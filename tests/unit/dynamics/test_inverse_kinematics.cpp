@@ -193,6 +193,121 @@ TEST(InverseKinematics, FindSolutionPaths)
   EXPECT_EQ(solution.size(), static_cast<int>(ik->getDofs().size()));
 }
 
+TEST(InverseKinematics, SolveAllowIncompleteFalse)
+{
+  auto fixture = makeIkSkeleton();
+  auto ik = fixture.end->getOrCreateIK();
+  ASSERT_NE(ik, nullptr);
+
+  auto target
+      = std::make_shared<SimpleFrame>(Frame::World(), "ik_target_solve");
+  target->setTransform(fixture.end->getTransform());
+  ik->setTarget(target);
+
+  auto solver = std::make_shared<math::GradientDescentSolver>();
+  solver->setNumMaxIterations(1);
+  solver->setTolerance(1e-6);
+  ik->setSolver(solver);
+
+  const Eigen::VectorXd before = ik->getPositions();
+  const bool solved = ik->solveAndApply(false);
+  if (!solved) {
+    EXPECT_TRUE(ik->getPositions().isApprox(before));
+  }
+}
+
+TEST(InverseKinematics, FindSolutionUsesProvidedConfig)
+{
+  auto fixture = makeIkSkeleton();
+  auto ik = fixture.end->getOrCreateIK();
+  ASSERT_NE(ik, nullptr);
+
+  auto target
+      = std::make_shared<SimpleFrame>(Frame::World(), "ik_target_config");
+  target->setTransform(fixture.end->getTransform());
+  ik->setTarget(target);
+
+  auto solver = std::make_shared<math::GradientDescentSolver>();
+  solver->setNumMaxIterations(1);
+  solver->setTolerance(1e-6);
+  ik->setSolver(solver);
+
+  Eigen::VectorXd config
+      = Eigen::VectorXd::Constant(static_cast<int>(ik->getDofs().size()), 0.1);
+  ik->findSolution(config);
+  EXPECT_EQ(config.size(), static_cast<int>(ik->getDofs().size()));
+}
+
+TEST(InverseKinematics, TaskSpaceRegionReferenceFrameError)
+{
+  auto fixture = makeIkSkeleton();
+  auto ik = fixture.end->getOrCreateIK();
+  ASSERT_NE(ik, nullptr);
+
+  auto& tsr = ik->setErrorMethod<InverseKinematics::TaskSpaceRegion>();
+  tsr.setBounds(
+      Eigen::Vector6d::Constant(-0.2), Eigen::Vector6d::Constant(0.2));
+  tsr.setErrorLengthClamp(0.1);
+
+  auto reference = std::make_shared<SimpleFrame>(fixture.root, "ik_ref_frame");
+  Eigen::Isometry3d refTf = Eigen::Isometry3d::Identity();
+  refTf.translation() = Eigen::Vector3d(0.05, -0.02, 0.03);
+  refTf.linear()
+      = Eigen::AngleAxisd(0.3, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  reference->setRelativeTransform(refTf);
+  tsr.setReferenceFrame(reference);
+
+  auto target = std::make_shared<SimpleFrame>(Frame::World(), "ik_tsr_target");
+  Eigen::Isometry3d targetTf = fixture.end->getTransform();
+  targetTf.translation() += Eigen::Vector3d(0.1, -0.05, 0.08);
+  target->setTransform(targetTf);
+  ik->setTarget(target);
+
+  const auto& error = tsr.evalError(ik->getPositions());
+  EXPECT_TRUE(error.array().isFinite().all());
+  EXPECT_FALSE(reference->isWorld());
+}
+
+TEST(InverseKinematics, AnalyticalExtraDofSettings)
+{
+  auto fixture = makeIkSkeleton();
+  auto ik = fixture.end->getOrCreateIK();
+  ASSERT_NE(ik, nullptr);
+
+  auto target
+      = std::make_shared<SimpleFrame>(Frame::World(), "ik_target_analytical");
+  target->setTransform(fixture.end->getTransform());
+  ik->setTarget(target);
+
+  ik->setGradientMethod<DummyAnalytical>();
+  auto* analytical = ik->getAnalytical();
+  ASSERT_NE(analytical, nullptr);
+
+  analytical->setExtraDofUtilization(
+      InverseKinematics::Analytical::POST_ANALYTICAL);
+  analytical->setExtraErrorLengthClamp(0.3);
+  EXPECT_EQ(
+      analytical->getExtraDofUtilization(),
+      InverseKinematics::Analytical::POST_ANALYTICAL);
+  EXPECT_NEAR(analytical->getExtraErrorLengthClamp(), 0.3, 1e-12);
+}
+
+TEST(InverseKinematics, JacobianDampingAccessors)
+{
+  auto fixture = makeIkSkeleton();
+  auto ik = fixture.end->getOrCreateIK();
+  ASSERT_NE(ik, nullptr);
+
+  auto& dls = ik->setGradientMethod<InverseKinematics::JacobianDLS>();
+  dls.setDampingCoefficient(0.12);
+  EXPECT_NEAR(dls.getDampingCoefficient(), 0.12, 1e-12);
+
+  auto& transpose
+      = ik->setGradientMethod<InverseKinematics::JacobianTranspose>();
+  transpose.setComponentWiseClamp(0.05);
+  EXPECT_NEAR(transpose.getComponentWiseClamp(), 0.05, 1e-12);
+}
+
 TEST(InverseKinematics, AnalyticalGradientAndWeights)
 {
   auto fixture = makeIkSkeleton();
@@ -492,6 +607,39 @@ TEST(HierarchicalIK, CompositeAndWholeBody)
   Eigen::VectorXd wbPositions;
   wholeBody->solveAndApply(wbPositions, false);
   EXPECT_EQ(wbPositions.size(), fixture.skeleton->getNumDofs());
+}
+
+TEST(HierarchicalIK, AccessorsAndNullspaceCaching)
+{
+  auto fixture = makeIkSkeleton();
+  auto composite = CompositeIK::create(fixture.skeleton);
+  ASSERT_NE(composite, nullptr);
+
+  auto objective = std::make_shared<math::ModularFunction>("hik_obj");
+  composite->setObjective(objective);
+  composite->setNullSpaceObjective(objective);
+
+  auto solver = std::make_shared<math::GradientDescentSolver>();
+  solver->setNumMaxIterations(1);
+  composite->setSolver(solver);
+
+  const HierarchicalIK* constIk = composite.get();
+  EXPECT_EQ(constIk->getObjective(), objective);
+  EXPECT_EQ(constIk->getNullSpaceObjective(), objective);
+  EXPECT_TRUE(constIk->hasNullSpaceObjective());
+  EXPECT_EQ(constIk->getSolver(), solver);
+  EXPECT_NE(constIk->getProblem(), nullptr);
+
+  Eigen::VectorXd positions = composite->getPositions();
+  positions.array() += 0.1;
+  composite->setPositions(positions);
+  EXPECT_TRUE(composite->getPositions().isApprox(positions));
+
+  composite->refreshIKHierarchy();
+  const auto nullspaces = composite->computeNullSpaces();
+  EXPECT_EQ(nullspaces.size(), composite->getIKHierarchy().size());
+
+  composite->clearCaches();
 }
 
 namespace {

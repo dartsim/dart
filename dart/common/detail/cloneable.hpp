@@ -591,7 +591,7 @@ template <typename T>
 CloneableVector<T>& CloneableVector<T>::operator=(const CloneableVector& other)
 {
   copy(other);
-  return this;
+  return *this;
 }
 
 //==============================================================================

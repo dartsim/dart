@@ -1,7 +1,5 @@
 // Copyright (c) 2011, The DART development contributors
 
-#include <dart/utils/dart_resource_retriever.hpp>
-
 #include <dart/all.hpp>
 
 #include <gtest/gtest.h>
@@ -72,6 +70,13 @@ dart::common::filesystem::path getSampleDataRoot()
   dart::common::filesystem::path here(__FILE__);
   return here.parent_path().parent_path().parent_path().parent_path() / "data";
 }
+
+class ExposedArrowShape final : public ArrowShape
+{
+public:
+  using ArrowShape::ArrowShape;
+  using MeshShape::convertToAssimpMesh;
+};
 
 } // namespace
 
@@ -242,6 +247,30 @@ TEST(ArrowShapeTest, DoubleArrowMeshGeneration)
   ASSERT_NE(mesh, nullptr);
   EXPECT_EQ(mesh->getVertices().size(), 6 * resolution + 2);
   EXPECT_EQ(mesh->getTriangles().size(), 8 * resolution);
+}
+
+//==============================================================================
+TEST(ArrowShapeTest, MeshConversions)
+{
+  const Eigen::Vector3d tail(0.0, 0.0, 0.0);
+  const Eigen::Vector3d head(0.0, 0.0, 1.0);
+  const std::size_t resolution = 6;
+
+  ArrowShape::Properties props;
+  props.mDoubleArrow = true;
+
+  ExposedArrowShape arrow(
+      tail, head, props, Eigen::Vector4d::Ones(), resolution);
+
+  const auto triMesh = arrow.getTriMesh();
+  ASSERT_NE(triMesh, nullptr);
+
+  const auto polygonMesh = arrow.getPolygonMesh();
+  ASSERT_NE(polygonMesh, nullptr);
+  EXPECT_TRUE(polygonMesh->hasVertices());
+
+  const aiScene* scene = arrow.convertToAssimpMesh();
+  ASSERT_NE(scene, nullptr);
 }
 
 //==============================================================================

@@ -30,9 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/common/cloneable.hpp>
-
-#include <dart/dart.hpp>
+#include <dart/all.hpp>
 
 #include <gtest/gtest.h>
 
@@ -63,6 +61,34 @@ public:
 using SimpleMakeCloneable = MakeCloneable<SimpleBase, SimpleData>;
 
 using SimplePtr = std::unique_ptr<SimpleBase>;
+
+struct ProxyOwner
+{
+  SimpleData data;
+};
+
+void setProxyData(ProxyOwner* owner, const SimpleData& data)
+{
+  owner->data = data;
+}
+
+SimpleData getProxyData(const ProxyOwner* owner)
+{
+  return owner->data;
+}
+
+class ProxyBase : public Cloneable<ProxyBase>
+{
+public:
+  ~ProxyBase() override = default;
+};
+
+using SimpleProxy = ProxyCloneable<
+    ProxyBase,
+    ProxyOwner,
+    SimpleData,
+    setProxyData,
+    getProxyData>;
 
 SimplePtr makeSimpleCloneable(int value, const std::string& name)
 {
@@ -356,4 +382,47 @@ TEST(CloneableMap, MergeFromCloneableMap)
       static_cast<const SimpleMakeCloneable*>(map.at("override").get())->value,
       3);
   ASSERT_NE(map.at("added"), nullptr);
+}
+
+//==============================================================================
+TEST(CloneableVector, CopyAssignment)
+{
+  std::vector<SimplePtr> sourceVec;
+  sourceVec.push_back(makeSimpleCloneable(5, "five"));
+  CloneableVector<SimplePtr> source(std::move(sourceVec));
+
+  std::vector<SimplePtr> targetVec;
+  targetVec.push_back(makeSimpleCloneable(9, "nine"));
+  CloneableVector<SimplePtr> target(std::move(targetVec));
+
+  target = source;
+
+  const auto& targetVector = target.getVector();
+  ASSERT_EQ(targetVector.size(), 1u);
+  ASSERT_NE(targetVector[0], nullptr);
+  EXPECT_EQ(
+      static_cast<const SimpleMakeCloneable*>(targetVector[0].get())->value, 5);
+}
+
+//==============================================================================
+TEST(ProxyCloneable, CopyAndMoveAssignment)
+{
+  ProxyOwner owner;
+  owner.data = SimpleData{1, "owner"};
+
+  SimpleProxy owned(&owner);
+  owned = SimpleData{2, "updated"};
+  EXPECT_EQ(owner.data.value, 2);
+  EXPECT_EQ(owner.data.name, "updated");
+
+  SimpleProxy standalone(SimpleData{3, "standalone"});
+  SimpleProxy moved;
+  moved = std::move(standalone);
+  EXPECT_EQ(moved.get().value, 3);
+  EXPECT_EQ(moved.get().name, "standalone");
+
+  SimpleProxy copied;
+  copied = owned;
+  EXPECT_EQ(copied.get().value, 2);
+  EXPECT_EQ(copied.get().name, "updated");
 }

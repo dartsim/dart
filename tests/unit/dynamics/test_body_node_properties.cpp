@@ -434,6 +434,51 @@ static SkeletonPtr createChainSkeleton(const std::string& name, int numBodies)
   return skeleton;
 }
 
+TEST(BodyNodeProperties, MoveTransformJacobianAndExternalForce)
+{
+  auto source = createChainSkeleton("move_chain", 2);
+  BodyNode* moving = source->getBodyNode("body1");
+
+  auto target = Skeleton::create("move_target");
+  auto targetRoot = target->createJointAndBodyNodePair<FreeJoint>();
+
+  EXPECT_TRUE(moving->moveTo(target, targetRoot.second));
+  EXPECT_EQ(moving->getSkeleton(), target);
+
+  auto refFrame = SimpleFrame::createShared(Frame::World(), "move_ref");
+  refFrame->setTranslation(Eigen::Vector3d(0.05, 0.0, -0.05));
+
+  const auto worldTf = moving->getTransform(Frame::World());
+  const auto refTf = moving->getTransform(refFrame.get());
+  EXPECT_TRUE(worldTf.matrix().allFinite());
+  EXPECT_TRUE(refTf.matrix().allFinite());
+
+  const auto linearJac = moving->getLinearJacobian();
+  const auto angularJac = moving->getAngularJacobian();
+  EXPECT_EQ(linearJac.rows(), 3);
+  EXPECT_EQ(angularJac.rows(), 3);
+
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(0.2, 0.2, 0.2));
+  ShapeNode* shapeNode = moving->createShapeNodeWith<VisualAspect>(box);
+  ASSERT_NE(shapeNode, nullptr);
+  EXPECT_EQ(moving->getNumShapeNodes(), 1u);
+  shapeNode->remove();
+  EXPECT_EQ(moving->getNumShapeNodes(), 0u);
+
+  moving->setExtForce(
+      Eigen::Vector3d(1.0, 0.0, 0.0), Eigen::Vector3d::Zero(), true, true);
+  moving->addExtForce(
+      Eigen::Vector3d(0.0, 1.0, 0.0), Eigen::Vector3d::Zero(), true, true);
+  target->computeForwardDynamics();
+
+  const auto& bodyForce = moving->getBodyForce();
+  EXPECT_TRUE(bodyForce.array().isFinite().all());
+
+  SkeletonPtr removed = moving->remove("removed_move");
+  ASSERT_NE(removed, nullptr);
+  EXPECT_EQ(removed->getNumBodyNodes(), 1u);
+}
+
 TEST(BodyNodeStructural, SplitCreatesNewSkeleton)
 {
   auto skeleton = createChainSkeleton("original", 4);

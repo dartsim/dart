@@ -3,10 +3,12 @@
 #include <dart/all.hpp>
 
 #include <Eigen/Core>
+#include <assimp/cexport.h>
 #include <assimp/cimport.h>
 #include <assimp/config.h>
 #include <assimp/material.h>
 #include <assimp/postprocess.h>
+#include <assimp/scene.h>
 #include <gtest/gtest.h>
 
 #include <atomic>
@@ -203,8 +205,7 @@ private:
       return &byFull->second;
     }
 
-    if (uri.mPath) {
-      const auto& path = uri.mPath.get();
+    const auto findByPath = [&](const std::string& path) -> const std::string* {
       const auto byPath = mData.find(path);
       if (byPath != mData.end()) {
         return &byPath->second;
@@ -215,12 +216,25 @@ private:
           return &byTrim->second;
         }
       }
+      const auto slash = path.find_last_of("/\\");
+      if (slash != std::string::npos) {
+        const auto byName = mData.find(path.substr(slash + 1));
+        if (byName != mData.end()) {
+          return &byName->second;
+        }
+      }
+      return nullptr;
+    };
+
+    if (uri.mPath) {
+      if (const std::string* data = findByPath(uri.mPath.get())) {
+        return data;
+      }
     }
 
     if (uri.mAuthority) {
-      const auto byAuthority = mData.find(uri.mAuthority.get());
-      if (byAuthority != mData.end()) {
-        return &byAuthority->second;
+      if (const std::string* data = findByPath(uri.mAuthority.get())) {
+        return data;
       }
     }
 
@@ -454,6 +468,37 @@ public:
   const aiScene* callConvertToAssimpMesh() const
   {
     return convertToAssimpMesh();
+  }
+};
+
+class MeshHandleHarness final : public dynamics::MeshShape
+{
+public:
+  using dynamics::MeshShape::MeshShape;
+
+  MeshHandle& meshHandle()
+  {
+    return mMesh;
+  }
+
+  const MeshHandle& meshHandle() const
+  {
+    return mMesh;
+  }
+
+  void resetMeshHandle()
+  {
+    mMesh.reset();
+  }
+
+  void setCachedScene(const aiScene* scene)
+  {
+    mCachedAiScene = scene;
+  }
+
+  void clearTriMesh()
+  {
+    mTriMesh.reset();
   }
 };
 
@@ -1470,6 +1515,309 @@ TEST(MeshShapeTest, ConvertToAssimpMeshWithSubMeshesAndTexCoords)
   EXPECT_GE(scene->mNumMeshes, 1u);
   ASSERT_NE(scene->mMeshes, nullptr);
   EXPECT_TRUE(scene->mMeshes[0]->HasTextureCoords(0));
+}
+
+TEST(MeshShapeTest, MeshHandleAccessorsAndOwnership)
+{
+  const std::string objData
+      = "v 0 0 0\n"
+        "v 1 0 0\n"
+        "v 0 1 0\n"
+        "f 1 2 3\n";
+  const unsigned int flags = aiProcess_Triangulate
+                             | aiProcess_JoinIdenticalVertices
+                             | aiProcess_SortByPType;
+  const aiScene* imported = aiImportFileFromMemory(
+      objData.data(), static_cast<unsigned int>(objData.size()), flags, "obj");
+  ASSERT_NE(imported, nullptr);
+
+  aiScene* copied = nullptr;
+  aiCopyScene(imported, &copied);
+  ASSERT_NE(copied, nullptr);
+
+  auto triMesh = std::make_shared<math::TriMesh<double>>();
+  triMesh->addVertex(0.0, 0.0, 0.0);
+  triMesh->addVertex(1.0, 0.0, 0.0);
+  triMesh->addVertex(0.0, 1.0, 0.0);
+  triMesh->addTriangle(0, 1, 2);
+
+  MeshHandleHarness shape(Eigen::Vector3d::Ones(), triMesh, common::Uri());
+  shape.meshHandle().set(
+      imported, dynamics::MeshShape::MeshOwnership::Imported);
+  EXPECT_TRUE(shape.meshHandle());
+  EXPECT_EQ(shape.meshHandle().get(), imported);
+  EXPECT_EQ(shape.meshHandle()->mNumMeshes, imported->mNumMeshes);
+  EXPECT_EQ(
+      shape.meshHandle().getOwnership(),
+      dynamics::MeshShape::MeshOwnership::Imported);
+  EXPECT_EQ(shape.meshHandle().getShared().get(), imported);
+
+  shape.meshHandle().reset();
+  EXPECT_FALSE(shape.meshHandle());
+  EXPECT_EQ(
+      shape.meshHandle().getOwnership(),
+      dynamics::MeshShape::MeshOwnership::None);
+  EXPECT_EQ(shape.meshHandle().getShared().get(), nullptr);
+
+  shape.meshHandle().set(copied, dynamics::MeshShape::MeshOwnership::Copied);
+  EXPECT_TRUE(shape.meshHandle());
+  EXPECT_EQ(
+      shape.meshHandle().getOwnership(),
+      dynamics::MeshShape::MeshOwnership::Copied);
+  shape.meshHandle().reset();
+
+  auto* manualScene = new aiScene();
+  shape.meshHandle().set(
+      manualScene, dynamics::MeshShape::MeshOwnership::Manual);
+  EXPECT_EQ(
+      shape.meshHandle().getOwnership(),
+      dynamics::MeshShape::MeshOwnership::Manual);
+  shape.meshHandle().reset();
+
+  auto customScene = std::shared_ptr<const aiScene>(
+      new aiScene(),
+      [](const aiScene* scene) { delete const_cast<aiScene*>(scene); });
+  shape.meshHandle().set(customScene);
+  EXPECT_EQ(
+      shape.meshHandle().getOwnership(),
+      dynamics::MeshShape::MeshOwnership::Custom);
+  EXPECT_EQ(shape.meshHandle().getShared().get(), customScene.get());
+  shape.meshHandle().reset();
+}
+
+TEST(MeshShapeTest, GetTriMeshUsesCachedScene)
+{
+  const std::string objData
+      = "v 0 0 0\n"
+        "v 1 0 0\n"
+        "v 0 1 0\n"
+        "f 1 2 3\n";
+  const unsigned int flags = aiProcess_Triangulate
+                             | aiProcess_JoinIdenticalVertices
+                             | aiProcess_SortByPType;
+  const aiScene* imported = aiImportFileFromMemory(
+      objData.data(), static_cast<unsigned int>(objData.size()), flags, "obj");
+  ASSERT_NE(imported, nullptr);
+
+  auto triMesh = std::make_shared<math::TriMesh<double>>();
+  MeshHandleHarness shape(Eigen::Vector3d::Ones(), triMesh, common::Uri());
+  shape.clearTriMesh();
+  shape.resetMeshHandle();
+  shape.setCachedScene(imported);
+
+  const auto cachedTriMesh = shape.getTriMesh();
+  ASSERT_NE(cachedTriMesh, nullptr);
+  EXPECT_TRUE(cachedTriMesh->hasTriangles());
+  EXPECT_EQ(cachedTriMesh->getVertices().size(), 3u);
+}
+
+TEST(MeshShapeTest, ConvertToAssimpMeshExportsMtlAndTexCoordZ)
+{
+  auto triMesh = std::make_shared<math::TriMesh<double>>();
+  triMesh->addVertex(0.0, 0.0, 0.0);
+  triMesh->addVertex(1.0, 0.0, 0.0);
+  triMesh->addVertex(0.0, 1.0, 0.0);
+  triMesh->addVertex(1.0, 1.0, 0.0);
+  triMesh->addTriangle(0, 1, 2);
+  triMesh->addTriangle(1, 3, 2);
+  for (int i = 0; i < 4; ++i) {
+    triMesh->addVertexNormal(0.0, 0.0, 1.0);
+  }
+
+  SubmeshMaterialMeshShape shape(
+      Eigen::Vector3d::Ones(), triMesh, common::Uri());
+
+  std::vector<dynamics::MeshMaterial> materials(2);
+  materials[0].ambient = Eigen::Vector4f(0.1f, 0.2f, 0.3f, 1.0f);
+  materials[0].diffuse = Eigen::Vector4f(0.4f, 0.5f, 0.6f, 1.0f);
+  materials[0].specular = Eigen::Vector4f(0.2f, 0.3f, 0.4f, 1.0f);
+  materials[0].emissive = Eigen::Vector4f(0.0f, 0.1f, 0.2f, 1.0f);
+  materials[0].shininess = 42.0f;
+  materials[0].textureImagePaths = {"albedo.png"};
+  materials[1].diffuse = Eigen::Vector4f(0.2f, 0.8f, 0.1f, 1.0f);
+  shape.setMaterials(std::move(materials));
+
+  std::vector<SubmeshMaterialMeshShape::SubMeshRange> ranges(2);
+  ranges[0].vertexOffset = 0u;
+  ranges[0].vertexCount = 2u;
+  ranges[0].triangleOffset = 0u;
+  ranges[0].triangleCount = 1u;
+  ranges[0].materialIndex = 0u;
+  ranges[1].vertexOffset = 2u;
+  ranges[1].vertexCount = 2u;
+  ranges[1].triangleOffset = 1u;
+  ranges[1].triangleCount = 1u;
+  ranges[1].materialIndex = 1u;
+  shape.setSubMeshRanges(std::move(ranges));
+
+  std::vector<Eigen::Vector3d> texCoords;
+  texCoords.emplace_back(0.0, 0.0, 0.25);
+  texCoords.emplace_back(1.0, 0.0, 0.5);
+  texCoords.emplace_back(0.0, 1.0, 0.75);
+  texCoords.emplace_back(1.0, 1.0, 1.0);
+  shape.setTextureCoords(std::move(texCoords), 3);
+
+  const aiScene* scene = shape.callConvertToAssimpMesh();
+  ASSERT_NE(scene, nullptr);
+  ASSERT_GE(scene->mNumMeshes, 1u);
+  ASSERT_GE(scene->mNumMaterials, 2u);
+
+  const aiMesh* mesh = scene->mMeshes[0];
+  ASSERT_NE(mesh, nullptr);
+  ASSERT_TRUE(mesh->HasTextureCoords(0));
+  bool hasZ = false;
+  for (unsigned int i = 0; i < mesh->mNumVertices; ++i) {
+    if (mesh->mTextureCoords[0][i].z > 0.1f) {
+      hasZ = true;
+      break;
+    }
+  }
+  EXPECT_TRUE(hasZ);
+
+  const aiMaterial* mat0 = scene->mMaterials[0];
+  EXPECT_NE(mat0, nullptr);
+}
+
+TEST(MeshShapeTest, ConvertToAssimpMeshSubmeshMismatchUsesSingleMesh)
+{
+  auto triMesh = std::make_shared<math::TriMesh<double>>();
+  triMesh->addVertex(0.0, 0.0, 0.0);
+  triMesh->addVertex(1.0, 0.0, 0.0);
+  triMesh->addVertex(0.0, 1.0, 0.0);
+  triMesh->addVertex(1.0, 1.0, 0.0);
+  triMesh->addTriangle(0, 1, 2);
+  triMesh->addTriangle(1, 3, 2);
+
+  SubmeshMismatchMeshShape shape(
+      Eigen::Vector3d::Ones(), triMesh, common::Uri());
+
+  std::vector<dynamics::MeshMaterial> materials(2);
+  shape.setMaterials(std::move(materials));
+
+  std::vector<SubmeshMismatchMeshShape::SubMeshRange> ranges(1);
+  ranges[0].vertexOffset = 0u;
+  ranges[0].vertexCount = triMesh->getVertices().size();
+  ranges[0].triangleOffset = 0u;
+  ranges[0].triangleCount = triMesh->getTriangles().size() - 1u;
+  ranges[0].materialIndex = 0u;
+  shape.setSubMeshRanges(std::move(ranges));
+
+  const aiScene* scene = shape.callConvertToAssimpMesh();
+  ASSERT_NE(scene, nullptr);
+  EXPECT_EQ(scene->mNumMaterials, 1u);
+  EXPECT_GE(scene->mNumMeshes, 1u);
+}
+
+TEST(MeshShapeTest, ConvertToAssimpMeshSubmeshFaceFormats)
+{
+  auto runCase = [](bool withTexCoords,
+                    bool withNormals,
+                    bool addZeroRange,
+                    unsigned int materialIndex) -> const aiScene* {
+    auto triMesh = std::make_shared<math::TriMesh<double>>();
+    triMesh->addVertex(0.0, 0.0, 0.0);
+    triMesh->addVertex(1.0, 0.0, 0.0);
+    triMesh->addVertex(0.0, 1.0, 0.0);
+    triMesh->addTriangle(0, 1, 2);
+    if (withNormals) {
+      triMesh->addVertexNormal(0.0, 0.0, 1.0);
+      triMesh->addVertexNormal(0.0, 0.0, 1.0);
+      triMesh->addVertexNormal(0.0, 0.0, 1.0);
+    }
+
+    SubmeshMaterialMeshShape shape(
+        Eigen::Vector3d::Ones(), triMesh, common::Uri());
+
+    std::vector<dynamics::MeshMaterial> materials(2);
+    shape.setMaterials(std::move(materials));
+
+    std::vector<SubmeshMaterialMeshShape::SubMeshRange> ranges;
+    if (addZeroRange) {
+      SubmeshMaterialMeshShape::SubMeshRange emptyRange;
+      emptyRange.vertexOffset = 0u;
+      emptyRange.vertexCount = 0u;
+      emptyRange.triangleOffset = 0u;
+      emptyRange.triangleCount = 0u;
+      emptyRange.materialIndex = 0u;
+      ranges.push_back(emptyRange);
+    }
+    SubmeshMaterialMeshShape::SubMeshRange range;
+    range.vertexOffset = 0u;
+    range.vertexCount = 3u;
+    range.triangleOffset = 0u;
+    range.triangleCount = 1u;
+    range.materialIndex = materialIndex;
+    ranges.push_back(range);
+    shape.setSubMeshRanges(std::move(ranges));
+
+    if (withTexCoords) {
+      std::vector<Eigen::Vector3d> texCoords;
+      texCoords.emplace_back(0.0, 0.0, 0.0);
+      texCoords.emplace_back(1.0, 0.0, 0.0);
+      texCoords.emplace_back(0.0, 1.0, 0.0);
+      shape.setTextureCoords(std::move(texCoords), 2);
+    }
+
+    const aiScene* scene = shape.callConvertToAssimpMesh();
+    if (!scene) {
+      ADD_FAILURE() << "convertToAssimpMesh returned null scene";
+      return nullptr;
+    }
+    if (scene->mNumMeshes < 1u) {
+      ADD_FAILURE() << "convertToAssimpMesh produced no meshes";
+    }
+    return scene;
+  };
+
+  const aiScene* texScene = runCase(true, false, true, 5u);
+  ASSERT_NE(texScene, nullptr);
+  EXPECT_TRUE(texScene->mMeshes[0]->HasTextureCoords(0));
+
+  const aiScene* normalScene = runCase(false, true, false, 0u);
+  ASSERT_NE(normalScene, nullptr);
+  EXPECT_FALSE(normalScene->mMeshes[0]->HasTextureCoords(0));
+
+  const aiScene* plainScene = runCase(false, false, false, 0u);
+  ASSERT_NE(plainScene, nullptr);
+  EXPECT_FALSE(plainScene->mMeshes[0]->HasTextureCoords(0));
+}
+
+TEST(MeshShapeTest, LoadMeshFromMemoryResourceWithPathResolution)
+{
+  const std::string objData
+      = "mtllib mesh.mtl\n"
+        "v 0 0 0\n"
+        "v 1 0 0\n"
+        "v 0 1 0\n"
+        "usemtl material_0\n"
+        "f 1 2 3\n";
+  const std::string mtlData
+      = "newmtl material_0\n"
+        "Ka 0.1 0.2 0.3\n"
+        "Kd 0.4 0.5 0.6\n"
+        "Ks 0.7 0.8 0.9\n"
+        "Ns 12\n";
+
+  std::unordered_map<std::string, std::string> data;
+  data.emplace("mesh.obj", objData);
+  data.emplace("mesh.mtl", mtlData);
+
+  auto retriever = std::make_shared<StringResourceRetriever>(std::move(data));
+  const std::string uriString = "package://example/assets/mesh.obj";
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* scene = dynamics::MeshShape::loadMesh(uriString, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+  ASSERT_NE(scene, nullptr);
+
+  const common::Uri meshUri = common::Uri::createFromStringOrPath(uriString);
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  dynamics::MeshShape shape(Eigen::Vector3d::Ones(), scene, meshUri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+
+  ASSERT_FALSE(shape.getMaterials().empty());
+  const auto* material = shape.getMaterial(0u);
+  ASSERT_NE(material, nullptr);
 }
 
 TEST(MeshShapeTest, LoadMeshFromCustomUriWithMaterial)

@@ -300,6 +300,30 @@ TEST(SoftBodyNode, PointMassSpan)
 }
 
 //==============================================================================
+TEST(SoftBodyNode, PointMassIteratorAccessors)
+{
+  auto skeleton = Skeleton::create("soft-iterator");
+  auto* softBody = createBoxSoftBody(skeleton);
+
+  const auto dofs = skeleton->getNumDofs();
+  skeleton->setPositions(Eigen::VectorXd::Zero(dofs));
+  skeleton->setVelocities(Eigen::VectorXd::Zero(dofs));
+
+  auto pointMasses = softBody->getPointMasses();
+  ASSERT_GT(pointMasses.size(), 0u);
+
+  for (auto* pm : pointMasses) {
+    ASSERT_NE(pm, nullptr);
+    pm->setPositions(Eigen::Vector3d(0.1, 0.2, 0.3));
+    pm->setVelocities(Eigen::Vector3d(0.4, -0.2, 0.1));
+    pm->setForces(Eigen::Vector3d(0.7, 0.5, -0.3));
+    EXPECT_TRUE(pm->getPositions().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+    EXPECT_TRUE(pm->getVelocities().isApprox(Eigen::Vector3d(0.4, -0.2, 0.1)));
+    EXPECT_TRUE(pm->getForces().isApprox(Eigen::Vector3d(0.7, 0.5, -0.3)));
+  }
+}
+
+//==============================================================================
 TEST(SoftBodyNode, ConstPointMassAccess)
 {
   auto skeleton = Skeleton::create("soft-const-pm");
@@ -513,6 +537,36 @@ TEST(SoftBodyNode, MultiStepSimulation)
     auto* pm = softBody->getPointMass(i);
     EXPECT_TRUE(pm->getPositions().array().isFinite().all());
     EXPECT_TRUE(pm->getVelocities().array().isFinite().all());
+  }
+}
+
+//==============================================================================
+TEST(SoftBodyNode, WorldStepWithDampingAndConstraints)
+{
+  auto skeleton = Skeleton::create("soft-damping-step");
+  auto* softBody = createBoxSoftBody(skeleton);
+  softBody->setDampingCoefficient(0.25);
+
+  const auto dofs = skeleton->getNumDofs();
+  skeleton->setPositions(Eigen::VectorXd::Zero(dofs));
+  skeleton->setVelocities(Eigen::VectorXd::Zero(dofs));
+
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    auto* pm = softBody->getPointMass(i);
+    pm->setVelocities(Eigen::Vector3d(0.2, -0.1, 0.05));
+    pm->setConstraintImpulse(Eigen::Vector3d::UnitX(), false);
+  }
+
+  auto world = simulation::World::create();
+  world->addSkeleton(skeleton);
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world->setTimeStep(1e-3);
+  world->step();
+
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    const auto* pm = softBody->getPointMass(i);
+    EXPECT_TRUE(pm->getForces().array().isFinite().all());
+    EXPECT_TRUE(pm->getConstraintImpulses().array().isFinite().all());
   }
 }
 

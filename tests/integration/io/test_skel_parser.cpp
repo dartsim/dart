@@ -1453,6 +1453,23 @@ simulation::WorldPtr readWorldFromSkelString(std::string_view xml)
   return world;
 }
 
+simulation::WorldPtr readWorldFromSkelStringWithIo(
+    std::string_view xml, std::string_view tag)
+{
+  static std::size_t counter = 0;
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / ("test_" + std::string(tag) + "_"
+                           + std::to_string(counter++) + ".skel");
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = io::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  return world;
+}
+
 } // namespace
 
 //==============================================================================
@@ -1499,6 +1516,270 @@ TEST(SkelParser, InertiaFromShapeNodesUsesVolumes)
   ASSERT_NE(body, nullptr);
   EXPECT_DOUBLE_EQ(body->getMass(), 2.0);
   EXPECT_GT(body->getInertia().getMoment().trace(), 0.0);
+}
+
+//==============================================================================
+TEST(SkelParser, ParsesPlaneSoftBodyAndJointAttributes)
+{
+  const std::string skelXml = R"(
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="parser_coverage">
+      <body name="root">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+            </plane>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <body name="body1">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="body2">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="body3">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="soft_body">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <soft_shape>
+          <total_mass>1.0</total_mass>
+          <transformation>0 0 0 0 0 0</transformation>
+          <geometry>
+            <box>
+              <size>0.5 0.5 0.5</size>
+              <frags>2 2 2</frags>
+            </box>
+          </geometry>
+          <kv>100</kv>
+          <ke>50</ke>
+        </soft_shape>
+      </body>
+      <body name="body4">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="body5">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>root</child>
+      </joint>
+      <joint type="prismatic" name="pjoint" actuator="servo">
+        <parent>root</parent>
+        <child>body1</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+          <dynamics>
+            <damping>0.2</damping>
+            <friction>0.1</friction>
+            <spring_rest_position>0.3</spring_rest_position>
+            <spring_stiffness>100</spring_stiffness>
+          </dynamics>
+          <limit>
+            <lower>-1</lower>
+            <upper>1</upper>
+          </limit>
+        </axis>
+        <init_pos>0.5</init_pos>
+        <init_vel>0.1</init_vel>
+        <dof>
+          <velocity lower="-2" upper="2" initial="0.1" />
+          <force lower="-5" upper="5" initial="0.0" />
+        </dof>
+      </joint>
+      <joint type="universal" name="ujoint" actuator="passive">
+        <parent>body1</parent>
+        <child>body2</child>
+        <axis>
+          <xyz>0 1 0</xyz>
+        </axis>
+        <axis2>
+          <xyz>0 0 1</xyz>
+        </axis2>
+        <init_pos>0.1 0.2</init_pos>
+        <init_vel>0.3 0.4</init_vel>
+      </joint>
+      <joint type="euler" name="ejoint" actuator="velocity">
+        <parent>body2</parent>
+        <child>body3</child>
+        <axis_order>xyz</axis_order>
+        <init_pos>0.1 0.2 0.3</init_pos>
+        <init_vel>0.4 0.5 0.6</init_vel>
+      </joint>
+      <joint type="revolute" name="rjoint" actuator="locked">
+        <parent>body3</parent>
+        <child>soft_body</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+      <joint type="revolute" name="force_joint" actuator="force">
+        <parent>soft_body</parent>
+        <child>body4</child>
+        <axis>
+          <xyz>0 1 0</xyz>
+        </axis>
+      </joint>
+      <joint type="revolute" name="accel_joint" actuator="acceleration">
+        <parent>body4</parent>
+        <child>body5</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+        </axis>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+ )";
+
+  auto world = readWorldFromSkelStringWithIo(skelXml, "skel_parser");
+  ASSERT_NE(world, nullptr);
+
+  auto skel = world->getSkeleton("parser_coverage");
+  ASSERT_NE(skel, nullptr);
+  EXPECT_EQ(skel->getNumBodyNodes(), 7u);
+  EXPECT_EQ(skel->getNumJoints(), 7u);
+
+  auto* root = skel->getBodyNode("root");
+  ASSERT_NE(root, nullptr);
+  auto* rootShapeNode = root->getShapeNode(0);
+  ASSERT_NE(rootShapeNode, nullptr);
+  auto planeShape
+      = std::dynamic_pointer_cast<const PlaneShape>(rootShapeNode->getShape());
+  ASSERT_NE(planeShape, nullptr);
+  EXPECT_VECTOR_DOUBLE_EQ(planeShape->getNormal(), Eigen::Vector3d::UnitZ());
+  EXPECT_DOUBLE_EQ(planeShape->getOffset(), 0.0);
+
+  auto* softBody = skel->getBodyNode("soft_body");
+  ASSERT_NE(softBody, nullptr);
+  EXPECT_NE(dynamic_cast<SoftBodyNode*>(softBody), nullptr);
+
+  auto* prismaticBody = skel->getBodyNode("body1");
+  ASSERT_NE(prismaticBody, nullptr);
+  auto* prismaticJoint
+      = dynamic_cast<PrismaticJoint*>(prismaticBody->getParentJoint());
+  ASSERT_NE(prismaticJoint, nullptr);
+  EXPECT_DOUBLE_EQ(prismaticJoint->getPosition(0), 0.5);
+  EXPECT_DOUBLE_EQ(prismaticJoint->getVelocity(0), 0.1);
+  EXPECT_DOUBLE_EQ(prismaticJoint->getDampingCoefficient(0), 0.2);
+  EXPECT_DOUBLE_EQ(prismaticJoint->getCoulombFriction(0), 0.1);
+  EXPECT_DOUBLE_EQ(prismaticJoint->getRestPosition(0), 0.3);
+  EXPECT_DOUBLE_EQ(prismaticJoint->getSpringStiffness(0), 100);
+  EXPECT_DOUBLE_EQ(prismaticJoint->getPositionLowerLimit(0), -1.0);
+  EXPECT_DOUBLE_EQ(prismaticJoint->getPositionUpperLimit(0), 1.0);
+  EXPECT_DOUBLE_EQ(prismaticJoint->getVelocityLowerLimit(0), -2.0);
+  EXPECT_DOUBLE_EQ(prismaticJoint->getVelocityUpperLimit(0), 2.0);
+  EXPECT_DOUBLE_EQ(prismaticJoint->getForceLowerLimit(0), -5.0);
+  EXPECT_DOUBLE_EQ(prismaticJoint->getForceUpperLimit(0), 5.0);
+  EXPECT_EQ(prismaticJoint->getActuatorType(), Joint::SERVO);
+
+  auto* universalBody = skel->getBodyNode("body2");
+  ASSERT_NE(universalBody, nullptr);
+  auto* universalJoint
+      = dynamic_cast<UniversalJoint*>(universalBody->getParentJoint());
+  ASSERT_NE(universalJoint, nullptr);
+  EXPECT_VECTOR_DOUBLE_EQ(
+      universalJoint->getPositions(), Eigen::Vector2d(0.1, 0.2));
+  EXPECT_VECTOR_DOUBLE_EQ(
+      universalJoint->getVelocities(), Eigen::Vector2d(0.3, 0.4));
+  EXPECT_EQ(universalJoint->getActuatorType(), Joint::PASSIVE);
+
+  auto* eulerBody = skel->getBodyNode("body3");
+  ASSERT_NE(eulerBody, nullptr);
+  auto* eulerJoint = dynamic_cast<EulerJoint*>(eulerBody->getParentJoint());
+  ASSERT_NE(eulerJoint, nullptr);
+  EXPECT_VECTOR_DOUBLE_EQ(
+      eulerJoint->getPositions(), Eigen::Vector3d(0.1, 0.2, 0.3));
+  EXPECT_VECTOR_DOUBLE_EQ(
+      eulerJoint->getVelocities(), Eigen::Vector3d(0.4, 0.5, 0.6));
+  EXPECT_EQ(eulerJoint->getActuatorType(), Joint::VELOCITY);
+
+  auto* lockedJoint = skel->getJoint("rjoint");
+  ASSERT_NE(lockedJoint, nullptr);
+  EXPECT_EQ(lockedJoint->getActuatorType(), Joint::LOCKED);
+
+  auto* forceJoint = skel->getJoint("force_joint");
+  ASSERT_NE(forceJoint, nullptr);
+  EXPECT_EQ(forceJoint->getActuatorType(), Joint::FORCE);
+
+  auto* accelJoint = skel->getJoint("accel_joint");
+  ASSERT_NE(accelJoint, nullptr);
+  EXPECT_EQ(accelJoint->getActuatorType(), Joint::ACCELERATION);
 }
 
 //==============================================================================

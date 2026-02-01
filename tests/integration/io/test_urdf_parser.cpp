@@ -168,6 +168,23 @@ common::Uri addMemoryFile(
   return common::Uri(std::string(uri));
 }
 
+#if DART_IO_HAS_URDF
+std::filesystem::path writeTempFile(
+    const std::string& xml,
+    const std::string& tag,
+    const std::string& extension)
+{
+  static std::size_t counter = 0;
+  const auto tempPath
+      = std::filesystem::temp_directory_path()
+        / ("test_" + tag + "_" + std::to_string(counter++) + extension);
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+  return tempPath;
+}
+#endif
+
 } // namespace
 
 //==============================================================================
@@ -359,6 +376,83 @@ TEST(UrdfParser, parseJointProperties)
   EXPECT_DOUBLE_EQ(joint2->getPositionUpperLimit(0), dart::math::inf);
   EXPECT_TRUE(joint2->isCyclic(0));
 }
+
+#if DART_IO_HAS_URDF
+//==============================================================================
+TEST(UrdfParser, ParsesMimicJoint)
+{
+  const std::string urdfXml = R"(
+<robot name="mimic_robot">
+  <link name="base" />
+  <link name="link1" />
+  <link name="link2" />
+  <joint name="joint1" type="revolute">
+    <parent link="base" />
+    <child link="link1" />
+    <axis xyz="0 0 1" />
+    <limit lower="-1" upper="1" effort="1" velocity="1" />
+  </joint>
+  <joint name="joint2" type="revolute">
+    <parent link="link1" />
+    <child link="link2" />
+    <axis xyz="0 1 0" />
+    <limit lower="-1" upper="1" effort="1" velocity="1" />
+    <mimic joint="joint1" multiplier="2" offset="0.5" />
+  </joint>
+</robot>
+ )";
+
+  const auto tempPath = writeTempFile(urdfXml, "urdf_mimic", ".urdf");
+  auto skel = dart::io::readSkeleton(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+
+  ASSERT_NE(skel, nullptr);
+  auto* joint1 = skel->getJoint("joint1");
+  auto* joint2 = skel->getJoint("joint2");
+  ASSERT_NE(joint1, nullptr);
+  ASSERT_NE(joint2, nullptr);
+  EXPECT_EQ(joint2->getActuatorType(), dynamics::Joint::MIMIC);
+  EXPECT_EQ(joint2->getMimicJoint(), joint1);
+}
+
+//==============================================================================
+TEST(UrdfParser, ParsesPlanarAndFloatingJoints)
+{
+  const std::string urdfXml = R"(
+<robot name="planar_floating_robot">
+  <link name="base" />
+  <link name="link1" />
+  <link name="link2" />
+  <joint name="planar_joint" type="planar">
+    <parent link="base" />
+    <child link="link1" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <axis xyz="0 0 1" />
+  </joint>
+  <joint name="floating_joint" type="floating">
+    <parent link="link1" />
+    <child link="link2" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
+  </joint>
+</robot>
+ )";
+
+  const auto tempPath = writeTempFile(urdfXml, "urdf_joint", ".urdf");
+  auto skel = dart::io::readSkeleton(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+
+  ASSERT_NE(skel, nullptr);
+  auto* planar
+      = dynamic_cast<dynamics::PlanarJoint*>(skel->getJoint("planar_joint"));
+  auto* floating
+      = dynamic_cast<dynamics::FreeJoint*>(skel->getJoint("floating_joint"));
+  ASSERT_NE(planar, nullptr);
+  ASSERT_NE(floating, nullptr);
+  EXPECT_EQ(planar->getPlaneType(), dynamics::PlanarJoint::PlaneType::XY);
+}
+#endif
 
 //==============================================================================
 TEST(UrdfParser, parsePlanarJointLimitsAndAxis)

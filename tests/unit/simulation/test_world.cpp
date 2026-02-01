@@ -30,25 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/simulation/recording.hpp>
-#include <dart/simulation/world.hpp>
-
-#include <dart/constraint/constraint_solver.hpp>
-
-#include <dart/collision/collision_option.hpp>
-#include <dart/collision/collision_result.hpp>
-
-#include <dart/dynamics/body_node.hpp>
-#include <dart/dynamics/box_shape.hpp>
-#include <dart/dynamics/free_joint.hpp>
-#include <dart/dynamics/revolute_joint.hpp>
-#include <dart/dynamics/simple_frame.hpp>
-#include <dart/dynamics/skeleton.hpp>
-
-#include <dart/common/exception.hpp>
-
-#include <dart/dart.hpp>
-#include <dart/sensor/sensor.hpp>
+#include <dart/all.hpp>
 
 #include <gtest/gtest.h>
 
@@ -202,6 +184,64 @@ TEST(WorldTests, RemoveAllSkeletons)
   EXPECT_TRUE(removed.count(skel1) > 0);
   EXPECT_TRUE(removed.count(skel2) > 0);
   EXPECT_TRUE(removed.count(skel3) > 0);
+}
+
+//==============================================================================
+TEST(WorldTests, ClonePreservesSkeletonsAndFrames)
+{
+  auto world = World::create("source_world");
+  auto skel = createSimpleSkeleton("clone_skel");
+  world->addSkeleton(skel);
+
+  auto frame = SimpleFrame::createShared(Frame::World(), "clone_frame");
+  world->addSimpleFrame(frame);
+
+  auto clone = world->clone();
+  ASSERT_NE(clone, nullptr);
+  EXPECT_EQ(clone->getNumSkeletons(), 1u);
+  EXPECT_EQ(clone->getNumSimpleFrames(), 1u);
+  EXPECT_NE(clone->getSkeleton(0), skel);
+  EXPECT_NE(clone->getSimpleFrame(0).get(), frame.get());
+  EXPECT_EQ(clone->getSkeleton(0)->getName(), "clone_skel");
+  EXPECT_EQ(clone->getSimpleFrame(0)->getName(), "clone_frame");
+}
+
+//==============================================================================
+TEST(WorldTests, RecordingBakesState)
+{
+  auto world = World::create();
+  auto skel = createSimpleSkeleton("record_skel");
+  world->addSkeleton(skel);
+
+  auto* recording = world->getRecording();
+  ASSERT_NE(recording, nullptr);
+  recording->clear();
+  EXPECT_EQ(recording->getNumFrames(), 0);
+
+  world->bake();
+  EXPECT_EQ(recording->getNumFrames(), 1);
+
+  world->step();
+  world->bake();
+  EXPECT_EQ(recording->getNumFrames(), 2);
+}
+
+//==============================================================================
+TEST(WorldTests, HandlesNameChanges)
+{
+  auto world = World::create();
+  auto skel = createSimpleSkeleton("named_skel");
+  world->addSkeleton(skel);
+
+  skel->setName("renamed_skel");
+  EXPECT_TRUE(world->hasSkeleton("renamed_skel"));
+  EXPECT_FALSE(world->hasSkeleton("named_skel"));
+
+  auto frame = SimpleFrame::createShared(Frame::World(), "named_frame");
+  world->addSimpleFrame(frame);
+
+  frame->setName("renamed_frame");
+  EXPECT_NE(world->getSimpleFrame("renamed_frame"), nullptr);
 }
 
 //==============================================================================

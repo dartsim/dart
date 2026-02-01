@@ -30,29 +30,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/math/lcp/lcp_types.hpp>
-#include <dart/math/lcp/lcp_validation.hpp>
-#include <dart/math/lcp/newton/fischer_burmeister_newton_solver.hpp>
-#include <dart/math/lcp/newton/minimum_map_newton_solver.hpp>
-#include <dart/math/lcp/newton/penalized_fischer_burmeister_newton_solver.hpp>
-#include <dart/math/lcp/other/interior_point_solver.hpp>
-#include <dart/math/lcp/other/mprgp_solver.hpp>
-#include <dart/math/lcp/other/shock_propagation_solver.hpp>
-#include <dart/math/lcp/other/staggering_solver.hpp>
-#include <dart/math/lcp/pivoting/baraff_solver.hpp>
-#include <dart/math/lcp/pivoting/dantzig/matrix.hpp>
-#include <dart/math/lcp/pivoting/dantzig_solver.hpp>
-#include <dart/math/lcp/pivoting/direct_solver.hpp>
-#include <dart/math/lcp/pivoting/lemke_solver.hpp>
-#include <dart/math/lcp/projection/bgs_solver.hpp>
-#include <dart/math/lcp/projection/blocked_jacobi_solver.hpp>
-#include <dart/math/lcp/projection/jacobi_solver.hpp>
-#include <dart/math/lcp/projection/nncg_solver.hpp>
-#include <dart/math/lcp/projection/pgs_solver.hpp>
-#include <dart/math/lcp/projection/red_black_gauss_seidel_solver.hpp>
-#include <dart/math/lcp/projection/subspace_minimization_solver.hpp>
-#include <dart/math/lcp/projection/symmetric_psor_solver.hpp>
-
 #include <dart/all.hpp>
 
 #include <Eigen/Dense>
@@ -1427,6 +1404,52 @@ TEST(LemkeSolverCoverage, SolvesStandardProblem)
   const auto result = solver.solve(problem, x, options);
   EXPECT_EQ(result.status, LcpSolverStatus::Success);
   EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(LemkeSolverCoverage, MaxIterationsExceeded)
+{
+  LemkeSolver solver;
+  auto problem = makeLemkePivotProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.b.size());
+
+  LcpOptions options = solver.getDefaultOptions();
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(LemkeSolverCoverage, ValidationMode)
+{
+  LemkeSolver solver;
+  auto problem = makeNearSingularProblem(5);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.b.size());
+
+  LcpOptions options = solver.getDefaultOptions();
+  options.validateSolution = true;
+  options.absoluteTolerance = 1e-12;
+  options.complementarityTolerance = 1e-12;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_TRUE(result.validated);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+}
+
+TEST(LemkeSolverCoverage, RejectsInvalidProblem)
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2);
+  Eigen::VectorXd b = Eigen::VectorXd::Zero(3);
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi = Eigen::VectorXd::Ones(2);
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(2, -1);
+  LcpProblem problem(A, b, lo, hi, findex);
+
+  LemkeSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_FALSE(result.message.empty());
 }
 
 TEST(LemkeSolverCoverage, SolvesWarmStartProblem)

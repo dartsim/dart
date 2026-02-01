@@ -1054,6 +1054,93 @@ TEST(SkeletonAccessors, ConstAccessorCoverage)
 }
 
 //==============================================================================
+TEST(SkeletonAccessors, MetaSkeletonConstOverloads)
+{
+  auto skeleton = Skeleton::create("meta_const");
+
+  RevoluteJoint::Properties rootJointProps;
+  rootJointProps.mName = "joint0";
+  rootJointProps.mAxis = Eigen::Vector3d::UnitZ();
+  BodyNode::Properties rootBodyProps;
+  rootBodyProps.mName = "body0";
+  rootBodyProps.mInertia.setMass(1.0);
+  auto rootPair = skeleton->createJointAndBodyNodePair<RevoluteJoint>(
+      nullptr, rootJointProps, rootBodyProps);
+
+  RevoluteJoint::Properties childJointProps;
+  childJointProps.mName = "joint1";
+  childJointProps.mAxis = Eigen::Vector3d::UnitY();
+  BodyNode::Properties childBodyProps;
+  childBodyProps.mName = "body1";
+  childBodyProps.mInertia.setMass(1.0);
+  auto childPair = skeleton->createJointAndBodyNodePair<RevoluteJoint>(
+      rootPair.second, childJointProps, childBodyProps);
+
+  const std::size_t dofs = skeleton->getNumDofs();
+  Eigen::VectorXd positions(dofs);
+  positions << 0.2, -0.4;
+  Eigen::VectorXd velocities(dofs);
+  velocities << 0.3, -0.1;
+  Eigen::VectorXd accelerations(dofs);
+  accelerations << -0.2, 0.6;
+  Eigen::VectorXd forces(dofs);
+  forces << 1.2, -0.8;
+  Eigen::VectorXd commands(dofs);
+  commands << 0.05, -0.1;
+
+  skeleton->setPositions(positions);
+  skeleton->setVelocities(velocities);
+  skeleton->setAccelerations(accelerations);
+  skeleton->setForces(forces);
+  skeleton->setCommands(commands);
+
+  Eigen::VectorXd lower = Eigen::VectorXd::Constant(dofs, -1.0);
+  Eigen::VectorXd upper = Eigen::VectorXd::Constant(dofs, 1.0);
+  skeleton->setPositionLowerLimits(lower);
+  skeleton->setPositionUpperLimits(upper);
+  skeleton->setVelocityLowerLimits(lower * 2.0);
+  skeleton->setVelocityUpperLimits(upper * 2.0);
+  skeleton->setAccelerationLowerLimits(lower * 3.0);
+  skeleton->setAccelerationUpperLimits(upper * 3.0);
+  skeleton->setForceLowerLimits(lower * 4.0);
+  skeleton->setForceUpperLimits(upper * 4.0);
+
+  const Skeleton* constSkel = skeleton.get();
+  const MetaSkeleton* meta = static_cast<const MetaSkeleton*>(constSkel);
+
+  EXPECT_EQ(meta->getNumBodyNodes(), 2u);
+  EXPECT_EQ(meta->getBodyNode(0), rootPair.second);
+  EXPECT_EQ(meta->getBodyNode("body1"), childPair.second);
+
+  EXPECT_EQ(meta->getNumJoints(), 2u);
+  EXPECT_EQ(meta->getJoint(0), rootPair.first);
+  EXPECT_EQ(meta->getJoint("joint1"), childPair.first);
+
+  EXPECT_EQ(meta->getNumDofs(), dofs);
+  const auto* dof0 = meta->getDof(0);
+  ASSERT_NE(dof0, nullptr);
+
+  EXPECT_EQ(meta->getIndexOf(rootPair.second), 0u);
+  EXPECT_EQ(meta->getIndexOf(childPair.first), 1u);
+  EXPECT_EQ(meta->getIndexOf(dof0), 0u);
+
+  EXPECT_TRUE(meta->getPositions().isApprox(positions));
+  EXPECT_TRUE(meta->getVelocities().isApprox(velocities));
+  EXPECT_TRUE(meta->getAccelerations().isApprox(accelerations));
+  EXPECT_TRUE(meta->getForces().isApprox(forces));
+  EXPECT_TRUE(meta->getCommands().isApprox(commands));
+
+  EXPECT_TRUE(meta->getPositionLowerLimits().isApprox(lower));
+  EXPECT_TRUE(meta->getPositionUpperLimits().isApprox(upper));
+  EXPECT_TRUE(meta->getVelocityLowerLimits().isApprox(lower * 2.0));
+  EXPECT_TRUE(meta->getVelocityUpperLimits().isApprox(upper * 2.0));
+  EXPECT_TRUE(meta->getAccelerationLowerLimits().isApprox(lower * 3.0));
+  EXPECT_TRUE(meta->getAccelerationUpperLimits().isApprox(upper * 3.0));
+  EXPECT_TRUE(meta->getForceLowerLimits().isApprox(lower * 4.0));
+  EXPECT_TRUE(meta->getForceUpperLimits().isApprox(upper * 4.0));
+}
+
+//==============================================================================
 TEST(SkeletonAccessors, ZeroDofMassMatrixAndForceAccessors)
 {
   auto skeleton = Skeleton::create("zero_dof_skeleton");

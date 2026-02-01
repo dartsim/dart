@@ -44,6 +44,7 @@
 #include "dart/dynamics/sphere_shape.hpp"
 #include "dart/dynamics/universal_joint.hpp"
 #include "dart/dynamics/weld_joint.hpp"
+#include "dart/io/read.hpp"
 #include "dart/simulation/world.hpp"
 #include "dart/utils/sdf/detail/sdf_helpers.hpp"
 #include "dart/utils/sdf/sdf_parser.hpp"
@@ -55,6 +56,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <map>
 #include <sstream>
@@ -230,6 +232,21 @@ private:
 };
 
 } // namespace
+
+std::filesystem::path writeTempFile(
+    const std::string& xml,
+    const std::string& tag,
+    const std::string& extension)
+{
+  static std::size_t counter = 0;
+  const auto tempPath
+      = std::filesystem::temp_directory_path()
+        / ("test_" + tag + "_" + std::to_string(counter++) + extension);
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+  return tempPath;
+}
 
 //==============================================================================
 TEST(SdfParser, SDFSingleBodyWithoutJoint)
@@ -446,6 +463,211 @@ f 4 5 1
   });
 
   EXPECT_TRUE(foundMesh);
+}
+
+//==============================================================================
+TEST(SdfParser, ParsesPlaneAndJointVariants)
+{
+  const std::string sdfXml = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7" xmlns:dart="https://dartsim.org">
+  <world name="default">
+    <model name="joint_model">
+      <static>true</static>
+      <link name="base">
+        <inertial>
+          <mass>1.0</mass>
+          <inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <collision name="plane_collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>10 10</size>
+            </plane>
+          </geometry>
+        </collision>
+      </link>
+      <link name="link1">
+        <inertial>
+          <mass>1.0</mass>
+          <inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </inertia>
+        </inertial>
+      </link>
+      <link name="link2">
+        <inertial>
+          <mass>1.0</mass>
+          <inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </inertia>
+        </inertial>
+      </link>
+      <link name="link3">
+        <inertial>
+          <mass>1.0</mass>
+          <inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </inertia>
+        </inertial>
+      </link>
+      <link name="link4">
+        <inertial>
+          <mass>1.0</mass>
+          <inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </inertia>
+        </inertial>
+      </link>
+      <joint name="revolute2_joint" type="revolute2">
+        <parent>base</parent>
+        <child>link1</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+          <limit>
+            <lower>-1</lower>
+            <upper>1</upper>
+          </limit>
+          <dynamics>
+            <spring_reference>0.1</spring_reference>
+            <spring_stiffness>100</spring_stiffness>
+          </dynamics>
+        </axis>
+        <axis2>
+          <xyz>0 1 0</xyz>
+        </axis2>
+        <dart:actuator_type>servo</dart:actuator_type>
+      </joint>
+      <joint name="ball_joint" type="ball">
+        <parent>link1</parent>
+        <child>link2</child>
+      </joint>
+      <joint name="screw_joint" type="screw">
+        <parent>link2</parent>
+        <child>link3</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <limit>
+            <lower>-0.5</lower>
+            <upper>0.5</upper>
+          </limit>
+        </axis>
+        <thread_pitch>0.2</thread_pitch>
+      </joint>
+      <joint name="universal_joint" type="universal">
+        <parent>link3</parent>
+        <child>link4</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+        </axis>
+        <axis2>
+          <xyz>0 1 0</xyz>
+        </axis2>
+      </joint>
+    </model>
+  </world>
+</sdf>
+ )";
+
+  const auto tempPath = writeTempFile(sdfXml, "sdf_parser", ".sdf");
+  auto world = dart::io::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+
+  ASSERT_NE(world, nullptr);
+  auto skel = world->getSkeleton("joint_model");
+  ASSERT_NE(skel, nullptr);
+
+  auto* base = skel->getBodyNode("base");
+  ASSERT_NE(base, nullptr);
+  bool foundPlane = false;
+  base->eachShapeNodeWith<CollisionAspect>([&](ShapeNode* node) {
+    if (dynamic_cast<const BoxShape*>(node->getShape().get())) {
+      foundPlane = true;
+    }
+  });
+  EXPECT_TRUE(foundPlane);
+
+  auto* revolute2
+      = dynamic_cast<UniversalJoint*>(skel->getJoint("revolute2_joint"));
+  ASSERT_NE(revolute2, nullptr);
+  EXPECT_DOUBLE_EQ(revolute2->getSpringStiffness(0), 100);
+  EXPECT_DOUBLE_EQ(revolute2->getRestPosition(0), 0.1);
+
+  auto* ball = dynamic_cast<BallJoint*>(skel->getJoint("ball_joint"));
+  EXPECT_NE(ball, nullptr);
+
+  auto* screw = dynamic_cast<ScrewJoint*>(skel->getJoint("screw_joint"));
+  ASSERT_NE(screw, nullptr);
+  EXPECT_DOUBLE_EQ(screw->getPitch(), 0.2);
+
+  auto* universal
+      = dynamic_cast<UniversalJoint*>(skel->getJoint("universal_joint"));
+  EXPECT_NE(universal, nullptr);
+}
+
+//==============================================================================
+TEST(SdfParser, ParsesMjcfActuators)
+{
+  const std::string mjcfXml = R"(
+<mujoco model="mjcf_actuator">
+  <option timestep="0.01" />
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="torso">
+      <joint name="root" type="free" />
+      <geom type="sphere" size="0.1" />
+      <body name="link1" pos="0 0 0.2">
+        <joint name="hinge1" type="hinge" axis="1 0 0" />
+        <geom type="sphere" size="0.1" />
+      </body>
+    </body>
+  </worldbody>
+  <actuator>
+    <motor name="motor1" joint="hinge1" gear="1" />
+    <position name="pos1" joint="hinge1" kp="10" />
+    <velocity name="vel1" joint="hinge1" kv="2" />
+  </actuator>
+</mujoco>
+ )";
+
+  const auto tempPath = writeTempFile(mjcfXml, "mjcf_parser", ".xml");
+  auto world = dart::io::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+
+  ASSERT_NE(world, nullptr);
+  EXPECT_GT(world->getNumSkeletons(), 0u);
 }
 
 //==============================================================================

@@ -160,6 +160,29 @@ TEST(BallJointTest, IsCyclic)
 }
 
 //==============================================================================
+TEST(BallJointTest, ConvertToPositionsAndRelativeTransform)
+{
+  auto skel = createSkeletonWithJoint<BallJoint>("ball_transform");
+  auto* joint = dynamic_cast<BallJoint*>(skel->getJoint(0));
+  ASSERT_NE(joint, nullptr);
+
+  const Eigen::Matrix3d rotation
+      = Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitX()).toRotationMatrix();
+  const Eigen::Vector3d positions = BallJoint::convertToPositions(rotation);
+  joint->setPositions(positions);
+
+  for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+    EXPECT_NEAR(joint->getPosition(i), positions[static_cast<int>(i)], 1e-12);
+  }
+
+  const Eigen::Isometry3d tf = joint->getRelativeTransform();
+  EXPECT_TRUE(tf.linear().isApprox(rotation, 1e-10));
+
+  const Eigen::Vector3d roundTrip = BallJoint::convertToPositions(tf.linear());
+  EXPECT_TRUE(roundTrip.isApprox(positions, 1e-10));
+}
+
+//==============================================================================
 TEST(RevoluteJointTest, StaticType)
 {
   EXPECT_EQ(RevoluteJoint::getStaticType(), "RevoluteJoint");
@@ -343,6 +366,33 @@ TEST(WeldJointTest, GetType)
   auto joint = skel->getJoint(0);
 
   EXPECT_EQ(joint->getType(), WeldJoint::getStaticType());
+}
+
+//==============================================================================
+TEST(ZeroDofJointTest, ConstLimitGetters)
+{
+  auto skel = createSkeletonWithJoint<WeldJoint>("weld_limits");
+  const Joint* constJoint = skel->getJoint(0);
+
+  EXPECT_DOUBLE_EQ(constJoint->getPositionLowerLimit(0), 0.0);
+  EXPECT_DOUBLE_EQ(constJoint->getPositionUpperLimit(0), 0.0);
+  EXPECT_EQ(constJoint->getPositionLowerLimits().size(), 0);
+  EXPECT_EQ(constJoint->getPositionUpperLimits().size(), 0);
+
+  EXPECT_DOUBLE_EQ(constJoint->getVelocityLowerLimit(0), 0.0);
+  EXPECT_DOUBLE_EQ(constJoint->getVelocityUpperLimit(0), 0.0);
+  EXPECT_EQ(constJoint->getVelocityLowerLimits().size(), 0);
+  EXPECT_EQ(constJoint->getVelocityUpperLimits().size(), 0);
+
+  EXPECT_DOUBLE_EQ(constJoint->getAccelerationLowerLimit(0), 0.0);
+  EXPECT_DOUBLE_EQ(constJoint->getAccelerationUpperLimit(0), 0.0);
+  EXPECT_EQ(constJoint->getAccelerationLowerLimits().size(), 0);
+  EXPECT_EQ(constJoint->getAccelerationUpperLimits().size(), 0);
+
+  EXPECT_DOUBLE_EQ(constJoint->getForceLowerLimit(0), 0.0);
+  EXPECT_DOUBLE_EQ(constJoint->getForceUpperLimit(0), 0.0);
+  EXPECT_EQ(constJoint->getForceLowerLimits().size(), 0);
+  EXPECT_EQ(constJoint->getForceUpperLimits().size(), 0);
 }
 
 //==============================================================================
@@ -1417,6 +1467,56 @@ TEST(FreeJointTest, SetTransformWithReferenceFrameAndCharts)
   freeJoint->setCoordinateChart(FreeJoint::CoordinateChart::EULER_ZYX);
   freeJoint->setTransform(tf, refFrame.get());
   EXPECT_TRUE(freeJoint->getPositions().allFinite());
+}
+
+//==============================================================================
+TEST(FreeJointTest, TransformJacobianAndDynamicsCoverage)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("free_cov");
+  auto* freeJoint = static_cast<FreeJoint*>(skel->getJoint(0));
+
+  Eigen::Isometry3d worldTf = Eigen::Isometry3d::Identity();
+  worldTf.translation() = Eigen::Vector3d(0.5, -0.3, 0.2);
+  worldTf.linear()
+      = Eigen::AngleAxisd(0.2, Eigen::Vector3d::UnitX()).toRotationMatrix();
+  freeJoint->setTransform(worldTf, Frame::World());
+
+  auto refFrame = SimpleFrame::createShared(Frame::World(), "free_ref");
+  refFrame->setTranslation(Eigen::Vector3d(-0.1, 0.2, 0.3));
+
+  Eigen::Isometry3d localTf = Eigen::Isometry3d::Identity();
+  localTf.translation() = Eigen::Vector3d(0.2, 0.1, -0.2);
+  localTf.linear()
+      = Eigen::AngleAxisd(-0.15, Eigen::Vector3d::UnitY()).toRotationMatrix();
+  freeJoint->setTransform(localTf, refFrame.get());
+
+  Eigen::Vector6d positions;
+  positions << 0.1, -0.2, 0.15, 0.4, -0.3, 0.2;
+  Eigen::Vector6d velocities;
+  velocities << -0.05, 0.1, 0.2, -0.3, 0.25, -0.15;
+  freeJoint->setPositions(positions);
+  freeJoint->setVelocities(velocities);
+
+  const auto jac = freeJoint->getRelativeJacobian();
+  EXPECT_EQ(jac.rows(), 6);
+  EXPECT_EQ(jac.cols(), 6);
+
+  const auto jacDeriv = freeJoint->getRelativeJacobianTimeDeriv();
+  EXPECT_EQ(jacDeriv.rows(), 6);
+  EXPECT_EQ(jacDeriv.cols(), 6);
+
+  Eigen::VectorXd jacPositions = Eigen::VectorXd::Zero(6);
+  jacPositions.tail<3>() = Eigen::Vector3d(0.1, -0.2, 0.05);
+  const auto jacAtPositions = freeJoint->getRelativeJacobian(jacPositions);
+  EXPECT_EQ(jacAtPositions.rows(), 6);
+  EXPECT_EQ(jacAtPositions.cols(), 6);
+
+  skel->computeForwardDynamics();
+
+  Eigen::Vector6d spatialVel;
+  spatialVel << 0.2, -0.1, 0.3, 0.4, -0.2, 0.1;
+  freeJoint->setSpatialVelocity(spatialVel, Frame::World(), Frame::World());
+  EXPECT_TRUE(freeJoint->getVelocities().allFinite());
 }
 
 //==============================================================================
