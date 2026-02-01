@@ -41,20 +41,37 @@
 #include <dart/dynamics/fwd.hpp>
 
 #include <optional>
+#include <unordered_map>
+#include <vector>
 
 namespace dart {
 namespace gui {
+
+struct EntityInfo
+{
+  dart::dynamics::BodyNode* body_node = nullptr;
+  dart::dynamics::SimpleFrame* simple_frame = nullptr;
+  dart::dynamics::ShapeNode* shape_node = nullptr;
+};
 
 class DART_GUI_API SceneExtractor
 {
 public:
   Scene extract(const dart::simulation::World& world) const;
 
+  Scene extract(
+      const dart::simulation::World& world,
+      const std::vector<dart::dynamics::SimpleFrame*>& frames) const;
+
+  const std::unordered_map<uint64_t, EntityInfo>& entityMap() const;
+
 private:
   std::optional<ShapeData> convertShape(
       const dart::dynamics::Shape& shape) const;
 
   Material extractMaterial(const dart::dynamics::ShapeNode& node) const;
+
+  mutable std::unordered_map<uint64_t, EntityInfo> entity_map_;
 };
 
 } // namespace gui

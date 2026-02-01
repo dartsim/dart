@@ -33,6 +33,7 @@
 #ifndef DART_GUI_SCENEVIEWER_HPP_
 #define DART_GUI_SCENEVIEWER_HPP_
 
+#include <dart/gui/drag_controller.hpp>
 #include <dart/gui/export.hpp>
 #include <dart/gui/orbit_camera_controller.hpp>
 #include <dart/gui/scene.hpp>
@@ -41,7 +42,11 @@
 
 #include <dart/simulation/fwd.hpp>
 
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/simple_frame.hpp>
+
 #include <memory>
+#include <vector>
 
 namespace dart {
 namespace gui {
@@ -76,6 +81,16 @@ public:
       double size = 3.0);
   void clearDebug();
 
+  void enableDragAndDrop(dart::dynamics::SimpleFrame* frame);
+  void disableDragAndDrop(dart::dynamics::SimpleFrame* frame);
+
+  void enableDragAndDrop(
+      dart::dynamics::BodyNode* bodyNode,
+      bool useExternalIK = true,
+      bool useWholeBody = false);
+
+  DragController& dragController();
+
   std::optional<uint64_t> selectedNodeId() const;
 
   void captureScreenshot(const std::string& filename);
@@ -84,6 +99,8 @@ private:
   std::unique_ptr<ViewerBackend> backend_;
   SceneExtractor extractor_;
   OrbitCameraController camera_controller_;
+  DragController drag_controller_;
+  std::vector<dart::dynamics::SimpleFrame*> simple_frames_;
   std::shared_ptr<dart::simulation::World> world_;
   Scene scene_;
   bool paused_ = false;

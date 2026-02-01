@@ -35,8 +35,40 @@
 #include "dart/common/logging.hpp"
 #include "dart/simulation/world.hpp"
 
+#include <algorithm>
+
+#include <cstdint>
+
 namespace dart {
 namespace gui {
+
+namespace {
+
+uint64_t makeSimpleFrameMarkerId(const dart::dynamics::SimpleFrame* frame)
+{
+  const auto raw = reinterpret_cast<uintptr_t>(frame);
+  return static_cast<uint64_t>(raw) | (1ULL << 63);
+}
+
+void addSimpleFrameMarkers(
+    const std::vector<dart::dynamics::SimpleFrame*>& frames, Scene& scene)
+{
+  for (auto* frame : frames) {
+    if (!frame) {
+      continue;
+    }
+
+    SceneNode node;
+    node.id = makeSimpleFrameMarkerId(frame);
+    node.transform = frame->getWorldTransform();
+    node.shape = SphereData{0.03};
+    node.material.color = Eigen::Vector4d(0.2, 0.8, 0.2, 0.8);
+    node.visible = true;
+    scene.nodes.push_back(std::move(node));
+  }
+}
+
+} // namespace
 
 SceneViewer::SceneViewer(
     std::unique_ptr<ViewerBackend> backend, const ViewerConfig& config)
@@ -88,7 +120,7 @@ bool SceneViewer::frame()
       world_->step();
     }
 
-    Scene extracted = extractor_.extract(*world_);
+    Scene extracted = extractor_.extract(*world_, simple_frames_);
     extracted.camera = scene_.camera;
     extracted.debug_lines = scene_.debug_lines;
     extracted.debug_points = scene_.debug_points;
@@ -98,6 +130,7 @@ bool SceneViewer::frame()
     extracted.headlight = scene_.headlight;
     extracted.paused = paused_;
     extracted.sim_time = world_->getTime();
+    addSimpleFrameMarkers(simple_frames_, extracted);
     scene_ = std::move(extracted);
   } else {
     Scene empty;
@@ -109,6 +142,7 @@ bool SceneViewer::frame()
     empty.lights = scene_.lights;
     empty.headlight = scene_.headlight;
     empty.paused = paused_;
+    addSimpleFrameMarkers(simple_frames_, empty);
     scene_ = std::move(empty);
   }
 
@@ -144,11 +178,30 @@ bool SceneViewer::frame()
     if (const auto* mouseEvent = std::get_if<MouseButtonEvent>(&event)) {
       if (mouseEvent->button == MouseButton::Left && mouseEvent->pressed) {
         auto hit = backend_->pickNode(scene_, mouseEvent->x, mouseEvent->y);
-        if (hit) {
-          scene_.selected_node_id = hit->node_id;
-        } else {
-          scene_.selected_node_id = std::nullopt;
+        if (hit
+            && drag_controller_.handleMousePress(
+                *hit, extractor_.entityMap())) {
+          continue;
         }
+        scene_.selected_node_id
+            = hit ? std::make_optional(hit->node_id) : std::nullopt;
+      }
+
+      if (mouseEvent->button == MouseButton::Left && !mouseEvent->pressed
+          && drag_controller_.isDragging()) {
+        drag_controller_.handleMouseRelease();
+      }
+    }
+
+    if (const auto* moveEvent = std::get_if<MouseMoveEvent>(&event)) {
+      if (drag_controller_.isDragging()) {
+        drag_controller_.handleMouseDrag(
+            moveEvent->dx,
+            moveEvent->dy,
+            scene_.camera,
+            static_cast<double>(config_.width),
+            static_cast<double>(config_.height),
+            moveEvent->modifiers);
       }
     }
   }
@@ -174,7 +227,7 @@ void SceneViewer::step()
 
   world_->step();
 
-  Scene extracted = extractor_.extract(*world_);
+  Scene extracted = extractor_.extract(*world_, simple_frames_);
   extracted.camera = scene_.camera;
   extracted.debug_lines = scene_.debug_lines;
   extracted.debug_points = scene_.debug_points;
@@ -182,6 +235,7 @@ void SceneViewer::step()
   extracted.show_axes = scene_.show_axes;
   extracted.lights = scene_.lights;
   extracted.headlight = scene_.headlight;
+  addSimpleFrameMarkers(simple_frames_, extracted);
   scene_ = std::move(extracted);
 }
 
@@ -222,6 +276,61 @@ void SceneViewer::clearDebug()
 {
   scene_.debug_lines.clear();
   scene_.debug_points.clear();
+}
+
+void SceneViewer::enableDragAndDrop(dart::dynamics::SimpleFrame* frame)
+{
+  if (!frame) {
+    return;
+  }
+
+  auto existing
+      = std::find(simple_frames_.begin(), simple_frames_.end(), frame);
+  if (existing != simple_frames_.end()) {
+    return;
+  }
+
+  simple_frames_.push_back(frame);
+  drag_controller_.addDraggable(
+      std::make_unique<SimpleFrameDraggable>(
+          frame, makeSimpleFrameMarkerId(frame)));
+}
+
+void SceneViewer::enableDragAndDrop(
+    dart::dynamics::BodyNode* bodyNode, bool useExternalIK, bool useWholeBody)
+{
+  if (!bodyNode) {
+    return;
+  }
+
+  drag_controller_.addDraggable(
+      std::make_unique<BodyNodeDraggable>(
+          bodyNode, extractor_.entityMap(), useExternalIK, useWholeBody));
+}
+
+void SceneViewer::disableDragAndDrop(dart::dynamics::SimpleFrame* frame)
+{
+  if (!frame) {
+    return;
+  }
+
+  auto it = std::remove(simple_frames_.begin(), simple_frames_.end(), frame);
+  if (it == simple_frames_.end()) {
+    return;
+  }
+
+  simple_frames_.erase(it, simple_frames_.end());
+  drag_controller_.clearDraggables();
+  for (auto* remaining : simple_frames_) {
+    drag_controller_.addDraggable(
+        std::make_unique<SimpleFrameDraggable>(
+            remaining, makeSimpleFrameMarkerId(remaining)));
+  }
+}
+
+DragController& SceneViewer::dragController()
+{
+  return drag_controller_;
 }
 
 std::optional<uint64_t> SceneViewer::selectedNodeId() const

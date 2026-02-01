@@ -36,6 +36,9 @@
 #include <dart/gui/export.hpp>
 #include <dart/gui/input_event.hpp>
 #include <dart/gui/scene.hpp>
+#include <dart/gui/scene_extractor.hpp>
+
+#include <dart/dynamics/fwd.hpp>
 
 #include <Eigen/Geometry>
 
@@ -110,6 +113,23 @@ public:
       double screenWidth,
       double screenHeight);
 
+  /// Handle a mouse press event. Returns true if a drag started.
+  bool handleMousePress(
+      const HitResult& hit,
+      const std::unordered_map<uint64_t, EntityInfo>& entityMap);
+
+  /// Handle mouse movement while dragging
+  void handleMouseDrag(
+      double screenDx,
+      double screenDy,
+      const Camera& camera,
+      double screenWidth,
+      double screenHeight,
+      const ModifierKeys& mods);
+
+  /// Handle mouse release
+  void handleMouseRelease();
+
   /// Query whether a drag is in progress
   bool isDragging() const;
 
@@ -120,6 +140,63 @@ private:
   std::vector<std::unique_ptr<Draggable>> draggables_;
   Draggable* active_ = nullptr;
   bool dragging_ = false;
+  Eigen::Vector3d drag_origin_ = Eigen::Vector3d::Zero();
+};
+
+class DART_GUI_API SimpleFrameDraggable : public Draggable
+{
+public:
+  SimpleFrameDraggable(
+      dart::dynamics::SimpleFrame* frame, uint64_t markerNodeId);
+
+  bool canDrag(const HitResult& hit) const override;
+  void beginDrag(const HitResult& hit) override;
+  void updateDrag(
+      const Eigen::Vector3d& delta, const ModifierKeys& mods) override;
+  void endDrag() override;
+
+  dart::dynamics::SimpleFrame* frame() const
+  {
+    return frame_;
+  }
+
+private:
+  dart::dynamics::SimpleFrame* frame_;
+  uint64_t marker_node_id_;
+  Eigen::Isometry3d saved_transform_ = Eigen::Isometry3d::Identity();
+  Eigen::Vector3d pick_offset_ = Eigen::Vector3d::Zero();
+  Eigen::AngleAxisd saved_rotation_ = Eigen::AngleAxisd::Identity();
+};
+
+class DART_GUI_API BodyNodeDraggable : public Draggable
+{
+public:
+  BodyNodeDraggable(
+      dart::dynamics::BodyNode* bodyNode,
+      const std::unordered_map<uint64_t, EntityInfo>& entityMap,
+      bool useExternalIK = true,
+      bool useWholeBody = false);
+
+  bool canDrag(const HitResult& hit) const override;
+  void beginDrag(const HitResult& hit) override;
+  void updateDrag(
+      const Eigen::Vector3d& delta, const ModifierKeys& mods) override;
+  void endDrag() override;
+
+  dart::dynamics::BodyNode* bodyNode() const
+  {
+    return body_node_;
+  }
+
+private:
+  dart::dynamics::BodyNode* body_node_;
+  const std::unordered_map<uint64_t, EntityInfo>& entity_map_;
+  bool use_external_ik_;
+  bool use_whole_body_;
+  dart::dynamics::InverseKinematicsPtr ik_;
+  Eigen::Isometry3d saved_target_transform_ = Eigen::Isometry3d::Identity();
+  Eigen::Vector3d saved_local_offset_ = Eigen::Vector3d::Zero();
+  Eigen::AngleAxisd saved_rotation_ = Eigen::AngleAxisd::Identity();
 };
 
 } // namespace gui

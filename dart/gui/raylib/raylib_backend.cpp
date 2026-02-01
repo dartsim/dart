@@ -958,6 +958,23 @@ void RaylibBackend::render(const Scene& scene)
               drawCachedMesh(g_meshes.unit_sphere, color, m);
             }
             rlPopMatrix();
+          } else if constexpr (std::is_same_v<ShapeT, VoxelGridData>) {
+            if (shape.voxels.empty()) {
+              return;
+            }
+            rlPushMatrix();
+            const Matrix tf = eigenToRaylib(node.transform);
+            rlMultMatrixf(reinterpret_cast<const float*>(&tf));
+            for (const auto& voxel : shape.voxels) {
+              const double size = voxel.second * 2.0;
+              Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+              m.col(0).head<3>() *= size;
+              m.col(1).head<3>() *= size;
+              m.col(2).head<3>() *= size;
+              m.col(3).head<3>() = voxel.first;
+              drawCachedMesh(g_meshes.unit_cube, color, m);
+            }
+            rlPopMatrix();
           }
         },
         node.shape);
@@ -1117,7 +1134,6 @@ void RaylibBackend::render(const Scene& scene)
                     YELLOW);
               }
             } else if constexpr (std::is_same_v<ShapeT, HeightmapData>) {
-              // Bounding box wireframe
               const float hw = static_cast<float>(shape.scale.x()) * 0.5f;
               const float hd = static_cast<float>(shape.scale.y()) * 0.5f;
               float minH = 0, maxH = 0;
@@ -1131,6 +1147,22 @@ void RaylibBackend::render(const Scene& scene)
               const Vector3 center{0, 0, (minH + maxH) * sz * 0.5f};
               const Vector3 size{hw * 2, hd * 2, (maxH - minH) * sz};
               DrawCubeWiresV(center, size, YELLOW);
+            } else if constexpr (std::is_same_v<ShapeT, VoxelGridData>) {
+              if (shape.voxels.empty()) {
+                return;
+              }
+              Eigen::Vector3d minV = shape.voxels.front().first;
+              Eigen::Vector3d maxV = shape.voxels.front().first;
+              for (const auto& voxel : shape.voxels) {
+                const double hs = voxel.second;
+                minV = minV.cwiseMin(
+                    voxel.first - Eigen::Vector3d::Constant(hs));
+                maxV = maxV.cwiseMax(
+                    voxel.first + Eigen::Vector3d::Constant(hs));
+              }
+              const Eigen::Vector3d center = (minV + maxV) * 0.5;
+              const Eigen::Vector3d size = maxV - minV;
+              DrawCubeWiresV(toVector3(center), toVector3(size), YELLOW);
             }
           },
           node.shape);
@@ -1339,6 +1371,22 @@ BoundingBox computeAABB(
               shape.scale.x() * 0.5,
               shape.scale.y() * 0.5,
               (maxH - minH) * shape.scale.z() * 0.5);
+        } else if constexpr (std::is_same_v<ShapeT, VoxelGridData>) {
+          if (shape.voxels.empty()) {
+            return;
+          }
+          Eigen::Vector3d minV
+              = Eigen::Vector3d::Constant(std::numeric_limits<double>::max());
+          Eigen::Vector3d maxV = Eigen::Vector3d::Constant(
+              std::numeric_limits<double>::lowest());
+          for (const auto& voxel : shape.voxels) {
+            const double hs = voxel.second;
+            minV = minV.cwiseMin(voxel.first - Eigen::Vector3d::Constant(hs));
+            maxV = maxV.cwiseMax(voxel.first + Eigen::Vector3d::Constant(hs));
+          }
+          localCenter = (minV + maxV) * 0.5;
+          halfExtent = (maxV - minV) * 0.5;
+          hasLocalCenter = true;
         }
       },
       node.shape);

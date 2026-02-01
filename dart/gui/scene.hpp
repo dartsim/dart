@@ -156,6 +156,12 @@ struct HeightmapData
   Eigen::Vector3d scale{1.0, 1.0, 1.0};
 };
 
+struct VoxelGridData
+{
+  /// Each voxel: (center_position, half_size)
+  std::vector<std::pair<Eigen::Vector3d, double>> voxels;
+};
+
 using ShapeData = std::variant<
     BoxData,
     SphereData,
@@ -169,7 +175,8 @@ using ShapeData = std::variant<
     PyramidData,
     PointCloudData,
     MultiSphereData,
-    HeightmapData>;
+    HeightmapData,
+    VoxelGridData>;
 
 /// Grid configuration for the viewer
 struct GridConfig

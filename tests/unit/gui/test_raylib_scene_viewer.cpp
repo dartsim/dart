@@ -42,10 +42,11 @@
 #include <raylib.h>
 
 #include <filesystem>
-#include <fstream>
 #include <random>
 
 #include <cstdio>
+
+extern "C" bool IsImageValid(Image image);
 
 namespace {
 
@@ -153,7 +154,7 @@ struct TestViewer
 bool hasNonBackgroundPixels(const std::string& pngPath)
 {
   Image img = LoadImage(pngPath.c_str());
-  if (!IsImageValid(img)) {
+  if (img.data == nullptr || img.width <= 0 || img.height <= 0) {
     return false;
   }
 
@@ -175,7 +176,7 @@ bool hasNonBackgroundPixels(const std::string& pngPath)
 bool hasYellowPixels(const std::string& pngPath)
 {
   Image img = LoadImage(pngPath.c_str());
-  if (!IsImageValid(img)) {
+  if (img.data == nullptr || img.width <= 0 || img.height <= 0) {
     return false;
   }
 
@@ -199,11 +200,15 @@ bool imagesAreDifferent(const std::string& pathA, const std::string& pathB)
   Image imgA = LoadImage(pathA.c_str());
   Image imgB = LoadImage(pathB.c_str());
 
-  if (!IsImageValid(imgA) || !IsImageValid(imgB)) {
-    if (IsImageValid(imgA)) {
+  const bool imgAValid
+      = imgA.data != nullptr && imgA.width > 0 && imgA.height > 0;
+  const bool imgBValid
+      = imgB.data != nullptr && imgB.width > 0 && imgB.height > 0;
+  if (!imgAValid || !imgBValid) {
+    if (imgAValid) {
       UnloadImage(imgA);
     }
-    if (IsImageValid(imgB)) {
+    if (imgBValid) {
       UnloadImage(imgB);
     }
     return true;
@@ -1061,4 +1066,101 @@ TEST_F(RaylibSceneViewerTest, DragControllerDefaults)
   dart::gui::DragController controller;
   EXPECT_FALSE(controller.isDragging());
   EXPECT_EQ(controller.activeDraggable(), nullptr);
+}
+
+TEST_F(RaylibSceneViewerTest, SimpleFrameDraggableCreation)
+{
+  auto frame = dart::dynamics::SimpleFrame::createShared();
+  frame->setTranslation(Eigen::Vector3d(1, 0, 0.5));
+
+  TestViewer tv;
+  tv.viewer.enableDragAndDrop(frame.get());
+
+  for (int i = 0; i < 3; ++i) {
+    tv.viewer.frame();
+  }
+
+  EXPECT_FALSE(tv.viewer.dragController().isDragging());
+}
+
+TEST_F(RaylibSceneViewerTest, SimpleFrameDraggableUpdateDrag)
+{
+  auto frame = dart::dynamics::SimpleFrame::createShared();
+  frame->setTranslation(Eigen::Vector3d(1, 0, 0.5));
+
+  const uint64_t markerId = 12345;
+  dart::gui::SimpleFrameDraggable draggable(frame.get(), markerId);
+
+  dart::gui::HitResult hit;
+  hit.node_id = markerId;
+  hit.point = Eigen::Vector3d(1, 0, 0.5);
+
+  EXPECT_TRUE(draggable.canDrag(hit));
+
+  draggable.beginDrag(hit);
+
+  const Eigen::Vector3d posBefore = frame->getWorldTransform().translation();
+  const Eigen::Vector3d delta(0.1, 0.0, 0.0);
+  dart::gui::ModifierKeys mods;
+  draggable.updateDrag(delta, mods);
+
+  const Eigen::Vector3d posAfter = frame->getWorldTransform().translation();
+  EXPECT_NEAR((posAfter - posBefore).norm(), 0.1, 1e-6);
+
+  draggable.endDrag();
+}
+
+TEST_F(RaylibSceneViewerTest, BodyNodeDraggableCanDragMatch)
+{
+  auto world = dart::simulation::World::create();
+  auto skel = dart::dynamics::Skeleton::create("test");
+  auto [joint, body]
+      = skel->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  auto boxShape = std::make_shared<dart::dynamics::BoxShape>(
+      Eigen::Vector3d(0.5, 0.5, 0.5));
+  auto sn = body->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect>(boxShape);
+  sn->getVisualAspect()->setColor(Eigen::Vector3d(0.8, 0.2, 0.2));
+  world->addSkeleton(skel);
+
+  dart::gui::SceneExtractor extractor;
+  extractor.extract(*world);
+
+  dart::gui::BodyNodeDraggable draggable(body, extractor.entityMap());
+
+  dart::gui::HitResult hit;
+  hit.node_id = boxShape->getID();
+  hit.point = Eigen::Vector3d(0, 0, 0);
+
+  EXPECT_TRUE(draggable.canDrag(hit));
+
+  dart::gui::HitResult wrongHit;
+  wrongHit.node_id = 999999;
+  EXPECT_FALSE(draggable.canDrag(wrongHit));
+}
+
+TEST_F(RaylibSceneViewerTest, BodyNodeDnDRegistration)
+{
+  auto world = createTestWorld();
+
+  dart::gui::ViewerConfig config;
+  config.width = 640;
+  config.height = 480;
+  config.headless = true;
+  config.target_fps = 0;
+  auto viewer = dart::gui::SceneViewer(
+      std::make_unique<dart::gui::RaylibBackend>(), config);
+  viewer.setWorld(world);
+
+  viewer.frame();
+
+  auto* body = world->getSkeleton(0)->getBodyNode(0);
+  viewer.enableDragAndDrop(body);
+
+  for (int i = 0; i < 5; ++i) {
+    viewer.frame();
+  }
+
+  EXPECT_FALSE(viewer.dragController().isDragging());
 }

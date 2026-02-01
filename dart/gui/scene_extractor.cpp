@@ -33,6 +33,7 @@
 #include "dart/gui/scene_extractor.hpp"
 
 #include "dart/common/logging.hpp"
+#include "dart/config.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/capsule_shape.hpp"
@@ -54,12 +55,18 @@
 #include "dart/dynamics/sphere_shape.hpp"
 #include "dart/simulation/world.hpp"
 
+#if DART_HAVE_OCTOMAP
+  #include "dart/dynamics/voxel_grid_shape.hpp"
+#endif
+
 namespace dart {
 namespace gui {
 
 Scene SceneExtractor::extract(const dart::simulation::World& world) const
 {
   Scene scene;
+
+  entity_map_.clear();
 
   for (std::size_t i = 0; i < world.getNumSkeletons(); ++i) {
     auto skeleton = world.getSkeleton(i);
@@ -101,12 +108,29 @@ Scene SceneExtractor::extract(const dart::simulation::World& world) const
         node.shape = std::move(*shapeData);
         node.material = extractMaterial(*shapeNode);
         node.visible = !visual->isHidden();
+        entity_map_[node.id] = EntityInfo{bodyNode, nullptr, shapeNode};
         scene.nodes.push_back(std::move(node));
       }
     }
   }
 
   return scene;
+}
+
+//=============================================================================
+Scene SceneExtractor::extract(
+    const dart::simulation::World& world,
+    const std::vector<dart::dynamics::SimpleFrame*>& frames) const
+{
+  (void)frames;
+  return extract(world);
+}
+
+//=============================================================================
+const std::unordered_map<uint64_t, EntityInfo>& SceneExtractor::entityMap()
+    const
+{
+  return entity_map_;
 }
 
 std::optional<ShapeData> SceneExtractor::convertShape(
@@ -371,6 +395,32 @@ std::optional<ShapeData> SceneExtractor::convertShape(
     data.scale = Eigen::Vector3d(s.x(), s.y(), s.z());
     return ShapeData{std::move(data)};
   }
+
+#if DART_HAVE_OCTOMAP
+  if (auto vg = dynamic_cast<const dart::dynamics::VoxelGridShape*>(&shape)) {
+    auto tree = vg->getOctree();
+    if (!tree) {
+      return std::nullopt;
+    }
+    VoxelGridData data;
+    const double resolution = tree->getResolution();
+    const double halfSize = resolution * 0.5;
+    const double threshold = tree->getOccupancyThres();
+    for (auto it = tree->begin_leafs(), end = tree->end_leafs(); it != end;
+         ++it) {
+      if (it->getOccupancy() < threshold) {
+        continue;
+      }
+      const auto& coord = it.getCoordinate();
+      Eigen::Vector3d center(
+          static_cast<double>(coord.x()),
+          static_cast<double>(coord.y()),
+          static_cast<double>(coord.z()));
+      data.voxels.emplace_back(center, halfSize);
+    }
+    return ShapeData{std::move(data)};
+  }
+#endif // DART_HAVE_OCTOMAP
 
   return std::nullopt;
 }

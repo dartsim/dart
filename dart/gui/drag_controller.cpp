@@ -32,6 +32,10 @@
 
 #include "dart/gui/drag_controller.hpp"
 
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/inverse_kinematics.hpp"
+#include "dart/dynamics/simple_frame.hpp"
+
 #include <cmath>
 
 namespace dart {
@@ -126,6 +130,206 @@ bool DragController::isDragging() const
 Draggable* DragController::activeDraggable() const
 {
   return active_;
+}
+
+bool DragController::handleMousePress(
+    const HitResult& hit,
+    const std::unordered_map<uint64_t, EntityInfo>& entityMap)
+{
+  (void)entityMap;
+  if (dragging_) {
+    return false;
+  }
+
+  for (const auto& draggable : draggables_) {
+    if (!draggable) {
+      continue;
+    }
+    if (!draggable->canDrag(hit)) {
+      continue;
+    }
+    active_ = draggable.get();
+    dragging_ = true;
+    drag_origin_ = hit.point;
+    active_->beginDrag(hit);
+    return true;
+  }
+
+  return false;
+}
+
+void DragController::handleMouseDrag(
+    double screenDx,
+    double screenDy,
+    const Camera& camera,
+    double screenWidth,
+    double screenHeight,
+    const ModifierKeys& mods)
+{
+  if (!dragging_ || !active_) {
+    return;
+  }
+
+  const Eigen::Vector3d delta = getDeltaCursor(
+      drag_origin_,
+      ConstraintType::Unconstrained,
+      Eigen::Vector3d::UnitZ(),
+      camera,
+      screenDx,
+      screenDy,
+      screenWidth,
+      screenHeight);
+  active_->updateDrag(delta, mods);
+}
+
+void DragController::handleMouseRelease()
+{
+  if (active_) {
+    active_->endDrag();
+  }
+  active_ = nullptr;
+  dragging_ = false;
+}
+
+//=============================================================================
+SimpleFrameDraggable::SimpleFrameDraggable(
+    dart::dynamics::SimpleFrame* frame, uint64_t markerNodeId)
+  : frame_(frame), marker_node_id_(markerNodeId)
+{
+}
+
+bool SimpleFrameDraggable::canDrag(const HitResult& hit) const
+{
+  return hit.node_id == marker_node_id_;
+}
+
+void SimpleFrameDraggable::beginDrag(const HitResult& hit)
+{
+  if (!frame_) {
+    return;
+  }
+
+  saved_transform_ = frame_->getWorldTransform();
+  pick_offset_ = hit.point - saved_transform_.translation();
+  saved_rotation_ = Eigen::AngleAxisd(saved_transform_.rotation());
+}
+
+void SimpleFrameDraggable::updateDrag(
+    const Eigen::Vector3d& delta, const ModifierKeys& mods)
+{
+  if (!frame_) {
+    return;
+  }
+
+  if (mods.ctrl) {
+    const double angle = delta.norm();
+    if (angle < 1e-12) {
+      return;
+    }
+    Eigen::Vector3d axis = delta.normalized();
+    Eigen::AngleAxisd rot(angle, axis);
+    saved_rotation_ = rot * saved_rotation_;
+    saved_transform_.linear() = saved_rotation_.toRotationMatrix();
+  } else {
+    saved_transform_.translation() += delta;
+  }
+
+  frame_->setTransform(saved_transform_);
+}
+
+void SimpleFrameDraggable::endDrag() {}
+
+//=============================================================================
+BodyNodeDraggable::BodyNodeDraggable(
+    dart::dynamics::BodyNode* bodyNode,
+    const std::unordered_map<uint64_t, EntityInfo>& entityMap,
+    bool useExternalIK,
+    bool useWholeBody)
+  : body_node_(bodyNode),
+    entity_map_(entityMap),
+    use_external_ik_(useExternalIK),
+    use_whole_body_(useWholeBody)
+{
+}
+
+bool BodyNodeDraggable::canDrag(const HitResult& hit) const
+{
+  auto it = entity_map_.find(hit.node_id);
+  if (it == entity_map_.end()) {
+    return false;
+  }
+  return it->second.body_node == body_node_;
+}
+
+void BodyNodeDraggable::beginDrag(const HitResult& hit)
+{
+  if (!body_node_) {
+    return;
+  }
+
+  if (use_external_ik_) {
+    ik_ = dart::dynamics::InverseKinematics::create(body_node_);
+  } else {
+    ik_ = body_node_->getIK(true);
+  }
+
+  if (!ik_) {
+    return;
+  }
+
+  if (use_whole_body_) {
+    ik_->useWholeBody();
+  } else {
+    ik_->useChain();
+  }
+
+  ik_->setGradientMethod<
+      dart::dynamics::InverseKinematics::JacobianTranspose>();
+
+  const Eigen::Isometry3d bodyTf = body_node_->getWorldTransform();
+  saved_local_offset_ = bodyTf.inverse() * hit.point;
+  ik_->setOffset(saved_local_offset_);
+
+  saved_target_transform_ = bodyTf;
+  saved_target_transform_.translation() = hit.point;
+  saved_rotation_ = Eigen::AngleAxisd(bodyTf.rotation());
+
+  auto target = ik_->getTarget();
+  target->setTransform(saved_target_transform_);
+}
+
+void BodyNodeDraggable::updateDrag(
+    const Eigen::Vector3d& delta, const ModifierKeys& mods)
+{
+  if (!body_node_ || !ik_) {
+    return;
+  }
+
+  if (mods.ctrl) {
+    const double angle = delta.norm();
+    if (angle < 1e-12) {
+      return;
+    }
+    Eigen::AngleAxisd rot(angle, delta.normalized());
+    saved_rotation_ = rot * saved_rotation_;
+    if (!mods.alt) {
+      saved_target_transform_.linear() = saved_rotation_.toRotationMatrix();
+    }
+  } else {
+    saved_target_transform_.translation() += delta;
+  }
+
+  auto target = ik_->getTarget();
+  target->setTransform(saved_target_transform_);
+  ik_->solveAndApply(true);
+}
+
+void BodyNodeDraggable::endDrag()
+{
+  if (!use_external_ik_ && body_node_) {
+    body_node_->clearIK();
+  }
+  ik_ = nullptr;
 }
 
 } // namespace gui
