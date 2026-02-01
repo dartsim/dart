@@ -35,11 +35,13 @@
 #include "dart/common/uri.hpp"
 #include "dart/dynamics/ball_joint.hpp"
 #include "dart/dynamics/box_shape.hpp"
+#include "dart/dynamics/cylinder_shape.hpp"
 #include "dart/dynamics/free_joint.hpp"
 #include "dart/dynamics/mesh_shape.hpp"
 #include "dart/dynamics/prismatic_joint.hpp"
 #include "dart/dynamics/revolute_joint.hpp"
 #include "dart/dynamics/screw_joint.hpp"
+#include "dart/dynamics/soft_body_node.hpp"
 #include "dart/dynamics/universal_joint.hpp"
 #include "dart/dynamics/weld_joint.hpp"
 #include "dart/simulation/world.hpp"
@@ -1911,7 +1913,8 @@ f 1 2 3
     }
     const auto* visual = shapeNode->getVisualAspect();
     if (visual
-        && visual->getRGBA().isApprox(Eigen::Vector4d(0.1, 0.2, 0.3, 1.0))) {
+        && visual->getRGBA().isApprox(
+            Eigen::Vector4d(0.1, 0.2, 0.3, 1.0), 1e-9)) {
       foundDiffuse = true;
     }
   }
@@ -1919,5 +1922,239 @@ f 1 2 3
   EXPECT_TRUE(foundCylinder);
   EXPECT_TRUE(foundMesh);
   EXPECT_TRUE(foundPlane);
+  EXPECT_TRUE(foundDiffuse);
+}
+
+//==============================================================================
+TEST(SdfParser, StaticModelParsesBooleanValues)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/static_bool/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="static_bool">
+    <static>TrUe</static>
+    <link name="link">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+  </model>
+</sdf>
+  )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  EXPECT_FALSE(skeleton->isMobile());
+}
+
+//==============================================================================
+TEST(SdfParser, UniversalScrewAndBallJointLimits)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/joint_details/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="joint_details">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="link1">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="link2">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="link3">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <joint name="screw_joint" type="screw">
+      <parent>base</parent>
+      <child>link1</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>0.2</lower>
+          <upper>0.6</upper>
+        </limit>
+        <dynamics>
+          <damping>0.1</damping>
+          <friction>0.05</friction>
+          <spring_reference>0.25</spring_reference>
+          <spring_stiffness>2.0</spring_stiffness>
+        </dynamics>
+      </axis>
+      <thread_pitch>0.25</thread_pitch>
+    </joint>
+    <joint name="universal_joint" type="universal">
+      <parent>link1</parent>
+      <child>link2</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <lower>0.5</lower>
+          <upper>1.5</upper>
+        </limit>
+        <dynamics>
+          <damping>0.2</damping>
+          <friction>0.1</friction>
+          <spring_reference>0.3</spring_reference>
+          <spring_stiffness>3.0</spring_stiffness>
+        </dynamics>
+      </axis>
+      <axis2>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-2.0</lower>
+          <upper>-1.0</upper>
+        </limit>
+        <dynamics>
+          <damping>0.4</damping>
+          <friction>0.15</friction>
+          <spring_reference>-1.2</spring_reference>
+          <spring_stiffness>4.0</spring_stiffness>
+        </dynamics>
+      </axis2>
+    </joint>
+    <joint name="ball_joint" type="ball">
+      <parent>link2</parent>
+      <child>link3</child>
+    </joint>
+  </model>
+</sdf>
+  )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+
+  auto* screw
+      = dynamic_cast<dynamics::ScrewJoint*>(skeleton->getJoint("screw_joint"));
+  ASSERT_NE(screw, nullptr);
+  EXPECT_TRUE(screw->areLimitsEnforced());
+  EXPECT_TRUE(screw->getAxis().isApprox(Eigen::Vector3d(0.0, 0.0, 1.0)));
+  EXPECT_NEAR(screw->getPitch(), 0.25, 1e-9);
+  EXPECT_NEAR(screw->getPositionLowerLimit(0), 0.2, 1e-9);
+  EXPECT_NEAR(screw->getPositionUpperLimit(0), 0.6, 1e-9);
+  EXPECT_NEAR(screw->getPosition(0), 0.4, 1e-9);
+  EXPECT_NEAR(screw->getRestPosition(0), 0.4, 1e-9);
+  EXPECT_NEAR(screw->getDampingCoefficient(0), 0.1, 1e-9);
+  EXPECT_NEAR(screw->getCoulombFriction(0), 0.05, 1e-9);
+  EXPECT_NEAR(screw->getSpringStiffness(0), 2.0, 1e-9);
+
+  auto* universal = dynamic_cast<dynamics::UniversalJoint*>(
+      skeleton->getJoint("universal_joint"));
+  ASSERT_NE(universal, nullptr);
+  EXPECT_TRUE(universal->areLimitsEnforced());
+  EXPECT_NEAR(universal->getPosition(0), 1.0, 1e-9);
+  EXPECT_NEAR(universal->getPosition(1), -1.5, 1e-9);
+  EXPECT_NEAR(universal->getDampingCoefficient(0), 0.2, 1e-9);
+  EXPECT_NEAR(universal->getCoulombFriction(0), 0.1, 1e-9);
+  EXPECT_NEAR(universal->getRestPosition(0), 1.0, 1e-9);
+  EXPECT_NEAR(universal->getSpringStiffness(0), 3.0, 1e-9);
+  EXPECT_NEAR(universal->getDampingCoefficient(1), 0.4, 1e-9);
+  EXPECT_NEAR(universal->getCoulombFriction(1), 0.15, 1e-9);
+  EXPECT_NEAR(universal->getRestPosition(1), -1.5, 1e-9);
+  EXPECT_NEAR(universal->getSpringStiffness(1), 4.0, 1e-9);
+
+  auto* ball
+      = dynamic_cast<dynamics::BallJoint*>(skeleton->getJoint("ball_joint"));
+  ASSERT_NE(ball, nullptr);
+  EXPECT_EQ(ball->getNumDofs(), 3u);
+}
+
+//==============================================================================
+TEST(SdfParser, MaterialDiffuseThreeComponentsAndMeshPose)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string meshUri = "memory://pkg/meshes/material.obj";
+  const std::string worldUri = "memory://pkg/material_geometry.world";
+  const std::string meshData = R"(
+o Tri
+v 0 0 0
+v 1 0 0
+v 0 1 0
+f 1 2 3
+  )";
+
+  const std::string worldSdf = std::string(R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="default">
+    <model name="geometry_material">
+      <link name="link">
+        <inertial><mass>1.0</mass></inertial>
+        <visual name="cylinder_visual">
+          <geometry>
+            <cylinder><radius>0.2</radius><length>0.5</length></cylinder>
+          </geometry>
+        </visual>
+        <visual name="mesh_visual">
+          <geometry>
+            <mesh>
+              <uri>)") + meshUri
+                               + R"(</uri>
+            </mesh>
+          </geometry>
+          <pose>0.1 0.2 0.3 0 0 0</pose>
+        </visual>
+        <visual name="diffuse_visual">
+          <geometry>
+            <box><size>0.1 0.2 0.3</size></box>
+          </geometry>
+          <material>
+            <diffuse> 0.10000000009 0.2 0.3 </diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+  </world>
+</sdf>
+  )";
+
+  retriever->add(meshUri, meshData);
+  retriever->add(worldUri, worldSdf);
+
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  const auto world = SdfParser::readWorld(common::Uri(worldUri), options);
+  ASSERT_TRUE(world != nullptr);
+
+  const auto skeleton = world->getSkeleton("geometry_material");
+  ASSERT_TRUE(skeleton != nullptr);
+  auto* body = skeleton->getBodyNode("link");
+  ASSERT_TRUE(body != nullptr);
+
+  bool foundCylinder = false;
+  bool foundMesh = false;
+  bool foundDiffuse = false;
+  bool foundMeshPose = false;
+  const auto numShapes = body->getNumShapeNodes();
+  for (std::size_t i = 0; i < numShapes; ++i) {
+    const auto* shapeNode = body->getShapeNode(i);
+    ASSERT_NE(shapeNode, nullptr);
+    const auto shape = shapeNode->getShape();
+    if (!shape) {
+      continue;
+    }
+    if (shape->is<dynamics::CylinderShape>()) {
+      foundCylinder = true;
+    }
+    if (shape->is<dynamics::MeshShape>()) {
+      foundMesh = true;
+      const auto translation = shapeNode->getRelativeTransform().translation();
+      if (translation.isApprox(Eigen::Vector3d(0.1, 0.2, 0.3), 1e-9)) {
+        foundMeshPose = true;
+      }
+    }
+    const auto* visual = shapeNode->getVisualAspect();
+    if (visual
+        && visual->getRGBA().isApprox(Eigen::Vector4d(0.1, 0.2, 0.3, 1.0))) {
+      foundDiffuse = true;
+    }
+  }
+
+  EXPECT_TRUE(foundCylinder);
+  EXPECT_TRUE(foundMesh);
+  EXPECT_TRUE(foundMeshPose);
   EXPECT_TRUE(foundDiffuse);
 }

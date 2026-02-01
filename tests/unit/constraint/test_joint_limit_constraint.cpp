@@ -30,7 +30,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "../../helpers/gtest_utils.hpp"
 #include "dart/constraint/joint_limit_constraint.hpp"
 #include "dart/dynamics/revolute_joint.hpp"
 #include "dart/dynamics/skeleton.hpp"
@@ -39,6 +38,8 @@
 #include <gtest/gtest.h>
 
 #include <memory>
+
+#include <cmath>
 
 using namespace dart;
 using namespace dart::constraint;
@@ -514,4 +515,43 @@ TEST(JointLimitConstraintTests, JointLimitConstraintWorldStep)
   constraint::JointLimitConstraint::setErrorReductionParameter(prevErp);
   constraint::JointLimitConstraint::setMaxErrorReductionVelocity(prevErv);
   constraint::JointLimitConstraint::setConstraintForceMixing(prevCfm);
+}
+
+TEST(JointLimitConstraintTests, WorldStepWithVelocityLimitsAndBounceParams)
+{
+  auto skeleton = makeSingleRevoluteSkeleton();
+  auto* joint = static_cast<RevoluteJoint*>(skeleton->getJoint(0));
+  joint->setPositionLowerLimit(0, -0.05);
+  joint->setPositionUpperLimit(0, 0.05);
+  joint->setVelocityLowerLimit(0, -0.2);
+  joint->setVelocityUpperLimit(0, 0.2);
+  joint->setLimitEnforcement(true);
+  joint->setPosition(0, 0.15);
+  joint->setVelocity(0, 1.0);
+
+  auto world = simulation::World::create();
+  ASSERT_NE(world, nullptr);
+  world->setTimeStep(1e-3);
+  world->addSkeleton(skeleton);
+
+  const double prevAllowance = JointLimitConstraint::getErrorAllowance();
+  const double prevErp = JointLimitConstraint::getErrorReductionParameter();
+  const double prevErv = JointLimitConstraint::getMaxErrorReductionVelocity();
+
+  JointLimitConstraint::setErrorAllowance(0.0);
+  JointLimitConstraint::setErrorReductionParameter(0.8);
+  JointLimitConstraint::setMaxErrorReductionVelocity(5.0);
+
+  const double initialPosition = joint->getPosition(0);
+  const double initialVelocity = joint->getVelocity(0);
+  for (int i = 0; i < 20; ++i) {
+    world->step();
+  }
+
+  EXPECT_LT(joint->getPosition(0), initialPosition);
+  EXPECT_LT(std::abs(joint->getVelocity(0)), std::abs(initialVelocity));
+
+  JointLimitConstraint::setErrorAllowance(prevAllowance);
+  JointLimitConstraint::setErrorReductionParameter(prevErp);
+  JointLimitConstraint::setMaxErrorReductionVelocity(prevErv);
 }

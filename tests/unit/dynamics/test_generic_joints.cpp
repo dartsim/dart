@@ -1686,3 +1686,204 @@ TEST(GenericJoint, VelocityAndAccelerationVectorCommands)
   joint.setAccelerations(accelerations);
   EXPECT_TRUE(joint.getCommands().isApprox(accelerations));
 }
+
+//==============================================================================
+TEST(GenericJoints, RevoluteVelocityActuatorContactConstraints)
+{
+  auto world = simulation::World::create();
+  world->setTimeStep(0.001);
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+
+  auto skel = dynamics::Skeleton::create("revolute_velocity");
+  auto rootPair = skel->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  rootPair.second->setMass(1.0);
+
+  auto revPair
+      = rootPair.second
+            ->createChildJointAndBodyNodePair<dynamics::RevoluteJoint>();
+  auto* joint = revPair.first;
+  auto* body = revPair.second;
+  joint->setActuatorType(dynamics::Joint::VELOCITY);
+  joint->setCommand(0, 0.6);
+  body->setMass(1.0);
+  body->createShapeNodeWith<dynamics::VisualAspect, dynamics::CollisionAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+
+  Eigen::Isometry3d rootTf = Eigen::Isometry3d::Identity();
+  rootTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.0);
+  rootPair.first->setPositions(dynamics::FreeJoint::convertToPositions(rootTf));
+
+  auto collider = dynamics::Skeleton::create("revolute_velocity_collider");
+  auto colPair = collider->createJointAndBodyNodePair<dynamics::WeldJoint>();
+  auto* colBody = colPair.second;
+  colBody->setMass(1.0);
+  colBody
+      ->createShapeNodeWith<dynamics::VisualAspect, dynamics::CollisionAspect>(
+          std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  Eigen::Isometry3d colTf = Eigen::Isometry3d::Identity();
+  colTf.translation() = Eigen::Vector3d(0.2, 0.0, 0.0);
+  colPair.first->setTransformFromParentBodyNode(colTf);
+
+  world->addSkeleton(skel);
+  world->addSkeleton(collider);
+
+  for (int i = 0; i < 3; ++i) {
+    world->step();
+  }
+
+  EXPECT_TRUE(joint->getPositions().allFinite());
+  EXPECT_TRUE(joint->getVelocities().allFinite());
+  EXPECT_TRUE(std::isfinite(joint->getConstraintImpulse(0)));
+  EXPECT_TRUE(std::isfinite(joint->getVelocityChange(0)));
+}
+
+//==============================================================================
+TEST(GenericJoints, RevoluteAccelerationActuatorSpringDampingContact)
+{
+  auto world = simulation::World::create();
+  world->setTimeStep(0.001);
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+
+  auto skel = dynamics::Skeleton::create("revolute_acceleration");
+  auto rootPair = skel->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  rootPair.second->setMass(1.0);
+
+  auto revPair
+      = rootPair.second
+            ->createChildJointAndBodyNodePair<dynamics::RevoluteJoint>();
+  auto* joint = revPair.first;
+  auto* body = revPair.second;
+  joint->setActuatorType(dynamics::Joint::ACCELERATION);
+  joint->setCommand(0, 0.4);
+  joint->setSpringStiffness(0, 100.0);
+  joint->setDampingCoefficient(0, 10.0);
+  joint->setPosition(0, 0.2);
+  joint->setVelocity(0, -0.1);
+  body->setMass(1.0);
+  body->createShapeNodeWith<dynamics::VisualAspect, dynamics::CollisionAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+
+  Eigen::Isometry3d rootTf = Eigen::Isometry3d::Identity();
+  rootTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.0);
+  rootPair.first->setPositions(dynamics::FreeJoint::convertToPositions(rootTf));
+
+  auto collider = dynamics::Skeleton::create("revolute_accel_collider");
+  auto colPair = collider->createJointAndBodyNodePair<dynamics::WeldJoint>();
+  auto* colBody = colPair.second;
+  colBody->setMass(1.0);
+  colBody
+      ->createShapeNodeWith<dynamics::VisualAspect, dynamics::CollisionAspect>(
+          std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  Eigen::Isometry3d colTf = Eigen::Isometry3d::Identity();
+  colTf.translation() = Eigen::Vector3d(0.25, 0.0, 0.0);
+  colPair.first->setTransformFromParentBodyNode(colTf);
+
+  world->addSkeleton(skel);
+  world->addSkeleton(collider);
+
+  for (int i = 0; i < 3; ++i) {
+    world->step();
+  }
+
+  EXPECT_TRUE(joint->getPositions().allFinite());
+  EXPECT_TRUE(joint->getVelocities().allFinite());
+  EXPECT_TRUE(std::isfinite(joint->getConstraintImpulse(0)));
+  EXPECT_TRUE(std::isfinite(joint->getVelocityChange(0)));
+}
+
+//==============================================================================
+TEST(GenericJoints, RevoluteLockedActuatorContactConstraints)
+{
+  auto world = simulation::World::create();
+  world->setTimeStep(0.001);
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+
+  auto skel = dynamics::Skeleton::create("revolute_locked");
+  auto rootPair = skel->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  rootPair.second->setMass(1.0);
+
+  auto revPair
+      = rootPair.second
+            ->createChildJointAndBodyNodePair<dynamics::RevoluteJoint>();
+  auto* joint = revPair.first;
+  auto* body = revPair.second;
+  joint->setActuatorType(dynamics::Joint::LOCKED);
+  body->setMass(1.0);
+  body->createShapeNodeWith<dynamics::VisualAspect, dynamics::CollisionAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+
+  Eigen::Isometry3d rootTf = Eigen::Isometry3d::Identity();
+  rootTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.0);
+  rootPair.first->setPositions(dynamics::FreeJoint::convertToPositions(rootTf));
+
+  auto collider = dynamics::Skeleton::create("revolute_locked_collider");
+  auto colPair = collider->createJointAndBodyNodePair<dynamics::WeldJoint>();
+  auto* colBody = colPair.second;
+  colBody->setMass(1.0);
+  colBody
+      ->createShapeNodeWith<dynamics::VisualAspect, dynamics::CollisionAspect>(
+          std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  Eigen::Isometry3d colTf = Eigen::Isometry3d::Identity();
+  colTf.translation() = Eigen::Vector3d(0.2, 0.0, 0.0);
+  colPair.first->setTransformFromParentBodyNode(colTf);
+
+  world->addSkeleton(skel);
+  world->addSkeleton(collider);
+
+  for (int i = 0; i < 3; ++i) {
+    world->step();
+  }
+
+  EXPECT_TRUE(joint->getPositions().allFinite());
+  EXPECT_TRUE(std::isfinite(joint->getConstraintImpulse(0)));
+  EXPECT_TRUE(std::isfinite(joint->getVelocityChange(0)));
+}
+
+//==============================================================================
+TEST(GenericJoints, RevoluteForceActuatorContactConstraints)
+{
+  auto world = simulation::World::create();
+  world->setTimeStep(0.001);
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+
+  auto skel = dynamics::Skeleton::create("revolute_force");
+  auto rootPair = skel->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  rootPair.second->setMass(1.0);
+
+  auto revPair
+      = rootPair.second
+            ->createChildJointAndBodyNodePair<dynamics::RevoluteJoint>();
+  auto* joint = revPair.first;
+  auto* body = revPair.second;
+  joint->setActuatorType(dynamics::Joint::FORCE);
+  body->setMass(1.0);
+  body->createShapeNodeWith<dynamics::VisualAspect, dynamics::CollisionAspect>(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+
+  Eigen::Isometry3d rootTf = Eigen::Isometry3d::Identity();
+  rootTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.0);
+  rootPair.first->setPositions(dynamics::FreeJoint::convertToPositions(rootTf));
+
+  auto collider = dynamics::Skeleton::create("revolute_force_collider");
+  auto colPair = collider->createJointAndBodyNodePair<dynamics::WeldJoint>();
+  auto* colBody = colPair.second;
+  colBody->setMass(1.0);
+  colBody
+      ->createShapeNodeWith<dynamics::VisualAspect, dynamics::CollisionAspect>(
+          std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  Eigen::Isometry3d colTf = Eigen::Isometry3d::Identity();
+  colTf.translation() = Eigen::Vector3d(0.2, 0.0, 0.0);
+  colPair.first->setTransformFromParentBodyNode(colTf);
+
+  world->addSkeleton(skel);
+  world->addSkeleton(collider);
+
+  for (int i = 0; i < 3; ++i) {
+    world->step();
+  }
+
+  EXPECT_TRUE(joint->getPositions().allFinite());
+  EXPECT_TRUE(joint->getVelocities().allFinite());
+  EXPECT_TRUE(std::isfinite(joint->getConstraintImpulse(0)));
+  EXPECT_TRUE(std::isfinite(joint->getVelocityChange(0)));
+}

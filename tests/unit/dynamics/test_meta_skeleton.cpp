@@ -1196,3 +1196,118 @@ TEST(MetaSkeletonTests, IndexLimitAccessors)
   EXPECT_DOUBLE_EQ(skel->getForceLowerLimit(0), -3.0);
   EXPECT_DOUBLE_EQ(skel->getForceUpperLimit(0), 3.0);
 }
+
+//==============================================================================
+TEST(MetaSkeletonTests, IndexedPositionVelocityAccelerationLimits)
+{
+  auto skel = createChainSkeleton(3, "indexed_limits");
+
+  skel->setPositionLowerLimit(1, -0.4);
+  skel->setPositionUpperLimit(1, 0.6);
+  EXPECT_DOUBLE_EQ(skel->getPositionLowerLimit(1), -0.4);
+  EXPECT_DOUBLE_EQ(skel->getPositionUpperLimit(1), 0.6);
+
+  skel->setVelocityLowerLimit(2, -1.5);
+  skel->setVelocityUpperLimit(2, 1.5);
+  EXPECT_DOUBLE_EQ(skel->getVelocityLowerLimit(2), -1.5);
+  EXPECT_DOUBLE_EQ(skel->getVelocityUpperLimit(2), 1.5);
+
+  skel->setAccelerationLowerLimit(0, -2.2);
+  skel->setAccelerationUpperLimit(0, 2.2);
+  EXPECT_DOUBLE_EQ(skel->getAccelerationLowerLimit(0), -2.2);
+  EXPECT_DOUBLE_EQ(skel->getAccelerationUpperLimit(0), 2.2);
+}
+
+//==============================================================================
+TEST(MetaSkeletonTests, LinearAngularJacobianRelativeFrames)
+{
+  auto skel = createChainSkeleton(2, "jac_rel_frames");
+  auto* root = skel->getBodyNode(0);
+  auto* endBody = skel->getBodyNode(1);
+  ASSERT_NE(root, nullptr);
+  ASSERT_NE(endBody, nullptr);
+
+  const Eigen::Vector3d offset(0.05, -0.02, 0.01);
+  const auto Jlin
+      = skel->getLinearJacobian(endBody, offset, root, Frame::World());
+  EXPECT_EQ(Jlin.rows(), 3);
+  EXPECT_EQ(Jlin.cols(), static_cast<int>(skel->getNumDofs()));
+
+  const auto Jang = skel->getAngularJacobian(endBody, root, Frame::World());
+  EXPECT_EQ(Jang.rows(), 3);
+  EXPECT_EQ(Jang.cols(), static_cast<int>(skel->getNumDofs()));
+}
+
+//==============================================================================
+TEST(MetaSkeletonTests, JacobianClassicDerivWithVelocities)
+{
+  auto skel = createChainSkeleton(2, "jac_classic_nonzero");
+
+  Eigen::VectorXd velocities(2);
+  velocities << 0.4, -0.3;
+  skel->setVelocities(velocities);
+
+  auto* endBody = skel->getBodyNode(1);
+  ASSERT_NE(endBody, nullptr);
+
+  const auto Jclassic = skel->getJacobianClassicDeriv(endBody);
+  EXPECT_EQ(Jclassic.rows(), 6);
+  EXPECT_EQ(Jclassic.cols(), static_cast<int>(skel->getNumDofs()));
+  EXPECT_TRUE(Jclassic.array().isFinite().all());
+}
+
+//==============================================================================
+TEST(MetaSkeletonTests, COMQueriesWithoutFrame)
+{
+  auto skel = createMixedSkeleton("com_no_frame");
+
+  skel->setVelocities(Eigen::VectorXd::Constant(skel->getNumDofs(), 0.15));
+  skel->setAccelerations(Eigen::VectorXd::Constant(skel->getNumDofs(), -0.07));
+
+  const auto com = skel->getCOM();
+  EXPECT_TRUE(com.array().isFinite().all());
+
+  const auto comVel = skel->getCOMLinearVelocity();
+  EXPECT_TRUE(comVel.array().isFinite().all());
+
+  const auto comAcc = skel->getCOMLinearAcceleration();
+  EXPECT_TRUE(comAcc.array().isFinite().all());
+}
+
+TEST(MetaSkeletonTests, PerIndexVelocityAndAccelerationLimits)
+{
+  auto skel = createChainSkeleton(3);
+  std::vector<std::size_t> indices = {0, 2};
+
+  Eigen::VectorXd lowerVel(2);
+  lowerVel << -5.0, -3.0;
+  skel->setVelocityLowerLimits(indices, lowerVel);
+
+  auto gotLowerVel = skel->getVelocityLowerLimits(indices);
+  EXPECT_DOUBLE_EQ(gotLowerVel[0], -5.0);
+  EXPECT_DOUBLE_EQ(gotLowerVel[1], -3.0);
+
+  Eigen::VectorXd upperVel(2);
+  upperVel << 5.0, 3.0;
+  skel->setVelocityUpperLimits(indices, upperVel);
+
+  auto gotUpperVel = skel->getVelocityUpperLimits(indices);
+  EXPECT_DOUBLE_EQ(gotUpperVel[0], 5.0);
+  EXPECT_DOUBLE_EQ(gotUpperVel[1], 3.0);
+
+  Eigen::VectorXd lowerAcc(2);
+  lowerAcc << -100.0, -50.0;
+  skel->setAccelerationLowerLimits(indices, lowerAcc);
+
+  auto gotLowerAcc = skel->getAccelerationLowerLimits(indices);
+  EXPECT_DOUBLE_EQ(gotLowerAcc[0], -100.0);
+  EXPECT_DOUBLE_EQ(gotLowerAcc[1], -50.0);
+
+  Eigen::VectorXd upperAcc(2);
+  upperAcc << 100.0, 50.0;
+  skel->setAccelerationUpperLimits(indices, upperAcc);
+
+  auto gotUpperAcc = skel->getAccelerationUpperLimits(indices);
+  EXPECT_DOUBLE_EQ(gotUpperAcc[0], 100.0);
+  EXPECT_DOUBLE_EQ(gotUpperAcc[1], 50.0);
+}

@@ -301,3 +301,393 @@ TEST(SkeletonConfiguration, ConfigurationFlagsForForcesAndCommands)
   EXPECT_TRUE(config.mAccelerations.isApprox(accelerations));
   EXPECT_TRUE(config.mCommands.isApprox(commands));
 }
+
+#include <dart/dart.hpp>
+
+TEST(SkeletonProperties, TreeLevelMassMatrixGetters)
+{
+  auto skeleton = Skeleton::create("multi_tree_matrices");
+  auto root1 = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto child1 = root1.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  child1.first->setAxis(Eigen::Vector3d::UnitY());
+
+  auto root2 = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto child2 = root2.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  child2.first->setAxis(Eigen::Vector3d::UnitX());
+
+  ASSERT_EQ(skeleton->getNumTrees(), 2u);
+
+  Eigen::Vector6d root1Pos = Eigen::Vector6d::Zero();
+  Eigen::Vector6d root2Pos = Eigen::Vector6d::Zero();
+  root2Pos[0] = 1.0;
+  root1.first->setPositions(root1Pos);
+  root2.first->setPositions(root2Pos);
+
+  Eigen::VectorXd childPos(1);
+  childPos[0] = 0.25;
+  child1.first->setPositions(childPos);
+  childPos[0] = -0.15;
+  child2.first->setPositions(childPos);
+
+  Eigen::VectorXd velocities = Eigen::VectorXd::Zero(skeleton->getNumDofs());
+  velocities[0] = 0.3;
+  velocities[6] = -0.2;
+  skeleton->setVelocities(velocities);
+
+  root1.second->addExtForce(Eigen::Vector3d(1.0, -2.0, 0.5));
+  root2.second->addExtForce(Eigen::Vector3d(-0.5, 1.5, 0.0));
+
+  const auto tree0Dofs = skeleton->getTreeDofs(0);
+  const auto tree1Dofs = skeleton->getTreeDofs(1);
+
+  const auto& mass0 = skeleton->getMassMatrix(0);
+  EXPECT_EQ(mass0.rows(), static_cast<int>(tree0Dofs.size()));
+  EXPECT_EQ(mass0.cols(), static_cast<int>(tree0Dofs.size()));
+
+  const auto& augMass0 = skeleton->getAugMassMatrix(0);
+  EXPECT_EQ(augMass0.rows(), static_cast<int>(tree0Dofs.size()));
+  EXPECT_EQ(augMass0.cols(), static_cast<int>(tree0Dofs.size()));
+
+  const auto& invMass0 = skeleton->getInvMassMatrix(0);
+  EXPECT_EQ(invMass0.rows(), static_cast<int>(tree0Dofs.size()));
+  EXPECT_EQ(invMass0.cols(), static_cast<int>(tree0Dofs.size()));
+
+  const auto& invAugMass0 = skeleton->getInvAugMassMatrix(0);
+  EXPECT_EQ(invAugMass0.rows(), static_cast<int>(tree0Dofs.size()));
+  EXPECT_EQ(invAugMass0.cols(), static_cast<int>(tree0Dofs.size()));
+
+  const auto& coriolis0 = skeleton->getCoriolisForces(0);
+  EXPECT_EQ(coriolis0.size(), static_cast<int>(tree0Dofs.size()));
+
+  const auto& gravity0 = skeleton->getGravityForces(0);
+  EXPECT_EQ(gravity0.size(), static_cast<int>(tree0Dofs.size()));
+
+  const auto& cg0 = skeleton->getCoriolisAndGravityForces(0);
+  EXPECT_EQ(cg0.size(), static_cast<int>(tree0Dofs.size()));
+
+  const auto& ext0 = skeleton->getExternalForces(0);
+  EXPECT_EQ(ext0.size(), static_cast<int>(tree0Dofs.size()));
+
+  const auto& constraint0 = skeleton->getConstraintForces(0);
+  EXPECT_EQ(constraint0.size(), static_cast<int>(tree0Dofs.size()));
+
+  const auto& mass1 = skeleton->getMassMatrix(1);
+  EXPECT_EQ(mass1.rows(), static_cast<int>(tree1Dofs.size()));
+  EXPECT_EQ(mass1.cols(), static_cast<int>(tree1Dofs.size()));
+
+  const auto& augMass1 = skeleton->getAugMassMatrix(1);
+  EXPECT_EQ(augMass1.rows(), static_cast<int>(tree1Dofs.size()));
+  EXPECT_EQ(augMass1.cols(), static_cast<int>(tree1Dofs.size()));
+
+  const auto& invMass1 = skeleton->getInvMassMatrix(1);
+  EXPECT_EQ(invMass1.rows(), static_cast<int>(tree1Dofs.size()));
+  EXPECT_EQ(invMass1.cols(), static_cast<int>(tree1Dofs.size()));
+
+  const auto& invAugMass1 = skeleton->getInvAugMassMatrix(1);
+  EXPECT_EQ(invAugMass1.rows(), static_cast<int>(tree1Dofs.size()));
+  EXPECT_EQ(invAugMass1.cols(), static_cast<int>(tree1Dofs.size()));
+
+  const auto& coriolis1 = skeleton->getCoriolisForces(1);
+  EXPECT_EQ(coriolis1.size(), static_cast<int>(tree1Dofs.size()));
+
+  const auto& gravity1 = skeleton->getGravityForces(1);
+  EXPECT_EQ(gravity1.size(), static_cast<int>(tree1Dofs.size()));
+
+  const auto& cg1 = skeleton->getCoriolisAndGravityForces(1);
+  EXPECT_EQ(cg1.size(), static_cast<int>(tree1Dofs.size()));
+
+  const auto& ext1 = skeleton->getExternalForces(1);
+  EXPECT_EQ(ext1.size(), static_cast<int>(tree1Dofs.size()));
+
+  const auto& constraint1 = skeleton->getConstraintForces(1);
+  EXPECT_EQ(constraint1.size(), static_cast<int>(tree1Dofs.size()));
+
+  Eigen::VectorXd positions = skeleton->getPositions();
+  positions[0] += 0.2;
+  positions[6] -= 0.1;
+  skeleton->setPositions(positions);
+
+  velocities = skeleton->getVelocities();
+  velocities[0] -= 0.15;
+  velocities[6] += 0.05;
+  skeleton->setVelocities(velocities);
+
+  (void)skeleton->getMassMatrix(0);
+  (void)skeleton->getAugMassMatrix(1);
+  (void)skeleton->getInvMassMatrix(0);
+  (void)skeleton->getInvAugMassMatrix(1);
+  (void)skeleton->getCoriolisForces(1);
+  (void)skeleton->getGravityForces(0);
+  (void)skeleton->getCoriolisAndGravityForces(1);
+  (void)skeleton->getExternalForces(0);
+}
+
+TEST(SkeletonProperties, ClearExternalAndInternalForces)
+{
+  auto skeleton = Skeleton::create("force_clear");
+  auto root = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto child = root.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  child.first->setAxis(Eigen::Vector3d::UnitZ());
+
+  root.second->addExtForce(Eigen::Vector3d(1.0, 0.0, 0.0));
+  child.second->addExtForce(Eigen::Vector3d(0.0, -2.0, 1.0));
+  EXPECT_FALSE(root.second->getExternalForceLocal().isZero());
+  EXPECT_FALSE(child.second->getExternalForceLocal().isZero());
+
+  skeleton->clearExternalForces();
+  EXPECT_TRUE(root.second->getExternalForceLocal().isZero(0.0));
+  EXPECT_TRUE(child.second->getExternalForceLocal().isZero(0.0));
+
+  Eigen::VectorXd rootForces
+      = Eigen::VectorXd::Constant(root.first->getNumDofs(), 1.5);
+  Eigen::VectorXd childForces
+      = Eigen::VectorXd::Constant(child.first->getNumDofs(), -0.75);
+  root.first->setForces(rootForces);
+  child.first->setForces(childForces);
+  EXPECT_FALSE(root.first->getForces().isZero(0.0));
+  EXPECT_FALSE(child.first->getForces().isZero(0.0));
+
+  skeleton->clearInternalForces();
+  EXPECT_TRUE(root.first->getForces().isZero(0.0));
+  EXPECT_TRUE(child.first->getForces().isZero(0.0));
+}
+
+TEST(SkeletonProperties, ClearConstraintAndPositionImpulses)
+{
+  auto skeleton = Skeleton::create("impulse_clear");
+  auto root = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto child = root.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  child.first->setAxis(Eigen::Vector3d::UnitX());
+
+  const Eigen::Vector6d impulse = Eigen::Vector6d::Ones();
+  root.second->addConstraintImpulse(impulse);
+  child.second->addConstraintImpulse(-impulse);
+  root.second->addPositionConstraintImpulse(0.5 * impulse);
+  child.second->addPositionConstraintImpulse(-0.25 * impulse);
+
+  EXPECT_FALSE(root.second->getConstraintImpulse().isZero(0.0));
+  EXPECT_FALSE(child.second->getConstraintImpulse().isZero(0.0));
+  EXPECT_FALSE(root.second->getPositionConstraintImpulse().isZero(0.0));
+  EXPECT_FALSE(child.second->getPositionConstraintImpulse().isZero(0.0));
+
+  skeleton->clearConstraintImpulses();
+  EXPECT_TRUE(root.second->getConstraintImpulse().isZero(0.0));
+  EXPECT_TRUE(child.second->getConstraintImpulse().isZero(0.0));
+
+  skeleton->clearPositionConstraintImpulses();
+  EXPECT_TRUE(root.second->getPositionConstraintImpulse().isZero(0.0));
+  EXPECT_TRUE(child.second->getPositionConstraintImpulse().isZero(0.0));
+}
+
+TEST(SkeletonProperties, BiasImpulseAndVelocityChangeUpdates)
+{
+  auto skeleton = Skeleton::create("bias_impulse");
+  auto root = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto child = root.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  child.first->setAxis(Eigen::Vector3d::UnitY());
+
+  Eigen::VectorXd positions = Eigen::VectorXd::Zero(skeleton->getNumDofs());
+  positions[0] = 0.2;
+  positions[6] = -0.1;
+  skeleton->setPositions(positions);
+
+  skeleton->updateBiasImpulse(child.second);
+
+  const Eigen::Vector6d impulse = Eigen::Vector6d::Ones() * 0.1;
+  skeleton->updateBiasImpulse(child.second, impulse);
+  EXPECT_TRUE(child.second->getConstraintImpulse().isZero(0.0));
+
+  Eigen::Vector6d impulse1 = Eigen::Vector6d::Zero();
+  Eigen::Vector6d impulse2 = Eigen::Vector6d::Zero();
+  impulse1[0] = 1.0;
+  impulse2[2] = 1.0;
+  skeleton->updateBiasImpulse(root.second, impulse1, child.second, impulse2);
+  EXPECT_TRUE(root.second->getConstraintImpulse().isZero(0.0));
+  EXPECT_TRUE(child.second->getConstraintImpulse().isZero(0.0));
+
+  skeleton->updateVelocityChange();
+
+  root.second->addPositionConstraintImpulse(Eigen::Vector6d::UnitY() * 0.05);
+  skeleton->computePositionVelocityChanges();
+  EXPECT_EQ(
+      skeleton->getPositionVelocityChanges().size(),
+      static_cast<int>(skeleton->getNumDofs()));
+
+  skeleton->setImpulseApplied(true);
+  EXPECT_TRUE(skeleton->isImpulseApplied());
+  skeleton->setPositionImpulseApplied(true);
+  EXPECT_TRUE(skeleton->isPositionImpulseApplied());
+}
+
+TEST(SkeletonProperties, ConstraintImpulsePathsViaWorldStep)
+{
+  auto world = dart::simulation::World::create();
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  auto skel1 = Skeleton::create("contact_1");
+  auto root1 = skel1->createJointAndBodyNodePair<FreeJoint>();
+  auto shape1 = std::make_shared<BoxShape>(Eigen::Vector3d(0.2, 0.2, 0.2));
+  root1.second->createShapeNodeWith<VisualAspect, CollisionAspect>(shape1);
+  root1.second->setMass(1.0);
+
+  auto skel2 = Skeleton::create("contact_2");
+  auto root2 = skel2->createJointAndBodyNodePair<FreeJoint>();
+  auto shape2 = std::make_shared<BoxShape>(Eigen::Vector3d(0.2, 0.2, 0.2));
+  root2.second->createShapeNodeWith<VisualAspect, CollisionAspect>(shape2);
+  root2.second->setMass(1.0);
+
+  Eigen::Vector6d pos1 = Eigen::Vector6d::Zero();
+  Eigen::Vector6d pos2 = Eigen::Vector6d::Zero();
+  pos2[1] = 0.05;
+  root1.first->setPositions(pos1);
+  root2.first->setPositions(pos2);
+
+  world->addSkeleton(skel1);
+  world->addSkeleton(skel2);
+  EXPECT_EQ(world->getNumSkeletons(), 2u);
+
+  world->step();
+  EXPECT_EQ(world->getNumSkeletons(), 2u);
+}
+
+//==============================================================================
+// Test const overloads and span-returning variants of Skeleton/BodyNode/Joint
+// These cover lines in skeleton.cpp, body_node.cpp, meta_skeleton.cpp that are
+// only reached when calling through const references.
+TEST(SkeletonProperties, ConstOverloadsAndSpanVariants)
+{
+  using namespace dart::dynamics;
+
+  // Build a multi-tree skeleton with soft body node
+  auto skel = Skeleton::create("const_test");
+
+  // Tree 0: FreeJoint -> revolute -> weld
+  auto [freeJ, freeBody] = skel->createJointAndBodyNodePair<FreeJoint>();
+  freeBody->setName("freeBody");
+  freeBody->setMass(1.0);
+  auto [revJ, revBody]
+      = freeBody->createChildJointAndBodyNodePair<RevoluteJoint>();
+  revJ->setName("revJoint");
+  revBody->setName("revBody");
+  revBody->setMass(1.0);
+  revBody->createShapeNodeWith<VisualAspect, CollisionAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d(0.1, 0.1, 0.1)));
+
+  // Tree 1: Another FreeJoint root
+  auto [freeJ2, freeBody2] = skel->createJointAndBodyNodePair<FreeJoint>();
+  freeBody2->setName("freeBody2");
+  freeBody2->setMass(1.0);
+
+  ASSERT_EQ(skel->getNumTrees(), 2u);
+  ASSERT_GE(skel->getNumBodyNodes(), 3u);
+
+  // Get a const reference to the skeleton
+  const Skeleton& constSkel = *skel;
+
+// Suppress deprecated warnings for testing const overloads that are deprecated
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
+  auto constBodyNodes = constSkel.getBodyNodes();
+  EXPECT_EQ(constBodyNodes.size(), skel->getNumBodyNodes());
+
+  const BodyNode* constBn = constSkel.getBodyNode("revBody");
+  ASSERT_NE(constBn, nullptr);
+  EXPECT_EQ(constBn->getName(), "revBody");
+
+  auto constNamedNodes = constSkel.getBodyNodes("freeBody");
+  EXPECT_EQ(constNamedNodes.size(), 1u);
+
+  auto constNoNodes = constSkel.getBodyNodes("nonexistent");
+  EXPECT_EQ(constNoNodes.size(), 0u);
+
+  EXPECT_TRUE(constSkel.hasBodyNode(skel->getBodyNode(0)));
+  EXPECT_FALSE(constSkel.hasBodyNode(nullptr));
+
+  const Joint* constJoint = constSkel.getJoint(0);
+  ASSERT_NE(constJoint, nullptr);
+
+  auto constJoints = constSkel.getJoints();
+  EXPECT_EQ(constJoints.size(), skel->getNumJoints());
+
+  const Joint* namedJoint = constSkel.getJoint("revJoint");
+  ASSERT_NE(namedJoint, nullptr);
+
+  auto tree0Bodies = constSkel.getTreeBodyNodes(0);
+  EXPECT_GE(tree0Bodies.size(), 1u);
+  auto tree1Bodies = constSkel.getTreeBodyNodes(1);
+  EXPECT_GE(tree1Bodies.size(), 1u);
+
+  const BodyNode* root0 = constSkel.getRootBodyNode(0);
+  ASSERT_NE(root0, nullptr);
+  const BodyNode* root1 = constSkel.getRootBodyNode(1);
+  ASSERT_NE(root1, nullptr);
+
+  auto dofSpan = skel->getDofs();
+  EXPECT_EQ(static_cast<std::size_t>(dofSpan.size()), skel->getNumDofs());
+
+  const DegreeOfFreedom* constDof = constSkel.getDof(0);
+  ASSERT_NE(constDof, nullptr);
+
+  auto constDofs = constSkel.getDofs();
+  EXPECT_EQ(static_cast<std::size_t>(constDofs.size()), skel->getNumDofs());
+
+#pragma GCC diagnostic pop
+
+  // skeleton.cpp: getTreeDofs(treeIdx) const
+  auto treeDofs0 = constSkel.getTreeDofs(0);
+  EXPECT_GE(treeDofs0.size(), 1u);
+
+  // --- Body node const accessors ---
+  const BodyNode& constBody = *constBn;
+  EXPECT_GE(constBody.getNumChildBodyNodes(), 0u);
+  EXPECT_NE(constBody.getParentJoint(), nullptr);
+  EXPECT_NE(constBody.getSkeleton().get(), nullptr);
+}
+
+//==============================================================================
+// Test skeleton with zero DOFs (WeldJoint-only skeleton)
+TEST(SkeletonProperties, ZeroDofSkeletonEdgeCases)
+{
+  using namespace dart::dynamics;
+
+  auto skel = Skeleton::create("zero_dof");
+  auto [weldJ, body] = skel->createJointAndBodyNodePair<WeldJoint>();
+  body->setMass(1.0);
+
+  ASSERT_EQ(skel->getNumDofs(), 0u);
+
+  // skeleton.cpp lines ~1656, 1688: return zero vector when numDofs == 0
+  auto positions = skel->getPositions();
+  EXPECT_EQ(positions.size(), 0);
+  auto velocities = skel->getVelocities();
+  EXPECT_EQ(velocities.size(), 0);
+  auto accelerations = skel->getAccelerations();
+  EXPECT_EQ(accelerations.size(), 0);
+
+  // Mass matrix and related for zero-DOF skeleton
+  auto& massMatrix = skel->getMassMatrix();
+  EXPECT_EQ(massMatrix.rows(), 0);
+  EXPECT_EQ(massMatrix.cols(), 0);
+
+  auto coriolisForces = skel->getCoriolisForces();
+  EXPECT_EQ(coriolisForces.size(), 0);
+
+  auto gravityForces = skel->getGravityForces();
+  EXPECT_EQ(gravityForces.size(), 0);
+
+  // COM Jacobian on zero-DOF (skeleton.cpp lines ~1749, 1796)
+  auto comJac = skel->getCOMLinearJacobian();
+  EXPECT_EQ(comJac.cols(), 0);
+
+  // Integration with zero DOFs
+  skel->integratePositions(0.001);
+  skel->integrateVelocities(0.001);
+
+  // Configuration operations
+  auto config = skel->getConfiguration();
+  skel->setConfiguration(config);
+
+  // computeForwardKinematics on zero-dof
+  skel->computeForwardKinematics();
+}

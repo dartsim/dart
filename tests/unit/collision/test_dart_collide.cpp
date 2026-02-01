@@ -1361,4 +1361,84 @@ TEST(DARTCollide, BoxBoxEdgeEdgeContact)
   }
 }
 
+TEST(DARTCollide, BoxBoxEdgeEdgeCollisionGroup)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto boxA = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+  auto boxB = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+
+  auto frameA = std::make_shared<SimpleFrame>(Frame::World(), "edge_a");
+  frameA->setShape(boxA);
+  auto frameB = std::make_shared<SimpleFrame>(Frame::World(), "edge_b");
+  frameB->setShape(boxB);
+
+  Eigen::Isometry3d tfA = Eigen::Isometry3d::Identity();
+  tfA.linear() = Eigen::AngleAxisd(0.15 * math::pi, Eigen::Vector3d::UnitX())
+                     .toRotationMatrix();
+  frameA->setRelativeTransform(tfA);
+
+  Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
+  tfB.linear()
+      = (Eigen::AngleAxisd(0.25 * math::pi, Eigen::Vector3d::UnitY())
+         * Eigen::AngleAxisd(0.35 * math::pi, Eigen::Vector3d::UnitZ()))
+            .toRotationMatrix();
+  tfB.translation() = Eigen::Vector3d(0.7, 0.2, 0.1);
+  frameB->setRelativeTransform(tfB);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(frameA.get());
+  group->addShapeFrame(frameB.get());
+
+  CollisionOption option;
+  option.maxNumContacts = 4u;
+  CollisionResult result;
+  const bool collided = group->collide(option, &result);
+
+  EXPECT_TRUE(collided);
+  ASSERT_GT(result.getNumContacts(), 0u);
+  const auto& contact = result.getContact(0);
+  EXPECT_TRUE(contact.point.allFinite());
+  EXPECT_TRUE(contact.normal.allFinite());
+  EXPECT_GT(contact.normal.norm(), 0.5);
+}
+
+TEST(DARTCollide, BoxBoxEdgeEdgeCollisionGroupSkewed)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto boxA = std::make_shared<BoxShape>(Eigen::Vector3d(1.2, 0.8, 1.0));
+  auto boxB = std::make_shared<BoxShape>(Eigen::Vector3d(0.9, 1.1, 1.0));
+
+  auto frameA = std::make_shared<SimpleFrame>(Frame::World(), "edge_c");
+  frameA->setShape(boxA);
+  auto frameB = std::make_shared<SimpleFrame>(Frame::World(), "edge_d");
+  frameB->setShape(boxB);
+
+  Eigen::Isometry3d tfA = Eigen::Isometry3d::Identity();
+  tfA.linear() = Eigen::AngleAxisd(0.2 * math::pi, Eigen::Vector3d::UnitY())
+                     .toRotationMatrix();
+  frameA->setRelativeTransform(tfA);
+
+  Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
+  tfB.linear() = (Eigen::AngleAxisd(0.4 * math::pi, Eigen::Vector3d::UnitX())
+                  * Eigen::AngleAxisd(0.3 * math::pi, Eigen::Vector3d::UnitZ()))
+                     .toRotationMatrix();
+  tfB.translation() = Eigen::Vector3d(0.6, -0.25, 0.15);
+  frameB->setRelativeTransform(tfB);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(frameA.get());
+  group->addShapeFrame(frameB.get());
+
+  CollisionOption option;
+  option.maxNumContacts = 2u;
+  CollisionResult result;
+  const bool collided = group->collide(option, &result);
+
+  EXPECT_TRUE(collided);
+  ASSERT_GT(result.getNumContacts(), 0u);
+  const auto& contact = result.getContact(0);
+  EXPECT_GT(contact.penetrationDepth, 0.0);
+  EXPECT_TRUE(contact.normal.allFinite());
+}
+
 } // namespace dart::test

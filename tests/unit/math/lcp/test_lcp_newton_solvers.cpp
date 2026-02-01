@@ -299,7 +299,7 @@ TEST(FischerBurmeisterNewtonSolver, ConvergenceFailureWithLowIterations)
 {
   FischerBurmeisterNewtonSolver solver;
   auto problem = makeInfeasibleProblem();
-  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
 
   LcpOptions options;
   options.maxIterations = 1;
@@ -420,7 +420,7 @@ TEST(
 {
   PenalizedFischerBurmeisterNewtonSolver solver;
   auto problem = makeInfeasibleProblem();
-  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
 
   LcpOptions options;
   options.maxIterations = 1;
@@ -547,7 +547,7 @@ TEST(MinimumMapNewtonSolver, ConvergenceFailureWithLowIterations)
 {
   MinimumMapNewtonSolver solver;
   auto problem = makeInfeasibleProblem();
-  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
 
   LcpOptions options;
   options.maxIterations = 1;
@@ -556,6 +556,82 @@ TEST(MinimumMapNewtonSolver, ConvergenceFailureWithLowIterations)
   const auto result = solver.solve(problem, x, options);
 
   EXPECT_NE(result.status, LcpSolverStatus::Success);
+}
+
+//==============================================================================
+TEST(MinimumMapNewtonSolver, LineSearchFailureWithZeroSteps)
+{
+  MinimumMapNewtonSolver solver;
+  MinimumMapNewtonSolver::Parameters params;
+  params.maxLineSearchSteps = 0;
+  solver.setParameters(params);
+
+  auto problem = makeIllConditionedProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+
+  LcpOptions options;
+  options.maxIterations = 2;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
+  EXPECT_FALSE(result.message.empty());
+}
+
+//==============================================================================
+TEST(FischerBurmeisterNewtonSolver, LineSearchFailureWithZeroSteps)
+{
+  FischerBurmeisterNewtonSolver solver;
+  FischerBurmeisterNewtonSolver::Parameters params;
+  params.maxLineSearchSteps = 0;
+  solver.setParameters(params);
+
+  auto problem = makeIllConditionedProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.maxIterations = 2;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
+  EXPECT_FALSE(result.message.empty());
+}
+
+//==============================================================================
+TEST(PenalizedFischerBurmeisterNewtonSolver, LineSearchFailureWithZeroSteps)
+{
+  PenalizedFischerBurmeisterNewtonSolver solver;
+  PenalizedFischerBurmeisterNewtonSolver::Parameters params;
+  params.maxLineSearchSteps = 0;
+  solver.setParameters(params);
+
+  auto problem = makeIllConditionedProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.maxIterations = 2;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
+  EXPECT_FALSE(result.message.empty());
+}
+
+//==============================================================================
+TEST(PenalizedFischerBurmeisterNewtonSolver, RejectsInvalidLambda)
+{
+  PenalizedFischerBurmeisterNewtonSolver solver;
+  PenalizedFischerBurmeisterNewtonSolver::Parameters params;
+  params.lambda = 0.0;
+  solver.setParameters(params);
+
+  auto problem = makeIllConditionedProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.maxIterations = 10;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_FALSE(result.message.empty());
 }
 
 //==============================================================================

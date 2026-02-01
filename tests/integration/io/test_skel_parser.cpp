@@ -3207,3 +3207,292 @@ TEST(SkelParser, ParsesSoftBodyVariantsFromXml)
     EXPECT_GT(softBody->getNumPointMasses(), 0u);
   }
 }
+
+//==============================================================================
+TEST(SkelParser, JointDynamicsAndDofLimitsFromXml)
+{
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="base">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="slider">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="universal_link">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="planar_link">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>base</child>
+      </joint>
+      <joint type="prismatic" name="slide_joint">
+        <parent>base</parent>
+        <child>slider</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+          <damping>0.9</damping>
+          <dynamics>
+            <friction>0.2</friction>
+            <spring_rest_position>0.3</spring_rest_position>
+            <spring_stiffness>4.1</spring_stiffness>
+          </dynamics>
+          <limit>
+            <lower>-0.4</lower>
+            <upper>0.6</upper>
+          </limit>
+        </axis>
+        <dof local_index="0" name="slide_dof">
+          <velocity lower="-1.2" upper="1.3" initial="0.5" />
+          <acceleration lower="-2.2" upper="2.3" initial="0.6" />
+          <force lower="-3.2" upper="3.3" initial="0.7" />
+        </dof>
+      </joint>
+      <joint type="universal" name="universal_joint">
+        <parent>slider</parent>
+        <child>universal_link</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <limit>
+            <lower>-0.7</lower>
+            <upper>0.8</upper>
+          </limit>
+          <dynamics>
+            <damping>0.4</damping>
+            <spring_stiffness>1.5</spring_stiffness>
+          </dynamics>
+        </axis>
+        <axis2>
+          <xyz>0 1 0</xyz>
+          <limit>
+            <lower>-0.9</lower>
+            <upper>1.1</upper>
+          </limit>
+          <dynamics>
+            <damping>0.6</damping>
+            <spring_stiffness>1.7</spring_stiffness>
+          </dynamics>
+        </axis2>
+        <init_pos>0.1 0.2</init_pos>
+        <init_vel>-0.1 -0.2</init_vel>
+      </joint>
+      <joint type="planar" name="planar_joint">
+        <parent>universal_link</parent>
+        <child>planar_link</child>
+        <plane type="arbitrary">
+          <translation_axis1>
+            <xyz>1 0 0</xyz>
+          </translation_axis1>
+          <translation_axis2>
+            <xyz>0 1 0</xyz>
+          </translation_axis2>
+        </plane>
+        <init_pos>0.2 0.3 0.4</init_pos>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+  )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+
+  auto* prismatic
+      = dynamic_cast<dynamics::PrismaticJoint*>(skel->getJoint("slide_joint"));
+  ASSERT_NE(prismatic, nullptr);
+  EXPECT_TRUE(prismatic->getAxis().isApprox(Eigen::Vector3d::UnitX()));
+  EXPECT_DOUBLE_EQ(prismatic->getDampingCoefficient(0), 0.9);
+  EXPECT_DOUBLE_EQ(prismatic->getCoulombFriction(0), 0.2);
+  EXPECT_DOUBLE_EQ(prismatic->getRestPosition(0), 0.3);
+  EXPECT_DOUBLE_EQ(prismatic->getSpringStiffness(0), 4.1);
+  EXPECT_DOUBLE_EQ(prismatic->getPositionLowerLimit(0), -0.4);
+  EXPECT_DOUBLE_EQ(prismatic->getPositionUpperLimit(0), 0.6);
+  auto* prismaticDof = prismatic->getDof(0);
+  ASSERT_NE(prismaticDof, nullptr);
+  EXPECT_DOUBLE_EQ(prismaticDof->getVelocityLowerLimit(), -1.2);
+  EXPECT_DOUBLE_EQ(prismaticDof->getVelocityUpperLimit(), 1.3);
+  EXPECT_DOUBLE_EQ(prismaticDof->getAccelerationLowerLimit(), -2.2);
+  EXPECT_DOUBLE_EQ(prismaticDof->getAccelerationUpperLimit(), 2.3);
+  EXPECT_DOUBLE_EQ(prismaticDof->getForceLowerLimit(), -3.2);
+  EXPECT_DOUBLE_EQ(prismaticDof->getForceUpperLimit(), 3.3);
+  EXPECT_NEAR(prismatic->getVelocity(0), 0.5, 1e-9);
+
+  auto* universal = dynamic_cast<dynamics::UniversalJoint*>(
+      skel->getJoint("universal_joint"));
+  ASSERT_NE(universal, nullptr);
+  EXPECT_TRUE(universal->getAxis1().isApprox(Eigen::Vector3d::UnitZ()));
+  EXPECT_TRUE(universal->getAxis2().isApprox(Eigen::Vector3d::UnitY()));
+  EXPECT_DOUBLE_EQ(universal->getPositionLowerLimit(0), -0.7);
+  EXPECT_DOUBLE_EQ(universal->getPositionUpperLimit(0), 0.8);
+  EXPECT_DOUBLE_EQ(universal->getDampingCoefficient(0), 0.4);
+  EXPECT_DOUBLE_EQ(universal->getSpringStiffness(0), 1.5);
+  EXPECT_DOUBLE_EQ(universal->getPositionLowerLimit(1), -0.9);
+  EXPECT_DOUBLE_EQ(universal->getPositionUpperLimit(1), 1.1);
+  EXPECT_DOUBLE_EQ(universal->getDampingCoefficient(1), 0.6);
+  EXPECT_DOUBLE_EQ(universal->getSpringStiffness(1), 1.7);
+
+  auto* planar
+      = dynamic_cast<dynamics::PlanarJoint*>(skel->getJoint("planar_joint"));
+  ASSERT_NE(planar, nullptr);
+  EXPECT_EQ(
+      planar->getPlaneType(), dynamics::PlanarJoint::PlaneType::ARBITRARY);
+  EXPECT_TRUE(
+      planar->getTranslationalAxis1().isApprox(Eigen::Vector3d::UnitX()));
+  EXPECT_TRUE(
+      planar->getTranslationalAxis2().isApprox(Eigen::Vector3d::UnitY()));
+  EXPECT_TRUE(planar->getPositions().isApprox(Eigen::Vector3d(0.2, 0.3, 0.4)));
+}
+
+//==============================================================================
+TEST(SkelParser, MeshEllipsoidAndSoftBodyParsingFromXml)
+{
+  const auto tempDir = std::filesystem::temp_directory_path();
+  const auto meshPath = tempDir / "dart_skel_mesh_variants.obj";
+  std::ofstream meshFile(meshPath.string(), std::ios::binary);
+  ASSERT_TRUE(meshFile.is_open());
+  meshFile << "o Mesh\n"
+           << "v 0 0 0\n"
+           << "v 1 0 0\n"
+           << "v 0 1 0\n"
+           << "f 1 2 3\n";
+  meshFile.close();
+
+  const std::string skelXml = std::string(R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="ellipsoid_body">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <ellipsoid>
+              <size>0.2 0.4 0.6</size>
+            </ellipsoid>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <body name="mesh_body">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <mesh>
+              <file_name>)") + meshPath.string()
+                              + R"(</file_name>
+              <scale>1 2 3</scale>
+            </mesh>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <body name="soft_box">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <soft_shape>
+          <total_mass>1.2</total_mass>
+          <transformation>0.1 0.2 0.3 0 0 0</transformation>
+          <geometry>
+            <box>
+              <size>0.3 0.2 0.1</size>
+              <frags>2 2 2</frags>
+            </box>
+          </geometry>
+          <kv>1.1</kv>
+          <ke>2.2</ke>
+          <damp>0.4</damp>
+        </soft_shape>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>ellipsoid_body</child>
+      </joint>
+      <joint type="weld" name="mesh_joint">
+        <parent>ellipsoid_body</parent>
+        <child>mesh_body</child>
+      </joint>
+      <joint type="weld" name="soft_joint">
+        <parent>mesh_body</parent>
+        <child>soft_box</child>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+  )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+
+  auto* ellipsoidBody = skel->getBodyNode("ellipsoid_body");
+  ASSERT_NE(ellipsoidBody, nullptr);
+  auto ellipsoidShape = ellipsoidBody->getShapeNode(0)->getShape();
+  ASSERT_TRUE(ellipsoidShape->is<dynamics::EllipsoidShape>());
+  auto ellipsoid
+      = std::dynamic_pointer_cast<dynamics::EllipsoidShape>(ellipsoidShape);
+  ASSERT_NE(ellipsoid, nullptr);
+  EXPECT_TRUE(
+      ellipsoid->getDiameters().isApprox(Eigen::Vector3d(0.2, 0.4, 0.6)));
+
+  auto* meshBody = skel->getBodyNode("mesh_body");
+  ASSERT_NE(meshBody, nullptr);
+  auto meshShape = meshBody->getShapeNode(0)->getShape();
+  ASSERT_TRUE(meshShape->is<dynamics::MeshShape>());
+  auto mesh = std::dynamic_pointer_cast<dynamics::MeshShape>(meshShape);
+  ASSERT_NE(mesh, nullptr);
+  EXPECT_TRUE(mesh->getScale().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+
+  ASSERT_EQ(skel->getNumSoftBodyNodes(), 1u);
+  auto* softBody = skel->getSoftBodyNode(0);
+  ASSERT_NE(softBody, nullptr);
+  EXPECT_GT(softBody->getNumPointMasses(), 0u);
+
+  std::error_code ec;
+  std::filesystem::remove(meshPath, ec);
+}

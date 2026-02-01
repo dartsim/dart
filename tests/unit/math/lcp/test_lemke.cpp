@@ -257,6 +257,51 @@ TEST(Lemke, SolvesFrictionIndexViaFallback)
 }
 
 //==============================================================================
+TEST(Lemke, EmptyProblem)
+{
+  dart::math::LemkeSolver solver;
+
+  Eigen::MatrixXd A(0, 0);
+  Eigen::VectorXd b(0);
+  Eigen::VectorXd lo(0);
+  Eigen::VectorXd hi(0);
+  Eigen::VectorXi findex(0);
+
+  LcpProblem problem(A, b, lo, hi, findex);
+  Eigen::VectorXd x;
+
+  const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+
+  EXPECT_EQ(result.status, dart::math::LcpSolverStatus::Success);
+  EXPECT_EQ(x.size(), 0);
+}
+
+//==============================================================================
+TEST(Lemke, DegenerateZeroMatrixFails)
+{
+  dart::math::LemkeSolver solver;
+
+  Eigen::MatrixXd A(1, 1);
+  A << 0.0;
+  Eigen::VectorXd b(1);
+  b << 1.0;
+
+  LcpProblem problem(
+      A,
+      b,
+      Eigen::VectorXd::Zero(1),
+      Eigen::VectorXd::Constant(1, std::numeric_limits<double>::infinity()),
+      Eigen::VectorXi::Constant(1, -1));
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(1);
+
+  const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+
+  EXPECT_EQ(result.status, dart::math::LcpSolverStatus::Failed);
+  EXPECT_FALSE(result.message.empty());
+  EXPECT_NEAR(x[0], 0.0, 1e-12);
+}
+
+//==============================================================================
 int main(int argc, char* argv[])
 {
   ::testing::InitGoogleTest(&argc, argv);

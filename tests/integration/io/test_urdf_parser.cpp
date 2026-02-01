@@ -32,10 +32,12 @@
 
 #include "helpers/gtest_utils.hpp"
 
+#include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/cylinder_shape.hpp"
 #include "dart/dynamics/free_joint.hpp"
 #include "dart/dynamics/mesh_shape.hpp"
 #include "dart/dynamics/planar_joint.hpp"
+#include "dart/dynamics/prismatic_joint.hpp"
 #include "dart/dynamics/sphere_shape.hpp"
 #include "dart/dynamics/weld_joint.hpp"
 #include "dart/simulation/world.hpp"
@@ -1672,4 +1674,158 @@ TEST(UrdfParser, TransmissionsSkipInvalidReductionAndMultiDof)
 
   EXPECT_NE(j1->getActuatorType(), dart::dynamics::Joint::MIMIC);
   EXPECT_NE(j2->getActuatorType(), dart::dynamics::Joint::MIMIC);
+}
+
+//==============================================================================
+TEST(UrdfParser, PrismaticLimitsSetInitialAndRestPositions)
+{
+  const std::string urdfStr = R"(
+    <robot name="prismatic_limits">
+      <link name="base" />
+      <link name="slider" />
+      <joint name="slide" type="prismatic">
+        <parent link="base" />
+        <child link="slider" />
+        <axis xyz="0 1 0" />
+        <limit lower="1.0" upper="3.0" velocity="2.0" effort="4.0" />
+        <dynamics damping="0.5" friction="0.7" />
+      </joint>
+    </robot>
+  )";
+
+  UrdfParser parser;
+  const auto robot = parser.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+
+  auto* joint
+      = dynamic_cast<dynamics::PrismaticJoint*>(robot->getJoint("slide"));
+  ASSERT_NE(joint, nullptr);
+  EXPECT_DOUBLE_EQ(joint->getPositionLowerLimit(0), 1.0);
+  EXPECT_DOUBLE_EQ(joint->getPositionUpperLimit(0), 3.0);
+  EXPECT_DOUBLE_EQ(joint->getRestPosition(0), 2.0);
+  EXPECT_DOUBLE_EQ(joint->getDampingCoefficient(0), 0.5);
+  EXPECT_DOUBLE_EQ(joint->getCoulombFriction(0), 0.7);
+  EXPECT_NEAR(joint->getPosition(0), 2.0, 1e-12);
+}
+
+//==============================================================================
+TEST(UrdfParser, MeshMaterialUsesGlobalColorAndCollisionMeshScale)
+{
+  const auto tempDir = makeTempDir("dart-urdf-mesh-material");
+  const auto visualMeshPath = tempDir / "visual.obj";
+  const auto collisionMeshPath = tempDir / "collision.obj";
+
+  std::ofstream visualMeshFile(visualMeshPath);
+  ASSERT_TRUE(visualMeshFile.is_open());
+  visualMeshFile << "o Mesh\n"
+                 << "v 0 0 0\n"
+                 << "v 1 0 0\n"
+                 << "v 0 1 0\n"
+                 << "f 1 2 3\n";
+  visualMeshFile.close();
+
+  std::ofstream collisionMeshFile(collisionMeshPath);
+  ASSERT_TRUE(collisionMeshFile.is_open());
+  collisionMeshFile << "o Mesh\n"
+                    << "v 0 0 0\n"
+                    << "v 1 0 0\n"
+                    << "v 0 1 0\n"
+                    << "f 1 2 3\n";
+  collisionMeshFile.close();
+
+  const std::string urdfStr = R"(
+    <robot name="mesh_material">
+      <material name="box_color">
+        <color rgba="0.2 0.4 0.6 0.8" />
+      </material>
+      <material name="mesh_color">
+        <color rgba="0.7 0.8 0.9 1.0" />
+      </material>
+      <link name="link">
+        <visual>
+          <geometry>
+            <box size="0.1 0.2 0.3" />
+          </geometry>
+          <material name="box_color" />
+        </visual>
+        <visual>
+          <geometry>
+            <mesh filename="visual.obj" scale="1 2 3" />
+          </geometry>
+          <material name="mesh_color" />
+        </visual>
+        <collision>
+          <geometry>
+            <mesh filename="collision.obj" scale="0.5 0.5 0.5" />
+          </geometry>
+        </collision>
+      </link>
+    </robot>
+  )";
+
+  UrdfParser parser;
+  const Uri baseUri = Uri::createFromPath((tempDir / "model.urdf").string());
+  const auto robot = parser.parseSkeletonString(urdfStr, baseUri);
+  ASSERT_TRUE(robot);
+
+  auto* body = robot->getBodyNode("link");
+  ASSERT_NE(body, nullptr);
+
+  bool foundVisualMesh = false;
+  bool foundBoxColor = false;
+  body->eachShapeNodeWith<dynamics::VisualAspect>(
+      [&](dynamics::ShapeNode* node) {
+        auto mesh
+            = std::dynamic_pointer_cast<dynamics::MeshShape>(node->getShape());
+        if (mesh) {
+          foundVisualMesh = true;
+          EXPECT_TRUE(
+              mesh->getScale().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+          EXPECT_EQ(mesh->getColorMode(), dynamics::MeshShape::SHAPE_COLOR);
+          return;
+        }
+        if (node->getShape()->is<dynamics::BoxShape>()) {
+          const auto* visual = node->getVisualAspect();
+          ASSERT_NE(visual, nullptr);
+          foundBoxColor = true;
+        }
+      });
+  EXPECT_TRUE(foundVisualMesh);
+  EXPECT_TRUE(foundBoxColor);
+
+  bool foundCollisionMesh = false;
+  body->eachShapeNodeWith<dynamics::CollisionAspect>(
+      [&](dynamics::ShapeNode* node) {
+        auto mesh
+            = std::dynamic_pointer_cast<dynamics::MeshShape>(node->getShape());
+        if (!mesh) {
+          return;
+        }
+        foundCollisionMesh = true;
+        EXPECT_TRUE(mesh->getScale().isApprox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+      });
+  EXPECT_TRUE(foundCollisionMesh);
+
+  std::filesystem::remove_all(tempDir);
+}
+
+//==============================================================================
+TEST(UrdfParser, VisualWithoutGeometryIsIgnored)
+{
+  const std::string urdfStr = R"(
+    <robot name="bad_visual">
+      <link name="base">
+        <visual>
+          <origin xyz="0 0 0" rpy="0 0 0" />
+        </visual>
+      </link>
+    </robot>
+  )";
+
+  UrdfParser parser;
+  const auto robot = parser.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+  auto* body = robot->getBodyNode("base");
+  ASSERT_NE(body, nullptr);
+  EXPECT_EQ(body->getNumShapeNodes(), 0u);
 }

@@ -30,12 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/constraint/constraint_solver.hpp"
 #include "dart/constraint/coupler_constraint.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/joint.hpp"
 #include "dart/dynamics/mimic_dof_properties.hpp"
 #include "dart/dynamics/revolute_joint.hpp"
 #include "dart/dynamics/skeleton.hpp"
+#include "dart/simulation/world.hpp"
 
 #include <gtest/gtest.h>
 
@@ -159,4 +161,66 @@ TEST(CouplerConstraint, CouplerConstraintMaintainsMimic)
   constraint.applyImpulse(lambda.data());
   constraint.excite();
   constraint.unexcite();
+}
+
+TEST(CouplerConstraint, WorldStepMaintainsMimicRelation)
+{
+  auto world = simulation::World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+  auto skeleton = dynamics::Skeleton::create("coupler_world");
+  skeleton->setTimeStep(0.01);
+
+  dynamics::BodyNode::Properties bodyProps;
+  bodyProps.mInertia.setMass(1.0);
+
+  dynamics::RevoluteJoint::Properties joint1Props;
+  joint1Props.mName = "joint1";
+  joint1Props.mAxis = Eigen::Vector3d::UnitZ();
+  auto pair1 = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+      nullptr, joint1Props, bodyProps);
+
+  dynamics::RevoluteJoint::Properties joint2Props;
+  joint2Props.mName = "joint2";
+  joint2Props.mAxis = Eigen::Vector3d::UnitZ();
+  auto pair2 = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+      pair1.second, joint2Props, bodyProps);
+
+  auto* joint1 = pair1.first;
+  auto* joint2 = pair2.first;
+  ASSERT_NE(joint1, nullptr);
+  ASSERT_NE(joint2, nullptr);
+
+  joint1->setPosition(0, 0.6);
+  joint2->setPosition(0, -0.4);
+  joint2->setActuatorType(dynamics::Joint::MIMIC);
+
+  std::vector<dynamics::MimicDofProperties> mimicProps(1);
+  mimicProps[0].mReferenceJoint = joint1;
+  mimicProps[0].mReferenceDofIndex = 0;
+  mimicProps[0].mMultiplier = 2.0;
+  mimicProps[0].mOffset = -0.1;
+  mimicProps[0].mConstraintType = dynamics::MimicConstraintType::Coupler;
+
+  auto constraint
+      = std::make_shared<constraint::CouplerConstraint>(joint2, mimicProps);
+  world->addSkeleton(skeleton);
+  world->getConstraintSolver()->addConstraint(constraint);
+
+  const double initialExpected
+      = joint1->getPosition(0) * mimicProps[0].mMultiplier
+        + mimicProps[0].mOffset;
+  const double initialError
+      = std::abs(joint2->getPosition(0) - initialExpected);
+  EXPECT_GT(initialError, 0.0);
+
+  for (int i = 0; i < 100; ++i) {
+    world->step();
+  }
+
+  const double finalExpected
+      = joint1->getPosition(0) * mimicProps[0].mMultiplier
+        + mimicProps[0].mOffset;
+  const double finalError = std::abs(joint2->getPosition(0) - finalExpected);
+  EXPECT_LT(finalError, initialError);
+  EXPECT_LT(finalError, 0.25);
 }

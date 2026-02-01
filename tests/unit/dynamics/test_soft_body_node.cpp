@@ -12,6 +12,8 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include <vector>
+
 #include <cmath>
 
 using namespace dart;
@@ -647,4 +649,81 @@ TEST(SoftBodyNode, PointMassStateAccessors)
   EXPECT_TRUE(pm->getVelocities().array().isFinite().all());
   EXPECT_TRUE(pm->getAccelerations().array().isFinite().all());
   EXPECT_TRUE(pm->getForces().array().isFinite().all());
+}
+
+//==============================================================================
+TEST(SoftBodyNode, PropertiesConstructionAndAggregateForces)
+{
+  auto skeleton = Skeleton::create("soft-props-aggregate");
+
+  SoftBodyNode::UniqueProperties uniqueProps
+      = SoftBodyNodeHelper::makeBoxProperties(
+          Eigen::Vector3d::Constant(0.3),
+          Eigen::Isometry3d::Identity(),
+          1.0,
+          5.0,
+          6.0,
+          0.02);
+  BodyNode::Properties bodyProps;
+  bodyProps.mName = "soft_props_body";
+  bodyProps.mInertia.setMass(0.5);
+  SoftBodyNode::Properties props(bodyProps, uniqueProps);
+
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>(
+      nullptr, FreeJoint::Properties(), props);
+  auto* softBody = pair.second;
+  ASSERT_NE(softBody, nullptr);
+  EXPECT_GT(softBody->getNumPointMasses(), 0u);
+  EXPECT_GT(softBody->getNumFaces(), 0u);
+
+  softBody->addExtForce(
+      Eigen::Vector3d(0.0, 0.4, 0.0), Eigen::Vector3d::Zero(), true, true);
+  softBody->getPointMass(0)->addExtForce(Eigen::Vector3d(0.0, 0.0, -0.2));
+
+  auto world = simulation::World::create();
+  world->addSkeleton(skeleton);
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world->setTimeStep(1e-3);
+  world->step();
+
+  skeleton->computeInverseDynamics(true, true, true);
+
+  const auto externalForces = skeleton->getExternalForces();
+  EXPECT_EQ(externalForces.size(), static_cast<int>(skeleton->getNumDofs()));
+  EXPECT_TRUE(externalForces.array().isFinite().all());
+}
+
+//==============================================================================
+TEST(SoftBodyNode, PropertiesConstructionAddPointMassAndFace)
+{
+  auto skeleton = Skeleton::create("soft-props-add-points");
+
+  SoftBodyNode::UniqueProperties uniqueProps
+      = SoftBodyNodeHelper::makeBoxProperties(
+          Eigen::Vector3d::Constant(0.25),
+          Eigen::Isometry3d::Identity(),
+          1.0,
+          5.0,
+          6.0,
+          0.02);
+  BodyNode::Properties bodyProps;
+  bodyProps.mName = "soft_props_add_body";
+  bodyProps.mInertia.setMass(0.5);
+  SoftBodyNode::Properties props(bodyProps, uniqueProps);
+
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>(
+      nullptr, FreeJoint::Properties(), props);
+  auto* softBody = pair.second;
+  ASSERT_NE(softBody, nullptr);
+
+  const auto pointCount = softBody->getNumPointMasses();
+  const auto faceCount = softBody->getNumFaces();
+  PointMass::Properties extraProp(Eigen::Vector3d(0.0, 0.0, 0.1), 0.1);
+  softBody->addPointMass(extraProp);
+  softBody->connectPointMasses(0, pointCount);
+  softBody->connectPointMasses(1, pointCount);
+  softBody->connectPointMasses(2, pointCount);
+  softBody->addFace(Eigen::Vector3i(0, 1, static_cast<int>(pointCount)));
+  EXPECT_EQ(softBody->getNumPointMasses(), pointCount + 1u);
+  EXPECT_EQ(softBody->getNumFaces(), faceCount + 1u);
 }

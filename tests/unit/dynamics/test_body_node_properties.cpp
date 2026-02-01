@@ -2024,3 +2024,91 @@ TEST(BodyNodeShapeNodes, DeprecatedGetShapeNodes)
   EXPECT_EQ(constShapeNodes.size(), 2u);
   EXPECT_EQ(constCollisionNodes.size(), 1u);
 }
+
+TEST(BodyNodeShapeNodes, RemoveShapeNodeReorders)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(0.2, 0.3, 0.4));
+  auto sphere = std::make_shared<SphereShape>(0.15);
+  auto cylinder = std::make_shared<CylinderShape>(0.1, 0.4);
+
+  ShapeNode* node0 = body->createShapeNodeWith<VisualAspect>(box);
+  ShapeNode* node1 = body->createShapeNodeWith<CollisionAspect>(sphere);
+  ShapeNode* node2
+      = body->createShapeNodeWith<VisualAspect, CollisionAspect>(cylinder);
+
+  ASSERT_EQ(body->getNumShapeNodes(), 3u);
+
+  node1->remove();
+  EXPECT_EQ(body->getNumShapeNodes(), 2u);
+
+  bool found0 = false;
+  bool found2 = false;
+  for (std::size_t i = 0; i < body->getNumShapeNodes(); ++i) {
+    ShapeNode* current = body->getShapeNode(i);
+    EXPECT_NE(current, node1);
+    found0 = found0 || (current == node0);
+    found2 = found2 || (current == node2);
+  }
+  EXPECT_TRUE(found0);
+  EXPECT_TRUE(found2);
+}
+
+TEST(BodyNodeForces, ClearExternalForcesResets)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  body->addExtForce(
+      Eigen::Vector3d(0.5, -0.2, 0.1), Eigen::Vector3d::Zero(), true, true);
+  EXPECT_GT(body->getExternalForceLocal().norm(), 0.0);
+
+  body->clearExternalForces();
+  EXPECT_TRUE(body->getExternalForceLocal().isZero());
+}
+
+TEST(BodyNodeConstraintImpulse, ClearConstraintImpulseResetsState)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  body->setConstraintImpulse(Eigen::Vector6d::Ones());
+  EXPECT_FALSE(body->getConstraintImpulse().isZero());
+
+  body->clearConstraintImpulse();
+  EXPECT_TRUE(body->getConstraintImpulse().isZero());
+  EXPECT_TRUE(body->getBodyVelocityChange().isZero());
+}
+
+TEST(BodyNodeImpulse, BiasImpulseViaImpulseForwardDynamics)
+{
+  auto skeleton = Skeleton::create("impulse_bias_test");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+  pair.second->setMass(1.0);
+
+  pair.second->setConstraintImpulse(Eigen::Vector6d::Ones());
+  skeleton->computeImpulseForwardDynamics();
+
+  const Eigen::Vector6d& delV = pair.second->getBodyVelocityChange();
+  EXPECT_TRUE(delV.array().isFinite().all());
+}
+
+TEST(BodyNodeTransform, WorldTransformDerivativeOutOfBounds)
+{
+  auto skeleton = Skeleton::create("transform_deriv_oob");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+  pair.second->setMass(1.0);
+
+  const std::size_t oobIndex = pair.second->getNumDependentGenCoords();
+#ifndef NDEBUG
+  EXPECT_DEATH(
+      { pair.second->getWorldTransformDerivative(oobIndex); }, "Assertion");
+#else
+  const auto& deriv = pair.second->getWorldTransformDerivative(oobIndex);
+  EXPECT_TRUE(deriv.isZero());
+#endif
+}

@@ -32,7 +32,9 @@
 
 #include <dart/math/lcp/lcp_types.hpp>
 #include <dart/math/lcp/other/shock_propagation_solver.hpp>
+#include <dart/math/lcp/other/staggering_solver.hpp>
 #include <dart/math/lcp/pivoting/baraff_solver.hpp>
+#include <dart/math/lcp/pivoting/direct_solver.hpp>
 #include <dart/math/lcp/projection/bgs_solver.hpp>
 #include <dart/math/lcp/projection/nncg_solver.hpp>
 #include <dart/math/lcp/projection/pgs_solver.hpp>
@@ -89,6 +91,26 @@ LcpProblem makeBoxedProblem()
   Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
   Eigen::VectorXd hi = Eigen::VectorXd::Constant(2, 5.0);
   Eigen::VectorXi findex = Eigen::VectorXi::Constant(2, -1);
+  return LcpProblem(
+      std::move(A),
+      std::move(b),
+      std::move(lo),
+      std::move(hi),
+      std::move(findex));
+}
+
+LcpProblem makeLargeCoupledProblem(int n)
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(n, n) * 2.0;
+  for (int i = 0; i < n - 1; ++i) {
+    A(i, i + 1) = 0.5;
+    A(i + 1, i) = 0.5;
+  }
+  Eigen::VectorXd b = Eigen::VectorXd::Ones(n);
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(n);
+  Eigen::VectorXd hi
+      = Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity());
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(n, -1);
   return LcpProblem(
       std::move(A),
       std::move(b),
@@ -223,6 +245,25 @@ TEST(NncgSolver, SolveBoxedProblem)
 }
 
 //==============================================================================
+TEST(NncgSolver, RejectsInvalidRestartThreshold)
+{
+  NncgSolver solver;
+  NncgSolver::Parameters params;
+  params.restartThreshold = 0.0;
+  solver.setParameters(params);
+
+  auto problem = makeSimpleDiagonalProblem(2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.maxIterations = 10;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_FALSE(result.message.empty());
+}
+
+//==============================================================================
 TEST(BgsSolver, NameAndCategory)
 {
   BgsSolver solver;
@@ -298,6 +339,69 @@ TEST(BgsSolver, SolveBoxedProblem)
   options.maxIterations = 200;
   auto result = solver.solve(problem, x, options);
 
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+//==============================================================================
+TEST(BgsSolver, InvalidBlockSizes)
+{
+  BgsSolver solver;
+  BgsSolver::Parameters params;
+  params.blockSizes = {1, 2};
+  solver.setParameters(params);
+
+  auto problem = makeSimpleDiagonalProblem(2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.maxIterations = 10;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_FALSE(result.message.empty());
+}
+
+//==============================================================================
+TEST(BgsSolver, BlockPartitionMissingFrictionIndex)
+{
+  BgsSolver solver;
+  BgsSolver::Parameters params;
+  params.blockSizes = {1, 1};
+  solver.setParameters(params);
+
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2);
+  Eigen::VectorXd b = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi
+      = Eigen::VectorXd::Constant(2, std::numeric_limits<double>::infinity());
+  Eigen::VectorXi findex(2);
+  findex << 1, -1;
+  LcpProblem problem(A, b, lo, hi, findex);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.maxIterations = 10;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_FALSE(result.message.empty());
+}
+
+//==============================================================================
+TEST(BgsSolver, LargeProblemHitsMaxIterations)
+{
+  BgsSolver solver;
+  auto problem = makeLargeCoupledProblem(60);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(60);
+
+  LcpOptions options;
+  options.maxIterations = 1;
+  options.absoluteTolerance = 1e-12;
+  options.relativeTolerance = 1e-12;
+  options.validateSolution = false;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::MaxIterations);
   EXPECT_TRUE(x.array().isFinite().all());
 }
 
@@ -1008,4 +1112,76 @@ TEST(ShockPropagationSolver, WarmStartConvergesImmediately)
 
   EXPECT_EQ(result.status, LcpSolverStatus::Success);
   EXPECT_EQ(result.iterations, 0);
+}
+
+//=============================================================================
+TEST(DirectSolver, InfeasibleProblemReportsFailure)
+{
+  DirectSolver solver;
+  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(2, 2);
+  Eigen::VectorXd b = Eigen::VectorXd::Ones(2);
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi
+      = Eigen::VectorXd::Constant(2, std::numeric_limits<double>::infinity());
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(2, -1);
+  LcpProblem problem(A, b, lo, hi, findex);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
+  EXPECT_FALSE(result.message.empty());
+}
+
+//=============================================================================
+TEST(StaggeringSolver, FallbackWithoutFrictionIndices)
+{
+  StaggeringSolver solver;
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2) * 2.0;
+  Eigen::VectorXd target(2);
+  target << 0.25, 0.75;
+  Eigen::VectorXd b = A * target;
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi
+      = Eigen::VectorXd::Constant(2, std::numeric_limits<double>::infinity());
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(2, -1);
+  LcpProblem problem(A, b, lo, hi, findex);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.maxIterations = 10;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_NEAR(x[0], target[0], 1e-6);
+  EXPECT_NEAR(x[1], target[1], 1e-6);
+}
+
+//=============================================================================
+TEST(StaggeringSolver, MaxIterationsOnFrictionProblem)
+{
+  StaggeringSolver solver;
+  Eigen::MatrixXd A(3, 3);
+  A << 4.0, 0.5, 0.5, 0.5, 3.0, 0.2, 0.5, 0.2, 2.5;
+  Eigen::VectorXd target(3);
+  target << 1.0, 0.2, -0.1;
+  Eigen::VectorXd b = A * target;
+  Eigen::VectorXd lo(3);
+  lo << 0.0, -0.5, -0.5;
+  Eigen::VectorXd hi(3);
+  hi << std::numeric_limits<double>::infinity(), 0.5, 0.5;
+  Eigen::VectorXi findex(3);
+  findex << -1, 0, 0;
+  LcpProblem problem(A, b, lo, hi, findex);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+
+  LcpOptions options;
+  options.maxIterations = 1;
+  options.absoluteTolerance = 1e-12;
+  options.relativeTolerance = 1e-12;
+  options.validateSolution = false;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::MaxIterations);
 }

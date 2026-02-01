@@ -23,6 +23,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <memory>
 #include <vector>
 
@@ -317,13 +318,11 @@ TEST(SoftContactConstraint, CoefficientHelpers)
       = constraint::SoftContactConstraint::getConstraintForceMixing();
 
   EXPECT_TRUE(
-      std::isfinite(
-          ExposedSoftContactConstraint::computeFrictionCoefficient(
-              fixture.rigidShapeNode)));
+      std::isfinite(ExposedSoftContactConstraint::computeFrictionCoefficient(
+          fixture.rigidShapeNode)));
   EXPECT_TRUE(
-      std::isfinite(
-          ExposedSoftContactConstraint::computeRestitutionCoefficient(
-              fixture.rigidShapeNode)));
+      std::isfinite(ExposedSoftContactConstraint::computeRestitutionCoefficient(
+          fixture.rigidShapeNode)));
 
   constraint::SoftContactConstraint::setErrorAllowance(-0.5);
   constraint::SoftContactConstraint::setErrorReductionParameter(1.2);
@@ -332,15 +331,12 @@ TEST(SoftContactConstraint, CoefficientHelpers)
 
   EXPECT_TRUE(
       std::isfinite(constraint::SoftContactConstraint::getErrorAllowance()));
-  EXPECT_TRUE(
-      std::isfinite(
-          constraint::SoftContactConstraint::getErrorReductionParameter()));
-  EXPECT_TRUE(
-      std::isfinite(
-          constraint::SoftContactConstraint::getMaxErrorReductionVelocity()));
-  EXPECT_TRUE(
-      std::isfinite(
-          constraint::SoftContactConstraint::getConstraintForceMixing()));
+  EXPECT_TRUE(std::isfinite(
+      constraint::SoftContactConstraint::getErrorReductionParameter()));
+  EXPECT_TRUE(std::isfinite(
+      constraint::SoftContactConstraint::getMaxErrorReductionVelocity()));
+  EXPECT_TRUE(std::isfinite(
+      constraint::SoftContactConstraint::getConstraintForceMixing()));
 
   constraint::SoftContactConstraint::setErrorAllowance(prevAllowance);
   constraint::SoftContactConstraint::setErrorReductionParameter(prevErp);
@@ -1013,6 +1009,308 @@ TEST(SoftContactConstraint, WorldStepAfterClearingCollisionResult)
   }
 
   EXPECT_GT(solver->getLastCollisionResult().getNumContacts(), 0u);
+}
+
+TEST(ContactConstraint, FrictionlessRestitutionAndSurfaceMotion)
+{
+  constexpr double timeStep = 0.01;
+  auto detector = collision::DARTCollisionDetector::create();
+  ASSERT_NE(detector, nullptr);
+
+  auto boxA
+      = createBox(Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d::Zero());
+  auto boxB = createBox(
+      Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(0.0, 0.0, 0.2));
+
+  auto* shapeA = boxA->getBodyNode(0)->getShapeNode(0);
+  auto* shapeB = boxB->getBodyNode(0)->getShapeNode(0);
+  ASSERT_NE(shapeA, nullptr);
+  ASSERT_NE(shapeB, nullptr);
+
+  auto* jointA = dynamic_cast<dynamics::FreeJoint*>(boxA->getJoint(0));
+  auto* jointB = dynamic_cast<dynamics::FreeJoint*>(boxB->getJoint(0));
+  ASSERT_NE(jointA, nullptr);
+  ASSERT_NE(jointB, nullptr);
+
+  Eigen::Vector6d velA = Eigen::Vector6d::Zero();
+  velA[5] = -2.0;
+  jointA->setSpatialVelocity(velA, Frame::World(), Frame::World());
+  jointB->setSpatialVelocity(
+      Eigen::Vector6d::Zero(), Frame::World(), Frame::World());
+
+  TestCollisionObject objectA(detector.get(), shapeA);
+  TestCollisionObject objectB(detector.get(), shapeB);
+
+  collision::Contact contact;
+  contact.collisionObject1 = &objectA;
+  contact.collisionObject2 = &objectB;
+  contact.point = Eigen::Vector3d::Zero();
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contact.penetrationDepth = 0.02;
+  contact.triID1 = 0;
+  contact.triID2 = 0;
+  contact.userData = nullptr;
+
+  constraint::ContactSurfaceParams paramsNoMotion;
+  paramsNoMotion.mPrimaryFrictionCoeff = 0.0;
+  paramsNoMotion.mSecondaryFrictionCoeff = 0.0;
+  paramsNoMotion.mRestitutionCoeff = 0.0;
+  paramsNoMotion.mContactSurfaceMotionVelocity = Eigen::Vector3d::Zero();
+
+  ExposedContactConstraint noMotion(contact, timeStep, paramsNoMotion);
+  noMotion.update();
+  ASSERT_EQ(noMotion.getDimension(), 1u);
+
+  constraint::ConstraintInfo info{};
+  LcpBuffers buffers;
+  prepareConstraintInfo(
+      info,
+      buffers,
+      noMotion.getDimension(),
+      1.0 / timeStep,
+      constraint::ConstraintPhase::Velocity,
+      true);
+  noMotion.getInformation(&info);
+  const double bNoMotion = buffers.b[0];
+
+  constraint::ContactSurfaceParams paramsMotion = paramsNoMotion;
+  paramsMotion.mContactSurfaceMotionVelocity
+      = Eigen::Vector3d(0.25, 0.5, -0.25);
+
+  ExposedContactConstraint withMotion(contact, timeStep, paramsMotion);
+  withMotion.update();
+  prepareConstraintInfo(
+      info,
+      buffers,
+      withMotion.getDimension(),
+      1.0 / timeStep,
+      constraint::ConstraintPhase::Velocity,
+      true);
+  withMotion.getInformation(&info);
+  const double bWithMotion = buffers.b[0];
+  EXPECT_NEAR(
+      bWithMotion - bNoMotion,
+      paramsMotion.mContactSurfaceMotionVelocity.x(),
+      1e-12);
+
+  constraint::ContactSurfaceParams paramsRestitution = paramsMotion;
+  paramsRestitution.mRestitutionCoeff = 0.9;
+
+  ExposedContactConstraint withRestitution(
+      contact, timeStep, paramsRestitution);
+  withRestitution.update();
+  prepareConstraintInfo(
+      info,
+      buffers,
+      withRestitution.getDimension(),
+      1.0 / timeStep,
+      constraint::ConstraintPhase::Velocity,
+      true);
+  withRestitution.getInformation(&info);
+  const double bWithRestitution = buffers.b[0];
+  EXPECT_GT(bWithRestitution, bWithMotion);
+}
+
+TEST(ContactConstraint, SecondarySlipComplianceAffectsVelocityChange)
+{
+  constexpr double timeStep = 0.01;
+  auto detector = collision::DARTCollisionDetector::create();
+  ASSERT_NE(detector, nullptr);
+
+  auto boxA
+      = createBox(Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d::Zero());
+  auto boxB = createBox(
+      Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(0.2, 0.0, 0.0));
+
+  auto* shapeA = boxA->getBodyNode(0)->getShapeNode(0);
+  auto* shapeB = boxB->getBodyNode(0)->getShapeNode(0);
+  ASSERT_NE(shapeA, nullptr);
+  ASSERT_NE(shapeB, nullptr);
+
+  TestCollisionObject objectA(detector.get(), shapeA);
+  TestCollisionObject objectB(detector.get(), shapeB);
+
+  collision::Contact contact;
+  contact.collisionObject1 = &objectA;
+  contact.collisionObject2 = &objectB;
+  contact.point = Eigen::Vector3d::Zero();
+  contact.normal = Eigen::Vector3d::UnitX();
+  contact.penetrationDepth = 0.02;
+  contact.triID1 = 0;
+  contact.triID2 = 0;
+  contact.userData = nullptr;
+
+  constraint::ContactSurfaceParams params;
+  params.mPrimaryFrictionCoeff = 0.4;
+  params.mSecondaryFrictionCoeff = 0.2;
+  params.mPrimarySlipCompliance = 0.05;
+  params.mSecondarySlipCompliance = 0.2;
+  params.mFirstFrictionalDirection = Eigen::Vector3d::UnitX();
+
+  ExposedContactConstraint constraint(contact, timeStep, params);
+  constraint.update();
+  ASSERT_EQ(constraint.getDimension(), 3u);
+
+  constraint.applyUnitImpulse(2);
+  std::vector<double> vel(constraint.getDimension(), 0.0);
+  constraint.getVelocityChange(vel.data(), true);
+  EXPECT_GT(vel[2], 0.0);
+}
+
+TEST(ContactConstraint, CustomSurfaceMaterialsParams)
+{
+  constexpr double timeStep = 0.01;
+  auto detector = collision::DARTCollisionDetector::create();
+  ASSERT_NE(detector, nullptr);
+
+  auto boxA
+      = createBox(Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d::Zero());
+  auto boxB = createBox(
+      Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(0.0, 0.0, 0.2));
+
+  auto* shapeA = boxA->getBodyNode(0)->getShapeNode(0);
+  auto* shapeB = boxB->getBodyNode(0)->getShapeNode(0);
+  ASSERT_NE(shapeA, nullptr);
+  ASSERT_NE(shapeB, nullptr);
+
+  auto* dynA = shapeA->getDynamicsAspect();
+  auto* dynB = shapeB->getDynamicsAspect();
+  ASSERT_NE(dynA, nullptr);
+  ASSERT_NE(dynB, nullptr);
+  dynA->setPrimaryFrictionCoeff(0.6);
+  dynA->setSecondaryFrictionCoeff(0.4);
+  dynA->setRestitutionCoeff(0.8);
+  dynB->setPrimaryFrictionCoeff(0.5);
+  dynB->setSecondaryFrictionCoeff(0.3);
+  dynB->setRestitutionCoeff(0.7);
+
+  TestCollisionObject objectA(detector.get(), shapeA);
+  TestCollisionObject objectB(detector.get(), shapeB);
+
+  collision::Contact contact;
+  contact.collisionObject1 = &objectA;
+  contact.collisionObject2 = &objectB;
+  contact.point = Eigen::Vector3d::Zero();
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contact.penetrationDepth = 0.02;
+  contact.triID1 = 0;
+  contact.triID2 = 0;
+  contact.userData = nullptr;
+
+  constraint::DefaultContactSurfaceHandler handler;
+  const auto params = handler.createParams(contact, 1);
+  ASSERT_GT(params.mPrimaryFrictionCoeff, 0.0);
+  ASSERT_GT(params.mSecondaryFrictionCoeff, 0.0);
+
+  ExposedContactConstraint constraint(contact, timeStep, params);
+  constraint.update();
+  ASSERT_EQ(constraint.getDimension(), 3u);
+
+  constraint::ConstraintInfo info{};
+  LcpBuffers buffers;
+  prepareConstraintInfo(
+      info,
+      buffers,
+      constraint.getDimension(),
+      1.0 / timeStep,
+      constraint::ConstraintPhase::Velocity,
+      false);
+  constraint.getInformation(&info);
+
+  EXPECT_EQ(buffers.findex[1], 0);
+  EXPECT_EQ(buffers.findex[2], 0);
+  EXPECT_DOUBLE_EQ(buffers.lo[1], -params.mPrimaryFrictionCoeff);
+  EXPECT_DOUBLE_EQ(buffers.hi[1], params.mPrimaryFrictionCoeff);
+  EXPECT_DOUBLE_EQ(buffers.lo[2], -params.mSecondaryFrictionCoeff);
+  EXPECT_DOUBLE_EQ(buffers.hi[2], params.mSecondaryFrictionCoeff);
+}
+
+TEST(SoftContactConstraint, WorldStepWithPointMassProperties)
+{
+  auto world = simulation::World::create();
+  ASSERT_NE(world, nullptr);
+  world->setTimeStep(0.001);
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  auto ground = createGround(
+      Eigen::Vector3d(2.0, 0.1, 2.0), Eigen::Vector3d(0.0, -0.05, 0.0));
+  ground->setMobile(false);
+
+  auto softSkel = dynamics::Skeleton::create("soft_props_contact");
+  BodyNode::Properties bodyProps;
+  bodyProps.mName = "soft_props_body";
+  bodyProps.mInertia.setMass(1.0);
+
+  dynamics::SoftBodyNode::UniqueProperties uniqueProps
+      = dynamics::SoftBodyNodeHelper::makeBoxProperties(
+          Eigen::Vector3d::Constant(0.3),
+          Eigen::Isometry3d::Identity(),
+          1.0,
+          6.0,
+          6.0,
+          0.05);
+  uniqueProps.mKv = 15.0;
+  uniqueProps.mKe = 12.0;
+  uniqueProps.mDampCoeff = 0.2;
+
+  dynamics::SoftBodyNode::Properties props(bodyProps, uniqueProps);
+  auto softPair = softSkel->createJointAndBodyNodePair<
+      dynamics::FreeJoint,
+      dynamics::SoftBodyNode>(
+      nullptr, dynamics::FreeJoint::Properties(), props);
+  auto* softBody = softPair.second;
+  ASSERT_NE(softBody, nullptr);
+
+  EXPECT_DOUBLE_EQ(softBody->getVertexSpringStiffness(), 15.0);
+  EXPECT_DOUBLE_EQ(softBody->getEdgeSpringStiffness(), 12.0);
+  EXPECT_DOUBLE_EQ(softBody->getDampingCoefficient(), 0.2);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0.0, 0.25, 0.0);
+  dynamics::FreeJoint::setTransformOf(softBody, tf);
+
+  ASSERT_GT(softBody->getNumPointMasses(), 0u);
+  double initialMinY = softBody->getPointMass(0)->getPositions().y();
+  for (std::size_t i = 1; i < softBody->getNumPointMasses(); ++i) {
+    initialMinY
+        = std::min(initialMinY, softBody->getPointMass(i)->getPositions().y());
+  }
+
+  for (std::size_t i = 0; i < softBody->getNumShapeNodes(); ++i) {
+    auto* shapeNode = softBody->getShapeNode(i);
+    auto* dynAspect = shapeNode->getDynamicsAspect();
+    if (dynAspect) {
+      dynAspect->setFrictionCoeff(0.6);
+      dynAspect->setRestitutionCoeff(0.2);
+    }
+  }
+
+  world->addSkeleton(ground);
+  world->addSkeleton(softSkel);
+
+  for (int i = 0; i < 200; ++i) {
+    world->step();
+  }
+
+  auto solver = world->getConstraintSolver();
+  ASSERT_NE(solver, nullptr);
+  double finalMinY = softBody->getPointMass(0)->getPositions().y();
+  for (std::size_t i = 1; i < softBody->getNumPointMasses(); ++i) {
+    finalMinY
+        = std::min(finalMinY, softBody->getPointMass(i)->getPositions().y());
+  }
+  EXPECT_LT(finalMinY, initialMinY);
+
+  bool anyColliding = false;
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    if (softBody->getPointMass(i)->isColliding()) {
+      anyColliding = true;
+      break;
+    }
+  }
+  if (solver->getLastCollisionResult().getNumContacts() > 0u) {
+    EXPECT_TRUE(anyColliding);
+  }
 }
 
 } // namespace dart::test

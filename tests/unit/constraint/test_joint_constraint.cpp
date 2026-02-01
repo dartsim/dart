@@ -32,9 +32,11 @@
 
 #include "helpers/dynamics_helpers.hpp"
 
-#include "../../helpers/gtest_utils.hpp"
+#include "helpers/gtest_utils.hpp" // IWYU pragma: keep
+
 #include "dart/constraint/constraint_solver.hpp"
 #include "dart/constraint/joint_constraint.hpp"
+#include "dart/constraint/joint_coulomb_friction_constraint.hpp"
 #include "dart/constraint/revolute_joint_constraint.hpp"
 #include "dart/dynamics/revolute_joint.hpp"
 #include "dart/dynamics/skeleton.hpp"
@@ -46,6 +48,7 @@
 #include <memory>
 #include <vector>
 
+#include <cmath>
 using namespace dart;
 using namespace dart::constraint;
 using namespace dart::dynamics;
@@ -564,4 +567,113 @@ TEST(JointConstraintTests, RevoluteJointConstraintApplyImpulseTwoBodies)
   }
   EXPECT_TRUE(anyNonZeroA);
   EXPECT_TRUE(anyNonZeroB);
+}
+
+TEST(JointCoulombFrictionConstraint, WorldStepAppliesCoulombFriction)
+{
+  auto world = World::create();
+  ASSERT_NE(world, nullptr);
+  world->setTimeStep(1e-3);
+
+  auto skel = Skeleton::create("coulomb_friction");
+  auto pair = skel->createJointAndBodyNodePair<RevoluteJoint>();
+  auto* joint = pair.first;
+  auto* body = pair.second;
+  joint->setAxis(Eigen::Vector3d::UnitZ());
+  joint->setActuatorType(Joint::FORCE);
+  joint->setCoulombFriction(0, 0.8);
+  joint->setVelocity(0, 1.0);
+  body->addExtTorque(Eigen::Vector3d(0.0, 0.0, 0.5), true);
+
+  world->addSkeleton(skel);
+
+  EXPECT_VECTOR_DOUBLE_EQ(
+      world->getGravity(), Eigen::Vector3d(0.0, 0.0, -9.81));
+
+  const double initialVelocity = joint->getVelocity(0);
+  for (int i = 0; i < 20; ++i) {
+    world->step();
+  }
+
+  EXPECT_LT(std::abs(joint->getVelocity(0)), std::abs(initialVelocity));
+  const double impulse = joint->getConstraintImpulse(0);
+  EXPECT_TRUE(std::isfinite(impulse));
+  EXPECT_LE(
+      std::abs(impulse),
+      joint->getCoulombFriction(0) * world->getTimeStep() + 1e-12);
+}
+
+TEST(JointConstraintTests, RevoluteJointConstraintWorldStepConverges)
+{
+  auto world = World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  auto skelA = createBox(
+      Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(0.0, 0.1, 0.0));
+  auto skelB = createBox(
+      Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(0.0, 0.5, 0.0));
+  world->addSkeleton(skelA);
+  world->addSkeleton(skelB);
+
+  auto* bodyA = skelA->getBodyNode(0);
+  auto* bodyB = skelB->getBodyNode(0);
+  ASSERT_NE(bodyA, nullptr);
+  ASSERT_NE(bodyB, nullptr);
+
+  const Eigen::Vector3d jointPos(0.0, 0.3, 0.0);
+  const Eigen::Vector3d axis1 = Eigen::Vector3d::Zero();
+  const Eigen::Vector3d axis2 = Eigen::Vector3d::Zero();
+  auto constraint = std::make_shared<RevoluteJointConstraint>(
+      bodyA, bodyB, jointPos, axis1, axis2);
+  world->getConstraintSolver()->addConstraint(constraint);
+
+  const Eigen::Vector3d offsetA = bodyA->getTransform().inverse() * jointPos;
+  const Eigen::Vector3d offsetB = bodyB->getTransform().inverse() * jointPos;
+
+  skelB->setPosition(4, skelB->getPosition(4) + 0.25);
+
+  const Eigen::Vector3d anchorA = bodyA->getTransform() * offsetA;
+  const Eigen::Vector3d anchorB = bodyB->getTransform() * offsetB;
+  const double initialError = (anchorA - anchorB).norm();
+  EXPECT_GT(initialError, 0.0);
+
+  for (int i = 0; i < 200; ++i) {
+    world->step();
+  }
+
+  const Eigen::Vector3d finalAnchorA = bodyA->getTransform() * offsetA;
+  const Eigen::Vector3d finalAnchorB = bodyB->getTransform() * offsetB;
+  const double finalError = (finalAnchorA - finalAnchorB).norm();
+  EXPECT_LT(finalError, initialError);
+}
+
+TEST(JointConstraintTests, JointConstraintWorldStepEnforcesLimits)
+{
+  auto world = World::create();
+
+  auto skeleton = Skeleton::create("limit_skel");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  auto* joint = pair.first;
+  ASSERT_NE(joint, nullptr);
+  joint->setAxis(Eigen::Vector3d::UnitZ());
+  joint->setPositionLowerLimit(0, -0.1);
+  joint->setPositionUpperLimit(0, 0.1);
+  joint->setVelocityLowerLimit(0, -0.5);
+  joint->setVelocityUpperLimit(0, 0.5);
+  joint->setLimitEnforcement(true);
+
+  skeleton->setPosition(0, 0.5);
+  world->addSkeleton(skeleton);
+
+  auto constraint = std::make_shared<JointConstraint>(joint);
+  world->getConstraintSolver()->addConstraint(constraint);
+
+  const double initialPosition = joint->getPosition(0);
+  for (int i = 0; i < 200; ++i) {
+    world->step();
+  }
+
+  const double finalPosition = joint->getPosition(0);
+  EXPECT_LT(finalPosition, initialPosition);
+  EXPECT_LT(std::abs(finalPosition), 0.3);
 }

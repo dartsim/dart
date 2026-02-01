@@ -4,10 +4,8 @@
 #include "dart/common/uri.hpp"
 #include "dart/config.hpp"
 #include "dart/dynamics/arrow_shape.hpp"
-#include "dart/dynamics/assimp_input_resource_adaptor.hpp"
 #include "dart/dynamics/mesh_shape.hpp"
 #include "dart/math/tri_mesh.hpp"
-#include "dart/utils/mesh_loader.hpp"
 
 #include <Eigen/Core>
 #include <assimp/cimport.h>
@@ -170,9 +168,7 @@ private:
 DART_SUPPRESS_DEPRECATED_END
 
 const aiScene* loadMeshWithOverrides(
-    const std::string& uri,
-    const common::ResourceRetrieverPtr& retriever,
-    bool ignoreUnitSize)
+    const std::string& filePath, bool ignoreUnitSize)
 {
   aiPropertyStore* propertyStore = aiCreatePropertyStore();
   aiSetImportPropertyInteger(
@@ -197,15 +193,12 @@ const aiScene* loadMeshWithOverrides(
   }
 #endif
 
-  dynamics::AssimpInputResourceRetrieverAdaptor systemIO(retriever);
-  aiFileIO fileIO = dynamics::createFileIO(&systemIO);
-
   const aiScene* scene = aiImportFileExWithProperties(
-      uri.c_str(),
+      filePath.c_str(),
       aiProcess_GenNormals | aiProcess_Triangulate
           | aiProcess_JoinIdenticalVertices | aiProcess_SortByPType
           | aiProcess_OptimizeMeshes,
-      &fileIO,
+      nullptr,
       propertyStore);
 
   if (!scene) {
@@ -261,6 +254,27 @@ std::shared_ptr<math::TriMesh<double>> createTetraMesh()
   return mesh;
 }
 
+std::shared_ptr<math::TriMesh<double>> loadTriMeshFromUri(
+    const std::string& uri, const common::ResourceRetrieverPtr& retriever)
+{
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* scene = dynamics::MeshShape::loadMesh(uri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+  if (!scene) {
+    return nullptr;
+  }
+
+  class MeshShapeHarness final : public dynamics::MeshShape
+  {
+  public:
+    using dynamics::MeshShape::convertAssimpMesh;
+  };
+
+  auto triMesh = MeshShapeHarness::convertAssimpMesh(scene);
+  aiReleaseImport(const_cast<aiScene*>(scene));
+  return triMesh;
+}
+
 class SubmeshMismatchMeshShape final : public dynamics::MeshShape
 {
 public:
@@ -275,6 +289,34 @@ public:
   void setMaterials(std::vector<dynamics::MeshMaterial> materials)
   {
     mMaterials = std::move(materials);
+  }
+
+  const aiScene* callConvertToAssimpMesh() const
+  {
+    return convertToAssimpMesh();
+  }
+};
+
+class SubmeshMaterialMeshShape final : public dynamics::MeshShape
+{
+public:
+  using dynamics::MeshShape::MeshShape;
+  using dynamics::MeshShape::SubMeshRange;
+
+  void setSubMeshRanges(std::vector<SubMeshRange> ranges)
+  {
+    mSubMeshRanges = std::move(ranges);
+  }
+
+  void setMaterials(std::vector<dynamics::MeshMaterial> materials)
+  {
+    mMaterials = std::move(materials);
+  }
+
+  void setTextureCoords(std::vector<Eigen::Vector3d> coords, int components)
+  {
+    mTextureCoords = std::move(coords);
+    mTextureCoordComponents = components;
   }
 
   const aiScene* callConvertToAssimpMesh() const
@@ -351,8 +393,7 @@ TEST(MeshShapeTest, ColladaUnitMetadataApplied)
   const Eigen::Vector3d extentsWithUnits
       = shapeWithUnits->getBoundingBox().computeFullExtents();
 
-  const aiScene* sceneIgnoringUnits
-      = loadMeshWithOverrides(fileUri, retriever, true);
+  const aiScene* sceneIgnoringUnits = loadMeshWithOverrides(filePath, true);
   ASSERT_NE(sceneIgnoringUnits, nullptr);
   DART_SUPPRESS_DEPRECATED_BEGIN
   const auto shapeIgnoringUnits = std::make_shared<dynamics::MeshShape>(
@@ -566,8 +607,7 @@ TEST(MeshShapeTest, TriMeshConstructorPreservesMaterialsFromUri)
 
   auto aliasRetriever
       = std::make_shared<AliasUriResourceRetriever>(aliasUri, filePath);
-  auto loader = std::make_unique<utils::MeshLoaderd>();
-  auto triMesh = loader->load(aliasUri, aliasRetriever);
+  auto triMesh = loadTriMeshFromUri(aliasUri, aliasRetriever);
   ASSERT_NE(triMesh, nullptr);
 
   dynamics::MeshShape shape(
@@ -630,8 +670,8 @@ TEST(MeshShapeTest, TriMeshGetMeshPreservesTextureCoords)
   }
 
   auto retriever = std::make_shared<common::LocalResourceRetriever>();
-  auto loader = std::make_unique<utils::MeshLoaderd>();
-  auto triMesh = loader->load(objPath.string(), retriever);
+  auto triMesh = loadTriMeshFromUri(
+      common::Uri::createFromPath(objPath.string()).toString(), retriever);
   ASSERT_NE(triMesh, nullptr);
 
   dynamics::MeshShape shape(
@@ -710,8 +750,8 @@ TEST(MeshShapeTest, TriMeshGetMeshPreservesMaterialIndices)
   }
 
   auto retriever = std::make_shared<common::LocalResourceRetriever>();
-  auto loader = std::make_unique<utils::MeshLoaderd>();
-  auto triMesh = loader->load(objPath.string(), retriever);
+  auto triMesh = loadTriMeshFromUri(
+      common::Uri::createFromPath(objPath.string()).toString(), retriever);
   ASSERT_NE(triMesh, nullptr);
 
   dynamics::MeshShape shape(
@@ -968,8 +1008,8 @@ TEST(MeshShapeTest, ConvertToAssimpMeshUsesEmbeddedMaterials)
   }
 
   auto retriever = std::make_shared<common::LocalResourceRetriever>();
-  auto loader = std::make_unique<utils::MeshLoaderd>();
-  auto triMesh = loader->load(objPath.string(), retriever);
+  auto triMesh = loadTriMeshFromUri(
+      common::Uri::createFromPath(objPath.string()).toString(), retriever);
   ASSERT_NE(triMesh, nullptr);
 
   class MeshShapeHarness final : public dynamics::MeshShape
@@ -1246,6 +1286,130 @@ TEST(MeshShapeTest, LoadMeshFromTempObjAndUriMetadata)
   dynamics::MeshShape uriShape(Eigen::Vector3d::Ones(), uriMesh, nonFileUri);
   EXPECT_EQ(uriShape.getMeshUri(), nonFileUri.toString());
   EXPECT_TRUE(uriShape.getMeshPath().empty());
+
+  common::error_code ec;
+  common::filesystem::remove(objPath, ec);
+}
+
+TEST(MeshShapeTest, ConvertToAssimpMeshWithSubMeshesAndTexCoords)
+{
+  auto triMesh = std::make_shared<math::TriMesh<double>>();
+  triMesh->addVertex(0.0, 0.0, 0.0);
+  triMesh->addVertex(1.0, 0.0, 0.0);
+  triMesh->addVertex(0.0, 1.0, 0.0);
+  triMesh->addVertex(1.0, 1.0, 0.0);
+  triMesh->addTriangle(0, 1, 2);
+  triMesh->addTriangle(1, 3, 2);
+  for (int i = 0; i < 4; ++i) {
+    triMesh->addVertexNormal(0.0, 0.0, 1.0);
+  }
+
+  SubmeshMaterialMeshShape shape(
+      Eigen::Vector3d::Ones(), triMesh, common::Uri());
+
+  std::vector<dynamics::MeshMaterial> materials(2);
+  materials[0].diffuse = Eigen::Vector4f(1.0f, 0.0f, 0.0f, 1.0f);
+  materials[1].diffuse = Eigen::Vector4f(0.0f, 1.0f, 0.0f, 1.0f);
+  shape.setMaterials(std::move(materials));
+
+  std::vector<SubmeshMaterialMeshShape::SubMeshRange> ranges(2);
+  ranges[0].vertexOffset = 0u;
+  ranges[0].vertexCount = 2u;
+  ranges[0].triangleOffset = 0u;
+  ranges[0].triangleCount = 1u;
+  ranges[0].materialIndex = 0u;
+  ranges[1].vertexOffset = 2u;
+  ranges[1].vertexCount = 2u;
+  ranges[1].triangleOffset = 1u;
+  ranges[1].triangleCount = 1u;
+  ranges[1].materialIndex = 1u;
+  shape.setSubMeshRanges(std::move(ranges));
+
+  std::vector<Eigen::Vector3d> texCoords;
+  texCoords.emplace_back(0.0, 0.0, 0.0);
+  texCoords.emplace_back(1.0, 0.0, 0.0);
+  texCoords.emplace_back(0.0, 1.0, 0.0);
+  texCoords.emplace_back(1.0, 1.0, 0.0);
+  shape.setTextureCoords(std::move(texCoords), 2);
+
+  const aiScene* scene = shape.callConvertToAssimpMesh();
+  ASSERT_NE(scene, nullptr);
+  EXPECT_GE(scene->mNumMaterials, 2u);
+  EXPECT_GE(scene->mNumMeshes, 1u);
+  ASSERT_NE(scene->mMeshes, nullptr);
+  EXPECT_TRUE(scene->mMeshes[0]->HasTextureCoords(0));
+}
+
+TEST(MeshShapeTest, TriMeshConstructorPreservesTexturePaths)
+{
+  const auto tempDir = common::filesystem::temp_directory_path();
+  const auto timestamp
+      = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+  const auto baseName
+      = std::string("dart_meshshape_textures_") + std::to_string(timestamp);
+  const auto objPath = tempDir / (baseName + ".obj");
+
+  {
+    std::ofstream objFile(objPath.string());
+    ASSERT_TRUE(objFile);
+    objFile << "# placeholder file for mesh uri\n";
+  }
+
+  auto* scene = new aiScene();
+  scene->mNumMaterials = 1;
+  scene->mMaterials = new aiMaterial*[scene->mNumMaterials];
+  scene->mMaterials[0] = new aiMaterial();
+  aiString texturePath("textures/albedo.png");
+  scene->mMaterials[0]->AddProperty(&texturePath, AI_MATKEY_TEXTURE_DIFFUSE(0));
+
+  scene->mNumMeshes = 1;
+  scene->mMeshes = new aiMesh*[scene->mNumMeshes];
+  auto* mesh = new aiMesh();
+  mesh->mNumVertices = 3;
+  mesh->mVertices = new aiVector3D[mesh->mNumVertices];
+  mesh->mVertices[0] = aiVector3D(0.0f, 0.0f, 0.0f);
+  mesh->mVertices[1] = aiVector3D(1.0f, 0.0f, 0.0f);
+  mesh->mVertices[2] = aiVector3D(0.0f, 1.0f, 0.0f);
+  mesh->mNumFaces = 1;
+  mesh->mFaces = new aiFace[mesh->mNumFaces];
+  mesh->mFaces[0].mNumIndices = 3;
+  mesh->mFaces[0].mIndices = new unsigned int[3];
+  mesh->mFaces[0].mIndices[0] = 0u;
+  mesh->mFaces[0].mIndices[1] = 1u;
+  mesh->mFaces[0].mIndices[2] = 2u;
+  mesh->mPrimitiveTypes = aiPrimitiveType_TRIANGLE;
+  mesh->mMaterialIndex = 0u;
+  scene->mMeshes[0] = mesh;
+
+  scene->mRootNode = new aiNode();
+  scene->mRootNode->mNumMeshes = 1;
+  scene->mRootNode->mMeshes = new unsigned int[1];
+  scene->mRootNode->mMeshes[0] = 0u;
+
+  const common::Uri meshUri = common::Uri::createFromPath(objPath.string());
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  dynamics::MeshShape shape(
+      Eigen::Vector3d::Ones(),
+      scene,
+      meshUri,
+      nullptr,
+      dynamics::MeshShape::MeshOwnership::Manual);
+  DART_SUPPRESS_DEPRECATED_END
+
+  ASSERT_FALSE(shape.getMaterials().empty());
+  const auto* material = shape.getMaterial(0u);
+  ASSERT_NE(material, nullptr);
+  ASSERT_FALSE(material->textureImagePaths.empty());
+
+  bool foundTexture = false;
+  for (const auto& path : material->textureImagePaths) {
+    if (path.find("textures/albedo.png") != std::string::npos) {
+      foundTexture = true;
+      break;
+    }
+  }
+  EXPECT_TRUE(foundTexture);
 
   common::error_code ec;
   common::filesystem::remove(objPath, ec);

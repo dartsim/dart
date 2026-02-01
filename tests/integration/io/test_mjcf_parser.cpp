@@ -47,18 +47,12 @@
 #include <string>
 
 using namespace dart;
-using namespace dart::test;
 using namespace utils::MjcfParser::detail;
 
 //==============================================================================
 common::ResourceRetrieverPtr createRetriever()
 {
-  auto newRetriever = std::make_shared<utils::CompositeResourceRetriever>();
-  newRetriever->addSchemaRetriever(
-      "file", std::make_shared<common::LocalResourceRetriever>());
-  newRetriever->addSchemaRetriever(
-      "dart", utils::DartResourceRetriever::create());
-  return newRetriever;
+  return nullptr;
 }
 
 //==============================================================================
@@ -73,11 +67,15 @@ TEST(MjcfParserTest, ParseDetailMujocoAnt)
   EXPECT_EQ(mujoco.getModel(), "ant");
 
   const auto& compiler = mujoco.getCompiler();
-  EXPECT_EQ(compiler.getAngle(), Angle::DEGREE);
-  EXPECT_EQ(compiler.getCoordinate(), Coordinate::LOCAL);
+  EXPECT_EQ(
+      compiler.getAngle(), dart::utils::MjcfParser::detail::Angle::DEGREE);
+  EXPECT_EQ(
+      compiler.getCoordinate(),
+      dart::utils::MjcfParser::detail::Coordinate::LOCAL);
 
   const auto& option = mujoco.getOption();
-  EXPECT_EQ(option.getIntegrator(), Integrator::RK4);
+  EXPECT_EQ(
+      option.getIntegrator(), dart::utils::MjcfParser::detail::Integrator::RK4);
   EXPECT_DOUBLE_EQ(option.getTimestep(), 0.01);
 
   const auto& worldbody = mujoco.getWorldbody();
@@ -87,8 +85,7 @@ TEST(MjcfParserTest, ParseDetailMujocoAnt)
   ASSERT_EQ(worldbody.getNumRootBodies(), 1);
   const auto& rootBody0 = worldbody.getRootBody(0);
   EXPECT_EQ(rootBody0.getName(), "torso");
-  EXPECT_TRUE(equals(
-      rootBody0.getRelativeTransform().translation().eval(),
+  EXPECT_TRUE(rootBody0.getRelativeTransform().translation().isApprox(
       Eigen::Vector3d(0, 0, 0.75)));
 
   ASSERT_EQ(rootBody0.getNumJoints(), 1);
@@ -108,6 +105,10 @@ TEST(MjcfParserTest, DefaultSettings)
   ASSERT_NE(world, nullptr);
 
   ASSERT_EQ(world->getNumSkeletons(), 2);
+
+  const auto torsoNodes
+      = dart::utils::MjcfParser::detail::getBodyNodes(*world, "torso");
+  EXPECT_EQ(torsoNodes.size(), 1u);
 
   auto boxSkel = world->getSkeleton(options.mGeomSkeletonNamePrefix);
   ASSERT_NE(boxSkel, nullptr);
@@ -273,9 +274,7 @@ TEST(MjcfParserTest, Reacher)
   auto reacherSkel = world->getSkeleton("body0");
   ASSERT_NE(reacherSkel, nullptr);
   ASSERT_EQ(reacherSkel->getNumBodyNodes(), 3);
-  EXPECT_EQ(
-      reacherSkel->getRootJoint()->getType(),
-      dynamics::RevoluteJoint::getStaticType());
+  EXPECT_EQ(reacherSkel->getRootJoint()->getType(), "RevoluteJoint");
 
   auto targetSkel = world->getSkeleton("target");
   ASSERT_NE(targetSkel, nullptr);
@@ -303,9 +302,7 @@ TEST(MjcfParserTest, Striker)
   auto strikerSkel = world->getSkeleton("r_shoulder_pan_link");
   ASSERT_NE(strikerSkel, nullptr);
   ASSERT_EQ(strikerSkel->getNumBodyNodes(), 10);
-  EXPECT_EQ(
-      strikerSkel->getRootJoint()->getType(),
-      dynamics::RevoluteJoint::getStaticType());
+  EXPECT_EQ(strikerSkel->getRootJoint()->getType(), "RevoluteJoint");
 
   auto objectSkel = world->getSkeleton("object");
   ASSERT_NE(objectSkel, nullptr);
@@ -331,9 +328,7 @@ TEST(MjcfParserTest, Thrower)
   auto throwerSkel = world->getSkeleton("r_shoulder_pan_link");
   ASSERT_NE(throwerSkel, nullptr);
   ASSERT_EQ(throwerSkel->getNumBodyNodes(), 16);
-  EXPECT_EQ(
-      throwerSkel->getRootJoint()->getType(),
-      dynamics::RevoluteJoint::getStaticType());
+  EXPECT_EQ(throwerSkel->getRootJoint()->getType(), "RevoluteJoint");
 
   auto goalSkel = world->getSkeleton("goal");
   ASSERT_NE(goalSkel, nullptr);
@@ -405,7 +400,8 @@ TEST(MjcfParserTest, ParsesSitesAndOptions)
 
   const auto& option = mujoco.getOption();
   EXPECT_DOUBLE_EQ(option.getTimestep(), 0.01);
-  EXPECT_EQ(option.getIntegrator(), Integrator::RK4);
+  EXPECT_EQ(
+      option.getIntegrator(), dart::utils::MjcfParser::detail::Integrator::RK4);
   EXPECT_EQ(option.getCollision(), CollisionType::DYNAMIC);
   EXPECT_EQ(option.getCone(), ConeType::PYRAMIDAL);
   EXPECT_EQ(option.getJacobian(), JacobianType::SPARSE);
@@ -561,8 +557,11 @@ TEST(MjcfParserTest, CompilerAttributesParsed)
   EXPECT_DOUBLE_EQ(compiler.getSetTotalMass(), 5.5);
   EXPECT_TRUE(compiler.getBalanceInertia());
   EXPECT_TRUE(compiler.getStripPath());
-  EXPECT_EQ(compiler.getCoordinate(), Coordinate::GLOBAL);
-  EXPECT_EQ(compiler.getAngle(), Angle::RADIAN);
+  EXPECT_EQ(
+      compiler.getCoordinate(),
+      dart::utils::MjcfParser::detail::Coordinate::GLOBAL);
+  EXPECT_EQ(
+      compiler.getAngle(), dart::utils::MjcfParser::detail::Angle::RADIAN);
   EXPECT_TRUE(compiler.getFitAabb());
   EXPECT_EQ(compiler.getEulerSeq(), "zyx");
   EXPECT_EQ(compiler.getMeshDir(), "meshes");
@@ -1017,9 +1016,7 @@ TEST(MjcfParserTest, JointTypeMappingToDart)
 
   const auto* hingeBody = skel->getBodyNode("child_hinge");
   ASSERT_NE(hingeBody, nullptr);
-  EXPECT_EQ(
-      hingeBody->getParentJoint()->getType(),
-      dynamics::RevoluteJoint::getStaticType());
+  EXPECT_EQ(hingeBody->getParentJoint()->getType(), "RevoluteJoint");
 
   const auto* ballBody = skel->getBodyNode("child_ball");
   ASSERT_NE(ballBody, nullptr);
@@ -1401,4 +1398,136 @@ TEST(MjcfParserTest, InertialFullInertiaParsing)
       inertial.getDiagInertia().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
   EXPECT_TRUE(
       inertial.getOffDiagInertia().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+}
+
+//==============================================================================
+TEST(MjcfParserTest, ComplexMjcfCoversDetails)
+{
+  const auto tempDir = std::filesystem::temp_directory_path();
+  const auto meshPath = tempDir / "dart_mjcf_unit_mesh.stl";
+  const auto xmlPath = tempDir / "dart_mjcf_complex.xml";
+
+  {
+    std::ofstream meshOutput(meshPath.string(), std::ios::binary);
+    meshOutput << "solid unit\n"
+                  "facet normal 0 0 1\n"
+                  "  outer loop\n"
+                  "    vertex 0 0 0\n"
+                  "    vertex 1 0 0\n"
+                  "    vertex 0 1 0\n"
+                  "  endloop\n"
+                  "endfacet\n"
+                  "endsolid unit\n";
+  }
+
+  const std::string meshFileName = meshPath.filename().string();
+  std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="complex_mjcf">
+  <compiler angle="degree" coordinate="global" eulerseq="zyx" meshdir="." />
+  <option gravity="0 0 -9.81" timestep="0.002" integrator="Euler" />
+  <size nuser_body="2" />
+  <default>
+    <geom type="sphere" size="0.1" />
+    <joint damping="0.1" springref="0.2" range="-1 1" />
+    <default class="classA">
+      <geom type="box" size="0.2 0.3 0.4" rgba="0.2 0.3 0.4 1"
+            friction="0.1 0.2 0.3" contype="1" conaffinity="2" condim="3"
+            group="4" priority="7" density="200" margin="0.01" gap="0.02" />
+      <joint type="hinge" axis="0 1 0" damping="0.4" springref="0.5" />
+    </default>
+  </default>
+  <asset>
+    <mesh name="test_mesh" file="${MESH_FILE}" scale="1 2 3" />
+  </asset>
+  <worldbody>
+    <geom name="ground_plane" type="plane" size="1 1 0.1" rgba="0.1 0.2 0.3 1" />
+    <body name="root" pos="0 0 0" user="1 2" zaxis="0 0 1">
+      <geom type="sphere" size="0.1" />
+      <geom name="box_fromto" type="box" size="0.1 0.2 0.3" fromto="0 0 0 0 0 1" />
+      <site name="body_site" type="box" size="0.1 0.2 0.3" fromto="0 0 0 0 0 2" />
+      <joint name="root_free" type="free" />
+      <body name="child1" pos="0 0 1" quat="1 0 0 0">
+        <geom class="classA" name="child_geom" pos="0.1 0.2 0.3" euler="0 0 45" />
+        <joint name="hinge_joint" type="hinge" axis="0 1 0" range="-0.5 0.5" damping="0.2"
+               springref="0.1" />
+      </body>
+      <body name="child2" pos="0 0 2" xyaxes="1 0 0 0 1 0">
+        <geom name="mesh_geom" type="mesh" mesh="test_mesh" />
+        <inertial pos="0 0 0" mass="1.0" diaginertia="0.1 0.2 0.3" />
+        <joint name="slide_x" type="slide" axis="1 0 0" range="-1 1" />
+        <joint name="slide_y" type="slide" axis="0 1 0" range="-1 1" />
+        <joint name="slide_z" type="slide" axis="0 0 1" range="-1 1" />
+      </body>
+      <body name="child3" pos="0 0 3">
+        <geom name="capsule_geom" type="capsule" size="0.1" fromto="0 0 0 0 0 2" mass="1.5" />
+        <joint name="ball_joint" type="ball" damping="0.3" />
+      </body>
+      <body name="mocap_body" pos="1 0 0" mocap="true">
+        <geom type="sphere" size="0.1" />
+      </body>
+    </body>
+  </worldbody>
+  <equality>
+    <weld name="weld1" body1="root" body2="child1" active="false"
+          solimp="0.95 0.9 0.003 0.6 1" solref="0.01 2"
+          relpose="0 0 0 1 0 0 0" />
+  </equality>
+</mujoco>
+)";
+
+  const std::string meshToken = "${MESH_FILE}";
+  const auto meshTokenPos = xml.find(meshToken);
+  ASSERT_NE(meshTokenPos, std::string::npos);
+  xml.replace(meshTokenPos, meshToken.size(), meshFileName);
+
+  std::ofstream output(xmlPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  const auto options = utils::MjcfParser::Options();
+  auto world
+      = utils::MjcfParser::readWorld(common::Uri(xmlPath.string()), options);
+
+  std::error_code ec;
+  std::filesystem::remove(xmlPath, ec);
+  std::filesystem::remove(meshPath, ec);
+
+  ASSERT_NE(world, nullptr);
+  EXPECT_TRUE(world->hasSkeleton("root"));
+  EXPECT_TRUE(
+      world->hasSkeleton(options.mGeomSkeletonNamePrefix + "ground_plane"));
+
+  auto skel = world->getSkeleton("root");
+  ASSERT_NE(skel, nullptr);
+  EXPECT_EQ(
+      skel->getRootJoint()->getType(), dynamics::FreeJoint::getStaticType());
+
+  const auto* child2 = skel->getBodyNode("child2");
+  ASSERT_NE(child2, nullptr);
+  EXPECT_EQ(child2->getParentJoint()->getType(), "TranslationalJoint");
+
+  const auto* child3 = skel->getBodyNode("child3");
+  ASSERT_NE(child3, nullptr);
+  EXPECT_EQ(
+      child3->getParentJoint()->getType(),
+      dynamics::BallJoint::getStaticType());
+
+  const auto* mocapBody = skel->getBodyNode("mocap_body");
+  ASSERT_NE(mocapBody, nullptr);
+  auto* mocapShapeNode = mocapBody->getShapeNode(0);
+  ASSERT_NE(mocapShapeNode, nullptr);
+  EXPECT_EQ(mocapShapeNode->getCollisionAspect(), nullptr);
+  EXPECT_EQ(mocapShapeNode->getDynamicsAspect(), nullptr);
+
+  auto* meshShapeNode = child2->getShapeNode(0);
+  ASSERT_NE(meshShapeNode, nullptr);
+  EXPECT_NE(meshShapeNode->getShape(), nullptr);
+
+  auto groundSkel
+      = world->getSkeleton(options.mGeomSkeletonNamePrefix + "ground_plane");
+  ASSERT_NE(groundSkel, nullptr);
+  EXPECT_FALSE(groundSkel->isMobile());
+
+  EXPECT_GT(world->getConstraintSolver()->getNumConstraints(), 0u);
 }

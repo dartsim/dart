@@ -34,6 +34,8 @@
 #include <dart/math/lcp/other/mprgp_solver.hpp>
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
 #include <dart/math/lcp/projection/blocked_jacobi_solver.hpp>
+#include <dart/math/lcp/projection/jacobi_solver.hpp>
+#include <dart/math/lcp/projection/red_black_gauss_seidel_solver.hpp>
 #include <dart/math/lcp/projection/subspace_minimization_solver.hpp>
 #include <dart/math/lcp/projection/symmetric_psor_solver.hpp>
 
@@ -135,6 +137,26 @@ LcpProblem makeZeroRhsProblem(int n)
 LcpProblem makeIdentityProblem(int n)
 {
   Eigen::MatrixXd A = Eigen::MatrixXd::Identity(n, n);
+  Eigen::VectorXd b = Eigen::VectorXd::Ones(n);
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(n);
+  Eigen::VectorXd hi
+      = Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity());
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(n, -1);
+  return LcpProblem(
+      std::move(A),
+      std::move(b),
+      std::move(lo),
+      std::move(hi),
+      std::move(findex));
+}
+
+LcpProblem makeLargeCoupledProblem(int n)
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(n, n) * 2.0;
+  for (int i = 0; i < n - 1; ++i) {
+    A(i, i + 1) = 0.5;
+    A(i + 1, i) = 0.5;
+  }
   Eigen::VectorXd b = Eigen::VectorXd::Ones(n);
   Eigen::VectorXd lo = Eigen::VectorXd::Zero(n);
   Eigen::VectorXd hi
@@ -357,6 +379,25 @@ TEST(MprgpSolver, SolveEdgeCases)
   result = solver.solve(identity, x, options);
   EXPECT_TRUE(x.array().isFinite().all());
   ExpectNonnegative(x, kTol);
+}
+
+//==============================================================================
+TEST(MprgpSolver, RejectsNegativeSymmetryTolerance)
+{
+  MprgpSolver solver;
+  MprgpSolver::Parameters params;
+  params.symmetryTolerance = -1.0;
+  solver.setParameters(params);
+
+  auto problem = makeDiagonalProblem(2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.maxIterations = 10;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_FALSE(result.message.empty());
 }
 
 //==============================================================================
@@ -684,6 +725,134 @@ TEST(SubspaceMinimizationSolver, SolveEdgeCases)
   result = solver.solve(identity, x, options);
   EXPECT_TRUE(x.array().isFinite().all());
   ExpectNonnegative(x, kTol);
+}
+
+//==============================================================================
+TEST(JacobiSolver, InvalidDivisionEpsilon)
+{
+  JacobiSolver solver;
+  JacobiSolver::Parameters params;
+  params.epsilonForDivision = 0.0;
+  solver.setParameters(params);
+
+  auto problem = makeDiagonalProblem(2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.maxIterations = 10;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_FALSE(result.message.empty());
+}
+
+//==============================================================================
+TEST(RedBlackGaussSeidelSolver, InvalidDivisionEpsilon)
+{
+  RedBlackGaussSeidelSolver solver;
+  RedBlackGaussSeidelSolver::Parameters params;
+  params.epsilonForDivision = 0.0;
+  solver.setParameters(params);
+
+  auto problem = makeDiagonalProblem(2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.maxIterations = 10;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_FALSE(result.message.empty());
+}
+
+//==============================================================================
+TEST(SymmetricPsorSolver, RejectsInvalidRelaxation)
+{
+  SymmetricPsorSolver solver;
+  auto problem = makeDiagonalProblem(2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.maxIterations = 10;
+  options.relaxation = 2.5;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_FALSE(result.message.empty());
+}
+
+//==============================================================================
+TEST(BlockedJacobiSolver, InvalidBlockPartition)
+{
+  BlockedJacobiSolver solver;
+  BlockedJacobiSolver::Parameters params;
+  params.blockSizes = {1, 2};
+  solver.setParameters(params);
+
+  auto problem = makeDiagonalProblem(2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.maxIterations = 10;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_FALSE(result.message.empty());
+}
+
+//==============================================================================
+TEST(SubspaceMinimizationSolver, InvalidPgsIterations)
+{
+  SubspaceMinimizationSolver solver;
+  SubspaceMinimizationSolver::Parameters params;
+  params.pgsIterations = 0;
+  solver.setParameters(params);
+
+  auto problem = makeDiagonalProblem(2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.maxIterations = 10;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_FALSE(result.message.empty());
+}
+
+//==============================================================================
+TEST(JacobiSolver, LargeProblemHitsMaxIterations)
+{
+  JacobiSolver solver;
+  auto problem = makeLargeCoupledProblem(60);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(60);
+
+  LcpOptions options;
+  options.maxIterations = 1;
+  options.absoluteTolerance = 1e-12;
+  options.relativeTolerance = 1e-12;
+  options.validateSolution = false;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::MaxIterations);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+//==============================================================================
+TEST(RedBlackGaussSeidelSolver, LargeProblemHitsMaxIterations)
+{
+  RedBlackGaussSeidelSolver solver;
+  auto problem = makeLargeCoupledProblem(60);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(60);
+
+  LcpOptions options;
+  options.maxIterations = 1;
+  options.absoluteTolerance = 1e-12;
+  options.relativeTolerance = 1e-12;
+  options.validateSolution = false;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::MaxIterations);
+  EXPECT_TRUE(x.array().isFinite().all());
 }
 
 //==============================================================================

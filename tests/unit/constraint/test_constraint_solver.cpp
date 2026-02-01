@@ -28,6 +28,7 @@
 
 #include <limits>
 #include <memory>
+#include <type_traits>
 #include <vector>
 
 #include <cmath>
@@ -725,20 +726,18 @@ TEST(ConstraintSolver, HasSkeleton)
   auto skeleton1 = dynamics::Skeleton::create("has_skel1");
   auto skeleton2 = dynamics::Skeleton::create("has_skel2");
 
-  EXPECT_FALSE(
-      std::ranges::any_of(solver.getSkeletons(), [&](const auto& skel) {
-        return skel == skeleton1;
-      }));
+  EXPECT_FALSE(std::ranges::any_of(
+      solver.getSkeletons(),
+      [&](const auto& skel) { return skel == skeleton1; }));
 
   solver.addSkeleton(skeleton1);
 
   EXPECT_TRUE(std::ranges::any_of(solver.getSkeletons(), [&](const auto& skel) {
     return skel == skeleton1;
   }));
-  EXPECT_FALSE(
-      std::ranges::any_of(solver.getSkeletons(), [&](const auto& skel) {
-        return skel == skeleton2;
-      }));
+  EXPECT_FALSE(std::ranges::any_of(
+      solver.getSkeletons(),
+      [&](const auto& skel) { return skel == skeleton2; }));
 
   solver.addSkeleton(skeleton2);
 
@@ -1455,4 +1454,35 @@ TEST(ContactConstraint, ApplyImpulseAndPositionImpulse)
   constraint.applyPositionImpulse(lambda);
   EXPECT_TRUE(boxA->isPositionImpulseApplied());
   EXPECT_TRUE(boxB->isPositionImpulseApplied());
+}
+
+//=============================================================================
+TEST(ConstraintSolver, EachConstraintConstAndNonConst)
+{
+  constraint::ConstraintSolver solver;
+  auto skeleton = dynamics::Skeleton::create("each_constraint");
+  auto constraintA = std::make_shared<DummyConstraint>(skeleton);
+  auto constraintB = std::make_shared<DummyConstraint>(skeleton);
+
+  solver.addConstraint(constraintA);
+  solver.addConstraint(constraintB);
+
+  std::vector<constraint::ConstraintBase*> seen;
+  solver.eachConstraint([&](auto constraint) {
+    using ConstraintType = std::decay_t<decltype(constraint)>;
+    if constexpr (std::is_pointer_v<ConstraintType>) {
+      seen.push_back(constraint);
+    } else {
+      seen.push_back(constraint.get());
+    }
+  });
+  EXPECT_EQ(seen.size(), 2u);
+
+  const constraint::ConstraintSolver& constSolver = solver;
+  std::size_t callbackCount = 0;
+  constSolver.eachConstraint([&](auto) {
+    ++callbackCount;
+    return callbackCount < 1u;
+  });
+  EXPECT_EQ(callbackCount, 1u);
 }
