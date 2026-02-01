@@ -24,6 +24,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/gui/drag_controller.hpp>
 #include <dart/gui/input_event.hpp>
 #include <dart/gui/orbit_camera_controller.hpp>
 #include <dart/gui/raylib/raylib_backend.hpp>
@@ -33,6 +34,7 @@
 #include <dart/simulation/world.hpp>
 
 #include <dart/dynamics/All.hpp>
+#include <dart/dynamics/heightmap_shape.hpp>
 #include <dart/dynamics/multi_sphere_convex_hull_shape.hpp>
 #include <dart/dynamics/point_cloud_shape.hpp>
 
@@ -918,4 +920,145 @@ TEST_F(RaylibSceneViewerTest, ModifierKeysDefaults)
   EXPECT_FALSE(mods.shift);
   EXPECT_FALSE(mods.alt);
   EXPECT_FALSE(mods.super);
+}
+
+TEST_F(RaylibSceneViewerTest, HeightmapRendering)
+{
+  auto world = dart::simulation::World::create();
+  world->setGravity(Eigen::Vector3d(0, 0, -9.81));
+
+  auto skeleton = dart::dynamics::Skeleton::create("heightmap_skel");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+
+  auto hmShape = std::make_shared<dart::dynamics::HeightmapShapef>();
+  std::vector<float> heights(25, 0.0f); // 5x5 flat
+  heights[12] = 1.0f;                   // center peak
+  hmShape->setHeightField(5, 5, heights);
+  hmShape->setScale(Eigen::Vector3f(2.0f, 2.0f, 1.0f));
+
+  auto shapeNode = body->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect>(hmShape);
+  shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.3, 0.6, 0.2, 1.0));
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0, 0, 0.1);
+  joint->setTransformFromParentBodyNode(tf);
+
+  world->addSkeleton(skeleton);
+
+  dart::gui::ViewerConfig config;
+  config.width = 640;
+  config.height = 480;
+  config.headless = true;
+  config.target_fps = 0;
+
+  auto viewer = dart::gui::SceneViewer(
+      std::make_unique<dart::gui::RaylibBackend>(), config);
+  viewer.setWorld(world);
+
+  for (int i = 0; i < 3; ++i) {
+    viewer.frame();
+  }
+
+  const std::string path = kTestOutputDir + "/heightmap_test.png";
+  removeFile(path);
+  viewer.captureScreenshot(path);
+  viewer.frame();
+
+  ASSERT_TRUE(fileExists(path));
+  EXPECT_TRUE(hasNonBackgroundPixels(path))
+      << "Heightmap should render with visible pixels";
+}
+
+TEST_F(RaylibSceneViewerTest, GridConfigPlanes)
+{
+  dart::gui::GridConfig defaults;
+  EXPECT_EQ(defaults.plane, dart::gui::GridConfig::Plane::ZX);
+  EXPECT_EQ(defaults.num_cells, 20u);
+  EXPECT_DOUBLE_EQ(defaults.cell_size, 1.0);
+  EXPECT_EQ(defaults.minor_per_major, 5u);
+
+  dart::gui::ViewerConfig config;
+  config.width = 320;
+  config.height = 240;
+  config.headless = true;
+  config.target_fps = 0;
+
+  dart::gui::RaylibBackend backend;
+  ASSERT_TRUE(backend.initialize(config));
+
+  dart::gui::Scene scene;
+  dart::gui::GridConfig grid;
+  grid.plane = dart::gui::GridConfig::Plane::XY;
+  grid.num_cells = 4;
+  grid.cell_size = 0.5;
+  scene.grid_config = grid;
+
+  EXPECT_NO_THROW({
+    backend.beginFrame();
+    backend.render(scene);
+    backend.endFrame();
+  });
+
+  backend.shutdown();
+}
+
+TEST_F(RaylibSceneViewerTest, DragControllerConstraints)
+{
+  dart::gui::Camera camera;
+  camera.position = Eigen::Vector3d(0.0, -10.0, 0.0);
+  camera.target = Eigen::Vector3d(0.0, 0.0, 0.0);
+  camera.up = Eigen::Vector3d(0.0, 0.0, 1.0);
+
+  const Eigen::Vector3d fromPosition = Eigen::Vector3d::Zero();
+  const double screenDx = 10.0;
+  const double screenDy = 10.0;
+  const double screenWidth = 640.0;
+  const double screenHeight = 480.0;
+
+  const Eigen::Vector3d unconstrained
+      = dart::gui::DragController::getDeltaCursor(
+          fromPosition,
+          dart::gui::ConstraintType::Unconstrained,
+          Eigen::Vector3d::UnitX(),
+          camera,
+          screenDx,
+          screenDy,
+          screenWidth,
+          screenHeight);
+
+  const Eigen::Vector3d lineDelta = dart::gui::DragController::getDeltaCursor(
+      fromPosition,
+      dart::gui::ConstraintType::Line,
+      Eigen::Vector3d::UnitX(),
+      camera,
+      screenDx,
+      screenDy,
+      screenWidth,
+      screenHeight);
+
+  EXPECT_NEAR(lineDelta.y(), 0.0, 1e-9);
+  EXPECT_NEAR(lineDelta.z(), 0.0, 1e-9);
+  EXPECT_NEAR(lineDelta.x(), unconstrained.x(), 1e-9);
+
+  const Eigen::Vector3d planeDelta = dart::gui::DragController::getDeltaCursor(
+      fromPosition,
+      dart::gui::ConstraintType::Plane,
+      Eigen::Vector3d::UnitZ(),
+      camera,
+      screenDx,
+      screenDy,
+      screenWidth,
+      screenHeight);
+
+  EXPECT_NEAR(planeDelta.z(), 0.0, 1e-9);
+}
+
+TEST_F(RaylibSceneViewerTest, DragControllerDefaults)
+{
+  dart::gui::DragController controller;
+  EXPECT_FALSE(controller.isDragging());
+  EXPECT_EQ(controller.activeDraggable(), nullptr);
 }

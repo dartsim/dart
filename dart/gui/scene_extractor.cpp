@@ -40,6 +40,7 @@
 #include "dart/dynamics/convex_mesh_shape.hpp"
 #include "dart/dynamics/cylinder_shape.hpp"
 #include "dart/dynamics/ellipsoid_shape.hpp"
+#include "dart/dynamics/heightmap_shape.hpp"
 #include "dart/dynamics/line_segment_shape.hpp"
 #include "dart/dynamics/mesh_shape.hpp"
 #include "dart/dynamics/multi_sphere_convex_hull_shape.hpp"
@@ -49,6 +50,7 @@
 #include "dart/dynamics/shape_frame.hpp"
 #include "dart/dynamics/shape_node.hpp"
 #include "dart/dynamics/skeleton.hpp"
+#include "dart/dynamics/soft_mesh_shape.hpp"
 #include "dart/dynamics/sphere_shape.hpp"
 #include "dart/simulation/world.hpp"
 
@@ -174,6 +176,37 @@ std::optional<ShapeData> SceneExtractor::convertShape(
       meshData.indices.push_back(static_cast<uint32_t>(triangle[2]));
     }
 
+    return ShapeData{std::move(meshData)};
+  }
+
+  if (auto softMesh
+      = dynamic_cast<const dart::dynamics::SoftMeshShape*>(&shape)) {
+    // SoftMeshShape produces MeshData — reuse existing variant
+    auto triMesh = softMesh->getTriMesh();
+    if (!triMesh || !triMesh->hasVertices() || !triMesh->hasTriangles()) {
+      return std::nullopt;
+    }
+    MeshData meshData;
+    const auto& vertices = triMesh->getVertices();
+    meshData.vertices.reserve(vertices.size());
+    for (const auto& vertex : vertices) {
+      meshData.vertices.emplace_back(vertex.cast<float>());
+    }
+    if (triMesh->hasVertexNormals()
+        && triMesh->getVertexNormals().size() == vertices.size()) {
+      const auto& normals = triMesh->getVertexNormals();
+      meshData.normals.reserve(normals.size());
+      for (const auto& normal : normals) {
+        meshData.normals.emplace_back(normal.normalized().cast<float>());
+      }
+    }
+    const auto& triangles = triMesh->getTriangles();
+    meshData.indices.reserve(triangles.size() * 3);
+    for (const auto& triangle : triangles) {
+      meshData.indices.push_back(static_cast<uint32_t>(triangle[0]));
+      meshData.indices.push_back(static_cast<uint32_t>(triangle[1]));
+      meshData.indices.push_back(static_cast<uint32_t>(triangle[2]));
+    }
     return ShapeData{std::move(meshData)};
   }
 
@@ -303,6 +336,39 @@ std::optional<ShapeData> SceneExtractor::convertShape(
           &shape)) {
     MultiSphereData data;
     data.spheres = multiSphere->getSpheres();
+    return ShapeData{std::move(data)};
+  }
+
+  if (auto hm = dynamic_cast<const dart::dynamics::HeightmapShapef*>(&shape)) {
+    HeightmapData data;
+    const auto& field = hm->getHeightField();
+    data.width = static_cast<std::size_t>(field.cols());
+    data.depth = static_cast<std::size_t>(field.rows());
+    data.heights.resize(data.width * data.depth);
+    for (std::size_t r = 0; r < data.depth; ++r) {
+      for (std::size_t c = 0; c < data.width; ++c) {
+        data.heights[r * data.width + c]
+            = field(static_cast<Eigen::Index>(r), static_cast<Eigen::Index>(c));
+      }
+    }
+    const auto& s = hm->getScale();
+    data.scale = Eigen::Vector3d(s.x(), s.y(), s.z());
+    return ShapeData{std::move(data)};
+  }
+  if (auto hm = dynamic_cast<const dart::dynamics::HeightmapShaped*>(&shape)) {
+    HeightmapData data;
+    const auto& field = hm->getHeightField();
+    data.width = static_cast<std::size_t>(field.cols());
+    data.depth = static_cast<std::size_t>(field.rows());
+    data.heights.resize(data.width * data.depth);
+    for (std::size_t r = 0; r < data.depth; ++r) {
+      for (std::size_t c = 0; c < data.width; ++c) {
+        data.heights[r * data.width + c] = static_cast<float>(
+            field(static_cast<Eigen::Index>(r), static_cast<Eigen::Index>(c)));
+      }
+    }
+    const auto& s = hm->getScale();
+    data.scale = Eigen::Vector3d(s.x(), s.y(), s.z());
     return ShapeData{std::move(data)};
   }
 

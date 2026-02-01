@@ -92,7 +92,7 @@ bool SceneViewer::frame()
     extracted.camera = scene_.camera;
     extracted.debug_lines = scene_.debug_lines;
     extracted.debug_points = scene_.debug_points;
-    extracted.show_grid = scene_.show_grid;
+    extracted.grid_config = scene_.grid_config;
     extracted.show_axes = scene_.show_axes;
     extracted.lights = scene_.lights;
     extracted.headlight = scene_.headlight;
@@ -104,7 +104,7 @@ bool SceneViewer::frame()
     empty.camera = scene_.camera;
     empty.debug_lines = scene_.debug_lines;
     empty.debug_points = scene_.debug_points;
-    empty.show_grid = scene_.show_grid;
+    empty.grid_config = scene_.grid_config;
     empty.show_axes = scene_.show_axes;
     empty.lights = scene_.lights;
     empty.headlight = scene_.headlight;
@@ -178,7 +178,7 @@ void SceneViewer::step()
   extracted.camera = scene_.camera;
   extracted.debug_lines = scene_.debug_lines;
   extracted.debug_points = scene_.debug_points;
-  extracted.show_grid = scene_.show_grid;
+  extracted.grid_config = scene_.grid_config;
   extracted.show_axes = scene_.show_axes;
   extracted.lights = scene_.lights;
   extracted.headlight = scene_.headlight;

@@ -148,6 +148,14 @@ struct MultiSphereData
   std::vector<std::pair<double, Eigen::Vector3d>> spheres;
 };
 
+struct HeightmapData
+{
+  std::vector<float> heights; // row-major
+  std::size_t width = 0;
+  std::size_t depth = 0;
+  Eigen::Vector3d scale{1.0, 1.0, 1.0};
+};
+
 using ShapeData = std::variant<
     BoxData,
     SphereData,
@@ -160,7 +168,35 @@ using ShapeData = std::variant<
     LineData,
     PyramidData,
     PointCloudData,
-    MultiSphereData>;
+    MultiSphereData,
+    HeightmapData>;
+
+/// Grid configuration for the viewer
+struct GridConfig
+{
+  enum class Plane
+  {
+    XY,
+    YZ,
+    ZX
+  };
+
+  Plane plane = Plane::ZX;
+  std::size_t num_cells = 20;
+  double cell_size = 1.0;
+  std::size_t minor_per_major = 5;
+  Eigen::Vector4d major_color{0.5, 0.5, 0.5, 1.0};
+  Eigen::Vector4d minor_color{0.7, 0.7, 0.7, 0.5};
+  float major_width = 2.0f;
+  float minor_width = 1.0f;
+  Eigen::Vector3d offset{0, 0, 0};
+
+  /// Create default ZX grid
+  static GridConfig defaultZX()
+  {
+    return GridConfig{};
+  }
+};
 
 /// A single renderable node in the scene
 struct SceneNode
@@ -220,7 +256,7 @@ struct Scene
   Camera camera;
   std::vector<Light> lights;
   bool headlight = true;
-  bool show_grid = true;
+  std::optional<GridConfig> grid_config = GridConfig::defaultZX();
   bool show_axes = true;
   bool paused = false;
   double sim_time = 0.0;

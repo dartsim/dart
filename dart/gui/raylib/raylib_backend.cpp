@@ -703,8 +703,58 @@ void RaylibBackend::render(const Scene& scene)
   ClearBackground(RAYWHITE);
   BeginMode3D(camera);
 
-  if (scene.show_grid) {
-    DrawGrid(20, 1.0f);
+  if (scene.grid_config.has_value()) {
+    const auto& gc = scene.grid_config.value();
+    const int totalCells = static_cast<int>(gc.num_cells);
+    const float cellSize = static_cast<float>(gc.cell_size);
+    const float halfLen = totalCells * cellSize * 0.5f;
+    const Color majorColor = toColor(gc.major_color);
+    const Color minorColor = toColor(gc.minor_color);
+    const int minorPerMajor = static_cast<int>(gc.minor_per_major);
+    const Vector3 off{
+        static_cast<float>(gc.offset.x()),
+        static_cast<float>(gc.offset.y()),
+        static_cast<float>(gc.offset.z())};
+
+    rlPushMatrix();
+    rlTranslatef(off.x, off.y, off.z);
+
+    for (int i = 0; i <= totalCells; ++i) {
+      const float pos = -halfLen + i * cellSize;
+      const bool isMajor = (minorPerMajor > 0) && (i % minorPerMajor == 0);
+      const Color lineColor = isMajor ? majorColor : minorColor;
+
+      // Draw lines in the appropriate plane
+      if (gc.plane == GridConfig::Plane::ZX) {
+        DrawLine3D(
+            Vector3{pos, 0.0f, -halfLen},
+            Vector3{pos, 0.0f, halfLen},
+            lineColor);
+        DrawLine3D(
+            Vector3{-halfLen, 0.0f, pos},
+            Vector3{halfLen, 0.0f, pos},
+            lineColor);
+      } else if (gc.plane == GridConfig::Plane::XY) {
+        DrawLine3D(
+            Vector3{pos, -halfLen, 0.0f},
+            Vector3{pos, halfLen, 0.0f},
+            lineColor);
+        DrawLine3D(
+            Vector3{-halfLen, pos, 0.0f},
+            Vector3{halfLen, pos, 0.0f},
+            lineColor);
+      } else if (gc.plane == GridConfig::Plane::YZ) {
+        DrawLine3D(
+            Vector3{0.0f, pos, -halfLen},
+            Vector3{0.0f, pos, halfLen},
+            lineColor);
+        DrawLine3D(
+            Vector3{0.0f, -halfLen, pos},
+            Vector3{0.0f, halfLen, pos},
+            lineColor);
+      }
+    }
+    rlPopMatrix();
   }
 
   if (scene.show_axes) {
@@ -793,6 +843,60 @@ void RaylibBackend::render(const Scene& scene)
             drawCachedMesh(g_meshes.unit_plane, color, m);
           } else if constexpr (std::is_same_v<ShapeT, MeshData>) {
             drawMeshDataLit(shape, color, node.transform);
+          } else if constexpr (std::is_same_v<ShapeT, HeightmapData>) {
+            if (shape.width < 2 || shape.depth < 2) {
+              return;
+            }
+            // Generate a triangle mesh from the height grid
+            const std::size_t w = shape.width;
+            const std::size_t d = shape.depth;
+            const double sx = shape.scale.x();
+            const double sy = shape.scale.y();
+            const double sz = shape.scale.z();
+
+            MeshData meshData;
+            meshData.vertices.reserve(w * d);
+            meshData.normals.reserve(w * d);
+
+            for (std::size_t r = 0; r < d; ++r) {
+              for (std::size_t c = 0; c < w; ++c) {
+                const float x = static_cast<float>(c * sx / (w - 1) - sx * 0.5);
+                const float y = static_cast<float>(r * sy / (d - 1) - sy * 0.5);
+                const float z
+                    = shape.heights[r * w + c] * static_cast<float>(sz);
+                meshData.vertices.emplace_back(Eigen::Vector3f(x, y, z));
+                meshData.normals.emplace_back(Eigen::Vector3f(0, 0, 1));
+              }
+            }
+            // Generate triangle indices (2 triangles per cell)
+            for (std::size_t r = 0; r + 1 < d; ++r) {
+              for (std::size_t c = 0; c + 1 < w; ++c) {
+                const uint32_t tl = static_cast<uint32_t>(r * w + c);
+                const uint32_t tr = tl + 1;
+                const uint32_t bl = static_cast<uint32_t>((r + 1) * w + c);
+                const uint32_t br = bl + 1;
+                meshData.indices.push_back(tl);
+                meshData.indices.push_back(bl);
+                meshData.indices.push_back(tr);
+                meshData.indices.push_back(tr);
+                meshData.indices.push_back(bl);
+                meshData.indices.push_back(br);
+              }
+            }
+            // Compute per-vertex normals from triangles
+            for (std::size_t i = 0; i + 2 < meshData.indices.size(); i += 3) {
+              const auto& v0 = meshData.vertices[meshData.indices[i]];
+              const auto& v1 = meshData.vertices[meshData.indices[i + 1]];
+              const auto& v2 = meshData.vertices[meshData.indices[i + 2]];
+              Eigen::Vector3f n = (v1 - v0).cross(v2 - v0);
+              if (n.norm() > 1e-9f) {
+                n.normalize();
+              }
+              meshData.normals[meshData.indices[i]] = n;
+              meshData.normals[meshData.indices[i + 1]] = n;
+              meshData.normals[meshData.indices[i + 2]] = n;
+            }
+            drawMeshDataLit(meshData, color, node.transform);
           } else if constexpr (std::is_same_v<ShapeT, LineData>) {
             rlPushMatrix();
             const Matrix tf = eigenToRaylib(node.transform);
@@ -1012,6 +1116,21 @@ void RaylibBackend::render(const Scene& scene)
                     12,
                     YELLOW);
               }
+            } else if constexpr (std::is_same_v<ShapeT, HeightmapData>) {
+              // Bounding box wireframe
+              const float hw = static_cast<float>(shape.scale.x()) * 0.5f;
+              const float hd = static_cast<float>(shape.scale.y()) * 0.5f;
+              float minH = 0, maxH = 0;
+              if (!shape.heights.empty()) {
+                minH = *std::min_element(
+                    shape.heights.begin(), shape.heights.end());
+                maxH = *std::max_element(
+                    shape.heights.begin(), shape.heights.end());
+              }
+              const float sz = static_cast<float>(shape.scale.z());
+              const Vector3 center{0, 0, (minH + maxH) * sz * 0.5f};
+              const Vector3 size{hw * 2, hd * 2, (maxH - minH) * sz};
+              DrawCubeWiresV(center, size, YELLOW);
             }
           },
           node.shape);
@@ -1208,6 +1327,18 @@ BoundingBox computeAABB(
           localCenter = (minV + maxV) * 0.5;
           halfExtent = (maxV - minV) * 0.5;
           hasLocalCenter = true;
+        } else if constexpr (std::is_same_v<ShapeT, HeightmapData>) {
+          float minH = 0, maxH = 0;
+          if (!shape.heights.empty()) {
+            minH
+                = *std::min_element(shape.heights.begin(), shape.heights.end());
+            maxH
+                = *std::max_element(shape.heights.begin(), shape.heights.end());
+          }
+          halfExtent = Eigen::Vector3d(
+              shape.scale.x() * 0.5,
+              shape.scale.y() * 0.5,
+              (maxH - minH) * shape.scale.z() * 0.5);
         }
       },
       node.shape);
