@@ -83,8 +83,31 @@ public:
   ~ProxyBase() override = default;
 };
 
+class CopyableProxyBase
+{
+public:
+  virtual ~CopyableProxyBase() = default;
+
+  virtual std::unique_ptr<CopyableProxyBase> clone() const
+  {
+    return std::make_unique<CopyableProxyBase>(*this);
+  }
+
+  virtual void copy(const CopyableProxyBase& other)
+  {
+    (void)other;
+  }
+};
+
 using SimpleProxy = ProxyCloneable<
     ProxyBase,
+    ProxyOwner,
+    SimpleData,
+    setProxyData,
+    getProxyData>;
+
+using CopyableProxy = ProxyCloneable<
+    CopyableProxyBase,
     ProxyOwner,
     SimpleData,
     setProxyData,
@@ -385,6 +408,37 @@ TEST(CloneableMap, MergeFromCloneableMap)
 }
 
 //==============================================================================
+TEST(CloneableMap, CopyConstructorAndAssignment)
+{
+  using SimpleMap = std::map<std::string, SimplePtr>;
+
+  SimpleMap baseMap;
+  baseMap["first"] = makeSimpleCloneable(1, "first");
+  baseMap["empty"] = nullptr;
+
+  CloneableMap<SimpleMap> holder(baseMap);
+  CloneableMap<SimpleMap> copied(holder);
+
+  const auto& copiedMap = copied.getMap();
+  ASSERT_NE(copiedMap.at("first"), nullptr);
+  EXPECT_EQ(
+      static_cast<const SimpleMakeCloneable*>(copiedMap.at("first").get())
+          ->value,
+      1);
+  ASSERT_TRUE(copiedMap.contains("empty"));
+  EXPECT_EQ(copiedMap.at("empty"), nullptr);
+
+  CloneableMap<SimpleMap> assigned;
+  assigned = holder;
+  ASSERT_NE(assigned.getMap().at("first"), nullptr);
+  EXPECT_EQ(
+      static_cast<const SimpleMakeCloneable*>(
+          assigned.getMap().at("first").get())
+          ->value,
+      1);
+}
+
+//==============================================================================
 TEST(CloneableVector, CopyAssignment)
 {
   std::vector<SimplePtr> sourceVec;
@@ -425,4 +479,28 @@ TEST(ProxyCloneable, CopyAndMoveAssignment)
   copied = owned;
   EXPECT_EQ(copied.get().value, 2);
   EXPECT_EQ(copied.get().name, "updated");
+}
+
+//==============================================================================
+TEST(ProxyCloneable, CopyAndMoveConstructors)
+{
+  ProxyOwner owner;
+  owner.data = SimpleData{7, "owner"};
+
+  CopyableProxy owned(&owner);
+  owned = SimpleData{8, "updated"};
+
+  const CopyableProxy& constOwned = owned;
+  CopyableProxy copied(constOwned);
+  EXPECT_EQ(copied.get().value, 8);
+  EXPECT_EQ(copied.get().name, "updated");
+  EXPECT_EQ(copied.getOwner(), nullptr);
+
+  CopyableProxy moved(std::move(owned));
+  EXPECT_EQ(moved.get().value, 8);
+  EXPECT_EQ(moved.get().name, "updated");
+  EXPECT_EQ(moved.getOwner(), nullptr);
+
+  EXPECT_EQ(owner.data.value, 8);
+  EXPECT_EQ(owner.data.name, "updated");
 }

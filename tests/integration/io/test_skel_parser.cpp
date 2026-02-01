@@ -34,6 +34,8 @@
 
 #include "dart/utils/All.hpp"
 
+#include <dart/utils/skel_parser.hpp>
+
 #include <dart/all.hpp>
 
 #include <gtest/gtest.h>
@@ -4550,4 +4552,388 @@ TEST(SkelParser, MeshEllipsoidAndSoftBodyParsingFromXml)
 
   std::error_code ec;
   std::filesystem::remove(meshPath, ec);
+}
+
+//==============================================================================
+TEST(SkelParser, JointActuatorTypesFromXml)
+{
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="base">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <box><size>1 1 1</size></box>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <body name="link1">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <box><size>1 1 1</size></box>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <body name="link2">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <box><size>1 1 1</size></box>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <body name="link3">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <box><size>1 1 1</size></box>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <body name="link4">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <box><size>1 1 1</size></box>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <body name="link5">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <box><size>1 1 1</size></box>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>base</child>
+      </joint>
+      <joint type="revolute" name="servo_joint" actuator="servo">
+        <parent>base</parent>
+        <child>link1</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+      <joint type="revolute" name="velocity_joint" actuator="velocity">
+        <parent>link1</parent>
+        <child>link2</child>
+        <axis>
+          <xyz>0 1 0</xyz>
+        </axis>
+      </joint>
+      <joint type="revolute" name="acceleration_joint" actuator="acceleration">
+        <parent>link2</parent>
+        <child>link3</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+        </axis>
+      </joint>
+      <joint type="revolute" name="locked_joint" actuator="locked">
+        <parent>link3</parent>
+        <child>link4</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+      <joint type="revolute" name="passive_joint" actuator="passive">
+        <parent>link4</parent>
+        <child>link5</child>
+        <axis>
+          <xyz>0 1 0</xyz>
+        </axis>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+  )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+
+  EXPECT_EQ(
+      skel->getJoint("servo_joint")->getActuatorType(), dynamics::Joint::SERVO);
+  EXPECT_EQ(
+      skel->getJoint("velocity_joint")->getActuatorType(),
+      dynamics::Joint::VELOCITY);
+  EXPECT_EQ(
+      skel->getJoint("acceleration_joint")->getActuatorType(),
+      dynamics::Joint::ACCELERATION);
+  EXPECT_EQ(
+      skel->getJoint("locked_joint")->getActuatorType(),
+      dynamics::Joint::LOCKED);
+  EXPECT_EQ(
+      skel->getJoint("passive_joint")->getActuatorType(),
+      dynamics::Joint::PASSIVE);
+}
+
+//==============================================================================
+TEST(SkelParser, PlanarJointParsingFromXml)
+{
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="base">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <box><size>1 1 1</size></box>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <body name="platform">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <box><size>1 1 1</size></box>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>base</child>
+      </joint>
+      <joint type="planar" name="planar_joint">
+        <parent>base</parent>
+        <child>platform</child>
+        <plane type="yz" />
+        <init_pos>0.1 0.2 0.3</init_pos>
+        <init_vel>-0.2 -0.3 -0.4</init_vel>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+  )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+  auto* planarJoint
+      = dynamic_cast<dynamics::PlanarJoint*>(skel->getJoint("planar_joint"));
+  ASSERT_NE(planarJoint, nullptr);
+  EXPECT_EQ(planarJoint->getPlaneType(), dynamics::PlanarJoint::PlaneType::YZ);
+  EXPECT_TRUE(
+      planarJoint->getTranslationalAxis1().isApprox(Eigen::Vector3d::UnitY()));
+  EXPECT_TRUE(
+      planarJoint->getTranslationalAxis2().isApprox(Eigen::Vector3d::UnitZ()));
+  EXPECT_TRUE(
+      planarJoint->getRotationalAxis().isApprox(Eigen::Vector3d::UnitX()));
+  EXPECT_TRUE(
+      planarJoint->getPositions().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+  EXPECT_TRUE(
+      planarJoint->getVelocities().isApprox(Eigen::Vector3d(-0.2, -0.3, -0.4)));
+}
+
+//==============================================================================
+TEST(SkelParser, EulerJointAxisOrdersFromXml)
+{
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="base">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <box><size>1 1 1</size></box>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <body name="link_xyz">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <box><size>1 1 1</size></box>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <body name="link_zyx">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <box><size>1 1 1</size></box>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>base</child>
+      </joint>
+      <joint type="euler" name="euler_xyz">
+        <parent>base</parent>
+        <child>link_xyz</child>
+        <axis_order>xyz</axis_order>
+        <init_pos>0.1 0.2 0.3</init_pos>
+        <init_vel>0.4 0.5 0.6</init_vel>
+      </joint>
+      <joint type="euler" name="euler_zyx">
+        <parent>link_xyz</parent>
+        <child>link_zyx</child>
+        <axis_order>zyx</axis_order>
+        <init_pos>-0.1 -0.2 -0.3</init_pos>
+        <init_vel>-0.4 -0.5 -0.6</init_vel>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+  )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+
+  auto* eulerXyz
+      = dynamic_cast<dynamics::EulerJoint*>(skel->getJoint("euler_xyz"));
+  ASSERT_NE(eulerXyz, nullptr);
+  EXPECT_EQ(eulerXyz->getAxisOrder(), dynamics::EulerJoint::AxisOrder::XYZ);
+  EXPECT_TRUE(
+      eulerXyz->getPositions().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+  EXPECT_TRUE(
+      eulerXyz->getVelocities().isApprox(Eigen::Vector3d(0.4, 0.5, 0.6)));
+
+  auto* eulerZyx
+      = dynamic_cast<dynamics::EulerJoint*>(skel->getJoint("euler_zyx"));
+  ASSERT_NE(eulerZyx, nullptr);
+  EXPECT_EQ(eulerZyx->getAxisOrder(), dynamics::EulerJoint::AxisOrder::ZYX);
+  EXPECT_TRUE(
+      eulerZyx->getPositions().isApprox(Eigen::Vector3d(-0.1, -0.2, -0.3)));
+  EXPECT_TRUE(
+      eulerZyx->getVelocities().isApprox(Eigen::Vector3d(-0.4, -0.5, -0.6)));
+}
+
+//==============================================================================
+TEST(SkelParser, TranslationalJointParsingFromXml)
+{
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="base">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <box><size>1 1 1</size></box>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <body name="slider">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+            <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <box><size>1 1 1</size></box>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>base</child>
+      </joint>
+      <joint type="translational" name="translational_joint">
+        <parent>base</parent>
+        <child>slider</child>
+        <init_pos>0.7 0.8 0.9</init_pos>
+        <init_vel>0.1 0.2 0.3</init_vel>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+  )";
+
+  const auto world = readWorldFromSkelString(skelXml);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+  auto* joint = dynamic_cast<dynamics::TranslationalJoint*>(
+      skel->getJoint("translational_joint"));
+  ASSERT_NE(joint, nullptr);
+  EXPECT_TRUE(joint->getPositions().isApprox(Eigen::Vector3d(0.7, 0.8, 0.9)));
+  EXPECT_TRUE(joint->getVelocities().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
 }

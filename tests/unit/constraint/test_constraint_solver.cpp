@@ -920,18 +920,20 @@ TEST(ConstraintSolver, HasSkeleton)
   auto skeleton1 = dynamics::Skeleton::create("has_skel1");
   auto skeleton2 = dynamics::Skeleton::create("has_skel2");
 
-  EXPECT_FALSE(std::ranges::any_of(
-      solver.getSkeletons(),
-      [&](const auto& skel) { return skel == skeleton1; }));
+  EXPECT_FALSE(
+      std::ranges::any_of(solver.getSkeletons(), [&](const auto& skel) {
+        return skel == skeleton1;
+      }));
 
   solver.addSkeleton(skeleton1);
 
   EXPECT_TRUE(std::ranges::any_of(solver.getSkeletons(), [&](const auto& skel) {
     return skel == skeleton1;
   }));
-  EXPECT_FALSE(std::ranges::any_of(
-      solver.getSkeletons(),
-      [&](const auto& skel) { return skel == skeleton2; }));
+  EXPECT_FALSE(
+      std::ranges::any_of(solver.getSkeletons(), [&](const auto& skel) {
+        return skel == skeleton2;
+      }));
 
   solver.addSkeleton(skeleton2);
 

@@ -553,8 +553,9 @@ TEST(LcpValidationCoverage, ComputesEffectiveBoundsForFriction)
   Eigen::VectorXd loEff;
   Eigen::VectorXd hiEff;
   std::string message;
-  EXPECT_TRUE(detail::computeEffectiveBounds(
-      lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_TRUE(
+      detail::computeEffectiveBounds(
+          lo, hi, findex, x, loEff, hiEff, &message));
   EXPECT_NEAR(loEff[1], -0.2, 1e-12);
   EXPECT_NEAR(hiEff[1], 0.2, 1e-12);
   EXPECT_NEAR(loEff[2], -0.1, 1e-12);
@@ -571,8 +572,9 @@ TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsMismatchedSizes)
   Eigen::VectorXd loEff;
   Eigen::VectorXd hiEff;
   std::string message;
-  EXPECT_FALSE(detail::computeEffectiveBounds(
-      lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_FALSE(
+      detail::computeEffectiveBounds(
+          lo, hi, findex, x, loEff, hiEff, &message));
   EXPECT_FALSE(message.empty());
 }
 
@@ -590,13 +592,15 @@ TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsInvalidFrictionIndex)
   Eigen::VectorXd loEff;
   Eigen::VectorXd hiEff;
   std::string message;
-  EXPECT_FALSE(detail::computeEffectiveBounds(
-      lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_FALSE(
+      detail::computeEffectiveBounds(
+          lo, hi, findex, x, loEff, hiEff, &message));
   EXPECT_FALSE(message.empty());
 
   findex << -1, 1;
-  EXPECT_FALSE(detail::computeEffectiveBounds(
-      lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_FALSE(
+      detail::computeEffectiveBounds(
+          lo, hi, findex, x, loEff, hiEff, &message));
   EXPECT_FALSE(message.empty());
 }
 
@@ -614,8 +618,9 @@ TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsInvalidReferenceValue)
   Eigen::VectorXd loEff;
   Eigen::VectorXd hiEff;
   std::string message;
-  EXPECT_FALSE(detail::computeEffectiveBounds(
-      lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_FALSE(
+      detail::computeEffectiveBounds(
+          lo, hi, findex, x, loEff, hiEff, &message));
   EXPECT_FALSE(message.empty());
 }
 
@@ -634,8 +639,9 @@ TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsInvalidFrictionCoeff)
   Eigen::VectorXd loEff;
   Eigen::VectorXd hiEff;
   std::string message;
-  EXPECT_FALSE(detail::computeEffectiveBounds(
-      lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_FALSE(
+      detail::computeEffectiveBounds(
+          lo, hi, findex, x, loEff, hiEff, &message));
   EXPECT_FALSE(message.empty());
 }
 
@@ -739,8 +745,9 @@ TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsDimensionMismatch)
   Eigen::VectorXd loEff;
   Eigen::VectorXd hiEff;
   std::string message;
-  EXPECT_FALSE(detail::computeEffectiveBounds(
-      lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_FALSE(
+      detail::computeEffectiveBounds(
+          lo, hi, findex, x, loEff, hiEff, &message));
   EXPECT_NE(message.find("dimensions"), std::string::npos);
 }
 
@@ -755,8 +762,9 @@ TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsFindexOutOfRange)
   Eigen::VectorXd loEff;
   Eigen::VectorXd hiEff;
   std::string message;
-  EXPECT_FALSE(detail::computeEffectiveBounds(
-      lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_FALSE(
+      detail::computeEffectiveBounds(
+          lo, hi, findex, x, loEff, hiEff, &message));
   EXPECT_NE(message.find("Invalid friction index entry"), std::string::npos);
 }
 
@@ -771,8 +779,9 @@ TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsSelfReference)
   Eigen::VectorXd loEff;
   Eigen::VectorXd hiEff;
   std::string message;
-  EXPECT_FALSE(detail::computeEffectiveBounds(
-      lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_FALSE(
+      detail::computeEffectiveBounds(
+          lo, hi, findex, x, loEff, hiEff, &message));
   EXPECT_NE(message.find("self reference"), std::string::npos);
 }
 
@@ -835,8 +844,9 @@ TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsNonFiniteMu)
   Eigen::VectorXd loEff;
   Eigen::VectorXd hiEff;
   std::string message;
-  EXPECT_FALSE(detail::computeEffectiveBounds(
-      lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_FALSE(
+      detail::computeEffectiveBounds(
+          lo, hi, findex, x, loEff, hiEff, &message));
   EXPECT_NE(message.find("Invalid friction coefficient"), std::string::npos);
 }
 
@@ -932,6 +942,36 @@ TEST(LcpValidationCoverage, ComputesResidualAndComplementarityNorms)
   const double comp = detail::complementarityInfinityNorm(x, w, lo, hi, 1e-6);
   EXPECT_GT(residual, 0.0);
   EXPECT_GT(comp, 0.0);
+}
+
+TEST(LcpValidationCoverage, NaturalResidualProjectsToBounds)
+{
+  Eigen::VectorXd x(1);
+  Eigen::VectorXd w(1);
+  Eigen::VectorXd lo(1);
+  Eigen::VectorXd hi(1);
+  x << 2.0;
+  w << -1.0;
+  lo << 0.0;
+  hi << 1.0;
+
+  const double residual = detail::naturalResidualInfinityNorm(x, w, lo, hi);
+  EXPECT_NEAR(residual, 1.0, 1e-12);
+}
+
+TEST(LcpValidationCoverage, ComplementarityInfinityNormTracksBoundCases)
+{
+  Eigen::VectorXd x(3);
+  Eigen::VectorXd w(3);
+  Eigen::VectorXd lo(3);
+  Eigen::VectorXd hi(3);
+  lo << 0.0, 0.5, 0.0;
+  hi << 1.0, 0.5, std::numeric_limits<double>::infinity();
+  x << 0.0, 0.5, 0.25;
+  w << -0.2, 0.3, 0.4;
+
+  const double comp = detail::complementarityInfinityNorm(x, w, lo, hi, 1e-6);
+  EXPECT_NEAR(comp, 0.4, 1e-12);
 }
 
 TEST(LcpTypesCoverage, LcpResultSucceeded)
@@ -1404,6 +1444,23 @@ TEST(LemkeSolverCoverage, SolvesStandardProblem)
   const auto result = solver.solve(problem, x, options);
   EXPECT_EQ(result.status, LcpSolverStatus::Success);
   EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(LemkeSolverCoverage, SolvesMultipleSizes)
+{
+  LemkeSolver solver;
+  const std::vector<int> sizes = {1, 3, 5, 10};
+  for (const int size : sizes) {
+    auto problem = makeStandardProblem(size, 2.0, 0.25);
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(size);
+
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_TRUE(x.array().isFinite().all());
+
+    const Eigen::VectorXd expected = Eigen::VectorXd::Constant(size, 0.25);
+    EXPECT_TRUE(x.isApprox(expected, 1e-6));
+  }
 }
 
 TEST(LemkeSolverCoverage, MaxIterationsExceeded)

@@ -308,6 +308,40 @@ TEST(InverseKinematics, JacobianDampingAccessors)
   EXPECT_NEAR(transpose.getComponentWiseClamp(), 0.05, 1e-12);
 }
 
+TEST(InverseKinematics, SolveWithJacobianMethods)
+{
+  auto fixture = makeIkSkeleton();
+  auto ik = fixture.end->getOrCreateIK();
+  ASSERT_NE(ik, nullptr);
+
+  auto target
+      = std::make_shared<SimpleFrame>(Frame::World(), "ik_target_modes");
+  Eigen::Isometry3d targetTf = fixture.end->getTransform();
+  targetTf.translation() += Eigen::Vector3d(0.05, 0.02, -0.01);
+  target->setTransform(targetTf);
+  ik->setTarget(target);
+
+  auto solver = std::make_shared<math::GradientDescentSolver>();
+  solver->setNumMaxIterations(2);
+  solver->setTolerance(1e-6);
+  ik->setSolver(solver);
+
+  auto& dls = ik->setGradientMethod<InverseKinematics::JacobianDLS>();
+  dls.setDampingCoefficient(0.15);
+  Eigen::VectorXd dlsSolution;
+  EXPECT_TRUE(ik->findSolution(dlsSolution) || dlsSolution.size() > 0);
+  EXPECT_EQ(dlsSolution.size(), static_cast<int>(ik->getDofs().size()));
+
+  auto& transpose
+      = ik->setGradientMethod<InverseKinematics::JacobianTranspose>();
+  transpose.setComponentWiseClamp(0.05);
+  transpose.setComponentWeights(
+      Eigen::VectorXd::Constant(static_cast<int>(ik->getDofs().size()), 0.8));
+  Eigen::VectorXd jtSolution;
+  EXPECT_TRUE(ik->findSolution(jtSolution) || jtSolution.size() > 0);
+  EXPECT_EQ(jtSolution.size(), static_cast<int>(ik->getDofs().size()));
+}
+
 TEST(InverseKinematics, AnalyticalGradientAndWeights)
 {
   auto fixture = makeIkSkeleton();

@@ -95,6 +95,21 @@ protected:
   }
 };
 
+SkeletonPtr createGroupSkeleton()
+{
+  auto skeleton = Skeleton::create("group_skeleton");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  rootPair.first->setName("root_joint");
+  rootPair.second->setName("root_body");
+
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  childPair.first->setName("child_joint");
+  childPair.second->setName("child_body");
+
+  return skeleton;
+}
+
 } // namespace
 
 //==============================================================================
@@ -125,6 +140,151 @@ TEST(ReferentialSkeletonAccessors, ReturnsMutableBodyNodeVector)
   DART_SUPPRESS_DEPRECATED_END
   ASSERT_EQ(nodes.size(), 1u);
   EXPECT_EQ(nodes.front(), pair.second);
+}
+
+//==============================================================================
+TEST(GroupAccessors, CreateAndClone)
+{
+  auto skeleton = createGroupSkeleton();
+  auto* rootBody = skeleton->getBodyNode("root_body");
+  auto* childBody = skeleton->getBodyNode("child_body");
+  ASSERT_NE(rootBody, nullptr);
+  ASSERT_NE(childBody, nullptr);
+
+  std::vector<BodyNode*> bodyNodes = {rootBody, childBody};
+  auto group = Group::create("group", bodyNodes, true, true);
+
+  EXPECT_EQ(group->getNumBodyNodes(), 2u);
+  EXPECT_EQ(group->getNumJoints(), 2u);
+  EXPECT_EQ(group->getNumDofs(), 7u);
+  EXPECT_EQ(group->getBodyNode(0), rootBody);
+  EXPECT_EQ(group->getBodyNode(1), childBody);
+  EXPECT_EQ(group->getJoint("child_joint"), childBody->getParentJoint());
+
+  auto clone = group->cloneGroup("group_clone");
+  ASSERT_NE(clone, nullptr);
+  EXPECT_EQ(clone->getName(), "group_clone");
+  EXPECT_EQ(clone->getNumBodyNodes(), group->getNumBodyNodes());
+  EXPECT_EQ(clone->getNumJoints(), group->getNumJoints());
+  EXPECT_EQ(clone->getNumDofs(), group->getNumDofs());
+  EXPECT_NE(clone->getBodyNode(0), group->getBodyNode(0));
+}
+
+//==============================================================================
+TEST(GroupAccessors, AddRemoveComponents)
+{
+  auto skeleton = createGroupSkeleton();
+  auto* rootBody = skeleton->getBodyNode("root_body");
+  auto* childBody = skeleton->getBodyNode("child_body");
+  ASSERT_NE(rootBody, nullptr);
+  ASSERT_NE(childBody, nullptr);
+
+  auto emptyGroup = Group::create("empty");
+  EXPECT_TRUE(emptyGroup->addBodyNode(rootBody, false));
+  EXPECT_FALSE(emptyGroup->addBodyNode(rootBody, false));
+  EXPECT_TRUE(emptyGroup->removeBodyNode(rootBody, false));
+  EXPECT_FALSE(emptyGroup->removeBodyNode(rootBody, false));
+
+  EXPECT_TRUE(emptyGroup->addJoint(childBody->getParentJoint(), true, false));
+  EXPECT_EQ(emptyGroup->getNumJoints(), 1u);
+  EXPECT_EQ(emptyGroup->getNumDofs(), 1u);
+  EXPECT_TRUE(
+      emptyGroup->removeJoint(childBody->getParentJoint(), true, false));
+  EXPECT_EQ(emptyGroup->getNumJoints(), 0u);
+  EXPECT_EQ(emptyGroup->getNumDofs(), 0u);
+
+  EXPECT_TRUE(emptyGroup->addDof(childBody->getParentJoint()->getDof(0), true));
+  EXPECT_EQ(emptyGroup->getNumDofs(), 1u);
+  EXPECT_EQ(emptyGroup->getNumJoints(), 1u);
+  EXPECT_TRUE(
+      emptyGroup->removeDof(childBody->getParentJoint()->getDof(0), false));
+  EXPECT_EQ(emptyGroup->getNumDofs(), 0u);
+  EXPECT_EQ(emptyGroup->getNumJoints(), 1u);
+  EXPECT_TRUE(
+      emptyGroup->removeJoint(childBody->getParentJoint(), false, false));
+  EXPECT_EQ(emptyGroup->getNumJoints(), 0u);
+
+  auto componentGroup = Group::create("components");
+  EXPECT_TRUE(componentGroup->addComponent(childBody));
+  EXPECT_EQ(componentGroup->getNumBodyNodes(), 1u);
+  EXPECT_EQ(componentGroup->getNumDofs(), 1u);
+  EXPECT_EQ(componentGroup->getNumJoints(), 0u);
+}
+
+//==============================================================================
+TEST(ReferentialSkeletonAccessors, NameAndVectorLookups)
+{
+  auto skeleton = createGroupSkeleton();
+  auto* rootBody = skeleton->getBodyNode("root_body");
+  auto* childBody = skeleton->getBodyNode("child_body");
+  ASSERT_NE(rootBody, nullptr);
+  ASSERT_NE(childBody, nullptr);
+
+  std::vector<BodyNode*> bodyNodes = {rootBody, childBody};
+  auto group = Group::create("lookup_group", bodyNodes, true, true);
+
+  EXPECT_EQ(group->getBodyNode("root_body"), rootBody);
+  EXPECT_EQ(group->getBodyNodes("child_body").size(), 1u);
+  EXPECT_EQ(group->getJoint("child_joint"), childBody->getParentJoint());
+  EXPECT_EQ(group->getJoints("root_joint").size(), 1u);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  auto& rawBodies = group->getBodyNodes();
+  auto joints = group->getJoints();
+  auto dofs = group->getDofs();
+  DART_SUPPRESS_DEPRECATED_END
+
+  EXPECT_EQ(rawBodies.size(), 2u);
+  EXPECT_EQ(joints.size(), group->getNumJoints());
+  EXPECT_EQ(dofs.size(), group->getNumDofs());
+}
+
+//==============================================================================
+TEST(MetaSkeletonSegments, GroupDofSegments)
+{
+  auto skeleton = createGroupSkeleton();
+  const std::size_t dofs = skeleton->getNumDofs();
+  Eigen::VectorXd positions = Eigen::VectorXd::LinSpaced(
+      static_cast<Eigen::Index>(dofs), 0.5, 0.5 + dofs - 1.0);
+  Eigen::VectorXd velocities = Eigen::VectorXd::LinSpaced(
+      static_cast<Eigen::Index>(dofs), -0.2, -0.2 + dofs - 1.0);
+  Eigen::VectorXd forces = Eigen::VectorXd::LinSpaced(
+      static_cast<Eigen::Index>(dofs), 1.0, 1.0 + dofs - 1.0);
+
+  skeleton->setPositions(positions);
+  skeleton->setVelocities(velocities);
+  skeleton->setForces(forces);
+
+  Eigen::VectorXd lowerLimits = Eigen::VectorXd::Constant(dofs, -2.0);
+  Eigen::VectorXd upperVelLimits = Eigen::VectorXd::Constant(dofs, 3.0);
+  skeleton->setPositionLowerLimits(lowerLimits);
+  skeleton->setVelocityUpperLimits(upperVelLimits);
+
+  std::vector<DegreeOfFreedom*> dofSubset
+      = {skeleton->getDof(0), skeleton->getDof(3), skeleton->getDof(6)};
+  auto group = Group::create("dof_group", dofSubset, true, true);
+
+  Eigen::VectorXd expectedPositions(3);
+  Eigen::VectorXd expectedVelocities(3);
+  Eigen::VectorXd expectedForces(3);
+  for (std::size_t i = 0; i < dofSubset.size(); ++i) {
+    expectedPositions[static_cast<Eigen::Index>(i)]
+        = positions[static_cast<Eigen::Index>(
+            dofSubset[i]->getIndexInSkeleton())];
+    expectedVelocities[static_cast<Eigen::Index>(i)]
+        = velocities[static_cast<Eigen::Index>(
+            dofSubset[i]->getIndexInSkeleton())];
+    expectedForces[static_cast<Eigen::Index>(i)]
+        = forces[static_cast<Eigen::Index>(dofSubset[i]->getIndexInSkeleton())];
+  }
+
+  EXPECT_TRUE(group->getPositions().isApprox(expectedPositions));
+  EXPECT_TRUE(group->getVelocities().isApprox(expectedVelocities));
+  EXPECT_TRUE(group->getForces().isApprox(expectedForces));
+  EXPECT_TRUE(group->getPositionLowerLimits().isApprox(
+      Eigen::VectorXd::Constant(3, -2.0)));
+  EXPECT_TRUE(group->getVelocityUpperLimits().isApprox(
+      Eigen::VectorXd::Constant(3, 3.0)));
 }
 
 //==============================================================================
@@ -3808,8 +3968,9 @@ TEST(SkeletonClone, CloneSkeletonDefaultName)
   pair.first->setAxis(Eigen::Vector3d::UnitZ());
   pair.second->setMass(1.0);
 
-  skeleton->setPositions(Eigen::VectorXd::Constant(
-      static_cast<Eigen::Index>(skeleton->getNumDofs()), 0.25));
+  skeleton->setPositions(
+      Eigen::VectorXd::Constant(
+          static_cast<Eigen::Index>(skeleton->getNumDofs()), 0.25));
 
   auto clone = skeleton->cloneSkeleton();
   ASSERT_NE(clone, nullptr);

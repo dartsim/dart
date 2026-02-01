@@ -183,6 +183,21 @@ std::filesystem::path writeTempFile(
   output.close();
   return tempPath;
 }
+
+std::filesystem::path writeTempFileWithPrefix(
+    const std::string& xml,
+    const std::string& tag,
+    const std::string& extension)
+{
+  static std::size_t counter = 0;
+  const auto tempPath
+      = std::filesystem::path("/tmp")
+        / ("dart_test_" + tag + "_" + std::to_string(counter++) + extension);
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+  return tempPath;
+}
 #endif
 
 } // namespace
@@ -2374,3 +2389,103 @@ TEST(UrdfParser, TransmissionsAndPackageMeshes)
 
   std::filesystem::remove_all(tempDir);
 }
+
+#if DART_IO_HAS_URDF
+//==============================================================================
+TEST(UrdfParser, VisualMaterialGlobalOverridesLocalColor)
+{
+  const std::string urdfXml = R"(
+<robot name="material_override">
+  <material name="shared">
+    <color rgba="0.1 0.2 0.3 0.4" />
+  </material>
+  <link name="link">
+    <visual name="shared_visual">
+      <geometry>
+        <box size="0.1 0.1 0.1" />
+      </geometry>
+      <material name="shared">
+        <color rgba="0.9 0.8 0.7 0.6" />
+      </material>
+    </visual>
+    <visual name="local_visual">
+      <geometry>
+        <box size="0.2 0.2 0.2" />
+      </geometry>
+      <material name="local">
+        <color rgba="0.4 0.5 0.6 0.7" />
+      </material>
+    </visual>
+  </link>
+</robot>
+  )";
+
+  const auto tempPath
+      = writeTempFileWithPrefix(urdfXml, "urdf_material_override", ".urdf");
+  auto skeleton = dart::io::readSkeleton(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+
+  ASSERT_NE(skeleton, nullptr);
+  auto* body = skeleton->getBodyNode("link");
+  ASSERT_NE(body, nullptr);
+
+  bool foundShared = false;
+  bool foundLocal = false;
+  body->eachShapeNodeWith<dynamics::VisualAspect>(
+      [&](dynamics::ShapeNode* node) {
+        const auto* visual = node->getVisualAspect();
+        ASSERT_NE(visual, nullptr);
+        if (node->getName() == "shared_visual") {
+          foundShared = true;
+          EXPECT_TRUE(
+              visual->getRGBA().isApprox(Eigen::Vector4d(0.1, 0.2, 0.3, 0.4)));
+        } else if (node->getName() == "local_visual") {
+          foundLocal = true;
+          EXPECT_TRUE(
+              visual->getRGBA().isApprox(Eigen::Vector4d(0.4, 0.5, 0.6, 0.7)));
+        }
+      });
+  EXPECT_TRUE(foundShared);
+  EXPECT_TRUE(foundLocal);
+}
+
+//==============================================================================
+TEST(UrdfParser, CollisionNameAndOriginParsed)
+{
+  const std::string urdfXml = R"(
+<robot name="collision_details">
+  <link name="base">
+    <collision name="col1">
+      <origin xyz="0.1 0.2 0.3" rpy="0 0 0" />
+      <geometry>
+        <box size="0.1 0.1 0.1" />
+      </geometry>
+    </collision>
+  </link>
+</robot>
+  )";
+
+  const auto tempPath
+      = writeTempFileWithPrefix(urdfXml, "urdf_collision_details", ".urdf");
+  auto skeleton = dart::io::readSkeleton(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+
+  ASSERT_NE(skeleton, nullptr);
+  auto* body = skeleton->getBodyNode("base");
+  ASSERT_NE(body, nullptr);
+
+  bool foundCollision = false;
+  body->eachShapeNodeWith<dynamics::CollisionAspect>(
+      [&](dynamics::ShapeNode* node) {
+        if (node->getName() != "col1") {
+          return;
+        }
+        foundCollision = true;
+        const auto translation = node->getRelativeTransform().translation();
+        EXPECT_TRUE(translation.isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+      });
+  EXPECT_TRUE(foundCollision);
+}
+#endif

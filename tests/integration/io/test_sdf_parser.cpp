@@ -35,7 +35,9 @@
 #include "dart/common/uri.hpp"
 #include "dart/dynamics/ball_joint.hpp"
 #include "dart/dynamics/box_shape.hpp"
+#include "dart/dynamics/capsule_shape.hpp"
 #include "dart/dynamics/cylinder_shape.hpp"
+#include "dart/dynamics/ellipsoid_shape.hpp"
 #include "dart/dynamics/free_joint.hpp"
 #include "dart/dynamics/mesh_shape.hpp"
 #include "dart/dynamics/prismatic_joint.hpp"
@@ -242,6 +244,21 @@ std::filesystem::path writeTempFile(
   const auto tempPath
       = std::filesystem::temp_directory_path()
         / ("test_" + tag + "_" + std::to_string(counter++) + extension);
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+  return tempPath;
+}
+
+std::filesystem::path writeTempFileWithPrefix(
+    const std::string& xml,
+    const std::string& tag,
+    const std::string& extension)
+{
+  static std::size_t counter = 0;
+  const auto tempPath
+      = std::filesystem::path("/tmp")
+        / ("dart_test_" + tag + "_" + std::to_string(counter++) + extension);
   std::ofstream output(tempPath.string(), std::ios::binary);
   output << xml;
   output.close();
@@ -2874,4 +2891,117 @@ TEST(SdfParser, Revolute2JointUpperLowerLimitInitials)
   EXPECT_NEAR(joint->getRestPosition(0), -0.4, 1e-9);
   EXPECT_NEAR(joint->getPosition(1), 0.2, 1e-9);
   EXPECT_NEAR(joint->getRestPosition(1), 0.2, 1e-9);
+}
+
+//==============================================================================
+TEST(SdfParser, MjcfGeomJointSiteAndTendonParsing)
+{
+  const std::string mjcfXml = R"(
+<mujoco model="parser_coverage">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <joint name="root_free" type="free" />
+      <geom name="root_capsule" type="capsule" size="0.05 0.2" />
+      <site name="root_site" type="ellipsoid" size="0.02 0.03 0.04"
+            rgba="0.2 0.3 0.4 1" />
+      <body name="hinge_body" pos="0 0 0.1">
+        <joint name="hinge_joint" type="hinge" axis="0 1 0" />
+        <geom name="hinge_cylinder" type="cylinder" size="0.02 0.3" />
+      </body>
+      <body name="slide_body" pos="0 0 0.2">
+        <joint name="slide_joint" type="slide" axis="1 0 0"
+               range="-0.1 0.2" />
+        <geom name="slide_ellipsoid" type="ellipsoid" size="0.05 0.06 0.07" />
+      </body>
+      <body name="ball_body" pos="0 0 0.3">
+        <joint name="ball_joint" type="ball" />
+        <geom name="ball_sphere" type="sphere" size="0.08" />
+      </body>
+    </body>
+  </worldbody>
+  <tendon>
+    <spatial name="tendon1">
+      <site site="root_site" />
+    </spatial>
+  </tendon>
+  <actuator>
+    <motor name="motor1" joint="hinge_joint" gear="1" />
+  </actuator>
+</mujoco>
+  )";
+
+  const auto tempPath
+      = writeTempFileWithPrefix(mjcfXml, "mjcf_coverage", ".xml");
+  auto world = dart::io::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+
+  ASSERT_NE(world, nullptr);
+  const auto skeleton = world->getSkeleton("root");
+  ASSERT_NE(skeleton, nullptr);
+
+  auto* root = skeleton->getBodyNode("root");
+  ASSERT_NE(root, nullptr);
+  EXPECT_NE(
+      dynamic_cast<dynamics::FreeJoint*>(root->getParentJoint()), nullptr);
+
+  auto* hinge = skeleton->getBodyNode("hinge_body");
+  ASSERT_NE(hinge, nullptr);
+  EXPECT_NE(
+      dynamic_cast<dynamics::RevoluteJoint*>(hinge->getParentJoint()), nullptr);
+
+  auto* slide = skeleton->getBodyNode("slide_body");
+  ASSERT_NE(slide, nullptr);
+  EXPECT_NE(
+      dynamic_cast<dynamics::PrismaticJoint*>(slide->getParentJoint()),
+      nullptr);
+
+  auto* ball = skeleton->getBodyNode("ball_body");
+  ASSERT_NE(ball, nullptr);
+  EXPECT_NE(
+      dynamic_cast<dynamics::BallJoint*>(ball->getParentJoint()), nullptr);
+
+  bool foundCapsule = false;
+  bool foundCylinder = false;
+  bool foundEllipsoid = false;
+  for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
+    auto* body = skeleton->getBodyNode(i);
+    if (!body) {
+      continue;
+    }
+    const auto numShapes = body->getNumShapeNodes();
+    for (std::size_t j = 0; j < numShapes; ++j) {
+      const auto* node = body->getShapeNode(j);
+      if (!node || !node->getShape()) {
+        continue;
+      }
+      if (node->getShape()->is<dynamics::CapsuleShape>()) {
+        foundCapsule = true;
+      } else if (node->getShape()->is<dynamics::CylinderShape>()) {
+        foundCylinder = true;
+      } else if (node->getShape()->is<dynamics::EllipsoidShape>()) {
+        foundEllipsoid = true;
+      }
+    }
+  }
+
+  EXPECT_TRUE(foundCapsule);
+  EXPECT_TRUE(foundCylinder);
+  EXPECT_TRUE(foundEllipsoid);
+
+  bool foundSite = false;
+  const auto rootShapes = root->getNumShapeNodes();
+  for (std::size_t i = 0; i < rootShapes; ++i) {
+    const auto* node = root->getShapeNode(i);
+    if (!node || node->getName() != "site:root_site") {
+      continue;
+    }
+    ASSERT_NE(node->getShape(), nullptr);
+    EXPECT_TRUE(node->getShape()->is<dynamics::EllipsoidShape>());
+    foundSite = true;
+  }
+  EXPECT_TRUE(foundSite);
 }

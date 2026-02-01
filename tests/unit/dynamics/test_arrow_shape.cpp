@@ -212,6 +212,44 @@ TEST(ArrowShapeTest, PropertiesClampedToValidRange)
 }
 
 //==============================================================================
+TEST(ArrowShapeTest, SetPropertiesClampsValues)
+{
+  ArrowShape arrow(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitX());
+
+  ArrowShape::Properties props;
+  props.mHeadLengthScale = -0.4;
+  props.mMinHeadLength = -1.0;
+  props.mMaxHeadLength = -2.0;
+  props.mHeadRadiusScale = 0.2;
+  props.mDoubleArrow = true;
+
+  arrow.setProperties(props);
+
+  const auto& clamped = arrow.getProperties();
+  EXPECT_GE(clamped.mHeadLengthScale, 0.0);
+  EXPECT_GE(clamped.mMinHeadLength, 0.0);
+  EXPECT_GE(clamped.mMaxHeadLength, 0.0);
+  EXPECT_GE(clamped.mHeadRadiusScale, 1.0);
+  EXPECT_TRUE(clamped.mDoubleArrow);
+}
+
+//==============================================================================
+TEST(ArrowShapeTest, SetPositionsVeryShortArrow)
+{
+  ArrowShape arrow(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitZ());
+
+  const Eigen::Vector3d tail(0.0, 0.0, 0.0);
+  const Eigen::Vector3d head(1e-8, 0.0, 0.0);
+  arrow.setPositions(tail, head);
+
+  const auto mesh = arrow.getTriMesh();
+  ASSERT_NE(mesh, nullptr);
+  EXPECT_GT(mesh->getVertices().size(), 0u);
+  const auto extents = arrow.getBoundingBox().computeFullExtents();
+  EXPECT_TRUE(extents.array().isFinite().all());
+}
+
+//==============================================================================
 TEST(ArrowShapeTest, SingleArrowMeshGeneration)
 {
   const Eigen::Vector3d tail(0.0, 0.0, 0.0);

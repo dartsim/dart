@@ -1782,6 +1782,58 @@ TEST(MeshShapeTest, ConvertToAssimpMeshSubmeshFaceFormats)
   EXPECT_FALSE(plainScene->mMeshes[0]->HasTextureCoords(0));
 }
 
+TEST(MeshShapeTest, ConvertToAssimpMeshReturnsNullWithoutTriangles)
+{
+  auto triMesh = std::make_shared<math::TriMesh<double>>();
+  triMesh->addVertex(0.0, 0.0, 0.0);
+  triMesh->addVertex(1.0, 0.0, 0.0);
+  triMesh->addVertex(0.0, 1.0, 0.0);
+
+  class MeshShapeHarness final : public dynamics::MeshShape
+  {
+  public:
+    using dynamics::MeshShape::MeshShape;
+    const aiScene* callConvertToAssimpMesh() const
+    {
+      return convertToAssimpMesh();
+    }
+  };
+
+  MeshShapeHarness shape(Eigen::Vector3d::Ones(), triMesh, common::Uri());
+  const aiScene* scene = shape.callConvertToAssimpMesh();
+  EXPECT_EQ(scene, nullptr);
+}
+
+TEST(MeshShapeTest, ConvertToAssimpMeshHandlesOutOfRangeMaterialIndex)
+{
+  auto triMesh = std::make_shared<math::TriMesh<double>>();
+  triMesh->addVertex(0.0, 0.0, 0.0);
+  triMesh->addVertex(1.0, 0.0, 0.0);
+  triMesh->addVertex(0.0, 1.0, 0.0);
+  triMesh->addTriangle(0, 1, 2);
+
+  SubmeshMaterialMeshShape shape(
+      Eigen::Vector3d::Ones(), triMesh, common::Uri());
+
+  std::vector<dynamics::MeshMaterial> materials(2);
+  materials[0].diffuse = Eigen::Vector4f(0.4f, 0.4f, 0.4f, 1.0f);
+  materials[1].diffuse = Eigen::Vector4f(0.1f, 0.7f, 0.2f, 1.0f);
+  shape.setMaterials(std::move(materials));
+
+  std::vector<SubmeshMaterialMeshShape::SubMeshRange> ranges(1);
+  ranges[0].vertexOffset = 0u;
+  ranges[0].vertexCount = 3u;
+  ranges[0].triangleOffset = 0u;
+  ranges[0].triangleCount = 1u;
+  ranges[0].materialIndex = 5u;
+  shape.setSubMeshRanges(std::move(ranges));
+
+  const aiScene* scene = shape.callConvertToAssimpMesh();
+  ASSERT_NE(scene, nullptr);
+  EXPECT_GE(scene->mNumMaterials, 1u);
+  EXPECT_GE(scene->mNumMeshes, 1u);
+}
+
 TEST(MeshShapeTest, LoadMeshFromMemoryResourceWithPathResolution)
 {
   const std::string objData

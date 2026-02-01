@@ -396,6 +396,25 @@ TEST(ZeroDofJointTest, ConstLimitGetters)
 }
 
 //==============================================================================
+TEST(ZeroDofJointTest, CommandsPositionsAndVelocities)
+{
+  auto skel = createSkeletonWithJoint<WeldJoint>("weld_zero_ops");
+  Joint* joint = skel->getJoint(0);
+
+  joint->setCommand(0, 5.0);
+  joint->setPosition(0, 1.2);
+  joint->setVelocity(0, -3.4);
+
+  EXPECT_DOUBLE_EQ(joint->getCommand(0), 0.0);
+  EXPECT_DOUBLE_EQ(joint->getPosition(0), 0.0);
+  EXPECT_DOUBLE_EQ(joint->getVelocity(0), 0.0);
+
+  EXPECT_EQ(joint->getCommands().size(), 0);
+  EXPECT_EQ(joint->getPositions().size(), 0);
+  EXPECT_EQ(joint->getVelocities().size(), 0);
+}
+
+//==============================================================================
 TEST(JointTest, SetPosition)
 {
   auto skel = createSkeletonWithJoint<RevoluteJoint>("revolute");
@@ -1393,6 +1412,27 @@ TEST(FreeJointTest, ConvertToTransformWithCharts)
   EXPECT_TRUE(tfExpMap.translation().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
   EXPECT_TRUE(tfXYZ.translation().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
   EXPECT_TRUE(tfZYX.translation().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+}
+
+//==============================================================================
+TEST(FreeJointTest, ConvertWithInvalidChart)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0.3, -0.4, 0.5);
+  tf.linear()
+      = Eigen::AngleAxisd(0.2, Eigen::Vector3d::UnitY()).toRotationMatrix();
+
+  const auto invalidChart = static_cast<FreeJoint::CoordinateChart>(-1);
+  Eigen::Vector6d positions = FreeJoint::convertToPositions(tf, invalidChart);
+  EXPECT_TRUE(positions.head<3>().isZero(1e-12));
+  EXPECT_TRUE(positions.tail<3>().isApprox(tf.translation(), 1e-12));
+
+  Eigen::Vector6d raw;
+  raw << 0.9, -0.8, 0.7, -1.0, 2.0, -3.0;
+  Eigen::Isometry3d tfInvalid
+      = FreeJoint::convertToTransform(raw, invalidChart);
+  EXPECT_TRUE(tfInvalid.linear().isApprox(Eigen::Matrix3d::Identity(), 1e-12));
+  EXPECT_TRUE(tfInvalid.translation().isApprox(raw.tail<3>(), 1e-12));
 }
 
 //==============================================================================
