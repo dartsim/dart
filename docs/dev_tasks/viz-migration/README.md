@@ -4,7 +4,7 @@
 
 - [x] Phase 0: Architecture design and API specification
 - [x] Phase 1: Raylib World Viewer MVP (display World, camera, primitives, stepping)
-- [ ] Phase 2: Interaction parity (input, picking, selection)
+- [x] Phase 2: Interaction parity (input, picking, selection)
 - [ ] Phase 3: Manipulation tools parity (drag-and-drop, IK)
 - [ ] Phase 4: UI overlay parity (ImGui integration)
 - [ ] Phase 5: Migration of shipped content (examples/tutorials)
@@ -39,6 +39,5 @@ backend. The new API coexists with the OSG code in `dart::gui` during migration.
 
 ## Immediate Next Steps
 
-1. Commit Phase 0+1 work
-2. Proceed to Phase 2: picking/selection via ray cast
-3. Add orbit camera controls (Raylib `UpdateCamera` integration)
+1. Proceed to Phase 3: manipulation tools parity (drag-and-drop, IK)
+2. Or Phase 4: UI overlay parity (ImGui integration)
