@@ -51,6 +51,8 @@ public:
   void endFrame() override;
   void shutdown() override;
   std::vector<InputEvent> pollEvents() override;
+  std::optional<HitResult> pickNode(
+      const Scene& scene, float screen_x, float screen_y) override;
 
 private:
   ViewerConfig config_{};

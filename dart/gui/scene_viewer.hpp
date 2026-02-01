@@ -34,6 +34,7 @@
 #define DART_GUI_SCENEVIEWER_HPP_
 
 #include <dart/gui/export.hpp>
+#include <dart/gui/orbit_camera_controller.hpp>
 #include <dart/gui/scene.hpp>
 #include <dart/gui/scene_extractor.hpp>
 #include <dart/gui/viewer_backend.hpp>
@@ -75,9 +76,12 @@ public:
       double size = 3.0);
   void clearDebug();
 
+  std::optional<uint64_t> selectedNodeId() const;
+
 private:
   std::unique_ptr<ViewerBackend> backend_;
   SceneExtractor extractor_;
+  OrbitCameraController camera_controller_;
   std::shared_ptr<dart::simulation::World> world_;
   Scene scene_;
   bool paused_ = false;

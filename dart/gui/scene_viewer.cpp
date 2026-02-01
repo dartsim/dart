@@ -115,6 +115,9 @@ bool SceneViewer::frame()
   backend_->endFrame();
 
   auto events = backend_->pollEvents();
+
+  camera_controller_.handleEvents(events, scene_.camera);
+
   for (const auto& event : events) {
     if (const auto* keyEvent = std::get_if<KeyEvent>(&event)) {
       if (!keyEvent->pressed) {
@@ -128,8 +131,22 @@ bool SceneViewer::frame()
         case Key::Enter:
           step();
           break;
+        case Key::Escape:
+          scene_.selected_node_id = std::nullopt;
+          break;
         default:
           break;
+      }
+    }
+
+    if (const auto* mouseEvent = std::get_if<MouseButtonEvent>(&event)) {
+      if (mouseEvent->button == MouseButton::Left && mouseEvent->pressed) {
+        auto hit = backend_->pickNode(scene_, mouseEvent->x, mouseEvent->y);
+        if (hit) {
+          scene_.selected_node_id = hit->node_id;
+        } else {
+          scene_.selected_node_id = std::nullopt;
+        }
       }
     }
   }
@@ -202,6 +219,11 @@ void SceneViewer::clearDebug()
 {
   scene_.debug_lines.clear();
   scene_.debug_points.clear();
+}
+
+std::optional<uint64_t> SceneViewer::selectedNodeId() const
+{
+  return scene_.selected_node_id;
 }
 
 } // namespace gui

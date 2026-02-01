@@ -37,6 +37,7 @@
 #include <dart/gui/input_event.hpp>
 #include <dart/gui/scene.hpp>
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -63,6 +64,14 @@ public:
   virtual void endFrame() = 0;
   virtual void shutdown() = 0;
   virtual std::vector<InputEvent> pollEvents() = 0;
+
+  /// Ray-cast pick: returns the nearest hit among scene nodes, if any.
+  /// @param scene The current scene snapshot
+  /// @param screen_x Mouse X in screen coordinates
+  /// @param screen_y Mouse Y in screen coordinates
+  virtual std::optional<HitResult> pickNode(
+      const Scene& scene, float screen_x, float screen_y)
+      = 0;
 };
 
 } // namespace gui

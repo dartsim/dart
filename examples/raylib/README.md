@@ -2,10 +2,18 @@
 
 ## Summary
 
-- Goal: exercise the experimental Raylib backend window.
-- Concepts/APIs: Raylib integration, basic render loop.
-- Expected output: a Raylib window showing DART and Raylib version strings.
-- Controls: close the window to exit; `--frames` limits frame count.
+- Goal: exercise the experimental Raylib backend with physics scene.
+- Concepts/APIs: Raylib integration, SceneViewer, orbit camera, picking.
+- Expected output: a Raylib window showing falling shapes on a ground plane.
+- Controls:
+  - **Right-drag**: orbit camera
+  - **Middle-drag**: pan camera
+  - **Scroll**: zoom in/out
+  - **Left-click**: select object (yellow wireframe highlight)
+  - **Escape**: deselect
+  - **Space**: pause/unpause simulation
+  - **Enter**: single-step (while paused)
+  - `--frames N`: run for N frames then exit
 
 ## Notes
 

@@ -105,6 +105,24 @@ int main(int argc, char* argv[])
   sphereJoint->setTransformFromParentBodyNode(sphereTf);
   world->addSkeleton(sphereSkel);
 
+  // Create a cylinder
+  auto cylSkel = dart::dynamics::Skeleton::create("cylinder");
+  auto [cylJoint, cylBody]
+      = cylSkel->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  auto cylShape = std::make_shared<dart::dynamics::CylinderShape>(0.12, 0.5);
+  auto cylShapeNode = cylBody->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect>(cylShape);
+  cylShapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.3, 0.8, 0.3));
+  dart::dynamics::Inertia cylInertia;
+  cylInertia.setMass(0.8);
+  cylInertia.setMoment(cylShape->computeInertia(0.8));
+  cylBody->setInertia(cylInertia);
+  Eigen::Isometry3d cylTf = Eigen::Isometry3d::Identity();
+  cylTf.translation() = Eigen::Vector3d(-0.4, 0.3, 1.5);
+  cylJoint->setTransformFromParentBodyNode(cylTf);
+  world->addSkeleton(cylSkel);
+
   // Create and run the viewer
   auto config = dart::gui::ViewerConfig{};
   config.width = 1280;

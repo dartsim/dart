@@ -435,11 +435,99 @@ void RaylibBackend::render(const Scene& scene)
         toColor(point.color));
   }
 
+  // Selection highlight: draw yellow wireframe overlay on selected node
+  if (scene.selected_node_id.has_value()) {
+    const uint64_t selectedId = scene.selected_node_id.value();
+    for (const auto& node : scene.nodes) {
+      if (node.id != selectedId || !node.visible) {
+        continue;
+      }
+
+      rlPushMatrix();
+      const Matrix selTransform = eigenToRaylib(node.transform);
+      rlMultMatrixf(reinterpret_cast<const float*>(&selTransform));
+
+      std::visit(
+          [&](const auto& shape) {
+            using ShapeT = std::decay_t<decltype(shape)>;
+            if constexpr (std::is_same_v<ShapeT, BoxData>) {
+              Vector3 size{
+                  static_cast<float>(shape.size.x()),
+                  static_cast<float>(shape.size.y()),
+                  static_cast<float>(shape.size.z())};
+              DrawCubeWiresV(Vector3{0.0f, 0.0f, 0.0f}, size, YELLOW);
+            } else if constexpr (std::is_same_v<ShapeT, SphereData>) {
+              DrawSphereWires(
+                  Vector3{0.0f, 0.0f, 0.0f},
+                  static_cast<float>(shape.radius),
+                  12,
+                  12,
+                  YELLOW);
+            } else if constexpr (std::is_same_v<ShapeT, CylinderData>) {
+              rlPushMatrix();
+              rlRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
+              DrawCylinderWires(
+                  Vector3{0.0f, 0.0f, 0.0f},
+                  static_cast<float>(shape.radius),
+                  static_cast<float>(shape.radius),
+                  static_cast<float>(shape.height),
+                  24,
+                  YELLOW);
+              rlPopMatrix();
+            } else if constexpr (std::is_same_v<ShapeT, CapsuleData>) {
+              rlPushMatrix();
+              rlRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
+              const float halfH = static_cast<float>(shape.height) * 0.5f;
+              DrawCapsuleWires(
+                  Vector3{0.0f, -halfH, 0.0f},
+                  Vector3{0.0f, halfH, 0.0f},
+                  static_cast<float>(shape.radius),
+                  16,
+                  16,
+                  YELLOW);
+              rlPopMatrix();
+            } else if constexpr (std::is_same_v<ShapeT, ConeData>) {
+              rlPushMatrix();
+              rlRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
+              DrawCylinderWires(
+                  Vector3{0.0f, 0.0f, 0.0f},
+                  0.0f,
+                  static_cast<float>(shape.radius),
+                  static_cast<float>(shape.height),
+                  24,
+                  YELLOW);
+              rlPopMatrix();
+            } else if constexpr (std::is_same_v<ShapeT, EllipsoidData>) {
+              rlPushMatrix();
+              rlScalef(
+                  static_cast<float>(shape.radii.x()),
+                  static_cast<float>(shape.radii.y()),
+                  static_cast<float>(shape.radii.z()));
+              DrawSphereWires(Vector3{0.0f, 0.0f, 0.0f}, 1.0f, 12, 12, YELLOW);
+              rlPopMatrix();
+            }
+          },
+          node.shape);
+
+      rlPopMatrix();
+      break;
+    }
+  }
+
   EndMode3D();
 
   DrawText(TextFormat("FPS: %d", GetFPS()), 20, 20, 20, DARKGRAY);
   DrawText(TextFormat("Sim: %.2f", scene.sim_time), 20, 45, 20, DARKBLUE);
   DrawText(scene.paused ? "Paused" : "Running", 20, 70, 20, DARKGREEN);
+
+  if (scene.selected_node_id.has_value()) {
+    DrawText(
+        TextFormat("Selected: %llu", scene.selected_node_id.value()),
+        20,
+        95,
+        20,
+        ORANGE);
+  }
 
   EndDrawing();
 }
@@ -521,6 +609,115 @@ std::vector<InputEvent> RaylibBackend::pollEvents()
   }
 
   return events;
+}
+
+namespace {
+
+BoundingBox computeAABB(
+    const SceneNode& node, const Eigen::Isometry3d& transform)
+{
+  Eigen::Vector3d halfExtent = Eigen::Vector3d::Zero();
+
+  std::visit(
+      [&halfExtent](const auto& shape) {
+        using ShapeT = std::decay_t<decltype(shape)>;
+        if constexpr (std::is_same_v<ShapeT, BoxData>) {
+          halfExtent = shape.size * 0.5;
+        } else if constexpr (std::is_same_v<ShapeT, SphereData>) {
+          halfExtent.setConstant(shape.radius);
+        } else if constexpr (std::is_same_v<ShapeT, CylinderData>) {
+          halfExtent
+              = Eigen::Vector3d(shape.radius, shape.radius, shape.height * 0.5);
+        } else if constexpr (std::is_same_v<ShapeT, CapsuleData>) {
+          const double r = shape.radius;
+          const double h = shape.height * 0.5 + r;
+          halfExtent = Eigen::Vector3d(r, r, h);
+        } else if constexpr (std::is_same_v<ShapeT, ConeData>) {
+          halfExtent
+              = Eigen::Vector3d(shape.radius, shape.radius, shape.height * 0.5);
+        } else if constexpr (std::is_same_v<ShapeT, EllipsoidData>) {
+          halfExtent = shape.radii;
+        } else if constexpr (std::is_same_v<ShapeT, MeshData>) {
+          Eigen::Vector3f minV
+              = Eigen::Vector3f::Constant(std::numeric_limits<float>::max());
+          Eigen::Vector3f maxV
+              = Eigen::Vector3f::Constant(std::numeric_limits<float>::lowest());
+          for (const auto& v : shape.vertices) {
+            minV = minV.cwiseMin(v);
+            maxV = maxV.cwiseMax(v);
+          }
+          halfExtent = ((maxV - minV) * 0.5f).cast<double>();
+        }
+        // PlaneData and LineData: skip picking
+      },
+      node.shape);
+
+  if (halfExtent.isZero()) {
+    return BoundingBox{Vector3{0.0f, 0.0f, 0.0f}, Vector3{0.0f, 0.0f, 0.0f}};
+  }
+
+  const Eigen::Vector3d center = transform.translation();
+  const Eigen::Matrix3d rot = transform.rotation();
+
+  // Compute axis-aligned extent from oriented bounding box
+  Eigen::Vector3d aaExtent = Eigen::Vector3d::Zero();
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      aaExtent[i] += std::abs(rot(i, j)) * halfExtent[j];
+    }
+  }
+
+  const Eigen::Vector3d minCorner = center - aaExtent;
+  const Eigen::Vector3d maxCorner = center + aaExtent;
+  return BoundingBox{toVector3(minCorner), toVector3(maxCorner)};
+}
+
+} // namespace
+
+std::optional<HitResult> RaylibBackend::pickNode(
+    const Scene& scene, float screen_x, float screen_y)
+{
+  if (!initialized_) {
+    return std::nullopt;
+  }
+
+  const Camera3D camera = toRaylibCamera(scene.camera);
+  const Ray ray = GetScreenToWorldRay(Vector2{screen_x, screen_y}, camera);
+
+  std::optional<HitResult> nearest;
+  double nearestDist = std::numeric_limits<double>::max();
+
+  for (const auto& node : scene.nodes) {
+    if (!node.visible) {
+      continue;
+    }
+
+    const BoundingBox aabb = computeAABB(node, node.transform);
+
+    // Skip zero-size AABBs (planes, lines, etc.)
+    if (aabb.min.x == aabb.max.x && aabb.min.y == aabb.max.y
+        && aabb.min.z == aabb.max.z) {
+      continue;
+    }
+
+    const RayCollision collision = GetRayCollisionBox(ray, aabb);
+    if (collision.hit) {
+      const double dist = static_cast<double>(collision.distance);
+      if (dist < nearestDist) {
+        nearestDist = dist;
+        HitResult hit;
+        hit.node_id = node.id;
+        hit.distance = dist;
+        hit.point = Eigen::Vector3d(
+            collision.point.x, collision.point.y, collision.point.z);
+        hit.normal = Eigen::Vector3d(
+            collision.normal.x, collision.normal.y, collision.normal.z);
+        nearest = hit;
+      }
+    }
+  }
+
+  return nearest;
 }
 
 } // namespace gui
