@@ -11,6 +11,7 @@
 
 using namespace dart;
 using namespace dart::dynamics;
+using namespace dart::simulation;
 
 namespace {
 
@@ -65,6 +66,18 @@ private:
   std::string mName;
 };
 
+class FreeJointAccessor final : public FreeJoint
+{
+public:
+  using FreeJoint::FreeJoint;
+  using Properties = FreeJoint::Properties;
+
+  const Eigen::Isometry3d& getQPublic() const
+  {
+    return getQ();
+  }
+};
+
 } // namespace
 
 //==============================================================================
@@ -111,6 +124,37 @@ TEST(FreeJointTest, ConvertToTransform)
   Eigen::Isometry3d tf = FreeJoint::convertToTransform(positions);
 
   EXPECT_TRUE(tf.translation().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+}
+
+//==============================================================================
+TEST(FreeJointTest, FrameVelocityAccelerationAndLazyQ)
+{
+  auto skel = Skeleton::create("free_frames");
+  auto pair = skel->createJointAndBodyNodePair<FreeJointAccessor>();
+  auto* joint = pair.first;
+  auto* body = pair.second;
+
+  Eigen::Vector6d spatialVelocity;
+  spatialVelocity << 0.1, 0.2, 0.3, 1.0, 2.0, 3.0;
+  joint->setRelativeSpatialVelocity(spatialVelocity, Frame::World());
+
+  const Eigen::Vector6d expectedVelocity
+      = math::AdR(Frame::World()->getTransform(body), spatialVelocity);
+  EXPECT_TRUE(joint->getRelativeSpatialVelocity().isApprox(expectedVelocity));
+
+  Eigen::Vector6d spatialAcceleration;
+  spatialAcceleration << -0.2, 0.4, -0.6, 0.5, -1.0, 1.5;
+  joint->setRelativeSpatialAcceleration(spatialAcceleration, Frame::World());
+
+  const Eigen::Vector6d expectedAcceleration
+      = math::AdR(Frame::World()->getTransform(body), spatialAcceleration);
+  EXPECT_TRUE(
+      joint->getRelativeSpatialAcceleration().isApprox(expectedAcceleration));
+
+  const Eigen::Vector6d positions = Eigen::Vector6d::LinSpaced(6, 0.1, 0.6);
+  joint->setPositions(positions);
+  const Eigen::Isometry3d& q = joint->getQPublic();
+  EXPECT_TRUE(q.isApprox(FreeJoint::convertToTransform(positions)));
 }
 
 //==============================================================================

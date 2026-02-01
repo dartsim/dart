@@ -288,6 +288,31 @@ TEST(ArrowShapeTest, DoubleArrowMeshGeneration)
 }
 
 //==============================================================================
+TEST(ArrowShapeTest, DoubleArrowGeneratesFullMesh)
+{
+  ArrowShape::Properties props;
+  props.mDoubleArrow = true;
+  props.mRadius = 0.05;
+  props.mHeadLengthScale = 0.3;
+  props.mHeadRadiusScale = 2.0;
+
+  ArrowShape arrow(
+      Eigen::Vector3d::Zero(), Eigen::Vector3d(0.0, 0.0, 2.0), props);
+
+  const auto mesh = arrow.getTriMesh();
+  ASSERT_NE(mesh, nullptr);
+  EXPECT_GT(mesh->getTriangles().size(), 20u);
+  EXPECT_GT(mesh->getVertices().size(), 10u);
+
+  double maxRadius = 0.0;
+  for (const auto& vertex : mesh->getVertices()) {
+    maxRadius = std::max(maxRadius, vertex.head<2>().norm());
+  }
+  EXPECT_GT(maxRadius, props.mRadius * 1.5);
+  EXPECT_FALSE(arrow.getMaterials().empty());
+}
+
+//==============================================================================
 TEST(ArrowShapeTest, MeshConversions)
 {
   const Eigen::Vector3d tail(0.0, 0.0, 0.0);

@@ -31,7 +31,11 @@
  */
 
 #include "../../helpers/gtest_utils.hpp"
+#define private public
 #include "dart/common/uri.hpp"
+#undef private
+
+#include <dart/all.hpp>
 
 #include <gtest/gtest.h>
 
@@ -382,6 +386,35 @@ TEST(UriHelpers, getRelativeUri)
   ASSERT_TRUE(mergedUri.fromRelativeUri(baseUri, "http:g", false));
   EXPECT_EQ("http://a/b/c/g", mergedUri.toString());
 #endif
+}
+
+TEST(UriHelpers, getRelativeUri_StringViewOverload)
+{
+  const std::string base = "http://example.com/a/b/c";
+  const std::string relative = "../d/./e";
+
+  const std::string merged
+      = Uri::getRelativeUri(std::string_view(base), std::string_view(relative));
+
+  EXPECT_EQ(merged, "http://example.com/a/d/e");
+}
+
+TEST(UriHelpers, removeDotSegments_CoversRelativePrefixes)
+{
+  EXPECT_EQ(Uri::removeDotSegments(".././a/../b"), "/b");
+}
+
+TEST(UriHelpers, removeDotSegments_RemovesDotAndDotDotSegments)
+{
+  EXPECT_EQ(Uri::removeDotSegments("/.."), "/");
+  EXPECT_EQ(Uri::removeDotSegments(".."), "");
+}
+
+TEST(UriHelpers, fromRelativeUri_StringViewOverload)
+{
+  Uri mergedUri;
+  ASSERT_TRUE(mergedUri.fromRelativeUri("http://example.com/a/b/", "c", true));
+  EXPECT_EQ(mergedUri.toString(), "http://example.com/a/b/c");
 }
 
 TEST(UriHelpers, UriComponentAccessors)

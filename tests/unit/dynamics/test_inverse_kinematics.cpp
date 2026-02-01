@@ -1341,6 +1341,61 @@ TEST(InverseKinematics, ErrorMethodSizeMismatchAndCaching)
   EXPECT_TRUE(desired.matrix().array().isFinite().all());
 }
 
+TEST(InverseKinematics, ErrorMethodDesiredTransformAndAnalyticalSolutions)
+{
+  auto chain = makeIkChain();
+  auto ik = chain.endEffector->createIK();
+  ASSERT_NE(ik, nullptr);
+
+  class CustomErrorMethod final : public InverseKinematics::ErrorMethod
+  {
+  public:
+    explicit CustomErrorMethod(InverseKinematics* ik)
+      : InverseKinematics::ErrorMethod(
+            ik, "CustomError", InverseKinematics::ErrorMethod::Properties())
+    {
+    }
+
+    Eigen::Vector6d computeError() override
+    {
+      return Eigen::Vector6d::Zero();
+    }
+
+    Eigen::Isometry3d computeDesiredTransform(
+        const Eigen::Isometry3d& currentTf,
+        const Eigen::Vector6d& error) override
+    {
+      return InverseKinematics::ErrorMethod::computeDesiredTransform(
+          currentTf, error);
+    }
+
+    std::unique_ptr<InverseKinematics::ErrorMethod> clone(
+        InverseKinematics* newIk) const override
+    {
+      return std::make_unique<CustomErrorMethod>(newIk);
+    }
+  };
+
+  auto target
+      = std::make_shared<SimpleFrame>(Frame::World(), "ik_target_desired");
+  Eigen::Isometry3d targetTf = chain.endEffector->getWorldTransform();
+  targetTf.translation() += Eigen::Vector3d(0.05, 0.02, -0.03);
+  target->setTransform(targetTf);
+  ik->setTarget(target);
+
+  auto& error = ik->setErrorMethod<CustomErrorMethod>();
+  const Eigen::Vector6d zeroError = Eigen::Vector6d::Zero();
+  const auto desired = error.computeDesiredTransform(
+      chain.endEffector->getWorldTransform(), zeroError);
+  EXPECT_TRUE(desired.matrix().isApprox(targetTf.matrix()));
+
+  auto& analytical = ik->setGradientMethod<DummyAnalytical>();
+  const auto solutions = analytical.getSolutions();
+  ASSERT_EQ(solutions.size(), 1u);
+  EXPECT_EQ(
+      solutions[0].mConfig.size(), static_cast<int>(ik->getDofs().size()));
+}
+
 TEST(InverseKinematics, TaskSpaceRegionCenterBoundsAndOffset)
 {
   auto fixture = makeIkSkeleton();
@@ -1566,6 +1621,26 @@ TEST(HierarchicalIK, CompositeIgnoresInactiveModulesInNullspace)
 
   const auto nullspaces = composite->computeNullSpaces();
   EXPECT_EQ(nullspaces.size(), composite->getIKHierarchy().size());
+}
+
+TEST(HierarchicalIK, ObjectiveAccessorsNonConst)
+{
+  auto chain = makeIkChain();
+  auto composite = CompositeIK::create(chain.skeleton);
+  ASSERT_NE(composite, nullptr);
+
+  auto objective = std::make_shared<SimpleHierarchicalObjective>(composite);
+  auto nullObjective = std::make_shared<SimpleHierarchicalObjective>(composite);
+
+  composite->setObjective(objective);
+  composite->setNullSpaceObjective(nullObjective);
+
+  EXPECT_EQ(composite->getObjective(), objective);
+  EXPECT_EQ(composite->getNullSpaceObjective(), nullObjective);
+
+  const HierarchicalIK& constIk = *composite;
+  EXPECT_EQ(constIk.getObjective().get(), objective.get());
+  EXPECT_EQ(constIk.getNullSpaceObjective().get(), nullObjective.get());
 }
 
 TEST(InverseKinematics, TaskSpaceRegionNonWorldReference)

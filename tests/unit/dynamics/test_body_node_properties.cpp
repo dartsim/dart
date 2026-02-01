@@ -54,6 +54,7 @@
 #include <optional>
 
 using namespace dart::dynamics;
+using namespace dart::simulation;
 
 static SkeletonPtr createBodyNodeSkeleton()
 {
@@ -61,6 +62,30 @@ static SkeletonPtr createBodyNodeSkeleton()
   auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
   pair.second->setName("body");
   return skeleton;
+}
+
+TEST(BodyNodeProperties, SetCompositeProperties)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  const auto properties = body->getCompositeProperties();
+  body->setProperties(properties);
+
+  EXPECT_EQ(body->getSkeleton().get(), skeleton.get());
+}
+
+TEST(BodyNodeProperties, TransformDerivativesCache)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  skeleton->setPositions(
+      Eigen::VectorXd::Constant(skeleton->getNumDofs(), 0.1));
+
+  const Eigen::Matrix4d first = body->getWorldTransformDerivative(0);
+  const Eigen::Matrix4d second = body->getWorldTransformDerivative(0);
+  EXPECT_TRUE(first.isApprox(second));
 }
 
 TEST(BodyNodeProperties, MassAndInertia)

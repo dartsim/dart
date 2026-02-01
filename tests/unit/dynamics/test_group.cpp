@@ -23,6 +23,7 @@
 
 using namespace dart;
 using namespace dart::dynamics;
+using namespace dart::simulation;
 
 //==============================================================================
 TEST(GroupTest, CreateEmptyGroup)
@@ -206,6 +207,40 @@ TEST(GroupTest, RemoveDof)
   EXPECT_EQ(group->getNumDofs(), 1u);
 
   bool result = group->removeDof(skel->getDof(0), false, false);
+  EXPECT_TRUE(result);
+  EXPECT_EQ(group->getNumDofs(), 0u);
+}
+
+//==============================================================================
+TEST(GroupTest, RemoveDofCleanupJoint)
+{
+  auto skel = createNLinkRobot(1, Eigen::Vector3d(0.1, 0.1, 0.5), DOF_PITCH);
+  auto group = Group::create("cleanup_group");
+
+  auto* joint = skel->getJoint(0);
+  group->addJoint(joint, true, false);
+
+  auto* dof = joint->getDof(0);
+  bool result = group->removeDof(dof, true, false);
+
+  EXPECT_TRUE(result);
+  EXPECT_EQ(group->getNumDofs(), 0u);
+}
+
+//==============================================================================
+TEST(GroupTest, RemoveDofsBatchCleanup)
+{
+  auto skel = createNLinkRobot(2, Eigen::Vector3d(0.1, 0.1, 0.5), DOF_PITCH);
+  auto group = Group::create("batch_group");
+
+  group->addJoint(skel->getJoint(0), true, false);
+  group->addJoint(skel->getJoint(1), true, false);
+
+  std::vector<DegreeOfFreedom*> dofs;
+  dofs.push_back(skel->getDof(0));
+  dofs.push_back(skel->getDof(1));
+
+  bool result = group->removeDofs(dofs, true, false);
   EXPECT_TRUE(result);
   EXPECT_EQ(group->getNumDofs(), 0u);
 }

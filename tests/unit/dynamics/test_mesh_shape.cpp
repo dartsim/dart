@@ -1215,6 +1215,47 @@ TEST(MeshShapeTest, ConvertToAssimpMeshUsesEmbeddedMaterials)
   common::filesystem::remove(mtlPath, ec);
 }
 
+TEST(MeshShapeTest, ConvertToAssimpMeshUsesMemoryResourceForSubMeshes)
+{
+  auto triMesh = std::make_shared<math::TriMesh<double>>();
+  triMesh->addVertex(0.0, 0.0, 0.0);
+  triMesh->addVertex(1.0, 0.0, 0.0);
+  triMesh->addVertex(0.0, 1.0, 0.0);
+  triMesh->addVertex(1.0, 1.0, 0.0);
+  triMesh->addTriangle(0, 1, 2);
+  triMesh->addTriangle(1, 3, 2);
+  triMesh->addVertexNormal(0.0, 0.0, 1.0);
+  triMesh->addVertexNormal(0.0, 0.0, 1.0);
+  triMesh->addVertexNormal(0.0, 0.0, 1.0);
+  triMesh->addVertexNormal(0.0, 0.0, 1.0);
+
+  SubmeshMaterialMeshShape shape(
+      Eigen::Vector3d::Ones(), triMesh, common::Uri());
+
+  std::vector<dynamics::MeshMaterial> materials(2);
+  materials[0].diffuse = Eigen::Vector4f(0.2f, 0.3f, 0.4f, 1.0f);
+  materials[1].diffuse = Eigen::Vector4f(0.5f, 0.6f, 0.7f, 1.0f);
+  shape.setMaterials(std::move(materials));
+
+  std::vector<SubmeshMaterialMeshShape::SubMeshRange> ranges(2);
+  ranges[0].vertexOffset = 0u;
+  ranges[0].vertexCount = 2u;
+  ranges[0].triangleOffset = 0u;
+  ranges[0].triangleCount = 1u;
+  ranges[0].materialIndex = 0u;
+  ranges[1].vertexOffset = 2u;
+  ranges[1].vertexCount = 2u;
+  ranges[1].triangleOffset = 1u;
+  ranges[1].triangleCount = 1u;
+  ranges[1].materialIndex = 1u;
+  shape.setSubMeshRanges(std::move(ranges));
+
+  const aiScene* scene = shape.callConvertToAssimpMesh();
+  ASSERT_NE(scene, nullptr);
+  EXPECT_GE(scene->mNumMeshes, 1u);
+  EXPECT_GE(scene->mNumMaterials, 2u);
+}
+
 TEST(MeshShapeTest, ConvertToAssimpMeshPreservesNormals)
 {
   auto triMesh = std::make_shared<math::TriMesh<double>>();
@@ -1402,6 +1443,44 @@ TEST(MeshShapeTest, UriConstructionSetMeshAndRenderSettings)
   EXPECT_EQ(shape.getMeshPath(), quadPath);
 }
 
+TEST(MeshShapeTest, SetMeshWithUriStringAndCloneMesh)
+{
+  const std::string meshPath
+      = dart::config::dataPath("urdf/KR5/meshes/base_link.STL");
+  const common::Uri meshUri = common::Uri::createFromPath(meshPath);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  class MeshShapeCloneHarness final : public dynamics::MeshShape
+  {
+  public:
+    using dynamics::MeshShape::cloneMesh;
+    using dynamics::MeshShape::MeshShape;
+  };
+  DART_SUPPRESS_DEPRECATED_END
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  auto retriever = std::make_shared<common::LocalResourceRetriever>();
+  const aiScene* scene
+      = dynamics::MeshShape::loadMesh(meshUri.toString(), retriever);
+  DART_SUPPRESS_DEPRECATED_END
+  ASSERT_NE(scene, nullptr);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  MeshShapeCloneHarness shape(
+      Eigen::Vector3d::Ones(), scene, meshUri, retriever);
+  shape.setMesh(scene, meshUri.toString(), retriever);
+  DART_SUPPRESS_DEPRECATED_END
+
+  EXPECT_EQ(shape.getMeshUri(), meshUri.toString());
+  EXPECT_FALSE(shape.getMeshPath().empty());
+
+  aiScene* clonedScene = shape.cloneMesh();
+  ASSERT_NE(clonedScene, nullptr);
+  EXPECT_NE(clonedScene, scene);
+  EXPECT_EQ(clonedScene->mNumMeshes, scene->mNumMeshes);
+  aiReleaseImport(clonedScene);
+}
+
 TEST(MeshShapeTest, BoundingBoxVolumeAndColorModes)
 {
   auto mesh = createTetraMesh();
@@ -1466,6 +1545,79 @@ TEST(MeshShapeTest, LoadMeshFromTempObjAndUriMetadata)
 
   common::error_code ec;
   common::filesystem::remove(objPath, ec);
+}
+
+TEST(MeshShapeTest, ExtractMaterialsResolvesTexturePaths)
+{
+  const auto tempDir = common::filesystem::temp_directory_path();
+  const auto timestamp
+      = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+  const auto baseName = std::string("dart_meshshape_materials_tex_")
+                        + std::to_string(timestamp);
+  const auto objPath = tempDir / (baseName + ".obj");
+  const auto mtlPath = tempDir / (baseName + ".mtl");
+  const auto texPath = tempDir / (baseName + ".png");
+
+  {
+    std::ofstream texFile(texPath.string());
+    ASSERT_TRUE(texFile);
+    texFile << " ";
+  }
+
+  {
+    std::ofstream mtlFile(mtlPath.string());
+    ASSERT_TRUE(mtlFile);
+    mtlFile << "newmtl material_0\n"
+            << "Ka 0 0 0\n"
+            << "Kd 0.8 0.7 0.6\n"
+            << "Ks 0 0 0\n"
+            << "Ns 0\n"
+            << "map_Kd " << texPath.filename().string() << "\n";
+  }
+
+  {
+    std::ofstream objFile(objPath.string());
+    ASSERT_TRUE(objFile);
+    objFile << "mtllib " << mtlPath.filename().string() << "\n"
+            << "v 0 0 0\n"
+            << "v 1 0 0\n"
+            << "v 0 1 0\n"
+            << "usemtl material_0\n"
+            << "f 1 2 3\n";
+  }
+
+  auto retriever = std::make_shared<common::LocalResourceRetriever>();
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* scene
+      = dynamics::MeshShape::loadMesh(objPath.string(), retriever);
+  DART_SUPPRESS_DEPRECATED_END
+  ASSERT_NE(scene, nullptr);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  dynamics::MeshShape shape(
+      Eigen::Vector3d::Ones(),
+      scene,
+      common::Uri::createFromPath(objPath.string()),
+      retriever);
+  DART_SUPPRESS_DEPRECATED_END
+
+  common::error_code ec;
+  const auto expectedPath = common::filesystem::canonical(texPath, ec).string();
+  ASSERT_FALSE(ec);
+
+  bool foundTexture = false;
+  for (const auto& material : shape.getMaterials()) {
+    if (material.textureImagePaths.empty()) {
+      continue;
+    }
+    foundTexture = true;
+    EXPECT_EQ(material.textureImagePaths.front(), expectedPath);
+  }
+  EXPECT_TRUE(foundTexture);
+
+  common::filesystem::remove(objPath, ec);
+  common::filesystem::remove(mtlPath, ec);
+  common::filesystem::remove(texPath, ec);
 }
 
 TEST(MeshShapeTest, ConvertToAssimpMeshWithSubMeshesAndTexCoords)

@@ -39,6 +39,8 @@
 #include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
+#include <dart/all.hpp>
+
 #include <gtest/gtest.h>
 
 using namespace dart;
@@ -210,6 +212,24 @@ TEST(LinkageTests, CloneLinkage)
 }
 
 //==============================================================================
+TEST(LinkageTests, CloneLinkageWithTerminalCriteria)
+{
+  auto skel = createChainSkeleton(4);
+  auto* start = skel->getBodyNode(0);
+  auto* end = skel->getBodyNode(3);
+  auto* terminal = skel->getBodyNode(1);
+
+  Linkage::Criteria criteria(start, end);
+  criteria.mTerminals.emplace_back(terminal, true);
+  auto linkage = Linkage::create(criteria, "terminal_linkage");
+  ASSERT_NE(linkage, nullptr);
+
+  auto clone = linkage->cloneLinkage("terminal_clone");
+  ASSERT_NE(clone, nullptr);
+  EXPECT_EQ(clone->getName(), "terminal_clone");
+}
+
+//==============================================================================
 TEST(LinkageTests, CloneMetaSkeleton)
 {
   auto skel = createChainSkeleton(3);
@@ -285,6 +305,69 @@ TEST(LinkageTests, LinkageWithTerminals)
   EXPECT_TRUE(linkage->hasBodyNode(start));
   EXPECT_TRUE(linkage->hasBodyNode(terminal));
   EXPECT_FALSE(linkage->hasBodyNode(skel->getBodyNode(4)));
+}
+
+//==============================================================================
+TEST(LinkageTests, InclusiveTerminalOnTarget)
+{
+  auto skel = createChainSkeleton(5);
+  auto* start = skel->getBodyNode(0);
+  auto* target = skel->getBodyNode(2);
+
+  Linkage::Criteria criteria;
+  criteria.mStart
+      = Linkage::Criteria::Target(start, Linkage::Criteria::INCLUDE, false);
+  criteria.mTargets.push_back(
+      Linkage::Criteria::Target(target, Linkage::Criteria::INCLUDE, false));
+  criteria.mTerminals.emplace_back(target, true);
+
+  auto linkage = Linkage::create(criteria, "inclusive_terminal_target");
+
+  ASSERT_NE(linkage, nullptr);
+  EXPECT_TRUE(linkage->hasBodyNode(target));
+}
+
+//==============================================================================
+TEST(LinkageTests, UpstreamExpansionStopsAtInclusiveTerminal)
+{
+  auto skel = createBranchingSkeleton();
+  auto* start = skel->getBodyNode("grandchild1");
+  auto* terminal = skel->getBodyNode("child1");
+
+  Linkage::Criteria criteria;
+  criteria.mStart
+      = Linkage::Criteria::Target(start, Linkage::Criteria::UPSTREAM, false);
+  criteria.mTerminals.emplace_back(terminal, true);
+
+  auto linkage = Linkage::create(criteria, "upstream_terminal");
+
+  ASSERT_NE(linkage, nullptr);
+  EXPECT_TRUE(linkage->hasBodyNode(start));
+  EXPECT_TRUE(linkage->hasBodyNode(terminal));
+  EXPECT_FALSE(linkage->hasBodyNode(skel->getBodyNode("root")));
+}
+
+//==============================================================================
+TEST(LinkageTests, TerminalPreventsClimbToCommonRoot)
+{
+  auto skel = createBranchingSkeleton();
+  auto* start = skel->getBodyNode("grandchild1");
+  auto* target = skel->getBodyNode("grandchild2");
+  auto* terminal = skel->getBodyNode("child1");
+
+  Linkage::Criteria criteria;
+  criteria.mStart
+      = Linkage::Criteria::Target(start, Linkage::Criteria::INCLUDE, false);
+  criteria.mTargets.push_back(
+      Linkage::Criteria::Target(target, Linkage::Criteria::INCLUDE, true));
+  criteria.mTerminals.emplace_back(terminal, true);
+
+  auto linkage = Linkage::create(criteria, "terminal_climb_block");
+
+  ASSERT_NE(linkage, nullptr);
+  EXPECT_TRUE(linkage->hasBodyNode(start));
+  EXPECT_TRUE(linkage->hasBodyNode(terminal));
+  EXPECT_FALSE(linkage->hasBodyNode(target));
 }
 
 //==============================================================================

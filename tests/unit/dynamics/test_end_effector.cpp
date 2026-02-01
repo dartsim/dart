@@ -6,10 +6,13 @@
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/skeleton.hpp>
 
+#include <dart/all.hpp>
+
 #include <gtest/gtest.h>
 
 using namespace dart;
 using namespace dynamics;
+using namespace dart::simulation;
 
 class EndEffectorTest : public ::testing::Test
 {
@@ -45,6 +48,18 @@ TEST_F(EndEffectorTest, CreateEndEffector)
 
   EXPECT_EQ(skeleton->getNumEndEffectors(), 1u);
   EXPECT_EQ(ee->getName(), "test_ee");
+  EXPECT_EQ(ee->getBodyNodePtr().get(), childBody);
+}
+
+TEST_F(EndEffectorTest, CreateEndEffectorBasicProperties)
+{
+  EndEffector::BasicProperties properties;
+  properties.mName = "basic_ee";
+
+  EndEffector* ee = childBody->createEndEffector(properties);
+  ASSERT_NE(ee, nullptr);
+
+  EXPECT_EQ(ee->getName(), "basic_ee");
   EXPECT_EQ(ee->getBodyNodePtr().get(), childBody);
 }
 

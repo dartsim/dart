@@ -352,6 +352,48 @@ TEST(CloneableVector, MoveConstructorTransfersOwnership)
 }
 
 //==============================================================================
+TEST(CloneableVector, CopyConstructorClonesElements)
+{
+  std::vector<SimplePtr> raw;
+  raw.push_back(makeSimpleCloneable(21, "twenty_one"));
+  raw.push_back(nullptr);
+
+  CloneableVector<SimplePtr> original(std::move(raw));
+  CloneableVector<SimplePtr> copied(original);
+
+  const auto& originalVector = original.getVector();
+  const auto& copiedVector = copied.getVector();
+  ASSERT_EQ(copiedVector.size(), 2u);
+  ASSERT_NE(copiedVector[0], nullptr);
+  EXPECT_NE(copiedVector[0].get(), originalVector[0].get());
+  EXPECT_EQ(
+      static_cast<const SimpleMakeCloneable*>(copiedVector[0].get())->value,
+      21);
+  EXPECT_EQ(copiedVector[1], nullptr);
+}
+
+//==============================================================================
+TEST(CloneableVector, CopyUpdatesExistingEntriesInPlace)
+{
+  std::vector<SimplePtr> sourceRaw;
+  sourceRaw.push_back(makeSimpleCloneable(5, "five"));
+  CloneableVector<SimplePtr> source(std::move(sourceRaw));
+
+  std::vector<SimplePtr> targetRaw;
+  targetRaw.push_back(makeSimpleCloneable(9, "nine"));
+  CloneableVector<SimplePtr> target(std::move(targetRaw));
+
+  const auto* originalPtr = target.getVector()[0].get();
+  target.copy(source);
+
+  const auto& targetVector = target.getVector();
+  ASSERT_NE(targetVector[0], nullptr);
+  EXPECT_EQ(targetVector[0].get(), originalPtr);
+  EXPECT_EQ(
+      static_cast<const SimpleMakeCloneable*>(targetVector[0].get())->value, 5);
+}
+
+//==============================================================================
 TEST(CloneableMap, MoveAndMerge)
 {
   using SimpleMap = std::map<std::string, SimplePtr>;
@@ -379,6 +421,29 @@ TEST(CloneableMap, MoveAndMerge)
 
   movedHolder.copy(incoming, false);
   EXPECT_EQ(movedHolder.getMap()["replace"], nullptr);
+}
+
+//==============================================================================
+TEST(CloneableMap, MergeMatchingKeysCopiesInPlace)
+{
+  using SimpleMap = std::map<std::string, SimplePtr>;
+
+  SimpleMap baseMap;
+  baseMap["shared"] = makeSimpleCloneable(1, "base");
+  CloneableMap<SimpleMap> holder(baseMap);
+
+  SimpleMap incoming;
+  incoming["shared"] = makeSimpleCloneable(2, "incoming");
+
+  const auto* originalPtr = holder.getMap().at("shared").get();
+  holder.merge(incoming);
+
+  const auto& map = holder.getMap();
+  ASSERT_NE(map.at("shared"), nullptr);
+  EXPECT_EQ(map.at("shared").get(), originalPtr);
+  EXPECT_EQ(
+      static_cast<const SimpleMakeCloneable*>(map.at("shared").get())->value,
+      2);
 }
 
 //==============================================================================

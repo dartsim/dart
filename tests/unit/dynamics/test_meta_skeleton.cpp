@@ -40,6 +40,8 @@
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/skeleton.hpp>
 
+#include <dart/all.hpp>
+
 #include <gtest/gtest.h>
 
 #include <vector>
@@ -48,6 +50,7 @@
 
 using namespace dart;
 using namespace dart::dynamics;
+using namespace dart::simulation;
 
 //==============================================================================
 // Helper: Create a simple chain skeleton with N revolute joints
@@ -111,6 +114,47 @@ SkeletonPtr createMixedSkeleton(const std::string& name = "mixed")
   pair3.second->setInertia(inertia3);
 
   return skel;
+}
+
+//==============================================================================
+TEST(MetaSkeletonTests, ConstructNewTreeForAdditionalRoot)
+{
+  auto skel = Skeleton::create("multi_root");
+
+  auto root1 = skel->createJointAndBodyNodePair<FreeJoint>();
+  root1.second->setName("root1");
+
+  BodyNode::AspectProperties root2Props("root2");
+  auto root2 = skel->createJointAndBodyNodePair<FreeJoint>(
+      nullptr, FreeJoint::Properties(), root2Props);
+  root2.second->setName("root2");
+
+  EXPECT_EQ(skel->getNumTrees(), 2u);
+}
+
+//==============================================================================
+TEST(MetaSkeletonTests, JacobianSpatialDerivatives)
+{
+  auto skel = createMixedSkeleton("jacobian_deriv");
+  skel->setPositions(Eigen::VectorXd::Constant(skel->getNumDofs(), 0.2));
+  skel->setVelocities(Eigen::VectorXd::Constant(skel->getNumDofs(), -0.1));
+  skel->setAccelerations(Eigen::VectorXd::Constant(skel->getNumDofs(), 0.05));
+  skel->computeForwardKinematics(true, true, true);
+
+  auto* body = skel->getBodyNode("child1");
+  ASSERT_NE(body, nullptr);
+
+  const math::Jacobian dJ
+      = skel->getJacobianSpatialDeriv(body, Eigen::Vector3d::UnitX());
+  const math::Jacobian dJWorld = skel->getJacobianSpatialDeriv(
+      body, Eigen::Vector3d::UnitX(), Frame::World());
+
+  EXPECT_EQ(dJ.rows(), 6);
+  EXPECT_EQ(dJ.cols(), static_cast<int>(skel->getNumDofs()));
+  EXPECT_EQ(dJWorld.rows(), 6);
+  EXPECT_EQ(dJWorld.cols(), static_cast<int>(skel->getNumDofs()));
+  EXPECT_TRUE(dJ.array().isFinite().all());
+  EXPECT_TRUE(dJWorld.array().isFinite().all());
 }
 
 //==============================================================================

@@ -632,6 +632,72 @@ TEST(SoftBodyNode, ChainWithSoftBody)
   EXPECT_EQ(M.cols(), 2);
 }
 
+//==============================================================================
+TEST(SoftBodyNode, ChildBodyNodeDynamicsPaths)
+{
+  auto skeleton = Skeleton::create("soft-child-dynamics");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d::Constant(0.4),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      10.0,
+      10.0,
+      0.1);
+
+  auto childPair = softBody->createChildJointAndBodyNodePair<RevoluteJoint>();
+  childPair.first->setAxis(Eigen::Vector3d::UnitY());
+  auto* childBody = childPair.second;
+
+  Inertia inertia;
+  inertia.setMass(0.8);
+  inertia.setMoment(0.02 * Eigen::Matrix3d::Identity());
+  childBody->setInertia(inertia);
+
+  const auto dofs = skeleton->getNumDofs();
+  Eigen::VectorXd positions = Eigen::VectorXd::Zero(dofs);
+  Eigen::VectorXd velocities = Eigen::VectorXd::Zero(dofs);
+  if (dofs > 0) {
+    velocities[0] = 0.2;
+  }
+  if (dofs > 1) {
+    velocities[1] = -0.1;
+  }
+  skeleton->setPositions(positions);
+  skeleton->setVelocities(velocities);
+
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    auto* pm = softBody->getPointMass(i);
+    ASSERT_NE(pm, nullptr);
+    pm->setVelocities(Eigen::Vector3d(0.1, -0.2, 0.05));
+  }
+
+  const auto invMass = skeleton->getInvMassMatrix();
+  EXPECT_EQ(invMass.rows(), dofs);
+  EXPECT_EQ(invMass.cols(), dofs);
+
+  const auto coriolis = skeleton->getCoriolisAndGravityForces();
+  EXPECT_EQ(coriolis.size(), dofs);
+
+  skeleton->computeImpulseForwardDynamics();
+  skeleton->updateVelocityChange();
+  skeleton->computePositionVelocityChanges();
+
+  auto world = simulation::World::create();
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world->setTimeStep(1e-3);
+  world->addSkeleton(skeleton);
+  world->step();
+
+  auto* pm = softBody->getPointMass(0);
+  ASSERT_NE(pm, nullptr);
+  EXPECT_TRUE(pm->getWorldVelocity().array().isFinite().all());
+  EXPECT_TRUE(childBody->getSpatialVelocity().array().isFinite().all());
+}
+
 namespace {
 
 SoftBodyNode* createCoverageBoxSoftBody(const SkeletonPtr& skeleton)

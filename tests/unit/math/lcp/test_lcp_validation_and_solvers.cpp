@@ -382,6 +382,17 @@ LcpProblem makeLemkePivotProblem()
       std::move(findex));
 }
 
+Eigen::MatrixXd makeHilbertMatrix(int n, double scale)
+{
+  Eigen::MatrixXd A(n, n);
+  for (int r = 0; r < n; ++r) {
+    for (int c = 0; c < n; ++c) {
+      A(r, c) = scale / static_cast<double>(r + c + 1);
+    }
+  }
+  return A;
+}
+
 LcpProblem makeDirectSolverProblem()
 {
   Eigen::MatrixXd A(3, 3);
@@ -2095,6 +2106,33 @@ TEST(LemkeSolverCoverage, SolvesLargerPivotingProblem)
   EXPECT_TRUE(x.array().isFinite().all());
 }
 
+TEST(LemkeSolverCoverage, ExercisesIllConditionedProblem)
+{
+  LemkeSolver solver;
+  const int n = 6;
+  const std::vector<double> scales = {1e2, 1e4, 1e6, 1e8};
+
+  Eigen::VectorXd target(n);
+  for (int i = 0; i < n; ++i) {
+    target[i] = 0.2 + 0.03 * static_cast<double>(i);
+  }
+
+  for (const double scale : scales) {
+    Eigen::MatrixXd A = makeHilbertMatrix(n, scale);
+    Eigen::VectorXd b = A * target;
+    Eigen::VectorXd lo = Eigen::VectorXd::Zero(n);
+    Eigen::VectorXd hi
+        = Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity());
+    Eigen::VectorXi findex = Eigen::VectorXi::Constant(n, -1);
+    LcpProblem problem(A, b, lo, hi, findex);
+
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    // Ill-conditioned problems may or may not succeed; just exercise the path
+    EXPECT_TRUE(x.array().isFinite().all());
+  }
+}
+
 TEST(MprgpSolverCoverage, FallsBackForNonSymmetricProblem)
 {
   MprgpSolver solver;
@@ -2427,6 +2465,19 @@ TEST(ShockPropagationSolverCoverage, SolvesLayeredStandardBlocks)
 
   auto problem = makeTwoBlockStandardProblem();
   Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(ShockPropagationSolverCoverage, GroupsFrictionIndicesWithDefaults)
+{
+  ShockPropagationSolver solver;
+  auto problem = makeFrictionBlockProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.b.size());
+
+  LcpOptions options;
+  options.maxIterations = 2;
   const auto result = solver.solve(problem, x, options);
   EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
   EXPECT_TRUE(x.array().isFinite().all());
