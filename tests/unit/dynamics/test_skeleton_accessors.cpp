@@ -368,6 +368,58 @@ TEST(SkeletonAccessors, MassMatrixVariants)
   EXPECT_TRUE(extForces.allFinite());
 }
 
+//=============================================================================
+TEST(SkeletonAccessors, MassAndForceAccessorsWithInertia)
+{
+  auto skel = Skeleton::create("mass_force_inertia");
+
+  RevoluteJoint::Properties rootJointProps;
+  rootJointProps.mAxis = Eigen::Vector3d::UnitZ();
+  BodyNode::Properties rootBodyProps;
+  rootBodyProps.mInertia.setMass(2.0);
+  rootBodyProps.mInertia.setMoment(0.2, 0.3, 0.4, 0.0, 0.0, 0.0);
+
+  auto rootPair = skel->createJointAndBodyNodePair<RevoluteJoint>(
+      nullptr, rootJointProps, rootBodyProps);
+
+  PrismaticJoint::Properties childJointProps;
+  childJointProps.mAxis = Eigen::Vector3d::UnitX();
+  BodyNode::Properties childBodyProps;
+  childBodyProps.mInertia.setMass(1.5);
+  childBodyProps.mInertia.setMoment(0.1, 0.15, 0.2, 0.0, 0.0, 0.0);
+
+  auto childPair = skel->createJointAndBodyNodePair<PrismaticJoint>(
+      rootPair.second, childJointProps, childBodyProps);
+
+  skel->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  skel->setPositions(Eigen::Vector2d(0.1, -0.2));
+  skel->setVelocities(Eigen::Vector2d(0.3, 0.4));
+  skel->setAccelerations(Eigen::Vector2d(-0.1, 0.2));
+  skel->setForces(Eigen::Vector2d(0.5, -0.6));
+  skel->setCommands(Eigen::Vector2d(0.2, 0.1));
+
+  childPair.second->addExtForce(
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(0.1, 0.0, 0.0),
+      false,
+      false);
+
+  const auto& massMatrix = skel->getMassMatrix();
+  EXPECT_EQ(massMatrix.rows(), 2);
+  EXPECT_EQ(massMatrix.cols(), 2);
+  EXPECT_TRUE(massMatrix.allFinite());
+
+  EXPECT_TRUE(skel->getAugMassMatrix().allFinite());
+  EXPECT_TRUE(skel->getInvMassMatrix().allFinite());
+  EXPECT_TRUE(skel->getInvAugMassMatrix().allFinite());
+
+  EXPECT_TRUE(skel->getCoriolisForces().allFinite());
+  EXPECT_TRUE(skel->getGravityForces().allFinite());
+  EXPECT_TRUE(skel->getCoriolisAndGravityForces().allFinite());
+  EXPECT_TRUE(skel->getExternalForces().allFinite());
+  EXPECT_TRUE(skel->getConstraintForces().allFinite());
+}
+
 //==============================================================================
 // Mass Matrix Numerical Correctness Tests
 //==============================================================================
@@ -3221,4 +3273,125 @@ TEST(SkeletonAccessors, DynamicsCacheQueries)
   EXPECT_EQ(G.size(), static_cast<int>(constSkel.getNumDofs()));
   EXPECT_EQ(CG.size(), static_cast<int>(constSkel.getNumDofs()));
   EXPECT_EQ(Fext.size(), static_cast<int>(constSkel.getNumDofs()));
+}
+
+//==============================================================================
+TEST(SkeletonAccessors, MultiTreeMassMatricesAndCaches)
+{
+  auto skeleton = Skeleton::create("multi_tree_cache");
+  auto rootA = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  rootA.second->setMass(1.0);
+  auto childA = rootA.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  childA.first->setAxis(Eigen::Vector3d::UnitZ());
+  childA.second->setMass(0.5);
+
+  auto rootB = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  rootB.second->setMass(1.2);
+  auto childB = rootB.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  childB.first->setAxis(Eigen::Vector3d::UnitY());
+  childB.second->setMass(0.4);
+
+  ASSERT_EQ(skeleton->getNumTrees(), 2u);
+
+  Eigen::VectorXd positions = Eigen::VectorXd::LinSpaced(
+      static_cast<int>(skeleton->getNumDofs()),
+      0.1,
+      0.1 + static_cast<double>(skeleton->getNumDofs() - 1));
+  Eigen::VectorXd velocities = Eigen::VectorXd::LinSpaced(
+      static_cast<int>(skeleton->getNumDofs()), -0.2, 0.2);
+  skeleton->setPositions(positions);
+  skeleton->setVelocities(velocities);
+  skeleton->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+
+  childB.second->addExtForce(
+      Eigen::Vector3d(2.0, -1.0, 0.5), Eigen::Vector3d::Zero(), true, true);
+
+  const auto tree0Dofs = skeleton->getTreeDofs(0);
+  const auto tree1Dofs = skeleton->getTreeDofs(1);
+
+  const auto& M0 = skeleton->getMassMatrix(0);
+  const auto& M1 = skeleton->getMassMatrix(1);
+  EXPECT_EQ(M0.rows(), static_cast<int>(tree0Dofs.size()));
+  EXPECT_EQ(M1.cols(), static_cast<int>(tree1Dofs.size()));
+  EXPECT_TRUE(M0.allFinite());
+  EXPECT_TRUE(M1.allFinite());
+
+  const auto& M0_cached = skeleton->getMassMatrix(0);
+  const auto& M1_cached = skeleton->getMassMatrix(1);
+  EXPECT_EQ(M0_cached.rows(), M0.rows());
+  EXPECT_EQ(M1_cached.cols(), M1.cols());
+
+  EXPECT_TRUE(skeleton->getAugMassMatrix(0).allFinite());
+  EXPECT_TRUE(skeleton->getAugMassMatrix(1).allFinite());
+  EXPECT_TRUE(skeleton->getInvMassMatrix(0).allFinite());
+  EXPECT_TRUE(skeleton->getInvMassMatrix(1).allFinite());
+  EXPECT_TRUE(skeleton->getInvAugMassMatrix(0).allFinite());
+  EXPECT_TRUE(skeleton->getInvAugMassMatrix(1).allFinite());
+
+  EXPECT_TRUE(skeleton->getCoriolisForces(0).allFinite());
+  EXPECT_TRUE(skeleton->getCoriolisForces(1).allFinite());
+  EXPECT_TRUE(skeleton->getGravityForces(0).allFinite());
+  EXPECT_TRUE(skeleton->getGravityForces(1).allFinite());
+  EXPECT_TRUE(skeleton->getCoriolisAndGravityForces(0).allFinite());
+  EXPECT_TRUE(skeleton->getCoriolisAndGravityForces(1).allFinite());
+  EXPECT_TRUE(skeleton->getExternalForces(0).allFinite());
+  EXPECT_TRUE(skeleton->getExternalForces(1).allFinite());
+
+  const auto& M = skeleton->getMassMatrix();
+  EXPECT_EQ(M.rows(), static_cast<int>(skeleton->getNumDofs()));
+  EXPECT_EQ(M.cols(), static_cast<int>(skeleton->getNumDofs()));
+  EXPECT_TRUE(M.allFinite());
+}
+
+//==============================================================================
+TEST(SkeletonImpulse, BiasImpulseAndVelocityChange)
+{
+  auto skeleton = Skeleton::create("bias_impulse_test");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  rootPair.second->setMass(1.0);
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  childPair.first->setAxis(Eigen::Vector3d::UnitZ());
+  childPair.second->setMass(0.5);
+
+  Eigen::Vector6d impulseA;
+  impulseA << 0.1, -0.2, 0.3, 0.4, -0.5, 0.6;
+  Eigen::Vector6d impulseB;
+  impulseB << -0.3, 0.2, -0.1, 0.5, 0.1, -0.2;
+
+  skeleton->updateBiasImpulse(rootPair.second);
+  skeleton->updateBiasImpulse(rootPair.second, impulseA);
+  skeleton->updateBiasImpulse(
+      rootPair.second, impulseA, childPair.second, impulseB);
+
+  skeleton->updateVelocityChange();
+  const auto velocityChanges = skeleton->getVelocityChanges();
+  EXPECT_EQ(velocityChanges.size(), static_cast<int>(skeleton->getNumDofs()));
+
+  childPair.second->addPositionConstraintImpulse(Eigen::Vector6d::Ones());
+  skeleton->computePositionVelocityChanges();
+  EXPECT_EQ(
+      skeleton->getPositionVelocityChanges().size(),
+      static_cast<int>(skeleton->getNumDofs()));
+
+  skeleton->computeImpulseForwardDynamics();
+}
+
+//==============================================================================
+TEST(SkeletonClone, CloneSkeletonDefaultName)
+{
+  auto skeleton = Skeleton::create("clone_default");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+  pair.second->setMass(1.0);
+
+  skeleton->setPositions(
+      Eigen::VectorXd::Constant(
+          static_cast<Eigen::Index>(skeleton->getNumDofs()), 0.25));
+
+  auto clone = skeleton->cloneSkeleton();
+  ASSERT_NE(clone, nullptr);
+  EXPECT_EQ(clone->getName(), skeleton->getName());
+  EXPECT_EQ(clone->getNumBodyNodes(), skeleton->getNumBodyNodes());
+  EXPECT_TRUE(clone->getPositions().isApprox(skeleton->getPositions()));
 }

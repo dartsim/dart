@@ -1870,3 +1870,157 @@ TEST(BodyNodeCoverage, GetNodesConstAndNonConst)
   std::vector<const Node*> constNodes = constBody->getNodes();
   EXPECT_EQ(constNodes.size(), nodes.size());
 }
+
+#include <dart/simulation/world.hpp>
+
+#include <dart/dynamics/arrow_shape.hpp>
+#include <dart/dynamics/soft_body_node.hpp>
+
+TEST(NodeLifecycle, ShapeNodeAddAndCount)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(0.3, 0.4, 0.5));
+  ShapeNode* shapeNode
+      = body->createShapeNodeWith<VisualAspect, CollisionAspect>(box);
+  ASSERT_NE(shapeNode, nullptr);
+  EXPECT_EQ(body->getNumShapeNodes(), 1u);
+  EXPECT_EQ(body->getShapeNode(0), shapeNode);
+}
+
+TEST(ArrowShape, SetPropertiesAndPositions)
+{
+  ArrowShape::Properties props;
+  props.mRadius = 0.05;
+  props.mHeadRadiusScale = 0.5;
+  props.mHeadLengthScale = 1.5;
+  props.mMinHeadLength = -0.1;
+  props.mMaxHeadLength = 1.0;
+  props.mDoubleArrow = true;
+
+  ArrowShape arrow(
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d::UnitZ(),
+      props,
+      Eigen::Vector4d::Ones(),
+      6);
+
+  arrow.setPositions(
+      Eigen::Vector3d(0.1, 0.0, 0.0), Eigen::Vector3d(0.1, 0.2, 0.3));
+  EXPECT_TRUE(arrow.getTail().isApprox(Eigen::Vector3d(0.1, 0.0, 0.0)));
+  EXPECT_TRUE(arrow.getHead().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+
+  arrow.setProperties(props);
+  const auto& updated = arrow.getProperties();
+  EXPECT_NEAR(updated.mRadius, 0.05, 1e-12);
+  EXPECT_DOUBLE_EQ(updated.mHeadRadiusScale, 1.0);
+  EXPECT_DOUBLE_EQ(updated.mHeadLengthScale, 1.0);
+  EXPECT_DOUBLE_EQ(updated.mMinHeadLength, 0.0);
+  EXPECT_DOUBLE_EQ(updated.mMaxHeadLength, 1.0);
+  EXPECT_TRUE(updated.mDoubleArrow);
+}
+
+TEST(FreeJoint, SpatialVelocityAndConversions)
+{
+  auto skeleton = Skeleton::create("free_joint_test");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* joint = static_cast<FreeJoint*>(pair.first);
+  ASSERT_NE(joint, nullptr);
+
+  Eigen::Vector6d spatialVel = Eigen::Vector6d::Zero();
+  spatialVel[0] = 0.2;
+  spatialVel[4] = -0.1;
+  joint->setSpatialVelocity(spatialVel, Frame::World(), Frame::World());
+  const Eigen::Vector6d currentVel = pair.second->getSpatialVelocity();
+  EXPECT_TRUE(currentVel.array().isFinite().all());
+  EXPECT_GT(currentVel.norm(), 0.0);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.linear()
+      = Eigen::AngleAxisd(0.1, Eigen::Vector3d::UnitX()).toRotationMatrix();
+  tf.translation() = Eigen::Vector3d(0.2, -0.1, 0.3);
+
+  Eigen::Vector6d positions
+      = joint->convertToPositions(tf, FreeJoint::CoordinateChart::EULER_ZYX);
+  Eigen::Isometry3d tfRoundTrip = joint->convertToTransform(
+      positions, FreeJoint::CoordinateChart::EULER_ZYX);
+  EXPECT_TRUE(tfRoundTrip.translation().isApprox(tf.translation(), 1e-12));
+}
+
+TEST(ZeroDofJoint, WeldJointConstraintImpulsePaths)
+{
+  auto skeleton = Skeleton::create("weld_joint_test");
+  auto pair = skeleton->createJointAndBodyNodePair<WeldJoint>();
+  auto* weldJoint = pair.first;
+  ASSERT_NE(weldJoint, nullptr);
+
+  weldJoint->setConstraintImpulse(0, 1.0);
+  EXPECT_DOUBLE_EQ(weldJoint->getConstraintImpulse(0), 0.0);
+  weldJoint->resetConstraintImpulses();
+
+  Eigen::VectorXd q0;
+  Eigen::VectorXd v;
+  Eigen::VectorXd result;
+  weldJoint->integratePositions(q0, v, 0.01, result);
+  EXPECT_EQ(result.size(), 0);
+
+  const Eigen::Vector6d wrench = weldJoint->getBodyConstraintWrench();
+  EXPECT_TRUE(wrench.array().isFinite().all());
+}
+
+TEST(SoftBodyNode, AggregateAugmentedMassMatrixViaWorldStep)
+{
+  auto world = dart::simulation::World::create();
+  world->setTimeStep(0.001);
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  auto skeleton = Skeleton::create("soft_body_world");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+  ASSERT_NE(softBody, nullptr);
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d(0.2, 0.2, 0.2),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      10.0,
+      10.0,
+      0.1);
+
+  world->addSkeleton(skeleton);
+
+  for (int i = 0; i < 5; ++i) {
+    world->step();
+  }
+
+  const Eigen::MatrixXd augMass = skeleton->getAugMassMatrix();
+  EXPECT_EQ(augMass.rows(), static_cast<int>(skeleton->getNumDofs()));
+  EXPECT_TRUE(augMass.array().isFinite().all());
+}
+
+TEST(BodyNodeShapeNodes, DeprecatedGetShapeNodes)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+  auto sphere = std::make_shared<SphereShape>(0.5);
+
+  body->createShapeNodeWith<VisualAspect>(box);
+  body->createShapeNodeWith<CollisionAspect>(sphere);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  auto shapeNodes = body->getShapeNodes();
+  auto visualNodes = body->getShapeNodesWith<VisualAspect>();
+  const BodyNode* constBody = body;
+  auto constShapeNodes = constBody->getShapeNodes();
+  auto constCollisionNodes = constBody->getShapeNodesWith<CollisionAspect>();
+  DART_SUPPRESS_DEPRECATED_END
+
+  EXPECT_EQ(shapeNodes.size(), 2u);
+  EXPECT_EQ(visualNodes.size(), 1u);
+  EXPECT_EQ(constShapeNodes.size(), 2u);
+  EXPECT_EQ(constCollisionNodes.size(), 1u);
+}

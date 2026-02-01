@@ -725,18 +725,20 @@ TEST(ConstraintSolver, HasSkeleton)
   auto skeleton1 = dynamics::Skeleton::create("has_skel1");
   auto skeleton2 = dynamics::Skeleton::create("has_skel2");
 
-  EXPECT_FALSE(std::ranges::any_of(
-      solver.getSkeletons(),
-      [&](const auto& skel) { return skel == skeleton1; }));
+  EXPECT_FALSE(
+      std::ranges::any_of(solver.getSkeletons(), [&](const auto& skel) {
+        return skel == skeleton1;
+      }));
 
   solver.addSkeleton(skeleton1);
 
   EXPECT_TRUE(std::ranges::any_of(solver.getSkeletons(), [&](const auto& skel) {
     return skel == skeleton1;
   }));
-  EXPECT_FALSE(std::ranges::any_of(
-      solver.getSkeletons(),
-      [&](const auto& skel) { return skel == skeleton2; }));
+  EXPECT_FALSE(
+      std::ranges::any_of(solver.getSkeletons(), [&](const auto& skel) {
+        return skel == skeleton2;
+      }));
 
   solver.addSkeleton(skeleton2);
 
@@ -860,6 +862,32 @@ TEST(ConstraintSolver, SetNullLcpSolverIgnored)
 
   // Should still have the original solver
   EXPECT_EQ(solver.getLcpSolver(), originalSolver);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SetSecondaryLcpSolverSameAsPrimary)
+{
+  constraint::ConstraintSolver solver;
+  auto solverImpl = std::make_shared<ConstantLcpSolver>(0.2);
+
+  solver.setLcpSolver(solverImpl);
+  solver.setSecondaryLcpSolver(solverImpl);
+
+  EXPECT_EQ(solver.getLcpSolver(), solverImpl);
+  EXPECT_EQ(solver.getSecondaryLcpSolver(), solverImpl);
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SetPrimaryLcpSolverSameAsSecondary)
+{
+  constraint::ConstraintSolver solver;
+  auto solverImpl = std::make_shared<ConstantLcpSolver>(0.4);
+
+  solver.setSecondaryLcpSolver(solverImpl);
+  solver.setLcpSolver(solverImpl);
+
+  EXPECT_EQ(solver.getLcpSolver(), solverImpl);
+  EXPECT_EQ(solver.getSecondaryLcpSolver(), solverImpl);
 }
 
 //==============================================================================

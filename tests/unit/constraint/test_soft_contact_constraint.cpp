@@ -317,11 +317,13 @@ TEST(SoftContactConstraint, CoefficientHelpers)
       = constraint::SoftContactConstraint::getConstraintForceMixing();
 
   EXPECT_TRUE(
-      std::isfinite(ExposedSoftContactConstraint::computeFrictionCoefficient(
-          fixture.rigidShapeNode)));
+      std::isfinite(
+          ExposedSoftContactConstraint::computeFrictionCoefficient(
+              fixture.rigidShapeNode)));
   EXPECT_TRUE(
-      std::isfinite(ExposedSoftContactConstraint::computeRestitutionCoefficient(
-          fixture.rigidShapeNode)));
+      std::isfinite(
+          ExposedSoftContactConstraint::computeRestitutionCoefficient(
+              fixture.rigidShapeNode)));
 
   constraint::SoftContactConstraint::setErrorAllowance(-0.5);
   constraint::SoftContactConstraint::setErrorReductionParameter(1.2);
@@ -330,12 +332,15 @@ TEST(SoftContactConstraint, CoefficientHelpers)
 
   EXPECT_TRUE(
       std::isfinite(constraint::SoftContactConstraint::getErrorAllowance()));
-  EXPECT_TRUE(std::isfinite(
-      constraint::SoftContactConstraint::getErrorReductionParameter()));
-  EXPECT_TRUE(std::isfinite(
-      constraint::SoftContactConstraint::getMaxErrorReductionVelocity()));
-  EXPECT_TRUE(std::isfinite(
-      constraint::SoftContactConstraint::getConstraintForceMixing()));
+  EXPECT_TRUE(
+      std::isfinite(
+          constraint::SoftContactConstraint::getErrorReductionParameter()));
+  EXPECT_TRUE(
+      std::isfinite(
+          constraint::SoftContactConstraint::getMaxErrorReductionVelocity()));
+  EXPECT_TRUE(
+      std::isfinite(
+          constraint::SoftContactConstraint::getConstraintForceMixing()));
 
   constraint::SoftContactConstraint::setErrorAllowance(prevAllowance);
   constraint::SoftContactConstraint::setErrorReductionParameter(prevErp);

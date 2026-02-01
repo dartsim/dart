@@ -147,8 +147,9 @@ TEST(BulletCollisionCoverage, CollideWithShapesAndFilter)
   coneFrame->setShape(std::make_shared<ConeShape>(0.05, 0.2));
   ellipsoidFrame->setShape(
       std::make_shared<EllipsoidShape>(Eigen::Vector3d(0.08, 0.12, 0.1)));
-  meshFrame->setShape(std::make_shared<MeshShape>(
-      Eigen::Vector3d::Ones(), makeSimpleTriMesh()));
+  meshFrame->setShape(
+      std::make_shared<MeshShape>(
+          Eigen::Vector3d::Ones(), makeSimpleTriMesh()));
 
   planeFrame->setTranslation(Eigen::Vector3d::Zero());
   sphereFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.05));

@@ -261,6 +261,28 @@ std::shared_ptr<math::TriMesh<double>> createTetraMesh()
   return mesh;
 }
 
+class SubmeshMismatchMeshShape final : public dynamics::MeshShape
+{
+public:
+  using dynamics::MeshShape::MeshShape;
+  using dynamics::MeshShape::SubMeshRange;
+
+  void setSubMeshRanges(std::vector<SubMeshRange> ranges)
+  {
+    mSubMeshRanges = std::move(ranges);
+  }
+
+  void setMaterials(std::vector<dynamics::MeshMaterial> materials)
+  {
+    mMaterials = std::move(materials);
+  }
+
+  const aiScene* callConvertToAssimpMesh() const
+  {
+    return convertToAssimpMesh();
+  }
+};
+
 } // namespace
 
 TEST(MeshShapeTest, CloneCreatesIndependentScene)
@@ -1031,6 +1053,63 @@ TEST(MeshShapeTest, TriMeshPolygonMeshAndBoundingVolume)
   EXPECT_EQ(shape.getMaterial(0), nullptr);
 }
 
+TEST(MeshShapeTest, EmptyMeshBoundingBoxAndVolume)
+{
+  auto triMesh = std::make_shared<math::TriMesh<double>>();
+  dynamics::MeshShape shape(Eigen::Vector3d(2.0, 3.0, 4.0), triMesh);
+
+  const auto extents = shape.getBoundingBox().computeFullExtents();
+  EXPECT_TRUE(extents.isApprox(Eigen::Vector3d::Zero(), 1e-12));
+  EXPECT_DOUBLE_EQ(shape.getVolume(), 0.0);
+}
+
+TEST(MeshShapeTest, PolygonMeshPreservesVertexNormals)
+{
+  auto triMesh = std::make_shared<math::TriMesh<double>>();
+  triMesh->addVertex(0.0, 0.0, 0.0);
+  triMesh->addVertex(1.0, 0.0, 0.0);
+  triMesh->addVertex(0.0, 1.0, 0.0);
+  triMesh->addTriangle(0, 1, 2);
+  triMesh->addVertexNormal(0.0, 0.0, 1.0);
+  triMesh->addVertexNormal(0.0, 0.0, 1.0);
+  triMesh->addVertexNormal(0.0, 0.0, 1.0);
+
+  dynamics::MeshShape shape(Eigen::Vector3d::Ones(), triMesh, common::Uri());
+  const auto polygonMesh = shape.getPolygonMesh();
+  ASSERT_NE(polygonMesh, nullptr);
+  ASSERT_TRUE(polygonMesh->hasVertexNormals());
+  EXPECT_EQ(polygonMesh->getVertexNormals().size(), 3u);
+}
+
+TEST(MeshShapeTest, ConvertToAssimpMeshSkipsInvalidSubmeshRanges)
+{
+  auto triMesh = std::make_shared<math::TriMesh<double>>();
+  triMesh->addVertex(0.0, 0.0, 0.0);
+  triMesh->addVertex(1.0, 0.0, 0.0);
+  triMesh->addVertex(0.0, 1.0, 0.0);
+  triMesh->addVertex(1.0, 1.0, 0.0);
+  triMesh->addTriangle(0, 1, 2);
+  triMesh->addTriangle(1, 3, 2);
+
+  SubmeshMismatchMeshShape shape(
+      Eigen::Vector3d::Ones(), triMesh, common::Uri());
+
+  std::vector<dynamics::MeshMaterial> materials(2);
+  shape.setMaterials(materials);
+
+  std::vector<SubmeshMismatchMeshShape::SubMeshRange> ranges(1);
+  ranges[0].vertexOffset = 0;
+  ranges[0].vertexCount = triMesh->getVertices().size() + 1;
+  ranges[0].triangleOffset = 0;
+  ranges[0].triangleCount = triMesh->getTriangles().size();
+  ranges[0].materialIndex = 0;
+  shape.setSubMeshRanges(std::move(ranges));
+
+  const aiScene* scene = shape.callConvertToAssimpMesh();
+  ASSERT_NE(scene, nullptr);
+  EXPECT_GE(scene->mNumMeshes, 1u);
+}
+
 TEST(MeshShapeTest, LoadMeshFromFilePathAndUriAccessors)
 {
   const std::string filePath = dart::config::dataPath("obj/BoxSmall.obj");
@@ -1104,4 +1183,70 @@ TEST(MeshShapeTest, UriConstructionSetMeshAndRenderSettings)
 
   EXPECT_EQ(shape.getMeshUri(), quadUri.toString());
   EXPECT_EQ(shape.getMeshPath(), quadPath);
+}
+
+TEST(MeshShapeTest, BoundingBoxVolumeAndColorModes)
+{
+  auto mesh = createTetraMesh();
+  dynamics::MeshShape shape(Eigen::Vector3d(1.0, 2.0, 0.5), mesh);
+
+  const auto extents = shape.getBoundingBox().computeFullExtents();
+  EXPECT_TRUE(extents.isApprox(Eigen::Vector3d(1.0, 2.0, 0.5), 1e-12));
+  EXPECT_NEAR(shape.getVolume(), 1.0 * 2.0 * 0.5, 1e-12);
+
+  shape.setScale(2.0);
+  const auto scaledExtents = shape.getBoundingBox().computeFullExtents();
+  EXPECT_TRUE(scaledExtents.isApprox(Eigen::Vector3d::Constant(2.0), 1e-12));
+  EXPECT_NEAR(shape.getVolume(), 8.0, 1e-12);
+
+  shape.setColorMode(dynamics::MeshShape::SHAPE_COLOR);
+  EXPECT_EQ(shape.getColorMode(), dynamics::MeshShape::SHAPE_COLOR);
+  shape.setColorMode(dynamics::MeshShape::MATERIAL_COLOR);
+  EXPECT_EQ(shape.getColorMode(), dynamics::MeshShape::MATERIAL_COLOR);
+  shape.setColorMode(dynamics::MeshShape::COLOR_INDEX);
+  shape.setColorIndex(3);
+  EXPECT_EQ(shape.getColorIndex(), 3);
+}
+
+TEST(MeshShapeTest, LoadMeshFromTempObjAndUriMetadata)
+{
+  const auto tempDir = common::filesystem::temp_directory_path();
+  const auto timestamp
+      = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+  const auto baseName
+      = std::string("dart_meshshape_load_") + std::to_string(timestamp);
+  const auto objPath = tempDir / (baseName + ".obj");
+
+  {
+    std::ofstream objFile(objPath.string());
+    ASSERT_TRUE(objFile);
+    objFile << "v 0 0 0\n"
+            << "v 1 0 0\n"
+            << "v 0 1 0\n"
+            << "f 1 2 3\n";
+  }
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* scene = dynamics::MeshShape::loadMesh(objPath.string());
+  DART_SUPPRESS_DEPRECATED_END
+  ASSERT_NE(scene, nullptr);
+
+  const common::Uri fileUri = common::Uri::createFromPath(objPath.string());
+  auto retriever = std::make_shared<common::LocalResourceRetriever>();
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  dynamics::MeshShape shape(Eigen::Vector3d::Ones(), scene, fileUri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+
+  EXPECT_EQ(shape.getMeshUri(), fileUri.toString());
+  EXPECT_EQ(shape.getMeshPath(), objPath.string());
+  EXPECT_GE(shape.getVolume(), 0.0);
+
+  const common::Uri nonFileUri("package://example/mesh.obj");
+  auto uriMesh = createTetraMesh();
+  dynamics::MeshShape uriShape(Eigen::Vector3d::Ones(), uriMesh, nonFileUri);
+  EXPECT_EQ(uriShape.getMeshUri(), nonFileUri.toString());
+  EXPECT_TRUE(uriShape.getMeshPath().empty());
+
+  common::error_code ec;
+  common::filesystem::remove(objPath, ec);
 }

@@ -1045,6 +1045,49 @@ TEST(WorldTests, GetSimpleFrameOutOfRange)
 }
 
 //==============================================================================
+TEST(WorldTests, CreateWithBulletCollisionDetector)
+{
+  WorldConfig config;
+  config.name = "bullet_world";
+  config.collisionDetector = CollisionDetectorType::Bullet;
+  auto world = World::create(config);
+  EXPECT_EQ(world->getName(), "bullet_world");
+  EXPECT_NE(world->getCollisionDetector(), nullptr);
+}
+
+TEST(WorldTests, AddDuplicateSimpleFrame)
+{
+  auto world = World::create();
+  auto frame = SimpleFrame::createShared(Frame::World(), "dup_frame");
+
+  world->addSimpleFrame(frame);
+  EXPECT_EQ(world->getNumSimpleFrames(), 1u);
+
+  world->addSimpleFrame(frame);
+  EXPECT_EQ(world->getNumSimpleFrames(), 1u);
+}
+
+TEST(WorldTests, RemoveNonExistentSimpleFrame)
+{
+  auto world = World::create();
+  auto frame1 = SimpleFrame::createShared(Frame::World(), "existing");
+  auto frame2 = SimpleFrame::createShared(Frame::World(), "not_added");
+
+  world->addSimpleFrame(frame1);
+  EXPECT_EQ(world->getNumSimpleFrames(), 1u);
+
+  world->removeSimpleFrame(frame2);
+  EXPECT_EQ(world->getNumSimpleFrames(), 1u);
+}
+
+TEST(WorldTests, ConstSensorManager)
+{
+  auto world = World::create();
+  const World& constWorld = *world;
+  const sensor::SensorManager& mgr = constWorld.getSensorManager();
+  (void)mgr;
+}
+
 TEST(WorldTests, BakeWithMultipleSkeletons)
 {
   auto world = World::create();
@@ -1078,4 +1121,72 @@ TEST(WorldTests, BakeWithMultipleSkeletons)
   }
 
   EXPECT_EQ(recording->getNumFrames(), 5);
+}
+
+#include <dart/dynamics/weld_joint.hpp>
+
+TEST(WorldTests, DartCollisionDetectorBoxContact)
+{
+  auto world = World::create();
+  world->setCollisionDetector(CollisionDetectorType::Dart);
+
+  auto skel1 = createBoxSkeleton("dart_box1", Eigen::Vector3d::Zero());
+  auto skel2 = createBoxSkeleton("dart_box2", Eigen::Vector3d::Zero());
+
+  Eigen::Vector6d pos2 = skel2->getPositions();
+  pos2[2] = 0.78539816339;
+  skel2->setPositions(pos2);
+
+  world->addSkeleton(skel1);
+  world->addSkeleton(skel2);
+
+  collision::CollisionOption option(true, 20u);
+  collision::CollisionResult result;
+  const bool collided = world->checkCollision(option, &result);
+
+  EXPECT_TRUE(collided);
+  EXPECT_TRUE(result.isCollision());
+  EXPECT_GT(result.getNumContacts(), 0u);
+}
+
+TEST(WorldTests, FclCollisionDetectorBoxContact)
+{
+  auto world = World::create();
+  world->setCollisionDetector(CollisionDetectorType::Fcl);
+
+  auto skel1 = createBoxSkeleton("fcl_box1", Eigen::Vector3d::Zero());
+  auto skel2 = createBoxSkeleton("fcl_box2", Eigen::Vector3d(0.3, 0.0, 0.0));
+
+  world->addSkeleton(skel1);
+  world->addSkeleton(skel2);
+
+  collision::CollisionOption option(true, 20u);
+  collision::CollisionResult result;
+  const bool collided = world->checkCollision(option, &result);
+
+  EXPECT_TRUE(collided);
+  EXPECT_TRUE(result.isCollision());
+}
+
+TEST(WorldTests, WeldJointWorldStep)
+{
+  auto world = World::create();
+  world->setTimeStep(0.001);
+
+  auto skel = Skeleton::create("weld_world");
+  auto rootPair = skel->createJointAndBodyNodePair<FreeJoint>(
+      nullptr, FreeJoint::Properties(), BodyNode::AspectProperties("root"));
+  auto childPair = rootPair.second->createChildJointAndBodyNodePair<WeldJoint>(
+      WeldJoint::Properties(), BodyNode::AspectProperties("child"));
+
+  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d::Ones());
+  rootPair.second->createShapeNodeWith<VisualAspect, CollisionAspect>(shape);
+  childPair.second->createShapeNodeWith<VisualAspect, CollisionAspect>(shape);
+
+  world->addSkeleton(skel);
+
+  world->step();
+  world->step();
+
+  EXPECT_EQ(world->getSimFrames(), 2);
 }

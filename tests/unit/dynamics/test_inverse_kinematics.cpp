@@ -574,6 +574,38 @@ private:
   InverseKinematics* mIk;
 };
 
+class InequalityConstraintFunction final : public InverseKinematics::Function,
+                                           public math::Function
+{
+public:
+  explicit InequalityConstraintFunction(InverseKinematics* ik) : mIk(ik) {}
+
+  math::FunctionPtr clone(InverseKinematics* newIk) const override
+  {
+    return std::make_shared<InequalityConstraintFunction>(newIk);
+  }
+
+  double eval(const Eigen::VectorXd& x) override
+  {
+    return x.sum();
+  }
+
+  void evalGradient(
+      const Eigen::VectorXd& x, Eigen::Map<Eigen::VectorXd> grad) override
+  {
+    (void)x;
+    grad.setOnes();
+  }
+
+  const InverseKinematics* getIk() const
+  {
+    return mIk;
+  }
+
+private:
+  InverseKinematics* mIk;
+};
+
 class SimpleHierarchicalObjective final : public HierarchicalIK::Function,
                                           public math::Function
 {
@@ -650,6 +682,38 @@ public:
   std::unique_ptr<GradientMethod> clone(InverseKinematics* newIk) const override
   {
     return std::make_unique<CoverageAnalytical>(newIk);
+  }
+
+private:
+  std::vector<std::size_t> mDofs;
+};
+
+class NoSolutionAnalytical final : public InverseKinematics::Analytical
+{
+public:
+  explicit NoSolutionAnalytical(InverseKinematics* ik)
+    : Analytical(ik, "NoSolutionAnalytical", Properties())
+  {
+    const auto dofs = ik->getDofs();
+    mDofs.assign(dofs.begin(), dofs.end());
+  }
+
+  std::span<const Solution> computeSolutions(
+      const Eigen::Isometry3d& desiredTf) override
+  {
+    (void)desiredTf;
+    mSolutions.clear();
+    return mSolutions;
+  }
+
+  std::span<const std::size_t> getDofs() const override
+  {
+    return mDofs;
+  }
+
+  std::unique_ptr<GradientMethod> clone(InverseKinematics* newIk) const override
+  {
+    return std::make_unique<NoSolutionAnalytical>(newIk);
   }
 
 private:
@@ -825,6 +889,52 @@ TEST(InverseKinematics, AnalyticalGetSolutionsSorting)
 
   const auto solutionsTf = analytical.getSolutions(target->getTransform());
   EXPECT_EQ(solutionsTf.size(), solutions.size());
+}
+
+TEST(InverseKinematics, CloneCopiesInequalityConstraints)
+{
+  auto chain = makeIkChain();
+  auto ik = InverseKinematics::create(chain.endEffector);
+  ASSERT_NE(ik, nullptr);
+
+  auto ineq = std::make_shared<InequalityConstraintFunction>(ik.get());
+  ik->getProblem()->addIneqConstraint(ineq);
+  ASSERT_EQ(ik->getProblem()->getNumIneqConstraints(), 1u);
+
+  auto clonedSkel = chain.skeleton->cloneSkeleton();
+  auto* clonedEnd = clonedSkel->getEndEffector("ee");
+  ASSERT_NE(clonedEnd, nullptr);
+
+  auto clonedIk = ik->clone(clonedEnd);
+  ASSERT_NE(clonedIk, nullptr);
+  ASSERT_EQ(clonedIk->getProblem()->getNumIneqConstraints(), 1u);
+
+  auto clonedConstraint
+      = std::dynamic_pointer_cast<const InequalityConstraintFunction>(
+          clonedIk->getProblem()->getIneqConstraint(0u));
+  ASSERT_NE(clonedConstraint, nullptr);
+  EXPECT_NE(clonedConstraint.get(), ineq.get());
+  EXPECT_EQ(clonedConstraint->getIk(), clonedIk.get());
+}
+
+TEST(InverseKinematics, AnalyticalGradientHandlesNoSolutions)
+{
+  auto chain = makeIkChain();
+  auto ik = InverseKinematics::create(chain.endEffector);
+  ASSERT_NE(ik, nullptr);
+
+  auto target = std::make_shared<SimpleFrame>(Frame::World(), "ik_target_none");
+  Eigen::Isometry3d targetTf = chain.endEffector->getWorldTransform();
+  targetTf.translation() += Eigen::Vector3d(0.1, -0.05, 0.02);
+  target->setTransform(targetTf);
+  ik->setTarget(target);
+
+  auto& analytical = ik->setGradientMethod<NoSolutionAnalytical>();
+  Eigen::VectorXd q = ik->getPositions();
+  Eigen::VectorXd grad = Eigen::VectorXd::Zero(q.size());
+  Eigen::Map<Eigen::VectorXd> gradMap(grad.data(), grad.size());
+  analytical.evalGradient(q, gradMap);
+  EXPECT_TRUE(grad.isZero(1e-12));
 }
 
 TEST(HierarchicalIK, ObjectiveConstraintAndClone)
@@ -1305,4 +1415,69 @@ TEST(HierarchicalIK, WholeBodyCloneCopiesHierarchy)
   ASSERT_NE(cloned, nullptr);
   cloned->refreshIKHierarchy();
   EXPECT_EQ(cloned->getSkeleton()->getNumDofs(), clonedSkel->getNumDofs());
+}
+
+TEST(HierarchicalIK, CloneWholeBodyIkExplicit)
+{
+  auto chain = makeIkChain();
+  auto rootIk = chain.root->getOrCreateIK();
+  auto endIk = chain.endEffector->getOrCreateIK();
+  ASSERT_NE(rootIk, nullptr);
+  ASSERT_NE(endIk, nullptr);
+
+  rootIk->setHierarchyLevel(0);
+  endIk->setHierarchyLevel(1);
+
+  auto wholeBody = WholeBodyIK::create(chain.skeleton);
+  ASSERT_NE(wholeBody, nullptr);
+  wholeBody->refreshIKHierarchy();
+
+  auto clonedSkel = chain.skeleton->cloneSkeleton();
+  auto clonedWhole = wholeBody->cloneWholeBodyIK(clonedSkel);
+  ASSERT_NE(clonedWhole, nullptr);
+  EXPECT_EQ(clonedWhole->getSkeleton()->getNumDofs(), clonedSkel->getNumDofs());
+}
+
+TEST(InverseKinematics, CloneCopiesErrorAndGradientMethods)
+{
+  auto chain = makeIkChain();
+  auto ik = InverseKinematics::create(chain.endEffector);
+  ASSERT_NE(ik, nullptr);
+
+  auto& tsr = ik->setErrorMethod<InverseKinematics::TaskSpaceRegion>();
+  tsr.setBounds(
+      Eigen::Vector6d::Constant(-0.1), Eigen::Vector6d::Constant(0.1));
+  tsr.setComputeFromCenter(true);
+  tsr.setErrorLengthClamp(0.2);
+
+  auto& gradient = ik->setGradientMethod<InverseKinematics::JacobianDLS>();
+  gradient.setDampingCoefficient(0.03);
+  gradient.setComponentWiseClamp(0.15);
+
+  ik->setObjective(std::make_shared<SimpleIkObjective>(ik.get()));
+  ik->setNullSpaceObjective(std::make_shared<SimpleIkObjective>(ik.get()));
+
+  auto clonedSkel = chain.skeleton->cloneSkeleton();
+  auto* clonedEnd = clonedSkel->getEndEffector("ee");
+  ASSERT_NE(clonedEnd, nullptr);
+
+  auto clonedIk = ik->clone(clonedEnd);
+  ASSERT_NE(clonedIk, nullptr);
+
+  auto* clonedTsr = dynamic_cast<InverseKinematics::TaskSpaceRegion*>(
+      &clonedIk->getErrorMethod());
+  ASSERT_NE(clonedTsr, nullptr);
+  EXPECT_TRUE(
+      clonedTsr->getBounds().first.isApprox(Eigen::Vector6d::Constant(-0.1)));
+  EXPECT_TRUE(clonedTsr->isComputingFromCenter());
+  EXPECT_DOUBLE_EQ(clonedTsr->getErrorLengthClamp(), 0.2);
+
+  auto* clonedDls = dynamic_cast<InverseKinematics::JacobianDLS*>(
+      &clonedIk->getGradientMethod());
+  ASSERT_NE(clonedDls, nullptr);
+  EXPECT_NEAR(clonedDls->getDampingCoefficient(), 0.03, 1e-12);
+  EXPECT_DOUBLE_EQ(clonedDls->getComponentWiseClamp(), 0.15);
+
+  EXPECT_NE(clonedIk->getObjective(), nullptr);
+  EXPECT_TRUE(clonedIk->hasNullSpaceObjective());
 }

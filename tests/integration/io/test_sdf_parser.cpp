@@ -30,22 +30,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "helpers/gtest_utils.hpp"
-
 #include "dart/common/resource.hpp"
 #include "dart/common/resource_retriever.hpp"
 #include "dart/common/uri.hpp"
-#include "dart/config.hpp"
 #include "dart/dynamics/ball_joint.hpp"
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/free_joint.hpp"
 #include "dart/dynamics/mesh_shape.hpp"
-#include "dart/dynamics/planar_joint.hpp"
 #include "dart/dynamics/prismatic_joint.hpp"
 #include "dart/dynamics/revolute_joint.hpp"
 #include "dart/dynamics/screw_joint.hpp"
-#include "dart/dynamics/skeleton.hpp"
-#include "dart/dynamics/soft_body_node.hpp"
 #include "dart/dynamics/universal_joint.hpp"
 #include "dart/dynamics/weld_joint.hpp"
 #include "dart/simulation/world.hpp"
@@ -69,7 +63,6 @@
 
 using namespace dart;
 using namespace dart::dynamics;
-using namespace dart::test;
 using namespace math;
 using namespace simulation;
 using namespace utils;
@@ -1748,4 +1741,183 @@ f 1 2 3
         EXPECT_TRUE(mesh->getScale().isApprox(Eigen::Vector3d(0.5, 1.0, 2.0)));
       });
   EXPECT_TRUE(foundMesh);
+}
+
+//==============================================================================
+TEST(SdfParser, WorldParsesJointAndGeometryVariants)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string meshUri = "memory://pkg/meshes/variant.obj";
+  const std::string worldUri = "memory://pkg/worlds/variants.world";
+  const std::string meshData = R"(
+o Variant
+v 0 0 0
+v 1 0 0
+v 0 1 0
+f 1 2 3
+  )";
+
+  const std::string worldSdf = std::string(R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="default">
+    <model name="joint_model">
+      <link name="base">
+        <inertial><mass>1.0</mass></inertial>
+      </link>
+      <link name="link1">
+        <inertial><mass>1.0</mass></inertial>
+      </link>
+      <link name="link2">
+        <inertial><mass>1.0</mass></inertial>
+      </link>
+      <link name="link3">
+        <inertial><mass>1.0</mass></inertial>
+      </link>
+      <link name="link4">
+        <inertial><mass>1.0</mass></inertial>
+      </link>
+      <link name="link5">
+        <inertial><mass>1.0</mass></inertial>
+      </link>
+      <joint name="prismatic_joint" type="prismatic">
+        <parent>base</parent>
+        <child>link1</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+          <limit><lower>-0.5</lower><upper>0.5</upper></limit>
+        </axis>
+      </joint>
+      <joint name="screw_joint" type="screw">
+        <parent>link1</parent>
+        <child>link2</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+        <thread_pitch>0.25</thread_pitch>
+      </joint>
+      <joint name="universal_joint" type="universal">
+        <parent>link2</parent>
+        <child>link3</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+        </axis>
+        <axis2>
+          <xyz>0 1 0</xyz>
+        </axis2>
+      </joint>
+      <joint name="ball_joint" type="ball">
+        <parent>link3</parent>
+        <child>link4</child>
+      </joint>
+      <joint name="fixed_joint" type="fixed">
+        <parent>link4</parent>
+        <child>link5</child>
+      </joint>
+    </model>
+    <model name="geometry_model">
+      <link name="geo_link">
+        <inertial><mass>1.0</mass></inertial>
+        <visual name="cylinder_visual">
+          <geometry>
+            <cylinder><radius>0.2</radius><length>0.5</length></cylinder>
+          </geometry>
+        </visual>
+        <visual name="plane_visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>1 2</size>
+            </plane>
+          </geometry>
+        </visual>
+        <visual name="mesh_visual">
+          <geometry>
+            <mesh>
+              <uri>)") + meshUri
+                               + R"(</uri>
+            </mesh>
+          </geometry>
+        </visual>
+        <visual name="diffuse_visual">
+          <geometry>
+            <box><size>0.1 0.2 0.3</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.1 0.2 0.3</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+  </world>
+</sdf>
+  )";
+
+  retriever->add(meshUri, meshData);
+  retriever->add(worldUri, worldSdf);
+
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+  const auto world = SdfParser::readWorld(common::Uri(worldUri), options);
+  ASSERT_TRUE(world != nullptr);
+  EXPECT_EQ(world->getNumSkeletons(), 2u);
+
+  const auto joints = world->getSkeleton("joint_model");
+  ASSERT_TRUE(joints != nullptr);
+  EXPECT_NE(
+      dynamic_cast<dynamics::PrismaticJoint*>(
+          joints->getJoint("prismatic_joint")),
+      nullptr);
+  EXPECT_NE(
+      dynamic_cast<dynamics::ScrewJoint*>(joints->getJoint("screw_joint")),
+      nullptr);
+  EXPECT_NE(
+      dynamic_cast<dynamics::UniversalJoint*>(
+          joints->getJoint("universal_joint")),
+      nullptr);
+  EXPECT_NE(
+      dynamic_cast<dynamics::BallJoint*>(joints->getJoint("ball_joint")),
+      nullptr);
+  EXPECT_NE(
+      dynamic_cast<dynamics::WeldJoint*>(joints->getJoint("fixed_joint")),
+      nullptr);
+
+  const auto geometry = world->getSkeleton("geometry_model");
+  ASSERT_TRUE(geometry != nullptr);
+  auto* body = geometry->getBodyNode("geo_link");
+  ASSERT_TRUE(body != nullptr);
+
+  bool foundCylinder = false;
+  bool foundMesh = false;
+  bool foundPlane = false;
+  bool foundDiffuse = false;
+  const auto numShapes = body->getNumShapeNodes();
+  for (std::size_t i = 0; i < numShapes; ++i) {
+    const auto* shapeNode = body->getShapeNode(i);
+    ASSERT_NE(shapeNode, nullptr);
+    const auto shape = shapeNode->getShape();
+    if (!shape) {
+      continue;
+    }
+    if (shape->getType() == "CylinderShape") {
+      foundCylinder = true;
+    } else if (shape->is<dynamics::MeshShape>()) {
+      foundMesh = true;
+    } else if (shape->is<dynamics::BoxShape>()) {
+      auto box = std::dynamic_pointer_cast<const dynamics::BoxShape>(shape);
+      if (box && box->getSize().z() < 0.01) {
+        foundPlane = true;
+      }
+    }
+    const auto* visual = shapeNode->getVisualAspect();
+    if (visual
+        && visual->getRGBA().isApprox(Eigen::Vector4d(0.1, 0.2, 0.3, 1.0))) {
+      foundDiffuse = true;
+    }
+  }
+
+  EXPECT_TRUE(foundCylinder);
+  EXPECT_TRUE(foundMesh);
+  EXPECT_TRUE(foundPlane);
+  EXPECT_TRUE(foundDiffuse);
 }

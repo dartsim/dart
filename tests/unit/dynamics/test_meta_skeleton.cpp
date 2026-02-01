@@ -1175,3 +1175,24 @@ TEST(MetaSkeletonTests, VelocityAndAccelerationLimitVectors)
   EXPECT_DOUBLE_EQ(accelUpperOut[1], 2.5);
   EXPECT_DOUBLE_EQ(accelUpperOut[2], 3.5);
 }
+
+//==============================================================================
+TEST(MetaSkeletonTests, IndexLimitAccessors)
+{
+  auto skel = createChainSkeleton(3, "limit_indexed");
+
+  skel->setVelocityLowerLimit(1, -1.1);
+  skel->setVelocityUpperLimit(1, 1.2);
+  EXPECT_DOUBLE_EQ(skel->getVelocityLowerLimit(1), -1.1);
+  EXPECT_DOUBLE_EQ(skel->getVelocityUpperLimit(1), 1.2);
+
+  skel->setAccelerationLowerLimit(2, -2.0);
+  skel->setAccelerationUpperLimit(2, 2.0);
+  EXPECT_DOUBLE_EQ(skel->getAccelerationLowerLimit(2), -2.0);
+  EXPECT_DOUBLE_EQ(skel->getAccelerationUpperLimit(2), 2.0);
+
+  skel->setForceLowerLimit(0, -3.0);
+  skel->setForceUpperLimit(0, 3.0);
+  EXPECT_DOUBLE_EQ(skel->getForceLowerLimit(0), -3.0);
+  EXPECT_DOUBLE_EQ(skel->getForceUpperLimit(0), 3.0);
+}

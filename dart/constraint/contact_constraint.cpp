@@ -68,16 +68,18 @@ ContactConstraint::ContactConstraint(
     const ContactSurfaceParams& contactSurfaceParams)
   : ConstraintBase(),
     mTimeStep(timeStep),
-    mBodyNodeA(const_cast<dynamics::ShapeFrame*>(
-                   contact.collisionObject1->getShapeFrame())
-                   ->asShapeNode()
-                   ->getBodyNodePtr()
-                   .get()),
-    mBodyNodeB(const_cast<dynamics::ShapeFrame*>(
-                   contact.collisionObject2->getShapeFrame())
-                   ->asShapeNode()
-                   ->getBodyNodePtr()
-                   .get()),
+    mBodyNodeA(
+        const_cast<dynamics::ShapeFrame*>(
+            contact.collisionObject1->getShapeFrame())
+            ->asShapeNode()
+            ->getBodyNodePtr()
+            .get()),
+    mBodyNodeB(
+        const_cast<dynamics::ShapeFrame*>(
+            contact.collisionObject2->getShapeFrame())
+            ->asShapeNode()
+            ->getBodyNodePtr()
+            .get()),
     mContact(contact),
     mFirstFrictionalDirection(DART_DEFAULT_FRICTION_DIR),
     mPrimarySlipCompliance(DART_DEFAULT_SLIP_COMPLIANCE),

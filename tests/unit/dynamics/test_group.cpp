@@ -581,3 +581,31 @@ TEST(GroupTest, AddNullComponentWithoutWarning)
 
   EXPECT_FALSE(group->addComponent(nullptr, false));
 }
+
+//==============================================================================
+TEST(GroupTest, ConstAccessorsAndMembershipQueries)
+{
+  auto skel = createNLinkRobot(3, Eigen::Vector3d(0.1, 0.1, 0.5), DOF_PITCH);
+  std::vector<BodyNode*> bodyNodes;
+  bodyNodes.reserve(skel->getNumBodyNodes());
+  for (std::size_t i = 0; i < skel->getNumBodyNodes(); ++i) {
+    bodyNodes.push_back(skel->getBodyNode(i));
+  }
+
+  auto group = Group::create("const_group", bodyNodes);
+  const Group& constGroup = *group;
+
+  EXPECT_EQ(constGroup.getNumBodyNodes(), skel->getNumBodyNodes());
+  EXPECT_EQ(constGroup.getNumJoints(), skel->getNumJoints());
+  EXPECT_EQ(constGroup.getNumDofs(), skel->getNumDofs());
+
+  auto* body0 = skel->getBodyNode(0);
+  auto* joint0 = skel->getJoint(0);
+  auto* dof0 = skel->getDof(0);
+
+  EXPECT_TRUE(constGroup.hasBodyNode(body0));
+  EXPECT_TRUE(constGroup.hasJoint(joint0));
+  EXPECT_NE(constGroup.getIndexOf(body0, false), INVALID_INDEX);
+  EXPECT_NE(constGroup.getIndexOf(joint0, false), INVALID_INDEX);
+  EXPECT_NE(constGroup.getIndexOf(dof0, false), INVALID_INDEX);
+}

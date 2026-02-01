@@ -201,6 +201,35 @@ TEST(SkeletonConfiguration, GetConfigWithIndicesAndCommands)
   EXPECT_EQ(config.mVelocities.size(), 0);
 }
 
+TEST(SkeletonConfiguration, GetConfigCommandsForcesAccelerations)
+{
+  auto skeleton = Skeleton::create("cmd_test");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+
+  const std::size_t dofs = skeleton->getNumDofs();
+  ASSERT_EQ(dofs, 2u);
+
+  Eigen::VectorXd forces(2);
+  forces << 1.0, 2.0;
+  Eigen::VectorXd accelerations(2);
+  accelerations << -0.1, 0.4;
+
+  skeleton->setForces(forces);
+  skeleton->setAccelerations(accelerations);
+
+  // For FORCE actuator type, setForce() also writes mCommands, so commands
+  // should match forces after the call above.
+  const auto config = skeleton->getConfiguration(
+      Skeleton::CONFIG_COMMANDS | Skeleton::CONFIG_FORCES
+      | Skeleton::CONFIG_ACCELERATIONS);
+  EXPECT_EQ(config.mPositions.size(), 0);
+  EXPECT_EQ(config.mVelocities.size(), 0);
+  EXPECT_TRUE(config.mCommands.isApprox(forces));
+  EXPECT_TRUE(config.mForces.isApprox(forces));
+  EXPECT_TRUE(config.mAccelerations.isApprox(accelerations));
+}
+
 TEST(SkeletonConfiguration, UpdatesSelectedDofs)
 {
   auto skeleton = createTestSkeleton();
@@ -239,4 +268,36 @@ TEST(SkeletonConfiguration, UpdatesSelectedDofs)
   EXPECT_EQ(subsetConfig.mPositions.size(), 0);
   EXPECT_EQ(subsetConfig.mVelocities.size(), positions.size());
   EXPECT_TRUE(subsetConfig.mVelocities.isApprox(velocities));
+}
+
+TEST(SkeletonConfiguration, ConfigurationFlagsForForcesAndCommands)
+{
+  auto skeleton = Skeleton::create("config_flags_skel");
+  auto root = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  root.first->setAxis(Eigen::Vector3d::UnitZ());
+  auto child = root.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  child.first->setAxis(Eigen::Vector3d::UnitY());
+
+  ASSERT_EQ(skeleton->getNumDofs(), 2u);
+
+  Eigen::VectorXd forces(2);
+  forces << 1.0, -2.0;
+  skeleton->setForces(forces);
+
+  Eigen::VectorXd accelerations(2);
+  accelerations << 0.4, -0.3;
+  skeleton->setAccelerations(accelerations);
+
+  Eigen::VectorXd commands(2);
+  commands << -0.5, 0.25;
+  skeleton->setCommands(commands);
+
+  const auto config = skeleton->getConfiguration(
+      Skeleton::CONFIG_FORCES | Skeleton::CONFIG_ACCELERATIONS
+      | Skeleton::CONFIG_COMMANDS);
+  EXPECT_EQ(config.mPositions.size(), 0);
+  EXPECT_EQ(config.mVelocities.size(), 0);
+  EXPECT_TRUE(config.mForces.isApprox(forces));
+  EXPECT_TRUE(config.mAccelerations.isApprox(accelerations));
+  EXPECT_TRUE(config.mCommands.isApprox(commands));
 }

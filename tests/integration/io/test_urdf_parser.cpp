@@ -32,15 +32,20 @@
 
 #include "helpers/gtest_utils.hpp"
 
-#include "dart/config.hpp"
+#include "dart/dynamics/cylinder_shape.hpp"
 #include "dart/dynamics/free_joint.hpp"
 #include "dart/dynamics/mesh_shape.hpp"
 #include "dart/dynamics/planar_joint.hpp"
-#include "dart/dynamics/revolute_joint.hpp"
+#include "dart/dynamics/sphere_shape.hpp"
 #include "dart/dynamics/weld_joint.hpp"
-#include "dart/io/read.hpp"
 #include "dart/simulation/world.hpp"
 #include "dart/utils/urdf/urdf_parser.hpp"
+
+#if DART_IO_HAS_URDF
+  #include "dart/config.hpp"
+  #include "dart/dynamics/revolute_joint.hpp"
+  #include "dart/io/read.hpp"
+#endif
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -49,7 +54,6 @@
 #include <chrono>
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 
 using namespace dart;
 using namespace dart::test;
@@ -1512,4 +1516,160 @@ TEST(UrdfParser, CollisionGeometryTypesParsing)
   EXPECT_EQ(boxCount, 1u);
   EXPECT_EQ(sphereCount, 1u);
   EXPECT_EQ(cylinderCount, 1u);
+}
+
+//==============================================================================
+TEST(UrdfParser, ParsesJointTypesGeometryAndInertia)
+{
+  const auto tempDir = makeTempDir("dart-urdf-variants");
+  const auto meshPath = tempDir / "mesh.obj";
+  std::ofstream meshFile(meshPath);
+  ASSERT_TRUE(meshFile.is_open());
+  meshFile << "o Mesh\n"
+           << "v 0 0 0\n"
+           << "v 1 0 0\n"
+           << "v 0 1 0\n"
+           << "f 1 2 3\n";
+  meshFile.close();
+
+  const std::string urdfStr = R"(
+    <robot name="variants">
+      <link name="base">
+        <inertial>
+          <mass value="3.0"/>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <inertia ixx="0.3" iyy="0.3" izz="0.3" ixy="0" ixz="0" iyz="0"/>
+        </inertial>
+        <visual>
+          <geometry>
+            <cylinder radius="0.2" length="0.5"/>
+          </geometry>
+        </visual>
+        <visual>
+          <geometry>
+            <mesh filename="mesh.obj" scale="1 2 3"/>
+          </geometry>
+        </visual>
+        <collision>
+          <geometry>
+            <sphere radius="0.1"/>
+          </geometry>
+        </collision>
+      </link>
+      <link name="link1"/>
+      <joint name="continuous_joint" type="continuous">
+        <parent link="base"/>
+        <child link="link1"/>
+        <axis xyz="0 0 1"/>
+      </joint>
+      <link name="link2"/>
+      <joint name="fixed_joint" type="fixed">
+        <parent link="link1"/>
+        <child link="link2"/>
+      </joint>
+      <link name="link3"/>
+      <joint name="floating_joint" type="floating">
+        <parent link="link2"/>
+        <child link="link3"/>
+      </joint>
+    </robot>
+  )";
+
+  UrdfParser parser;
+  const Uri baseUri = Uri::createFromPath((tempDir / "model.urdf").string());
+  const auto robot = parser.parseSkeletonString(urdfStr, baseUri);
+  ASSERT_TRUE(robot);
+
+  auto* continuous = robot->getJoint("continuous_joint");
+  auto* fixed = robot->getJoint("fixed_joint");
+  auto* floating = robot->getJoint("floating_joint");
+  ASSERT_NE(continuous, nullptr);
+  ASSERT_NE(fixed, nullptr);
+  ASSERT_NE(floating, nullptr);
+  EXPECT_EQ(continuous->getType(), "RevoluteJoint");
+  EXPECT_EQ(fixed->getType(), "WeldJoint");
+  EXPECT_EQ(floating->getType(), "FreeJoint");
+
+  auto* base = robot->getBodyNode("base");
+  ASSERT_NE(base, nullptr);
+  EXPECT_DOUBLE_EQ(base->getMass(), 3.0);
+
+  bool foundCylinder = false;
+  bool foundSphere = false;
+  bool foundMesh = false;
+  base->eachShapeNode([&](const dynamics::ShapeNode* node) {
+    const auto shape = node->getShape();
+    if (!shape) {
+      return;
+    }
+    if (shape->is<dynamics::CylinderShape>()) {
+      foundCylinder = true;
+    } else if (shape->is<dynamics::SphereShape>()) {
+      foundSphere = true;
+    } else if (shape->is<dynamics::MeshShape>()) {
+      const auto mesh
+          = std::dynamic_pointer_cast<const dynamics::MeshShape>(shape);
+      ASSERT_TRUE(mesh != nullptr);
+      EXPECT_TRUE(mesh->getScale().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+      foundMesh = true;
+    }
+  });
+
+  EXPECT_TRUE(foundCylinder);
+  EXPECT_TRUE(foundSphere);
+  EXPECT_TRUE(foundMesh);
+
+  std::filesystem::remove_all(tempDir);
+}
+
+//==============================================================================
+TEST(UrdfParser, TransmissionsSkipInvalidReductionAndMultiDof)
+{
+  const std::string urdfStr = R"(
+    <robot name="transmission_variants">
+      <link name="base"/>
+      <link name="link1"/>
+      <joint name="j1" type="continuous">
+        <parent link="base"/>
+        <child link="link1"/>
+        <axis xyz="0 0 1"/>
+      </joint>
+      <link name="link2"/>
+      <joint name="j2" type="floating">
+        <parent link="link1"/>
+        <child link="link2"/>
+      </joint>
+
+      <transmission name="tx_bad_ratio">
+        <type>transmission_interface/SimpleTransmission</type>
+        <actuator name="motor">
+          <mechanicalReduction>bad</mechanicalReduction>
+        </actuator>
+        <joint name="j1">
+          <hardwareInterface>EffortJointInterface</hardwareInterface>
+        </joint>
+      </transmission>
+      <transmission name="tx_multi_dof">
+        <type>transmission_interface/SimpleTransmission</type>
+        <actuator name="motor">
+          <mechanicalReduction>2.0</mechanicalReduction>
+        </actuator>
+        <joint name="j2">
+          <hardwareInterface>EffortJointInterface</hardwareInterface>
+        </joint>
+      </transmission>
+    </robot>
+  )";
+
+  UrdfParser parser;
+  const auto robot = parser.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+
+  auto* j1 = robot->getJoint("j1");
+  auto* j2 = robot->getJoint("j2");
+  ASSERT_NE(j1, nullptr);
+  ASSERT_NE(j2, nullptr);
+
+  EXPECT_NE(j1->getActuatorType(), dart::dynamics::Joint::MIMIC);
+  EXPECT_NE(j2->getActuatorType(), dart::dynamics::Joint::MIMIC);
 }

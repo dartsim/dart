@@ -30,8 +30,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "helpers/dynamics_helpers.hpp"
-
 #include "helpers/gtest_utils.hpp"
 
 #include "dart/utils/All.hpp"
@@ -1556,6 +1554,234 @@ TEST(SkelParser, SoftBodySphereProperties)
 }
 
 //==============================================================================
+TEST(SkelParser, WorldXmlParsesJointAndShapeVariants)
+{
+  static std::size_t counter = 0;
+  const auto tempDir = std::filesystem::temp_directory_path()
+                       / ("dart_skel_variants_" + std::to_string(counter++));
+  std::filesystem::create_directories(tempDir);
+  const auto meshPath = tempDir / "mesh.obj";
+
+  std::ofstream meshFile(meshPath.string(), std::ios::binary);
+  ASSERT_TRUE(meshFile.is_open());
+  meshFile << "o Mesh\n"
+           << "v 0 0 0\n"
+           << "v 1 0 0\n"
+           << "v 0 1 0\n"
+           << "f 1 2 3\n";
+  meshFile.close();
+
+  const std::string skelXml = R"(
+<skel version="1.0">
+  <world name="world">
+    <skeleton name="skel">
+      <body name="base">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <ellipsoid>
+              <size>0.2 0.3 0.4</size>
+            </ellipsoid>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <body name="link1">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <cylinder>
+              <radius>0.2</radius>
+              <height>0.5</height>
+            </cylinder>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <body name="link2">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+        <visualization_shape>
+          <geometry>
+            <mesh>
+              <file_name>mesh.obj</file_name>
+              <scale>1 2 3</scale>
+            </mesh>
+          </geometry>
+        </visualization_shape>
+      </body>
+      <body name="link3">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="link4">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <body name="link5">
+        <inertia>
+          <mass>1.0</mass>
+          <moment_of_inertia>
+            <ixx>0.1</ixx>
+            <iyy>0.1</iyy>
+            <izz>0.1</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </moment_of_inertia>
+        </inertia>
+      </body>
+      <joint type="free" name="root_joint">
+        <parent>world</parent>
+        <child>base</child>
+      </joint>
+      <joint type="prismatic" name="prismatic_joint" actuator="force">
+        <parent>base</parent>
+        <child>link1</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+        </axis>
+      </joint>
+      <joint type="universal" name="universal_joint" actuator="passive">
+        <parent>link1</parent>
+        <child>link2</child>
+        <axis>
+          <xyz>1 0 0</xyz>
+        </axis>
+        <axis2>
+          <xyz>0 1 0</xyz>
+        </axis2>
+      </joint>
+      <joint type="ball" name="ball_joint" actuator="velocity">
+        <parent>link2</parent>
+        <child>link3</child>
+      </joint>
+      <joint type="euler" name="euler_joint" actuator="acceleration">
+        <parent>link3</parent>
+        <child>link4</child>
+        <axis_order>xyz</axis_order>
+      </joint>
+      <joint type="planar" name="planar_joint" actuator="locked">
+        <parent>link4</parent>
+        <child>link5</child>
+        <plane type="arbitrary">
+          <translation_axis1>
+            <xyz>1 0 0</xyz>
+          </translation_axis1>
+          <translation_axis2>
+            <xyz>0 1 0</xyz>
+          </translation_axis2>
+        </plane>
+      </joint>
+    </skeleton>
+  </world>
+</skel>
+  )";
+
+  const auto baseUri
+      = common::Uri::createFromPath((tempDir / "world.skel").string());
+  const auto world = SkelParser::readWorldXML(skelXml, baseUri);
+  ASSERT_NE(world, nullptr);
+  const auto skel = world->getSkeleton("skel");
+  ASSERT_NE(skel, nullptr);
+
+  EXPECT_NE(
+      dynamic_cast<dynamics::PrismaticJoint*>(
+          skel->getJoint("prismatic_joint")),
+      nullptr);
+  EXPECT_NE(
+      dynamic_cast<dynamics::UniversalJoint*>(
+          skel->getJoint("universal_joint")),
+      nullptr);
+  EXPECT_NE(
+      dynamic_cast<dynamics::BallJoint*>(skel->getJoint("ball_joint")),
+      nullptr);
+  EXPECT_NE(
+      dynamic_cast<dynamics::EulerJoint*>(skel->getJoint("euler_joint")),
+      nullptr);
+  EXPECT_NE(
+      dynamic_cast<dynamics::PlanarJoint*>(skel->getJoint("planar_joint")),
+      nullptr);
+
+  EXPECT_EQ(
+      skel->getJoint("prismatic_joint")->getActuatorType(),
+      dynamics::Joint::FORCE);
+  EXPECT_EQ(
+      skel->getJoint("universal_joint")->getActuatorType(),
+      dynamics::Joint::PASSIVE);
+  EXPECT_EQ(
+      skel->getJoint("ball_joint")->getActuatorType(),
+      dynamics::Joint::VELOCITY);
+  EXPECT_EQ(
+      skel->getJoint("euler_joint")->getActuatorType(),
+      dynamics::Joint::ACCELERATION);
+  EXPECT_EQ(
+      skel->getJoint("planar_joint")->getActuatorType(),
+      dynamics::Joint::LOCKED);
+
+  auto* baseBody = skel->getBodyNode("base");
+  auto* link1 = skel->getBodyNode("link1");
+  auto* link2 = skel->getBodyNode("link2");
+  ASSERT_NE(baseBody, nullptr);
+  ASSERT_NE(link1, nullptr);
+  ASSERT_NE(link2, nullptr);
+
+  EXPECT_TRUE(
+      baseBody->getShapeNode(0)->getShape()->is<dynamics::EllipsoidShape>());
+  EXPECT_TRUE(
+      link1->getShapeNode(0)->getShape()->is<dynamics::CylinderShape>());
+  EXPECT_TRUE(link2->getShapeNode(0)->getShape()->is<dynamics::MeshShape>());
+
+  std::error_code ec;
+  std::filesystem::remove_all(tempDir, ec);
+}
+
+//==============================================================================
 TEST(SkelParser, SoftBodyBoxProperties)
 {
   const std::string skelXml = R"(<?xml version="1.0" ?>
@@ -2449,4 +2675,535 @@ TEST(SkelParser, JointTypesFromXml)
       = dynamic_cast<dynamics::EulerJoint*>(skel->getJoint("euler_joint"));
   ASSERT_NE(euler, nullptr);
   EXPECT_EQ(euler->getAxisOrder(), dynamics::EulerJoint::AxisOrder::XYZ);
+}
+
+#include <tinyxml2.h>
+
+namespace dart {
+namespace io {
+
+dynamics::SkeletonPtr readSkeleton(
+    const common::Uri& uri, const ReadOptions& options)
+{
+  return utils::SkelParser::readSkeleton(uri, options.resourceRetriever);
+}
+
+} // namespace io
+} // namespace dart
+
+namespace {
+
+std::filesystem::path makeTempSkelPath(const std::string& tag)
+{
+  static std::size_t counter = 0;
+  const auto filename
+      = "dart_skel_" + tag + "_" + std::to_string(counter++) + ".skel";
+  return std::filesystem::temp_directory_path() / filename;
+}
+
+bool writeSkelXml(const std::filesystem::path& path, std::string_view xml)
+{
+  tinyxml2::XMLDocument doc;
+  const std::string xmlCopy(xml);
+  if (doc.Parse(xmlCopy.c_str()) != tinyxml2::XML_SUCCESS) {
+    return false;
+  }
+  return doc.SaveFile(path.string().c_str()) == tinyxml2::XML_SUCCESS;
+}
+
+dynamics::SkeletonPtr readSkeletonFromSkelXml(std::string_view xml)
+{
+  const auto path = makeTempSkelPath("inline");
+  if (!writeSkelXml(path, xml)) {
+    return nullptr;
+  }
+  auto skeleton = dart::io::readSkeleton(path.string());
+  std::error_code ec;
+  std::filesystem::remove(path, ec);
+  return skeleton;
+}
+
+} // namespace
+
+//==============================================================================
+TEST(SkelParser, ParsesJointTypesLimitsAndDofsFromXml)
+{
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <skeleton name="skel">
+    <body name="base">
+      <inertia>
+        <mass>1.0</mass>
+        <moment_of_inertia>
+          <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </moment_of_inertia>
+      </inertia>
+    </body>
+    <body name="link1">
+      <inertia>
+        <mass>1.0</mass>
+        <moment_of_inertia>
+          <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </moment_of_inertia>
+      </inertia>
+    </body>
+    <body name="link3">
+      <inertia>
+        <mass>1.0</mass>
+        <moment_of_inertia>
+          <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </moment_of_inertia>
+      </inertia>
+    </body>
+    <body name="link4">
+      <inertia>
+        <mass>1.0</mass>
+        <moment_of_inertia>
+          <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </moment_of_inertia>
+      </inertia>
+    </body>
+    <body name="link5">
+      <inertia>
+        <mass>1.0</mass>
+        <moment_of_inertia>
+          <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </moment_of_inertia>
+      </inertia>
+    </body>
+    <body name="link6">
+      <inertia>
+        <mass>1.0</mass>
+        <moment_of_inertia>
+          <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </moment_of_inertia>
+      </inertia>
+    </body>
+    <joint type="free" name="root_joint">
+      <parent>world</parent>
+      <child>base</child>
+      <init_pos>0.1 0.2 0.3 0.4 0.5 0.6</init_pos>
+      <init_vel>-0.1 -0.2 -0.3 -0.4 -0.5 -0.6</init_vel>
+    </joint>
+    <joint type="prismatic" name="prismatic_joint">
+      <parent>base</parent>
+      <child>link1</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <lower>-0.2</lower>
+          <upper>0.4</upper>
+        </limit>
+        <dynamics>
+          <damping>0.1</damping>
+          <friction>0.2</friction>
+          <spring_rest_position>0.3</spring_rest_position>
+          <spring_stiffness>4.0</spring_stiffness>
+        </dynamics>
+      </axis>
+      <dof local_index="0">
+        <position lower="-0.2" upper="0.4" initial="0.1" />
+        <damping>0.15</damping>
+        <spring_stiffness>2.5</spring_stiffness>
+      </dof>
+    </joint>
+    <joint type="translational" name="translational_joint">
+      <parent>link1</parent>
+      <child>link3</child>
+      <init_pos>0.1 0.2 0.3</init_pos>
+      <init_vel>-0.4 -0.5 -0.6</init_vel>
+      <dof local_index="1">
+        <position lower="-1.0" upper="1.0" initial="0.2" />
+      </dof>
+    </joint>
+    <joint type="universal" name="universal_joint">
+      <parent>link3</parent>
+      <child>link4</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <lower>-0.4</lower>
+          <upper>0.6</upper>
+        </limit>
+        <dynamics>
+          <damping>0.2</damping>
+          <spring_stiffness>0.9</spring_stiffness>
+        </dynamics>
+      </axis>
+      <axis2>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-0.5</lower>
+          <upper>0.7</upper>
+        </limit>
+        <dynamics>
+          <damping>0.3</damping>
+          <spring_stiffness>1.1</spring_stiffness>
+        </dynamics>
+      </axis2>
+      <init_pos>0.1 0.2</init_pos>
+      <init_vel>0.3 0.4</init_vel>
+      <dof local_index="0">
+        <position lower="-0.4" upper="0.6" initial="0.1" />
+      </dof>
+      <dof local_index="1">
+        <position lower="-0.5" upper="0.7" initial="0.2" />
+      </dof>
+    </joint>
+    <joint type="ball" name="ball_joint">
+      <parent>link4</parent>
+      <child>link5</child>
+      <init_pos>0.1 0.2 0.3</init_pos>
+      <init_vel>-0.1 -0.2 -0.3</init_vel>
+      <dof local_index="2">
+        <position lower="-0.3" upper="0.3" initial="0.2" />
+      </dof>
+    </joint>
+    <joint type="planar" name="planar_joint">
+      <parent>link5</parent>
+      <child>link6</child>
+      <plane type="arbitrary">
+        <translation_axis1>
+          <xyz>1 0 0</xyz>
+        </translation_axis1>
+        <translation_axis2>
+          <xyz>0 1 0</xyz>
+        </translation_axis2>
+      </plane>
+      <init_pos>0.2 0.3 0.4</init_pos>
+      <init_vel>-0.2 -0.3 -0.4</init_vel>
+    </joint>
+  </skeleton>
+</skel>
+  )";
+
+  const auto skel = readSkeletonFromSkelXml(skelXml);
+  ASSERT_NE(skel, nullptr);
+
+  auto* prismatic = dynamic_cast<dynamics::PrismaticJoint*>(
+      skel->getJoint("prismatic_joint"));
+  ASSERT_NE(prismatic, nullptr);
+  EXPECT_DOUBLE_EQ(prismatic->getPositionLowerLimit(0), -0.2);
+  EXPECT_DOUBLE_EQ(prismatic->getPositionUpperLimit(0), 0.4);
+  EXPECT_DOUBLE_EQ(prismatic->getDampingCoefficient(0), 0.15);
+  EXPECT_DOUBLE_EQ(prismatic->getSpringStiffness(0), 2.5);
+
+  auto* translational = dynamic_cast<dynamics::TranslationalJoint*>(
+      skel->getJoint("translational_joint"));
+  ASSERT_NE(translational, nullptr);
+  EXPECT_TRUE(
+      translational->getPositions().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+  EXPECT_TRUE(translational->getVelocities().isApprox(
+      Eigen::Vector3d(-0.4, -0.5, -0.6)));
+
+  auto* universal = dynamic_cast<dynamics::UniversalJoint*>(
+      skel->getJoint("universal_joint"));
+  ASSERT_NE(universal, nullptr);
+  EXPECT_DOUBLE_EQ(universal->getPositionLowerLimit(0), -0.4);
+  EXPECT_DOUBLE_EQ(universal->getPositionUpperLimit(0), 0.6);
+  EXPECT_DOUBLE_EQ(universal->getDampingCoefficient(0), 0.2);
+  EXPECT_DOUBLE_EQ(universal->getSpringStiffness(0), 0.9);
+  EXPECT_DOUBLE_EQ(universal->getPositionLowerLimit(1), -0.5);
+  EXPECT_DOUBLE_EQ(universal->getPositionUpperLimit(1), 0.7);
+  EXPECT_DOUBLE_EQ(universal->getDampingCoefficient(1), 0.3);
+  EXPECT_DOUBLE_EQ(universal->getSpringStiffness(1), 1.1);
+
+  auto* ball = dynamic_cast<dynamics::BallJoint*>(skel->getJoint("ball_joint"));
+  ASSERT_NE(ball, nullptr);
+  EXPECT_EQ(ball->getNumDofs(), 3u);
+
+  auto* planar
+      = dynamic_cast<dynamics::PlanarJoint*>(skel->getJoint("planar_joint"));
+  ASSERT_NE(planar, nullptr);
+  EXPECT_EQ(
+      planar->getPlaneType(), dynamics::PlanarJoint::PlaneType::ARBITRARY);
+  EXPECT_TRUE(planar->getPositions().isApprox(Eigen::Vector3d(0.2, 0.3, 0.4)));
+  EXPECT_TRUE(
+      planar->getVelocities().isApprox(Eigen::Vector3d(-0.2, -0.3, -0.4)));
+}
+
+//==============================================================================
+TEST(SkelParser, ParsesRigidShapeVariantsFromXml)
+{
+  static std::size_t counter = 0;
+  const auto tempDir = std::filesystem::temp_directory_path()
+                       / ("dart_skel_shapes_" + std::to_string(counter++));
+  std::filesystem::create_directories(tempDir);
+
+  const auto meshPath = tempDir / "mesh.obj";
+  std::ofstream meshFile(meshPath.string(), std::ios::binary);
+  ASSERT_TRUE(meshFile.is_open());
+  meshFile << "o Mesh\n"
+           << "v 0 0 0\n"
+           << "v 1 0 0\n"
+           << "v 0 1 0\n"
+           << "f 1 2 3\n";
+  meshFile.close();
+
+  const auto skelPath = tempDir / "shapes.skel";
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <skeleton name="skel">
+    <body name="box_body">
+      <inertia>
+        <mass>1.0</mass>
+        <moment_of_inertia>
+          <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </moment_of_inertia>
+      </inertia>
+      <visualization_shape>
+        <geometry>
+          <box><size>0.2 0.3 0.4</size></box>
+        </geometry>
+      </visualization_shape>
+    </body>
+    <body name="ellipsoid_body">
+      <inertia>
+        <mass>1.0</mass>
+        <moment_of_inertia>
+          <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </moment_of_inertia>
+      </inertia>
+      <visualization_shape>
+        <geometry>
+          <ellipsoid><size>0.1 0.2 0.3</size></ellipsoid>
+        </geometry>
+      </visualization_shape>
+    </body>
+    <body name="cylinder_body">
+      <inertia>
+        <mass>1.0</mass>
+        <moment_of_inertia>
+          <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </moment_of_inertia>
+      </inertia>
+      <visualization_shape>
+        <geometry>
+          <cylinder><radius>0.2</radius><height>0.5</height></cylinder>
+        </geometry>
+      </visualization_shape>
+    </body>
+    <body name="capsule_body">
+      <inertia>
+        <mass>1.0</mass>
+        <moment_of_inertia>
+          <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </moment_of_inertia>
+      </inertia>
+      <visualization_shape>
+        <geometry>
+          <capsule><radius>0.15</radius><height>0.4</height></capsule>
+        </geometry>
+      </visualization_shape>
+    </body>
+    <body name="mesh_body">
+      <inertia>
+        <mass>1.0</mass>
+        <moment_of_inertia>
+          <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </moment_of_inertia>
+      </inertia>
+      <visualization_shape>
+        <geometry>
+          <mesh>
+            <file_name>mesh.obj</file_name>
+            <scale>2 3 4</scale>
+          </mesh>
+        </geometry>
+      </visualization_shape>
+    </body>
+    <joint type="free" name="root_joint">
+      <parent>world</parent>
+      <child>box_body</child>
+    </joint>
+    <joint type="weld" name="ellipsoid_joint">
+      <parent>box_body</parent>
+      <child>ellipsoid_body</child>
+    </joint>
+    <joint type="weld" name="cylinder_joint">
+      <parent>ellipsoid_body</parent>
+      <child>cylinder_body</child>
+    </joint>
+    <joint type="weld" name="capsule_joint">
+      <parent>cylinder_body</parent>
+      <child>capsule_body</child>
+    </joint>
+    <joint type="weld" name="mesh_joint">
+      <parent>capsule_body</parent>
+      <child>mesh_body</child>
+    </joint>
+  </skeleton>
+</skel>
+  )";
+
+  ASSERT_TRUE(writeSkelXml(skelPath, skelXml));
+  const auto skel = dart::io::readSkeleton(skelPath.string());
+  ASSERT_NE(skel, nullptr);
+
+  auto* boxBody = skel->getBodyNode("box_body");
+  ASSERT_NE(boxBody, nullptr);
+  EXPECT_TRUE(boxBody->getShapeNode(0)->getShape()->is<dynamics::BoxShape>());
+
+  auto* ellipsoidBody = skel->getBodyNode("ellipsoid_body");
+  ASSERT_NE(ellipsoidBody, nullptr);
+  EXPECT_TRUE(ellipsoidBody->getShapeNode(0)
+                  ->getShape()
+                  ->is<dynamics::EllipsoidShape>());
+
+  auto* cylinderBody = skel->getBodyNode("cylinder_body");
+  ASSERT_NE(cylinderBody, nullptr);
+  EXPECT_TRUE(
+      cylinderBody->getShapeNode(0)->getShape()->is<dynamics::CylinderShape>());
+
+  auto* capsuleBody = skel->getBodyNode("capsule_body");
+  ASSERT_NE(capsuleBody, nullptr);
+  EXPECT_TRUE(
+      capsuleBody->getShapeNode(0)->getShape()->is<dynamics::CapsuleShape>());
+
+  auto* meshBody = skel->getBodyNode("mesh_body");
+  ASSERT_NE(meshBody, nullptr);
+  auto meshShape = std::dynamic_pointer_cast<dynamics::MeshShape>(
+      meshBody->getShapeNode(0)->getShape());
+  ASSERT_NE(meshShape, nullptr);
+  EXPECT_TRUE(meshShape->getScale().isApprox(Eigen::Vector3d(2.0, 3.0, 4.0)));
+
+  std::error_code ec;
+  std::filesystem::remove_all(tempDir, ec);
+}
+
+//==============================================================================
+TEST(SkelParser, ParsesSoftBodyVariantsFromXml)
+{
+  const std::string skelXml = R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <skeleton name="soft_skel">
+    <body name="soft_sphere">
+      <inertia>
+        <mass>1.0</mass>
+        <moment_of_inertia>
+          <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </moment_of_inertia>
+      </inertia>
+      <soft_shape>
+        <total_mass>1.0</total_mass>
+        <geometry>
+          <sphere>
+            <radius>0.2</radius>
+            <num_slices>6</num_slices>
+            <num_stacks>4</num_stacks>
+          </sphere>
+        </geometry>
+        <kv>1.0</kv>
+        <ke>2.0</ke>
+        <damp>0.3</damp>
+      </soft_shape>
+    </body>
+    <body name="soft_box">
+      <inertia>
+        <mass>1.0</mass>
+        <moment_of_inertia>
+          <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </moment_of_inertia>
+      </inertia>
+      <soft_shape>
+        <total_mass>1.1</total_mass>
+        <geometry>
+          <box>
+            <size>0.3 0.2 0.1</size>
+            <frags>2 3 4</frags>
+          </box>
+        </geometry>
+        <kv>1.2</kv>
+        <ke>2.2</ke>
+        <damp>0.4</damp>
+      </soft_shape>
+    </body>
+    <body name="soft_ellipsoid">
+      <inertia>
+        <mass>1.0</mass>
+        <moment_of_inertia>
+          <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </moment_of_inertia>
+      </inertia>
+      <soft_shape>
+        <total_mass>1.2</total_mass>
+        <geometry>
+          <ellipsoid>
+            <size>0.2 0.3 0.4</size>
+            <num_slices>8</num_slices>
+            <num_stacks>5</num_stacks>
+          </ellipsoid>
+        </geometry>
+        <kv>1.3</kv>
+        <ke>2.3</ke>
+        <damp>0.5</damp>
+      </soft_shape>
+    </body>
+    <body name="soft_cylinder">
+      <inertia>
+        <mass>1.0</mass>
+        <moment_of_inertia>
+          <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </moment_of_inertia>
+      </inertia>
+      <soft_shape>
+        <total_mass>1.3</total_mass>
+        <geometry>
+          <cylinder>
+            <radius>0.15</radius>
+            <height>0.4</height>
+            <num_slices>8</num_slices>
+            <num_stacks>5</num_stacks>
+            <num_rings>3</num_rings>
+          </cylinder>
+        </geometry>
+        <kv>1.4</kv>
+        <ke>2.4</ke>
+        <damp>0.6</damp>
+      </soft_shape>
+    </body>
+    <joint type="free" name="root_joint">
+      <parent>world</parent>
+      <child>soft_sphere</child>
+    </joint>
+    <joint type="weld" name="soft_box_joint">
+      <parent>soft_sphere</parent>
+      <child>soft_box</child>
+    </joint>
+    <joint type="weld" name="soft_ellipsoid_joint">
+      <parent>soft_box</parent>
+      <child>soft_ellipsoid</child>
+    </joint>
+    <joint type="weld" name="soft_cylinder_joint">
+      <parent>soft_ellipsoid</parent>
+      <child>soft_cylinder</child>
+    </joint>
+  </skeleton>
+</skel>
+  )";
+
+  const auto skel = readSkeletonFromSkelXml(skelXml);
+  ASSERT_NE(skel, nullptr);
+  ASSERT_EQ(skel->getNumSoftBodyNodes(), 4u);
+
+  for (std::size_t i = 0; i < skel->getNumSoftBodyNodes(); ++i) {
+    auto* softBody = skel->getSoftBodyNode(i);
+    ASSERT_NE(softBody, nullptr);
+    EXPECT_GT(softBody->getNumPointMasses(), 0u);
+  }
 }

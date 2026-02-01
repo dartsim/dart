@@ -589,3 +589,79 @@ TEST(ReferentialSkeleton, LinkageJacobianDerivatives)
       = linkage->getAngularJacobianDeriv(tipPair.second, Frame::World());
   EXPECT_EQ(Jangular.cols(), static_cast<int>(linkage->getNumDofs()));
 }
+
+TEST(ReferentialSkeleton, ConstIndexAccessors)
+{
+  auto skeleton = Skeleton::create("ref_const_index");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  childPair.first->setAxis(Eigen::Vector3d::UnitZ());
+
+  std::array<BodyNode*, 2> bodyNodes = {rootPair.second, childPair.second};
+  auto group = Group::create("ref_const_index_group", bodyNodes);
+
+  const Group* constGroup = group.get();
+  EXPECT_NE(constGroup->getBodyNode(0), nullptr);
+  EXPECT_NE(constGroup->getBodyNode(1), nullptr);
+  EXPECT_NE(constGroup->getJoint(0), nullptr);
+  EXPECT_NE(constGroup->getDof(0), nullptr);
+
+  EXPECT_EQ(constGroup->getIndexOf(constGroup->getBodyNode(1), false), 1u);
+  EXPECT_NE(
+      constGroup->getIndexOf(constGroup->getJoint(0), false), INVALID_INDEX);
+  EXPECT_NE(
+      constGroup->getIndexOf(constGroup->getDof(0), false), INVALID_INDEX);
+}
+
+TEST(ReferentialSkeleton, ChainAndLinkageMassMatrices)
+{
+  auto skeleton = Skeleton::create("ref_chain_mass");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  rootPair.second->setMass(1.0);
+  auto midPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  midPair.first->setAxis(Eigen::Vector3d::UnitY());
+  midPair.second->setMass(0.8);
+  auto tipPair
+      = midPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  tipPair.first->setAxis(Eigen::Vector3d::UnitX());
+  tipPair.second->setMass(0.6);
+
+  skeleton->setPositions(
+      Eigen::VectorXd::Constant(skeleton->getNumDofs(), 0.1));
+  skeleton->setVelocities(
+      Eigen::VectorXd::Constant(skeleton->getNumDofs(), 0.2));
+
+  tipPair.second->addExtForce(
+      Eigen::Vector3d(0.5, -0.2, 0.1), Eigen::Vector3d::Zero(), true, true);
+
+  auto chain = Chain::create(rootPair.second, tipPair.second, "chain_mass");
+  ASSERT_NE(chain, nullptr);
+
+  EXPECT_EQ(
+      chain->getMassMatrix().rows(), static_cast<int>(chain->getNumDofs()));
+  EXPECT_TRUE(chain->getAugMassMatrix().allFinite());
+  EXPECT_TRUE(chain->getInvMassMatrix().allFinite());
+  EXPECT_TRUE(chain->getInvAugMassMatrix().allFinite());
+  EXPECT_TRUE(chain->getCoriolisForces().allFinite());
+  EXPECT_TRUE(chain->getGravityForces().allFinite());
+  EXPECT_TRUE(chain->getCoriolisAndGravityForces().allFinite());
+  EXPECT_TRUE(chain->getExternalForces().allFinite());
+
+  Linkage::Criteria criteria;
+  criteria.mStart = Linkage::Criteria::Target(rootPair.second);
+  criteria.mTargets.emplace_back(tipPair.second);
+  auto linkage = Linkage::create(criteria, "linkage_mass");
+  ASSERT_NE(linkage, nullptr);
+
+  EXPECT_EQ(
+      linkage->getMassMatrix().cols(), static_cast<int>(linkage->getNumDofs()));
+  EXPECT_TRUE(linkage->getAugMassMatrix().allFinite());
+  EXPECT_TRUE(linkage->getInvMassMatrix().allFinite());
+  EXPECT_TRUE(linkage->getInvAugMassMatrix().allFinite());
+  EXPECT_TRUE(linkage->getCoriolisForces().allFinite());
+  EXPECT_TRUE(linkage->getGravityForces().allFinite());
+  EXPECT_TRUE(linkage->getCoriolisAndGravityForces().allFinite());
+  EXPECT_TRUE(linkage->getExternalForces().allFinite());
+}

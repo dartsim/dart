@@ -39,6 +39,7 @@
 #include <dart/math/lcp/other/mprgp_solver.hpp>
 #include <dart/math/lcp/other/shock_propagation_solver.hpp>
 #include <dart/math/lcp/other/staggering_solver.hpp>
+#include <dart/math/lcp/pivoting/baraff_solver.hpp>
 #include <dart/math/lcp/pivoting/dantzig/matrix.hpp>
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
 #include <dart/math/lcp/pivoting/direct_solver.hpp>
@@ -443,8 +444,9 @@ TEST(LcpValidationCoverage, ComputesEffectiveBoundsForFriction)
   Eigen::VectorXd loEff;
   Eigen::VectorXd hiEff;
   std::string message;
-  EXPECT_TRUE(detail::computeEffectiveBounds(
-      lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_TRUE(
+      detail::computeEffectiveBounds(
+          lo, hi, findex, x, loEff, hiEff, &message));
   EXPECT_NEAR(loEff[1], -0.2, 1e-12);
   EXPECT_NEAR(hiEff[1], 0.2, 1e-12);
   EXPECT_NEAR(loEff[2], -0.1, 1e-12);
@@ -461,8 +463,9 @@ TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsMismatchedSizes)
   Eigen::VectorXd loEff;
   Eigen::VectorXd hiEff;
   std::string message;
-  EXPECT_FALSE(detail::computeEffectiveBounds(
-      lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_FALSE(
+      detail::computeEffectiveBounds(
+          lo, hi, findex, x, loEff, hiEff, &message));
   EXPECT_FALSE(message.empty());
 }
 
@@ -480,13 +483,15 @@ TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsInvalidFrictionIndex)
   Eigen::VectorXd loEff;
   Eigen::VectorXd hiEff;
   std::string message;
-  EXPECT_FALSE(detail::computeEffectiveBounds(
-      lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_FALSE(
+      detail::computeEffectiveBounds(
+          lo, hi, findex, x, loEff, hiEff, &message));
   EXPECT_FALSE(message.empty());
 
   findex << -1, 1;
-  EXPECT_FALSE(detail::computeEffectiveBounds(
-      lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_FALSE(
+      detail::computeEffectiveBounds(
+          lo, hi, findex, x, loEff, hiEff, &message));
   EXPECT_FALSE(message.empty());
 }
 
@@ -504,8 +509,9 @@ TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsInvalidReferenceValue)
   Eigen::VectorXd loEff;
   Eigen::VectorXd hiEff;
   std::string message;
-  EXPECT_FALSE(detail::computeEffectiveBounds(
-      lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_FALSE(
+      detail::computeEffectiveBounds(
+          lo, hi, findex, x, loEff, hiEff, &message));
   EXPECT_FALSE(message.empty());
 }
 
@@ -524,8 +530,9 @@ TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsInvalidFrictionCoeff)
   Eigen::VectorXd loEff;
   Eigen::VectorXd hiEff;
   std::string message;
-  EXPECT_FALSE(detail::computeEffectiveBounds(
-      lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_FALSE(
+      detail::computeEffectiveBounds(
+          lo, hi, findex, x, loEff, hiEff, &message));
   EXPECT_FALSE(message.empty());
 }
 
@@ -970,6 +977,37 @@ TEST(MprgpSolverCoverage, RejectsInvalidDivisionEpsilon)
   EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
 }
 
+TEST(MprgpSolverCoverage, RejectsNegativeSymmetryTolerance)
+{
+  MprgpSolver solver;
+  MprgpSolver::Parameters params;
+  params.symmetryTolerance = -0.5;
+
+  LcpOptions options;
+  options.customOptions = &params;
+
+  auto problem = makeStandardProblem(2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+}
+
+TEST(MprgpSolverCoverage, WarmStartResetsNonFiniteGuess)
+{
+  MprgpSolver solver;
+  auto problem = makeStandardProblem(2);
+  Eigen::VectorXd x = Eigen::VectorXd::Constant(2, 0.2);
+  x[0] = std::numeric_limits<double>::quiet_NaN();
+
+  LcpOptions options;
+  options.warmStart = true;
+  options.maxIterations = 50;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+  EXPECT_TRUE((x.array() >= 0.0).all());
+}
+
 TEST(LemkeSolverCoverage, SolvesStandardProblem)
 {
   LemkeSolver solver;
@@ -993,6 +1031,37 @@ TEST(LemkeSolverCoverage, SolvesWarmStartProblem)
   const auto result = solver.solve(problem, x, options);
   EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
   EXPECT_TRUE(x.array().isFinite().all());
+}
+
+TEST(LemkeSolverCoverage, SolvesNonPositiveBWithZeroSolution)
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2);
+  Eigen::VectorXd b(2);
+  b << -0.5, -0.2;
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi
+      = Eigen::VectorXd::Constant(2, std::numeric_limits<double>::infinity());
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(2, -1);
+  LcpProblem problem(A, b, lo, hi, findex);
+
+  LemkeSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  LcpOptions options;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_NEAR(x.norm(), 0.0, 1e-12);
+}
+
+TEST(LemkeSolverCoverage, SolvesZeroSizeProblem)
+{
+  LemkeSolver solver;
+  auto problem = makeZeroProblem();
+  Eigen::VectorXd x;
+
+  LcpOptions options;
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(x.size(), 0);
 }
 
 TEST(LemkeSolverCoverage, FallsBackForBoxedProblem)
@@ -1692,4 +1761,860 @@ TEST(StaggeringSolverCoverage, SolvesMultiContactFrictionProblem)
   const auto result = solver.solve(problem, x, options);
   EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
   EXPECT_TRUE(x.array().isFinite().all());
+}
+
+namespace {
+
+LcpProblem makeZeroRhsProblem(int n)
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(n, n) * 2.0;
+  Eigen::VectorXd b = Eigen::VectorXd::Zero(n);
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(n);
+  Eigen::VectorXd hi
+      = Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity());
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(n, -1);
+  return LcpProblem(
+      std::move(A),
+      std::move(b),
+      std::move(lo),
+      std::move(hi),
+      std::move(findex));
+}
+
+LcpProblem makeInfeasibleSingularProblem(int n)
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(n, n);
+  Eigen::VectorXd b = Eigen::VectorXd::Ones(n);
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(n);
+  Eigen::VectorXd hi
+      = Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity());
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(n, -1);
+  return LcpProblem(
+      std::move(A),
+      std::move(b),
+      std::move(lo),
+      std::move(hi),
+      std::move(findex));
+}
+
+void expectZeroSolution(const Eigen::VectorXd& x)
+{
+  EXPECT_LT(x.norm(), 1e-4);
+}
+
+} // namespace
+
+TEST(LcpValidationCoverage, ValidateSolutionAcceptsFixedAndInteriorCases)
+{
+  Eigen::VectorXd x(3);
+  Eigen::VectorXd w(3);
+  Eigen::VectorXd lo(3);
+  Eigen::VectorXd hi(3);
+
+  lo << 0.0, 0.2, -0.5;
+  hi << 0.0, 0.8, 0.5;
+  x << 0.0, 0.6, 0.1;
+  w << 0.0, 0.0, 0.0;
+
+  std::string message;
+  EXPECT_TRUE(detail::validateSolution(x, w, lo, hi, 1e-8, &message));
+
+  const double comp = detail::complementarityInfinityNorm(x, w, lo, hi, 1e-8);
+  EXPECT_NEAR(comp, 0.0, 1e-12);
+}
+
+TEST(DantzigMatrixCoverage, SolveL1AndL1TWithLargerMatrix)
+{
+  const int n = 8;
+  const int nskip = padding(n);
+  std::vector<double> L(n * nskip, 0.0);
+  Eigen::MatrixXd Le = Eigen::MatrixXd::Identity(n, n);
+  for (int r = 1; r < n; ++r) {
+    for (int c = 0; c < r; ++c) {
+      const double value = 0.02 * static_cast<double>(r + 1);
+      L[r * nskip + c] = value;
+      Le(r, c) = value;
+    }
+  }
+
+  std::vector<double> b(n, 0.0);
+  for (int i = 0; i < n; ++i) {
+    b[static_cast<std::size_t>(i)] = static_cast<double>(i + 1);
+  }
+
+  const Eigen::VectorXd be = Eigen::VectorXd::Map(b.data(), n);
+  const Eigen::VectorXd expected
+      = Le.triangularView<Eigen::UnitLower>().solve(be);
+  dSolveL1(L.data(), b.data(), n, nskip);
+  for (int i = 0; i < n; ++i) {
+    EXPECT_NEAR(b[static_cast<std::size_t>(i)], expected[i], 1e-8);
+  }
+
+  std::vector<double> b2(n, 0.0);
+  for (int i = 0; i < n; ++i) {
+    b2[static_cast<std::size_t>(i)] = static_cast<double>(i % 3) - 1.0;
+  }
+  const Eigen::VectorXd be2 = Eigen::VectorXd::Map(b2.data(), n);
+  const Eigen::VectorXd expected2
+      = Le.transpose().triangularView<Eigen::UnitUpper>().solve(be2);
+  dSolveL1T(L.data(), b2.data(), n, nskip);
+  for (int i = 0; i < n; ++i) {
+    EXPECT_NEAR(b2[static_cast<std::size_t>(i)], expected2[i], 1e-8);
+  }
+}
+
+TEST(DantzigMatrixCoverage, FactorCholeskyWithTmpBuffer)
+{
+  const int n = 3;
+  const int nskip = padding(n);
+  std::vector<double> A(n * nskip, 0.0);
+  Eigen::Matrix3d Ae;
+  Ae << 4.0, 0.2, 0.1, 0.2, 3.0, 0.3, 0.1, 0.3, 2.5;
+  for (int r = 0; r < n; ++r) {
+    for (int c = 0; c < n; ++c) {
+      A[r * nskip + c] = Ae(r, c);
+    }
+  }
+
+  std::vector<double> tmp(n, 0.0);
+  EXPECT_EQ(dFactorCholesky(A.data(), n, tmp.data()), 1);
+
+  std::vector<double> b = {1.0, -2.0, 0.5};
+  dSolveCholesky(A.data(), b.data(), n, tmp.data());
+
+  const Eigen::Vector3d expected
+      = Ae.ldlt().solve(Eigen::Vector3d(1.0, -2.0, 0.5));
+  EXPECT_NEAR(b[0], expected[0], 1e-8);
+  EXPECT_NEAR(b[1], expected[1], 1e-8);
+  EXPECT_NEAR(b[2], expected[2], 1e-8);
+}
+
+TEST(LemkeSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
+{
+  LemkeSolver defaultSolver;
+  const auto defaults = defaultSolver.getDefaultOptions();
+  EXPECT_EQ(defaults.maxIterations, 0);
+
+  auto standard = makeStandardProblem(2, 2.2, 0.25);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  auto result = defaultSolver.solve(standard, x, defaults);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+
+  LemkeSolver customSolver;
+  LcpOptions options = customSolver.getDefaultOptions();
+  options.absoluteTolerance = 1e-8;
+  options.validateSolution = true;
+
+  auto zeroProblem = makeZeroRhsProblem(2);
+  Eigen::VectorXd xZero = Eigen::VectorXd::Zero(2);
+  auto zeroResult = customSolver.solve(zeroProblem, xZero, options);
+  EXPECT_EQ(zeroResult.status, LcpSolverStatus::Success);
+  expectZeroSolution(xZero);
+
+  auto singularProblem = makeInfeasibleSingularProblem(2);
+  Eigen::VectorXd xSingular = Eigen::VectorXd::Zero(2);
+  auto singularResult = customSolver.solve(singularProblem, xSingular, options);
+  EXPECT_NE(singularResult.status, LcpSolverStatus::Success);
+
+  auto emptyProblem = makeZeroProblem();
+  Eigen::VectorXd xEmpty;
+  auto emptyResult = customSolver.solve(emptyProblem, xEmpty, options);
+  EXPECT_EQ(emptyResult.status, LcpSolverStatus::Success);
+  EXPECT_EQ(xEmpty.size(), 0);
+}
+
+TEST(BaraffSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
+{
+  BaraffSolver defaultSolver;
+  const auto defaults = defaultSolver.getDefaultOptions();
+  EXPECT_GT(defaults.maxIterations, 0);
+
+  auto standard = makeStandardProblem(3, 2.0, 0.3);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  auto result = defaultSolver.solve(standard, x, defaults);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+
+  BaraffSolver customSolver;
+  LcpOptions options = customSolver.getDefaultOptions();
+  options.maxIterations = 20;
+  options.warmStart = true;
+  options.absoluteTolerance = 1e-7;
+
+  auto zeroProblem = makeZeroRhsProblem(3);
+  LcpOptions zeroOptions = options;
+  zeroOptions.warmStart = false;
+  zeroOptions.maxIterations = 50;
+  Eigen::VectorXd xZero = Eigen::VectorXd::Zero(3);
+  auto zeroResult = customSolver.solve(zeroProblem, xZero, zeroOptions);
+  EXPECT_NE(zeroResult.status, LcpSolverStatus::InvalidProblem);
+  expectZeroSolution(xZero);
+
+  auto singularProblem = makeInfeasibleSingularProblem(3);
+  Eigen::VectorXd xSingular = Eigen::VectorXd::Zero(3);
+  auto singularResult = customSolver.solve(singularProblem, xSingular, options);
+  EXPECT_NE(singularResult.status, LcpSolverStatus::Success);
+
+  BaraffSolver emptySolver;
+  auto emptyProblem = makeZeroProblem();
+  Eigen::VectorXd xEmpty;
+  auto emptyResult = emptySolver.solve(
+      emptyProblem, xEmpty, emptySolver.getDefaultOptions());
+  EXPECT_EQ(emptyResult.status, LcpSolverStatus::Success);
+  EXPECT_EQ(xEmpty.size(), 0);
+}
+
+TEST(DirectSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
+{
+  DirectSolver defaultSolver;
+  const auto defaults = defaultSolver.getDefaultOptions();
+  EXPECT_GE(defaults.maxIterations, 0);
+
+  auto standard = makeStandardProblem(2, 2.0, 0.35);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  auto result = defaultSolver.solve(standard, x, defaults);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+
+  DirectSolver customSolver;
+  LcpOptions options = customSolver.getDefaultOptions();
+  options.absoluteTolerance = 1e-8;
+
+  auto zeroProblem = makeZeroRhsProblem(2);
+  Eigen::VectorXd xZero = Eigen::VectorXd::Zero(2);
+  auto zeroResult = customSolver.solve(zeroProblem, xZero, options);
+  EXPECT_EQ(zeroResult.status, LcpSolverStatus::Success);
+  expectZeroSolution(xZero);
+
+  auto singularProblem = makeInfeasibleSingularProblem(2);
+  Eigen::VectorXd xSingular = Eigen::VectorXd::Zero(2);
+  auto singularResult = customSolver.solve(singularProblem, xSingular, options);
+  EXPECT_EQ(singularResult.status, LcpSolverStatus::Failed);
+
+  auto emptyProblem = makeZeroProblem();
+  Eigen::VectorXd xEmpty;
+  auto emptyResult = customSolver.solve(emptyProblem, xEmpty, options);
+  EXPECT_EQ(emptyResult.status, LcpSolverStatus::Success);
+  EXPECT_EQ(xEmpty.size(), 0);
+}
+
+TEST(DantzigSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
+{
+  DantzigSolver defaultSolver;
+  const auto defaults = defaultSolver.getDefaultOptions();
+  EXPECT_GE(defaults.maxIterations, 0);
+
+  auto standard = makeStandardProblem(3, 2.5, 0.2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  auto result = defaultSolver.solve(standard, x, defaults);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+
+  DantzigSolver customSolver;
+  LcpOptions options = customSolver.getDefaultOptions();
+  options.absoluteTolerance = 1e-8;
+  options.validateSolution = true;
+
+  auto zeroProblem = makeZeroRhsProblem(3);
+  Eigen::VectorXd xZero = Eigen::VectorXd::Zero(3);
+  auto zeroResult = customSolver.solve(zeroProblem, xZero, options);
+  EXPECT_EQ(zeroResult.status, LcpSolverStatus::Success);
+  expectZeroSolution(xZero);
+
+  auto singularProblem = makeInfeasibleSingularProblem(3);
+  Eigen::VectorXd xSingular = Eigen::VectorXd::Zero(3);
+  auto singularResult = customSolver.solve(singularProblem, xSingular, options);
+  EXPECT_NE(singularResult.status, LcpSolverStatus::Success);
+
+  auto emptyProblem = makeZeroProblem();
+  Eigen::VectorXd xEmpty;
+  auto emptyResult = customSolver.solve(emptyProblem, xEmpty, options);
+  EXPECT_EQ(emptyResult.status, LcpSolverStatus::Success);
+  EXPECT_EQ(xEmpty.size(), 0);
+}
+
+TEST(PgsSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
+{
+  PgsSolver defaultSolver;
+  const auto defaults = defaultSolver.getDefaultOptions();
+  EXPECT_GT(defaults.maxIterations, 0);
+
+  auto standard = makeStandardProblem(2, 2.0, 0.25);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  auto result = defaultSolver.solve(standard, x, defaults);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+
+  PgsSolver customSolver;
+  PgsSolver::Parameters params;
+  params.randomizeConstraintOrder = true;
+  LcpOptions options = customSolver.getDefaultOptions();
+  options.customOptions = &params;
+  options.maxIterations = 25;
+  options.relaxation = 1.1;
+  options.warmStart = true;
+
+  auto zeroProblem = makeZeroRhsProblem(2);
+  Eigen::VectorXd xZero = Eigen::VectorXd::Constant(2, 0.2);
+  auto zeroResult = customSolver.solve(zeroProblem, xZero, options);
+  EXPECT_NE(zeroResult.status, LcpSolverStatus::InvalidProblem);
+  expectZeroSolution(xZero);
+
+  auto singularProblem = makeInfeasibleSingularProblem(2);
+  Eigen::VectorXd xSingular = Eigen::VectorXd::Zero(2);
+  auto singularResult = customSolver.solve(singularProblem, xSingular, options);
+  EXPECT_NE(singularResult.status, LcpSolverStatus::Success);
+
+  auto emptyProblem = makeZeroProblem();
+  Eigen::VectorXd xEmpty;
+  auto emptyResult = customSolver.solve(emptyProblem, xEmpty, options);
+  EXPECT_EQ(emptyResult.status, LcpSolverStatus::Success);
+  EXPECT_EQ(xEmpty.size(), 0);
+}
+
+TEST(BlockedJacobiSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
+{
+  BlockedJacobiSolver defaultSolver;
+  const auto defaults = defaultSolver.getDefaultOptions();
+  EXPECT_GT(defaults.maxIterations, 0);
+
+  auto standard = makeStandardProblem(2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  auto result = defaultSolver.solve(standard, x, defaults);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+
+  BlockedJacobiSolver customSolver;
+  BlockedJacobiSolver::Parameters params;
+  params.blockSizes = {2};
+  customSolver.setParameters(params);
+  LcpOptions options = customSolver.getDefaultOptions();
+  options.maxIterations = 30;
+  options.warmStart = true;
+
+  auto zeroProblem = makeZeroRhsProblem(2);
+  Eigen::VectorXd xZero = Eigen::VectorXd::Constant(2, 0.1);
+  auto zeroResult = customSolver.solve(zeroProblem, xZero, options);
+  EXPECT_NE(zeroResult.status, LcpSolverStatus::InvalidProblem);
+  expectZeroSolution(xZero);
+
+  auto singularProblem = makeInfeasibleSingularProblem(2);
+  Eigen::VectorXd xSingular = Eigen::VectorXd::Zero(2);
+  auto singularResult = customSolver.solve(singularProblem, xSingular, options);
+  EXPECT_NE(singularResult.status, LcpSolverStatus::Success);
+
+  BlockedJacobiSolver emptySolver;
+  auto emptyProblem = makeZeroProblem();
+  Eigen::VectorXd xEmpty;
+  auto emptyResult = emptySolver.solve(
+      emptyProblem, xEmpty, emptySolver.getDefaultOptions());
+  EXPECT_EQ(emptyResult.status, LcpSolverStatus::Success);
+  EXPECT_EQ(xEmpty.size(), 0);
+}
+
+TEST(BgsSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
+{
+  BgsSolver defaultSolver;
+  const auto defaults = defaultSolver.getDefaultOptions();
+  EXPECT_GT(defaults.maxIterations, 0);
+
+  auto standard = makeStandardProblem(2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  auto result = defaultSolver.solve(standard, x, defaults);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+
+  BgsSolver customSolver;
+  BgsSolver::Parameters params;
+  params.blockSizes = {2};
+  customSolver.setParameters(params);
+  LcpOptions options = customSolver.getDefaultOptions();
+  options.maxIterations = 30;
+  options.warmStart = true;
+
+  auto zeroProblem = makeZeroRhsProblem(2);
+  Eigen::VectorXd xZero = Eigen::VectorXd::Constant(2, 0.1);
+  auto zeroResult = customSolver.solve(zeroProblem, xZero, options);
+  EXPECT_NE(zeroResult.status, LcpSolverStatus::InvalidProblem);
+  expectZeroSolution(xZero);
+
+  auto singularProblem = makeInfeasibleSingularProblem(2);
+  Eigen::VectorXd xSingular = Eigen::VectorXd::Zero(2);
+  auto singularResult = customSolver.solve(singularProblem, xSingular, options);
+  EXPECT_NE(singularResult.status, LcpSolverStatus::Success);
+
+  BgsSolver emptySolver;
+  auto emptyProblem = makeZeroProblem();
+  Eigen::VectorXd xEmpty;
+  auto emptyResult = emptySolver.solve(
+      emptyProblem, xEmpty, emptySolver.getDefaultOptions());
+  EXPECT_EQ(emptyResult.status, LcpSolverStatus::Success);
+  EXPECT_EQ(xEmpty.size(), 0);
+}
+
+TEST(JacobiSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
+{
+  JacobiSolver defaultSolver;
+  const auto defaults = defaultSolver.getDefaultOptions();
+  EXPECT_GT(defaults.maxIterations, 0);
+
+  auto standard = makeStandardProblem(3);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  auto result = defaultSolver.solve(standard, x, defaults);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+
+  JacobiSolver customSolver;
+  JacobiSolver::Parameters params;
+  params.epsilonForDivision = 1e-8;
+  customSolver.setParameters(params);
+  LcpOptions options = customSolver.getDefaultOptions();
+  options.maxIterations = 40;
+  options.relaxation = 1.1;
+
+  auto zeroProblem = makeZeroRhsProblem(3);
+  Eigen::VectorXd xZero = Eigen::VectorXd::Constant(3, 0.2);
+  auto zeroResult = customSolver.solve(zeroProblem, xZero, options);
+  EXPECT_NE(zeroResult.status, LcpSolverStatus::InvalidProblem);
+  expectZeroSolution(xZero);
+
+  auto singularProblem = makeInfeasibleSingularProblem(3);
+  Eigen::VectorXd xSingular = Eigen::VectorXd::Zero(3);
+  auto singularResult = customSolver.solve(singularProblem, xSingular, options);
+  EXPECT_NE(singularResult.status, LcpSolverStatus::Success);
+
+  auto emptyProblem = makeZeroProblem();
+  Eigen::VectorXd xEmpty;
+  auto emptyResult = customSolver.solve(emptyProblem, xEmpty, options);
+  EXPECT_EQ(emptyResult.status, LcpSolverStatus::Success);
+  EXPECT_EQ(xEmpty.size(), 0);
+}
+
+TEST(RedBlackGaussSeidelCoverage, DefaultCustomZeroRhsAndEdgeCases)
+{
+  RedBlackGaussSeidelSolver defaultSolver;
+  const auto defaults = defaultSolver.getDefaultOptions();
+  EXPECT_GT(defaults.maxIterations, 0);
+
+  auto standard = makeStandardProblem(3);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  auto result = defaultSolver.solve(standard, x, defaults);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+
+  RedBlackGaussSeidelSolver customSolver;
+  RedBlackGaussSeidelSolver::Parameters params;
+  params.epsilonForDivision = 1e-8;
+  customSolver.setParameters(params);
+  LcpOptions options = customSolver.getDefaultOptions();
+  options.maxIterations = 40;
+  options.relaxation = 1.2;
+
+  auto zeroProblem = makeZeroRhsProblem(3);
+  Eigen::VectorXd xZero = Eigen::VectorXd::Constant(3, 0.2);
+  auto zeroResult = customSolver.solve(zeroProblem, xZero, options);
+  EXPECT_NE(zeroResult.status, LcpSolverStatus::InvalidProblem);
+  expectZeroSolution(xZero);
+
+  auto singularProblem = makeInfeasibleSingularProblem(3);
+  Eigen::VectorXd xSingular = Eigen::VectorXd::Zero(3);
+  auto singularResult = customSolver.solve(singularProblem, xSingular, options);
+  EXPECT_NE(singularResult.status, LcpSolverStatus::Success);
+
+  auto emptyProblem = makeZeroProblem();
+  Eigen::VectorXd xEmpty;
+  auto emptyResult = customSolver.solve(emptyProblem, xEmpty, options);
+  EXPECT_EQ(emptyResult.status, LcpSolverStatus::Success);
+  EXPECT_EQ(xEmpty.size(), 0);
+}
+
+TEST(SymmetricPsorSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
+{
+  SymmetricPsorSolver defaultSolver;
+  const auto defaults = defaultSolver.getDefaultOptions();
+  EXPECT_GT(defaults.maxIterations, 0);
+
+  auto standard = makeStandardProblem(3);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  auto result = defaultSolver.solve(standard, x, defaults);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+
+  SymmetricPsorSolver customSolver;
+  SymmetricPsorSolver::Parameters params;
+  params.epsilonForDivision = 1e-8;
+  customSolver.setParameters(params);
+  LcpOptions options = customSolver.getDefaultOptions();
+  options.maxIterations = 40;
+  options.relaxation = 1.25;
+
+  auto zeroProblem = makeZeroRhsProblem(3);
+  Eigen::VectorXd xZero = Eigen::VectorXd::Constant(3, 0.2);
+  auto zeroResult = customSolver.solve(zeroProblem, xZero, options);
+  EXPECT_NE(zeroResult.status, LcpSolverStatus::InvalidProblem);
+  expectZeroSolution(xZero);
+
+  auto singularProblem = makeInfeasibleSingularProblem(3);
+  Eigen::VectorXd xSingular = Eigen::VectorXd::Zero(3);
+  auto singularResult = customSolver.solve(singularProblem, xSingular, options);
+  EXPECT_NE(singularResult.status, LcpSolverStatus::Success);
+
+  auto emptyProblem = makeZeroProblem();
+  Eigen::VectorXd xEmpty;
+  auto emptyResult = customSolver.solve(emptyProblem, xEmpty, options);
+  EXPECT_EQ(emptyResult.status, LcpSolverStatus::Success);
+  EXPECT_EQ(xEmpty.size(), 0);
+}
+
+TEST(NncgSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
+{
+  NncgSolver defaultSolver;
+  const auto defaults = defaultSolver.getDefaultOptions();
+  EXPECT_GT(defaults.maxIterations, 0);
+
+  auto standard = makeStandardProblem(3);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  auto result = defaultSolver.solve(standard, x, defaults);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+
+  NncgSolver customSolver;
+  NncgSolver::Parameters params;
+  params.pgsIterations = 2;
+  params.restartInterval = 2;
+  params.restartThreshold = 0.5;
+  LcpOptions options = customSolver.getDefaultOptions();
+  options.customOptions = &params;
+  options.maxIterations = 20;
+  options.relaxation = 1.0;
+
+  auto zeroProblem = makeZeroRhsProblem(3);
+  Eigen::VectorXd xZero = Eigen::VectorXd::Constant(3, 0.05);
+  auto zeroResult = customSolver.solve(zeroProblem, xZero, options);
+  EXPECT_NE(zeroResult.status, LcpSolverStatus::InvalidProblem);
+  expectZeroSolution(xZero);
+
+  auto singularProblem = makeInfeasibleSingularProblem(3);
+  Eigen::VectorXd xSingular = Eigen::VectorXd::Zero(3);
+  auto singularResult = customSolver.solve(singularProblem, xSingular, options);
+  EXPECT_NE(singularResult.status, LcpSolverStatus::Success);
+
+  auto emptyProblem = makeZeroProblem();
+  Eigen::VectorXd xEmpty;
+  auto emptyResult = customSolver.solve(emptyProblem, xEmpty, options);
+  EXPECT_EQ(emptyResult.status, LcpSolverStatus::Success);
+  EXPECT_EQ(xEmpty.size(), 0);
+}
+
+TEST(SubspaceMinimizationSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
+{
+  SubspaceMinimizationSolver defaultSolver;
+  const auto defaults = defaultSolver.getDefaultOptions();
+  EXPECT_GT(defaults.maxIterations, 0);
+
+  auto standard = makeStandardProblem(3);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  auto result = defaultSolver.solve(standard, x, defaults);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+
+  SubspaceMinimizationSolver customSolver;
+  SubspaceMinimizationSolver::Parameters params;
+  params.pgsIterations = 3;
+  params.activeSetTolerance = 1e-5;
+  LcpOptions options = customSolver.getDefaultOptions();
+  options.customOptions = &params;
+  options.maxIterations = 20;
+  options.relaxation = 1.0;
+
+  auto zeroProblem = makeZeroRhsProblem(3);
+  Eigen::VectorXd xZero = Eigen::VectorXd::Constant(3, 0.05);
+  auto zeroResult = customSolver.solve(zeroProblem, xZero, options);
+  EXPECT_NE(zeroResult.status, LcpSolverStatus::InvalidProblem);
+  expectZeroSolution(xZero);
+
+  auto singularProblem = makeInfeasibleSingularProblem(3);
+  Eigen::VectorXd xSingular = Eigen::VectorXd::Zero(3);
+  auto singularResult = customSolver.solve(singularProblem, xSingular, options);
+  EXPECT_NE(singularResult.status, LcpSolverStatus::Success);
+
+  auto emptyProblem = makeZeroProblem();
+  Eigen::VectorXd xEmpty;
+  auto emptyResult = customSolver.solve(emptyProblem, xEmpty, options);
+  EXPECT_EQ(emptyResult.status, LcpSolverStatus::Success);
+  EXPECT_EQ(xEmpty.size(), 0);
+}
+
+TEST(FischerBurmeisterNewtonCoverage, DefaultCustomZeroRhsAndEdgeCases)
+{
+  FischerBurmeisterNewtonSolver defaultSolver;
+  const auto defaults = defaultSolver.getDefaultOptions();
+  EXPECT_GT(defaults.maxIterations, 0);
+
+  auto standard = makeStandardProblem(3, 2.0, 0.2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  auto result = defaultSolver.solve(standard, x, defaults);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+
+  FischerBurmeisterNewtonSolver customSolver;
+  FischerBurmeisterNewtonSolver::Parameters params;
+  params.smoothingEpsilon = 1e-4;
+  params.maxLineSearchSteps = 6;
+  params.sufficientDecrease = 0.1;
+  params.stepReduction = 0.5;
+  params.minStep = 1e-4;
+  LcpOptions options = customSolver.getDefaultOptions();
+  options.customOptions = &params;
+  options.maxIterations = 10;
+  options.warmStart = true;
+
+  auto zeroProblem = makeZeroRhsProblem(3);
+  LcpOptions zeroOptions = options;
+  zeroOptions.maxIterations = 25;
+  zeroOptions.warmStart = false;
+  Eigen::VectorXd xZero = Eigen::VectorXd::Zero(3);
+  auto zeroResult = customSolver.solve(zeroProblem, xZero, zeroOptions);
+  EXPECT_NE(zeroResult.status, LcpSolverStatus::InvalidProblem);
+  expectZeroSolution(xZero);
+
+  auto singularProblem = makeInfeasibleSingularProblem(3);
+  Eigen::VectorXd xSingular = Eigen::VectorXd::Zero(3);
+  auto singularResult = customSolver.solve(singularProblem, xSingular, options);
+  EXPECT_NE(singularResult.status, LcpSolverStatus::Success);
+
+  auto emptyProblem = makeZeroProblem();
+  Eigen::VectorXd xEmpty;
+  auto emptyResult = customSolver.solve(emptyProblem, xEmpty, options);
+  EXPECT_EQ(emptyResult.status, LcpSolverStatus::Success);
+  EXPECT_EQ(xEmpty.size(), 0);
+}
+
+TEST(MinimumMapNewtonCoverage, DefaultCustomZeroRhsAndEdgeCases)
+{
+  MinimumMapNewtonSolver defaultSolver;
+  const auto defaults = defaultSolver.getDefaultOptions();
+  EXPECT_GT(defaults.maxIterations, 0);
+
+  auto standard = makeStandardProblem(3, 2.0, 0.2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  auto result = defaultSolver.solve(standard, x, defaults);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+
+  MinimumMapNewtonSolver customSolver;
+  MinimumMapNewtonSolver::Parameters params;
+  params.maxLineSearchSteps = 6;
+  params.sufficientDecrease = 0.1;
+  params.stepReduction = 0.5;
+  params.minStep = 1e-4;
+  LcpOptions options = customSolver.getDefaultOptions();
+  options.customOptions = &params;
+  options.maxIterations = 10;
+  options.warmStart = true;
+
+  auto zeroProblem = makeZeroRhsProblem(3);
+  LcpOptions zeroOptions = options;
+  zeroOptions.maxIterations = 25;
+  zeroOptions.warmStart = false;
+  Eigen::VectorXd xZero = Eigen::VectorXd::Zero(3);
+  auto zeroResult = customSolver.solve(zeroProblem, xZero, zeroOptions);
+  EXPECT_NE(zeroResult.status, LcpSolverStatus::InvalidProblem);
+  expectZeroSolution(xZero);
+
+  auto singularProblem = makeInfeasibleSingularProblem(3);
+  Eigen::VectorXd xSingular = Eigen::VectorXd::Zero(3);
+  auto singularResult = customSolver.solve(singularProblem, xSingular, options);
+  EXPECT_NE(singularResult.status, LcpSolverStatus::Success);
+
+  auto emptyProblem = makeZeroProblem();
+  Eigen::VectorXd xEmpty;
+  auto emptyResult = customSolver.solve(emptyProblem, xEmpty, options);
+  EXPECT_EQ(emptyResult.status, LcpSolverStatus::Success);
+  EXPECT_EQ(xEmpty.size(), 0);
+}
+
+TEST(PenalizedFischerBurmeisterNewtonCoverage, DefaultCustomZeroRhsAndEdgeCases)
+{
+  PenalizedFischerBurmeisterNewtonSolver defaultSolver;
+  const auto defaults = defaultSolver.getDefaultOptions();
+  EXPECT_GT(defaults.maxIterations, 0);
+
+  auto standard = makeStandardProblem(3, 2.0, 0.25);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  auto result = defaultSolver.solve(standard, x, defaults);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+
+  PenalizedFischerBurmeisterNewtonSolver customSolver;
+  PenalizedFischerBurmeisterNewtonSolver::Parameters params;
+  params.lambda = 0.7;
+  params.smoothingEpsilon = 1e-4;
+  params.maxLineSearchSteps = 6;
+  params.sufficientDecrease = 0.1;
+  params.stepReduction = 0.5;
+  params.minStep = 1e-4;
+  LcpOptions options = customSolver.getDefaultOptions();
+  options.customOptions = &params;
+  options.maxIterations = 10;
+  options.warmStart = true;
+
+  auto zeroProblem = makeZeroRhsProblem(3);
+  Eigen::VectorXd xZero = Eigen::VectorXd::Constant(3, 0.05);
+  auto zeroResult = customSolver.solve(zeroProblem, xZero, options);
+  EXPECT_NE(zeroResult.status, LcpSolverStatus::InvalidProblem);
+  expectZeroSolution(xZero);
+
+  auto singularProblem = makeInfeasibleSingularProblem(3);
+  Eigen::VectorXd xSingular = Eigen::VectorXd::Zero(3);
+  auto singularResult = customSolver.solve(singularProblem, xSingular, options);
+  EXPECT_NE(singularResult.status, LcpSolverStatus::Success);
+
+  auto emptyProblem = makeZeroProblem();
+  Eigen::VectorXd xEmpty;
+  auto emptyResult = customSolver.solve(emptyProblem, xEmpty, options);
+  EXPECT_EQ(emptyResult.status, LcpSolverStatus::Success);
+  EXPECT_EQ(xEmpty.size(), 0);
+}
+
+TEST(MprgpSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
+{
+  MprgpSolver defaultSolver;
+  const auto defaults = defaultSolver.getDefaultOptions();
+  EXPECT_GT(defaults.maxIterations, 0);
+
+  auto standard = makeStandardProblem(3);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  auto result = defaultSolver.solve(standard, x, defaults);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+
+  MprgpSolver customSolver;
+  MprgpSolver::Parameters params;
+  params.epsilonForDivision = 1e-8;
+  params.symmetryTolerance = 1e-8;
+  params.checkPositiveDefinite = false;
+  customSolver.setParameters(params);
+  LcpOptions options = customSolver.getDefaultOptions();
+  options.maxIterations = 20;
+  options.warmStart = true;
+
+  auto zeroProblem = makeZeroRhsProblem(3);
+  Eigen::VectorXd xZero = Eigen::VectorXd::Constant(3, 0.05);
+  auto zeroResult = customSolver.solve(zeroProblem, xZero, options);
+  EXPECT_NE(zeroResult.status, LcpSolverStatus::InvalidProblem);
+  expectZeroSolution(xZero);
+
+  auto singularProblem = makeInfeasibleSingularProblem(3);
+  Eigen::VectorXd xSingular = Eigen::VectorXd::Zero(3);
+  auto singularResult = customSolver.solve(singularProblem, xSingular, options);
+  EXPECT_NE(singularResult.status, LcpSolverStatus::Success);
+
+  auto emptyProblem = makeZeroProblem();
+  Eigen::VectorXd xEmpty;
+  auto emptyResult = customSolver.solve(emptyProblem, xEmpty, options);
+  EXPECT_EQ(emptyResult.status, LcpSolverStatus::Success);
+  EXPECT_EQ(xEmpty.size(), 0);
+}
+
+TEST(InteriorPointSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
+{
+  InteriorPointSolver defaultSolver;
+  const auto defaults = defaultSolver.getDefaultOptions();
+  EXPECT_GT(defaults.maxIterations, 0);
+
+  auto standard = makeStandardProblem(3);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  auto result = defaultSolver.solve(standard, x, defaults);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+
+  InteriorPointSolver customSolver;
+  InteriorPointSolver::Parameters params;
+  params.sigma = 0.9;
+  params.stepScale = 0.8;
+  customSolver.setParameters(params);
+  LcpOptions options = customSolver.getDefaultOptions();
+  options.maxIterations = 8;
+  options.warmStart = true;
+
+  auto zeroProblem = makeZeroRhsProblem(3);
+  LcpOptions zeroOptions = options;
+  zeroOptions.maxIterations = 50;
+  zeroOptions.warmStart = false;
+  Eigen::VectorXd xZero = Eigen::VectorXd::Zero(3);
+  auto zeroResult = customSolver.solve(zeroProblem, xZero, zeroOptions);
+  EXPECT_NE(zeroResult.status, LcpSolverStatus::InvalidProblem);
+  expectZeroSolution(xZero);
+
+  auto singularProblem = makeInfeasibleSingularProblem(3);
+  Eigen::VectorXd xSingular = Eigen::VectorXd::Zero(3);
+  auto singularResult = customSolver.solve(singularProblem, xSingular, options);
+  EXPECT_NE(singularResult.status, LcpSolverStatus::Success);
+
+  auto emptyProblem = makeZeroProblem();
+  Eigen::VectorXd xEmpty;
+  auto emptyResult = customSolver.solve(emptyProblem, xEmpty, options);
+  EXPECT_EQ(emptyResult.status, LcpSolverStatus::Success);
+  EXPECT_EQ(xEmpty.size(), 0);
+}
+
+TEST(StaggeringSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
+{
+  StaggeringSolver defaultSolver;
+  const auto defaults = defaultSolver.getDefaultOptions();
+  EXPECT_GT(defaults.maxIterations, 0);
+
+  auto friction = makeFrictionProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  auto result = defaultSolver.solve(friction, x, defaults);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+
+  StaggeringSolver customSolver;
+  LcpOptions options = customSolver.getDefaultOptions();
+  options.maxIterations = 6;
+  options.relaxation = 1.1;
+  options.warmStart = true;
+
+  auto zeroProblem = makeZeroRhsProblem(3);
+  Eigen::VectorXd xZero = Eigen::VectorXd::Constant(3, 0.05);
+  auto zeroResult = customSolver.solve(zeroProblem, xZero, options);
+  EXPECT_NE(zeroResult.status, LcpSolverStatus::InvalidProblem);
+  expectZeroSolution(xZero);
+
+  auto singularProblem = makeInfeasibleSingularProblem(3);
+  Eigen::VectorXd xSingular = Eigen::VectorXd::Zero(3);
+  auto singularResult = customSolver.solve(singularProblem, xSingular, options);
+  EXPECT_NE(singularResult.status, LcpSolverStatus::Success);
+
+  auto emptyProblem = makeZeroProblem();
+  Eigen::VectorXd xEmpty;
+  auto emptyResult = customSolver.solve(emptyProblem, xEmpty, options);
+  EXPECT_EQ(emptyResult.status, LcpSolverStatus::Success);
+  EXPECT_EQ(xEmpty.size(), 0);
+}
+
+TEST(ShockPropagationSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
+{
+  ShockPropagationSolver defaultSolver;
+  const auto defaults = defaultSolver.getDefaultOptions();
+  EXPECT_GT(defaults.maxIterations, 0);
+
+  auto standard = makeStandardProblem(2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  auto result = defaultSolver.solve(standard, x, defaults);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+
+  ShockPropagationSolver customSolver;
+  ShockPropagationSolver::Parameters params;
+  params.blockSizes = {1, 1};
+  params.layers = {{0}, {1}};
+  customSolver.setParameters(params);
+  LcpOptions options = customSolver.getDefaultOptions();
+  options.maxIterations = 2;
+  options.warmStart = true;
+
+  auto zeroProblem = makeZeroRhsProblem(2);
+  Eigen::VectorXd xZero = Eigen::VectorXd::Constant(2, 0.05);
+  auto zeroResult = customSolver.solve(zeroProblem, xZero, options);
+  EXPECT_NE(zeroResult.status, LcpSolverStatus::InvalidProblem);
+  expectZeroSolution(xZero);
+
+  auto singularProblem = makeInfeasibleSingularProblem(2);
+  Eigen::VectorXd xSingular = Eigen::VectorXd::Zero(2);
+  auto singularResult = customSolver.solve(singularProblem, xSingular, options);
+  EXPECT_NE(singularResult.status, LcpSolverStatus::Success);
+
+  auto emptyProblem = makeZeroProblem();
+  Eigen::VectorXd xEmpty;
+  auto emptyResult = customSolver.solve(emptyProblem, xEmpty, options);
+  EXPECT_EQ(emptyResult.status, LcpSolverStatus::Success);
+  EXPECT_EQ(xEmpty.size(), 0);
 }

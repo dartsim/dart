@@ -1455,6 +1455,7 @@ TEST(GenericJoints, KinematicActuatorConstraintPaths)
   auto* joint = pair.first;
   auto* body = pair.second;
   joint->setActuatorType(dynamics::Joint::VELOCITY);
+  joint->setCommand(0, 0.4);
   body->setMass(1.0);
   body->createShapeNodeWith<dynamics::VisualAspect, dynamics::CollisionAspect>(
       std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.2, 0.2, 0.2)));
@@ -1478,6 +1479,8 @@ TEST(GenericJoints, KinematicActuatorConstraintPaths)
   }
   EXPECT_TRUE(joint->getPositions().allFinite());
   EXPECT_TRUE(joint->getVelocities().allFinite());
+  EXPECT_TRUE(std::isfinite(joint->getConstraintImpulse(0)));
+  EXPECT_TRUE(std::isfinite(joint->getVelocityChange(0)));
 
   // Also test LOCKED actuator type
   joint->setActuatorType(dynamics::Joint::LOCKED);
@@ -1485,6 +1488,7 @@ TEST(GenericJoints, KinematicActuatorConstraintPaths)
     world->step();
   }
   EXPECT_TRUE(joint->getPositions().allFinite());
+  EXPECT_TRUE(std::isfinite(joint->getConstraintImpulse(0)));
 }
 
 //==============================================================================
@@ -1644,3 +1648,41 @@ TEST(GenericJoint, InitialVectorSizeMismatchDeath)
   EXPECT_DEATH({ joint->setFrictions(bad); }, "");
 }
 #endif
+
+//==============================================================================
+TEST(GenericJoint, IntegrateVelocitiesUpdatesState)
+{
+  MultiDofJointTest joint;
+  const auto ndofs = static_cast<Eigen::Index>(joint.getNumDofs());
+
+  Eigen::VectorXd velocities = Eigen::VectorXd::LinSpaced(ndofs, -0.3, 0.3);
+  Eigen::VectorXd accelerations = Eigen::VectorXd::Constant(ndofs, 0.2);
+
+  joint.setVelocities(velocities);
+  joint.setAccelerations(accelerations);
+
+  const double dt = 0.5;
+  joint.integrateVelocities(dt);
+
+  Eigen::VectorXd expected = velocities + accelerations * dt;
+  EXPECT_TRUE(joint.getVelocities().isApprox(expected, 1e-12));
+}
+
+//==============================================================================
+TEST(GenericJoint, VelocityAndAccelerationVectorCommands)
+{
+  MultiDofJointTest joint;
+  const auto ndofs = static_cast<Eigen::Index>(joint.getNumDofs());
+
+  Eigen::VectorXd velocities
+      = Eigen::VectorXd::LinSpaced(ndofs, 0.1, 0.1 * ndofs);
+  Eigen::VectorXd accelerations = Eigen::VectorXd::LinSpaced(ndofs, -0.2, 0.05);
+
+  joint.setActuatorType(Joint::VELOCITY);
+  joint.setVelocities(velocities);
+  EXPECT_TRUE(joint.getCommands().isApprox(velocities));
+
+  joint.setActuatorType(Joint::ACCELERATION);
+  joint.setAccelerations(accelerations);
+  EXPECT_TRUE(joint.getCommands().isApprox(accelerations));
+}
