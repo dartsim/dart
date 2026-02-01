@@ -50,6 +50,94 @@ namespace dart {
 namespace gui {
 namespace {
 
+// clang-format off
+constexpr const char* kLightingVS =
+    "#version 330\n"
+    "in vec3 vertexPosition;\n"
+    "in vec2 vertexTexcoord;\n"
+    "in vec3 vertexNormal;\n"
+    "in vec4 vertexColor;\n"
+    "uniform mat4 mvp;\n"
+    "uniform mat4 matModel;\n"
+    "uniform mat4 matNormal;\n"
+    "out vec3 fragPosition;\n"
+    "out vec2 fragTexCoord;\n"
+    "out vec3 fragNormal;\n"
+    "void main() {\n"
+    "    fragPosition = vec3(matModel * vec4(vertexPosition, 1.0));\n"
+    "    fragTexCoord = vertexTexcoord;\n"
+    "    fragNormal = normalize(vec3(matNormal * vec4(vertexNormal, 0.0)));\n"
+    "    gl_Position = mvp * vec4(vertexPosition, 1.0);\n"
+    "}\n";
+
+constexpr const char* kLightingFS =
+    "#version 330\n"
+    "in vec3 fragPosition;\n"
+    "in vec2 fragTexCoord;\n"
+    "in vec3 fragNormal;\n"
+    "uniform sampler2D texture0;\n"
+    "uniform vec4 colDiffuse;\n"
+    "uniform vec3 viewPos;\n"
+    "uniform vec4 ambientColor;\n"
+    "uniform vec4 specularColor;\n"
+    "uniform float shininess;\n"
+    "uniform int numLights;\n"
+    "uniform vec3 lightDirs[4];\n"
+    "uniform vec4 lightColors[4];\n"
+    "out vec4 finalColor;\n"
+    "void main() {\n"
+    "    vec4 texelColor = texture(texture0, fragTexCoord);\n"
+    "    vec3 normal = normalize(fragNormal);\n"
+    "    vec3 viewDir = normalize(viewPos - fragPosition);\n"
+    "    vec3 ambient = ambientColor.rgb;\n"
+    "    vec3 diffuse = vec3(0.0);\n"
+    "    vec3 specular = vec3(0.0);\n"
+    "    for (int i = 0; i < numLights && i < 4; i++) {\n"
+    "        vec3 ld = normalize(-lightDirs[i]);\n"
+    "        float NdotL = max(dot(normal, ld), 0.0);\n"
+    "        diffuse += lightColors[i].rgb * NdotL;\n"
+    "        if (NdotL > 0.0) {\n"
+    "            vec3 halfDir = normalize(ld + viewDir);\n"
+    "            float spec = pow(max(dot(normal, halfDir), 0.0), shininess);\n"
+    "            specular += specularColor.rgb * spec * lightColors[i].rgb;\n"
+    "        }\n"
+    "    }\n"
+    "    vec3 lighting = ambient + diffuse;\n"
+    "    finalColor = vec4(texelColor.rgb * colDiffuse.rgb * lighting + specular,"
+    "                      colDiffuse.a * texelColor.a);\n"
+    "}\n";
+// clang-format on
+
+constexpr int kMaxLights = 4;
+
+struct LightingState
+{
+  Shader shader{};
+  bool loaded = false;
+  int loc_view_pos = -1;
+  int loc_ambient = -1;
+  int loc_specular = -1;
+  int loc_shininess = -1;
+  int loc_num_lights = -1;
+  int loc_light_dirs[kMaxLights] = {-1, -1, -1, -1};
+  int loc_light_colors[kMaxLights] = {-1, -1, -1, -1};
+};
+
+struct MeshCache
+{
+  Mesh unit_cube{};
+  Mesh unit_sphere{};
+  Mesh unit_cylinder{};
+  Mesh unit_cone{};
+  Mesh unit_hemisphere{};
+  Mesh unit_plane{};
+  Mesh unit_pyramid{};
+  bool loaded = false;
+};
+
+static LightingState g_lighting;
+static MeshCache g_meshes;
+
 Vector3 toVector3(const Eigen::Vector3d& value)
 {
   return Vector3{
@@ -76,6 +164,14 @@ Matrix eigenToRaylib(const Eigen::Isometry3d& transform)
   return result;
 }
 
+Matrix eigenMatToRaylib(const Eigen::Matrix4d& mat)
+{
+  Eigen::Matrix4f matf = mat.cast<float>();
+  Matrix result;
+  std::memcpy(&result, matf.data(), sizeof(Matrix));
+  return result;
+}
+
 Camera3D toRaylibCamera(const Camera& camera)
 {
   Camera3D result{};
@@ -87,30 +183,275 @@ Camera3D toRaylibCamera(const Camera& camera)
   return result;
 }
 
-Matrix planeLocalTransform(const PlaneData& plane)
+Mesh genPyramidMesh()
 {
-  Eigen::Vector3d normal = plane.normal;
-  if (normal.norm() < 1e-9) {
-    normal = Eigen::Vector3d::UnitZ();
-  }
-  normal.normalize();
+  constexpr int kTriCount = 6;
+  constexpr int kVertCount = kTriCount * 3;
 
-  Eigen::Vector3d tangent = normal.cross(Eigen::Vector3d::UnitZ());
-  if (tangent.norm() < 1e-6) {
-    tangent = normal.cross(Eigen::Vector3d::UnitX());
-  }
-  tangent.normalize();
-  Eigen::Vector3d bitangent = normal.cross(tangent);
+  Mesh mesh{};
+  mesh.vertexCount = kVertCount;
+  mesh.triangleCount = kTriCount;
+  mesh.vertices = static_cast<float*>(
+      MemAlloc(static_cast<int>(kVertCount * 3 * sizeof(float))));
+  mesh.normals = static_cast<float*>(
+      MemAlloc(static_cast<int>(kVertCount * 3 * sizeof(float))));
+  mesh.texcoords = static_cast<float*>(
+      MemAlloc(static_cast<int>(kVertCount * 2 * sizeof(float))));
+  mesh.indices = static_cast<unsigned short*>(
+      MemAlloc(static_cast<int>(kVertCount * sizeof(unsigned short))));
 
-  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-  transform.linear().col(0) = tangent;
-  transform.linear().col(1) = normal;
-  transform.linear().col(2) = bitangent;
-  transform.translation() = normal * plane.offset;
-  return eigenToRaylib(transform);
+  const float hw = 0.5f;
+  const float hd = 0.5f;
+  const float hh = 0.5f;
+
+  const float bx[4] = {-hw, hw, hw, -hw};
+  const float by[4] = {-hd, -hd, hd, hd};
+  const float bz = -hh;
+  const float az = hh;
+
+  int vi = 0;
+  auto addVert = [&](float x, float y, float z, float nx, float ny, float nz) {
+    mesh.vertices[vi * 3 + 0] = x;
+    mesh.vertices[vi * 3 + 1] = y;
+    mesh.vertices[vi * 3 + 2] = z;
+    mesh.normals[vi * 3 + 0] = nx;
+    mesh.normals[vi * 3 + 1] = ny;
+    mesh.normals[vi * 3 + 2] = nz;
+    mesh.texcoords[vi * 2 + 0] = 0.0f;
+    mesh.texcoords[vi * 2 + 1] = 0.0f;
+    mesh.indices[vi] = static_cast<unsigned short>(vi);
+    ++vi;
+  };
+
+  const float sn = 1.0f / std::sqrt(1.25f);
+  const float un = 0.5f / std::sqrt(1.25f);
+
+  const float nx[4] = {0.0f, sn, 0.0f, -sn};
+  const float ny[4] = {-sn, 0.0f, sn, 0.0f};
+
+  for (int i = 0; i < 4; ++i) {
+    const int j = (i + 1) % 4;
+    addVert(bx[i], by[i], bz, nx[i], ny[i], un);
+    addVert(bx[j], by[j], bz, nx[i], ny[i], un);
+    addVert(0.0f, 0.0f, az, nx[i], ny[i], un);
+  }
+
+  addVert(bx[0], by[0], bz, 0.0f, 0.0f, -1.0f);
+  addVert(bx[2], by[2], bz, 0.0f, 0.0f, -1.0f);
+  addVert(bx[1], by[1], bz, 0.0f, 0.0f, -1.0f);
+  addVert(bx[0], by[0], bz, 0.0f, 0.0f, -1.0f);
+  addVert(bx[3], by[3], bz, 0.0f, 0.0f, -1.0f);
+  addVert(bx[2], by[2], bz, 0.0f, 0.0f, -1.0f);
+
+  UploadMesh(&mesh, false);
+  return mesh;
 }
 
-void drawMeshData(const MeshData& data, const Color& color)
+void initLighting()
+{
+  g_lighting.shader = LoadShaderFromMemory(kLightingVS, kLightingFS);
+  const int testLoc = GetShaderLocation(g_lighting.shader, "numLights");
+  if (testLoc < 0) {
+    DART_WARN("Lighting shader failed to compile; using flat rendering");
+    g_lighting.loaded = false;
+    return;
+  }
+
+  g_lighting.loaded = true;
+  g_lighting.loc_view_pos = GetShaderLocation(g_lighting.shader, "viewPos");
+  g_lighting.loc_ambient = GetShaderLocation(g_lighting.shader, "ambientColor");
+  g_lighting.loc_specular
+      = GetShaderLocation(g_lighting.shader, "specularColor");
+  g_lighting.loc_shininess = GetShaderLocation(g_lighting.shader, "shininess");
+  g_lighting.loc_num_lights = testLoc;
+
+  for (int i = 0; i < kMaxLights; ++i) {
+    g_lighting.loc_light_dirs[i]
+        = GetShaderLocation(g_lighting.shader, TextFormat("lightDirs[%d]", i));
+    g_lighting.loc_light_colors[i] = GetShaderLocation(
+        g_lighting.shader, TextFormat("lightColors[%d]", i));
+  }
+}
+
+void shutdownLighting()
+{
+  if (g_lighting.loaded) {
+    UnloadShader(g_lighting.shader);
+    g_lighting = LightingState{};
+  }
+}
+
+void initMeshes()
+{
+  g_meshes.unit_cube = GenMeshCube(1.0f, 1.0f, 1.0f);
+  g_meshes.unit_sphere = GenMeshSphere(1.0f, 16, 16);
+  g_meshes.unit_cylinder = GenMeshCylinder(1.0f, 1.0f, 24);
+  g_meshes.unit_cone = GenMeshCone(1.0f, 1.0f, 24);
+  g_meshes.unit_hemisphere = GenMeshHemiSphere(1.0f, 16, 16);
+  g_meshes.unit_plane = GenMeshPlane(1.0f, 1.0f, 1, 1);
+  g_meshes.unit_pyramid = genPyramidMesh();
+  g_meshes.loaded = true;
+}
+
+void shutdownMeshes()
+{
+  if (!g_meshes.loaded) {
+    return;
+  }
+  UnloadMesh(g_meshes.unit_cube);
+  UnloadMesh(g_meshes.unit_sphere);
+  UnloadMesh(g_meshes.unit_cylinder);
+  UnloadMesh(g_meshes.unit_cone);
+  UnloadMesh(g_meshes.unit_hemisphere);
+  UnloadMesh(g_meshes.unit_plane);
+  UnloadMesh(g_meshes.unit_pyramid);
+  g_meshes = MeshCache{};
+}
+
+void updateLightUniforms(const Scene& scene)
+{
+  if (!g_lighting.loaded) {
+    return;
+  }
+
+  const float viewPos[3]
+      = {static_cast<float>(scene.camera.position.x()),
+         static_cast<float>(scene.camera.position.y()),
+         static_cast<float>(scene.camera.position.z())};
+  SetShaderValue(
+      g_lighting.shader, g_lighting.loc_view_pos, viewPos, SHADER_UNIFORM_VEC3);
+
+  int numLights = 0;
+
+  if (scene.headlight) {
+    Eigen::Vector3d dir = (scene.camera.target - scene.camera.position);
+    if (dir.norm() > 1e-9) {
+      dir.normalize();
+    } else {
+      dir = Eigen::Vector3d(0, 0, -1);
+    }
+    const float ld[3]
+        = {static_cast<float>(dir.x()),
+           static_cast<float>(dir.y()),
+           static_cast<float>(dir.z())};
+    const float lc[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+    SetShaderValue(
+        g_lighting.shader,
+        g_lighting.loc_light_dirs[0],
+        ld,
+        SHADER_UNIFORM_VEC3);
+    SetShaderValue(
+        g_lighting.shader,
+        g_lighting.loc_light_colors[0],
+        lc,
+        SHADER_UNIFORM_VEC4);
+    numLights = 1;
+  }
+
+  for (const auto& light : scene.lights) {
+    if (numLights >= kMaxLights) {
+      break;
+    }
+    const float ld[3]
+        = {static_cast<float>(light.direction.x()),
+           static_cast<float>(light.direction.y()),
+           static_cast<float>(light.direction.z())};
+    const float lc[4]
+        = {static_cast<float>(light.color[0]),
+           static_cast<float>(light.color[1]),
+           static_cast<float>(light.color[2]),
+           static_cast<float>(light.color[3])};
+    SetShaderValue(
+        g_lighting.shader,
+        g_lighting.loc_light_dirs[numLights],
+        ld,
+        SHADER_UNIFORM_VEC3);
+    SetShaderValue(
+        g_lighting.shader,
+        g_lighting.loc_light_colors[numLights],
+        lc,
+        SHADER_UNIFORM_VEC4);
+    ++numLights;
+  }
+
+  SetShaderValue(
+      g_lighting.shader,
+      g_lighting.loc_num_lights,
+      &numLights,
+      SHADER_UNIFORM_INT);
+}
+
+void setPerNodeUniforms(const dart::gui::Material& mat)
+{
+  if (!g_lighting.loaded) {
+    return;
+  }
+
+  const float ambient[4]
+      = {static_cast<float>(mat.ambient[0]),
+         static_cast<float>(mat.ambient[1]),
+         static_cast<float>(mat.ambient[2]),
+         static_cast<float>(mat.ambient[3])};
+  const float specular[4]
+      = {static_cast<float>(mat.specular[0]),
+         static_cast<float>(mat.specular[1]),
+         static_cast<float>(mat.specular[2]),
+         static_cast<float>(mat.specular[3])};
+  const float shininess = static_cast<float>(mat.shininess);
+
+  SetShaderValue(
+      g_lighting.shader, g_lighting.loc_ambient, ambient, SHADER_UNIFORM_VEC4);
+  SetShaderValue(
+      g_lighting.shader,
+      g_lighting.loc_specular,
+      specular,
+      SHADER_UNIFORM_VEC4);
+  SetShaderValue(
+      g_lighting.shader,
+      g_lighting.loc_shininess,
+      &shininess,
+      SHADER_UNIFORM_FLOAT);
+}
+
+::Material makeLitMaterial(const Color& diffuse)
+{
+  ::Material mat = LoadMaterialDefault();
+  if (g_lighting.loaded) {
+    mat.shader = g_lighting.shader;
+  }
+  mat.maps[MATERIAL_MAP_DIFFUSE].color = diffuse;
+  return mat;
+}
+
+void freeMaterial(::Material& mat)
+{
+  // Detach the shared lighting shader so UnloadMaterial won't free it.
+  // Also detach texture references that belong to the cache.
+  mat.shader = {0, nullptr};
+  // Free the maps array allocated by LoadMaterialDefault().
+  RL_FREE(mat.maps);
+  mat.maps = nullptr;
+}
+
+void drawCachedMesh(
+    Mesh mesh, const Color& diffuse, const Eigen::Matrix4d& transform)
+{
+  ::Material mat = makeLitMaterial(diffuse);
+  DrawMesh(mesh, mat, eigenMatToRaylib(transform));
+  freeMaterial(mat);
+}
+
+Eigen::Matrix3d rotMinusX90()
+{
+  Eigen::Matrix3d r;
+  r << 1, 0, 0, 0, 0, 1, 0, -1, 0;
+  return r;
+}
+
+void drawMeshDataLit(
+    const MeshData& data,
+    const Color& diffuse,
+    const Eigen::Isometry3d& nodeTransform)
 {
   if (data.vertices.empty() || data.indices.empty()) {
     return;
@@ -161,11 +502,9 @@ void drawMeshData(const MeshData& data, const Color& color)
 
   UploadMesh(&mesh, false);
 
-  ::Material rlMaterial = LoadMaterialDefault();
-  rlMaterial.maps[MATERIAL_MAP_DIFFUSE].color = color;
-  ::Matrix identity = eigenToRaylib(Eigen::Isometry3d::Identity());
-  DrawMesh(mesh, rlMaterial, identity);
-  UnloadMaterial(rlMaterial);
+  ::Material mat = makeLitMaterial(diffuse);
+  DrawMesh(mesh, mat, eigenToRaylib(nodeTransform));
+  freeMaterial(mat);
   UnloadMesh(mesh);
 }
 
@@ -297,6 +636,9 @@ bool RaylibBackend::initialize(const ViewerConfig& config)
     SetTargetFPS(config_.target_fps);
   }
 
+  initLighting();
+  initMeshes();
+
   initialized_ = true;
   return true;
 }
@@ -335,93 +677,108 @@ void RaylibBackend::render(const Scene& scene)
     DrawLine3D(origin, Vector3{0.0f, 0.0f, 1.0f}, BLUE);
   }
 
+  updateLightUniforms(scene);
+
+  const Eigen::Matrix3d rMinusX90 = rotMinusX90();
+
   for (const auto& node : scene.nodes) {
     if (!node.visible) {
       continue;
     }
 
     const Color color = toColor(node.material.color);
-    rlPushMatrix();
-    const Matrix transform = eigenToRaylib(node.transform);
-    rlMultMatrixf(reinterpret_cast<const float*>(&transform));
+    setPerNodeUniforms(node.material);
 
     std::visit(
         [&](const auto& shape) {
           using ShapeT = std::decay_t<decltype(shape)>;
           if constexpr (std::is_same_v<ShapeT, BoxData>) {
-            Vector3 size{
-                static_cast<float>(shape.size.x()),
-                static_cast<float>(shape.size.y()),
-                static_cast<float>(shape.size.z())};
-            DrawCubeV(Vector3{0.0f, 0.0f, 0.0f}, size, color);
-            if (node.material.wireframe) {
-              DrawCubeWiresV(Vector3{0.0f, 0.0f, 0.0f}, size, color);
-            }
+            Eigen::Matrix4d m = node.transform.matrix();
+            m.col(0) *= shape.size.x();
+            m.col(1) *= shape.size.y();
+            m.col(2) *= shape.size.z();
+            drawCachedMesh(g_meshes.unit_cube, color, m);
           } else if constexpr (std::is_same_v<ShapeT, SphereData>) {
-            DrawSphere(
-                Vector3{0.0f, 0.0f, 0.0f},
-                static_cast<float>(shape.radius),
-                color);
+            Eigen::Matrix4d m = node.transform.matrix();
+            const double r = shape.radius;
+            m.col(0) *= r;
+            m.col(1) *= r;
+            m.col(2) *= r;
+            drawCachedMesh(g_meshes.unit_sphere, color, m);
           } else if constexpr (std::is_same_v<ShapeT, CylinderData>) {
-            rlPushMatrix();
-            rlRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-            DrawCylinder(
-                Vector3{0.0f, 0.0f, 0.0f},
-                static_cast<float>(shape.radius),
-                static_cast<float>(shape.radius),
-                static_cast<float>(shape.height),
-                24,
-                color);
-            rlPopMatrix();
+            Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+            m.block<3, 3>(0, 0) = node.transform.rotation() * rMinusX90;
+            m.col(0).head<3>() *= shape.radius;
+            m.col(1).head<3>() *= shape.height;
+            m.col(2).head<3>() *= shape.radius;
+            m.col(3).head<3>() = node.transform.translation();
+            drawCachedMesh(g_meshes.unit_cylinder, color, m);
           } else if constexpr (std::is_same_v<ShapeT, CapsuleData>) {
             rlPushMatrix();
+            const Matrix tf = eigenToRaylib(node.transform);
+            rlMultMatrixf(reinterpret_cast<const float*>(&tf));
             rlRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-            const float halfHeight = static_cast<float>(shape.height) * 0.5f;
+            const float halfH = static_cast<float>(shape.height) * 0.5f;
             DrawCapsule(
-                Vector3{0.0f, -halfHeight, 0.0f},
-                Vector3{0.0f, halfHeight, 0.0f},
+                Vector3{0.0f, -halfH, 0.0f},
+                Vector3{0.0f, halfH, 0.0f},
                 static_cast<float>(shape.radius),
                 16,
                 16,
                 color);
             rlPopMatrix();
           } else if constexpr (std::is_same_v<ShapeT, ConeData>) {
-            rlPushMatrix();
-            rlRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-            DrawCylinder(
-                Vector3{0.0f, 0.0f, 0.0f},
-                0.0f,
-                static_cast<float>(shape.radius),
-                static_cast<float>(shape.height),
-                24,
-                color);
-            rlPopMatrix();
+            Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+            m.block<3, 3>(0, 0) = node.transform.rotation() * rMinusX90;
+            m.col(0).head<3>() *= shape.radius;
+            m.col(1).head<3>() *= shape.height;
+            m.col(2).head<3>() *= shape.radius;
+            m.col(3).head<3>() = node.transform.translation();
+            drawCachedMesh(g_meshes.unit_cone, color, m);
           } else if constexpr (std::is_same_v<ShapeT, EllipsoidData>) {
-            rlPushMatrix();
-            rlScalef(
-                static_cast<float>(shape.radii.x()),
-                static_cast<float>(shape.radii.y()),
-                static_cast<float>(shape.radii.z()));
-            DrawSphere(Vector3{0.0f, 0.0f, 0.0f}, 1.0f, color);
-            rlPopMatrix();
+            Eigen::Matrix4d m = node.transform.matrix();
+            m.col(0) *= shape.radii.x();
+            m.col(1) *= shape.radii.y();
+            m.col(2) *= shape.radii.z();
+            drawCachedMesh(g_meshes.unit_sphere, color, m);
           } else if constexpr (std::is_same_v<ShapeT, PlaneData>) {
-            rlPushMatrix();
-            const Matrix planeTransform = planeLocalTransform(shape);
-            rlMultMatrixf(reinterpret_cast<const float*>(&planeTransform));
-            DrawPlane(Vector3{0.0f, 0.0f, 0.0f}, Vector2{20.0f, 20.0f}, color);
-            rlPopMatrix();
+            Eigen::Vector3d normal = shape.normal;
+            if (normal.norm() < 1e-9) {
+              normal = Eigen::Vector3d::UnitZ();
+            }
+            normal.normalize();
+            Eigen::Vector3d tangent = normal.cross(Eigen::Vector3d::UnitZ());
+            if (tangent.norm() < 1e-6) {
+              tangent = normal.cross(Eigen::Vector3d::UnitX());
+            }
+            tangent.normalize();
+            Eigen::Vector3d bitangent = normal.cross(tangent);
+            Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+            m.block<3, 1>(0, 0) = tangent * 20.0;
+            m.block<3, 1>(0, 1) = normal;
+            m.block<3, 1>(0, 2) = bitangent * 20.0;
+            m.block<3, 1>(0, 3) = normal * shape.offset;
+            drawCachedMesh(g_meshes.unit_plane, color, m);
           } else if constexpr (std::is_same_v<ShapeT, MeshData>) {
-            drawMeshData(shape, color);
+            drawMeshDataLit(shape, color, node.transform);
           } else if constexpr (std::is_same_v<ShapeT, LineData>) {
+            rlPushMatrix();
+            const Matrix tf = eigenToRaylib(node.transform);
+            rlMultMatrixf(reinterpret_cast<const float*>(&tf));
             for (const auto& segment : shape.segments) {
               DrawLine3D(
                   toVector3(segment.first), toVector3(segment.second), color);
             }
+            rlPopMatrix();
+          } else if constexpr (std::is_same_v<ShapeT, PyramidData>) {
+            Eigen::Matrix4d m = node.transform.matrix();
+            m.col(0) *= shape.base_width;
+            m.col(1) *= shape.base_depth;
+            m.col(2) *= shape.height;
+            drawCachedMesh(g_meshes.unit_pyramid, color, m);
           }
         },
         node.shape);
-
-    rlPopMatrix();
   }
 
   for (const auto& line : scene.debug_lines) {
@@ -435,7 +792,6 @@ void RaylibBackend::render(const Scene& scene)
         toColor(point.color));
   }
 
-  // Selection highlight: draw yellow wireframe overlay on selected node
   if (scene.selected_node_id.has_value()) {
     const uint64_t selectedId = scene.selected_node_id.value();
     for (const auto& node : scene.nodes) {
@@ -505,6 +861,23 @@ void RaylibBackend::render(const Scene& scene)
                   static_cast<float>(shape.radii.z()));
               DrawSphereWires(Vector3{0.0f, 0.0f, 0.0f}, 1.0f, 12, 12, YELLOW);
               rlPopMatrix();
+            } else if constexpr (std::is_same_v<ShapeT, PyramidData>) {
+              const float hw = static_cast<float>(shape.base_width) * 0.5f;
+              const float hd = static_cast<float>(shape.base_depth) * 0.5f;
+              const float hh = static_cast<float>(shape.height) * 0.5f;
+              const Vector3 b0{-hw, -hd, -hh};
+              const Vector3 b1{hw, -hd, -hh};
+              const Vector3 b2{hw, hd, -hh};
+              const Vector3 b3{-hw, hd, -hh};
+              const Vector3 apex{0, 0, hh};
+              DrawLine3D(b0, b1, YELLOW);
+              DrawLine3D(b1, b2, YELLOW);
+              DrawLine3D(b2, b3, YELLOW);
+              DrawLine3D(b3, b0, YELLOW);
+              DrawLine3D(b0, apex, YELLOW);
+              DrawLine3D(b1, apex, YELLOW);
+              DrawLine3D(b2, apex, YELLOW);
+              DrawLine3D(b3, apex, YELLOW);
             }
           },
           node.shape);
@@ -547,6 +920,8 @@ void RaylibBackend::shutdown()
     return;
   }
 
+  shutdownMeshes();
+  shutdownLighting();
   CloseWindow();
   initialized_ = false;
 }
@@ -654,8 +1029,12 @@ BoundingBox computeAABB(
             maxV = maxV.cwiseMax(v);
           }
           halfExtent = ((maxV - minV) * 0.5f).cast<double>();
+        } else if constexpr (std::is_same_v<ShapeT, PyramidData>) {
+          halfExtent = Eigen::Vector3d(
+              shape.base_width * 0.5,
+              shape.base_depth * 0.5,
+              shape.height * 0.5);
         }
-        // PlaneData and LineData: skip picking
       },
       node.shape);
 
@@ -666,7 +1045,6 @@ BoundingBox computeAABB(
   const Eigen::Vector3d center = transform.translation();
   const Eigen::Matrix3d rot = transform.rotation();
 
-  // Compute axis-aligned extent from oriented bounding box
   Eigen::Vector3d aaExtent = Eigen::Vector3d::Zero();
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 3; ++j) {
@@ -701,7 +1079,6 @@ std::optional<HitResult> RaylibBackend::pickNode(
 
     const BoundingBox aabb = computeAABB(node, node.transform);
 
-    // Skip zero-size AABBs (planes, lines, etc.)
     if (aabb.min.x == aabb.max.x && aabb.min.y == aabb.max.y
         && aabb.min.z == aabb.max.z) {
       continue;

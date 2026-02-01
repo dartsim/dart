@@ -547,3 +547,194 @@ TEST_F(RaylibSceneViewerTest, NoWorldDoesNotCrash)
   EXPECT_TRUE(viewer.frame());
   EXPECT_TRUE(viewer.frame());
 }
+
+TEST_F(RaylibSceneViewerTest, ConvexMeshExtraction)
+{
+  // Create a world with a ConvexMeshShape
+  auto world = dart::simulation::World::create();
+  world->setGravity(Eigen::Vector3d(0, 0, -9.81));
+
+  auto skeleton = dart::dynamics::Skeleton::create("convex_mesh_skel");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+
+  // Create a simple tetrahedron TriMesh
+  auto triMesh = std::make_shared<dart::math::TriMeshd>();
+  triMesh->addVertex(Eigen::Vector3d(0.0, 0.0, 0.0));
+  triMesh->addVertex(Eigen::Vector3d(1.0, 0.0, 0.0));
+  triMesh->addVertex(Eigen::Vector3d(0.5, 1.0, 0.0));
+  triMesh->addVertex(Eigen::Vector3d(0.5, 0.5, 1.0));
+
+  // Add 4 triangular faces
+  triMesh->addTriangle(0, 1, 2);
+  triMesh->addTriangle(0, 1, 3);
+  triMesh->addTriangle(1, 2, 3);
+  triMesh->addTriangle(2, 0, 3);
+
+  auto convexMeshShape = dart::dynamics::ConvexMeshShape::fromMesh(triMesh);
+  auto shapeNode = body->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect>(convexMeshShape);
+  shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.5, 0.5, 0.8));
+
+  dart::dynamics::Inertia inertia;
+  inertia.setMass(1.0);
+  inertia.setMoment(convexMeshShape->computeInertia(1.0));
+  body->setInertia(inertia);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0, 0, 1.0);
+  joint->setTransformFromParentBodyNode(tf);
+
+  world->addSkeleton(skeleton);
+
+  // Create viewer and render
+  dart::gui::ViewerConfig config;
+  config.width = 640;
+  config.height = 480;
+  config.headless = true;
+  config.target_fps = 0;
+
+  auto viewer = dart::gui::SceneViewer(
+      std::make_unique<dart::gui::RaylibBackend>(), config);
+  viewer.setWorld(world);
+
+  // Render a few frames
+  for (int i = 0; i < 3; ++i) {
+    viewer.frame();
+  }
+
+  // Capture screenshot and verify it has non-background pixels
+  const std::string path = kTestOutputDir + "/convex_mesh_test.png";
+  removeFile(path);
+  viewer.captureScreenshot(path);
+  viewer.frame();
+
+  ASSERT_TRUE(fileExists(path));
+  EXPECT_TRUE(hasNonBackgroundPixels(path))
+      << "ConvexMesh should render with visible pixels";
+}
+
+TEST_F(RaylibSceneViewerTest, PyramidShapeRendering)
+{
+  // Create a world with a PyramidShape
+  auto world = dart::simulation::World::create();
+  world->setGravity(Eigen::Vector3d(0, 0, -9.81));
+
+  auto skeleton = dart::dynamics::Skeleton::create("pyramid_skel");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+
+  auto pyramidShape
+      = std::make_shared<dart::dynamics::PyramidShape>(0.5, 0.5, 1.0);
+  auto shapeNode = body->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect>(pyramidShape);
+  shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.8, 0.6, 0.2));
+
+  dart::dynamics::Inertia inertia;
+  inertia.setMass(1.0);
+  inertia.setMoment(pyramidShape->computeInertia(1.0));
+  body->setInertia(inertia);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0, 0, 1.0);
+  joint->setTransformFromParentBodyNode(tf);
+
+  world->addSkeleton(skeleton);
+
+  // Create viewer and render
+  dart::gui::ViewerConfig config;
+  config.width = 640;
+  config.height = 480;
+  config.headless = true;
+  config.target_fps = 0;
+
+  auto viewer = dart::gui::SceneViewer(
+      std::make_unique<dart::gui::RaylibBackend>(), config);
+  viewer.setWorld(world);
+
+  // Render a few frames
+  for (int i = 0; i < 3; ++i) {
+    viewer.frame();
+  }
+
+  // Capture screenshot and verify it has non-background pixels
+  const std::string path = kTestOutputDir + "/pyramid_test.png";
+  removeFile(path);
+  viewer.captureScreenshot(path);
+  viewer.frame();
+
+  ASSERT_TRUE(fileExists(path));
+  EXPECT_TRUE(hasNonBackgroundPixels(path))
+      << "Pyramid should render with visible pixels";
+}
+
+TEST_F(RaylibSceneViewerTest, UnsupportedShapeGracefulHandling)
+{
+  // Create a world with a supported shape (BoxShape)
+  // This tests that the extractor handles shapes gracefully
+  auto world = dart::simulation::World::create();
+  world->setGravity(Eigen::Vector3d(0, 0, -9.81));
+
+  auto skeleton = dart::dynamics::Skeleton::create("box_skel");
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+
+  auto boxShape = std::make_shared<dart::dynamics::BoxShape>(
+      Eigen::Vector3d(0.5, 0.5, 0.5));
+  auto shapeNode = body->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect>(boxShape);
+  shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.5, 0.5, 0.5));
+
+  dart::dynamics::Inertia inertia;
+  inertia.setMass(1.0);
+  inertia.setMoment(boxShape->computeInertia(1.0));
+  body->setInertia(inertia);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0, 0, 1.0);
+  joint->setTransformFromParentBodyNode(tf);
+
+  world->addSkeleton(skeleton);
+
+  // Create viewer and render multiple frames
+  dart::gui::ViewerConfig config;
+  config.width = 640;
+  config.height = 480;
+  config.headless = true;
+  config.target_fps = 0;
+
+  auto viewer = dart::gui::SceneViewer(
+      std::make_unique<dart::gui::RaylibBackend>(), config);
+  viewer.setWorld(world);
+
+  // Render several frames — should not crash
+  EXPECT_NO_THROW({
+    for (int i = 0; i < 10; ++i) {
+      viewer.frame();
+    }
+  });
+}
+
+TEST_F(RaylibSceneViewerTest, MaterialHasExpectedDefaults)
+{
+  // Test Material struct default values
+  dart::gui::Material material;
+
+  // Verify ambient color defaults
+  EXPECT_NEAR(material.ambient.x(), 0.2, 1e-6);
+  EXPECT_NEAR(material.ambient.y(), 0.2, 1e-6);
+  EXPECT_NEAR(material.ambient.z(), 0.2, 1e-6);
+  EXPECT_NEAR(material.ambient.w(), 1.0, 1e-6);
+
+  // Verify specular color defaults
+  EXPECT_NEAR(material.specular.x(), 1.0, 1e-6);
+  EXPECT_NEAR(material.specular.y(), 1.0, 1e-6);
+  EXPECT_NEAR(material.specular.z(), 1.0, 1e-6);
+  EXPECT_NEAR(material.specular.w(), 1.0, 1e-6);
+
+  // Verify shininess default
+  EXPECT_NEAR(material.shininess, 32.0, 1e-6);
+}

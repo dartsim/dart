@@ -48,7 +48,10 @@ namespace gui {
 /// Material for a renderable node
 struct Material
 {
-  Eigen::Vector4d color{0.5, 0.5, 0.5, 1.0}; // RGBA
+  Eigen::Vector4d color{0.5, 0.5, 0.5, 1.0};
+  Eigen::Vector4d ambient{0.2, 0.2, 0.2, 1.0};
+  Eigen::Vector4d specular{1.0, 1.0, 1.0, 1.0};
+  double shininess = 32.0;
   bool wireframe = false;
 };
 
@@ -105,6 +108,13 @@ struct LineData
   std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> segments;
 };
 
+struct PyramidData
+{
+  double base_width;
+  double base_depth;
+  double height;
+};
+
 using ShapeData = std::variant<
     BoxData,
     SphereData,
@@ -114,7 +124,8 @@ using ShapeData = std::variant<
     EllipsoidData,
     PlaneData,
     MeshData,
-    LineData>;
+    LineData,
+    PyramidData>;
 
 /// A single renderable node in the scene
 struct SceneNode
@@ -173,6 +184,7 @@ struct Scene
   std::vector<DebugPoint> debug_points;
   Camera camera;
   std::vector<Light> lights;
+  bool headlight = true;
   bool show_grid = true;
   bool show_axes = true;
   bool paused = false;

@@ -37,11 +37,13 @@
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/capsule_shape.hpp"
 #include "dart/dynamics/cone_shape.hpp"
+#include "dart/dynamics/convex_mesh_shape.hpp"
 #include "dart/dynamics/cylinder_shape.hpp"
 #include "dart/dynamics/ellipsoid_shape.hpp"
 #include "dart/dynamics/line_segment_shape.hpp"
 #include "dart/dynamics/mesh_shape.hpp"
 #include "dart/dynamics/plane_shape.hpp"
+#include "dart/dynamics/pyramid_shape.hpp"
 #include "dart/dynamics/shape_frame.hpp"
 #include "dart/dynamics/shape_node.hpp"
 #include "dart/dynamics/skeleton.hpp"
@@ -138,6 +140,41 @@ std::optional<ShapeData> SceneExtractor::convertShape(
     return ShapeData{PlaneData{plane->getNormal(), plane->getOffset()}};
   }
 
+  if (auto convexMesh
+      = dynamic_cast<const dart::dynamics::ConvexMeshShape*>(&shape)) {
+    auto triMesh = convexMesh->getMesh();
+    if (!triMesh || !triMesh->hasVertices() || !triMesh->hasTriangles()) {
+      return std::nullopt;
+    }
+
+    MeshData meshData;
+    const auto& vertices = triMesh->getVertices();
+    meshData.vertices.reserve(vertices.size());
+
+    for (const auto& vertex : vertices) {
+      meshData.vertices.emplace_back(vertex.cast<float>());
+    }
+
+    if (triMesh->hasVertexNormals()
+        && triMesh->getVertexNormals().size() == vertices.size()) {
+      const auto& normals = triMesh->getVertexNormals();
+      meshData.normals.reserve(normals.size());
+      for (const auto& normal : normals) {
+        meshData.normals.emplace_back(normal.normalized().cast<float>());
+      }
+    }
+
+    const auto& triangles = triMesh->getTriangles();
+    meshData.indices.reserve(triangles.size() * 3);
+    for (const auto& triangle : triangles) {
+      meshData.indices.push_back(static_cast<uint32_t>(triangle[0]));
+      meshData.indices.push_back(static_cast<uint32_t>(triangle[1]));
+      meshData.indices.push_back(static_cast<uint32_t>(triangle[2]));
+    }
+
+    return ShapeData{std::move(meshData)};
+  }
+
   if (auto mesh = dynamic_cast<const dart::dynamics::MeshShape*>(&shape)) {
     auto triMesh = mesh->getTriMesh();
     if (!triMesh || !triMesh->hasVertices() || !triMesh->hasTriangles()) {
@@ -210,6 +247,14 @@ std::optional<ShapeData> SceneExtractor::convertShape(
     }
 
     return ShapeData{std::move(lineData)};
+  }
+
+  if (auto pyramid
+      = dynamic_cast<const dart::dynamics::PyramidShape*>(&shape)) {
+    return ShapeData{PyramidData{
+        pyramid->getBaseWidth(),
+        pyramid->getBaseDepth(),
+        pyramid->getHeight()}};
   }
 
   return std::nullopt;

@@ -95,6 +95,7 @@ bool SceneViewer::frame()
     extracted.show_grid = scene_.show_grid;
     extracted.show_axes = scene_.show_axes;
     extracted.lights = scene_.lights;
+    extracted.headlight = scene_.headlight;
     extracted.paused = paused_;
     extracted.sim_time = world_->getTime();
     scene_ = std::move(extracted);
@@ -106,6 +107,7 @@ bool SceneViewer::frame()
     empty.show_grid = scene_.show_grid;
     empty.show_axes = scene_.show_axes;
     empty.lights = scene_.lights;
+    empty.headlight = scene_.headlight;
     empty.paused = paused_;
     scene_ = std::move(empty);
   }
@@ -179,6 +181,7 @@ void SceneViewer::step()
   extracted.show_grid = scene_.show_grid;
   extracted.show_axes = scene_.show_axes;
   extracted.lights = scene_.lights;
+  extracted.headlight = scene_.headlight;
   scene_ = std::move(extracted);
 }
 
