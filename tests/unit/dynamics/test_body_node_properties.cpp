@@ -2198,8 +2198,13 @@ TEST(SoftBodyNode, AggregateAugmentedMassMatrixViaWorldStep)
     world->step();
   }
 
+  const auto dofs = skeleton->getNumDofs();
+  skeleton->setPositions(Eigen::VectorXd::Zero(dofs));
+  skeleton->setVelocities(Eigen::VectorXd::Zero(dofs));
+  skeleton->computeForwardDynamics();
+
   const Eigen::MatrixXd augMass = skeleton->getAugMassMatrix();
-  EXPECT_EQ(augMass.rows(), static_cast<int>(skeleton->getNumDofs()));
+  EXPECT_EQ(augMass.rows(), static_cast<int>(dofs));
   EXPECT_TRUE(augMass.array().isFinite().all());
 }
 
