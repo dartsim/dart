@@ -559,6 +559,46 @@ joint->setPositionLimits(0, -M_PI, M_PI);
 joint->setPositionLimits(0, -dart::math::pi, dart::math::pi);
 ```
 
+### Windows URI and Path Portability in Tests
+
+**Problem:** Tests that construct URIs from filesystem paths or embed paths in XML model files can fail on Windows due to backslash separators, missing drive letters, or broken mesh resolution.
+
+**Key patterns:**
+
+1. **Use `Uri::createFromPath()` instead of `Uri(path.string())`**: The `Uri` constructor stores backslashes on Windows, which breaks mesh resolution in parsers. `Uri::createFromPath()` properly converts to a `file:///` URI with forward slashes and a drive letter.
+
+   ```cpp
+   // WRONG — fails on Windows when used as a base URI for mesh resolution
+   common::Uri uri(path.string());
+
+   // CORRECT — portable across all platforms
+   common::Uri uri = common::Uri::createFromPath(path.string());
+   ```
+
+2. **Use the two-arg `loadMesh(uri, retriever)` overload**: The single-arg `MeshShape::loadMesh(filePath)` internally prepends `"file://"` without drive letter handling on Windows. Use the two-arg overload with a proper URI instead.
+
+   ```cpp
+   // WRONG — broken on Windows (produces "file:///mesh.obj" without drive letter)
+   meshShape->loadMesh(meshPath);
+
+   // CORRECT — portable
+   auto uri = common::Uri::createFromPath(meshPath);
+   auto retriever = std::make_shared<common::LocalResourceRetriever>();
+   meshShape->loadMesh(uri.toString(), retriever);
+   ```
+
+3. **Use absolute paths with forward slashes in XML test fixtures**: Relative mesh paths like `<file_name>mesh.obj</file_name>` resolve to `file:///mesh.obj` (no drive letter) on Windows. When writing paths into XML programmatically, convert backslashes to forward slashes:
+
+   ```cpp
+   std::string meshPathStr = meshPath.string();
+   std::replace(meshPathStr.begin(), meshPathStr.end(), '\\', '/');
+   // Then embed meshPathStr in the XML
+   ```
+
+4. **Use `std::filesystem::temp_directory_path()` instead of `/tmp`**: The `/tmp` path does not exist on Windows.
+
+**Important:** Do NOT modify `Uri::fromPath()` in `uri.cpp` — the existing behavior (storing backslashes in the URI on Windows) is relied upon by `getFilesystemPath()` round-trip tests.
+
 ### Signal Slot Ordering Is Non-Deterministic
 
 **Problem:** `dart::common::Signal` stores connections in a `std::set` with `owner_less` ordering. Tests that register multiple slots and assert a specific invocation order will pass on some platforms but fail on others.
