@@ -188,6 +188,9 @@ World::World(const WorldConfig& config)
     mTimeStep(0.001),
     mTime(0.0),
     mFrame(0),
+    mMemoryManager(
+        config.baseAllocator ? *config.baseAllocator
+                             : common::MemoryAllocator::GetDefault()),
     mRecording(new Recording(mSkeletons)),
     onNameChanged(mNameChangedSignal)
 {
@@ -220,7 +223,11 @@ World::~World()
 //==============================================================================
 WorldPtr World::clone() const
 {
-  WorldPtr worldClone = World::create(mName);
+  WorldConfig config;
+  config.name = mName;
+  config.baseAllocator = const_cast<common::MemoryAllocator*>(
+      &mMemoryManager.getBaseAllocator());
+  WorldPtr worldClone = World::create(config);
 
   worldClone->setGravity(mGravity);
   worldClone->setTimeStep(mTimeStep);
@@ -806,6 +813,7 @@ void World::setConstraintSolver(constraint::UniqueConstraintSolverPtr solver)
 
   mConstraintSolver = std::move(solver);
   mConstraintSolver->setTimeStep(mTimeStep);
+  mConstraintSolver->setFrameAllocator(&mMemoryManager.getFrameAllocator());
 }
 
 //==============================================================================
@@ -818,6 +826,18 @@ constraint::ConstraintSolver* World::getConstraintSolver()
 const constraint::ConstraintSolver* World::getConstraintSolver() const
 {
   return mConstraintSolver.get();
+}
+
+//==============================================================================
+common::MemoryManager& World::getMemoryManager()
+{
+  return mMemoryManager;
+}
+
+//==============================================================================
+const common::MemoryManager& World::getMemoryManager() const
+{
+  return mMemoryManager;
 }
 
 //==============================================================================

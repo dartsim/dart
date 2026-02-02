@@ -35,6 +35,8 @@
 
 #include <dart/dynamics/skeleton.hpp>
 
+#include <type_traits>
+
 namespace dart {
 namespace dynamics {
 
@@ -81,7 +83,17 @@ std::pair<JointType*, NodeType*> Skeleton::createJointAndBodyNodePair(
     const typename NodeType::Properties& _bodyProperties)
 {
   JointType* joint = new JointType(_jointProperties);
-  NodeType* node = new NodeType(_parent, joint, _bodyProperties);
+  NodeType* node;
+  if constexpr (std::is_same_v<NodeType, BodyNode>) {
+    void* mem = allocateBodyNodeMemory(BodyNodePoolKind::Body);
+    node = new (mem) NodeType(_parent, joint, _bodyProperties);
+  } else if constexpr (std::is_same_v<NodeType, SoftBodyNode>) {
+    void* mem = allocateBodyNodeMemory(BodyNodePoolKind::Soft);
+    node = new (mem) NodeType(_parent, joint, _bodyProperties);
+  } else {
+    node = new NodeType(_parent, joint, _bodyProperties);
+    mHeapAllocatedBodyNodes.push_back(node);
+  }
   registerBodyNode(node);
 
   return std::pair<JointType*, NodeType*>(joint, node);

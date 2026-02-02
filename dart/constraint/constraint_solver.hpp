@@ -44,6 +44,7 @@
 #include <dart/math/lcp/lcp_solver.hpp>
 
 #include <dart/common/deprecated.hpp>
+#include <dart/common/frame_allocator.hpp>
 
 #include <dart/export.hpp>
 
@@ -74,7 +75,7 @@ public:
   ConstraintSolver(const ConstraintSolver& other) = delete;
 
   /// Destructor
-  virtual ~ConstraintSolver() = default;
+  virtual ~ConstraintSolver();
 
   /// Add single skeleton
   void addSkeleton(const dynamics::SkeletonPtr& skeleton);
@@ -145,6 +146,8 @@ public:
 
   /// Get time step
   double getTimeStep() const;
+
+  void setFrameAllocator(common::FrameAllocator* alloc);
 
   /// Set collision detector
   void setCollisionDetector(
@@ -356,6 +359,14 @@ protected:
   Eigen::VectorXi mFIndex;
   Eigen::VectorXi mFIndexBackup;
   Eigen::VectorXi mOffset;
+
+  std::unique_ptr<common::FrameAllocator> mOwnedFrameAllocator;
+  common::FrameAllocator* mFrameAllocator = nullptr;
+
+  /// Persistent containers (reused across steps to avoid per-step allocation)
+  std::vector<collision::Contact*> mContactPtrs;
+  std::vector<bool> mImpulseAppliedStates;
+  std::vector<ConstraintBasePtr> mPositionConstraints;
 };
 
 } // namespace constraint

@@ -67,6 +67,24 @@ if(TARGET dart-io)
   dart_format_add(dynamics/bm_kinematics.cpp)
 endif()
 
+add_executable(bm_dynamics_cache dynamics/bm_dynamics_cache.cpp)
+target_link_libraries(bm_dynamics_cache
+  dart
+  benchmark::benchmark
+  benchmark::benchmark_main
+)
+dart_format_add(dynamics/bm_dynamics_cache.cpp)
+
+if(TARGET dart-io)
+  add_executable(bm_dynamics_cache_io dynamics/bm_dynamics_cache_io.cpp)
+  target_link_libraries(bm_dynamics_cache_io
+    dart-io
+    benchmark::benchmark
+    benchmark::benchmark_main
+  )
+  dart_format_add(dynamics/bm_dynamics_cache_io.cpp)
+endif()
+
 # ==============================================================================
 # Component Benchmarks (organized in subdirectories)
 # ==============================================================================

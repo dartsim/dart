@@ -119,6 +119,9 @@ profiling/*.txt
 # Sisyphus agent artifacts
 .sisyphus/
 
+# Benchmark result artifacts
+.benchmark_results/
+
 # Coverage files
 *.info
 *.gcda
