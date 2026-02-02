@@ -190,6 +190,9 @@ void* BodyNodePool<T>::allocate()
 
   if (mChunks.empty() || mNextSlotIndex >= mSlotsPerChunk) {
     addChunk();
+    if (mChunks.empty() || mChunks.back()->mData == nullptr) {
+      return nullptr;
+    }
   }
 
   void* slot = mChunks.back()->getSlot(mNextSlotIndex);

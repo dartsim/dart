@@ -222,7 +222,7 @@ def format_markdown(
         "**Metric**: {} ({})".format(metric, aggregate),
         "",
         "| Benchmark | Baseline (\u00b5s) | Optimized (\u00b5s) "
-        "| \u0394 (\u00b5s) | Change |",
+        + "| \u0394 (\u00b5s) | Change |",
         "|-----------|--------------|----------------|--------|--------|",
     ]
 
