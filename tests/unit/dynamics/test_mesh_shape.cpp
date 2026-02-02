@@ -1380,14 +1380,15 @@ TEST(MeshShapeTest, ConvertToAssimpMeshSkipsInvalidSubmeshRanges)
 TEST(MeshShapeTest, LoadMeshFromFilePathAndUriAccessors)
 {
   const std::string filePath = dart::config::dataPath("obj/BoxSmall.obj");
+  const common::Uri fileUri = common::Uri::createFromPath(filePath);
+  auto retriever = std::make_shared<common::LocalResourceRetriever>();
 
   DART_SUPPRESS_DEPRECATED_BEGIN
-  const aiScene* scene = dynamics::MeshShape::loadMesh(filePath);
+  const aiScene* scene
+      = dynamics::MeshShape::loadMesh(fileUri.toString(), retriever);
   DART_SUPPRESS_DEPRECATED_END
   ASSERT_NE(scene, nullptr);
 
-  const common::Uri fileUri = common::Uri::createFromPath(filePath);
-  auto retriever = std::make_shared<common::LocalResourceRetriever>();
   DART_SUPPRESS_DEPRECATED_BEGIN
   dynamics::MeshShape shape(Eigen::Vector3d::Ones(), scene, fileUri, retriever);
   DART_SUPPRESS_DEPRECATED_END
@@ -1531,13 +1532,15 @@ TEST(MeshShapeTest, LoadMeshFromTempObjAndUriMetadata)
             << "f 1 2 3\n";
   }
 
+  const common::Uri fileUri = common::Uri::createFromPath(objPath.string());
+  auto retriever = std::make_shared<common::LocalResourceRetriever>();
+
   DART_SUPPRESS_DEPRECATED_BEGIN
-  const aiScene* scene = dynamics::MeshShape::loadMesh(objPath.string());
+  const aiScene* scene
+      = dynamics::MeshShape::loadMesh(fileUri.toString(), retriever);
   DART_SUPPRESS_DEPRECATED_END
   ASSERT_NE(scene, nullptr);
 
-  const common::Uri fileUri = common::Uri::createFromPath(objPath.string());
-  auto retriever = std::make_shared<common::LocalResourceRetriever>();
   DART_SUPPRESS_DEPRECATED_BEGIN
   dynamics::MeshShape shape(Eigen::Vector3d::Ones(), scene, fileUri, retriever);
   DART_SUPPRESS_DEPRECATED_END

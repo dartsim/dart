@@ -1514,10 +1514,12 @@ TEST(MjcfParserTest, ComplexMjcfCoversDetails)
   }
 
   const std::string meshFileName = meshPath.filename().string();
+  std::string meshDirStr = tempDir.string();
+  std::replace(meshDirStr.begin(), meshDirStr.end(), '\\', '/');
   std::string xml = R"(
 <?xml version="1.0" ?>
 <mujoco model="complex_mjcf">
-  <compiler angle="degree" coordinate="global" eulerseq="zyx" meshdir="." />
+  <compiler angle="degree" coordinate="global" eulerseq="zyx" meshdir="${MESH_DIR}" />
   <option gravity="0 0 -9.81" timestep="0.002" integrator="Euler" />
   <size nuser_body="2" />
   <default>
@@ -1569,6 +1571,11 @@ TEST(MjcfParserTest, ComplexMjcfCoversDetails)
 </mujoco>
 )";
 
+  const std::string meshDirToken = "${MESH_DIR}";
+  const auto meshDirTokenPos = xml.find(meshDirToken);
+  ASSERT_NE(meshDirTokenPos, std::string::npos);
+  xml.replace(meshDirTokenPos, meshDirToken.size(), meshDirStr);
+
   const std::string meshToken = "${MESH_FILE}";
   const auto meshTokenPos = xml.find(meshToken);
   ASSERT_NE(meshTokenPos, std::string::npos);
@@ -1579,8 +1586,8 @@ TEST(MjcfParserTest, ComplexMjcfCoversDetails)
   output.close();
 
   const auto options = utils::MjcfParser::Options();
-  auto world
-      = utils::MjcfParser::readWorld(common::Uri(xmlPath.string()), options);
+  auto world = utils::MjcfParser::readWorld(
+      common::Uri::createFromPath(xmlPath.string()), options);
 
   std::error_code ec;
   std::filesystem::remove(xmlPath, ec);
@@ -1646,10 +1653,12 @@ TEST(MjcfParserTest, CustomModelParsesBodiesGeomsAndActuators)
   }
 
   const std::string meshFileName = meshPath.filename().string();
+  std::string meshDirStr = tempDir.string();
+  std::replace(meshDirStr.begin(), meshDirStr.end(), '\\', '/');
   std::string xml = R"(
 <?xml version="1.0" ?>
 <mujoco model="custom_parser">
-  <compiler angle="radian" coordinate="global" eulerseq="xyz" meshdir="." />
+  <compiler angle="radian" coordinate="global" eulerseq="xyz" meshdir="${MESH_DIR}" />
   <option timestep="0.003" gravity="0 0 -9.81" integrator="Euler" />
   <size nuserdata="2" nkey="1" />
   <default>
@@ -1682,6 +1691,11 @@ TEST(MjcfParserTest, CustomModelParsesBodiesGeomsAndActuators)
 </mujoco>
   )";
 
+  const std::string meshDirToken = "${MESH_DIR}";
+  const auto meshDirTokenPos = xml.find(meshDirToken);
+  ASSERT_NE(meshDirTokenPos, std::string::npos);
+  xml.replace(meshDirTokenPos, meshDirToken.size(), meshDirStr);
+
   const std::string meshToken = "${MESH_FILE}";
   const auto meshTokenPos = xml.find(meshToken);
   ASSERT_NE(meshTokenPos, std::string::npos);
@@ -1691,8 +1705,8 @@ TEST(MjcfParserTest, CustomModelParsesBodiesGeomsAndActuators)
   output << xml;
   output.close();
 
-  const auto world
-      = utils::MjcfParser::readWorld(common::Uri(xmlPath.string()));
+  const auto world = utils::MjcfParser::readWorld(
+      common::Uri::createFromPath(xmlPath.string()));
   std::error_code ec;
   std::filesystem::remove(xmlPath, ec);
   std::filesystem::remove(meshPath, ec);
