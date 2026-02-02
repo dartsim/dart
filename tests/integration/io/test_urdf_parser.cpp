@@ -191,7 +191,7 @@ std::filesystem::path writeTempFileWithPrefix(
 {
   static std::size_t counter = 0;
   const auto tempPath
-      = std::filesystem::path("/tmp")
+      = std::filesystem::temp_directory_path()
         / ("dart_test_" + tag + "_" + std::to_string(counter++) + extension);
   std::ofstream output(tempPath.string(), std::ios::binary);
   output << xml;
