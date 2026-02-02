@@ -180,8 +180,13 @@ Camera3D toRaylibCamera(const Camera& camera)
   result.position = toVector3(camera.position);
   result.target = toVector3(camera.target);
   result.up = toVector3(camera.up);
-  result.fovy = static_cast<float>(camera.fovy);
-  result.projection = CAMERA_PERSPECTIVE;
+  if (camera.projection == Camera::Projection::Orthographic) {
+    result.projection = CAMERA_ORTHOGRAPHIC;
+    result.fovy = static_cast<float>(camera.ortho_size);
+  } else {
+    result.projection = CAMERA_PERSPECTIVE;
+    result.fovy = static_cast<float>(camera.fovy);
+  }
   return result;
 }
 

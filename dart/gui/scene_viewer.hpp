@@ -61,6 +61,21 @@ struct WorldEntry
   bool simulating = true;
 };
 
+class DART_GUI_API ViewerAttachment
+{
+public:
+  virtual ~ViewerAttachment() = default;
+  virtual void refresh(Scene& scene) = 0;
+};
+
+class DART_GUI_API MouseEventHandler
+{
+public:
+  virtual ~MouseEventHandler() = default;
+  virtual void handleMouseEvent(const InputEvent& event, const Scene& scene)
+      = 0;
+};
+
 class DART_GUI_API SceneViewer
 {
 public:
@@ -137,6 +152,12 @@ public:
   void stopRecording();
   bool isRecording() const;
 
+  void addAttachment(std::shared_ptr<ViewerAttachment> attachment);
+  void removeAttachment(const std::shared_ptr<ViewerAttachment>& attachment);
+
+  void addMouseEventHandler(MouseEventHandler* handler);
+  void removeMouseEventHandler(MouseEventHandler* handler);
+
   void setPreStepCallback(StepCallback cb);
   void setPostStepCallback(StepCallback cb);
   void setPreRefreshCallback(StepCallback cb);
@@ -165,6 +186,8 @@ private:
   std::string recording_prefix_;
   std::size_t recording_digits_ = 6;
   std::size_t recording_frame_count_ = 0;
+  std::vector<std::shared_ptr<ViewerAttachment>> attachments_;
+  std::vector<MouseEventHandler*> mouse_handlers_;
 
   // RTF tracking
   double target_frequency_ = 60.0;

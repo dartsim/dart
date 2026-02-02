@@ -265,6 +265,14 @@ struct Camera
   Eigen::Vector3d target{0.0, 0.0, 0.0};
   Eigen::Vector3d up{0.0, 0.0, 1.0};
   double fovy = 45.0; // degrees
+
+  enum class Projection
+  {
+    Perspective,
+    Orthographic
+  };
+  Projection projection = Projection::Perspective;
+  double ortho_size = 10.0; // half-height for orthographic mode
 };
 
 /// Light configuration

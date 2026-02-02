@@ -79,6 +79,7 @@ SceneViewer::SceneViewer(
   if (!backend_) {
     DART_WARN("SceneViewer constructed with a nullptr backend.");
   }
+  scene_.camera.up = config_.upwards_direction;
 }
 
 void SceneViewer::setWorld(std::shared_ptr<dart::simulation::World> world)
@@ -285,6 +286,12 @@ bool SceneViewer::frame()
     post_refresh_cb_();
   }
 
+  for (auto& attachment : attachments_) {
+    if (attachment) {
+      attachment->refresh(scene_);
+    }
+  }
+
   if (recording_ && backend_) {
     std::ostringstream oss;
     oss << recording_directory_ << "/" << recording_prefix_ << std::setfill('0')
@@ -318,6 +325,13 @@ bool SceneViewer::frame()
         case Key::Escape:
           scene_.selected_node_id = std::nullopt;
           break;
+        case Key::Num5:
+          if (scene_.camera.projection == Camera::Projection::Perspective) {
+            scene_.camera.projection = Camera::Projection::Orthographic;
+          } else {
+            scene_.camera.projection = Camera::Projection::Perspective;
+          }
+          break;
         default:
           break;
       }
@@ -350,6 +364,18 @@ bool SceneViewer::frame()
             static_cast<double>(config_.width),
             static_cast<double>(config_.height),
             moveEvent->modifiers);
+      }
+    }
+  }
+
+  for (const auto& event : events) {
+    if (std::holds_alternative<MouseButtonEvent>(event)
+        || std::holds_alternative<MouseMoveEvent>(event)
+        || std::holds_alternative<ScrollEvent>(event)) {
+      for (auto* handler : mouse_handlers_) {
+        if (handler) {
+          handler->handleMouseEvent(event, scene_);
+        }
       }
     }
   }
@@ -587,6 +613,37 @@ void SceneViewer::stopRecording()
 bool SceneViewer::isRecording() const
 {
   return recording_;
+}
+
+void SceneViewer::addAttachment(std::shared_ptr<ViewerAttachment> attachment)
+{
+  if (attachment) {
+    attachments_.push_back(std::move(attachment));
+  }
+}
+
+void SceneViewer::removeAttachment(
+    const std::shared_ptr<ViewerAttachment>& attachment)
+{
+  auto it = std::find(attachments_.begin(), attachments_.end(), attachment);
+  if (it != attachments_.end()) {
+    attachments_.erase(it);
+  }
+}
+
+void SceneViewer::addMouseEventHandler(MouseEventHandler* handler)
+{
+  if (handler) {
+    mouse_handlers_.push_back(handler);
+  }
+}
+
+void SceneViewer::removeMouseEventHandler(MouseEventHandler* handler)
+{
+  auto it = std::find(mouse_handlers_.begin(), mouse_handlers_.end(), handler);
+  if (it != mouse_handlers_.end()) {
+    mouse_handlers_.erase(it);
+  }
 }
 
 void SceneViewer::setPreStepCallback(StepCallback cb)

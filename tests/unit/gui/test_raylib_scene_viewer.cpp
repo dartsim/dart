@@ -1362,3 +1362,120 @@ TEST_F(RaylibSceneViewerTest, DebugPolyhedron)
   viewer.addDebugPolyhedron(vertices, edges);
   viewer.frame();
 }
+
+TEST_F(RaylibSceneViewerTest, CameraProjectionModes)
+{
+  dart::gui::ViewerConfig config;
+  config.width = 64;
+  config.height = 64;
+  config.headless = true;
+
+  auto backend = std::make_unique<dart::gui::RaylibBackend>();
+  dart::gui::SceneViewer viewer(std::move(backend), config);
+
+  auto world = dart::simulation::World::create();
+  viewer.setWorld(world);
+
+  EXPECT_EQ(
+      viewer.camera().projection, dart::gui::Camera::Projection::Perspective);
+
+  viewer.camera().projection = dart::gui::Camera::Projection::Orthographic;
+  viewer.camera().ortho_size = 5.0;
+  viewer.frame();
+  EXPECT_EQ(
+      viewer.camera().projection, dart::gui::Camera::Projection::Orthographic);
+}
+
+TEST_F(RaylibSceneViewerTest, UpwardsDirection)
+{
+  dart::gui::ViewerConfig config;
+  config.width = 64;
+  config.height = 64;
+  config.headless = true;
+  config.upwards_direction = Eigen::Vector3d(0, 1, 0);
+
+  auto backend = std::make_unique<dart::gui::RaylibBackend>();
+  dart::gui::SceneViewer viewer(std::move(backend), config);
+
+  EXPECT_NEAR(viewer.camera().up.y(), 1.0, 1e-9);
+  EXPECT_NEAR(viewer.camera().up.z(), 0.0, 1e-9);
+
+  viewer.frame();
+}
+
+TEST_F(RaylibSceneViewerTest, ViewerAttachment)
+{
+  dart::gui::ViewerConfig config;
+  config.width = 64;
+  config.height = 64;
+  config.headless = true;
+
+  auto backend = std::make_unique<dart::gui::RaylibBackend>();
+  dart::gui::SceneViewer viewer(std::move(backend), config);
+
+  auto world = dart::simulation::World::create();
+  viewer.setWorld(world);
+
+  int refresh_count = 0;
+
+  class TestAttachment : public dart::gui::ViewerAttachment
+  {
+  public:
+    int* counter;
+    explicit TestAttachment(int* c) : counter(c) {}
+    void refresh(dart::gui::Scene& /*scene*/) override
+    {
+      (*counter)++;
+    }
+  };
+
+  auto attachment = std::make_shared<TestAttachment>(&refresh_count);
+  viewer.addAttachment(attachment);
+
+  viewer.frame();
+  EXPECT_EQ(refresh_count, 1);
+
+  viewer.frame();
+  EXPECT_EQ(refresh_count, 2);
+
+  viewer.removeAttachment(attachment);
+  viewer.frame();
+  EXPECT_EQ(refresh_count, 2);
+}
+
+TEST_F(RaylibSceneViewerTest, MouseEventHandlerObserver)
+{
+  dart::gui::ViewerConfig config;
+  config.width = 64;
+  config.height = 64;
+  config.headless = true;
+
+  auto backend = std::make_unique<dart::gui::RaylibBackend>();
+  dart::gui::SceneViewer viewer(std::move(backend), config);
+
+  auto world = dart::simulation::World::create();
+  viewer.setWorld(world);
+
+  int event_count = 0;
+
+  class TestHandler : public dart::gui::MouseEventHandler
+  {
+  public:
+    int* counter;
+    explicit TestHandler(int* c) : counter(c) {}
+    void handleMouseEvent(
+        const dart::gui::InputEvent& /*event*/,
+        const dart::gui::Scene& /*scene*/) override
+    {
+      (*counter)++;
+    }
+  };
+
+  TestHandler handler(&event_count);
+  viewer.addMouseEventHandler(&handler);
+
+  viewer.frame();
+
+  viewer.removeMouseEventHandler(&handler);
+  viewer.frame();
+}

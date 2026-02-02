@@ -37,6 +37,8 @@
 #include <dart/gui/input_event.hpp>
 #include <dart/gui/scene.hpp>
 
+#include <Eigen/Core>
+
 #include <optional>
 #include <string>
 #include <vector>
@@ -51,6 +53,7 @@ struct DART_GUI_API ViewerConfig
   std::string title = "DART Viewer";
   int target_fps = 60;
   bool headless = false;
+  Eigen::Vector3d upwards_direction{0.0, 0.0, 1.0};
 };
 
 class DART_GUI_API ViewerBackend
