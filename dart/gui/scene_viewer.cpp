@@ -33,11 +33,13 @@
 #include "dart/gui/scene_viewer.hpp"
 
 #include "dart/common/logging.hpp"
+#include "dart/gui/im_gui_widget.hpp"
 #include "dart/simulation/world.hpp"
 
 #include <algorithm>
 #include <iomanip>
 #include <sstream>
+#include <unordered_map>
 
 #include <cstdint>
 
@@ -50,6 +52,37 @@ uint64_t makeSimpleFrameMarkerId(const dart::dynamics::SimpleFrame* frame)
 {
   const auto raw = reinterpret_cast<uintptr_t>(frame);
   return static_cast<uint64_t>(raw) | (1ULL << 63);
+}
+
+uint64_t makeInteractiveToolNodeId(
+    const InteractiveTool* tool, std::size_t encoded)
+{
+  const auto raw = reinterpret_cast<uintptr_t>(tool);
+  return static_cast<uint64_t>(raw) | (static_cast<uint64_t>(encoded) << 48);
+}
+
+std::unordered_map<uint64_t, std::size_t> makeInteractiveToolNodeMap(
+    InteractiveFrame* frame)
+{
+  std::unordered_map<uint64_t, std::size_t> toolNodeMap;
+  if (!frame) {
+    return toolNodeMap;
+  }
+
+  for (std::size_t type = 0; type < InteractiveTool::NUM_TYPES; ++type) {
+    for (std::size_t coord = 0; coord < 3; ++coord) {
+      auto* tool
+          = frame->getTool(static_cast<InteractiveTool::Type>(type), coord);
+      if (!tool || !tool->getEnabled()) {
+        continue;
+      }
+
+      const std::size_t encoded = type * 3 + coord;
+      toolNodeMap[makeInteractiveToolNodeId(tool, encoded)] = encoded;
+    }
+  }
+
+  return toolNodeMap;
 }
 
 void addSimpleFrameMarkers(
@@ -221,7 +254,8 @@ bool SceneViewer::frame()
     Scene merged;
     for (auto& entry : worlds_) {
       if (entry.active && entry.world) {
-        Scene extracted = extractor_.extract(*entry.world, simple_frames_);
+        Scene extracted = extractor_.extract(
+            *entry.world, simple_frames_, interactive_frames_);
         merged.nodes.insert(
             merged.nodes.end(),
             std::make_move_iterator(extracted.nodes.begin()),
@@ -307,11 +341,49 @@ bool SceneViewer::frame()
 
   auto events = backend_->pollEvents();
 
-  camera_controller_.handleEvents(events, scene_.camera);
+  const bool imgui_wants_mouse = backend_ && backend_->wantCaptureMouse();
+  const bool imgui_wants_keyboard = backend_ && backend_->wantCaptureKeyboard();
+
+  std::vector<InputEvent> filtered_events;
+  filtered_events.reserve(events.size());
+  for (const auto& event : events) {
+    if (imgui_wants_mouse
+        && (std::holds_alternative<MouseButtonEvent>(event)
+            || std::holds_alternative<MouseMoveEvent>(event)
+            || std::holds_alternative<ScrollEvent>(event))) {
+      continue;
+    }
+
+    if (imgui_wants_keyboard && std::holds_alternative<KeyEvent>(event)) {
+      continue;
+    }
+
+    filtered_events.push_back(event);
+  }
+
+  camera_controller_.handleEvents(filtered_events, scene_.camera);
 
   for (const auto& event : events) {
     if (const auto* keyEvent = std::get_if<KeyEvent>(&event)) {
       if (!keyEvent->pressed) {
+        continue;
+      }
+
+      if (keyEvent->key == Key::F1) {
+        if (about_widget_) {
+          about_widget_->toggleVisible();
+        }
+        continue;
+      }
+
+      if (keyEvent->key == Key::F2) {
+        if (menu_widget_) {
+          menu_widget_->toggleVisible();
+        }
+        continue;
+      }
+
+      if (imgui_wants_keyboard) {
         continue;
       }
 
@@ -336,7 +408,9 @@ bool SceneViewer::frame()
           break;
       }
     }
+  }
 
+  for (const auto& event : filtered_events) {
     if (const auto* mouseEvent = std::get_if<MouseButtonEvent>(&event)) {
       if (mouseEvent->button == MouseButton::Left && mouseEvent->pressed) {
         auto hit = backend_->pickNode(scene_, mouseEvent->x, mouseEvent->y);
@@ -368,7 +442,7 @@ bool SceneViewer::frame()
     }
   }
 
-  for (const auto& event : events) {
+  for (const auto& event : filtered_events) {
     if (std::holds_alternative<MouseButtonEvent>(event)
         || std::holds_alternative<MouseMoveEvent>(event)
         || std::holds_alternative<ScrollEvent>(event)) {
@@ -414,7 +488,8 @@ void SceneViewer::step()
   Scene merged;
   for (auto& entry : worlds_) {
     if (entry.active && entry.world) {
-      Scene extracted = extractor_.extract(*entry.world, simple_frames_);
+      Scene extracted = extractor_.extract(
+          *entry.world, simple_frames_, interactive_frames_);
       merged.nodes.insert(
           merged.nodes.end(),
           std::make_move_iterator(extracted.nodes.begin()),
@@ -546,6 +621,24 @@ void SceneViewer::enableDragAndDrop(dart::dynamics::SimpleFrame* frame)
           frame, makeSimpleFrameMarkerId(frame)));
 }
 
+void SceneViewer::enableDragAndDrop(InteractiveFrame* frame)
+{
+  if (!frame) {
+    return;
+  }
+
+  auto existing = std::find(
+      interactive_frames_.begin(), interactive_frames_.end(), frame);
+  if (existing != interactive_frames_.end()) {
+    return;
+  }
+
+  interactive_frames_.push_back(frame);
+  drag_controller_.addDraggable(
+      std::make_unique<InteractiveFrameDraggable>(
+          frame, makeInteractiveToolNodeMap(frame)));
+}
+
 void SceneViewer::enableDragAndDrop(
     dart::dynamics::BodyNode* bodyNode, bool useExternalIK, bool useWholeBody)
 {
@@ -575,6 +668,37 @@ void SceneViewer::disableDragAndDrop(dart::dynamics::SimpleFrame* frame)
     drag_controller_.addDraggable(
         std::make_unique<SimpleFrameDraggable>(
             remaining, makeSimpleFrameMarkerId(remaining)));
+  }
+  for (auto* remaining : interactive_frames_) {
+    drag_controller_.addDraggable(
+        std::make_unique<InteractiveFrameDraggable>(
+            remaining, makeInteractiveToolNodeMap(remaining)));
+  }
+}
+
+void SceneViewer::disableDragAndDrop(InteractiveFrame* frame)
+{
+  if (!frame) {
+    return;
+  }
+
+  auto it = std::remove(
+      interactive_frames_.begin(), interactive_frames_.end(), frame);
+  if (it == interactive_frames_.end()) {
+    return;
+  }
+
+  interactive_frames_.erase(it, interactive_frames_.end());
+  drag_controller_.clearDraggables();
+  for (auto* remaining : simple_frames_) {
+    drag_controller_.addDraggable(
+        std::make_unique<SimpleFrameDraggable>(
+            remaining, makeSimpleFrameMarkerId(remaining)));
+  }
+  for (auto* remaining : interactive_frames_) {
+    drag_controller_.addDraggable(
+        std::make_unique<InteractiveFrameDraggable>(
+            remaining, makeInteractiveToolNodeMap(remaining)));
   }
 }
 
@@ -629,6 +753,30 @@ void SceneViewer::removeAttachment(
   if (it != attachments_.end()) {
     attachments_.erase(it);
   }
+}
+
+void SceneViewer::addWidget(std::shared_ptr<ImGuiWidget> widget)
+{
+  if (backend_) {
+    backend_->addWidget(std::move(widget));
+  }
+}
+
+void SceneViewer::removeWidget(const std::shared_ptr<ImGuiWidget>& widget)
+{
+  if (backend_) {
+    backend_->removeWidget(widget);
+  }
+}
+
+void SceneViewer::setAboutWidget(std::shared_ptr<ImGuiWidget> widget)
+{
+  about_widget_ = std::move(widget);
+}
+
+void SceneViewer::setMenuWidget(std::shared_ptr<ImGuiWidget> widget)
+{
+  menu_widget_ = std::move(widget);
 }
 
 void SceneViewer::addMouseEventHandler(MouseEventHandler* handler)

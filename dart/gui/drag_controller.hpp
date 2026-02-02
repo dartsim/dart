@@ -35,6 +35,7 @@
 
 #include <dart/gui/export.hpp>
 #include <dart/gui/input_event.hpp>
+#include <dart/gui/interactive_frame.hpp>
 #include <dart/gui/scene.hpp>
 #include <dart/gui/scene_extractor.hpp>
 
@@ -60,9 +61,14 @@ public:
   /// Called when drag begins
   virtual void beginDrag(const HitResult& hit) = 0;
 
-  /// Called each frame while dragging; delta is in world space
+  /// Called each frame while dragging
   virtual void updateDrag(
-      const Eigen::Vector3d& delta, const ModifierKeys& mods)
+      double screenDx,
+      double screenDy,
+      const Camera& camera,
+      double screenW,
+      double screenH,
+      const ModifierKeys& mods)
       = 0;
 
   /// Called when drag ends
@@ -152,7 +158,13 @@ public:
   bool canDrag(const HitResult& hit) const override;
   void beginDrag(const HitResult& hit) override;
   void updateDrag(
-      const Eigen::Vector3d& delta, const ModifierKeys& mods) override;
+      double screenDx,
+      double screenDy,
+      const Camera& camera,
+      double screenW,
+      double screenH,
+      const ModifierKeys& mods) override;
+  void updateDrag(const Eigen::Vector3d& delta, const ModifierKeys& mods);
   void endDrag() override;
 
   dart::dynamics::SimpleFrame* frame() const
@@ -180,7 +192,12 @@ public:
   bool canDrag(const HitResult& hit) const override;
   void beginDrag(const HitResult& hit) override;
   void updateDrag(
-      const Eigen::Vector3d& delta, const ModifierKeys& mods) override;
+      double screenDx,
+      double screenDy,
+      const Camera& camera,
+      double screenW,
+      double screenH,
+      const ModifierKeys& mods) override;
   void endDrag() override;
 
   dart::dynamics::BodyNode* bodyNode() const
@@ -197,6 +214,35 @@ private:
   Eigen::Isometry3d saved_target_transform_ = Eigen::Isometry3d::Identity();
   Eigen::Vector3d saved_local_offset_ = Eigen::Vector3d::Zero();
   Eigen::AngleAxisd saved_rotation_ = Eigen::AngleAxisd::Identity();
+};
+
+class DART_GUI_API InteractiveFrameDraggable : public Draggable
+{
+public:
+  /// toolNodeMap maps scene node IDs to encoded tool indices (type * 3 + coord)
+  InteractiveFrameDraggable(
+      InteractiveFrame* frame,
+      std::unordered_map<uint64_t, std::size_t> toolNodeMap);
+
+  bool canDrag(const HitResult& hit) const override;
+  void beginDrag(const HitResult& hit) override;
+  void updateDrag(
+      double screenDx,
+      double screenDy,
+      const Camera& camera,
+      double screenW,
+      double screenH,
+      const ModifierKeys& modifiers) override;
+  void endDrag() override;
+
+private:
+  InteractiveFrame* frame_;
+  std::unordered_map<uint64_t, std::size_t> tool_node_map_;
+  InteractiveTool* active_tool_ = nullptr;
+  InteractiveTool::Type active_type_;
+  std::size_t active_coord_ = 0;
+  Eigen::Isometry3d saved_transform_ = Eigen::Isometry3d::Identity();
+  Eigen::Vector3d pick_offset_ = Eigen::Vector3d::Zero();
 };
 
 } // namespace gui

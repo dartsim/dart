@@ -47,6 +47,8 @@
 namespace dart {
 namespace gui {
 
+class InteractiveFrame;
+
 struct EntityInfo
 {
   dart::dynamics::BodyNode* body_node = nullptr;
@@ -63,7 +65,14 @@ public:
       const dart::simulation::World& world,
       const std::vector<dart::dynamics::SimpleFrame*>& frames) const;
 
+  Scene extract(
+      const dart::simulation::World& world,
+      const std::vector<dart::dynamics::SimpleFrame*>& frames,
+      const std::vector<InteractiveFrame*>& interactive_frames) const;
+
   const std::unordered_map<uint64_t, EntityInfo>& entityMap() const;
+
+  std::unordered_map<uint64_t, std::size_t> toolNodeMap() const;
 
 private:
   std::optional<ShapeData> convertShape(
@@ -72,6 +81,7 @@ private:
   Material extractMaterial(const dart::dynamics::ShapeNode& node) const;
 
   mutable std::unordered_map<uint64_t, EntityInfo> entity_map_;
+  mutable std::unordered_map<uint64_t, std::size_t> tool_node_map_;
 };
 
 } // namespace gui

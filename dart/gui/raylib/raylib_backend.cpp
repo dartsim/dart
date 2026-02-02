@@ -34,6 +34,7 @@
 
 #include "dart/common/logging.hpp"
 
+#include <GLFW/glfw3.h>
 #include <raylib.h>
 #include <rlgl.h>
 
@@ -641,6 +642,30 @@ std::optional<Key> mapKey(int key)
       return Key::Num8;
     case KEY_NINE:
       return Key::Num9;
+    case KEY_F1:
+      return Key::F1;
+    case KEY_F2:
+      return Key::F2;
+    case KEY_F3:
+      return Key::F3;
+    case KEY_F4:
+      return Key::F4;
+    case KEY_F5:
+      return Key::F5;
+    case KEY_F6:
+      return Key::F6;
+    case KEY_F7:
+      return Key::F7;
+    case KEY_F8:
+      return Key::F8;
+    case KEY_F9:
+      return Key::F9;
+    case KEY_F10:
+      return Key::F10;
+    case KEY_F11:
+      return Key::F11;
+    case KEY_F12:
+      return Key::F12;
     default:
       return std::nullopt;
   }
@@ -674,6 +699,7 @@ bool RaylibBackend::initialize(const ViewerConfig& config)
   }
 
   InitWindow(config_.width, config_.height, config_.title.c_str());
+  imgui_bridge_.initialize(glfwGetCurrentContext());
   if (config_.target_fps > 0) {
     SetTargetFPS(config_.target_fps);
   }
@@ -1202,6 +1228,9 @@ void RaylibBackend::render(const Scene& scene)
 
   EndMode3D();
 
+  imgui_bridge_.newFrame();
+  imgui_bridge_.render();
+
   DrawText(TextFormat("FPS: %d", GetFPS()), 20, 20, 20, DARKGRAY);
   DrawText(TextFormat("Sim: %.2f", scene.sim_time), 20, 45, 20, DARKBLUE);
   DrawText(scene.paused ? "Paused" : "Running", 20, 70, 20, DARKGREEN);
@@ -1233,6 +1262,7 @@ void RaylibBackend::shutdown()
     return;
   }
 
+  imgui_bridge_.shutdown();
   shutdownTextures();
   shutdownMeshes();
   shutdownLighting();
@@ -1253,7 +1283,7 @@ std::vector<InputEvent> RaylibBackend::pollEvents()
   mods.alt = IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT);
   mods.super = IsKeyDown(KEY_LEFT_SUPER) || IsKeyDown(KEY_RIGHT_SUPER);
 
-  static const std::array<int, 44> kKeys
+  static const std::array<int, 56> kKeys
       = {KEY_SPACE, KEY_ESCAPE, KEY_ENTER, KEY_TAB,  KEY_LEFT, KEY_RIGHT,
          KEY_UP,    KEY_DOWN,   KEY_A,     KEY_B,    KEY_C,    KEY_D,
          KEY_E,     KEY_F,      KEY_G,     KEY_H,    KEY_I,    KEY_J,
@@ -1261,7 +1291,9 @@ std::vector<InputEvent> RaylibBackend::pollEvents()
          KEY_Q,     KEY_R,      KEY_S,     KEY_T,    KEY_U,    KEY_V,
          KEY_W,     KEY_X,      KEY_Y,     KEY_Z,    KEY_ZERO, KEY_ONE,
          KEY_TWO,   KEY_THREE,  KEY_FOUR,  KEY_FIVE, KEY_SIX,  KEY_SEVEN,
-         KEY_EIGHT, KEY_NINE};
+         KEY_EIGHT, KEY_NINE,   KEY_F1,    KEY_F2,   KEY_F3,   KEY_F4,
+         KEY_F5,    KEY_F6,     KEY_F7,    KEY_F8,   KEY_F9,   KEY_F10,
+         KEY_F11,   KEY_F12};
 
   for (int key : kKeys) {
     auto mapped = mapKey(key);
@@ -1491,6 +1523,36 @@ std::optional<HitResult> RaylibBackend::pickNode(
 void RaylibBackend::captureScreenshot(const std::string& filename)
 {
   pending_screenshot_ = filename;
+}
+
+void RaylibBackend::addWidget(std::shared_ptr<ImGuiWidget> widget)
+{
+  imgui_bridge_.addWidget(std::move(widget));
+}
+
+void RaylibBackend::removeWidget(const std::shared_ptr<ImGuiWidget>& widget)
+{
+  imgui_bridge_.removeWidget(widget);
+}
+
+bool RaylibBackend::wantCaptureMouse() const
+{
+  return imgui_bridge_.wantCaptureMouse();
+}
+
+bool RaylibBackend::wantCaptureKeyboard() const
+{
+  return imgui_bridge_.wantCaptureKeyboard();
+}
+
+ImGuiRaylibBridge& RaylibBackend::imguiBridge()
+{
+  return imgui_bridge_;
+}
+
+const ImGuiRaylibBridge& RaylibBackend::imguiBridge() const
+{
+  return imgui_bridge_;
 }
 
 } // namespace gui

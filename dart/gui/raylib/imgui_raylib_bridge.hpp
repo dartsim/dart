@@ -30,71 +30,38 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_VIEWER_BACKEND_HPP_
-#define DART_GUI_VIEWER_BACKEND_HPP_
+#ifndef DART_GUI_RAYLIB_IMGUI_RAYLIB_BRIDGE_HPP_
+#define DART_GUI_RAYLIB_IMGUI_RAYLIB_BRIDGE_HPP_
 
 #include <dart/gui/export.hpp>
-#include <dart/gui/input_event.hpp>
-#include <dart/gui/scene.hpp>
-
-#include <Eigen/Core>
+#include <dart/gui/im_gui_widget.hpp>
 
 #include <memory>
-#include <optional>
-#include <string>
 #include <vector>
+
+struct GLFWwindow;
 
 namespace dart {
 namespace gui {
 
-class ImGuiWidget;
-
-struct DART_GUI_API ViewerConfig
-{
-  int width = 1280;
-  int height = 720;
-  std::string title = "DART Viewer";
-  int target_fps = 60;
-  bool headless = false;
-  Eigen::Vector3d upwards_direction{0.0, 0.0, 1.0};
-};
-
-class DART_GUI_API ViewerBackend
+class DART_GUI_API ImGuiRaylibBridge
 {
 public:
-  virtual ~ViewerBackend() = default;
-  virtual bool initialize(const ViewerConfig& config) = 0;
-  virtual bool shouldClose() const = 0;
-  virtual void beginFrame() = 0;
-  virtual void render(const Scene& scene) = 0;
-  virtual void endFrame() = 0;
-  virtual void shutdown() = 0;
-  virtual std::vector<InputEvent> pollEvents() = 0;
+  void initialize(GLFWwindow* window);
+  void shutdown();
+  void newFrame();
+  void render();
+  bool wantCaptureMouse() const;
+  bool wantCaptureKeyboard() const;
+  void addWidget(std::shared_ptr<ImGuiWidget> widget);
+  void removeWidget(const std::shared_ptr<ImGuiWidget>& widget);
 
-  /// Ray-cast pick: returns the nearest hit among scene nodes, if any.
-  /// @param scene The current scene snapshot
-  /// @param screen_x Mouse X in screen coordinates
-  /// @param screen_y Mouse Y in screen coordinates
-  virtual std::optional<HitResult> pickNode(
-      const Scene& scene, float screen_x, float screen_y)
-      = 0;
-
-  /// Queue a screenshot to be captured during the next render() call.
-  virtual void captureScreenshot(const std::string& filename) = 0;
-
-  virtual void addWidget(std::shared_ptr<ImGuiWidget>) {}
-  virtual void removeWidget(const std::shared_ptr<ImGuiWidget>&) {}
-  virtual bool wantCaptureMouse() const
-  {
-    return false;
-  }
-  virtual bool wantCaptureKeyboard() const
-  {
-    return false;
-  }
+private:
+  std::vector<std::shared_ptr<ImGuiWidget>> widgets_;
+  bool initialized_ = false;
 };
 
 } // namespace gui
 } // namespace dart
 
-#endif // DART_GUI_VIEWER_BACKEND_HPP_
+#endif // DART_GUI_RAYLIB_IMGUI_RAYLIB_BRIDGE_HPP_

@@ -170,16 +170,8 @@ void DragController::handleMouseDrag(
     return;
   }
 
-  const Eigen::Vector3d delta = getDeltaCursor(
-      drag_origin_,
-      ConstraintType::Unconstrained,
-      Eigen::Vector3d::UnitZ(),
-      camera,
-      screenDx,
-      screenDy,
-      screenWidth,
-      screenHeight);
-  active_->updateDrag(delta, mods);
+  active_->updateDrag(
+      screenDx, screenDy, camera, screenWidth, screenHeight, mods);
 }
 
 void DragController::handleMouseRelease()
@@ -212,6 +204,46 @@ void SimpleFrameDraggable::beginDrag(const HitResult& hit)
   saved_transform_ = frame_->getWorldTransform();
   pick_offset_ = hit.point - saved_transform_.translation();
   saved_rotation_ = Eigen::AngleAxisd(saved_transform_.rotation());
+}
+
+void SimpleFrameDraggable::updateDrag(
+    double screenDx,
+    double screenDy,
+    const Camera& camera,
+    double screenW,
+    double screenH,
+    const ModifierKeys& mods)
+{
+  if (!frame_) {
+    return;
+  }
+
+  const Eigen::Vector3d fromPosition
+      = saved_transform_.translation() + pick_offset_;
+  const Eigen::Vector3d delta = DragController::getDeltaCursor(
+      fromPosition,
+      ConstraintType::Unconstrained,
+      Eigen::Vector3d::UnitZ(),
+      camera,
+      screenDx,
+      screenDy,
+      screenW,
+      screenH);
+
+  if (mods.ctrl) {
+    const double angle = delta.norm();
+    if (angle < 1e-12) {
+      return;
+    }
+    Eigen::Vector3d axis = delta.normalized();
+    Eigen::AngleAxisd rot(angle, axis);
+    saved_rotation_ = rot * saved_rotation_;
+    saved_transform_.linear() = saved_rotation_.toRotationMatrix();
+  } else {
+    saved_transform_.translation() += delta;
+  }
+
+  frame_->setTransform(saved_transform_);
 }
 
 void SimpleFrameDraggable::updateDrag(
@@ -299,11 +331,27 @@ void BodyNodeDraggable::beginDrag(const HitResult& hit)
 }
 
 void BodyNodeDraggable::updateDrag(
-    const Eigen::Vector3d& delta, const ModifierKeys& mods)
+    double screenDx,
+    double screenDy,
+    const Camera& camera,
+    double screenW,
+    double screenH,
+    const ModifierKeys& mods)
 {
   if (!body_node_ || !ik_) {
     return;
   }
+
+  const Eigen::Vector3d fromPosition = saved_target_transform_.translation();
+  const Eigen::Vector3d delta = DragController::getDeltaCursor(
+      fromPosition,
+      ConstraintType::Unconstrained,
+      Eigen::Vector3d::UnitZ(),
+      camera,
+      screenDx,
+      screenDy,
+      screenW,
+      screenH);
 
   if (mods.ctrl) {
     const double angle = delta.norm();
@@ -330,6 +378,120 @@ void BodyNodeDraggable::endDrag()
     body_node_->clearIK();
   }
   ik_ = nullptr;
+}
+
+//=============================================================================
+InteractiveFrameDraggable::InteractiveFrameDraggable(
+    InteractiveFrame* frame,
+    std::unordered_map<uint64_t, std::size_t> toolNodeMap)
+  : frame_(frame), tool_node_map_(std::move(toolNodeMap))
+{
+}
+
+bool InteractiveFrameDraggable::canDrag(const HitResult& hit) const
+{
+  return tool_node_map_.count(hit.node_id) > 0;
+}
+
+void InteractiveFrameDraggable::beginDrag(const HitResult& hit)
+{
+  if (!frame_) {
+    return;
+  }
+
+  auto it = tool_node_map_.find(hit.node_id);
+  if (it == tool_node_map_.end()) {
+    return;
+  }
+
+  const auto encoded = it->second;
+  const auto type = static_cast<InteractiveTool::Type>(encoded / 3);
+  const auto coord = encoded % 3;
+
+  active_tool_ = frame_->getTool(type, coord);
+  active_type_ = type;
+  active_coord_ = coord;
+  saved_transform_ = frame_->getTransform();
+  pick_offset_ = hit.point - saved_transform_.translation();
+}
+
+void InteractiveFrameDraggable::updateDrag(
+    double screenDx,
+    double screenDy,
+    const Camera& camera,
+    double screenW,
+    double screenH,
+    const ModifierKeys& modifiers)
+{
+  (void)modifiers;
+  if (!frame_ || !active_tool_) {
+    return;
+  }
+
+  const Eigen::Vector3d axis
+      = frame_->getTransform().rotation().col(active_coord_);
+  const Eigen::Vector3d fromPosition
+      = saved_transform_.translation() + pick_offset_;
+
+  if (active_type_ == InteractiveTool::LINEAR) {
+    const Eigen::Vector3d delta = DragController::getDeltaCursor(
+        fromPosition,
+        ConstraintType::Line,
+        axis,
+        camera,
+        screenDx,
+        screenDy,
+        screenW,
+        screenH);
+    const Eigen::Vector3d translation = saved_transform_.translation() + delta;
+    frame_->setTranslation(translation);
+    saved_transform_.translation() = translation;
+    return;
+  }
+
+  if (active_type_ == InteractiveTool::PLANAR) {
+    const Eigen::Vector3d delta = DragController::getDeltaCursor(
+        fromPosition,
+        ConstraintType::Plane,
+        axis,
+        camera,
+        screenDx,
+        screenDy,
+        screenW,
+        screenH);
+    const Eigen::Vector3d translation = saved_transform_.translation() + delta;
+    frame_->setTranslation(translation);
+    saved_transform_.translation() = translation;
+    return;
+  }
+
+  if (active_type_ == InteractiveTool::ANGULAR) {
+    const Eigen::Vector3d delta = DragController::getDeltaCursor(
+        fromPosition,
+        ConstraintType::Unconstrained,
+        Eigen::Vector3d::UnitZ(),
+        camera,
+        screenDx,
+        screenDy,
+        screenW,
+        screenH);
+    const Eigen::Vector3d perp = delta - axis * delta.dot(axis);
+    const double angle = perp.norm();
+    if (angle < 1e-12) {
+      return;
+    }
+    const Eigen::Vector3d axisNormalized = axis.normalized();
+    const Eigen::Matrix3d rotation
+        = Eigen::AngleAxisd(angle, axisNormalized).toRotationMatrix()
+          * saved_transform_.rotation();
+    frame_->setRotation(rotation);
+    saved_transform_.linear() = rotation;
+  }
+}
+
+void InteractiveFrameDraggable::endDrag()
+{
+  active_tool_ = nullptr;
 }
 
 } // namespace gui

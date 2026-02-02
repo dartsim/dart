@@ -40,7 +40,6 @@
 #define DART_GUI_IMGUIWIDGET_HPP_
 
 #include <dart/gui/export.hpp>
-#include <dart/gui/im_gui_viewer.hpp>
 
 namespace dart {
 namespace gui {

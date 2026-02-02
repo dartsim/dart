@@ -35,6 +35,7 @@
 
 #include <dart/gui/drag_controller.hpp>
 #include <dart/gui/export.hpp>
+#include <dart/gui/interactive_frame.hpp>
 #include <dart/gui/orbit_camera_controller.hpp>
 #include <dart/gui/scene.hpp>
 #include <dart/gui/scene_extractor.hpp>
@@ -53,6 +54,8 @@
 
 namespace dart {
 namespace gui {
+
+class ImGuiWidget;
 
 struct WorldEntry
 {
@@ -134,6 +137,9 @@ public:
   void enableDragAndDrop(dart::dynamics::SimpleFrame* frame);
   void disableDragAndDrop(dart::dynamics::SimpleFrame* frame);
 
+  void enableDragAndDrop(InteractiveFrame* frame);
+  void disableDragAndDrop(InteractiveFrame* frame);
+
   void enableDragAndDrop(
       dart::dynamics::BodyNode* bodyNode,
       bool useExternalIK = true,
@@ -155,6 +161,12 @@ public:
   void addAttachment(std::shared_ptr<ViewerAttachment> attachment);
   void removeAttachment(const std::shared_ptr<ViewerAttachment>& attachment);
 
+  void addWidget(std::shared_ptr<ImGuiWidget> widget);
+  void removeWidget(const std::shared_ptr<ImGuiWidget>& widget);
+
+  void setAboutWidget(std::shared_ptr<ImGuiWidget> widget);
+  void setMenuWidget(std::shared_ptr<ImGuiWidget> widget);
+
   void addMouseEventHandler(MouseEventHandler* handler);
   void removeMouseEventHandler(MouseEventHandler* handler);
 
@@ -171,6 +183,7 @@ private:
   OrbitCameraController camera_controller_;
   DragController drag_controller_;
   std::vector<dart::dynamics::SimpleFrame*> simple_frames_;
+  std::vector<InteractiveFrame*> interactive_frames_;
   std::vector<WorldEntry> worlds_;
   Scene scene_;
   bool paused_ = false;
@@ -188,6 +201,8 @@ private:
   std::size_t recording_frame_count_ = 0;
   std::vector<std::shared_ptr<ViewerAttachment>> attachments_;
   std::vector<MouseEventHandler*> mouse_handlers_;
+  std::shared_ptr<ImGuiWidget> about_widget_;
+  std::shared_ptr<ImGuiWidget> menu_widget_;
 
   // RTF tracking
   double target_frequency_ = 60.0;

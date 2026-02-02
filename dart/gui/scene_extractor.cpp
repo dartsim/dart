@@ -53,6 +53,7 @@
 #include "dart/dynamics/skeleton.hpp"
 #include "dart/dynamics/soft_mesh_shape.hpp"
 #include "dart/dynamics/sphere_shape.hpp"
+#include "dart/gui/interactive_frame.hpp"
 #include "dart/simulation/world.hpp"
 
 #if DART_HAVE_OCTOMAP
@@ -67,6 +68,7 @@ Scene SceneExtractor::extract(const dart::simulation::World& world) const
   Scene scene;
 
   entity_map_.clear();
+  tool_node_map_.clear();
 
   for (std::size_t i = 0; i < world.getNumSkeletons(); ++i) {
     auto skeleton = world.getSkeleton(i);
@@ -127,10 +129,89 @@ Scene SceneExtractor::extract(
 }
 
 //=============================================================================
+Scene SceneExtractor::extract(
+    const dart::simulation::World& world,
+    const std::vector<dart::dynamics::SimpleFrame*>& frames,
+    const std::vector<InteractiveFrame*>& interactive_frames) const
+{
+  Scene scene = extract(world, frames);
+
+  tool_node_map_.clear();
+
+  for (auto* frame : interactive_frames) {
+    if (!frame) {
+      continue;
+    }
+
+    for (std::size_t type = 0; type < InteractiveTool::NUM_TYPES; ++type) {
+      for (std::size_t coord = 0; coord < 3; ++coord) {
+        auto* tool
+            = frame->getTool(static_cast<InteractiveTool::Type>(type), coord);
+        if (!tool || !tool->getEnabled()) {
+          continue;
+        }
+
+        const auto shapeFrames = tool->getShapeFrames();
+        const std::size_t encoded = type * 3 + coord;
+        const auto raw = reinterpret_cast<uintptr_t>(tool);
+        const uint64_t nodeId = static_cast<uint64_t>(raw)
+                                | (static_cast<uint64_t>(encoded) << 48);
+
+        for (auto* shapeFrame : shapeFrames) {
+          if (!shapeFrame) {
+            continue;
+          }
+
+          auto shape = shapeFrame->getShape();
+          if (!shape) {
+            continue;
+          }
+
+          auto shapeData = convertShape(*shape);
+          if (!shapeData) {
+            DART_WARN("Skipping unsupported shape type: {}", shape->getType());
+            continue;
+          }
+
+          SceneNode node;
+          node.id = nodeId;
+          node.transform = shapeFrame->getWorldTransform();
+          node.shape = std::move(*shapeData);
+
+          Eigen::Vector4d color = Eigen::Vector4d::Zero();
+          color[coord] = 1.0;
+          color[3] = 1.0;
+
+          auto* visual = shapeFrame->getVisualAspect();
+          if (visual) {
+            color[3] = visual->getRGBA()[3];
+            node.visible = !visual->isHidden();
+          } else {
+            node.visible = true;
+          }
+
+          node.material.color = color;
+          entity_map_[node.id] = EntityInfo{nullptr, tool, nullptr};
+          tool_node_map_[node.id] = encoded;
+          scene.nodes.push_back(std::move(node));
+        }
+      }
+    }
+  }
+
+  return scene;
+}
+
+//=============================================================================
 const std::unordered_map<uint64_t, EntityInfo>& SceneExtractor::entityMap()
     const
 {
   return entity_map_;
+}
+
+std::unordered_map<uint64_t, std::size_t> SceneExtractor::toolNodeMap() const
+{
+  return tool_node_map_;
 }
 
 std::optional<ShapeData> SceneExtractor::convertShape(

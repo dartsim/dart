@@ -17,6 +17,8 @@ file(GLOB srcs "*.cpp")
 
 dart_add_library(${target_name} ${hdrs} ${srcs})
 target_link_libraries(${target_name} PUBLIC dart-gui raylib::raylib)
+target_compile_definitions(
+  ${target_name} PRIVATE DART_VERSION_STRING="${DART_VERSION}")
 
 install(FILES ${hdrs} DESTINATION include/dart/gui/raylib COMPONENT headers)
 

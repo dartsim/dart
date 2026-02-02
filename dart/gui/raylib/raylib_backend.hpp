@@ -33,6 +33,7 @@
 #ifndef DART_GUI_RAYLIB_RAYLIB_BACKEND_HPP_
 #define DART_GUI_RAYLIB_RAYLIB_BACKEND_HPP_
 
+#include <dart/gui/raylib/imgui_raylib_bridge.hpp>
 #include <dart/gui/viewer_backend.hpp>
 
 namespace dart {
@@ -55,10 +56,19 @@ public:
       const Scene& scene, float screen_x, float screen_y) override;
   void captureScreenshot(const std::string& filename) override;
 
+  ImGuiRaylibBridge& imguiBridge();
+  const ImGuiRaylibBridge& imguiBridge() const;
+
+  void addWidget(std::shared_ptr<ImGuiWidget> widget) override;
+  void removeWidget(const std::shared_ptr<ImGuiWidget>& widget) override;
+  bool wantCaptureMouse() const override;
+  bool wantCaptureKeyboard() const override;
+
 private:
   ViewerConfig config_{};
   bool initialized_ = false;
   std::string pending_screenshot_;
+  ImGuiRaylibBridge imgui_bridge_;
 };
 
 } // namespace gui
