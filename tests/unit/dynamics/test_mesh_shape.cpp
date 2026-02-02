@@ -298,6 +298,11 @@ public:
     this->mIsVolumeDirty = true;
   }
 
+  ~DirectAssignMeshShape() override
+  {
+    mRawScene = nullptr;
+  }
+
   const aiScene* rawScene() const
   {
     return mRawScene;
@@ -309,7 +314,7 @@ public:
   }
 
 private:
-  const aiScene* mRawScene{nullptr};
+  aiScene* mRawScene{nullptr};
 };
 DART_SUPPRESS_DEPRECATED_END
 
@@ -1209,6 +1214,7 @@ TEST(MeshShapeTest, ConvertToAssimpMeshUsesEmbeddedMaterials)
   ASSERT_NE(scene, nullptr);
   EXPECT_GE(scene->mNumMaterials, 2u);
   EXPECT_GE(scene->mNumMeshes, 1u);
+  aiReleaseImport(const_cast<aiScene*>(scene));
 
   common::error_code ec;
   common::filesystem::remove(objPath, ec);
@@ -1254,6 +1260,7 @@ TEST(MeshShapeTest, ConvertToAssimpMeshUsesMemoryResourceForSubMeshes)
   ASSERT_NE(scene, nullptr);
   EXPECT_GE(scene->mNumMeshes, 1u);
   EXPECT_GE(scene->mNumMaterials, 2u);
+  aiReleaseImport(const_cast<aiScene*>(scene));
 }
 
 TEST(MeshShapeTest, ConvertToAssimpMeshPreservesNormals)
@@ -1283,6 +1290,7 @@ TEST(MeshShapeTest, ConvertToAssimpMeshPreservesNormals)
   ASSERT_GE(scene->mNumMeshes, 1u);
   ASSERT_NE(scene->mMeshes[0], nullptr);
   EXPECT_TRUE(scene->mMeshes[0]->HasNormals());
+  aiReleaseImport(const_cast<aiScene*>(scene));
 }
 
 TEST(MeshShapeTest, TriMeshPolygonMeshAndBoundingVolume)
@@ -1366,6 +1374,7 @@ TEST(MeshShapeTest, ConvertToAssimpMeshSkipsInvalidSubmeshRanges)
   const aiScene* scene = shape.callConvertToAssimpMesh();
   ASSERT_NE(scene, nullptr);
   EXPECT_GE(scene->mNumMeshes, 1u);
+  aiReleaseImport(const_cast<aiScene*>(scene));
 }
 
 TEST(MeshShapeTest, LoadMeshFromFilePathAndUriAccessors)
@@ -1667,6 +1676,7 @@ TEST(MeshShapeTest, ConvertToAssimpMeshWithSubMeshesAndTexCoords)
   EXPECT_GE(scene->mNumMeshes, 1u);
   ASSERT_NE(scene->mMeshes, nullptr);
   EXPECT_TRUE(scene->mMeshes[0]->HasTextureCoords(0));
+  aiReleaseImport(const_cast<aiScene*>(scene));
 }
 
 TEST(MeshShapeTest, MeshHandleAccessorsAndOwnership)
@@ -1828,6 +1838,7 @@ TEST(MeshShapeTest, ConvertToAssimpMeshExportsMtlAndTexCoordZ)
 
   const aiMaterial* mat0 = scene->mMaterials[0];
   EXPECT_NE(mat0, nullptr);
+  aiReleaseImport(const_cast<aiScene*>(scene));
 }
 
 TEST(MeshShapeTest, ConvertToAssimpMeshSubmeshMismatchUsesSingleMesh)
@@ -1858,6 +1869,7 @@ TEST(MeshShapeTest, ConvertToAssimpMeshSubmeshMismatchUsesSingleMesh)
   ASSERT_NE(scene, nullptr);
   EXPECT_EQ(scene->mNumMaterials, 1u);
   EXPECT_GE(scene->mNumMeshes, 1u);
+  aiReleaseImport(const_cast<aiScene*>(scene));
 }
 
 TEST(MeshShapeTest, ConvertToAssimpMeshSubmeshFaceFormats)
@@ -1932,6 +1944,10 @@ TEST(MeshShapeTest, ConvertToAssimpMeshSubmeshFaceFormats)
   const aiScene* plainScene = runCase(false, false, false, 0u);
   ASSERT_NE(plainScene, nullptr);
   EXPECT_FALSE(plainScene->mMeshes[0]->HasTextureCoords(0));
+
+  aiReleaseImport(const_cast<aiScene*>(texScene));
+  aiReleaseImport(const_cast<aiScene*>(normalScene));
+  aiReleaseImport(const_cast<aiScene*>(plainScene));
 }
 
 TEST(MeshShapeTest, ConvertToAssimpMeshReturnsNullWithoutTriangles)
@@ -1984,6 +2000,7 @@ TEST(MeshShapeTest, ConvertToAssimpMeshHandlesOutOfRangeMaterialIndex)
   ASSERT_NE(scene, nullptr);
   EXPECT_GE(scene->mNumMaterials, 1u);
   EXPECT_GE(scene->mNumMeshes, 1u);
+  aiReleaseImport(const_cast<aiScene*>(scene));
 }
 
 TEST(MeshShapeTest, LoadMeshFromMemoryResourceWithPathResolution)

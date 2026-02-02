@@ -2,6 +2,7 @@
 
 #include <dart/all.hpp>
 
+#include <assimp/cimport.h>
 #include <gtest/gtest.h>
 
 namespace dart {
@@ -334,6 +335,7 @@ TEST(ArrowShapeTest, MeshConversions)
 
   const aiScene* scene = arrow.convertToAssimpMesh();
   ASSERT_NE(scene, nullptr);
+  aiReleaseImport(const_cast<aiScene*>(scene));
 }
 
 //==============================================================================
