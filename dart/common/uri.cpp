@@ -257,7 +257,7 @@ bool Uri::fromPath(std::string_view path)
   std::string unixPath = pathString;
   std::replace(std::begin(unixPath), std::end(unixPath), '\\', '/');
 
-  return fromString(fileScheme + "/" + unixPath);
+  return fromString(fileScheme + "/" + pathString);
 #else
   return fromString(fileScheme + pathString);
 #endif

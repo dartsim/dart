@@ -1677,9 +1677,8 @@ const aiScene* MeshShape::loadMesh(
 const aiScene* MeshShape::loadMesh(const std::string& filePath)
 {
   const auto retriever = std::make_shared<common::LocalResourceRetriever>();
-  const auto uri = common::Uri::createFromPath(filePath);
   DART_SUPPRESS_DEPRECATED_BEGIN
-  const aiScene* scene = loadMesh(uri.toString(), retriever);
+  const aiScene* scene = loadMesh("file://" + filePath, retriever);
   DART_SUPPRESS_DEPRECATED_END
   return scene;
 }
