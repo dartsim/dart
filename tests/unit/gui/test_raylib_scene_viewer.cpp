@@ -25,7 +25,9 @@
  */
 
 #include <dart/gui/drag_controller.hpp>
+#include <dart/gui/im_gui_widget.hpp>
 #include <dart/gui/input_event.hpp>
+#include <dart/gui/interactive_frame.hpp>
 #include <dart/gui/orbit_camera_controller.hpp>
 #include <dart/gui/raylib/raylib_backend.hpp>
 #include <dart/gui/scene.hpp>
@@ -1478,4 +1480,452 @@ TEST_F(RaylibSceneViewerTest, MouseEventHandlerObserver)
 
   viewer.removeMouseEventHandler(&handler);
   viewer.frame();
+}
+
+TEST_F(RaylibSceneViewerTest, InteractiveFrameToolExtraction)
+{
+  auto world = dart::simulation::World::create();
+  auto interactiveFrame = std::make_shared<dart::gui::InteractiveFrame>(
+      dart::dynamics::Frame::World(), "test_frame");
+  world->addSimpleFrame(interactiveFrame);
+
+  dart::gui::SceneExtractor extractor;
+  std::vector<dart::dynamics::SimpleFrame*> frames;
+  std::vector<dart::gui::InteractiveFrame*> interactiveFrames{
+      interactiveFrame.get()};
+  extractor.extract(*world, frames, interactiveFrames);
+
+  const auto& toolNodeMap = extractor.toolNodeMap();
+  EXPECT_FALSE(toolNodeMap.empty());
+  EXPECT_EQ(toolNodeMap.size(), 9u);
+
+  const auto& entityMap = extractor.entityMap();
+  for (const auto& entry : toolNodeMap) {
+    EXPECT_TRUE(entityMap.count(entry.first) > 0u);
+  }
+}
+
+TEST_F(RaylibSceneViewerTest, InteractiveFrameDraggableCanDrag)
+{
+  auto world = dart::simulation::World::create();
+  auto interactiveFrame = std::make_shared<dart::gui::InteractiveFrame>(
+      dart::dynamics::Frame::World(), "test_frame");
+  world->addSimpleFrame(interactiveFrame);
+
+  dart::gui::SceneExtractor extractor;
+  extractor.extract(*world, {}, {interactiveFrame.get()});
+
+  const auto& toolNodeMap = extractor.toolNodeMap();
+  ASSERT_FALSE(toolNodeMap.empty());
+
+  dart::gui::InteractiveFrameDraggable draggable(
+      interactiveFrame.get(), toolNodeMap);
+
+  auto validId = toolNodeMap.begin()->first;
+  dart::gui::HitResult hit;
+  hit.node_id = validId;
+  hit.point = interactiveFrame->getWorldTransform().translation();
+
+  EXPECT_TRUE(draggable.canDrag(hit));
+
+  uint64_t invalidId = 1u;
+  while (toolNodeMap.count(invalidId) > 0u) {
+    ++invalidId;
+  }
+  dart::gui::HitResult invalidHit;
+  invalidHit.node_id = invalidId;
+  EXPECT_FALSE(draggable.canDrag(invalidHit));
+}
+
+TEST_F(RaylibSceneViewerTest, InteractiveFrameLinearDrag)
+{
+  auto world = dart::simulation::World::create();
+  auto interactiveFrame = std::make_shared<dart::gui::InteractiveFrame>(
+      dart::dynamics::Frame::World(), "linear_drag");
+  interactiveFrame->setTranslation(Eigen::Vector3d(1.0, 2.0, 3.0));
+  world->addSimpleFrame(interactiveFrame);
+
+  dart::gui::SceneExtractor extractor;
+  extractor.extract(*world, {}, {interactiveFrame.get()});
+
+  const auto& toolNodeMap = extractor.toolNodeMap();
+  ASSERT_FALSE(toolNodeMap.empty());
+
+  uint64_t nodeId = 0;
+  std::size_t encoded = 0;
+  bool found = false;
+  for (const auto& entry : toolNodeMap) {
+    if (entry.second < 3u) {
+      nodeId = entry.first;
+      encoded = entry.second;
+      found = true;
+      break;
+    }
+  }
+  ASSERT_TRUE(found);
+
+  dart::gui::InteractiveFrameDraggable draggable(
+      interactiveFrame.get(), toolNodeMap);
+  dart::gui::HitResult hit;
+  hit.node_id = nodeId;
+  hit.point = interactiveFrame->getWorldTransform().translation();
+
+  draggable.beginDrag(hit);
+  const Eigen::Vector3d before
+      = interactiveFrame->getWorldTransform().translation();
+
+  dart::gui::Camera camera;
+  camera.position = Eigen::Vector3d(3.0, -3.0, 3.0);
+  camera.target = Eigen::Vector3d(0.0, 0.0, 0.0);
+  camera.up = Eigen::Vector3d(0.0, 0.0, 1.0);
+
+  dart::gui::ModifierKeys mods;
+  draggable.updateDrag(15.0, -7.0, camera, 640.0, 480.0, mods);
+
+  const Eigen::Vector3d after
+      = interactiveFrame->getWorldTransform().translation();
+  const Eigen::Vector3d delta = after - before;
+  EXPECT_GT(delta.norm(), 1e-6);
+
+  const int coord = static_cast<int>(encoded);
+  if (coord == 0) {
+    EXPECT_NEAR(delta.y(), 0.0, 1e-6);
+    EXPECT_NEAR(delta.z(), 0.0, 1e-6);
+  } else if (coord == 1) {
+    EXPECT_NEAR(delta.x(), 0.0, 1e-6);
+    EXPECT_NEAR(delta.z(), 0.0, 1e-6);
+  } else {
+    EXPECT_NEAR(delta.x(), 0.0, 1e-6);
+    EXPECT_NEAR(delta.y(), 0.0, 1e-6);
+  }
+}
+
+TEST_F(RaylibSceneViewerTest, InteractiveFrameAngularDrag)
+{
+  auto world = dart::simulation::World::create();
+  auto interactiveFrame = std::make_shared<dart::gui::InteractiveFrame>(
+      dart::dynamics::Frame::World(), "angular_drag");
+  interactiveFrame->setTranslation(Eigen::Vector3d(-1.0, 1.0, 0.5));
+  world->addSimpleFrame(interactiveFrame);
+
+  dart::gui::SceneExtractor extractor;
+  extractor.extract(*world, {}, {interactiveFrame.get()});
+
+  const auto& toolNodeMap = extractor.toolNodeMap();
+  ASSERT_FALSE(toolNodeMap.empty());
+
+  uint64_t nodeId = 0;
+  bool found = false;
+  for (const auto& entry : toolNodeMap) {
+    if (entry.second >= 3u && entry.second < 6u) {
+      nodeId = entry.first;
+      found = true;
+      break;
+    }
+  }
+  ASSERT_TRUE(found);
+
+  dart::gui::InteractiveFrameDraggable draggable(
+      interactiveFrame.get(), toolNodeMap);
+  dart::gui::HitResult hit;
+  hit.node_id = nodeId;
+  hit.point = interactiveFrame->getWorldTransform().translation();
+
+  draggable.beginDrag(hit);
+  const Eigen::Matrix3d before
+      = interactiveFrame->getWorldTransform().rotation();
+  const Eigen::Vector3d translationBefore
+      = interactiveFrame->getWorldTransform().translation();
+
+  dart::gui::Camera camera;
+  camera.position = Eigen::Vector3d(4.0, -2.0, 2.0);
+  camera.target = Eigen::Vector3d(0.0, 0.0, 0.0);
+  camera.up = Eigen::Vector3d(0.0, 0.0, 1.0);
+
+  dart::gui::ModifierKeys mods;
+  draggable.updateDrag(12.0, 8.0, camera, 640.0, 480.0, mods);
+
+  const Eigen::Matrix3d after
+      = interactiveFrame->getWorldTransform().rotation();
+  EXPECT_GT((after - before).norm(), 1e-6);
+
+  const Eigen::Vector3d translationAfter
+      = interactiveFrame->getWorldTransform().translation();
+  EXPECT_NEAR((translationAfter - translationBefore).norm(), 0.0, 1e-9);
+}
+
+TEST_F(RaylibSceneViewerTest, InteractiveFramePlanarDrag)
+{
+  auto world = dart::simulation::World::create();
+  auto interactiveFrame = std::make_shared<dart::gui::InteractiveFrame>(
+      dart::dynamics::Frame::World(), "planar_drag");
+  interactiveFrame->setTranslation(Eigen::Vector3d(0.5, -1.0, 1.5));
+  world->addSimpleFrame(interactiveFrame);
+
+  dart::gui::SceneExtractor extractor;
+  extractor.extract(*world, {}, {interactiveFrame.get()});
+
+  const auto& toolNodeMap = extractor.toolNodeMap();
+  ASSERT_FALSE(toolNodeMap.empty());
+
+  uint64_t nodeId = 0;
+  std::size_t encoded = 0;
+  bool found = false;
+  for (const auto& entry : toolNodeMap) {
+    if (entry.second >= 6u && entry.second < 9u) {
+      nodeId = entry.first;
+      encoded = entry.second;
+      found = true;
+      break;
+    }
+  }
+  ASSERT_TRUE(found);
+
+  dart::gui::InteractiveFrameDraggable draggable(
+      interactiveFrame.get(), toolNodeMap);
+  dart::gui::HitResult hit;
+  hit.node_id = nodeId;
+  hit.point = interactiveFrame->getWorldTransform().translation();
+
+  draggable.beginDrag(hit);
+  const Eigen::Vector3d before
+      = interactiveFrame->getWorldTransform().translation();
+
+  dart::gui::Camera camera;
+  camera.position = Eigen::Vector3d(2.0, -4.0, 3.0);
+  camera.target = Eigen::Vector3d(0.0, 0.0, 0.0);
+  camera.up = Eigen::Vector3d(0.0, 0.0, 1.0);
+
+  dart::gui::ModifierKeys mods;
+  draggable.updateDrag(-9.0, 5.0, camera, 640.0, 480.0, mods);
+
+  const Eigen::Vector3d after
+      = interactiveFrame->getWorldTransform().translation();
+  const Eigen::Vector3d delta = after - before;
+  EXPECT_GT(delta.norm(), 1e-6);
+
+  const int coord = static_cast<int>(encoded % 3u);
+  if (coord == 0) {
+    EXPECT_NEAR(delta.x(), 0.0, 1e-6);
+  } else if (coord == 1) {
+    EXPECT_NEAR(delta.y(), 0.0, 1e-6);
+  } else {
+    EXPECT_NEAR(delta.z(), 0.0, 1e-6);
+  }
+}
+
+TEST_F(RaylibSceneViewerTest, InteractiveFrameEnableDisable)
+{
+  TestViewer tv;
+  auto world = tv.viewer.primaryWorld();
+  ASSERT_TRUE(world != nullptr);
+
+  auto interactiveFrame = std::make_shared<dart::gui::InteractiveFrame>(
+      dart::dynamics::Frame::World(), "enable_disable");
+  world->addSimpleFrame(interactiveFrame);
+
+  tv.viewer.enableDragAndDrop(interactiveFrame.get());
+  EXPECT_NO_THROW({
+    for (int i = 0; i < 3; ++i) {
+      tv.viewer.frame();
+    }
+  });
+
+  tv.viewer.disableDragAndDrop(interactiveFrame.get());
+  EXPECT_NO_THROW({
+    for (int i = 0; i < 3; ++i) {
+      tv.viewer.frame();
+    }
+  });
+}
+
+TEST_F(RaylibSceneViewerTest, AddRemoveWidget)
+{
+  class TestWidget : public dart::gui::ImGuiWidget
+  {
+  public:
+    void render() override {}
+  };
+
+  TestViewer tv;
+  auto widget = std::make_shared<TestWidget>();
+
+  EXPECT_NO_THROW(tv.viewer.addWidget(widget));
+  EXPECT_NO_THROW({
+    for (int i = 0; i < 3; ++i) {
+      tv.viewer.frame();
+    }
+  });
+
+  EXPECT_NO_THROW(tv.viewer.removeWidget(widget));
+  EXPECT_NO_THROW({
+    for (int i = 0; i < 3; ++i) {
+      tv.viewer.frame();
+    }
+  });
+}
+
+TEST_F(RaylibSceneViewerTest, WidgetVisibilityToggle)
+{
+  class TestWidget : public dart::gui::ImGuiWidget
+  {
+  public:
+    void render() override {}
+  };
+
+  TestWidget widget;
+  EXPECT_TRUE(widget.isVisible());
+
+  widget.hide();
+  EXPECT_FALSE(widget.isVisible());
+
+  widget.show();
+  EXPECT_TRUE(widget.isVisible());
+
+  widget.toggleVisible();
+  EXPECT_FALSE(widget.isVisible());
+}
+
+TEST_F(RaylibSceneViewerTest, WantCaptureMouseDefault)
+{
+  dart::gui::ViewerConfig config;
+  config.width = 64;
+  config.height = 64;
+  config.headless = true;
+
+  dart::gui::RaylibBackend backend;
+  ASSERT_TRUE(backend.initialize(config));
+
+  EXPECT_FALSE(backend.wantCaptureMouse());
+  EXPECT_FALSE(backend.wantCaptureKeyboard());
+
+  backend.shutdown();
+}
+
+TEST_F(RaylibSceneViewerTest, FKeyMapping)
+{
+  dart::gui::KeyEvent f1Event{
+      dart::gui::Key::F1, true, dart::gui::ModifierKeys{}};
+  dart::gui::KeyEvent f2Event{
+      dart::gui::Key::F2, false, dart::gui::ModifierKeys{}};
+
+  (void)f1Event;
+  (void)f2Event;
+  (void)dart::gui::Key::F3;
+  (void)dart::gui::Key::F4;
+  (void)dart::gui::Key::F5;
+  (void)dart::gui::Key::F6;
+  (void)dart::gui::Key::F7;
+  (void)dart::gui::Key::F8;
+  (void)dart::gui::Key::F9;
+  (void)dart::gui::Key::F10;
+  (void)dart::gui::Key::F11;
+  (void)dart::gui::Key::F12;
+}
+
+TEST_F(RaylibSceneViewerTest, MultiWorldWithDnD)
+{
+  dart::gui::ViewerConfig config;
+  config.width = 64;
+  config.height = 64;
+  config.headless = true;
+
+  auto backend = std::make_unique<dart::gui::RaylibBackend>();
+  dart::gui::SceneViewer viewer(std::move(backend), config);
+
+  auto world1 = dart::simulation::World::create();
+  auto world2 = dart::simulation::World::create();
+
+  auto addBox = [](const std::shared_ptr<dart::simulation::World>& w,
+                   const std::string& name) {
+    auto skel = dart::dynamics::Skeleton::create(name);
+    auto pair = skel->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+    auto shape = std::make_shared<dart::dynamics::BoxShape>(
+        Eigen::Vector3d(0.1, 0.1, 0.1));
+    pair.second->createShapeNodeWith<dart::dynamics::VisualAspect>(shape);
+    w->addSkeleton(skel);
+  };
+
+  addBox(world1, "world1_box");
+  addBox(world2, "world2_box");
+
+  viewer.addWorld(world1);
+  viewer.addWorld(world2);
+
+  auto frame = dart::dynamics::SimpleFrame::createShared();
+  world1->addSimpleFrame(frame);
+  viewer.enableDragAndDrop(frame.get());
+
+  EXPECT_NO_THROW({
+    for (int i = 0; i < 3; ++i) {
+      viewer.frame();
+    }
+  });
+
+  viewer.removeWorld(world2);
+  EXPECT_NO_THROW({
+    for (int i = 0; i < 2; ++i) {
+      viewer.frame();
+    }
+  });
+}
+
+TEST_F(RaylibSceneViewerTest, RecordingWithWidgets)
+{
+  class TestWidget : public dart::gui::ImGuiWidget
+  {
+  public:
+    void render() override {}
+  };
+
+  TestViewer tv;
+  auto widget = std::make_shared<TestWidget>();
+  tv.viewer.addWidget(widget);
+
+  auto tmpDir
+      = std::filesystem::temp_directory_path() / "dart_widget_recording";
+  std::filesystem::create_directories(tmpDir);
+
+  tv.viewer.startRecording(tmpDir.string(), "widget_frame", 4);
+  for (int i = 0; i < 3; ++i) {
+    tv.viewer.frame();
+  }
+  tv.viewer.stopRecording();
+
+  EXPECT_TRUE(std::filesystem::exists(tmpDir / "widget_frame0000.png"));
+  EXPECT_TRUE(std::filesystem::exists(tmpDir / "widget_frame0001.png"));
+  EXPECT_TRUE(std::filesystem::exists(tmpDir / "widget_frame0002.png"));
+
+  std::filesystem::remove_all(tmpDir);
+}
+
+TEST_F(RaylibSceneViewerTest, PrimaryWorldGetter)
+{
+  dart::gui::ViewerConfig config;
+  config.width = 64;
+  config.height = 64;
+  config.headless = true;
+
+  auto backend = std::make_unique<dart::gui::RaylibBackend>();
+  dart::gui::SceneViewer viewer(std::move(backend), config);
+
+  EXPECT_EQ(viewer.primaryWorld(), nullptr);
+
+  auto world1 = dart::simulation::World::create();
+  viewer.setWorld(world1);
+  EXPECT_EQ(viewer.primaryWorld(), world1);
+
+  auto world2 = dart::simulation::World::create();
+  viewer.addWorld(world2);
+  EXPECT_EQ(viewer.primaryWorld(), world1);
+}
+
+TEST_F(RaylibSceneViewerTest, EntityMapAndSceneGetters)
+{
+  TestViewer tv;
+
+  tv.viewer.frame();
+
+  EXPECT_GT(tv.viewer.entityMap().size(), 0u);
+  EXPECT_GT(tv.viewer.scene().nodes.size(), 0u);
 }
