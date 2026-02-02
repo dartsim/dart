@@ -1025,6 +1025,29 @@ void RaylibBackend::render(const Scene& scene)
         toColor(point.color));
   }
 
+  for (const auto& poly : scene.debug_polygons) {
+    for (std::size_t i = 0; i < poly.vertices.size(); ++i) {
+      std::size_t j = (i + 1) % poly.vertices.size();
+      auto p1 = toVector3(poly.vertices[i]);
+      auto p2 = toVector3(poly.vertices[j]);
+      DrawLine3D(p1, p2, toColor(poly.outline_color));
+    }
+    auto cc = toVector3(poly.centroid);
+    DrawSphere(cc, 0.02f, toColor(poly.centroid_color));
+    auto comPos = toVector3(poly.com);
+    DrawSphere(comPos, 0.025f, toColor(poly.com_color));
+  }
+
+  for (const auto& ph : scene.debug_polyhedra) {
+    for (const auto& [i, j] : ph.edges) {
+      if (i < ph.vertices.size() && j < ph.vertices.size()) {
+        auto p1 = toVector3(ph.vertices[i]);
+        auto p2 = toVector3(ph.vertices[j]);
+        DrawLine3D(p1, p2, toColor(ph.color));
+      }
+    }
+  }
+
   if (scene.selected_node_id.has_value()) {
     const uint64_t selectedId = scene.selected_node_id.value();
     for (const auto& node : scene.nodes) {

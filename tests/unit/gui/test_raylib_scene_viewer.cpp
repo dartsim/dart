@@ -44,6 +44,7 @@
 #include <filesystem>
 #include <random>
 
+#include <cmath>
 #include <cstdio>
 
 extern "C" bool IsImageValid(Image image);
@@ -1251,4 +1252,113 @@ TEST_F(RaylibSceneViewerTest, ScreenRecording)
 
   // Cleanup
   std::filesystem::remove_all(tmpDir);
+}
+
+TEST_F(RaylibSceneViewerTest, RealTimeFactorTracking)
+{
+  dart::gui::ViewerConfig config;
+  config.width = 64;
+  config.height = 64;
+  config.headless = true;
+
+  auto backend = std::make_unique<dart::gui::RaylibBackend>();
+  dart::gui::SceneViewer viewer(std::move(backend), config);
+
+  auto world = dart::simulation::World::create();
+  viewer.setWorld(world);
+
+  viewer.frame();
+  viewer.frame();
+  viewer.frame();
+
+  double last = viewer.getLastRealTimeFactor();
+  EXPECT_GT(last, 0.0);
+  EXPECT_TRUE(std::isfinite(last));
+  EXPECT_LE(
+      viewer.getLowestRealTimeFactor(), viewer.getHighestRealTimeFactor());
+}
+
+TEST_F(RaylibSceneViewerTest, MultipleWorlds)
+{
+  dart::gui::ViewerConfig config;
+  config.width = 64;
+  config.height = 64;
+  config.headless = true;
+
+  auto backend = std::make_unique<dart::gui::RaylibBackend>();
+  dart::gui::SceneViewer viewer(std::move(backend), config);
+
+  auto world1 = dart::simulation::World::create();
+  auto world2 = dart::simulation::World::create();
+
+  auto addBox = [](std::shared_ptr<dart::simulation::World>& w) {
+    auto skel = dart::dynamics::Skeleton::create("skel");
+    auto pair = skel->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+    auto shape = std::make_shared<dart::dynamics::BoxShape>(
+        Eigen::Vector3d(0.1, 0.1, 0.1));
+    pair.second->createShapeNodeWith<dart::dynamics::VisualAspect>(shape);
+    w->addSkeleton(skel);
+  };
+  addBox(world1);
+  addBox(world2);
+
+  viewer.addWorld(world1);
+  viewer.addWorld(world2);
+
+  viewer.frame();
+
+  EXPECT_TRUE(true);
+
+  viewer.removeWorld(world2);
+  viewer.frame();
+
+  viewer.removeWorld(world1);
+  viewer.frame();
+}
+
+TEST_F(RaylibSceneViewerTest, SupportPolygonOverlay)
+{
+  dart::gui::ViewerConfig config;
+  config.width = 64;
+  config.height = 64;
+  config.headless = true;
+
+  auto backend = std::make_unique<dart::gui::RaylibBackend>();
+  dart::gui::SceneViewer viewer(std::move(backend), config);
+
+  auto world = dart::simulation::World::create();
+  viewer.setWorld(world);
+
+  std::vector<Eigen::Vector3d> vertices = {{-1, 0, -1}, {1, 0, -1}, {0, 0, 1}};
+  Eigen::Vector3d centroid(0, 0, 0);
+  Eigen::Vector3d com(0, 0, 0);
+
+  viewer.addSupportPolygon(vertices, centroid, com);
+
+  viewer.frame();
+
+  viewer.clearDebugOverlays();
+  viewer.frame();
+}
+
+TEST_F(RaylibSceneViewerTest, DebugPolyhedron)
+{
+  dart::gui::ViewerConfig config;
+  config.width = 64;
+  config.height = 64;
+  config.headless = true;
+
+  auto backend = std::make_unique<dart::gui::RaylibBackend>();
+  dart::gui::SceneViewer viewer(std::move(backend), config);
+
+  auto world = dart::simulation::World::create();
+  viewer.setWorld(world);
+
+  std::vector<Eigen::Vector3d> vertices
+      = {{0, 0, 0}, {1, 0, 0}, {0.5, 1, 0}, {0.5, 0.5, 1}};
+  std::vector<std::pair<std::size_t, std::size_t>> edges
+      = {{0, 1}, {1, 2}, {2, 0}, {0, 3}, {1, 3}, {2, 3}};
+
+  viewer.addDebugPolyhedron(vertices, edges);
+  viewer.frame();
 }

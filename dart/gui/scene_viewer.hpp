@@ -45,12 +45,21 @@
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 
+#include <chrono>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <vector>
 
 namespace dart {
 namespace gui {
+
+struct WorldEntry
+{
+  std::shared_ptr<dart::simulation::World> world;
+  bool active = true;
+  bool simulating = true;
+};
 
 class DART_GUI_API SceneViewer
 {
@@ -61,6 +70,19 @@ public:
       std::unique_ptr<ViewerBackend> backend, const ViewerConfig& config = {});
 
   void setWorld(std::shared_ptr<dart::simulation::World> world);
+
+  void addWorld(std::shared_ptr<dart::simulation::World> world);
+  void removeWorld(const std::shared_ptr<dart::simulation::World>& world);
+  void setWorldActive(
+      const std::shared_ptr<dart::simulation::World>& world, bool active);
+  void setWorldSimulating(
+      const std::shared_ptr<dart::simulation::World>& world, bool simulating);
+
+  void setTargetFrequency(double hz);
+  void setTargetRealTimeFactor(double rtf);
+  double getLastRealTimeFactor() const;
+  double getLowestRealTimeFactor() const;
+  double getHighestRealTimeFactor() const;
 
   void run();
 
@@ -83,6 +105,16 @@ public:
       const Eigen::Vector4d& color = Eigen::Vector4d(1, 1, 0, 1),
       double size = 3.0);
   void clearDebug();
+
+  void addSupportPolygon(
+      const std::vector<Eigen::Vector3d>& vertices,
+      const Eigen::Vector3d& centroid,
+      const Eigen::Vector3d& com);
+  void addDebugPolyhedron(
+      const std::vector<Eigen::Vector3d>& vertices,
+      const std::vector<std::pair<std::size_t, std::size_t>>& edges,
+      const Eigen::Vector4d& color = Eigen::Vector4d(1, 1, 0, 0.8));
+  void clearDebugOverlays();
 
   void enableDragAndDrop(dart::dynamics::SimpleFrame* frame);
   void disableDragAndDrop(dart::dynamics::SimpleFrame* frame);
@@ -118,7 +150,7 @@ private:
   OrbitCameraController camera_controller_;
   DragController drag_controller_;
   std::vector<dart::dynamics::SimpleFrame*> simple_frames_;
-  std::shared_ptr<dart::simulation::World> world_;
+  std::vector<WorldEntry> worlds_;
   Scene scene_;
   bool paused_ = false;
   bool initialized_ = false;
@@ -133,6 +165,15 @@ private:
   std::string recording_prefix_;
   std::size_t recording_digits_ = 6;
   std::size_t recording_frame_count_ = 0;
+
+  // RTF tracking
+  double target_frequency_ = 60.0;
+  double target_rtf_ = 1.0;
+  double last_rtf_ = 1.0;
+  double lowest_rtf_ = std::numeric_limits<double>::max();
+  double highest_rtf_ = 0.0;
+  std::chrono::steady_clock::time_point last_frame_time_;
+  bool first_frame_ = true;
 };
 
 } // namespace gui

@@ -229,6 +229,26 @@ struct DebugPoint
   double size = 3.0;
 };
 
+/// Support polygon debug visualization
+struct DebugPolygon
+{
+  std::vector<Eigen::Vector3d> vertices; // polygon vertices in world space
+  Eigen::Vector3d centroid = Eigen::Vector3d::Zero();
+  Eigen::Vector3d com = Eigen::Vector3d::Zero();
+  Eigen::Vector4d fill_color{0.0, 0.8, 0.0, 0.3};
+  Eigen::Vector4d outline_color{0.0, 1.0, 0.0, 1.0};
+  Eigen::Vector4d centroid_color{0.0, 0.0, 1.0, 1.0};
+  Eigen::Vector4d com_color{1.0, 0.0, 0.0, 1.0};
+};
+
+/// Debug wireframe polyhedron
+struct DebugPolyhedron
+{
+  std::vector<Eigen::Vector3d> vertices;
+  std::vector<std::pair<std::size_t, std::size_t>> edges; // index pairs
+  Eigen::Vector4d color{1.0, 1.0, 0.0, 0.8};
+};
+
 /// Result of a ray-cast pick operation
 struct HitResult
 {
@@ -260,6 +280,8 @@ struct Scene
   std::vector<SceneNode> nodes;
   std::vector<DebugLine> debug_lines;
   std::vector<DebugPoint> debug_points;
+  std::vector<DebugPolygon> debug_polygons;
+  std::vector<DebugPolyhedron> debug_polyhedra;
   Camera camera;
   std::vector<Light> lights;
   bool headlight = true;
