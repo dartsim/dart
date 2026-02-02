@@ -45,6 +45,7 @@
 #include <vector>
 
 #include <cstddef>
+#include <cstdint>
 
 namespace dart::common {
 
@@ -73,14 +74,59 @@ public:
   [[nodiscard]] const MemoryAllocator& getBaseAllocator() const;
   [[nodiscard]] MemoryAllocator& getBaseAllocator();
 
-  [[nodiscard]] void* allocate(size_t bytes) noexcept override;
-  void deallocate(void* pointer, size_t bytes) override;
+  // PERF: These fast paths MUST stay inline. Moving them out-of-line causes
+  // 2-4x regression from function-call overhead (benchmarked). Do NOT move
+  // to .cpp — see tests/benchmark/common/bm_allocators.cpp.
+
+  [[nodiscard]] inline void* allocate(size_t bytes) noexcept override
+  {
+    const auto padded = (bytes + 31) & ~size_t{31};
+    auto* next = mCur + padded;
+
+    if (next <= mEnd) [[likely]] {
+      auto* result = mCur;
+      mCur = next;
+      return result;
+    }
+
+    return allocateAlignedSlow(bytes, 32);
+  }
+
+  inline void deallocate(void* /*pointer*/, size_t /*bytes*/) override
+  {
+    // Arena semantics: memory is freed in bulk on reset()
+  }
+
   void print(std::ostream& os = std::cout, int indent = 0) const override;
 
-  [[nodiscard]] void* allocateAligned(
-      size_t bytes, size_t alignment = 32) noexcept;
+  [[nodiscard]] inline void* allocateAligned(
+      size_t bytes, size_t alignment = 32) noexcept
+  {
+    if (bytes == 0 || alignment == 0) [[unlikely]] {
+      return nullptr;
+    }
 
-  void reset() noexcept;
+    const auto cur = reinterpret_cast<uintptr_t>(mCur);
+    const auto aligned = (cur + alignment - 1) & ~(alignment - 1);
+    auto* next = reinterpret_cast<char*>(aligned + bytes);
+
+    if (next <= mEnd) [[likely]] {
+      mCur = next;
+      return reinterpret_cast<void*>(aligned);
+    }
+
+    return allocateAlignedSlow(bytes, alignment);
+  }
+
+  inline void reset() noexcept
+  {
+    if (mOverflowAllocations.empty()) [[likely]] {
+      const auto addr = reinterpret_cast<uintptr_t>(mBuffer);
+      mCur = reinterpret_cast<char*>((addr + 31) & ~uintptr_t{31});
+      return;
+    }
+    resetSlow();
+  }
 
   template <typename T, typename... Args>
   [[nodiscard]] T* construct(Args&&... args)
@@ -106,10 +152,17 @@ private:
     size_t allocatedSize;
   };
 
+  [[nodiscard]] void* allocateAlignedSlow(
+      size_t bytes, size_t alignment) noexcept;
+  void resetSlow() noexcept;
+
   MemoryAllocator& mBaseAllocator;
+
+  char* mCur;
+  char* mEnd;
+
   char* mBuffer;
   size_t mCapacity;
-  size_t mOffset;
   std::vector<OverflowEntry> mOverflowAllocations;
 };
 
