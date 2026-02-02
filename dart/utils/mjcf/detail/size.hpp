@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_SIZE_HPP_
 #define DART_UTILS_MJCF_DETAIL_SIZE_HPP_
 
+#include <dart/utils/export.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
 
 #include <tinyxml2.h>
@@ -42,7 +43,7 @@ namespace utils {
 namespace MjcfParser {
 namespace detail {
 
-class Size final
+class DART_UTILS_API Size final
 {
 public:
   Size() = default;

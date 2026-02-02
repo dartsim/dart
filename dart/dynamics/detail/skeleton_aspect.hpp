@@ -38,6 +38,8 @@
 #include <dart/common/proxy_aspect.hpp>
 #include <dart/common/requires_aspect.hpp>
 
+#include <dart/export.hpp>
+
 #include <Eigen/Core>
 
 namespace dart {
@@ -51,7 +53,7 @@ namespace detail {
 /// The Properties of this Skeleton which are independent of the components
 /// within the Skeleton, such as its BodyNodes and Joints. This does not
 /// include any Properties of the Skeleton's Aspects.
-struct SkeletonAspectProperties
+struct DART_API SkeletonAspectProperties
 {
   /// Name of the Skeleton
   std::string mName;
@@ -95,17 +97,19 @@ using JointStateVector = std::vector<common::Composite::State>;
 using JointPropertiesVector = std::vector<common::Composite::Properties>;
 
 //==============================================================================
-void setAllBodyNodeStates(Skeleton* skel, const BodyNodeStateVector& states);
+DART_API void setAllBodyNodeStates(
+    Skeleton* skel, const BodyNodeStateVector& states);
 
 //==============================================================================
-BodyNodeStateVector getAllBodyNodeStates(const Skeleton* skel);
+DART_API BodyNodeStateVector getAllBodyNodeStates(const Skeleton* skel);
 
 //==============================================================================
-void setAllBodyNodeProperties(
+DART_API void setAllBodyNodeProperties(
     Skeleton* skel, const BodyNodePropertiesVector& properties);
 
 //==============================================================================
-BodyNodePropertiesVector getAllBodyNodeProperties(const Skeleton* skel);
+DART_API BodyNodePropertiesVector
+getAllBodyNodeProperties(const Skeleton* skel);
 
 //==============================================================================
 using BodyNodeVectorProxyAspectState = common::ProxyCloneable<

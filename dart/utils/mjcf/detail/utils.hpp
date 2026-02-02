@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_UTILS_HPP_
 #define DART_UTILS_MJCF_DETAIL_UTILS_HPP_
 
+#include <dart/utils/export.hpp>
 #include <dart/utils/mjcf/detail/compiler.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
 
@@ -51,11 +52,12 @@ namespace detail {
 
 /// Checks if orientation elements (i.e., <quat>, <axisangle>, <euler>,
 /// <xyaxes>, <zaxis>) are properly set in @c element
-Errors checkOrientationValidity(const tinyxml2::XMLElement* element);
+DART_UTILS_API Errors
+checkOrientationValidity(const tinyxml2::XMLElement* element);
 
 /// Extracts rotation matrix from "pre-parsed" orientation elements and the
 /// compiler settings
-Eigen::Matrix3d compileRotation(
+DART_UTILS_API Eigen::Matrix3d compileRotation(
     const Eigen::Quaterniond& quat,
     const std::optional<Eigen::Vector4d>& axisAngle,
     const std::optional<Eigen::Vector3d>& euler,
@@ -69,13 +71,13 @@ Eigen::Matrix3d compileRotation(
 /// @param[in] retriever The resource retriever used for the main MJCF model
 /// file
 /// @return Errors occurred in handling <include> elements
-Errors handleInclude(
+DART_UTILS_API Errors handleInclude(
     tinyxml2::XMLElement* element,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 
 /// Finds all BodyNodes by name
-std::vector<dynamics::BodyNode*> getBodyNodes(
+DART_UTILS_API std::vector<dynamics::BodyNode*> getBodyNodes(
     const simulation::World& world, std::string_view name);
 
 } // namespace detail

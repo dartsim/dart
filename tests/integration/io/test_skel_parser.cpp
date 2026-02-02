@@ -3736,18 +3736,6 @@ TEST(SkelParser, JointTypesFromXml)
 
 #include <tinyxml2.h>
 
-namespace dart {
-namespace io {
-
-dynamics::SkeletonPtr readSkeleton(
-    const common::Uri& uri, const ReadOptions& options)
-{
-  return utils::SkelParser::readSkeleton(uri, options.resourceRetriever);
-}
-
-} // namespace io
-} // namespace dart
-
 namespace {
 
 std::filesystem::path makeTempSkelPath(const std::string& tag)

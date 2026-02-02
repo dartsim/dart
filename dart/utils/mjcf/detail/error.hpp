@@ -33,6 +33,8 @@
 #ifndef DART_UTILS_MJCF_DETAIL_ERROR_HPP_
 #define DART_UTILS_MJCF_DETAIL_ERROR_HPP_
 
+#include <dart/utils/export.hpp>
+
 #include <string>
 #include <vector>
 
@@ -66,7 +68,7 @@ enum class ErrorCode
   UNDEFINED_ERROR,
 };
 
-class Error final
+class DART_UTILS_API Error final
 {
 public:
   Error() = default;

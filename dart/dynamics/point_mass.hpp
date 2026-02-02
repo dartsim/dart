@@ -672,7 +672,7 @@ protected:
 //  PointMass* pm2;
 //};
 
-class PointMassNotifier : public Entity
+class DART_API PointMassNotifier : public Entity
 {
 public:
   PointMassNotifier(SoftBodyNode* _parentSoftBody, const std::string& _name);

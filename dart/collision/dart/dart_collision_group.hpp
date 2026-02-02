@@ -40,7 +40,7 @@ namespace collision {
 
 class DARTCollisionObject;
 
-class DARTCollisionGroup : public CollisionGroup
+class DART_API DARTCollisionGroup : public CollisionGroup
 {
 public:
   friend class DARTCollisionDetector;
