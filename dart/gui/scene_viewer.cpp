@@ -616,9 +616,8 @@ void SceneViewer::enableDragAndDrop(dart::dynamics::SimpleFrame* frame)
   }
 
   simple_frames_.push_back(frame);
-  drag_controller_.addDraggable(
-      std::make_unique<SimpleFrameDraggable>(
-          frame, makeSimpleFrameMarkerId(frame)));
+  drag_controller_.addDraggable(std::make_unique<SimpleFrameDraggable>(
+      frame, makeSimpleFrameMarkerId(frame)));
 }
 
 void SceneViewer::enableDragAndDrop(InteractiveFrame* frame)
@@ -634,9 +633,8 @@ void SceneViewer::enableDragAndDrop(InteractiveFrame* frame)
   }
 
   interactive_frames_.push_back(frame);
-  drag_controller_.addDraggable(
-      std::make_unique<InteractiveFrameDraggable>(
-          frame, makeInteractiveToolNodeMap(frame)));
+  drag_controller_.addDraggable(std::make_unique<InteractiveFrameDraggable>(
+      frame, makeInteractiveToolNodeMap(frame)));
 }
 
 void SceneViewer::enableDragAndDrop(
@@ -646,9 +644,8 @@ void SceneViewer::enableDragAndDrop(
     return;
   }
 
-  drag_controller_.addDraggable(
-      std::make_unique<BodyNodeDraggable>(
-          bodyNode, extractor_.entityMap(), useExternalIK, useWholeBody));
+  drag_controller_.addDraggable(std::make_unique<BodyNodeDraggable>(
+      bodyNode, extractor_.entityMap(), useExternalIK, useWholeBody));
 }
 
 void SceneViewer::disableDragAndDrop(dart::dynamics::SimpleFrame* frame)
@@ -665,14 +662,12 @@ void SceneViewer::disableDragAndDrop(dart::dynamics::SimpleFrame* frame)
   simple_frames_.erase(it, simple_frames_.end());
   drag_controller_.clearDraggables();
   for (auto* remaining : simple_frames_) {
-    drag_controller_.addDraggable(
-        std::make_unique<SimpleFrameDraggable>(
-            remaining, makeSimpleFrameMarkerId(remaining)));
+    drag_controller_.addDraggable(std::make_unique<SimpleFrameDraggable>(
+        remaining, makeSimpleFrameMarkerId(remaining)));
   }
   for (auto* remaining : interactive_frames_) {
-    drag_controller_.addDraggable(
-        std::make_unique<InteractiveFrameDraggable>(
-            remaining, makeInteractiveToolNodeMap(remaining)));
+    drag_controller_.addDraggable(std::make_unique<InteractiveFrameDraggable>(
+        remaining, makeInteractiveToolNodeMap(remaining)));
   }
 }
 
@@ -691,14 +686,12 @@ void SceneViewer::disableDragAndDrop(InteractiveFrame* frame)
   interactive_frames_.erase(it, interactive_frames_.end());
   drag_controller_.clearDraggables();
   for (auto* remaining : simple_frames_) {
-    drag_controller_.addDraggable(
-        std::make_unique<SimpleFrameDraggable>(
-            remaining, makeSimpleFrameMarkerId(remaining)));
+    drag_controller_.addDraggable(std::make_unique<SimpleFrameDraggable>(
+        remaining, makeSimpleFrameMarkerId(remaining)));
   }
   for (auto* remaining : interactive_frames_) {
-    drag_controller_.addDraggable(
-        std::make_unique<InteractiveFrameDraggable>(
-            remaining, makeInteractiveToolNodeMap(remaining)));
+    drag_controller_.addDraggable(std::make_unique<InteractiveFrameDraggable>(
+        remaining, makeInteractiveToolNodeMap(remaining)));
   }
 }
 
@@ -710,6 +703,26 @@ DragController& SceneViewer::dragController()
 std::optional<uint64_t> SceneViewer::selectedNodeId() const
 {
   return scene_.selected_node_id;
+}
+
+std::shared_ptr<dart::simulation::World> SceneViewer::primaryWorld() const
+{
+  for (const auto& entry : worlds_) {
+    if (entry.active && entry.world) {
+      return entry.world;
+    }
+  }
+  return nullptr;
+}
+
+const std::unordered_map<uint64_t, EntityInfo>& SceneViewer::entityMap() const
+{
+  return extractor_.entityMap();
+}
+
+const Scene& SceneViewer::scene() const
+{
+  return scene_;
 }
 
 void SceneViewer::captureScreenshot(const std::string& filename)

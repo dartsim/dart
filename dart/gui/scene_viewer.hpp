@@ -149,6 +149,10 @@ public:
 
   std::optional<uint64_t> selectedNodeId() const;
 
+  std::shared_ptr<dart::simulation::World> primaryWorld() const;
+  const std::unordered_map<uint64_t, EntityInfo>& entityMap() const;
+  const Scene& scene() const;
+
   void captureScreenshot(const std::string& filename);
 
   void startRecording(
