@@ -50,11 +50,17 @@
 
 #include <dart/export.hpp>
 
+#include <memory>
 #include <mutex>
 #include <span>
 
 namespace dart {
 namespace dynamics {
+
+namespace detail {
+template <typename T>
+class BodyNodePool;
+} // namespace detail
 
 /// class Skeleton
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
@@ -1305,6 +1311,29 @@ protected:
   mutable common::aligned_vector<DataCache> mTreeCache;
 
   mutable DataCache mSkelCache;
+
+  /// Pool for BodyNode allocation (contiguous memory per skeleton)
+  std::unique_ptr<detail::BodyNodePool<BodyNode>> mBodyNodePool;
+
+  /// Pool for SoftBodyNode allocation (separate pool due to different size)
+  std::unique_ptr<detail::BodyNodePool<SoftBodyNode>> mSoftBodyNodePool;
+
+  enum class BodyNodePoolKind
+  {
+    Body,
+    Soft
+  };
+
+  void* allocateBodyNodeMemory(BodyNodePoolKind kind);
+
+  /// BodyNodes allocated on the heap (e.g. unsupported NodeType)
+  /// These need traditional `delete` in the destructor
+  std::vector<BodyNode*> mHeapAllocatedBodyNodes;
+
+  /// Shared chunk references that keep pool memory alive for cross-skeleton
+  /// moved BodyNodes. The chunk's shared_ptr prevents the memory from being
+  /// freed even after the source skeleton is destroyed.
+  std::vector<std::shared_ptr<void>> mBorrowedChunks;
 
   using SpecializedTreeNodes
       = std::map<std::type_index, std::vector<NodeMap::iterator>*>;

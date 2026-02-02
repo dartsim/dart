@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_MEMORYMANAGER_HPP_
 #define DART_COMMON_MEMORYMANAGER_HPP_
 
+#include <dart/common/frame_allocator.hpp>
 #include <dart/common/free_list_allocator.hpp>
 #include <dart/common/pool_allocator.hpp>
 
@@ -54,6 +55,7 @@ public:
     Base,
     Free,
     Pool,
+    Frame,
   };
 
   /// Returns the default memory manager
@@ -71,12 +73,16 @@ public:
 
   /// Returns the base allocator
   [[nodiscard]] MemoryAllocator& getBaseAllocator();
+  [[nodiscard]] const MemoryAllocator& getBaseAllocator() const;
 
   /// Returns the free list allocator
   [[nodiscard]] FreeListAllocator& getFreeListAllocator();
 
   /// Returns the pool allocator
   [[nodiscard]] PoolAllocator& getPoolAllocator();
+
+  /// Returns the frame allocator (bump allocator with arena semantics)
+  [[nodiscard]] FrameAllocator& getFrameAllocator();
 
   /// Allocates @c size bytes of uninitialized storage.
   ///
@@ -103,6 +109,9 @@ public:
   /// @return On failure, a null pointer
   [[nodiscard]] void* allocateUsingPool(size_t bytes);
 
+  /// Allocates @c size bytes of uninitialized storage using FrameAllocator.
+  [[nodiscard]] void* allocateUsingFrame(size_t bytes);
+
   /// Deallocates the storage referenced by the pointer @c p, which must be a
   /// pointer obtained by an earlier cal to allocate().
   ///
@@ -115,6 +124,8 @@ public:
   void deallocateUsingFree(void* pointer, size_t bytes);
 
   void deallocateUsingPool(void* pointer, size_t bytes);
+
+  void deallocateUsingFrame(void* pointer, size_t bytes);
 
   /// Allocates uninitialized storage and constructs an object of type T to the
   /// allocated storage.
@@ -137,6 +148,9 @@ public:
   template <typename T, typename... Args>
   [[nodiscard]] T* constructUsingPool(Args&&... args) noexcept;
 
+  template <typename T, typename... Args>
+  [[nodiscard]] T* constructUsingFrame(Args&&... args) noexcept;
+
   /// Calls the destructor of the object and deallocate the storage.
   template <typename T>
   void destroy(Type type, T* object) noexcept;
@@ -150,6 +164,9 @@ public:
   /// PoolAllocator.
   template <typename T>
   void destroyUsingPool(T* pointer) noexcept;
+
+  template <typename T>
+  void destroyUsingFrame(T* pointer) noexcept;
 
   /// Returns true if a pointer is allocated by the internal allocator.
   [[nodiscard]] bool hasAllocated(void* pointer, size_t size) const noexcept;
@@ -176,6 +193,11 @@ private:
 
   /// The pool allocator with debug instrumentation.
   std::unique_ptr<PoolAllocator::Debug> mPoolAllocatorWithDebug;
+
+  /// The frame allocator (bump allocator with arena-semantic bulk-free).
+  /// No debug wrapper: arena semantics are incompatible with per-alloc
+  /// tracking.
+  std::unique_ptr<FrameAllocator> mFrameAllocator;
 
   /// Whether to route allocations through the debug instrumented allocators.
   bool mUseDebugAllocators{false};

@@ -51,6 +51,7 @@ set(common_unit_sources
   common/test_composite.cpp
   common/test_exception.cpp
   common/test_factory.cpp
+  common/test_frame_allocator.cpp
   common/test_free_list_allocator.cpp
   common/test_local_resource.cpp
   common/test_local_resource_retriever.cpp
@@ -177,6 +178,8 @@ dart_add_test("unit" UNIT_dynamics_Entity dynamics/test_entity.cpp)
 if(TARGET dart-utils-urdf)
   dart_add_test("unit" UNIT_dynamics_CreateShapeNodeApi dynamics/test_create_shape_node_api.cpp)
 endif()
+
+dart_add_test("unit" UNIT_dynamics_BodyNodePool dynamics/test_body_node_pool.cpp)
 
 # ==============================================================================
 # Math Tests

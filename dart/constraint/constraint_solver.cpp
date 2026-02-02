@@ -38,6 +38,7 @@
 #include "dart/collision/contact.hpp"
 #include "dart/collision/dart/dart_collision_detector.hpp"
 #include "dart/collision/fcl/fcl_collision_detector.hpp"
+#include "dart/common/frame_allocator.hpp"
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
 #include "dart/common/profile.hpp"
@@ -80,7 +81,9 @@ ConstraintSolver::ConstraintSolver()
     mTimeStep(0.001),
     mContactSurfaceHandler(std::make_shared<DefaultContactSurfaceHandler>()),
     mLcpSolver(std::make_shared<math::DantzigSolver>()),
-    mSecondaryLcpSolver(std::make_shared<math::PgsSolver>())
+    mSecondaryLcpSolver(std::make_shared<math::PgsSolver>()),
+    mOwnedFrameAllocator(std::make_unique<common::FrameAllocator>()),
+    mFrameAllocator(mOwnedFrameAllocator.get())
 {
   auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
       mCollisionDetector);
@@ -103,6 +106,20 @@ ConstraintSolver::ConstraintSolver(
   : ConstraintSolver(std::move(primary))
 {
   setSecondaryLcpSolver(std::move(secondary));
+}
+
+//==============================================================================
+ConstraintSolver::~ConstraintSolver()
+{
+  mActiveConstraints.clear();
+  mContactConstraints.clear();
+  mSoftContactConstraints.clear();
+  mJointConstraints.clear();
+  mMimicMotorConstraints.clear();
+  mCouplerConstraints.clear();
+  mJointCoulombFrictionConstraints.clear();
+  mConstrainedGroups.clear();
+  mPositionConstraints.clear();
 }
 
 //==============================================================================
@@ -244,6 +261,12 @@ void ConstraintSolver::setTimeStep(double _timeStep)
 double ConstraintSolver::getTimeStep() const
 {
   return mTimeStep;
+}
+
+//==============================================================================
+void ConstraintSolver::setFrameAllocator(common::FrameAllocator* alloc)
+{
+  mFrameAllocator = alloc ? alloc : mOwnedFrameAllocator.get();
 }
 
 void ConstraintSolver::setCollisionDetector(
@@ -422,6 +445,19 @@ void ConstraintSolver::updateConstraints()
 
   // Clear previous active constraint list
   mActiveConstraints.clear();
+  mConstrainedGroups.clear();
+  mPositionConstraints.clear();
+
+  // Destroy previous automatic constraints
+  mContactConstraints.clear();
+  mSoftContactConstraints.clear();
+  mJointConstraints.clear();
+  mMimicMotorConstraints.clear();
+  mCouplerConstraints.clear();
+  mJointCoulombFrictionConstraints.clear();
+
+  // Reset the per-step arena after releasing all per-step constraints
+  mFrameAllocator->reset();
 
   //----------------------------------------------------------------------------
   // Update manual constraints
@@ -440,12 +476,6 @@ void ConstraintSolver::updateConstraints()
   mCollisionResult.clear();
 
   mCollisionGroup->collide(mCollisionOption, &mCollisionResult);
-
-  // Destroy previous contact constraints
-  mContactConstraints.clear();
-
-  // Destroy previous soft contact constraints
-  mSoftContactConstraints.clear();
 
   // Create a mapping of contact pairs to the number of contacts between them
   using ContactPair
@@ -470,7 +500,8 @@ void ConstraintSolver::updateConstraints()
   };
 
   std::map<ContactPair, size_t, ContactPairCompare> contactPairMap;
-  std::vector<collision::Contact*> contacts;
+  mContactPtrs.clear();
+  mContactPtrs.reserve(mCollisionResult.getNumContacts());
 
   // Create new contact constraints
   for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i) {
@@ -492,18 +523,22 @@ void ConstraintSolver::updateConstraints()
 
     if (isSoftContact(contact)) {
       mSoftContactConstraints.push_back(
-          std::make_shared<SoftContactConstraint>(contact, mTimeStep));
+          std::allocate_shared<SoftContactConstraint>(
+              common::FrameStlAllocator<SoftContactConstraint>(
+                  *mFrameAllocator),
+              contact,
+              mTimeStep));
     } else {
       // Increment the count of contacts between the two collision objects
       ++contactPairMap[std::make_pair(
           contact.collisionObject1, contact.collisionObject2)];
 
-      contacts.push_back(&contact);
+      mContactPtrs.push_back(&contact);
     }
   }
 
   // Add the new contact constraints to dynamic constraint list
-  for (auto* contact : contacts) {
+  for (auto* contact : mContactPtrs) {
     std::size_t numContacts = 1;
     auto it = contactPairMap.find(
         std::make_pair(contact->collisionObject1, contact->collisionObject2));
@@ -534,12 +569,6 @@ void ConstraintSolver::updateConstraints()
   //----------------------------------------------------------------------------
   // Update automatic constraints: joint constraints
   //----------------------------------------------------------------------------
-  // Destroy previous joint constraints
-  mJointConstraints.clear();
-  mMimicMotorConstraints.clear();
-  mCouplerConstraints.clear();
-  mJointCoulombFrictionConstraints.clear();
-
   // Create new joint constraints
   for (const auto& skel : mSkeletons) {
     const std::size_t numJoints = skel->getNumJoints();
@@ -554,14 +583,20 @@ void ConstraintSolver::updateConstraints()
       for (std::size_t j = 0; j < dof; ++j) {
         if (joint->getCoulombFriction(j) != 0.0) {
           mJointCoulombFrictionConstraints.push_back(
-              std::make_shared<JointCoulombFrictionConstraint>(joint));
+              std::allocate_shared<JointCoulombFrictionConstraint>(
+                  common::FrameStlAllocator<JointCoulombFrictionConstraint>(
+                      *mFrameAllocator),
+                  joint));
           break;
         }
       }
 
       if (joint->areLimitsEnforced()
           || joint->hasActuatorType(dynamics::Joint::SERVO)) {
-        mJointConstraints.push_back(std::make_shared<JointConstraint>(joint));
+        mJointConstraints.push_back(
+            std::allocate_shared<JointConstraint>(
+                common::FrameStlAllocator<JointConstraint>(*mFrameAllocator),
+                joint));
       }
 
       if (joint->hasActuatorType(dynamics::Joint::MIMIC)) {
@@ -598,12 +633,18 @@ void ConstraintSolver::updateConstraints()
         if (hasValidMimicDof) {
           if (useCouplerConstraint && allMimicWithReference) {
             mCouplerConstraints.push_back(
-                std::make_shared<CouplerConstraint>(
-                    joint, joint->getMimicDofProperties()));
+                std::allocate_shared<CouplerConstraint>(
+                    common::FrameStlAllocator<CouplerConstraint>(
+                        *mFrameAllocator),
+                    joint,
+                    joint->getMimicDofProperties()));
           } else {
             mMimicMotorConstraints.push_back(
-                std::make_shared<MimicMotorConstraint>(
-                    joint, joint->getMimicDofProperties()));
+                std::allocate_shared<MimicMotorConstraint>(
+                    common::FrameStlAllocator<MimicMotorConstraint>(
+                        *mFrameAllocator),
+                    joint,
+                    joint->getMimicDofProperties()));
           }
         }
       }
@@ -718,24 +759,24 @@ void ConstraintSolver::solvePositionConstrainedGroups()
   DART_PROFILE_SCOPED;
 
   // Preserve velocity-impulse flags across the position pass.
-  std::vector<bool> impulseAppliedStates;
-  impulseAppliedStates.reserve(mSkeletons.size());
+  mImpulseAppliedStates.clear();
+  mImpulseAppliedStates.reserve(mSkeletons.size());
   for (const auto& skeleton : mSkeletons) {
-    impulseAppliedStates.push_back(skeleton->isImpulseApplied());
+    mImpulseAppliedStates.push_back(skeleton->isImpulseApplied());
   }
 
   for (auto& constraintGroup : mConstrainedGroups) {
-    std::vector<ConstraintBasePtr> positionConstraints;
-    positionConstraints.reserve(constraintGroup.getNumConstraints());
+    mPositionConstraints.clear();
+    mPositionConstraints.reserve(constraintGroup.getNumConstraints());
     for (std::size_t i = 0; i < constraintGroup.getNumConstraints(); ++i) {
       const ConstraintBasePtr& constraint = constraintGroup.getConstraint(i);
       if (std::dynamic_pointer_cast<ContactConstraint>(constraint)) {
-        positionConstraints.push_back(constraint);
+        mPositionConstraints.push_back(constraint);
       }
     }
 
     solveConstrainedGroupInternal(
-        positionConstraints, ConstraintPhase::Position);
+        mPositionConstraints, ConstraintPhase::Position);
   }
 
   for (auto& skeleton : mSkeletons) {
@@ -745,7 +786,7 @@ void ConstraintSolver::solvePositionConstrainedGroups()
   }
 
   for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
-    mSkeletons[i]->setImpulseApplied(impulseAppliedStates[i]);
+    mSkeletons[i]->setImpulseApplied(mImpulseAppliedStates[i]);
   }
 }
 

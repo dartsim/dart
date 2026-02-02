@@ -38,6 +38,7 @@
 #include "dart/common/stl_helpers.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/degree_of_freedom.hpp"
+#include "dart/dynamics/detail/body_node_pool.hpp"
 #include "dart/dynamics/end_effector.hpp"
 #include "dart/dynamics/inverse_kinematics.hpp"
 #include "dart/dynamics/joint.hpp"
@@ -448,8 +449,31 @@ std::unique_ptr<common::LockableReference> Skeleton::getLockableReference()
 Skeleton::~Skeleton()
 {
   for (BodyNode* bn : mSkelCache.mBodyNodes) {
-    delete bn;
+    if (mBodyNodePool->owns(bn)) {
+      bn->~BodyNode();
+      mBodyNodePool->deallocate(bn);
+    } else if (mSoftBodyNodePool->owns(bn)) {
+      bn->~BodyNode();
+      mSoftBodyNodePool->deallocate(bn);
+    } else {
+      // Either heap-allocated or from a borrowed chunk (cross-skeleton move).
+      // Call destructor explicitly, then free if heap-allocated.
+      bool isHeap = std::find(
+                        mHeapAllocatedBodyNodes.begin(),
+                        mHeapAllocatedBodyNodes.end(),
+                        bn)
+                    != mHeapAllocatedBodyNodes.end();
+      if (isHeap) {
+        delete bn;
+      } else {
+        // Memory lives in a borrowed chunk — just destruct, chunk ref handles
+        // memory lifetime
+        bn->~BodyNode();
+      }
+    }
   }
+
+  // Borrowed chunks are released when mBorrowedChunks is destroyed
 }
 
 //==============================================================================
@@ -485,7 +509,22 @@ SkeletonPtr Skeleton::cloneSkeleton(const std::string& cloneName) const
         originalParent->getName(),
         getBodyNode(i)->getName());
 
-    BodyNode* newBody = getBodyNode(i)->clone(parentClone, joint, false);
+    const BodyNode* originalBody = getBodyNode(i);
+    const SoftBodyNode* softBody = originalBody->asSoftBodyNode();
+
+    BodyNode* newBody;
+    if (softBody) {
+      void* mem = skelClone->mSoftBodyNodePool->allocate();
+      SoftBodyNode* softClone = new (mem) SoftBodyNode(
+          parentClone, joint, softBody->getSoftBodyNodeProperties());
+      softClone->matchAspects(originalBody);
+      newBody = softClone;
+    } else {
+      void* mem = skelClone->mBodyNodePool->allocate();
+      newBody = new (mem)
+          BodyNode(parentClone, joint, originalBody->getBodyNodeProperties());
+      newBody->matchAspects(originalBody);
+    }
 
     // The IK module gets cloned by the Skeleton and not by the BodyNode,
     // because IK modules rely on the Skeleton's structure and indexing. If the
@@ -2215,7 +2254,9 @@ const Eigen::VectorXd& Skeleton::getConstraintForces() const
 
 //==============================================================================
 Skeleton::Skeleton(const AspectPropertiesData& properties)
-  : mTotalMass(0.0),
+  : mBodyNodePool(std::make_unique<detail::BodyNodePool<BodyNode>>()),
+    mSoftBodyNodePool(std::make_unique<detail::BodyNodePool<SoftBodyNode>>()),
+    mTotalMass(0.0),
     mIsImpulseApplied(false),
     mIsPositionImpulseApplied(false),
     mUnionSize(1)
@@ -2225,6 +2266,20 @@ Skeleton::Skeleton(const AspectPropertiesData& properties)
   createAspect<detail::JointVectorProxyAspect>();
 
   updateNameManagerNames();
+}
+
+//==============================================================================
+void* Skeleton::allocateBodyNodeMemory(BodyNodePoolKind kind)
+{
+  switch (kind) {
+    case BodyNodePoolKind::Body:
+      return mBodyNodePool->allocate();
+    case BodyNodePoolKind::Soft:
+      return mSoftBodyNodePool->allocate();
+  }
+
+  DART_ASSERT(false);
+  return nullptr;
 }
 
 //==============================================================================
@@ -2743,6 +2798,29 @@ bool Skeleton::moveBodyNodeTree(
   }
   _newSkeleton->receiveBodyNodeTree(tree);
 
+  if (_newSkeleton.get() != this) {
+    for (BodyNode* bn : tree) {
+      std::shared_ptr<void> chunk;
+      if (auto c = mBodyNodePool->getChunkFor(bn)) {
+        chunk = std::move(c);
+      } else if (auto c = mSoftBodyNodePool->getChunkFor(bn)) {
+        chunk = std::move(c);
+      }
+
+      if (chunk) {
+        _newSkeleton->mBorrowedChunks.push_back(std::move(chunk));
+      }
+    }
+
+    // Transfer any borrowed chunks from this skeleton to the new skeleton.
+    // This handles chained moves (A→B→C): B's borrowed chunks for moved
+    // nodes must transfer to C.
+    for (auto& borrowed : mBorrowedChunks) {
+      _newSkeleton->mBorrowedChunks.push_back(std::move(borrowed));
+    }
+    mBorrowedChunks.clear();
+  }
+
   return true;
 }
 
@@ -2779,7 +2857,22 @@ std::pair<Joint*, BodyNode*> Skeleton::cloneBodyNodeTree(
         = i == 0 ? _parentNode
                  : nameMap[original->getParentBodyNode()->getName()];
 
-    BodyNode* clone = original->clone(newParent, joint, true);
+    BodyNode* clone;
+    const SoftBodyNode* softOriginal = original->asSoftBodyNode();
+    if (softOriginal) {
+      void* mem = _newSkeleton->mSoftBodyNodePool->allocate();
+      SoftBodyNode* softClone = new (mem) SoftBodyNode(
+          newParent, joint, softOriginal->getSoftBodyNodeProperties());
+      softClone->matchAspects(original);
+      softClone->matchNodes(original);
+      clone = softClone;
+    } else {
+      void* mem = _newSkeleton->mBodyNodePool->allocate();
+      clone = new (mem)
+          BodyNode(newParent, joint, original->getBodyNodeProperties());
+      clone->matchAspects(original);
+      clone->matchNodes(original);
+    }
     clones.push_back(clone);
     nameMap[clone->getName()] = clone;
 
