@@ -56,6 +56,7 @@ add_subdirectory(polyhedron_visual)
 # when DART_BUILD_GUI_RAYLIB=ON to avoid duplicate binary directory errors
 if(NOT DART_BUILD_GUI_RAYLIB)
   add_subdirectory(raylib)
+  add_subdirectory(raylib_drag_and_drop)
 endif()
 add_subdirectory(simulation_event_handler)
 add_subdirectory(tinkertoy)
