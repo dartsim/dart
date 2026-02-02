@@ -36,6 +36,8 @@
 #include "dart/simulation/world.hpp"
 
 #include <algorithm>
+#include <iomanip>
+#include <sstream>
 
 #include <cstdint>
 
@@ -116,8 +118,20 @@ bool SceneViewer::frame()
   }
 
   if (world_) {
+    if (pre_refresh_cb_) {
+      pre_refresh_cb_();
+    }
+
     if (!paused_) {
-      world_->step();
+      for (std::size_t i = 0; i < num_steps_per_cycle_; ++i) {
+        if (pre_step_cb_) {
+          pre_step_cb_();
+        }
+        world_->step();
+        if (post_step_cb_) {
+          post_step_cb_();
+        }
+      }
     }
 
     Scene extracted = extractor_.extract(*world_, simple_frames_);
@@ -144,6 +158,19 @@ bool SceneViewer::frame()
     empty.paused = paused_;
     addSimpleFrameMarkers(simple_frames_, empty);
     scene_ = std::move(empty);
+  }
+
+  if (post_refresh_cb_) {
+    post_refresh_cb_();
+  }
+
+  if (recording_ && backend_) {
+    std::ostringstream oss;
+    oss << recording_directory_ << "/" << recording_prefix_ << std::setfill('0')
+        << std::setw(static_cast<int>(recording_digits_))
+        << recording_frame_count_ << ".png";
+    backend_->captureScreenshot(oss.str());
+    ++recording_frame_count_;
   }
 
   backend_->beginFrame();
@@ -225,7 +252,13 @@ void SceneViewer::step()
     return;
   }
 
+  if (pre_step_cb_) {
+    pre_step_cb_();
+  }
   world_->step();
+  if (post_step_cb_) {
+    post_step_cb_();
+  }
 
   Scene extracted = extractor_.extract(*world_, simple_frames_);
   extracted.camera = scene_.camera;
@@ -343,6 +376,56 @@ void SceneViewer::captureScreenshot(const std::string& filename)
   if (backend_) {
     backend_->captureScreenshot(filename);
   }
+}
+
+void SceneViewer::startRecording(
+    const std::string& directory, const std::string& prefix, std::size_t digits)
+{
+  recording_ = true;
+  recording_directory_ = directory;
+  recording_prefix_ = prefix;
+  recording_digits_ = digits;
+  recording_frame_count_ = 0;
+}
+
+void SceneViewer::stopRecording()
+{
+  recording_ = false;
+}
+
+bool SceneViewer::isRecording() const
+{
+  return recording_;
+}
+
+void SceneViewer::setPreStepCallback(StepCallback cb)
+{
+  pre_step_cb_ = std::move(cb);
+}
+
+void SceneViewer::setPostStepCallback(StepCallback cb)
+{
+  post_step_cb_ = std::move(cb);
+}
+
+void SceneViewer::setPreRefreshCallback(StepCallback cb)
+{
+  pre_refresh_cb_ = std::move(cb);
+}
+
+void SceneViewer::setPostRefreshCallback(StepCallback cb)
+{
+  post_refresh_cb_ = std::move(cb);
+}
+
+void SceneViewer::setNumStepsPerCycle(std::size_t n)
+{
+  num_steps_per_cycle_ = (n > 0) ? n : 1;
+}
+
+std::size_t SceneViewer::numStepsPerCycle() const
+{
+  return num_steps_per_cycle_;
 }
 
 } // namespace gui

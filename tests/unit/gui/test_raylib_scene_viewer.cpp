@@ -1164,3 +1164,91 @@ TEST_F(RaylibSceneViewerTest, BodyNodeDnDRegistration)
 
   EXPECT_FALSE(viewer.dragController().isDragging());
 }
+
+TEST_F(RaylibSceneViewerTest, WorldNodeHooks)
+{
+  dart::gui::ViewerConfig config;
+  config.width = 64;
+  config.height = 64;
+  config.headless = true;
+
+  auto backend = std::make_unique<dart::gui::RaylibBackend>();
+  dart::gui::SceneViewer viewer(std::move(backend), config);
+
+  auto world = dart::simulation::World::create();
+  viewer.setWorld(world);
+
+  std::vector<std::string> order;
+  viewer.setPreRefreshCallback([&] { order.push_back("preRefresh"); });
+  viewer.setPreStepCallback([&] { order.push_back("preStep"); });
+  viewer.setPostStepCallback([&] { order.push_back("postStep"); });
+  viewer.setPostRefreshCallback([&] { order.push_back("postRefresh"); });
+
+  // Run one frame (not paused)
+  viewer.frame();
+
+  ASSERT_GE(order.size(), 4u);
+  EXPECT_EQ(order[0], "preRefresh");
+  EXPECT_EQ(order[1], "preStep");
+  EXPECT_EQ(order[2], "postStep");
+  EXPECT_EQ(order[3], "postRefresh");
+}
+
+TEST_F(RaylibSceneViewerTest, NumStepsPerCycle)
+{
+  dart::gui::ViewerConfig config;
+  config.width = 64;
+  config.height = 64;
+  config.headless = true;
+
+  auto backend = std::make_unique<dart::gui::RaylibBackend>();
+  dart::gui::SceneViewer viewer(std::move(backend), config);
+
+  auto world = dart::simulation::World::create();
+  viewer.setWorld(world);
+
+  int step_count = 0;
+  viewer.setPostStepCallback([&] { step_count++; });
+  viewer.setNumStepsPerCycle(3);
+
+  viewer.frame();
+  EXPECT_EQ(step_count, 3);
+}
+
+TEST_F(RaylibSceneViewerTest, ScreenRecording)
+{
+  dart::gui::ViewerConfig config;
+  config.width = 64;
+  config.height = 64;
+  config.headless = true;
+  config.target_fps = 0;
+
+  auto backend = std::make_unique<dart::gui::RaylibBackend>();
+  dart::gui::SceneViewer viewer(std::move(backend), config);
+
+  auto world = dart::simulation::World::create();
+  viewer.setWorld(world);
+
+  // Use a temp directory
+  auto tmpDir = std::filesystem::temp_directory_path() / "dart_recording_test";
+  std::filesystem::create_directories(tmpDir);
+
+  viewer.startRecording(tmpDir.string(), "test_frame", 4);
+  EXPECT_TRUE(viewer.isRecording());
+
+  // Run 3 frames
+  viewer.frame();
+  viewer.frame();
+  viewer.frame();
+
+  viewer.stopRecording();
+  EXPECT_FALSE(viewer.isRecording());
+
+  // Verify 3 files were created
+  EXPECT_TRUE(std::filesystem::exists(tmpDir / "test_frame0000.png"));
+  EXPECT_TRUE(std::filesystem::exists(tmpDir / "test_frame0001.png"));
+  EXPECT_TRUE(std::filesystem::exists(tmpDir / "test_frame0002.png"));
+
+  // Cleanup
+  std::filesystem::remove_all(tmpDir);
+}

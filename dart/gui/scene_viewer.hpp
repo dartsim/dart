@@ -45,6 +45,7 @@
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -54,6 +55,8 @@ namespace gui {
 class DART_GUI_API SceneViewer
 {
 public:
+  using StepCallback = std::function<void()>;
+
   explicit SceneViewer(
       std::unique_ptr<ViewerBackend> backend, const ViewerConfig& config = {});
 
@@ -95,6 +98,20 @@ public:
 
   void captureScreenshot(const std::string& filename);
 
+  void startRecording(
+      const std::string& directory,
+      const std::string& prefix = "frame",
+      std::size_t digits = 6);
+  void stopRecording();
+  bool isRecording() const;
+
+  void setPreStepCallback(StepCallback cb);
+  void setPostStepCallback(StepCallback cb);
+  void setPreRefreshCallback(StepCallback cb);
+  void setPostRefreshCallback(StepCallback cb);
+  void setNumStepsPerCycle(std::size_t n);
+  std::size_t numStepsPerCycle() const;
+
 private:
   std::unique_ptr<ViewerBackend> backend_;
   SceneExtractor extractor_;
@@ -106,6 +123,16 @@ private:
   bool paused_ = false;
   bool initialized_ = false;
   ViewerConfig config_;
+  StepCallback pre_step_cb_;
+  StepCallback post_step_cb_;
+  StepCallback pre_refresh_cb_;
+  StepCallback post_refresh_cb_;
+  std::size_t num_steps_per_cycle_ = 1;
+  bool recording_ = false;
+  std::string recording_directory_;
+  std::string recording_prefix_;
+  std::size_t recording_digits_ = 6;
+  std::size_t recording_frame_count_ = 0;
 };
 
 } // namespace gui
