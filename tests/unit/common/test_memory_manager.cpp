@@ -34,6 +34,8 @@
 
 #include <dart/common/memory_manager.hpp>
 
+#include <dart/all.hpp>
+
 #include <gtest/gtest.h>
 
 using namespace dart;
@@ -279,6 +281,37 @@ TEST(MemoryManagerTest, PrintAndStreamOperator)
   // Note: operator<< is a friend function not exported with DART_API on
   // Windows, so we verify print() output covers the same content instead.
   EXPECT_NE(oss1.str().find("[MemoryManager]"), std::string::npos);
+}
+
+//==============================================================================
+TEST(MemoryManagerTest, DefaultAllocatorsAndStream)
+{
+  auto& mm = MemoryManager::GetDefault();
+
+  auto& freeListAllocator = mm.getFreeListAllocator();
+  auto& poolAllocator = mm.getPoolAllocator();
+
+  auto* freePtr = mm.allocate(MemoryManager::Type::Free, sizeof(double));
+  ASSERT_NE(freePtr, nullptr);
+  mm.deallocate(MemoryManager::Type::Free, freePtr, sizeof(double));
+
+  auto* poolPtr = mm.allocate(MemoryManager::Type::Pool, sizeof(double));
+  ASSERT_NE(poolPtr, nullptr);
+  mm.deallocate(MemoryManager::Type::Pool, poolPtr, sizeof(double));
+
+  std::ostringstream oss;
+  mm.print(oss, 2);
+  EXPECT_NE(oss.str().find("free_allocator"), std::string::npos);
+  EXPECT_NE(oss.str().find("pool_allocator"), std::string::npos);
+
+  EXPECT_NE(&freeListAllocator.getBaseAllocator(), nullptr);
+  EXPECT_NE(&poolAllocator.getBaseAllocator(), nullptr);
+
+#ifndef _WIN32
+  std::ostringstream stream;
+  stream << mm;
+  EXPECT_NE(stream.str().find("[MemoryManager]"), std::string::npos);
+#endif
 }
 
 //==============================================================================

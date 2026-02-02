@@ -36,12 +36,85 @@
 #include <gtest/gtest.h>
 #include <tinyxml2.h>
 
+#include <filesystem>
+#include <fstream>
 #include <stdexcept>
 #include <string>
 
 #include <cmath>
 
 using namespace dart::utils;
+
+namespace {
+
+class CloneableNode : public tinyxml2::XMLNode
+{
+public:
+  explicit CloneableNode(tinyxml2::XMLDocument* document) : XMLNode(document) {}
+
+  ~CloneableNode() override
+  {
+    _firstChild = nullptr;
+    _lastChild = nullptr;
+  }
+
+  tinyxml2::XMLNode* ShallowClone(
+      tinyxml2::XMLDocument* document) const override
+  {
+    if (document == nullptr) {
+      return nullptr;
+    }
+    return document->NewElement("clone");
+  }
+
+  bool ShallowEqual(const tinyxml2::XMLNode* /*compare*/) const override
+  {
+    return false;
+  }
+
+  bool Accept(tinyxml2::XMLVisitor* /*visitor*/) const override
+  {
+    return false;
+  }
+
+  void AttachChild(CloneableNode* child)
+  {
+    if (child == nullptr) {
+      return;
+    }
+
+    child->_parent = this;
+    child->_prev = _lastChild;
+    child->_next = nullptr;
+
+    if (_lastChild) {
+      auto* last = static_cast<CloneableNode*>(_lastChild);
+      last->_next = child;
+      _lastChild = child;
+      return;
+    }
+
+    _firstChild = child;
+    _lastChild = child;
+  }
+};
+
+class FailingCloneNode : public CloneableNode
+{
+public:
+  explicit FailingCloneNode(tinyxml2::XMLDocument* document)
+    : CloneableNode(document)
+  {
+  }
+
+  tinyxml2::XMLNode* ShallowClone(
+      tinyxml2::XMLDocument* /*document*/) const override
+  {
+    return nullptr;
+  }
+};
+
+} // namespace
 
 //==============================================================================
 // Tests for valid input (round-trip parsing)
@@ -314,6 +387,22 @@ TEST(XmlHelpers, GetValueVector3dWithValidChild)
   EXPECT_DOUBLE_EQ(result[0], 1.0);
   EXPECT_DOUBLE_EQ(result[1], 2.0);
   EXPECT_DOUBLE_EQ(result[2], 3.0);
+}
+
+TEST(XmlHelpers, GetValueVec3WithValidChild)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+
+  tinyxml2::XMLElement* child = doc.NewElement("vec");
+  child->SetText("4.0 5.0 6.0");
+  root->InsertEndChild(child);
+
+  const Eigen::Vector3d result = getValueVec3(root, "vec");
+  EXPECT_DOUBLE_EQ(result[0], 4.0);
+  EXPECT_DOUBLE_EQ(result[1], 5.0);
+  EXPECT_DOUBLE_EQ(result[2], 6.0);
 }
 
 TEST(XmlHelpers, HasElementReturnsTrueForExisting)
@@ -606,4 +695,241 @@ TEST(XmlHelpers, GetValueBoolNumericValues)
 
   EXPECT_TRUE(getValueBool(root, "trueFlag"));
   EXPECT_FALSE(getValueBool(root, "falseFlag"));
+}
+
+//==============================================================================
+TEST(XmlHelpers, AttributeParsingAndErrors)
+{
+  const char* xml =
+      R"(<root bool="true" int="7" uint="9" float="1.5" double="2.25" char="A"
+              v2i="1 2" v2d="3 4" v3d="5 6 7" v4d="1 2 3 4" v6d="1 2 3 4 5 6"
+              bad_int="nope" bad_double="nope" />)";
+  tinyxml2::XMLDocument doc;
+  doc.Parse(xml);
+  const auto* root = doc.FirstChildElement("root");
+  ASSERT_NE(root, nullptr);
+
+  EXPECT_TRUE(getAttributeBool(root, "bool"));
+  EXPECT_EQ(getAttributeInt(root, "int"), 7);
+  EXPECT_EQ(getAttributeUInt(root, "uint"), 9u);
+  EXPECT_FLOAT_EQ(getAttributeFloat(root, "float"), 1.5f);
+  EXPECT_DOUBLE_EQ(getAttributeDouble(root, "double"), 2.25);
+  EXPECT_EQ(getAttributeChar(root, "char"), 'A');
+  EXPECT_EQ(getAttributeVector2i(root, "v2i"), Eigen::Vector2i(1, 2));
+  EXPECT_TRUE(
+      getAttributeVector2d(root, "v2d").isApprox(Eigen::Vector2d(3.0, 4.0)));
+  EXPECT_TRUE(getAttributeVector3d(root, "v3d")
+                  .isApprox(Eigen::Vector3d(5.0, 6.0, 7.0)));
+  EXPECT_TRUE(getAttributeVector4d(root, "v4d")
+                  .isApprox(Eigen::Vector4d(1.0, 2.0, 3.0, 4.0)));
+  EXPECT_TRUE(getAttributeVector6d(root, "v6d")
+                  .isApprox(Eigen::Vector6d(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)));
+
+  EXPECT_EQ(getAttributeString(root, "missing"), "");
+  EXPECT_FALSE(getAttributeBool(root, "missing_bool"));
+  EXPECT_EQ(getAttributeInt(root, "bad_int"), 0);
+  EXPECT_DOUBLE_EQ(getAttributeDouble(root, "bad_double"), 0.0);
+  EXPECT_EQ(getAttributeChar(root, "missing_char"), '\0');
+
+  const char* valuesXml
+      = R"(<values><value_int>5</value_int><value_vec3>1 2 3</value_vec3></values>)";
+  tinyxml2::XMLDocument valuesDoc;
+  valuesDoc.Parse(valuesXml);
+  const auto* values = valuesDoc.FirstChildElement("values");
+  ASSERT_NE(values, nullptr);
+
+  EXPECT_EQ(getValueInt(values, "value_int"), 5);
+  EXPECT_TRUE(getValueVector3d(values, "value_vec3")
+                  .isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+  EXPECT_THROW(getValueDouble(values, "missing"), std::runtime_error);
+}
+
+TEST(XmlHelpers, InvalidBoolReturnsFalse)
+{
+  EXPECT_FALSE(toBool("maybe"));
+}
+
+TEST(XmlHelpers, OpenXmlFileThrowsOnMalformed)
+{
+  const auto path = std::filesystem::temp_directory_path()
+                    / "dart_xml_helpers_malformed.xml";
+  std::ofstream output(path.string(), std::ios::binary);
+  output << "<root>";
+  output.close();
+
+  tinyxml2::XMLDocument doc;
+  const auto uri = dart::common::Uri::createFromPath(path.string());
+  EXPECT_THROW(openXMLFile(doc, uri, nullptr), std::runtime_error);
+
+  std::error_code ec;
+  std::filesystem::remove(path, ec);
+}
+
+TEST(XmlHelpers, ReadXmlFileReturnsFalseOnMalformed)
+{
+  const auto path = std::filesystem::temp_directory_path()
+                    / "dart_xml_helpers_malformed_read.xml";
+  std::ofstream output(path.string(), std::ios::binary);
+  output << "<root>";
+  output.close();
+
+  tinyxml2::XMLDocument doc;
+  const auto uri = dart::common::Uri::createFromPath(path.string());
+  EXPECT_FALSE(readXmlFile(doc, uri, nullptr));
+
+  std::error_code ec;
+  std::filesystem::remove(path, ec);
+}
+
+TEST(XmlHelpers, GetAttributeBoolInvalidReturnsFalse)
+{
+  const char* xml = R"(<root flag="maybe" />)";
+  tinyxml2::XMLDocument doc;
+  doc.Parse(xml);
+  const auto* root = doc.FirstChildElement("root");
+  ASSERT_NE(root, nullptr);
+
+  EXPECT_FALSE(getAttributeBool(root, "flag"));
+}
+
+TEST(XmlHelpers, GetAttributeUIntMissingReturnsZero)
+{
+  const char* xml = R"(<root />)";
+  tinyxml2::XMLDocument doc;
+  doc.Parse(xml);
+  const auto* root = doc.FirstChildElement("root");
+  ASSERT_NE(root, nullptr);
+
+  EXPECT_EQ(getAttributeUInt(root, "count"), 0u);
+}
+
+TEST(XmlHelpers, GetAttributeFloatInvalidReturnsZero)
+{
+  const char* xml = R"(<root value="not_a_float" />)";
+  tinyxml2::XMLDocument doc;
+  doc.Parse(xml);
+  const auto* root = doc.FirstChildElement("root");
+  ASSERT_NE(root, nullptr);
+
+  EXPECT_FLOAT_EQ(getAttributeFloat(root, "value"), 0.0f);
+}
+
+//==============================================================================
+TEST(XmlHelpers, ToStringMapsErrorCodes)
+{
+  EXPECT_FALSE(toString(tinyxml2::XMLError::XML_NO_ATTRIBUTE).empty());
+  EXPECT_FALSE(toString(tinyxml2::XMLError::XML_ERROR_PARSING).empty());
+  EXPECT_FALSE(toString(tinyxml2::XMLError::XML_ERROR_EMPTY_DOCUMENT).empty());
+  EXPECT_FALSE(toString(tinyxml2::XMLError::XML_SUCCESS).empty());
+}
+
+TEST(XmlHelpers, ToStringCoversAllErrorCodes)
+{
+  using tinyxml2::XMLError;
+  EXPECT_EQ(toString(XMLError::XML_SUCCESS), "XML_SUCCESS");
+  EXPECT_EQ(toString(XMLError::XML_NO_ATTRIBUTE), "XML_NO_ATTRIBUTE");
+  EXPECT_EQ(
+      toString(XMLError::XML_WRONG_ATTRIBUTE_TYPE), "XML_WRONG_ATTRIBUTE_TYPE");
+  EXPECT_EQ(
+      toString(XMLError::XML_ERROR_FILE_NOT_FOUND), "XML_ERROR_FILE_NOT_FOUND");
+  EXPECT_EQ(
+      toString(XMLError::XML_ERROR_FILE_COULD_NOT_BE_OPENED),
+      "XML_ERROR_FILE_COULD_NOT_BE_OPENED");
+  EXPECT_EQ(
+      toString(XMLError::XML_ERROR_FILE_READ_ERROR),
+      "XML_ERROR_FILE_READ_ERROR");
+  EXPECT_EQ(
+      toString(XMLError::XML_ERROR_PARSING_ELEMENT),
+      "XML_ERROR_PARSING_ELEMENT");
+  EXPECT_EQ(
+      toString(XMLError::XML_ERROR_PARSING_ATTRIBUTE),
+      "XML_ERROR_PARSING_ATTRIBUTE");
+  EXPECT_EQ(
+      toString(XMLError::XML_ERROR_PARSING_TEXT), "XML_ERROR_PARSING_TEXT");
+  EXPECT_EQ(
+      toString(XMLError::XML_ERROR_PARSING_CDATA), "XML_ERROR_PARSING_CDATA");
+  EXPECT_EQ(
+      toString(XMLError::XML_ERROR_PARSING_COMMENT),
+      "XML_ERROR_PARSING_COMMENT");
+  EXPECT_EQ(
+      toString(XMLError::XML_ERROR_PARSING_DECLARATION),
+      "XML_ERROR_PARSING_DECLARATION");
+  EXPECT_EQ(
+      toString(XMLError::XML_ERROR_PARSING_UNKNOWN),
+      "XML_ERROR_PARSING_UNKNOWN");
+  EXPECT_EQ(
+      toString(XMLError::XML_ERROR_EMPTY_DOCUMENT), "XML_ERROR_EMPTY_DOCUMENT");
+  EXPECT_EQ(
+      toString(XMLError::XML_ERROR_MISMATCHED_ELEMENT),
+      "XML_ERROR_MISMATCHED_ELEMENT");
+  EXPECT_EQ(toString(XMLError::XML_ERROR_PARSING), "XML_ERROR_PARSING");
+  EXPECT_EQ(
+      toString(XMLError::XML_CAN_NOT_CONVERT_TEXT), "XML_CAN_NOT_CONVERT_TEXT");
+  EXPECT_EQ(toString(XMLError::XML_NO_TEXT_NODE), "XML_NO_TEXT_NODE");
+  EXPECT_EQ(toString(XMLError::XML_ERROR_COUNT), "XML_ERROR_COUNT");
+  EXPECT_EQ(toString(static_cast<XMLError>(999)), "Unknown error");
+}
+
+//==============================================================================
+TEST(XmlHelpers, GetElementReturnsChild)
+{
+  tinyxml2::XMLDocument doc;
+  tinyxml2::XMLElement* root = doc.NewElement("root");
+  doc.InsertEndChild(root);
+  tinyxml2::XMLElement* child = doc.NewElement("child");
+  root->InsertEndChild(child);
+
+  EXPECT_EQ(getElement(root, "child"), child);
+  const tinyxml2::XMLElement* constRoot = root;
+  EXPECT_EQ(getElement(constRoot, "child"), child);
+}
+
+TEST(XmlHelpers, LargeVectorXdParsing)
+{
+  const std::string input = "1 2 3 4 5 6 7 8 9 10";
+  const Eigen::VectorXd result = toVectorXd(input);
+  ASSERT_EQ(result.size(), 10);
+  EXPECT_DOUBLE_EQ(result[0], 1.0);
+  EXPECT_DOUBLE_EQ(result[9], 10.0);
+}
+
+TEST(XmlHelpers, CopyNodeRejectsNullDestination)
+{
+  tinyxml2::XMLDocument srcDoc;
+  srcDoc.InsertEndChild(srcDoc.NewElement("root"));
+
+  EXPECT_FALSE(copyNode(nullptr, srcDoc));
+}
+
+TEST(XmlHelpers, CopyNodeRejectsUncloneableNode)
+{
+  tinyxml2::XMLDocument destDoc;
+  tinyxml2::XMLDocument srcDoc;
+
+  EXPECT_FALSE(copyNode(&destDoc, srcDoc));
+}
+
+TEST(XmlHelpers, CopyNodeRejectsChildCloneFailure)
+{
+  tinyxml2::XMLDocument doc;
+  auto* destParent = doc.NewElement("dest");
+  doc.InsertEndChild(destParent);
+
+  auto* src = new CloneableNode(&doc);
+  auto* child = new FailingCloneNode(&doc);
+  src->AttachChild(child);
+
+  EXPECT_FALSE(copyNode(destParent, *src));
+  delete src;
+  delete child;
+}
+
+TEST(XmlHelpers, CopyChildNodesRejectsNullDestination)
+{
+  tinyxml2::XMLDocument srcDoc;
+  tinyxml2::XMLElement* root = srcDoc.NewElement("root");
+  srcDoc.InsertEndChild(root);
+  root->InsertEndChild(srcDoc.NewElement("child"));
+
+  EXPECT_FALSE(copyChildNodes(nullptr, srcDoc));
 }

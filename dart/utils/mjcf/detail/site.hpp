@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_SITE_HPP_
 #define DART_UTILS_MJCF_DETAIL_SITE_HPP_
 
+#include <dart/utils/export.hpp>
 #include <dart/utils/mjcf/detail/compiler.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
 #include <dart/utils/mjcf/detail/types.hpp>
@@ -51,7 +52,7 @@ namespace detail {
 
 class Body;
 
-class Site final
+class DART_UTILS_API Site final
 {
 public:
   /// Default constructor

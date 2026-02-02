@@ -119,6 +119,39 @@ TEST(LcpSolversStress, RandomSpdStandardProblems)
 }
 
 //==============================================================================
+TEST(LcpSolversStress, DantzigHandlesOddSizedStandardProblem)
+{
+  std::mt19937 rng(246u);
+  const int n = 7;
+  const Eigen::MatrixXd A = MakeRandomSpdMatrix(n, rng);
+
+  Eigen::VectorXd xStar(n);
+  for (int i = 0; i < n; ++i) {
+    xStar[i] = Uniform(rng, 0.15, 0.85);
+  }
+
+  const Eigen::VectorXd b = A * xStar;
+  const Eigen::VectorXd lo = Eigen::VectorXd::Zero(n);
+  const Eigen::VectorXd hi
+      = Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity());
+  const Eigen::VectorXi findex = Eigen::VectorXi::Constant(n, -1);
+  const LcpProblem problem(A, b, lo, hi, findex);
+
+  DantzigSolver dantzig;
+  LcpOptions options = dantzig.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = true;
+  options.absoluteTolerance = 1e-8;
+  options.complementarityTolerance = 1e-6;
+
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
+  const auto result = dantzig.solve(problem, x, options);
+  ASSERT_TRUE(result.succeeded()) << result.message;
+  ExpectFeasibleSolution(problem, x, 1e-6);
+  EXPECT_NEAR((x - xStar).lpNorm<Eigen::Infinity>(), 0.0, 1e-6);
+}
+
+//==============================================================================
 TEST(LcpSolversStress, RandomSpdFrictionIndexProblems)
 {
   std::mt19937 rng(456u);

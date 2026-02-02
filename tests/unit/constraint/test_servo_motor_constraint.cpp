@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/world.hpp>
+
 #include <dart/constraint/servo_motor_constraint.hpp>
 
 #include <dart/dynamics/revolute_joint.hpp>
@@ -307,4 +309,34 @@ TEST(ServoMotorConstraint, InformationAndImpulseFlow)
 
   constraint.unexcite();
   EXPECT_FALSE(skel->isImpulseApplied());
+}
+
+TEST(ServoMotorConstraint, WorldStepTargetsVelocityAndRespectsForceLimits)
+{
+  auto world = simulation::World::create();
+  ASSERT_NE(world, nullptr);
+  world->setTimeStep(1e-3);
+
+  auto skel = Skeleton::create("servo_world");
+  auto pair = skel->createJointAndBodyNodePair<RevoluteJoint>();
+  auto* joint = pair.first;
+  joint->setAxis(Eigen::Vector3d::UnitZ());
+  joint->setActuatorType(Joint::SERVO);
+  joint->setForceLowerLimit(0, -2.0);
+  joint->setForceUpperLimit(0, 2.0);
+  joint->setCommand(0, 5.0);
+
+  world->addSkeleton(skel);
+
+  const double initialVelocity = joint->getVelocity(0);
+  for (int i = 0; i < 20; ++i) {
+    world->step();
+  }
+
+  EXPECT_GT(joint->getVelocity(0), initialVelocity);
+  const double impulse = joint->getConstraintImpulse(0);
+  EXPECT_TRUE(std::isfinite(impulse));
+  EXPECT_LE(
+      std::abs(impulse),
+      joint->getForceUpperLimit(0) * world->getTimeStep() + 1e-12);
 }

@@ -25,10 +25,14 @@ dart_add_test("unit" UNIT_collision_Contact collision/test_contact.cpp)
 
 if(DART_HAVE_BULLET)
   dart_add_test("unit" UNIT_collision_BulletContact collision/test_bullet_contact.cpp)
+  dart_add_test(
+    "unit" UNIT_collision_BulletCollisionShapes collision/test_bullet_collision_shapes.cpp)
 endif()
 
 if(DART_HAVE_ODE)
   dart_add_test("unit" UNIT_collision_OdeHeightmap collision/test_ode_heightmap.cpp)
+  dart_add_test(
+    "unit" UNIT_collision_OdeCylinderMesh collision/test_ode_cylinder_mesh.cpp)
 endif()
 
 dart_add_test(
@@ -72,6 +76,7 @@ set(common_unit_sources
   common/test_stopwatch.cpp
   common/test_subject_observer.cpp
   common/test_string.cpp
+  common/test_template_coverage.cpp
   common/test_uri.cpp
   common/test_version_counter.cpp
 )
@@ -110,6 +115,8 @@ dart_add_test("unit" UNIT_constraint_ServoMotorConstraint constraint/test_servo_
 dart_add_test("unit" UNIT_constraint_ConstrainedGroup constraint/test_constrained_group.cpp)
 dart_add_test(
   "unit" UNIT_constraint_SoftContactConstraint constraint/test_soft_contact_constraint.cpp)
+dart_add_test(
+  "unit" UNIT_constraint_CouplerConstraint constraint/test_coupler_constraint.cpp)
 
 # ==============================================================================
 # Dynamics Tests
@@ -119,6 +126,8 @@ dart_add_test(
   "unit" UNIT_dynamics_BodyNodeExternalForce dynamics/test_body_node_external_force.cpp)
 dart_add_test("unit" UNIT_dynamics_Inertia dynamics/test_inertia.cpp)
 dart_add_test("unit" UNIT_dynamics_ScrewJoint dynamics/test_screw_joint.cpp)
+dart_add_test("unit" UNIT_dynamics_BallJoint dynamics/test_ball_joint.cpp)
+dart_add_test("unit" UNIT_dynamics_UniversalJoint dynamics/test_universal_joint.cpp)
 dart_add_test("unit" UNIT_dynamics_ShapeNodePtr dynamics/test_shape_node_ptr.cpp)
 dart_add_test("unit" UNIT_dynamics_BodyNodePtr dynamics/test_body_node_ptr.cpp)
 dart_add_test("unit" UNIT_dynamics_NodePtr dynamics/test_node_ptr.cpp)
@@ -135,6 +144,7 @@ dart_add_test("unit" UNIT_dynamics_SkeletonClone dynamics/test_skeleton_clone.cp
 dart_add_test("unit" UNIT_dynamics_SkeletonAccessors dynamics/test_skeleton_accessors.cpp)
 dart_add_test("unit" UNIT_dynamics_SkeletonProperties dynamics/test_skeleton_properties.cpp)
 dart_add_test("unit" UNIT_dynamics_BodyNodeProperties dynamics/test_body_node_properties.cpp)
+dart_add_test("unit" UNIT_dynamics_BasicNodeManager dynamics/test_basic_node_manager.cpp)
 dart_add_test("unit" UNIT_dynamics_Noexcept dynamics/test_noexcept.cpp)
 dart_add_test(
   "unit" UNIT_dynamics_BodyNodeCollisionSignals dynamics/test_body_node_collision_signals.cpp)
@@ -173,7 +183,6 @@ dart_add_test("unit" UNIT_dynamics_EulerJoint dynamics/test_euler_joint.cpp)
 dart_add_test("unit" UNIT_dynamics_PlanarJoint dynamics/test_planar_joint.cpp)
 dart_add_test("unit" UNIT_dynamics_ShapeFrame dynamics/test_shape_frame.cpp)
 dart_add_test("unit" UNIT_dynamics_Entity dynamics/test_entity.cpp)
-
 # Additional dynamics tests
 if(TARGET dart-utils-urdf)
   dart_add_test("unit" UNIT_dynamics_CreateShapeNodeApi dynamics/test_create_shape_node_api.cpp)
@@ -227,6 +236,9 @@ dart_build_tests(
     math/lcp/test_pgs.cpp
     math/lcp/test_pivot_matrix.cpp
     math/lcp/test_additional_solvers.cpp
+    math/lcp/test_lcp_validation_and_solvers.cpp
+    math/lcp/test_lcp_newton_solvers.cpp
+    math/lcp/test_lcp_projection_solvers.cpp
 )
 
 # ==============================================================================

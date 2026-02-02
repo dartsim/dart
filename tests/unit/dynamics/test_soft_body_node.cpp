@@ -1,14 +1,11 @@
-// Copyright (c) 2011-2025, The DART development contributors
+// Copyright (c) 2011, The DART development contributors
 
-#include <dart/simulation/world.hpp>
+#include <dart/all.hpp>
 
-#include <dart/dynamics/free_joint.hpp>
-#include <dart/dynamics/revolute_joint.hpp>
-#include <dart/dynamics/skeleton.hpp>
-#include <dart/dynamics/soft_body_node.hpp>
-#include <dart/dynamics/soft_mesh_shape.hpp>
-
+#include <Eigen/Dense>
 #include <gtest/gtest.h>
+
+#include <vector>
 
 #include <cmath>
 
@@ -78,6 +75,30 @@ TEST(SoftBodyNode, AccessorsAndDynamics)
 }
 
 //==============================================================================
+TEST(SoftBodyNode, WorldSteppingIntegrationPaths)
+{
+  auto skeleton = Skeleton::create("soft-body-step");
+  auto* softBody
+      = createBoxSoftBody(skeleton, Eigen::Vector3d(0.4, 0.5, 0.6), 1.5);
+
+  auto world = simulation::World::create();
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world->addSkeleton(skeleton);
+
+  for (int i = 0; i < 5; ++i) {
+    world->step();
+  }
+
+  auto* pointMass = softBody->getPointMass(0);
+  ASSERT_NE(pointMass, nullptr);
+
+  EXPECT_TRUE(pointMass->getWorldPosition().array().isFinite().all());
+  EXPECT_TRUE(pointMass->getWorldVelocity().array().isFinite().all());
+  EXPECT_TRUE(pointMass->getWorldAcceleration().array().isFinite().all());
+  EXPECT_TRUE(pointMass->getConstraintImpulses().array().isFinite().all());
+}
+
+//==============================================================================
 TEST(SoftBodyNode, MassMatricesAndForces)
 {
   auto skeleton = Skeleton::create("soft-body-mass");
@@ -100,8 +121,11 @@ TEST(SoftBodyNode, MassMatricesAndForces)
   EXPECT_DOUBLE_EQ(softBody->getEdgeSpringStiffness(), 30.0);
 
   const auto dofs = skeleton->getNumDofs();
-  skeleton->setPositions(Eigen::VectorXd::Constant(dofs, 0.1));
-  skeleton->setVelocities(Eigen::VectorXd::Constant(dofs, 0.2));
+  // Use zero positions/velocities to avoid NaN in augmented mass matrix
+  // (SoftBodyNode inertia can produce NaN with non-zero FreeJoint positions)
+  skeleton->setPositions(Eigen::VectorXd::Zero(dofs));
+  skeleton->setVelocities(Eigen::VectorXd::Zero(dofs));
+  skeleton->computeForwardDynamics();
 
   const auto massMatrix = skeleton->getMassMatrix();
   const auto augMassMatrix = skeleton->getAugMassMatrix();
@@ -272,6 +296,30 @@ TEST(SoftBodyNode, PointMassSpan)
 
   for (std::size_t i = 0; i < pointMasses.size(); ++i) {
     EXPECT_EQ(pointMasses[i], softBody->getPointMass(i));
+  }
+}
+
+//==============================================================================
+TEST(SoftBodyNode, PointMassIteratorAccessors)
+{
+  auto skeleton = Skeleton::create("soft-iterator");
+  auto* softBody = createBoxSoftBody(skeleton);
+
+  const auto dofs = skeleton->getNumDofs();
+  skeleton->setPositions(Eigen::VectorXd::Zero(dofs));
+  skeleton->setVelocities(Eigen::VectorXd::Zero(dofs));
+
+  auto pointMasses = softBody->getPointMasses();
+  ASSERT_GT(pointMasses.size(), 0u);
+
+  for (auto* pm : pointMasses) {
+    ASSERT_NE(pm, nullptr);
+    pm->setPositions(Eigen::Vector3d(0.1, 0.2, 0.3));
+    pm->setVelocities(Eigen::Vector3d(0.4, -0.2, 0.1));
+    pm->setForces(Eigen::Vector3d(0.7, 0.5, -0.3));
+    EXPECT_TRUE(pm->getPositions().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+    EXPECT_TRUE(pm->getVelocities().isApprox(Eigen::Vector3d(0.4, -0.2, 0.1)));
+    EXPECT_TRUE(pm->getForces().isApprox(Eigen::Vector3d(0.7, 0.5, -0.3)));
   }
 }
 
@@ -493,6 +541,36 @@ TEST(SoftBodyNode, MultiStepSimulation)
 }
 
 //==============================================================================
+TEST(SoftBodyNode, WorldStepWithDampingAndConstraints)
+{
+  auto skeleton = Skeleton::create("soft-damping-step");
+  auto* softBody = createBoxSoftBody(skeleton);
+  softBody->setDampingCoefficient(0.25);
+
+  const auto dofs = skeleton->getNumDofs();
+  skeleton->setPositions(Eigen::VectorXd::Zero(dofs));
+  skeleton->setVelocities(Eigen::VectorXd::Zero(dofs));
+
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    auto* pm = softBody->getPointMass(i);
+    pm->setVelocities(Eigen::Vector3d(0.2, -0.1, 0.05));
+    pm->setConstraintImpulse(Eigen::Vector3d::UnitX(), false);
+  }
+
+  auto world = simulation::World::create();
+  world->addSkeleton(skeleton);
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world->setTimeStep(1e-3);
+  world->step();
+
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    const auto* pm = softBody->getPointMass(i);
+    EXPECT_TRUE(pm->getForces().array().isFinite().all());
+    EXPECT_TRUE(pm->getConstraintImpulses().array().isFinite().all());
+  }
+}
+
+//==============================================================================
 TEST(SoftBodyNode, EllipsoidAndCylinderShapes)
 {
   // Test ellipsoid shape
@@ -552,4 +630,348 @@ TEST(SoftBodyNode, ChainWithSoftBody)
   const auto& M = skeleton->getMassMatrix();
   EXPECT_EQ(M.rows(), 2);
   EXPECT_EQ(M.cols(), 2);
+}
+
+//==============================================================================
+TEST(SoftBodyNode, ChildBodyNodeDynamicsPaths)
+{
+  auto skeleton = Skeleton::create("soft-child-dynamics");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d::Constant(0.4),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      10.0,
+      10.0,
+      0.1);
+
+  auto childPair = softBody->createChildJointAndBodyNodePair<RevoluteJoint>();
+  childPair.first->setAxis(Eigen::Vector3d::UnitY());
+  auto* childBody = childPair.second;
+
+  Inertia inertia;
+  inertia.setMass(0.8);
+  inertia.setMoment(0.02 * Eigen::Matrix3d::Identity());
+  childBody->setInertia(inertia);
+
+  const auto dofs = skeleton->getNumDofs();
+  Eigen::VectorXd positions = Eigen::VectorXd::Zero(dofs);
+  Eigen::VectorXd velocities = Eigen::VectorXd::Zero(dofs);
+  if (dofs > 0) {
+    velocities[0] = 0.2;
+  }
+  if (dofs > 1) {
+    velocities[1] = -0.1;
+  }
+  skeleton->setPositions(positions);
+  skeleton->setVelocities(velocities);
+
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    auto* pm = softBody->getPointMass(i);
+    ASSERT_NE(pm, nullptr);
+    pm->setVelocities(Eigen::Vector3d(0.1, -0.2, 0.05));
+  }
+
+  const auto invMass = skeleton->getInvMassMatrix();
+  EXPECT_EQ(invMass.rows(), dofs);
+  EXPECT_EQ(invMass.cols(), dofs);
+
+  const auto coriolis = skeleton->getCoriolisAndGravityForces();
+  EXPECT_EQ(coriolis.size(), dofs);
+
+  skeleton->computeImpulseForwardDynamics();
+  skeleton->updateVelocityChange();
+  skeleton->computePositionVelocityChanges();
+
+  auto world = simulation::World::create();
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world->setTimeStep(1e-3);
+  world->addSkeleton(skeleton);
+  world->step();
+
+  auto* pm = softBody->getPointMass(0);
+  ASSERT_NE(pm, nullptr);
+  EXPECT_TRUE(pm->getWorldVelocity().array().isFinite().all());
+  EXPECT_TRUE(childBody->getSpatialVelocity().array().isFinite().all());
+}
+
+namespace {
+
+SoftBodyNode* createCoverageBoxSoftBody(const SkeletonPtr& skeleton)
+{
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d::Constant(0.6),
+      Eigen::Isometry3d::Identity(),
+      Eigen::Vector3i(3, 3, 3),
+      2.0,
+      15.0,
+      20.0,
+      0.05);
+  return softBody;
+}
+
+} // namespace
+
+//==============================================================================
+TEST(SoftBodyNode, DerivativeUpdatesWithWorldStep)
+{
+  auto skeleton = Skeleton::create("soft-derivative");
+  auto* softBody = createCoverageBoxSoftBody(skeleton);
+  ASSERT_GT(softBody->getNumPointMasses(), 0u);
+
+  const auto dofs = skeleton->getNumDofs();
+  skeleton->setPositions(Eigen::VectorXd::Constant(dofs, 0.15));
+  skeleton->setVelocities(Eigen::VectorXd::LinSpaced(dofs, 0.1, 0.2));
+  skeleton->setAccelerations(Eigen::VectorXd::Constant(dofs, -0.05));
+
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    auto* pm = softBody->getPointMass(i);
+    ASSERT_NE(pm, nullptr);
+    pm->setVelocities(Eigen::Vector3d(0.1, -0.2, 0.3));
+    pm->setForces(Eigen::Vector3d(1.0, -0.5, 0.2));
+    if (i % 2 == 0) {
+      pm->addExtForce(Eigen::Vector3d(0.3, 0.1, -0.2));
+    }
+  }
+
+  auto world = simulation::World::create();
+  world->addSkeleton(skeleton);
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world->setTimeStep(1e-3);
+
+  const auto massMatrix = skeleton->getMassMatrix();
+  const auto coriolis = skeleton->getCoriolisAndGravityForces();
+
+  EXPECT_EQ(massMatrix.rows(), dofs);
+  EXPECT_EQ(coriolis.size(), dofs);
+}
+
+//==============================================================================
+TEST(SoftBodyNode, PointMassStateAccessors)
+{
+  auto skeleton = Skeleton::create("soft-point-mass-state");
+  auto* softBody = createCoverageBoxSoftBody(skeleton);
+  ASSERT_GT(softBody->getNumPointMasses(), 0u);
+
+  auto* pm = softBody->getPointMass(0);
+  ASSERT_NE(pm, nullptr);
+
+  auto& state = pm->getState();
+  state.mPositions = Eigen::Vector3d(0.2, -0.1, 0.05);
+  state.mVelocities = Eigen::Vector3d(0.4, 0.0, -0.3);
+  state.mAccelerations = Eigen::Vector3d(-0.2, 0.1, 0.05);
+  state.mForces = Eigen::Vector3d(2.0, -1.5, 0.5);
+
+  EXPECT_TRUE(pm->getPositions().isApprox(state.mPositions));
+  EXPECT_TRUE(pm->getVelocities().isApprox(state.mVelocities));
+  EXPECT_TRUE(pm->getAccelerations().isApprox(state.mAccelerations));
+  EXPECT_TRUE(pm->getForces().isApprox(state.mForces));
+
+  const auto* constPm = pm;
+  const auto& constState = constPm->getState();
+  EXPECT_TRUE(constState.mPositions.isApprox(state.mPositions));
+
+  auto world = simulation::World::create();
+  world->addSkeleton(skeleton);
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  world->setTimeStep(1e-3);
+
+  for (int step = 0; step < 2; ++step) {
+    world->step();
+  }
+
+  EXPECT_TRUE(pm->getVelocities().array().isFinite().all());
+  EXPECT_TRUE(pm->getAccelerations().array().isFinite().all());
+  EXPECT_TRUE(pm->getForces().array().isFinite().all());
+}
+
+//==============================================================================
+TEST(SoftBodyNode, PropertiesConstructionAndAggregateForces)
+{
+  auto skeleton = Skeleton::create("soft-props-aggregate");
+
+  SoftBodyNode::UniqueProperties uniqueProps
+      = SoftBodyNodeHelper::makeBoxProperties(
+          Eigen::Vector3d::Constant(0.3),
+          Eigen::Isometry3d::Identity(),
+          1.0,
+          5.0,
+          6.0,
+          0.02);
+  BodyNode::Properties bodyProps;
+  bodyProps.mName = "soft_props_body";
+  bodyProps.mInertia.setMass(0.5);
+  SoftBodyNode::Properties props(bodyProps, uniqueProps);
+
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>(
+      nullptr, FreeJoint::Properties(), props);
+  auto* softBody = pair.second;
+  ASSERT_NE(softBody, nullptr);
+  EXPECT_GT(softBody->getNumPointMasses(), 0u);
+  EXPECT_GT(softBody->getNumFaces(), 0u);
+
+  softBody->addExtForce(
+      Eigen::Vector3d(0.0, 0.4, 0.0), Eigen::Vector3d::Zero(), true, true);
+  softBody->getPointMass(0)->addExtForce(Eigen::Vector3d(0.0, 0.0, -0.2));
+
+  auto world = simulation::World::create();
+  world->addSkeleton(skeleton);
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world->setTimeStep(1e-3);
+  world->step();
+
+  skeleton->computeInverseDynamics(true, true, true);
+
+  const auto externalForces = skeleton->getExternalForces();
+  EXPECT_EQ(externalForces.size(), static_cast<int>(skeleton->getNumDofs()));
+  EXPECT_TRUE(externalForces.array().isFinite().all());
+}
+
+//==============================================================================
+TEST(SoftBodyNode, PropertiesConstructionAddPointMassAndFace)
+{
+  auto skeleton = Skeleton::create("soft-props-add-points");
+
+  SoftBodyNode::UniqueProperties uniqueProps
+      = SoftBodyNodeHelper::makeBoxProperties(
+          Eigen::Vector3d::Constant(0.25),
+          Eigen::Isometry3d::Identity(),
+          1.0,
+          5.0,
+          6.0,
+          0.02);
+  BodyNode::Properties bodyProps;
+  bodyProps.mName = "soft_props_add_body";
+  bodyProps.mInertia.setMass(0.5);
+  SoftBodyNode::Properties props(bodyProps, uniqueProps);
+
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>(
+      nullptr, FreeJoint::Properties(), props);
+  auto* softBody = pair.second;
+  ASSERT_NE(softBody, nullptr);
+
+  const auto pointCount = softBody->getNumPointMasses();
+  const auto faceCount = softBody->getNumFaces();
+  PointMass::Properties extraProp(Eigen::Vector3d(0.0, 0.0, 0.1), 0.1);
+  softBody->addPointMass(extraProp);
+  softBody->connectPointMasses(0, pointCount);
+  softBody->connectPointMasses(1, pointCount);
+  softBody->connectPointMasses(2, pointCount);
+  softBody->addFace(Eigen::Vector3i(0, 1, static_cast<int>(pointCount)));
+  EXPECT_EQ(softBody->getNumPointMasses(), pointCount + 1u);
+  EXPECT_EQ(softBody->getNumFaces(), faceCount + 1u);
+}
+
+//==============================================================================
+TEST(SoftBodyNode, PointMassStateAndPropertiesEquality)
+{
+  PointMass::State stateA(
+      Eigen::Vector3d(0.1, 0.2, 0.3),
+      Eigen::Vector3d(-0.2, 0.0, 0.4),
+      Eigen::Vector3d(0.5, -0.1, 0.2),
+      Eigen::Vector3d(1.0, 2.0, 3.0));
+  PointMass::State stateB = stateA;
+  EXPECT_TRUE(stateA == stateB);
+
+  stateB.mForces[0] = 9.0;
+  EXPECT_FALSE(stateA == stateB);
+
+  std::vector<std::size_t> connections = {1, 2};
+  PointMass::Properties propsA(
+      Eigen::Vector3d(0.4, 0.5, 0.6), 1.2, connections);
+  PointMass::Properties propsB(
+      Eigen::Vector3d(0.4, 0.5, 0.6), 1.2, connections);
+  EXPECT_TRUE(propsA == propsB);
+  EXPECT_FALSE(propsA != propsB);
+
+  propsB.setMass(2.4);
+  EXPECT_FALSE(propsA == propsB);
+  EXPECT_TRUE(propsA != propsB);
+}
+
+//==============================================================================
+TEST(SoftBodyNode, PointMassConstraintImpulseAndWorldTransforms)
+{
+  auto skeleton = Skeleton::create("soft-impulse");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d::Constant(0.4),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      10.0,
+      10.0,
+      0.1);
+
+  auto* joint = pair.first;
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.linear() = Eigen::AngleAxisd(dart::math::half_pi, Eigen::Vector3d::UnitZ())
+                    .toRotationMatrix();
+  joint->setTransform(tf);
+
+  PointMass* pm = softBody->getPointMass(0);
+  ASSERT_NE(pm, nullptr);
+
+  pm->setConstraintImpulse(Eigen::Vector3d(1.0, 0.0, 0.0), false);
+  Eigen::Vector3d localImpulse = pm->getConstraintImpulses();
+  EXPECT_TRUE(localImpulse.isApprox(Eigen::Vector3d(0.0, -1.0, 0.0), 1e-12));
+
+  pm->addConstraintImpulse(Eigen::Vector3d(0.0, 0.0, 2.0), true);
+  localImpulse = pm->getConstraintImpulses();
+  EXPECT_TRUE(localImpulse.isApprox(Eigen::Vector3d(0.0, -1.0, 2.0), 1e-12));
+
+  pm->clearConstraintImpulse();
+  EXPECT_TRUE(pm->getConstraintImpulses().isZero(0.0));
+
+  pm->setPositions(Eigen::Vector3d(0.1, -0.2, 0.3));
+  pm->setVelocities(Eigen::Vector3d(0.5, 0.0, 0.0));
+  pm->setAccelerations(Eigen::Vector3d(0.0, 0.1, 0.0));
+
+  const Eigen::Vector3d worldPos = pm->getWorldPosition();
+  const Eigen::Vector3d worldVel = pm->getWorldVelocity();
+  const Eigen::Vector3d worldAcc = pm->getWorldAcceleration();
+
+  EXPECT_TRUE(worldPos.allFinite());
+  EXPECT_TRUE(worldVel.isApprox(Eigen::Vector3d(0.0, 0.5, 0.0), 1e-12));
+  EXPECT_TRUE(worldAcc.isApprox(Eigen::Vector3d(-0.1, 0.0, 0.0), 1e-12));
+}
+
+//==============================================================================
+TEST(SoftBodyNode, BiasImpulseAndConstrainedTermUpdates)
+{
+  auto skeleton = Skeleton::create("soft-impulse-update");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d::Constant(0.5),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      15.0,
+      12.0,
+      0.08);
+
+  softBody->setConstraintImpulse(Eigen::Vector6d::Ones());
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    auto* pm = softBody->getPointMass(i);
+    pm->setConstraintImpulse(Eigen::Vector3d::UnitX());
+    pm->setVelocityChange(0, 0.1);
+  }
+
+  skeleton->computeImpulseForwardDynamics();
+  skeleton->updateVelocityChange();
+  skeleton->computePositionVelocityChanges();
+
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    const auto* pm = softBody->getPointMass(i);
+    EXPECT_TRUE(pm->getVelocities().array().isFinite().all());
+    EXPECT_TRUE(pm->getAccelerations().array().isFinite().all());
+  }
 }

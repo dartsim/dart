@@ -1,7 +1,8 @@
 # Reference: https://docs.codecov.com/docs/codecovyml-reference
 #
 # Test Coverage Audit: docs/dev_tasks/test-coverage-audit/
-# Using 'auto' targets to track coverage trends without blocking PRs
+# Project: 'auto' ratchets coverage upward over time
+# Patch: 80% floor for new/changed lines (industry standard)
 
 codecov:
   require_ci_to_pass: true
@@ -18,8 +19,8 @@ coverage:
         threshold: 2% # Allow 2% fluctuation from baseline
     patch:
       default:
-        target: auto
-        threshold: 5% # More lenient for patches
+        target: 80%
+        threshold: 5% # Effective floor: 75% (accommodates C++ exception/template paths)
 
   ignore:
     # Test code (shouldn't count toward coverage)

@@ -44,12 +44,17 @@
 
 #include <dart/math/constants.hpp>
 
+#include <dart/common/diagnostics.hpp>
+
+#include <dart/all.hpp>
+
 #include <Eigen/Core>
 #include <gtest/gtest.h>
 
 #include <optional>
 
 using namespace dart::dynamics;
+using namespace dart::simulation;
 
 static SkeletonPtr createBodyNodeSkeleton()
 {
@@ -57,6 +62,30 @@ static SkeletonPtr createBodyNodeSkeleton()
   auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
   pair.second->setName("body");
   return skeleton;
+}
+
+TEST(BodyNodeProperties, SetCompositeProperties)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  const auto properties = body->getCompositeProperties();
+  body->setProperties(properties);
+
+  EXPECT_EQ(body->getSkeleton().get(), skeleton.get());
+}
+
+TEST(BodyNodeProperties, TransformDerivativesCache)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  skeleton->setPositions(
+      Eigen::VectorXd::Constant(skeleton->getNumDofs(), 0.1));
+
+  const Eigen::Matrix4d first = body->getWorldTransformDerivative(0);
+  const Eigen::Matrix4d second = body->getWorldTransformDerivative(0);
+  EXPECT_TRUE(first.isApprox(second));
 }
 
 TEST(BodyNodeProperties, MassAndInertia)
@@ -207,6 +236,84 @@ TEST(BodyNodeProperties, ShapeNodeAccessors)
   EXPECT_EQ(body->getNumShapeNodesWith<CollisionAspect>(), 2u);
 }
 
+TEST(BodyNodeProperties, ConstNodeAndShapeAccessors)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(0.3, 0.4, 0.5));
+  body->createShapeNodeWith<VisualAspect>(box);
+
+  const BodyNode& constBody = *body;
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const auto shapeNodes = constBody.getShapeNodes();
+  DART_SUPPRESS_DEPRECATED_END
+  EXPECT_EQ(shapeNodes.size(), 1u);
+  EXPECT_EQ(shapeNodes[0]->getShape().get(), box.get());
+
+  const auto nodes = constBody.getNodes();
+  EXPECT_GE(nodes.size(), 1u);
+
+  const auto mutableNodes = body->getNodes();
+  EXPECT_GE(mutableNodes.size(), 1u);
+}
+
+TEST(BodyNodeProperties, ConstSpatialAccessors)
+{
+  auto skeleton = Skeleton::create("const_body_accessors");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  rootPair.second->setName("root");
+
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+  childPair.first->setAxis(Eigen::Vector3d::UnitZ());
+  childPair.second->setName("child");
+
+  skeleton->setVelocities(Eigen::VectorXd::Ones(skeleton->getNumDofs()) * 0.1);
+  skeleton->setAccelerations(
+      Eigen::VectorXd::Constant(skeleton->getNumDofs(), 0.2));
+
+  const BodyNode* constRoot = rootPair.second;
+  const BodyNode* constChild = childPair.second;
+
+  EXPECT_EQ(constRoot->getSkeleton().get(), skeleton.get());
+  EXPECT_EQ(constChild->getParentBodyNode(), rootPair.second);
+  EXPECT_EQ(constChild->getParentJoint(), childPair.first);
+  EXPECT_EQ(constRoot->getNumChildBodyNodes(), 1u);
+  EXPECT_EQ(constRoot->getChildBodyNode(0), childPair.second);
+
+  const auto& relVel = constChild->getRelativeSpatialVelocity();
+  EXPECT_TRUE(relVel.array().isFinite().all());
+  const auto& relAcc = constChild->getRelativeSpatialAcceleration();
+  EXPECT_TRUE(relAcc.array().isFinite().all());
+  const auto& primaryAcc = constChild->getPrimaryRelativeAcceleration();
+  EXPECT_TRUE(primaryAcc.array().isFinite().all());
+  const auto& partialAcc = constChild->getPartialAcceleration();
+  EXPECT_TRUE(partialAcc.array().isFinite().all());
+
+  const auto& jacobian = constChild->getJacobian();
+  EXPECT_EQ(jacobian.rows(), 6);
+  EXPECT_EQ(jacobian.cols(), static_cast<int>(skeleton->getNumDofs()));
+
+  const auto& worldJacobian = constChild->getWorldJacobian();
+  EXPECT_EQ(worldJacobian.rows(), 6);
+  EXPECT_EQ(worldJacobian.cols(), static_cast<int>(skeleton->getNumDofs()));
+
+  const auto& jacobianSpatialDeriv = constChild->getJacobianSpatialDeriv();
+  EXPECT_EQ(jacobianSpatialDeriv.rows(), 6);
+  EXPECT_EQ(
+      jacobianSpatialDeriv.cols(), static_cast<int>(skeleton->getNumDofs()));
+
+  const auto& jacobianClassicDeriv = constChild->getJacobianClassicDeriv();
+  EXPECT_EQ(jacobianClassicDeriv.rows(), 6);
+  EXPECT_EQ(
+      jacobianClassicDeriv.cols(), static_cast<int>(skeleton->getNumDofs()));
+
+  const auto& bodyVelocityChange = constChild->getBodyVelocityChange();
+  EXPECT_TRUE(bodyVelocityChange.array().isFinite().all());
+}
+
 TEST(BodyNodeProperties, EachShapeNodeIteration)
 {
   auto skeleton = createBodyNodeSkeleton();
@@ -350,6 +457,51 @@ static SkeletonPtr createChainSkeleton(const std::string& name, int numBodies)
   }
 
   return skeleton;
+}
+
+TEST(BodyNodeProperties, MoveTransformJacobianAndExternalForce)
+{
+  auto source = createChainSkeleton("move_chain", 2);
+  BodyNode* moving = source->getBodyNode("body1");
+
+  auto target = Skeleton::create("move_target");
+  auto targetRoot = target->createJointAndBodyNodePair<FreeJoint>();
+
+  EXPECT_TRUE(moving->moveTo(target, targetRoot.second));
+  EXPECT_EQ(moving->getSkeleton(), target);
+
+  auto refFrame = SimpleFrame::createShared(Frame::World(), "move_ref");
+  refFrame->setTranslation(Eigen::Vector3d(0.05, 0.0, -0.05));
+
+  const auto worldTf = moving->getTransform(Frame::World());
+  const auto refTf = moving->getTransform(refFrame.get());
+  EXPECT_TRUE(worldTf.matrix().allFinite());
+  EXPECT_TRUE(refTf.matrix().allFinite());
+
+  const auto linearJac = moving->getLinearJacobian();
+  const auto angularJac = moving->getAngularJacobian();
+  EXPECT_EQ(linearJac.rows(), 3);
+  EXPECT_EQ(angularJac.rows(), 3);
+
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(0.2, 0.2, 0.2));
+  ShapeNode* shapeNode = moving->createShapeNodeWith<VisualAspect>(box);
+  ASSERT_NE(shapeNode, nullptr);
+  EXPECT_EQ(moving->getNumShapeNodes(), 1u);
+  shapeNode->remove();
+  EXPECT_EQ(moving->getNumShapeNodes(), 0u);
+
+  moving->setExtForce(
+      Eigen::Vector3d(1.0, 0.0, 0.0), Eigen::Vector3d::Zero(), true, true);
+  moving->addExtForce(
+      Eigen::Vector3d(0.0, 1.0, 0.0), Eigen::Vector3d::Zero(), true, true);
+  target->computeForwardDynamics();
+
+  const auto& bodyForce = moving->getBodyForce();
+  EXPECT_TRUE(bodyForce.array().isFinite().all());
+
+  SkeletonPtr removed = moving->remove("removed_move");
+  ASSERT_NE(removed, nullptr);
+  EXPECT_EQ(removed->getNumBodyNodes(), 1u);
 }
 
 TEST(BodyNodeStructural, SplitCreatesNewSkeleton)
@@ -1540,6 +1692,57 @@ TEST(BodyNodeChildren, GetChildBodyNode)
   EXPECT_EQ(constBody->getChildBodyNode(0), child.second);
 }
 
+//==============================================================================
+TEST(BodyNodeConstAccessors, ParentChildAndSpatialFrames)
+{
+  auto skeleton = Skeleton::create("const_body_access");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto childPair
+      = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
+
+  const BodyNode* constChild = childPair.second;
+  EXPECT_EQ(constChild->getParentJoint(), childPair.first);
+  EXPECT_EQ(constChild->getParentBodyNode(), rootPair.second);
+
+  const BodyNode* constRoot = rootPair.second;
+  EXPECT_EQ(constRoot->getChildJoint(0), childPair.first);
+  EXPECT_EQ(constRoot->getChildBodyNode(0), childPair.second);
+
+  rootPair.first->setVelocities(Eigen::Vector6d::Constant(0.1));
+  rootPair.first->setAccelerations(Eigen::Vector6d::Constant(0.2));
+
+  auto frame = SimpleFrame::createShared(Frame::World(), "const_frame");
+  frame->setTranslation(Eigen::Vector3d(0.1, -0.2, 0.3));
+
+  const auto velWorld
+      = constRoot->getSpatialVelocity(Frame::World(), Frame::World());
+  const auto velFrame = constRoot->getSpatialVelocity(frame.get(), frame.get());
+  const auto accWorld
+      = constRoot->getSpatialAcceleration(Frame::World(), Frame::World());
+  const auto accFrame
+      = constRoot->getSpatialAcceleration(frame.get(), frame.get());
+
+  EXPECT_TRUE(velWorld.allFinite());
+  EXPECT_TRUE(velFrame.allFinite());
+  EXPECT_TRUE(accWorld.allFinite());
+  EXPECT_TRUE(accFrame.allFinite());
+}
+
+//==============================================================================
+TEST(NodeConstAccessors, BodyNodeAndSkeletonPtrs)
+{
+  auto skeleton = Skeleton::create("node_const_access");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* marker = pair.second->createMarker(std::string("marker"));
+
+  const Node* constNode = marker;
+  const auto bodyPtr = constNode->getBodyNodePtr();
+  const auto skelPtr = constNode->getSkeleton();
+
+  EXPECT_EQ(bodyPtr.get(), pair.second);
+  EXPECT_EQ(skelPtr.get(), skeleton.get());
+}
+
 // ============================================================================
 // BodyNode Copy/Assignment Tests
 // ============================================================================
@@ -1721,11 +1924,26 @@ TEST(BodyNodeShapeNodes, GetShapeNodesVector)
   body->createShapeNodeWith<VisualAspect>(box);
   body->createShapeNodeWith<CollisionAspect>(sphere);
 
-  // Use getNumShapeNodes instead of deprecated getShapeNodes()
   EXPECT_EQ(body->getNumShapeNodes(), 2u);
 
+  std::vector<ShapeNode*> shapeNodes;
+  shapeNodes.reserve(body->getNumShapeNodes());
+  for (std::size_t i = 0; i < body->getNumShapeNodes(); ++i) {
+    shapeNodes.push_back(body->getShapeNode(i));
+  }
+  EXPECT_EQ(shapeNodes.size(), 2u);
+  EXPECT_EQ(shapeNodes[0], body->getShapeNode(0));
+  EXPECT_EQ(shapeNodes[1], body->getShapeNode(1));
+
   const BodyNode* constBody = body;
-  EXPECT_EQ(constBody->getNumShapeNodes(), 2u);
+  std::vector<const ShapeNode*> constShapeNodes;
+  constShapeNodes.reserve(constBody->getNumShapeNodes());
+  for (std::size_t i = 0; i < constBody->getNumShapeNodes(); ++i) {
+    constShapeNodes.push_back(constBody->getShapeNode(i));
+  }
+  EXPECT_EQ(constShapeNodes.size(), 2u);
+  EXPECT_EQ(constShapeNodes[0], constBody->getShapeNode(0));
+  EXPECT_EQ(constShapeNodes[1], constBody->getShapeNode(1));
 }
 
 // ============================================================================
@@ -1806,4 +2024,299 @@ TEST(BodyNodeTransform, GetWorldTransformSecondDerivative)
   EXPECT_EQ(secondDeriv.rows(), 4);
   EXPECT_EQ(secondDeriv.cols(), 4);
   EXPECT_TRUE(secondDeriv.array().isFinite().all());
+}
+
+TEST(BodyNodeCoverage, GravityModeOff)
+{
+  auto skeleton = Skeleton::create("gravity_mode_test");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  pair.second->setMass(1.0);
+  pair.second->setGravityMode(false);
+  EXPECT_FALSE(pair.second->getGravityMode());
+
+  skeleton->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  skeleton->computeForwardDynamics();
+
+  const Eigen::Vector6d& acc = pair.second->getSpatialAcceleration();
+  EXPECT_TRUE(acc.isApprox(Eigen::Vector6d::Zero(), 1e-10));
+}
+
+TEST(BodyNodeCoverage, AddExtForceGlobalOffset)
+{
+  auto skeleton = Skeleton::create("ext_force_global");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  pair.second->setMass(1.0);
+
+  Eigen::Vector3d globalForce(0.0, 10.0, 0.0);
+  Eigen::Vector3d globalOffset(1.0, 0.0, 0.0);
+
+  pair.second->addExtForce(globalForce, globalOffset, false, false);
+  const Eigen::Vector6d& extForce = pair.second->getExternalForceLocal();
+  EXPECT_GT(extForce.norm(), 0.0);
+
+  pair.second->clearExternalForces();
+  EXPECT_NEAR(pair.second->getExternalForceLocal().norm(), 0.0, 1e-10);
+}
+
+TEST(BodyNodeCoverage, GetNodesConstAndNonConst)
+{
+  auto skeleton = Skeleton::create("get_nodes_test");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  pair.second->createShapeNodeWith<VisualAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+
+  BodyNode* body = pair.second;
+  std::vector<Node*> nodes = body->getNodes();
+  EXPECT_GE(nodes.size(), 1u);
+
+  const BodyNode* constBody = body;
+  std::vector<const Node*> constNodes = constBody->getNodes();
+  EXPECT_EQ(constNodes.size(), nodes.size());
+}
+
+#include <dart/simulation/world.hpp>
+
+#include <dart/dynamics/arrow_shape.hpp>
+#include <dart/dynamics/soft_body_node.hpp>
+
+TEST(NodeLifecycle, ShapeNodeAddAndCount)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(0.3, 0.4, 0.5));
+  ShapeNode* shapeNode
+      = body->createShapeNodeWith<VisualAspect, CollisionAspect>(box);
+  ASSERT_NE(shapeNode, nullptr);
+  EXPECT_EQ(body->getNumShapeNodes(), 1u);
+  EXPECT_EQ(body->getShapeNode(0), shapeNode);
+}
+
+TEST(ArrowShape, SetPropertiesAndPositions)
+{
+  ArrowShape::Properties props;
+  props.mRadius = 0.05;
+  props.mHeadRadiusScale = 0.5;
+  props.mHeadLengthScale = 1.5;
+  props.mMinHeadLength = -0.1;
+  props.mMaxHeadLength = 1.0;
+  props.mDoubleArrow = true;
+
+  ArrowShape arrow(
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d::UnitZ(),
+      props,
+      Eigen::Vector4d::Ones(),
+      6);
+
+  arrow.setPositions(
+      Eigen::Vector3d(0.1, 0.0, 0.0), Eigen::Vector3d(0.1, 0.2, 0.3));
+  EXPECT_TRUE(arrow.getTail().isApprox(Eigen::Vector3d(0.1, 0.0, 0.0)));
+  EXPECT_TRUE(arrow.getHead().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+
+  arrow.setProperties(props);
+  const auto& updated = arrow.getProperties();
+  EXPECT_NEAR(updated.mRadius, 0.05, 1e-12);
+  EXPECT_DOUBLE_EQ(updated.mHeadRadiusScale, 1.0);
+  EXPECT_DOUBLE_EQ(updated.mHeadLengthScale, 1.0);
+  EXPECT_DOUBLE_EQ(updated.mMinHeadLength, 0.0);
+  EXPECT_DOUBLE_EQ(updated.mMaxHeadLength, 1.0);
+  EXPECT_TRUE(updated.mDoubleArrow);
+}
+
+TEST(FreeJoint, SpatialVelocityAndConversions)
+{
+  auto skeleton = Skeleton::create("free_joint_test");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* joint = static_cast<FreeJoint*>(pair.first);
+  ASSERT_NE(joint, nullptr);
+
+  Eigen::Vector6d spatialVel = Eigen::Vector6d::Zero();
+  spatialVel[0] = 0.2;
+  spatialVel[4] = -0.1;
+  joint->setSpatialVelocity(spatialVel, Frame::World(), Frame::World());
+  const Eigen::Vector6d currentVel = pair.second->getSpatialVelocity();
+  EXPECT_TRUE(currentVel.array().isFinite().all());
+  EXPECT_GT(currentVel.norm(), 0.0);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.linear()
+      = Eigen::AngleAxisd(0.1, Eigen::Vector3d::UnitX()).toRotationMatrix();
+  tf.translation() = Eigen::Vector3d(0.2, -0.1, 0.3);
+
+  Eigen::Vector6d positions
+      = joint->convertToPositions(tf, FreeJoint::CoordinateChart::EULER_ZYX);
+  Eigen::Isometry3d tfRoundTrip = joint->convertToTransform(
+      positions, FreeJoint::CoordinateChart::EULER_ZYX);
+  EXPECT_TRUE(tfRoundTrip.translation().isApprox(tf.translation(), 1e-12));
+}
+
+TEST(ZeroDofJoint, WeldJointConstraintImpulsePaths)
+{
+  auto skeleton = Skeleton::create("weld_joint_test");
+  auto pair = skeleton->createJointAndBodyNodePair<WeldJoint>();
+  auto* weldJoint = pair.first;
+  ASSERT_NE(weldJoint, nullptr);
+
+  weldJoint->setConstraintImpulse(0, 1.0);
+  EXPECT_DOUBLE_EQ(weldJoint->getConstraintImpulse(0), 0.0);
+  weldJoint->resetConstraintImpulses();
+
+  Eigen::VectorXd q0;
+  Eigen::VectorXd v;
+  Eigen::VectorXd result;
+  weldJoint->integratePositions(q0, v, 0.01, result);
+  EXPECT_EQ(result.size(), 0);
+
+  const Eigen::Vector6d wrench = weldJoint->getBodyConstraintWrench();
+  EXPECT_TRUE(wrench.array().isFinite().all());
+}
+
+TEST(SoftBodyNode, AggregateAugmentedMassMatrixViaWorldStep)
+{
+  auto world = dart::simulation::World::create();
+  world->setTimeStep(0.001);
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  auto skeleton = Skeleton::create("soft_body_world");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  auto* softBody = pair.second;
+  ASSERT_NE(softBody, nullptr);
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d(0.2, 0.2, 0.2),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      10.0,
+      10.0,
+      0.1);
+
+  world->addSkeleton(skeleton);
+
+  for (int i = 0; i < 5; ++i) {
+    world->step();
+  }
+
+  const auto dofs = skeleton->getNumDofs();
+  skeleton->setPositions(Eigen::VectorXd::Zero(dofs));
+  skeleton->setVelocities(Eigen::VectorXd::Zero(dofs));
+  skeleton->computeForwardDynamics();
+
+  const Eigen::MatrixXd augMass = skeleton->getAugMassMatrix();
+  EXPECT_EQ(augMass.rows(), static_cast<int>(dofs));
+  EXPECT_TRUE(augMass.array().isFinite().all());
+}
+
+TEST(BodyNodeShapeNodes, DeprecatedGetShapeNodes)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+  auto sphere = std::make_shared<SphereShape>(0.5);
+
+  body->createShapeNodeWith<VisualAspect>(box);
+  body->createShapeNodeWith<CollisionAspect>(sphere);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  auto shapeNodes = body->getShapeNodes();
+  auto visualNodes = body->getShapeNodesWith<VisualAspect>();
+  const BodyNode* constBody = body;
+  auto constShapeNodes = constBody->getShapeNodes();
+  auto constCollisionNodes = constBody->getShapeNodesWith<CollisionAspect>();
+  DART_SUPPRESS_DEPRECATED_END
+
+  EXPECT_EQ(shapeNodes.size(), 2u);
+  EXPECT_EQ(visualNodes.size(), 1u);
+  EXPECT_EQ(constShapeNodes.size(), 2u);
+  EXPECT_EQ(constCollisionNodes.size(), 1u);
+}
+
+TEST(BodyNodeShapeNodes, RemoveShapeNodeReorders)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(0.2, 0.3, 0.4));
+  auto sphere = std::make_shared<SphereShape>(0.15);
+  auto cylinder = std::make_shared<CylinderShape>(0.1, 0.4);
+
+  ShapeNode* node0 = body->createShapeNodeWith<VisualAspect>(box);
+  ShapeNode* node1 = body->createShapeNodeWith<CollisionAspect>(sphere);
+  ShapeNode* node2
+      = body->createShapeNodeWith<VisualAspect, CollisionAspect>(cylinder);
+
+  ASSERT_EQ(body->getNumShapeNodes(), 3u);
+
+  node1->remove();
+  EXPECT_EQ(body->getNumShapeNodes(), 2u);
+
+  bool found0 = false;
+  bool found2 = false;
+  for (std::size_t i = 0; i < body->getNumShapeNodes(); ++i) {
+    ShapeNode* current = body->getShapeNode(i);
+    EXPECT_NE(current, node1);
+    found0 = found0 || (current == node0);
+    found2 = found2 || (current == node2);
+  }
+  EXPECT_TRUE(found0);
+  EXPECT_TRUE(found2);
+}
+
+TEST(BodyNodeForces, ClearExternalForcesResets)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  body->addExtForce(
+      Eigen::Vector3d(0.5, -0.2, 0.1), Eigen::Vector3d::Zero(), true, true);
+  EXPECT_GT(body->getExternalForceLocal().norm(), 0.0);
+
+  body->clearExternalForces();
+  EXPECT_TRUE(body->getExternalForceLocal().isZero());
+}
+
+TEST(BodyNodeConstraintImpulse, ClearConstraintImpulseResetsState)
+{
+  auto skeleton = createBodyNodeSkeleton();
+  BodyNode* body = skeleton->getBodyNode(0);
+
+  body->setConstraintImpulse(Eigen::Vector6d::Ones());
+  EXPECT_FALSE(body->getConstraintImpulse().isZero());
+
+  body->clearConstraintImpulse();
+  EXPECT_TRUE(body->getConstraintImpulse().isZero());
+  EXPECT_TRUE(body->getBodyVelocityChange().isZero());
+}
+
+TEST(BodyNodeImpulse, BiasImpulseViaImpulseForwardDynamics)
+{
+  auto skeleton = Skeleton::create("impulse_bias_test");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+  pair.second->setMass(1.0);
+
+  pair.second->setConstraintImpulse(Eigen::Vector6d::Ones());
+  skeleton->computeImpulseForwardDynamics();
+
+  const Eigen::Vector6d& delV = pair.second->getBodyVelocityChange();
+  EXPECT_TRUE(delV.array().isFinite().all());
+}
+
+TEST(BodyNodeTransform, WorldTransformDerivativeOutOfBounds)
+{
+  auto skeleton = Skeleton::create("transform_deriv_oob");
+  auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+  pair.second->setMass(1.0);
+
+  const std::size_t oobIndex = pair.second->getNumDependentGenCoords();
+#ifndef NDEBUG
+  EXPECT_DEATH(
+      { pair.second->getWorldTransformDerivative(oobIndex); }, "Assertion");
+#else
+  const auto& deriv = pair.second->getWorldTransformDerivative(oobIndex);
+  EXPECT_TRUE(deriv.isZero());
+#endif
 }

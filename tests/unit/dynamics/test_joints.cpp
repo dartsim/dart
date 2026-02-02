@@ -5,23 +5,13 @@
  * This file is provided under the BSD-style License.
  */
 
-#include <dart/simulation/world.hpp>
-
-#include <dart/dynamics/ball_joint.hpp>
-#include <dart/dynamics/euler_joint.hpp>
-#include <dart/dynamics/free_joint.hpp>
-#include <dart/dynamics/planar_joint.hpp>
-#include <dart/dynamics/prismatic_joint.hpp>
-#include <dart/dynamics/revolute_joint.hpp>
-#include <dart/dynamics/skeleton.hpp>
-#include <dart/dynamics/translational_joint.hpp>
-#include <dart/dynamics/universal_joint.hpp>
-#include <dart/dynamics/weld_joint.hpp>
+#include <dart/all.hpp>
 
 #include <gtest/gtest.h>
 
 using namespace dart;
 using namespace dart::dynamics;
+using namespace dart::simulation;
 
 namespace {
 
@@ -41,6 +31,52 @@ SkeletonPtr createSkeletonWithJoint(const std::string& name)
 
   return skel;
 }
+
+class TestNode final : public Node
+{
+public:
+  TestNode(BodyNode* bodyNode, std::string name)
+    : Node(bodyNode), mName(std::move(name))
+  {
+  }
+
+  const std::string& setName(const std::string& newName) override
+  {
+    mName = registerNameChange(newName);
+    return mName;
+  }
+
+  const std::string& getName() const override
+  {
+    return mName;
+  }
+
+  void attachToBody()
+  {
+    attach();
+  }
+
+protected:
+  Node* cloneNode(BodyNode* bodyNode) const override
+  {
+    return new TestNode(bodyNode, mName);
+  }
+
+private:
+  std::string mName;
+};
+
+class FreeJointAccessor final : public FreeJoint
+{
+public:
+  using FreeJoint::FreeJoint;
+  using Properties = FreeJoint::Properties;
+
+  const Eigen::Isometry3d& getQPublic() const
+  {
+    return getQ();
+  }
+};
 
 } // namespace
 
@@ -91,6 +127,37 @@ TEST(FreeJointTest, ConvertToTransform)
 }
 
 //==============================================================================
+TEST(FreeJointTest, FrameVelocityAccelerationAndLazyQ)
+{
+  auto skel = Skeleton::create("free_frames");
+  auto pair = skel->createJointAndBodyNodePair<FreeJointAccessor>();
+  auto* joint = pair.first;
+  auto* body = pair.second;
+
+  Eigen::Vector6d spatialVelocity;
+  spatialVelocity << 0.1, 0.2, 0.3, 1.0, 2.0, 3.0;
+  joint->setRelativeSpatialVelocity(spatialVelocity, Frame::World());
+
+  const Eigen::Vector6d expectedVelocity
+      = math::AdR(Frame::World()->getTransform(body), spatialVelocity);
+  EXPECT_TRUE(joint->getRelativeSpatialVelocity().isApprox(expectedVelocity));
+
+  Eigen::Vector6d spatialAcceleration;
+  spatialAcceleration << -0.2, 0.4, -0.6, 0.5, -1.0, 1.5;
+  joint->setRelativeSpatialAcceleration(spatialAcceleration, Frame::World());
+
+  const Eigen::Vector6d expectedAcceleration
+      = math::AdR(Frame::World()->getTransform(body), spatialAcceleration);
+  EXPECT_TRUE(
+      joint->getRelativeSpatialAcceleration().isApprox(expectedAcceleration));
+
+  const Eigen::Vector6d positions = Eigen::Vector6d::LinSpaced(6, 0.1, 0.6);
+  joint->setPositions(positions);
+  const Eigen::Isometry3d& q = joint->getQPublic();
+  EXPECT_TRUE(q.isApprox(FreeJoint::convertToTransform(positions)));
+}
+
+//==============================================================================
 TEST(BallJointTest, StaticType)
 {
   EXPECT_EQ(BallJoint::getStaticType(), "BallJoint");
@@ -134,6 +201,29 @@ TEST(BallJointTest, IsCyclic)
   for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
     EXPECT_TRUE(joint->isCyclic(i));
   }
+}
+
+//==============================================================================
+TEST(BallJointTest, ConvertToPositionsAndRelativeTransform)
+{
+  auto skel = createSkeletonWithJoint<BallJoint>("ball_transform");
+  auto* joint = dynamic_cast<BallJoint*>(skel->getJoint(0));
+  ASSERT_NE(joint, nullptr);
+
+  const Eigen::Matrix3d rotation
+      = Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitX()).toRotationMatrix();
+  const Eigen::Vector3d positions = BallJoint::convertToPositions(rotation);
+  joint->setPositions(positions);
+
+  for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+    EXPECT_NEAR(joint->getPosition(i), positions[static_cast<int>(i)], 1e-12);
+  }
+
+  const Eigen::Isometry3d tf = joint->getRelativeTransform();
+  EXPECT_TRUE(tf.linear().isApprox(rotation, 1e-10));
+
+  const Eigen::Vector3d roundTrip = BallJoint::convertToPositions(tf.linear());
+  EXPECT_TRUE(roundTrip.isApprox(positions, 1e-10));
 }
 
 //==============================================================================
@@ -320,6 +410,52 @@ TEST(WeldJointTest, GetType)
   auto joint = skel->getJoint(0);
 
   EXPECT_EQ(joint->getType(), WeldJoint::getStaticType());
+}
+
+//==============================================================================
+TEST(ZeroDofJointTest, ConstLimitGetters)
+{
+  auto skel = createSkeletonWithJoint<WeldJoint>("weld_limits");
+  const Joint* constJoint = skel->getJoint(0);
+
+  EXPECT_DOUBLE_EQ(constJoint->getPositionLowerLimit(0), 0.0);
+  EXPECT_DOUBLE_EQ(constJoint->getPositionUpperLimit(0), 0.0);
+  EXPECT_EQ(constJoint->getPositionLowerLimits().size(), 0);
+  EXPECT_EQ(constJoint->getPositionUpperLimits().size(), 0);
+
+  EXPECT_DOUBLE_EQ(constJoint->getVelocityLowerLimit(0), 0.0);
+  EXPECT_DOUBLE_EQ(constJoint->getVelocityUpperLimit(0), 0.0);
+  EXPECT_EQ(constJoint->getVelocityLowerLimits().size(), 0);
+  EXPECT_EQ(constJoint->getVelocityUpperLimits().size(), 0);
+
+  EXPECT_DOUBLE_EQ(constJoint->getAccelerationLowerLimit(0), 0.0);
+  EXPECT_DOUBLE_EQ(constJoint->getAccelerationUpperLimit(0), 0.0);
+  EXPECT_EQ(constJoint->getAccelerationLowerLimits().size(), 0);
+  EXPECT_EQ(constJoint->getAccelerationUpperLimits().size(), 0);
+
+  EXPECT_DOUBLE_EQ(constJoint->getForceLowerLimit(0), 0.0);
+  EXPECT_DOUBLE_EQ(constJoint->getForceUpperLimit(0), 0.0);
+  EXPECT_EQ(constJoint->getForceLowerLimits().size(), 0);
+  EXPECT_EQ(constJoint->getForceUpperLimits().size(), 0);
+}
+
+//==============================================================================
+TEST(ZeroDofJointTest, CommandsPositionsAndVelocities)
+{
+  auto skel = createSkeletonWithJoint<WeldJoint>("weld_zero_ops");
+  Joint* joint = skel->getJoint(0);
+
+  joint->setCommand(0, 5.0);
+  joint->setPosition(0, 1.2);
+  joint->setVelocity(0, -3.4);
+
+  EXPECT_DOUBLE_EQ(joint->getCommand(0), 0.0);
+  EXPECT_DOUBLE_EQ(joint->getPosition(0), 0.0);
+  EXPECT_DOUBLE_EQ(joint->getVelocity(0), 0.0);
+
+  EXPECT_EQ(joint->getCommands().size(), 0);
+  EXPECT_EQ(joint->getPositions().size(), 0);
+  EXPECT_EQ(joint->getVelocities().size(), 0);
 }
 
 //==============================================================================
@@ -1323,6 +1459,27 @@ TEST(FreeJointTest, ConvertToTransformWithCharts)
 }
 
 //==============================================================================
+TEST(FreeJointTest, ConvertWithInvalidChart)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0.3, -0.4, 0.5);
+  tf.linear()
+      = Eigen::AngleAxisd(0.2, Eigen::Vector3d::UnitY()).toRotationMatrix();
+
+  const auto invalidChart = static_cast<FreeJoint::CoordinateChart>(-1);
+  Eigen::Vector6d positions = FreeJoint::convertToPositions(tf, invalidChart);
+  EXPECT_TRUE(positions.head<3>().isZero(1e-12));
+  EXPECT_TRUE(positions.tail<3>().isApprox(tf.translation(), 1e-12));
+
+  Eigen::Vector6d raw;
+  raw << 0.9, -0.8, 0.7, -1.0, 2.0, -3.0;
+  Eigen::Isometry3d tfInvalid
+      = FreeJoint::convertToTransform(raw, invalidChart);
+  EXPECT_TRUE(tfInvalid.linear().isApprox(Eigen::Matrix3d::Identity(), 1e-12));
+  EXPECT_TRUE(tfInvalid.translation().isApprox(raw.tail<3>(), 1e-12));
+}
+
+//==============================================================================
 TEST(FreeJointTest, SetCoordinateChart)
 {
   auto skel = createSkeletonWithJoint<FreeJoint>("chart_test");
@@ -1373,6 +1530,77 @@ TEST(FreeJointTest, SetTransform)
   auto body = skel->getBodyNode(0);
   EXPECT_TRUE(body->getWorldTransform().translation().isApprox(
       worldTf.translation(), 1e-10));
+}
+
+//==============================================================================
+TEST(FreeJointTest, SetTransformWithReferenceFrameAndCharts)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("ref_frame_tf");
+  auto* freeJoint = static_cast<FreeJoint*>(skel->getJoint(0));
+
+  auto refFrame = SimpleFrame::createShared(Frame::World(), "ref_frame");
+  refFrame->setTranslation(Eigen::Vector3d(0.2, -0.1, 0.3));
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(1.0, 2.0, 3.0);
+
+  freeJoint->setCoordinateChart(FreeJoint::CoordinateChart::EULER_XYZ);
+  freeJoint->setTransform(tf, refFrame.get());
+  EXPECT_TRUE(freeJoint->getPositions().allFinite());
+
+  freeJoint->setCoordinateChart(FreeJoint::CoordinateChart::EULER_ZYX);
+  freeJoint->setTransform(tf, refFrame.get());
+  EXPECT_TRUE(freeJoint->getPositions().allFinite());
+}
+
+//==============================================================================
+TEST(FreeJointTest, TransformJacobianAndDynamicsCoverage)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("free_cov");
+  auto* freeJoint = static_cast<FreeJoint*>(skel->getJoint(0));
+
+  Eigen::Isometry3d worldTf = Eigen::Isometry3d::Identity();
+  worldTf.translation() = Eigen::Vector3d(0.5, -0.3, 0.2);
+  worldTf.linear()
+      = Eigen::AngleAxisd(0.2, Eigen::Vector3d::UnitX()).toRotationMatrix();
+  freeJoint->setTransform(worldTf, Frame::World());
+
+  auto refFrame = SimpleFrame::createShared(Frame::World(), "free_ref");
+  refFrame->setTranslation(Eigen::Vector3d(-0.1, 0.2, 0.3));
+
+  Eigen::Isometry3d localTf = Eigen::Isometry3d::Identity();
+  localTf.translation() = Eigen::Vector3d(0.2, 0.1, -0.2);
+  localTf.linear()
+      = Eigen::AngleAxisd(-0.15, Eigen::Vector3d::UnitY()).toRotationMatrix();
+  freeJoint->setTransform(localTf, refFrame.get());
+
+  Eigen::Vector6d positions;
+  positions << 0.1, -0.2, 0.15, 0.4, -0.3, 0.2;
+  Eigen::Vector6d velocities;
+  velocities << -0.05, 0.1, 0.2, -0.3, 0.25, -0.15;
+  freeJoint->setPositions(positions);
+  freeJoint->setVelocities(velocities);
+
+  const auto jac = freeJoint->getRelativeJacobian();
+  EXPECT_EQ(jac.rows(), 6);
+  EXPECT_EQ(jac.cols(), 6);
+
+  const auto jacDeriv = freeJoint->getRelativeJacobianTimeDeriv();
+  EXPECT_EQ(jacDeriv.rows(), 6);
+  EXPECT_EQ(jacDeriv.cols(), 6);
+
+  Eigen::VectorXd jacPositions = Eigen::VectorXd::Zero(6);
+  jacPositions.tail<3>() = Eigen::Vector3d(0.1, -0.2, 0.05);
+  const auto jacAtPositions = freeJoint->getRelativeJacobian(jacPositions);
+  EXPECT_EQ(jacAtPositions.rows(), 6);
+  EXPECT_EQ(jacAtPositions.cols(), 6);
+
+  skel->computeForwardDynamics();
+
+  Eigen::Vector6d spatialVel;
+  spatialVel << 0.2, -0.1, 0.3, 0.4, -0.2, 0.1;
+  freeJoint->setSpatialVelocity(spatialVel, Frame::World(), Frame::World());
+  EXPECT_TRUE(freeJoint->getVelocities().allFinite());
 }
 
 //==============================================================================
@@ -1600,4 +1828,165 @@ TEST(FreeJointTest, SetTransformOfSkeletonAllRoots)
   auto body = skel->getBodyNode(0);
   EXPECT_TRUE(body->getWorldTransform().translation().isApprox(
       tf.translation(), 1e-10));
+}
+
+//==============================================================================
+TEST(FreeJointTest, SpatialVelocityAndAccelerationFrames)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("frame_motion");
+  auto* freeJoint = static_cast<FreeJoint*>(skel->getJoint(0));
+
+  auto refFrame = SimpleFrame::createShared(Frame::World(), "ref_frame");
+  refFrame->setTranslation(Eigen::Vector3d(0.1, -0.2, 0.3));
+
+  Eigen::Isometry3d targetTf = Eigen::Isometry3d::Identity();
+  targetTf.translation() = Eigen::Vector3d(0.2, 0.1, -0.1);
+  freeJoint->setTransform(targetTf, refFrame.get());
+  EXPECT_TRUE(freeJoint->getPositions().array().isFinite().all());
+
+  Eigen::Vector6d spatialVel;
+  spatialVel << 0.1, -0.2, 0.3, 1.0, -2.0, 3.0;
+  freeJoint->setSpatialVelocity(spatialVel, refFrame.get(), refFrame.get());
+  freeJoint->setSpatialVelocity(spatialVel, Frame::World(), refFrame.get());
+
+  Eigen::Vector6d spatialAcc;
+  spatialAcc << -0.1, 0.2, -0.3, 0.5, -0.6, 0.7;
+  freeJoint->setSpatialAcceleration(spatialAcc, refFrame.get(), refFrame.get());
+  freeJoint->setSpatialAcceleration(spatialAcc, Frame::World(), refFrame.get());
+
+  freeJoint->setVelocities(Eigen::Vector6d::Constant(0.05));
+  const auto jacobianDot = freeJoint->getRelativeJacobianTimeDeriv();
+  EXPECT_TRUE(jacobianDot.allFinite());
+}
+
+//==============================================================================
+TEST(ZeroDofJointTest, ConstLimitAccessors)
+{
+  auto skel = createSkeletonWithJoint<WeldJoint>("const_limits");
+  const auto* joint = static_cast<const WeldJoint*>(skel->getJoint(0));
+
+  EXPECT_DOUBLE_EQ(joint->getPositionLowerLimit(0), 0.0);
+  EXPECT_DOUBLE_EQ(joint->getPositionUpperLimit(0), 0.0);
+  EXPECT_DOUBLE_EQ(joint->getVelocityLowerLimit(0), 0.0);
+  EXPECT_DOUBLE_EQ(joint->getVelocityUpperLimit(0), 0.0);
+  EXPECT_DOUBLE_EQ(joint->getAccelerationLowerLimit(0), 0.0);
+  EXPECT_DOUBLE_EQ(joint->getAccelerationUpperLimit(0), 0.0);
+  EXPECT_DOUBLE_EQ(joint->getForceLowerLimit(0), 0.0);
+  EXPECT_DOUBLE_EQ(joint->getForceUpperLimit(0), 0.0);
+}
+
+//==============================================================================
+TEST(JointTest, ConstAccessorsAndIntegratePositions)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("const_joint");
+  auto* joint = skel->getJoint(0);
+  const Joint* constJoint = joint;
+
+  EXPECT_EQ(constJoint->getChildBodyNode(), skel->getBodyNode(0));
+  EXPECT_EQ(constJoint->getParentBodyNode(), nullptr);
+  EXPECT_EQ(constJoint->getSkeleton(), skel);
+
+  Eigen::VectorXd q0(1);
+  q0 << 0.0;
+  Eigen::VectorXd v(1);
+  v << 1.0;
+  const double dt = 0.2;
+  Eigen::VectorXd result = constJoint->integratePositions(q0, v, dt);
+  EXPECT_NEAR(result[0], 0.2, 1e-10);
+}
+
+//==============================================================================
+TEST(FreeJointTest, SetTransformWithNonWorldReference)
+{
+  auto skel = createSkeletonWithJoint<FreeJoint>("non_world_ref");
+  auto* freeJoint = static_cast<FreeJoint*>(skel->getJoint(0));
+
+  auto refFrame = SimpleFrame::createShared(Frame::World(), "non_world_ref");
+  Eigen::Isometry3d refTf = Eigen::Isometry3d::Identity();
+  refTf.translation() = Eigen::Vector3d(-0.2, 0.1, 0.05);
+  refTf.linear()
+      = Eigen::AngleAxisd(0.2, Eigen::Vector3d::UnitY()).toRotationMatrix();
+  refFrame->setTransform(refTf);
+
+  Eigen::Isometry3d targetTf = Eigen::Isometry3d::Identity();
+  targetTf.translation() = Eigen::Vector3d(0.4, -0.3, 0.2);
+  targetTf.linear()
+      = Eigen::AngleAxisd(0.1, Eigen::Vector3d::UnitX()).toRotationMatrix();
+
+  freeJoint->setCoordinateChart(FreeJoint::CoordinateChart::EULER_XYZ);
+  freeJoint->setTransform(targetTf, refFrame.get());
+  const auto xyzPositions = freeJoint->getPositions();
+  EXPECT_EQ(xyzPositions.size(), 6);
+
+  freeJoint->setCoordinateChart(FreeJoint::CoordinateChart::EULER_ZYX);
+  freeJoint->setTransform(targetTf, refFrame.get());
+  const auto zyxPositions = freeJoint->getPositions();
+  EXPECT_EQ(zyxPositions.size(), 6);
+}
+
+//==============================================================================
+TEST(NodeTest, ConstAccessorsAndRemovalState)
+{
+  auto skel = createSkeletonWithJoint<RevoluteJoint>("node_accessors");
+  auto* body = skel->getBodyNode(0);
+  auto* node = new TestNode(body, "test_node");
+
+  EXPECT_TRUE(node->isRemoved());
+  node->attachToBody();
+  EXPECT_FALSE(node->isRemoved());
+
+  EXPECT_EQ(node->getBodyNodePtr().get(), body);
+  const TestNode* constNode = node;
+  EXPECT_EQ(constNode->getBodyNodePtr().get(), body);
+  EXPECT_EQ(constNode->getSkeleton(), skel);
+}
+
+//==============================================================================
+TEST(LinkageTest, EmptyCriteriaReturnsEmpty)
+{
+  Linkage::Criteria criteria;
+  const auto nodes = criteria.satisfy();
+  EXPECT_TRUE(nodes.empty());
+}
+
+//==============================================================================
+TEST(LinkageTest, ChainStopsAtFreeJoint)
+{
+  auto skel = Skeleton::create("linkage_chain");
+
+  BodyNode::Properties bodyProps;
+  bodyProps.mInertia.setMass(1.0);
+
+  RevoluteJoint::Properties rootProps;
+  rootProps.mName = "root_joint";
+  auto rootPair = skel->createJointAndBodyNodePair<RevoluteJoint>(
+      nullptr, rootProps, bodyProps);
+
+  FreeJoint::Properties freeProps;
+  freeProps.mName = "free_joint";
+  auto freePair = skel->createJointAndBodyNodePair<FreeJoint>(
+      rootPair.second, freeProps, bodyProps);
+
+  RevoluteJoint::Properties leafProps;
+  leafProps.mName = "leaf_joint";
+  auto leafPair = skel->createJointAndBodyNodePair<RevoluteJoint>(
+      freePair.second, leafProps, bodyProps);
+
+  Linkage::Criteria criteria(rootPair.second, leafPair.second, true);
+  ASSERT_EQ(criteria.mTargets.size(), 1u);
+  criteria.mTargets[0].mChain = true;
+  criteria.mStart.mPolicy = Linkage::Criteria::INCLUDE;
+
+  const auto nodes = criteria.satisfy();
+  EXPECT_FALSE(nodes.empty());
+  EXPECT_EQ(nodes.front(), rootPair.second);
+
+  bool hasFree = false;
+  for (auto* node : nodes) {
+    if (node == freePair.second) {
+      hasFree = true;
+      break;
+    }
+  }
+  EXPECT_FALSE(hasFree);
 }

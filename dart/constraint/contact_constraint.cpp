@@ -248,7 +248,7 @@ void ContactConstraint::setErrorAllowance(double allowance)
     DART_WARN(
         "Error reduction parameter[{}] is lower than 0.0. It is set to 0.0.",
         allowance);
-    mErrorAllowance = 0.0;
+    allowance = 0.0;
   }
 
   mErrorAllowance = allowance;
@@ -268,13 +268,13 @@ void ContactConstraint::setErrorReductionParameter(double erp)
     DART_WARN(
         "Error reduction parameter[{}] is lower than 0.0. It is set to 0.0.",
         erp);
-    mErrorReductionParameter = 0.0;
+    erp = 0.0;
   }
   if (erp > 1.0) {
     DART_WARN(
         "Error reduction parameter[{}] is greater than 1.0. It is set to 1.0.",
         erp);
-    mErrorReductionParameter = 1.0;
+    erp = 1.0;
   }
 
   mErrorReductionParameter = erp;
@@ -295,7 +295,7 @@ void ContactConstraint::setMaxErrorReductionVelocity(double erv)
         "Maximum error reduction velocity[{}] is lower than 0.0. It is set to "
         "0.0.",
         erv);
-    mMaxErrorReductionVelocity = 0.0;
+    erv = 0.0;
   }
 
   mMaxErrorReductionVelocity = erv;
@@ -316,7 +316,7 @@ void ContactConstraint::setConstraintForceMixing(double cfm)
         "Constraint force mixing parameter[{}] is lower than 1e-9. It is set "
         "to 1e-9.",
         cfm);
-    mConstraintForceMixing = 1e-9;
+    cfm = 1e-9;
   }
 
   mConstraintForceMixing = cfm;

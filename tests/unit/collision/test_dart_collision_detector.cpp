@@ -1,9 +1,10 @@
-// Copyright (c) 2011-2025, The DART development contributors
+// Copyright (c) 2011, The DART development contributors
 
 #include <dart/collision/collision_group.hpp>
 #include <dart/collision/collision_option.hpp>
 #include <dart/collision/collision_result.hpp>
 #include <dart/collision/dart/dart_collision_detector.hpp>
+#include <dart/collision/dart/dart_collision_group.hpp>
 #include <dart/collision/raycast_option.hpp>
 #include <dart/collision/raycast_result.hpp>
 
@@ -17,6 +18,8 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <array>
 #include <utility>
 
 using namespace dart;
@@ -32,6 +35,42 @@ struct ShapeSetup
   SkeletonPtr skeleton;
   BodyNode* body{nullptr};
   ShapeNode* shapeNode{nullptr};
+};
+
+class TestDARTCollisionDetector : public DARTCollisionDetector
+{
+public:
+  static std::shared_ptr<TestDARTCollisionDetector> create()
+  {
+    return std::shared_ptr<TestDARTCollisionDetector>(
+        new TestDARTCollisionDetector());
+  }
+
+  using CollisionDetector::claimCollisionObject;
+
+private:
+  TestDARTCollisionDetector() = default;
+};
+
+class TestDARTCollisionGroup : public DARTCollisionGroup
+{
+public:
+  explicit TestDARTCollisionGroup(const CollisionDetectorPtr& collisionDetector)
+    : DARTCollisionGroup(collisionDetector)
+  {
+  }
+
+  using DARTCollisionGroup::addCollisionObjectsToEngine;
+  using DARTCollisionGroup::addCollisionObjectToEngine;
+  using DARTCollisionGroup::initializeEngineData;
+  using DARTCollisionGroup::removeAllCollisionObjectsFromEngine;
+  using DARTCollisionGroup::removeCollisionObjectFromEngine;
+  using DARTCollisionGroup::updateCollisionGroupEngineData;
+
+  std::size_t getNumObjects() const
+  {
+    return mCollisionObjects.size();
+  }
 };
 
 ShapeSetup makeShapeSetup(const std::string& name, const ShapePtr& shape)
@@ -67,6 +106,31 @@ std::pair<bool, std::size_t> runCollision(
   CollisionResult result;
   const bool collided = group->collide(option, &result);
   return {collided, result.getNumContacts()};
+}
+
+std::pair<bool, CollisionResult> runCollisionWithTransforms(
+    const ShapePtr& shapeA,
+    const ShapePtr& shapeB,
+    const Eigen::Isometry3d& tfA,
+    const Eigen::Isometry3d& tfB)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto setupA = makeShapeSetup("shape_a", shapeA);
+  auto setupB = makeShapeSetup("shape_b", shapeB);
+
+  FreeJoint::setTransformOf(setupA.body, tfA);
+  FreeJoint::setTransformOf(setupB.body, tfB);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setupA.shapeNode);
+  group->addShapeFrame(setupB.shapeNode);
+
+  CollisionOption option;
+  option.maxNumContacts = 10u;
+
+  CollisionResult result;
+  const bool collided = group->collide(option, &result);
+  return {collided, result};
 }
 
 } // namespace
@@ -134,6 +198,35 @@ TEST(DARTCollisionDetector, UnsupportedShapePairReturnsFalse)
   EXPECT_EQ(result.second, 0u);
 }
 
+TEST(DARTCollisionDetector, BoxBoxEdgeEdgeContact)
+{
+  auto box1 = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 0.2, 0.2));
+  auto box2 = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 0.2, 0.2));
+
+  Eigen::Isometry3d tfA = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
+  tfB.linear() = (Eigen::AngleAxisd(0.6, Eigen::Vector3d::UnitZ())
+                  * Eigen::AngleAxisd(0.35, Eigen::Vector3d::UnitY()))
+                     .toRotationMatrix();
+  tfB.translation() = Eigen::Vector3d(0.05, -0.02, 0.03);
+
+  auto result = runCollisionWithTransforms(box1, box2, tfA, tfB);
+  ASSERT_TRUE(result.first);
+  ASSERT_GT(result.second.getNumContacts(), 0u);
+
+  const auto& contact = result.second.getContact(0);
+  const Eigen::Vector3d normal = contact.normal.normalized();
+  const Eigen::Matrix3d axesA = tfA.linear();
+  const Eigen::Matrix3d axesB = tfB.linear();
+
+  double maxAbsDot = 0.0;
+  for (int i = 0; i < 3; ++i) {
+    maxAbsDot = std::max(maxAbsDot, std::abs(normal.dot(axesA.col(i))));
+    maxAbsDot = std::max(maxAbsDot, std::abs(normal.dot(axesB.col(i))));
+  }
+  EXPECT_LT(maxAbsDot, 0.95);
+}
+
 TEST(DARTCollisionDetector, RaycastReturnsNotSupported)
 {
   // DARTCollisionDetector does not override raycast, so it uses the base
@@ -154,4 +247,103 @@ TEST(DARTCollisionDetector, RaycastReturnsNotSupported)
   const bool hit = group->raycast(from, to, option, &result);
   EXPECT_FALSE(hit);
   EXPECT_FALSE(result.hasHit());
+}
+
+TEST(DARTCollisionDetector, MaxNumContactsZeroReturnsFalse)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto setupA = makeShapeSetup("shape_a", std::make_shared<SphereShape>(0.5));
+  auto setupB = makeShapeSetup("shape_b", std::make_shared<SphereShape>(0.5));
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0.2, 0.0, 0.0);
+  FreeJoint::setTransformOf(setupB.body, tf);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setupA.shapeNode);
+  group->addShapeFrame(setupB.shapeNode);
+
+  CollisionOption option;
+  option.maxNumContacts = 0u;
+  CollisionResult result;
+
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(result.getNumContacts(), 0u);
+}
+
+TEST(DARTCollisionDetector, EmptyGroupReturnsFalse)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  CollisionOption option;
+  option.maxNumContacts = 1u;
+  CollisionResult result;
+
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(result.getNumContacts(), 0u);
+}
+
+TEST(DARTCollisionDetector, MismatchedDetectorGroupReturnsFalse)
+{
+  auto detectorA = DARTCollisionDetector::create();
+  auto detectorB = DARTCollisionDetector::create();
+
+  auto setupA = makeShapeSetup("shape_a", std::make_shared<SphereShape>(0.5));
+  auto setupB = makeShapeSetup("shape_b", std::make_shared<SphereShape>(0.5));
+
+  auto groupA = detectorA->createCollisionGroup();
+  auto groupB = detectorB->createCollisionGroup();
+  groupA->addShapeFrame(setupA.shapeNode);
+  groupB->addShapeFrame(setupB.shapeNode);
+
+  CollisionOption option;
+  CollisionResult result;
+
+  EXPECT_FALSE(groupA->collide(groupB.get(), option, &result));
+}
+
+TEST(DARTCollisionDetector, DistanceQueriesReturnZero)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto setupA = makeShapeSetup("shape_a", std::make_shared<SphereShape>(0.5));
+  auto setupB = makeShapeSetup("shape_b", std::make_shared<SphereShape>(0.5));
+
+  auto groupA = detector->createCollisionGroup();
+  auto groupB = detector->createCollisionGroup();
+  groupA->addShapeFrame(setupA.shapeNode);
+  groupB->addShapeFrame(setupB.shapeNode);
+
+  DistanceOption option;
+  DistanceResult result;
+
+  EXPECT_DOUBLE_EQ(groupA->distance(option, &result), 0.0);
+  EXPECT_DOUBLE_EQ(groupA->distance(groupB.get(), option, &result), 0.0);
+}
+
+TEST(DARTCollisionGroup, EngineDataCallbacks)
+{
+  auto detector = TestDARTCollisionDetector::create();
+  TestDARTCollisionGroup group(detector);
+
+  auto setupA = makeShapeSetup("shape_a", std::make_shared<SphereShape>(0.5));
+  auto setupB = makeShapeSetup("shape_b", std::make_shared<SphereShape>(0.5));
+
+  auto objectA = detector->claimCollisionObject(setupA.shapeNode);
+  auto objectB = detector->claimCollisionObject(setupB.shapeNode);
+
+  group.initializeEngineData();
+  group.addCollisionObjectToEngine(objectA.get());
+  EXPECT_EQ(group.getNumObjects(), 1u);
+
+  std::array<CollisionObject*, 2> objects{objectA.get(), objectB.get()};
+  group.addCollisionObjectsToEngine(objects);
+  EXPECT_EQ(group.getNumObjects(), 2u);
+
+  group.updateCollisionGroupEngineData();
+  group.removeCollisionObjectFromEngine(objectA.get());
+  EXPECT_EQ(group.getNumObjects(), 1u);
+
+  group.removeAllCollisionObjectsFromEngine();
+  EXPECT_EQ(group.getNumObjects(), 0u);
 }

@@ -78,7 +78,6 @@ data/screencap/*
 # Python distribution artifacts
 dist/
 *.egg-info
-build/
 
 # Python wheel files
 *.whl
@@ -93,25 +92,9 @@ gh-pages/
 # ImGui configuration
 imgui.ini
 
-# Temporary directory for dependencies
-.deps/
-
 # Gazebo physics plugins
 /libgz-physics-*.so
 *.dylib
-
-# Python distribution artifacts
-dist/
-*.egg-info
-
-# Python wheel files
-*.whl
-
-# pixi environments
-.pixi
-
-# ImGui configuration
-imgui.ini
 
 # Profiling logs
 profiling/*.txt
@@ -122,11 +105,14 @@ profiling/*.txt
 # Benchmark result artifacts
 .benchmark_results/
 
-# Coverage files
-*.info
-*.gcda
-*.gcno
-*.gcov
-htmlcov/
-coverage_html/
-.gcov/
+# clangd / LSP artifacts
+.cache/
+.clangd
+compile_commands.json
+compile_flags.txt
+
+# OpenCode agent artifacts
+.opencode/
+
+# Temporary apt downloads
+.tmp_apt/

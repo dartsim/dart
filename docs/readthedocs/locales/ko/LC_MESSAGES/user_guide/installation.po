@@ -1,5 +1,5 @@
 # SOME DESCRIPTIVE TITLE.
-# Copyright (C) Copyright (c) 2011-2025, The DART development contributors
+# Copyright (C) Copyright (c) 2011, The DART development contributors
 # This file is distributed under the same license as the DART: Dynamic
 # Animation and Robotics Toolkit package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2023.

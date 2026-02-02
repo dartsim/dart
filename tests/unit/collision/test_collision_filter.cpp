@@ -32,6 +32,7 @@
 
 #include <dart/collision/collision_filter.hpp>
 #include <dart/collision/collision_group.hpp>
+#include <dart/collision/collision_object.hpp>
 #include <dart/collision/collision_option.hpp>
 #include <dart/collision/collision_result.hpp>
 #include <dart/collision/dart/dart_collision_detector.hpp>
@@ -40,6 +41,8 @@
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
+#include <dart/dynamics/shape_node.hpp>
+#include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/skeleton.hpp>
 
 #include <gtest/gtest.h>
@@ -69,6 +72,23 @@ public:
       const CollisionObject* /*object2*/) const override
   {
     return false;
+  }
+};
+
+class StubCollisionObject : public CollisionObject
+{
+public:
+  StubCollisionObject(
+      CollisionDetector* detector, const dynamics::ShapeFrame* shapeFrame)
+    : CollisionObject(detector, shapeFrame)
+  {
+  }
+
+  void updateEngineData() override {}
+
+  void setShapeFrame(const dynamics::ShapeFrame* shapeFrame)
+  {
+    mShapeFrame = shapeFrame;
   }
 };
 
@@ -475,4 +495,47 @@ TEST(BodyNodeCollisionFilter, ObjectSelfCollision)
   CollisionResult result;
 
   EXPECT_FALSE(group->collide(option, &result));
+}
+
+TEST(BodyNodeCollisionFilter, SameCollisionObjectPointerIsIgnored)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto frame = std::make_shared<SimpleFrame>(Frame::World(), "frame");
+  frame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+
+  StubCollisionObject object(detector.get(), frame.get());
+  BodyNodeCollisionFilter filter;
+
+  EXPECT_TRUE(filter.ignoresCollision(&object, &object));
+}
+
+TEST(BodyNodeCollisionFilter, NullShapeFrameReturnsFalse)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto frameA = std::make_shared<SimpleFrame>(Frame::World(), "frameA");
+  auto frameB = std::make_shared<SimpleFrame>(Frame::World(), "frameB");
+  frameA->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  frameB->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+
+  StubCollisionObject objectA(detector.get(), frameA.get());
+  StubCollisionObject objectB(detector.get(), frameB.get());
+  objectA.setShapeFrame(nullptr);
+
+  BodyNodeCollisionFilter filter;
+  EXPECT_FALSE(filter.ignoresCollision(&objectA, &objectB));
+}
+
+TEST(BodyNodeCollisionFilter, NonShapeNodeFramesReturnFalse)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto frameA = std::make_shared<SimpleFrame>(Frame::World(), "frameA");
+  auto frameB = std::make_shared<SimpleFrame>(Frame::World(), "frameB");
+  frameA->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  frameB->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+
+  StubCollisionObject objectA(detector.get(), frameA.get());
+  StubCollisionObject objectB(detector.get(), frameB.get());
+
+  BodyNodeCollisionFilter filter;
+  EXPECT_FALSE(filter.ignoresCollision(&objectA, &objectB));
 }

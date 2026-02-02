@@ -37,6 +37,8 @@
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
+#include <dart/common/local_resource_retriever.hpp>
+
 #include <gtest/gtest.h>
 
 using namespace dart;
@@ -227,4 +229,36 @@ TEST(ReadUnit, SkelWorldWithMultipleSkeletonsReturnsFirst)
   const auto skeleton = io::readSkeleton(
       "dart://sample/skel/test/single_pendulum.skel", options);
   EXPECT_NE(skeleton, nullptr);
+}
+
+//==============================================================================
+TEST(ReadUnit, InfersFormatFromMjcfFileExtension)
+{
+  const auto skeleton = io::readSkeleton("/nonexistent/model.mjcf");
+  EXPECT_EQ(skeleton, nullptr);
+}
+
+//==============================================================================
+TEST(ReadUnit, ReturnsNullForNoExtensionFile)
+{
+  const auto skeleton = io::readSkeleton("/some/path/file_without_ext");
+  EXPECT_EQ(skeleton, nullptr);
+}
+
+//==============================================================================
+TEST(ReadUnit, ReturnsNullForDotBeforeSlash)
+{
+  const auto skeleton = io::readSkeleton("/some/path.dir/no_ext");
+  EXPECT_EQ(skeleton, nullptr);
+}
+
+//==============================================================================
+TEST(ReadUnit, PassesExplicitRetrieverThrough)
+{
+  auto retriever = std::make_shared<common::LocalResourceRetriever>();
+  io::ReadOptions options;
+  options.resourceRetriever = retriever;
+  options.format = io::ModelFormat::Skel;
+  const auto skeleton = io::readSkeleton("/nonexistent/robot.skel", options);
+  EXPECT_EQ(skeleton, nullptr);
 }

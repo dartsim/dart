@@ -33,11 +33,14 @@
 #include <dart/dynamics/ball_joint.hpp>
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/frame.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/meta_skeleton.hpp>
 #include <dart/dynamics/prismatic_joint.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/skeleton.hpp>
+
+#include <dart/all.hpp>
 
 #include <gtest/gtest.h>
 
@@ -47,6 +50,7 @@
 
 using namespace dart;
 using namespace dart::dynamics;
+using namespace dart::simulation;
 
 //==============================================================================
 // Helper: Create a simple chain skeleton with N revolute joints
@@ -113,6 +117,47 @@ SkeletonPtr createMixedSkeleton(const std::string& name = "mixed")
 }
 
 //==============================================================================
+TEST(MetaSkeletonTests, ConstructNewTreeForAdditionalRoot)
+{
+  auto skel = Skeleton::create("multi_root");
+
+  auto root1 = skel->createJointAndBodyNodePair<FreeJoint>();
+  root1.second->setName("root1");
+
+  BodyNode::AspectProperties root2Props("root2");
+  auto root2 = skel->createJointAndBodyNodePair<FreeJoint>(
+      nullptr, FreeJoint::Properties(), root2Props);
+  root2.second->setName("root2");
+
+  EXPECT_EQ(skel->getNumTrees(), 2u);
+}
+
+//==============================================================================
+TEST(MetaSkeletonTests, JacobianSpatialDerivatives)
+{
+  auto skel = createMixedSkeleton("jacobian_deriv");
+  skel->setPositions(Eigen::VectorXd::Constant(skel->getNumDofs(), 0.2));
+  skel->setVelocities(Eigen::VectorXd::Constant(skel->getNumDofs(), -0.1));
+  skel->setAccelerations(Eigen::VectorXd::Constant(skel->getNumDofs(), 0.05));
+  skel->computeForwardKinematics(true, true, true);
+
+  auto* body = skel->getBodyNode("child1");
+  ASSERT_NE(body, nullptr);
+
+  const math::Jacobian dJ
+      = skel->getJacobianSpatialDeriv(body, Eigen::Vector3d::UnitX());
+  const math::Jacobian dJWorld = skel->getJacobianSpatialDeriv(
+      body, Eigen::Vector3d::UnitX(), Frame::World());
+
+  EXPECT_EQ(dJ.rows(), 6);
+  EXPECT_EQ(dJ.cols(), static_cast<int>(skel->getNumDofs()));
+  EXPECT_EQ(dJWorld.rows(), 6);
+  EXPECT_EQ(dJWorld.cols(), static_cast<int>(skel->getNumDofs()));
+  EXPECT_TRUE(dJ.array().isFinite().all());
+  EXPECT_TRUE(dJWorld.array().isFinite().all());
+}
+
+//==============================================================================
 // Test name operations
 TEST(MetaSkeletonTests, NameOperations)
 {
@@ -169,6 +214,32 @@ TEST(MetaSkeletonTests, StructuralProperties)
     ASSERT_NE(dof, nullptr);
     EXPECT_EQ(dof->getIndexInSkeleton(), i);
   }
+}
+
+//==============================================================================
+TEST(MetaSkeletonTests, ConstAccessors)
+{
+  auto skel = createMixedSkeleton("const_accessors");
+  skel->setPositions(Eigen::VectorXd::Constant(skel->getNumDofs(), 0.1));
+  skel->setVelocities(Eigen::VectorXd::Constant(skel->getNumDofs(), -0.2));
+  skel->setAccelerations(Eigen::VectorXd::Constant(skel->getNumDofs(), 0.3));
+  skel->setCommands(Eigen::VectorXd::Zero(skel->getNumDofs()));
+
+  const MetaSkeleton& constSkel = *skel;
+  EXPECT_EQ(constSkel.getNumBodyNodes(), skel->getNumBodyNodes());
+  EXPECT_EQ(constSkel.getNumJoints(), skel->getNumJoints());
+  EXPECT_EQ(constSkel.getNumDofs(), skel->getNumDofs());
+
+  const auto positions = constSkel.getPositions();
+  EXPECT_EQ(positions.size(), static_cast<int>(skel->getNumDofs()));
+  const auto velocities = constSkel.getVelocities();
+  EXPECT_EQ(velocities.size(), static_cast<int>(skel->getNumDofs()));
+  const auto accelerations = constSkel.getAccelerations();
+  EXPECT_EQ(accelerations.size(), static_cast<int>(skel->getNumDofs()));
+
+  const auto commands = constSkel.getCommands();
+  EXPECT_EQ(commands.size(), static_cast<int>(skel->getNumDofs()));
+  EXPECT_TRUE(constSkel.getCOM().array().isFinite().all());
 }
 
 //==============================================================================
@@ -246,6 +317,25 @@ TEST(MetaSkeletonTests, CommandOperations)
   EXPECT_DOUBLE_EQ(result[0], 0.0);
   EXPECT_DOUBLE_EQ(result[1], 0.0);
   EXPECT_DOUBLE_EQ(result[2], 0.0);
+}
+
+//==============================================================================
+TEST(MetaSkeletonTests, ComQueriesWithFrame)
+{
+  auto skel = createMixedSkeleton("com_frame");
+
+  skel->setVelocities(Eigen::VectorXd::Constant(skel->getNumDofs(), 0.2));
+  skel->setAccelerations(Eigen::VectorXd::Constant(skel->getNumDofs(), -0.1));
+
+  const auto com = skel->getCOM(Frame::World());
+  EXPECT_TRUE(com.array().isFinite().all());
+
+  const auto comLinearVelocity = skel->getCOMLinearVelocity(Frame::World());
+  EXPECT_TRUE(comLinearVelocity.array().isFinite().all());
+
+  const auto comLinearAcceleration
+      = skel->getCOMLinearAcceleration(Frame::World());
+  EXPECT_TRUE(comLinearAcceleration.array().isFinite().all());
 }
 
 //==============================================================================
@@ -821,6 +911,33 @@ TEST(MetaSkeletonTests, JacobianDerivatives)
 }
 
 //==============================================================================
+TEST(MetaSkeletonTests, FrameBasedComAndJacobianDerivs)
+{
+  auto skel = createMixedSkeleton("frame_derivs");
+  skel->setVelocities(Eigen::VectorXd::Constant(skel->getNumDofs(), 0.2));
+
+  auto* root = skel->getBodyNode(0);
+  auto* endBody = skel->getBodyNode(skel->getNumBodyNodes() - 1u);
+  ASSERT_NE(root, nullptr);
+  ASSERT_NE(endBody, nullptr);
+
+  const auto com = skel->getCOM(root);
+  const auto comVel = skel->getCOMLinearVelocity(root);
+  const auto comAcc = skel->getCOMLinearAcceleration(root);
+  EXPECT_TRUE(com.array().isFinite().all());
+  EXPECT_TRUE(comVel.array().isFinite().all());
+  EXPECT_TRUE(comAcc.array().isFinite().all());
+
+  const Eigen::Vector3d offset(0.01, -0.02, 0.03);
+  const auto Jclassic = skel->getJacobianClassicDeriv(endBody, offset, root);
+  EXPECT_EQ(Jclassic.cols(), static_cast<int>(skel->getNumDofs()));
+  const auto Jlinear = skel->getLinearJacobianDeriv(endBody, root);
+  EXPECT_EQ(Jlinear.cols(), static_cast<int>(skel->getNumDofs()));
+  const auto Jangular = skel->getAngularJacobianDeriv(endBody, root);
+  EXPECT_EQ(Jangular.cols(), static_cast<int>(skel->getNumDofs()));
+}
+
+//==============================================================================
 // Test COM Jacobians
 TEST(MetaSkeletonTests, COMJacobians)
 {
@@ -970,4 +1087,297 @@ TEST(MetaSkeletonTests, CloneMetaSkeleton)
   // Clone with same name
   MetaSkeletonPtr clone2 = skel->cloneMetaSkeleton("original");
   EXPECT_EQ(clone2->getName(), "original");
+}
+
+TEST(MetaSkeletonTests, CommandSubsetAccessors)
+{
+  auto skel = createChainSkeleton(4);
+  std::vector<std::size_t> indices = {0u, 2u};
+
+  Eigen::VectorXd commands(2);
+  commands << 1.2, -0.7;
+  skel->setCommands(indices, commands);
+
+  Eigen::VectorXd result = skel->getCommands(indices);
+  EXPECT_EQ(result.size(), 2);
+  EXPECT_NEAR(result[0], 1.2, 1e-12);
+  EXPECT_NEAR(result[1], -0.7, 1e-12);
+}
+
+TEST(MetaSkeletonTests, JacobianRelativeToSameNode)
+{
+  auto skel = createChainSkeleton(2);
+  auto* body = skel->getBodyNode(1);
+  ASSERT_NE(body, nullptr);
+
+  const auto J = skel->getJacobian(body, body, Frame::World());
+  EXPECT_TRUE(J.isZero());
+
+  const Eigen::Vector3d offset(0.05, -0.02, 0.03);
+  const auto Joffset = skel->getJacobian(body, offset, body, Frame::World());
+  EXPECT_TRUE(Joffset.isZero());
+}
+
+TEST(MetaSkeletonTests, SpatialDerivativeRelativeToSameNode)
+{
+  auto skel = createChainSkeleton(2);
+  auto* body = skel->getBodyNode(1);
+  ASSERT_NE(body, nullptr);
+
+  const auto dJ = skel->getJacobianSpatialDeriv(body, body, Frame::World());
+  EXPECT_TRUE(dJ.isZero());
+
+  const Eigen::Vector3d offset(0.02, 0.01, -0.04);
+  const auto dJoffset
+      = skel->getJacobianSpatialDeriv(body, offset, body, Frame::World());
+  EXPECT_TRUE(dJoffset.isZero());
+}
+
+//=============================================================================
+TEST(MetaSkeletonTests, JacobianInNodeCoordinates)
+{
+  auto skel = createChainSkeleton(2);
+  auto* root = skel->getBodyNode(0);
+  auto* endBody = skel->getBodyNode(1);
+  ASSERT_NE(root, nullptr);
+  ASSERT_NE(endBody, nullptr);
+
+  const auto J = skel->getJacobian(endBody, root, endBody);
+  EXPECT_EQ(J.rows(), 6);
+  EXPECT_EQ(J.cols(), static_cast<int>(skel->getNumDofs()));
+
+  const Eigen::Vector3d offset(0.02, -0.01, 0.03);
+  const auto Joffset = skel->getJacobian(endBody, offset, root, endBody);
+  EXPECT_EQ(Joffset.rows(), 6);
+  EXPECT_EQ(Joffset.cols(), static_cast<int>(skel->getNumDofs()));
+}
+
+//=============================================================================
+TEST(MetaSkeletonTests, JacobianInWorldCoordinates)
+{
+  auto skel = createChainSkeleton(2);
+  auto* root = skel->getBodyNode(0);
+  auto* endBody = skel->getBodyNode(1);
+  ASSERT_NE(root, nullptr);
+  ASSERT_NE(endBody, nullptr);
+
+  const auto J = skel->getJacobian(endBody, root, Frame::World());
+  EXPECT_EQ(J.rows(), 6);
+  EXPECT_EQ(J.cols(), static_cast<int>(skel->getNumDofs()));
+
+  const Eigen::Vector3d offset(0.01, 0.02, -0.02);
+  const auto Joffset = skel->getJacobian(endBody, offset, root, Frame::World());
+  EXPECT_EQ(Joffset.rows(), 6);
+  EXPECT_EQ(Joffset.cols(), static_cast<int>(skel->getNumDofs()));
+}
+
+TEST(MetaSkeletonTests, CenterOfMassVelocityAndAcceleration)
+{
+  auto skel = createChainSkeleton(3, "com_vel_acc");
+
+  skel->setPositions(Eigen::VectorXd::Constant(3, 0.2));
+  skel->setVelocities(Eigen::VectorXd::Constant(3, -0.1));
+  skel->setAccelerations(Eigen::VectorXd::Constant(3, 0.05));
+
+  const auto com = skel->getCOM();
+  EXPECT_TRUE(com.allFinite());
+
+  const auto comVel = skel->getCOMLinearVelocity();
+  EXPECT_TRUE(comVel.allFinite());
+
+  const auto comAcc = skel->getCOMLinearAcceleration();
+  EXPECT_TRUE(comAcc.allFinite());
+}
+
+TEST(MetaSkeletonTests, JacobianDifferentFrames)
+{
+  auto skel = createChainSkeleton(2, "jac_frames");
+  auto* endBody = skel->getBodyNode(1);
+  ASSERT_NE(endBody, nullptr);
+
+  const auto Jworld = skel->getJacobian(endBody, Frame::World());
+  EXPECT_EQ(Jworld.cols(), static_cast<int>(skel->getNumDofs()));
+
+  const auto Jlocal = skel->getJacobian(endBody, endBody);
+  EXPECT_EQ(Jlocal.cols(), static_cast<int>(skel->getNumDofs()));
+}
+
+TEST(MetaSkeletonTests, EnergyAndLagrangianRelationship)
+{
+  auto skel = createChainSkeleton(2, "energy_lagrangian");
+
+  skel->setVelocities(Eigen::VectorXd::Constant(2, 0.25));
+
+  const double kinetic = skel->computeKineticEnergy();
+  const double potential = skel->computePotentialEnergy();
+  const double lagrangian = skel->computeLagrangian();
+
+  EXPECT_TRUE(std::isfinite(kinetic));
+  EXPECT_TRUE(std::isfinite(potential));
+  EXPECT_NEAR(lagrangian, kinetic - potential, 1e-10);
+}
+
+TEST(MetaSkeletonTests, VelocityAndAccelerationLimitVectors)
+{
+  auto skel = createChainSkeleton(3, "limits_vectors");
+
+  Eigen::VectorXd velocityUpper(3);
+  velocityUpper << 2.0, 3.0, 4.0;
+  skel->setVelocityUpperLimits(velocityUpper);
+  const auto velocityUpperOut = skel->getVelocityUpperLimits();
+  EXPECT_DOUBLE_EQ(velocityUpperOut[0], 2.0);
+  EXPECT_DOUBLE_EQ(velocityUpperOut[1], 3.0);
+  EXPECT_DOUBLE_EQ(velocityUpperOut[2], 4.0);
+
+  Eigen::VectorXd accelLower(3);
+  accelLower << -1.0, -2.0, -3.0;
+  skel->setAccelerationLowerLimits(accelLower);
+  const auto accelLowerOut = skel->getAccelerationLowerLimits();
+  EXPECT_DOUBLE_EQ(accelLowerOut[0], -1.0);
+  EXPECT_DOUBLE_EQ(accelLowerOut[1], -2.0);
+  EXPECT_DOUBLE_EQ(accelLowerOut[2], -3.0);
+
+  Eigen::VectorXd accelUpper(3);
+  accelUpper << 1.5, 2.5, 3.5;
+  skel->setAccelerationUpperLimits(accelUpper);
+  const auto accelUpperOut = skel->getAccelerationUpperLimits();
+  EXPECT_DOUBLE_EQ(accelUpperOut[0], 1.5);
+  EXPECT_DOUBLE_EQ(accelUpperOut[1], 2.5);
+  EXPECT_DOUBLE_EQ(accelUpperOut[2], 3.5);
+}
+
+//==============================================================================
+TEST(MetaSkeletonTests, IndexLimitAccessors)
+{
+  auto skel = createChainSkeleton(3, "limit_indexed");
+
+  skel->setVelocityLowerLimit(1, -1.1);
+  skel->setVelocityUpperLimit(1, 1.2);
+  EXPECT_DOUBLE_EQ(skel->getVelocityLowerLimit(1), -1.1);
+  EXPECT_DOUBLE_EQ(skel->getVelocityUpperLimit(1), 1.2);
+
+  skel->setAccelerationLowerLimit(2, -2.0);
+  skel->setAccelerationUpperLimit(2, 2.0);
+  EXPECT_DOUBLE_EQ(skel->getAccelerationLowerLimit(2), -2.0);
+  EXPECT_DOUBLE_EQ(skel->getAccelerationUpperLimit(2), 2.0);
+
+  skel->setForceLowerLimit(0, -3.0);
+  skel->setForceUpperLimit(0, 3.0);
+  EXPECT_DOUBLE_EQ(skel->getForceLowerLimit(0), -3.0);
+  EXPECT_DOUBLE_EQ(skel->getForceUpperLimit(0), 3.0);
+}
+
+//==============================================================================
+TEST(MetaSkeletonTests, IndexedPositionVelocityAccelerationLimits)
+{
+  auto skel = createChainSkeleton(3, "indexed_limits");
+
+  skel->setPositionLowerLimit(1, -0.4);
+  skel->setPositionUpperLimit(1, 0.6);
+  EXPECT_DOUBLE_EQ(skel->getPositionLowerLimit(1), -0.4);
+  EXPECT_DOUBLE_EQ(skel->getPositionUpperLimit(1), 0.6);
+
+  skel->setVelocityLowerLimit(2, -1.5);
+  skel->setVelocityUpperLimit(2, 1.5);
+  EXPECT_DOUBLE_EQ(skel->getVelocityLowerLimit(2), -1.5);
+  EXPECT_DOUBLE_EQ(skel->getVelocityUpperLimit(2), 1.5);
+
+  skel->setAccelerationLowerLimit(0, -2.2);
+  skel->setAccelerationUpperLimit(0, 2.2);
+  EXPECT_DOUBLE_EQ(skel->getAccelerationLowerLimit(0), -2.2);
+  EXPECT_DOUBLE_EQ(skel->getAccelerationUpperLimit(0), 2.2);
+}
+
+//==============================================================================
+TEST(MetaSkeletonTests, LinearAngularJacobianRelativeFrames)
+{
+  auto skel = createChainSkeleton(2, "jac_rel_frames");
+  auto* root = skel->getBodyNode(0);
+  auto* endBody = skel->getBodyNode(1);
+  ASSERT_NE(root, nullptr);
+  ASSERT_NE(endBody, nullptr);
+
+  const Eigen::Vector3d offset(0.05, -0.02, 0.01);
+  const auto Jlin
+      = skel->getLinearJacobian(endBody, offset, root, Frame::World());
+  EXPECT_EQ(Jlin.rows(), 3);
+  EXPECT_EQ(Jlin.cols(), static_cast<int>(skel->getNumDofs()));
+
+  const auto Jang = skel->getAngularJacobian(endBody, root, Frame::World());
+  EXPECT_EQ(Jang.rows(), 3);
+  EXPECT_EQ(Jang.cols(), static_cast<int>(skel->getNumDofs()));
+}
+
+//==============================================================================
+TEST(MetaSkeletonTests, JacobianClassicDerivWithVelocities)
+{
+  auto skel = createChainSkeleton(2, "jac_classic_nonzero");
+
+  Eigen::VectorXd velocities(2);
+  velocities << 0.4, -0.3;
+  skel->setVelocities(velocities);
+
+  auto* endBody = skel->getBodyNode(1);
+  ASSERT_NE(endBody, nullptr);
+
+  const auto Jclassic = skel->getJacobianClassicDeriv(endBody);
+  EXPECT_EQ(Jclassic.rows(), 6);
+  EXPECT_EQ(Jclassic.cols(), static_cast<int>(skel->getNumDofs()));
+  EXPECT_TRUE(Jclassic.array().isFinite().all());
+}
+
+//==============================================================================
+TEST(MetaSkeletonTests, COMQueriesWithoutFrame)
+{
+  auto skel = createMixedSkeleton("com_no_frame");
+
+  skel->setVelocities(Eigen::VectorXd::Constant(skel->getNumDofs(), 0.15));
+  skel->setAccelerations(Eigen::VectorXd::Constant(skel->getNumDofs(), -0.07));
+
+  const auto com = skel->getCOM();
+  EXPECT_TRUE(com.array().isFinite().all());
+
+  const auto comVel = skel->getCOMLinearVelocity();
+  EXPECT_TRUE(comVel.array().isFinite().all());
+
+  const auto comAcc = skel->getCOMLinearAcceleration();
+  EXPECT_TRUE(comAcc.array().isFinite().all());
+}
+
+TEST(MetaSkeletonTests, PerIndexVelocityAndAccelerationLimits)
+{
+  auto skel = createChainSkeleton(3);
+  std::vector<std::size_t> indices = {0, 2};
+
+  Eigen::VectorXd lowerVel(2);
+  lowerVel << -5.0, -3.0;
+  skel->setVelocityLowerLimits(indices, lowerVel);
+
+  auto gotLowerVel = skel->getVelocityLowerLimits(indices);
+  EXPECT_DOUBLE_EQ(gotLowerVel[0], -5.0);
+  EXPECT_DOUBLE_EQ(gotLowerVel[1], -3.0);
+
+  Eigen::VectorXd upperVel(2);
+  upperVel << 5.0, 3.0;
+  skel->setVelocityUpperLimits(indices, upperVel);
+
+  auto gotUpperVel = skel->getVelocityUpperLimits(indices);
+  EXPECT_DOUBLE_EQ(gotUpperVel[0], 5.0);
+  EXPECT_DOUBLE_EQ(gotUpperVel[1], 3.0);
+
+  Eigen::VectorXd lowerAcc(2);
+  lowerAcc << -100.0, -50.0;
+  skel->setAccelerationLowerLimits(indices, lowerAcc);
+
+  auto gotLowerAcc = skel->getAccelerationLowerLimits(indices);
+  EXPECT_DOUBLE_EQ(gotLowerAcc[0], -100.0);
+  EXPECT_DOUBLE_EQ(gotLowerAcc[1], -50.0);
+
+  Eigen::VectorXd upperAcc(2);
+  upperAcc << 100.0, 50.0;
+  skel->setAccelerationUpperLimits(indices, upperAcc);
+
+  auto gotUpperAcc = skel->getAccelerationUpperLimits(indices);
+  EXPECT_DOUBLE_EQ(gotUpperAcc[0], 100.0);
+  EXPECT_DOUBLE_EQ(gotUpperAcc[1], 50.0);
 }
