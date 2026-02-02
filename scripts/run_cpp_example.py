@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build and run a C++ example with optional runtime arguments."""
+
 from __future__ import annotations
 
 import argparse
@@ -46,9 +47,16 @@ def _normalize_target(target: str) -> str:
     return target
 
 
+def _is_raylib_target(target: str) -> bool:
+    """Return True if *target* is a Raylib-backed example."""
+    return target in {"raylib", "dart_raylib"} or target.startswith("raylib_")
+
+
 def _resolve_build_and_binary(target: str) -> tuple[str, str]:
     if target in {"raylib", "dart_raylib"}:
         return "dart_raylib", "raylib"
+    if target.startswith("raylib_"):
+        return f"dart_{target}", target
     return target, target
 
 
@@ -74,7 +82,7 @@ def _cmake_cache_bool(build_dir: Path, option: str) -> bool | None:
 def _ensure_target_requirements(
     build_dir: Path, target: str, env: dict[str, str]
 ) -> None:
-    if target not in {"raylib", "dart_raylib"}:
+    if not _is_raylib_target(target):
         return
 
     enabled = _cmake_cache_bool(build_dir, "DART_BUILD_GUI_RAYLIB")

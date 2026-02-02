@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/gui/interactive_frame.hpp>
 #include <dart/gui/raylib/about_widget.hpp>
 #include <dart/gui/raylib/inspector_widget.hpp>
 #include <dart/gui/raylib/main_menu_widget.hpp>
@@ -89,7 +90,7 @@ int main(int argc, char* argv[])
   }
 
   // InteractiveFrame with gizmo tools
-  auto interactiveFrame = dart::gui::InteractiveFrame::create(
+  auto interactiveFrame = std::make_shared<dart::gui::InteractiveFrame>(
       dart::dynamics::Frame::World(), "interactive_frame");
   {
     Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
