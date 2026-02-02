@@ -1359,8 +1359,9 @@ TEST(DARTCollide, BoxBoxEdgeEdgeContact)
 
   // Box B rotated 45 deg around Z, translated so edges overlap
   Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
-  tfB.linear() = Eigen::AngleAxisd(M_PI / 4.0, Eigen::Vector3d::UnitZ())
-                     .toRotationMatrix();
+  tfB.linear()
+      = Eigen::AngleAxisd(dart::math::pi / 4.0, Eigen::Vector3d::UnitZ())
+            .toRotationMatrix();
   tfB.translation() = Eigen::Vector3d(1.0, 0.0, 0.0);
   auto objB = makeObject(boxB, detector.get(), tfB);
 

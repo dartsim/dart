@@ -345,10 +345,9 @@ TEST(ArrowShapeTest, ReconfigureReleasesCachedScene)
   const Eigen::Vector3d head(1.0, 0.0, 0.0);
   ArrowShape arrow(tail, head);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const aiScene* scene = arrow.getMesh();
-#pragma GCC diagnostic pop
+  DART_SUPPRESS_DEPRECATED_END
 
   ASSERT_NE(scene, nullptr);
 

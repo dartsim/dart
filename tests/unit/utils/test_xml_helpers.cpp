@@ -45,12 +45,6 @@
 
 using namespace dart::utils;
 
-namespace dart::utils {
-Eigen::Vector3d getValueVec3(
-    const tinyxml2::XMLElement* parentElement, std::string_view name);
-std::string toString(tinyxml2::XMLError errorCode);
-} // namespace dart::utils
-
 namespace {
 
 class CloneableNode : public tinyxml2::XMLNode

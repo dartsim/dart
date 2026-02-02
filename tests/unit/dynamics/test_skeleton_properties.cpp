@@ -38,6 +38,8 @@
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/skeleton.hpp>
 
+#include <dart/common/diagnostics.hpp>
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
@@ -588,9 +590,7 @@ TEST(SkeletonProperties, ConstOverloadsAndSpanVariants)
   // Get a const reference to the skeleton
   const Skeleton& constSkel = *skel;
 
-// Suppress deprecated warnings for testing const overloads that are deprecated
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  DART_SUPPRESS_DEPRECATED_BEGIN
 
   auto constBodyNodes = constSkel.getBodyNodes();
   EXPECT_EQ(constBodyNodes.size(), skel->getNumBodyNodes());
@@ -636,7 +636,7 @@ TEST(SkeletonProperties, ConstOverloadsAndSpanVariants)
   auto constDofs = constSkel.getDofs();
   EXPECT_EQ(static_cast<std::size_t>(constDofs.size()), skel->getNumDofs());
 
-#pragma GCC diagnostic pop
+  DART_SUPPRESS_DEPRECATED_END
 
   // skeleton.cpp: getTreeDofs(treeIdx) const
   auto treeDofs0 = constSkel.getTreeDofs(0);
