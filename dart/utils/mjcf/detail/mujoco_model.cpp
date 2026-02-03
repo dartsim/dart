@@ -72,7 +72,9 @@ Errors MujocoModel::read(
        "default",
        "asset",
        "worldbody",
-       "equality"});
+       "equality",
+       "actuator",
+       "contact"});
 
   // Read 'model' attribute
   if (hasAttribute(element, "model")) {
@@ -135,6 +137,22 @@ Errors MujocoModel::read(
         baseUri,
         retriever);
     errors.insert(errors.end(), worldbodyErrors.begin(), worldbodyErrors.end());
+  }
+
+  // Read <actuator>
+  if (hasElement(element, "actuator")) {
+    auto actuatorElement = getElement(element, "actuator");
+    DART_ASSERT(actuatorElement);
+    const auto actuatorErrors = mActuator.read(actuatorElement);
+    errors.insert(errors.end(), actuatorErrors.begin(), actuatorErrors.end());
+  }
+
+  // Read <contact>
+  if (hasElement(element, "contact")) {
+    auto contactElement = getElement(element, "contact");
+    DART_ASSERT(contactElement);
+    const auto contactErrors = mContact.read(contactElement);
+    errors.insert(errors.end(), contactErrors.begin(), contactErrors.end());
   }
 
   const Errors assetPreprocessErrors = mAsset.preprocess(mCompiler);
@@ -258,6 +276,18 @@ const Worldbody& MujocoModel::getWorldbody() const
 const Equality& MujocoModel::getEquality() const
 {
   return mEquality;
+}
+
+//==============================================================================
+const Actuator& MujocoModel::getActuator() const
+{
+  return mActuator;
+}
+
+//==============================================================================
+const Contact& MujocoModel::getContact() const
+{
+  return mContact;
 }
 
 } // namespace detail

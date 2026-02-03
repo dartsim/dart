@@ -86,6 +86,10 @@
 
 - IO and Parsing
   - MJCF parser improvements for MuJoCo 3.x compatibility: fixed `limited` attribute parsing to use `std::optional<bool>`, added `autolimits` compiler attribute (default: true), added `<freejoint>` element support, wired `<option>` timestep/gravity to World, mapped joint stiffness/frictionloss to DART spring/friction APIs, added unknown element warnings for unsupported MJCF elements, and fixed null pointer crash for unnamed joints on root bodies.
+  - MJCF `<actuator>` parsing: motor, position, velocity, and general actuator types are mapped to DART Joint actuator types (FORCE, SERVO, VELOCITY) with force limits scaled by gear ratio. Includes `ActuatorAttributes` for shared attributes (dyntype, gaintype, biastype, forcelimited, forcerange, gear, ctrlrange).
+  - MJCF `<contact><exclude>` collision filtering: body-pair exclusions are mapped to DART's `BodyNodeCollisionFilter` blacklist on the world's constraint solver.
+  - MJCF `<asset>` texture and material parsing: `<texture>` (name, type, file, builtin, rgb1/rgb2, width/height) and `<material>` (name, texture, rgba, emission, specular, shininess, reflectance) elements are parsed and accessible by name or index.
+  - MJCF `<body>` camera and light parsing: `<camera>` (fovy, pos, mode, target, quat) and `<light>` (pos, dir, active, diffuse, specular, directional, castshadow) elements are parsed as child elements of bodies.
   - Fixed `Option::getApiRate()` and `Option::getImpRatio()` returning the wrong value (both returned timestep).
   - Fix null pointer dereference in XmlHelpers getValue\* functions when child element is missing. ([#2428](https://github.com/dartsim/dart/pull/2428))
   - Unified model loading under `dart::io` and added HTTP retriever support. ([#2316](https://github.com/dartsim/dart/pull/2316), [#2138](https://github.com/dartsim/dart/pull/2138), [#604](https://github.com/dartsim/dart/issues/604))

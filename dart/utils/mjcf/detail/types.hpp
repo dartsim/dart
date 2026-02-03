@@ -131,6 +131,14 @@ enum class JointType
   HINGE,
 };
 
+enum class ActuatorType
+{
+  MOTOR,
+  POSITION,
+  VELOCITY,
+  GENERAL,
+};
+
 } // namespace detail
 } // namespace MjcfParser
 } // namespace utils

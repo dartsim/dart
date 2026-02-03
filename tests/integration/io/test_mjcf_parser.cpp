@@ -2296,3 +2296,225 @@ TEST(MjcfParserTest, OptionTimestepGravity)
   EXPECT_DOUBLE_EQ(world->getTimeStep(), 0.005);
   EXPECT_TRUE(world->getGravity().isApprox(Eigen::Vector3d(0, 0, -10)));
 }
+
+//==============================================================================
+TEST(MjcfParserTest, ActuatorMotorSetsForceType)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="actuator_motor">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <joint name="hinge1" type="hinge" axis="0 0 1" />
+    </body>
+  </worldbody>
+  <actuator>
+    <motor joint="hinge1" gear="2" forcelimited="true" forcerange="-10 10" />
+  </actuator>
+</mujoco>
+)";
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_actuator_motor.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+
+  auto* joint = world->getSkeleton(0)->getJoint("hinge1");
+  ASSERT_NE(joint, nullptr);
+  EXPECT_EQ(joint->getActuatorType(), dynamics::Joint::FORCE);
+  // Force limits scaled by gear=2
+  EXPECT_DOUBLE_EQ(joint->getForceLowerLimit(0), -20.0);
+  EXPECT_DOUBLE_EQ(joint->getForceUpperLimit(0), 20.0);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, ActuatorPositionSetsServoType)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="actuator_position">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <joint name="slide1" type="slide" axis="1 0 0" />
+    </body>
+  </worldbody>
+  <actuator>
+    <position joint="slide1" />
+  </actuator>
+</mujoco>
+)";
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / "dart_mjcf_actuator_position.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+
+  auto* joint = world->getSkeleton(0)->getJoint("slide1");
+  ASSERT_NE(joint, nullptr);
+  EXPECT_EQ(joint->getActuatorType(), dynamics::Joint::SERVO);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, ContactExcludeDisablesCollision)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="contact_exclude">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="body1">
+      <geom type="sphere" size="0.1" />
+    </body>
+    <body name="body2" pos="0 0 1">
+      <geom type="sphere" size="0.1" />
+    </body>
+  </worldbody>
+  <contact>
+    <exclude body1="body1" body2="body2" />
+  </contact>
+</mujoco>
+)";
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / "dart_mjcf_contact_exclude.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+
+  // Verify that a collision filter was set
+  const auto& collisionOption
+      = world->getConstraintSolver()->getCollisionOption();
+  EXPECT_NE(collisionOption.collisionFilter, nullptr);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, AssetTextureAndMaterialParsing)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="asset_texture_material">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <asset>
+    <texture name="grid" type="2d" builtin="checker" rgb1="0.8 0.8 0.8"
+             rgb2="0.2 0.2 0.2" width="512" height="512" />
+    <material name="grid_mat" texture="grid" rgba="1 1 1 1"
+              emission="0.1" specular="0.8" shininess="0.9" reflectance="0.2" />
+  </asset>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+    </body>
+  </worldbody>
+</mujoco>
+)";
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_asset_tex_mat.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(common::Uri(tempPath.string()), createRetriever());
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_TRUE(errors.empty());
+
+  const auto& asset = mujoco.getAsset();
+  ASSERT_EQ(asset.getNumTextures(), 1u);
+  EXPECT_EQ(asset.getTexture(0).getName(), "grid");
+  EXPECT_EQ(asset.getTexture(0).getType(), "2d");
+  EXPECT_EQ(asset.getTexture(0).getBuiltin(), "checker");
+
+  const auto* texByName = asset.getTexture("grid");
+  ASSERT_NE(texByName, nullptr);
+  EXPECT_EQ(texByName->getName(), "grid");
+
+  ASSERT_EQ(asset.getNumMaterials(), 1u);
+  EXPECT_EQ(asset.getMaterial(0).getName(), "grid_mat");
+  EXPECT_EQ(asset.getMaterial(0).getTexture(), "grid");
+  EXPECT_DOUBLE_EQ(asset.getMaterial(0).getEmission(), 0.1);
+  EXPECT_DOUBLE_EQ(asset.getMaterial(0).getSpecular(), 0.8);
+  EXPECT_DOUBLE_EQ(asset.getMaterial(0).getShininess(), 0.9);
+  EXPECT_DOUBLE_EQ(asset.getMaterial(0).getReflectance(), 0.2);
+
+  const auto* matByName = asset.getMaterial("grid_mat");
+  ASSERT_NE(matByName, nullptr);
+  EXPECT_EQ(matByName->getName(), "grid_mat");
+}
+
+//==============================================================================
+TEST(MjcfParserTest, BodyCameraAndLightParsing)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="body_camera_light">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <camera name="cam1" fovy="60" pos="0 -1 1" mode="trackcom" />
+      <light name="light1" pos="0 0 2" dir="0 0 -1"
+             diffuse="0.9 0.9 0.9" specular="0.1 0.1 0.1"
+             directional="true" />
+    </body>
+  </worldbody>
+</mujoco>
+)";
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_camera_light.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(common::Uri(tempPath.string()), createRetriever());
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_TRUE(errors.empty());
+
+  const auto& body = mujoco.getWorldbody().getRootBody(0);
+
+  ASSERT_EQ(body.getNumCameras(), 1u);
+  const auto& cam = body.getCamera(0);
+  EXPECT_EQ(cam.getName(), "cam1");
+  EXPECT_DOUBLE_EQ(cam.getFovy(), 60.0);
+  EXPECT_TRUE(cam.getPos().isApprox(Eigen::Vector3d(0, -1, 1)));
+  EXPECT_EQ(cam.getMode(), "trackcom");
+
+  ASSERT_EQ(body.getNumLights(), 1u);
+  const auto& light = body.getLight(0);
+  EXPECT_EQ(light.getName(), "light1");
+  EXPECT_TRUE(light.getPos().isApprox(Eigen::Vector3d(0, 0, 2)));
+  EXPECT_TRUE(light.getDir().isApprox(Eigen::Vector3d(0, 0, -1)));
+  EXPECT_TRUE(light.getDiffuse().isApprox(Eigen::Vector3d(0.9, 0.9, 0.9)));
+  EXPECT_TRUE(light.getSpecular().isApprox(Eigen::Vector3d(0.1, 0.1, 0.1)));
+  EXPECT_TRUE(light.getDirectional());
+}
