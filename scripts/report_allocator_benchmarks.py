@@ -220,9 +220,6 @@ def _detect_unexpected_findings(
         if "Typed" in alloc_name or "Direct" in alloc_name:
             continue
         for e in entries:
-            typed_key = e["name"].replace(
-                "BM_MMDispatch_" + alloc_name, "BM_MMDispatch_Typed"
-            )
             direct_key = e["name"].replace(
                 "BM_MMDispatch_" + alloc_name, "BM_DirectFreeList"
             )

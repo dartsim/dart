@@ -305,12 +305,14 @@ def main(argv: list[str]) -> int:
         for p in passes:
             speedup = (1.0 / p["ratio"] - 1) * 100 if p["ratio"] > 0 else 0
             print(
-                "  PASS  {} [<={}x]: {:.1f} ns vs Std {:.1f} ns (ratio {:.2f})".format(
+                "  PASS  {} [<={}x]: {:.1f} ns vs Std {:.1f} ns"
+                " (ratio {:.2f}, {:.0f}% faster)".format(
                     p["benchmark"],
                     p["threshold"],
                     p["dart_ns"],
                     p["std_ns"],
                     p["ratio"],
+                    speedup,
                 )
             )
 
