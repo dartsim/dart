@@ -5,6 +5,7 @@
  * This file is provided under the BSD-style License.
  */
 
+#include "dart/common/exception.hpp"
 #include "dart/math/optimization/function.hpp"
 #include "dart/math/optimization/gradient_descent_solver.hpp"
 #include "dart/math/optimization/problem.hpp"
@@ -12,6 +13,7 @@
 
 #include <gtest/gtest.h>
 
+#include <limits>
 #include <sstream>
 
 using namespace dart::math;
@@ -82,6 +84,48 @@ TEST(ProblemTest, SetDimensionClearsSeeds)
   prob.setDimension(3);
   EXPECT_EQ(prob.getDimension(), 3u);
   EXPECT_EQ(prob.getSeeds().size(), 0u);
+}
+
+TEST(ProblemTest, SetDimensionRejectsExcessiveDimension)
+{
+  Problem prob(2);
+
+  EXPECT_THROW(
+      prob.setDimension(Problem::kMaxDimension + 1),
+      dart::common::InvalidArgumentException);
+  EXPECT_EQ(prob.getDimension(), 2u);
+
+  const std::size_t huge = std::numeric_limits<std::size_t>::max();
+  EXPECT_THROW(prob.setDimension(huge), dart::common::InvalidArgumentException);
+  EXPECT_EQ(prob.getDimension(), 2u);
+}
+
+TEST(ProblemTest, ConstructorRejectsExcessiveDimension)
+{
+  EXPECT_THROW(
+      Problem(Problem::kMaxDimension + 1),
+      dart::common::InvalidArgumentException);
+}
+
+TEST(ProblemTest, SetDimensionAcceptsMaxDimension)
+{
+  // kMaxDimension itself should be accepted (boundary check)
+  // Note: This allocates ~32 MB; acceptable for a unit test
+  Problem prob(0);
+  EXPECT_NO_THROW(prob.setDimension(Problem::kMaxDimension));
+  EXPECT_EQ(prob.getDimension(), Problem::kMaxDimension);
+}
+
+TEST(ProblemTest, ZeroDimensionRemainsValid)
+{
+  Problem prob(0);
+  EXPECT_EQ(prob.getDimension(), 0u);
+  EXPECT_EQ(prob.getInitialGuess().size(), 0);
+
+  prob.setDimension(5);
+  EXPECT_EQ(prob.getDimension(), 5u);
+  prob.setDimension(0);
+  EXPECT_EQ(prob.getDimension(), 0u);
 }
 
 TEST(ProblemTest, AddAndGetEqConstraints)

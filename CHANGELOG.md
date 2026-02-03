@@ -78,6 +78,7 @@
   - Ensure Bullet double-precision builds include `dart/collision/bullet/BulletInclude.hpp` before Bullet headers so `BT_USE_DOUBLE_PRECISION` is honored: [#2334](https://github.com/dartsim/dart/pull/2334).
 
 - LCP and Optimization
+  - Added dimension validation to `Problem::setDimension()` to reject dimensions exceeding `Problem::kMaxDimension` (1,000,000) with `InvalidArgumentException` instead of attempting multi-GB allocations that cause ASan aborts or `std::bad_alloc`. ([#2500](https://github.com/dartsim/dart/issues/2500))
   - Refactored the LCP solver stack under `dart::math::lcp` with unified APIs plus new solver implementations and ImGui dashboard support. ([#2202](https://github.com/dartsim/dart/pull/2202), [#2241](https://github.com/dartsim/dart/pull/2241), [#2318](https://github.com/dartsim/dart/pull/2318), [#2355](https://github.com/dartsim/dart/pull/2355))
   - Modernized the Dantzig solver and improved stability (C++20 optimizations, NaN fallback, warning suppression). ([#2081](https://github.com/dartsim/dart/pull/2081), [#2253](https://github.com/dartsim/dart/pull/2253), [#2111](https://github.com/dartsim/dart/pull/2111))
   - Fixed Lemke solver segfaults on macOS arm64 by avoiding Eigen stack allocations. ([#2462](https://github.com/dartsim/dart/pull/2462))
