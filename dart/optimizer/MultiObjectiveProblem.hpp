@@ -47,7 +47,16 @@ namespace optimizer {
 class MultiObjectiveProblem
 {
 public:
+  /// Maximum allowed dimension for a MultiObjectiveProblem.
+  ///
+  /// Requesting a dimension above this limit throws std::invalid_argument.
+  /// The value (1 000 000) keeps peak allocation under ~16 MB (two
+  /// VectorXd of 8 bytes each).
+  static constexpr std::size_t kMaxDimension = 1'000'000;
+
   /// Constructor
+  ///
+  /// \throws std::invalid_argument if \p dim exceeds kMaxDimension.
   explicit MultiObjectiveProblem(std::size_t dim, std::size_t integerDim = 0u);
 
   /// Destructor
@@ -72,6 +81,7 @@ public:
   ///
   /// \param[in] dim Total dimension of the solution.
   /// \param[in] integerDim The dimension of integer part in the solution.
+  /// \throws std::invalid_argument if \p dim exceeds kMaxDimension.
   virtual void setSolutionDimension(
       std::size_t dim, std::size_t integerDim = 0u);
 

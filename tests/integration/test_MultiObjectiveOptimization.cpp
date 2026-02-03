@@ -2,6 +2,7 @@
 
 #include <dart/optimizer/Function.hpp>
 #include <dart/optimizer/GenericMultiObjectiveProblem.hpp>
+#include <dart/optimizer/MultiObjectiveProblem.hpp>
 #include <dart/optimizer/MultiObjectiveSolver.hpp>
 
 #include <dart/common/Console.hpp>
@@ -10,6 +11,7 @@
 #include <gtest/gtest.h>
 
 #include <fstream>
+#include <limits>
 #if HAVE_PAGMO
   #include <dart/optimizer/pagmo/pagmo.hpp>
 #endif
@@ -173,4 +175,70 @@ TEST(ZDT1, Basic)
   testZDT1(pagmoSolver);
   testZDT1Generic(pagmoSolver);
 #endif
+}
+
+//==============================================================================
+class MinimalMOProblem : public MultiObjectiveProblem
+{
+public:
+  explicit MinimalMOProblem(std::size_t dim) : MultiObjectiveProblem(dim) {}
+
+  std::size_t getObjectiveDimension() const override
+  {
+    return 1u;
+  }
+
+  Eigen::VectorXd evaluateObjectives(
+      const Eigen::VectorXd& /*x*/) const override
+  {
+    return Eigen::VectorXd::Zero(1);
+  }
+};
+
+//==============================================================================
+TEST(MultiObjectiveProblem, SetSolutionDimensionRejectsExcessiveDimension)
+{
+  MinimalMOProblem prob(1);
+  EXPECT_THROW(
+      prob.setSolutionDimension(MultiObjectiveProblem::kMaxDimension + 1),
+      std::invalid_argument);
+}
+
+//==============================================================================
+TEST(MultiObjectiveProblem, ConstructorRejectsExcessiveDimension)
+{
+  EXPECT_THROW(
+      MinimalMOProblem(MultiObjectiveProblem::kMaxDimension + 1),
+      std::invalid_argument);
+}
+
+//==============================================================================
+TEST(MultiObjectiveProblem, SetSolutionDimensionAcceptsMaxDimension)
+{
+  MinimalMOProblem prob(1);
+  EXPECT_NO_THROW(
+      prob.setSolutionDimension(MultiObjectiveProblem::kMaxDimension));
+  EXPECT_EQ(prob.getSolutionDimension(), MultiObjectiveProblem::kMaxDimension);
+}
+
+//==============================================================================
+TEST(MultiObjectiveProblem, ZeroDimensionRemainsValid)
+{
+  MinimalMOProblem prob(0);
+  EXPECT_EQ(prob.getSolutionDimension(), 0u);
+}
+
+//==============================================================================
+TEST(GenericMultiObjectiveProblem, ConstructorRejectsExcessiveDimension)
+{
+  EXPECT_THROW(
+      GenericMultiObjectiveProblem(MultiObjectiveProblem::kMaxDimension + 1),
+      std::invalid_argument);
+}
+
+//==============================================================================
+TEST(GenericMultiObjectiveProblem, ConstructorAcceptsValidDimension)
+{
+  GenericMultiObjectiveProblem prob(10);
+  EXPECT_EQ(prob.getSolutionDimension(), 10u);
 }
