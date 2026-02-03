@@ -81,9 +81,8 @@ MemoryAllocator& FrameAllocator::getBaseAllocator()
 void FrameAllocator::print(std::ostream& os, int indent) const
 {
   const std::string spaces(indent, ' ');
-  const auto usedBytes = static_cast<size_t>(mCur - mBuffer);
   os << spaces << "[FrameAllocator] capacity: " << mCapacity
-     << " used: " << usedBytes << " overflow: " << mOverflowAllocations.size()
+     << " used: " << used() << " overflow: " << mOverflowAllocations.size()
      << "\n";
 }
 
@@ -141,7 +140,12 @@ size_t FrameAllocator::capacity() const noexcept
 //==============================================================================
 size_t FrameAllocator::used() const noexcept
 {
-  return static_cast<size_t>(mCur - mBuffer);
+  // Measure from the aligned base (not raw mBuffer) since mCur starts at the
+  // first 32-byte aligned address within the buffer.
+  const auto addr = reinterpret_cast<uintptr_t>(mBuffer);
+  const auto* alignedBase
+      = reinterpret_cast<const char*>((addr + 31) & ~uintptr_t{31});
+  return static_cast<size_t>(mCur - alignedBase);
 }
 
 //==============================================================================
