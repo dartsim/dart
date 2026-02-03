@@ -51,6 +51,7 @@
 #include <Eigen/Dense>
 
 #include <algorithm>
+#include <unordered_set>
 #include <vector>
 
 #include <cstddef>
@@ -750,6 +751,7 @@ simulation::WorldPtr createWorld(
 
   // Map MJCF <actuator> entries to DART Joint APIs
   const detail::Actuator& actuator = mujoco.getActuator();
+  std::unordered_set<std::string> actuatedJoints;
   for (std::size_t i = 0; i < actuator.getNumEntries(); ++i) {
     const detail::Actuator::Entry& entry = actuator.getEntry(i);
 
@@ -758,6 +760,14 @@ simulation::WorldPtr createWorld(
           "[MjcfParser] Actuator '{}' has no joint specified, skipping.",
           entry.mName);
       continue;
+    }
+
+    if (!actuatedJoints.insert(entry.mJoint).second) {
+      DART_WARN(
+          "[MjcfParser] Multiple actuators target joint '{}'. Actuator '{}' "
+          "overwrites the previously applied actuator type and force limits.",
+          entry.mJoint,
+          entry.mName);
     }
 
     // Find the DART Joint by name across all skeletons
@@ -779,7 +789,6 @@ simulation::WorldPtr createWorld(
       continue;
     }
 
-    // Map actuator type
     switch (entry.mType) {
       case detail::ActuatorType::MOTOR:
         dartJoint->setActuatorType(dynamics::Joint::FORCE);
