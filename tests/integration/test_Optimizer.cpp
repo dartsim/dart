@@ -65,6 +65,35 @@ using namespace dart::optimizer;
 using namespace dart::dynamics;
 
 //==============================================================================
+TEST(Optimizer, SetDimensionRejectsExcessiveDimension)
+{
+  Problem prob;
+  EXPECT_THROW(
+      prob.setDimension(Problem::kMaxDimension + 1), std::invalid_argument);
+}
+
+//==============================================================================
+TEST(Optimizer, ConstructorRejectsExcessiveDimension)
+{
+  EXPECT_THROW(Problem(Problem::kMaxDimension + 1), std::invalid_argument);
+}
+
+//==============================================================================
+TEST(Optimizer, SetDimensionAcceptsMaxDimension)
+{
+  Problem prob;
+  EXPECT_NO_THROW(prob.setDimension(Problem::kMaxDimension));
+  EXPECT_EQ(prob.getDimension(), Problem::kMaxDimension);
+}
+
+//==============================================================================
+TEST(Optimizer, ZeroDimensionRemainsValid)
+{
+  Problem prob(0);
+  EXPECT_EQ(prob.getDimension(), 0u);
+}
+
+//==============================================================================
 /// \brief class SampleObjFunc
 class SampleObjFunc : public Function
 {

@@ -2,6 +2,12 @@
 
 ## DART 6
 
+### DART 6.16.7 (TBD)
+
+* Optimizer
+
+  * Validate Problem and MultiObjectiveProblem dimension to prevent excessive allocation from huge inputs: [#2500](https://github.com/dartsim/dart/issues/2500)
+
 ### [DART 6.16.6 (2026-01-28)](https://github.com/dartsim/dart/milestone/91?closed=1)
 
 * Constraint

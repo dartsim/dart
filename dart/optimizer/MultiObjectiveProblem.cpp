@@ -40,6 +40,8 @@
 #include <algorithm>
 #include <limits>
 #include <numeric>
+#include <stdexcept>
+#include <string>
 
 namespace dart {
 namespace optimizer {
@@ -66,6 +68,13 @@ MultiObjectiveProblem::MultiObjectiveProblem(
 void MultiObjectiveProblem::setSolutionDimension(
     std::size_t dim, std::size_t integerDim)
 {
+  if (dim > kMaxDimension) {
+    throw std::invalid_argument(
+        "[MultiObjectiveProblem::setSolutionDimension] Requested dimension ("
+        + std::to_string(dim) + ") exceeds the maximum allowed dimension ("
+        + std::to_string(kMaxDimension) + ").");
+  }
+
   if (dim == mDimension && integerDim == mIntegerDimension)
     return;
 

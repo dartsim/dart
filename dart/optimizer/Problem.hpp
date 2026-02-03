@@ -48,7 +48,16 @@ namespace optimizer {
 class Problem
 {
 public:
+  /// Maximum allowed dimension for a Problem.
+  ///
+  /// Requesting a dimension above this limit throws std::invalid_argument.
+  /// The value (1 000 000) keeps peak allocation under ~32 MB (four
+  /// VectorXd of 8 bytes each).
+  static constexpr std::size_t kMaxDimension = 1'000'000;
+
   /// \brief Constructor
+  ///
+  /// \throws std::invalid_argument if \p _dim exceeds kMaxDimension.
   explicit Problem(std::size_t _dim = 0);
 
   /// \brief Destructor
@@ -57,6 +66,8 @@ public:
   //--------------------------- Problem Setting --------------------------------
   /// \brief Set dimension. Note: Changing the dimension will clear out the
   /// initial guess and any seeds that have been added.
+  ///
+  /// \throws std::invalid_argument if \p _dim exceeds kMaxDimension.
   void setDimension(std::size_t _dim);
 
   /// \brief Get dimension

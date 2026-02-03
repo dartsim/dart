@@ -39,6 +39,8 @@
 
 #include <algorithm>
 #include <limits>
+#include <stdexcept>
+#include <string>
 
 namespace dart {
 namespace optimizer {
@@ -64,6 +66,13 @@ Problem::Problem(std::size_t _dim) : mDimension(0), mOptimumValue(0.0)
 //==============================================================================
 void Problem::setDimension(std::size_t _dim)
 {
+  if (_dim > kMaxDimension) {
+    throw std::invalid_argument(
+        "[Problem::setDimension] Requested dimension (" + std::to_string(_dim)
+        + ") exceeds the maximum allowed dimension ("
+        + std::to_string(kMaxDimension) + ").");
+  }
+
   if (_dim != mDimension) {
     mDimension = _dim;
 
