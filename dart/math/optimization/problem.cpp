@@ -32,6 +32,7 @@
 
 #include "dart/math/optimization/problem.hpp"
 
+#include "dart/common/exception.hpp"
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
 #include "dart/math/helpers.hpp"
@@ -57,16 +58,25 @@ static T getVectorObjectIfAvailable(std::size_t _idx, std::span<const T> _vec)
 }
 
 //==============================================================================
-Problem::Problem(std::size_t _dim) : mDimension(0), mOptimumValue(0.0)
+Problem::Problem(std::size_t dim) : mDimension(0), mOptimumValue(0.0)
 {
-  setDimension(_dim);
+  setDimension(dim);
 }
 
 //==============================================================================
-void Problem::setDimension(std::size_t _dim)
+void Problem::setDimension(std::size_t dim)
 {
-  if (_dim != mDimension) {
-    mDimension = _dim;
+  DART_THROW_T_IF(
+      dim > kMaxDimension,
+      common::InvalidArgumentException,
+      "Problem dimension {} exceeds maximum allowed dimension {}. "
+      "This would allocate approximately {} MB across internal vectors.",
+      dim,
+      kMaxDimension,
+      (dim * 4 * sizeof(double)) / (1024 * 1024));
+
+  if (dim != mDimension) {
+    mDimension = dim;
 
     mInitialGuess = Eigen::VectorXd::Zero(mDimension);
 
