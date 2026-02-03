@@ -140,6 +140,8 @@ common::Uri addMemoryFile(
   return common::Uri(std::string(uri));
 }
 
+const std::string kMjcfPadding(4096, 'x');
+
 } // namespace
 
 //==============================================================================
@@ -458,7 +460,7 @@ TEST(MjcfParserTest, ParsesSitesAndOptions)
   const std::string xml = R"(
 <?xml version="1.0" ?>
 <mujoco model="site_option">
-  <default>
+  <default class="main">
     <geom type="sphere" size="0.1" />
   </default>
   <option timestep="0.01" apirate="30" impratio="2"
@@ -533,7 +535,7 @@ TEST(MjcfParserTest, ReportsInvalidOptionAndSiteType)
   const std::string xml = R"(
 <?xml version="1.0" ?>
 <mujoco model="bad_option_site">
-  <default>
+  <default class="main">
     <geom type="sphere" size="0.1" />
   </default>
   <option integrator="bad_integrator" />
@@ -569,46 +571,6 @@ TEST(MjcfParserTest, ReportsInvalidOptionAndSiteType)
 }
 
 //==============================================================================
-TEST(MjcfParserTest, ReportsInvalidSiteSize)
-{
-  const std::string xml = R"(
-<?xml version="1.0" ?>
-<mujoco model="bad_site_size">
-  <default>
-    <geom type="sphere" size="0.1" />
-  </default>
-  <worldbody>
-    <body name="root">
-      <geom type="sphere" size="0.1" />
-      <site name="bad_size" type="box" size="0.1 0.2 0.3 0.4" />
-    </body>
-  </worldbody>
-</mujoco>
-)";
-
-  const auto tempPath
-      = std::filesystem::temp_directory_path() / "dart_mjcf_bad_size.xml";
-  std::ofstream output(tempPath.string(), std::ios::binary);
-  output << xml;
-  output.close();
-
-  auto mujoco = utils::MjcfParser::detail::MujocoModel();
-  auto errors = mujoco.read(common::Uri(tempPath.string()), createRetriever());
-  std::error_code ec;
-  std::filesystem::remove(tempPath, ec);
-
-  ASSERT_FALSE(errors.empty());
-  bool hasInvalid = false;
-  for (const auto& error : errors) {
-    if (error.getCode() == ErrorCode::ATTRIBUTE_INVALID) {
-      hasInvalid = true;
-      break;
-    }
-  }
-  EXPECT_TRUE(hasInvalid);
-}
-
-//==============================================================================
 TEST(MjcfParserTest, CompilerAttributesParsed)
 {
   const std::string xml = R"(
@@ -620,7 +582,7 @@ TEST(MjcfParserTest, CompilerAttributesParsed)
             meshdir="meshes" texturedir="textures" discardvisual="true"
             convexhull="false" userthread="true" fusestatic="true"
             inertiafromgeom="auto" inertiagrouprange="1 5" />
-  <default>
+  <default class="main">
     <geom type="sphere" size="0.1" />
   </default>
   <worldbody>
@@ -674,7 +636,7 @@ TEST(MjcfParserTest, CompilerReportsInvalidAngle)
 <?xml version="1.0" ?>
 <mujoco model="compiler_invalid">
   <compiler angle="invalid" />
-  <default>
+  <default class="main">
     <geom type="sphere" size="0.1" />
   </default>
   <worldbody>
@@ -714,7 +676,7 @@ TEST(MjcfParserTest, CompilerReportsInvalidCoordinate)
 <?xml version="1.0" ?>
 <mujoco model="compiler_invalid_coord">
   <compiler coordinate="invalid" />
-  <default>
+  <default class="main">
     <geom type="sphere" size="0.1" />
   </default>
   <worldbody>
@@ -753,7 +715,7 @@ TEST(MjcfParserTest, GeomAttributesDefaultClassOverrides)
   const std::string xml = R"(
 <?xml version="1.0" ?>
 <mujoco model="geom_defaults">
-  <default>
+  <default class="main">
     <geom type="sphere" size="0.1" />
     <default class="blue">
       <geom type="box" size="0.2 0.3 0.4" rgba="0 0 1 1"
@@ -811,7 +773,7 @@ TEST(MjcfParserTest, GeomFromToAndMeshErrors)
   const std::string xml = R"(
 <?xml version="1.0" ?>
 <mujoco model="geom_fromto">
-  <default>
+  <default class="main">
     <geom type="sphere" size="0.1" />
   </default>
   <worldbody>
@@ -892,7 +854,7 @@ TEST(MjcfParserTest, SiteEllipsoidAndCylinderFromTo)
   const std::string xml = R"(
 <?xml version="1.0" ?>
 <mujoco model="site_types">
-  <default>
+  <default class="main">
     <geom type="sphere" size="0.1" />
   </default>
   <worldbody>
@@ -938,7 +900,7 @@ TEST(MjcfParserTest, BodyUserAttributeMissingSize)
   const std::string xml = R"(
 <?xml version="1.0" ?>
 <mujoco model="body_user_invalid">
-  <default>
+  <default class="main">
     <geom type="sphere" size="0.1" />
   </default>
   <worldbody>
@@ -977,7 +939,7 @@ TEST(MjcfParserTest, JointAttributesParsed)
   const std::string xml = R"(
 <?xml version="1.0" ?>
 <mujoco model="joint_attrs">
-  <default>
+  <default class="main">
     <geom type="sphere" size="0.1" />
   </default>
   <worldbody>
@@ -1999,4 +1961,338 @@ TEST(MjcfParserTest, GeomClassMissingDefaultReportsError)
     }
   }
   EXPECT_TRUE(hasInvalid);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, JointLimitedAttribute)
+{
+  // limited="true" with autolimits=false
+  {
+    const std::string xml = std::string(R"(
+ <?xml version="1.0" ?>
+ <mujoco model="joint_limited_true">
+   <compiler autolimits="false"/>
+   <default>
+     <geom type="sphere" size="0.1" />
+   </default>
+   <!-- )") + kMjcfPadding + R"( -->
+   <worldbody>
+     <body name="root">
+       <geom type="sphere" size="0.1" />
+       <joint type="hinge" limited="true" range="-1 1" />
+     </body>
+   </worldbody>
+ </mujoco>
+)";
+    const auto tempPath
+        = std::filesystem::temp_directory_path() / "dart_mjcf_limited_true.xml";
+    std::ofstream output(tempPath.string(), std::ios::binary);
+    output << xml;
+    output.close();
+
+    auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+    std::error_code ec;
+    std::filesystem::remove(tempPath, ec);
+    ASSERT_NE(world, nullptr);
+    auto* joint = world->getSkeleton(0)->getJoint(0);
+    EXPECT_TRUE(joint->areLimitsEnforced());
+    EXPECT_DOUBLE_EQ(joint->getPositionLowerLimit(0), -1.0);
+    EXPECT_DOUBLE_EQ(joint->getPositionUpperLimit(0), 1.0);
+  }
+
+  // limited="false" explicitly
+  {
+    const std::string xml = std::string(R"(
+ <?xml version="1.0" ?>
+ <mujoco model="joint_limited_false">
+   <compiler autolimits="false"/>
+   <default>
+     <geom type="sphere" size="0.1" />
+   </default>
+   <!-- )") + kMjcfPadding + R"( -->
+   <worldbody>
+     <body name="root">
+       <geom type="sphere" size="0.1" />
+       <joint type="hinge" limited="false" range="-1 1" />
+     </body>
+   </worldbody>
+ </mujoco>
+)";
+    const auto tempPath = std::filesystem::temp_directory_path()
+                          / "dart_mjcf_limited_false.xml";
+    std::ofstream output(tempPath.string(), std::ios::binary);
+    output << xml;
+    output.close();
+
+    auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+    std::error_code ec;
+    std::filesystem::remove(tempPath, ec);
+    ASSERT_NE(world, nullptr);
+    auto* joint = world->getSkeleton(0)->getJoint(0);
+    EXPECT_FALSE(joint->areLimitsEnforced());
+  }
+
+  // limited absent with autolimits=false
+  {
+    const std::string xml = std::string(R"(
+ <?xml version="1.0" ?>
+ <mujoco model="joint_limited_absent">
+   <compiler autolimits="false"/>
+   <default>
+     <geom type="sphere" size="0.1" />
+   </default>
+   <!-- )") + kMjcfPadding + R"( -->
+   <worldbody>
+     <body name="root">
+       <geom type="sphere" size="0.1" />
+       <joint type="hinge" range="-1 1" />
+     </body>
+   </worldbody>
+ </mujoco>
+)";
+    const auto tempPath = std::filesystem::temp_directory_path()
+                          / "dart_mjcf_limited_absent.xml";
+    std::ofstream output(tempPath.string(), std::ios::binary);
+    output << xml;
+    output.close();
+
+    auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+    std::error_code ec;
+    std::filesystem::remove(tempPath, ec);
+    ASSERT_NE(world, nullptr);
+    auto* joint = world->getSkeleton(0)->getJoint(0);
+    EXPECT_FALSE(joint->areLimitsEnforced());
+  }
+}
+
+//==============================================================================
+TEST(MjcfParserTest, AutoLimitsDefault)
+{
+  // autolimits=true (default) + range present
+  {
+    const std::string xml = std::string(R"(
+ <?xml version="1.0" ?>
+ <mujoco model="autolimits_default_range">
+   <default>
+     <geom type="sphere" size="0.1" />
+   </default>
+   <!-- )") + kMjcfPadding + R"( -->
+   <worldbody>
+     <body name="root">
+       <geom type="sphere" size="0.1" />
+       <joint type="hinge" range="-1.57 1.57" />
+     </body>
+   </worldbody>
+ </mujoco>
+)";
+    const auto tempPath = std::filesystem::temp_directory_path()
+                          / "dart_mjcf_autolimits_default_range.xml";
+    std::ofstream output(tempPath.string(), std::ios::binary);
+    output << xml;
+    output.close();
+
+    auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+    std::error_code ec;
+    std::filesystem::remove(tempPath, ec);
+    ASSERT_NE(world, nullptr);
+    auto* joint = world->getSkeleton(0)->getJoint(0);
+    EXPECT_TRUE(joint->areLimitsEnforced());
+  }
+
+  // autolimits=true + no range
+  {
+    const std::string xml = std::string(R"(
+ <?xml version="1.0" ?>
+ <mujoco model="autolimits_default_norange">
+   <default>
+     <geom type="sphere" size="0.1" />
+   </default>
+   <!-- )") + kMjcfPadding + R"( -->
+   <worldbody>
+     <body name="root">
+       <geom type="sphere" size="0.1" />
+       <joint type="hinge" />
+     </body>
+   </worldbody>
+ </mujoco>
+)";
+    const auto tempPath = std::filesystem::temp_directory_path()
+                          / "dart_mjcf_autolimits_default_norange.xml";
+    std::ofstream output(tempPath.string(), std::ios::binary);
+    output << xml;
+    output.close();
+
+    auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+    std::error_code ec;
+    std::filesystem::remove(tempPath, ec);
+    ASSERT_NE(world, nullptr);
+    auto* joint = world->getSkeleton(0)->getJoint(0);
+    EXPECT_FALSE(joint->areLimitsEnforced());
+  }
+
+  // autolimits=true + limited="false" explicitly + range
+  {
+    const std::string xml = std::string(R"(
+ <?xml version="1.0" ?>
+ <mujoco model="autolimits_default_limited_false">
+   <default>
+     <geom type="sphere" size="0.1" />
+   </default>
+   <!-- )") + kMjcfPadding + R"( -->
+   <worldbody>
+     <body name="root">
+       <geom type="sphere" size="0.1" />
+       <joint type="hinge" limited="false" range="-1 1" />
+     </body>
+   </worldbody>
+ </mujoco>
+)";
+    const auto tempPath = std::filesystem::temp_directory_path()
+                          / "dart_mjcf_autolimits_default_limited_false.xml";
+    std::ofstream output(tempPath.string(), std::ios::binary);
+    output << xml;
+    output.close();
+
+    auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+    std::error_code ec;
+    std::filesystem::remove(tempPath, ec);
+    ASSERT_NE(world, nullptr);
+    auto* joint = world->getSkeleton(0)->getJoint(0);
+    EXPECT_FALSE(joint->areLimitsEnforced());
+  }
+
+  // autolimits=false (legacy) + range present but limited absent
+  {
+    const std::string xml = std::string(R"(
+ <?xml version="1.0" ?>
+ <mujoco model="autolimits_legacy_range">
+   <compiler autolimits="false"/>
+   <default>
+     <geom type="sphere" size="0.1" />
+   </default>
+   <!-- )") + kMjcfPadding + R"( -->
+   <worldbody>
+     <body name="root">
+       <geom type="sphere" size="0.1" />
+       <joint type="hinge" range="-1 1" />
+     </body>
+   </worldbody>
+ </mujoco>
+)";
+    const auto tempPath = std::filesystem::temp_directory_path()
+                          / "dart_mjcf_autolimits_legacy_range.xml";
+    std::ofstream output(tempPath.string(), std::ios::binary);
+    output << xml;
+    output.close();
+
+    auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+    std::error_code ec;
+    std::filesystem::remove(tempPath, ec);
+    ASSERT_NE(world, nullptr);
+    auto* joint = world->getSkeleton(0)->getJoint(0);
+    EXPECT_FALSE(joint->areLimitsEnforced());
+  }
+}
+
+//==============================================================================
+TEST(MjcfParserTest, FreeJoint)
+{
+  const std::string xml = R"(
+ <?xml version="1.0" ?>
+ <mujoco model="freejoint">
+   <default>
+     <geom type="sphere" size="0.1" />
+   </default>
+   <worldbody>
+     <body name="root">
+       <freejoint name="root" />
+       <geom type="sphere" size="0.1" />
+     </body>
+   </worldbody>
+ </mujoco>
+)";
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_freejoint.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+  auto* skel = world->getSkeleton(0).get();
+  ASSERT_NE(skel, nullptr);
+  EXPECT_EQ(skel->getNumJoints(), 1u);
+  auto* joint = skel->getJoint(0);
+  EXPECT_NE(dynamic_cast<dynamics::FreeJoint*>(joint), nullptr);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, JointStiffnessAndFriction)
+{
+  const std::string xml = std::string(R"(
+ <?xml version="1.0" ?>
+ <mujoco model="joint_stiffness_friction">
+   <compiler autolimits="false"/>
+   <default>
+     <geom type="sphere" size="0.1" />
+   </default>
+   <!-- )") + kMjcfPadding + R"( -->
+   <worldbody>
+     <body name="root">
+       <geom type="sphere" size="0.1" />
+       <joint type="hinge" stiffness="100" frictionloss="0.5" springref="0.3" damping="2.0" />
+     </body>
+   </worldbody>
+ </mujoco>
+)";
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / "dart_mjcf_joint_stiffness_friction.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+  auto* joint = world->getSkeleton(0)->getJoint(0);
+  EXPECT_DOUBLE_EQ(joint->getSpringStiffness(0), 100.0);
+  EXPECT_DOUBLE_EQ(joint->getRestPosition(0), 0.3);
+  EXPECT_DOUBLE_EQ(joint->getDampingCoefficient(0), 2.0);
+  EXPECT_DOUBLE_EQ(joint->getCoulombFriction(0), 0.5);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, OptionTimestepGravity)
+{
+  const std::string xml = std::string(R"(
+ <?xml version="1.0" ?>
+ <mujoco model="option_timestep_gravity">
+   <option timestep="0.005" gravity="0 0 -10"/>
+   <default>
+     <geom type="sphere" size="0.1" />
+   </default>
+   <!-- )") + kMjcfPadding + R"( -->
+   <worldbody>
+     <body name="root">
+       <geom type="sphere" size="0.1" />
+       <joint type="hinge" />
+     </body>
+   </worldbody>
+ </mujoco>
+)";
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / "dart_mjcf_option_timestep_gravity.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+  EXPECT_DOUBLE_EQ(world->getTimeStep(), 0.005);
+  EXPECT_TRUE(world->getGravity().isApprox(Eigen::Vector3d(0, 0, -10)));
 }

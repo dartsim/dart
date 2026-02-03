@@ -63,6 +63,17 @@ Errors MujocoModel::read(
   const Errors includeErrors = handleInclude(element, baseUri, retriever);
   errors.insert(errors.end(), includeErrors.begin(), includeErrors.end());
 
+  warnUnknownElements(
+      element,
+      {"include",
+       "compiler",
+       "option",
+       "size",
+       "default",
+       "asset",
+       "worldbody",
+       "equality"});
+
   // Read 'model' attribute
   if (hasAttribute(element, "model")) {
     const std::string model = getAttributeString(element, "model");

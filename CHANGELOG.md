@@ -85,6 +85,8 @@
   - Added LCP documentation. ([#2240](https://github.com/dartsim/dart/pull/2240))
 
 - IO and Parsing
+  - MJCF parser improvements for MuJoCo 3.x compatibility: fixed `limited` attribute parsing to use `std::optional<bool>`, added `autolimits` compiler attribute (default: true), added `<freejoint>` element support, wired `<option>` timestep/gravity to World, mapped joint stiffness/frictionloss to DART spring/friction APIs, added unknown element warnings for unsupported MJCF elements, and fixed null pointer crash for unnamed joints on root bodies.
+  - Fixed `Option::getApiRate()` and `Option::getImpRatio()` returning the wrong value (both returned timestep).
   - Fix null pointer dereference in XmlHelpers getValue\* functions when child element is missing. ([#2428](https://github.com/dartsim/dart/pull/2428))
   - Unified model loading under `dart::io` and added HTTP retriever support. ([#2316](https://github.com/dartsim/dart/pull/2316), [#2138](https://github.com/dartsim/dart/pull/2138), [#604](https://github.com/dartsim/dart/issues/604))
   - SDF/URDF parsing improvements: libsdformat integration, SDF mimic metadata, SDF joint limits, tiny inertial handling, URDF multi-DoF limits, and transmission coupling. ([#2154](https://github.com/dartsim/dart/pull/2154), [#2254](https://github.com/dartsim/dart/pull/2254), [#2232](https://github.com/dartsim/dart/pull/2232), [#2284](https://github.com/dartsim/dart/pull/2284), [#2233](https://github.com/dartsim/dart/pull/2233), [#2281](https://github.com/dartsim/dart/pull/2281), [#264](https://github.com/dartsim/dart/issues/264))
