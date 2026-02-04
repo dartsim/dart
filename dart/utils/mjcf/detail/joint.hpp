@@ -58,10 +58,14 @@ public:
   JointType getType() const;
   const Eigen::Vector3d& getPos() const;
   const Eigen::Vector3d& getAxis() const;
+  std::optional<bool> getLimited() const;
   bool isLimited() const;
   const Eigen::Vector2d& getRange() const;
   double getDamping() const;
   double getSpringRef() const;
+  double getStiffness() const;
+  double getArmature() const;
+  double getFrictionLoss() const;
 
 private:
   // Private members used by Body class
@@ -103,7 +107,7 @@ private:
   Eigen::Vector2d mSpringDamper{Eigen::Vector2d::Zero()};
 
   /// This attribute specifies if the joint has limits.
-  bool mLimited{false};
+  std::optional<bool> mLimited{std::nullopt};
 
   double mStiffness{0};
 

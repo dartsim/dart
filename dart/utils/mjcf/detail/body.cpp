@@ -96,6 +96,52 @@ Errors Body::read(
     mJoints.emplace_back(std::move(joint));
   }
 
+  // Read <freejoint> — creates a free joint that ignores defaults
+  ElementEnumerator freejointElements(element, "freejoint");
+  while (freejointElements.next()) {
+    // Create a Joint with FREE type and zero dynamics, ignoring defaults
+    Joint freeJoint;
+
+    // freejoint does NOT inherit from default classes — use blank attributes
+    JointAttributes blankAttrs;
+    blankAttrs.mType = JointType::FREE;
+    blankAttrs.mStiffness = 0;
+    blankAttrs.mDamping = 0;
+    blankAttrs.mFrictionLoss = 0;
+    blankAttrs.mArmature = 0;
+
+    // Read name if present
+    if (hasAttribute(freejointElements.get(), "name")) {
+      blankAttrs.mName = getAttributeString(freejointElements.get(), "name");
+    }
+
+    // Body is a friend of Joint, so set attributes directly
+    freeJoint.mAttributes = blankAttrs;
+
+    mJoints.emplace_back(std::move(freeJoint));
+  }
+
+  // Validate: at most one free joint per body (from <freejoint> or <joint
+  // type="free">)
+  {
+    int freeJointCount = 0;
+    for (const auto& joint : mJoints) {
+      if (joint.mAttributes.mType == JointType::FREE) {
+        ++freeJointCount;
+      }
+    }
+    if (freeJointCount > 1) {
+      errors.emplace_back(
+          ErrorCode::ELEMENT_INVALID,
+          "Body cannot have more than one free joint (from <freejoint> and/or "
+          "<joint type=\"free\">)");
+      return errors;
+    }
+  }
+
+  warnUnknownElements(
+      element, {"inertial", "joint", "freejoint", "geom", "site", "body"});
+
   // Read multiple <geom>
   ElementEnumerator geomElements(element, "geom");
   while (geomElements.next()) {

@@ -80,6 +80,8 @@ Errors Worldbody::read(
   const Errors includeErrors = handleInclude(element, baseUri, retriever);
   errors.insert(errors.end(), includeErrors.begin(), includeErrors.end());
 
+  warnUnknownElements(element, {"body", "geom", "site", "include"});
+
   // Read multiple <geom>
   ElementEnumerator geomElements(element, "geom");
   while (geomElements.next()) {
