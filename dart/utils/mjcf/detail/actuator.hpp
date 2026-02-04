@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_ACTUATOR_HPP_
 #define DART_UTILS_MJCF_DETAIL_ACTUATOR_HPP_
 
+#include <dart/utils/export.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
 #include <dart/utils/mjcf/detail/types.hpp>
 
@@ -47,7 +48,7 @@ namespace utils {
 namespace MjcfParser {
 namespace detail {
 
-class Actuator final
+class DART_UTILS_API Actuator final
 {
 public:
   Actuator() = default;

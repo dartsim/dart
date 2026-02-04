@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_LIGHT_HPP_
 #define DART_UTILS_MJCF_DETAIL_LIGHT_HPP_
 
+#include <dart/utils/export.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
 
 #include <Eigen/Core>
@@ -45,7 +46,7 @@ namespace utils {
 namespace MjcfParser {
 namespace detail {
 
-class Light final
+class DART_UTILS_API Light final
 {
 public:
   Light() = default;

@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_CONTACT_HPP_
 #define DART_UTILS_MJCF_DETAIL_CONTACT_HPP_
 
+#include <dart/utils/export.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
 
 #include <Eigen/Core>
@@ -46,7 +47,7 @@ namespace utils {
 namespace MjcfParser {
 namespace detail {
 
-class Contact final
+class DART_UTILS_API Contact final
 {
 public:
   struct Pair
