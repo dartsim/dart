@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "tests/common/lcpsolver/LcpProblemFactory.hpp"
+#include "tests/common/lcpsolver/lcp_problem_factory.hpp"
 
 #include <dart/math/lcp/all.hpp>
 
@@ -94,6 +94,8 @@ std::vector<SolverTestCase> createAllSolvers()
        true,
        true,
        true});
+  solvers.push_back({"Apgd", std::make_unique<ApgdSolver>(), true, true, true});
+  solvers.push_back({"Tgs", std::make_unique<TgsSolver>(), true, true, true});
 
   solvers.push_back(
       {"MinimumMapNewton",
@@ -130,6 +132,14 @@ std::vector<SolverTestCase> createAllSolvers()
        true});
   solvers.push_back(
       {"Staggering", std::make_unique<StaggeringSolver>(), true, true, true});
+  solvers.push_back({"Admm", std::make_unique<AdmmSolver>(), true, true, true});
+  solvers.push_back({"Sap", std::make_unique<SapSolver>(), true, true, true});
+  solvers.push_back(
+      {"BoxedSemiSmoothNewton",
+       std::make_unique<BoxedSemiSmoothNewtonSolver>(),
+       true,
+       true,
+       true});
 
   return solvers;
 }

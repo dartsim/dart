@@ -50,8 +50,6 @@
 #include "dart/constraint/boxed_lcp_constraint_solver.hpp"
 #include "dart/constraint/constrained_group.hpp"
 #include "dart/constraint/constraint_solver.hpp"
-#include "dart/constraint/dantzig_boxed_lcp_solver.hpp"
-#include "dart/constraint/pgs_boxed_lcp_solver.hpp"
 #include "dart/dynamics/skeleton.hpp"
 #include "dart/math/lcp/pivoting/dantzig_solver.hpp"
 #include "dart/math/lcp/pivoting/lemke_solver.hpp"
@@ -167,19 +165,6 @@ CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
   return nullptr;
 }
 
-std::string_view toLcpSolverName(LcpSolverType type)
-{
-  switch (type) {
-    case LcpSolverType::Dantzig:
-      return "Dantzig";
-    case LcpSolverType::Pgs:
-      return "PGS";
-    case LcpSolverType::Lemke:
-      return "Lemke";
-  }
-  return "Unknown";
-}
-
 math::LcpSolverPtr createLcpSolver(LcpSolverType type)
 {
   switch (type) {
@@ -197,59 +182,26 @@ math::LcpSolverPtr createLcpSolver(LcpSolverType type)
   return std::make_shared<math::DantzigSolver>();
 }
 
-DART_SUPPRESS_DEPRECATED_BEGIN
-constraint::BoxedLcpSolverPtr createBoxedLcpSolver(LcpSolverType type)
-{
-  switch (type) {
-    case LcpSolverType::Dantzig:
-      return std::make_shared<constraint::DantzigBoxedLcpSolver>();
-    case LcpSolverType::Pgs:
-      return std::make_shared<constraint::PgsBoxedLcpSolver>();
-    case LcpSolverType::Lemke:
-      return nullptr;
-  }
-  return nullptr;
-}
-DART_SUPPRESS_DEPRECATED_END
-
 std::unique_ptr<constraint::ConstraintSolver> createConstraintSolver(
     const WorldConfig& config)
 {
-  auto primaryBoxed = createBoxedLcpSolver(config.primaryLcpSolver);
-
-  if (primaryBoxed) {
-    DART_SUPPRESS_DEPRECATED_BEGIN
-    if (config.secondaryLcpSolver.has_value()) {
-      auto secondaryBoxed
-          = createBoxedLcpSolver(config.secondaryLcpSolver.value());
-      if (!secondaryBoxed) {
-        DART_WARN(
-            "Secondary LCP solver '{}' is not compatible with boxed primary "
-            "solver '{}'. Secondary solver will be ignored. Consider using "
-            "Dantzig or PGS as secondary, or use Lemke as the primary solver.",
-            toLcpSolverName(config.secondaryLcpSolver.value()),
-            toLcpSolverName(config.primaryLcpSolver));
-      }
-      return std::make_unique<constraint::BoxedLcpConstraintSolver>(
-          std::move(primaryBoxed), std::move(secondaryBoxed));
-    }
-    auto solver = std::make_unique<constraint::BoxedLcpConstraintSolver>(
-        std::move(primaryBoxed), nullptr);
-    DART_SUPPRESS_DEPRECATED_END
-    return solver;
-  }
+  // Create BoxedLcpConstraintSolver (not base ConstraintSolver) to maintain
+  // backward compatibility with gz-physics, which does dynamic_cast to
+  // BoxedLcpConstraintSolver to access getBoxedLcpSolver()/getType() etc.
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  auto solver = std::make_unique<constraint::BoxedLcpConstraintSolver>();
+  DART_SUPPRESS_DEPRECATED_END
 
   auto primary = createLcpSolver(config.primaryLcpSolver);
+  solver->setLcpSolver(std::move(primary));
 
   if (config.secondaryLcpSolver.has_value()) {
     auto secondary = createLcpSolver(config.secondaryLcpSolver.value());
-    return std::make_unique<constraint::ConstraintSolver>(
-        std::move(primary), std::move(secondary));
+    solver->setSecondaryLcpSolver(std::move(secondary));
+  } else {
+    solver->setSecondaryLcpSolver(nullptr);
   }
 
-  auto solver
-      = std::make_unique<constraint::ConstraintSolver>(std::move(primary));
-  solver->setSecondaryLcpSolver(nullptr);
   return solver;
 }
 

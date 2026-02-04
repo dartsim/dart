@@ -224,7 +224,7 @@ dart_build_tests(
   TARGET_PREFIX UNIT_math_lcp
   LINK_LIBRARIES dart dart-baseline-ode
   SOURCES
-    math/lcp/test_AllSolversSmoke.cpp
+    math/lcp/test_all_solvers_smoke.cpp
     math/lcp/test_dantzig_vs_ode.cpp
     math/lcp/test_dantzig_solver.cpp
     math/lcp/test_dantzig_misc.cpp
@@ -314,9 +314,9 @@ dart_add_test("unit" UNIT_sensor_SensorManager sensor/test_sensor_manager.cpp)
 # ==============================================================================
 # Simulation Tests
 # ==============================================================================
-dart_add_test("unit" UNIT_simulation_WorldConfig simulation/test_WorldConfig.cpp)
 dart_add_test("unit" UNIT_simulation_World simulation/test_world.cpp)
 dart_add_test("unit" UNIT_simulation_Recording simulation/test_recording.cpp)
+dart_add_test("unit" UNIT_simulation_WorldConfig simulation/test_world_config.cpp)
 
 # ==============================================================================
 # Simulation-Experimental Tests

@@ -1,108 +1,180 @@
 # LCP Epic: Dynamics-Agnostic LCP API + Solvers
 
-> **AI Agents**: Start with [RESUME.md](RESUME.md) for current session state and next steps.
+## Status: Phase 4 In Progress
 
-## Status Overview
-
-| Phase   | Description                           | Status                 |
-| ------- | ------------------------------------- | ---------------------- |
-| Phase 1 | Solver Selection API + Demo Stability | ✅ Complete (PR #2464) |
-| Phase 2 | Test Infrastructure + Problem Factory | ✅ Complete            |
-| Phase 3 | Python Bindings                       | ✅ Complete            |
-| Phase 4 | Future Solvers, Benchmarks, Docs      | 📋 Not Started         |
-
-**Current State**: All code committed and pushed. Needs visual verification of high-DPI fixes.
+| Phase   | Description                           | Status                      |
+| ------- | ------------------------------------- | --------------------------- |
+| Phase 1 | Solver Selection API + Demo Stability | :white_check_mark: PR #2464 |
+| Phase 2 | Test Infrastructure + Problem Factory | :white_check_mark: Complete |
+| Phase 3 | Python Bindings                       | :white_check_mark: Complete |
+| Phase 4 | New Solvers (APGD, TGS)               | :construction: PR #2465     |
 
 ---
 
-## What Was Built
+## Phase 1: Foundation (COMPLETE ✅)
 
-### GUI Fixes (dart/gui/)
+**PR #2464**: WorldConfig Solver Selection + Demo Stability
 
-| Fix                  | Commit        | Description                                              |
-| -------------------- | ------------- | -------------------------------------------------------- |
-| Font scaling         | `0472a322d68` | `setFontScale()` loads fonts at target size              |
-| World switching      | `27881b54067` | Clear nodes before switching worlds (fixes white screen) |
-| Framebuffer scale    | `b0bb5e95b6c` | Normalize scale when viewport/traits flipped             |
-| FontGlobalScale skip | `26f7cc3725f` | Avoid double-scaling with rebuilt fonts                  |
-
-### lcp_physics Example
-
-| Feature          | Description                                               |
-| ---------------- | --------------------------------------------------------- |
-| ImGui widget     | Full control panel with scenarios, solvers, parameters    |
-| 5 scenarios      | mass_ratio, box_stack, ball_drop, dominos, inclined_plane |
-| Headless capture | `--headless --frames N --out DIR` (includes ImGui panel)  |
-| Debug section    | DPI diagnostics (DisplaySize, FontSize, etc.)             |
-| UI scaling       | Layout scales with font size at high DPI                  |
-
-### Test Infrastructure
-
-| File                                           | Purpose                            |
-| ---------------------------------------------- | ---------------------------------- |
-| `tests/common/lcpsolver/LcpProblemFactory.hpp` | Unified LCP problem generation     |
-| `tests/unit/math/lcp/test_AllSolversSmoke.cpp` | Smoke tests for all 19 solvers     |
-| `tests/benchmark/lcpsolver/`                   | Google Benchmark performance tests |
-
-### Python Bindings
-
-- `LcpSolverType` and `CollisionDetectorType` enums
-- `WorldConfig` with solver selection
-- `World.create(config)` factory
+- Added `LcpSolverType` enum with Dantzig/Pgs/Lemke
+- Added primary/secondary solver config to `WorldConfig`
+- Fixed demo crashes with bounds checking and exception handling
+- Unit test: `tests/unit/simulation/test_world_config.cpp`
 
 ---
 
-## Commands Reference
+## Phase 2: Test Infrastructure (CURRENT FOCUS)
+
+### Goals
+
+Following PR #2462 patterns:
+
+- [x] Create `tests/common/lcpsolver/lcp_problem_factory.hpp` - Unified problem generation
+- [x] `tests/unit/math/lcp/test_all_solvers_smoke.cpp` - Every solver basic test
+- [ ] Extend `test_LcpEdgeCases.cpp` - n=1, singular matrices (optional)
+- [ ] Update `lcp_test_fixtures.hpp` to use factory (optional refactor)
+
+### 2.1 LCP Problem Factory (DONE ✅)
+
+**New file**: `tests/common/lcpsolver/lcp_problem_factory.hpp`
+
+**Categories implemented**:
+
+- Standard, Boxed, BoxedFriction
+- Edge cases: empty(), trivial1d(), trivial1dAtLowerBound()
+- Well-conditioned: standard2dSpd(), boxed2dActiveUpper()
+- Ill-conditioned: illConditioned3d()
+- Contact scenarios: singleContactFriction()
+
+### 2.2 All Solvers Smoke Test (DONE ✅)
+
+**New file**: `tests/unit/math/lcp/test_all_solvers_smoke.cpp`
+
+Tests all 19 LCP solvers with 5 test cases:
+
+- EmptyProblemSucceeds
+- Trivial1dDoesNotCrash
+- Standard2dDoesNotCrash
+- BoxedProblemHandledCorrectly
+- FrictionProblemDoesNotCrash
+
+### Acceptance Criteria
+
+- [x] Every solver in `dart/math/lcp/` has at least one test
+- [x] Edge cases documented and tested
+- [x] `pixi run test-all` passes (143/143)
+
+---
+
+## Phase 3: Python Bindings (COMPLETE ✅)
+
+### Completed
+
+- [x] `LcpSolverType` enum bound to Python
+- [x] `CollisionDetectorType` enum bound to Python
+- [x] `WorldConfig` struct with solver selection fields
+- [x] `World.create(config)` factory method
+- [x] Python tests in `python/tests/unit/simulation/test_world.py`
+
+### Deferred to Phase 4
+
+- Additional demo scenarios using Problem Factory
+- Convergence visualization for iterative solvers
+- Refactor demo to use shared Problem Factory
+- Performance history export (CSV)
+
+---
+
+## Phase 4: New Solvers (IN PROGRESS)
+
+### 4.1 Implemented Solvers
+
+| Priority | Solver                      | Source                     | Status                  |
+| -------- | --------------------------- | -------------------------- | ----------------------- |
+| **P1**   | APGD (Nesterov-Accelerated) | Chrono, Mazhar ToG 2015    | :white_check_mark: Done |
+| **P1**   | TGS (Temporal Gauss-Seidel) | PhysX/Isaac Gym            | :white_check_mark: Done |
+| **P2**   | ADMM with Adaptive rho      | Pinocchio, Carpentier 2024 | :white_check_mark: Done |
+| **P2**   | SAP (Semi-Analytic Primal)  | Drake v1.5+, Castro 2022   | :white_check_mark: Done |
+
+### 4.2 Future Solver Candidates
+
+| Priority | Solver                      | Source        | Use Case                     | Complexity |
+| -------- | --------------------------- | ------------- | ---------------------------- | ---------- |
+| **P3**   | IPC (Incremental Potential) | SIGGRAPH 2020 | Guaranteed intersection-free | High       |
+
+### 4.3 Implemented P3 Solvers
+
+| Priority | Solver                   | Source   | Status                  |
+| -------- | ------------------------ | -------- | ----------------------- |
+| **P3**   | Boxed Semi-Smooth Newton | Research | :white_check_mark: Done |
+
+### 4.4 Runtime Solver Switching
+
+```cpp
+// TODO: World::setLcpSolver() for post-creation changes
+// Requires ConstraintSolver hot-swap capability
+```
+
+### 4.5 Benchmark Infrastructure
+
+- [x] Performance profiles (Dolan-More) - `scripts/lcp_performance_profile.py`
+- [ ] CI regression detection
+- [ ] Problem Factory scaling tests
+
+#### Performance Profile Results
+
+Run with: `pixi run python scripts/lcp_performance_profile.py --run`
+
+Results saved to `docs/background/lcp/figures/`:
+
+- `performance_profile_standard.csv` - Standard LCP problems
+- `performance_profile_boxed.csv` - Boxed constraint problems
+- `performance_profile_frictionindex.csv` - Friction contact problems
+
+**Key findings** (n=12,24,48,96):
+
+| Category      | Top Performers                  |
+| ------------- | ------------------------------- |
+| Standard      | Direct, PGS, TGS, SAP           |
+| Boxed         | TGS, PGS, Jacobi, SymmetricPsor |
+| FrictionIndex | PGS, TGS, SAP, ADMM             |
+
+### 4.6 Documentation Expansion
+
+- Expand `docs/background/lcp/` as educational resource
+- Add pseudocode for future solvers
+- "Choosing a solver" decision guide
+
+---
+
+## Validation Commands
 
 ```bash
-# Build
-pixi run build
+# Phase 1 validation
+pixi run lint                    # Format
+pixi run build                   # Build
+pixi run test-unit               # Unit tests
 
-# Run lcp_physics
-./build/default/cpp/Release/bin/lcp_physics                    # Default
-./build/default/cpp/Release/bin/lcp_physics --gui-scale 2      # High DPI test
-./build/default/cpp/Release/bin/lcp_physics --list             # List scenarios
-./build/default/cpp/Release/bin/lcp_physics --headless --scenario mass --frames 1 --out ./frames --gui-scale 2
+# Demo manual testing
+./build/default/cpp/Release/bin/lcp_solvers
+# 1. Click through all examples rapidly
+# 2. Click "Run All" on each
+# 3. Switch solver while running
 
-# Run tests
-pixi run test-all
-
-# Clean corrupted frame files
-find . -maxdepth 1 -type f -name $'*[\x80-\xff]*' -delete
+# Phase 2 validation
+pixi run test-all                # Full test suite
 ```
 
 ---
 
-## Phase 4 Future Work
+## References
 
-| Priority | Item                                  |
-| -------- | ------------------------------------- |
-| P1       | APGD solver (10-100x faster than PGS) |
-| P1       | TGS solver (GPU real-time)            |
-| P2       | Runtime solver switching              |
-| P2       | Benchmark infrastructure              |
-| P3       | Documentation expansion               |
-
----
-
-## Key Files
-
-```
-dart/gui/ImGuiHandler.*              # Font scaling implementation
-dart/gui/WorldNode.*                 # Scenario switching fix
-examples/lcp_physics/main.cpp        # Main example with all features
-tests/common/lcpsolver/              # Test infrastructure
-tests/benchmark/lcpsolver/           # Performance benchmarks
-```
+- `dart/math/lcp/` - LCP solver implementations (24 solvers)
+- `docs/background/lcp/` - Theory and algorithm documentation
+- `examples/lcp_solvers/` - Interactive demo
+- `tests/unit/math/lcp/` - Existing unit tests
+- `tests/benchmark/lcpsolver/` - Performance benchmarks
+- `tests/common/lcpsolver/` - Shared test fixtures
 
 ---
 
-## Git Info
-
-- **Branch**: `refactor/lcp_plan`
-- **PR**: #2464
-- **State**: All committed and pushed
-
----
-
-**Last Updated**: 2026-01-19
+**Last Updated**: 2025-01-18

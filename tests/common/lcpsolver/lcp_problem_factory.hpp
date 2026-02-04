@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_TESTS_LCPPROBLEMFACTORY_HPP_
-#define DART_TESTS_LCPPROBLEMFACTORY_HPP_
+#ifndef DART_TESTS_LCP_PROBLEM_FACTORY_HPP_
+#define DART_TESTS_LCP_PROBLEM_FACTORY_HPP_
 
 #include <dart/math/lcp/lcp_types.hpp>
 
@@ -466,4 +466,4 @@ private:
 
 } // namespace dart::test
 
-#endif // DART_TESTS_LCPPROBLEMFACTORY_HPP_
+#endif // DART_TESTS_LCP_PROBLEM_FACTORY_HPP_

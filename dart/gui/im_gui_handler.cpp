@@ -691,6 +691,7 @@ void ImGuiHandler::render(::osg::RenderInfo& /*renderInfo*/)
   ImGui::Render();
 
   auto* drawData = ImGui::GetDrawData();
+#if IMGUI_VERSION_NUM >= 19200
   if (drawData && drawData->Textures) {
     for (auto* texture : *drawData->Textures) {
       if (!texture) {
@@ -701,6 +702,7 @@ void ImGuiHandler::render(::osg::RenderInfo& /*renderInfo*/)
       }
     }
   }
+#endif
   ImGui_ImplOpenGL2_RenderDrawData(drawData);
 }
 
