@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/All.hpp>
-#include <dart/io/Read.hpp>
+#include <dart/all.hpp>
+#include <dart/io/read.hpp>
 
 #include <Eigen/Geometry>
 
@@ -79,17 +79,20 @@ void printUsage(const char* argv0)
 
 bool parseSizeT(std::string_view value, std::size_t& output)
 {
-  if (value.empty() || value.front() == '-')
+  if (value.empty() || value.front() == '-') {
     return false;
+  }
 
   char* end = nullptr;
   const unsigned long long result
       = std::strtoull(std::string(value).c_str(), &end, 10);
-  if (!end || *end != '\0')
+  if (!end || *end != '\0') {
     return false;
+  }
 
-  if (result > std::numeric_limits<std::size_t>::max())
+  if (result > std::numeric_limits<std::size_t>::max()) {
     return false;
+  }
 
   output = static_cast<std::size_t>(result);
   return true;
@@ -97,13 +100,15 @@ bool parseSizeT(std::string_view value, std::size_t& output)
 
 bool parseDouble(std::string_view value, double& output)
 {
-  if (value.empty())
+  if (value.empty()) {
     return false;
+  }
 
   char* end = nullptr;
   const double result = std::strtod(std::string(value).c_str(), &end);
-  if (!end || *end != '\0')
+  if (!end || *end != '\0') {
     return false;
+  }
 
   output = result;
   return true;
@@ -173,10 +178,12 @@ int main(int argc, char* argv[])
 {
   Options options;
   const ParseResult parseResult = parseArgs(argc, argv, options);
-  if (parseResult == ParseResult::Help)
+  if (parseResult == ParseResult::Help) {
     return 0;
-  if (parseResult == ParseResult::Error)
+  }
+  if (parseResult == ParseResult::Error) {
     return 1;
+  }
 
   auto world = dart::io::readWorld(dart::common::Uri(options.worldUri));
   if (!world) {
@@ -184,13 +191,15 @@ int main(int argc, char* argv[])
     return 1;
   }
 
-  if (options.setTimeStep)
+  if (options.setTimeStep) {
     world->setTimeStep(options.timeStep);
+  }
 
   dart::dynamics::SkeletonPtr skeleton;
   if (options.skeletonName.empty()) {
-    if (world->getNumSkeletons() > 0)
+    if (world->getNumSkeletons() > 0) {
       skeleton = world->getSkeleton(0);
+    }
   } else {
     skeleton = world->getSkeleton(options.skeletonName);
   }
@@ -202,8 +211,9 @@ int main(int argc, char* argv[])
 
   dart::dynamics::BodyNode* bodyNode = nullptr;
   if (options.bodyName.empty()) {
-    if (skeleton->getNumBodyNodes() > 0)
+    if (skeleton->getNumBodyNodes() > 0) {
       bodyNode = skeleton->getBodyNode(0);
+    }
   } else {
     bodyNode = skeleton->getBodyNode(options.bodyName);
   }

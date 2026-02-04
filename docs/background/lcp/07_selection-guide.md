@@ -1,27 +1,19 @@
 # LCP Solver Selection Guide
 
-**Navigation**: [← Other Methods](06_other-methods.md) | [Overview](02_overview.md)
+> **Attribution**: This content is derived from "Contact Handling for Articulated
+> Rigid Bodies Using LCP" by Jie Tan, Kristin Siu, and C. Karen Liu.
+> The original PDF is preserved at [`docs/lcp.pdf`](../../lcp.pdf).
+
+**Navigation**: [← Other Methods](06_other-methods.md) | [Index](../README.md) | [Overview](02_overview.md)
 
 ## Quick Decision Tree
 
-```
-START
-  |
-  ├─ Real-time/Interactive? ──YES──> PGS/PSOR (PgsSolver w/ relaxation)
-  |
-  ├─ High accuracy needed? ──YES──> Newton Methods or Pivoting
-  |                                  (Dantzig/Lemke available now)
-  |
-  ├─ Large problem (n>1000)? ──YES──> PGS or NNCG
-  |
-  ├─ Ill-conditioned? ──YES──> Pivoting (Dantzig/Lemke)
-  |                             or Interior Point
-  |
-  ├─ Contact problem? ──YES──> BGS or Dantzig
-  |
-  └─ Default ──> Start with Dantzig or PGS
-                  (Lemke for standard LCP)
-```
+- **Real-time/Interactive?** → PGS/PSOR (`PgsSolver` w/ relaxation)
+- **High accuracy needed?** → Newton Methods or Pivoting (Dantzig/Lemke available now)
+- **Large problem ($n > 1000$)?** → PGS or NNCG
+- **Ill-conditioned?** → Pivoting (Dantzig/Lemke) or Interior Point
+- **Contact problem?** → BGS or Dantzig
+- **Default** → Start with Dantzig or PGS (Lemke for standard LCP)
 
 ## Detailed Selection by Use Case
 
@@ -32,7 +24,7 @@ START
 
 **Rationale**:
 
-- Need O(n) per-iteration cost
+- Need $O(n)$ per-iteration cost
 - Acceptable approximate solutions
 - 50-100 iterations typical
 - Predictable performance
@@ -130,7 +122,7 @@ Per-contact blocks with:
 
 **Rationale**:
 
-- O(n) per-iteration essential
+- $O(n)$ per-iteration essential
 - Matrix-free implementations
 - Sparse matrix exploitation
 
@@ -215,15 +207,15 @@ Block size: 32-256 threads per block
 
 ### Computational Cost
 
-| Use Case      | Best Method | Per-Iter Time | Iterations | Total Time | Available Now |
-| ------------- | ----------- | ------------- | ---------- | ---------- | ------------- |
-| Real-time     | PGS         | O(n)          | 50-100     | O(50n)     | ✅            |
-| Real-time     | Dantzig     | O(n³)         | 1          | O(n³)      | ✅            |
-| High accuracy | Newton      | O(n³)\*       | 5-20       | O(20n³)\*  | ✅ (standard) |
-| High accuracy | Dantzig     | O(n³)         | 1          | O(n³)      | ✅            |
-| Contact       | BGS         | O(nb³)        | 50-100     | O(50nb³)   | ✅            |
-| Contact       | Dantzig     | -             | -          | -          | ✅            |
-| Large-scale   | NNCG        | O(n)          | 20-200     | O(200n)    | ✅            |
+| Use Case      | Best Method | Per-Iter Time | Iterations | Total Time   | Available Now |
+| ------------- | ----------- | ------------- | ---------- | ------------ | ------------- |
+| Real-time     | PGS         | $O(n)$        | 50-100     | $O(50n)$     | ✅            |
+| Real-time     | Dantzig     | $O(n^3)$      | 1          | $O(n^3)$     | ✅            |
+| High accuracy | Newton      | $O(n^3)$\*    | 5-20       | $O(20n^3)$\* | ✅ (standard) |
+| High accuracy | Dantzig     | $O(n^3)$      | 1          | $O(n^3)$     | ✅            |
+| Contact       | BGS         | $O(nb^3)$     | 50-100     | $O(50nb^3)$  | ✅            |
+| Contact       | Dantzig     | -             | -          | -            | ✅            |
+| Large-scale   | NNCG        | $O(n)$        | 20-200     | $O(200n)$    | ✅            |
 
 \* With iterative subsolver
 
@@ -252,13 +244,13 @@ Pivoting ─> Interior Point ─> Newton ─> BGS ─> PGS ─> Jacobi
 
 ## Problem Size Guidelines
 
-| Problem Size     | Recommended Method          | Currently Available                                         |
-| ---------------- | --------------------------- | ----------------------------------------------------------- |
-| n < 10           | Direct 2D/3D or Pivoting    | Direct ✅, Dantzig ✅, Lemke ✅                             |
-| 10 ≤ n < 100     | Pivoting or Newton          | Dantzig ✅, Lemke ✅, Newton ✅ (standard)                  |
-| 100 ≤ n < 1000   | PGS, BGS, PGS-SM, or Newton | PGS ✅, BGS ✅, PGS-SM ✅, Dantzig ✅, Newton ✅ (standard) |
-| 1000 ≤ n < 10000 | NNCG or PGS                 | PGS ✅, NNCG ✅                                             |
-| n ≥ 10000        | NNCG or specialized         | NNCG ✅, PGS ✅ (approx)                                    |
+| Problem Size          | Recommended Method          | Currently Available                                         |
+| --------------------- | --------------------------- | ----------------------------------------------------------- |
+| $n < 10$              | Direct 2D/3D or Pivoting    | Direct ✅, Dantzig ✅, Lemke ✅                             |
+| $10 \leq n < 100$     | Pivoting or Newton          | Dantzig ✅, Lemke ✅, Newton ✅ (standard)                  |
+| $100 \leq n < 1000$   | PGS, BGS, PGS-SM, or Newton | PGS ✅, BGS ✅, PGS-SM ✅, Dantzig ✅, Newton ✅ (standard) |
+| $1000 \leq n < 10000$ | NNCG or PGS                 | PGS ✅, NNCG ✅                                             |
+| $n \geq 10000$        | NNCG or specialized         | NNCG ✅, PGS ✅ (approx)                                    |
 
 ## Conditioning Guidelines
 
@@ -320,7 +312,7 @@ if (!result.succeeded()) {
 
 ### Pitfall 1: Using Expensive Method for Real-Time
 
-**Problem**: Using Dantzig (O(n³)) for real-time with n > 100
+**Problem**: Using Dantzig ($O(n^3)$) for real-time with $n > 100$
 
 **Solution**:
 
@@ -386,38 +378,40 @@ if (merit_function > gamma * previous_merit) {
 
 ### PGS/PSOR
 
-```
-max_iterations:
-  - Real-time: 50-100
-  - Accuracy: 500-1000
+**max_iterations**:
 
-tolerance:
-  - Real-time: 1e-4 to 1e-6
-  - Accuracy: 1e-6 to 1e-8
+- Real-time: 50-100
+- Accuracy: 500-1000
 
-relaxation (PSOR only):
-  - Start: 1.0 (PGS)
-  - Tune: 1.2-1.5
-  - Under-relax if unstable: 0.8-0.95
-```
+**tolerance**:
+
+- Real-time: $10^{-4}$ to $10^{-6}$
+- Accuracy: $10^{-6}$ to $10^{-8}$
+
+**relaxation** (PSOR only):
+
+- Start: 1.0 (PGS)
+- Tune: 1.2-1.5
+- Under-relax if unstable: 0.8-0.95
 
 ### Newton Methods
 
-```
-max_iterations: 20-50
+**max_iterations**: 20-50
 
-tolerance:
-  - Standard: 1e-8
-  - High accuracy: 1e-12
+**tolerance**:
 
-line_search:
-  - alpha: 1e-4 (sufficient decrease)
-  - beta: 0.5 (step reduction)
+- Standard: $10^{-8}$
+- High accuracy: $10^{-12}$
 
-subsolver_tolerance:
-  - Initial: 0.1 * ||H||
-  - Final: 0.01 * ||H||
-```
+**line_search**:
+
+- $\alpha$: $10^{-4}$ (sufficient decrease)
+- $\beta$: 0.5 (step reduction)
+
+**subsolver_tolerance**:
+
+- Initial: $0.1 \|H\|$
+- Final: $0.01 \|H\|$
 
 ### Dantzig (currently available)
 
@@ -459,35 +453,32 @@ findex[i] = j;   // Depends on x[j] for friction cone
 
 ### Solution is Infeasible
 
-```
-1. Validate input: A, b satisfy LCP structure
-2. Check bounds: lo <= 0 <= hi
-3. Verify complementarity: x^T(Ax-b) ≈ 0
+1. Validate input: $A$, $b$ satisfy LCP structure
+2. Check bounds: $\text{lo} \leq 0 \leq \text{hi}$
+3. Verify complementarity: $x^T(Ax-b) \approx 0$
 4. Try different solver (Dantzig vs Lemke)
-```
 
 ### Performance is Poor
 
-```
 Current (with Dantzig/PGS/BGS/Lemke/Newton/Interior Point):
-1. Limit problem size (n < 100)
+
+1. Limit problem size ($n < 100$)
 2. Use Dantzig for contacts
 3. Reduce contact points
 4. Simplify collision geometry
 5. Use Interior Point for ill-conditioned problems
-```
 
 ## Summary Recommendations
 
 ### Current State
 
-| Scenario               | Use             | Notes                                    |
-| ---------------------- | --------------- | ---------------------------------------- |
-| Contact with friction  | BGS or Dantzig  | BGS for blocks, Dantzig for exact solves |
-| Bounded variables      | Dantzig         | Supports bounds and friction             |
-| Standard LCP           | Lemke or Newton | Newton for high accuracy (standard only) |
-| Large problems (n>100) | NNCG or PGS     | NNCG converges faster, both approximate  |
-| Real-time (n>50)       | PGS/PSOR        | Tune `relaxation`, keep Dantzig fallback |
+| Scenario                 | Use             | Notes                                    |
+| ------------------------ | --------------- | ---------------------------------------- |
+| Contact with friction    | BGS or Dantzig  | BGS for blocks, Dantzig for exact solves |
+| Bounded variables        | Dantzig         | Supports bounds and friction             |
+| Standard LCP             | Lemke or Newton | Newton for high accuracy (standard only) |
+| Large problems ($n>100$) | NNCG or PGS     | NNCG converges faster, both approximate  |
+| Real-time ($n>50$)       | PGS/PSOR        | Tune `relaxation`, keep Dantzig fallback |
 
 ### Current State (With Interior Point)
 

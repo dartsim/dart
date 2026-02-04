@@ -1,4 +1,4 @@
 #pragma once
 
-#include "dart/lcpsolver/detail/DeprecatedNamespace.hpp"
-#include "dart/math/lcp/pivoting/dantzig/Lcp-impl.hpp"
+#include "dart/lcpsolver/detail/deprecated_namespace.hpp"
+#include "dart/math/lcp/pivoting/dantzig/lcp-impl.hpp"

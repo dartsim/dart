@@ -30,14 +30,19 @@ STOP if ALL are true:
 
 | Learning Type | Example | Route To |
 |---------------|---------|----------|
-| Module-specific pattern | "SoftBodyNode clamps negative damping" | Module `AGENTS.md` |
+| High-level module guidance | "Use Skeleton::create() factory" | Module `AGENTS.md` (brief) |
+| Detailed API pattern | "SoftBodyNode clamps negative damping" | `docs/onboarding/*.md` |
 | Cross-cutting workflow | "Always run lint before commit" | `docs/onboarding/*.md` |
 | Build/test gotcha | "arm64 CI needs longer timeout" | `docs/onboarding/ci-cd.md` |
-| API usage pattern | "Use Skeleton::create(), not constructor" | Module `AGENTS.md` + `docs/onboarding/*.md` |
 | Repeatable workflow | "Dual-PR for bugfixes" | `.claude/commands/` or skill |
 | Tool/command tip | "gh run watch for CI monitoring" | Skill or `docs/onboarding/*.md` |
 | Process improvement | "This template needs better X" | This file (`improve-docs.md`) |
 | Agent compliance failure | "Agent skipped lint despite docs saying to" | Improve doc prominence/structure (see Note) |
+
+> **CRITICAL: AGENTS.md files are POINTER BOARDS, not content repositories.**
+> They should contain high-level guidance and pointers to detailed docs.
+> Task-specific gotchas, implementation details, or specific file/function references
+> belong in `docs/onboarding/*.md`, NOT in AGENTS.md.
 
 > **Note on Agent Compliance Failures**: When an agent fails to follow documented rules,
 > the issue is usually **visibility**, not missing content. Fix by: (1) moving the rule
@@ -51,13 +56,12 @@ STOP if ALL are true:
 
 ```
 
-Is this about a SPECIFIC module (dart/dynamics, dart/collision, etc.)?
-├─ YES → Check module's AGENTS.md first
-│ ├─ Add if it's a key pattern, gotcha, or testing tip
-│ └─ Point to docs/onboarding/_.md for detailed explanation
+Is this HIGH-LEVEL guidance (concepts, pointers, structure)?
+├─ YES → Module's AGENTS.md (keep brief, 1-2 sentences per item)
 │
-└─ NO → Is this a cross-cutting concern (build, test, CI, workflow)?
-├─ YES → docs/onboarding/_.md
+└─ NO → Is this DETAILED content (gotchas, patterns, debugging)?
+├─ YES → docs/onboarding/\*.md (NEVER in AGENTS.md)
+│ ├─ dynamics.md - Dynamics API patterns
 │ ├─ building.md - Build issues, dependencies
 │ ├─ testing.md - Test patterns, debugging
 │ ├─ ci-cd.md - CI failures, timeouts, caching
@@ -79,7 +83,7 @@ Is this about a SPECIFIC module (dart/dynamics, dart/collision, etc.)?
 | Location | Purpose | When to Update |
 |----------|---------|----------------|
 | `AGENTS.md` (root) | Entry point, pointers | Rarely (structure changes only) |
-| `dart/*/AGENTS.md` | Module-specific guidance | Patterns, gotchas for that module |
+| `dart/*/AGENTS.md` | Module-specific pointers | High-level concepts, links to detailed docs |
 | `python/AGENTS.md` | Python binding guidance | Python-specific patterns |
 | `tests/AGENTS.md` | Test suite guidance | Testing patterns, fixtures |
 | `docs/onboarding/*.md` | Detailed developer guides | Workflows, architecture, deep dives |
@@ -131,10 +135,51 @@ grep -r "your keyword" docs/ .claude/ --include="*.md"
 - Point to code as source of truth, not hardcoded lists
 - Check if code changes invalidated existing docs
 
-### AGENTS.md Style
+### AGENTS.md Style (CRITICAL)
 
-Keep concise: Overview, Key Concepts, Code Patterns, Testing, See Also.
-For detailed content, point to `docs/onboarding/*.md`.
+**AGENTS.md files are POINTER BOARDS, not content repositories.**
+
+Structure: Overview, Key Concepts, Code Patterns, Testing, See Also.
+Length: Each section should be 3-5 bullet points max.
+
+**What BELONGS in AGENTS.md:**
+
+- High-level module purpose (1-2 sentences)
+- Key abstractions/concepts (bullet list of names + one-liner)
+- Common entry points (factory methods, main classes)
+- Pointers to detailed docs (`@docs/onboarding/*.md`)
+
+**What does NOT belong in AGENTS.md:**
+
+- Task-specific gotchas from a particular fix
+- References to specific file:function locations
+- Detailed implementation patterns
+- Debugging tips for specific failures
+- Anything that references a PR, commit, or specific bug
+
+**Anti-pattern example (DO NOT DO THIS):**
+
+```markdown
+## Gotchas
+
+- **assertFiniteState in setters**: When fixing bug X, check Y before Z.
+  See `generic_joint.hpp:updateAccelerationDynamic()` for the pattern.
+```
+
+**Correct pattern:**
+
+```markdown
+## Code Patterns
+
+- Use factory methods (`Skeleton::create()`) not constructors
+- Joint state modifications trigger validation in debug builds
+
+## See Also
+
+- @docs/onboarding/dynamics.md - Detailed API patterns and gotchas
+```
+
+For detailed content, create or update `docs/onboarding/*.md`.
 
 ## Output
 

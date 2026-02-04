@@ -11,12 +11,14 @@ namespace dart::python_nb {
 template <typename T>
 std::shared_ptr<T> makeOsgShared(T* raw)
 {
-  if (!raw)
+  if (!raw) {
     return nullptr;
+  }
   raw->ref();
   return std::shared_ptr<T>(raw, [](T* ptr) {
-    if (ptr)
+    if (ptr) {
       ptr->unref();
+    }
   });
 }
 
@@ -29,20 +31,23 @@ std::shared_ptr<T> makeOsgShared(Args&&... args)
 template <typename T>
 std::shared_ptr<T> osgRefToShared(const ::osg::ref_ptr<T>& ref)
 {
-  if (!ref)
+  if (!ref) {
     return nullptr;
+  }
   ref->ref();
   return std::shared_ptr<T>(ref.get(), [](T* ptr) {
-    if (ptr)
+    if (ptr) {
       ptr->unref();
+    }
   });
 }
 
 template <typename T>
 ::osg::ref_ptr<T> sharedToOsgRef(const std::shared_ptr<T>& ptr)
 {
-  if (!ptr)
+  if (!ptr) {
     return {};
+  }
   return ::osg::ref_ptr<T>(ptr.get());
 }
 

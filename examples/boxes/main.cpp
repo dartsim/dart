@@ -30,11 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/all.hpp>
 
 #include <dart/collision/bullet/All.hpp>
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 
 #include <osgShadow/ShadowMap>
 

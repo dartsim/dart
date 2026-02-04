@@ -30,18 +30,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
-#include <dart/gui/All.hpp>
-#include <dart/gui/ImGuiHandler.hpp>
-#include <dart/gui/IncludeImGui.hpp>
+#include <dart/gui/all.hpp>
+#include <dart/gui/im_gui_handler.hpp>
+#include <dart/gui/include_im_gui.hpp>
 
 #include <dart/utils/All.hpp>
 
 #include <dart/collision/bullet/All.hpp>
 
-#include <dart/All.hpp>
-#include <dart/io/Read.hpp>
+#include <dart/all.hpp>
+#include <dart/io/read.hpp>
 
 #include <CLI/CLI.hpp>
 
@@ -66,8 +66,9 @@ public:
 
   void customPreStep() override
   {
-    if (!mRobot || !mMocap || !mInteractiveFrame)
+    if (!mRobot || !mMocap || !mInteractiveFrame) {
       return;
+    }
 
     mMocap->getParentJoint()->setTransformFromParentBodyNode(
         mInteractiveFrame->getTransform());
@@ -108,13 +109,15 @@ public:
     // Menu
     if (ImGui::BeginMenuBar()) {
       if (ImGui::BeginMenu("Menu")) {
-        if (ImGui::MenuItem("Exit"))
+        if (ImGui::MenuItem("Exit")) {
           mViewer->setDone(true);
+        }
         ImGui::EndMenu();
       }
       if (ImGui::BeginMenu("Help")) {
-        if (ImGui::MenuItem("About DART"))
+        if (ImGui::MenuItem("About DART")) {
           mViewer->showAbout();
+        }
         ImGui::EndMenu();
       }
       ImGui::EndMenuBar();
@@ -138,11 +141,13 @@ public:
     if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
       int e = mViewer->isSimulating() ? 0 : 1;
       if (mViewer->isAllowingSimulation()) {
-        if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating())
+        if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating()) {
           mViewer->simulate(true);
+        }
         ImGui::SameLine();
-        if (ImGui::RadioButton("Pause", &e, 1) && mViewer->isSimulating())
+        if (ImGui::RadioButton("Pause", &e, 1) && mViewer->isSimulating()) {
           mViewer->simulate(false);
+        }
       }
     }
 

@@ -1,6 +1,10 @@
 # Pivoting Methods for LCP
 
-**Navigation**: [← Overview](02_overview.md) | [Projection Methods →](04_projection-methods.md)
+> **Attribution**: This content is derived from "Contact Handling for Articulated
+> Rigid Bodies Using LCP" by Jie Tan, Kristin Siu, and C. Karen Liu.
+> The original PDF is preserved at [`docs/lcp.pdf`](../../lcp.pdf).
+
+**Navigation**: [← Overview](02_overview.md) | [Index](../README.md) | [Projection Methods →](04_projection-methods.md)
 
 ## Overview
 
@@ -8,28 +12,25 @@ Pivoting methods solve LCPs by exploiting their combinatorial nature through enu
 
 ## Active / Free index sets
 
-Let `y = Ax - b`. Partition the indices into:
+Let $y = Ax - b$. Partition the indices into:
 
-- Active set `A = { i | x_i > 0 }`
-- Free set `F = { i | y_i > 0 }`
+- Active set $\mathcal{A} = \{ i \mid x_i > 0 \}$
+- Free set $\mathcal{F} = \{ i \mid y_i > 0 \}$
 
-Strict complementarity implies `A ∩ F = ∅` and `A ∪ F = I`, where `I = {1, …, n}`. Reordering rows/columns with this partition yields a reduced problem that makes the pivot structure explicit:
+Strict complementarity implies $\mathcal{A} \cap \mathcal{F} = \emptyset$ and $\mathcal{A} \cup \mathcal{F} = \mathcal{I}$, where $\mathcal{I} = \{1, \ldots, n\}$. Reordering rows/columns with this partition yields a reduced problem that makes the pivot structure explicit:
 
-```
-[ I_F  -A_FA ] [ y_F ] = [ -b_F ]
-[  0    A_AA ] [ x_A ]   [  b_A ]
-```
+$$\begin{bmatrix} I_{\mathcal{F}} & -A_{\mathcal{F}\mathcal{A}} \\ 0 & A_{\mathcal{A}\mathcal{A}} \end{bmatrix} \begin{bmatrix} y_{\mathcal{F}} \\ x_{\mathcal{A}} \end{bmatrix} = \begin{bmatrix} -b_{\mathcal{F}} \\ b_{\mathcal{A}} \end{bmatrix}$$
 
-The stacked matrix built from identity columns (for `y_F`) and negated `A` columns (for `x_A`) is a **complementarity matrix**. Choosing, for every index, whether the column comes from `I` or from `-A` enumerates up to `2^n` distinct matrices; this combinatorial explosion is what gives pivoting its exponential worst case. For symmetric positive (semi-)definite `A`, the same conditions can instead be written as a quadratic program, avoiding explicit pivot enumeration.
+The stacked matrix built from identity columns (for $y_{\mathcal{F}}$) and negated $A$ columns (for $x_{\mathcal{A}}$) is a **complementarity matrix**. Choosing, for every index, whether the column comes from $I$ or from $-A$ enumerates up to $2^n$ distinct matrices; this combinatorial explosion is what gives pivoting its exponential worst case. For symmetric positive (semi-)definite $A$, the same conditions can instead be written as a quadratic program, avoiding explicit pivot enumeration.
 
 ### Constructing a complementarity matrix
 
 1. Decide the membership of each index (active vs free).
-2. Zero out columns in `A` that belong to `F` (since `x_F = 0`) and rows that belong to `A` (since `y_A = 0`).
-3. Reorder unknowns to `[y_F; x_A]` and build `C = [I_F, -A_FA]`.
-4. Solve `C s = b` for `s = [y_F; x_A]` and keep only solutions with `s ≥ 0`.
+2. Zero out columns in $A$ that belong to $\mathcal{F}$ (since $x_{\mathcal{F}} = 0$) and rows that belong to $\mathcal{A}$ (since $y_{\mathcal{A}} = 0$).
+3. Reorder unknowns to $[y_{\mathcal{F}}; x_{\mathcal{A}}]$ and build $C = [I_{\mathcal{F}}, -A_{\mathcal{F}\mathcal{A}}]$.
+4. Solve $Cs = b$ for $s = [y_{\mathcal{F}}; x_{\mathcal{A}}]$ and keep only solutions with $s \geq 0$.
 
-Each feasible `s` corresponds to one candidate LCP solution. Pivoting methods search these candidates without testing all `2^n` possibilities when possible.
+Each feasible $s$ corresponds to one candidate LCP solution. Pivoting methods search these candidates without testing all $2^n$ possibilities when possible.
 
 ## 1. Direct Methods for Small-Sized Problems
 
@@ -39,32 +40,25 @@ Geometric approaches for 2D and 3D LCPs using complementarity cones and angle in
 
 ### 2D Algorithm
 
-Given LCP with 2D vector `x`:
+Given LCP with 2D vector $x$:
 
-```
 Test all 4 complementarity cones:
-  C₁ = [e₁, e₂] (both from identity)
-  C₂ = [a₁, e₂] (first from A, second from identity)
-  C₃ = [e₁, a₂] (first from identity, second from A)
-  C₄ = [a₁, a₂] (both from A)
 
-For each cone C:
-  if b is in positive cone of C:
-    return solution x = C⁻¹b
-```
+- $C_1 = [e_1, e_2]$ (both from identity)
+- $C_2 = [a_1, e_2]$ (first from $A$, second from identity)
+- $C_3 = [e_1, a_2]$ (first from identity, second from $A$)
+- $C_4 = [a_1, a_2]$ (both from $A$)
+
+For each cone $C$: if $b$ is in positive cone of $C$, return solution $x = C^{-1}b$.
 
 ### 3D Algorithm
 
 Test all 8 complementarity cones using spherical triangle inclusion:
 
-```
-For cone C = [c₁, c₂, c₃]:
-  if det(C) > 0 and
-     (c₁ × c₂)·b >= 0 and
-     (c₂ × c₃)·b >= 0 and
-     (c₃ × c₁)·b >= 0:
-    return x = C⁻¹b
-```
+For cone $C = [c_1, c_2, c_3]$:
+
+- if $\det(C) > 0$ and $(c_1 \times c_2) \cdot b \geq 0$ and $(c_2 \times c_3) \cdot b \geq 0$ and $(c_3 \times c_1) \cdot b \geq 0$:
+  - return $x = C^{-1}b$
 
 #### Bitmask implementation (2D)
 
@@ -80,12 +74,12 @@ for k = 1..4:
 return "no solution"
 ```
 
-This tests whether `b` lies in the cone spanned by `c1, c2` by checking that the signed areas (determinants) with `b` have opposite signs.
+This tests whether $b$ lies in the cone spanned by $c_1, c_2$ by checking that the signed areas (determinants) with $b$ have opposite signs.
 
 ### Properties
 
-- **Time Complexity**: O(2ⁿ) for n-dimensional problem
-- **Space Complexity**: O(n)
+- **Time Complexity**: $O(2^n)$ for $n$-dimensional problem
+- **Space Complexity**: $O(n)$
 - **Convergence**: Exact solution (if exists)
 - **Applicability**: Only 2D/3D problems
 
@@ -103,22 +97,20 @@ BLCP solver using pivoting. Derived from ODE (Open Dynamics Engine).
 
 ### Problem Formulation
 
-Given `(A, b, lo, hi)`, solve:
+Given $(A, b, \text{lo}, \text{hi})$, solve:
 
-```
-Ax = b + w, where each (xᵢ, wᵢ) satisfies one of:
-  (1) x = lo, w >= 0  (at lower bound)
-  (2) x = hi, w <= 0  (at upper bound)
-  (3) lo < x < hi, w = 0  (free variable)
-```
+$Ax = b + w$, where each $(x_i, w_i)$ satisfies one of:
+
+1. $x = \text{lo}$, $w \geq 0$ (at lower bound)
+2. $x = \text{hi}$, $w \leq 0$ (at upper bound)
+3. $\text{lo} < x < \text{hi}$, $w = 0$ (free variable)
 
 ### Key Features
 
-- **Bounded variables**: `lo[i] <= x[i] <= hi[i]`
-- **Unbounded variables**: Represented by `lo = -∞`, `hi = +∞` (legacy API uses
-  `nub` to seed the initial unbounded block)
+- **Bounded variables**: $\text{lo}_i \leq x_i \leq \text{hi}_i$
+- **Unbounded variables**: Represented by $\text{lo} = -\infty$, $\text{hi} = +\infty$ (legacy API uses `nub` to seed the initial unbounded block)
 - **Friction support**: `findex[i]` for friction cone constraints
-  - When `findex[i] >= 0`: bounds become `hi[i] = |hi[i] * x[findex[i]]|`, `lo[i] = -hi[i]`
+  - When `findex[i] >= 0`: bounds become $\text{hi}_i = |\text{hi}_i \cdot x_{\text{findex}[i]}|$, $\text{lo}_i = -\text{hi}_i$
 - **Early termination**: Optional for faster approximate solutions
 
 ### Algorithm Pseudocode
@@ -177,8 +169,8 @@ bool success = SolveLCP<double>(
 
 ### Properties
 
-- **Time Complexity**: O(n⁴) worst case
-- **Space Complexity**: O(n²)
+- **Time Complexity**: $O(n^4)$ worst case
+- **Space Complexity**: $O(n^2)$
 - **Convergence**: Exact solution
 - **Matrix Requirements**: None (general BLCP)
 
@@ -196,24 +188,20 @@ Standard pivoting method for LCP using complementary pivoting.
 
 ### Problem Formulation
 
-```
-Find z such that:
-  Mz = q + w
-  z >= 0, w >= 0
-  z^T w = 0
-```
+Find $z$ such that:
+$$Mz = q + w$$
+$$z \geq 0, \quad w \geq 0$$
+$$z^T w = 0$$
 
 ### Algorithm Overview
 
-```
-1. Initialize with artificial variable z₀
+1. Initialize with artificial variable $z_0$
 2. Iterate:
-   a. Select entering variable (complementary to leaving)
-   b. Perform ratio test for leaving variable
-   c. Pivot to update basis
-   d. If z₀ leaves basis, solution found
+   - Select entering variable (complementary to leaving)
+   - Perform ratio test for leaving variable
+   - Pivot to update basis
+   - If $z_0$ leaves basis, solution found
 3. Extract final solution
-```
 
 ### DART Implementation
 
@@ -244,8 +232,8 @@ auto result = solver.solve(problem, z, options);
 
 ### Properties
 
-- **Time Complexity**: O(n⁴) worst case
-- **Space Complexity**: O(n²)
+- **Time Complexity**: $O(n^4)$ worst case
+- **Space Complexity**: $O(n^2)$
 - **Convergence**: Exact solution (if exists)
 - **Matrix Requirements**: None (general LCP)
 
@@ -263,13 +251,12 @@ Direct enumeration of complementarity sets for tiny standard LCPs.
 
 ### Algorithm Overview
 
-```
-for each active set S ⊆ {1..n}:
-  Solve A_SS x_S = b_S
-  Set x_{~S} = 0
-  w = A x - b
-  Accept if x >= 0, w >= 0, and xᵀw ≈ 0
-```
+For each active set $S \subseteq \{1, \ldots, n\}$:
+
+1. Solve $A_{SS} x_S = b_S$
+2. Set $x_{\bar{S}} = 0$
+3. Compute $w = Ax - b$
+4. Accept if $x \geq 0$, $w \geq 0$, and $x^T w \approx 0$
 
 ### DART Implementation
 
@@ -290,13 +277,13 @@ DirectSolver solver;
 auto result = solver.solve(problem, x, solver.getDefaultOptions());
 ```
 
-> Note: DART limits the direct solver to n ≤ 3 and delegates larger problems
+> Note: DART limits the direct solver to $n \leq 3$ and delegates larger problems
 > to the boxed-capable pivoting solver.
 
 ### Properties
 
-- **Time Complexity**: O(2ⁿ) (only practical for n ≤ 3)
-- **Space Complexity**: O(n²)
+- **Time Complexity**: $O(2^n)$ (only practical for $n \leq 3$)
+- **Space Complexity**: $O(n^2)$
 - **Convergence**: Exact solution (if exists)
 - **Matrix Requirements**: None (general LCP)
 
@@ -313,23 +300,23 @@ Incrementally builds active/free index sets while maintaining complementarity co
 
 The method keeps three sets:
 
-- **Active A**: indices where `x_i > 0`
-- **Free F**: indices where `y_i = (Ax-b)_i > 0`
-- **Unprocessed U**: indices not yet assigned
+- **Active $\mathcal{A}$**: indices where $x_i > 0$
+- **Free $\mathcal{F}$**: indices where $y_i = (Ax-b)_i > 0$
+- **Unprocessed $\mathcal{U}$**: indices not yet assigned
 
 ### Key Concepts
 
 - **Index Sets**:
-  - **Active set A**: indices where `xᵢ > 0`
-  - **Free set F**: indices where `yᵢ = (Ax - b)ᵢ > 0`
-  - **Unprocessed U**: indices not yet assigned
+  - **Active set $\mathcal{A}$**: indices where $x_i > 0$
+  - **Free set $\mathcal{F}$**: indices where $y_i = (Ax - b)_i > 0$
+  - **Unprocessed $\mathcal{U}$**: indices not yet assigned
 - **Blocking constraints**: bounds on how far a candidate variable may move before violating complementarity in the current basis
 
 ### Algorithm Pseudocode
 
-```
-Given symmetric PSD A, b. Start with x = 0, y = b, A = ∅, F = ∅, U = I
+Given symmetric PSD $A$, $b$. Start with $x = 0$, $y = b$, $\mathcal{A} = \emptyset$, $\mathcal{F} = \emptyset$, $\mathcal{U} = \mathcal{I}$:
 
+```
 while U not empty:
   j = argmin_{i in U} y_i           # most negative residual
   enter j into tentative active set
@@ -361,8 +348,8 @@ while U not empty:
 
 Notes:
 
-- Only one index swaps at a time, so an incremental factorization of `A_AA` keeps the inner loop O(n²) while the outer loop runs O(n) times (practical O(n³), worst-case O(n⁴)).
-- Works best when `A` is symmetric positive semidefinite (common for contact problems), where it mirrors an active-set QP solve.
+- Only one index swaps at a time, so an incremental factorization of $A_{\mathcal{A}\mathcal{A}}$ keeps the inner loop $O(n^2)$ while the outer loop runs $O(n)$ times (practical $O(n^3)$, worst-case $O(n^4)$).
+- Works best when $A$ is symmetric positive semidefinite (common for contact problems), where it mirrors an active-set QP solve.
 
 ### DART Implementation
 
@@ -390,8 +377,8 @@ auto result = solver.solve(problem, x, options);
 
 ### Properties
 
-- **Time Complexity**: O(n⁴) with incremental factorization
-- **Space Complexity**: O(n²)
+- **Time Complexity**: $O(n^4)$ with incremental factorization
+- **Space Complexity**: $O(n^2)$
 - **Convergence**: Exact solution
 - **Matrix Requirements**: Symmetric PD or PSD
 
@@ -409,12 +396,12 @@ auto result = solver.solve(problem, x, options);
 
 ## Comparison Table
 
-| Method       | Status         | Problem Type | Time  | Matrix Requirements |
-| ------------ | -------------- | ------------ | ----- | ------------------- |
-| Direct 2D/3D | ✅ Implemented | LCP          | O(2ⁿ) | None                |
-| Dantzig      | ✅ Implemented | BLCP         | O(n⁴) | None                |
-| Lemke        | ✅ Implemented | LCP          | O(n⁴) | None                |
-| Baraff       | ✅ Implemented | LCP          | O(n⁴) | Symmetric PD/PSD    |
+| Method       | Status         | Problem Type | Time     | Matrix Requirements |
+| ------------ | -------------- | ------------ | -------- | ------------------- |
+| Direct 2D/3D | ✅ Implemented | LCP          | $O(2^n)$ | None                |
+| Dantzig      | ✅ Implemented | BLCP         | $O(n^4)$ | None                |
+| Lemke        | ✅ Implemented | LCP          | $O(n^4)$ | None                |
+| Baraff       | ✅ Implemented | LCP          | $O(n^4)$ | Symmetric PD/PSD    |
 
 ## When to Use Pivoting Methods
 
@@ -427,14 +414,14 @@ auto result = solver.solve(problem, x, options);
 
 ### Disadvantages
 
-- ❌ High computational cost O(n⁴)
+- ❌ High computational cost $O(n^4)$
 - ❌ Require full matrix assembly
-- ❌ Not suitable for real-time with large n
-- ❌ Memory intensive O(n²)
+- ❌ Not suitable for real-time with large $n$
+- ❌ Memory intensive $O(n^2)$
 
 ### Recommended For
 
-- Small to medium problems (n < 100)
+- Small to medium problems ($n < 100$)
 - Off-line simulations
 - High accuracy requirements
 - Poorly conditioned systems
@@ -443,7 +430,7 @@ auto result = solver.solve(problem, x, options);
 ### Not Recommended For
 
 - Real-time interactive simulation
-- Large-scale problems (n > 1000)
+- Large-scale problems ($n > 1000$)
 - When approximate solutions suffice
 - Matrix-free implementations needed
 

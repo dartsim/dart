@@ -1,9 +1,9 @@
 #include "collision/collision_option.hpp"
 
 #include "common/repr.hpp"
-#include "dart/collision/CollisionFilter.hpp"
-#include "dart/collision/CollisionOption.hpp"
-#include "dart/dynamics/BodyNode.hpp"
+#include "dart/collision/collision_filter.hpp"
+#include "dart/collision/collision_option.hpp"
+#include "dart/dynamics/body_node.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>

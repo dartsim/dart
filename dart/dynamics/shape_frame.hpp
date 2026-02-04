@@ -1,0 +1,308 @@
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#ifndef DART_DYNAMICS_SHAPEFRAME_HPP_
+#define DART_DYNAMICS_SHAPEFRAME_HPP_
+
+#include <dart/dynamics/detail/shape_frame_aspect.hpp>
+#include <dart/dynamics/ellipsoid_shape.hpp>
+#include <dart/dynamics/fixed_frame.hpp>
+#include <dart/dynamics/templated_jacobian_node.hpp>
+
+#include <dart/common/aspect_with_version.hpp>
+#include <dart/common/signal.hpp>
+#include <dart/common/specialized_for_aspect.hpp>
+
+#include <dart/export.hpp>
+
+#include <Eigen/Dense>
+
+namespace dart {
+namespace dynamics {
+
+//==============================================================================
+class DART_API VisualAspect final
+  : public common::AspectWithVersionedProperties<
+        VisualAspect,
+        detail::VisualAspectProperties,
+        ShapeFrame>
+{
+public:
+  using Base = common::AspectWithVersionedProperties<
+      VisualAspect,
+      detail::VisualAspectProperties,
+      ShapeFrame>;
+
+  /// Constructor
+  VisualAspect(const PropertiesData& properties = PropertiesData());
+
+  VisualAspect(const VisualAspect&) = delete;
+
+  /// Set RGBA color
+  void setRGBA(const Eigen::Vector4d& color);
+
+  DART_COMMON_GET_ASPECT_PROPERTY(Eigen::Vector4d, RGBA)
+  // const Eigen::Vector4d& getRGBA() const;
+
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(bool, Hidden)
+  // void setHidden(const bool& value);
+  // const bool& getHidden() const;
+
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(bool, Shadowed)
+  // void setShadowed(const bool& value);
+  // const bool& getShadowed() const;
+
+  /// Identical to setRGB(const Eigen::Vector3d&)
+  void setColor(const Eigen::Vector3d& color);
+
+  /// Identical to setRGBA(const Eigen::Vector4d&)
+  void setColor(const Eigen::Vector4d& color);
+
+  /// Set RGB color components (leave alpha alone)
+  void setRGB(const Eigen::Vector3d& rgb);
+
+  /// Set the transparency of the Shape
+  void setAlpha(const double alpha);
+
+  /// Reset the color back to the default and mark it as unspecified.
+  void resetColor();
+
+  /// True if no explicit color has been assigned to this VisualAspect.
+  bool usesDefaultColor() const;
+
+  /// Default RGBA color used when no explicit color is set.
+  static Eigen::Vector4d getDefaultRGBA();
+
+  /// Get color
+  Eigen::Vector3d getColor() const;
+
+  /// Get RGB color components
+  Eigen::Vector3d getRGB() const;
+
+  /// Get the transparency of the Shape
+  double getAlpha() const;
+
+  /// Hide the ShapeNode
+  void hide();
+
+  /// Show the ShapeNode
+  void show();
+
+  /// True iff the ShapeNode is set to be hidden. Use hide(bool) to change this
+  /// setting
+  bool isHidden() const;
+};
+
+//==============================================================================
+class DART_API CollisionAspect final
+  : public common::AspectWithVersionedProperties<
+        CollisionAspect,
+        detail::CollisionAspectProperties,
+        ShapeFrame>
+{
+public:
+  CollisionAspect(const CollisionAspect&) = delete;
+  CollisionAspect(const PropertiesData& properties = PropertiesData());
+
+  void setCollidable(const bool& value);
+  const bool& getCollidable() const;
+
+  /// Return true if this body can collide with others bodies
+  bool isCollidable() const;
+
+protected:
+  void setComposite(common::Composite* newComposite) override;
+  void loseComposite(common::Composite* oldComposite) override;
+};
+
+//==============================================================================
+class DART_API DynamicsAspect final
+  : public common::AspectWithVersionedProperties<
+        DynamicsAspect,
+        detail::DynamicsAspectProperties,
+        ShapeFrame>
+{
+public:
+  using Base = common::AspectWithVersionedProperties<
+      DynamicsAspect,
+      detail::DynamicsAspectProperties,
+      ShapeFrame>;
+
+  DynamicsAspect(const DynamicsAspect&) = delete;
+
+  DynamicsAspect(const PropertiesData& properties = PropertiesData());
+
+  /// Set both primary and secondary friction coefficients to the same value.
+  void setFrictionCoeff(const double& value);
+  /// Get average of primary and secondary friction coefficients.
+  double getFrictionCoeff() const;
+
+  // DART_COMMON_SET_GET_ASPECT_PROPERTY(double, PrimaryFrictionCoeff)
+  void setPrimaryFrictionCoeff(const double& value);
+  const double& getPrimaryFrictionCoeff() const;
+
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, SecondaryFrictionCoeff)
+  // void setSecondaryFrictionCoeff(const double& value);
+  // const double& getSecondaryFrictionCoeff() const;
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, RestitutionCoeff)
+  // void setRestitutionCoeff(const double& value);
+  // const double& getRestitutionCoeff() const;
+
+  /// Slip compliance parameters act as constraint force mixing (cfm)
+  /// for the friction constraints.
+  /// They start with a default value of -1.0 and will be ignored
+  /// in favor of the global default value unless explicitly
+  /// set to a positive value.
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, PrimarySlipCompliance)
+  // void sePrimarytSlipCompliance(const double& value);
+  // const double& getPrimarySlipCompliance() const;
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, SecondarySlipCompliance)
+  // void setSecondarySlipCompliance(const double& value);
+  // const double& getSecondarySlipCompliance() const;
+
+  /// Set the frame for interpreting the first friction direction vector.
+  /// The frame pointer defaults to nullptr, which is interpreted as this
+  /// ShapeFrame.
+  void setFirstFrictionDirectionFrame(const Frame* value);
+
+  /// Get the frame for the first friction direction vector.
+  const Frame* getFirstFrictionDirectionFrame() const;
+
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(Eigen::Vector3d, FirstFrictionDirection)
+  // void setFirstFrictionDirection(const Eigen::Vector3d& value);
+  // const Eigen::Vector3d& getFirstFrictionDirection() const;
+};
+
+//==============================================================================
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
+class DART_API ShapeFrame : public virtual common::VersionCounter,
+                            public detail::ShapeFrameCompositeBase,
+                            public virtual Frame
+{
+public:
+  friend class BodyNode;
+
+  using ShapeUpdatedSignal = common::Signal<void(
+      const ShapeFrame* thisShapeFrame,
+      const ShapePtr& oldShape,
+      const ShapePtr& newShape)>;
+
+  using RelativeTransformUpdatedSignal = common::Signal<void(
+      const ShapeFrame* thisShapeFrame,
+      const Eigen::Isometry3d& oldTransform,
+      const Eigen::Isometry3d& newTransform)>;
+
+  using UniqueProperties = AspectProperties;
+  using Properties = UniqueProperties;
+
+  /// Destructor
+  virtual ~ShapeFrame() override;
+
+  /// Set the UniqueProperties of this ShapeFrame
+  void setProperties(const UniqueProperties& properties);
+
+  /// Set the AspectProperties of this ShapeFrame
+  void setAspectProperties(const AspectProperties& properties);
+
+  const AspectProperties& getAspectProperties() const;
+
+  /// Set shape
+  void setShape(const ShapePtr& shape);
+
+  /// Return shape
+  ShapePtr getShape();
+
+  /// Return (const) shape
+  ConstShapePtr getShape() const;
+
+  DART_BAKE_SPECIALIZED_ASPECT(VisualAspect)
+
+  DART_BAKE_SPECIALIZED_ASPECT(CollisionAspect)
+
+  DART_BAKE_SPECIALIZED_ASPECT(DynamicsAspect)
+
+  // Documentation inherited
+  ShapeFrame* asShapeFrame() override;
+
+  // Documentation inherited
+  const ShapeFrame* asShapeFrame() const override;
+
+  /// Returns true if this Frame is a ShapeNode
+  bool isShapeNode() const;
+
+  /// Convert 'this' into a ShapeNode pointer if ShapeFrame is a ShapeNode,
+  /// otherwise return nullptr
+  virtual ShapeNode* asShapeNode();
+
+  /// Convert 'const this' into a ShapeNode pointer if ShapeFrame is a
+  /// ShapeNode, otherwise return nullptr.
+  ///
+  /// This should be preferred over performing a dynamic_cast when you want to
+  /// cast a ShapeFrame into a ShapeNode, because this method costs less.
+  virtual const ShapeNode* asShapeNode() const;
+
+protected:
+  /// Constructor
+  ShapeFrame(Frame* parent, const Properties& properties);
+
+  /// Constructor
+  ShapeFrame(Frame* parent, const ShapePtr& shape = nullptr);
+
+  /// Delegating constructor
+  ShapeFrame(const std::tuple<Frame*, Properties>& args);
+
+  /// Contains whether or not this is a ShapeNode
+  bool mAmShapeNode;
+
+  /// Shape updated signal
+  ShapeUpdatedSignal mShapeUpdatedSignal;
+
+  /// Relative transformation updated signal
+  RelativeTransformUpdatedSignal mRelativeTransformUpdatedSignal;
+
+  /// Connect to changes in the Shape version
+  common::Connection mConnectionForShapeVersionChange;
+
+public:
+  /// Slot register for shape updated signal
+  common::SlotRegister<ShapeUpdatedSignal> onShapeUpdated;
+
+  /// Slot register for relative transformation updated signal
+  common::SlotRegister<RelativeTransformUpdatedSignal>
+      onRelativeTransformUpdated;
+};
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
+
+} // namespace dynamics
+} // namespace dart
+
+#endif // DART_DYNAMICS_SHAPEFRAME_HPP_

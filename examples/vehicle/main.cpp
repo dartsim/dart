@@ -30,14 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/all.hpp>
 
 #include <dart/utils/All.hpp>
 
-#include <dart/All.hpp>
-#include <dart/io/Read.hpp>
+#include <dart/all.hpp>
+#include <dart/io/read.hpp>
 
 #include <iostream>
 
@@ -77,16 +77,18 @@ public:
         case 'a':
         case 'A':
           mSteeringWheelAngle += +10_deg;
-          if (mSteeringWheelAngle > 30.0_deg)
+          if (mSteeringWheelAngle > 30.0_deg) {
             mSteeringWheelAngle = 30.0_deg;
+          }
           std::cout << "Steering left, angle: " << mSteeringWheelAngle
                     << std::endl;
           return true;
         case 'd':
         case 'D':
           mSteeringWheelAngle += -10_deg;
-          if (mSteeringWheelAngle < -30.0_deg)
+          if (mSteeringWheelAngle < -30.0_deg) {
             mSteeringWheelAngle = -30.0_deg;
+          }
           std::cout << "Steering right, angle: " << mSteeringWheelAngle
                     << std::endl;
           return true;

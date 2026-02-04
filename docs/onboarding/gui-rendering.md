@@ -542,6 +542,73 @@ viewer->pauseRecording();
 
 ---
 
+## Headless Rendering
+
+### Overview
+
+DART supports headless rendering for CI pipelines, batch frame capture, and testing without a display window. This uses OSG's pbuffer backend to render to an offscreen buffer.
+
+### Key API
+
+```cpp
+// Configure headless mode
+ViewerConfig config = ViewerConfig::headless(1280, 720);
+
+// Create viewer with config
+auto viewer = Viewer::create(config);
+
+// Check if headless
+if (viewer->isHeadless()) {
+  // Capture frames to files
+  viewer->captureScreen("frame_000001.png");
+
+  // Or capture to memory buffer (raw RGBA pixels)
+  int width, height;
+  std::vector<unsigned char> pixels = viewer->captureBuffer(&width, &height);
+}
+```
+
+### ViewerConfig Options
+
+| Field                 | Type            | Description                              |
+| --------------------- | --------------- | ---------------------------------------- |
+| `mode`                | `RenderingMode` | `Window` (default) or `Headless`         |
+| `width`               | `int`           | Viewport width (default: 1024)           |
+| `height`              | `int`           | Viewport height (default: 768)           |
+| `useSoftwareRenderer` | `bool`          | OSMesa placeholder (not yet implemented) |
+
+### CI Integration
+
+Headless mode requires either a display server or virtual framebuffer:
+
+```bash
+# Using xvfb-run wrapper (recommended for CI)
+xvfb-run --auto-servernum ./my_headless_app --headless --frames 100
+
+# Manual Xvfb setup
+Xvfb :99 -screen 0 1280x720x24 &
+export DISPLAY=:99
+./my_headless_app --headless --frames 100
+```
+
+### Example: rigid_cubes
+
+The `rigid_cubes` example demonstrates headless mode with CLI flags:
+
+```bash
+./rigid_cubes --headless --frames 100 --out ./output/ --width 1920 --height 1080
+```
+
+See [`examples/rigid_cubes/README.md`](../../examples/rigid_cubes/README.md) for full documentation including video creation with ffmpeg.
+
+### Files
+
+- `dart/gui/ViewerConfig.hpp` - `RenderingMode` enum and `ViewerConfig` struct
+- `dart/gui/Viewer.hpp` - `Viewer(ViewerConfig)` constructor, `isHeadless()`, `captureBuffer()`
+- `.github/workflows/ci_ubuntu.yml` - `headless-rendering` CI job
+
+---
+
 ## Camera System
 
 ### Camera Modes

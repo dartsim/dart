@@ -30,13 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/all.hpp>
 
 #include <dart/utils/All.hpp>
 #include <dart/utils/urdf/All.hpp>
 
-#include <dart/All.hpp>
-#include <dart/io/Read.hpp>
+#include <dart/all.hpp>
+#include <dart/io/read.hpp>
 
 using namespace dart::common;
 using namespace dart::dynamics;
@@ -87,8 +87,9 @@ public:
 
     _grad.setZero();
     int smaller = std::min(mResultVector.size(), _grad.size());
-    for (int i = 0; i < smaller; ++i)
+    for (int i = 0; i < smaller; ++i) {
       _grad[i] = mResultVector[i];
+    }
   }
 
   void computeResultVector(const Eigen::VectorXd& _x)
@@ -98,21 +99,24 @@ public:
     if (enforceIdealPosture) {
       // Try to get the robot into the best possible posture
       for (int i = 0; i < _x.size(); ++i) {
-        if (mIdeal.size() <= i)
+        if (mIdeal.size() <= i) {
           break;
+        }
 
         mResultVector[i] = mWeights[i] * (_x[i] - mIdeal[i]);
       }
     } else {
       // Only adjust the posture if it is really bad
       for (int i = 0; i < _x.size(); ++i) {
-        if (mIdeal.size() <= i)
+        if (mIdeal.size() <= i) {
           break;
+        }
 
-        if (_x[i] < mLower[i])
+        if (_x[i] < mLower[i]) {
           mResultVector[i] = mWeights[i] * (_x[i] - mLower[i]);
-        else if (mUpper[i] < _x[i])
+        } else if (mUpper[i] < _x[i]) {
           mResultVector[i] = mWeights[i] * (_x[i] - mUpper[i]);
+        }
       }
     }
   }
@@ -180,17 +184,19 @@ public:
       Eigen::Isometry3d new_tf = Eigen::Isometry3d::Identity();
       Eigen::Vector3d forward = old_tf.linear().col(0);
       forward[2] = 0.0;
-      if (forward.norm() > 1e-10)
+      if (forward.norm() > 1e-10) {
         forward.normalize();
-      else
+      } else {
         forward.setZero();
+      }
 
       Eigen::Vector3d left = old_tf.linear().col(1);
       left[2] = 0.0;
-      if (left.norm() > 1e-10)
+      if (left.norm() > 1e-10) {
         left.normalize();
-      else
+      } else {
         left.setZero();
+      }
 
       const Eigen::Vector3d& up = Eigen::Vector3d::UnitZ();
 
@@ -198,29 +204,37 @@ public:
       const double elevationStep = 0.2 * linearStep;
       const double rotationalStep = 2.0 * pi / 180.0;
 
-      if (mMoveComponents[MOVE_W])
+      if (mMoveComponents[MOVE_W]) {
         new_tf.translate(linearStep * forward);
+      }
 
-      if (mMoveComponents[MOVE_S])
+      if (mMoveComponents[MOVE_S]) {
         new_tf.translate(-linearStep * forward);
+      }
 
-      if (mMoveComponents[MOVE_A])
+      if (mMoveComponents[MOVE_A]) {
         new_tf.translate(linearStep * left);
+      }
 
-      if (mMoveComponents[MOVE_D])
+      if (mMoveComponents[MOVE_D]) {
         new_tf.translate(-linearStep * left);
+      }
 
-      if (mMoveComponents[MOVE_F])
+      if (mMoveComponents[MOVE_F]) {
         new_tf.translate(elevationStep * up);
+      }
 
-      if (mMoveComponents[MOVE_Z])
+      if (mMoveComponents[MOVE_Z]) {
         new_tf.translate(-elevationStep * up);
+      }
 
-      if (mMoveComponents[MOVE_Q])
+      if (mMoveComponents[MOVE_Q]) {
         new_tf.rotate(Eigen::AngleAxisd(rotationalStep, up));
+      }
 
-      if (mMoveComponents[MOVE_E])
+      if (mMoveComponents[MOVE_E]) {
         new_tf.rotate(Eigen::AngleAxisd(-rotationalStep, up));
+      }
 
       new_tf.pretranslate(old_tf.translation());
       new_tf.rotate(old_tf.rotation());
@@ -230,10 +244,11 @@ public:
 
     bool solved = mAtlas->getIK(true)->solveAndApply(true);
 
-    if (!solved)
+    if (!solved) {
       ++iter;
-    else
+    } else {
       iter = 0;
+    }
 
     if (iter == 1000) {
       std::cout << "Failing!" << std::endl;
@@ -273,8 +288,9 @@ public:
 
     mLegs.reserve(12);
     for (std::size_t i = 0; i < mAtlas->getNumDofs(); ++i) {
-      if (mAtlas->getDof(i)->getName().substr(1, 5) == "_leg_")
+      if (mAtlas->getDof(i)->getName().substr(1, 5) == "_leg_") {
         mLegs.push_back(mAtlas->getDof(i)->getIndexInSkeleton());
+      }
     }
     // We should also adjust the pelvis when detangling the legs
     mLegs.push_back(mAtlas->getDof("rootJoint_rot_x")->getIndexInSkeleton());
@@ -310,9 +326,10 @@ public:
 
     if (::osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType()) {
       if (ea.getKey() == 'p') {
-        for (std::size_t i = 0; i < mAtlas->getNumDofs(); ++i)
+        for (std::size_t i = 0; i < mAtlas->getNumDofs(); ++i) {
           std::cout << mAtlas->getDof(i)->getName() << ": "
                     << mAtlas->getDof(i)->getPosition() << std::endl;
+        }
         std::cout << "  -- -- -- -- -- " << std::endl;
         return true;
       }
@@ -320,8 +337,9 @@ public:
       if (ea.getKey() == 't') {
         // Reset all the positions except for x, y, and yaw
         for (std::size_t i = 0; i < mAtlas->getNumDofs(); ++i) {
-          if (i < 2 || 4 < i)
+          if (i < 2 || 4 < i) {
             mAtlas->getDof(i)->setPosition(mRestConfig[i]);
+          }
         }
         return true;
       }
@@ -404,12 +422,14 @@ public:
       }
 
       if (mOptimizationKey == ea.getKey()) {
-        if (mPosture)
+        if (mPosture) {
           mPosture->enforceIdealPosture = true;
+        }
 
-        if (mBalance)
+        if (mBalance) {
           mBalance->setErrorMethod(
               dart::constraint::BalanceConstraint::OPTIMIZE_BALANCE);
+        }
 
         return true;
       }
@@ -417,12 +437,14 @@ public:
 
     if (::osgGA::GUIEventAdapter::KEYUP == ea.getEventType()) {
       if (ea.getKey() == mOptimizationKey) {
-        if (mPosture)
+        if (mPosture) {
           mPosture->enforceIdealPosture = false;
+        }
 
-        if (mBalance)
+        if (mBalance) {
           mBalance->setErrorMethod(
               dart::constraint::BalanceConstraint::FROM_CENTROID);
+        }
 
         return true;
       }
@@ -840,18 +862,21 @@ void setupWholeBodySolver(const SkeletonPtr& atlas)
 void enableDragAndDrops(dart::gui::Viewer& viewer, const SkeletonPtr& atlas)
 {
   // Turn on drag-and-drop for the whole Skeleton
-  for (std::size_t i = 0; i < atlas->getNumBodyNodes(); ++i)
+  for (std::size_t i = 0; i < atlas->getNumBodyNodes(); ++i) {
     viewer.enableDragAndDrop(atlas->getBodyNode(i), false, false);
+  }
 
   atlas->eachEndEffector([&](EndEffector* ee) {
-    if (!ee->getIK())
+    if (!ee->getIK()) {
       return;
+    }
 
     // Check whether the target is an interactive frame, and add it if it is
     if (const auto& frame
         = std::dynamic_pointer_cast<dart::gui::InteractiveFrame>(
-            ee->getIK()->getTarget()))
+            ee->getIK()->getTarget())) {
       viewer.enableDragAndDrop(frame.get());
+    }
   });
 }
 

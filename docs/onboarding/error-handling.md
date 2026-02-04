@@ -173,3 +173,81 @@ DART_THROW_T_IF(index >= mBodyNodes.size(), OutOfRangeException,
 ```
 
 Migration status: DART now treats programmer errors with typed exceptions and expected failures with `Result<T, E>`, replacing legacy log-and-return patterns. The source of truth is the implementation in `dart/common/` and the updated call sites across IO and parsing modules. Keep new work aligned with this dual strategy and avoid introducing new logging-only error paths.
+
+## Numerical Validation Policy
+
+DART's dynamics pipeline uses `DART_ASSERT` for debug-only invariant checks. Some of these guards validate data that originates from user input (model files, API calls) and can legitimately contain non-finite values (NaN, infinity, overflow). When such data reaches a `DART_ASSERT`, it crashes the process in debug builds — unacceptable for simulation loops where a single bad model should not bring down the entire application.
+
+This section defines when to use `DART_ASSERT` versus `DART_WARN` for numerical validation.
+
+### Decision Tree
+
+Classify each numerical check into one of three categories:
+
+| Category               | Location                                                                                                             | Data Source                     | Macro                           | Recovery                     |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------- | ---------------------------- |
+| **A — Public API**     | Setters like `Joint::setTransformFromParentBodyNode`                                                                 | Direct user input               | `DART_WARN`                     | Reject value, keep previous  |
+| **B — Per-joint math** | Joint-type-specific algorithms (e.g., `RevoluteJoint::getRelativeJacobian`)                                          | Computed from validated inputs  | `DART_ASSERT`                   | None (true invariant)        |
+| **C-upstream**         | Internal functions that depend on user data (e.g., `BodyNode::updateTransform`, `GenericJoint::addChildArtInertia*`) | Derived from user poses/inertia | `DART_WARN` or `DART_WARN_ONCE` | Use identity/zero fallback   |
+| **C-downstream**       | Deep pipeline functions protected by upstream guards                                                                 | Already validated               | `DART_ASSERT`                   | None (protected by upstream) |
+
+### Category A — Public API Setters
+
+```cpp
+// Example: Joint::setTransformFromParentBodyNode
+if (!math::verifyTransform(_T)) {
+  DART_WARN("Non-finite transform rejected in setTransformFromParentBodyNode");
+  return;  // Keep previous value
+}
+```
+
+**Rationale**: Users can pass anything through the public API. Gazebo's SDF parser may produce `1e308` values that overflow to infinity during pose composition. Reject silently with a warning.
+
+### Category B — Algorithmic Invariants
+
+```cpp
+// Example: Inside RevoluteJoint::getRelativeJacobian
+DART_ASSERT(math::verifyTransform(result));
+```
+
+**Rationale**: If inputs are valid (enforced by Category A/C guards), the algorithm should produce valid outputs. A failure here indicates a genuine bug.
+
+### Category C-upstream — Defense-in-Depth
+
+```cpp
+// Example: BodyNode::updateTransform
+if (!math::verifyTransform(mT)) {
+  DART_WARN("Non-finite world transform in BodyNode::updateTransform. "
+            "Using identity.");
+  mT.setIdentity();
+}
+```
+
+**Rationale**: Even with public API guards, overflow can emerge during dynamics computation (e.g., `transformInertia()` producing infinity from large-but-finite inputs). These guards prevent cascading NaN propagation through the simulation. Use `DART_WARN_ONCE` when the check is in a hot loop.
+
+### Parsers (MJCF, URDF, SDF)
+
+Parser validation of transforms from model files follows Category A rules: validate and warn, never assert. Model files are external user data.
+
+```cpp
+// Example: MJCF body parser
+if (!math::verifyRotation(R)) {
+  DART_WARN("Non-finite rotation in MJCF body. Using identity.");
+  R = Eigen::Matrix3d::Identity();
+}
+```
+
+### When to Add New Guards
+
+When adding numerical assertions to dynamics code, ask:
+
+1. **Can this value trace back to user input** (model files, API calls, external forces)? → Category A or C-upstream: use `DART_WARN`
+2. **Is this a pure algorithmic result from validated inputs?** → Category B: use `DART_ASSERT`
+3. **Is this deep in the pipeline with upstream guards already in place?** → Category C-downstream: use `DART_ASSERT`
+
+### Key Files
+
+- `dart/common/Macros.hpp` — `DART_ASSERT` definition (wraps `assert()`)
+- `dart/common/Logging.hpp` — `DART_WARN`, `DART_WARN_ONCE`, `DART_ERROR`
+- `dart/math/geometry.cpp` — `math::verifyTransform()`, `math::verifyRotation()`
+- `dart/math/helpers.hpp` — `math::isNan()`, `math::isInf()`

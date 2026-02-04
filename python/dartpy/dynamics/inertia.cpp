@@ -1,7 +1,7 @@
 #include "dynamics/inertia.hpp"
 
 #include "common/eigen_utils.hpp"
-#include "dart/dynamics/Inertia.hpp"
+#include "dart/dynamics/inertia.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>

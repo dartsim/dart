@@ -1,10 +1,10 @@
 # Alias headers for backward compatibility
 set(hdrs
-  All.hpp
-  Function.hpp
-  GradientDescentSolver.hpp
-  Problem.hpp
-  Solver.hpp
+  all.hpp
+  function.hpp
+  gradient_descent_solver.hpp
+  problem.hpp
+  solver.hpp
 )
 list(TRANSFORM hdrs PREPEND "${CMAKE_CURRENT_LIST_DIR}/")
 

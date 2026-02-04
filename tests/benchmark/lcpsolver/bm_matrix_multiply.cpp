@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/math/lcp/pivoting/dantzig/Matrix.hpp>
+#include <dart/math/lcp/pivoting/dantzig/matrix.hpp>
 
 #include <Eigen/Dense>
 #include <benchmark/benchmark.h>
@@ -55,10 +55,12 @@ public:
     B.resize(size * size);
     C.resize(size * size);
 
-    for (auto& val : A)
+    for (auto& val : A) {
       val = dist(rng);
-    for (auto& val : B)
+    }
+    for (auto& val : B) {
       val = dist(rng);
+    }
   }
 
   void TearDown(const ::benchmark::State&) override

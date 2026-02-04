@@ -30,17 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
-#include <dart/gui/All.hpp>
-#include <dart/gui/ImGuiHandler.hpp>
-#include <dart/gui/IncludeImGui.hpp>
+#include <dart/gui/all.hpp>
+#include <dart/gui/im_gui_handler.hpp>
+#include <dart/gui/include_im_gui.hpp>
 
 #include <dart/utils/All.hpp>
 #include <dart/utils/urdf/All.hpp>
 
-#include <dart/All.hpp>
-#include <dart/io/Read.hpp>
+#include <dart/all.hpp>
+#include <dart/io/read.hpp>
 
 #include <CLI/CLI.hpp>
 
@@ -99,11 +99,13 @@ public:
   // Triggered at the beginning of each simulation step
   void customPreStep() override
   {
-    if (!mRobot)
+    if (!mRobot) {
       return;
+    }
 
-    if (!mUpdate)
+    if (!mUpdate) {
       return;
+    }
 
     // Set robot pose
     Eigen::VectorXd pos = mRobot->getPositions();
@@ -195,8 +197,9 @@ protected:
       auto body = mRobot->getBodyNode(bodyIndex);
       const auto numShapeNodes
           = body->getNumShapeNodesWith<dynamics::VisualAspect>();
-      if (numShapeNodes == 0)
+      if (numShapeNodes == 0) {
         continue;
+      }
 
       const auto shapeIndex
           = math::Random::uniform<std::size_t>(0, numShapeNodes - 1);
@@ -205,16 +208,18 @@ protected:
       auto shape = shapeNode->getShape();
       DART_ASSERT(shape);
 
-      if (!shape->is<dynamics::MeshShape>())
+      if (!shape->is<dynamics::MeshShape>()) {
         continue;
+      }
       auto mesh = std::static_pointer_cast<dynamics::MeshShape>(shape);
 
       const auto triMesh = mesh->getTriMesh();
       DART_ASSERT(triMesh);
 
       const auto& vertices = triMesh->getVertices();
-      if (vertices.empty())
+      if (vertices.empty()) {
         continue;
+      }
 
       Eigen::Isometry3d tf = shapeNode->getWorldTransform();
       const auto vertexIndex
@@ -227,8 +232,9 @@ protected:
           static_cast<float>(eigenVertex.y()),
           static_cast<float>(eigenVertex.z()));
 
-      if (pointCloud.size() == numPoints)
+      if (pointCloud.size() == numPoints) {
         return pointCloud;
+      }
     }
   }
 
@@ -323,13 +329,15 @@ public:
     // Menu
     if (ImGui::BeginMenuBar()) {
       if (ImGui::BeginMenu("Menu")) {
-        if (ImGui::MenuItem("Exit"))
+        if (ImGui::MenuItem("Exit")) {
           mViewer->setDone(true);
+        }
         ImGui::EndMenu();
       }
       if (ImGui::BeginMenu("Help")) {
-        if (ImGui::MenuItem("About DART"))
+        if (ImGui::MenuItem("About DART")) {
           mViewer->showAbout();
+        }
         ImGui::EndMenu();
       }
       ImGui::EndMenuBar();
@@ -353,29 +361,35 @@ public:
     if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
       int e = mViewer->isSimulating() ? 0 : 1;
       if (mViewer->isAllowingSimulation()) {
-        if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating())
+        if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating()) {
           mViewer->simulate(true);
+        }
         ImGui::SameLine();
-        if (ImGui::RadioButton("Pause", &e, 1) && mViewer->isSimulating())
+        if (ImGui::RadioButton("Pause", &e, 1) && mViewer->isSimulating()) {
           mViewer->simulate(false);
+        }
       }
 
       int robotUpdate = mNode->getUpdate() ? 0 : 1;
-      if (ImGui::RadioButton("Run Robot Updating", &robotUpdate, 0))
+      if (ImGui::RadioButton("Run Robot Updating", &robotUpdate, 0)) {
         mNode->setUpdate(true);
+      }
       ImGui::SameLine();
-      if (ImGui::RadioButton("Stop Robot Updating", &robotUpdate, 1))
+      if (ImGui::RadioButton("Stop Robot Updating", &robotUpdate, 1)) {
         mNode->setUpdate(false);
+      }
 
       int samplingMode
           = mNode->getPointSamplingMode() == PointCloudWorld::SAMPLE_ON_ROBOT
                 ? 0
                 : 1;
-      if (ImGui::RadioButton("Sample on robot", &samplingMode, 0))
+      if (ImGui::RadioButton("Sample on robot", &samplingMode, 0)) {
         mNode->setPointSamplingMode(PointCloudWorld::SAMPLE_ON_ROBOT);
+      }
       ImGui::SameLine();
-      if (ImGui::RadioButton("Sample in box", &samplingMode, 1))
+      if (ImGui::RadioButton("Sample in box", &samplingMode, 1)) {
         mNode->setPointSamplingMode(PointCloudWorld::SAMPLE_IN_BOX);
+      }
     }
 
     if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -383,10 +397,11 @@ public:
         // Point cloud settings
         bool pcShow = !mNode->getPointCloudVisualAspect()->isHidden();
         if (ImGui::Checkbox("Point Cloud", &pcShow)) {
-          if (pcShow)
+          if (pcShow) {
             mNode->getPointCloudVisualAspect()->show();
-          else
+          } else {
             mNode->getPointCloudVisualAspect()->hide();
+          }
         }
 
         if (pcShow) {
@@ -455,8 +470,9 @@ public:
               = static_cast<float>(pointCloudShape->getVisualSize());
           if (ImGui::InputFloat(
                   "Visual Size", &visualSize, 0.01f, 0.02f, "%.2f")) {
-            if (visualSize < 0.01f)
+            if (visualSize < 0.01f) {
               visualSize = 0.01f;
+            }
             pointCloudShape->setVisualSize(static_cast<double>(visualSize));
           }
         }
@@ -466,10 +482,11 @@ public:
         // Voxel settings
         bool vgShow = !mNode->getVoxelGridVisualAspect()->isHidden();
         if (ImGui::Checkbox("Voxel Grid", &vgShow)) {
-          if (vgShow)
+          if (vgShow) {
             mNode->getVoxelGridVisualAspect()->show();
-          else
+          } else {
             mNode->getVoxelGridVisualAspect()->hide();
+          }
         }
         if (vgShow) {
           auto visual = mNode->getVoxelGridVisualAspect();
@@ -494,40 +511,48 @@ public:
         ImGui::Text("Grid");
 
         bool display = mGrid->isDisplayed();
-        if (ImGui::Checkbox("Show", &display))
+        if (ImGui::Checkbox("Show", &display)) {
           mGrid->display(display);
+        }
 
         if (display) {
           int e = static_cast<int>(mGrid->getPlaneType());
           if (mViewer->isAllowingSimulation()) {
-            if (ImGui::RadioButton("XY-Plane", &e, 0))
+            if (ImGui::RadioButton("XY-Plane", &e, 0)) {
               mGrid->setPlaneType(gui::GridVisual::PlaneType::XY);
+            }
             ImGui::SameLine();
-            if (ImGui::RadioButton("YZ-Plane", &e, 1))
+            if (ImGui::RadioButton("YZ-Plane", &e, 1)) {
               mGrid->setPlaneType(gui::GridVisual::PlaneType::YZ);
+            }
             ImGui::SameLine();
-            if (ImGui::RadioButton("ZX-Plane", &e, 2))
+            if (ImGui::RadioButton("ZX-Plane", &e, 2)) {
               mGrid->setPlaneType(gui::GridVisual::PlaneType::ZX);
+            }
           }
 
           static Eigen::Vector3f offset;
           ImGui::Columns(3);
           offset = mGrid->getOffset().cast<float>();
-          if (ImGui::InputFloat("X", &offset[0], 0.1f, 0.5f, "%.1f"))
+          if (ImGui::InputFloat("X", &offset[0], 0.1f, 0.5f, "%.1f")) {
             mGrid->setOffset(offset.cast<double>());
+          }
           ImGui::NextColumn();
-          if (ImGui::InputFloat("Y", &offset[1], 0.1f, 0.5f, "%.1f"))
+          if (ImGui::InputFloat("Y", &offset[1], 0.1f, 0.5f, "%.1f")) {
             mGrid->setOffset(offset.cast<double>());
+          }
           ImGui::NextColumn();
-          if (ImGui::InputFloat("Z", &offset[2], 0.1f, 0.5f, "%.1f"))
+          if (ImGui::InputFloat("Z", &offset[2], 0.1f, 0.5f, "%.1f")) {
             mGrid->setOffset(offset.cast<double>());
+          }
           ImGui::Columns(1);
 
           static int cellCount;
           cellCount = static_cast<int>(mGrid->getNumCells());
           if (ImGui::InputInt("Line Count", &cellCount, 1, 5)) {
-            if (cellCount < 0)
+            if (cellCount < 0) {
               cellCount = 0;
+            }
             mGrid->setNumCells(static_cast<std::size_t>(cellCount));
           }
 
@@ -546,8 +571,9 @@ public:
                   &minorLinesPerMajorLine,
                   1,
                   5)) {
-            if (minorLinesPerMajorLine < 0)
+            if (minorLinesPerMajorLine < 0) {
               minorLinesPerMajorLine = 0;
+            }
             mGrid->setNumMinorLinesPerMajorLine(
                 static_cast<std::size_t>(minorLinesPerMajorLine));
           }

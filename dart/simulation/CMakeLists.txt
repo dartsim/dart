@@ -8,7 +8,7 @@ dart_add_core_sources(${srcs} ${detail_srcs})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "simulation headers" ${hdrs})
-list(REMOVE_ITEM header_names SmartPointer.hpp)
+list(REMOVE_ITEM header_names smart_pointer.hpp)
 dart_generate_component_headers(
   COMPONENT_NAME simulation
   TARGET_DIR "dart/simulation/"

@@ -1,0 +1,598 @@
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include "../../helpers/gtest_utils.hpp"
+#include "dart/common/aspect.hpp"
+#include "dart/common/composite.hpp"
+
+#include <gtest/gtest.h>
+
+using namespace dart;
+using namespace dart::common;
+
+namespace {
+
+// Static counter to track loseComposite calls that persists after object
+// destruction. Used by SetAspectReplacesExisting test to verify behavior
+// without accessing destroyed objects.
+int g_loseCompositeCallCount = 0;
+
+class TrackingComposite : public Composite
+{
+};
+
+struct StatefulAspect : public CompositeTrackingAspect<TrackingComposite>
+{
+  using Base = CompositeTrackingAspect<TrackingComposite>;
+
+  struct StateData
+  {
+    double value = 0.0;
+    int visits = 0;
+  };
+  struct PropertiesData
+  {
+    double stiffness = 0.0;
+  };
+
+  using State = Aspect::MakeState<StateData>;
+  using Properties = Aspect::MakeProperties<PropertiesData>;
+
+  StatefulAspect()
+  {
+    mState.value = 0.0;
+    mState.visits = 0;
+    mProperties.stiffness = 0.0;
+  }
+
+  StatefulAspect(double stateValue, double stiffness)
+  {
+    mState.value = stateValue;
+    mState.visits = 1;
+    mProperties.stiffness = stiffness;
+  }
+
+  std::unique_ptr<Aspect> cloneAspect() const override
+  {
+    auto clone = std::make_unique<StatefulAspect>();
+    clone->mState = mState;
+    clone->mProperties = mProperties;
+    clone->mSetCompositeCount = mSetCompositeCount;
+    clone->mLoseCompositeCount = mLoseCompositeCount;
+    return clone;
+  }
+
+  void setAspectState(const Aspect::State& other) override
+  {
+    mState = static_cast<const State&>(other);
+  }
+
+  const Aspect::State* getAspectState() const override
+  {
+    return &mState;
+  }
+
+  void setAspectProperties(const Aspect::Properties& properties) override
+  {
+    mProperties = static_cast<const Properties&>(properties);
+  }
+
+  const Aspect::Properties* getAspectProperties() const override
+  {
+    return &mProperties;
+  }
+
+  void setComposite(Composite* newComposite) override
+  {
+    ++mSetCompositeCount;
+    Base::setComposite(newComposite);
+  }
+
+  void loseComposite(Composite* oldComposite) override
+  {
+    ++mLoseCompositeCount;
+    ++g_loseCompositeCallCount;
+    Base::loseComposite(oldComposite);
+  }
+
+  State mState;
+  Properties mProperties;
+  int mSetCompositeCount = 0;
+  int mLoseCompositeCount = 0;
+};
+
+struct SecondStatefulAspect : public CompositeTrackingAspect<TrackingComposite>
+{
+  using Base = CompositeTrackingAspect<TrackingComposite>;
+
+  struct StateData
+  {
+    int id = 0;
+  };
+  struct PropertiesData
+  {
+    double mass = 1.0;
+  };
+
+  using State = Aspect::MakeState<StateData>;
+  using Properties = Aspect::MakeProperties<PropertiesData>;
+
+  SecondStatefulAspect() = default;
+  SecondStatefulAspect(int id, double mass)
+  {
+    mState.id = id;
+    mProperties.mass = mass;
+  }
+
+  std::unique_ptr<Aspect> cloneAspect() const override
+  {
+    auto clone = std::make_unique<SecondStatefulAspect>();
+    clone->mState = mState;
+    clone->mProperties = mProperties;
+    return clone;
+  }
+
+  void setAspectState(const Aspect::State& other) override
+  {
+    mState = static_cast<const State&>(other);
+  }
+
+  const Aspect::State* getAspectState() const override
+  {
+    return &mState;
+  }
+
+  void setAspectProperties(const Aspect::Properties& properties) override
+  {
+    mProperties = static_cast<const Properties&>(properties);
+  }
+
+  const Aspect::Properties* getAspectProperties() const override
+  {
+    return &mProperties;
+  }
+
+  State mState;
+  Properties mProperties;
+};
+
+} // namespace
+
+//==============================================================================
+TEST(CompositeTests, StateAndPropertiesRoundTrip)
+{
+  TrackingComposite composite;
+  auto* aspect = composite.createAspect<StatefulAspect>();
+  ASSERT_NE(aspect, nullptr);
+
+  aspect->mState.value = 3.14;
+  aspect->mState.visits = 2;
+  aspect->mProperties.stiffness = 42.0;
+
+  auto state = composite.getCompositeState();
+  auto* stateCopy = state.get<StatefulAspect>();
+  ASSERT_NE(stateCopy, nullptr);
+  EXPECT_DOUBLE_EQ(stateCopy->value, 3.14);
+  EXPECT_EQ(stateCopy->visits, 2);
+
+  stateCopy->value = -1.0;
+  stateCopy->visits = 7;
+  composite.setCompositeState(state);
+  EXPECT_DOUBLE_EQ(aspect->mState.value, -1.0);
+  EXPECT_EQ(aspect->mState.visits, 7);
+
+  auto properties = composite.getCompositeProperties();
+  auto* propertiesCopy = properties.get<StatefulAspect>();
+  ASSERT_NE(propertiesCopy, nullptr);
+  EXPECT_DOUBLE_EQ(propertiesCopy->stiffness, 42.0);
+
+  propertiesCopy->stiffness = 0.5;
+  composite.setCompositeProperties(properties);
+  EXPECT_DOUBLE_EQ(aspect->mProperties.stiffness, 0.5);
+}
+
+//==============================================================================
+TEST(CompositeTests, DuplicateAspectsCloneState)
+{
+  TrackingComposite source;
+  auto* aspect = source.createAspect<StatefulAspect>(5.0, 10.0);
+  ASSERT_NE(aspect, nullptr);
+
+  TrackingComposite destination;
+  destination.duplicateAspects(&source);
+
+  auto* cloned = destination.get<StatefulAspect>();
+  ASSERT_NE(cloned, nullptr);
+  EXPECT_NE(cloned, aspect);
+  EXPECT_DOUBLE_EQ(cloned->mState.value, 5.0);
+  EXPECT_DOUBLE_EQ(cloned->mProperties.stiffness, 10.0);
+
+  cloned->mState.value = 1.0;
+  EXPECT_DOUBLE_EQ(aspect->mState.value, 5.0);
+}
+
+//==============================================================================
+TEST(CompositeTests, ReleaseAndMovePreservesAspectLifecycle)
+{
+  TrackingComposite first;
+  auto* aspect = first.createAspect<StatefulAspect>();
+  ASSERT_NE(aspect, nullptr);
+  EXPECT_EQ(aspect->mSetCompositeCount, 1);
+
+  auto released = first.releaseAspect<StatefulAspect>();
+  ASSERT_NE(released, nullptr);
+  EXPECT_EQ(released->mLoseCompositeCount, 1);
+  EXPECT_FALSE(released->hasComposite());
+  EXPECT_EQ(first.get<StatefulAspect>(), nullptr);
+
+  TrackingComposite second;
+  second.set(std::move(released));
+  auto* moved = second.get<StatefulAspect>();
+  ASSERT_NE(moved, nullptr);
+  EXPECT_EQ(moved->mSetCompositeCount, 2);
+  EXPECT_EQ(moved->getComposite(), &second);
+
+  auto detachedAgain = second.releaseAspect<StatefulAspect>();
+  ASSERT_NE(detachedAgain, nullptr);
+  EXPECT_EQ(detachedAgain->mLoseCompositeCount, 2);
+  EXPECT_FALSE(detachedAgain->hasComposite());
+  EXPECT_EQ(second.get<StatefulAspect>(), nullptr);
+}
+
+//==============================================================================
+TEST(CompositeTests, CloneableMapCopyHandlesNullEntries)
+{
+  Composite::State source;
+  source.getMap().emplace(typeid(StatefulAspect), nullptr);
+  EXPECT_EQ(source.getMap().size(), 1u);
+
+  Composite::State destination;
+  destination.copy(source);
+
+  EXPECT_EQ(destination.getMap().size(), 1u);
+  EXPECT_EQ(destination.get<StatefulAspect>(), nullptr);
+
+  Composite::State nonEmpty;
+  auto& nonEmptyState = nonEmpty.getOrCreate<StatefulAspect>();
+  nonEmptyState.value = 2.0;
+  nonEmptyState.visits = 3;
+
+  Composite::State destinationNonEmpty;
+  destinationNonEmpty.copy(nonEmpty);
+  auto* copiedState = destinationNonEmpty.get<StatefulAspect>();
+  ASSERT_NE(copiedState, nullptr);
+  EXPECT_DOUBLE_EQ(copiedState->value, 2.0);
+  EXPECT_EQ(copiedState->visits, 3);
+}
+
+//==============================================================================
+TEST(CompositeTests, HasReturnsFalseForMissingAspect)
+{
+  TrackingComposite composite;
+  EXPECT_FALSE(composite.has<StatefulAspect>());
+  EXPECT_EQ(composite.get<StatefulAspect>(), nullptr);
+}
+
+//==============================================================================
+TEST(CompositeTests, HasReturnsTrueForPresentAspect)
+{
+  TrackingComposite composite;
+
+  // Initially no aspect
+  EXPECT_FALSE(composite.has<StatefulAspect>());
+
+  // Create the aspect
+  auto* aspect = composite.createAspect<StatefulAspect>();
+  ASSERT_NE(aspect, nullptr);
+
+  // has<T>() should now return true
+  EXPECT_TRUE(composite.has<StatefulAspect>());
+  EXPECT_NE(composite.get<StatefulAspect>(), nullptr);
+}
+
+//==============================================================================
+TEST(CompositeTests, RemoveAspectDeletesAspect)
+{
+  TrackingComposite composite;
+
+  // Create the aspect
+  auto* aspect = composite.createAspect<StatefulAspect>();
+  ASSERT_NE(aspect, nullptr);
+  EXPECT_TRUE(composite.has<StatefulAspect>());
+
+  // Remove the aspect
+  composite.removeAspect<StatefulAspect>();
+
+  // has<T>() should now return false
+  EXPECT_FALSE(composite.has<StatefulAspect>());
+  EXPECT_EQ(composite.get<StatefulAspect>(), nullptr);
+}
+
+//==============================================================================
+TEST(CompositeTests, GetConstReturnsCorrectPointer)
+{
+  TrackingComposite composite;
+  auto* aspect = composite.createAspect<StatefulAspect>(1.5, 2.5);
+  ASSERT_NE(aspect, nullptr);
+
+  // Get const reference to composite
+  const TrackingComposite& constComposite = composite;
+
+  // const get<T>() should return same pointer as non-const get<T>()
+  const StatefulAspect* constAspect = constComposite.get<StatefulAspect>();
+  ASSERT_NE(constAspect, nullptr);
+  EXPECT_EQ(constAspect, aspect);
+
+  // Verify we can read values through const pointer
+  EXPECT_DOUBLE_EQ(constAspect->mState.value, 1.5);
+  EXPECT_DOUBLE_EQ(constAspect->mProperties.stiffness, 2.5);
+}
+
+//==============================================================================
+TEST(CompositeTests, IsSpecializedForReturnsFalseOnBaseComposite)
+{
+  // isSpecializedFor<T>() should always return false for the base Composite
+  // class (it's a static constexpr function)
+  EXPECT_FALSE(Composite::isSpecializedFor<StatefulAspect>());
+  EXPECT_FALSE(TrackingComposite::isSpecializedFor<StatefulAspect>());
+
+  // Verify at instance level as well (even though it's static)
+  TrackingComposite composite;
+  (void)composite; // Silence unused variable warning
+  EXPECT_FALSE(TrackingComposite::isSpecializedFor<StatefulAspect>());
+}
+
+//==============================================================================
+TEST(CompositeTests, MatchAspectsClearsAndCopies)
+{
+  TrackingComposite source;
+  source.createAspect<StatefulAspect>(1.0, 2.0);
+
+  TrackingComposite destination;
+  destination.createAspect<StatefulAspect>(5.0, 10.0);
+
+  destination.matchAspects(&source);
+
+  auto* matched = destination.get<StatefulAspect>();
+  ASSERT_NE(matched, nullptr);
+  EXPECT_DOUBLE_EQ(matched->mState.value, 1.0);
+  EXPECT_DOUBLE_EQ(matched->mProperties.stiffness, 2.0);
+}
+
+//==============================================================================
+TEST(CompositeTests, DuplicateAspectsSkipsNullAspect)
+{
+  TrackingComposite source;
+  source.createAspect<StatefulAspect>(3.0, 6.0);
+  source.removeAspect<StatefulAspect>();
+  EXPECT_FALSE(source.has<StatefulAspect>());
+
+  TrackingComposite destination;
+  destination.duplicateAspects(&source);
+
+  EXPECT_FALSE(destination.has<StatefulAspect>());
+}
+
+//==============================================================================
+TEST(CompositeTests, DuplicateAspectsToSelfIsNoOp)
+{
+  TrackingComposite composite;
+  auto* aspect = composite.createAspect<StatefulAspect>(2.0, 4.0);
+  int originalSetCount = aspect->mSetCompositeCount;
+
+  composite.duplicateAspects(&composite);
+
+  EXPECT_EQ(composite.get<StatefulAspect>(), aspect);
+  EXPECT_EQ(aspect->mSetCompositeCount, originalSetCount);
+}
+
+//==============================================================================
+TEST(CompositeTests, CopyCompositeStateToExisting)
+{
+  TrackingComposite composite;
+  auto* aspect = composite.createAspect<StatefulAspect>();
+  aspect->mState.value = 42.0;
+  aspect->mState.visits = 10;
+
+  Composite::State state;
+  composite.copyCompositeStateTo(state);
+
+  auto* copied = state.get<StatefulAspect>();
+  ASSERT_NE(copied, nullptr);
+  EXPECT_DOUBLE_EQ(copied->value, 42.0);
+  EXPECT_EQ(copied->visits, 10);
+
+  aspect->mState.value = 100.0;
+  composite.copyCompositeStateTo(state);
+  EXPECT_DOUBLE_EQ(copied->value, 100.0);
+}
+
+//==============================================================================
+TEST(CompositeTests, CopyCompositePropertiesToExisting)
+{
+  TrackingComposite composite;
+  auto* aspect = composite.createAspect<StatefulAspect>();
+  aspect->mProperties.stiffness = 99.0;
+
+  Composite::Properties props;
+  composite.copyCompositePropertiesTo(props);
+
+  auto* copied = props.get<StatefulAspect>();
+  ASSERT_NE(copied, nullptr);
+  EXPECT_DOUBLE_EQ(copied->stiffness, 99.0);
+
+  aspect->mProperties.stiffness = 200.0;
+  composite.copyCompositePropertiesTo(props);
+  EXPECT_DOUBLE_EQ(copied->stiffness, 200.0);
+}
+
+//==============================================================================
+TEST(CompositeTests, SetAspectReplacesExisting)
+{
+  g_loseCompositeCallCount = 0;
+
+  TrackingComposite composite;
+  auto* original = composite.createAspect<StatefulAspect>(1.0, 1.0);
+  EXPECT_EQ(original->mSetCompositeCount, 1);
+  auto* originalAddr = original;
+
+  auto replacement = std::make_unique<StatefulAspect>(2.0, 2.0);
+  composite.set(std::move(replacement));
+
+  auto* current = composite.get<StatefulAspect>();
+  ASSERT_NE(current, nullptr);
+  EXPECT_NE(current, originalAddr);
+  EXPECT_DOUBLE_EQ(current->mState.value, 2.0);
+  EXPECT_EQ(g_loseCompositeCallCount, 1);
+}
+
+//==============================================================================
+TEST(CompositeTests, SetCompositeStatePartialUpdate)
+{
+  TrackingComposite composite;
+  auto* aspect = composite.createAspect<StatefulAspect>(1.0, 1.0);
+
+  Composite::State state;
+  auto& stateData = state.getOrCreate<StatefulAspect>();
+  stateData.value = 99.0;
+  stateData.visits = 99;
+
+  auto& secondStateData = state.getOrCreate<SecondStatefulAspect>();
+  secondStateData.id = 42;
+
+  composite.setCompositeState(state);
+
+  EXPECT_DOUBLE_EQ(aspect->mState.value, 99.0);
+  EXPECT_EQ(aspect->mState.visits, 99);
+  EXPECT_FALSE(composite.has<SecondStatefulAspect>());
+}
+
+//==============================================================================
+TEST(CompositeTests, SetCompositePropertiesPartialUpdate)
+{
+  TrackingComposite composite;
+  auto* aspect = composite.createAspect<StatefulAspect>(1.0, 1.0);
+
+  Composite::Properties props;
+  auto& propsData = props.getOrCreate<StatefulAspect>();
+  propsData.stiffness = 77.0;
+
+  auto& secondPropsData = props.getOrCreate<SecondStatefulAspect>();
+  secondPropsData.mass = 100.0;
+
+  composite.setCompositeProperties(props);
+
+  EXPECT_DOUBLE_EQ(aspect->mProperties.stiffness, 77.0);
+  EXPECT_FALSE(composite.has<SecondStatefulAspect>());
+}
+
+//==============================================================================
+TEST(CompositeTests, MultipleAspectsStateAndProperties)
+{
+  TrackingComposite composite;
+  auto* first = composite.createAspect<StatefulAspect>(1.0, 10.0);
+  auto* second = composite.createAspect<SecondStatefulAspect>(5, 50.0);
+
+  auto state = composite.getCompositeState();
+  auto* firstState = state.get<StatefulAspect>();
+  auto* secondState = state.get<SecondStatefulAspect>();
+
+  ASSERT_NE(firstState, nullptr);
+  ASSERT_NE(secondState, nullptr);
+  EXPECT_DOUBLE_EQ(firstState->value, 1.0);
+  EXPECT_EQ(secondState->id, 5);
+
+  firstState->value = 2.0;
+  secondState->id = 10;
+  composite.setCompositeState(state);
+
+  EXPECT_DOUBLE_EQ(first->mState.value, 2.0);
+  EXPECT_EQ(second->mState.id, 10);
+
+  auto props = composite.getCompositeProperties();
+  auto* firstProps = props.get<StatefulAspect>();
+  auto* secondProps = props.get<SecondStatefulAspect>();
+
+  ASSERT_NE(firstProps, nullptr);
+  ASSERT_NE(secondProps, nullptr);
+  EXPECT_DOUBLE_EQ(firstProps->stiffness, 10.0);
+  EXPECT_DOUBLE_EQ(secondProps->mass, 50.0);
+
+  firstProps->stiffness = 20.0;
+  secondProps->mass = 100.0;
+  composite.setCompositeProperties(props);
+
+  EXPECT_DOUBLE_EQ(first->mProperties.stiffness, 20.0);
+  EXPECT_DOUBLE_EQ(second->mProperties.mass, 100.0);
+}
+
+//==============================================================================
+TEST(CompositeTests, DuplicateAspectsPreservesLocalAspects)
+{
+  TrackingComposite source;
+  source.createAspect<StatefulAspect>(1.0, 1.0);
+
+  TrackingComposite destination;
+  destination.createAspect<SecondStatefulAspect>(99, 99.0);
+
+  destination.duplicateAspects(&source);
+
+  EXPECT_TRUE(destination.has<StatefulAspect>());
+  EXPECT_TRUE(destination.has<SecondStatefulAspect>());
+
+  auto* copied = destination.get<StatefulAspect>();
+  auto* preserved = destination.get<SecondStatefulAspect>();
+
+  ASSERT_NE(copied, nullptr);
+  ASSERT_NE(preserved, nullptr);
+  EXPECT_DOUBLE_EQ(copied->mState.value, 1.0);
+  EXPECT_EQ(preserved->mState.id, 99);
+}
+
+//==============================================================================
+TEST(CompositeTests, DuplicateAspectsUpdatesExistingAspect)
+{
+  TrackingComposite source;
+  source.createAspect<StatefulAspect>(5.0, 50.0);
+
+  TrackingComposite destination;
+  auto* original = destination.createAspect<StatefulAspect>(1.0, 10.0);
+  auto* originalAddr = original;
+
+  destination.duplicateAspects(&source);
+
+  auto* updated = destination.get<StatefulAspect>();
+  ASSERT_NE(updated, nullptr);
+  EXPECT_NE(updated, originalAddr);
+  EXPECT_DOUBLE_EQ(updated->mState.value, 5.0);
+  EXPECT_DOUBLE_EQ(updated->mProperties.stiffness, 50.0);
+}

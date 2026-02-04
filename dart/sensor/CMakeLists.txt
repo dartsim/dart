@@ -14,10 +14,10 @@ dart_generate_component_headers(
   SOURCE_HEADERS ${hdrs}
 )
 
-# Install (includes All.hpp, sensor.hpp for component compatibility,
-# and generated PascalCase headers for case compatibility)
+# Install (includes All.hpp; the generated sensor.hpp component header is
+# omitted to avoid colliding with the Sensor header).
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/sensor.hpp
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp
   DESTINATION include/dart/sensor
   COMPONENT headers
 )

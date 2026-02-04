@@ -30,11 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/all.hpp>
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 
 const double default_height = 1.0; // m
 const double default_width = 0.2;  // m
@@ -97,8 +97,9 @@ public:
 
   void applyForce(std::size_t index)
   {
-    if (index < mForceCountDown.size())
+    if (index < mForceCountDown.size()) {
       mForceCountDown[index] = default_countdown;
+    }
   }
 
   void changeRestPosition(double delta)
@@ -269,10 +270,11 @@ public:
           mController->changeDamping(-delta_damping);
           return true;
         case 'r':
-          if (mController->hasConstraint())
+          if (mController->hasConstraint()) {
             mController->removeConstraint();
-          else
+          } else {
             mController->addConstraint();
+          }
           return true;
         case 'f':
           mController->toggleBodyForce();

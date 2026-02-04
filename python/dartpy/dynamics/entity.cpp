@@ -1,8 +1,8 @@
 #include "dynamics/entity.hpp"
 
 #include "common/type_casters.hpp"
-#include "dart/dynamics/Entity.hpp"
-#include "dart/dynamics/Frame.hpp"
+#include "dart/dynamics/entity.hpp"
+#include "dart/dynamics/frame.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>

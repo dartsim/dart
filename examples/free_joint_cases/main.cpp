@@ -30,14 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/GridVisual.hpp>
-#include <dart/gui/ImGuiHandler.hpp>
-#include <dart/gui/ImGuiViewer.hpp>
-#include <dart/gui/ImGuiWidget.hpp>
-#include <dart/gui/IncludeImGui.hpp>
-#include <dart/gui/WorldNode.hpp>
+#include <dart/gui/grid_visual.hpp>
+#include <dart/gui/im_gui_handler.hpp>
+#include <dart/gui/im_gui_viewer.hpp>
+#include <dart/gui/im_gui_widget.hpp>
+#include <dart/gui/include_im_gui.hpp>
+#include <dart/gui/world_node.hpp>
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 
 #include <CLI/CLI.hpp>
 
@@ -234,8 +234,9 @@ void integrateTorqueFreeStep(
     const Eigen::Matrix3d& inertiaInv,
     double dt)
 {
-  if (!(dt > 0.0))
+  if (!(dt > 0.0)) {
     return;
+  }
 
   const TorqueFreeDeriv k1
       = evaluateTorqueFreeDeriv(state, inertia, inertiaInv);
@@ -441,13 +442,15 @@ public:
 
     if (ImGui::BeginMenuBar()) {
       if (ImGui::BeginMenu("Menu")) {
-        if (ImGui::MenuItem("Exit"))
+        if (ImGui::MenuItem("Exit")) {
           mViewer->setDone(true);
+        }
         ImGui::EndMenu();
       }
       if (ImGui::BeginMenu("Help")) {
-        if (ImGui::MenuItem("About DART"))
+        if (ImGui::MenuItem("About DART")) {
           mViewer->showAbout();
+        }
         ImGui::EndMenu();
       }
       ImGui::EndMenuBar();
@@ -456,11 +459,13 @@ public:
     if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
       int state = mViewer->isSimulating() ? 0 : 1;
       if (mViewer->isAllowingSimulation()) {
-        if (ImGui::RadioButton("Play", &state, 0) && !mViewer->isSimulating())
+        if (ImGui::RadioButton("Play", &state, 0) && !mViewer->isSimulating()) {
           mViewer->simulate(true);
+        }
         ImGui::SameLine();
-        if (ImGui::RadioButton("Pause", &state, 1) && mViewer->isSimulating())
+        if (ImGui::RadioButton("Pause", &state, 1) && mViewer->isSimulating()) {
           mViewer->simulate(false);
+        }
       }
 
       ImGui::Text("Time: %s", formatDouble(mWorld->getTime(), 3).c_str());
@@ -517,8 +522,9 @@ public:
 
     if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen)) {
       bool showGrid = mGrid && mGrid->isDisplayed();
-      if (ImGui::Checkbox("Show grid", &showGrid) && mGrid)
+      if (ImGui::Checkbox("Show grid", &showGrid) && mGrid) {
         mGrid->display(showGrid);
+      }
     }
 
     if (ImGui::CollapsingHeader("Cases", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -611,8 +617,9 @@ private:
   void applyGroundTruthVisibility()
   {
     for (auto& c : mCases) {
-      if (!c.referenceShapeNode)
+      if (!c.referenceShapeNode) {
         continue;
+      }
       c.referenceShapeNode->getVisualAspect()->setHidden(!mShowGroundTruth);
     }
   }
@@ -620,8 +627,9 @@ private:
   void resetTorqueFreeGroundTruth()
   {
     mTorqueFreeTime = 0.0;
-    for (auto& c : mCases)
+    for (auto& c : mCases) {
       resetTorqueFreeState(c);
+    }
   }
 
   void advanceTorqueFreeGroundTruth()
@@ -632,20 +640,23 @@ private:
       return;
     }
 
-    if (!(targetTime > mTorqueFreeTime))
+    if (!(targetTime > mTorqueFreeTime)) {
       return;
+    }
 
     const double baseStep = (mSimulationDt > 0.0)
                                 ? (mSimulationDt / mTorqueFreeSubsteps)
                                 : (targetTime - mTorqueFreeTime);
-    if (!(baseStep > 0.0))
+    if (!(baseStep > 0.0)) {
       return;
+    }
 
     double time = mTorqueFreeTime;
     while (time + 1e-12 < targetTime) {
       const double dt = std::min(baseStep, targetTime - time);
-      for (auto& c : mCases)
+      for (auto& c : mCases) {
         integrateTorqueFreeStep(c.torqueFreeState, c.inertia, c.inertiaInv, dt);
+      }
       time += dt;
     }
 
@@ -656,12 +667,14 @@ private:
   {
     const double t = mWorld->getTime();
 
-    if (!mShowGroundTruth)
+    if (!mShowGroundTruth) {
       return;
+    }
 
     for (auto& c : mCases) {
-      if (!c.referenceJoint)
+      if (!c.referenceJoint) {
         continue;
+      }
 
       Eigen::Isometry3d expected = Eigen::Isometry3d::Identity();
       if (mGroundTruthModel == GroundTruthModel::TorqueFreeRigidBody) {
@@ -678,8 +691,9 @@ private:
 
   void recomputeMetrics()
   {
-    for (auto& c : mCases)
+    for (auto& c : mCases) {
       c.metrics = computeMetrics(c, mNumericDt);
+    }
   }
 
   osg::ref_ptr<dart::gui::ImGuiViewer> mViewer;

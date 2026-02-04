@@ -2,8 +2,8 @@
 
 #include "common/repr.hpp"
 #include "common/type_casters.hpp"
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/Linkage.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/linkage.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
@@ -21,12 +21,14 @@ std::shared_ptr<dart::dynamics::BodyNode> lockBodyNode(
 {
   auto locked = weak.lock();
   auto* node = locked.get();
-  if (!node)
+  if (!node) {
     return nullptr;
+  }
 
   auto skeleton = node->getSkeleton();
-  if (!skeleton)
+  if (!skeleton) {
     return nullptr;
+  }
 
   return std::shared_ptr<dart::dynamics::BodyNode>(skeleton, node);
 }

@@ -962,7 +962,8 @@ function(install_component_exports package_name)
     foreach(dependent_package IN LISTS dependency_package)
       set(find_pkg_name "Find${dependent_package}.cmake")
       set(find_pkg_path "")
-      set(dart_find_pkg_name "DARTFind${dependent_package}.cmake")
+      string(TOLOWER "${dependent_package}" dependent_package_lower)
+      set(dart_find_pkg_name "dart_find_${dependent_package_lower}.cmake")
       set(dart_find_pkg_path "")
       foreach(module_path IN LISTS CMAKE_MODULE_PATH)
         set(find_pkg_path_candidate "${module_path}/${find_pkg_name}")
@@ -1013,15 +1014,34 @@ function(dart_snake_to_pascal output_var input_string)
   string(REPLACE "_" ";" words "${name_without_ext}")
   set(pascal_result "")
   foreach(word IN LISTS words)
-    # Capitalize first letter of each word
-    string(SUBSTRING "${word}" 0 1 first_letter)
-    string(TOUPPER "${first_letter}" first_letter_upper)
-    string(LENGTH "${word}" word_length)
-    if(word_length GREATER 1)
-      string(SUBSTRING "${word}" 1 -1 rest_of_word)
-      set(capitalized_word "${first_letter_upper}${rest_of_word}")
+    # Honor known acronyms/edge cases, otherwise capitalize first letter.
+    string(TOLOWER "${word}" word_lower)
+    if(word_lower STREQUAL "dart")
+      set(capitalized_word "DART")
+    elseif(word_lower STREQUAL "fcl")
+      set(capitalized_word "FCL")
+    elseif(word_lower STREQUAL "ode")
+      set(capitalized_word "Ode")
+    elseif(word_lower STREQUAL "ik")
+      set(capitalized_word "IK")
+    elseif(word_lower STREQUAL "io")
+      set(capitalized_word "IO")
+    elseif(word_lower STREQUAL "impl")
+      set(capitalized_word "IMPL")
+    elseif(word_lower STREQUAL "lcpsolver")
+      set(capitalized_word "LcpSolver")
+    elseif(word_lower STREQUAL "callocator")
+      set(capitalized_word "CAllocator")
     else()
-      set(capitalized_word "${first_letter_upper}")
+      string(SUBSTRING "${word}" 0 1 first_letter)
+      string(TOUPPER "${first_letter}" first_letter_upper)
+      string(LENGTH "${word}" word_length)
+      if(word_length GREATER 1)
+        string(SUBSTRING "${word}" 1 -1 rest_of_word)
+        set(capitalized_word "${first_letter_upper}${rest_of_word}")
+      else()
+        set(capitalized_word "${first_letter_upper}")
+      endif()
     endif()
     string(APPEND pascal_result "${capitalized_word}")
   endforeach()
@@ -1034,18 +1054,15 @@ endfunction()
 # Check if a filename is in snake_case format
 # Usage:
 #   dart_is_snake_case(output_var "filename.hpp")
-# Returns TRUE if filename contains underscores and no uppercase letters
+# Returns TRUE if filename contains no uppercase letters
 #-------------------------------------------------------------------------------
 function(dart_is_snake_case output_var filename)
   get_filename_component(name_without_ext "${filename}" NAME_WE)
 
-  # Check if contains underscores
-  string(FIND "${name_without_ext}" "_" underscore_pos)
-
   # Check if contains uppercase letters (excluding extension)
   string(REGEX MATCH "[A-Z]" has_uppercase "${name_without_ext}")
 
-  if(NOT underscore_pos EQUAL -1 AND NOT has_uppercase)
+  if(NOT has_uppercase)
     set(${output_var} TRUE PARENT_SCOPE)
   else()
     set(${output_var} FALSE PARENT_SCOPE)
@@ -1084,6 +1101,18 @@ function(dart_generate_case_compat_headers)
     set(DGCCH_RELATIVE_TO "${CMAKE_CURRENT_SOURCE_DIR}")
   endif()
 
+  if(NOT DEFINED DART_CASE_INSENSITIVE_FS)
+    set(_dart_case_check_dir "${CMAKE_BINARY_DIR}/CMakeFiles/dart_case_check")
+    file(MAKE_DIRECTORY "${_dart_case_check_dir}")
+    set(_dart_case_check_file "${_dart_case_check_dir}/dart_case_check.txt")
+    file(WRITE "${_dart_case_check_file}" "dart")
+    if(EXISTS "${_dart_case_check_dir}/DART_CASE_CHECK.TXT")
+      set(DART_CASE_INSENSITIVE_FS TRUE CACHE INTERNAL "Detected case-insensitive filesystem")
+    else()
+      set(DART_CASE_INSENSITIVE_FS FALSE CACHE INTERNAL "Detected case-sensitive filesystem")
+    endif()
+  endif()
+
   set(generated_headers)
 
   foreach(header IN LISTS DGCCH_HEADERS)
@@ -1093,6 +1122,14 @@ function(dart_generate_case_compat_headers)
     dart_is_snake_case(is_snake "${header_name}")
 
     if(is_snake)
+      if(DART_CASE_INSENSITIVE_FS)
+        get_filename_component(name_without_ext "${header_name}" NAME_WE)
+        string(FIND "${name_without_ext}" "_" underscore_pos)
+        if(underscore_pos EQUAL -1)
+          continue()
+        endif()
+      endif()
+
       # Convert to PascalCase
       dart_snake_to_pascal(pascal_name "${header_name}")
 
@@ -1279,12 +1316,27 @@ macro(dart_generate_component_headers)
 
   # Automatically generate PascalCase compatibility headers if SOURCE_HEADERS provided
   if(DART_GCH_SOURCE_HEADERS)
-    dart_generate_case_compat_headers(
-      HEADERS ${DART_GCH_SOURCE_HEADERS}
-      OUTPUT_DIR "${DART_GCH_OUTPUT_DIR}"
-      COMPONENT_PATH "${DART_GCH_TARGET_DIR}"
-      RELATIVE_TO "${CMAKE_CURRENT_SOURCE_DIR}"
-    )
+    set(filtered_source_headers)
+    foreach(header IN LISTS DART_GCH_SOURCE_HEADERS)
+      file(RELATIVE_PATH rel_path "${CMAKE_CURRENT_SOURCE_DIR}" "${header}")
+      get_filename_component(rel_dir "${rel_path}" DIRECTORY)
+      get_filename_component(header_name "${header}" NAME)
+      string(TOLOWER "${header_name}" header_name_lower)
+      if(header_name_lower STREQUAL "all.hpp"
+         AND (rel_dir STREQUAL "" OR rel_dir STREQUAL "."))
+        continue()
+      endif()
+      list(APPEND filtered_source_headers "${header}")
+    endforeach()
+
+    if(filtered_source_headers)
+      dart_generate_case_compat_headers(
+        HEADERS ${filtered_source_headers}
+        OUTPUT_DIR "${DART_GCH_OUTPUT_DIR}"
+        COMPONENT_PATH "${DART_GCH_TARGET_DIR}"
+        RELATIVE_TO "${CMAKE_CURRENT_SOURCE_DIR}"
+      )
+    endif()
   endif()
 endmacro()
 
@@ -1293,12 +1345,13 @@ endmacro()
 #===============================================================================
 
 #-------------------------------------------------------------------------------
-# Find a DART package using DARTFind<name>.cmake
+# Find a DART package using dart_find_<name>.cmake
 # Usage:
 #   dart_find_package(<package_name>)
 #-------------------------------------------------------------------------------
 macro(dart_find_package _name)
-  include(DARTFind${_name})
+  string(TOLOWER "${_name}" _name_lower)
+  include(dart_find_${_name_lower})
 endmacro()
 
 #===============================================================================

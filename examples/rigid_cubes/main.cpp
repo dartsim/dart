@@ -30,23 +30,147 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/all.hpp>
 
 #include <dart/utils/All.hpp>
 
-#include <dart/All.hpp>
-#include <dart/io/Read.hpp>
+#include <dart/all.hpp>
+#include <dart/io/read.hpp>
 
+#include <filesystem>
 #include <iostream>
+#include <string>
+#include <string_view>
+
+#include <cstdlib>
 
 using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart::gui;
-using namespace dart::gui;
 using namespace dart::utils;
 using namespace dart::math;
 
+namespace {
+
+//==============================================================================
+// Command-line options
+//==============================================================================
+struct Options
+{
+  bool headless = false;
+  int frames = -1;
+  std::string outDir;
+  int width = 640;
+  int height = 480;
+  bool help = false;
+};
+
+//==============================================================================
+void printUsage(const char* argv0)
+{
+  std::cout
+      << "Usage: " << argv0 << " [options]\n\n"
+      << "Options:\n"
+      << "  --headless        Run without display window (for CI/testing)\n"
+      << "  --frames <n>      Run for n frames then exit (default: "
+         "interactive)\n"
+      << "  --out <dir>       Output directory for captured frames\n"
+      << "  --width <n>       Viewport width (default: 640)\n"
+      << "  --height <n>      Viewport height (default: 480)\n"
+      << "  -h, --help        Show this help\n\n"
+      << "Interactive controls (when not headless):\n"
+      << "  space bar: simulation on/off\n"
+      << "  'p': playback/stop\n"
+      << "  'v': visualization on/off\n"
+      << "  '1'-'4': apply directional forces\n";
+}
+
+//==============================================================================
+bool parseInt(std::string_view value, int& output)
+{
+  if (value.empty()) {
+    return false;
+  }
+
+  const std::string str(value);
+  char* end = nullptr;
+  const long result = std::strtol(str.c_str(), &end, 10);
+  if (!end || *end != '\0') {
+    return false;
+  }
+
+  output = static_cast<int>(result);
+  return true;
+}
+
+//==============================================================================
+enum class ParseResult
+{
+  Ok,
+  Help,
+  Error
+};
+
+//==============================================================================
+ParseResult parseArgs(int argc, char* argv[], Options& options)
+{
+  for (int i = 1; i < argc; ++i) {
+    const std::string_view arg(argv[i]);
+
+    if (arg == "-h" || arg == "--help") {
+      printUsage(argv[0]);
+      return ParseResult::Help;
+    }
+
+    if (arg == "--headless") {
+      options.headless = true;
+      continue;
+    }
+
+    if (arg == "--frames" && i + 1 < argc) {
+      if (!parseInt(argv[++i], options.frames) || options.frames < 0) {
+        std::cerr << "Invalid frames value: " << argv[i] << "\n";
+        printUsage(argv[0]);
+        return ParseResult::Error;
+      }
+      continue;
+    }
+
+    if (arg == "--out" && i + 1 < argc) {
+      options.outDir = argv[++i];
+      continue;
+    }
+
+    if (arg == "--width" && i + 1 < argc) {
+      if (!parseInt(argv[++i], options.width) || options.width <= 0) {
+        std::cerr << "Invalid width: " << argv[i] << "\n";
+        printUsage(argv[0]);
+        return ParseResult::Error;
+      }
+      continue;
+    }
+
+    if (arg == "--height" && i + 1 < argc) {
+      if (!parseInt(argv[++i], options.height) || options.height <= 0) {
+        std::cerr << "Invalid height: " << argv[i] << "\n";
+        printUsage(argv[0]);
+        return ParseResult::Error;
+      }
+      continue;
+    }
+
+    std::cerr << "Unknown argument: " << arg << "\n";
+    printUsage(argv[0]);
+    return ParseResult::Error;
+  }
+
+  return ParseResult::Ok;
+}
+
+} // namespace
+
+//==============================================================================
 class RigidCubesWorldNode : public dart::gui::RealTimeWorldNode
 {
 public:
@@ -78,6 +202,7 @@ protected:
   Eigen::Vector3d mForce;
 };
 
+//==============================================================================
 class RigidCubesEventHandler : public ::osgGA::GUIEventHandler
 {
 public:
@@ -146,8 +271,37 @@ protected:
   WorldPtr mWorld;
 };
 
-int main()
+//==============================================================================
+int main(int argc, char* argv[])
 {
+  // Parse command-line arguments
+  Options options;
+  const ParseResult parseResult = parseArgs(argc, argv, options);
+  if (parseResult == ParseResult::Help) {
+    return EXIT_SUCCESS;
+  }
+  if (parseResult == ParseResult::Error) {
+    return EXIT_FAILURE;
+  }
+
+  // Validate headless options
+  if (options.headless && options.frames < 0) {
+    std::cerr << "Error: --headless requires --frames to be specified\n";
+    printUsage(argv[0]);
+    return EXIT_FAILURE;
+  }
+
+  // Create output directory if specified
+  if (!options.outDir.empty()) {
+    std::error_code ec;
+    std::filesystem::create_directories(options.outDir, ec);
+    if (ec) {
+      std::cerr << "Failed to create output directory '" << options.outDir
+                << "': " << ec.message() << "\n";
+      return EXIT_FAILURE;
+    }
+  }
+
   // Create and initialize the world
   auto world = dart::io::readWorld("dart://sample/skel/cubes.skel");
   if (!world) {
@@ -156,24 +310,28 @@ int main()
   }
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
 
-  // Create OSG viewer
-  dart::gui::Viewer viewer;
+  std::unique_ptr<dart::gui::Viewer> viewerPtr;
+  if (options.headless) {
+    viewerPtr = std::make_unique<dart::gui::Viewer>(
+        dart::gui::ViewerConfig::headless(options.width, options.height));
+  } else {
+    viewerPtr = std::make_unique<dart::gui::Viewer>();
+  }
+  dart::gui::Viewer& viewer = *viewerPtr;
 
-  // Create shadow technique
   auto shadow = dart::gui::WorldNode::createDefaultShadowTechnique(&viewer);
 
-  // Create custom world node
   ::osg::ref_ptr<RigidCubesWorldNode> worldNode
       = new RigidCubesWorldNode(world, shadow);
   viewer.addWorldNode(worldNode);
 
-  // Create and add event handler
   ::osg::ref_ptr<RigidCubesEventHandler> eventHandler
       = new RigidCubesEventHandler(&viewer, worldNode, world);
   viewer.addEventHandler(eventHandler);
 
-  // Set up the viewer window
-  viewer.setUpViewInWindow(0, 0, 640, 480);
+  if (!options.headless) {
+    viewer.setUpViewInWindow(0, 0, options.width, options.height);
+  }
 
   // Set up camera position
   viewer.getCameraManipulator()->setHomePosition(
@@ -182,7 +340,31 @@ int main()
       ::osg::Vec3(0.0f, 0.0f, 1.0f));
   viewer.setCameraManipulator(viewer.getCameraManipulator());
 
-  // Add instruction text
+  if (options.headless) {
+    std::cout << "Running in headless mode for " << options.frames
+              << " frames\n";
+    if (!options.outDir.empty()) {
+      std::cout << "Saving frames to: " << options.outDir << "\n";
+    }
+
+    // Start recording if output directory specified
+    if (!options.outDir.empty()) {
+      viewer.record(options.outDir, "frame_", false, 6);
+    }
+
+    // Enable simulation
+    viewer.simulate(true);
+
+    // Run the specified number of frames
+    for (int i = 0; i < options.frames; ++i) {
+      viewer.frame();
+    }
+
+    std::cout << "Headless rendering complete.\n";
+    return EXIT_SUCCESS;
+  }
+
+  // Interactive mode: add instruction text and run viewer loop
   viewer.addInstructionText("Rigid Cubes Example\n");
   viewer.addInstructionText("Controls:\n");
   viewer.addInstructionText("  space bar: simulation on/off\n");

@@ -1,6 +1,6 @@
 #include "common/uri.hpp"
 
-#include "dart/common/Uri.hpp"
+#include "dart/common/uri.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/string.h>

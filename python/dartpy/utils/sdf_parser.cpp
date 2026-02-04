@@ -1,6 +1,6 @@
 #include "utils/sdf_parser.hpp"
 
-#include "dart/utils/sdf/SdfParser.hpp"
+#include "dart/utils/sdf/sdf_parser.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>

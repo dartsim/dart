@@ -2,10 +2,8 @@
 
 <!--
 CRITICAL: FOR AGENTS READING THIS FILE
-=======================================
 This is a PROMPT TEMPLATE, not an active task.
 Do NOT execute unless a human pastes this into a new session.
-=======================================
 -->
 
 ## Prompt

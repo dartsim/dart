@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/io/Read.hpp>
+#include <dart/io/read.hpp>
 
 #include <algorithm>
 #include <iostream>
@@ -144,8 +144,9 @@ bool parsePackageMapping(
     std::string_view value, std::string& packageName, std::string& packagePath)
 {
   const std::size_t equalSign = value.find('=');
-  if (equalSign == std::string_view::npos)
+  if (equalSign == std::string_view::npos) {
     return false;
+  }
 
   packageName = std::string(value.substr(0, equalSign));
   packagePath = std::string(value.substr(equalSign + 1));
@@ -249,10 +250,12 @@ int main(int argc, char* argv[])
 {
   Options options;
   const ParseResult parseResult = parseArgs(argc, argv, options);
-  if (parseResult == ParseResult::Help)
+  if (parseResult == ParseResult::Help) {
     return 0;
-  if (parseResult == ParseResult::Error)
+  }
+  if (parseResult == ParseResult::Error) {
     return 1;
+  }
 
   if (!options.loadWorld && !options.loadSkeleton) {
     std::cerr << "Nothing to load. Enable --world or --skeleton.\n";
@@ -262,8 +265,9 @@ int main(int argc, char* argv[])
   dart::io::ReadOptions readOptions;
   readOptions.format = options.format;
   readOptions.sdfDefaultRootJointType = options.sdfRootJointType;
-  for (const auto& mapping : options.packageMappings)
+  for (const auto& mapping : options.packageMappings) {
     readOptions.addPackageDirectory(mapping.first, mapping.second);
+  }
 
   std::cout << "Read options: format=" << formatToString(readOptions.format)
             << ", sdf-root-joint="

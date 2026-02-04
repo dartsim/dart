@@ -1,6 +1,6 @@
 #include "common/string.hpp"
 
-#include "dart/common/String.hpp"
+#include "dart/common/string.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/string.h>

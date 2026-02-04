@@ -13,7 +13,8 @@ if("@component@" STREQUAL "collision-bullet" OR "@component@" STREQUAL "collisio
 endif()
 
 foreach(external_dep @external_dependencies@)
-  include(${CMAKE_CURRENT_LIST_DIR}/DARTFind${external_dep}.cmake)
+  string(TOLOWER "${external_dep}" external_dep_lower)
+  include(${CMAKE_CURRENT_LIST_DIR}/dart_find_${external_dep_lower}.cmake)
 
   string(TOUPPER ${external_dep} EXTERNAL_DEP_UPPER)
   if(NOT ${external_dep}_FOUND AND NOT ${EXTERNAL_DEP_UPPER}_FOUND)

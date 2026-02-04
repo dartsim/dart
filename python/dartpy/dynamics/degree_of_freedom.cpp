@@ -1,8 +1,8 @@
 #include "dynamics/degree_of_freedom.hpp"
 
 #include "common/repr.hpp"
-#include "dart/dynamics/DegreeOfFreedom.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/degree_of_freedom.hpp"
+#include "dart/dynamics/skeleton.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/pair.h>

@@ -1,7 +1,7 @@
 #include "dynamics/revolute_joint.hpp"
 
 #include "common/type_casters.hpp"
-#include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/revolute_joint.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>

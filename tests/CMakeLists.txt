@@ -53,9 +53,9 @@ endif()
 # - DART_${test_type}_TESTS
 #
 # Usage:
-#   dart_add_test("unit" test_UnitTestA) # assumed source is test_UnitTestA.cpp
-#   dart_add_test("unit" test_UnitTestB test_SourceB1.cpp)
-#   dart_add_test("unit" test_UnitTestA test_SourceC1.cpp test_SourceC2.cpp)
+#   dart_add_test("unit" test_unit_test_aNone) # assumed source is test_unit_test_a.cpp
+#   dart_add_test("unit" test_unit_test_bNone test_source_b1.cpp)
+#   dart_add_test("unit" test_unit_test_aNone test_source_c1.cpp test_source_c2.cpp)
 #===============================================================================
 function(dart_add_test test_type target_name) # ARGN for source files
 
@@ -216,7 +216,7 @@ else()
 endif()
 
 dart_format_add(
-  helpers/GTestUtils.hpp
+  helpers/gtest_utils.hpp
   helpers/common_helpers.hpp
   helpers/dynamics_helpers.hpp
 )

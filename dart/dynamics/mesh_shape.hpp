@@ -1,0 +1,415 @@
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#ifndef DART_DYNAMICS_MESHSHAPE_HPP_
+#define DART_DYNAMICS_MESHSHAPE_HPP_
+
+#include <dart/dynamics/mesh_material.hpp>
+#include <dart/dynamics/shape.hpp>
+
+#include <dart/math/polygon_mesh.hpp>
+#include <dart/math/tri_mesh.hpp>
+
+#include <dart/common/resource_retriever.hpp>
+
+#include <assimp/cimport.h>
+#include <assimp/scene.h>
+
+#include <memory>
+#include <span>
+#include <string>
+#include <vector>
+
+namespace dart {
+namespace dynamics {
+
+class DART_API MeshShape : public Shape
+{
+public:
+  enum class MeshOwnership
+  {
+    None,
+    Imported, // from aiImportFile* family; free with aiReleaseImport
+    Copied,   // from aiCopyScene; free with aiFreeScene
+    Manual,   // from manual new aiScene; free with delete
+    Custom    // managed externally via shared_ptr deleter
+  };
+
+  enum ColorMode
+  {
+    MATERIAL_COLOR = 0, ///< Use the colors specified by the Mesh's material
+    COLOR_INDEX,        ///< Use the colors specified by aiMesh::mColor
+    SHAPE_COLOR,        ///< Use the color specified by the visual aspect
+  };
+
+  /// Alpha mode to specify how the alpha of this mesh should be determined. The
+  /// final alpha value is affected by ColorMode and visual aspect that holds
+  /// this mesh.
+  enum AlphaMode
+  {
+    /// Blend alphas of visual aspect and mesh. This is the default.
+    /// - MATERIAL_COLOR: Blend the alpha of visual aspect and the alpha values
+    ///                   of the mesh materials.
+    /// - COLOR_INDEX: Blend the alpha of visual aspect and the alpha value of
+    ///                mesh color
+    /// - SHAPE_COLOR: Use the alpha of visual aspect.
+    BLEND = 0,
+
+    /// Use the alpha of mesh or visual aspect.
+    /// - MATERIAL_COLOR: Use the alpha values of mesh materials.
+    /// - COLOR_INDEX: Use the alpha value of mesh color.
+    /// - SHAPE_COLOR: Use the alpha of visual aspect.
+    AUTO,
+
+    /// Always use the alpha of visual aspect.
+    SHAPE_ALPHA
+  };
+
+  /// Constructor using TriMesh (preferred).
+  MeshShape(
+      const Eigen::Vector3d& scale,
+      std::shared_ptr<math::TriMesh<double>> mesh,
+      const common::Uri& uri = "");
+
+  /// Constructor using TriMesh (preferred) with a resource retriever.
+  ///
+  /// Providing a resource retriever allows MeshShape to resolve and preserve
+  /// material/texture metadata associated with the source URI.
+  MeshShape(
+      const Eigen::Vector3d& scale,
+      std::shared_ptr<math::TriMesh<double>> mesh,
+      const common::Uri& uri,
+      common::ResourceRetrieverPtr resourceRetriever);
+
+  /// Constructor using aiScene (deprecated, for backward compatibility).
+  [[deprecated("Use TriMesh-based APIs; Assimp APIs will be removed in DART 8.")]] MeshShape(
+      const Eigen::Vector3d& scale,
+      const aiScene* mesh,
+      const common::Uri& uri = "",
+      common::ResourceRetrieverPtr resourceRetriever = nullptr,
+      MeshOwnership ownership = MeshOwnership::Imported);
+
+  /// Constructor that accepts a shared_ptr so callers can supply a custom
+  /// deleter for aiScene.
+  [[deprecated("Use TriMesh-based APIs; Assimp APIs will be removed in DART 8.")]] MeshShape(
+      const Eigen::Vector3d& scale,
+      std::shared_ptr<const aiScene> mesh,
+      const common::Uri& uri = "",
+      common::ResourceRetrieverPtr resourceRetriever = nullptr);
+
+  /// Destructor.
+  ~MeshShape() override;
+
+  // Documentation inherited.
+  std::string_view getType() const override;
+
+  /// Returns shape type for this class
+  static std::string_view getStaticType();
+
+  /// Returns the TriMesh representation of this mesh (preferred).
+  std::shared_ptr<math::TriMesh<double>> getTriMesh() const;
+
+  /// Returns the polygon mesh representation of this mesh, if available.
+  ///
+  /// This is intended for rendering/export pipelines that want to preserve
+  /// non-triangular faces. The returned mesh may be generated lazily and can be
+  /// a triangulated representation when no original polygons are available.
+  std::shared_ptr<math::PolygonMesh<double>> getPolygonMesh() const;
+
+  /// Returns the aiScene representation of this mesh (deprecated).
+  ///
+  /// WARNING: This method performs an expensive conversion from TriMesh to
+  /// aiScene on every call. It is provided only for backward compatibility.
+  /// Please migrate to getTriMesh() for better performance.
+  [[deprecated(
+      "Use TriMesh-based APIs; Assimp APIs will be removed in DART "
+      "8.")]] const aiScene*
+  getMesh() const;
+
+  /// Updates positions of the vertices or the elements. By default, this does
+  /// nothing; you must extend the MeshShape class and implement your own
+  /// version of this function if you want the mesh data to get updated before
+  /// rendering
+  virtual void update();
+
+  [[deprecated(
+      "Use TriMesh-based APIs; Assimp APIs will be removed in DART 8.")]] void
+  setMesh(
+      const aiScene* mesh,
+      const std::string& path = "",
+      common::ResourceRetrieverPtr resourceRetriever = nullptr);
+
+  /// Sets the mesh pointer with explicit ownership semantics.
+  [[deprecated(
+      "Use TriMesh-based APIs; Assimp APIs will be removed in DART 8.")]] void
+  setMesh(
+      const aiScene* mesh,
+      MeshOwnership ownership,
+      const common::Uri& path,
+      common::ResourceRetrieverPtr resourceRetriever = nullptr);
+
+  [[deprecated(
+      "Use TriMesh-based APIs; Assimp APIs will be removed in DART 8.")]] void
+  setMesh(
+      const aiScene* mesh,
+      const common::Uri& path,
+      common::ResourceRetrieverPtr resourceRetriever = nullptr);
+
+  /// Sets the mesh using a shared_ptr so callers can provide a custom deleter.
+  [[deprecated(
+      "Use TriMesh-based APIs; Assimp APIs will be removed in DART 8.")]] void
+  setMesh(
+      std::shared_ptr<const aiScene> mesh,
+      const common::Uri& path = "",
+      common::ResourceRetrieverPtr resourceRetriever = nullptr);
+
+  /// Returns URI to the mesh as std::string; an empty string if unavailable.
+  std::string getMeshUri() const;
+  // TODO(DART 7): Replace with getMeshUri2().
+
+  /// Returns URI to the mesh; an empty string if unavailable.
+  const common::Uri& getMeshUri2() const;
+  // TODO(DART 7): Remove.
+
+  /// Returns path to the mesh on disk; an empty string if unavailable.
+  const std::string& getMeshPath() const;
+
+  common::ResourceRetrieverPtr getResourceRetriever();
+
+  /// Sets the scale of the object using a 3D vector.
+  ///
+  /// The scale is applied independently along each axis (x, y, z). Negative
+  /// values will mirror the object along the corresponding axis, potentially
+  /// flipping normals and causing inside-out geometry.
+  ///
+  /// Use caution when applying negative scales as it may affect rendering and
+  /// physics calculations.
+  void setScale(const Eigen::Vector3d& scale);
+
+  /// Sets a uniform scale for the object across all axes.
+  void setScale(double scale);
+
+  /// Returns the current scale of the object as a 3D vector.
+  ///
+  /// Each component of the vector represents the scale factor along the
+  /// corresponding axis (x, y, z). Negative values indicate that the object has
+  /// been mirrored along that axis.
+  const Eigen::Vector3d& getScale() const;
+
+  /// Set how the color of this mesh should be determined
+  void setColorMode(ColorMode mode);
+
+  /// Get the coloring mode that this mesh is using
+  ColorMode getColorMode() const;
+
+  /// Sets how the alpha of this mesh should be determined
+  void setAlphaMode(AlphaMode mode);
+
+  /// Returns the alpha mode that this mesh is using
+  AlphaMode getAlphaMode() const;
+
+  /// Set which entry in aiMesh::mColor should be used when the color mode is
+  /// COLOR_INDEX. This value must be smaller than AI_MAX_NUMBER_OF_COLOR_SETS.
+  /// If the color index is higher than what the mesh has available, then we
+  /// will use the highest index possible.
+  void setColorIndex(int index);
+
+  /// Get the index that will be used when the ColorMode is set to COLOR_INDEX
+  int getColorIndex() const;
+
+  int getDisplayList() const;
+
+  void setDisplayList(int index);
+
+  /// Returns materials extracted from the mesh (for rendering without Assimp).
+  /// This provides an Assimp-free way to access material properties.
+  std::span<const MeshMaterial> getMaterials() const;
+
+  /// Returns the number of materials in this mesh.
+  std::size_t getNumMaterials() const;
+
+  /// Returns a specific material by index.
+  /// Returns nullptr if index is out of bounds.
+  const MeshMaterial* getMaterial(std::size_t index) const;
+
+  [[deprecated(
+      "Use TriMesh-based APIs; Assimp APIs will be removed in DART "
+      "8.")]] static const aiScene*
+  loadMesh(const std::string& filePath);
+
+  [[deprecated(
+      "Use TriMesh-based APIs; Assimp APIs will be removed in DART "
+      "8.")]] static const aiScene*
+  loadMesh(
+      const std::string& _uri, const common::ResourceRetrieverPtr& retriever);
+
+  [[deprecated(
+      "Use TriMesh-based APIs; Assimp APIs will be removed in DART "
+      "8.")]] static const aiScene*
+  loadMesh(
+      const common::Uri& uri, const common::ResourceRetrieverPtr& retriever);
+
+  // Documentation inherited.
+  Eigen::Matrix3d computeInertia(double mass) const override;
+
+  // Documentation inherited.
+  virtual ShapePtr clone() const override;
+
+protected:
+  class DART_API MeshHandle
+  {
+  public:
+    MeshHandle() = default;
+
+    MeshHandle& operator=(const aiScene* mesh);
+    MeshHandle& operator=(std::shared_ptr<const aiScene> mesh);
+
+    const aiScene* get() const;
+    const aiScene* operator->() const;
+    explicit operator bool() const;
+
+    void reset();
+    MeshOwnership getOwnership() const;
+    const std::shared_ptr<const aiScene>& getShared() const;
+
+    void set(const aiScene* mesh, MeshOwnership ownership);
+    void set(std::shared_ptr<const aiScene> mesh);
+
+  private:
+    std::shared_ptr<const aiScene> mMesh;
+    MeshOwnership mMeshOwnership{MeshOwnership::None};
+  };
+
+  struct SubMeshRange
+  {
+    std::size_t vertexOffset{0};
+    std::size_t vertexCount{0};
+    std::size_t triangleOffset{0};
+    std::size_t triangleCount{0};
+    unsigned int materialIndex{0};
+  };
+
+  static std::shared_ptr<const aiScene> makeMeshHandle(
+      const aiScene* mesh, MeshOwnership ownership);
+
+  // Documentation inherited.
+  void updateBoundingBox() const override;
+
+  // Documentation inherited.
+  void updateVolume() const override;
+
+  aiScene* cloneMesh() const;
+
+  void releaseMesh();
+
+  MeshHandle mMesh;
+
+  /// Converts aiScene to TriMesh for internal use.
+  static std::shared_ptr<math::TriMesh<double>> convertAssimpMesh(
+      const aiScene* scene);
+  static std::shared_ptr<math::TriMesh<double>> convertAssimpMesh(
+      const aiScene* scene, std::vector<SubMeshRange>* subMeshes);
+  static std::shared_ptr<math::PolygonMesh<double>> convertAssimpPolygonMesh(
+      const aiScene* scene);
+  static std::shared_ptr<math::PolygonMesh<double>> convertTriMeshToPolygonMesh(
+      const math::TriMesh<double>& mesh);
+  static bool collectSubMeshRanges(
+      const aiScene* scene,
+      std::vector<SubMeshRange>& ranges,
+      std::size_t expectedVertices,
+      std::size_t expectedTriangles);
+
+  /// Converts TriMesh back to aiScene for backward compatibility.
+  /// NOTE: This creates a new aiScene on every call and the caller is
+  /// responsible for freeing it with aiReleaseImport().
+  const aiScene* convertToAssimpMesh() const;
+
+  /// Extracts material information from aiScene for Assimp-free rendering.
+  void extractMaterialsFromScene(
+      const aiScene* scene,
+      const std::string& basePath,
+      const common::Uri& meshUri);
+
+  /// Extracts texture coordinates from aiScene for Assimp-free rendering.
+  void extractTextureCoordsFromScene(const aiScene* scene);
+
+  /// TriMesh representation (preferred, ownership shared).
+  std::shared_ptr<math::TriMesh<double>> mTriMesh;
+
+  /// Polygon mesh representation (optional, cached on demand).
+  std::shared_ptr<math::PolygonMesh<double>> mPolygonMesh;
+
+  /// Submesh ranges extracted from Assimp (for backward compatibility).
+  std::vector<SubMeshRange> mSubMeshRanges;
+
+  /// Cached aiScene for backward compatibility (created on-demand).
+  /// Mutable to allow lazy conversion in const getMesh() method.
+  mutable const aiScene* mCachedAiScene;
+
+  /// URI the mesh, if available).
+  common::Uri mMeshUri;
+
+  /// Path the mesh on disk, if available.
+  std::string mMeshPath;
+
+  /// Optional method of loading resources by URI.
+  common::ResourceRetrieverPtr mResourceRetriever;
+
+  /// Texture coordinates aligned with TriMesh vertex order.
+  std::vector<Eigen::Vector3d> mTextureCoords;
+
+  /// Number of texture coordinate components (0 means none).
+  int mTextureCoordComponents{0};
+
+  /// OpenGL DisplayList id for rendering
+  int mDisplayList;
+
+  /// Scale
+  Eigen::Vector3d mScale;
+
+  /// Specifies how the color of this mesh should be determined
+  ColorMode mColorMode;
+
+  /// Specifies how the alpha of this mesh should be determined
+  AlphaMode mAlphaMode;
+
+  /// Specifies which color index should be used when mColorMode is COLOR_INDEX
+  int mColorIndex;
+
+  /// Materials extracted from the mesh (for Assimp-free rendering).
+  std::vector<MeshMaterial> mMaterials;
+};
+
+} // namespace dynamics
+} // namespace dart
+
+#endif // DART_DYNAMICS_MESHSHAPE_HPP_

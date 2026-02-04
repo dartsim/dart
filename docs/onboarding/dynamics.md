@@ -4,6 +4,10 @@
 
 This document provides an exploration of the core dynamics classes in DART (Dynamic Animation and Robotics Toolkit), located in the `dart/dynamics` directory.
 
+> **Theory Reference**: For the mathematical foundations (Lagrangian dynamics, equations of motion,
+> recursive algorithms), see [`docs/background/dynamics/`](../background/dynamics/) — derived from
+> C. Karen Liu and Sumit Jain's tutorial on multibody dynamics.
+
 ## Coding Conventions
 
 - Follow `CONTRIBUTING.md` for formatting (two-space indentation, camelCase functions, PascalCase classes, no cuddled braces).
@@ -508,7 +512,7 @@ body1->setMass(0.5);
 
 // Set joint properties
 joint1->setPosition(0, 0.5);  // Set position of first DOF
-joint1->setPositionLimits(0, -M_PI, M_PI);  // Set limits
+joint1->setPositionLimits(0, -dart::math::pi, dart::math::pi);  // Set limits
 
 // Add a shape for visualization/collision
 auto shape = std::make_shared<BoxShape>(Eigen::Vector3d(0.1, 0.1, 0.5));

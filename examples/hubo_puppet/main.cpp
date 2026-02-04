@@ -30,17 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
 #include <dart/config.hpp>
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/all.hpp>
 
 #include <dart/utils/All.hpp>
 #include <dart/utils/urdf/All.hpp>
 
-#include <dart/All.hpp>
-#include <dart/io/Read.hpp>
+#include <dart/all.hpp>
+#include <dart/io/read.hpp>
 
 #include <span>
 
@@ -89,8 +89,9 @@ public:
 
     _grad.setZero();
     int smaller = std::min(mResultVector.size(), _grad.size());
-    for (int i = 0; i < smaller; ++i)
+    for (int i = 0; i < smaller; ++i) {
       _grad[i] = mResultVector[i];
+    }
   }
 
   void computeResultVector(const Eigen::VectorXd& _x)
@@ -99,20 +100,23 @@ public:
 
     if (enforceIdealPosture) {
       for (int i = 0; i < _x.size(); ++i) {
-        if (mIdeal.size() <= i)
+        if (mIdeal.size() <= i) {
           break;
+        }
 
         mResultVector[i] = mWeights[i] * (_x[i] - mIdeal[i]);
       }
     } else {
       for (int i = 0; i < _x.size(); ++i) {
-        if (mIdeal.size() <= i)
+        if (mIdeal.size() <= i) {
           break;
+        }
 
-        if (_x[i] < mLower[i])
+        if (_x[i] < mLower[i]) {
           mResultVector[i] = mWeights[i] * (_x[i] - mLower[i]);
-        else if (mUpper[i] < _x[i])
+        } else if (mUpper[i] < _x[i]) {
           mResultVector[i] = mWeights[i] * (_x[i] - mUpper[i]);
+        }
       }
     }
   }
@@ -297,8 +301,9 @@ public:
 
       double det = -(q * q + r * r);
 
-      if (std::abs(det) < zeroSize)
+      if (std::abs(det) < zeroSize) {
         isValid = false;
+      }
 
       double k = det < 0 ? -1 : 1;
 
@@ -320,8 +325,9 @@ public:
 
       Eigen::Vector3d euler = Rupper.eulerAngles(1, 0, 2);
 
-      if (flipShoulder)
+      if (flipShoulder) {
         euler = flipEuler3Axis(euler);
+      }
 
       testQ(SP) = euler[0];
       testQ(SR) = euler[1];
@@ -329,8 +335,9 @@ public:
 
       for (std::size_t j = 0; j < 6; ++j) {
         testQ[j] = dart::math::wrapToPi(testQ[j]);
-        if (std::abs(testQ[j]) < zeroSize)
+        if (std::abs(testQ[j]) < zeroSize) {
           testQ[j] = 0.0;
+        }
       }
 
       int validity = isValid ? VALID : OUT_OF_REACH;
@@ -344,8 +351,9 @@ public:
 
   std::span<const std::size_t> getDofs() const override
   {
-    if (!configured)
+    if (!configured) {
       configure();
+    }
 
     return {mDofs.data(), mDofs.size()};
   }
@@ -525,16 +533,18 @@ public:
            / (2 * L4 * L5);
       radical = 1 - C4 * C4;
       sqrt_radical = std::sqrt(radical);
-      if (sqrt_radical.imag() != 0)
+      if (sqrt_radical.imag() != 0) {
         isValid = false;
+      }
       q4 = atan2(alternatives(i, 0) * sqrt_radical.real(), C4);
 
       S4 = sin(q4);
       psi = atan2(S4 * L4, C4 * L4 + L5);
       radical = (px + L6) * (px + L6) + py * py;
       sqrt_radical = std::sqrt(radical);
-      if (sqrt_radical.imag() != 0)
+      if (sqrt_radical.imag() != 0) {
         isValid = false;
+      }
 
       q5 = dart::math::wrapToPi(
           atan2(-pz, alternatives(i, 1) * sqrt_radical.real()) - psi);
@@ -542,8 +552,9 @@ public:
       q6 = atan2(py, -(px + L6));
       C45 = cos(q4 + q5);
       C5 = cos(q5);
-      if (C45 * L4 + C5 * L5 < 0)
+      if (C45 * L4 + C5 * L5 < 0) {
         q6 = dart::math::wrapToPi(q6 + pi);
+      }
 
       S6 = sin(q6);
       C6 = cos(q6);
@@ -551,14 +562,16 @@ public:
       S2 = C6 * ay + S6 * ax;
       radical = 1 - S2 * S2;
       sqrt_radical = std::sqrt(radical);
-      if (sqrt_radical.imag() != 0)
+      if (sqrt_radical.imag() != 0) {
         isValid = false;
+      }
       q2 = atan2(S2, alternatives(i, 2) * sqrt_radical.real());
 
       q1 = atan2(C6 * sy + S6 * sx, C6 * ny + S6 * nx);
       C2 = cos(q2);
-      if (C2 < 0)
+      if (C2 < 0) {
         q1 = dart::math::wrapToPi(q1 + pi);
+      }
 
       q345 = atan2(-az / C2, -(C6 * ax - S6 * ay) / C2);
       q3 = dart::math::wrapToPi(q345 - q4 - q5);
@@ -570,9 +583,11 @@ public:
       testQ[4] = q5;
       testQ[5] = q6;
 
-      for (int k = 0; k < testQ.size(); ++k)
-        if (fabs(testQ[k]) < zeroSize)
+      for (int k = 0; k < testQ.size(); ++k) {
+        if (fabs(testQ[k]) < zeroSize) {
           testQ[k] = 0;
+        }
+      }
 
       int validity = isValid ? VALID : OUT_OF_REACH;
       mSolutions.push_back(Solution(testQ, validity));
@@ -585,8 +600,9 @@ public:
 
   std::span<const std::size_t> getDofs() const override
   {
-    if (!configured)
+    if (!configured) {
       configure();
+    }
 
     return {mDofs.data(), mDofs.size()};
   }
@@ -634,8 +650,9 @@ protected:
       saved_q[i] = dofs[i]->getPosition();
       dofs[i]->setPosition(0.0);
 
-      if (bn->getNumChildBodyNodes() > 0)
+      if (bn->getNumChildBodyNodes() > 0) {
         bn = bn->getChildBodyNode(0);
+      }
     }
 
     L4 = std::abs(
@@ -740,17 +757,19 @@ public:
       Eigen::Isometry3d new_tf = Eigen::Isometry3d::Identity();
       Eigen::Vector3d forward = old_tf.linear().col(0);
       forward[2] = 0.0;
-      if (forward.norm() > 1e-10)
+      if (forward.norm() > 1e-10) {
         forward.normalize();
-      else
+      } else {
         forward.setZero();
+      }
 
       Eigen::Vector3d left = old_tf.linear().col(1);
       left[2] = 0.0;
-      if (left.norm() > 1e-10)
+      if (left.norm() > 1e-10) {
         left.normalize();
-      else
+      } else {
         left.setZero();
+      }
 
       const Eigen::Vector3d& up = Eigen::Vector3d::UnitZ();
 
@@ -764,29 +783,37 @@ public:
         rotationalStep *= 2.0;
       }
 
-      if (mMoveComponents[MOVE_W])
+      if (mMoveComponents[MOVE_W]) {
         new_tf.translate(linearStep * forward);
+      }
 
-      if (mMoveComponents[MOVE_S])
+      if (mMoveComponents[MOVE_S]) {
         new_tf.translate(-linearStep * forward);
+      }
 
-      if (mMoveComponents[MOVE_A])
+      if (mMoveComponents[MOVE_A]) {
         new_tf.translate(linearStep * left);
+      }
 
-      if (mMoveComponents[MOVE_D])
+      if (mMoveComponents[MOVE_D]) {
         new_tf.translate(-linearStep * left);
+      }
 
-      if (mMoveComponents[MOVE_F])
+      if (mMoveComponents[MOVE_F]) {
         new_tf.translate(elevationStep * up);
+      }
 
-      if (mMoveComponents[MOVE_Z])
+      if (mMoveComponents[MOVE_Z]) {
         new_tf.translate(-elevationStep * up);
+      }
 
-      if (mMoveComponents[MOVE_Q])
+      if (mMoveComponents[MOVE_Q]) {
         new_tf.rotate(Eigen::AngleAxisd(rotationalStep, up));
+      }
 
-      if (mMoveComponents[MOVE_E])
+      if (mMoveComponents[MOVE_E]) {
         new_tf.rotate(Eigen::AngleAxisd(-rotationalStep, up));
+      }
 
       new_tf.pretranslate(old_tf.translation());
       new_tf.rotate(old_tf.rotation());
@@ -866,17 +893,19 @@ public:
 
     if (::osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType()) {
       if (ea.getKey() == 'p') {
-        for (std::size_t i = 0; i < mHubo->getNumDofs(); ++i)
+        for (std::size_t i = 0; i < mHubo->getNumDofs(); ++i) {
           std::cout << mHubo->getDof(i)->getName() << ": "
                     << mHubo->getDof(i)->getPosition() << std::endl;
+        }
         return true;
       }
 
       if (ea.getKey() == 't') {
         // Reset all the positions except for x, y, and yaw
         for (std::size_t i = 0; i < mHubo->getNumDofs(); ++i) {
-          if (i < 2 || 4 < i)
+          if (i < 2 || 4 < i) {
             mHubo->getDof(i)->setPosition(mRestConfig[i]);
+          }
         }
         return true;
       }
@@ -917,8 +946,9 @@ public:
         return true;
       }
 
-      if (ea.getKey() == ::osgGA::GUIEventAdapter::KEY_Shift_L)
+      if (ea.getKey() == ::osgGA::GUIEventAdapter::KEY_Shift_L) {
         mTeleop->mAmplifyMovement = true;
+      }
 
       switch (ea.getKey()) {
         case 'w':
@@ -978,12 +1008,14 @@ public:
       }
 
       if (mOptimizationKey == ea.getKey()) {
-        if (mPosture)
+        if (mPosture) {
           mPosture->enforceIdealPosture = true;
+        }
 
-        if (mBalance)
+        if (mBalance) {
           mBalance->setErrorMethod(
               dart::constraint::BalanceConstraint::OPTIMIZE_BALANCE);
+        }
 
         return true;
       }
@@ -991,18 +1023,21 @@ public:
 
     if (::osgGA::GUIEventAdapter::KEYUP == ea.getEventType()) {
       if (ea.getKey() == mOptimizationKey) {
-        if (mPosture)
+        if (mPosture) {
           mPosture->enforceIdealPosture = false;
+        }
 
-        if (mBalance)
+        if (mBalance) {
           mBalance->setErrorMethod(
               dart::constraint::BalanceConstraint::FROM_CENTROID);
+        }
 
         return true;
       }
 
-      if (ea.getKey() == ::osgGA::GUIEventAdapter::KEY_Shift_L)
+      if (ea.getKey() == ::osgGA::GUIEventAdapter::KEY_Shift_L) {
         mTeleop->mAmplifyMovement = false;
+      }
 
       switch (ea.getKey()) {
         case 'w':
@@ -1343,19 +1378,22 @@ void setupEndEffectors(const SkeletonPtr& hubo)
 void enableDragAndDrops(dart::gui::Viewer& viewer, const SkeletonPtr& hubo)
 {
   // Turn on drag-and-drop for the whole Skeleton
-  for (std::size_t i = 0; i < hubo->getNumBodyNodes(); ++i)
+  for (std::size_t i = 0; i < hubo->getNumBodyNodes(); ++i) {
     viewer.enableDragAndDrop(hubo->getBodyNode(i), false, false);
+  }
 
   for (std::size_t i = 0; i < hubo->getNumEndEffectors(); ++i) {
     EndEffector* ee = hubo->getEndEffector(i);
-    if (!ee->getIK())
+    if (!ee->getIK()) {
       continue;
+    }
 
     // Check whether the target is an interactive frame, and add it if it is
     if (const auto& frame
         = std::dynamic_pointer_cast<dart::gui::InteractiveFrame>(
-            ee->getIK()->getTarget()))
+            ee->getIK()->getTarget())) {
       viewer.enableDragAndDrop(frame.get());
+    }
   }
 }
 

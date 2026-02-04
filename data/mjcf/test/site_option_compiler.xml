@@ -1,0 +1,95 @@
+<mujoco model="site_option_compiler">
+  <compiler
+      coordinate="local"
+      angle="degree"
+      inertiafromgeom="true"
+      eulerseq="xyz"
+      meshdir="."
+      texturedir="."
+      boundmass="0.2"
+      boundinertia="0.1"
+      settotalmass="12"
+      balanceinertia="true"
+      strippath="true"
+      discardvisual="false"
+      convexhull="true"
+      userthread="false"
+      fusestatic="true"
+      inertiagrouprange="1 4"/>
+  <option
+      timestep="0.005"
+      apirate="0.005"
+      impratio="0.005"
+      gravity="0 0 -9.81"
+      wind="1 0 0"
+      magnetic="0 -0.5 0.25"
+      density="500"
+      viscosity="1.2"
+      integrator="RK4"
+      collision="all"
+      cone="elliptic"
+      jacobian="dense"
+      solver="Newton"
+      iterations="100"
+      tolerance="1e-8"
+      noslip_iterations="3"
+      mpr_iterations="42"
+      mpr_tolerance="1e-5">
+    <flag
+        energy="enable"
+        fwdinv="enable"
+        override="enable"
+        contact="enable"
+        constraint="enable"/>
+  </option>
+  <worldbody>
+    <body name="site_sphere_body">
+      <site
+          name="site_sphere"
+          type="sphere"
+          size="0.2"
+          pos="0 0 0.1"
+          quat="1 0 0 0"
+          rgba="1 0 0 1"
+          group="1"/>
+    </body>
+    <body name="site_capsule_body" pos="0 0 0.2">
+      <site
+          name="site_capsule"
+          type="capsule"
+          size="0.05 0.2"
+          pos="0 0 0"
+          euler="0 0 45"
+          rgba="0 1 0 1"
+          group="2"/>
+    </body>
+    <body name="site_ellipsoid_body" pos="0 0 0.3">
+      <site
+          name="site_ellipsoid"
+          type="ellipsoid"
+          size="0.1 0.2 0.3"
+          pos="0 0 0"
+          axisangle="0 1 0 90"
+          rgba="0 0 1 1"
+          group="3"/>
+    </body>
+    <body name="site_cylinder_body" pos="0 0 0.4">
+      <site
+          name="site_cylinder"
+          type="cylinder"
+          size="0.07 0.15"
+          pos="0 0 0"
+          rgba="1 1 0 1"
+          group="4"/>
+    </body>
+    <body name="site_box_body" pos="0 0 0.5">
+      <site
+          name="site_box"
+          type="box"
+          size="0.05 0.06 0.07"
+          pos="0 0 0"
+          rgba="0 1 1 1"
+          group="5"/>
+    </body>
+  </worldbody>
+</mujoco>

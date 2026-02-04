@@ -30,13 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Helpers.hpp"
-#include "InputHandler.hpp"
-#include "WamWorld.hpp"
+#include "helpers.hpp"
+#include "input_handler.hpp"
+#include "wam_world.hpp"
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/all.hpp>
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 
 #include <iostream>
 

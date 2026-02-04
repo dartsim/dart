@@ -1,13 +1,13 @@
 #include "common/type_casters.hpp"
 #include "gui/gui.hpp"
 
-#include <dart/gui/DragAndDrop.hpp>
-#include <dart/gui/InteractiveFrame.hpp>
-#include <dart/gui/Viewer.hpp>
+#include <dart/gui/drag_and_drop.hpp>
+#include <dart/gui/interactive_frame.hpp>
+#include <dart/gui/viewer.hpp>
 
-#include <dart/dynamics/BodyNode.hpp>
-#include <dart/dynamics/Shape.hpp>
-#include <dart/dynamics/SimpleFrame.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/shape.hpp>
+#include <dart/dynamics/simple_frame.hpp>
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>

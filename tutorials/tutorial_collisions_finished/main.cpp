@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/all.hpp>
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 
 #include <random>
 
@@ -97,8 +97,9 @@ void setupRing(const SkeletonPtr& ring)
     Eigen::Vector3d restPos
         = BallJoint::convertToPositions(Eigen::Matrix3d(rotation));
 
-    for (std::size_t j = 0; j < 3; ++j)
+    for (std::size_t j = 0; j < 3; ++j) {
       joint->setRestPosition(j, restPos[j]);
+    }
   }
   // snippet:cpp-collisions-lesson4b-ring-rest-end
 
@@ -156,8 +157,9 @@ public:
           addRing(mOriginalRigidRing->cloneSkeleton());
           return true;
         case 'd':
-          if (mWorld->getNumSkeletons() > 2)
+          if (mWorld->getNumSkeletons() > 2) {
             removeSkeleton(mWorld->getSkeleton(2));
+          }
           std::cout << "Remaining objects: " << mWorld->getNumSkeletons() - 2
                     << std::endl;
           return true;
@@ -182,8 +184,9 @@ protected:
     Eigen::Vector6d positions(Eigen::Vector6d::Zero());
 
     // If randomization is on, we will randomize the starting y-location
-    if (mRandomize)
+    if (mRandomize) {
       positions[4] = default_spawn_range * mDistribution(mMT);
+    }
 
     positions[5] = default_start_height;
     object->getJoint(0)->setPositions(positions);
@@ -263,8 +266,9 @@ protected:
   {
     setupRing(ring);
 
-    if (!addObject(ring))
+    if (!addObject(ring)) {
       return;
+    }
 
     // snippet:cpp-collisions-lesson5-closed-chain-start
     // Create a closed loop to turn the chain into a ring
@@ -413,8 +417,9 @@ BodyNode* addRigidBody(
   // Set damping to make the simulation more stable
   if (parent) {
     Joint* joint = bn->getParentJoint();
-    for (std::size_t i = 0; i < joint->getNumDofs(); ++i)
+    for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
       joint->getDof(i)->setDampingCoefficient(default_damping_coefficient);
+    }
   }
   // snippet:cpp-collisions-lesson1f-damping-end
 

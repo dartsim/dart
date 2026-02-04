@@ -1,7 +1,7 @@
 #include "dynamics/planar_joint.hpp"
 
 #include "common/type_casters.hpp"
-#include "dart/dynamics/PlanarJoint.hpp"
+#include "dart/dynamics/planar_joint.hpp"
 
 #include <nanobind/nanobind.h>
 
