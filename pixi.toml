@@ -20,6 +20,7 @@ doxygen = ">=1.13.2,<2"
 eigen = ">=3.4.0,<4"
 entt = ">=3.16.0,<4"
 fcl = ">=0.7.0,<0.8"
+foonathan-memory = ">=0.7.3,<0.8"
 fmt = ">=11.2.0,<13"
 gtest = ">=1.17.0,<2"
 imgui = ">=1.92.3,<2"
@@ -854,6 +855,9 @@ py-atlas-puppet = { cmd = """
 """, depends-on = ["build"], env = { BUILD_TYPE = "Release" } }
 
 bm = { cmd = "python scripts/run_cpp_benchmark.py", depends-on = ["config"] }
+bm-check = { cmd = "python scripts/check_allocator_benchmarks.py", depends-on = [
+  "config",
+] }
 
 test-joints = { cmd = [
   "bash",

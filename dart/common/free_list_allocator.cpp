@@ -48,9 +48,6 @@ FreeListAllocator::FreeListAllocator(
 //==============================================================================
 FreeListAllocator::~FreeListAllocator()
 {
-  // Lock the mutex
-  std::lock_guard<std::mutex> lock(mMutex);
-
   // If there are outstanding allocations, just log the leak and release the
   // backing chunks wholesale. The internal bookkeeping structures may be
   // inconsistent at this point, so we avoid walking them while deallocating.
@@ -96,9 +93,6 @@ void* FreeListAllocator::allocate(size_t bytes) noexcept
   if (bytes == 0) {
     return nullptr;
   }
-
-  // Lock the mutex
-  std::lock_guard<std::mutex> lock(mMutex);
 
   // Ensure that the first memory block doesn't have the previous block
   DART_ASSERT(mFirstMemoryBlock->mPrev == nullptr);
@@ -169,9 +163,6 @@ void FreeListAllocator::deallocate(void* pointer, size_t bytes)
     return;
   }
 
-  // Lock the mutex
-  std::lock_guard<std::mutex> lock(mMutex);
-
   unsigned char* block_addr
       = static_cast<unsigned char*>(pointer) - sizeof(MemoryBlockHeader);
   MemoryBlockHeader* block = reinterpret_cast<MemoryBlockHeader*>(block_addr);
@@ -235,9 +226,6 @@ bool FreeListAllocator::allocateMemoryBlock(size_t sizeToAllocate)
 //==============================================================================
 void FreeListAllocator::print(std::ostream& os, int indent) const
 {
-  // Lock the mutex
-  std::lock_guard<std::mutex> lock(mMutex);
-
   if (indent == 0) {
     os << "[FreeListAllocator]\n";
   }

@@ -1642,6 +1642,14 @@ private:
 
   void RunSolverIndex(int index)
   {
+    if (index < 0 || index >= static_cast<int>(mSolvers.size())) {
+      return;
+    }
+    if (mExampleIndex < 0
+        || mExampleIndex >= static_cast<int>(mExamples.size())) {
+      return;
+    }
+
     const auto& solverInfo = mSolvers[index];
     auto solver = CreateSolver(solverInfo.type);
     if (!solver) {
@@ -1656,27 +1664,52 @@ private:
     options.customOptions = GetCustomOptionsPointer(solverInfo, example);
 
     const int n = static_cast<int>(problem.b.size());
+    if (n <= 0) {
+      stats.hasResult = true;
+      stats.check.message = "Empty problem";
+      return;
+    }
+
     Eigen::VectorXd x = Eigen::VectorXd::Zero(n);
 
     double minMs = std::numeric_limits<double>::infinity();
     double maxMs = 0.0;
     double totalMs = 0.0;
 
-    for (int i = 0; i < mRunCount; ++i) {
-      if (!mOptions.warmStart || i == 0) {
-        x = Eigen::VectorXd::Zero(n);
+    try {
+      for (int i = 0; i < mRunCount; ++i) {
+        if (!mOptions.warmStart || i == 0) {
+          x = Eigen::VectorXd::Zero(n);
+        }
+
+        const auto start = std::chrono::steady_clock::now();
+        stats.result = solver->solve(problem, x, options);
+        const auto end = std::chrono::steady_clock::now();
+        const double ms
+            = std::chrono::duration<double, std::milli>(end - start).count();
+
+        totalMs += ms;
+        minMs = std::min(minMs, ms);
+        maxMs = std::max(maxMs, ms);
+        AppendHistory(stats.historyMs, static_cast<float>(ms));
+
+        if (!x.allFinite()) {
+          stats.check.message = "Solver produced non-finite values";
+          stats.check.ok = false;
+          stats.hasResult = true;
+          return;
+        }
       }
-
-      const auto start = std::chrono::steady_clock::now();
-      stats.result = solver->solve(problem, x, options);
-      const auto end = std::chrono::steady_clock::now();
-      const double ms
-          = std::chrono::duration<double, std::milli>(end - start).count();
-
-      totalMs += ms;
-      minMs = std::min(minMs, ms);
-      maxMs = std::max(maxMs, ms);
-      AppendHistory(stats.historyMs, static_cast<float>(ms));
+    } catch (const std::exception& e) {
+      stats.check.message = std::string("Exception: ") + e.what();
+      stats.check.ok = false;
+      stats.hasResult = true;
+      return;
+    } catch (...) {
+      stats.check.message = "Unknown exception during solve";
+      stats.check.ok = false;
+      stats.hasResult = true;
+      return;
     }
 
     stats.check = CheckSolution(problem, x, mOptions);
