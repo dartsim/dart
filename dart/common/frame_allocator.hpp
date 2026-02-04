@@ -80,6 +80,10 @@ public:
 
   [[nodiscard]] inline void* allocate(size_t bytes) noexcept override
   {
+    if (!mCur) [[unlikely]] {
+      return allocateAlignedSlow(bytes, 32);
+    }
+
     const auto padded = (bytes + 31) & ~size_t{31};
     auto* next = mCur + padded;
 
@@ -102,8 +106,10 @@ public:
   [[nodiscard]] inline void* allocateAligned(
       size_t bytes, size_t alignment = 32) noexcept
   {
-    if (bytes == 0 || alignment == 0) [[unlikely]] {
-      return nullptr;
+    if (bytes == 0 || alignment == 0 || !mCur) [[unlikely]] {
+      return (bytes == 0 || alignment == 0)
+                 ? nullptr
+                 : allocateAlignedSlow(bytes, alignment);
     }
 
     const auto cur = reinterpret_cast<uintptr_t>(mCur);

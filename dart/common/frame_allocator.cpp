@@ -114,7 +114,8 @@ void FrameAllocator::resetSlow() noexcept
   }
   mOverflowAllocations.clear();
 
-  const auto usedBytes = static_cast<size_t>(mCur - mBuffer);
+  const size_t usedBytes
+      = (mBuffer && mCur) ? static_cast<size_t>(mCur - mBuffer) : 0;
   const size_t needed = usedBytes + totalOverflow;
   const size_t newCapacity = std::max(mCapacity * 2, needed + 256);
   void* newBuffer = mBaseAllocator.allocate(newCapacity);
@@ -140,6 +141,9 @@ size_t FrameAllocator::capacity() const noexcept
 //==============================================================================
 size_t FrameAllocator::used() const noexcept
 {
+  if (!mBuffer) {
+    return 0;
+  }
   // Measure from the aligned base (not raw mBuffer) since mCur starts at the
   // first 32-byte aligned address within the buffer.
   const auto addr = reinterpret_cast<uintptr_t>(mBuffer);

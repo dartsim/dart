@@ -181,3 +181,37 @@ TEST_F(FrameAllocatorTest, MultipleResets)
     EXPECT_EQ(allocator.capacity(), stableCapacity);
   }
 }
+
+//=============================================================================
+TEST_F(FrameAllocatorTest, ZeroCapacity)
+{
+  FrameAllocator allocator(MemoryAllocator::GetDefault(), 0);
+  EXPECT_EQ(allocator.capacity(), 0u);
+  EXPECT_EQ(allocator.used(), 0u);
+
+  // allocate() must not crash — it falls back to overflow allocation.
+  void* ptr = allocator.allocate(64);
+  EXPECT_NE(ptr, nullptr);
+  EXPECT_EQ(allocator.overflowCount(), 1u);
+
+  // allocateAligned() must not crash either.
+  void* aligned = allocator.allocateAligned(32, 64);
+  EXPECT_NE(aligned, nullptr);
+  const uintptr_t addr = reinterpret_cast<uintptr_t>(aligned);
+  EXPECT_EQ(addr % 64, 0u);
+  EXPECT_EQ(allocator.overflowCount(), 2u);
+
+  // allocateAligned() with zero bytes/alignment still returns nullptr.
+  EXPECT_EQ(allocator.allocateAligned(0, 32), nullptr);
+  EXPECT_EQ(allocator.allocateAligned(32, 0), nullptr);
+
+  // reset() must not crash; it should grow the buffer via resetSlow().
+  allocator.reset();
+  EXPECT_EQ(allocator.overflowCount(), 0u);
+  EXPECT_GT(allocator.capacity(), 0u);
+
+  // After reset, the buffer is now valid — fast path should work.
+  void* after = allocator.allocate(64);
+  EXPECT_NE(after, nullptr);
+  EXPECT_EQ(allocator.overflowCount(), 0u);
+}
