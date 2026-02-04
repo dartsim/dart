@@ -51,6 +51,7 @@
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/skeleton.hpp>
 
+#include <dart/common/memory_manager.hpp>
 #include <dart/common/name_manager.hpp>
 #include <dart/common/smart_pointer.hpp>
 #include <dart/common/subject.hpp>
@@ -86,6 +87,10 @@ struct WorldConfig final
 
   /// Preferred collision detector for the world.
   CollisionDetectorType collisionDetector = CollisionDetectorType::Fcl;
+
+  /// Optional base allocator for the world's memory manager.
+  /// If nullptr, MemoryAllocator::GetDefault() is used.
+  common::MemoryAllocator* baseAllocator = nullptr;
 
   WorldConfig() = default;
   explicit WorldConfig(std::string_view worldName)
@@ -325,6 +330,9 @@ public:
   /// Get the constraint solver
   const constraint::ConstraintSolver* getConstraintSolver() const;
 
+  [[nodiscard]] common::MemoryManager& getMemoryManager();
+  [[nodiscard]] const common::MemoryManager& getMemoryManager() const;
+
   /// Bake simulated current state and store it into mRecording
   void bake();
 
@@ -453,6 +461,8 @@ protected:
 
   /// Current simulation frame number
   int mFrame;
+
+  common::MemoryManager mMemoryManager;
 
   /// Constraint solver
   std::unique_ptr<constraint::ConstraintSolver> mConstraintSolver;

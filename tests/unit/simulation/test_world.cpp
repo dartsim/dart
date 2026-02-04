@@ -30,24 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/simulation/recording.hpp>
-#include <dart/simulation/world.hpp>
-
-#include <dart/constraint/constraint_solver.hpp>
-
-#include <dart/collision/collision_option.hpp>
-#include <dart/collision/collision_result.hpp>
-
-#include <dart/dynamics/body_node.hpp>
-#include <dart/dynamics/box_shape.hpp>
-#include <dart/dynamics/free_joint.hpp>
-#include <dart/dynamics/revolute_joint.hpp>
-#include <dart/dynamics/simple_frame.hpp>
-#include <dart/dynamics/skeleton.hpp>
-
-#include <dart/common/exception.hpp>
-
-#include <dart/sensor/sensor.hpp>
+#include <dart/all.hpp>
 
 #include <gtest/gtest.h>
 
@@ -201,6 +184,64 @@ TEST(WorldTests, RemoveAllSkeletons)
   EXPECT_TRUE(removed.count(skel1) > 0);
   EXPECT_TRUE(removed.count(skel2) > 0);
   EXPECT_TRUE(removed.count(skel3) > 0);
+}
+
+//==============================================================================
+TEST(WorldTests, ClonePreservesSkeletonsAndFrames)
+{
+  auto world = World::create("source_world");
+  auto skel = createSimpleSkeleton("clone_skel");
+  world->addSkeleton(skel);
+
+  auto frame = SimpleFrame::createShared(Frame::World(), "clone_frame");
+  world->addSimpleFrame(frame);
+
+  auto clone = world->clone();
+  ASSERT_NE(clone, nullptr);
+  EXPECT_EQ(clone->getNumSkeletons(), 1u);
+  EXPECT_EQ(clone->getNumSimpleFrames(), 1u);
+  EXPECT_NE(clone->getSkeleton(0), skel);
+  EXPECT_NE(clone->getSimpleFrame(0).get(), frame.get());
+  EXPECT_EQ(clone->getSkeleton(0)->getName(), "clone_skel");
+  EXPECT_EQ(clone->getSimpleFrame(0)->getName(), "clone_frame");
+}
+
+//==============================================================================
+TEST(WorldTests, RecordingBakesState)
+{
+  auto world = World::create();
+  auto skel = createSimpleSkeleton("record_skel");
+  world->addSkeleton(skel);
+
+  auto* recording = world->getRecording();
+  ASSERT_NE(recording, nullptr);
+  recording->clear();
+  EXPECT_EQ(recording->getNumFrames(), 0);
+
+  world->bake();
+  EXPECT_EQ(recording->getNumFrames(), 1);
+
+  world->step();
+  world->bake();
+  EXPECT_EQ(recording->getNumFrames(), 2);
+}
+
+//==============================================================================
+TEST(WorldTests, HandlesNameChanges)
+{
+  auto world = World::create();
+  auto skel = createSimpleSkeleton("named_skel");
+  world->addSkeleton(skel);
+
+  skel->setName("renamed_skel");
+  EXPECT_TRUE(world->hasSkeleton("renamed_skel"));
+  EXPECT_FALSE(world->hasSkeleton("named_skel"));
+
+  auto frame = SimpleFrame::createShared(Frame::World(), "named_frame");
+  world->addSimpleFrame(frame);
+
+  frame->setName("renamed_frame");
+  EXPECT_NE(world->getSimpleFrame("renamed_frame"), nullptr);
 }
 
 //==============================================================================
@@ -975,4 +1016,251 @@ TEST(WorldTests, OnNameChangedSignal)
   EXPECT_TRUE(signalCalled);
   EXPECT_EQ(capturedOldName, "original_world");
   EXPECT_EQ(capturedNewName, "renamed_world");
+}
+
+//==============================================================================
+TEST(WorldTests, CloneWithSimpleFrames)
+{
+  auto world = World::create("frame_world");
+
+  auto frame1 = SimpleFrame::createShared(Frame::World(), "frame1");
+  frame1->setTranslation(Eigen::Vector3d(1, 2, 3));
+  auto frame2 = SimpleFrame::createShared(Frame::World(), "frame2");
+  frame2->setTranslation(Eigen::Vector3d(4, 5, 6));
+
+  world->addSimpleFrame(frame1);
+  world->addSimpleFrame(frame2);
+
+  EXPECT_EQ(world->getNumSimpleFrames(), 2u);
+
+  auto clone = world->clone();
+
+  ASSERT_NE(clone, nullptr);
+  EXPECT_EQ(clone->getNumSimpleFrames(), 2u);
+  EXPECT_NE(clone->getSimpleFrame("frame1"), nullptr);
+  EXPECT_NE(clone->getSimpleFrame("frame2"), nullptr);
+}
+
+//==============================================================================
+TEST(WorldTests, SetNameSameNameNoSignal)
+{
+  auto world = World::create("same_name");
+
+  bool signalCalled = false;
+  world->onNameChanged.connect(
+      [&](const std::string&, const std::string&) { signalCalled = true; });
+
+  world->setName("same_name");
+
+  EXPECT_FALSE(signalCalled);
+  EXPECT_EQ(world->getName(), "same_name");
+}
+
+//==============================================================================
+TEST(WorldTests, SetTimeStepRejectsInvalid)
+{
+  auto world = World::create();
+  double originalTimeStep = world->getTimeStep();
+
+  world->setTimeStep(std::numeric_limits<double>::quiet_NaN());
+  EXPECT_DOUBLE_EQ(world->getTimeStep(), originalTimeStep);
+
+  world->setTimeStep(std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(world->getTimeStep(), originalTimeStep);
+
+  world->setTimeStep(-std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(world->getTimeStep(), originalTimeStep);
+}
+
+//==============================================================================
+TEST(WorldTests, GetSimpleFrameOutOfRange)
+{
+  auto world = World::create();
+
+  auto frame = SimpleFrame::createShared(Frame::World(), "only_frame");
+  world->addSimpleFrame(frame);
+
+  EXPECT_EQ(world->getSimpleFrame(0), frame);
+  EXPECT_EQ(world->getSimpleFrame(1), nullptr);
+  EXPECT_EQ(world->getSimpleFrame(999), nullptr);
+}
+
+//==============================================================================
+TEST(WorldTests, CreateWithBulletCollisionDetector)
+{
+  WorldConfig config;
+  config.name = "bullet_world";
+  config.collisionDetector = CollisionDetectorType::Bullet;
+  auto world = World::create(config);
+  EXPECT_EQ(world->getName(), "bullet_world");
+  EXPECT_NE(world->getCollisionDetector(), nullptr);
+}
+
+TEST(WorldTests, AddDuplicateSimpleFrame)
+{
+  auto world = World::create();
+  auto frame = SimpleFrame::createShared(Frame::World(), "dup_frame");
+
+  world->addSimpleFrame(frame);
+  EXPECT_EQ(world->getNumSimpleFrames(), 1u);
+
+  world->addSimpleFrame(frame);
+  EXPECT_EQ(world->getNumSimpleFrames(), 1u);
+}
+
+TEST(WorldTests, RemoveNonExistentSimpleFrame)
+{
+  auto world = World::create();
+  auto frame1 = SimpleFrame::createShared(Frame::World(), "existing");
+  auto frame2 = SimpleFrame::createShared(Frame::World(), "not_added");
+
+  world->addSimpleFrame(frame1);
+  EXPECT_EQ(world->getNumSimpleFrames(), 1u);
+
+  world->removeSimpleFrame(frame2);
+  EXPECT_EQ(world->getNumSimpleFrames(), 1u);
+}
+
+TEST(WorldTests, ConstSensorManager)
+{
+  auto world = World::create();
+  const World& constWorld = *world;
+  const sensor::SensorManager& mgr = constWorld.getSensorManager();
+  (void)mgr;
+}
+
+TEST(WorldTests, BakeWithMultipleSkeletons)
+{
+  auto world = World::create();
+  world->setTimeStep(0.001);
+
+  auto skel1 = Skeleton::create("bake_skel1");
+  auto pair1 = skel1->createJointAndBodyNodePair<FreeJoint>(
+      nullptr, FreeJoint::Properties(), BodyNode::AspectProperties("body1"));
+  Inertia inertia1;
+  inertia1.setMass(1.0);
+  pair1.second->setInertia(inertia1);
+
+  auto skel2 = Skeleton::create("bake_skel2");
+  auto pair2 = skel2->createJointAndBodyNodePair<RevoluteJoint>(
+      nullptr,
+      RevoluteJoint::Properties(),
+      BodyNode::AspectProperties("body2"));
+  Inertia inertia2;
+  inertia2.setMass(1.0);
+  pair2.second->setInertia(inertia2);
+
+  world->addSkeleton(skel1);
+  world->addSkeleton(skel2);
+
+  auto recording = world->getRecording();
+  EXPECT_EQ(recording->getNumSkeletons(), 2);
+
+  for (int i = 0; i < 5; ++i) {
+    world->step();
+    world->bake();
+  }
+
+  EXPECT_EQ(recording->getNumFrames(), 5);
+}
+
+#include <dart/dynamics/weld_joint.hpp>
+
+TEST(WorldTests, DartCollisionDetectorBoxContact)
+{
+  auto world = World::create();
+  world->setCollisionDetector(CollisionDetectorType::Dart);
+
+  auto skel1 = createBoxSkeleton("dart_box1", Eigen::Vector3d::Zero());
+  auto skel2 = createBoxSkeleton("dart_box2", Eigen::Vector3d::Zero());
+
+  Eigen::Vector6d pos2 = skel2->getPositions();
+  pos2[2] = 0.78539816339;
+  skel2->setPositions(pos2);
+
+  world->addSkeleton(skel1);
+  world->addSkeleton(skel2);
+
+  collision::CollisionOption option(true, 20u);
+  collision::CollisionResult result;
+  const bool collided = world->checkCollision(option, &result);
+
+  EXPECT_TRUE(collided);
+  EXPECT_TRUE(result.isCollision());
+  EXPECT_GT(result.getNumContacts(), 0u);
+}
+
+TEST(WorldTests, FclCollisionDetectorBoxContact)
+{
+  auto world = World::create();
+  world->setCollisionDetector(CollisionDetectorType::Fcl);
+
+  auto skel1 = createBoxSkeleton("fcl_box1", Eigen::Vector3d::Zero());
+  auto skel2 = createBoxSkeleton("fcl_box2", Eigen::Vector3d(0.3, 0.0, 0.0));
+
+  world->addSkeleton(skel1);
+  world->addSkeleton(skel2);
+
+  collision::CollisionOption option(true, 20u);
+  collision::CollisionResult result;
+  const bool collided = world->checkCollision(option, &result);
+
+  EXPECT_TRUE(collided);
+  EXPECT_TRUE(result.isCollision());
+}
+
+TEST(WorldTests, WeldJointWorldStep)
+{
+  auto world = World::create();
+  world->setTimeStep(0.001);
+
+  auto skel = Skeleton::create("weld_world");
+  auto rootPair = skel->createJointAndBodyNodePair<FreeJoint>(
+      nullptr, FreeJoint::Properties(), BodyNode::AspectProperties("root"));
+  auto childPair = rootPair.second->createChildJointAndBodyNodePair<WeldJoint>(
+      WeldJoint::Properties(), BodyNode::AspectProperties("child"));
+
+  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d::Ones());
+  rootPair.second->createShapeNodeWith<VisualAspect, CollisionAspect>(shape);
+  childPair.second->createShapeNodeWith<VisualAspect, CollisionAspect>(shape);
+
+  world->addSkeleton(skel);
+
+  world->step();
+  world->step();
+
+  EXPECT_EQ(world->getSimFrames(), 2);
+}
+
+TEST(WorldTests, ConstAccessorsAndNameClash)
+{
+  auto world = World::create("const_world");
+  auto skelA = createSimpleSkeleton("robot");
+  auto skelB = createSimpleSkeleton("robot");
+
+  world->addSkeleton(skelA);
+  world->addSkeleton(skelB);
+
+  EXPECT_NE(skelA->getName(), skelB->getName());
+
+  auto frame = SimpleFrame::createShared(Frame::World(), "const_frame");
+  world->addSimpleFrame(frame);
+
+  world->step();
+
+  const World& constWorld = *world;
+  EXPECT_EQ(constWorld.getNumSkeletons(), 2u);
+  EXPECT_NE(constWorld.getSkeleton(0), nullptr);
+  EXPECT_NE(constWorld.getSkeleton(skelA->getName()), nullptr);
+  EXPECT_NE(constWorld.getConstraintSolver(), nullptr);
+  EXPECT_NE(constWorld.getCollisionDetector(), nullptr);
+  EXPECT_NE(constWorld.getSimpleFrame("const_frame"), nullptr);
+
+  EXPECT_EQ(constWorld.getGravity(), world->getGravity());
+  EXPECT_DOUBLE_EQ(constWorld.getTimeStep(), world->getTimeStep());
+  EXPECT_DOUBLE_EQ(constWorld.getTime(), world->getTime());
+  EXPECT_EQ(constWorld.getSimFrames(), world->getSimFrames());
+
+  const auto& lastResult = constWorld.getLastCollisionResult();
+  EXPECT_EQ(lastResult.getNumContacts(), 0u);
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2025, The DART development contributors
+// Copyright (c) 2011, The DART development contributors
 
 #include <dart/simulation/world.hpp>
 
@@ -311,4 +311,40 @@ TEST(SensorManagerTest, AddSameSensorTwice)
   EXPECT_EQ(firstName, "test_sensor");
   EXPECT_EQ(secondName, "test_sensor");
   EXPECT_EQ(manager.getNumSensors(), 1u);
+}
+
+TEST(SensorManagerTest, RemoveSensorNullptr)
+{
+  sensor::SensorManager manager;
+
+  auto sensor = std::make_shared<TestSensor>();
+  sensor->setName("existing");
+  manager.addSensor(sensor);
+
+  EXPECT_EQ(manager.getNumSensors(), 1u);
+
+  manager.removeSensor(nullptr);
+
+  EXPECT_EQ(manager.getNumSensors(), 1u);
+  EXPECT_TRUE(manager.hasSensor(sensor));
+}
+
+TEST(SensorManagerTest, RemoveSensorNotInManager)
+{
+  sensor::SensorManager manager;
+
+  auto sensor1 = std::make_shared<TestSensor>();
+  sensor1->setName("in_manager");
+  manager.addSensor(sensor1);
+
+  auto sensor2 = std::make_shared<TestSensor>();
+  sensor2->setName("not_in_manager");
+
+  EXPECT_EQ(manager.getNumSensors(), 1u);
+
+  manager.removeSensor(sensor2);
+
+  EXPECT_EQ(manager.getNumSensors(), 1u);
+  EXPECT_TRUE(manager.hasSensor(sensor1));
+  EXPECT_FALSE(manager.hasSensor(sensor2));
 }

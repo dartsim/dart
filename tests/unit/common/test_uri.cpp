@@ -31,7 +31,11 @@
  */
 
 #include "../../helpers/gtest_utils.hpp"
+#define private public
 #include "dart/common/uri.hpp"
+#undef private
+
+#include <dart/all.hpp>
 
 #include <gtest/gtest.h>
 
@@ -249,6 +253,41 @@ TEST(UriHelpers, getUri_InputIsPath_AppendsFileSchema)
   }
 }
 
+TEST(UriComponent, AccessorsAndDefaults)
+{
+  UriComponent component;
+  EXPECT_FALSE(component);
+  EXPECT_TRUE(!component);
+  EXPECT_EQ(component.get_value_or("default"), "default");
+
+  component = std::string("value");
+  EXPECT_TRUE(component);
+  EXPECT_EQ(*component, "value");
+  EXPECT_EQ(component.get(), "value");
+  EXPECT_EQ(component->size(), std::string("value").size());
+}
+
+TEST(UriHelpers, GetPathAndFilesystemPath)
+{
+  Uri uri = Uri::createFromString("file:///tmp/robot.urdf");
+  EXPECT_EQ(uri.getPath(), "/tmp/robot.urdf");
+#ifdef _WIN32
+  EXPECT_EQ(uri.getFilesystemPath(), "tmp/robot.urdf");
+#else
+  EXPECT_EQ(uri.getFilesystemPath(), "/tmp/robot.urdf");
+#endif
+}
+
+TEST(UriHelpers, ResolveRelativeUriRemovesDotSegments)
+{
+  const std::string base = "http://example.com/a/b/c";
+  const std::string relative = "../d/e";
+  const auto merged = Uri::createFromRelativeUri(
+      std::string_view(base), std::string_view(relative));
+
+  EXPECT_EQ(merged.toString(), "http://example.com/a/d/e");
+}
+
 TEST(UriHelpers, fromString_WindowsStyleFileUri_ParsesCorrectly)
 {
   Uri uri;
@@ -349,6 +388,35 @@ TEST(UriHelpers, getRelativeUri)
 #endif
 }
 
+TEST(UriHelpers, getRelativeUri_StringViewOverload)
+{
+  const std::string base = "http://example.com/a/b/c";
+  const std::string relative = "../d/./e";
+
+  const std::string merged
+      = Uri::getRelativeUri(std::string_view(base), std::string_view(relative));
+
+  EXPECT_EQ(merged, "http://example.com/a/d/e");
+}
+
+TEST(UriHelpers, removeDotSegments_CoversRelativePrefixes)
+{
+  EXPECT_EQ(Uri::removeDotSegments(".././a/../b"), "/b");
+}
+
+TEST(UriHelpers, removeDotSegments_RemovesDotAndDotDotSegments)
+{
+  EXPECT_EQ(Uri::removeDotSegments("/.."), "/");
+  EXPECT_EQ(Uri::removeDotSegments(".."), "");
+}
+
+TEST(UriHelpers, fromRelativeUri_StringViewOverload)
+{
+  Uri mergedUri;
+  ASSERT_TRUE(mergedUri.fromRelativeUri("http://example.com/a/b/", "c", true));
+  EXPECT_EQ(mergedUri.toString(), "http://example.com/a/b/c");
+}
+
 TEST(UriHelpers, UriComponentAccessors)
 {
   UriComponent component("value");
@@ -381,4 +449,253 @@ TEST(UriHelpers, CreateFromRelativeUri)
   const auto mergedFromUris
       = Uri::createFromRelativeUri(baseUri, relativeUri, true);
   EXPECT_EQ(mergedFromUris.toString(), "http://a/b/c/g");
+}
+
+//==============================================================================
+// Edge case tests for improved coverage
+//==============================================================================
+
+TEST(UriHelpers, fromString_EmptyString_ReturnsTrue)
+{
+  Uri uri;
+  // Empty string is valid per RFC 3986 (empty relative reference)
+  EXPECT_TRUE(uri.fromString(""));
+  EXPECT_FALSE(uri.mScheme);
+  EXPECT_FALSE(uri.mAuthority);
+  EXPECT_TRUE(uri.mPath);
+  EXPECT_EQ("", *uri.mPath);
+}
+
+TEST(UriHelpers, fromString_PathOnly_NoScheme)
+{
+  Uri uri;
+  // Relative path without scheme
+  EXPECT_TRUE(uri.fromString("foo/bar"));
+  EXPECT_FALSE(uri.mScheme);
+  EXPECT_FALSE(uri.mAuthority);
+  EXPECT_TRUE(uri.mPath);
+  EXPECT_EQ("foo/bar", *uri.mPath);
+}
+
+TEST(UriHelpers, fromString_FragmentOnly)
+{
+  Uri uri;
+  EXPECT_TRUE(uri.fromString("#fragment"));
+  EXPECT_FALSE(uri.mScheme);
+  EXPECT_FALSE(uri.mAuthority);
+  EXPECT_TRUE(uri.mPath);
+  EXPECT_EQ("", *uri.mPath);
+  EXPECT_TRUE(uri.mFragment);
+  EXPECT_EQ("fragment", *uri.mFragment);
+}
+
+TEST(UriHelpers, fromString_QueryOnly)
+{
+  Uri uri;
+  EXPECT_TRUE(uri.fromString("?query=value"));
+  EXPECT_FALSE(uri.mScheme);
+  EXPECT_FALSE(uri.mAuthority);
+  EXPECT_TRUE(uri.mPath);
+  EXPECT_EQ("", *uri.mPath);
+  EXPECT_TRUE(uri.mQuery);
+  EXPECT_EQ("query=value", *uri.mQuery);
+}
+
+TEST(UriHelpers, fromString_EmptyAuthority)
+{
+  Uri uri;
+  EXPECT_TRUE(uri.fromString("file:///path/to/file"));
+  EXPECT_TRUE(uri.mScheme);
+  EXPECT_EQ("file", *uri.mScheme);
+  EXPECT_TRUE(uri.mAuthority);
+  EXPECT_EQ("", *uri.mAuthority);
+  EXPECT_TRUE(uri.mPath);
+  EXPECT_EQ("/path/to/file", *uri.mPath);
+}
+
+TEST(UriHelpers, merge_EmptyBasePath_WithAuthority)
+{
+  Uri baseUri, relativeUri, mergedUri;
+  // Base with authority but empty path
+  ASSERT_TRUE(baseUri.fromString("http://example.com"));
+  ASSERT_TRUE(relativeUri.fromString("relative"));
+  ASSERT_TRUE(mergedUri.fromRelativeUri(baseUri, relativeUri, true));
+  EXPECT_EQ("http://example.com/relative", mergedUri.toString());
+}
+
+TEST(UriHelpers, merge_RootPath)
+{
+  Uri baseUri, relativeUri, mergedUri;
+  // Base with root path only
+  ASSERT_TRUE(baseUri.fromString("http://example.com/"));
+  ASSERT_TRUE(relativeUri.fromString("relative"));
+  ASSERT_TRUE(mergedUri.fromRelativeUri(baseUri, relativeUri, true));
+  EXPECT_EQ("http://example.com/relative", mergedUri.toString());
+}
+
+TEST(UriHelpers, merge_RelativeWithAbsolutePath)
+{
+  Uri baseUri, relativeUri, mergedUri;
+  ASSERT_TRUE(baseUri.fromString("http://a/b/c/d"));
+  ASSERT_TRUE(relativeUri.fromString("/absolute"));
+  ASSERT_TRUE(mergedUri.fromRelativeUri(baseUri, relativeUri, true));
+  EXPECT_EQ("http://a/absolute", mergedUri.toString());
+}
+
+TEST(UriHelpers, merge_RelativeWithAuthority)
+{
+  Uri baseUri, relativeUri, mergedUri;
+  ASSERT_TRUE(baseUri.fromString("http://a/b/c/d"));
+  ASSERT_TRUE(relativeUri.fromString("//newhost/path"));
+  ASSERT_TRUE(mergedUri.fromRelativeUri(baseUri, relativeUri, true));
+  EXPECT_EQ("http://newhost/path", mergedUri.toString());
+}
+
+TEST(UriHelpers, getFilesystemPath_FileUri)
+{
+  Uri uri;
+  ASSERT_TRUE(uri.fromString("file:///home/user/file.txt"));
+  // On Unix, getFilesystemPath returns the path as-is
+#ifndef _WIN32
+  EXPECT_EQ("/home/user/file.txt", uri.getFilesystemPath());
+#endif
+}
+
+TEST(UriHelpers, getFilesystemPath_NonFileUri)
+{
+  Uri uri;
+  ASSERT_TRUE(uri.fromString("http://example.com/path"));
+  // For non-file URIs, getFilesystemPath returns the path component
+  EXPECT_EQ("/path", uri.getFilesystemPath());
+}
+
+TEST(UriHelpers, clear_ResetsAllComponents)
+{
+  Uri uri;
+  ASSERT_TRUE(uri.fromString("http://user@host:8080/path?query#fragment"));
+  EXPECT_TRUE(uri.mScheme);
+  EXPECT_TRUE(uri.mAuthority);
+  EXPECT_TRUE(uri.mPath);
+  EXPECT_TRUE(uri.mQuery);
+  EXPECT_TRUE(uri.mFragment);
+
+  uri.clear();
+
+  EXPECT_FALSE(uri.mScheme);
+  EXPECT_FALSE(uri.mAuthority);
+  EXPECT_FALSE(uri.mPath);
+  EXPECT_FALSE(uri.mQuery);
+  EXPECT_FALSE(uri.mFragment);
+}
+
+TEST(UriHelpers, toString_PartialComponents)
+{
+  Uri uri;
+  // URI with only scheme and path
+  ASSERT_TRUE(uri.fromString("mailto:user@example.com"));
+  EXPECT_EQ("mailto:user@example.com", uri.toString());
+
+  // URI with query and fragment
+  ASSERT_TRUE(uri.fromString("http://host/path?q=1#frag"));
+  EXPECT_EQ("http://host/path?q=1#frag", uri.toString());
+}
+
+TEST(UriHelpers, getUri_InvalidInput_ReturnsEmpty)
+{
+  // getUri with empty string should still work (empty is valid)
+  std::string result = Uri::getUri("");
+#ifndef _WIN32
+  // On Unix, empty string is treated as path and becomes file://
+  EXPECT_EQ("file://", result);
+#endif
+}
+
+TEST(UriHelpers, getRelativeUri_WithBaseUri)
+{
+  Uri baseUri;
+  ASSERT_TRUE(baseUri.fromString("http://a/b/c"));
+  std::string_view relative = "relative";
+  std::string result = Uri::getRelativeUri(baseUri, relative, true);
+  EXPECT_EQ("http://a/b/relative", result);
+}
+
+TEST(UriHelpers, createFromPath_AbsolutePath)
+{
+#ifdef _WIN32
+  const std::string path = "C:\\Users\\test\\file.txt";
+#else
+  const std::string path = "/home/user/file.txt";
+#endif
+  Uri uri = Uri::createFromPath(path);
+  EXPECT_TRUE(uri.mScheme);
+  EXPECT_EQ("file", *uri.mScheme);
+  EXPECT_TRUE(uri.mAuthority);
+  EXPECT_EQ("", *uri.mAuthority);
+  EXPECT_EQ(path, uri.getFilesystemPath());
+}
+
+TEST(UriHelpers, createFromStringOrPath_WithUri)
+{
+  Uri uri = Uri::createFromStringOrPath("http://example.com/path");
+  EXPECT_TRUE(uri.mScheme);
+  EXPECT_EQ("http", *uri.mScheme);
+  EXPECT_EQ("http://example.com/path", uri.toString());
+}
+
+TEST(UriHelpers, createFromStringOrPath_WithPath)
+{
+#ifndef _WIN32
+  Uri uri = Uri::createFromStringOrPath("/absolute/path");
+  EXPECT_TRUE(uri.mScheme);
+  EXPECT_EQ("file", *uri.mScheme);
+  EXPECT_EQ("/absolute/path", uri.getFilesystemPath());
+#endif
+}
+
+TEST(UriHelpers, getRelativeUri_WithUriObjects)
+{
+  Uri baseUri = Uri::createFromString("http://a/b/c/d");
+  Uri relativeUri = Uri::createFromString("../e");
+  std::string result = Uri::getRelativeUri(baseUri, relativeUri, true);
+  EXPECT_EQ("http://a/b/e", result);
+}
+
+TEST(UriHelpers, fromRelativeUri_CharPtrOverload)
+{
+  Uri mergedUri;
+  ASSERT_TRUE(mergedUri.fromRelativeUri("http://a/b/c", "g", true));
+  EXPECT_EQ("http://a/b/g", mergedUri.toString());
+}
+
+TEST(UriHelpers, UriComponent_MutableAccessors)
+{
+  UriComponent component("initial");
+  EXPECT_EQ(*component, "initial");
+
+  *component = "modified";
+  EXPECT_EQ(*component, "modified");
+
+  component->clear();
+  EXPECT_TRUE(component->empty());
+}
+
+TEST(UriHelpers, UriComponent_ArrowOperator)
+{
+  UriComponent component("test_value");
+  EXPECT_EQ(component->length(), 10u);
+  EXPECT_EQ(component->substr(0, 4), "test");
+}
+
+TEST(UriHelpers, getPath_ReturnsPathComponent)
+{
+  Uri uri;
+  ASSERT_TRUE(uri.fromString("http://host/path/to/resource?query"));
+  EXPECT_EQ("/path/to/resource", uri.getPath());
+}
+
+TEST(UriHelpers, getPath_EmptyPath)
+{
+  Uri uri;
+  ASSERT_TRUE(uri.fromString("http://host"));
+  EXPECT_EQ("", uri.getPath());
 }

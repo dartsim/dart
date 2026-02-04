@@ -37,6 +37,8 @@
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
+#include <dart/common/local_resource_retriever.hpp>
+
 #include <gtest/gtest.h>
 
 using namespace dart;
@@ -120,3 +122,143 @@ TEST(ReadUnit, ReadsUrdfWithPackageDirectories)
   EXPECT_NE(skeleton, nullptr);
 }
 #endif
+
+//==============================================================================
+TEST(ReadUnit, ReturnsNullForNonExistentFile)
+{
+  const auto skeleton = io::readSkeleton("/nonexistent/path/robot.urdf");
+  EXPECT_EQ(skeleton, nullptr);
+
+  const auto world = io::readWorld("/nonexistent/path/world.sdf");
+  EXPECT_EQ(world, nullptr);
+}
+
+//==============================================================================
+TEST(ReadUnit, ReturnsNullForUnknownExtension)
+{
+  const auto skeleton = io::readSkeleton("/some/file.unknown");
+  EXPECT_EQ(skeleton, nullptr);
+}
+
+//==============================================================================
+TEST(ReadUnit, TryReadSkeletonReturnsErrorForInvalidPath)
+{
+  const auto result = io::tryReadSkeleton("/nonexistent/robot.urdf");
+  EXPECT_FALSE(result.isOk());
+  EXPECT_TRUE(result.isErr());
+}
+
+//==============================================================================
+TEST(ReadUnit, TryReadWorldReturnsErrorForInvalidPath)
+{
+  const auto result = io::tryReadWorld("/nonexistent/world.sdf");
+  EXPECT_FALSE(result.isOk());
+  EXPECT_TRUE(result.isErr());
+}
+
+//==============================================================================
+TEST(ReadUnit, TryReadSkeletonReturnsOkForValidFile)
+{
+  const auto result
+      = io::tryReadSkeleton("dart://sample/skel/test/single_pendulum.skel");
+  EXPECT_TRUE(result.isOk());
+  EXPECT_FALSE(result.isErr());
+  EXPECT_NE(result.value(), nullptr);
+}
+
+//==============================================================================
+TEST(ReadUnit, TryReadWorldReturnsOkForValidFile)
+{
+  const auto result
+      = io::tryReadWorld("dart://sample/skel/test/single_pendulum.skel");
+  EXPECT_TRUE(result.isOk());
+  EXPECT_FALSE(result.isErr());
+  EXPECT_NE(result.value(), nullptr);
+}
+
+//==============================================================================
+TEST(ReadUnit, ReadsMjcfWorldSuccessfully)
+{
+  const auto world = io::readWorld("dart://sample/mjcf/openai/ant.xml");
+  EXPECT_NE(world, nullptr);
+}
+
+//==============================================================================
+TEST(ReadUnit, ReadsSkelWorldSuccessfully)
+{
+  io::ReadOptions options;
+  options.format = io::ModelFormat::Skel;
+  const auto world
+      = io::readWorld("dart://sample/skel/test/single_pendulum.skel", options);
+  EXPECT_NE(world, nullptr);
+}
+
+//==============================================================================
+TEST(ReadUnit, InfersFormatFromSkelExtension)
+{
+  const auto skeleton
+      = io::readSkeleton("dart://sample/skel/test/single_pendulum.skel");
+  EXPECT_NE(skeleton, nullptr);
+}
+
+//==============================================================================
+TEST(ReadUnit, InfersFormatFromUrdfExtension)
+{
+#if DART_IO_HAS_URDF
+  const auto skeleton
+      = io::readSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
+  EXPECT_NE(skeleton, nullptr);
+#endif
+}
+
+//==============================================================================
+TEST(ReadUnit, InfersFormatFromMjcfExtension)
+{
+  io::ReadOptions options;
+  options.format = io::ModelFormat::Mjcf;
+  const auto skeleton
+      = io::readSkeleton("dart://sample/mjcf/openai/ant.xml", options);
+  EXPECT_EQ(skeleton, nullptr);
+}
+
+//==============================================================================
+TEST(ReadUnit, SkelWorldWithMultipleSkeletonsReturnsFirst)
+{
+  io::ReadOptions options;
+  options.format = io::ModelFormat::Skel;
+  const auto skeleton = io::readSkeleton(
+      "dart://sample/skel/test/single_pendulum.skel", options);
+  EXPECT_NE(skeleton, nullptr);
+}
+
+//==============================================================================
+TEST(ReadUnit, InfersFormatFromMjcfFileExtension)
+{
+  const auto skeleton = io::readSkeleton("/nonexistent/model.mjcf");
+  EXPECT_EQ(skeleton, nullptr);
+}
+
+//==============================================================================
+TEST(ReadUnit, ReturnsNullForNoExtensionFile)
+{
+  const auto skeleton = io::readSkeleton("/some/path/file_without_ext");
+  EXPECT_EQ(skeleton, nullptr);
+}
+
+//==============================================================================
+TEST(ReadUnit, ReturnsNullForDotBeforeSlash)
+{
+  const auto skeleton = io::readSkeleton("/some/path.dir/no_ext");
+  EXPECT_EQ(skeleton, nullptr);
+}
+
+//==============================================================================
+TEST(ReadUnit, PassesExplicitRetrieverThrough)
+{
+  auto retriever = std::make_shared<common::LocalResourceRetriever>();
+  io::ReadOptions options;
+  options.resourceRetriever = retriever;
+  options.format = io::ModelFormat::Skel;
+  const auto skeleton = io::readSkeleton("/nonexistent/robot.skel", options);
+  EXPECT_EQ(skeleton, nullptr);
+}

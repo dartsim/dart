@@ -45,7 +45,9 @@
 #include "dart/collision/raycast_option.hpp"
 #include "dart/collision/raycast_result.hpp"
 #include "dart/config.hpp"
+#include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/box_shape.hpp"
+#include "dart/dynamics/free_joint.hpp"
 #include "dart/dynamics/shape.hpp"
 #include "dart/dynamics/simple_frame.hpp"
 #include "dart/dynamics/skeleton.hpp"
@@ -441,4 +443,239 @@ TEST(CollisionGroupTests, EmptyGroupWithFCL)
   Eigen::Vector3d to(5, 0, 0);
   bool hit = group->raycast(from, to, rayOption, &rayResult);
   EXPECT_FALSE(hit);
+}
+
+//==============================================================================
+TEST(CollisionGroupTests, SubscribeToSkeleton)
+{
+  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  // Create a skeleton with a body that has a collision shape
+  auto skel = Skeleton::create("test_skel");
+  auto pair = skel->createJointAndBodyNodePair<dynamics::FreeJoint>(
+      nullptr,
+      dynamics::FreeJoint::Properties(),
+      dynamics::BodyNode::AspectProperties("body"));
+  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d::Ones());
+  pair.second->createShapeNodeWith<dynamics::CollisionAspect>(shape);
+
+  // Subscribe to the skeleton
+  group->subscribeTo(dynamics::ConstMetaSkeletonPtr(skel));
+
+  EXPECT_TRUE(group->isSubscribedTo(skel.get()));
+  // After update, the shape frames from the skeleton should be in the group
+  group->update();
+  EXPECT_GE(group->getNumShapeFrames(), 1u);
+
+  // Unsubscribe
+  group->unsubscribeFrom(skel.get());
+  EXPECT_FALSE(group->isSubscribedTo(skel.get()));
+}
+
+//==============================================================================
+TEST(CollisionGroupTests, SubscribeToBodyNode)
+{
+  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  auto skel = Skeleton::create("bn_skel");
+  auto pair = skel->createJointAndBodyNodePair<dynamics::FreeJoint>(
+      nullptr,
+      dynamics::FreeJoint::Properties(),
+      dynamics::BodyNode::AspectProperties("body"));
+  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d::Ones());
+  pair.second->createShapeNodeWith<dynamics::CollisionAspect>(shape);
+
+  auto bodyNode = pair.second;
+
+  // Subscribe to the body node
+  group->subscribeTo(dynamics::ConstBodyNodePtr(bodyNode));
+
+  EXPECT_TRUE(group->isSubscribedTo(bodyNode));
+  group->update();
+  EXPECT_GE(group->getNumShapeFrames(), 1u);
+
+  // Unsubscribe
+  group->unsubscribeFrom(bodyNode);
+  EXPECT_FALSE(group->isSubscribedTo(bodyNode));
+}
+
+//==============================================================================
+TEST(CollisionGroupTests, AddShapeFrameDuplicateIsNoOp)
+{
+  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  auto frame = createBoxFrame("dup_box");
+  group->addShapeFrame(frame.get());
+  EXPECT_EQ(group->getNumShapeFrames(), 1u);
+
+  // Adding the same frame again should not increase the count
+  group->addShapeFrame(frame.get());
+  EXPECT_EQ(group->getNumShapeFrames(), 1u);
+}
+
+//==============================================================================
+TEST(CollisionGroupTests, RemoveShapeFrameNullptrNoCrash)
+{
+  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  // Removing nullptr should not crash
+  group->removeShapeFrame(nullptr);
+  EXPECT_EQ(group->getNumShapeFrames(), 0u);
+}
+
+//==============================================================================
+TEST(CollisionGroupTests, RemoveShapeFrameNotInGroup)
+{
+  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  auto frame = createBoxFrame("not_in_group");
+
+  // Removing a frame that was never added should not crash
+  group->removeShapeFrame(frame.get());
+  EXPECT_EQ(group->getNumShapeFrames(), 0u);
+}
+
+//==============================================================================
+TEST(CollisionGroupTests, ManualUpdateWithAutomaticOff)
+{
+  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  auto frameA = createBoxFrame("manA");
+  auto frameB = createBoxFrame("manB", Eigen::Vector3d(0.25, 0, 0));
+
+  group->addShapeFrame(frameA.get());
+  group->addShapeFrame(frameB.get());
+
+  // Turn off automatic update
+  group->setAutomaticUpdate(false);
+  EXPECT_FALSE(group->getAutomaticUpdate());
+
+  // Manually call update, then collide
+  group->update();
+
+  CollisionResult result;
+  CollisionOption option;
+  // Even with automatic off, collide should still work (it just won't
+  // auto-update)
+  bool collides = group->collide(option, &result);
+  EXPECT_TRUE(collides);
+}
+
+//==============================================================================
+TEST(CollisionGroupTests, AddShapeFramesOfSkeleton)
+{
+  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  auto skel = Skeleton::create("skel_frames");
+  auto pair = skel->createJointAndBodyNodePair<dynamics::FreeJoint>(
+      nullptr,
+      dynamics::FreeJoint::Properties(),
+      dynamics::BodyNode::AspectProperties("body"));
+  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d::Ones());
+  pair.second->createShapeNodeWith<dynamics::CollisionAspect>(shape);
+
+  // addShapeFramesOf with a MetaSkeleton should add its shape frames
+  group->addShapeFramesOf(
+      static_cast<const dynamics::MetaSkeleton*>(skel.get()));
+  EXPECT_GE(group->getNumShapeFrames(), 1u);
+}
+
+//==============================================================================
+TEST(CollisionGroupTests, AddShapeFramesOfBodyNode)
+{
+  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  auto skel = Skeleton::create("bn_frames");
+  auto pair = skel->createJointAndBodyNodePair<dynamics::FreeJoint>(
+      nullptr,
+      dynamics::FreeJoint::Properties(),
+      dynamics::BodyNode::AspectProperties("body"));
+  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d::Ones());
+  pair.second->createShapeNodeWith<dynamics::CollisionAspect>(shape);
+
+  group->addShapeFramesOf(static_cast<const dynamics::BodyNode*>(pair.second));
+  EXPECT_GE(group->getNumShapeFrames(), 1u);
+}
+
+//==============================================================================
+TEST(CollisionGroupTests, IsSubscribedToTerminator)
+{
+  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  // The no-arg terminator should return true
+  EXPECT_TRUE(group->isSubscribedTo());
+}
+
+//==============================================================================
+TEST(CollisionGroupTests, AddShapeFrameNullptrIsNoOp)
+{
+  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  group->addShapeFrame(nullptr);
+  EXPECT_EQ(group->getNumShapeFrames(), 0u);
+}
+
+//==============================================================================
+TEST(CollisionGroupTests, SubscribedSkeletonUpdatesOnShapeChange)
+{
+  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  auto skel = Skeleton::create("update_skel");
+  auto pair = skel->createJointAndBodyNodePair<dynamics::FreeJoint>(
+      nullptr,
+      dynamics::FreeJoint::Properties(),
+      dynamics::BodyNode::AspectProperties("body"));
+  auto shapeNode = pair.second->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+
+  group->subscribeTo(dynamics::ConstMetaSkeletonPtr(skel));
+  group->update();
+  EXPECT_TRUE(group->hasShapeFrame(shapeNode));
+
+  shapeNode->setShape(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Constant(2.0)));
+  group->update();
+
+  EXPECT_TRUE(group->hasShapeFrame(shapeNode));
+  EXPECT_EQ(group->getNumShapeFrames(), 1u);
+}
+
+//==============================================================================
+TEST(CollisionGroupTests, SubscribedSkeletonTracksNewBody)
+{
+  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  auto skel = Skeleton::create("dynamic_skel");
+  auto pair = skel->createJointAndBodyNodePair<dynamics::FreeJoint>(
+      nullptr,
+      dynamics::FreeJoint::Properties(),
+      dynamics::BodyNode::AspectProperties("body0"));
+  pair.second->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+
+  group->subscribeTo(dynamics::ConstMetaSkeletonPtr(skel));
+  group->update();
+  EXPECT_EQ(group->getNumShapeFrames(), 1u);
+
+  auto pair2 = skel->createJointAndBodyNodePair<dynamics::FreeJoint>(
+      pair.second,
+      dynamics::FreeJoint::Properties(),
+      dynamics::BodyNode::AspectProperties("body1"));
+  pair2.second->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+
+  group->update();
+  EXPECT_EQ(group->getNumShapeFrames(), 2u);
 }

@@ -71,3 +71,112 @@ TEST(IcosphereTests, Constructor)
   EXPECT_DOUBLE_EQ(s2.getRadius(), 2);
   EXPECT_EQ(s2.getNumSubdivisions(), 3);
 }
+
+//==============================================================================
+TEST(IcosphereTests, IcosahedronVerticesAndTriangles)
+{
+  const double radius = 2.5;
+  const auto result = Icosphered::computeIcosahedron(radius);
+  const auto& vertices = result.first;
+  const auto& triangles = result.second;
+
+  EXPECT_EQ(vertices.size(), 12u);
+  EXPECT_EQ(triangles.size(), 20u);
+
+  for (const auto& vertex : vertices) {
+    EXPECT_NEAR(vertex.norm(), radius, 1e-12);
+  }
+
+  for (const auto& triangle : triangles) {
+    EXPECT_LT(triangle[0], vertices.size());
+    EXPECT_LT(triangle[1], vertices.size());
+    EXPECT_LT(triangle[2], vertices.size());
+  }
+}
+
+//==============================================================================
+TEST(IcosphereTests, EdgeCountMatchesTriangleCount)
+{
+  for (std::size_t subdivisions = 0; subdivisions < 4; ++subdivisions) {
+    const auto triangles = Icosphered::getNumTriangles(subdivisions);
+    const auto edges = Icosphered::getNumEdges(subdivisions);
+    EXPECT_EQ(edges, triangles / 2 * 3);
+  }
+}
+
+//==============================================================================
+TEST(IcosphereTests, FloatAndDoubleInstantiation)
+{
+  const float radiusF = 1.5f;
+  const std::size_t subdivF = 1;
+  const Icospheref sphereF(radiusF, subdivF);
+  EXPECT_FALSE(sphereF.isEmpty());
+  EXPECT_EQ(sphereF.getNumSubdivisions(), subdivF);
+  EXPECT_EQ(sphereF.getVertices().size(), Icospheref::getNumVertices(subdivF));
+  EXPECT_EQ(
+      sphereF.getTriangles().size(), Icospheref::getNumTriangles(subdivF));
+
+  const double radiusD = 2.25;
+  const std::size_t subdivD = 2;
+  const Icosphered sphereD(radiusD, subdivD);
+  EXPECT_FALSE(sphereD.isEmpty());
+  EXPECT_EQ(sphereD.getNumSubdivisions(), subdivD);
+  EXPECT_EQ(sphereD.getVertices().size(), Icosphered::getNumVertices(subdivD));
+  EXPECT_EQ(
+      sphereD.getTriangles().size(), Icosphered::getNumTriangles(subdivD));
+
+  const auto icosa = Icospheref::computeIcosahedron(radiusF);
+  EXPECT_EQ(icosa.first.size(), 12u);
+  EXPECT_EQ(icosa.second.size(), 20u);
+}
+
+//==============================================================================
+TEST(IcosphereTests, ExplicitTemplateCoverage)
+{
+  using IcosphereDouble = dart::math::Icosphere<double>;
+  using IcosphereFloat = dart::math::Icosphere<float>;
+
+  EXPECT_EQ(IcosphereDouble::getNumVertices(0), 12u);
+  EXPECT_EQ(IcosphereDouble::getNumVertices(1), 42u);
+  EXPECT_EQ(IcosphereDouble::getNumEdges(0), 30u);
+  EXPECT_EQ(IcosphereDouble::getNumTriangles(0), 20u);
+  EXPECT_EQ(IcosphereDouble::getNumTriangles(1), 80u);
+
+  const auto icosa = IcosphereDouble::computeIcosahedron(1.0);
+  EXPECT_EQ(icosa.first.size(), 12u);
+  EXPECT_EQ(icosa.second.size(), 20u);
+
+  const IcosphereDouble ico0(1.0, 0);
+  EXPECT_DOUBLE_EQ(ico0.getRadius(), 1.0);
+  EXPECT_EQ(ico0.getNumSubdivisions(), 0u);
+
+  const IcosphereDouble ico1(2.0, 1);
+  EXPECT_DOUBLE_EQ(ico1.getRadius(), 2.0);
+  EXPECT_EQ(ico1.getNumSubdivisions(), 1u);
+
+  const IcosphereDouble ico2(1.0, 2);
+  EXPECT_EQ(ico2.getTriangles().size(), IcosphereDouble::getNumTriangles(2));
+
+  const IcosphereFloat icof(1.5f, 1);
+  EXPECT_FLOAT_EQ(icof.getRadius(), 1.5f);
+}
+
+//==============================================================================
+TEST(IcosphereTests, SubdivisionBuildUsesImplHeader)
+{
+  const double radius = 1.25;
+  const std::size_t subdivisions = 2;
+
+  const dart::math::Icosphere<double> icosphere(radius, subdivisions);
+
+  EXPECT_EQ(
+      icosphere.getVertices().size(),
+      dart::math::Icosphere<double>::getNumVertices(subdivisions));
+  EXPECT_EQ(
+      icosphere.getTriangles().size(),
+      dart::math::Icosphere<double>::getNumTriangles(subdivisions));
+
+  for (const auto& vertex : icosphere.getVertices()) {
+    EXPECT_NEAR(vertex.norm(), radius, 1e-12);
+  }
+}

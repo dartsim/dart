@@ -1,0 +1,59 @@
+<mujoco model="geom_types">
+  <compiler coordinate="local" angle="degree"/>
+  <worldbody>
+    <body name="geom_body">
+      <geom
+          name="capsule_geom"
+          type="capsule"
+          size="0.2"
+          fromto="0 0 0 0 0 2"
+          density="750"
+          friction="0.2 0.01 0.001"
+          contype="2"
+          conaffinity="3"
+          margin="0.01"
+          gap="0.02"/>
+      <geom
+          name="cylinder_geom"
+          type="cylinder"
+          size="0.15"
+          fromto="0 0 0 0 0 4"
+          density="500"
+          friction="0.3 0.02 0.002"
+          contype="1"
+          conaffinity="1"
+          margin="0.015"
+          gap="0.025"/>
+      <geom
+          name="box_geom"
+          type="box"
+          size="0.1 0.2 0.3"
+          density="250"
+          friction="0.4 0.03 0.003"
+          contype="0"
+          conaffinity="0"
+          margin="0.02"
+          gap="0.03"/>
+      <geom
+          name="ellipsoid_geom"
+          type="ellipsoid"
+          size="0.05 0.1 0.15"
+          density="1200"
+          friction="0.5 0.04 0.004"
+          contype="4"
+          conaffinity="5"
+          margin="0.005"
+          gap="0.01"/>
+      <geom
+          name="sphere_geom"
+          type="sphere"
+          size="0.35"
+          density="900"
+          friction="0.6 0.05 0.005"
+          contype="6"
+          conaffinity="7"
+          margin="0.03"
+          gap="0.04"/>
+    </body>
+  </worldbody>
+</mujoco>

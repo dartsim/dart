@@ -561,7 +561,7 @@ void Profiler::clearNode(ProfileNode& node)
   node.callCount = 0;
   node.inclusiveNs = 0;
   node.selfNs = 0;
-  node.minNs = std::numeric_limits<std::uint64_t>::max();
+  node.minNs = Profiler::kUnsetDuration;
   node.maxNs = 0;
   for (auto& [_, child] : node.children) {
     clearNode(*child);

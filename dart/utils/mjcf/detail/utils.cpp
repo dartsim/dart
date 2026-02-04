@@ -115,7 +115,12 @@ Eigen::Matrix3d compileRotation(
       angle = math::toRadian(angle);
     }
     rot = Eigen::AngleAxisd(angle, axis).toRotationMatrix();
-    DART_ASSERT(math::verifyRotation(rot));
+    if (!math::verifyRotation(rot)) {
+      DART_WARN(
+          "[MjcfUtils] Non-finite rotation detected while parsing MJCF data. "
+          "The model file may contain extreme or invalid orientation values.");
+      rot = Eigen::Matrix3d::Identity();
+    }
   } else if (euler) {
     Eigen::Vector3d angles = *euler;
     if (compiler.getAngle() == Angle::DEGREE) {
@@ -126,10 +131,24 @@ Eigen::Matrix3d compileRotation(
 
     if (compiler.getEulerSeq() == "xyz") {
       rot = math::eulerXYZToMatrix(angles);
-      DART_ASSERT(math::verifyRotation(rot));
+      if (!math::verifyRotation(rot)) {
+        DART_WARN(
+            "[MjcfUtils] Non-finite rotation detected while parsing MJCF "
+            "data. "
+            "The model file may contain extreme or invalid orientation "
+            "values.");
+        rot = Eigen::Matrix3d::Identity();
+      }
     } else if (compiler.getEulerSeq() == "zyx") {
       rot = math::eulerZYXToMatrix(angles);
-      DART_ASSERT(math::verifyRotation(rot));
+      if (!math::verifyRotation(rot)) {
+        DART_WARN(
+            "[MjcfUtils] Non-finite rotation detected while parsing MJCF "
+            "data. "
+            "The model file may contain extreme or invalid orientation "
+            "values.");
+        rot = Eigen::Matrix3d::Identity();
+      }
     } else {
       DART_ERROR(
           "[MjcfParser] Unsupported Euler angle sequence: '{}'. Please report "
@@ -141,15 +160,30 @@ Eigen::Matrix3d compileRotation(
     rot.col(0) = (*xyAxes).head<3>().normalized();                    // X axis
     rot.col(1) = (*xyAxes).tail<3>().normalized();                    // Y axis
     rot.col(2).noalias() = rot.col(0).cross(rot.col(1)).normalized(); // Z axis
-    DART_ASSERT(math::verifyRotation(rot));
+    if (!math::verifyRotation(rot)) {
+      DART_WARN(
+          "[MjcfUtils] Non-finite rotation detected while parsing MJCF data. "
+          "The model file may contain extreme or invalid orientation values.");
+      rot = Eigen::Matrix3d::Identity();
+    }
   } else if (zAxis) {
     rot = Eigen::Quaterniond::FromTwoVectors(
               Eigen::Vector3d::UnitZ(), zAxis->normalized())
               .toRotationMatrix();
-    DART_ASSERT(math::verifyRotation(rot));
+    if (!math::verifyRotation(rot)) {
+      DART_WARN(
+          "[MjcfUtils] Non-finite rotation detected while parsing MJCF data. "
+          "The model file may contain extreme or invalid orientation values.");
+      rot = Eigen::Matrix3d::Identity();
+    }
   } else {
     rot = quat.normalized().toRotationMatrix();
-    DART_ASSERT(math::verifyRotation(rot));
+    if (!math::verifyRotation(rot)) {
+      DART_WARN(
+          "[MjcfUtils] Non-finite rotation detected while parsing MJCF data. "
+          "The model file may contain extreme or invalid orientation values.");
+      rot = Eigen::Matrix3d::Identity();
+    }
   }
 
   return rot;
@@ -208,6 +242,64 @@ std::vector<dynamics::BodyNode*> getBodyNodes(
   }
 
   return bodyNodes;
+}
+
+//==============================================================================
+void warnUnknownElements(
+    const tinyxml2::XMLElement* parentElement,
+    const std::vector<std::string>& knownChildNames)
+{
+  const tinyxml2::XMLElement* child = parentElement->FirstChildElement();
+  while (child != nullptr) {
+    const std::string childName = child->Name();
+
+    bool known = false;
+    for (const auto& name : knownChildNames) {
+      if (childName == name) {
+        known = true;
+        break;
+      }
+    }
+
+    if (!known) {
+      DART_WARN(
+          "[MjcfParser] Unsupported MJCF element '<{}>' in '<{}>' — this "
+          "element will be ignored",
+          childName,
+          parentElement->Name());
+    }
+
+    child = child->NextSiblingElement();
+  }
+}
+
+//==============================================================================
+void warnUnknownAttributes(
+    const tinyxml2::XMLElement* element,
+    const std::vector<std::string>& knownAttrNames)
+{
+  const tinyxml2::XMLAttribute* attr = element->FirstAttribute();
+  while (attr != nullptr) {
+    const std::string attrName = attr->Name();
+
+    bool known = false;
+    for (const auto& name : knownAttrNames) {
+      if (attrName == name) {
+        known = true;
+        break;
+      }
+    }
+
+    if (!known) {
+      DART_WARN(
+          "[MjcfParser] Unsupported MJCF attribute '{}' on '<{}>' — this "
+          "attribute will be ignored",
+          attrName,
+          element->Name());
+    }
+
+    attr = attr->Next();
+  }
 }
 
 } // namespace detail

@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2025, The DART development contributors
+// Copyright (c) 2011, The DART development contributors
 
 #include <dart/dynamics/line_segment_shape.hpp>
 
@@ -73,4 +73,95 @@ TEST(LineSegmentShape, InertiaBoundingBoxAndClone)
   ASSERT_NE(clonedLine, nullptr);
   EXPECT_EQ(clonedLine->getVertices().size(), 2u);
   EXPECT_EQ(clonedLine->getConnections().size(), 1u);
+}
+
+TEST(LineSegmentShape, SetVertexValid)
+{
+  LineSegmentShape shape(0.1f);
+
+  shape.addVertex(Eigen::Vector3d(0.0, 0.0, 0.0));
+  shape.addVertex(Eigen::Vector3d(1.0, 0.0, 0.0));
+
+  EXPECT_EQ(shape.getVertices().size(), 2u);
+
+  shape.setVertex(0, Eigen::Vector3d(0.5, 0.5, 0.5));
+  EXPECT_TRUE(shape.getVertex(0).isApprox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+
+  shape.setVertex(1, Eigen::Vector3d(2.0, 2.0, 2.0));
+  EXPECT_TRUE(shape.getVertex(1).isApprox(Eigen::Vector3d(2.0, 2.0, 2.0)));
+}
+
+TEST(LineSegmentShape, RemoveVertexValid)
+{
+  LineSegmentShape shape(0.1f);
+
+  shape.addVertex(Eigen::Vector3d(0.0, 0.0, 0.0));
+  shape.addVertex(Eigen::Vector3d(1.0, 0.0, 0.0));
+  shape.addVertex(Eigen::Vector3d(2.0, 0.0, 0.0));
+
+  EXPECT_EQ(shape.getVertices().size(), 3u);
+
+  shape.removeVertex(1);
+  EXPECT_EQ(shape.getVertices().size(), 2u);
+}
+
+TEST(LineSegmentShape, RemoveConnectionByIndex)
+{
+  LineSegmentShape shape(
+      Eigen::Vector3d(0.0, 0.0, 0.0), Eigen::Vector3d(1.0, 0.0, 0.0), 0.1f);
+
+  EXPECT_EQ(shape.getVertices().size(), 2u);
+  EXPECT_EQ(shape.getConnections().size(), 1u);
+
+  shape.removeConnection(0);
+  EXPECT_EQ(shape.getConnections().size(), 0u);
+}
+
+TEST(LineSegmentShape, GetStaticType)
+{
+  EXPECT_EQ(LineSegmentShape::getStaticType(), "LineSegmentShape");
+
+  LineSegmentShape shape(0.1f);
+  EXPECT_EQ(shape.getType(), LineSegmentShape::getStaticType());
+}
+
+TEST(LineSegmentShape, GetVertexEmptyShape)
+{
+  LineSegmentShape shape(0.1f);
+
+  EXPECT_TRUE(shape.getVertices().empty());
+  EXPECT_TRUE(shape.getVertex(0).isApprox(Eigen::Vector3d::Zero()));
+}
+
+TEST(LineSegmentShape, AddConnectionValidIndices)
+{
+  LineSegmentShape shape(
+      Eigen::Vector3d(0.0, 0.0, 0.0), Eigen::Vector3d(1.0, 0.0, 0.0), 0.1f);
+
+  EXPECT_EQ(shape.getConnections().size(), 1u);
+
+  const auto& connections = shape.getConnections();
+  EXPECT_EQ(connections[0][0], 0);
+  EXPECT_EQ(connections[0][1], 1);
+}
+
+TEST(LineSegmentShape, ComputeInertiaZeroLength)
+{
+  LineSegmentShape shape(
+      Eigen::Vector3d(0.0, 0.0, 0.0), Eigen::Vector3d(0.0, 0.0, 0.0), 0.1f);
+
+  const auto inertia = shape.computeInertia(1.0);
+  EXPECT_TRUE(inertia.hasNaN());
+}
+
+TEST(LineSegmentShape, GetVerticesAndConnectionsSpans)
+{
+  LineSegmentShape shape(
+      Eigen::Vector3d(0.0, 0.0, 0.0), Eigen::Vector3d(1.0, 0.0, 0.0), 0.1f);
+
+  const auto& vertices = shape.getVertices();
+  EXPECT_EQ(vertices.size(), 2u);
+
+  const auto& connections = shape.getConnections();
+  EXPECT_EQ(connections.size(), 1u);
 }

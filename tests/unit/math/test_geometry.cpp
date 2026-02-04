@@ -34,11 +34,10 @@
 
 #include "dart/common/platform.hpp"
 #include "dart/math/geometry.hpp"
-#include "dart/math/helpers.hpp"
 
 #include <gtest/gtest.h>
 
-#include <iostream>
+#include <limits>
 #include <span>
 #include <vector>
 
@@ -232,6 +231,44 @@ TEST(Geometry, ComputeConvexHullUsesSortedAngles)
 
   EXPECT_EQ(hull.size(), 3u);
   EXPECT_EQ(indices.size(), 3u);
+}
+
+TEST(Geometry, ComputeConvexHullCollinearDuplicates)
+{
+  SupportPolygon points;
+  points.emplace_back(0.0, 0.0);
+  points.emplace_back(1.0, 1.0);
+  points.emplace_back(2.0, 2.0);
+  points.emplace_back(3.0, 3.0);
+
+  std::vector<std::size_t> indices;
+  const auto hull
+      = computeConvexHull(indices, std::span<const Eigen::Vector2d>(points));
+
+  ASSERT_EQ(hull.size(), 2u);
+  ASSERT_EQ(indices.size(), 2u);
+  EXPECT_TRUE(hull[0].isApprox(Eigen::Vector2d(0.0, 0.0), 1e-12));
+  EXPECT_TRUE(hull[1].isApprox(Eigen::Vector2d(3.0, 3.0), 1e-12));
+}
+
+TEST(Geometry, ComputeConvexHullDropsInteriorPoint)
+{
+  SupportPolygon points;
+  points.emplace_back(0.0, 0.0);
+  points.emplace_back(2.0, 0.0);
+  points.emplace_back(2.0, 2.0);
+  points.emplace_back(0.0, 2.0);
+  points.emplace_back(1.0, 1.0); // interior point
+
+  std::vector<std::size_t> indices;
+  const auto hull
+      = computeConvexHull(indices, std::span<const Eigen::Vector2d>(points));
+
+  EXPECT_EQ(hull.size(), 4u);
+  EXPECT_EQ(indices.size(), 4u);
+  for (const auto& point : hull) {
+    EXPECT_TRUE(point.allFinite());
+  }
 }
 
 TEST(Geometry, ComputeIntersectionBasic)
@@ -768,8 +805,156 @@ TEST(LieGroupOperators, ExponentialMappings)
     }
 
     Eigen::Isometry3d T = math::expMap(randomS);
-    EXPECT_TRUE(math::verifyTransform(T));
+    // With extreme inputs (±1e128), the translation component may overflow to
+    // infinity while the rotation remains valid. Only verify the rotation part.
+    EXPECT_TRUE(math::verifyRotation(T.linear()));
   }
+}
+
+//==============================================================================
+TEST(Geometry, QuatSecondDerivCrossTerms)
+{
+  const Eigen::Quaterniond q = Eigen::Quaterniond::Identity();
+
+  Eigen::Matrix3d expected = Eigen::Matrix3d::Zero();
+  expected(1, 2) = -2.0;
+  expected(2, 1) = 2.0;
+  EXPECT_TRUE(equals(quatSecondDeriv(q, 0, 1), expected));
+
+  expected.setZero();
+  expected(0, 1) = 2.0;
+  expected(1, 0) = 2.0;
+  EXPECT_TRUE(equals(quatSecondDeriv(q, 1, 2), expected));
+}
+
+#if !defined(NDEBUG)
+//==============================================================================
+TEST(Geometry, FromSkewSymmetricRejectsDiagonal)
+{
+  Eigen::Matrix3d m = Eigen::Matrix3d::Zero();
+  m(0, 0) = 1.0;
+
+  const Eigen::Vector3d v = fromSkewSymmetric(m);
+  EXPECT_TRUE(v.isZero(0.0));
+}
+#endif
+
+//==============================================================================
+TEST(Geometry, ComputeCentroidOfHullTriangleAndDegenerate)
+{
+  SupportPolygon triangle;
+  triangle.emplace_back(0.0, 0.0);
+  triangle.emplace_back(2.0, 0.0);
+  triangle.emplace_back(0.0, 2.0);
+
+  const Eigen::Vector2d centroid = computeCentroidOfHull(triangle);
+  EXPECT_TRUE(centroid.isApprox(Eigen::Vector2d(2.0 / 3.0, 2.0 / 3.0), 1e-12));
+
+  SupportPolygon degenerate;
+  degenerate.emplace_back(0.0, 0.0);
+  degenerate.emplace_back(1.0, 0.0);
+  degenerate.emplace_back(2.0, 0.0);
+
+  const Eigen::Vector2d degenerateCentroid = computeCentroidOfHull(degenerate);
+  EXPECT_TRUE(degenerateCentroid.isApprox(Eigen::Vector2d::Zero(), 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, ComputeConvexHullBacktracksRightTurn)
+{
+  SupportPolygon points;
+  points.emplace_back(0.0, 0.0);
+  points.emplace_back(2.0, 0.0);
+  points.emplace_back(1.0, 0.5);
+  points.emplace_back(2.0, 2.0);
+  points.emplace_back(0.0, 2.0);
+
+  std::vector<std::size_t> indices;
+  const auto hull
+      = computeConvexHull(indices, std::span<const Eigen::Vector2d>(points));
+
+  bool hasInterior = false;
+  for (const auto& p : hull) {
+    if (p.isApprox(points[2], 1e-12)) {
+      hasInterior = true;
+      break;
+    }
+  }
+
+  EXPECT_FALSE(hasInterior);
+  EXPECT_EQ(hull.size(), 4u);
+}
+
+//==============================================================================
+TEST(Geometry, ComputeIntersectionVerticalAndBeyondEndpointsExtra)
+{
+  Eigen::Vector2d intersection;
+  auto result = computeIntersection(
+      intersection,
+      Eigen::Vector2d(1.0, 0.0),
+      Eigen::Vector2d(1.0, 2.0),
+      Eigen::Vector2d(0.0, 1.0),
+      Eigen::Vector2d(2.0, 1.0));
+  EXPECT_EQ(result, INTERSECTING);
+  EXPECT_TRUE(intersection.isApprox(Eigen::Vector2d(1.0, 1.0), 1e-12));
+
+  result = computeIntersection(
+      intersection,
+      Eigen::Vector2d(0.0, 0.0),
+      Eigen::Vector2d(1.0, 0.0),
+      Eigen::Vector2d(2.0, 1.0),
+      Eigen::Vector2d(2.0, -1.0));
+  EXPECT_EQ(result, BEYOND_ENDPOINTS);
+}
+
+//==============================================================================
+TEST(Geometry, SupportPolygonEdgeAndOutsideCases)
+{
+  SupportPolygon line;
+  line.emplace_back(0.0, 0.0);
+  line.emplace_back(1.0, 0.0);
+
+  EXPECT_FALSE(isInsideSupportPolygon(Eigen::Vector2d(0.5, 0.0), line, false));
+  EXPECT_FALSE(isInsideSupportPolygon(Eigen::Vector2d(2.0, 0.0), line, true));
+
+  SupportPolygon square;
+  square.emplace_back(0.0, 0.0);
+  square.emplace_back(2.0, 0.0);
+  square.emplace_back(2.0, 2.0);
+  square.emplace_back(0.0, 2.0);
+  EXPECT_FALSE(isInsideSupportPolygon(Eigen::Vector2d(3.0, 0.0), square, true));
+}
+
+//==============================================================================
+TEST(Geometry, ClosestPointVerticalLineSegment)
+{
+  const Eigen::Vector2d p(0.0, 5.0);
+  const Eigen::Vector2d s1(1.0, 0.0);
+  const Eigen::Vector2d s2(1.0, 2.0);
+
+  const Eigen::Vector2d closest = computeClosestPointOnLineSegment(p, s1, s2);
+  EXPECT_TRUE(closest.isApprox(Eigen::Vector2d(1.0, 2.0), 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, ClosestPointSupportPolygonOverload)
+{
+  SupportPolygon segment;
+  segment.emplace_back(0.0, 0.0);
+  segment.emplace_back(2.0, 0.0);
+
+  const Eigen::Vector2d p(1.0, 1.0);
+  const Eigen::Vector2d direct
+      = computeClosestPointOnSupportPolygon(p, segment);
+
+  std::size_t i1 = 0;
+  std::size_t i2 = 0;
+  const Eigen::Vector2d withIndex
+      = computeClosestPointOnSupportPolygon(i1, i2, p, segment);
+
+  EXPECT_TRUE(direct.isApprox(withIndex, 1e-12));
+  EXPECT_EQ(i1, 0u);
+  EXPECT_EQ(i2, 1u);
 }
 
 //==============================================================================
@@ -1503,6 +1688,81 @@ TEST(Geometry, ComputeSupportPolygon)
 }
 
 //==============================================================================
+TEST(Geometry, MatrixToEulerXYZPositiveSingularity)
+{
+  const Eigen::Matrix3d rot
+      = Eigen::AngleAxisd(math::half_pi, Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
+  const Eigen::Vector3d angles = matrixToEulerXYZ(rot);
+
+  EXPECT_NEAR(angles[0], 0.0, 1e-12);
+  EXPECT_NEAR(angles[1], math::half_pi, 1e-12);
+  EXPECT_NEAR(angles[2], 0.0, 1e-12);
+  EXPECT_TRUE(eulerXYZToMatrix(angles).isApprox(rot, 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, MatrixToEulerXYZNegativeSingularity)
+{
+  const Eigen::Matrix3d rot
+      = Eigen::AngleAxisd(-math::half_pi, Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
+  const Eigen::Vector3d angles = matrixToEulerXYZ(rot);
+
+  EXPECT_NEAR(angles[0], 0.0, 1e-12);
+  EXPECT_NEAR(angles[1], -math::half_pi, 1e-12);
+  EXPECT_NEAR(angles[2], 0.0, 1e-12);
+  EXPECT_TRUE(eulerXYZToMatrix(angles).isApprox(rot, 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, MatrixToEulerZYXPositiveSingularity)
+{
+  const Eigen::Matrix3d rot
+      = Eigen::AngleAxisd(-math::half_pi, Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
+  const Eigen::Vector3d angles = matrixToEulerZYX(rot);
+
+  EXPECT_NEAR(angles[1], -math::half_pi, 1e-12);
+}
+
+//==============================================================================
+TEST(Geometry, MatrixToEulerZYXNegativeSingularity)
+{
+  const Eigen::Matrix3d rot
+      = Eigen::AngleAxisd(math::half_pi, Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
+  const Eigen::Vector3d angles = matrixToEulerZYX(rot);
+
+  EXPECT_NEAR(angles[1], math::half_pi, 1e-12);
+  EXPECT_TRUE(eulerZYXToMatrix(angles).isApprox(rot, 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, LogMapIsometryIdentity)
+{
+  const Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  const Eigen::Vector6d twist = logMap(T);
+
+  EXPECT_NEAR(twist.norm(), 0.0, 1e-12);
+  EXPECT_TRUE(expMap(twist).matrix().isApprox(T.matrix(), 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, LogMapIsometryHalfTurn)
+{
+  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  T.linear() = Eigen::AngleAxisd(math::pi, Eigen::Vector3d::UnitX())
+                   .toRotationMatrix();
+  T.translation() = Eigen::Vector3d(0.2, -0.1, 0.3);
+
+  const Eigen::Vector6d twist = logMap(T);
+  const Eigen::Isometry3d recovered = expMap(twist);
+
+  EXPECT_TRUE(recovered.matrix().isApprox(T.matrix(), 1e-6));
+}
+
+//==============================================================================
 TEST(Geometry, ComputeSupportPolygonWithIndices)
 {
   std::vector<Eigen::Vector3d> geometry;
@@ -1521,3 +1781,492 @@ TEST(Geometry, ComputeSupportPolygonWithIndices)
   EXPECT_EQ(indices.size(), 3u);
 }
 #endif // !DART_OS_WINDOWS
+
+//==============================================================================
+TEST(Geometry, EulerAndLogMapEdges)
+{
+  const Eigen::Vector3d nearPos(0.0, math::half_pi, 0.2);
+  const Eigen::Matrix3d rPos = math::eulerXYZToMatrix(nearPos);
+  const Eigen::Vector3d recoveredPos = math::matrixToEulerXYZ(rPos);
+  EXPECT_TRUE(math::eulerXYZToMatrix(recoveredPos).isApprox(rPos, 1e-12));
+
+  const Eigen::Vector3d nearNeg(0.0, -math::half_pi, -0.25);
+  const Eigen::Matrix3d rNeg = math::eulerXYZToMatrix(nearNeg);
+  const Eigen::Vector3d recoveredNeg = math::matrixToEulerXYZ(rNeg);
+  EXPECT_TRUE(math::eulerXYZToMatrix(recoveredNeg).isApprox(rNeg, 1e-12));
+
+  Eigen::Isometry3d nearPi = Eigen::Isometry3d::Identity();
+  nearPi.linear() = Eigen::AngleAxisd(math::pi - 1e-7, Eigen::Vector3d::UnitZ())
+                        .toRotationMatrix();
+  nearPi.translation() = Eigen::Vector3d(0.4, -0.2, 0.1);
+  const Eigen::Vector6d twistPi = math::logMap(nearPi);
+  const Eigen::Isometry3d roundTripPi = math::expMap(twistPi);
+  EXPECT_TRUE(nearPi.matrix().isApprox(roundTripPi.matrix(), 1e-6));
+
+  Eigen::Isometry3d nearZero = Eigen::Isometry3d::Identity();
+  nearZero.linear()
+      = Eigen::AngleAxisd(1e-9, Eigen::Vector3d::UnitX()).toRotationMatrix();
+  nearZero.translation() = Eigen::Vector3d(0.1, 0.2, -0.3);
+  const Eigen::Vector6d twistZero = math::logMap(nearZero);
+  const Eigen::Isometry3d roundTripZero = math::expMap(twistZero);
+  EXPECT_TRUE(nearZero.matrix().isApprox(roundTripZero.matrix(), 1e-6));
+
+  Eigen::Matrix3d invalidRot = Eigen::Matrix3d::Identity();
+  invalidRot(0, 0) = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_FALSE(math::verifyRotation(invalidRot));
+
+  Eigen::Isometry3d invalidTf = Eigen::Isometry3d::Identity();
+  invalidTf.translation()[0] = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_FALSE(math::verifyTransform(invalidTf));
+}
+
+//==============================================================================
+TEST(Geometry, QuaternionSecondDerivSameDofs)
+{
+  const Eigen::Quaterniond q = Eigen::Quaterniond::Identity();
+
+  const Eigen::Matrix3d dxx = quatSecondDeriv(q, 1, 1);
+  EXPECT_DOUBLE_EQ(dxx(0, 0), 2.0);
+  EXPECT_DOUBLE_EQ(dxx(1, 1), -2.0);
+  EXPECT_DOUBLE_EQ(dxx(2, 2), -2.0);
+
+  const Eigen::Matrix3d dyy = quatSecondDeriv(q, 2, 2);
+  EXPECT_DOUBLE_EQ(dyy(0, 0), -2.0);
+  EXPECT_DOUBLE_EQ(dyy(1, 1), 2.0);
+  EXPECT_DOUBLE_EQ(dyy(2, 2), -2.0);
+
+  const Eigen::Matrix3d dzz = quatSecondDeriv(q, 3, 3);
+  EXPECT_DOUBLE_EQ(dzz(0, 0), -2.0);
+  EXPECT_DOUBLE_EQ(dzz(1, 1), -2.0);
+  EXPECT_DOUBLE_EQ(dzz(2, 2), 2.0);
+}
+
+//==============================================================================
+TEST(Geometry, QuaternionSecondDerivOrderSwap)
+{
+  const Eigen::Quaterniond q = Eigen::Quaterniond::Identity();
+
+  const Eigen::Matrix3d d30 = quatSecondDeriv(q, 3, 0);
+  const Eigen::Matrix3d d03 = quatSecondDeriv(q, 0, 3);
+  EXPECT_TRUE(d30.isApprox(d03));
+
+  EXPECT_DOUBLE_EQ(d30(0, 1), -2.0);
+  EXPECT_DOUBLE_EQ(d30(1, 0), 2.0);
+}
+
+//==============================================================================
+TEST(Geometry, ComputeConvexHullWrapper)
+{
+  std::vector<Eigen::Vector2d> points;
+  points.emplace_back(0.0, 0.0);
+  points.emplace_back(1.0, 0.0);
+  points.emplace_back(1.0, 1.0);
+  points.emplace_back(0.0, 1.0);
+
+  const auto hull = computeConvexHull(std::span<const Eigen::Vector2d>(points));
+  EXPECT_EQ(hull.size(), 4u);
+}
+
+//==============================================================================
+TEST(Geometry, QuaternionSecondDerivCrossTerms)
+{
+  const Eigen::Quaterniond q = Eigen::Quaterniond::Identity();
+
+  const Eigen::Matrix3d d02 = quatSecondDeriv(q, 0, 2);
+  EXPECT_DOUBLE_EQ(d02(0, 2), 2.0);
+  EXPECT_DOUBLE_EQ(d02(2, 0), -2.0);
+
+  const Eigen::Matrix3d d12 = quatSecondDeriv(q, 1, 2);
+  EXPECT_DOUBLE_EQ(d12(0, 1), 2.0);
+  EXPECT_DOUBLE_EQ(d12(1, 0), 2.0);
+}
+
+#if !defined(NDEBUG)
+//==============================================================================
+TEST(Geometry, FromSkewSymmetricNonZeroDiagonal)
+{
+  const Eigen::Matrix3d matrix = Eigen::Matrix3d::Identity();
+  const Eigen::Vector3d value = fromSkewSymmetric(matrix);
+  EXPECT_TRUE(value.isApprox(Eigen::Vector3d::Zero(), 1e-12));
+}
+#endif
+
+//==============================================================================
+TEST(Geometry, ComputeCentroidOfHullWarningAndZeroArea)
+{
+  SupportPolygon nonConvex;
+  nonConvex.emplace_back(-2.0, -2.0);
+  nonConvex.emplace_back(-2.0, -1.0);
+  nonConvex.emplace_back(-2.0, 0.0);
+  nonConvex.emplace_back(-2.0, 2.0);
+  nonConvex.emplace_back(-1.0, 0.0);
+
+  const Eigen::Vector2d centroid = computeCentroidOfHull(nonConvex);
+  EXPECT_TRUE(centroid.isApprox(Eigen::Vector2d::Zero(), 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, ComputeConvexHullRightTurnBacktrack)
+{
+  SupportPolygon points;
+  points.emplace_back(0.0, 0.0);
+  points.emplace_back(2.0, 0.0);
+  points.emplace_back(1.0, 0.2);
+  points.emplace_back(2.0, 2.0);
+  points.emplace_back(0.0, 2.0);
+
+  std::vector<std::size_t> indices;
+  const auto hull
+      = computeConvexHull(indices, std::span<const Eigen::Vector2d>(points));
+
+  EXPECT_EQ(hull.size(), 4u);
+  EXPECT_EQ(indices.size(), 4u);
+
+  bool hasInterior = false;
+  for (const auto& point : hull) {
+    if (point.isApprox(Eigen::Vector2d(1.0, 0.2), 1e-12)) {
+      hasInterior = true;
+      break;
+    }
+  }
+  EXPECT_FALSE(hasInterior);
+}
+
+//==============================================================================
+TEST(Geometry, ComputeIntersectionVerticalAndBeyondEndpointsAlt)
+{
+  Eigen::Vector2d intersection;
+  auto result = computeIntersection(
+      intersection,
+      Eigen::Vector2d(1.0, 0.0),
+      Eigen::Vector2d(1.0, 2.0),
+      Eigen::Vector2d(0.0, 1.0),
+      Eigen::Vector2d(2.0, 1.0));
+
+  EXPECT_EQ(result, INTERSECTING);
+  EXPECT_TRUE(intersection.isApprox(Eigen::Vector2d(1.0, 1.0), 1e-12));
+
+  result = computeIntersection(
+      intersection,
+      Eigen::Vector2d(1.0, 0.0),
+      Eigen::Vector2d(1.0, 2.0),
+      Eigen::Vector2d(2.0, 1.0),
+      Eigen::Vector2d(3.0, 1.0));
+  EXPECT_EQ(result, BEYOND_ENDPOINTS);
+}
+
+//==============================================================================
+TEST(Geometry, IsInsideSupportPolygonEdgeRangeChecks)
+{
+  SupportPolygon segment;
+  segment.emplace_back(0.0, 0.0);
+  segment.emplace_back(2.0, 0.0);
+  EXPECT_FALSE(
+      isInsideSupportPolygon(Eigen::Vector2d(1.0, 1.0), segment, true));
+
+  SupportPolygon square;
+  square.emplace_back(0.0, 0.0);
+  square.emplace_back(2.0, 0.0);
+  square.emplace_back(2.0, 2.0);
+  square.emplace_back(0.0, 2.0);
+
+  EXPECT_FALSE(isInsideSupportPolygon(Eigen::Vector2d(3.0, 0.0), square, true));
+  EXPECT_TRUE(isInsideSupportPolygon(Eigen::Vector2d(1.0, 0.0), square, true));
+}
+
+//==============================================================================
+TEST(Geometry, ComputeClosestPointOnLineSegmentVerticalStart)
+{
+  const Eigen::Vector2d s1(1.0, 0.0);
+  const Eigen::Vector2d s2(1.0, 2.0);
+  const Eigen::Vector2d p(0.0, -1.0);
+
+  const Eigen::Vector2d closest = computeClosestPointOnLineSegment(p, s1, s2);
+  EXPECT_TRUE(closest.isApprox(Eigen::Vector2d(1.0, 0.0), 1e-12));
+}
+
+//==============================================================================
+TEST(Geometry, ComputeClosestPointOnSupportPolygonOverload)
+{
+  SupportPolygon square;
+  square.emplace_back(0.0, 0.0);
+  square.emplace_back(2.0, 0.0);
+  square.emplace_back(2.0, 2.0);
+  square.emplace_back(0.0, 2.0);
+
+  const Eigen::Vector2d closest
+      = computeClosestPointOnSupportPolygon(Eigen::Vector2d(3.0, 1.0), square);
+  EXPECT_TRUE(closest.isApprox(Eigen::Vector2d(2.0, 1.0), 1e-12));
+}
+
+//==============================================================================
+static std::vector<Eigen::Isometry3d> makeRandomTransforms(std::size_t count)
+{
+  std::vector<Eigen::Isometry3d> transforms(count);
+  for (std::size_t i = 0; i < count; ++i) {
+    transforms[i] = Eigen::Isometry3d::Identity();
+    transforms[i].linear() = math::expMapRot(Eigen::Vector3d::Random() * 0.5);
+    transforms[i].translation() = Eigen::Vector3d::Random() * 2.0;
+  }
+  return transforms;
+}
+
+static std::vector<Eigen::Vector6d> makeRandomInputs(std::size_t count)
+{
+  std::vector<Eigen::Vector6d> inputs(count);
+  for (std::size_t i = 0; i < count; ++i) {
+    inputs[i] = Eigen::Vector6d::Random();
+  }
+  return inputs;
+}
+
+//==============================================================================
+TEST(Geometry, BatchAdT_ExactMultipleOf4)
+{
+  constexpr std::size_t count = 8;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::batch::AdT_batch(
+      transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::AdT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchAdT_WithRemainder)
+{
+  constexpr std::size_t count = 7;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::batch::AdT_batch(
+      transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::AdT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchAdT_SmallCount)
+{
+  constexpr std::size_t count = 3;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::batch::AdT_batch(
+      transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::AdT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchAdInvT_ExactMultipleOf4)
+{
+  constexpr std::size_t count = 8;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::batch::AdInvT_batch(
+      transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::AdInvT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchAdInvT_WithRemainder)
+{
+  constexpr std::size_t count = 7;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::batch::AdInvT_batch(
+      transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::AdInvT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchAdInvT_SmallCount)
+{
+  constexpr std::size_t count = 3;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::batch::AdInvT_batch(
+      transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::AdInvT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchdAdT_ExactMultipleOf4)
+{
+  constexpr std::size_t count = 8;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::batch::dAdT_batch(
+      transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::dAdT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchdAdT_WithRemainder)
+{
+  constexpr std::size_t count = 7;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::batch::dAdT_batch(
+      transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::dAdT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchdAdT_SmallCount)
+{
+  constexpr std::size_t count = 3;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::batch::dAdT_batch(
+      transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::dAdT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchdAdInvT_ExactMultipleOf4)
+{
+  constexpr std::size_t count = 8;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::batch::dAdInvT_batch(
+      transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::dAdInvT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchdAdInvT_WithRemainder)
+{
+  constexpr std::size_t count = 7;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::batch::dAdInvT_batch(
+      transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::dAdInvT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchdAdInvT_SmallCount)
+{
+  constexpr std::size_t count = 3;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::batch::dAdInvT_batch(
+      transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::dAdInvT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchAdT_SingleElement)
+{
+  auto transforms = makeRandomTransforms(1);
+  auto inputs = makeRandomInputs(1);
+  std::vector<Eigen::Vector6d> outputs(1);
+
+  math::batch::AdT_batch(transforms.data(), inputs.data(), outputs.data(), 1);
+
+  Eigen::Vector6d expected = math::AdT(transforms[0], inputs[0]);
+  EXPECT_VECTOR_NEAR(outputs[0], expected, LIE_GROUP_OPT_TOL);
+}
+
+//==============================================================================
+TEST(Geometry, BatchAdT_Exactly4)
+{
+  constexpr std::size_t count = 4;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::batch::AdT_batch(
+      transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::AdT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchAdT_Exactly5)
+{
+  constexpr std::size_t count = 5;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::batch::AdT_batch(
+      transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::AdT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}

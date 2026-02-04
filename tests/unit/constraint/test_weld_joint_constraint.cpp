@@ -40,6 +40,7 @@
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/skeleton.hpp>
 
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
 using namespace dart;
@@ -308,4 +309,53 @@ TEST(WeldJointConstraint, RelativeTransformMaintained)
 
   Eigen::Isometry3d storedRelTransform = constraint->getRelativeTransform();
   EXPECT_TRUE(storedRelTransform.isApprox(relativeTransform));
+}
+
+TEST(WeldJointConstraint, WorldStepMaintainsRelativeTransform)
+{
+  auto world = World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  auto skel1 = createFreeSkeleton("skel1");
+  auto skel2 = createFreeSkeleton("skel2");
+  world->addSkeleton(skel1);
+  world->addSkeleton(skel2);
+
+  auto body1 = skel1->getBodyNode(0);
+  auto body2 = skel2->getBodyNode(0);
+
+  skel2->setPosition(0, 0.3);
+  skel2->setPosition(3, 1.2);
+  skel2->setPosition(4, -0.4);
+
+  auto constraint = std::make_shared<WeldJointConstraint>(body1, body2);
+  Eigen::Isometry3d desired = Eigen::Isometry3d::Identity();
+  desired.linear()
+      = Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitY()).toRotationMatrix();
+  desired.translation() = Eigen::Vector3d(0.4, -0.2, 0.1);
+  constraint->setRelativeTransform(desired);
+
+  world->getConstraintSolver()->addConstraint(constraint);
+
+  skel2->setPosition(3, skel2->getPosition(3) + 0.3);
+  skel2->setPosition(4, skel2->getPosition(4) - 0.2);
+
+  Eigen::Isometry3d initialRel
+      = body1->getTransform().inverse() * body2->getTransform();
+  Eigen::Isometry3d initialError = desired.inverse() * initialRel;
+  const double initialTransError = initialError.translation().norm();
+  EXPECT_GT(initialTransError, 0.0);
+
+  for (int i = 0; i < 200; ++i) {
+    world->step();
+  }
+
+  Eigen::Isometry3d finalRel
+      = body1->getTransform().inverse() * body2->getTransform();
+  Eigen::Isometry3d finalError = desired.inverse() * finalRel;
+  const double finalTransError = finalError.translation().norm();
+  const double finalAngleError = Eigen::AngleAxisd(finalError.linear()).angle();
+
+  EXPECT_LT(finalTransError, initialTransError);
+  EXPECT_FALSE(finalAngleError != finalAngleError);
 }

@@ -1,4 +1,6 @@
-// Copyright (c) 2011-2025, The DART development contributors
+// Copyright (c) 2011, The DART development contributors
+
+#include <dart/simulation/world.hpp>
 
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/point_mass.hpp>
@@ -162,4 +164,137 @@ TEST(SoftBodyNodeHelper, SettersAndPointMassOperations)
 
   opBody->removeAllPointMasses();
   EXPECT_EQ(opBody->getNumPointMasses(), 0u);
+}
+
+TEST(SoftBodyNodeHelper, MakeBoxPropertiesWithLargeFrags)
+{
+  const Eigen::Vector3d size(1.0, 2.0, 3.0);
+  const auto transform = Eigen::Isometry3d::Identity();
+
+  const Eigen::Vector3i frags3(3, 3, 3);
+  const auto props3 = SoftBodyNodeHelper::makeBoxProperties(
+      size, transform, frags3, 4.0, 20.0, 30.0, 0.2);
+  EXPECT_GE(props3.mPointProps.size(), 26u);
+  EXPECT_GE(props3.mFaces.size(), 12u);
+
+  const Eigen::Vector3i frags4(4, 4, 4);
+  const auto props4 = SoftBodyNodeHelper::makeBoxProperties(
+      size, transform, frags4, 4.0, 20.0, 30.0, 0.2);
+  EXPECT_GT(props4.mPointProps.size(), props3.mPointProps.size());
+  EXPECT_GT(props4.mFaces.size(), props3.mFaces.size());
+
+  const Eigen::Vector3i fragsAsym(3, 4, 5);
+  const auto propsAsym = SoftBodyNodeHelper::makeBoxProperties(
+      size, transform, fragsAsym, 4.0, 20.0, 30.0, 0.2);
+  EXPECT_GT(propsAsym.mPointProps.size(), 0u);
+  EXPECT_GT(propsAsym.mFaces.size(), 0u);
+}
+
+TEST(SoftBodyNodeHelper, SetBoxWithFragsOnSoftBody)
+{
+  auto skeleton = Skeleton::create("frag-box");
+  auto* softBody = createSoftBody(skeleton);
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d(1.0, 1.0, 1.0),
+      Eigen::Isometry3d::Identity(),
+      Eigen::Vector3i(3, 3, 3),
+      2.0,
+      5.0,
+      6.0,
+      0.1);
+  EXPECT_GT(softBody->getNumPointMasses(), 8u);
+}
+
+TEST(SoftBodyNodeHelper, MakeEllipsoidWithMoreSlices)
+{
+  const auto ellip = SoftBodyNodeHelper::makeEllipsoidProperties(
+      Eigen::Vector3d(1.0, 1.5, 2.0), 8, 6, 3.0, 10.0, 11.0, 0.2);
+  EXPECT_GT(ellip.mPointProps.size(), 10u);
+  EXPECT_GT(ellip.mFaces.size(), 0u);
+}
+
+TEST(SoftBodyNodeHelper, MakeCylinderWithMoreRings)
+{
+  const auto cyl = SoftBodyNodeHelper::makeCylinderProperties(
+      0.5, 2.0, 8, 4, 3, 3.0, 10.0, 11.0, 0.2);
+  EXPECT_GT(cyl.mPointProps.size(), 22u);
+  EXPECT_GT(cyl.mFaces.size(), 0u);
+}
+
+TEST(SoftBodyNodeHelper, ConstructorWithSpans)
+{
+  std::vector<PointMass::Properties> points;
+  points.push_back(PointMass::Properties(Eigen::Vector3d::Zero(), 0.5));
+  points.push_back(PointMass::Properties(Eigen::Vector3d::UnitX(), 0.5));
+  points.push_back(PointMass::Properties(Eigen::Vector3d::UnitY(), 0.5));
+
+  std::vector<Eigen::Vector3i> faces;
+  faces.push_back(Eigen::Vector3i(0, 1, 2));
+
+  SoftBodyNode::UniqueProperties props(10.0, 10.0, 0.1, points, faces);
+  EXPECT_EQ(props.mPointProps.size(), 3u);
+  EXPECT_EQ(props.mFaces.size(), 1u);
+}
+
+TEST(SoftBodyNodeHelper, NotifierAndTransformUpdates)
+{
+  auto skeleton = Skeleton::create("soft-body-notifier");
+  auto* softBody = createSoftBody(skeleton);
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d(0.6, 0.4, 0.2),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      8.0,
+      4.0,
+      0.05);
+  ASSERT_GT(softBody->getNumPointMasses(), 0u);
+
+  EXPECT_NE(softBody->getNotifier(), nullptr);
+  const SoftBodyNode* constBody = softBody;
+  EXPECT_NE(constBody->getNotifier(), nullptr);
+
+  auto* pm = softBody->getPointMass(0);
+  ASSERT_NE(pm, nullptr);
+
+  pm->setPositions(Eigen::Vector3d(0.1, -0.2, 0.3));
+  const Eigen::Vector3d local = pm->getLocalPosition();
+  const Eigen::Vector3d world = pm->getWorldPosition();
+  EXPECT_TRUE(local.allFinite());
+  EXPECT_TRUE(world.allFinite());
+
+  EXPECT_TRUE(std::isfinite(pm->getPsi()));
+}
+
+TEST(SoftBodyNodeHelper, WorldStepClearsPartialAccelerationNotice)
+{
+  auto world = simulation::World::create();
+  auto skeleton = Skeleton::create("soft-body-world-step");
+  auto* softBody = createSoftBody(skeleton);
+
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d(0.4, 0.3, 0.2),
+      Eigen::Isometry3d::Identity(),
+      1.0,
+      8.0,
+      4.0,
+      0.05);
+  world->addSkeleton(skeleton);
+
+  auto* notifier = softBody->getNotifier();
+  ASSERT_NE(notifier, nullptr);
+  notifier->clearPartialAccelerationNotice();
+  EXPECT_FALSE(notifier->needsPartialAccelerationUpdate());
+
+  auto* pm = softBody->getPointMass(0);
+  ASSERT_NE(pm, nullptr);
+  pm->setPositions(Eigen::Vector3d(0.05, -0.03, 0.02));
+  EXPECT_TRUE(notifier->needsPartialAccelerationUpdate());
+
+  world->step();
+  EXPECT_TRUE(pm->getPartialAccelerations().allFinite());
 }

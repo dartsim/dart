@@ -73,6 +73,13 @@ T* MemoryManager::constructUsingPool(Args&&... args) noexcept
 }
 
 //==============================================================================
+template <typename T, typename... Args>
+T* MemoryManager::constructUsingFrame(Args&&... args) noexcept
+{
+  return construct<T, Args...>(Type::Frame, std::forward<Args>(args)...);
+}
+
+//==============================================================================
 template <typename T>
 void MemoryManager::destroy(Type type, T* object) noexcept
 {
@@ -95,6 +102,13 @@ template <typename T>
 void MemoryManager::destroyUsingPool(T* pointer) noexcept
 {
   destroy(Type::Pool, pointer);
+}
+
+//==============================================================================
+template <typename T>
+void MemoryManager::destroyUsingFrame(T* pointer) noexcept
+{
+  destroy(Type::Frame, pointer);
 }
 
 } // namespace dart::common

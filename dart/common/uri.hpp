@@ -216,12 +216,12 @@ struct DART_API Uri final
   /// differ by the leading '/' on Windows.
   std::string getFilesystemPath() const;
 
+  /// Implement section 5.2.4 of RFC 3986.
+  static std::string removeDotSegments(const std::string& path);
+
 private:
   /// Implement section 5.2.3 of RFC 3986.
   static std::string mergePaths(const Uri& base, const Uri& relative);
-
-  /// Implement section 5.2.4 of RFC 3986.
-  static std::string removeDotSegments(const std::string& path);
 };
 
 } // namespace common

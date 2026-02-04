@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2025, The DART development contributors
+// Copyright (c) 2011, The DART development contributors
 
 #include <dart/dynamics/capsule_shape.hpp>
 
@@ -140,11 +140,69 @@ TEST(CapsuleShapeTest, Inertia)
 }
 
 //==============================================================================
-// Test with small valid dimensions
 TEST(CapsuleShapeTest, SmallDimensions)
 {
   auto capsule = std::make_shared<dart::dynamics::CapsuleShape>(1e-10, 1e-10);
   EXPECT_GT(capsule->getRadius(), 0.0);
   EXPECT_GT(capsule->getHeight(), 0.0);
   EXPECT_GT(capsule->getVolume(), 0.0);
+}
+
+//==============================================================================
+TEST(CapsuleShapeTest, VolumeUpdatesOnDimensionChange)
+{
+  auto capsule = std::make_shared<dart::dynamics::CapsuleShape>(1.0, 2.0);
+  const double initialVolume = capsule->getVolume();
+
+  capsule->setRadius(2.0);
+  EXPECT_GT(capsule->getVolume(), initialVolume);
+
+  capsule->setHeight(4.0);
+  const double newVolume = capsule->getVolume();
+  EXPECT_GT(newVolume, initialVolume);
+}
+
+//==============================================================================
+TEST(CapsuleShapeTest, BoundingBoxUpdatesOnDimensionChange)
+{
+  auto capsule = std::make_shared<dart::dynamics::CapsuleShape>(1.0, 2.0);
+
+  capsule->setRadius(2.0);
+  capsule->setHeight(4.0);
+
+  const auto& bbox = capsule->getBoundingBox();
+  EXPECT_DOUBLE_EQ(bbox.getMin().x(), -2.0);
+  EXPECT_DOUBLE_EQ(bbox.getMin().y(), -2.0);
+  EXPECT_DOUBLE_EQ(bbox.getMin().z(), -(2.0 + 4.0 / 2.0));
+
+  EXPECT_DOUBLE_EQ(bbox.getMax().x(), 2.0);
+  EXPECT_DOUBLE_EQ(bbox.getMax().y(), 2.0);
+  EXPECT_DOUBLE_EQ(bbox.getMax().z(), 2.0 + 4.0 / 2.0);
+}
+
+//==============================================================================
+TEST(CapsuleShapeTest, CloneIndependence)
+{
+  auto capsule = std::make_shared<dart::dynamics::CapsuleShape>(0.5, 2.0);
+  auto clone = std::dynamic_pointer_cast<dart::dynamics::CapsuleShape>(
+      capsule->clone());
+
+  capsule->setRadius(1.5);
+  capsule->setHeight(5.0);
+
+  EXPECT_DOUBLE_EQ(clone->getRadius(), 0.5);
+  EXPECT_DOUBLE_EQ(clone->getHeight(), 2.0);
+  EXPECT_DOUBLE_EQ(capsule->getRadius(), 1.5);
+  EXPECT_DOUBLE_EQ(capsule->getHeight(), 5.0);
+}
+
+//==============================================================================
+TEST(CapsuleShapeTest, InertiaWithDifferentMasses)
+{
+  auto capsule = std::make_shared<dart::dynamics::CapsuleShape>(1.0, 2.0);
+
+  auto inertia1 = capsule->computeInertia(1.0);
+  auto inertia2 = capsule->computeInertia(2.0);
+
+  EXPECT_TRUE(inertia2.isApprox(2.0 * inertia1, 1e-10));
 }

@@ -32,6 +32,8 @@
 
 #include <dart/collision/contact.hpp>
 
+#include <dart/dynamics/body_node.hpp>
+
 #include <gtest/gtest.h>
 
 #include <limits>
@@ -56,4 +58,79 @@ TEST(Contact, ZeroNormalHonorsEpsilon)
 
   EXPECT_TRUE(Contact::isZeroNormal(Eigen::Vector3d(0.0, 0.0, epsilon / 10.0)));
   EXPECT_FALSE(Contact::isZeroNormal(Eigen::Vector3d(0.0, 0.0, epsilon * 2.0)));
+}
+
+//==============================================================================
+TEST(Contact, DefaultConstructorInitializesMembers)
+{
+  Contact contact;
+
+  EXPECT_TRUE(contact.point.isZero());
+  EXPECT_TRUE(contact.normal.isZero());
+  EXPECT_TRUE(contact.force.isZero());
+  EXPECT_EQ(contact.collisionObject1, nullptr);
+  EXPECT_EQ(contact.collisionObject2, nullptr);
+  EXPECT_EQ(contact.penetrationDepth, 0.0);
+  EXPECT_EQ(contact.triID1, 0);
+  EXPECT_EQ(contact.triID2, 0);
+  EXPECT_EQ(contact.userData, nullptr);
+}
+
+//==============================================================================
+TEST(Contact, PointNormalPenetrationAccessors)
+{
+  Contact contact;
+
+  contact.point = Eigen::Vector3d(1.0, 2.0, 3.0);
+  contact.normal = Eigen::Vector3d(0.0, 0.0, 1.0);
+  contact.penetrationDepth = 0.05;
+
+  EXPECT_EQ(contact.point, Eigen::Vector3d(1.0, 2.0, 3.0));
+  EXPECT_EQ(contact.normal, Eigen::Vector3d(0.0, 0.0, 1.0));
+  EXPECT_DOUBLE_EQ(contact.penetrationDepth, 0.05);
+}
+
+//==============================================================================
+TEST(Contact, ForceAccessor)
+{
+  Contact contact;
+
+  contact.force = Eigen::Vector3d(10.0, 20.0, 30.0);
+
+  EXPECT_EQ(contact.force, Eigen::Vector3d(10.0, 20.0, 30.0));
+}
+
+//==============================================================================
+TEST(Contact, IsNonZeroNormalInverseOfIsZeroNormal)
+{
+  const Eigen::Vector3d zeroNormal(0.0, 0.0, 0.0);
+  const Eigen::Vector3d nonZeroNormal(0.0, 0.0, 1.0);
+
+  EXPECT_TRUE(Contact::isZeroNormal(zeroNormal));
+  EXPECT_FALSE(Contact::isNonZeroNormal(zeroNormal));
+
+  EXPECT_FALSE(Contact::isZeroNormal(nonZeroNormal));
+  EXPECT_TRUE(Contact::isNonZeroNormal(nonZeroNormal));
+}
+
+//==============================================================================
+TEST(Contact, NormalEpsilonSquaredConsistency)
+{
+  const double epsilon = Contact::getNormalEpsilon();
+  const double epsilonSquared = Contact::getNormalEpsilonSquared();
+
+  EXPECT_DOUBLE_EQ(epsilonSquared, epsilon * epsilon);
+}
+
+//==============================================================================
+TEST(Contact, ShapeFrameAccessorsReturnNullWithoutCollisionObjects)
+{
+  Contact contact;
+
+  EXPECT_EQ(contact.getShapeFrame1(), nullptr);
+  EXPECT_EQ(contact.getShapeFrame2(), nullptr);
+  EXPECT_EQ(contact.getShapeNode1(), nullptr);
+  EXPECT_EQ(contact.getShapeNode2(), nullptr);
+  EXPECT_FALSE(contact.getBodyNodePtr1());
+  EXPECT_FALSE(contact.getBodyNodePtr2());
 }

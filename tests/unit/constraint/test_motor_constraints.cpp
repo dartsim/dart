@@ -5,14 +5,13 @@
  * This file is provided under the BSD-style License.
  */
 
-#include "helpers/dynamics_helpers.hpp"
-
 #include "dart/constraint/coupler_constraint.hpp"
 #include "dart/constraint/mimic_motor_constraint.hpp"
 #include "dart/constraint/servo_motor_constraint.hpp"
 #include "dart/dynamics/mimic_dof_properties.hpp"
 #include "dart/dynamics/revolute_joint.hpp"
 #include "dart/dynamics/skeleton.hpp"
+#include "dart/simulation/world.hpp"
 
 #include <gtest/gtest.h>
 
@@ -220,6 +219,47 @@ TEST(MimicMotorConstraint, MimicPropertiesOffset)
   auto constraint
       = std::make_shared<MimicMotorConstraint>(depJoint, propsArray);
   EXPECT_EQ(constraint->getType(), MimicMotorConstraint::getStaticType());
+}
+
+//==============================================================================
+TEST(MimicMotorConstraint, WorldStepTracksMultiplierAndOffset)
+{
+  auto world = simulation::World::create();
+  ASSERT_NE(world, nullptr);
+  world->setTimeStep(1e-3);
+
+  auto skel = createTwoJointSkeleton("mimic_world");
+  auto* refJoint = skel->getJoint(0);
+  auto* depJoint = skel->getJoint(1);
+  ASSERT_NE(refJoint, nullptr);
+  ASSERT_NE(depJoint, nullptr);
+
+  refJoint->setActuatorType(Joint::LOCKED);
+  refJoint->setPosition(0, 0.2);
+
+  depJoint->setActuatorType(Joint::MIMIC);
+  depJoint->setMimicConstraintType(MimicConstraintType::Motor);
+  depJoint->setMimicJoint(refJoint, 2.0, 0.1);
+  depJoint->setPosition(0, 0.0);
+
+  world->addSkeleton(skel);
+
+  for (int i = 0; i < 30; ++i) {
+    world->step();
+  }
+  EXPECT_GT(depJoint->getPosition(0), 0.0);
+
+  refJoint->setPosition(0, -0.2);
+  depJoint->setPosition(0, 0.3);
+  depJoint->setMimicJoint(refJoint, -1.5, -0.05);
+  refJoint->setVelocity(0, 0.0);
+  depJoint->setVelocity(0, 0.0);
+
+  const double resetPosition = depJoint->getPosition(0);
+  for (int i = 0; i < 30; ++i) {
+    world->step();
+  }
+  EXPECT_LT(depJoint->getPosition(0), resetPosition);
 }
 
 //==============================================================================

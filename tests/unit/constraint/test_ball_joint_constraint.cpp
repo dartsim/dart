@@ -277,3 +277,65 @@ TEST(BallJointConstraint, MultipleConstraints)
   world->getConstraintSolver()->removeAllConstraints();
   EXPECT_EQ(world->getConstraintSolver()->getNumConstraints(), 0u);
 }
+
+TEST(BallJointConstraint, WorldStepReducesAnchorErrorWithDynamicSettings)
+{
+  auto world = World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  auto skel1 = createFreeSkeleton("skel1");
+  auto skel2 = createFreeSkeleton("skel2");
+  world->addSkeleton(skel1);
+  world->addSkeleton(skel2);
+
+  auto body1 = skel1->getBodyNode(0);
+  auto body2 = skel2->getBodyNode(0);
+
+  skel2->setPosition(3, 1.5);
+  skel2->setPosition(4, -0.5);
+
+  Eigen::Vector3d jointPos = body1->getTransform().translation();
+  auto constraint
+      = std::make_shared<BallJointConstraint>(body1, body2, jointPos);
+
+  const Eigen::Vector3d offset1 = body1->getTransform().inverse() * jointPos;
+  const Eigen::Vector3d offset2 = body2->getTransform().inverse() * jointPos;
+
+  const double prevAllowance = BallJointConstraint::getErrorAllowance();
+  const double prevErp = BallJointConstraint::getErrorReductionParameter();
+  const double prevErv = BallJointConstraint::getMaxErrorReductionVelocity();
+  const double prevCfm = BallJointConstraint::getConstraintForceMixing();
+
+  BallJointConstraint::setErrorAllowance(-0.01);
+  BallJointConstraint::setErrorReductionParameter(-0.2);
+  BallJointConstraint::setMaxErrorReductionVelocity(-1.0);
+  BallJointConstraint::setConstraintForceMixing(1e-12);
+
+  BallJointConstraint::setErrorAllowance(0.0);
+  BallJointConstraint::setErrorReductionParameter(0.2);
+  BallJointConstraint::setMaxErrorReductionVelocity(2.0);
+  BallJointConstraint::setConstraintForceMixing(1e-6);
+
+  world->getConstraintSolver()->addConstraint(constraint);
+
+  skel2->setPosition(3, skel2->getPosition(3) + 0.4);
+
+  const Eigen::Vector3d anchor1 = body1->getTransform() * offset1;
+  const Eigen::Vector3d anchor2 = body2->getTransform() * offset2;
+  const double initialError = (anchor1 - anchor2).norm();
+  EXPECT_GT(initialError, 0.0);
+
+  for (int i = 0; i < 200; ++i) {
+    world->step();
+  }
+
+  const Eigen::Vector3d finalAnchor1 = body1->getTransform() * offset1;
+  const Eigen::Vector3d finalAnchor2 = body2->getTransform() * offset2;
+  const double finalError = (finalAnchor1 - finalAnchor2).norm();
+  EXPECT_LT(finalError, initialError);
+
+  BallJointConstraint::setErrorAllowance(prevAllowance);
+  BallJointConstraint::setErrorReductionParameter(prevErp);
+  BallJointConstraint::setMaxErrorReductionVelocity(prevErv);
+  BallJointConstraint::setConstraintForceMixing(prevCfm);
+}

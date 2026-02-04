@@ -76,6 +76,10 @@ private:
   struct Flattened;
 
   friend class ProfileScope;
+  friend class ProfilerTestAccess;
+
+  static constexpr std::uint64_t kUnsetDuration
+      = std::numeric_limits<std::uint64_t>::max();
 
   Profiler();
 

@@ -177,10 +177,16 @@ if(TARGET dart-utils)
   if(DART_ENABLE_SDFORMAT)
     dart_add_test("integration" INTEGRATION_io_SdfParser io/test_sdf_parser.cpp)
     target_link_libraries(INTEGRATION_io_SdfParser dart-utils)
+    if(TARGET dart-io)
+      target_link_libraries(INTEGRATION_io_SdfParser dart-io)
+    endif()
   endif()
 
   dart_add_test("integration" INTEGRATION_io_SkelParser io/test_skel_parser.cpp)
   target_link_libraries(INTEGRATION_io_SkelParser dart-utils)
+  if(TARGET dart-io)
+    target_link_libraries(INTEGRATION_io_SkelParser dart-io)
+  endif()
 
 endif()
 

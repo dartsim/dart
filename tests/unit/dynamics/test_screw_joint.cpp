@@ -74,3 +74,35 @@ TEST(ScrewJoint, ThreadPitch)
   expectedDiff = axis * pitch * angle / 2.0_pi;
   EXPECT_TRUE(diff.isApprox(expectedDiff));
 }
+
+//==============================================================================
+TEST(ScrewJoint, CopyAndConstAccess)
+{
+  auto skel = dynamics::Skeleton::create();
+  auto [joint, body] = skel->createJointAndBodyNodePair<dynamics::ScrewJoint>();
+  (void)body;
+
+  dynamics::ScrewJoint::Properties props;
+  props.mAxis = Eigen::Vector3d::UnitY();
+  props.mPitch = 0.25;
+  joint->setProperties(props);
+
+  const dynamics::ScrewJoint* constJoint = joint;
+  EXPECT_EQ(constJoint->getType(), dynamics::ScrewJoint::getStaticType());
+  EXPECT_FALSE(constJoint->isCyclic(0));
+  EXPECT_TRUE(constJoint->getAxis().isApprox(Eigen::Vector3d::UnitY()));
+  EXPECT_DOUBLE_EQ(constJoint->getPitch(), 0.25);
+
+  Eigen::Matrix<double, 1, 1> position;
+  position << 0.0;
+  const auto jacobian = constJoint->getRelativeJacobianStatic(position);
+  EXPECT_EQ(jacobian.cols(), 1);
+
+  joint->copy(static_cast<const dynamics::ScrewJoint*>(nullptr));
+
+  auto [otherJoint, otherBody]
+      = skel->createJointAndBodyNodePair<dynamics::ScrewJoint>();
+  (void)otherBody;
+  otherJoint->copy(*joint);
+  EXPECT_DOUBLE_EQ(otherJoint->getPitch(), joint->getPitch());
+}

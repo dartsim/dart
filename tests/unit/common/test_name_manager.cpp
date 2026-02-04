@@ -224,3 +224,55 @@ TEST_F(NameManagerTest, MultipleObjects)
   EXPECT_EQ(mgr->getObject("second"), &obj2);
   EXPECT_EQ(mgr->getObject("third"), &obj3);
 }
+
+TEST_F(NameManagerTest, AddEmptyNameRejected)
+{
+  EXPECT_FALSE(mgr->addName("", &obj1));
+  EXPECT_EQ(mgr->getCount(), 0u);
+  EXPECT_FALSE(mgr->hasObject(&obj1));
+}
+
+TEST_F(NameManagerTest, SetPatternNumberBeforeName)
+{
+  EXPECT_TRUE(mgr->setPattern("%d_%s"));
+  mgr->addName("base", &obj1);
+
+  std::string newName = mgr->issueNewName("base");
+  EXPECT_TRUE(newName.find("_base") != std::string::npos);
+  EXPECT_TRUE(newName.find("1") != std::string::npos);
+}
+
+TEST_F(NameManagerTest, IssueNewNameAndAddWithEmptyName)
+{
+  std::string result = mgr->issueNewNameAndAdd("", &obj1);
+  EXPECT_EQ(result, "unnamed");
+  EXPECT_TRUE(mgr->hasName("unnamed"));
+  EXPECT_EQ(mgr->getObject("unnamed"), &obj1);
+}
+
+TEST_F(NameManagerTest, ChangeObjectNameToSameName)
+{
+  mgr->addName("sameName", &obj1);
+
+  std::string result = mgr->changeObjectName(&obj1, "sameName");
+  EXPECT_EQ(result, "sameName");
+  EXPECT_TRUE(mgr->hasName("sameName"));
+  EXPECT_EQ(mgr->getName(&obj1), "sameName");
+  EXPECT_EQ(mgr->getCount(), 1u);
+}
+
+TEST_F(NameManagerTest, IssueNewNameMultipleConflicts)
+{
+  mgr->addName("item", &obj1);
+
+  std::string name1 = mgr->issueNewNameAndAdd("item", &obj2);
+  EXPECT_NE(name1, "item");
+  EXPECT_TRUE(mgr->hasName(name1));
+
+  std::string name2 = mgr->issueNewNameAndAdd("item", &obj3);
+  EXPECT_NE(name2, "item");
+  EXPECT_NE(name2, name1);
+  EXPECT_TRUE(mgr->hasName(name2));
+
+  EXPECT_EQ(mgr->getCount(), 3u);
+}

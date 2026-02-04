@@ -32,6 +32,7 @@
 
 #include <dart/config.hpp>
 
+#include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/voxel_grid_shape.hpp>
 
 #include <gtest/gtest.h>
@@ -55,6 +56,24 @@ TEST(VoxelGridShape, BasicProperties)
 
   // Test null octree assignment (should be ignored as per .cpp)
   shape.setOctree(nullptr);
+  EXPECT_EQ(shape.getOctree(), octree);
+}
+
+//==============================================================================
+TEST(VoxelGridShape, ConstructorWithNullOctree)
+{
+  VoxelGridShape shape(std::shared_ptr<octomap::OcTree>{});
+  ASSERT_NE(shape.getOctree(), nullptr);
+  EXPECT_DOUBLE_EQ(shape.getOctree()->getResolution(), 0.01);
+}
+
+//==============================================================================
+TEST(VoxelGridShape, SetOctreeSamePointer)
+{
+  VoxelGridShape shape(0.05);
+  auto octree = std::make_shared<octomap::OcTree>(0.2);
+  shape.setOctree(octree);
+  shape.setOctree(octree);
   EXPECT_EQ(shape.getOctree(), octree);
 }
 
@@ -102,6 +121,22 @@ TEST(VoxelGridShape, PointCloudUpdate)
 
   EXPECT_GT(shape.getOccupancy(Eigen::Vector3d(1, 0, 0)), 0.5);
   EXPECT_GT(shape.getOccupancy(Eigen::Vector3d(0, 1, 0)), 0.5);
+}
+
+//==============================================================================
+TEST(VoxelGridShape, PointCloudUpdateWithFrame)
+{
+  VoxelGridShape shape(0.1);
+  octomap::Pointcloud pc;
+  pc.push_back(0.2, 0.0, 0.0);
+
+  SimpleFrame frame(Frame::World(), "sensor_frame");
+  frame.setTransform(Eigen::Isometry3d::Identity());
+
+  shape.updateOccupancy(pc, Eigen::Vector3d::Zero(), &frame);
+
+  EXPECT_GT(shape.getOccupancy(Eigen::Vector3d(0.2, 0.0, 0.0)), 0.0);
+  EXPECT_DOUBLE_EQ(shape.getOccupancy(Eigen::Vector3d(2.0, 2.0, 2.0)), 0.0);
 }
 
 //==============================================================================

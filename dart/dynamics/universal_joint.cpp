@@ -199,7 +199,13 @@ void UniversalJoint::updateRelativeTransform() const
        * Eigen::AngleAxisd(positions[0], getAxis1())
        * Eigen::AngleAxisd(positions[1], getAxis2())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
-  DART_ASSERT(math::verifyTransform(mT));
+  if (!math::verifyTransform(mT)) {
+    DART_WARN_ONCE(
+        "[UniversalJoint::updateRelativeTransform] Non-finite relative "
+        "transform detected in '{}'. Using identity.",
+        this->getName());
+    mT = Eigen::Isometry3d::Identity();
+  }
 }
 
 //==============================================================================

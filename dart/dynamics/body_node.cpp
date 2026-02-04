@@ -1754,7 +1754,13 @@ void BodyNode::updateTransform()
 {
   // Calling getWorldTransform will update the transform if an update is needed
   getWorldTransform();
-  DART_ASSERT(math::verifyTransform(mWorldTransform));
+  if (!math::verifyTransform(mWorldTransform)) {
+    DART_WARN_ONCE(
+        "[BodyNode::updateTransform] Non-finite world transform detected for "
+        "body [{}]. This likely results from non-finite joint transforms "
+        "(e.g., numerical overflow in pose values).",
+        getName());
+  }
 }
 
 //==============================================================================
@@ -1844,16 +1850,29 @@ void BodyNode::updateArtInertia(double _timeStep) const
   }
 
   // Verification
-  //  assert(!math::isNan(mArtInertia));
-  DART_ASSERT(!math::isNan(mArtInertiaImplicit));
+  if (math::isNan(mArtInertia) || math::isNan(mArtInertiaImplicit)) {
+    DART_WARN_ONCE(
+        "[BodyNode::updateArtInertia] Non-finite articulated inertia detected "
+        "for body [{}]. This likely results from non-finite joint transforms "
+        "(e.g., numerical overflow in pose values). Resetting to spatial "
+        "inertia to prevent further propagation.",
+        getName());
+    mArtInertia = mAspectProperties.mInertia.getSpatialTensor();
+    mArtInertiaImplicit = mArtInertia;
+  }
 
   // Update parent joint's inverse of projected articulated body inertia
   mParentJoint->updateInvProjArtInertia(mArtInertia);
   mParentJoint->updateInvProjArtInertiaImplicit(mArtInertiaImplicit, _timeStep);
 
   // Verification
-  //  assert(!math::isNan(mArtInertia));
-  DART_ASSERT(!math::isNan(mArtInertiaImplicit));
+  if (math::isNan(mArtInertiaImplicit)) {
+    DART_WARN_ONCE(
+        "[BodyNode::updateArtInertia] Non-finite articulated inertia "
+        "detected for body [{}] after updating inverse projected inertia.",
+        getName());
+    mArtInertiaImplicit = mAspectProperties.mInertia.getSpatialTensor();
+  }
 }
 
 //==============================================================================

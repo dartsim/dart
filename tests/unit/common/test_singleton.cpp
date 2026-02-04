@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/common/detail/shared_library_manager.hpp>
 #include <dart/common/singleton.hpp>
 
 #include <gtest/gtest.h>
@@ -37,141 +38,48 @@
 using namespace dart;
 using namespace dart::common;
 
-// Test singleton class with default constructor
-class SimpleSingleton : public Singleton<SimpleSingleton>
-{
-public:
-  int getValue() const
-  {
-    return mValue;
-  }
-  void setValue(int val)
-  {
-    mValue = val;
-  }
-
-protected:
-  friend class Singleton<SimpleSingleton>;
-  SimpleSingleton() : mValue(42) {}
-
-private:
-  int mValue;
-};
-
-// Test singleton class with constructor arguments
-class ConfiguredSingleton : public Singleton<ConfiguredSingleton>
-{
-public:
-  int getInitialValue() const
-  {
-    return mInitialValue;
-  }
-  const std::string& getName() const
-  {
-    return mName;
-  }
-
-protected:
-  friend class Singleton<ConfiguredSingleton>;
-  ConfiguredSingleton(int value = 0, std::string name = "default")
-    : mInitialValue(value), mName(std::move(name))
-  {
-  }
-
-private:
-  int mInitialValue;
-  std::string mName;
-};
-
-// Test singleton class with counter to track instantiation
-class CountedSingleton : public Singleton<CountedSingleton>
-{
-public:
-  static int sConstructionCount;
-
-  int getInstanceId() const
-  {
-    return mInstanceId;
-  }
-
-protected:
-  friend class Singleton<CountedSingleton>;
-  CountedSingleton() : mInstanceId(++sConstructionCount) {}
-
-private:
-  int mInstanceId;
-};
-
-int CountedSingleton::sConstructionCount = 0;
+// =============================================================================
+// Test the Singleton template through SharedLibraryManager, which is the
+// production user. SharedLibraryManager is compiled into the dart shared
+// library, so the Singleton<T> template instantiation, the static local
+// instance, and the static member pointer all live in the same DSO. This avoids
+// cross-DSO static destruction order issues that can cause SEGFAULT on macOS
+// arm64 Release when test-only singletons are defined in the test TU but link
+// against the dart shared library.
+// =============================================================================
 
 TEST(Singleton, GetSingletonReturnsReference)
 {
-  SimpleSingleton& singleton = SimpleSingleton::getSingleton();
-  EXPECT_EQ(singleton.getValue(), 42);
+  auto& manager = detail::SharedLibraryManager::getSingleton();
+  EXPECT_NE(&manager, nullptr);
 }
 
 TEST(Singleton, GetSingletonPtrReturnsPointer)
 {
-  SimpleSingleton* singletonPtr = SimpleSingleton::getSingletonPtr();
-  EXPECT_NE(singletonPtr, nullptr);
-  EXPECT_EQ(singletonPtr->getValue(), 42);
+  auto* managerPtr = detail::SharedLibraryManager::getSingletonPtr();
+  EXPECT_NE(managerPtr, nullptr);
 }
 
 TEST(Singleton, SameInstanceReturned)
 {
-  SimpleSingleton& singleton1 = SimpleSingleton::getSingleton();
-  SimpleSingleton& singleton2 = SimpleSingleton::getSingleton();
-  EXPECT_EQ(&singleton1, &singleton2);
+  auto& manager1 = detail::SharedLibraryManager::getSingleton();
+  auto& manager2 = detail::SharedLibraryManager::getSingleton();
+  EXPECT_EQ(&manager1, &manager2);
 }
 
 TEST(Singleton, SameInstanceFromRefAndPtr)
 {
-  SimpleSingleton& singleton = SimpleSingleton::getSingleton();
-  SimpleSingleton* singletonPtr = SimpleSingleton::getSingletonPtr();
-  EXPECT_EQ(&singleton, singletonPtr);
+  auto& manager = detail::SharedLibraryManager::getSingleton();
+  auto* managerPtr = detail::SharedLibraryManager::getSingletonPtr();
+  EXPECT_EQ(&manager, managerPtr);
 }
 
-TEST(Singleton, StateIsPersistent)
+TEST(Singleton, PtrAndRefAreConsistentAcrossCalls)
 {
-  SimpleSingleton& singleton1 = SimpleSingleton::getSingleton();
-  singleton1.setValue(100);
+  auto* ptr1 = detail::SharedLibraryManager::getSingletonPtr();
+  auto* ptr2 = detail::SharedLibraryManager::getSingletonPtr();
+  EXPECT_EQ(ptr1, ptr2);
 
-  SimpleSingleton& singleton2 = SimpleSingleton::getSingleton();
-  EXPECT_EQ(singleton2.getValue(), 100);
-}
-
-TEST(Singleton, ConstructedOnlyOnce)
-{
-  int initialCount = CountedSingleton::sConstructionCount;
-
-  CountedSingleton& singleton1 = CountedSingleton::getSingleton();
-  int firstId = singleton1.getInstanceId();
-
-  CountedSingleton& singleton2 = CountedSingleton::getSingleton();
-  int secondId = singleton2.getInstanceId();
-
-  // Both should have the same instance ID
-  EXPECT_EQ(firstId, secondId);
-
-  // Construction count should only increment by 1
-  EXPECT_EQ(CountedSingleton::sConstructionCount, initialCount + 1);
-}
-
-TEST(Singleton, WithConstructorArguments)
-{
-  // First call initializes with arguments
-  ConfiguredSingleton& singleton
-      = ConfiguredSingleton::getSingleton(99, "custom");
-  EXPECT_EQ(singleton.getInitialValue(), 99);
-  EXPECT_EQ(singleton.getName(), "custom");
-}
-
-TEST(Singleton, SubsequentCallsIgnoreArguments)
-{
-  // Get the existing singleton (arguments should be ignored)
-  ConfiguredSingleton& singleton
-      = ConfiguredSingleton::getSingleton(999, "ignored");
-
-  EXPECT_NE(singleton.getInitialValue(), 999);
-  EXPECT_NE(singleton.getName(), "ignored");
+  auto& ref = detail::SharedLibraryManager::getSingleton();
+  EXPECT_EQ(ptr1, &ref);
 }

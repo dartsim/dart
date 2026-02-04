@@ -590,6 +590,24 @@ Notes:
 
 `dynamic_cast` can fail silently across shared library boundaries on FreeBSD due to duplicate RTTI symbols. Prefer type enums + `static_cast` for polymorphic dispatch in cross-library APIs.
 
+### macOS ARM64: Flaky SEGFAULTs in FCL and Sensor Tests
+
+Certain tests (`FclPrimitiveContactMatrix` in Release, `SensorManager` in Debug) intermittently SEGFAULT on macOS ARM64 CI runners. These failures are non-deterministic — the same commit passes on push-triggered runs but can fail on PR-triggered runs.
+
+**Symptoms:**
+
+- SEGFAULT in `INTEGRATION_collision_FclPrimitiveContactMatrix` (Release only)
+- SEGFAULT in `UNIT_sensor_SensorManager` (Debug only)
+- Failures appear on PR-triggered runs but pass on push-triggered runs for the same commit
+
+**Solution:** Re-run only the failed jobs:
+
+```bash
+gh run rerun <RUN_ID> --failed
+```
+
+These are pre-existing intermittent issues, not caused by PR changes. If you see them, verify the failing tests are in the known-flaky list above before re-running.
+
 ### ARM64: Memory Alignment
 
 ARM64 requires strict alignment. Avoid `alloca()`, VLAs, and reinterpreting `std::vector<char>` as other types. Use `std::vector<T>` to guarantee `alignof(T)`.

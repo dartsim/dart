@@ -224,10 +224,16 @@ using ElementEnumerator = TemplatedElementEnumerator<tinyxml2::XMLElement>;
 using ConstElementEnumerator
     = TemplatedElementEnumerator<const tinyxml2::XMLElement>;
 
-bool copyNode(tinyxml2::XMLNode* destParent, const tinyxml2::XMLNode& src);
-
-bool copyChildNodes(
+DART_UTILS_API bool copyNode(
     tinyxml2::XMLNode* destParent, const tinyxml2::XMLNode& src);
+
+DART_UTILS_API bool copyChildNodes(
+    tinyxml2::XMLNode* destParent, const tinyxml2::XMLNode& src);
+
+DART_UTILS_API Eigen::Vector3d getValueVec3(
+    const tinyxml2::XMLElement* parentElement, std::string_view name);
+
+DART_UTILS_API std::string toString(tinyxml2::XMLError errorCode);
 
 } // namespace utils
 } // namespace dart
