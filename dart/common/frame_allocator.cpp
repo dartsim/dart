@@ -34,18 +34,23 @@
 
 #include <algorithm>
 
-#include <cstdint>
-
 namespace dart::common {
 
 //==============================================================================
 FrameAllocator::FrameAllocator(
     MemoryAllocator& baseAllocator, size_t initialCapacity)
   : mBaseAllocator(baseAllocator),
+    mCur(nullptr),
+    mEnd(nullptr),
     mBuffer(static_cast<char*>(baseAllocator.allocate(initialCapacity))),
-    mCapacity(mBuffer ? initialCapacity : 0),
-    mOffset(0)
+    mCapacity(mBuffer ? initialCapacity : 0)
 {
+  if (mBuffer) {
+    const auto addr = reinterpret_cast<uintptr_t>(mBuffer);
+    const auto aligned = (addr + 31) & ~uintptr_t{31};
+    mCur = reinterpret_cast<char*>(aligned);
+    mEnd = mBuffer + mCapacity;
+  }
 }
 
 //==============================================================================
@@ -73,46 +78,18 @@ MemoryAllocator& FrameAllocator::getBaseAllocator()
 }
 
 //==============================================================================
-void* FrameAllocator::allocate(size_t bytes) noexcept
-{
-  return allocateAligned(bytes, 32);
-}
-
-//==============================================================================
-void FrameAllocator::deallocate(void* /*pointer*/, size_t /*bytes*/)
-{
-  // Arena semantics: memory is freed in bulk on reset()
-}
-
-//==============================================================================
 void FrameAllocator::print(std::ostream& os, int indent) const
 {
   const std::string spaces(indent, ' ');
   os << spaces << "[FrameAllocator] capacity: " << mCapacity
-     << " used: " << mOffset << " overflow: " << mOverflowAllocations.size()
+     << " used: " << used() << " overflow: " << mOverflowAllocations.size()
      << "\n";
 }
 
 //==============================================================================
-void* FrameAllocator::allocateAligned(size_t bytes, size_t alignment) noexcept
+void* FrameAllocator::allocateAlignedSlow(
+    size_t bytes, size_t alignment) noexcept
 {
-  if (bytes == 0 || alignment == 0) {
-    return nullptr;
-  }
-
-  // Align based on the actual memory address, not just the offset, since the
-  // buffer base may not be aligned to the requested alignment.
-  const auto currentAddr = reinterpret_cast<uintptr_t>(mBuffer) + mOffset;
-  const auto alignedAddr = (currentAddr + alignment - 1) & ~(alignment - 1);
-  const auto alignedOffset
-      = static_cast<size_t>(alignedAddr - reinterpret_cast<uintptr_t>(mBuffer));
-
-  if (alignedOffset + bytes <= mCapacity) {
-    mOffset = alignedOffset + bytes;
-    return mBuffer + alignedOffset;
-  }
-
-  // Over-allocate to guarantee alignment within the raw block
   const size_t totalSize = bytes + alignment;
   void* raw = mBaseAllocator.allocate(totalSize);
   if (!raw) {
@@ -128,29 +105,31 @@ void* FrameAllocator::allocateAligned(size_t bytes, size_t alignment) noexcept
 }
 
 //==============================================================================
-void FrameAllocator::reset() noexcept
+void FrameAllocator::resetSlow() noexcept
 {
-  if (!mOverflowAllocations.empty()) {
-    size_t totalOverflow = 0;
-    for (const auto& entry : mOverflowAllocations) {
-      mBaseAllocator.deallocate(entry.ptr, entry.allocatedSize);
-      totalOverflow += entry.allocatedSize;
-    }
-    mOverflowAllocations.clear();
+  size_t totalOverflow = 0;
+  for (const auto& entry : mOverflowAllocations) {
+    mBaseAllocator.deallocate(entry.ptr, entry.allocatedSize);
+    totalOverflow += entry.allocatedSize;
+  }
+  mOverflowAllocations.clear();
 
-    const size_t needed = mOffset + totalOverflow;
-    const size_t newCapacity = std::max(mCapacity * 2, needed + 256);
-    void* newBuffer = mBaseAllocator.allocate(newCapacity);
-    if (newBuffer) {
-      if (mBuffer) {
-        mBaseAllocator.deallocate(mBuffer, mCapacity);
-      }
-      mBuffer = static_cast<char*>(newBuffer);
-      mCapacity = newCapacity;
+  const size_t usedBytes
+      = (mBuffer && mCur) ? static_cast<size_t>(mCur - mBuffer) : 0;
+  const size_t needed = usedBytes + totalOverflow;
+  const size_t newCapacity = std::max(mCapacity * 2, needed + 256);
+  void* newBuffer = mBaseAllocator.allocate(newCapacity);
+  if (newBuffer) {
+    if (mBuffer) {
+      mBaseAllocator.deallocate(mBuffer, mCapacity);
     }
+    mBuffer = static_cast<char*>(newBuffer);
+    mCapacity = newCapacity;
+    mEnd = mBuffer + mCapacity;
   }
 
-  mOffset = 0;
+  const auto addr = reinterpret_cast<uintptr_t>(mBuffer);
+  mCur = reinterpret_cast<char*>((addr + 31) & ~uintptr_t{31});
 }
 
 //==============================================================================
@@ -162,7 +141,15 @@ size_t FrameAllocator::capacity() const noexcept
 //==============================================================================
 size_t FrameAllocator::used() const noexcept
 {
-  return mOffset;
+  if (!mBuffer) {
+    return 0;
+  }
+  // Measure from the aligned base (not raw mBuffer) since mCur starts at the
+  // first 32-byte aligned address within the buffer.
+  const auto addr = reinterpret_cast<uintptr_t>(mBuffer);
+  const auto* alignedBase
+      = reinterpret_cast<const char*>((addr + 31) & ~uintptr_t{31});
+  return static_cast<size_t>(mCur - alignedBase);
 }
 
 //==============================================================================

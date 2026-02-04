@@ -94,6 +94,28 @@ if(TARGET dart-io)
 endif()
 
 # ==============================================================================
+# Common (Allocator) Benchmarks
+# ==============================================================================
+add_executable(bm_allocators common/bm_allocators.cpp)
+target_link_libraries(bm_allocators
+  dart
+  benchmark::benchmark
+  benchmark::benchmark_main
+)
+dart_format_add(common/bm_allocators.cpp)
+
+find_package(foonathan_memory QUIET)
+if(foonathan_memory_FOUND)
+  add_executable(bm_allocators_comparative common/bm_allocators_comparative.cpp)
+  target_link_libraries(bm_allocators_comparative
+    dart
+    foonathan_memory
+    benchmark::benchmark
+  )
+  dart_format_add(common/bm_allocators_comparative.cpp)
+endif()
+
+# ==============================================================================
 # Component Benchmarks (organized in subdirectories)
 # ==============================================================================
 add_subdirectory(lcpsolver)
