@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_ASSET_HPP_
 #define DART_UTILS_MJCF_DETAIL_ASSET_HPP_
 
+#include <dart/utils/export.hpp>
 #include <dart/utils/mjcf/detail/compiler.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
 #include <dart/utils/mjcf/detail/material.hpp>
@@ -52,7 +53,7 @@ namespace detail {
 
 class Body;
 
-class Asset final
+class DART_UTILS_API Asset final
 {
 public:
   /// Default constructor
