@@ -32,6 +32,7 @@
 
 #include "dart/utils/mjcf/detail/asset.hpp"
 
+#include "dart/utils/mjcf/detail/utils.hpp"
 #include "dart/utils/xml_helpers.hpp"
 
 namespace dart {
@@ -86,6 +87,8 @@ Errors Asset::read(tinyxml2::XMLElement* element)
       mMeshes.emplace_back(std::move(mesh));
     }
   }
+
+  warnUnknownElements(element, {"mesh"});
 
   return errors;
 }

@@ -32,6 +32,7 @@
 
 #include "dart/utils/mjcf/detail/equality.hpp"
 
+#include "dart/utils/mjcf/detail/utils.hpp"
 #include "dart/utils/xml_helpers.hpp"
 
 namespace dart {
@@ -71,6 +72,8 @@ Errors Equality::read(tinyxml2::XMLElement* element, const Defaults& defaults)
     errors.insert(errors.end(), bodyErrors.begin(), bodyErrors.end());
     mWelds.emplace_back(std::move(weld));
   }
+
+  warnUnknownElements(element, {"weld"});
 
   return errors;
 }

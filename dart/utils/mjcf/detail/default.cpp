@@ -120,6 +120,9 @@ Errors Default::read(tinyxml2::XMLElement* element, const Default* parent)
     }
   }
 
+  warnUnknownElements(
+      element, {"geom", "joint", "mesh", "equality", "default", "class"});
+
   return errors;
 }
 

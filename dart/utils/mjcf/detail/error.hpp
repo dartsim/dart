@@ -65,6 +65,8 @@ enum class ErrorCode
 
   INCORRECT_ELEMENT_TYPE,
 
+  ELEMENT_UNSUPPORTED,
+
   UNDEFINED_ERROR,
 };
 

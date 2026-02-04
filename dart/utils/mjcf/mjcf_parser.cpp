@@ -89,11 +89,12 @@ void createJointCommonProperties(
     const detail::Body& /*mjcfBody*/,
     const detail::Joint& mjcfJoint)
 {
-  // Name
   if (!mjcfJoint.getName().empty()) {
     props.mName = mjcfJoint.getName();
-  } else {
+  } else if (parentBodyNode != nullptr) {
     props.mName = parentBodyNode->getName() + "_Joint";
+  } else {
+    props.mName = "root_Joint";
   }
 }
 
@@ -169,6 +170,21 @@ dynamics::BallJoint::Properties createBallJointProperties(
   // Damping
   props.mDampingCoefficients.setConstant(mjcfJoint.getDamping());
 
+  // Spring stiffness
+  props.mSpringStiffnesses.setConstant(mjcfJoint.getStiffness());
+
+  // Coulomb friction
+  props.mFrictions.setConstant(mjcfJoint.getFrictionLoss());
+
+  // Armature warning
+  if (mjcfJoint.getArmature() != 0.0) {
+    DART_WARN(
+        "[MjcfParser] Joint '{}' has non-zero armature ({}) which is not "
+        "mapped to DART (no reflected inertia concept).",
+        mjcfJoint.getName(),
+        mjcfJoint.getArmature());
+  }
+
   return props;
 }
 
@@ -210,6 +226,21 @@ dynamics::PrismaticJoint::Properties createPrismaticJointProperties(
   // Spring rest position
   props.mRestPositions[0] = mjcfJoint.getSpringRef();
 
+  // Spring stiffness
+  props.mSpringStiffnesses[0] = mjcfJoint.getStiffness();
+
+  // Coulomb friction
+  props.mFrictions[0] = mjcfJoint.getFrictionLoss();
+
+  // Armature warning
+  if (mjcfJoint.getArmature() != 0.0) {
+    DART_WARN(
+        "[MjcfParser] Joint '{}' has non-zero armature ({}) which is not "
+        "mapped to DART (no reflected inertia concept).",
+        mjcfJoint.getName(),
+        mjcfJoint.getArmature());
+  }
+
   return props;
 }
 
@@ -250,6 +281,21 @@ dynamics::RevoluteJoint::Properties createRevoluteJointProperties(
 
   // Spring rest position
   props.mRestPositions[0] = mjcfJoint.getSpringRef();
+
+  // Spring stiffness
+  props.mSpringStiffnesses[0] = mjcfJoint.getStiffness();
+
+  // Coulomb friction
+  props.mFrictions[0] = mjcfJoint.getFrictionLoss();
+
+  // Armature warning
+  if (mjcfJoint.getArmature() != 0.0) {
+    DART_WARN(
+        "[MjcfParser] Joint '{}' has non-zero armature ({}) which is not "
+        "mapped to DART (no reflected inertia concept).",
+        mjcfJoint.getName(),
+        mjcfJoint.getArmature());
+  }
 
   return props;
 }
@@ -310,6 +356,14 @@ createJointAndBodyNodePairForMultipleJoints(
       props.mRestPositions[0] = mjcfJoint0.getSpringRef();
       props.mRestPositions[1] = mjcfJoint1.getSpringRef();
 
+      // Spring stiffness
+      props.mSpringStiffnesses[0] = mjcfJoint0.getStiffness();
+      props.mSpringStiffnesses[1] = mjcfJoint1.getStiffness();
+
+      // Coulomb friction
+      props.mFrictions[0] = mjcfJoint0.getFrictionLoss();
+      props.mFrictions[1] = mjcfJoint1.getFrictionLoss();
+
       // Dof names
       props.mDofNames[0] = mjcfJoint0.getName();
       props.mDofNames[1] = mjcfJoint1.getName();
@@ -369,6 +423,16 @@ createJointAndBodyNodePairForMultipleJoints(
       props.mRestPositions[0] = mjcfJoint0.getSpringRef();
       props.mRestPositions[1] = mjcfJoint1.getSpringRef();
       props.mRestPositions[2] = mjcfJoint2.getSpringRef();
+
+      // Spring stiffness
+      props.mSpringStiffnesses[0] = mjcfJoint0.getStiffness();
+      props.mSpringStiffnesses[1] = mjcfJoint1.getStiffness();
+      props.mSpringStiffnesses[2] = mjcfJoint2.getStiffness();
+
+      // Coulomb friction
+      props.mFrictions[0] = mjcfJoint0.getFrictionLoss();
+      props.mFrictions[1] = mjcfJoint1.getFrictionLoss();
+      props.mFrictions[2] = mjcfJoint2.getFrictionLoss();
 
       // Dof names
       props.mDofNames[0] = mjcfJoint0.getName();
@@ -635,6 +699,13 @@ simulation::WorldPtr createWorld(
 {
   simulation::WorldPtr world = simulation::World::create();
   world->setName(mujoco.getModel());
+
+  // Wire MJCF <option> values into DART World
+  const detail::Option& option = mujoco.getOption();
+  world->setTimeStep(option.getTimestep());
+  world->setGravity(option.getGravity());
+  // Note: Other Option values (solver, collision, cone) don't have direct DART
+  // World API mappings and are intentionally not wired.
 
   const detail::Asset& mjcfAsset = mujoco.getAsset();
   const detail::Worldbody& mjcfWorldbody = mujoco.getWorldbody();

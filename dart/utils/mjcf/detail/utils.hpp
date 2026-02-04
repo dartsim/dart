@@ -43,7 +43,9 @@
 #include <tinyxml2.h>
 
 #include <optional>
+#include <string>
 #include <string_view>
+#include <vector>
 
 namespace dart {
 namespace utils {
@@ -79,6 +81,18 @@ DART_UTILS_API Errors handleInclude(
 /// Finds all BodyNodes by name
 DART_UTILS_API std::vector<dynamics::BodyNode*> getBodyNodes(
     const simulation::World& world, std::string_view name);
+
+/// Logs warnings about child elements of @c parentElement that are not in
+/// @c knownChildNames.
+DART_UTILS_API void warnUnknownElements(
+    const tinyxml2::XMLElement* parentElement,
+    const std::vector<std::string>& knownChildNames);
+
+/// Logs warnings about attributes of @c element that are not in
+/// @c knownAttrNames.
+DART_UTILS_API void warnUnknownAttributes(
+    const tinyxml2::XMLElement* element,
+    const std::vector<std::string>& knownAttrNames);
 
 } // namespace detail
 } // namespace MjcfParser
