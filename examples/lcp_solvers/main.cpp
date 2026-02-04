@@ -949,8 +949,9 @@ void AddReferenceScene(const dart::simulation::WorldPtr& world)
 
   auto ground = std::make_shared<dart::dynamics::SimpleFrame>(
       dart::dynamics::Frame::World(), "ground");
-  ground->setShape(std::make_shared<dart::dynamics::BoxShape>(
-      Eigen::Vector3d(groundSize, groundSize, groundThickness)));
+  ground->setShape(
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d(groundSize, groundSize, groundThickness)));
   Eigen::Isometry3d groundTf = Eigen::Isometry3d::Identity();
   groundTf.translation() = Eigen::Vector3d(0.0, 0.0, -0.5 * groundThickness);
   ground->setRelativeTransform(groundTf);
