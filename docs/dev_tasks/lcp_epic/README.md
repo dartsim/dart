@@ -28,13 +28,13 @@
 
 ### lcp_physics Example
 
-| Feature       | Description                                               |
-| ------------- | --------------------------------------------------------- |
-| ImGui widget  | Full control panel with scenarios, solvers, parameters    |
-| 5 scenarios   | mass_ratio, box_stack, ball_drop, dominos, inclined_plane |
-| Headless mode | `--headless --frames N --out DIR`                         |
-| Debug section | DPI diagnostics (DisplaySize, FontSize, etc.)             |
-| UI scaling    | Layout scales with font size at high DPI                  |
+| Feature          | Description                                               |
+| ---------------- | --------------------------------------------------------- |
+| ImGui widget     | Full control panel with scenarios, solvers, parameters    |
+| 5 scenarios      | mass_ratio, box_stack, ball_drop, dominos, inclined_plane |
+| Headless capture | `--headless --frames N --out DIR` (includes ImGui panel)  |
+| Debug section    | DPI diagnostics (DisplaySize, FontSize, etc.)             |
+| UI scaling       | Layout scales with font size at high DPI                  |
 
 ### Test Infrastructure
 
@@ -62,7 +62,7 @@ pixi run build
 ./build/default/cpp/Release/bin/lcp_physics                    # Default
 ./build/default/cpp/Release/bin/lcp_physics --gui-scale 2      # High DPI test
 ./build/default/cpp/Release/bin/lcp_physics --list             # List scenarios
-./build/default/cpp/Release/bin/lcp_physics --headless --scenario mass --frames 100
+./build/default/cpp/Release/bin/lcp_physics --headless --scenario mass --frames 1 --out ./frames --gui-scale 2
 
 # Run tests
 pixi run test-all

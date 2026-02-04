@@ -6,23 +6,28 @@
 
 - **Branch**: `refactor/lcp_plan`
 - **PR**: #2464
-- **State**: All code committed and pushed. Ready for visual verification.
-- **Next Action**: Visual test at `--gui-scale 2` to confirm fixes work
+- **State**: All committed locally. 3 unpushed commits. Builds clean, tests pass.
+- **Next Action**: Push commits, then visual verification at `--gui-scale 2`
 
 ---
 
-## Recent Commits (All Pushed)
+## Last Session (2026-02-03)
+
+Cleaned up corrupted headless rendering artifacts and committed outstanding work:
+
+1. **Deleted**: Non-ASCII corrupted file + leftover `headless_frames_run*/` and `rigid_frames/` dirs
+2. **Committed**: `.gitignore` patterns for `headless_frames*/`, `rigid_frames/`, `*_frames/`
+3. **Committed**: Headless capture fix — replaced `viewer.record()` with manual `captureBuffer()` + `osgDB::writeImageFile()` to eliminate corrupted filenames. Added `ImGuiViewer(ViewerConfig)` constructor and texture readiness check.
+4. **Committed**: Dev task doc updates
+
+## Recent Commits (3 Unpushed)
 
 ```
-97c7376297c checkpoint(examples): add ImGui debug readout for lcp_physics
-997025ec189 checkpoint(examples): scale lcp_physics widget layout with font size
-b0bb5e95b6c checkpoint(gui): normalize ImGui framebuffer scale
-26f7cc3725f checkpoint(gui): skip FontGlobalScale with rebuilt fonts
-27881b54067 fix(gui): clear shape nodes when switching worlds in WorldNode
-0472a322d68 fix(gui): add setFontScale() for crisp ImGui text at high DPI
-4639cd41e5b fix(example): load fonts at scaled size for crisp text at high DPI
-6ee024c0f6c fix(example): correct GUI scaling and suppress slip compliance warnings
-bc4e6e7a8e7 feat(example): add ImGui widget to lcp_physics for interactive control
+b774e965e32 docs: update lcp_epic dev task docs with headless capture changes
+8552f94b0b7 fix(gui): use manual captureBuffer for headless frame capture
+47bf2f1b938 chore: add gitignore patterns for headless frame capture artifacts
+3382e369c7a checkpoint(examples): update ImGui debug readout and docs
+2bedcd11bb8 checkpoint(examples): add ImGui debug readout for lcp_physics
 ```
 
 ---
@@ -96,13 +101,10 @@ pixi run build
 ./build/default/cpp/Release/bin/lcp_physics                    # Default
 ./build/default/cpp/Release/bin/lcp_physics --gui-scale 2      # High DPI
 ./build/default/cpp/Release/bin/lcp_physics --list             # List scenarios
-./build/default/cpp/Release/bin/lcp_physics --headless --scenario mass --frames 100
+./build/default/cpp/Release/bin/lcp_physics --headless --scenario mass --frames 1 --out ./frames --gui-scale 2
 
 # Run tests
 pixi run test-all
-
-# Clean corrupted frame files
-find . -maxdepth 1 -type f -name $'*[\x80-\xff]*' -delete
 ```
 
 ---
@@ -148,7 +150,11 @@ ImGui::SetNextWindowSize(ImVec2(340.0f * uiScale, 600.0f * uiScale), ...);
 ```bash
 cd /home/js/dev/dartsim/dart/task_4
 git checkout refactor/lcp_plan
-git log --oneline -5  # Verify latest commits
+git status  # Should show "ahead by 3 commits"
+git log --oneline -5
+
+# Push if not yet pushed
+git push
 
 # Build if needed
 pixi run build
@@ -182,4 +188,4 @@ pixi run build
 
 ---
 
-**Last Updated**: 2026-01-19
+**Last Updated**: 2026-02-03
