@@ -691,6 +691,16 @@ void ImGuiHandler::render(::osg::RenderInfo& /*renderInfo*/)
   ImGui::Render();
 
   auto* drawData = ImGui::GetDrawData();
+  if (drawData && drawData->Textures) {
+    for (auto* texture : *drawData->Textures) {
+      if (!texture) {
+        continue;
+      }
+      if (texture->Status != ImTextureStatus_OK) {
+        ImGui_ImplOpenGL2_UpdateTexture(texture);
+      }
+    }
+  }
   ImGui_ImplOpenGL2_RenderDrawData(drawData);
 }
 

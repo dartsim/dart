@@ -36,6 +36,8 @@
 #include <dart/all.hpp>
 
 #include <CLI/CLI.hpp>
+#include <osg/Image>
+#include <osgDB/WriteFile>
 
 #include <algorithm>
 #include <chrono>
@@ -44,6 +46,7 @@
 #include <iomanip>
 #include <iostream>
 #include <random>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -843,13 +846,43 @@ int parseSolver(const std::string& name)
   return 0;
 }
 
+bool writeHeadlessFrame(
+    const std::string& outDir,
+    std::size_t frameIndex,
+    const std::vector<uint8_t>& pixels,
+    int width,
+    int height)
+{
+  if (outDir.empty() || pixels.empty() || width <= 0 || height <= 0) {
+    return false;
+  }
+
+  std::ostringstream path;
+  path << outDir << "/frame_" << std::setfill('0') << std::setw(6) << frameIndex
+       << std::setw(0) << ".png";
+
+  ::osg::ref_ptr<::osg::Image> image = new ::osg::Image;
+  image->setImage(
+      width,
+      height,
+      1,
+      GL_RGBA,
+      GL_RGBA,
+      GL_UNSIGNED_BYTE,
+      const_cast<unsigned char*>(pixels.data()),
+      ::osg::Image::NO_DELETE);
+
+  return ::osgDB::writeImageFile(*image, path.str());
+}
+
 int runHeadless(
     int scenarioIdx,
     int solverIdx,
     int frames,
     const std::string& outDir,
     int width,
-    int height)
+    int height,
+    double guiScale)
 {
   namespace fs = std::filesystem;
 
@@ -870,7 +903,10 @@ int runHeadless(
   world->setTimeStep(1.0 / 1000.0);
   applySolver(world, solvers[solverIdx].type);
 
-  Viewer viewer(ViewerConfig::headless(width, height));
+  ImGuiViewer viewer(ViewerConfig::headless(width, height));
+  viewer.setThreadingModel(::osgViewer::Viewer::SingleThreaded);
+  viewer.setImGuiScale(static_cast<float>(guiScale));
+  viewer.getImGuiHandler()->setFontScale(static_cast<float>(guiScale));
   auto shadow = WorldNode::createDefaultShadowTechnique(&viewer);
   osg::ref_ptr<LcpPhysicsWorldNode> worldNode
       = new LcpPhysicsWorldNode(world, shadow);
@@ -882,10 +918,6 @@ int runHeadless(
       ::osg::Vec3(0.0f, 1.0f, 0.0f));
   viewer.setCameraManipulator(viewer.getCameraManipulator());
 
-  if (!outDir.empty()) {
-    viewer.record(outDir, "frame_", false, 6);
-  }
-
   std::cout << "Scenario: " << scenarios[scenarioIdx].name << "\n";
   std::cout << "Solver: " << solvers[solverIdx].name << "\n";
   std::cout << "Frames: " << frames << ", Size: " << width << "x" << height
@@ -895,11 +927,27 @@ int runHeadless(
   }
 
   viewer.simulate(true);
+  viewer.getImGuiHandler()->addWidget(
+      std::make_shared<LcpPhysicsWidget>(
+          &viewer, worldNode, scenarioIdx, solverIdx));
 
   double totalStepTime = 0.0;
   for (int i = 0; i < frames; ++i) {
     viewer.frame();
     totalStepTime += worldNode->getStepTimeMs();
+    if (!outDir.empty()) {
+      int captureWidth = 0;
+      int captureHeight = 0;
+      const auto pixels = viewer.captureBuffer(&captureWidth, &captureHeight);
+      if (!writeHeadlessFrame(
+              outDir,
+              static_cast<std::size_t>(i),
+              pixels,
+              captureWidth,
+              captureHeight)) {
+        std::cerr << "Failed to capture frame " << i << "\n";
+      }
+    }
   }
 
   std::cout << "Completed " << frames << " frames\n";
@@ -954,7 +1002,8 @@ int main(int argc, char* argv[])
   int solverIdx = parseSolver(solverName);
 
   if (headless) {
-    return runHeadless(scenarioIdx, solverIdx, frames, outDir, width, height);
+    return runHeadless(
+        scenarioIdx, solverIdx, frames, outDir, width, height, guiScale);
   }
 
   auto scenarios = GetScenarios();

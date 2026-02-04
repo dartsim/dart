@@ -53,6 +53,9 @@ public:
   ImGuiViewer(
       const ::osg::Vec4& clearColor = ::osg::Vec4(0.9f, 0.9f, 0.9f, 1.0f));
 
+  /// Constructor with configuration bundle. Supports headless mode.
+  explicit ImGuiViewer(const ViewerConfig& config);
+
   /// Destructor.
   virtual ~ImGuiViewer();
 

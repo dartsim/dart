@@ -44,6 +44,9 @@ cmake --build build/default/cpp/Release --target lcp_physics
 ./lcp_physics --headless --scenario mass_ratio --frames 300 --out ./mass_ratio_frames
 ```
 
+Headless captures render the ImGui control panel; use `--gui-scale` to adjust
+the UI size in the saved frames.
+
 ## References
 
 - Guendelman et al. (2003) "Nonconvex Rigid Bodies with Stacking" - Stanford

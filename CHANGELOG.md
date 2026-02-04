@@ -97,6 +97,7 @@
 
 - GUI and Rendering
   - Added headless rendering support via `ViewerConfig` and pbuffer graphics context for CI pipelines and batch frame capture. Includes `Viewer::captureBuffer()` for raw RGBA pixel readback and a new `headless-rendering` CI job. ([#2466](https://github.com/dartsim/dart/pull/2466))
+  - Added `ImGuiViewer` construction from `ViewerConfig` to support headless ImGui rendering and example frame capture workflows.
   - GUI naming updates and backend cleanup (including the osg suffix removal). ([#2209](https://github.com/dartsim/dart/pull/2209), [#2257](https://github.com/dartsim/dart/pull/2257))
   - ImGui integration updates: FetchContent, Vulkan detection/loader fixes, GUI scale controls, and ImGuiWidget subclassing. ([#2056](https://github.com/dartsim/dart/pull/2056), [#2085](https://github.com/dartsim/dart/pull/2085), [#2261](https://github.com/dartsim/dart/pull/2261), [#2280](https://github.com/dartsim/dart/pull/2280), [#2356](https://github.com/dartsim/dart/pull/2356))
   - Rendering updates: PolyhedronVisual attachments and VisualAspect color handling. ([#2214](https://github.com/dartsim/dart/pull/2214), [#2230](https://github.com/dartsim/dart/pull/2230))
