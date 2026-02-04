@@ -1,6 +1,6 @@
 # Gap Analysis: Experimental Collision vs Reference Backends
 
-> **Last Updated**: 2026-01-20
+> **Last Updated**: 2026-02-03
 > **Purpose**: Track implementation gaps against FCL, Bullet, and ODE superset
 > **Goal**: Feature parity + performance wins before DART integration
 
@@ -13,8 +13,8 @@ The experimental collision module has **strong primitive coverage** but signific
 1. **Shapes**: Missing Cone, Ellipsoid, HeightField, Compound, Octree
 2. **Collision pairs**: Missing Plane-Plane, some Cylinder pairs for specialized algorithms
 3. **Distance queries**: Missing Cylinder, Plane distance; limited to primitives + Convex/Mesh via GJK
-4. **Advanced features**: No collision filtering, no compound shapes, no persistent manifolds
-5. **DART integration**: Not yet wired as a CollisionDetector backend
+4. **Advanced features**: ~~No collision filtering~~ ✅, ~~no compound shapes~~ ✅, no persistent manifolds
+5. **DART integration**: ✅ Wired as `"experimental"` CollisionDetector backend (2026-02-03)
 
 ---
 
@@ -35,7 +35,7 @@ The experimental collision module has **strong primitive coverage** but signific
 | Cone            | ❌           | ✅  | ✅     | ❌      | **Missing**            |
 | Ellipsoid       | ❌           | ✅  | ❌     | ❌      | **Missing** (FCL only) |
 | HeightField     | ❌           | ❌  | ✅     | ✅      | **Missing**            |
-| Compound        | ❌           | ❌  | ✅     | partial | **Missing**            |
+| Compound        | ✅           | ❌  | ✅     | partial | **Ahead** of FCL/ODE   |
 | Octree/Voxels   | ❌           | ✅  | ❌     | ❌      | **Missing** (FCL only) |
 | 2D Shapes       | ❌           | ❌  | ✅     | ❌      | N/A (not needed)       |
 

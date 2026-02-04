@@ -1,7 +1,7 @@
 # Experimental Built-in Collision Detection Module
 
-> **Epic Status**: Standalone Library Development
-> **Last Updated**: 2026-01-20
+> **Epic Status**: DART Backend Integration Complete
+> **Last Updated**: 2026-02-03
 > **Location**: `dart/collision/experimental/`
 
 ## North Star
@@ -53,7 +53,7 @@ If we can't beat existing backends in performance, there's no point in building 
 
 The module is being developed as a **standalone collision library** first, before DART API integration. Integration is deferred until feature parity with existing backends.
 
-### What's Built (413 tests passing)
+### What's Built (475+ tests passing)
 
 **Shapes:**
 
@@ -92,10 +92,10 @@ The module is being developed as a **standalone collision library** first, befor
 ### What's Next (Priority)
 
 1. ~~**P0 - Collision filtering** (groups/masks)~~ **COMPLETE**
-2. **P0 - Compound shapes**
-3. **P0 - Parallel narrowphase**
-4. **P1 - DART backend integration**
-5. **P1 - Visual verification CI** (enable VSG build + headless test in CI)
+2. ~~**P0 - Compound shapes**~~ **COMPLETE** (2026-02-03)
+3. ~~**P0 - Parallel narrowphase**~~ **COMPLETE** (2026-02-03)
+4. ~~**P1 - DART backend integration**~~ **COMPLETE** (2026-02-03)
+5. ~~**P1 - Visual verification CI**~~ **COMPLETE** (2026-02-03)
 
 See [gap_analysis.md](./gap_analysis.md) for full priority roadmap.
 
@@ -133,12 +133,14 @@ pixi run build && ctest --test-dir build/default/cpp/Release -L collision-experi
 - [x] Multiple broadphase algorithms
 - [x] ECS batch infrastructure
 - [x] Collision filtering (groups/masks)
-- [ ] Compound shapes
-- [ ] Parallel narrowphase
+- [x] Compound shapes (2026-02-03)
+- [x] Parallel narrowphase (2026-02-03)
 - [ ] Performance parity with FCL
 
-### DART Integration (Deferred):
+### DART Integration:
 
-- [ ] Wired as additional backend (opt-in)
-- [ ] Passes existing collision integration tests
+- [x] Wired as additional backend (opt-in) — registered as `"experimental"` (2026-02-03)
+- [x] Shape adapter: `dynamics::Shape` → `experimental::Shape` (2026-02-03)
+- [x] Contact conversion: `experimental::ContactPoint` → `collision::Contact` (2026-02-03)
+- [ ] Passes existing collision integration tests (partial — basic tests pass)
 - [ ] Documentation complete

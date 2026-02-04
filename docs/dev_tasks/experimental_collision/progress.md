@@ -1,7 +1,7 @@
 # Experimental Collision Module - Progress Tracker
 
-> **Last Updated**: 2026-01-20
-> **Current Focus**: Standalone Library Development
+> **Last Updated**: 2026-02-03
+> **Current Focus**: DART Integration Complete
 
 ## Status Summary
 
@@ -11,6 +11,9 @@
 | Standalone CollisionWorld  | **Complete** | 100%     |
 | Additional Shapes          | **Complete** | 100%     |
 | Distance Queries           | **Complete** | 100%     |
+| Compound Shapes            | **Complete** | 100%     |
+| Parallel Narrowphase       | **Complete** | 100%     |
+| DART Backend Integration   | **Complete** | 100%     |
 | Comparative Benchmarks     | **Partial**  | 90%      |
 | Raycast Support            | **Complete** | 100%     |
 | ECS Refactoring            | **Complete** | 100%     |
@@ -18,11 +21,11 @@
 | Convex/Mesh Shapes         | **Complete** | 100%     |
 | Continuous Collision (CCD) | **Complete** | 100%     |
 | Visual Verification        | **Complete** | 100%     |
-| DART Integration           | **Deferred** | -        |
+| DART Integration           | **Complete** | 100%     |
 
 ---
 
-## Completed Components (444 tests)
+## Completed Components (475+ tests)
 
 | Component                        | Files                                    | Tests | Notes                                               |
 | -------------------------------- | ---------------------------------------- | ----- | --------------------------------------------------- |
@@ -48,6 +51,9 @@
 | NarrowPhase                      | narrow_phase/narrow_phase.hpp/.cpp       | 7     | Shape-type dispatch                                 |
 | CollisionWorld                   | collision_world.hpp/.cpp                 | 8     | Standalone collision detection                      |
 | CollisionFilter                  | collision_filter.hpp/.cpp                | 31    | Bitmask + callback collision filtering              |
+| CompoundShape                    | shapes/shape.hpp/.cpp                    | 30+   | Recursive child dispatch for all queries            |
+| Parallel Narrowphase             | collision_world.cpp                      | 10+   | std::thread chunked pairs, deterministic merge      |
+| DART Backend (Experimental)      | experimental_backend/                    | 8+    | ExperimentalCollisionDetector registered as factory |
 
 ---
 
@@ -64,9 +70,12 @@ See **[gap_analysis.md](./gap_analysis.md)** for a comprehensive comparison agai
 **Critical gaps blocking integration:**
 
 1. ~~No collision filtering (groups/masks)~~ **COMPLETE** (2026-01-20)
-2. No compound shapes
-3. No parallel narrowphase
-4. Not yet wired as DART CollisionDetector backend
+2. ~~No compound shapes~~ **COMPLETE** (2026-02-03)
+3. ~~No parallel narrowphase~~ **COMPLETE** (2026-02-03)
+4. ~~Not yet wired as DART CollisionDetector backend~~ **COMPLETE** (2026-02-03)
+
+**All critical integration blockers resolved.** The module is now usable as a DART
+CollisionDetector backend registered as `"experimental"` via `CollisionDetector::Factory`.
 
 ## Next Steps
 
@@ -369,6 +378,9 @@ done
 | 2026-01-19 | Standalone shapes (no dynamics dep)           | Enables pure collision testing                   |
 | 2026-01-19 | Use PascalCase for abbreviations (Aabb)       | Codebase convention                              |
 | 2026-01-19 | BoxShape stores full extents internally       | API takes half-extents for compatibility         |
+| 2026-02-03 | CompoundShape with recursive dispatch         | Bullet-style children with local transforms      |
+| 2026-02-03 | std::thread parallel narrowphase              | No TBB dependency, deterministic merge via sort  |
+| 2026-02-03 | ExperimentalCollisionDetector backend         | Bridge pattern: dynamics::Shape → experimental   |
 | 2026-01-19 | AABB Tree with SAH insertion                  | O(n log n) vs O(n²), 95-188x speedup at scale    |
 | 2026-01-19 | Fat AABBs in AABB Tree                        | Reduce update frequency for small movements      |
 | 2026-01-19 | CollisionWorld as standalone API              | Simpler than full CollisionDetector integration  |
