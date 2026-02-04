@@ -32,7 +32,7 @@
 
 #include "math/random.hpp"
 
-#include "dart/math/Random.hpp"
+#include "dart/math/random.hpp"
 
 #include <nanobind/nanobind.h>
 

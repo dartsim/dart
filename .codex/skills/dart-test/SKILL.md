@@ -2,6 +2,10 @@
 name: dart-test
 description: DART testing patterns - unit tests, integration tests, CI validation
 ---
+<!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
+<!-- Source: .claude/skills/dart-test/SKILL.md -->
+<!-- Sync script: scripts/sync_ai_commands.py -->
+<!-- Run `pixi run sync-ai-commands` to update -->
 
 # DART Testing
 

@@ -111,11 +111,14 @@ tests/
 │   ├── common/              # Allocators, factory, logging, memory, strings
 │   ├── constraint/          # Constraint solver API
 │   ├── dynamics/            # Joint tests, inertia calculations, shape node API
-│   ├── lcpsolver/           # LCP solver algorithms
-│   └── math/                # Geometry, math operations, random, meshes
+│   ├── gui/                 # Tests for OSG nodes and ImGui integration
+│   ├── io/                  # Tests for parsers (URDF, SDF error paths)
+│   ├── math/                # Geometry, math operations, random, meshes, LCP solvers
+│   ├── sensor/              # Tests for the sensor API
+│   ├── simulation/          # Tests for simulation world
+│   └── utils/               # Tests for utility classes
 ├── helpers/
-│   ├── GTestUtils.hpp       # Shared GoogleTest utilities
-│   └── TestHelpers.hpp      # Shared helper functions for tests
+│   └── GTestUtils.hpp       # Shared GoogleTest utilities
 └── README.md                # Points to this comprehensive guide
 ```
 
@@ -169,8 +172,12 @@ Unit tests focus on testing **individual classes or functions in isolation**. Th
 - **common/**: Allocators, factory patterns, logging, memory management, strings, URIs
 - **constraint/**: Constraint solver API tests (without full physics)
 - **dynamics/**: Individual joint tests, inertia calculations, single component tests
-- **lcpsolver/**: LCP solver algorithms (Lemke, etc.)
-- **math/**: Geometry primitives, icosphere generation, mathematical operations, random number generation, triangle meshes
+- **gui/**: OSG nodes and ImGui integration tests
+- **io/**: Parser tests (URDF, SDF error paths)
+- **math/**: Geometry primitives, icosphere generation, mathematical operations, random number generation, triangle meshes, LCP solvers (in `lcp/` subdirectory)
+- **sensor/**: Sensor API tests
+- **simulation/**: Simulation world tests
+- **utils/**: Utility class tests
 
 ### How to Decide: Integration vs Unit?
 
@@ -455,6 +462,20 @@ dart_get_tests(integration_tests "integration")
    - `EXPECT_NEAR` for floating-point comparisons
 10. **Update tests with code changes**: Keep tests in sync with the code they verify
 
+## Coverage Patterns
+
+Areas that commonly need additional test coverage (identified from test-coverage-audit):
+
+| Pattern                | What to Test                                                         | Example                                               |
+| ---------------------- | -------------------------------------------------------------------- | ----------------------------------------------------- |
+| **Smart pointers**     | Lifecycle, expiration, owner lifetime                                | `BodyNodePtr`, `NodePtr`, `WeakPtr` variants          |
+| **Aspect system**      | `has<T>()`, `get<T>()`, `removeAspect<T>()`, `isSpecializedFor<T>()` | Composite template methods                            |
+| **Constraint solvers** | Empty inputs, duplicate skeletons, timestep changes, null detectors  | `ConstraintSolver` edge cases                         |
+| **Collision filters**  | Self-collision, blacklist edge cases, composite behavior             | `CollisionFilter` combinations                        |
+| **Template classes**   | All template instantiations, not just common types                   | `TemplateBodyNodePtr<BodyNode>` vs `<const BodyNode>` |
+
+**Key insight**: Template classes and smart pointer wrappers often have lower coverage because tests only exercise common instantiations. Add explicit tests for const variants, weak references, and edge cases like expired pointers.
+
 ## Common Pitfalls and Solutions
 
 ### Missing Test Namespace
@@ -501,6 +522,18 @@ using namespace Eigen;  // For Eigen types in test code
 target_link_libraries(bm_yourtest dart-utils benchmark::benchmark)
 ```
 
+### Windows DLL Export Issues in Tests
+
+**Problem:** New tests call methods that aren't exported from Windows DLLs, causing linker errors like "unresolved external symbol" on Windows CI.
+
+**Solution:** Add `DART_API` exports to the methods being tested:
+
+- For regular classes: Add `DART_API` at class level in the header
+- For CRTP template classes (e.g., `FixedJacobianNode`): Add `DART_API` to individual methods, NOT class level (class-level causes MSVC C2512)
+- If a class already has class-level `DART_API`, do NOT add method-level (causes MSVC C2487)
+
+**Pattern:** When adding tests that call new public APIs, verify Windows CI passes or add exports proactively.
+
 ### Using Deprecated Headers
 
 **Problem:** Warnings treated as errors when using deprecated aggregate headers.
@@ -511,6 +544,92 @@ target_link_libraries(bm_yourtest dart-utils benchmark::benchmark)
 - `dart/simulation/simulation.hpp` → `dart/simulation/All.hpp`
 - `dart/constraint/constraint.hpp` → `dart/constraint/All.hpp`
 - `dart/collision/bullet/bullet.hpp` → `dart/collision/bullet/All.hpp`
+
+### Using `M_PI` Instead of `dart::math::pi`
+
+**Problem:** `M_PI` is not defined by the C++ standard. MSVC does not provide it unless `_USE_MATH_DEFINES` is defined before `<cmath>`, causing compilation failures on Windows CI.
+
+**Solution:** Always use `dart::math::pi` (from `<dart/math/Constants.hpp>`):
+
+```cpp
+// WRONG - fails on Windows MSVC
+joint->setPositionLimits(0, -M_PI, M_PI);
+
+// CORRECT - portable across all platforms
+joint->setPositionLimits(0, -dart::math::pi, dart::math::pi);
+```
+
+### Windows URI and Path Portability in Tests
+
+**Problem:** Tests that construct URIs from filesystem paths or embed paths in XML model files can fail on Windows due to backslash separators, missing drive letters, or broken mesh resolution.
+
+**Key patterns:**
+
+1. **Use `Uri::createFromPath()` instead of `Uri(path.string())`**: The `Uri` constructor stores backslashes on Windows, which breaks mesh resolution in parsers. `Uri::createFromPath()` properly converts to a `file:///` URI with forward slashes and a drive letter.
+
+   ```cpp
+   // WRONG — fails on Windows when used as a base URI for mesh resolution
+   common::Uri uri(path.string());
+
+   // CORRECT — portable across all platforms
+   common::Uri uri = common::Uri::createFromPath(path.string());
+   ```
+
+2. **Use the two-arg `loadMesh(uri, retriever)` overload**: The single-arg `MeshShape::loadMesh(filePath)` internally prepends `"file://"` without drive letter handling on Windows. Use the two-arg overload with a proper URI instead.
+
+   ```cpp
+   // WRONG — broken on Windows (produces "file:///mesh.obj" without drive letter)
+   meshShape->loadMesh(meshPath);
+
+   // CORRECT — portable
+   auto uri = common::Uri::createFromPath(meshPath);
+   auto retriever = std::make_shared<common::LocalResourceRetriever>();
+   meshShape->loadMesh(uri.toString(), retriever);
+   ```
+
+3. **Use absolute paths with forward slashes in XML test fixtures**: Relative mesh paths like `<file_name>mesh.obj</file_name>` resolve to `file:///mesh.obj` (no drive letter) on Windows. When writing paths into XML programmatically, convert backslashes to forward slashes:
+
+   ```cpp
+   std::string meshPathStr = meshPath.string();
+   std::replace(meshPathStr.begin(), meshPathStr.end(), '\\', '/');
+   // Then embed meshPathStr in the XML
+   ```
+
+4. **Use `std::filesystem::temp_directory_path()` instead of `/tmp`**: The `/tmp` path does not exist on Windows.
+
+**Important:** Do NOT modify `Uri::fromPath()` in `uri.cpp` — the existing behavior (storing backslashes in the URI on Windows) is relied upon by `getFilesystemPath()` round-trip tests.
+
+### Signal Slot Ordering Is Non-Deterministic
+
+**Problem:** `dart::common::Signal` stores connections in a `std::set` with `owner_less` ordering. Tests that register multiple slots and assert a specific invocation order will pass on some platforms but fail on others.
+
+**Solution:** When testing Signal behavior, either:
+
+- Test with a **single slot** to avoid ordering assumptions
+- Collect results from all slots into a container and check **set equality** (not sequence equality)
+
+### Debug Assertions Crash on Invalid Access
+
+**Problem:** Passing out-of-bounds indices or invalid arguments to DART APIs triggers `DART_ASSERT` in debug builds, which aborts the process rather than returning an error. Tests that intentionally call invalid APIs will crash (SEGFAULT/abort) instead of failing gracefully.
+
+**Solution:** Do not write tests that intentionally trigger `DART_ASSERT`. Only test valid API usage. If testing error handling, test cases where the API returns errors or throws exceptions, not cases guarded by debug-only assertions.
+
+### AddressSanitizer (ASan) Sensitivity in Allocator Tests
+
+**Problem:** Tests exercising complex allocation/deallocation patterns (e.g., `PoolAllocator` edge cases like cross-block deallocation or block expansion) can trigger AddressSanitizer false positives in CI Release builds. These patterns may be valid C++ but ASan flags them as memory errors.
+
+**Solution:** Keep allocator tests simple — test basic alloc/dealloc, null pointer handling, and diagnostics (e.g., `operator<<`). Avoid stress-testing internal memory block management, as these patterns are sensitive to ASan instrumentation.
+
+### Numerical Test Tolerances Vary by Platform
+
+**Problem:** Floating-point results can differ across platforms (x86 vs ARM64, different compilers, optimization levels). Tests with overly tight tolerances (e.g., `1e-6`) may pass locally but fail in CI on different architectures.
+
+**Solution:** Use `EXPECT_NEAR` with tolerances appropriate for the computation:
+
+- Simple arithmetic: `1e-12` to `1e-10`
+- Single integration step: `1e-6` to `1e-4`
+- Multi-step simulation: `1e-4` to `1e-2`
+- When in doubt, start with `1e-6` and relax if CI shows platform-dependent failures
 
 ## Design Principles
 

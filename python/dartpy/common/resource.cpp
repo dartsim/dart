@@ -1,7 +1,7 @@
 #include "common/resource.hpp"
 
-#include "dart/common/LocalResource.hpp"
-#include "dart/common/Resource.hpp"
+#include "dart/common/local_resource.hpp"
+#include "dart/common/resource.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>

@@ -1,11 +1,11 @@
 #include "gui/gui.hpp"
 #include "gui/utils.hpp"
 
-#include <dart/gui/RealTimeWorldNode.hpp>
-#include <dart/gui/Viewer.hpp>
-#include <dart/gui/WorldNode.hpp>
+#include <dart/gui/real_time_world_node.hpp>
+#include <dart/gui/viewer.hpp>
+#include <dart/gui/world_node.hpp>
 
-#include <dart/simulation/World.hpp>
+#include <dart/simulation/world.hpp>
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
@@ -79,8 +79,9 @@ public:
 ::osg::ref_ptr<osgShadow::ShadowTechnique> toShadowRef(
     ShadowTechniquePtr shadow)
 {
-  if (!shadow)
+  if (!shadow) {
     return {};
+  }
   return ::osg::ref_ptr<osgShadow::ShadowTechnique>(shadow);
 }
 void defWorldNode(nb::module_& m)

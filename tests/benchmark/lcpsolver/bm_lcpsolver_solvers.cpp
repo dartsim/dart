@@ -8,9 +8,9 @@
  * Benchmarks for the math::LcpSolver implementations (Dantzig, PGS).
  */
 
-#include <dart/math/lcp/pivoting/DantzigSolver.hpp>
-#include <dart/math/lcp/pivoting/LemkeSolver.hpp>
-#include <dart/math/lcp/projection/PgsSolver.hpp>
+#include <dart/math/lcp/pivoting/dantzig_solver.hpp>
+#include <dart/math/lcp/pivoting/lemke_solver.hpp>
+#include <dart/math/lcp/projection/pgs_solver.hpp>
 
 #include <Eigen/Dense>
 #include <benchmark/benchmark.h>
@@ -30,8 +30,9 @@ LcpProblem makeStandardSpdProblem(int n, unsigned seed)
 
   Eigen::MatrixXd M(n, n);
   for (int r = 0; r < n; ++r) {
-    for (int c = 0; c < n; ++c)
+    for (int c = 0; c < n; ++c) {
       M(r, c) = dist(rng);
+    }
   }
 
   Eigen::MatrixXd A
@@ -39,8 +40,9 @@ LcpProblem makeStandardSpdProblem(int n, unsigned seed)
         + static_cast<double>(n) * Eigen::MatrixXd::Identity(n, n);
 
   Eigen::VectorXd xStar(n);
-  for (int i = 0; i < n; ++i)
+  for (int i = 0; i < n; ++i) {
     xStar[i] = std::abs(dist(rng)) + 0.1;
+  }
 
   Eigen::VectorXd b = A * xStar;
   Eigen::VectorXd lo = Eigen::VectorXd::Zero(n);
@@ -63,8 +65,9 @@ LcpProblem makeBoxedActiveBoundsSpdProblem(int n, unsigned seed)
 
   Eigen::MatrixXd M(n, n);
   for (int r = 0; r < n; ++r) {
-    for (int c = 0; c < n; ++c)
+    for (int c = 0; c < n; ++c) {
       M(r, c) = dist(rng);
+    }
   }
 
   Eigen::MatrixXd A
@@ -110,8 +113,9 @@ LcpProblem makeFrictionIndexSpdProblem(int numContacts, unsigned seed)
 
   Eigen::MatrixXd M(n, n);
   for (int r = 0; r < n; ++r) {
-    for (int c = 0; c < n; ++c)
+    for (int c = 0; c < n; ++c) {
       M(r, c) = dist(rng);
+    }
   }
 
   Eigen::MatrixXd A

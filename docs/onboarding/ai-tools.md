@@ -144,6 +144,98 @@ The `@path/to/file` syntax tells agents to automatically load referenced files i
 
 3. Update `AGENTS.md` skills table
 
+### Skill Design Principles
+
+Skills and subfolder `AGENTS.md` files serve different purposes. Understanding this prevents duplication.
+
+#### Skills vs Subfolder AGENTS.md
+
+| Type                    | Purpose                   | When Loaded                   | Content Style                       |
+| ----------------------- | ------------------------- | ----------------------------- | ----------------------------------- |
+| **SKILL.md**            | On-demand quick reference | Agent explicitly loads skill  | Lightweight, commands, pointers     |
+| **Subfolder AGENTS.md** | Module-specific context   | Auto-loaded when in directory | Module architecture, file locations |
+
+#### Design Rules
+
+1. **Skills are lightweight** — Quick commands and common patterns only
+2. **Skills point to full docs** — "For complete guide: `docs/onboarding/X.md`"
+3. **Subfolder AGENTS.md is source of truth** — Module-specific details live there
+4. **No duplication** — Skills reference docs, don't copy content
+
+#### Skill Template (Follow Existing Pattern)
+
+Follow the pattern of `dart-build` and `dart-test`:
+
+```markdown
+---
+name: dart-<name>
+description: Brief description for skill discovery
+---
+
+# Skill Title
+
+Load this skill when [trigger condition].
+
+## Quick Commands
+
+\`\`\`bash
+pixi run <relevant-command>
+\`\`\`
+
+## Full Documentation
+
+For complete guide: `docs/onboarding/<relevant>.md`
+
+For module details: `<module>/AGENTS.md`
+
+## Common Issues
+
+| Issue | Solution |
+| ----- | -------- |
+| ...   | ...      |
+
+## Key Files
+
+- `path/to/main/file`
+- `path/to/tests`
+```
+
+#### Creating New Skills
+
+To add a new DART-specific skill:
+
+1. Create skill directory and file:
+
+   ```bash
+   mkdir -p .claude/skills/dart-<name>
+   # Create SKILL.md following the template above
+   ```
+
+2. Sync to all tool directories:
+   ```bash
+   pixi run lint  # Includes sync-ai-commands
+   ```
+
+**Skill candidates** (create when needed): `dart-dynamics` (articulated bodies), `dart-collision` (collision backends), `dart-architecture` (core design).
+
+#### Cross-Agent Compatibility
+
+Skills work across multiple AI tools through automatic syncing:
+
+| Source            | Target           | Tool                  |
+| ----------------- | ---------------- | --------------------- |
+| `.claude/skills/` | (native)         | Claude Code, OpenCode |
+| `.claude/skills/` | `.codex/skills/` | Codex                 |
+
+**Sync is automatic** via `pixi run lint` (includes `sync-ai-commands`).
+
+**CI verification**: `pixi run check-ai-commands` ensures sync in CI.
+
+#### Acknowledgment
+
+The SKILL.md format is inspired by [OpenSkills](https://github.com/numman-ali/openskills) (Apache 2.0).
+DART skills are original content under BSD 2-Clause license.
+
 ### Keeping Commands and Skills in Sync
 
 Commands and skills exist in multiple directories because tools don't share paths.
@@ -163,6 +255,12 @@ pixi run check-ai-commands  # Check if in sync (CI mode, no changes)
 | ------------------- | -------------------- | ----------------- |
 | `.claude/commands/` | `.opencode/command/` | OpenCode commands |
 | `.claude/skills/`   | `.codex/skills/`     | Codex skills      |
+
+**Sync details**:
+
+- Synced files get an auto-generated header (placed AFTER frontmatter to preserve tool parsing)
+- Target directories (`.codex/`, `.opencode/`) are excluded from prettier to prevent re-sync loops
+- Edit source files only; synced files are overwritten on each sync
 
 **Manual workflow** (if not using sync script):
 
@@ -315,28 +413,64 @@ Contributors can create personal instruction files that are gitignored:
 
 When AI agents (Claude Code, OpenCode, etc.) work on PRs, they may encounter review comments from other AI systems (e.g., Codex bot, GitHub Copilot).
 
+### Detecting AI-Generated Reviews
+
+**Bot usernames always end with `[bot]`:**
+
+- `chatgpt-codex-connector[bot]` — Codex automated reviews
+- `github-actions[bot]` — GitHub Actions automated comments
+- `copilot[bot]` — GitHub Copilot suggestions
+
+**If the reviewer username ends in `[bot]`, it is an AI-generated review.**
+
+### Rules for AI Agents (CRITICAL)
+
+**NEVER reply to AI-generated review comments. This means:**
+
+- ❌ **NO** `gh pr comment` commands responding to bot feedback
+- ❌ **NO** PR comment replies acknowledging or addressing bot feedback
+- ❌ **NO** comments like "Addressed the Codex review feedback"
+- ✅ **YES** Push the code fix silently
+- ✅ **YES** Re-trigger review with `@codex review` after pushing
+
+**The code change IS the response. No acknowledgment needed.**
+
 **Guidance for AI agents addressing automated reviews**:
 
-- **Do NOT reply directly to AI-generated review comments** - the code change is the response
-- Address the feedback in code, then push the fix
-- If the feedback is valid, implement the fix silently
-- If the feedback is incorrect, ignore it (maintainers will dismiss if needed)
+- Address the feedback in code, then push the fix silently
+- If the feedback is valid, implement the fix without commenting
+- If the feedback appears incorrect (false positive):
+  1. **Verify** the claim is false by running standalone tests or examining the code
+  2. **Add a test** that explicitly documents the correct behavior AND refutes the claim
+  3. Example: If Codex claims `hprod([2,3,5,7])` returns 294 instead of 210:
+     ```cpp
+     EXPECT_FLOAT_EQ(result, 210.0f);  // Verify correct behavior
+     EXPECT_NE(result, 294.0f);        // Explicitly refute false claim
+     ```
+  4. Push the test (no comment needed) - the test serves as permanent documentation
 - **Follow the review-fix loop** (see workflow below)
 
 This avoids noisy bot-to-bot conversations while still leveraging automated verification.
+
+> **Note**: False positives can recur across reviews. Tests that explicitly refute incorrect claims prevent future confusion and document the verification.
 
 ### Review-Fix Loop Workflow
 
 After identifying an AI-generated review comment to address:
 
-1. **Push the fix** silently (no reply to the comment)
-2. **Resolve the thread immediately** using GraphQL (see commands below)
-3. **Re-trigger the review**: `gh pr comment <PR> --body "@codex review"`
-4. **Monitor for results**:
+1. **Make the code fix**
+2. **Run `pixi run lint`** — MANDATORY before every commit (auto-fixes formatting)
+3. **Commit and push** silently (no reply to the comment)
+4. **Resolve the thread immediately** using GraphQL (see commands below)
+5. **Re-trigger the review**: `gh pr comment <PR> --body "@codex review"`
+6. **Monitor for results**:
    - New review comments → repeat from step 1
    - "No issues" or 👍 reaction → done, PR is ready for human review
 
-**Agents MUST resolve threads automatically after pushing fixes.** This keeps the PR clean.
+**Agents MUST:**
+
+- Run `pixi run lint` before EVERY commit (CI will fail otherwise)
+- Resolve threads automatically after pushing fixes (keeps PR clean)
 
 ### GraphQL Commands for Thread Resolution
 

@@ -174,8 +174,9 @@ std::vector<std::pair<int, int>> generateSwapPairs(int n, int num_swaps)
   for (int i = 0; i < num_swaps; ++i) {
     int i1 = dist(rng);
     int i2 = dist(rng);
-    if (i1 > i2)
+    if (i1 > i2) {
       std::swap(i1, i2);
+    }
     if (i1 != i2) { // Only swap different rows
       swaps.emplace_back(i1, i2);
     }

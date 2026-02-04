@@ -8,32 +8,32 @@
  * Solver-agnostic benchmark harness for LCP comparisons.
  */
 
-#include "tests/common/lcpsolver/LcpTestHarness.hpp"
+#include "tests/common/lcpsolver/lcp_test_harness.hpp"
 
-#include <dart/math/lcp/newton/BoxedSemiSmoothNewtonSolver.hpp>
-#include <dart/math/lcp/newton/FischerBurmeisterNewtonSolver.hpp>
-#include <dart/math/lcp/newton/MinimumMapNewtonSolver.hpp>
-#include <dart/math/lcp/newton/PenalizedFischerBurmeisterNewtonSolver.hpp>
-#include <dart/math/lcp/other/AdmmSolver.hpp>
-#include <dart/math/lcp/other/InteriorPointSolver.hpp>
-#include <dart/math/lcp/other/MprgpSolver.hpp>
-#include <dart/math/lcp/other/SapSolver.hpp>
-#include <dart/math/lcp/other/ShockPropagationSolver.hpp>
-#include <dart/math/lcp/other/StaggeringSolver.hpp>
-#include <dart/math/lcp/pivoting/BaraffSolver.hpp>
-#include <dart/math/lcp/pivoting/DantzigSolver.hpp>
-#include <dart/math/lcp/pivoting/DirectSolver.hpp>
-#include <dart/math/lcp/pivoting/LemkeSolver.hpp>
-#include <dart/math/lcp/projection/ApgdSolver.hpp>
-#include <dart/math/lcp/projection/BgsSolver.hpp>
-#include <dart/math/lcp/projection/BlockedJacobiSolver.hpp>
-#include <dart/math/lcp/projection/JacobiSolver.hpp>
-#include <dart/math/lcp/projection/NncgSolver.hpp>
-#include <dart/math/lcp/projection/PgsSolver.hpp>
-#include <dart/math/lcp/projection/RedBlackGaussSeidelSolver.hpp>
-#include <dart/math/lcp/projection/SubspaceMinimizationSolver.hpp>
-#include <dart/math/lcp/projection/SymmetricPsorSolver.hpp>
-#include <dart/math/lcp/projection/TgsSolver.hpp>
+#include <dart/math/lcp/newton/boxed_semi_smooth_newton_solver.hpp>
+#include <dart/math/lcp/newton/fischer_burmeister_newton_solver.hpp>
+#include <dart/math/lcp/newton/minimum_map_newton_solver.hpp>
+#include <dart/math/lcp/newton/penalized_fischer_burmeister_newton_solver.hpp>
+#include <dart/math/lcp/other/admm_solver.hpp>
+#include <dart/math/lcp/other/interior_point_solver.hpp>
+#include <dart/math/lcp/other/mprgp_solver.hpp>
+#include <dart/math/lcp/other/sap_solver.hpp>
+#include <dart/math/lcp/other/shock_propagation_solver.hpp>
+#include <dart/math/lcp/other/staggering_solver.hpp>
+#include <dart/math/lcp/pivoting/baraff_solver.hpp>
+#include <dart/math/lcp/pivoting/dantzig_solver.hpp>
+#include <dart/math/lcp/pivoting/direct_solver.hpp>
+#include <dart/math/lcp/pivoting/lemke_solver.hpp>
+#include <dart/math/lcp/projection/apgd_solver.hpp>
+#include <dart/math/lcp/projection/bgs_solver.hpp>
+#include <dart/math/lcp/projection/blocked_jacobi_solver.hpp>
+#include <dart/math/lcp/projection/jacobi_solver.hpp>
+#include <dart/math/lcp/projection/nncg_solver.hpp>
+#include <dart/math/lcp/projection/pgs_solver.hpp>
+#include <dart/math/lcp/projection/red_black_gauss_seidel_solver.hpp>
+#include <dart/math/lcp/projection/subspace_minimization_solver.hpp>
+#include <dart/math/lcp/projection/symmetric_psor_solver.hpp>
+#include <dart/math/lcp/projection/tgs_solver.hpp>
 
 #include <Eigen/Dense>
 #include <benchmark/benchmark.h>
@@ -69,8 +69,9 @@ LcpProblem MakeStandardSpdProblem(int n, unsigned seed)
 
   Eigen::MatrixXd M(n, n);
   for (int r = 0; r < n; ++r) {
-    for (int c = 0; c < n; ++c)
+    for (int c = 0; c < n; ++c) {
       M(r, c) = dist(rng);
+    }
   }
 
   Eigen::MatrixXd A
@@ -78,8 +79,9 @@ LcpProblem MakeStandardSpdProblem(int n, unsigned seed)
         + static_cast<double>(n) * Eigen::MatrixXd::Identity(n, n);
 
   Eigen::VectorXd xStar(n);
-  for (int i = 0; i < n; ++i)
+  for (int i = 0; i < n; ++i) {
     xStar[i] = std::abs(dist(rng)) + 0.1;
+  }
 
   Eigen::VectorXd b = A * xStar;
   Eigen::VectorXd lo = Eigen::VectorXd::Zero(n);
@@ -102,8 +104,9 @@ LcpProblem MakeBoxedActiveBoundsProblem(int n, unsigned seed)
 
   Eigen::MatrixXd M(n, n);
   for (int r = 0; r < n; ++r) {
-    for (int c = 0; c < n; ++c)
+    for (int c = 0; c < n; ++c) {
       M(r, c) = dist(rng);
+    }
   }
 
   Eigen::MatrixXd A
@@ -149,8 +152,9 @@ LcpProblem MakeFrictionIndexProblem(int numContacts, unsigned seed)
 
   Eigen::MatrixXd M(n, n);
   for (int r = 0; r < n; ++r) {
-    for (int c = 0; c < n; ++c)
+    for (int c = 0; c < n; ++c) {
       M(r, c) = dist(rng);
+    }
   }
 
   Eigen::MatrixXd A
@@ -213,18 +217,21 @@ void AddShockPropagationCounters(
 {
   const int blockCount = static_cast<int>(params.blockSizes.size());
   int layerCount = static_cast<int>(params.layers.size());
-  if (layerCount == 0 && blockCount > 0)
+  if (layerCount == 0 && blockCount > 0) {
     layerCount = 1;
+  }
 
   int maxBlockSize = 0;
-  for (const int size : params.blockSizes)
+  for (const int size : params.blockSizes) {
     maxBlockSize = std::max(maxBlockSize, size);
+  }
 
   int maxBlocksPerLayer = 0;
   if (!params.layers.empty()) {
-    for (const auto& layer : params.layers)
+    for (const auto& layer : params.layers) {
       maxBlocksPerLayer
           = std::max(maxBlocksPerLayer, static_cast<int>(layer.size()));
+    }
   } else {
     maxBlocksPerLayer = blockCount;
   }
@@ -330,8 +337,9 @@ static void BM_LcpCompare_ShockPropagation_Standard(benchmark::State& state)
 
   params.layers.clear();
   params.layers.reserve(params.blockSizes.size());
-  for (int i = 0; i < static_cast<int>(params.blockSizes.size()); ++i)
+  for (int i = 0; i < static_cast<int>(params.blockSizes.size()); ++i) {
     params.layers.push_back({i});
+  }
 
   auto options = MakeBenchmarkOptions(100);
   options.customOptions = &params;
@@ -822,8 +830,9 @@ static void BM_LcpCompare_ShockPropagation_FrictionIndex(
   params.blockSizes.assign(numContacts, 3);
   params.layers.clear();
   params.layers.reserve(numContacts);
-  for (int i = 0; i < numContacts; ++i)
+  for (int i = 0; i < numContacts; ++i) {
     params.layers.push_back({i});
+  }
 
   auto options = MakeBenchmarkOptions(100);
   options.customOptions = &params;

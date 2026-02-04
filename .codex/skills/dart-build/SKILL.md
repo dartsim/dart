@@ -2,6 +2,10 @@
 name: dart-build
 description: DART build system knowledge - CMake, pixi, dependencies, troubleshooting
 ---
+<!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
+<!-- Source: .claude/skills/dart-build/SKILL.md -->
+<!-- Sync script: scripts/sync_ai_commands.py -->
+<!-- Run `pixi run sync-ai-commands` to update -->
 
 # DART Build System
 

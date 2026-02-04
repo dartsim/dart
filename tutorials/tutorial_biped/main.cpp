@@ -30,14 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/all.hpp>
 
 #include <dart/utils/All.hpp>
 
-#include <dart/All.hpp>
-#include <dart/io/Read.hpp>
+#include <dart/all.hpp>
+#include <dart/io/read.hpp>
 
 const double default_speed_increment = 0.5;
 
@@ -203,18 +203,19 @@ public:
       BodyNode* bn = mWorld->getSkeleton("biped")->getBodyNode("h_abdomen");
       bn->setColor(dart::Color::Red());
 
-      if (mPositiveSign)
+      if (mPositiveSign) {
         bn->addExtForce(
             default_force * Eigen::Vector3d::UnitX(),
             bn->getCOM(),
             false,
             false);
-      else
+      } else {
         bn->addExtForce(
             -default_force * Eigen::Vector3d::UnitX(),
             bn->getCOM(),
             false,
             false);
+      }
 
       --mForceCountDown;
     }

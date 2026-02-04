@@ -1,6 +1,6 @@
 #include "utils/mjcf_parser.hpp"
 
-#include "dart/utils/mjcf/MjcfParser.hpp"
+#include "dart/utils/mjcf/mjcf_parser.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>

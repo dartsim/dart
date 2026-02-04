@@ -18,7 +18,7 @@
 - Added `LcpSolverType` enum with Dantzig/Pgs/Lemke
 - Added primary/secondary solver config to `WorldConfig`
 - Fixed demo crashes with bounds checking and exception handling
-- Unit test: `tests/unit/simulation/test_WorldConfig.cpp`
+- Unit test: `tests/unit/simulation/test_world_config.cpp`
 
 ---
 
@@ -28,14 +28,14 @@
 
 Following PR #2462 patterns:
 
-- [x] Create `tests/common/lcpsolver/LcpProblemFactory.hpp` - Unified problem generation
-- [x] `tests/unit/math/lcp/test_AllSolversSmoke.cpp` - Every solver basic test
+- [x] Create `tests/common/lcpsolver/lcp_problem_factory.hpp` - Unified problem generation
+- [x] `tests/unit/math/lcp/test_all_solvers_smoke.cpp` - Every solver basic test
 - [ ] Extend `test_LcpEdgeCases.cpp` - n=1, singular matrices (optional)
-- [ ] Update `LcpTestFixtures.hpp` to use factory (optional refactor)
+- [ ] Update `lcp_test_fixtures.hpp` to use factory (optional refactor)
 
 ### 2.1 LCP Problem Factory (DONE ✅)
 
-**New file**: `tests/common/lcpsolver/LcpProblemFactory.hpp`
+**New file**: `tests/common/lcpsolver/lcp_problem_factory.hpp`
 
 **Categories implemented**:
 
@@ -47,7 +47,7 @@ Following PR #2462 patterns:
 
 ### 2.2 All Solvers Smoke Test (DONE ✅)
 
-**New file**: `tests/unit/math/lcp/test_AllSolversSmoke.cpp`
+**New file**: `tests/unit/math/lcp/test_all_solvers_smoke.cpp`
 
 Tests all 19 LCP solvers with 5 test cases:
 

@@ -36,8 +36,8 @@
 
 #include "dart/utils/urdf/urdf_world_parser.hpp"
 
-#include "dart/common/Logging.hpp"
-#include "dart/utils/urdf/IncludeUrdf.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/utils/urdf/include_urdf.hpp"
 
 #include <tinyxml2.h>
 
@@ -129,8 +129,9 @@ std::shared_ptr<World> parseWorldURDF(
 
   std::shared_ptr<World> world = std::make_shared<World>();
   world->name = std::string(name);
-  if (debug)
+  if (debug) {
     std::cout << "World name: " << world->name << std::endl;
+  }
 
   // Get all include filenames
   int count = 0;
@@ -145,12 +146,14 @@ std::shared_ptr<World> parseWorldURDF(
     std::string string_filename(filename);
     std::string string_model_name(model_name);
     includedFiles[string_model_name] = string_filename;
-    if (debug)
+    if (debug) {
       std::cout << "Include: Model name: " << model_name
                 << " filename: " << filename << std::endl;
+    }
   }
-  if (debug)
+  if (debug) {
     std::cout << "Found " << count << " include filenames " << std::endl;
+  }
 
   // Get all entities
   count = 0;
@@ -220,16 +223,18 @@ std::shared_ptr<World> parseWorldURDF(
         }
       } // end of include read
     } catch (urdf::ParseError& /*e*/) {
-      if (debug)
+      if (debug) {
         std::cout << "Entity xml not initialized correctly \n";
+      }
       // entity->reset();
       // world->reset();
       return world;
     }
 
   } // end for
-  if (debug)
+  if (debug) {
     std::cout << "Found " << count << " entities \n";
+  }
 
   return world;
 }

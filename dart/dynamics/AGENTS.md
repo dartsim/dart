@@ -21,6 +21,10 @@ Core articulated body system: Skeleton, BodyNode, Joint, and Shape classes.
 - Configuration space: generalized positions (q) and velocities (q̇)
 - Lie group representations for joint transforms
 
+## Numerical Validation
+
+Dynamics code uses `DART_ASSERT` for algorithmic invariants and `DART_WARN` for user-data-derived checks. See `docs/onboarding/error-handling.md` (Numerical Validation Policy) for the Category A/B/C decision tree.
+
 ## Testing
 
 Unit tests: `tests/unit/dynamics/`

@@ -24,16 +24,19 @@ stability, which are achieved through the use of generalized coordinates to
 represent articulated rigid body systems and the application of Featherstone's
 Articulated Body Algorithm to compute motion dynamics.
 
-AI Docs (Experimental)
-----------------------
+AI Docs (Interactive Q&A; Experimental)
+---------------------------------------
 
 The official documentation is the source of truth. If you want AI-assisted
 Q&A and summaries, try:
 
 * `DeepWiki <https://deepwiki.com/dartsim/dart>`_
-* `NotebookLM <https://notebooklm.google.com/notebook/c0cfc8ce-17ae-415a-a615-44c4342f0da6>`_
+* `NotebookLM <https://notebooklm.google.com/notebook/c0cfc8ce-17ae-415a-a615-44c4342f0da6>`_ (Google account required)
 
 These tools are experimental and may be incomplete or occasionally outdated.
+
+Documentation can lag behind the code as the project evolves; please report
+outdated pages or errors in `GitHub Issues <https://github.com/dartsim/dart/issues>`_.
 
 News and Announcements
 ----------------------

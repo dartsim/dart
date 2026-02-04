@@ -11,6 +11,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Gazebo / gz-physics workflow: [build-system.md](build-system.md#gazebo-integration-feature)
   - PR template checklist: [`.github/PULL_REQUEST_TEMPLATE.md`](../../.github/PULL_REQUEST_TEMPLATE.md)
   - Asserts-enabled CI build (no `-DNDEBUG`): see [Asserts-Enabled CI Build](#asserts-enabled-ci-build-no--dndebug)
+  - ASAN testing (memory errors): `pixi run test-asan` (runs in CI for `release-6.16`)
   - CI monitoring commands: see [CI Monitoring (CLI)](#ci-monitoring-cli) and [CI Monitoring (API)](#ci-monitoring-api)
   - Common CI failure fixes: see [Common CI Failure Modes](#common-ci-failure-modes)
 - Fast CI fail-fast loop:
@@ -60,6 +61,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
 - FreeBSD RTTI failures: `dynamic_cast` across shared library boundaries can fail silently; use type enums + `static_cast` instead.
 - macOS ARM64 sporadic SEGFAULT: `alloca()` or VLAs may cause alignment violations; use `std::vector<T>` for proper alignment.
 - RTD build failures: Sphinx extension compatibility issues; use defensive `.get(key, default)` patterns.
+- Case-colliding files after branch merge: When merging `release-*` into `main`, PascalCase files from the release branch can collide with snake_case files in main on case-insensitive filesystems (macOS, Windows). Check for duplicates with `find tests -name "*.cpp" | sort -f | uniq -di` and remove the PascalCase version. Also verify new tests are registered in the appropriate `CMakeLists.txt`.
 
 ## Task Recap (General)
 
@@ -587,6 +589,24 @@ Notes:
 ### FreeBSD: RTTI Across Shared Libraries
 
 `dynamic_cast` can fail silently across shared library boundaries on FreeBSD due to duplicate RTTI symbols. Prefer type enums + `static_cast` for polymorphic dispatch in cross-library APIs.
+
+### macOS ARM64: Flaky SEGFAULTs in FCL and Sensor Tests
+
+Certain tests (`FclPrimitiveContactMatrix` in Release, `SensorManager` in Debug) intermittently SEGFAULT on macOS ARM64 CI runners. These failures are non-deterministic — the same commit passes on push-triggered runs but can fail on PR-triggered runs.
+
+**Symptoms:**
+
+- SEGFAULT in `INTEGRATION_collision_FclPrimitiveContactMatrix` (Release only)
+- SEGFAULT in `UNIT_sensor_SensorManager` (Debug only)
+- Failures appear on PR-triggered runs but pass on push-triggered runs for the same commit
+
+**Solution:** Re-run only the failed jobs:
+
+```bash
+gh run rerun <RUN_ID> --failed
+```
+
+These are pre-existing intermittent issues, not caused by PR changes. If you see them, verify the failing tests are in the known-flaky list above before re-running.
 
 ### ARM64: Memory Alignment
 

@@ -75,7 +75,7 @@ Skills are in `.claude/skills/` (synced to `.codex/skills/` for Codex).
 
 - **Bug fixes**: Require PRs to BOTH `release-6.16` AND `main` branches. See `docs/onboarding/contributing.md`.
 - **Multi-phase tasks**: Create `docs/dev_tasks/<task>/` for tracking. See `docs/dev_tasks/README.md` for criteria.
-- **AI reviews**: Do NOT reply to AI-generated review comments (Codex, Copilot). Push fix, then `@codex review`. See `docs/onboarding/ai-tools.md`.
+- **AI reviews**: NEVER reply to AI-generated review comments (usernames ending in `[bot]` like `chatgpt-codex-connector[bot]}`, `github-actions[bot]`, `copilot[bot]`). No `gh pr comment`, no PR comment replies. Just push the fix silently, then re-trigger with `@codex review`. See `docs/onboarding/ai-tools.md`.
 - **Commands**: Use `pixi run ...` tasks; don't invent new entry points.
 - **Formatting**: Run `pixi run lint` before committing (auto-fixes).
 - **PRs**: Use `.github/PULL_REQUEST_TEMPLATE.md` and set the milestone (`DART 7.0` for `main`, `DART 6.16.x` for `release-6.16`).
@@ -85,14 +85,15 @@ Skills are in `.claude/skills/` (synced to `.codex/skills/` for Codex).
 
 **STOP before every `git commit`. Verify:**
 
-- [ ] `pixi run lint` — Format code/docs (run even for docs-only changes)
+- [ ] **`pixi run lint`** — ALWAYS run, even for docs-only changes. CI WILL fail without this.
 - [ ] `pixi run build` — If C++/Python code changed
 - [ ] `pixi run test-unit` — If behavior could be affected
+- [ ] **CHANGELOG.md** — Update if adding features, fixing bugs, or making breaking changes
 - [ ] **Dev task cleanup** — If task used `docs/dev_tasks/<task>/`, remove folder in this PR (not after merge)
 
 Shortcut: `pixi run test-all` runs lint + build + all tests.
 
-**Why this exists**: Agents often skip these steps when focused on the task. CI will catch issues, but fixing post-push wastes time. Run checks locally first.
+**Why this exists**: Agents often skip `pixi run lint` when focused on the task. CI will catch issues, but fixing post-push wastes time and CI resources. Run lint locally first—EVERY time.
 
 ## Tool Compatibility
 
@@ -118,3 +119,69 @@ Shortcut: `pixi run test-all` runs lint + build + all tests.
 > **Prefer slash commands** over manual prompts when available.
 
 Index: [`docs/prompts/AGENTS.md`](docs/prompts/AGENTS.md)
+
+<skills_system priority="1">
+
+## Available Skills
+
+<!-- SKILLS_TABLE_START -->
+<usage>
+When users ask you to perform tasks, check if any of the available skills below can help complete the task more effectively. Skills provide specialized capabilities and domain knowledge.
+
+How to use skills:
+
+- Invoke: `npx openskills read <skill-name>` (run in your shell)
+  - For multiple: `npx openskills read skill-one,skill-two`
+- The skill content will load with detailed instructions on how to complete the task
+- Base directory provided in output for resolving bundled resources (references/, scripts/, assets/)
+
+Usage notes:
+
+- Only use skills listed in <available_skills> below
+- Do not invoke a skill that is already loaded in your context
+- Each skill invocation is stateless
+  </usage>
+
+<available_skills>
+
+<skill>
+<name>dart-build</name>
+<description>DART build system knowledge - CMake, pixi, dependencies, troubleshooting</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>dart-ci</name>
+<description>DART CI/CD troubleshooting - GitHub Actions, cache debugging, platform-specific failures</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>dart-contribute</name>
+<description>DART contribution workflow - branching, PRs, code review, dual-PR for bugfixes</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>dart-io</name>
+<description>DART model loading - URDF, SDF, MJCF, SKEL parsers and dart::io unified API</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>dart-python</name>
+<description>DART Python bindings (dartpy) - nanobind, wheel building, API patterns</description>
+<location>project</location>
+</skill>
+
+<skill>
+<name>dart-test</name>
+<description>DART testing patterns - unit tests, integration tests, CI validation</description>
+<location>project</location>
+</skill>
+
+</available_skills>
+
+<!-- SKILLS_TABLE_END -->
+
+</skills_system>

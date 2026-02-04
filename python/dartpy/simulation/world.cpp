@@ -3,12 +3,12 @@
 #include "common/eigen_utils.hpp"
 #include "common/repr.hpp"
 #include "common/type_casters.hpp"
-#include "dart/collision/CollisionOption.hpp"
-#include "dart/collision/CollisionResult.hpp"
-#include "dart/constraint/ConstraintSolver.hpp"
-#include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/dynamics/Skeleton.hpp"
-#include "dart/simulation/World.hpp"
+#include "dart/collision/collision_option.hpp"
+#include "dart/collision/collision_result.hpp"
+#include "dart/constraint/constraint_solver.hpp"
+#include "dart/dynamics/simple_frame.hpp"
+#include "dart/dynamics/skeleton.hpp"
+#include "dart/simulation/world.hpp"
 #include "simulation/constraint_solver.hpp"
 
 #include <nanobind/eigen/dense.h>

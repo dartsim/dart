@@ -30,14 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/all.hpp>
 
 #include <dart/utils/All.hpp>
 
-#include <dart/All.hpp>
-#include <dart/io/Read.hpp>
+#include <dart/all.hpp>
+#include <dart/io/read.hpp>
 
 #include <iostream>
 
@@ -144,8 +144,9 @@ int main()
   // Set initial pose for the skeleton
   int dof = myWorld->getSkeleton(1)->getNumDofs();
   Eigen::VectorXd initPose = Eigen::VectorXd::Zero(dof);
-  for (int i = 0; i < 3; i++)
+  for (int i = 0; i < 3; i++) {
     initPose[i] = dart::math::Random::uniform(-0.5, 0.5);
+  }
   myWorld->getSkeleton(1)->setPositions(initPose);
 
   // Create event handler for keyboard input (using osg::ref_ptr for OSG

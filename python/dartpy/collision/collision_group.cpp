@@ -5,10 +5,10 @@
 #include "collision/raycast.hpp"
 #include "common/eigen_utils.hpp"
 #include "common/type_casters.hpp"
-#include "dart/collision/CollisionDetector.hpp"
-#include "dart/collision/CollisionGroup.hpp"
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/collision/collision_detector.hpp"
+#include "dart/collision/collision_group.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/shape_frame.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>

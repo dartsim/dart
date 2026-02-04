@@ -32,7 +32,7 @@ file(GLOB math_lcp_other_srcs "other/*.cpp")
 dart_add_core_headers(${math_lcp_other_hdrs})
 dart_add_core_sources(${math_lcp_other_srcs})
 
-# Compute relative header names (e.g., lcp/pivoting/LemkeSolver.hpp, lcp/dantzig/Common.hpp)
+# Compute relative header names (e.g., lcp/pivoting/lemke_solver.hpp, lcp/dantzig/common.hpp)
 set(math_lcp_header_names "")
 set(math_lcp_public_hdrs
   ${math_lcp_hdrs}
