@@ -44,6 +44,8 @@
 
 #include <iostream>
 
+#include <cstdio>
+
 namespace collision = dart::collision::experimental;
 namespace guivsg = dart::gui::vsg;
 
@@ -57,6 +59,40 @@ enum class DemoMode
   CCD,
   Picking
 };
+
+collision::Aabb computeWorldAabb(const collision::CollisionObject& obj)
+{
+  const auto* shape = obj.getShape();
+  const auto& transform = obj.getTransform();
+
+  collision::Aabb localAabb;
+  switch (shape->getType()) {
+    case collision::ShapeType::Sphere: {
+      const auto* s = static_cast<const collision::SphereShape*>(shape);
+      localAabb = collision::Aabb::forSphere(s->getRadius());
+      break;
+    }
+    case collision::ShapeType::Box: {
+      const auto* b = static_cast<const collision::BoxShape*>(shape);
+      localAabb = collision::Aabb::forBox(b->getHalfExtents());
+      break;
+    }
+    case collision::ShapeType::Capsule: {
+      const auto* c = static_cast<const collision::CapsuleShape*>(shape);
+      localAabb = collision::Aabb::forCapsule(c->getRadius(), c->getHeight());
+      break;
+    }
+    case collision::ShapeType::Cylinder: {
+      const auto* c = static_cast<const collision::CylinderShape*>(shape);
+      localAabb = collision::Aabb::forCylinder(c->getRadius(), c->getHeight());
+      break;
+    }
+    default:
+      localAabb = collision::Aabb(
+          Eigen::Vector3d(-0.5, -0.5, -0.5), Eigen::Vector3d(0.5, 0.5, 0.5));
+  }
+  return collision::Aabb::transformed(localAabb, transform);
+}
 
 struct DemoState
 {
@@ -74,15 +110,22 @@ struct DemoState
   bool pickHit = false;
   Eigen::Vector3d pickHitPoint = Eigen::Vector3d::Zero();
   Eigen::Vector3d pickHitNormal = Eigen::Vector3d::UnitZ();
+
+  double hoverX = 0.0;
+  double hoverY = 0.0;
+  bool hoverHit = false;
+  Eigen::Vector3d hoverHitPoint = Eigen::Vector3d::Zero();
+  std::string hoverInfo;
+
+  const collision::CollisionObject* selectedObject = nullptr;
+  collision::Aabb selectedAabb;
 };
 
-void buildScene(
+void addPrimitiveTargets(
     guivsg::CollisionSceneBuilder& builder,
     collision::CollisionWorld& world,
-    DemoState& state)
+    bool showAABBs)
 {
-  builder.clear();
-
   auto box = world.createObject(
       std::make_unique<collision::BoxShape>(Eigen::Vector3d(0.5, 0.5, 0.5)));
   box.setTransform(
@@ -108,7 +151,7 @@ void buildScene(
   builder.addObject(capsule, guivsg::colors::Yellow);
   builder.addObject(cylinder, guivsg::colors::Cyan);
 
-  if (state.showAABBs) {
+  if (showAABBs) {
     collision::Aabb boxAabb
         = collision::Aabb::forBox(Eigen::Vector3d(0.5, 0.5, 0.5));
     collision::Aabb worldBoxAabb = collision::Aabb::transformed(
@@ -134,26 +177,49 @@ void buildScene(
         Eigen::Translation3d(3.0, 0.0, 0.0) * Eigen::Isometry3d::Identity());
     builder.addAabb(worldCylinderAabb, guivsg::colors::Orange);
   }
+}
+
+void buildScene(
+    guivsg::CollisionSceneBuilder& builder,
+    collision::CollisionWorld& world,
+    DemoState& state)
+{
+  builder.clear();
 
   switch (state.mode) {
-    case DemoMode::Shapes:
+    case DemoMode::Shapes: {
+      addPrimitiveTargets(builder, world, state.showAABBs);
       break;
+    }
 
     case DemoMode::Contacts: {
-      auto collidingSphere
+      auto staticSphere
+          = world.createObject(std::make_unique<collision::SphereShape>(0.4));
+      staticSphere.setTransform(
+          Eigen::Translation3d(0.0, 0.0, 0.0) * Eigen::Isometry3d::Identity());
+      builder.addObject(staticSphere, guivsg::colors::Green);
+
+      auto movingSphere
           = world.createObject(std::make_unique<collision::SphereShape>(0.35));
-      collidingSphere.setTransform(
+      movingSphere.setTransform(
           Eigen::Translation3d(0.0, state.sphereOffset, 0.0)
           * Eigen::Isometry3d::Identity());
-      builder.addObject(collidingSphere, guivsg::colors::Magenta);
+      builder.addObject(movingSphere, guivsg::colors::Magenta);
 
       if (state.showAABBs) {
-        collision::Aabb collSphereAabb = collision::Aabb::forSphere(0.35);
-        collision::Aabb worldCollSphereAabb = collision::Aabb::transformed(
-            collSphereAabb,
+        collision::Aabb staticAabb = collision::Aabb::forSphere(0.4);
+        collision::Aabb worldStaticAabb = collision::Aabb::transformed(
+            staticAabb,
+            Eigen::Translation3d(0.0, 0.0, 0.0)
+                * Eigen::Isometry3d::Identity());
+        builder.addAabb(worldStaticAabb, guivsg::colors::Orange);
+
+        collision::Aabb movingAabb = collision::Aabb::forSphere(0.35);
+        collision::Aabb worldMovingAabb = collision::Aabb::transformed(
+            movingAabb,
             Eigen::Translation3d(0.0, state.sphereOffset, 0.0)
                 * Eigen::Isometry3d::Identity());
-        builder.addAabb(worldCollSphereAabb, guivsg::colors::Orange);
+        builder.addAabb(worldMovingAabb, guivsg::colors::Orange);
       }
 
       collision::CollisionResult result;
@@ -221,8 +287,6 @@ void buildScene(
         builder.addAabb(worldDs2Aabb, guivsg::colors::Orange);
       }
 
-      // Compute distance between the two spheres analytically
-      // (CollisionWorld doesn't have a direct distance() method yet)
       Eigen::Vector3d center1(-0.8, 1.5, 0.5);
       Eigen::Vector3d center2(0.6, 1.5, 0.3);
       double r1 = 0.3;
@@ -241,6 +305,8 @@ void buildScene(
     }
 
     case DemoMode::Raycast: {
+      addPrimitiveTargets(builder, world, state.showAABBs);
+
       double angle = state.rayAngle * M_PI / 180.0;
       Eigen::Vector3d dir(std::cos(angle), std::sin(angle), -0.1);
       collision::Ray ray(
@@ -255,9 +321,11 @@ void buildScene(
     }
 
     case DemoMode::CCD: {
-      Eigen::Vector3d ccdStart(-3.0, 2.0, 0.5);
-      Eigen::Vector3d ccdEnd(3.0, 2.0, 0.5);
-      double ccdRadius = 0.2;
+      addPrimitiveTargets(builder, world, state.showAABBs);
+
+      Eigen::Vector3d ccdStart(-3.0, 0.0, 0.0);
+      Eigen::Vector3d ccdEnd(3.0, 0.0, 0.0);
+      double ccdRadius = 0.15;
 
       collision::CcdOption ccdOpt = collision::CcdOption::standard();
       collision::CcdResult ccdHit;
@@ -268,6 +336,8 @@ void buildScene(
     }
 
     case DemoMode::Picking: {
+      addPrimitiveTargets(builder, world, state.showAABBs);
+
       if (state.hasPickRay) {
         collision::Ray pickRay(
             state.pickRayOrigin, state.pickRayDirection, 100.0);
@@ -350,7 +420,8 @@ int main(int argc, char* argv[])
     return 0;
   }
 
-  guivsg::ImGuiViewer viewer(scaledWidth, scaledHeight, "DART Collision Sandbox");
+  guivsg::ImGuiViewer viewer(
+      scaledWidth, scaledHeight, "DART Collision Sandbox");
   viewer.addGrid(6.0, 1.0);
   viewer.addAxes(1.0);
   viewer.lookAt(
@@ -360,7 +431,7 @@ int main(int argc, char* argv[])
 
   float guiScaleF = static_cast<float>(guiScale);
   bool firstFrame = true;
-  viewer.setImGuiCallback([&state, guiScaleF, &firstFrame]() {
+  viewer.setImGuiCallback([&state, guiScaleF, &firstFrame, &viewer, &world]() {
     ImGui::GetIO().FontGlobalScale = guiScaleF;
 
     if (firstFrame) {
@@ -432,7 +503,7 @@ int main(int argc, char* argv[])
     }
 
     if (state.mode == DemoMode::Picking) {
-      ImGui::Text("Click in 3D view to cast ray");
+      ImGui::Text("Left-click in 3D view to cast ray");
       if (state.hasPickRay) {
         if (state.pickHit) {
           ImGui::TextColored(
@@ -447,31 +518,96 @@ int main(int argc, char* argv[])
       }
     }
 
-    ImGui::Separator();
-    ImGui::Text("Camera: Left-drag rotate, Right-drag pan, Scroll zoom");
+    ImGui::End();
+
+    ImGuiIO& io = ImGui::GetIO();
+    ImVec2 mousePos = io.MousePos;
+
+    if (!io.WantCaptureMouse) {
+      char hoverBuf[128];
+      Eigen::Vector3d rayOrigin, rayDir;
+      if (viewer.computePickingRay(mousePos.x, mousePos.y, rayOrigin, rayDir)) {
+        collision::Ray ray(rayOrigin, rayDir, 100.0);
+        collision::RaycastOption rayOpt;
+        collision::RaycastResult rayHit;
+        bool hit = world.raycast(ray, rayOpt, rayHit);
+
+        if (hit && rayHit.object) {
+          state.hoverHit = true;
+          state.hoverHitPoint = rayHit.point;
+
+          collision::Aabb aabb = computeWorldAabb(*rayHit.object);
+          viewer.setHoverHighlight(aabb.min, aabb.max);
+
+          std::snprintf(
+              hoverBuf,
+              sizeof(hoverBuf),
+              "(%.2f, %.2f, %.2f)",
+              rayHit.point.x(),
+              rayHit.point.y(),
+              rayHit.point.z());
+          state.hoverInfo = hoverBuf;
+
+          if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+            state.selectedObject = rayHit.object;
+            state.selectedAabb = aabb;
+            viewer.setSelectionHighlight(aabb.min, aabb.max);
+
+            if (state.mode == DemoMode::Picking) {
+              state.pickRayOrigin = rayOrigin;
+              state.pickRayDirection = rayDir;
+              state.hasPickRay = true;
+              state.needsRebuild = true;
+            }
+          }
+        } else {
+          state.hoverHit = false;
+          viewer.clearHoverHighlight();
+          state.hoverInfo.clear();
+
+          if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+            state.selectedObject = nullptr;
+            viewer.clearSelectionHighlight();
+          }
+        }
+      } else {
+        viewer.clearHoverHighlight();
+        state.hoverInfo.clear();
+      }
+    } else {
+      viewer.clearHoverHighlight();
+      state.hoverInfo.clear();
+    }
+
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    float statusBarHeight = 24 * guiScaleF;
+    ImGui::SetNextWindowPos(ImVec2(
+        viewport->Pos.x, viewport->Pos.y + viewport->Size.y - statusBarHeight));
+    ImGui::SetNextWindowSize(ImVec2(viewport->Size.x, statusBarHeight));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 4));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+    ImGui::Begin(
+        "##StatusBar",
+        nullptr,
+        ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize
+            | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar
+            | ImGuiWindowFlags_NoSavedSettings
+            | ImGuiWindowFlags_NoBringToFrontOnFocus);
+
+    ImGui::Text("Right-drag: rotate | Middle-drag: pan | Scroll: zoom");
+    if (!state.hoverInfo.empty()) {
+      ImGui::SameLine(viewport->Size.x - 200 * guiScaleF);
+      ImGui::Text("Pos: %s", state.hoverInfo.c_str());
+    }
 
     ImGui::End();
+    ImGui::PopStyleVar(2);
   });
 
   buildScene(builder, world, state);
   viewer.setScene(builder.build());
 
   while (!viewer.shouldClose()) {
-    if (state.mode == DemoMode::Picking) {
-      if (ImGui::IsMouseClicked(ImGuiMouseButton_Middle)
-          && !ImGui::GetIO().WantCaptureMouse) {
-        ImVec2 mousePos = ImGui::GetMousePos();
-        Eigen::Vector3d rayOrigin, rayDir;
-        if (viewer.computePickingRay(
-                mousePos.x, mousePos.y, rayOrigin, rayDir)) {
-          state.pickRayOrigin = rayOrigin;
-          state.pickRayDirection = rayDir;
-          state.hasPickRay = true;
-          state.needsRebuild = true;
-        }
-      }
-    }
-
     if (state.needsRebuild) {
       world = collision::CollisionWorld();
       buildScene(builder, world, state);

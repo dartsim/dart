@@ -157,6 +157,7 @@ void RunPipelineBenchmark(
   using Clock = std::chrono::steady_clock;
 
   const std::size_t count = static_cast<std::size_t>(state.range(0));
+  const int maxThreads = static_cast<int>(state.range(1));
   auto specs = buildScene(count, range, 42);
 
   CollisionWorld world;
@@ -169,6 +170,8 @@ void RunPipelineBenchmark(
   CollisionResult result;
   BroadPhaseSnapshot snapshot;
   BatchStats stats;
+  BatchSettings settings;
+  settings.maxThreads = maxThreads;
 
   std::uint64_t updateNs = 0;
   std::uint64_t broadPhaseNs = 0;
@@ -207,7 +210,7 @@ void RunPipelineBenchmark(
 
     auto startNarrowPhase = Clock::now();
     stats.clear();
-    world.collideAll(snapshot, option, result, &stats);
+    world.collideAll(snapshot, option, result, settings, &stats);
     auto endNarrowPhase = Clock::now();
     narrowPhaseNs += std::chrono::duration_cast<std::chrono::nanoseconds>(
                          endNarrowPhase - startNarrowPhase)
@@ -232,6 +235,8 @@ void RunPipelineBenchmark(
 
   state.SetComplexityN(count);
   state.counters["objects"] = static_cast<double>(count);
+  state.counters["max_threads"]
+      = benchmark::Counter(maxThreads, benchmark::Counter::kAvgIterations);
   state.counters["aabb_update_ns"]
       = benchmark::Counter(updateNs, benchmark::Counter::kAvgIterations);
   state.counters["broadphase_ns"]
@@ -264,8 +269,12 @@ static void BM_Scenario_PipelineBreakdown_Dense_Experimental(
   RunPipelineBenchmark(state, kDenseRange, MakeMixedScene);
 }
 BENCHMARK(BM_Scenario_PipelineBreakdown_Dense_Experimental)
-    ->Arg(1000)
-    ->Arg(10000)
+    ->Args({1000, 1})
+    ->Args({1000, 2})
+    ->Args({1000, 4})
+    ->Args({10000, 1})
+    ->Args({10000, 2})
+    ->Args({10000, 4})
     ->Complexity();
 
 static void BM_Scenario_PipelineBreakdown_Sparse_Experimental(
@@ -274,8 +283,12 @@ static void BM_Scenario_PipelineBreakdown_Sparse_Experimental(
   RunPipelineBenchmark(state, kSparseRange, MakeMixedScene);
 }
 BENCHMARK(BM_Scenario_PipelineBreakdown_Sparse_Experimental)
-    ->Arg(1000)
-    ->Arg(10000)
+    ->Args({1000, 1})
+    ->Args({1000, 2})
+    ->Args({1000, 4})
+    ->Args({10000, 1})
+    ->Args({10000, 2})
+    ->Args({10000, 4})
     ->Complexity();
 
 static void BM_Scenario_PipelineBreakdown_RP3D_Dense_Spheres_Experimental(
@@ -284,8 +297,12 @@ static void BM_Scenario_PipelineBreakdown_RP3D_Dense_Spheres_Experimental(
   RunPipelineBenchmark(state, kRp3dDenseRange, MakeSphereScene);
 }
 BENCHMARK(BM_Scenario_PipelineBreakdown_RP3D_Dense_Spheres_Experimental)
-    ->Arg(1000)
-    ->Arg(10000)
+    ->Args({1000, 1})
+    ->Args({1000, 2})
+    ->Args({1000, 4})
+    ->Args({10000, 1})
+    ->Args({10000, 2})
+    ->Args({10000, 4})
     ->Complexity();
 
 static void BM_Scenario_PipelineBreakdown_RP3D_Sparse_Spheres_Experimental(
@@ -294,8 +311,12 @@ static void BM_Scenario_PipelineBreakdown_RP3D_Sparse_Spheres_Experimental(
   RunPipelineBenchmark(state, kRp3dSparseRange, MakeSphereScene);
 }
 BENCHMARK(BM_Scenario_PipelineBreakdown_RP3D_Sparse_Spheres_Experimental)
-    ->Arg(1000)
-    ->Arg(10000)
+    ->Args({1000, 1})
+    ->Args({1000, 2})
+    ->Args({1000, 4})
+    ->Args({10000, 1})
+    ->Args({10000, 2})
+    ->Args({10000, 4})
     ->Complexity();
 
 BENCHMARK_MAIN();

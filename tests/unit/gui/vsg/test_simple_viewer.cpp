@@ -29,31 +29,32 @@
 
 #include <gtest/gtest.h>
 
-namespace vsg = dart::gui::vsg;
+namespace dart_vsg = dart::gui::vsg;
 
 TEST(VsgSimpleViewer, HeadlessFactory)
 {
-  auto viewer = vsg::SimpleViewer::headless(640, 480);
+  auto viewer = dart_vsg::SimpleViewer::headless(640, 480);
   EXPECT_TRUE(viewer.isHeadless());
 }
 
 TEST(VsgSimpleViewer, HeadlessTagConstruction)
 {
-  vsg::SimpleViewer viewer(vsg::SimpleViewer::HeadlessTag{}, 320, 240);
+  dart_vsg::SimpleViewer viewer(
+      dart_vsg::SimpleViewer::HeadlessTag{}, 320, 240);
   EXPECT_TRUE(viewer.isHeadless());
 }
 
 TEST(VsgSimpleViewer, GetRoot)
 {
-  auto viewer = vsg::SimpleViewer::headless(640, 480);
+  auto viewer = dart_vsg::SimpleViewer::headless(640, 480);
   auto root = viewer.getRoot();
   ASSERT_NE(root, nullptr);
 }
 
 TEST(VsgSimpleViewer, AddNode)
 {
-  auto viewer = vsg::SimpleViewer::headless(640, 480);
-  auto axes = vsg::createAxes(1.0);
+  auto viewer = dart_vsg::SimpleViewer::headless(640, 480);
+  auto axes = dart_vsg::createAxes(1.0);
 
   viewer.addNode(axes);
   SUCCEED();
@@ -61,21 +62,21 @@ TEST(VsgSimpleViewer, AddNode)
 
 TEST(VsgSimpleViewer, AddGrid)
 {
-  auto viewer = vsg::SimpleViewer::headless(640, 480);
+  auto viewer = dart_vsg::SimpleViewer::headless(640, 480);
   viewer.addGrid(5.0, 0.5);
   SUCCEED();
 }
 
 TEST(VsgSimpleViewer, AddAxes)
 {
-  auto viewer = vsg::SimpleViewer::headless(640, 480);
+  auto viewer = dart_vsg::SimpleViewer::headless(640, 480);
   viewer.addAxes(2.0);
   SUCCEED();
 }
 
 TEST(VsgSimpleViewer, LookAt)
 {
-  auto viewer = vsg::SimpleViewer::headless(640, 480);
+  auto viewer = dart_vsg::SimpleViewer::headless(640, 480);
   viewer.lookAt(
       Eigen::Vector3d(5.0, 5.0, 5.0),
       Eigen::Vector3d(0.0, 0.0, 0.0),
@@ -85,22 +86,22 @@ TEST(VsgSimpleViewer, LookAt)
 
 TEST(VsgSimpleViewer, SetBackgroundColor)
 {
-  auto viewer = vsg::SimpleViewer::headless(640, 480);
+  auto viewer = dart_vsg::SimpleViewer::headless(640, 480);
   viewer.setBackgroundColor(Eigen::Vector4d(0.1, 0.2, 0.3, 1.0));
   SUCCEED();
 }
 
 TEST(VsgSimpleViewer, SetScene)
 {
-  auto viewer = vsg::SimpleViewer::headless(640, 480);
-  auto axes = vsg::createAxes(1.0);
+  auto viewer = dart_vsg::SimpleViewer::headless(640, 480);
+  auto axes = dart_vsg::createAxes(1.0);
   viewer.setScene(axes);
   SUCCEED();
 }
 
 TEST(VsgSimpleViewer, Clear)
 {
-  auto viewer = vsg::SimpleViewer::headless(640, 480);
+  auto viewer = dart_vsg::SimpleViewer::headless(640, 480);
   viewer.addAxes(1.0);
   viewer.addGrid(5.0, 1.0);
   viewer.clear();

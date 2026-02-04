@@ -36,6 +36,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <random>
 
 using namespace dart::collision::experimental;
 
@@ -305,6 +306,65 @@ TEST(CollisionWorld, CollideAllOrderingAndRepeatability)
       EXPECT_NEAR(repeatContact.depth, baseContact.depth, 1e-10);
     }
   }
+}
+
+TEST(CollisionWorld, ParallelCollideBasic)
+{
+  CollisionWorld world;
+  const std::size_t count = 50;
+
+  std::mt19937 rng(123u);
+  std::uniform_real_distribution<double> dist(-1.0, 1.0);
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+    tf.translation() = Eigen::Vector3d(dist(rng), dist(rng), dist(rng));
+    world.createObject(std::make_unique<SphereShape>(0.5), tf);
+  }
+
+  BatchSettings snapshotSettings;
+  snapshotSettings.deterministic = true;
+  auto snapshot = world.buildBroadPhaseSnapshot(snapshotSettings);
+
+  CollisionOption option = CollisionOption::fullContacts(100000);
+  CollisionResult baseline;
+  BatchSettings singleSettings = snapshotSettings;
+  singleSettings.maxThreads = 1;
+  singleSettings.grainSize = 1;
+  ASSERT_TRUE(world.collideAll(snapshot, option, baseline, singleSettings));
+
+  CollisionResult parallel;
+  BatchSettings parallelSettings = snapshotSettings;
+  parallelSettings.maxThreads = 4;
+  parallelSettings.grainSize = 1;
+  ASSERT_TRUE(world.collideAll(snapshot, option, parallel, parallelSettings));
+
+  ASSERT_EQ(parallel.numManifolds(), baseline.numManifolds());
+  ASSERT_EQ(parallel.numContacts(), baseline.numContacts());
+  for (std::size_t i = 0; i < baseline.numContacts(); ++i) {
+    const auto& baseContact = baseline.getContact(i);
+    const auto& parallelContact = parallel.getContact(i);
+    EXPECT_NEAR(parallelContact.position.x(), baseContact.position.x(), 1e-10);
+    EXPECT_NEAR(parallelContact.position.y(), baseContact.position.y(), 1e-10);
+    EXPECT_NEAR(parallelContact.position.z(), baseContact.position.z(), 1e-10);
+    EXPECT_NEAR(parallelContact.normal.x(), baseContact.normal.x(), 1e-10);
+    EXPECT_NEAR(parallelContact.normal.y(), baseContact.normal.y(), 1e-10);
+    EXPECT_NEAR(parallelContact.normal.z(), baseContact.normal.z(), 1e-10);
+    EXPECT_NEAR(parallelContact.depth, baseContact.depth, 1e-10);
+  }
+}
+
+TEST(CollisionWorld, ParallelCollideEmpty)
+{
+  CollisionWorld world;
+  BatchSettings settings;
+  settings.maxThreads = 4;
+  settings.deterministic = true;
+
+  auto snapshot = world.buildBroadPhaseSnapshot(settings);
+  CollisionResult result;
+  EXPECT_FALSE(world.collideAll(snapshot, CollisionOption(), result, settings));
+  EXPECT_EQ(result.numContacts(), 0u);
+  EXPECT_EQ(result.numManifolds(), 0u);
 }
 
 TEST(CollisionWorld, ObjectIdRoundTrip)

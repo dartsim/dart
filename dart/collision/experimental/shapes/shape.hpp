@@ -53,7 +53,8 @@ enum class ShapeType
   Convex,
   Sdf,
   HeightField,
-  PointCloud
+  PointCloud,
+  Compound
 };
 
 class DART_COLLISION_EXPERIMENTAL_API Shape
@@ -195,6 +196,36 @@ public:
 
 private:
   std::shared_ptr<const SignedDistanceField> field_;
+};
+
+class DART_COLLISION_EXPERIMENTAL_API CompoundShape : public Shape
+{
+public:
+  struct ChildShape
+  {
+    std::unique_ptr<Shape> shape;
+    Eigen::Isometry3d localTransform;
+  };
+
+  CompoundShape();
+  explicit CompoundShape(std::vector<ChildShape> children);
+
+  void addChild(
+      std::unique_ptr<Shape> shape,
+      const Eigen::Isometry3d& localTransform = Eigen::Isometry3d::Identity());
+  void removeChild(std::size_t index);
+
+  [[nodiscard]] ShapeType getType() const override;
+  [[nodiscard]] Aabb computeLocalAabb() const override;
+
+  [[nodiscard]] std::size_t numChildren() const;
+  [[nodiscard]] const Shape& childShape(std::size_t index) const;
+  [[nodiscard]] const Eigen::Isometry3d& childTransform(
+      std::size_t index) const;
+  [[nodiscard]] const std::vector<ChildShape>& children() const;
+
+private:
+  std::vector<ChildShape> children_;
 };
 
 } // namespace dart::collision::experimental

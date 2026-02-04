@@ -35,12 +35,12 @@
 
 #include <gtest/gtest.h>
 
-namespace vsg = dart::gui::vsg;
+namespace dart_vsg = dart::gui::vsg;
 namespace collision = dart::collision::experimental;
 
 TEST(VsgCollisionSceneBuilder, DefaultConstruction)
 {
-  vsg::CollisionSceneBuilder builder;
+  dart_vsg::CollisionSceneBuilder builder;
   auto scene = builder.build();
   ASSERT_NE(scene, nullptr);
 }
@@ -50,8 +50,8 @@ TEST(VsgCollisionSceneBuilder, AddObject)
   collision::CollisionWorld world;
   auto obj = world.createObject(std::make_unique<collision::SphereShape>(1.0));
 
-  vsg::CollisionSceneBuilder builder;
-  builder.addObject(obj, vsg::colors::Red);
+  dart_vsg::CollisionSceneBuilder builder;
+  builder.addObject(obj, dart_vsg::colors::Red);
 
   auto scene = builder.build();
   ASSERT_NE(scene, nullptr);
@@ -65,9 +65,9 @@ TEST(VsgCollisionSceneBuilder, AddMultipleObjects)
   auto box = world.createObject(
       std::make_unique<collision::BoxShape>(Eigen::Vector3d(1, 1, 1)));
 
-  vsg::CollisionSceneBuilder builder;
-  builder.addObject(sphere, vsg::colors::Red);
-  builder.addObject(box, vsg::colors::Blue);
+  dart_vsg::CollisionSceneBuilder builder;
+  builder.addObject(sphere, dart_vsg::colors::Red);
+  builder.addObject(box, dart_vsg::colors::Blue);
 
   auto scene = builder.build();
   ASSERT_NE(scene, nullptr);
@@ -88,7 +88,7 @@ TEST(VsgCollisionSceneBuilder, AddContacts)
   collision::CollisionResult result;
   world.collide(option, result);
 
-  vsg::CollisionSceneBuilder builder;
+  dart_vsg::CollisionSceneBuilder builder;
   builder.addObject(sphere1);
   builder.addObject(sphere2);
   builder.addContacts(result, 0.2, 0.03);
@@ -103,8 +103,8 @@ TEST(VsgCollisionSceneBuilder, AddAabb)
   aabb.min = Eigen::Vector3d(-1, -1, -1);
   aabb.max = Eigen::Vector3d(1, 1, 1);
 
-  vsg::CollisionSceneBuilder builder;
-  builder.addAabb(aabb, vsg::colors::Yellow);
+  dart_vsg::CollisionSceneBuilder builder;
+  builder.addAabb(aabb, dart_vsg::colors::Yellow);
 
   auto scene = builder.build();
   ASSERT_NE(scene, nullptr);
@@ -118,7 +118,7 @@ TEST(VsgCollisionSceneBuilder, AddDistanceResult)
   result.pointOnObject2 = Eigen::Vector3d(1, 0, 0);
   result.normal = Eigen::Vector3d(1, 0, 0);
 
-  vsg::CollisionSceneBuilder builder;
+  dart_vsg::CollisionSceneBuilder builder;
   builder.addDistanceResult(result);
 
   auto scene = builder.build();
@@ -136,7 +136,7 @@ TEST(VsgCollisionSceneBuilder, AddRaycast)
   hit.point = Eigen::Vector3d(5, 0, 0);
   hit.normal = Eigen::Vector3d(-1, 0, 0);
 
-  vsg::CollisionSceneBuilder builder;
+  dart_vsg::CollisionSceneBuilder builder;
   builder.addRaycast(ray, &hit);
 
   auto scene = builder.build();
@@ -148,7 +148,7 @@ TEST(VsgCollisionSceneBuilder, AddRaycastMiss)
   collision::Ray ray(
       Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 0, 0).normalized(), 10.0);
 
-  vsg::CollisionSceneBuilder builder;
+  dart_vsg::CollisionSceneBuilder builder;
   builder.addRaycast(ray, nullptr);
 
   auto scene = builder.build();
@@ -161,7 +161,7 @@ TEST(VsgCollisionSceneBuilder, AddSphereCast)
   Eigen::Vector3d end(10, 0, 0);
   double radius = 0.5;
 
-  vsg::CollisionSceneBuilder builder;
+  dart_vsg::CollisionSceneBuilder builder;
   builder.addSphereCast(start, end, radius, nullptr);
 
   auto scene = builder.build();
@@ -173,7 +173,7 @@ TEST(VsgCollisionSceneBuilder, Clear)
   collision::CollisionWorld world;
   auto obj = world.createObject(std::make_unique<collision::SphereShape>(1.0));
 
-  vsg::CollisionSceneBuilder builder;
+  dart_vsg::CollisionSceneBuilder builder;
   builder.addObject(obj);
   builder.clear();
 

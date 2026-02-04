@@ -426,12 +426,14 @@ bool SimpleViewer::shouldClose() const
 
 void SimpleViewer::addGrid(double size, double spacing)
 {
-  addNode(createGrid(size, spacing));
+  m_root->addChild(createGrid(size, spacing));
+  m_needsCompile = true;
 }
 
 void SimpleViewer::addAxes(double length)
 {
-  addNode(createAxes(length));
+  m_root->addChild(createAxes(length));
+  m_needsCompile = true;
 }
 
 std::vector<uint8_t> SimpleViewer::captureBuffer()

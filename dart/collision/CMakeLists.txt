@@ -4,6 +4,7 @@ file(GLOB srcs "*.cpp")
 file(GLOB detail_hdrs "detail/*.hpp")
 file(GLOB detail_srcs "detail/*.cpp")
 file(GLOB dart_hdrs "dart/*.hpp")
+file(GLOB experimental_backend_hdrs "experimental_backend/*.hpp")
 file(GLOB fcl_hdrs "fcl/*.hpp")
 file(GLOB ode_hdrs "ode/*.hpp")
 file(GLOB ode_detail_hdrs "ode/detail/*.hpp")
@@ -21,12 +22,28 @@ set(
   dart/All.hpp
   fcl/All.hpp
 )
+if(DART_BUILD_COLLISION_EXPERIMENTAL)
+  list(APPEND header_names experimental_backend/All.hpp)
+endif()
+set(collision_source_headers
+  ${hdrs}
+  ${detail_hdrs}
+  ${dart_hdrs}
+  ${fcl_hdrs}
+  ${ode_hdrs}
+  ${ode_detail_hdrs}
+  ${bullet_hdrs}
+  ${bullet_detail_hdrs}
+)
+if(DART_BUILD_COLLISION_EXPERIMENTAL)
+  list(APPEND collision_source_headers ${experimental_backend_hdrs})
+endif()
 dart_generate_component_headers(
   COMPONENT_NAME collision
   TARGET_DIR "dart/collision/"
   OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
   HEADERS ${header_names}
-  SOURCE_HEADERS ${hdrs} ${detail_hdrs} ${dart_hdrs} ${fcl_hdrs} ${ode_hdrs} ${ode_detail_hdrs} ${bullet_hdrs} ${bullet_detail_hdrs}
+  SOURCE_HEADERS ${collision_source_headers}
 )
 
 # Install headers and generated component headers
@@ -46,6 +63,9 @@ dart_install_compat_headers(COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS} DEST
 
 # Add subdirectories
 add_subdirectory(dart)
+if(DART_BUILD_COLLISION_EXPERIMENTAL)
+  add_subdirectory(experimental_backend)
+endif()
 add_subdirectory(fcl)
 add_subdirectory(ode)
 add_subdirectory(bullet)

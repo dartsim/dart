@@ -63,7 +63,9 @@ ImGuiViewer::ImGuiViewer(int width, int height, const std::string& title)
 {
   m_root = ::vsg::Group::create();
   m_sceneRoot = ::vsg::Group::create();
+  m_highlightGroup = ::vsg::Group::create();
   m_root->addChild(m_sceneRoot);
+  m_root->addChild(m_highlightGroup);
   setupViewer();
 }
 
@@ -109,8 +111,11 @@ void ImGuiViewer::setupCamera()
   auto viewportState = ::vsg::ViewportState::create(extent);
   m_camera = ::vsg::Camera::create(perspective, m_lookAt, viewportState);
 
-  auto trackball = ::vsg::Trackball::create(m_camera);
-  m_viewer->addEventHandler(trackball);
+  m_trackball = ::vsg::Trackball::create(m_camera);
+  m_trackball->rotateButtonMask = ::vsg::BUTTON_MASK_3;
+  m_trackball->panButtonMask = ::vsg::BUTTON_MASK_2;
+  m_trackball->zoomButtonMask = ::vsg::BUTTON_MASK_OFF;
+  m_viewer->addEventHandler(m_trackball);
 }
 
 void ImGuiViewer::compile()
@@ -246,12 +251,14 @@ bool ImGuiViewer::shouldClose() const
 
 void ImGuiViewer::addGrid(double size, double spacing)
 {
-  addNode(createGrid(size, spacing));
+  m_root->addChild(createGrid(size, spacing));
+  m_needsCompile = true;
 }
 
 void ImGuiViewer::addAxes(double length)
 {
-  addNode(createAxes(length));
+  m_root->addChild(createAxes(length));
+  m_needsCompile = true;
 }
 
 ::vsg::ref_ptr<::vsg::Window> ImGuiViewer::getWindow() const
@@ -322,6 +329,76 @@ void ImGuiViewer::getWindowSize(int& width, int& height) const
   } else {
     width = m_width;
     height = m_height;
+  }
+}
+
+void ImGuiViewer::setSelectionCallback(SelectionCallback callback)
+{
+  m_selectionCallback = std::move(callback);
+}
+
+void ImGuiViewer::setHoverCallback(HoverCallback callback)
+{
+  m_hoverCallback = std::move(callback);
+}
+
+void ImGuiViewer::getMousePosition(double& x, double& y) const
+{
+  x = m_mouseX;
+  y = m_mouseY;
+}
+
+void ImGuiViewer::setHoverHighlight(
+    const Eigen::Vector3d& min, const Eigen::Vector3d& max)
+{
+  if (m_hoverHighlight) {
+    auto& children = m_highlightGroup->children;
+    children.erase(
+        std::remove(children.begin(), children.end(), m_hoverHighlight),
+        children.end());
+  }
+
+  Eigen::Vector3d padding = (max - min) * 0.02;
+  m_hoverHighlight = createWireframeBox(
+      min - padding, max + padding, Eigen::Vector4d(0.0, 1.0, 1.0, 0.8));
+  m_highlightGroup->addChild(m_hoverHighlight);
+}
+
+void ImGuiViewer::clearHoverHighlight()
+{
+  if (m_hoverHighlight) {
+    auto& children = m_highlightGroup->children;
+    children.erase(
+        std::remove(children.begin(), children.end(), m_hoverHighlight),
+        children.end());
+    m_hoverHighlight = nullptr;
+  }
+}
+
+void ImGuiViewer::setSelectionHighlight(
+    const Eigen::Vector3d& min, const Eigen::Vector3d& max)
+{
+  if (m_selectionHighlight) {
+    auto& children = m_highlightGroup->children;
+    children.erase(
+        std::remove(children.begin(), children.end(), m_selectionHighlight),
+        children.end());
+  }
+
+  Eigen::Vector3d padding = (max - min) * 0.03;
+  m_selectionHighlight = createWireframeBox(
+      min - padding, max + padding, Eigen::Vector4d(1.0, 0.8, 0.0, 1.0));
+  m_highlightGroup->addChild(m_selectionHighlight);
+}
+
+void ImGuiViewer::clearSelectionHighlight()
+{
+  if (m_selectionHighlight) {
+    auto& children = m_highlightGroup->children;
+    children.erase(
+        std::remove(children.begin(), children.end(), m_selectionHighlight),
+        children.end());
+    m_selectionHighlight = nullptr;
   }
 }
 

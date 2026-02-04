@@ -339,3 +339,12 @@ jobs:
           else
             echo "collision_viz not built - skipping"
           fi
+
+      - name: Run collision_sandbox headless
+        run: |
+          if [ -x ./build/default/cpp/Release/bin/collision_sandbox ]; then
+            ./build/default/cpp/Release/bin/collision_sandbox --headless --frames 10 || \
+              ./build/default/cpp/Release/bin/collision_sandbox --headless
+          else
+            echo "collision_sandbox not built - skipping"
+          fi

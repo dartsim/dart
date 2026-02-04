@@ -41,6 +41,8 @@
 
 #include <algorithm>
 #include <limits>
+#include <thread>
+#include <utility>
 
 namespace dart::collision::experimental {
 
@@ -375,7 +377,6 @@ bool CollisionWorld::collideAll(
     const BatchSettings& settings,
     BatchStats* stats)
 {
-  (void)settings;
   result.clear();
   bool hasCollision = false;
 
@@ -390,50 +391,207 @@ bool CollisionWorld::collideAll(
   }
 
   auto view = getBatchView();
-  for (const auto& pair : snapshot.pairs) {
-    const auto* shape1 = view.shape(pair.first);
-    const auto* shape2 = view.shape(pair.second);
-    const auto* tf1 = view.transform(pair.first);
-    const auto* tf2 = view.transform(pair.second);
+  if (settings.maxThreads <= 1 || snapshot.pairs.size() < settings.grainSize) {
+    for (const auto& pair : snapshot.pairs) {
+      const auto* shape1 = view.shape(pair.first);
+      const auto* shape2 = view.shape(pair.second);
+      const auto* tf1 = view.transform(pair.first);
+      const auto* tf2 = view.transform(pair.second);
 
-    if (!shape1 || !shape2 || !tf1 || !tf2) {
-      continue;
-    }
+      if (!shape1 || !shape2 || !tf1 || !tf2) {
+        continue;
+      }
 
-    if (pair.first < m_idToEntity.size() && pair.second < m_idToEntity.size()) {
-      auto entity1 = m_idToEntity[pair.first];
-      auto entity2 = m_idToEntity[pair.second];
-      if (entity1 != entt::null && entity2 != entt::null) {
-        auto* filter1
-            = m_registry.try_get<comps::CollisionFilterComponent>(entity1);
-        auto* filter2
-            = m_registry.try_get<comps::CollisionFilterComponent>(entity2);
-        if (filter1 && filter2) {
-          if (!shouldCollide(filter1->filterData, filter2->filterData)) {
-            continue;
-          }
-          if (option.collisionFilter) {
-            CollisionObject obj1(entity1, this);
-            CollisionObject obj2(entity2, this);
-            if (option.collisionFilter->ignoresCollision(obj1, obj2)) {
+      if (pair.first < m_idToEntity.size()
+          && pair.second < m_idToEntity.size()) {
+        auto entity1 = m_idToEntity[pair.first];
+        auto entity2 = m_idToEntity[pair.second];
+        if (entity1 != entt::null && entity2 != entt::null) {
+          auto* filter1
+              = m_registry.try_get<comps::CollisionFilterComponent>(entity1);
+          auto* filter2
+              = m_registry.try_get<comps::CollisionFilterComponent>(entity2);
+          if (filter1 && filter2) {
+            if (!shouldCollide(filter1->filterData, filter2->filterData)) {
               continue;
+            }
+            if (option.collisionFilter) {
+              CollisionObject obj1(entity1, this);
+              CollisionObject obj2(entity2, this);
+              if (option.collisionFilter->ignoresCollision(obj1, obj2)) {
+                continue;
+              }
             }
           }
         }
       }
-    }
 
-    if (stats) {
-      ++stats->numPairsTested;
-    }
+      if (stats) {
+        ++stats->numPairsTested;
+      }
 
-    if (NarrowPhase::collide(shape1, *tf1, shape2, *tf2, option, result)) {
-      hasCollision = true;
-      if (option.enableContact == false
-          || (option.maxNumContacts > 0
-              && result.numContacts() >= option.maxNumContacts)) {
+      if (NarrowPhase::collide(shape1, *tf1, shape2, *tf2, option, result)) {
+        hasCollision = true;
+        if (option.enableContact == false
+            || (option.maxNumContacts > 0
+                && result.numContacts() >= option.maxNumContacts)) {
+          break;
+        }
+      }
+    }
+  } else {
+    const std::size_t numPairs = snapshot.pairs.size();
+    int numThreads = settings.maxThreads;
+    const unsigned int hwThreads = std::thread::hardware_concurrency();
+    if (hwThreads > 0) {
+      numThreads = std::min(numThreads, static_cast<int>(hwThreads));
+    }
+    numThreads = std::max(numThreads, 1);
+
+    const std::size_t chunkSize = std::max(
+        settings.grainSize,
+        (numPairs + static_cast<std::size_t>(numThreads) - 1)
+            / static_cast<std::size_t>(numThreads));
+
+    std::vector<CollisionResult> threadResults(
+        static_cast<std::size_t>(numThreads));
+    std::vector<std::vector<BroadPhasePair>> threadPairs(
+        static_cast<std::size_t>(numThreads));
+    std::vector<std::size_t> threadPairsTested(
+        static_cast<std::size_t>(numThreads), 0);
+    std::vector<bool> threadHasCollision(
+        static_cast<std::size_t>(numThreads), false);
+    std::vector<std::thread> threads;
+    threads.reserve(static_cast<std::size_t>(numThreads));
+
+    for (int t = 0; t < numThreads; ++t) {
+      const std::size_t begin = static_cast<std::size_t>(t) * chunkSize;
+      const std::size_t end = std::min(begin + chunkSize, numPairs);
+      if (begin >= end) {
         break;
       }
+
+      threads.emplace_back([&, begin, end, t]() {
+        auto& localResult = threadResults[static_cast<std::size_t>(t)];
+        auto& localPairs = threadPairs[static_cast<std::size_t>(t)];
+        std::size_t localPairsTested = 0;
+        bool localHasCollision = false;
+
+        for (std::size_t i = begin; i < end; ++i) {
+          const auto& pair = snapshot.pairs[i];
+          const auto* shape1 = view.shape(pair.first);
+          const auto* shape2 = view.shape(pair.second);
+          const auto* tf1 = view.transform(pair.first);
+          const auto* tf2 = view.transform(pair.second);
+
+          if (!shape1 || !shape2 || !tf1 || !tf2) {
+            continue;
+          }
+
+          if (pair.first < m_idToEntity.size()
+              && pair.second < m_idToEntity.size()) {
+            auto entity1 = m_idToEntity[pair.first];
+            auto entity2 = m_idToEntity[pair.second];
+            if (entity1 != entt::null && entity2 != entt::null) {
+              auto* filter1
+                  = m_registry.try_get<comps::CollisionFilterComponent>(
+                      entity1);
+              auto* filter2
+                  = m_registry.try_get<comps::CollisionFilterComponent>(
+                      entity2);
+              if (filter1 && filter2) {
+                if (!shouldCollide(filter1->filterData, filter2->filterData)) {
+                  continue;
+                }
+                if (option.collisionFilter) {
+                  CollisionObject obj1(entity1, this);
+                  CollisionObject obj2(entity2, this);
+                  if (option.collisionFilter->ignoresCollision(obj1, obj2)) {
+                    continue;
+                  }
+                }
+              }
+            }
+          }
+
+          ++localPairsTested;
+
+          const std::size_t manifoldsBefore = localResult.numManifolds();
+          if (NarrowPhase::collide(
+                  shape1, *tf1, shape2, *tf2, option, localResult)) {
+            localHasCollision = true;
+            const std::size_t manifoldsAfter = localResult.numManifolds();
+            for (std::size_t m = manifoldsBefore; m < manifoldsAfter; ++m) {
+              localPairs.push_back(pair);
+            }
+            if (option.enableContact == false
+                || (option.maxNumContacts > 0
+                    && localResult.numContacts() >= option.maxNumContacts)) {
+              break;
+            }
+          }
+        }
+
+        threadPairsTested[static_cast<std::size_t>(t)] = localPairsTested;
+        threadHasCollision[static_cast<std::size_t>(t)] = localHasCollision;
+      });
+    }
+
+    for (auto& thread : threads) {
+      thread.join();
+    }
+
+    std::vector<std::pair<BroadPhasePair, ContactManifold>> merged;
+    std::size_t mergedReserve = 0;
+    for (const auto& pairs : threadPairs) {
+      mergedReserve += pairs.size();
+    }
+    merged.reserve(mergedReserve);
+
+    for (std::size_t t = 0; t < threadResults.size(); ++t) {
+      if (threadHasCollision[t]) {
+        hasCollision = true;
+      }
+      if (stats) {
+        stats->numPairsTested += threadPairsTested[t];
+      }
+
+      const auto manifolds = threadResults[t].getManifolds();
+      const auto& pairs = threadPairs[t];
+      const std::size_t count = std::min(manifolds.size(), pairs.size());
+      for (std::size_t i = 0; i < count; ++i) {
+        merged.emplace_back(pairs[i], manifolds[i]);
+      }
+    }
+
+    if (settings.deterministic && merged.size() > 1) {
+      std::stable_sort(
+          merged.begin(), merged.end(), [](const auto& a, const auto& b) {
+            return a.first < b.first;
+          });
+    }
+
+    std::size_t contactCount = 0;
+    BroadPhasePair currentPair;
+    bool hasCurrentPair = false;
+    for (std::size_t i = 0; i < merged.size(); ++i) {
+      const auto& entry = merged[i];
+      if (!hasCurrentPair) {
+        currentPair = entry.first;
+        hasCurrentPair = true;
+      } else if (entry.first != currentPair) {
+        if (option.enableContact == false) {
+          break;
+        }
+        if (option.maxNumContacts > 0
+            && contactCount >= option.maxNumContacts) {
+          break;
+        }
+        currentPair = entry.first;
+      }
+
+      result.addManifold(entry.second);
+      contactCount += entry.second.numContacts();
     }
   }
 

@@ -283,4 +283,78 @@ const SignedDistanceField* SdfShape::getField() const
   return field_.get();
 }
 
+CompoundShape::CompoundShape() = default;
+
+CompoundShape::CompoundShape(std::vector<ChildShape> children)
+  : children_(std::move(children))
+{
+}
+
+void CompoundShape::addChild(
+    std::unique_ptr<Shape> shape, const Eigen::Isometry3d& localTransform)
+{
+  children_.push_back(ChildShape{std::move(shape), localTransform});
+}
+
+void CompoundShape::removeChild(std::size_t index)
+{
+  if (index >= children_.size()) {
+    return;
+  }
+
+  children_.erase(children_.begin() + static_cast<std::ptrdiff_t>(index));
+}
+
+ShapeType CompoundShape::getType() const
+{
+  return ShapeType::Compound;
+}
+
+Aabb CompoundShape::computeLocalAabb() const
+{
+  bool hasChild = false;
+  Aabb merged;
+
+  for (const auto& child : children_) {
+    if (!child.shape) {
+      continue;
+    }
+
+    const Aabb childAabb = Aabb::transformed(
+        child.shape->computeLocalAabb(), child.localTransform);
+    if (!hasChild) {
+      merged = childAabb;
+      hasChild = true;
+    } else {
+      merged.merge(childAabb);
+    }
+  }
+
+  if (!hasChild) {
+    return Aabb();
+  }
+
+  return merged;
+}
+
+std::size_t CompoundShape::numChildren() const
+{
+  return children_.size();
+}
+
+const Shape& CompoundShape::childShape(std::size_t index) const
+{
+  return *children_.at(index).shape;
+}
+
+const Eigen::Isometry3d& CompoundShape::childTransform(std::size_t index) const
+{
+  return children_.at(index).localTransform;
+}
+
+const std::vector<CompoundShape::ChildShape>& CompoundShape::children() const
+{
+  return children_;
+}
+
 } // namespace dart::collision::experimental

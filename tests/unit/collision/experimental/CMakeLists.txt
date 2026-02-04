@@ -44,6 +44,8 @@ if(DART_BUILD_TESTS AND TARGET GTest::gtest)
   if(NOT DART_TESTS_LIBCCD_FOUND)
     list(FILTER test_files EXCLUDE REGEX "test_libccd_.*\\.cpp$")
   endif()
+  list(APPEND test_files "${CMAKE_CURRENT_SOURCE_DIR}/test_parallel_determinism.cpp")
+  list(REMOVE_DUPLICATES test_files)
 
   foreach(test_file ${test_files})
     get_filename_component(test_name ${test_file} NAME_WE)

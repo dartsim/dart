@@ -13,6 +13,8 @@ dart_add_test("unit" UNIT_collision_Raycast collision/test_raycast.cpp)
 
 dart_add_test("unit" UNIT_collision_CollisionResult collision/test_collision_result.cpp)
 dart_add_test(
+  "unit" UNIT_collision_ExperimentalBackend collision/test_experimental_backend.cpp)
+dart_add_test(
   "unit"
   UNIT_collision_ConvexMesh
   collision/test_convex_mesh_shape_collision.cpp)

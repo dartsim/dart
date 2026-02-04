@@ -155,6 +155,37 @@ public:
   /// @param height [out] Window height
   void getWindowSize(int& width, int& height) const;
 
+  /// @brief Callback for mouse selection events
+  /// Parameters: screenX, screenY, button (1=left, 2=middle, 3=right)
+  using SelectionCallback = std::function<void(double, double, int)>;
+
+  /// @brief Set callback for left-click selection
+  void setSelectionCallback(SelectionCallback callback);
+
+  /// @brief Callback for mouse hover events
+  /// Parameters: screenX, screenY
+  using HoverCallback = std::function<void(double, double)>;
+
+  /// @brief Set callback for mouse hover (called on mouse move)
+  void setHoverCallback(HoverCallback callback);
+
+  /// @brief Get the last mouse position
+  void getMousePosition(double& x, double& y) const;
+
+  /// @brief Set hover highlight (thin cyan wireframe)
+  void setHoverHighlight(
+      const Eigen::Vector3d& min, const Eigen::Vector3d& max);
+
+  /// @brief Clear hover highlight
+  void clearHoverHighlight();
+
+  /// @brief Set selection highlight (thick yellow wireframe)
+  void setSelectionHighlight(
+      const Eigen::Vector3d& min, const Eigen::Vector3d& max);
+
+  /// @brief Clear selection highlight
+  void clearSelectionHighlight();
+
 private:
   void setupViewer();
   void setupCamera();
@@ -178,6 +209,16 @@ private:
   ImGuiCallback m_imguiCallback;
   ::vsg::ref_ptr<ImGuiCommand> m_imguiCommand;
   ::vsg::ref_ptr<::vsg::Node> m_renderImGui;
+  ::vsg::ref_ptr<::vsg::Trackball> m_trackball;
+
+  SelectionCallback m_selectionCallback;
+  HoverCallback m_hoverCallback;
+  double m_mouseX{0.0};
+  double m_mouseY{0.0};
+
+  ::vsg::ref_ptr<::vsg::Group> m_highlightGroup;
+  ::vsg::ref_ptr<::vsg::Node> m_hoverHighlight;
+  ::vsg::ref_ptr<::vsg::Node> m_selectionHighlight;
 
   bool m_needsCompile{true};
 };

@@ -31,63 +31,63 @@
 
 #include <gtest/gtest.h>
 
-namespace vsg = dart::gui::vsg;
+namespace dart_vsg = dart::gui::vsg;
 namespace collision = dart::collision::experimental;
 
 TEST(VsgGeometryBuilders, CreateSphere)
 {
-  auto node = vsg::createSphere(1.0);
+  auto node = dart_vsg::createSphere(1.0);
   ASSERT_NE(node, nullptr);
 }
 
 TEST(VsgGeometryBuilders, CreateSphereWithOptions)
 {
-  vsg::GeometryOptions options;
+  dart_vsg::GeometryOptions options;
   options.color = Eigen::Vector4d(1.0, 0.0, 0.0, 1.0);
   options.wireframe = true;
 
-  auto node = vsg::createSphere(0.5, options);
+  auto node = dart_vsg::createSphere(0.5, options);
   ASSERT_NE(node, nullptr);
 }
 
 TEST(VsgGeometryBuilders, CreateBox)
 {
   Eigen::Vector3d size(1.0, 2.0, 3.0);
-  auto node = vsg::createBox(size);
+  auto node = dart_vsg::createBox(size);
   ASSERT_NE(node, nullptr);
 }
 
 TEST(VsgGeometryBuilders, CreateBoxWithOptions)
 {
-  vsg::GeometryOptions options;
-  options.color = vsg::colors::Blue;
+  dart_vsg::GeometryOptions options;
+  options.color = dart_vsg::colors::Blue;
   options.twoSided = true;
 
-  auto node = vsg::createBox(Eigen::Vector3d(1.0, 1.0, 1.0), options);
+  auto node = dart_vsg::createBox(Eigen::Vector3d(1.0, 1.0, 1.0), options);
   ASSERT_NE(node, nullptr);
 }
 
 TEST(VsgGeometryBuilders, CreateCapsule)
 {
-  auto node = vsg::createCapsule(0.5, 2.0);
+  auto node = dart_vsg::createCapsule(0.5, 2.0);
   ASSERT_NE(node, nullptr);
 }
 
 TEST(VsgGeometryBuilders, CreateCylinder)
 {
-  auto node = vsg::createCylinder(0.5, 1.5);
+  auto node = dart_vsg::createCylinder(0.5, 1.5);
   ASSERT_NE(node, nullptr);
 }
 
 TEST(VsgGeometryBuilders, CreateCone)
 {
-  auto node = vsg::createCone(0.5, 1.0);
+  auto node = dart_vsg::createCone(0.5, 1.0);
   ASSERT_NE(node, nullptr);
 }
 
 TEST(VsgGeometryBuilders, CreatePlane)
 {
-  auto node = vsg::createPlane(10.0, 10.0);
+  auto node = dart_vsg::createPlane(10.0, 10.0);
   ASSERT_NE(node, nullptr);
 }
 
@@ -97,41 +97,41 @@ TEST(VsgGeometryBuilders, CreateMesh)
       = {{0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {0.5, 1.0, 0.0}};
   std::vector<std::array<unsigned int, 3>> triangles = {{0, 1, 2}};
 
-  auto node = vsg::createMesh(vertices, triangles);
+  auto node = dart_vsg::createMesh(vertices, triangles);
   ASSERT_NE(node, nullptr);
 }
 
 TEST(VsgGeometryBuilders, CreateFromShapeSphere)
 {
   collision::SphereShape sphere(1.0);
-  auto node = vsg::createFromShape(sphere);
+  auto node = dart_vsg::createFromShape(sphere);
   ASSERT_NE(node, nullptr);
 }
 
 TEST(VsgGeometryBuilders, CreateFromShapeBox)
 {
   collision::BoxShape box(Eigen::Vector3d(1.0, 2.0, 3.0));
-  auto node = vsg::createFromShape(box);
+  auto node = dart_vsg::createFromShape(box);
   ASSERT_NE(node, nullptr);
 }
 
 TEST(VsgGeometryBuilders, CreateFromShapeCapsule)
 {
   collision::CapsuleShape capsule(0.5, 2.0);
-  auto node = vsg::createFromShape(capsule);
+  auto node = dart_vsg::createFromShape(capsule);
   ASSERT_NE(node, nullptr);
 }
 
 TEST(VsgGeometryBuilders, CreateFromShapeCylinder)
 {
   collision::CylinderShape cylinder(0.5, 1.5);
-  auto node = vsg::createFromShape(cylinder);
+  auto node = dart_vsg::createFromShape(cylinder);
   ASSERT_NE(node, nullptr);
 }
 
 TEST(VsgGeometryBuilders, CreateFromShapePlane)
 {
   collision::PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
-  auto node = vsg::createFromShape(plane);
+  auto node = dart_vsg::createFromShape(plane);
   ASSERT_NE(node, nullptr);
 }

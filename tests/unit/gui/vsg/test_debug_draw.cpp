@@ -29,26 +29,28 @@
 
 #include <gtest/gtest.h>
 
-namespace vsg = dart::gui::vsg;
+namespace dart_vsg = dart::gui::vsg;
 
 TEST(VsgDebugDraw, CreatePoint)
 {
-  auto node
-      = vsg::createPoint(Eigen::Vector3d(1, 2, 3), 0.05, vsg::colors::Red);
+  auto node = dart_vsg::createPoint(
+      Eigen::Vector3d(1, 2, 3), 0.05, dart_vsg::colors::Red);
   ASSERT_NE(node, nullptr);
 }
 
 TEST(VsgDebugDraw, CreatePoints)
 {
   std::vector<Eigen::Vector3d> positions = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}};
-  auto node = vsg::createPoints(positions, 0.03, vsg::colors::Green);
+  auto node = dart_vsg::createPoints(positions, 0.03, dart_vsg::colors::Green);
   ASSERT_NE(node, nullptr);
 }
 
 TEST(VsgDebugDraw, CreateLine)
 {
-  auto node = vsg::createLine(
-      Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 1, 1), vsg::colors::Blue);
+  auto node = dart_vsg::createLine(
+      Eigen::Vector3d(0, 0, 0),
+      Eigen::Vector3d(1, 1, 1),
+      dart_vsg::colors::Blue);
   ASSERT_NE(node, nullptr);
 }
 
@@ -56,17 +58,17 @@ TEST(VsgDebugDraw, CreateLines)
 {
   std::vector<Eigen::Vector3d> starts = {{0, 0, 0}, {1, 0, 0}};
   std::vector<Eigen::Vector3d> ends = {{0, 1, 0}, {1, 1, 0}};
-  auto node = vsg::createLines(starts, ends, vsg::colors::White);
+  auto node = dart_vsg::createLines(starts, ends, dart_vsg::colors::White);
   ASSERT_NE(node, nullptr);
 }
 
 TEST(VsgDebugDraw, CreateArrow)
 {
-  auto node = vsg::createArrow(
+  auto node = dart_vsg::createArrow(
       Eigen::Vector3d(0, 0, 0),
       Eigen::Vector3d(0, 0, 1),
       0.5,
-      vsg::colors::Yellow);
+      dart_vsg::colors::Yellow);
   ASSERT_NE(node, nullptr);
 }
 
@@ -74,27 +76,28 @@ TEST(VsgDebugDraw, CreateArrows)
 {
   std::vector<Eigen::Vector3d> starts = {{0, 0, 0}, {1, 0, 0}};
   std::vector<Eigen::Vector3d> directions = {{0, 0, 1}, {0, 1, 0}};
-  auto node = vsg::createArrows(starts, directions, 0.3, vsg::colors::Cyan);
+  auto node
+      = dart_vsg::createArrows(starts, directions, 0.3, dart_vsg::colors::Cyan);
   ASSERT_NE(node, nullptr);
 }
 
 TEST(VsgDebugDraw, CreateAxes)
 {
-  auto node = vsg::createAxes(2.0, 0.05);
+  auto node = dart_vsg::createAxes(2.0, 0.05);
   ASSERT_NE(node, nullptr);
 }
 
 TEST(VsgDebugDraw, CreateGrid)
 {
-  auto node = vsg::createGrid(10.0, 1.0, vsg::colors::Gray);
+  auto node = dart_vsg::createGrid(10.0, 1.0, dart_vsg::colors::Gray);
   ASSERT_NE(node, nullptr);
 }
 
 TEST(VsgDebugDraw, CreateWireframeBox)
 {
-  auto node = vsg::createWireframeBox(
+  auto node = dart_vsg::createWireframeBox(
       Eigen::Vector3d(-1, -1, -1),
       Eigen::Vector3d(1, 1, 1),
-      vsg::colors::Orange);
+      dart_vsg::colors::Orange);
   ASSERT_NE(node, nullptr);
 }
