@@ -611,7 +611,7 @@ BENCHMARK(BM_MMConstruct_Frame<LargeObj>)
 // Section 7: STL Container Workload (FrameStlAllocator)
 // =============================================================================
 
-static void BM_StlContainer_StdAlloc(benchmark::State& state)
+static void BM_StlContainer_Std(benchmark::State& state)
 {
   const auto n = static_cast<size_t>(state.range(0));
 
@@ -629,14 +629,14 @@ static void BM_StlContainer_StdAlloc(benchmark::State& state)
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * n));
 }
-BENCHMARK(BM_StlContainer_StdAlloc)
+BENCHMARK(BM_StlContainer_Std)
     ->Arg(100)
     ->Arg(1000)
     ->Arg(10000)
     ->Repetitions(3)
     ->ReportAggregatesOnly(true);
 
-static void BM_StlContainer_FrameAlloc(benchmark::State& state)
+static void BM_StlContainer_Frame(benchmark::State& state)
 {
   const auto n = static_cast<size_t>(state.range(0));
   const size_t arenaSize = n * sizeof(int) * 2 + 4096;
@@ -660,7 +660,7 @@ static void BM_StlContainer_FrameAlloc(benchmark::State& state)
   }
   state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * n));
 }
-BENCHMARK(BM_StlContainer_FrameAlloc)
+BENCHMARK(BM_StlContainer_Frame)
     ->Arg(100)
     ->Arg(1000)
     ->Arg(10000)
