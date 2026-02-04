@@ -2337,6 +2337,52 @@ TEST(MjcfParserTest, ActuatorMotorSetsForceType)
 }
 
 //==============================================================================
+TEST(MjcfParserTest, ActuatorAutoLimitedResolvesFromRange)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="actuator_auto_limited">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <joint name="hinge1" type="hinge" axis="0 0 1" />
+    </body>
+    <body name="root2" pos="1 0 0">
+      <geom type="sphere" size="0.1" />
+      <joint name="hinge2" type="hinge" axis="0 0 1" />
+    </body>
+  </worldbody>
+  <actuator>
+    <motor joint="hinge1" forcelimited="auto" forcerange="-5 5" />
+    <motor joint="hinge2" ctrllimited="auto" />
+  </actuator>
+</mujoco>
+)";
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / "dart_mjcf_actuator_auto_limited.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+
+  auto* joint1 = world->getSkeleton(0)->getJoint("hinge1");
+  ASSERT_NE(joint1, nullptr);
+  EXPECT_DOUBLE_EQ(joint1->getForceLowerLimit(0), -5.0);
+  EXPECT_DOUBLE_EQ(joint1->getForceUpperLimit(0), 5.0);
+
+  auto* joint2 = world->getSkeleton(1)->getJoint("hinge2");
+  ASSERT_NE(joint2, nullptr);
+  EXPECT_EQ(joint2->getActuatorType(), dynamics::Joint::FORCE);
+}
+
+//==============================================================================
 TEST(MjcfParserTest, ActuatorPositionSetsServoType)
 {
   const std::string xml = R"(

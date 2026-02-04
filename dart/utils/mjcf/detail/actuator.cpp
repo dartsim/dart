@@ -82,12 +82,15 @@ Errors Actuator::read(tinyxml2::XMLElement* element)
           "Failed to find required attribute 'joint' in actuator element."));
     }
 
+    bool autoCtrlLimited = false;
     if (hasAttribute(child, "ctrllimited")) {
       const std::string ctrlLimited = getAttributeString(child, "ctrllimited");
       if (ctrlLimited == "true" || ctrlLimited == "1") {
         entry.mCtrlLimited = true;
       } else if (ctrlLimited == "false" || ctrlLimited == "0") {
         entry.mCtrlLimited = false;
+      } else if (ctrlLimited == "auto") {
+        autoCtrlLimited = true;
       } else {
         errors.emplace_back(
             ErrorCode::ATTRIBUTE_INVALID,
@@ -99,6 +102,12 @@ Errors Actuator::read(tinyxml2::XMLElement* element)
       entry.mCtrlRange = getAttributeVector2d(child, "ctrlrange");
     }
 
+    // Resolve "auto": enable ctrl limiting when ctrlrange is non-zero
+    if (autoCtrlLimited) {
+      entry.mCtrlLimited = !entry.mCtrlRange.isZero();
+    }
+
+    bool autoForceLimited = false;
     if (hasAttribute(child, "forcelimited")) {
       const std::string forceLimited
           = getAttributeString(child, "forcelimited");
@@ -106,6 +115,8 @@ Errors Actuator::read(tinyxml2::XMLElement* element)
         entry.mForceLimited = true;
       } else if (forceLimited == "false" || forceLimited == "0") {
         entry.mForceLimited = false;
+      } else if (forceLimited == "auto") {
+        autoForceLimited = true;
       } else {
         errors.emplace_back(
             ErrorCode::ATTRIBUTE_INVALID,
@@ -115,6 +126,11 @@ Errors Actuator::read(tinyxml2::XMLElement* element)
 
     if (hasAttribute(child, "forcerange")) {
       entry.mForceRange = getAttributeVector2d(child, "forcerange");
+    }
+
+    // Resolve "auto": enable force limiting when forcerange is non-zero
+    if (autoForceLimited) {
+      entry.mForceLimited = !entry.mForceRange.isZero();
     }
 
     if (hasAttribute(child, "gear")) {
