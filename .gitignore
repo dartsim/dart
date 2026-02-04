@@ -72,12 +72,11 @@ docs/python_api/_build/
 # Data files
 data/screencap/*
 
-# Headless rendering artifacts (corrupted frame captures in root)
+# Headless rendering artifacts
 /*.png
-
-# Corrupted frame files from headless OSG (non-ASCII filenames)
-# These appear as binary garbage in git status - delete manually with:
-# find . -maxdepth 1 -type f -name $'*[\x80-\xff]*' -delete
+headless_frames*/
+rigid_frames/
+*_frames/
 
 # Temporary directory for dependencies
 .deps/
