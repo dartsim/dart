@@ -19,30 +19,30 @@
 
 ### GUI Fixes (dart/gui/)
 
-| Fix | Commit | Description |
-|-----|--------|-------------|
-| Font scaling | `0472a322d68` | `setFontScale()` loads fonts at target size |
-| World switching | `27881b54067` | Clear nodes before switching worlds (fixes white screen) |
-| Framebuffer scale | `b0bb5e95b6c` | Normalize scale when viewport/traits flipped |
-| FontGlobalScale skip | `26f7cc3725f` | Avoid double-scaling with rebuilt fonts |
+| Fix                  | Commit        | Description                                              |
+| -------------------- | ------------- | -------------------------------------------------------- |
+| Font scaling         | `0472a322d68` | `setFontScale()` loads fonts at target size              |
+| World switching      | `27881b54067` | Clear nodes before switching worlds (fixes white screen) |
+| Framebuffer scale    | `b0bb5e95b6c` | Normalize scale when viewport/traits flipped             |
+| FontGlobalScale skip | `26f7cc3725f` | Avoid double-scaling with rebuilt fonts                  |
 
 ### lcp_physics Example
 
-| Feature | Description |
-|---------|-------------|
-| ImGui widget | Full control panel with scenarios, solvers, parameters |
-| 5 scenarios | mass_ratio, box_stack, ball_drop, dominos, inclined_plane |
-| Headless mode | `--headless --frames N --out DIR` |
-| Debug section | DPI diagnostics (DisplaySize, FontSize, etc.) |
-| UI scaling | Layout scales with font size at high DPI |
+| Feature       | Description                                               |
+| ------------- | --------------------------------------------------------- |
+| ImGui widget  | Full control panel with scenarios, solvers, parameters    |
+| 5 scenarios   | mass_ratio, box_stack, ball_drop, dominos, inclined_plane |
+| Headless mode | `--headless --frames N --out DIR`                         |
+| Debug section | DPI diagnostics (DisplaySize, FontSize, etc.)             |
+| UI scaling    | Layout scales with font size at high DPI                  |
 
 ### Test Infrastructure
 
-| File | Purpose |
-|------|---------|
-| `tests/common/lcpsolver/LcpProblemFactory.hpp` | Unified LCP problem generation |
-| `tests/unit/math/lcp/test_AllSolversSmoke.cpp` | Smoke tests for all 19 solvers |
-| `tests/benchmark/lcpsolver/` | Google Benchmark performance tests |
+| File                                           | Purpose                            |
+| ---------------------------------------------- | ---------------------------------- |
+| `tests/common/lcpsolver/LcpProblemFactory.hpp` | Unified LCP problem generation     |
+| `tests/unit/math/lcp/test_AllSolversSmoke.cpp` | Smoke tests for all 19 solvers     |
+| `tests/benchmark/lcpsolver/`                   | Google Benchmark performance tests |
 
 ### Python Bindings
 
@@ -75,13 +75,13 @@ find . -maxdepth 1 -type f -name $'*[\x80-\xff]*' -delete
 
 ## Phase 4 Future Work
 
-| Priority | Item |
-|----------|------|
-| P1 | APGD solver (10-100x faster than PGS) |
-| P1 | TGS solver (GPU real-time) |
-| P2 | Runtime solver switching |
-| P2 | Benchmark infrastructure |
-| P3 | Documentation expansion |
+| Priority | Item                                  |
+| -------- | ------------------------------------- |
+| P1       | APGD solver (10-100x faster than PGS) |
+| P1       | TGS solver (GPU real-time)            |
+| P2       | Runtime solver switching              |
+| P2       | Benchmark infrastructure              |
+| P3       | Documentation expansion               |
 
 ---
 

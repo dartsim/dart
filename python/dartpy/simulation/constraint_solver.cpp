@@ -2,8 +2,8 @@
 
 #include "collision/collision_group.hpp"
 #include "collision/collision_option.hpp"
-#include "dart/constraint/ConstraintBase.hpp"
-#include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/constraint/constraint_base.hpp"
+#include "dart/constraint/constraint_solver.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>

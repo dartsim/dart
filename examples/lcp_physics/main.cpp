@@ -30,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/All.hpp>
-#include <dart/gui/IncludeImGui.hpp>
+#include <dart/gui/all.hpp>
+#include <dart/gui/include_im_gui.hpp>
 
-#include <dart/All.hpp>
+#include <dart/all.hpp>
 
 #include <CLI/CLI.hpp>
 
@@ -456,8 +456,9 @@ WorldPtr createScenario(Scenario scenario)
 void applySolver(WorldPtr world, SolverType solverType)
 {
   auto* solver = world->getConstraintSolver();
-  if (!solver)
+  if (!solver) {
     return;
+  }
 
   switch (solverType) {
     case SolverType::Dantzig:
@@ -604,8 +605,9 @@ private:
       }
       ImGui::SameLine();
       if (ImGui::Button("Step", ImVec2(70.0f * mUiScale, 0.0f))) {
-        if (simulating)
+        if (simulating) {
           mViewer->simulate(false);
+        }
         mWorld->step();
       }
       ImGui::SameLine();
@@ -700,8 +702,9 @@ private:
             ImVec2(300.0f * mUiScale, 60.0f * mUiScale));
 
         float avgTime = 0.0f;
-        for (float t : history)
+        for (float t : history) {
           avgTime += t;
+        }
         avgTime /= static_cast<float>(history.size());
         ImGui::Text("Avg: %.2f ms, Max: %.2f ms", avgTime, maxTime / 1.2f);
       }
@@ -724,8 +727,7 @@ private:
     }
 
     const ImGuiIO& io = ImGui::GetIO();
-    ImGui::Text(
-        "DisplaySize: %.0f x %.0f", io.DisplaySize.x, io.DisplaySize.y);
+    ImGui::Text("DisplaySize: %.0f x %.0f", io.DisplaySize.x, io.DisplaySize.y);
     ImGui::Text(
         "FramebufferScale: %.2f x %.2f",
         io.DisplayFramebufferScale.x,
@@ -735,7 +737,9 @@ private:
     ImGui::Text("UiScale: %.2f", mUiScale);
     if (io.Fonts && io.Fonts->TexData) {
       ImGui::Text(
-          "FontTex: %d x %d", io.Fonts->TexData->Width, io.Fonts->TexData->Height);
+          "FontTex: %d x %d",
+          io.Fonts->TexData->Width,
+          io.Fonts->TexData->Height);
     }
   }
 

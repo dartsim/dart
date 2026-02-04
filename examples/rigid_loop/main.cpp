@@ -30,14 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/all.hpp>
 
 #include <dart/utils/All.hpp>
 
-#include <dart/All.hpp>
-#include <dart/io/Read.hpp>
+#include <dart/all.hpp>
+#include <dart/io/read.hpp>
 
 using namespace dart;
 using namespace math;
@@ -65,9 +65,11 @@ private:
     int nDof = mWorld->getSkeleton(0)->getNumDofs();
     // add damping to each joint; twist-dof has smaller damping
     Eigen::VectorXd damping = -0.01 * mWorld->getSkeleton(0)->getVelocities();
-    for (int i = 0; i < nDof; i++)
-      if (i % 3 == 1)
+    for (int i = 0; i < nDof; i++) {
+      if (i % 3 == 1) {
         damping[i] *= 0.1;
+      }
+    }
     return damping;
   }
 

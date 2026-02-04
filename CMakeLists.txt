@@ -50,7 +50,7 @@ set(CMAKE_DEBUG_POSTFIX "d")
 set(CMAKE_MODULE_PATH "${DART_SOURCE_DIR}/cmake")
 
 include(dart_defs)
-include(CompilerCache)
+include(compiler_cache)
 
 # Initialize CMake component helpers (now part of dart_defs.cmake)
 # Uses the following variables:
@@ -251,6 +251,8 @@ set(DART_PROFILE_ENABLE_TRACY "${DART_PROFILE_TRACY}")
 # errors.
 dart_option(DART_ENABLE_SIMD
   "Build DART with all SIMD instructions on the current local machine" OFF CATEGORY performance)
+dart_option(DART_SIMD_FORCE_SCALAR
+  "Force dart::simd to use scalar fallback (for testing)" OFF CATEGORY performance)
 dart_option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF CATEGORY performance)
 dart_option(DART_ENABLE_ASAN "Build DART with AddressSanitizer instrumentation" OFF CATEGORY diagnostics)
 # GCC and Clang add ANSI-formatted colors when they detect the output medium is a
@@ -432,7 +434,7 @@ endif()
 #===============================================================================
 # Find dependencies
 #===============================================================================
-include(DARTFindDependencies)
+include(dart_find_dependencies)
 
 #===============================================================================
 # Check for non-case-sensitive filesystems
@@ -599,6 +601,10 @@ if(DART_ENABLE_ASAN)
   # Disable Boost's embedded GDB scripts, which are known to trigger quoting issues
   # with recent GCC versions when AddressSanitizer instrumentation is enabled.
   add_compile_definitions(BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS)
+endif()
+
+if(DART_SIMD_FORCE_SCALAR)
+  add_compile_definitions(DART_SIMD_FORCE_SCALAR=1)
 endif()
 
 #===============================================================================

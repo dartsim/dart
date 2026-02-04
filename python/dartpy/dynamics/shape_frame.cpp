@@ -3,9 +3,9 @@
 #include "common/eigen_utils.hpp"
 #include "common/repr.hpp"
 #include "common/type_casters.hpp"
-#include "dart/dynamics/Shape.hpp"
-#include "dart/dynamics/ShapeFrame.hpp"
-#include "dart/dynamics/ShapeNode.hpp"
+#include "dart/dynamics/shape.hpp"
+#include "dart/dynamics/shape_frame.hpp"
+#include "dart/dynamics/shape_node.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>

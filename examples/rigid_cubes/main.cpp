@@ -30,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/All.hpp>
+#include <dart/gui/all.hpp>
 
 #include <dart/utils/All.hpp>
 
-#include <dart/All.hpp>
-#include <dart/io/Read.hpp>
+#include <dart/all.hpp>
+#include <dart/io/read.hpp>
 
 #include <filesystem>
 #include <iostream>
@@ -89,14 +89,16 @@ void printUsage(const char* argv0)
 //==============================================================================
 bool parseInt(std::string_view value, int& output)
 {
-  if (value.empty())
+  if (value.empty()) {
     return false;
+  }
 
   const std::string str(value);
   char* end = nullptr;
   const long result = std::strtol(str.c_str(), &end, 10);
-  if (!end || *end != '\0')
+  if (!end || *end != '\0') {
     return false;
+  }
 
   output = static_cast<int>(result);
   return true;
@@ -275,10 +277,12 @@ int main(int argc, char* argv[])
   // Parse command-line arguments
   Options options;
   const ParseResult parseResult = parseArgs(argc, argv, options);
-  if (parseResult == ParseResult::Help)
+  if (parseResult == ParseResult::Help) {
     return EXIT_SUCCESS;
-  if (parseResult == ParseResult::Error)
+  }
+  if (parseResult == ParseResult::Error) {
     return EXIT_FAILURE;
+  }
 
   // Validate headless options
   if (options.headless && options.frames < 0) {

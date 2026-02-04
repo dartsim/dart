@@ -30,27 +30,27 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/GridVisual.hpp>
-#include <dart/gui/ImGuiHandler.hpp>
-#include <dart/gui/ImGuiViewer.hpp>
-#include <dart/gui/ImGuiWidget.hpp>
-#include <dart/gui/IncludeImGui.hpp>
-#include <dart/gui/RealTimeWorldNode.hpp>
-#include <dart/gui/Viewer.hpp>
+#include <dart/gui/grid_visual.hpp>
+#include <dart/gui/im_gui_handler.hpp>
+#include <dart/gui/im_gui_viewer.hpp>
+#include <dart/gui/im_gui_widget.hpp>
+#include <dart/gui/include_im_gui.hpp>
+#include <dart/gui/real_time_world_node.hpp>
+#include <dart/gui/viewer.hpp>
 
-#include <dart/simulation/World.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/dynamics/BodyNode.hpp>
-#include <dart/dynamics/BoxShape.hpp>
-#include <dart/dynamics/Inertia.hpp>
-#include <dart/dynamics/LineSegmentShape.hpp>
-#include <dart/dynamics/RevoluteJoint.hpp>
-#include <dart/dynamics/ShapeNode.hpp>
-#include <dart/dynamics/SimpleFrame.hpp>
-#include <dart/dynamics/Skeleton.hpp>
-#include <dart/dynamics/WeldJoint.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/inertia.hpp>
+#include <dart/dynamics/line_segment_shape.hpp>
+#include <dart/dynamics/revolute_joint.hpp>
+#include <dart/dynamics/shape_node.hpp>
+#include <dart/dynamics/simple_frame.hpp>
+#include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/weld_joint.hpp>
 
-#include <dart/math/Constants.hpp>
+#include <dart/math/constants.hpp>
 
 #include <CLI/CLI.hpp>
 #include <Eigen/Dense>
@@ -97,13 +97,15 @@ dart::dynamics::SimpleFramePtr createLimitGuide(
     const dart::simulation::WorldPtr& world)
 {
   using namespace dart::dynamics;
-  if (!world || !followerJoint)
+  if (!world || !followerJoint) {
     return nullptr;
+  }
 
   const auto* revolute
       = dynamic_cast<dart::dynamics::RevoluteJoint*>(followerJoint);
-  if (revolute == nullptr)
+  if (revolute == nullptr) {
     return nullptr;
+  }
 
   auto frame = SimpleFrame::createShared(Frame::World(), name);
   auto line = std::make_shared<LineSegmentShape>(0.05f);
@@ -115,8 +117,9 @@ dart::dynamics::SimpleFramePtr createLimitGuide(
   visual->setColor(color);
 
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  if (const auto* parent = followerJoint->getParentBodyNode())
+  if (const auto* parent = followerJoint->getParentBodyNode()) {
     tf = parent->getWorldTransform();
+  }
   tf = tf * followerJoint->getTransformFromParentBodyNode();
   tf.rotate(Eigen::AngleAxisd(angle, revolute->getAxis()));
   tf.translate(Eigen::Vector3d(0.0, 0.0, 0.02));
@@ -340,8 +343,9 @@ public:
   void reset()
   {
     for (auto& pair : mPairs) {
-      if (!pair.skeleton)
+      if (!pair.skeleton) {
         continue;
+      }
       pair.skeleton->setPositions(pair.initialPositions);
       pair.skeleton->setVelocities(
           Eigen::VectorXd::Zero(pair.skeleton->getNumDofs()));
@@ -410,13 +414,15 @@ private:
 
   double computeDesiredFollowerPosition(const PairData& pair) const
   {
-    if (pair.followerJoint == nullptr)
+    if (pair.followerJoint == nullptr) {
       return 0.0;
+    }
 
     const auto& props = pair.followerJoint->getMimicDofProperties()[0];
     const auto* refJoint = props.mReferenceJoint;
-    if (refJoint == nullptr)
+    if (refJoint == nullptr) {
       return 0.0;
+    }
 
     return refJoint->getPosition(props.mReferenceDofIndex) * props.mMultiplier
            + props.mOffset;
@@ -424,16 +430,18 @@ private:
 
   void refreshPairVisual(PairData& pair)
   {
-    if (!pair.linkShape || !pair.referenceBody || !pair.followerBody)
+    if (!pair.linkShape || !pair.referenceBody || !pair.followerBody) {
       return;
+    }
 
     pair.linkShape->setVertex(
         0, pair.referenceBody->getTransform().translation());
     pair.linkShape->setVertex(
         1, pair.followerBody->getTransform().translation());
 
-    if (!pair.linkVisual)
+    if (!pair.linkVisual) {
       return;
+    }
 
     const double desired = computeDesiredFollowerPosition(pair);
     const double actual
@@ -456,8 +464,9 @@ private:
 
   void driveReferenceJoint(PairData& pair)
   {
-    if (pair.referenceJoint == nullptr)
+    if (pair.referenceJoint == nullptr) {
       return;
+    }
 
     const double position = pair.referenceJoint->getPosition(0);
     const double velocity = pair.referenceJoint->getVelocity(0);
@@ -497,8 +506,9 @@ public:
   bool handle(
       const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
   {
-    if (ea.getEventType() != ::osgGA::GUIEventAdapter::KEYDOWN)
+    if (ea.getEventType() != ::osgGA::GUIEventAdapter::KEYDOWN) {
       return false;
+    }
 
     switch (ea.getKey()) {
       case 'r':
@@ -525,8 +535,9 @@ public:
 
   void render() override
   {
-    if (mViewer == nullptr || mController == nullptr)
+    if (mViewer == nullptr || mController == nullptr) {
       return;
+    }
 
     ImGui::SetNextWindowPos(ImVec2(12, 12));
     ImGui::SetNextWindowSize(ImVec2(360, 280), ImGuiCond_Once);
@@ -739,8 +750,9 @@ int main(int argc, char* argv[])
   viewer->getImGuiHandler()->addWidget(
       std::make_shared<CouplerOverlay>(viewer.get(), controller.get()));
 
-  if (!viewer->isRealized())
+  if (!viewer->isRealized()) {
     viewer->realize();
+  }
 
   osg::ref_ptr<osg::GraphicsContext> gc
       = viewer->getCamera() ? viewer->getCamera()->getGraphicsContext()

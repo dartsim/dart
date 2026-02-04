@@ -1,0 +1,134 @@
+name: CI SIMD Multi-Arch
+
+on:
+  push:
+    branches:
+      - "**"
+    paths:
+      - "dart/simd/**"
+      - "tests/unit/simd/**"
+      - "tests/benchmark/simd/**"
+      - ".github/workflows/ci_simd.yml"
+  pull_request:
+    branches:
+      - "**"
+    paths:
+      - "dart/simd/**"
+      - "tests/unit/simd/**"
+      - "tests/benchmark/simd/**"
+      - ".github/workflows/ci_simd.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  simd-x86-levels:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        simd_level:
+          - name: scalar
+            cmake_flags: "-DDART_SIMD_FORCE_SCALAR=ON"
+          - name: sse42
+            cmake_flags: "-DCMAKE_CXX_FLAGS=-msse4.2"
+          - name: avx
+            cmake_flags: "-DCMAKE_CXX_FLAGS='-mavx -mno-avx2'"
+          - name: avx2
+            cmake_flags: "-DCMAKE_CXX_FLAGS='-mavx2 -mfma'"
+    name: x86_64 ${{ matrix.simd_level.name }}
+    env:
+      DART_PARALLEL_JOBS: 4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.9.4
+        with:
+          cache: true
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
+
+      - name: Install system dependencies
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.0
+        with:
+          packages: libgl1-mesa-dev libglu1-mesa-dev
+          version: 2
+
+      - name: Build SIMD library
+        run: |
+          pixi run cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DDART_BUILD_TESTS=ON \
+            -DDART_BUILD_DARTPY=OFF \
+            -DDART_BUILD_EXAMPLES=OFF \
+            -DDART_BUILD_TUTORIALS=OFF \
+            -DDART_BUILD_SIMULATION_EXPERIMENTAL=OFF \
+            -DDART_BUILD_GUI_OSG=OFF \
+            -DDART_BUILD_COLLISION_BULLET=OFF \
+            -DDART_BUILD_COLLISION_ODE=OFF \
+            ${{ matrix.simd_level.cmake_flags }}
+
+      - name: Build SIMD tests
+        run: |
+          pixi run cmake --build build --target \
+            UNIT_simd_simd_vec_scalar \
+            UNIT_simd_simd_vec_mask_scalar \
+            UNIT_simd_simd_operations_scalar \
+            UNIT_simd_simd_config \
+            UNIT_simd_simd_edge_cases \
+            UNIT_simd_simd_eigen_interop \
+            UNIT_simd_simd_batch_soa \
+            UNIT_simd_simd_dynamic \
+            UNIT_simd_simd_geometry
+
+      - name: Run SIMD tests
+        run: |
+          cd build && ctest -R "UNIT_simd" --output-on-failure
+
+  simd-arm64-neon:
+    runs-on: macos-latest
+    name: ARM64 NEON (macOS)
+    env:
+      DART_PARALLEL_JOBS: 4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.9.4
+        with:
+          cache: false
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
+
+      - name: Build SIMD library
+        run: |
+          pixi run cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DDART_BUILD_TESTS=ON \
+            -DDART_BUILD_DARTPY=OFF \
+            -DDART_BUILD_EXAMPLES=OFF \
+            -DDART_BUILD_TUTORIALS=OFF \
+            -DDART_BUILD_SIMULATION_EXPERIMENTAL=OFF \
+            -DDART_BUILD_GUI_OSG=OFF \
+            -DDART_BUILD_COLLISION_BULLET=OFF \
+            -DDART_BUILD_COLLISION_ODE=OFF
+
+      - name: Build SIMD tests
+        run: |
+          pixi run cmake --build build --target \
+            UNIT_simd_simd_vec_scalar \
+            UNIT_simd_simd_vec_mask_scalar \
+            UNIT_simd_simd_operations_scalar \
+            UNIT_simd_simd_config \
+            UNIT_simd_simd_edge_cases \
+            UNIT_simd_simd_eigen_interop \
+            UNIT_simd_simd_batch_soa \
+            UNIT_simd_simd_dynamic \
+            UNIT_simd_simd_geometry
+
+      - name: Run SIMD tests
+        run: |
+          cd build && ctest -R "UNIT_simd" --output-on-failure

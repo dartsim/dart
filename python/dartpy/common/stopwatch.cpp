@@ -1,6 +1,6 @@
 #include "common/stopwatch.hpp"
 
-#include "dart/common/Stopwatch.hpp"
+#include "dart/common/stopwatch.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/string.h>

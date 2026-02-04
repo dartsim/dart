@@ -33,7 +33,7 @@
 #ifndef DART_TESTS_LCPPROBLEMFACTORY_HPP_
 #define DART_TESTS_LCPPROBLEMFACTORY_HPP_
 
-#include <dart/math/lcp/LcpTypes.hpp>
+#include <dart/math/lcp/lcp_types.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/QR>
@@ -392,8 +392,9 @@ private:
 
     Eigen::MatrixXd M(n, n);
     for (int r = 0; r < n; ++r) {
-      for (int c = 0; c < n; ++c)
+      for (int c = 0; c < n; ++c) {
         M(r, c) = dist(rng);
+      }
     }
 
     Eigen::MatrixXd A = M.transpose() * M;
@@ -408,8 +409,9 @@ private:
 
     Eigen::MatrixXd M(n, n);
     for (int r = 0; r < n; ++r) {
-      for (int c = 0; c < n; ++c)
+      for (int c = 0; c < n; ++c) {
         M(r, c) = dist(rng);
+      }
     }
 
     Eigen::HouseholderQR<Eigen::MatrixXd> qr(M);
@@ -455,8 +457,9 @@ private:
     std::mt19937 rng(seed);
     std::uniform_real_distribution<double> dist(minVal, maxVal);
     Eigen::VectorXd x(n);
-    for (int i = 0; i < n; ++i)
+    for (int i = 0; i < n; ++i) {
       x[i] = dist(rng);
+    }
     return x;
   }
 };

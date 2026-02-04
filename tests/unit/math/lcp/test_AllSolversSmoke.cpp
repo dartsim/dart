@@ -32,7 +32,7 @@
 
 #include "tests/common/lcpsolver/LcpProblemFactory.hpp"
 
-#include <dart/math/lcp/All.hpp>
+#include <dart/math/lcp/all.hpp>
 
 #include <gtest/gtest.h>
 
@@ -179,8 +179,9 @@ TEST_F(AllSolversSmokeTest, Trivial1dDoesNotCrash)
   auto problem = LcpProblemFactory::trivial1d();
 
   for (auto& solver : mSolvers) {
-    if (!canSolve(solver, problem))
+    if (!canSolve(solver, problem)) {
       continue;
+    }
 
     Eigen::VectorXd x;
     auto result = solver.solver->solve(
@@ -195,8 +196,9 @@ TEST_F(AllSolversSmokeTest, Standard2dDoesNotCrash)
   auto problem = LcpProblemFactory::standard2dSpd();
 
   for (auto& solver : mSolvers) {
-    if (!canSolve(solver, problem))
+    if (!canSolve(solver, problem)) {
       continue;
+    }
 
     Eigen::VectorXd x;
     LcpOptions options = solver.solver->getDefaultOptions();
@@ -241,8 +243,9 @@ TEST_F(AllSolversSmokeTest, FrictionProblemDoesNotCrash)
   auto problem = LcpProblemFactory::singleContactFriction();
 
   for (auto& solver : mSolvers) {
-    if (!solver.supportsFindex)
+    if (!solver.supportsFindex) {
       continue;
+    }
 
     Eigen::VectorXd x;
     LcpOptions options = solver.solver->getDefaultOptions();

@@ -33,7 +33,7 @@
 #ifndef DART_COLLISION_TRITRIINTERSECTIONTEST_HPP_
 #define DART_COLLISION_TRITRIINTERSECTIONTEST_HPP_
 
-#include "dart/common/Macros.hpp"
+#include "dart/common/macros.hpp"
 
 #include <cmath>
 
@@ -180,18 +180,24 @@ inline int tri_tri_intersect(
 
   /* coplanarity robustness check */
 #if USE_EPSILON_TEST == TRUE
-  if (fabs(du0) < EPSILON)
+  if (fabs(du0) < EPSILON) {
     du0 = 0.0;
-  if (fabs(du1) < EPSILON)
+  }
+  if (fabs(du1) < EPSILON) {
     du1 = 0.0;
-  if (fabs(du2) < EPSILON)
+  }
+  if (fabs(du2) < EPSILON) {
     du2 = 0.0;
-  if (du1 == 0 && du2 == 0 && fabs(du0) < 1e-4)
+  }
+  if (du1 == 0 && du2 == 0 && fabs(du0) < 1e-4) {
     du0 = 0.0;
-  if (du0 == 0 && du2 == 0 && fabs(du1) < 1e-4)
+  }
+  if (du0 == 0 && du2 == 0 && fabs(du1) < 1e-4) {
     du1 = 0.0;
-  if (du0 == 0 && du1 == 0 && fabs(du2) < 1e-4)
+  }
+  if (du0 == 0 && du1 == 0 && fabs(du2) < 1e-4) {
     du2 = 0.0;
+  }
 #endif
   du0du1 = du0 * du1;
   du0du2 = du0 * du2;
@@ -214,18 +220,24 @@ inline int tri_tri_intersect(
   dv2 = DART_DOT(N2, V2) + d2;
 
 #if USE_EPSILON_TEST == TRUE
-  if (fabs(dv0) < EPSILON)
+  if (fabs(dv0) < EPSILON) {
     dv0 = 0.0;
-  if (fabs(dv1) < EPSILON)
+  }
+  if (fabs(dv1) < EPSILON) {
     dv1 = 0.0;
-  if (fabs(dv2) < EPSILON)
+  }
+  if (fabs(dv2) < EPSILON) {
     dv2 = 0.0;
-  if (dv1 == 0 && dv2 == 0 && fabs(dv0) < 1e-5)
+  }
+  if (dv1 == 0 && dv2 == 0 && fabs(dv0) < 1e-5) {
     dv0 = 0.0;
-  if (dv0 == 0 && dv2 == 0 && fabs(dv1) < 1e-5)
+  }
+  if (dv0 == 0 && dv2 == 0 && fabs(dv1) < 1e-5) {
     dv1 = 0.0;
-  if (dv0 == 0 && dv1 == 0 && fabs(dv2) < 1e-5)
+  }
+  if (dv0 == 0 && dv1 == 0 && fabs(dv2) < 1e-5) {
     dv2 = 0.0;
+  }
 #endif
   dv0dv1 = dv0 * dv1;
   dv0dv2 = dv0 * dv2;
@@ -243,10 +255,12 @@ inline int tri_tri_intersect(
   index = 0;
   b = fabs(D[1]);
   c = fabs(D[2]);
-  if (b > max)
+  if (b > max) {
     max = b, index = 1;
-  if (c > max)
+  }
+  if (c > max) {
     max = c, index = 2;
+  }
 
   /* this is the simplified projection onto L*/
   vp0 = V0[index];
@@ -315,13 +329,15 @@ inline int tri_tri_intersect(
     DART_ASSERT(false && "contact error: unexpected geometry configuration");
   }
 
-  for (int i = 3; i > 0; i--)
+  for (int i = 3; i > 0; i--) {
     for (int j = 0; j < i; j++) {
       if (res[j][index] > res[j + 1][index]) {
-        for (int k = 0; k < 3; k++)
+        for (int k = 0; k < 3; k++) {
           DART_SWAP(res[j][k], res[j + 1][k]);
+        }
       }
     }
+  }
   DART_SET(res1, res[1]);
   DART_SET(res2, res[2]);
 

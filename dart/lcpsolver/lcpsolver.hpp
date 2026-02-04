@@ -1,3 +1,3 @@
 #pragma once
 
-#include "dart/lcpsolver/All.hpp"
+#include "dart/lcpsolver/all.hpp"

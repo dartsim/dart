@@ -1,8 +1,8 @@
 #include "dynamics/zero_dof_joint.hpp"
 
 #include "common/type_casters.hpp"
-#include "dart/dynamics/Joint.hpp"
-#include "dart/dynamics/ZeroDofJoint.hpp"
+#include "dart/dynamics/joint.hpp"
+#include "dart/dynamics/zero_dof_joint.hpp"
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>

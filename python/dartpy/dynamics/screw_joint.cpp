@@ -1,7 +1,7 @@
 #include "dynamics/screw_joint.hpp"
 
 #include "common/type_casters.hpp"
-#include "dart/dynamics/ScrewJoint.hpp"
+#include "dart/dynamics/screw_joint.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
