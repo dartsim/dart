@@ -201,7 +201,8 @@ TEST_F(FrameAllocatorTest, ZeroCapacity)
   EXPECT_EQ(addr % 64, 0u);
   EXPECT_EQ(allocator.overflowCount(), 2u);
 
-  // allocateAligned() with zero bytes/alignment still returns nullptr.
+  // Zero-byte requests return nullptr, consistent with other DART allocators.
+  EXPECT_EQ(allocator.allocate(0), nullptr);
   EXPECT_EQ(allocator.allocateAligned(0, 32), nullptr);
   EXPECT_EQ(allocator.allocateAligned(32, 0), nullptr);
 

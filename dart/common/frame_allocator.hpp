@@ -80,8 +80,8 @@ public:
 
   [[nodiscard]] inline void* allocate(size_t bytes) noexcept override
   {
-    if (!mCur) [[unlikely]] {
-      return allocateAlignedSlow(bytes, 32);
+    if (bytes == 0 || !mCur) [[unlikely]] {
+      return bytes == 0 ? nullptr : allocateAlignedSlow(bytes, 32);
     }
 
     const auto padded = (bytes + 31) & ~size_t{31};
