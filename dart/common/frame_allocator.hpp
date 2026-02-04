@@ -114,7 +114,10 @@ public:
 
     const auto cur = reinterpret_cast<uintptr_t>(mCur);
     const auto aligned = (cur + alignment - 1) & ~(alignment - 1);
-    auto* next = reinterpret_cast<char*>(aligned + bytes);
+    // Round next to 32-byte boundary so that allocate()'s fast path
+    // invariant (mCur is 32-aligned) is preserved after mixed calls.
+    auto* next
+        = reinterpret_cast<char*>((aligned + bytes + 31) & ~uintptr_t{31});
 
     if (next <= mEnd) [[likely]] {
       mCur = next;
