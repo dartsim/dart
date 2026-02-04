@@ -49,7 +49,11 @@
 #include "dart/common/string.hpp"
 #include "dart/constraint/boxed_lcp_constraint_solver.hpp"
 #include "dart/constraint/constrained_group.hpp"
+#include "dart/constraint/constraint_solver.hpp"
 #include "dart/dynamics/skeleton.hpp"
+#include "dart/math/lcp/pivoting/dantzig_solver.hpp"
+#include "dart/math/lcp/pivoting/lemke_solver.hpp"
+#include "dart/math/lcp/projection/pgs_solver.hpp"
 
 #include <iostream>
 #include <string>
@@ -161,6 +165,46 @@ CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
   return nullptr;
 }
 
+math::LcpSolverPtr createLcpSolver(LcpSolverType type)
+{
+  switch (type) {
+    case LcpSolverType::Dantzig:
+      return std::make_shared<math::DantzigSolver>();
+    case LcpSolverType::Pgs:
+      return std::make_shared<math::PgsSolver>();
+    case LcpSolverType::Lemke:
+      return std::make_shared<math::LemkeSolver>();
+  }
+
+  DART_FATAL(
+      "Encountered unsupported LcpSolverType value: {}.",
+      static_cast<int>(type));
+  return std::make_shared<math::DantzigSolver>();
+}
+
+std::unique_ptr<constraint::ConstraintSolver> createConstraintSolver(
+    const WorldConfig& config)
+{
+  // Create BoxedLcpConstraintSolver (not base ConstraintSolver) to maintain
+  // backward compatibility with gz-physics, which does dynamic_cast to
+  // BoxedLcpConstraintSolver to access getBoxedLcpSolver()/getType() etc.
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  auto solver = std::make_unique<constraint::BoxedLcpConstraintSolver>();
+  DART_SUPPRESS_DEPRECATED_END
+
+  auto primary = createLcpSolver(config.primaryLcpSolver);
+  solver->setLcpSolver(std::move(primary));
+
+  if (config.secondaryLcpSolver.has_value()) {
+    auto secondary = createLcpSolver(config.secondaryLcpSolver.value());
+    solver->setSecondaryLcpSolver(std::move(secondary));
+  } else {
+    solver->setSecondaryLcpSolver(nullptr);
+  }
+
+  return solver;
+}
+
 } // namespace
 
 //==============================================================================
@@ -196,9 +240,7 @@ World::World(const WorldConfig& config)
 {
   mIndices.push_back(0);
 
-  DART_SUPPRESS_DEPRECATED_BEGIN
-  auto solver = std::make_unique<constraint::BoxedLcpConstraintSolver>();
-  DART_SUPPRESS_DEPRECATED_END
+  auto solver = createConstraintSolver(config);
   setConstraintSolver(std::move(solver));
 
   if (auto detector = resolveCollisionDetector(config)) {
