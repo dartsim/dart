@@ -2028,8 +2028,7 @@ TEST(Geometry, BatchAdT_ExactMultipleOf4)
   auto inputs = makeRandomInputs(count);
   std::vector<Eigen::Vector6d> outputs(count);
 
-  math::batch::AdT_batch(
-      transforms.data(), inputs.data(), outputs.data(), count);
+  math::AdT_batch(transforms.data(), inputs.data(), outputs.data(), count);
 
   for (std::size_t i = 0; i < count; ++i) {
     Eigen::Vector6d expected = math::AdT(transforms[i], inputs[i]);
@@ -2045,8 +2044,7 @@ TEST(Geometry, BatchAdT_WithRemainder)
   auto inputs = makeRandomInputs(count);
   std::vector<Eigen::Vector6d> outputs(count);
 
-  math::batch::AdT_batch(
-      transforms.data(), inputs.data(), outputs.data(), count);
+  math::AdT_batch(transforms.data(), inputs.data(), outputs.data(), count);
 
   for (std::size_t i = 0; i < count; ++i) {
     Eigen::Vector6d expected = math::AdT(transforms[i], inputs[i]);
@@ -2062,8 +2060,7 @@ TEST(Geometry, BatchAdT_SmallCount)
   auto inputs = makeRandomInputs(count);
   std::vector<Eigen::Vector6d> outputs(count);
 
-  math::batch::AdT_batch(
-      transforms.data(), inputs.data(), outputs.data(), count);
+  math::AdT_batch(transforms.data(), inputs.data(), outputs.data(), count);
 
   for (std::size_t i = 0; i < count; ++i) {
     Eigen::Vector6d expected = math::AdT(transforms[i], inputs[i]);
@@ -2079,8 +2076,7 @@ TEST(Geometry, BatchAdInvT_ExactMultipleOf4)
   auto inputs = makeRandomInputs(count);
   std::vector<Eigen::Vector6d> outputs(count);
 
-  math::batch::AdInvT_batch(
-      transforms.data(), inputs.data(), outputs.data(), count);
+  math::AdInvT_batch(transforms.data(), inputs.data(), outputs.data(), count);
 
   for (std::size_t i = 0; i < count; ++i) {
     Eigen::Vector6d expected = math::AdInvT(transforms[i], inputs[i]);
@@ -2096,8 +2092,7 @@ TEST(Geometry, BatchAdInvT_WithRemainder)
   auto inputs = makeRandomInputs(count);
   std::vector<Eigen::Vector6d> outputs(count);
 
-  math::batch::AdInvT_batch(
-      transforms.data(), inputs.data(), outputs.data(), count);
+  math::AdInvT_batch(transforms.data(), inputs.data(), outputs.data(), count);
 
   for (std::size_t i = 0; i < count; ++i) {
     Eigen::Vector6d expected = math::AdInvT(transforms[i], inputs[i]);
@@ -2113,8 +2108,7 @@ TEST(Geometry, BatchAdInvT_SmallCount)
   auto inputs = makeRandomInputs(count);
   std::vector<Eigen::Vector6d> outputs(count);
 
-  math::batch::AdInvT_batch(
-      transforms.data(), inputs.data(), outputs.data(), count);
+  math::AdInvT_batch(transforms.data(), inputs.data(), outputs.data(), count);
 
   for (std::size_t i = 0; i < count; ++i) {
     Eigen::Vector6d expected = math::AdInvT(transforms[i], inputs[i]);
@@ -2130,8 +2124,7 @@ TEST(Geometry, BatchdAdT_ExactMultipleOf4)
   auto inputs = makeRandomInputs(count);
   std::vector<Eigen::Vector6d> outputs(count);
 
-  math::batch::dAdT_batch(
-      transforms.data(), inputs.data(), outputs.data(), count);
+  math::dAdT_batch(transforms.data(), inputs.data(), outputs.data(), count);
 
   for (std::size_t i = 0; i < count; ++i) {
     Eigen::Vector6d expected = math::dAdT(transforms[i], inputs[i]);
@@ -2147,8 +2140,7 @@ TEST(Geometry, BatchdAdT_WithRemainder)
   auto inputs = makeRandomInputs(count);
   std::vector<Eigen::Vector6d> outputs(count);
 
-  math::batch::dAdT_batch(
-      transforms.data(), inputs.data(), outputs.data(), count);
+  math::dAdT_batch(transforms.data(), inputs.data(), outputs.data(), count);
 
   for (std::size_t i = 0; i < count; ++i) {
     Eigen::Vector6d expected = math::dAdT(transforms[i], inputs[i]);
@@ -2164,8 +2156,7 @@ TEST(Geometry, BatchdAdT_SmallCount)
   auto inputs = makeRandomInputs(count);
   std::vector<Eigen::Vector6d> outputs(count);
 
-  math::batch::dAdT_batch(
-      transforms.data(), inputs.data(), outputs.data(), count);
+  math::dAdT_batch(transforms.data(), inputs.data(), outputs.data(), count);
 
   for (std::size_t i = 0; i < count; ++i) {
     Eigen::Vector6d expected = math::dAdT(transforms[i], inputs[i]);
@@ -2181,8 +2172,7 @@ TEST(Geometry, BatchdAdInvT_ExactMultipleOf4)
   auto inputs = makeRandomInputs(count);
   std::vector<Eigen::Vector6d> outputs(count);
 
-  math::batch::dAdInvT_batch(
-      transforms.data(), inputs.data(), outputs.data(), count);
+  math::dAdInvT_batch(transforms.data(), inputs.data(), outputs.data(), count);
 
   for (std::size_t i = 0; i < count; ++i) {
     Eigen::Vector6d expected = math::dAdInvT(transforms[i], inputs[i]);
@@ -2198,8 +2188,7 @@ TEST(Geometry, BatchdAdInvT_WithRemainder)
   auto inputs = makeRandomInputs(count);
   std::vector<Eigen::Vector6d> outputs(count);
 
-  math::batch::dAdInvT_batch(
-      transforms.data(), inputs.data(), outputs.data(), count);
+  math::dAdInvT_batch(transforms.data(), inputs.data(), outputs.data(), count);
 
   for (std::size_t i = 0; i < count; ++i) {
     Eigen::Vector6d expected = math::dAdInvT(transforms[i], inputs[i]);
@@ -2215,8 +2204,7 @@ TEST(Geometry, BatchdAdInvT_SmallCount)
   auto inputs = makeRandomInputs(count);
   std::vector<Eigen::Vector6d> outputs(count);
 
-  math::batch::dAdInvT_batch(
-      transforms.data(), inputs.data(), outputs.data(), count);
+  math::dAdInvT_batch(transforms.data(), inputs.data(), outputs.data(), count);
 
   for (std::size_t i = 0; i < count; ++i) {
     Eigen::Vector6d expected = math::dAdInvT(transforms[i], inputs[i]);
@@ -2231,7 +2219,7 @@ TEST(Geometry, BatchAdT_SingleElement)
   auto inputs = makeRandomInputs(1);
   std::vector<Eigen::Vector6d> outputs(1);
 
-  math::batch::AdT_batch(transforms.data(), inputs.data(), outputs.data(), 1);
+  math::AdT_batch(transforms.data(), inputs.data(), outputs.data(), 1);
 
   Eigen::Vector6d expected = math::AdT(transforms[0], inputs[0]);
   EXPECT_VECTOR_NEAR(outputs[0], expected, LIE_GROUP_OPT_TOL);
@@ -2245,8 +2233,7 @@ TEST(Geometry, BatchAdT_Exactly4)
   auto inputs = makeRandomInputs(count);
   std::vector<Eigen::Vector6d> outputs(count);
 
-  math::batch::AdT_batch(
-      transforms.data(), inputs.data(), outputs.data(), count);
+  math::AdT_batch(transforms.data(), inputs.data(), outputs.data(), count);
 
   for (std::size_t i = 0; i < count; ++i) {
     Eigen::Vector6d expected = math::AdT(transforms[i], inputs[i]);
@@ -2262,8 +2249,7 @@ TEST(Geometry, BatchAdT_Exactly5)
   auto inputs = makeRandomInputs(count);
   std::vector<Eigen::Vector6d> outputs(count);
 
-  math::batch::AdT_batch(
-      transforms.data(), inputs.data(), outputs.data(), count);
+  math::AdT_batch(transforms.data(), inputs.data(), outputs.data(), count);
 
   for (std::size_t i = 0; i < count; ++i) {
     Eigen::Vector6d expected = math::AdT(transforms[i], inputs[i]);

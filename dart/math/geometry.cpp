@@ -2062,8 +2062,6 @@ BoundingBox::BoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max)
 {
 }
 
-namespace batch {
-
 void AdT_batch(
     const Eigen::Isometry3d* transforms,
     const Eigen::Vector6d* inputs,
@@ -2203,8 +2201,6 @@ void dAdInvT_batch(
     outputs[i] = dAdInvT(transforms[i], inputs[i]);
   }
 }
-
-} // namespace batch
 
 } // namespace math
 } // namespace dart

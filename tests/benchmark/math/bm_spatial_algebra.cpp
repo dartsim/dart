@@ -137,7 +137,7 @@ static void BM_AdT_Batch_SIMD(benchmark::State& state)
   const int n = static_cast<int>(state.range(0));
   auto data = makeBatchData(n);
   for (auto _ : state) {
-    dart::math::batch::AdT_batch(
+    dart::math::AdT_batch(
         data.transforms.data(), data.inputs.data(), data.outputs.data(), n);
     benchmark::DoNotOptimize(data.outputs.data());
   }
@@ -190,7 +190,7 @@ static void BM_AdInvT_Batch_SIMD(benchmark::State& state)
   const int n = static_cast<int>(state.range(0));
   auto data = makeBatchData(n);
   for (auto _ : state) {
-    dart::math::batch::AdInvT_batch(
+    dart::math::AdInvT_batch(
         data.transforms.data(), data.inputs.data(), data.outputs.data(), n);
     benchmark::DoNotOptimize(data.outputs.data());
   }
@@ -243,7 +243,7 @@ static void BM_dAdT_Batch_SIMD(benchmark::State& state)
   const int n = static_cast<int>(state.range(0));
   auto data = makeBatchData(n);
   for (auto _ : state) {
-    dart::math::batch::dAdT_batch(
+    dart::math::dAdT_batch(
         data.transforms.data(), data.inputs.data(), data.outputs.data(), n);
     benchmark::DoNotOptimize(data.outputs.data());
   }
@@ -296,7 +296,7 @@ static void BM_dAdInvT_Batch_SIMD(benchmark::State& state)
   const int n = static_cast<int>(state.range(0));
   auto data = makeBatchData(n);
   for (auto _ : state) {
-    dart::math::batch::dAdInvT_batch(
+    dart::math::dAdInvT_batch(
         data.transforms.data(), data.inputs.data(), data.outputs.data(), n);
     benchmark::DoNotOptimize(data.outputs.data());
   }

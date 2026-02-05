@@ -696,8 +696,6 @@ protected:
   Eigen::Vector3d mMax;
 };
 
-namespace batch {
-
 /// Batch AdT: apply N adjoint transforms simultaneously using SoA layout
 DART_API void AdT_batch(
     const Eigen::Isometry3d* transforms,
@@ -725,8 +723,6 @@ DART_API void dAdInvT_batch(
     const Eigen::Vector6d* inputs,
     Eigen::Vector6d* outputs,
     std::size_t count);
-
-} // namespace batch
 
 } // namespace math
 } // namespace dart
