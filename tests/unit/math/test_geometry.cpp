@@ -1998,3 +1998,261 @@ TEST(Geometry, ComputeClosestPointOnSupportPolygonOverload)
       = computeClosestPointOnSupportPolygon(Eigen::Vector2d(3.0, 1.0), square);
   EXPECT_TRUE(closest.isApprox(Eigen::Vector2d(2.0, 1.0), 1e-12));
 }
+
+//==============================================================================
+static std::vector<Eigen::Isometry3d> makeRandomTransforms(std::size_t count)
+{
+  std::vector<Eigen::Isometry3d> transforms(count);
+  for (std::size_t i = 0; i < count; ++i) {
+    transforms[i] = Eigen::Isometry3d::Identity();
+    transforms[i].linear() = math::expMapRot(Eigen::Vector3d::Random() * 0.5);
+    transforms[i].translation() = Eigen::Vector3d::Random() * 2.0;
+  }
+  return transforms;
+}
+
+static std::vector<Eigen::Vector6d> makeRandomInputs(std::size_t count)
+{
+  std::vector<Eigen::Vector6d> inputs(count);
+  for (std::size_t i = 0; i < count; ++i) {
+    inputs[i] = Eigen::Vector6d::Random();
+  }
+  return inputs;
+}
+
+//==============================================================================
+TEST(Geometry, BatchAdT_ExactMultipleOf4)
+{
+  constexpr std::size_t count = 8;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::AdT_batch(transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::AdT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchAdT_WithRemainder)
+{
+  constexpr std::size_t count = 7;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::AdT_batch(transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::AdT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchAdT_SmallCount)
+{
+  constexpr std::size_t count = 3;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::AdT_batch(transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::AdT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchAdInvT_ExactMultipleOf4)
+{
+  constexpr std::size_t count = 8;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::AdInvT_batch(transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::AdInvT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchAdInvT_WithRemainder)
+{
+  constexpr std::size_t count = 7;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::AdInvT_batch(transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::AdInvT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchAdInvT_SmallCount)
+{
+  constexpr std::size_t count = 3;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::AdInvT_batch(transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::AdInvT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchdAdT_ExactMultipleOf4)
+{
+  constexpr std::size_t count = 8;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::dAdT_batch(transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::dAdT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchdAdT_WithRemainder)
+{
+  constexpr std::size_t count = 7;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::dAdT_batch(transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::dAdT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchdAdT_SmallCount)
+{
+  constexpr std::size_t count = 3;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::dAdT_batch(transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::dAdT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchdAdInvT_ExactMultipleOf4)
+{
+  constexpr std::size_t count = 8;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::dAdInvT_batch(transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::dAdInvT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchdAdInvT_WithRemainder)
+{
+  constexpr std::size_t count = 7;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::dAdInvT_batch(transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::dAdInvT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchdAdInvT_SmallCount)
+{
+  constexpr std::size_t count = 3;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::dAdInvT_batch(transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::dAdInvT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchAdT_SingleElement)
+{
+  auto transforms = makeRandomTransforms(1);
+  auto inputs = makeRandomInputs(1);
+  std::vector<Eigen::Vector6d> outputs(1);
+
+  math::AdT_batch(transforms.data(), inputs.data(), outputs.data(), 1);
+
+  Eigen::Vector6d expected = math::AdT(transforms[0], inputs[0]);
+  EXPECT_VECTOR_NEAR(outputs[0], expected, LIE_GROUP_OPT_TOL);
+}
+
+//==============================================================================
+TEST(Geometry, BatchAdT_Exactly4)
+{
+  constexpr std::size_t count = 4;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::AdT_batch(transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::AdT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
+
+//==============================================================================
+TEST(Geometry, BatchAdT_Exactly5)
+{
+  constexpr std::size_t count = 5;
+  auto transforms = makeRandomTransforms(count);
+  auto inputs = makeRandomInputs(count);
+  std::vector<Eigen::Vector6d> outputs(count);
+
+  math::AdT_batch(transforms.data(), inputs.data(), outputs.data(), count);
+
+  for (std::size_t i = 0; i < count; ++i) {
+    Eigen::Vector6d expected = math::AdT(transforms[i], inputs[i]);
+    EXPECT_VECTOR_NEAR(outputs[i], expected, LIE_GROUP_OPT_TOL);
+  }
+}
