@@ -352,10 +352,14 @@ typename Derived::PlainObject AdInvTJac(
 
   typename Derived::PlainObject ret(_J.rows(), _J.cols());
 
-  // Compute AdInvT column by column
-  for (int i = 0; i < _J.cols(); ++i) {
-    ret.col(i) = AdInvT(_T, _J.col(i));
-  }
+  // Block operation: apply AdInvT to all columns simultaneously
+  // AdInvT formula: top = R^T * w, bottom = R^T * (v + w x p)
+  ret.template topRows<3>().noalias()
+      = _T.linear().transpose() * _J.template topRows<3>();
+  ret.template bottomRows<3>().noalias()
+      = _T.linear().transpose()
+        * (_J.template bottomRows<3>()
+           + _J.template topRows<3>().colwise().cross(_T.translation()));
 
   return ret;
 }
@@ -691,6 +695,34 @@ protected:
   // @brief maximum coordinates of the bounding box
   Eigen::Vector3d mMax;
 };
+
+/// Batch AdT: apply N adjoint transforms simultaneously using SoA layout
+DART_API void AdT_batch(
+    const Eigen::Isometry3d* transforms,
+    const Eigen::Vector6d* inputs,
+    Eigen::Vector6d* outputs,
+    std::size_t count);
+
+/// Batch AdInvT: apply N inverse adjoint transforms using SoA layout
+DART_API void AdInvT_batch(
+    const Eigen::Isometry3d* transforms,
+    const Eigen::Vector6d* inputs,
+    Eigen::Vector6d* outputs,
+    std::size_t count);
+
+/// Batch dAdT: apply N dual adjoint transforms using SoA layout
+DART_API void dAdT_batch(
+    const Eigen::Isometry3d* transforms,
+    const Eigen::Vector6d* inputs,
+    Eigen::Vector6d* outputs,
+    std::size_t count);
+
+/// Batch dAdInvT: apply N inverse dual adjoint transforms using SoA layout
+DART_API void dAdInvT_batch(
+    const Eigen::Isometry3d* transforms,
+    const Eigen::Vector6d* inputs,
+    Eigen::Vector6d* outputs,
+    std::size_t count);
 
 } // namespace math
 } // namespace dart
