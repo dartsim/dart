@@ -718,6 +718,7 @@ int main(int argc, char* argv[])
 
   osg::ref_ptr<dart::gui::ImGuiViewer> viewer = new dart::gui::ImGuiViewer();
   viewer->setImGuiScale(static_cast<float>(guiScale));
+  viewer->getImGuiHandler()->setFontScale(static_cast<float>(guiScale));
   if (osg::GraphicsContext::getWindowingSystemInterface() == nullptr) {
     std::cerr << "No OSG windowing system detected. Running the GUI example "
                  "requires an active display server.\n";
