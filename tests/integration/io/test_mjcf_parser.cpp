@@ -2383,6 +2383,67 @@ TEST(MjcfParserTest, ActuatorAutoLimitedResolvesFromRange)
 }
 
 //==============================================================================
+TEST(MjcfParserTest, ActuatorOmittedLimitedDefaultsToAuto)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="actuator_omitted_limited">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="b1">
+      <geom type="sphere" size="0.1" />
+      <joint name="j1" type="hinge" axis="0 0 1" />
+    </body>
+    <body name="b2" pos="1 0 0">
+      <geom type="sphere" size="0.1" />
+      <joint name="j2" type="hinge" axis="0 0 1" />
+    </body>
+    <body name="b3" pos="2 0 0">
+      <geom type="sphere" size="0.1" />
+      <joint name="j3" type="hinge" axis="0 0 1" />
+    </body>
+  </worldbody>
+  <actuator>
+    <motor joint="j1" forcerange="-8 8" />
+    <motor joint="j2" ctrlrange="-3 3" />
+    <motor joint="j3" />
+  </actuator>
+</mujoco>
+)";
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / "dart_mjcf_actuator_omitted_limited.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+
+  // j1: forcerange set without forcelimited => auto => limits applied
+  auto* joint1 = world->getSkeleton(0)->getJoint("j1");
+  ASSERT_NE(joint1, nullptr);
+  EXPECT_DOUBLE_EQ(joint1->getForceLowerLimit(0), -8.0);
+  EXPECT_DOUBLE_EQ(joint1->getForceUpperLimit(0), 8.0);
+
+  // j2: ctrlrange set without ctrllimited => auto => limits applied
+  auto* joint2 = world->getSkeleton(1)->getJoint("j2");
+  ASSERT_NE(joint2, nullptr);
+  EXPECT_TRUE(joint2->getActuatorType() == dynamics::Joint::FORCE);
+
+  // j3: no range and no attribute => auto resolves to false (no limits)
+  auto* joint3 = world->getSkeleton(2)->getJoint("j3");
+  ASSERT_NE(joint3, nullptr);
+  EXPECT_DOUBLE_EQ(
+      joint3->getForceLowerLimit(0), -std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(
+      joint3->getForceUpperLimit(0), std::numeric_limits<double>::infinity());
+}
+
+//==============================================================================
 TEST(MjcfParserTest, ActuatorPositionSetsServoType)
 {
   const std::string xml = R"(

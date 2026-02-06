@@ -82,19 +82,24 @@ Errors Actuator::read(tinyxml2::XMLElement* element)
           "Failed to find required attribute 'joint' in actuator element."));
     }
 
-    bool autoCtrlLimited = false;
+    // MuJoCo default for ctrllimited is "auto" — apply auto-resolution
+    // when the attribute is missing or explicitly set to "auto".
+    bool autoCtrlLimited = true;
     if (hasAttribute(child, "ctrllimited")) {
       const std::string ctrlLimited = getAttributeString(child, "ctrllimited");
       if (ctrlLimited == "true" || ctrlLimited == "1") {
         entry.mCtrlLimited = true;
+        autoCtrlLimited = false;
       } else if (ctrlLimited == "false" || ctrlLimited == "0") {
         entry.mCtrlLimited = false;
+        autoCtrlLimited = false;
       } else if (ctrlLimited == "auto") {
-        autoCtrlLimited = true;
+        // autoCtrlLimited remains true
       } else {
         errors.emplace_back(
             ErrorCode::ATTRIBUTE_INVALID,
             "Invalid attribute for 'ctrllimited': " + ctrlLimited);
+        autoCtrlLimited = false;
       }
     }
 
@@ -107,20 +112,24 @@ Errors Actuator::read(tinyxml2::XMLElement* element)
       entry.mCtrlLimited = !entry.mCtrlRange.isZero();
     }
 
-    bool autoForceLimited = false;
+    // MuJoCo default for forcelimited is "auto" — same logic as ctrllimited.
+    bool autoForceLimited = true;
     if (hasAttribute(child, "forcelimited")) {
       const std::string forceLimited
           = getAttributeString(child, "forcelimited");
       if (forceLimited == "true" || forceLimited == "1") {
         entry.mForceLimited = true;
+        autoForceLimited = false;
       } else if (forceLimited == "false" || forceLimited == "0") {
         entry.mForceLimited = false;
+        autoForceLimited = false;
       } else if (forceLimited == "auto") {
-        autoForceLimited = true;
+        // autoForceLimited remains true
       } else {
         errors.emplace_back(
             ErrorCode::ATTRIBUTE_INVALID,
             "Invalid attribute for 'forcelimited': " + forceLimited);
+        autoForceLimited = false;
       }
     }
 
