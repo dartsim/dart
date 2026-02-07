@@ -36,6 +36,8 @@
 #include <dart/utils/mjcf/detail/error.hpp>
 #include <dart/utils/mjcf/detail/types.hpp>
 
+#include <dart/math/math_types.hpp>
+
 #include <Eigen/Core>
 #include <tinyxml2.h>
 
@@ -56,7 +58,7 @@ struct ActuatorAttributes final
   Eigen::Vector2d mCtrlRange{Eigen::Vector2d::Zero()};
   bool mForceLimited{false};
   Eigen::Vector2d mForceRange{Eigen::Vector2d::Zero()};
-  double mGear{1.0};
+  Eigen::Vector6d mGear{(Eigen::Vector6d() << 1, 0, 0, 0, 0, 0).finished()};
   Eigen::Vector3d mGainPrm{Eigen::Vector3d::Zero()};
   Eigen::Vector3d mBiasPrm{Eigen::Vector3d::Zero()};
 };

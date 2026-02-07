@@ -119,7 +119,11 @@ Errors appendActuatorAttributes(
 
   // gear
   if (hasAttribute(element, "gear")) {
-    attributes.mGear = getAttributeDouble(element, "gear");
+    const Eigen::VectorXd gearVec = getAttributeVectorXd(element, "gear");
+    attributes.mGear = Eigen::Vector6d::Zero();
+    const Eigen::Index n
+        = std::min(gearVec.size(), static_cast<Eigen::Index>(6));
+    attributes.mGear.head(n) = gearVec.head(n);
   }
 
   // gainprm

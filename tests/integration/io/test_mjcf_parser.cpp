@@ -3074,6 +3074,44 @@ TEST(MjcfParserTest, ActuatorOverwriteClearsStaleForceLimit)
 }
 
 //==============================================================================
+TEST(MjcfParserTest, ActuatorVectorGearScalesForceByFirstElement)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="actuator_vector_gear">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <joint name="hinge1" type="hinge" axis="0 0 1" />
+    </body>
+  </worldbody>
+  <actuator>
+    <motor joint="hinge1" gear="5 0 0 0 0 0"
+           forcelimited="true" forcerange="-10 10" />
+  </actuator>
+</mujoco>
+)";
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_vector_gear.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+
+  auto* joint = world->getSkeleton(0)->getJoint("hinge1");
+  ASSERT_NE(joint, nullptr);
+  EXPECT_DOUBLE_EQ(joint->getForceLowerLimit(0), -50.0);
+  EXPECT_DOUBLE_EQ(joint->getForceUpperLimit(0), 50.0);
+}
+
+//==============================================================================
 TEST(MjcfParserTest, JointLimitedAutoValue)
 {
   // limited="auto" should behave the same as absent (std::nullopt)

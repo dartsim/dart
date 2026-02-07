@@ -143,7 +143,11 @@ Errors Actuator::read(tinyxml2::XMLElement* element)
     }
 
     if (hasAttribute(child, "gear")) {
-      entry.mGear = getAttributeDouble(child, "gear");
+      const Eigen::VectorXd gearVec = getAttributeVectorXd(child, "gear");
+      entry.mGear = Eigen::Vector6d::Zero();
+      const Eigen::Index n
+          = std::min(gearVec.size(), static_cast<Eigen::Index>(6));
+      entry.mGear.head(n) = gearVec.head(n);
     }
 
     if (allowGainBias) {
