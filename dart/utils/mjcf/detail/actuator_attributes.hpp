@@ -54,9 +54,9 @@ struct ActuatorAttributes final
   std::optional<std::string> mName;
   std::string mJoint;
   ActuatorType mType{ActuatorType::GENERAL};
-  bool mCtrlLimited{false};
+  std::optional<bool> mCtrlLimited;
   Eigen::Vector2d mCtrlRange{Eigen::Vector2d::Zero()};
-  bool mForceLimited{false};
+  std::optional<bool> mForceLimited;
   Eigen::Vector2d mForceRange{Eigen::Vector2d::Zero()};
   Eigen::Vector6d mGear{(Eigen::Vector6d() << 1, 0, 0, 0, 0, 0).finished()};
   Eigen::Vector3d mGainPrm{Eigen::Vector3d::Zero()};

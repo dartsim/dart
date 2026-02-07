@@ -97,29 +97,19 @@ Errors Actuator::read(tinyxml2::XMLElement* element, const Defaults& defaults)
     entry.mName = attrs.mName.value_or("");
     entry.mJoint = attrs.mJoint;
     entry.mType = type;
-    entry.mCtrlLimited = attrs.mCtrlLimited;
     entry.mCtrlRange = attrs.mCtrlRange;
-    entry.mForceLimited = attrs.mForceLimited;
     entry.mForceRange = attrs.mForceRange;
     entry.mGear = attrs.mGear;
     entry.mGainPrm = attrs.mGainPrm;
     entry.mBiasPrm = attrs.mBiasPrm;
 
-    auto isAutoOrAbsent = [](tinyxml2::XMLElement* el, const char* attr) {
-      if (!hasAttribute(el, attr)) {
-        return true;
-      }
-      const std::string val = getAttributeString(el, attr);
-      return val == "auto";
-    };
+    entry.mCtrlLimited = attrs.mCtrlLimited.has_value()
+                             ? attrs.mCtrlLimited.value()
+                             : !entry.mCtrlRange.isZero();
 
-    if (isAutoOrAbsent(child, "ctrllimited")) {
-      entry.mCtrlLimited = !entry.mCtrlRange.isZero();
-    }
-
-    if (isAutoOrAbsent(child, "forcelimited")) {
-      entry.mForceLimited = !entry.mForceRange.isZero();
-    }
+    entry.mForceLimited = attrs.mForceLimited.has_value()
+                              ? attrs.mForceLimited.value()
+                              : !entry.mForceRange.isZero();
 
     mEntries.emplace_back(std::move(entry));
   };

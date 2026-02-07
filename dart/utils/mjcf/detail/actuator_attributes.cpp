@@ -80,7 +80,7 @@ Errors appendActuatorAttributes(
     } else if (ctrlLimited == "false" || ctrlLimited == "0") {
       attributes.mCtrlLimited = false;
     } else if (ctrlLimited == "auto") {
-      // Deferred — resolved after ctrlrange is known
+      attributes.mCtrlLimited = std::nullopt;
     } else {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID,
@@ -103,7 +103,7 @@ Errors appendActuatorAttributes(
     } else if (forceLimited == "false" || forceLimited == "0") {
       attributes.mForceLimited = false;
     } else if (forceLimited == "auto") {
-      // Deferred — resolved after forcerange is known
+      attributes.mForceLimited = std::nullopt;
     } else {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID,

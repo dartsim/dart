@@ -3247,6 +3247,47 @@ TEST(MjcfParserTest, ActuatorUnknownClassEmitsError)
 }
 
 //==============================================================================
+TEST(MjcfParserTest, DefaultCtrlLimitedPreservedOverAutoInfer)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="ctrl_default_preserved">
+  <default>
+    <motor ctrllimited="false" ctrlrange="-1 1"
+           forcelimited="false" forcerange="-50 50" gear="1" />
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="b1">
+      <geom type="sphere" size="0.1" />
+      <joint name="hinge1" type="hinge" axis="0 0 1" />
+    </body>
+  </worldbody>
+  <actuator>
+    <motor joint="hinge1" />
+  </actuator>
+</mujoco>
+)";
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / "dart_mjcf_ctrl_default_preserved.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+
+  auto* j1 = world->getSkeleton(0)->getJoint("hinge1");
+  ASSERT_NE(j1, nullptr);
+  EXPECT_DOUBLE_EQ(
+      j1->getForceLowerLimit(0), -std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(
+      j1->getForceUpperLimit(0), std::numeric_limits<double>::infinity());
+}
+
+//==============================================================================
 TEST(MjcfParserTest, JointLimitedAutoValue)
 {
   const std::string xml = R"(
