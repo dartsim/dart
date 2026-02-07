@@ -2296,3 +2296,1079 @@ TEST(MjcfParserTest, OptionTimestepGravity)
   EXPECT_DOUBLE_EQ(world->getTimeStep(), 0.005);
   EXPECT_TRUE(world->getGravity().isApprox(Eigen::Vector3d(0, 0, -10)));
 }
+
+//==============================================================================
+TEST(MjcfParserTest, ActuatorMotorSetsForceType)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="actuator_motor">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <joint name="hinge1" type="hinge" axis="0 0 1" />
+    </body>
+  </worldbody>
+  <actuator>
+    <motor joint="hinge1" gear="2" forcelimited="true" forcerange="-10 10" />
+  </actuator>
+</mujoco>
+)";
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_actuator_motor.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+
+  auto* joint = world->getSkeleton(0)->getJoint("hinge1");
+  ASSERT_NE(joint, nullptr);
+  EXPECT_EQ(joint->getActuatorType(), dynamics::Joint::FORCE);
+  // Force limits scaled by gear=2
+  EXPECT_DOUBLE_EQ(joint->getForceLowerLimit(0), -20.0);
+  EXPECT_DOUBLE_EQ(joint->getForceUpperLimit(0), 20.0);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, ActuatorAutoLimitedResolvesFromRange)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="actuator_auto_limited">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <joint name="hinge1" type="hinge" axis="0 0 1" />
+    </body>
+    <body name="root2" pos="1 0 0">
+      <geom type="sphere" size="0.1" />
+      <joint name="hinge2" type="hinge" axis="0 0 1" />
+    </body>
+  </worldbody>
+  <actuator>
+    <motor joint="hinge1" forcelimited="auto" forcerange="-5 5" />
+    <motor joint="hinge2" ctrllimited="auto" />
+  </actuator>
+</mujoco>
+)";
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / "dart_mjcf_actuator_auto_limited.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+
+  auto* joint1 = world->getSkeleton(0)->getJoint("hinge1");
+  ASSERT_NE(joint1, nullptr);
+  EXPECT_DOUBLE_EQ(joint1->getForceLowerLimit(0), -5.0);
+  EXPECT_DOUBLE_EQ(joint1->getForceUpperLimit(0), 5.0);
+
+  auto* joint2 = world->getSkeleton(1)->getJoint("hinge2");
+  ASSERT_NE(joint2, nullptr);
+  EXPECT_EQ(joint2->getActuatorType(), dynamics::Joint::FORCE);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, ActuatorOmittedLimitedDefaultsToAuto)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="actuator_omitted_limited">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="b1">
+      <geom type="sphere" size="0.1" />
+      <joint name="j1" type="hinge" axis="0 0 1" />
+    </body>
+    <body name="b2" pos="1 0 0">
+      <geom type="sphere" size="0.1" />
+      <joint name="j2" type="hinge" axis="0 0 1" />
+    </body>
+    <body name="b3" pos="2 0 0">
+      <geom type="sphere" size="0.1" />
+      <joint name="j3" type="hinge" axis="0 0 1" />
+    </body>
+  </worldbody>
+  <actuator>
+    <motor joint="j1" forcerange="-8 8" />
+    <motor joint="j2" ctrlrange="-3 3" />
+    <motor joint="j3" />
+  </actuator>
+</mujoco>
+)";
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / "dart_mjcf_actuator_omitted_limited.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+
+  // j1: forcerange set without forcelimited => auto => limits applied
+  auto* joint1 = world->getSkeleton(0)->getJoint("j1");
+  ASSERT_NE(joint1, nullptr);
+  EXPECT_DOUBLE_EQ(joint1->getForceLowerLimit(0), -8.0);
+  EXPECT_DOUBLE_EQ(joint1->getForceUpperLimit(0), 8.0);
+
+  // j2: ctrlrange set without ctrllimited => auto => limits applied
+  auto* joint2 = world->getSkeleton(1)->getJoint("j2");
+  ASSERT_NE(joint2, nullptr);
+  EXPECT_TRUE(joint2->getActuatorType() == dynamics::Joint::FORCE);
+
+  // j3: no range and no attribute => auto resolves to false (no limits)
+  auto* joint3 = world->getSkeleton(2)->getJoint("j3");
+  ASSERT_NE(joint3, nullptr);
+  EXPECT_DOUBLE_EQ(
+      joint3->getForceLowerLimit(0), -std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(
+      joint3->getForceUpperLimit(0), std::numeric_limits<double>::infinity());
+}
+
+//==============================================================================
+TEST(MjcfParserTest, ActuatorPositionSetsServoType)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="actuator_position">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <joint name="slide1" type="slide" axis="1 0 0" />
+    </body>
+  </worldbody>
+  <actuator>
+    <position joint="slide1" />
+  </actuator>
+</mujoco>
+)";
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / "dart_mjcf_actuator_position.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+
+  auto* joint = world->getSkeleton(0)->getJoint("slide1");
+  ASSERT_NE(joint, nullptr);
+  EXPECT_EQ(joint->getActuatorType(), dynamics::Joint::SERVO);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, ContactExcludeDisablesCollision)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="contact_exclude">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="body1">
+      <geom type="sphere" size="0.1" />
+    </body>
+    <body name="body2" pos="0 0 1">
+      <geom type="sphere" size="0.1" />
+    </body>
+  </worldbody>
+  <contact>
+    <exclude body1="body1" body2="body2" />
+  </contact>
+</mujoco>
+)";
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / "dart_mjcf_contact_exclude.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+
+  // Verify that a collision filter was set
+  const auto& collisionOption
+      = world->getConstraintSolver()->getCollisionOption();
+  EXPECT_NE(collisionOption.collisionFilter, nullptr);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, AssetTextureAndMaterialParsing)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="asset_texture_material">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <asset>
+    <texture name="grid" type="2d" builtin="checker" rgb1="0.8 0.8 0.8"
+             rgb2="0.2 0.2 0.2" width="512" height="512" />
+    <material name="grid_mat" texture="grid" rgba="1 1 1 1"
+              emission="0.1" specular="0.8" shininess="0.9" reflectance="0.2" />
+  </asset>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+    </body>
+  </worldbody>
+</mujoco>
+)";
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_asset_tex_mat.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(common::Uri(tempPath.string()), createRetriever());
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_TRUE(errors.empty());
+
+  const auto& asset = mujoco.getAsset();
+  ASSERT_EQ(asset.getNumTextures(), 1u);
+  EXPECT_EQ(asset.getTexture(0).getName(), "grid");
+  EXPECT_EQ(asset.getTexture(0).getType(), "2d");
+  EXPECT_EQ(asset.getTexture(0).getBuiltin(), "checker");
+
+  const auto* texByName = asset.getTexture("grid");
+  ASSERT_NE(texByName, nullptr);
+  EXPECT_EQ(texByName->getName(), "grid");
+
+  ASSERT_EQ(asset.getNumMaterials(), 1u);
+  EXPECT_EQ(asset.getMaterial(0).getName(), "grid_mat");
+  EXPECT_EQ(asset.getMaterial(0).getTexture(), "grid");
+  EXPECT_DOUBLE_EQ(asset.getMaterial(0).getEmission(), 0.1);
+  EXPECT_DOUBLE_EQ(asset.getMaterial(0).getSpecular(), 0.8);
+  EXPECT_DOUBLE_EQ(asset.getMaterial(0).getShininess(), 0.9);
+  EXPECT_DOUBLE_EQ(asset.getMaterial(0).getReflectance(), 0.2);
+
+  const auto* matByName = asset.getMaterial("grid_mat");
+  ASSERT_NE(matByName, nullptr);
+  EXPECT_EQ(matByName->getName(), "grid_mat");
+}
+
+//==============================================================================
+TEST(MjcfParserTest, ActuatorDefaultAttributes)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="actuator_defaults">
+  <default>
+    <geom type="sphere" size="0.1" />
+    <motor ctrllimited="true" ctrlrange="-1 1" forcelimited="true"
+           forcerange="-50 50" gear="3" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <joint name="hinge1" type="hinge" axis="0 0 1" />
+    </body>
+  </worldbody>
+  <actuator>
+    <motor joint="hinge1" name="motor1" />
+  </actuator>
+</mujoco>
+ )";
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / "dart_mjcf_actuator_defaults.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+
+  auto* joint = world->getSkeleton(0)->getJoint("hinge1");
+  ASSERT_NE(joint, nullptr);
+  EXPECT_DOUBLE_EQ(joint->getForceLowerLimit(0), -150.0);
+  EXPECT_DOUBLE_EQ(joint->getForceUpperLimit(0), 150.0);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, ActuatorVelocityAndGeneralTypes)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="actuator_vel_general">
+  <default><geom type="sphere" size="0.1" /></default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <joint name="j1" type="hinge" axis="0 0 1" />
+    </body>
+    <body name="root2" pos="1 0 0">
+      <geom type="sphere" size="0.1" />
+      <joint name="j2" type="hinge" axis="0 0 1" />
+    </body>
+  </worldbody>
+  <actuator>
+    <velocity joint="j1" />
+    <general joint="j2" gainprm="100 0 0" biasprm="0 -100 -10" />
+  </actuator>
+</mujoco>
+ )";
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / "dart_mjcf_actuator_vel_general.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+
+  auto* joint1 = world->getSkeleton(0)->getJoint("j1");
+  ASSERT_NE(joint1, nullptr);
+  EXPECT_EQ(joint1->getActuatorType(), dynamics::Joint::VELOCITY);
+
+  auto* joint2 = world->getSkeleton(1)->getJoint("j2");
+  ASSERT_NE(joint2, nullptr);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, ContactPairParsing)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="contact_pair">
+  <default><geom type="sphere" size="0.1" /></default>
+  <worldbody>
+    <body name="body1">
+      <geom name="geom1" type="sphere" size="0.1" />
+    </body>
+    <body name="body2" pos="0 0 1">
+      <geom name="geom2" type="sphere" size="0.1" />
+    </body>
+  </worldbody>
+  <contact>
+    <pair geom1="geom1" geom2="geom2" condim="4" margin="0.001" gap="0.01" />
+  </contact>
+</mujoco>
+ )";
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_contact_pair.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(common::Uri(tempPath.string()), createRetriever());
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_TRUE(errors.empty());
+
+  const auto& contact = mujoco.getContact();
+  ASSERT_EQ(contact.getNumPairs(), 1u);
+  const auto& pair = contact.getPair(0);
+  EXPECT_EQ(pair.mGeom1, "geom1");
+  EXPECT_EQ(pair.mGeom2, "geom2");
+  EXPECT_EQ(pair.mCondim, 4);
+  EXPECT_DOUBLE_EQ(pair.mMargin, 0.001);
+  EXPECT_DOUBLE_EQ(pair.mGap, 0.01);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, BodyCameraExtendedAttributes)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="camera_extended">
+  <default><geom type="sphere" size="0.1" /></default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <camera name="cam_targeted" pos="1 0 0" target="root"
+              quat="1 0 0 0" />
+    </body>
+  </worldbody>
+</mujoco>
+ )";
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / "dart_mjcf_camera_extended.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(common::Uri(tempPath.string()), createRetriever());
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_TRUE(errors.empty());
+
+  const auto& body = mujoco.getWorldbody().getRootBody(0);
+  ASSERT_EQ(body.getNumCameras(), 1u);
+  const auto& camera = body.getCamera(0);
+  EXPECT_EQ(camera.getTarget(), "root");
+}
+
+//==============================================================================
+TEST(MjcfParserTest, BodyLightExtendedAttributes)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="light_extended">
+  <default><geom type="sphere" size="0.1" /></default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <light name="inactive_light" active="false" directional="false"
+             pos="0 0 3" dir="0 0 -1" />
+    </body>
+  </worldbody>
+</mujoco>
+ )";
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_light_extended.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(common::Uri(tempPath.string()), createRetriever());
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_TRUE(errors.empty());
+
+  const auto& body = mujoco.getWorldbody().getRootBody(0);
+  ASSERT_EQ(body.getNumLights(), 1u);
+  const auto& light = body.getLight(0);
+  EXPECT_FALSE(light.getActive());
+  EXPECT_FALSE(light.getDirectional());
+}
+
+//==============================================================================
+TEST(MjcfParserTest, AssetMaterialRgba)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="material_rgba">
+  <default><geom type="sphere" size="0.1" /></default>
+  <asset>
+    <material name="red_mat" rgba="1 0 0 0.5" />
+  </asset>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+    </body>
+  </worldbody>
+</mujoco>
+ )";
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_material_rgba.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(common::Uri(tempPath.string()), createRetriever());
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_TRUE(errors.empty());
+
+  const auto& asset = mujoco.getAsset();
+  ASSERT_EQ(asset.getNumMaterials(), 1u);
+  const auto* material = asset.getMaterial("red_mat");
+  ASSERT_NE(material, nullptr);
+  EXPECT_TRUE(material->getRgba().isApprox(Eigen::Vector4d(1, 0, 0, 0.5)));
+}
+
+//==============================================================================
+TEST(MjcfParserTest, UnknownElementWarns)
+{
+  // An unknown element <foo> in <body> should not cause parse errors
+  // (warnUnknownElements logs but does not add to Errors vector)
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="unknown_element">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <foo bar="baz" />
+    </body>
+  </worldbody>
+</mujoco>
+)";
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_unknown_elem.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(common::Uri(tempPath.string()), createRetriever());
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  // Unknown elements produce warnings, not errors
+  EXPECT_TRUE(errors.empty());
+}
+
+//==============================================================================
+TEST(MjcfParserTest, JointArmatureParsed)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="joint_armature">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <joint name="hinge1" type="hinge" armature="0.5"
+             stiffness="10" frictionloss="0.3" />
+    </body>
+  </worldbody>
+</mujoco>
+)";
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_joint_armature.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(common::Uri(tempPath.string()), createRetriever());
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_TRUE(errors.empty());
+
+  const auto& body = mujoco.getWorldbody().getRootBody(0);
+  ASSERT_EQ(body.getNumJoints(), 1u);
+  const auto& joint = body.getJoint(0);
+  EXPECT_DOUBLE_EQ(joint.getArmature(), 0.5);
+  EXPECT_DOUBLE_EQ(joint.getStiffness(), 10.0);
+  EXPECT_DOUBLE_EQ(joint.getFrictionLoss(), 0.3);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, MultipleFreeJointsError)
+{
+  // A body with both <freejoint> and <joint type="free"> should produce error
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="multi_free">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <freejoint name="fj" />
+      <joint name="jf" type="free" />
+    </body>
+  </worldbody>
+</mujoco>
+)";
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_multi_free.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(common::Uri(tempPath.string()), createRetriever());
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+
+  ASSERT_FALSE(errors.empty());
+  bool hasInvalid = false;
+  for (const auto& error : errors) {
+    if (error.getCode() == ErrorCode::ELEMENT_INVALID) {
+      hasInvalid = true;
+      break;
+    }
+  }
+  EXPECT_TRUE(hasInvalid);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, AutoLimitsZeroRangeSetsUnlimited)
+{
+  // autolimits=true (default) + no range attr + no default range override
+  // → range stays (0,0) → mLimited = false
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="autolimits_zero_range">
+  <default>
+    <geom type="sphere" size="0.1" />
+    <joint type="hinge" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <joint name="hinge1" type="hinge" />
+    </body>
+  </worldbody>
+</mujoco>
+)";
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / "dart_mjcf_autolimits_zero.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+  auto* joint = world->getSkeleton(0)->getJoint("hinge1");
+  ASSERT_NE(joint, nullptr);
+  EXPECT_FALSE(joint->areLimitsEnforced());
+}
+
+//==============================================================================
+TEST(MjcfParserTest, RootBodyUnnamedJointGetsDefaultName)
+{
+  // A root body with an unnamed joint should get "root_Joint" as name
+  // (null parent → falls through to "root_Joint" path in
+  // createJointCommonProperties)
+  const std::string xml = std::string(R"(
+ <?xml version="1.0" ?>
+ <mujoco model="root_unnamed_joint">
+   <default>
+     <geom type="sphere" size="0.1" />
+   </default>
+   <!-- )") + kMjcfPadding + R"( -->
+   <worldbody>
+     <body name="root">
+       <geom type="sphere" size="0.1" />
+       <joint type="hinge" range="-1 1" />
+     </body>
+   </worldbody>
+ </mujoco>
+)";
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_root_unnamed.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+
+  auto* skel = world->getSkeleton(0).get();
+  ASSERT_NE(skel, nullptr);
+  // The unnamed joint on a root body (no parent BodyNode) gets "root_Joint"
+  auto* joint = skel->getJoint("root_Joint");
+  EXPECT_NE(joint, nullptr);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, ActuatorNegativeGearPreservesForceOrdering)
+{
+  // A negative gear should not flip force limits (lower > upper)
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="actuator_neg_gear">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <joint name="hinge1" type="hinge" axis="0 0 1" />
+    </body>
+  </worldbody>
+  <actuator>
+    <motor joint="hinge1" gear="-3" forcelimited="true" forcerange="-10 10" />
+  </actuator>
+</mujoco>
+)";
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_neg_gear.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+
+  auto* joint = world->getSkeleton(0)->getJoint("hinge1");
+  ASSERT_NE(joint, nullptr);
+  // gear=-3, forcerange=[-10,10]: scaled = [30, -30]
+  // After ordering: lower=-30, upper=30
+  EXPECT_DOUBLE_EQ(joint->getForceLowerLimit(0), -30.0);
+  EXPECT_DOUBLE_EQ(joint->getForceUpperLimit(0), 30.0);
+  EXPECT_LE(joint->getForceLowerLimit(0), joint->getForceUpperLimit(0));
+}
+
+//==============================================================================
+TEST(MjcfParserTest, ActuatorOverwriteClearsStaleForceLimit)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="actuator_overwrite">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <joint name="hinge1" type="hinge" axis="0 0 1" />
+    </body>
+  </worldbody>
+  <actuator>
+    <motor joint="hinge1" forcelimited="true" forcerange="-10 10" />
+    <velocity joint="hinge1" />
+  </actuator>
+</mujoco>
+)";
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / "dart_mjcf_actuator_overwrite.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+
+  auto* joint = world->getSkeleton(0)->getJoint("hinge1");
+  ASSERT_NE(joint, nullptr);
+  EXPECT_EQ(joint->getActuatorType(), dynamics::Joint::VELOCITY);
+  EXPECT_DOUBLE_EQ(
+      joint->getForceLowerLimit(0), -std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(
+      joint->getForceUpperLimit(0), std::numeric_limits<double>::infinity());
+}
+
+//==============================================================================
+TEST(MjcfParserTest, ActuatorVectorGearScalesForceByFirstElement)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="actuator_vector_gear">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <joint name="hinge1" type="hinge" axis="0 0 1" />
+    </body>
+  </worldbody>
+  <actuator>
+    <motor joint="hinge1" gear="5 0 0 0 0 0"
+           forcelimited="true" forcerange="-10 10" />
+  </actuator>
+</mujoco>
+)";
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_vector_gear.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+
+  auto* joint = world->getSkeleton(0)->getJoint("hinge1");
+  ASSERT_NE(joint, nullptr);
+  EXPECT_DOUBLE_EQ(joint->getForceLowerLimit(0), -50.0);
+  EXPECT_DOUBLE_EQ(joint->getForceUpperLimit(0), 50.0);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, ActuatorPerDofGearScaling)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="actuator_per_dof_gear">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <joint name="ball1" type="ball" />
+    </body>
+  </worldbody>
+  <actuator>
+    <motor joint="ball1" gear="2 3 4"
+           forcelimited="true" forcerange="-10 10" />
+  </actuator>
+</mujoco>
+)";
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_per_dof_gear.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+
+  auto* joint = world->getSkeleton(0)->getJoint("ball1");
+  ASSERT_NE(joint, nullptr);
+  ASSERT_EQ(joint->getNumDofs(), 3u);
+  EXPECT_DOUBLE_EQ(joint->getForceLowerLimit(0), -20.0);
+  EXPECT_DOUBLE_EQ(joint->getForceUpperLimit(0), 20.0);
+  EXPECT_DOUBLE_EQ(joint->getForceLowerLimit(1), -30.0);
+  EXPECT_DOUBLE_EQ(joint->getForceUpperLimit(1), 30.0);
+  EXPECT_DOUBLE_EQ(joint->getForceLowerLimit(2), -40.0);
+  EXPECT_DOUBLE_EQ(joint->getForceUpperLimit(2), 40.0);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, DefaultActuatorAttributesInherited)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="default_actuator">
+  <default>
+    <motor ctrllimited="true" ctrlrange="-1 1"
+           forcelimited="true" forcerange="-50 50" gear="3" />
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="b1">
+      <geom type="sphere" size="0.1" />
+      <joint name="hinge1" type="hinge" axis="0 0 1" />
+      <body name="b2">
+        <geom type="sphere" size="0.1" />
+        <joint name="hinge2" type="hinge" axis="0 1 0" />
+      </body>
+    </body>
+  </worldbody>
+  <actuator>
+    <motor joint="hinge1" />
+    <motor joint="hinge2" gear="5" forcelimited="false" />
+  </actuator>
+</mujoco>
+)";
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / "dart_mjcf_default_actuator.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+
+  auto* j1 = world->getSkeleton(0)->getJoint("hinge1");
+  ASSERT_NE(j1, nullptr);
+  EXPECT_EQ(j1->getActuatorType(), dynamics::Joint::FORCE);
+  EXPECT_DOUBLE_EQ(j1->getForceLowerLimit(0), -150.0);
+  EXPECT_DOUBLE_EQ(j1->getForceUpperLimit(0), 150.0);
+
+  auto* j2 = world->getSkeleton(0)->getJoint("hinge2");
+  ASSERT_NE(j2, nullptr);
+  EXPECT_EQ(j2->getActuatorType(), dynamics::Joint::FORCE);
+  EXPECT_DOUBLE_EQ(
+      j2->getForceLowerLimit(0), -std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(
+      j2->getForceUpperLimit(0), std::numeric_limits<double>::infinity());
+}
+
+//==============================================================================
+TEST(MjcfParserTest, ActuatorUnknownClassEmitsError)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="unknown_class">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="b1">
+      <geom type="sphere" size="0.1" />
+      <joint name="hinge1" type="hinge" axis="0 0 1" />
+    </body>
+  </worldbody>
+  <actuator>
+    <motor class="nonexistent" joint="hinge1" />
+  </actuator>
+</mujoco>
+)";
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / "dart_mjcf_unknown_actuator_class.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(common::Uri(tempPath.string()), createRetriever());
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+
+  bool hasInvalid = false;
+  for (const auto& error : errors) {
+    if (error.getCode() == ErrorCode::ATTRIBUTE_INVALID) {
+      hasInvalid = true;
+      break;
+    }
+  }
+  EXPECT_TRUE(hasInvalid);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, DefaultCtrlLimitedPreservedOverAutoInfer)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="ctrl_default_preserved">
+  <default>
+    <motor ctrllimited="false" ctrlrange="-1 1"
+           forcelimited="false" forcerange="-50 50" gear="1" />
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="b1">
+      <geom type="sphere" size="0.1" />
+      <joint name="hinge1" type="hinge" axis="0 0 1" />
+    </body>
+  </worldbody>
+  <actuator>
+    <motor joint="hinge1" />
+  </actuator>
+</mujoco>
+)";
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / "dart_mjcf_ctrl_default_preserved.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+
+  auto* j1 = world->getSkeleton(0)->getJoint("hinge1");
+  ASSERT_NE(j1, nullptr);
+  EXPECT_DOUBLE_EQ(
+      j1->getForceLowerLimit(0), -std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(
+      j1->getForceUpperLimit(0), std::numeric_limits<double>::infinity());
+}
+
+//==============================================================================
+TEST(MjcfParserTest, JointLimitedAutoValue)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="limited_auto">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <joint name="hinge1" type="hinge" limited="auto" range="-1 1" />
+    </body>
+  </worldbody>
+</mujoco>
+)";
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_limited_auto.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  // With autolimits=true (default), limited="auto" → nullopt → inferred from
+  // range
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+  auto* joint = world->getSkeleton(0)->getJoint("hinge1");
+  ASSERT_NE(joint, nullptr);
+  // range=(-1,1) non-zero + autolimits → limited=true
+  EXPECT_TRUE(joint->areLimitsEnforced());
+}
+
+//==============================================================================
+TEST(MjcfParserTest, BodyCameraAndLightParsing)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="body_camera_light">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <camera name="cam1" fovy="60" pos="0 -1 1" mode="trackcom" />
+      <light name="light1" pos="0 0 2" dir="0 0 -1"
+             diffuse="0.9 0.9 0.9" specular="0.1 0.1 0.1"
+             directional="true" />
+    </body>
+  </worldbody>
+</mujoco>
+)";
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_camera_light.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(common::Uri(tempPath.string()), createRetriever());
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_TRUE(errors.empty());
+
+  const auto& body = mujoco.getWorldbody().getRootBody(0);
+
+  ASSERT_EQ(body.getNumCameras(), 1u);
+  const auto& cam = body.getCamera(0);
+  EXPECT_EQ(cam.getName(), "cam1");
+  EXPECT_DOUBLE_EQ(cam.getFovy(), 60.0);
+  EXPECT_TRUE(cam.getPos().isApprox(Eigen::Vector3d(0, -1, 1)));
+  EXPECT_EQ(cam.getMode(), "trackcom");
+
+  ASSERT_EQ(body.getNumLights(), 1u);
+  const auto& light = body.getLight(0);
+  EXPECT_EQ(light.getName(), "light1");
+  EXPECT_TRUE(light.getPos().isApprox(Eigen::Vector3d(0, 0, 2)));
+  EXPECT_TRUE(light.getDir().isApprox(Eigen::Vector3d(0, 0, -1)));
+  EXPECT_TRUE(light.getDiffuse().isApprox(Eigen::Vector3d(0.9, 0.9, 0.9)));
+  EXPECT_TRUE(light.getSpecular().isApprox(Eigen::Vector3d(0.1, 0.1, 0.1)));
+  EXPECT_TRUE(light.getDirectional());
+}

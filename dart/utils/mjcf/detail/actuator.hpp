@@ -30,75 +30,53 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_MJCF_DETAIL_DEFAULT_HPP_
-#define DART_UTILS_MJCF_DETAIL_DEFAULT_HPP_
+#ifndef DART_UTILS_MJCF_DETAIL_ACTUATOR_HPP_
+#define DART_UTILS_MJCF_DETAIL_ACTUATOR_HPP_
 
-#include <dart/utils/mjcf/detail/actuator_attributes.hpp>
+#include <dart/utils/export.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
-#include <dart/utils/mjcf/detail/geom_attributes.hpp>
-#include <dart/utils/mjcf/detail/joint_attributes.hpp>
-#include <dart/utils/mjcf/detail/mesh_attributes.hpp>
-#include <dart/utils/mjcf/detail/weld_attributes.hpp>
+#include <dart/utils/mjcf/detail/types.hpp>
 
+#include <dart/math/math_types.hpp>
+
+#include <Eigen/Core>
 #include <tinyxml2.h>
 
-#include <optional>
 #include <string>
-#include <string_view>
-#include <unordered_map>
+#include <vector>
 
 namespace dart {
 namespace utils {
 namespace MjcfParser {
 namespace detail {
 
-class Default final
+class DART_UTILS_API Actuator final
 {
 public:
-  /// Default constructor
-  Default() = default;
+  Actuator() = default;
 
-  const ActuatorAttributes& getActuatorAttributes(ActuatorType type) const;
-  const GeomAttributes& getGeomAttributes() const;
-  const JointAttributes& getJointAttributes() const;
-  const MeshAttributes& getMeshAttributes() const;
+  struct Entry
+  {
+    std::string mName;
+    std::string mJoint;
+    ActuatorType mType{ActuatorType::GENERAL};
+    bool mCtrlLimited{false};
+    Eigen::Vector2d mCtrlRange{Eigen::Vector2d::Zero()};
+    bool mForceLimited{false};
+    Eigen::Vector2d mForceRange{Eigen::Vector2d::Zero()};
+    Eigen::Vector6d mGear{(Eigen::Vector6d() << 1, 0, 0, 0, 0, 0).finished()};
+    Eigen::Vector3d mGainPrm{Eigen::Vector3d::Zero()};
+    Eigen::Vector3d mBiasPrm{Eigen::Vector3d::Zero()};
+  };
 
-  const WeldAttributes& getWeldAttributes() const;
-
-private:
-  // Private members used by Defaults class
-  friend class Defaults;
-  Errors read(tinyxml2::XMLElement* element, const Default* parent);
-
-private:
-  ActuatorAttributes mMotorAttributes;
-  ActuatorAttributes mPositionAttributes;
-  ActuatorAttributes mVelocityAttributes;
-  ActuatorAttributes mGeneralAttributes;
-
-  GeomAttributes mGeomAttributes;
-  JointAttributes mJointAttributes;
-  MeshAttributes mMeshAttributes;
-
-  WeldAttributes mWeldAttributes;
-};
-
-class Defaults
-{
-public:
-  bool hasDefault(std::string_view className) const;
-  const Default* getDefault(std::string_view className) const;
-  const Default* getRootDefault() const;
+  std::size_t getNumEntries() const;
+  const Entry& getEntry(std::size_t index) const;
 
 private:
-  // Private members used by MujocoModel class
   friend class MujocoModel;
-  Errors read(tinyxml2::XMLElement* element, const Default* parent);
+  Errors read(tinyxml2::XMLElement* element, const class Defaults& defaults);
 
-private:
-  //  Default mRootDefault;
-  std::string mRootClassName;
-  std::unordered_map<std::string, Default> mDefaultMap;
+  std::vector<Entry> mEntries;
 };
 
 } // namespace detail
@@ -106,4 +84,4 @@ private:
 } // namespace utils
 } // namespace dart
 
-#endif // #ifndef DART_UTILS_MJCF_DETAIL_DEFAULT_HPP_
+#endif // #ifndef DART_UTILS_MJCF_DETAIL_ACTUATOR_HPP_

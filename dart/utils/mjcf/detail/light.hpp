@@ -30,75 +30,46 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_MJCF_DETAIL_DEFAULT_HPP_
-#define DART_UTILS_MJCF_DETAIL_DEFAULT_HPP_
+#ifndef DART_UTILS_MJCF_DETAIL_LIGHT_HPP_
+#define DART_UTILS_MJCF_DETAIL_LIGHT_HPP_
 
-#include <dart/utils/mjcf/detail/actuator_attributes.hpp>
+#include <dart/utils/export.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
-#include <dart/utils/mjcf/detail/geom_attributes.hpp>
-#include <dart/utils/mjcf/detail/joint_attributes.hpp>
-#include <dart/utils/mjcf/detail/mesh_attributes.hpp>
-#include <dart/utils/mjcf/detail/weld_attributes.hpp>
 
+#include <Eigen/Core>
 #include <tinyxml2.h>
 
-#include <optional>
 #include <string>
-#include <string_view>
-#include <unordered_map>
 
 namespace dart {
 namespace utils {
 namespace MjcfParser {
 namespace detail {
 
-class Default final
+class DART_UTILS_API Light final
 {
 public:
-  /// Default constructor
-  Default() = default;
-
-  const ActuatorAttributes& getActuatorAttributes(ActuatorType type) const;
-  const GeomAttributes& getGeomAttributes() const;
-  const JointAttributes& getJointAttributes() const;
-  const MeshAttributes& getMeshAttributes() const;
-
-  const WeldAttributes& getWeldAttributes() const;
-
-private:
-  // Private members used by Defaults class
-  friend class Defaults;
-  Errors read(tinyxml2::XMLElement* element, const Default* parent);
+  Light() = default;
+  const std::string& getName() const;
+  const Eigen::Vector3d& getPos() const;
+  const Eigen::Vector3d& getDir() const;
+  bool getActive() const;
+  const Eigen::Vector3d& getDiffuse() const;
+  const Eigen::Vector3d& getSpecular() const;
+  bool getDirectional() const;
 
 private:
-  ActuatorAttributes mMotorAttributes;
-  ActuatorAttributes mPositionAttributes;
-  ActuatorAttributes mVelocityAttributes;
-  ActuatorAttributes mGeneralAttributes;
+  friend class Body;
+  Errors read(tinyxml2::XMLElement* element);
 
-  GeomAttributes mGeomAttributes;
-  JointAttributes mJointAttributes;
-  MeshAttributes mMeshAttributes;
-
-  WeldAttributes mWeldAttributes;
-};
-
-class Defaults
-{
-public:
-  bool hasDefault(std::string_view className) const;
-  const Default* getDefault(std::string_view className) const;
-  const Default* getRootDefault() const;
-
-private:
-  // Private members used by MujocoModel class
-  friend class MujocoModel;
-  Errors read(tinyxml2::XMLElement* element, const Default* parent);
-
-private:
-  //  Default mRootDefault;
-  std::string mRootClassName;
-  std::unordered_map<std::string, Default> mDefaultMap;
+  std::string mName;
+  Eigen::Vector3d mPos{Eigen::Vector3d::Zero()};
+  Eigen::Vector3d mDir{Eigen::Vector3d(0, 0, -1)};
+  bool mActive{true};
+  Eigen::Vector3d mDiffuse{Eigen::Vector3d(0.7, 0.7, 0.7)};
+  Eigen::Vector3d mSpecular{Eigen::Vector3d(0.3, 0.3, 0.3)};
+  bool mDirectional{false};
+  bool mCastshadow{true};
 };
 
 } // namespace detail
@@ -106,4 +77,4 @@ private:
 } // namespace utils
 } // namespace dart
 
-#endif // #ifndef DART_UTILS_MJCF_DETAIL_DEFAULT_HPP_
+#endif // #ifndef DART_UTILS_MJCF_DETAIL_LIGHT_HPP_

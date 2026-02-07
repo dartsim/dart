@@ -33,9 +33,12 @@
 #ifndef DART_UTILS_MJCF_DETAIL_ASSET_HPP_
 #define DART_UTILS_MJCF_DETAIL_ASSET_HPP_
 
+#include <dart/utils/export.hpp>
 #include <dart/utils/mjcf/detail/compiler.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
+#include <dart/utils/mjcf/detail/material.hpp>
 #include <dart/utils/mjcf/detail/mesh.hpp>
+#include <dart/utils/mjcf/detail/texture.hpp>
 
 #include <tinyxml2.h>
 
@@ -50,7 +53,7 @@ namespace detail {
 
 class Body;
 
-class Asset final
+class DART_UTILS_API Asset final
 {
 public:
   /// Default constructor
@@ -66,6 +69,24 @@ public:
 
   /// Finds <mesh> element by name
   const Mesh* getMesh(std::string_view name) const;
+
+  /// Returns the number of <texture> elements in <asset>.
+  std::size_t getNumTextures() const;
+
+  /// Returns <texture> element at @c index in <asset>.
+  const Texture& getTexture(std::size_t index) const;
+
+  /// Finds <texture> element by name
+  const Texture* getTexture(std::string_view name) const;
+
+  /// Returns the number of <material> elements in <asset>.
+  std::size_t getNumMaterials() const;
+
+  /// Returns <material> element at @c index in <asset>.
+  const Material& getMaterial(std::size_t index) const;
+
+  /// Finds <material> element by name
+  const Material* getMaterial(std::string_view name) const;
 
   /// \}
 
@@ -87,6 +108,10 @@ private:
 private:
   std::vector<Mesh> mMeshes;
   std::unordered_map<std::string, Mesh*> mMeshMap;
+  std::vector<Texture> mTextures;
+  std::unordered_map<std::string, Texture*> mTextureMap;
+  std::vector<Material> mMaterials;
+  std::unordered_map<std::string, Material*> mMaterialMap;
 };
 
 } // namespace detail

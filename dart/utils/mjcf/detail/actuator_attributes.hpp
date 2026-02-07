@@ -30,80 +30,45 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_MJCF_DETAIL_DEFAULT_HPP_
-#define DART_UTILS_MJCF_DETAIL_DEFAULT_HPP_
+#ifndef DART_UTILS_MJCF_DETAIL_ACTUATORATTRIBUTES_HPP_
+#define DART_UTILS_MJCF_DETAIL_ACTUATORATTRIBUTES_HPP_
 
-#include <dart/utils/mjcf/detail/actuator_attributes.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
-#include <dart/utils/mjcf/detail/geom_attributes.hpp>
-#include <dart/utils/mjcf/detail/joint_attributes.hpp>
-#include <dart/utils/mjcf/detail/mesh_attributes.hpp>
-#include <dart/utils/mjcf/detail/weld_attributes.hpp>
+#include <dart/utils/mjcf/detail/types.hpp>
 
+#include <dart/math/math_types.hpp>
+
+#include <Eigen/Core>
 #include <tinyxml2.h>
 
 #include <optional>
 #include <string>
-#include <string_view>
-#include <unordered_map>
 
 namespace dart {
 namespace utils {
 namespace MjcfParser {
 namespace detail {
 
-class Default final
+struct ActuatorAttributes final
 {
-public:
-  /// Default constructor
-  Default() = default;
-
-  const ActuatorAttributes& getActuatorAttributes(ActuatorType type) const;
-  const GeomAttributes& getGeomAttributes() const;
-  const JointAttributes& getJointAttributes() const;
-  const MeshAttributes& getMeshAttributes() const;
-
-  const WeldAttributes& getWeldAttributes() const;
-
-private:
-  // Private members used by Defaults class
-  friend class Defaults;
-  Errors read(tinyxml2::XMLElement* element, const Default* parent);
-
-private:
-  ActuatorAttributes mMotorAttributes;
-  ActuatorAttributes mPositionAttributes;
-  ActuatorAttributes mVelocityAttributes;
-  ActuatorAttributes mGeneralAttributes;
-
-  GeomAttributes mGeomAttributes;
-  JointAttributes mJointAttributes;
-  MeshAttributes mMeshAttributes;
-
-  WeldAttributes mWeldAttributes;
+  std::optional<std::string> mName;
+  std::string mJoint;
+  ActuatorType mType{ActuatorType::GENERAL};
+  std::optional<bool> mCtrlLimited;
+  Eigen::Vector2d mCtrlRange{Eigen::Vector2d::Zero()};
+  std::optional<bool> mForceLimited;
+  Eigen::Vector2d mForceRange{Eigen::Vector2d::Zero()};
+  Eigen::Vector6d mGear{(Eigen::Vector6d() << 1, 0, 0, 0, 0, 0).finished()};
+  Eigen::Vector3d mGainPrm{Eigen::Vector3d::Zero()};
+  Eigen::Vector3d mBiasPrm{Eigen::Vector3d::Zero()};
 };
 
-class Defaults
-{
-public:
-  bool hasDefault(std::string_view className) const;
-  const Default* getDefault(std::string_view className) const;
-  const Default* getRootDefault() const;
-
-private:
-  // Private members used by MujocoModel class
-  friend class MujocoModel;
-  Errors read(tinyxml2::XMLElement* element, const Default* parent);
-
-private:
-  //  Default mRootDefault;
-  std::string mRootClassName;
-  std::unordered_map<std::string, Default> mDefaultMap;
-};
+Errors appendActuatorAttributes(
+    ActuatorAttributes& attributes, tinyxml2::XMLElement* element);
 
 } // namespace detail
 } // namespace MjcfParser
 } // namespace utils
 } // namespace dart
 
-#endif // #ifndef DART_UTILS_MJCF_DETAIL_DEFAULT_HPP_
+#endif // #ifndef DART_UTILS_MJCF_DETAIL_ACTUATORATTRIBUTES_HPP_
