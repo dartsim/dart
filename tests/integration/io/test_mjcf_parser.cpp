@@ -3206,6 +3206,47 @@ TEST(MjcfParserTest, DefaultActuatorAttributesInherited)
 }
 
 //==============================================================================
+TEST(MjcfParserTest, ActuatorUnknownClassEmitsError)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="unknown_class">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="b1">
+      <geom type="sphere" size="0.1" />
+      <joint name="hinge1" type="hinge" axis="0 0 1" />
+    </body>
+  </worldbody>
+  <actuator>
+    <motor class="nonexistent" joint="hinge1" />
+  </actuator>
+</mujoco>
+)";
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / "dart_mjcf_unknown_actuator_class.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(common::Uri(tempPath.string()), createRetriever());
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+
+  bool hasInvalid = false;
+  for (const auto& error : errors) {
+    if (error.getCode() == ErrorCode::ATTRIBUTE_INVALID) {
+      hasInvalid = true;
+      break;
+    }
+  }
+  EXPECT_TRUE(hasInvalid);
+}
+
+//==============================================================================
 TEST(MjcfParserTest, JointLimitedAutoValue)
 {
   const std::string xml = R"(

@@ -71,10 +71,14 @@ Errors Actuator::read(tinyxml2::XMLElement* element, const Defaults& defaults)
   auto parseEntry = [&](tinyxml2::XMLElement* child, ActuatorType type) {
     ActuatorAttributes attrs;
     if (hasAttribute(child, "class")) {
-      const Default* cls
-          = defaults.getDefault(getAttributeString(child, "class"));
+      const std::string className = getAttributeString(child, "class");
+      const Default* cls = defaults.getDefault(className);
       if (cls != nullptr) {
         attrs = cls->getActuatorAttributes(type);
+      } else {
+        errors.push_back(Error(
+            ErrorCode::ATTRIBUTE_INVALID,
+            "Failed to find default with class name '" + className + "'"));
       }
     } else if (rootDefault != nullptr) {
       attrs = rootDefault->getActuatorAttributes(type);
