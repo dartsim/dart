@@ -51,6 +51,7 @@
 #include <Eigen/Dense>
 
 #include <algorithm>
+#include <limits>
 #include <unordered_set>
 #include <vector>
 
@@ -809,14 +810,20 @@ simulation::WorldPtr createWorld(
         break;
     }
 
-    // Map force limits if specified
+    const std::size_t numDofs = dartJoint->getNumDofs();
     if (entry.mForceLimited) {
-      const std::size_t numDofs = dartJoint->getNumDofs();
       for (std::size_t d = 0; d < numDofs; ++d) {
         const double scaledLo = entry.mForceRange[0] * entry.mGear;
         const double scaledHi = entry.mForceRange[1] * entry.mGear;
         dartJoint->setForceLowerLimit(d, std::min(scaledLo, scaledHi));
         dartJoint->setForceUpperLimit(d, std::max(scaledLo, scaledHi));
+      }
+    } else {
+      for (std::size_t d = 0; d < numDofs; ++d) {
+        dartJoint->setForceLowerLimit(
+            d, -std::numeric_limits<double>::infinity());
+        dartJoint->setForceUpperLimit(
+            d, std::numeric_limits<double>::infinity());
       }
     }
   }

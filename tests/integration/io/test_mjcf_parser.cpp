@@ -3033,6 +3033,47 @@ TEST(MjcfParserTest, ActuatorNegativeGearPreservesForceOrdering)
 }
 
 //==============================================================================
+TEST(MjcfParserTest, ActuatorOverwriteClearsStaleForceLimit)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="actuator_overwrite">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <joint name="hinge1" type="hinge" axis="0 0 1" />
+    </body>
+  </worldbody>
+  <actuator>
+    <motor joint="hinge1" forcelimited="true" forcerange="-10 10" />
+    <velocity joint="hinge1" />
+  </actuator>
+</mujoco>
+)";
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / "dart_mjcf_actuator_overwrite.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+
+  auto* joint = world->getSkeleton(0)->getJoint("hinge1");
+  ASSERT_NE(joint, nullptr);
+  EXPECT_EQ(joint->getActuatorType(), dynamics::Joint::VELOCITY);
+  EXPECT_DOUBLE_EQ(
+      joint->getForceLowerLimit(0), -std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(
+      joint->getForceUpperLimit(0), std::numeric_limits<double>::infinity());
+}
+
+//==============================================================================
 TEST(MjcfParserTest, JointLimitedAutoValue)
 {
   // limited="auto" should behave the same as absent (std::nullopt)
