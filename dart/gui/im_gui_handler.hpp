@@ -74,6 +74,10 @@ public:
 
   void setCameraCallbacks(::osg::Camera* camera);
 
+  /// Rebuild the default font atlas at the requested scale.
+  /// Note: This replaces the current font atlas with the default font.
+  void setFontScale(float scale);
+
   //----------------------------------------------------------------------------
   /// \{ @name Widget management
   //----------------------------------------------------------------------------
@@ -109,6 +113,14 @@ protected:
   float mMouseWheel;
 
   std::array<float, 2> mFramebufferScale;
+
+  float mFontScale{1.0f};
+
+  float mLastFontFramebufferScale{1.0f};
+
+  bool mUseFontScale{false};
+
+  bool mFontScaleDirty{false};
 
   std::vector<std::shared_ptr<ImGuiWidget>> mWidgets;
 
