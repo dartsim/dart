@@ -813,8 +813,9 @@ simulation::WorldPtr createWorld(
     const std::size_t numDofs = dartJoint->getNumDofs();
     if (entry.mForceLimited) {
       for (std::size_t d = 0; d < numDofs; ++d) {
-        const double scaledLo = entry.mForceRange[0] * entry.mGear[0];
-        const double scaledHi = entry.mForceRange[1] * entry.mGear[0];
+        const double g = (d < 6) ? entry.mGear[d] : entry.mGear[0];
+        const double scaledLo = entry.mForceRange[0] * g;
+        const double scaledHi = entry.mForceRange[1] * g;
         dartJoint->setForceLowerLimit(d, std::min(scaledLo, scaledHi));
         dartJoint->setForceUpperLimit(d, std::max(scaledLo, scaledHi));
       }

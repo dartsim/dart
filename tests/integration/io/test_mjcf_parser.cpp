@@ -3112,6 +3112,49 @@ TEST(MjcfParserTest, ActuatorVectorGearScalesForceByFirstElement)
 }
 
 //==============================================================================
+TEST(MjcfParserTest, ActuatorPerDofGearScaling)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="actuator_per_dof_gear">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <joint name="ball1" type="ball" />
+    </body>
+  </worldbody>
+  <actuator>
+    <motor joint="ball1" gear="2 3 4"
+           forcelimited="true" forcerange="-10 10" />
+  </actuator>
+</mujoco>
+)";
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_per_dof_gear.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+
+  auto* joint = world->getSkeleton(0)->getJoint("ball1");
+  ASSERT_NE(joint, nullptr);
+  ASSERT_EQ(joint->getNumDofs(), 3u);
+  EXPECT_DOUBLE_EQ(joint->getForceLowerLimit(0), -20.0);
+  EXPECT_DOUBLE_EQ(joint->getForceUpperLimit(0), 20.0);
+  EXPECT_DOUBLE_EQ(joint->getForceLowerLimit(1), -30.0);
+  EXPECT_DOUBLE_EQ(joint->getForceUpperLimit(1), 30.0);
+  EXPECT_DOUBLE_EQ(joint->getForceLowerLimit(2), -40.0);
+  EXPECT_DOUBLE_EQ(joint->getForceUpperLimit(2), 40.0);
+}
+
+//==============================================================================
 TEST(MjcfParserTest, JointLimitedAutoValue)
 {
   // limited="auto" should behave the same as absent (std::nullopt)
