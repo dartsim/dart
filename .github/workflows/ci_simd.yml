@@ -82,7 +82,8 @@ jobs:
             UNIT_simd_simd_eigen_interop \
             UNIT_simd_simd_batch_soa \
             UNIT_simd_simd_dynamic \
-            UNIT_simd_simd_geometry
+            UNIT_simd_simd_geometry \
+            UNIT_simd_simd_math
 
       - name: Run SIMD tests
         run: |
@@ -127,7 +128,8 @@ jobs:
             UNIT_simd_simd_eigen_interop \
             UNIT_simd_simd_batch_soa \
             UNIT_simd_simd_dynamic \
-            UNIT_simd_simd_geometry
+            UNIT_simd_simd_geometry \
+            UNIT_simd_simd_math
 
       - name: Run SIMD tests
         run: |
