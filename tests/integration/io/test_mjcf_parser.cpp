@@ -2610,10 +2610,8 @@ TEST(MjcfParserTest, ActuatorDefaultAttributes)
 
   auto* joint = world->getSkeleton(0)->getJoint("hinge1");
   ASSERT_NE(joint, nullptr);
-  EXPECT_TRUE(std::isinf(joint->getForceLowerLimit(0)));
-  EXPECT_TRUE(std::isinf(joint->getForceUpperLimit(0)));
-  EXPECT_LT(joint->getForceLowerLimit(0), 0.0);
-  EXPECT_GT(joint->getForceUpperLimit(0), 0.0);
+  EXPECT_DOUBLE_EQ(joint->getForceLowerLimit(0), -150.0);
+  EXPECT_DOUBLE_EQ(joint->getForceUpperLimit(0), 150.0);
 }
 
 //==============================================================================
@@ -3155,9 +3153,61 @@ TEST(MjcfParserTest, ActuatorPerDofGearScaling)
 }
 
 //==============================================================================
+TEST(MjcfParserTest, DefaultActuatorAttributesInherited)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="default_actuator">
+  <default>
+    <motor ctrllimited="true" ctrlrange="-1 1"
+           forcelimited="true" forcerange="-50 50" gear="3" />
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="b1">
+      <geom type="sphere" size="0.1" />
+      <joint name="hinge1" type="hinge" axis="0 0 1" />
+      <body name="b2">
+        <geom type="sphere" size="0.1" />
+        <joint name="hinge2" type="hinge" axis="0 1 0" />
+      </body>
+    </body>
+  </worldbody>
+  <actuator>
+    <motor joint="hinge1" />
+    <motor joint="hinge2" gear="5" forcelimited="false" />
+  </actuator>
+</mujoco>
+)";
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / "dart_mjcf_default_actuator.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto world = utils::MjcfParser::readWorld(common::Uri(tempPath.string()));
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_NE(world, nullptr);
+
+  auto* j1 = world->getSkeleton(0)->getJoint("hinge1");
+  ASSERT_NE(j1, nullptr);
+  EXPECT_EQ(j1->getActuatorType(), dynamics::Joint::FORCE);
+  EXPECT_DOUBLE_EQ(j1->getForceLowerLimit(0), -150.0);
+  EXPECT_DOUBLE_EQ(j1->getForceUpperLimit(0), 150.0);
+
+  auto* j2 = world->getSkeleton(0)->getJoint("hinge2");
+  ASSERT_NE(j2, nullptr);
+  EXPECT_EQ(j2->getActuatorType(), dynamics::Joint::FORCE);
+  EXPECT_DOUBLE_EQ(
+      j2->getForceLowerLimit(0), -std::numeric_limits<double>::infinity());
+  EXPECT_DOUBLE_EQ(
+      j2->getForceUpperLimit(0), std::numeric_limits<double>::infinity());
+}
+
+//==============================================================================
 TEST(MjcfParserTest, JointLimitedAutoValue)
 {
-  // limited="auto" should behave the same as absent (std::nullopt)
   const std::string xml = R"(
 <?xml version="1.0" ?>
 <mujoco model="limited_auto">

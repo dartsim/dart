@@ -74,7 +74,7 @@ public:
 
 private:
   friend class MujocoModel;
-  Errors read(tinyxml2::XMLElement* element);
+  Errors read(tinyxml2::XMLElement* element, const class Defaults& defaults);
 
   std::vector<Entry> mEntries;
 };

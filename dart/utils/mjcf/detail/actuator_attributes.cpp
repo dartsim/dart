@@ -67,13 +67,9 @@ Errors appendActuatorAttributes(
     attributes.mName = getAttributeString(element, "name");
   }
 
-  // joint
+  // joint (optional in <default> context, required on actual actuator elements)
   if (hasAttribute(element, "joint")) {
     attributes.mJoint = getAttributeString(element, "joint");
-  } else {
-    errors.push_back(Error(
-        ErrorCode::ATTRIBUTE_MISSING,
-        "Failed to find required attribute 'joint' in <" + elementName + ">."));
   }
 
   // ctrllimited
@@ -83,6 +79,8 @@ Errors appendActuatorAttributes(
       attributes.mCtrlLimited = true;
     } else if (ctrlLimited == "false" || ctrlLimited == "0") {
       attributes.mCtrlLimited = false;
+    } else if (ctrlLimited == "auto") {
+      // Deferred — resolved after ctrlrange is known
     } else {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID,
@@ -104,6 +102,8 @@ Errors appendActuatorAttributes(
       attributes.mForceLimited = true;
     } else if (forceLimited == "false" || forceLimited == "0") {
       attributes.mForceLimited = false;
+    } else if (forceLimited == "auto") {
+      // Deferred — resolved after forcerange is known
     } else {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID,

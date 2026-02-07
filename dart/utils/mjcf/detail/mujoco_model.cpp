@@ -143,7 +143,7 @@ Errors MujocoModel::read(
   if (hasElement(element, "actuator")) {
     auto actuatorElement = getElement(element, "actuator");
     DART_ASSERT(actuatorElement);
-    const auto actuatorErrors = mActuator.read(actuatorElement);
+    const auto actuatorErrors = mActuator.read(actuatorElement, mDefaults);
     errors.insert(errors.end(), actuatorErrors.begin(), actuatorErrors.end());
   }
 

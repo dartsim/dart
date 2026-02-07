@@ -32,6 +32,8 @@
 
 #include "dart/utils/mjcf/detail/actuator.hpp"
 
+#include "dart/utils/mjcf/detail/actuator_attributes.hpp"
+#include "dart/utils/mjcf/detail/default.hpp"
 #include "dart/utils/mjcf/detail/utils.hpp"
 #include "dart/utils/xml_helpers.hpp"
 
@@ -53,7 +55,7 @@ const Actuator::Entry& Actuator::getEntry(std::size_t index) const
 }
 
 //==============================================================================
-Errors Actuator::read(tinyxml2::XMLElement* element)
+Errors Actuator::read(tinyxml2::XMLElement* element, const Defaults& defaults)
 {
   Errors errors;
 
@@ -64,100 +66,55 @@ Errors Actuator::read(tinyxml2::XMLElement* element)
     return errors;
   }
 
-  auto parseEntry = [&](tinyxml2::XMLElement* child,
-                        ActuatorType type,
-                        bool allowGainBias) {
-    Entry entry;
-    entry.mType = type;
+  const Default* rootDefault = defaults.getRootDefault();
 
-    if (hasAttribute(child, "name")) {
-      entry.mName = getAttributeString(child, "name");
+  auto parseEntry = [&](tinyxml2::XMLElement* child, ActuatorType type) {
+    ActuatorAttributes attrs;
+    if (hasAttribute(child, "class")) {
+      const Default* cls
+          = defaults.getDefault(getAttributeString(child, "class"));
+      if (cls != nullptr) {
+        attrs = cls->getActuatorAttributes(type);
+      }
+    } else if (rootDefault != nullptr) {
+      attrs = rootDefault->getActuatorAttributes(type);
     }
 
-    if (hasAttribute(child, "joint")) {
-      entry.mJoint = getAttributeString(child, "joint");
-    } else {
+    const Errors appendErrors = appendActuatorAttributes(attrs, child);
+    errors.insert(errors.end(), appendErrors.begin(), appendErrors.end());
+
+    if (attrs.mJoint.empty()) {
       errors.push_back(Error(
           ErrorCode::ATTRIBUTE_MISSING,
           "Failed to find required attribute 'joint' in actuator element."));
     }
 
-    // MuJoCo default for ctrllimited is "auto" — apply auto-resolution
-    // when the attribute is missing or explicitly set to "auto".
-    bool autoCtrlLimited = true;
-    if (hasAttribute(child, "ctrllimited")) {
-      const std::string ctrlLimited = getAttributeString(child, "ctrllimited");
-      if (ctrlLimited == "true" || ctrlLimited == "1") {
-        entry.mCtrlLimited = true;
-        autoCtrlLimited = false;
-      } else if (ctrlLimited == "false" || ctrlLimited == "0") {
-        entry.mCtrlLimited = false;
-        autoCtrlLimited = false;
-      } else if (ctrlLimited == "auto") {
-        // autoCtrlLimited remains true
-      } else {
-        errors.emplace_back(
-            ErrorCode::ATTRIBUTE_INVALID,
-            "Invalid attribute for 'ctrllimited': " + ctrlLimited);
-        autoCtrlLimited = false;
+    Entry entry;
+    entry.mName = attrs.mName.value_or("");
+    entry.mJoint = attrs.mJoint;
+    entry.mType = type;
+    entry.mCtrlLimited = attrs.mCtrlLimited;
+    entry.mCtrlRange = attrs.mCtrlRange;
+    entry.mForceLimited = attrs.mForceLimited;
+    entry.mForceRange = attrs.mForceRange;
+    entry.mGear = attrs.mGear;
+    entry.mGainPrm = attrs.mGainPrm;
+    entry.mBiasPrm = attrs.mBiasPrm;
+
+    auto isAutoOrAbsent = [](tinyxml2::XMLElement* el, const char* attr) {
+      if (!hasAttribute(el, attr)) {
+        return true;
       }
-    }
+      const std::string val = getAttributeString(el, attr);
+      return val == "auto";
+    };
 
-    if (hasAttribute(child, "ctrlrange")) {
-      entry.mCtrlRange = getAttributeVector2d(child, "ctrlrange");
-    }
-
-    // Resolve "auto": enable ctrl limiting when ctrlrange is non-zero
-    if (autoCtrlLimited) {
+    if (isAutoOrAbsent(child, "ctrllimited")) {
       entry.mCtrlLimited = !entry.mCtrlRange.isZero();
     }
 
-    // MuJoCo default for forcelimited is "auto" — same logic as ctrllimited.
-    bool autoForceLimited = true;
-    if (hasAttribute(child, "forcelimited")) {
-      const std::string forceLimited
-          = getAttributeString(child, "forcelimited");
-      if (forceLimited == "true" || forceLimited == "1") {
-        entry.mForceLimited = true;
-        autoForceLimited = false;
-      } else if (forceLimited == "false" || forceLimited == "0") {
-        entry.mForceLimited = false;
-        autoForceLimited = false;
-      } else if (forceLimited == "auto") {
-        // autoForceLimited remains true
-      } else {
-        errors.emplace_back(
-            ErrorCode::ATTRIBUTE_INVALID,
-            "Invalid attribute for 'forcelimited': " + forceLimited);
-        autoForceLimited = false;
-      }
-    }
-
-    if (hasAttribute(child, "forcerange")) {
-      entry.mForceRange = getAttributeVector2d(child, "forcerange");
-    }
-
-    // Resolve "auto": enable force limiting when forcerange is non-zero
-    if (autoForceLimited) {
+    if (isAutoOrAbsent(child, "forcelimited")) {
       entry.mForceLimited = !entry.mForceRange.isZero();
-    }
-
-    if (hasAttribute(child, "gear")) {
-      const Eigen::VectorXd gearVec = getAttributeVectorXd(child, "gear");
-      entry.mGear = Eigen::Vector6d::Zero();
-      const Eigen::Index n
-          = std::min(gearVec.size(), static_cast<Eigen::Index>(6));
-      entry.mGear.head(n) = gearVec.head(n);
-    }
-
-    if (allowGainBias) {
-      if (hasAttribute(child, "gainprm")) {
-        entry.mGainPrm = getAttributeVector3d(child, "gainprm");
-      }
-
-      if (hasAttribute(child, "biasprm")) {
-        entry.mBiasPrm = getAttributeVector3d(child, "biasprm");
-      }
     }
 
     mEntries.emplace_back(std::move(entry));
@@ -165,22 +122,22 @@ Errors Actuator::read(tinyxml2::XMLElement* element)
 
   ElementEnumerator motorElements(element, "motor");
   while (motorElements.next()) {
-    parseEntry(motorElements.get(), ActuatorType::MOTOR, false);
+    parseEntry(motorElements.get(), ActuatorType::MOTOR);
   }
 
   ElementEnumerator positionElements(element, "position");
   while (positionElements.next()) {
-    parseEntry(positionElements.get(), ActuatorType::POSITION, false);
+    parseEntry(positionElements.get(), ActuatorType::POSITION);
   }
 
   ElementEnumerator velocityElements(element, "velocity");
   while (velocityElements.next()) {
-    parseEntry(velocityElements.get(), ActuatorType::VELOCITY, false);
+    parseEntry(velocityElements.get(), ActuatorType::VELOCITY);
   }
 
   ElementEnumerator generalElements(element, "general");
   while (generalElements.next()) {
-    parseEntry(generalElements.get(), ActuatorType::GENERAL, true);
+    parseEntry(generalElements.get(), ActuatorType::GENERAL);
   }
 
   warnUnknownElements(element, {"motor", "position", "velocity", "general"});
