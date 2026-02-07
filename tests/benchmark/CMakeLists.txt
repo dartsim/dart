@@ -67,6 +67,14 @@ if(TARGET dart-io)
   dart_format_add(dynamics/bm_kinematics.cpp)
 endif()
 
+add_executable(bm_jacobian dynamics/bm_jacobian.cpp)
+target_link_libraries(bm_jacobian
+  dart
+  benchmark::benchmark
+  benchmark::benchmark_main
+)
+dart_format_add(dynamics/bm_jacobian.cpp)
+
 add_executable(bm_dynamics_cache dynamics/bm_dynamics_cache.cpp)
 target_link_libraries(bm_dynamics_cache
   dart
@@ -116,6 +124,25 @@ if(DART_BUILD_SIMULATION_EXPERIMENTAL)
 endif()
 
 # ==============================================================================
+# Math Benchmarks
+# ==============================================================================
+add_executable(bm_helpers math/bm_helpers.cpp)
+target_link_libraries(bm_helpers
+  dart
+  benchmark::benchmark
+  benchmark::benchmark_main
+)
+dart_format_add(math/bm_helpers.cpp)
+
+add_executable(bm_spatial_algebra math/bm_spatial_algebra.cpp)
+target_link_libraries(bm_spatial_algebra
+  dart
+  benchmark::benchmark
+  benchmark::benchmark_main
+)
+dart_format_add(math/bm_spatial_algebra.cpp)
+
+# ==============================================================================
 # SIMD Benchmarks
 # ==============================================================================
 add_executable(bm_simd simd/bm_simd.cpp)
@@ -133,6 +160,35 @@ if(COMPILER_SUPPORTS_MARCH_NATIVE)
 endif()
 
 dart_format_add(simd/bm_simd.cpp)
+
+# ==============================================================================
+# Dynamics SIMD Benchmarks
+# ==============================================================================
+add_executable(bm_mesh_bbox dynamics/bm_mesh_bbox.cpp)
+target_link_libraries(bm_mesh_bbox
+  dart-simd
+  Eigen3::Eigen
+  benchmark::benchmark
+  benchmark::benchmark_main
+)
+check_cxx_compiler_flag("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE_MESH)
+if(COMPILER_SUPPORTS_MARCH_NATIVE_MESH)
+  target_compile_options(bm_mesh_bbox PRIVATE -march=native)
+endif()
+dart_format_add(dynamics/bm_mesh_bbox.cpp)
+
+add_executable(bm_soft_body dynamics/bm_soft_body.cpp)
+target_link_libraries(bm_soft_body
+  dart-simd
+  Eigen3::Eigen
+  benchmark::benchmark
+  benchmark::benchmark_main
+)
+check_cxx_compiler_flag("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE_SOFT)
+if(COMPILER_SUPPORTS_MARCH_NATIVE_SOFT)
+  target_compile_options(bm_soft_body PRIVATE -march=native)
+endif()
+dart_format_add(dynamics/bm_soft_body.cpp)
 
 # ==============================================================================
 # Note: Benchmarks are standalone executables for performance measurement.
