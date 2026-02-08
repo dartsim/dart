@@ -143,4 +143,8 @@ TEST(TranslationalJoint2DTest, CopyAndConstAccess)
   (void)otherBody;
   otherJoint->copy(*joint);
   EXPECT_EQ(otherJoint->getPlaneType(), joint->getPlaneType());
+
+  otherJoint->setYZPlane(false);
+  joint->copy(otherJoint);
+  EXPECT_EQ(joint->getPlaneType(), TranslationalJoint2D::PlaneType::YZ);
 }

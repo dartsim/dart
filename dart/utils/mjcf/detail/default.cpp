@@ -33,6 +33,7 @@
 #include "dart/utils/mjcf/detail/default.hpp"
 
 #include "dart/common/macros.hpp"
+#include "dart/utils/mjcf/detail/actuator_attributes.hpp"
 #include "dart/utils/mjcf/detail/utils.hpp"
 #include "dart/utils/xml_helpers.hpp"
 
@@ -40,6 +41,23 @@ namespace dart {
 namespace utils {
 namespace MjcfParser {
 namespace detail {
+
+//==============================================================================
+const ActuatorAttributes& Default::getActuatorAttributes(
+    ActuatorType type) const
+{
+  switch (type) {
+    case ActuatorType::MOTOR:
+      return mMotorAttributes;
+    case ActuatorType::POSITION:
+      return mPositionAttributes;
+    case ActuatorType::VELOCITY:
+      return mVelocityAttributes;
+    case ActuatorType::GENERAL:
+      return mGeneralAttributes;
+  }
+  return mGeneralAttributes;
+}
 
 //==============================================================================
 const GeomAttributes& Default::getGeomAttributes() const
@@ -77,14 +95,40 @@ Errors Default::read(tinyxml2::XMLElement* element, const Default* parent)
     return errors;
   }
 
-  // Inherit from the parent
   if (parent != nullptr) {
+    mMotorAttributes = parent->mMotorAttributes;
+    mPositionAttributes = parent->mPositionAttributes;
+    mVelocityAttributes = parent->mVelocityAttributes;
+    mGeneralAttributes = parent->mGeneralAttributes;
     mGeomAttributes = parent->mGeomAttributes;
     mJointAttributes = parent->mJointAttributes;
     mMeshAttributes = parent->mMeshAttributes;
   }
 
-  // Read <geom>
+  if (hasElement(element, "motor")) {
+    const Errors e = appendActuatorAttributes(
+        mMotorAttributes, getElement(element, "motor"));
+    errors.insert(errors.end(), e.begin(), e.end());
+  }
+
+  if (hasElement(element, "position")) {
+    const Errors e = appendActuatorAttributes(
+        mPositionAttributes, getElement(element, "position"));
+    errors.insert(errors.end(), e.begin(), e.end());
+  }
+
+  if (hasElement(element, "velocity")) {
+    const Errors e = appendActuatorAttributes(
+        mVelocityAttributes, getElement(element, "velocity"));
+    errors.insert(errors.end(), e.begin(), e.end());
+  }
+
+  if (hasElement(element, "general")) {
+    const Errors e = appendActuatorAttributes(
+        mGeneralAttributes, getElement(element, "general"));
+    errors.insert(errors.end(), e.begin(), e.end());
+  }
+
   if (hasElement(element, "geom")) {
     auto geomElement = getElement(element, "geom");
     const Errors geomErrors
@@ -121,7 +165,17 @@ Errors Default::read(tinyxml2::XMLElement* element, const Default* parent)
   }
 
   warnUnknownElements(
-      element, {"geom", "joint", "mesh", "equality", "default", "class"});
+      element,
+      {"motor",
+       "position",
+       "velocity",
+       "general",
+       "geom",
+       "joint",
+       "mesh",
+       "equality",
+       "default",
+       "class"});
 
   return errors;
 }

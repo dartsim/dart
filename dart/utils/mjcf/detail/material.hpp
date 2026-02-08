@@ -30,45 +30,52 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dynamics/skeleton.hpp>
-#include <dart/dynamics/universal_joint.hpp>
+#ifndef DART_UTILS_MJCF_DETAIL_MATERIAL_HPP_
+#define DART_UTILS_MJCF_DETAIL_MATERIAL_HPP_
 
-#include <gtest/gtest.h>
+#include <dart/utils/export.hpp>
+#include <dart/utils/mjcf/detail/error.hpp>
 
-using namespace dart::dynamics;
+#include <Eigen/Core>
+#include <tinyxml2.h>
 
-//=============================================================================
-TEST(UniversalJoint, CopyAndConstAccess)
+#include <string>
+
+namespace dart {
+namespace utils {
+namespace MjcfParser {
+namespace detail {
+
+class DART_UTILS_API Material final
 {
-  auto skeleton = Skeleton::create("universal_joint");
-  auto [joint, body] = skeleton->createJointAndBodyNodePair<UniversalJoint>();
-  (void)body;
+public:
+  Material() = default;
+  const std::string& getName() const;
+  const std::string& getTexture() const;
+  const Eigen::Vector4d& getRgba() const;
+  double getEmission() const;
+  double getSpecular() const;
+  double getShininess() const;
+  double getReflectance() const;
 
-  UniversalJoint::Properties props;
-  props.mAxis[0] = Eigen::Vector3d::UnitX();
-  props.mAxis[1] = Eigen::Vector3d::UnitZ();
-  joint->setProperties(props);
+private:
+  friend class Asset;
+  Errors read(tinyxml2::XMLElement* element);
 
-  const UniversalJoint* constJoint = joint;
-  EXPECT_EQ(constJoint->getType(), UniversalJoint::getStaticType());
-  EXPECT_TRUE(constJoint->getAxis1().isApprox(Eigen::Vector3d::UnitX()));
-  EXPECT_TRUE(constJoint->getAxis2().isApprox(Eigen::Vector3d::UnitZ()));
-  EXPECT_TRUE(constJoint->isCyclic(0));
+  std::string mName;
+  std::string mTexture;
+  Eigen::Vector2d mTexRepeat{Eigen::Vector2d::Ones()};
+  bool mTexUniform{false};
+  Eigen::Vector4d mRgba{0.5, 0.5, 0.5, 1.0};
+  double mEmission{0.0};
+  double mSpecular{0.5};
+  double mShininess{0.5};
+  double mReflectance{0.0};
+};
 
-  const Eigen::Vector2d positions(0.1, -0.2);
-  const auto jacobian = constJoint->getRelativeJacobianStatic(positions);
-  EXPECT_EQ(jacobian.cols(), 2);
+} // namespace detail
+} // namespace MjcfParser
+} // namespace utils
+} // namespace dart
 
-  joint->copy(static_cast<const UniversalJoint*>(nullptr));
-  joint->copy(joint);
-
-  auto [otherJoint, otherBody]
-      = skeleton->createJointAndBodyNodePair<UniversalJoint>();
-  (void)otherBody;
-  otherJoint->copy(*joint);
-  EXPECT_TRUE(otherJoint->getAxis1().isApprox(joint->getAxis1()));
-
-  otherJoint->setAxis1(Eigen::Vector3d::UnitY());
-  joint->copy(otherJoint);
-  EXPECT_TRUE(joint->getAxis1().isApprox(Eigen::Vector3d::UnitY()));
-}
+#endif // #ifndef DART_UTILS_MJCF_DETAIL_MATERIAL_HPP_

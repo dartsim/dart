@@ -30,45 +30,45 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dynamics/skeleton.hpp>
-#include <dart/dynamics/universal_joint.hpp>
+#ifndef DART_UTILS_MJCF_DETAIL_ACTUATORATTRIBUTES_HPP_
+#define DART_UTILS_MJCF_DETAIL_ACTUATORATTRIBUTES_HPP_
 
-#include <gtest/gtest.h>
+#include <dart/utils/mjcf/detail/error.hpp>
+#include <dart/utils/mjcf/detail/types.hpp>
 
-using namespace dart::dynamics;
+#include <dart/math/math_types.hpp>
 
-//=============================================================================
-TEST(UniversalJoint, CopyAndConstAccess)
+#include <Eigen/Core>
+#include <tinyxml2.h>
+
+#include <optional>
+#include <string>
+
+namespace dart {
+namespace utils {
+namespace MjcfParser {
+namespace detail {
+
+struct ActuatorAttributes final
 {
-  auto skeleton = Skeleton::create("universal_joint");
-  auto [joint, body] = skeleton->createJointAndBodyNodePair<UniversalJoint>();
-  (void)body;
+  std::optional<std::string> mName;
+  std::string mJoint;
+  ActuatorType mType{ActuatorType::GENERAL};
+  std::optional<bool> mCtrlLimited;
+  Eigen::Vector2d mCtrlRange{Eigen::Vector2d::Zero()};
+  std::optional<bool> mForceLimited;
+  Eigen::Vector2d mForceRange{Eigen::Vector2d::Zero()};
+  Eigen::Vector6d mGear{(Eigen::Vector6d() << 1, 0, 0, 0, 0, 0).finished()};
+  Eigen::Vector3d mGainPrm{Eigen::Vector3d::Zero()};
+  Eigen::Vector3d mBiasPrm{Eigen::Vector3d::Zero()};
+};
 
-  UniversalJoint::Properties props;
-  props.mAxis[0] = Eigen::Vector3d::UnitX();
-  props.mAxis[1] = Eigen::Vector3d::UnitZ();
-  joint->setProperties(props);
+Errors appendActuatorAttributes(
+    ActuatorAttributes& attributes, tinyxml2::XMLElement* element);
 
-  const UniversalJoint* constJoint = joint;
-  EXPECT_EQ(constJoint->getType(), UniversalJoint::getStaticType());
-  EXPECT_TRUE(constJoint->getAxis1().isApprox(Eigen::Vector3d::UnitX()));
-  EXPECT_TRUE(constJoint->getAxis2().isApprox(Eigen::Vector3d::UnitZ()));
-  EXPECT_TRUE(constJoint->isCyclic(0));
+} // namespace detail
+} // namespace MjcfParser
+} // namespace utils
+} // namespace dart
 
-  const Eigen::Vector2d positions(0.1, -0.2);
-  const auto jacobian = constJoint->getRelativeJacobianStatic(positions);
-  EXPECT_EQ(jacobian.cols(), 2);
-
-  joint->copy(static_cast<const UniversalJoint*>(nullptr));
-  joint->copy(joint);
-
-  auto [otherJoint, otherBody]
-      = skeleton->createJointAndBodyNodePair<UniversalJoint>();
-  (void)otherBody;
-  otherJoint->copy(*joint);
-  EXPECT_TRUE(otherJoint->getAxis1().isApprox(joint->getAxis1()));
-
-  otherJoint->setAxis1(Eigen::Vector3d::UnitY());
-  joint->copy(otherJoint);
-  EXPECT_TRUE(joint->getAxis1().isApprox(Eigen::Vector3d::UnitY()));
-}
+#endif // #ifndef DART_UTILS_MJCF_DETAIL_ACTUATORATTRIBUTES_HPP_
