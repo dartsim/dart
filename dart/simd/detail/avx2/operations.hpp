@@ -36,6 +36,8 @@
 #include <dart/simd/detail/avx2/vec.hpp>
 #include <dart/simd/detail/avx2/vec_mask.hpp>
 
+#include <cstring>
+
 #if defined(DART_SIMD_AVX2)
 
 namespace dart::simd {
