@@ -518,8 +518,10 @@ frexpSimd(const Vec<float, 8>& v)
   __m256i mantBits = _mm256_and_si256(bits, mantissaMask);
 
   __m256i isZeroOrSubnorm = _mm256_cmpeq_epi32(expBits, _mm256_setzero_si256());
+  __m256i isInfNan = _mm256_cmpeq_epi32(expBits, expMask);
+  __m256i needScalar = _mm256_or_si256(isZeroOrSubnorm, isInfNan);
 
-  if (!_mm256_testz_si256(isZeroOrSubnorm, isZeroOrSubnorm)) {
+  if (!_mm256_testz_si256(needScalar, needScalar)) {
     alignas(32) float vArr[8];
     alignas(32) float mantArr[8];
     alignas(32) std::int32_t expArr[8];
@@ -532,6 +534,12 @@ frexpSimd(const Vec<float, 8>& v)
       std::int32_t biasedExp
           = static_cast<std::int32_t>((b & 0x7F800000) >> 23);
       std::int32_t expAdjust = 0;
+
+      if (biasedExp == 255) {
+        mantArr[i] = vArr[i];
+        expArr[i] = 0;
+        continue;
+      }
 
       if (biasedExp == 0) {
         if ((b & 0x007FFFFF) == 0) {

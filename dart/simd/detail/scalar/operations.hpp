@@ -509,6 +509,12 @@ frexpSimd(const Vec<float, W>& v)
     std::int32_t biasedExp = static_cast<std::int32_t>((bits & expMask) >> 23);
     std::int32_t expAdjust = 0;
 
+    if (biasedExp == 255) {
+      mantArr[i] = vArr[i];
+      expArr[i] = 0;
+      continue;
+    }
+
     if (biasedExp == 0) {
       if ((bits & mantissaMask) == 0) {
         mantArr[i] = vArr[i];

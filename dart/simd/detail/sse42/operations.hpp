@@ -539,8 +539,10 @@ frexpSimd(const Vec<float, 4>& v)
   __m128i mantBits = _mm_and_si128(bits, mantissaMask);
 
   __m128i isZeroOrSubnorm = _mm_cmpeq_epi32(expBits, _mm_setzero_si128());
+  __m128i isInfNan = _mm_cmpeq_epi32(expBits, expMask);
+  __m128i needScalar = _mm_or_si128(isZeroOrSubnorm, isInfNan);
 
-  if (!_mm_testz_si128(isZeroOrSubnorm, isZeroOrSubnorm)) {
+  if (!_mm_testz_si128(needScalar, needScalar)) {
     alignas(16) float vArr[4];
     alignas(16) float mantArr[4];
     alignas(16) std::int32_t expArr[4];
@@ -553,6 +555,12 @@ frexpSimd(const Vec<float, 4>& v)
       std::int32_t biasedExp
           = static_cast<std::int32_t>((b & 0x7F800000) >> 23);
       std::int32_t expAdjust = 0;
+
+      if (biasedExp == 255) {
+        mantArr[i] = vArr[i];
+        expArr[i] = 0;
+        continue;
+      }
 
       if (biasedExp == 0) {
         if ((b & 0x007FFFFF) == 0) {
