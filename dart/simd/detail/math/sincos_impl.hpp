@@ -165,11 +165,9 @@ DART_SIMD_INLINE void sincosImplSimd(
   }
 
   if constexpr (ComputeSin) {
-    // Extract bit 2 of j and move to sign position (bit 31).
-    // j is always even, so bit 2 determines the sin sign.
-    // Avoid shifting j left by 29 (causes signed overflow UB for large j).
     VecI jBit2 = bitAnd(shiftRight<2>(j), VecI::broadcast(1));
-    VecI signSinI = bitXor(shiftLeft<31>(jBit2), xSign);
+    VecI negJBit2 = VecI::broadcast(0) - jBit2;
+    VecI signSinI = bitXor(shiftLeft<31>(negJBit2), xSign);
     VecT signSin = reinterpretAsFloat(signSinI);
     VecT sinResult = bitOr(bitAnd(s, polymaskF), bitAnd(c, invPolymaskF));
     sinResult = bitXor(sinResult, signSin);
@@ -180,12 +178,11 @@ DART_SIMD_INLINE void sincosImplSimd(
   }
 
   if constexpr (ComputeCos) {
-    // Extract bit 2 of ~(j-2) and move to sign position (bit 31).
-    // Equivalent to checking if ((j-2) & 4) == 0.
-    // Avoid shifting large values left by 29 (causes signed overflow UB).
     VecI jMinus2 = j - VecI::broadcast(2);
     VecI jMinus2Bit2 = bitAnd(shiftRight<2>(jMinus2), VecI::broadcast(1));
-    VecI signCosI = shiftLeft<31>(bitXor(jMinus2Bit2, VecI::broadcast(1)));
+    VecI negCosBit
+        = VecI::broadcast(0) - bitXor(jMinus2Bit2, VecI::broadcast(1));
+    VecI signCosI = shiftLeft<31>(negCosBit);
     VecT signCos = reinterpretAsFloat(signCosI);
     VecT cosResult = bitOr(bitAnd(c, polymaskF), bitAnd(s, invPolymaskF));
     cosResult = bitXor(cosResult, signCos);
