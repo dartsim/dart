@@ -51,6 +51,9 @@ namespace detail {
 class TranslationalJoint2DUniqueProperties
 {
 public:
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   /// Constructor for pre-defined plane types. Defaults to the XY plane if
   /// PlaneType::ARBITRARY is specified.
   explicit TranslationalJoint2DUniqueProperties(
