@@ -506,16 +506,55 @@ template <>
 [[nodiscard]] DART_SIMD_INLINE std::pair<Vec<float, 8>, Vec<std::int32_t, 8>>
 frexpSimd(const Vec<float, 8>& v)
 {
+  const __m256i signMask = _mm256_set1_epi32(0x80000000);
   const __m256i expMask = _mm256_set1_epi32(0x7F800000);
   const __m256i mantissaMask = _mm256_set1_epi32(0x007FFFFF);
   const __m256i halfExp = _mm256_set1_epi32(0x3F000000);
   const __m256i bias = _mm256_set1_epi32(127);
 
   __m256i bits = _mm256_castps_si256(v.data);
+  __m256i signBits = _mm256_and_si256(bits, signMask);
   __m256i expBits = _mm256_and_si256(bits, expMask);
+  __m256i mantBits = _mm256_and_si256(bits, mantissaMask);
+
+  __m256i isZeroOrSubnorm = _mm256_cmpeq_epi32(expBits, _mm256_setzero_si256());
+
+  if (!_mm256_testz_si256(isZeroOrSubnorm, isZeroOrSubnorm)) {
+    alignas(32) float vArr[8];
+    alignas(32) float mantArr[8];
+    alignas(32) std::int32_t expArr[8];
+    v.store(vArr);
+
+    for (std::size_t i = 0; i < 8; ++i) {
+      std::uint32_t b;
+      std::memcpy(&b, &vArr[i], sizeof(float));
+
+      std::int32_t biasedExp
+          = static_cast<std::int32_t>((b & 0x7F800000) >> 23);
+      std::int32_t expAdjust = 0;
+
+      if (biasedExp == 0) {
+        if ((b & 0x007FFFFF) == 0) {
+          mantArr[i] = vArr[i];
+          expArr[i] = 0;
+          continue;
+        }
+        float normalized = vArr[i] * 8388608.0f;
+        std::memcpy(&b, &normalized, sizeof(float));
+        biasedExp = static_cast<std::int32_t>((b & 0x7F800000) >> 23);
+        expAdjust = -23;
+      }
+
+      expArr[i] = biasedExp - 127 + expAdjust;
+      std::uint32_t mantResult = (b & 0x807FFFFF) | 0x3F000000;
+      std::memcpy(&mantArr[i], &mantResult, sizeof(float));
+    }
+    return {Vec<float, 8>::load(mantArr), Vec<std::int32_t, 8>::load(expArr)};
+  }
+
   __m256i exponent = _mm256_sub_epi32(_mm256_srli_epi32(expBits, 23), bias);
   __m256i mantissaBits
-      = _mm256_or_si256(_mm256_and_si256(bits, mantissaMask), halfExp);
+      = _mm256_or_si256(_mm256_or_si256(mantBits, halfExp), signBits);
 
   return {
       Vec<float, 8>(_mm256_castsi256_ps(mantissaBits)),

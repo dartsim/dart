@@ -492,6 +492,7 @@ template <std::size_t W>
 [[nodiscard]] DART_SIMD_INLINE std::pair<Vec<float, W>, Vec<std::int32_t, W>>
 frexpSimd(const Vec<float, W>& v)
 {
+  constexpr std::uint32_t signMask = 0x80000000;
   constexpr std::uint32_t expMask = 0x7F800000;
   constexpr std::uint32_t mantissaMask = 0x007FFFFF;
   constexpr std::uint32_t halfExp = 0x3F000000;
@@ -521,7 +522,7 @@ frexpSimd(const Vec<float, W>& v)
     }
 
     expArr[i] = biasedExp - 127 + expAdjust;
-    std::uint32_t mantissaBits = (bits & mantissaMask) | halfExp;
+    std::uint32_t mantissaBits = (bits & (signMask | mantissaMask)) | halfExp;
     std::memcpy(&mantArr[i], &mantissaBits, sizeof(float));
   }
   return {Vec<float, W>::load(mantArr), Vec<std::int32_t, W>::load(expArr)};

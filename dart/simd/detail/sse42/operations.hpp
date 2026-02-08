@@ -527,16 +527,55 @@ template <>
 [[nodiscard]] DART_SIMD_INLINE std::pair<Vec<float, 4>, Vec<std::int32_t, 4>>
 frexpSimd(const Vec<float, 4>& v)
 {
+  const __m128i signMask = _mm_set1_epi32(0x80000000);
   const __m128i expMask = _mm_set1_epi32(0x7F800000);
   const __m128i mantissaMask = _mm_set1_epi32(0x007FFFFF);
   const __m128i halfExp = _mm_set1_epi32(0x3F000000);
   const __m128i bias = _mm_set1_epi32(127);
 
   __m128i bits = _mm_castps_si128(v.data);
+  __m128i signBits = _mm_and_si128(bits, signMask);
   __m128i expBits = _mm_and_si128(bits, expMask);
+  __m128i mantBits = _mm_and_si128(bits, mantissaMask);
+
+  __m128i isZeroOrSubnorm = _mm_cmpeq_epi32(expBits, _mm_setzero_si128());
+
+  if (!_mm_testz_si128(isZeroOrSubnorm, isZeroOrSubnorm)) {
+    alignas(16) float vArr[4];
+    alignas(16) float mantArr[4];
+    alignas(16) std::int32_t expArr[4];
+    v.store(vArr);
+
+    for (std::size_t i = 0; i < 4; ++i) {
+      std::uint32_t b;
+      std::memcpy(&b, &vArr[i], sizeof(float));
+
+      std::int32_t biasedExp
+          = static_cast<std::int32_t>((b & 0x7F800000) >> 23);
+      std::int32_t expAdjust = 0;
+
+      if (biasedExp == 0) {
+        if ((b & 0x007FFFFF) == 0) {
+          mantArr[i] = vArr[i];
+          expArr[i] = 0;
+          continue;
+        }
+        float normalized = vArr[i] * 8388608.0f;
+        std::memcpy(&b, &normalized, sizeof(float));
+        biasedExp = static_cast<std::int32_t>((b & 0x7F800000) >> 23);
+        expAdjust = -23;
+      }
+
+      expArr[i] = biasedExp - 127 + expAdjust;
+      std::uint32_t mantResult = (b & 0x807FFFFF) | 0x3F000000;
+      std::memcpy(&mantArr[i], &mantResult, sizeof(float));
+    }
+    return {Vec<float, 4>::load(mantArr), Vec<std::int32_t, 4>::load(expArr)};
+  }
+
   __m128i exponent = _mm_sub_epi32(_mm_srli_epi32(expBits, 23), bias);
   __m128i mantissaBits
-      = _mm_or_si128(_mm_and_si128(bits, mantissaMask), halfExp);
+      = _mm_or_si128(_mm_or_si128(mantBits, halfExp), signBits);
 
   return {
       Vec<float, 4>(_mm_castsi128_ps(mantissaBits)),
