@@ -4,6 +4,10 @@
 
 ### DART 6.16.7 (TBD)
 
+* Build
+
+  * Added support for assimp 6.x while maintaining backward compatibility with assimp 5.x
+
 * Optimizer
 
   * Validate Problem and MultiObjectiveProblem dimension to prevent excessive allocation from huge inputs: [#2500](https://github.com/dartsim/dart/issues/2500)

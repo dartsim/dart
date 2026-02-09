@@ -128,6 +128,13 @@ target_link_libraries(dart
     fcl
     assimp
 )
+
+# assimp version detection for conditional compilation
+if(ASSIMP_VERSION_MAJOR)
+  target_compile_definitions(dart
+    PUBLIC DART_ASSIMP_VERSION_MAJOR=${ASSIMP_VERSION_MAJOR})
+endif()
+
 if(TARGET fmt::fmt-header-only)
   target_link_libraries(dart PUBLIC fmt::fmt-header-only)
 elseif(TARGET fmt::fmt)
