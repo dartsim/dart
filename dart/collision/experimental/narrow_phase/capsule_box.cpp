@@ -134,10 +134,12 @@ bool collideCapsuleBox(
     const Eigen::Vector3d absClosest = closestOnBox.cwiseAbs();
     const Eigen::Vector3d distToFace = halfExtents - absClosest;
     int minAxis = 0;
-    if (distToFace.y() < distToFace.x())
+    if (distToFace.y() < distToFace.x()) {
       minAxis = 1;
-    if (distToFace.z() < distToFace[minAxis])
+    }
+    if (distToFace.z() < distToFace[minAxis]) {
       minAxis = 2;
+    }
     normalLocal = Eigen::Vector3d::Zero();
     normalLocal[minAxis] = (closestOnSegment[minAxis] >= 0) ? 1.0 : -1.0;
   } else {

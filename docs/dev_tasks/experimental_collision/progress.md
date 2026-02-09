@@ -1,7 +1,7 @@
 # Experimental Collision Module - Progress Tracker
 
-> **Last Updated**: 2026-02-03
-> **Current Focus**: DART Integration Complete
+> **Last Updated**: 2026-02-09
+> **Current Focus**: Full Backend Feature Parity
 
 ## Status Summary
 
@@ -14,6 +14,8 @@
 | Compound Shapes            | **Complete** | 100%     |
 | Parallel Narrowphase       | **Complete** | 100%     |
 | DART Backend Integration   | **Complete** | 100%     |
+| Backend Distance/Raycast   | **Complete** | 100%     |
+| Shape Adapter Expansion    | **Complete** | 100%     |
 | Comparative Benchmarks     | **Partial**  | 90%      |
 | Raycast Support            | **Complete** | 100%     |
 | ECS Refactoring            | **Complete** | 100%     |
@@ -25,35 +27,36 @@
 
 ---
 
-## Completed Components (475+ tests)
+## Completed Components (575+ tests)
 
-| Component                        | Files                                    | Tests | Notes                                               |
-| -------------------------------- | ---------------------------------------- | ----- | --------------------------------------------------- |
-| ContactPoint, ContactManifold    | types.hpp/.cpp                           | 21    | Core contact representation                         |
-| CollisionResult, CollisionOption | types.hpp/.cpp                           | -     | (included above)                                    |
-| Aabb                             | aabb.hpp/.cpp                            | 26    | Axis-aligned bounding box                           |
-| All Shapes                       | shapes/shape.hpp/.cpp                    | 24    | Sphere, Box, Capsule, Cylinder, Plane, Convex, Mesh |
-| GJK/EPA Algorithm                | narrow_phase/gjk.hpp/.cpp                | 15    | Generic convex collision detection                  |
-| Sphere-sphere                    | narrow_phase/sphere_sphere.hpp/.cpp      | 17    | Narrow-phase                                        |
-| Box-box (SAT)                    | narrow_phase/box_box.hpp/.cpp            | 18    | Separating Axis Theorem                             |
-| Sphere-box                       | narrow_phase/sphere_box.hpp/.cpp         | 19    | Mixed pair                                          |
-| Capsule collision                | narrow*phase/capsule*\*.hpp/.cpp         | 14    | All capsule pairs                                   |
-| Cylinder collision               | narrow_phase/cylinder_collision.hpp/.cpp | 18    | All cylinder pairs                                  |
-| Plane collision                  | narrow_phase/plane_sphere.hpp/.cpp       | 11    | All plane pairs                                     |
-| Distance queries                 | narrow_phase/distance.hpp/.cpp           | 18    | 6 primitive pairs + Convex/Mesh                     |
-| Raycast                          | narrow_phase/raycast.hpp/.cpp            | 39    | 7 shape types incl. Mesh/Convex                     |
-| CCD (sphere/capsule cast)        | narrow_phase/ccd.hpp/.cpp                | 62    | Swept volume + conservative advancement             |
-| BruteForceBroadPhase             | broad_phase/brute_force.hpp/.cpp         | 15    | O(n²) broad-phase                                   |
-| AabbTreeBroadPhase               | broad_phase/aabb_tree.hpp/.cpp           | 21    | O(n log n) dynamic AABB tree                        |
-| SpatialHashBroadPhase            | broad_phase/spatial_hash.hpp/.cpp        | 24    | O(1) avg for uniform distributions                  |
-| SweepAndPruneBroadPhase          | broad_phase/sweep_and_prune.hpp/.cpp     | 19    | O(n + k) sorted endpoint lists                      |
-| CollisionObject                  | collision_object.hpp/.cpp                | 12    | Lightweight ECS handle                              |
-| NarrowPhase                      | narrow_phase/narrow_phase.hpp/.cpp       | 7     | Shape-type dispatch                                 |
-| CollisionWorld                   | collision_world.hpp/.cpp                 | 8     | Standalone collision detection                      |
-| CollisionFilter                  | collision_filter.hpp/.cpp                | 31    | Bitmask + callback collision filtering              |
-| CompoundShape                    | shapes/shape.hpp/.cpp                    | 30+   | Recursive child dispatch for all queries            |
-| Parallel Narrowphase             | collision_world.cpp                      | 10+   | std::thread chunked pairs, deterministic merge      |
-| DART Backend (Experimental)      | experimental_backend/                    | 8+    | ExperimentalCollisionDetector registered as factory |
+| Component                        | Files                                    | Tests | Notes                                                   |
+| -------------------------------- | ---------------------------------------- | ----- | ------------------------------------------------------- |
+| ContactPoint, ContactManifold    | types.hpp/.cpp                           | 21    | Core contact representation                             |
+| CollisionResult, CollisionOption | types.hpp/.cpp                           | -     | (included above)                                        |
+| Aabb                             | aabb.hpp/.cpp                            | 26    | Axis-aligned bounding box                               |
+| All Shapes                       | shapes/shape.hpp/.cpp                    | 24    | Sphere, Box, Capsule, Cylinder, Plane, Convex, Mesh     |
+| GJK/EPA Algorithm                | narrow_phase/gjk.hpp/.cpp                | 15    | Generic convex collision detection                      |
+| Sphere-sphere                    | narrow_phase/sphere_sphere.hpp/.cpp      | 17    | Narrow-phase                                            |
+| Box-box (SAT)                    | narrow_phase/box_box.hpp/.cpp            | 18    | Separating Axis Theorem                                 |
+| Sphere-box                       | narrow_phase/sphere_box.hpp/.cpp         | 19    | Mixed pair                                              |
+| Capsule collision                | narrow*phase/capsule*\*.hpp/.cpp         | 14    | All capsule pairs                                       |
+| Cylinder collision               | narrow_phase/cylinder_collision.hpp/.cpp | 18    | All cylinder pairs                                      |
+| Plane collision                  | narrow_phase/plane_sphere.hpp/.cpp       | 11    | All plane pairs                                         |
+| Distance queries                 | narrow_phase/distance.hpp/.cpp           | 18    | 6 primitive pairs + Convex/Mesh                         |
+| Raycast                          | narrow_phase/raycast.hpp/.cpp            | 39    | 7 shape types incl. Mesh/Convex                         |
+| CCD (sphere/capsule cast)        | narrow_phase/ccd.hpp/.cpp                | 62    | Swept volume + conservative advancement                 |
+| BruteForceBroadPhase             | broad_phase/brute_force.hpp/.cpp         | 15    | O(n²) broad-phase                                       |
+| AabbTreeBroadPhase               | broad_phase/aabb_tree.hpp/.cpp           | 21    | O(n log n) dynamic AABB tree                            |
+| SpatialHashBroadPhase            | broad_phase/spatial_hash.hpp/.cpp        | 24    | O(1) avg for uniform distributions                      |
+| SweepAndPruneBroadPhase          | broad_phase/sweep_and_prune.hpp/.cpp     | 19    | O(n + k) sorted endpoint lists                          |
+| CollisionObject                  | collision_object.hpp/.cpp                | 12    | Lightweight ECS handle                                  |
+| NarrowPhase                      | narrow_phase/narrow_phase.hpp/.cpp       | 7     | Shape-type dispatch                                     |
+| CollisionWorld                   | collision_world.hpp/.cpp                 | 8     | Standalone collision detection                          |
+| CollisionFilter                  | collision_filter.hpp/.cpp                | 31    | Bitmask + callback collision filtering                  |
+| CompoundShape                    | shapes/shape.hpp/.cpp                    | 30+   | Recursive child dispatch for all queries                |
+| Parallel Narrowphase             | collision_world.cpp                      | 10+   | std::thread chunked pairs, deterministic merge          |
+| DART Backend (Experimental)      | experimental_backend/                    | 14+   | ExperimentalCollisionDetector: collide+distance+raycast |
+| Shape Adapter (expanded)         | experimental_backend/shape_adapter.cpp   | 3+    | Cone, Ellipsoid, Heightmap, MultiSphere adapted         |
 
 ---
 
@@ -76,6 +79,11 @@ See **[gap_analysis.md](./gap_analysis.md)** for a comprehensive comparison agai
 
 **All critical integration blockers resolved.** The module is now usable as a DART
 CollisionDetector backend registered as `"experimental"` via `CollisionDetector::Factory`.
+
+5. ~~**P1 - Backend distance queries**~~ **COMPLETE** (2026-02-09)
+6. ~~**P1 - Backend raycast queries**~~ **COMPLETE** (2026-02-09)
+7. ~~**P2 - Shape adapter expansion** (Cone, Ellipsoid, Heightmap, MultiSphere)~~ **COMPLETE** (2026-02-09)
+8. ~~**P1 - Integration test participation**~~ **COMPLETE** (2026-02-09)
 
 ## Next Steps
 

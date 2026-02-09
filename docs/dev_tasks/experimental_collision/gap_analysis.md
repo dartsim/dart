@@ -10,11 +10,11 @@
 
 The experimental collision module has **strong primitive coverage** but significant gaps in:
 
-1. **Shapes**: Missing Cone, Ellipsoid, HeightField, Compound, Octree
-2. **Collision pairs**: Missing Plane-Plane, some Cylinder pairs for specialized algorithms
-3. **Distance queries**: Missing Cylinder, Plane distance; limited to primitives + Convex/Mesh via GJK
+1. **Shapes**: ~~Missing Cone, Ellipsoid, HeightField~~ Cone/Ellipsoid/HeightField adapted via ConvexShape/MeshShape (2026-02-09); missing Octree
+2. **Collision pairs**: Missing Plane-Plane (degenerate case, rarely needed)
+3. **Distance queries**: Full coverage via GJK for all shape pairs; backend distance() wired (2026-02-09)
 4. **Advanced features**: ~~No collision filtering~~ ✅, ~~no compound shapes~~ ✅, no persistent manifolds
-5. **DART integration**: ✅ Wired as `"experimental"` CollisionDetector backend (2026-02-03)
+5. **DART integration**: ✅ Full backend with collide + distance + raycast (2026-02-09)
 
 ---
 
@@ -22,32 +22,32 @@ The experimental collision module has **strong primitive coverage** but signific
 
 ### Current Implementation
 
-| Shape           | Experimental | FCL | Bullet | ODE     | Gap                    |
-| --------------- | ------------ | --- | ------ | ------- | ---------------------- |
-| Sphere          | ✅           | ✅  | ✅     | ✅      | None                   |
-| Box             | ✅           | ✅  | ✅     | ✅      | None                   |
-| Capsule         | ✅           | ✅  | ✅     | ✅      | None                   |
-| Cylinder        | ✅           | ✅  | ✅     | ✅      | None                   |
-| Plane/Halfspace | ✅           | ✅  | ✅     | ✅      | None                   |
-| Convex Hull     | ✅           | ✅  | ✅     | ✅      | None                   |
-| Triangle Mesh   | ✅           | ✅  | ✅     | ✅      | None                   |
-| SDF             | ✅           | ❌  | ✅     | ❌      | **Ahead** of FCL/ODE   |
-| Cone            | ❌           | ✅  | ✅     | ❌      | **Missing**            |
-| Ellipsoid       | ❌           | ✅  | ❌     | ❌      | **Missing** (FCL only) |
-| HeightField     | ❌           | ❌  | ✅     | ✅      | **Missing**            |
-| Compound        | ✅           | ❌  | ✅     | partial | **Ahead** of FCL/ODE   |
-| Octree/Voxels   | ❌           | ✅  | ❌     | ❌      | **Missing** (FCL only) |
-| 2D Shapes       | ❌           | ❌  | ✅     | ❌      | N/A (not needed)       |
+| Shape           | Experimental | FCL | Bullet | ODE     | Gap                     |
+| --------------- | ------------ | --- | ------ | ------- | ----------------------- |
+| Sphere          | ✅           | ✅  | ✅     | ✅      | None                    |
+| Box             | ✅           | ✅  | ✅     | ✅      | None                    |
+| Capsule         | ✅           | ✅  | ✅     | ✅      | None                    |
+| Cylinder        | ✅           | ✅  | ✅     | ✅      | None                    |
+| Plane/Halfspace | ✅           | ✅  | ✅     | ✅      | None                    |
+| Convex Hull     | ✅           | ✅  | ✅     | ✅      | None                    |
+| Triangle Mesh   | ✅           | ✅  | ✅     | ✅      | None                    |
+| SDF             | ✅           | ❌  | ✅     | ❌      | **Ahead** of FCL/ODE    |
+| Cone            | ✅ (convex)  | ✅  | ✅     | ❌      | Adapted via ConvexShape |
+| Ellipsoid       | ✅ (convex)  | ✅  | ❌     | ❌      | Adapted via ConvexShape |
+| HeightField     | ✅ (mesh)    | ❌  | ✅     | ✅      | Adapted via MeshShape   |
+| Compound        | ✅           | ❌  | ✅     | partial | **Ahead** of FCL/ODE    |
+| Octree/Voxels   | ❌           | ✅  | ❌     | ❌      | **Missing** (FCL only)  |
+| 2D Shapes       | ❌           | ❌  | ✅     | ❌      | N/A (not needed)        |
 
 ### Priority Assessment
 
-| Shape           | Priority | Rationale                                                          |
-| --------------- | -------- | ------------------------------------------------------------------ |
-| **Cone**        | Medium   | Used in some robotics (tool tips), but can approximate with convex |
-| **HeightField** | Medium   | Terrain simulation; common in games, less in robotics              |
-| **Compound**    | High     | Multi-part robots; currently must use multiple objects             |
-| **Ellipsoid**   | Low      | Rare in robotics; can approximate with convex or scaled sphere     |
-| **Octree**      | Low      | Mapping/planning use case; specialized                             |
+| Shape           | Priority | Rationale                                                    |
+| --------------- | -------- | ------------------------------------------------------------ |
+| **Cone**        | ✅ Done  | Adapted via ConvexShape (32 base points + apex) (2026-02-09) |
+| **HeightField** | ✅ Done  | Adapted via triangulated MeshShape (2026-02-09)              |
+| **Compound**    | ✅ Done  | Native CompoundShape with recursive dispatch (2026-02-03)    |
+| **Ellipsoid**   | ✅ Done  | Sphere → SphereShape; non-sphere → ConvexShape (2026-02-09)  |
+| **Octree**      | Low      | Mapping/planning use case; specialized                       |
 
 ---
 
@@ -245,8 +245,8 @@ FCL's BV flexibility is powerful but adds significant template complexity. For e
 | Persistent manifolds               | ❌           | ❌  | ✅      | ❌      | **High**     |
 | Contact reduction                  | partial      | ❌  | ✅      | ❌      | Medium       |
 | Security margins                   | ❌           | ❌  | ✅      | ❌      | Low          |
-| Compound shapes                    | ❌           | ❌  | ✅      | partial | **High**     |
-| Multi-threading                    | ❌           | ❌  | partial | ❌      | **High**     |
+| Compound shapes                    | ✅           | ❌  | ✅      | partial | **Complete** |
+| Multi-threading                    | ✅           | ❌  | partial | ❌      | **Complete** |
 | Contact warm-starting              | ❌           | ❌  | ✅      | ❌      | Medium       |
 | Tolerance verification             | ❌           | ✅  | ❌      | ❌      | Low          |
 
@@ -416,14 +416,16 @@ FCL's BV flexibility is powerful but adds significant template complexity. For e
 
 ## 8. DART Integration Status
 
-| Component                                | Status         | Notes                    |
-| ---------------------------------------- | -------------- | ------------------------ |
-| CollisionDetector backend                | ❌ Not started | Required for integration |
-| CollisionGroup support                   | ❌ Not started |                          |
-| Shape adapters (dynamics → experimental) | ❌ Not started |                          |
-| Integration tests                        | ❌ Not started |                          |
-| Feature parity with FCL backend          | ❌ In progress |                          |
-| Documentation                            | partial        | Dev docs only            |
+| Component                                | Status      | Notes                                       |
+| ---------------------------------------- | ----------- | ------------------------------------------- |
+| CollisionDetector backend                | ✅ Complete | Registered as `"experimental"` (2026-02-03) |
+| CollisionGroup support                   | ✅ Complete | ExperimentalCollisionGroup (2026-02-03)     |
+| Shape adapters (dynamics → experimental) | ✅ Complete | 10 shape types adapted (2026-02-09)         |
+| Distance queries (backend)               | ✅ Complete | Both overloads wired (2026-02-09)           |
+| Raycast queries (backend)                | ✅ Complete | Override implemented (2026-02-09)           |
+| Integration tests                        | ✅ Complete | Consistency + CollisionGroups (2026-02-09)  |
+| Feature parity with FCL backend          | ✅ Partial  | collide+distance; raycast ahead of FCL      |
+| Documentation                            | partial     | Dev docs only                               |
 
 ---
 
@@ -473,14 +475,14 @@ FCL's BV flexibility is powerful but adds significant template complexity. For e
 
 | Category          | Experimental | FCL   | Bullet | ODE  | Notes                                 |
 | ----------------- | ------------ | ----- | ------ | ---- | ------------------------------------- |
-| Shapes            | 8/11 (73%)   | 10/11 | 10/11  | 8/11 | Missing Cone, HeightField, Compound   |
+| Shapes            | 11/11 (100%) | 10/11 | 10/11  | 8/11 | All adapted (native+convex/mesh)      |
 | Collision pairs   | ~95%         | ~98%  | ~98%   | ~90% | Excellent                             |
-| Distance pairs    | ~65%         | ~95%  | ~95%   | 0%   | Gap in Cylinder/Plane pairs           |
-| Raycast           | 100%\*       | 0%    | 100%   | 100% | \*For implemented shapes              |
+| Distance pairs    | ~85%         | ~95%  | ~95%   | 0%   | Full GJK coverage; backend wired      |
+| Raycast           | 100%\*       | 0%    | 100%   | 100% | \*Backend wired (2026-02-09)          |
 | CCD               | ~70%         | ~80%  | ~90%   | 0%   | Good sphere/capsule; no general sweep |
 | Broad-phase       | ~80%         | ~90%  | ~70%   | ~80% | Strong coverage                       |
 | BV types          | 1/7 (14%)    | 7/7   | 2/7    | 1/7  | AABB only; FCL excels here            |
-| Advanced features | ~30%         | ~60%  | ~90%   | ~50% | Major gap                             |
+| Advanced features | ~60%         | ~60%  | ~90%   | ~50% | Filtering+compound+threading done     |
 
 ### Overall Assessment
 
@@ -492,14 +494,14 @@ FCL's BV flexibility is powerful but adds significant template complexity. For e
 - Deterministic ordering guarantees
 - SDF shape support (unique feature)
 
-**Critical Gaps:**
+**All Critical Gaps Resolved** (2026-02-09):
 
-1. **No collision filtering** - Blocks practical use
-2. **No compound shapes** - Blocks multi-part robots
-3. **No parallel narrowphase** - Performance limiter
-4. **No DART integration** - Not usable as backend yet
+1. ~~No collision filtering~~ ✅ Complete
+2. ~~No compound shapes~~ ✅ Complete
+3. ~~No parallel narrowphase~~ ✅ Complete
+4. ~~No DART integration~~ ✅ Complete (collide + distance + raycast)
 
-**Recommendation:** Focus on collision filtering and compound shapes before DART integration. Parallel narrowphase can proceed in parallel as it's orthogonal to feature work.
+**Remaining Work:** Performance benchmarking vs FCL/Bullet/ODE, persistent manifolds, contact warm-starting.
 
 ---
 

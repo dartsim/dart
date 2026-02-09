@@ -49,11 +49,11 @@ If we can't beat existing backends in performance, there's no point in building 
 
 ## Current Status
 
-**Standalone Library Development** (Active)
+**DART Backend Integration Complete** (Active — optimization phase)
 
-The module is being developed as a **standalone collision library** first, before DART API integration. Integration is deferred until feature parity with existing backends.
+The standalone library and DART backend integration are feature-complete. Distance queries, raycast, and expanded shape adapters are wired. Remaining work is performance optimization and benchmark validation.
 
-### What's Built (475+ tests passing)
+### What's Built (575+ tests passing)
 
 **Shapes:**
 
@@ -96,6 +96,13 @@ The module is being developed as a **standalone collision library** first, befor
 3. ~~**P0 - Parallel narrowphase**~~ **COMPLETE** (2026-02-03)
 4. ~~**P1 - DART backend integration**~~ **COMPLETE** (2026-02-03)
 5. ~~**P1 - Visual verification CI**~~ **COMPLETE** (2026-02-03)
+6. ~~**P1 - Distance query wiring**~~ **COMPLETE** (2026-02-09)
+7. ~~**P1 - Raycast wiring**~~ **COMPLETE** (2026-02-09)
+8. ~~**P1 - Shape adapter expansion** (Cone, Ellipsoid, Heightmap, MultiSphere)~~ **COMPLETE** (2026-02-09)
+9. ~~**P1 - Integration test expansion**~~ **COMPLETE** (2026-02-09)
+10. **P1 - Performance parity with FCL** — benchmarking needed
+11. **P1 - Persistent manifolds** — contact caching for warm-starting
+12. **P2 - BVH traversal for mesh-mesh optimization**
 
 See [gap_analysis.md](./gap_analysis.md) for full priority roadmap.
 
@@ -142,5 +149,9 @@ pixi run build && ctest --test-dir build/default/cpp/Release -L collision-experi
 - [x] Wired as additional backend (opt-in) — registered as `"experimental"` (2026-02-03)
 - [x] Shape adapter: `dynamics::Shape` → `experimental::Shape` (2026-02-03)
 - [x] Contact conversion: `experimental::ContactPoint` → `collision::Contact` (2026-02-03)
-- [ ] Passes existing collision integration tests (partial — basic tests pass)
+- [x] Distance query wiring (2026-02-09)
+- [x] Raycast wiring (2026-02-09)
+- [x] Expanded shape adapters: Cone, Ellipsoid, Heightmap, MultiSphere (2026-02-09)
+- [x] Passes existing collision integration tests — CollisionGroups passes (2026-02-09)
+- [ ] Full integration test coverage (some pre-existing SEGFAULTs in non-experimental tests)
 - [ ] Documentation complete

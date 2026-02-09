@@ -1,108 +1,129 @@
 # Resume: Experimental Collision Module
 
-## Last Session Summary (2026-02-03)
+## Last Session Summary (2026-02-09)
 
-Completed 4 major features: F1 (Compound Shapes), F2 (Parallel Narrowphase), F3 (DART Backend Integration), and F4 (VSG CI Polish). Also fixed VSG test namespace conflicts and updated all progress docs. All code committed and tests passing.
+Completed all remaining "Immediate Next Steps" from the previous session: distance query wiring, raycast wiring, expanded shape adapters (Cone, Ellipsoid, Heightmap, MultiSphere), integration test expansion, and documentation updates. Merged latest `origin/main` into `feature/new_coll` (3 conflicts resolved). All backend unit tests pass (14+ cases). Integration tests pass for experimental backend.
 
 ## Current Branch
 
-`feature/new_coll` — **clean** (207 commits ahead of main, no uncommitted changes)
+`feature/new_coll` — **ahead of origin by 33 commits** (uncommitted changes pending commit)
 
 ```bash
 git checkout feature/new_coll
-git status  # Should show clean
-git log -3 --oneline
-# c3cd925fe19 docs: update experimental collision progress...
-# c8a2770a844 feat(collision): add compound shapes, parallel narrowphase...
-# 3f3dd727ddc fix(gui): fix crash on scene change...
+git status && git log -3 --oneline
 ```
 
-## What Was Completed
+## What Was Completed This Session
+
+### Merge: origin/main → feature/new_coll ✅
+
+- Resolved conflicts in `.gitignore`, `CHANGELOG.md`, `tests/unit/CMakeLists.txt`
+
+### Distance Query Wiring ✅
+
+- Replaced both stubbed `distance()` methods with real implementations
+- Constructs temporary `experimental::CollisionObject` wrappers per pair
+- Supports DistanceFilter, distanceLowerBound clamping, nearest points, ShapeFrame assignment
+- Both single-group and cross-group overloads
+- File: `dart/collision/experimental_backend/experimental_collision_detector.cpp`
+
+### Raycast Wiring ✅
+
+- Constructs `experimental::Ray` from `from`/`to` vectors
+- Per-object filter via `RaycastOption::passesFilter`
+- All-hits vs closest-only, sort-by-closest behavior
+- Converts `experimental::RaycastResult` → DART `RayHit`
+- Files: `experimental_collision_detector.hpp` (declaration), `.cpp` (implementation)
+
+### Shape Adapter Expansion ✅
+
+- ConeShape → ConvexShape (32 base points + apex)
+- Non-sphere EllipsoidShape → ConvexShape (latitude/longitude surface sampling)
+- HeightmapShape<float/double> → triangulated MeshShape
+- MultiSphereConvexHullShape → ConvexShape (surface point sampling)
+- File: `dart/collision/experimental_backend/shape_adapter.cpp`
+
+### Unit Tests ✅
+
+- Added 14+ test cases: DistanceSphereSphere, DistanceOverlapping, DistanceCrossGroup, DistanceWithFilter, RaycastHit, RaycastMiss, RaycastMultipleObjects, RaycastFilter, ConeShapeAdapter, EllipsoidShapeAdapter, HeightmapShapeAdapter
+- File: `tests/unit/collision/test_experimental_backend.cpp`
+
+### Integration Test Expansion ✅
+
+- Added `"experimental"` to `INSTANTIATE_TEST_SUITE_P` Values in `test_collision_groups.cpp`
+- CollisionGroups and consistency tests pass with experimental backend
+
+### Documentation Updates ✅
+
+- Updated `gap_analysis.md` — shapes at 100%, all critical gaps resolved
+- Updated `progress.md` — added backend distance/raycast/shape adapter rows, test count 575+
+
+## Previous Session Work (2026-02-03)
 
 ### F1: Compound Shapes ✅
-- Added `CompoundShape` class with `ChildShape` struct (child shape + local transform)
-- Recursive narrowphase dispatch for collide/distance/raycast/CCD
-- Files: `dart/collision/experimental/shapes/shape.hpp/.cpp`, `narrow_phase/narrow_phase.cpp`
-- Tests: `tests/unit/collision/experimental/test_compound.cpp` (30+ tests)
 
 ### F2: Parallel Narrowphase ✅
-- `CollisionWorld::collideAll()` parallelized with `std::thread` + chunked pairs
-- Per-thread result buffers with deterministic merge via stable sort
-- Single-thread path unchanged (zero overhead guard)
-- Files: `dart/collision/experimental/collision_world.cpp`
-- Tests: `test_parallel_determinism.cpp`, extended `test_collision_world.cpp`
 
 ### F3: DART Backend Integration ✅
-- Created `dart/collision/experimental_backend/` directory with:
-  - `ExperimentalCollisionDetector` — registered as `"experimental"` in factory
-  - `ExperimentalCollisionGroup`, `ExperimentalCollisionObject`
-  - `shape_adapter.hpp/.cpp` — converts `dynamics::Shape` → `experimental::Shape`
-- Added `add_subdirectory(experimental_backend)` to `dart/collision/CMakeLists.txt`
-- Tests: `tests/unit/collision/test_experimental_backend.cpp`
 
 ### F4: VSG CI Polish ✅
-- Added `collision_sandbox --headless` step to `vsg-rendering` CI job
-- File: `.github/workflows/ci_ubuntu.yml`
-
-### Fix: VSG Test Namespace Conflicts ✅
-- Renamed `namespace vsg = dart::gui::vsg` → `namespace dart_vsg = dart::gui::vsg`
-- Files: 4 test files in `tests/unit/gui/vsg/`
 
 ## Test Status
 
 ```bash
-# Collision-experimental: 28/29 pass (1 pre-existing raycast edge case failure)
+# Collision-experimental: 28/29 pass (1 pre-existing raycast edge case)
 ctest --test-dir build/default/cpp/Release -L collision-experimental -j$(nproc)
 
-# DART backend: 1/1 pass
+# DART backend: 1/1 pass (14+ individual test cases inside)
 ctest --test-dir build/default/cpp/Release -R UNIT_collision_ExperimentalBackend
 
-# VSG tests: 3/4 pass (1 segfault during cleanup, all test cases pass)
-ctest --test-dir build/default/cpp/Release -R gui_vsg
+# Integration: CollisionGroups passes with "experimental" backend
+ctest --test-dir build/default/cpp/Release -R INTEGRATION_collision_CollisionGroups
 ```
 
-## Immediate Next Steps
+## Remaining Work
 
-The core integration work is **complete**. Remaining work is polish/optimization:
+The core implementation is **feature-complete**. Remaining items are optimization/polish:
 
-1. **Performance benchmarking** — Run parallel speedup measurements with different thread counts
-2. **More shape coverage** — Add Cone, Ellipsoid, HeightField to shape adapter
-3. **Full integration test suite** — Run existing DART collision integration tests with experimental backend
-4. **Distance query support** — ExperimentalCollisionDetector currently warns on distance(); could implement
-5. **Raycast support** — ExperimentalCollisionDetector could implement raycast() using experimental module
+1. **Performance benchmarking** — Run comparative benchmarks vs FCL/Bullet/ODE
+2. **Performance parity with FCL** — Optimize until experimental is faster
+3. **Persistent manifolds** (P1 from gap analysis)
+4. **Contact warm-starting** (P2)
+5. **BVH traversal for mesh-mesh** (P1)
+6. **Full integration test suite** — Some existing integration tests have pre-existing SEGFAULTs unrelated to experimental backend
 
 ## Context That Would Be Lost
 
 - **BoxShape convention difference**: `dynamics::BoxShape` uses full size, `experimental::BoxShape` uses half-extents. Shape adapter does `size * 0.5`.
 - **Normal convention**: Both use obj2→obj1, so no conversion needed.
-- **Pre-existing test failures**: `test_raycast` has 2 `RayStartsInside` failures (Box, Capsule) — known edge cases, not from our changes.
-- **VSG segfault**: `UNIT_gui_vsg_geometry_builders` crashes during teardown (Vulkan cleanup), but all 14 test cases pass.
+- **Pre-existing test failures**: `test_raycast` has `RayStartsInside` failures (Box, Capsule) — known edge cases, not from our changes.
+- **Distance implementation**: Creates temporary `experimental::CollisionObject` wrappers per pair, calls `NarrowPhase::distance()`, converts results.
+- **Raycast implementation**: Iterates group objects, constructs `experimental::Ray` from from/to vectors, filters per-object.
 
 ## How to Resume
 
 ```bash
 cd /home/js/dev/dartsim/dart/task_2
 git checkout feature/new_coll
-
-# Verify state:
 git status && git log -3 --oneline
 
-# Build and run tests:
 pixi run build
 ctest --test-dir build/default/cpp/Release -L collision-experimental -j$(nproc)
 ctest --test-dir build/default/cpp/Release -R UNIT_collision_ExperimentalBackend
 ```
 
-Then choose next step from "Immediate Next Steps" above.
+Then choose from "Remaining Work" above.
 
 ## Key Files Reference
 
-| Component | Location |
-|-----------|----------|
-| Compound shapes | `dart/collision/experimental/shapes/shape.hpp` (lines 201-229) |
-| Parallel narrowphase | `dart/collision/experimental/collision_world.cpp` |
-| DART backend | `dart/collision/experimental_backend/` (9 files) |
-| Shape adapter | `dart/collision/experimental_backend/shape_adapter.cpp` |
-| Backend test | `tests/unit/collision/test_experimental_backend.cpp` |
-| Progress docs | `docs/dev_tasks/experimental_collision/progress.md` |
-| Gap analysis | `docs/dev_tasks/experimental_collision/gap_analysis.md` |
+| Component            | Location                                                                  |
+| -------------------- | ------------------------------------------------------------------------- |
+| Backend detector     | `dart/collision/experimental_backend/experimental_collision_detector.cpp` |
+| Backend header       | `dart/collision/experimental_backend/experimental_collision_detector.hpp` |
+| Shape adapter        | `dart/collision/experimental_backend/shape_adapter.cpp`                   |
+| Backend test         | `tests/unit/collision/test_experimental_backend.cpp`                      |
+| Integration test     | `tests/integration/collision/test_collision_groups.cpp`                   |
+| Compound shapes      | `dart/collision/experimental/shapes/shape.hpp`                            |
+| Parallel narrowphase | `dart/collision/experimental/collision_world.cpp`                         |
+| Progress docs        | `docs/dev_tasks/experimental_collision/progress.md`                       |
+| Gap analysis         | `docs/dev_tasks/experimental_collision/gap_analysis.md`                   |

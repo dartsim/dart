@@ -35,15 +35,21 @@
 #include "dart/common/logging.hpp"
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/capsule_shape.hpp"
+#include "dart/dynamics/cone_shape.hpp"
 #include "dart/dynamics/convex_mesh_shape.hpp"
 #include "dart/dynamics/cylinder_shape.hpp"
 #include "dart/dynamics/ellipsoid_shape.hpp"
+#include "dart/dynamics/heightmap_shape.hpp"
 #include "dart/dynamics/mesh_shape.hpp"
+#include "dart/dynamics/multi_sphere_convex_hull_shape.hpp"
 #include "dart/dynamics/plane_shape.hpp"
 #include "dart/dynamics/sphere_shape.hpp"
 #include "dart/math/tri_mesh.hpp"
 
+#include <numbers>
 #include <vector>
+
+#include <cmath>
 
 namespace dart {
 namespace collision {
@@ -87,6 +93,27 @@ std::unique_ptr<experimental::Shape> adaptShape(
         cylinder->getRadius(), cylinder->getHeight());
   }
 
+  if (shapeType == dynamics::ConeShape::getStaticType()) {
+    const auto& cone
+        = std::static_pointer_cast<const dynamics::ConeShape>(shape);
+    const double radius = cone->getRadius();
+    const double height = cone->getHeight();
+
+    std::vector<Eigen::Vector3d> vertices;
+    constexpr int numBasePoints = 32;
+    vertices.reserve(numBasePoints + 1);
+    vertices.emplace_back(0.0, 0.0, height * 0.5);
+
+    constexpr double kTwoPi = 2.0 * std::numbers::pi_v<double>;
+    for (int i = 0; i < numBasePoints; ++i) {
+      const double angle = kTwoPi * static_cast<double>(i) / numBasePoints;
+      vertices.emplace_back(
+          radius * std::cos(angle), radius * std::sin(angle), -height * 0.5);
+    }
+
+    return std::make_unique<experimental::ConvexShape>(std::move(vertices));
+  }
+
   if (shapeType == dynamics::PlaneShape::getStaticType()) {
     const auto& plane
         = std::static_pointer_cast<const dynamics::PlaneShape>(shape);
@@ -101,6 +128,128 @@ std::unique_ptr<experimental::Shape> adaptShape(
       const auto radii = ellipsoid->getRadii();
       return std::make_unique<experimental::SphereShape>(radii.x());
     }
+
+    const auto radii = ellipsoid->getRadii();
+    std::vector<Eigen::Vector3d> vertices;
+    constexpr int numLatitude = 8;
+    constexpr int numLongitude = 16;
+    vertices.reserve(numLatitude * numLongitude + 2);
+    vertices.emplace_back(0.0, 0.0, radii.z());
+    vertices.emplace_back(0.0, 0.0, -radii.z());
+
+    constexpr double kPi = std::numbers::pi_v<double>;
+    constexpr double kTwoPi = 2.0 * std::numbers::pi_v<double>;
+    for (int lat = 1; lat < numLatitude; ++lat) {
+      const double theta = kPi * static_cast<double>(lat) / numLatitude;
+      const double sinTheta = std::sin(theta);
+      const double cosTheta = std::cos(theta);
+
+      for (int lon = 0; lon < numLongitude; ++lon) {
+        const double phi = kTwoPi * static_cast<double>(lon) / numLongitude;
+        vertices.emplace_back(
+            radii.x() * sinTheta * std::cos(phi),
+            radii.y() * sinTheta * std::sin(phi),
+            radii.z() * cosTheta);
+      }
+    }
+
+    return std::make_unique<experimental::ConvexShape>(std::move(vertices));
+  }
+
+  if (shapeType == dynamics::HeightmapShape<double>::getStaticType()
+      || shapeType == dynamics::HeightmapShape<float>::getStaticType()) {
+    std::vector<Eigen::Vector3d> vertices;
+    std::vector<experimental::MeshShape::Triangle> triangles;
+
+    auto buildMeshFromHeightmap
+        = [&vertices, &triangles](const auto* heightmap) -> bool {
+      if (!heightmap) {
+        return false;
+      }
+
+      const auto width = heightmap->getWidth();
+      const auto depth = heightmap->getDepth();
+      if (width < 2 || depth < 2) {
+        DART_WARN(
+            "[ExperimentalCollisionDetector] HeightmapShape is too small to "
+            "triangulate (width={}, depth={}).",
+            width,
+            depth);
+        return false;
+      }
+
+      const auto& field = heightmap->getHeightField();
+      const auto scale = heightmap->getScale().template cast<double>();
+
+      vertices.reserve(width * depth);
+      for (std::size_t y = 0; y < depth; ++y) {
+        for (std::size_t x = 0; x < width; ++x) {
+          const double height = static_cast<double>(field(y, x));
+          vertices.emplace_back(
+              scale.x() * static_cast<double>(x),
+              -scale.y() * static_cast<double>(y),
+              scale.z() * height);
+        }
+      }
+
+      triangles.reserve((width - 1) * (depth - 1) * 2);
+      for (std::size_t y = 0; y + 1 < depth; ++y) {
+        for (std::size_t x = 0; x + 1 < width; ++x) {
+          const int v00 = static_cast<int>(y * width + x);
+          const int v10 = static_cast<int>(y * width + (x + 1));
+          const int v01 = static_cast<int>((y + 1) * width + x);
+          const int v11 = static_cast<int>((y + 1) * width + (x + 1));
+
+          triangles.emplace_back(v00, v10, v01);
+          triangles.emplace_back(v10, v11, v01);
+        }
+      }
+
+      return true;
+    };
+
+    if (const auto* heightmapDouble = shape->as<dynamics::HeightmapShaped>()) {
+      if (buildMeshFromHeightmap(heightmapDouble)) {
+        return std::make_unique<experimental::MeshShape>(
+            std::move(vertices), std::move(triangles));
+      }
+    } else if (
+        const auto* heightmapFloat = shape->as<dynamics::HeightmapShapef>()) {
+      if (buildMeshFromHeightmap(heightmapFloat)) {
+        return std::make_unique<experimental::MeshShape>(
+            std::move(vertices), std::move(triangles));
+      }
+    }
+
+    return nullptr;
+  }
+
+  if (shapeType == dynamics::MultiSphereConvexHullShape::getStaticType()) {
+    const auto& multiSphere
+        = std::static_pointer_cast<const dynamics::MultiSphereConvexHullShape>(
+            shape);
+    const auto& spheres = multiSphere->getSpheres();
+    if (spheres.empty()) {
+      DART_WARN(
+          "[ExperimentalCollisionDetector] MultiSphereConvexHullShape has no "
+          "spheres.");
+      return nullptr;
+    }
+
+    std::vector<Eigen::Vector3d> vertices;
+    vertices.reserve(spheres.size() * 6);
+    for (const auto& sphere : spheres) {
+      const double radius = sphere.first;
+      const Eigen::Vector3d& center = sphere.second;
+      vertices.emplace_back(center + Eigen::Vector3d(radius, 0.0, 0.0));
+      vertices.emplace_back(center + Eigen::Vector3d(-radius, 0.0, 0.0));
+      vertices.emplace_back(center + Eigen::Vector3d(0.0, radius, 0.0));
+      vertices.emplace_back(center + Eigen::Vector3d(0.0, -radius, 0.0));
+      vertices.emplace_back(center + Eigen::Vector3d(0.0, 0.0, radius));
+      vertices.emplace_back(center + Eigen::Vector3d(0.0, 0.0, -radius));
+    }
+
+    return std::make_unique<experimental::ConvexShape>(std::move(vertices));
   }
 
   if (shapeType == dynamics::MeshShape::getStaticType()) {
