@@ -38,6 +38,7 @@
 #include <dart/collision/experimental/narrow_phase/convex_convex.hpp>
 #include <dart/collision/experimental/narrow_phase/cylinder_collision.hpp>
 #include <dart/collision/experimental/narrow_phase/distance.hpp>
+#include <dart/collision/experimental/narrow_phase/mesh_mesh.hpp>
 #include <dart/collision/experimental/narrow_phase/narrow_phase.hpp>
 #include <dart/collision/experimental/narrow_phase/plane_sphere.hpp>
 #include <dart/collision/experimental/narrow_phase/raycast.hpp>
@@ -294,6 +295,22 @@ bool collideShapes(
     return collideCylinderPlane(*c, tf2, *p, tf1, result, option);
   }
 
+  if (type1 == ShapeType::Mesh && type2 == ShapeType::Mesh) {
+    const auto* m1 = static_cast<const MeshShape*>(shape1);
+    const auto* m2 = static_cast<const MeshShape*>(shape2);
+    return collideMeshMesh(*m1, tf1, *m2, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Mesh && type2 != ShapeType::Convex) {
+    const auto* mesh = static_cast<const MeshShape*>(shape1);
+    return collidePrimitiveMesh(*shape2, tf2, *mesh, tf1, result, option);
+  }
+
+  if (type2 == ShapeType::Mesh && type1 != ShapeType::Convex) {
+    const auto* mesh = static_cast<const MeshShape*>(shape2);
+    return collidePrimitiveMesh(*shape1, tf1, *mesh, tf2, result, option);
+  }
+
   if (type1 == ShapeType::Convex || type1 == ShapeType::Mesh
       || type2 == ShapeType::Convex || type2 == ShapeType::Mesh) {
     return collideConvexConvex(*shape1, tf1, *shape2, tf2, result, option);
@@ -505,6 +522,12 @@ double distanceShapes(
   if ((type1 == ShapeType::Cylinder || type2 == ShapeType::Cylinder)
       && type1 != ShapeType::Sdf && type2 != ShapeType::Sdf) {
     return distanceConvexConvex(*shape1, tf1, *shape2, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Mesh && type2 == ShapeType::Mesh) {
+    const auto* m1 = static_cast<const MeshShape*>(shape1);
+    const auto* m2 = static_cast<const MeshShape*>(shape2);
+    return distanceMeshMesh(*m1, tf1, *m2, tf2, result, option);
   }
 
   if (type1 == ShapeType::Convex || type1 == ShapeType::Mesh

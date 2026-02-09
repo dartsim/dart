@@ -71,6 +71,15 @@ struct DART_API Contact
   /// Penetration depth
   double penetrationDepth;
 
+  /// Cached normal impulse from previous frame for warm-starting.
+  double cachedNormalImpulse{0.0};
+
+  /// Cached friction impulse on first tangent direction from previous frame.
+  double cachedFrictionImpulse1{0.0};
+
+  /// Cached friction impulse on second tangent direction from previous frame.
+  double cachedFrictionImpulse2{0.0};
+
   // TODO(JS): triID1 will be deprecated when we don't use fcl_mesh
   /// @brief
   int triID1;

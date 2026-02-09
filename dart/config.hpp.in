@@ -68,6 +68,7 @@
 #cmakedefine01 DART_BUILD_MODE_RELEASE
 
 #cmakedefine01 DART_HAVE_BULLET
+#cmakedefine01 DART_HAVE_FCL
 #cmakedefine01 DART_HAVE_ODE
 #cmakedefine01 DART_HAVE_OCTOMAP
 #cmakedefine01 DART_HAVE_SDFORMAT

@@ -35,6 +35,12 @@
 
 #include <dart/collision/collision_detector.hpp>
 
+#include <memory>
+
+namespace dart::collision::experimental {
+class PersistentManifoldCache;
+}
+
 namespace dart {
 namespace collision {
 
@@ -106,6 +112,8 @@ protected:
 
 private:
   static Registrar<ExperimentalCollisionDetector> mRegistrar;
+
+  std::unique_ptr<experimental::PersistentManifoldCache> mManifoldCache;
 };
 
 } // namespace collision

@@ -147,8 +147,13 @@ endfunction()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 
-# Default component: dart
+# Default components: dart and collision-fcl (FCL was previously part of
+# libdart.so; always include it for backward compatibility with consumers
+# that link only ${DART_LIBRARIES}).
 list(APPEND @PROJECT_NAME_UPPERCASE@_FIND_COMPONENTS dart)
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@_collision-fclComponent.cmake")
+  list(APPEND @PROJECT_NAME_UPPERCASE@_FIND_COMPONENTS collision-fcl)
+endif()
 
 # Components
 if(@PROJECT_NAME_UPPERCASE@_FIND_COMPONENTS)

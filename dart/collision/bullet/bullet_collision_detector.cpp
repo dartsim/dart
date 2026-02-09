@@ -41,6 +41,9 @@
 #include "dart/collision/bullet/detail/bullet_overlap_filter_callback.hpp"
 #include "dart/collision/collision_filter.hpp"
 #include "dart/collision/collision_object.hpp"
+#if DART_BULLET_HAS_EXPERIMENTAL
+  #include "dart/collision/experimental_backend/experimental_query_helper.hpp"
+#endif
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
 #include "dart/dynamics/box_shape.hpp"
@@ -67,6 +70,13 @@ namespace dart {
 namespace collision {
 
 namespace {
+
+#if DART_BULLET_HAS_EXPERIMENTAL
+bool useExperimentalNarrowPhase()
+{
+  return true;
+}
+#endif
 
 Contact convertContact(
     const btManifoldPoint& bulletManifoldPoint,
@@ -236,6 +246,31 @@ bool BulletCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
+  // Check if 'this' is the collision engine of 'group'.
+  if (!checkGroupValidity(this, group)) {
+    return false;
+  }
+
+  auto castedGroup = static_cast<BulletCollisionGroup*>(group);
+  auto collisionWorld = castedGroup->getBulletCollisionWorld();
+
+#if DART_BULLET_HAS_EXPERIMENTAL
+  if (useExperimentalNarrowPhase()) {
+    castedGroup->updateEngineData();
+
+    std::vector<CollisionObject*> collisionObjects;
+    collisionObjects.reserve(castedGroup->mObjectInfoList.size());
+    for (const auto& info : castedGroup->mObjectInfoList) {
+      if (info && info->mObject) {
+        collisionObjects.push_back(info->mObject.get());
+      }
+    }
+
+    return experimentalCollide(
+        collisionObjects, collisionObjects, option, result);
+  }
+#endif
+
   if (result) {
     result->clear();
   }
@@ -246,14 +281,6 @@ bool BulletCollisionDetector::collide(
         "Use maxNumContacts >= 1 for binary checks.");
     return false;
   }
-
-  // Check if 'this' is the collision engine of 'group'.
-  if (!checkGroupValidity(this, group)) {
-    return false;
-  }
-
-  auto castedGroup = static_cast<BulletCollisionGroup*>(group);
-  auto collisionWorld = castedGroup->getBulletCollisionWorld();
 
   auto dispatcher = static_cast<detail::BulletCollisionDispatcher*>(
       collisionWorld->getDispatcher());
@@ -281,6 +308,42 @@ bool BulletCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
+  if (!checkGroupValidity(this, group1)) {
+    return false;
+  }
+
+  if (!checkGroupValidity(this, group2)) {
+    return false;
+  }
+
+#if DART_BULLET_HAS_EXPERIMENTAL
+  if (useExperimentalNarrowPhase()) {
+    auto* castedGroup1 = static_cast<BulletCollisionGroup*>(group1);
+    auto* castedGroup2 = static_cast<BulletCollisionGroup*>(group2);
+    castedGroup1->updateEngineData();
+    castedGroup2->updateEngineData();
+
+    std::vector<CollisionObject*> collisionObjects1;
+    collisionObjects1.reserve(castedGroup1->mObjectInfoList.size());
+    for (const auto& info : castedGroup1->mObjectInfoList) {
+      if (info && info->mObject) {
+        collisionObjects1.push_back(info->mObject.get());
+      }
+    }
+
+    std::vector<CollisionObject*> collisionObjects2;
+    collisionObjects2.reserve(castedGroup2->mObjectInfoList.size());
+    for (const auto& info : castedGroup2->mObjectInfoList) {
+      if (info && info->mObject) {
+        collisionObjects2.push_back(info->mObject.get());
+      }
+    }
+
+    return experimentalCollide(
+        collisionObjects1, collisionObjects2, option, result);
+  }
+#endif
+
   if (result) {
     result->clear();
   }
@@ -289,14 +352,6 @@ bool BulletCollisionDetector::collide(
     DART_WARN(
         "CollisionOption::maxNumContacts is 0; skipping collision detection. "
         "Use maxNumContacts >= 1 for binary checks.");
-    return false;
-  }
-
-  if (!checkGroupValidity(this, group1)) {
-    return false;
-  }
-
-  if (!checkGroupValidity(this, group2)) {
     return false;
   }
 
@@ -333,10 +388,33 @@ bool BulletCollisionDetector::collide(
 
 //==============================================================================
 double BulletCollisionDetector::distance(
-    CollisionGroup* /*group*/,
-    const DistanceOption& /*option*/,
-    DistanceResult* /*result*/)
+    CollisionGroup* group, const DistanceOption& option, DistanceResult* result)
 {
+  if (!checkGroupValidity(this, group)) {
+    return 0.0;
+  }
+
+  auto* castedGroup = static_cast<BulletCollisionGroup*>(group);
+  castedGroup->updateEngineData();
+
+#if DART_BULLET_HAS_EXPERIMENTAL
+  if (useExperimentalNarrowPhase()) {
+    std::vector<CollisionObject*> collisionObjects;
+    collisionObjects.reserve(castedGroup->mObjectInfoList.size());
+    for (const auto& info : castedGroup->mObjectInfoList) {
+      if (info && info->mObject) {
+        collisionObjects.push_back(info->mObject.get());
+      }
+    }
+
+    return experimentalDistance(
+        collisionObjects, collisionObjects, option, result);
+  }
+#else
+  (void)option;
+  (void)result;
+#endif
+
   static bool warned = false;
   if (!warned) {
     DART_WARN(
@@ -350,11 +428,50 @@ double BulletCollisionDetector::distance(
 
 //==============================================================================
 double BulletCollisionDetector::distance(
-    CollisionGroup* /*group1*/,
-    CollisionGroup* /*group2*/,
-    const DistanceOption& /*option*/,
-    DistanceResult* /*result*/)
+    CollisionGroup* group1,
+    CollisionGroup* group2,
+    const DistanceOption& option,
+    DistanceResult* result)
 {
+  if (!checkGroupValidity(this, group1)) {
+    return 0.0;
+  }
+
+  if (!checkGroupValidity(this, group2)) {
+    return 0.0;
+  }
+
+  auto* castedGroup1 = static_cast<BulletCollisionGroup*>(group1);
+  auto* castedGroup2 = static_cast<BulletCollisionGroup*>(group2);
+  castedGroup1->updateEngineData();
+  castedGroup2->updateEngineData();
+
+#if DART_BULLET_HAS_EXPERIMENTAL
+  if (useExperimentalNarrowPhase()) {
+    std::vector<CollisionObject*> collisionObjects1;
+    collisionObjects1.reserve(castedGroup1->mObjectInfoList.size());
+    for (const auto& info : castedGroup1->mObjectInfoList) {
+      if (info && info->mObject) {
+        collisionObjects1.push_back(info->mObject.get());
+      }
+    }
+
+    std::vector<CollisionObject*> collisionObjects2;
+    collisionObjects2.reserve(castedGroup2->mObjectInfoList.size());
+    for (const auto& info : castedGroup2->mObjectInfoList) {
+      if (info && info->mObject) {
+        collisionObjects2.push_back(info->mObject.get());
+      }
+    }
+
+    return experimentalDistance(
+        collisionObjects1, collisionObjects2, option, result);
+  }
+#else
+  (void)option;
+  (void)result;
+#endif
+
   static bool warned = false;
   if (!warned) {
     DART_WARN(
@@ -374,16 +491,33 @@ bool BulletCollisionDetector::raycast(
     const RaycastOption& option,
     RaycastResult* result)
 {
-  if (result) {
-    result->clear();
-  }
-
   // Check if 'this' is the collision engine of 'group'.
   if (!checkGroupValidity(this, group)) {
     return false;
   }
 
-  auto castedGroup = static_cast<BulletCollisionGroup*>(group);
+  auto* castedGroup = static_cast<BulletCollisionGroup*>(group);
+
+#if DART_BULLET_HAS_EXPERIMENTAL
+  if (useExperimentalNarrowPhase()) {
+    castedGroup->updateEngineData();
+
+    std::vector<CollisionObject*> collisionObjects;
+    collisionObjects.reserve(castedGroup->mObjectInfoList.size());
+    for (const auto& info : castedGroup->mObjectInfoList) {
+      if (info && info->mObject) {
+        collisionObjects.push_back(info->mObject.get());
+      }
+    }
+
+    return experimentalRaycast(collisionObjects, from, to, option, result);
+  }
+#endif
+
+  if (result) {
+    result->clear();
+  }
+
   auto collisionWorld = castedGroup->getBulletCollisionWorld();
 
   const auto btFrom = convertVector3(from);

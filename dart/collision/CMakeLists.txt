@@ -5,11 +5,6 @@ file(GLOB detail_hdrs "detail/*.hpp")
 file(GLOB detail_srcs "detail/*.cpp")
 file(GLOB dart_hdrs "dart/*.hpp")
 file(GLOB experimental_backend_hdrs "experimental_backend/*.hpp")
-file(GLOB fcl_hdrs "fcl/*.hpp")
-file(GLOB ode_hdrs "ode/*.hpp")
-file(GLOB ode_detail_hdrs "ode/detail/*.hpp")
-file(GLOB bullet_hdrs "bullet/*.hpp")
-file(GLOB bullet_detail_hdrs "bullet/detail/*.hpp")
 dart_add_core_headers(${hdrs} ${detail_hdrs})
 dart_add_core_sources(${srcs} ${detail_srcs})
 
@@ -20,7 +15,6 @@ set(
   header_names
   ${header_names}
   dart/All.hpp
-  fcl/All.hpp
 )
 if(DART_BUILD_COLLISION_EXPERIMENTAL)
   list(APPEND header_names experimental_backend/All.hpp)
@@ -29,11 +23,6 @@ set(collision_source_headers
   ${hdrs}
   ${detail_hdrs}
   ${dart_hdrs}
-  ${fcl_hdrs}
-  ${ode_hdrs}
-  ${ode_detail_hdrs}
-  ${bullet_hdrs}
-  ${bullet_detail_hdrs}
 )
 if(DART_BUILD_COLLISION_EXPERIMENTAL)
   list(APPEND collision_source_headers ${experimental_backend_hdrs})

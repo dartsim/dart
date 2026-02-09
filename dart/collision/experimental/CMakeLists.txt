@@ -42,6 +42,7 @@ set(collision_experimental_sources
   collision_object.cpp
   collision_world.cpp
   contact_manifold.cpp
+  persistent_manifold_cache.cpp
   narrow_phase/box_box.cpp
   narrow_phase/capsule_box.cpp
   narrow_phase/capsule_capsule.cpp
@@ -52,6 +53,7 @@ set(collision_experimental_sources
   narrow_phase/distance.cpp
   narrow_phase/gjk.cpp
   narrow_phase/mpr.cpp
+  narrow_phase/mesh_mesh.cpp
   narrow_phase/narrow_phase.cpp
   narrow_phase/plane_sphere.cpp
   narrow_phase/raycast.cpp

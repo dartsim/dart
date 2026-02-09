@@ -30,43 +30,38 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FWD_HPP_
-#define DART_COLLISION_FWD_HPP_
+#pragma once
 
-#include <dart/config.hpp>
+#include <dart/collision/experimental/export.hpp>
+#include <dart/collision/experimental/shapes/shape.hpp>
+#include <dart/collision/experimental/types.hpp>
 
-#include <dart/common/smart_pointer.hpp>
+#include <Eigen/Geometry>
 
-namespace dart {
-namespace collision {
+namespace dart::collision::experimental {
 
-class CollisionDetector;
-class CollisionFilter;
-class CollisionGroup;
-class CollisionObject;
+DART_COLLISION_EXPERIMENTAL_API bool collideMeshMesh(
+    const MeshShape& mesh1,
+    const Eigen::Isometry3d& tf1,
+    const MeshShape& mesh2,
+    const Eigen::Isometry3d& tf2,
+    CollisionResult& result,
+    const CollisionOption& option);
 
-struct CollisionOption;
-class CollisionResult;
-struct Contact;
+DART_COLLISION_EXPERIMENTAL_API double distanceMeshMesh(
+    const MeshShape& mesh1,
+    const Eigen::Isometry3d& tf1,
+    const MeshShape& mesh2,
+    const Eigen::Isometry3d& tf2,
+    DistanceResult& result,
+    const DistanceOption& option);
 
-struct DistanceFilter;
-struct DistanceOption;
-struct DistanceResult;
+DART_COLLISION_EXPERIMENTAL_API bool collidePrimitiveMesh(
+    const Shape& primitive,
+    const Eigen::Isometry3d& tfPrim,
+    const MeshShape& mesh,
+    const Eigen::Isometry3d& tfMesh,
+    CollisionResult& result,
+    const CollisionOption& option);
 
-struct RaycastOption;
-struct RaycastResult;
-
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionDetector)
-DART_COMMON_DECLARE_SHARED_WEAK(DARTCollisionDetector)
-
-#if DART_HAVE_FCL
-DART_COMMON_DECLARE_SHARED_WEAK(FCLCollisionDetector)
-#endif
-
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionObject)
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionGroup)
-
-} // namespace collision
-} // namespace dart
-
-#endif // DART_COLLISION_FWD_HPP_
+} // namespace dart::collision::experimental

@@ -457,22 +457,24 @@ TEST(World, ConfiguresCollisionDetectorViaConfig)
 }
 
 //==============================================================================
-TEST(World, DefaultWorldUsesFclPrimitive)
+TEST(World, DefaultWorldUsesExperimentalOrFcl)
 {
   auto factory = collision::CollisionDetector::getFactory();
   ASSERT_NE(factory, nullptr);
 
-  if (!factory->canCreate("fcl")) {
-    GTEST_SKIP() << "fcl collision detector is not available in this build";
-  }
-
   auto world = World::create();
-  auto fclDetector = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(
-      world->getCollisionDetector());
-  ASSERT_TRUE(fclDetector);
-  EXPECT_EQ(
-      fclDetector->getPrimitiveShapeType(),
-      collision::FCLCollisionDetector::PRIMITIVE);
+  auto detector = world->getCollisionDetector();
+  ASSERT_TRUE(detector);
+
+  // Default is experimental if available, otherwise fcl
+  const auto type = std::string(detector->getTypeView());
+  if (factory->canCreate("experimental")) {
+    EXPECT_EQ(type, "experimental");
+  } else if (factory->canCreate("fcl")) {
+    EXPECT_EQ(type, "fcl");
+  } else {
+    EXPECT_EQ(type, "dart");
+  }
 }
 
 //==============================================================================
@@ -540,9 +542,9 @@ TEST(World, ConfigFallbacksWhenPreferredDetectorUnavailable)
 
   auto world = World::create(config);
   ASSERT_TRUE(world->getCollisionDetector());
-  EXPECT_EQ(
-      world->getCollisionDetector()->getTypeView(),
-      collision::FCLCollisionDetector::getStaticType());
+  const auto type = std::string(world->getCollisionDetector()->getTypeView());
+  EXPECT_TRUE(type == "experimental" || type == "fcl")
+      << "Expected experimental or fcl fallback, got: " << type;
 }
 
 //==============================================================================
@@ -574,9 +576,9 @@ TEST(World, ConfigWarnsWhenPreferredAndFallbackUnavailable)
 
   auto world = World::create(config);
   ASSERT_TRUE(world->getCollisionDetector());
-  EXPECT_EQ(
-      world->getCollisionDetector()->getTypeView(),
-      collision::FCLCollisionDetector::getStaticType());
+  const auto type = std::string(world->getCollisionDetector()->getTypeView());
+  EXPECT_TRUE(type == "experimental" || type == "fcl")
+      << "Expected experimental or fcl fallback, got: " << type;
 }
 
 //==============================================================================

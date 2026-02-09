@@ -50,6 +50,7 @@ if(DART_BUILD_COLLISION_BULLET)
   add_executable(bm_boxes collision/bm_boxes.cpp)
   target_link_libraries(bm_boxes
     dart
+    dart-collision-bullet
     benchmark::benchmark
     benchmark::benchmark_main
   )
@@ -100,6 +101,15 @@ if(DART_BUILD_COLLISION_EXPERIMENTAL)
     dart-collision-experimental
     benchmark::benchmark
   )
+  if(TARGET dart-collision-fcl)
+    target_link_libraries(bm_comparative dart-collision-fcl)
+  endif()
+  if(TARGET dart-collision-bullet)
+    target_link_libraries(bm_comparative dart-collision-bullet)
+  endif()
+  if(TARGET dart-collision-ode)
+    target_link_libraries(bm_comparative dart-collision-ode)
+  endif()
   dart_format_add(collision/bm_comparative.cpp)
 
   add_executable(
@@ -111,6 +121,15 @@ if(DART_BUILD_COLLISION_EXPERIMENTAL)
     dart-collision-experimental
     benchmark::benchmark
   )
+  if(TARGET dart-collision-fcl)
+    target_link_libraries(bm_comparative_narrow_phase dart-collision-fcl)
+  endif()
+  if(TARGET dart-collision-bullet)
+    target_link_libraries(bm_comparative_narrow_phase dart-collision-bullet)
+  endif()
+  if(TARGET dart-collision-ode)
+    target_link_libraries(bm_comparative_narrow_phase dart-collision-ode)
+  endif()
   dart_format_add(collision/comparative/bm_narrow_phase.cpp)
   add_executable(
     bm_comparative_distance
@@ -121,6 +140,15 @@ if(DART_BUILD_COLLISION_EXPERIMENTAL)
     dart-collision-experimental
     benchmark::benchmark
   )
+  if(TARGET dart-collision-fcl)
+    target_link_libraries(bm_comparative_distance dart-collision-fcl)
+  endif()
+  if(TARGET dart-collision-bullet)
+    target_link_libraries(bm_comparative_distance dart-collision-bullet)
+  endif()
+  if(TARGET dart-collision-ode)
+    target_link_libraries(bm_comparative_distance dart-collision-ode)
+  endif()
   dart_format_add(collision/comparative/bm_distance.cpp)
   add_executable(
     bm_comparative_raycast
@@ -131,6 +159,9 @@ if(DART_BUILD_COLLISION_EXPERIMENTAL)
     dart-collision-experimental
     benchmark::benchmark
   )
+  if(TARGET dart-collision-bullet)
+    target_link_libraries(bm_comparative_raycast dart-collision-bullet)
+  endif()
   dart_format_add(collision/comparative/bm_raycast.cpp)
   add_executable(
     bm_scenarios_mixed_primitives
@@ -141,6 +172,15 @@ if(DART_BUILD_COLLISION_EXPERIMENTAL)
     dart-collision-experimental
     benchmark::benchmark
   )
+  if(TARGET dart-collision-fcl)
+    target_link_libraries(bm_scenarios_mixed_primitives dart-collision-fcl)
+  endif()
+  if(TARGET dart-collision-bullet)
+    target_link_libraries(bm_scenarios_mixed_primitives dart-collision-bullet)
+  endif()
+  if(TARGET dart-collision-ode)
+    target_link_libraries(bm_scenarios_mixed_primitives dart-collision-ode)
+  endif()
   dart_format_add(collision/scenarios/bm_mixed_primitives.cpp)
   add_executable(
     bm_scenarios_raycast_batch
@@ -151,6 +191,9 @@ if(DART_BUILD_COLLISION_EXPERIMENTAL)
     dart-collision-experimental
     benchmark::benchmark
   )
+  if(TARGET dart-collision-bullet)
+    target_link_libraries(bm_scenarios_raycast_batch dart-collision-bullet)
+  endif()
   dart_format_add(collision/scenarios/bm_raycast_batch.cpp)
   add_executable(
     bm_scenarios_mesh_heavy
@@ -161,6 +204,12 @@ if(DART_BUILD_COLLISION_EXPERIMENTAL)
     dart-collision-experimental
     benchmark::benchmark
   )
+  if(TARGET dart-collision-fcl)
+    target_link_libraries(bm_scenarios_mesh_heavy dart-collision-fcl)
+  endif()
+  if(TARGET dart-collision-bullet)
+    target_link_libraries(bm_scenarios_mesh_heavy dart-collision-bullet)
+  endif()
   dart_format_add(collision/scenarios/bm_mesh_heavy.cpp)
   add_executable(
     bm_scenarios_pipeline_breakdown

@@ -32,7 +32,9 @@
 
 #include <dart/collision/experimental/shapes/shape.hpp>
 
+#include <algorithm>
 #include <limits>
+#include <numeric>
 
 namespace dart::collision::experimental {
 
@@ -206,6 +208,7 @@ MeshShape::MeshShape(
     std::vector<Eigen::Vector3d> vertices, std::vector<Triangle> triangles)
   : vertices_(std::move(vertices)), triangles_(std::move(triangles))
 {
+  buildBvh();
 }
 
 ShapeType MeshShape::getType() const
@@ -240,6 +243,16 @@ const std::vector<MeshShape::Triangle>& MeshShape::getTriangles() const
   return triangles_;
 }
 
+const std::vector<MeshShape::BvhNode>& MeshShape::bvhNodes() const
+{
+  return bvhNodes_;
+}
+
+const std::vector<int>& MeshShape::bvhTriIndices() const
+{
+  return triIndices_;
+}
+
 Eigen::Vector3d MeshShape::support(const Eigen::Vector3d& direction) const
 {
   if (vertices_.empty()) {
@@ -258,6 +271,100 @@ Eigen::Vector3d MeshShape::support(const Eigen::Vector3d& direction) const
   }
 
   return vertices_[maxIndex];
+}
+
+void MeshShape::buildBvh()
+{
+  bvhNodes_.clear();
+  triIndices_.clear();
+
+  const int numTriangles = static_cast<int>(triangles_.size());
+  if (numTriangles <= 0) {
+    return;
+  }
+
+  triIndices_.resize(static_cast<std::size_t>(numTriangles));
+  std::iota(triIndices_.begin(), triIndices_.end(), 0);
+
+  auto triangleAabb = [this](int triIndex) {
+    const Triangle& tri = triangles_[static_cast<std::size_t>(triIndex)];
+    const Eigen::Vector3d& v0 = vertices_[static_cast<std::size_t>(tri[0])];
+    const Eigen::Vector3d& v1 = vertices_[static_cast<std::size_t>(tri[1])];
+    const Eigen::Vector3d& v2 = vertices_[static_cast<std::size_t>(tri[2])];
+    const Eigen::Vector3d min = v0.cwiseMin(v1).cwiseMin(v2);
+    const Eigen::Vector3d max = v0.cwiseMax(v1).cwiseMax(v2);
+    return Aabb(min, max);
+  };
+
+  auto triangleCentroid = [this](int triIndex) {
+    const Triangle& tri = triangles_[static_cast<std::size_t>(triIndex)];
+    return (vertices_[static_cast<std::size_t>(tri[0])]
+            + vertices_[static_cast<std::size_t>(tri[1])]
+            + vertices_[static_cast<std::size_t>(tri[2])])
+           / 3.0;
+  };
+
+  constexpr int kLeafSize = 4;
+  const auto buildNode = [&](auto&& self, int first, int count) -> int {
+    const int nodeIndex = static_cast<int>(bvhNodes_.size());
+    bvhNodes_.push_back(BvhNode{});
+
+    Aabb bounds = triangleAabb(triIndices_[static_cast<std::size_t>(first)]);
+    Eigen::Vector3d centroidMin
+        = triangleCentroid(triIndices_[static_cast<std::size_t>(first)]);
+    Eigen::Vector3d centroidMax = centroidMin;
+
+    for (int i = 1; i < count; ++i) {
+      const int triIndex = triIndices_[static_cast<std::size_t>(first + i)];
+      bounds.merge(triangleAabb(triIndex));
+      const Eigen::Vector3d centroid = triangleCentroid(triIndex);
+      centroidMin = centroidMin.cwiseMin(centroid);
+      centroidMax = centroidMax.cwiseMax(centroid);
+    }
+
+    bvhNodes_[static_cast<std::size_t>(nodeIndex)].box = bounds;
+
+    const Eigen::Vector3d centroidExtent = centroidMax - centroidMin;
+    const bool smallCentroidSpan = centroidExtent.maxCoeff() <= 1e-12;
+    if (count <= kLeafSize || smallCentroidSpan) {
+      BvhNode& leaf = bvhNodes_[static_cast<std::size_t>(nodeIndex)];
+      leaf.left = -1;
+      leaf.right = -1;
+      leaf.first = first;
+      leaf.count = count;
+      return nodeIndex;
+    }
+
+    int axis = 0;
+    if (centroidExtent[1] > centroidExtent[axis]) {
+      axis = 1;
+    }
+    if (centroidExtent[2] > centroidExtent[axis]) {
+      axis = 2;
+    }
+
+    const int mid = first + count / 2;
+    std::nth_element(
+        triIndices_.begin() + first,
+        triIndices_.begin() + mid,
+        triIndices_.begin() + first + count,
+        [&](int lhsTriIndex, int rhsTriIndex) {
+          return triangleCentroid(lhsTriIndex)[axis]
+                 < triangleCentroid(rhsTriIndex)[axis];
+        });
+
+    const int left = self(self, first, mid - first);
+    const int right = self(self, mid, first + count - mid);
+
+    BvhNode& internal = bvhNodes_[static_cast<std::size_t>(nodeIndex)];
+    internal.first = 0;
+    internal.count = 0;
+    internal.left = left;
+    internal.right = right;
+    return nodeIndex;
+  };
+
+  buildNode(buildNode, 0, numTriangles);
 }
 
 SdfShape::SdfShape(std::shared_ptr<const SignedDistanceField> field)

@@ -36,7 +36,24 @@
 
 #include <dart/utils/skel_parser.hpp>
 
+#include <dart/collision/fcl/fcl_collision_detector.hpp>
+
 #include <dart/all.hpp>
+
+namespace {
+// Force-link dart-collision-fcl.so so that its static Registrar triggers
+// factory registration.  We reference create() which is defined only in the
+// .so (not inlined from headers), guaranteeing the linker pulls it in.
+struct ForceFclLink
+{
+  ForceFclLink()
+  {
+    volatile auto fn = &dart::collision::FCLCollisionDetector::create;
+    (void)fn;
+  }
+};
+static ForceFclLink kForceFclLink;
+} // namespace
 
 #include <gtest/gtest.h>
 
@@ -1090,7 +1107,7 @@ TEST(SkelParser, ReadWorldXmlUnknownCollisionDetectorFallsBack)
   ASSERT_NE(world, nullptr);
   const auto detector = world->getConstraintSolver()->getCollisionDetector();
   ASSERT_NE(detector, nullptr);
-  EXPECT_EQ(detector->getTypeView(), "fcl");
+  EXPECT_EQ(detector->getTypeView(), "experimental");
 }
 
 //==============================================================================

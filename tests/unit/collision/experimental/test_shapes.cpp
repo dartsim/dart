@@ -321,3 +321,60 @@ TEST(MeshShape, UnitCube)
   EXPECT_EQ(aabb.max, Eigen::Vector3d(1, 1, 1));
   EXPECT_DOUBLE_EQ(aabb.volume(), 1.0);
 }
+
+TEST(MeshShape, BvhSingleTriangle)
+{
+  std::vector<Eigen::Vector3d> vertices = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}};
+  std::vector<MeshShape::Triangle> triangles = {{0, 1, 2}};
+
+  MeshShape mesh(vertices, triangles);
+
+  ASSERT_EQ(mesh.bvhTriIndices().size(), 1u);
+  ASSERT_EQ(mesh.bvhNodes().size(), 1u);
+  EXPECT_EQ(mesh.bvhTriIndices()[0], 0);
+
+  const auto& root = mesh.bvhNodes()[0];
+  EXPECT_EQ(root.left, -1);
+  EXPECT_EQ(root.right, -1);
+  EXPECT_EQ(root.first, 0);
+  EXPECT_EQ(root.count, 1);
+}
+
+TEST(MeshShape, BvhLargeMesh)
+{
+  std::vector<Eigen::Vector3d> vertices;
+  std::vector<MeshShape::Triangle> triangles;
+  constexpr int kResolution = 32;
+  vertices.reserve(
+      static_cast<std::size_t>((kResolution + 1) * (kResolution + 1)));
+  triangles.reserve(static_cast<std::size_t>(kResolution * kResolution * 2));
+
+  for (int y = 0; y <= kResolution; ++y) {
+    for (int x = 0; x <= kResolution; ++x) {
+      vertices.emplace_back(
+          static_cast<double>(x), static_cast<double>(y), 0.0);
+    }
+  }
+
+  const auto idx = [kResolution](int x, int y) {
+    return y * (kResolution + 1) + x;
+  };
+
+  for (int y = 0; y < kResolution; ++y) {
+    for (int x = 0; x < kResolution; ++x) {
+      triangles.emplace_back(idx(x, y), idx(x + 1, y), idx(x + 1, y + 1));
+      triangles.emplace_back(idx(x, y), idx(x + 1, y + 1), idx(x, y + 1));
+    }
+  }
+
+  MeshShape mesh(vertices, triangles);
+
+  ASSERT_EQ(mesh.bvhTriIndices().size(), triangles.size());
+  ASSERT_FALSE(mesh.bvhNodes().empty());
+  if (triangles.size() > 4) {
+    const auto& root = mesh.bvhNodes()[0];
+    EXPECT_EQ(root.count, 0);
+    EXPECT_GE(root.left, 0);
+    EXPECT_GE(root.right, 0);
+  }
+}

@@ -4,16 +4,34 @@
 # Collision Tests
 # ==============================================================================
 dart_add_test("unit" UNIT_collision_Distance collision/test_distance.cpp)
+if(TARGET dart-collision-fcl)
+  target_link_libraries(UNIT_collision_Distance dart-collision-fcl)
+endif()
+if(TARGET dart-collision-bullet)
+  target_link_libraries(UNIT_collision_Distance dart-collision-bullet)
+endif()
 
 dart_add_test("unit" UNIT_collision_DistanceFilter collision/test_distance_filter.cpp)
 
 dart_add_test("unit" UNIT_collision_CollisionGroup collision/test_collision_group.cpp)
+if(TARGET dart-collision-fcl)
+  target_link_libraries(UNIT_collision_CollisionGroup dart-collision-fcl)
+endif()
+if(TARGET dart-collision-bullet)
+  target_link_libraries(UNIT_collision_CollisionGroup dart-collision-bullet)
+endif()
 
 dart_add_test(
   "unit" UNIT_collision_DARTCollisionDetector collision/test_dart_collision_detector.cpp)
 dart_add_test("unit" UNIT_collision_DARTCollide collision/test_dart_collide.cpp)
 
 dart_add_test("unit" UNIT_collision_Raycast collision/test_raycast.cpp)
+if(TARGET dart-collision-fcl)
+  target_link_libraries(UNIT_collision_Raycast dart-collision-fcl)
+endif()
+if(TARGET dart-collision-bullet)
+  target_link_libraries(UNIT_collision_Raycast dart-collision-bullet)
+endif()
 
 dart_add_test("unit" UNIT_collision_CollisionResult collision/test_collision_result.cpp)
 dart_add_test(
@@ -22,25 +40,42 @@ dart_add_test(
   "unit"
   UNIT_collision_ConvexMesh
   collision/test_convex_mesh_shape_collision.cpp)
+if(TARGET dart-collision-fcl)
+  target_link_libraries(UNIT_collision_ConvexMesh dart-collision-fcl)
+endif()
+if(TARGET dart-collision-bullet)
+  target_link_libraries(UNIT_collision_ConvexMesh dart-collision-bullet)
+endif()
+if(TARGET dart-collision-ode)
+  target_link_libraries(UNIT_collision_ConvexMesh dart-collision-ode)
+endif()
 
 dart_add_test("unit" UNIT_collision_Contact collision/test_contact.cpp)
 
 if(DART_HAVE_BULLET)
   dart_add_test("unit" UNIT_collision_BulletContact collision/test_bullet_contact.cpp)
+  target_link_libraries(UNIT_collision_BulletContact dart-collision-bullet)
   dart_add_test(
     "unit" UNIT_collision_BulletCollisionShapes collision/test_bullet_collision_shapes.cpp)
+  target_link_libraries(UNIT_collision_BulletCollisionShapes dart-collision-bullet)
 endif()
 
 if(DART_HAVE_ODE)
   dart_add_test("unit" UNIT_collision_OdeHeightmap collision/test_ode_heightmap.cpp)
+  target_link_libraries(UNIT_collision_OdeHeightmap dart-collision-ode)
   dart_add_test(
     "unit" UNIT_collision_OdeCylinderMesh collision/test_ode_cylinder_mesh.cpp)
+  target_link_libraries(UNIT_collision_OdeCylinderMesh dart-collision-ode)
 endif()
 
 dart_add_test(
   "unit" UNIT_collision_FCLCollisionObject collision/test_fcl_collision_object.cpp)
 dart_add_test(
   "unit" UNIT_collision_FCLCollisionDetector collision/test_fcl_collision_detector.cpp)
+if(TARGET dart-collision-fcl)
+  target_link_libraries(UNIT_collision_FCLCollisionObject dart-collision-fcl)
+  target_link_libraries(UNIT_collision_FCLCollisionDetector dart-collision-fcl)
+endif()
 dart_add_test("unit" UNIT_collision_CollisionOption collision/test_collision_option.cpp)
 dart_add_test("unit" UNIT_collision_CollisionFilter collision/test_collision_filter.cpp)
 dart_add_test("unit" UNIT_collision_DistanceOption collision/test_distance_option.cpp)
@@ -109,6 +144,9 @@ dart_add_test(
   "unit" UNIT_constraint_BalanceConstraint constraint/test_balance_constraint.cpp)
 dart_add_test(
   "unit" UNIT_constraint_ContactSurface constraint/test_contact_surface.cpp)
+if(TARGET dart-collision-fcl)
+  target_link_libraries(UNIT_constraint_ContactSurface dart-collision-fcl)
+endif()
 dart_add_test("unit" UNIT_constraint_JointConstraints constraint/test_joint_constraints.cpp)
 dart_add_test("unit" UNIT_constraint_MotorConstraints constraint/test_motor_constraints.cpp)
 dart_add_test("unit" UNIT_constraint_WeldJointConstraint constraint/test_weld_joint_constraint.cpp)
@@ -334,6 +372,9 @@ dart_add_test("unit" UNIT_sensor_SensorManager sensor/test_sensor_manager.cpp)
 # Simulation Tests
 # ==============================================================================
 dart_add_test("unit" UNIT_simulation_World simulation/test_world.cpp)
+if(TARGET dart-collision-bullet)
+  target_link_libraries(UNIT_simulation_World dart-collision-bullet)
+endif()
 dart_add_test("unit" UNIT_simulation_Recording simulation/test_recording.cpp)
 dart_add_test("unit" UNIT_simulation_WorldConfig simulation/test_world_config.cpp)
 

@@ -166,6 +166,15 @@ class DART_COLLISION_EXPERIMENTAL_API MeshShape : public Shape
 public:
   using Triangle = Eigen::Vector3i; // indices into vertices array
 
+  struct BvhNode
+  {
+    Aabb box;
+    int left = -1;
+    int right = -1;
+    int first = 0;
+    int count = 0;
+  };
+
   MeshShape(
       std::vector<Eigen::Vector3d> vertices, std::vector<Triangle> triangles);
 
@@ -174,13 +183,19 @@ public:
 
   [[nodiscard]] const std::vector<Eigen::Vector3d>& getVertices() const;
   [[nodiscard]] const std::vector<Triangle>& getTriangles() const;
+  [[nodiscard]] const std::vector<BvhNode>& bvhNodes() const;
+  [[nodiscard]] const std::vector<int>& bvhTriIndices() const;
 
   /// Returns the support point in the given direction (furthest vertex)
   [[nodiscard]] Eigen::Vector3d support(const Eigen::Vector3d& direction) const;
 
 private:
+  void buildBvh();
+
   std::vector<Eigen::Vector3d> vertices_;
   std::vector<Triangle> triangles_;
+  std::vector<BvhNode> bvhNodes_;
+  std::vector<int> triIndices_;
 };
 
 /// Signed distance field shape for distance and gradient queries.

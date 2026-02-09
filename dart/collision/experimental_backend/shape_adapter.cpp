@@ -43,6 +43,7 @@
 #include "dart/dynamics/mesh_shape.hpp"
 #include "dart/dynamics/multi_sphere_convex_hull_shape.hpp"
 #include "dart/dynamics/plane_shape.hpp"
+#include "dart/dynamics/pyramid_shape.hpp"
 #include "dart/dynamics/sphere_shape.hpp"
 #include "dart/math/tri_mesh.hpp"
 
@@ -121,6 +122,24 @@ std::unique_ptr<experimental::Shape> adaptShape(
         plane->getNormal(), plane->getOffset());
   }
 
+  if (shapeType == dynamics::PyramidShape::getStaticType()) {
+    const auto& pyramid
+        = std::static_pointer_cast<const dynamics::PyramidShape>(shape);
+    const double w = pyramid->getBaseWidth();
+    const double d = pyramid->getBaseDepth();
+    const double h = pyramid->getHeight();
+
+    std::vector<Eigen::Vector3d> vertices;
+    vertices.reserve(5);
+    vertices.emplace_back(0.0, 0.0, h * 0.5);          // apex
+    vertices.emplace_back(w * 0.5, d * 0.5, -h * 0.5); // base corners
+    vertices.emplace_back(-w * 0.5, d * 0.5, -h * 0.5);
+    vertices.emplace_back(-w * 0.5, -d * 0.5, -h * 0.5);
+    vertices.emplace_back(w * 0.5, -d * 0.5, -h * 0.5);
+
+    return std::make_unique<experimental::ConvexShape>(std::move(vertices));
+  }
+
   if (shapeType == dynamics::EllipsoidShape::getStaticType()) {
     const auto& ellipsoid
         = std::static_pointer_cast<const dynamics::EllipsoidShape>(shape);
@@ -180,14 +199,16 @@ std::unique_ptr<experimental::Shape> adaptShape(
 
       const auto& field = heightmap->getHeightField();
       const auto scale = heightmap->getScale().template cast<double>();
+      const double xOffset = 0.5 * static_cast<double>(width - 1);
+      const double yOffset = 0.5 * static_cast<double>(depth - 1);
 
       vertices.reserve(width * depth);
       for (std::size_t y = 0; y < depth; ++y) {
         for (std::size_t x = 0; x < width; ++x) {
           const double height = static_cast<double>(field(y, x));
           vertices.emplace_back(
-              scale.x() * static_cast<double>(x),
-              -scale.y() * static_cast<double>(y),
+              scale.x() * (static_cast<double>(x) - xOffset),
+              -scale.y() * (static_cast<double>(y) - yOffset),
               scale.z() * height);
         }
       }

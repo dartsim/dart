@@ -447,6 +447,47 @@ bool rayTriangleMollerTrumbore(
   return t > kMeshEpsilon;
 }
 
+bool rayAabbIntersect(
+    const Eigen::Vector3d& origin,
+    const Eigen::Vector3d& direction,
+    const Aabb& box,
+    double maxDistance,
+    double& tEnter,
+    double& tExit)
+{
+  tEnter = 0.0;
+  tExit = maxDistance;
+
+  for (int i = 0; i < 3; ++i) {
+    const double o = origin[i];
+    const double d = direction[i];
+    const double bMin = box.min[i];
+    const double bMax = box.max[i];
+
+    if (std::abs(d) < kMeshEpsilon) {
+      if (o < bMin || o > bMax) {
+        return false;
+      }
+      continue;
+    }
+
+    const double invD = 1.0 / d;
+    double t0 = (bMin - o) * invD;
+    double t1 = (bMax - o) * invD;
+    if (t0 > t1) {
+      std::swap(t0, t1);
+    }
+
+    tEnter = std::max(tEnter, t0);
+    tExit = std::min(tExit, t1);
+    if (tEnter > tExit) {
+      return false;
+    }
+  }
+
+  return tExit >= 0.0;
+}
+
 } // namespace
 
 bool raycastMesh(
@@ -464,33 +505,70 @@ bool raycastMesh(
 
   const auto& vertices = mesh.getVertices();
   const auto& triangles = mesh.getTriangles();
+  const auto& nodes = mesh.bvhNodes();
+  const auto& triIndices = mesh.bvhTriIndices();
+
+  if (nodes.empty()) {
+    return false;
+  }
 
   double maxDist = std::min(ray.maxDistance, option.maxDistance);
   double bestT = std::numeric_limits<double>::max();
   Eigen::Vector3d bestNormal = Eigen::Vector3d::UnitZ();
 
-  for (const auto& tri : triangles) {
-    const Eigen::Vector3d& v0 = vertices[static_cast<std::size_t>(tri[0])];
-    const Eigen::Vector3d& v1 = vertices[static_cast<std::size_t>(tri[1])];
-    const Eigen::Vector3d& v2 = vertices[static_cast<std::size_t>(tri[2])];
+  std::vector<int> stack;
+  stack.push_back(0);
+  while (!stack.empty()) {
+    const int nodeIndex = stack.back();
+    stack.pop_back();
 
-    double t, u, v;
-    if (rayTriangleMollerTrumbore(
-            localOrigin,
-            localDir,
-            v0,
-            v1,
-            v2,
-            t,
-            u,
-            v,
-            option.backfaceCulling)) {
-      if (t > 0.0 && t < bestT && t <= maxDist) {
-        bestT = t;
-        const Eigen::Vector3d edge1 = v1 - v0;
-        const Eigen::Vector3d edge2 = v2 - v0;
-        bestNormal = edge1.cross(edge2).normalized();
+    const auto& node = nodes[static_cast<std::size_t>(nodeIndex)];
+    double tEnter = 0.0;
+    double tExit = 0.0;
+    if (!rayAabbIntersect(
+            localOrigin, localDir, node.box, maxDist, tEnter, tExit)
+        || tEnter > bestT) {
+      continue;
+    }
+
+    if (node.count > 0) {
+      for (int i = 0; i < node.count; ++i) {
+        const int triIndex
+            = triIndices[static_cast<std::size_t>(node.first + i)];
+        const auto& tri = triangles[static_cast<std::size_t>(triIndex)];
+        const Eigen::Vector3d& v0 = vertices[static_cast<std::size_t>(tri[0])];
+        const Eigen::Vector3d& v1 = vertices[static_cast<std::size_t>(tri[1])];
+        const Eigen::Vector3d& v2 = vertices[static_cast<std::size_t>(tri[2])];
+
+        double t = 0.0;
+        double u = 0.0;
+        double v = 0.0;
+        if (rayTriangleMollerTrumbore(
+                localOrigin,
+                localDir,
+                v0,
+                v1,
+                v2,
+                t,
+                u,
+                v,
+                option.backfaceCulling)) {
+          if (t > 0.0 && t < bestT && t <= maxDist) {
+            bestT = t;
+            const Eigen::Vector3d edge1 = v1 - v0;
+            const Eigen::Vector3d edge2 = v2 - v0;
+            bestNormal = edge1.cross(edge2).normalized();
+          }
+        }
       }
+      continue;
+    }
+
+    if (node.left >= 0) {
+      stack.push_back(node.left);
+    }
+    if (node.right >= 0) {
+      stack.push_back(node.right);
     }
   }
 

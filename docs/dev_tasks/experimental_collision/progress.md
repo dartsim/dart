@@ -85,6 +85,47 @@ CollisionDetector backend registered as `"experimental"` via `CollisionDetector:
 7. ~~**P2 - Shape adapter expansion** (Cone, Ellipsoid, Heightmap, MultiSphere)~~ **COMPLETE** (2026-02-09)
 8. ~~**P1 - Integration test participation**~~ **COMPLETE** (2026-02-09)
 
+## Decoupling & Architecture (2026-02-09)
+
+| Phase | Task                                                      | Status       | Notes                                                 |
+| ----- | --------------------------------------------------------- | ------------ | ----------------------------------------------------- |
+| 1     | FCL → separate dart-collision-fcl.so                      | **Complete** | No longer linked into libdart.so                      |
+| 1     | Bullet → separate dart-collision-bullet.so                | **Complete** | Removed dart_add_core_headers leak                    |
+| 1     | ODE → separate dart-collision-ode.so                      | **Complete** | Removed dart_add_core_headers leak                    |
+| 1     | Source decoupling (constraint_solver, world, skel_parser) | **Complete** | Factory-only, no FCL/Bullet/ODE includes              |
+| 1     | Default backend → experimental                            | **Complete** | Fallback: experimental → fcl → dart                   |
+| 1     | config.hpp.in: DART_HAVE_FCL                              | **Complete** | All three backends gated                              |
+| 1     | Build verification (547 targets)                          | **Complete** | All libraries + tests compile                         |
+| 1     | Test verification                                         | **Complete** | 20/20 unit, 3/3 integration, World pass               |
+| 2     | Gazebo backward compat (facade detectors)                 | **Pending**  | gz-physics inherits from Bullet/ODE detectors         |
+| 3     | Break dynamics↔collision circular dep                     | **Pending**  | Move shapes to geometry module or abstract interfaces |
+| 4     | Final lint/build/test/commit                              | **Pending**  |                                                       |
+
+### Gazebo Compatibility Plan (Phase 2)
+
+**Problem**: gz-physics `GzBulletCollisionDetector` inherits `dart::collision::BulletCollisionDetector`. Removing the class breaks gz.
+
+**Solution (Option D — Hybrid Facade)**:
+
+- Keep FCL/Bullet/ODE class names, headers, and inheritance hierarchy
+- Override `collide()`/`distance()`/`raycast()` to delegate to ExperimentalCollisionDetector
+- External deps (libfcl, libbullet, libode) remain linked in the separate .so for ABI
+- Factory keys `"fcl"`, `"bullet"`, `"ode"` resolve to facades
+- Tests/benchmarks can still use real backends via compile flag
+
+### Dynamics↔Collision Dependency Break (Phase 3)
+
+**Problem**: `dart/collision/` includes `dart/dynamics/` headers (Shape types, ShapeFrame, BodyNode).
+
+**Approach**: Create `dart/geometry/` module with shape base class + concrete shapes. Both collision and dynamics depend on geometry, not on each other. This is XL-sized work requiring:
+
+1. New `dart/geometry/` module with Shape hierarchy
+2. Move shape classes from `dart/dynamics/` to `dart/geometry/`
+3. Update all includes across codebase
+4. CollisionObject uses geometry::ShapeFrame instead of dynamics::ShapeFrame
+
+---
+
 ## Next Steps
 
 ### Priority 1: More Shapes

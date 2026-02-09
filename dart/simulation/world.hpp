@@ -78,6 +78,7 @@ enum class CollisionDetectorType
   Fcl,
   Bullet,
   Ode,
+  Experimental,
 };
 
 /// Available LCP solver types for constraint solving.
@@ -110,7 +111,7 @@ struct WorldConfig final
   std::string name = "world";
 
   /// Preferred collision detector for the world.
-  CollisionDetectorType collisionDetector = CollisionDetectorType::Fcl;
+  CollisionDetectorType collisionDetector = CollisionDetectorType::Experimental;
 
   /// Primary LCP solver for constraint resolution.
   LcpSolverType primaryLcpSolver = LcpSolverType::Dantzig;

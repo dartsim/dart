@@ -37,7 +37,10 @@
 namespace dart::collision::experimental {
 
 struct ContactPoint;
+struct CachedContact;
 class ContactManifold;
+struct PersistentManifold;
+class PersistentManifoldCache;
 class CollisionResult;
 struct CollisionOption;
 

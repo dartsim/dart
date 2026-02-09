@@ -3,7 +3,12 @@
 #include "collision/collision_group.hpp"
 #include "dart/collision/collision_detector.hpp"
 #include "dart/collision/dart/dart_collision_detector.hpp"
-#include "dart/collision/fcl/fcl_collision_detector.hpp"
+#if DART_HAVE_FCL
+  #include "dart/collision/fcl/fcl_collision_detector.hpp"
+#endif
+#ifdef DART_HAS_EXPERIMENTAL_COLLISION
+  #include "dart/collision/experimental_backend/experimental_collision_detector.hpp"
+#endif
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
@@ -33,6 +38,7 @@ void defCollisionDetector(nb::module_& m)
         return self.createCollisionGroupAsSharedPtr();
       });
 
+#if DART_HAVE_FCL
   nb::class_<dart::collision::FCLCollisionDetector, CollisionDetector>(
       m, "FCLCollisionDetector")
       .def(
@@ -44,6 +50,7 @@ void defCollisionDetector(nb::module_& m)
         return std::string(
             dart::collision::FCLCollisionDetector::getStaticType());
       });
+#endif
 
   nb::class_<dart::collision::DARTCollisionDetector, CollisionDetector>(
       m, "DARTCollisionDetector")
@@ -56,6 +63,21 @@ void defCollisionDetector(nb::module_& m)
         return std::string(
             dart::collision::DARTCollisionDetector::getStaticType());
       });
+
+#ifdef DART_HAS_EXPERIMENTAL_COLLISION
+  nb::class_<dart::collision::ExperimentalCollisionDetector, CollisionDetector>(
+      m, "ExperimentalCollisionDetector")
+      .def(
+          nb::new_(
+              []() -> std::shared_ptr<
+                       dart::collision::ExperimentalCollisionDetector> {
+                return dart::collision::ExperimentalCollisionDetector::create();
+              }))
+      .def_static("getStaticType", []() {
+        return std::string(
+            dart::collision::ExperimentalCollisionDetector::getStaticType());
+      });
+#endif
 
 #if DART_HAVE_BULLET
   nb::class_<dart::collision::BulletCollisionDetector, CollisionDetector>(

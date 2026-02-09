@@ -38,6 +38,7 @@ void defWorld(nb::module_& m)
       .value("Fcl", CollisionDetectorType::Fcl)
       .value("Bullet", CollisionDetectorType::Bullet)
       .value("Ode", CollisionDetectorType::Ode)
+      .value("Experimental", CollisionDetectorType::Experimental)
       .export_values();
 
   nb::enum_<LcpSolverType>(m, "LcpSolverType")

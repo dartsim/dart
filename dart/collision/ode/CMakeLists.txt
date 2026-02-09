@@ -38,17 +38,36 @@ file(GLOB srcs "*.cpp")
 file(GLOB detail_hdrs "detail/*.hpp")
 file(GLOB detail_srcs "detail/*.cpp")
 
-dart_add_core_headers(${hdrs} ${detail_hdrs})
-dart_add_core_sources(${srcs} ${detail_srcs})
-set(_dart_ode_include_dirs ${ODE_INCLUDE_DIRS})
-if(_dart_ode_include_dirs)
-  set_property(GLOBAL APPEND PROPERTY DART_PUBLIC_INCLUDE_DIRS ${_dart_ode_include_dirs})
+set(target_name ${PROJECT_NAME}-collision-ode)
+dart_add_library(${target_name} ${srcs} ${detail_srcs})
+target_include_directories(${target_name}
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
+)
+if(ODE_INCLUDE_DIRS)
+  target_include_directories(${target_name} PUBLIC ${ODE_INCLUDE_DIRS})
 endif()
+target_link_libraries(${target_name}
+  PUBLIC
+    dart
+    ${_dart_ode_public_link}
+)
+if(TARGET ${PROJECT_NAME}-collision-experimental)
+  target_link_libraries(${target_name} PUBLIC ${PROJECT_NAME}-collision-experimental)
+  target_compile_definitions(${target_name} PRIVATE DART_ODE_HAS_EXPERIMENTAL=1)
+endif()
+target_compile_definitions(${target_name}
+  PRIVATE
+    DART_BUILDING_COLLISION_ODE
+)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-  set_property(GLOBAL APPEND PROPERTY DART_EXTRA_COMPILE_OPTIONS -Wno-deprecated-enum-enum-conversion)
+  target_compile_options(${target_name} PRIVATE -Wno-deprecated-enum-enum-conversion)
 endif()
-set_property(GLOBAL APPEND PROPERTY DART_EXTRA_LINK_LIBS ${_dart_ode_public_link})
-dart_pkgconfig_append_libraries(${_dart_ode_public_link})
+
+add_component_targets(${PROJECT_NAME} collision-ode ${target_name})
+add_component_dependencies(${PROJECT_NAME} collision-ode dart)
+add_component_dependency_packages(${PROJECT_NAME} collision-ode ODE)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "collision_ode headers" ${hdrs})

@@ -34,6 +34,9 @@
 
 #include "dart/collision/collision_filter.hpp"
 #include "dart/collision/contact.hpp"
+#if DART_ODE_HAS_EXPERIMENTAL
+  #include "dart/collision/experimental_backend/experimental_query_helper.hpp"
+#endif
 #include "dart/collision/ode/ode_collision_group.hpp"
 #include "dart/collision/ode/ode_collision_object.hpp"
 #include "dart/collision/ode/ode_types.hpp"
@@ -63,6 +66,26 @@ namespace dart {
 namespace collision {
 
 namespace {
+
+#if DART_ODE_HAS_EXPERIMENTAL
+bool useExperimentalNarrowPhase()
+{
+  return true;
+}
+#endif
+
+bool checkGroupValidity(OdeCollisionDetector* cd, CollisionGroup* group)
+{
+  if (cd != group->getCollisionDetector().get()) {
+    DART_ERROR(
+        "Attempting to check collision for a collision group that is created "
+        "from a different collision detector instance.");
+
+    return false;
+  }
+
+  return true;
+}
 
 void CollisionCallback(void* data, dGeomID o1, dGeomID o2);
 
@@ -212,15 +235,34 @@ bool OdeCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
+  if (!checkGroupValidity(this, group)) {
+    return false;
+  }
+
+  auto* odeGroup = static_cast<OdeCollisionGroup*>(group);
+  odeGroup->updateEngineData();
+
+#if DART_ODE_HAS_EXPERIMENTAL
+  if (useExperimentalNarrowPhase()) {
+    std::vector<CollisionObject*> collisionObjects;
+    collisionObjects.reserve(odeGroup->mObjectInfoList.size());
+    for (const auto& info : odeGroup->mObjectInfoList) {
+      if (info && info->mObject) {
+        collisionObjects.push_back(info->mObject.get());
+      }
+    }
+
+    return experimentalCollide(
+        collisionObjects, collisionObjects, option, result);
+  }
+#endif
+
   if (0u == option.maxNumContacts) {
     DART_WARN(
         "CollisionOption::maxNumContacts is 0; skipping collision detection. "
         "Use maxNumContacts >= 1 for binary checks.");
     return false;
   }
-
-  auto odeGroup = static_cast<OdeCollisionGroup*>(group);
-  odeGroup->updateEngineData();
 
   OdeCollisionCallbackData data(option, result);
   data.contactGeoms = contactCollisions;
@@ -242,18 +284,49 @@ bool OdeCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
+  if (!checkGroupValidity(this, group1)) {
+    return false;
+  }
+
+  if (!checkGroupValidity(this, group2)) {
+    return false;
+  }
+
+  auto* odeGroup1 = static_cast<OdeCollisionGroup*>(group1);
+  odeGroup1->updateEngineData();
+
+  auto* odeGroup2 = static_cast<OdeCollisionGroup*>(group2);
+  odeGroup2->updateEngineData();
+
+#if DART_ODE_HAS_EXPERIMENTAL
+  if (useExperimentalNarrowPhase()) {
+    std::vector<CollisionObject*> collisionObjects1;
+    collisionObjects1.reserve(odeGroup1->mObjectInfoList.size());
+    for (const auto& info : odeGroup1->mObjectInfoList) {
+      if (info && info->mObject) {
+        collisionObjects1.push_back(info->mObject.get());
+      }
+    }
+
+    std::vector<CollisionObject*> collisionObjects2;
+    collisionObjects2.reserve(odeGroup2->mObjectInfoList.size());
+    for (const auto& info : odeGroup2->mObjectInfoList) {
+      if (info && info->mObject) {
+        collisionObjects2.push_back(info->mObject.get());
+      }
+    }
+
+    return experimentalCollide(
+        collisionObjects1, collisionObjects2, option, result);
+  }
+#endif
+
   if (0u == option.maxNumContacts) {
     DART_WARN(
         "CollisionOption::maxNumContacts is 0; skipping collision detection. "
         "Use maxNumContacts >= 1 for binary checks.");
     return false;
   }
-
-  auto odeGroup1 = static_cast<OdeCollisionGroup*>(group1);
-  odeGroup1->updateEngineData();
-
-  auto odeGroup2 = static_cast<OdeCollisionGroup*>(group2);
-  odeGroup2->updateEngineData();
 
   OdeCollisionCallbackData data(option, result);
   data.contactGeoms = contactCollisions;
@@ -274,10 +347,33 @@ bool OdeCollisionDetector::collide(
 
 //==============================================================================
 double OdeCollisionDetector::distance(
-    CollisionGroup* /*group*/,
-    const DistanceOption& /*option*/,
-    DistanceResult* /*result*/)
+    CollisionGroup* group, const DistanceOption& option, DistanceResult* result)
 {
+  if (!checkGroupValidity(this, group)) {
+    return 0.0;
+  }
+
+  auto* odeGroup = static_cast<OdeCollisionGroup*>(group);
+  odeGroup->updateEngineData();
+
+#if DART_ODE_HAS_EXPERIMENTAL
+  if (useExperimentalNarrowPhase()) {
+    std::vector<CollisionObject*> collisionObjects;
+    collisionObjects.reserve(odeGroup->mObjectInfoList.size());
+    for (const auto& info : odeGroup->mObjectInfoList) {
+      if (info && info->mObject) {
+        collisionObjects.push_back(info->mObject.get());
+      }
+    }
+
+    return experimentalDistance(
+        collisionObjects, collisionObjects, option, result);
+  }
+#else
+  (void)option;
+  (void)result;
+#endif
+
   DART_ERROR(
       "[OdeCollisionDetector] Distance query is not supported. Returning -1.0 "
       "instead.");
@@ -286,15 +382,91 @@ double OdeCollisionDetector::distance(
 
 //==============================================================================
 double OdeCollisionDetector::distance(
-    CollisionGroup* /*group1*/,
-    CollisionGroup* /*group2*/,
-    const DistanceOption& /*option*/,
-    DistanceResult* /*result*/)
+    CollisionGroup* group1,
+    CollisionGroup* group2,
+    const DistanceOption& option,
+    DistanceResult* result)
 {
+  if (!checkGroupValidity(this, group1)) {
+    return 0.0;
+  }
+
+  if (!checkGroupValidity(this, group2)) {
+    return 0.0;
+  }
+
+  auto* odeGroup1 = static_cast<OdeCollisionGroup*>(group1);
+  auto* odeGroup2 = static_cast<OdeCollisionGroup*>(group2);
+  odeGroup1->updateEngineData();
+  odeGroup2->updateEngineData();
+
+#if DART_ODE_HAS_EXPERIMENTAL
+  if (useExperimentalNarrowPhase()) {
+    std::vector<CollisionObject*> collisionObjects1;
+    collisionObjects1.reserve(odeGroup1->mObjectInfoList.size());
+    for (const auto& info : odeGroup1->mObjectInfoList) {
+      if (info && info->mObject) {
+        collisionObjects1.push_back(info->mObject.get());
+      }
+    }
+
+    std::vector<CollisionObject*> collisionObjects2;
+    collisionObjects2.reserve(odeGroup2->mObjectInfoList.size());
+    for (const auto& info : odeGroup2->mObjectInfoList) {
+      if (info && info->mObject) {
+        collisionObjects2.push_back(info->mObject.get());
+      }
+    }
+
+    return experimentalDistance(
+        collisionObjects1, collisionObjects2, option, result);
+  }
+#else
+  (void)option;
+  (void)result;
+#endif
+
   DART_ERROR(
       "[OdeCollisionDetector] Distance query is not supported. Returning -1.0 "
       "instead.");
   return -1.0;
+}
+
+//==============================================================================
+bool OdeCollisionDetector::raycast(
+    CollisionGroup* group,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& to,
+    const RaycastOption& option,
+    RaycastResult* result)
+{
+  if (!checkGroupValidity(this, group)) {
+    return false;
+  }
+
+  auto* odeGroup = static_cast<OdeCollisionGroup*>(group);
+  odeGroup->updateEngineData();
+
+#if DART_ODE_HAS_EXPERIMENTAL
+  if (useExperimentalNarrowPhase()) {
+    std::vector<CollisionObject*> collisionObjects;
+    collisionObjects.reserve(odeGroup->mObjectInfoList.size());
+    for (const auto& info : odeGroup->mObjectInfoList) {
+      if (info && info->mObject) {
+        collisionObjects.push_back(info->mObject.get());
+      }
+    }
+
+    return experimentalRaycast(collisionObjects, from, to, option, result);
+  }
+#else
+  DART_UNUSED(from);
+  DART_UNUSED(to);
+  DART_UNUSED(option);
+  DART_UNUSED(result);
+#endif
+
+  return false;
 }
 
 //==============================================================================

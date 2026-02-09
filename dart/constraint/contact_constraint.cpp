@@ -33,6 +33,7 @@
 #include "dart/constraint/contact_constraint.hpp"
 
 #include "dart/collision/collision_object.hpp"
+#include "dart/collision/experimental/persistent_manifold_cache.hpp"
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
 #include "dart/dynamics/body_node.hpp"
@@ -452,11 +453,9 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
       info->b[2] += mContactSurfaceMotionVelocity.z();
     }
 
-    // TODO(JS): Initial guess
-    // x
-    info->x[0] = 0.0;
-    info->x[1] = 0.0;
-    info->x[2] = 0.0;
+    info->x[0] = std::max(0.0, mContact.cachedNormalImpulse);
+    info->x[1] = mContact.cachedFrictionImpulse1;
+    info->x[2] = mContact.cachedFrictionImpulse2;
   }
   //----------------------------------------------------------------------------
   // Frictionless case
@@ -508,9 +507,7 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
       info->b[0] += mContactSurfaceMotionVelocity.x();
     }
 
-    // TODO(JS): Initial guess
-    // x
-    info->x[0] = 0.0;
+    info->x[0] = std::max(0.0, mContact.cachedNormalImpulse);
   }
 }
 
@@ -636,6 +633,25 @@ void ContactConstraint::unexcite()
 //==============================================================================
 void ContactConstraint::applyImpulse(double* lambda)
 {
+  const auto updateCachedUserData = [&](double normalImpulse,
+                                        double frictionImpulse1,
+                                        double frictionImpulse2) {
+    if (!mContact.userData || !mContact.collisionObject1) {
+      return;
+    }
+
+    const auto* detector = mContact.collisionObject1->getCollisionDetector();
+    if (!detector || detector->getTypeView() != "experimental") {
+      return;
+    }
+
+    auto* cached = static_cast<collision::experimental::CachedContact*>(
+        mContact.userData);
+    cached->cachedNormalImpulse = normalImpulse;
+    cached->cachedFrictionImpulse1 = frictionImpulse1;
+    cached->cachedFrictionImpulse2 = frictionImpulse2;
+  };
+
   //----------------------------------------------------------------------------
   // Friction case
   //----------------------------------------------------------------------------
@@ -677,6 +693,11 @@ void ContactConstraint::applyImpulse(double* lambda)
     if (mBodyNodeB->isReactive()) {
       mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(2) * lambda[2]);
     }
+
+    mContact.cachedNormalImpulse = lambda[0];
+    mContact.cachedFrictionImpulse1 = lambda[1];
+    mContact.cachedFrictionImpulse2 = lambda[2];
+    updateCachedUserData(lambda[0], lambda[1], lambda[2]);
   }
   //----------------------------------------------------------------------------
   // Frictionless case
@@ -693,6 +714,10 @@ void ContactConstraint::applyImpulse(double* lambda)
 
     // Store contact impulse (force) toward the normal w.r.t. world frame
     mContact.force = mContact.normal * lambda[0] / mTimeStep;
+    mContact.cachedNormalImpulse = lambda[0];
+    mContact.cachedFrictionImpulse1 = 0.0;
+    mContact.cachedFrictionImpulse2 = 0.0;
+    updateCachedUserData(lambda[0], 0.0, 0.0);
   }
 }
 

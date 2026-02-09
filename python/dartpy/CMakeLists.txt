@@ -309,6 +309,18 @@ foreach(lib ${dartpy_libraries})
   endif()
 endforeach()
 
+if(DART_BUILD_COLLISION_FCL)
+  target_link_libraries(dartpy PRIVATE dart-collision-fcl)
+endif()
+
+if(DART_BUILD_COLLISION_BULLET)
+  target_link_libraries(dartpy PRIVATE dart-collision-bullet)
+endif()
+
+if(DART_BUILD_COLLISION_ODE)
+  target_link_libraries(dartpy PRIVATE dart-collision-ode)
+endif()
+
 if(TARGET dart-gui)
   target_link_libraries(dartpy PRIVATE dart-gui)
   foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)

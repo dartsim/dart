@@ -31,11 +31,13 @@
  */
 
 #include "dart/collision/collision_group.hpp"
+#include "dart/collision/collision_object.hpp"
 #include "dart/collision/collision_option.hpp"
 #include "dart/collision/collision_result.hpp"
 #include "dart/collision/distance_filter.hpp"
 #include "dart/collision/distance_option.hpp"
 #include "dart/collision/distance_result.hpp"
+#include "dart/collision/experimental/persistent_manifold_cache.hpp"
 #include "dart/collision/experimental_backend/experimental_collision_detector.hpp"
 #include "dart/collision/experimental_backend/shape_adapter.hpp"
 #include "dart/collision/raycast_option.hpp"
@@ -54,6 +56,8 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
+
+#include <cmath>
 
 using namespace dart;
 using namespace dart::collision;
@@ -112,6 +116,142 @@ private:
 };
 
 } // namespace
+
+//==============================================================================
+TEST(ExperimentalCollisionBackend, PersistentManifoldCacheCreateAndRetrieve)
+{
+  experimental::PersistentManifoldCache cache;
+  auto& manifold = cache.getOrCreate(11u, 29u);
+
+  experimental::CachedContact contact;
+  contact.localPointA = Eigen::Vector3d(0.1, 0.0, 0.0);
+  contact.localPointB = Eigen::Vector3d(0.1, 0.0, 0.0);
+  contact.penetrationDepth = 0.02;
+  manifold.addOrReplace(contact);
+
+  EXPECT_EQ(1u, cache.size());
+  auto& same = cache.getOrCreate(11u, 29u);
+  EXPECT_EQ(1, same.numContacts);
+  EXPECT_NEAR(0.02, same.contacts[0].penetrationDepth, 1e-12);
+}
+
+//==============================================================================
+TEST(ExperimentalCollisionBackend, PersistentManifoldCachePairKeySymmetry)
+{
+  experimental::PersistentManifoldCache cache;
+
+  auto& manifoldAB = cache.getOrCreate(3u, 9u);
+  auto& manifoldBA = cache.getOrCreate(9u, 3u);
+
+  EXPECT_EQ(&manifoldAB, &manifoldBA);
+  EXPECT_EQ(1u, cache.size());
+}
+
+//==============================================================================
+TEST(ExperimentalCollisionBackend, PersistentManifoldCacheContactMatching)
+{
+  experimental::PersistentManifold manifold;
+
+  experimental::CachedContact first;
+  first.localPointA = Eigen::Vector3d(0.1, 0.2, 0.3);
+  first.localPointB = Eigen::Vector3d(0.1, 0.2, 0.3);
+  first.cachedNormalImpulse = 1.2;
+  first.cachedFrictionImpulse1 = -0.3;
+  first.cachedFrictionImpulse2 = 0.7;
+  manifold.addOrReplace(first);
+
+  experimental::CachedContact second;
+  second.localPointA = Eigen::Vector3d(0.1005, 0.2, 0.3005);
+  second.localPointB = Eigen::Vector3d(0.1005, 0.2, 0.3005);
+  second.penetrationDepth = 0.04;
+  manifold.addOrReplace(second);
+
+  ASSERT_EQ(1, manifold.numContacts);
+  EXPECT_NEAR(1.2, manifold.contacts[0].cachedNormalImpulse, 1e-12);
+  EXPECT_NEAR(-0.3, manifold.contacts[0].cachedFrictionImpulse1, 1e-12);
+  EXPECT_NEAR(0.7, manifold.contacts[0].cachedFrictionImpulse2, 1e-12);
+  EXPECT_EQ(0, manifold.contacts[0].lifetime);
+}
+
+//==============================================================================
+TEST(ExperimentalCollisionBackend, PersistentManifoldCacheReduction)
+{
+  experimental::PersistentManifold manifold;
+
+  for (int i = 0; i < 6; ++i) {
+    experimental::CachedContact contact;
+    contact.localPointA = Eigen::Vector3d(0.04 * i, 0.03 * (i % 3), 0.0);
+    contact.localPointB = contact.localPointA;
+    contact.penetrationDepth = (i == 4) ? 0.25 : 0.01 * i;
+    manifold.addOrReplace(contact);
+  }
+
+  EXPECT_EQ(4, manifold.numContacts);
+  bool foundDeepest = false;
+  for (int i = 0; i < manifold.numContacts; ++i) {
+    if (std::abs(
+            manifold.contacts[static_cast<std::size_t>(i)].penetrationDepth
+            - 0.25)
+        < 1e-12) {
+      foundDeepest = true;
+      break;
+    }
+  }
+  EXPECT_TRUE(foundDeepest);
+}
+
+//==============================================================================
+TEST(ExperimentalCollisionBackend, PersistentManifoldCacheRefreshRemovesDrifted)
+{
+  experimental::PersistentManifold manifold;
+  experimental::CachedContact contact;
+  contact.localPointA = Eigen::Vector3d::Zero();
+  contact.localPointB = Eigen::Vector3d::Zero();
+  contact.normal = Eigen::Vector3d::UnitX();
+  manifold.addOrReplace(contact);
+
+  Eigen::Isometry3d tfA = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
+  tfB.translation() = Eigen::Vector3d(0.1, 0.0, 0.0);
+
+  manifold.refresh(tfA, tfB, 0.04);
+  EXPECT_EQ(0, manifold.numContacts);
+}
+
+//==============================================================================
+TEST(ExperimentalCollisionBackend, PersistentManifoldCacheWarmStartInCollide)
+{
+  auto detector = ExperimentalCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  auto sphereA = createSphereFrame("sphereA", 1.0, Eigen::Vector3d::Zero());
+  auto sphereB
+      = createSphereFrame("sphereB", 1.0, Eigen::Vector3d(1.5, 0.0, 0.0));
+  group->addShapeFrame(sphereA.get());
+  group->addShapeFrame(sphereB.get());
+
+  CollisionResult first;
+  CollisionOption option;
+  option.enableContact = true;
+  ASSERT_TRUE(group->collide(option, &first));
+  ASSERT_GT(first.getNumContacts(), 0u);
+
+  auto& firstContact = first.getContact(0);
+  ASSERT_NE(nullptr, firstContact.userData);
+  auto* cached
+      = static_cast<experimental::CachedContact*>(firstContact.userData);
+  cached->cachedNormalImpulse = 1.5;
+  cached->cachedFrictionImpulse1 = -0.4;
+  cached->cachedFrictionImpulse2 = 0.2;
+
+  CollisionResult second;
+  ASSERT_TRUE(group->collide(option, &second));
+  ASSERT_GT(second.getNumContacts(), 0u);
+  const auto& warm = second.getContact(0);
+  EXPECT_NEAR(1.5, warm.cachedNormalImpulse, 1e-12);
+  EXPECT_NEAR(-0.4, warm.cachedFrictionImpulse1, 1e-12);
+  EXPECT_NEAR(0.2, warm.cachedFrictionImpulse2, 1e-12);
+}
 
 //==============================================================================
 TEST(ExperimentalCollisionBackend, SphereSphereCollide)
@@ -350,7 +490,7 @@ TEST(ExperimentalCollisionBackend, RaycastFilter)
 //==============================================================================
 TEST(ExperimentalCollisionBackend, ConeShapeAdapter)
 {
-  auto cone = std::make_shared<ConeShape>(0.5, 1.2);
+  dynamics::ShapePtr cone = std::make_shared<ConeShape>(0.5, 1.2);
   auto adapted = adaptShape(cone);
   ASSERT_NE(nullptr, adapted);
   EXPECT_EQ(experimental::ShapeType::Convex, adapted->getType());
@@ -367,7 +507,8 @@ TEST(ExperimentalCollisionBackend, EllipsoidShapeAdapter)
       = std::make_shared<EllipsoidShape>(Eigen::Vector3d(2.0, 3.0, 4.0));
   ASSERT_FALSE(ellipsoid->isSphere());
 
-  auto adapted = adaptShape(ellipsoid);
+  dynamics::ShapePtr ellipsoidShape = ellipsoid;
+  auto adapted = adaptShape(ellipsoidShape);
   ASSERT_NE(nullptr, adapted);
   EXPECT_EQ(experimental::ShapeType::Convex, adapted->getType());
 
@@ -384,7 +525,8 @@ TEST(ExperimentalCollisionBackend, HeightmapShapeAdapter)
   const std::vector<double> heights = {0.0, 1.0, 2.0, 3.0};
   heightmap->setHeightField(2, 2, heights);
 
-  auto adapted = adaptShape(heightmap);
+  dynamics::ShapePtr heightmapShape = heightmap;
+  auto adapted = adaptShape(heightmapShape);
   ASSERT_NE(nullptr, adapted);
   EXPECT_EQ(experimental::ShapeType::Mesh, adapted->getType());
 
@@ -400,7 +542,8 @@ TEST(ExperimentalCollisionBackend, MultiSphereConvexHullShapeAdapter)
   spheres.emplace_back(0.3, Eigen::Vector3d::Zero());
   spheres.emplace_back(0.2, Eigen::Vector3d(1.0, 0.0, 0.0));
 
-  auto multiSphere = std::make_shared<MultiSphereConvexHullShape>(spheres);
+  dynamics::ShapePtr multiSphere
+      = std::make_shared<MultiSphereConvexHullShape>(spheres);
   auto adapted = adaptShape(multiSphere);
   ASSERT_NE(nullptr, adapted);
   EXPECT_EQ(experimental::ShapeType::Convex, adapted->getType());

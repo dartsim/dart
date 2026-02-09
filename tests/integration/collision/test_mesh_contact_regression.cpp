@@ -38,8 +38,9 @@
 #include <dart/dynamics/simple_frame.hpp>
 
 #include <Eigen/Core>
-#include <cmath>
 #include <gtest/gtest.h>
+
+#include <cmath>
 
 using dart::collision::FCLCollisionDetector;
 
@@ -53,8 +54,8 @@ TEST(CollisionRegression, MeshMeshContactPointsStayOnContactPlane)
   detector->setPrimitiveShapeType(FCLCollisionDetector::MESH);
   detector->setContactPointComputationMethod(FCLCollisionDetector::FCL);
 
-  auto shape = std::make_shared<dart::dynamics::BoxShape>(
-      Eigen::Vector3d::Ones());
+  auto shape
+      = std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d::Ones());
 
   auto bottom = dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World());

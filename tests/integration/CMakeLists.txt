@@ -5,26 +5,55 @@
 # ==============================================================================
 dart_add_test("integration" INTEGRATION_collision_CollisionGroups collision/test_collision_groups.cpp)
 dart_add_test("integration" INTEGRATION_collision_Issue2470 collision/test_issue2470.cpp)
+if(TARGET dart-collision-fcl)
+  target_link_libraries(INTEGRATION_collision_CollisionGroups dart-collision-fcl)
+endif()
+if(TARGET dart-collision-bullet)
+  target_link_libraries(INTEGRATION_collision_CollisionGroups dart-collision-bullet)
+endif()
+if(TARGET dart-collision-ode)
+  target_link_libraries(INTEGRATION_collision_CollisionGroups dart-collision-ode)
+endif()
 
 if(TARGET dart-io)
   dart_add_test("integration" INTEGRATION_collision_Collision collision/test_collision.cpp)
   target_link_libraries(INTEGRATION_collision_Collision dart-io)
+  if(TARGET dart-collision-fcl)
+    target_link_libraries(INTEGRATION_collision_Collision dart-collision-fcl)
+  endif()
+  if(TARGET dart-collision-bullet)
+    target_link_libraries(INTEGRATION_collision_Collision dart-collision-bullet)
+  endif()
+  if(TARGET dart-collision-ode)
+    target_link_libraries(INTEGRATION_collision_Collision dart-collision-ode)
+  endif()
+  if(DART_BUILD_COLLISION_EXPERIMENTAL)
+    target_link_libraries(INTEGRATION_collision_Collision dart-collision-experimental)
+    target_compile_definitions(INTEGRATION_collision_Collision PRIVATE DART_HAS_EXPERIMENTAL_COLLISION)
+  endif()
 endif()
 
-if(DART_BUILD_COLLISION_FCL)
+if(TARGET dart-collision-fcl)
   dart_add_test(
     "integration"
     INTEGRATION_collision_MeshContactRegression
     collision/test_mesh_contact_regression.cpp)
+  target_link_libraries(INTEGRATION_collision_MeshContactRegression dart-collision-fcl)
 endif()
 dart_add_test(
   "integration"
   INTEGRATION_collision_FclPrimitiveContactMatrix
   collision/test_fcl_primitive_contact_matrix.cpp)
+if(TARGET dart-collision-fcl)
+  target_link_libraries(INTEGRATION_collision_FclPrimitiveContactMatrix dart-collision-fcl)
+endif()
 dart_add_test(
   "integration"
   INTEGRATION_collision_FclPrimitiveContactMatrixFcl
   collision/test_fcl_primitive_contact_matrix_fcl.cpp)
+if(TARGET dart-collision-fcl)
+  target_link_libraries(INTEGRATION_collision_FclPrimitiveContactMatrixFcl dart-collision-fcl)
+endif()
 # Suppress <ciso646> deprecation warning from octomap headers (GCC 15+)
 # This file directly includes <fcl/fcl.h> which pulls in octomap's OcTreeKey.h
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15)
@@ -39,6 +68,15 @@ if(DART_BUILD_COLLISION_EXPERIMENTAL)
   target_link_libraries(
     INTEGRATION_collision_experimental_backend_consistency
     dart-collision-experimental)
+  if(TARGET dart-collision-fcl)
+    target_link_libraries(INTEGRATION_collision_experimental_backend_consistency dart-collision-fcl)
+  endif()
+  if(TARGET dart-collision-bullet)
+    target_link_libraries(INTEGRATION_collision_experimental_backend_consistency dart-collision-bullet)
+  endif()
+  if(TARGET dart-collision-ode)
+    target_link_libraries(INTEGRATION_collision_experimental_backend_consistency dart-collision-ode)
+  endif()
 endif()
 
 # Additional collision tests
@@ -49,24 +87,41 @@ endif()
 
 if(DART_BUILD_COLLISION_BULLET)
   dart_add_test("integration" INTEGRATION_collision_CollisionAccuracy collision/test_collision_accuracy.cpp)
+  target_link_libraries(INTEGRATION_collision_CollisionAccuracy dart-collision-bullet)
   dart_add_test("integration" INTEGRATION_collision_BulletCylinderRolling collision/test_bullet_cylinder_rolling.cpp)
+  target_link_libraries(INTEGRATION_collision_BulletCylinderRolling dart-collision-bullet)
   dart_add_test("integration" INTEGRATION_collision_BulletEllipsoidRolling collision/test_bullet_ellipsoid_rolling.cpp)
+  target_link_libraries(INTEGRATION_collision_BulletEllipsoidRolling dart-collision-bullet)
   dart_add_test("integration" INTEGRATION_collision_BulletBoxStack collision/test_bullet_box_stack.cpp)
+  target_link_libraries(INTEGRATION_collision_BulletBoxStack dart-collision-bullet)
 endif()
 
 if(DART_BUILD_COLLISION_BULLET AND DART_BUILD_COLLISION_ODE)
   dart_add_test("integration" INTEGRATION_collision_PlaneShapeCollision collision/test_plane_shape_collision.cpp)
-  target_link_libraries(INTEGRATION_collision_PlaneShapeCollision dart-utils)
+  target_link_libraries(
+    INTEGRATION_collision_PlaneShapeCollision
+    dart-utils
+    dart-collision-bullet
+    dart-collision-ode
+  )
+  if(TARGET dart-collision-fcl)
+    target_link_libraries(INTEGRATION_collision_PlaneShapeCollision dart-collision-fcl)
+  endif()
 
   if(TARGET dart-io)
     dart_add_test("integration" INTEGRATION_collision_ContactGrouping collision/test_contact_grouping.cpp)
-    target_link_libraries(INTEGRATION_collision_ContactGrouping dart-io)
+    target_link_libraries(INTEGRATION_collision_ContactGrouping dart-io dart-collision-ode)
   endif()
 
   dart_add_test(
     "integration"
     INTEGRATION_collision_CapsuleGroundContact
     collision/test_capsule_ground_contact.cpp)
+  target_link_libraries(
+    INTEGRATION_collision_CapsuleGroundContact
+    dart-collision-bullet
+    dart-collision-ode
+  )
 endif()
 
 # ==============================================================================
@@ -86,6 +141,7 @@ dart_add_test("integration" INTEGRATION_constraint_SplitImpulse constraint/test_
 
 if(DART_BUILD_COLLISION_ODE)
   dart_add_test("integration" INTEGRATION_constraint_ForceDependentSlip constraint/test_force_dependent_slip.cpp)
+  target_link_libraries(INTEGRATION_constraint_ForceDependentSlip dart-collision-ode)
 endif()
 
 # Additional constraint tests
@@ -197,6 +253,9 @@ if(TARGET dart-utils)
   if(TARGET dart-io)
     target_link_libraries(INTEGRATION_io_SkelParser dart-io)
   endif()
+  if(TARGET dart-collision-fcl)
+    target_link_libraries(INTEGRATION_io_SkelParser dart-collision-fcl)
+  endif()
 
 endif()
 
@@ -288,6 +347,15 @@ if(TARGET dart-utils AND TARGET dart-io)
 
   dart_add_test("integration" INTEGRATION_simulation_World simulation/test_world.cpp)
   target_link_libraries(INTEGRATION_simulation_World dart-io)
+  if(TARGET dart-collision-fcl)
+    target_link_libraries(INTEGRATION_simulation_World dart-collision-fcl)
+  endif()
+  if(TARGET dart-collision-bullet)
+    target_link_libraries(INTEGRATION_simulation_World dart-collision-bullet)
+  endif()
+  if(TARGET dart-collision-ode)
+    target_link_libraries(INTEGRATION_simulation_World dart-collision-ode)
+  endif()
 
   # Additional simulation tests
   dart_add_test("integration" INTEGRATION_simulation_Issue410 simulation/test_issue410.cpp)
@@ -299,6 +367,12 @@ if(TARGET dart-utils AND TARGET dart-io)
 
     dart_add_test("integration" INTEGRATION_simulation_MimicConstraint simulation/test_mimic_constraint.cpp)
     target_link_libraries(INTEGRATION_simulation_MimicConstraint dart-io)
+    if(TARGET dart-collision-bullet)
+      target_link_libraries(INTEGRATION_simulation_MimicConstraint dart-collision-bullet)
+    endif()
+    if(TARGET dart-collision-ode)
+      target_link_libraries(INTEGRATION_simulation_MimicConstraint dart-collision-ode)
+    endif()
   endif()
 endif()
 

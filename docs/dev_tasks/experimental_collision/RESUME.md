@@ -1,129 +1,115 @@
 # Resume: Experimental Collision Module
 
-## Last Session Summary (2026-02-09)
+## Last Session Summary (2026-02-09 — Session 3)
 
-Completed all remaining "Immediate Next Steps" from the previous session: distance query wiring, raycast wiring, expanded shape adapters (Cone, Ellipsoid, Heightmap, MultiSphere), integration test expansion, and documentation updates. Merged latest `origin/main` into `feature/new_coll` (3 conflicts resolved). All backend unit tests pass (14+ cases). Integration tests pass for experimental backend.
+**Major milestone**: FCL/Bullet/ODE fully decoupled from libdart.so into separate shared libraries. Experimental backend is now the default collision detector. Build succeeds (547 test targets), all key tests pass.
+
+### Session 3 Accomplishments
+
+1. **FCL/Bullet/ODE → separate .so files**: `dart-collision-fcl`, `dart-collision-bullet`, `dart-collision-ode` now build independently, linking `PUBLIC dart + external_lib`
+2. **Default backend = experimental**: Factory fallback chain: experimental → fcl → dart
+3. **Source decoupled**: constraint_solver.cpp, world.cpp, skel_parser.cpp use factory only (no FCL/Bullet/ODE includes)
+4. **BVH mesh support**: Per-mesh AABB BVH with median split, mesh-mesh dual-tree traversal
+5. **Persistent manifold cache**: Contact caching with warm-start in ContactConstraint
+6. **Integration tests updated**: 7 test suites include experimental, all pass
+7. **Benchmark baseline**: Experimental 5-25x faster than FCL
+8. **Test fixes**: World tests updated for new default, adaptShape ambiguity resolved
 
 ## Current Branch
 
-`feature/new_coll` — **ahead of origin by 33 commits** (uncommitted changes pending commit)
-
-```bash
-git checkout feature/new_coll
-git status && git log -3 --oneline
-```
-
-## What Was Completed This Session
-
-### Merge: origin/main → feature/new_coll ✅
-
-- Resolved conflicts in `.gitignore`, `CHANGELOG.md`, `tests/unit/CMakeLists.txt`
-
-### Distance Query Wiring ✅
-
-- Replaced both stubbed `distance()` methods with real implementations
-- Constructs temporary `experimental::CollisionObject` wrappers per pair
-- Supports DistanceFilter, distanceLowerBound clamping, nearest points, ShapeFrame assignment
-- Both single-group and cross-group overloads
-- File: `dart/collision/experimental_backend/experimental_collision_detector.cpp`
-
-### Raycast Wiring ✅
-
-- Constructs `experimental::Ray` from `from`/`to` vectors
-- Per-object filter via `RaycastOption::passesFilter`
-- All-hits vs closest-only, sort-by-closest behavior
-- Converts `experimental::RaycastResult` → DART `RayHit`
-- Files: `experimental_collision_detector.hpp` (declaration), `.cpp` (implementation)
-
-### Shape Adapter Expansion ✅
-
-- ConeShape → ConvexShape (32 base points + apex)
-- Non-sphere EllipsoidShape → ConvexShape (latitude/longitude surface sampling)
-- HeightmapShape<float/double> → triangulated MeshShape
-- MultiSphereConvexHullShape → ConvexShape (surface point sampling)
-- File: `dart/collision/experimental_backend/shape_adapter.cpp`
-
-### Unit Tests ✅
-
-- Added 14+ test cases: DistanceSphereSphere, DistanceOverlapping, DistanceCrossGroup, DistanceWithFilter, RaycastHit, RaycastMiss, RaycastMultipleObjects, RaycastFilter, ConeShapeAdapter, EllipsoidShapeAdapter, HeightmapShapeAdapter
-- File: `tests/unit/collision/test_experimental_backend.cpp`
-
-### Integration Test Expansion ✅
-
-- Added `"experimental"` to `INSTANTIATE_TEST_SUITE_P` Values in `test_collision_groups.cpp`
-- CollisionGroups and consistency tests pass with experimental backend
-
-### Documentation Updates ✅
-
-- Updated `gap_analysis.md` — shapes at 100%, all critical gaps resolved
-- Updated `progress.md` — added backend distance/raycast/shape adapter rows, test count 575+
-
-## Previous Session Work (2026-02-03)
-
-### F1: Compound Shapes ✅
-
-### F2: Parallel Narrowphase ✅
-
-### F3: DART Backend Integration ✅
-
-### F4: VSG CI Polish ✅
-
-## Test Status
-
-```bash
-# Collision-experimental: 28/29 pass (1 pre-existing raycast edge case)
-ctest --test-dir build/default/cpp/Release -L collision-experimental -j$(nproc)
-
-# DART backend: 1/1 pass (14+ individual test cases inside)
-ctest --test-dir build/default/cpp/Release -R UNIT_collision_ExperimentalBackend
-
-# Integration: CollisionGroups passes with "experimental" backend
-ctest --test-dir build/default/cpp/Release -R INTEGRATION_collision_CollisionGroups
-```
-
-## Remaining Work
-
-The core implementation is **feature-complete**. Remaining items are optimization/polish:
-
-1. **Performance benchmarking** — Run comparative benchmarks vs FCL/Bullet/ODE
-2. **Performance parity with FCL** — Optimize until experimental is faster
-3. **Persistent manifolds** (P1 from gap analysis)
-4. **Contact warm-starting** (P2)
-5. **BVH traversal for mesh-mesh** (P1)
-6. **Full integration test suite** — Some existing integration tests have pre-existing SEGFAULTs unrelated to experimental backend
-
-## Context That Would Be Lost
-
-- **BoxShape convention difference**: `dynamics::BoxShape` uses full size, `experimental::BoxShape` uses half-extents. Shape adapter does `size * 0.5`.
-- **Normal convention**: Both use obj2→obj1, so no conversion needed.
-- **Pre-existing test failures**: `test_raycast` has `RayStartsInside` failures (Box, Capsule) — known edge cases, not from our changes.
-- **Distance implementation**: Creates temporary `experimental::CollisionObject` wrappers per pair, calls `NarrowPhase::distance()`, converts results.
-- **Raycast implementation**: Iterates group objects, constructs `experimental::Ray` from from/to vectors, filters per-object.
-
-## How to Resume
+`feature/new_coll` — uncommitted changes pending commit
 
 ```bash
 cd /home/js/dev/dartsim/dart/task_2
 git checkout feature/new_coll
 git status && git log -3 --oneline
-
-pixi run build
-ctest --test-dir build/default/cpp/Release -L collision-experimental -j$(nproc)
-ctest --test-dir build/default/cpp/Release -R UNIT_collision_ExperimentalBackend
 ```
 
-Then choose from "Remaining Work" above.
+## Test Status
+
+```bash
+# Unit collision: 20/20 pass
+ctest --test-dir build/default/cpp/Release -R "UNIT_collision" -j$(nproc)
+
+# Collision-experimental: 28/30 pass (2 pre-existing RayStartsInside failures)
+ctest --test-dir build/default/cpp/Release -L collision-experimental -j$(nproc)
+
+# Integration collision: 3/3 pass (CollisionGroups, Collision, CollisionAccuracy)
+ctest --test-dir build/default/cpp/Release -R "INTEGRATION_collision_Collision" -j$(nproc)
+
+# World integration: 1/1 pass
+ctest --test-dir build/default/cpp/Release -R "INTEGRATION_simulation_World" -j$(nproc)
+```
+
+## Architecture (Current State)
+
+```
+libdart.so (core)
+├── collision/ (interfaces + dart backend + experimental_backend adapter)
+├── constraint/, dynamics/, simulation/, etc.
+└── Links: Eigen, assimp, fmt, spdlog
+
+dart-collision-experimental.so (narrow phase engine)
+└── Links: dart
+
+dart-collision-fcl.so (optional, for tests/benchmarks/gazebo)
+└── Links: dart, fcl
+
+dart-collision-bullet.so (optional, for tests/benchmarks/gazebo)
+└── Links: dart, Bullet
+
+dart-collision-ode.so (optional, for tests/benchmarks/gazebo)
+└── Links: dart, ODE
+```
+
+## Remaining Work (Priority Order)
+
+### Phase 2: Gazebo Backward Compatibility (NEXT)
+
+**Constraint**: `pixi run -e gazebo test-gz` must pass. gz-physics **inherits** from BulletCollisionDetector and OdeCollisionDetector.
+
+**Approach (Option D — Hybrid Facade)**: Keep class names and inheritance surfaces (FCLCollisionDetector, BulletCollisionDetector, OdeCollisionDetector) but make their collide()/distance()/raycast() internally delegate to experimental. The external deps (libfcl, libbullet, libode) remain linked for ABI compat but actual collision work uses experimental.
+
+**Key files to modify**:
+
+- `dart/collision/fcl/fcl_collision_detector.cpp` — override collide/distance to forward to experimental
+- `dart/collision/bullet/bullet_collision_detector.cpp` — same
+- `dart/collision/ode/ode_collision_detector.cpp` — same
+- Headers stay identical (gz-physics includes them and subclasses)
+
+### Phase 3: Break dynamics↔collision Circular Dependency
+
+**Goal**: collision module should NOT include dynamics headers. dynamics depends on collision.
+
+**The coupling**: collision's `CollisionObject` holds `ShapeFrame*` (dynamics type). Experimental narrow phase includes dynamics shape headers (BoxShape, SphereShape, etc.).
+
+**Approach**: Move Shape hierarchy to `dart/geometry/` or create collision-side abstract interfaces. This is an XL task requiring careful planning.
+
+### Phase 4: Final Gates
+
+- `pixi run lint`, full test suite, `pixi run -e gazebo test-gz`
+- Commit, PR
+
+## Context That Would Be Lost
+
+- **Bullet/ODE CMakeLists**: Had `dart_add_core_headers` leak — now removed, builds as separate .so
+- **DART_HAVE_FCL**: Added to `config.hpp.in` as `#cmakedefine01`
+- **Factory pattern**: All detector creation uses `CollisionDetector::getFactory()->create("name")`
+- **gz-physics inherits**: `GzBulletCollisionDetector : BulletCollisionDetector`, `GzOdeCollisionDetector : OdeCollisionDetector`
+- **gz-physics includes**: `<dart/collision/bullet/BulletCollisionDetector.hpp>`, `<dart/collision/fcl/FCLCollisionDetector.hpp>`, `<dart/collision/ode/OdeCollisionDetector.hpp>`
 
 ## Key Files Reference
 
-| Component            | Location                                                                  |
-| -------------------- | ------------------------------------------------------------------------- |
-| Backend detector     | `dart/collision/experimental_backend/experimental_collision_detector.cpp` |
-| Backend header       | `dart/collision/experimental_backend/experimental_collision_detector.hpp` |
-| Shape adapter        | `dart/collision/experimental_backend/shape_adapter.cpp`                   |
-| Backend test         | `tests/unit/collision/test_experimental_backend.cpp`                      |
-| Integration test     | `tests/integration/collision/test_collision_groups.cpp`                   |
-| Compound shapes      | `dart/collision/experimental/shapes/shape.hpp`                            |
-| Parallel narrowphase | `dart/collision/experimental/collision_world.cpp`                         |
-| Progress docs        | `docs/dev_tasks/experimental_collision/progress.md`                       |
-| Gap analysis         | `docs/dev_tasks/experimental_collision/gap_analysis.md`                   |
+| Component               | Location                                                                  |
+| ----------------------- | ------------------------------------------------------------------------- |
+| Backend detector        | `dart/collision/experimental_backend/experimental_collision_detector.cpp` |
+| Shape adapter           | `dart/collision/experimental_backend/shape_adapter.cpp`                   |
+| FCL separate lib        | `dart/collision/fcl/CMakeLists.txt`                                       |
+| Bullet separate lib     | `dart/collision/bullet/CMakeLists.txt`                                    |
+| ODE separate lib        | `dart/collision/ode/CMakeLists.txt`                                       |
+| Core CMake              | `dart/CMakeLists.txt` (no FCL/Bullet/ODE link)                            |
+| World (factory default) | `dart/simulation/world.cpp`                                               |
+| Constraint solver       | `dart/constraint/constraint_solver.cpp`                                   |
+| Config defines          | `dart/config.hpp.in` (DART_HAVE_FCL/BULLET/ODE)                           |
+| Integration test CMake  | `tests/integration/CMakeLists.txt`                                        |
+| Progress docs           | `docs/dev_tasks/experimental_collision/progress.md`                       |

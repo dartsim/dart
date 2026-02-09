@@ -39,6 +39,9 @@
 #include "dart/collision/fcl/fcl_collision_object.hpp"
 #include "dart/collision/fcl/fcl_types.hpp"
 #include "dart/collision/fcl/tri_tri_intersection_test.hpp"
+#if DART_FCL_HAS_EXPERIMENTAL
+  #include "dart/collision/experimental_backend/experimental_query_helper.hpp"
+#endif
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
 #include "dart/dynamics/box_shape.hpp"
@@ -69,6 +72,13 @@ namespace dart {
 namespace collision {
 
 namespace {
+
+#if DART_FCL_HAS_EXPERIMENTAL
+bool useExperimentalNarrowPhase()
+{
+  return true;
+}
+#endif
 
 std::string collisionObjectKey(const FCLCollisionObject* object)
 {
@@ -694,6 +704,27 @@ bool FCLCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
+  if (!checkGroupValidity(this, group)) {
+    return false;
+  }
+
+  auto* casted = static_cast<FCLCollisionGroup*>(group);
+  casted->updateEngineData();
+
+  #if DART_FCL_HAS_EXPERIMENTAL
+  if (useExperimentalNarrowPhase()) {
+    std::vector<CollisionObject*> collisionObjects;
+    collisionObjects.reserve(casted->mObjectInfoList.size());
+    for (const auto& info : casted->mObjectInfoList) {
+      if (info && info->mObject) {
+        collisionObjects.push_back(info->mObject.get());
+      }
+    }
+
+    return experimentalCollide(collisionObjects, collisionObjects, option, result);
+  }
+  #endif
+
   if (result) {
     result->clear();
   }
@@ -704,13 +735,6 @@ bool FCLCollisionDetector::collide(
         "Use maxNumContacts >= 1 for binary checks.");
     return false;
   }
-
-  if (!checkGroupValidity(this, group)) {
-    return false;
-  }
-
-  auto casted = static_cast<FCLCollisionGroup*>(group);
-  casted->updateEngineData();
 
   FCLCollisionCallbackData collData(
       option, result, mPrimitiveShapeType, mContactPointComputationMethod);
@@ -729,6 +753,42 @@ bool FCLCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
+  if (!checkGroupValidity(this, group1)) {
+    return false;
+  }
+
+  if (!checkGroupValidity(this, group2)) {
+    return false;
+  }
+
+  auto* casted1 = static_cast<FCLCollisionGroup*>(group1);
+  auto* casted2 = static_cast<FCLCollisionGroup*>(group2);
+  casted1->updateEngineData();
+  casted2->updateEngineData();
+
+  #if DART_FCL_HAS_EXPERIMENTAL
+  if (useExperimentalNarrowPhase()) {
+    std::vector<CollisionObject*> collisionObjects1;
+    collisionObjects1.reserve(casted1->mObjectInfoList.size());
+    for (const auto& info : casted1->mObjectInfoList) {
+      if (info && info->mObject) {
+        collisionObjects1.push_back(info->mObject.get());
+      }
+    }
+
+    std::vector<CollisionObject*> collisionObjects2;
+    collisionObjects2.reserve(casted2->mObjectInfoList.size());
+    for (const auto& info : casted2->mObjectInfoList) {
+      if (info && info->mObject) {
+        collisionObjects2.push_back(info->mObject.get());
+      }
+    }
+
+    return experimentalCollide(
+        collisionObjects1, collisionObjects2, option, result);
+  }
+  #endif
+
   if (result) {
     result->clear();
   }
@@ -739,19 +799,6 @@ bool FCLCollisionDetector::collide(
         "Use maxNumContacts >= 1 for binary checks.");
     return false;
   }
-
-  if (!checkGroupValidity(this, group1)) {
-    return false;
-  }
-
-  if (!checkGroupValidity(this, group2)) {
-    return false;
-  }
-
-  auto casted1 = static_cast<FCLCollisionGroup*>(group1);
-  auto casted2 = static_cast<FCLCollisionGroup*>(group2);
-  casted1->updateEngineData();
-  casted2->updateEngineData();
 
   FCLCollisionCallbackData collData(
       option, result, mPrimitiveShapeType, mContactPointComputationMethod);
@@ -768,16 +815,30 @@ bool FCLCollisionDetector::collide(
 double FCLCollisionDetector::distance(
     CollisionGroup* group, const DistanceOption& option, DistanceResult* result)
 {
-  if (result) {
-    result->clear();
-  }
-
   if (!checkGroupValidity(this, group)) {
     return 0.0;
   }
 
-  auto casted = static_cast<FCLCollisionGroup*>(group);
+  auto* casted = static_cast<FCLCollisionGroup*>(group);
   casted->updateEngineData();
+
+  #if DART_FCL_HAS_EXPERIMENTAL
+  if (useExperimentalNarrowPhase()) {
+    std::vector<CollisionObject*> collisionObjects;
+    collisionObjects.reserve(casted->mObjectInfoList.size());
+    for (const auto& info : casted->mObjectInfoList) {
+      if (info && info->mObject) {
+        collisionObjects.push_back(info->mObject.get());
+      }
+    }
+
+    return experimentalDistance(collisionObjects, collisionObjects, option, result);
+  }
+  #endif
+
+  if (result) {
+    result->clear();
+  }
 
   FCLDistanceCallbackData distData(option, result);
 
@@ -797,10 +858,6 @@ double FCLCollisionDetector::distance(
     const DistanceOption& option,
     DistanceResult* result)
 {
-  if (result) {
-    result->clear();
-  }
-
   if (!checkGroupValidity(this, group1)) {
     return 0.0;
   }
@@ -809,10 +866,37 @@ double FCLCollisionDetector::distance(
     return 0.0;
   }
 
-  auto casted1 = static_cast<FCLCollisionGroup*>(group1);
-  auto casted2 = static_cast<FCLCollisionGroup*>(group2);
+  auto* casted1 = static_cast<FCLCollisionGroup*>(group1);
+  auto* casted2 = static_cast<FCLCollisionGroup*>(group2);
   casted1->updateEngineData();
   casted2->updateEngineData();
+
+  #if DART_FCL_HAS_EXPERIMENTAL
+  if (useExperimentalNarrowPhase()) {
+    std::vector<CollisionObject*> collisionObjects1;
+    collisionObjects1.reserve(casted1->mObjectInfoList.size());
+    for (const auto& info : casted1->mObjectInfoList) {
+      if (info && info->mObject) {
+        collisionObjects1.push_back(info->mObject.get());
+      }
+    }
+
+    std::vector<CollisionObject*> collisionObjects2;
+    collisionObjects2.reserve(casted2->mObjectInfoList.size());
+    for (const auto& info : casted2->mObjectInfoList) {
+      if (info && info->mObject) {
+        collisionObjects2.push_back(info->mObject.get());
+      }
+    }
+
+    return experimentalDistance(
+        collisionObjects1, collisionObjects2, option, result);
+  }
+  #endif
+
+  if (result) {
+    result->clear();
+  }
 
   FCLDistanceCallbackData distData(option, result);
 
@@ -829,9 +913,50 @@ double FCLCollisionDetector::distance(
 }
 
 //==============================================================================
+bool FCLCollisionDetector::raycast(
+    CollisionGroup* group,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& to,
+    const RaycastOption& option,
+    RaycastResult* result)
+{
+  if (!checkGroupValidity(this, group)) {
+    return false;
+  }
+
+  auto* casted = static_cast<FCLCollisionGroup*>(group);
+  casted->updateEngineData();
+
+  #if DART_FCL_HAS_EXPERIMENTAL
+  if (useExperimentalNarrowPhase()) {
+    std::vector<CollisionObject*> collisionObjects;
+    collisionObjects.reserve(casted->mObjectInfoList.size());
+    for (const auto& info : casted->mObjectInfoList) {
+      if (info && info->mObject) {
+        collisionObjects.push_back(info->mObject.get());
+      }
+    }
+
+    return experimentalRaycast(collisionObjects, from, to, option, result);
+  }
+  #else
+  DART_UNUSED(from);
+  DART_UNUSED(to);
+  DART_UNUSED(option);
+  DART_UNUSED(result);
+  #endif
+
+  return false;
+}
+
+//==============================================================================
 void FCLCollisionDetector::setPrimitiveShapeType(
     FCLCollisionDetector::PrimitiveShape type)
 {
+  DART_WARN(
+      "FCLCollisionDetector::setPrimitiveShapeType() is deprecated and has no "
+      "effect on collision queries because FCL now uses the experimental "
+      "narrow phase path.");
   mPrimitiveShapeType = type;
 }
 

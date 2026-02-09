@@ -30,43 +30,45 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FWD_HPP_
-#define DART_COLLISION_FWD_HPP_
+#ifndef DART_COLLISION_EXPERIMENTAL_BACKEND_EXPERIMENTALQUERYHELPER_HPP_
+#define DART_COLLISION_EXPERIMENTAL_BACKEND_EXPERIMENTALQUERYHELPER_HPP_
 
-#include <dart/config.hpp>
+#include "dart/collision/collision_option.hpp"
+#include "dart/collision/collision_result.hpp"
+#include "dart/collision/distance_option.hpp"
+#include "dart/collision/distance_result.hpp"
+#include "dart/collision/raycast_option.hpp"
+#include "dart/collision/raycast_result.hpp"
 
-#include <dart/common/smart_pointer.hpp>
+#include <Eigen/Core>
+
+#include <vector>
 
 namespace dart {
 namespace collision {
 
-class CollisionDetector;
-class CollisionFilter;
-class CollisionGroup;
 class CollisionObject;
 
-struct CollisionOption;
-class CollisionResult;
-struct Contact;
+bool experimentalCollide(
+    const std::vector<CollisionObject*>& objects1,
+    const std::vector<CollisionObject*>& objects2,
+    const CollisionOption& option,
+    CollisionResult* result);
 
-struct DistanceFilter;
-struct DistanceOption;
-struct DistanceResult;
+double experimentalDistance(
+    const std::vector<CollisionObject*>& objects1,
+    const std::vector<CollisionObject*>& objects2,
+    const DistanceOption& option,
+    DistanceResult* result);
 
-struct RaycastOption;
-struct RaycastResult;
-
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionDetector)
-DART_COMMON_DECLARE_SHARED_WEAK(DARTCollisionDetector)
-
-#if DART_HAVE_FCL
-DART_COMMON_DECLARE_SHARED_WEAK(FCLCollisionDetector)
-#endif
-
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionObject)
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionGroup)
+bool experimentalRaycast(
+    const std::vector<CollisionObject*>& objects,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& to,
+    const RaycastOption& option,
+    RaycastResult* result);
 
 } // namespace collision
 } // namespace dart
 
-#endif // DART_COLLISION_FWD_HPP_
+#endif // DART_COLLISION_EXPERIMENTAL_BACKEND_EXPERIMENTALQUERYHELPER_HPP_

@@ -34,7 +34,6 @@
 
 #include "dart/collision/collision_object.hpp"
 #include "dart/collision/dart/dart_collision_detector.hpp"
-#include "dart/collision/fcl/fcl_collision_detector.hpp"
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
 #include "dart/config.hpp"
@@ -732,30 +731,6 @@ tinyxml2::XMLElement* checkFormatAndGetWorldElement(
 }
 
 //==============================================================================
-static std::shared_ptr<collision::CollisionDetector>
-createFclMeshCollisionDetector()
-{
-  auto cd = collision::CollisionDetector::getFactory()->create("fcl");
-  auto fcl = std::static_pointer_cast<collision::FCLCollisionDetector>(cd);
-  fcl->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
-  fcl->setContactPointComputationMethod(collision::FCLCollisionDetector::DART);
-
-  return fcl;
-}
-
-//==============================================================================
-static std::shared_ptr<collision::CollisionDetector>
-createFclPrimitiveCollisionDetector()
-{
-  auto cd = collision::CollisionDetector::getFactory()->create("fcl");
-  auto fcl = std::static_pointer_cast<collision::FCLCollisionDetector>(cd);
-  fcl->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
-  fcl->setContactPointComputationMethod(collision::FCLCollisionDetector::DART);
-
-  return fcl;
-}
-
-//==============================================================================
 simulation::WorldPtr readWorld(
     tinyxml2::XMLElement* _worldElement,
     const common::Uri& _baseUri,
@@ -790,35 +765,33 @@ simulation::WorldPtr readWorld(
     }
 
     // Collision detector
+    auto* factory = collision::CollisionDetector::getFactory();
     std::shared_ptr<collision::CollisionDetector> collision_detector;
 
     if (hasElement(physicsElement, "collision_detector")) {
       const auto cdType = getValueString(physicsElement, "collision_detector");
 
-      if (cdType == "fcl_mesh") {
-        collision_detector = createFclMeshCollisionDetector();
-      } else if (cdType == "fcl") {
-        collision_detector
-            = collision::CollisionDetector::getFactory()->create("fcl");
-        auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
-            collision_detector);
-        cd->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
-        cd->setContactPointComputationMethod(
-            collision::FCLCollisionDetector::DART);
+      if (cdType == "fcl_mesh" || cdType == "fcl") {
+        collision_detector = factory->create("fcl");
       } else {
-        collision_detector
-            = collision::CollisionDetector::getFactory()->create(cdType);
+        collision_detector = factory->create(cdType);
       }
 
       DART_WARN_IF(
           !collision_detector,
           "Unknown collision detector[{}]. Default collision "
-          "detector[fcl_mesh] will be loaded.",
+          "detector[experimental] will be loaded.",
           cdType);
     }
 
     if (!collision_detector) {
-      collision_detector = createFclPrimitiveCollisionDetector();
+      collision_detector = factory->create("experimental");
+    }
+    if (!collision_detector) {
+      collision_detector = factory->create("fcl");
+    }
+    if (!collision_detector) {
+      collision_detector = factory->create("dart");
     }
 
     newWorld->setCollisionDetector(collision_detector);
