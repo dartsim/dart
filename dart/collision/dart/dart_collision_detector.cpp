@@ -38,10 +38,6 @@
 #include "dart/collision/dart/dart_collision_group.hpp"
 #include "dart/collision/dart/dart_collision_object.hpp"
 #include "dart/common/logging.hpp"
-#include "dart/dynamics/box_shape.hpp"
-#include "dart/dynamics/ellipsoid_shape.hpp"
-#include "dart/dynamics/shape_frame.hpp"
-#include "dart/dynamics/sphere_shape.hpp"
 
 namespace dart {
 namespace collision {
@@ -279,51 +275,6 @@ double DARTCollisionDetector::distance(
 DARTCollisionDetector::DARTCollisionDetector() : CollisionDetector()
 {
   mCollisionObjectManager.reset(new ManagerForSharableCollisionObjects(this));
-}
-
-//==============================================================================
-void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
-{
-  if (!shapeFrame) {
-    return;
-  }
-
-  const auto& shape = shapeFrame->getShape();
-  const auto& shapeType = shape->getType();
-
-  if (shapeType == dynamics::SphereShape::getStaticType()) {
-    return;
-  }
-
-  if (shapeType == dynamics::BoxShape::getStaticType()) {
-    return;
-  }
-
-  if (shapeType == dynamics::EllipsoidShape::getStaticType()) {
-    const auto& ellipsoid
-        = std::static_pointer_cast<const dynamics::EllipsoidShape>(shape);
-
-    if (ellipsoid->isSphere()) {
-      return;
-    }
-  }
-
-  DART_ERROR(
-      "[DARTCollisionDetector] Attempting to create shape type [{}] that is "
-      "not supported by DARTCollisionDetector. Currently, only BoxShape and "
-      "EllipsoidShape (only when all the radii are equal) are supported. This "
-      "shape will always get penetrated by other objects.",
-      shapeType);
-}
-
-//==============================================================================
-std::unique_ptr<CollisionObject> DARTCollisionDetector::createCollisionObject(
-    const dynamics::ShapeFrame* shapeFrame)
-{
-  warnUnsupportedShapeType(shapeFrame);
-
-  return std::unique_ptr<DARTCollisionObject>(
-      new DARTCollisionObject(this, shapeFrame));
 }
 
 //==============================================================================

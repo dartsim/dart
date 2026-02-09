@@ -33,45 +33,9 @@
 #include "dart/collision/contact.hpp"
 
 #include "dart/collision/collision_object.hpp"
-#include "dart/dynamics/body_node.hpp"
-#include "dart/dynamics/shape_frame.hpp"
-#include "dart/dynamics/shape_node.hpp"
 
 namespace dart {
 namespace collision {
-namespace {
-
-const dynamics::ShapeFrame* getShapeFrame(const CollisionObject* object)
-{
-  if (object == nullptr) {
-    return nullptr;
-  }
-
-  return object->getShapeFrame();
-}
-
-const dynamics::ShapeNode* getShapeNode(const CollisionObject* object)
-{
-  const auto* shapeFrame = getShapeFrame(object);
-  if (shapeFrame == nullptr) {
-    return nullptr;
-  }
-
-  return shapeFrame->asShapeNode();
-}
-
-dynamics::ConstBodyNodePtr getBodyNode(const CollisionObject* object)
-{
-  const auto* shapeNode = getShapeNode(object);
-  if (shapeNode == nullptr) {
-    return nullptr;
-  }
-
-  return shapeNode->getBodyNodePtr();
-}
-
-} // namespace
-
 //==============================================================================
 Contact::Contact()
   : point(Eigen::Vector3d::Zero()),
@@ -86,42 +50,6 @@ Contact::Contact()
 {
   // TODO(MXG): Consider using NaN instead of zero for uninitialized quantities
   // Do nothing
-}
-
-//==============================================================================
-const dynamics::ShapeFrame* Contact::getShapeFrame1() const
-{
-  return getShapeFrame(collisionObject1);
-}
-
-//==============================================================================
-const dynamics::ShapeFrame* Contact::getShapeFrame2() const
-{
-  return getShapeFrame(collisionObject2);
-}
-
-//==============================================================================
-const dynamics::ShapeNode* Contact::getShapeNode1() const
-{
-  return getShapeNode(collisionObject1);
-}
-
-//==============================================================================
-const dynamics::ShapeNode* Contact::getShapeNode2() const
-{
-  return getShapeNode(collisionObject2);
-}
-
-//==============================================================================
-dynamics::ConstBodyNodePtr Contact::getBodyNodePtr1() const
-{
-  return getBodyNode(collisionObject1);
-}
-
-//==============================================================================
-dynamics::ConstBodyNodePtr Contact::getBodyNodePtr2() const
-{
-  return getBodyNode(collisionObject2);
 }
 
 //==============================================================================

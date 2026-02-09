@@ -40,7 +40,6 @@
 #include "dart/collision/experimental/narrow_phase/narrow_phase.hpp"
 #include "dart/collision/experimental_backend/shape_adapter.hpp"
 #include "dart/common/logging.hpp"
-#include "dart/dynamics/shape_frame.hpp"
 
 #include <algorithm>
 #include <limits>
@@ -70,12 +69,11 @@ std::vector<TemporaryCollisionObject> buildTemporaryObjects(
       continue;
     }
 
-    const auto* shapeFrame = object->getShapeFrame();
-    if (!shapeFrame) {
+    if (!object->getShapeFrame()) {
       continue;
     }
 
-    auto shape = adaptShape(shapeFrame->getShape());
+    auto shape = adaptShape(object->getShape());
     if (!shape) {
       continue;
     }

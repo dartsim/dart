@@ -33,8 +33,6 @@
 #include "dart/collision/collision_object.hpp"
 
 #include "dart/collision/collision_detector.hpp"
-#include "dart/common/macros.hpp"
-#include "dart/dynamics/shape_frame.hpp"
 
 namespace dart {
 namespace collision {
@@ -55,28 +53,6 @@ const CollisionDetector* CollisionObject::getCollisionDetector() const
 const dynamics::ShapeFrame* CollisionObject::getShapeFrame() const
 {
   return mShapeFrame;
-}
-
-//==============================================================================
-dynamics::ConstShapePtr CollisionObject::getShape() const
-{
-  return mShapeFrame->getShape();
-}
-
-//==============================================================================
-const Eigen::Isometry3d& CollisionObject::getTransform() const
-{
-  return mShapeFrame->getWorldTransform();
-}
-
-//==============================================================================
-CollisionObject::CollisionObject(
-    CollisionDetector* collisionDetector,
-    const dynamics::ShapeFrame* shapeFrame)
-  : mCollisionDetector(collisionDetector), mShapeFrame(shapeFrame)
-{
-  DART_ASSERT(mCollisionDetector);
-  DART_ASSERT(mShapeFrame);
 }
 
 } // namespace collision

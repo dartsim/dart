@@ -36,8 +36,6 @@
 #include "dart/collision/collision_object.hpp"
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
-#include "dart/dynamics/body_node.hpp"
-#include "dart/dynamics/skeleton.hpp"
 
 #include <algorithm>
 

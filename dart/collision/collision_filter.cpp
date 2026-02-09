@@ -33,8 +33,6 @@
 #include "dart/collision/collision_filter.hpp"
 
 #include "dart/collision/collision_object.hpp"
-#include "dart/common/macros.hpp"
-#include "dart/dynamics/body_node.hpp"
 
 namespace dart {
 namespace collision {
@@ -77,110 +75,6 @@ bool CompositeCollisionFilter::ignoresCollision(
     if (filter->ignoresCollision(object1, object2)) {
       return true;
     }
-  }
-
-  return false;
-}
-
-//==============================================================================
-void BodyNodeCollisionFilter::addBodyNodePairToBlackList(
-    const dynamics::BodyNode* bodyNode1, const dynamics::BodyNode* bodyNode2)
-{
-  mBodyNodeBlackList.addPair(bodyNode1, bodyNode2);
-}
-
-//==============================================================================
-void BodyNodeCollisionFilter::removeBodyNodePairFromBlackList(
-    const dynamics::BodyNode* bodyNode1, const dynamics::BodyNode* bodyNode2)
-{
-  mBodyNodeBlackList.removePair(bodyNode1, bodyNode2);
-}
-
-//==============================================================================
-void BodyNodeCollisionFilter::removeAllBodyNodePairsFromBlackList()
-{
-  mBodyNodeBlackList.removeAllPairs();
-}
-
-//==============================================================================
-bool BodyNodeCollisionFilter::ignoresCollision(
-    const collision::CollisionObject* object1,
-    const collision::CollisionObject* object2) const
-{
-  if (object1 == object2) {
-    return true;
-  }
-
-  const auto* shapeFrame1 = object1->getShapeFrame();
-  const auto* shapeFrame2 = object2->getShapeFrame();
-  if (!shapeFrame1 || !shapeFrame2) {
-    return false;
-  }
-
-  auto shapeNode1 = shapeFrame1->asShapeNode();
-  auto shapeNode2 = shapeFrame2->asShapeNode();
-
-  // We don't filter out for non-ShapeNode because this class shouldn't have the
-  // authority to make decisions about filtering any ShapeFrames that aren't
-  // attached to a BodyNode. So here we just return false. In order to decide
-  // whether the non-ShapeNode should be ignored, please use other collision
-  // filters.
-  if (!shapeNode1 || !shapeNode2) {
-    return false;
-  }
-
-  auto bodyNode1 = shapeNode1->getBodyNodePtr();
-  auto bodyNode2 = shapeNode2->getBodyNodePtr();
-  if (!bodyNode1 || !bodyNode2) {
-    return false;
-  }
-
-  if (bodyNode1 == bodyNode2) {
-    return true;
-  }
-
-  if (!bodyNode1->isCollidable() || !bodyNode2->isCollidable()) {
-    return true;
-  }
-
-  const auto& skel1 = bodyNode1->getSkeleton();
-  const auto& skel2 = bodyNode2->getSkeleton();
-  if (!skel1 || !skel2) {
-    return false;
-  }
-
-  if (!skel1->isMobile() && !skel2->isMobile()) {
-    return true;
-  }
-
-  if (skel1 == skel2) {
-    if (!skel1->isEnabledSelfCollisionCheck()) {
-      return true;
-    }
-
-    if (!skel1->isEnabledAdjacentBodyCheck()) {
-      if (areAdjacentBodies(bodyNode1, bodyNode2)) {
-        return true;
-      }
-    }
-  }
-
-  if (mBodyNodeBlackList.contains(bodyNode1, bodyNode2)) {
-    return true;
-  }
-
-  return false;
-}
-
-//==============================================================================
-bool BodyNodeCollisionFilter::areAdjacentBodies(
-    const dynamics::BodyNode* bodyNode1,
-    const dynamics::BodyNode* bodyNode2) const
-{
-  if ((bodyNode1->getParentBodyNode() == bodyNode2)
-      || (bodyNode2->getParentBodyNode() == bodyNode1)) {
-    DART_ASSERT(bodyNode1->getSkeleton() == bodyNode2->getSkeleton());
-    return true;
   }
 
   return false;
