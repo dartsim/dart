@@ -203,8 +203,9 @@ bool getExtentAlongDirection(
     double& extent)
 {
   const double norm = direction.norm();
-  if (norm <= 0.0)
+  if (norm <= 0.0) {
     return false;
+  }
 
   const Eigen::Vector3d dir = direction / norm;
   const Eigen::Vector3d dirAbs = dir.cwiseAbs();
@@ -256,8 +257,9 @@ bool getConeSideExtentAlongDirection(
 {
   if (const auto* cone
       = dynamic_cast<const dart::dynamics::ConeShape*>(&shape)) {
-    if (std::abs(direction.z()) > 1e-6)
+    if (std::abs(direction.z()) > 1e-6) {
       return false;
+    }
     extent = 0.5 * cone->getRadius();
     return true;
   }
@@ -288,8 +290,9 @@ TEST(FclPrimitiveContacts, PairMatrixRespectsDartConventions)
 
   for (const auto& shapeA : kShapeSpecs) {
     for (const auto& shapeB : kShapeSpecs) {
-      if (isPlane(shapeA.kind) && isPlane(shapeB.kind))
+      if (isPlane(shapeA.kind) && isPlane(shapeB.kind)) {
         continue;
+      }
 
       const bool planeA = isPlane(shapeA.kind);
       const bool planeB = isPlane(shapeB.kind);
@@ -569,8 +572,9 @@ TEST(FclPrimitiveContacts, RotatedPlaneNormal)
         * kPlaneNormal;
 
   for (const auto& shapeSpec : kShapeSpecs) {
-    if (isPlane(shapeSpec.kind))
+    if (isPlane(shapeSpec.kind)) {
       continue;
+    }
 
     SCOPED_TRACE(std::string("Rotated plane vs ") + shapeSpec.name);
 
@@ -684,8 +688,9 @@ TEST(FclPrimitiveContacts, ContainmentCases)
 
   for (const auto& containerSpec : kContainmentContainers) {
     for (const auto& containedSpec : kShapeSpecs) {
-      if (isPlane(containedSpec.kind))
+      if (isPlane(containedSpec.kind)) {
         continue;
+      }
 
       SCOPED_TRACE(
           std::string("Container: ") + containerSpec.name
@@ -800,11 +805,13 @@ TEST(FclPrimitiveContacts, ConeSideContacts)
 
   for (const auto& shapeA : kShapeSpecs) {
     for (const auto& shapeB : kShapeSpecs) {
-      if (isPlane(shapeA.kind) || isPlane(shapeB.kind))
+      if (isPlane(shapeA.kind) || isPlane(shapeB.kind)) {
         continue;
+      }
 
-      if (shapeA.kind != ShapeKind::Cone && shapeB.kind != ShapeKind::Cone)
+      if (shapeA.kind != ShapeKind::Cone && shapeB.kind != ShapeKind::Cone) {
         continue;
+      }
 
       SCOPED_TRACE(
           std::string("Pair: ") + shapeA.name + " vs " + shapeB.name

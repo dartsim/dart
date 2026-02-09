@@ -93,8 +93,9 @@ int Marker::getID() const
 //==============================================================================
 void Marker::setConstraintType(Marker::ConstraintType type)
 {
-  if (type == mAspectProperties.mType)
+  if (type == mAspectProperties.mType) {
     return;
+  }
 
   mAspectProperties.mType = type;
   incrementVersion();
@@ -109,8 +110,9 @@ Marker::ConstraintType Marker::getConstraintType() const
 //==============================================================================
 void Marker::setColor(const Eigen::Vector4d& color)
 {
-  if (color == mAspectProperties.mColor)
+  if (color == mAspectProperties.mColor) {
     return;
+  }
 
   mAspectProperties.mColor = color;
   incrementVersion();
@@ -143,8 +145,9 @@ Node* Marker::cloneNode(BodyNode* parent) const
   Marker* marker = new Marker(parent, BasicProperties());
   marker->duplicateAspects(this);
 
-  if (mIK)
+  if (mIK) {
     marker->mIK = mIK->clone(marker);
+  }
 
   return marker;
 }

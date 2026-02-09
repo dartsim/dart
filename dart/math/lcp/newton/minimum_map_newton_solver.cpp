@@ -47,8 +47,9 @@ namespace {
 
 double matrixInfinityNorm(const Eigen::MatrixXd& A)
 {
-  if (A.size() == 0)
+  if (A.size() == 0) {
     return 0.0;
+  }
 
   return A.cwiseAbs().rowwise().sum().maxCoeff();
 }
@@ -180,15 +181,17 @@ LcpResult MinimumMapNewtonSolver::solve(
     freeSet.reserve(static_cast<std::size_t>(n));
 
     for (int i = 0; i < n; ++i) {
-      if (y[i] < x[i])
+      if (y[i] < x[i]) {
         active.push_back(i);
-      else
+      } else {
         freeSet.push_back(i);
+      }
     }
 
     dx.setZero();
-    for (const int idx : freeSet)
+    for (const int idx : freeSet) {
       dx[idx] = -x[idx];
+    }
 
     if (!active.empty()) {
       const auto aSize = std::ssize(active);
@@ -201,14 +204,17 @@ LcpResult MinimumMapNewtonSolver::solve(
       for (int r = 0; r < aSize; ++r) {
         const int i = active[r];
         rhs[r] = -y[i];
-        for (int c = 0; c < aSize; ++c)
+        for (int c = 0; c < aSize; ++c) {
           A_AA(r, c) = A(i, active[c]);
-        for (int c = 0; c < fSize; ++c)
+        }
+        for (int c = 0; c < fSize; ++c) {
           A_AF(r, c) = A(i, freeSet[c]);
+        }
       }
 
-      for (int c = 0; c < fSize; ++c)
+      for (int c = 0; c < fSize; ++c) {
         dxF[c] = dx[freeSet[c]];
+      }
 
       rhs -= A_AF * dxF;
 
@@ -219,8 +225,9 @@ LcpResult MinimumMapNewtonSolver::solve(
         return result;
       }
 
-      for (int r = 0; r < aSize; ++r)
+      for (int r = 0; r < aSize; ++r) {
         dx[active[r]] = dxA[r];
+      }
     }
 
     double step = 1.0;
@@ -241,8 +248,9 @@ LcpResult MinimumMapNewtonSolver::solve(
       }
 
       step *= params->stepReduction;
-      if (step < params->minStep)
+      if (step < params->minStep) {
         break;
+      }
     }
 
     if (!accepted) {

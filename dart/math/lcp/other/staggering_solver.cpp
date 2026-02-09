@@ -49,8 +49,9 @@ namespace {
 
 double matrixInfinityNorm(const Eigen::MatrixXd& A)
 {
-  if (A.size() == 0)
+  if (A.size() == 0) {
     return 0.0;
+  }
 
   return A.cwiseAbs().rowwise().sum().maxCoeff();
 }
@@ -104,8 +105,9 @@ LcpResult StaggeringSolver::solve(
     return result;
   }
 
-  if (x.size() != n || !options.warmStart || !x.allFinite())
+  if (x.size() != n || !options.warmStart || !x.allFinite()) {
     x = Eigen::VectorXd::Zero(n);
+  }
 
   const int maxIterations = std::max(
       1,
@@ -136,10 +138,11 @@ LcpResult StaggeringSolver::solve(
   frictionIndices.reserve(static_cast<std::size_t>(n));
 
   for (int i = 0; i < n; ++i) {
-    if (findex[i] >= 0)
+    if (findex[i] >= 0) {
       frictionIndices.push_back(i);
-    else
+    } else {
       normalIndices.push_back(i);
+    }
   }
 
   if (normalIndices.empty() || frictionIndices.empty()) {
@@ -174,19 +177,23 @@ LcpResult StaggeringSolver::solve(
     b_n[r] = b[i];
     lo_n[r] = lo[i];
     hi_n[r] = hi[i];
-    for (int c = 0; c < nNormal; ++c)
+    for (int c = 0; c < nNormal; ++c) {
       A_nn(r, c) = A(i, normalIndices[c]);
-    for (int c = 0; c < nFriction; ++c)
+    }
+    for (int c = 0; c < nFriction; ++c) {
       A_nf(r, c) = A(i, frictionIndices[c]);
+    }
   }
 
   for (int r = 0; r < nFriction; ++r) {
     const int i = frictionIndices[r];
     b_f[r] = b[i];
-    for (int c = 0; c < nNormal; ++c)
+    for (int c = 0; c < nNormal; ++c) {
       A_fn(r, c) = A(i, normalIndices[c]);
-    for (int c = 0; c < nFriction; ++c)
+    }
+    for (int c = 0; c < nFriction; ++c) {
       A_ff(r, c) = A(i, frictionIndices[c]);
+    }
   }
 
   Eigen::VectorXi findex_n = Eigen::VectorXi::Constant(nNormal, -1);
@@ -194,8 +201,9 @@ LcpResult StaggeringSolver::solve(
 
   auto gather = [&](std::span<const int> indices, Eigen::VectorXd& out) {
     out.resize(std::ssize(indices));
-    for (int k = 0; k < std::ssize(indices); ++k)
+    for (int k = 0; k < std::ssize(indices); ++k) {
       out[k] = x[indices[k]];
+    }
   };
 
   auto scatterRelaxedNormal
@@ -203,10 +211,12 @@ LcpResult StaggeringSolver::solve(
           for (int k = 0; k < std::ssize(indices); ++k) {
             const int idx = indices[k];
             double updated = x[idx] + relaxation * (values[k] - x[idx]);
-            if (std::isfinite(lo[idx]))
+            if (std::isfinite(lo[idx])) {
               updated = std::max(updated, lo[idx]);
-            if (std::isfinite(hi[idx]))
+            }
+            if (std::isfinite(hi[idx])) {
               updated = std::min(updated, hi[idx]);
+            }
             x[idx] = updated;
           }
         };
@@ -218,10 +228,12 @@ LcpResult StaggeringSolver::solve(
     for (int k = 0; k < std::ssize(indices); ++k) {
       const int idx = indices[k];
       double updated = x[idx] + relaxation * (values[k] - x[idx]);
-      if (std::isfinite(loEff[idx]))
+      if (std::isfinite(loEff[idx])) {
         updated = std::max(updated, loEff[idx]);
-      if (std::isfinite(hiEff[idx]))
+      }
+      if (std::isfinite(hiEff[idx])) {
         updated = std::min(updated, hiEff[idx]);
+      }
       x[idx] = updated;
     }
   };
@@ -268,8 +280,9 @@ LcpResult StaggeringSolver::solve(
     return true;
   };
 
-  if (!updateMetrics())
+  if (!updateMetrics()) {
     return result;
+  }
 
   bool converged = (residual <= tol && complementarity <= compTol);
   int iterationsUsed = 0;
@@ -322,11 +335,13 @@ LcpResult StaggeringSolver::solve(
     }
     scatterRelaxedFriction(frictionIndices, x_f, loEff, hiEff);
 
-    if (!updateMetrics())
+    if (!updateMetrics()) {
       return result;
+    }
 
-    if (residual <= tol && complementarity <= compTol)
+    if (residual <= tol && complementarity <= compTol) {
       converged = true;
+    }
   }
 
   result.iterations = iterationsUsed;

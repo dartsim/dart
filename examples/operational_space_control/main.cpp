@@ -55,12 +55,14 @@ public:
     // Setup gain matrices
     std::size_t dofs = mEndEffector->getNumDependentGenCoords();
     mKp.setZero();
-    for (std::size_t i = 0; i < 3; ++i)
+    for (std::size_t i = 0; i < 3; ++i) {
       mKp(i, i) = 50.0;
+    }
 
     mKd.setZero(dofs, dofs);
-    for (std::size_t i = 0; i < dofs; ++i)
+    for (std::size_t i = 0; i < dofs; ++i) {
       mKd(i, i) = 5.0;
+    }
 
     // Set joint properties
     mRobot->eachJoint([](dart::dynamics::Joint* joint) {
@@ -150,14 +152,16 @@ public:
   ConstraintEventHandler(dart::gui::DragAndDrop* dnd = nullptr) : mDnD(dnd)
   {
     clearConstraints();
-    if (mDnD)
+    if (mDnD) {
       mDnD->unconstrain();
+    }
   }
 
   void clearConstraints()
   {
-    for (std::size_t i = 0; i < 3; ++i)
+    for (std::size_t i = 0; i < 3; ++i) {
       mConstrained[i] = false;
+    }
   }
 
   virtual bool handle(
@@ -210,28 +214,35 @@ public:
         return false;
     }
 
-    if (!handled)
+    if (!handled) {
       return handled;
+    }
 
     std::size_t constraintDofs = 0;
-    for (std::size_t i = 0; i < 3; ++i)
-      if (mConstrained[i])
+    for (std::size_t i = 0; i < 3; ++i) {
+      if (mConstrained[i]) {
         ++constraintDofs;
+      }
+    }
 
     if (constraintDofs == 0 || constraintDofs == 3) {
       mDnD->unconstrain();
     } else if (constraintDofs == 1) {
       Eigen::Vector3d v(Eigen::Vector3d::Zero());
-      for (std::size_t i = 0; i < 3; ++i)
-        if (mConstrained[i])
+      for (std::size_t i = 0; i < 3; ++i) {
+        if (mConstrained[i]) {
           v[i] = 1.0;
+        }
+      }
 
       mDnD->constrainToLine(v);
     } else if (constraintDofs == 2) {
       Eigen::Vector3d v(Eigen::Vector3d::Zero());
-      for (std::size_t i = 0; i < 3; ++i)
-        if (!mConstrained[i])
+      for (std::size_t i = 0; i < 3; ++i) {
+        if (!mConstrained[i]) {
           v[i] = 1.0;
+        }
+      }
 
       mDnD->constrainToPlane(v);
     }
@@ -258,11 +269,12 @@ public:
   {
     if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN) {
       if (ea.getKey() == 's' || ea.getKey() == 'S') {
-        if (mNode->isShadowed())
+        if (mNode->isShadowed()) {
           mNode->setShadowTechnique(nullptr);
-        else
+        } else {
           mNode->setShadowTechnique(
               dart::gui::WorldNode::createDefaultShadowTechnique(mViewer));
+        }
         return true;
       }
     }

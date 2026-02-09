@@ -50,8 +50,9 @@ namespace {
 
 double matrixInfinityNorm(const Eigen::MatrixXd& A)
 {
-  if (A.size() == 0)
+  if (A.size() == 0) {
     return 0.0;
+  }
 
   return A.cwiseAbs().rowwise().sum().maxCoeff();
 }
@@ -71,8 +72,9 @@ enum class SetType
 void RemoveIndex(std::vector<int>& indices, int idx)
 {
   const auto it = std::ranges::find(indices, idx);
-  if (it == indices.end())
+  if (it == indices.end()) {
     return;
+  }
 
   *it = indices.back();
   indices.pop_back();
@@ -145,8 +147,9 @@ LcpResult BaraffSolver::solve(
   int maxIterations = (options.maxIterations > 0)
                           ? options.maxIterations
                           : mDefaultOptions.maxIterations;
-  if (maxIterations <= 0)
+  if (maxIterations <= 0) {
     maxIterations = std::numeric_limits<int>::max();
+  }
 
   if (x.size() != n || !options.warmStart || !x.allFinite()) {
     x = Eigen::VectorXd::Zero(n);
@@ -174,8 +177,9 @@ LcpResult BaraffSolver::solve(
       }
     }
   } else {
-    for (int i = 0; i < n; ++i)
+    for (int i = 0; i < n; ++i) {
       unprocessed.push_back(i);
+    }
   }
 
   int iterationsUsed = 0;
@@ -192,8 +196,9 @@ LcpResult BaraffSolver::solve(
       }
     }
 
-    if (entering < 0)
+    if (entering < 0) {
       break;
+    }
 
     if (minW >= -absTol) {
       for (const int idx : unprocessed) {
@@ -233,8 +238,9 @@ LcpResult BaraffSolver::solve(
           break;
         }
         const Eigen::VectorXd deltaA = lu.solve(-A_aj);
-        for (int r = 0; r < m; ++r)
+        for (int r = 0; r < m; ++r) {
           deltaX[activeSet[r]] = deltaA[r];
+        }
       }
 
       const Eigen::VectorXd deltaW = A * deltaX;
@@ -298,8 +304,9 @@ LcpResult BaraffSolver::solve(
       }
     }
 
-    if (hitLimit || numericalError)
+    if (hitLimit || numericalError) {
       break;
+    }
   }
 
   result.iterations = iterationsUsed;
@@ -334,12 +341,13 @@ LcpResult BaraffSolver::solve(
 
   const bool converged
       = result.residual <= tol && result.complementarity <= compTolScaled;
-  if (converged)
+  if (converged) {
     result.status = LcpSolverStatus::Success;
-  else if (hitLimit)
+  } else if (hitLimit) {
     result.status = LcpSolverStatus::MaxIterations;
-  else
+  } else {
     result.status = LcpSolverStatus::Failed;
+  }
 
   if (options.validateSolution && result.status == LcpSolverStatus::Success) {
     const double validationTol = std::max(tol, compTolScaled);

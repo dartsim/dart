@@ -111,8 +111,9 @@ std::size_t ConstrainedGroup::getTotalDimension() const
 {
   std::size_t totalDim = 0;
 
-  for (const auto& constraint : mConstraints)
+  for (const auto& constraint : mConstraints) {
     totalDim += constraint->getDimension();
+  }
 
   return totalDim;
 }

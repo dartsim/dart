@@ -103,8 +103,9 @@ void EllipsoidShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC) {
     return;
+  }
 
   extractData(false);
 }
@@ -203,10 +204,11 @@ EllipsoidShapeDrawable::EllipsoidShapeDrawable(
 //==============================================================================
 void EllipsoidShapeDrawable::refresh(bool firstTime)
 {
-  if (mEllipsoidShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mEllipsoidShape->getDataVariance() == dart::dynamics::Shape::STATIC) {
     setDataVariance(::osg::Object::STATIC);
-  else
+  } else {
     setDataVariance(::osg::Object::DYNAMIC);
+  }
 
   if (mEllipsoidShape->checkDataVariance(
           dart::dynamics::Shape::DYNAMIC_PRIMITIVE)

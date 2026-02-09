@@ -214,12 +214,14 @@ public:
   TemplateNodePtr<NodeT, BodyNodeT> lock() const
   {
     TemplateBodyNodePtr<BodyNodeT> bodyNode = mWeakBodyNodePtr.lock();
-    if (nullptr == bodyNode)
+    if (nullptr == bodyNode) {
       return nullptr;
+    }
 
     std::shared_ptr<NodeDestructor> destructor = mWeakDestructor.lock();
-    if (nullptr == destructor)
+    if (nullptr == destructor) {
       return nullptr;
+    }
 
     return TemplateNodePtr<NodeT, BodyNodeT>(mNode);
   }

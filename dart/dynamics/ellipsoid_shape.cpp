@@ -142,10 +142,11 @@ Eigen::Matrix3d EllipsoidShape::computeInertia(double mass) const
 //==============================================================================
 bool EllipsoidShape::isSphere() const
 {
-  if (mDiameters[0] == mDiameters[1] && mDiameters[1] == mDiameters[2])
+  if (mDiameters[0] == mDiameters[1] && mDiameters[1] == mDiameters[2]) {
     return true;
-  else
+  } else {
     return false;
+  }
 }
 
 //==============================================================================

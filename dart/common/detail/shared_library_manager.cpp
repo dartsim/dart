@@ -71,17 +71,19 @@ std::shared_ptr<SharedLibrary> SharedLibraryManager::load(std::string_view path)
     // This check could fail if all instances to the library go out of scope,
     // since iter->second is a std::weak_ptr. In that case, we remove the
     // destructed library from the list and create new one.
-    if (lib)
+    if (lib) {
       return lib;
-    else
+    } else {
       mSharedLibraries.erase(iter);
+    }
   }
 
   const auto newLib = std::make_shared<SharedLibrary>(
       SharedLibrary::ProtectedConstruction, canonicalPath);
 
-  if (!newLib->isValid())
+  if (!newLib->isValid()) {
     return nullptr;
+  }
 
   mSharedLibraries[canonicalPath] = newLib;
   DART_ASSERT(canonicalPath == newLib->getCanonicalPath());

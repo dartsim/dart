@@ -95,36 +95,37 @@ inline std::pair<Joint*, BodyNode*> add1DofJoint(
   properties.mPositionLowerLimits[0] = min;
   properties.mPositionUpperLimits[0] = max;
   std::pair<Joint*, BodyNode*> newComponent;
-  if (DOF_X == type)
+  if (DOF_X == type) {
     newComponent = skel->createJointAndBodyNodePair<PrismaticJoint>(
         parent,
         PrismaticJoint::Properties(properties, Vector3d(1.0, 0.0, 0.0)),
         node);
-  else if (DOF_Y == type)
+  } else if (DOF_Y == type) {
     newComponent = skel->createJointAndBodyNodePair<PrismaticJoint>(
         parent,
         PrismaticJoint::Properties(properties, Vector3d(0.0, 1.0, 0.0)),
         node);
-  else if (DOF_Z == type)
+  } else if (DOF_Z == type) {
     newComponent = skel->createJointAndBodyNodePair<PrismaticJoint>(
         parent,
         PrismaticJoint::Properties(properties, Vector3d(0.0, 0.0, 1.0)),
         node);
-  else if (DOF_YAW == type)
+  } else if (DOF_YAW == type) {
     newComponent = skel->createJointAndBodyNodePair<RevoluteJoint>(
         parent,
         RevoluteJoint::Properties(properties, Vector3d(0.0, 0.0, 1.0)),
         node);
-  else if (DOF_PITCH == type)
+  } else if (DOF_PITCH == type) {
     newComponent = skel->createJointAndBodyNodePair<RevoluteJoint>(
         parent,
         RevoluteJoint::Properties(properties, Vector3d(0.0, 1.0, 0.0)),
         node);
-  else if (DOF_ROLL == type)
+  } else if (DOF_ROLL == type) {
     newComponent = skel->createJointAndBodyNodePair<RevoluteJoint>(
         parent,
         RevoluteJoint::Properties(properties, Vector3d(1.0, 0.0, 0.0)),
         node);
+  }
 
   newComponent.first->setPosition(0, val);
   return newComponent;
@@ -212,8 +213,9 @@ inline SkeletonPtr createThreeLinkRobot(
   }
 
   // If finished, add an end effector
-  if (finished)
+  if (finished) {
     addEndEffector(robot, parent_node, dimEE);
+  }
 
   return robot;
 }
@@ -297,8 +299,9 @@ inline SkeletonPtr createNLinkRobot(
   }
 
   // If finished, initialize the skeleton
-  if (finished)
+  if (finished) {
     addEndEffector(robot, parent_node, dim);
+  }
 
   return robot;
 }
@@ -369,8 +372,9 @@ inline SkeletonPtr createNLinkPendulum(
   }
 
   // If finished, initialize the skeleton
-  if (finished)
+  if (finished) {
     addEndEffector(robot, parent_node, dim);
+  }
 
   return robot;
 }

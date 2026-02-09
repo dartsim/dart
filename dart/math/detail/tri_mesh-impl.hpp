@@ -191,8 +191,9 @@ TriMesh<S> TriMesh<S>::operator+(const TriMesh& other) const
 template <typename S>
 TriMesh<S>& TriMesh<S>::operator+=(const TriMesh& other)
 {
-  if (other.isEmpty())
+  if (other.isEmpty()) {
     return *this;
+  }
 
   const auto oldNumVertices = this->mVertices.size();
   const auto oldNumTriangles = mTriangles.size();

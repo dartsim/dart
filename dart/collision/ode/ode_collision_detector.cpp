@@ -115,8 +115,9 @@ void eraseHistoryForObject(
     std::vector<OdeCollisionDetector::ContactHistoryItem>& cache,
     const CollisionObject* object)
 {
-  if (!object)
+  if (!object) {
     return;
+  }
 
   std::erase_if(
       cache, [object](const OdeCollisionDetector::ContactHistoryItem& item) {
@@ -345,8 +346,9 @@ void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
 
   auto cdData = static_cast<OdeCollisionCallbackData*>(data);
 
-  if (cdData->done)
+  if (cdData->done) {
     return;
+  }
 
   auto& odeResult = cdData->contactGeoms;
   auto* result = cdData->result;
@@ -361,8 +363,9 @@ void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
   DART_ASSERT(collObj1);
   DART_ASSERT(collObj2);
 
-  if (filter && filter->ignoresCollision(collObj1, collObj2))
+  if (filter && filter->ignoresCollision(collObj1, collObj2)) {
     return;
+  }
 
   // Perform narrow-phase collision detection
   auto numc
@@ -386,14 +389,17 @@ void reportContacts(
     CollisionResult& result,
     std::vector<OdeCollisionDetector::ContactHistoryItem>* history)
 {
-  if (0u == numContacts)
+  if (0u == numContacts) {
     return;
+  }
 
-  if (0u == option.maxNumContacts)
+  if (0u == option.maxNumContacts) {
     return;
+  }
 
-  if (result.getNumContacts() >= option.maxNumContacts)
+  if (result.getNumContacts() >= option.maxNumContacts) {
     return;
+  }
 
   // For binary check, return after adding the first contact point to the result
   // without the checkings of repeatidity and co-linearity.
@@ -428,8 +434,9 @@ void reportContacts(
   for (const auto& curr_cont : results_vec_copy) {
     const auto current_pair
         = MakeNewPair(curr_cont.collisionObject1, curr_cont.collisionObject2);
-    if (current_pair != pair)
+    if (current_pair != pair) {
       continue;
+    }
 
     ++pairContactCount;
 
@@ -475,8 +482,9 @@ void reportContacts(
         return;
       }
       result.addContact(past_cont);
-      if (--missing == 0u)
+      if (--missing == 0u) {
         break;
+      }
     }
     if (missing == 0u) {
       break;
@@ -577,8 +585,9 @@ bool shouldUseContactHistory(
 //==============================================================================
 void OdeCollisionDetector::pruneContactHistory(const CollisionResult& result)
 {
-  if (mContactHistory.empty())
+  if (mContactHistory.empty()) {
     return;
+  }
 
   const auto& contacts = result.getContacts();
   for (auto& pastContact : mContactHistory) {

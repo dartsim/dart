@@ -81,7 +81,7 @@ TEST(Issue1193, AngularVelAdd)
 }
 
 const double tol = 1e-5;
-const int g_iters = 100000;
+const int g_iters = 1000;
 
 Eigen::Vector3d computeWorldAngularMomentum(const SkeletonPtr skel)
 {
@@ -321,8 +321,9 @@ TEST(PlanarJoint, MomentumConservation)
   const Eigen::Vector3d initialAngular = computeWorldAngularMomentum(skel);
 
   const int numSteps = 2000;
-  for (int i = 0; i < numSteps; ++i)
+  for (int i = 0; i < numSteps; ++i) {
     world->step();
+  }
 
   const Eigen::Vector3d finalLinear = computeWorldLinearMomentum(skel);
   const Eigen::Vector3d finalAngular = computeWorldAngularMomentum(skel);

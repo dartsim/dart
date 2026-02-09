@@ -49,8 +49,9 @@ namespace {
 
 double matrixInfinityNorm(const Eigen::MatrixXd& A)
 {
-  if (A.size() == 0)
+  if (A.size() == 0) {
     return 0.0;
+  }
 
   return A.cwiseAbs().rowwise().sum().maxCoeff();
 }
@@ -65,12 +66,14 @@ double computeStepSize(
 {
   double alpha = 1.0;
   for (Eigen::Index i = 0; i < x.size(); ++i) {
-    if (dx[i] < 0.0)
+    if (dx[i] < 0.0) {
       alpha = std::min(alpha, -x[i] / dx[i]);
+    }
   }
   alpha = std::min(1.0, stepScale * alpha);
-  if (!std::isfinite(alpha))
+  if (!std::isfinite(alpha)) {
     return 0.0;
+  }
   return alpha;
 }
 
@@ -156,8 +159,9 @@ LcpResult InteriorPointSolver::solve(
   int maxIterations = (options.maxIterations > 0)
                           ? options.maxIterations
                           : mDefaultOptions.maxIterations;
-  if (maxIterations < 1)
+  if (maxIterations < 1) {
     maxIterations = 1;
+  }
 
   const Parameters* params
       = options.customOptions
@@ -272,10 +276,11 @@ LcpResult InteriorPointSolver::solve(
   result.complementarity
       = detail::complementarityInfinityNorm(x, wEval, loEff, hiEff, compTol);
 
-  if (converged)
+  if (converged) {
     result.status = LcpSolverStatus::Success;
-  else
+  } else {
     result.status = LcpSolverStatus::MaxIterations;
+  }
 
   if (options.validateSolution && result.status == LcpSolverStatus::Success) {
     const double validationTol = std::max(tol, compTol);

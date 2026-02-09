@@ -84,10 +84,11 @@ public:
         mNode->reorientTarget();
         return true;
       } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Return) {
-        if (!mViewer->isRecording())
+        if (!mViewer->isRecording()) {
           mViewer->record(dart::config::dataPath("screencap"));
-        else
+        } else {
           mViewer->pauseRecording();
+        }
         return true;
       }
     }
@@ -122,8 +123,9 @@ public:
       const auto picks = viewer->getDefaultEventHandler()->getButtonPicks(
           dart::gui::LEFT_MOUSE, dart::gui::BUTTON_PUSH);
 
-      if (picks.empty())
+      if (picks.empty()) {
         return;
+      }
 
       node->handlePick(picks.front());
     }
@@ -152,10 +154,12 @@ int main(int argc, char* argv[])
           Eigen::Isometry3d::Identity(),
           0.2);
 
-  for (size_t i = 0; i < 3; ++i)
-    for (size_t j = 0; j < 3; ++j)
+  for (size_t i = 0; i < 3; ++i) {
+    for (size_t j = 0; j < 3; ++j) {
       coordinates->getTool((dart::gui::InteractiveTool::Type)(i), j)
           ->setEnabled(false);
+    }
+  }
 
   world->addSimpleFrame(coordinates);
 
@@ -165,6 +169,7 @@ int main(int argc, char* argv[])
   // Create the viewer
   osg::ref_ptr<dart::gui::ImGuiViewer> viewer = new dart::gui::ImGuiViewer();
   viewer->setImGuiScale(static_cast<float>(guiScale));
+  viewer->getImGuiHandler()->setFontScale(static_cast<float>(guiScale));
   viewer->addWorldNode(node);
 
   // Add control widget for atlas

@@ -144,8 +144,9 @@ TemplatedElementEnumerator<ElementType>::~TemplatedElementEnumerator()
 template <typename ElementType>
 bool TemplatedElementEnumerator<ElementType>::next()
 {
-  if (!mParentElement)
+  if (!mParentElement) {
     return false;
+  }
 
   if (mCurrentElement) {
     mCurrentElement
@@ -155,8 +156,9 @@ bool TemplatedElementEnumerator<ElementType>::next()
         = mParentElement->FirstChildElement(mChildElementName.c_str());
   }
 
-  if (!valid())
+  if (!valid()) {
     mParentElement = nullptr;
+  }
 
   return valid();
 }

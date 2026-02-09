@@ -62,8 +62,9 @@ struct BlockData
 
 double matrixInfinityNorm(const Eigen::MatrixXd& A)
 {
-  if (A.size() == 0)
+  if (A.size() == 0) {
     return 0.0;
+  }
 
   return A.cwiseAbs().rowwise().sum().maxCoeff();
 }
@@ -92,8 +93,9 @@ bool buildBlockData(
 {
   const auto m = std::ssize(indices);
   if (m == 0) {
-    if (message)
+    if (message) {
       *message = "Block size must be positive";
+    }
     return false;
   }
 
@@ -116,15 +118,17 @@ bool buildBlockData(
     } else {
       auto it = std::ranges::find(indices, frictionIndex);
       if (it == indices.end()) {
-        if (message)
+        if (message) {
           *message = "Block partition must include friction index";
+        }
         return false;
       }
       block.findex[r] = static_cast<int>(std::distance(indices.begin(), it));
     }
 
-    for (int c = 0; c < m; ++c)
+    for (int c = 0; c < m; ++c) {
       block.A(r, c) = A(globalIndex, indices[c]);
+    }
   }
 
   return true;
@@ -142,23 +146,26 @@ bool buildBlocks(
 {
   const auto n = std::ssize(b);
   blocks.clear();
-  if (n == 0)
+  if (n == 0) {
     return true;
+  }
 
   if (!params.blockSizes.empty()) {
     int total = 0;
     for (const int size : params.blockSizes) {
       if (size <= 0) {
-        if (message)
+        if (message) {
           *message = "Block sizes must be positive";
+        }
         return false;
       }
       total += size;
     }
 
     if (total != n) {
-      if (message)
+      if (message) {
         *message = "Block sizes must sum to problem dimension";
+      }
       return false;
     }
 
@@ -166,8 +173,9 @@ bool buildBlocks(
     for (const int size : params.blockSizes) {
       std::vector<int> indices;
       indices.reserve(static_cast<std::size_t>(size));
-      for (int i = 0; i < size; ++i)
+      for (int i = 0; i < size; ++i) {
         indices.push_back(offset + i);
+      }
       offset += size;
 
       BlockData block;
@@ -179,8 +187,9 @@ bool buildBlocks(
               findex,
               std::span<const int>{indices},
               block,
-              message))
+              message)) {
         return false;
+      }
       blocks.push_back(std::move(block));
     }
 
@@ -201,23 +210,27 @@ bool buildBlocks(
   auto unite = [&](int a, int b) {
     const int rootA = findRoot(a);
     const int rootB = findRoot(b);
-    if (rootA != rootB)
+    if (rootA != rootB) {
       parent[rootB] = rootA;
+    }
   };
 
   for (int i = 0; i < n; ++i) {
     const int frictionIndex = findex[i];
-    if (frictionIndex >= 0)
+    if (frictionIndex >= 0) {
       unite(i, frictionIndex);
+    }
   }
 
   std::vector<std::vector<int>> groups(n);
-  for (int i = 0; i < n; ++i)
+  for (int i = 0; i < n; ++i) {
     groups[findRoot(i)].push_back(i);
+  }
 
   for (const auto& indices : groups) {
-    if (indices.empty())
+    if (indices.empty()) {
       continue;
+    }
     BlockData block;
     if (!buildBlockData(
             A,
@@ -227,8 +240,9 @@ bool buildBlocks(
             findex,
             std::span<const int>{indices},
             block,
-            message))
+            message)) {
       return false;
+    }
     blocks.push_back(std::move(block));
   }
 
@@ -290,8 +304,9 @@ LcpResult BgsSolver::solve(
     return result;
   }
 
-  if (x.size() != n || !options.warmStart || !x.allFinite())
+  if (x.size() != n || !options.warmStart || !x.allFinite()) {
     x = Eigen::VectorXd::Zero(n);
+  }
 
   const int maxIterations = std::max(
       1,
@@ -356,8 +371,9 @@ LcpResult BgsSolver::solve(
     return true;
   };
 
-  if (!updateMetrics())
+  if (!updateMetrics()) {
     return result;
+  }
 
   bool converged = (residual <= tol && complementarity <= compTol);
   int iterationsUsed = 0;
@@ -378,8 +394,9 @@ LcpResult BgsSolver::solve(
     for (const auto& block : blocks) {
       const auto m = std::ssize(block.indices);
       Eigen::VectorXd xBlock(m);
-      for (int r = 0; r < m; ++r)
+      for (int r = 0; r < m; ++r) {
         xBlock[r] = x[block.indices[r]];
+      }
 
       Eigen::VectorXd AxBlock(m);
       for (int r = 0; r < m; ++r) {
@@ -403,15 +420,18 @@ LcpResult BgsSolver::solve(
         return result;
       }
 
-      for (int r = 0; r < m; ++r)
+      for (int r = 0; r < m; ++r) {
         x[block.indices[r]] = xBlock[r];
+      }
     }
 
-    if (!updateMetrics())
+    if (!updateMetrics()) {
       return result;
+    }
 
-    if (residual <= tol && complementarity <= compTol)
+    if (residual <= tol && complementarity <= compTol) {
       converged = true;
+    }
   }
 
   result.iterations = iterationsUsed;

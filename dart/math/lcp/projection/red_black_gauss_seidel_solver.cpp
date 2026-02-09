@@ -47,8 +47,9 @@ namespace {
 
 double matrixInfinityNorm(const Eigen::MatrixXd& A)
 {
-  if (A.size() == 0)
+  if (A.size() == 0) {
     return 0.0;
+  }
 
   return A.cwiseAbs().rowwise().sum().maxCoeff();
 }
@@ -115,8 +116,9 @@ LcpResult RedBlackGaussSeidelSolver::solve(
     return result;
   }
 
-  if (x.size() != n || !options.warmStart || !x.allFinite())
+  if (x.size() != n || !options.warmStart || !x.allFinite()) {
     x = Eigen::VectorXd::Zero(n);
+  }
 
   const int maxIterations = std::max(
       1,
@@ -158,10 +160,11 @@ LcpResult RedBlackGaussSeidelSolver::solve(
   redIndices.reserve(static_cast<std::size_t>(n + 1) / 2);
   blackIndices.reserve(static_cast<std::size_t>(n) / 2);
   for (int i = 0; i < n; ++i) {
-    if ((i % 2) == 0)
+    if ((i % 2) == 0) {
       redIndices.push_back(i);
-    else
+    } else {
       blackIndices.push_back(i);
+    }
   }
 
   Eigen::VectorXd w;
@@ -195,8 +198,9 @@ LcpResult RedBlackGaussSeidelSolver::solve(
     return true;
   };
 
-  if (!updateMetrics())
+  if (!updateMetrics()) {
     return result;
+  }
 
   bool converged = (residual <= tol && complementarity <= compTol);
   int iterationsUsed = 0;
@@ -205,18 +209,22 @@ LcpResult RedBlackGaussSeidelSolver::solve(
     if (findex[i] >= 0) {
       const int ref = findex[i];
       const double bound = std::abs(hi[i]) * std::abs(xRef[ref]);
-      if (value > bound)
+      if (value > bound) {
         return bound;
-      if (value < -bound)
+      }
+      if (value < -bound) {
         return -bound;
+      }
       return value;
     }
 
     double projected = value;
-    if (std::isfinite(lo[i]))
+    if (std::isfinite(lo[i])) {
       projected = std::max(projected, lo[i]);
-    if (std::isfinite(hi[i]))
+    }
+    if (std::isfinite(hi[i])) {
       projected = std::min(projected, hi[i]);
+    }
     return projected;
   };
 
@@ -242,21 +250,26 @@ LcpResult RedBlackGaussSeidelSolver::solve(
 
     xOld = x;
 
-    for (const int i : redIndices)
+    for (const int i : redIndices) {
       updateIndex(i, xOld);
+    }
 
     xMixed = xOld;
-    for (const int i : redIndices)
+    for (const int i : redIndices) {
       xMixed[i] = x[i];
+    }
 
-    for (const int i : blackIndices)
+    for (const int i : blackIndices) {
       updateIndex(i, xMixed);
+    }
 
-    if (!updateMetrics())
+    if (!updateMetrics()) {
       return result;
+    }
 
-    if (residual <= tol && complementarity <= compTol)
+    if (residual <= tol && complementarity <= compTol) {
       converged = true;
+    }
   }
 
   result.iterations = iterationsUsed;

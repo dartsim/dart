@@ -100,8 +100,9 @@ Assimp::IOStream* AssimpInputResourceRetrieverAdaptor::Open(
 //==============================================================================
 void AssimpInputResourceRetrieverAdaptor::Close(Assimp::IOStream* pFile)
 {
-  if (pFile)
+  if (pFile) {
     delete pFile;
+  }
 }
 
 /*
@@ -164,10 +165,11 @@ aiReturn AssimpInputResourceAdaptor::Seek(std::size_t pOffset, aiOrigin pOrigin)
       return aiReturn_FAILURE;
   }
 
-  if (mResource->seek(pOffset, origin))
+  if (mResource->seek(pOffset, origin)) {
     return aiReturn_SUCCESS;
-  else
+  } else {
     return aiReturn_FAILURE;
+  }
 }
 
 //==============================================================================
@@ -247,8 +249,9 @@ std::size_t fileWriteProc(
 aiFile* fileOpenProc(aiFileIO* _io, const char* _path, const char* _mode)
 {
   Assimp::IOStream* stream = getIOSystem(_io)->Open(_path, _mode);
-  if (!stream)
+  if (!stream) {
     return nullptr;
+  }
 
   aiFile* out = new aiFile;
   out->FileSizeProc = &fileSizeProc;

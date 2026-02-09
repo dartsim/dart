@@ -50,8 +50,9 @@ namespace {
 
 double matrixInfinityNorm(const Eigen::MatrixXd& A)
 {
-  if (A.size() == 0)
+  if (A.size() == 0) {
     return 0.0;
+  }
 
   return A.cwiseAbs().rowwise().sum().maxCoeff();
 }
@@ -118,8 +119,9 @@ LcpResult SubspaceMinimizationSolver::solve(
     return result;
   }
 
-  if (x.size() != n || !options.warmStart || !x.allFinite())
+  if (x.size() != n || !options.warmStart || !x.allFinite()) {
     x = Eigen::VectorXd::Zero(n);
+  }
 
   const int maxIterations = std::max(
       1,
@@ -188,8 +190,9 @@ LcpResult SubspaceMinimizationSolver::solve(
     return true;
   };
 
-  if (!updateMetrics())
+  if (!updateMetrics()) {
     return result;
+  }
 
   bool converged = (residual <= tol && complementarity <= compTol);
   int iterationsUsed = 0;
@@ -208,8 +211,9 @@ LcpResult SubspaceMinimizationSolver::solve(
       return pgsResult;
     }
 
-    if (!updateMetrics())
+    if (!updateMetrics()) {
       return result;
+    }
 
     const double activeTol
         = (params->activeSetTolerance > 0.0) ? params->activeSetTolerance : tol;
@@ -225,10 +229,11 @@ LcpResult SubspaceMinimizationSolver::solve(
       const bool interior = (!atLo && !atHi)
                             && (!hasLo || x[i] > loEff[i] + activeTol)
                             && (!hasUpper || x[i] < hiEff[i] - activeTol);
-      if (interior)
+      if (interior) {
         freeIndices.push_back(i);
-      else
+      } else {
         fixedIndices.push_back(i);
+      }
     }
 
     if (!freeIndices.empty()) {
@@ -239,11 +244,13 @@ LcpResult SubspaceMinimizationSolver::solve(
       for (int r = 0; r < fSize; ++r) {
         const int i = freeIndices[r];
         double rhsVal = b[i];
-        for (const int j : fixedIndices)
+        for (const int j : fixedIndices) {
           rhsVal -= A(i, j) * x[j];
+        }
         rhs[r] = rhsVal;
-        for (int c = 0; c < fSize; ++c)
+        for (int c = 0; c < fSize; ++c) {
           A_ff(r, c) = A(i, freeIndices[c]);
+        }
       }
 
       const Eigen::VectorXd xFree = A_ff.colPivHouseholderQr().solve(rhs);
@@ -256,19 +263,23 @@ LcpResult SubspaceMinimizationSolver::solve(
       for (int r = 0; r < fSize; ++r) {
         const int i = freeIndices[r];
         double value = xFree[r];
-        if (std::isfinite(loEff[i]))
+        if (std::isfinite(loEff[i])) {
           value = std::max(value, loEff[i]);
-        if (std::isfinite(hiEff[i]))
+        }
+        if (std::isfinite(hiEff[i])) {
           value = std::min(value, hiEff[i]);
+        }
         x[i] = value;
       }
     }
 
-    if (!updateMetrics())
+    if (!updateMetrics()) {
       return result;
+    }
 
-    if (residual <= tol && complementarity <= compTol)
+    if (residual <= tol && complementarity <= compTol) {
       converged = true;
+    }
   }
 
   result.iterations = iterationsUsed;

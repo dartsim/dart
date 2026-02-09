@@ -51,8 +51,9 @@ SensorManager::SensorManager(
 //==============================================================================
 SensorManager::~SensorManager()
 {
-  for (const auto& connection : mNameConnections)
+  for (const auto& connection : mNameConnections) {
     connection.disconnect();
+  }
 }
 
 //==============================================================================
@@ -82,8 +83,9 @@ const std::string& SensorManager::getDefaultName() const
 //==============================================================================
 SensorPtr SensorManager::getSensor(std::size_t index) const
 {
-  if (index < mSensors.size())
+  if (index < mSensors.size()) {
     return mSensors[index];
+  }
 
   return nullptr;
 }
@@ -156,11 +158,13 @@ void SensorManager::removeSensor(const SensorPtr& sensor)
 std::set<SensorPtr> SensorManager::removeAllSensors()
 {
   std::set<SensorPtr> ptrs;
-  for (const auto& sensor : mSensors)
+  for (const auto& sensor : mSensors) {
     ptrs.insert(sensor);
+  }
 
-  while (getNumSensors() > 0)
+  while (getNumSensors() > 0) {
     removeSensor(getSensor(0));
+  }
 
   return ptrs;
 }
@@ -186,8 +190,9 @@ void SensorManager::updateSensors(const simulation::World& world)
   context.frame = world.getSimFrames();
 
   for (const auto& sensor : mSensors) {
-    if (sensor)
+    if (sensor) {
       sensor->update(world, context);
+    }
   }
 }
 
@@ -195,8 +200,9 @@ void SensorManager::updateSensors(const simulation::World& world)
 void SensorManager::resetSensors()
 {
   for (const auto& sensor : mSensors) {
-    if (sensor)
+    if (sensor) {
       sensor->reset();
+    }
   }
 }
 

@@ -52,7 +52,7 @@ class Support;
 namespace detail {
 
 //==============================================================================
-struct EndEffectorProperties
+struct DART_API EndEffectorProperties
 {
   /// The default relative transform for the EndEffector. If the relative
   /// transform of the EndEffector is ever changed, you can call

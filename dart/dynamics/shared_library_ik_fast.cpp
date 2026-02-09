@@ -248,8 +248,9 @@ const char* SharedLibraryIkFast::getIkFastVersion()
 //==============================================================================
 void SharedLibraryIkFast::configure() const
 {
-  if (!mSharedLibrary)
+  if (!mSharedLibrary) {
     return;
+  }
 
   IkFast::configure();
 }

@@ -66,8 +66,9 @@ static void extractDataFromObjectTypeMap(
   // This method allows us to avoid dynamic allocation (cloning) whenever
   // possible.
   for (const auto& object : objectMap) {
-    if (nullptr == object.second)
+    if (nullptr == object.second) {
       continue;
+    }
 
     const DataType* data = (object.second.get()->*getData)();
     if (data) {
@@ -124,8 +125,9 @@ static void setObjectsFromDataTypeMap(
   while (objectMap.end() != objects && dataMap.end() != data) {
     if (objects->first == data->first) {
       ObjectType* object = objects->second.get();
-      if (object && data->second)
+      if (object && data->second) {
         (object->*setData)(*data->second);
+      }
 
       ++objects;
       ++data;
@@ -200,8 +202,9 @@ void Composite::duplicateAspects(const Composite* fromComposite)
     return;
   }
 
-  if (this == fromComposite)
+  if (this == fromComposite) {
     return;
+  }
 
   const AspectMap& otherMap = fromComposite->mAspectMap;
 
@@ -215,8 +218,9 @@ void Composite::duplicateAspects(const Composite* fromComposite)
       _set(incoming->first, incoming->second.get());
       ++incoming;
     } else if (receiving->first == incoming->first) {
-      if (incoming->second)
+      if (incoming->second) {
         _set(incoming->first, incoming->second.get());
+      }
 
       ++receiving;
       ++incoming;
@@ -242,8 +246,9 @@ void Composite::matchAspects(const Composite* otherComposite)
     return;
   }
 
-  for (auto& aspect : mAspectMap)
+  for (auto& aspect : mAspectMap) {
     _replaceAspect(aspect.second, nullptr);
+  }
 
   duplicateAspects(otherComposite);
 }
@@ -251,15 +256,17 @@ void Composite::matchAspects(const Composite* otherComposite)
 //==============================================================================
 void Composite::addToComposite(Aspect* aspect)
 {
-  if (aspect)
+  if (aspect) {
     aspect->setComposite(this);
+  }
 }
 
 //==============================================================================
 void Composite::removeFromComposite(Aspect* aspect)
 {
-  if (aspect)
+  if (aspect) {
     aspect->loseComposite(this);
+  }
 }
 
 //==============================================================================

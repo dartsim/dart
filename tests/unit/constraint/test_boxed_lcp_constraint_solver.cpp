@@ -205,4 +205,138 @@ TEST(PgsBoxedLcpSolver, AcceptsNullFindex)
   EXPECT_NEAR(x[0], target, 1e-6);
 }
 
+//==============================================================================
+TEST(BoxedLcpConstraintSolver, Constructors)
+{
+  // Default
+  {
+    constraint::BoxedLcpConstraintSolver solver;
+    EXPECT_NE(solver.getBoxedLcpSolver(), nullptr);
+    EXPECT_NE(solver.getSecondaryBoxedLcpSolver(), nullptr);
+  }
+
+  // Primary only
+  {
+    auto dantzig = std::make_shared<constraint::DantzigBoxedLcpSolver>();
+    constraint::BoxedLcpConstraintSolver solver(dantzig);
+    EXPECT_EQ(solver.getBoxedLcpSolver(), dantzig);
+    EXPECT_NE(solver.getSecondaryBoxedLcpSolver(), nullptr);
+  }
+
+  // Both
+  {
+    auto dantzig = std::make_shared<constraint::DantzigBoxedLcpSolver>();
+    auto pgs = std::make_shared<constraint::PgsBoxedLcpSolver>();
+    constraint::BoxedLcpConstraintSolver solver(dantzig, pgs);
+    EXPECT_EQ(solver.getBoxedLcpSolver(), dantzig);
+    EXPECT_EQ(solver.getSecondaryBoxedLcpSolver(), pgs);
+  }
+
+  // Null primary (should fallback to Dantzig)
+  {
+    constraint::BoxedLcpConstraintSolver solver(nullptr, nullptr);
+    EXPECT_NE(solver.getBoxedLcpSolver(), nullptr);
+    EXPECT_EQ(solver.getSecondaryBoxedLcpSolver(), nullptr);
+  }
+}
+
+//==============================================================================
+TEST(BoxedLcpConstraintSolver, Setters)
+{
+  constraint::BoxedLcpConstraintSolver solver;
+  auto dantzig = std::make_shared<constraint::DantzigBoxedLcpSolver>();
+  auto pgs = std::make_shared<constraint::PgsBoxedLcpSolver>();
+
+  solver.setBoxedLcpSolver(pgs);
+  EXPECT_EQ(solver.getBoxedLcpSolver(), pgs);
+
+  // Set null (should be ignored)
+  solver.setBoxedLcpSolver(nullptr);
+  EXPECT_EQ(solver.getBoxedLcpSolver(), pgs);
+
+  solver.setSecondaryBoxedLcpSolver(dantzig);
+  EXPECT_EQ(solver.getSecondaryBoxedLcpSolver(), dantzig);
+
+  // Set primary same as secondary (allowed but discouraged, triggers
+  // DART_WARN_IF)
+  solver.setBoxedLcpSolver(dantzig);
+  EXPECT_EQ(solver.getBoxedLcpSolver(), dantzig);
+}
+
+//==============================================================================
+class DummyBoxedLcpSolver : public constraint::BoxedLcpSolver
+{
+public:
+  const std::string& getType() const override
+  {
+    static const std::string type = "DummyBoxedLcpSolver";
+    return type;
+  }
+
+  bool canSolve(int /*n*/, const double* /*A*/) override
+  {
+    return true;
+  }
+
+  bool solve(
+      int n,
+      double* /*A*/,
+      double* /*x*/,
+      double* /*b*/,
+      int /*nub*/,
+      double* /*lo*/,
+      double* /*hi*/,
+      int* /*findex*/,
+      bool /*earlyTermination*/) override
+  {
+    mN = n;
+    return mReturn;
+  }
+  int mN{0};
+  bool mReturn{true};
+};
+
+//==============================================================================
+TEST(BoxedLcpConstraintSolver, AdapterLogic)
+{
+  constraint::BoxedLcpConstraintSolver solver;
+  auto dummy = std::make_shared<DummyBoxedLcpSolver>();
+  solver.setBoxedLcpSolver(dummy);
+
+  auto adapter = solver.getLcpSolver();
+  ASSERT_TRUE(adapter != nullptr);
+  EXPECT_EQ(adapter->getCategory(), "Boxed");
+  EXPECT_EQ(adapter->getName(), "DummyBoxedLcpSolver");
+
+  // Trigger solve through adapter
+  math::LcpProblem problem(
+      Eigen::MatrixXd::Identity(2, 2),
+      Eigen::VectorXd::Ones(2),
+      Eigen::VectorXd::Zero(2),
+      Eigen::VectorXd::Constant(2, 1.0),
+      Eigen::VectorXi::Constant(2, -1));
+
+  Eigen::VectorXd x;
+  auto result = adapter->solve(problem, x, math::LcpOptions());
+  EXPECT_EQ(result.status, math::LcpSolverStatus::Success);
+  EXPECT_EQ(dummy->mN, 2);
+
+  // Test empty problem
+  math::LcpProblem emptyProblem(
+      Eigen::MatrixXd(0, 0),
+      Eigen::VectorXd(0),
+      Eigen::VectorXd(0),
+      Eigen::VectorXd(0),
+      Eigen::VectorXi(0));
+  result = adapter->solve(emptyProblem, x, math::LcpOptions());
+  EXPECT_EQ(result.status, math::LcpSolverStatus::Success);
+  EXPECT_EQ(x.size(), 0);
+
+  // Test invalid dimensions
+  math::LcpProblem invalidProblem = problem;
+  invalidProblem.b = Eigen::VectorXd::Zero(1);
+  result = adapter->solve(invalidProblem, x, math::LcpOptions());
+  EXPECT_EQ(result.status, math::LcpSolverStatus::InvalidProblem);
+}
+
 DART_SUPPRESS_DEPRECATED_END

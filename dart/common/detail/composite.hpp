@@ -62,8 +62,9 @@ template <class T>
 T* Composite::get()
 {
   AspectMap::iterator it = mAspectMap.find(typeid(T));
-  if (mAspectMap.end() == it)
+  if (mAspectMap.end() == it) {
     return nullptr;
+  }
 
   return static_cast<T*>(it->second.get());
 }
@@ -109,8 +110,9 @@ void Composite::removeAspect()
 {
   AspectMap::iterator it = mAspectMap.find(typeid(T));
   DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE(removeAspect, T, DART_BLANK)
-  if (mAspectMap.end() != it)
+  if (mAspectMap.end() != it) {
     _replaceAspect(it->second, nullptr);
+  }
 }
 
 //==============================================================================

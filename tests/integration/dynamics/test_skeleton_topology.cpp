@@ -154,8 +154,9 @@ TEST(Issue1445, Collision)
 
   const double zeroVelocityTol = 3e-3;
 
-  for (std::size_t i = 0; i < numSteps; ++i)
+  for (std::size_t i = 0; i < numSteps; ++i) {
     world->step();
+  }
 
   // Expect both bodies to hit the ground and stop
   EXPECT_NEAR(0.0, model1Body->getLinearVelocity().z(), zeroVelocityTol);
@@ -165,8 +166,9 @@ TEST(Issue1445, Collision)
   world->addSkeleton(temp1);
   model2Body->moveTo<dart::dynamics::FreeJoint>(temp1, nullptr);
 
-  for (std::size_t i = 0; i < numSteps; ++i)
+  for (std::size_t i = 0; i < numSteps; ++i) {
     world->step();
+  }
 
   // Expect both bodies to remain in contact with the ground with zero velocity.
   EXPECT_NEAR(0.0, model1Body->getLinearVelocity().z(), zeroVelocityTol);
@@ -175,8 +177,9 @@ TEST(Issue1445, Collision)
   auto* groundBody = ground->getRootBodyNode();
   auto temp2 = groundBody->remove();
 
-  for (std::size_t i = 0; i < numSteps; ++i)
+  for (std::size_t i = 0; i < numSteps; ++i) {
     world->step();
+  }
 
   // Expect both bodies to be falling after the BodyNode of the the ground is
   // removed

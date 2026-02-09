@@ -46,8 +46,9 @@ namespace {
 
 double matrixInfinityNorm(const Eigen::MatrixXd& A)
 {
-  if (A.size() == 0)
+  if (A.size() == 0) {
     return 0.0;
+  }
 
   return A.cwiseAbs().rowwise().sum().maxCoeff();
 }
@@ -113,8 +114,9 @@ LcpResult JacobiSolver::solve(
     return result;
   }
 
-  if (x.size() != n || !options.warmStart || !x.allFinite())
+  if (x.size() != n || !options.warmStart || !x.allFinite()) {
     x = Eigen::VectorXd::Zero(n);
+  }
 
   const int maxIterations = std::max(
       1,
@@ -182,8 +184,9 @@ LcpResult JacobiSolver::solve(
     return true;
   };
 
-  if (!updateMetrics(x))
+  if (!updateMetrics(x)) {
     return result;
+  }
 
   bool converged = (residual <= tol && complementarity <= compTol);
   int iterationsUsed = 0;
@@ -201,21 +204,25 @@ LcpResult JacobiSolver::solve(
         value = x[i] + relaxation * (step - x[i]);
       }
 
-      if (std::isfinite(loEff[i]))
+      if (std::isfinite(loEff[i])) {
         value = std::max(value, loEff[i]);
-      if (std::isfinite(hiEff[i]))
+      }
+      if (std::isfinite(hiEff[i])) {
         value = std::min(value, hiEff[i]);
+      }
 
       xNew[i] = value;
     }
 
     x = xNew;
 
-    if (!updateMetrics(x))
+    if (!updateMetrics(x)) {
       return result;
+    }
 
-    if (residual <= tol && complementarity <= compTol)
+    if (residual <= tol && complementarity <= compTol) {
       converged = true;
+    }
   }
 
   result.iterations = iterationsUsed;

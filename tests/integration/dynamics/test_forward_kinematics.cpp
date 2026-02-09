@@ -165,8 +165,9 @@ Eigen::MatrixXd standardJacobian(
   Eigen::MatrixXd J = skeleton->getJacobian(node).bottomRows<3>();
 
   Eigen::MatrixXd reduced_J(3, q.size());
-  for (int i = 0; i < q.size(); ++i)
+  for (int i = 0; i < q.size(); ++i) {
     reduced_J.col(i) = J.col(active_indices[i]);
+  }
 
   return reduced_J;
 }
@@ -184,8 +185,9 @@ TEST(ForwardKinematics, JacobianPartialChange)
   SkeletonPtr skeleton2 = skeleton1->cloneSkeleton();
 
   std::vector<std::size_t> active_indices;
-  for (std::size_t i = 0; i < 3; ++i)
+  for (std::size_t i = 0; i < 3; ++i) {
     active_indices.push_back(i);
+  }
 
   Eigen::VectorXd q = Eigen::VectorXd::Random(active_indices.size());
 
@@ -238,8 +240,9 @@ TEST(ForwardKinematics, JacobianEndEffectorChange)
   EndEffector* ee2 = last_bn2->createEndEffector();
 
   std::vector<std::size_t> active_indices;
-  for (std::size_t i = 0; i < 3; ++i)
+  for (std::size_t i = 0; i < 3; ++i) {
     active_indices.push_back(i);
+  }
 
   Eigen::VectorXd q = Eigen::VectorXd::Random(active_indices.size());
 

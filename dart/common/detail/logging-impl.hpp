@@ -179,14 +179,16 @@ inline std::string makeLogPrefix(
     has_component = true;
   }
   if (line > 0) {
-    if (has_component)
+    if (has_component) {
       prefix += ':';
+    }
     prefix += std::to_string(line);
     has_component = true;
   }
   if (function != nullptr && *function != '\0') {
-    if (has_component)
+    if (has_component) {
       prefix += "::";
+    }
     prefix += function;
     has_component = true;
   }

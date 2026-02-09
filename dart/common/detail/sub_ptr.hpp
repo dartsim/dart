@@ -107,8 +107,9 @@ T* sub_ptr<T>::get() const
 template <class T>
 void sub_ptr<T>::set(T* _ptr)
 {
-  if (mT == _ptr)
+  if (mT == _ptr) {
     return;
+  }
 
   removeSubject(mSubjectBase);
   mSubjectBase = dynamic_cast<Subject*>(_ptr);

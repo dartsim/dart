@@ -372,3 +372,114 @@ TEST(Distance, UsesMinimumAcrossPairs)
       || (result.shapeFrame1 == frame2.get()
           && result.shapeFrame2 == frame1.get()));
 }
+
+//==============================================================================
+TEST(DistanceResult, DefaultConstructorInitializesMembers)
+{
+  DistanceResult result;
+
+  EXPECT_DOUBLE_EQ(result.minDistance, 0.0);
+  EXPECT_DOUBLE_EQ(result.unclampedMinDistance, 0.0);
+  EXPECT_EQ(result.shapeFrame1, nullptr);
+  EXPECT_EQ(result.shapeFrame2, nullptr);
+  EXPECT_TRUE(result.nearestPoint1.isZero());
+  EXPECT_TRUE(result.nearestPoint2.isZero());
+  EXPECT_FALSE(result.found());
+}
+
+//==============================================================================
+TEST(DistanceResult, ClearResetsAllMembers)
+{
+  DistanceResult result;
+  result.minDistance = 1.5;
+  result.unclampedMinDistance = 1.5;
+  result.nearestPoint1 = Eigen::Vector3d(1.0, 2.0, 3.0);
+  result.nearestPoint2 = Eigen::Vector3d(4.0, 5.0, 6.0);
+
+  result.clear();
+
+  EXPECT_DOUBLE_EQ(result.minDistance, 0.0);
+  EXPECT_DOUBLE_EQ(result.unclampedMinDistance, 0.0);
+  EXPECT_EQ(result.shapeFrame1, nullptr);
+  EXPECT_EQ(result.shapeFrame2, nullptr);
+  EXPECT_TRUE(result.nearestPoint1.isZero());
+  EXPECT_TRUE(result.nearestPoint2.isZero());
+  EXPECT_FALSE(result.found());
+}
+
+//==============================================================================
+TEST(DistanceResult, FoundReturnsTrueWhenShapeFramesSet)
+{
+  auto fcl = FCLCollisionDetector::create();
+  auto frame1 = SimpleFrame::createShared(Frame::World());
+  auto frame2 = SimpleFrame::createShared(Frame::World());
+
+  auto sphere = std::make_shared<SphereShape>(0.1);
+  frame1->setShape(sphere);
+  frame2->setShape(sphere);
+
+  frame1->setTranslation(Eigen::Vector3d::Zero());
+  frame2->setTranslation(Eigen::Vector3d(1.0, 0.0, 0.0));
+
+  auto group = fcl->createCollisionGroup(frame1.get(), frame2.get());
+
+  DistanceResult result;
+  group->distance(DistanceOption(), &result);
+
+  EXPECT_TRUE(result.found());
+  EXPECT_NE(result.shapeFrame1, nullptr);
+  EXPECT_NE(result.shapeFrame2, nullptr);
+}
+
+//==============================================================================
+TEST(DistanceResult, IsMinDistanceClampedDetectsClamping)
+{
+  auto fcl = FCLCollisionDetector::create();
+  auto frame1 = SimpleFrame::createShared(Frame::World());
+  auto frame2 = SimpleFrame::createShared(Frame::World());
+
+  auto sphere = std::make_shared<SphereShape>(0.1);
+  frame1->setShape(sphere);
+  frame2->setShape(sphere);
+
+  frame1->setTranslation(Eigen::Vector3d::Zero());
+  frame2->setTranslation(Eigen::Vector3d(1.0, 0.0, 0.0));
+
+  auto group = fcl->createCollisionGroup(frame1.get(), frame2.get());
+
+  DistanceOption option;
+  option.distanceLowerBound = 0.5;
+
+  DistanceResult result;
+  group->distance(option, &result);
+
+  EXPECT_TRUE(result.found());
+  EXPECT_GE(result.minDistance, option.distanceLowerBound);
+}
+
+//==============================================================================
+TEST(DistanceResult, NearestPointsComputedWhenEnabled)
+{
+  auto fcl = FCLCollisionDetector::create();
+  auto frame1 = SimpleFrame::createShared(Frame::World());
+  auto frame2 = SimpleFrame::createShared(Frame::World());
+
+  auto sphere = std::make_shared<SphereShape>(0.1);
+  frame1->setShape(sphere);
+  frame2->setShape(sphere);
+
+  frame1->setTranslation(Eigen::Vector3d::Zero());
+  frame2->setTranslation(Eigen::Vector3d(1.0, 0.0, 0.0));
+
+  auto group = fcl->createCollisionGroup(frame1.get(), frame2.get());
+
+  DistanceOption option;
+  option.enableNearestPoints = true;
+
+  DistanceResult result;
+  group->distance(option, &result);
+
+  EXPECT_TRUE(result.found());
+  EXPECT_TRUE(result.nearestPoint1.allFinite());
+  EXPECT_TRUE(result.nearestPoint2.allFinite());
+}

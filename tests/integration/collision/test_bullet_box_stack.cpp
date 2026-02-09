@@ -117,8 +117,9 @@ TEST(Issue867, BulletBoxStackingStaysStable)
     maxObservedTopZ = std::max(maxObservedTopZ, topPos.z());
 
     if (step == kNumSteps - 1) {
-      for (const auto& box : boxes)
+      for (const auto& box : boxes) {
         finalKineticEnergy += box->computeKineticEnergy();
+      }
     }
   }
 

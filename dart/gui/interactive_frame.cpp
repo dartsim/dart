@@ -57,8 +57,9 @@ InteractiveTool::InteractiveTool(
 void InteractiveTool::setEnabled(bool enabled)
 {
   mEnabled = enabled;
-  for (auto& frame : mSimpleFrames)
+  for (auto& frame : mSimpleFrames) {
     frame->getVisualAspect(true)->setHidden(!enabled);
+  }
 }
 
 //==============================================================================
@@ -70,8 +71,9 @@ bool InteractiveTool::getEnabled() const
 //==============================================================================
 void InteractiveTool::setAlpha(double alpha)
 {
-  for (auto& frame : mSimpleFrames)
+  for (auto& frame : mSimpleFrames) {
     frame->getVisualAspect(true)->setAlpha(alpha);
+  }
 }
 
 //==============================================================================
@@ -84,8 +86,9 @@ void InteractiveTool::resetAlpha()
 void InteractiveTool::setDefaultAlpha(double alpha, bool reset)
 {
   mDefaultAlpha = alpha;
-  if (reset)
+  if (reset) {
     resetAlpha();
+  }
 }
 
 //==============================================================================
@@ -127,8 +130,9 @@ InteractiveTool::getShapeFrames()
 {
   std::vector<dart::dynamics::SimpleFrame*> frames(mSimpleFrames.size());
 
-  for (auto i = 0u; i < frames.size(); ++i)
+  for (auto i = 0u; i < frames.size(); ++i) {
     frames[i] = mSimpleFrames[i].get();
+  }
 
   return frames;
 }
@@ -139,8 +143,9 @@ InteractiveTool::getShapeFrames() const
 {
   std::vector<const dart::dynamics::SimpleFrame*> frames(mSimpleFrames.size());
 
-  for (auto i = 0u; i < frames.size(); ++i)
+  for (auto i = 0u; i < frames.size(); ++i) {
     frames[i] = mSimpleFrames[i].get();
+  }
 
   return frames;
 }
@@ -242,8 +247,9 @@ InteractiveFrame::getShapeFrames()
 {
   std::vector<dart::dynamics::SimpleFrame*> frames(mSimpleFrames.size());
 
-  for (auto i = 0u; i < frames.size(); ++i)
+  for (auto i = 0u; i < frames.size(); ++i) {
     frames[i] = mSimpleFrames[i].get();
+  }
 
   return frames;
 }
@@ -254,8 +260,9 @@ InteractiveFrame::getShapeFrames() const
 {
   std::vector<const dart::dynamics::SimpleFrame*> frames(mSimpleFrames.size());
 
-  for (auto i = 0u; i < frames.size(); ++i)
+  for (auto i = 0u; i < frames.size(); ++i) {
     frames[i] = mSimpleFrames[i].get();
+  }
 
   return frames;
 }
@@ -416,10 +423,11 @@ void InteractiveFrame::createStandardVisualizationShapes(
     color[3] = getTool(InteractiveTool::ANGULAR, r)->getDefaultAlpha();
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-    if (r == 1)
+    if (r == 1) {
       tf.rotate(Eigen::AngleAxisd(pi / 2, Eigen::Vector3d(0, 0, 1)));
-    else if (r == 2)
+    } else if (r == 2) {
       tf.rotate(Eigen::AngleAxisd(pi / 2, Eigen::Vector3d(0, 1, 0)));
+    }
 
     auto shapeFrame = mTools[InteractiveTool::ANGULAR][r]->addShapeFrame(shape);
     shapeFrame->setRelativeTransform(tf);
@@ -466,10 +474,11 @@ void InteractiveFrame::createStandardVisualizationShapes(
     color[p] = 0.9;
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-    if (p == 1)
+    if (p == 1) {
       tf.rotate(Eigen::AngleAxisd(pi / 2, Eigen::Vector3d(0, 0, 1)));
-    else if (p == 2)
+    } else if (p == 2) {
       tf.rotate(Eigen::AngleAxisd(pi / 2, Eigen::Vector3d(0, 1, 0)));
+    }
 
     auto shapeFrame = mTools[InteractiveTool::PLANAR][p]->addShapeFrame(shape);
     shapeFrame->setRelativeTransform(tf);
@@ -517,9 +526,11 @@ void InteractiveFrame::deleteAllVisualizationShapes()
 //==============================================================================
 void InteractiveFrame::deleteAllTools()
 {
-  for (std::size_t i = 0; i < InteractiveTool::NUM_TYPES; ++i)
-    for (std::size_t j = 0; j < 3; ++j)
+  for (std::size_t i = 0; i < InteractiveTool::NUM_TYPES; ++i) {
+    for (std::size_t j = 0; j < 3; ++j) {
       delete mTools[i][j];
+    }
+  }
 }
 
 } // namespace gui

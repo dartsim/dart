@@ -138,8 +138,9 @@ public:
           addRing(mOriginalRigidRing->cloneSkeleton());
           return true;
         case 'd':
-          if (mWorld->getNumSkeletons() > 2)
+          if (mWorld->getNumSkeletons() > 2) {
             removeSkeleton(mWorld->getSkeleton(2));
+          }
           std::cout << "Remaining objects: " << mWorld->getNumSkeletons() - 2
                     << std::endl;
           return true;
@@ -190,8 +191,9 @@ protected:
   {
     setupRing(ring);
 
-    if (!addObject(ring))
+    if (!addObject(ring)) {
       return;
+    }
 
     // Create a closed loop to turn the chain into a ring
     // Lesson 5

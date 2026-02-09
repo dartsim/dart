@@ -528,3 +528,64 @@ TEST(ContactSurface, ValidSlipCompliancePassesThrough)
   EXPECT_DOUBLE_EQ(params.mPrimarySlipCompliance, 0.2);
   EXPECT_DOUBLE_EQ(params.mSecondarySlipCompliance, 0.4);
 }
+
+//==============================================================================
+// ContactSurfaceHandler Hierarchy Tests
+//==============================================================================
+
+TEST(ContactSurfaceHandler, DefaultConstructorHasNoParent)
+{
+  ContactSurfaceHandler handler;
+  EXPECT_EQ(handler.getParent(), nullptr);
+}
+
+TEST(ContactSurfaceHandler, SetParentWorks)
+{
+  auto parent = std::make_shared<DefaultContactSurfaceHandler>();
+  ContactSurfaceHandler handler;
+
+  handler.setParent(parent);
+  EXPECT_EQ(handler.getParent(), parent);
+}
+
+TEST(ContactSurfaceHandler, CannotSetSelfAsParent)
+{
+  auto handler = std::make_shared<ContactSurfaceHandler>();
+  handler->setParent(handler);
+  EXPECT_EQ(handler->getParent(), nullptr);
+}
+
+TEST(ContactSurfaceHandler, ConstructorWithParent)
+{
+  auto parent = std::make_shared<DefaultContactSurfaceHandler>();
+  ContactSurfaceHandler handler(parent);
+  EXPECT_EQ(handler.getParent(), parent);
+}
+
+TEST(ContactSurfaceHandler, BaseCreateParamsDelegatesToParent)
+{
+  auto setup = createCollidingBoxes(0.3, 0.5);
+  auto result = setup.runCollision();
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  auto parent = std::make_shared<DefaultContactSurfaceHandler>();
+  ContactSurfaceHandler handler(parent);
+
+  auto params = handler.createParams(result.getContact(0), 1);
+
+  EXPECT_DOUBLE_EQ(params.mPrimaryFrictionCoeff, 0.3);
+}
+
+TEST(ContactSurfaceHandler, BaseCreateParamsReturnsDefaultWithNoParent)
+{
+  auto setup = createCollidingBoxes(0.3, 0.5);
+  auto result = setup.runCollision();
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  ContactSurfaceHandler handler;
+
+  auto params = handler.createParams(result.getContact(0), 1);
+
+  EXPECT_DOUBLE_EQ(params.mPrimaryFrictionCoeff, DART_DEFAULT_FRICTION_COEFF);
+  EXPECT_DOUBLE_EQ(params.mRestitutionCoeff, DART_DEFAULT_RESTITUTION_COEFF);
+}

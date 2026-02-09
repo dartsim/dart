@@ -80,8 +80,9 @@ SimpleFrame::~SimpleFrame()
 //==============================================================================
 const std::string& SimpleFrame::setName(const std::string& _name)
 {
-  if (_name == mName)
+  if (_name == mName) {
     return mName;
+  }
 
   std::string oldName = mName;
   mName = _name;
@@ -115,11 +116,13 @@ void SimpleFrame::copy(
 void SimpleFrame::copy(
     const Frame* _otherFrame, Frame* _refFrame, bool _copyProperties)
 {
-  if (nullptr == _otherFrame || nullptr == _refFrame)
+  if (nullptr == _otherFrame || nullptr == _refFrame) {
     return;
+  }
 
-  if ((this == _otherFrame) && (_refFrame == getParentFrame()))
+  if ((this == _otherFrame) && (_refFrame == getParentFrame())) {
     return;
+  }
 
   Eigen::Isometry3d relativeTf = _otherFrame->getTransform(_refFrame);
   Eigen::Vector6d relativeVelocity
@@ -134,12 +137,14 @@ void SimpleFrame::copy(
 
   if (_copyProperties) {
     const auto shapeFrame = dynamic_cast<const ShapeFrame*>(_otherFrame);
-    if (shapeFrame)
+    if (shapeFrame) {
       setCompositeProperties(shapeFrame->getCompositeProperties());
+    }
 
     const auto simpleFrame = dynamic_cast<const SimpleFrame*>(_otherFrame);
-    if (simpleFrame)
+    if (simpleFrame) {
       setName(simpleFrame->getName());
+    }
   }
 }
 
@@ -221,11 +226,12 @@ void SimpleFrame::setRelativeSpatialVelocity(
 void SimpleFrame::setRelativeSpatialVelocity(
     const Eigen::Vector6d& _newSpatialVelocity, const Frame* _inCoordinatesOf)
 {
-  if (this == _inCoordinatesOf)
+  if (this == _inCoordinatesOf) {
     setRelativeSpatialVelocity(_newSpatialVelocity);
-  else
+  } else {
     setRelativeSpatialVelocity(
         math::AdR(_inCoordinatesOf->getTransform(this), _newSpatialVelocity));
+  }
 }
 
 //==============================================================================
@@ -247,12 +253,13 @@ void SimpleFrame::setRelativeSpatialAcceleration(
     const Eigen::Vector6d& _newSpatialAcceleration,
     const Frame* _inCoordinatesOf)
 {
-  if (this == _inCoordinatesOf)
+  if (this == _inCoordinatesOf) {
     setRelativeSpatialAcceleration(_newSpatialAcceleration);
-  else
+  } else {
     setRelativeSpatialAcceleration(
         math::AdR(
             _inCoordinatesOf->getTransform(this), _newSpatialAcceleration));
+  }
 }
 
 //==============================================================================

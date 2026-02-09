@@ -77,8 +77,9 @@ UniversalJoint::Properties UniversalJoint::getUniversalJointProperties() const
 //==============================================================================
 void UniversalJoint::copy(const UniversalJoint& _otherJoint)
 {
-  if (this == &_otherJoint)
+  if (this == &_otherJoint) {
     return;
+  }
 
   setProperties(_otherJoint.getUniversalJointProperties());
 }
@@ -86,10 +87,11 @@ void UniversalJoint::copy(const UniversalJoint& _otherJoint)
 //==============================================================================
 void UniversalJoint::copy(const UniversalJoint* _otherJoint)
 {
-  if (nullptr == _otherJoint)
+  if (nullptr == _otherJoint) {
     return;
+  }
 
-  copy(*this);
+  copy(*_otherJoint);
 }
 
 //==============================================================================
@@ -181,10 +183,12 @@ Joint* UniversalJoint::clone() const
 //==============================================================================
 void UniversalJoint::updateDegreeOfFreedomNames()
 {
-  if (!mDofs[0]->isNamePreserved())
+  if (!mDofs[0]->isNamePreserved()) {
     mDofs[0]->setName(Joint::mAspectProperties.mName + "_1", false);
-  if (!mDofs[1]->isNamePreserved())
+  }
+  if (!mDofs[1]->isNamePreserved()) {
     mDofs[1]->setName(Joint::mAspectProperties.mName + "_2", false);
+  }
 }
 
 //==============================================================================
@@ -195,7 +199,13 @@ void UniversalJoint::updateRelativeTransform() const
        * Eigen::AngleAxisd(positions[0], getAxis1())
        * Eigen::AngleAxisd(positions[1], getAxis2())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
-  DART_ASSERT(math::verifyTransform(mT));
+  if (!math::verifyTransform(mT)) {
+    DART_WARN_ONCE(
+        "[UniversalJoint::updateRelativeTransform] Non-finite relative "
+        "transform detected in '{}'. Using identity.",
+        this->getName());
+    mT = Eigen::Isometry3d::Identity();
+  }
 }
 
 //==============================================================================

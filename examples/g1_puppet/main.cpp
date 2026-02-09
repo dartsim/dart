@@ -67,8 +67,9 @@ public:
   void customPreRefresh() override
   {
     for (const auto& handle : mHandles) {
-      if (!handle->active)
+      if (!handle->active) {
         continue;
+      }
 
       handle->ik->getTarget()->setTransform(handle->frame->getTransform());
       handle->ik->solveAndApply(true);
@@ -90,13 +91,15 @@ public:
   bool handle(
       const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
   {
-    if (ea.getEventType() != ::osgGA::GUIEventAdapter::KEYDOWN)
+    if (ea.getEventType() != ::osgGA::GUIEventAdapter::KEYDOWN) {
       return false;
+    }
 
     const int key = ea.getKey();
     for (const auto& handle : mHandles) {
-      if (key != handle->hotkey)
+      if (key != handle->hotkey) {
         continue;
+      }
 
       handle->active = !handle->active;
       if (handle->active) {
@@ -136,25 +139,30 @@ struct Options
 
 std::optional<std::string> getLastPathSegment(std::string value)
 {
-  if (value.empty())
+  if (value.empty()) {
     return std::nullopt;
+  }
 
   const std::size_t terminator = value.find_first_of("?#");
-  if (terminator != std::string::npos)
+  if (terminator != std::string::npos) {
     value.erase(terminator);
+  }
 
-  while (!value.empty() && (value.back() == '/' || value.back() == '\\'))
+  while (!value.empty() && (value.back() == '/' || value.back() == '\\')) {
     value.pop_back();
+  }
 
-  if (value.empty())
+  if (value.empty()) {
     return std::nullopt;
+  }
 
   const std::size_t slash = value.find_last_of("/\\");
   std::string segment
       = value.substr(slash == std::string::npos ? 0 : slash + 1);
 
-  if (segment.empty())
+  if (segment.empty()) {
     return std::nullopt;
+  }
 
   return segment;
 }
@@ -162,18 +170,22 @@ std::optional<std::string> getLastPathSegment(std::string value)
 std::optional<std::string> inferPackageNameFromRobotUri(
     const std::string& robotUri)
 {
-  if (robotUri.empty())
+  if (robotUri.empty()) {
     return std::nullopt;
+  }
 
   dart::common::Uri uri;
-  if (!uri.fromStringOrPath(robotUri))
+  if (!uri.fromStringOrPath(robotUri)) {
     return std::nullopt;
+  }
 
-  if (!uri.mScheme || *uri.mScheme != "package")
+  if (!uri.mScheme || *uri.mScheme != "package") {
     return std::nullopt;
+  }
 
-  if (!uri.mAuthority)
+  if (!uri.mAuthority) {
     return std::nullopt;
+  }
 
   return uri.mAuthority.get();
 }
@@ -181,17 +193,20 @@ std::optional<std::string> inferPackageNameFromRobotUri(
 std::optional<std::string> inferPackageNameFromPackageUri(
     const std::string& packageUri)
 {
-  if (packageUri.empty())
+  if (packageUri.empty()) {
     return std::nullopt;
+  }
 
   dart::common::Uri uri;
   if (uri.fromStringOrPath(packageUri)) {
-    if (uri.mScheme && *uri.mScheme == "package" && uri.mAuthority)
+    if (uri.mScheme && *uri.mScheme == "package" && uri.mAuthority) {
       return uri.mAuthority.get();
+    }
 
     if (uri.mPath) {
-      if (auto segment = getLastPathSegment(uri.mPath.get()))
+      if (auto segment = getLastPathSegment(uri.mPath.get())) {
         return segment;
+      }
     }
   }
 
@@ -234,11 +249,14 @@ Options parseCommandLine(int argc, char* argv[])
 
   if (!packageNameExplicit) {
     if (robotUriExplicit) {
-      if (auto robotName = inferPackageNameFromRobotUri(options.robotUri))
+      if (auto robotName = inferPackageNameFromRobotUri(options.robotUri)) {
         options.packageName = *robotName;
+      }
     } else if (packageUriExplicit) {
-      if (auto packageName = inferPackageNameFromPackageUri(options.packageUri))
+      if (auto packageName
+          = inferPackageNameFromPackageUri(options.packageUri)) {
         options.packageName = *packageName;
+      }
     } else if (
         auto robotName = inferPackageNameFromRobotUri(options.robotUri)) {
       options.packageName = *robotName;
@@ -384,8 +402,9 @@ SkeletonPtr loadG1(
 
 void enableDragAndDrop(dart::gui::Viewer& viewer, const SkeletonPtr& robot)
 {
-  for (std::size_t i = 0; i < robot->getNumBodyNodes(); ++i)
+  for (std::size_t i = 0; i < robot->getNumBodyNodes(); ++i) {
     viewer.enableDragAndDrop(robot->getBodyNode(i), false, false);
+  }
 }
 
 } // namespace
@@ -402,8 +421,9 @@ int main(int argc, char* argv[])
   world->addSkeleton(ground);
 
   SkeletonPtr g1 = loadG1(options, retriever);
-  if (!g1)
+  if (!g1) {
     return 1;
+  }
 
   g1->setName("G1");
   world->addSkeleton(g1);

@@ -60,6 +60,8 @@ MemoryManager::MemoryManager(MemoryAllocator& baseAllocator)
     mFreeListAllocator = std::make_unique<FreeListAllocator>(mBaseAllocator);
     mPoolAllocator = std::make_unique<PoolAllocator>(*mFreeListAllocator);
   }
+
+  mFrameAllocator = std::make_unique<FrameAllocator>(mBaseAllocator);
 }
 
 //==============================================================================
@@ -70,6 +72,12 @@ MemoryManager::~MemoryManager()
 
 //==============================================================================
 MemoryAllocator& MemoryManager::getBaseAllocator()
+{
+  return mBaseAllocator;
+}
+
+//==============================================================================
+const MemoryAllocator& MemoryManager::getBaseAllocator() const
 {
   return mBaseAllocator;
 }
@@ -99,6 +107,13 @@ PoolAllocator& MemoryManager::getPoolAllocator()
 }
 
 //==============================================================================
+FrameAllocator& MemoryManager::getFrameAllocator()
+{
+  DART_ASSERT(mFrameAllocator != nullptr);
+  return *mFrameAllocator;
+}
+
+//==============================================================================
 void* MemoryManager::allocate(Type type, size_t bytes)
 {
   switch (type) {
@@ -120,6 +135,9 @@ void* MemoryManager::allocate(Type type, size_t bytes)
 
       DART_ASSERT(mPoolAllocator != nullptr);
       return mPoolAllocator->allocate(bytes);
+    case Type::Frame:
+      DART_ASSERT(mFrameAllocator != nullptr);
+      return mFrameAllocator->allocate(bytes);
   }
   return nullptr;
 }
@@ -163,6 +181,10 @@ void MemoryManager::deallocate(Type type, void* pointer, size_t bytes)
       DART_ASSERT(mPoolAllocator != nullptr);
       mPoolAllocator->deallocate(pointer, bytes);
       break;
+    case Type::Frame:
+      DART_ASSERT(mFrameAllocator != nullptr);
+      mFrameAllocator->deallocate(pointer, bytes);
+      break;
   }
 }
 
@@ -179,6 +201,18 @@ void MemoryManager::deallocateUsingPool(void* pointer, size_t bytes)
 }
 
 //==============================================================================
+void* MemoryManager::allocateUsingFrame(size_t bytes)
+{
+  return allocate(Type::Frame, bytes);
+}
+
+//==============================================================================
+void MemoryManager::deallocateUsingFrame(void* pointer, size_t bytes)
+{
+  deallocate(Type::Frame, pointer, bytes);
+}
+
+//==============================================================================
 bool MemoryManager::hasAllocated(void* pointer, size_t size) const noexcept
 {
   if (!mUseDebugAllocators) {
@@ -186,12 +220,14 @@ bool MemoryManager::hasAllocated(void* pointer, size_t size) const noexcept
   }
 
   if (mFreeListAllocatorWithDebug != nullptr
-      && mFreeListAllocatorWithDebug->hasAllocated(pointer, size))
+      && mFreeListAllocatorWithDebug->hasAllocated(pointer, size)) {
     return true;
+  }
 
   if (mPoolAllocatorWithDebug != nullptr
-      && mPoolAllocatorWithDebug->hasAllocated(pointer, size))
+      && mPoolAllocatorWithDebug->hasAllocated(pointer, size)) {
     return true;
+  }
 
   return false;
 }
@@ -218,6 +254,10 @@ void MemoryManager::print(std::ostream& os, int indent) const
   } else {
     DART_ASSERT(mPoolAllocator != nullptr);
     mPoolAllocator->print(os, indent + 2);
+  }
+  os << spaces << "frame_allocator:\n";
+  if (mFrameAllocator) {
+    mFrameAllocator->print(os, indent + 2);
   }
   os << spaces << "base_allocator:\n";
   mBaseAllocator.print(os, indent + 2);

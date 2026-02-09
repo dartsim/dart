@@ -48,8 +48,9 @@ RaycastOption::RaycastOption(
 //==============================================================================
 bool RaycastOption::passesFilter(const CollisionObject* object) const
 {
-  if (!mFilter)
+  if (!mFilter) {
     return true;
+  }
 
   return mFilter(object);
 }

@@ -51,8 +51,15 @@ namespace math {
 class DART_API Problem
 {
 public:
+  /// @brief Maximum allowed dimension (~32 MB across 4 internal vectors).
+  /// @throws InvalidArgumentException from setDimension() if exceeded.
+  static constexpr std::size_t kMaxDimension = 1'000'000;
+
   /// @brief Constructor
-  explicit Problem(std::size_t _dim = 0);
+  ///
+  /// @param[in] dim Dimension of the problem. Must be <= kMaxDimension.
+  /// @throws InvalidArgumentException if dim exceeds kMaxDimension.
+  explicit Problem(std::size_t dim = 0);
 
   /// @brief Destructor
   virtual ~Problem() = default;
@@ -60,7 +67,10 @@ public:
   //--------------------------- Problem Setting --------------------------------
   /// @brief Set dimension. Note: Changing the dimension will clear out the
   /// initial guess and any seeds that have been added.
-  void setDimension(std::size_t _dim);
+  ///
+  /// @param[in] dim New dimension. Must be <= kMaxDimension.
+  /// @throws InvalidArgumentException if dim exceeds kMaxDimension.
+  void setDimension(std::size_t dim);
 
   /// @brief Get dimension
   std::size_t getDimension() const;

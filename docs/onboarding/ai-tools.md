@@ -439,10 +439,20 @@ When AI agents (Claude Code, OpenCode, etc.) work on PRs, they may encounter rev
 
 - Address the feedback in code, then push the fix silently
 - If the feedback is valid, implement the fix without commenting
-- If the feedback is incorrect, ignore it (maintainers will dismiss if needed)
+- If the feedback appears incorrect (false positive):
+  1. **Verify** the claim is false by running standalone tests or examining the code
+  2. **Add a test** that explicitly documents the correct behavior AND refutes the claim
+  3. Example: If Codex claims `hprod([2,3,5,7])` returns 294 instead of 210:
+     ```cpp
+     EXPECT_FLOAT_EQ(result, 210.0f);  // Verify correct behavior
+     EXPECT_NE(result, 294.0f);        // Explicitly refute false claim
+     ```
+  4. Push the test (no comment needed) - the test serves as permanent documentation
 - **Follow the review-fix loop** (see workflow below)
 
 This avoids noisy bot-to-bot conversations while still leveraging automated verification.
+
+> **Note**: False positives can recur across reviews. Tests that explicitly refute incorrect claims prevent future confusion and document the verification.
 
 ### Review-Fix Loop Workflow
 
@@ -492,6 +502,53 @@ PR=2458; gh api graphql -f query="query { repository(owner: \"dartsim\", name: \
 ```
 
 **Why resolve immediately**: Clicking "Resolve conversation" in the UI adds no comment noise. The code change is the response—the resolved thread shows the fix was acknowledged.
+
+### Autonomous Review-Fix-Monitor Loop
+
+For agents iterating on automated reviews, the complete loop is:
+
+```
+1. Fetch latest review comments
+2. For each comment:
+   a. Implement the fix (or add a test refuting a false positive)
+   b. Run `pixi run lint` (MANDATORY)
+   c. Build and run relevant tests
+   d. Commit and push silently (no reply to bot comment)
+3. Resolve addressed threads via GraphQL
+4. Re-trigger: `gh pr comment <PR> --body "@codex review"`
+5. Monitor CI: `gh pr checks <PR>`
+6. Wait for new review (poll with `gh api repos/dartsim/dart/pulls/<PR>/reviews`)
+7. If new review has comments → go to step 2
+8. If no new comments AND CI is green → done
+```
+
+**Checking for new reviews:**
+
+```bash
+# List all reviews with timestamps
+gh api repos/dartsim/dart/pulls/<PR>/reviews \
+  --jq '.[] | "ID:\(.id) User:\(.user.login) State:\(.state) At:\(.submitted_at)"'
+
+# Fetch comments from a specific review
+gh api repos/dartsim/dart/pulls/<PR>/reviews/<REVIEW_ID>/comments \
+  --jq '.[] | "File:\(.path) Line:\(.line // .original_line) Body:\(.body)"'
+```
+
+**Monitoring CI:**
+
+```bash
+# Check all CI status checks
+gh pr checks <PR>
+
+# Watch until all checks complete (useful for waiting)
+gh pr checks <PR> --watch
+```
+
+**Stop conditions:**
+
+- Codex review returns no comments (or only 👍 reactions)
+- All CI checks pass (green)
+- Pre-existing failures (e.g., `simulation-experimental` "Not Run") can be ignored
 
 ---
 

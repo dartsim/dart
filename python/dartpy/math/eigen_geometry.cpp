@@ -22,11 +22,13 @@ void checkRotation(const Eigen::Matrix<T, 3, 3>& R)
             .array()
             .abs()
             .maxCoeff();
-  if (identity_error >= kCheckTolerance)
+  if (identity_error >= kCheckTolerance) {
     throw std::runtime_error("Rotation matrix is not orthonormal");
+  }
   const T det_error = std::abs(R.determinant() - 1);
-  if (det_error >= kCheckTolerance)
+  if (det_error >= kCheckTolerance) {
     throw std::runtime_error("Rotation matrix violates right-hand rule");
+  }
 }
 
 template <typename T>
@@ -38,24 +40,27 @@ void checkIsometry(const Eigen::Transform<T, 3, Eigen::Isometry>& X)
   bottom_expected << 0, 0, 0, 1;
   const T bottom_error
       = (X.matrix().bottomRows(1) - bottom_expected).array().abs().maxCoeff();
-  if (bottom_error >= kCheckTolerance)
+  if (bottom_error >= kCheckTolerance) {
     throw std::runtime_error("Homogeneous matrix is improperly scaled.");
+  }
 }
 
 template <typename T>
 void checkQuaternion(const Eigen::Quaternion<T>& q)
 {
   const T norm_error = std::abs(q.coeffs().norm() - 1);
-  if (norm_error >= kCheckTolerance)
+  if (norm_error >= kCheckTolerance) {
     throw std::runtime_error("Quaternion is not normalized");
+  }
 }
 
 template <typename T>
 void checkAngleAxis(const Eigen::AngleAxis<T>& v)
 {
   const T norm_error = std::abs(v.axis().norm() - 1);
-  if (norm_error >= kCheckTolerance)
+  if (norm_error >= kCheckTolerance) {
     throw std::runtime_error("Axis is not normalized");
+  }
 }
 
 } // namespace
@@ -267,8 +272,9 @@ void defEigenGeometry(nb::module_& m)
       .def(
           nb::new_([](double angle, const nb::handle& axis) {
             Eigen::VectorXd vec = toVector(axis);
-            if (vec.size() != 3)
+            if (vec.size() != 3) {
               throw nb::value_error("AngleAxis axis must have length 3");
+            }
             AngleAxis out(angle, Eigen::Vector3d(vec));
             checkAngleAxis(out);
             return out;

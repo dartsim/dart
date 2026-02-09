@@ -107,12 +107,15 @@ bool TranslationalJoint::isCyclic(std::size_t /*_index*/) const
 //==============================================================================
 void TranslationalJoint::updateDegreeOfFreedomNames()
 {
-  if (!mDofs[0]->isNamePreserved())
+  if (!mDofs[0]->isNamePreserved()) {
     mDofs[0]->setName(Joint::mAspectProperties.mName + "_x", false);
-  if (!mDofs[1]->isNamePreserved())
+  }
+  if (!mDofs[1]->isNamePreserved()) {
     mDofs[1]->setName(Joint::mAspectProperties.mName + "_y", false);
-  if (!mDofs[2]->isNamePreserved())
+  }
+  if (!mDofs[2]->isNamePreserved()) {
     mDofs[2]->setName(Joint::mAspectProperties.mName + "_z", false);
+  }
 }
 
 //==============================================================================
@@ -123,7 +126,13 @@ void TranslationalJoint::updateRelativeTransform() const
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   // Verification
-  DART_ASSERT(math::verifyTransform(mT));
+  if (!math::verifyTransform(mT)) {
+    DART_WARN_ONCE(
+        "[TranslationalJoint::updateRelativeTransform] Non-finite relative "
+        "transform detected in '{}'. Using identity.",
+        this->getName());
+    mT = Eigen::Isometry3d::Identity();
+  }
 }
 
 //==============================================================================

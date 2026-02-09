@@ -116,8 +116,9 @@ void ArrowShape::setProperties(const Properties& _properties)
 //==============================================================================
 void ArrowShape::notifyColorUpdated(const Eigen::Vector4d& _color)
 {
-  if (mMaterials.empty())
+  if (mMaterials.empty()) {
     mMaterials.emplace_back();
+  }
 
   auto& material = mMaterials.front();
 

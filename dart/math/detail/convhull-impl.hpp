@@ -188,10 +188,13 @@ inline void isMember(
     int nRightElements)
 {
   std::memset(pOut, 0, nLeftElements * sizeof(int));
-  for (int i = 0; i < nLeftElements; i++)
-    for (int j = 0; j < nRightElements; j++)
-      if (remainingCandidates[i] == pRight[j])
+  for (int i = 0; i < nLeftElements; i++) {
+    for (int j = 0; j < nRightElements; j++) {
+      if (remainingCandidates[i] == pRight[j]) {
         pOut[i] = 1;
+      }
+    }
+  }
 }
 
 /// Sorts an array of floats and optionally returns sorted values and original
@@ -222,12 +225,14 @@ inline void sortFloat(
   }
 
   for (int i = 0; i < len; i++) {
-    if (outVec != nullptr)
+    if (outVec != nullptr) {
       outVec[i] = data[i].value;
-    else
+    } else {
       inVec[i] = data[i].value;
-    if (newIndices != nullptr)
+    }
+    if (newIndices != nullptr) {
       newIndices[i] = data[i].index;
+    }
   }
 }
 
@@ -288,8 +293,9 @@ inline void convexHull3dBuild(
   int currentTriangleCount = (kSpatialDimension + 1);
   std::vector<int> triangleIndices(currentTriangleCount * kSpatialDimension, 0);
   std::vector<int> initialSimplexIndices(currentTriangleCount);
-  for (int i = 0; i < currentTriangleCount; i++)
+  for (int i = 0; i < currentTriangleCount; i++) {
     initialSimplexIndices[i] = i;
+  }
 
   // Compute plane coefficients
   std::vector<S> triangleNormals(currentTriangleCount * kSpatialDimension);
@@ -305,19 +311,22 @@ inline void convexHull3dBuild(
 
     S triangleVertexCoords
         [convhull_internal::kDimensions * convhull_internal::kDimensions];
-    for (int j = 0; j < kSpatialDimension; j++)
-      for (k = 0; k < kSpatialDimension; k++)
+    for (int j = 0; j < kSpatialDimension; j++) {
+      for (k = 0; k < kSpatialDimension; k++) {
         triangleVertexCoords[j * kSpatialDimension + k] = perturbedVertices
             [(triangleIndices[i * kSpatialDimension + j])
                  * (kSpatialDimension + 1)
              + k];
+      }
+    }
 
     S tempNormal[convhull_internal::kDimensions];
     S tempOffset;
     convhull_internal::computePlane3d(
         triangleVertexCoords, tempNormal, &tempOffset);
-    for (int j = 0; j < kSpatialDimension; j++)
+    for (int j = 0; j < kSpatialDimension; j++) {
       triangleNormals[i * kSpatialDimension + j] = tempNormal[j];
+    }
     triangleOffsets[i] = tempOffset;
   }
 
@@ -329,57 +338,70 @@ inline void convexHull3dBuild(
 
   std::memset(A, 0, sizeof(A));
   for (int k = 0; k < (kSpatialDimension + 1); k++) {
-    for (int i = 0; i < kSpatialDimension; i++)
+    for (int i = 0; i < kSpatialDimension; i++) {
       sortedTriangleIndices[i] = triangleIndices[k * kSpatialDimension + i];
+    }
     convhull_internal::sortInt(sortedTriangleIndices, kSpatialDimension);
     int p = k;
-    for (int i = 0; i < kSpatialDimension; i++)
-      for (int j = 0; j < (kSpatialDimension + 1); j++)
+    for (int i = 0; i < kSpatialDimension; i++) {
+      for (int j = 0; j < (kSpatialDimension + 1); j++) {
         A[i * (kSpatialDimension + 1) + j] = perturbedVertices
             [(triangleIndices[k * kSpatialDimension + i])
                  * (kSpatialDimension + 1)
              + j];
-    for (int i = kSpatialDimension; i < (kSpatialDimension + 1); i++)
-      for (int j = 0; j < (kSpatialDimension + 1); j++)
+      }
+    }
+    for (int i = kSpatialDimension; i < (kSpatialDimension + 1); i++) {
+      for (int j = 0; j < (kSpatialDimension + 1); j++) {
         A[i * (kSpatialDimension + 1) + j]
             = perturbedVertices[p * (kSpatialDimension + 1) + j];
+      }
+    }
 
     S v = convhull_internal::det4x4(A);
 
     if (v < 0) {
-      for (int j = 0; j < 2; j++)
+      for (int j = 0; j < 2; j++) {
         swapBuffer[j] = triangleIndices
             [k * kSpatialDimension + kSpatialDimension - j - 1];
-      for (int j = 0; j < 2; j++)
+      }
+      for (int j = 0; j < 2; j++) {
         triangleIndices[k * kSpatialDimension + kSpatialDimension - j - 1]
             = swapBuffer[1 - j];
+      }
 
-      for (int j = 0; j < kSpatialDimension; j++)
+      for (int j = 0; j < kSpatialDimension; j++) {
         triangleNormals[k * kSpatialDimension + j]
             = -triangleNormals[k * kSpatialDimension + j];
+      }
       triangleOffsets[k] = -triangleOffsets[k];
     }
   }
 
   // Compute center and distances
   S geometricCentroid[convhull_internal::kDimensions] = {0};
-  for (int i = kSpatialDimension + 1; i < numInputVertices; i++)
-    for (int j = 0; j < kSpatialDimension; j++)
+  for (int i = kSpatialDimension + 1; i < numInputVertices; i++) {
+    for (int j = 0; j < kSpatialDimension; j++) {
       geometricCentroid[j]
           += perturbedVertices[i * (kSpatialDimension + 1) + j];
-  for (int j = 0; j < kSpatialDimension; j++)
+    }
+  }
+  for (int j = 0; j < kSpatialDimension; j++) {
     geometricCentroid[j]
         = geometricCentroid[j]
           / static_cast<S>(numInputVertices - kSpatialDimension - 1);
+  }
 
   std::vector<S> normalizedDisplacements(
       (numInputVertices - kSpatialDimension - 1) * kSpatialDimension);
-  for (int i = kSpatialDimension + 1, k = 0; i < numInputVertices; i++, k++)
-    for (int j = 0; j < kSpatialDimension; j++)
+  for (int i = kSpatialDimension + 1, k = 0; i < numInputVertices; i++, k++) {
+    for (int j = 0; j < kSpatialDimension; j++) {
       normalizedDisplacements[k * kSpatialDimension + j]
           = (perturbedVertices[i * (kSpatialDimension + 1) + j]
              - geometricCentroid[j])
             / axisAlignedExtents[j];
+    }
+  }
 
   std::vector<S> squaredDistances(numInputVertices - kSpatialDimension - 1, 0);
   std::vector<S> sortedSquaredDistances(
@@ -404,8 +426,9 @@ inline void convexHull3dBuild(
       true);
 
   int numRemainingCandidates = (numInputVertices - kSpatialDimension - 1);
-  for (int i = 0; i < numRemainingCandidates; i++)
+  for (int i = 0; i < numRemainingCandidates; i++) {
     remainingCandidates[i] = sortedVertexIndices[i] + kSpatialDimension + 1;
+  }
 
   // Main quickhull loop - Pre-allocate vectors to avoid reallocations
   std::memset(A, 0, sizeof(A));
@@ -489,8 +512,9 @@ inline void convexHull3dBuild(
           > static_cast<S>(0.0)) {
         numVisibleTriangles++;
         triangleVisibilityFlags[j] = 1;
-      } else
+      } else {
         triangleVisibilityFlags[j] = 0;
+      }
     }
     int numOccludedTriangles = currentTriangleCount - numVisibleTriangles;
 
@@ -509,9 +533,10 @@ inline void convexHull3dBuild(
       k = 0;
       for (int j = 0; j < currentTriangleCount; j++) {
         if (triangleVisibilityFlags[j] == 0) {
-          for (int l = 0; l < kSpatialDimension; l++)
+          for (int l = 0; l < kSpatialDimension; l++) {
             occludedTriangleData[k * kSpatialDimension + l]
                 = triangleIndices[j * kSpatialDimension + l];
+          }
           k++;
         }
       }
@@ -519,8 +544,9 @@ inline void convexHull3dBuild(
       int horizonEdgeCounter = 0;
       for (int j = 0; j < numVisibleTriangles; j++) {
         int vis = visibleTriangleIndices[j];
-        for (k = 0; k < kSpatialDimension; k++)
+        for (k = 0; k < kSpatialDimension; k++) {
           sortedCurrentFace[k] = triangleIndices[vis * kSpatialDimension + k];
+        }
         convhull_internal::sortInt(sortedCurrentFace, kSpatialDimension);
         convhull_internal::isMember(
             occludedTriangleData.data(),
@@ -532,8 +558,9 @@ inline void convexHull3dBuild(
         candidateHorizonFaces.clear();
         for (k = 0; k < numOccludedTriangles; k++) {
           int f0Sum = 0;
-          for (int l = 0; l < kSpatialDimension; l++)
+          for (int l = 0; l < kSpatialDimension; l++) {
             f0Sum += sharedEdgeFlags[k * kSpatialDimension + l];
+          }
           if (f0Sum == kSpatialDimension - 1) {
             candidateHorizonFaces.push_back(k);
           }
@@ -543,9 +570,10 @@ inline void convexHull3dBuild(
           horizonEdgeCounter++;
           horizonEdgeVertices.resize(
               horizonEdgeCounter * (kSpatialDimension - 1));
-          for (int l = 0; l < kSpatialDimension; l++)
+          for (int l = 0; l < kSpatialDimension; l++) {
             currentFaceVertices[l] = occludedTriangleData
                 [candidateHorizonFaces[k] * kSpatialDimension + l];
+          }
           int h = 0;
           for (int l = 0; l < kSpatialDimension; l++) {
             if (sharedEdgeFlags
@@ -563,13 +591,15 @@ inline void convexHull3dBuild(
       int l = 0;
       for (int j = 0; j < currentTriangleCount; j++) {
         if (!triangleVisibilityFlags[j]) {
-          for (k = 0; k < kSpatialDimension; k++)
+          for (k = 0; k < kSpatialDimension; k++) {
             triangleIndices[l * kSpatialDimension + k]
                 = triangleIndices[j * kSpatialDimension + k];
+          }
 
-          for (k = 0; k < kSpatialDimension; k++)
+          for (k = 0; k < kSpatialDimension; k++) {
             triangleNormals[l * kSpatialDimension + k]
                 = triangleNormals[j * kSpatialDimension + k];
+          }
           triangleOffsets[l] = triangleOffsets[j];
           l++;
         }
@@ -592,9 +622,10 @@ inline void convexHull3dBuild(
 
       for (int j = 0; j < numNewTriangles; j++) {
         currentTriangleCount++;
-        for (k = 0; k < kSpatialDimension - 1; k++)
+        for (k = 0; k < kSpatialDimension - 1; k++) {
           triangleIndices[(currentTriangleCount - 1) * kSpatialDimension + k]
               = horizonEdgeVertices[j * (kSpatialDimension - 1) + k];
+        }
         triangleIndices
             [(currentTriangleCount - 1) * kSpatialDimension
              + (kSpatialDimension - 1)]
@@ -602,32 +633,37 @@ inline void convexHull3dBuild(
 
         S triangleVertexCoords
             [convhull_internal::kDimensions * convhull_internal::kDimensions];
-        for (k = 0; k < kSpatialDimension; k++)
-          for (l = 0; l < kSpatialDimension; l++)
+        for (k = 0; k < kSpatialDimension; k++) {
+          for (l = 0; l < kSpatialDimension; l++) {
             triangleVertexCoords[k * kSpatialDimension + l] = perturbedVertices
                 [(triangleIndices
                       [(currentTriangleCount - 1) * kSpatialDimension + k])
                      * (kSpatialDimension + 1)
                  + l];
+          }
+        }
 
         S tempNormal[convhull_internal::kDimensions];
         S tempOffset;
         convhull_internal::computePlane3d(
             triangleVertexCoords, tempNormal, &tempOffset);
-        for (k = 0; k < kSpatialDimension; k++)
+        for (k = 0; k < kSpatialDimension; k++) {
           triangleNormals[(currentTriangleCount - 1) * kSpatialDimension + k]
               = tempNormal[k];
+        }
         triangleOffsets[(currentTriangleCount - 1)] = tempOffset;
       }
 
       allTriangleIndices.resize(numInputVertices);
       faceContainsVertexFlags.resize(numInputVertices);
-      for (int j = 0; j < numInputVertices; j++)
+      for (int j = 0; j < numInputVertices; j++) {
         allTriangleIndices[j] = j;
+      }
 
       for (k = firstNewTriangleIndex; k < currentTriangleCount; k++) {
-        for (int j = 0; j < kSpatialDimension; j++)
+        for (int j = 0; j < kSpatialDimension; j++) {
           sortedCurrentFace[j] = triangleIndices[k * kSpatialDimension + j];
+        }
         convhull_internal::sortInt(sortedCurrentFace, kSpatialDimension);
         convhull_internal::isMember(
             allTriangleIndices.data(),
@@ -637,9 +673,11 @@ inline void convexHull3dBuild(
             kSpatialDimension);
 
         int numCandidateOrientationTriangles = 0;
-        for (int j = 0; j < numInputVertices; j++)
-          if (!faceContainsVertexFlags[j])
+        for (int j = 0; j < numInputVertices; j++) {
+          if (!faceContainsVertexFlags[j]) {
             numCandidateOrientationTriangles++;
+          }
+        }
 
         nonMatchingTriangles.resize(numCandidateOrientationTriangles);
         l = 0;
@@ -654,43 +692,54 @@ inline void convexHull3dBuild(
         S orientationDeterminant = static_cast<S>(0.0);
 
         while (orientationDeterminant == static_cast<S>(0.0)) {
-          for (int j = 0; j < kSpatialDimension; j++)
-            for (l = 0; l < kSpatialDimension + 1; l++)
+          for (int j = 0; j < kSpatialDimension; j++) {
+            for (l = 0; l < kSpatialDimension + 1; l++) {
               A[j * (kSpatialDimension + 1) + l] = perturbedVertices
                   [(triangleIndices[k * kSpatialDimension + j])
                        * (kSpatialDimension + 1)
                    + l];
-          for (int j = kSpatialDimension; j < kSpatialDimension + 1; j++)
-            for (l = 0; l < kSpatialDimension + 1; l++)
+            }
+          }
+          for (int j = kSpatialDimension; j < kSpatialDimension + 1; j++) {
+            for (l = 0; l < kSpatialDimension + 1; l++) {
               A[j * (kSpatialDimension + 1) + l] = perturbedVertices
                   [nonMatchingTriangles[index] * (kSpatialDimension + 1) + l];
+            }
+          }
           index++;
           orientationDeterminant = convhull_internal::det4x4(A);
         }
 
         if (orientationDeterminant < static_cast<S>(0.0)) {
-          for (int j = 0; j < 2; j++)
+          for (int j = 0; j < 2; j++) {
             swapBuffer[j] = triangleIndices
                 [k * kSpatialDimension + kSpatialDimension - j - 1];
-          for (int j = 0; j < 2; j++)
+          }
+          for (int j = 0; j < 2; j++) {
             triangleIndices[k * kSpatialDimension + kSpatialDimension - j - 1]
                 = swapBuffer[1 - j];
+          }
 
-          for (int j = 0; j < kSpatialDimension; j++)
+          for (int j = 0; j < kSpatialDimension; j++) {
             triangleNormals[k * kSpatialDimension + j]
                 = -triangleNormals[k * kSpatialDimension + j];
+          }
           triangleOffsets[k] = -triangleOffsets[k];
 #ifndef NDEBUG
-          for (l = 0; l < kSpatialDimension; l++)
-            for (int j = 0; j < kSpatialDimension + 1; j++)
+          for (l = 0; l < kSpatialDimension; l++) {
+            for (int j = 0; j < kSpatialDimension + 1; j++) {
               A[l * (kSpatialDimension + 1) + j] = perturbedVertices
                   [(triangleIndices[k * kSpatialDimension + l])
                        * (kSpatialDimension + 1)
                    + j];
-          for (; l < kSpatialDimension + 1; l++)
-            for (int j = 0; j < kSpatialDimension + 1; j++)
+            }
+          }
+          for (; l < kSpatialDimension + 1; l++) {
+            for (int j = 0; j < kSpatialDimension + 1; j++) {
               A[l * (kSpatialDimension + 1) + j] = perturbedVertices
                   [nonMatchingTriangles[index] * (kSpatialDimension + 1) + j];
+            }
+          }
           orientationDeterminant = convhull_internal::det4x4(A);
           DART_ASSERT(
               orientationDeterminant

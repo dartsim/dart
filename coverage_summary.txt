@@ -1,0 +1,1194 @@
+✨ Pixi task (config-coverage in default): bash -lc "set -euo pipefail
+PIXI_ENVIRONMENT_NAME=${PIXI_ENVIRONMENT_NAME:-default}
+rm -rf \"build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE\"
+echo \"Configuring coverage build directory: build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE\"
+DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
+if [ \"${SCCACHE_GHA_ENABLED:-}\" = \"false\" ]; then
+  DART_DISABLE_COMPILER_CACHE_VALUE=ON
+  unset DART_COMPILER_CACHE
+  if [ \"${CMAKE_C_COMPILER_LAUNCHER:-}\" = \"sccache\" ]; then
+    unset CMAKE_C_COMPILER_LAUNCHER
+  fi
+  if [ \"${CMAKE_CXX_COMPILER_LAUNCHER:-}\" = \"sccache\" ]; then
+    unset CMAKE_CXX_COMPILER_LAUNCHER
+  fi
+fi
+if [ -z \"${CMAKE_C_COMPILER_LAUNCHER:-}\" ]; then
+  if [ \"${SCCACHE_GHA_ENABLED:-}\" != \"false\" ] && command -v sccache >/dev/null 2>&1; then
+    CMAKE_C_COMPILER_LAUNCHER=sccache
+    CMAKE_CXX_COMPILER_LAUNCHER=sccache
+  elif command -v ccache >/dev/null 2>&1; then
+    CMAKE_C_COMPILER_LAUNCHER=ccache
+    CMAKE_CXX_COMPILER_LAUNCHER=ccache
+  fi
+fi
+LAUNCHER_DEFS=\"\"
+if [ -n \"${CMAKE_C_COMPILER_LAUNCHER:-}\" ]; then
+  LAUNCHER_DEFS=\"$LAUNCHER_DEFS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER}\"
+fi
+if [ -n \"${CMAKE_CXX_COMPILER_LAUNCHER:-}\" ]; then
+  LAUNCHER_DEFS=\"$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}\"
+fi
+cmake -G Ninja -S . -B \"build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE\" -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_PROFILE=OFF -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} -DDART_CODECOV=ON -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_TRACY=ON -DDART_VERBOSE=$DART_VERBOSE $LAUNCHER_DEFS"
+Configuring coverage build directory: build/default/cpp/Debug
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Compiler cache enabled: sccache (/home/js/dev/dartsim/dart/task_1/.pixi/envs/default/bin/sccache)
+-- 
+-- ============================================
+--                 DART 7.0.0
+-- ============================================
+-- 
+-- [ Options ]
+-- - CMake Globals
+--   - BUILD_SHARED_LIBS : ON [default]
+-- - Build Outputs
+--   - BUILD_SHARED_LIBS                  : ON [default]
+--   - DART_BUILD_DARTPY                  : OFF [default]
+--   - DART_BUILD_GUI                     : ON [default]
+--   - DART_BUILD_GUI_RAYLIB              : OFF [default]
+--   - DART_BUILD_COLLISION_BULLET        : OFF [default]
+--   - DART_BUILD_COLLISION_ODE           : OFF [default]
+--   - DART_BUILD_EXAMPLES                : ON [default]
+--   - DART_BUILD_TUTORIALS               : ON [default]
+--   - DART_BUILD_TESTS                   : ON [default]
+--   - DART_ENABLE_SDFORMAT               : ON [default]
+--   - DART_BUILD_SIMULATION_EXPERIMENTAL : OFF [default]
+-- - Performance & Debug
+--   - DART_DISABLE_COMPILER_CACHE        : OFF [default]
+--   - DART_BUILD_PROFILE                 : OFF [default]
+--   - DART_PROFILE_BUILTIN               : ON [default]
+--   - DART_PROFILE_TRACY                 : ON [default]
+--   - DART_CODECOV                       : ON
+--   - DART_ENABLE_SIMD                   : OFF [default]
+--   - DART_FAST_DEBUG                    : OFF [default]
+-- - System Integrations
+--   - DART_USE_SYSTEM_IMGUI              : ON
+--   - DART_USE_SYSTEM_RAYLIB             : OFF [default]
+--   - DART_USE_SYSTEM_GOOGLEBENCHMARK    : ON
+--   - DART_USE_SYSTEM_GOOGLETEST         : ON
+--   - DART_USE_SYSTEM_NANOBIND           : OFF [default]
+--   - DART_USE_SYSTEM_TRACY              : ON
+--   - DART_USE_SYSTEM_ODE                : ON [default]
+--   - DART_USE_SYSTEM_BULLET             : ON [default]
+-- - Developer Experience
+--   - DART_ENABLE_ASAN                   : OFF [default]
+--   - DART_FORCE_COLORED_OUTPUT          : OFF [default]
+--   - DART_VERBOSE                       : OFF [default]
+-- 
+-- [ Build Tools ]
+-- - CMake               : 4.2.1
+-- - C++                 : GNU 13.3.0
+-- 
+CMake Warning (dev) at cmake/dart_defs.cmake:547 (install):
+  Policy CMP0177 is not set: install() DESTINATION paths are normalized.  Run
+  "cmake --help-policy CMP0177" for policy details.  Use the cmake_policy
+  command to set the policy and suppress this warning.
+Call Stack (most recent call first):
+  CMakeLists.txt:316 (dart_coverage)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Found assimp: /home/js/dev/dartsim/dart/task_1/.pixi/envs/default/include (found suitable version "5.4.3", minimum required is "5.2.2")
+-- Found Python3: /home/js/dev/dartsim/dart/task_1/.pixi/envs/default/bin/python3.12 (found version "3.12.12") found components: Interpreter Development Development.Module Development.Embed
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Found Vulkan: /home/js/dev/dartsim/dart/task_1/.pixi/envs/default/lib/libvulkan.so (found version "1.3.231") found components: glslc glslangValidator
+-- Found CURL: /home/js/dev/dartsim/dart/task_1/.pixi/envs/default/lib/libcurl.so (found version "8.18.0")
+-- Adding 5 components including the default component 'dart'
+-- Found GTest: /home/js/dev/dartsim/dart/task_1/.pixi/envs/default/lib/cmake/GTest/GTestConfig.cmake (found version "1.17.0")
+-- Adding 190 tests (integration: 56, unit: 134)
+-- Adding 36 examples
+-- Adding 10 tutorials
+-- Skipping Raylib example (DART_BUILD_GUI_RAYLIB == OFF)
+-- Formatting on 990 source files.
+-- 
+-- Run 'cmake --build .' to build all the components
+-- Run 'cmake --build . --target tests' to build all the tests
+-- Run 'cmake --build . --target examples' to build all the examples
+-- Run 'cmake --build . --target tutorials' to build all the tutorials
+-- Run 'cmake --build . --target view_docs' to see the API documentation
+-- Run 'cmake --build . --target install' to install all the C++ components
+-- - 'coverage'     : generate coverage report
+-- - 'coverage_html': generate coverage report in html
+-- - 'coverage_view': view generated coverage report in a browser
+-- 
+-- Configuring done (3.0s)
+-- Generating done (0.5s)
+-- Build files have been written to: /home/js/dev/dartsim/dart/task_1/build/default/cpp/Debug
+
+✨ Pixi task (build-coverage in default): bash -lc "set -euo pipefail
+PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
+CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE python scripts/cmake_build.py --parallel ${PARALLEL_JOBS} --target all --target tests && ctest --output-on-failure -j ${PARALLEL_JOBS} --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE"
+[1/257] Building CXX object dart/CMakeFiles/dart.dir/common/subject.cpp.o
+[2/257] Building CXX object dart/CMakeFiles/dart.dir/common/exception.cpp.o
+[3/257] Building CXX object dart/CMakeFiles/dart.dir/common/observer.cpp.o
+[4/257] Building CXX object dart/CMakeFiles/dart.dir/common/signal.cpp.o
+[5/257] Building CXX object dart/CMakeFiles/dart.dir/common/stopwatch.cpp.o
+[6/257] Building CXX object dart/CMakeFiles/dart.dir/common/string.cpp.o
+[7/257] Building CXX object dart/CMakeFiles/dart.dir/common/detail/connection_body.cpp.o
+[8/257] Building CXX object dart/CMakeFiles/dart.dir/math/random.cpp.o
+[9/257] Building CXX object dart/CMakeFiles/dart.dir/common/detail/profiler.cpp.o
+[10/257] Building CXX object dart/CMakeFiles/dart.dir/math/optimization/solver.cpp.o
+[11/257] Building CXX object dart/CMakeFiles/dart.dir/common/free_list_allocator.cpp.o
+[12/257] Building CXX object dart/CMakeFiles/dart.dir/common/local_resource.cpp.o
+[13/257] Building CXX object dart/CMakeFiles/dart.dir/math/lcp/lcp_solver.cpp.o
+[14/257] Building CXX object dart/CMakeFiles/dart.dir/common/memory_allocator.cpp.o
+[15/257] Building CXX object dart/CMakeFiles/dart.dir/common/callocator.cpp.o
+[16/257] Building CXX object dart/CMakeFiles/dart.dir/common/detail/shared_library_manager.cpp.o
+[17/257] Building CXX object dart/CMakeFiles/dart.dir/common/local_resource_retriever.cpp.o
+[18/257] Building CXX object dart/CMakeFiles/dart.dir/common/pool_allocator.cpp.o
+[19/257] Building CXX object dart/CMakeFiles/dart.dir/common/resource.cpp.o
+[20/257] Building CXX object dart/CMakeFiles/dart.dir/common/version_counter.cpp.o
+[21/257] Building CXX object dart/CMakeFiles/dart.dir/common/resource_retriever.cpp.o
+[22/257] Building CXX object dart/CMakeFiles/dart.dir/common/uri.cpp.o
+[23/257] Building CXX object dart/CMakeFiles/dart.dir/common/shared_library.cpp.o
+[24/257] Building CXX object dart/CMakeFiles/dart.dir/common/composite.cpp.o
+[25/257] Building CXX object dart/CMakeFiles/dart.dir/math/lcp/lcp_types.cpp.o
+[26/257] Building CXX object dart/CMakeFiles/dart.dir/common/aspect.cpp.o
+[27/257] Building CXX object dart/CMakeFiles/dart.dir/math/polygon_mesh.cpp.o
+[28/257] Building CXX object dart/CMakeFiles/dart.dir/common/memory_manager.cpp.o
+[29/257] Building CXX object dart/CMakeFiles/dart.dir/math/tri_mesh.cpp.o
+[30/257] Building CXX object dart/CMakeFiles/dart.dir/math/configuration_space.cpp.o
+[31/257] Building CXX object dart/CMakeFiles/dart.dir/math/optimization/problem.cpp.o
+[32/257] Building CXX object dart/CMakeFiles/dart.dir/math/optimization/function.cpp.o
+[33/257] Building CXX object dart/CMakeFiles/dart.dir/math/lcp/projection/jacobi_solver.cpp.o
+[34/257] Building CXX object dart/CMakeFiles/dart.dir/math/lcp/pivoting/dantzig/lcp.cpp.o
+[35/257] Building CXX object dart/CMakeFiles/dart.dir/math/lcp/pivoting/dantzig/misc.cpp.o
+[36/257] Building CXX object dart/CMakeFiles/dart.dir/math/lcp/projection/pgs_solver.cpp.o
+[37/257] Building CXX object dart/CMakeFiles/dart.dir/math/optimization/gradient_descent_solver.cpp.o
+[38/257] Building CXX object dart/CMakeFiles/dart.dir/math/lcp/projection/bgs_solver.cpp.o
+[39/257] Building CXX object dart/CMakeFiles/dart.dir/math/lcp/pivoting/dantzig_solver.cpp.o
+[40/257] Building CXX object dart/CMakeFiles/dart.dir/math/geometry.cpp.o
+[41/257] Building CXX object dart/CMakeFiles/dart.dir/math/lcp/projection/red_black_gauss_seidel_solver.cpp.o
+[42/257] Building CXX object dart/CMakeFiles/dart.dir/math/lcp/projection/symmetric_psor_solver.cpp.o
+[43/257] Building CXX object dart/CMakeFiles/dart.dir/math/lcp/projection/nncg_solver.cpp.o
+[44/257] Building CXX object dart/CMakeFiles/dart.dir/math/lcp/projection/blocked_jacobi_solver.cpp.o
+[45/257] Building CXX object dart/CMakeFiles/dart.dir/math/lcp/pivoting/baraff_solver.cpp.o
+[46/257] Building CXX object dart/CMakeFiles/dart.dir/math/lcp/other/shock_propagation_solver.cpp.o
+[47/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/arrow_shape.cpp.o
+[48/257] Building CXX object dart/CMakeFiles/dart.dir/math/lcp/pivoting/direct_solver.cpp.o
+[49/257] Building CXX object dart/CMakeFiles/dart.dir/math/lcp/other/mprgp_solver.cpp.o
+[50/257] Building CXX object dart/CMakeFiles/dart.dir/math/lcp/pivoting/lemke_solver.cpp.o
+[51/257] Building CXX object dart/CMakeFiles/dart.dir/math/lcp/other/staggering_solver.cpp.o
+[52/257] Building CXX object dart/CMakeFiles/dart.dir/math/lcp/newton/minimum_map_newton_solver.cpp.o
+[53/257] Building CXX object dart/CMakeFiles/dart.dir/math/lcp/projection/subspace_minimization_solver.cpp.o
+[54/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/box_shape.cpp.o
+[55/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/cone_shape.cpp.o
+[56/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/cylinder_shape.cpp.o
+[57/257] Building CXX object dart/CMakeFiles/dart.dir/math/lcp/other/interior_point_solver.cpp.o
+[58/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/capsule_shape.cpp.o
+[59/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/chain.cpp.o
+[60/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/convex_mesh_shape.cpp.o
+[61/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/entity.cpp.o
+[62/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/branch.cpp.o
+[63/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/group.cpp.o
+[64/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/fixed_frame.cpp.o
+[65/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/ellipsoid_shape.cpp.o
+[66/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/degree_of_freedom.cpp.o
+[67/257] Building CXX object dart/CMakeFiles/dart.dir/math/lcp/newton/fischer_burmeister_newton_solver.cpp.o
+[68/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/node.cpp.o
+[69/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/jacobian_node.cpp.o
+[70/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/meta_skeleton.cpp.o
+[71/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/plane_shape.cpp.o
+[72/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/fixed_jacobian_node.cpp.o
+[73/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/line_segment_shape.cpp.o
+[74/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/pyramid_shape.cpp.o
+[75/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/frame.cpp.o
+[76/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/multi_sphere_convex_hull_shape.cpp.o
+[77/257] Building CXX object dart/CMakeFiles/dart.dir/math/lcp/newton/penalized_fischer_burmeister_newton_solver.cpp.o
+[78/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/ik_fast.cpp.o
+[79/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/shape.cpp.o
+[80/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/mesh_shape.cpp.o
+[81/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/joint.cpp.o
+[82/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/point_cloud_shape.cpp.o
+[83/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/referential_skeleton.cpp.o
+[84/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/euler_joint.cpp.o
+[85/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/end_effector.cpp.o
+[86/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/linkage.cpp.o
+[87/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/inertia.cpp.o
+[88/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/body_node.cpp.o
+[89/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/marker.cpp.o
+[90/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/planar_joint.cpp.o
+[91/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/prismatic_joint.cpp.o
+[92/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/shared_library_ik_fast.cpp.o
+[93/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/ball_joint.cpp.o
+[94/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/shape_frame.cpp.o
+[95/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/simple_frame.cpp.o
+[96/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/sphere_shape.cpp.o
+[97/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/point_mass.cpp.o
+[98/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/screw_joint.cpp.o
+[99/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/detail/euler_joint_aspect.cpp.o
+[100/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/detail/entity_node_aspect.cpp.o
+[101/257] Building CXX object dart/CMakeFiles/dart.dir/collision/collision_option.cpp.o
+[102/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/detail/free_joint_aspect.cpp.o
+[103/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/soft_mesh_shape.cpp.o
+[104/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/free_joint.cpp.o
+[105/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/weld_joint.cpp.o
+[106/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/detail/assimp_input_resource_adaptor.cpp.o
+[107/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/detail/revolute_joint_aspect.cpp.o
+[108/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/detail/prismatic_joint_aspect.cpp.o
+[109/257] Building CXX object dart/CMakeFiles/dart.dir/collision/distance_option.cpp.o
+[110/257] Building CXX object dart/CMakeFiles/dart.dir/collision/collision_detector.cpp.o
+[111/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/revolute_joint.cpp.o
+[112/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/detail/screw_joint_aspect.cpp.o
+[113/257] Building CXX object dart/CMakeFiles/dart.dir/collision/raycast_option.cpp.o
+[114/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/detail/planar_joint_aspect.cpp.o
+[115/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/voxel_grid_shape.cpp.o
+[116/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/detail/universal_joint_aspect.cpp.o
+[117/257] Building CXX object dart/CMakeFiles/dart.dir/collision/raycast_result.cpp.o
+[118/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/detail/ball_joint_aspect.cpp.o
+[119/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/zero_dof_joint.cpp.o
+[120/257] Building CXX object dart/CMakeFiles/dart.dir/collision/collision_group.cpp.o
+[121/257] Building CXX object dart/CMakeFiles/dart.dir/collision/distance_result.cpp.o
+[122/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/hierarchical_ik.cpp.o
+[123/257] Building CXX object dart/CMakeFiles/dart.dir/collision/contact.cpp.o
+[124/257] Building CXX object dart/CMakeFiles/dart.dir/collision/collision_filter.cpp.o
+[125/257] Building CXX object dart/CMakeFiles/dart.dir/collision/dart/dart_collision_object.cpp.o
+[126/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/detail/translational_joint2_d_aspect.cpp.o
+[127/257] Building CXX object dart/CMakeFiles/dart.dir/collision/collision_object.cpp.o
+[128/257] Building CXX object dart/CMakeFiles/dart.dir/collision/distance_filter.cpp.o
+[129/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/shape_node.cpp.o
+[130/257] Building CXX object dart/CMakeFiles/dart.dir/collision/fcl/backward_compatibility.cpp.o
+[131/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/inverse_kinematics.cpp.o
+[132/257] Building CXX object dart/CMakeFiles/dart.dir/collision/dart/dart_collision_detector.cpp.o
+[133/257] Building CXX object dart/CMakeFiles/dart.dir/collision/fcl/fcl_types.cpp.o
+[134/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/skeleton.cpp.o
+[135/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/soft_body_node.cpp.o
+[136/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/universal_joint.cpp.o
+[137/257] Building CXX object dart/CMakeFiles/dart.dir/collision/collision_result.cpp.o
+[138/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/translational_joint2_d.cpp.o
+[139/257] Building CXX object dart/CMakeFiles/dart.dir/dynamics/translational_joint.cpp.o
+[140/257] Building CXX object dart/CMakeFiles/dart.dir/constraint/constrained_group.cpp.o
+[141/257] Building CXX object dart/CMakeFiles/dart.dir/constraint/boxed_lcp_constraint_solver.cpp.o
+[142/257] Building CXX object dart/CMakeFiles/dart.dir/collision/fcl/fcl_collision_object.cpp.o
+[143/257] Building CXX object dart/CMakeFiles/dart.dir/constraint/constraint_base.cpp.o
+[144/257] Building CXX object dart/CMakeFiles/dart.dir/collision/dart/dart_collision_group.cpp.o
+[145/257] Building CXX object dart/CMakeFiles/dart.dir/constraint/dynamic_joint_constraint.cpp.o
+[146/257] Building CXX object dart/CMakeFiles/dart.dir/constraint/pgs_boxed_lcp_solver.cpp.o
+[147/257] Building CXX object dart/CMakeFiles/dart.dir/constraint/dantzig_boxed_lcp_solver.cpp.o
+[148/257] Building CXX object dart/CMakeFiles/dart.dir/collision/fcl/fcl_collision_group.cpp.o
+[149/257] Building CXX object dart/CMakeFiles/dart.dir/constraint/mimic_motor_constraint.cpp.o
+[150/257] Building CXX object dart/CMakeFiles/dart.dir/constraint/contact_surface.cpp.o
+[151/257] Building CXX object dart/CMakeFiles/dart.dir/constraint/coupler_constraint.cpp.o
+[152/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/file_info_dof.cpp.o
+[153/257] Building CXX object dart/CMakeFiles/dart.dir/collision/dart/dart_collide.cpp.o
+[154/257] Building CXX object dart/CMakeFiles/dart.dir/constraint/constraint_solver.cpp.o
+[155/257] Building CXX object dart/CMakeFiles/dart.dir/constraint/joint_constraint.cpp.o
+[156/257] Building CXX object dart/CMakeFiles/dart.dir/constraint/contact_constraint.cpp.o
+[157/257] Building CXX object dart/CMakeFiles/dart.dir/simulation/recording.cpp.o
+[158/257] Building CXX object dart/CMakeFiles/dart.dir/sensor/sensor_manager.cpp.o
+[159/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/composite_resource_retriever.cpp.o
+[160/257] Building CXX object dart/CMakeFiles/dart.dir/sensor/sensor.cpp.o
+[161/257] Building CXX object dart/CMakeFiles/dart.dir/collision/fcl/fcl_collision_detector.cpp.o
+[162/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/dart_resource_retriever.cpp.o
+[163/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/mjcf/detail/error.cpp.o
+[164/257] Building CXX object dart/CMakeFiles/dart.dir/constraint/revolute_joint_constraint.cpp.o
+[165/257] Building CXX object dart/CMakeFiles/dart.dir/constraint/joint_limit_constraint.cpp.o
+[166/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/file_info_world.cpp.o
+[167/257] Building CXX object dart/CMakeFiles/dart.dir/constraint/servo_motor_constraint.cpp.o
+[168/257] Building CXX object dart/CMakeFiles/dart.dir/constraint/joint_coulomb_friction_constraint.cpp.o
+[169/257] Building CXX object dart/CMakeFiles/dart.dir/constraint/ball_joint_constraint.cpp.o
+[170/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/http_resource_retriever.cpp.o
+[171/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/package_resource_retriever.cpp.o
+[172/257] Building CXX object dart/CMakeFiles/dart.dir/constraint/soft_contact_constraint.cpp.o
+[173/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/xml_helpers.cpp.o
+[174/257] Building CXX object dart/CMakeFiles/dart.dir/simulation/world.cpp.o
+[175/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/mjcf/detail/equality.cpp.o
+[176/257] Building CXX object dart/CMakeFiles/dart.dir/constraint/weld_joint_constraint.cpp.o
+[177/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/mjcf/detail/joint.cpp.o
+[178/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/mjcf/detail/asset.cpp.o
+[179/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/mjcf/detail/compiler.cpp.o
+[180/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/mjcf/detail/body.cpp.o
+[181/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/mjcf/detail/mesh_attributes.cpp.o
+[182/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/mjcf/detail/option.cpp.o
+[183/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/mjcf/detail/body_attributes.cpp.o
+[184/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/mjcf/detail/joint_attributes.cpp.o
+[185/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/mjcf/detail/geom_attributes.cpp.o
+[186/257] Building CXX object dart/utils/urdf/CMakeFiles/dart-utils-urdf.dir/urdf_world_parser.cpp.o
+[187/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/mjcf/detail/mesh.cpp.o
+[188/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/mjcf/detail/size.cpp.o
+[189/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/default_event_handler.cpp.o
+[190/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/mjcf/detail/default.cpp.o
+[191/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/mjcf/detail/inertial.cpp.o
+[192/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/grid_visual.cpp.o
+[193/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/mjcf/detail/geom.cpp.o
+[194/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/mjcf/detail/weld.cpp.o
+[195/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/im_gui_viewer.cpp.o
+[196/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/im_gui_widget.cpp.o
+[197/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/skel_parser.cpp.o
+[198/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/mjcf/detail/mujoco_model.cpp.o
+[199/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/mjcf/detail/weld_attributes.cpp.o
+[200/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/sdf/detail/sdf_helpers.cpp.o
+[201/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/sdf/detail/geometry_parsers.cpp.o
+[202/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/mjcf/detail/worldbody.cpp.o
+[203/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/trackball_manipulator.cpp.o
+[204/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/drag_and_drop.cpp.o
+[205/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/im_gui_handler.cpp.o
+[206/257] Building CXX object dart/io/CMakeFiles/dart-io.dir/read.cpp.o
+[207/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/utils.cpp.o
+[208/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/real_time_world_node.cpp.o
+[209/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/mjcf/mjcf_parser.cpp.o
+[210/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/mjcf/detail/utils.cpp.o
+[211/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/sdf/sdf_parser.cpp.o
+[212/257] Building CXX object dart/utils/urdf/CMakeFiles/dart-utils-urdf.dir/urdf_parser.cpp.o
+[213/257] Building CXX object tests/baseline/CMakeFiles/dart-baseline-ode.dir/odelcpsolver/error.cpp.o
+[214/257] Building CXX object tests/baseline/CMakeFiles/dart-baseline-ode.dir/odelcpsolver/fastdot.cpp.o
+[215/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/render/cone_shape_node.cpp.o
+[216/257] Building CXX object dart/CMakeFiles/dart.dir/constraint/balance_constraint.cpp.o
+[217/257] Building CXX object tests/baseline/CMakeFiles/dart-baseline-ode.dir/odelcpsolver/fastldlt.cpp.o
+[218/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/world_node.cpp.o
+[219/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/support_polygon_visual.cpp.o
+[220/257] Building CXX object tests/baseline/CMakeFiles/dart-baseline-ode.dir/odelcpsolver/fastlsolve.cpp.o
+[221/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/render/line_segment_shape_node.cpp.o
+[222/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/render/capsule_shape_node.cpp.o
+[223/257] Building CXX object tests/baseline/CMakeFiles/dart-baseline-ode.dir/odelcpsolver/matrix.cpp.o
+[224/257] Building CXX object tests/baseline/CMakeFiles/dart-baseline-ode.dir/odelcpsolver/fastltsolve.cpp.o
+[225/257] Building CXX object tests/baseline/CMakeFiles/dart-baseline-ode.dir/odelcpsolver/misc.cpp.o
+[226/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/render/box_shape_node.cpp.o
+[227/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/render/mesh_shape_node.cpp.o
+[228/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/viewer.cpp.o
+[229/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/render/sphere_shape_node.cpp.o
+[230/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/render/shape_node.cpp.o
+[231/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/render/plane_shape_node.cpp.o
+[232/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/render/cylinder_shape_node.cpp.o
+[233/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/detail/camera_mode_callback.cpp.o
+[234/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/polyhedron_visual.cpp.o
+[235/257] Building CXX object tests/baseline/CMakeFiles/dart-baseline-ode.dir/odelcpsolver/lcp.cpp.o
+[236/257] Building CXX object dart/utils/CMakeFiles/dart-utils.dir/mjcf/detail/site.cpp.o
+[237/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/render/ellipsoid_shape_node.cpp.o
+[238/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/render/convex_mesh_shape_node.cpp.o
+[239/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/render/pyramid_shape_node.cpp.o
+[240/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/render/warning_shape_node.cpp.o
+[241/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/render/voxel_grid_shape_node.cpp.o
+[242/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/interactive_frame.cpp.o
+[243/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/render/soft_mesh_shape_node.cpp.o
+[244/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/render/multi_sphere_shape_node.cpp.o
+[245/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/shape_frame_node.cpp.o
+[246/257] Building CXX object dart/gui/CMakeFiles/dart-gui.dir/render/point_cloud_shape_node.cpp.o
+[247/257] Linking CXX static library tests/baseline/libdart-baseline-oded.a
+[248/257] Linking CXX shared library lib/libdartd.so.7.0.0
+[249/257] Creating library symlink lib/libdartd.so.7.0 lib/libdartd.so
+[250/257] Linking CXX shared library lib/libdart-utilsd.so.7.0.0
+[251/257] Creating library symlink lib/libdart-utilsd.so.7.0 lib/libdart-utilsd.so
+[252/257] Linking CXX shared library lib/libdart-utils-urdfd.so.7.0.0
+[253/257] Creating library symlink lib/libdart-utils-urdfd.so.7.0 lib/libdart-utils-urdfd.so
+[254/257] Linking CXX shared library lib/libdart-iod.so.7.0.0
+[255/257] Creating library symlink lib/libdart-iod.so.7.0 lib/libdart-iod.so
+[256/257] Linking CXX shared library lib/libdart-guid.so.7.0.0
+[257/257] Creating library symlink lib/libdart-guid.so.7.0 lib/libdart-guid.so
+[1/392] Building CXX object tests/integration/CMakeFiles/GeneratedWamIkFast.dir/io/generated_wam_ik_fast.cpp.o
+[2/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_dynamics_DynamicsCenterOfMass.dir/dynamics/test_dynamics_center_of_mass.cpp.o
+[3/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_collision_FclPrimitiveContactMatrixFcl.dir/collision/test_fcl_primitive_contact_matrix_fcl.cpp.o
+[4/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_dynamics_DynamicsJacobians.dir/dynamics/test_dynamics_jacobians.cpp.o
+[5/392] Building CXX object tests/integration/CMakeFiles/SharedLibraryWamIkFast.dir/io/shared_library_wam_ik_fast.cpp.o
+[6/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_dynamics_DynamicsFiniteDifference.dir/dynamics/test_dynamics_finite_difference.cpp.o
+[7/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_constraint_SplitImpulse.dir/constraint/test_split_impulse.cpp.o
+[8/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_dynamics_DynamicsImpulse.dir/dynamics/test_dynamics_impulse.cpp.o
+[9/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_dynamics_DynamicsEquations.dir/dynamics/test_dynamics_equations.cpp.o
+[10/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_constraint_ContactConstraint.dir/constraint/test_contact_constraint.cpp.o
+[11/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_collision_NoFalseContacts.dir/collision/test_no_false_contacts.cpp.o
+[12/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_constraint_friction.dir/constraint/test_friction.cpp.o
+[13/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_dynamics_ServoJointLimits.dir/dynamics/test_servo_joint_limits.cpp.o
+[14/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_collision_SelfCollisionFiltering.dir/collision/test_self_collision_filtering.cpp.o
+[15/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_constraint_LcpSolverStability.dir/constraint/test_lcp_solver_stability.cpp.o
+[16/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_dynamics_Skeleton.dir/dynamics/test_skeleton.cpp.o
+[17/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_dynamics_name_management.dir/dynamics/test_name_management.cpp.o
+[18/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_dynamics_DynamicsHybrid.dir/dynamics/test_dynamics_hybrid.cpp.o
+[19/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_constraint_constraint.dir/constraint/test_constraint.cpp.o
+[20/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_collision_Collision.dir/collision/test_collision.cpp.o
+[21/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_dynamics_SoftDynamics.dir/dynamics/test_soft_dynamics.cpp.o
+[22/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_collision_CollisionGroups.dir/collision/test_collision_groups.cpp.o
+[23/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_collision_FclPrimitiveContactMatrix.dir/collision/test_fcl_primitive_contact_matrix.cpp.o
+[24/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_dynamics_MetaSkeleton.dir/dynamics/test_meta_skeleton.cpp.o
+[25/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_dynamics_JointForceTorque.dir/dynamics/test_joint_force_torque.cpp.o
+[26/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_dynamics_AtlasIK.dir/dynamics/test_atlas_ik.cpp.o
+[27/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_dynamics_DynamicsEquations.dir/dynamics/dynamics_test_fixture.cpp.o
+[28/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_dynamics_DynamicsImpulse.dir/dynamics/dynamics_test_fixture.cpp.o
+[29/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_dynamics_SkeletonState.dir/dynamics/test_skeleton_state.cpp.o
+[30/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_dynamics_DynamicsCenterOfMass.dir/dynamics/dynamics_test_fixture.cpp.o
+[31/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_dynamics_ForwardKinematics.dir/dynamics/test_forward_kinematics.cpp.o
+[32/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_io_Read.dir/io/test_read.cpp.o
+[33/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_io_SdfParser.dir/io/test_sdf_parser.cpp.o
+[34/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_dynamics_Joints.dir/dynamics/test_joints.cpp.o
+[35/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_io_UrdfParser.dir/io/test_urdf_parser.cpp.o
+[36/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_dynamics_UniversalJointLimits.dir/dynamics/test_universal_joint_limits.cpp.o
+[37/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_dynamics_SkeletonTopology.dir/dynamics/test_skeleton_topology.cpp.o
+[38/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_simulation_FileInfoWorld.dir/simulation/test_file_info_world.cpp.o
+[39/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_io_MjcfParser.dir/io/test_mjcf_parser.cpp.o
+[40/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_io_SkelParser.dir/io/test_skel_parser.cpp.o
+[41/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_dynamics_DynamicsHybrid.dir/dynamics/dynamics_test_fixture.cpp.o
+[42/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_optimization_inverse_kinematics.dir/optimization/test_inverse_kinematics.cpp.o
+[43/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_optimization_Optimizer.dir/optimization/test_optimizer.cpp.o
+[44/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_simulation_Sensors.dir/simulation/test_sensors.cpp.o
+[45/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_utils_DartResourceRetriever.dir/utils/test_dart_resource_retriever.cpp.o
+[46/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_dynamics_DynamicsJacobians.dir/dynamics/dynamics_test_fixture.cpp.o
+[47/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_utils_CompositeResourceRetriever.dir/utils/test_composite_resource_retriever.cpp.o
+[48/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_dynamics_DynamicsFiniteDifference.dir/dynamics/dynamics_test_fixture.cpp.o
+[49/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_io_UrdfMaterialParsing.dir/io/test_urdf_material_parsing.cpp.o
+[50/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_simulation_building.dir/simulation/test_building.cpp.o
+[51/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_simulation_Issue743.dir/simulation/test_issue743.cpp.o
+[52/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_utils_PackageResourceRetriever.dir/utils/test_package_resource_retriever.cpp.o
+[53/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_simulation_Issue870.dir/simulation/test_issue870.cpp.o
+[54/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_simulation_Issue410.dir/simulation/test_issue410.cpp.o
+[55/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_simulation_MimicConstraint.dir/simulation/test_mimic_constraint.cpp.o
+[56/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_utils_LocalResourceRetriever.dir/utils/test_local_resource_retriever.cpp.o
+[57/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_io_IkFast.dir/io/test_ik_fast.cpp.o
+[58/392] Building CXX object tests/unit/CMakeFiles/UNIT_collision_Contact.dir/collision/test_contact.cpp.o
+[59/392] Building CXX object tests/unit/CMakeFiles/UNIT_collision_DistanceOption.dir/collision/test_distance_option.cpp.o
+[60/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_utils_Subscriptions.dir/utils/test_subscriptions.cpp.o
+[61/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_utils_Concurrency.dir/utils/test_concurrency.cpp.o
+[62/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_utils_aspect.dir/utils/test_aspect.cpp.o
+[63/392] Building CXX object tests/unit/CMakeFiles/UNIT_collision_CollisionOption.dir/collision/test_collision_option.cpp.o
+[64/392] Building CXX object tests/unit/CMakeFiles/UNIT_collision_RaycastOption.dir/collision/test_raycast_option.cpp.o
+[65/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_utils_frames.dir/utils/test_frames.cpp.o
+[66/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_simulation_World.dir/simulation/test_world.cpp.o
+[67/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_utils_signal.dir/utils/test_signal.cpp.o
+[68/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_exception.dir/common/test_exception.cpp.o
+[69/392] Building CXX object tests/integration/CMakeFiles/INTEGRATION_simulation_MomentumConservation.dir/simulation/test_momentum_conservation.cpp.o
+[70/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_local_resource_retriever.dir/common/test_local_resource_retriever.cpp.o
+[71/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_lockable_reference.dir/common/test_lockable_reference.cpp.o
+[72/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_profiler.dir/common/test_profiler.cpp.o
+[73/392] Building CXX object tests/unit/CMakeFiles/UNIT_collision_DARTCollisionDetector.dir/collision/test_dart_collision_detector.cpp.o
+[74/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_cloneable.dir/common/test_cloneable.cpp.o
+[75/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_c_allocator.dir/common/test_c_allocator.cpp.o
+[76/392] Building CXX object tests/unit/CMakeFiles/UNIT_collision_DARTCollide.dir/collision/test_dart_collide.cpp.o
+[77/392] Building CXX object tests/unit/CMakeFiles/UNIT_collision_CollisionGroup.dir/collision/test_collision_group.cpp.o
+[78/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_result.dir/common/test_result.cpp.o
+[79/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_signal.dir/common/test_signal.cpp.o
+[80/392] Building CXX object tests/unit/CMakeFiles/UNIT_collision_Distance.dir/collision/test_distance.cpp.o
+[81/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_singleton.dir/common/test_singleton.cpp.o
+[82/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_castable.dir/common/test_castable.cpp.o
+[83/392] Building CXX object tests/unit/CMakeFiles/UNIT_collision_CollisionFilter.dir/collision/test_collision_filter.cpp.o
+[84/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_composite.dir/common/test_composite.cpp.o
+[85/392] Linking CXX shared library lib/libGeneratedWamIkFastd.so.7.0.0
+[86/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_version_counter.dir/common/test_version_counter.cpp.o
+[87/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_subject_observer.dir/common/test_subject_observer.cpp.o
+[88/392] Building CXX object tests/unit/CMakeFiles/UNIT_collision_ConvexMesh.dir/collision/test_convex_mesh_shape_collision.cpp.o
+[89/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_free_list_allocator.dir/common/test_free_list_allocator.cpp.o
+[90/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_memory_manager.dir/common/test_memory_manager.cpp.o
+[91/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_string.dir/common/test_string.cpp.o
+[92/392] Building CXX object tests/unit/CMakeFiles/UNIT_collision_DistanceFilter.dir/collision/test_distance_filter.cpp.o
+[93/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_aspect.dir/common/test_aspect.cpp.o
+[94/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_logging.dir/common/test_logging.cpp.o
+[95/392] Creating library symlink lib/libGeneratedWamIkFastd.so.7.0 lib/libGeneratedWamIkFastd.so
+[96/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_pool_allocator.dir/common/test_pool_allocator.cpp.o
+[97/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_stopwatch.dir/common/test_stopwatch.cpp.o
+[98/392] Building CXX object tests/unit/CMakeFiles/UNIT_collision_CollisionResult.dir/collision/test_collision_result.cpp.o
+[99/392] Building CXX object tests/unit/CMakeFiles/UNIT_collision_FCLCollisionObject.dir/collision/test_fcl_collision_object.cpp.o
+[100/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_uri.dir/common/test_uri.cpp.o
+[101/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_name_manager.dir/common/test_name_manager.cpp.o
+[102/392] Building CXX object tests/unit/CMakeFiles/UNIT_collision_Raycast.dir/collision/test_raycast.cpp.o
+[103/392] Building CXX object tests/unit/CMakeFiles/UNIT_constraint_BoxedLcpConstraintSolver.dir/constraint/test_boxed_lcp_constraint_solver.cpp.o
+[104/392] Building CXX object tests/unit/CMakeFiles/UNIT_constraint_ConstraintSolver.dir/constraint/test_constraint_solver.cpp.o
+[105/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_resource.dir/common/test_resource.cpp.o
+[106/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_factory.dir/common/test_factory.cpp.o
+[107/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_HeightmapShape.dir/dynamics/test_heightmap_shape.cpp.o
+[108/392] Building CXX object tests/unit/CMakeFiles/UNIT_constraint_JointLimitConstraint.dir/constraint/test_joint_limit_constraint.cpp.o
+[109/392] Building CXX object tests/unit/CMakeFiles/UNIT_constraint_BallJointConstraint.dir/constraint/test_ball_joint_constraint.cpp.o
+[110/392] Building CXX object tests/unit/CMakeFiles/UNIT_common_stl_allocator.dir/common/test_stl_allocator.cpp.o
+[111/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_ConvexMeshShape.dir/dynamics/test_convex_mesh_shape.cpp.o
+[112/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_SphereShape.dir/dynamics/test_sphere_shape.cpp.o
+[113/392] Building CXX object tests/unit/CMakeFiles/UNIT_constraint_WeldJointConstraint.dir/constraint/test_weld_joint_constraint.cpp.o
+[114/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_BodyNodePtr.dir/dynamics/test_body_node_ptr.cpp.o
+[115/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_Inertia.dir/dynamics/test_inertia.cpp.o
+[116/392] Building CXX object tests/unit/CMakeFiles/UNIT_constraint_BalanceConstraint.dir/constraint/test_balance_constraint.cpp.o
+[117/392] Building CXX object tests/unit/CMakeFiles/UNIT_constraint_ServoMotorConstraint.dir/constraint/test_servo_motor_constraint.cpp.o
+[118/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_ShapeNodePtr.dir/dynamics/test_shape_node_ptr.cpp.o
+[119/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_NodePtr.dir/dynamics/test_node_ptr.cpp.o
+[120/392] Building CXX object tests/unit/CMakeFiles/UNIT_constraint_MotorConstraints.dir/constraint/test_motor_constraints.cpp.o
+[121/392] Building CXX object tests/unit/CMakeFiles/UNIT_constraint_JointConstraint.dir/constraint/test_joint_constraint.cpp.o
+[122/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_ShapeNodeInertia.dir/dynamics/test_shape_node_inertia.cpp.o
+[123/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_BodyNodeExternalForce.dir/dynamics/test_body_node_external_force.cpp.o
+[124/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_JointCommand.dir/dynamics/test_joint_command.cpp.o
+[125/392] Building CXX object tests/unit/CMakeFiles/UNIT_constraint_JointConstraints.dir/constraint/test_joint_constraints.cpp.o
+[126/392] Building CXX object tests/unit/CMakeFiles/UNIT_constraint_SoftContactConstraint.dir/constraint/test_soft_contact_constraint.cpp.o
+[127/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_BodyNodePotentialEnergy.dir/dynamics/test_body_node_potential_energy.cpp.o
+[128/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_CapsuleShape.dir/dynamics/test_capsule_shape.cpp.o
+[129/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_Noexcept.dir/dynamics/test_noexcept.cpp.o
+[130/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_MeshShape.dir/dynamics/test_mesh_shape.cpp.o
+[131/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_CylinderShape.dir/dynamics/test_cylinder_shape.cpp.o
+[132/392] Building CXX object tests/unit/CMakeFiles/UNIT_constraint_ContactSurface.dir/constraint/test_contact_surface.cpp.o
+[133/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_SkeletonProperties.dir/dynamics/test_skeleton_properties.cpp.o
+[134/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_ConeShape.dir/dynamics/test_cone_shape.cpp.o
+[135/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_BodyNodeProperties.dir/dynamics/test_body_node_properties.cpp.o
+[136/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_BodyNodeDerivatives.dir/dynamics/test_body_node_derivatives.cpp.o
+[137/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_EllipsoidShape.dir/dynamics/test_ellipsoid_shape.cpp.o
+[138/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_VisualAspect.dir/dynamics/test_visual_aspect.cpp.o
+[139/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_SkeletonAccessors.dir/dynamics/test_skeleton_accessors.cpp.o
+[140/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_SoftBodyNodeHelper.dir/dynamics/test_soft_body_node_helper.cpp.o
+[141/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_LineSegmentShape.dir/dynamics/test_line_segment_shape.cpp.o
+[142/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_SkeletonClone.dir/dynamics/test_skeleton_clone.cpp.o
+[143/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_ScrewJoint.dir/dynamics/test_screw_joint.cpp.o
+[144/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_DegreeOfFreedom.dir/dynamics/test_degree_of_freedom.cpp.o
+[145/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_SoftBodyNode.dir/dynamics/test_soft_body_node.cpp.o
+[146/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_PlaneShape.dir/dynamics/test_plane_shape.cpp.o
+[147/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_WeldJointMerge.dir/dynamics/test_weld_joint_merge.cpp.o
+[148/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_Joints.dir/dynamics/test_joints.cpp.o
+[149/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_EndEffector.dir/dynamics/test_end_effector.cpp.o
+[150/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_Linkage.dir/dynamics/test_linkage.cpp.o
+[151/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_Frame.dir/dynamics/test_frame.cpp.o
+[152/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_PointMass.dir/dynamics/test_point_mass.cpp.o
+[153/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_VoxelGridShape.dir/dynamics/test_voxel_grid_shape.cpp.o
+[154/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_Group.dir/dynamics/test_group.cpp.o
+[155/392] Building CXX object tests/unit/CMakeFiles/UNIT_math_optimization_Problem.dir/math/optimization/test_Problem.cpp.o
+[156/392] Building CXX object tests/unit/CMakeFiles/UNIT_math_value_equal.dir/math/test_value_equal.cpp.o
+[157/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_PointCloudShape.dir/dynamics/test_point_cloud_shape.cpp.o
+[158/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_InverseKinematics.dir/dynamics/test_inverse_kinematics.cpp.o
+[159/392] Building CXX object tests/unit/CMakeFiles/UNIT_math_random.dir/math/test_random.cpp.o
+[160/392] Building CXX object tests/unit/CMakeFiles/UNIT_math_tri_mesh.dir/math/test_tri_mesh.cpp.o
+[161/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_PyramidShape.dir/dynamics/test_pyramid_shape.cpp.o
+[162/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_ReferentialSkeleton.dir/dynamics/test_referential_skeleton.cpp.o
+[163/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_CreateShapeNodeApi.dir/dynamics/test_create_shape_node_api.cpp.o
+[164/392] Building CXX object tests/unit/CMakeFiles/UNIT_math_geometry.dir/math/test_geometry.cpp.o
+[165/392] Building CXX object tests/unit/CMakeFiles/UNIT_math_polygon_mesh.dir/math/test_polygon_mesh.cpp.o
+[166/392] Building CXX object tests/unit/CMakeFiles/UNIT_math_icosphere.dir/math/test_icosphere.cpp.o
+[167/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_Marker.dir/dynamics/test_marker.cpp.o
+[168/392] Building CXX object tests/unit/CMakeFiles/UNIT_math_lcp_math_lcp_lcp_edge_cases.dir/math/lcp/test_lcp_edge_cases.cpp.o
+[169/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_BodyNodeCollisionSignals.dir/dynamics/test_body_node_collision_signals.cpp.o
+[170/392] Building CXX object tests/unit/CMakeFiles/UNIT_math_configuration_space.dir/math/test_configuration_space.cpp.o
+[171/392] Building CXX object tests/unit/CMakeFiles/UNIT_gui_ImGuiWindowScaling.dir/gui/test_im_gui_window_scaling.cpp.o
+[172/392] Building CXX object tests/unit/CMakeFiles/UNIT_math_Convhull.dir/math/test_convhull.cpp.o
+[173/392] Building CXX object tests/unit/CMakeFiles/UNIT_math_lcp_math_lcp_pgs.dir/math/lcp/test_pgs.cpp.o
+[174/392] Building CXX object tests/unit/CMakeFiles/UNIT_math_lcp_math_lcp_dantzig_vs_ode.dir/math/lcp/test_dantzig_vs_ode.cpp.o
+[175/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_MetaSkeleton.dir/dynamics/test_meta_skeleton.cpp.o
+[176/392] Building CXX object tests/unit/CMakeFiles/UNIT_gui_HeadlessViewer.dir/gui/test_headless_viewer.cpp.o
+[177/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_ZeroDofJoint.dir/dynamics/test_zero_dof_joint.cpp.o
+[178/392] Building CXX object tests/unit/CMakeFiles/UNIT_math_lcp_math_lcp_lcp_solvers_stress.dir/math/lcp/test_lcp_solvers_stress.cpp.o
+[179/392] Building CXX object tests/unit/CMakeFiles/UNIT_math_lcp_math_lcp_lcp_comparison_harness.dir/math/lcp/test_lcp_comparison_harness.cpp.o
+[180/392] Building CXX object tests/unit/CMakeFiles/UNIT_math_lcp_math_lcp_pivot_matrix.dir/math/lcp/test_pivot_matrix.cpp.o
+[181/392] Building CXX object tests/unit/CMakeFiles/UNIT_math_lcp_math_lcp_lemke.dir/math/lcp/test_lemke.cpp.o
+[182/392] Building CXX object tests/unit/CMakeFiles/test_HttpResourceRetriever.dir/utils/test_http_resource_retriever.cpp.o
+[183/392] Building CXX object tests/unit/CMakeFiles/UNIT_math_lcp_math_lcp_dantzig_solver.dir/math/lcp/test_dantzig_solver.cpp.o
+[184/392] Building CXX object tests/unit/CMakeFiles/UNIT_gui_ConvexMeshShapeNode.dir/gui/test_convex_mesh_shape_node.cpp.o
+[185/392] Building CXX object tests/unit/CMakeFiles/UNIT_gui_MeshShapeNodeMaterialUpdates.dir/gui/test_mesh_shape_node_material_updates.cpp.o
+[186/392] Building CXX object tests/unit/CMakeFiles/test_xml_helpersNone.dir/utils/test_xml_helpers.cpp.o
+[187/392] Building CXX object tests/unit/CMakeFiles/UNIT_gui_HeightmapShapeNode.dir/gui/test_heightmap_shape_node.cpp.o
+[188/392] Building CXX object tests/unit/CMakeFiles/UNIT_simulation_World.dir/simulation/test_World.cpp.o
+[189/392] Building CXX object tests/unit/CMakeFiles/UNIT_io_SdfParser_Errors.dir/io/test_sdf_parser_errors.cpp.o
+[190/392] Building CXX object tests/unit/CMakeFiles/UNIT_gui_PlaneShapeNode.dir/gui/test_plane_shape_node.cpp.o
+[191/392] Building CXX object tests/unit/CMakeFiles/UNIT_io_UrdfParser_Errors.dir/io/test_urdf_parser_errors.cpp.o
+[192/392] Building CXX object tests/unit/CMakeFiles/UNIT_math_lcp_math_lcp_lcp_problems.dir/math/lcp/test_lcp_test_problems.cpp.o
+[193/392] Building CXX object tests/unit/CMakeFiles/test_io_readNone.dir/io/test_read.cpp.o
+[194/392] Building CXX object tests/unit/CMakeFiles/UNIT_sensor_Sensor.dir/sensor/test_Sensor.cpp.o
+[195/392] Building CXX object tests/unit/CMakeFiles/UNIT_math_math.dir/math/test_math.cpp.o
+[196/392] Building CXX object tests/unit/CMakeFiles/UNIT_dynamics_GenericJoints.dir/dynamics/test_generic_joints.cpp.o
+[197/392] Building CXX object tests/unit/CMakeFiles/UNIT_sensor_SensorManager.dir/sensor/test_SensorManager.cpp.o
+[198/392] Building CXX object tests/unit/CMakeFiles/test_sdf_helpersNone.dir/utils/test_sdf_helpers.cpp.o
+[199/392] Building CXX object tests/unit/CMakeFiles/test_mesh_loaderNone.dir/utils/test_mesh_loader.cpp.o
+[200/392] Building CXX object tests/unit/CMakeFiles/test_FileInfoDof.dir/utils/test_file_info_dof.cpp.o
+[201/392] Linking CXX executable bin/INTEGRATION_collision_FclPrimitiveContactMatrixFcl
+[202/392] Linking CXX shared library lib/libSharedLibraryWamIkFastd.so.7.0.0
+[203/392] Creating library symlink lib/libSharedLibraryWamIkFastd.so.7.0 lib/libSharedLibraryWamIkFastd.so
+[204/392] Linking CXX executable bin/INTEGRATION_collision_SelfCollisionFiltering
+[205/392] Linking CXX executable bin/INTEGRATION_collision_CollisionGroups
+[206/392] Linking CXX executable bin/INTEGRATION_dynamics_name_management
+[207/392] Linking CXX executable bin/INTEGRATION_constraint_friction
+[208/392] Linking CXX executable bin/INTEGRATION_collision_FclPrimitiveContactMatrix
+[209/392] Linking CXX executable bin/INTEGRATION_dynamics_SkeletonTopology
+[210/392] Linking CXX executable bin/INTEGRATION_constraint_constraint
+[211/392] Linking CXX executable bin/INTEGRATION_constraint_SplitImpulse
+[212/392] Linking CXX executable bin/INTEGRATION_io_SdfParser
+[213/392] Linking CXX executable bin/INTEGRATION_constraint_ContactConstraint
+[214/392] Linking CXX executable bin/INTEGRATION_collision_NoFalseContacts
+[215/392] Linking CXX executable bin/INTEGRATION_constraint_LcpSolverStability
+[216/392] Linking CXX executable bin/INTEGRATION_dynamics_JointForceTorque
+[217/392] Linking CXX executable bin/INTEGRATION_dynamics_Skeleton
+[218/392] Linking CXX executable bin/INTEGRATION_collision_Collision
+[219/392] Linking CXX executable bin/INTEGRATION_dynamics_SoftDynamics
+[220/392] Linking CXX executable bin/INTEGRATION_dynamics_SkeletonState
+[221/392] Linking CXX executable bin/INTEGRATION_dynamics_UniversalJointLimits
+[222/392] Linking CXX executable bin/INTEGRATION_dynamics_DynamicsCenterOfMass
+[223/392] Linking CXX executable bin/INTEGRATION_dynamics_Joints
+[224/392] Linking CXX executable bin/INTEGRATION_io_SkelParser
+[225/392] Linking CXX executable bin/INTEGRATION_dynamics_ServoJointLimits
+[226/392] Linking CXX executable bin/INTEGRATION_io_MjcfParser
+[227/392] Linking CXX executable bin/INTEGRATION_simulation_Issue870
+[228/392] Linking CXX executable bin/INTEGRATION_dynamics_AtlasIK
+[229/392] Linking CXX executable bin/INTEGRATION_io_UrdfParser
+[230/392] Linking CXX executable bin/INTEGRATION_dynamics_DynamicsJacobians
+[231/392] Linking CXX executable bin/INTEGRATION_simulation_building
+[232/392] Linking CXX executable bin/INTEGRATION_optimization_Optimizer
+[233/392] Linking CXX executable bin/INTEGRATION_dynamics_MetaSkeleton
+[234/392] Linking CXX executable bin/INTEGRATION_io_Read
+[235/392] Linking CXX executable bin/INTEGRATION_simulation_Issue743
+[236/392] Linking CXX executable bin/INTEGRATION_dynamics_ForwardKinematics
+[237/392] Linking CXX executable bin/INTEGRATION_simulation_FileInfoWorld
+[238/392] Linking CXX executable bin/INTEGRATION_dynamics_DynamicsEquations
+[239/392] Linking CXX executable bin/INTEGRATION_dynamics_DynamicsHybrid
+[240/392] Linking CXX executable bin/INTEGRATION_optimization_inverse_kinematics
+[241/392] Linking CXX executable bin/INTEGRATION_utils_LocalResourceRetriever
+[242/392] Linking CXX executable bin/INTEGRATION_simulation_Sensors
+[243/392] Linking CXX executable bin/INTEGRATION_dynamics_DynamicsFiniteDifference
+[244/392] Linking CXX executable bin/INTEGRATION_io_IkFast
+[245/392] Linking CXX executable bin/INTEGRATION_utils_signal
+[246/392] Linking CXX executable bin/INTEGRATION_utils_aspect
+[247/392] Linking CXX executable bin/INTEGRATION_simulation_MomentumConservation
+[248/392] Linking CXX executable bin/UNIT_common_exception
+[249/392] Linking CXX executable bin/UNIT_collision_DistanceFilter
+[250/392] Linking CXX executable bin/INTEGRATION_dynamics_DynamicsImpulse
+[251/392] Linking CXX executable bin/UNIT_common_cloneable
+[252/392] Linking CXX executable bin/UNIT_common_castable
+[253/392] Linking CXX executable bin/UNIT_collision_CollisionGroup
+[254/392] Linking CXX executable bin/UNIT_common_lockable_reference
+[255/392] Linking CXX executable bin/UNIT_common_factory
+[256/392] Linking CXX executable bin/INTEGRATION_utils_CompositeResourceRetriever
+[257/392] Linking CXX executable bin/UNIT_common_logging
+[258/392] Linking CXX executable bin/UNIT_collision_ConvexMesh
+[259/392] Linking CXX executable bin/INTEGRATION_io_UrdfMaterialParsing
+[260/392] Linking CXX executable bin/INTEGRATION_utils_Concurrency
+[261/392] Linking CXX executable bin/UNIT_common_aspect
+[262/392] Linking CXX executable bin/UNIT_collision_DARTCollide
+[263/392] Linking CXX executable bin/UNIT_collision_Contact
+[264/392] Linking CXX executable bin/UNIT_common_result
+[265/392] Linking CXX executable bin/UNIT_common_name_manager
+[266/392] Linking CXX executable bin/UNIT_common_singleton
+[267/392] Linking CXX executable bin/UNIT_collision_DARTCollisionDetector
+[268/392] Linking CXX executable bin/UNIT_collision_Distance
+[269/392] Linking CXX executable bin/INTEGRATION_simulation_World
+[270/392] Linking CXX executable bin/INTEGRATION_utils_DartResourceRetriever
+[271/392] Linking CXX executable bin/UNIT_common_composite
+[272/392] Linking CXX executable bin/INTEGRATION_utils_Subscriptions
+[273/392] Linking CXX executable bin/UNIT_common_local_resource_retriever
+[274/392] Linking CXX executable bin/INTEGRATION_utils_frames
+[275/392] Linking CXX executable bin/UNIT_collision_CollisionOption
+[276/392] Linking CXX executable bin/UNIT_common_c_allocator
+[277/392] Linking CXX executable bin/UNIT_collision_RaycastOption
+[278/392] Linking CXX executable bin/UNIT_common_memory_manager
+[279/392] Linking CXX executable bin/UNIT_collision_Raycast
+[280/392] Linking CXX executable bin/UNIT_common_profiler
+[281/392] Linking CXX executable bin/UNIT_collision_CollisionFilter
+[282/392] Linking CXX executable bin/INTEGRATION_simulation_MimicConstraint
+[283/392] Linking CXX executable bin/UNIT_collision_CollisionResult
+[284/392] Linking CXX executable bin/INTEGRATION_simulation_Issue410
+[285/392] Linking CXX executable bin/INTEGRATION_utils_PackageResourceRetriever
+[286/392] Linking CXX executable bin/UNIT_collision_FCLCollisionObject
+[287/392] Linking CXX executable bin/UNIT_collision_DistanceOption
+[288/392] Linking CXX executable bin/UNIT_common_version_counter
+[289/392] Linking CXX executable bin/UNIT_common_free_list_allocator
+[290/392] Linking CXX executable bin/UNIT_common_uri
+[291/392] Linking CXX executable bin/UNIT_common_resource
+[292/392] Linking CXX executable bin/UNIT_common_signal
+[293/392] Linking CXX executable bin/UNIT_constraint_BoxedLcpConstraintSolver
+[294/392] Linking CXX executable bin/UNIT_common_string
+[295/392] Linking CXX executable bin/UNIT_common_subject_observer
+[296/392] Linking CXX executable bin/UNIT_common_pool_allocator
+[297/392] Linking CXX executable bin/UNIT_constraint_JointConstraints
+[298/392] Linking CXX executable bin/UNIT_constraint_ContactSurface
+[299/392] Linking CXX executable bin/UNIT_constraint_MotorConstraints
+[300/392] Linking CXX executable bin/UNIT_common_stopwatch
+[301/392] Linking CXX executable bin/UNIT_constraint_ConstraintSolver
+[302/392] Linking CXX executable bin/UNIT_constraint_WeldJointConstraint
+[303/392] Linking CXX executable bin/UNIT_constraint_JointLimitConstraint
+[304/392] Linking CXX executable bin/UNIT_constraint_BallJointConstraint
+[305/392] Linking CXX executable bin/UNIT_common_stl_allocator
+[306/392] Linking CXX executable bin/UNIT_dynamics_ScrewJoint
+[307/392] Linking CXX executable bin/UNIT_constraint_JointConstraint
+[308/392] Linking CXX executable bin/UNIT_constraint_BalanceConstraint
+[309/392] Linking CXX executable bin/UNIT_dynamics_Noexcept
+[310/392] Linking CXX executable bin/UNIT_dynamics_ConvexMeshShape
+[311/392] Linking CXX executable bin/UNIT_constraint_SoftContactConstraint
+[312/392] Linking CXX executable bin/UNIT_dynamics_BodyNodeExternalForce
+[313/392] Linking CXX executable bin/UNIT_dynamics_BodyNodeDerivatives
+[314/392] Linking CXX executable bin/UNIT_dynamics_SkeletonClone
+[315/392] Linking CXX executable bin/UNIT_constraint_ServoMotorConstraint
+[316/392] Linking CXX executable bin/UNIT_dynamics_Inertia
+[317/392] Linking CXX executable bin/UNIT_dynamics_GenericJoints
+[318/392] Linking CXX executable bin/UNIT_dynamics_BodyNodePtr
+[319/392] Linking CXX executable bin/UNIT_dynamics_VisualAspect
+[320/392] Linking CXX executable bin/UNIT_dynamics_HeightmapShape
+[321/392] Linking CXX executable bin/UNIT_dynamics_BodyNodePotentialEnergy
+[322/392] Linking CXX executable bin/UNIT_dynamics_ShapeNodeInertia
+[323/392] Linking CXX executable bin/UNIT_dynamics_SkeletonAccessors
+[324/392] Linking CXX executable bin/UNIT_dynamics_ShapeNodePtr
+[325/392] Linking CXX executable bin/UNIT_dynamics_BodyNodeCollisionSignals
+[326/392] Linking CXX executable bin/UNIT_dynamics_SkeletonProperties
+[327/392] Linking CXX executable bin/UNIT_dynamics_SphereShape
+[328/392] Linking CXX executable bin/UNIT_dynamics_PlaneShape
+[329/392] Linking CXX executable bin/UNIT_dynamics_MeshShape
+[330/392] Linking CXX executable bin/UNIT_dynamics_JointCommand
+[331/392] Linking CXX executable bin/UNIT_dynamics_CapsuleShape
+[332/392] Linking CXX executable bin/UNIT_dynamics_PointMass
+[333/392] Linking CXX executable bin/UNIT_dynamics_EllipsoidShape
+[334/392] Linking CXX executable bin/UNIT_dynamics_NodePtr
+[335/392] Linking CXX executable bin/UNIT_math_polygon_mesh
+[336/392] Linking CXX executable bin/UNIT_dynamics_CylinderShape
+[337/392] Linking CXX executable bin/UNIT_math_value_equal
+[338/392] Linking CXX executable bin/UNIT_math_icosphere
+[339/392] Linking CXX executable bin/UNIT_dynamics_ConeShape
+[340/392] Linking CXX executable bin/UNIT_dynamics_EndEffector
+[341/392] Linking CXX executable bin/UNIT_dynamics_Joints
+[342/392] Linking CXX executable bin/UNIT_dynamics_DegreeOfFreedom
+[343/392] Linking CXX executable bin/UNIT_dynamics_Group
+[344/392] Linking CXX executable bin/UNIT_dynamics_WeldJointMerge
+[345/392] Linking CXX executable bin/UNIT_dynamics_PointCloudShape
+[346/392] Linking CXX executable bin/UNIT_dynamics_BodyNodeProperties
+[347/392] Linking CXX executable bin/UNIT_dynamics_VoxelGridShape
+[348/392] Linking CXX executable bin/UNIT_dynamics_Linkage
+[349/392] Linking CXX executable bin/UNIT_math_tri_mesh
+[350/392] Linking CXX executable bin/UNIT_dynamics_SoftBodyNode
+[351/392] Linking CXX executable bin/UNIT_math_lcp_math_lcp_pivot_matrix
+[352/392] Linking CXX executable bin/UNIT_gui_HeightmapShapeNode
+[353/392] Linking CXX executable bin/UNIT_math_Convhull
+[354/392] Linking CXX executable bin/UNIT_dynamics_Frame
+[355/392] Linking CXX executable bin/UNIT_math_configuration_space
+[356/392] Linking CXX executable bin/UNIT_gui_ImGuiWindowScaling
+[357/392] Linking CXX executable bin/UNIT_dynamics_Marker
+[358/392] Linking CXX executable bin/UNIT_dynamics_SoftBodyNodeHelper
+[359/392] Linking CXX executable bin/UNIT_dynamics_ZeroDofJoint
+[360/392] Linking CXX executable bin/UNIT_math_lcp_math_lcp_lcp_problems
+[361/392] Linking CXX executable bin/UNIT_dynamics_ReferentialSkeleton
+[362/392] Linking CXX executable bin/UNIT_math_math
+[363/392] Linking CXX executable bin/UNIT_dynamics_PyramidShape
+[364/392] Linking CXX executable bin/UNIT_dynamics_CreateShapeNodeApi
+[365/392] Linking CXX executable bin/UNIT_dynamics_LineSegmentShape
+[366/392] Linking CXX executable bin/UNIT_math_lcp_math_lcp_lemke
+[367/392] Linking CXX executable bin/UNIT_math_geometry
+[368/392] Linking CXX executable bin/UNIT_gui_HeadlessViewer
+[369/392] Linking CXX executable bin/UNIT_math_optimization_Problem
+[370/392] Linking CXX executable bin/UNIT_math_lcp_math_lcp_dantzig_vs_ode
+[371/392] Linking CXX executable bin/UNIT_dynamics_MetaSkeleton
+[372/392] Linking CXX executable bin/UNIT_math_lcp_math_lcp_pgs
+[373/392] Linking CXX executable bin/UNIT_math_random
+[374/392] Linking CXX executable bin/test_xml_helpersNone
+[375/392] Linking CXX executable bin/UNIT_math_lcp_math_lcp_lcp_comparison_harness
+[376/392] Linking CXX executable bin/UNIT_dynamics_InverseKinematics
+[377/392] Linking CXX executable bin/UNIT_math_lcp_math_lcp_lcp_edge_cases
+[378/392] Linking CXX executable bin/UNIT_math_lcp_math_lcp_lcp_solvers_stress
+[379/392] Linking CXX executable bin/UNIT_sensor_SensorManager
+[380/392] Linking CXX executable bin/UNIT_math_lcp_math_lcp_dantzig_solver
+[381/392] Linking CXX executable bin/test_HttpResourceRetriever
+[382/392] Linking CXX executable bin/UNIT_sensor_Sensor
+[383/392] Linking CXX executable bin/test_io_readNone
+[384/392] Linking CXX executable bin/UNIT_gui_MeshShapeNodeMaterialUpdates
+[385/392] Linking CXX executable bin/UNIT_simulation_World
+[386/392] Linking CXX executable bin/UNIT_gui_ConvexMeshShapeNode
+[387/392] Linking CXX executable bin/test_sdf_helpersNone
+[388/392] Linking CXX executable bin/test_FileInfoDof
+[389/392] Linking CXX executable bin/test_mesh_loaderNone
+[390/392] Linking CXX executable bin/UNIT_io_SdfParser_Errors
+[391/392] Linking CXX executable bin/UNIT_io_UrdfParser_Errors
+[392/392] Linking CXX executable bin/UNIT_gui_PlaneShapeNode
+Test project /home/js/dev/dartsim/dart/task_1/build/default/cpp/Debug
+        Start   1: INTEGRATION_collision_CollisionGroups
+        Start   2: INTEGRATION_collision_Collision
+        Start   3: INTEGRATION_collision_FclPrimitiveContactMatrix
+        Start   4: INTEGRATION_collision_FclPrimitiveContactMatrixFcl
+        Start   5: INTEGRATION_collision_SelfCollisionFiltering
+        Start   6: INTEGRATION_collision_NoFalseContacts
+        Start   7: INTEGRATION_constraint_constraint
+        Start   8: INTEGRATION_constraint_friction
+        Start   9: INTEGRATION_constraint_ContactConstraint
+        Start  10: INTEGRATION_constraint_SplitImpulse
+        Start  11: INTEGRATION_constraint_LcpSolverStability
+        Start  12: INTEGRATION_dynamics_name_management
+        Start  13: INTEGRATION_dynamics_DynamicsJacobians
+        Start  14: INTEGRATION_dynamics_DynamicsFiniteDifference
+        Start  15: INTEGRATION_dynamics_DynamicsEquations
+        Start  16: INTEGRATION_dynamics_DynamicsCenterOfMass
+        Start  17: INTEGRATION_dynamics_DynamicsImpulse
+        Start  18: INTEGRATION_dynamics_DynamicsHybrid
+        Start  19: INTEGRATION_dynamics_Joints
+        Start  20: INTEGRATION_dynamics_JointForceTorque
+        Start  21: INTEGRATION_dynamics_Skeleton
+        Start  22: INTEGRATION_dynamics_MetaSkeleton
+        Start  23: INTEGRATION_dynamics_SoftDynamics
+        Start  24: INTEGRATION_dynamics_ServoJointLimits
+        Start  25: INTEGRATION_dynamics_UniversalJointLimits
+        Start  26: INTEGRATION_dynamics_ForwardKinematics
+        Start  27: INTEGRATION_dynamics_AtlasIK
+        Start  28: INTEGRATION_dynamics_SkeletonState
+        Start  29: INTEGRATION_dynamics_SkeletonTopology
+        Start  30: INTEGRATION_io_MjcfParser
+        Start  31: INTEGRATION_io_SdfParser
+        Start  32: INTEGRATION_io_SkelParser
+  1/190 Test   #4: INTEGRATION_collision_FclPrimitiveContactMatrixFcl ...   Passed    0.10 sec
+        Start  33: INTEGRATION_io_Read
+  2/190 Test  #12: INTEGRATION_dynamics_name_management .................   Passed    0.55 sec
+        Start  34: INTEGRATION_io_UrdfParser
+  3/190 Test   #1: INTEGRATION_collision_CollisionGroups ................   Passed    0.70 sec
+        Start  35: INTEGRATION_io_UrdfMaterialParsing
+  4/190 Test   #3: INTEGRATION_collision_FclPrimitiveContactMatrix ......   Passed    0.75 sec
+        Start  36: INTEGRATION_io_IkFast
+  5/190 Test  #23: INTEGRATION_dynamics_SoftDynamics ....................   Passed    0.74 sec
+        Start  37: INTEGRATION_optimization_inverse_kinematics
+  6/190 Test   #6: INTEGRATION_collision_NoFalseContacts ................   Passed    0.80 sec
+        Start  38: INTEGRATION_optimization_Optimizer
+  7/190 Test   #5: INTEGRATION_collision_SelfCollisionFiltering .........   Passed    0.80 sec
+        Start  39: INTEGRATION_simulation_building
+  8/190 Test  #28: INTEGRATION_dynamics_SkeletonState ...................   Passed    0.78 sec
+        Start  40: INTEGRATION_simulation_Issue870
+  9/190 Test  #10: INTEGRATION_constraint_SplitImpulse ..................   Passed    0.84 sec
+        Start  41: INTEGRATION_simulation_Issue743
+ 10/190 Test  #18: INTEGRATION_dynamics_DynamicsHybrid ..................   Passed    1.01 sec
+        Start  42: INTEGRATION_simulation_Sensors
+ 11/190 Test  #26: INTEGRATION_dynamics_ForwardKinematics ...............   Passed    1.01 sec
+        Start  43: INTEGRATION_simulation_FileInfoWorld
+ 12/190 Test  #35: INTEGRATION_io_UrdfMaterialParsing ...................   Passed    0.49 sec
+        Start  44: INTEGRATION_simulation_World
+ 13/190 Test  #38: INTEGRATION_optimization_Optimizer ...................   Passed    0.40 sec
+        Start  45: INTEGRATION_simulation_Issue410
+ 14/190 Test   #7: INTEGRATION_constraint_constraint ....................   Passed    1.21 sec
+        Start  46: INTEGRATION_simulation_MomentumConservation
+ 15/190 Test  #37: INTEGRATION_optimization_inverse_kinematics ..........   Passed    0.44 sec
+        Start  47: INTEGRATION_simulation_MimicConstraint
+ 16/190 Test  #39: INTEGRATION_simulation_building ......................   Passed    0.42 sec
+        Start  48: INTEGRATION_utils_aspect
+ 17/190 Test  #36: INTEGRATION_io_IkFast ................................   Passed    0.61 sec
+        Start  49: INTEGRATION_utils_frames
+ 18/190 Test  #42: INTEGRATION_simulation_Sensors .......................   Passed    0.37 sec
+        Start  50: INTEGRATION_utils_signal
+ 19/190 Test  #41: INTEGRATION_simulation_Issue743 ......................   Passed    0.74 sec
+        Start  51: INTEGRATION_utils_Concurrency
+ 20/190 Test  #48: INTEGRATION_utils_aspect .............................   Passed    0.39 sec
+        Start  52: INTEGRATION_utils_LocalResourceRetriever
+ 21/190 Test  #33: INTEGRATION_io_Read ..................................   Passed    1.56 sec
+        Start  53: INTEGRATION_utils_Subscriptions
+ 22/190 Test  #21: INTEGRATION_dynamics_Skeleton ........................   Passed    1.65 sec
+        Start  54: INTEGRATION_utils_CompositeResourceRetriever
+ 23/190 Test  #50: INTEGRATION_utils_signal .............................   Passed    0.38 sec
+        Start  55: INTEGRATION_utils_DartResourceRetriever
+ 24/190 Test  #52: INTEGRATION_utils_LocalResourceRetriever .............   Passed    0.37 sec
+        Start  56: INTEGRATION_utils_PackageResourceRetriever
+ 25/190 Test  #53: INTEGRATION_utils_Subscriptions ......................   Passed    0.36 sec
+        Start  57: UNIT_collision_Distance
+ 26/190 Test  #27: INTEGRATION_dynamics_AtlasIK .........................   Passed    2.03 sec
+        Start  58: UNIT_collision_DistanceFilter
+ 27/190 Test  #34: INTEGRATION_io_UrdfParser ............................   Passed    1.55 sec
+        Start  59: UNIT_collision_CollisionGroup
+ 28/190 Test  #54: INTEGRATION_utils_CompositeResourceRetriever .........   Passed    0.45 sec
+        Start  60: UNIT_collision_DARTCollisionDetector
+ 29/190 Test   #9: INTEGRATION_constraint_ContactConstraint .............   Passed    2.15 sec
+        Start  61: UNIT_collision_DARTCollide
+ 30/190 Test  #55: INTEGRATION_utils_DartResourceRetriever ..............   Passed    0.44 sec
+        Start  62: UNIT_collision_Raycast
+ 31/190 Test  #57: UNIT_collision_Distance ..............................   Passed    0.37 sec
+        Start  63: UNIT_collision_CollisionResult
+ 32/190 Test  #56: INTEGRATION_utils_PackageResourceRetriever ...........   Passed    0.46 sec
+        Start  64: UNIT_collision_ConvexMesh
+ 33/190 Test  #17: INTEGRATION_dynamics_DynamicsImpulse .................   Passed    2.44 sec
+        Start  65: UNIT_collision_Contact
+ 34/190 Test  #24: INTEGRATION_dynamics_ServoJointLimits ................   Passed    2.45 sec
+        Start  66: UNIT_collision_FCLCollisionObject
+ 35/190 Test  #58: UNIT_collision_DistanceFilter ........................   Passed    0.41 sec
+        Start  67: UNIT_collision_CollisionOption
+ 36/190 Test  #59: UNIT_collision_CollisionGroup ........................   Passed    0.39 sec
+        Start  68: UNIT_collision_CollisionFilter
+ 37/190 Test  #61: UNIT_collision_DARTCollide ...........................   Passed    0.38 sec
+        Start  69: UNIT_collision_DistanceOption
+ 38/190 Test  #60: UNIT_collision_DARTCollisionDetector .................   Passed    0.43 sec
+        Start  70: UNIT_collision_RaycastOption
+ 39/190 Test  #29: INTEGRATION_dynamics_SkeletonTopology ................   Passed    2.50 sec
+        Start  71: UNIT_common_aspect
+ 40/190 Test  #62: UNIT_collision_Raycast ...............................   Passed    0.39 sec
+        Start  72: UNIT_common_c_allocator
+ 41/190 Test  #63: UNIT_collision_CollisionResult .......................   Passed    0.39 sec
+        Start  73: UNIT_common_castable
+ 42/190 Test  #73: UNIT_common_castable .................................   Passed    0.01 sec
+        Start  74: UNIT_common_cloneable
+ 43/190 Test  #30: INTEGRATION_io_MjcfParser ............................   Passed    2.72 sec
+        Start  75: UNIT_common_composite
+ 44/190 Test  #74: UNIT_common_cloneable ................................   Passed    0.01 sec
+        Start  76: UNIT_common_exception
+ 45/190 Test  #76: UNIT_common_exception ................................   Passed    0.01 sec
+        Start  77: UNIT_common_factory
+ 46/190 Test  #49: INTEGRATION_utils_frames .............................   Passed    1.46 sec
+        Start  78: UNIT_common_free_list_allocator
+ 47/190 Test  #77: UNIT_common_factory ..................................   Passed    0.01 sec
+        Start  79: UNIT_common_local_resource_retriever
+ 48/190 Test  #64: UNIT_collision_ConvexMesh ............................   Passed    0.44 sec
+        Start  80: UNIT_common_lockable_reference
+ 49/190 Test  #65: UNIT_collision_Contact ...............................   Passed    0.42 sec
+        Start  81: UNIT_common_logging
+ 50/190 Test  #80: UNIT_common_lockable_reference .......................   Passed    0.01 sec
+        Start  82: UNIT_common_memory_manager
+ 51/190 Test  #81: UNIT_common_logging ..................................   Passed    0.01 sec
+        Start  83: UNIT_common_name_manager
+ 52/190 Test  #83: UNIT_common_name_manager .............................   Passed    0.01 sec
+        Start  84: UNIT_common_pool_allocator
+ 53/190 Test  #67: UNIT_collision_CollisionOption .......................   Passed    0.41 sec
+        Start  85: UNIT_common_profiler
+ 54/190 Test  #66: UNIT_collision_FCLCollisionObject ....................   Passed    0.43 sec
+        Start  86: UNIT_common_resource
+ 55/190 Test  #68: UNIT_collision_CollisionFilter .......................   Passed    0.44 sec
+        Start  87: UNIT_common_result
+ 56/190 Test  #87: UNIT_common_result ...................................   Passed    0.01 sec
+        Start  88: UNIT_common_signal
+ 57/190 Test  #69: UNIT_collision_DistanceOption ........................   Passed    0.46 sec
+        Start  89: UNIT_common_singleton
+ 58/190 Test  #70: UNIT_collision_RaycastOption .........................   Passed    0.45 sec
+ 59/190 Test  #71: UNIT_common_aspect ...................................   Passed    0.44 sec
+        Start  90: UNIT_common_stl_allocator
+        Start  91: UNIT_common_stopwatch
+ 60/190 Test  #89: UNIT_common_singleton ................................   Passed    0.01 sec
+        Start  92: UNIT_common_string
+ 61/190 Test  #72: UNIT_common_c_allocator ..............................   Passed    0.42 sec
+        Start  93: UNIT_common_subject_observer
+ 62/190 Test  #25: INTEGRATION_dynamics_UniversalJointLimits ............   Passed    3.11 sec
+        Start  94: UNIT_common_uri
+ 63/190 Test  #75: UNIT_common_composite ................................   Passed    0.39 sec
+        Start  95: UNIT_common_version_counter
+ 64/190 Test  #78: UNIT_common_free_list_allocator ......................   Passed    0.38 sec
+        Start  96: UNIT_constraint_ConstraintSolver
+ 65/190 Test  #79: UNIT_common_local_resource_retriever .................   Passed    0.39 sec
+        Start  97: UNIT_constraint_BoxedLcpConstraintSolver
+ 66/190 Test  #82: UNIT_common_memory_manager ...........................   Passed    0.39 sec
+        Start  98: UNIT_constraint_JointLimitConstraint
+ 67/190 Test  #84: UNIT_common_pool_allocator ...........................   Passed    0.41 sec
+        Start  99: UNIT_constraint_JointConstraint
+ 68/190 Test  #85: UNIT_common_profiler .................................   Passed    0.46 sec
+        Start 100: UNIT_constraint_BalanceConstraint
+ 69/190 Test  #88: UNIT_common_signal ...................................   Passed    0.43 sec
+        Start 101: UNIT_constraint_ContactSurface
+ 70/190 Test  #86: UNIT_common_resource .................................   Passed    0.46 sec
+        Start 102: UNIT_constraint_JointConstraints
+ 71/190 Test  #51: INTEGRATION_utils_Concurrency ........................   Passed    1.81 sec
+        Start 103: UNIT_constraint_MotorConstraints
+ 72/190 Test  #91: UNIT_common_stopwatch ................................   Passed    0.40 sec
+        Start 104: UNIT_constraint_WeldJointConstraint
+ 73/190 Test  #92: UNIT_common_string ...................................   Passed    0.40 sec
+        Start 105: UNIT_constraint_BallJointConstraint
+ 74/190 Test  #90: UNIT_common_stl_allocator ............................   Passed    0.42 sec
+        Start 106: UNIT_constraint_ServoMotorConstraint
+ 75/190 Test  #93: UNIT_common_subject_observer .........................   Passed    0.41 sec
+        Start 107: UNIT_constraint_SoftContactConstraint
+ 76/190 Test  #94: UNIT_common_uri ......................................   Passed    0.40 sec
+        Start 108: UNIT_dynamics_GenericJoints
+ 77/190 Test  #95: UNIT_common_version_counter ..........................   Passed    0.40 sec
+        Start 109: UNIT_dynamics_BodyNodeExternalForce
+ 78/190 Test  #96: UNIT_constraint_ConstraintSolver .....................   Passed    0.40 sec
+        Start 110: UNIT_dynamics_Inertia
+ 79/190 Test  #97: UNIT_constraint_BoxedLcpConstraintSolver .............   Passed    0.41 sec
+        Start 111: UNIT_dynamics_ScrewJoint
+ 80/190 Test  #98: UNIT_constraint_JointLimitConstraint .................   Passed    0.40 sec
+        Start 112: UNIT_dynamics_ShapeNodePtr
+ 81/190 Test  #99: UNIT_constraint_JointConstraint ......................   Passed    0.44 sec
+        Start 113: UNIT_dynamics_BodyNodePtr
+ 82/190 Test  #14: INTEGRATION_dynamics_DynamicsFiniteDifference ........   Passed    3.77 sec
+        Start 114: UNIT_dynamics_NodePtr
+ 83/190 Test #103: UNIT_constraint_MotorConstraints .....................   Passed    0.42 sec
+        Start 115: UNIT_dynamics_MeshShape
+ 84/190 Test #102: UNIT_constraint_JointConstraints .....................   Passed    0.48 sec
+        Start 116: UNIT_dynamics_HeightmapShape
+ 85/190 Test #100: UNIT_constraint_BalanceConstraint ....................   Passed    0.49 sec
+        Start 117: UNIT_dynamics_SphereShape
+ 86/190 Test #101: UNIT_constraint_ContactSurface .......................   Passed    0.57 sec
+        Start 118: UNIT_dynamics_JointCommand
+ 87/190 Test #107: UNIT_constraint_SoftContactConstraint ................   Passed    0.52 sec
+        Start 119: UNIT_dynamics_ConvexMeshShape
+ 88/190 Test #106: UNIT_constraint_ServoMotorConstraint .................   Passed    0.52 sec
+        Start 120: UNIT_dynamics_BodyNodeDerivatives
+ 89/190 Test #110: UNIT_dynamics_Inertia ................................   Passed    0.42 sec
+        Start 121: UNIT_dynamics_BodyNodePotentialEnergy
+ 90/190 Test #109: UNIT_dynamics_BodyNodeExternalForce ..................   Passed    0.44 sec
+        Start 122: UNIT_dynamics_ShapeNodeInertia
+ 91/190 Test #111: UNIT_dynamics_ScrewJoint .............................   Passed    0.43 sec
+        Start 123: UNIT_dynamics_SkeletonClone
+ 92/190 Test #112: UNIT_dynamics_ShapeNodePtr ...........................   Passed    0.39 sec
+        Start 124: UNIT_dynamics_SkeletonAccessors
+ 93/190 Test   #2: INTEGRATION_collision_Collision ......................   Passed    4.11 sec
+        Start 125: UNIT_dynamics_SkeletonProperties
+ 94/190 Test #113: UNIT_dynamics_BodyNodePtr ............................   Passed    0.42 sec
+        Start 126: UNIT_dynamics_BodyNodeProperties
+ 95/190 Test #114: UNIT_dynamics_NodePtr ................................   Passed    0.41 sec
+        Start 127: UNIT_dynamics_Noexcept
+ 96/190 Test #127: UNIT_dynamics_Noexcept ...............................   Passed    0.01 sec
+        Start 128: UNIT_dynamics_BodyNodeCollisionSignals
+ 97/190 Test #116: UNIT_dynamics_HeightmapShape .........................   Passed    0.41 sec
+        Start 129: UNIT_dynamics_VisualAspect
+ 98/190 Test #117: UNIT_dynamics_SphereShape ............................   Passed    0.41 sec
+        Start 130: UNIT_dynamics_WeldJointMerge
+ 99/190 Test #119: UNIT_dynamics_ConvexMeshShape ........................   Passed    0.38 sec
+        Start 131: UNIT_dynamics_CapsuleShape
+100/190 Test #118: UNIT_dynamics_JointCommand ...........................   Passed    0.44 sec
+        Start 132: UNIT_dynamics_ConeShape
+101/190 Test #121: UNIT_dynamics_BodyNodePotentialEnergy ................   Passed    0.42 sec
+        Start 133: UNIT_dynamics_CylinderShape
+102/190 Test #120: UNIT_dynamics_BodyNodeDerivatives ....................   Passed    0.55 sec
+        Start 134: UNIT_dynamics_EllipsoidShape
+103/190 Test #122: UNIT_dynamics_ShapeNodeInertia .......................   Passed    0.49 sec
+        Start 135: UNIT_dynamics_PlaneShape
+104/190 Test  #22: INTEGRATION_dynamics_MetaSkeleton ....................   Passed    4.47 sec
+        Start 136: UNIT_dynamics_PointCloudShape
+105/190 Test #124: UNIT_dynamics_SkeletonAccessors ......................   Passed    0.46 sec
+        Start 137: UNIT_dynamics_EndEffector
+106/190 Test #123: UNIT_dynamics_SkeletonClone ..........................   Passed    0.49 sec
+        Start 138: UNIT_dynamics_Marker
+107/190 Test #125: UNIT_dynamics_SkeletonProperties .....................   Passed    0.46 sec
+        Start 139: UNIT_dynamics_PointMass
+108/190 Test #126: UNIT_dynamics_BodyNodeProperties .....................   Passed    0.40 sec
+        Start 140: UNIT_dynamics_SoftBodyNodeHelper
+109/190 Test #128: UNIT_dynamics_BodyNodeCollisionSignals ...............   Passed    0.51 sec
+        Start 141: UNIT_dynamics_SoftBodyNode
+110/190 Test #105: UNIT_constraint_BallJointConstraint ..................   Passed    1.29 sec
+        Start 142: UNIT_dynamics_Frame
+111/190 Test #130: UNIT_dynamics_WeldJointMerge .........................   Passed    0.45 sec
+        Start 143: UNIT_dynamics_Group
+112/190 Test #129: UNIT_dynamics_VisualAspect ...........................   Passed    0.46 sec
+        Start 144: UNIT_dynamics_Joints
+113/190 Test #131: UNIT_dynamics_CapsuleShape ...........................   Passed    0.41 sec
+        Start 145: UNIT_dynamics_DegreeOfFreedom
+114/190 Test  #32: INTEGRATION_io_SkelParser ............................   Passed    4.70 sec
+        Start 146: UNIT_dynamics_MetaSkeleton
+115/190 Test #132: UNIT_dynamics_ConeShape ..............................   Passed    0.42 sec
+        Start 147: UNIT_dynamics_Linkage
+116/190 Test #133: UNIT_dynamics_CylinderShape ..........................   Passed    0.41 sec
+        Start 148: UNIT_dynamics_LineSegmentShape
+117/190 Test #134: UNIT_dynamics_EllipsoidShape .........................   Passed    0.44 sec
+        Start 149: UNIT_dynamics_PyramidShape
+118/190 Test #135: UNIT_dynamics_PlaneShape .............................   Passed    0.49 sec
+        Start 150: UNIT_dynamics_VoxelGridShape
+119/190 Test #136: UNIT_dynamics_PointCloudShape ........................   Passed    0.49 sec
+        Start 151: UNIT_dynamics_ZeroDofJoint
+120/190 Test #138: UNIT_dynamics_Marker .................................   Passed    0.47 sec
+        Start 152: UNIT_dynamics_ReferentialSkeleton
+121/190 Test #104: UNIT_constraint_WeldJointConstraint ..................   Passed    1.59 sec
+        Start 153: UNIT_dynamics_InverseKinematics
+122/190 Test #137: UNIT_dynamics_EndEffector ............................   Passed    0.55 sec
+        Start 154: UNIT_dynamics_CreateShapeNodeApi
+123/190 Test #115: UNIT_dynamics_MeshShape ..............................   Passed    1.27 sec
+        Start 155: UNIT_math_configuration_space
+124/190 Test #140: UNIT_dynamics_SoftBodyNodeHelper .....................   Passed    0.53 sec
+        Start 156: UNIT_math_geometry
+125/190 Test #139: UNIT_dynamics_PointMass ..............................   Passed    0.57 sec
+        Start 157: UNIT_math_icosphere
+126/190 Test #142: UNIT_dynamics_Frame ..................................   Passed    0.51 sec
+        Start 158: UNIT_math_math
+127/190 Test #144: UNIT_dynamics_Joints .................................   Passed    0.53 sec
+        Start 159: UNIT_math_polygon_mesh
+128/190 Test #145: UNIT_dynamics_DegreeOfFreedom ........................   Passed    0.52 sec
+        Start 160: UNIT_math_random
+129/190 Test #159: UNIT_math_polygon_mesh ...............................   Passed    0.01 sec
+        Start 161: UNIT_math_tri_mesh
+130/190 Test #161: UNIT_math_tri_mesh ...................................   Passed    0.01 sec
+        Start 162: UNIT_math_value_equal
+131/190 Test #162: UNIT_math_value_equal ................................   Passed    0.01 sec
+        Start 163: UNIT_math_Convhull
+132/190 Test #163: UNIT_math_Convhull ...................................   Passed    0.01 sec
+        Start 164: UNIT_math_optimization_Problem
+133/190 Test #141: UNIT_dynamics_SoftBodyNode ...........................   Passed    0.65 sec
+        Start 165: UNIT_math_lcp_math_lcp_dantzig_solver
+134/190 Test #148: UNIT_dynamics_LineSegmentShape .......................   Passed    0.52 sec
+        Start 166: UNIT_math_lcp_math_lcp_dantzig_vs_ode
+135/190 Test #146: UNIT_dynamics_MetaSkeleton ...........................   Passed    0.61 sec
+        Start 167: UNIT_math_lcp_math_lcp_lcp_comparison_harness
+136/190 Test #147: UNIT_dynamics_Linkage ................................   Passed    0.58 sec
+        Start 168: UNIT_math_lcp_math_lcp_lcp_edge_cases
+137/190 Test #143: UNIT_dynamics_Group ..................................   Passed    0.69 sec
+        Start 169: UNIT_math_lcp_math_lcp_lcp_solvers_stress
+138/190 Test #152: UNIT_dynamics_ReferentialSkeleton ....................   Passed    0.52 sec
+        Start 170: UNIT_math_lcp_math_lcp_lcp_problems
+139/190 Test #149: UNIT_dynamics_PyramidShape ...........................   Passed    0.58 sec
+140/190 Test #151: UNIT_dynamics_ZeroDofJoint ...........................   Passed    0.53 sec
+        Start 171: UNIT_math_lcp_math_lcp_lemke
+        Start 172: UNIT_math_lcp_math_lcp_pgs
+141/190 Test #170: UNIT_math_lcp_math_lcp_lcp_problems ..................   Passed    0.03 sec
+        Start 173: UNIT_math_lcp_math_lcp_pivot_matrix
+142/190 Test #173: UNIT_math_lcp_math_lcp_pivot_matrix ..................   Passed    0.01 sec
+        Start 174: UNIT_gui_HeightmapShapeNode
+143/190 Test #174: UNIT_gui_HeightmapShapeNode ..........................   Passed    0.01 sec
+        Start 175: UNIT_gui_ImGuiWindowScaling
+144/190 Test #175: UNIT_gui_ImGuiWindowScaling ..........................   Passed    0.01 sec
+        Start 176: UNIT_gui_HeadlessViewer
+145/190 Test #150: UNIT_dynamics_VoxelGridShape .........................   Passed    0.60 sec
+        Start 177: UNIT_gui_MeshShapeNodeMaterialUpdates
+146/190 Test #154: UNIT_dynamics_CreateShapeNodeApi .....................   Passed    0.52 sec
+        Start 178: UNIT_gui_ConvexMeshShapeNode
+147/190 Test #155: UNIT_math_configuration_space ........................   Passed    0.50 sec
+        Start 179: UNIT_gui_PlaneShapeNode
+148/190 Test #156: UNIT_math_geometry ...................................   Passed    0.50 sec
+        Start 180: test_sdf_helpersNone
+149/190 Test #153: UNIT_dynamics_InverseKinematics ......................   Passed    0.60 sec
+        Start 181: test_mesh_loaderNone
+150/190 Test #160: UNIT_math_random .....................................   Passed    0.41 sec
+        Start 182: test_HttpResourceRetriever
+151/190 Test #164: UNIT_math_optimization_Problem .......................   Passed    0.41 sec
+        Start 183: test_FileInfoDof
+152/190 Test #166: UNIT_math_lcp_math_lcp_dantzig_vs_ode ................   Passed    0.43 sec
+        Start 184: test_xml_helpersNone
+153/190 Test #165: UNIT_math_lcp_math_lcp_dantzig_solver ................   Passed    0.44 sec
+        Start 185: test_io_readNone
+154/190 Test #168: UNIT_math_lcp_math_lcp_lcp_edge_cases ................   Passed    0.45 sec
+        Start 186: UNIT_io_UrdfParser_Errors
+155/190 Test  #11: INTEGRATION_constraint_LcpSolverStability ............   Passed    5.87 sec
+        Start 187: UNIT_io_SdfParser_Errors
+156/190 Test #167: UNIT_math_lcp_math_lcp_lcp_comparison_harness ........   Passed    0.50 sec
+        Start 188: UNIT_sensor_Sensor
+157/190 Test #172: UNIT_math_lcp_math_lcp_pgs ...........................   Passed    0.41 sec
+        Start 189: UNIT_sensor_SensorManager
+158/190 Test #169: UNIT_math_lcp_math_lcp_lcp_solvers_stress ............   Passed    0.53 sec
+        Start 190: UNIT_simulation_World
+159/190 Test #171: UNIT_math_lcp_math_lcp_lemke .........................   Passed    0.43 sec
+160/190 Test #157: UNIT_math_icosphere ..................................   Passed    0.91 sec
+161/190 Test  #31: INTEGRATION_io_SdfParser .............................   Passed    5.96 sec
+162/190 Test #178: UNIT_gui_ConvexMeshShapeNode .........................   Passed    0.50 sec
+163/190 Test #179: UNIT_gui_PlaneShapeNode ..............................   Passed    0.56 sec
+164/190 Test #177: UNIT_gui_MeshShapeNodeMaterialUpdates ................   Passed    0.63 sec
+165/190 Test #182: test_HttpResourceRetriever ...........................   Passed    0.59 sec
+166/190 Test #183: test_FileInfoDof .....................................   Passed    0.57 sec
+167/190 Test #181: test_mesh_loaderNone .................................   Passed    0.70 sec
+168/190 Test #184: test_xml_helpersNone .................................   Passed    0.55 sec
+169/190 Test #176: UNIT_gui_HeadlessViewer ..............................   Passed    0.81 sec
+170/190 Test #188: UNIT_sensor_Sensor ...................................   Passed    0.50 sec
+171/190 Test #189: UNIT_sensor_SensorManager ............................   Passed    0.47 sec
+172/190 Test #180: test_sdf_helpersNone .................................   Passed    0.81 sec
+173/190 Test #186: UNIT_io_UrdfParser_Errors ............................   Passed    0.59 sec
+174/190 Test #190: UNIT_simulation_World ................................   Passed    0.57 sec
+175/190 Test #185: test_io_readNone .....................................   Passed    0.78 sec
+176/190 Test   #8: INTEGRATION_constraint_friction ......................   Passed    6.67 sec
+177/190 Test  #15: INTEGRATION_dynamics_DynamicsEquations ...............   Passed    6.72 sec
+178/190 Test #187: UNIT_io_SdfParser_Errors .............................   Passed    0.86 sec
+179/190 Test  #43: INTEGRATION_simulation_FileInfoWorld .................   Passed    6.12 sec
+180/190 Test  #16: INTEGRATION_dynamics_DynamicsCenterOfMass ............   Passed    7.80 sec
+181/190 Test #108: UNIT_dynamics_GenericJoints ..........................   Passed    5.07 sec
+182/190 Test  #20: INTEGRATION_dynamics_JointForceTorque ................   Passed    9.83 sec
+183/190 Test  #44: INTEGRATION_simulation_World .........................   Passed   11.25 sec
+184/190 Test  #46: INTEGRATION_simulation_MomentumConservation ..........   Passed   11.60 sec
+185/190 Test #158: UNIT_math_math .......................................   Passed    8.68 sec
+186/190 Test  #47: INTEGRATION_simulation_MimicConstraint ...............   Passed   32.02 sec
+187/190 Test  #13: INTEGRATION_dynamics_DynamicsJacobians ...............   Passed   33.37 sec
+188/190 Test  #19: INTEGRATION_dynamics_Joints ..........................   Passed   44.20 sec
+189/190 Test  #40: INTEGRATION_simulation_Issue870 ......................   Passed   44.21 sec
+190/190 Test  #45: INTEGRATION_simulation_Issue410 ......................   Passed  207.21 sec
+
+100% tests passed, 0 tests failed out of 190
+
+Total Test time (real) = 208.46 sec
+
+✨ Pixi task (coverage-report in default): bash -lc "set -euo pipefail
+# Drop coverage artifacts for directories we filter out later so that
+# stale gcda files without matching gcno files do not break lcov.
+find build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE '(' -path '*/tests/*' -o -path '*/examples/*' -o -path '*/tutorials/*' ')' '(' -name '*.gcda' -o -name '*.gcno' ')' -delete
+lcov --capture --directory build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE --output-file coverage.info --rc geninfo_unexecuted_blocks=1 && lcov --remove coverage.info '/usr/*' '*/.pixi/*' '*/.deps/*' '*/tests/*' '*/examples/*' '*/tutorials/*' '*/dart/gui/*' --output-file coverage.info && lcov --list coverage.info"
+Capturing coverage data from build/default/cpp/Debug
+Found gcov version: 13.3.0
+Using intermediate gcov format
+Using JSON module JSON::PP
+Scanning build/default/cpp/Debug for .gcda files ...
+Found 238 data files in build/default/cpp/Debug
+Processing CMakeFiles/dart.dir/collision/raycast_result.cpp.gcda
+Processing CMakeFiles/dart.dir/collision/collision_filter.cpp.gcda
+Processing CMakeFiles/dart.dir/collision/collision_object.cpp.gcda
+Processing CMakeFiles/dart.dir/collision/dart/dart_collision_object.cpp.gcda
+Processing CMakeFiles/dart.dir/collision/dart/dart_collide.cpp.gcda
+Processing CMakeFiles/dart.dir/collision/dart/dart_collision_detector.cpp.gcda
+Processing CMakeFiles/dart.dir/collision/dart/dart_collision_group.cpp.gcda
+Processing CMakeFiles/dart.dir/collision/collision_group.cpp.gcda
+Processing CMakeFiles/dart.dir/collision/collision_option.cpp.gcda
+Processing CMakeFiles/dart.dir/collision/raycast_option.cpp.gcda
+Processing CMakeFiles/dart.dir/collision/distance_option.cpp.gcda
+Processing CMakeFiles/dart.dir/collision/distance_result.cpp.gcda
+Processing CMakeFiles/dart.dir/collision/collision_result.cpp.gcda
+Processing CMakeFiles/dart.dir/collision/distance_filter.cpp.gcda
+Processing CMakeFiles/dart.dir/collision/fcl/backward_compatibility.cpp.gcda
+Processing CMakeFiles/dart.dir/collision/fcl/fcl_collision_detector.cpp.gcda

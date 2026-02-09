@@ -59,8 +59,9 @@ inline bool validateProblem(
         || (lo.size() != b.size()) || (hi.size() != b.size())
         || (findex.size() != b.size());
   if (dimensionMismatch) {
-    if (message)
+    if (message) {
       *message = "Matrix/vector dimensions inconsistent";
+    }
     return false;
   }
 
@@ -68,32 +69,37 @@ inline bool validateProblem(
   for (Eigen::Index i = 0; i < n; ++i) {
     const int ref = findex[i];
     if (ref >= n) {
-      if (message)
+      if (message) {
         *message = "Friction index entry out of range";
+      }
       return false;
     }
 
     if (ref == i) {
-      if (message)
+      if (message) {
         *message = "Friction index entry cannot reference itself";
+      }
       return false;
     }
 
     if (std::isnan(lo[i]) || std::isnan(hi[i])) {
-      if (message)
+      if (message) {
         *message = "Bounds contain NaN";
+      }
       return false;
     }
 
     if (ref >= 0 && !std::isfinite(hi[i])) {
-      if (message)
+      if (message) {
         *message = "Friction coefficient (hi) must be finite";
+      }
       return false;
     }
 
     if (std::isfinite(lo[i]) && std::isfinite(hi[i]) && lo[i] > hi[i]) {
-      if (message)
+      if (message) {
         *message = "Lower bound exceeds upper bound";
+      }
       return false;
     }
   }
@@ -113,8 +119,9 @@ inline bool computeEffectiveBounds(
   const Eigen::Index n = x.size();
 
   if (lo.size() != n || hi.size() != n || findex.size() != n) {
-    if (message)
+    if (message) {
       *message = "Invalid LCP problem dimensions";
+    }
     return false;
   }
 
@@ -123,32 +130,37 @@ inline bool computeEffectiveBounds(
 
   for (Eigen::Index i = 0; i < n; ++i) {
     const int ref = findex[i];
-    if (ref < 0)
+    if (ref < 0) {
       continue;
+    }
 
     if (ref >= n) {
-      if (message)
+      if (message) {
         *message = "Invalid friction index entry";
+      }
       return false;
     }
 
     if (ref == i) {
-      if (message)
+      if (message) {
         *message = "Invalid friction index entry: self reference";
+      }
       return false;
     }
 
     const double scale = x[ref];
     const double mu = std::abs(hi[i]);
     if (!std::isfinite(scale)) {
-      if (message)
+      if (message) {
         *message = "Invalid friction index reference value";
+      }
       return false;
     }
 
     if (!std::isfinite(mu)) {
-      if (message)
+      if (message) {
         *message = "Invalid friction coefficient (hi) for friction index entry";
+      }
       return false;
     }
 
@@ -175,10 +187,12 @@ inline double naturalResidualInfinityNorm(
 
   for (Eigen::Index i = 0; i < n; ++i) {
     double projected = x[i] - w[i];
-    if (std::isfinite(lo[i]))
+    if (std::isfinite(lo[i])) {
       projected = std::max(projected, lo[i]);
-    if (std::isfinite(hi[i]))
+    }
+    if (std::isfinite(hi[i])) {
       projected = std::min(projected, hi[i]);
+    }
 
     const double residual = x[i] - projected;
     maxResidual = std::max(maxResidual, std::abs(residual));
@@ -206,10 +220,12 @@ inline double complementarityInfinityNorm(
     const double wi = w[i];
 
     double violation = 0.0;
-    if (std::isfinite(lo[i]) && xi < lo[i] - tol)
+    if (std::isfinite(lo[i]) && xi < lo[i] - tol) {
       violation = std::max(violation, lo[i] - xi);
-    if (std::isfinite(hi[i]) && xi > hi[i] + tol)
+    }
+    if (std::isfinite(hi[i]) && xi > hi[i] + tol) {
       violation = std::max(violation, xi - hi[i]);
+    }
 
     const bool hasLo = std::isfinite(lo[i]);
     const bool hasUpper = std::isfinite(hi[i]);
@@ -245,14 +261,16 @@ inline bool validateSolution(
 {
   const Eigen::Index n = x.size();
   if (w.size() != n || lo.size() != n || hi.size() != n) {
-    if (message)
+    if (message) {
       *message = "Solution validation failed: dimension mismatch";
+    }
     return false;
   }
 
   if (!x.allFinite() || !w.allFinite()) {
-    if (message)
+    if (message) {
       *message = "Solution validation failed: non-finite values";
+    }
     return false;
   }
 
@@ -261,13 +279,15 @@ inline bool validateSolution(
     const double wi = w[i];
 
     if (std::isfinite(lo[i]) && xi < lo[i] - tol) {
-      if (message)
+      if (message) {
         *message = "Solution validation failed: lower bound violation";
+      }
       return false;
     }
     if (std::isfinite(hi[i]) && xi > hi[i] + tol) {
-      if (message)
+      if (message) {
         *message = "Solution validation failed: upper bound violation";
+      }
       return false;
     }
 
@@ -281,26 +301,30 @@ inline bool validateSolution(
 
     if (fixed) {
       if (std::abs(wi) > tol) {
-        if (message)
+        if (message) {
           *message = "Solution validation failed: fixed variable residual";
+        }
         return false;
       }
     } else if (atLo) {
       if (wi < -tol) {
-        if (message)
+        if (message) {
           *message = "Solution validation failed: w must be non-negative at lo";
+        }
         return false;
       }
     } else if (atHi) {
       if (wi > tol) {
-        if (message)
+        if (message) {
           *message = "Solution validation failed: w must be non-positive at hi";
+        }
         return false;
       }
     } else if (interior) {
       if (std::abs(wi) > tol) {
-        if (message)
+        if (message) {
           *message = "Solution validation failed: w must be zero in interior";
+        }
         return false;
       }
     }

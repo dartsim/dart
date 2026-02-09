@@ -147,8 +147,9 @@ bool compareStringAndFile(
 
   char c = ifs.get();
   while (ifs.good()) {
-    if (*itr != c)
+    if (*itr != c) {
       return false;
+    }
 
     c = ifs.get();
     itr++;

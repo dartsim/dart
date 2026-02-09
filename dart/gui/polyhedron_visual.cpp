@@ -50,8 +50,9 @@ namespace {
 
 Eigen::Vector3d computeSafeNormal(const Eigen::Vector3d& normal)
 {
-  if (normal.norm() < 1e-9)
+  if (normal.norm() < 1e-9) {
     return Eigen::Vector3d::UnitZ();
+  }
 
   return normal.normalized();
 }
@@ -59,8 +60,9 @@ Eigen::Vector3d computeSafeNormal(const Eigen::Vector3d& normal)
 std::pair<std::size_t, std::size_t> makeOrderedEdge(
     std::size_t a, std::size_t b)
 {
-  if (a < b)
+  if (a < b) {
     return std::make_pair(a, b);
+  }
 
   return std::make_pair(b, a);
 }
@@ -105,12 +107,14 @@ void PolyhedronVisual::setVertices(
 
   if (vertices.rows() == 3) {
     converted.reserve(vertices.cols());
-    for (int i = 0; i < vertices.cols(); ++i)
+    for (int i = 0; i < vertices.cols(); ++i) {
       converted.emplace_back(vertices(0, i), vertices(1, i), vertices(2, i));
+    }
   } else if (vertices.cols() == 3) {
     converted.reserve(vertices.rows());
-    for (int i = 0; i < vertices.rows(); ++i)
+    for (int i = 0; i < vertices.rows(); ++i) {
       converted.emplace_back(vertices(i, 0), vertices(i, 1), vertices(i, 2));
+    }
   } else {
     DART_WARN(
         "[PolyhedronVisual::setVertices] Expected either a 3xN or Nx3 matrix. "
@@ -168,8 +172,9 @@ Eigen::Vector4d PolyhedronVisual::getWireframeColor() const
 //==============================================================================
 void PolyhedronVisual::setWireframeWidth(float width)
 {
-  if (mWireWidth == width)
+  if (mWireWidth == width) {
     return;
+  }
 
   mWireWidth = width;
   updateWireframeWidth();
@@ -184,15 +189,17 @@ float PolyhedronVisual::getWireframeWidth() const
 //==============================================================================
 void PolyhedronVisual::display(bool display)
 {
-  if (mDisplay == display)
+  if (mDisplay == display) {
     return;
+  }
 
   mDisplay = display;
 
-  if (mDisplay)
+  if (mDisplay) {
     addChild(mGeode);
-  else
+  } else {
     removeChild(mGeode);
+  }
 }
 
 //==============================================================================
@@ -204,15 +211,17 @@ bool PolyhedronVisual::isDisplayed() const
 //==============================================================================
 void PolyhedronVisual::displaySurface(bool display)
 {
-  if (mDisplaySurface == display)
+  if (mDisplaySurface == display) {
     return;
+  }
 
   mDisplaySurface = display;
 
-  if (mDisplaySurface)
+  if (mDisplaySurface) {
     mGeode->addDrawable(mSurfaceGeom);
-  else
+  } else {
     mGeode->removeDrawable(mSurfaceGeom);
+  }
 }
 
 //==============================================================================
@@ -224,15 +233,17 @@ bool PolyhedronVisual::isSurfaceDisplayed() const
 //==============================================================================
 void PolyhedronVisual::displayWireframe(bool display)
 {
-  if (mDisplayWireframe == display)
+  if (mDisplayWireframe == display) {
     return;
+  }
 
   mDisplayWireframe = display;
 
-  if (mDisplayWireframe)
+  if (mDisplayWireframe) {
     mGeode->addDrawable(mWireframeGeom);
-  else
+  } else {
     mGeode->removeDrawable(mWireframeGeom);
+  }
 }
 
 //==============================================================================
@@ -244,8 +255,9 @@ bool PolyhedronVisual::isWireframeDisplayed() const
 //==============================================================================
 void PolyhedronVisual::refresh()
 {
-  if (!mDirty)
+  if (!mDirty) {
     return;
+  }
 
   updateGeometry();
 }
@@ -386,8 +398,9 @@ void PolyhedronVisual::clearGeometry()
 //==============================================================================
 void PolyhedronVisual::updateWireframeWidth()
 {
-  if (mWireframeWidth)
+  if (mWireframeWidth) {
     mWireframeWidth->setWidth(mWireWidth);
+  }
 }
 
 } // namespace gui

@@ -116,10 +116,10 @@ public:
   Properties getEndEffectorProperties() const;
 
   /// Copy the State and Properties of another EndEffector
-  void copy(const EndEffector& _otherEndEffector);
+  DART_API void copy(const EndEffector& _otherEndEffector);
 
   /// Copy the State and Properties of another EndEffector
-  void copy(const EndEffector* _otherEndEffector);
+  DART_API void copy(const EndEffector* _otherEndEffector);
 
   /// Copy the State and Properties of another EndEffector
   EndEffector& operator=(const EndEffector& _otherEndEffector);

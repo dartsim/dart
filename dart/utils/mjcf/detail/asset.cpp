@@ -32,6 +32,7 @@
 
 #include "dart/utils/mjcf/detail/asset.hpp"
 
+#include "dart/utils/mjcf/detail/utils.hpp"
 #include "dart/utils/xml_helpers.hpp"
 
 namespace dart {
@@ -64,6 +65,54 @@ const Mesh* Asset::getMesh(std::string_view name) const
 }
 
 //==============================================================================
+std::size_t Asset::getNumTextures() const
+{
+  return mTextures.size();
+}
+
+//==============================================================================
+const Texture& Asset::getTexture(std::size_t index) const
+{
+  return mTextures[index];
+}
+
+//==============================================================================
+const Texture* Asset::getTexture(std::string_view name) const
+{
+  const std::string nameString(name);
+  const auto result = mTextureMap.find(nameString);
+  if (result != mTextureMap.end()) {
+    return result->second;
+  } else {
+    return nullptr;
+  }
+}
+
+//==============================================================================
+std::size_t Asset::getNumMaterials() const
+{
+  return mMaterials.size();
+}
+
+//==============================================================================
+const Material& Asset::getMaterial(std::size_t index) const
+{
+  return mMaterials[index];
+}
+
+//==============================================================================
+const Material* Asset::getMaterial(std::string_view name) const
+{
+  const std::string nameString(name);
+  const auto result = mMaterialMap.find(nameString);
+  if (result != mMaterialMap.end()) {
+    return result->second;
+  } else {
+    return nullptr;
+  }
+}
+
+//==============================================================================
 Errors Asset::read(tinyxml2::XMLElement* element)
 {
   Errors errors;
@@ -86,6 +135,32 @@ Errors Asset::read(tinyxml2::XMLElement* element)
       mMeshes.emplace_back(std::move(mesh));
     }
   }
+
+  // Read multiple <texture>
+  ElementEnumerator textureElements(element, "texture");
+  while (textureElements.next()) {
+    Texture texture = Texture();
+    const auto textureErrors = texture.read(textureElements.get());
+    errors.insert(errors.end(), textureErrors.begin(), textureErrors.end());
+
+    if (textureErrors.empty()) {
+      mTextures.emplace_back(std::move(texture));
+    }
+  }
+
+  // Read multiple <material>
+  ElementEnumerator materialElements(element, "material");
+  while (materialElements.next()) {
+    Material material = Material();
+    const auto materialErrors = material.read(materialElements.get());
+    errors.insert(errors.end(), materialErrors.begin(), materialErrors.end());
+
+    if (materialErrors.empty()) {
+      mMaterials.emplace_back(std::move(material));
+    }
+  }
+
+  warnUnknownElements(element, {"mesh", "texture", "material"});
 
   return errors;
 }
@@ -113,6 +188,14 @@ Errors Asset::compile(const Compiler& compiler)
 
     const Errors meshErrors = mesh.compile(compiler);
     errors.insert(errors.end(), meshErrors.begin(), meshErrors.end());
+  }
+
+  for (Texture& texture : mTextures) {
+    mTextureMap[texture.getName()] = &texture;
+  }
+
+  for (Material& material : mMaterials) {
+    mMaterialMap[material.getName()] = &material;
   }
 
   return errors;

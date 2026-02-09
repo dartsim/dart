@@ -1,4 +1,11 @@
-# Custom build files
+# Coverage files
+*.info
+*.gcda
+*.gcno
+*.gcov
+htmlcov/
+coverage_html/
+.gcov/
 build/
 .build/
 
@@ -67,13 +74,18 @@ data/screencap/*
 *.vsgt
 *.ppm
 
+# Headless rendering artifacts
+/*.png
+headless_frames*/
+rigid_frames/
+*_frames/
+
 # Temporary directory for dependencies
 .deps/
 
 # Python distribution artifacts
 dist/
 *.egg-info
-build/
 
 # Python wheel files
 *.whl
@@ -88,25 +100,9 @@ gh-pages/
 # ImGui configuration
 imgui.ini
 
-# Temporary directory for dependencies
-.deps/
-
 # Gazebo physics plugins
 /libgz-physics-*.so
 *.dylib
-
-# Python distribution artifacts
-dist/
-*.egg-info
-
-# Python wheel files
-*.whl
-
-# pixi environments
-.pixi
-
-# ImGui configuration
-imgui.ini
 
 # Profiling logs
 profiling/*.txt
@@ -118,3 +114,21 @@ rp3d_profiling_*.txt
 
 # Benchmark results
 docs/**/results/*.json
+
+# Sisyphus agent artifacts
+.sisyphus/
+
+# Benchmark result artifacts
+.benchmark_results/
+
+# clangd / LSP artifacts
+.cache/
+.clangd
+compile_commands.json
+compile_flags.txt
+
+# OpenCode agent artifacts
+.opencode/
+
+# Temporary apt downloads
+.tmp_apt/

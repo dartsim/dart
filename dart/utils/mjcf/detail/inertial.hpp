@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_INERTIAL_HPP_
 #define DART_UTILS_MJCF_DETAIL_INERTIAL_HPP_
 
+#include <dart/utils/export.hpp>
 #include <dart/utils/mjcf/detail/compiler.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
 
@@ -49,7 +50,7 @@ namespace detail {
 
 class Body;
 
-class Inertial final
+class DART_UTILS_API Inertial final
 {
 public:
   Inertial() = default;

@@ -92,14 +92,27 @@ Errors Joint::preprocess(const Compiler& /*compiler*/)
   mRange = mAttributes.mRange;
   mSpringRef = mAttributes.mSpringRef;
   mDamping = mAttributes.mDamping;
+  mStiffness = mAttributes.mStiffness;
+  mArmature = mAttributes.mArmature;
+  mFrictionLoss = mAttributes.mFrictionLoss;
+  mLimited = mAttributes.mLimited;
 
   return errors;
 }
 
 //==============================================================================
-Errors Joint::compile(const Compiler& /*compiler*/)
+Errors Joint::compile(const Compiler& compiler)
 {
   Errors errors;
+
+  if (compiler.getAutoLimits() && !mLimited.has_value()) {
+    if (mRange[0] != 0.0 || mRange[1] != 0.0) {
+      mLimited = true;
+    } else {
+      mLimited = false;
+    }
+  }
+
   return errors;
 }
 
@@ -147,9 +160,15 @@ const Eigen::Vector3d& Joint::getAxis() const
 }
 
 //==============================================================================
-bool Joint::isLimited() const
+std::optional<bool> Joint::getLimited() const
 {
   return mLimited;
+}
+
+//==============================================================================
+bool Joint::isLimited() const
+{
+  return mLimited.value_or(false);
 }
 
 //==============================================================================
@@ -168,6 +187,24 @@ double Joint::getDamping() const
 double Joint::getSpringRef() const
 {
   return mSpringRef;
+}
+
+//==============================================================================
+double Joint::getStiffness() const
+{
+  return mStiffness;
+}
+
+//==============================================================================
+double Joint::getArmature() const
+{
+  return mArmature;
+}
+
+//==============================================================================
+double Joint::getFrictionLoss() const
+{
+  return mFrictionLoss;
 }
 
 } // namespace detail

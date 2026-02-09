@@ -78,8 +78,9 @@ inline double InfinityNorm(const Eigen::VectorXd& v)
 
 inline double InfinityNorm(const Eigen::MatrixXd& m)
 {
-  if (m.size() == 0)
+  if (m.size() == 0) {
     return 0.0;
+  }
 
   return m.cwiseAbs().rowwise().sum().maxCoeff();
 }
@@ -91,10 +92,12 @@ inline double ComputeBoundViolation(
 {
   double violation = 0.0;
   for (Eigen::Index i = 0; i < x.size(); ++i) {
-    if (std::isfinite(lo[i]))
+    if (std::isfinite(lo[i])) {
       violation = std::max(violation, lo[i] - x[i]);
-    if (std::isfinite(hi[i]))
+    }
+    if (std::isfinite(hi[i])) {
       violation = std::max(violation, x[i] - hi[i]);
+    }
   }
   return std::max(0.0, violation);
 }
@@ -162,14 +165,16 @@ inline LcpCheckResult CheckLcpSolution(
   const double validationTol = std::max(report.tol, report.compTol);
   report.validated = dart::math::detail::validateSolution(
       x, w, loEff, hiEff, validationTol, &validationMessage);
-  if (!report.validated && report.message.empty())
+  if (!report.validated && report.message.empty()) {
     report.message = validationMessage;
+  }
 
   report.ok = report.finiteOk && report.boundsOk && report.residualOk
               && report.complementarityOk && report.validated;
 
-  if (!report.ok && report.message.empty())
+  if (!report.ok && report.message.empty()) {
     report.message = "Solution violates comparison contract";
+  }
 
   return report;
 }
@@ -195,10 +200,12 @@ inline std::string DescribeReport(const LcpSolveReport& report)
       << " comp=" << report.result.complementarity
       << " tol=" << report.check.tol << " compTol=" << report.check.compTol
       << " boundViolation=" << report.check.boundViolation;
-  if (!report.result.message.empty())
+  if (!report.result.message.empty()) {
     out << " msg=" << report.result.message;
-  if (!report.check.message.empty())
+  }
+  if (!report.check.message.empty()) {
     out << " check=" << report.check.message;
+  }
   return out.str();
 }
 

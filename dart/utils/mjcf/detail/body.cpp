@@ -96,6 +96,60 @@ Errors Body::read(
     mJoints.emplace_back(std::move(joint));
   }
 
+  // Read <freejoint> — creates a free joint that ignores defaults
+  ElementEnumerator freejointElements(element, "freejoint");
+  while (freejointElements.next()) {
+    // Create a Joint with FREE type and zero dynamics, ignoring defaults
+    Joint freeJoint;
+
+    // freejoint does NOT inherit from default classes — use blank attributes
+    JointAttributes blankAttrs;
+    blankAttrs.mType = JointType::FREE;
+    blankAttrs.mStiffness = 0;
+    blankAttrs.mDamping = 0;
+    blankAttrs.mFrictionLoss = 0;
+    blankAttrs.mArmature = 0;
+
+    // Read name if present
+    if (hasAttribute(freejointElements.get(), "name")) {
+      blankAttrs.mName = getAttributeString(freejointElements.get(), "name");
+    }
+
+    // Body is a friend of Joint, so set attributes directly
+    freeJoint.mAttributes = blankAttrs;
+
+    mJoints.emplace_back(std::move(freeJoint));
+  }
+
+  // Validate: at most one free joint per body (from <freejoint> or <joint
+  // type="free">)
+  {
+    int freeJointCount = 0;
+    for (const auto& joint : mJoints) {
+      if (joint.mAttributes.mType == JointType::FREE) {
+        ++freeJointCount;
+      }
+    }
+    if (freeJointCount > 1) {
+      errors.emplace_back(
+          ErrorCode::ELEMENT_INVALID,
+          "Body cannot have more than one free joint (from <freejoint> and/or "
+          "<joint type=\"free\">)");
+      return errors;
+    }
+  }
+
+  warnUnknownElements(
+      element,
+      {"inertial",
+       "joint",
+       "freejoint",
+       "geom",
+       "site",
+       "camera",
+       "light",
+       "body"});
+
   // Read multiple <geom>
   ElementEnumerator geomElements(element, "geom");
   while (geomElements.next()) {
@@ -113,6 +167,24 @@ Errors Body::read(
     const Errors siteErrors = site.read(siteElements.get());
     errors.insert(errors.end(), siteErrors.begin(), siteErrors.end());
     mSites.emplace_back(std::move(site));
+  }
+
+  // Read multiple <camera>
+  ElementEnumerator cameraElements(element, "camera");
+  while (cameraElements.next()) {
+    Camera camera = Camera();
+    const Errors cameraErrors = camera.read(cameraElements.get());
+    errors.insert(errors.end(), cameraErrors.begin(), cameraErrors.end());
+    mCameras.emplace_back(std::move(camera));
+  }
+
+  // Read multiple <light>
+  ElementEnumerator lightElements(element, "light");
+  while (lightElements.next()) {
+    Light light = Light();
+    const Errors lightErrors = light.read(lightElements.get());
+    errors.insert(errors.end(), lightErrors.begin(), lightErrors.end());
+    mLights.emplace_back(std::move(light));
   }
 
   // Read childrend <body>
@@ -233,7 +305,12 @@ Errors Body::postprocess(const Body* parent, const Compiler& compiler)
           mAttributes.mXYAxes,
           mAttributes.mZAxis,
           compiler);
-      DART_ASSERT(math::verifyTransform(mRelativeTransform));
+      if (!math::verifyTransform(mRelativeTransform)) {
+        DART_WARN(
+            "[MjcfBody] Non-finite transform detected while parsing MJCF body. "
+            "The model file may contain extreme or invalid pose values.");
+        mRelativeTransform = Eigen::Isometry3d::Identity();
+      }
     } else {
       mWorldTransform.translation() = *mAttributes.mPos;
       mWorldTransform.linear() = compileRotation(
@@ -243,25 +320,47 @@ Errors Body::postprocess(const Body* parent, const Compiler& compiler)
           mAttributes.mXYAxes,
           mAttributes.mZAxis,
           compiler);
+      if (!math::verifyTransform(mWorldTransform)) {
+        DART_WARN(
+            "[MjcfBody] Non-finite transform detected while parsing MJCF body. "
+            "The model file may contain extreme or invalid pose values.");
+        mWorldTransform = Eigen::Isometry3d::Identity();
+      }
       if (mAttributes.mInertial) {
         mInertial.setRelativeTransform(
             mWorldTransform.inverse() * mInertial.getWorldTransform());
       }
-      DART_ASSERT(math::verifyTransform(mWorldTransform));
     }
   } else {
     if (compiler.getCoordinate() == Coordinate::LOCAL) {
       mRelativeTransform = mInertial.getRelativeTransform();
-      DART_ASSERT(math::verifyTransform(mRelativeTransform));
+      if (!math::verifyTransform(mRelativeTransform)) {
+        DART_WARN(
+            "[MjcfBody] Non-finite transform detected while parsing MJCF body. "
+            "The model file may contain extreme or invalid pose values.");
+        mRelativeTransform = Eigen::Isometry3d::Identity();
+        mInertial.setRelativeTransform(Eigen::Isometry3d::Identity());
+      }
     } else {
       mWorldTransform = mInertial.getWorldTransform();
+      if (!math::verifyTransform(mWorldTransform)) {
+        DART_WARN(
+            "[MjcfBody] Non-finite transform detected while parsing MJCF body. "
+            "The model file may contain extreme or invalid pose values.");
+        mWorldTransform = Eigen::Isometry3d::Identity();
+      }
       if (parent != nullptr) {
         mRelativeTransform
             = parent->getWorldTransform().inverse() * mWorldTransform;
-        DART_ASSERT(math::verifyTransform(mRelativeTransform));
+        if (!math::verifyTransform(mRelativeTransform)) {
+          DART_WARN(
+              "[MjcfBody] Non-finite transform detected while parsing MJCF "
+              "body. "
+              "The model file may contain extreme or invalid pose values.");
+          mRelativeTransform = Eigen::Isometry3d::Identity();
+        }
       } else {
         mRelativeTransform = mWorldTransform;
-        DART_ASSERT(math::verifyTransform(mRelativeTransform));
       }
       mInertial.setRelativeTransform(Eigen::Isometry3d::Identity());
     }
@@ -357,9 +456,39 @@ const Site& Body::getSite(std::size_t index) const
 }
 
 //==============================================================================
+std::size_t Body::getNumCameras() const
+{
+  return mCameras.size();
+}
+
+//==============================================================================
+const Camera& Body::getCamera(std::size_t index) const
+{
+  return mCameras[index];
+}
+
+//==============================================================================
+std::size_t Body::getNumLights() const
+{
+  return mLights.size();
+}
+
+//==============================================================================
+const Light& Body::getLight(std::size_t index) const
+{
+  return mLights[index];
+}
+
+//==============================================================================
 void Body::setRelativeTransform(const Eigen::Isometry3d& tf)
 {
-  DART_ASSERT(math::verifyTransform(tf));
+  if (!math::verifyTransform(tf)) {
+    DART_WARN(
+        "[MjcfBody] Non-finite transform detected while parsing MJCF body. "
+        "The model file may contain extreme or invalid pose values.");
+    mRelativeTransform = Eigen::Isometry3d::Identity();
+    return;
+  }
   mRelativeTransform = tf;
 }
 
@@ -372,7 +501,13 @@ const Eigen::Isometry3d& Body::getRelativeTransform() const
 //==============================================================================
 void Body::setWorldTransform(const Eigen::Isometry3d& tf)
 {
-  DART_ASSERT(math::verifyTransform(tf));
+  if (!math::verifyTransform(tf)) {
+    DART_WARN(
+        "[MjcfBody] Non-finite transform detected while parsing MJCF body. "
+        "The model file may contain extreme or invalid pose values.");
+    mWorldTransform = Eigen::Isometry3d::Identity();
+    return;
+  }
   mWorldTransform = tf;
 }
 

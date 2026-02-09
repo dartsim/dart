@@ -136,8 +136,9 @@ public:
     using AspectType = typename GetAspect<AspectT>::Type;
 
     typename MapType::iterator it = this->mMap.find(typeid(AspectType));
-    if (this->mMap.end() == it)
+    if (this->mMap.end() == it) {
       return nullptr;
+    }
 
     return static_cast<Data*>(it->second.get());
   }
@@ -158,8 +159,9 @@ public:
         typename MapType::value_type(typeid(AspectType), nullptr));
     auto& it = insertion.first;
 
-    if (insertion.second || !it->second)
+    if (insertion.second || !it->second) {
       it->second = std::make_unique<Data>(std::forward<Args>(args)...);
+    }
 
     return static_cast<Data&>(*it->second);
   }
@@ -336,8 +338,9 @@ protected:
   void _setBaseFrom(const CompositeType& composite)
   {
     const Base* data = composite.template get<AspectType>();
-    if (data)
+    if (data) {
       static_cast<Base&>(*this) = *data;
+    }
   }
 
   void _addData(CompositeType& composite) const

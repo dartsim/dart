@@ -112,9 +112,10 @@ computeConvexHull3D(
     eigenFaces.emplace_back(index1, index2, index3);
   }
 
-  if (optimize)
+  if (optimize) {
     return discardUnusedVertices<S, Index, VertexAllocator>(
         inputVertices, eigenFaces);
+  }
 
   std::vector<Eigen::Matrix<S, 3, 1>, VertexAllocator> verticesCopy;
   verticesCopy.reserve(inputVertices.size());

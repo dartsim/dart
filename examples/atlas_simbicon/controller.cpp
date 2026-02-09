@@ -166,10 +166,11 @@ bool Controller::isAllowingControl() const
   const Eigen::Vector3d pos = tf.translation();
   const auto y = pos[1];
 
-  if (y < mMinPelvisHeight || mMaxPelvisHeight < y)
+  if (y < mMinPelvisHeight || mMaxPelvisHeight < y) {
     return false;
-  else
+  } else {
     return true;
+  }
 }
 
 //==============================================================================
@@ -178,22 +179,25 @@ void Controller::keyboard(
 {
   switch (_key) {
     case 'h': // Harness pelvis toggle
-      if (mPelvisHarnessOn)
+      if (mPelvisHarnessOn) {
         unharnessPelvis();
-      else
+      } else {
         harnessPelvis();
+      }
       break;
     case 'j': // Harness left foot toggle
-      if (mLeftFootHarnessOn)
+      if (mLeftFootHarnessOn) {
         unharnessLeftFoot();
-      else
+      } else {
         harnessLeftFoot();
+      }
       break;
     case 'k': // Harness right foot toggle
-      if (mRightFootHarnessOn)
+      if (mRightFootHarnessOn) {
         unharnessRightFoot();
-      else
+      } else {
         harnessRightFoot();
+      }
       break;
     case 'r': // Reset robot
       resetRobot();
@@ -245,8 +249,9 @@ void Controller::printDebugInfo() const
 //==============================================================================
 void Controller::harnessPelvis()
 {
-  if (mPelvisHarnessOn)
+  if (mPelvisHarnessOn) {
     return;
+  }
 
   BodyNode* bd = mAtlasRobot->getBodyNode("pelvis");
   mWeldJointConstraintPelvis = std::make_shared<WeldJointConstraint>(bd);
@@ -259,8 +264,9 @@ void Controller::harnessPelvis()
 //==============================================================================
 void Controller::unharnessPelvis()
 {
-  if (!mPelvisHarnessOn)
+  if (!mPelvisHarnessOn) {
     return;
+  }
 
   mConstratinSolver->removeConstraint(mWeldJointConstraintPelvis);
   mPelvisHarnessOn = false;
@@ -271,8 +277,9 @@ void Controller::unharnessPelvis()
 //==============================================================================
 void Controller::harnessLeftFoot()
 {
-  if (mLeftFootHarnessOn)
+  if (mLeftFootHarnessOn) {
     return;
+  }
 
   BodyNode* bd = mAtlasRobot->getBodyNode("l_foot");
   mWeldJointConstraintLeftFoot = std::make_shared<WeldJointConstraint>(bd);
@@ -284,8 +291,9 @@ void Controller::harnessLeftFoot()
 //==============================================================================
 void Controller::unharnessLeftFoot()
 {
-  if (!mLeftFootHarnessOn)
+  if (!mLeftFootHarnessOn) {
     return;
+  }
 
   mConstratinSolver->removeConstraint(mWeldJointConstraintLeftFoot);
   mLeftFootHarnessOn = false;
@@ -296,8 +304,9 @@ void Controller::unharnessLeftFoot()
 //==============================================================================
 void Controller::harnessRightFoot()
 {
-  if (mRightFootHarnessOn)
+  if (mRightFootHarnessOn) {
     return;
+  }
 
   BodyNode* bd = mAtlasRobot->getBodyNode("r_foot");
   mWeldJointConstraintRightFoot = std::make_shared<WeldJointConstraint>(bd);
@@ -309,8 +318,9 @@ void Controller::harnessRightFoot()
 //==============================================================================
 void Controller::unharnessRightFoot()
 {
-  if (!mRightFootHarnessOn)
+  if (!mRightFootHarnessOn) {
     return;
+  }
 
   mConstratinSolver->removeConstraint(mWeldJointConstraintRightFoot);
   mRightFootHarnessOn = false;
@@ -941,8 +951,9 @@ void Controller::_setJointDamping()
   for (std::size_t i = 1; i < mAtlasRobot->getNumBodyNodes(); ++i) {
     Joint* joint = mAtlasRobot->getJoint(i);
     if (joint->getNumDofs() > 0) {
-      for (std::size_t j = 0; j < joint->getNumDofs(); ++j)
+      for (std::size_t j = 0; j < joint->getNumDofs(); ++j) {
         joint->setDampingCoefficient(j, 80.0);
+      }
     }
   }
 }
@@ -965,8 +976,9 @@ bool Controller::_containStateMachine(const StateMachine* _stateMachine) const
   for (vector<StateMachine*>::const_iterator it = mStateMachines.begin();
        it != mStateMachines.end();
        ++it) {
-    if (*it == _stateMachine)
+    if (*it == _stateMachine) {
       return true;
+    }
   }
 
   return false;

@@ -170,3 +170,88 @@ TEST(CollisionResultTests, ClearRemovesContactsAndCollisionSets)
   EXPECT_TRUE(result.getCollidingBodyNodes().empty());
   EXPECT_TRUE(result.getCollidingShapeFrames().empty());
 }
+
+//==============================================================================
+TEST(CollisionResultTests, GetContactReturnsValidContact)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto skeletonA = makeSkeleton("contact_a");
+  auto skeletonB = makeSkeleton("contact_b");
+  auto group = makeGroupWithOverlap(skeletonA, skeletonB, detector);
+
+  CollisionOption option;
+  option.maxNumContacts = 5u;
+  CollisionResult result;
+  ASSERT_TRUE(group->collide(option, &result));
+
+  const std::size_t numContacts = result.getNumContacts();
+  ASSERT_GT(numContacts, 0u);
+
+  const auto& constResult = result;
+  const Contact& contact = constResult.getContact(0);
+  EXPECT_TRUE(contact.point.allFinite());
+  EXPECT_TRUE(contact.normal.allFinite());
+
+  Contact& mutableContact = result.getContact(0);
+  Eigen::Vector3d originalPoint = mutableContact.point;
+  mutableContact.point = Eigen::Vector3d(1.0, 2.0, 3.0);
+  EXPECT_EQ(result.getContact(0).point, Eigen::Vector3d(1.0, 2.0, 3.0));
+  mutableContact.point = originalPoint;
+}
+
+//==============================================================================
+TEST(CollisionResultTests, GetContactsReturnsSpan)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto skeletonA = makeSkeleton("span_a");
+  auto skeletonB = makeSkeleton("span_b");
+  auto group = makeGroupWithOverlap(skeletonA, skeletonB, detector);
+
+  CollisionOption option;
+  option.maxNumContacts = 10u;
+  CollisionResult result;
+  ASSERT_TRUE(group->collide(option, &result));
+
+  auto contacts = result.getContacts();
+  EXPECT_EQ(contacts.size(), result.getNumContacts());
+
+  for (const auto& contact : contacts) {
+    EXPECT_TRUE(contact.point.allFinite());
+    EXPECT_NE(contact.collisionObject1, nullptr);
+    EXPECT_NE(contact.collisionObject2, nullptr);
+  }
+}
+
+//==============================================================================
+TEST(CollisionResultTests, EmptyResultHasNoContacts)
+{
+  CollisionResult result;
+
+  EXPECT_FALSE(result.isCollision());
+  EXPECT_FALSE(result);
+  EXPECT_EQ(result.getNumContacts(), 0u);
+  EXPECT_TRUE(result.getContacts().empty());
+  EXPECT_TRUE(result.getCollidingBodyNodes().empty());
+  EXPECT_TRUE(result.getCollidingShapeFrames().empty());
+}
+
+//==============================================================================
+TEST(CollisionResultTests, MaxNumContactsLimitsResults)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto skeletonA = makeSkeleton("limit_a");
+  auto skeletonB = makeSkeleton("limit_b");
+  auto group = makeGroupWithOverlap(skeletonA, skeletonB, detector);
+
+  CollisionOption option1;
+  option1.maxNumContacts = 1u;
+  CollisionResult result1;
+  ASSERT_TRUE(group->collide(option1, &result1));
+  EXPECT_EQ(result1.getNumContacts(), 1u);
+
+  CollisionOption option2;
+  option2.maxNumContacts = 2u;
+  CollisionResult result2;
+  ASSERT_TRUE(group->collide(option2, &result2));
+  EXPECT_LE(result2.getNumContacts(), 2u);
+}

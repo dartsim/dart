@@ -55,10 +55,23 @@ ImGuiViewer::ImGuiViewer(const ::osg::Vec4& clearColor)
 }
 
 //==============================================================================
+ImGuiViewer::ImGuiViewer(const ViewerConfig& config)
+  : Viewer(config),
+    mImGuiHandler(new ImGuiHandler()),
+    mAboutWidget(new AboutWidget())
+{
+  mImGuiHandler->setCameraCallbacks(getCamera());
+  mImGuiHandler->addWidget(mAboutWidget, false);
+
+  addEventHandler(mImGuiHandler);
+}
+
+//==============================================================================
 ImGuiViewer::~ImGuiViewer()
 {
-  if (mImGuiHandler)
+  if (mImGuiHandler) {
     mImGuiHandler->removeAllWidget();
+  }
 }
 
 //==============================================================================
@@ -77,8 +90,9 @@ const ImGuiHandler* ImGuiViewer::getImGuiHandler() const
 void ImGuiViewer::setImGuiScale(float scale)
 {
   applyImGuiScale(scale);
-  if (std::isfinite(scale) && scale > 0.f)
+  if (std::isfinite(scale) && scale > 0.f) {
     mImGuiScale = scale;
+  }
 }
 
 //==============================================================================

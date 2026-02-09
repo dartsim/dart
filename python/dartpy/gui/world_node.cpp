@@ -79,8 +79,9 @@ public:
 ::osg::ref_ptr<osgShadow::ShadowTechnique> toShadowRef(
     ShadowTechniquePtr shadow)
 {
-  if (!shadow)
+  if (!shadow) {
     return {};
+  }
   return ::osg::ref_ptr<osgShadow::ShadowTechnique>(shadow);
 }
 void defWorldNode(nb::module_& m)

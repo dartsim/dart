@@ -77,16 +77,18 @@ public:
         case 'a':
         case 'A':
           mSteeringWheelAngle += +10_deg;
-          if (mSteeringWheelAngle > 30.0_deg)
+          if (mSteeringWheelAngle > 30.0_deg) {
             mSteeringWheelAngle = 30.0_deg;
+          }
           std::cout << "Steering left, angle: " << mSteeringWheelAngle
                     << std::endl;
           return true;
         case 'd':
         case 'D':
           mSteeringWheelAngle += -10_deg;
-          if (mSteeringWheelAngle < -30.0_deg)
+          if (mSteeringWheelAngle < -30.0_deg) {
             mSteeringWheelAngle = -30.0_deg;
+          }
           std::cout << "Steering right, angle: " << mSteeringWheelAngle
                     << std::endl;
           return true;

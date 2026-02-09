@@ -171,8 +171,9 @@ TEST(IkFast, LoadWamArmIk)
   for (const auto& solution : solutions) {
     ASSERT_EQ(solution.mConfig.size(), 6);
 
-    if (solution.mValidity != dynamics::InverseKinematics::Analytical::VALID)
+    if (solution.mValidity != dynamics::InverseKinematics::Analytical::VALID) {
       continue;
+    }
 
     wam->setPositions(dofs, solution.mConfig);
     Eigen::Isometry3d newTf = ee->getTransform();

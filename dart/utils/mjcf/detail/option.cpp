@@ -215,13 +215,13 @@ double Option::getTimestep() const
 //==============================================================================
 double Option::getApiRate() const
 {
-  return mTimestep;
+  return mApiRate;
 }
 
 //==============================================================================
 double Option::getImpRatio() const
 {
-  return mTimestep;
+  return mImpRatio;
 }
 
 //==============================================================================

@@ -83,7 +83,7 @@ public:
 
   DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, JointAspect)
 
-  struct ExtendedProperties : Properties
+  struct DART_API ExtendedProperties : Properties
   {
     /// Composed constructor
     ExtendedProperties(

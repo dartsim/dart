@@ -117,8 +117,9 @@ dynamics::SkeletonPtr UrdfParser::parseSkeleton(const common::Uri& uri)
       = getResourceRetriever(mOptions.mResourceRetriever);
 
   std::string content;
-  if (!readFileToString(resourceRetriever, uri, content))
+  if (!readFileToString(resourceRetriever, uri, content)) {
     return nullptr;
+  }
 
   // Use urdfdom to load the URDF file.
   const ModelInterfacePtr urdfInterface = urdf::parseURDF(content);
@@ -169,8 +170,9 @@ simulation::WorldPtr UrdfParser::parseWorld(const common::Uri& uri)
       = getResourceRetriever(mOptions.mResourceRetriever);
 
   std::string content;
-  if (!readFileToString(resourceRetriever, uri, content))
+  if (!readFileToString(resourceRetriever, uri, content)) {
     return nullptr;
+  }
 
   return parseWorldString(content, uri);
 }
@@ -218,11 +220,12 @@ simulation::WorldPtr UrdfParser::parseWorldString(
     dynamics::Joint* rootJoint = skeleton->getRootBodyNode()->getParentJoint();
     Eigen::Isometry3d transform = toEigen(worldInterface->models[i].origin);
 
-    if (dynamic_cast<dynamics::FreeJoint*>(rootJoint))
+    if (dynamic_cast<dynamics::FreeJoint*>(rootJoint)) {
       rootJoint->setPositions(
           dynamics::FreeJoint::convertToPositions(transform));
-    else
+    } else {
       rootJoint->setTransformFromParentBodyNode(transform);
+    }
 
     world->addSkeleton(skeleton);
   }
@@ -280,8 +283,9 @@ dynamics::SkeletonPtr UrdfParser::modelInterfaceToSkeleton(
   }
 
   // Find mimic joints
-  for (std::size_t i = 0; i < root->child_links.size(); i++)
+  for (std::size_t i = 0; i < root->child_links.size(); i++) {
     addMimicJointsRecursive(model, skeleton, root->child_links[i].get());
+  }
 
   const std::vector<TransmissionInfo> empty;
   const auto& transmissions
@@ -311,20 +315,23 @@ bool UrdfParser::createSkeletonRecursive(
 
   dynamics::BodyNode::Properties properties;
   if (!createDartNodeProperties(
-          lk, properties, baseUri, resourceRetriever, options))
+          lk, properties, baseUri, resourceRetriever, options)) {
     return false;
+  }
 
   dynamics::BodyNode* node = createDartJointAndNode(
       lk->parent_joint.get(), properties, parentNode, skel, options);
 
-  if (!node)
+  if (!node) {
     return false;
+  }
 
   const auto result
       = createShapeNodes(model, lk, node, baseUri, resourceRetriever);
 
-  if (!result)
+  if (!result) {
     return false;
+  }
 
   for (std::size_t i = 0; i < lk->child_links.size(); ++i) {
     if (!createSkeletonRecursive(
@@ -379,8 +386,9 @@ bool UrdfParser::addMimicJointsRecursive(
   }
 
   for (std::size_t i = 0; i < _lk->child_links.size(); ++i) {
-    if (!addMimicJointsRecursive(model, _skel, _lk->child_links[i].get()))
+    if (!addMimicJointsRecursive(model, _skel, _lk->child_links[i].get())) {
       return false;
+    }
   }
 
   return true;
@@ -392,8 +400,9 @@ std::vector<UrdfParser::TransmissionInfo> UrdfParser::parseTransmissions(
 {
   std::vector<TransmissionInfo> transmissions;
 
-  if (urdfString.empty())
+  if (urdfString.empty()) {
     return transmissions;
+  }
 
   tinyxml2::XMLDocument doc;
   const auto parseResult = doc.Parse(urdfString.data(), urdfString.size());
@@ -407,8 +416,9 @@ std::vector<UrdfParser::TransmissionInfo> UrdfParser::parseTransmissions(
   }
 
   const auto* robotElement = doc.FirstChildElement("robot");
-  if (!robotElement)
+  if (!robotElement) {
     return transmissions;
+  }
 
   for (auto* tx = robotElement->FirstChildElement("transmission");
        tx != nullptr;
@@ -448,8 +458,9 @@ std::vector<UrdfParser::TransmissionInfo> UrdfParser::parseTransmissions(
     double mechanicalReduction = 1.0;
     const auto* reductionElement
         = actuatorElement->FirstChildElement("mechanicalReduction");
-    if (!reductionElement)
+    if (!reductionElement) {
       reductionElement = jointElement->FirstChildElement("mechanicalReduction");
+    }
     if (reductionElement) {
       const auto queryResult
           = reductionElement->QueryDoubleText(&mechanicalReduction);
@@ -485,18 +496,21 @@ void UrdfParser::applyTransmissions(
     const urdf::ModelInterface* model,
     dynamics::SkeletonPtr skel)
 {
-  if (transmissions.empty())
+  if (transmissions.empty()) {
     return;
+  }
 
   const std::string modelName = model ? model->getName() : "";
   std::unordered_map<std::string, std::vector<TransmissionInfo>> grouped;
-  for (const auto& tx : transmissions)
+  for (const auto& tx : transmissions) {
     grouped[tx.mActuatorName].push_back(tx);
+  }
 
   for (const auto& actuatorPair : grouped) {
     const auto& entries = actuatorPair.second;
-    if (entries.size() < 2)
+    if (entries.size() < 2) {
       continue;
+    }
 
     std::vector<std::pair<const TransmissionInfo*, dynamics::Joint*>> valid;
     for (const auto& tx : entries) {
@@ -532,8 +546,9 @@ void UrdfParser::applyTransmissions(
       valid.emplace_back(&tx, joint);
     }
 
-    if (valid.size() < 2)
+    if (valid.size() < 2) {
       continue;
+    }
 
     const auto* referenceInfo = valid.front().first;
     dynamics::Joint* referenceJoint = valid.front().second;
@@ -557,8 +572,9 @@ void UrdfParser::applyTransmissions(
 
       followerJoint->setActuatorType(dynamics::Joint::MIMIC);
       followerJoint->setMimicJoint(referenceJoint, multiplier, 0.0);
-      if (followerInfo->mUseCoupler)
+      if (followerInfo->mUseCoupler) {
         followerJoint->setUseCouplerConstraint(true);
+      }
     }
   }
 }
@@ -572,8 +588,9 @@ bool UrdfParser::readFileToString(
     std::string& _output)
 {
   const common::ResourcePtr resource = _resourceRetriever->retrieve(_uri);
-  if (!resource)
+  if (!resource) {
     return false;
+  }
 
   _output = _resourceRetriever->readAll(_uri);
 
@@ -654,13 +671,14 @@ dynamics::BodyNode* UrdfParser::createDartJointAndNode(
     // position instead of assuming zero.
     if (_jt->limits->lower > 0 || _jt->limits->upper < 0) {
       if (std::isfinite(_jt->limits->lower)
-          && std::isfinite(_jt->limits->upper))
+          && std::isfinite(_jt->limits->upper)) {
         singleDof.mInitialPositions[0]
             = (_jt->limits->lower + _jt->limits->upper) / 2.0;
-      else if (std::isfinite(_jt->limits->lower))
+      } else if (std::isfinite(_jt->limits->lower)) {
         singleDof.mInitialPositions[0] = _jt->limits->lower;
-      else if (std::isfinite(_jt->limits->upper))
+      } else if (std::isfinite(_jt->limits->upper)) {
         singleDof.mInitialPositions[0] = _jt->limits->upper;
+      }
 
       // Any other case means that the limits are both +inf, both -inf, or
       // either of them is NaN. This should generate warnings elsewhere.
@@ -879,8 +897,9 @@ void setMaterial(
     urdf::Color urdf_color = viz->material->color;
 
     const auto& m_it = model->materials_.find(viz->material_name);
-    if (m_it != model->materials_.end())
+    if (m_it != model->materials_.end()) {
       urdf_color = m_it->second->color;
+    }
 
     const Eigen::Vector4d color(
         static_cast<double>(urdf_color.r),
@@ -890,8 +909,9 @@ void setMaterial(
     visualAspect->setColor(color);
     auto shapeFrame = visualAspect->getComposite();
     auto shape = shapeFrame->getShape();
-    if (auto mesh = std::dynamic_pointer_cast<dynamics::MeshShape>(shape))
+    if (auto mesh = std::dynamic_pointer_cast<dynamics::MeshShape>(shape)) {
       mesh->setColorMode(dynamics::MeshShape::ColorMode::SHAPE_COLOR);
+    }
   }
 }
 
@@ -911,8 +931,9 @@ bool UrdfParser::createShapeNodes(
     if (shape) {
       auto shapeNode
           = bodyNode->createShapeNodeWith<dynamics::VisualAspect>(shape);
-      if (!visual->name.empty())
+      if (!visual->name.empty()) {
         shapeNode->setName(visual->name);
+      }
       shapeNode->setRelativeTransform(toEigen(visual->origin));
       setMaterial(model, shapeNode->getVisualAspect(), visual.get());
     } else {
@@ -929,11 +950,13 @@ bool UrdfParser::createShapeNodes(
       auto shapeNode = bodyNode->createShapeNodeWith<
           dynamics::CollisionAspect,
           dynamics::DynamicsAspect>(shape);
-      if (!collision->name.empty())
+      if (!collision->name.empty()) {
         shapeNode->setName(collision->name);
+      }
       shapeNode->setRelativeTransform(toEigen(collision->origin));
-    } else
+    } else {
       return false;
+    }
   }
 
   return true;
@@ -995,8 +1018,9 @@ dynamics::ShapePtr UrdfParser::createShape(
       auto loader = std::make_unique<utils::MeshLoaderd>();
       auto triMeshUnique = loader->load(resolvedUri, _resourceRetriever);
 
-      if (!triMeshUnique)
+      if (!triMeshUnique) {
         return nullptr;
+      }
 
       std::shared_ptr<math::TriMesh<double>> triMesh(std::move(triMeshUnique));
 
@@ -1021,10 +1045,11 @@ dynamics::ShapePtr UrdfParser::createShape(
 common::ResourceRetrieverPtr UrdfParser::getResourceRetriever(
     const common::ResourceRetrieverPtr& _resourceRetriever)
 {
-  if (_resourceRetriever)
+  if (_resourceRetriever) {
     return _resourceRetriever;
-  else
+  } else {
     return mRetriever;
+  }
 }
 
 template dynamics::ShapePtr UrdfParser::createShape<urdf::Visual>(

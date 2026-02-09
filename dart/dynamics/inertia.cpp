@@ -97,12 +97,13 @@ void Inertia::setParameter(Param _param, double _value)
 //==============================================================================
 double Inertia::getParameter(Param _param) const
 {
-  if (_param == MASS)
+  if (_param == MASS) {
     return mMass;
-  else if (_param <= COM_Z)
+  } else if (_param <= COM_Z) {
     return mCenterOfMass[_param - 1];
-  else if (_param <= I_YZ)
+  } else if (_param <= I_YZ) {
     return mMoment[_param - 4];
+  }
 
   DART_WARN(
       "Requested Param #{}, but inertial parameters only go up to {}. "
@@ -147,8 +148,9 @@ void Inertia::setMoment(const Eigen::Matrix3d& _moment)
       "Passing in an invalid moment of inertia matrix. Results might not by "
       "physically accurate or meaningful.");
 
-  for (std::size_t i = 0; i < 3; ++i)
+  for (std::size_t i = 0; i < 3; ++i) {
     mMoment[i] = _moment(i, i);
+  }
 
   mMoment[I_XY - 4] = _moment(0, 1);
   mMoment[I_XZ - 4] = _moment(0, 2);
@@ -180,8 +182,9 @@ void Inertia::setMoment(
 Eigen::Matrix3d Inertia::getMoment() const
 {
   Eigen::Matrix3d I;
-  for (int i = 0; i < 3; ++i)
+  for (int i = 0; i < 3; ++i) {
     I(i, i) = mMoment[i];
+  }
 
   I(0, 1) = I(1, 0) = mMoment[I_XY - 4];
   I(0, 2) = I(2, 0) = mMoment[I_XZ - 4];
@@ -453,8 +456,9 @@ void Inertia::computeParameters()
   mCenterOfMass[2] = -C(0, 1);
 
   Eigen::Matrix3d I = mSpatialTensor.block<3, 3>(0, 0) + mMass * C * C;
-  for (std::size_t i = 0; i < 3; ++i)
+  for (std::size_t i = 0; i < 3; ++i) {
     mMoment[i] = I(i, i);
+  }
 
   mMoment[I_XY - 4] = I(0, 1);
   mMoment[I_XZ - 4] = I(0, 2);

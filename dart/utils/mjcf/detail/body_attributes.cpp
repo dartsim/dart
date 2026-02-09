@@ -127,10 +127,11 @@ Errors appendBodyAttributes(
 
     attributes.mUser = user;
   } else {
-    if (size)
+    if (size) {
       attributes.mUser.setZero(size->getNUserBody());
-    else
+    } else {
       attributes.mUser.resize(0);
+    }
   }
 
   // Read <inertial>

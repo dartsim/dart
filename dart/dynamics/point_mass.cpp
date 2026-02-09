@@ -143,6 +143,12 @@ bool PointMass::Properties::operator!=(const PointMass::Properties& other) const
 //==============================================================================
 PointMass::PointMass(SoftBodyNode* _softBodyNode)
   : // mIndexInSkeleton(Eigen::Matrix<std::size_t, 3, 1>::Zero()),
+    mM_dV(Eigen::Vector3d::Zero()),
+    mM_F(Eigen::Vector3d::Zero()),
+    mBiasForceForInvMeta(Eigen::Vector3d::Zero()),
+    mG_F(Eigen::Vector3d::Zero()),
+    mCg_dV(Eigen::Vector3d::Zero()),
+    mCg_F(Eigen::Vector3d::Zero()),
     mParentSoftBodyNode(_softBodyNode),
     mPositionDeriv(Eigen::Vector3d::Zero()),
     mVelocitiesDeriv(Eigen::Vector3d::Zero()),
@@ -207,8 +213,9 @@ void PointMass::setMass(double _mass)
   DART_ASSERT(0.0 < _mass);
   double& mMass
       = mParentSoftBodyNode->mAspectProperties.mPointProps[mIndex].mMass;
-  if (_mass == mMass)
+  if (_mass == mMass) {
     return;
+  }
 
   mMass = _mass;
   mParentSoftBodyNode->incrementVersion();
@@ -423,8 +430,9 @@ const Vector3d& PointMass::getAccelerations() const
 //==============================================================================
 const Vector3d& PointMass::getPartialAccelerations() const
 {
-  if (mNotifier->needsPartialAccelerationUpdate())
+  if (mNotifier->needsPartialAccelerationUpdate()) {
     mParentSoftBodyNode->updatePartialAcceleration();
+  }
   return mEta;
 }
 
@@ -600,8 +608,9 @@ void PointMass::setRestingPosition(const Eigen::Vector3d& _p)
 {
   Eigen::Vector3d& mRest
       = mParentSoftBodyNode->mAspectProperties.mPointProps[mIndex].mX0;
-  if (_p == mRest)
+  if (_p == mRest) {
     return;
+  }
 
   mRest = _p;
   mParentSoftBodyNode->incrementVersion();
@@ -617,16 +626,18 @@ const Eigen::Vector3d& PointMass::getRestingPosition() const
 //==============================================================================
 const Eigen::Vector3d& PointMass::getLocalPosition() const
 {
-  if (mNotifier->needsTransformUpdate())
+  if (mNotifier->needsTransformUpdate()) {
     mParentSoftBodyNode->updateTransform();
+  }
   return mX;
 }
 
 //==============================================================================
 const Eigen::Vector3d& PointMass::getWorldPosition() const
 {
-  if (mNotifier && mNotifier->needsTransformUpdate())
+  if (mNotifier && mNotifier->needsTransformUpdate()) {
     mParentSoftBodyNode->updateTransform();
+  }
   return mW;
 }
 
@@ -691,8 +702,9 @@ const SoftBodyNode* PointMass::getParentSoftBodyNode() const
 //==============================================================================
 const Eigen::Vector3d& PointMass::getBodyVelocity() const
 {
-  if (mNotifier->needsVelocityUpdate())
+  if (mNotifier->needsVelocityUpdate()) {
     mParentSoftBodyNode->updateVelocity();
+  }
   return mV;
 }
 
@@ -705,8 +717,9 @@ Eigen::Vector3d PointMass::getWorldVelocity() const
 //==============================================================================
 const Eigen::Vector3d& PointMass::getBodyAcceleration() const
 {
-  if (mNotifier->needsAccelerationUpdate())
+  if (mNotifier->needsAccelerationUpdate()) {
     mParentSoftBodyNode->updateAccelerationID();
+  }
   return mA;
 }
 
@@ -1156,8 +1169,9 @@ void PointMassNotifier::dirtyAcceleration()
 //==============================================================================
 const std::string& PointMassNotifier::setName(const std::string& _name)
 {
-  if (_name == mName)
+  if (_name == mName) {
     return mName;
+  }
 
   const std::string oldName = mName;
 

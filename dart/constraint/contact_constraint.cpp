@@ -96,10 +96,11 @@ ContactConstraint::ContactConstraint(
   // Bounce
   //----------------------------------------------
   mRestitutionCoeff = contactSurfaceParams.mRestitutionCoeff;
-  if (mRestitutionCoeff > DART_RESTITUTION_COEFF_THRESHOLD)
+  if (mRestitutionCoeff > DART_RESTITUTION_COEFF_THRESHOLD) {
     mIsBounceOn = true;
-  else
+  } else {
     mIsBounceOn = false;
+  }
 
   //----------------------------------------------
   // Friction
@@ -247,7 +248,7 @@ void ContactConstraint::setErrorAllowance(double allowance)
     DART_WARN(
         "Error reduction parameter[{}] is lower than 0.0. It is set to 0.0.",
         allowance);
-    mErrorAllowance = 0.0;
+    allowance = 0.0;
   }
 
   mErrorAllowance = allowance;
@@ -267,13 +268,13 @@ void ContactConstraint::setErrorReductionParameter(double erp)
     DART_WARN(
         "Error reduction parameter[{}] is lower than 0.0. It is set to 0.0.",
         erp);
-    mErrorReductionParameter = 0.0;
+    erp = 0.0;
   }
   if (erp > 1.0) {
     DART_WARN(
         "Error reduction parameter[{}] is greater than 1.0. It is set to 1.0.",
         erp);
-    mErrorReductionParameter = 1.0;
+    erp = 1.0;
   }
 
   mErrorReductionParameter = erp;
@@ -294,7 +295,7 @@ void ContactConstraint::setMaxErrorReductionVelocity(double erv)
         "Maximum error reduction velocity[{}] is lower than 0.0. It is set to "
         "0.0.",
         erv);
-    mMaxErrorReductionVelocity = 0.0;
+    erv = 0.0;
   }
 
   mMaxErrorReductionVelocity = erv;
@@ -315,7 +316,7 @@ void ContactConstraint::setConstraintForceMixing(double cfm)
         "Constraint force mixing parameter[{}] is lower than 1e-9. It is set "
         "to 1e-9.",
         cfm);
-    mConstraintForceMixing = 1e-9;
+    cfm = 1e-9;
   }
 
   mConstraintForceMixing = cfm;
@@ -342,10 +343,11 @@ const Eigen::Vector3d& ContactConstraint::getFrictionDirection1() const
 //==============================================================================
 void ContactConstraint::update()
 {
-  if (mBodyNodeA->isReactive() || mBodyNodeB->isReactive())
+  if (mBodyNodeA->isReactive() || mBodyNodeB->isReactive()) {
     mActive = true;
-  else
+  } else {
     mActive = false;
+  }
 }
 
 //==============================================================================
@@ -579,11 +581,15 @@ void ContactConstraint::getVelocityChange(double* vel, bool withCfm)
   Eigen::Map<Eigen::VectorXd> velMap(vel, static_cast<int>(mDim));
   velMap.setZero();
 
-  if (mBodyNodeA->getSkeleton()->isImpulseApplied() && mBodyNodeA->isReactive())
+  if (mBodyNodeA->getSkeleton()->isImpulseApplied()
+      && mBodyNodeA->isReactive()) {
     velMap += mSpatialNormalA.transpose() * mBodyNodeA->getBodyVelocityChange();
+  }
 
-  if (mBodyNodeB->getSkeleton()->isImpulseApplied() && mBodyNodeB->isReactive())
+  if (mBodyNodeB->getSkeleton()->isImpulseApplied()
+      && mBodyNodeB->isReactive()) {
     velMap += mSpatialNormalB.transpose() * mBodyNodeB->getBodyVelocityChange();
+  }
 
   // Add small values to the diagnal to keep it away from singular, similar to
   // cfm variable in ODE
@@ -606,21 +612,25 @@ void ContactConstraint::getVelocityChange(double* vel, bool withCfm)
 //==============================================================================
 void ContactConstraint::excite()
 {
-  if (mBodyNodeA->isReactive())
+  if (mBodyNodeA->isReactive()) {
     mBodyNodeA->getSkeleton()->setImpulseApplied(true);
+  }
 
-  if (mBodyNodeB->isReactive())
+  if (mBodyNodeB->isReactive()) {
     mBodyNodeB->getSkeleton()->setImpulseApplied(true);
+  }
 }
 
 //==============================================================================
 void ContactConstraint::unexcite()
 {
-  if (mBodyNodeA->isReactive())
+  if (mBodyNodeA->isReactive()) {
     mBodyNodeA->getSkeleton()->setImpulseApplied(false);
+  }
 
-  if (mBodyNodeB->isReactive())
+  if (mBodyNodeB->isReactive()) {
     mBodyNodeB->getSkeleton()->setImpulseApplied(false);
+  }
 }
 
 //==============================================================================
@@ -638,40 +648,48 @@ void ContactConstraint::applyImpulse(double* lambda)
     mContact.force = mContact.normal * lambda[0] / mTimeStep;
 
     // Normal impulsive force
-    if (mBodyNodeA->isReactive())
+    if (mBodyNodeA->isReactive()) {
       mBodyNodeA->addConstraintImpulse(mSpatialNormalA.col(0) * lambda[0]);
-    if (mBodyNodeB->isReactive())
+    }
+    if (mBodyNodeB->isReactive()) {
       mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(0) * lambda[0]);
+    }
 
     // Add contact impulse (force) toward the tangential w.r.t. world frame
     const Eigen::MatrixXd D = getTangentBasisMatrixODE(mContact.normal);
     mContact.force += D.col(0) * lambda[1] / mTimeStep;
 
     // Tangential direction-1 impulsive force
-    if (mBodyNodeA->isReactive())
+    if (mBodyNodeA->isReactive()) {
       mBodyNodeA->addConstraintImpulse(mSpatialNormalA.col(1) * lambda[1]);
-    if (mBodyNodeB->isReactive())
+    }
+    if (mBodyNodeB->isReactive()) {
       mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(1) * lambda[1]);
+    }
 
     // Add contact impulse (force) toward the tangential w.r.t. world frame
     mContact.force += D.col(1) * lambda[2] / mTimeStep;
 
     // Tangential direction-2 impulsive force
-    if (mBodyNodeA->isReactive())
+    if (mBodyNodeA->isReactive()) {
       mBodyNodeA->addConstraintImpulse(mSpatialNormalA.col(2) * lambda[2]);
-    if (mBodyNodeB->isReactive())
+    }
+    if (mBodyNodeB->isReactive()) {
       mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(2) * lambda[2]);
+    }
   }
   //----------------------------------------------------------------------------
   // Frictionless case
   //----------------------------------------------------------------------------
   else {
     // Normal impulsive force
-    if (mBodyNodeA->isReactive())
+    if (mBodyNodeA->isReactive()) {
       mBodyNodeA->addConstraintImpulse(mSpatialNormalA * lambda[0]);
+    }
 
-    if (mBodyNodeB->isReactive())
+    if (mBodyNodeB->isReactive()) {
       mBodyNodeB->addConstraintImpulse(mSpatialNormalB * lambda[0]);
+    }
 
     // Store contact impulse (force) toward the normal w.r.t. world frame
     mContact.force = mContact.normal * lambda[0] / mTimeStep;
@@ -722,10 +740,11 @@ dynamics::SkeletonPtr ContactConstraint::getRootSkeleton() const
 {
   DART_ASSERT(isActive());
 
-  if (mBodyNodeA->isReactive())
+  if (mBodyNodeA->isReactive()) {
     return ConstraintBase::getRootSkeleton(mBodyNodeA->getSkeleton());
-  else
+  } else {
     return ConstraintBase::getRootSkeleton(mBodyNodeB->getSkeleton());
+  }
 }
 
 //==============================================================================
@@ -800,19 +819,22 @@ ContactConstraint::getTangentBasisMatrixODE(const Eigen::Vector3d& n)
 //==============================================================================
 void ContactConstraint::uniteSkeletons()
 {
-  if (!mBodyNodeA->isReactive() || !mBodyNodeB->isReactive())
+  if (!mBodyNodeA->isReactive() || !mBodyNodeB->isReactive()) {
     return;
+  }
 
-  if (mBodyNodeA->getSkeleton() == mBodyNodeB->getSkeleton())
+  if (mBodyNodeA->getSkeleton() == mBodyNodeB->getSkeleton()) {
     return;
+  }
 
   const dynamics::SkeletonPtr& unionIdA
       = ConstraintBase::compressPath(mBodyNodeA->getSkeleton());
   const dynamics::SkeletonPtr& unionIdB
       = ConstraintBase::compressPath(mBodyNodeB->getSkeleton());
 
-  if (unionIdA == unionIdB)
+  if (unionIdA == unionIdB) {
     return;
+  }
 
   if (unionIdA->mUnionSize < unionIdB->mUnionSize) {
     // Merge root1 --> root2

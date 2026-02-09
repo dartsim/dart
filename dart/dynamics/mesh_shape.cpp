@@ -104,10 +104,12 @@ public:
     }
 
     const ptrdiff_t next = base + offset;
-    if (next < 0)
+    if (next < 0) {
       return false;
-    if (static_cast<std::size_t>(next) > mData.size())
+    }
+    if (static_cast<std::size_t>(next) > mData.size()) {
       return false;
+    }
 
     mPosition = static_cast<std::size_t>(next);
     return true;
@@ -115,8 +117,9 @@ public:
 
   std::size_t read(void* buffer, std::size_t size, std::size_t count) override
   {
-    if (!buffer || size == 0 || count == 0)
+    if (!buffer || size == 0 || count == 0) {
       return 0;
+    }
 
     const std::size_t remaining = mData.size() - mPosition;
     const std::size_t availableCount = remaining / size;
@@ -154,11 +157,13 @@ public:
   common::ResourcePtr retrieve(const common::Uri& uri) override
   {
     const std::string* data = findData(uri);
-    if (data)
+    if (data) {
       return std::make_shared<MemoryResource>(*data);
+    }
 
-    if (mFallback)
+    if (mFallback) {
       return mFallback->retrieve(uri);
+    }
 
     return nullptr;
   }
@@ -167,38 +172,44 @@ private:
   const std::string* findData(const common::Uri& uri) const
   {
     const auto byFull = mData.find(uri.toString());
-    if (byFull != mData.end())
+    if (byFull != mData.end()) {
       return &byFull->second;
+    }
 
     const auto findByPath = [&](const std::string& path) -> const std::string* {
       const auto byPath = mData.find(path);
-      if (byPath != mData.end())
+      if (byPath != mData.end()) {
         return &byPath->second;
+      }
 
       if (!path.empty() && path.front() == '/') {
         const auto byTrim = mData.find(path.substr(1));
-        if (byTrim != mData.end())
+        if (byTrim != mData.end()) {
           return &byTrim->second;
+        }
       }
 
       const auto slash = path.find_last_of("/\\");
       if (slash != std::string::npos) {
         const auto byName = mData.find(path.substr(slash + 1));
-        if (byName != mData.end())
+        if (byName != mData.end()) {
           return &byName->second;
+        }
       }
 
       return nullptr;
     };
 
     if (uri.mPath) {
-      if (const std::string* data = findByPath(uri.mPath.get()))
+      if (const std::string* data = findByPath(uri.mPath.get())) {
         return data;
+      }
     }
 
     if (uri.mAuthority) {
-      if (const std::string* data = findByPath(uri.mAuthority.get()))
+      if (const std::string* data = findByPath(uri.mAuthority.get())) {
         return data;
+      }
     }
 
     return nullptr;
@@ -218,8 +229,9 @@ bool MeshShape::collectSubMeshRanges(
     std::size_t expectedTriangles)
 {
   ranges.clear();
-  if (!scene)
+  if (!scene) {
     return false;
+  }
 
   std::size_t vertexOffset = 0;
   std::size_t triangleOffset = 0;
@@ -338,8 +350,9 @@ MeshShape::MeshShape(
       {
         void operator()(const aiScene* scene) const
         {
-          if (scene)
+          if (scene) {
             aiReleaseImport(const_cast<aiScene*>(scene));
+          }
         }
       };
 
@@ -413,8 +426,9 @@ void MeshShape::releaseMesh()
 std::shared_ptr<const aiScene> MeshShape::makeMeshHandle(
     const aiScene* mesh, MeshOwnership ownership)
 {
-  if (!mesh)
+  if (!mesh) {
     return nullptr;
+  }
 
   switch (ownership) {
     case MeshOwnership::Imported:
@@ -661,8 +675,9 @@ const aiScene* MeshShape::convertToAssimpMesh() const
   if (useSubMeshes) {
     bool warnedIndex = false;
     for (const auto& range : mSubMeshRanges) {
-      if (range.triangleCount == 0)
+      if (range.triangleCount == 0) {
         continue;
+      }
 
       unsigned int materialIndex = range.materialIndex;
       if (materialIndex >= mMaterials.size()) {
@@ -1516,8 +1531,9 @@ aiScene* MeshShape::cloneMesh() const
   DART_SUPPRESS_DEPRECATED_BEGIN
   const aiScene* scene = getMesh();
   DART_SUPPRESS_DEPRECATED_END
-  if (!scene)
+  if (!scene) {
     return nullptr;
+  }
 
   aiScene* new_scene = nullptr;
   aiCopyScene(scene, &new_scene);
@@ -1530,8 +1546,9 @@ namespace {
 bool hasColladaExtension(std::string_view path)
 {
   const std::size_t extensionIndex = path.find_last_of('.');
-  if (extensionIndex == std::string_view::npos)
+  if (extensionIndex == std::string_view::npos) {
     return false;
+  }
 
   std::string extension(path.substr(extensionIndex));
   std::transform(
@@ -1542,21 +1559,25 @@ bool hasColladaExtension(std::string_view path)
 bool isColladaResource(
     std::string_view uri, const common::ResourceRetrieverPtr& retriever)
 {
-  if (hasColladaExtension(uri))
+  if (hasColladaExtension(uri)) {
     return true;
+  }
 
   const auto parsedUri = common::Uri::createFromStringOrPath(std::string(uri));
   if (parsedUri.mScheme.get_value_or("file") == "file" && parsedUri.mPath) {
-    if (hasColladaExtension(parsedUri.mPath.get()))
+    if (hasColladaExtension(parsedUri.mPath.get())) {
       return true;
+    }
   }
 
-  if (!retriever)
+  if (!retriever) {
     return false;
+  }
 
   const auto resource = retriever->retrieve(parsedUri);
-  if (!resource)
+  if (!resource) {
     return false;
+  }
 
   constexpr std::size_t kMaxProbeSize = 4096;
   const auto sampleSize = std::min(kMaxProbeSize, resource->getSize());
@@ -1627,8 +1648,9 @@ const aiScene* MeshShape::loadMesh(
   }
 
 #if !defined(AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION)
-  if (isCollada && scene->mRootNode)
+  if (isCollada && scene->mRootNode) {
     scene->mRootNode->mTransformation = aiMatrix4x4();
+  }
 #endif
 
   // Finally, pre-transform the vertices. We can't do this as part of the

@@ -284,18 +284,19 @@ public:
       BodyNode* bn = mWorld->getSkeleton("biped")->getBodyNode("h_abdomen");
       bn->setColor(dart::Color::Red());
 
-      if (mPositiveSign)
+      if (mPositiveSign) {
         bn->addExtForce(
             default_force * Eigen::Vector3d::UnitX(),
             bn->getCOM(),
             false,
             false);
-      else
+      } else {
         bn->addExtForce(
             -default_force * Eigen::Vector3d::UnitX(),
             bn->getCOM(),
             false,
             false);
+      }
 
       --mForceCountDown;
     }
@@ -342,8 +343,9 @@ SkeletonPtr loadBiped()
 
   // Set joint limits
   // snippet:cpp-biped-lesson1-limits-start
-  for (std::size_t i = 0; i < biped->getNumJoints(); ++i)
+  for (std::size_t i = 0; i < biped->getNumJoints(); ++i) {
     biped->getJoint(i)->setLimitEnforcement(true);
+  }
   // snippet:cpp-biped-lesson1-limits-end
 
   // Enable self collision check but ignore adjacent bodies

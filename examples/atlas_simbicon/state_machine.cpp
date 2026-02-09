@@ -112,8 +112,9 @@ void StateMachine::computeControlForce(double _dt)
   DART_ASSERT(mCurrentState != nullptr && "Invalid current state.");
 
   // Check transition is needed from current state
-  if (mCurrentState->isTerminalConditionSatisfied())
+  if (mCurrentState->isTerminalConditionSatisfied()) {
     transiteTo(mCurrentState->getNextState(), mBeginTime + mElapsedTime);
+  }
 
   // Update control force
   mCurrentState->computeControlForce(_dt);
@@ -191,8 +192,9 @@ bool StateMachine::_containState(const State* _state) const
 {
   for (vector<State*>::const_iterator it = mStates.begin(); it != mStates.end();
        ++it) {
-    if (*it == _state)
+    if (*it == _state) {
       return true;
+    }
   }
 
   return false;

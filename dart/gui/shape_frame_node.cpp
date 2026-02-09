@@ -135,8 +135,9 @@ const WorldNode* ShapeFrameNode::getWorldNode() const
 //==============================================================================
 void ShapeFrameNode::refresh(bool shortCircuitIfUtilized)
 {
-  if (shortCircuitIfUtilized && mUtilized)
+  if (shortCircuitIfUtilized && mUtilized) {
     return;
+  }
 
   mUtilized = true;
 
@@ -201,8 +202,9 @@ void ShapeFrameNode::createShapeNode(
     const std::shared_ptr<dart::dynamics::Shape>& shape)
 {
   using namespace dart::dynamics;
-  if (mRenderShapeNode)
+  if (mRenderShapeNode) {
     removeChild(mRenderShapeNode->getNode());
+  }
 
   mRenderShapeNode = nullptr;
 
@@ -211,116 +213,132 @@ void ShapeFrameNode::createShapeNode(
   if (SphereShape::getStaticType() == shapeType) {
     std::shared_ptr<SphereShape> es
         = std::dynamic_pointer_cast<SphereShape>(shape);
-    if (es)
+    if (es) {
       mRenderShapeNode = new render::SphereShapeNode(es, this);
-    else
+    } else {
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+    }
   } else if (BoxShape::getStaticType() == shapeType) {
     std::shared_ptr<BoxShape> bs = std::dynamic_pointer_cast<BoxShape>(shape);
-    if (bs)
+    if (bs) {
       mRenderShapeNode = new render::BoxShapeNode(bs, this);
-    else
+    } else {
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+    }
   } else if (EllipsoidShape::getStaticType() == shapeType) {
     std::shared_ptr<EllipsoidShape> es
         = std::dynamic_pointer_cast<EllipsoidShape>(shape);
-    if (es)
+    if (es) {
       mRenderShapeNode = new render::EllipsoidShapeNode(es, this);
-    else
+    } else {
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+    }
   } else if (CylinderShape::getStaticType() == shapeType) {
     std::shared_ptr<CylinderShape> cs
         = std::dynamic_pointer_cast<CylinderShape>(shape);
-    if (cs)
+    if (cs) {
       mRenderShapeNode = new render::CylinderShapeNode(cs, this);
-    else
+    } else {
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+    }
   } else if (CapsuleShape::getStaticType() == shapeType) {
     std::shared_ptr<CapsuleShape> cs
         = std::dynamic_pointer_cast<CapsuleShape>(shape);
-    if (cs)
+    if (cs) {
       mRenderShapeNode = new render::CapsuleShapeNode(cs, this);
-    else
+    } else {
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+    }
   } else if (ConeShape::getStaticType() == shapeType) {
     std::shared_ptr<ConeShape> cs = std::dynamic_pointer_cast<ConeShape>(shape);
-    if (cs)
+    if (cs) {
       mRenderShapeNode = new render::ConeShapeNode(cs, this);
-    else
+    } else {
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+    }
   } else if (PyramidShape::getStaticType() == shapeType) {
     std::shared_ptr<PyramidShape> cs
         = std::dynamic_pointer_cast<PyramidShape>(shape);
-    if (cs)
+    if (cs) {
       mRenderShapeNode = new render::PyramidShapeNode(cs, this);
-    else
+    } else {
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+    }
   } else if (PlaneShape::getStaticType() == shapeType) {
     std::shared_ptr<PlaneShape> ps
         = std::dynamic_pointer_cast<PlaneShape>(shape);
-    if (ps)
+    if (ps) {
       mRenderShapeNode = new render::PlaneShapeNode(ps, this);
-    else
+    } else {
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+    }
   } else if (shape->is<MultiSphereConvexHullShape>()) {
     std::shared_ptr<MultiSphereConvexHullShape> ms
         = std::dynamic_pointer_cast<MultiSphereConvexHullShape>(shape);
-    if (ms)
+    if (ms) {
       mRenderShapeNode = new render::MultiSphereShapeNode(ms, this);
-    else
+    } else {
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+    }
   } else if (ConvexMeshShape::getStaticType() == shapeType) {
     std::shared_ptr<ConvexMeshShape> cms
         = std::dynamic_pointer_cast<ConvexMeshShape>(shape);
-    if (cms)
+    if (cms) {
       mRenderShapeNode = new render::ConvexMeshShapeNode(cms, this);
-    else
+    } else {
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+    }
   } else if (MeshShape::getStaticType() == shapeType) {
     std::shared_ptr<MeshShape> ms = std::dynamic_pointer_cast<MeshShape>(shape);
-    if (ms)
+    if (ms) {
       mRenderShapeNode = new render::MeshShapeNode(ms, this);
-    else
+    } else {
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+    }
   } else if (SoftMeshShape::getStaticType() == shapeType) {
     std::shared_ptr<SoftMeshShape> sms
         = std::dynamic_pointer_cast<SoftMeshShape>(shape);
-    if (sms)
+    if (sms) {
       mRenderShapeNode = new render::SoftMeshShapeNode(sms, this);
-    else
+    } else {
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+    }
   } else if (LineSegmentShape::getStaticType() == shapeType) {
     std::shared_ptr<LineSegmentShape> lss
         = std::dynamic_pointer_cast<LineSegmentShape>(shape);
-    if (lss)
+    if (lss) {
       mRenderShapeNode = new render::LineSegmentShapeNode(lss, this);
-    else
+    } else {
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+    }
   } else if (PointCloudShape::getStaticType() == shapeType) {
     std::shared_ptr<PointCloudShape> lss
         = std::dynamic_pointer_cast<PointCloudShape>(shape);
-    if (lss)
+    if (lss) {
       mRenderShapeNode = new render::PointCloudShapeNode(lss, this);
-    else
+    } else {
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+    }
   }
 #if DART_HAVE_OCTOMAP
   else if (VoxelGridShape::getStaticType() == shapeType) {
     std::shared_ptr<VoxelGridShape> lss
         = std::dynamic_pointer_cast<VoxelGridShape>(shape);
-    if (lss)
+    if (lss) {
       mRenderShapeNode = new render::VoxelGridShapeNode(lss, this);
-    else
+    } else {
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+    }
   }
 #endif // DART_HAVE_OCTOMAP
   else if (HeightmapShapef::getStaticType() == shapeType) {
     std::shared_ptr<HeightmapShapef> lss
         = std::dynamic_pointer_cast<HeightmapShapef>(shape);
-    if (lss)
+    if (lss) {
       mRenderShapeNode = new render::HeightmapShapeNode<float>(lss, this);
-    else
+    } else {
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+    }
   }
   // OpenSceneGraph currently doesn't support double precision for Heightmap
   // else if(HeightmapShaped::getStaticType() == shapeType)
@@ -336,8 +354,9 @@ void ShapeFrameNode::createShapeNode(
     mRenderShapeNode = new render::WarningShapeNode(shape, this);
   }
 
-  if (nullptr == mRenderShapeNode)
+  if (nullptr == mRenderShapeNode) {
     return;
+  }
 
   addChild(mRenderShapeNode->getNode());
 }

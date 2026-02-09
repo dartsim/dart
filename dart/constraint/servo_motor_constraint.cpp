@@ -153,8 +153,9 @@ void ServoMotorConstraint::getInformation(ConstraintInfo* lcp)
   std::size_t index = 0;
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i) {
-    if (mActive[i] == false)
+    if (mActive[i] == false) {
       continue;
+    }
 
     DART_ASSERT(lcp->w[index] == 0.0);
 
@@ -164,10 +165,11 @@ void ServoMotorConstraint::getInformation(ConstraintInfo* lcp)
 
     DART_ASSERT(lcp->findex[index] == -1);
 
-    if (mLifeTime[i])
+    if (mLifeTime[i]) {
       lcp->x[index] = mOldX[i];
-    else
+    } else {
       lcp->x[index] = 0.0;
+    }
 
     index++;
   }
@@ -183,8 +185,9 @@ void ServoMotorConstraint::applyUnitImpulse(std::size_t index)
 
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i) {
-    if (mActive[i] == false)
+    if (mActive[i] == false) {
       continue;
+    }
 
     if (localIndex == index) {
       skeleton->clearConstraintImpulses();
@@ -208,13 +211,15 @@ void ServoMotorConstraint::getVelocityChange(double* delVel, bool withCfm)
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i) {
-    if (mActive[i] == false)
+    if (mActive[i] == false) {
       continue;
+    }
 
-    if (mJoint->getSkeleton()->isImpulseApplied())
+    if (mJoint->getSkeleton()->isImpulseApplied()) {
       delVel[localIndex] = mJoint->getVelocityChange(i);
-    else
+    } else {
       delVel[localIndex] = 0.0;
+    }
 
     ++localIndex;
   }
@@ -247,8 +252,9 @@ void ServoMotorConstraint::applyImpulse(double* lambda)
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i) {
-    if (mActive[i] == false)
+    if (mActive[i] == false) {
       continue;
+    }
 
     mJoint->setConstraintImpulse(
         i, mJoint->getConstraintImpulse(i) + lambda[localIndex]);
@@ -271,8 +277,9 @@ bool ServoMotorConstraint::isActive() const
 {
   // Since we are not allowed to set the joint actuator type per each
   // DegreeOfFreedom, we just check if the whole joint is SERVO actuator.
-  if (mJoint->getActuatorType() == dynamics::Joint::SERVO)
+  if (mJoint->getActuatorType() == dynamics::Joint::SERVO) {
     return true;
+  }
 
   return false;
 }

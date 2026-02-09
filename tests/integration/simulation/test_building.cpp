@@ -107,6 +107,7 @@ TEST(Building, Basic)
   EXPECT_TRUE(world->getNumSkeletons() == 1);
 
   int nSteps = 20;
-  for (int i = 0; i < nSteps; ++i)
+  for (int i = 0; i < nSteps; ++i) {
     world->step();
+  }
 }

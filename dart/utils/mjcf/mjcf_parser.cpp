@@ -33,6 +33,7 @@
 #include "dart/utils/mjcf/mjcf_parser.hpp"
 
 #include "dart/collision/All.hpp"
+#include "dart/collision/collision_filter.hpp"
 #include "dart/common/All.hpp"
 #include "dart/common/macros.hpp"
 #include "dart/config.hpp"
@@ -40,6 +41,8 @@
 #include "dart/dynamics/All.hpp"
 #include "dart/utils/composite_resource_retriever.hpp"
 #include "dart/utils/dart_resource_retriever.hpp"
+#include "dart/utils/mjcf/detail/actuator.hpp"
+#include "dart/utils/mjcf/detail/contact.hpp"
 #include "dart/utils/mjcf/detail/mujoco_model.hpp"
 #include "dart/utils/mjcf/detail/utils.hpp"
 #include "dart/utils/mjcf/detail/worldbody.hpp"
@@ -48,6 +51,8 @@
 #include <Eigen/Dense>
 
 #include <algorithm>
+#include <limits>
+#include <unordered_set>
 #include <vector>
 
 #include <cstddef>
@@ -55,6 +60,10 @@
 namespace dart {
 namespace utils {
 namespace MjcfParser {
+
+//=============================================================================
+dynamics::BodyNode* getUniqueBodyOrNull(
+    const simulation::World& world, std::string_view name);
 
 //==============================================================================
 dynamics::BodyNode::Properties createBodyProperties(
@@ -89,11 +98,12 @@ void createJointCommonProperties(
     const detail::Body& /*mjcfBody*/,
     const detail::Joint& mjcfJoint)
 {
-  // Name
   if (!mjcfJoint.getName().empty()) {
     props.mName = mjcfJoint.getName();
-  } else {
+  } else if (parentBodyNode != nullptr) {
     props.mName = parentBodyNode->getName() + "_Joint";
+  } else {
+    props.mName = "root_Joint";
   }
 }
 
@@ -169,6 +179,21 @@ dynamics::BallJoint::Properties createBallJointProperties(
   // Damping
   props.mDampingCoefficients.setConstant(mjcfJoint.getDamping());
 
+  // Spring stiffness
+  props.mSpringStiffnesses.setConstant(mjcfJoint.getStiffness());
+
+  // Coulomb friction
+  props.mFrictions.setConstant(mjcfJoint.getFrictionLoss());
+
+  // Armature warning
+  if (mjcfJoint.getArmature() != 0.0) {
+    DART_WARN(
+        "[MjcfParser] Joint '{}' has non-zero armature ({}) which is not "
+        "mapped to DART (no reflected inertia concept).",
+        mjcfJoint.getName(),
+        mjcfJoint.getArmature());
+  }
+
   return props;
 }
 
@@ -210,6 +235,21 @@ dynamics::PrismaticJoint::Properties createPrismaticJointProperties(
   // Spring rest position
   props.mRestPositions[0] = mjcfJoint.getSpringRef();
 
+  // Spring stiffness
+  props.mSpringStiffnesses[0] = mjcfJoint.getStiffness();
+
+  // Coulomb friction
+  props.mFrictions[0] = mjcfJoint.getFrictionLoss();
+
+  // Armature warning
+  if (mjcfJoint.getArmature() != 0.0) {
+    DART_WARN(
+        "[MjcfParser] Joint '{}' has non-zero armature ({}) which is not "
+        "mapped to DART (no reflected inertia concept).",
+        mjcfJoint.getName(),
+        mjcfJoint.getArmature());
+  }
+
   return props;
 }
 
@@ -250,6 +290,21 @@ dynamics::RevoluteJoint::Properties createRevoluteJointProperties(
 
   // Spring rest position
   props.mRestPositions[0] = mjcfJoint.getSpringRef();
+
+  // Spring stiffness
+  props.mSpringStiffnesses[0] = mjcfJoint.getStiffness();
+
+  // Coulomb friction
+  props.mFrictions[0] = mjcfJoint.getFrictionLoss();
+
+  // Armature warning
+  if (mjcfJoint.getArmature() != 0.0) {
+    DART_WARN(
+        "[MjcfParser] Joint '{}' has non-zero armature ({}) which is not "
+        "mapped to DART (no reflected inertia concept).",
+        mjcfJoint.getName(),
+        mjcfJoint.getArmature());
+  }
 
   return props;
 }
@@ -310,6 +365,14 @@ createJointAndBodyNodePairForMultipleJoints(
       props.mRestPositions[0] = mjcfJoint0.getSpringRef();
       props.mRestPositions[1] = mjcfJoint1.getSpringRef();
 
+      // Spring stiffness
+      props.mSpringStiffnesses[0] = mjcfJoint0.getStiffness();
+      props.mSpringStiffnesses[1] = mjcfJoint1.getStiffness();
+
+      // Coulomb friction
+      props.mFrictions[0] = mjcfJoint0.getFrictionLoss();
+      props.mFrictions[1] = mjcfJoint1.getFrictionLoss();
+
       // Dof names
       props.mDofNames[0] = mjcfJoint0.getName();
       props.mDofNames[1] = mjcfJoint1.getName();
@@ -369,6 +432,16 @@ createJointAndBodyNodePairForMultipleJoints(
       props.mRestPositions[0] = mjcfJoint0.getSpringRef();
       props.mRestPositions[1] = mjcfJoint1.getSpringRef();
       props.mRestPositions[2] = mjcfJoint2.getSpringRef();
+
+      // Spring stiffness
+      props.mSpringStiffnesses[0] = mjcfJoint0.getStiffness();
+      props.mSpringStiffnesses[1] = mjcfJoint1.getStiffness();
+      props.mSpringStiffnesses[2] = mjcfJoint2.getStiffness();
+
+      // Coulomb friction
+      props.mFrictions[0] = mjcfJoint0.getFrictionLoss();
+      props.mFrictions[1] = mjcfJoint1.getFrictionLoss();
+      props.mFrictions[2] = mjcfJoint2.getFrictionLoss();
 
       // Dof names
       props.mDofNames[0] = mjcfJoint0.getName();
@@ -497,7 +570,8 @@ bool createShapeNodes(
     // RGBA
     dynamics::VisualAspect* visualAspect = shapeNode->getVisualAspect();
 
-    // TODO(JS): Check whether this object use material instead of RGBA
+    // TODO(PR2): Material resolution from <asset><material> is not yet wired.
+    // The Geom class would need to parse and expose the 'material' attribute.
     visualAspect->setRGBA(geom.getRGBA());
 
     // Set relative transform of the ShapeNode
@@ -524,7 +598,8 @@ bool createShapeNodes(
     // RGBA
     dynamics::VisualAspect* visualAspect = shapeNode->getVisualAspect();
 
-    // TODO(JS): Check whether this object use material instead of RGBA
+    // TODO(PR2): Material resolution from <asset><material> is not yet wired.
+    // The Geom class would need to parse and expose the 'material' attribute.
     visualAspect->setRGBA(site.getRGBA());
 
     // Set relative transform of the ShapeNode
@@ -596,8 +671,9 @@ bool populateSkeletonRecurse(
   DART_ASSERT(joint != nullptr);
 
   // Create ShapeNodes for the current BodyNode
-  if (!createShapeNodes(bodyNode, mjcfBody, mjcfAsset))
+  if (!createShapeNodes(bodyNode, mjcfBody, mjcfAsset)) {
     return false;
+  }
 
   for (auto i = 0u; i < mjcfBody.getNumChildBodies(); ++i) {
     if (!populateSkeletonRecurse(
@@ -635,6 +711,13 @@ simulation::WorldPtr createWorld(
   simulation::WorldPtr world = simulation::World::create();
   world->setName(mujoco.getModel());
 
+  // Wire MJCF <option> values into DART World
+  const detail::Option& option = mujoco.getOption();
+  world->setTimeStep(option.getTimestep());
+  world->setGravity(option.getGravity());
+  // Note: Other Option values (solver, collision, cone) don't have direct DART
+  // World API mappings and are intentionally not wired.
+
   const detail::Asset& mjcfAsset = mujoco.getAsset();
   const detail::Worldbody& mjcfWorldbody = mujoco.getWorldbody();
 
@@ -667,6 +750,113 @@ simulation::WorldPtr createWorld(
     world->addSkeleton(skel);
   }
 
+  // Map MJCF <actuator> entries to DART Joint APIs
+  const detail::Actuator& actuator = mujoco.getActuator();
+  std::unordered_set<std::string> actuatedJoints;
+  for (std::size_t i = 0; i < actuator.getNumEntries(); ++i) {
+    const detail::Actuator::Entry& entry = actuator.getEntry(i);
+
+    if (entry.mJoint.empty()) {
+      DART_WARN(
+          "[MjcfParser] Actuator '{}' has no joint specified, skipping.",
+          entry.mName);
+      continue;
+    }
+
+    if (!actuatedJoints.insert(entry.mJoint).second) {
+      DART_WARN(
+          "[MjcfParser] Multiple actuators target joint '{}'. Actuator '{}' "
+          "overwrites the previously applied actuator type and force limits.",
+          entry.mJoint,
+          entry.mName);
+    }
+
+    // Find the DART Joint by name across all skeletons
+    dynamics::Joint* dartJoint = nullptr;
+    for (std::size_t s = 0; s < world->getNumSkeletons(); ++s) {
+      auto skel = world->getSkeleton(s);
+      dartJoint = skel->getJoint(entry.mJoint);
+      if (dartJoint != nullptr) {
+        break;
+      }
+    }
+
+    if (dartJoint == nullptr) {
+      DART_WARN(
+          "[MjcfParser] Actuator '{}' references joint '{}' which was not "
+          "found in any skeleton.",
+          entry.mName,
+          entry.mJoint);
+      continue;
+    }
+
+    switch (entry.mType) {
+      case detail::ActuatorType::MOTOR:
+        dartJoint->setActuatorType(dynamics::Joint::FORCE);
+        break;
+      case detail::ActuatorType::POSITION:
+        dartJoint->setActuatorType(dynamics::Joint::SERVO);
+        break;
+      case detail::ActuatorType::VELOCITY:
+        dartJoint->setActuatorType(dynamics::Joint::VELOCITY);
+        break;
+      case detail::ActuatorType::GENERAL:
+        // General actuator — default to FORCE, log for transparency
+        dartJoint->setActuatorType(dynamics::Joint::FORCE);
+        DART_WARN(
+            "[MjcfParser] Actuator '{}' uses <general> type which is mapped "
+            "to FORCE. gainprm/biasprm are not fully supported.",
+            entry.mName);
+        break;
+    }
+
+    const std::size_t numDofs = dartJoint->getNumDofs();
+    if (entry.mForceLimited) {
+      for (std::size_t d = 0; d < numDofs; ++d) {
+        const double g = (d < 6) ? entry.mGear[d] : entry.mGear[0];
+        const double scaledLo = entry.mForceRange[0] * g;
+        const double scaledHi = entry.mForceRange[1] * g;
+        dartJoint->setForceLowerLimit(d, std::min(scaledLo, scaledHi));
+        dartJoint->setForceUpperLimit(d, std::max(scaledLo, scaledHi));
+      }
+    } else {
+      for (std::size_t d = 0; d < numDofs; ++d) {
+        dartJoint->setForceLowerLimit(
+            d, -std::numeric_limits<double>::infinity());
+        dartJoint->setForceUpperLimit(
+            d, std::numeric_limits<double>::infinity());
+      }
+    }
+  }
+
+  // Map MJCF <contact><exclude> entries to DART collision filtering
+  const detail::Contact& contact = mujoco.getContact();
+  if (contact.getNumExcludes() > 0) {
+    auto bodyFilter = std::make_shared<collision::BodyNodeCollisionFilter>();
+    for (std::size_t i = 0; i < contact.getNumExcludes(); ++i) {
+      const detail::Contact::Exclude& exclude = contact.getExclude(i);
+
+      dynamics::BodyNode* body1 = getUniqueBodyOrNull(*world, exclude.mBody1);
+      dynamics::BodyNode* body2 = getUniqueBodyOrNull(*world, exclude.mBody2);
+
+      if (body1 != nullptr && body2 != nullptr) {
+        bodyFilter->addBodyNodePairToBlackList(body1, body2);
+      } else {
+        DART_WARN(
+            "[MjcfParser] <contact><exclude> references body '{}' or '{}' "
+            "which was not found.",
+            exclude.mBody1,
+            exclude.mBody2);
+      }
+    }
+
+    world->getConstraintSolver()->getCollisionOption().collisionFilter
+        = bodyFilter;
+  }
+
+  // Note: <contact><pair> elements are not yet mapped to DART
+  // (would require per-pair friction/condim which DART doesn't support)
+
   // Parse root <geom> elements
   for (std::size_t i = 0; i < mjcfWorldbody.getNumGeoms(); ++i) {
     const detail::Geom& mjcfGeom = mjcfWorldbody.getGeom(i);
@@ -692,7 +882,7 @@ simulation::WorldPtr createWorld(
         dynamics::DynamicsAspect>(shape);
     dynamics::VisualAspect* visualAspect = shapeNode->getVisualAspect();
 
-    // TODO(JS): Check whether this object use material instead of RGBA
+    // TODO(PR2): Material resolution from <asset><material> is not yet wired.
     visualAspect->setRGBA(mjcfGeom.getRGBA());
 
     // Root <geom>s are meant to be kinematic objects.
@@ -724,7 +914,7 @@ simulation::WorldPtr createWorld(
         = body->createShapeNodeWith<dynamics::VisualAspect>(shape);
     dynamics::VisualAspect* visualAspect = shapeNode->getVisualAspect();
 
-    // TODO(JS): Check whether this object use material instead of RGBA
+    // TODO(PR2): Material resolution from <asset><material> is not yet wired.
     visualAspect->setRGBA(mjcfSite.getRGBA());
 
     // Root <site>s are meant to be kinematic objects.
@@ -776,8 +966,9 @@ simulation::WorldPtr readWorld(const common::Uri& uri, const Options& options)
         "{}",
         "[MjcfParser] Failed to parse MJCF file for the following "
         "reason(s):\n");
-    for (const auto& error : errors)
+    for (const auto& error : errors) {
       DART_ERROR(" - {}", error.getMessage());
+    }
 
     return nullptr;
   }

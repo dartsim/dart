@@ -136,8 +136,9 @@ static std::vector<T2>& convertVector(
     std::span<const T1> t1_vec, std::vector<T2>& t2_vec)
 {
   t2_vec.resize(t1_vec.size());
-  for (std::size_t i = 0; i < t1_vec.size(); ++i)
+  for (std::size_t i = 0; i < t1_vec.size(); ++i) {
     t2_vec[i] = t1_vec[i];
+  }
   return t2_vec;
 }
 
@@ -160,8 +161,9 @@ std::vector<BodyNode*> ReferentialSkeleton::getBodyNodes(std::string_view name)
   std::vector<BodyNode*> bodyNodes;
 
   for (const auto& bodyNode : mBodyNodes) {
-    if (bodyNode->getName() == name)
+    if (bodyNode->getName() == name) {
       bodyNodes.push_back(bodyNode.get());
+    }
   }
 
   return bodyNodes;
@@ -174,8 +176,9 @@ std::vector<const BodyNode*> ReferentialSkeleton::getBodyNodes(
   std::vector<const BodyNode*> bodyNodes;
 
   for (const auto& bodyNode : mBodyNodes) {
-    if (bodyNode->getName() == name)
+    if (bodyNode->getName() == name) {
       bodyNodes.push_back(bodyNode.get());
+    }
   }
 
   return bodyNodes;
@@ -270,8 +273,9 @@ std::vector<Joint*> ReferentialSkeleton::getJoints()
 {
   std::vector<Joint*> joints;
   joints.reserve(mJoints.size());
-  for (const auto& joint : mJoints)
+  for (const auto& joint : mJoints) {
     joints.push_back(joint.get());
+  }
   return joints;
 }
 
@@ -280,8 +284,9 @@ std::vector<const Joint*> ReferentialSkeleton::getJoints() const
 {
   std::vector<const Joint*> joints;
   joints.reserve(mJoints.size());
-  for (const auto& joint : mJoints)
+  for (const auto& joint : mJoints) {
     joints.push_back(joint.get());
+  }
   return joints;
 }
 
@@ -292,8 +297,9 @@ std::vector<Joint*> ReferentialSkeleton::getJoints(std::string_view name)
   std::vector<Joint*> joints;
 
   for (const auto& joint : mJoints) {
-    if (joint->getName() == name)
+    if (joint->getName() == name) {
       joints.push_back(joint.get());
+    }
   }
 
   return joints;
@@ -306,8 +312,9 @@ std::vector<const Joint*> ReferentialSkeleton::getJoints(
   std::vector<const Joint*> joints;
 
   for (const auto& joint : mJoints) {
-    if (joint->getName() == name)
+    if (joint->getName() == name) {
       joints.push_back(joint.get());
+    }
   }
 
   return joints;
@@ -463,8 +470,9 @@ void assignJacobian(
   std::size_t nDofs = bn_dofs.size();
   for (std::size_t i = 0; i < nDofs; ++i) {
     std::size_t refIndex = _refSkel->getIndexOf(bn_dofs[i], false);
-    if (INVALID_INDEX == refIndex)
+    if (INVALID_INDEX == refIndex) {
       continue;
+    }
 
     _J.col(refIndex) = _JBodyNode.col(i);
   }
@@ -479,8 +487,9 @@ math::Jacobian variadicGetJacobian(
 {
   math::Jacobian J = math::Jacobian::Zero(6, _refSkel->getNumDofs());
 
-  if (!isValidBodyNode(_refSkel, _node, "getJacobian"))
+  if (!isValidBodyNode(_refSkel, _node, "getJacobian")) {
     return J;
+  }
 
   const math::Jacobian JBodyNode = _node->getJacobian(args...);
 
@@ -527,8 +536,9 @@ math::Jacobian variadicGetWorldJacobian(
 {
   math::Jacobian J = math::Jacobian::Zero(6, _refSkel->getNumDofs());
 
-  if (!isValidBodyNode(_refSkel, _node, "getWorldJacobian"))
+  if (!isValidBodyNode(_refSkel, _node, "getWorldJacobian")) {
     return J;
+  }
 
   const math::Jacobian JBodyNode = _node->getWorldJacobian(args...);
 
@@ -561,8 +571,9 @@ math::LinearJacobian variadicGetLinearJacobian(
   math::LinearJacobian J
       = math::LinearJacobian::Zero(3, _refSkel->getNumDofs());
 
-  if (!isValidBodyNode(_refSkel, _node, "getLinearJacobian"))
+  if (!isValidBodyNode(_refSkel, _node, "getLinearJacobian")) {
     return J;
+  }
 
   const math::LinearJacobian JBodyNode = _node->getLinearJacobian(args...);
 
@@ -597,8 +608,9 @@ math::AngularJacobian variadicGetAngularJacobian(
   math::AngularJacobian J
       = math::AngularJacobian::Zero(3, _refSkel->getNumDofs());
 
-  if (!isValidBodyNode(_refSkel, _node, "getAngularJacobian"))
+  if (!isValidBodyNode(_refSkel, _node, "getAngularJacobian")) {
     return J;
+  }
 
   const math::AngularJacobian JBodyNode = _node->getAngularJacobian(args...);
 
@@ -623,8 +635,9 @@ math::Jacobian variadicGetJacobianSpatialDeriv(
 {
   math::Jacobian dJ = math::Jacobian::Zero(6, _refSkel->getNumDofs());
 
-  if (!isValidBodyNode(_refSkel, _node, "getJacobianSpatialDeriv"))
+  if (!isValidBodyNode(_refSkel, _node, "getJacobianSpatialDeriv")) {
     return dJ;
+  }
 
   const math::Jacobian dJBodyNode = _node->getJacobianSpatialDeriv(args...);
 
@@ -673,8 +686,9 @@ math::Jacobian variadicGetJacobianClassicDeriv(
 {
   math::Jacobian dJ = math::Jacobian::Zero(6, _refSkel->getNumDofs());
 
-  if (!isValidBodyNode(_refSkel, _node, "getJacobianClassicDeriv"))
+  if (!isValidBodyNode(_refSkel, _node, "getJacobianClassicDeriv")) {
     return dJ;
+  }
 
   const math::Jacobian dJBodyNode = _node->getJacobianClassicDeriv(args...);
 
@@ -717,8 +731,9 @@ math::LinearJacobian variadicGetLinearJacobianDeriv(
   math::LinearJacobian dJv
       = math::LinearJacobian::Zero(3, _refSkel->getNumDofs());
 
-  if (!isValidBodyNode(_refSkel, _node, "getLinearJacobianDeriv"))
+  if (!isValidBodyNode(_refSkel, _node, "getLinearJacobianDeriv")) {
     return dJv;
+  }
 
   const math::LinearJacobian dJvBodyNode
       = _node->getLinearJacobianDeriv(args...);
@@ -755,8 +770,9 @@ math::AngularJacobian variadicGetAngularJacobianDeriv(
   math::AngularJacobian dJw
       = math::AngularJacobian::Zero(3, _refSkel->getNumDofs());
 
-  if (!isValidBodyNode(_refSkel, _node, "getAngularJacobianDeriv"))
+  if (!isValidBodyNode(_refSkel, _node, "getAngularJacobianDeriv")) {
     return dJw;
+  }
 
   const math::AngularJacobian dJwBodyNode
       = _node->getAngularJacobianDeriv(args...);
@@ -777,8 +793,9 @@ math::AngularJacobian ReferentialSkeleton::getAngularJacobianDeriv(
 double ReferentialSkeleton::getMass() const noexcept
 {
   double mass = 0;
-  for (const BodyNode* bn : mRawBodyNodes)
+  for (const BodyNode* bn : mRawBodyNodes) {
     mass += bn->getMass();
+  }
 
   return mass;
 }
@@ -910,15 +927,17 @@ const Eigen::VectorXd& ReferentialSkeleton::getConstraintForces() const
 //==============================================================================
 void ReferentialSkeleton::clearExternalForces()
 {
-  for (BodyNode* bn : mRawBodyNodes)
+  for (BodyNode* bn : mRawBodyNodes) {
     bn->clearExternalForces();
+  }
 }
 
 //==============================================================================
 void ReferentialSkeleton::clearInternalForces()
 {
-  for (BodyNode* bn : mRawBodyNodes)
+  for (BodyNode* bn : mRawBodyNodes) {
     bn->clearInternalForces();
+  }
 }
 
 //==============================================================================
@@ -926,8 +945,9 @@ double ReferentialSkeleton::computeKineticEnergy() const
 {
   double KE = 0.0;
 
-  for (const BodyNode* bn : mRawBodyNodes)
+  for (const BodyNode* bn : mRawBodyNodes) {
     KE += bn->computeKineticEnergy();
+  }
 
   DART_ASSERT(KE >= 0.0 && "Kinetic Energy should always be zero or greater");
   return KE;
@@ -1046,8 +1066,9 @@ JacType getCOMJacobianTemplate(
     for (std::size_t i = 0; i < nDofs; ++i) {
       const DegreeOfFreedom* dof = dofs[i];
       std::size_t index = _refSkel->getIndexOf(dof, false);
-      if (INVALID_INDEX == index)
+      if (INVALID_INDEX == index) {
         continue;
+      }
 
       J.col(index) += bnJ.col(i);
     }
@@ -1103,8 +1124,9 @@ void ReferentialSkeleton::registerComponent(BodyNode* _bn)
   registerJoint(_bn->getParentJoint());
 
   std::size_t nDofs = _bn->getParentJoint()->getNumDofs();
-  for (std::size_t i = 0; i < nDofs; ++i)
+  for (std::size_t i = 0; i < nDofs; ++i) {
     registerDegreeOfFreedom(_bn->getParentJoint()->getDof(i));
+  }
 }
 
 //==============================================================================
@@ -1191,8 +1213,9 @@ void ReferentialSkeleton::registerDegreeOfFreedom(DegreeOfFreedom* _dof)
   } else {
     IndexMap& indexing = it->second;
 
-    if (indexing.mDofIndices.size() < localIndex + 1)
+    if (indexing.mDofIndices.size() < localIndex + 1) {
       indexing.mDofIndices.resize(localIndex + 1, INVALID_INDEX);
+    }
 
     if (INVALID_INDEX == indexing.mDofIndices[localIndex]) {
       mDofs.push_back(_dof);
@@ -1248,13 +1271,15 @@ void ReferentialSkeleton::unregisterBodyNode(
 
   if (_unregisterDofs) {
     for (std::size_t i = 0; i < indexing.mDofIndices.size(); ++i) {
-      if (indexing.mDofIndices[i] != INVALID_INDEX)
+      if (indexing.mDofIndices[i] != INVALID_INDEX) {
         unregisterDegreeOfFreedom(_bn, i);
+      }
     }
   }
 
-  if (indexing.isExpired())
+  if (indexing.isExpired()) {
     mIndexMap.erase(it);
+  }
 
   unregisterSkeleton(_bn->getSkeleton().get());
   updateCaches();
@@ -1301,8 +1326,9 @@ void ReferentialSkeleton::unregisterJoint(BodyNode* _child)
     indexing.mJointIndex = i;
   }
 
-  if (it->second.isExpired())
+  if (it->second.isExpired()) {
     mIndexMap.erase(it);
+  }
 
   unregisterSkeleton(_child->getSkeleton().get());
 
@@ -1352,8 +1378,9 @@ void ReferentialSkeleton::unregisterDegreeOfFreedom(
     indexing.mDofIndices[dof.getLocalIndex()] = i;
   }
 
-  if (it->second.isExpired())
+  if (it->second.isExpired()) {
     mIndexMap.erase(it);
+  }
 
   updateCaches();
 }
@@ -1404,8 +1431,9 @@ void ReferentialSkeleton::registerSkeleton(const Skeleton* skel)
   // to take that into account.
   DART_ASSERT(skel);
 
-  if (hasSkeleton(skel))
+  if (hasSkeleton(skel)) {
     return;
+  }
 
   mSkeletons.insert(skel);
   mSkeletonMutexes.insert(&skel->getMutex());
@@ -1436,15 +1464,18 @@ ReferentialSkeleton::IndexMap::IndexMap()
 //==============================================================================
 bool ReferentialSkeleton::IndexMap::isExpired() const
 {
-  if (INVALID_INDEX != mBodyNodeIndex)
+  if (INVALID_INDEX != mBodyNodeIndex) {
     return false;
+  }
 
-  if (INVALID_INDEX != mJointIndex)
+  if (INVALID_INDEX != mJointIndex) {
     return false;
+  }
 
   for (std::size_t i = 0; i < mDofIndices.size(); ++i) {
-    if (mDofIndices[i] != INVALID_INDEX)
+    if (mDofIndices[i] != INVALID_INDEX) {
       return false;
+    }
   }
 
   return true;

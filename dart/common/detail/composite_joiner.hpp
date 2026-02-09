@@ -95,9 +95,10 @@ template <class Base1, class Base2>
 template <class T, typename... Args>
 T* CompositeJoiner<Base1, Base2>::createAspect(Args&&... args)
 {
-  if (Base1::template isSpecializedFor<T>())
+  if (Base1::template isSpecializedFor<T>()) {
     return Base1::template createAspect<T, Args...>(
         std::forward<Args>(args)...);
+  }
 
   return Base2::template createAspect<T, Args...>(std::forward<Args>(args)...);
 }

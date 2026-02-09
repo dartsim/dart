@@ -126,8 +126,9 @@ bool DARTCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
-  if (result)
+  if (result) {
     result->clear();
+  }
 
   if (0u == option.maxNumContacts) [[unlikely]] {
     DART_WARN(
@@ -136,14 +137,16 @@ bool DARTCollisionDetector::collide(
     return false;
   }
 
-  if (!checkGroupValidity(this, group))
+  if (!checkGroupValidity(this, group)) {
     return false;
+  }
 
   auto casted = static_cast<DARTCollisionGroup*>(group);
   const auto& objects = casted->mCollisionObjects;
 
-  if (objects.empty()) [[unlikely]]
+  if (objects.empty()) [[unlikely]] {
     return false;
+  }
 
   auto collisionFound = false;
   const auto& filter = option.collisionFilter;
@@ -154,18 +157,21 @@ bool DARTCollisionDetector::collide(
     for (auto j = i + 1u; j < objects.size(); ++j) {
       auto* collObj2 = objects[j];
 
-      if (filter && filter->ignoresCollision(collObj1, collObj2)) [[unlikely]]
+      if (filter && filter->ignoresCollision(collObj1, collObj2)) [[unlikely]] {
         continue;
+      }
 
       collisionFound = checkPair(collObj1, collObj2, option, result);
 
       if (result) {
-        if (result->getNumContacts() >= option.maxNumContacts) [[unlikely]]
+        if (result->getNumContacts() >= option.maxNumContacts) [[unlikely]] {
           return true;
+        }
       } else {
         // If no result is passed, stop checking when the first contact is found
-        if (collisionFound) [[unlikely]]
+        if (collisionFound) [[unlikely]] {
           return true;
+        }
       }
     }
   }
@@ -181,8 +187,9 @@ bool DARTCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
-  if (result)
+  if (result) {
     result->clear();
+  }
 
   if (0u == option.maxNumContacts) {
     DART_WARN(
@@ -191,11 +198,13 @@ bool DARTCollisionDetector::collide(
     return false;
   }
 
-  if (!checkGroupValidity(this, group1))
+  if (!checkGroupValidity(this, group1)) {
     return false;
+  }
 
-  if (!checkGroupValidity(this, group2))
+  if (!checkGroupValidity(this, group2)) {
     return false;
+  }
 
   auto casted1 = static_cast<DARTCollisionGroup*>(group1);
   auto casted2 = static_cast<DARTCollisionGroup*>(group2);
@@ -203,8 +212,9 @@ bool DARTCollisionDetector::collide(
   const auto& objects1 = casted1->mCollisionObjects;
   const auto& objects2 = casted2->mCollisionObjects;
 
-  if (objects1.empty() || objects2.empty()) [[unlikely]]
+  if (objects1.empty() || objects2.empty()) [[unlikely]] {
     return false;
+  }
 
   auto collisionFound = false;
   const auto& filter = option.collisionFilter;
@@ -215,18 +225,21 @@ bool DARTCollisionDetector::collide(
     for (auto j = 0u; j < objects2.size(); ++j) {
       auto* collObj2 = objects2[j];
 
-      if (filter && filter->ignoresCollision(collObj1, collObj2))
+      if (filter && filter->ignoresCollision(collObj1, collObj2)) {
         continue;
+      }
 
       collisionFound = checkPair(collObj1, collObj2, option, result);
 
       if (result) {
-        if (result->getNumContacts() >= option.maxNumContacts)
+        if (result->getNumContacts() >= option.maxNumContacts) {
           return true;
+        }
       } else {
         // If no result is passed, stop checking when the first contact is found
-        if (collisionFound)
+        if (collisionFound) {
           return true;
+        }
       }
     }
   }
@@ -271,24 +284,28 @@ DARTCollisionDetector::DARTCollisionDetector() : CollisionDetector()
 //==============================================================================
 void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
 {
-  if (!shapeFrame)
+  if (!shapeFrame) {
     return;
+  }
 
   const auto& shape = shapeFrame->getShape();
   const auto& shapeType = shape->getType();
 
-  if (shapeType == dynamics::SphereShape::getStaticType())
+  if (shapeType == dynamics::SphereShape::getStaticType()) {
     return;
+  }
 
-  if (shapeType == dynamics::BoxShape::getStaticType())
+  if (shapeType == dynamics::BoxShape::getStaticType()) {
     return;
+  }
 
   if (shapeType == dynamics::EllipsoidShape::getStaticType()) {
     const auto& ellipsoid
         = std::static_pointer_cast<const dynamics::EllipsoidShape>(shape);
 
-    if (ellipsoid->isSphere())
+    if (ellipsoid->isSphere()) {
       return;
+    }
   }
 
   DART_ERROR(
@@ -330,8 +347,9 @@ bool checkPair(
   collide(o1, o2, pairResult);
 
   // Early return for binary check
-  if (!result)
+  if (!result) {
     return pairResult.isCollision();
+  }
 
   postProcess(o1, o2, option, *result, pairResult);
 
@@ -353,8 +371,9 @@ void postProcess(
     CollisionResult& totalResult,
     const CollisionResult& pairResult)
 {
-  if (!pairResult.isCollision()) [[likely]]
+  if (!pairResult.isCollision()) [[likely]] {
     return;
+  }
 
   // Don't add repeated points
   const auto tol = 3.0e-12;
@@ -369,16 +388,18 @@ void postProcess(
       }
     }
 
-    if (foundClose)
+    if (foundClose) {
       continue;
+    }
 
     auto contact = pairContact;
     contact.collisionObject1 = o1;
     contact.collisionObject2 = o2;
     totalResult.addContact(contact);
 
-    if (totalResult.getNumContacts() >= option.maxNumContacts)
+    if (totalResult.getNumContacts() >= option.maxNumContacts) {
       break;
+    }
   }
 }
 

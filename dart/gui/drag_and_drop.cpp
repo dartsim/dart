@@ -77,8 +77,9 @@ dart::dynamics::Entity* DragAndDrop::getEntity() const
 //==============================================================================
 void DragAndDrop::update()
 {
-  if (nullptr == mEntity)
+  if (nullptr == mEntity) {
     return;
+  }
 
   MouseButtonEvent event
       = mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
@@ -107,8 +108,9 @@ void DragAndDrop::update()
         // The picks are always ordered from closest to furthest. If the closest
         // pick is not our Entity, then something is blocking the way, so if we
         // are obstructable, then we should quit.
-        if (mAmObstructable)
+        if (mAmObstructable) {
           return;
+        }
       }
     }
   }
@@ -155,8 +157,9 @@ Eigen::AngleAxisd DragAndDrop::getConstrainedRotation() const
          + mPickedPosition - mPivot;
   }
 
-  if (v1.norm() == 0 || v2.norm() == 0 || v1.cross(v2).norm() == 0)
+  if (v1.norm() == 0 || v2.norm() == 0 || v1.cross(v2).norm() == 0) {
     return Eigen::AngleAxisd(0, Eigen::Vector3d(1, 0, 0));
+  }
 
   v1.normalize();
   v2.normalize();
@@ -164,8 +167,9 @@ Eigen::AngleAxisd DragAndDrop::getConstrainedRotation() const
   Eigen::Vector3d axis = v1.cross(v2);
   if (LINE_CONSTRAINT == mConstraintType
       || PLANE_CONSTRAINT == mConstraintType) {
-    if (axis.dot(mVector) == 0)
+    if (axis.dot(mVector) == 0) {
       return Eigen::AngleAxisd(0, Eigen::Vector3d(1, 0, 0));
+    }
 
     axis = axis.dot(mVector) * mVector;
   }
@@ -230,11 +234,13 @@ void DragAndDrop::setRotationModKey(
 void DragAndDrop::handleDestructionNotification(
     const dart::common::Subject* subscription)
 {
-  if (mEntity == subscription)
+  if (mEntity == subscription) {
     mViewer->disableDragAndDrop(this);
+  }
 
-  if (mViewer == subscription)
+  if (mViewer == subscription) {
     delete this;
+  }
 }
 
 //==============================================================================
@@ -277,10 +283,11 @@ void SimpleFrameDnD::move()
   }
 
   dart::dynamics::Frame* parent = mFrame->getParentFrame();
-  if (parent->isWorld())
+  if (parent->isWorld()) {
     mFrame->setRelativeTransform(tf);
-  else
+  } else {
     mFrame->setRelativeTransform(parent->getWorldTransform().inverse() * tf);
+  }
 }
 
 //==============================================================================
@@ -312,15 +319,17 @@ void SimpleFrameShapeDnD::update()
   // This is almost identical to the original DragAndDrop::update() except that
   // it also checks that the picked shape matches
 
-  if (nullptr == mFrame || nullptr == mShape)
+  if (nullptr == mFrame || nullptr == mShape) {
     return;
+  }
 
   MouseButtonEvent event
       = mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
 
   if (mAmMoving) {
-    if (BUTTON_RELEASE == event)
+    if (BUTTON_RELEASE == event) {
       mAmMoving = false;
+    }
 
     move();
   } else {
@@ -336,8 +345,9 @@ void SimpleFrameShapeDnD::update()
           return;
         }
 
-        if (mAmObstructable)
+        if (mAmObstructable) {
           return;
+        }
       }
     }
   }
@@ -349,8 +359,9 @@ void SimpleFrameShapeDnD::handleDestructionNotification(
 {
   DragAndDrop::handleDestructionNotification(subscription);
 
-  if (mShape == subscription)
+  if (mShape == subscription) {
     mViewer->disableDragAndDrop(this);
+  }
 }
 
 //==============================================================================
@@ -365,11 +376,13 @@ public:
 
   void update() override
   {
-    if (!mFrame)
+    if (!mFrame) {
       return;
+    }
 
-    if (!mEventHandler)
+    if (!mEventHandler) {
       return;
+    }
 
     if (mHighlighting) {
       MouseButtonEvent event = mEventHandler->getButtonEvent(LEFT_MOUSE);
@@ -380,27 +393,33 @@ public:
         if (picks.size() > 0) {
           const PickInfo& pick = picks[0];
           if (pick.frame->getParentFrame()
-              != mFrame->getTool((InteractiveTool::Type)mTool, mCoordinate))
+              != mFrame->getTool((InteractiveTool::Type)mTool, mCoordinate)) {
             stop_highlighting = true;
-        } else
+          }
+        } else {
           stop_highlighting = true;
+        }
       }
 
       if (stop_highlighting) {
-        for (std::size_t s = 0; s < InteractiveTool::NUM_TYPES; ++s)
-          for (std::size_t c = 0; c < 3; ++c)
+        for (std::size_t s = 0; s < InteractiveTool::NUM_TYPES; ++s) {
+          for (std::size_t c = 0; c < 3; ++c) {
             mFrame->getTool((InteractiveTool::Type)s, c)->resetAlpha();
+          }
+        }
         mHighlighting = false;
       }
     } else {
       MouseButtonEvent event = mEventHandler->getButtonEvent(LEFT_MOUSE);
 
-      if (BUTTON_NOTHING != event && BUTTON_RELEASE != event)
+      if (BUTTON_NOTHING != event && BUTTON_RELEASE != event) {
         return;
+      }
 
       const auto picks = mEventHandler->getMovePicks();
-      if (picks.size() == 0)
+      if (picks.size() == 0) {
         return;
+      }
 
       const PickInfo& pick = picks[0];
 
@@ -415,17 +434,19 @@ public:
             break;
           }
         }
-        if (mHighlighting)
+        if (mHighlighting) {
           break;
+        }
       }
 
       if (mHighlighting) {
         for (std::size_t s = 0; s < InteractiveTool::NUM_TYPES; ++s) {
           for (std::size_t c = 0; c < 3; ++c) {
-            if (s == (std::size_t)mTool && c == mCoordinate)
+            if (s == (std::size_t)mTool && c == mCoordinate) {
               mFrame->getTool((InteractiveTool::Type)s, c)->setAlpha(1.0);
-            else
+            } else {
               mFrame->getTool((InteractiveTool::Type)s, c)->setAlpha(0.3);
+            }
           }
         }
       }
@@ -464,8 +485,9 @@ public:
 
   void update() override
   {
-    if (nullptr == mEntity)
+    if (nullptr == mEntity) {
       return;
+    }
 
     MouseButtonEvent event
         = mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
@@ -494,8 +516,9 @@ public:
           // The picks are always ordered from closest to furthest. If the
           // closest pick is not our Entity, then something is blocking the way,
           // so if we are obstructable, then we should quit.
-          if (mAmObstructable)
+          if (mAmObstructable) {
             return;
+          }
         }
       }
     }
@@ -515,10 +538,12 @@ InteractiveFrameDnD::InteractiveFrameDnD(
   mViewer->getDefaultEventHandler()->addMouseEventHandler(
       new InteractiveFrameMouseEvent(frame));
 
-  for (std::size_t i = 0; i < InteractiveTool::NUM_TYPES; ++i)
-    for (std::size_t j = 0; j < 3; ++j)
+  for (std::size_t i = 0; i < InteractiveTool::NUM_TYPES; ++i) {
+    for (std::size_t j = 0; j < 3; ++j) {
       mDnDs.push_back(new InteractiveToolDnD(
           viewer, frame, frame->getTool((InteractiveTool::Type)i, j)));
+    }
+  }
 
   for (std::size_t i = 0; i < 3; ++i) {
     DragAndDrop* dnd = mDnDs[i];
@@ -570,8 +595,9 @@ void InteractiveFrameDnD::update()
             = mInteractiveFrame->getTool((InteractiveTool::Type)i, j);
         if (!dnd->isMoving() && tool->getEnabled()) {
           const auto shapeFrames = tool->getShapeFrames();
-          for (std::size_t s = 0; s < shapeFrames.size(); ++s)
+          for (std::size_t s = 0; s < shapeFrames.size(); ++s) {
             shapeFrames[s]->getVisualAspect(true)->setHidden(true);
+          }
         }
       }
     }
@@ -582,8 +608,9 @@ void InteractiveFrameDnD::update()
             = mInteractiveFrame->getTool((InteractiveTool::Type)i, j);
         if (tool->getEnabled()) {
           const auto shapeFrames = tool->getShapeFrames();
-          for (std::size_t s = 0; s < shapeFrames.size(); ++s)
+          for (std::size_t s = 0; s < shapeFrames.size(); ++s) {
             shapeFrames[s]->getVisualAspect(true)->setHidden(false);
+          }
         }
       }
     }
@@ -627,8 +654,9 @@ dart::dynamics::BodyNode* BodyNodeDnD::getBodyNode() const
 //==============================================================================
 void BodyNodeDnD::update()
 {
-  if (nullptr == mEntity)
+  if (nullptr == mEntity) {
     return;
+  }
 
   MouseButtonEvent event
       = mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
@@ -657,8 +685,9 @@ void BodyNodeDnD::update()
         // The picks are always ordered from closest to furthest. If the closest
         // pick is not our Entity, then something is blocking the way, so if we
         // are obstructable, then we should quit.
-        if (mAmObstructable)
+        if (mAmObstructable) {
           return;
+        }
       }
     }
   }
@@ -667,8 +696,9 @@ void BodyNodeDnD::update()
 //==============================================================================
 void BodyNodeDnD::move()
 {
-  if (mIK == nullptr)
+  if (mIK == nullptr) {
     return;
+  }
 
   bool restrictJoints
       = (mViewer->getDefaultEventHandler()->getModKeyMask()
@@ -679,16 +709,18 @@ void BodyNodeDnD::move()
 
     dart::dynamics::Joint* joint = mBodyNode.lock()->getParentJoint();
     for (std::size_t count = 0; count <= mAdditionalBodyNodes; ++count) {
-      for (std::size_t j = 0; j < joint->getNumDofs(); ++j)
+      for (std::size_t j = 0; j < joint->getNumDofs(); ++j) {
         dofs.push_back(joint->getDof(j)->getIndexInSkeleton());
+      }
     }
 
     mIK->setDofs(std::span<const std::size_t>(dofs));
   } else {
-    if (mUseWholeBody)
+    if (mUseWholeBody) {
       mIK->useWholeBody();
-    else
+    } else {
       mIK->useChain();
+    }
   }
 
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
@@ -717,10 +749,11 @@ void BodyNodeDnD::move()
     mIK->setOffset(mSavedLocalOffset);
   }
 
-  if (mIK->getTarget()->getParentFrame()->isWorld())
+  if (mIK->getTarget()->getParentFrame()->isWorld()) {
     mIK->getTarget()->setRelativeTransform(tf);
-  else
+  } else {
     mIK->getTarget()->setTransform(tf);
+  }
 
   if (mUseExternalIK) {
     mIK->getSolver()->setNumMaxIterations(10);

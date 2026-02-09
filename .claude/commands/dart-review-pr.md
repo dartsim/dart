@@ -32,5 +32,7 @@ Apply minimal fixes, verify, push.
 1. Push fix silently (no reply)
 2. Resolve thread via GraphQL (see ai-tools.md)
 3. Re-trigger: `gh pr comment $1 --body "@codex review"`
+4. Monitor CI: `gh pr checks $1`
+5. Check for new review, repeat until no comments + CI green
 
-Full details: `docs/onboarding/ai-tools.md` § "Handling Automated Reviews"
+Full iterative loop: `docs/onboarding/ai-tools.md` § "Autonomous Review-Fix-Monitor Loop"

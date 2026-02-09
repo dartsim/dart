@@ -198,6 +198,11 @@ Errors Compiler::read(tinyxml2::XMLElement* element)
     mInertiaGroupRange = getAttributeVector2i(element, "inertiagrouprange");
   }
 
+  // autolimits
+  if (hasAttribute(element, "autolimits")) {
+    mAutoLimits = getAttributeBool(element, "autolimits");
+  }
+
   return errors;
 }
 
@@ -301,6 +306,12 @@ InertiaFromGeom Compiler::getInertiaFromGeom() const
 const Eigen::Vector2i& Compiler::getInertiaGroupRange() const
 {
   return mInertiaGroupRange;
+}
+
+//==============================================================================
+bool Compiler::getAutoLimits() const
+{
+  return mAutoLimits;
 }
 
 } // namespace detail

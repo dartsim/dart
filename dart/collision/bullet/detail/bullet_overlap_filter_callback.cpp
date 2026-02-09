@@ -59,8 +59,9 @@ BulletOverlapFilterCallback::BulletOverlapFilterCallback(
 bool BulletOverlapFilterCallback::needBroadphaseCollision(
     btBroadphaseProxy* proxy0, btBroadphaseProxy* proxy1) const
 {
-  if (done)
+  if (done) {
     return false;
+  }
 
   DART_ASSERT(
       (proxy0 != nullptr && proxy1 != nullptr)
@@ -88,11 +89,13 @@ bool BulletOverlapFilterCallback::needBroadphaseCollision(
       const dynamics::ShapeFrame* shapeFrame0 = collObj0->getShapeFrame();
       const dynamics::ShapeFrame* shapeFrame1 = collObj1->getShapeFrame();
       if (group1->hasShapeFrame(shapeFrame0)
-          && group1->hasShapeFrame(shapeFrame1))
+          && group1->hasShapeFrame(shapeFrame1)) {
         return false;
+      }
       if (group2->hasShapeFrame(shapeFrame0)
-          && group2->hasShapeFrame(shapeFrame1))
+          && group2->hasShapeFrame(shapeFrame1)) {
         return false;
+      }
     }
 
     if (filter) {

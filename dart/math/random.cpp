@@ -54,8 +54,9 @@ void Random::setSeed(unsigned int seed)
 unsigned int Random::generateSeed(bool applyGeneratedSeed)
 {
   const unsigned int seed = std::random_device{}();
-  if (applyGeneratedSeed)
+  if (applyGeneratedSeed) {
     setSeed(seed);
+  }
   return seed;
 }
 

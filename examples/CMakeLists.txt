@@ -19,12 +19,12 @@ add_subdirectory(joint_constraints)
 add_subdirectory(mimic_pendulums)
 add_subdirectory(rigid_chain)
 add_subdirectory(rigid_loop)
-add_subdirectory(lcp_solvers)
 
 # Collisions and contacts examples
 add_subdirectory(box_stacking)
 add_subdirectory(capsule_ground_contact)
 add_subdirectory(heightmap)
+add_subdirectory(lcp_physics)
 add_subdirectory(rigid_shapes)
 
 # Control and IK examples

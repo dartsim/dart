@@ -92,14 +92,16 @@ std::vector<SkeletonPtr> getSkeletons()
   const auto fileList = getFileList();
 
   std::vector<WorldPtr> worlds;
-  for (std::size_t i = 0; i < fileList.size(); ++i)
+  for (std::size_t i = 0; i < fileList.size(); ++i) {
     worlds.push_back(dart::io::readWorld(fileList[i]));
+  }
 
   std::vector<SkeletonPtr> skeletons;
   for (std::size_t i = 0; i < worlds.size(); ++i) {
     WorldPtr world = worlds[i];
-    for (std::size_t j = 0; j < world->getNumSkeletons(); ++j)
+    for (std::size_t j = 0; j < world->getNumSkeletons(); ++j) {
       skeletons.push_back(world->getSkeleton(j));
+    }
   }
 
   return skeletons;
@@ -629,14 +631,17 @@ TEST(MetaSkeleton, Group)
   EXPECT_EQ(skel1Group->getNumJoints(), skel->getNumJoints());
   EXPECT_EQ(skel1Group->getNumDofs(), skel->getNumDofs());
 
-  for (std::size_t i = 0; i < skel1Group->getNumBodyNodes(); ++i)
+  for (std::size_t i = 0; i < skel1Group->getNumBodyNodes(); ++i) {
     EXPECT_EQ(skel1Group->getBodyNode(i), skel->getBodyNode(i));
+  }
 
-  for (std::size_t i = 0; i < skel1Group->getNumJoints(); ++i)
+  for (std::size_t i = 0; i < skel1Group->getNumJoints(); ++i) {
     EXPECT_EQ(skel1Group->getJoint(i), skel->getJoint(i));
+  }
 
-  for (std::size_t i = 0; i < skel1Group->getNumDofs(); ++i)
+  for (std::size_t i = 0; i < skel1Group->getNumDofs(); ++i) {
     EXPECT_EQ(skel1Group->getDof(i), skel->getDof(i));
+  }
 
   // Test arbitrary Groups by plucking random BodyNodes, Joints, and
   // DegreesOfFreedom from a Skeleton.
@@ -648,32 +653,38 @@ TEST(MetaSkeleton, Group)
     std::size_t randomIndex
         = Random::uniform<std::size_t>(0, skel->getNumBodyNodes() - 1);
     BodyNode* bn = skel->getBodyNode(randomIndex);
-    if (group->addBodyNode(bn, false))
+    if (group->addBodyNode(bn, false)) {
       bodyNodes.push_back(bn);
+    }
 
     randomIndex = Random::uniform<std::size_t>(0, skel->getNumJoints() - 1);
     Joint* joint = skel->getJoint(randomIndex);
-    if (group->addJoint(joint, false, false))
+    if (group->addJoint(joint, false, false)) {
       joints.push_back(joint);
+    }
 
     randomIndex = Random::uniform<std::size_t>(0, skel->getNumDofs() - 1);
     DegreeOfFreedom* dof = skel->getDof(randomIndex);
-    if (group->addDof(dof, false, false))
+    if (group->addDof(dof, false, false)) {
       dofs.push_back(dof);
+    }
   }
 
   EXPECT_EQ(group->getNumBodyNodes(), bodyNodes.size());
   EXPECT_EQ(group->getNumJoints(), joints.size());
   EXPECT_EQ(group->getNumDofs(), dofs.size());
 
-  for (std::size_t i = 0; i < group->getNumBodyNodes(); ++i)
+  for (std::size_t i = 0; i < group->getNumBodyNodes(); ++i) {
     EXPECT_EQ(group->getBodyNode(i), bodyNodes[i]);
+  }
 
-  for (std::size_t i = 0; i < group->getNumJoints(); ++i)
+  for (std::size_t i = 0; i < group->getNumJoints(); ++i) {
     EXPECT_EQ(group->getJoint(i), joints[i]);
+  }
 
-  for (std::size_t i = 0; i < group->getNumDofs(); ++i)
+  for (std::size_t i = 0; i < group->getNumDofs(); ++i) {
     EXPECT_EQ(group->getDof(i), dofs[i]);
+  }
 }
 
 //==============================================================================

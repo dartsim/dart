@@ -114,8 +114,9 @@ bool solutionsMatch(
     const std::vector<dReal>& x2,
     double tolerance = 1e-5)
 {
-  if (x1.size() != x2.size())
+  if (x1.size() != x2.size()) {
     return false;
+  }
 
   for (size_t i = 0; i < x1.size(); ++i) {
     if (std::abs(x1[i] - x2[i]) > tolerance) {

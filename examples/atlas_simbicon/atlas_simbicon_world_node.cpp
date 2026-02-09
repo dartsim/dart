@@ -57,10 +57,11 @@ void AtlasSimbiconWorldNode::customPreStep()
   pelvis->addExtForce(mExternalForce);
   mController->update();
 
-  if (mForceDuration > 0)
+  if (mForceDuration > 0) {
     mForceDuration--;
-  else
+  } else {
     mExternalForce.setZero();
+  }
 }
 
 //==============================================================================

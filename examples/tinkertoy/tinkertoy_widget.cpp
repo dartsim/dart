@@ -72,13 +72,15 @@ void TinkertoyWidget::render()
   // Menu
   if (ImGui::BeginMenuBar()) {
     if (ImGui::BeginMenu("Menu")) {
-      if (ImGui::MenuItem("Exit"))
+      if (ImGui::MenuItem("Exit")) {
         mViewer->setDone(true);
+      }
       ImGui::EndMenu();
     }
     if (ImGui::BeginMenu("Help")) {
-      if (ImGui::MenuItem("About DART"))
+      if (ImGui::MenuItem("About DART")) {
         mViewer->showAbout();
+      }
       ImGui::EndMenu();
     }
     ImGui::EndMenuBar();
@@ -133,11 +135,13 @@ void TinkertoyWidget::render()
   if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
     int e = mViewer->isSimulating() ? 0 : 1;
     if (mViewer->isAllowingSimulation()) {
-      if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating())
+      if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating()) {
         mViewer->simulate(true);
+      }
       ImGui::SameLine();
-      if (ImGui::RadioButton("Pause", &e, 1) && mViewer->isSimulating())
+      if (ImGui::RadioButton("Pause", &e, 1) && mViewer->isSimulating()) {
         mViewer->simulate(false);
+      }
     }
   }
 
@@ -167,28 +171,34 @@ void TinkertoyWidget::render()
     ImGui::Spacing();
 
     const auto reorient = ImGui::Button("Reorient Target");
-    if (reorient)
+    if (reorient) {
       mNode->reorientTarget();
+    }
 
     const auto clearTarget = ImGui::Button("Reset Target");
-    if (clearTarget)
+    if (clearTarget) {
       mNode->clearPick();
+    }
 
     const auto addWeld = ImGui::Button("Add a Weld-Joint Block");
-    if (addWeld)
+    if (addWeld) {
       mNode->addWeldJointBlock();
+    }
 
     const auto addRevolute = ImGui::Button("Add a Revolute-Joint Block");
-    if (addRevolute)
+    if (addRevolute) {
       mNode->addRevoluteJointBlock();
+    }
 
     const auto addBall = ImGui::Button("Add a Ball-Joint Block");
-    if (addBall)
+    if (addBall) {
       mNode->addBallJointBlock();
+    }
 
     const auto deleteBlock = ImGui::Button("Delete Block");
-    if (deleteBlock)
+    if (deleteBlock) {
       mNode->deletePick();
+    }
   }
 
   ImGui::End();
@@ -197,13 +207,15 @@ void TinkertoyWidget::render()
 //==============================================================================
 void TinkertoyWidget::setGravity(bool gravity)
 {
-  if (mGravity == gravity)
+  if (mGravity == gravity) {
     return;
+  }
 
   mGravity = gravity;
 
-  if (mGravity)
+  if (mGravity) {
     mNode->getWorld()->setGravity(-9.81 * Eigen::Vector3d::UnitZ());
-  else
+  } else {
     mNode->getWorld()->setGravity(Eigen::Vector3d::Zero());
+  }
 }

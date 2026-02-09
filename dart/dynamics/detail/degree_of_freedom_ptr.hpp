@@ -114,8 +114,9 @@ public:
   /// Get the raw DegreeOfFreedom pointer
   DegreeOfFreedomT* get() const
   {
-    if (nullptr == mBodyNodePtr)
+    if (nullptr == mBodyNodePtr) {
       return nullptr;
+    }
 
     return mBodyNodePtr->getParentJoint()->getDof(mIndex);
   }
@@ -130,8 +131,9 @@ public:
   /// tied to
   std::size_t getLocalIndex() const
   {
-    if (nullptr == mBodyNodePtr)
+    if (nullptr == mBodyNodePtr) {
       return INVALID_INDEX;
+    }
 
     return mIndex;
   }
@@ -166,8 +168,9 @@ public:
   auto operator<=>(
       const TemplateDegreeOfFreedomPtr<OtherDofT, OtherBodyNodeT>& _rhs) const
   {
-    if (auto cmp = mBodyNodePtr <=> _rhs.mBodyNodePtr; cmp != 0)
+    if (auto cmp = mBodyNodePtr <=> _rhs.mBodyNodePtr; cmp != 0) {
       return cmp;
+    }
     return mIndex <=> _rhs.mIndex;
   }
 
@@ -255,8 +258,9 @@ public:
   TemplateDegreeOfFreedomPtr<DegreeOfFreedomT, BodyNodeT> lock() const
   {
     TemplateBodyNodePtr<BodyNodeT> bodyNode = mWeakBodyNode.lock();
-    if (nullptr == bodyNode)
+    if (nullptr == bodyNode) {
       return nullptr;
+    }
 
     return TemplateDegreeOfFreedomPtr<DegreeOfFreedomT, BodyNodeT>(
         bodyNode->getParentJoint()->getDof(mIndex));

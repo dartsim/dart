@@ -111,8 +111,9 @@ dynamics::ShapePtr readGeometryShape(
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever)
 {
-  if (!geometryElement)
+  if (!geometryElement) {
     return nullptr;
+  }
 
   if (hasElement(geometryElement, "sphere")) {
     const ElementPtr& sphereElement = getElement(geometryElement, "sphere");

@@ -88,8 +88,9 @@ Errors Geom::read(
 static bool canUseFromTo(
     GeomType type, const std::optional<Eigen::Vector6d>& fromto)
 {
-  if (!fromto)
+  if (!fromto) {
     return false;
+  }
 
   switch (type) {
     case detail::GeomType::CAPSULE:

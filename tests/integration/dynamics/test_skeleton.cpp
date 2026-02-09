@@ -89,14 +89,16 @@ std::vector<SkeletonPtr> getSkeletons()
   const auto fileList = getFileList();
 
   std::vector<WorldPtr> worlds;
-  for (std::size_t i = 0; i < fileList.size(); ++i)
+  for (std::size_t i = 0; i < fileList.size(); ++i) {
     worlds.push_back(dart::io::readWorld(fileList[i]));
+  }
 
   std::vector<SkeletonPtr> skeletons;
   for (std::size_t i = 0; i < worlds.size(); ++i) {
     WorldPtr world = worlds[i];
-    for (std::size_t j = 0; j < world->getNumSkeletons(); ++j)
+    for (std::size_t j = 0; j < world->getNumSkeletons(); ++j) {
       skeletons.push_back(world->getSkeleton(j));
+    }
   }
 
   return skeletons;
@@ -105,8 +107,9 @@ std::vector<SkeletonPtr> getSkeletons()
 void constructSubtree(std::vector<BodyNode*>& _tree, BodyNode* bn)
 {
   _tree.push_back(bn);
-  for (std::size_t i = 0; i < bn->getNumChildBodyNodes(); ++i)
+  for (std::size_t i = 0; i < bn->getNumChildBodyNodes(); ++i) {
     constructSubtree(_tree, bn->getChildBodyNode(i));
+  }
 }
 
 TEST(Skeleton, Restructuring)
@@ -119,8 +122,9 @@ TEST(Skeleton, Restructuring)
   std::size_t numIterations = 2 * skeletons.size();
 #endif
 
-  for (const auto& skeleton : skeletons)
+  for (const auto& skeleton : skeletons) {
     EXPECT_TRUE(skeleton->checkIndexingConsistency());
+  }
 
   // Test moves within the current Skeleton
   for (std::size_t i = 0; i < numIterations; ++i) {

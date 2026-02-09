@@ -101,8 +101,9 @@ void ConeShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC) {
     return;
+  }
 
   extractData(false);
 }
@@ -178,10 +179,11 @@ ConeShapeDrawable::ConeShapeDrawable(
 //==============================================================================
 void ConeShapeDrawable::refresh(bool firstTime)
 {
-  if (mConeShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mConeShape->getDataVariance() == dart::dynamics::Shape::STATIC) {
     setDataVariance(::osg::Object::STATIC);
-  else
+  } else {
     setDataVariance(::osg::Object::DYNAMIC);
+  }
 
   if (mConeShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
       || firstTime) {

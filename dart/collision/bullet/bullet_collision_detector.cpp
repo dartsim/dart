@@ -182,8 +182,9 @@ static bool isCollision(btCollisionWorld* world)
   for (auto i = 0; i < numManifolds; ++i) {
     const auto* contactManifold = dispatcher->getManifoldByIndexInternal(i);
 
-    if (contactManifold->getNumContacts() > 0)
+    if (contactManifold->getNumContacts() > 0) {
       return true;
+    }
   }
 
   return false;
@@ -199,8 +200,9 @@ void filterOutCollisions(btCollisionWorld* world)
   DART_ASSERT(dispatcher);
 
   const auto filter = dispatcher->getFilter();
-  if (!filter)
+  if (!filter) {
     return;
+  }
 
   const auto numManifolds = dispatcher->getNumManifolds();
 
@@ -218,12 +220,14 @@ void filterOutCollisions(btCollisionWorld* world)
     const auto collObj0 = static_cast<BulletCollisionObject*>(userPtr0);
     const auto collObj1 = static_cast<BulletCollisionObject*>(userPtr1);
 
-    if (filter->ignoresCollision(collObj0, collObj1))
+    if (filter->ignoresCollision(collObj0, collObj1)) {
       manifoldsToRelease.push_back(contactManifold);
+    }
   }
 
-  for (const auto& manifold : manifoldsToRelease)
+  for (const auto& manifold : manifoldsToRelease) {
     dispatcher->clearManifold(manifold);
+  }
 }
 
 //==============================================================================
@@ -232,8 +236,9 @@ bool BulletCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
-  if (result)
+  if (result) {
     result->clear();
+  }
 
   if (0u == option.maxNumContacts) {
     DART_WARN(
@@ -243,8 +248,9 @@ bool BulletCollisionDetector::collide(
   }
 
   // Check if 'this' is the collision engine of 'group'.
-  if (!checkGroupValidity(this, group))
+  if (!checkGroupValidity(this, group)) {
     return false;
+  }
 
   auto castedGroup = static_cast<BulletCollisionGroup*>(group);
   auto collisionWorld = castedGroup->getBulletCollisionWorld();
@@ -275,8 +281,9 @@ bool BulletCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
-  if (result)
+  if (result) {
     result->clear();
+  }
 
   if (0u == option.maxNumContacts) {
     DART_WARN(
@@ -285,11 +292,13 @@ bool BulletCollisionDetector::collide(
     return false;
   }
 
-  if (!checkGroupValidity(this, group1))
+  if (!checkGroupValidity(this, group1)) {
     return false;
+  }
 
-  if (!checkGroupValidity(this, group2))
+  if (!checkGroupValidity(this, group2)) {
     return false;
+  }
 
   // Create a new collision group, merging the two groups into
   auto groupForFiltering
@@ -365,12 +374,14 @@ bool BulletCollisionDetector::raycast(
     const RaycastOption& option,
     RaycastResult* result)
 {
-  if (result)
+  if (result) {
     result->clear();
+  }
 
   // Check if 'this' is the collision engine of 'group'.
-  if (!checkGroupValidity(this, group))
+  if (!checkGroupValidity(this, group)) {
     return false;
+  }
 
   auto castedGroup = static_cast<BulletCollisionGroup*>(group);
   auto collisionWorld = castedGroup->getBulletCollisionWorld();
@@ -391,17 +402,20 @@ bool BulletCollisionDetector::raycast(
     collisionWorld->rayTest(btFrom, btTo, callback);
 
     if (result == nullptr) {
-      if (!callback.hasHit())
+      if (!callback.hasHit()) {
         return false;
+      }
 
-      if (!option.mFilter)
+      if (!option.mFilter) {
         return true;
+      }
 
       for (int i = 0; i < callback.m_collisionObjects.size(); ++i) {
         const auto* collObj = static_cast<BulletCollisionObject*>(
             callback.m_collisionObjects[i]->getUserPointer());
-        if (option.passesFilter(collObj))
+        if (option.passesFilter(collObj)) {
           return true;
+        }
       }
 
       return false;
@@ -431,8 +445,9 @@ bool BulletCollisionDetector::raycast(
     castedGroup->updateEngineData();
     collisionWorld->rayTest(btFrom, btTo, callback);
 
-    if (result == nullptr)
+    if (result == nullptr) {
       return callback.hasHit();
+    }
 
     if (callback.hasHit()) {
       reportRayHits(callback, option, *result);
@@ -495,8 +510,9 @@ std::shared_ptr<BulletCollisionShape>
 BulletCollisionDetector::claimBulletCollisionShape(
     const dynamics::ConstShapePtr& shape)
 {
-  if (!shape)
+  if (!shape) {
     return nullptr;
+  }
 
   const std::size_t currentVersion = shape->getVersion();
   const auto rawShape = shape.get();
@@ -525,16 +541,19 @@ BulletCollisionDetector::claimBulletCollisionShape(
 void BulletCollisionDetector::reclaimBulletCollisionShape(
     const dynamics::Shape* shape)
 {
-  if (!shape)
+  if (!shape) {
     return;
+  }
 
   const auto& search = mShapeMap.find(shape);
-  if (search == mShapeMap.end())
+  if (search == mShapeMap.end()) {
     return;
+  }
 
   const auto bulletShape = search->second.mShape.lock();
-  if (bulletShape && bulletShape.use_count() > 1)
+  if (bulletShape && bulletShape.use_count() > 1) {
     return;
+  }
 
   mShapeMap.erase(search);
 }
@@ -788,8 +807,9 @@ void reportContacts(
     for (auto j = 0; j < numContacts; ++j) {
       const auto& cp = contactManifold->getContactPoint(j);
 
-      if (!bullet::detail::shouldReportContact(cp, option))
+      if (!bullet::detail::shouldReportContact(cp, option)) {
         continue;
+      }
 
       result.addContact(convertContact(cp, collObj0, collObj1));
 
@@ -841,8 +861,9 @@ void reportRayHits(
   result.mRayHits.clear();
   result.mRayHits.reserve(1);
 
-  if (option.passesFilter(rayHit.mCollisionObject))
+  if (option.passesFilter(rayHit.mCollisionObject)) {
     result.mRayHits.emplace_back(rayHit);
+  }
 }
 
 //==============================================================================
@@ -870,12 +891,14 @@ void reportRayHits(
         callback.m_hitPointWorld[i],
         callback.m_hitNormalWorld[i],
         callback.m_hitFractions[i]);
-    if (option.passesFilter(rayHit.mCollisionObject))
+    if (option.passesFilter(rayHit.mCollisionObject)) {
       result.mRayHits.emplace_back(rayHit);
+    }
   }
 
-  if (option.mSortByClosest)
+  if (option.mSortByClosest) {
     std::ranges::sort(result.mRayHits, FractionLess());
+  }
 }
 
 //==============================================================================
@@ -1002,10 +1025,12 @@ std::unique_ptr<btCollisionShape> createBulletEllipsoidMultiSphere(
   const double maxRadius = radii.maxCoeff();
   constexpr double kMaxAspectRatioForMultiSphere = 4.0;
 
-  if (minRadius <= 0.0)
+  if (minRadius <= 0.0) {
     return nullptr;
-  if (maxRadius / minRadius > kMaxAspectRatioForMultiSphere)
+  }
+  if (maxRadius / minRadius > kMaxAspectRatioForMultiSphere) {
     return nullptr;
+  }
 
   std::vector<btVector3> centers;
   std::vector<btScalar> childRadii;
@@ -1021,8 +1046,9 @@ std::unique_ptr<btCollisionShape> createBulletEllipsoidMultiSphere(
         = std::min({radii[(i + 1) % 3], radii[(i + 2) % 3], axisRadius});
     const double delta = axisRadius - childRadius;
 
-    if (delta <= axisEpsilon)
+    if (delta <= axisEpsilon) {
       continue;
+    }
 
     Eigen::Vector3d offset = Eigen::Vector3d::Zero();
     offset[i] = delta;
@@ -1034,8 +1060,9 @@ std::unique_ptr<btCollisionShape> createBulletEllipsoidMultiSphere(
     childRadii.emplace_back(static_cast<btScalar>(childRadius));
   }
 
-  if (centers.empty())
+  if (centers.empty()) {
     return nullptr;
+  }
 
   return std::make_unique<btMultiSphereShape>(
       centers.data(), childRadii.data(), centers.size());

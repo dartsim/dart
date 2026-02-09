@@ -189,3 +189,59 @@ TEST(PgsSolver, RelaxationAffectsSinglePassUpdate)
   EXPECT_NEAR(xHalf[0], 0.5, 1e-12);
   EXPECT_NEAR(xHalf[1], 1.0, 1e-12);
 }
+
+//==============================================================================
+TEST(PgsSolver, RejectsInvalidRelaxation)
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(1, 1);
+  Eigen::VectorXd b(1);
+  b << 1.0;
+
+  LcpProblem problem(
+      A,
+      b,
+      Eigen::VectorXd::Zero(1),
+      Eigen::VectorXd::Constant(1, std::numeric_limits<double>::infinity()),
+      Eigen::VectorXi::Constant(1, -1));
+
+  PgsSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.maxIterations = 5;
+  options.warmStart = false;
+  options.relaxation = 2.5;
+
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(1);
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_FALSE(result.message.empty());
+}
+
+//==============================================================================
+TEST(PgsSolver, HandlesZeroDiagonalEntries)
+{
+  Eigen::Matrix2d A = Eigen::Matrix2d::Zero();
+  A(1, 1) = 2.0;
+  Eigen::Vector2d b;
+  b << 1.0, 0.5;
+
+  LcpProblem problem(
+      A,
+      b,
+      Eigen::Vector2d::Zero(),
+      Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity()),
+      Eigen::Vector2i::Constant(-1));
+
+  PgsSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.maxIterations = 3;
+  options.warmStart = false;
+  options.validateSolution = false;
+
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+  EXPECT_NEAR(x[0], 0.0, 1e-12);
+}

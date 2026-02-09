@@ -173,8 +173,9 @@ static void swapProblem(
   DART_ASSERT(
       n > 0 && i1 >= 0 && i2 >= 0 && i1 < n && i2 < n && nskip >= n
       && i1 <= i2);
-  if (i1 == i2)
+  if (i1 == i2) {
     return;
+  }
 
   swapRowsAndCols(A, n, i1, i2, nskip, do_fast_row_swaps);
 
@@ -224,14 +225,16 @@ template <typename Scalar>
 static void checkFactorization(
     PivotMatrix<Scalar>& A, Scalar* _L, Scalar* _d, int nC, int* C, int nskip)
 {
-  if (nC == 0)
+  if (nC == 0) {
     return;
+  }
 
   // get A1=A, copy the lower triangle to the upper triangle, get A2=A[C,C]
   dMatrix A1(nC, nC);
   for (int i = 0; i < nC; ++i) {
-    for (int j = 0; j <= i; ++j)
+    for (int j = 0; j <= i; ++j) {
       A1(i, j) = A1(j, i) = A[i][j];
+    }
   }
   dMatrix A2 = A1.select(nC, C, nC, C);
 
@@ -241,11 +244,13 @@ static void checkFactorization(
   // compute A3 = L*D*L'
   dMatrix L(nC, nC, _L, nskip, 1);
   dMatrix D(nC, nC);
-  for (int i = 0; i < nC; ++i)
+  for (int i = 0; i < nC; ++i) {
     D(i, i) = 1 / _d[i];
+  }
   L.clearUpperTriangle();
-  for (int i = 0; i < nC; ++i)
+  for (int i = 0; i < nC; ++i) {
     L(i, i) = 1;
+  }
   dMatrix A3 = L * D * L.transpose();
 
   // printf ("L=\n"); L.print(); printf ("\n");
@@ -267,15 +272,19 @@ static void checkPermutations(int i, int n, int nC, int nN, int* p, int* C)
 {
   int j, k;
   DART_ASSERT(nC >= 0 && nN >= 0 && (nC + nN) == i && i < n);
-  for (k = 0; k < i; k++)
+  for (k = 0; k < i; k++) {
     DART_ASSERT(p[k] >= 0 && p[k] < i);
-  for (k = i; k < n; k++)
+  }
+  for (k = i; k < n; k++) {
     DART_ASSERT(p[k] == k);
+  }
   for (j = 0; j < nC; j++) {
     int C_is_bad = 1;
-    for (k = 0; k < nC; k++)
-      if (C[k] == j)
+    for (k = 0; k < nC; k++) {
+      if (C[k] == j) {
         C_is_bad = 0;
+      }
+    }
     DART_ASSERT(C_is_bad == 0);
   }
 }
@@ -452,8 +461,9 @@ LCP<Scalar>::LCP(
   {
     int* p = m_p;
     const int n = m_n;
-    for (int k = 0; k < n; ++k)
+    for (int k = 0; k < n; ++k) {
       p[k] = k; // initially unpermuted
+    }
   }
 
   /*
@@ -491,8 +501,9 @@ LCP<Scalar>::LCP(
     const int n = m_n;
     const Scalar inf = ScalarTraits<Scalar>::inf();
     for (int k = m_nub; k < n; ++k) {
-      if (findex && findex[k] >= 0)
+      if (findex && findex[k] >= 0) {
         continue;
+      }
       if (lo[k] == -inf && hi[k] == inf) {
         swapProblem(
             m_A,
@@ -521,8 +532,9 @@ LCP<Scalar>::LCP(
     {
       Scalar* Lrow = m_L;
       const int nskip = m_nskip;
-      for (int j = 0; j < nub; Lrow += nskip, ++j)
+      for (int j = 0; j < nub; Lrow += nskip, ++j) {
         memcpy(Lrow, AROW(j), (j + 1) * sizeof(Scalar));
+      }
     }
     dFactorLDLT(m_L, m_d, nub, m_nskip);
     memcpy(m_x, m_b, nub * sizeof(Scalar));
@@ -530,8 +542,9 @@ LCP<Scalar>::LCP(
     SetZero(m_w, nub);
     {
       int* C = m_C;
-      for (int k = 0; k < nub; ++k)
+      for (int k = 0; k < nub; ++k) {
         C[k] = k;
+      }
     }
     m_nC = nub;
   }
@@ -586,8 +599,9 @@ void LCP<Scalar>::transfer_i_to_C(int i)
     {
       const int nC = m_nC;
       Scalar *const Ltgt = m_L + nC * m_nskip, *ell = m_ell;
-      for (int j = 0; j < nC; ++j)
+      for (int j = 0; j < nC; ++j) {
         Ltgt[j] = ell[j];
+      }
     }
     const int nC = m_nC;
     m_d[nC] = reciprocal(AROW(i)[i] - Dot(m_ell, m_Dell, nC));
@@ -617,8 +631,9 @@ void LCP<Scalar>::transfer_i_to_C(int i)
 
   #ifdef DEBUG_LCP
   checkFactorization(m_A, m_L, m_d, m_nC, m_C, m_nskip);
-  if (i < (m_n - 1))
+  if (i < (m_n - 1)) {
     checkPermutations(i + 1, m_n, m_nC, m_nN, m_p, m_C);
+  }
   #endif
 }
 
@@ -635,15 +650,18 @@ void LCP<Scalar>::transfer_i_from_N_to_C(int i)
         // if nub>0, initial part of aptr unpermuted
         const int nub = m_nub;
         int j = 0;
-        for (; j < nub; ++j)
+        for (; j < nub; ++j) {
           Dell[j] = aptr[j];
+        }
         const int nC = m_nC;
-        for (; j < nC; ++j)
+        for (; j < nC; ++j) {
           Dell[j] = aptr[C[j]];
+        }
   #else
         const int nC = m_nC;
-        for (int j = 0; j < nC; ++j)
+        for (int j = 0; j < nC; ++j) {
           Dell[j] = aptr[C[j]];
+        }
   #endif
       }
       dSolveL1(m_L, m_Dell, m_nC, m_nskip);
@@ -651,8 +669,9 @@ void LCP<Scalar>::transfer_i_from_N_to_C(int i)
         const int nC = m_nC;
         Scalar* const Ltgt = m_L + nC * m_nskip;
         Scalar *ell = m_ell, *Dell = m_Dell, *d = m_d;
-        for (int j = 0; j < nC; ++j)
+        for (int j = 0; j < nC; ++j) {
           Ltgt[j] = ell[j] = Dell[j] * d[j];
+        }
       }
       const int nC = m_nC;
       m_d[nC] = reciprocal(AROW(i)[i] - Dot(m_ell, m_Dell, nC));
@@ -722,8 +741,9 @@ void LCP<Scalar>::transfer_i_from_C_to_N(int i, void* tmpbuf)
           k = last_idx;
         }
         C[k] = C[j];
-        if (j < (nC - 1))
+        if (j < (nC - 1)) {
           memmove(C + j, C + j + 1, (nC - j - 1) * sizeof(int));
+        }
         break;
       }
     }
@@ -778,12 +798,14 @@ void LCP<Scalar>::pN_plusequals_ANi(Scalar* p, int i, int sign)
   Scalar* ptgt = p + nC;
   if (sign > 0) {
     const int nN = m_nN;
-    for (int j = 0; j < nN; ++j)
+    for (int j = 0; j < nN; ++j) {
       ptgt[j] += aptr[j];
+    }
   } else {
     const int nN = m_nN;
-    for (int j = 0; j < nN; ++j)
+    for (int j = 0; j < nN; ++j) {
       ptgt[j] -= aptr[j];
+    }
   }
 }
 
@@ -825,45 +847,52 @@ void LCP<Scalar>::solve1(Scalar* a, int i, int dir, int only_transfer)
       // if nub>0, initial part of aptr[] is guaranteed unpermuted
       const int nub = m_nub;
       int j = 0;
-      for (; j < nub; ++j)
+      for (; j < nub; ++j) {
         Dell[j] = aptr[j];
+      }
       const int nC = m_nC;
-      for (; j < nC; ++j)
+      for (; j < nC; ++j) {
         Dell[j] = aptr[C[j]];
+      }
   #else
       const int nC = m_nC;
-      for (int j = 0; j < nC; ++j)
+      for (int j = 0; j < nC; ++j) {
         Dell[j] = aptr[C[j]];
+      }
   #endif
     }
     dSolveL1(m_L, m_Dell, m_nC, m_nskip);
     {
       Scalar *ell = m_ell, *Dell = m_Dell, *d = m_d;
       const int nC = m_nC;
-      for (int j = 0; j < nC; ++j)
+      for (int j = 0; j < nC; ++j) {
         ell[j] = Dell[j] * d[j];
+      }
     }
 
     if (!only_transfer) {
       Scalar *tmp = m_tmp, *ell = m_ell;
       {
         const int nC = m_nC;
-        for (int j = 0; j < nC; ++j)
+        for (int j = 0; j < nC; ++j) {
           tmp[j] = ell[j];
+        }
       }
       dSolveL1T(m_L, tmp, m_nC, m_nskip);
       if (dir > 0) {
         int* C = m_C;
         Scalar* tmp = m_tmp;
         const int nC = m_nC;
-        for (int j = 0; j < nC; ++j)
+        for (int j = 0; j < nC; ++j) {
           a[C[j]] = -tmp[j];
+        }
       } else {
         int* C = m_C;
         Scalar* tmp = m_tmp;
         const int nC = m_nC;
-        for (int j = 0; j < nC; ++j)
+        for (int j = 0; j < nC; ++j) {
           a[C[j]] = tmp[j];
+        }
       }
     }
   }
@@ -878,16 +907,18 @@ void LCP<Scalar>::unpermute()
     Scalar *x = m_x, *tmp = m_tmp;
     const int* p = m_p;
     const int n = m_n;
-    for (int j = 0; j < n; ++j)
+    for (int j = 0; j < n; ++j) {
       x[p[j]] = tmp[j];
+    }
   }
   {
     memcpy(m_tmp, m_w, m_n * sizeof(Scalar));
     Scalar *w = m_w, *tmp = m_tmp;
     const int* p = m_p;
     const int n = m_n;
-    for (int j = 0; j < n; ++j)
+    for (int j = 0; j < n; ++j) {
       w[p[j]] = tmp[j];
+    }
   }
 }
 

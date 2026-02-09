@@ -133,10 +133,12 @@ void CouplerConstraint::update()
     double timeStep = mJoint->getSkeleton()->getTimeStep();
     double velLower = mJoint->getVelocityLowerLimit(i);
     double velUpper = mJoint->getVelocityUpperLimit(i);
-    if (!std::isfinite(velLower))
+    if (!std::isfinite(velLower)) {
       velLower = -kDefaultVelocityLimit;
-    if (!std::isfinite(velUpper))
+    }
+    if (!std::isfinite(velUpper)) {
       velUpper = kDefaultVelocityLimit;
+    }
     double qError
         = mimicProp.mReferenceJoint->getPosition(mimicProp.mReferenceDofIndex)
               * mimicProp.mMultiplier
@@ -150,10 +152,12 @@ void CouplerConstraint::update()
     if (mNegativeVelocityError[i] != 0.0) {
       double upper = mJoint->getForceUpperLimit(i);
       double lower = mJoint->getForceLowerLimit(i);
-      if (!std::isfinite(upper))
+      if (!std::isfinite(upper)) {
         upper = kDefaultForceLimit;
-      if (!std::isfinite(lower))
+      }
+      if (!std::isfinite(lower)) {
         lower = -kDefaultForceLimit;
+      }
 
       mUpperBound[i] = upper * timeStep;
       mLowerBound[i] = lower * timeStep;
@@ -178,8 +182,9 @@ void CouplerConstraint::getInformation(ConstraintInfo* lcp)
   std::size_t index = 0;
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i) {
-    if (mActive[i] == false)
+    if (mActive[i] == false) {
       continue;
+    }
 
     DART_ASSERT(lcp->w[index] == 0.0);
 
@@ -189,10 +194,11 @@ void CouplerConstraint::getInformation(ConstraintInfo* lcp)
 
     DART_ASSERT(lcp->findex[index] == -1);
 
-    if (mLifeTime[i])
+    if (mLifeTime[i]) {
       lcp->x[index] = mOldX[i];
-    else
+    } else {
       lcp->x[index] = 0.0;
+    }
 
     index++;
   }
@@ -208,8 +214,9 @@ void CouplerConstraint::applyUnitImpulse(std::size_t index)
 
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i) {
-    if (mActive[i] == false)
+    if (mActive[i] == false) {
       continue;
+    }
 
     if (localIndex == index) {
       const auto& mimicProp = mMimicProps[i];
@@ -225,8 +232,9 @@ void CouplerConstraint::applyUnitImpulse(std::size_t index)
       DART_ASSERT(referenceBodyNode != nullptr);
 
       dependentSkeleton->clearConstraintImpulses();
-      if (referenceSkeleton != dependentSkeleton.get())
+      if (referenceSkeleton != dependentSkeleton.get()) {
         referenceSkeleton->clearConstraintImpulses();
+      }
 
       double impulse = 1.0;
       mJoint->setConstraintImpulse(i, impulse);
@@ -258,13 +266,15 @@ void CouplerConstraint::getVelocityChange(double* delVel, bool withCfm)
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i) {
-    if (mActive[i] == false)
+    if (mActive[i] == false) {
       continue;
+    }
 
-    if (mJoint->getSkeleton()->isImpulseApplied())
+    if (mJoint->getSkeleton()->isImpulseApplied()) {
       delVel[localIndex] = mJoint->getVelocityChange(i);
-    else
+    } else {
       delVel[localIndex] = 0.0;
+    }
 
     ++localIndex;
   }
@@ -305,8 +315,9 @@ void CouplerConstraint::applyImpulse(double* lambda)
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i) {
-    if (mActive[i] == false)
+    if (mActive[i] == false) {
       continue;
+    }
 
     mJoint->setConstraintImpulse(
         i, mJoint->getConstraintImpulse(i) + lambda[localIndex]);
@@ -335,49 +346,59 @@ dynamics::SkeletonPtr CouplerConstraint::getRootSkeleton() const
 //==============================================================================
 void CouplerConstraint::uniteSkeletons()
 {
-  if (mJoint == nullptr || mBodyNode == nullptr)
+  if (mJoint == nullptr || mBodyNode == nullptr) {
     return;
+  }
 
-  if (!mBodyNode->isReactive())
+  if (!mBodyNode->isReactive()) {
     return;
+  }
 
   auto dependentSkeleton = mJoint->getSkeleton();
-  if (!dependentSkeleton)
+  if (!dependentSkeleton) {
     return;
+  }
 
   auto dependentRoot = ConstraintBase::compressPath(dependentSkeleton);
 
   for (std::size_t i = 0; i < mJoint->getNumDofs(); ++i) {
-    if (i >= mMimicProps.size())
+    if (i >= mMimicProps.size()) {
       break;
+    }
 
     const auto& mimicProp = mMimicProps[i];
 
     if (mJoint->getActuatorType(i) != dynamics::Joint::MIMIC
-        || mimicProp.mReferenceJoint == nullptr)
+        || mimicProp.mReferenceJoint == nullptr) {
       continue;
+    }
 
     auto referenceBody = mimicProp.mReferenceJoint->getChildBodyNode();
-    if (referenceBody == nullptr || !referenceBody->isReactive())
+    if (referenceBody == nullptr || !referenceBody->isReactive()) {
       continue;
+    }
 
     auto referenceSkeletonConst = mimicProp.mReferenceJoint->getSkeleton();
-    if (!referenceSkeletonConst)
+    if (!referenceSkeletonConst) {
       continue;
+    }
 
     auto referenceSkeleton
         = std::const_pointer_cast<dynamics::Skeleton>(referenceSkeletonConst);
-    if (!referenceSkeleton)
+    if (!referenceSkeleton) {
       continue;
+    }
 
-    if (referenceSkeleton == dependentSkeleton)
+    if (referenceSkeleton == dependentSkeleton) {
       continue;
+    }
 
     auto referenceRoot = ConstraintBase::compressPath(referenceSkeleton);
     dependentRoot = ConstraintBase::compressPath(dependentSkeleton);
 
-    if (dependentRoot == referenceRoot)
+    if (dependentRoot == referenceRoot) {
       continue;
+    }
 
     if (dependentRoot->mUnionSize < referenceRoot->mUnionSize) {
       dependentRoot->mUnionRootSkeleton = referenceRoot;

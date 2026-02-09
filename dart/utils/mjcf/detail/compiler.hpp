@@ -76,6 +76,7 @@ public:
   bool getFuseStatic() const;
   InertiaFromGeom getInertiaFromGeom() const;
   const Eigen::Vector2i& getInertiaGroupRange() const;
+  bool getAutoLimits() const;
 
 private:
   // Private members used by MujocoModel class
@@ -103,6 +104,7 @@ private:
   bool mFuseStatic{false};
   InertiaFromGeom mInertiaFromGeom{InertiaFromGeom::IFG_AUTO};
   Eigen::Vector2i mInertiaGroupRange{Eigen::Vector2i(0, 5)};
+  bool mAutoLimits{true};
 };
 
 } // namespace detail

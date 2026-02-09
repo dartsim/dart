@@ -61,8 +61,9 @@ void randomize_transform(
   tf.setIdentity();
   tf.translate(r);
 
-  if (theta.norm() > 0)
+  if (theta.norm() > 0) {
     tf.rotate(Eigen::AngleAxisd(theta.norm(), theta.normalized()));
+  }
 }
 
 void randomize_transforms(common::aligned_vector<Eigen::Isometry3d>& tfs)
@@ -179,8 +180,9 @@ TEST(Frames, ForwardKinematicsChain)
   }
 
   Eigen::Isometry3d expectation(Eigen::Isometry3d::Identity());
-  for (std::size_t j = 0; j < frames.size(); ++j)
+  for (std::size_t j = 0; j < frames.size(); ++j) {
     expectation = expectation * tfs[j];
+  }
 
   EXPECT_TRANSFORM_NEAR(frames.back()->getTransform(), expectation, tolerance);
 
@@ -197,15 +199,16 @@ TEST(Frames, ForwardKinematicsChain)
       SimpleFrame* F = frames[i];
       F->setRelativeSpatialVelocity(v_rels[i]);
 
-      if (i > 0)
+      if (i > 0) {
         compute_spatial_velocity(
             v_total[i - 1], v_rels[i], F->getRelativeTransform(), v_total[i]);
-      else
+      } else {
         compute_spatial_velocity(
             Eigen::Vector6d::Zero(),
             v_rels[i],
             F->getRelativeTransform(),
             v_total[i]);
+      }
     }
 
     for (std::size_t i = 0; i < frames.size(); ++i) {
@@ -237,7 +240,7 @@ TEST(Frames, ForwardKinematicsChain)
       Eigen::Isometry3d tf = i > 0 ? frames[i - 1]->getTransform()
                                    : Eigen::Isometry3d::Identity();
 
-      if (i > 0)
+      if (i > 0) {
         compute_velocity(
             v_total[i - 1],
             w_total[i - 1],
@@ -247,7 +250,7 @@ TEST(Frames, ForwardKinematicsChain)
             tf,
             v_total[i],
             w_total[i]);
-      else
+      } else {
         compute_velocity(
             Eigen::Vector3d::Zero(),
             Eigen::Vector3d::Zero(),
@@ -257,6 +260,7 @@ TEST(Frames, ForwardKinematicsChain)
             tf,
             v_total[i],
             w_total[i]);
+      }
     }
 
     for (std::size_t i = 0; i < frames.size(); ++i) {

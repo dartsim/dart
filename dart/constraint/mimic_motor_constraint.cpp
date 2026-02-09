@@ -170,10 +170,12 @@ void MimicMotorConstraint::update()
     double timeStep = mJoint->getSkeleton()->getTimeStep();
     double velLower = mJoint->getVelocityLowerLimit(i);
     double velUpper = mJoint->getVelocityUpperLimit(i);
-    if (!std::isfinite(velLower))
+    if (!std::isfinite(velLower)) {
       velLower = -kDefaultVelocityLimit;
-    if (!std::isfinite(velUpper))
+    }
+    if (!std::isfinite(velUpper)) {
       velUpper = kDefaultVelocityLimit;
+    }
     double qError
         = mimicProp.mReferenceJoint->getPosition(mimicProp.mReferenceDofIndex)
               * mimicProp.mMultiplier
@@ -188,10 +190,12 @@ void MimicMotorConstraint::update()
       // Note that we are computing impulse not force
       double upper = mJoint->getForceUpperLimit(i);
       double lower = mJoint->getForceLowerLimit(i);
-      if (!std::isfinite(upper))
+      if (!std::isfinite(upper)) {
         upper = kDefaultForceLimit;
-      if (!std::isfinite(lower))
+      }
+      if (!std::isfinite(lower)) {
         lower = -kDefaultForceLimit;
+      }
 
       mUpperBound[i] = upper * timeStep;
       mLowerBound[i] = lower * timeStep;
@@ -216,8 +220,9 @@ void MimicMotorConstraint::getInformation(ConstraintInfo* lcp)
   std::size_t index = 0;
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i) {
-    if (mActive[i] == false)
+    if (mActive[i] == false) {
       continue;
+    }
 
     DART_ASSERT(lcp->w[index] == 0.0);
 
@@ -227,10 +232,11 @@ void MimicMotorConstraint::getInformation(ConstraintInfo* lcp)
 
     DART_ASSERT(lcp->findex[index] == -1);
 
-    if (mLifeTime[i])
+    if (mLifeTime[i]) {
       lcp->x[index] = mOldX[i];
-    else
+    } else {
       lcp->x[index] = 0.0;
+    }
 
     index++;
   }
@@ -246,8 +252,9 @@ void MimicMotorConstraint::applyUnitImpulse(std::size_t index)
 
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i) {
-    if (mActive[i] == false)
+    if (mActive[i] == false) {
       continue;
+    }
 
     if (localIndex == index) {
       skeleton->clearConstraintImpulses();
@@ -271,13 +278,15 @@ void MimicMotorConstraint::getVelocityChange(double* delVel, bool withCfm)
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i) {
-    if (mActive[i] == false)
+    if (mActive[i] == false) {
       continue;
+    }
 
-    if (mJoint->getSkeleton()->isImpulseApplied())
+    if (mJoint->getSkeleton()->isImpulseApplied()) {
       delVel[localIndex] = mJoint->getVelocityChange(i);
-    else
+    } else {
       delVel[localIndex] = 0.0;
+    }
 
     ++localIndex;
   }
@@ -310,8 +319,9 @@ void MimicMotorConstraint::applyImpulse(double* lambda)
   std::size_t localIndex = 0;
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i) {
-    if (mActive[i] == false)
+    if (mActive[i] == false) {
       continue;
+    }
 
     mJoint->setConstraintImpulse(
         i, mJoint->getConstraintImpulse(i) + lambda[localIndex]);

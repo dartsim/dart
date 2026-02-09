@@ -51,8 +51,9 @@ double sanitizeParsedValue(double value)
   constexpr double roundingScale = 1e6;
   constexpr double tolerance = 1e-7;
   const double rounded = std::round(value * roundingScale) / roundingScale;
-  if (std::abs(value - rounded) <= tolerance)
+  if (std::abs(value - rounded) <= tolerance) {
     return rounded;
+  }
   return value;
 }
 
@@ -71,8 +72,9 @@ std::string toLowerCopy(std::string_view text)
 std::string trimCopy(std::string_view text)
 {
   const auto start = text.find_first_not_of(" \t\r\n");
-  if (start == std::string_view::npos)
+  if (start == std::string_view::npos) {
     return std::string();
+  }
 
   const auto end = text.find_last_not_of(" \t\r\n");
   return std::string(text.substr(start, end - start + 1));
@@ -80,13 +82,15 @@ std::string trimCopy(std::string_view text)
 
 std::string getElementText(const ElementPtr& element)
 {
-  if (!element)
+  if (!element) {
     return std::string();
+  }
 
   sdf::Errors errors;
   const auto serialized = element->ToString(errors, "");
-  if (!errors.empty())
+  if (!errors.empty()) {
     return std::string();
+  }
 
   const auto open = serialized.find('>');
   const auto close = serialized.rfind('<');
@@ -100,8 +104,9 @@ std::string getElementText(const ElementPtr& element)
 
 std::string getChildElementText(const ElementPtr& parent, std::string_view name)
 {
-  if (!parent || name.empty())
+  if (!parent || name.empty()) {
     return std::string();
+  }
 
   const auto child = getElement(parent, name);
   return getElementText(child);
@@ -113,14 +118,16 @@ std::string getValueText(
     const sdf::ParamPtr& param)
 {
   const auto directText = getChildElementText(parentElement, name);
-  if (!directText.empty())
+  if (!directText.empty()) {
     return directText;
+  }
 
   if (param) {
     try {
       std::string text = trimCopy(param->GetAsString());
-      if (text.find('<') == std::string::npos)
+      if (text.find('<') == std::string::npos) {
         return text;
+      }
     } catch (const std::exception& e) {
       DART_WARN(
           "[SdfParser] Failed to parse element <{}> under <{}> as string: {}",
@@ -136,12 +143,14 @@ std::string getValueText(
 sdf::ParamPtr getAttributeParam(
     const ElementPtr& element, std::string_view attributeName)
 {
-  if (!element || attributeName.empty())
+  if (!element || attributeName.empty()) {
     return nullptr;
+  }
 
   const std::string attributeNameString(attributeName);
-  if (!element->HasAttribute(attributeNameString))
+  if (!element->HasAttribute(attributeNameString)) {
     return nullptr;
+  }
 
   return element->GetAttribute(attributeNameString);
 }
@@ -149,16 +158,19 @@ sdf::ParamPtr getAttributeParam(
 sdf::ParamPtr getChildValueParam(
     const ElementPtr& parentElement, std::string_view name)
 {
-  if (!parentElement || name.empty())
+  if (!parentElement || name.empty()) {
     return nullptr;
+  }
 
   const std::string nameString(name);
-  if (!parentElement->HasElement(nameString))
+  if (!parentElement->HasElement(nameString)) {
     return nullptr;
+  }
 
   const auto child = parentElement->GetElement(nameString);
-  if (!child)
+  if (!child) {
     return nullptr;
+  }
 
   return child->GetValue();
 }
@@ -203,12 +215,14 @@ bool hasElement(const ElementPtr& parent, std::string_view name)
 
 ElementPtr getElement(const ElementPtr& parent, std::string_view name)
 {
-  if (!parent || name.empty())
+  if (!parent || name.empty()) {
     return nullptr;
+  }
 
   const std::string nameString(name);
-  if (!parent->HasElement(nameString))
+  if (!parent->HasElement(nameString)) {
     return nullptr;
+  }
 
   return parent->GetElement(nameString);
 }
@@ -238,8 +252,9 @@ std::string getAttributeString(
   }
 
   std::string value;
-  if (attribute->Get(value))
+  if (attribute->Get(value)) {
     return value;
+  }
 
   try {
     return attribute->GetAsString();
@@ -257,12 +272,14 @@ std::string getValueString(
     const ElementPtr& parentElement, std::string_view name)
 {
   const auto param = getChildValueParam(parentElement, name);
-  if (!param)
+  if (!param) {
     return std::string();
+  }
 
   std::string value;
-  if (param->Get(value))
+  if (param->Get(value)) {
     return value;
+  }
 
   try {
     return param->GetAsString();
@@ -279,8 +296,9 @@ std::string getValueString(
 bool getValueBool(const ElementPtr& parentElement, std::string_view name)
 {
   bool value = false;
-  if (readScalarParam(getChildValueParam(parentElement, name), value))
+  if (readScalarParam(getChildValueParam(parentElement, name), value)) {
     return value;
+  }
 
   DART_WARN(
       "[SdfParser] Failed to parse element <{}> under <{}> as bool.",
@@ -293,8 +311,9 @@ unsigned int getValueUInt(
     const ElementPtr& parentElement, std::string_view name)
 {
   unsigned int value = 0u;
-  if (readScalarParam(getChildValueParam(parentElement, name), value))
+  if (readScalarParam(getChildValueParam(parentElement, name), value)) {
     return value;
+  }
 
   DART_WARN(
       "[SdfParser] Failed to parse element <{}> under <{}> as unsigned int.",
@@ -306,8 +325,9 @@ unsigned int getValueUInt(
 double getValueDouble(const ElementPtr& parentElement, std::string_view name)
 {
   double value = 0.0;
-  if (readScalarParam(getChildValueParam(parentElement, name), value))
+  if (readScalarParam(getChildValueParam(parentElement, name), value)) {
     return value;
+  }
 
   DART_WARN(
       "[SdfParser] Failed to parse element <{}> under <{}> as double.",
@@ -321,16 +341,19 @@ Eigen::Vector2d getValueVector2d(
 {
   Eigen::Vector2d result = Eigen::Vector2d::Zero();
   const auto param = getChildValueParam(parentElement, name);
-  if (!param)
+  if (!param) {
     return result;
+  }
 
   gz::math::Vector2d vec2;
-  if (param->Get(vec2))
+  if (param->Get(vec2)) {
     return toEigen(vec2);
+  }
 
   const auto text = getValueText(parentElement, name, param);
-  if (text.empty())
+  if (text.empty()) {
     return result;
+  }
 
   const auto values = parseArray<double>(text);
   if (values.size() >= 2) {
@@ -351,16 +374,19 @@ Eigen::Vector3d getValueVector3d(
 {
   Eigen::Vector3d result = Eigen::Vector3d::Zero();
   const auto param = getChildValueParam(parentElement, name);
-  if (!param)
+  if (!param) {
     return result;
+  }
 
   gz::math::Vector3d vec3;
-  if (param->Get(vec3))
+  if (param->Get(vec3)) {
     return toEigen(vec3);
+  }
 
   const auto text = getValueText(parentElement, name, param);
-  if (text.empty())
+  if (text.empty()) {
     return result;
+  }
 
   const auto values = parseArray<double>(text);
   if (values.size() >= 3) {
@@ -381,12 +407,14 @@ Eigen::Vector3i getValueVector3i(
 {
   Eigen::Vector3i result = Eigen::Vector3i::Zero();
   const auto param = getChildValueParam(parentElement, name);
-  if (!param)
+  if (!param) {
     return result;
+  }
 
   const auto text = getValueText(parentElement, name, param);
-  if (text.empty())
+  if (text.empty()) {
     return result;
+  }
 
   const auto values = parseArray<int>(text);
   if (values.size() >= 3) {
@@ -407,8 +435,9 @@ Eigen::VectorXd getValueVectorXd(
     const ElementPtr& parentElement, std::string_view name)
 {
   const auto param = getChildValueParam(parentElement, name);
-  if (!param)
+  if (!param) {
     return Eigen::VectorXd();
+  }
 
   const auto text = getValueText(parentElement, name, param);
   if (!text.empty()) {
@@ -423,8 +452,9 @@ Eigen::VectorXd getValueVectorXd(
   }
 
   gz::math::Color color;
-  if (param->Get(color))
+  if (param->Get(color)) {
     return colorToVector(color);
+  }
 
   gz::math::Vector3d vec3;
   if (param->Get(vec3)) {
@@ -441,16 +471,19 @@ Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(
     const ElementPtr& parentElement, std::string_view name)
 {
   const auto param = getChildValueParam(parentElement, name);
-  if (!param)
+  if (!param) {
     return Eigen::Isometry3d::Identity();
+  }
 
   gz::math::Pose3d pose;
-  if (param->Get(pose))
+  if (param->Get(pose)) {
     return poseToIsometry(pose);
+  }
 
   const auto text = getValueText(parentElement, name, param);
-  if (text.empty())
+  if (text.empty()) {
     return Eigen::Isometry3d::Identity();
+  }
 
   const auto values = parseArray<double>(text);
   if (values.size() == 6) {
@@ -481,8 +514,9 @@ ElementEnumerator::ElementEnumerator(
 
 bool ElementEnumerator::next()
 {
-  if (!mParent)
+  if (!mParent) {
     return false;
+  }
 
   if (!mInitialized) {
     mCurrent = getElement(mParent, mName);

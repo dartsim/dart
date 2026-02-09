@@ -36,6 +36,8 @@
 #include "dart/common/macros.hpp"
 #include "dart/math/helpers.hpp"
 
+#include <dart/simd/simd.hpp>
+
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
@@ -448,11 +450,12 @@ Eigen::Matrix3d expMapRot(const Eigen::Vector3d& _q)
   Eigen::Matrix3d qss = math::makeSkewSymmetric(_q);
   Eigen::Matrix3d qss2 = qss * qss;
 
-  if (theta < EPSILON_EXPMAP_THETA)
+  if (theta < EPSILON_EXPMAP_THETA) {
     R = Eigen::Matrix3d::Identity() + qss + 0.5 * qss2;
-  else
+  } else {
     R = Eigen::Matrix3d::Identity() + (sin(theta) / theta) * qss
         + ((1 - cos(theta)) / (theta * theta)) * qss2;
+  }
 
   return R;
 }
@@ -465,11 +468,12 @@ Eigen::Matrix3d expMapJac(const Eigen::Vector3d& _q)
   Eigen::Matrix3d qss = math::makeSkewSymmetric(_q);
   Eigen::Matrix3d qss2 = qss * qss;
 
-  if (theta < EPSILON_EXPMAP_THETA)
+  if (theta < EPSILON_EXPMAP_THETA) {
     J = Eigen::Matrix3d::Identity() + 0.5 * qss + (1.0 / 6.0) * qss2;
-  else
+  } else {
     J = Eigen::Matrix3d::Identity() + ((1 - cos(theta)) / (theta * theta)) * qss
         + ((theta - sin(theta)) / (theta * theta * theta)) * qss2;
+  }
 
   return J;
 }
@@ -1462,9 +1466,11 @@ Eigen::Matrix3d parallelAxisTheorem(
 {
   const Eigen::Vector3d& p = _comShift;
   Eigen::Matrix3d result(_original);
-  for (std::size_t i = 0; i < 3; ++i)
-    for (std::size_t j = 0; j < 3; ++j)
+  for (std::size_t i = 0; i < 3; ++i) {
+    for (std::size_t j = 0; j < 3; ++j) {
       result(i, j) += _mass * (delta(i, j) * p.dot(p) - p(i) * p(j));
+    }
+  }
 
   return result;
 }
@@ -1476,7 +1482,7 @@ bool verifyRotation(const Eigen::Matrix3d& _T)
 
 bool verifyTransform(const Eigen::Isometry3d& _T)
 {
-  return !isNan(_T.matrix().topRows<3>())
+  return !isNan(_T.matrix().topRows<3>()) && !isInf(_T.matrix().topRows<3>())
          && std::abs(_T.linear().determinant() - 1.0) <= DART_EPSILON;
 }
 
@@ -1519,8 +1525,9 @@ Eigen::Matrix3d computeRotation(
 
   // Second axis
   Eigen::Vector3d axis1 = axis0.cross(Eigen::Vector3d::UnitX());
-  if (axis1.norm() < DART_EPSILON)
+  if (axis1.norm() < DART_EPSILON) {
     axis1 = axis0.cross(Eigen::Vector3d::UnitY());
+  }
   axis1.normalize();
 
   // Third axis
@@ -1533,7 +1540,10 @@ Eigen::Matrix3d computeRotation(
   result.col(++index % 3) = axis1;
   result.col(++index % 3) = axis2;
 
-  DART_ASSERT(verifyRotation(result));
+  if (!verifyRotation(result)) {
+    DART_WARN("[math::computeRotation] Non-finite rotation result.");
+    result = Eigen::Matrix3d::Identity();
+  }
 
   return result;
 }
@@ -1550,7 +1560,10 @@ Eigen::Isometry3d computeTransform(
   result.translation() = translation;
 
   // Verification
-  DART_ASSERT(verifyTransform(result));
+  if (!verifyTransform(result)) {
+    DART_WARN("[math::computeTransform] Non-finite transform result.");
+    result = Eigen::Isometry3d::Identity();
+  }
 
   return result;
 }
@@ -1575,8 +1588,9 @@ SupportPolygon computeSupportPolgyon(
 {
   SupportPolygon polygon;
   polygon.reserve(geometry.size());
-  for (const Eigen::Vector3d& v : geometry)
+  for (const Eigen::Vector3d& v : geometry) {
     polygon.push_back(Eigen::Vector2d(v.dot(axis1), v.dot(axis2)));
+  }
 
   return computeConvexHull(originalIndices, polygon);
 }
@@ -1626,11 +1640,13 @@ Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull)
     return invalid;
   }
 
-  if (_convexHull.size() == 1)
+  if (_convexHull.size() == 1) {
     return _convexHull[0];
+  }
 
-  if (_convexHull.size() == 2)
+  if (_convexHull.size() == 2) {
     return (_convexHull[0] + _convexHull[1]) / 2.0;
+  }
 
   Eigen::Vector2d c(0, 0);
   Eigen::Vector2d intersect;
@@ -1690,8 +1706,9 @@ Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull)
   // A negative area means we have a bug in the code
   DART_ASSERT(area >= 0.0);
 
-  if (area == 0.0)
+  if (area == 0.0) {
     return c;
+  }
 
   return c / area;
 }
@@ -1715,8 +1732,9 @@ SupportPolygon computeConvexHull(
 
   if (points.size() <= 3) {
     // Three or fewer points is already a convex hull
-    for (std::size_t i = 0; i < points.size(); ++i)
+    for (std::size_t i = 0; i < points.size(); ++i) {
       originalIndices.push_back(i);
+    }
 
     SupportPolygon hull;
     hull.reserve(points.size());
@@ -1768,13 +1786,15 @@ SupportPolygon computeConvexHull(
     // three or fewer unique points
     originalIndices.reserve(angles.size() + 1);
     originalIndices.push_back(lowestIndex);
-    for (std::size_t i = 0; i < angles.size(); ++i)
+    for (std::size_t i = 0; i < angles.size(); ++i) {
       originalIndices.push_back(angles[i].mIndex);
+    }
 
     SupportPolygon polygon;
     polygon.reserve(originalIndices.size());
-    for (std::size_t index : originalIndices)
+    for (std::size_t index : originalIndices) {
       polygon.push_back(points[index]);
+    }
 
     return polygon;
   }
@@ -1809,13 +1829,15 @@ SupportPolygon computeConvexHull(
   const Eigen::Vector2d& p1 = points[edge.back()];
   const Eigen::Vector2d& p2 = points[angles.back().mIndex];
   const Eigen::Vector2d& p3 = points[lowestIndex];
-  if (isLeftTurn(p1, p2, p3))
+  if (isLeftTurn(p1, p2, p3)) {
     edge.push_back(angles.back().mIndex);
+  }
 
   SupportPolygon polygon;
   polygon.reserve(edge.size());
-  for (std::size_t index : edge)
+  for (std::size_t index : edge) {
     polygon.push_back(points[index]);
+  }
 
   // Note that we do not need to fill in originalIndices, because "edge" is a
   // non-const reference to originalIndices and it has been filled in with the
@@ -1849,10 +1871,11 @@ IntersectionResult computeIntersection(
               + dx_a * dx_b * (b1[1] - a1[1]))
              / (dx_b * dy_a - dx_a * dy_b);
 
-  if (dx_a != 0.0)
+  if (dx_a != 0.0) {
     point[1] = dy_a / dx_a * (point[0] - a1[0]) + a1[1];
-  else
+  } else {
     point[1] = dy_b / dx_b * (point[0] - b1[0]) + b1[1];
+  }
 
   for (std::size_t i = 0; i < 2; ++i) {
     if ((point[i] < std::min(a1[i], a2[i]))
@@ -1881,27 +1904,31 @@ bool isInsideSupportPolygon(
     const SupportPolygon& _support,
     bool _includeEdge)
 {
-  if (_support.size() == 0)
+  if (_support.size() == 0) {
     return false;
+  }
 
   if (_support.size() == 1) {
-    if (!_includeEdge)
+    if (!_includeEdge) {
       return false;
+    }
 
     return (_support[0] == _p);
   }
 
   if (_support.size() == 2) {
-    if (!_includeEdge)
+    if (!_includeEdge) {
       return false;
+    }
 
     const Eigen::Vector2d& p1 = _support[0];
     const Eigen::Vector2d& p2 = _support[1];
     const Eigen::Vector2d& p3 = _p;
 
     if (cross(p2 - p1, p3 - p1) == 0) {
-      if (p3[0] < std::min(p1[0], p2[0]) || std::max(p1[0], p2[0]) < p3[0])
+      if (p3[0] < std::min(p1[0], p2[0]) || std::max(p1[0], p2[0]) < p3[0]) {
         return false;
+      }
 
       return true;
     }
@@ -1915,15 +1942,18 @@ bool isInsideSupportPolygon(
     const Eigen::Vector2d& p3 = _p;
 
     double crossProduct = cross(p2 - p1, p3 - p1);
-    if (crossProduct > 0.0)
+    if (crossProduct > 0.0) {
       continue;
+    }
 
     if (crossProduct == 0) {
-      if (!_includeEdge)
+      if (!_includeEdge) {
         return false;
+      }
 
-      if (p3[0] < std::min(p1[0], p2[0]) || std::max(p1[0], p2[0]) < p3[0])
+      if (p3[0] < std::min(p1[0], p2[0]) || std::max(p1[0], p2[0]) < p3[0]) {
         return false;
+      }
 
       return true;
     } else {
@@ -1948,10 +1978,11 @@ Eigen::Vector2d computeClosestPointOnLineSegment(
 
     if (result[1] < std::min(_s1[1], _s2[1])
         || std::max(_s1[1], _s2[1]) < result[1]) {
-      if (std::abs(_p[1] - _s2[1]) < std::abs(_p[1] - _s1[1]))
+      if (std::abs(_p[1] - _s2[1]) < std::abs(_p[1] - _s1[1])) {
         result[1] = _s2[1];
-      else
+      } else {
         result[1] = _s1[1];
+      }
     }
   } else {
     double m = (_s2[1] - _s1[1]) / (_s2[0] - _s1[0]);
@@ -1961,10 +1992,11 @@ Eigen::Vector2d computeClosestPointOnLineSegment(
 
     if (result[0] < std::min(_s1[0], _s2[0])
         || std::max(_s1[0], _s2[0]) < result[0]) {
-      if ((_p - _s2).norm() < (_p - _s1).norm())
+      if ((_p - _s2).norm() < (_p - _s1).norm()) {
         result = _s2;
-      else
+      } else {
         result = _s1;
+      }
     }
   }
 
@@ -2028,6 +2060,146 @@ BoundingBox::BoundingBox() : mMin(0, 0, 0), mMax(0, 0, 0) {}
 BoundingBox::BoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max)
   : mMin(min), mMax(max)
 {
+}
+
+void AdT_batch(
+    const Eigen::Isometry3d* transforms,
+    const Eigen::Vector6d* inputs,
+    Eigen::Vector6d* outputs,
+    std::size_t count)
+{
+  std::size_t i = 0;
+  for (; i + 4 <= count; i += 4) {
+    // R*w and R*v per transform (3x3 matmul not easily SoA-batched)
+    std::array<Eigen::Vector3d, 4> Rw, Rv, p_arr;
+    for (int k = 0; k < 4; ++k) {
+      const auto& T = transforms[i + k];
+      const auto& V = inputs[i + k];
+      Rw[k] = T.linear() * V.head<3>();
+      Rv[k] = T.linear() * V.tail<3>();
+      p_arr[k] = T.translation();
+    }
+
+    // Batch cross product: p x Rw
+    auto soa_p = simd::transposeAosToSoa(p_arr);
+    auto soa_Rw = simd::transposeAosToSoa(Rw);
+    auto soa_cross = simd::cross3(soa_p, soa_Rw);
+    auto cross_results = soa_cross.toAos();
+
+    for (int k = 0; k < 4; ++k) {
+      outputs[i + k].head<3>() = Rw[k];
+      outputs[i + k].tail<3>() = Rv[k] + cross_results[k];
+    }
+  }
+
+  for (; i < count; ++i) {
+    outputs[i] = AdT(transforms[i], inputs[i]);
+  }
+}
+
+void AdInvT_batch(
+    const Eigen::Isometry3d* transforms,
+    const Eigen::Vector6d* inputs,
+    Eigen::Vector6d* outputs,
+    std::size_t count)
+{
+  // AdInvT: head = R^T * w, tail = R^T * (v + w x p)
+  std::size_t i = 0;
+  for (; i + 4 <= count; i += 4) {
+    std::array<Eigen::Vector3d, 4> w_arr, p_arr;
+    for (int k = 0; k < 4; ++k) {
+      w_arr[k] = inputs[i + k].head<3>();
+      p_arr[k] = transforms[i + k].translation();
+    }
+
+    // Batch cross product: w x p
+    auto soa_w = simd::transposeAosToSoa(w_arr);
+    auto soa_p = simd::transposeAosToSoa(p_arr);
+    auto soa_cross = simd::cross3(soa_w, soa_p);
+    auto cross_results = soa_cross.toAos();
+
+    for (int k = 0; k < 4; ++k) {
+      const auto& T = transforms[i + k];
+      const auto& V = inputs[i + k];
+      outputs[i + k].head<3>().noalias() = T.linear().transpose() * V.head<3>();
+      outputs[i + k].tail<3>().noalias()
+          = T.linear().transpose() * (V.tail<3>() + cross_results[k]);
+    }
+  }
+
+  for (; i < count; ++i) {
+    outputs[i] = AdInvT(transforms[i], inputs[i]);
+  }
+}
+
+void dAdT_batch(
+    const Eigen::Isometry3d* transforms,
+    const Eigen::Vector6d* inputs,
+    Eigen::Vector6d* outputs,
+    std::size_t count)
+{
+  // dAdT: head = R^T * (m + f x p), tail = R^T * f
+  std::size_t i = 0;
+  for (; i + 4 <= count; i += 4) {
+    std::array<Eigen::Vector3d, 4> f_arr, p_arr;
+    for (int k = 0; k < 4; ++k) {
+      f_arr[k] = inputs[i + k].tail<3>();
+      p_arr[k] = transforms[i + k].translation();
+    }
+
+    // Batch cross product: f x p
+    auto soa_f = simd::transposeAosToSoa(f_arr);
+    auto soa_p = simd::transposeAosToSoa(p_arr);
+    auto soa_cross = simd::cross3(soa_f, soa_p);
+    auto cross_results = soa_cross.toAos();
+
+    for (int k = 0; k < 4; ++k) {
+      const auto& T = transforms[i + k];
+      const auto& F = inputs[i + k];
+      outputs[i + k].head<3>().noalias()
+          = T.linear().transpose() * (F.head<3>() + cross_results[k]);
+      outputs[i + k].tail<3>().noalias() = T.linear().transpose() * F.tail<3>();
+    }
+  }
+
+  for (; i < count; ++i) {
+    outputs[i] = dAdT(transforms[i], inputs[i]);
+  }
+}
+
+void dAdInvT_batch(
+    const Eigen::Isometry3d* transforms,
+    const Eigen::Vector6d* inputs,
+    Eigen::Vector6d* outputs,
+    std::size_t count)
+{
+  // dAdInvT: tail = R * f, head = R * m + p x (R * f)
+  std::size_t i = 0;
+  for (; i + 4 <= count; i += 4) {
+    std::array<Eigen::Vector3d, 4> Rf, p_arr;
+    for (int k = 0; k < 4; ++k) {
+      const auto& T = transforms[i + k];
+      Rf[k] = T.linear() * inputs[i + k].tail<3>();
+      p_arr[k] = T.translation();
+    }
+
+    // Batch cross product: p x Rf
+    auto soa_p = simd::transposeAosToSoa(p_arr);
+    auto soa_Rf = simd::transposeAosToSoa(Rf);
+    auto soa_cross = simd::cross3(soa_p, soa_Rf);
+    auto cross_results = soa_cross.toAos();
+
+    for (int k = 0; k < 4; ++k) {
+      const auto& T = transforms[i + k];
+      outputs[i + k].tail<3>() = Rf[k];
+      outputs[i + k].head<3>().noalias()
+          = T.linear() * inputs[i + k].head<3>() + cross_results[k];
+    }
+  }
+
+  for (; i < count; ++i) {
+    outputs[i] = dAdInvT(transforms[i], inputs[i]);
+  }
 }
 
 } // namespace math

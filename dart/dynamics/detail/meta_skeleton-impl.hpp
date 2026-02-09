@@ -45,8 +45,9 @@ void MetaSkeleton::eachBodyNode(Func func) const
                     std::invoke_result_t<Func, const dynamics::BodyNode*>,
                     bool>) {
     for (auto i = 0u; i < getNumBodyNodes(); ++i) {
-      if (!func(getBodyNode(i)))
+      if (!func(getBodyNode(i))) {
         return;
+      }
     }
   } else {
     for (auto i = 0u; i < getNumBodyNodes(); ++i) {
@@ -63,8 +64,9 @@ void MetaSkeleton::eachBodyNode(Func func)
                     std::invoke_result_t<Func, dynamics::BodyNode*>,
                     bool>) {
     for (auto i = 0u; i < getNumBodyNodes(); ++i) {
-      if (!func(getBodyNode(i)))
+      if (!func(getBodyNode(i))) {
         return;
+      }
     }
   } else {
     for (auto i = 0u; i < getNumBodyNodes(); ++i) {
@@ -81,8 +83,9 @@ void MetaSkeleton::eachJoint(Func func) const
                     std::invoke_result_t<Func, const dynamics::Joint*>,
                     bool>) {
     for (auto i = 0u; i < getNumJoints(); ++i) {
-      if (!func(getJoint(i)))
+      if (!func(getJoint(i))) {
         return;
+      }
     }
   } else {
     for (auto i = 0u; i < getNumJoints(); ++i) {
@@ -99,8 +102,9 @@ void MetaSkeleton::eachJoint(Func func)
                     std::invoke_result_t<Func, dynamics::Joint*>,
                     bool>) {
     for (auto i = 0u; i < getNumJoints(); ++i) {
-      if (!func(getJoint(i)))
+      if (!func(getJoint(i))) {
         return;
+      }
     }
   } else {
     for (auto i = 0u; i < getNumJoints(); ++i) {
@@ -118,8 +122,9 @@ void MetaSkeleton::eachDof(Func func) const
                         invoke_result_t<Func, const dynamics::DegreeOfFreedom*>,
                     bool>) {
     for (auto i = 0u; i < getNumDofs(); ++i) {
-      if (!func(getDof(i)))
+      if (!func(getDof(i))) {
         return;
+      }
     }
   } else {
     for (auto i = 0u; i < getNumDofs(); ++i) {
@@ -136,8 +141,9 @@ void MetaSkeleton::eachDof(Func func)
                     std::invoke_result_t<Func, dynamics::DegreeOfFreedom*>,
                     bool>) {
     for (auto i = 0u; i < getNumDofs(); ++i) {
-      if (!func(getDof(i)))
+      if (!func(getDof(i))) {
         return;
+      }
     }
   } else {
     for (auto i = 0u; i < getNumDofs(); ++i) {

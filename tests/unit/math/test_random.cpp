@@ -215,14 +215,17 @@ bool testClosedEnds(int maxTry, I min = 0, I max = 2)
   for (int i = 0; i < maxTry; ++i) {
     const I val = math::Random::uniform<I>(min, max);
 
-    if (val == min)
+    if (val == min) {
       foundMin = true;
+    }
 
-    if (val == max)
+    if (val == max) {
       foundMax = true;
+    }
 
-    if (foundMin && foundMax)
+    if (foundMin && foundMax) {
       return true;
+    }
   }
 
   return false;
@@ -318,4 +321,32 @@ TEST(Random, SetSeed)
     EXPECT_EQ(second[i], math::Random::uniform(min, max));
     EXPECT_EQ(third[i], math::Random::uniform(min, max));
   }
+}
+
+//==============================================================================
+TEST(Random, GenerateSeedWithoutApplying)
+{
+  unsigned int originalSeed = math::Random::getSeed();
+
+  [[maybe_unused]] unsigned int generatedSeed
+      = math::Random::generateSeed(false);
+
+  EXPECT_EQ(math::Random::getSeed(), originalSeed);
+}
+
+//==============================================================================
+TEST(Random, GenerateSeedWithApplying)
+{
+  unsigned int generatedSeed = math::Random::generateSeed(true);
+
+  EXPECT_EQ(math::Random::getSeed(), generatedSeed);
+}
+
+//==============================================================================
+TEST(Random, GetGenerator)
+{
+  auto& gen1 = math::Random::getGenerator();
+  auto& gen2 = math::Random::getGenerator();
+
+  EXPECT_EQ(&gen1, &gen2);
 }

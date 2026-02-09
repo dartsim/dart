@@ -166,8 +166,9 @@ void HeightmapShapeNode<S>::refresh()
   setNodeMask(mVisualAspect->isHidden() ? 0x0u : ~0x0u);
 
   if (mShape->getDataVariance() == dynamics::Shape::STATIC
-      && mHeightmapVersion == mHeightmapShape->getVersion())
+      && mHeightmapVersion == mHeightmapShape->getVersion()) {
     return;
+  }
 
   extractData(false);
 
@@ -419,17 +420,21 @@ void setVertices(
 
       auto sum = typename HeightmapShapeDrawable<S>::osgVec3();
 
-      if (i > 0 && j > 0)
+      if (i > 0 && j > 0) {
         sum += getNormal(ptCurr, vertices[p2], vertices[p3]);
+      }
 
-      if (i + 1 < rows && j > 0)
+      if (i + 1 < rows && j > 0) {
         sum += getNormal(ptCurr, vertices[p3], vertices[p5]);
+      }
 
-      if (i + 1 < rows && j + 1 < cols)
+      if (i + 1 < rows && j + 1 < cols) {
         sum += getNormal(ptCurr, vertices[p5], vertices[p4]);
+      }
 
-      if (i > 0 && j + 1 < cols)
+      if (i > 0 && j + 1 < cols) {
         sum += getNormal(ptCurr, vertices[p4], vertices[p2]);
+      }
 
       sum.normalize();
 
@@ -442,10 +447,11 @@ void setVertices(
 template <typename S>
 void HeightmapShapeDrawable<S>::refresh(bool /*firstTime*/)
 {
-  if (mHeightmapShape->getDataVariance() == dynamics::Shape::STATIC)
+  if (mHeightmapShape->getDataVariance() == dynamics::Shape::STATIC) {
     setDataVariance(::osg::Object::STATIC);
-  else
+  } else {
     setDataVariance(::osg::Object::DYNAMIC);
+  }
 
   // Row major matrix where top left corner is the height at (0, 0), and bottom
   // right corner is the height at (rows, -cols) in (x, y) coordinates.
@@ -472,8 +478,9 @@ void HeightmapShapeDrawable<S>::refresh(bool /*firstTime*/)
   // the color could be updated in the version up. So we always update the
   // color.
   {
-    if (mColors->size() != 1)
+    if (mColors->size() != 1) {
       mColors->resize(1);
+    }
 
     const ::osg::Vec4d color = eigToOsgVec4d(mVisualAspect->getRGBA());
     (*mColors)[0] = color;

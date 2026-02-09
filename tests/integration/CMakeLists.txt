@@ -4,6 +4,7 @@
 # Collision Tests
 # ==============================================================================
 dart_add_test("integration" INTEGRATION_collision_CollisionGroups collision/test_collision_groups.cpp)
+dart_add_test("integration" INTEGRATION_collision_Issue2470 collision/test_issue2470.cpp)
 
 if(TARGET dart-io)
   dart_add_test("integration" INTEGRATION_collision_Collision collision/test_collision.cpp)
@@ -101,6 +102,7 @@ dart_build_tests(
   LINK_LIBRARIES dart
   SOURCES
     dynamics/test_name_management.cpp
+    dynamics/test_invalid_dynamics_inputs.cpp
 )
 
 if(TARGET dart-utils AND TARGET dart-io)
@@ -185,10 +187,16 @@ if(TARGET dart-utils)
   if(DART_ENABLE_SDFORMAT)
     dart_add_test("integration" INTEGRATION_io_SdfParser io/test_sdf_parser.cpp)
     target_link_libraries(INTEGRATION_io_SdfParser dart-utils)
+    if(TARGET dart-io)
+      target_link_libraries(INTEGRATION_io_SdfParser dart-io)
+    endif()
   endif()
 
   dart_add_test("integration" INTEGRATION_io_SkelParser io/test_skel_parser.cpp)
   target_link_libraries(INTEGRATION_io_SkelParser dart-utils)
+  if(TARGET dart-io)
+    target_link_libraries(INTEGRATION_io_SkelParser dart-io)
+  endif()
 
 endif()
 

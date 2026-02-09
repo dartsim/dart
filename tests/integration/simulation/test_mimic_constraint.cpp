@@ -83,16 +83,18 @@ bool hasFiniteState(const SkeletonPtr& skeleton)
   bool finite = true;
   skeleton->eachBodyNode([&](dart::dynamics::BodyNode* bn) {
     const auto tf = bn->getWorldTransform();
-    if (!tf.matrix().array().isFinite().all())
+    if (!tf.matrix().array().isFinite().all()) {
       finite = false;
+    }
   });
   return finite;
 }
 
 Eigen::Vector3d getTranslation(const dart::dynamics::BodyNode* bn)
 {
-  if (bn == nullptr)
+  if (bn == nullptr) {
     return Eigen::Vector3d::Zero();
+  }
   return bn->getWorldTransform().translation();
 }
 
@@ -119,8 +121,9 @@ void setBoxedSolver(WorldPtr world, bool usePgs)
 {
   auto* boxedSolver = dynamic_cast<dart::constraint::ConstraintSolver*>(
       world->getConstraintSolver());
-  if (!boxedSolver)
+  if (!boxedSolver) {
     return;
+  }
 
   if (usePgs) {
     boxedSolver->setLcpSolver(std::make_shared<dart::math::PgsSolver>());
@@ -142,17 +145,20 @@ void retargetMimicJoints(const WorldPtr& world, const std::string& baselineName)
 
   for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
     const auto skeleton = world->getSkeleton(i);
-    if (!skeleton)
+    if (!skeleton) {
       continue;
+    }
 
     for (std::size_t j = 0; j < skeleton->getNumJoints(); ++j) {
       auto* joint = skeleton->getJoint(j);
-      if (!joint)
+      if (!joint) {
         continue;
+      }
 
       const auto props = joint->getMimicDofProperties();
-      if (props.empty())
+      if (props.empty()) {
         continue;
+      }
 
       if (skeleton == baseline) {
         std::vector<dart::dynamics::MimicDofProperties> clearedProps(
@@ -167,8 +173,9 @@ void retargetMimicJoints(const WorldPtr& world, const std::string& baselineName)
       bool updated = false;
       for (std::size_t dofIndex = 0; dofIndex < props.size(); ++dofIndex) {
         auto prop = props[dofIndex];
-        if (prop.mReferenceJoint == nullptr)
+        if (prop.mReferenceJoint == nullptr) {
           continue;
+        }
 
         auto* ref = baseline->getJoint(prop.mReferenceJoint->getName());
         ASSERT_NE(nullptr, ref);

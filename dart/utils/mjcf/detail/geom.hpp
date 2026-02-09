@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_GEOM_HPP_
 #define DART_UTILS_MJCF_DETAIL_GEOM_HPP_
 
+#include <dart/utils/export.hpp>
 #include <dart/utils/mjcf/detail/compiler.hpp>
 #include <dart/utils/mjcf/detail/default.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
@@ -48,7 +49,7 @@ namespace detail {
 
 class Body;
 
-class Geom final
+class DART_UTILS_API Geom final
 {
 public:
   /// Default constructor

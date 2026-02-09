@@ -98,8 +98,9 @@ public:
 
   void applyForce(std::size_t index)
   {
-    if (index < mForceCountDown.size())
+    if (index < mForceCountDown.size()) {
       mForceCountDown[index] = default_countdown;
+    }
   }
 
   void changeRestPosition(double delta)
@@ -111,9 +112,10 @@ public:
 
       // The system becomes numerically unstable when the rest position exceeds
       // 90 degrees
-      if (std::abs(q0) > dart::math::toRadian(90.0))
+      if (std::abs(q0) > dart::math::toRadian(90.0)) {
         q0 = (q0 > 0) ? dart::math::toRadian(90.0)
                       : dart::math::toRadian(-90.0);
+      }
 
       dof->setRestPosition(q0);
     }
@@ -130,8 +132,9 @@ public:
     for (std::size_t i = 0; i < mPendulum->getNumDofs(); ++i) {
       DegreeOfFreedom* dof = mPendulum->getDof(i);
       double stiffness = dof->getSpringStiffness() + delta;
-      if (stiffness < 0.0)
+      if (stiffness < 0.0) {
         stiffness = 0.0;
+      }
       dof->setSpringStiffness(stiffness);
     }
     // snippet:cpp-lesson2b-stiffness-end
@@ -143,8 +146,9 @@ public:
     for (std::size_t i = 0; i < mPendulum->getNumDofs(); ++i) {
       DegreeOfFreedom* dof = mPendulum->getDof(i);
       double damping = dof->getDampingCoefficient() + delta;
-      if (damping < 0.0)
+      if (damping < 0.0) {
         damping = 0.0;
+      }
       dof->setDampingCoefficient(damping);
     }
     // snippet:cpp-lesson2c-damping-end
@@ -337,10 +341,11 @@ public:
           mController->changeDamping(-delta_damping);
           return true;
         case 'r':
-          if (mController->hasConstraint())
+          if (mController->hasConstraint()) {
             mController->removeConstraint();
-          else
+          } else {
             mController->addConstraint();
+          }
           return true;
         case 'f':
           mController->toggleBodyForce();

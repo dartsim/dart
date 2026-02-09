@@ -32,6 +32,7 @@
 
 #include "../../helpers/gtest_utils.hpp"
 
+#include <dart/common/detail/logging-impl.hpp>
 #include <dart/common/logging.hpp>
 // For version macros
 #include <dart/config.hpp>
@@ -55,8 +56,9 @@ namespace {
 std::size_t countOccurrences(
     const std::string& haystack, const std::string& needle)
 {
-  if (needle.empty())
+  if (needle.empty()) {
     return 0u;
+  }
 
   std::size_t count = 0u;
   std::string::size_type pos = haystack.find(needle);
@@ -89,11 +91,13 @@ public:
   ~WarningCapture()
   {
 #if DART_HAVE_spdlog
-    if (logger)
+    if (logger) {
       logger->flush();
+    }
     spdlog::set_default_logger(previousLogger);
-    if (logger)
+    if (logger) {
       spdlog::drop(logger->name());
+    }
 #else
     std::cout.rdbuf(oldCout);
     std::cerr.rdbuf(oldCerr);
@@ -103,10 +107,12 @@ public:
   std::string contents()
   {
 #if DART_HAVE_spdlog
-    if (logger)
+    if (logger) {
       logger->flush();
-    if (stream)
+    }
+    if (stream) {
       return stream->str();
+    }
     return {};
 #else
     return stream.str();
@@ -166,14 +172,16 @@ TEST(LoggingTest, WarnOnce)
 
   {
     WarningCapture capture;
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i < 3; ++i) {
       triggerWarningOnce();
+    }
 
     const std::size_t occurrences
         = countOccurrences(capture.contents(), sentinel);
-    if (occurrences == 0u)
+    if (occurrences == 0u) {
       GTEST_SKIP()
           << "warn-once sentinel already emitted earlier in this process";
+    }
 
     EXPECT_EQ(occurrences, 1u);
   }
@@ -183,4 +191,63 @@ TEST(LoggingTest, WarnOnce)
     triggerWarningOnce();
     EXPECT_EQ(countOccurrences(capture.contents(), sentinel), 0u);
   }
+}
+
+//==============================================================================
+TEST(LoggingTest, LevelFunctions)
+{
+  dart::common::trace("test {}", 42);
+  dart::common::debug("test {}", 42);
+  dart::common::info("test {}", 42);
+  dart::common::warn("test {}", 42);
+  dart::common::error("test {}", 42);
+  dart::common::fatal("test {}", 42);
+}
+
+//==============================================================================
+TEST(LoggingTest, DetailHelpers)
+{
+  using dart::common::detail::LogLevel;
+  using dart::common::detail::makeLogPrefix;
+  using dart::common::detail::toAnsiColor;
+  using dart::common::detail::toLabel;
+
+  const auto emptyPrefix = makeLogPrefix(nullptr, 0, nullptr);
+  EXPECT_TRUE(emptyPrefix.empty());
+
+  const auto fullPrefix = makeLogPrefix("file.cpp", 42, "func");
+  if (!fullPrefix.empty()) {
+    EXPECT_NE(fullPrefix.find("file.cpp"), std::string::npos);
+    EXPECT_NE(fullPrefix.find("42"), std::string::npos);
+    EXPECT_NE(fullPrefix.find("func"), std::string::npos);
+  }
+
+  const auto partialPrefix = makeLogPrefix("file.cpp", 0, nullptr);
+  if (!partialPrefix.empty()) {
+    EXPECT_NE(partialPrefix.find("file.cpp"), std::string::npos);
+  }
+
+  EXPECT_NE(toAnsiColor(LogLevel::Trace), 0);
+  EXPECT_NE(toAnsiColor(LogLevel::Debug), 0);
+  EXPECT_NE(toAnsiColor(LogLevel::Info), 0);
+  EXPECT_NE(toAnsiColor(LogLevel::Warn), 0);
+  EXPECT_NE(toAnsiColor(LogLevel::Error), 0);
+  EXPECT_NE(toAnsiColor(LogLevel::Fatal), 0);
+
+  EXPECT_STREQ(toLabel(LogLevel::Trace), "[trace]");
+  EXPECT_STREQ(toLabel(LogLevel::Debug), "[debug]");
+  EXPECT_STREQ(toLabel(LogLevel::Info), "[info]");
+  EXPECT_STREQ(toLabel(LogLevel::Warn), "[warn]");
+  EXPECT_STREQ(toLabel(LogLevel::Error), "[error]");
+  EXPECT_STREQ(toLabel(LogLevel::Fatal), "[fatal]");
+
+#if DART_HAVE_spdlog
+  using dart::common::detail::toSpdlogLevel;
+  EXPECT_EQ(toSpdlogLevel(LogLevel::Trace), spdlog::level::trace);
+  EXPECT_EQ(toSpdlogLevel(LogLevel::Debug), spdlog::level::debug);
+  EXPECT_EQ(toSpdlogLevel(LogLevel::Info), spdlog::level::info);
+  EXPECT_EQ(toSpdlogLevel(LogLevel::Warn), spdlog::level::warn);
+  EXPECT_EQ(toSpdlogLevel(LogLevel::Error), spdlog::level::err);
+  EXPECT_EQ(toSpdlogLevel(LogLevel::Fatal), spdlog::level::critical);
+#endif
 }

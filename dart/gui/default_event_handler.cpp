@@ -55,9 +55,11 @@ DefaultEventHandler::DefaultEventHandler(Viewer* _viewer)
   mViewer->addInstructionText("Spacebar:     Turn simulation on/off\n");
   mViewer->addInstructionText("Ctrl+H:       Turn headlights on/off\n");
 
-  for (std::size_t i = 0; i < NUM_MOUSE_BUTTONS; ++i)
-    for (std::size_t j = 0; j < BUTTON_NOTHING; ++j)
+  for (std::size_t i = 0; i < NUM_MOUSE_BUTTONS; ++i) {
+    for (std::size_t j = 0; j < BUTTON_NOTHING; ++j) {
       mSuppressButtonPicks[i][j] = false;
+    }
+  }
   mSuppressMovePicks = false;
 
   clearButtonEvents();
@@ -117,12 +119,13 @@ Eigen::Vector3d DefaultEventHandler::getDeltaCursor(
 
     double denominator = v1_v1 * v2_v2 - v2_v1 * v2_v1;
     double s;
-    if (fabs(denominator) < 1e-10)
+    if (fabs(denominator) < 1e-10) {
       s = 0;
-    else
+    } else {
       s = (v1_v1 * (v2.dot(b1) - v2.dot(b2))
            + v2_v1 * (v1.dot(b2) - v1.dot(b1)))
           / denominator;
+    }
 
     return v2 * s;
   } else if (PLANE_CONSTRAINT == _constraint) {
@@ -160,8 +163,9 @@ void DefaultEventHandler::getNearAndFarPointUnderCursor(
 std::span<const PickInfo> DefaultEventHandler::getButtonPicks(
     MouseButton button, MouseButtonEvent event) const
 {
-  if (BUTTON_NOTHING == event)
+  if (BUTTON_NOTHING == event) {
     return std::span<const PickInfo>(mMovePicks);
+  }
 
   return std::span<const PickInfo>(mButtonPicks[button][event]);
 }
@@ -176,10 +180,11 @@ std::span<const PickInfo> DefaultEventHandler::getMovePicks() const
 void DefaultEventHandler::suppressButtonPicks(
     MouseButton button, MouseButtonEvent event)
 {
-  if (BUTTON_NOTHING == event)
+  if (BUTTON_NOTHING == event) {
     mSuppressMovePicks = true;
-  else
+  } else {
     mSuppressButtonPicks[button][event] = true;
+  }
 }
 
 //==============================================================================
@@ -192,10 +197,11 @@ void DefaultEventHandler::suppressMovePicks()
 void DefaultEventHandler::activateButtonPicks(
     MouseButton button, MouseButtonEvent event)
 {
-  if (BUTTON_NOTHING == event)
+  if (BUTTON_NOTHING == event) {
     mSuppressMovePicks = false;
-  else
+  } else {
     mSuppressButtonPicks[button][event] = false;
+  }
 }
 
 //==============================================================================
@@ -259,35 +265,42 @@ static void assignEventToButtons(
     const ::osgGA::GUIEventAdapter& ea)
 {
   MouseButtonEvent event = BUTTON_NOTHING;
-  if (ea.getEventType() == ::osgGA::GUIEventAdapter::PUSH)
+  if (ea.getEventType() == ::osgGA::GUIEventAdapter::PUSH) {
     event = BUTTON_PUSH;
-  else if (ea.getEventType() == ::osgGA::GUIEventAdapter::DRAG)
+  } else if (ea.getEventType() == ::osgGA::GUIEventAdapter::DRAG) {
     event = BUTTON_DRAG;
-  else if (ea.getEventType() == ::osgGA::GUIEventAdapter::RELEASE)
+  } else if (ea.getEventType() == ::osgGA::GUIEventAdapter::RELEASE) {
     event = BUTTON_RELEASE;
+  }
 
   if (BUTTON_RELEASE == event) {
     if ((ea.getButtonMask() & ::osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON) == 0
-        && wasActive(mLastButtonEvent[LEFT_MOUSE]))
+        && wasActive(mLastButtonEvent[LEFT_MOUSE])) {
       mLastButtonEvent[LEFT_MOUSE] = event;
+    }
 
     if ((ea.getButtonMask() & ::osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON) == 0
-        && wasActive(mLastButtonEvent[RIGHT_MOUSE]))
+        && wasActive(mLastButtonEvent[RIGHT_MOUSE])) {
       mLastButtonEvent[RIGHT_MOUSE] = event;
+    }
 
     if ((ea.getButtonMask() & ::osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON)
             == 0
-        && wasActive(mLastButtonEvent[MIDDLE_MOUSE]))
+        && wasActive(mLastButtonEvent[MIDDLE_MOUSE])) {
       mLastButtonEvent[MIDDLE_MOUSE] = event;
+    }
   } else {
-    if (ea.getButtonMask() & ::osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON)
+    if (ea.getButtonMask() & ::osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON) {
       mLastButtonEvent[LEFT_MOUSE] = event;
+    }
 
-    if (ea.getButtonMask() & ::osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON)
+    if (ea.getButtonMask() & ::osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON) {
       mLastButtonEvent[RIGHT_MOUSE] = event;
+    }
 
-    if (ea.getButtonMask() & ::osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON)
+    if (ea.getButtonMask() & ::osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON) {
       mLastButtonEvent[MIDDLE_MOUSE] = event;
+    }
   }
 }
 
@@ -332,8 +345,9 @@ bool DefaultEventHandler::handle(
     }
 
     case ::osgGA::GUIEventAdapter::MOVE: {
-      if (!mSuppressMovePicks)
+      if (!mSuppressMovePicks) {
         pick(mMovePicks, ea);
+      }
 
       triggerMouseEventHandlers();
       break;
@@ -392,22 +406,26 @@ void DefaultEventHandler::eventPick(const ::osgGA::GUIEventAdapter& ea)
           && !mSuppressButtonPicks[MIDDLE_MOUSE][mbe])) {
     pick(mTempPicks, ea);
 
-    if (ea.getButtonMask() & ::osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON)
+    if (ea.getButtonMask() & ::osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON) {
       mButtonPicks[LEFT_MOUSE][mbe] = mTempPicks;
+    }
 
-    if (ea.getButtonMask() & ::osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON)
+    if (ea.getButtonMask() & ::osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON) {
       mButtonPicks[RIGHT_MOUSE][mbe] = mTempPicks;
+    }
 
-    if (ea.getButtonMask() & ::osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON)
+    if (ea.getButtonMask() & ::osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON) {
       mButtonPicks[MIDDLE_MOUSE][mbe] = mTempPicks;
+    }
   }
 }
 
 //==============================================================================
 void DefaultEventHandler::clearButtonEvents()
 {
-  for (std::size_t i = 0; i < NUM_MOUSE_BUTTONS; ++i)
+  for (std::size_t i = 0; i < NUM_MOUSE_BUTTONS; ++i) {
     mLastButtonEvent[i] = BUTTON_NOTHING;
+  }
 }
 
 //==============================================================================
@@ -416,8 +434,9 @@ void DefaultEventHandler::handleDestructionNotification(
 {
   MouseEventHandler* meh = const_cast<MouseEventHandler*>(
       dynamic_cast<const MouseEventHandler*>(_subject));
-  if (mMouseEventHandlers.contains(meh))
+  if (mMouseEventHandlers.contains(meh)) {
     mMouseEventHandlers.erase(meh);
+  }
 }
 
 } // namespace gui

@@ -65,8 +65,9 @@ void DARTCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 void DARTCollisionGroup::addCollisionObjectsToEngine(
     std::span<CollisionObject* const> collObjects)
 {
-  for (auto collObject : collObjects)
+  for (auto collObject : collObjects) {
     addCollisionObjectToEngine(collObject);
+  }
 }
 
 //==============================================================================

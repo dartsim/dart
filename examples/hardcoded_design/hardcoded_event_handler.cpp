@@ -42,8 +42,9 @@ HardcodedEventHandler::HardcodedEventHandler(dart::dynamics::SkeletonPtr _skel)
 bool HardcodedEventHandler::handle(
     const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& /*aa*/)
 {
-  if (ea.getEventType() != osgGA::GUIEventAdapter::KEYDOWN)
+  if (ea.getEventType() != osgGA::GUIEventAdapter::KEYDOWN) {
     return false;
+  }
 
   switch (ea.getKey()) {
     case '-': {

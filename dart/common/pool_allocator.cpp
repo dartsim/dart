@@ -47,9 +47,7 @@ PoolAllocator::PoolAllocator(MemoryAllocator& baseAllocator)
       8 <= sizeof(MemoryUnit),
       "sizeof(MemoryUnit) should be equal to or greater than 8.");
 
-  // Global setting
   if (!mInitialized) {
-    // Fill mUnitSizes from 8 to 1024 with 8 interval
     for (auto i = 0u; i < HEAP_COUNT; ++i) {
       mUnitSizes[i] = (i + 1) * 8;
     }
@@ -80,9 +78,6 @@ PoolAllocator::PoolAllocator(MemoryAllocator& baseAllocator)
 //==============================================================================
 PoolAllocator::~PoolAllocator()
 {
-  // Lock the mutex
-  std::lock_guard<std::mutex> lock(mMutex);
-
   for (int i = 0; i < mCurrentMemoryBlockIndex; ++i) {
     mBaseAllocator.deallocate(mMemoryBlocks[i].mMemoryUnits, BLOCK_SIZE);
   }
@@ -109,32 +104,8 @@ int PoolAllocator::getNumAllocatedMemoryBlocks() const
 }
 
 //==============================================================================
-void* PoolAllocator::allocate(size_t bytes) noexcept
+void* PoolAllocator::allocateSlow(int heapIndex) noexcept
 {
-  // Cannot allocate zero bytes
-  if (bytes == 0) {
-    return nullptr;
-  }
-
-  // Use the default allocator to allocate memory that is greater than
-  // MAX_UNIT_SIZE
-  if (bytes > MAX_UNIT_SIZE) {
-    DART_TRACE(
-        "Cannot allocate memory of size > {} using PoolAllocator.",
-        MAX_UNIT_SIZE);
-    return mBaseAllocator.allocate(bytes);
-  }
-
-  // Lock the mutex
-  std::lock_guard<std::mutex> lock(mMutex);
-
-  const int heapIndex = mMapSizeToHeapIndex[bytes];
-
-  if (MemoryUnit* unit = mFreeMemoryUnits[heapIndex]) {
-    mFreeMemoryUnits[heapIndex] = unit->mNext;
-    return unit;
-  }
-
   if (mCurrentMemoryBlockIndex == mMemoryBlocksSize) {
     MemoryBlock* currentMemoryBlocks = mMemoryBlocks;
     mMemoryBlocksSize += 64;
@@ -154,20 +125,17 @@ void* PoolAllocator::allocate(size_t bytes) noexcept
   DART_ASSERT(unitSize > 0);
   const unsigned int unitCount = BLOCK_SIZE / unitSize;
   DART_ASSERT(unitCount > 0);
-  void* memoryUnitsBegin = static_cast<void*>(newBlock->mMemoryUnits);
-  char* memoryUnitsBeginChar = static_cast<char*>(memoryUnitsBegin);
+  auto* memoryUnitsBeginChar = reinterpret_cast<char*>(newBlock->mMemoryUnits);
   for (size_t i = 0u; i < unitCount - 1; ++i) {
-    void* unitPointer = static_cast<void*>(memoryUnitsBeginChar + unitSize * i);
-    void* nextUnitPointer
-        = static_cast<void*>(memoryUnitsBeginChar + unitSize * (i + 1));
-    MemoryUnit* unit = static_cast<MemoryUnit*>(unitPointer);
-    MemoryUnit* nextUnit = static_cast<MemoryUnit*>(nextUnitPointer);
+    auto* unit
+        = reinterpret_cast<MemoryUnit*>(memoryUnitsBeginChar + unitSize * i);
+    auto* nextUnit = reinterpret_cast<MemoryUnit*>(
+        memoryUnitsBeginChar + unitSize * (i + 1));
     unit->mNext = nextUnit;
   }
 
-  void* lastUnitPointer
-      = static_cast<void*>(memoryUnitsBeginChar + unitSize * (unitCount - 1));
-  MemoryUnit* lastUnit = static_cast<MemoryUnit*>(lastUnitPointer);
+  auto* lastUnit = reinterpret_cast<MemoryUnit*>(
+      memoryUnitsBeginChar + unitSize * (unitCount - 1));
   lastUnit->mNext = nullptr;
 
   mFreeMemoryUnits[heapIndex] = newBlock->mMemoryUnits->mNext;
@@ -177,33 +145,8 @@ void* PoolAllocator::allocate(size_t bytes) noexcept
 }
 
 //==============================================================================
-void PoolAllocator::deallocate(void* pointer, size_t bytes)
-{
-  // Cannot deallocate nullptr or zero bytes
-  if (pointer == nullptr || bytes == 0) {
-    return;
-  }
-
-  if (bytes > MAX_UNIT_SIZE) {
-    return mBaseAllocator.deallocate(pointer, bytes);
-  }
-
-  // Lock the mutex
-  std::lock_guard<std::mutex> lock(mMutex);
-
-  const int heapIndex = mMapSizeToHeapIndex[bytes];
-
-  MemoryUnit* releasedUnit = static_cast<MemoryUnit*>(pointer);
-  releasedUnit->mNext = mFreeMemoryUnits[heapIndex];
-  mFreeMemoryUnits[heapIndex] = releasedUnit;
-}
-
-//==============================================================================
 void PoolAllocator::print(std::ostream& os, int indent) const
 {
-  // Lock the mutex
-  std::lock_guard<std::mutex> lock(mMutex);
-
   if (indent == 0) {
     os << "[PoolAllocator]\n";
   }

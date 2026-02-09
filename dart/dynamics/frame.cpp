@@ -45,8 +45,9 @@ using FramePtrSet = std::set<Frame*>;
 //==============================================================================
 Frame::~Frame()
 {
-  if (isWorld())
+  if (isWorld()) {
     return;
+  }
 
   changeParentFrame(nullptr);
 
@@ -54,8 +55,9 @@ Frame::~Frame()
   // reference frames to the World frame.
   EntityPtrSet::iterator it = mChildEntities.begin(),
                          end = mChildEntities.end();
-  while (it != end)
+  while (it != end) {
     (*(it++))->changeParentFrame(Frame::World());
+  }
   // Note: When we instruct an Entity to change its parent Frame, it will erase
   // itself from this Frame's mChildEntities list. This would invalidate the
   // 'it' and clobber our attempt to iterate through the std::set if we applied
@@ -91,8 +93,9 @@ std::shared_ptr<Frame> Frame::WorldShared()
 //==============================================================================
 const Eigen::Isometry3d& Frame::getWorldTransform() const
 {
-  if (mAmWorld)
+  if (mAmWorld) {
     return mWorldTransform;
+  }
 
   if (mNeedTransformUpdate) {
     mWorldTransform
@@ -106,12 +109,13 @@ const Eigen::Isometry3d& Frame::getWorldTransform() const
 //==============================================================================
 Eigen::Isometry3d Frame::getTransform(const Frame* _withRespectTo) const
 {
-  if (_withRespectTo->isWorld())
+  if (_withRespectTo->isWorld()) {
     return getWorldTransform();
-  else if (_withRespectTo == mParentFrame)
+  } else if (_withRespectTo == mParentFrame) {
     return getRelativeTransform();
-  else if (_withRespectTo == this)
+  } else if (_withRespectTo == this) {
     return Eigen::Isometry3d::Identity();
+  }
 
   return _withRespectTo->getWorldTransform().inverse() * getWorldTransform();
 }
@@ -123,8 +127,9 @@ Eigen::Isometry3d Frame::getTransform(
   DART_ASSERT(nullptr != withRespectTo);
   DART_ASSERT(nullptr != inCoordinatesOf);
 
-  if (withRespectTo == inCoordinatesOf)
+  if (withRespectTo == inCoordinatesOf) {
     return getTransform(withRespectTo);
+  }
 
   // Rotation from "inCoordinatesOf" to "withRespecTo"
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
@@ -137,8 +142,9 @@ Eigen::Isometry3d Frame::getTransform(
 //==============================================================================
 const Eigen::Vector6d& Frame::getSpatialVelocity() const
 {
-  if (mAmWorld)
+  if (mAmWorld) {
     return mVelocity;
+  }
 
   if (mNeedVelocityUpdate) {
     mVelocity
@@ -156,15 +162,18 @@ const Eigen::Vector6d& Frame::getSpatialVelocity() const
 Eigen::Vector6d Frame::getSpatialVelocity(
     const Frame* _relativeTo, const Frame* _inCoordinatesOf) const
 {
-  if (this == _relativeTo)
+  if (this == _relativeTo) {
     return Eigen::Vector6d::Zero();
+  }
 
   if (_relativeTo->isWorld()) {
-    if (this == _inCoordinatesOf)
+    if (this == _inCoordinatesOf) {
       return getSpatialVelocity();
+    }
 
-    if (_inCoordinatesOf->isWorld())
+    if (_inCoordinatesOf->isWorld()) {
       return math::AdR(getWorldTransform(), getSpatialVelocity());
+    }
 
     return math::AdR(getTransform(_inCoordinatesOf), getSpatialVelocity());
   }
@@ -175,8 +184,9 @@ Eigen::Vector6d Frame::getSpatialVelocity(
                                        _relativeTo->getSpatialVelocity()))
                                       .eval();
 
-  if (this == _inCoordinatesOf)
+  if (this == _inCoordinatesOf) {
     return result;
+  }
 
   return math::AdR(getTransform(_inCoordinatesOf), result);
 }
@@ -193,15 +203,17 @@ Eigen::Vector6d Frame::getSpatialVelocity(
     const Frame* _relativeTo,
     const Frame* _inCoordinatesOf) const
 {
-  if (this == _relativeTo)
+  if (this == _relativeTo) {
     return Eigen::Vector6d::Zero();
+  }
 
   Eigen::Vector6d v = getSpatialVelocity();
   v.tail<3>().noalias() += v.head<3>().cross(_offset);
 
   if (_relativeTo->isWorld()) {
-    if (this == _inCoordinatesOf)
+    if (this == _inCoordinatesOf) {
       return v;
+    }
 
     return math::AdR(getTransform(_inCoordinatesOf), v);
   }
@@ -212,8 +224,9 @@ Eigen::Vector6d Frame::getSpatialVelocity(
 
   v = v - v_0;
 
-  if (this == _inCoordinatesOf)
+  if (this == _inCoordinatesOf) {
     return v;
+  }
 
   return math::AdR(getTransform(_inCoordinatesOf), v);
 }
@@ -244,8 +257,9 @@ Eigen::Vector3d Frame::getAngularVelocity(
 //==============================================================================
 const Eigen::Vector6d& Frame::getSpatialAcceleration() const
 {
-  if (mAmWorld)
+  if (mAmWorld) {
     return mAcceleration;
+  }
 
   if (mNeedAccelerationUpdate) {
     mAcceleration = math::AdInvT(
@@ -271,15 +285,18 @@ Eigen::Vector6d Frame::getSpatialAcceleration(
 
   // a_21[O] = R_O2*( a_2[2] - X_21*a_1[1] - v_2[2] x v_21[2] )
 
-  if (this == _relativeTo)
+  if (this == _relativeTo) {
     return Eigen::Vector6d::Zero();
+  }
 
   if (_relativeTo->isWorld()) {
-    if (this == _inCoordinatesOf)
+    if (this == _inCoordinatesOf) {
       return getSpatialAcceleration();
+    }
 
-    if (_inCoordinatesOf->isWorld())
+    if (_inCoordinatesOf->isWorld()) {
       return math::AdR(getWorldTransform(), getSpatialAcceleration());
+    }
 
     return math::AdR(getTransform(_inCoordinatesOf), getSpatialAcceleration());
   }
@@ -295,8 +312,9 @@ Eigen::Vector6d Frame::getSpatialAcceleration(
                                            _relativeTo->getSpatialVelocity())))
                                       .eval();
 
-  if (this == _inCoordinatesOf)
+  if (this == _inCoordinatesOf) {
     return result;
+  }
 
   return math::AdR(getTransform(_inCoordinatesOf), result);
 }
@@ -314,16 +332,18 @@ Eigen::Vector6d Frame::getSpatialAcceleration(
     const Frame* _relativeTo,
     const Frame* _inCoordinatesOf) const
 {
-  if (this == _relativeTo)
+  if (this == _relativeTo) {
     return Eigen::Vector6d::Zero();
+  }
 
   // Compute spatial acceleration of the point
   Eigen::Vector6d a = getSpatialAcceleration();
   a.tail<3>().noalias() += a.head<3>().cross(_offset);
 
   if (_relativeTo->isWorld()) {
-    if (this == _inCoordinatesOf)
+    if (this == _inCoordinatesOf) {
       return a;
+    }
 
     return math::AdR(getTransform(_inCoordinatesOf), a);
   }
@@ -342,8 +362,9 @@ Eigen::Vector6d Frame::getSpatialAcceleration(
 
   a = a - a_ref - math::ad(v, v_rel);
 
-  if (this == _inCoordinatesOf)
+  if (this == _inCoordinatesOf) {
     return a;
+  }
 
   return math::AdR(getTransform(_inCoordinatesOf), a);
 }
@@ -352,8 +373,9 @@ Eigen::Vector6d Frame::getSpatialAcceleration(
 Eigen::Vector3d Frame::getLinearAcceleration(
     const Frame* _relativeTo, const Frame* _inCoordinatesOf) const
 {
-  if (this == _relativeTo)
+  if (this == _relativeTo) {
     return Eigen::Vector3d::Zero();
+  }
 
   const Eigen::Vector6d& v_rel = getSpatialVelocity(_relativeTo, this);
 
@@ -363,8 +385,9 @@ Eigen::Vector3d Frame::getLinearAcceleration(
          + v_rel.head<3>().cross(v_rel.tail<3>()))
             .eval();
 
-  if (this == _inCoordinatesOf)
+  if (this == _inCoordinatesOf) {
     return a;
+  }
 
   return getTransform(_inCoordinatesOf).linear() * a;
 }
@@ -375,8 +398,9 @@ Eigen::Vector3d Frame::getLinearAcceleration(
     const Frame* _relativeTo,
     const Frame* _inCoordinatesOf) const
 {
-  if (this == _relativeTo)
+  if (this == _relativeTo) {
     return Eigen::Vector3d::Zero();
+  }
 
   const Eigen::Vector6d& v_rel = getSpatialVelocity(_offset, _relativeTo, this);
   const Eigen::Vector3d& a
@@ -384,8 +408,9 @@ Eigen::Vector3d Frame::getLinearAcceleration(
          + v_rel.head<3>().cross(v_rel.tail<3>()))
             .eval();
 
-  if (this == _inCoordinatesOf)
+  if (this == _inCoordinatesOf) {
     return a;
+  }
 
   return getTransform(_inCoordinatesOf).linear() * a;
 }
@@ -402,8 +427,9 @@ template <typename T>
 static std::set<const T*> convertToConstSet(const std::set<T*>& _set)
 {
   std::set<const T*> const_set;
-  for (const auto& element : _set)
+  for (const auto& element : _set) {
     const_set.insert(element);
+  }
 
   return const_set;
 }
@@ -478,13 +504,15 @@ void Frame::dirtyTransform()
   mTransformUpdatedSignal.raise(this);
 
   // If we already know we need to update, just quit
-  if (mNeedTransformUpdate)
+  if (mNeedTransformUpdate) {
     return;
+  }
 
   mNeedTransformUpdate = true;
 
-  for (Entity* entity : mChildEntities)
+  for (Entity* entity : mChildEntities) {
     entity->dirtyTransform();
+  }
 }
 
 //==============================================================================
@@ -497,13 +525,15 @@ void Frame::dirtyVelocity()
   mVelocityChangedSignal.raise(this);
 
   // If we already know we need to update, just quit
-  if (mNeedVelocityUpdate)
+  if (mNeedVelocityUpdate) {
     return;
+  }
 
   mNeedVelocityUpdate = true;
 
-  for (Entity* entity : mChildEntities)
+  for (Entity* entity : mChildEntities) {
     entity->dirtyVelocity();
+  }
 }
 
 //==============================================================================
@@ -514,13 +544,15 @@ void Frame::dirtyAcceleration()
   mAccelerationChangedSignal.raise(this);
 
   // If we already know we need to update, just quit
-  if (mNeedAccelerationUpdate)
+  if (mNeedAccelerationUpdate) {
     return;
+  }
 
   mNeedAccelerationUpdate = true;
 
-  for (Entity* entity : mChildEntities)
+  for (Entity* entity : mChildEntities) {
     entity->dirtyAcceleration();
+  }
 }
 
 //==============================================================================
@@ -556,8 +588,9 @@ Frame::Frame(ConstructAbstractTag)
 //==============================================================================
 void Frame::changeParentFrame(Frame* _newParentFrame)
 {
-  if (mParentFrame == _newParentFrame)
+  if (mParentFrame == _newParentFrame) {
     return;
+  }
 
   if (_newParentFrame) {
     if (_newParentFrame->descendsFrom(this)) {
@@ -576,8 +609,9 @@ void Frame::changeParentFrame(Frame* _newParentFrame)
   }
 
   if (mParentFrame && !mParentFrame->isWorld()) {
-    if (mParentFrame->mChildFrames.contains(this))
+    if (mParentFrame->mChildFrames.contains(this)) {
       mParentFrame->mChildFrames.erase(this);
+    }
   }
 
   if (nullptr == _newParentFrame) {
@@ -585,8 +619,9 @@ void Frame::changeParentFrame(Frame* _newParentFrame)
     return;
   }
 
-  if (!mAmQuiet && !_newParentFrame->isWorld())
+  if (!mAmQuiet && !_newParentFrame->isWorld()) {
     _newParentFrame->mChildFrames.insert(this);
+  }
 
   Entity::changeParentFrame(_newParentFrame);
 }

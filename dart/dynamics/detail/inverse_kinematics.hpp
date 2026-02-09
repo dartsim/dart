@@ -59,8 +59,9 @@ IKGradientMethod& InverseKinematics::setGradientMethod(Args&&... args)
   mGradientMethod = std::unique_ptr<GradientMethod>(newMethod);
 
   mAnalytical = dynamic_cast<Analytical*>(mGradientMethod.get());
-  if (nullptr != mAnalytical)
+  if (nullptr != mAnalytical) {
     mAnalytical->constructDofMap();
+  }
 
   return *newMethod;
 }
@@ -71,8 +72,9 @@ void InverseKinematics::setDofs(std::span<DegreeOfFreedomT* const> _dofs)
 {
   std::vector<std::size_t> indices;
   indices.reserve(_dofs.size());
-  for (const DegreeOfFreedomT* dof : _dofs)
+  for (const DegreeOfFreedomT* dof : _dofs) {
     indices.push_back(dof->getIndexInSkeleton());
+  }
 
   setDofs(indices);
 }

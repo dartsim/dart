@@ -83,8 +83,9 @@ void CollisionGroup::addShapeFrame(const dynamics::ShapeFrame* shapeFrame)
 void CollisionGroup::addShapeFrames(
     std::span<const dynamics::ShapeFrame* const> shapeFrames)
 {
-  for (const auto& shapeFrame : shapeFrames)
+  for (const auto& shapeFrame : shapeFrames) {
     addShapeFrame(shapeFrame);
+  }
 }
 
 //==============================================================================
@@ -102,16 +103,18 @@ void CollisionGroup::subscribeTo()
 //==============================================================================
 void CollisionGroup::removeShapeFrame(const dynamics::ShapeFrame* shapeFrame)
 {
-  if (!shapeFrame)
+  if (!shapeFrame) {
     return;
+  }
 
   const auto search = std::ranges::find_if(
       mObjectInfoList, [&](const std::unique_ptr<ObjectInfo>& info) {
         return info->mFrame == shapeFrame;
       });
 
-  if (mObjectInfoList.end() == search)
+  if (mObjectInfoList.end() == search) {
     return;
+  }
 
   removeCollisionObjectFromEngine((*search)->mObject.get());
 
@@ -120,15 +123,17 @@ void CollisionGroup::removeShapeFrame(const dynamics::ShapeFrame* shapeFrame)
   // ShapeFrame. Otherwise, this ShapeFrame would just reappear instantly the
   // next time an update is performed.
   for (const void* source : (*search)->mSources) {
-    if (nullptr == source)
+    if (nullptr == source) {
       continue;
+    }
 
     // We don't know which container this source is kept in, so try erasing it
     // from each.
     if (mSkeletonSources.erase(
             static_cast<const dynamics::MetaSkeleton*>(source))
-        > 0)
+        > 0) {
       continue;
+    }
 
     mBodyNodeSources.erase(static_cast<const dynamics::BodyNode*>(source));
   }
@@ -141,8 +146,9 @@ void CollisionGroup::removeShapeFrame(const dynamics::ShapeFrame* shapeFrame)
 void CollisionGroup::removeShapeFrames(
     std::span<const dynamics::ShapeFrame* const> shapeFrames)
 {
-  for (const auto& shapeFrame : shapeFrames)
+  for (const auto& shapeFrame : shapeFrames) {
     removeShapeFrame(shapeFrame);
+  }
 }
 
 //==============================================================================
@@ -192,8 +198,9 @@ const dynamics::ShapeFrame* CollisionGroup::getShapeFrame(
     std::size_t index) const
 {
   DART_ASSERT(index < mObjectInfoList.size());
-  if (index < mObjectInfoList.size())
+  if (index < mObjectInfoList.size()) {
     return mObjectInfoList[index]->mFrame;
+  }
 
   return nullptr;
 }
@@ -202,8 +209,9 @@ const dynamics::ShapeFrame* CollisionGroup::getShapeFrame(
 bool CollisionGroup::collide(
     const CollisionOption& option, CollisionResult* result)
 {
-  if (mUpdateAutomatically)
+  if (mUpdateAutomatically) {
     update();
+  }
 
   return mCollisionDetector->collide(this, option, result);
 }
@@ -214,8 +222,9 @@ bool CollisionGroup::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
-  if (mUpdateAutomatically)
+  if (mUpdateAutomatically) {
     update();
+  }
 
   return mCollisionDetector->collide(this, otherGroup, option, result);
 }
@@ -224,8 +233,9 @@ bool CollisionGroup::collide(
 double CollisionGroup::distance(
     const DistanceOption& option, DistanceResult* result)
 {
-  if (mUpdateAutomatically)
+  if (mUpdateAutomatically) {
     update();
+  }
 
   return mCollisionDetector->distance(this, option, result);
 }
@@ -236,8 +246,9 @@ double CollisionGroup::distance(
     const DistanceOption& option,
     DistanceResult* result)
 {
-  if (mUpdateAutomatically)
+  if (mUpdateAutomatically) {
     update();
+  }
 
   return mCollisionDetector->distance(this, otherGroup, option, result);
 }
@@ -249,8 +260,9 @@ bool CollisionGroup::raycast(
     const RaycastOption& option,
     RaycastResult* result)
 {
-  if (mUpdateAutomatically)
+  if (mUpdateAutomatically) {
     update();
+  }
 
   return mCollisionDetector->raycast(this, from, to, option, result);
 }
@@ -272,11 +284,13 @@ void CollisionGroup::update()
 {
   removeDeletedShapeFrames();
 
-  for (auto& entry : mSkeletonSources)
+  for (auto& entry : mSkeletonSources) {
     updateSkeletonSource(entry);
+  }
 
-  for (auto& entry : mBodyNodeSources)
+  for (auto& entry : mBodyNodeSources) {
     updateBodyNodeSource(entry);
+  }
 }
 
 //==============================================================================
@@ -288,26 +302,30 @@ void CollisionGroup::removeDeletedShapeFrames()
           return info->mFrame == shapeFrame;
         });
 
-    if (mObjectInfoList.end() == search)
+    if (mObjectInfoList.end() == search) {
       continue;
+    }
 
     // Clear out the ShapeFrame from any subscriber that it might have
     for (const void* source : (*search)->mSources) {
-      if (nullptr == source)
+      if (nullptr == source) {
         continue;
+      }
 
       auto skelSearch = mSkeletonSources.find(
           static_cast<const dynamics::MetaSkeleton*>(source));
       if (skelSearch != mSkeletonSources.end()) {
         skelSearch->second.mObjects.erase(shapeFrame);
-        for (auto& child : skelSearch->second.mChildren)
+        for (auto& child : skelSearch->second.mChildren) {
           child.second.mFrames.erase(shapeFrame);
+        }
       }
 
       auto bodySearch = mBodyNodeSources.find(
           static_cast<const dynamics::BodyNode*>(source));
-      if (bodySearch != mBodyNodeSources.end())
+      if (bodySearch != mBodyNodeSources.end()) {
         bodySearch->second.mObjects.erase(shapeFrame);
+      }
     }
 
     removeCollisionObjectFromEngine((*search)->mObject.get());
@@ -345,8 +363,9 @@ std::size_t CollisionGroup::computeMetaSkeletonVersion(
 //==============================================================================
 void CollisionGroup::updateEngineData()
 {
-  for (const auto& info : mObjectInfoList)
+  for (const auto& info : mObjectInfoList) {
     info->mObject->updateEngineData();
+  }
 
   updateCollisionGroupEngineData();
 }
@@ -380,24 +399,27 @@ void CollisionGroup::ShapeFrameObserver::handleDestructionNotification(
     const common::Subject* subject)
 {
   auto it = mMap.find(subject);
-  if (it == mMap.end())
+  if (it == mMap.end()) {
     return;
+  }
 
   const dynamics::ShapeFrame* frame = it->second;
   mMap.erase(it);
 
-  if (mGroup)
+  if (mGroup) {
     mGroup->handleShapeFrameDestruction(frame);
-  else
+  } else {
     mDeletedFrames.insert(frame);
+  }
 }
 
 //==============================================================================
 auto CollisionGroup::addShapeFrameImpl(
     const dynamics::ShapeFrame* shapeFrame, const void* source) -> ObjectInfo*
 {
-  if (!shapeFrame)
+  if (!shapeFrame) {
     return nullptr;
+  }
 
   auto it = std::ranges::find_if(
       mObjectInfoList, [&](const std::unique_ptr<ObjectInfo>& info) {
@@ -436,16 +458,18 @@ auto CollisionGroup::addShapeFrameImpl(
 void CollisionGroup::removeShapeFrameInternal(
     const dynamics::ShapeFrame* shapeFrame, const void* source)
 {
-  if (!shapeFrame)
+  if (!shapeFrame) {
     return;
+  }
 
   const auto search = std::ranges::find_if(
       mObjectInfoList, [&](const std::unique_ptr<ObjectInfo>& info) {
         return info->mFrame == shapeFrame;
       });
 
-  if (mObjectInfoList.end() == search)
+  if (mObjectInfoList.end() == search) {
     return;
+  }
 
   std::unordered_set<const void*>& objectSources = (*search)->mSources;
   objectSources.erase(source);
@@ -466,16 +490,18 @@ bool CollisionGroup::updateSkeletonSource(SkeletonSources::value_type& entry)
   if (!meta) {
     // This skeleton no longer exists, so we should remove all its contents from
     // the CollisionGroup.
-    for (const auto& object : source.mObjects)
+    for (const auto& object : source.mObjects) {
       removeShapeFrameInternal(object.second->mFrame, entry.first);
+    }
 
     return true;
   }
 
   const std::size_t currentSkeletonVersion = computeMetaSkeletonVersion(*meta);
   // If the version hasn't changed, then there will be nothing to update.
-  if (currentSkeletonVersion == source.mLastKnownVersion)
+  if (currentSkeletonVersion == source.mLastKnownVersion) {
     return false;
+  }
 
   source.mLastKnownVersion = currentSkeletonVersion;
   bool updateNeeded = false;
@@ -516,8 +542,9 @@ bool CollisionGroup::updateSkeletonSource(SkeletonSources::value_type& entry)
 
     // If the version of this BodyNode has not changed, then move on to the next
     // one.
-    if (child->second.mLastKnownVersion == currentVersion)
+    if (child->second.mLastKnownVersion == currentVersion) {
       continue;
+    }
 
     child->second.mLastKnownVersion = currentVersion;
 
@@ -577,8 +604,9 @@ bool CollisionGroup::updateBodyNodeSource(BodyNodeSources::value_type& entry)
   if (!bn) {
     // This BodyNode no longer exists, so we should remove all i ts contents
     // from the CollisionGroup.
-    for (const auto& object : source.mObjects)
+    for (const auto& object : source.mObjects) {
       removeShapeFrameInternal(object.second->mFrame, object.first);
+    }
 
     return true;
   }
@@ -586,8 +614,9 @@ bool CollisionGroup::updateBodyNodeSource(BodyNodeSources::value_type& entry)
   const std::size_t currentBodyNodeVersion = bn->getVersion();
 
   // If the version hasn't changed, then there will be nothing to update.
-  if (currentBodyNodeVersion == source.mLastKnownVersion)
+  if (currentBodyNodeVersion == source.mLastKnownVersion) {
     return false;
+  }
 
   source.mLastKnownVersion = currentBodyNodeVersion;
   bool updateNeeded = false;
@@ -652,8 +681,9 @@ bool CollisionGroup::updateShapeFrame(ObjectInfo* object)
 void CollisionGroup::handleShapeFrameDestruction(
     const dynamics::ShapeFrame* shapeFrame)
 {
-  if (!shapeFrame)
+  if (!shapeFrame) {
     return;
+  }
 
   mObserver.mDeletedFrames.insert(shapeFrame);
   removeDeletedShapeFrames();

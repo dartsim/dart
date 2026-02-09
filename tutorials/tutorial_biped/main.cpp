@@ -203,18 +203,19 @@ public:
       BodyNode* bn = mWorld->getSkeleton("biped")->getBodyNode("h_abdomen");
       bn->setColor(dart::Color::Red());
 
-      if (mPositiveSign)
+      if (mPositiveSign) {
         bn->addExtForce(
             default_force * Eigen::Vector3d::UnitX(),
             bn->getCOM(),
             false,
             false);
-      else
+      } else {
         bn->addExtForce(
             -default_force * Eigen::Vector3d::UnitX(),
             bn->getCOM(),
             false,
             false);
+      }
 
       --mForceCountDown;
     }

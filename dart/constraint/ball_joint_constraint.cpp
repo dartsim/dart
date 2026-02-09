@@ -159,8 +159,9 @@ void BallJointConstraint::getInformation(ConstraintInfo* _lcp)
   _lcp->x[2] = mOldX[2];
 
   Eigen::Vector3d negativeVel = -mJacobian1 * mBodyNode1->getSpatialVelocity();
-  if (mBodyNode2)
+  if (mBodyNode2) {
     negativeVel += mJacobian2 * mBodyNode2->getSpatialVelocity();
+  }
 
   mViolation *= mErrorReductionParameter * _lcp->invTimeStep;
 
@@ -239,24 +240,27 @@ void BallJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
 {
   DART_ASSERT(_vel != nullptr && "Null pointer is not allowed.");
 
-  for (std::size_t i = 0; i < mDim; ++i)
+  for (std::size_t i = 0; i < mDim; ++i) {
     _vel[i] = 0.0;
+  }
 
   if (mBodyNode1->getSkeleton()->isImpulseApplied()
       && mBodyNode1->isReactive()) {
     Eigen::Vector3d v1 = mJacobian1 * mBodyNode1->getBodyVelocityChange();
     // std::cout << "velChange " << mBodyNode1->getBodyVelocityChange() <<
     // std::endl; std::cout << "v1: " << v1 << std::endl;
-    for (std::size_t i = 0; i < mDim; ++i)
+    for (std::size_t i = 0; i < mDim; ++i) {
       _vel[i] += v1[i];
+    }
   }
 
   if (mBodyNode2 && mBodyNode2->getSkeleton()->isImpulseApplied()
       && mBodyNode2->isReactive()) {
     Eigen::Vector3d v2 = mJacobian2 * mBodyNode2->getBodyVelocityChange();
     // std::cout << "v2: " << v2 << std::endl;
-    for (std::size_t i = 0; i < mDim; ++i)
+    for (std::size_t i = 0; i < mDim; ++i) {
       _vel[i] -= v2[i];
+    }
   }
 
   // Add small values to diagnal to keep it away from singular, similar to cfm
@@ -270,27 +274,33 @@ void BallJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
 //==============================================================================
 void BallJointConstraint::excite()
 {
-  if (mBodyNode1->isReactive())
+  if (mBodyNode1->isReactive()) {
     mBodyNode1->getSkeleton()->setImpulseApplied(true);
+  }
 
-  if (mBodyNode2 == nullptr)
+  if (mBodyNode2 == nullptr) {
     return;
+  }
 
-  if (mBodyNode2->isReactive())
+  if (mBodyNode2->isReactive()) {
     mBodyNode2->getSkeleton()->setImpulseApplied(true);
+  }
 }
 
 //==============================================================================
 void BallJointConstraint::unexcite()
 {
-  if (mBodyNode1->isReactive())
+  if (mBodyNode1->isReactive()) {
     mBodyNode1->getSkeleton()->setImpulseApplied(false);
+  }
 
-  if (mBodyNode2 == nullptr)
+  if (mBodyNode2 == nullptr) {
     return;
+  }
 
-  if (mBodyNode2->isReactive())
+  if (mBodyNode2->isReactive()) {
     mBodyNode2->getSkeleton()->setImpulseApplied(false);
+  }
 }
 
 //==============================================================================
@@ -307,15 +317,17 @@ void BallJointConstraint::applyImpulse(double* _lambda)
 
   mBodyNode1->addConstraintImpulse(mJacobian1.transpose() * imp);
 
-  if (mBodyNode2)
+  if (mBodyNode2) {
     mBodyNode2->addConstraintImpulse(-mJacobian2.transpose() * imp);
+  }
 }
 
 //==============================================================================
 dynamics::SkeletonPtr BallJointConstraint::getRootSkeleton() const
 {
-  if (mBodyNode1->isReactive())
+  if (mBodyNode1->isReactive()) {
     return ConstraintBase::getRootSkeleton(mBodyNode1->getSkeleton());
+  }
 
   if (mBodyNode2) {
     if (mBodyNode2->isReactive()) {
@@ -333,22 +345,26 @@ dynamics::SkeletonPtr BallJointConstraint::getRootSkeleton() const
 //==============================================================================
 void BallJointConstraint::uniteSkeletons()
 {
-  if (mBodyNode2 == nullptr)
+  if (mBodyNode2 == nullptr) {
     return;
+  }
 
-  if (!mBodyNode1->isReactive() || !mBodyNode2->isReactive())
+  if (!mBodyNode1->isReactive() || !mBodyNode2->isReactive()) {
     return;
+  }
 
-  if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton())
+  if (mBodyNode1->getSkeleton() == mBodyNode2->getSkeleton()) {
     return;
+  }
 
   dynamics::SkeletonPtr unionId1
       = ConstraintBase::compressPath(mBodyNode1->getSkeleton());
   dynamics::SkeletonPtr unionId2
       = ConstraintBase::compressPath(mBodyNode2->getSkeleton());
 
-  if (unionId1 == unionId2)
+  if (unionId1 == unionId2) {
     return;
+  }
 
   if (unionId1->mUnionSize < unionId2->mUnionSize) {
     // Merge root1 --> root2
@@ -364,14 +380,16 @@ void BallJointConstraint::uniteSkeletons()
 //==============================================================================
 bool BallJointConstraint::isActive() const
 {
-  if (mBodyNode1->isReactive())
+  if (mBodyNode1->isReactive()) {
     return true;
+  }
 
   if (mBodyNode2) {
-    if (mBodyNode2->isReactive())
+    if (mBodyNode2->isReactive()) {
       return true;
-    else
+    } else {
       return false;
+    }
   } else {
     return false;
   }

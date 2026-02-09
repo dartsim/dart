@@ -45,7 +45,7 @@ namespace constraint {
 
 /// Base class for joint constraints that are being created or destructed during
 /// simulation.
-class DynamicJointConstraint : public ConstraintBase
+class DART_API DynamicJointConstraint : public ConstraintBase
 {
 public:
   /// Constructor
@@ -86,10 +86,10 @@ public:
   static double getConstraintForceMixing();
 
   /// Get the first BodyNode that this constraint is associated with
-  DART_API dynamics::BodyNode* getBodyNode1() const;
+  dynamics::BodyNode* getBodyNode1() const;
 
   /// Get the second BodyNode that this constraint is associated with
-  DART_API dynamics::BodyNode* getBodyNode2() const;
+  dynamics::BodyNode* getBodyNode2() const;
 
 protected:
   /// First body node

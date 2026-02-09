@@ -103,6 +103,38 @@ Errors appendJointAttributes(
     attributes.mDamping = getAttributeDouble(element, "damping");
   }
 
+  // stiffness
+  if (hasAttribute(element, "stiffness")) {
+    attributes.mStiffness = getAttributeDouble(element, "stiffness");
+  }
+
+  // armature
+  if (hasAttribute(element, "armature")) {
+    attributes.mArmature = getAttributeDouble(element, "armature");
+  }
+
+  // frictionloss
+  if (hasAttribute(element, "frictionloss")) {
+    attributes.mFrictionLoss = getAttributeDouble(element, "frictionloss");
+  }
+
+  // limited
+  if (hasAttribute(element, "limited")) {
+    const std::string limited = getAttributeString(element, "limited");
+    if (limited == "true" || limited == "1") {
+      attributes.mLimited = true;
+    } else if (limited == "false" || limited == "0") {
+      attributes.mLimited = false;
+    } else if (limited == "auto") {
+      attributes.mLimited = std::nullopt;
+    } else {
+      errors.emplace_back(
+          ErrorCode::ATTRIBUTE_INVALID,
+          "Invalid attribute for 'limited': " + limited);
+      return errors;
+    }
+  }
+
   return errors;
 }
 

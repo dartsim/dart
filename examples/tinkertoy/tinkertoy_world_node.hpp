@@ -90,8 +90,9 @@ public:
 
   void setPickedNodeColor(const Eigen::Vector4d& color)
   {
-    if (!mPickedNode)
+    if (!mPickedNode) {
       return;
+    }
 
     mPickedNode->setColor(color);
   }
@@ -128,8 +129,9 @@ public:
                              - mPickedNode->getWorldTransform() * mPickedPoint);
 
       const double F_norm = F.norm();
-      if (F_norm > MaxForce)
+      if (F_norm > MaxForce) {
         F = MaxForce * F / F_norm;
+      }
 
       mPickedNode->addExtForce(F, mPickedPoint);
     }
@@ -140,8 +142,9 @@ public:
     dart::dynamics::BodyNode* bn
         = dynamic_cast<dart::dynamics::BodyNode*>(pick.frame->getParentFrame());
 
-    if (!bn)
+    if (!bn) {
       return;
+    }
 
     mPickedNode = bn;
     mPickedPoint = bn->getWorldTransform().inverse() * pick.position;
@@ -161,8 +164,9 @@ public:
 
   void deletePick()
   {
-    if (!mPickedNode)
+    if (!mPickedNode) {
       return;
+    }
 
     if (isSimulating()) {
       std::cout << " -- Please pause simulation [using the Spacebar] before "
@@ -254,8 +258,9 @@ public:
     joint->setName("joint_#" + std::to_string(skel->getNumJoints()));
 
     joint->setTransformFromParentBodyNode(relTf);
-    for (size_t i = 0; i < joint->getNumDofs(); ++i)
+    for (size_t i = 0; i < joint->getNumDofs(); ++i) {
       joint->getDof(i)->setDampingCoefficient(DefaultDamping);
+    }
 
     bn->createShapeNodeWith<
         dart::dynamics::VisualAspect,
@@ -311,8 +316,9 @@ public:
     auto pair = addBlock<dart::dynamics::RevoluteJoint>(
         parent, relTf, mRevoluteJointShape);
 
-    if (pair.first)
+    if (pair.first) {
       pair.first->setAxis(Eigen::Vector3d::UnitZ());
+    }
 
     return pair.second;
   }
@@ -416,10 +422,11 @@ public:
   {
     mForceCoeff = coeff;
 
-    if (mForceCoeff > MaxForceCoeff)
+    if (mForceCoeff > MaxForceCoeff) {
       mForceCoeff = MaxForceCoeff;
-    else if (mForceCoeff < MinForceCoeff)
+    } else if (mForceCoeff < MinForceCoeff) {
       mForceCoeff = MinForceCoeff;
+    }
   }
 
   double getForceCoeff() const
@@ -430,8 +437,9 @@ public:
   void incrementForceCoeff()
   {
     mForceCoeff += ForceIncrement;
-    if (mForceCoeff > MaxForceCoeff)
+    if (mForceCoeff > MaxForceCoeff) {
       mForceCoeff = MaxForceCoeff;
+    }
 
     std::cout << "[Force Coefficient: " << mForceCoeff << "]" << std::endl;
   }
@@ -439,8 +447,9 @@ public:
   void decrementForceCoeff()
   {
     mForceCoeff -= ForceIncrement;
-    if (mForceCoeff < MinForceCoeff)
+    if (mForceCoeff < MinForceCoeff) {
       mForceCoeff = MinForceCoeff;
+    }
 
     std::cout << "[Force Coefficient: " << mForceCoeff << "]" << std::endl;
   }

@@ -89,8 +89,9 @@ const Solver::Properties& Solver::getSolverProperties() const
 //==============================================================================
 void Solver::copy(const Solver& _otherSolver)
 {
-  if (this == &_otherSolver)
+  if (this == &_otherSolver) {
     return;
+  }
 
   setProperties(_otherSolver.getSolverProperties());
 }

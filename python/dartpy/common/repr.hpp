@@ -46,8 +46,9 @@ inline std::string format_repr(
   if (!fields.empty()) {
     oss << "(";
     for (std::size_t i = 0; i < fields.size(); ++i) {
-      if (i != 0)
+      if (i != 0) {
         oss << ", ";
+      }
       oss << fields[i].first << "=" << fields[i].second;
     }
     oss << ")";

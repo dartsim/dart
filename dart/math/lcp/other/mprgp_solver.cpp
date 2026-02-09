@@ -49,8 +49,9 @@ namespace {
 
 double matrixInfinityNorm(const Eigen::MatrixXd& A)
 {
-  if (A.size() == 0)
+  if (A.size() == 0) {
     return 0.0;
+  }
 
   return A.cwiseAbs().rowwise().sum().maxCoeff();
 }
@@ -73,8 +74,9 @@ bool isStandardLcp(
 
 bool isSymmetric(const Eigen::MatrixXd& A, double tol)
 {
-  if (A.rows() != A.cols())
+  if (A.rows() != A.cols()) {
     return false;
+  }
 
   return (A - A.transpose()).cwiseAbs().maxCoeff() <= tol;
 }
@@ -222,8 +224,9 @@ LcpResult MprgpSolver::solve(
     return true;
   };
 
-  if (!updateMetrics())
+  if (!updateMetrics()) {
     return result;
+  }
 
   bool converged = (residual <= tol && complementarity <= compTol);
   int iterationsUsed = 0;
@@ -272,8 +275,9 @@ LcpResult MprgpSolver::solve(
     }
 
     for (int i = 0; i < n; ++i) {
-      if (active[i])
+      if (active[i]) {
         p[i] = 0.0;
+      }
     }
 
     Ap = A * p;
@@ -298,8 +302,9 @@ LcpResult MprgpSolver::solve(
 
     double alphaMax = std::numeric_limits<double>::infinity();
     for (int i = 0; i < n; ++i) {
-      if (p[i] < 0.0)
+      if (p[i] < 0.0) {
         alphaMax = std::min(alphaMax, -x[i] / p[i]);
+      }
     }
 
     const double step = std::min(alpha, alphaMax);
@@ -318,11 +323,13 @@ LcpResult MprgpSolver::solve(
     pgPrev = pg;
     activePrev = active;
 
-    if (!updateMetrics())
+    if (!updateMetrics()) {
       return result;
+    }
 
-    if (residual <= tol && complementarity <= compTol)
+    if (residual <= tol && complementarity <= compTol) {
       converged = true;
+    }
   }
 
   result.iterations = iterationsUsed;

@@ -65,10 +65,11 @@ TimerCondition::~TimerCondition() {}
 //==============================================================================
 bool TimerCondition::isSatisfied()
 {
-  if (mState->getElapsedTime() > mDuration)
+  if (mState->getElapsedTime() > mDuration) {
     return true;
-  else
+  } else {
     return false;
+  }
 }
 
 //==============================================================================
@@ -94,13 +95,15 @@ bool BodyContactCondition::isSatisfied()
   if (soft) {
     for (std::size_t i = 0; i < soft->getNumPointMasses(); ++i) {
       PointMass* pm = soft->getPointMass(i);
-      if (pm->isColliding())
+      if (pm->isColliding()) {
         return true;
+      }
     }
   }
 
-  if (!mConstraintSolver)
+  if (!mConstraintSolver) {
     return false;
+  }
 
   const auto& result = mConstraintSolver->getLastCollisionResult();
   return result.inCollision(mBodyNode);

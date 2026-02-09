@@ -63,8 +63,9 @@ Sensor::Sensor(const Properties& properties)
 //==============================================================================
 const std::string& Sensor::setName(std::string_view name)
 {
-  if (name == mProperties.name)
+  if (name == mProperties.name) {
     return mProperties.name;
+  }
 
   const std::string oldName = mProperties.name;
   mProperties.name = name;
@@ -126,8 +127,9 @@ const Eigen::Isometry3d& Sensor::getRelativeTransform() const
 Eigen::Isometry3d Sensor::getWorldTransform() const
 {
   const auto* parent = getParentFrame();
-  if (parent)
+  if (parent) {
     return parent->getWorldTransform() * mProperties.relativeTransform;
+  }
 
   return mProperties.relativeTransform;
 }
@@ -174,8 +176,9 @@ void Sensor::reset()
 void Sensor::update(
     const simulation::World& world, const SensorUpdateContext& context)
 {
-  if (!shouldUpdate(context))
+  if (!shouldUpdate(context)) {
     return;
+  }
 
   updateImpl(world, context);
   markUpdated(context);
@@ -202,14 +205,17 @@ void Sensor::resetImpl()
 //==============================================================================
 bool Sensor::shouldUpdate(const SensorUpdateContext& context) const
 {
-  if (!mProperties.enabled)
+  if (!mProperties.enabled) {
     return false;
+  }
 
-  if (mProperties.updateRate <= 0.0)
+  if (mProperties.updateRate <= 0.0) {
     return true;
+  }
 
-  if (!mHasUpdate)
+  if (!mHasUpdate) {
     return true;
+  }
 
   const double period = 1.0 / mProperties.updateRate;
   const double elapsed = context.time - mLastUpdateContext.time;

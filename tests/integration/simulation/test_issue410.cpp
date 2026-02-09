@@ -63,14 +63,18 @@ namespace {
 bool isContactApproxEqual(
     const Contact& lhs, const Contact& rhs, double tol = 1e-12)
 {
-  if (!lhs.point.isApprox(rhs.point, tol))
+  if (!lhs.point.isApprox(rhs.point, tol)) {
     return false;
-  if (!lhs.normal.isApprox(rhs.normal, tol))
+  }
+  if (!lhs.normal.isApprox(rhs.normal, tol)) {
     return false;
-  if (!lhs.force.isApprox(rhs.force, tol))
+  }
+  if (!lhs.force.isApprox(rhs.force, tol)) {
     return false;
-  if (std::abs(lhs.penetrationDepth - rhs.penetrationDepth) > tol)
+  }
+  if (std::abs(lhs.penetrationDepth - rhs.penetrationDepth) > tol) {
     return false;
+  }
 
   const auto* lhsShape1
       = lhs.collisionObject1 ? lhs.collisionObject1->getShapeFrame() : nullptr;
@@ -105,8 +109,9 @@ std::vector<std::size_t> getJointIndices(const SkeletonPtr& skel)
   indices.reserve(names.size());
   for (const auto& name : names) {
     const auto* joint = skel->getJoint(name);
-    if (joint)
+    if (joint) {
       indices.push_back(joint->getIndexInSkeleton(0));
+    }
   }
   return indices;
 }
@@ -130,7 +135,7 @@ void applyVelocityCommands(
 
 // Verifies that cloned worlds run deterministically when given identical
 // velocity commands, covering the original #410 report.
-TEST(Simulation, DISABLED_ClonedWorldsStayDeterministic)
+TEST(Simulation, ClonedWorldsStayDeterministic)
 {
   auto baseWorld = dart::io::readWorld("dart://sample/skel/fullbody1.skel");
   ASSERT_NE(baseWorld, nullptr);
@@ -186,7 +191,7 @@ TEST(Simulation, DISABLED_ClonedWorldsStayDeterministic)
 
 // Ensure contact points produced under a large time step still report
 // meaningful forces instead of zero-force contacts.
-TEST(Simulation, DISABLED_ContactsReportNonZeroForceWithLargeTimeStep)
+TEST(Simulation, ContactsReportNonZeroForceWithLargeTimeStep)
 {
   auto world = World::create("issue410_contacts");
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
@@ -226,8 +231,9 @@ TEST(Simulation, DISABLED_ContactsReportNonZeroForceWithLargeTimeStep)
   for (int i = 0; i < steps; ++i) {
     world->step();
     const auto& contacts = world->getLastCollisionResult().getContacts();
-    if (contacts.empty())
+    if (contacts.empty()) {
       continue;
+    }
 
     sawContact = true;
     maxContacts = std::max<std::size_t>(maxContacts, contacts.size());

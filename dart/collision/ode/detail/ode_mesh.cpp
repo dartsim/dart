@@ -49,12 +49,14 @@ OdeMesh::OdeMesh(
   fillArraysFromTriMesh(mesh, scale);
 
   /// This will hold the vertex data of the triangle mesh
-  if (!mOdeTriMeshDataId)
+  if (!mOdeTriMeshDataId) {
     mOdeTriMeshDataId = dGeomTriMeshDataCreate();
+  }
 
   const double* normalData = nullptr;
-  if (!mNormals.empty() && mNormals.size() == mVertices.size())
+  if (!mNormals.empty() && mNormals.size() == mVertices.size()) {
     normalData = mNormals.data();
+  }
 
   // Build the ODE triangle mesh
   dGeomTriMeshDataBuildDouble1(
@@ -77,12 +79,14 @@ OdeMesh::OdeMesh(
 {
   fillArrays(mesh);
 
-  if (!mOdeTriMeshDataId)
+  if (!mOdeTriMeshDataId) {
     mOdeTriMeshDataId = dGeomTriMeshDataCreate();
+  }
 
   const double* normalData = nullptr;
-  if (!mNormals.empty() && mNormals.size() == mVertices.size())
+  if (!mNormals.empty() && mNormals.size() == mVertices.size()) {
     normalData = mNormals.data();
+  }
 
   dGeomTriMeshDataBuildDouble1(
       mOdeTriMeshDataId,
@@ -102,8 +106,9 @@ OdeMesh::~OdeMesh()
 {
   dGeomDestroy(mGeomId);
 
-  if (mOdeTriMeshDataId)
+  if (mOdeTriMeshDataId) {
     dGeomTriMeshDataDestroy(mOdeTriMeshDataId);
+  }
 }
 
 //==============================================================================

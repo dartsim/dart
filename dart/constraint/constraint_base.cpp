@@ -89,8 +89,9 @@ dynamics::SkeletonPtr ConstraintBase::compressPath(
 dynamics::SkeletonPtr ConstraintBase::getRootSkeleton(
     dynamics::SkeletonPtr _skeleton)
 {
-  while (_skeleton->mUnionRootSkeleton.lock() != _skeleton)
+  while (_skeleton->mUnionRootSkeleton.lock() != _skeleton) {
     _skeleton = _skeleton->mUnionRootSkeleton.lock();
+  }
 
   return _skeleton;
 }

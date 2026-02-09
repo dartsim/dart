@@ -43,10 +43,11 @@ template <class NodeType>
 math::Jacobian TemplatedJacobianNode<NodeType>::getJacobian(
     const Frame* _inCoordinatesOf) const
 {
-  if (this == _inCoordinatesOf)
+  if (this == _inCoordinatesOf) {
     return static_cast<const NodeType*>(this)->getJacobian();
-  else if (_inCoordinatesOf->isWorld())
+  } else if (_inCoordinatesOf->isWorld()) {
     return static_cast<const NodeType*>(this)->getWorldJacobian();
+  }
 
   return math::AdRJac(
       getTransform(_inCoordinatesOf),
@@ -69,10 +70,11 @@ template <class NodeType>
 math::Jacobian TemplatedJacobianNode<NodeType>::getJacobian(
     const Eigen::Vector3d& _offset, const Frame* _inCoordinatesOf) const
 {
-  if (this == _inCoordinatesOf)
+  if (this == _inCoordinatesOf) {
     return getJacobian(_offset);
-  else if (_inCoordinatesOf->isWorld())
+  } else if (_inCoordinatesOf->isWorld()) {
     return getWorldJacobian(_offset);
+  }
 
   Eigen::Isometry3d T = getTransform(_inCoordinatesOf);
   T.translation() = -T.linear() * _offset;
@@ -123,8 +125,9 @@ math::LinearJacobian TemplatedJacobianNode<NodeType>::getLinearJacobian(
   math::LinearJacobian JLinear;
   JLinear = J.bottomRows<3>() + J.topRows<3>().colwise().cross(_offset);
 
-  if (this == _inCoordinatesOf)
+  if (this == _inCoordinatesOf) {
     return JLinear;
+  }
 
   return getTransform(_inCoordinatesOf).linear() * JLinear;
 }
@@ -153,8 +156,9 @@ template <class NodeType>
 math::Jacobian TemplatedJacobianNode<NodeType>::getJacobianSpatialDeriv(
     const Frame* _inCoordinatesOf) const
 {
-  if (this == _inCoordinatesOf)
+  if (this == _inCoordinatesOf) {
     return static_cast<const NodeType*>(this)->getJacobianSpatialDeriv();
+  }
 
   return math::AdRJac(
       getTransform(_inCoordinatesOf),
@@ -179,8 +183,9 @@ template <class NodeType>
 math::Jacobian TemplatedJacobianNode<NodeType>::getJacobianSpatialDeriv(
     const Eigen::Vector3d& _offset, const Frame* _inCoordinatesOf) const
 {
-  if (this == _inCoordinatesOf)
+  if (this == _inCoordinatesOf) {
     return getJacobianSpatialDeriv(_offset);
+  }
 
   Eigen::Isometry3d T = getTransform(_inCoordinatesOf);
   T.translation() = T.linear() * -_offset;
@@ -194,8 +199,9 @@ template <class NodeType>
 math::Jacobian TemplatedJacobianNode<NodeType>::getJacobianClassicDeriv(
     const Frame* _inCoordinatesOf) const
 {
-  if (_inCoordinatesOf->isWorld())
+  if (_inCoordinatesOf->isWorld()) {
     return static_cast<const NodeType*>(this)->getJacobianClassicDeriv();
+  }
 
   return math::AdRInvJac(
       _inCoordinatesOf->getWorldTransform(),
@@ -219,8 +225,9 @@ math::Jacobian TemplatedJacobianNode<NodeType>::getJacobianClassicDeriv(
   J_d.bottomRows<3>() += J_d.topRows<3>().colwise().cross(p)
                          + J.topRows<3>().colwise().cross(w.cross(p));
 
-  if (_inCoordinatesOf->isWorld())
+  if (_inCoordinatesOf->isWorld()) {
     return J_d;
+  }
 
   return math::AdRInvJac(_inCoordinatesOf->getWorldTransform(), J_d);
 }
@@ -233,8 +240,9 @@ math::LinearJacobian TemplatedJacobianNode<NodeType>::getLinearJacobianDeriv(
   const math::Jacobian& J_d
       = static_cast<const NodeType*>(this)->getJacobianClassicDeriv();
 
-  if (_inCoordinatesOf->isWorld())
+  if (_inCoordinatesOf->isWorld()) {
     return J_d.bottomRows<3>();
+  }
 
   return _inCoordinatesOf->getWorldTransform().linear().transpose()
          * J_d.bottomRows<3>();
@@ -254,9 +262,10 @@ math::LinearJacobian TemplatedJacobianNode<NodeType>::getLinearJacobianDeriv(
   const Eigen::Vector3d& w = getAngularVelocity();
   const Eigen::Vector3d& p = (getWorldTransform().linear() * _offset).eval();
 
-  if (_inCoordinatesOf->isWorld())
+  if (_inCoordinatesOf->isWorld()) {
     return J_d.bottomRows<3>() + J_d.topRows<3>().colwise().cross(p)
            + J.topRows<3>().colwise().cross(w.cross(p));
+  }
 
   return _inCoordinatesOf->getWorldTransform().linear().transpose()
          * (J_d.bottomRows<3>() + J_d.topRows<3>().colwise().cross(p)
@@ -271,8 +280,9 @@ math::AngularJacobian TemplatedJacobianNode<NodeType>::getAngularJacobianDeriv(
   const math::Jacobian& J_d
       = static_cast<const NodeType*>(this)->getJacobianClassicDeriv();
 
-  if (_inCoordinatesOf->isWorld())
+  if (_inCoordinatesOf->isWorld()) {
     return J_d.topRows<3>();
+  }
 
   return _inCoordinatesOf->getWorldTransform().linear().transpose()
          * J_d.topRows<3>();

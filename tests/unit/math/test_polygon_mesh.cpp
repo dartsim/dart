@@ -130,3 +130,52 @@ TEST(PolygonMeshTests, TriangulateComputesNormals)
   EXPECT_TRUE(triMesh.hasVertexNormals());
   EXPECT_EQ(triMesh.getVertexNormals().size(), triMesh.getVertices().size());
 }
+
+//==============================================================================
+TEST(PolygonMeshTests, TriangulateDegenerateFaceFallsBack)
+{
+  PolygonMeshd mesh;
+  mesh.addVertex(0.0, 0.0, 0.0);
+  mesh.addVertex(1.0, 0.0, 0.0);
+  mesh.addVertex(2.0, 0.0, 0.0);
+  mesh.addVertex(3.0, 0.0, 0.0);
+  mesh.addFace({0, 1, 2, 3});
+
+  const auto triMesh = mesh.triangulate();
+  EXPECT_EQ(triMesh.getTriangles().size(), 2u);
+}
+
+//==============================================================================
+TEST(PolygonMeshTests, PreservesVertexNormals)
+{
+  PolygonMeshd mesh;
+  mesh.reserveVertices(3);
+  mesh.reserveVertexNormals(3);
+  mesh.addVertex(0.0, 0.0, 0.0);
+  mesh.addVertex(1.0, 0.0, 0.0);
+  mesh.addVertex(0.0, 1.0, 0.0);
+
+  mesh.addVertexNormal(0.0, 0.0, 1.0);
+  mesh.addVertexNormal(0.0, 0.0, 1.0);
+  mesh.addVertexNormal(0.0, 0.0, 1.0);
+
+  mesh.addFace({0, 1, 2});
+  const auto triMesh = mesh.triangulate();
+
+  ASSERT_TRUE(triMesh.hasVertexNormals());
+  ASSERT_EQ(triMesh.getVertexNormals().size(), triMesh.getVertices().size());
+  EXPECT_TRUE(triMesh.getVertexNormals()[0].isApprox(
+      Eigen::Vector3d(0.0, 0.0, 1.0), 1e-12));
+}
+
+//==============================================================================
+TEST(PolygonMeshTests, TriangulateIgnoresSmallFaces)
+{
+  PolygonMeshd mesh;
+  mesh.addVertex(0.0, 0.0, 0.0);
+  mesh.addVertex(1.0, 0.0, 0.0);
+  mesh.addFace({0, 1});
+
+  const auto triMesh = mesh.triangulate();
+  EXPECT_EQ(triMesh.getTriangles().size(), 0u);
+}

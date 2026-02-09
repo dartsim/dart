@@ -122,8 +122,9 @@ Mesh<S> Mesh<S>::operator+(const Mesh& other) const
 template <typename S>
 Mesh<S>& Mesh<S>::operator+=(const Mesh& other)
 {
-  if (other.isEmpty())
+  if (other.isEmpty()) {
     return *this;
+  }
 
   // Insert vertex normals if both meshes have normals. Otherwise, clean the
   // vertex normals.

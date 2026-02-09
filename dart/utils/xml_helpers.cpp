@@ -86,11 +86,11 @@ std::string toString(char v)
 bool toBool(std::string_view str)
 {
   const std::string upper = common::toUpper(std::string(str));
-  if (upper == "TRUE" || str == "1")
+  if (upper == "TRUE" || str == "1") {
     return true;
-  else if (upper == "FALSE" || str == "0")
+  } else if (upper == "FALSE" || str == "0") {
     return false;
-  else {
+  } else {
     DART_ERROR("value [{}] is not a valid boolean type. Retuning false.", str);
     return false;
   }
@@ -433,11 +433,11 @@ bool getValueBool(
 
   const std::string str = getChildElementText(parentElement, std::string(name));
 
-  if (common::toUpper(str) == "TRUE" || str == "1")
+  if (common::toUpper(str) == "TRUE" || str == "1") {
     return true;
-  else if (common::toUpper(str) == "FALSE" || str == "0")
+  } else if (common::toUpper(str) == "FALSE" || str == "0") {
     return false;
-  else {
+  } else {
     DART_ERROR("value [{}] is not a valid boolean type. Returning false.", str);
     DART_ASSERT(0);
     return false;
@@ -661,10 +661,11 @@ void openXMLFile(
     const common::ResourceRetrieverPtr& retrieverOrNullPtr)
 {
   common::ResourceRetrieverPtr retriever;
-  if (retrieverOrNullPtr)
+  if (retrieverOrNullPtr) {
     retriever = retrieverOrNullPtr;
-  else
+  } else {
     retriever = std::make_shared<common::LocalResourceRetriever>();
+  }
 
   const auto content = retriever->readAll(uri);
   const auto result = doc.Parse(&content.front());
@@ -683,10 +684,11 @@ bool readXmlFile(
     const common::ResourceRetrieverPtr& retrieverOrNullPtr)
 {
   common::ResourceRetrieverPtr retriever;
-  if (retrieverOrNullPtr)
+  if (retrieverOrNullPtr) {
     retriever = retrieverOrNullPtr;
-  else
+  } else {
     retriever = std::make_shared<common::LocalResourceRetriever>();
+  }
 
   const auto content = retriever->readAll(uri);
   const auto result = doc.Parse(&content.front());

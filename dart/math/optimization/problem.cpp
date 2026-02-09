@@ -32,6 +32,7 @@
 
 #include "dart/math/optimization/problem.hpp"
 
+#include "dart/common/exception.hpp"
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
 #include "dart/math/helpers.hpp"
@@ -49,23 +50,33 @@ template <typename T>
 static T getVectorObjectIfAvailable(std::size_t _idx, std::span<const T> _vec)
 {
   // TODO: Should we have an out-of-bounds assertion or throw here?
-  if (_idx < _vec.size())
+  if (_idx < _vec.size()) {
     return _vec[_idx];
+  }
 
   return nullptr;
 }
 
 //==============================================================================
-Problem::Problem(std::size_t _dim) : mDimension(0), mOptimumValue(0.0)
+Problem::Problem(std::size_t dim) : mDimension(0), mOptimumValue(0.0)
 {
-  setDimension(_dim);
+  setDimension(dim);
 }
 
 //==============================================================================
-void Problem::setDimension(std::size_t _dim)
+void Problem::setDimension(std::size_t dim)
 {
-  if (_dim != mDimension) {
-    mDimension = _dim;
+  DART_THROW_T_IF(
+      dim > kMaxDimension,
+      common::InvalidArgumentException,
+      "Problem dimension {} exceeds maximum allowed dimension {}. "
+      "This would allocate approximately {} MB across internal vectors.",
+      dim,
+      kMaxDimension,
+      (dim * 4 * sizeof(double)) / (1024 * 1024));
+
+  if (dim != mDimension) {
+    mDimension = dim;
 
     mInitialGuess = Eigen::VectorXd::Zero(mDimension);
 
@@ -128,20 +139,22 @@ void Problem::addSeed(const Eigen::VectorXd& _seed)
 //==============================================================================
 Eigen::VectorXd& Problem::getSeed(std::size_t _index)
 {
-  if (_index < mSeeds.size())
+  if (_index < mSeeds.size()) {
     return mSeeds[_index];
+  }
 
-  if (mSeeds.size() == 0)
+  if (mSeeds.size() == 0) {
     DART_WARN(
         "Requested seed at index [{}], but there are currently no seeds. "
         "Returning the problem's initial guess instead.",
         _index);
-  else
+  } else {
     DART_WARN(
         "Requested seed at index [{}], but the current max index is [{}]. "
         "Returning the Problem's initial guess instead.",
         _index,
         mSeeds.size() - 1);
+  }
 
   return mInitialGuess;
 }

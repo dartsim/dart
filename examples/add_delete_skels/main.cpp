@@ -67,9 +67,10 @@ public:
           return true;
         case 'w':
         case 'W':
-          if (mWorld->getNumSkeletons() > 1)
+          if (mWorld->getNumSkeletons() > 1) {
             mWorld->removeSkeleton(
                 mWorld->getSkeleton(mWorld->getNumSkeletons() - 1));
+          }
           return true;
         default:
           return false;

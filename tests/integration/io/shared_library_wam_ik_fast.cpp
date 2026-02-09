@@ -206,10 +206,11 @@ inline float IKasin(float f)
       f > -1 - IKFAST_SINCOS_THRESH
       && f < 1 + IKFAST_SINCOS_THRESH); // any more error implies something is
                                         // wrong with the solver
-  if (f <= -1)
+  if (f <= -1) {
     return float(-IKPI_2);
-  else if (f >= 1)
+  } else if (f >= 1) {
     return float(IKPI_2);
+  }
   return asinf(f);
 }
 inline double IKasin(double f)
@@ -218,10 +219,11 @@ inline double IKasin(double f)
       f > -1 - IKFAST_SINCOS_THRESH
       && f < 1 + IKFAST_SINCOS_THRESH); // any more error implies something is
                                         // wrong with the solver
-  if (f <= -1)
+  if (f <= -1) {
     return -IKPI_2;
-  else if (f >= 1)
+  } else if (f >= 1) {
     return IKPI_2;
+  }
   return asin(f);
 }
 
@@ -249,10 +251,11 @@ inline float IKacos(float f)
       f > -1 - IKFAST_SINCOS_THRESH
       && f < 1 + IKFAST_SINCOS_THRESH); // any more error implies something is
                                         // wrong with the solver
-  if (f <= -1)
+  if (f <= -1) {
     return float(IKPI);
-  else if (f >= 1)
+  } else if (f >= 1) {
     return float(0);
+  }
   return acosf(f);
 }
 inline double IKacos(double f)
@@ -261,10 +264,11 @@ inline double IKacos(double f)
       f > -1 - IKFAST_SINCOS_THRESH
       && f < 1 + IKFAST_SINCOS_THRESH); // any more error implies something is
                                         // wrong with the solver
-  if (f <= -1)
+  if (f <= -1) {
     return IKPI;
-  else if (f >= 1)
+  } else if (f >= 1) {
     return 0;
+  }
   return acos(f);
 }
 inline float IKsin(float f)
@@ -293,14 +297,16 @@ inline double IKtan(double f)
 }
 inline float IKsqrt(float f)
 {
-  if (f <= 0.0f)
+  if (f <= 0.0f) {
     return 0.0f;
+  }
   return sqrtf(f);
 }
 inline double IKsqrt(double f)
 {
-  if (f <= 0.0)
+  if (f <= 0.0) {
     return 0.0;
+  }
   return sqrt(f);
 }
 inline float IKatan2Simple(float fy, float fx)
@@ -664,8 +670,9 @@ public:
         if ((((-1.18441410190393) + (((2.9867963734811) * pp))))
                 < -1 - IKFAST_SINCOS_THRESH
             || (((-1.18441410190393) + (((2.9867963734811) * pp))))
-                   > 1 + IKFAST_SINCOS_THRESH)
+                   > 1 + IKFAST_SINCOS_THRESH) {
           continue;
+        }
         IkReal x67 = IKasin(((-1.18441410190393) + (((2.9867963734811) * pp))));
         j9array[0] = ((-1.34027003705633) + (((1.0) * x67)));
         sj9array[0] = IKsin(j9array[0]);
@@ -778,8 +785,9 @@ public:
                         }
                         IkReal x90 = ((-1.0) * (x93.value));
                         IkReal x91 = ((0.045) * py * sj8);
-                        if ((((x87 * x87) + (x89 * x89))) < -0.00001)
+                        if ((((x87 * x87) + (x89 * x89))) < -0.00001) {
                           continue;
+                        }
                         CheckValue<IkReal> x94 = IKPowWithIntegerCheck(
                             IKabs(IKsqrt(((x87 * x87) + (x89 * x89)))), -1);
                         if (!x94.valid) {
@@ -792,8 +800,9 @@ public:
                             || (((x94.value)
                                  * ((((cj9 * x91)) + (((-1.0) * x91))
                                      + (((-1.0) * (0.3) * py * sj8 * sj9))))))
-                                   > 1 + IKFAST_SINCOS_THRESH)
+                                   > 1 + IKFAST_SINCOS_THRESH) {
                           continue;
+                        }
                         IkReal x92 = IKasin(
                             ((x94.value)
                              * ((((cj9 * x91)) + (((-1.0) * x91))
@@ -2815,8 +2824,9 @@ public:
                                                                                                + (((-66.6666666666667)
                                                                                                    * x624))))))
                                                                                        - 1)
-                                                                                       <= IKFAST_SINCOS_THRESH)
+                                                                                       <= IKFAST_SINCOS_THRESH) {
                                                                               continue;
+                                                                            }
                                                                             j6array[0] = IKatan2(
                                                                                 ((17.0)
                                                                                  * (x626.value)),
@@ -3128,8 +3138,9 @@ public:
                                                                                                * x644))
                                                                                            + (((-78.4313725490196) * x642 * x643)) + (((-1.0) * (78.4313725490196) * cj4 * (px * px * px))) + (((56.6666666666667) * x642)) + (((56.6666666666667) * x641))))))
                                                                                    - 1)
-                                                                                   <= IKFAST_SINCOS_THRESH)
+                                                                                   <= IKFAST_SINCOS_THRESH) {
                                                                           continue;
+                                                                        }
                                                                         j6array[0] = IKatan2(
                                                                             ((((1.17647058823529)
                                                                                * x642))
@@ -3456,8 +3467,9 @@ public:
                                                                                            * x663))
                                                                                        + x661))))
                                                                                - 1)
-                                                                               <= IKFAST_SINCOS_THRESH)
+                                                                               <= IKFAST_SINCOS_THRESH) {
                                                                       continue;
+                                                                    }
                                                                     j6array[0] = IKatan2(
                                                                         ((((1.17647058823529)
                                                                            * x660))
@@ -6360,8 +6372,9 @@ public:
                                                                                                  + (((66.6666666666667)
                                                                                                      * x801))))))
                                                                                          - 1)
-                                                                                         <= IKFAST_SINCOS_THRESH)
+                                                                                         <= IKFAST_SINCOS_THRESH) {
                                                                                 continue;
+                                                                              }
                                                                               j6array[0] = IKatan2(
                                                                                   ((17.0)
                                                                                    * (x802.value)),
@@ -6655,8 +6668,9 @@ public:
                                                                                      + IKsqr((
                                                                                          (x820.value) * (((((78.4313725490196) * x817 * x818)) + (((78.4313725490196) * sj4 * (py * py * py))) + (((78.4313725490196) * cj4 * (px * px * px))) + (((-56.6666666666667) * x816)) + (((-56.6666666666667) * x817)) + (((78.4313725490196) * x816 * x819))))))
                                                                                      - 1)
-                                                                                     <= IKFAST_SINCOS_THRESH)
+                                                                                     <= IKFAST_SINCOS_THRESH) {
                                                                             continue;
+                                                                          }
                                                                           j6array[0] = IKatan2(
                                                                               ((((1.17647058823529)
                                                                                  * x816))
@@ -6979,8 +6993,9 @@ public:
                                                                                              * x835
                                                                                              * x837))))))
                                                                                  - 1)
-                                                                                 <= IKFAST_SINCOS_THRESH)
+                                                                                 <= IKFAST_SINCOS_THRESH) {
                                                                         continue;
+                                                                      }
                                                                       j6array[0] = IKatan2(
                                                                           ((((1.17647058823529)
                                                                              * x833))
@@ -8604,16 +8619,18 @@ public:
                       continue;
                     }
                     IkReal x1041 = ((-1.0) * (x1043.value));
-                    if ((((x1040 * x1040) + (x1038 * x1038))) < -0.00001)
+                    if ((((x1040 * x1040) + (x1038 * x1038))) < -0.00001) {
                       continue;
+                    }
                     CheckValue<IkReal> x1044 = IKPowWithIntegerCheck(
                         IKabs(IKsqrt(((x1040 * x1040) + (x1038 * x1038)))), -1);
                     if (!x1044.valid) {
                       continue;
                     }
                     if (((pz * (x1044.value))) < -1 - IKFAST_SINCOS_THRESH
-                        || ((pz * (x1044.value))) > 1 + IKFAST_SINCOS_THRESH)
+                        || ((pz * (x1044.value))) > 1 + IKFAST_SINCOS_THRESH) {
                       continue;
+                    }
                     IkReal x1042 = IKasin((pz * (x1044.value)));
                     j6array[0] = ((((-1.0) * x1042)) + x1041);
                     sj6array[0] = IKsin(j6array[0]);
@@ -23462,8 +23479,9 @@ public:
                 }
                 IkReal x1794 = ((-1.0) * (x1797.value));
                 IkReal x1795 = ((0.045) * sj8);
-                if ((((py * py) + (px * px))) < -0.00001)
+                if ((((py * py) + (px * px))) < -0.00001) {
                   continue;
+                }
                 CheckValue<IkReal> x1798 = IKPowWithIntegerCheck(
                     IKabs(IKsqrt(((py * py) + (px * px)))), -1);
                 if (!x1798.valid) {
@@ -23476,8 +23494,9 @@ public:
                     || (((x1798.value)
                          * (((((-1.0) * cj9 * x1795)) + (((0.3) * sj8 * sj9))
                              + x1795))))
-                           > 1 + IKFAST_SINCOS_THRESH)
+                           > 1 + IKFAST_SINCOS_THRESH) {
                   continue;
+                }
                 IkReal x1796 = IKasin(
                     ((x1798.value)
                      * (((((-1.0) * cj9 * x1795)) + (((0.3) * sj8 * sj9))
@@ -25395,8 +25414,9 @@ public:
                                                                                        + (((-66.6666666666667)
                                                                                            * x1871))))))
                                                                                - 1)
-                                                                               <= IKFAST_SINCOS_THRESH)
+                                                                               <= IKFAST_SINCOS_THRESH) {
                                                                       continue;
+                                                                    }
                                                                     j6array[0] = IKatan2(
                                                                         ((17.0)
                                                                          * (x1873
@@ -25710,8 +25730,9 @@ public:
                                                                                        * x1889
                                                                                        * x1890))))))
                                                                            - 1)
-                                                                           <= IKFAST_SINCOS_THRESH)
+                                                                           <= IKFAST_SINCOS_THRESH) {
                                                                   continue;
+                                                                }
                                                                 j6array[0] = IKatan2(
                                                                     ((((1.17647058823529)
                                                                        * x1888))
@@ -26001,8 +26022,9 @@ public:
                                                                                    * px
                                                                                    * x1907))))))
                                                                        - 1)
-                                                                       <= IKFAST_SINCOS_THRESH)
+                                                                       <= IKFAST_SINCOS_THRESH) {
                                                               continue;
+                                                            }
                                                             j6array[0] = IKatan2(
                                                                 ((((1.17647058823529)
                                                                    * x1907))
@@ -28666,8 +28688,9 @@ public:
                                                                                          + (((66.6666666666667)
                                                                                              * x2048))))))
                                                                                  - 1)
-                                                                                 <= IKFAST_SINCOS_THRESH)
+                                                                                 <= IKFAST_SINCOS_THRESH) {
                                                                         continue;
+                                                                      }
                                                                       j6array[0] = IKatan2(
                                                                           ((17.0)
                                                                            * (x2049
@@ -28977,8 +29000,9 @@ public:
                                                                                      + (((-56.6666666666667)
                                                                                          * x2063))))))
                                                                              - 1)
-                                                                             <= IKFAST_SINCOS_THRESH)
+                                                                             <= IKFAST_SINCOS_THRESH) {
                                                                     continue;
+                                                                  }
                                                                   j6array[0] = IKatan2(
                                                                       ((((1.17647058823529)
                                                                          * x2063))
@@ -29282,8 +29306,9 @@ public:
                                                                                      * x2084))
                                                                                  + x2082))))
                                                                          - 1)
-                                                                         <= IKFAST_SINCOS_THRESH)
+                                                                         <= IKFAST_SINCOS_THRESH) {
                                                                 continue;
+                                                              }
                                                               j6array[0] = IKatan2(
                                                                   ((((1.17647058823529)
                                                                      * x2080))
@@ -30859,8 +30884,9 @@ public:
                                              ((((-1.0) * sj10 * x211))
                                               + ((cj10 * new_r00))))
                                          - 1)
-                                         <= IKFAST_SINCOS_THRESH)
+                                         <= IKFAST_SINCOS_THRESH) {
                                 continue;
+                              }
                               j12array[0] = IKatan2(
                                   ((((-1.0) * cj10 * x211))
                                    + (((-1.0) * (1.0) * new_r00 * sj10))),
@@ -31100,8 +31126,9 @@ public:
                                                 + (((-1.0) * (1.0) * new_r01
                                                     * sj10))))
                                            - 1)
-                                           <= IKFAST_SINCOS_THRESH)
+                                           <= IKFAST_SINCOS_THRESH) {
                                   continue;
+                                }
                                 j12array[0] = IKatan2(
                                     ((((-1.0) * sj10 * x221))
                                      + ((cj10 * new_r01))),
@@ -31281,8 +31308,9 @@ public:
                                         + (((-1.0) * (1.0)
                                             * (new_r02 * new_r02)))))))
                                + IKsqr((new_r02 * x229)) - 1)
-                               <= IKFAST_SINCOS_THRESH)
+                               <= IKFAST_SINCOS_THRESH) {
                       continue;
+                    }
                     j10array[0] = IKatan2(
                         (x229 * (x231.value)
                          * (((1.0) + (((-1.0) * (1.0) * (cj11 * cj11)))
@@ -31808,8 +31836,9 @@ public:
                                                 && IKabs(
                                                        IKsqr(new_r00)
                                                        + IKsqr(new_r01) - 1)
-                                                       <= IKFAST_SINCOS_THRESH)
+                                                       <= IKFAST_SINCOS_THRESH) {
                                               continue;
+                                            }
                                             j12array[0]
                                                 = IKatan2(new_r00, new_r01);
                                             sj12array[0] = IKsin(j12array[0]);
@@ -32036,8 +32065,9 @@ public:
                                                               * (((1.0)
                                                                   * new_r20))))
                                                          - 1)
-                                                         <= IKFAST_SINCOS_THRESH)
+                                                         <= IKFAST_SINCOS_THRESH) {
                                                 continue;
+                                              }
                                               j12array[0] = IKatan2(
                                                   new_r21,
                                                   ((-1.0)
@@ -32277,8 +32307,9 @@ public:
                                                                * (((1.0)
                                                                    * new_r21))))
                                                            + IKsqr(new_r20) - 1)
-                                                           <= IKFAST_SINCOS_THRESH)
+                                                           <= IKFAST_SINCOS_THRESH) {
                                                   continue;
+                                                }
                                                 j12array[0] = IKatan2(
                                                     ((-1.0)
                                                      * (((1.0) * new_r21))),
@@ -32533,8 +32564,9 @@ public:
                                                                       * sj10
                                                                       * x331))))
                                                              - 1)
-                                                             <= IKFAST_SINCOS_THRESH)
+                                                             <= IKFAST_SINCOS_THRESH) {
                                                     continue;
+                                                  }
                                                   j12array[0] = IKatan2(
                                                       ((((-1.0) * cj10 * x331))
                                                        + (((-1.0) * (1.0)
@@ -32807,8 +32839,9 @@ public:
                                                                        * new_r01
                                                                        * sj10))))
                                                                - 1)
-                                                               <= IKFAST_SINCOS_THRESH)
+                                                               <= IKFAST_SINCOS_THRESH) {
                                                       continue;
+                                                    }
                                                     j12array[0] = IKatan2(
                                                         (((cj10 * new_r01))
                                                          + (((-1.0) * sj10
@@ -33095,8 +33128,9 @@ public:
                                                                  + IKsqr(
                                                                      new_r11)
                                                                  - 1)
-                                                                 <= IKFAST_SINCOS_THRESH)
+                                                                 <= IKFAST_SINCOS_THRESH) {
                                                         continue;
+                                                      }
                                                       j12array[0] = IKatan2(
                                                           new_r10, new_r11);
                                                       sj12array[0]
@@ -33714,8 +33748,9 @@ public:
                                                + IKsqr(
                                                    ((-1.0) * new_r20 * x369))
                                                - 1)
-                                               <= IKFAST_SINCOS_THRESH)
+                                               <= IKFAST_SINCOS_THRESH) {
                                       continue;
+                                    }
                                     j12array[0] = IKatan2(
                                         (x369 * (x371.value) * (x372.value)
                                          * (((((-1.0) * (1.0) * new_r01 * sj11))
@@ -33914,8 +33949,9 @@ public:
                                                     + (((-1.0) * (1.0) * new_r00
                                                         * sj11))))))
                                            + IKsqr(((-1.0) * x386 * x387)) - 1)
-                                           <= IKFAST_SINCOS_THRESH)
+                                           <= IKFAST_SINCOS_THRESH) {
                                   continue;
+                                }
                                 j12array[0] = IKatan2(
                                     (x386 * (x389.value)
                                      * (((((-1.0) * cj10 * cj11 * x387))
@@ -34749,8 +34785,9 @@ public:
                                             && IKabs(
                                                    IKsqr(new_r00)
                                                    + IKsqr(new_r01) - 1)
-                                                   <= IKFAST_SINCOS_THRESH)
+                                                   <= IKFAST_SINCOS_THRESH) {
                                           continue;
+                                        }
                                         j12array[0] = IKatan2(new_r00, new_r01);
                                         sj12array[0] = IKsin(j12array[0]);
                                         cj12array[0] = IKcos(j12array[0]);
@@ -34966,8 +35003,9 @@ public:
                                                          (-1.0)
                                                          * (((1.0) * new_r20))))
                                                      - 1)
-                                                     <= IKFAST_SINCOS_THRESH)
+                                                     <= IKFAST_SINCOS_THRESH) {
                                             continue;
+                                          }
                                           j12array[0] = IKatan2(
                                               new_r21,
                                               ((-1.0) * (((1.0) * new_r20))));
@@ -35180,8 +35218,9 @@ public:
                                                             * (((1.0)
                                                                 * new_r21))))
                                                        + IKsqr(new_r20) - 1)
-                                                       <= IKFAST_SINCOS_THRESH)
+                                                       <= IKFAST_SINCOS_THRESH) {
                                               continue;
+                                            }
                                             j12array[0] = IKatan2(
                                                 ((-1.0) * (((1.0) * new_r21))),
                                                 new_r20);
@@ -35396,8 +35435,9 @@ public:
                                                               + (((-1.0) * sj10
                                                                   * x519))))
                                                          - 1)
-                                                         <= IKFAST_SINCOS_THRESH)
+                                                         <= IKFAST_SINCOS_THRESH) {
                                                 continue;
+                                              }
                                               j12array[0] = IKatan2(
                                                   ((((-1.0) * cj10 * x519))
                                                    + (((-1.0) * (1.0) * new_r00
@@ -35646,8 +35686,9 @@ public:
                                                                     * new_r01
                                                                     * sj10))))
                                                            - 1)
-                                                           <= IKFAST_SINCOS_THRESH)
+                                                           <= IKFAST_SINCOS_THRESH) {
                                                   continue;
+                                                }
                                                 j12array[0] = IKatan2(
                                                     ((((-1.0) * sj10 * x530))
                                                      + ((cj10 * new_r01))),
@@ -35905,8 +35946,9 @@ public:
                                                              IKsqr(new_r10)
                                                              + IKsqr(new_r11)
                                                              - 1)
-                                                             <= IKFAST_SINCOS_THRESH)
+                                                             <= IKFAST_SINCOS_THRESH) {
                                                     continue;
+                                                  }
                                                   j12array[0] = IKatan2(
                                                       new_r10, new_r11);
                                                   sj12array[0]
@@ -36425,8 +36467,9 @@ public:
                                                     + ((new_r20 * sj10))))))
                                            + IKsqr(((-1.0) * new_r20 * x557))
                                            - 1)
-                                           <= IKFAST_SINCOS_THRESH)
+                                           <= IKFAST_SINCOS_THRESH) {
                                   continue;
+                                }
                                 j12array[0] = IKatan2(
                                     (x557 * (x559.value) * (x560.value)
                                      * (((((-1.0) * (1.0) * new_r01 * sj11))
@@ -36621,8 +36664,9 @@ public:
                                                 + (((-1.0) * (1.0) * new_r00
                                                     * sj11))))))
                                        + IKsqr(((-1.0) * x574 * x575)) - 1)
-                                       <= IKFAST_SINCOS_THRESH)
+                                       <= IKFAST_SINCOS_THRESH) {
                               continue;
+                            }
                             j12array[0] = IKatan2(
                                 (x574 * (x577.value)
                                  * (((((-1.0) * cj10 * cj11 * x575))

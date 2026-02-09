@@ -64,9 +64,10 @@ TEST(Concurrency, FrameDeletion)
 {
   // Regression test for issue #576
   std::vector<std::future<void>> futures;
-  for (std::size_t i = 0; i < 10; ++i)
+  for (std::size_t i = 0; i < 10; ++i) {
     futures.push_back(
         std::async(std::launch::async, &createAndDestroyFrames, i));
+  }
 
   for (std::size_t i = 0; i < futures.size(); ++i) {
     EXPECT_EQ(Frame::World()->getNumChildEntities(), 0);

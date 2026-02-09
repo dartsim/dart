@@ -72,8 +72,9 @@ void CollisionGroup::addShapeFramesOf(
   DART_ASSERT(otherGroup);
 
   if (otherGroup && this != otherGroup) {
-    for (const auto& info : otherGroup->mObjectInfoList)
+    for (const auto& info : otherGroup->mObjectInfoList) {
       addShapeFrame(info->mFrame);
+    }
   }
 
   addShapeFramesOf(others...);
@@ -102,8 +103,9 @@ void CollisionGroup::addShapeFramesOf(
   DART_ASSERT(skel);
 
   auto numBodyNodes = skel->getNumBodyNodes();
-  for (auto i = 0u; i < numBodyNodes; ++i)
+  for (auto i = 0u; i < numBodyNodes; ++i) {
     addShapeFramesOf(skel->getBodyNode(i));
+  }
 
   addShapeFramesOf(others...);
 }
@@ -201,8 +203,9 @@ void CollisionGroup::removeShapeFramesOf(
       return;
     }
 
-    for (const auto& info : otherGroup->mObjectInfoList)
+    for (const auto& info : otherGroup->mObjectInfoList) {
       removeShapeFrame(info->mFrame);
+    }
   }
 
   removeShapeFramesOf(others...);
@@ -231,8 +234,9 @@ void CollisionGroup::removeShapeFramesOf(
   DART_ASSERT(skel);
 
   auto numBodyNodes = skel->getNumBodyNodes();
-  for (auto i = 0u; i < numBodyNodes; ++i)
+  for (auto i = 0u; i < numBodyNodes; ++i) {
     removeShapeFramesOf(skel->getBodyNode(i));
+  }
 
   removeShapeFramesOf(others...);
 }
@@ -244,8 +248,9 @@ void CollisionGroup::unsubscribeFrom(
 {
   auto it = mBodyNodeSources.find(bodyNode);
   if (it != mBodyNodeSources.end()) {
-    for (const auto& entry : it->second.mObjects)
+    for (const auto& entry : it->second.mObjects) {
       removeShapeFrameInternal(entry.first, bodyNode);
+    }
 
     mBodyNodeSources.erase(it);
   }

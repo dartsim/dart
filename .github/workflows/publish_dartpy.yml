@@ -91,18 +91,13 @@ jobs:
       - uses: actions/checkout@v6
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
 
-      - uses: prefix-dev/setup-pixi@v0.9.3
+      - name: Setup pixi (CI)
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
+        uses: ./.github/actions/setup-pixi-ci
         with:
           pixi-version: latest
-          cache: true
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi${{ runner.os == 'Windows' && '.exe' || '' }}
-
-      - name: Setup sccache
-        if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')
-        uses: mozilla-actions/sccache-action@v0.0.9
-        with:
-          disable_annotations: true
+          install-args: -e py${{ matrix.python-version }}-wheel
 
       - name: Configure environment for compiler cache
         if: (matrix.skip-on-commit != true) || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v')

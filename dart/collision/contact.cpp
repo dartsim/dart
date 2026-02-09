@@ -43,8 +43,9 @@ namespace {
 
 const dynamics::ShapeFrame* getShapeFrame(const CollisionObject* object)
 {
-  if (object == nullptr)
+  if (object == nullptr) {
     return nullptr;
+  }
 
   return object->getShapeFrame();
 }
@@ -52,8 +53,9 @@ const dynamics::ShapeFrame* getShapeFrame(const CollisionObject* object)
 const dynamics::ShapeNode* getShapeNode(const CollisionObject* object)
 {
   const auto* shapeFrame = getShapeFrame(object);
-  if (shapeFrame == nullptr)
+  if (shapeFrame == nullptr) {
     return nullptr;
+  }
 
   return shapeFrame->asShapeNode();
 }
@@ -61,8 +63,9 @@ const dynamics::ShapeNode* getShapeNode(const CollisionObject* object)
 dynamics::ConstBodyNodePtr getBodyNode(const CollisionObject* object)
 {
   const auto* shapeNode = getShapeNode(object);
-  if (shapeNode == nullptr)
+  if (shapeNode == nullptr) {
     return nullptr;
+  }
 
   return shapeNode->getBodyNodePtr();
 }
@@ -124,13 +127,15 @@ dynamics::ConstBodyNodePtr Contact::getBodyNodePtr2() const
 //==============================================================================
 bool Contact::isZeroNormal(const Eigen::Vector3d& normal)
 {
-  if (!normal.allFinite())
+  if (!normal.allFinite()) {
     return true;
+  }
 
-  if (normal.squaredNorm() < getNormalEpsilonSquared())
+  if (normal.squaredNorm() < getNormalEpsilonSquared()) {
     return true;
-  else
+  } else {
     return false;
+  }
 }
 
 //==============================================================================

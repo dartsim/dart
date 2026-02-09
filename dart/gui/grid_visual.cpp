@@ -54,8 +54,9 @@ GridVisual::GridVisual()
 //==============================================================================
 void GridVisual::setNumCells(std::size_t cells)
 {
-  if (mNumCells == cells)
+  if (mNumCells == cells) {
     return;
+  }
 
   mNumCells = cells;
   mNeedUpdate = true;
@@ -70,11 +71,13 @@ std::size_t GridVisual::getNumCells() const
 //==============================================================================
 void GridVisual::setMinorLineStepSize(double size)
 {
-  if (std::abs(mMinorLineStepSize - size) < 1e-6)
+  if (std::abs(mMinorLineStepSize - size) < 1e-6) {
     return;
+  }
 
-  if (size < 0.0)
+  if (size < 0.0) {
     size = 0.0;
+  }
 
   mMinorLineStepSize = size;
   mNeedUpdate = true;
@@ -89,8 +92,9 @@ double GridVisual::getMinorLineStepSize() const
 //==============================================================================
 void GridVisual::setNumMinorLinesPerMajorLine(std::size_t size)
 {
-  if (mNumMinorLinesPerMajorLine == size)
+  if (mNumMinorLinesPerMajorLine == size) {
     return;
+  }
 
   mNumMinorLinesPerMajorLine = size;
   mNeedUpdate = true;
@@ -105,8 +109,9 @@ std::size_t GridVisual::getNumMinorLinesPerMajorLine() const
 //==============================================================================
 void GridVisual::setPlaneType(GridVisual::PlaneType type)
 {
-  if (mPlaneType == type)
+  if (mPlaneType == type) {
     return;
+  }
 
   mPlaneType = type;
   mNeedUpdate = true;
@@ -121,8 +126,9 @@ GridVisual::PlaneType GridVisual::getPlaneType() const
 //==============================================================================
 void GridVisual::setOffset(const Eigen::Vector3d& offset)
 {
-  if (mOffset.isApprox(offset))
+  if (mOffset.isApprox(offset)) {
     return;
+  }
 
   mOffset = offset;
   mNeedUpdate = true;
@@ -137,15 +143,17 @@ const Eigen::Vector3d& GridVisual::getOffset() const
 //==============================================================================
 void GridVisual::display(bool display)
 {
-  if (mDisplayGrid == display)
+  if (mDisplayGrid == display) {
     return;
+  }
 
   mDisplayGrid = display;
 
-  if (mDisplayGrid)
+  if (mDisplayGrid) {
     addChild(mGeode);
-  else
+  } else {
     removeChild(mGeode);
+  }
 }
 
 //==============================================================================
@@ -195,8 +203,9 @@ Eigen::Vector4d GridVisual::getMinorLineColor() const
 //==============================================================================
 void GridVisual::setAxisLineWidth(float width)
 {
-  if (width < 1)
+  if (width < 1) {
     width = 1;
+  }
 
   mAxisLineWidth->setWidth(width);
   mAxisLineGeom->getOrCreateStateSet()->setAttributeAndModes(mAxisLineWidth);
@@ -211,8 +220,9 @@ float GridVisual::getAxisLineWidth() const
 //==============================================================================
 void GridVisual::setMajorLineWidth(float width)
 {
-  if (width < 1)
+  if (width < 1) {
     width = 1;
+  }
 
   mMajorLineWidth->setWidth(width);
   mMinorLineGeom->getOrCreateStateSet()->setAttributeAndModes(mMinorLineWidth);
@@ -227,8 +237,9 @@ float GridVisual::getMajorLineWidth() const
 //==============================================================================
 void GridVisual::setMinorLineWidth(float width)
 {
-  if (width < 1)
+  if (width < 1) {
     width = 1;
+  }
 
   mMinorLineWidth->setWidth(width);
   mMajorLineGeom->getOrCreateStateSet()->setAttributeAndModes(mMajorLineWidth);
@@ -412,8 +423,9 @@ void setVertices(
 //==============================================================================
 void GridVisual::refresh()
 {
-  if (!mNeedUpdate)
+  if (!mNeedUpdate) {
     return;
+  }
 
   if (mDisplayGrid) {
     setVertices(
@@ -428,13 +440,15 @@ void GridVisual::refresh()
 
     mMajorLineFaces->clear();
     mMajorLineFaces->reserve(mMajorLineVertices->size());
-    for (auto i = 0u; i < mMajorLineVertices->size(); ++i)
+    for (auto i = 0u; i < mMajorLineVertices->size(); ++i) {
       mMajorLineFaces->push_back(i);
+    }
 
     mMinorLineFaces->clear();
     mMinorLineFaces->reserve(mMinorLineVertices->size());
-    for (auto i = 0u; i < mMinorLineVertices->size(); ++i)
+    for (auto i = 0u; i < mMinorLineVertices->size(); ++i) {
       mMinorLineFaces->push_back(i);
+    }
 
     mMinorLineGeom->setVertexArray(mMinorLineVertices);
     mMinorLineGeom->getOrCreateStateSet()->setAttributeAndModes(

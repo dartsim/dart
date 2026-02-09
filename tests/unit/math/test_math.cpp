@@ -1292,8 +1292,9 @@ Jacobian AdTJac1(const Eigen::Isometry3d& _T, const Jacobian& _J)
 {
   Jacobian res = Jacobian::Zero(6, _J.cols());
 
-  for (int i = 0; i < _J.cols(); ++i)
+  for (int i = 0; i < _J.cols(); ++i) {
     res.col(i) = AdT(_T, _J.col(i));
+  }
   return res;
 }
 
@@ -1309,8 +1310,9 @@ typename Derived::PlainObject AdTJac2(
 
   typename Derived::PlainObject ret(_J.rows(), _J.cols());
 
-  for (int i = 0; i < _J.cols(); ++i)
+  for (int i = 0; i < _J.cols(); ++i) {
     ret.col(i) = AdT(_T, _J.col(i));
+  }
 
   return ret;
 }

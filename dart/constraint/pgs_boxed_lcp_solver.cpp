@@ -94,15 +94,17 @@ bool PgsBoxedLcpSolver::solve(
     int* findex,
     bool earlyTermination)
 {
-  if (n <= 0 || !A || !x || !b || !lo || !hi)
+  if (n <= 0 || !A || !x || !b || !lo || !hi) {
     return false;
+  }
 
   const int nSkip = math::padding(n);
   Eigen::MatrixXd Ablock(n, n);
   for (int r = 0; r < n; ++r) {
     const double* row = A + nSkip * r;
-    for (int c = 0; c < n; ++c)
+    for (int c = 0; c < n; ++c) {
       Ablock(r, c) = row[c];
+    }
   }
 
   Eigen::VectorXd bVec(n);
@@ -114,8 +116,9 @@ bool PgsBoxedLcpSolver::solve(
     bVec[i] = b[i];
     loVec[i] = lo[i];
     hiVec[i] = hi[i];
-    if (findex)
+    if (findex) {
       findexVec[i] = findex[i];
+    }
     xVec[i] = x[i];
   }
 
@@ -145,8 +148,9 @@ bool PgsBoxedLcpSolver::solve(
 
   const math::LcpResult result = solver.solve(problem, xVec, options);
 
-  for (int i = 0; i < n; ++i)
+  for (int i = 0; i < n; ++i) {
     x[i] = xVec[i];
+  }
 
   return result.succeeded();
 }

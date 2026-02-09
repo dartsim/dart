@@ -100,8 +100,9 @@ bool Connection::isConnected() const
 //==============================================================================
 void Connection::disconnect() const
 {
-  if (auto connectionBody = mWeakConnectionBody.lock())
+  if (auto connectionBody = mWeakConnectionBody.lock()) {
     connectionBody->disconnect();
+  }
 }
 
 //==============================================================================

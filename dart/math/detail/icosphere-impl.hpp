@@ -45,8 +45,9 @@ template <typename S>
 std::size_t Icosphere<S>::getNumVertices(std::size_t subdivisions)
 {
   std::size_t numVertices = 12;
-  for (auto i = 0u; i < subdivisions; ++i)
+  for (auto i = 0u; i < subdivisions; ++i) {
     numVertices += getNumEdges(i);
+  }
   return numVertices;
 }
 
@@ -90,7 +91,8 @@ Icosphere<S>::computeIcosahedron(S radius)
          {z, -x, 0},
          {-z, -x, 0}};
 
-  static const Triangles triangles
+  // Do NOT make static: causes SEGFAULT on ARM64/NEON (alignment issue)
+  const Triangles triangles
       = {{0, 4, 1},  {0, 9, 4},  {9, 5, 4},  {4, 5, 8},  {4, 8, 1},
          {8, 10, 1}, {8, 3, 10}, {5, 3, 8},  {5, 2, 3},  {2, 7, 3},
          {7, 10, 3}, {7, 6, 10}, {7, 11, 6}, {11, 0, 6}, {0, 1, 6},
@@ -136,8 +138,9 @@ void Icosphere<S>::build()
   std::tie(this->mVertices, this->mTriangles) = computeIcosahedron(mRadius);
 
   // Return if no need to subdivide
-  if (mSubdivisions == 0)
+  if (mSubdivisions == 0) {
     return;
+  }
 
   // Create index map that is used for subdivision
   using IndexMap = std::map<std::pair<std::size_t, std::size_t>, std::size_t>;
@@ -179,8 +182,9 @@ void Icosphere<S>::build()
 
         // Sort indices to guarantee that the key is unique for the same pairs
         // of indices.
-        if (indexA > indexB)
+        if (indexA > indexB) {
           std::swap(indexA, indexB);
+        }
 
         // Check whether the mid vertex given index pair is already created.
         const auto result = midVertexIndices.insert(

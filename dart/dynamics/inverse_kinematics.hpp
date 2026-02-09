@@ -736,7 +736,7 @@ public:
 class DART_API InverseKinematics::TaskSpaceRegion : public ErrorMethod
 {
 public:
-  struct UniqueProperties
+  struct DART_API UniqueProperties
   {
     /// Setting this to true (which is default) will tell it to compute the
     /// error based on the center of the Task Space Region instead of the edge
@@ -952,7 +952,7 @@ private:
 class DART_API InverseKinematics::JacobianDLS : public GradientMethod
 {
 public:
-  struct UniqueProperties
+  struct DART_API UniqueProperties
   {
     /// Damping coefficient
     double mDamping;

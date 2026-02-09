@@ -127,8 +127,9 @@ RollingResult runRollingTrial(
   dart::dynamics::FreeJoint::setTransformOf(object->getJoint(0), objectTf);
   world->addSkeleton(object);
 
-  for (std::size_t i = 0; i < 2000; ++i)
+  for (std::size_t i = 0; i < 2000; ++i) {
     world->step();
+  }
 
   const auto& collisionResult = world->getLastCollisionResult();
   const auto transform = objectBody->getWorldTransform();

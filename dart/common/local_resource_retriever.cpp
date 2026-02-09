@@ -46,11 +46,13 @@ namespace common {
 //==============================================================================
 bool LocalResourceRetriever::exists(const Uri& _uri)
 {
-  if (_uri.mScheme.get_value_or("file") != "file")
+  if (_uri.mScheme.get_value_or("file") != "file") {
     return false;
+  }
 
-  if (!_uri.mPath)
+  if (!_uri.mPath) {
     return false;
+  }
 
   const auto path = _uri.getFilesystemPath();
 
@@ -60,35 +62,39 @@ bool LocalResourceRetriever::exists(const Uri& _uri)
 //==============================================================================
 common::ResourcePtr LocalResourceRetriever::retrieve(const Uri& _uri)
 {
-  if (_uri.mScheme.get_value_or("file") != "file")
+  if (_uri.mScheme.get_value_or("file") != "file") {
     return nullptr;
-  else if (!_uri.mPath)
+  } else if (!_uri.mPath) {
     return nullptr;
+  }
 
   const auto resource
       = std::make_shared<LocalResource>(_uri.getFilesystemPath());
 
-  if (resource->isGood())
+  if (resource->isGood()) {
     return resource;
-  else
+  } else {
     return nullptr;
+  }
 }
 
 //==============================================================================
 DART_SUPPRESS_DEPRECATED_BEGIN
 std::string LocalResourceRetriever::getFilePath(const Uri& uri)
 {
-  if (uri.mScheme.get_value_or("file") != "file")
+  if (uri.mScheme.get_value_or("file") != "file") {
     return "";
-  else if (!uri.mPath)
+  } else if (!uri.mPath) {
     return "";
+  }
 
   const auto path = uri.getFilesystemPath();
 
-  if (std::ifstream(path, std::ios::binary).good())
+  if (std::ifstream(path, std::ios::binary).good()) {
     return path;
-  else
+  } else {
     return "";
+  }
 }
 DART_SUPPRESS_DEPRECATED_END
 

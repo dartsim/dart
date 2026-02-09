@@ -101,8 +101,9 @@ void CapsuleShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC) {
     return;
+  }
 
   extractData(false);
 }
@@ -179,10 +180,11 @@ CapsuleShapeDrawable::CapsuleShapeDrawable(
 //==============================================================================
 void CapsuleShapeDrawable::refresh(bool firstTime)
 {
-  if (mCapsuleShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mCapsuleShape->getDataVariance() == dart::dynamics::Shape::STATIC) {
     setDataVariance(::osg::Object::STATIC);
-  else
+  } else {
     setDataVariance(::osg::Object::DYNAMIC);
+  }
 
   if (mCapsuleShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
       || firstTime) {

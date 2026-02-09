@@ -232,14 +232,16 @@ struct signal_maximum
   {
     // If there are no slots to call, just return the
     // default-constructed value
-    if (first == last)
+    if (first == last) {
       return T();
+    }
 
     T max_value = *first++;
 
     while (first != last) {
-      if (max_value < *first)
+      if (max_value < *first) {
         max_value = *first;
+      }
       ++first;
     }
 
@@ -258,8 +260,9 @@ struct signal_sum
   {
     // If there are no slots to call, just return the
     // default-constructed value
-    if (first == last)
+    if (first == last) {
       return T();
+    }
 
     T sum = *first;
     first++;
@@ -317,11 +320,12 @@ void frameChangeCallback(
   std::string newFrameName
       = _newParentFrame == nullptr ? "(empty)" : _newParentFrame->getName();
 
-  if (_newParentFrame)
+  if (_newParentFrame) {
     std::cout << "[" << _entity->getName() << "]: " << oldFrameName << " --> "
               << newFrameName << std::endl;
-  else
+  } else {
     std::cout << "Entity (" << _entity << ") has been destroyed" << std::endl;
+  }
 }
 
 //==============================================================================
@@ -429,8 +433,9 @@ TEST(Signal, ConcurrentUsage)
     });
   }
 
-  for (auto& thread : workers)
+  for (auto& thread : workers) {
     thread.join();
+  }
 
   keepRaising.store(false, std::memory_order_relaxed);
   raiser.join();

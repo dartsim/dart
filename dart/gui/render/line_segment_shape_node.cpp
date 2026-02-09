@@ -107,8 +107,9 @@ void LineSegmentShapeNode::refresh()
 
   setNodeMask(mVisualAspect->isHidden() ? 0x0 : ~0x0);
 
-  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mShape->getDataVariance() == dart::dynamics::Shape::STATIC) {
     return;
+  }
 
   extractData(false);
 }
@@ -198,10 +199,11 @@ LineSegmentShapeDrawable::LineSegmentShapeDrawable(
 //==============================================================================
 void LineSegmentShapeDrawable::refresh(bool firstTime)
 {
-  if (mLineSegmentShape->getDataVariance() == dart::dynamics::Shape::STATIC)
+  if (mLineSegmentShape->getDataVariance() == dart::dynamics::Shape::STATIC) {
     setDataVariance(::osg::Object::STATIC);
-  else
+  } else {
     setDataVariance(::osg::Object::DYNAMIC);
+  }
 
   if (mLineSegmentShape->checkDataVariance(
           dart::dynamics::Shape::DYNAMIC_ELEMENTS)
@@ -227,11 +229,13 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
       || firstTime) {
     const auto vertices = mLineSegmentShape->getVertices();
 
-    if (mVertices->size() != vertices.size())
+    if (mVertices->size() != vertices.size()) {
       mVertices->resize(vertices.size());
+    }
 
-    for (std::size_t i = 0; i < vertices.size(); ++i)
+    for (std::size_t i = 0; i < vertices.size(); ++i) {
       (*mVertices)[i] = eigToOsgVec3(vertices[i]);
+    }
 
     setVertexArray(mVertices);
   }

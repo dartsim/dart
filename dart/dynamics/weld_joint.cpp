@@ -141,8 +141,9 @@ BodyNode* WeldJoint::merge()
   for (const Node* node : nodes) {
     const Frame* frame = dynamic_cast<const Frame*>(node);
     Eigen::Isometry3d worldTf = Eigen::Isometry3d::Identity();
-    if (frame)
+    if (frame) {
       worldTf = frame->getTransform();
+    }
 
     Node* clone = node->cloneNode(parent);
     clone->attach();
@@ -155,8 +156,9 @@ BodyNode* WeldJoint::merge()
   // Reparent grandchildren while keeping their world transforms intact.
   std::vector<BodyNode*> grandchildren;
   grandchildren.reserve(child->getNumChildBodyNodes());
-  for (std::size_t i = 0; i < child->getNumChildBodyNodes(); ++i)
+  for (std::size_t i = 0; i < child->getNumChildBodyNodes(); ++i) {
     grandchildren.push_back(child->getChildBodyNode(i));
+  }
 
   for (BodyNode* grandchild : grandchildren) {
     Joint* joint = grandchild->getParentJoint();

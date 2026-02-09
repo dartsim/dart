@@ -159,15 +159,17 @@ bool GradientDescentSolver::solve()
       satisfied = true;
       for (std::size_t i = 0; i < problem->getNumEqConstraints(); ++i) {
         mEqConstraintCostCache[i] = problem->getEqConstraint(i)->eval(x);
-        if (std::abs(mEqConstraintCostCache[i]) > tol)
+        if (std::abs(mEqConstraintCostCache[i]) > tol) {
           satisfied = false;
+        }
       }
 
       // Check if the inequality constraints are satisfied
       for (std::size_t i = 0; i < problem->getNumIneqConstraints(); ++i) {
         mIneqConstraintCostCache[i] = problem->getIneqConstraint(i)->eval(x);
-        if (mIneqConstraintCostCache[i] > std::abs(tol))
+        if (mIneqConstraintCostCache[i] > std::abs(tol)) {
           satisfied = false;
+        }
       }
 
       dx.setZero();
@@ -176,12 +178,14 @@ bool GradientDescentSolver::solve()
       // Compute the gradient of the objective, combined with the weighted
       // gradients of the softened constraints
       const FunctionPtr& objective = problem->getObjective();
-      if (objective)
+      if (objective) {
         objective->evalGradient(x, dxMap);
+      }
       for (int i = 0; i < static_cast<int>(problem->getNumEqConstraints());
            ++i) {
-        if (std::abs(mEqConstraintCostCache[i]) < tol)
+        if (std::abs(mEqConstraintCostCache[i]) < tol) {
           continue;
+        }
 
         problem->getEqConstraint(i)->evalGradient(x, gradMap);
 
@@ -200,8 +204,9 @@ bool GradientDescentSolver::solve()
 
       for (int i = 0; i < static_cast<int>(problem->getNumIneqConstraints());
            ++i) {
-        if (mIneqConstraintCostCache[i] < tol)
+        if (mIneqConstraintCostCache[i] < tol) {
           continue;
+        }
 
         problem->getIneqConstraint(i)->evalGradient(x, gradMap);
 
@@ -217,10 +222,11 @@ bool GradientDescentSolver::solve()
       x -= gamma * dx;
       clampToBoundary(x);
 
-      if ((x - lastx).norm() < tol)
+      if ((x - lastx).norm() < tol) {
         minimized = true;
-      else
+      } else {
         minimized = false;
+      }
 
       lastx = x;
       ++stepCount;
@@ -239,8 +245,9 @@ bool GradientDescentSolver::solve()
             << "grad: " << dx.transpose() << std::endl;
       }
 
-      if (stepCount > mProperties.mNumMaxIterations)
+      if (stepCount > mProperties.mNumMaxIterations) {
         break;
+      }
 
     } while (!minimized || !satisfied);
 
@@ -248,8 +255,9 @@ bool GradientDescentSolver::solve()
       ++attemptCount;
 
       if (mGradientP.mMaxAttempts > 0
-          && attemptCount >= mGradientP.mMaxAttempts)
+          && attemptCount >= mGradientP.mMaxAttempts) {
         break;
+      }
 
       if (attemptCount - 1 < problem->getSeeds().size()) {
         x = problem->getSeed(attemptCount - 1);
@@ -262,10 +270,11 @@ bool GradientDescentSolver::solve()
 
   mLastConfig = x;
   problem->setOptimalSolution(x);
-  if (problem->getObjective())
+  if (problem->getObjective()) {
     problem->setOptimumValue(problem->getObjective()->eval(x));
-  else
+  } else {
     problem->setOptimumValue(0.0);
+  }
 
   return minimized && satisfied;
 }
@@ -317,8 +326,9 @@ GradientDescentSolver::getGradientDescentProperties() const
 //==============================================================================
 void GradientDescentSolver::copy(const GradientDescentSolver& _other)
 {
-  if (this == &_other)
+  if (this == &_other) {
     return;
+  }
 
   setProperties(_other.getGradientDescentProperties());
 }
@@ -418,11 +428,13 @@ const Eigen::VectorXd& GradientDescentSolver::getIneqConstraintWeights() const
 //==============================================================================
 void GradientDescentSolver::randomizeConfiguration(Eigen::VectorXd& _x)
 {
-  if (nullptr == mProperties.mProblem)
+  if (nullptr == mProperties.mProblem) {
     return;
+  }
 
-  if (_x.size() < static_cast<int>(mProperties.mProblem->getDimension()))
+  if (_x.size() < static_cast<int>(mProperties.mProblem->getDimension())) {
     _x = Eigen::VectorXd::Zero(mProperties.mProblem->getDimension());
+  }
 
   for (int i = 0; i < _x.size(); ++i) {
     double lower = mProperties.mProblem->getLowerBounds()[i];
@@ -440,8 +452,9 @@ void GradientDescentSolver::randomizeConfiguration(Eigen::VectorXd& _x)
 //==============================================================================
 void GradientDescentSolver::clampToBoundary(Eigen::VectorXd& _x)
 {
-  if (nullptr == mProperties.mProblem)
+  if (nullptr == mProperties.mProblem) {
     return;
+  }
 
   if (_x.size() != static_cast<int>(mProperties.mProblem->getDimension())) {
     DART_ERROR(

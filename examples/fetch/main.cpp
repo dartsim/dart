@@ -66,8 +66,9 @@ public:
 
   void customPreStep() override
   {
-    if (!mRobot || !mMocap || !mInteractiveFrame)
+    if (!mRobot || !mMocap || !mInteractiveFrame) {
       return;
+    }
 
     mMocap->getParentJoint()->setTransformFromParentBodyNode(
         mInteractiveFrame->getTransform());
@@ -108,13 +109,15 @@ public:
     // Menu
     if (ImGui::BeginMenuBar()) {
       if (ImGui::BeginMenu("Menu")) {
-        if (ImGui::MenuItem("Exit"))
+        if (ImGui::MenuItem("Exit")) {
           mViewer->setDone(true);
+        }
         ImGui::EndMenu();
       }
       if (ImGui::BeginMenu("Help")) {
-        if (ImGui::MenuItem("About DART"))
+        if (ImGui::MenuItem("About DART")) {
           mViewer->showAbout();
+        }
         ImGui::EndMenu();
       }
       ImGui::EndMenuBar();
@@ -138,11 +141,13 @@ public:
     if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
       int e = mViewer->isSimulating() ? 0 : 1;
       if (mViewer->isAllowingSimulation()) {
-        if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating())
+        if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating()) {
           mViewer->simulate(true);
+        }
         ImGui::SameLine();
-        if (ImGui::RadioButton("Pause", &e, 1) && mViewer->isSimulating())
+        if (ImGui::RadioButton("Pause", &e, 1) && mViewer->isSimulating()) {
           mViewer->simulate(false);
+        }
       }
     }
 
@@ -227,6 +232,7 @@ int main(int argc, char* argv[])
   // Create a Viewer and set it up with the WorldNode
   auto viewer = gui::ImGuiViewer();
   viewer.setImGuiScale(static_cast<float>(guiScale));
+  viewer.getImGuiHandler()->setFontScale(static_cast<float>(guiScale));
   viewer.addWorldNode(node);
 
   // Create grid

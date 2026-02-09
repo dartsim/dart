@@ -99,8 +99,9 @@ TEST(LcpComparisonHarness, BaraffOnStandardFixtures)
   options.complementarityTolerance = 1e-6;
 
   for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
-    if (fixture.kind != dart::test::LcpFixtureKind::Standard)
+    if (fixture.kind != dart::test::LcpFixtureKind::Standard) {
       continue;
+    }
     ExpectSolverPassesFixture(solver, fixture, options, 1e-6, false);
   }
 }
@@ -118,8 +119,9 @@ TEST(LcpComparisonHarness, InteriorPointOnStandardFixtures)
   options.complementarityTolerance = 1e-6;
 
   for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
-    if (fixture.kind != dart::test::LcpFixtureKind::Standard)
+    if (fixture.kind != dart::test::LcpFixtureKind::Standard) {
       continue;
+    }
     ExpectSolverPassesFixture(solver, fixture, options, 1e-4, true);
   }
 }
@@ -137,8 +139,9 @@ TEST(LcpComparisonHarness, MprgpOnStandardFixtures)
   options.complementarityTolerance = 1e-6;
 
   for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
-    if (fixture.kind != dart::test::LcpFixtureKind::Standard)
+    if (fixture.kind != dart::test::LcpFixtureKind::Standard) {
       continue;
+    }
     ExpectSolverPassesFixture(solver, fixture, options, 1e-6, false);
   }
 }
@@ -149,8 +152,9 @@ TEST(LcpComparisonHarness, ShockPropagationOnStandardFixtures)
   dart::math::ShockPropagationSolver solver;
 
   for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
-    if (fixture.kind != dart::test::LcpFixtureKind::Standard)
+    if (fixture.kind != dart::test::LcpFixtureKind::Standard) {
       continue;
+    }
 
     const int n = static_cast<int>(fixture.problem.b.size());
 
@@ -178,16 +182,18 @@ TEST(LcpComparisonHarness, ShockPropagationOnFrictionIndexFixtures)
 
   for (const auto& fixture : dart::test::getFrictionIndexFixtures()) {
     const int n = static_cast<int>(fixture.problem.b.size());
-    if (n % 3 != 0)
+    if (n % 3 != 0) {
       continue;
+    }
 
     const int numBlocks = n / 3;
     dart::math::ShockPropagationSolver::Parameters params;
     params.blockSizes.assign(numBlocks, 3);
     params.layers.clear();
     params.layers.reserve(numBlocks);
-    for (int i = 0; i < numBlocks; ++i)
+    for (int i = 0; i < numBlocks; ++i) {
       params.layers.push_back({i});
+    }
 
     LcpOptions options = solver.getDefaultOptions();
     options.warmStart = false;
@@ -310,11 +316,13 @@ TEST(LcpComparisonHarness, BgsOnStandardFixtureWithExplicitBlocks)
   dart::math::BgsSolver solver;
 
   for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
-    if (fixture.kind != dart::test::LcpFixtureKind::Standard)
+    if (fixture.kind != dart::test::LcpFixtureKind::Standard) {
       continue;
+    }
     const int n = static_cast<int>(fixture.problem.b.size());
-    if (n > 3)
+    if (n > 3) {
       continue;
+    }
 
     dart::math::BgsSolver::Parameters params;
     params.blockSizes = {n};
@@ -355,11 +363,13 @@ TEST(LcpComparisonHarness, BlockedJacobiOnStandardFixtureWithExplicitBlocks)
   dart::math::BlockedJacobiSolver solver;
 
   for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
-    if (fixture.kind != dart::test::LcpFixtureKind::Standard)
+    if (fixture.kind != dart::test::LcpFixtureKind::Standard) {
       continue;
+    }
     const int n = static_cast<int>(fixture.problem.b.size());
-    if (n > 3)
+    if (n > 3) {
       continue;
+    }
 
     dart::math::BlockedJacobiSolver::Parameters params;
     params.blockSizes = {n};
@@ -612,8 +622,9 @@ TEST(LcpComparisonHarness, LemkeOnStandardFixtures)
   options.complementarityTolerance = 1e-6;
 
   for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
-    if (fixture.kind != dart::test::LcpFixtureKind::Standard)
+    if (fixture.kind != dart::test::LcpFixtureKind::Standard) {
       continue;
+    }
     ExpectSolverPassesFixture(solver, fixture, options, 1e-6, false);
   }
 }
@@ -630,8 +641,9 @@ TEST(LcpComparisonHarness, DirectOnStandardFixtures)
   options.complementarityTolerance = 1e-8;
 
   for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
-    if (fixture.kind != dart::test::LcpFixtureKind::Standard)
+    if (fixture.kind != dart::test::LcpFixtureKind::Standard) {
       continue;
+    }
     ExpectSolverPassesFixture(solver, fixture, options, 1e-8, false);
   }
 }
@@ -649,8 +661,9 @@ TEST(LcpComparisonHarness, MinimumMapNewtonOnStandardFixtures)
   options.complementarityTolerance = 1e-6;
 
   for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
-    if (fixture.kind != dart::test::LcpFixtureKind::Standard)
+    if (fixture.kind != dart::test::LcpFixtureKind::Standard) {
       continue;
+    }
     ExpectSolverPassesFixture(solver, fixture, options, 1e-6, false);
   }
 }
@@ -668,8 +681,9 @@ TEST(LcpComparisonHarness, FischerBurmeisterNewtonOnStandardFixtures)
   options.complementarityTolerance = 1e-6;
 
   for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
-    if (fixture.kind != dart::test::LcpFixtureKind::Standard)
+    if (fixture.kind != dart::test::LcpFixtureKind::Standard) {
       continue;
+    }
     ExpectSolverPassesFixture(solver, fixture, options, 1e-6, false);
   }
 }
@@ -691,8 +705,9 @@ TEST(LcpComparisonHarness, PenalizedFischerBurmeisterNewtonOnStandardFixtures)
   options.customOptions = &params;
 
   for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
-    if (fixture.kind != dart::test::LcpFixtureKind::Standard)
+    if (fixture.kind != dart::test::LcpFixtureKind::Standard) {
       continue;
+    }
     ExpectSolverPassesFixture(solver, fixture, options, 1e-6, false);
   }
 }

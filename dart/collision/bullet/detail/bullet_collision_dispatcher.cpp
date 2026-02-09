@@ -70,16 +70,18 @@ auto BulletCollisionDispatcher::getFilter() const
 bool BulletCollisionDispatcher::needsCollision(
     const btCollisionObject* body0, const btCollisionObject* body1)
 {
-  if (mDone)
+  if (mDone) {
     return false;
+  }
 
   const auto collObj0
       = static_cast<BulletCollisionObject*>(body0->getUserPointer());
   const auto collObj1
       = static_cast<BulletCollisionObject*>(body1->getUserPointer());
 
-  if (mFilter && mFilter->ignoresCollision(collObj0, collObj1))
+  if (mFilter && mFilter->ignoresCollision(collObj0, collObj1)) {
     return false;
+  }
 
   return btCollisionDispatcher::needsCollision(body0, body1);
 }

@@ -93,8 +93,9 @@ void ConvexMeshShape::setMesh(const std::shared_ptr<TriMeshType>& mesh)
 std::shared_ptr<ConvexMeshShape> ConvexMeshShape::fromMesh(
     const std::shared_ptr<TriMeshType>& mesh, bool computeHull)
 {
-  if (!mesh)
+  if (!mesh) {
     return std::make_shared<ConvexMeshShape>(std::make_shared<TriMeshType>());
+  }
 
   if (computeHull) {
     auto hull = mesh->generateConvexHull(true);
