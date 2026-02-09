@@ -457,7 +457,7 @@ TEST(World, ConfiguresCollisionDetectorViaConfig)
 }
 
 //==============================================================================
-TEST(World, DefaultWorldUsesExperimentalOrFcl)
+TEST(World, DefaultWorldUsesFclOrExperimental)
 {
   auto factory = collision::CollisionDetector::getFactory();
   ASSERT_NE(factory, nullptr);
@@ -466,12 +466,11 @@ TEST(World, DefaultWorldUsesExperimentalOrFcl)
   auto detector = world->getCollisionDetector();
   ASSERT_TRUE(detector);
 
-  // Default is experimental if available, otherwise fcl
   const auto type = std::string(detector->getTypeView());
-  if (factory->canCreate("experimental")) {
-    EXPECT_EQ(type, "experimental");
-  } else if (factory->canCreate("fcl")) {
+  if (factory->canCreate("fcl")) {
     EXPECT_EQ(type, "fcl");
+  } else if (factory->canCreate("experimental")) {
+    EXPECT_EQ(type, "experimental");
   } else {
     EXPECT_EQ(type, "dart");
   }

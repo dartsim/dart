@@ -1,5 +1,29 @@
 # Copyright (c) 2011, The DART development contributors
 
+# See tests/integration/CMakeLists.txt for documentation on why this is needed.
+# See tests/integration/CMakeLists.txt for documentation.
+function(dart_force_link_collision_backend target backend)
+  if(NOT TARGET ${backend})
+    return()
+  endif()
+  set(keyword "${ARGV2}")
+  if(MSVC OR APPLE)
+    if(keyword)
+      target_link_libraries(${target} ${keyword} ${backend})
+    else()
+      target_link_libraries(${target} ${backend})
+    endif()
+  else()
+    if(keyword)
+      target_link_libraries(
+        ${target} ${keyword} -Wl,--no-as-needed ${backend} -Wl,--as-needed)
+    else()
+      target_link_libraries(
+        ${target} -Wl,--no-as-needed ${backend} -Wl,--as-needed)
+    endif()
+  endif()
+endfunction()
+
 # ==============================================================================
 # Collision Tests
 # ==============================================================================
@@ -134,6 +158,7 @@ dart_build_tests(
 # Constraint Tests
 # ==============================================================================
 dart_add_test("unit" UNIT_constraint_ConstraintSolver constraint/test_constraint_solver.cpp)
+dart_force_link_collision_backend(UNIT_constraint_ConstraintSolver dart-collision-fcl)
 dart_add_test(
   "unit" UNIT_constraint_BoxedLcpConstraintSolver constraint/test_boxed_lcp_constraint_solver.cpp)
 dart_add_test(
@@ -144,9 +169,7 @@ dart_add_test(
   "unit" UNIT_constraint_BalanceConstraint constraint/test_balance_constraint.cpp)
 dart_add_test(
   "unit" UNIT_constraint_ContactSurface constraint/test_contact_surface.cpp)
-if(TARGET dart-collision-fcl)
-  target_link_libraries(UNIT_constraint_ContactSurface dart-collision-fcl)
-endif()
+dart_force_link_collision_backend(UNIT_constraint_ContactSurface dart-collision-fcl)
 dart_add_test("unit" UNIT_constraint_JointConstraints constraint/test_joint_constraints.cpp)
 dart_add_test("unit" UNIT_constraint_MotorConstraints constraint/test_motor_constraints.cpp)
 dart_add_test("unit" UNIT_constraint_WeldJointConstraint constraint/test_weld_joint_constraint.cpp)
@@ -155,6 +178,7 @@ dart_add_test("unit" UNIT_constraint_ServoMotorConstraint constraint/test_servo_
 dart_add_test("unit" UNIT_constraint_ConstrainedGroup constraint/test_constrained_group.cpp)
 dart_add_test(
   "unit" UNIT_constraint_SoftContactConstraint constraint/test_soft_contact_constraint.cpp)
+dart_force_link_collision_backend(UNIT_constraint_SoftContactConstraint dart-collision-fcl)
 dart_add_test(
   "unit" UNIT_constraint_CouplerConstraint constraint/test_coupler_constraint.cpp)
 

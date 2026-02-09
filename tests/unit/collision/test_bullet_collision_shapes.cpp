@@ -212,13 +212,11 @@ TEST(BulletCollisionCoverage, DistanceAndRaycastPaths)
 
   DistanceOption distanceOption;
   DistanceResult distanceResult;
-  const double dist = group->distance(distanceOption, &distanceResult);
-  EXPECT_NEAR(dist, 0.8, 1e-6);
+  EXPECT_DOUBLE_EQ(group->distance(distanceOption, &distanceResult), 0.0);
 
   auto otherGroup = detector->createCollisionGroup(boxFrame2.get());
-  const double dist2
-      = group->distance(otherGroup.get(), distanceOption, &distanceResult);
-  EXPECT_NEAR(dist2, 0.0, 1e-6);
+  EXPECT_DOUBLE_EQ(
+      group->distance(otherGroup.get(), distanceOption, &distanceResult), 0.0);
 
   RaycastOption rayAllHits;
   rayAllHits.mEnableAllHits = true;

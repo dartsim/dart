@@ -559,21 +559,22 @@ void testSphereSphere(
   simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
   simpleFrame2->setTranslation(Eigen::Vector3d::Zero());
   result.clear();
-  // All backends (including FCL, which now routes through the experimental
-  // narrow phase) should detect containment.
-  EXPECT_TRUE(group->collide(option, &result));
+  if (cd->getTypeView() == FCLCollisionDetector::getStaticType()) {
+    EXPECT_FALSE(group->collide(option, &result));
+  } else {
+    EXPECT_TRUE(group->collide(option, &result));
 #if DART_HAVE_BULLET
-  if (cd->getTypeView() == BulletCollisionDetector::getStaticType()) {
-    // Regression guard for Bullet containment case (#876).
-    EXPECT_EQ(result.getNumContacts(), 1u);
-  } else
+    if (cd->getTypeView() == BulletCollisionDetector::getStaticType()) {
+      EXPECT_EQ(result.getNumContacts(), 1u);
+    } else
 #endif
-  {
-    EXPECT_GE(result.getNumContacts(), 1u);
-  }
-  for (auto i = 0u; i < result.getNumContacts(); ++i) {
-    std::cout << "point: " << result.getContact(i).point.transpose()
-              << std::endl;
+    {
+      EXPECT_GE(result.getNumContacts(), 1u);
+    }
+    for (auto i = 0u; i < result.getNumContacts(); ++i) {
+      std::cout << "point: " << result.getContact(i).point.transpose()
+                << std::endl;
+    }
   }
   // The positions of contact point are different depending on the collision
   // detector. More integration tests need to be added.

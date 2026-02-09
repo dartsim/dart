@@ -76,7 +76,11 @@ namespace {
 #if DART_FCL_HAS_EXPERIMENTAL
 bool useExperimentalNarrowPhase()
 {
-  return true;
+  // Disabled by default: experimental narrow phase produces different contact
+  // geometry (normals, positions, counts) than native FCL, breaking existing
+  // test expectations. Enable selectively once experimental manifold quality
+  // matches native backends.
+  return false;
 }
 #endif
 
@@ -953,10 +957,6 @@ bool FCLCollisionDetector::raycast(
 void FCLCollisionDetector::setPrimitiveShapeType(
     FCLCollisionDetector::PrimitiveShape type)
 {
-  DART_WARN(
-      "FCLCollisionDetector::setPrimitiveShapeType() is deprecated and has no "
-      "effect on collision queries because FCL now uses the experimental "
-      "narrow phase path.");
   mPrimitiveShapeType = type;
 }
 

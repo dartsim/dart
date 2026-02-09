@@ -70,7 +70,7 @@ namespace {
 #if DART_ODE_HAS_EXPERIMENTAL
 bool useExperimentalNarrowPhase()
 {
-  return true;
+  return false;
 }
 #endif
 

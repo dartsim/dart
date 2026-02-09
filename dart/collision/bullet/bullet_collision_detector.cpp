@@ -74,7 +74,7 @@ namespace {
 #if DART_BULLET_HAS_EXPERIMENTAL
 bool useExperimentalNarrowPhase()
 {
-  return true;
+  return false;
 }
 #endif
 
