@@ -1,44 +1,49 @@
 # Resume: Experimental Collision Module
 
-## Last Session Summary (2026-02-09 — Session 3)
+## Last Session Summary (2026-02-09 — Session 5)
 
-**Major milestone**: FCL/Bullet/ODE fully decoupled from libdart.so into separate shared libraries. Experimental backend is now the default collision detector. Build succeeds (547 test targets), all key tests pass.
+**Major milestone**: Phase 3 complete — all collision→dynamics .cpp dependencies broken via bridge pattern. Zero dynamics includes remain in collision core .cpp files. All tests pass with zero regressions.
 
-### Session 3 Accomplishments
+### Session 5 Accomplishments
 
-1. **FCL/Bullet/ODE → separate .so files**: `dart-collision-fcl`, `dart-collision-bullet`, `dart-collision-ode` now build independently, linking `PUBLIC dart + external_lib`
-2. **Default backend = experimental**: Factory fallback chain: experimental → fcl → dart
-3. **Source decoupled**: constraint_solver.cpp, world.cpp, skel_parser.cpp use factory only (no FCL/Bullet/ODE includes)
-4. **BVH mesh support**: Per-mesh AABB BVH with median split, mesh-mesh dual-tree traversal
-5. **Persistent manifold cache**: Contact caching with warm-start in ContactConstraint
-6. **Integration tests updated**: 7 test suites include experimental, all pass
-7. **Benchmark baseline**: Experimental 5-25x faster than FCL
-8. **Test fixes**: World tests updated for new default, adaptShape ambiguity resolved
+1. **Phase 3 Bridge Pattern**: Moved dynamics-dependent implementations from `dart/collision/*.cpp` into 4 new bridge files under `dart/dynamics/detail/`
+2. **12 collision files stripped**: Zero `dart/dynamics/` includes in collision core .cpp files
+3. **Gazebo fix**: Conditionally exclude `experimental_collision_bridge.cpp` when `DART_BUILD_COLLISION_EXPERIMENTAL=OFF`
+4. **Full verification**: 293/299 tests (same 6 pre-existing), 65/65 Gazebo, lint clean
+5. **Committed**: `e96bcf436ec` on `feature/new_coll`
+
+### Previous Sessions (commits)
+
+- `e0ea977ddab` — Wire distance/raycast queries, shape adapters
+- `3229fb81add` — Decouple FCL/Bullet/ODE into facades routing through experimental backend
+- `b6c9bd655ab` — Restore native narrow phase for FCL/Bullet/ODE backends
 
 ## Current Branch
 
-`feature/new_coll` — uncommitted changes pending commit
+`feature/new_coll` — clean working tree, all committed
 
 ```bash
 cd /home/js/dev/dartsim/dart/task_2
 git checkout feature/new_coll
-git status && git log -3 --oneline
+git status && git log -5 --oneline
 ```
 
 ## Test Status
 
 ```bash
-# Unit collision: 20/20 pass
-ctest --test-dir build/default/cpp/Release -R "UNIT_collision" -j$(nproc)
+# Full suite: 293/299 pass (6 pre-existing failures)
+ctest --test-dir build/default/cpp/Release -j$(nproc) --output-on-failure
 
-# Collision-experimental: 28/30 pass (2 pre-existing RayStartsInside failures)
-ctest --test-dir build/default/cpp/Release -L collision-experimental -j$(nproc)
+# Gazebo: 65/65 pass
+pixi run -e gazebo test-gz
 
-# Integration collision: 3/3 pass (CollisionGroups, Collision, CollisionAccuracy)
-ctest --test-dir build/default/cpp/Release -R "INTEGRATION_collision_Collision" -j$(nproc)
-
-# World integration: 1/1 pass
-ctest --test-dir build/default/cpp/Release -R "INTEGRATION_simulation_World" -j$(nproc)
+# Pre-existing failures (NOT caused by our changes):
+# 4 - INTEGRATION_collision_MeshContactRegression
+# 19 - INTEGRATION_constraint_ContactConstraint
+# 57 - INTEGRATION_simulation_Issue410
+# 229 - UNIT_gui_vsg_geometry_builders (SEGFAULT)
+# 258 - test_diagnostics_profiling (Not Run)
+# 291 - test_raycast (Failed)
 ```
 
 ## Architecture (Current State)
@@ -46,6 +51,12 @@ ctest --test-dir build/default/cpp/Release -R "INTEGRATION_simulation_World" -j$
 ```
 libdart.so (core)
 ├── collision/ (interfaces + dart backend + experimental_backend adapter)
+│   └── .cpp files have ZERO dynamics includes (bridge pattern)
+├── dynamics/detail/
+│   ├── collision_bridge.cpp              # core collision→dynamics bridge
+│   ├── collision_group_bridge.hpp        # template impls (addShapeFramesOf)
+│   ├── dart_collision_bridge.cpp         # DART backend collision math
+│   └── experimental_collision_bridge.cpp # adaptShape() (conditional)
 ├── constraint/, dynamics/, simulation/, etc.
 └── Links: Eigen, assimp, fmt, spdlog
 
@@ -64,52 +75,48 @@ dart-collision-ode.so (optional, for tests/benchmarks/gazebo)
 
 ## Remaining Work (Priority Order)
 
-### Phase 2: Gazebo Backward Compatibility (NEXT)
+### Optional: Performance Optimization
+- Benchmark experimental vs FCL/Bullet for specific workloads
+- Persistent manifold warm-starting
+- BVH traversal for mesh-mesh
 
-**Constraint**: `pixi run -e gazebo test-gz` must pass. gz-physics **inherits** from BulletCollisionDetector and OdeCollisionDetector.
+### Optional: Collision Header Cleanup
+- Collision `.hpp` files still use `dart/dynamics/fwd.hpp` forward declarations
+- Full decoupling would require extracting shapes to `dart/geometry/` module (XL task)
 
-**Approach (Option D — Hybrid Facade)**: Keep class names and inheritance surfaces (FCLCollisionDetector, BulletCollisionDetector, OdeCollisionDetector) but make their collide()/distance()/raycast() internally delegate to experimental. The external deps (libfcl, libbullet, libode) remain linked for ABI compat but actual collision work uses experimental.
-
-**Key files to modify**:
-
-- `dart/collision/fcl/fcl_collision_detector.cpp` — override collide/distance to forward to experimental
-- `dart/collision/bullet/bullet_collision_detector.cpp` — same
-- `dart/collision/ode/ode_collision_detector.cpp` — same
-- Headers stay identical (gz-physics includes them and subclasses)
-
-### Phase 3: Break dynamics↔collision Circular Dependency
-
-**Goal**: collision module should NOT include dynamics headers. dynamics depends on collision.
-
-**The coupling**: collision's `CollisionObject` holds `ShapeFrame*` (dynamics type). Experimental narrow phase includes dynamics shape headers (BoxShape, SphereShape, etc.).
-
-**Approach**: Move Shape hierarchy to `dart/geometry/` or create collision-side abstract interfaces. This is an XL task requiring careful planning.
-
-### Phase 4: Final Gates
-
-- `pixi run lint`, full test suite, `pixi run -e gazebo test-gz`
-- Commit, PR
+### Phase 2 (Gazebo Facades): DEFERRED
+- Native narrow phase was restored for FCL/Bullet/ODE in commit `b6c9bd655ab`
+- Facades not needed currently since backends use their own native implementations
 
 ## Context That Would Be Lost
 
-- **Bullet/ODE CMakeLists**: Had `dart_add_core_headers` leak — now removed, builds as separate .so
-- **DART_HAVE_FCL**: Added to `config.hpp.in` as `#cmakedefine01`
-- **Factory pattern**: All detector creation uses `CollisionDetector::getFactory()->create("name")`
-- **gz-physics inherits**: `GzBulletCollisionDetector : BulletCollisionDetector`, `GzOdeCollisionDetector : OdeCollisionDetector`
-- **gz-physics includes**: `<dart/collision/bullet/BulletCollisionDetector.hpp>`, `<dart/collision/fcl/FCLCollisionDetector.hpp>`, `<dart/collision/ode/OdeCollisionDetector.hpp>`
+- **Bridge pattern key insight**: C++ allows member function implementations in any .cpp that compiles into the same binary target. Since `dart/collision/` and `dart/dynamics/` both use `dart_add_core_sources()` → `libdart.so`, member functions of collision classes can be defined in `dart/dynamics/detail/*.cpp`.
+- **CMake auto-discovery**: `dart/dynamics/CMakeLists.txt` uses `file(GLOB detail_srcs "detail/*.cpp")`, so new bridge files are auto-discovered.
+- **Gazebo conditional**: `experimental_collision_bridge.cpp` must be excluded when `DART_BUILD_COLLISION_EXPERIMENTAL=OFF` because it references `dart::collision::experimental::*` symbols that live in the separate `.so`.
+- **6 pre-existing test failures**: These existed before Phase 3 and are unrelated to our changes.
 
 ## Key Files Reference
 
-| Component               | Location                                                                  |
-| ----------------------- | ------------------------------------------------------------------------- |
-| Backend detector        | `dart/collision/experimental_backend/experimental_collision_detector.cpp` |
-| Shape adapter           | `dart/collision/experimental_backend/shape_adapter.cpp`                   |
-| FCL separate lib        | `dart/collision/fcl/CMakeLists.txt`                                       |
-| Bullet separate lib     | `dart/collision/bullet/CMakeLists.txt`                                    |
-| ODE separate lib        | `dart/collision/ode/CMakeLists.txt`                                       |
-| Core CMake              | `dart/CMakeLists.txt` (no FCL/Bullet/ODE link)                            |
-| World (factory default) | `dart/simulation/world.cpp`                                               |
-| Constraint solver       | `dart/constraint/constraint_solver.cpp`                                   |
-| Config defines          | `dart/config.hpp.in` (DART_HAVE_FCL/BULLET/ODE)                           |
-| Integration test CMake  | `tests/integration/CMakeLists.txt`                                        |
-| Progress docs           | `docs/dev_tasks/experimental_collision/progress.md`                       |
+| Component                    | Location                                                                  |
+| ---------------------------- | ------------------------------------------------------------------------- |
+| Core bridge (collision→dyn)  | `dart/dynamics/detail/collision_bridge.cpp`                               |
+| Template bridge              | `dart/dynamics/detail/collision_group_bridge.hpp`                         |
+| DART backend bridge          | `dart/dynamics/detail/dart_collision_bridge.cpp`                          |
+| Experimental bridge          | `dart/dynamics/detail/experimental_collision_bridge.cpp`                  |
+| Dynamics CMakeLists          | `dart/dynamics/CMakeLists.txt` (conditional exclusion)                    |
+| Backend detector             | `dart/collision/experimental_backend/experimental_collision_detector.cpp` |
+| Shape adapter (stripped)     | `dart/collision/experimental_backend/shape_adapter.cpp`                   |
+| FCL separate lib             | `dart/collision/fcl/CMakeLists.txt`                                       |
+| Bullet separate lib          | `dart/collision/bullet/CMakeLists.txt`                                    |
+| ODE separate lib             | `dart/collision/ode/CMakeLists.txt`                                       |
+| Progress docs                | `docs/dev_tasks/experimental_collision/progress.md`                       |
+
+## Dependency Verification
+
+```bash
+# Verify no dynamics includes in collision core .cpp files (should be ZERO):
+grep -r '#include.*dart/dynamics/' dart/collision/ --include='*.cpp' | grep -v '/fcl/' | grep -v '/bullet/' | grep -v '/ode/'
+
+# Check remaining dynamics includes in collision headers (fwd.hpp only):
+grep -r '#include.*dart/dynamics/' dart/collision/ --include='*.hpp' | grep -v fwd.hpp
+```

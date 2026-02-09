@@ -97,9 +97,9 @@ CollisionDetector backend registered as `"experimental"` via `CollisionDetector:
 | 1     | config.hpp.in: DART_HAVE_FCL                              | **Complete** | All three backends gated                              |
 | 1     | Build verification (547 targets)                          | **Complete** | All libraries + tests compile                         |
 | 1     | Test verification                                         | **Complete** | 20/20 unit, 3/3 integration, World pass               |
-| 2     | Gazebo backward compat (facade detectors)                 | **Pending**  | gz-physics inherits from Bullet/ODE detectors         |
-| 3     | Break dynamics↔collision circular dep                     | **Pending**  | Move shapes to geometry module or abstract interfaces |
-| 4     | Final lint/build/test/commit                              | **Pending**  |                                                       |
+| 2     | Gazebo backward compat (facade detectors)                 | **Deferred** | Native narrow phase restored; facades not needed now  |
+| 3     | Break collision→dynamics .cpp dependency                  | **Complete** | Bridge pattern: impls moved to dynamics/detail/       |
+| 4     | Final lint/build/test/commit                              | **Complete** | 293/299 tests, 65/65 Gazebo, lint clean               |
 
 ### Gazebo Compatibility Plan (Phase 2)
 
@@ -113,16 +113,26 @@ CollisionDetector backend registered as `"experimental"` via `CollisionDetector:
 - Factory keys `"fcl"`, `"bullet"`, `"ode"` resolve to facades
 - Tests/benchmarks can still use real backends via compile flag
 
-### Dynamics↔Collision Dependency Break (Phase 3)
+### Collision→Dynamics Dependency Break (Phase 3) — COMPLETE
 
-**Problem**: `dart/collision/` includes `dart/dynamics/` headers (Shape types, ShapeFrame, BodyNode).
+**Problem**: `dart/collision/` .cpp files included `dart/dynamics/` headers (Shape types, ShapeFrame, BodyNode).
 
-**Approach**: Create `dart/geometry/` module with shape base class + concrete shapes. Both collision and dynamics depend on geometry, not on each other. This is XL-sized work requiring:
+**Approach (Bridge Pattern)**: Instead of a full geometry module extraction, move dynamics-dependent
+member function implementations from `dart/collision/*.cpp` into bridge files under
+`dart/dynamics/detail/`. Since both modules compile into `libdart.so`, member functions
+can be defined in any .cpp that links into the same target.
 
-1. New `dart/geometry/` module with Shape hierarchy
-2. Move shape classes from `dart/dynamics/` to `dart/geometry/`
-3. Update all includes across codebase
-4. CollisionObject uses geometry::ShapeFrame instead of dynamics::ShapeFrame
+**Bridge files created:**
+- `dart/dynamics/detail/collision_bridge.cpp` — core collision objects, contacts, filters, groups
+- `dart/dynamics/detail/collision_group_bridge.hpp` — variadic template impls (addShapeFramesOf)
+- `dart/dynamics/detail/dart_collision_bridge.cpp` — DART backend collision math + shape dispatch
+- `dart/dynamics/detail/experimental_collision_bridge.cpp` — adaptShape() implementations
+
+**Result**: Zero `dart/dynamics/` includes remain in collision core .cpp files.
+Collision headers still use `dart/dynamics/fwd.hpp` forward declarations (acceptable interim).
+The experimental bridge is conditionally excluded when `DART_BUILD_COLLISION_EXPERIMENTAL=OFF`.
+
+**Verification**: 293/299 tests (same 6 pre-existing), 65/65 Gazebo tests, lint clean.
 
 ---
 
