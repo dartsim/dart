@@ -43,6 +43,7 @@
   - Pixi tasks and helper scripts now guard optional targets (dartpy, GUI examples) automatically, detect missing generator targets before invoking `cmake --build`, and expose `DART_BUILD_*_OVERRIDE` environment hooks so CI and local workflows can toggle bindings/apps without editing `pixi.toml`.
   - Exported `DynamicJointConstraint` and `JointConstraint` on Windows so constraint unit tests link successfully.
   - Exported soft contact constraints, DART collision helpers, `computeIntersection`, and IK property types on Windows to fix shared-library unit test linking. ([#2462](https://github.com/dartsim/dart/pull/2462))
+  - Added support for assimp 6.x while maintaining backward compatibility with assimp 5.x
 
 - Tooling and Docs
   - Added AI-native documentation architecture with AGENTS.md, module-specific guides, slash commands, and command sync automation. ([#2446](https://github.com/dartsim/dart/pull/2446), [#2447](https://github.com/dartsim/dart/pull/2447), [#2448](https://github.com/dartsim/dart/pull/2448), [#2449](https://github.com/dartsim/dart/pull/2449))
