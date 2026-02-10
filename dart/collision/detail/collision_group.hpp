@@ -33,6 +33,156 @@
 #ifndef DART_COLLISION_DETAIL_COLLISIONGROUP_HPP_
 #define DART_COLLISION_DETAIL_COLLISIONGROUP_HPP_
 
-#include <dart/dynamics/detail/collision_group_bridge.hpp>
+#include <dart/collision/collision_group.hpp>
+
+namespace dart {
+namespace collision {
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::addShapeFramesOf(
+    const dynamics::ShapeFrame* shapeFrame, const Others*... others)
+{
+  addShapeFrame(shapeFrame);
+  addShapeFramesOf(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::addShapeFramesOf(
+    std::span<const dynamics::ShapeFrame* const> shapeFrames,
+    const Others*... others)
+{
+  addShapeFrames(shapeFrames);
+  addShapeFramesOf(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::addShapeFramesOf(
+    const CollisionGroup* otherGroup, const Others*... others)
+{
+  addShapeFramesOfGroup(otherGroup);
+  addShapeFramesOf(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::addShapeFramesOf(
+    const dynamics::BodyNode* bodyNode, const Others*... others)
+{
+  addShapeFramesOfBodyNode(bodyNode);
+  addShapeFramesOf(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::addShapeFramesOf(
+    const dynamics::MetaSkeleton* skeleton, const Others*... others)
+{
+  addShapeFramesOfMetaSkeleton(skeleton);
+  addShapeFramesOf(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::subscribeTo(
+    const dynamics::ConstBodyNodePtr& bodyNode, const Others&... others)
+{
+  subscribeToBodyNode(bodyNode);
+  subscribeTo(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::subscribeTo(
+    const dynamics::ConstMetaSkeletonPtr& metaSkeleton, const Others&... others)
+{
+  subscribeToMetaSkeleton(metaSkeleton);
+  subscribeTo(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::removeShapeFramesOf(
+    const dynamics::ShapeFrame* shapeFrame, const Others*... others)
+{
+  removeShapeFrame(shapeFrame);
+  removeShapeFramesOf(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::removeShapeFramesOf(
+    std::span<const dynamics::ShapeFrame* const> shapeFrames,
+    const Others*... others)
+{
+  removeShapeFrames(shapeFrames);
+  removeShapeFramesOf(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::removeShapeFramesOf(
+    const CollisionGroup* otherGroup, const Others*... others)
+{
+  removeShapeFramesOfGroup(otherGroup);
+  removeShapeFramesOf(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::removeShapeFramesOf(
+    const dynamics::BodyNode* bodyNode, const Others*... others)
+{
+  removeShapeFramesOfBodyNode(bodyNode);
+  removeShapeFramesOf(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::removeShapeFramesOf(
+    const dynamics::MetaSkeleton* skeleton, const Others*... others)
+{
+  removeShapeFramesOfMetaSkeleton(skeleton);
+  removeShapeFramesOf(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::unsubscribeFrom(
+    const dynamics::BodyNode* bodyNode, const Others*... others)
+{
+  unsubscribeFromBodyNode(bodyNode);
+  unsubscribeFrom(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::unsubscribeFrom(
+    const dynamics::MetaSkeleton* skeleton, const Others*... others)
+{
+  unsubscribeFromMetaSkeleton(skeleton);
+  unsubscribeFrom(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+bool CollisionGroup::isSubscribedTo(
+    const dynamics::BodyNode* bodyNode, const Others*... others)
+{
+  return isSubscribedToBodyNode(bodyNode) && isSubscribedTo(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+bool CollisionGroup::isSubscribedTo(
+    const dynamics::MetaSkeleton* skeleton, const Others*... others)
+{
+  return isSubscribedToMetaSkeleton(skeleton) && isSubscribedTo(others...);
+}
+
+} // namespace collision
+} // namespace dart
 
 #endif // DART_COLLISION_DETAIL_COLLISIONGROUP_HPP_

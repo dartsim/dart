@@ -52,6 +52,270 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
+struct CollisionGroup::Impl
+{
+  template <typename Source, typename Child = void>
+  struct CollisionSourceData
+  {
+    Source mSource;
+
+    std::size_t mLastKnownVersion;
+
+    std::unordered_map<const dynamics::ShapeFrame*, ObjectInfo*> mObjects;
+
+    struct ChildInfo
+    {
+      std::size_t mLastKnownVersion;
+      std::unordered_set<const dynamics::ShapeFrame*> mFrames;
+
+      explicit ChildInfo(const std::size_t version) : mLastKnownVersion(version)
+      {
+      }
+    };
+
+    std::unordered_map<const Child*, ChildInfo> mChildren;
+
+    CollisionSourceData(const Source& source, std::size_t lastKnownVersion)
+      : mSource(source), mLastKnownVersion(lastKnownVersion)
+    {
+    }
+  };
+
+  using SkeletonSource = CollisionSourceData<
+      dynamics::WeakConstMetaSkeletonPtr,
+      dynamics::BodyNode>;
+  using SkeletonSources
+      = std::unordered_map<const dynamics::MetaSkeleton*, SkeletonSource>;
+
+  using BodyNodeSource = CollisionSourceData<dynamics::WeakConstBodyNodePtr>;
+  using BodyNodeSources
+      = std::unordered_map<const dynamics::BodyNode*, BodyNodeSource>;
+
+  SkeletonSources mSkeletonSources;
+  BodyNodeSources mBodyNodeSources;
+
+  static void ensureImpl(CollisionGroup& group)
+  {
+    if (!group.mImpl) {
+      group.mImpl = std::make_unique<CollisionGroup::Impl>();
+    }
+  }
+
+  static std::size_t computeMetaSkeletonVersion(
+      const dynamics::MetaSkeleton& metaSkeleton)
+  {
+    if (const auto* skeleton
+        = dynamic_cast<const dynamics::Skeleton*>(&metaSkeleton)) {
+      return skeleton->getVersion();
+    }
+
+    const std::size_t numBodies = metaSkeleton.getNumBodyNodes();
+    std::size_t seed = numBodies;
+
+    for (std::size_t i = 0u; i < numBodies; ++i) {
+      const auto* bodyNode = metaSkeleton.getBodyNode(i);
+      const auto bodyNodeHash = static_cast<std::size_t>(
+          reinterpret_cast<std::uintptr_t>(bodyNode));
+      const auto bodyNodeVersion = bodyNode ? bodyNode->getVersion() : 0u;
+
+      seed ^= bodyNodeHash + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
+      seed ^= bodyNodeVersion + 0x9e3779b97f4a7c15ULL + (seed << 6)
+              + (seed >> 2);
+    }
+
+    return seed;
+  }
+
+  static bool updateShapeFrame(
+      CollisionGroup& group, CollisionGroup::ObjectInfo* object)
+  {
+    const dynamics::ConstShapePtr& shape = object->mFrame->getShape();
+    const std::size_t currentID = shape ? shape->getID() : 0;
+    const std::size_t currentVersion = shape ? shape->getVersion() : 0;
+
+    if (currentID != object->mLastKnownShapeID
+        || currentVersion != object->mLastKnownVersion) {
+      group.removeCollisionObjectFromEngine(object->mObject.get());
+      group.mCollisionDetector->refreshCollisionObject(object->mObject.get());
+      group.addCollisionObjectToEngine(object->mObject.get());
+
+      object->mLastKnownShapeID = currentID;
+      object->mLastKnownVersion = currentVersion;
+
+      return true;
+    }
+
+    return false;
+  }
+
+  static bool doUpdateSkeletonSource(
+      CollisionGroup& group, SkeletonSources::value_type& entry)
+  {
+    SkeletonSource& source = entry.second;
+
+    const dynamics::ConstMetaSkeletonPtr meta = source.mSource.lock();
+    if (!meta) {
+      for (const auto& object : source.mObjects) {
+        group.removeShapeFrameInternal(object.second->mFrame, entry.first);
+      }
+
+      return true;
+    }
+
+    const std::size_t currentSkeletonVersion
+        = computeMetaSkeletonVersion(*meta);
+    if (currentSkeletonVersion == source.mLastKnownVersion) {
+      return false;
+    }
+
+    source.mLastKnownVersion = currentSkeletonVersion;
+    bool updateNeeded = false;
+
+    auto unusedChildren = source.mChildren;
+
+    for (std::size_t i = 0; i < meta->getNumBodyNodes(); ++i) {
+      const dynamics::BodyNode* bn = meta->getBodyNode(i);
+      const std::size_t currentVersion = bn->getVersion();
+
+      unusedChildren.erase(bn);
+
+      auto insertion = source.mChildren.insert(
+          std::make_pair(bn, SkeletonSource::ChildInfo(currentVersion)));
+
+      const auto child = insertion.first;
+
+      if (insertion.second) {
+        updateNeeded = true;
+
+        bn->eachShapeNodeWith<dynamics::CollisionAspect>(
+            [&](const dynamics::ShapeNode* shapeNode) {
+              source.mObjects.insert(
+                  {shapeNode, group.addShapeFrameImpl(shapeNode, meta.get())});
+              child->second.mFrames.insert(shapeNode);
+            });
+
+        continue;
+      }
+
+      if (child->second.mLastKnownVersion == currentVersion) {
+        continue;
+      }
+
+      child->second.mLastKnownVersion = currentVersion;
+
+      std::unordered_set<const dynamics::ShapeFrame*> unusedFrames
+          = child->second.mFrames;
+
+      child->first->eachShapeNodeWith<dynamics::CollisionAspect>(
+          [&](const dynamics::ShapeNode* shapeNode) {
+            unusedFrames.erase(shapeNode);
+
+            auto frameInsertion
+                = source.mObjects.insert(std::make_pair(shapeNode, nullptr));
+
+            const auto& it = frameInsertion.first;
+            if (frameInsertion.second) {
+              updateNeeded = true;
+
+              it->second = group.addShapeFrameImpl(shapeNode, meta.get());
+              child->second.mFrames.insert(shapeNode);
+            } else {
+              updateNeeded |= updateShapeFrame(group, it->second);
+            }
+          });
+
+      for (const dynamics::ShapeFrame* unused : unusedFrames) {
+        updateNeeded = true;
+        group.removeShapeFrameInternal(unused, meta.get());
+        child->second.mFrames.erase(unused);
+      }
+    }
+
+    for (const auto& unusedChild : unusedChildren) {
+      for (const dynamics::ShapeFrame* unusedFrame :
+           unusedChild.second.mFrames) {
+        updateNeeded = true;
+        group.removeShapeFrameInternal(unusedFrame, meta.get());
+        source.mObjects.erase(unusedFrame);
+      }
+
+      source.mChildren.erase(unusedChild.first);
+    }
+
+    return updateNeeded;
+  }
+
+  static bool doUpdateBodyNodeSource(
+      CollisionGroup& group, BodyNodeSources::value_type& entry)
+  {
+    BodyNodeSource& source = entry.second;
+
+    const dynamics::ConstBodyNodePtr bn = source.mSource.lock();
+    if (!bn) {
+      for (const auto& object : source.mObjects) {
+        group.removeShapeFrameInternal(object.second->mFrame, object.first);
+      }
+
+      return true;
+    }
+
+    const std::size_t currentBodyNodeVersion = bn->getVersion();
+
+    if (currentBodyNodeVersion == source.mLastKnownVersion) {
+      return false;
+    }
+
+    source.mLastKnownVersion = currentBodyNodeVersion;
+    bool updateNeeded = false;
+
+    std::unordered_map<const dynamics::ShapeFrame*, CollisionGroup::ObjectInfo*>
+        unusedFrames = source.mObjects;
+
+    bn->eachShapeNodeWith<dynamics::CollisionAspect>(
+        [&](const dynamics::ShapeNode* shapeNode) {
+          unusedFrames.erase(shapeNode);
+
+          auto frameInsertion
+              = source.mObjects.insert(std::make_pair(shapeNode, nullptr));
+
+          const auto& it = frameInsertion.first;
+          if (frameInsertion.second) {
+            updateNeeded = true;
+            it->second = group.addShapeFrameImpl(shapeNode, bn.get());
+          } else {
+            updateNeeded |= updateShapeFrame(group, it->second);
+          }
+        });
+
+    for (const auto& unusedFrame : unusedFrames) {
+      updateNeeded = true;
+      group.removeShapeFrameInternal(unusedFrame.first, bn.get());
+      source.mObjects.erase(unusedFrame.first);
+    }
+
+    return updateNeeded;
+  }
+};
+
+//==============================================================================
+CollisionGroup::CollisionGroup(const CollisionDetectorPtr& collisionDetector)
+  : mCollisionDetector(collisionDetector),
+    mUpdateAutomatically(true),
+    mObserver(this)
+{
+  DART_ASSERT(mCollisionDetector);
+}
+
+//==============================================================================
+CollisionGroup::CollisionGroup(CollisionGroup&&) noexcept = default;
+
+//==============================================================================
+CollisionGroup& CollisionGroup::operator=(CollisionGroup&&) noexcept = default;
+
+//==============================================================================
+CollisionGroup::~CollisionGroup() = default;
+
+//==============================================================================
 dynamics::ConstShapePtr CollisionObject::getShape() const
 {
   return mShapeFrame->getShape();
@@ -347,19 +611,21 @@ void CollisionGroup::removeDeletedShapeFrames()
         continue;
       }
 
-      auto skelSearch = mSkeletonSources.find(
-          static_cast<const dynamics::MetaSkeleton*>(source));
-      if (skelSearch != mSkeletonSources.end()) {
-        skelSearch->second.mObjects.erase(shapeFrame);
-        for (auto& child : skelSearch->second.mChildren) {
-          child.second.mFrames.erase(shapeFrame);
+      if (mImpl) {
+        auto skelSearch = mImpl->mSkeletonSources.find(
+            static_cast<const dynamics::MetaSkeleton*>(source));
+        if (skelSearch != mImpl->mSkeletonSources.end()) {
+          skelSearch->second.mObjects.erase(shapeFrame);
+          for (auto& child : skelSearch->second.mChildren) {
+            child.second.mFrames.erase(shapeFrame);
+          }
         }
-      }
 
-      auto bodySearch = mBodyNodeSources.find(
-          static_cast<const dynamics::BodyNode*>(source));
-      if (bodySearch != mBodyNodeSources.end()) {
-        bodySearch->second.mObjects.erase(shapeFrame);
+        auto bodySearch = mImpl->mBodyNodeSources.find(
+            static_cast<const dynamics::BodyNode*>(source));
+        if (bodySearch != mImpl->mBodyNodeSources.end()) {
+          bodySearch->second.mObjects.erase(shapeFrame);
+        }
       }
     }
 
@@ -368,31 +634,6 @@ void CollisionGroup::removeDeletedShapeFrames()
   }
 
   mObserver.mDeletedFrames.clear();
-}
-
-//==============================================================================
-std::size_t CollisionGroup::computeMetaSkeletonVersion(
-    const dynamics::MetaSkeleton& metaSkeleton)
-{
-  if (const auto* skeleton
-      = dynamic_cast<const dynamics::Skeleton*>(&metaSkeleton)) {
-    return skeleton->getVersion();
-  }
-
-  const std::size_t numBodies = metaSkeleton.getNumBodyNodes();
-  std::size_t seed = numBodies;
-
-  for (std::size_t i = 0u; i < numBodies; ++i) {
-    const auto* bodyNode = metaSkeleton.getBodyNode(i);
-    const auto bodyNodeHash
-        = static_cast<std::size_t>(reinterpret_cast<std::uintptr_t>(bodyNode));
-    const auto bodyNodeVersion = bodyNode ? bodyNode->getVersion() : 0u;
-
-    seed ^= bodyNodeHash + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
-    seed ^= bodyNodeVersion + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
-  }
-
-  return seed;
 }
 
 //==============================================================================
@@ -432,171 +673,217 @@ auto CollisionGroup::addShapeFrameImpl(
 }
 
 //==============================================================================
-bool CollisionGroup::updateSkeletonSource(SkeletonSources::value_type& entry)
+void CollisionGroup::addShapeFramesOfBodyNode(
+    const dynamics::BodyNode* bodyNode)
 {
-  SkeletonSource& source = entry.second;
+  DART_ASSERT(bodyNode);
 
-  const dynamics::ConstMetaSkeletonPtr& meta = source.mSource.lock();
-  if (!meta) {
-    for (const auto& object : source.mObjects) {
-      removeShapeFrameInternal(object.second->mFrame, entry.first);
+  bodyNode->eachShapeNodeWith<dynamics::CollisionAspect>(
+      [this](const dynamics::ShapeNode* shapeNode) {
+        addShapeFrame(shapeNode);
+      });
+}
+
+//==============================================================================
+void CollisionGroup::addShapeFramesOfMetaSkeleton(
+    const dynamics::MetaSkeleton* skel)
+{
+  DART_ASSERT(skel);
+
+  auto numBodyNodes = skel->getNumBodyNodes();
+  for (auto i = 0u; i < numBodyNodes; ++i) {
+    addShapeFramesOfBodyNode(skel->getBodyNode(i));
+  }
+}
+
+//==============================================================================
+void CollisionGroup::addShapeFramesOfGroup(const CollisionGroup* otherGroup)
+{
+  DART_ASSERT(otherGroup);
+
+  if (otherGroup && this != otherGroup) {
+    for (const auto& info : otherGroup->mObjectInfoList) {
+      addShapeFrame(info->mFrame);
     }
-
-    return true;
   }
+}
 
-  const std::size_t currentSkeletonVersion = computeMetaSkeletonVersion(*meta);
-  if (currentSkeletonVersion == source.mLastKnownVersion) {
-    return false;
+//==============================================================================
+void CollisionGroup::subscribeToBodyNode(
+    const dynamics::ConstBodyNodePtr& bodyNode)
+{
+  Impl::ensureImpl(*this);
+
+  const auto inserted = mImpl->mBodyNodeSources.insert(
+      Impl::BodyNodeSources::value_type(
+          bodyNode.get(),
+          Impl::BodyNodeSource(bodyNode.get(), bodyNode->getVersion())));
+
+  if (inserted.second) {
+    const Impl::BodyNodeSources::iterator& entry = inserted.first;
+    bodyNode->eachShapeNodeWith<dynamics::CollisionAspect>(
+        [&](const dynamics::ShapeNode* shapeNode) {
+          entry->second.mObjects.insert(
+              {shapeNode, addShapeFrameImpl(shapeNode, bodyNode.get())});
+        });
   }
+}
 
-  source.mLastKnownVersion = currentSkeletonVersion;
-  bool updateNeeded = false;
+//==============================================================================
+void CollisionGroup::subscribeToMetaSkeleton(
+    const dynamics::ConstMetaSkeletonPtr& metaSkeleton)
+{
+  Impl::ensureImpl(*this);
 
-  auto unusedChildren = source.mChildren;
+  const auto inserted = mImpl->mSkeletonSources.insert(
+      Impl::SkeletonSources::value_type(
+          metaSkeleton.get(),
+          Impl::SkeletonSource(
+              metaSkeleton, Impl::computeMetaSkeletonVersion(*metaSkeleton))));
 
-  for (std::size_t i = 0; i < meta->getNumBodyNodes(); ++i) {
-    const dynamics::BodyNode* bn = meta->getBodyNode(i);
-    const std::size_t currentVersion = bn->getVersion();
+  if (inserted.second) {
+    Impl::SkeletonSource& entry = inserted.first->second;
 
-    unusedChildren.erase(bn);
+    const std::size_t numBodies = metaSkeleton->getNumBodyNodes();
+    for (std::size_t i = 0u; i < numBodies; ++i) {
+      const dynamics::BodyNode* bn = metaSkeleton->getBodyNode(i);
 
-    auto insertion = source.mChildren.insert(
-        std::make_pair(bn, SkeletonSource::ChildInfo(currentVersion)));
-
-    const auto child = insertion.first;
-
-    if (insertion.second) {
-      updateNeeded = true;
+      auto& childInfo
+          = entry.mChildren
+                .insert(
+                    std::make_pair(
+                        bn, Impl::SkeletonSource::ChildInfo(bn->getVersion())))
+                .first->second;
 
       bn->eachShapeNodeWith<dynamics::CollisionAspect>(
           [&](const dynamics::ShapeNode* shapeNode) {
-            source.mObjects.insert(
-                {shapeNode, addShapeFrameImpl(shapeNode, meta.get())});
-            child->second.mFrames.insert(shapeNode);
+            entry.mObjects.insert(
+                {shapeNode, addShapeFrameImpl(shapeNode, metaSkeleton.get())});
+            childInfo.mFrames.insert(shapeNode);
           });
-
-      continue;
-    }
-
-    if (child->second.mLastKnownVersion == currentVersion) {
-      continue;
-    }
-
-    child->second.mLastKnownVersion = currentVersion;
-
-    std::unordered_set<const dynamics::ShapeFrame*> unusedFrames
-        = child->second.mFrames;
-
-    child->first->eachShapeNodeWith<dynamics::CollisionAspect>(
-        [&](const dynamics::ShapeNode* shapeNode) {
-          unusedFrames.erase(shapeNode);
-
-          auto frameInsertion
-              = source.mObjects.insert(std::make_pair(shapeNode, nullptr));
-
-          const auto& it = frameInsertion.first;
-          if (frameInsertion.second) {
-            updateNeeded = true;
-
-            it->second = addShapeFrameImpl(shapeNode, meta.get());
-            child->second.mFrames.insert(shapeNode);
-          } else {
-            updateNeeded |= updateShapeFrame(it->second);
-          }
-        });
-
-    for (const dynamics::ShapeFrame* unused : unusedFrames) {
-      updateNeeded = true;
-      removeShapeFrameInternal(unused, meta.get());
-      child->second.mFrames.erase(unused);
     }
   }
-
-  for (const auto& unusedChild : unusedChildren) {
-    for (const dynamics::ShapeFrame* unusedFrame : unusedChild.second.mFrames) {
-      updateNeeded = true;
-      removeShapeFrameInternal(unusedFrame, meta.get());
-      source.mObjects.erase(unusedFrame);
-    }
-
-    source.mChildren.erase(unusedChild.first);
-  }
-
-  return updateNeeded;
 }
 
 //==============================================================================
-bool CollisionGroup::updateBodyNodeSource(BodyNodeSources::value_type& entry)
+void CollisionGroup::removeShapeFramesOfBodyNode(
+    const dynamics::BodyNode* bodyNode)
 {
-  BodyNodeSource& source = entry.second;
+  DART_ASSERT(bodyNode);
 
-  const dynamics::ConstBodyNodePtr bn = source.mSource.lock();
-  if (!bn) {
-    for (const auto& object : source.mObjects) {
-      removeShapeFrameInternal(object.second->mFrame, object.first);
-    }
-
-    return true;
-  }
-
-  const std::size_t currentBodyNodeVersion = bn->getVersion();
-
-  if (currentBodyNodeVersion == source.mLastKnownVersion) {
-    return false;
-  }
-
-  source.mLastKnownVersion = currentBodyNodeVersion;
-  bool updateNeeded = false;
-
-  std::unordered_map<const dynamics::ShapeFrame*, ObjectInfo*> unusedFrames
-      = source.mObjects;
-
-  bn->eachShapeNodeWith<dynamics::CollisionAspect>(
+  bodyNode->eachShapeNodeWith<dynamics::CollisionAspect>(
       [&](const dynamics::ShapeNode* shapeNode) {
-        unusedFrames.erase(shapeNode);
-
-        auto frameInsertion
-            = source.mObjects.insert(std::make_pair(shapeNode, nullptr));
-
-        const auto& it = frameInsertion.first;
-        if (frameInsertion.second) {
-          updateNeeded = true;
-          it->second = addShapeFrameImpl(shapeNode, bn.get());
-        } else {
-          updateNeeded |= updateShapeFrame(it->second);
-        }
+        removeShapeFrame(shapeNode);
       });
-
-  for (const auto& unusedFrame : unusedFrames) {
-    updateNeeded = true;
-    removeShapeFrameInternal(unusedFrame.first, bn.get());
-    source.mObjects.erase(unusedFrame.first);
-  }
-
-  return updateNeeded;
 }
 
 //==============================================================================
-bool CollisionGroup::updateShapeFrame(ObjectInfo* object)
+void CollisionGroup::removeShapeFramesOfMetaSkeleton(
+    const dynamics::MetaSkeleton* skel)
 {
-  const dynamics::ConstShapePtr& shape = object->mFrame->getShape();
-  const std::size_t currentID = shape ? shape->getID() : 0;
-  const std::size_t currentVersion = shape ? shape->getVersion() : 0;
+  DART_ASSERT(skel);
 
-  if (currentID != object->mLastKnownShapeID
-      || currentVersion != object->mLastKnownVersion) {
-    removeCollisionObjectFromEngine(object->mObject.get());
-    mCollisionDetector->refreshCollisionObject(object->mObject.get());
-    addCollisionObjectToEngine(object->mObject.get());
+  auto numBodyNodes = skel->getNumBodyNodes();
+  for (auto i = 0u; i < numBodyNodes; ++i) {
+    removeShapeFramesOfBodyNode(skel->getBodyNode(i));
+  }
+}
 
-    object->mLastKnownShapeID = currentID;
-    object->mLastKnownVersion = currentVersion;
+//==============================================================================
+void CollisionGroup::removeShapeFramesOfGroup(const CollisionGroup* otherGroup)
+{
+  DART_ASSERT(otherGroup);
 
-    return true;
+  if (otherGroup) {
+    if (this == otherGroup) {
+      removeAllShapeFrames();
+      return;
+    }
+
+    for (const auto& info : otherGroup->mObjectInfoList) {
+      removeShapeFrame(info->mFrame);
+    }
+  }
+}
+
+//==============================================================================
+void CollisionGroup::unsubscribeFromBodyNode(const dynamics::BodyNode* bodyNode)
+{
+  if (!mImpl) {
+    return;
   }
 
-  return false;
+  auto it = mImpl->mBodyNodeSources.find(bodyNode);
+  if (it != mImpl->mBodyNodeSources.end()) {
+    for (const auto& entry : it->second.mObjects) {
+      removeShapeFrameInternal(entry.first, bodyNode);
+    }
+
+    mImpl->mBodyNodeSources.erase(it);
+  }
+}
+
+//==============================================================================
+void CollisionGroup::unsubscribeFromMetaSkeleton(
+    const dynamics::MetaSkeleton* skeleton)
+{
+  if (!mImpl) {
+    return;
+  }
+
+  auto it = mImpl->mSkeletonSources.find(skeleton);
+  if (it != mImpl->mSkeletonSources.end()) {
+    for (const auto& entry : it->second.mObjects) {
+      removeShapeFrameInternal(entry.first, skeleton);
+    }
+
+    mImpl->mSkeletonSources.erase(it);
+  }
+}
+
+//==============================================================================
+bool CollisionGroup::isSubscribedToBodyNode(const dynamics::BodyNode* bodyNode)
+{
+  return mImpl && mImpl->mBodyNodeSources.contains(bodyNode);
+}
+
+//==============================================================================
+bool CollisionGroup::isSubscribedToMetaSkeleton(
+    const dynamics::MetaSkeleton* skeleton)
+{
+  return mImpl && mImpl->mSkeletonSources.contains(skeleton);
+}
+
+//==============================================================================
+void CollisionGroup::updateSubscriptions()
+{
+  if (!mImpl) {
+    return;
+  }
+
+  for (auto& entry : mImpl->mSkeletonSources) {
+    Impl::doUpdateSkeletonSource(*this, entry);
+  }
+
+  for (auto& entry : mImpl->mBodyNodeSources) {
+    Impl::doUpdateBodyNodeSource(*this, entry);
+  }
+}
+
+//==============================================================================
+void CollisionGroup::eraseSkeletonSource(const dynamics::MetaSkeleton* source)
+{
+  if (mImpl) {
+    mImpl->mSkeletonSources.erase(source);
+  }
+}
+
+//==============================================================================
+void CollisionGroup::eraseBodyNodeSource(const dynamics::BodyNode* source)
+{
+  if (mImpl) {
+    mImpl->mBodyNodeSources.erase(source);
+  }
 }
 
 } // namespace collision

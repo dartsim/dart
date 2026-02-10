@@ -33,6 +33,7 @@
 #ifndef DART_COLLISION_COLLISIONGROUP_HPP_
 #define DART_COLLISION_COLLISIONGROUP_HPP_
 
+#include <dart/collision/collision_fwd.hpp>
 #include <dart/collision/collision_option.hpp>
 #include <dart/collision/collision_result.hpp>
 #include <dart/collision/distance_option.hpp>
@@ -40,8 +41,6 @@
 #include <dart/collision/fwd.hpp>
 #include <dart/collision/raycast_option.hpp>
 #include <dart/collision/raycast_result.hpp>
-
-#include <dart/dynamics/fwd.hpp>
 
 #include <dart/common/observer.hpp>
 
@@ -65,11 +64,11 @@ public:
   CollisionGroup(const CollisionGroup&) = delete;
   CollisionGroup& operator=(const CollisionGroup&) = delete;
 
-  CollisionGroup(CollisionGroup&&) noexcept = default;
-  CollisionGroup& operator=(CollisionGroup&&) noexcept = default;
+  CollisionGroup(CollisionGroup&&) noexcept;
+  CollisionGroup& operator=(CollisionGroup&&) noexcept;
 
   /// Destructor
-  virtual ~CollisionGroup() = default;
+  virtual ~CollisionGroup();
 
   /// Return collision detection engine associated with this CollisionGroup
   CollisionDetectorPtr getCollisionDetector();
@@ -147,6 +146,14 @@ public:
   /// template.
   void subscribeTo();
 
+  void addShapeFramesOfBodyNode(const dynamics::BodyNode* bodyNode);
+  void addShapeFramesOfMetaSkeleton(const dynamics::MetaSkeleton* skeleton);
+  void addShapeFramesOfGroup(const CollisionGroup* otherGroup);
+
+  void subscribeToBodyNode(const dynamics::ConstBodyNodePtr& bodyNode);
+  void subscribeToMetaSkeleton(
+      const dynamics::ConstMetaSkeletonPtr& metaSkeleton);
+
   /// Remove a ShapeFrame from this CollisionGroup. If this ShapeFrame was being
   /// provided by any subscriptions, then calling this function will unsubscribe
   /// from those subscriptions, because otherwise this ShapeFrame would simply
@@ -206,6 +213,10 @@ public:
   /// template function template<typename...> removeShapeFramesOf().
   void removeShapeFramesOf();
 
+  void removeShapeFramesOfBodyNode(const dynamics::BodyNode* bodyNode);
+  void removeShapeFramesOfMetaSkeleton(const dynamics::MetaSkeleton* skeleton);
+  void removeShapeFramesOfGroup(const CollisionGroup* otherGroup);
+
   /// Remove all the ShapeFrames in this CollisionGroup
   void removeAllShapeFrames();
 
@@ -225,6 +236,9 @@ public:
   /// template.
   void unsubscribeFrom();
 
+  void unsubscribeFromBodyNode(const dynamics::BodyNode* bodyNode);
+  void unsubscribeFromMetaSkeleton(const dynamics::MetaSkeleton* skeleton);
+
   /// Check if this is subscribed to bodyNode and the other sources
   template <typename... Others>
   bool isSubscribedTo(
@@ -238,6 +252,9 @@ public:
   /// Return true. This function is for terminating the recursive variadic
   /// template
   bool isSubscribedTo();
+
+  bool isSubscribedToBodyNode(const dynamics::BodyNode* bodyNode);
+  bool isSubscribedToMetaSkeleton(const dynamics::MetaSkeleton* skeleton);
 
   /// Return true if this CollisionGroup contains shapeFrame
   bool hasShapeFrame(const dynamics::ShapeFrame* shapeFrame) const;
@@ -466,92 +483,18 @@ private:
       const dynamics::ShapeFrame* shapeFrame, const void* source);
 
   friend class ShapeFrameObserver;
+  friend struct Impl;
   void handleShapeFrameDestruction(const dynamics::ShapeFrame* shapeFrame);
 
-  /// Compute a version tag for MetaSkeletons even when they do not expose a
-  /// VersionCounter interface.
-  static std::size_t computeMetaSkeletonVersion(
-      const dynamics::MetaSkeleton& metaSkeleton);
+  void updateSubscriptions();
+  void eraseSkeletonSource(const dynamics::MetaSkeleton* source);
+  void eraseBodyNodeSource(const dynamics::BodyNode* source);
 
-  /// Set this to true to have this CollisionGroup check for updates
-  /// automatically. Default is true.
   bool mUpdateAutomatically;
 
-  /// @private This struct is used to store sources of ShapeFrames that the
-  /// CollisionGroup is subscribed to, alongside the last version number of that
-  /// source, as known by this CollisionGroup.
-  template <typename Source, typename Child = void>
-  struct CollisionSource
-  {
-    /// The source of ShapeFrames
-    Source mSource;
+  struct Impl;
+  std::unique_ptr<Impl> mImpl;
 
-    /// The last known version of that source
-    std::size_t mLastKnownVersion;
-
-    /// The set of objects that pertain to this source
-    std::unordered_map<const dynamics::ShapeFrame*, ObjectInfo*> mObjects;
-
-    /// This is information pertaining to a child of the source. In the current
-    /// implementation, this only gets used by SkeletonSources.
-    struct ChildInfo
-    {
-      /// Last known version of this child
-      std::size_t mLastKnownVersion;
-
-      /// Last known set of frames attached to this child
-      std::unordered_set<const dynamics::ShapeFrame*> mFrames;
-
-      /// A constructor that simply accepts a last known version number. Shape
-      /// frames can be added later.
-      explicit ChildInfo(const std::size_t version) : mLastKnownVersion(version)
-      {
-        // Do nothing
-      }
-    };
-
-    /// The last known versions of the children related to this source. This is
-    /// used by SkeletonSources to keep track of their child BodyNode versions.
-    std::unordered_map<const Child*, ChildInfo> mChildren;
-
-    /// Constructor
-    CollisionSource(const Source& source, std::size_t lastKnownVersion)
-      : mSource(source), mLastKnownVersion(lastKnownVersion)
-    {
-      // Do nothing
-    }
-  };
-
-  // Convenient typedefs for Skeleton sources
-  using SkeletonSource
-      = CollisionSource<dynamics::WeakConstMetaSkeletonPtr, dynamics::BodyNode>;
-  using SkeletonSources
-      = std::unordered_map<const dynamics::MetaSkeleton*, SkeletonSource>;
-
-  // Convenient typedefs for BodyNode sources
-  using BodyNodeSource = CollisionSource<dynamics::WeakConstBodyNodePtr>;
-  using BodyNodeSources
-      = std::unordered_map<const dynamics::BodyNode*, BodyNodeSource>;
-
-  /// Internal function called to update a Skeleton source
-  /// @returns true if an update was performed
-  bool updateSkeletonSource(SkeletonSources::value_type& entry);
-
-  /// Internal function called to update a BodyNode source
-  /// @returns true if an update was performed
-  bool updateBodyNodeSource(BodyNodeSources::value_type& entry);
-
-  /// Internal function called to update a ShapeFrame
-  /// @returns true if an update was performed
-  bool updateShapeFrame(ObjectInfo* object);
-
-  /// Skeleton sources that this group is subscribed to
-  SkeletonSources mSkeletonSources;
-
-  /// BodyNode sources that this group is susbscribed to
-  BodyNodeSources mBodyNodeSources;
-
-  /// The object that observes the Shape Frames that this group cares about
   ShapeFrameObserver mObserver;
 };
 

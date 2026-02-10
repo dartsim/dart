@@ -30,23 +30,42 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_EXPERIMENTAL_BACKEND_SHAPE_ADAPTER_HPP_
-#define DART_COLLISION_EXPERIMENTAL_BACKEND_SHAPE_ADAPTER_HPP_
-
-#include <dart/collision/collision_fwd.hpp>
-#include <dart/collision/experimental/shapes/shape.hpp>
+#ifndef DART_COLLISION_COLLISION_FWD_HPP_
+#define DART_COLLISION_COLLISION_FWD_HPP_
 
 #include <memory>
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
-std::unique_ptr<experimental::Shape> adaptShape(
-    const dynamics::ShapePtr& shape);
-std::unique_ptr<experimental::Shape> adaptShape(
-    const dynamics::ConstShapePtr& shape);
+class BodyNode;
+class MetaSkeleton;
+class Shape;
+class ShapeFrame;
+class ShapeNode;
+class Skeleton;
 
-} // namespace collision
+using ShapePtr = std::shared_ptr<Shape>;
+using ConstShapePtr = std::shared_ptr<const Shape>;
+using WeakShapePtr = std::weak_ptr<Shape>;
+using WeakConstShapePtr = std::weak_ptr<const Shape>;
+
+using MetaSkeletonPtr = std::shared_ptr<MetaSkeleton>;
+using ConstMetaSkeletonPtr = std::shared_ptr<const MetaSkeleton>;
+using WeakMetaSkeletonPtr = std::weak_ptr<MetaSkeleton>;
+using WeakConstMetaSkeletonPtr = std::weak_ptr<const MetaSkeleton>;
+
+template <class BodyNodeT>
+class TemplateBodyNodePtr;
+template <class BodyNodeT>
+class TemplateWeakBodyNodePtr;
+
+using BodyNodePtr = TemplateBodyNodePtr<BodyNode>;
+using ConstBodyNodePtr = TemplateBodyNodePtr<const BodyNode>;
+using WeakBodyNodePtr = TemplateWeakBodyNodePtr<BodyNode>;
+using WeakConstBodyNodePtr = TemplateWeakBodyNodePtr<const BodyNode>;
+
+} // namespace dynamics
 } // namespace dart
 
-#endif // DART_COLLISION_EXPERIMENTAL_BACKEND_SHAPE_ADAPTER_HPP_
+#endif // DART_COLLISION_COLLISION_FWD_HPP_

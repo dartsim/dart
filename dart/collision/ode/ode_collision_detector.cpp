@@ -42,6 +42,7 @@
 #include "dart/collision/ode/ode_types.hpp"
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
+#include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/capsule_shape.hpp"
 #include "dart/dynamics/cone_shape.hpp"

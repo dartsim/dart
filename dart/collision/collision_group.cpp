@@ -35,6 +35,7 @@
 #include "dart/collision/collision_detector.hpp"
 #include "dart/collision/collision_object.hpp"
 #include "dart/common/macros.hpp"
+#include "dart/dynamics/shape_frame.hpp"
 
 #include <algorithm>
 
@@ -43,15 +44,6 @@
 
 namespace dart {
 namespace collision {
-
-//==============================================================================
-CollisionGroup::CollisionGroup(const CollisionDetectorPtr& collisionDetector)
-  : mCollisionDetector(collisionDetector),
-    mUpdateAutomatically(true),
-    mObserver(this)
-{
-  DART_ASSERT(mCollisionDetector);
-}
 
 //==============================================================================
 CollisionGroup::ShapeFrameObserver::ShapeFrameObserver(CollisionGroup* group)
@@ -125,15 +117,8 @@ void CollisionGroup::removeShapeFrame(const dynamics::ShapeFrame* shapeFrame)
       continue;
     }
 
-    // We don't know which container this source is kept in, so try erasing it
-    // from each.
-    if (mSkeletonSources.erase(
-            static_cast<const dynamics::MetaSkeleton*>(source))
-        > 0) {
-      continue;
-    }
-
-    mBodyNodeSources.erase(static_cast<const dynamics::BodyNode*>(source));
+    eraseSkeletonSource(static_cast<const dynamics::MetaSkeleton*>(source));
+    eraseBodyNodeSource(static_cast<const dynamics::BodyNode*>(source));
   }
 
   mObjectInfoList.erase(search);
@@ -281,14 +266,7 @@ bool CollisionGroup::getAutomaticUpdate() const
 void CollisionGroup::update()
 {
   removeDeletedShapeFrames();
-
-  for (auto& entry : mSkeletonSources) {
-    updateSkeletonSource(entry);
-  }
-
-  for (auto& entry : mBodyNodeSources) {
-    updateBodyNodeSource(entry);
-  }
+  updateSubscriptions();
 }
 
 //==============================================================================

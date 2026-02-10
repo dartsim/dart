@@ -39,6 +39,7 @@
 #include "dart/collision/experimental_backend/experimental_query_helper.hpp"
 #include "dart/collision/experimental_backend/shape_adapter.hpp"
 #include "dart/common/logging.hpp"
+#include "dart/dynamics/shape_frame.hpp"
 
 #include <optional>
 #include <unordered_map>
