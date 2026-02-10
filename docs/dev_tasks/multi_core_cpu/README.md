@@ -151,12 +151,41 @@ pixi run build
 
 ## Resuming This Task
 
-If continuing from a fresh agent session:
+**Quick start for fresh sessions:**
 
-1. Load this file: `@docs/dev_tasks/multi_core_cpu/README.md`
-2. Review current status in `01_progress.md`
-3. Check `02_design.md` for architectural decisions
-4. Run `pixi run build && ctest -R compute_graph` to verify current state
+```bash
+# 1. Switch to branch
+git checkout feature/multi_core
+
+# 2. Verify state
+pixi run build && cd build/default/cpp/Release && ctest -R compute_graph -V
+```
+
+**Context loading (copy-paste for agents):**
+
+```
+@docs/dev_tasks/multi_core_cpu/RESUME.md
+@docs/dev_tasks/multi_core_cpu/README.md
+```
+
+**Files to reference:**
+
+| File             | Purpose                                                      |
+| ---------------- | ------------------------------------------------------------ |
+| `RESUME.md`      | Session continuity, next steps, quick architecture reference |
+| `README.md`      | Full status, usage examples, phase roadmap                   |
+| `01_progress.md` | Detailed progress log, benchmark results, file changes       |
+| `02_design.md`   | Architecture decisions, component diagrams, class interfaces |
+
+**Key implementation files:**
+
+| File                                                 | Purpose                                              |
+| ---------------------------------------------------- | ---------------------------------------------------- |
+| `dart/simulation/compute_graph/fwd.hpp`              | Core types: NodeId, ExecutorConfig, ExecutionContext |
+| `dart/simulation/compute_graph/world_step_graph.hpp` | WorldStepGraph wrapper API                           |
+| `dart/simulation/World.hpp`                          | GraphExecutionConfig integration                     |
+| `tests/unit/simulation/compute_graph/`               | Unit tests (8 cases)                                 |
+| `tests/benchmark/simulation/bm_compute_graph.cpp`    | Performance benchmarks                               |
 
 ## See Also
 

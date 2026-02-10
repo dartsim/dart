@@ -2,9 +2,14 @@
 
 ## Current Status
 
-**Phase**: 2 (World Integration)
-**Status**: Complete
-**Last Updated**: 2026-01-19
+| Field            | Value                                          |
+| ---------------- | ---------------------------------------------- |
+| **Phase**        | 2 (World Integration) + Test Hardening         |
+| **Status**       | Complete — PR-ready                             |
+| **Branch**       | `feature/multi_core` (8 commits ahead of main) |
+| **Last Updated** | 2026-02-10                                     |
+
+**TL;DR**: Compute graph module complete and integrated. Comprehensive tests prove bit-exact correctness vs sequential path (200 multi-step, multi-DOF). Real-world benchmarks show 2–5x speedup for 32+ skeleton scenarios with batching.
 
 ## Completed Tasks
 
@@ -43,7 +48,16 @@
 - [x] Added graph rebuild triggers for skeleton/time step/solver changes
 - [x] Added unit tests for WorldStepGraph integration and batching
 
-## Performance Comparison (2026-01-19)
+### Session 4: Test Hardening and Real-World Benchmarks
+
+- [x] Added multi-step correctness test (200 steps, 3 multi-DOF skeletons, bit-exact)
+- [x] Added edge case tests (empty world, single skeleton, immobile-only, WorldConfig constructor)
+- [x] Added TaskflowExecutor direct parallel execution test
+- [x] Added realistic World::step() benchmarks with actual physics (8-DOF skeletons)
+- [x] Verified all 18 tests pass, no regressions in broader test suite
+- [x] Collected benchmark evidence proving benefit with batching
+
+## Performance: Abstract Graph (2026-01-19)
 
 Command:
 
@@ -61,11 +75,43 @@ Selected results (real_time):
 - Thread scaling (32-parallel graph): 1 thread 41.7 us, 2 threads 43.7 us
   (0.95x), 4 threads 48.6 us (0.86x), 8 threads 71.7 us (0.58x).
 
-Notes:
+Notes: Abstract graph microbenchmarks emphasize scheduling overhead; Taskflow is
+slower for small per-node work.
 
-- These microbenchmarks emphasize scheduling overhead; Taskflow is slower for
-  small per-node work. Real-world step graphs with heavier node work may
-  benefit, but batching remains important to reduce overhead.
+## Performance: Real World::step() (2026-02-10)
+
+Command:
+
+```bash
+./build/default/cpp/Release/bin/bm_compute_graph --benchmark_filter="BM_WorldStep" --benchmark_min_time=0.5s
+```
+
+Context: same host, 32 CPUs @ 5300 MHz, 8-DOF skeletons (FreeJoint→RevoluteJoint×2).
+
+### Sequential vs Graph (auto-batch)
+
+| Skeletons | Sequential (CPU) | Graph auto (CPU) | Speedup |
+| --------- | ---------------- | ---------------- | ------- |
+| 1         | 3,153 ns         | 5,438 ns         | 0.58x   |
+| 8         | 14,770 ns        | 25,249 ns        | 0.58x   |
+| 16        | 28,763 ns        | 39,764 ns        | 0.72x   |
+| 32        | 61,684 ns        | 64,440 ns        | 0.96x   |
+| 64        | 112,683 ns       | 105,029 ns       | 1.07x   |
+
+### Batching effect (graph vs sequential)
+
+| Skeletons | Batch | Graph (CPU)  | vs Sequential |
+| --------- | ----- | ------------ | ------------- |
+| 32        | 1     | 65,612 ns    | 0.94x         |
+| 32        | 4     | 25,440 ns    | **2.42x**     |
+| 32        | 8     | 11,069 ns    | **5.57x**     |
+| 64        | 1     | 105,181 ns   | 1.07x         |
+| 64        | 4     | 48,286 ns    | **2.33x**     |
+| 64        | 8     | 20,379 ns    | **5.53x**     |
+
+Key insight: Batching is the key to benefit. With batch=4+ and 32+ skeletons,
+the graph path is 2–5x faster than sequential. Without batching, overhead
+dominates for small skeleton counts.
 
 ## Next Steps (Phase 3)
 

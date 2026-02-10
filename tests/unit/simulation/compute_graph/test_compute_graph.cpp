@@ -33,10 +33,14 @@
 #include <dart/simulation/compute_graph/compute_graph.hpp>
 #include <dart/simulation/compute_graph/compute_node.hpp>
 #include <dart/simulation/compute_graph/graph_executor.hpp>
+#ifdef DART_HAVE_TASKFLOW
+  #include <dart/simulation/compute_graph/taskflow_executor.hpp>
+#endif
 
 #include <gtest/gtest.h>
 
 #include <atomic>
+#include <thread>
 #include <vector>
 
 using namespace dart::simulation;
@@ -186,3 +190,67 @@ TEST(ComputeGraph, Clear)
 
   EXPECT_EQ(graph.getNodeCount(), 0u);
 }
+
+#ifdef DART_HAVE_TASKFLOW
+TEST(ComputeGraph, TaskflowParallelExecution)
+{
+  ComputeGraph graph;
+
+  std::atomic<int> startCount{0};
+  std::atomic<int> nodeACount{0};
+  std::atomic<int> nodeBCount{0};
+  std::atomic<int> nodeCCount{0};
+  std::atomic<int> endCount{0};
+
+  std::thread::id nodeAThread;
+  std::thread::id nodeBThread;
+  std::thread::id nodeCThread;
+
+  const NodeId start
+      = graph.addNode([&](const ExecutionContext&) { ++startCount; }, "start");
+  const NodeId nodeA = graph.addNode(
+      [&](const ExecutionContext&) {
+        ++nodeACount;
+        nodeAThread = std::this_thread::get_id();
+      },
+      "node_a");
+  const NodeId nodeB = graph.addNode(
+      [&](const ExecutionContext&) {
+        ++nodeBCount;
+        nodeBThread = std::this_thread::get_id();
+      },
+      "node_b");
+  const NodeId nodeC = graph.addNode(
+      [&](const ExecutionContext&) {
+        ++nodeCCount;
+        nodeCThread = std::this_thread::get_id();
+      },
+      "node_c");
+  const NodeId end
+      = graph.addNode([&](const ExecutionContext&) { ++endCount; }, "end");
+
+  EXPECT_TRUE(graph.addEdge(start, nodeA));
+  EXPECT_TRUE(graph.addEdge(start, nodeB));
+  EXPECT_TRUE(graph.addEdge(start, nodeC));
+  EXPECT_TRUE(graph.addEdge(nodeA, end));
+  EXPECT_TRUE(graph.addEdge(nodeB, end));
+  EXPECT_TRUE(graph.addEdge(nodeC, end));
+  EXPECT_TRUE(graph.finalize());
+
+  ExecutorConfig config;
+  config.numWorkers = 4;
+  TaskflowExecutor executor(config);
+  ExecutionContext ctx;
+  executor.execute(graph, ctx);
+
+  EXPECT_EQ(startCount.load(), 1);
+  EXPECT_EQ(nodeACount.load(), 1);
+  EXPECT_EQ(nodeBCount.load(), 1);
+  EXPECT_EQ(nodeCCount.load(), 1);
+  EXPECT_EQ(endCount.load(), 1);
+
+  EXPECT_NE(nodeAThread, std::thread::id{});
+  EXPECT_NE(nodeBThread, std::thread::id{});
+  EXPECT_NE(nodeCThread, std::thread::id{});
+}
+#endif
