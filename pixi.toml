@@ -28,7 +28,7 @@ sphinx-intl = "*"
 sphinx_rtd_theme = "*"
 sphinx-tabs = "*"
 tracy-profiler-gui = ">=0.11.1,<0.12"
-assimp = ">=5.4.3,<6"
+assimp = ">=5.4.3,<7"
 bullet-cpp = ">=3.25,<4"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
@@ -735,7 +735,7 @@ libgz-common6 = ">=6.0.0"
 libgz-utils2 = ">=2.0.0"
 libsdformat15 = ">=15.0.0"
 eigen = ">=3.4.0"
-assimp = ">=5.4.3"
+assimp = ">=5.4.3,<6"
 libode = ">=0.16.2"
 bullet-cpp = ">=3.25"
 
@@ -771,8 +771,16 @@ test-gz = { cmd = """
 ], env = { LD_LIBRARY_PATH = "$CONDA_PREFIX/lib:$LD_LIBRARY_PATH" } }
 
 #==============
+# Features
+#==============
+
+[feature.assimp6.dependencies]
+assimp = ">=6.0.4,<7"
+
+#==============
 # Environments
 #==============
 
 [environments]
+default = ["assimp6"]
 gazebo = ["gazebo"]
