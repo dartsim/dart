@@ -288,12 +288,7 @@ dart_option(
   OFF
   CATEGORY build
 )
-dart_option(
-  DART_BUILD_COLLISION_EXPERIMENTAL
-  "Build experimental collision module (dart::collision::experimental)"
-  OFF
-  CATEGORY build
-)
+
 
 dart_configure_compiler_cache()
 
@@ -645,9 +640,7 @@ endif()
 # Add sub-directories
 #===============================================================================
 
-if(DART_BUILD_COLLISION_EXPERIMENTAL)
-  add_subdirectory(dart/collision/experimental)
-endif()
+add_subdirectory(dart/collision/native)
 
 add_subdirectory(dart)
 

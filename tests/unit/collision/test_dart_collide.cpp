@@ -85,7 +85,7 @@ CollisionHandle makeObject(
 
 TEST(DARTCollide, CollisionObjectAccessors)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto frame = std::make_shared<SimpleFrame>(Frame::World(), "frame");
   auto shape = std::make_shared<BoxShape>(Eigen::Vector3d::Ones());
   frame->setShape(shape);
@@ -100,7 +100,7 @@ TEST(DARTCollide, CollisionObjectAccessors)
 
 TEST(DARTCollide, SphereSphereCases)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto sphere = std::make_shared<SphereShape>(0.5);
 
   auto objA = makeObject(sphere, detector.get(), Eigen::Isometry3d::Identity());
@@ -153,7 +153,7 @@ TEST(DARTCollide, SphereSphereCases)
 
 TEST(DARTCollide, BoxSphereContacts)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
   auto sphere = std::make_shared<SphereShape>(0.4);
 
@@ -205,7 +205,7 @@ TEST(DARTCollide, BoxSphereContacts)
 TEST(DARTCollide, BoxSphereInsideAndBoundary)
 {
   constexpr double kNearBoundaryEps = 1e-8;
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
   auto sphere = std::make_shared<SphereShape>(0.2);
 
@@ -244,7 +244,7 @@ TEST(DARTCollide, BoxSphereInsideAndBoundary)
 
 TEST(DARTCollide, BoxSphereAxisClampingAndInside)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
   auto sphere = std::make_shared<SphereShape>(0.2);
 
@@ -321,7 +321,7 @@ TEST(DARTCollide, BoxSphereAxisClampingAndInside)
 TEST(DARTCollide, SphereBoxInsideAndBoundary)
 {
   constexpr double kNearBoundaryEps = 1e-8;
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
   auto sphere = std::make_shared<SphereShape>(0.2);
 
@@ -361,7 +361,7 @@ TEST(DARTCollide, SphereBoxInsideAndBoundary)
 TEST(DARTCollide, SphereBoxAxisClampingAndNearZero)
 {
   constexpr double kNearZeroEps = 1e-8;
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
   auto sphere = std::make_shared<SphereShape>(0.2);
 
@@ -453,7 +453,7 @@ TEST(DARTCollide, SphereBoxAxisClampingAndNearZero)
 
 TEST(DARTCollide, BoxBoxContacts)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
 
   Eigen::Isometry3d tfA = Eigen::Isometry3d::Identity();
@@ -494,7 +494,7 @@ TEST(DARTCollide, BoxBoxContacts)
 
 TEST(DARTCollide, CylinderSphereAndPlane)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto shape = std::make_shared<SphereShape>(0.1);
 
   Eigen::Isometry3d tfCyl = Eigen::Isometry3d::Identity();
@@ -548,7 +548,7 @@ TEST(DARTCollide, CylinderSphereAndPlane)
 
 TEST(DARTCollide, CylinderSphereSideAndCap)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto shape = std::make_shared<SphereShape>(0.1);
 
   auto cylObj
@@ -592,7 +592,7 @@ TEST(DARTCollide, CylinderSphereSideAndCap)
 
 TEST(DARTCollide, CylinderPlaneNonParallelAndSeparated)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto shape = std::make_shared<SphereShape>(0.1);
 
   auto cylObj
@@ -633,7 +633,7 @@ TEST(DARTCollide, CylinderPlaneNonParallelAndSeparated)
 
 TEST(DARTCollide, CylinderPlaneParallelAxisAndEqualDepth)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto shape = std::make_shared<SphereShape>(0.1);
 
   auto cylObj
@@ -674,7 +674,7 @@ TEST(DARTCollide, CylinderPlaneParallelAxisAndEqualDepth)
 
 TEST(DARTCollide, CylinderPlaneAllNegativeDepths)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto shape = std::make_shared<SphereShape>(0.1);
 
   auto cylObj
@@ -848,7 +848,7 @@ TEST(DARTCollideHelpers, ClosestLineBoxPointsAnchorTransition)
 // Additional comprehensive tests for main collide() function dispatcher
 TEST(DARTCollide, MainDispatcherSphereSphere)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto sphere1 = std::make_shared<SphereShape>(0.5);
   auto sphere2 = std::make_shared<SphereShape>(0.3);
 
@@ -867,7 +867,7 @@ TEST(DARTCollide, MainDispatcherSphereSphere)
 
 TEST(DARTCollide, MainDispatcherBoxBox)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto box1 = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
   auto box2 = std::make_shared<BoxShape>(Eigen::Vector3d(0.5, 0.5, 0.5));
 
@@ -885,7 +885,7 @@ TEST(DARTCollide, MainDispatcherBoxBox)
 
 TEST(DARTCollide, MainDispatcherBoxSphere)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
   auto sphere = std::make_shared<SphereShape>(0.3);
 
@@ -910,7 +910,7 @@ TEST(DARTCollide, MainDispatcherBoxSphere)
 
 TEST(DARTCollide, MainDispatcherSphereBox)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto sphere = std::make_shared<SphereShape>(0.3);
   auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
 
@@ -929,7 +929,7 @@ TEST(DARTCollide, MainDispatcherSphereBox)
 
 TEST(DARTCollide, MainDispatcherEllipsoidSphere)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto ellipsoid
       = std::make_shared<EllipsoidShape>(Eigen::Vector3d(0.6, 0.4, 0.5));
   auto sphere = std::make_shared<SphereShape>(0.2);
@@ -950,7 +950,7 @@ TEST(DARTCollide, MainDispatcherEllipsoidSphere)
 
 TEST(DARTCollide, MainDispatcherSphereEllipsoid)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto sphere = std::make_shared<SphereShape>(0.2);
   auto ellipsoid
       = std::make_shared<EllipsoidShape>(Eigen::Vector3d(0.6, 0.4, 0.5));
@@ -971,7 +971,7 @@ TEST(DARTCollide, MainDispatcherSphereEllipsoid)
 
 TEST(DARTCollide, MainDispatcherEllipsoidBox)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto ellipsoid
       = std::make_shared<EllipsoidShape>(Eigen::Vector3d(0.6, 0.4, 0.5));
   auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
@@ -992,7 +992,7 @@ TEST(DARTCollide, MainDispatcherEllipsoidBox)
 
 TEST(DARTCollide, MainDispatcherBoxEllipsoid)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
   auto ellipsoid
       = std::make_shared<EllipsoidShape>(Eigen::Vector3d(0.6, 0.4, 0.5));
@@ -1012,7 +1012,7 @@ TEST(DARTCollide, MainDispatcherBoxEllipsoid)
 
 TEST(DARTCollide, MainDispatcherEllipsoidEllipsoid)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto ellipsoid1
       = std::make_shared<EllipsoidShape>(Eigen::Vector3d(0.6, 0.4, 0.5));
   auto ellipsoid2
@@ -1033,7 +1033,7 @@ TEST(DARTCollide, MainDispatcherEllipsoidEllipsoid)
 
 TEST(DARTCollide, MainDispatcherNoCollision)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto sphere1 = std::make_shared<SphereShape>(0.5);
   auto sphere2 = std::make_shared<SphereShape>(0.3);
 
@@ -1052,7 +1052,7 @@ TEST(DARTCollide, MainDispatcherNoCollision)
 
 TEST(DARTCollide, MainDispatcherEdgeCases)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto sphere = std::make_shared<SphereShape>(0.1);
   auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
 
@@ -1073,7 +1073,7 @@ TEST(DARTCollide, MainDispatcherEdgeCases)
 
 TEST(DARTCollide, CylinderPlaneEqualDepthAdjacentEdges)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto shape = std::make_shared<SphereShape>(0.1);
 
   auto cylObj
@@ -1100,7 +1100,7 @@ TEST(DARTCollide, CylinderPlaneEqualDepthAdjacentEdges)
 
 TEST(DARTCollide, CylinderPlaneEqualDepthOppositeEdges)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto shape = std::make_shared<SphereShape>(0.1);
 
   auto cylObj
@@ -1133,9 +1133,9 @@ TEST(DARTCollide, CylinderPlaneEqualDepthOppositeEdges)
 
 namespace dart::test {
 
-TEST(DARTCollide, CapsuleCapsuleUnsupportedPair)
+TEST(DARTCollide, CapsuleCapsulePairIsSupported)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto capsuleA = std::make_shared<CapsuleShape>(0.2, 0.4);
   auto capsuleB = std::make_shared<CapsuleShape>(0.2, 0.4);
 
@@ -1157,13 +1157,13 @@ TEST(DARTCollide, CapsuleCapsuleUnsupportedPair)
   CollisionResult result;
   const bool collided = group->collide(option, &result);
 
-  EXPECT_FALSE(collided);
-  EXPECT_EQ(result.getNumContacts(), 0u);
+  EXPECT_TRUE(collided);
+  EXPECT_GT(result.getNumContacts(), 0u);
 }
 
-TEST(DARTCollide, SphereCapsuleUnsupportedPair)
+TEST(DARTCollide, SphereCapsulePairIsSupported)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto sphere = std::make_shared<SphereShape>(0.2);
   auto capsule = std::make_shared<CapsuleShape>(0.2, 0.4);
 
@@ -1185,13 +1185,13 @@ TEST(DARTCollide, SphereCapsuleUnsupportedPair)
   CollisionResult result;
   const bool collided = group->collide(option, &result);
 
-  EXPECT_FALSE(collided);
-  EXPECT_EQ(result.getNumContacts(), 0u);
+  EXPECT_TRUE(collided);
+  EXPECT_GT(result.getNumContacts(), 0u);
 }
 
-TEST(DARTCollide, BoxCylinderUnsupportedPair)
+TEST(DARTCollide, BoxCylinderPairIsSupported)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
   auto cylinder = std::make_shared<CylinderShape>(0.3, 1.0);
 
@@ -1214,13 +1214,13 @@ TEST(DARTCollide, BoxCylinderUnsupportedPair)
   CollisionResult result;
   const bool collided = group->collide(option, &result);
 
-  EXPECT_FALSE(collided);
-  EXPECT_EQ(result.getNumContacts(), 0u);
+  EXPECT_TRUE(collided);
+  EXPECT_GT(result.getNumContacts(), 0u);
 }
 
 TEST(DARTCollide, CylinderPlaneDirectContact)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto cylinder = std::make_shared<CylinderShape>(0.4, 1.0);
   auto plane = std::make_shared<PlaneShape>(Eigen::Vector3d::UnitY(), 0.0);
 
@@ -1248,7 +1248,7 @@ TEST(DARTCollide, CylinderPlaneDirectContact)
 
 TEST(DARTCollide, CylinderPlaneParallelAxisFallback)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto cylinder = std::make_shared<CylinderShape>(0.4, 1.0);
   auto plane = std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0);
 
@@ -1277,7 +1277,7 @@ TEST(DARTCollide, CylinderPlaneParallelAxisFallback)
 
 TEST(DARTCollide, CylinderSphereInteriorContact)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto cylinder = std::make_shared<CylinderShape>(0.5, 0.8);
   auto sphere = std::make_shared<SphereShape>(0.2);
 
@@ -1305,7 +1305,7 @@ TEST(DARTCollide, CylinderSphereInteriorContact)
 
 TEST(DARTCollide, BoxBoxFaceContactNormalDepth)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
 
   Eigen::Isometry3d tfA = Eigen::Isometry3d::Identity();
@@ -1334,7 +1334,7 @@ TEST(DARTCollide, BoxBoxFaceContactNormalDepth)
 
 TEST(DARTCollide, MainDispatcherUnsupportedPair)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto cylinder = std::make_shared<CylinderShape>(0.2, 0.4);
   auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.4));
 
@@ -1350,7 +1350,7 @@ TEST(DARTCollide, MainDispatcherUnsupportedPair)
 
 TEST(DARTCollide, BoxBoxEdgeEdgeContact)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto boxA = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
   auto boxB = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
 
@@ -1384,7 +1384,7 @@ TEST(DARTCollide, BoxBoxEdgeEdgeContact)
 
 TEST(DARTCollide, BoxBoxEdgeEdgeCollisionGroup)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto boxA = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
   auto boxB = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
 
@@ -1425,7 +1425,7 @@ TEST(DARTCollide, BoxBoxEdgeEdgeCollisionGroup)
 
 TEST(DARTCollide, BoxBoxEdgeEdgeCollisionGroupSkewed)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto boxA = std::make_shared<BoxShape>(Eigen::Vector3d(1.2, 0.8, 1.0));
   auto boxB = std::make_shared<BoxShape>(Eigen::Vector3d(0.9, 1.1, 1.0));
 
@@ -1464,7 +1464,7 @@ TEST(DARTCollide, BoxBoxEdgeEdgeCollisionGroupSkewed)
 
 TEST(DARTCollide, BoxBoxEdgeEdgeContactRotatedAxes)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto boxA = std::make_shared<BoxShape>(Eigen::Vector3d(1.2, 0.6, 0.8));
   auto boxB = std::make_shared<BoxShape>(Eigen::Vector3d(0.9, 1.1, 0.7));
 
@@ -1501,7 +1501,7 @@ TEST(DARTCollide, BoxBoxEdgeEdgeContactRotatedAxes)
 
 TEST(DARTCollide, BoxBoxFaceContactAlongY)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
 
   Eigen::Isometry3d tfA = Eigen::Isometry3d::Identity();
@@ -1530,7 +1530,7 @@ TEST(DARTCollide, BoxBoxFaceContactAlongY)
 TEST(DARTCollide, BoxSphereNegativeAxisNearEps)
 {
   constexpr double kNearEps = 1e-8;
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
   auto sphere = std::make_shared<SphereShape>(0.2);
 
@@ -1572,7 +1572,7 @@ TEST(DARTCollide, BoxSphereNegativeAxisNearEps)
 TEST(DARTCollide, SphereBoxNegativeAxisNearEps)
 {
   constexpr double kNearEps = 1e-8;
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0));
   auto sphere = std::make_shared<SphereShape>(0.2);
 

@@ -47,8 +47,8 @@
 #if DART_HAVE_BULLET
   #include "dart/collision/bullet/All.hpp"
 #endif
-#ifdef DART_HAS_EXPERIMENTAL_COLLISION
-  #include "dart/collision/experimental_backend/experimental_collision_detector.hpp"
+#ifdef DART_HAS_DART_COLLISION
+  #include "dart/collision/dart/dart_collision_detector.hpp"
 #endif
 #include "helpers/dynamics_helpers.hpp"
 
@@ -478,11 +478,11 @@ TEST_F(Collision, SimpleFrames)
   testSimpleFrames(bullet);
 #endif
 
-  auto dart = DARTCollisionDetector::create();
+  auto dart = DartCollisionDetector::create();
   testSimpleFrames(dart);
 
-#ifdef DART_HAS_EXPERIMENTAL_COLLISION
-  auto experimental = ExperimentalCollisionDetector::create();
+#ifdef DART_HAS_DART_COLLISION
+  auto experimental = DartCollisionDetector::create();
   testSimpleFrames(experimental);
 #endif
 }
@@ -623,15 +623,15 @@ TEST_F(Collision, SphereSphere)
 #endif
 
   {
-    SCOPED_TRACE("DARTCollisionDetector");
-    auto dart = DARTCollisionDetector::create();
+    SCOPED_TRACE("DartCollisionDetector");
+    auto dart = DartCollisionDetector::create();
     testSphereSphere(dart);
   }
 
-#ifdef DART_HAS_EXPERIMENTAL_COLLISION
+#ifdef DART_HAS_DART_COLLISION
   {
-    SCOPED_TRACE("ExperimentalCollisionDetector");
-    auto experimental = ExperimentalCollisionDetector::create();
+    SCOPED_TRACE("DartCollisionDetector");
+    auto experimental = DartCollisionDetector::create();
     testSphereSphere(experimental);
   }
 #endif
@@ -745,11 +745,11 @@ TEST_F(Collision, BoxBox)
   testBoxBox(bullet);
 #endif
 
-  auto dart = DARTCollisionDetector::create();
+  auto dart = DartCollisionDetector::create();
   testBoxBox(dart);
 
-#ifdef DART_HAS_EXPERIMENTAL_COLLISION
-  auto experimental = ExperimentalCollisionDetector::create();
+#ifdef DART_HAS_DART_COLLISION
+  auto experimental = DartCollisionDetector::create();
   testBoxBox(experimental);
 #endif
 }
@@ -882,7 +882,7 @@ TEST_F(Collision, testCylinderCylinder)
   testCylinderCylinder(bullet);
 #endif
 
-  // auto dart = DARTCollisionDetector::create();
+  // auto dart = DartCollisionDetector::create();
   // testCylinderCylinder(dart);
 }
 
@@ -972,8 +972,8 @@ TEST_F(Collision, testConeCone)
 #endif
 
   {
-    // SCOPED_TRACE("DARTCollisionDetector");
-    // auto dart = DARTCollisionDetector::create();
+    // SCOPED_TRACE("DartCollisionDetector");
+    // auto dart = DartCollisionDetector::create();
     // testConeCone(dart);
   }
 }
@@ -1170,7 +1170,7 @@ TEST_F(Collision, testCapsuleCapsule)
   testCapsuleCapsule(bullet);
 #endif
 
-  // auto dart = DARTCollisionDetector::create();
+  // auto dart = DartCollisionDetector::create();
   // testCapsuleCapsule(dart);
 }
 
@@ -1397,7 +1397,7 @@ void testHeightmapBox(
 TEST_F(Collision, testHeightmapBox)
 {
 #if DART_HAVE_ODE
-  #ifdef DART_HAS_EXPERIMENTAL_COLLISION
+  #ifdef DART_HAS_DART_COLLISION
   GTEST_SKIP() << "ODE/Bullet heightmap tests skipped: backends route through "
                   "experimental narrow phase which uses mesh approximation for "
                   "heightmaps (known limitation)";
@@ -1412,7 +1412,7 @@ TEST_F(Collision, testHeightmapBox)
 #endif
 
 #if DART_HAVE_BULLET
-  #ifndef DART_HAS_EXPERIMENTAL_COLLISION
+  #ifndef DART_HAS_DART_COLLISION
   auto bullet = BulletCollisionDetector::create();
 
   DART_DEBUG("Testing Bullet (float)");
@@ -1634,15 +1634,15 @@ TEST_F(Collision, Options)
   testOptions(bullet);
 #endif
 
-  auto dart = DARTCollisionDetector::create();
+  auto dart = DartCollisionDetector::create();
   testOptions(dart);
 
-#ifdef DART_HAS_EXPERIMENTAL_COLLISION
+#ifdef DART_HAS_DART_COLLISION
   // Experimental backend uses GJK/EPA which may return fewer contacts per pair
   // than mesh-based backends. Verify core option behavior (maxNumContacts cap,
   // binary check, zero-max short-circuit) with relaxed contact counts.
   {
-    auto cd = ExperimentalCollisionDetector::create();
+    auto cd = DartCollisionDetector::create();
     auto f1 = SimpleFrame::createShared(Frame::World());
     auto f2 = SimpleFrame::createShared(Frame::World());
     auto f3 = SimpleFrame::createShared(Frame::World());
@@ -1794,11 +1794,11 @@ TEST_F(Collision, Filter)
   testFilter(bullet);
 #endif
 
-  auto dart = DARTCollisionDetector::create();
+  auto dart = DartCollisionDetector::create();
   testFilter(dart);
 
-#ifdef DART_HAS_EXPERIMENTAL_COLLISION
-  auto experimental = ExperimentalCollisionDetector::create();
+#ifdef DART_HAS_DART_COLLISION
+  auto experimental = DartCollisionDetector::create();
   testFilter(experimental);
 #endif
 }
@@ -1899,11 +1899,11 @@ TEST_F(Collision, CreateCollisionGroupFromVariousObject)
   testCreateCollisionGroups(bullet);
 #endif
 
-  auto dart = DARTCollisionDetector::create();
+  auto dart = DartCollisionDetector::create();
   testCreateCollisionGroups(dart);
 
-#ifdef DART_HAS_EXPERIMENTAL_COLLISION
-  auto experimental = ExperimentalCollisionDetector::create();
+#ifdef DART_HAS_DART_COLLISION
+  auto experimental = DartCollisionDetector::create();
   testCreateCollisionGroups(experimental);
 #endif
 }
@@ -2060,7 +2060,8 @@ TEST_F(Collision, Factory)
   EXPECT_TRUE(!collision::CollisionDetector::getFactory()->canCreate("ode"));
 #endif
 
-#ifdef DART_HAS_EXPERIMENTAL_COLLISION
+#ifdef DART_HAS_DART_COLLISION
+  EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("dart"));
   EXPECT_TRUE(
       collision::CollisionDetector::getFactory()->canCreate("experimental"));
 #endif
@@ -2191,7 +2192,7 @@ TEST(Issue1654, OdeHonorsMaxNumContacts)
 #if DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 TEST_F(Collision, VoxelGrid)
 {
-  #ifdef DART_HAS_EXPERIMENTAL_COLLISION
+  #ifdef DART_HAS_DART_COLLISION
   GTEST_SKIP() << "VoxelGridShape not yet supported by experimental backend";
   #endif
 

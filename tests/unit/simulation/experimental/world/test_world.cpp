@@ -42,7 +42,7 @@
 TEST(World, Construction)
 {
   // Create a World instance
-  dart::simulation::experimental::World world;
+  dart::simulation::native::World world;
   (void)world;       // Suppress unused variable warning
   EXPECT_TRUE(true); // If we get here, construction succeeded
 }
@@ -51,14 +51,14 @@ TEST(World, Construction)
 TEST(Version, VersionString)
 {
   // Test that version() returns a valid string_view
-  auto ver = dart::simulation::experimental::version();
+  auto ver = dart::simulation::native::version();
   EXPECT_FALSE(ver.empty());
   EXPECT_GT(ver.size(), 0u);
 
   // Test individual version components
-  EXPECT_GE(dart::simulation::experimental::versionMajor(), 7);
-  EXPECT_GE(dart::simulation::experimental::versionMinor(), 0);
-  EXPECT_GE(dart::simulation::experimental::versionPatch(), 0);
+  EXPECT_GE(dart::simulation::native::versionMajor(), 7);
+  EXPECT_GE(dart::simulation::native::versionMinor(), 0);
+  EXPECT_GE(dart::simulation::native::versionPatch(), 0);
 }
 
 //==============================================================================
@@ -68,14 +68,14 @@ TEST(Version, VersionString)
 // Test default mode is design mode
 TEST(World, DefaultModeIsDesign)
 {
-  dart::simulation::experimental::World world;
+  dart::simulation::native::World world;
   EXPECT_FALSE(world.isSimulationMode());
 }
 
 // Test entering simulation mode
 TEST(World, EnterSimulationMode)
 {
-  dart::simulation::experimental::World world;
+  dart::simulation::native::World world;
 
   // Initially in design mode
   EXPECT_FALSE(world.isSimulationMode());
@@ -90,7 +90,7 @@ TEST(World, EnterSimulationMode)
 // Test cannot enter simulation mode twice
 TEST(World, CannotEnterSimulationModeTwice)
 {
-  dart::simulation::experimental::World world;
+  dart::simulation::native::World world;
 
   // First call succeeds
   world.enterSimulationMode();
@@ -99,13 +99,13 @@ TEST(World, CannotEnterSimulationModeTwice)
   // Second call should throw
   EXPECT_THROW(
       world.enterSimulationMode(),
-      dart::simulation::experimental::InvalidArgumentException);
+      dart::simulation::native::InvalidArgumentException);
 }
 
 // Test baking with empty world
 TEST(World, BakingEmptyWorld)
 {
-  dart::simulation::experimental::World world;
+  dart::simulation::native::World world;
 
   // Baking should work even with empty world
   EXPECT_NO_THROW(world.enterSimulationMode());
@@ -115,7 +115,7 @@ TEST(World, BakingEmptyWorld)
 // Test baking with multibodies
 TEST(World, BakingWithMultibodies)
 {
-  dart::simulation::experimental::World world;
+  dart::simulation::native::World world;
 
   // Create several multibodies with joints and links
   auto robot1 = world.addMultiBody("robot1");
@@ -130,8 +130,7 @@ TEST(World, BakingWithMultibodies)
       "link2",
       {.parentLink = link2,
        .jointName = "joint2",
-       .jointType
-       = dart::simulation::experimental::comps::JointType::Prismatic});
+       .jointType = dart::simulation::native::comps::JointType::Prismatic});
 
   // Baking should succeed
   EXPECT_NO_THROW(world.enterSimulationMode());
@@ -148,12 +147,12 @@ TEST(World, BakingWithMultibodies)
 // Test that simulation operations require simulation mode
 TEST(World, UpdateKinematicsRequiresSimulationMode)
 {
-  dart::simulation::experimental::World world;
+  dart::simulation::native::World world;
 
   // updateKinematics should throw in design mode
   EXPECT_THROW(
       world.updateKinematics(),
-      dart::simulation::experimental::InvalidArgumentException);
+      dart::simulation::native::InvalidArgumentException);
 
   // After entering simulation mode, should work
   world.enterSimulationMode();

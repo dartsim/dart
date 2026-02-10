@@ -161,7 +161,7 @@ TEST(Distance, testBasicInterface)
   testBasicInterface(bullet);
 #endif
 
-  auto dart = DARTCollisionDetector::create();
+  auto dart = DartCollisionDetector::create();
   testBasicInterface(dart);
 }
 
@@ -273,7 +273,7 @@ TEST(Distance, Options)
   testOptions(bullet);
 #endif
 
-  auto dart = DARTCollisionDetector::create();
+  auto dart = DartCollisionDetector::create();
   testOptions(dart);
 }
 
@@ -333,7 +333,7 @@ TEST(Distance, SphereSphere)
   testSphereSphere(bullet);
 #endif
 
-  auto dart = DARTCollisionDetector::create();
+  auto dart = DartCollisionDetector::create();
   testSphereSphere(dart);
 }
 

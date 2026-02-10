@@ -1107,7 +1107,7 @@ TEST(SkelParser, ReadWorldXmlUnknownCollisionDetectorFallsBack)
   ASSERT_NE(world, nullptr);
   const auto detector = world->getConstraintSolver()->getCollisionDetector();
   ASSERT_NE(detector, nullptr);
-  EXPECT_EQ(detector->getTypeView(), "experimental");
+  EXPECT_EQ(detector->getTypeView(), "dart");
 }
 
 //==============================================================================

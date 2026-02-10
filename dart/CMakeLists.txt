@@ -267,6 +267,7 @@ endif()
 if(spdlog_FOUND)
   add_component_dependency_packages(${PROJECT_NAME} dart spdlog)
 endif()
+add_component_dependencies(${PROJECT_NAME} dart collision-native)
 
 if(MSVC)
   set_target_properties(

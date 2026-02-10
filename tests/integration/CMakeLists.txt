@@ -62,10 +62,8 @@ if(TARGET dart-io)
   if(TARGET dart-collision-ode)
     target_link_libraries(INTEGRATION_collision_Collision dart-collision-ode)
   endif()
-  if(DART_BUILD_COLLISION_EXPERIMENTAL)
-    target_link_libraries(INTEGRATION_collision_Collision dart-collision-experimental)
-    target_compile_definitions(INTEGRATION_collision_Collision PRIVATE DART_HAS_EXPERIMENTAL_COLLISION)
-  endif()
+  target_link_libraries(INTEGRATION_collision_Collision dart-collision-native)
+  target_compile_definitions(INTEGRATION_collision_Collision PRIVATE DART_HAS_DART_COLLISION)
 endif()
 
 if(TARGET dart-collision-fcl)
@@ -95,23 +93,21 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_G
   target_compile_options(INTEGRATION_collision_FclPrimitiveContactMatrixFcl PRIVATE -Wno-cpp)
 endif()
 
-if(DART_BUILD_COLLISION_EXPERIMENTAL)
-  dart_add_test(
-    "integration"
-    INTEGRATION_collision_experimental_backend_consistency
-    collision/test_experimental_backend_consistency.cpp)
-  target_link_libraries(
-    INTEGRATION_collision_experimental_backend_consistency
-    dart-collision-experimental)
-  if(TARGET dart-collision-fcl)
-    target_link_libraries(INTEGRATION_collision_experimental_backend_consistency dart-collision-fcl)
-  endif()
-  if(TARGET dart-collision-bullet)
-    target_link_libraries(INTEGRATION_collision_experimental_backend_consistency dart-collision-bullet)
-  endif()
-  if(TARGET dart-collision-ode)
-    target_link_libraries(INTEGRATION_collision_experimental_backend_consistency dart-collision-ode)
-  endif()
+dart_add_test(
+  "integration"
+  INTEGRATION_collision_native_backend_consistency
+  collision/test_native_backend_consistency.cpp)
+target_link_libraries(
+  INTEGRATION_collision_native_backend_consistency
+  dart-collision-native)
+if(TARGET dart-collision-fcl)
+  target_link_libraries(INTEGRATION_collision_native_backend_consistency dart-collision-fcl)
+endif()
+if(TARGET dart-collision-bullet)
+  target_link_libraries(INTEGRATION_collision_native_backend_consistency dart-collision-bullet)
+endif()
+if(TARGET dart-collision-ode)
+  target_link_libraries(INTEGRATION_collision_native_backend_consistency dart-collision-ode)
 endif()
 
 # Additional collision tests

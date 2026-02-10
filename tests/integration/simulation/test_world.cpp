@@ -469,8 +469,8 @@ TEST(World, DefaultWorldUsesFclOrExperimental)
   const auto type = std::string(detector->getTypeView());
   if (factory->canCreate("fcl")) {
     EXPECT_EQ(type, "fcl");
-  } else if (factory->canCreate("experimental")) {
-    EXPECT_EQ(type, "experimental");
+  } else if (factory->canCreate("dart")) {
+    EXPECT_EQ(type, "dart");
   } else {
     EXPECT_EQ(type, "dart");
   }
@@ -502,9 +502,9 @@ TEST(World, TypedSetterConfiguresFclPrimitive)
 TEST(World, TypedSetterFallsBackWhenDetectorUnavailable)
 {
   ScopedCollisionFactoryDisabler disableDart(
-      collision::DARTCollisionDetector::getStaticType(),
+      collision::DartCollisionDetector::getStaticType(),
       []() -> collision::CollisionDetectorPtr {
-        return collision::DARTCollisionDetector::create();
+        return collision::DartCollisionDetector::create();
       });
 
   if (!disableDart.wasDisabled()) {
@@ -526,9 +526,9 @@ TEST(World, TypedSetterFallsBackWhenDetectorUnavailable)
 TEST(World, ConfigFallbacksWhenPreferredDetectorUnavailable)
 {
   ScopedCollisionFactoryDisabler disableDart(
-      collision::DARTCollisionDetector::getStaticType(),
+      collision::DartCollisionDetector::getStaticType(),
       []() -> collision::CollisionDetectorPtr {
-        return collision::DARTCollisionDetector::create();
+        return collision::DartCollisionDetector::create();
       });
 
   if (!disableDart.wasDisabled()) {
@@ -542,17 +542,17 @@ TEST(World, ConfigFallbacksWhenPreferredDetectorUnavailable)
   auto world = World::create(config);
   ASSERT_TRUE(world->getCollisionDetector());
   const auto type = std::string(world->getCollisionDetector()->getTypeView());
-  EXPECT_TRUE(type == "experimental" || type == "fcl")
-      << "Expected experimental or fcl fallback, got: " << type;
+  EXPECT_TRUE(type == "dart" || type == "experimental" || type == "fcl")
+      << "Expected dart, experimental, or fcl fallback, got: " << type;
 }
 
 //==============================================================================
 TEST(World, ConfigWarnsWhenPreferredAndFallbackUnavailable)
 {
   ScopedCollisionFactoryDisabler disableDart(
-      collision::DARTCollisionDetector::getStaticType(),
+      collision::DartCollisionDetector::getStaticType(),
       []() -> collision::CollisionDetectorPtr {
-        return collision::DARTCollisionDetector::create();
+        return collision::DartCollisionDetector::create();
       });
 
   if (!disableDart.wasDisabled()) {
@@ -576,8 +576,8 @@ TEST(World, ConfigWarnsWhenPreferredAndFallbackUnavailable)
   auto world = World::create(config);
   ASSERT_TRUE(world->getCollisionDetector());
   const auto type = std::string(world->getCollisionDetector()->getTypeView());
-  EXPECT_TRUE(type == "experimental" || type == "fcl")
-      << "Expected experimental or fcl fallback, got: " << type;
+  EXPECT_TRUE(type == "dart" || type == "experimental" || type == "fcl")
+      << "Expected dart, experimental, or fcl fallback, got: " << type;
 }
 
 //==============================================================================

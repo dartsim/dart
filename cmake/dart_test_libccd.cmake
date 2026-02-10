@@ -1,4 +1,4 @@
-# Optional libccd support for collision experimental tests/benchmarks.
+# Optional libccd support for collision native tests/benchmarks.
 
 if(TARGET dart_tests_libccd)
   set(DART_TESTS_LIBCCD_FOUND TRUE)

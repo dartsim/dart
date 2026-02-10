@@ -34,8 +34,8 @@
 
 #include <dart/collision/DistanceOption.hpp>
 #include <dart/collision/DistanceResult.hpp>
-#include <dart/collision/experimental/narrow_phase/distance.hpp>
-#include <dart/collision/experimental/shapes/shape.hpp>
+#include <dart/collision/native/narrow_phase/distance.hpp>
+#include <dart/collision/native/shapes/shape.hpp>
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
@@ -64,7 +64,7 @@
 
 #include <cmath>
 
-using namespace dart::collision::experimental;
+using namespace dart::collision::native;
 
 namespace {
 

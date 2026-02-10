@@ -32,8 +32,6 @@
 
 #include "dart/collision/collision_object.hpp"
 #include "dart/collision/dart/dart_collide.hpp"
-#include "dart/collision/dart/dart_collision_detector.hpp"
-#include "dart/collision/dart/dart_collision_object.hpp"
 #include "dart/common/logging.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/box_shape.hpp"
@@ -1539,55 +1537,12 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
   }
 
   DART_ERROR(
-      "[DARTCollisionDetector] Attempting to check for an unsupported shape "
+      "[DartCollisionDetector] Attempting to check for an unsupported shape "
       "pair: [{}] - [{}]. Returning false.",
       shape1->getType(),
       shape2->getType());
 
   return false;
-}
-
-void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
-{
-  if (!shapeFrame) {
-    return;
-  }
-
-  const auto& shape = shapeFrame->getShape();
-  const auto& shapeType = shape->getType();
-
-  if (shapeType == dynamics::SphereShape::getStaticType()) {
-    return;
-  }
-
-  if (shapeType == dynamics::BoxShape::getStaticType()) {
-    return;
-  }
-
-  if (shapeType == dynamics::EllipsoidShape::getStaticType()) {
-    const auto& ellipsoid
-        = std::static_pointer_cast<const dynamics::EllipsoidShape>(shape);
-
-    if (ellipsoid->isSphere()) {
-      return;
-    }
-  }
-
-  DART_ERROR(
-      "[DARTCollisionDetector] Attempting to create shape type [{}] that is "
-      "not supported by DARTCollisionDetector. Currently, only BoxShape and "
-      "EllipsoidShape (only when all the radii are equal) are supported. This "
-      "shape will always get penetrated by other objects.",
-      shapeType);
-}
-
-std::unique_ptr<CollisionObject> DARTCollisionDetector::createCollisionObject(
-    const dynamics::ShapeFrame* shapeFrame)
-{
-  warnUnsupportedShapeType(shapeFrame);
-
-  return std::unique_ptr<DARTCollisionObject>(
-      new DARTCollisionObject(this, shapeFrame));
 }
 
 } // namespace collision

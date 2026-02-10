@@ -35,19 +35,21 @@
 
 #include <dart/collision/collision_detector.hpp>
 
-#include <vector>
+#include <memory>
+
+namespace dart::collision::native {
+class PersistentManifoldCache;
+}
 
 namespace dart {
 namespace collision {
 
-class DARTCollisionObject;
-
-class DART_API DARTCollisionDetector : public CollisionDetector
+class DART_API DartCollisionDetector : public CollisionDetector
 {
 public:
   using CollisionDetector::createCollisionGroup;
 
-  static std::shared_ptr<DARTCollisionDetector> create();
+  static std::shared_ptr<DartCollisionDetector> create();
 
   // Documentation inherited
   std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()
@@ -89,9 +91,17 @@ public:
       const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
       DistanceResult* result = nullptr) override;
 
+  // Documentation inherited
+  bool raycast(
+      CollisionGroup* group,
+      const Eigen::Vector3d& from,
+      const Eigen::Vector3d& to,
+      const RaycastOption& option = RaycastOption(),
+      RaycastResult* result = nullptr) override;
+
 protected:
   /// Constructor
-  DARTCollisionDetector();
+  DartCollisionDetector();
 
   // Documentation inherited
   std::unique_ptr<CollisionObject> createCollisionObject(
@@ -101,7 +111,10 @@ protected:
   void refreshCollisionObject(CollisionObject* object) override;
 
 private:
-  static Registrar<DARTCollisionDetector> mRegistrar;
+  static Registrar<DartCollisionDetector> mRegistrar;
+  static Registrar<DartCollisionDetector> mRegistrarExperimental;
+
+  std::unique_ptr<native::PersistentManifoldCache> mManifoldCache;
 };
 
 } // namespace collision

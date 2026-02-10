@@ -637,6 +637,43 @@ void CollisionGroup::removeDeletedShapeFrames()
 }
 
 //==============================================================================
+void CollisionGroup::ShapeFrameObserver::addShapeFrame(
+    const dynamics::ShapeFrame* shapeFrame)
+{
+  addSubject(shapeFrame);
+  mMap.insert(
+      std::make_pair(
+          static_cast<const common::Subject*>(shapeFrame), shapeFrame));
+}
+
+//==============================================================================
+void CollisionGroup::ShapeFrameObserver::removeShapeFrame(
+    const dynamics::ShapeFrame* shapeFrame)
+{
+  removeSubject(shapeFrame);
+  mMap.erase(static_cast<const common::Subject*>(shapeFrame));
+}
+
+//==============================================================================
+void CollisionGroup::ShapeFrameObserver::handleDestructionNotification(
+    const common::Subject* subject)
+{
+  auto it = mMap.find(subject);
+  if (it == mMap.end()) {
+    return;
+  }
+
+  const dynamics::ShapeFrame* frame = it->second;
+  mMap.erase(it);
+
+  if (mGroup) {
+    mGroup->handleShapeFrameDestruction(frame);
+  } else {
+    mDeletedFrames.insert(frame);
+  }
+}
+
+//==============================================================================
 auto CollisionGroup::addShapeFrameImpl(
     const dynamics::ShapeFrame* shapeFrame, const void* source) -> ObjectInfo*
 {

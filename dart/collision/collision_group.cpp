@@ -35,7 +35,6 @@
 #include "dart/collision/collision_detector.hpp"
 #include "dart/collision/collision_object.hpp"
 #include "dart/common/macros.hpp"
-#include "dart/dynamics/shape_frame.hpp"
 
 #include <algorithm>
 
@@ -280,46 +279,9 @@ void CollisionGroup::updateEngineData()
 }
 
 //==============================================================================
-void CollisionGroup::ShapeFrameObserver::addShapeFrame(
-    const dynamics::ShapeFrame* shapeFrame)
-{
-  addSubject(shapeFrame);
-  mMap.insert(
-      std::make_pair(
-          static_cast<const common::Subject*>(shapeFrame), shapeFrame));
-}
-
-//==============================================================================
-void CollisionGroup::ShapeFrameObserver::removeShapeFrame(
-    const dynamics::ShapeFrame* shapeFrame)
-{
-  removeSubject(shapeFrame);
-  mMap.erase(shapeFrame);
-}
-
-//==============================================================================
 void CollisionGroup::ShapeFrameObserver::removeAllShapeFrames()
 {
   removeAllSubjects();
-}
-
-//==============================================================================
-void CollisionGroup::ShapeFrameObserver::handleDestructionNotification(
-    const common::Subject* subject)
-{
-  auto it = mMap.find(subject);
-  if (it == mMap.end()) {
-    return;
-  }
-
-  const dynamics::ShapeFrame* frame = it->second;
-  mMap.erase(it);
-
-  if (mGroup) {
-    mGroup->handleShapeFrameDestruction(frame);
-  } else {
-    mDeletedFrames.insert(frame);
-  }
 }
 
 //==============================================================================

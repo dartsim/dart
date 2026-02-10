@@ -96,7 +96,7 @@ TEST(FreeFrame, LocalTransform)
   T_desired.translate(Eigen::Vector3d(1.0, 2.0, 3.0));
   T_desired.rotate(
       Eigen::AngleAxisd(
-          dart::simulation::experimental::pi / 4, Eigen::Vector3d::UnitZ()));
+          dart::simulation::native::pi / 4, Eigen::Vector3d::UnitZ()));
 
   frame.setLocalTransform(T_desired);
   Eigen::Isometry3d T_actual = frame.getLocalTransform();
@@ -138,7 +138,7 @@ TEST(FixedFrame, ConstructionRequiresName)
   // Empty name should throw
   EXPECT_THROW(
       world.addFixedFrame("", parent),
-      dart::simulation::experimental::InvalidArgumentException);
+      dart::simulation::native::InvalidArgumentException);
 
   // Valid name should succeed
   auto attached = world.addFixedFrame("attached", parent);
@@ -152,7 +152,7 @@ TEST(FixedFrame, CannotAttachToWorld)
   // Attaching to world frame should throw
   EXPECT_THROW(
       world.addFixedFrame("attached", Frame::world()),
-      dart::simulation::experimental::InvalidArgumentException);
+      dart::simulation::native::InvalidArgumentException);
 }
 
 TEST(FixedFrame, ConstructionWithOffset)
@@ -170,7 +170,7 @@ TEST(FixedFrame, ConstructionWithOffset)
   offset.translate(Eigen::Vector3d(1.0, 2.0, 3.0));
   offset.rotate(
       Eigen::AngleAxisd(
-          dart::simulation::experimental::pi / 6, Eigen::Vector3d::UnitX()));
+          dart::simulation::native::pi / 6, Eigen::Vector3d::UnitX()));
 
   auto attached2 = world.addFixedFrame("attached2", parent, offset);
   Eigen::Isometry3d T2 = attached2.getLocalTransform();

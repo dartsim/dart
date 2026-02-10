@@ -41,11 +41,10 @@ static void BM_DirectGet(benchmark::State& state)
 {
   entt::registry registry;
   auto entity = registry.create();
-  registry.emplace<dart::simulation::experimental::comps::Name>(entity, "test");
+  registry.emplace<dart::simulation::native::comps::Name>(entity, "test");
 
   for (auto _ : state) {
-    auto& comp
-        = registry.get<dart::simulation::experimental::comps::Name>(entity);
+    auto& comp = registry.get<dart::simulation::native::comps::Name>(entity);
     benchmark::DoNotOptimize(comp);
   }
 }
@@ -56,11 +55,11 @@ static void BM_SafeGet(benchmark::State& state)
 {
   entt::registry registry;
   auto entity = registry.create();
-  registry.emplace<dart::simulation::experimental::comps::Name>(entity, "test");
+  registry.emplace<dart::simulation::native::comps::Name>(entity, "test");
 
   for (auto _ : state) {
-    auto& comp = dart::simulation::experimental::safeGet<
-        dart::simulation::experimental::comps::Name>(registry, entity);
+    auto& comp = dart::simulation::native::safeGet<
+        dart::simulation::native::comps::Name>(registry, entity);
     benchmark::DoNotOptimize(comp);
   }
 }
@@ -71,11 +70,11 @@ static void BM_TryGetManual(benchmark::State& state)
 {
   entt::registry registry;
   auto entity = registry.create();
-  registry.emplace<dart::simulation::experimental::comps::Name>(entity, "test");
+  registry.emplace<dart::simulation::native::comps::Name>(entity, "test");
 
   for (auto _ : state) {
     auto* comp
-        = registry.try_get<dart::simulation::experimental::comps::Name>(entity);
+        = registry.try_get<dart::simulation::native::comps::Name>(entity);
     if (comp == nullptr) {
       state.SkipWithError("Component not found");
       break;

@@ -27,12 +27,12 @@
 #include <dart/gui/vsg/geometry_builders.hpp>
 #include <dart/gui/vsg/materials.hpp>
 
-#include <dart/collision/experimental/shapes/shape.hpp>
+#include <dart/collision/native/shapes/shape.hpp>
 
 #include <gtest/gtest.h>
 
 namespace dart_vsg = dart::gui::vsg;
-namespace collision = dart::collision::experimental;
+namespace collision = dart::collision::native;
 
 TEST(VsgGeometryBuilders, CreateSphere)
 {

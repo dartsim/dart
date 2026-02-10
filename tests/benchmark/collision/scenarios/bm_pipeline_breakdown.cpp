@@ -32,8 +32,8 @@
 
 #include "tests/benchmark/collision/fixtures/scene_builders.hpp"
 
-#include <dart/collision/experimental/collision_world.hpp>
-#include <dart/collision/experimental/shapes/shape.hpp>
+#include <dart/collision/native/collision_world.hpp>
+#include <dart/collision/native/shapes/shape.hpp>
 
 #include <benchmark/benchmark.h>
 
@@ -42,7 +42,7 @@
 #include <memory>
 #include <vector>
 
-using namespace dart::collision::experimental;
+using namespace dart::collision::native;
 
 namespace {
 

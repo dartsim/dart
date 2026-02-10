@@ -39,8 +39,8 @@
 #include "dart/collision/fcl/fcl_collision_object.hpp"
 #include "dart/collision/fcl/fcl_types.hpp"
 #include "dart/collision/fcl/tri_tri_intersection_test.hpp"
-#if DART_FCL_HAS_EXPERIMENTAL
-  #include "dart/collision/experimental_backend/experimental_query_helper.hpp"
+#if DART_FCL_HAS_DART
+  #include "dart/collision/dart/dart_query_helper.hpp"
 #endif
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
@@ -73,7 +73,7 @@ namespace collision {
 
 namespace {
 
-#if DART_FCL_HAS_EXPERIMENTAL
+#if DART_FCL_HAS_DART
 bool useExperimentalNarrowPhase()
 {
   // Disabled by default: experimental narrow phase produces different contact
@@ -715,7 +715,7 @@ bool FCLCollisionDetector::collide(
   auto* casted = static_cast<FCLCollisionGroup*>(group);
   casted->updateEngineData();
 
-  #if DART_FCL_HAS_EXPERIMENTAL
+  #if DART_FCL_HAS_DART
   if (useExperimentalNarrowPhase()) {
     std::vector<CollisionObject*> collisionObjects;
     collisionObjects.reserve(casted->mObjectInfoList.size());
@@ -725,7 +725,7 @@ bool FCLCollisionDetector::collide(
       }
     }
 
-    return experimentalCollide(collisionObjects, collisionObjects, option, result);
+    return dartCollide(collisionObjects, collisionObjects, option, result);
   }
   #endif
 
@@ -770,7 +770,7 @@ bool FCLCollisionDetector::collide(
   casted1->updateEngineData();
   casted2->updateEngineData();
 
-  #if DART_FCL_HAS_EXPERIMENTAL
+  #if DART_FCL_HAS_DART
   if (useExperimentalNarrowPhase()) {
     std::vector<CollisionObject*> collisionObjects1;
     collisionObjects1.reserve(casted1->mObjectInfoList.size());
@@ -788,7 +788,7 @@ bool FCLCollisionDetector::collide(
       }
     }
 
-    return experimentalCollide(
+    return dartCollide(
         collisionObjects1, collisionObjects2, option, result);
   }
   #endif
@@ -826,7 +826,7 @@ double FCLCollisionDetector::distance(
   auto* casted = static_cast<FCLCollisionGroup*>(group);
   casted->updateEngineData();
 
-  #if DART_FCL_HAS_EXPERIMENTAL
+  #if DART_FCL_HAS_DART
   if (useExperimentalNarrowPhase()) {
     std::vector<CollisionObject*> collisionObjects;
     collisionObjects.reserve(casted->mObjectInfoList.size());
@@ -836,7 +836,7 @@ double FCLCollisionDetector::distance(
       }
     }
 
-    return experimentalDistance(collisionObjects, collisionObjects, option, result);
+    return dartDistance(collisionObjects, collisionObjects, option, result);
   }
   #endif
 
@@ -875,7 +875,7 @@ double FCLCollisionDetector::distance(
   casted1->updateEngineData();
   casted2->updateEngineData();
 
-  #if DART_FCL_HAS_EXPERIMENTAL
+  #if DART_FCL_HAS_DART
   if (useExperimentalNarrowPhase()) {
     std::vector<CollisionObject*> collisionObjects1;
     collisionObjects1.reserve(casted1->mObjectInfoList.size());
@@ -893,7 +893,7 @@ double FCLCollisionDetector::distance(
       }
     }
 
-    return experimentalDistance(
+    return dartDistance(
         collisionObjects1, collisionObjects2, option, result);
   }
   #endif
@@ -931,7 +931,7 @@ bool FCLCollisionDetector::raycast(
   auto* casted = static_cast<FCLCollisionGroup*>(group);
   casted->updateEngineData();
 
-  #if DART_FCL_HAS_EXPERIMENTAL
+  #if DART_FCL_HAS_DART
   if (useExperimentalNarrowPhase()) {
     std::vector<CollisionObject*> collisionObjects;
     collisionObjects.reserve(casted->mObjectInfoList.size());
@@ -941,7 +941,7 @@ bool FCLCollisionDetector::raycast(
       }
     }
 
-    return experimentalRaycast(collisionObjects, from, to, option, result);
+    return dartRaycast(collisionObjects, from, to, option, result);
   }
   #else
   DART_UNUSED(from);

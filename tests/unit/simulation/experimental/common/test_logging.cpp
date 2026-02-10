@@ -34,7 +34,7 @@
 
 #include <gtest/gtest.h>
 
-using namespace dart::simulation::experimental::common;
+using namespace dart::simulation::native::common;
 
 // Test logging initialization
 TEST(Logging, Initialization)

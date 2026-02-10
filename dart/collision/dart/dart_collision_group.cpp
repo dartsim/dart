@@ -40,7 +40,7 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-DARTCollisionGroup::DARTCollisionGroup(
+DartCollisionGroup::DartCollisionGroup(
     const CollisionDetectorPtr& collisionDetector)
   : CollisionGroup(collisionDetector)
 {
@@ -48,13 +48,13 @@ DARTCollisionGroup::DARTCollisionGroup(
 }
 
 //==============================================================================
-void DARTCollisionGroup::initializeEngineData()
+void DartCollisionGroup::initializeEngineData()
 {
   // Do nothing
 }
 
 //==============================================================================
-void DARTCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
+void DartCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 {
   if (std::ranges::find(mCollisionObjects, object) == mCollisionObjects.end()) {
     mCollisionObjects.push_back(object);
@@ -62,7 +62,7 @@ void DARTCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 }
 
 //==============================================================================
-void DARTCollisionGroup::addCollisionObjectsToEngine(
+void DartCollisionGroup::addCollisionObjectsToEngine(
     std::span<CollisionObject* const> collObjects)
 {
   for (auto collObject : collObjects) {
@@ -71,20 +71,20 @@ void DARTCollisionGroup::addCollisionObjectsToEngine(
 }
 
 //==============================================================================
-void DARTCollisionGroup::removeCollisionObjectFromEngine(
+void DartCollisionGroup::removeCollisionObjectFromEngine(
     CollisionObject* object)
 {
   std::erase(mCollisionObjects, object);
 }
 
 //==============================================================================
-void DARTCollisionGroup::removeAllCollisionObjectsFromEngine()
+void DartCollisionGroup::removeAllCollisionObjectsFromEngine()
 {
   mCollisionObjects.clear();
 }
 
 //==============================================================================
-void DARTCollisionGroup::updateCollisionGroupEngineData()
+void DartCollisionGroup::updateCollisionGroupEngineData()
 {
   // Do nothing
 }

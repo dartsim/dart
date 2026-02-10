@@ -32,15 +32,15 @@
 
 #include <dart/config.hpp>
 
-#include <dart/collision/experimental/narrow_phase/box_box.hpp>
-#include <dart/collision/experimental/narrow_phase/capsule_box.hpp>
-#include <dart/collision/experimental/narrow_phase/capsule_capsule.hpp>
-#include <dart/collision/experimental/narrow_phase/capsule_sphere.hpp>
-#include <dart/collision/experimental/narrow_phase/cylinder_collision.hpp>
-#include <dart/collision/experimental/narrow_phase/plane_sphere.hpp>
-#include <dart/collision/experimental/narrow_phase/sphere_box.hpp>
-#include <dart/collision/experimental/narrow_phase/sphere_sphere.hpp>
-#include <dart/collision/experimental/shapes/shape.hpp>
+#include <dart/collision/native/narrow_phase/box_box.hpp>
+#include <dart/collision/native/narrow_phase/capsule_box.hpp>
+#include <dart/collision/native/narrow_phase/capsule_capsule.hpp>
+#include <dart/collision/native/narrow_phase/capsule_sphere.hpp>
+#include <dart/collision/native/narrow_phase/cylinder_collision.hpp>
+#include <dart/collision/native/narrow_phase/plane_sphere.hpp>
+#include <dart/collision/native/narrow_phase/sphere_box.hpp>
+#include <dart/collision/native/narrow_phase/sphere_sphere.hpp>
+#include <dart/collision/native/shapes/shape.hpp>
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
@@ -72,7 +72,7 @@
 
 #include <cmath>
 
-using namespace dart::collision::experimental;
+using namespace dart::collision::native;
 
 namespace {
 

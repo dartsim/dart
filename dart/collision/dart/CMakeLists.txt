@@ -20,3 +20,7 @@ install(
   DESTINATION include/dart/collision/dart
   COMPONENT headers
 )
+
+dart_property_add(
+  DART_EXTRA_LINK_LIBS
+  "${PROJECT_NAME}-collision-native")

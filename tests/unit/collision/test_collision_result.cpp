@@ -78,7 +78,7 @@ std::unique_ptr<CollisionGroup> makeGroupWithOverlap(
 //==============================================================================
 TEST(CollisionResultTests, TracksCollidingFramesAndBodies)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto skeletonA = makeSkeleton("a");
   auto skeletonB = makeSkeleton("b");
   auto group = makeGroupWithOverlap(skeletonA, skeletonB, detector);
@@ -109,7 +109,7 @@ TEST(CollisionResultTests, TracksCollidingFramesAndBodies)
 //==============================================================================
 TEST(CollisionResultTests, ContactProvidesBodyNodeAccessors)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto skeletonA = makeSkeleton("bodynode_a");
   auto skeletonB = makeSkeleton("bodynode_b");
   auto group = makeGroupWithOverlap(skeletonA, skeletonB, detector);
@@ -145,7 +145,7 @@ TEST(CollisionResultTests, ContactProvidesBodyNodeAccessors)
 //==============================================================================
 TEST(CollisionResultTests, ClearRemovesContactsAndCollisionSets)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto skeletonA = makeSkeleton("solo_a");
   auto skeletonB = makeSkeleton("solo_b");
   auto group = makeGroupWithOverlap(skeletonA, skeletonB, detector);
@@ -174,7 +174,7 @@ TEST(CollisionResultTests, ClearRemovesContactsAndCollisionSets)
 //==============================================================================
 TEST(CollisionResultTests, GetContactReturnsValidContact)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto skeletonA = makeSkeleton("contact_a");
   auto skeletonB = makeSkeleton("contact_b");
   auto group = makeGroupWithOverlap(skeletonA, skeletonB, detector);
@@ -202,7 +202,7 @@ TEST(CollisionResultTests, GetContactReturnsValidContact)
 //==============================================================================
 TEST(CollisionResultTests, GetContactsReturnsSpan)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto skeletonA = makeSkeleton("span_a");
   auto skeletonB = makeSkeleton("span_b");
   auto group = makeGroupWithOverlap(skeletonA, skeletonB, detector);
@@ -238,7 +238,7 @@ TEST(CollisionResultTests, EmptyResultHasNoContacts)
 //==============================================================================
 TEST(CollisionResultTests, MaxNumContactsLimitsResults)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto skeletonA = makeSkeleton("limit_a");
   auto skeletonB = makeSkeleton("limit_b");
   auto group = makeGroupWithOverlap(skeletonA, skeletonB, detector);

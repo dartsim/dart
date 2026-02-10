@@ -46,7 +46,7 @@ if(TARGET dart-collision-bullet)
 endif()
 
 dart_add_test(
-  "unit" UNIT_collision_DARTCollisionDetector collision/test_dart_collision_detector.cpp)
+  "unit" UNIT_collision_DartCollisionDetector collision/test_dart_collision_detector.cpp)
 dart_add_test("unit" UNIT_collision_DARTCollide collision/test_dart_collide.cpp)
 
 dart_add_test("unit" UNIT_collision_Raycast collision/test_raycast.cpp)
@@ -59,7 +59,7 @@ endif()
 
 dart_add_test("unit" UNIT_collision_CollisionResult collision/test_collision_result.cpp)
 dart_add_test(
-  "unit" UNIT_collision_ExperimentalBackend collision/test_experimental_backend.cpp)
+  "unit" UNIT_collision_NativeBackend collision/test_native_backend.cpp)
 dart_add_test(
   "unit"
   UNIT_collision_ConvexMesh
@@ -336,7 +336,7 @@ endif()
 # ==============================================================================
 if(TARGET dart-gui-vsg)
   dart_add_test("unit" UNIT_gui_vsg_geometry_builders gui/vsg/test_geometry_builders.cpp)
-  target_link_libraries(UNIT_gui_vsg_geometry_builders dart-gui-vsg dart-collision-experimental)
+  target_link_libraries(UNIT_gui_vsg_geometry_builders dart-gui-vsg dart-collision-native)
 
   dart_add_test("unit" UNIT_gui_vsg_debug_draw gui/vsg/test_debug_draw.cpp)
   target_link_libraries(UNIT_gui_vsg_debug_draw dart-gui-vsg)
@@ -345,7 +345,7 @@ if(TARGET dart-gui-vsg)
   target_link_libraries(UNIT_gui_vsg_simple_viewer dart-gui-vsg)
 
   dart_add_test("unit" UNIT_gui_vsg_collision_scene_builder gui/vsg/test_collision_scene_builder.cpp)
-  target_link_libraries(UNIT_gui_vsg_collision_scene_builder dart-gui-vsg dart-collision-experimental)
+  target_link_libraries(UNIT_gui_vsg_collision_scene_builder dart-gui-vsg dart-collision-native)
 endif()
 
 # ==============================================================================
@@ -410,11 +410,9 @@ if(DART_BUILD_SIMULATION_EXPERIMENTAL)
 endif()
 
 # ==============================================================================
-# Collision-Experimental Tests
+# Collision-Native Tests
 # ==============================================================================
-if(DART_BUILD_COLLISION_EXPERIMENTAL)
-  add_subdirectory(collision/experimental)
-endif()
+add_subdirectory(collision/native)
 
 # ==============================================================================
 # SIMD Tests

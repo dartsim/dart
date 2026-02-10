@@ -18,7 +18,7 @@
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *     MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
  *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
  *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
  *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
@@ -34,27 +34,34 @@
 #define DART_COLLISION_DART_DARTCOLLISIONOBJECT_HPP_
 
 #include <dart/collision/collision_object.hpp>
+#include <dart/collision/native/shapes/shape.hpp>
 
-#include <Eigen/Dense>
+#include <memory>
 
 namespace dart {
 namespace collision {
 
-class CollisionObject;
-
-class DARTCollisionObject : public CollisionObject
+class DartCollisionObject : public CollisionObject
 {
 public:
-  friend class DARTCollisionDetector;
+  friend class DartCollisionDetector;
+
+  const native::Shape* getNativeShape() const;
 
 protected:
   /// Constructor
-  DARTCollisionObject(
+  DartCollisionObject(
       CollisionDetector* collisionDetector,
-      const dynamics::ShapeFrame* shapeFrame);
+      const dynamics::ShapeFrame* shapeFrame,
+      std::unique_ptr<native::Shape> shape);
 
   // Documentation inherited
   void updateEngineData() override;
+
+  void setNativeShape(std::unique_ptr<native::Shape> shape);
+
+private:
+  std::unique_ptr<native::Shape> mShape;
 };
 
 } // namespace collision

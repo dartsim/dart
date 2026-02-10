@@ -81,7 +81,7 @@ TEST(Raycast, RaycastResultDefaultConstructor)
 //==============================================================================
 TEST(Raycast, RaycastOptionPassesFilterWhenUnset)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
 
   auto frame = SimpleFrame::createShared(Frame::World());
   frame->setShape(std::make_shared<SphereShape>(0.1));
@@ -97,7 +97,7 @@ TEST(Raycast, RaycastOptionPassesFilterWhenUnset)
 //==============================================================================
 TEST(Raycast, RaycastOptionHonorsPredicate)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
 
   auto firstFrame = SimpleFrame::createShared(Frame::World());
   firstFrame->setShape(std::make_shared<SphereShape>(0.1));
@@ -212,7 +212,7 @@ TEST(Raycast, testBasicInterface)
   testBasicInterface(bullet);
 #endif
 
-  auto dart = DARTCollisionDetector::create();
+  auto dart = DartCollisionDetector::create();
   testBasicInterface(dart);
 }
 
@@ -296,7 +296,7 @@ TEST(Raycast, testOptions)
   testOptions(bullet);
 #endif
 
-  auto dart = DARTCollisionDetector::create();
+  auto dart = DartCollisionDetector::create();
   testOptions(dart);
 }
 

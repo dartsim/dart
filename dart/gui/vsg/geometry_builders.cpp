@@ -32,7 +32,7 @@
 
 #include "dart/gui/vsg/geometry_builders.hpp"
 
-#include <dart/collision/experimental/shapes/shape.hpp>
+#include <dart/collision/native/shapes/shape.hpp>
 
 #include <vsg/utils/Builder.h>
 
@@ -206,16 +206,16 @@ namespace {
 }
 
 ::vsg::ref_ptr<::vsg::Node> createFromShape(
-    const collision::experimental::Shape& shape, const GeometryOptions& options)
+    const collision::native::Shape& shape, const GeometryOptions& options)
 {
-  using collision::experimental::BoxShape;
-  using collision::experimental::CapsuleShape;
-  using collision::experimental::ConvexShape;
-  using collision::experimental::CylinderShape;
-  using collision::experimental::MeshShape;
-  using collision::experimental::PlaneShape;
-  using collision::experimental::ShapeType;
-  using collision::experimental::SphereShape;
+  using collision::native::BoxShape;
+  using collision::native::CapsuleShape;
+  using collision::native::ConvexShape;
+  using collision::native::CylinderShape;
+  using collision::native::MeshShape;
+  using collision::native::PlaneShape;
+  using collision::native::ShapeType;
+  using collision::native::SphereShape;
 
   switch (shape.getType()) {
     case ShapeType::Sphere: {

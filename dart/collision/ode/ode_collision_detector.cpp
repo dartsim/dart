@@ -34,8 +34,8 @@
 
 #include "dart/collision/collision_filter.hpp"
 #include "dart/collision/contact.hpp"
-#if DART_ODE_HAS_EXPERIMENTAL
-  #include "dart/collision/experimental_backend/experimental_query_helper.hpp"
+#if DART_ODE_HAS_DART
+  #include "dart/collision/dart/dart_query_helper.hpp"
 #endif
 #include "dart/collision/ode/ode_collision_group.hpp"
 #include "dart/collision/ode/ode_collision_object.hpp"
@@ -68,7 +68,7 @@ namespace collision {
 
 namespace {
 
-#if DART_ODE_HAS_EXPERIMENTAL
+#if DART_ODE_HAS_DART
 bool useExperimentalNarrowPhase()
 {
   return false;
@@ -243,7 +243,7 @@ bool OdeCollisionDetector::collide(
   auto* odeGroup = static_cast<OdeCollisionGroup*>(group);
   odeGroup->updateEngineData();
 
-#if DART_ODE_HAS_EXPERIMENTAL
+#if DART_ODE_HAS_DART
   if (useExperimentalNarrowPhase()) {
     std::vector<CollisionObject*> collisionObjects;
     collisionObjects.reserve(odeGroup->mObjectInfoList.size());
@@ -253,8 +253,7 @@ bool OdeCollisionDetector::collide(
       }
     }
 
-    return experimentalCollide(
-        collisionObjects, collisionObjects, option, result);
+    return dartCollide(collisionObjects, collisionObjects, option, result);
   }
 #endif
 
@@ -299,7 +298,7 @@ bool OdeCollisionDetector::collide(
   auto* odeGroup2 = static_cast<OdeCollisionGroup*>(group2);
   odeGroup2->updateEngineData();
 
-#if DART_ODE_HAS_EXPERIMENTAL
+#if DART_ODE_HAS_DART
   if (useExperimentalNarrowPhase()) {
     std::vector<CollisionObject*> collisionObjects1;
     collisionObjects1.reserve(odeGroup1->mObjectInfoList.size());
@@ -317,8 +316,7 @@ bool OdeCollisionDetector::collide(
       }
     }
 
-    return experimentalCollide(
-        collisionObjects1, collisionObjects2, option, result);
+    return dartCollide(collisionObjects1, collisionObjects2, option, result);
   }
 #endif
 
@@ -357,7 +355,7 @@ double OdeCollisionDetector::distance(
   auto* odeGroup = static_cast<OdeCollisionGroup*>(group);
   odeGroup->updateEngineData();
 
-#if DART_ODE_HAS_EXPERIMENTAL
+#if DART_ODE_HAS_DART
   if (useExperimentalNarrowPhase()) {
     std::vector<CollisionObject*> collisionObjects;
     collisionObjects.reserve(odeGroup->mObjectInfoList.size());
@@ -367,8 +365,7 @@ double OdeCollisionDetector::distance(
       }
     }
 
-    return experimentalDistance(
-        collisionObjects, collisionObjects, option, result);
+    return dartDistance(collisionObjects, collisionObjects, option, result);
   }
 #else
   (void)option;
@@ -401,7 +398,7 @@ double OdeCollisionDetector::distance(
   odeGroup1->updateEngineData();
   odeGroup2->updateEngineData();
 
-#if DART_ODE_HAS_EXPERIMENTAL
+#if DART_ODE_HAS_DART
   if (useExperimentalNarrowPhase()) {
     std::vector<CollisionObject*> collisionObjects1;
     collisionObjects1.reserve(odeGroup1->mObjectInfoList.size());
@@ -419,8 +416,7 @@ double OdeCollisionDetector::distance(
       }
     }
 
-    return experimentalDistance(
-        collisionObjects1, collisionObjects2, option, result);
+    return dartDistance(collisionObjects1, collisionObjects2, option, result);
   }
 #else
   (void)option;
@@ -448,7 +444,7 @@ bool OdeCollisionDetector::raycast(
   auto* odeGroup = static_cast<OdeCollisionGroup*>(group);
   odeGroup->updateEngineData();
 
-#if DART_ODE_HAS_EXPERIMENTAL
+#if DART_ODE_HAS_DART
   if (useExperimentalNarrowPhase()) {
     std::vector<CollisionObject*> collisionObjects;
     collisionObjects.reserve(odeGroup->mObjectInfoList.size());
@@ -458,7 +454,7 @@ bool OdeCollisionDetector::raycast(
       }
     }
 
-    return experimentalRaycast(collisionObjects, from, to, option, result);
+    return dartRaycast(collisionObjects, from, to, option, result);
   }
 #else
   DART_UNUSED(from);

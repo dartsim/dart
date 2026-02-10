@@ -170,7 +170,7 @@ TEST(BodyNodeCollisionFilter, BlacklistPairThroughCollision)
   skel1->getJoint(0)->setPosition(0, 0.0);
   skel2->getJoint(0)->setPosition(0, 0.5); // Overlap with offset
 
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
   group->addShapeFrame(body1->getShapeNode(0));
   group->addShapeFrame(body2->getShapeNode(0));
@@ -207,7 +207,7 @@ TEST(BodyNodeCollisionFilter, RemoveAllFromBlacklistThroughCollision)
   skel1->getJoint(0)->setPosition(0, 0.0);
   skel2->getJoint(0)->setPosition(0, 0.5);
 
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
   group->addShapeFrame(body1->getShapeNode(0));
   group->addShapeFrame(body2->getShapeNode(0));
@@ -247,7 +247,7 @@ TEST(BodyNodeCollisionFilter, AdjacentBodiesIgnored)
       std::make_shared<BoxShape>(Eigen::Vector3d::Constant(1.0)));
 
   // By default, self-collision is disabled, so no collision expected
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
   group->addShapeFrame(pair1.second->getShapeNode(0));
   group->addShapeFrame(pair2.second->getShapeNode(0));
@@ -285,7 +285,7 @@ TEST(BodyNodeCollisionFilter, NonCollidableBodyIgnored)
   skel1->getJoint(0)->setPosition(0, 0.0);
   skel2->getJoint(0)->setPosition(0, 0.5);
 
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
   group->addShapeFrame(body1->getShapeNode(0));
   group->addShapeFrame(body2->getShapeNode(0));
@@ -322,7 +322,7 @@ TEST(BodyNodeCollisionFilter, ImmobileSkeletonsIgnored)
   skel1->getJoint(0)->setPosition(0, 0.0);
   skel2->getJoint(0)->setPosition(0, 0.5);
 
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
   group->addShapeFrame(body1->getShapeNode(0));
   group->addShapeFrame(body2->getShapeNode(0));
@@ -396,7 +396,7 @@ TEST(BodyNodeCollisionFilter, SameBodyNodeCollision)
   pair.second->createShapeNodeWith<CollisionAspect>(
       std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.5)));
 
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
   group->addShapeFrame(pair.second->getShapeNode(0));
   group->addShapeFrame(pair.second->getShapeNode(1));
@@ -419,7 +419,7 @@ TEST(BodyNodeCollisionFilter, AddDuplicatePairToBlacklist)
   skel1->getJoint(0)->setPosition(0, 0.0);
   skel2->getJoint(0)->setPosition(0, 0.5);
 
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
   group->addShapeFrame(body1->getShapeNode(0));
   group->addShapeFrame(body2->getShapeNode(0));
@@ -454,7 +454,7 @@ TEST(BodyNodeCollisionFilter, RemoveNonExistentPairFromBlacklist)
   skel1->getJoint(0)->setPosition(0, 0.0);
   skel2->getJoint(0)->setPosition(0, 0.5);
 
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
   group->addShapeFrame(body1->getShapeNode(0));
   group->addShapeFrame(body2->getShapeNode(0));
@@ -485,7 +485,7 @@ TEST(BodyNodeCollisionFilter, ObjectSelfCollision)
   auto skel = createSkeleton("skel");
   auto body = skel->getBodyNode(0);
 
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
   group->addShapeFrame(body->getShapeNode(0));
 
@@ -499,7 +499,7 @@ TEST(BodyNodeCollisionFilter, ObjectSelfCollision)
 
 TEST(BodyNodeCollisionFilter, SameCollisionObjectPointerIsIgnored)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto frame = std::make_shared<SimpleFrame>(Frame::World(), "frame");
   frame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
 
@@ -511,7 +511,7 @@ TEST(BodyNodeCollisionFilter, SameCollisionObjectPointerIsIgnored)
 
 TEST(BodyNodeCollisionFilter, NullShapeFrameReturnsFalse)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto frameA = std::make_shared<SimpleFrame>(Frame::World(), "frameA");
   auto frameB = std::make_shared<SimpleFrame>(Frame::World(), "frameB");
   frameA->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
@@ -527,7 +527,7 @@ TEST(BodyNodeCollisionFilter, NullShapeFrameReturnsFalse)
 
 TEST(BodyNodeCollisionFilter, NonShapeNodeFramesReturnFalse)
 {
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto frameA = std::make_shared<SimpleFrame>(Frame::World(), "frameA");
   auto frameB = std::make_shared<SimpleFrame>(Frame::World(), "frameB");
   frameA->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));

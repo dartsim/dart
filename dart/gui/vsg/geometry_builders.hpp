@@ -42,9 +42,9 @@
 #include <array>
 #include <vector>
 
-namespace dart::collision::experimental {
+namespace dart::collision::native {
 class Shape;
-} // namespace dart::collision::experimental
+} // namespace dart::collision::native
 
 namespace dart::gui::vsg {
 
@@ -79,7 +79,6 @@ DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createMesh(
     const GeometryOptions& options = {});
 
 DART_GUI_VSG_API ::vsg::ref_ptr<::vsg::Node> createFromShape(
-    const collision::experimental::Shape& shape,
-    const GeometryOptions& options = {});
+    const collision::native::Shape& shape, const GeometryOptions& options = {});
 
 } // namespace dart::gui::vsg

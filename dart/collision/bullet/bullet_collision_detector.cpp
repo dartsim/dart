@@ -41,8 +41,8 @@
 #include "dart/collision/bullet/detail/bullet_overlap_filter_callback.hpp"
 #include "dart/collision/collision_filter.hpp"
 #include "dart/collision/collision_object.hpp"
-#if DART_BULLET_HAS_EXPERIMENTAL
-  #include "dart/collision/experimental_backend/experimental_query_helper.hpp"
+#if DART_BULLET_HAS_DART
+  #include "dart/collision/dart/dart_query_helper.hpp"
 #endif
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
@@ -71,7 +71,7 @@ namespace collision {
 
 namespace {
 
-#if DART_BULLET_HAS_EXPERIMENTAL
+#if DART_BULLET_HAS_DART
 bool useExperimentalNarrowPhase()
 {
   return false;
@@ -254,7 +254,7 @@ bool BulletCollisionDetector::collide(
   auto castedGroup = static_cast<BulletCollisionGroup*>(group);
   auto collisionWorld = castedGroup->getBulletCollisionWorld();
 
-#if DART_BULLET_HAS_EXPERIMENTAL
+#if DART_BULLET_HAS_DART
   if (useExperimentalNarrowPhase()) {
     castedGroup->updateEngineData();
 
@@ -266,8 +266,7 @@ bool BulletCollisionDetector::collide(
       }
     }
 
-    return experimentalCollide(
-        collisionObjects, collisionObjects, option, result);
+    return dartCollide(collisionObjects, collisionObjects, option, result);
   }
 #endif
 
@@ -316,7 +315,7 @@ bool BulletCollisionDetector::collide(
     return false;
   }
 
-#if DART_BULLET_HAS_EXPERIMENTAL
+#if DART_BULLET_HAS_DART
   if (useExperimentalNarrowPhase()) {
     auto* castedGroup1 = static_cast<BulletCollisionGroup*>(group1);
     auto* castedGroup2 = static_cast<BulletCollisionGroup*>(group2);
@@ -339,8 +338,7 @@ bool BulletCollisionDetector::collide(
       }
     }
 
-    return experimentalCollide(
-        collisionObjects1, collisionObjects2, option, result);
+    return dartCollide(collisionObjects1, collisionObjects2, option, result);
   }
 #endif
 
@@ -397,7 +395,7 @@ double BulletCollisionDetector::distance(
   auto* castedGroup = static_cast<BulletCollisionGroup*>(group);
   castedGroup->updateEngineData();
 
-#if DART_BULLET_HAS_EXPERIMENTAL
+#if DART_BULLET_HAS_DART
   if (useExperimentalNarrowPhase()) {
     std::vector<CollisionObject*> collisionObjects;
     collisionObjects.reserve(castedGroup->mObjectInfoList.size());
@@ -407,8 +405,7 @@ double BulletCollisionDetector::distance(
       }
     }
 
-    return experimentalDistance(
-        collisionObjects, collisionObjects, option, result);
+    return dartDistance(collisionObjects, collisionObjects, option, result);
   }
 #else
   (void)option;
@@ -446,7 +443,7 @@ double BulletCollisionDetector::distance(
   castedGroup1->updateEngineData();
   castedGroup2->updateEngineData();
 
-#if DART_BULLET_HAS_EXPERIMENTAL
+#if DART_BULLET_HAS_DART
   if (useExperimentalNarrowPhase()) {
     std::vector<CollisionObject*> collisionObjects1;
     collisionObjects1.reserve(castedGroup1->mObjectInfoList.size());
@@ -464,8 +461,7 @@ double BulletCollisionDetector::distance(
       }
     }
 
-    return experimentalDistance(
-        collisionObjects1, collisionObjects2, option, result);
+    return dartDistance(collisionObjects1, collisionObjects2, option, result);
   }
 #else
   (void)option;
@@ -498,7 +494,7 @@ bool BulletCollisionDetector::raycast(
 
   auto* castedGroup = static_cast<BulletCollisionGroup*>(group);
 
-#if DART_BULLET_HAS_EXPERIMENTAL
+#if DART_BULLET_HAS_DART
   if (useExperimentalNarrowPhase()) {
     castedGroup->updateEngineData();
 
@@ -510,7 +506,7 @@ bool BulletCollisionDetector::raycast(
       }
     }
 
-    return experimentalRaycast(collisionObjects, from, to, option, result);
+    return dartRaycast(collisionObjects, from, to, option, result);
   }
 #endif
 

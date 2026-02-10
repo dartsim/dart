@@ -27,16 +27,16 @@
 #include <dart/gui/vsg/collision_scene_builder.hpp>
 #include <dart/gui/vsg/materials.hpp>
 
-#include <dart/collision/experimental/aabb.hpp>
-#include <dart/collision/experimental/collision_object.hpp>
-#include <dart/collision/experimental/collision_world.hpp>
-#include <dart/collision/experimental/shapes/shape.hpp>
-#include <dart/collision/experimental/types.hpp>
+#include <dart/collision/native/aabb.hpp>
+#include <dart/collision/native/collision_object.hpp>
+#include <dart/collision/native/collision_world.hpp>
+#include <dart/collision/native/shapes/shape.hpp>
+#include <dart/collision/native/types.hpp>
 
 #include <gtest/gtest.h>
 
 namespace dart_vsg = dart::gui::vsg;
-namespace collision = dart::collision::experimental;
+namespace collision = dart::collision::native;
 
 TEST(VsgCollisionSceneBuilder, DefaultConstruction)
 {

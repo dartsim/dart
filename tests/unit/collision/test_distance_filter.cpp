@@ -127,7 +127,7 @@ DummyCollisionObject makeObject(
 TEST(DistanceFilterTests, RejectsIdenticalObjects)
 {
   auto chain = makeThreeBodyChain("identical");
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto object = makeObject(chain.rootShape, detector.get());
 
   BodyNodeDistanceFilter filter;
@@ -138,7 +138,7 @@ TEST(DistanceFilterTests, RejectsIdenticalObjects)
 TEST(DistanceFilterTests, SkipsNonCollidableBodies)
 {
   auto chain = makeThreeBodyChain("non_collidable");
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   chain.child->setCollidable(false);
 
   auto rootObj = makeObject(chain.rootShape, detector.get());
@@ -152,7 +152,7 @@ TEST(DistanceFilterTests, SkipsNonCollidableBodies)
 TEST(DistanceFilterTests, RespectsSelfCollisionToggle)
 {
   auto chain = makeThreeBodyChain("self_collision");
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   chain.skeleton->disableSelfCollisionCheck();
 
   auto rootObj = makeObject(chain.rootShape, detector.get());
@@ -166,7 +166,7 @@ TEST(DistanceFilterTests, RespectsSelfCollisionToggle)
 TEST(DistanceFilterTests, AdjacentBodiesSkippedWhenDisabled)
 {
   auto chain = makeThreeBodyChain("adjacent_only");
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   chain.skeleton->enableSelfCollisionCheck();
   chain.skeleton->disableAdjacentBodyCheck();
 
@@ -181,7 +181,7 @@ TEST(DistanceFilterTests, AdjacentBodiesSkippedWhenDisabled)
 TEST(DistanceFilterTests, NonAdjacentBodiesStillMeasured)
 {
   auto chain = makeThreeBodyChain("non_adjacent");
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   chain.skeleton->enableSelfCollisionCheck();
   chain.skeleton->disableAdjacentBodyCheck();
 
@@ -198,7 +198,7 @@ TEST(DistanceFilterTests, SeparateSkeletonsAlwaysChecked)
   auto firstChain = makeThreeBodyChain("first");
   auto secondChain = makeThreeBodyChain("second");
 
-  auto detector = DARTCollisionDetector::create();
+  auto detector = DartCollisionDetector::create();
   auto firstObj = makeObject(firstChain.rootShape, detector.get());
   auto secondObj = makeObject(secondChain.rootShape, detector.get());
 

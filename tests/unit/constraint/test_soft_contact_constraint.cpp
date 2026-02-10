@@ -105,7 +105,7 @@ struct ContactFixture
 ContactFixture makeFixture(double friction, double restitution)
 {
   ContactFixture fixture;
-  fixture.detector = collision::DARTCollisionDetector::create();
+  fixture.detector = collision::DartCollisionDetector::create();
   fixture.softSkel = dynamics::Skeleton::create("soft");
   auto softPair = fixture.softSkel->createJointAndBodyNodePair<
       dynamics::FreeJoint,
@@ -352,7 +352,7 @@ TEST(SoftContactConstraint, CoefficientHelpers)
 TEST(SoftContactConstraint, ContactConstraintFrictionRestitutionPaths)
 {
   constexpr double timeStep = 0.001;
-  auto detector = collision::DARTCollisionDetector::create();
+  auto detector = collision::DartCollisionDetector::create();
   ASSERT_NE(detector, nullptr);
 
   auto skelA = createBox(
@@ -704,7 +704,7 @@ TEST(SoftContactConstraint, PointMassImpulseBranches)
 TEST(SoftContactConstraint, SelfCollisionApplyUnitImpulsePath)
 {
   constexpr double timeStep = 0.001;
-  auto detector = collision::DARTCollisionDetector::create();
+  auto detector = collision::DartCollisionDetector::create();
   ASSERT_NE(detector, nullptr);
 
   auto skel = dynamics::Skeleton::create("self");
@@ -781,7 +781,7 @@ TEST(SoftContactConstraint, RootSkeletonSelectionPaths)
   ExposedSoftContactConstraint softConstraint(softContact, timeStep);
   EXPECT_EQ(softConstraint.getRootSkeleton(), fixture.softSkel);
 
-  auto detector = collision::DARTCollisionDetector::create();
+  auto detector = collision::DartCollisionDetector::create();
   auto skelA = dynamics::Skeleton::create("rigidA");
   auto skelB = dynamics::Skeleton::create("rigidB");
   auto pairA = skelA->createJointAndBodyNodePair<dynamics::FreeJoint>();
@@ -1019,7 +1019,7 @@ TEST(SoftContactConstraint, WorldStepAfterClearingCollisionResult)
 TEST(ContactConstraint, FrictionlessRestitutionAndSurfaceMotion)
 {
   constexpr double timeStep = 0.01;
-  auto detector = collision::DARTCollisionDetector::create();
+  auto detector = collision::DartCollisionDetector::create();
   ASSERT_NE(detector, nullptr);
 
   auto boxA
@@ -1119,7 +1119,7 @@ TEST(ContactConstraint, FrictionlessRestitutionAndSurfaceMotion)
 TEST(ContactConstraint, SecondarySlipComplianceAffectsVelocityChange)
 {
   constexpr double timeStep = 0.01;
-  auto detector = collision::DARTCollisionDetector::create();
+  auto detector = collision::DartCollisionDetector::create();
   ASSERT_NE(detector, nullptr);
 
   auto boxA
@@ -1165,7 +1165,7 @@ TEST(ContactConstraint, SecondarySlipComplianceAffectsVelocityChange)
 TEST(ContactConstraint, CustomSurfaceMaterialsParams)
 {
   constexpr double timeStep = 0.01;
-  auto detector = collision::DARTCollisionDetector::create();
+  auto detector = collision::DartCollisionDetector::create();
   ASSERT_NE(detector, nullptr);
 
   auto boxA

@@ -6,9 +6,6 @@
 #if DART_HAVE_FCL
   #include "dart/collision/fcl/fcl_collision_detector.hpp"
 #endif
-#ifdef DART_HAS_EXPERIMENTAL_COLLISION
-  #include "dart/collision/experimental_backend/experimental_collision_detector.hpp"
-#endif
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
@@ -52,32 +49,20 @@ void defCollisionDetector(nb::module_& m)
       });
 #endif
 
-  nb::class_<dart::collision::DARTCollisionDetector, CollisionDetector>(
-      m, "DARTCollisionDetector")
+  nb::class_<dart::collision::DartCollisionDetector, CollisionDetector>(
+      m, "DartCollisionDetector")
       .def(
           nb::new_(
-              []() -> std::shared_ptr<dart::collision::DARTCollisionDetector> {
-                return dart::collision::DARTCollisionDetector::create();
+              []() -> std::shared_ptr<dart::collision::DartCollisionDetector> {
+                return dart::collision::DartCollisionDetector::create();
               }))
       .def_static("getStaticType", []() {
         return std::string(
-            dart::collision::DARTCollisionDetector::getStaticType());
+            dart::collision::DartCollisionDetector::getStaticType());
       });
 
-#ifdef DART_HAS_EXPERIMENTAL_COLLISION
-  nb::class_<dart::collision::ExperimentalCollisionDetector, CollisionDetector>(
-      m, "ExperimentalCollisionDetector")
-      .def(
-          nb::new_(
-              []() -> std::shared_ptr<
-                       dart::collision::ExperimentalCollisionDetector> {
-                return dart::collision::ExperimentalCollisionDetector::create();
-              }))
-      .def_static("getStaticType", []() {
-        return std::string(
-            dart::collision::ExperimentalCollisionDetector::getStaticType());
-      });
-#endif
+  // Backward compatibility alias
+  m.attr("DARTCollisionDetector") = m.attr("DartCollisionDetector");
 
 #if DART_HAVE_BULLET
   nb::class_<dart::collision::BulletCollisionDetector, CollisionDetector>(

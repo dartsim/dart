@@ -113,11 +113,7 @@ target_link_libraries(${target_name}
     ${link_libraries}
 )
 
-# Link to collision-experimental for createFromShape()
-# Use generator expression since collision-experimental is added after gui/vsg
-if(DART_BUILD_COLLISION_EXPERIMENTAL)
-  target_link_libraries(${target_name} PUBLIC ${PROJECT_NAME}-collision-experimental)
-endif()
+target_link_libraries(${target_name} PUBLIC ${PROJECT_NAME}-collision-native)
 
 # Add vsgImGui compile definition
 if(DART_HAS_VSGIMGUI)

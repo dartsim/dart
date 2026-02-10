@@ -33,7 +33,7 @@
 #include "dart/constraint/contact_constraint.hpp"
 
 #include "dart/collision/collision_object.hpp"
-#include "dart/collision/experimental/persistent_manifold_cache.hpp"
+#include "dart/collision/native/persistent_manifold_cache.hpp"
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
 #include "dart/dynamics/body_node.hpp"
@@ -645,8 +645,8 @@ void ContactConstraint::applyImpulse(double* lambda)
       return;
     }
 
-    auto* cached = static_cast<collision::experimental::CachedContact*>(
-        mContact.userData);
+    auto* cached
+        = static_cast<collision::native::CachedContact*>(mContact.userData);
     cached->cachedNormalImpulse = normalImpulse;
     cached->cachedFrictionImpulse1 = frictionImpulse1;
     cached->cachedFrictionImpulse2 = frictionImpulse2;

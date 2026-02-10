@@ -34,9 +34,9 @@
 
 #include <dart/collision/RaycastOption.hpp>
 #include <dart/collision/RaycastResult.hpp>
-#include <dart/collision/experimental/collision_world.hpp>
-#include <dart/collision/experimental/shapes/shape.hpp>
-#include <dart/collision/experimental/types.hpp>
+#include <dart/collision/native/collision_world.hpp>
+#include <dart/collision/native/shapes/shape.hpp>
+#include <dart/collision/native/types.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/CapsuleShape.hpp>
@@ -57,7 +57,7 @@
 #include <memory>
 #include <vector>
 
-using namespace dart::collision::experimental;
+using namespace dart::collision::native;
 
 namespace {
 

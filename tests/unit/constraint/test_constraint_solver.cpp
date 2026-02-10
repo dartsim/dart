@@ -858,7 +858,7 @@ TEST(ConstraintSolver, SetCollisionDetectorWithValidDetector)
   ASSERT_NE(originalDetector, nullptr);
 
   // Create a different collision detector (DART collision detector)
-  auto newDetector = collision::DARTCollisionDetector::create();
+  auto newDetector = collision::DartCollisionDetector::create();
   ASSERT_NE(newDetector, nullptr);
   ASSERT_NE(newDetector, originalDetector);
 
@@ -1457,7 +1457,7 @@ TEST(ContactConstraint, FrictionImpulseVelocityChangeWithSlip)
     using constraint::ContactConstraint::update;
   };
 
-  auto detector = collision::DARTCollisionDetector::create();
+  auto detector = collision::DartCollisionDetector::create();
   ASSERT_NE(detector, nullptr);
 
   auto boxA
@@ -1557,7 +1557,7 @@ TEST(ContactConstraint, StaticSettersAndGetters)
 
 TEST(ContactConstraint, FrictionDirectionSetGet)
 {
-  auto detector = collision::DARTCollisionDetector::create();
+  auto detector = collision::DartCollisionDetector::create();
   ASSERT_NE(detector, nullptr);
 
   auto boxA
@@ -1615,7 +1615,7 @@ TEST(ContactConstraint, ApplyImpulseAndPositionImpulse)
     using constraint::ContactConstraint::update;
   };
 
-  auto detector = collision::DARTCollisionDetector::create();
+  auto detector = collision::DartCollisionDetector::create();
   ASSERT_NE(detector, nullptr);
 
   auto boxA

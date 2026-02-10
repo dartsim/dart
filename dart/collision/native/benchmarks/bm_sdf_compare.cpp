@@ -1,0 +1,581 @@
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License
+ */
+
+#include <dart/collision/native/narrow_phase/distance.hpp>
+#include <dart/collision/native/sdf/dense_esdf_field.hpp>
+#include <dart/collision/native/sdf/dense_sdf_field.hpp>
+#include <dart/collision/native/sdf/dense_tsdf_field.hpp>
+#include <dart/collision/native/shapes/shape.hpp>
+
+#include <benchmark/benchmark.h>
+
+#ifdef DART_EXPERIMENTAL_HAVE_VOXBLOX
+  #include <voxblox/core/common.h>
+  #include <voxblox/core/esdf_map.h>
+  #include <voxblox/core/layer.h>
+#endif
+
+#include <algorithm>
+#include <array>
+#include <memory>
+#include <random>
+#include <string>
+#include <vector>
+
+#include <cstdint>
+
+namespace {
+
+constexpr double kVoxelSize = 0.1;
+constexpr int kDim = 32;
+constexpr double kRadius = 0.8;
+constexpr double kTruncation = 0.3;
+constexpr double kEsdfMaxDistance = 2.0;
+constexpr std::size_t kSweepQueryCount = 4096;
+
+struct GridConfig
+{
+  int dim;
+  double voxel_size;
+  double radius;
+};
+
+constexpr std::array<GridConfig, 5> kGridConfigs = {{
+    {32, 0.1, 0.8},
+    {40, 0.08, 0.8},
+    {64, 0.05, 0.8},
+    {80, 0.04, 0.8},
+    {96, 0.0333333333, 0.8},
+}};
+constexpr std::size_t kGridConfigCount = kGridConfigs.size();
+
+Eigen::Vector3d gridOrigin()
+{
+  return Eigen::Vector3d::Zero();
+}
+
+Eigen::Vector3d gridCenter()
+{
+  const double extent = kDim * kVoxelSize;
+  return Eigen::Vector3d(extent * 0.5, extent * 0.5, extent * 0.5);
+}
+
+Eigen::Vector3d gridCenterFor(const GridConfig& config)
+{
+  const double extent = config.dim * config.voxel_size;
+  return Eigen::Vector3d(extent * 0.5, extent * 0.5, extent * 0.5);
+}
+
+double sphereDistance(const Eigen::Vector3d& point)
+{
+  return (point - gridCenter()).norm() - kRadius;
+}
+
+double sphereDistanceFor(const Eigen::Vector3d& point, const GridConfig& config)
+{
+  return (point - gridCenterFor(config)).norm() - config.radius;
+}
+
+std::shared_ptr<dart::collision::native::DenseSdfField> buildDenseField()
+{
+  using dart::collision::native::DenseSdfField;
+  const Eigen::Vector3i dims(kDim, kDim, kDim);
+  auto field = std::make_shared<DenseSdfField>(gridOrigin(), dims, kVoxelSize);
+
+  for (int z = 0; z < kDim; ++z) {
+    for (int y = 0; y < kDim; ++y) {
+      for (int x = 0; x < kDim; ++x) {
+        const Eigen::Vector3d pos
+            = gridOrigin()
+              + (Eigen::Vector3d(x + 0.5, y + 0.5, z + 0.5) * kVoxelSize);
+        field->setDistance(Eigen::Vector3i(x, y, z), sphereDistance(pos));
+        field->setObserved(Eigen::Vector3i(x, y, z), true);
+      }
+    }
+  }
+
+  return field;
+}
+
+std::shared_ptr<dart::collision::native::DenseSdfField> buildDenseField(
+    const GridConfig& config)
+{
+  using dart::collision::native::DenseSdfField;
+  const Eigen::Vector3i dims(config.dim, config.dim, config.dim);
+  auto field
+      = std::make_shared<DenseSdfField>(gridOrigin(), dims, config.voxel_size);
+
+  for (int z = 0; z < config.dim; ++z) {
+    for (int y = 0; y < config.dim; ++y) {
+      for (int x = 0; x < config.dim; ++x) {
+        const Eigen::Vector3d pos
+            = gridOrigin()
+              + (Eigen::Vector3d(x + 0.5, y + 0.5, z + 0.5)
+                 * config.voxel_size);
+        field->setDistance(
+            Eigen::Vector3i(x, y, z), sphereDistanceFor(pos, config));
+        field->setObserved(Eigen::Vector3i(x, y, z), true);
+      }
+    }
+  }
+
+  return field;
+}
+
+std::shared_ptr<dart::collision::native::DenseTsdfField> buildDenseTsdf()
+{
+  using dart::collision::native::DenseTsdfField;
+  const Eigen::Vector3i dims(kDim, kDim, kDim);
+  auto field = std::make_shared<DenseTsdfField>(
+      gridOrigin(), dims, kVoxelSize, kTruncation, kEsdfMaxDistance);
+
+  for (int z = 0; z < kDim; ++z) {
+    for (int y = 0; y < kDim; ++y) {
+      for (int x = 0; x < kDim; ++x) {
+        const Eigen::Vector3d pos
+            = gridOrigin()
+              + (Eigen::Vector3d(x + 0.5, y + 0.5, z + 0.5) * kVoxelSize);
+        const double dist = sphereDistance(pos);
+        const double clamped = std::clamp(dist, -kTruncation, kTruncation);
+        field->setDistance(Eigen::Vector3i(x, y, z), clamped);
+        field->setWeight(Eigen::Vector3i(x, y, z), 1.0);
+      }
+    }
+  }
+
+  return field;
+}
+
+std::shared_ptr<dart::collision::native::DenseTsdfField> buildDenseTsdf(
+    const GridConfig& config)
+{
+  using dart::collision::native::DenseTsdfField;
+  const Eigen::Vector3i dims(config.dim, config.dim, config.dim);
+  auto field = std::make_shared<DenseTsdfField>(
+      gridOrigin(), dims, config.voxel_size, kTruncation, kEsdfMaxDistance);
+
+  for (int z = 0; z < config.dim; ++z) {
+    for (int y = 0; y < config.dim; ++y) {
+      for (int x = 0; x < config.dim; ++x) {
+        const Eigen::Vector3d pos
+            = gridOrigin()
+              + (Eigen::Vector3d(x + 0.5, y + 0.5, z + 0.5)
+                 * config.voxel_size);
+        const double dist = sphereDistanceFor(pos, config);
+        const double clamped = std::clamp(dist, -kTruncation, kTruncation);
+        field->setDistance(Eigen::Vector3i(x, y, z), clamped);
+        field->setWeight(Eigen::Vector3i(x, y, z), 1.0);
+      }
+    }
+  }
+
+  return field;
+}
+
+std::shared_ptr<dart::collision::native::DenseEsdfField> buildDenseEsdf()
+{
+  using dart::collision::native::DenseEsdfField;
+  using dart::collision::native::EsdfBuildOptions;
+
+  auto tsdf = buildDenseTsdf();
+  auto field = std::make_shared<DenseEsdfField>(
+      tsdf->origin(), tsdf->dims(), kVoxelSize, kEsdfMaxDistance);
+
+  EsdfBuildOptions options;
+  options.surfaceDistance = 0.5 * kVoxelSize;
+  options.maxDistance = kEsdfMaxDistance;
+  options.minWeight = 1e-6;
+  options.useDiagonalNeighbors = true;
+  if (!field->buildFromTsdf(*tsdf, options)) {
+    return nullptr;
+  }
+  return field;
+}
+
+std::shared_ptr<dart::collision::native::DenseEsdfField> buildDenseEsdf(
+    const GridConfig& config)
+{
+  using dart::collision::native::DenseEsdfField;
+  using dart::collision::native::EsdfBuildOptions;
+
+  auto tsdf = buildDenseTsdf(config);
+  auto field = std::make_shared<DenseEsdfField>(
+      tsdf->origin(), tsdf->dims(), config.voxel_size, kEsdfMaxDistance);
+
+  EsdfBuildOptions options;
+  options.surfaceDistance = 0.5 * config.voxel_size;
+  options.maxDistance = kEsdfMaxDistance;
+  options.minWeight = 1e-6;
+  options.useDiagonalNeighbors = true;
+  if (!field->buildFromTsdf(*tsdf, options)) {
+    return nullptr;
+  }
+  return field;
+}
+
+std::vector<Eigen::Vector3d> buildQueryPoints(std::size_t count)
+{
+  std::mt19937 rng(42);
+  const double extent = kDim * kVoxelSize;
+  std::uniform_real_distribution<double> dist(0.2, extent - 0.2);
+
+  std::vector<Eigen::Vector3d> points;
+  points.reserve(count);
+  for (std::size_t i = 0; i < count; ++i) {
+    points.emplace_back(dist(rng), dist(rng), dist(rng));
+  }
+  return points;
+}
+
+std::vector<Eigen::Vector3d> buildQueryPoints(
+    const GridConfig& config, std::size_t count)
+{
+  std::mt19937 rng(42);
+  const double extent = config.dim * config.voxel_size;
+  std::uniform_real_distribution<double> dist(0.2, extent - 0.2);
+
+  std::vector<Eigen::Vector3d> points;
+  points.reserve(count);
+  for (std::size_t i = 0; i < count; ++i) {
+    points.emplace_back(dist(rng), dist(rng), dist(rng));
+  }
+  return points;
+}
+
+#ifdef DART_EXPERIMENTAL_HAVE_VOXBLOX
+std::shared_ptr<voxblox::EsdfMap> buildVoxbloxMap()
+{
+  constexpr int kVoxelsPerSide = 16;
+  auto layer = std::make_shared<voxblox::Layer<voxblox::EsdfVoxel>>(
+      kVoxelSize, kVoxelsPerSide);
+
+  for (int z = 0; z < kDim; ++z) {
+    for (int y = 0; y < kDim; ++y) {
+      for (int x = 0; x < kDim; ++x) {
+        const Eigen::Vector3d pos
+            = gridOrigin()
+              + (Eigen::Vector3d(x + 0.5, y + 0.5, z + 0.5) * kVoxelSize);
+        const double dist = sphereDistance(pos);
+
+        const voxblox::GlobalIndex global(x, y, z);
+        voxblox::BlockIndex block;
+        voxblox::VoxelIndex voxel;
+        voxblox::getBlockAndVoxelIndexFromGlobalVoxelIndex(
+            global, kVoxelsPerSide, &block, &voxel);
+
+        auto block_ptr = layer->allocateBlockPtrByIndex(block);
+        voxblox::EsdfVoxel& voxel_ref = block_ptr->getVoxelByVoxelIndex(voxel);
+        voxel_ref.distance = static_cast<float>(dist);
+        voxel_ref.observed = true;
+      }
+    }
+  }
+
+  return std::make_shared<voxblox::EsdfMap>(layer);
+}
+#endif
+
+} // namespace
+
+static void BM_DenseSdfDistance(benchmark::State& state)
+{
+  static auto field = buildDenseField();
+  auto points = buildQueryPoints(static_cast<std::size_t>(state.range(0)));
+
+  dart::collision::native::SdfQueryOptions options;
+  options.interpolate = true;
+  options.requireObserved = true;
+
+  for (auto _ : state) {
+    double sum = 0.0;
+    for (const auto& point : points) {
+      double dist = 0.0;
+      field->distance(point, &dist, options);
+      sum += dist;
+    }
+    benchmark::DoNotOptimize(sum);
+  }
+
+  state.SetItemsProcessed(
+      state.iterations() * static_cast<std::uint64_t>(points.size()));
+}
+
+BENCHMARK(BM_DenseSdfDistance)->Arg(1024)->Arg(4096)->Arg(16384);
+
+static void BM_DenseSphereVsSdfDistance(benchmark::State& state)
+{
+  using namespace dart::collision::native;
+
+  static auto field = buildDenseField();
+  static auto base_ptr
+      = std::static_pointer_cast<const SignedDistanceField>(field);
+  static SdfShape sdf(base_ptr);
+  static SphereShape sphere(0.2);
+  static Eigen::Isometry3d sdf_tf = Eigen::Isometry3d::Identity();
+
+  auto points = buildQueryPoints(static_cast<std::size_t>(state.range(0)));
+
+  DistanceOption option;
+  for (auto _ : state) {
+    double sum = 0.0;
+    for (const auto& point : points) {
+      Eigen::Isometry3d sphere_tf = Eigen::Isometry3d::Identity();
+      sphere_tf.translation() = point;
+      DistanceResult result;
+      sum += distanceSphereSdf(sphere, sphere_tf, sdf, sdf_tf, result, option);
+    }
+    benchmark::DoNotOptimize(sum);
+  }
+
+  state.SetItemsProcessed(
+      state.iterations() * static_cast<std::uint64_t>(points.size()));
+}
+
+BENCHMARK(BM_DenseSphereVsSdfDistance)->Arg(1024)->Arg(4096)->Arg(16384);
+
+static void BM_DenseEsdfDistance(benchmark::State& state)
+{
+  static auto field = buildDenseEsdf();
+  if (!field) {
+    state.SkipWithError("Dense ESDF build failed.");
+    return;
+  }
+  auto points = buildQueryPoints(static_cast<std::size_t>(state.range(0)));
+
+  dart::collision::native::SdfQueryOptions options;
+  options.interpolate = true;
+  options.requireObserved = true;
+
+  for (auto _ : state) {
+    double sum = 0.0;
+    for (const auto& point : points) {
+      double dist = 0.0;
+      field->distance(point, &dist, options);
+      sum += dist;
+    }
+    benchmark::DoNotOptimize(sum);
+  }
+
+  state.SetItemsProcessed(
+      state.iterations() * static_cast<std::uint64_t>(points.size()));
+}
+
+BENCHMARK(BM_DenseEsdfDistance)->Arg(1024)->Arg(4096)->Arg(16384);
+
+static void BM_DenseEsdfBuild(benchmark::State& state)
+{
+  using dart::collision::native::DenseEsdfField;
+  using dart::collision::native::EsdfBuildOptions;
+
+  static auto tsdf = buildDenseTsdf();
+  DenseEsdfField esdf(
+      tsdf->origin(), tsdf->dims(), kVoxelSize, kEsdfMaxDistance);
+
+  EsdfBuildOptions options;
+  options.surfaceDistance = 0.5 * kVoxelSize;
+  options.maxDistance = kEsdfMaxDistance;
+  options.minWeight = 1e-6;
+  options.useDiagonalNeighbors = true;
+
+  for (auto _ : state) {
+    bool ok = esdf.buildFromTsdf(*tsdf, options);
+    benchmark::DoNotOptimize(ok);
+  }
+
+  state.SetItemsProcessed(
+      state.iterations() * static_cast<std::uint64_t>(kDim) * kDim * kDim);
+}
+
+BENCHMARK(BM_DenseEsdfBuild);
+
+std::string gridLabel(const GridConfig& config)
+{
+  return "dim=" + std::to_string(config.dim)
+         + " voxel=" + std::to_string(config.voxel_size);
+}
+
+static void BM_DenseSdfDistanceResolution(benchmark::State& state)
+{
+  const int config_index = static_cast<int>(state.range(0));
+  if (config_index < 0
+      || static_cast<std::size_t>(config_index) >= kGridConfigCount) {
+    state.SkipWithError("Invalid grid config index.");
+    return;
+  }
+  const GridConfig& config
+      = kGridConfigs[static_cast<std::size_t>(config_index)];
+  state.SetLabel(gridLabel(config));
+
+  using dart::collision::native::DenseSdfField;
+  static std::array<std::shared_ptr<DenseSdfField>, kGridConfigCount> fields;
+  static std::array<std::vector<Eigen::Vector3d>, kGridConfigCount> points;
+
+  if (!fields[static_cast<std::size_t>(config_index)]) {
+    fields[static_cast<std::size_t>(config_index)] = buildDenseField(config);
+  }
+  if (points[static_cast<std::size_t>(config_index)].empty()) {
+    points[static_cast<std::size_t>(config_index)]
+        = buildQueryPoints(config, kSweepQueryCount);
+  }
+
+  dart::collision::native::SdfQueryOptions options;
+  options.interpolate = true;
+  options.requireObserved = true;
+
+  const auto& field = fields[static_cast<std::size_t>(config_index)];
+  const auto& query_points = points[static_cast<std::size_t>(config_index)];
+
+  for (auto _ : state) {
+    double sum = 0.0;
+    for (const auto& point : query_points) {
+      double dist = 0.0;
+      field->distance(point, &dist, options);
+      sum += dist;
+    }
+    benchmark::DoNotOptimize(sum);
+  }
+
+  state.SetItemsProcessed(
+      state.iterations() * static_cast<std::uint64_t>(query_points.size()));
+}
+
+BENCHMARK(BM_DenseSdfDistanceResolution)
+    ->Arg(0)
+    ->Arg(1)
+    ->Arg(2)
+    ->Arg(3)
+    ->Arg(4);
+
+static void BM_DenseEsdfDistanceResolution(benchmark::State& state)
+{
+  const int config_index = static_cast<int>(state.range(0));
+  if (config_index < 0
+      || static_cast<std::size_t>(config_index) >= kGridConfigCount) {
+    state.SkipWithError("Invalid grid config index.");
+    return;
+  }
+  const GridConfig& config
+      = kGridConfigs[static_cast<std::size_t>(config_index)];
+  state.SetLabel(gridLabel(config));
+
+  using dart::collision::native::DenseEsdfField;
+  static std::array<std::shared_ptr<DenseEsdfField>, kGridConfigCount> fields;
+  static std::array<std::vector<Eigen::Vector3d>, kGridConfigCount> points;
+
+  if (!fields[static_cast<std::size_t>(config_index)]) {
+    fields[static_cast<std::size_t>(config_index)] = buildDenseEsdf(config);
+  }
+  if (!fields[static_cast<std::size_t>(config_index)]) {
+    state.SkipWithError("Dense ESDF build failed.");
+    return;
+  }
+  if (points[static_cast<std::size_t>(config_index)].empty()) {
+    points[static_cast<std::size_t>(config_index)]
+        = buildQueryPoints(config, kSweepQueryCount);
+  }
+
+  dart::collision::native::SdfQueryOptions options;
+  options.interpolate = true;
+  options.requireObserved = true;
+
+  const auto& field = fields[static_cast<std::size_t>(config_index)];
+  const auto& query_points = points[static_cast<std::size_t>(config_index)];
+
+  for (auto _ : state) {
+    double sum = 0.0;
+    for (const auto& point : query_points) {
+      double dist = 0.0;
+      field->distance(point, &dist, options);
+      sum += dist;
+    }
+    benchmark::DoNotOptimize(sum);
+  }
+
+  state.SetItemsProcessed(
+      state.iterations() * static_cast<std::uint64_t>(query_points.size()));
+}
+
+BENCHMARK(BM_DenseEsdfDistanceResolution)
+    ->Arg(0)
+    ->Arg(1)
+    ->Arg(2)
+    ->Arg(3)
+    ->Arg(4);
+
+static void BM_DenseEsdfBuildResolution(benchmark::State& state)
+{
+  const int config_index = static_cast<int>(state.range(0));
+  if (config_index < 0
+      || static_cast<std::size_t>(config_index) >= kGridConfigCount) {
+    state.SkipWithError("Invalid grid config index.");
+    return;
+  }
+  const GridConfig& config
+      = kGridConfigs[static_cast<std::size_t>(config_index)];
+  state.SetLabel(gridLabel(config));
+
+  using dart::collision::native::DenseEsdfField;
+  using dart::collision::native::EsdfBuildOptions;
+
+  static std::array<
+      std::shared_ptr<dart::collision::native::DenseTsdfField>,
+      kGridConfigCount>
+      tsdfs;
+  if (!tsdfs[static_cast<std::size_t>(config_index)]) {
+    tsdfs[static_cast<std::size_t>(config_index)] = buildDenseTsdf(config);
+  }
+
+  DenseEsdfField esdf(
+      gridOrigin(),
+      Eigen::Vector3i(config.dim, config.dim, config.dim),
+      config.voxel_size,
+      kEsdfMaxDistance);
+
+  EsdfBuildOptions options;
+  options.surfaceDistance = 0.5 * config.voxel_size;
+  options.maxDistance = kEsdfMaxDistance;
+  options.minWeight = 1e-6;
+  options.useDiagonalNeighbors = true;
+
+  for (auto _ : state) {
+    bool ok = esdf.buildFromTsdf(
+        *tsdfs[static_cast<std::size_t>(config_index)], options);
+    benchmark::DoNotOptimize(ok);
+  }
+
+  state.SetItemsProcessed(
+      state.iterations() * static_cast<std::uint64_t>(config.dim) * config.dim
+      * config.dim);
+}
+
+BENCHMARK(BM_DenseEsdfBuildResolution)->Arg(0)->Arg(1)->Arg(2)->Arg(3)->Arg(4);
+
+#ifdef DART_EXPERIMENTAL_HAVE_VOXBLOX
+static void BM_VoxbloxDistance(benchmark::State& state)
+{
+  static auto map = buildVoxbloxMap();
+  auto points = buildQueryPoints(static_cast<std::size_t>(state.range(0)));
+
+  for (auto _ : state) {
+    double sum = 0.0;
+    for (const auto& point : points) {
+      double dist = 0.0;
+      map->getDistanceAtPosition(point, true, &dist);
+      sum += dist;
+    }
+    benchmark::DoNotOptimize(sum);
+  }
+
+  state.SetItemsProcessed(
+      state.iterations() * static_cast<std::uint64_t>(points.size()));
+}
+
+BENCHMARK(BM_VoxbloxDistance)->Arg(1024)->Arg(4096)->Arg(16384);
+#endif

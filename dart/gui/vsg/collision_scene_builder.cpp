@@ -36,9 +36,9 @@
 #include "dart/gui/vsg/debug_draw.hpp"
 #include "dart/gui/vsg/geometry_builders.hpp"
 
-#include <dart/collision/experimental/aabb.hpp>
-#include <dart/collision/experimental/collision_object.hpp>
-#include <dart/collision/experimental/types.hpp>
+#include <dart/collision/native/aabb.hpp>
+#include <dart/collision/native/collision_object.hpp>
+#include <dart/collision/native/types.hpp>
 
 namespace dart::gui::vsg {
 
@@ -46,8 +46,7 @@ CollisionSceneBuilder::CollisionSceneBuilder() = default;
 CollisionSceneBuilder::~CollisionSceneBuilder() = default;
 
 void CollisionSceneBuilder::addObject(
-    const collision::experimental::CollisionObject& obj,
-    const Eigen::Vector4d& color)
+    const collision::native::CollisionObject& obj, const Eigen::Vector4d& color)
 {
   const auto* shape = obj.getShape();
   if (!shape) {
@@ -61,7 +60,7 @@ void CollisionSceneBuilder::addObject(
 }
 
 void CollisionSceneBuilder::addContacts(
-    const collision::experimental::CollisionResult& result,
+    const collision::native::CollisionResult& result,
     double normalLength,
     double pointSize)
 {
@@ -88,7 +87,7 @@ void CollisionSceneBuilder::addSphereCast(
     const Eigen::Vector3d& start,
     const Eigen::Vector3d& end,
     double radius,
-    const collision::experimental::CcdResult* hit)
+    const collision::native::CcdResult* hit)
 {
   auto startSphere
       = createSphere(radius, GeometryOptions{colors::Cyan, true, false});
@@ -118,13 +117,13 @@ void CollisionSceneBuilder::addSphereCast(
 }
 
 void CollisionSceneBuilder::addAabb(
-    const collision::experimental::Aabb& aabb, const Eigen::Vector4d& color)
+    const collision::native::Aabb& aabb, const Eigen::Vector4d& color)
 {
   m_nodes.push_back(createWireframeBox(aabb.min, aabb.max, color));
 }
 
 void CollisionSceneBuilder::addDistanceResult(
-    const collision::experimental::DistanceResult& result,
+    const collision::native::DistanceResult& result,
     const Eigen::Vector4d& lineColor,
     const Eigen::Vector4d& pointColor)
 {
@@ -139,8 +138,8 @@ void CollisionSceneBuilder::addDistanceResult(
 }
 
 void CollisionSceneBuilder::addRaycast(
-    const collision::experimental::Ray& ray,
-    const collision::experimental::RaycastResult* hit,
+    const collision::native::Ray& ray,
+    const collision::native::RaycastResult* hit,
     const Eigen::Vector4d& rayColor,
     const Eigen::Vector4d& hitColor)
 {

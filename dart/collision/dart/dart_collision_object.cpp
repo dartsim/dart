@@ -36,18 +36,31 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-DARTCollisionObject::DARTCollisionObject(
+DartCollisionObject::DartCollisionObject(
     CollisionDetector* collisionDetector,
-    const dynamics::ShapeFrame* shapeFrame)
-  : CollisionObject(collisionDetector, shapeFrame)
+    const dynamics::ShapeFrame* shapeFrame,
+    std::unique_ptr<native::Shape> shape)
+  : CollisionObject(collisionDetector, shapeFrame), mShape(std::move(shape))
 {
   // Do nothing
 }
 
 //==============================================================================
-void DARTCollisionObject::updateEngineData()
+void DartCollisionObject::updateEngineData()
 {
   // Do nothing
+}
+
+//==============================================================================
+const native::Shape* DartCollisionObject::getNativeShape() const
+{
+  return mShape.get();
+}
+
+//==============================================================================
+void DartCollisionObject::setNativeShape(std::unique_ptr<native::Shape> shape)
+{
+  mShape = std::move(shape);
 }
 
 } // namespace collision

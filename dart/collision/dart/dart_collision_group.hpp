@@ -38,18 +38,16 @@
 namespace dart {
 namespace collision {
 
-class DARTCollisionObject;
-
-class DART_API DARTCollisionGroup : public CollisionGroup
+class DartCollisionGroup : public CollisionGroup
 {
 public:
-  friend class DARTCollisionDetector;
+  friend class DartCollisionDetector;
 
   /// Constructor
-  DARTCollisionGroup(const CollisionDetectorPtr& collisionDetector);
+  DartCollisionGroup(const CollisionDetectorPtr& collisionDetector);
 
   /// Destructor
-  virtual ~DARTCollisionGroup() = default;
+  virtual ~DartCollisionGroup() = default;
 
 protected:
   // Documentation inherited
@@ -72,7 +70,7 @@ protected:
   void updateCollisionGroupEngineData() override;
 
 protected:
-  /// CollisionObjects added to this DARTCollisionGroup
+  /// CollisionObjects added to this DartCollisionGroup
   std::vector<CollisionObject*> mCollisionObjects;
 };
 

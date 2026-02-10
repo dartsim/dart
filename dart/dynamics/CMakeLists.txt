@@ -4,11 +4,7 @@ file(GLOB srcs "*.cpp")
 file(GLOB detail_hdrs "detail/*.hpp")
 file(GLOB detail_srcs "detail/*.cpp")
 
-# experimental_collision_bridge.cpp depends on libdart-collision-experimental
-# symbols, so exclude it when the experimental collision module is not built
-if(NOT DART_BUILD_COLLISION_EXPERIMENTAL)
-  list(FILTER detail_srcs EXCLUDE REGEX "experimental_collision_bridge\\.cpp$")
-endif()
+
 
 dart_add_core_headers(${hdrs} ${detail_hdrs})
 dart_add_core_sources(${srcs} ${detail_srcs})

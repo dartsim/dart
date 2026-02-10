@@ -4,7 +4,6 @@ file(GLOB srcs "*.cpp")
 file(GLOB detail_hdrs "detail/*.hpp")
 file(GLOB detail_srcs "detail/*.cpp")
 file(GLOB dart_hdrs "dart/*.hpp")
-file(GLOB experimental_backend_hdrs "experimental_backend/*.hpp")
 dart_add_core_headers(${hdrs} ${detail_hdrs})
 dart_add_core_sources(${srcs} ${detail_srcs})
 
@@ -16,17 +15,11 @@ set(
   ${header_names}
   dart/All.hpp
 )
-if(DART_BUILD_COLLISION_EXPERIMENTAL)
-  list(APPEND header_names experimental_backend/All.hpp)
-endif()
 set(collision_source_headers
   ${hdrs}
   ${detail_hdrs}
   ${dart_hdrs}
 )
-if(DART_BUILD_COLLISION_EXPERIMENTAL)
-  list(APPEND collision_source_headers ${experimental_backend_hdrs})
-endif()
 dart_generate_component_headers(
   COMPONENT_NAME collision
   TARGET_DIR "dart/collision/"
@@ -52,9 +45,6 @@ dart_install_compat_headers(COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS} DEST
 
 # Add subdirectories
 add_subdirectory(dart)
-if(DART_BUILD_COLLISION_EXPERIMENTAL)
-  add_subdirectory(experimental_backend)
-endif()
 add_subdirectory(fcl)
 add_subdirectory(ode)
 add_subdirectory(bullet)

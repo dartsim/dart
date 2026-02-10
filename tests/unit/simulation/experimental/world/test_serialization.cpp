@@ -56,13 +56,13 @@
 // Test save/load empty world
 TEST(Serialization, EmptyWorld)
 {
-  dart::simulation::experimental::World world1;
+  dart::simulation::native::World world1;
 
   // Save to stream
   std::stringstream ss;
   world1.saveBinary(ss);
   // Load into new world
-  dart::simulation::experimental::World world2;
+  dart::simulation::native::World world2;
   world2.loadBinary(ss);
 
   // Verify empty
@@ -74,13 +74,13 @@ TEST(Serialization, EmptyWorld)
 // Test save/load world with single multibody (no links)
 TEST(Serialization, SingleMultiBodyNoLinks)
 {
-  dart::simulation::experimental::World world1;
+  dart::simulation::native::World world1;
   [[maybe_unused]] auto mb1 = world1.addMultiBody("robot1");
 
   std::stringstream ss;
   world1.saveBinary(ss);
 
-  dart::simulation::experimental::World world2;
+  dart::simulation::native::World world2;
   world2.loadBinary(ss);
 
   EXPECT_EQ(world2.getMultiBodyCount(), 1);
@@ -94,14 +94,14 @@ TEST(Serialization, SingleMultiBodyNoLinks)
 // Test save/load world with single link (root, no parent joint)
 TEST(Serialization, SingleRootLink)
 {
-  dart::simulation::experimental::World world1;
+  dart::simulation::native::World world1;
   auto mb = world1.addMultiBody("robot");
   [[maybe_unused]] auto base = mb.addLink("base");
 
   std::stringstream ss;
   world1.saveBinary(ss);
 
-  dart::simulation::experimental::World world2;
+  dart::simulation::native::World world2;
   world2.loadBinary(ss);
 
   auto mb_restored = world2.getMultiBody("robot");
@@ -114,20 +114,20 @@ TEST(Serialization, SingleRootLink)
 // Test save/load simple 2-link chain with full property verification
 TEST(Serialization, TwoLinkChain)
 {
-  dart::simulation::experimental::World world1;
+  dart::simulation::native::World world1;
   auto mb = world1.addMultiBody("robot");
   auto base = mb.addLink("base");
   [[maybe_unused]] auto link1 = mb.addLink(
       "link1",
       {.parentLink = base,
        .jointName = "joint1",
-       .jointType = dart::simulation::experimental::comps::JointType::Revolute,
+       .jointType = dart::simulation::native::comps::JointType::Revolute,
        .axis = {0, 0, 1}});
 
   std::stringstream ss;
   world1.saveBinary(ss);
 
-  dart::simulation::experimental::World world2;
+  dart::simulation::native::World world2;
   world2.loadBinary(ss);
 
   // Verify MultiBody restored
@@ -152,7 +152,7 @@ TEST(Serialization, TwoLinkChain)
   EXPECT_EQ(joint1_restored->getName(), "joint1");
   EXPECT_EQ(
       joint1_restored->getType(),
-      dart::simulation::experimental::comps::JointType::Revolute);
+      dart::simulation::native::comps::JointType::Revolute);
 
   // Verify joint axis
   auto axis = joint1_restored->getAxis();
@@ -164,7 +164,7 @@ TEST(Serialization, TwoLinkChain)
 // Test save/load preserves names
 TEST(Serialization, PreservesNames)
 {
-  dart::simulation::experimental::World world1;
+  dart::simulation::native::World world1;
   auto mb = world1.addMultiBody("test_robot");
   [[maybe_unused]] auto base = mb.addLink("base_link");
   [[maybe_unused]] auto link = mb.addLink(
@@ -173,7 +173,7 @@ TEST(Serialization, PreservesNames)
   std::stringstream ss;
   world1.saveBinary(ss);
 
-  dart::simulation::experimental::World world2;
+  dart::simulation::native::World world2;
   world2.loadBinary(ss);
 
   auto mb_restored = world2.getMultiBody("test_robot");
@@ -184,14 +184,14 @@ TEST(Serialization, PreservesNames)
 // Test save/load with rigid bodies
 TEST(Serialization, WithRigidBodies)
 {
-  dart::simulation::experimental::World world1;
+  dart::simulation::native::World world1;
   [[maybe_unused]] auto rb1 = world1.addRigidBody("box1");
   [[maybe_unused]] auto rb2 = world1.addRigidBody("box2");
 
   std::stringstream ss;
   world1.saveBinary(ss);
 
-  dart::simulation::experimental::World world2;
+  dart::simulation::native::World world2;
   world2.loadBinary(ss);
 
   EXPECT_EQ(world2.getRigidBodyCount(), 2);
@@ -202,7 +202,7 @@ TEST(Serialization, WithRigidBodies)
 // Test save/load preserves simulation mode
 TEST(Serialization, PreservesSimulationMode)
 {
-  dart::simulation::experimental::World world1;
+  dart::simulation::native::World world1;
   world1.addMultiBody("robot");
   world1.enterSimulationMode();
   ASSERT_TRUE(world1.isSimulationMode());
@@ -210,7 +210,7 @@ TEST(Serialization, PreservesSimulationMode)
   std::stringstream ss;
   world1.saveBinary(ss);
 
-  dart::simulation::experimental::World world2;
+  dart::simulation::native::World world2;
   world2.loadBinary(ss);
 
   EXPECT_TRUE(world2.isSimulationMode());
@@ -219,14 +219,14 @@ TEST(Serialization, PreservesSimulationMode)
 // Test save/load preserves auto-generation counters
 TEST(Serialization, PreservesCounters)
 {
-  dart::simulation::experimental::World world1;
+  dart::simulation::native::World world1;
   [[maybe_unused]] auto mb1 = world1.addMultiBody("");
   [[maybe_unused]] auto mb2 = world1.addMultiBody("");
 
   std::stringstream ss;
   world1.saveBinary(ss);
 
-  dart::simulation::experimental::World world2;
+  dart::simulation::native::World world2;
   world2.loadBinary(ss);
 
   auto mb3 = world2.addMultiBody("");
@@ -236,7 +236,7 @@ TEST(Serialization, PreservesCounters)
 // Test multiple save/load cycles
 TEST(Serialization, MultipleCycles)
 {
-  dart::simulation::experimental::World world1;
+  dart::simulation::native::World world1;
   auto mb = world1.addMultiBody("robot");
   mb.addLink("base");
 
@@ -244,7 +244,7 @@ TEST(Serialization, MultipleCycles)
     std::stringstream ss;
     world1.saveBinary(ss);
 
-    dart::simulation::experimental::World world2;
+    dart::simulation::native::World world2;
     world2.loadBinary(ss);
 
     std::stringstream ss2;
@@ -261,13 +261,13 @@ TEST(Serialization, MultipleCycles)
 // Test load clears existing state
 TEST(Serialization, LoadClearsExisting)
 {
-  dart::simulation::experimental::World world1;
+  dart::simulation::native::World world1;
   world1.addMultiBody("robot1");
 
   std::stringstream ss;
   world1.saveBinary(ss);
 
-  dart::simulation::experimental::World world2;
+  dart::simulation::native::World world2;
   world2.addMultiBody("robot2");
   world2.addMultiBody("robot3");
   EXPECT_EQ(world2.getMultiBodyCount(), 2);
@@ -282,20 +282,20 @@ TEST(Serialization, LoadClearsExisting)
 // Test saves and restores joint type (REVOLUTE)
 TEST(Serialization, JointTypeRevolute)
 {
-  dart::simulation::experimental::World world1;
+  dart::simulation::native::World world1;
   auto mb = world1.addMultiBody("robot");
   [[maybe_unused]] auto base = mb.addLink("base");
   [[maybe_unused]] auto link1 = mb.addLink(
       "link1",
       {.parentLink = base,
        .jointName = "j1",
-       .jointType = dart::simulation::experimental::comps::JointType::Revolute,
+       .jointType = dart::simulation::native::comps::JointType::Revolute,
        .axis = {0, 0, 1}});
 
   std::stringstream ss;
   world1.saveBinary(ss);
 
-  dart::simulation::experimental::World world2;
+  dart::simulation::native::World world2;
   world2.loadBinary(ss);
 
   [[maybe_unused]] auto mb2 = world2.getMultiBody("robot");
@@ -306,20 +306,20 @@ TEST(Serialization, JointTypeRevolute)
 // Test saves and restores joint type (PRISMATIC)
 TEST(Serialization, JointTypePrismatic)
 {
-  dart::simulation::experimental::World world1;
+  dart::simulation::native::World world1;
   auto mb = world1.addMultiBody("robot");
   [[maybe_unused]] auto base = mb.addLink("base");
   [[maybe_unused]] auto link1 = mb.addLink(
       "link1",
       {.parentLink = base,
        .jointName = "j1",
-       .jointType = dart::simulation::experimental::comps::JointType::Prismatic,
+       .jointType = dart::simulation::native::comps::JointType::Prismatic,
        .axis = {1, 0, 0}});
 
   std::stringstream ss;
   world1.saveBinary(ss);
 
-  dart::simulation::experimental::World world2;
+  dart::simulation::native::World world2;
   world2.loadBinary(ss);
 
   [[maybe_unused]] auto mb2 = world2.getMultiBody("robot");
@@ -330,50 +330,50 @@ TEST(Serialization, JointTypePrismatic)
 // Test complex hierarchy (6-DOF manipulator)
 TEST(Serialization, ComplexHierarchy)
 {
-  dart::simulation::experimental::World world1;
+  dart::simulation::native::World world1;
   auto robot = world1.addMultiBody("ur5");
   [[maybe_unused]] auto base = robot.addLink("base");
   [[maybe_unused]] auto link1 = robot.addLink(
       "shoulder_link",
       {.parentLink = base,
        .jointName = "shoulder_pan",
-       .jointType = dart::simulation::experimental::comps::JointType::Revolute,
+       .jointType = dart::simulation::native::comps::JointType::Revolute,
        .axis = {0, 0, 1}});
   auto link2 = robot.addLink(
       "upper_arm_link",
       {.parentLink = link1,
        .jointName = "shoulder_lift",
-       .jointType = dart::simulation::experimental::comps::JointType::Revolute,
+       .jointType = dart::simulation::native::comps::JointType::Revolute,
        .axis = {0, 1, 0}});
   auto link3 = robot.addLink(
       "forearm_link",
       {.parentLink = link2,
        .jointName = "elbow",
-       .jointType = dart::simulation::experimental::comps::JointType::Revolute,
+       .jointType = dart::simulation::native::comps::JointType::Revolute,
        .axis = {0, 1, 0}});
   auto link4 = robot.addLink(
       "wrist_1_link",
       {.parentLink = link3,
        .jointName = "wrist_1",
-       .jointType = dart::simulation::experimental::comps::JointType::Revolute,
+       .jointType = dart::simulation::native::comps::JointType::Revolute,
        .axis = {0, 1, 0}});
   auto link5 = robot.addLink(
       "wrist_2_link",
       {.parentLink = link4,
        .jointName = "wrist_2",
-       .jointType = dart::simulation::experimental::comps::JointType::Revolute,
+       .jointType = dart::simulation::native::comps::JointType::Revolute,
        .axis = {0, 0, 1}});
   [[maybe_unused]] auto link6 = robot.addLink(
       "wrist_3_link",
       {.parentLink = link5,
        .jointName = "wrist_3",
-       .jointType = dart::simulation::experimental::comps::JointType::Revolute,
+       .jointType = dart::simulation::native::comps::JointType::Revolute,
        .axis = {0, 1, 0}});
 
   std::stringstream ss;
   world1.saveBinary(ss);
 
-  dart::simulation::experimental::World world2;
+  dart::simulation::native::World world2;
   world2.loadBinary(ss);
 
   auto robot_restored = world2.getMultiBody("ur5");
@@ -395,7 +395,7 @@ TEST(Serialization, ComplexHierarchy)
   ASSERT_TRUE(shoulder_pan.has_value());
   EXPECT_EQ(
       shoulder_pan->getType(),
-      dart::simulation::experimental::comps::JointType::Revolute);
+      dart::simulation::native::comps::JointType::Revolute);
   auto axis1 = shoulder_pan->getAxis();
   EXPECT_DOUBLE_EQ(axis1[0], 0.0);
   EXPECT_DOUBLE_EQ(axis1[1], 0.0);
@@ -405,7 +405,7 @@ TEST(Serialization, ComplexHierarchy)
   ASSERT_TRUE(shoulder_lift.has_value());
   EXPECT_EQ(
       shoulder_lift->getType(),
-      dart::simulation::experimental::comps::JointType::Revolute);
+      dart::simulation::native::comps::JointType::Revolute);
   auto axis2 = shoulder_lift->getAxis();
   EXPECT_DOUBLE_EQ(axis2[0], 0.0);
   EXPECT_DOUBLE_EQ(axis2[1], 1.0);
@@ -414,8 +414,7 @@ TEST(Serialization, ComplexHierarchy)
   auto elbow = robot_restored->getJoint("elbow");
   ASSERT_TRUE(elbow.has_value());
   EXPECT_EQ(
-      elbow->getType(),
-      dart::simulation::experimental::comps::JointType::Revolute);
+      elbow->getType(), dart::simulation::native::comps::JointType::Revolute);
   auto axis3 = elbow->getAxis();
   EXPECT_DOUBLE_EQ(axis3[0], 0.0);
   EXPECT_DOUBLE_EQ(axis3[1], 1.0);
@@ -424,14 +423,12 @@ TEST(Serialization, ComplexHierarchy)
   auto wrist_1 = robot_restored->getJoint("wrist_1");
   ASSERT_TRUE(wrist_1.has_value());
   EXPECT_EQ(
-      wrist_1->getType(),
-      dart::simulation::experimental::comps::JointType::Revolute);
+      wrist_1->getType(), dart::simulation::native::comps::JointType::Revolute);
 
   auto wrist_2 = robot_restored->getJoint("wrist_2");
   ASSERT_TRUE(wrist_2.has_value());
   EXPECT_EQ(
-      wrist_2->getType(),
-      dart::simulation::experimental::comps::JointType::Revolute);
+      wrist_2->getType(), dart::simulation::native::comps::JointType::Revolute);
   auto axis5 = wrist_2->getAxis();
   EXPECT_DOUBLE_EQ(axis5[0], 0.0);
   EXPECT_DOUBLE_EQ(axis5[1], 0.0);
@@ -440,8 +437,7 @@ TEST(Serialization, ComplexHierarchy)
   auto wrist_3 = robot_restored->getJoint("wrist_3");
   ASSERT_TRUE(wrist_3.has_value());
   EXPECT_EQ(
-      wrist_3->getType(),
-      dart::simulation::experimental::comps::JointType::Revolute);
+      wrist_3->getType(), dart::simulation::native::comps::JointType::Revolute);
   auto axis6 = wrist_3->getAxis();
   EXPECT_DOUBLE_EQ(axis6[0], 0.0);
   EXPECT_DOUBLE_EQ(axis6[1], 1.0);
@@ -451,7 +447,7 @@ TEST(Serialization, ComplexHierarchy)
 // Test multiple multibodies
 TEST(Serialization, MultipleMultiBodies)
 {
-  dart::simulation::experimental::World world1;
+  dart::simulation::native::World world1;
   [[maybe_unused]] auto mb1 = world1.addMultiBody("robot1");
   [[maybe_unused]] auto mb2 = world1.addMultiBody("robot2");
   auto mb3 = world1.addMultiBody("robot3");
@@ -463,7 +459,7 @@ TEST(Serialization, MultipleMultiBodies)
   std::stringstream ss;
   world1.saveBinary(ss);
 
-  dart::simulation::experimental::World world2;
+  dart::simulation::native::World world2;
   world2.loadBinary(ss);
 
   EXPECT_EQ(world2.getMultiBodyCount(), 3);
@@ -475,7 +471,7 @@ TEST(Serialization, MultipleMultiBodies)
 // Test mixed multibodies and rigid bodies
 TEST(Serialization, MixedContent)
 {
-  dart::simulation::experimental::World world1;
+  dart::simulation::native::World world1;
 
   auto mb = world1.addMultiBody("robot");
   mb.addLink("base");
@@ -486,7 +482,7 @@ TEST(Serialization, MixedContent)
   std::stringstream ss;
   world1.saveBinary(ss);
 
-  dart::simulation::experimental::World world2;
+  dart::simulation::native::World world2;
   world2.loadBinary(ss);
 
   EXPECT_EQ(world2.getMultiBodyCount(), 1);
@@ -499,17 +495,17 @@ TEST(Serialization, MixedContent)
 // Test auto-generated names are preserved
 TEST(Serialization, EmptyNames)
 {
-  dart::simulation::experimental::World world1;
+  dart::simulation::native::World world1;
   auto mb = world1.addMultiBody("");
   auto base = mb.addLink("");
-  dart::simulation::experimental::LinkOptions opts{
+  dart::simulation::native::LinkOptions opts{
       .parentLink = base, .jointName = ""};
   [[maybe_unused]] auto child = mb.addLink("", opts);
 
   std::stringstream ss;
   world1.saveBinary(ss);
 
-  dart::simulation::experimental::World world2;
+  dart::simulation::native::World world2;
   world2.loadBinary(ss);
 
   auto restoredMb = world2.getMultiBody("multibody_001");
@@ -532,7 +528,7 @@ TEST(Serialization, EmptyNames)
 // Test large hierarchy (stress test)
 TEST(Serialization, LargeHierarchy)
 {
-  dart::simulation::experimental::World world1;
+  dart::simulation::native::World world1;
   auto robot = world1.addMultiBody("large_robot");
 
   // Create chain of 20 links
@@ -546,7 +542,7 @@ TEST(Serialization, LargeHierarchy)
   std::stringstream ss;
   world1.saveBinary(ss);
 
-  dart::simulation::experimental::World world2;
+  dart::simulation::native::World world2;
   world2.loadBinary(ss);
 
   auto robot2 = world2.getMultiBody("large_robot");
@@ -562,7 +558,7 @@ TEST(Serialization, LargeHierarchy)
 // Test cache components are NOT serialized
 TEST(Serialization, CacheNotSerialized)
 {
-  dart::simulation::experimental::World world;
+  dart::simulation::native::World world;
 
   // Create a FreeFrame and set a transform
   auto frame = world.addFreeFrame("test");
@@ -580,13 +576,11 @@ TEST(Serialization, CacheNotSerialized)
     auto entity = frame.getEntity();
     ASSERT_TRUE(registry.valid(entity)) << "Entity should be valid";
     ASSERT_TRUE(
-        registry.all_of<dart::simulation::experimental::comps::FrameCache>(
-            entity))
+        registry.all_of<dart::simulation::native::comps::FrameCache>(entity))
         << "Entity should have FrameCache component";
 
     const auto& cache
-        = registry.get<dart::simulation::experimental::comps::FrameCache>(
-            entity);
+        = registry.get<dart::simulation::native::comps::FrameCache>(entity);
     EXPECT_FALSE(cache.needTransformUpdate)
         << "Cache should be clean after getTransform()";
   }
@@ -596,13 +590,12 @@ TEST(Serialization, CacheNotSerialized)
   world.saveBinary(ss);
 
   // Deserialize into new world
-  dart::simulation::experimental::World world2;
+  dart::simulation::native::World world2;
   world2.loadBinary(ss);
 
   // Check the registry directly for the restored FreeFrame
   auto& registry2 = world2.getRegistry();
-  auto view
-      = registry2.view<dart::simulation::experimental::comps::FreeFrameTag>();
+  auto view = registry2.view<dart::simulation::native::comps::FreeFrameTag>();
 
   ASSERT_FALSE(view.empty()) << "Should have restored FreeFrame";
 
@@ -610,13 +603,11 @@ TEST(Serialization, CacheNotSerialized)
 
   ASSERT_TRUE(registry2.valid(entity2)) << "Restored entity should be valid";
   ASSERT_TRUE(
-      registry2.all_of<dart::simulation::experimental::comps::FrameCache>(
-          entity2))
+      registry2.all_of<dart::simulation::native::comps::FrameCache>(entity2))
       << "Restored entity should have FrameCache component";
 
   const auto& cache2
-      = registry2.get<dart::simulation::experimental::comps::FrameCache>(
-          entity2);
+      = registry2.get<dart::simulation::native::comps::FrameCache>(entity2);
 
   // CRITICAL: Cache should be dirty after load (not serialized)
   EXPECT_TRUE(cache2.needTransformUpdate)
@@ -624,27 +615,23 @@ TEST(Serialization, CacheNotSerialized)
 
   // Verify state WAS serialized (parent should be entt::null)
   ASSERT_TRUE(
-      registry2.all_of<dart::simulation::experimental::comps::FrameState>(
-          entity2))
+      registry2.all_of<dart::simulation::native::comps::FrameState>(entity2))
       << "Restored entity should have FrameState component";
 
   const auto& state2
-      = registry2.get<dart::simulation::experimental::comps::FrameState>(
-          entity2);
+      = registry2.get<dart::simulation::native::comps::FrameState>(entity2);
   EXPECT_FALSE(registry2.valid(state2.parentFrame))
       << "State should be serialized correctly (parent should be null)";
 
   // Verify properties WAS serialized (local transform should match)
   ASSERT_TRUE(
-      registry2
-          .all_of<dart::simulation::experimental::comps::FreeFrameProperties>(
-              entity2))
+      registry2.all_of<dart::simulation::native::comps::FreeFrameProperties>(
+          entity2))
       << "Restored entity should have FreeFrameProperties component";
 
   const auto& props2
-      = registry2
-            .get<dart::simulation::experimental::comps::FreeFrameProperties>(
-                entity2);
+      = registry2.get<dart::simulation::native::comps::FreeFrameProperties>(
+          entity2);
   EXPECT_TRUE(props2.localTransform.isApprox(T1))
       << "Properties should be serialized correctly";
 }
@@ -655,7 +642,7 @@ TEST(Serialization, CacheNotSerialized)
 // change during deserialization, making entity references invalid.
 TEST(Serialization, StateSerializedCorrectly)
 {
-  dart::simulation::experimental::World world;
+  dart::simulation::native::World world;
 
   // Create parent and child frames
   auto parent = world.addFreeFrame("parent");
@@ -675,13 +662,12 @@ TEST(Serialization, StateSerializedCorrectly)
   world.saveBinary(ss);
 
   // Deserialize
-  dart::simulation::experimental::World world2;
+  dart::simulation::native::World world2;
   world2.loadBinary(ss);
 
   // Check that we have 2 FreeFrames
   auto& registry2 = world2.getRegistry();
-  auto view
-      = registry2.view<dart::simulation::experimental::comps::FreeFrameTag>();
+  auto view = registry2.view<dart::simulation::native::comps::FreeFrameTag>();
   EXPECT_EQ(std::distance(view.begin(), view.end()), 2)
       << "Should have restored 2 FreeFrames";
 
@@ -689,8 +675,7 @@ TEST(Serialization, StateSerializedCorrectly)
   for (auto entity : view) {
     // All FreeFrames should have FrameState component
     EXPECT_TRUE(
-        registry2.all_of<dart::simulation::experimental::comps::FrameState>(
-            entity))
+        registry2.all_of<dart::simulation::native::comps::FrameState>(entity))
         << "All FreeFrames should have FrameState after deserialization";
   }
 
@@ -701,8 +686,7 @@ TEST(Serialization, StateSerializedCorrectly)
 
   for (auto entity : view) {
     const auto& state
-        = registry2.get<dart::simulation::experimental::comps::FrameState>(
-            entity);
+        = registry2.get<dart::simulation::native::comps::FrameState>(entity);
     if (registry2.valid(state.parentFrame)) {
       framesWithParent++;
     } else {
@@ -721,7 +705,7 @@ TEST(Serialization, StateSerializedCorrectly)
 // Test properties ARE serialized
 TEST(Serialization, PropertiesSerializedCorrectly)
 {
-  dart::simulation::experimental::World world;
+  dart::simulation::native::World world;
 
   // Create FixedFrame with specific offset
   auto parent = world.addFreeFrame("parent");
@@ -729,7 +713,7 @@ TEST(Serialization, PropertiesSerializedCorrectly)
   offset.translate(Eigen::Vector3d(3.14, 2.71, 1.41));
   offset.rotate(
       Eigen::AngleAxisd(
-          dart::simulation::experimental::pi / 4, Eigen::Vector3d(1, 0, 0)));
+          dart::simulation::native::pi / 4, Eigen::Vector3d(1, 0, 0)));
 
   auto fixed = world.addFixedFrame("fixed", parent, offset);
 
@@ -738,20 +722,18 @@ TEST(Serialization, PropertiesSerializedCorrectly)
   world.saveBinary(ss);
 
   // Deserialize
-  dart::simulation::experimental::World world2;
+  dart::simulation::native::World world2;
   world2.loadBinary(ss);
 
   // Find the FixedFrame
   auto& registry2 = world2.getRegistry();
-  auto view
-      = registry2.view<dart::simulation::experimental::comps::FixedFrameTag>();
+  auto view = registry2.view<dart::simulation::native::comps::FixedFrameTag>();
   EXPECT_FALSE(view.empty()) << "Should have restored FixedFrame";
 
   auto entity = *view.begin();
   const auto& props
-      = registry2
-            .get<dart::simulation::experimental::comps::FixedFrameProperties>(
-                entity);
+      = registry2.get<dart::simulation::native::comps::FixedFrameProperties>(
+          entity);
 
   // Properties should match exactly
   EXPECT_TRUE(props.localTransform.isApprox(offset, 1e-10))
@@ -761,7 +743,7 @@ TEST(Serialization, PropertiesSerializedCorrectly)
 // Test round-trip consistency (save twice, should be identical)
 TEST(Serialization, RoundTripConsistency)
 {
-  dart::simulation::experimental::World world;
+  dart::simulation::native::World world;
 
   auto parent = world.addFreeFrame("parent");
   Eigen::Isometry3d T_parent = Eigen::Isometry3d::Identity();
@@ -784,24 +766,24 @@ TEST(Serialization, RoundTripConsistency)
   EXPECT_EQ(ss1.str(), ss2.str())
       << "Repeated saves should produce identical binary output";
 
-  dart::simulation::experimental::World world2;
+  dart::simulation::native::World world2;
   world2.loadBinary(ss1);
 
   auto& registry2 = world2.getRegistry();
   auto view = registry2.view<
-      dart::simulation::experimental::comps::Name,
-      dart::simulation::experimental::comps::FreeFrameProperties,
-      dart::simulation::experimental::comps::FrameState>();
+      dart::simulation::native::comps::Name,
+      dart::simulation::native::comps::FreeFrameProperties,
+      dart::simulation::native::comps::FrameState>();
 
   std::size_t frameCount = 0;
   for (auto entity : view) {
     const auto& name
-        = view.get<dart::simulation::experimental::comps::Name>(entity).name;
+        = view.get<dart::simulation::native::comps::Name>(entity).name;
     const auto& props
-        = view.get<dart::simulation::experimental::comps::FreeFrameProperties>(
+        = view.get<dart::simulation::native::comps::FreeFrameProperties>(
             entity);
     const auto& state
-        = view.get<dart::simulation::experimental::comps::FrameState>(entity);
+        = view.get<dart::simulation::native::comps::FrameState>(entity);
 
     if (name == "parent") {
       EXPECT_TRUE(props.localTransform.isApprox(T_parent));
@@ -823,7 +805,7 @@ TEST(Serialization, RoundTripConsistency)
 
 TEST(Serialization, CloneDeepCopy)
 {
-  dart::simulation::experimental::World world;
+  dart::simulation::native::World world;
 
   auto parent = world.addFreeFrame("parent");
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
@@ -838,23 +820,21 @@ TEST(Serialization, CloneDeepCopy)
   std::stringstream ss;
   world.saveBinary(ss);
 
-  dart::simulation::experimental::World clone;
+  dart::simulation::native::World clone;
   clone.loadBinary(ss);
 
   auto& cloneReg = clone.getRegistry();
   auto cloneView = cloneReg.view<
-      dart::simulation::experimental::comps::Name,
-      dart::simulation::experimental::comps::FreeFrameProperties>();
+      dart::simulation::native::comps::Name,
+      dart::simulation::native::comps::FreeFrameProperties>();
   EXPECT_EQ(std::distance(cloneView.begin(), cloneView.end()), 2);
 
   for (auto entity : cloneView) {
     auto& props
-        = cloneView
-              .get<dart::simulation::experimental::comps::FreeFrameProperties>(
-                  entity);
+        = cloneView.get<dart::simulation::native::comps::FreeFrameProperties>(
+            entity);
     const auto& name
-        = cloneView.get<dart::simulation::experimental::comps::Name>(entity)
-              .name;
+        = cloneView.get<dart::simulation::native::comps::Name>(entity).name;
     if (name == "parent") {
       EXPECT_TRUE(props.localTransform.isApprox(T));
     } else if (name == "child") {
@@ -865,16 +845,15 @@ TEST(Serialization, CloneDeepCopy)
 
   const auto& originalReg = world.getRegistry();
   auto originalView = originalReg.view<
-      dart::simulation::experimental::comps::Name,
-      dart::simulation::experimental::comps::FreeFrameProperties>();
+      dart::simulation::native::comps::Name,
+      dart::simulation::native::comps::FreeFrameProperties>();
   for (auto entity : originalView) {
     const auto& props
         = originalView
-              .get<dart::simulation::experimental::comps::FreeFrameProperties>(
+              .get<dart::simulation::native::comps::FreeFrameProperties>(
                   entity);
     const auto& name
-        = originalView.get<dart::simulation::experimental::comps::Name>(entity)
-              .name;
+        = originalView.get<dart::simulation::native::comps::Name>(entity).name;
     if (name == "child") {
       EXPECT_TRUE(props.localTransform.isApprox(T_child))
           << "Modifying clone should not affect original world";
@@ -884,7 +863,7 @@ TEST(Serialization, CloneDeepCopy)
 
 TEST(Serialization, CloneResetCounters)
 {
-  dart::simulation::experimental::World world;
+  dart::simulation::native::World world;
   auto frame1 = world.addFreeFrame(); // free_frame_001
   auto frame2 = world.addFreeFrame(); // free_frame_002
   (void)frame1;
@@ -894,15 +873,14 @@ TEST(Serialization, CloneResetCounters)
   std::stringstream ss;
   world.saveBinary(ss);
 
-  dart::simulation::experimental::World clone;
+  dart::simulation::native::World clone;
   clone.loadBinary(ss);
 
   auto nextFrame = clone.addFreeFrame();
   auto& cloneReg = clone.getRegistry();
   const auto& nextFrameName
       = cloneReg
-            .get<dart::simulation::experimental::comps::Name>(
-                nextFrame.getEntity())
+            .get<dart::simulation::native::comps::Name>(nextFrame.getEntity())
             .name;
   EXPECT_EQ(nextFrameName, "free_frame_003");
 
