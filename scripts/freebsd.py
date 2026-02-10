@@ -145,7 +145,8 @@ def ensure_started(args):
 
 
 def build_image(args):
-    run(
+    env = {**os.environ, "DOCKER_BUILDKIT": "0"}
+    subprocess.run(
         [
             "docker",
             "build",
@@ -154,7 +155,9 @@ def build_image(args):
             "-f",
             dockerfile_path(),
             docker_path(),
-        ]
+        ],
+        check=True,
+        env=env,
     )
 
 
