@@ -950,11 +950,16 @@ TEST(SerializationGolden, FormatVersionPresent)
   world.saveBinary(ss);
 
   std::string data = ss.str();
-  ASSERT_GE(data.size(), sizeof(std::uint32_t))
-      << "Binary output must contain at least the version header";
+  // Format: [magic: 4 bytes] [version: 4 bytes] [...]
+  ASSERT_GE(data.size(), 2 * sizeof(std::uint32_t))
+      << "Binary output must contain at least magic + version header";
+
+  std::uint32_t magic;
+  std::memcpy(&magic, data.data(), sizeof(magic));
+  EXPECT_EQ(magic, 0x44525437u) << "Magic number should be 'DRT7'";
 
   std::uint32_t version;
-  std::memcpy(&version, data.data(), sizeof(version));
+  std::memcpy(&version, data.data() + sizeof(std::uint32_t), sizeof(version));
   EXPECT_EQ(version, 1u) << "Current format version should be 1";
 }
 

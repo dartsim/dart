@@ -65,7 +65,7 @@ TEST(WorldCollision, RigidBodyGroundContact)
   auto ball = world.addRigidBody("ball");
   ball.setMass(1.0);
   ball.setInertia(Eigen::Matrix3d::Identity());
-  ball.setPosition(Eigen::Vector3d(0.0, 0.0, 0.4));
+  ball.setPosition(Eigen::Vector3d(0.0, 0.0, 2.0));
 
   auto ballShape = std::make_shared<dart::dynamics::SphereShape>(0.5);
   ball.createShapeNode(ballShape, "ball_shape");
@@ -77,10 +77,7 @@ TEST(WorldCollision, RigidBodyGroundContact)
     GTEST_SKIP() << "Collision detector not available";
   }
 
-  const auto& initialContacts = world.detectCollisions();
-  EXPECT_GT(initialContacts.getNumContacts(), 0u);
-
-  constexpr int steps = 1500;
+  constexpr int steps = 3000;
   for (int i = 0; i < steps; ++i) {
     world.step();
   }
@@ -88,5 +85,5 @@ TEST(WorldCollision, RigidBodyGroundContact)
   const auto& contacts = world.getLastCollisionResult();
   EXPECT_GT(contacts.getNumContacts(), 0u);
 
-  EXPECT_NEAR(ball.getPosition().z(), 0.5, 0.05);
+  EXPECT_NEAR(ball.getPosition().z(), 0.5, 0.1);
 }

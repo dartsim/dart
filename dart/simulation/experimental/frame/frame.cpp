@@ -234,7 +234,23 @@ const Eigen::Isometry3d& Frame::getTransform() const
 
   if (cache->needTransformUpdate) {
     auto parent = getParentFrame();
-    cache->worldTransform = parent.getTransform() * getLocalTransform();
+
+    const auto& registry = m_world->getRegistry();
+    const Eigen::Isometry3d* localTf = nullptr;
+    if (const auto* freeProps
+        = registry.try_get<comps::FreeFrameProperties>(m_entity)) {
+      localTf = &freeProps->localTransform;
+    } else if (
+        const auto* fixedProps
+        = registry.try_get<comps::FixedFrameProperties>(m_entity)) {
+      localTf = &fixedProps->localTransform;
+    }
+
+    if (localTf) {
+      cache->worldTransform = parent.getTransform() * (*localTf);
+    } else {
+      cache->worldTransform = parent.getTransform() * getLocalTransform();
+    }
     cache->needTransformUpdate = false;
   }
 
