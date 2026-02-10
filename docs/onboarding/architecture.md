@@ -266,20 +266,29 @@ DART supports **4 pluggable backends** via Strategy Pattern:
 | **DART**   | `dart/`   | Native implementation      | No dependencies, lightweight                   | Limited features                |
 | **ODE**    | `ode/`    | Open Dynamics Engine       | Good for ODE integration                       | No distance queries             |
 
-**Recommendation:** Use **FCL** with MESH mode and DART contact computation (default).
+**Default backend:** The experimental built-in backend is the default. FCL is the fallback if experimental is not available.
 
 **Backend-specific implementations:**
 
 - Each backend implements `CollisionDetector` and `CollisionGroup`
-- Factory registration allows runtime selection
-- Example: `FCLCollisionDetector`, `BulletCollisionDetector`
+- Factory registration allows runtime selection: `CollisionDetector::getFactory()->create("experimental")`
+- FCL, Bullet, and ODE are decoupled into separate `.so` files (`dart-collision-fcl`, etc.) and are not linked into `libdart.so`
+
+**Collision→Dynamics Dependency (Bridge Pattern):**
+
+- `dart/collision/` `.cpp` files have **zero** `dart/dynamics/` includes
+- Dynamics-dependent implementations (e.g., `getBodyNode()`, `addShapeFramesOf()`, shape adaptation) live in `dart/dynamics/detail/*_bridge.cpp`
+- This works because both modules compile into `libdart.so` via `dart_add_core_sources()`, so member functions can be defined in any `.cpp` within the same link target
+- Collision headers still use `dart/dynamics/fwd.hpp` forward declarations (acceptable interim)
 
 **Files:**
 
-- FCL: `dart/collision/fcl/FCLCollisionDetector.hpp`
-- Bullet: `dart/collision/bullet/BulletCollisionDetector.hpp`
-- DART: `dart/collision/dart/DARTCollisionDetector.hpp`
-- ODE: `dart/collision/ode/OdeCollisionDetector.hpp`
+- FCL: `dart/collision/fcl/fcl_collision_detector.hpp` (separate `dart-collision-fcl.so`)
+- Bullet: `dart/collision/bullet/bullet_collision_detector.hpp` (separate `dart-collision-bullet.so`)
+- DART: `dart/collision/dart/dart_collision_detector.hpp`
+- ODE: `dart/collision/ode/ode_collision_detector.hpp` (separate `dart-collision-ode.so`)
+- Experimental: `dart/collision/experimental/` (separate `dart-collision-experimental.so`)
+- Bridge files: `dart/dynamics/detail/*_bridge.cpp` (collision→dynamics glue)
 
 ---
 

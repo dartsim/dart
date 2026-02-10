@@ -73,6 +73,10 @@
   - Replace crash-causing `DART_ASSERT` with `DART_WARN` + graceful recovery for non-finite transforms in Joint setters, BodyNode update pipeline, GenericJoint inertia propagation, and MJCF parser validation. ([gz-physics#861](https://github.com/gazebosim/gz-physics/issues/861), [gz-physics#862](https://github.com/gazebosim/gz-physics/issues/862))
 
 - Collision and Geometry
+  - Decoupled FCL, Bullet, and ODE collision backends from `libdart.so` into separate shared libraries (`dart-collision-fcl`, `dart-collision-bullet`, `dart-collision-ode`). These backends are now optional, used only for tests, benchmarks, and Gazebo compatibility. The experimental built-in backend is the new default (`DART_BUILD_COLLISION_EXPERIMENTAL=ON`).
+  - Broke the collision→dynamics source dependency using a bridge pattern: dynamics-dependent implementations moved from `dart/collision/*.cpp` to `dart/dynamics/detail/*_bridge.cpp`. Collision `.cpp` files no longer include any `dart/dynamics/` headers.
+  - Added built-in experimental collision module (`dart/collision/experimental/`) with 575+ tests covering all primitive shape pairs, GJK/EPA, distance queries, raycast, CCD, four broad-phase algorithms, collision filtering, compound shapes, and parallel narrowphase.
+  - Wired experimental backend as a full `CollisionDetector` implementation with distance queries, raycast, and expanded shape adapters (Cone, Ellipsoid, Heightmap, MultiSphere).
   - Experimental collision: added MPR convex penetration and optional libccd parity tests/bench.
   - Experimental collision: handle degenerate triangle cases in GJK/MPR for robust convex queries.
   - Fixed PascalCase ODE compatibility headers to preserve legacy includes such as `OdeCollisionDetector.hpp`. ([#2475](https://github.com/dartsim/dart/pull/2475))
