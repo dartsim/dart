@@ -423,7 +423,12 @@ def apply_ports_patches(args):
     remote_dir = args.remote_dir or f"/home/{args.user}/dart"
     for patch_file in patch_files:
         rel_path = os.path.relpath(patch_file, repo_root())
-        command = f"cd {remote_dir} && patch -p0 -N -i {shlex.quote(rel_path)}"
+        command = (
+            f"cd {remote_dir} && "
+            f"patch -p0 -N --dry-run -i {shlex.quote(rel_path)} > /dev/null 2>&1 && "
+            f"patch -p0 -N -i {shlex.quote(rel_path)} || "
+            f"echo 'Skipping patch: {patch_file.name} (already applied or target missing)'"
+        )
         ssh_command(args, command, user=args.user)
 
 
