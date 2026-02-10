@@ -1,9 +1,6 @@
 name: CI FreeBSD (VM)
 
 on:
-  push:
-    branches:
-      - "**"
   pull_request:
     branches:
       - "**"
@@ -11,9 +8,11 @@ on:
     - cron: "0 4 * * 1"
   workflow_dispatch:
 
+# Use head_ref (branch name) for PRs so push+PR don't create parallel jobs
+# on the single self-hosted runner. Fall back to ref for schedule/dispatch.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name != 'schedule' && github.ref != 'refs/heads/main' }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 jobs:
   freebsd:
