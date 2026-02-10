@@ -12,6 +12,8 @@ The **experimental simulation API** (`dart::simulation::experimental`) is a next
 
 **Current State**: Phases 0-2 and 5 complete; Phase 3-4 (testing/perf) still partial. `World::step()` runs forward dynamics and resolves collisions/constraints via a classic-API adapter.
 
+**Branch Status** (Feb 2026): `feature/sim_exp` merged with latest `origin/main`. Build passes cleanly (zero warnings). All 22 experimental tests compile; 19/22 pass (3 pre-existing runtime failures).
+
 **End State Vision**: `dart::simulation::experimental::World` will become `dart::simulation::World` in DART 8, with full Python bindings and feature parity with the classic API.
 
 ---
@@ -435,7 +437,7 @@ The **experimental simulation API** (`dart::simulation::experimental`) is a next
 - [x] ECS profiling covered (existing `bm_ecs_safety.cpp`)
 - [ ] Optimizations applied (pending profiling results)
 - [ ] Documentation written
-- [ ] Classic comparison (BLOCKED: requires Phase 5 kinematics)
+- [ ] Classic comparison (now unblocked - Phase 5 complete)
 
 ### Phase 5: Physics (Target: Week 13-20) ✅ COMPLETE
 
@@ -482,15 +484,37 @@ The **experimental simulation API** (`dart::simulation::experimental`) is a next
 
 ---
 
+## Current Blockers
+
+### ~~Deprecation Warnings~~ ✅ RESOLVED
+
+All PascalCase includes updated to snake_case (33 includes across 13 files). Build passes with zero warnings.
+
+### Pre-Existing Runtime Test Failures (3 of 22)
+
+These 3 tests fail at runtime but are not caused by our changes:
+
+1. `test_collision_integration::RigidBodyGroundContact` — Physics tolerance issue
+2. `test_serialization::FormatVersionPresent` — Binary version check mismatch
+3. `test_shape_node::RigidBodyWorldTransform` — World transform assertion
+
+Can be filed as separate issues.
+
+---
+
 ## Proposed Follow-Up GitHub Issues
 
-| Title                                                       | Description                                                                                                                               |
-| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `[simulation-experimental] Implement remaining joint types` | Add Fixed, Ball, Universal, Planar, Free, Screw joint types to complete the JointType enum. Priority: Fixed, Ball (most commonly needed). |
-| `[simulation-experimental] Fill empty test files`           | `test_joint.cpp` and `test_link.cpp` are 0 bytes. Add basic unit tests for Joint and Link handle classes.                                 |
-| `[simulation-experimental] Create Python bindings`          | Create `dartpy.simulation_experimental` module. Start with World, MultiBody, Link, Joint bindings.                                        |
-| `[simulation-experimental] Design physics pipeline`         | RFC/design doc for integrating ABA, collision, constraints into ECS architecture. Major architecture decision.                            |
-| `[simulation-experimental] Add hello_world example`         | Create minimal example in `examples/simulation_experimental/` demonstrating World, MultiBody, and frame creation.                         |
+> **Note**: Issues marked ~~strikethrough~~ were completed in earlier phases.
+
+| Title                                                           | Description                                                     | Status  |
+| --------------------------------------------------------------- | --------------------------------------------------------------- | ------- |
+| ~~`[simulation-experimental] Implement remaining joint types`~~ | ~~Add Fixed, Ball, Universal, Planar, Free, Screw joint types~~ | ✅ Done |
+| ~~`[simulation-experimental] Fill empty test files`~~           | ~~`test_joint.cpp` and `test_link.cpp`~~                        | ✅ Done |
+| ~~`[simulation-experimental] Create Python bindings`~~          | ~~`dartpy.simulation_experimental` module~~                     | ✅ Done |
+| ~~`[simulation-experimental] Design physics pipeline`~~         | ~~ABA, collision, constraints integration~~                     | ✅ Done |
+| ~~`[simulation-experimental] Add hello_world example`~~         | ~~`examples/simulation_experimental/`~~                         | ✅ Done |
+| `[simulation-experimental] Migration guide`                     | Write classic→experimental migration docs                       | Phase 6 |
+| `[simulation-experimental] URDF/SDF loader`                     | Load models directly into experimental World                    | Phase 6 |
 
 ---
 

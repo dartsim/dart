@@ -212,8 +212,9 @@ TEST_F(ComputeGraphTest, TopologicalOrderLinearChain)
 
   auto indexOf = [&order](const std::string& name) {
     for (std::size_t i = 0; i < order.size(); ++i) {
-      if (order[i]->getName() == name)
+      if (order[i]->getName() == name) {
         return i;
+      }
     }
     return std::string::npos;
   };
@@ -240,8 +241,9 @@ TEST_F(ComputeGraphTest, TopologicalOrderDiamond)
 
   auto indexOf = [&order](const std::string& name) {
     for (std::size_t i = 0; i < order.size(); ++i) {
-      if (order[i]->getName() == name)
+      if (order[i]->getName() == name) {
         return i;
+      }
     }
     return std::string::npos;
   };
@@ -432,8 +434,9 @@ TEST_F(TaskflowExecutorTest, ExecuteLinearChain)
 
   auto indexOf = [&order](const std::string& name) {
     for (std::size_t i = 0; i < order.size(); ++i) {
-      if (order[i] == name)
+      if (order[i] == name) {
         return i;
+      }
     }
     return std::string::npos;
   };

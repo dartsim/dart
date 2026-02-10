@@ -274,7 +274,7 @@ TEST(Link, LocalTransformFromJointPosition)
       {.parentLink = base,
        .jointName = "joint1",
        .jointType = dse::comps::JointType::Revolute,
-       .jointAxis = Eigen::Vector3d::UnitZ()});
+       .axis = Eigen::Vector3d::UnitZ()});
 
   link1.getParentJoint().setPosition(Eigen::VectorXd::Zero(1));
 
@@ -293,7 +293,7 @@ TEST(Link, LocalTransformRotatesWithJoint)
       {.parentLink = base,
        .jointName = "joint1",
        .jointType = dse::comps::JointType::Revolute,
-       .jointAxis = Eigen::Vector3d::UnitZ()});
+       .axis = Eigen::Vector3d::UnitZ()});
 
   Eigen::VectorXd pos(1);
   pos << M_PI / 2;
@@ -316,7 +316,7 @@ TEST(Link, LocalTransformCacheInvalidatedOnJointChange)
       {.parentLink = base,
        .jointName = "joint1",
        .jointType = dse::comps::JointType::Revolute,
-       .jointAxis = Eigen::Vector3d::UnitZ()});
+       .axis = Eigen::Vector3d::UnitZ()});
 
   link1.getParentJoint().setPosition(Eigen::VectorXd::Zero(1));
   const auto& tf1 = link1.getLocalTransform();
@@ -342,7 +342,7 @@ TEST(Link, PrismaticJointTranslatesLink)
       {.parentLink = base,
        .jointName = "joint1",
        .jointType = dse::comps::JointType::Prismatic,
-       .jointAxis = Eigen::Vector3d::UnitX()});
+       .axis = Eigen::Vector3d::UnitX()});
 
   Eigen::VectorXd pos(1);
   pos << 1.5;
@@ -365,13 +365,14 @@ TEST(Link, TwoLinkArmForwardKinematics)
       {.parentLink = base,
        .jointName = "joint1",
        .jointType = dse::comps::JointType::Revolute,
-       .jointAxis = Eigen::Vector3d::UnitZ()});
+       .axis = Eigen::Vector3d::UnitZ()});
+
   auto link2 = robot.addLink(
       "link2",
       {.parentLink = link1,
        .jointName = "joint2",
        .jointType = dse::comps::JointType::Revolute,
-       .jointAxis = Eigen::Vector3d::UnitZ()});
+       .axis = Eigen::Vector3d::UnitZ()});
 
   Eigen::VectorXd pos1(1), pos2(1);
   pos1 << M_PI / 4;

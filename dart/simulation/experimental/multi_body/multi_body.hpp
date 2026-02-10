@@ -183,7 +183,7 @@ public:
   /// @param options LinkOptions specifying parent and joint configuration
   /// @return Link handle (use getParentJoint() to access the created joint)
   /// @throws InvalidArgumentException if in simulation mode or parent invalid
-  Link addLink(std::string_view name, const LinkOptions& options);
+  Link addLink(std::string_view name, LinkOptions options);
 
 private:
   entt::entity m_entity; ///< Entity ID in the registry

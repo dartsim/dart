@@ -35,8 +35,10 @@
 #include <dart/simulation/experimental/shape/shape_node.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
-#include <dart/dynamics/BoxShape.hpp>
-#include <dart/dynamics/SphereShape.hpp>
+#include <dart/collision/collision_result.hpp>
+
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/sphere_shape.hpp>
 
 #include <gtest/gtest.h>
 

@@ -37,7 +37,7 @@
 #include "dart/simulation/experimental/frame/frame.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
-#include <dart/dynamics/ShapeNode.hpp>
+#include <dart/dynamics/shape_node.hpp>
 
 namespace dart::simulation::experimental {
 

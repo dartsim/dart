@@ -34,7 +34,7 @@
 
 #include <dart/simulation/experimental/comps/component_category.hpp>
 
-#include <dart/dynamics/Fwd.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>

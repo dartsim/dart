@@ -34,8 +34,8 @@
 
 #include <dart/simulation/experimental/export.hpp>
 
-#include <dart/math/Geometry.hpp>
-#include <dart/math/MathTypes.hpp>
+#include <dart/math/geometry.hpp>
+#include <dart/math/math_types.hpp>
 
 #include <Eigen/Dense>
 

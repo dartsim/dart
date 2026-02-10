@@ -36,11 +36,11 @@
 
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 
-#include <dart/constraint/Fwd.hpp>
+#include <dart/constraint/fwd.hpp>
 
-#include <dart/collision/Fwd.hpp>
+#include <dart/collision/fwd.hpp>
 
-#include <dart/dynamics/Fwd.hpp>
+#include <dart/dynamics/fwd.hpp>
 
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>

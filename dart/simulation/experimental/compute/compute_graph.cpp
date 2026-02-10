@@ -163,10 +163,12 @@ bool ComputeGraph::validate() const
     bool fromFound = false;
     bool toFound = false;
     for (const auto& node : m_nodes) {
-      if (node.get() == edge.from)
+      if (node.get() == edge.from) {
         fromFound = true;
-      if (node.get() == edge.to)
+      }
+      if (node.get() == edge.to) {
         toFound = true;
+      }
     }
     if (!fromFound || !toFound) {
       return false;

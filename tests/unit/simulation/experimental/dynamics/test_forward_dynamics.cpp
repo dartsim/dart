@@ -35,8 +35,8 @@
 #include <dart/simulation/experimental/multi_body/multi_body.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
-#include <dart/dynamics/RevoluteJoint.hpp>
-#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/revolute_joint.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
 #include <gtest/gtest.h>
 

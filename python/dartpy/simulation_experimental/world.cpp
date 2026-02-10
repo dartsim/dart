@@ -1,6 +1,6 @@
 #include "simulation_experimental/world.hpp"
 
-#include "dart/collision/CollisionResult.hpp"
+#include "dart/collision/collision_result.hpp"
 #include "dart/simulation/experimental/body/rigid_body.hpp"
 #include "dart/simulation/experimental/body/rigid_body_options.hpp"
 #include "dart/simulation/experimental/frame/fixed_frame.hpp"

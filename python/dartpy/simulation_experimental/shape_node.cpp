@@ -1,6 +1,6 @@
 #include "simulation_experimental/shape_node.hpp"
 
-#include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/shape.hpp"
 #include "dart/simulation/experimental/frame/frame.hpp"
 #include "dart/simulation/experimental/shape/shape_node.hpp"
 

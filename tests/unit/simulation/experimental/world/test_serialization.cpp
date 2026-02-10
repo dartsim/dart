@@ -916,8 +916,7 @@ TEST(Serialization, CloneResetCounters)
 
 TEST(SerializationGolden, DeterministicOutput)
 {
-  auto createWorld = []() {
-    dart::simulation::experimental::World world;
+  auto setupWorld = [](dart::simulation::experimental::World& world) {
     auto robot = world.addMultiBody("test_robot");
     auto base = robot.addLink("base");
     robot.addLink(
@@ -927,11 +926,12 @@ TEST(SerializationGolden, DeterministicOutput)
          .jointType
          = dart::simulation::experimental::comps::JointType::Revolute,
          .axis = {0, 0, 1}});
-    return world;
   };
 
-  auto world1 = createWorld();
-  auto world2 = createWorld();
+  dart::simulation::experimental::World world1;
+  setupWorld(world1);
+  dart::simulation::experimental::World world2;
+  setupWorld(world2);
 
   std::stringstream ss1, ss2;
   world1.saveBinary(ss1);

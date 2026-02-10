@@ -110,8 +110,9 @@ void ForwardDynamicsSystem::computeArticulatedInertias(
       auto& childJointData = m_workspace.getJointData(childIdx);
 
       const std::size_t dof = childJoint.getDOF();
-      if (dof == 0)
+      if (dof == 0) {
         continue;
+      }
 
       const auto S = computeMotionSubspace(childJoint);
       const auto& Ia = childLinkData.articulatedInertia;
@@ -185,8 +186,9 @@ void ForwardDynamicsSystem::computeBiasForces(
       auto& childJointData = m_workspace.getJointData(childIdx);
 
       const std::size_t dof = childJoint.getDOF();
-      if (dof == 0)
+      if (dof == 0) {
         continue;
+      }
 
       const auto S = computeMotionSubspace(childJoint);
       const auto& Ia = childLinkData.articulatedInertia;

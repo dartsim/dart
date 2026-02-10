@@ -45,24 +45,24 @@
 #include "dart/simulation/experimental/multi_body/multi_body.hpp"
 #include "dart/simulation/experimental/shape/shape_node.hpp"
 
-#include <dart/constraint/ConstraintSolver.hpp>
+#include <dart/constraint/constraint_solver.hpp>
 
-#include <dart/collision/CollisionGroup.hpp>
+#include <dart/collision/collision_group.hpp>
 
-#include <dart/dynamics/BallJoint.hpp>
-#include <dart/dynamics/BodyNode.hpp>
-#include <dart/dynamics/FreeJoint.hpp>
-#include <dart/dynamics/Inertia.hpp>
-#include <dart/dynamics/PlanarJoint.hpp>
-#include <dart/dynamics/PrismaticJoint.hpp>
-#include <dart/dynamics/RevoluteJoint.hpp>
-#include <dart/dynamics/ScrewJoint.hpp>
-#include <dart/dynamics/ShapeNode.hpp>
-#include <dart/dynamics/Skeleton.hpp>
-#include <dart/dynamics/UniversalJoint.hpp>
-#include <dart/dynamics/WeldJoint.hpp>
+#include <dart/dynamics/ball_joint.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/inertia.hpp>
+#include <dart/dynamics/planar_joint.hpp>
+#include <dart/dynamics/prismatic_joint.hpp>
+#include <dart/dynamics/revolute_joint.hpp>
+#include <dart/dynamics/screw_joint.hpp>
+#include <dart/dynamics/shape_node.hpp>
+#include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/universal_joint.hpp>
+#include <dart/dynamics/weld_joint.hpp>
 
-#include <dart/math/MathTypes.hpp>
+#include <dart/math/math_types.hpp>
 
 #include <algorithm>
 #include <format>
