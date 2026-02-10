@@ -38,7 +38,6 @@
 
 #include <dart/export.hpp>
 
-#include <mutex>
 #include <vector>
 
 namespace dart::common {
@@ -56,6 +55,10 @@ namespace dart::common {
 ///
 /// If the preallocated memory is all used up, then this class allocates
 /// additional memory chunk using the base allocator.
+// PERF: std::mutex removed from this allocator — single-threaded by design
+// (same as comparable raw allocators in other libraries). Use external
+// synchronization if thread safety is needed.
+
 class DART_API FreeListAllocator : public MemoryAllocator
 {
 public:
@@ -147,9 +150,6 @@ private:
 
   /// The base allocator
   MemoryAllocator& mBaseAllocator;
-
-  /// Mutex for private variables except the base allocator
-  mutable std::mutex mMutex;
 
   /// Tracks the raw memory blocks reserved from the base allocator
   std::vector<AllocatedBlock> mAllocatedBlocks;

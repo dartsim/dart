@@ -21,6 +21,9 @@ CANONICAL_BENCHMARKS = {
     "simd": "bm_simd",
     "dynamics_cache": "bm_dynamics_cache",
     "dynamics_cache_io": "bm_dynamics_cache_io",
+    "allocators": "bm_allocators",
+    "allocators_comparative": "bm_allocators_comparative",
+    "allocators-comparative": "bm_allocators_comparative",
 }
 
 ALIASES = {
@@ -38,6 +41,8 @@ ALIASES = {
     "bm_simd": "bm_simd",
     "bm_dynamics_cache": "bm_dynamics_cache",
     "bm_dynamics_cache_io": "bm_dynamics_cache_io",
+    "bm_allocators": "bm_allocators",
+    "bm_allocators_comparative": "bm_allocators_comparative",
 }
 
 
@@ -115,6 +120,7 @@ def _find_binary(build_dir: Path, target: str) -> Path:
         build_dir / "tests" / "benchmark" / "integration" / target,
         build_dir / "tests" / "benchmark" / "unit" / target,
         build_dir / "tests" / "benchmark" / "simd" / target,
+        build_dir / "tests" / "benchmark" / "common" / target,
     ]
 
     for path in candidates:

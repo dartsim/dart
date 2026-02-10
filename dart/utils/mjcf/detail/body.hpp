@@ -35,11 +35,13 @@
 
 #include <dart/utils/export.hpp>
 #include <dart/utils/mjcf/detail/body_attributes.hpp>
+#include <dart/utils/mjcf/detail/camera.hpp>
 #include <dart/utils/mjcf/detail/compiler.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
 #include <dart/utils/mjcf/detail/geom.hpp>
 #include <dart/utils/mjcf/detail/inertial.hpp>
 #include <dart/utils/mjcf/detail/joint.hpp>
+#include <dart/utils/mjcf/detail/light.hpp>
 #include <dart/utils/mjcf/detail/site.hpp>
 
 #include <tinyxml2.h>
@@ -114,6 +116,18 @@ public:
   /// Returns a <site> element at @c index.
   const Site& getSite(std::size_t index) const;
 
+  /// Returns the number of <camera> elements.
+  std::size_t getNumCameras() const;
+
+  /// Returns a <camera> element at @c index.
+  const Camera& getCamera(std::size_t index) const;
+
+  /// Returns the number of <light> elements.
+  std::size_t getNumLights() const;
+
+  /// Returns a <light> element at @c index.
+  const Light& getLight(std::size_t index) const;
+
   /// \}
 
 private:
@@ -159,6 +173,8 @@ private:
   std::vector<Body> mChildBodies;
   std::vector<Geom> mGeoms;
   std::vector<Site> mSites;
+  std::vector<Camera> mCameras;
+  std::vector<Light> mLights;
 };
 
 } // namespace detail

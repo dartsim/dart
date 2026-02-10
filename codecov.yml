@@ -26,6 +26,9 @@ coverage:
     # Test code (shouldn't count toward coverage)
     - "tests/**"
 
+    # Template implementation headers (coverage tracked via explicit instantiation in .cpp files)
+    - "**/*-impl.hpp"
+
     # GUI - requires display for testing
     # BACKLOG: Revisit when headless CI is feasible
     - "dart/gui/**"

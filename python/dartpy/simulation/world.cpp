@@ -14,6 +14,7 @@
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/array.h>
+#include <nanobind/stl/optional.h>
 #include <nanobind/stl/set.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
@@ -28,10 +29,62 @@ namespace dart::python_nb {
 void defWorld(nb::module_& m)
 {
   using World = dart::simulation::World;
+  using WorldConfig = dart::simulation::WorldConfig;
+  using CollisionDetectorType = dart::simulation::CollisionDetectorType;
+  using LcpSolverType = dart::simulation::LcpSolverType;
+
+  nb::enum_<CollisionDetectorType>(m, "CollisionDetectorType")
+      .value("Dart", CollisionDetectorType::Dart)
+      .value("Fcl", CollisionDetectorType::Fcl)
+      .value("Bullet", CollisionDetectorType::Bullet)
+      .value("Ode", CollisionDetectorType::Ode)
+      .export_values();
+
+  nb::enum_<LcpSolverType>(m, "LcpSolverType")
+      .value("Dantzig", LcpSolverType::Dantzig)
+      .value("Pgs", LcpSolverType::Pgs)
+      .value("Lemke", LcpSolverType::Lemke)
+      .export_values();
+
+  nb::class_<WorldConfig>(m, "WorldConfig")
+      .def(nb::init<>())
+      .def(
+          "__init__",
+          [](WorldConfig* self, const std::string& name) {
+            new (self) WorldConfig(name);
+          },
+          nb::arg("name"))
+      .def_rw("name", &WorldConfig::name)
+      .def_rw("collision_detector", &WorldConfig::collisionDetector)
+      .def_rw("primary_lcp_solver", &WorldConfig::primaryLcpSolver)
+      .def_prop_ro(
+          "secondary_lcp_solver",
+          [](const WorldConfig& c) -> nb::object {
+            if (c.secondaryLcpSolver.has_value()) {
+              return nb::cast(c.secondaryLcpSolver.value());
+            }
+            return nb::none();
+          })
+      .def(
+          "set_secondary_lcp_solver",
+          [](WorldConfig& c, LcpSolverType v) { c.secondaryLcpSolver = v; },
+          nb::arg("solver"))
+      .def("clear_secondary_lcp_solver", [](WorldConfig& c) {
+        c.secondaryLcpSolver = std::nullopt;
+      });
 
   nb::class_<World>(m, "World")
       .def(nb::init<>())
       .def(nb::init<const std::string&>(), nb::arg("name"))
+      .def(nb::init<const WorldConfig&>(), nb::arg("config"))
+      .def_static(
+          "create",
+          [](const std::string& name) { return World::create(name); },
+          nb::arg("name") = "world")
+      .def_static(
+          "create",
+          [](const WorldConfig& config) { return World::create(config); },
+          nb::arg("config"))
       .def("clone", [](const World& self) { return self.clone(); })
       .def(
           "setName",

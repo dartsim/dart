@@ -225,9 +225,24 @@ Previously, all issue-based regression tests lived in a separate `tests/regressi
 Performance benchmarks measure execution time and resource usage:
 
 - **collision/**: Collision detection performance with various shapes and scenarios
-- **dynamics/**: Kinematics computation performance
+- **dynamics/**: Kinematics computation, cache-friendly allocation, and lifecycle benchmarks
 - **integration/**: End-to-end system performance
 - **unit/**: Individual component performance
+
+#### Benchmark Comparison Tool
+
+`scripts/compare_benchmarks.py` compares two Google Benchmark JSON files to detect regressions:
+
+```bash
+# Run benchmarks and save JSON output
+pixi run bm  # runs scripts/run_cpp_benchmark.py
+
+# Compare baseline vs optimized results
+python scripts/compare_benchmarks.py baseline.json optimized.json
+```
+
+The tool supports `--metric cpu_time|real_time` and `--aggregate` options.
+See the script's `--help` for details.
 
 ## Adding New Tests
 

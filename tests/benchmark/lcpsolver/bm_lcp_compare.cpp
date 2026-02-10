@@ -10,17 +10,21 @@
 
 #include "tests/common/lcpsolver/lcp_test_harness.hpp"
 
+#include <dart/math/lcp/newton/boxed_semi_smooth_newton_solver.hpp>
 #include <dart/math/lcp/newton/fischer_burmeister_newton_solver.hpp>
 #include <dart/math/lcp/newton/minimum_map_newton_solver.hpp>
 #include <dart/math/lcp/newton/penalized_fischer_burmeister_newton_solver.hpp>
+#include <dart/math/lcp/other/admm_solver.hpp>
 #include <dart/math/lcp/other/interior_point_solver.hpp>
 #include <dart/math/lcp/other/mprgp_solver.hpp>
+#include <dart/math/lcp/other/sap_solver.hpp>
 #include <dart/math/lcp/other/shock_propagation_solver.hpp>
 #include <dart/math/lcp/other/staggering_solver.hpp>
 #include <dart/math/lcp/pivoting/baraff_solver.hpp>
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
 #include <dart/math/lcp/pivoting/direct_solver.hpp>
 #include <dart/math/lcp/pivoting/lemke_solver.hpp>
+#include <dart/math/lcp/projection/apgd_solver.hpp>
 #include <dart/math/lcp/projection/bgs_solver.hpp>
 #include <dart/math/lcp/projection/blocked_jacobi_solver.hpp>
 #include <dart/math/lcp/projection/jacobi_solver.hpp>
@@ -29,6 +33,7 @@
 #include <dart/math/lcp/projection/red_black_gauss_seidel_solver.hpp>
 #include <dart/math/lcp/projection/subspace_minimization_solver.hpp>
 #include <dart/math/lcp/projection/symmetric_psor_solver.hpp>
+#include <dart/math/lcp/projection/tgs_solver.hpp>
 
 #include <Eigen/Dense>
 #include <benchmark/benchmark.h>
@@ -492,6 +497,57 @@ static void BM_LcpCompare_PenalizedFischerBurmeisterNewton_Standard(
       MakeLabel("PenalizedFischerBurmeisterNewton", "Standard"));
 }
 
+static void BM_LcpCompare_Apgd_Standard(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  const auto problem
+      = MakeStandardSpdProblem(n, 818u + static_cast<unsigned>(n));
+  const auto options = MakeBenchmarkOptions(200);
+  RunBenchmark<dart::math::ApgdSolver>(
+      state, problem, options, MakeLabel("Apgd", "Standard"));
+}
+
+static void BM_LcpCompare_Tgs_Standard(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  const auto problem
+      = MakeStandardSpdProblem(n, 919u + static_cast<unsigned>(n));
+  const auto options = MakeBenchmarkOptions(200);
+  RunBenchmark<dart::math::TgsSolver>(
+      state, problem, options, MakeLabel("Tgs", "Standard"));
+}
+
+static void BM_LcpCompare_Admm_Standard(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  const auto problem
+      = MakeStandardSpdProblem(n, 1020u + static_cast<unsigned>(n));
+  const auto options = MakeBenchmarkOptions(200);
+  RunBenchmark<dart::math::AdmmSolver>(
+      state, problem, options, MakeLabel("Admm", "Standard"));
+}
+
+static void BM_LcpCompare_Sap_Standard(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  const auto problem
+      = MakeStandardSpdProblem(n, 1121u + static_cast<unsigned>(n));
+  const auto options = MakeBenchmarkOptions(50);
+  RunBenchmark<dart::math::SapSolver>(
+      state, problem, options, MakeLabel("Sap", "Standard"));
+}
+
+static void BM_LcpCompare_BoxedSemiSmoothNewton_Standard(
+    benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  const auto problem
+      = MakeStandardSpdProblem(n, 1222u + static_cast<unsigned>(n));
+  const auto options = MakeBenchmarkOptions(50);
+  RunBenchmark<dart::math::BoxedSemiSmoothNewtonSolver>(
+      state, problem, options, MakeLabel("BoxedSemiSmoothNewton", "Standard"));
+}
+
 static void BM_LcpCompare_Dantzig_Boxed(benchmark::State& state)
 {
   const int n = static_cast<int>(state.range(0));
@@ -598,6 +654,56 @@ static void BM_LcpCompare_SubspaceMinimization_Boxed(benchmark::State& state)
   options.customOptions = &params;
   RunBenchmark<dart::math::SubspaceMinimizationSolver>(
       state, problem, options, MakeLabel("SubspaceMinimization", "Boxed"));
+}
+
+static void BM_LcpCompare_Apgd_Boxed(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  const auto problem
+      = MakeBoxedActiveBoundsProblem(n, 910u + static_cast<unsigned>(n));
+  const auto options = MakeBenchmarkOptions(200);
+  RunBenchmark<dart::math::ApgdSolver>(
+      state, problem, options, MakeLabel("Apgd", "Boxed"));
+}
+
+static void BM_LcpCompare_Tgs_Boxed(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  const auto problem
+      = MakeBoxedActiveBoundsProblem(n, 911u + static_cast<unsigned>(n));
+  const auto options = MakeBenchmarkOptions(200);
+  RunBenchmark<dart::math::TgsSolver>(
+      state, problem, options, MakeLabel("Tgs", "Boxed"));
+}
+
+static void BM_LcpCompare_Admm_Boxed(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  const auto problem
+      = MakeBoxedActiveBoundsProblem(n, 912u + static_cast<unsigned>(n));
+  const auto options = MakeBenchmarkOptions(200);
+  RunBenchmark<dart::math::AdmmSolver>(
+      state, problem, options, MakeLabel("Admm", "Boxed"));
+}
+
+static void BM_LcpCompare_Sap_Boxed(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  const auto problem
+      = MakeBoxedActiveBoundsProblem(n, 913u + static_cast<unsigned>(n));
+  const auto options = MakeBenchmarkOptions(50);
+  RunBenchmark<dart::math::SapSolver>(
+      state, problem, options, MakeLabel("Sap", "Boxed"));
+}
+
+static void BM_LcpCompare_BoxedSemiSmoothNewton_Boxed(benchmark::State& state)
+{
+  const int n = static_cast<int>(state.range(0));
+  const auto problem
+      = MakeBoxedActiveBoundsProblem(n, 914u + static_cast<unsigned>(n));
+  const auto options = MakeBenchmarkOptions(50);
+  RunBenchmark<dart::math::BoxedSemiSmoothNewtonSolver>(
+      state, problem, options, MakeLabel("BoxedSemiSmoothNewton", "Boxed"));
 }
 
 static void BM_LcpCompare_Dantzig_FrictionIndex(benchmark::State& state)
@@ -735,6 +841,60 @@ static void BM_LcpCompare_ShockPropagation_FrictionIndex(
   AddShockPropagationCounters(state, params);
 }
 
+static void BM_LcpCompare_Apgd_FrictionIndex(benchmark::State& state)
+{
+  const int numContacts = static_cast<int>(state.range(0));
+  const auto problem = MakeFrictionIndexProblem(
+      numContacts, 5050u + static_cast<unsigned>(numContacts));
+  const auto options = MakeBenchmarkOptions(200);
+  RunBenchmark<dart::math::ApgdSolver>(
+      state, problem, options, MakeLabel("Apgd", "FrictionIndex"));
+}
+
+static void BM_LcpCompare_Tgs_FrictionIndex(benchmark::State& state)
+{
+  const int numContacts = static_cast<int>(state.range(0));
+  const auto problem = MakeFrictionIndexProblem(
+      numContacts, 5151u + static_cast<unsigned>(numContacts));
+  const auto options = MakeBenchmarkOptions(200);
+  RunBenchmark<dart::math::TgsSolver>(
+      state, problem, options, MakeLabel("Tgs", "FrictionIndex"));
+}
+
+static void BM_LcpCompare_Admm_FrictionIndex(benchmark::State& state)
+{
+  const int numContacts = static_cast<int>(state.range(0));
+  const auto problem = MakeFrictionIndexProblem(
+      numContacts, 5252u + static_cast<unsigned>(numContacts));
+  const auto options = MakeBenchmarkOptions(200);
+  RunBenchmark<dart::math::AdmmSolver>(
+      state, problem, options, MakeLabel("Admm", "FrictionIndex"));
+}
+
+static void BM_LcpCompare_Sap_FrictionIndex(benchmark::State& state)
+{
+  const int numContacts = static_cast<int>(state.range(0));
+  const auto problem = MakeFrictionIndexProblem(
+      numContacts, 5353u + static_cast<unsigned>(numContacts));
+  const auto options = MakeBenchmarkOptions(50);
+  RunBenchmark<dart::math::SapSolver>(
+      state, problem, options, MakeLabel("Sap", "FrictionIndex"));
+}
+
+static void BM_LcpCompare_BoxedSemiSmoothNewton_FrictionIndex(
+    benchmark::State& state)
+{
+  const int numContacts = static_cast<int>(state.range(0));
+  const auto problem = MakeFrictionIndexProblem(
+      numContacts, 5454u + static_cast<unsigned>(numContacts));
+  const auto options = MakeBenchmarkOptions(50);
+  RunBenchmark<dart::math::BoxedSemiSmoothNewtonSolver>(
+      state,
+      problem,
+      options,
+      MakeLabel("BoxedSemiSmoothNewton", "FrictionIndex"));
+}
+
 static void BM_LcpCompare_Dantzig_Scaled(benchmark::State& state)
 {
   const int n = static_cast<int>(state.range(0));
@@ -826,6 +986,15 @@ BENCHMARK(BM_LcpCompare_PenalizedFischerBurmeisterNewton_Standard)
     ->Arg(24)
     ->Arg(48)
     ->Arg(96);
+BENCHMARK(BM_LcpCompare_Apgd_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
+BENCHMARK(BM_LcpCompare_Tgs_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
+BENCHMARK(BM_LcpCompare_Admm_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
+BENCHMARK(BM_LcpCompare_Sap_Standard)->Arg(12)->Arg(24)->Arg(48)->Arg(96);
+BENCHMARK(BM_LcpCompare_BoxedSemiSmoothNewton_Standard)
+    ->Arg(12)
+    ->Arg(24)
+    ->Arg(48)
+    ->Arg(96);
 
 BENCHMARK(BM_LcpCompare_Dantzig_Boxed)->Arg(12)->Arg(24)->Arg(48);
 BENCHMARK(BM_LcpCompare_Pgs_Boxed)->Arg(12)->Arg(24)->Arg(48);
@@ -837,6 +1006,11 @@ BENCHMARK(BM_LcpCompare_Bgs_Boxed)->Arg(12)->Arg(24)->Arg(48);
 BENCHMARK(BM_LcpCompare_BlockedJacobi_Boxed)->Arg(12)->Arg(24)->Arg(48);
 BENCHMARK(BM_LcpCompare_Nncg_Boxed)->Arg(12)->Arg(24)->Arg(48);
 BENCHMARK(BM_LcpCompare_SubspaceMinimization_Boxed)->Arg(12)->Arg(24)->Arg(48);
+BENCHMARK(BM_LcpCompare_Apgd_Boxed)->Arg(12)->Arg(24)->Arg(48);
+BENCHMARK(BM_LcpCompare_Tgs_Boxed)->Arg(12)->Arg(24)->Arg(48);
+BENCHMARK(BM_LcpCompare_Admm_Boxed)->Arg(12)->Arg(24)->Arg(48);
+BENCHMARK(BM_LcpCompare_Sap_Boxed)->Arg(12)->Arg(24)->Arg(48);
+BENCHMARK(BM_LcpCompare_BoxedSemiSmoothNewton_Boxed)->Arg(12)->Arg(24)->Arg(48);
 
 BENCHMARK(BM_LcpCompare_Dantzig_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
 BENCHMARK(BM_LcpCompare_Pgs_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
@@ -855,6 +1029,14 @@ BENCHMARK(BM_LcpCompare_SubspaceMinimization_FrictionIndex)
     ->Arg(16)
     ->Arg(64);
 BENCHMARK(BM_LcpCompare_ShockPropagation_FrictionIndex)
+    ->Arg(4)
+    ->Arg(16)
+    ->Arg(64);
+BENCHMARK(BM_LcpCompare_Apgd_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
+BENCHMARK(BM_LcpCompare_Tgs_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
+BENCHMARK(BM_LcpCompare_Admm_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
+BENCHMARK(BM_LcpCompare_Sap_FrictionIndex)->Arg(4)->Arg(16)->Arg(64);
+BENCHMARK(BM_LcpCompare_BoxedSemiSmoothNewton_FrictionIndex)
     ->Arg(4)
     ->Arg(16)
     ->Arg(64);

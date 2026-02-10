@@ -61,6 +61,7 @@
 
 #include <Eigen/Dense>
 
+#include <optional>
 #include <set>
 #include <string>
 #include <string_view>
@@ -79,6 +80,29 @@ enum class CollisionDetectorType
   Ode,
 };
 
+/// Available LCP solver types for constraint solving.
+///
+/// These solvers are used by the ConstraintSolver to resolve contact and
+/// joint constraints. See docs/background/lcp/ for detailed algorithm
+/// descriptions.
+enum class LcpSolverType
+{
+  /// Dantzig principal pivoting method.
+  /// Exact solver for boxed LCP with friction index support.
+  /// Best for: small-medium problems, contacts with friction.
+  Dantzig,
+
+  /// Projected Gauss-Seidel iterative solver.
+  /// Fast approximate solver with bounded runtime.
+  /// Best for: real-time simulation, large problems.
+  Pgs,
+
+  /// Lemke complementary pivoting method.
+  /// Exact solver for standard LCP (no box constraints).
+  /// Best for: standard LCP problems without bounds.
+  Lemke,
+};
+
 /// Configuration bundle used when constructing a World.
 struct WorldConfig final
 {
@@ -87,6 +111,16 @@ struct WorldConfig final
 
   /// Preferred collision detector for the world.
   CollisionDetectorType collisionDetector = CollisionDetectorType::Fcl;
+
+  /// Primary LCP solver for constraint resolution.
+  LcpSolverType primaryLcpSolver = LcpSolverType::Dantzig;
+
+  /// Secondary (fallback) LCP solver. Used when primary solver fails.
+  /// Set to std::nullopt to disable fallback behavior.
+  std::optional<LcpSolverType> secondaryLcpSolver = LcpSolverType::Pgs;
+
+  // TODO(lcp_epic): Consider adding World::setLcpSolver() for runtime changes.
+  // Current architecture requires solver to be set at construction time.
 
   /// Optional base allocator for the world's memory manager.
   /// If nullptr, MemoryAllocator::GetDefault() is used.

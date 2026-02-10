@@ -812,6 +812,7 @@ int main(int argc, char* argv[])
 
   osg::ref_ptr<gui::ImGuiViewer> viewer = new gui::ImGuiViewer();
   viewer->setImGuiScale(static_cast<float>(guiScale));
+  viewer->getImGuiHandler()->setFontScale(static_cast<float>(guiScale));
   viewer->addWorldNode(node);
 
   auto grid = ::osg::ref_ptr<gui::GridVisual>(new gui::GridVisual());

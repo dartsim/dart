@@ -392,15 +392,7 @@ inline bool isNan(double _v)
 /// @brief Returns whether _m is a NaN (Not-A-Number) matrix
 inline bool isNan(const Eigen::MatrixXd& _m)
 {
-  for (int i = 0; i < _m.rows(); ++i) {
-    for (int j = 0; j < _m.cols(); ++j) {
-      if (isNan(_m(i, j))) {
-        return true;
-      }
-    }
-  }
-
-  return false;
+  return _m.array().isNaN().any();
 }
 
 /// @brief Returns whether _v is an infinity value (either positive infinity or
@@ -418,15 +410,7 @@ inline bool isInf(double _v)
 /// negative infinity).
 inline bool isInf(const Eigen::MatrixXd& _m)
 {
-  for (int i = 0; i < _m.rows(); ++i) {
-    for (int j = 0; j < _m.cols(); ++j) {
-      if (isInf(_m(i, j))) {
-        return true;
-      }
-    }
-  }
-
-  return false;
+  return _m.array().isInf().any();
 }
 
 /// @brief Returns whether _m is symmetric or not

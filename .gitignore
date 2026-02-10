@@ -72,6 +72,12 @@ docs/python_api/_build/
 # Data files
 data/screencap/*
 
+# Headless rendering artifacts
+/*.png
+headless_frames*/
+rigid_frames/
+*_frames/
+
 # Temporary directory for dependencies
 .deps/
 

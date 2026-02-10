@@ -83,6 +83,33 @@ TEST_F(FrameAllocatorTest, Alignment)
 }
 
 //=============================================================================
+TEST_F(FrameAllocatorTest, MixedAllocatePreserves32ByteAlignment)
+{
+  FrameAllocator allocator;
+
+  // allocateAligned with small alignment must not break allocate()'s
+  // 32-byte alignment invariant.
+  void* a = allocator.allocateAligned(7, 4);
+  EXPECT_NE(a, nullptr);
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(a) % 4, 0u);
+
+  void* b = allocator.allocate(64);
+  EXPECT_NE(b, nullptr);
+  EXPECT_EQ(reinterpret_cast<uintptr_t>(b) % 32, 0u);
+
+  // Interleave several small-aligned and default allocations.
+  for (int i = 0; i < 10; ++i) {
+    void* small = allocator.allocateAligned(3, 8);
+    EXPECT_NE(small, nullptr);
+    EXPECT_EQ(reinterpret_cast<uintptr_t>(small) % 8, 0u);
+
+    void* regular = allocator.allocate(16);
+    EXPECT_NE(regular, nullptr);
+    EXPECT_EQ(reinterpret_cast<uintptr_t>(regular) % 32, 0u);
+  }
+}
+
+//=============================================================================
 TEST_F(FrameAllocatorTest, Reset)
 {
   FrameAllocator allocator;
@@ -180,4 +207,39 @@ TEST_F(FrameAllocatorTest, MultipleResets)
     allocator.reset();
     EXPECT_EQ(allocator.capacity(), stableCapacity);
   }
+}
+
+//=============================================================================
+TEST_F(FrameAllocatorTest, ZeroCapacity)
+{
+  FrameAllocator allocator(MemoryAllocator::GetDefault(), 0);
+  EXPECT_EQ(allocator.capacity(), 0u);
+  EXPECT_EQ(allocator.used(), 0u);
+
+  // allocate() must not crash — it falls back to overflow allocation.
+  void* ptr = allocator.allocate(64);
+  EXPECT_NE(ptr, nullptr);
+  EXPECT_EQ(allocator.overflowCount(), 1u);
+
+  // allocateAligned() must not crash either.
+  void* aligned = allocator.allocateAligned(32, 64);
+  EXPECT_NE(aligned, nullptr);
+  const uintptr_t addr = reinterpret_cast<uintptr_t>(aligned);
+  EXPECT_EQ(addr % 64, 0u);
+  EXPECT_EQ(allocator.overflowCount(), 2u);
+
+  // Zero-byte requests return nullptr, consistent with other DART allocators.
+  EXPECT_EQ(allocator.allocate(0), nullptr);
+  EXPECT_EQ(allocator.allocateAligned(0, 32), nullptr);
+  EXPECT_EQ(allocator.allocateAligned(32, 0), nullptr);
+
+  // reset() must not crash; it should grow the buffer via resetSlow().
+  allocator.reset();
+  EXPECT_EQ(allocator.overflowCount(), 0u);
+  EXPECT_GT(allocator.capacity(), 0u);
+
+  // After reset, the buffer is now valid — fast path should work.
+  void* after = allocator.allocate(64);
+  EXPECT_NE(after, nullptr);
+  EXPECT_EQ(allocator.overflowCount(), 0u);
 }

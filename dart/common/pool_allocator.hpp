@@ -39,7 +39,6 @@
 #include <dart/export.hpp>
 
 #include <array>
-#include <mutex>
 
 namespace dart::common {
 
@@ -71,11 +70,48 @@ public:
   /// Returns the count of allocated memory blocks
   [[nodiscard]] int getNumAllocatedMemoryBlocks() const;
 
-  // Documentation inherited
-  [[nodiscard]] void* allocate(size_t bytes) noexcept override;
+  // PERF: These fast paths MUST stay inline. Moving them out-of-line causes
+  // 2-5x regression from function-call overhead (benchmarked). Do NOT move
+  // to .cpp — see tests/benchmark/common/bm_allocators.cpp.
 
   // Documentation inherited
-  void deallocate(void* pointer, size_t bytes) override;
+  [[nodiscard]] inline void* allocate(size_t bytes) noexcept override
+  {
+    if (bytes == 0) [[unlikely]] {
+      return nullptr;
+    }
+
+    if (bytes > MAX_UNIT_SIZE) [[unlikely]] {
+      return mBaseAllocator.allocate(bytes);
+    }
+
+    const int heapIndex = mMapSizeToHeapIndex[bytes];
+
+    if (MemoryUnit* unit = mFreeMemoryUnits[heapIndex]) [[likely]] {
+      mFreeMemoryUnits[heapIndex] = unit->mNext;
+      return unit;
+    }
+
+    return allocateSlow(heapIndex);
+  }
+
+  // Documentation inherited
+  inline void deallocate(void* pointer, size_t bytes) override
+  {
+    if (pointer == nullptr || bytes == 0) [[unlikely]] {
+      return;
+    }
+
+    if (bytes > MAX_UNIT_SIZE) [[unlikely]] {
+      mBaseAllocator.deallocate(pointer, bytes);
+      return;
+    }
+
+    const int heapIndex = mMapSizeToHeapIndex[bytes];
+    MemoryUnit* releasedUnit = static_cast<MemoryUnit*>(pointer);
+    releasedUnit->mNext = mFreeMemoryUnits[heapIndex];
+    mFreeMemoryUnits[heapIndex] = releasedUnit;
+  }
 
   // Documentation inherited
   void print(std::ostream& os = std::cout, int indent = 0) const override;
@@ -83,15 +119,15 @@ public:
 private:
   struct MemoryUnit
   {
-    /// Pointer to next memory block
     MemoryUnit* mNext;
   };
 
   struct MemoryBlock
   {
-    /// Pointer to the first memory unit
     MemoryUnit* mMemoryUnits;
   };
+
+  [[nodiscard]] void* allocateSlow(int heapIndex) noexcept;
 
   inline static constexpr int HEAP_COUNT = 128;
 
@@ -105,36 +141,14 @@ private:
 
   inline static bool mInitialized = false;
 
-  /// The base allocator to allocate memory chunk
   MemoryAllocator& mBaseAllocator;
 
-  /// Mutex for for mNumAllocatedMemoryBlocks, mNumMemoryBlocks,
-  /// mFreeMemoryUnits, and mAllocatedMemoryBlocks.
-  mutable std::mutex mMutex;
-
-  /// The array of memory blocks.
-  ///
-  /// This array is a placeholder of allocated memory blocks. Initially this
-  /// contains nullptr as the elements.
   MemoryBlock* mMemoryBlocks;
 
-  /// The size of mMemoryBlocks.
-  ///
-  /// This is simply the current size of mMemoryBlocks. The value doesn't mean
-  /// the actual count of the allocated memory blocks.
   int mMemoryBlocksSize;
 
-  /// The count of the allocated memory blocks in use.
   int mCurrentMemoryBlockIndex;
 
-  /// List of free memory units.
-  ///
-  /// The size of mFreeMemoryUnits is fixed to HEAP_COUNT where each element is
-  /// for a specific memory size. For example, the first element has the free
-  /// memory unit for 8 bytes while the last element has the free memory unit
-  /// for 1024 bytes.
-  ///
-  /// The size must be the same of mUnitSizes.
   std::array<MemoryUnit*, HEAP_COUNT> mFreeMemoryUnits;
 };
 

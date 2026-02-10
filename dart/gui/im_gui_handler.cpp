@@ -203,6 +203,11 @@ ConvertedKey convertFromOSGKey(int key)
   }
 }
 
+namespace {
+// Disable FontGlobalScale when using rebuilt fonts to avoid bitmap scaling.
+bool gDisableFontGlobalScale = false;
+} // namespace
+
 //==============================================================================
 void applyImGuiScale(float scale)
 {
@@ -218,14 +223,18 @@ void applyImGuiScale(float scale)
   // Reset to the captured base style before applying the requested scale so
   // repeated calls are idempotent and preserve the configured palette.
   style = baseStyle;
-  io.FontGlobalScale = 1.f;
+  if (!gDisableFontGlobalScale) {
+    io.FontGlobalScale = 1.f;
+  }
 
   if (std::abs(scale - 1.f) < 1e-6f) {
     return;
   }
 
   style.ScaleAllSizes(scale);
-  io.FontGlobalScale = scale;
+  if (!gDisableFontGlobalScale) {
+    io.FontGlobalScale = scale;
+  }
 }
 
 //==============================================================================
@@ -263,6 +272,37 @@ private:
 };
 
 namespace {
+
+constexpr float kDefaultFontSize = 13.0f;
+
+void rebuildDefaultFont(float fontScale, float framebufferScale)
+{
+  if (!std::isfinite(fontScale) || fontScale <= 0.0f) {
+    return;
+  }
+
+  if (!std::isfinite(framebufferScale) || framebufferScale <= 0.0f) {
+    framebufferScale = 1.0f;
+  }
+
+  ImGuiIO& io = ImGui::GetIO();
+
+  ImGui_ImplOpenGL2_DestroyDeviceObjects();
+
+  io.Fonts->Clear();
+
+  ImFontConfig config;
+  config.SizePixels = kDefaultFontSize * fontScale * framebufferScale;
+  config.OversampleH = 2;
+  config.OversampleV = 2;
+  io.Fonts->AddFontDefault(&config);
+
+  io.Fonts->Build();
+
+  ImGui_ImplOpenGL2_CreateDeviceObjects();
+
+  io.FontGlobalScale = 1.0f / framebufferScale;
+}
 
 void setCurrentContext(ImGuiContext* context)
 {
@@ -339,6 +379,19 @@ void ImGuiHandler::setCameraCallbacks(::osg::Camera* camera)
 
   ImGuiNewFrameCallback* preDrawCallback = new ImGuiNewFrameCallback(this);
   camera->setPreDrawCallback(preDrawCallback);
+}
+
+//==============================================================================
+void ImGuiHandler::setFontScale(float scale)
+{
+  if (!std::isfinite(scale) || scale <= 0.0f) {
+    return;
+  }
+
+  gDisableFontGlobalScale = true;
+  mFontScale = scale;
+  mUseFontScale = true;
+  mFontScaleDirty = true;
 }
 
 //==============================================================================
@@ -565,25 +618,46 @@ void ImGuiHandler::newFrame(::osg::RenderInfo& renderInfo)
     const auto* traits
         = graphicsContext ? graphicsContext->getTraits() : nullptr;
     if (traits && traits->width > 0 && traits->height > 0) {
-      framebufferScale.x = static_cast<float>(viewport->width())
-                           / static_cast<float>(traits->width);
-      framebufferScale.y = static_cast<float>(viewport->height())
-                           / static_cast<float>(traits->height);
+      const float viewportWidth = static_cast<float>(viewport->width());
+      const float viewportHeight = static_cast<float>(viewport->height());
+      const float traitsWidth = static_cast<float>(traits->width);
+      const float traitsHeight = static_cast<float>(traits->height);
 
-      framebufferScale.x
-          = framebufferScale.x > 0.0f ? framebufferScale.x : 1.0f;
-      framebufferScale.y
-          = framebufferScale.y > 0.0f ? framebufferScale.y : 1.0f;
+      if (viewportWidth > 0.0f && viewportHeight > 0.0f) {
+        float scaleX = viewportWidth / traitsWidth;
+        float scaleY = viewportHeight / traitsHeight;
 
-      displaySize = ImVec2(
-          static_cast<float>(traits->width),
-          static_cast<float>(traits->height));
+        // Some platforms swap window vs framebuffer sizing between viewport
+        // and traits. Keep the scale >= 1 by treating the larger dimension as
+        // the framebuffer size.
+        if (scaleX < 1.0f || scaleY < 1.0f) {
+          scaleX = traitsWidth / viewportWidth;
+          scaleY = traitsHeight / viewportHeight;
+          displaySize = ImVec2(viewportWidth, viewportHeight);
+        } else {
+          displaySize = ImVec2(traitsWidth, traitsHeight);
+        }
+
+        framebufferScale.x = scaleX > 0.0f ? scaleX : 1.0f;
+        framebufferScale.y = scaleY > 0.0f ? scaleY : 1.0f;
+      }
     }
   }
 
   io.DisplaySize = displaySize;
   io.DisplayFramebufferScale = framebufferScale;
   mFramebufferScale = {framebufferScale.x, framebufferScale.y};
+
+  if (mUseFontScale) {
+    const float pixelScale = std::max(framebufferScale.x, framebufferScale.y);
+    const bool scaleChanged
+        = std::abs(pixelScale - mLastFontFramebufferScale) > 1e-3f;
+    if (mFontScaleDirty || scaleChanged) {
+      rebuildDefaultFont(mFontScale, pixelScale);
+      mLastFontFramebufferScale = pixelScale;
+      mFontScaleDirty = false;
+    }
+  }
 
   const auto currentTime
       = renderInfo.getView()->getFrameStamp()->getSimulationTime();
@@ -617,6 +691,18 @@ void ImGuiHandler::render(::osg::RenderInfo& /*renderInfo*/)
   ImGui::Render();
 
   auto* drawData = ImGui::GetDrawData();
+#if IMGUI_VERSION_NUM >= 19200
+  if (drawData && drawData->Textures) {
+    for (auto* texture : *drawData->Textures) {
+      if (!texture) {
+        continue;
+      }
+      if (texture->Status != ImTextureStatus_OK) {
+        ImGui_ImplOpenGL2_UpdateTexture(texture);
+      }
+    }
+  }
+#endif
   ImGui_ImplOpenGL2_RenderDrawData(drawData);
 }
 

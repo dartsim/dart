@@ -67,4 +67,8 @@ TEST(UniversalJoint, CopyAndConstAccess)
   (void)otherBody;
   otherJoint->copy(*joint);
   EXPECT_TRUE(otherJoint->getAxis1().isApprox(joint->getAxis1()));
+
+  otherJoint->setAxis1(Eigen::Vector3d::UnitY());
+  joint->copy(otherJoint);
+  EXPECT_TRUE(joint->getAxis1().isApprox(Eigen::Vector3d::UnitY()));
 }

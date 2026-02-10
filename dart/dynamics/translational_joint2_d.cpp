@@ -96,7 +96,7 @@ void TranslationalJoint2D::copy(const TranslationalJoint2D* otherJoint)
     return;
   }
 
-  copy(*this);
+  copy(*otherJoint);
 }
 
 //==============================================================================

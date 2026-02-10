@@ -100,7 +100,26 @@ WorldNode::WorldNode(
 //==============================================================================
 void WorldNode::setWorld(std::shared_ptr<dart::simulation::World> newWorld)
 {
+  if (mWorld == newWorld) {
+    return;
+  }
+
+  clearAllShapeFrameNodes();
+
   mWorld = newWorld;
+}
+
+//==============================================================================
+void WorldNode::clearAllShapeFrameNodes()
+{
+  for (auto& node_pair : mFrameToNode) {
+    ShapeFrameNode* node = node_pair.second;
+    if (node) {
+      mNormalGroup->removeChild(node);
+      mShadowedGroup->removeChild(node);
+    }
+  }
+  mFrameToNode.clear();
 }
 
 //==============================================================================

@@ -169,6 +169,7 @@ int main(int argc, char* argv[])
   // Create the viewer
   osg::ref_ptr<dart::gui::ImGuiViewer> viewer = new dart::gui::ImGuiViewer();
   viewer->setImGuiScale(static_cast<float>(guiScale));
+  viewer->getImGuiHandler()->setFontScale(static_cast<float>(guiScale));
   viewer->addWorldNode(node);
 
   // Add control widget for atlas

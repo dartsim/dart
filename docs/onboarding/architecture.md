@@ -77,6 +77,7 @@ DART follows a **modular layered architecture** with clear separation of concern
   - `MemoryManager.hpp` - Custom memory allocation
   - `PoolAllocator.hpp` - Pool-based allocation for performance
   - `FreeListAllocator.hpp` - Free list allocation
+  - `FrameAllocator.hpp` - Bump/arena allocator for per-step scratch memory
   - `SmartPointer.hpp` - Smart pointer utilities
 
 - **Observer Pattern**

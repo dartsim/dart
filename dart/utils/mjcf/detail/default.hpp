@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_DEFAULT_HPP_
 #define DART_UTILS_MJCF_DETAIL_DEFAULT_HPP_
 
+#include <dart/utils/mjcf/detail/actuator_attributes.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
 #include <dart/utils/mjcf/detail/geom_attributes.hpp>
 #include <dart/utils/mjcf/detail/joint_attributes.hpp>
@@ -57,6 +58,7 @@ public:
   /// Default constructor
   Default() = default;
 
+  const ActuatorAttributes& getActuatorAttributes(ActuatorType type) const;
   const GeomAttributes& getGeomAttributes() const;
   const JointAttributes& getJointAttributes() const;
   const MeshAttributes& getMeshAttributes() const;
@@ -69,11 +71,15 @@ private:
   Errors read(tinyxml2::XMLElement* element, const Default* parent);
 
 private:
+  ActuatorAttributes mMotorAttributes;
+  ActuatorAttributes mPositionAttributes;
+  ActuatorAttributes mVelocityAttributes;
+  ActuatorAttributes mGeneralAttributes;
+
   GeomAttributes mGeomAttributes;
   JointAttributes mJointAttributes;
   MeshAttributes mMeshAttributes;
 
-  // Equality constraint attributes
   WeldAttributes mWeldAttributes;
 };
 

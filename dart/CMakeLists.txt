@@ -150,6 +150,13 @@ target_link_libraries(
     fcl
     assimp
 )
+
+# assimp version detection for conditional compilation
+if(ASSIMP_VERSION_MAJOR)
+  target_compile_definitions(dart
+    PUBLIC DART_ASSIMP_VERSION_MAJOR=${ASSIMP_VERSION_MAJOR})
+endif()
+
 target_compile_definitions(dart PUBLIC BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS)
 get_property(_dart_extra_compile_options GLOBAL PROPERTY DART_EXTRA_COMPILE_OPTIONS)
 if(_dart_extra_compile_options)

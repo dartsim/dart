@@ -83,3 +83,4 @@
 #include <dart/simd/geometry/quaternion.hpp>
 #include <dart/simd/geometry/vector3.hpp>
 #include <dart/simd/geometry/vector4.hpp>
+#include <dart/simd/math.hpp>

@@ -3,6 +3,7 @@
 set(simd_headers
   config.hpp
   fwd.hpp
+  math.hpp
   memory.hpp
   simd.hpp
   # Scalar backend (always available)
@@ -33,6 +34,12 @@ set(simd_headers
   detail/sve/vec.hpp
   detail/sve/vec_mask.hpp
   detail/sve/operations.hpp
+  # Math functions
+  detail/math/constants.hpp
+  detail/math/exp_impl.hpp
+  detail/math/log_impl.hpp
+  detail/math/polynomial.hpp
+  detail/math/sincos_impl.hpp
   # Geometry types
   geometry/vector3.hpp
   geometry/vector4.hpp

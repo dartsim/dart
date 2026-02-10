@@ -36,6 +36,8 @@
 #include <dart/simd/detail/sse42/vec.hpp>
 #include <dart/simd/detail/sse42/vec_mask.hpp>
 
+#include <cstring>
+
 #if defined(DART_SIMD_SSE42)
 
 namespace dart::simd {
@@ -394,6 +396,211 @@ template <>
 {
   return Vec<std::int32_t, 4>(
       _mm_blendv_epi8(if_false.data, if_true.data, mask.data));
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<float, 4> bitAnd(
+    const Vec<float, 4>& a, const Vec<float, 4>& b)
+{
+  return Vec<float, 4>(_mm_and_ps(a.data, b.data));
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<double, 2> bitAnd(
+    const Vec<double, 2>& a, const Vec<double, 2>& b)
+{
+  return Vec<double, 2>(_mm_and_pd(a.data, b.data));
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<float, 4> bitOr(
+    const Vec<float, 4>& a, const Vec<float, 4>& b)
+{
+  return Vec<float, 4>(_mm_or_ps(a.data, b.data));
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<double, 2> bitOr(
+    const Vec<double, 2>& a, const Vec<double, 2>& b)
+{
+  return Vec<double, 2>(_mm_or_pd(a.data, b.data));
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<float, 4> bitXor(
+    const Vec<float, 4>& a, const Vec<float, 4>& b)
+{
+  return Vec<float, 4>(_mm_xor_ps(a.data, b.data));
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<double, 2> bitXor(
+    const Vec<double, 2>& a, const Vec<double, 2>& b)
+{
+  return Vec<double, 2>(_mm_xor_pd(a.data, b.data));
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<float, 4> bitAndnot(
+    const Vec<float, 4>& a, const Vec<float, 4>& b)
+{
+  return Vec<float, 4>(_mm_andnot_ps(b.data, a.data));
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<double, 2> bitAndnot(
+    const Vec<double, 2>& a, const Vec<double, 2>& b)
+{
+  return Vec<double, 2>(_mm_andnot_pd(b.data, a.data));
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<std::int32_t, 4> bitAnd(
+    const Vec<std::int32_t, 4>& a, const Vec<std::int32_t, 4>& b)
+{
+  return Vec<std::int32_t, 4>(_mm_and_si128(a.data, b.data));
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<std::int32_t, 4> bitOr(
+    const Vec<std::int32_t, 4>& a, const Vec<std::int32_t, 4>& b)
+{
+  return Vec<std::int32_t, 4>(_mm_or_si128(a.data, b.data));
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<std::int32_t, 4> bitXor(
+    const Vec<std::int32_t, 4>& a, const Vec<std::int32_t, 4>& b)
+{
+  return Vec<std::int32_t, 4>(_mm_xor_si128(a.data, b.data));
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<std::int32_t, 4> bitNot(
+    const Vec<std::int32_t, 4>& v)
+{
+  return Vec<std::int32_t, 4>(
+      _mm_xor_si128(v.data, _mm_set1_epi32(static_cast<int>(0xFFFFFFFF))));
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<std::int32_t, 4> reinterpretAsInt(
+    const Vec<float, 4>& v)
+{
+  return Vec<std::int32_t, 4>(_mm_castps_si128(v.data));
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<float, 4> reinterpretAsFloat(
+    const Vec<std::int32_t, 4>& v)
+{
+  return Vec<float, 4>(_mm_castsi128_ps(v.data));
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<std::int32_t, 4> convertToInt(
+    const Vec<float, 4>& v)
+{
+  return Vec<std::int32_t, 4>(_mm_cvttps_epi32(v.data));
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<float, 4> convertToFloat(
+    const Vec<std::int32_t, 4>& v)
+{
+  return Vec<float, 4>(_mm_cvtepi32_ps(v.data));
+}
+
+template <int N>
+[[nodiscard]] DART_SIMD_INLINE Vec<std::int32_t, 4> shiftLeft(
+    const Vec<std::int32_t, 4>& v)
+{
+  return Vec<std::int32_t, 4>(_mm_slli_epi32(v.data, N));
+}
+
+template <int N>
+[[nodiscard]] DART_SIMD_INLINE Vec<std::int32_t, 4> shiftRight(
+    const Vec<std::int32_t, 4>& v)
+{
+  return Vec<std::int32_t, 4>(_mm_srai_epi32(v.data, N));
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE std::pair<Vec<float, 4>, Vec<std::int32_t, 4>>
+frexpSimd(const Vec<float, 4>& v)
+{
+  const __m128i signMask = _mm_set1_epi32(0x80000000);
+  const __m128i expMask = _mm_set1_epi32(0x7F800000);
+  const __m128i mantissaMask = _mm_set1_epi32(0x007FFFFF);
+  const __m128i halfExp = _mm_set1_epi32(0x3F000000);
+  const __m128i bias = _mm_set1_epi32(127);
+
+  __m128i bits = _mm_castps_si128(v.data);
+  __m128i signBits = _mm_and_si128(bits, signMask);
+  __m128i expBits = _mm_and_si128(bits, expMask);
+  __m128i mantBits = _mm_and_si128(bits, mantissaMask);
+
+  __m128i isZeroOrSubnorm = _mm_cmpeq_epi32(expBits, _mm_setzero_si128());
+  __m128i isInfNan = _mm_cmpeq_epi32(expBits, expMask);
+  __m128i needScalar = _mm_or_si128(isZeroOrSubnorm, isInfNan);
+
+  if (!_mm_testz_si128(needScalar, needScalar)) {
+    alignas(16) float vArr[4];
+    alignas(16) float mantArr[4];
+    alignas(16) std::int32_t expArr[4];
+    v.store(vArr);
+
+    for (std::size_t i = 0; i < 4; ++i) {
+      std::uint32_t b;
+      std::memcpy(&b, &vArr[i], sizeof(float));
+
+      std::int32_t biasedExp
+          = static_cast<std::int32_t>((b & 0x7F800000) >> 23);
+      std::int32_t expAdjust = 0;
+
+      if (biasedExp == 255) {
+        mantArr[i] = vArr[i];
+        expArr[i] = 0;
+        continue;
+      }
+
+      if (biasedExp == 0) {
+        if ((b & 0x007FFFFF) == 0) {
+          mantArr[i] = vArr[i];
+          expArr[i] = 0;
+          continue;
+        }
+        float normalized = vArr[i] * 8388608.0f;
+        std::memcpy(&b, &normalized, sizeof(float));
+        biasedExp = static_cast<std::int32_t>((b & 0x7F800000) >> 23);
+        expAdjust = -23;
+      }
+
+      expArr[i] = biasedExp - 127 + expAdjust;
+      std::uint32_t mantResult = (b & 0x807FFFFF) | 0x3F000000;
+      std::memcpy(&mantArr[i], &mantResult, sizeof(float));
+    }
+    return {Vec<float, 4>::load(mantArr), Vec<std::int32_t, 4>::load(expArr)};
+  }
+
+  __m128i exponent = _mm_sub_epi32(_mm_srli_epi32(expBits, 23), bias);
+  __m128i mantissaBits
+      = _mm_or_si128(_mm_or_si128(mantBits, halfExp), signBits);
+
+  return {
+      Vec<float, 4>(_mm_castsi128_ps(mantissaBits)),
+      Vec<std::int32_t, 4>(exponent)};
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<float, 4> ldexpSimd(
+    const Vec<float, 4>& x, const Vec<std::int32_t, 4>& exp)
+{
+  // Fast path: x * 2^exp = x * reinterpret(shiftLeft<23>(exp + 127))
+  // This is much faster than extracting/recombining exponent bits
+  __m128i biasedExp = _mm_add_epi32(exp.data, _mm_set1_epi32(0x7f));
+  __m128i pow2 = _mm_slli_epi32(biasedExp, 23);
+  return Vec<float, 4>(_mm_mul_ps(x.data, _mm_castsi128_ps(pow2)));
 }
 
 } // namespace dart::simd

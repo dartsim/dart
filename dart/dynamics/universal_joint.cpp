@@ -91,7 +91,7 @@ void UniversalJoint::copy(const UniversalJoint* _otherJoint)
     return;
   }
 
-  copy(*this);
+  copy(*_otherJoint);
 }
 
 //==============================================================================

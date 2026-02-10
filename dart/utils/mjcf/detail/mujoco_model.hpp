@@ -34,8 +34,10 @@
 #define DART_UTILS_MJCF_DETAIL_MUJOCOMODEL_HPP_
 
 #include <dart/utils/export.hpp>
+#include <dart/utils/mjcf/detail/actuator.hpp>
 #include <dart/utils/mjcf/detail/asset.hpp>
 #include <dart/utils/mjcf/detail/compiler.hpp>
+#include <dart/utils/mjcf/detail/contact.hpp>
 #include <dart/utils/mjcf/detail/default.hpp>
 #include <dart/utils/mjcf/detail/equality.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
@@ -89,6 +91,12 @@ public:
   /// Returns the parsed <equality> element
   const Equality& getEquality() const;
 
+  /// Returns the parsed <actuator> element
+  const Actuator& getActuator() const;
+
+  /// Returns the parsed <contact> element
+  const Contact& getContact() const;
+
 private:
   Errors read(
       tinyxml2::XMLElement* element,
@@ -105,6 +113,8 @@ private:
   Asset mAsset;
   Worldbody mWorldbody;
   Equality mEquality;
+  Actuator mActuator;
+  Contact mContact;
 };
 
 } // namespace detail

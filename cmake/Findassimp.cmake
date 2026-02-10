@@ -32,6 +32,14 @@ if(MSVC)
   find_package(assimp QUIET CONFIG)
   if(TARGET assimp::assimp)
     set(ASSIMP_LIBRARIES "assimp::assimp")
+  elseif(TARGET Assimp::Assimp)
+    set(ASSIMP_LIBRARIES "Assimp::Assimp")
+  else()
+    find_library(
+      ASSIMP_LIBRARIES
+      NAMES assimp
+      HINTS ${PC_ASSIMP_LIBDIR}
+    )
   endif()
 else()
   find_library(
@@ -46,6 +54,11 @@ if(PC_ASSIMP_VERSION)
   set(ASSIMP_VERSION ${PC_ASSIMP_VERSION})
 endif()
 
+# Version: also check config-mode version if pkg-config didn't provide one
+if(NOT ASSIMP_VERSION AND assimp_VERSION)
+  set(ASSIMP_VERSION ${assimp_VERSION})
+endif()
+
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
@@ -54,3 +67,8 @@ find_package_handle_standard_args(
   REQUIRED_VARS ASSIMP_INCLUDE_DIRS ASSIMP_LIBRARIES
   VERSION_VAR ASSIMP_VERSION
 )
+
+# Extract version components for compile-time detection
+if(ASSIMP_VERSION)
+  string(REGEX MATCH "^([0-9]+)" ASSIMP_VERSION_MAJOR "${ASSIMP_VERSION}")
+endif()

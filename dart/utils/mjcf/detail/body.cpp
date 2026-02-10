@@ -140,7 +140,15 @@ Errors Body::read(
   }
 
   warnUnknownElements(
-      element, {"inertial", "joint", "freejoint", "geom", "site", "body"});
+      element,
+      {"inertial",
+       "joint",
+       "freejoint",
+       "geom",
+       "site",
+       "camera",
+       "light",
+       "body"});
 
   // Read multiple <geom>
   ElementEnumerator geomElements(element, "geom");
@@ -159,6 +167,24 @@ Errors Body::read(
     const Errors siteErrors = site.read(siteElements.get());
     errors.insert(errors.end(), siteErrors.begin(), siteErrors.end());
     mSites.emplace_back(std::move(site));
+  }
+
+  // Read multiple <camera>
+  ElementEnumerator cameraElements(element, "camera");
+  while (cameraElements.next()) {
+    Camera camera = Camera();
+    const Errors cameraErrors = camera.read(cameraElements.get());
+    errors.insert(errors.end(), cameraErrors.begin(), cameraErrors.end());
+    mCameras.emplace_back(std::move(camera));
+  }
+
+  // Read multiple <light>
+  ElementEnumerator lightElements(element, "light");
+  while (lightElements.next()) {
+    Light light = Light();
+    const Errors lightErrors = light.read(lightElements.get());
+    errors.insert(errors.end(), lightErrors.begin(), lightErrors.end());
+    mLights.emplace_back(std::move(light));
   }
 
   // Read childrend <body>
@@ -427,6 +453,30 @@ std::size_t Body::getNumSites() const
 const Site& Body::getSite(std::size_t index) const
 {
   return mSites[index];
+}
+
+//==============================================================================
+std::size_t Body::getNumCameras() const
+{
+  return mCameras.size();
+}
+
+//==============================================================================
+const Camera& Body::getCamera(std::size_t index) const
+{
+  return mCameras[index];
+}
+
+//==============================================================================
+std::size_t Body::getNumLights() const
+{
+  return mLights.size();
+}
+
+//==============================================================================
+const Light& Body::getLight(std::size_t index) const
+{
+  return mLights[index];
 }
 
 //==============================================================================

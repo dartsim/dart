@@ -156,6 +156,8 @@ protected:
   /// cycle
   void clearUnusedNodes();
 
+  void clearAllShapeFrameNodes();
+
   /// Refresh all the Skeleton rendering data
   void refreshSkeletons();
 

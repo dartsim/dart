@@ -351,6 +351,62 @@ template <>
       _mm256_blendv_pd(if_false.data, if_true.data, mask.data));
 }
 
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<float, 8> bitAnd(
+    const Vec<float, 8>& a, const Vec<float, 8>& b)
+{
+  return Vec<float, 8>(_mm256_and_ps(a.data, b.data));
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<double, 4> bitAnd(
+    const Vec<double, 4>& a, const Vec<double, 4>& b)
+{
+  return Vec<double, 4>(_mm256_and_pd(a.data, b.data));
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<float, 8> bitOr(
+    const Vec<float, 8>& a, const Vec<float, 8>& b)
+{
+  return Vec<float, 8>(_mm256_or_ps(a.data, b.data));
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<double, 4> bitOr(
+    const Vec<double, 4>& a, const Vec<double, 4>& b)
+{
+  return Vec<double, 4>(_mm256_or_pd(a.data, b.data));
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<float, 8> bitXor(
+    const Vec<float, 8>& a, const Vec<float, 8>& b)
+{
+  return Vec<float, 8>(_mm256_xor_ps(a.data, b.data));
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<double, 4> bitXor(
+    const Vec<double, 4>& a, const Vec<double, 4>& b)
+{
+  return Vec<double, 4>(_mm256_xor_pd(a.data, b.data));
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<float, 8> bitAndnot(
+    const Vec<float, 8>& a, const Vec<float, 8>& b)
+{
+  return Vec<float, 8>(_mm256_andnot_ps(b.data, a.data));
+}
+
+template <>
+[[nodiscard]] DART_SIMD_INLINE Vec<double, 4> bitAndnot(
+    const Vec<double, 4>& a, const Vec<double, 4>& b)
+{
+  return Vec<double, 4>(_mm256_andnot_pd(b.data, a.data));
+}
+
 } // namespace dart::simd
 
 #endif // DART_SIMD_AVX && !DART_SIMD_AVX2
