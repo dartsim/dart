@@ -379,3 +379,39 @@ TEST(MultiBody, LinksPersistAcrossHandles)
   EXPECT_EQ(robot1.getJointCount(), 1u);
   EXPECT_EQ(robot2->getJointCount(), 1u);
 }
+
+TEST(MultiBody, AddLink_DuplicateNames_StillCreatesDistinctLinks)
+{
+  namespace dse = dart::simulation::experimental;
+
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+
+  auto first = robot.addLink("duplicate");
+  auto second = robot.addLink("duplicate");
+
+  EXPECT_EQ(robot.getLinkCount(), 2u);
+  EXPECT_NE(first.getEntity(), second.getEntity());
+  EXPECT_EQ(first.getName(), "duplicate");
+  EXPECT_EQ(second.getName(), "duplicate");
+
+  auto resolved = robot.getLink("duplicate");
+  EXPECT_TRUE(resolved.has_value());
+  if (!resolved.has_value()) {
+    return;
+  }
+  EXPECT_EQ(resolved->getName(), "duplicate");
+}
+
+TEST(MultiBody, AddLink_NonExistentParent_Throws)
+{
+  namespace dse = dart::simulation::experimental;
+
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+
+  dse::Link invalidParent(static_cast<entt::entity>(999999), &world);
+  EXPECT_THROW(
+      robot.addLink("child", {.parentLink = invalidParent, .jointName = "j"}),
+      dse::InvalidArgumentException);
+}

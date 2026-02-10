@@ -21,4 +21,8 @@ if(DART_EXPERIMENTAL_BUILD_BENCHMARKS)
     bm_compute_graph
     ${CMAKE_CURRENT_SOURCE_DIR}/bm_compute_graph.cpp
   )
+  dart_experimental_add_benchmark(
+    bm_classic_comparison
+    ${CMAKE_CURRENT_SOURCE_DIR}/bm_classic_comparison.cpp
+  )
 endif()

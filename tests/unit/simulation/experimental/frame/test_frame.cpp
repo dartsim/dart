@@ -378,3 +378,63 @@ TEST(Frame, WorldFrame)
   auto T_local = world_frame.getLocalTransform();
   EXPECT_TRUE(T_local.isApprox(Eigen::Isometry3d::Identity()));
 }
+
+TEST(Frame, GetTransformRelativeTo_TwoArgOverload_ComputesExpected)
+{
+  namespace dse = dart::simulation::experimental;
+
+  dse::World world;
+  auto reference = world.addFreeFrame("reference");
+  auto target = world.addFreeFrame("target");
+
+  Eigen::Isometry3d T_reference = Eigen::Isometry3d::Identity();
+  T_reference.translate(Eigen::Vector3d(1.0, -2.0, 0.5));
+  T_reference.rotate(Eigen::AngleAxisd(M_PI / 3.0, Eigen::Vector3d::UnitZ()));
+  reference.setLocalTransform(T_reference);
+
+  Eigen::Isometry3d T_target = Eigen::Isometry3d::Identity();
+  T_target.translate(Eigen::Vector3d(-0.5, 1.0, 2.0));
+  T_target.rotate(Eigen::AngleAxisd(M_PI / 4.0, Eigen::Vector3d::UnitY()));
+  target.setLocalTransform(T_target);
+
+  const Eigen::Isometry3d expected
+      = reference.getTransform().inverse() * target.getTransform();
+  const Eigen::Isometry3d actual = target.getTransform(reference);
+
+  EXPECT_TRUE(actual.isApprox(expected, 1e-12));
+}
+
+TEST(Frame, GetTransform_ToAndExpressedIn_ThreeArgOverload_ComputesExpected)
+{
+  namespace dse = dart::simulation::experimental;
+
+  dse::World world;
+  auto from = world.addFreeFrame("from");
+  auto to = world.addFreeFrame("to");
+  auto expressedIn = world.addFreeFrame("expressed_in");
+
+  Eigen::Isometry3d T_from = Eigen::Isometry3d::Identity();
+  T_from.translate(Eigen::Vector3d(0.2, 0.4, -0.6));
+  T_from.rotate(Eigen::AngleAxisd(M_PI / 6.0, Eigen::Vector3d::UnitX()));
+  from.setLocalTransform(T_from);
+
+  Eigen::Isometry3d T_to = Eigen::Isometry3d::Identity();
+  T_to.translate(Eigen::Vector3d(1.0, 2.0, 3.0));
+  T_to.rotate(Eigen::AngleAxisd(M_PI / 5.0, Eigen::Vector3d::UnitY()));
+  to.setLocalTransform(T_to);
+
+  Eigen::Isometry3d T_expressed = Eigen::Isometry3d::Identity();
+  T_expressed.translate(Eigen::Vector3d(-1.0, 0.5, 0.75));
+  T_expressed.rotate(Eigen::AngleAxisd(-M_PI / 7.0, Eigen::Vector3d::UnitZ()));
+  expressedIn.setLocalTransform(T_expressed);
+
+  Eigen::Isometry3d coordinateTransform = Eigen::Isometry3d::Identity();
+  coordinateTransform.linear() = expressedIn.getTransform().linear().transpose()
+                                 * to.getTransform().linear();
+
+  const Eigen::Isometry3d expected
+      = coordinateTransform * from.getTransform(to);
+  const Eigen::Isometry3d actual = from.getTransform(to, expressedIn);
+
+  EXPECT_TRUE(actual.isApprox(expected, 1e-12));
+}

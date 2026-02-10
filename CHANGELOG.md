@@ -58,6 +58,7 @@
   - Miscellaneous repo hygiene: Docker build script fixes, Dependabot path cleanup, template updates, and badge/documentation cleanup. ([#2058](https://github.com/dartsim/dart/pull/2058), [#2291](https://github.com/dartsim/dart/pull/2291))
 
 - Simulation
+  - Improved the `simulation-experimental` module: all 22 module tests now pass, with fixes for Frame world transform updates, binary serialization, and collision test regressions.
   - Added `WorldConfig` support for collision detector selection plus multi-solver world scaffolding and sensor integration. ([#2168](https://github.com/dartsim/dart/pull/2168), [#2349](https://github.com/dartsim/dart/pull/2349), [#2352](https://github.com/dartsim/dart/pull/2352))
   - Joint and constraint enhancements: state-independent `Joint::integratePositions`, per-DoF mimic actuator modes, revolute joint constraint for closed-loop hinges, WeldJoint merge, PlanarJoint SE2 helpers, and joint coordinate charts. ([#2309](https://github.com/dartsim/dart/pull/2309), [#2222](https://github.com/dartsim/dart/pull/2222), [#2252](https://github.com/dartsim/dart/pull/2252), [#2242](https://github.com/dartsim/dart/pull/2242), [#2231](https://github.com/dartsim/dart/pull/2231), [#2351](https://github.com/dartsim/dart/pull/2351))
   - Coupler and mimic updates: new coupler constraint support, Gazebo-aligned mimic constraints, and URDF transmission coupling. ([#2212](https://github.com/dartsim/dart/pull/2212), [#2247](https://github.com/dartsim/dart/pull/2247), [#2281](https://github.com/dartsim/dart/pull/2281))

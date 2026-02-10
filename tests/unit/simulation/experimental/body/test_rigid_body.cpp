@@ -231,3 +231,43 @@ TEST(RigidBody, MultipleRigidBodies)
   EXPECT_DOUBLE_EQ(sphere.getMass(), 2.0);
   EXPECT_DOUBLE_EQ(cylinder.getMass(), 3.0);
 }
+
+TEST(RigidBody, VelocitySetters_BothComponents_RoundTrip)
+{
+  dse::World world;
+  auto body = world.addRigidBody("body");
+
+  const Eigen::Vector3d linear(1.25, -2.5, 3.75);
+  const Eigen::Vector3d angular(-0.5, 0.75, 1.0);
+
+  body.setLinearVelocity(linear);
+  body.setAngularVelocity(angular);
+
+  EXPECT_TRUE(body.getLinearVelocity().isApprox(linear));
+  EXPECT_TRUE(body.getAngularVelocity().isApprox(angular));
+}
+
+TEST(RigidBody, AddForceMultipleTimes_IntegratesSummedForce)
+{
+  dse::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  auto body = world.addRigidBody("body");
+  body.setMass(2.0);
+
+  body.addForce(Eigen::Vector3d(3.0, 0.0, 0.0));
+  body.addForce(Eigen::Vector3d(0.0, 4.0, 0.0));
+
+  world.enterSimulationMode();
+  world.step(false);
+
+  const Eigen::Vector3d expectedVelocity(0.015, 0.02, 0.0);
+  EXPECT_TRUE(body.getLinearVelocity().isApprox(expectedVelocity, 1e-12));
+
+  const Eigen::Vector3d accumulatedForce(3.0, 4.0, 0.0);
+  EXPECT_TRUE(body.getForce().isApprox(accumulatedForce));
+
+  world.step();
+  EXPECT_TRUE(body.getForce().isZero());
+}

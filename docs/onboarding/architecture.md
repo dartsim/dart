@@ -648,6 +648,70 @@ DART includes lightweight sensor scaffolding that is updated by the World to kee
 
 ---
 
+## Migration: Classic to Experimental API
+
+The experimental simulation stack (`dart::simulation::experimental`) keeps familiar top-level concepts, but shifts implementation from class-heavy OOP trees to ECS handles backed by EnTT.
+
+### Concept Mapping
+
+| Classic API (DART 6/7)            | Experimental API (`simulation::experimental`) | Notes                                                          |
+| --------------------------------- | --------------------------------------------- | -------------------------------------------------------------- |
+| `simulation::World`               | `simulation::experimental::World`             | Same concept and name, different namespace and lifecycle model |
+| `dynamics::Skeleton`              | `MultiBody`                                   | Articulated model container                                    |
+| `dynamics::BodyNode`              | `Link`                                        | Link remains a frame and carries rigid-body properties         |
+| `dynamics::Joint` class hierarchy | `Joint` + `comps::JointType` enum             | Single joint handle with runtime type selection                |
+| `dynamics::ShapeNode`             | `ShapeNode`                                   | Similar role for collision/visual attachment                   |
+| `dynamics::Frame` hierarchy       | `Frame` hierarchy                             | Similar transform-query semantics, different internals         |
+
+### Equivalent Operations (Classic vs Experimental)
+
+```cpp
+// Classic
+auto world = dart::simulation::World::create();
+auto robot = dart::dynamics::Skeleton::create("robot_arm");
+auto [joint0, base] = robot->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+auto [joint1, link1] = robot->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(base);
+joint1->setPosition(0, 0.5);
+world->addSkeleton(robot);
+world->step();
+
+// Experimental
+dart::simulation::experimental::World world;
+auto robotExp = world.addMultiBody("robot_arm");
+auto baseExp = robotExp.addLink("base");
+auto link1Exp = robotExp.addLink(
+    "link1",
+    {.parentLink = baseExp,
+     .jointName = "shoulder",
+     .jointType = dart::simulation::experimental::comps::JointType::Revolute,
+     .axis = Eigen::Vector3d::UnitZ()});
+if (auto shoulder = robotExp.getJoint("shoulder")) {
+  shoulder->setPosition(Eigen::VectorXd::Constant(1, 0.5));
+}
+world.step();
+```
+
+### Migration Checklist
+
+1. Move namespaces from `dart::simulation` / `dart::dynamics` to `dart::simulation::experimental`.
+2. Replace `Skeleton` creation/build logic with `World::addMultiBody()` + `MultiBody::addLink()`.
+3. Replace joint-type templates (`createJointAndBodyNodePair<...>`) with `LinkOptions{ jointType = ... }`.
+4. Replace per-DOF scalar APIs with vector APIs on `Joint` handles (`setPosition(Eigen::VectorXd)`, etc.).
+5. Keep `World`-level simulation control patterns (`setGravity`, `setTimeStep`, `step`) but update object access paths.
+
+### Not Yet Available (or Not Yet Feature-Complete) in Experimental
+
+- Unified model loading pipeline (`dart::io` URDF/SDF/MJCF/SKEL) into `MultiBody`.
+- Full classic inverse-dynamics workflows and mature high-level dynamics APIs used by `dynamics::Skeleton` users.
+- Full parity with classic GUI/tutorial workflows that depend on `simulation::World` + `dynamics::Skeleton` object graphs.
+- End-to-end API parity across all legacy helper utilities that assume `BodyNode`/`Joint` subtype polymorphism.
+
+### Recommendation
+
+Use experimental API for new projects; classic API remains supported in DART 7.
+
+---
+
 ## Main Entry Point
 
 The main DART header that includes all modules:

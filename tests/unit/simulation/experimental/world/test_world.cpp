@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/common/exceptions.hpp>
 #include <dart/simulation/experimental/comps/joint.hpp>
 #include <dart/simulation/experimental/multi_body/multi_body.hpp>
@@ -37,6 +38,8 @@
 #include <dart/simulation/experimental/world.hpp>
 
 #include <gtest/gtest.h>
+
+namespace dse = dart::simulation::experimental;
 
 // Test World construction
 TEST(World, Construction)
@@ -162,13 +165,46 @@ TEST(World, UpdateKinematicsRequiresSimulationMode)
 
 TEST(World, StepRequiresSimulationMode)
 {
-  dart::simulation::experimental::World world;
+  dse::World world;
 
-  EXPECT_THROW(
-      world.step(), dart::simulation::experimental::InvalidArgumentException);
+  EXPECT_THROW(world.step(), dse::InvalidArgumentException);
 
   world.enterSimulationMode();
   EXPECT_NO_THROW(world.step());
+}
+
+TEST(World, Clear_ResetsContainersAndMode)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  (void)robot.addLink("base");
+  (void)world.addRigidBody("box");
+
+  world.enterSimulationMode();
+  EXPECT_TRUE(world.isSimulationMode());
+
+  world.clear();
+
+  EXPECT_FALSE(world.isSimulationMode());
+  EXPECT_EQ(world.getMultiBodyCount(), 0u);
+  EXPECT_EQ(world.getRigidBodyCount(), 0u);
+  EXPECT_FALSE(world.getMultiBody("robot").has_value());
+
+  auto autoNamedMb = world.addMultiBody("");
+  auto autoNamedRb = world.addRigidBody("");
+  EXPECT_EQ(autoNamedMb.getName(), "multibody_001");
+  EXPECT_EQ(autoNamedRb.getName(), "rigid_body_001");
+
+  EXPECT_THROW(world.step(), dse::InvalidArgumentException);
+}
+
+TEST(World, GetMultiBody_NonExistentName_ReturnsNullopt)
+{
+  dse::World world;
+  (void)world.addMultiBody("existing");
+
+  auto missing = world.getMultiBody("does_not_exist");
+  EXPECT_FALSE(missing.has_value());
 }
 
 TEST(World, StepAdvancesTime)
@@ -232,8 +268,6 @@ TEST(World, FreeFallDynamics)
 
 TEST(World, ExternalForceIntegration)
 {
-  namespace dse = dart::simulation::experimental;
-
   dse::World world;
   world.setGravity(Eigen::Vector3d::Zero());
   world.setTimeStep(0.001);
@@ -266,4 +300,42 @@ TEST(World, ExternalForceIntegration)
   auto joint = slider.getParentJoint();
   EXPECT_NEAR(joint.getVelocity()(0), expectedVel, 0.01);
   EXPECT_NEAR(joint.getPosition()(0), expectedPos, 0.001);
+}
+
+TEST(World, Step_ZeroGravityEnergy_DoesNotGrow)
+{
+  dse::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.001);
+
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+  auto slider = robot.addLink(
+      "slider",
+      {.parentLink = base,
+       .jointName = "joint",
+       .jointType = dse::comps::JointType::Prismatic,
+       .axis = Eigen::Vector3d::UnitX()});
+
+  constexpr double mass = 2.0;
+  constexpr double initialVelocity = 3.0;
+  slider.setMass(mass);
+
+  Eigen::VectorXd vel(1);
+  vel << initialVelocity;
+  slider.getParentJoint().setVelocity(vel);
+
+  world.enterSimulationMode();
+
+  const double initialEnergy = 0.5 * mass * initialVelocity * initialVelocity;
+  for (int i = 0; i < 500; ++i) {
+    world.step();
+    const double currentVelocity = slider.getParentJoint().getVelocity()(0);
+    const double currentEnergy = 0.5 * mass * currentVelocity * currentVelocity;
+    EXPECT_LE(currentEnergy, initialEnergy + 1e-8);
+  }
+
+  const double finalVelocity = slider.getParentJoint().getVelocity()(0);
+  const double finalEnergy = 0.5 * mass * finalVelocity * finalVelocity;
+  EXPECT_NEAR(finalEnergy, initialEnergy, 1e-8);
 }

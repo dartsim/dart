@@ -107,3 +107,58 @@ TEST(ShapeNode, RigidBodyWorldTransform)
       = body.getPosition() + options.relativeTransform.translation();
   EXPECT_TRUE(worldTf.translation().isApprox(expected));
 }
+
+TEST(ShapeNode, MultipleShapesOnSameBody_DistinctNodes)
+{
+  dse::World world;
+  auto robot = world.addMultiBody("robot");
+  auto link = robot.addLink("base");
+
+  auto box = std::make_shared<dart::dynamics::BoxShape>(
+      Eigen::Vector3d(1.0, 1.0, 1.0));
+  auto sphere = std::make_shared<dart::dynamics::SphereShape>(0.25);
+
+  dse::ShapeNodeOptions boxOptions;
+  boxOptions.relativeTransform = Eigen::Isometry3d::Identity();
+  boxOptions.relativeTransform.translation() = Eigen::Vector3d(0.1, 0.2, 0.3);
+
+  dse::ShapeNodeOptions sphereOptions;
+  sphereOptions.relativeTransform = Eigen::Isometry3d::Identity();
+  sphereOptions.relativeTransform.translation()
+      = Eigen::Vector3d(-0.2, 0.0, 0.4);
+
+  auto boxNode = link.createShapeNode(box, "box", boxOptions);
+  auto sphereNode = link.createShapeNode(sphere, "sphere", sphereOptions);
+
+  EXPECT_NE(boxNode.getEntity(), sphereNode.getEntity());
+  EXPECT_EQ(boxNode.getParentFrame().getEntity(), link.getEntity());
+  EXPECT_EQ(sphereNode.getParentFrame().getEntity(), link.getEntity());
+  EXPECT_EQ(boxNode.getName(), "box");
+  EXPECT_EQ(sphereNode.getName(), "sphere");
+  EXPECT_TRUE(
+      boxNode.getRelativeTransform().isApprox(boxOptions.relativeTransform));
+  EXPECT_TRUE(sphereNode.getRelativeTransform().isApprox(
+      sphereOptions.relativeTransform));
+}
+
+TEST(ShapeNode, SetShape_ReplacesUnderlyingShape)
+{
+  dse::World world;
+  auto body = world.addRigidBody("body");
+
+  auto initialShape = std::make_shared<dart::dynamics::BoxShape>(
+      Eigen::Vector3d(0.5, 0.5, 0.5));
+  auto replacementShape = std::make_shared<dart::dynamics::SphereShape>(0.4);
+
+  dse::ShapeNodeOptions options;
+  options.frictionCoeff = 0.35;
+  options.restitutionCoeff = 0.45;
+
+  auto node = body.createShapeNode(initialShape, "shape", options);
+  EXPECT_EQ(node.getShape().get(), initialShape.get());
+
+  node.setShape(replacementShape);
+  EXPECT_EQ(node.getShape().get(), replacementShape.get());
+  EXPECT_DOUBLE_EQ(node.getFrictionCoeff(), 0.35);
+  EXPECT_DOUBLE_EQ(node.getRestitutionCoeff(), 0.45);
+}

@@ -16,13 +16,20 @@ DART is moving toward a Python-first experience while keeping production users p
 
 - `main` targets DART 7.0.0 with a Python-first API layered on a refreshed C++ architecture.
 - The legacy DART 6 API remains available throughout DART 7 to support migration and is deprecated rather than removed during DART 7.
+- Experimental simulation API (`dart::simulation::experimental`) is available as an opt-in path in DART 7.x.
 - Algorithmic behavior aligns with DART 6 while the refreshed architecture opens room for multi-core gains. GPU support for DART 7 is still undetermined and likely not planned.
 
 ## DART 8: Clean Break
 
 - DART 8 removes the legacy DART 6 API and deprecated DART 7 APIs.
+- Experimental simulation API becomes the default simulation surface in DART 8.0, and the classic simulation API is formally deprecated.
 - DART 8 becomes the first stable release of the new API; from here we preserve backward compatibility on a best-effort basis.
 - Users who still need the legacy surface should remain on DART 7 or DART 6, where that code continues in maintenance.
+
+## DART 9: Legacy Removal
+
+- Classic simulation API (`dart::simulation::World` + `dart::dynamics::Skeleton` workflow) is removed in DART 9.0.
+- Experimental API graduates to the only supported simulation API family.
 
 ## Contributing During the Transition
 
