@@ -1,6 +1,12 @@
 name: CI FreeBSD (VM)
 
 on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - "**"
   schedule:
     - cron: "0 4 * * 1"
   workflow_dispatch:
@@ -69,16 +75,30 @@ jobs:
           # See PR #2419 for details on each exclusion.
           FREEBSD_VM_TEST_EXCLUDE_REGEX: "ForwardKinematics|AtlasIK|INTEGRATION_io_Read|INTEGRATION_io_UrdfParser|INTEGRATION_io_UrdfMaterialParsing|INTEGRATION_io_IkFast|INTEGRATION_simulation_MomentumConservation|INTEGRATION_simulation_MimicConstraint|UNIT_constraint_BalanceConstraint|test_IoRead"
         run: |
-          pixi run freebsd-test &
-          TEST_PID=$!
-          # Wait for Docker container to start
-          sleep 10
-          # Show Docker container logs to verify QEMU startup and KVM detection
-          echo "=== Docker Container Logs (QEMU Startup) ==="
-          docker logs dart-freebsd-vm 2>&1 | head -50 || true
-          echo "=============================================="
-          # Wait for the test to complete
-          wait $TEST_PID
+          set -euo pipefail
+          max_attempts=2
+          for attempt in $(seq 1 $max_attempts); do
+            echo "=== FreeBSD VM test attempt ${attempt}/${max_attempts} ==="
+            pixi run freebsd-stop || true
+            pixi run freebsd-test &
+            TEST_PID=$!
+            sleep 10
+            echo "=== Docker Container Logs (QEMU Startup) ==="
+            docker logs dart-freebsd-vm 2>&1 | head -50 || true
+            echo "=============================================="
+            if wait $TEST_PID; then
+              echo "FreeBSD tests passed on attempt ${attempt}"
+              exit 0
+            fi
+            echo "::warning::FreeBSD VM test failed on attempt ${attempt}/${max_attempts}"
+            if [ "$attempt" -lt "$max_attempts" ]; then
+              echo "Retrying after cleanup..."
+              pixi run freebsd-stop || true
+              sleep 5
+            fi
+          done
+          echo "::error::FreeBSD VM tests failed after ${max_attempts} attempts"
+          exit 1
 
       - name: Show Docker container logs
         if: always() && steps.prereqs.outputs.kvm_available == 'true' && steps.prereqs.outputs.docker_available == 'true'

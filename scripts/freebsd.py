@@ -242,11 +242,58 @@ def wait_for_ssh_key(args, timeout=120):
     sys.exit(1)
 
 
+def dump_vm_diagnostics(args):
+    print("=== FreeBSD VM Diagnostics ===", file=sys.stderr, flush=True)
+
+    result = run(
+        ["docker", "inspect", "-f", "{{.State.Status}}", args.container],
+        check=False,
+        capture=True,
+    )
+    status = (result.stdout or "").strip() if result.returncode == 0 else "unknown"
+    print(f"Container status: {status}", file=sys.stderr, flush=True)
+
+    print("--- Container logs (last 50 lines) ---", file=sys.stderr, flush=True)
+    run(
+        ["docker", "logs", "--tail", "50", args.container],
+        check=False,
+    )
+
+    vm_dir = vm_dir_path(args.vm_dir)
+    serial_log = vm_dir / "serial.log"
+    if serial_log.exists():
+        size = serial_log.stat().st_size
+        print(
+            f"--- Serial log ({size} bytes, last 30 lines) ---",
+            file=sys.stderr,
+            flush=True,
+        )
+        try:
+            lines = serial_log.read_text(errors="replace").splitlines()
+            for line in lines[-30:]:
+                print(f"  {line}", file=sys.stderr, flush=True)
+        except Exception as exc:
+            print(f"  (could not read serial log: {exc})", file=sys.stderr, flush=True)
+    else:
+        print("--- Serial log: not found ---", file=sys.stderr, flush=True)
+
+    print("=== End Diagnostics ===", file=sys.stderr, flush=True)
+
+
 def wait_for_ssh(args, user, timeout=600):
     vm_dir = vm_dir_path(args.vm_dir)
     key_path = ssh_key_path(vm_dir)
     deadline = time.time() + timeout
     while time.time() < deadline:
+        if not container_running(args.container):
+            print(
+                f"Container '{args.container}' stopped unexpectedly.",
+                file=sys.stderr,
+                flush=True,
+            )
+            dump_vm_diagnostics(args)
+            sys.exit(1)
+
         result = subprocess.run(
             [
                 "ssh",
@@ -267,6 +314,8 @@ def wait_for_ssh(args, user, timeout=600):
         if result.returncode == 0:
             return
         time.sleep(5)
+
+    dump_vm_diagnostics(args)
     print(
         (
             "Timed out waiting for FreeBSD SSH to become ready. "
