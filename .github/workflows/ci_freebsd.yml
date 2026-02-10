@@ -1,16 +1,13 @@
 name: CI FreeBSD (VM)
 
 on:
-  pull_request:
-    branches:
-      - "**"
   schedule:
     - cron: "0 4 * * 1"
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref }}
-  cancel-in-progress: ${{ github.event_name != 'schedule' }}
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' && github.ref != 'refs/heads/main' }}
 
 jobs:
   freebsd:
