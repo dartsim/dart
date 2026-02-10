@@ -2,15 +2,27 @@
 
 ## DART 6
 
-### DART 6.16.7 (TBD)
+### [DART 6.16.7 (2026-02-10)](https://github.com/dartsim/dart/milestone/92?closed=1)
 
 * Build
 
-  * Added support for assimp 6.x while maintaining backward compatibility with assimp 5.x
+  * Added support for assimp 6.x while maintaining backward compatibility with assimp 5.x: [#2510](https://github.com/dartsim/dart/pull/2510)
+
+* Dynamics
+
+  * Reject non-finite transforms at Joint public API entry points and guard inertia propagation in kinematic joint variants: [#2497](https://github.com/dartsim/dart/pull/2497)
+
+* Math
+
+  * Enhance verifyTransform to also reject infinity values (previously only checked NaN): [#2497](https://github.com/dartsim/dart/pull/2497)
 
 * Optimizer
 
-  * Validate Problem and MultiObjectiveProblem dimension to prevent excessive allocation from huge inputs: [#2500](https://github.com/dartsim/dart/issues/2500)
+  * Validate Problem and MultiObjectiveProblem dimension to prevent excessive allocation from huge inputs: [#2503](https://github.com/dartsim/dart/pull/2503)
+
+* Parsers
+
+  * Replace MJCF parser DART_ASSERT with DART_WARN + identity fallback for non-finite transforms and rotations: [#2497](https://github.com/dartsim/dart/pull/2497)
 
 ### [DART 6.16.6 (2026-01-28)](https://github.com/dartsim/dart/milestone/91?closed=1)
 
@@ -21,16 +33,6 @@
 * Dynamics
 
   * Guard against non-finite articulated body computations from zero/epsilon mass or extreme spring values: [gz-physics#849](https://github.com/gazebosim/gz-physics/issues/849), [gz-physics#850](https://github.com/gazebosim/gz-physics/issues/850), [gz-physics#851](https://github.com/gazebosim/gz-physics/issues/851), [gz-physics#854](https://github.com/gazebosim/gz-physics/issues/854), [gz-physics#856](https://github.com/gazebosim/gz-physics/issues/856)
-
-  * Reject non-finite transforms at Joint public API entry points and guard inertia propagation in kinematic joint variants: [gz-physics#861](https://github.com/gazebosim/gz-physics/issues/861), [gz-physics#862](https://github.com/gazebosim/gz-physics/issues/862)
-
-* Parsers
-
-  * Replace MJCF parser DART_ASSERT with DART_WARN + identity fallback for non-finite transforms and rotations
-
-* Math
-
-  * Enhance verifyTransform to also reject infinity values (previously only checked NaN)
 
 ### [DART 6.16.5 (2026-01-21)](https://github.com/dartsim/dart/milestone/90?closed=1)
 
