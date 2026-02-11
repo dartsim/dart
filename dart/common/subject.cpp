@@ -46,13 +46,11 @@ Subject::~Subject()
 //==============================================================================
 void Subject::sendDestructionNotification() const
 {
-  mNotifying = true;
   while (!mObservers.empty()) {
     Observer* observer = *mObservers.begin();
     mObservers.erase(mObservers.begin());
     observer->receiveDestructionNotification(this);
   }
-  mNotifying = false;
 }
 
 //==============================================================================
