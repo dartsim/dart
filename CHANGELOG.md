@@ -2,6 +2,12 @@
 
 ## DART 6
 
+### [DART 6.16.8 (TBD)](https://github.com/dartsim/dart/milestone/93?closed=1)
+
+* GUI
+
+  * Fix SEGV in ImFontAtlas::AddFontFromMemoryCompressedTTF when null pointer is passed as compressed font data: [#2516](https://github.com/dartsim/dart/issues/2516)
+
 ### [DART 6.16.7 (2026-02-10)](https://github.com/dartsim/dart/milestone/92?closed=1)
 
 * Build
