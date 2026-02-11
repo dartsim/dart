@@ -60,7 +60,7 @@ void Observer::handleDestructionNotification(const Subject*)
 //==============================================================================
 void Observer::addSubject(const Subject* _subject)
 {
-  if (nullptr == _subject || _subject->mNotifying)
+  if (nullptr == _subject)
     return;
 
   if (mSubjects.find(_subject) != mSubjects.end())
