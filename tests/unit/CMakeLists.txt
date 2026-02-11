@@ -250,6 +250,9 @@ if(TARGET dart-gui)
   dart_add_test(
     "unit" UNIT_gui_ImGuiWindowScaling gui/test_im_gui_window_scaling.cpp)
   dart_add_test(
+    "unit" UNIT_gui_ImGuiNullFontGuard gui/test_imgui_null_font_guard.cpp)
+  target_link_libraries(UNIT_gui_ImGuiNullFontGuard dart-gui)
+  dart_add_test(
     "unit" UNIT_gui_HeadlessViewer gui/test_headless_viewer.cpp)
   target_link_libraries(UNIT_gui_HeadlessViewer dart-gui)
   # System ImGui builds can depend on SDL3, which is not available in ASAN CI.

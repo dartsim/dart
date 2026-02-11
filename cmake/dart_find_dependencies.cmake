@@ -237,6 +237,9 @@ if(DART_BUILD_GUI)
       GIT_TAG        ${IMGUI_TARGET_VERSION}
       GIT_SHALLOW    TRUE
       SOURCE_DIR     "${CMAKE_BINARY_DIR}/_deps/imgui-src"
+      PATCH_COMMAND  ${CMAKE_COMMAND}
+        -DIMGUI_SOURCE_DIR=${CMAKE_BINARY_DIR}/_deps/imgui-src
+        -P ${CMAKE_CURRENT_LIST_DIR}/patches/imgui_null_font_guard.cmake
     )
 
     # Populate imgui using the modern helper (avoids CMP0169 warnings)
