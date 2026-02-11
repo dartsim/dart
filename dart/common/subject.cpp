@@ -46,12 +46,12 @@ Subject::~Subject()
 //==============================================================================
 void Subject::sendDestructionNotification() const
 {
-  // Drain from the beginning to avoid iterator invalidation: callbacks may
-  // mutate mObservers (e.g. an observer removes another observer during
-  // notification), so we cannot rely on cached end-iterators or post-increment.
-  while (!mObservers.empty()) {
-    Observer* observer = *mObservers.begin();
-    mObservers.erase(mObservers.begin());
+  // Swap into a local to avoid iterator invalidation: callbacks may mutate
+  // mObservers (e.g. an observer destroys a sibling, or re-registers). The
+  // swap guarantees we iterate only the original set and cannot loop forever.
+  std::set<Observer*> observers;
+  observers.swap(mObservers);
+  for (Observer* observer : observers) {
     observer->receiveDestructionNotification(this);
   }
 }
