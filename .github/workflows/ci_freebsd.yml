@@ -97,4 +97,4 @@ jobs:
 
       - name: Stop FreeBSD VM
         if: always()
-        run: pixi run freebsd-stop
+        run: pixi run freebsd-stop || true
