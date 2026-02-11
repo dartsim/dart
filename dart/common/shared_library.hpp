@@ -40,7 +40,7 @@
 #include <string>
 #include <string_view>
 
-#if DART_OS_LINUX
+#if DART_OS_LINUX || DART_OS_FREEBSD
 
   #define DYNLIB_HANDLE void*
 
@@ -56,7 +56,7 @@ using hInstance = HINSTANCE__*;
 
 #endif
 
-#if DART_OS_LINUX
+#if DART_OS_LINUX || DART_OS_FREEBSD
 static constexpr const char* DART_SHARED_LIB_EXTENSION = "so";
 #elif DART_OS_MACOS
 static constexpr const char* DART_SHARED_LIB_EXTENSION = "dylib";
@@ -66,7 +66,7 @@ static constexpr const char* DART_SHARED_LIB_EXTENSION = "dll";
   #error Unhandled platform
 #endif
 
-#if DART_OS_LINUX
+#if DART_OS_LINUX || DART_OS_FREEBSD
 static constexpr const char* DART_SHARED_LIB_PREFIX = "lib";
 #elif DART_OS_MACOS
 static constexpr const char* DART_SHARED_LIB_PREFIX = "lib";

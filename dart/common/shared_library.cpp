@@ -35,7 +35,7 @@
 #include "dart/common/detail/shared_library_manager.hpp"
 #include "dart/common/logging.hpp"
 
-#if DART_OS_LINUX || DART_OS_MACOS
+#if DART_OS_LINUX || DART_OS_MACOS || DART_OS_FREEBSD
 
   #include <dlfcn.h>
   #define DYNLIB_LOAD(a) dlopen(a, RTLD_LAZY | RTLD_GLOBAL)
@@ -128,7 +128,7 @@ void* SharedLibrary::getSymbol(std::string_view symbolName) const
 //==============================================================================
 std::string SharedLibrary::getLastError() const
 {
-#if DART_OS_LINUX || DART_OS_MACOS
+#if DART_OS_LINUX || DART_OS_MACOS || DART_OS_FREEBSD
   return std::string(dlerror());
 #elif DART_OS_WINDOWS
   LPTSTR lpMsgBuf;
