@@ -34,7 +34,6 @@ string(REPLACE
     font_cfg.FontData = ttf_data;"
   "IM_ASSERT(!Locked && \"Cannot modify a locked ImFontAtlas between NewFrame() and EndFrame/Render()!\");
     // [DART patch] Guard against null/empty input (issue #2516)
-    IM_ASSERT(ttf_data != NULL && \"ttf_data is NULL!\");
     if (ttf_data == NULL || ttf_size <= 0)
         return NULL;
     ImFontConfig font_cfg = font_cfg_template ? *font_cfg_template : ImFontConfig();
@@ -47,7 +46,6 @@ string(REPLACE
 string(REPLACE
   "const unsigned int buf_decompressed_size = stb_decompress_length((const unsigned char*)compressed_ttf_data);"
   "// [DART patch] Guard against null/empty input to prevent SEGV in stb_decompress (issue #2516)
-    IM_ASSERT(compressed_ttf_data != NULL && \"compressed_ttf_data is NULL!\");
     if (compressed_ttf_data == NULL || compressed_ttf_size <= 0)
         return NULL;
 
@@ -59,7 +57,6 @@ string(REPLACE
 string(REPLACE
   "int compressed_ttf_size = (((int)strlen(compressed_ttf_data_base85) + 4) / 5) * 4;"
   "// [DART patch] Guard against null input (issue #2516)
-    IM_ASSERT(compressed_ttf_data_base85 != NULL && \"compressed_ttf_data_base85 is NULL!\");
     if (compressed_ttf_data_base85 == NULL)
         return NULL;
     int compressed_ttf_size = (((int)strlen(compressed_ttf_data_base85) + 4) / 5) * 4;"
