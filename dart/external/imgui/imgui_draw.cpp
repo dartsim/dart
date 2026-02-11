@@ -2160,7 +2160,6 @@ ImFont* ImFontAtlas::AddFontFromMemoryTTF(void* ttf_data, int ttf_size, float si
 {
     IM_ASSERT(!Locked && "Cannot modify a locked ImFontAtlas between NewFrame() and EndFrame/Render()!");
     // [DART patch] Guard against null/empty input (issue #2516)
-    IM_ASSERT(ttf_data != NULL && "ttf_data is NULL!");
     if (ttf_data == NULL || ttf_size <= 0)
         return NULL;
     ImFontConfig font_cfg = font_cfg_template ? *font_cfg_template : ImFontConfig();
@@ -2176,7 +2175,6 @@ ImFont* ImFontAtlas::AddFontFromMemoryTTF(void* ttf_data, int ttf_size, float si
 ImFont* ImFontAtlas::AddFontFromMemoryCompressedTTF(const void* compressed_ttf_data, int compressed_ttf_size, float size_pixels, const ImFontConfig* font_cfg_template, const ImWchar* glyph_ranges)
 {
     // [DART patch] Guard against null/empty input to prevent SEGV in stb_decompress (issue #2516)
-    IM_ASSERT(compressed_ttf_data != NULL && "compressed_ttf_data is NULL!");
     if (compressed_ttf_data == NULL || compressed_ttf_size <= 0)
         return NULL;
 
@@ -2193,7 +2191,6 @@ ImFont* ImFontAtlas::AddFontFromMemoryCompressedTTF(const void* compressed_ttf_d
 ImFont* ImFontAtlas::AddFontFromMemoryCompressedBase85TTF(const char* compressed_ttf_data_base85, float size_pixels, const ImFontConfig* font_cfg, const ImWchar* glyph_ranges)
 {
     // [DART patch] Guard against null input (issue #2516)
-    IM_ASSERT(compressed_ttf_data_base85 != NULL && "compressed_ttf_data_base85 is NULL!");
     if (compressed_ttf_data_base85 == NULL)
         return NULL;
 
