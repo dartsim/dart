@@ -78,6 +78,11 @@ protected:
 
   /// List of current Observers
   mutable std::set<Observer*> mObservers;
+
+  /// True while sendDestructionNotification() is draining mObservers.
+  /// Prevents re-registration during notification (which would cause an
+  /// infinite drain loop or skip original observers).
+  mutable bool mNotifying{false};
 };
 
 } // namespace common
