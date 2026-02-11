@@ -58,7 +58,7 @@ void Subject::sendDestructionNotification() const
 //==============================================================================
 void Subject::addObserver(Observer* _observer) const
 {
-  if (nullptr == _observer || mNotifying) {
+  if (nullptr == _observer) {
     return;
   }
 
