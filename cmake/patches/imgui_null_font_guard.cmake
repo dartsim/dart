@@ -63,5 +63,15 @@ string(REPLACE
   content "${content}"
 )
 
+# Verify all three patches were applied (detect source drift from ImGui updates)
+string(FIND "${content}" "DART patch" _patch_found)
+if(_patch_found EQUAL -1)
+  message(FATAL_ERROR
+    "ImGui null-pointer patch failed: none of the expected patterns were found "
+    "in ${file}. The ImGui source may have changed. Update the patch patterns "
+    "to match the current ImGui version."
+  )
+endif()
+
 file(WRITE "${file}" "${content}")
 message(STATUS "Patched imgui_draw.cpp with null pointer guards (issue #2516)")
