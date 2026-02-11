@@ -46,25 +46,19 @@ Subject::~Subject()
 //==============================================================================
 void Subject::sendDestructionNotification() const
 {
-  // Drain from the beginning: erase each observer before invoking its callback
-  // so that if the callback destroys a sibling observer (whose destructor calls
-  // removeObserver), the sibling is safely erased from mObservers without
-  // invalidating any iterator. A swap-into-local alternative is unsafe here
-  // because it leaves dangling pointers in the local set when siblings are
-  // destroyed. The iteration cap prevents infinite loops if a callback
-  // re-registers an observer on this (dying) subject.
-  const auto maxIterations = mObservers.size();
-  for (std::size_t i = 0; i < maxIterations && !mObservers.empty(); ++i) {
+  mNotifying = true;
+  while (!mObservers.empty()) {
     Observer* observer = *mObservers.begin();
     mObservers.erase(mObservers.begin());
     observer->receiveDestructionNotification(this);
   }
+  mNotifying = false;
 }
 
 //==============================================================================
 void Subject::addObserver(Observer* _observer) const
 {
-  if (nullptr == _observer)
+  if (nullptr == _observer || mNotifying)
     return;
 
   if (mObservers.find(_observer) != mObservers.end())
