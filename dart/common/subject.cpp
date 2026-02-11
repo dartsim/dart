@@ -51,8 +51,10 @@ void Subject::sendDestructionNotification() const
   // removeObserver), the sibling is safely erased from mObservers without
   // invalidating any iterator. A swap-into-local alternative is unsafe here
   // because it leaves dangling pointers in the local set when siblings are
-  // destroyed.
-  while (!mObservers.empty()) {
+  // destroyed. The iteration cap prevents infinite loops if a callback
+  // re-registers an observer on this (dying) subject.
+  const auto maxIterations = mObservers.size();
+  for (std::size_t i = 0; i < maxIterations && !mObservers.empty(); ++i) {
     Observer* observer = *mObservers.begin();
     mObservers.erase(mObservers.begin());
     observer->receiveDestructionNotification(this);
