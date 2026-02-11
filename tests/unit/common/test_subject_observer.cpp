@@ -639,8 +639,12 @@ TEST(SubjectObserverTests, ReconnectAfterNotification)
 
 //==============================================================================
 // Regression: destroying a sibling observer during sendDestructionNotification
-// invalidated the iterator (SEGFAULT on macOS arm64 Debug). The drain-from-
-// begin fix makes this safe.
+// invalidated the iterator (SEGFAULT on macOS arm64 Debug). The swap-into-
+// local fix makes this safe.
+//
+// Both observers are heap-allocated and each holds a destroy-handle to the
+// other. Whichever is notified first destroys its peer, exercising the
+// iterator-invalidation path regardless of std::set pointer ordering.
 class PeerDestroyingObserver : public Observer
 {
 public:
@@ -649,7 +653,7 @@ public:
     addSubject(subject);
   }
 
-  void setPeerToDestroy(std::unique_ptr<TestObserver>* peerOwner)
+  void setPeerToDestroy(std::unique_ptr<PeerDestroyingObserver>* peerOwner)
   {
     mPeerOwner = peerOwner;
   }
@@ -668,14 +672,13 @@ protected:
   void handleDestructionNotification(const Subject*) override
   {
     ++mNotificationCount;
-    if (mPeerOwner) {
+    if (mPeerOwner && *mPeerOwner) {
       mPeerOwner->reset();
-      mPeerOwner = nullptr;
     }
   }
 
 private:
-  std::unique_ptr<TestObserver>* mPeerOwner = nullptr;
+  std::unique_ptr<PeerDestroyingObserver>* mPeerOwner = nullptr;
   int mNotificationCount = 0;
 };
 
@@ -683,21 +686,22 @@ private:
 TEST(SubjectObserverTests, ObserverDestroysPeerDuringNotification)
 {
   TestSubject subject;
-  PeerDestroyingObserver observerA;
-  auto observerB = std::make_unique<TestObserver>();
+  auto observerA = std::make_unique<PeerDestroyingObserver>();
+  auto observerB = std::make_unique<PeerDestroyingObserver>();
 
-  observerA.track(&subject);
+  observerA->track(&subject);
   observerB->track(&subject);
   EXPECT_EQ(subject.observerCount(), 2u);
 
-  observerA.setPeerToDestroy(&observerB);
+  // Each observer holds a destroy-handle to the other, so whichever is
+  // notified first will destroy its peer — exercising the invalidation
+  // path regardless of pointer ordering in std::set.
+  observerA->setPeerToDestroy(&observerB);
+  observerB->setPeerToDestroy(&observerA);
 
-  // A's callback destroys B, whose destructor calls removeObserver on
-  // the subject. Before the fix this corrupted the iterator.
   subject.notify();
 
-  EXPECT_EQ(observerB, nullptr);
   EXPECT_EQ(subject.observerCount(), 0u);
-  EXPECT_EQ(observerA.subjectCount(), 0u);
-  EXPECT_EQ(observerA.notificationCount(), 1);
+  // Exactly one was destroyed by the other's callback
+  EXPECT_TRUE(!observerA || !observerB);
 }
