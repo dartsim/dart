@@ -636,3 +636,68 @@ TEST(SubjectObserverTests, ReconnectAfterNotification)
   subject.notify();
   EXPECT_EQ(observer.notificationCount(), 2);
 }
+
+//==============================================================================
+// Regression: destroying a sibling observer during sendDestructionNotification
+// invalidated the iterator (SEGFAULT on macOS arm64 Debug). The drain-from-
+// begin fix makes this safe.
+class PeerDestroyingObserver : public Observer
+{
+public:
+  void track(TestSubject* subject)
+  {
+    addSubject(subject);
+  }
+
+  void setPeerToDestroy(std::unique_ptr<TestObserver>* peerOwner)
+  {
+    mPeerOwner = peerOwner;
+  }
+
+  std::size_t subjectCount() const
+  {
+    return mSubjects.size();
+  }
+
+  int notificationCount() const
+  {
+    return mNotificationCount;
+  }
+
+protected:
+  void handleDestructionNotification(const Subject*) override
+  {
+    ++mNotificationCount;
+    if (mPeerOwner) {
+      mPeerOwner->reset();
+      mPeerOwner = nullptr;
+    }
+  }
+
+private:
+  std::unique_ptr<TestObserver>* mPeerOwner = nullptr;
+  int mNotificationCount = 0;
+};
+
+//==============================================================================
+TEST(SubjectObserverTests, ObserverDestroysPeerDuringNotification)
+{
+  TestSubject subject;
+  PeerDestroyingObserver observerA;
+  auto observerB = std::make_unique<TestObserver>();
+
+  observerA.track(&subject);
+  observerB->track(&subject);
+  EXPECT_EQ(subject.observerCount(), 2u);
+
+  observerA.setPeerToDestroy(&observerB);
+
+  // A's callback destroys B, whose destructor calls removeObserver on
+  // the subject. Before the fix this corrupted the iterator.
+  subject.notify();
+
+  EXPECT_EQ(observerB, nullptr);
+  EXPECT_EQ(subject.observerCount(), 0u);
+  EXPECT_EQ(observerA.subjectCount(), 0u);
+  EXPECT_EQ(observerA.notificationCount(), 1);
+}

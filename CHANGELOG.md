@@ -132,6 +132,7 @@
   - Removed the legacy optional shim. ([#2137](https://github.com/dartsim/dart/pull/2137))
   - Removed the final compatibility headers that only re-included their replacements (`dart/collision/Option.hpp`, `dart/collision/Result.hpp`, and `dart/dynamics/MultiSphereShape.hpp`) and scrubbed the remaining deprecated documentation strings.
   - Removed the remaining 6.13 compatibility shims: deleted `dart/utils/urdf/URDFTypes.hpp`, the Eigen alias typedefs in `math/MathTypes.hpp`, the `dart7::comps::NameComponent` alias, and the legacy `dInfinity`/`dPAD` helpers, and tightened `SkelParser` plane parsing to treat `<point>` as an error.
+  - Fixed iterator invalidation in `Subject::sendDestructionNotification()`, `Observer::~Observer()`, and `Observer::removeAllSubjects()` that caused non-deterministic SEGFAULT on macOS arm64 Debug builds when an observer callback mutated the observer/subject set during iteration.
 
 - dartpy
   - Added bindings for `dynamics::EndEffector` (including the `Support` aspect) and exposed `BodyNode::createEndEffector`/`getEndEffector` plus the `Skeleton::getEndEffector` overloads to unblock the Atlas puppet Python example and IK tests.
