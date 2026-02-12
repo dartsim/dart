@@ -249,6 +249,12 @@ if(TARGET dart-gui)
   dart_add_test("unit" UNIT_gui_HeightmapShapeNode gui/test_heightmap_shape_node.cpp)
   dart_add_test(
     "unit" UNIT_gui_ImGuiWindowScaling gui/test_im_gui_window_scaling.cpp)
+  # Null font guard test only works with fetched (patched) ImGui, not system ImGui
+  if(NOT DART_USE_SYSTEM_IMGUI)
+    dart_add_test(
+      "unit" UNIT_gui_ImGuiNullFontGuard gui/test_imgui_null_font_guard.cpp)
+    target_link_libraries(UNIT_gui_ImGuiNullFontGuard dart-gui)
+  endif()
   dart_add_test(
     "unit" UNIT_gui_HeadlessViewer gui/test_headless_viewer.cpp)
   target_link_libraries(UNIT_gui_HeadlessViewer dart-gui)

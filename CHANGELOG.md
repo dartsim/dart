@@ -104,6 +104,7 @@
   - Documented SKEL as a legacy format.
 
 - GUI and Rendering
+  - Fix SEGV in `ImFontAtlas::AddFontFromMemoryCompressedTTF` when null pointer is passed as compressed font data. ([#2516](https://github.com/dartsim/dart/issues/2516))
   - Added headless rendering support via `ViewerConfig` and pbuffer graphics context for CI pipelines and batch frame capture. Includes `Viewer::captureBuffer()` for raw RGBA pixel readback and a new `headless-rendering` CI job. ([#2466](https://github.com/dartsim/dart/pull/2466))
   - Added `ImGuiViewer` construction from `ViewerConfig` to support headless ImGui rendering and example frame capture workflows.
   - GUI naming updates and backend cleanup (including the osg suffix removal). ([#2209](https://github.com/dartsim/dart/pull/2209), [#2257](https://github.com/dartsim/dart/pull/2257))
