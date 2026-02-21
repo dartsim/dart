@@ -40,12 +40,8 @@ namespace common {
 //==============================================================================
 Observer::~Observer()
 {
-  std::set<const Subject*>::iterator it = mSubjects.begin(),
-                                     end = mSubjects.end();
-  while (it != end)
-    (*(it++))->removeObserver(this);
-  // We do this tricky iterator method to deal with the fact that mObservers
-  // will be changing as we go through the loop
+  while (!mSubjects.empty())
+    removeSubject(*mSubjects.begin());
 }
 
 //==============================================================================
@@ -90,11 +86,8 @@ void Observer::removeSubject(const Subject* _subject)
 //==============================================================================
 void Observer::removeAllSubjects()
 {
-  std::set<const Subject*>::iterator it = mSubjects.begin(),
-                                     end = mSubjects.end();
-
-  while (it != end)
-    removeSubject(*(it++));
+  while (!mSubjects.empty())
+    removeSubject(*mSubjects.begin());
 }
 
 } // namespace common

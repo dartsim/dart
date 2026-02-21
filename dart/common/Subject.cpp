@@ -46,12 +46,11 @@ Subject::~Subject()
 //==============================================================================
 void Subject::sendDestructionNotification() const
 {
-  std::set<Observer*>::iterator sub = mObservers.begin(),
-                                end = mObservers.end();
-  while (sub != end)
-    (*(sub++))->receiveDestructionNotification(this);
-  // We do this tricky iterator method to deal with the fact that mObservers
-  // will be changing as we go through the loop
+  while (!mObservers.empty()) {
+    Observer* observer = *mObservers.begin();
+    mObservers.erase(mObservers.begin());
+    observer->receiveDestructionNotification(this);
+  }
 }
 
 //==============================================================================
