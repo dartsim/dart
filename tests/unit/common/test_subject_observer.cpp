@@ -705,3 +705,61 @@ TEST(SubjectObserverTests, ObserverDestroysPeerDuringNotification)
   // Exactly one was destroyed by the other's callback
   EXPECT_TRUE(!observerA || !observerB);
 }
+
+//==============================================================================
+// Regression: an observer that re-subscribes to the dying subject inside its
+// destruction callback would cause the old drain loop to never terminate.
+// The snapshot-based approach notifies only the original observers and ignores
+// re-subscriptions made during the notification pass.
+class ResubscribingObserver : public Observer
+{
+public:
+  void track(TestSubject* subject)
+  {
+    mSubjectPtr = subject;
+    addSubject(subject);
+  }
+
+  std::size_t subjectCount() const
+  {
+    return mSubjects.size();
+  }
+
+  int notificationCount() const
+  {
+    return mNotificationCount;
+  }
+
+protected:
+  void handleDestructionNotification(const Subject*) override
+  {
+    ++mNotificationCount;
+    // Attempt to re-subscribe — must NOT cause an infinite loop
+    if (mSubjectPtr) {
+      addSubject(mSubjectPtr);
+    }
+  }
+
+private:
+  TestSubject* mSubjectPtr = nullptr;
+  int mNotificationCount = 0;
+};
+
+//==============================================================================
+TEST(SubjectObserverTests, ResubscribeDuringDestructionNotificationTerminates)
+{
+  TestSubject subject;
+  ResubscribingObserver observer;
+
+  observer.track(&subject);
+  EXPECT_EQ(subject.observerCount(), 1u);
+
+  // With the old drain loop this would hang forever.
+  // With the snapshot fix it terminates and notifies exactly once.
+  subject.notify();
+
+  EXPECT_EQ(observer.notificationCount(), 1);
+  // Re-subscription during notification silently succeeds — the observer
+  // is registered again in mObservers after the notification pass.
+  EXPECT_EQ(subject.observerCount(), 1u);
+}

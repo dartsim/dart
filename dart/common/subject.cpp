@@ -46,9 +46,23 @@ Subject::~Subject()
 //==============================================================================
 void Subject::sendDestructionNotification() const
 {
-  while (!mObservers.empty()) {
-    Observer* observer = *mObservers.begin();
-    mObservers.erase(mObservers.begin());
+  // Snapshot the observer list so that mutations during callbacks (peer
+  // destruction, re-subscription) cannot cause iterator invalidation or
+  // infinite loops.  mObservers keeps tracking live registrations so that
+  // removeObserver() from a peer's destructor still works correctly.
+  //
+  // Note: observers that re-subscribe during their callback will be
+  // registered again in mObservers after this function returns.  This is
+  // harmless when called from ~Subject() because the object destructs
+  // immediately after.
+  auto snapshot = mObservers;
+  for (Observer* observer : snapshot) {
+    // Skip observers that were already removed by an earlier callback
+    // (e.g. a peer's destructor called removeObserver on this subject).
+    if (!mObservers.contains(observer)) {
+      continue;
+    }
+    mObservers.erase(observer);
     observer->receiveDestructionNotification(this);
   }
 }
