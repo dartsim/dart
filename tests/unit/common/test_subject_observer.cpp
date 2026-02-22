@@ -636,3 +636,130 @@ TEST(SubjectObserverTests, ReconnectAfterNotification)
   subject.notify();
   EXPECT_EQ(observer.notificationCount(), 2);
 }
+
+//==============================================================================
+// Regression: destroying a sibling observer during sendDestructionNotification
+// invalidated the iterator (SEGFAULT on macOS arm64 Debug). The swap-into-
+// local fix makes this safe.
+//
+// Both observers are heap-allocated and each holds a destroy-handle to the
+// other. Whichever is notified first destroys its peer, exercising the
+// iterator-invalidation path regardless of std::set pointer ordering.
+class PeerDestroyingObserver : public Observer
+{
+public:
+  void track(TestSubject* subject)
+  {
+    addSubject(subject);
+  }
+
+  void setPeerToDestroy(std::unique_ptr<PeerDestroyingObserver>* peerOwner)
+  {
+    mPeerOwner = peerOwner;
+  }
+
+  std::size_t subjectCount() const
+  {
+    return mSubjects.size();
+  }
+
+  int notificationCount() const
+  {
+    return mNotificationCount;
+  }
+
+protected:
+  void handleDestructionNotification(const Subject*) override
+  {
+    ++mNotificationCount;
+    if (mPeerOwner && *mPeerOwner) {
+      mPeerOwner->reset();
+    }
+  }
+
+private:
+  std::unique_ptr<PeerDestroyingObserver>* mPeerOwner = nullptr;
+  int mNotificationCount = 0;
+};
+
+//==============================================================================
+TEST(SubjectObserverTests, ObserverDestroysPeerDuringNotification)
+{
+  TestSubject subject;
+  auto observerA = std::make_unique<PeerDestroyingObserver>();
+  auto observerB = std::make_unique<PeerDestroyingObserver>();
+
+  observerA->track(&subject);
+  observerB->track(&subject);
+  EXPECT_EQ(subject.observerCount(), 2u);
+
+  // Each observer holds a destroy-handle to the other, so whichever is
+  // notified first will destroy its peer — exercising the invalidation
+  // path regardless of pointer ordering in std::set.
+  observerA->setPeerToDestroy(&observerB);
+  observerB->setPeerToDestroy(&observerA);
+
+  subject.notify();
+
+  EXPECT_EQ(subject.observerCount(), 0u);
+  // Exactly one was destroyed by the other's callback
+  EXPECT_TRUE(!observerA || !observerB);
+}
+
+//==============================================================================
+// Regression: an observer that re-subscribes to the dying subject inside its
+// destruction callback would cause the old drain loop to never terminate.
+// The snapshot-based approach notifies only the original observers and ignores
+// re-subscriptions made during the notification pass.
+class ResubscribingObserver : public Observer
+{
+public:
+  void track(TestSubject* subject)
+  {
+    mSubjectPtr = subject;
+    addSubject(subject);
+  }
+
+  std::size_t subjectCount() const
+  {
+    return mSubjects.size();
+  }
+
+  int notificationCount() const
+  {
+    return mNotificationCount;
+  }
+
+protected:
+  void handleDestructionNotification(const Subject*) override
+  {
+    ++mNotificationCount;
+    // Attempt to re-subscribe — must NOT cause an infinite loop
+    if (mSubjectPtr) {
+      addSubject(mSubjectPtr);
+    }
+  }
+
+private:
+  TestSubject* mSubjectPtr = nullptr;
+  int mNotificationCount = 0;
+};
+
+//==============================================================================
+TEST(SubjectObserverTests, ResubscribeDuringDestructionNotificationTerminates)
+{
+  TestSubject subject;
+  ResubscribingObserver observer;
+
+  observer.track(&subject);
+  EXPECT_EQ(subject.observerCount(), 1u);
+
+  // With the old drain loop this would hang forever.
+  // With the snapshot fix it terminates and notifies exactly once.
+  subject.notify();
+
+  EXPECT_EQ(observer.notificationCount(), 1);
+  // Re-subscription during notification silently succeeds — the observer
+  // is registered again in mObservers after the notification pass.
+  EXPECT_EQ(subject.observerCount(), 1u);
+}
