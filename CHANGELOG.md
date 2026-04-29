@@ -12,6 +12,10 @@
 
   * Fix iterator invalidation in Subject/Observer notification loops that caused non-deterministic SEGFAULT on macOS arm64 Debug builds
 
+* Simulation
+
+  * Reject NaN, infinite, zero, and negative `World::setTimeStep()` values to prevent invalid timesteps from reaching the ODE LCP solver: [#2531](https://github.com/dartsim/dart/issues/2531)
+
 ### [DART 6.16.7 (2026-02-10)](https://github.com/dartsim/dart/milestone/92?closed=1)
 
 * Build

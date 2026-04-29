@@ -51,6 +51,8 @@
 #include <string>
 #include <vector>
 
+#include <cmath>
+
 namespace dart {
 namespace simulation {
 
@@ -133,8 +135,9 @@ WorldPtr World::clone() const
 //==============================================================================
 void World::setTimeStep(double _timeStep)
 {
-  if (_timeStep <= 0.0) {
-    dtwarn << "[World] Attempting to set negative timestep. Ignoring this "
+  if (!std::isfinite(_timeStep) || _timeStep <= 0.0) {
+    dtwarn << "[World] Attempting to set invalid timestep (" << _timeStep
+           << "). Ignoring this "
            << "request because it can lead to undefined behavior.\n";
     return;
   }

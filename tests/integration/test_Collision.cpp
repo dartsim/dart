@@ -50,6 +50,8 @@
 #include "dart/simulation/simulation.hpp"
 #include "dart/utils/utils.hpp"
 
+#include <limits>
+
 using namespace dart;
 using namespace common;
 using namespace math;
@@ -1594,6 +1596,37 @@ TEST_F(Collision, CollisionOfPrescribedJoints)
     EXPECT_NEAR(joint6->getVelocity(0), 0.0, tol);
     EXPECT_NEAR(joint6->getAcceleration(0), 0.0, tol);
   }
+}
+
+//==============================================================================
+TEST_F(Collision, CollisionOfPrescribedJointsRejectsInvalidTimeStep)
+{
+  WorldPtr world = SkelParser::readWorld(
+      "dart://sample/skel/test/collision_of_prescribed_joints_test.skel");
+  ASSERT_TRUE(world != nullptr);
+
+  const double originalTimeStep = world->getTimeStep();
+  ASSERT_GT(originalTimeStep, 0.0);
+
+  const double invalidValues[]
+      = {std::numeric_limits<double>::quiet_NaN(),
+         std::numeric_limits<double>::infinity(),
+         -std::numeric_limits<double>::infinity(),
+         0.0,
+         -1.0};
+
+  for (double invalid : invalidValues) {
+    world->setTimeStep(invalid);
+    EXPECT_DOUBLE_EQ(world->getTimeStep(), originalTimeStep);
+  }
+
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+    EXPECT_DOUBLE_EQ(world->getSkeleton(i)->getTimeStep(), originalTimeStep);
+  }
+
+  EXPECT_DOUBLE_EQ(
+      world->getConstraintSolver()->getTimeStep(), originalTimeStep);
+  EXPECT_NO_THROW(world->step(false));
 }
 
 //==============================================================================
