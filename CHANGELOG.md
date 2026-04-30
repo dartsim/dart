@@ -12,6 +12,14 @@
 
   * Fix iterator invalidation in Subject/Observer notification loops that caused non-deterministic SEGFAULT on macOS arm64 Debug builds
 
+* Simulation
+
+  * Reject NaN, infinite, zero, and negative `World::setTimeStep()` values to prevent invalid timesteps from reaching the ODE LCP solver. ([#2532](https://github.com/dartsim/dart/pull/2532), [#2531](https://github.com/dartsim/dart/issues/2531))
+
+* Tooling and Docs
+
+  * Improve FreeBSD VM CI startup resilience with a release image URL, fallback image downloads, a longer SSH readiness window, fresh VM container startup, KVM group propagation, retry handling, and startup diagnostics. ([#2532](https://github.com/dartsim/dart/pull/2532))
+
 ### [DART 6.16.7 (2026-02-10)](https://github.com/dartsim/dart/milestone/92?closed=1)
 
 * Build

@@ -4,10 +4,21 @@ import subprocess
 import sys
 from pathlib import Path
 
-DEFAULT_IMAGE_URL = (
-    "https://download.freebsd.org/ftp/snapshots/VM-IMAGES/15.0-STABLE/"
-    "amd64/Latest/FreeBSD-15.0-STABLE-amd64-BASIC-CLOUDINIT-ufs.qcow2.xz"
-)
+DEFAULT_IMAGE_URLS = [
+    (
+        "https://download.freebsd.org/ftp/releases/VM-IMAGES/15.0-RELEASE/"
+        "amd64/Latest/FreeBSD-15.0-RELEASE-amd64-BASIC-CLOUDINIT-ufs.qcow2.xz"
+    ),
+    (
+        "https://download.freebsd.org/ftp/snapshots/VM-IMAGES/15.1-PRERELEASE/"
+        "amd64/Latest/FreeBSD-15.1-PRERELEASE-amd64-BASIC-CLOUDINIT-ufs.qcow2.xz"
+    ),
+    (
+        "https://download.freebsd.org/ftp/releases/VM-IMAGES/14.4-RELEASE/"
+        "amd64/Latest/FreeBSD-14.4-RELEASE-amd64-BASIC-CLOUDINIT-ufs.qcow2.xz"
+    ),
+]
+DEFAULT_IMAGE_URL = ",".join(DEFAULT_IMAGE_URLS)
 DEFAULT_DISK_SIZE = "12G"
 
 
@@ -35,7 +46,32 @@ def is_xz_file(path):
         return handle.read(6) == b"\xfd7zXZ\x00"
 
 
-def ensure_image(vm_dir, image_url, image_xz, image_qcow2):
+def parse_image_urls(value):
+    urls = [url for url in value.replace(",", " ").split() if url]
+    return urls or DEFAULT_IMAGE_URLS
+
+
+def download_image(image_urls, image_xz):
+    failures = []
+    for image_url in image_urls:
+        print(f"Downloading FreeBSD image from {image_url}...")
+        result = subprocess.run(
+            ["curl", "-fL", image_url, "-o", str(image_xz)],
+            check=False,
+        )
+        if result.returncode == 0:
+            return
+        failures.append(f"{image_url} (curl exit {result.returncode})")
+        if image_xz.exists():
+            image_xz.unlink()
+
+    print("Failed to download any FreeBSD image:", file=sys.stderr)
+    for failure in failures:
+        print(f"  {failure}", file=sys.stderr)
+    sys.exit(1)
+
+
+def ensure_image(vm_dir, image_urls, image_xz, image_qcow2):
     if image_xz.exists() and not is_xz_file(image_xz):
         print(f"Removing invalid FreeBSD archive at {image_xz}...")
         image_xz.unlink()
@@ -43,8 +79,7 @@ def ensure_image(vm_dir, image_url, image_xz, image_qcow2):
         print(f"Removing empty FreeBSD image at {image_qcow2}...")
         image_qcow2.unlink()
     if not image_xz.exists():
-        print(f"Downloading FreeBSD image from {image_url}...")
-        run(["curl", "-fL", image_url, "-o", str(image_xz)])
+        download_image(image_urls, image_xz)
     if not image_qcow2.exists():
         print("Extracting FreeBSD image...")
         run(["xz", "-d", "-c", str(image_xz)], stdout_path=image_qcow2)
@@ -128,7 +163,7 @@ def write_seed(vm_dir, ssh_key, user_data, meta_data, seed_img, user):
 
 def main():
     vm_dir = Path(os.getenv("FREEBSD_VM_DIR", "/vm"))
-    image_url = os.getenv("FREEBSD_VM_IMAGE_URL", DEFAULT_IMAGE_URL)
+    image_urls = parse_image_urls(os.getenv("FREEBSD_VM_IMAGE_URL", DEFAULT_IMAGE_URL))
     ssh_port = getenv_int("FREEBSD_VM_SSH_PORT", 10022)
     cpus = getenv_int("FREEBSD_VM_CPUS", 4)
     mem = getenv_int("FREEBSD_VM_MEM", 4096)
@@ -145,7 +180,7 @@ def main():
     meta_data = vm_dir / "meta-data"
     ssh_key = vm_dir / "id_ed25519"
 
-    ensure_image(vm_dir, image_url, image_xz, image_qcow2)
+    ensure_image(vm_dir, image_urls, image_xz, image_qcow2)
     ensure_overlay(image_qcow2, overlay_qcow2)
     resize_overlay(overlay_qcow2, disk_size)
     ensure_ssh_key(vm_dir, ssh_key)
