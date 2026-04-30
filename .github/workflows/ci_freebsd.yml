@@ -43,8 +43,39 @@ jobs:
           FREEBSD_VM_MEM: "4096"
           FREEBSD_VM_BUILD_PARALLEL_LEVEL: "1"
           FREEBSD_VM_CTEST_TIMEOUT: "2400"
-        run: pixi run freebsd-test
+        run: |
+          set -euo pipefail
+          max_attempts=2
+          for attempt in $(seq 1 $max_attempts); do
+            echo "=== FreeBSD VM test attempt ${attempt}/${max_attempts} ==="
+            pixi run freebsd-stop || true
+            pixi run freebsd-test &
+            TEST_PID=$!
+            sleep 10
+            echo "=== Docker Container Logs (QEMU Startup) ==="
+            docker logs dart-freebsd-vm 2>&1 | head -50 || true
+            echo "=============================================="
+            if wait $TEST_PID; then
+              echo "FreeBSD tests passed on attempt ${attempt}"
+              exit 0
+            fi
+            echo "::warning::FreeBSD VM test failed on attempt ${attempt}/${max_attempts}"
+            if [ "$attempt" -lt "$max_attempts" ]; then
+              echo "Retrying after cleanup..."
+              pixi run freebsd-stop || true
+              sleep 5
+            fi
+          done
+          echo "::error::FreeBSD VM tests failed after ${max_attempts} attempts"
+          exit 1
+
+      - name: Show Docker container logs
+        if: always()
+        run: |
+          echo "=== Full Docker Container Logs ==="
+          docker logs dart-freebsd-vm 2>&1 || true
+          echo "==================================="
 
       - name: Stop FreeBSD VM
         if: always()
-        run: pixi run freebsd-stop
+        run: pixi run freebsd-stop || true

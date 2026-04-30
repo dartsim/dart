@@ -128,24 +128,25 @@ def container_running(container):
     return container in (result.stdout or "").splitlines()
 
 
+_ensure_started_state = {"started": False}
+
+
 def ensure_started(args):
-    key_path = ssh_key_path(vm_dir_path(args.vm_dir))
-    if container_running(args.container):
-        if not key_path.exists():
-            print(
-                "SSH key missing for the running FreeBSD VM; restarting to regenerate it.",
-                file=sys.stderr,
-            )
-            stop_container(args)
+    if _ensure_started_state["started"]:
+        if not container_running(args.container):
             start_container(args)
-    else:
-        start_container(args)
+            wait_for_ssh_key(args)
+            wait_for_ssh(args, user=args.user)
+        return
+    start_container(args)
     wait_for_ssh_key(args)
     wait_for_ssh(args, user=args.user)
+    _ensure_started_state["started"] = True
 
 
 def build_image(args):
-    run(
+    env = {**os.environ, "DOCKER_BUILDKIT": "0"}
+    subprocess.run(
         [
             "docker",
             "build",
@@ -154,7 +155,9 @@ def build_image(args):
             "-f",
             dockerfile_path(),
             docker_path(),
-        ]
+        ],
+        check=True,
+        env=env,
     )
 
 
@@ -166,12 +169,8 @@ def start_container(args):
     vm_dir.mkdir(parents=True, exist_ok=True)
     ensure_ssh_key(args)
 
-    if container_running(args.container):
-        print(f"Container '{args.container}' already running.")
-        return
-
-    if container_exists(args.container):
-        run(["docker", "rm", "-f", args.container])
+    # Always force-remove any existing container to ensure fresh state.
+    run(["docker", "rm", "-f", args.container], check=False)
 
     cmd = [
         "docker",
@@ -198,10 +197,17 @@ def start_container(args):
     if disk_size:
         cmd.extend(["-e", f"FREEBSD_VM_DISK_SIZE={disk_size}"])
 
-    if Path("/dev/kvm").exists():
-        cmd.extend(["--device", "/dev/kvm"])
+    kvm_path = Path("/dev/kvm")
+    if kvm_path.exists():
+        print("KVM detected on host, passing --device /dev/kvm to Docker")
+        kvm_gid = kvm_path.stat().st_gid
+        print(f"KVM device group ID: {kvm_gid}")
+        cmd.extend(["--device", "/dev/kvm", "--group-add", str(kvm_gid)])
+    else:
+        print("KVM not detected on host (/dev/kvm does not exist)")
 
     cmd.append(args.image)
+    print(f"Docker command: {' '.join(cmd)}")
     run(cmd)
 
 
@@ -238,11 +244,55 @@ def wait_for_ssh_key(args, timeout=120):
     sys.exit(1)
 
 
-def wait_for_ssh(args, user, timeout=300):
+def dump_vm_diagnostics(args):
+    print("=== FreeBSD VM Diagnostics ===", file=sys.stderr, flush=True)
+
+    result = run(
+        ["docker", "inspect", "-f", "{{.State.Status}}", args.container],
+        check=False,
+        capture=True,
+    )
+    status = (result.stdout or "").strip() if result.returncode == 0 else "unknown"
+    print(f"Container status: {status}", file=sys.stderr, flush=True)
+
+    print("--- Container logs (last 50 lines) ---", file=sys.stderr, flush=True)
+    run(["docker", "logs", "--tail", "50", args.container], check=False)
+
+    vm_dir = vm_dir_path(args.vm_dir)
+    serial_log = vm_dir / "serial.log"
+    if serial_log.exists():
+        size = serial_log.stat().st_size
+        print(
+            f"--- Serial log ({size} bytes, last 30 lines) ---",
+            file=sys.stderr,
+            flush=True,
+        )
+        try:
+            lines = serial_log.read_text(errors="replace").splitlines()
+            for line in lines[-30:]:
+                print(f"  {line}", file=sys.stderr, flush=True)
+        except Exception as exc:
+            print(f"  (could not read serial log: {exc})", file=sys.stderr, flush=True)
+    else:
+        print("--- Serial log: not found ---", file=sys.stderr, flush=True)
+
+    print("=== End Diagnostics ===", file=sys.stderr, flush=True)
+
+
+def wait_for_ssh(args, user, timeout=600):
     vm_dir = vm_dir_path(args.vm_dir)
     key_path = ssh_key_path(vm_dir)
     deadline = time.time() + timeout
     while time.time() < deadline:
+        if not container_running(args.container):
+            print(
+                f"Container '{args.container}' stopped unexpectedly.",
+                file=sys.stderr,
+                flush=True,
+            )
+            dump_vm_diagnostics(args)
+            sys.exit(1)
+
         result = subprocess.run(
             [
                 "ssh",
@@ -263,6 +313,8 @@ def wait_for_ssh(args, user, timeout=300):
         if result.returncode == 0:
             return
         time.sleep(5)
+
+    dump_vm_diagnostics(args)
     print(
         (
             "Timed out waiting for FreeBSD SSH to become ready. "
