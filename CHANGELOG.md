@@ -18,7 +18,7 @@
 
 * Tooling and Docs
 
-  * Improve FreeBSD VM CI startup resilience with a longer SSH readiness window, fresh VM container startup, KVM group propagation, retry handling, and startup diagnostics. ([#2532](https://github.com/dartsim/dart/pull/2532))
+  * Improve FreeBSD VM CI startup resilience with a release image URL, fallback image downloads, a longer SSH readiness window, fresh VM container startup, KVM group propagation, retry handling, and startup diagnostics. ([#2532](https://github.com/dartsim/dart/pull/2532))
 
 ### [DART 6.16.7 (2026-02-10)](https://github.com/dartsim/dart/milestone/92?closed=1)
 

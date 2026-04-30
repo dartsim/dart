@@ -41,10 +41,21 @@ DEFAULT_PACKAGES = [
     "ros-urdfdom",
     "ros-urdfdom_headers",
 ]
-DEFAULT_IMAGE_URL = (
-    "https://download.freebsd.org/ftp/snapshots/VM-IMAGES/15.0-STABLE/"
-    "amd64/Latest/FreeBSD-15.0-STABLE-amd64-BASIC-CLOUDINIT-ufs.qcow2.xz"
-)
+DEFAULT_IMAGE_URLS = [
+    (
+        "https://download.freebsd.org/ftp/releases/VM-IMAGES/15.0-RELEASE/"
+        "amd64/Latest/FreeBSD-15.0-RELEASE-amd64-BASIC-CLOUDINIT-ufs.qcow2.xz"
+    ),
+    (
+        "https://download.freebsd.org/ftp/snapshots/VM-IMAGES/15.1-PRERELEASE/"
+        "amd64/Latest/FreeBSD-15.1-PRERELEASE-amd64-BASIC-CLOUDINIT-ufs.qcow2.xz"
+    ),
+    (
+        "https://download.freebsd.org/ftp/releases/VM-IMAGES/14.4-RELEASE/"
+        "amd64/Latest/FreeBSD-14.4-RELEASE-amd64-BASIC-CLOUDINIT-ufs.qcow2.xz"
+    ),
+]
+DEFAULT_IMAGE_URL = ",".join(DEFAULT_IMAGE_URLS)
 SSH_OPTIONS = [
     "-o",
     "StrictHostKeyChecking=no",
@@ -547,7 +558,14 @@ def parse_args():
         default=env_default_int("FREEBSD_VM_MEM", DEFAULT_MEM),
     )
     parser.add_argument("--user", default=DEFAULT_USER)
-    parser.add_argument("--image-url", default=DEFAULT_IMAGE_URL)
+    parser.add_argument(
+        "--image-url",
+        default=DEFAULT_IMAGE_URL,
+        help=(
+            "FreeBSD VM image URL. Multiple URLs can be comma- or "
+            "whitespace-separated; the VM launcher tries them in order."
+        ),
+    )
     parser.add_argument("--remote-dir", default=DEFAULT_REMOTE_DIR)
 
     subparsers = parser.add_subparsers(dest="command", required=True)
