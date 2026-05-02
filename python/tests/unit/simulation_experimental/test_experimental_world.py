@@ -4,6 +4,12 @@ import pytest
 import dartpy as dart
 
 
+pytestmark = pytest.mark.skipif(
+    not hasattr(dart, "simulation_experimental"),
+    reason="simulation_experimental module was not built",
+)
+
+
 def test_world_creation():
     exp = dart.simulation_experimental
     world = exp.World()

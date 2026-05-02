@@ -150,14 +150,6 @@ set(dartpy_headers
   constraint/dynamic_joint_constraint.hpp
   constraint/joint_constraint.hpp
   constraint/joint_coulomb_friction_constraint.hpp
-  simulation_experimental/module.hpp
-  simulation_experimental/joint_type.hpp
-  simulation_experimental/frame.hpp
-  simulation_experimental/world.hpp
-  simulation_experimental/multi_body.hpp
-  simulation_experimental/rigid_body.hpp
-  simulation_experimental/shape_node.hpp
-  simulation_experimental/state_space.hpp
 )
 
 set(dartpy_sources
@@ -234,15 +226,32 @@ set(dartpy_sources
   constraint/dynamic_joint_constraint.cpp
   constraint/joint_constraint.cpp
   constraint/joint_coulomb_friction_constraint.cpp
-  simulation_experimental/module.cpp
-  simulation_experimental/joint_type.cpp
-  simulation_experimental/frame.cpp
-  simulation_experimental/world.cpp
-  simulation_experimental/multi_body.cpp
-  simulation_experimental/rigid_body.cpp
-  simulation_experimental/shape_node.cpp
-  simulation_experimental/state_space.cpp
 )
+
+set(dartpy_has_simulation_experimental OFF)
+if(TARGET dart-simulation-experimental)
+  set(dartpy_has_simulation_experimental ON)
+  list(APPEND dartpy_headers
+    simulation_experimental/module.hpp
+    simulation_experimental/joint_type.hpp
+    simulation_experimental/frame.hpp
+    simulation_experimental/world.hpp
+    simulation_experimental/multi_body.hpp
+    simulation_experimental/rigid_body.hpp
+    simulation_experimental/shape_node.hpp
+    simulation_experimental/state_space.hpp
+  )
+  list(APPEND dartpy_sources
+    simulation_experimental/module.cpp
+    simulation_experimental/joint_type.cpp
+    simulation_experimental/frame.cpp
+    simulation_experimental/world.cpp
+    simulation_experimental/multi_body.cpp
+    simulation_experimental/rigid_body.cpp
+    simulation_experimental/shape_node.cpp
+    simulation_experimental/state_space.cpp
+  )
+endif()
 
 set(dartpy_gui_headers
   gui/module.hpp
@@ -310,8 +319,10 @@ set(dartpy_libraries
   dart
   dart-utils
   dart-utils-urdf
-  dart-simulation-experimental
 )
+if(dartpy_has_simulation_experimental)
+  list(APPEND dartpy_libraries dart-simulation-experimental)
+endif()
 foreach(lib ${dartpy_libraries})
   if(TARGET ${lib})
     target_link_libraries(dartpy PRIVATE ${lib})
@@ -341,6 +352,9 @@ target_compile_definitions(dartpy
   PRIVATE
     DARTPY_VERSION_INFO="${DART_VERSION}"
 )
+if(dartpy_has_simulation_experimental)
+  target_compile_definitions(dartpy PRIVATE DARTPY_HAS_SIMULATION_EXPERIMENTAL)
+endif()
 target_compile_options(dartpy PRIVATE "-UNB_COMPACT_ASSERTIONS")
 
 set_target_properties(dartpy PROPERTIES OUTPUT_NAME "_dartpy")

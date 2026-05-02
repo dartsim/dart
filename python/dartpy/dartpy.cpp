@@ -40,8 +40,11 @@
 #include "math/module.hpp"
 #include "optimizer/module.hpp"
 #include "simulation/module.hpp"
-#include "simulation_experimental/module.hpp"
 #include "utils/module.hpp"
+
+#ifdef DARTPY_HAS_SIMULATION_EXPERIMENTAL
+  #include "simulation_experimental/module.hpp"
+#endif
 
 #include <nanobind/nanobind.h>
 
@@ -90,8 +93,10 @@ NB_MODULE(_dartpy, m)
       "gui", "GUI utilities (OpenSceneGraph + ImGui) backed by nanobind");
   dart::python_nb::defGuiModule(gui);
 
+#ifdef DARTPY_HAS_SIMULATION_EXPERIMENTAL
   auto simulation_experimental = m.def_submodule(
       "simulation_experimental",
       "Experimental next-generation simulation API (ECS-based)");
   dart::python_nb::defSimulationExperimentalModule(simulation_experimental);
+#endif
 }
