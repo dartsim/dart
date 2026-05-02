@@ -148,7 +148,7 @@ def test_shape_node_creation():
     robot = world.add_multi_body("robot")
     base = robot.add_link("base")
 
-    shape = dart.dynamics.BoxShape([1.0, 2.0, 3.0])
+    shape = dart.BoxShape([1.0, 2.0, 3.0])
     options = exp.ShapeNodeOptions()
     options.collidable = False
     options.friction_coeff = 0.7
@@ -217,6 +217,7 @@ def test_state_space_bounds():
     assert len(lower) == 4
     assert len(upper) == 4
     assert np.allclose(lower, [-1.0, -1.0, -5.0, -5.0])
+    assert np.allclose(upper, [1.0, 1.0, 5.0, 5.0])
 
 
 def test_world_step_advances_time():
@@ -228,7 +229,6 @@ def test_world_step_advances_time():
     assert world.get_time() == 0.0
     world.step()
     assert world.get_time() == pytest.approx(0.01)
-    assert np.allclose(upper, [1.0, 1.0, 5.0, 5.0])
 
 
 def test_state_space_get_variable():
