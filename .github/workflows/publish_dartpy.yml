@@ -4,7 +4,8 @@ name: Publish dartpy
 "on":
   push:
     branches:
-      - "**"
+      - "main"
+      - "release-*"
     tags:
       - "v*.*.*"
   pull_request:

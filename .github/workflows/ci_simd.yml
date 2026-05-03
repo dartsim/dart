@@ -3,7 +3,8 @@ name: CI SIMD Multi-Arch
 on:
   push:
     branches:
-      - "**"
+      - "main"
+      - "release-*"
     paths:
       - "dart/simd/**"
       - "tests/unit/simd/**"

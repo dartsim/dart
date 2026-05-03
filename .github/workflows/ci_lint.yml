@@ -3,7 +3,8 @@ name: CI Lint
 on:
   push:
     branches:
-      - "**"
+      - "main"
+      - "release-*"
     paths-ignore:
       - ".github/workflows/cache_*.yml"
   pull_request:

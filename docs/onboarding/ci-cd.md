@@ -19,7 +19,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Suggested (Unverified): `gh pr checks <PR_NUMBER> --watch --interval 30 --fail-fast`
   - Suggested (Unverified): `gh run view --job <JOB_ID> --log-failed`
 - Gotchas:
-  - `gh run list` can show separate runs for `push` and `pull_request`; for PR gating, watch the `pull_request` run.
+  - PR branch CI should run from `pull_request`; push-triggered CI is reserved for `main`, `release-*`, tags, schedules, and manual runs.
   - `gh run watch` is blocking and can run for a long time; use a persistent shell and re-run it if your terminal session times out.
   - `gh run view --job <JOB_ID> --log-failed` only works after the job completes; use the REST logs endpoint (or wait) when a run is still in progress.
   - If a PR is not mergeable due to conflicts, CI checks may be blocked or fail early (including AppVeyor); resolve conflicts locally and push before re-running CI.
@@ -40,7 +40,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - `gh run rerun --job` expects the job `databaseId` (not the numeric ID from the job URL); if `gh run view --json jobs` shows `id: null`, use `databaseId`. Suggested (Unverified): `gh run view <RUN_ID> --json jobs --jq '.jobs[] | {name, databaseId}'`.
   - Job log endpoints can return `log not found`/404 even after a failure; fall back to the run-level logs archive or re-run the job (see CI Monitoring (API)).
   - Review comment metadata is not exposed by `gh pr view --json`; Suggested (Unverified): `gh api /repos/<OWNER>/<REPO>/pulls/comments/<COMMENT_ID>`.
-  - `gh pr checks` may show duplicate entries when workflows run for both `push` and `pull_request` events; compare the run URLs and focus on the newest one.
+  - `gh pr checks` may show duplicate entries from older runs or workflows that still use both `push` and `pull_request`; compare the run URLs and focus on the newest one.
   - Newer runs can cancel older ones; confirm the run status/conclusion before spending time on job logs.
 - zsh can produce parse errors when jq expressions or backtick characters are not fully quoted; quote `gh ... --jq` programs and use a here-doc or `--body-file` when PR bodies include backticks.
   - If `CI gz-physics` fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature).
@@ -185,16 +185,16 @@ DART_PARALLEL_JOBS=8 CTEST_PARALLEL_LEVEL=8 pixi run test-eigen-overalignment
 
 ### Core CI Workflows
 
-| Workflow             | Purpose               | Platforms      | Trigger            | Doc-only skip |
-| -------------------- | --------------------- | -------------- | ------------------ | ------------- |
-| `ci_lint.yml`        | Lint + docs build     | Ubuntu         | PR, push           | No            |
-| `ci_ubuntu.yml`      | Build, test, coverage | Ubuntu         | PR, push, schedule | Yes           |
-| `ci_macos.yml`       | Build, test           | macOS          | PR, push, schedule | Yes           |
-| `ci_windows.yml`     | Build, test           | Windows        | PR, push, schedule | Yes           |
-| `ci_freebsd.yml`     | Build, test (VM)      | FreeBSD        | Schedule, manual   | N/A           |
-| `ci_altlinux.yml`    | Build, test (Docker)  | Alt Linux      | Schedule, manual   | N/A           |
-| `ci_gz_physics.yml`  | Gazebo integration    | Ubuntu         | PR, push, schedule | Yes           |
-| `publish_dartpy.yml` | Python wheels         | Multi-platform | Push, schedule     | Yes           |
+| Workflow             | Purpose               | Platforms      | Trigger                             | Doc-only skip |
+| -------------------- | --------------------- | -------------- | ----------------------------------- | ------------- |
+| `ci_lint.yml`        | Lint + docs build     | Ubuntu         | PR, main/release push               | No            |
+| `ci_ubuntu.yml`      | Build, test, coverage | Ubuntu         | PR, main/release push, schedule     | Yes           |
+| `ci_macos.yml`       | Build, test           | macOS          | PR, main/release push, schedule     | Yes           |
+| `ci_windows.yml`     | Build, test           | Windows        | PR, main/release push, schedule     | Yes           |
+| `ci_freebsd.yml`     | Build, test (VM)      | FreeBSD        | Schedule, manual                    | N/A           |
+| `ci_altlinux.yml`    | Build, test (Docker)  | Alt Linux      | PR, schedule, manual                | N/A           |
+| `ci_gz_physics.yml`  | Gazebo integration    | Ubuntu         | PR, main/release push, schedule     | Yes           |
+| `publish_dartpy.yml` | Python wheels         | Multi-platform | PR, main/release/tag push, schedule | Yes           |
 
 ### Design Principles
 

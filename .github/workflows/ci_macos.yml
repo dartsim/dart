@@ -5,7 +5,8 @@ name: CI macOS
 on:
   push:
     branches:
-      - "**"
+      - "main"
+      - "release-*"
   pull_request:
     branches:
       - "**"
