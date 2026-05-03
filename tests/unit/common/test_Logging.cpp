@@ -38,6 +38,8 @@
 
 #include <gtest/gtest.h>
 
+#include <string>
+
 using namespace dart;
 
 //==============================================================================
@@ -56,6 +58,18 @@ TEST(LoggingTest, Arguments)
 {
   [[maybe_unused]] int val = 10;
   DART_INFO("Log with param '{}' and '{}'", 1, val);
+}
+
+//==============================================================================
+TEST(LoggingTest, RuntimeFormatString)
+{
+  const std::string format = "Runtime format string {}";
+  dart::common::trace(format, 42);
+  dart::common::debug(format, 42);
+  dart::common::info(format, 42);
+  dart::common::warn(format, 42);
+  dart::common::error(format, 42);
+  dart::common::fatal(format, 42);
 }
 
 //==============================================================================
