@@ -33,6 +33,7 @@
 #include <dart/math/random.hpp>
 
 #include <concepts>
+#include <type_traits>
 
 namespace dart {
 namespace math {
@@ -46,15 +47,18 @@ namespace detail {
 /// Reference:
 /// https://en.cppreference.com/w/cpp/numeric/random/uniform_int_distribution
 template <typename T>
+using UniformIntType = std::remove_cvref_t<T>;
+
+template <typename T>
 concept UniformIntCompatible
-    = std::same_as<std::remove_cv_t<T>, short>
-      || std::same_as<std::remove_cv_t<T>, int>
-      || std::same_as<std::remove_cv_t<T>, long>
-      || std::same_as<std::remove_cv_t<T>, long long>
-      || std::same_as<std::remove_cv_t<T>, unsigned short>
-      || std::same_as<std::remove_cv_t<T>, unsigned int>
-      || std::same_as<std::remove_cv_t<T>, unsigned long>
-      || std::same_as<std::remove_cv_t<T>, unsigned long long>;
+    = std::same_as<UniformIntType<T>, short>
+      || std::same_as<UniformIntType<T>, int>
+      || std::same_as<UniformIntType<T>, long>
+      || std::same_as<UniformIntType<T>, long long>
+      || std::same_as<UniformIntType<T>, unsigned short>
+      || std::same_as<UniformIntType<T>, unsigned int>
+      || std::same_as<UniformIntType<T>, unsigned long>
+      || std::same_as<UniformIntType<T>, unsigned long long>;
 
 /// Check whether T is derived from Eigen::MatrixBase
 template <typename T>
@@ -220,7 +224,7 @@ struct UniformImpl;
 
 //==============================================================================
 template <typename T>
-  requires std::is_arithmetic_v<T>
+  requires(std::floating_point<T> || UniformIntCompatible<T>)
 struct UniformImpl<T>
 {
   static T run(T min, T max)
@@ -279,7 +283,7 @@ struct NormalImpl;
 
 //==============================================================================
 template <typename T>
-  requires std::is_arithmetic_v<T>
+  requires(std::floating_point<T> || UniformIntCompatible<T>)
 struct NormalImpl<T>
 {
   static T run(T min, T max)

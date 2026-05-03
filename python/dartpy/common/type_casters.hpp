@@ -4,6 +4,8 @@
 
 #include <nanobind/nanobind.h>
 
+#include <type_traits>
+
 #include "dart/dynamics/frame.hpp"
 #include "dart/dynamics/jacobian_node.hpp"
 #include "dart/dynamics/joint.hpp"
@@ -53,7 +55,7 @@ struct polymorphic_type_caster : type_caster_base_tag {
   NB_INLINE static handle from_cpp(
       T&& value, rv_policy policy, cleanup_list* cleanup) noexcept
   {
-    using BareT = std::remove_reference_t<std::remove_cv_t<T>>;
+    using BareT = std::remove_cvref_t<T>;
 
     if constexpr (std::is_pointer_v<BareT>) {
       Type* ptr = (Type*) value;
@@ -134,7 +136,7 @@ struct type_caster<dart::dynamics::BodyNode>
   NB_INLINE static handle from_cpp(
       T&& value, rv_policy policy, cleanup_list* cleanup) noexcept
   {
-    using BareT = std::remove_cv_t<std::remove_reference_t<T>>;
+    using BareT = std::remove_cvref_t<T>;
     if constexpr (std::is_pointer_v<BareT>
                   || std::is_lvalue_reference_v<T>) {
       if (policy != rv_policy::reference_internal)
@@ -153,7 +155,7 @@ struct type_caster<dart::dynamics::JacobianNode>
   NB_INLINE static handle from_cpp(
       T&& value, rv_policy policy, cleanup_list* cleanup) noexcept
   {
-    using BareT = std::remove_cv_t<std::remove_reference_t<T>>;
+    using BareT = std::remove_cvref_t<T>;
     if constexpr (std::is_pointer_v<BareT>
                   || std::is_lvalue_reference_v<T>) {
       if (policy != rv_policy::reference_internal)
@@ -172,7 +174,7 @@ struct type_caster<dart::dynamics::Joint>
   NB_INLINE static handle from_cpp(
       T&& value, rv_policy policy, cleanup_list* cleanup) noexcept
   {
-    using BareT = std::remove_cv_t<std::remove_reference_t<T>>;
+    using BareT = std::remove_cvref_t<T>;
     if constexpr (std::is_pointer_v<BareT>
                   || std::is_lvalue_reference_v<T>) {
       if (policy != rv_policy::reference_internal)
