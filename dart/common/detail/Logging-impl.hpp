@@ -37,12 +37,7 @@
 
 #if DART_HAVE_spdlog
   #include <spdlog/spdlog.h>
-  #if defined(SPDLOG_USE_STD_FORMAT)
-    #define DART_SPDLOG_RUNTIME(str) str
-  #else
-    #include <spdlog/fmt/fmt.h>
-    #define DART_SPDLOG_RUNTIME(str) fmt::runtime(str)
-  #endif
+  #define DART_SPDLOG_RUNTIME(str) SPDLOG_FMT_RUNTIME(str)
 #else
   #include <iostream>
   #include <string>
