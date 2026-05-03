@@ -1,5 +1,5 @@
 ---
-description: Start new feature/bugfix/refactor in DART
+description: start a feature, bugfix, refactor, docs, build, or test task
 agent: build
 ---
 

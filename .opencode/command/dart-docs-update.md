@@ -1,5 +1,5 @@
 ---
-description: Update documentation (no code changes)
+description: update documentation without code changes
 agent: build
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->

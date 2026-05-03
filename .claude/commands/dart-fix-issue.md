@@ -1,5 +1,5 @@
 ---
-description: Resolve a GitHub issue with proper fix and test
+description: resolve a GitHub issue with a fix and regression test
 agent: build
 ---
 

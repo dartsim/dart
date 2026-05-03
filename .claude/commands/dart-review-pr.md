@@ -1,5 +1,5 @@
 ---
-description: Review PR or address review feedback
+description: review a PR or address review feedback
 agent: build
 ---
 
