@@ -12,7 +12,7 @@
 
   * Fix iterator invalidation in Subject/Observer notification loops that caused non-deterministic SEGFAULT on macOS arm64 Debug builds
 
-  * Fix spdlog/fmt 12 builds by treating DART logging format parameters as runtime format strings. ([#2538](https://github.com/dartsim/dart/issues/2538))
+  * Fix spdlog/fmt 12 builds by treating DART logging format parameters as runtime format strings. ([#2540](https://github.com/dartsim/dart/pull/2540), [#2538](https://github.com/dartsim/dart/issues/2538))
 
 * Simulation
 
