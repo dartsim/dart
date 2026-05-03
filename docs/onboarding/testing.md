@@ -63,6 +63,21 @@ Signals to look for:
 
 - The test runner ends with `100% tests passed`
 
+Alignment-sensitive C++ build/test pass. Run this when allocator, placement-new,
+Eigen storage, SIMD-sensitive math, or object-pool code changes. It forces Eigen
+to use a 64-byte static alignment contract without requiring AVX-512 hardware.
+
+Suggested (Unverified):
+
+```bash
+DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run test-eigen-overalignment
+```
+
+Signals to look for:
+
+- The dedicated `eigen64-align` build configures successfully
+- The C++ tests built in that configuration end with `100% tests passed`
+
 Full validation.
 
 Suggested (Unverified):
