@@ -326,7 +326,10 @@ target_compile_definitions(dartpy
 )
 target_compile_options(dartpy PRIVATE "-UNB_COMPACT_ASSERTIONS")
 
-set_target_properties(dartpy PROPERTIES OUTPUT_NAME "_dartpy")
+set_target_properties(dartpy PROPERTIES
+  OUTPUT_NAME "_dartpy"
+  DEBUG_POSTFIX ""
+)
 
 # Copy pure-Python helpers into the build tree so tests can import them
 foreach(_py_file __init__.py _naming.py _layout.py)

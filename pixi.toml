@@ -688,7 +688,7 @@ test-py = { cmd = [
   "-lc",
   """
 set -euo pipefail
-BUILD_TYPE={{ build_type }}
+export BUILD_TYPE={{ build_type }}
 python scripts/pixi_test_py.py
 """,
 ], depends-on = [
@@ -1615,7 +1615,7 @@ test-simulation-experimental = { cmd = [
 ] }
 
 test-py = { cmd = """
-    BUILD_TYPE={{ build_type }}
+    export BUILD_TYPE={{ build_type }}
     CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp python scripts/cmake_build.py --config $BUILD_TYPE --target pytest
 """, depends-on = [
   { task = "config", args = [
