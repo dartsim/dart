@@ -187,7 +187,7 @@ DART_PARALLEL_JOBS=8 CTEST_PARALLEL_LEVEL=8 pixi run test-eigen-overalignment
 
 | Workflow             | Purpose               | Platforms      | Trigger            | Doc-only skip |
 | -------------------- | --------------------- | -------------- | ------------------ | ------------- |
-| `ci_lint.yml`        | Lint (formatting)     | Ubuntu         | PR, push           | No            |
+| `ci_lint.yml`        | Lint + docs build     | Ubuntu         | PR, push           | No            |
 | `ci_ubuntu.yml`      | Build, test, coverage | Ubuntu         | PR, push, schedule | Yes           |
 | `ci_macos.yml`       | Build, test           | macOS          | PR, push, schedule | Yes           |
 | `ci_windows.yml`     | Build, test           | Windows        | PR, push, schedule | Yes           |
@@ -337,68 +337,64 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /permissive- /Zc:twoPhase- /MP /FS
 
 ### Debug Builds
 
-Debug builds are slower and primarily useful for debugging, not CI validation.
-
-**Pattern** (see `ci_ubuntu.yml` and `ci_macos.yml`):
-
-```yaml
-build:
-  name: ${{ matrix.build_type }}
-  runs-on: ubuntu-latest
-  if: matrix.build_type == 'Release' || github.event_name == 'schedule' || github.ref == 'refs/heads/main'
-  strategy:
-    matrix:
-      build_type: ["Release", "Debug"]
-```
+Debug builds are slower, but Ubuntu and macOS keep explicit Debug C++ and dartpy
+test jobs in PR CI because they catch configuration-specific failures. Windows
+keeps Release-only tests to keep runtime acceptable.
 
 **Behavior:**
 
-- **PRs**: Only Release builds run
-- **Main branch**: Both Release and Debug run
-- **Scheduled runs**: Both Release and Debug run
-- **Savings**: 30-40 minutes per PR
+- **PRs**: Release and Debug jobs run on Ubuntu/macOS when code paths change
+- **Windows**: Release-only tests run on PRs, pushes, schedules, and manual dispatch
+- **Doc-only changes**: Platform jobs are skipped by path filters; lint/docs still run
 
 ### Python Wheel Builds
 
-Full wheel matrix is expensive (60-90 minutes) and only needed for releases.
+Full wheel matrix is expensive (60-90 minutes), so branch pushes outside `main`
+run only the essential Python version. PRs, `main`, tags, schedules, and manual
+runs keep the full matrix.
 
 **Pattern** (see `publish_dartpy.yml`):
 
 ```yaml
-build_wheels:
-  if: |
-    matrix.release_only == false ||
-    github.ref == 'refs/heads/main' ||
-    startsWith(github.ref, 'refs/tags/') ||
-    github.event_name == 'schedule'
+RUN_WHEEL: >-
+  ${{ matrix.skip-on-commit != true ||
+      github.event_name == 'pull_request' ||
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      github.ref == 'refs/heads/main' ||
+      startsWith(github.ref, 'refs/tags/v') }}
 ```
 
 **Behavior:**
 
-- **PRs**: Only essential configurations build
+- **PRs**: Full matrix builds so wheel breakages are caught before merge
+- **Non-main branch pushes**: Only essential configurations build
 - **Main branch**: Full matrix builds
 - **Release tags**: Full matrix builds
-- **Scheduled runs**: Full matrix builds
+- **Scheduled/manual runs**: Full matrix builds
 
 ### Documentation Builds
 
-Read the Docs now owns all documentation publishing. GitHub Actions no longer
-generates or deploys the API references, so doc validation happens locally:
+Read the Docs owns documentation publishing. GitHub Actions validates that the
+RTD-style documentation still renders once in `ci_lint.yml`, but it does not
+deploy the generated site:
 
 - Run `pixi run docs-build` to render the RTD site (including the C++ Doxygen
-  bundle).
+  bundle) locally.
 - Committers can optionally run `pixi run api-docs-cpp` or `pixi run api-docs-py`
   if they need to inspect the standalone builders.
 - RTD rebuilds automatically whenever `main` changes, keeping the hosted docs in
-  sync without consuming CI minutes.
+  sync without deploying from GitHub Actions.
 
 ## Lint Check Strategy
 
-**Dedicated workflow:** Linting is deterministic and platform-independent, so it runs once in a dedicated `ci_lint.yml` workflow.
+**Dedicated workflow:** Linting is deterministic and platform-independent, so it
+runs once in `ci_lint.yml`. The same workflow also runs one documentation build
+so platform test jobs do not each rebuild docs.
 
 **Key design:**
 
-- `ci_lint.yml` runs on ALL changes (including doc-only changes) to catch formatting issues early
+- `ci_lint.yml` runs on ALL changes (including doc-only changes) to catch formatting and documentation issues early
 - FreeBSD and Alt Linux CI (`ci_freebsd.yml`, `ci_altlinux.yml`) run on schedule/manual only to reduce maintenance burden
 - Lint is removed from platform-specific workflows since it's covered by the dedicated job
 
@@ -424,25 +420,29 @@ paths-ignore:
 **Per PR:**
 
 - Ubuntu Release: Full tests + coverage
+- Ubuntu Debug: Debug C++ and dartpy tests
 - macOS Release: Full tests
+- macOS Debug: Debug C++ and dartpy tests
 - Windows Release: Full tests
 - Gazebo integration: Integration tests
 
 **Scheduled runs:**
 
-- Add Debug builds for all platforms
+- Repeat the PR validation on a fixed cadence
 - Ensure periodic full validation
 
 ### Test Execution
 
-All tests run through `pixi run test-all`, which includes:
+GitHub Actions uses granular pixi tasks instead of `pixi run test-all` so CI
+does not repeat local-only validation in every platform job:
 
-- Linting (check-lint)
-- Unit tests (C++)
-- Python tests (dartpy)
-- Documentation build (optional)
+- `pixi run check-lint` runs once in `ci_lint.yml`
+- `pixi run docs-build` runs once in `ci_lint.yml`
+- Platform jobs run explicit C++ and dartpy test tasks for their build type
+- Release jobs build examples and install where that platform covers the path
 
-**Best practice:** Don't duplicate steps already in `test-all`.
+Use `pixi run test-all` for local pre-PR validation; avoid adding it to CI jobs
+unless the duplicated lint/docs/build work is intentional.
 
 ## Monitoring and Maintenance
 

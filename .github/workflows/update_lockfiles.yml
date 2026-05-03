@@ -7,11 +7,11 @@ permissions:
 on:
   workflow_dispatch:
   schedule:
-    - cron: 0 5 * * SAT # Runs at 05:00, on every Staturday
+    - cron: 0 5 * * SAT # Runs at 05:00 every Saturday
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   pixi-update:

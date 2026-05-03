@@ -10,6 +10,9 @@ inputs:
   cache:
     description: Enable pixi cache on GitHub-hosted runners.
     default: "true"
+  environments:
+    description: Space-separated pixi environment names to install on GitHub-hosted runners.
+    default: "default"
   post-cleanup:
     description: Enable pixi post-cleanup on GitHub-hosted runners.
     default: "true"
@@ -42,10 +45,11 @@ runs:
   using: composite
   steps:
     - name: Setup pixi
-      uses: prefix-dev/setup-pixi@v0.9.3
+      uses: prefix-dev/setup-pixi@v0.9.4
       with:
         pixi-version: ${{ inputs.pixi-version }}
         cache: ${{ inputs.cache == 'true' && startsWith(runner.name, 'GitHub Actions') }}
+        environments: ${{ inputs.environments }}
         post-cleanup: ${{ inputs.post-cleanup == 'true' && startsWith(runner.name, 'GitHub Actions') }}
         run-install: ${{ inputs.run-install == 'true' && startsWith(runner.name, 'GitHub Actions') }}
         pixi-bin-path: ${{ inputs.pixi-bin-path }}
@@ -58,11 +62,29 @@ runs:
         retries=${{ inputs.install-retries }}
         backoff=${{ inputs.install-backoff-seconds }}
         args="${{ inputs.install-args }}"
+        environments="${{ inputs.environments }}"
+
+        install_pixi_environment() {
+          if [ -n "${args}" ]; then
+            pixi install ${args}
+            return
+          fi
+
+          if [ -n "${environments}" ]; then
+            for environment in ${environments}; do
+              pixi install --environment "${environment}"
+            done
+            return
+          fi
+
+          pixi install
+        }
+
         for attempt in $(seq 1 "${retries}"); do
-          if pixi install ${args}; then
+          if install_pixi_environment; then
             exit 0
           fi
-          echo "pixi install ${args} failed (attempt ${attempt}/${retries})" >&2
+          echo "pixi install failed (attempt ${attempt}/${retries})" >&2
           sleep $((attempt * backoff))
         done
         exit 1
