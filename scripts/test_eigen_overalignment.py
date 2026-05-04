@@ -205,6 +205,7 @@ def test(build_dir: Path, args: argparse.Namespace, parallel: int) -> None:
         "--output-on-failure",
         "--parallel",
         str(ctest_parallel),
+        "--no-tests=error",
         "-LE",
         "simulation-experimental",
     ]
