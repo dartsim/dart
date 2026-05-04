@@ -46,6 +46,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - If `CI gz-physics` fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature).
   - CI jobs can sit in the queue for a long time; re-check the run list and wait for the PR run to start before assuming a failure.
   - Wheel publishing workflows may lag behind other jobs and stay queued longer; keep watching the PR run until all workflows complete.
+  - Alt Linux bootstrap failures while fetching packages from `ftp.altlinux.org` are usually mirror/network flakes; the bootstrap retries package installation in-place, and repeated failures should be rerun after the mirror recovers.
   - Randomized stress tests can diverge across platforms if they rely on library-dependent distributions; prefer deterministic RNG transforms when portability matters.
   - `check-format` failures usually mean formatting drift; run the C++ formatter and commit any diffs before retrying CI. Suggested (Unverified): `pixi run lint-cpp`.
   - Local lint may fail if clang-format is missing or a stale CMake cache references an old version; clean the build directory (`rm -rf build/`) and reconfigure to pick up the pixi-provided clang-format.
@@ -395,7 +396,7 @@ so platform test jobs do not each rebuild docs.
 **Key design:**
 
 - `ci_lint.yml` runs on ALL changes (including doc-only changes) to catch formatting and documentation issues early
-- FreeBSD and Alt Linux CI (`ci_freebsd.yml`, `ci_altlinux.yml`) run on schedule/manual only to reduce maintenance burden
+- FreeBSD CI (`ci_freebsd.yml`) runs on schedule/manual only to reduce maintenance burden; Alt Linux also runs on PRs for distro repro coverage
 - Lint is removed from platform-specific workflows since it's covered by the dedicated job
 
 **Doc-only skip patterns** (used by platform CI, NOT by lint CI):
