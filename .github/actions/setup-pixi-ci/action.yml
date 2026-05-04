@@ -49,7 +49,7 @@ runs:
       with:
         pixi-version: ${{ inputs.pixi-version }}
         cache: ${{ inputs.cache == 'true' && startsWith(runner.name, 'GitHub Actions') }}
-        environments: ${{ inputs.run-install == 'true' && inputs.environments || '' }}
+        environments: ${{ inputs.run-install == 'true' && startsWith(runner.name, 'GitHub Actions') && inputs.environments || '' }}
         post-cleanup: ${{ inputs.post-cleanup == 'true' && startsWith(runner.name, 'GitHub Actions') }}
         run-install: ${{ inputs.run-install == 'true' && startsWith(runner.name, 'GitHub Actions') }}
         pixi-bin-path: ${{ inputs.pixi-bin-path }}
