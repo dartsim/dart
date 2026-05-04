@@ -338,9 +338,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /permissive- /Zc:twoPhase- /MP /FS
 
 ### Debug Builds
 
-Debug builds are slower, but Ubuntu and macOS keep explicit Debug C++ and dartpy
-test jobs in PR CI because they catch configuration-specific failures. Windows
-keeps Release-only tests to keep runtime acceptable.
+Debug builds are slower, but Ubuntu keeps explicit Debug C++ and dartpy test
+jobs in PR CI because they catch configuration-specific failures. macOS keeps
+Debug C++ coverage, while dartpy is covered by macOS Release and Ubuntu Debug;
+macOS arm64 Debug dartpy builds are too slow for PR feedback on GitHub-hosted
+runners. Windows keeps Release-only tests to keep runtime acceptable.
 
 **Behavior:**
 
@@ -423,7 +425,7 @@ paths-ignore:
 - Ubuntu Release: Full tests + coverage
 - Ubuntu Debug: Debug C++ and dartpy tests
 - macOS Release: Full tests
-- macOS Debug: Debug C++ and dartpy tests
+- macOS Debug: Debug C++ tests
 - Windows Release: Full tests
 - Gazebo integration: Integration tests
 
@@ -439,7 +441,8 @@ does not repeat local-only validation in every platform job:
 
 - `pixi run check-lint` runs once in `ci_lint.yml`
 - `pixi run docs-build` runs once in `ci_lint.yml`
-- Platform jobs run explicit C++ and dartpy test tasks for their build type
+- Platform jobs run explicit C++ and dartpy test tasks for their selected
+  coverage slice
 - Release jobs build examples and install where that platform covers the path
 
 Use `pixi run test-all` for local pre-PR validation; avoid adding it to CI jobs

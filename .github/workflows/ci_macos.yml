@@ -112,12 +112,6 @@ jobs:
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Debug \
+          DART_BUILD_DARTPY_OVERRIDE=OFF \
           DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
           pixi run test ON Debug
-
-      - name: Run Debug Python tests
-        run: |
-          DART_VERBOSE=ON \
-          BUILD_TYPE=Debug \
-          DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
-          pixi run test-py ON Debug
