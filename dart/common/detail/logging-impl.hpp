@@ -47,7 +47,8 @@
     // spdlog uses std::format - no need for runtime wrapper
     #define DART_SPDLOG_RUNTIME(str) str
   #else
-    // spdlog uses fmt - need fmt::runtime for non-compile-time strings
+    // spdlog uses fmt - need its compatibility macro for non-compile-time
+    // strings across supported fmt versions.
     #include <fmt/ostream.h>
     #include <spdlog/fmt/fmt.h>
     #include <spdlog/fmt/ostr.h>
@@ -123,7 +124,7 @@ auto normalize(T&& arg)
 
 } // namespace detail_log_arg
 
-    #define DART_SPDLOG_RUNTIME(str) fmt::runtime(str)
+    #define DART_SPDLOG_RUNTIME(str) SPDLOG_FMT_RUNTIME(str)
   #endif
 #else
   #include <iostream>

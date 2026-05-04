@@ -205,6 +205,18 @@ TEST(LoggingTest, LevelFunctions)
 }
 
 //==============================================================================
+TEST(LoggingTest, RuntimeFormatString)
+{
+  const std::string format = "runtime {}";
+  dart::common::trace(format, 42);
+  dart::common::debug(format, 42);
+  dart::common::info(format, 42);
+  dart::common::warn(format, 42);
+  dart::common::error(format, 42);
+  dart::common::fatal(format, 42);
+}
+
+//==============================================================================
 TEST(LoggingTest, DetailHelpers)
 {
   using dart::common::detail::LogLevel;
