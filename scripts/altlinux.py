@@ -169,10 +169,11 @@ def bootstrap_container(args):
     command = f"""
 attempt=1
 while [ "$attempt" -le {apt_attempts} ]; do
-  if apt-get update && apt-get install -y --fix-missing {package_list} && apt-get install -y {package_list}; then
+  apt-get update && apt-get install -y --fix-missing {package_list} && apt-get install -y {package_list}
+  status=$?
+  if [ "$status" -eq 0 ]; then
     exit 0
   fi
-  status=$?
   if [ "$attempt" -eq {apt_attempts} ]; then
     exit "$status"
   fi
