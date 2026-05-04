@@ -35,6 +35,7 @@
 
 #include <dart/common/memory_allocator.hpp>
 
+#include <algorithm>
 #include <memory>
 #include <new>
 #include <vector>
@@ -232,15 +233,11 @@ bool BodyNodePool<T>::owns(const void* ptr) const noexcept
 
   const auto* bytePtr = static_cast<const std::byte*>(ptr);
   const std::size_t chunkBytes = mSlotsPerChunk * kSlotSize;
-  for (const auto& chunk : mChunks) {
+  return std::ranges::any_of(mChunks, [bytePtr, chunkBytes](const auto& chunk) {
     const std::byte* begin = chunk->mData;
     const std::byte* end = begin + chunkBytes;
-    if (bytePtr >= begin && bytePtr < end) {
-      return true;
-    }
-  }
-
-  return false;
+    return bytePtr >= begin && bytePtr < end;
+  });
 }
 
 //==============================================================================

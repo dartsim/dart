@@ -36,6 +36,8 @@
 #include "dart/common/macros.hpp"
 #include "dart/dynamics/body_node.hpp"
 
+#include <algorithm>
+
 namespace dart {
 namespace collision {
 
@@ -73,13 +75,9 @@ void CompositeCollisionFilter::removeAllCollisionFilters()
 bool CompositeCollisionFilter::ignoresCollision(
     const CollisionObject* object1, const CollisionObject* object2) const
 {
-  for (const auto* filter : mFilters) {
-    if (filter->ignoresCollision(object1, object2)) {
-      return true;
-    }
-  }
-
-  return false;
+  return std::ranges::any_of(mFilters, [object1, object2](const auto* filter) {
+    return filter->ignoresCollision(object1, object2);
+  });
 }
 
 //==============================================================================

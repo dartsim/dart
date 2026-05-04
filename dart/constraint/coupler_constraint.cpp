@@ -70,8 +70,8 @@ CouplerConstraint::CouplerConstraint(
   DART_ASSERT(joint->getNumDofs() <= mMimicProps.size());
   DART_ASSERT(mBodyNode);
 
-  std::fill(mLifeTime, mLifeTime + 6, 0);
-  std::fill(mActive, mActive + 6, false);
+  std::ranges::fill(mLifeTime, 0);
+  std::ranges::fill(mActive, false);
 }
 
 //==============================================================================

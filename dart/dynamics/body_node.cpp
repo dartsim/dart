@@ -1056,10 +1056,7 @@ Marker* BodyNode::createMarker(const Marker::BasicProperties& properties)
 //==============================================================================
 bool BodyNode::dependsOn(std::size_t _genCoordIndex) const
 {
-  return std::binary_search(
-      mDependentGenCoordIndices.begin(),
-      mDependentGenCoordIndices.end(),
-      _genCoordIndex);
+  return std::ranges::binary_search(mDependentGenCoordIndices, _genCoordIndex);
 }
 
 //==============================================================================

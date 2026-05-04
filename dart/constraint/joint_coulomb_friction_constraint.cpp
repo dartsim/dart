@@ -38,6 +38,7 @@
 #include "dart/dynamics/joint.hpp"
 #include "dart/dynamics/skeleton.hpp"
 
+#include <algorithm>
 #include <iostream>
 
 #define DART_CFM 1e-9
@@ -58,19 +59,8 @@ JointCoulombFrictionConstraint::JointCoulombFrictionConstraint(
   DART_ASSERT(_joint);
   DART_ASSERT(mBodyNode);
 
-  mLifeTime[0] = 0;
-  mLifeTime[1] = 0;
-  mLifeTime[2] = 0;
-  mLifeTime[3] = 0;
-  mLifeTime[4] = 0;
-  mLifeTime[5] = 0;
-
-  mActive[0] = false;
-  mActive[1] = false;
-  mActive[2] = false;
-  mActive[3] = false;
-  mActive[4] = false;
-  mActive[5] = false;
+  std::ranges::fill(mLifeTime, 0);
+  std::ranges::fill(mActive, false);
 }
 
 //==============================================================================
@@ -276,13 +266,7 @@ dynamics::SkeletonPtr JointCoulombFrictionConstraint::getRootSkeleton() const
 //==============================================================================
 bool JointCoulombFrictionConstraint::isActive() const
 {
-  for (std::size_t i = 0; i < 6; ++i) {
-    if (mActive[i]) {
-      return true;
-    }
-  }
-
-  return false;
+  return std::ranges::any_of(mActive, [](bool active) { return active; });
 }
 
 } // namespace constraint

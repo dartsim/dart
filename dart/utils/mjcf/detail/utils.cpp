@@ -37,6 +37,8 @@
 #include "dart/utils/dart_resource_retriever.hpp"
 #include "dart/utils/xml_helpers.hpp"
 
+#include <algorithm>
+
 namespace dart {
 namespace utils {
 namespace MjcfParser {
@@ -252,14 +254,8 @@ void warnUnknownElements(
   const tinyxml2::XMLElement* child = parentElement->FirstChildElement();
   while (child != nullptr) {
     const std::string childName = child->Name();
-
-    bool known = false;
-    for (const auto& name : knownChildNames) {
-      if (childName == name) {
-        known = true;
-        break;
-      }
-    }
+    const bool known = std::ranges::find(knownChildNames, childName)
+                       != knownChildNames.end();
 
     if (!known) {
       DART_WARN(
@@ -281,14 +277,8 @@ void warnUnknownAttributes(
   const tinyxml2::XMLAttribute* attr = element->FirstAttribute();
   while (attr != nullptr) {
     const std::string attrName = attr->Name();
-
-    bool known = false;
-    for (const auto& name : knownAttrNames) {
-      if (attrName == name) {
-        known = true;
-        break;
-      }
-    }
+    const bool known
+        = std::ranges::find(knownAttrNames, attrName) != knownAttrNames.end();
 
     if (!known) {
       DART_WARN(

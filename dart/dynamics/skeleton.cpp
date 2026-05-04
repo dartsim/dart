@@ -458,10 +458,7 @@ Skeleton::~Skeleton()
     } else {
       // Either heap-allocated or from a borrowed chunk (cross-skeleton move).
       // Call destructor explicitly, then free if heap-allocated.
-      bool isHeap = std::find(
-                        mHeapAllocatedBodyNodes.begin(),
-                        mHeapAllocatedBodyNodes.end(),
-                        bn)
+      bool isHeap = std::ranges::find(mHeapAllocatedBodyNodes, bn)
                     != mHeapAllocatedBodyNodes.end();
       if (isHeap) {
         delete bn;

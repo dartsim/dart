@@ -80,12 +80,8 @@ void UnorderedPairs<T>::addPair(const T* left, const T* right)
     std::swap(less, greater);
   }
 
-  // Call insert in case an entry for bodyNodeLess doesn't exist. If it doesn't
-  // exist, it will be initialized with an empty set. If it does already exist,
-  // we will just get an iterator to the existing entry.
-  const auto itLess
-      = mList.insert(std::make_pair(less, std::unordered_set<const T*>()))
-            .first;
+  // Create an empty set when the lower pointer has no existing entry.
+  const auto itLess = mList.try_emplace(less).first;
 
   // Insert bodyNodeGreater into the set corresponding to bodyNodeLess. If the
   // pair already existed, this will do nothing.
@@ -139,16 +135,7 @@ bool UnorderedPairs<T>::contains(const T* left, const T* right) const
   }
 
   const auto resultLeft = mList.find(less);
-  const bool foundLeft = (resultLeft != mList.end());
-  if (foundLeft) {
-    auto& associatedRights = resultLeft->second;
-
-    if (associatedRights.contains(greater)) {
-      return true;
-    }
-  }
-
-  return false;
+  return resultLeft != mList.end() && resultLeft->second.contains(greater);
 }
 
 } // namespace detail

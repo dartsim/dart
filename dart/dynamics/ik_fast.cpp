@@ -38,6 +38,8 @@
 #include "dart/dynamics/ikfast.h"
 #include "dart/dynamics/revolute_joint.hpp"
 
+#include <algorithm>
+
 namespace dart {
 namespace dynamics {
 
@@ -210,14 +212,11 @@ bool checkDofMapValidity(
   const auto& dependentDofs = ik->getNode()->getDependentDofs();
 
   for (const auto& dof : dofMap) {
-    bool found = false;
-    for (auto dependentDof : dependentDofs) {
-      const auto dependentDofIndex = dependentDof->getIndexInSkeleton();
-      if (dof == dependentDofIndex) {
-        found = true;
-        break;
-      }
-    }
+    const bool found
+        = std::ranges::any_of(dependentDofs, [dof](auto dependentDof) {
+            const auto dependentDofIndex = dependentDof->getIndexInSkeleton();
+            return dof == dependentDofIndex;
+          });
 
     if (!found) {
       DART_ERROR(
