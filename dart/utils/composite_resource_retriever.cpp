@@ -36,6 +36,7 @@
 #include "dart/common/logging.hpp"
 #include "dart/common/uri.hpp"
 
+#include <algorithm>
 #include <iostream>
 
 namespace dart {
@@ -76,13 +77,11 @@ bool CompositeResourceRetriever::addSchemaRetriever(
 //==============================================================================
 bool CompositeResourceRetriever::exists(const common::Uri& uri)
 {
-  for (const common::ResourceRetrieverPtr& resourceRetriever :
-       getRetrievers(uri)) {
-    if (resourceRetriever->exists(uri)) {
-      return true;
-    }
-  }
-  return false;
+  return std::ranges::any_of(
+      getRetrievers(uri),
+      [&uri](const common::ResourceRetrieverPtr& resourceRetriever) {
+        return resourceRetriever->exists(uri);
+      });
 }
 
 //==============================================================================

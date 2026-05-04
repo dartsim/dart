@@ -37,6 +37,7 @@
 #include "dart/common/logging.hpp"
 #include "dart/common/uri.hpp"
 
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 
@@ -80,23 +81,20 @@ bool PackageResourceRetriever::exists(const common::Uri& uri)
     return false;
   }
 
-  for (const std::string& packagePath : getPackagePaths(packageName)) {
-    const std::string resolvedUri = packagePath + relativePath;
-    common::Uri fileUri;
-    if (!fileUri.fromStringOrPath(resolvedUri)) {
-      DART_WARN(
-          "Failed to parse resolved URI '{}' for package '{}'.",
-          resolvedUri,
-          packageName);
-      continue;
-    }
+  return std::ranges::any_of(
+      getPackagePaths(packageName), [&](const auto& packagePath) {
+        const std::string resolvedUri = packagePath + relativePath;
+        common::Uri fileUri;
+        if (!fileUri.fromStringOrPath(resolvedUri)) {
+          DART_WARN(
+              "Failed to parse resolved URI '{}' for package '{}'.",
+              resolvedUri,
+              packageName);
+          return false;
+        }
 
-    if (mLocalRetriever->exists(fileUri)) {
-      return true;
-    }
-  }
-
-  return false;
+        return mLocalRetriever->exists(fileUri);
+      });
 }
 
 //==============================================================================
