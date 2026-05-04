@@ -328,8 +328,12 @@ target_compile_options(dartpy PRIVATE "-UNB_COMPACT_ASSERTIONS")
 
 set_target_properties(dartpy PROPERTIES
   OUTPUT_NAME "_dartpy"
-  DEBUG_POSTFIX ""
 )
+if(NOT CMAKE_CONFIGURATION_TYPES)
+  # Python imports the extension by the module init name, which is _dartpy.
+  # Single-config Debug builds use a separate build tree, so no postfix is needed.
+  set_target_properties(dartpy PROPERTIES DEBUG_POSTFIX "")
+endif()
 
 # Copy pure-Python helpers into the build tree so tests can import them
 foreach(_py_file __init__.py _naming.py _layout.py)
