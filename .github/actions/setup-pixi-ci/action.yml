@@ -72,7 +72,7 @@ runs:
 
           if [ -n "${environments}" ]; then
             for environment in ${environments}; do
-              pixi install --environment "${environment}"
+              pixi install --environment "${environment}" || return $?
             done
             return
           fi
