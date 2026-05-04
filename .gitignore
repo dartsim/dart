@@ -117,8 +117,17 @@ profiling/*.txt
 compile_commands.json
 compile_flags.txt
 
-# OpenCode agent artifacts
+# OpenCode project commands are source-controlled AI workflow files.
 .opencode/
+!.opencode/
+!.opencode/command/
+!.opencode/command/*.md
+
+# Codex project skills are source-controlled AI workflow files.
+!.codex/
+!.codex/skills/
+!.codex/skills/**/
+!.codex/skills/**/SKILL.md
 
 # Temporary apt downloads
 .tmp_apt/

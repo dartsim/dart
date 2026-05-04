@@ -1,6 +1,6 @@
 ---
 name: dart-test
-description: DART testing patterns - unit tests, integration tests, CI validation
+description: DART Test: unit tests, integration tests, CI validation, and debugging
 ---
 
 # DART Testing

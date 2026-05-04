@@ -1,11 +1,27 @@
 ---
-description: start a feature, bugfix, refactor, docs, build, or test task
-agent: build
+name: dart-new-task
+description: "DART New Task: start a feature, bugfix, refactor, docs, build, or test task"
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/commands/dart-new-task.md -->
 <!-- Sync script: scripts/sync_ai_commands.py -->
 <!-- Run `pixi run sync-ai-commands` to update -->
+
+# dart-new-task
+
+Use this skill in Codex when you want the same workflow that Claude Code and
+OpenCode expose as `/dart-new-task`.
+
+## Invocation
+
+- Claude Code/OpenCode: `/dart-new-task <arguments>`
+- Codex: `$dart-new-task <arguments>`
+
+Treat the text after the skill name as `$ARGUMENTS`. When the workflow
+references `$1`, `$2`, etc., map those to the positional values supplied by the
+user.
+
+## Command Body
 
 Start a new task in DART: $ARGUMENTS
 
