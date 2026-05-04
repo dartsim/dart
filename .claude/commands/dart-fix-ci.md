@@ -1,5 +1,5 @@
 ---
-description: Debug and fix failing CI checks
+description: debug and fix failing CI checks
 agent: build
 ---
 

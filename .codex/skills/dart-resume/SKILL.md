@@ -1,11 +1,27 @@
 ---
-description: continue work from a previous session
-agent: build
+name: dart-resume
+description: "DART Resume: continue work from a previous session"
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/commands/dart-resume.md -->
 <!-- Sync script: scripts/sync_ai_commands.py -->
 <!-- Run `pixi run sync-ai-commands` to update -->
+
+# dart-resume
+
+Use this skill in Codex when you want the same workflow that Claude Code and
+OpenCode expose as `/dart-resume`.
+
+## Invocation
+
+- Claude Code/OpenCode: `/dart-resume <arguments>`
+- Codex: `$dart-resume <arguments>`
+
+Treat the text after the skill name as `$ARGUMENTS`. When the workflow
+references `$1`, `$2`, etc., map those to the positional values supplied by the
+user.
+
+## Command Body
 
 Resume unfinished work: $ARGUMENTS
 

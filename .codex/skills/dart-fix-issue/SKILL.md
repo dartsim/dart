@@ -1,11 +1,27 @@
 ---
-description: resolve a GitHub issue with a fix and regression test
-agent: build
+name: dart-fix-issue
+description: "DART Fix Issue: resolve a GitHub issue with a fix and regression test"
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/commands/dart-fix-issue.md -->
 <!-- Sync script: scripts/sync_ai_commands.py -->
 <!-- Run `pixi run sync-ai-commands` to update -->
+
+# dart-fix-issue
+
+Use this skill in Codex when you want the same workflow that Claude Code and
+OpenCode expose as `/dart-fix-issue`.
+
+## Invocation
+
+- Claude Code/OpenCode: `/dart-fix-issue <arguments>`
+- Codex: `$dart-fix-issue <arguments>`
+
+Treat the text after the skill name as `$ARGUMENTS`. When the workflow
+references `$1`, `$2`, etc., map those to the positional values supplied by the
+user.
+
+## Command Body
 
 Fix GitHub issue: $ARGUMENTS
 

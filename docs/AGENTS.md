@@ -15,13 +15,18 @@ Entry Points (all redirect to AGENTS.md)
 
 Tool-Specific Commands
 ├── .claude/commands/      ← Claude Code (/dart-*)
-└── .opencode/command/     ← OpenCode (/dart-*)
+├── .opencode/command/     ← OpenCode (/dart-*)
+└── .codex/skills/         ← Codex ($dart-* generated workflow skills)
 
-Shared Skills (Claude Code + OpenCode)
-└── .claude/skills/
+Shared Skills
+├── .claude/skills/        ← Claude Code + OpenCode
+└── .codex/skills/         ← Codex (synced)
     ├── dart-build/SKILL.md
-    ├── dart-test/SKILL.md
-    └── dart-contribute/SKILL.md
+    ├── dart-ci/SKILL.md
+    ├── dart-contribute/SKILL.md
+    ├── dart-io/SKILL.md
+    ├── dart-python/SKILL.md
+    └── dart-test/SKILL.md
 
 Knowledge Base
 └── docs/
@@ -44,7 +49,10 @@ Knowledge Base
 ## By Task
 
 - **Building DART?** → `onboarding/building.md` or load skill `dart-build`
+- **Debugging CI?** → `onboarding/ci-cd.md` or load skill `dart-ci`
 - **Running tests?** → `onboarding/testing.md` or load skill `dart-test`
+- **Loading models?** → `onboarding/io-parsing.md` or load skill `dart-io`
+- **Working on dartpy?** → `onboarding/python-bindings.md` or load skill `dart-python`
 - **Understanding architecture?** → `onboarding/architecture.md`
 - **Contributing?** → `onboarding/contributing.md` or load skill `dart-contribute`
 - **Adding docs?** → `readthedocs/README.md`

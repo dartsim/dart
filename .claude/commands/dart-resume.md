@@ -1,5 +1,5 @@
 ---
-description: Continue work from previous session
+description: continue work from a previous session
 agent: build
 ---
 

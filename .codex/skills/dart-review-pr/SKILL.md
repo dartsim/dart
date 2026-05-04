@@ -1,11 +1,27 @@
 ---
-description: review a PR or address review feedback
-agent: build
+name: dart-review-pr
+description: "DART Review PR: review a PR or address review feedback"
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/commands/dart-review-pr.md -->
 <!-- Sync script: scripts/sync_ai_commands.py -->
 <!-- Run `pixi run sync-ai-commands` to update -->
+
+# dart-review-pr
+
+Use this skill in Codex when you want the same workflow that Claude Code and
+OpenCode expose as `/dart-review-pr`.
+
+## Invocation
+
+- Claude Code/OpenCode: `/dart-review-pr <arguments>`
+- Codex: `$dart-review-pr <arguments>`
+
+Treat the text after the skill name as `$ARGUMENTS`. When the workflow
+references `$1`, `$2`, etc., map those to the positional values supplied by the
+user.
+
+## Command Body
 
 Review or respond to PR: $ARGUMENTS
 
