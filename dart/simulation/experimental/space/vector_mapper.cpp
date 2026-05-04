@@ -145,13 +145,9 @@ void VectorMapper::fromEigen(
             m_space.getDimension()));
   }
 
-  // Convert Eigen to std::vector
-  std::vector<double> temp(vec.size());
-  for (Eigen::Index i = 0; i < vec.size(); ++i) {
-    temp[i] = vec[i];
-  }
-
-  fromVector(registry, std::span<const double>(temp));
+  fromVector(
+      registry,
+      std::span<const double>(vec.data(), static_cast<size_t>(vec.size())));
 }
 
 void VectorMapper::addMapper(
