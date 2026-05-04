@@ -26,17 +26,25 @@ except ImportError:  # pragma: no cover
 ROOT_DIR = Path(__file__).resolve().parent.parent
 
 
-def positive_int_env(name: str, default: int) -> int:
+def int_env(name: str, default: int, *, minimum: int, description: str) -> int:
     value = os.environ.get(name)
     if not value:
         return default
     try:
         parsed = int(value)
     except ValueError as exc:
-        raise SystemExit(f"{name} must be a positive integer") from exc
-    if parsed < 1:
-        raise SystemExit(f"{name} must be a positive integer")
+        raise SystemExit(f"{name} must be {description}") from exc
+    if parsed < minimum:
+        raise SystemExit(f"{name} must be {description}")
     return parsed
+
+
+def positive_int_env(name: str, default: int) -> int:
+    return int_env(name, default, minimum=1, description="a positive integer")
+
+
+def non_negative_int_env(name: str, default: int) -> int:
+    return int_env(name, default, minimum=0, description="a non-negative integer")
 
 
 def positive_int(value: str) -> int:
@@ -189,14 +197,14 @@ def build(build_dir: Path, targets: list[str], parallel: int) -> None:
 
 
 def test(build_dir: Path, args: argparse.Namespace, parallel: int) -> None:
-    ctest_parallel = positive_int_env("CTEST_PARALLEL_LEVEL", parallel)
+    ctest_parallel = non_negative_int_env("CTEST_PARALLEL_LEVEL", parallel)
     cmd = [
         "ctest",
         "--test-dir",
         str(build_dir),
         "--output-on-failure",
         "--parallel",
-        str(max(1, ctest_parallel)),
+        str(ctest_parallel),
         "-LE",
         "simulation-experimental",
     ]
