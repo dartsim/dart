@@ -38,6 +38,7 @@
 #include "dart/common/macros.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/revolute_joint.hpp"
+#include "dart/dynamics/simple_frame.hpp"
 #include "dart/dynamics/skeleton.hpp"
 #include "dart/io/read.hpp"
 #include "dart/math/geometry.hpp"
@@ -46,6 +47,7 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -267,6 +269,118 @@ TEST(World, RemoveSkeletonAndAllSkeletons)
   const auto removed = world->removeAllSkeletons();
   EXPECT_EQ(removed.size(), 1u);
   EXPECT_EQ(world->getNumSkeletons(), 0u);
+}
+
+//==============================================================================
+TEST(World, EachSkeletonKeepsRemovedSkeletonAliveDuringBoolCallback)
+{
+  {
+    auto world = World::create();
+    auto skeleton = Skeleton::create("skeleton");
+    skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+    std::weak_ptr<Skeleton> weakSkeleton = skeleton;
+
+    world->addSkeleton(skeleton);
+    skeleton.reset();
+
+    bool visited = false;
+    world->eachSkeleton([&](Skeleton* skel) -> bool {
+      visited = true;
+      world->removeAllSkeletons();
+      const auto keptAlive = weakSkeleton.lock();
+      EXPECT_NE(nullptr, keptAlive);
+      if (keptAlive) {
+        EXPECT_EQ(skel, keptAlive.get());
+        EXPECT_EQ("skeleton", keptAlive->getName());
+      }
+      return false;
+    });
+
+    EXPECT_TRUE(visited);
+    EXPECT_TRUE(weakSkeleton.expired());
+  }
+
+  {
+    auto world = World::create();
+    auto skeleton = Skeleton::create("skeleton");
+    skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+    std::weak_ptr<Skeleton> weakSkeleton = skeleton;
+
+    world->addSkeleton(skeleton);
+    skeleton.reset();
+
+    bool visited = false;
+    const auto& constWorld = *world;
+    constWorld.eachSkeleton([&](const Skeleton* skel) -> bool {
+      visited = true;
+      world->removeAllSkeletons();
+      const auto keptAlive = weakSkeleton.lock();
+      EXPECT_NE(nullptr, keptAlive);
+      if (keptAlive) {
+        EXPECT_EQ(skel, keptAlive.get());
+        EXPECT_EQ("skeleton", keptAlive->getName());
+      }
+      return false;
+    });
+
+    EXPECT_TRUE(visited);
+    EXPECT_TRUE(weakSkeleton.expired());
+  }
+}
+
+//==============================================================================
+TEST(World, EachSimpleFrameKeepsRemovedFrameAliveDuringBoolCallback)
+{
+  {
+    auto world = World::create();
+    auto frame = SimpleFrame::createShared(Frame::World(), "frame");
+    std::weak_ptr<SimpleFrame> weakFrame = frame;
+
+    world->addSimpleFrame(frame);
+    frame.reset();
+
+    bool visited = false;
+    world->eachSimpleFrame([&](SimpleFrame* simpleFrame) -> bool {
+      visited = true;
+      world->removeAllSimpleFrames();
+      const auto keptAlive = weakFrame.lock();
+      EXPECT_NE(nullptr, keptAlive);
+      if (keptAlive) {
+        EXPECT_EQ(simpleFrame, keptAlive.get());
+        EXPECT_EQ("frame", keptAlive->getName());
+      }
+      return false;
+    });
+
+    EXPECT_TRUE(visited);
+    EXPECT_TRUE(weakFrame.expired());
+  }
+
+  {
+    auto world = World::create();
+    auto frame = SimpleFrame::createShared(Frame::World(), "frame");
+    std::weak_ptr<SimpleFrame> weakFrame = frame;
+
+    world->addSimpleFrame(frame);
+    frame.reset();
+
+    bool visited = false;
+    const auto& constWorld = *world;
+    constWorld.eachSimpleFrame([&](const SimpleFrame* simpleFrame) -> bool {
+      visited = true;
+      world->removeAllSimpleFrames();
+      const auto keptAlive = weakFrame.lock();
+      EXPECT_NE(nullptr, keptAlive);
+      if (keptAlive) {
+        EXPECT_EQ(simpleFrame, keptAlive.get());
+        EXPECT_EQ("frame", keptAlive->getName());
+      }
+      return false;
+    });
+
+    EXPECT_TRUE(visited);
+    EXPECT_TRUE(weakFrame.expired());
+  }
 }
 
 //==============================================================================
