@@ -39,6 +39,7 @@
 #include <Eigen/StdVector>
 
 #include <memory>
+#include <type_traits>
 
 namespace dart {
 namespace common {
@@ -47,7 +48,7 @@ namespace common {
 template <typename _Tp, typename... _Args>
 std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args)
 {
-  using _Tp_nc = typename std::remove_const<_Tp>::type;
+  using _Tp_nc = std::remove_const_t<_Tp>;
 
   return std::allocate_shared<_Tp>(
       Eigen::aligned_allocator<_Tp_nc>(), std::forward<_Args>(__args)...);
