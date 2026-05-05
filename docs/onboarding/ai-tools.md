@@ -40,15 +40,15 @@ This document tracks AI coding assistant compatibility with DART's documentation
 
 ### Conventions
 
-| Convention                    | Rule                                                           |
-| ----------------------------- | -------------------------------------------------------------- |
-| **Single source of truth**    | `AGENTS.md` contains all instructions; other files redirect    |
-| **Command naming**            | `dart-` prefix (e.g., `dart-new-task.md`)                      |
-| **Skill naming**              | `dart-` prefix (e.g., `dart-build`)                            |
-| **Skill descriptions**        | Start with display name (e.g., `DART Build: ...`)              |
-| **No tool-specific language** | Use generic terms; avoid "Claude will..." or "Codex should..." |
-| **Placeholders**              | Use `$ARGUMENTS`, `$1`, `$2` for command args                  |
-| **File references**           | Use `@file` syntax for auto-loading context                    |
+| Convention                    | Rule                                                                       |
+| ----------------------------- | -------------------------------------------------------------------------- |
+| **Single source of truth**    | `AGENTS.md` contains all instructions; other files redirect                |
+| **Command naming**            | `dart-` prefix (e.g., `dart-new-task.md`)                                  |
+| **Skill naming**              | `dart-` prefix (e.g., `dart-build`)                                        |
+| **Skill descriptions**        | Start with display name and quote colon values (e.g., `"DART Build: ..."`) |
+| **No tool-specific language** | Use generic terms; avoid "Claude will..." or "Codex should..."             |
+| **Placeholders**              | Use `$ARGUMENTS`, `$1`, `$2` for command args                              |
+| **File references**           | Use `@file` syntax for auto-loading context                                |
 
 ### @file Import Syntax
 
@@ -174,7 +174,7 @@ Follow the pattern of `dart-build` and `dart-test`:
 ```markdown
 ---
 name: dart-<name>
-description: DART <Name>: brief description for skill discovery
+description: "DART <Name>: brief description for skill discovery"
 ---
 
 # Skill Title

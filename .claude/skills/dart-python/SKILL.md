@@ -1,6 +1,6 @@
 ---
 name: dart-python
-description: DART Python: dartpy bindings, nanobind, wheels, and API patterns
+description: "DART Python: dartpy bindings, nanobind, wheels, and API patterns"
 ---
 
 # DART Python Bindings (dartpy)

@@ -1,6 +1,6 @@
 ---
 name: dart-io
-description: DART IO: URDF, SDF, MJCF, SKEL parsers, and dart::io loading
+description: "DART IO: URDF, SDF, MJCF, SKEL parsers, and dart::io loading"
 ---
 
 # DART Model Loading (`dart::io`)

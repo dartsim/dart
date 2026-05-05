@@ -1,6 +1,6 @@
 ---
 name: dart-contribute
-description: DART Contribute: branching, PRs, review workflow, and dual-PR bugfixes
+description: "DART Contribute: branching, PRs, review workflow, and dual-PR bugfixes"
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/skills/dart-contribute/SKILL.md -->

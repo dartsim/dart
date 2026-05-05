@@ -1,6 +1,6 @@
 ---
 name: dart-build
-description: DART Build: CMake, pixi, dependencies, and build troubleshooting
+description: "DART Build: CMake, pixi, dependencies, and build troubleshooting"
 ---
 
 # DART Build System

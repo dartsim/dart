@@ -1,6 +1,6 @@
 ---
 name: dart-test
-description: DART Test: unit tests, integration tests, CI validation, and debugging
+description: "DART Test: unit tests, integration tests, CI validation, and debugging"
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/skills/dart-test/SKILL.md -->

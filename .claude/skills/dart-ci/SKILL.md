@@ -1,6 +1,6 @@
 ---
 name: dart-ci
-description: DART CI: GitHub Actions, cache debugging, and platform-specific failures
+description: "DART CI: GitHub Actions, cache debugging, and platform-specific failures"
 ---
 
 # DART CI/CD Troubleshooting
