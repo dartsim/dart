@@ -38,6 +38,8 @@
 #include <dart/all.hpp>
 #include <dart/io/read.hpp>
 
+#include <string_view>
+
 using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::simulation;
@@ -288,8 +290,10 @@ public:
 
     mLegs.reserve(12);
     for (std::size_t i = 0; i < mAtlas->getNumDofs(); ++i) {
-      if (mAtlas->getDof(i)->getName().substr(1, 5) == "_leg_") {
-        mLegs.push_back(mAtlas->getDof(i)->getIndexInSkeleton());
+      const auto* dof = mAtlas->getDof(i);
+      const std::string_view name = dof->getName();
+      if (name.size() > 1 && name.substr(1).starts_with("_leg_")) {
+        mLegs.push_back(dof->getIndexInSkeleton());
       }
     }
     // We should also adjust the pelvis when detangling the legs
