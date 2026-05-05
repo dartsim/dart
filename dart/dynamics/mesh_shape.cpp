@@ -33,7 +33,6 @@
 #include "dart/dynamics/mesh_shape.hpp"
 
 #include "dart/common/diagnostics.hpp"
-#include "dart/common/filesystem.hpp"
 #include "dart/common/local_resource_retriever.hpp"
 #include "dart/common/logging.hpp"
 #include "dart/common/resource.hpp"
@@ -50,6 +49,7 @@
 #include <assimp/postprocess.h>
 
 #include <algorithm>
+#include <filesystem>
 #include <iomanip>
 #include <iterator>
 #include <limits>
@@ -58,6 +58,7 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <unordered_map>
 #include <utility>
 
@@ -1337,11 +1338,11 @@ void MeshShape::extractMaterialsFromScene(
   mMaterials.clear();
   mMaterials.reserve(scene->mNumMaterials);
 
-  const common::filesystem::path meshPath = basePath;
+  const std::filesystem::path meshPath = basePath;
   std::error_code meshPathEc;
-  const bool meshPathExists
-      = !basePath.empty() && common::filesystem::exists(meshPath, meshPathEc)
-        && !meshPathEc;
+  const bool meshPathExists = !basePath.empty()
+                              && std::filesystem::exists(meshPath, meshPathEc)
+                              && !meshPathEc;
 
   for (std::size_t i = 0; i < scene->mNumMaterials; ++i) {
     aiMaterial* aiMat = scene->mMaterials[i];
@@ -1407,12 +1408,12 @@ void MeshShape::extractMaterialsFromScene(
             continue;
           }
 
-          const common::filesystem::path relativeImagePath = imagePathString;
+          const std::filesystem::path relativeImagePath = imagePathString;
           std::error_code ec;
           bool attemptedCanonicalize = false;
           if (!basePath.empty() || relativeImagePath.is_absolute()) {
-            const common::filesystem::path absoluteImagePath
-                = common::filesystem::canonical(
+            const std::filesystem::path absoluteImagePath
+                = std::filesystem::canonical(
                     meshPath.parent_path() / relativeImagePath, ec);
             attemptedCanonicalize = true;
             if (!ec) {

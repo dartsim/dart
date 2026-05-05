@@ -36,6 +36,7 @@
 #include "dart/common/macros.hpp"
 #include "dart/common/shared_library.hpp"
 
+#include <filesystem>
 #include <fstream>
 
 #include <cassert>
@@ -60,7 +61,7 @@ std::shared_ptr<SharedLibrary> SharedLibraryManager::load(std::string_view path)
   }
 
   // Convert the given path to the canonical path
-  const auto canonicalPath = common::filesystem::canonical(pathString).string();
+  const auto canonicalPath = std::filesystem::canonical(pathString).string();
 
   const auto iter = mSharedLibraries.find(canonicalPath);
 

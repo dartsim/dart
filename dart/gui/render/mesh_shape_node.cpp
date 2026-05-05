@@ -33,7 +33,6 @@
 #include "dart/gui/render/mesh_shape_node.hpp"
 
 #include "dart/common/diagnostics.hpp"
-#include "dart/common/filesystem.hpp"
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
 #include "dart/common/uri.hpp"
@@ -55,11 +54,13 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <filesystem>
 #include <fstream>
 #include <map>
 #include <sstream>
 #include <stdexcept>
 #include <string_view>
+#include <system_error>
 #include <vector>
 
 #include <cstdint>
@@ -97,11 +98,11 @@ bool isTransparent(const ::osg::Material* material)
   return false;
 }
 
-common::filesystem::path makeTemporaryTexturePath(std::string_view extension)
+std::filesystem::path makeTemporaryTexturePath(std::string_view extension)
 {
   static std::atomic<uint64_t> counter{0};
 
-  const auto tempDir = common::filesystem::temp_directory_path();
+  const auto tempDir = std::filesystem::temp_directory_path();
 
   for (std::size_t attempt = 0; attempt < 64; ++attempt) {
     std::stringstream name;
@@ -121,8 +122,8 @@ common::filesystem::path makeTemporaryTexturePath(std::string_view extension)
     }
 
     const auto candidate = tempDir / name.str();
-    common::error_code ec;
-    if (!common::filesystem::exists(candidate, ec)) {
+    std::error_code ec;
+    if (!std::filesystem::exists(candidate, ec)) {
       return candidate;
     }
   }
@@ -131,8 +132,7 @@ common::filesystem::path makeTemporaryTexturePath(std::string_view extension)
       "Failed to allocate temporary file for texture materialization.");
 }
 
-bool writeTextureFile(
-    const common::filesystem::path& path, std::string_view data)
+bool writeTextureFile(const std::filesystem::path& path, std::string_view data)
 {
   std::ofstream output(path.string(), std::ios::binary);
   output.write(data.data(), static_cast<std::streamsize>(data.size()));
@@ -175,9 +175,9 @@ std::string materializeTextureImage(
 
   if (textureUri.mScheme.get_value_or("file") == "file" && textureUri.mPath) {
     const auto localPath = textureUri.getFilesystemPath();
-    common::error_code ec;
-    if (common::filesystem::exists(localPath, ec) && !ec) {
-      const auto canonical = common::filesystem::canonical(localPath, ec);
+    std::error_code ec;
+    if (std::filesystem::exists(localPath, ec) && !ec) {
+      const auto canonical = std::filesystem::canonical(localPath, ec);
       if (!ec) {
         return canonical.string();
       } else {
@@ -207,8 +207,8 @@ std::string materializeTextureImage(
   }
 
   const std::string imagePathString(imagePath);
-  const auto extension = common::filesystem::path(imagePathString).extension();
-  common::filesystem::path tempPath;
+  const auto extension = std::filesystem::path(imagePathString).extension();
+  std::filesystem::path tempPath;
   try {
     tempPath = makeTemporaryTexturePath(extension.string());
   } catch (const std::exception& e) {
@@ -525,8 +525,8 @@ void MeshShapeNode::clearTemporaryTextures()
       continue;
     }
 
-    common::error_code ec;
-    common::filesystem::remove(path, ec);
+    std::error_code ec;
+    std::filesystem::remove(path, ec);
   }
 
   mTemporaryTextureFiles.clear();

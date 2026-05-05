@@ -7,6 +7,7 @@
 - Breaking Changes
   - Increased required C++ standard from C++17 to C++20. ([#2068](https://github.com/dartsim/dart/pull/2068))
     - See [Compatibility Policy](docs/onboarding/compatibility-policy.md) for details
+  - Removed the `dart/common/filesystem.hpp` compatibility header; include `<filesystem>` and use `std::filesystem`/`std::error_code` directly.
   - Renamed `RootJointType` enum values to PascalCase (`Floating`, `Fixed`) across `dart::utils::SdfParser`, `dart::utils::UrdfParser` (formerly `DartLoader`), and their dartpy bindings to align with the code-style guidelines.
   - Renamed component meta headers to `All.hpp` and added the `dart/all.hpp` umbrella header; deprecated `<component>.hpp`/`all.hpp` headers now forward to `All.hpp`. ([#2047](https://github.com/dartsim/dart/pull/2047), [#2070](https://github.com/dartsim/dart/pull/2070), [#2084](https://github.com/dartsim/dart/pull/2084), [#2166](https://github.com/dartsim/dart/pull/2166))
   - Renamed installed C++ headers to snake_case; PascalCase compatibility wrappers are generated with deprecation warnings for legacy includes. ([#2475](https://github.com/dartsim/dart/pull/2475))
