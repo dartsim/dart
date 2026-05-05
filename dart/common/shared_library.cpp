@@ -90,7 +90,7 @@ SharedLibrary::~SharedLibrary()
 }
 
 //==============================================================================
-const common::filesystem::path& SharedLibrary::getCanonicalPath() const
+const std::filesystem::path& SharedLibrary::getCanonicalPath() const
 {
   return mCanonicalPath;
 }

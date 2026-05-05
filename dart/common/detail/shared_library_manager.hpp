@@ -33,7 +33,6 @@
 #ifndef DART_COMMON_DETAIL_SHAREDLIBRARYMANAGER_HPP_
 #define DART_COMMON_DETAIL_SHAREDLIBRARYMANAGER_HPP_
 
-#include <dart/common/filesystem.hpp>
 #include <dart/common/singleton.hpp>
 
 #include <memory>

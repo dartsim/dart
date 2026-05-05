@@ -5,6 +5,8 @@
 #include <assimp/cimport.h>
 #include <gtest/gtest.h>
 
+#include <filesystem>
+
 namespace dart {
 namespace utils {
 } // namespace utils
@@ -44,7 +46,7 @@ private:
   dart::common::Uri toLocalUri(const dart::common::Uri& uri) const
   {
     if (isSampleUri(uri)) {
-      dart::common::filesystem::path path = mDataRoot;
+      std::filesystem::path path = mDataRoot;
       std::string relative = uri.getPath();
       if (!relative.empty() && relative.front() == '/') {
         relative.erase(0, 1);
@@ -66,9 +68,9 @@ private:
   dart::common::LocalResourceRetrieverPtr mDelegate;
 };
 
-dart::common::filesystem::path getSampleDataRoot()
+std::filesystem::path getSampleDataRoot()
 {
-  dart::common::filesystem::path here(__FILE__);
+  std::filesystem::path here(__FILE__);
   return here.parent_path().parent_path().parent_path().parent_path() / "data";
 }
 
