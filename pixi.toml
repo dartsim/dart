@@ -1808,6 +1808,10 @@ build-gz = { cmd = [
   "-lc",
   """
 set -euo pipefail
+if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
+fi
 CMAKE_BUILD_DIR=.deps/gz-physics/build python scripts/cmake_build.py --target all
 """,
 ], depends-on = [
@@ -1817,6 +1821,10 @@ CMAKE_BUILD_DIR=.deps/gz-physics/build python scripts/cmake_build.py --target al
 test-gz = { cmd = """
     bash -c '
         set -euo pipefail
+        if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
+          unset CMAKE_C_COMPILER_LAUNCHER
+          unset CMAKE_CXX_COMPILER_LAUNCHER
+        fi
         DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
         export DART_PARALLEL_JOBS
         export CTEST_OUTPUT_ON_FAILURE=1
