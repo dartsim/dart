@@ -94,6 +94,38 @@ def normalize_frontmatter_value(value: str) -> str:
     return value
 
 
+def validate_frontmatter_yaml_scalars(content: str, path_label: str) -> list[str]:
+    """Catch YAML-invalid unquoted scalar patterns in frontmatter."""
+    match = re.match(r"^---\s*\n(.*?)\n---", content, re.DOTALL)
+    if not match:
+        return []
+
+    errors = []
+    frontmatter = match.group(1)
+
+    for line_number, line in enumerate(frontmatter.splitlines(), start=2):
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+
+        m = re.match(r"^([A-Za-z0-9_-]+):\s*(.*)$", line)
+        if not m:
+            continue
+
+        key = m.group(1)
+        value = m.group(2).strip()
+        if not value or value[0] in {'"', "'", "|", ">"}:
+            continue
+
+        if ": " in value:
+            errors.append(
+                f"{path_label}:{line_number}: frontmatter field `{key}` contains "
+                "`: ` and must be quoted for strict YAML parsers"
+            )
+
+    return errors
+
+
 def strip_frontmatter(content: str) -> str:
     """Remove YAML frontmatter from a Markdown document."""
     match = re.match(r"^---\s*\n.*?\n---\s*\n?", content, re.DOTALL)
@@ -262,6 +294,8 @@ def validate_style_and_budget(repo_root: Path) -> bool:
             desc = meta.get("description", "")
             path_label = display_path(skill_path)
 
+            errors.extend(validate_frontmatter_yaml_scalars(content, path_label))
+
             if not desc:
                 errors.append(f"{path_label}: missing required description")
             elif name and not desc.startswith(f"{skill_display_name(name)}: "):
@@ -287,6 +321,8 @@ def validate_style_and_budget(repo_root: Path) -> bool:
             meta = parse_command_frontmatter(content)
             desc = meta.get("description", "")
             path_label = display_path(command_path)
+
+            errors.extend(validate_frontmatter_yaml_scalars(content, path_label))
 
             if not desc:
                 errors.append(f"{path_label}: missing required description")

@@ -1,6 +1,6 @@
 ---
 name: dart-ci
-description: DART CI: GitHub Actions, cache debugging, and platform-specific failures
+description: "DART CI: GitHub Actions, cache debugging, and platform-specific failures"
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/skills/dart-ci/SKILL.md -->
