@@ -91,12 +91,8 @@ fi
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
-  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_C_COMPILER_LAUNCHER
-  fi
-  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_CXX_COMPILER_LAUNCHER
-  fi
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
 fi
 if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
   if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
@@ -301,12 +297,8 @@ fi
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
-  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_C_COMPILER_LAUNCHER
-  fi
-  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_CXX_COMPILER_LAUNCHER
-  fi
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
 fi
 if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
   if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
@@ -467,12 +459,8 @@ DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
-  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_C_COMPILER_LAUNCHER
-  fi
-  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_CXX_COMPILER_LAUNCHER
-  fi
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
 fi
 if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
   if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] && command -v sccache >/dev/null 2>&1; then
@@ -735,12 +723,8 @@ DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
-  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_C_COMPILER_LAUNCHER
-  fi
-  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_CXX_COMPILER_LAUNCHER
-  fi
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
 fi
 if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
   if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
@@ -1230,12 +1214,8 @@ DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
-  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_C_COMPILER_LAUNCHER
-  fi
-  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_CXX_COMPILER_LAUNCHER
-  fi
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
 fi
 if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
   && command -v sccache >/dev/null 2>&1 \
@@ -1787,12 +1767,8 @@ config-gz = { cmd = [
   """
 set -euo pipefail
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
-  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_C_COMPILER_LAUNCHER
-  fi
-  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_CXX_COMPILER_LAUNCHER
-  fi
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
 fi
 if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
   && command -v sccache >/dev/null 2>&1 \
