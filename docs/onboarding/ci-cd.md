@@ -11,6 +11,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Gazebo / gz-physics workflow: [build-system.md](build-system.md#gazebo-integration-feature)
   - PR template checklist: [`.github/PULL_REQUEST_TEMPLATE.md`](../../.github/PULL_REQUEST_TEMPLATE.md)
   - Asserts-enabled CI build (no `-DNDEBUG`): see [Asserts-Enabled CI Build](#asserts-enabled-ci-build-no--dndebug)
+  - Eigen over-alignment CI build: see [Eigen Over-Alignment CI Build](#eigen-over-alignment-ci-build)
   - ASAN testing (memory errors): `pixi run test-asan` (runs in CI for `release-6.16`)
   - CI monitoring commands: see [CI Monitoring (CLI)](#ci-monitoring-cli) and [CI Monitoring (API)](#ci-monitoring-api)
   - Common CI failure fixes: see [Common CI Failure Modes](#common-ci-failure-modes)
@@ -30,6 +31,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - GitHub Actions API calls can return `HTTP 406` if you omit required headers; include an explicit `Accept` header.
   - `gh api` writes to stdout and does not support `--output`; redirect to a file when you need to search logs.
   - The asserts-enabled CI job uses a custom CMake configure (`CMAKE_BUILD_TYPE=None`) instead of pixi tasks; pass required build toggles explicitly (e.g., Bullet collision).
+  - The Eigen over-alignment job forces `EIGEN_MAX_ALIGN_BYTES=64` and `EIGEN_MAX_STATIC_ALIGN_BYTES=64`; failures usually indicate allocator, placement-new, or storage code assuming a smaller Eigen alignment.
   - Deprecated headers that emit `#warning` fail under `-Werror=cpp` (e.g., use `dart/utils/urdf/All.hpp` instead of deprecated `dart/utils/urdf/urdf.hpp`).
   - dartpy test failures can show up as a Python abort with minimal traceback when a C++ `DART_ASSERT` triggers; rerun the single test locally and inspect the C++ assert.
   - Bullet-backed raycast tests require Bullet to be built; skip or enable Bullet if the backend is intentionally disabled.
@@ -62,6 +64,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
 - macOS ARM64 sporadic SEGFAULT: `alloca()` or VLAs may cause alignment violations; use `std::vector<T>` for proper alignment.
 - RTD build failures: Sphinx extension compatibility issues; use defensive `.get(key, default)` patterns.
 - Case-colliding files after branch merge: When merging `release-*` into `main`, PascalCase files from the release branch can collide with snake_case files in main on case-insensitive filesystems (macOS, Windows). Check for duplicates with `find tests -name "*.cpp" | sort -f | uniq -di` and remove the PascalCase version. Also verify new tests are registered in the appropriate `CMakeLists.txt`.
+- Eigen over-alignment failures: reproduce with `pixi run test-eigen-overalignment`. These failures do not require AVX-512 hardware; the job forces Eigen's 64-byte static alignment contract at compile time.
 
 ## Task Recap (General)
 
@@ -153,6 +156,23 @@ to keep assertions enabled outside a Debug build.
 - Pass build toggles explicitly when bypassing pixi tasks (e.g., `DART_BUILD_COLLISION_BULLET=ON` if Bullet-backed tests are expected).
 - Expect `-Werror=cpp`; any deprecated headers that emit `#warning` will fail the build.
 - If a dartpy test aborts without a Python traceback, the C++ assert message is usually the first useful clue.
+
+## Eigen Over-Alignment CI Build
+
+The Eigen over-alignment job runs on Linux PRs and scheduled builds via
+`pixi run test-eigen-overalignment`.
+
+It configures a dedicated `eigen64-align` CMake tree with
+`EIGEN_MAX_ALIGN_BYTES=64` and `EIGEN_MAX_STATIC_ALIGN_BYTES=64`, then builds and
+runs the non-experimental C++ tests in a reduced no-GUI/no-dartpy configuration.
+This catches allocator, placement-new, object-pool, and Eigen storage mistakes
+that otherwise only appear on AVX-512-capable compiler/CPU combinations.
+
+Suggested (Unverified):
+
+```bash
+DART_PARALLEL_JOBS=8 CTEST_PARALLEL_LEVEL=8 pixi run test-eigen-overalignment
+```
 
 ## Next-Time Accelerators
 

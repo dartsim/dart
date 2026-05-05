@@ -681,6 +681,8 @@ test-lcpsolver = { cmd = """
 
 test-unit = { cmd = "python scripts/run_cpp_test.py", depends-on = ["config"] }
 
+test-eigen-overalignment = { cmd = "python scripts/test_eigen_overalignment.py" }
+
 test-py = { cmd = [
   "bash",
   "-lc",
