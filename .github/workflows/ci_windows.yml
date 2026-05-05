@@ -5,7 +5,8 @@ name: CI Windows
 on:
   push:
     branches:
-      - "**"
+      - "main"
+      - "release-*"
   pull_request:
     branches:
       - "**"
@@ -85,8 +86,7 @@ jobs:
           echo "CCACHE_COMPRESS=true" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           echo "CCACHE_MAXSIZE=5G" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      # Lint checks are now centralized to Ubuntu Release build only
-      # See ci_ubuntu.yml for the single source of lint validation
+      # Lint checks are centralized in ci_lint.yml.
 
       - name: Test DART (dartpy disabled)
         run: |

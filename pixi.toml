@@ -91,12 +91,8 @@ fi
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
-  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_C_COMPILER_LAUNCHER
-  fi
-  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_CXX_COMPILER_LAUNCHER
-  fi
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
 fi
 if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
   if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
@@ -301,12 +297,8 @@ fi
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
-  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_C_COMPILER_LAUNCHER
-  fi
-  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_CXX_COMPILER_LAUNCHER
-  fi
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
 fi
 if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
   if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
@@ -467,12 +459,8 @@ DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
-  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_C_COMPILER_LAUNCHER
-  fi
-  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_CXX_COMPILER_LAUNCHER
-  fi
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
 fi
 if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
   if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] && command -v sccache >/dev/null 2>&1; then
@@ -688,7 +676,7 @@ test-py = { cmd = [
   "-lc",
   """
 set -euo pipefail
-BUILD_TYPE={{ build_type }}
+export BUILD_TYPE={{ build_type }}
 python scripts/pixi_test_py.py
 """,
 ], depends-on = [
@@ -735,12 +723,8 @@ DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
-  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_C_COMPILER_LAUNCHER
-  fi
-  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_CXX_COMPILER_LAUNCHER
-  fi
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
 fi
 if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
   if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
@@ -1006,12 +990,8 @@ DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
-  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_C_COMPILER_LAUNCHER
-  fi
-  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_CXX_COMPILER_LAUNCHER
-  fi
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
 fi
 if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
   if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
@@ -1044,7 +1024,6 @@ cmake \
     -DDART_BUILD_COLLISION_ODE=${DART_BUILD_COLLISION_ODE_OVERRIDE:-ON} \
     -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} \
     -DDART_BUILD_PROFILE=OFF \
-    -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE:-OFF} \
     -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
     -DDART_USE_SYSTEM_GOOGLETEST=ON \
     -DDART_USE_SYSTEM_IMGUI=ON \
@@ -1235,12 +1214,8 @@ DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
-  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_C_COMPILER_LAUNCHER
-  fi
-  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_CXX_COMPILER_LAUNCHER
-  fi
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
 fi
 if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
   && command -v sccache >/dev/null 2>&1 \
@@ -1615,7 +1590,7 @@ test-simulation-experimental = { cmd = [
 ] }
 
 test-py = { cmd = """
-    BUILD_TYPE={{ build_type }}
+    export BUILD_TYPE={{ build_type }}
     CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp python scripts/cmake_build.py --config $BUILD_TYPE --target pytest
 """, depends-on = [
   { task = "config", args = [
@@ -1792,12 +1767,8 @@ config-gz = { cmd = [
   """
 set -euo pipefail
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
-  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_C_COMPILER_LAUNCHER
-  fi
-  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_CXX_COMPILER_LAUNCHER
-  fi
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
 fi
 if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
   && command -v sccache >/dev/null 2>&1 \
@@ -1837,6 +1808,10 @@ build-gz = { cmd = [
   "-lc",
   """
 set -euo pipefail
+if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
+fi
 CMAKE_BUILD_DIR=.deps/gz-physics/build python scripts/cmake_build.py --target all
 """,
 ], depends-on = [
@@ -1846,6 +1821,10 @@ CMAKE_BUILD_DIR=.deps/gz-physics/build python scripts/cmake_build.py --target al
 test-gz = { cmd = """
     bash -c '
         set -euo pipefail
+        if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
+          unset CMAKE_C_COMPILER_LAUNCHER
+          unset CMAKE_CXX_COMPILER_LAUNCHER
+        fi
         DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
         export DART_PARALLEL_JOBS
         export CTEST_OUTPUT_ON_FAILURE=1

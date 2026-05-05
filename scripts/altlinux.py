@@ -43,6 +43,19 @@ DEFAULT_PACKAGES = [
 EXCLUDES = [".git", "build", ".pixi", ".deps", ".build"]
 
 
+def positive_int_env(name, default):
+    value = os.getenv(name)
+    if not value:
+        return default
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise SystemExit(f"{name} must be a positive integer") from exc
+    if parsed < 1:
+        raise SystemExit(f"{name} must be a positive integer")
+    return parsed
+
+
 def run(cmd, check=True, capture=False):
     if capture:
         return subprocess.run(cmd, check=check, text=True, capture_output=True)
@@ -151,7 +164,24 @@ def bootstrap_container(args):
     packages_env = os.getenv("ALT_LINUX_PACKAGES")
     packages = shlex.split(packages_env) if packages_env else DEFAULT_PACKAGES
     package_list = " ".join(shlex.quote(pkg) for pkg in packages)
-    command = f"apt-get update && apt-get install -y {package_list}"
+    apt_attempts = positive_int_env("ALT_LINUX_APT_ATTEMPTS", 4)
+    apt_retry_delay = positive_int_env("ALT_LINUX_APT_RETRY_DELAY", 30)
+    command = f"""
+attempt=1
+while [ "$attempt" -le {apt_attempts} ]; do
+  apt-get update && apt-get install -y --fix-missing {package_list} && apt-get install -y {package_list}
+  status=$?
+  if [ "$status" -eq 0 ]; then
+    exit 0
+  fi
+  if [ "$attempt" -eq {apt_attempts} ]; then
+    exit "$status"
+  fi
+  echo "apt bootstrap failed on attempt $attempt/{apt_attempts}; retrying in {apt_retry_delay}s" >&2
+  sleep {apt_retry_delay}
+  attempt=$((attempt + 1))
+done
+"""
     exec_in_container(args, command)
 
 

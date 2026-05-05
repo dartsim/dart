@@ -5,7 +5,8 @@ name: CI Linux
 on:
   push:
     branches:
-      - "**"
+      - "main"
+      - "release-*"
   pull_request:
     branches:
       - "**"
@@ -108,12 +109,26 @@ jobs:
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
 
-      - name: Test DART and dartpy
+      - name: Run Release C++ tests
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Release \
           DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
-          pixi run test-all
+          pixi run test ON Release
+
+      - name: Run Release Python tests
+        run: |
+          DART_VERBOSE=ON \
+          BUILD_TYPE=Release \
+          DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
+          pixi run test-py ON Release
+
+      - name: Build Release examples
+        run: |
+          DART_VERBOSE=ON \
+          BUILD_TYPE=Release \
+          DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
+          pixi run build-examples ON Release
 
       - name: Test with AddressSanitizer
         run: |
@@ -151,12 +166,19 @@ jobs:
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
 
-      - name: Test DART and dartpy
+      - name: Run Debug C++ tests
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Debug \
           DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
-          pixi run test-all
+          pixi run test ON Debug
+
+      - name: Run Debug Python tests
+        run: |
+          DART_VERBOSE=ON \
+          BUILD_TYPE=Debug \
+          DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
+          pixi run test-py ON Debug
 
   build-asserts:
     needs: changes
