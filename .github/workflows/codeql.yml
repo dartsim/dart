@@ -96,3 +96,37 @@ jobs:
 
       - name: CodeQL Analyze
         uses: github/codeql-action/analyze@v4
+        with:
+          output: sarif-results
+          upload: failure-only
+
+      - name: Filter external dependency alerts
+        run: |
+          shopt -s nullglob
+          sarif_files=(sarif-results/*.sarif)
+
+          if (( ${#sarif_files[@]} == 0 )); then
+            echo "No CodeQL SARIF files found." >&2
+            exit 1
+          fi
+
+          for sarif in "${sarif_files[@]}"; do
+            tmp="${sarif}.tmp"
+            jq '
+              (.runs[]?.results) |= map(
+                select(
+                  (
+                    .locations[0].physicalLocation.artifactLocation.uri // ""
+                    | startswith(".pixi/")
+                  )
+                  | not
+                )
+              )
+            ' "$sarif" > "$tmp"
+            mv "$tmp" "$sarif"
+          done
+
+      - name: Upload filtered CodeQL results
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: sarif-results

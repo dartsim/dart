@@ -264,18 +264,22 @@ inline constexpr size_t dEstimateSolveCholeskyTmpbufSize(int n)
 template <typename Scalar>
 inline constexpr size_t dEstimateInvertPDMatrixTmpbufSize(int n)
 {
+  const size_t nSize = static_cast<size_t>(n);
+  const size_t nskipSize = static_cast<size_t>(padding(n));
   size_t FactorCholesky_size = dEstimateFactorCholeskyTmpbufSize<Scalar>(n);
   size_t SolveCholesky_size = dEstimateSolveCholeskyTmpbufSize<Scalar>(n);
   size_t MaxCholesky_size = FactorCholesky_size > SolveCholesky_size
                                 ? FactorCholesky_size
                                 : SolveCholesky_size;
-  return padding(n) * (n + 1) * sizeof(Scalar) + MaxCholesky_size;
+  return nskipSize * (nSize + 1) * sizeof(Scalar) + MaxCholesky_size;
 }
 
 template <typename Scalar>
 inline constexpr size_t dEstimateIsPositiveDefiniteTmpbufSize(int n)
 {
-  return padding(n) * n * sizeof(Scalar)
+  const size_t nSize = static_cast<size_t>(n);
+  const size_t nskipSize = static_cast<size_t>(padding(n));
+  return nskipSize * nSize * sizeof(Scalar)
          + dEstimateFactorCholeskyTmpbufSize<Scalar>(n);
 }
 

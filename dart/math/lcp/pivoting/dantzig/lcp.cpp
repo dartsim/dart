@@ -161,6 +161,8 @@ rows/columns and manipulate C.
 #include <memory>
 #include <vector>
 
+#include <cstddef>
+
 //***************************************************************************
 // code generation parameters
 
@@ -197,6 +199,8 @@ bool SolveLCP(
   // and return
   if (nub >= n) {
     const int nskip = padding(n);
+    const std::size_t nSize = static_cast<std::size_t>(n);
+    const std::size_t nskipSize = static_cast<std::size_t>(nskip);
     auto d = std::make_unique<Scalar[]>(n);
     SetZero(d.get(), n);
 
@@ -204,9 +208,10 @@ bool SolveLCP(
     Scalar* A_work = nullptr;
 
     if (n != nskip) {
-      A_storage.reset(new Scalar[n * nskip]);
+      A_storage.reset(new Scalar[nSize * nskipSize]);
       for (int i = 0; i < n; ++i) {
-        memcpy(&A_storage[i * nskip], &A[i * nskip], n * sizeof(Scalar));
+        const std::size_t rowOffset = static_cast<std::size_t>(i) * nskipSize;
+        memcpy(&A_storage[rowOffset], &A[rowOffset], nSize * sizeof(Scalar));
       }
       A_work = A_storage.get();
     } else {
@@ -221,14 +226,17 @@ bool SolveLCP(
   }
 
   const int nskip = padding(n);
+  const std::size_t nSize = static_cast<std::size_t>(n);
+  const std::size_t nskipSize = static_cast<std::size_t>(nskip);
 
   std::unique_ptr<Scalar[]> A_storage;
   Scalar* A_work = nullptr;
 
   if (n != nskip) {
-    A_storage.reset(new Scalar[n * nskip]);
+    A_storage.reset(new Scalar[nSize * nskipSize]);
     for (int i = 0; i < n; ++i) {
-      memcpy(&A_storage[i * nskip], &A[i * nskip], n * sizeof(Scalar));
+      const std::size_t rowOffset = static_cast<std::size_t>(i) * nskipSize;
+      memcpy(&A_storage[rowOffset], &A[rowOffset], nSize * sizeof(Scalar));
     }
     A_work = A_storage.get();
   } else {
@@ -238,7 +246,7 @@ bool SolveLCP(
   // Create PivotMatrix from work array
   PivotMatrix<Scalar> A_pivot(n, n, A_work, nskip);
 
-  auto L = std::make_unique<Scalar[]>(n * nskip);
+  auto L = std::make_unique<Scalar[]>(nSize * nskipSize);
   auto d = std::make_unique<Scalar[]>(n);
   std::unique_ptr<Scalar[]> wStorage;
   Scalar* w = outer_w;
