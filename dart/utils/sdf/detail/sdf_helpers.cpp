@@ -34,6 +34,8 @@
 
 #include <dart/common/uri.hpp>
 
+#include <algorithm>
+
 #include <cmath>
 
 #if __has_include(<gz/math/Quaternion.hh>)
@@ -62,10 +64,9 @@ double sanitizeParsedValue(double value)
 std::string toLowerCopy(std::string_view text)
 {
   std::string lower(text);
-  std::transform(
-      lower.begin(), lower.end(), lower.begin(), [](unsigned char c) {
-        return static_cast<char>(std::tolower(c));
-      });
+  std::ranges::transform(lower, lower.begin(), [](unsigned char c) {
+    return static_cast<char>(std::tolower(c));
+  });
   return lower;
 }
 

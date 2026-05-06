@@ -46,7 +46,7 @@ std::string toUpper(std::string str)
 //==============================================================================
 void toUpperInPlace(std::string& str)
 {
-  std::transform(str.begin(), str.end(), str.begin(), ::toupper);
+  std::ranges::transform(str, str.begin(), ::toupper);
 }
 
 //==============================================================================
@@ -59,7 +59,7 @@ std::string toLower(std::string str)
 //==============================================================================
 void toLowerInPlace(std::string& str)
 {
-  std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+  std::ranges::transform(str, str.begin(), ::tolower);
 }
 
 //==============================================================================

@@ -1552,8 +1552,7 @@ bool hasColladaExtension(std::string_view path)
   }
 
   std::string extension(path.substr(extensionIndex));
-  std::transform(
-      extension.begin(), extension.end(), extension.begin(), ::tolower);
+  std::ranges::transform(extension, extension.begin(), ::tolower);
   return extension == ".dae" || extension == ".zae";
 }
 
