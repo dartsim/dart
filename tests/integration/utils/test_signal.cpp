@@ -405,40 +405,39 @@ TEST(Signal, ConcurrentUsage)
 
   Signal<void()> signal;
 
-  std::atomic<bool> keepRaising{true};
   std::atomic<int> raiseCount{0};
   std::atomic<int> callbackCount{0};
 
-  std::thread raiser([&]() {
-    while (keepRaising.load(std::memory_order_relaxed)) {
-      signal.raise();
-      raiseCount.fetch_add(1, std::memory_order_relaxed);
-    }
-  });
-
-  while (raiseCount.load(std::memory_order_relaxed) == 0) {
-    std::this_thread::yield();
-  }
-
-  std::vector<std::thread> workers;
-  workers.reserve(kNumThreads);
-  for (int t = 0; t < kNumThreads; ++t) {
-    workers.emplace_back([&]() {
-      for (int i = 0; i < kIterationsPerThread; ++i) {
-        Connection conn = signal.connect(
-            [&]() { callbackCount.fetch_add(1, std::memory_order_relaxed); });
+  {
+    std::jthread raiser([&](std::stop_token stopToken) {
+      while (!stopToken.stop_requested()) {
         signal.raise();
-        conn.disconnect();
+        raiseCount.fetch_add(1, std::memory_order_relaxed);
       }
     });
-  }
 
-  for (auto& thread : workers) {
-    thread.join();
-  }
+    while (raiseCount.load(std::memory_order_relaxed) == 0) {
+      std::this_thread::yield();
+    }
 
-  keepRaising.store(false, std::memory_order_relaxed);
-  raiser.join();
+    {
+      std::vector<std::jthread> workers;
+      workers.reserve(kNumThreads);
+      for (int t = 0; t < kNumThreads; ++t) {
+        workers.emplace_back([&]() {
+          for (int i = 0; i < kIterationsPerThread; ++i) {
+            Connection conn = signal.connect([&]() {
+              callbackCount.fetch_add(1, std::memory_order_relaxed);
+            });
+            signal.raise();
+            conn.disconnect();
+          }
+        });
+      }
+    }
+
+    raiser.request_stop();
+  }
 
   EXPECT_EQ(signal.getNumConnections(), 0u);
   EXPECT_GE(callbackCount.load(), kNumThreads * kIterationsPerThread);
