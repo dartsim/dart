@@ -1162,8 +1162,8 @@ SkeletonPtr createHubo()
 
   for (std::size_t i = 0; i < hubo->getNumBodyNodes(); ++i) {
     BodyNode* bn = hubo->getBodyNode(i);
-    if (bn->getName().substr(0, 7) == "Body_LF"
-        || bn->getName().substr(0, 7) == "Body_RF") {
+    const auto& name = bn->getName();
+    if (name.starts_with("Body_LF") || name.starts_with("Body_RF")) {
       bn->remove();
       --i;
     }
