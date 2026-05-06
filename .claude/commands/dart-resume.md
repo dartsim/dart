@@ -9,20 +9,33 @@ Resume unfinished work: $ARGUMENTS
 
 @AGENTS.md
 @docs/onboarding/ci-cd.md
+@docs/onboarding/contributing.md
 
 ## Step 1: Recon (no changes)
 
 ```bash
-git status -sb && git branch -vv && git log -5 --oneline
+git rev-parse --show-toplevel
+git status -sb && git branch -vv && git log -10 --oneline --decorate
+git diff --stat && git stash list
 gh pr list --head "$(git branch --show-current)"
+gh pr status
 ```
 
 ## Step 2: Reconstruct
 
-From: branch name, commits, diffs, issue/PR description
+Infer the task from branch name, commits, diffs, issue/PR description, and any
+`docs/dev_tasks/<task>/` state. If the goal is still unclear after recon, stop
+and ask.
 
 ## Step 3: Continue
 
-- Propose 3-6 step plan
-- `pixi run test-all` before done
-- `git push -u origin HEAD`
+- Propose a 3-6 step plan before editing.
+- Continue with minimal scope and preserve existing user changes.
+- Run `pixi run lint` before committing.
+- Run relevant tests; use `pixi run test-all` before done when feasible.
+- Push with `git push -u origin HEAD` and create/update the PR.
+
+## Safety
+
+No destructive git commands (`reset --hard`, dropping stashes, deleting branches)
+without explicit confirmation.
