@@ -87,17 +87,15 @@ public:
 
   void resetToStandingPose()
   {
+    constexpr double degToRad = pi / 180.0;
+
     // Reset to standing configuration
-    mRobot->getDof("r_leg_hpy")
-        ->setPosition(-45.0 * constantsd::pi() / 180.0);
-    mRobot->getDof("r_leg_kny")->setPosition(90.0 * constantsd::pi() / 180.0);
-    mRobot->getDof("r_leg_aky")
-        ->setPosition(-45.0 * constantsd::pi() / 180.0);
-    mRobot->getDof("l_leg_hpy")
-        ->setPosition(-45.0 * constantsd::pi() / 180.0);
-    mRobot->getDof("l_leg_kny")->setPosition(90.0 * constantsd::pi() / 180.0);
-    mRobot->getDof("l_leg_aky")
-        ->setPosition(-45.0 * constantsd::pi() / 180.0);
+    mRobot->getDof("r_leg_hpy")->setPosition(-45.0 * degToRad);
+    mRobot->getDof("r_leg_kny")->setPosition(90.0 * degToRad);
+    mRobot->getDof("r_leg_aky")->setPosition(-45.0 * degToRad);
+    mRobot->getDof("l_leg_hpy")->setPosition(-45.0 * degToRad);
+    mRobot->getDof("l_leg_kny")->setPosition(90.0 * degToRad);
+    mRobot->getDof("l_leg_aky")->setPosition(-45.0 * degToRad);
 
     std::cout << "Reset to standing pose" << std::endl;
   }
@@ -138,16 +136,17 @@ SkeletonPtr loadAtlasRobot()
   }
 
   // Set up initial standing pose
-  atlas->getDof("r_leg_hpy")->setPosition(-45.0 * constantsd::pi() / 180.0);
-  atlas->getDof("r_leg_kny")->setPosition(90.0 * constantsd::pi() / 180.0);
-  atlas->getDof("r_leg_aky")->setPosition(-45.0 * constantsd::pi() / 180.0);
-  atlas->getDof("l_leg_hpy")->setPosition(-45.0 * constantsd::pi() / 180.0);
-  atlas->getDof("l_leg_kny")->setPosition(90.0 * constantsd::pi() / 180.0);
-  atlas->getDof("l_leg_aky")->setPosition(-45.0 * constantsd::pi() / 180.0);
+  constexpr double degToRad = pi / 180.0;
+  atlas->getDof("r_leg_hpy")->setPosition(-45.0 * degToRad);
+  atlas->getDof("r_leg_kny")->setPosition(90.0 * degToRad);
+  atlas->getDof("r_leg_aky")->setPosition(-45.0 * degToRad);
+  atlas->getDof("l_leg_hpy")->setPosition(-45.0 * degToRad);
+  atlas->getDof("l_leg_kny")->setPosition(90.0 * degToRad);
+  atlas->getDof("l_leg_aky")->setPosition(-45.0 * degToRad);
 
   // Prevent knees from bending backwards
-  atlas->getDof("r_leg_kny")->setPositionLowerLimit(10.0 * constantsd::pi() / 180.0);
-  atlas->getDof("l_leg_kny")->setPositionLowerLimit(10.0 * constantsd::pi() / 180.0);
+  atlas->getDof("r_leg_kny")->setPositionLowerLimit(10.0 * degToRad);
+  atlas->getDof("l_leg_kny")->setPositionLowerLimit(10.0 * degToRad);
 
   return atlas;
 }
@@ -272,8 +271,7 @@ void runHeadlessDemo(
             << " samples..." << std::endl;
   for (std::size_t i = 0; i < steps; ++i) {
     const double phase
-        = static_cast<double>(i) / static_cast<double>(steps)
-          * 2.0 * constantsd::pi();
+        = static_cast<double>(i) / static_cast<double>(steps) * two_pi;
     Eigen::Vector3d leftOffset(
         radius * std::cos(phase), 0.0, radius * std::sin(phase));
     Eigen::Vector3d rightOffset(
@@ -392,9 +390,9 @@ int main()
     const std::string arg = argv[i];
     if (arg == "--headless") {
       headless = true;
-    } else if (arg.rfind("--steps=", 0) == 0) {
+    } else if (arg.starts_with("--steps=")) {
       headlessSteps = std::stoul(arg.substr(8));
-    } else if (arg.rfind("--radius=", 0) == 0) {
+    } else if (arg.starts_with("--radius=")) {
       trajectoryRadius = std::stod(arg.substr(9));
     }
   }

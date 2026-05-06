@@ -66,11 +66,8 @@ std::filesystem::path computeCachePath(
   std::string url = uri.toString();
   if (uri.mFragment) {
     const auto fragment = "#" + uri.mFragment.get_value_or("");
-    if (!fragment.empty() && url.size() >= fragment.size()) {
-      if (url.compare(url.size() - fragment.size(), fragment.size(), fragment)
-          == 0) {
-        url.erase(url.size() - fragment.size());
-      }
+    if (!fragment.empty() && url.ends_with(fragment)) {
+      url.erase(url.size() - fragment.size());
     }
   }
 

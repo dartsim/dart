@@ -39,6 +39,7 @@
 #include "dart/dynamics/free_joint.hpp"
 #include "dart/dynamics/simple_frame.hpp"
 #include "dart/dynamics/skeleton.hpp"
+#include "dart/math/constants.hpp"
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -72,7 +73,7 @@ using dart::dynamics::ConvexMeshShape;
 
 namespace {
 
-constexpr double kPi = 3.141592653589793;
+constexpr double kPi = dart::math::pi;
 
 struct TestFCLDetector : public FCLCollisionDetector
 {

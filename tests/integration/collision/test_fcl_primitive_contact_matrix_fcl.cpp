@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/math/constants.hpp>
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <fcl/fcl.h>
@@ -85,7 +87,7 @@ const Eigen::Vector3d kContainerEllipsoidRadii(2.0, 1.5, 1.0);
 constexpr double kContainerCylinderRadius = 2.0;
 constexpr double kContainerCylinderHeight = 4.0;
 constexpr double kContainmentOffset = 0.2;
-constexpr double kYawQuarterTurn = 0.25 * 3.141592653589793;
+constexpr double kYawQuarterTurn = 0.25 * dart::math::pi;
 
 const std::vector<ShapeSpec> kShapeSpecs = {
     {ShapeKind::Box, "box"},
