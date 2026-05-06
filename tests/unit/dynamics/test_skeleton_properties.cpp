@@ -263,7 +263,7 @@ TEST(SkeletonConfiguration, UpdatesSelectedDofs)
   }
 
   for (std::size_t i = 0; i < dofs; ++i) {
-    if (std::find(indices.begin(), indices.end(), i) == indices.end()) {
+    if (std::ranges::find(indices, i) == indices.end()) {
       EXPECT_DOUBLE_EQ(updatedPositions[i], 0.0);
       EXPECT_DOUBLE_EQ(updatedVelocities[i], 0.0);
     }

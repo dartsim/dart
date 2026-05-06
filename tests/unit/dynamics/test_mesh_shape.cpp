@@ -998,7 +998,7 @@ TEST(MeshShapeTest, TriMeshGetMeshPreservesMaterialIndices)
     expectedMaterialNames.insert("material_" + std::to_string(index));
   }
   for (const auto& name : usedMaterialNames) {
-    EXPECT_TRUE(expectedMaterialNames.count(name)) << materialSummary.str();
+    EXPECT_TRUE(expectedMaterialNames.contains(name)) << materialSummary.str();
   }
 
   std::error_code ec;

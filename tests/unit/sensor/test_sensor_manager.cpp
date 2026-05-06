@@ -138,8 +138,8 @@ TEST(SensorManagerTest, RemoveAllSensors)
 
   EXPECT_EQ(manager.getNumSensors(), 0u);
   EXPECT_EQ(removed.size(), 2u);
-  EXPECT_TRUE(removed.count(sensor1) > 0);
-  EXPECT_TRUE(removed.count(sensor2) > 0);
+  EXPECT_TRUE(removed.contains(sensor1));
+  EXPECT_TRUE(removed.contains(sensor2));
 }
 
 TEST(SensorManagerTest, GetSensorByIndex)
