@@ -773,11 +773,10 @@ void FreeJoint::updateConstrainedTerms(double timeStep)
 //==============================================================================
 void FreeJoint::updateDegreeOfFreedomNames()
 {
-  std::array<std::string, 3> rotAffixes{"_rot_x", "_rot_y", "_rot_z"};
-
-  if (getCoordinateChart() == CoordinateChart::EULER_ZYX) {
-    rotAffixes = {"_rot_z", "_rot_y", "_rot_x"};
-  }
+  const auto rotAffixes
+      = getCoordinateChart() == CoordinateChart::EULER_ZYX
+            ? std::to_array<std::string>({"_rot_z", "_rot_y", "_rot_x"})
+            : std::to_array<std::string>({"_rot_x", "_rot_y", "_rot_z"});
 
   for (std::size_t i = 0; i < rotAffixes.size(); ++i) {
     if (!mDofs[i]->isNamePreserved()) {

@@ -54,6 +54,7 @@
 #include <chrono>
 #include <cmath>
 #include <memory>
+#include <string_view>
 #include <thread>
 
 using namespace dart::common;
@@ -386,14 +387,16 @@ int main()
   bool headless = false;
   std::size_t headlessSteps = 120;
   double trajectoryRadius = 0.08;
+  static constexpr std::string_view stepsPrefix = "--steps=";
+  static constexpr std::string_view radiusPrefix = "--radius=";
   for (int i = 1; i < argc; ++i) {
     const std::string arg = argv[i];
     if (arg == "--headless") {
       headless = true;
-    } else if (arg.starts_with("--steps=")) {
-      headlessSteps = std::stoul(arg.substr(8));
-    } else if (arg.starts_with("--radius=")) {
-      trajectoryRadius = std::stod(arg.substr(9));
+    } else if (arg.starts_with(stepsPrefix)) {
+      headlessSteps = std::stoul(arg.substr(stepsPrefix.size()));
+    } else if (arg.starts_with(radiusPrefix)) {
+      trajectoryRadius = std::stod(arg.substr(radiusPrefix.size()));
     }
   }
 
