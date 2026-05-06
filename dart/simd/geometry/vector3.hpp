@@ -67,6 +67,8 @@
 
 #include <Eigen/Core>
 
+#include <concepts>
+
 #include <cmath>
 
 namespace dart::simd {

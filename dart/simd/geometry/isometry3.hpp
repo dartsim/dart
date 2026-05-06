@@ -36,6 +36,8 @@
 
 #include <Eigen/Geometry>
 
+#include <concepts>
+
 namespace dart::simd {
 
 template <FloatType T>
