@@ -41,6 +41,7 @@
 #include "dart/math/helpers.hpp"
 
 #include <memory>
+#include <numeric>
 
 namespace dart {
 namespace collision {
@@ -144,8 +145,8 @@ DART_API void cullPoints(int n, double p[], int m, int i0, int iret[])
     cx = p[0];
     cy = p[1];
   } else if (n == 2) {
-    cx = 0.5 * (p[0] + p[2]);
-    cy = 0.5 * (p[1] + p[3]);
+    cx = std::midpoint(p[0], p[2]);
+    cy = std::midpoint(p[1], p[3]);
   } else {
     a = 0;
     cx = 0;
@@ -709,8 +710,8 @@ int dBoxBox(
     }
 
     {
-      point_vec << 0.5 * (pa[0] + pb[0]), 0.5 * (pa[1] + pb[1]),
-          0.5 * (pa[2] + pb[2]);
+      point_vec << std::midpoint(pa[0], pb[0]), std::midpoint(pa[1], pb[1]),
+          std::midpoint(pa[2], pb[2]);
       penetration = -s;
 
       Contact contact;

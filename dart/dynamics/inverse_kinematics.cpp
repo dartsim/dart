@@ -40,6 +40,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <numeric>
 #include <unordered_map>
 
 namespace dart {
@@ -524,7 +525,7 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
     if (displacement[i] < min[i]) {
       if (mTaskSpaceP.mComputeErrorFromCenter) {
         if (std::isfinite(max[i])) {
-          error[i] = displacement[i] - (min[i] + max[i]) / 2.0;
+          error[i] = displacement[i] - std::midpoint(min[i], max[i]);
         } else {
           error[i] = displacement[i] - (min[i] + tolerance);
         }
@@ -534,7 +535,7 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
     } else if (max[i] < displacement[i]) {
       if (mTaskSpaceP.mComputeErrorFromCenter) {
         if (std::isfinite(min[i])) {
-          error[i] = displacement[i] - (min[i] + max[i]) / 2.0;
+          error[i] = displacement[i] - std::midpoint(min[i], max[i]);
         } else {
           error[i] = displacement[i] - (max[i] - tolerance);
         }
