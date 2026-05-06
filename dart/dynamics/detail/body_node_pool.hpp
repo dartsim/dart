@@ -36,6 +36,7 @@
 #include <dart/common/memory_allocator.hpp>
 
 #include <algorithm>
+#include <bit>
 #include <memory>
 #include <new>
 #include <vector>
@@ -57,7 +58,7 @@ public:
   static constexpr std::size_t kSlotAlignment
       = alignof(T) > 32 ? alignof(T) : 32;
   static_assert(
-      (kSlotAlignment & (kSlotAlignment - 1)) == 0,
+      std::has_single_bit(kSlotAlignment),
       "BodyNodePool requires a power-of-two slot alignment.");
   static constexpr std::size_t kSlotSize
       = ((sizeof(T) + kSlotAlignment - 1) / kSlotAlignment) * kSlotAlignment;
