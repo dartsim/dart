@@ -117,7 +117,7 @@ public:
 
   bool exists(const common::Uri& uri) override
   {
-    return mFiles.count(uri.toString()) > 0;
+    return mFiles.contains(uri.toString());
   }
 
   common::ResourcePtr retrieve(const common::Uri& uri) override

@@ -214,7 +214,7 @@ TYPED_TEST(ConvexHullTest, CubeWithInternalPoint)
   // All 8 cube vertices should be used
   std::set<int> usedVertices(faces.begin(), faces.end());
   for (int i = 0; i < 8; ++i) {
-    EXPECT_GT(usedVertices.count(i), 0u)
+    EXPECT_TRUE(usedVertices.contains(i))
         << "Cube vertex " << i << " should be on the convex hull";
   }
 }
@@ -396,7 +396,7 @@ TYPED_TEST(ConvexHullTest, NoInternalVertices)
 
   // All 8 cube vertices must always be on the hull
   for (int i = 0; i < 8; ++i) {
-    EXPECT_GT(usedVertices.count(i), 0u)
+    EXPECT_TRUE(usedVertices.contains(i))
         << "Cube vertex " << i << " should be on the convex hull";
   }
 
@@ -404,7 +404,7 @@ TYPED_TEST(ConvexHullTest, NoInternalVertices)
   // For float precision with noise, it might rarely appear on hull due to
   // perturbation
   if (std::is_same<Scalar, double>::value) {
-    EXPECT_EQ(usedVertices.count(8), 0u)
+    EXPECT_FALSE(usedVertices.contains(8))
         << "Internal point should not be on the convex hull (double precision)";
   }
 }

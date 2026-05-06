@@ -181,9 +181,9 @@ TEST(WorldTests, RemoveAllSkeletons)
 
   EXPECT_EQ(world->getNumSkeletons(), 0u);
   EXPECT_EQ(removed.size(), 3u);
-  EXPECT_TRUE(removed.count(skel1) > 0);
-  EXPECT_TRUE(removed.count(skel2) > 0);
-  EXPECT_TRUE(removed.count(skel3) > 0);
+  EXPECT_TRUE(removed.contains(skel1));
+  EXPECT_TRUE(removed.contains(skel2));
+  EXPECT_TRUE(removed.contains(skel3));
 }
 
 //==============================================================================
@@ -855,9 +855,9 @@ TEST(WorldTests, RemoveAllSensors)
 
   EXPECT_EQ(world->getNumSensors(), 0u);
   EXPECT_EQ(removed.size(), 3u);
-  EXPECT_TRUE(removed.count(sensor1) > 0);
-  EXPECT_TRUE(removed.count(sensor2) > 0);
-  EXPECT_TRUE(removed.count(sensor3) > 0);
+  EXPECT_TRUE(removed.contains(sensor1));
+  EXPECT_TRUE(removed.contains(sensor2));
+  EXPECT_TRUE(removed.contains(sensor3));
 }
 
 //==============================================================================
