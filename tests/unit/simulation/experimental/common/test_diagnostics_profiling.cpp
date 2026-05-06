@@ -164,7 +164,7 @@ TEST(Profiling, ProfileStats_Record_AddsEntries)
 
   const auto& entries = ProfileStats::entries();
   EXPECT_EQ(entries.size(), 1);
-  EXPECT_TRUE(entries.find("test_entry") != entries.end());
+  EXPECT_TRUE(entries.contains("test_entry"));
 
   ProfileStats::reset();
 }
@@ -178,8 +178,8 @@ TEST(Profiling, ProfileStats_Entries_RetrievesRecordedEntries)
 
   const auto& entries = ProfileStats::entries();
   EXPECT_EQ(entries.size(), 2);
-  EXPECT_TRUE(entries.find("entry1") != entries.end());
-  EXPECT_TRUE(entries.find("entry2") != entries.end());
+  EXPECT_TRUE(entries.contains("entry1"));
+  EXPECT_TRUE(entries.contains("entry2"));
 
   ProfileStats::reset();
 }
@@ -314,7 +314,7 @@ TEST(Profiling, ScopedTimer_ReportsToProfileStats)
   }
 
   const auto& entries = ProfileStats::entries();
-  EXPECT_TRUE(entries.find("report_test") != entries.end());
+  EXPECT_TRUE(entries.contains("report_test"));
 
   ProfileStats::reset();
 }
@@ -348,7 +348,7 @@ TEST(Profiling, ScopedTimer_StringViewName)
   }
 
   const auto& entries = ProfileStats::entries();
-  EXPECT_TRUE(entries.find("string_view_test") != entries.end());
+  EXPECT_TRUE(entries.contains("string_view_test"));
 
   ProfileStats::reset();
 }
