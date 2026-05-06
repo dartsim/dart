@@ -428,8 +428,8 @@ bool BulletCollisionDetector::raycast(
         if (option.mSortByClosest) {
           result->mRayHits.resize(1);
         } else {
-          const auto closest = std::min_element(
-              result->mRayHits.begin(), result->mRayHits.end(), lessFraction);
+          const auto closest
+              = std::ranges::min_element(result->mRayHits, lessFraction);
           const RayHit closestHit = *closest;
           result->mRayHits.clear();
           result->mRayHits.emplace_back(closestHit);
