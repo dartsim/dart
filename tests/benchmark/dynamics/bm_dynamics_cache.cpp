@@ -65,6 +65,7 @@
 #include <benchmark/benchmark.h>
 
 #include <atomic>
+#include <numbers>
 #include <queue>
 #include <thread>
 #include <vector>
@@ -284,7 +285,7 @@ SkeletonPtr makeStar(int N, const std::string& prefix = "star")
     auto [cj, cb] = skel->createJointAndBodyNodePair<JointType>(
         rootBody, cjprops, cbprops);
 
-    const double angle = 2.0 * M_PI * i / (N - 1);
+    const double angle = 2.0 * std::numbers::pi_v<double> * i / (N - 1);
     cj->setTransformFromParentBodyNode(
         Eigen::Isometry3d(
             Eigen::Translation3d(
