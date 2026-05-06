@@ -591,9 +591,12 @@ Eigen::Vector6d logMap(const Eigen::Isometry3d& _T)
   Eigen::Vector6d ret;
 
   if (theta > pi - DART_EPSILON) {
-    const double c1 = 0.10132118364234; // 1 / pi^2
-    const double c2 = 0.01507440267955; // 1 / 4 / pi - 2 / pi^3
-    const double c3 = 0.00546765085347; // 3 / pi^4 - 1 / 4 / pi^2
+    constexpr double invPi = 1.0 / pi;
+    constexpr double invPiSquared = invPi * invPi;
+    constexpr double c1 = invPiSquared;
+    constexpr double c2 = 0.25 * invPi - 2.0 * invPiSquared * invPi;
+    constexpr double c3
+        = 3.0 * invPiSquared * invPiSquared - 0.25 * invPiSquared;
 
     double phi = pi - theta;
     double delta = 0.5 + 0.125 * phi * phi;

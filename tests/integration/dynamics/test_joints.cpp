@@ -60,6 +60,7 @@
 #include <algorithm>
 #include <array>
 #include <iostream>
+#include <numeric>
 
 using namespace dart;
 using namespace dart::math;
@@ -470,7 +471,7 @@ void testCommandLimits(dynamics::Joint* joint)
 {
   const double lower = -5.0;
   const double upper = +5.0;
-  const double mid = 0.5 * (lower + upper);
+  const double mid = std::midpoint(lower, upper);
   const double lessThanLower = -10.0;
   const double greaterThanUpper = +10.0;
 

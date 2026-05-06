@@ -35,6 +35,7 @@
 #include <dart/simd/config.hpp>
 
 #include <limits>
+#include <numbers>
 #include <type_traits>
 
 namespace dart::simd {
@@ -65,28 +66,28 @@ struct MathConstants
       "MathConstants requires floating point type");
 
   // Pi and related constants
-  static constexpr T pi = T(3.14159265358979323846264338327950288);
-  static constexpr T twoPi = T(6.28318530717958647692528676655900577);
-  static constexpr T halfPi = T(1.57079632679489661923132169163975144);
-  static constexpr T quarterPi = T(0.78539816339744830961566084581987572);
-  static constexpr T invPi = T(0.31830988618379067153776752674502872);
-  static constexpr T invTwoPi = T(0.15915494309189533576888376337251436);
-  static constexpr T twoOverPi = T(0.63661977236758134307553505349005745);
-  static constexpr T fourOverPi = T(1.27323954473516268615107010698011489);
+  static constexpr T pi = std::numbers::pi_v<T>;
+  static constexpr T twoPi = T(2) * std::numbers::pi_v<T>;
+  static constexpr T halfPi = std::numbers::pi_v<T> / T(2);
+  static constexpr T quarterPi = std::numbers::pi_v<T> / T(4);
+  static constexpr T invPi = std::numbers::inv_pi_v<T>;
+  static constexpr T invTwoPi = std::numbers::inv_pi_v<T> / T(2);
+  static constexpr T twoOverPi = T(2) * std::numbers::inv_pi_v<T>;
+  static constexpr T fourOverPi = T(4) * std::numbers::inv_pi_v<T>;
 
   // e and related constants
-  static constexpr T e = T(2.71828182845904523536028747135266250);
-  static constexpr T log2E = T(1.44269504088896340735992468100189214);
-  static constexpr T log10E = T(0.43429448190325182765112891891660508);
-  static constexpr T ln2 = T(0.69314718055994530941723212145817657);
-  static constexpr T ln10 = T(2.30258509299404568401799145468436421);
-  static constexpr T invLn2 = T(1.44269504088896340735992468100189214);
+  static constexpr T e = std::numbers::e_v<T>;
+  static constexpr T log2E = std::numbers::log2e_v<T>;
+  static constexpr T log10E = std::numbers::log10e_v<T>;
+  static constexpr T ln2 = std::numbers::ln2_v<T>;
+  static constexpr T ln10 = std::numbers::ln10_v<T>;
+  static constexpr T invLn2 = std::numbers::log2e_v<T>;
 
   // Square roots
-  static constexpr T sqrt2 = T(1.41421356237309504880168872420969808);
-  static constexpr T invSqrt2 = T(0.70710678118654752440084436210484904);
+  static constexpr T sqrt2 = std::numbers::sqrt2_v<T>;
+  static constexpr T invSqrt2 = T(1) / std::numbers::sqrt2_v<T>;
   static constexpr T sqrtPi = T(1.77245385090551602729816748334114518);
-  static constexpr T invSqrtPi = T(0.56418958354775628694807945156077259);
+  static constexpr T invSqrtPi = std::numbers::inv_sqrtpi_v<T>;
   static constexpr T sqrt2Pi = T(2.50662827463100050241576528481104525);
 
   // Special values

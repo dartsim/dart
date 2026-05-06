@@ -33,36 +33,19 @@
 #ifndef DART_MATH_CONSTANTS_HPP_
 #define DART_MATH_CONSTANTS_HPP_
 
-#include <limits>
-
-#if defined(__has_include)
-  #if __has_include(<numbers>)
-    #include <numbers>
-    #if defined(__cpp_lib_math_constants) && __cpp_lib_math_constants >= 201907L
-      #define DART_MATH_HAS_STD_NUMBERS 1
-    #endif
-  #endif
-#endif
-
-#ifndef DART_MATH_HAS_STD_NUMBERS
-  #define DART_MATH_HAS_STD_NUMBERS 0
-#endif
-
 #include "dart/common/deprecated.hpp"
 #include "dart/common/diagnostics.hpp"
+
+#include <limits>
+#include <numbers>
 
 namespace dart {
 namespace math {
 
 namespace detail {
 
-#if DART_MATH_HAS_STD_NUMBERS
 inline constexpr long double pi_ld = std::numbers::pi_v<long double>;
 inline constexpr long double phi_ld = std::numbers::phi_v<long double>;
-#else
-inline constexpr long double pi_ld = 3.141592653589793238462643383279502884L;
-inline constexpr long double phi_ld = 1.618033988749894848204586834365638118L;
-#endif
 
 inline constexpr long double two_pi_ld = 2.0L * pi_ld;
 inline constexpr long double half_pi_ld = 0.5L * pi_ld;
@@ -172,7 +155,5 @@ DART_SUPPRESS_DEPRECATED_END
 
 } // namespace math
 } // namespace dart
-
-#undef DART_MATH_HAS_STD_NUMBERS
 
 #endif // DART_MATH_CONSTANTS_HPP_

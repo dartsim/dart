@@ -93,10 +93,10 @@ int main()
 
   Eigen::VectorXd initPose(dof);
   initPose.setZero();
-  initPose[20] = 3.14159 * 0.4;
-  initPose[23] = 3.14159 * 0.4;
-  initPose[26] = 3.14159 * 0.4;
-  initPose[29] = 3.14159 * 0.4;
+  initPose[20] = 0.4 * pi;
+  initPose[23] = 0.4 * pi;
+  initPose[26] = 0.4 * pi;
+  initPose[29] = 0.4 * pi;
   myWorld->getSkeleton(0)->setPositions(initPose);
 
   // create a ball joint constraint

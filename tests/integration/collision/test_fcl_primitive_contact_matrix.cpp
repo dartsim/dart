@@ -42,6 +42,8 @@
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
 
+#include <dart/math/constants.hpp>
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
@@ -96,7 +98,7 @@ const Eigen::Vector3d kContainerEllipsoidRadii(2.0, 1.5, 1.0);
 const double kContainerCylinderRadius = 2.0;
 const double kContainerCylinderHeight = 4.0;
 const double kContainmentOffset = 0.2;
-const double kYawQuarterTurn = 0.25 * 3.141592653589793;
+const double kYawQuarterTurn = 0.25 * dart::math::pi;
 
 const std::vector<ShapeSpec> kShapeSpecs = {
     {ShapeKind::Box, "box"},
