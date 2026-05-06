@@ -817,11 +817,9 @@ int parseScenario(const std::string& name)
   auto scenarios = GetScenarios();
   for (int i = 0; i < static_cast<int>(scenarios.size()); ++i) {
     std::string lowerName = scenarios[i].name;
-    std::transform(
-        lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
+    std::ranges::transform(lowerName, lowerName.begin(), ::tolower);
     std::string lowerInput = name;
-    std::transform(
-        lowerInput.begin(), lowerInput.end(), lowerInput.begin(), ::tolower);
+    std::ranges::transform(lowerInput, lowerInput.begin(), ::tolower);
     if (lowerName.find(lowerInput) != std::string::npos) {
       return i;
     }
@@ -834,11 +832,9 @@ int parseSolver(const std::string& name)
   auto solvers = GetSolvers();
   for (int i = 0; i < static_cast<int>(solvers.size()); ++i) {
     std::string lowerName = solvers[i].name;
-    std::transform(
-        lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
+    std::ranges::transform(lowerName, lowerName.begin(), ::tolower);
     std::string lowerInput = name;
-    std::transform(
-        lowerInput.begin(), lowerInput.end(), lowerInput.begin(), ::tolower);
+    std::ranges::transform(lowerInput, lowerInput.begin(), ::tolower);
     if (lowerName.find(lowerInput) != std::string::npos) {
       return i;
     }
