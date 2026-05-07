@@ -265,7 +265,7 @@ using int_type_for_t = typename IntTypeFor<T>::type;
 } // namespace detail
 
 template <typename T, std::size_t W>
-  requires std::is_floating_point_v<T>
+  requires std::floating_point<T>
 [[nodiscard]] DART_SIMD_INLINE Vec<T, W> bitAnd(
     const Vec<T, W>& a, const Vec<T, W>& b)
 {
@@ -284,7 +284,7 @@ template <typename T, std::size_t W>
 }
 
 template <typename T, std::size_t W>
-  requires std::is_floating_point_v<T>
+  requires std::floating_point<T>
 [[nodiscard]] DART_SIMD_INLINE Vec<T, W> bitOr(
     const Vec<T, W>& a, const Vec<T, W>& b)
 {
@@ -303,7 +303,7 @@ template <typename T, std::size_t W>
 }
 
 template <typename T, std::size_t W>
-  requires std::is_floating_point_v<T>
+  requires std::floating_point<T>
 [[nodiscard]] DART_SIMD_INLINE Vec<T, W> bitXor(
     const Vec<T, W>& a, const Vec<T, W>& b)
 {
@@ -322,7 +322,7 @@ template <typename T, std::size_t W>
 }
 
 template <typename T, std::size_t W>
-  requires std::is_floating_point_v<T>
+  requires std::floating_point<T>
 [[nodiscard]] DART_SIMD_INLINE Vec<T, W> bitAndnot(
     const Vec<T, W>& a, const Vec<T, W>& b)
 {

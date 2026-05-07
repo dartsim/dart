@@ -36,6 +36,7 @@
 
 #include <gtest/gtest.h>
 
+#include <concepts>
 #include <limits>
 #include <random>
 #include <vector>
@@ -60,7 +61,7 @@ protected:
   // Tolerance for transcendental functions (looser than basic ops)
   static constexpr scalar_type tolerance()
   {
-    if constexpr (std::is_same_v<scalar_type, float>) {
+    if constexpr (std::same_as<scalar_type, float>) {
       return 1e-5f;
     } else {
       return 1e-12;
@@ -70,7 +71,7 @@ protected:
   // Even looser tolerance for functions with higher error accumulation
   static constexpr scalar_type looseTolerance()
   {
-    if constexpr (std::is_same_v<scalar_type, float>) {
+    if constexpr (std::same_as<scalar_type, float>) {
       return 1e-4f;
     } else {
       return 1e-10;
