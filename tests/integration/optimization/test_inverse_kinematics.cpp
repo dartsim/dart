@@ -39,6 +39,7 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <iterator>
 #include <span>
 #include <string_view>
 #include <vector>
@@ -70,7 +71,7 @@ public:
   std::span<const Solution> computeSolutions(const Eigen::Isometry3d&) override
   {
     mSolutions.clear();
-    const int dofCount = static_cast<int>(mDofs.size());
+    const auto dofCount = std::ssize(mDofs);
     Eigen::VectorXd config = Eigen::VectorXd::Zero(dofCount);
     mSolutions.emplace_back(config, VALID);
 
