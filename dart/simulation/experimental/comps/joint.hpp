@@ -200,22 +200,24 @@ struct Joint
 
   [[nodiscard]] std::size_t getDOF() const
   {
+    using enum JointType;
+
     switch (type) {
-      case JointType::Fixed:
+      case Fixed:
         return 0;
-      case JointType::Revolute:
+      case Revolute:
         return 1;
-      case JointType::Prismatic:
+      case Prismatic:
         return 1;
-      case JointType::Screw:
+      case Screw:
         return 1;
-      case JointType::Universal:
+      case Universal:
         return 2;
-      case JointType::Ball:
+      case Ball:
         return 3;
-      case JointType::Planar:
+      case Planar:
         return 3;
-      case JointType::Free:
+      case Free:
         return 6;
       default:
         return 0;
