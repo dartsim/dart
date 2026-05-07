@@ -181,10 +181,12 @@ int dInvertPDMatrix(
                                 : SolveCholesky_size;
   DART_ASSERT(MaxCholesky_size % sizeof(Scalar) == 0);
   const int nskip = padding(n);
-  const int nskip_mul_n = nskip * n;
+  const size_t nSize = static_cast<size_t>(n);
+  const size_t nskipSize = static_cast<size_t>(nskip);
+  const size_t nskip_mul_n = nskipSize * nSize;
   // Compute sizes in Scalar units for proper alignment on ARM64
   const size_t MaxCholesky_scalars = MaxCholesky_size / sizeof(Scalar);
-  const size_t total_scalars = MaxCholesky_scalars + nskip + nskip_mul_n;
+  const size_t total_scalars = MaxCholesky_scalars + nskipSize + nskip_mul_n;
   std::vector<Scalar> tmp_storage;
   Scalar* tmp;
   if (tmpbuf) {

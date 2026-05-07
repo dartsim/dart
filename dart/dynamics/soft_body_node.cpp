@@ -1730,9 +1730,12 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   //----------------------------------------------------------------------------
   // Faces
   //----------------------------------------------------------------------------
-  std::size_t nFacesX = 2 * (frags[1] - 1) * (frags[2] - 1);
-  std::size_t nFacesY = 2 * (frags[2] - 1) * (frags[0] - 1);
-  std::size_t nFacesZ = 2 * (frags[0] - 1) * (frags[1] - 1);
+  const std::size_t fragmentsX = static_cast<std::size_t>(frags[0]);
+  const std::size_t fragmentsY = static_cast<std::size_t>(frags[1]);
+  const std::size_t fragmentsZ = static_cast<std::size_t>(frags[2]);
+  std::size_t nFacesX = 2 * (fragmentsY - 1) * (fragmentsZ - 1);
+  std::size_t nFacesY = 2 * (fragmentsZ - 1) * (fragmentsX - 1);
+  std::size_t nFacesZ = 2 * (fragmentsX - 1) * (fragmentsY - 1);
   std::size_t nFaces = 2 * nFacesX + 2 * nFacesY + 2 * nFacesZ;
 
   std::vector<Eigen::Vector3i> faces(nFaces, Eigen::Vector3i::Zero());
