@@ -35,7 +35,7 @@
 #include "dart/common/diagnostics.hpp"
 #include "dart/common/logging.hpp"
 
-#include <sstream>
+#include <format>
 
 namespace dart {
 namespace common {
@@ -46,9 +46,8 @@ std::string ResourceRetriever::readAll(const Uri& uri)
   auto resource = retrieve(uri);
 
   if (!resource) {
-    std::stringstream ss;
-    ss << "Failed retrieving a resource from '" << uri.toString() << "'.";
-    throw std::runtime_error(ss.str());
+    throw std::runtime_error(
+        std::format("Failed retrieving a resource from '{}'.", uri.toString()));
   }
 
   return resource->readAll();

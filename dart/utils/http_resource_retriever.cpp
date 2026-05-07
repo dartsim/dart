@@ -36,9 +36,8 @@
 #include <dart/common/logging.hpp>
 #include <dart/common/macros.hpp>
 
-#include <iomanip>
+#include <format>
 #include <memory>
-#include <sstream>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -89,9 +88,7 @@ std::string computeHash(std::string_view input)
     hash *= 1099511628211ULL; // FNV-1a prime
   }
 
-  std::ostringstream oss;
-  oss << std::hex << std::setw(16) << std::setfill('0') << hash;
-  return oss.str();
+  return std::format("{:016x}", hash);
 }
 
 #if DART_HAS_CURL

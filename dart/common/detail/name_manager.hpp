@@ -38,7 +38,7 @@
 #include <dart/common/logging.hpp>
 #include <dart/common/name_manager.hpp>
 
-#include <sstream>
+#include <format>
 
 #include <cassert>
 
@@ -99,13 +99,14 @@ std::string NameManager<T>::issueNewName(std::string_view name) const
   int count = 1;
   std::string newName;
   do {
-    std::stringstream ss;
+    const auto nextCount = count++;
     if (mNameBeforeNumber) {
-      ss << mPrefix << name << mInfix << count++ << mAffix;
+      newName
+          = std::format("{}{}{}{}{}", mPrefix, name, mInfix, nextCount, mAffix);
     } else {
-      ss << mPrefix << count++ << mInfix << name << mAffix;
+      newName
+          = std::format("{}{}{}{}{}", mPrefix, nextCount, mInfix, name, mAffix);
     }
-    newName = ss.str();
   } while (hasName(newName));
 
   DART_INFO(
