@@ -707,10 +707,10 @@ simulation::WorldPtr createWorld()
 
   const auto dof = world->getSkeleton(0)->getNumDofs();
   Eigen::VectorXd initPose = Eigen::VectorXd::Zero(static_cast<int>(dof));
-  initPose[20] = 3.14159 * 0.4;
-  initPose[23] = 3.14159 * 0.4;
-  initPose[26] = 3.14159 * 0.4;
-  initPose[29] = 3.14159 * 0.4;
+  initPose[20] = 0.4 * dart::math::pi;
+  initPose[23] = 0.4 * dart::math::pi;
+  initPose[26] = 0.4 * dart::math::pi;
+  initPose[29] = 0.4 * dart::math::pi;
   world->getSkeleton(0)->setPositions(initPose);
 
   // Create a ball joint constraint
@@ -739,10 +739,10 @@ simulation::WorldPtr createWorldWithRevoluteConstraint()
 
   const auto dof = world->getSkeleton(0)->getNumDofs();
   Eigen::VectorXd initPose = Eigen::VectorXd::Zero(static_cast<int>(dof));
-  initPose[20] = 3.14159 * 0.4;
-  initPose[23] = 3.14159 * 0.4;
-  initPose[26] = 3.14159 * 0.4;
-  initPose[29] = 3.14159 * 0.4;
+  initPose[20] = 0.4 * dart::math::pi;
+  initPose[23] = 0.4 * dart::math::pi;
+  initPose[26] = 0.4 * dart::math::pi;
+  initPose[29] = 0.4 * dart::math::pi;
   world->getSkeleton(0)->setPositions(initPose);
 
   BodyNode* bd1 = world->getSkeleton(0)->getBodyNode("link 6");

@@ -15,6 +15,7 @@
 
 #include <limits>
 #include <memory>
+#include <numeric>
 #include <type_traits>
 #include <vector>
 
@@ -1213,7 +1214,8 @@ void setFrictionCoefficients(
       }
       dynamicsAspect->setPrimaryFrictionCoeff(primaryCoeff);
       dynamicsAspect->setSecondaryFrictionCoeff(secondaryCoeff);
-      dynamicsAspect->setFrictionCoeff(0.5 * (primaryCoeff + secondaryCoeff));
+      dynamicsAspect->setFrictionCoeff(
+          std::midpoint(primaryCoeff, secondaryCoeff));
     }
   }
 }

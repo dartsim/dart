@@ -73,6 +73,7 @@
 #include <functional>
 #include <iostream>
 #include <map>
+#include <numeric>
 #include <span>
 #include <sstream>
 #include <stdexcept>
@@ -1773,7 +1774,7 @@ static bool readAxisElement(
   // position instead of assuming zero
   if (0.0 < lower || upper < 0.0) {
     if (std::isfinite(lower) && std::isfinite(upper)) {
-      initial = (lower + upper) / 2.0;
+      initial = std::midpoint(lower, upper);
     } else if (std::isfinite(lower)) {
       initial = lower;
     } else if (std::isfinite(upper)) {

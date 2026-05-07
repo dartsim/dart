@@ -58,6 +58,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <numeric>
 #include <unordered_map>
 
 #include <cmath>
@@ -673,7 +674,7 @@ dynamics::BodyNode* UrdfParser::createDartJointAndNode(
       if (std::isfinite(_jt->limits->lower)
           && std::isfinite(_jt->limits->upper)) {
         singleDof.mInitialPositions[0]
-            = (_jt->limits->lower + _jt->limits->upper) / 2.0;
+            = std::midpoint(_jt->limits->lower, _jt->limits->upper);
       } else if (std::isfinite(_jt->limits->lower)) {
         singleDof.mInitialPositions[0] = _jt->limits->lower;
       } else if (std::isfinite(_jt->limits->upper)) {
@@ -759,7 +760,7 @@ dynamics::BodyNode* UrdfParser::createDartJointAndNode(
           if (std::isfinite(_jt->limits->lower)
               && std::isfinite(_jt->limits->upper)) {
             properties.mInitialPositions.setConstant(
-                (_jt->limits->lower + _jt->limits->upper) / 2.0);
+                std::midpoint(_jt->limits->lower, _jt->limits->upper));
           } else if (std::isfinite(_jt->limits->lower)) {
             properties.mInitialPositions.setConstant(_jt->limits->lower);
           } else if (std::isfinite(_jt->limits->upper)) {
@@ -819,7 +820,7 @@ dynamics::BodyNode* UrdfParser::createDartJointAndNode(
           if (std::isfinite(_jt->limits->lower)
               && std::isfinite(_jt->limits->upper)) {
             properties.mInitialPositions.setConstant(
-                (_jt->limits->lower + _jt->limits->upper) / 2.0);
+                std::midpoint(_jt->limits->lower, _jt->limits->upper));
           } else if (std::isfinite(_jt->limits->lower)) {
             properties.mInitialPositions.setConstant(_jt->limits->lower);
           } else if (std::isfinite(_jt->limits->upper)) {
