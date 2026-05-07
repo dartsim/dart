@@ -234,7 +234,7 @@ LcpResult RedBlackGaussSeidelSolver::solve(
     if (std::isfinite(diag) && std::abs(diag) >= params->epsilonForDivision) {
       const double residualEntry = A.row(i).dot(xRead) - b[i];
       const double step = xRead[i] - residualEntry / diag;
-      value = xRead[i] + relaxation * (step - xRead[i]);
+      value = std::lerp(xRead[i], step, relaxation);
     } else {
       value = 0.0;
     }
