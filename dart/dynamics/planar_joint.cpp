@@ -257,19 +257,20 @@ void PlanarJoint::updateDegreeOfFreedomNames()
 {
   std::vector<std::string> affixes;
   switch (mAspectProperties.mPlaneType) {
-    case PlaneType::XY:
+    using enum PlaneType;
+    case XY:
       affixes.push_back("_x");
       affixes.push_back("_y");
       break;
-    case PlaneType::YZ:
+    case YZ:
       affixes.push_back("_y");
       affixes.push_back("_z");
       break;
-    case PlaneType::ZX:
+    case ZX:
       affixes.push_back("_z");
       affixes.push_back("_x");
       break;
-    case PlaneType::ARBITRARY:
+    case ARBITRARY:
       affixes.push_back("_1");
       affixes.push_back("_2");
       break;
