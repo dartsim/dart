@@ -45,6 +45,10 @@
 #include <osg/Light>
 #include <osg/Material>
 
+#include <ranges>
+
+#include <cstddef>
+
 namespace dart {
 namespace gui {
 
@@ -233,7 +237,7 @@ void MultiSphereShapeDrawable::refresh(bool firstTime)
     // Convert the convex hull to OSG data types
     mVertices->resize(meshVertices.size());
     mNormals->resize(meshVertices.size());
-    for (auto i = 0u; i < meshVertices.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, meshVertices.size())) {
       const auto& v = meshVertices[i];
       const auto& n = meshNormals[i];
       (*mVertices)[i] = ::osg::Vec3(v[0], v[1], v[2]);
@@ -245,7 +249,8 @@ void MultiSphereShapeDrawable::refresh(bool firstTime)
     ::osg::ref_ptr<::osg::DrawElementsUInt> drawElements
         = new ::osg::DrawElementsUInt(GL_TRIANGLES);
     drawElements->resize(3 * meshTriangles.size());
-    for (auto i = 0u; i < meshTriangles.size(); ++i) {
+    for (const auto i :
+         std::views::iota(std::size_t{0}, meshTriangles.size())) {
       const auto& triangle = meshTriangles[i];
       (*drawElements)[3 * i] = triangle[0];
       (*drawElements)[3 * i + 1] = triangle[1];
