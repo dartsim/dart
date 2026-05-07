@@ -35,6 +35,7 @@
 #include <gtest/gtest.h>
 
 #include <limits>
+#include <ranges>
 
 using namespace dart;
 using namespace dart::dynamics;
@@ -227,7 +228,7 @@ TEST(BodyNodeExternalForce, SimulationDoesNotCrashWithNaNForce)
 
   // Positions should still be valid (no NaN propagation)
   Eigen::VectorXd positions = skel->getPositions();
-  for (Eigen::Index i = 0; i < positions.size(); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, positions.size())) {
     EXPECT_FALSE(std::isnan(positions[i]))
         << "Position " << i << " should not be NaN";
   }

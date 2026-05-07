@@ -46,6 +46,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <ranges>
 #include <vector>
 
 using namespace dart::dynamics;
@@ -258,7 +259,7 @@ TEST(SkeletonConfiguration, UpdatesSelectedDofs)
   const Eigen::VectorXd updatedPositions = skeleton->getPositions();
   const Eigen::VectorXd updatedVelocities = skeleton->getVelocities();
 
-  for (std::size_t i = 0; i < indices.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, indices.size())) {
     EXPECT_DOUBLE_EQ(updatedPositions[indices[i]], positions[i]);
     EXPECT_DOUBLE_EQ(updatedVelocities[indices[i]], velocities[i]);
   }

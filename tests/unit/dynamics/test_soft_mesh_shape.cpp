@@ -7,6 +7,8 @@
 
 #include <gtest/gtest.h>
 
+#include <ranges>
+
 #include <cmath>
 
 using namespace dart;
@@ -176,7 +178,8 @@ TEST(SoftMeshShapeTest, TriMeshVerticesMatchPointMasses)
 
   const auto& vertices = triMesh->getVertices();
 
-  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, softBody->getNumPointMasses())) {
     PointMass* pm = softBody->getPointMass(i);
     Eigen::Vector3d restingPos = pm->getRestingPosition();
     EXPECT_TRUE(vertices[i].isApprox(restingPos, 1e-10))
@@ -287,7 +290,8 @@ TEST(SoftMeshShapeTest, MultiplePointMassUpdates)
   ASSERT_NE(triMesh, nullptr);
 
   std::vector<Eigen::Vector3d> expectedPositions;
-  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, softBody->getNumPointMasses())) {
     PointMass* pm = softBody->getPointMass(i);
     Eigen::Vector3d restingPos = pm->getRestingPosition();
     Eigen::Vector3d displacement(
@@ -301,7 +305,8 @@ TEST(SoftMeshShapeTest, MultiplePointMassUpdates)
   softMeshShape->update();
 
   const auto& vertices = triMesh->getVertices();
-  for (std::size_t i = 0; i < expectedPositions.size(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, expectedPositions.size())) {
     EXPECT_TRUE(vertices[i].isApprox(expectedPositions[i], 1e-10))
         << "Vertex " << i << " not updated correctly";
   }
