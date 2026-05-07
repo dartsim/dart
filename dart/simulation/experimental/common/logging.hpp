@@ -262,21 +262,21 @@ inline std::string makeContext(const std::source_location& location)
       location.function_name());
 }
 
-template <typename Format, typename... Args>
+template <typename S, typename... Args>
 void log(
     LogLevel level,
     const char* file,
     int line,
     const char* function,
-    Format&& format,
+    const S& format,
     Args&&... args)
 {
   auto& logger = Logger::instance();
+  fmt::basic_string_view<char> fmt_view(format);
+  auto message = fmt::vformat(fmt_view, fmt::make_format_args(args...));
 #ifndef NDEBUG
   std::string prefix = makeContext(file, line, function);
   if (!prefix.empty()) {
-    auto message = fmt::format(
-        std::forward<Format>(format), std::forward<Args>(args)...);
     logger->log(toSpdlogLevel(level), "{}{}", prefix, message);
     return;
   }
@@ -285,24 +285,21 @@ void log(
   (void)line;
   (void)function;
 #endif
-  logger->log(
-      toSpdlogLevel(level),
-      std::forward<Format>(format),
-      std::forward<Args>(args)...);
+  logger->log(toSpdlogLevel(level), "{}", message);
 }
 
-template <typename Format, typename... Args>
+template <typename S, typename... Args>
 void log(
     LogLevel level,
     const std::source_location& location,
-    Format&& format,
+    const S& format,
     Args&&... args)
 {
   log(level,
       location.file_name(),
       static_cast<int>(location.line()),
       location.function_name(),
-      std::forward<Format>(format),
+      format,
       std::forward<Args>(args)...);
 }
 

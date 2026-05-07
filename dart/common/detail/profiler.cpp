@@ -570,12 +570,6 @@ void Profiler::clearNode(ProfileNode& node)
 }
 
 ProfileScope::ProfileScope(
-    std::string_view name, const std::source_location& location)
-  : ProfileScope(name, location.file_name(), static_cast<int>(location.line()))
-{
-}
-
-ProfileScope::ProfileScope(
     std::string_view name, std::string_view file, int line)
   : m_record(Profiler::threadRecord())
 {

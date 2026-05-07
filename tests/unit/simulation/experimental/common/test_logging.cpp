@@ -34,6 +34,8 @@
 
 #include <gtest/gtest.h>
 
+#include <source_location>
+
 using namespace dart::simulation::experimental::common;
 
 // Test logging initialization
@@ -107,4 +109,20 @@ TEST(Logging, AllLevels)
   DART_EXPERIMENTAL_WARN("Warning message");
   DART_EXPERIMENTAL_ERROR("Error message");
   DART_EXPERIMENTAL_CRITICAL("Critical message");
+}
+
+TEST(Logging, SourceLocationDetailHelpers)
+{
+  initializeLogging();
+
+  const auto context = detail::makeContext(std::source_location::current());
+  if (!context.empty()) {
+    EXPECT_NE(context.find("test_logging.cpp"), std::string::npos);
+  }
+
+  detail::log(
+      LogLevel::Info,
+      std::source_location::current(),
+      "source location detail log {}",
+      42);
 }

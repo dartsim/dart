@@ -146,7 +146,11 @@ class DART_API ProfileScope
 public:
   explicit ProfileScope(
       std::string_view name,
-      const std::source_location& location = std::source_location::current());
+      const std::source_location& location = std::source_location::current())
+    : ProfileScope(
+          name, location.file_name(), static_cast<int>(location.line()))
+  {
+  }
   explicit ProfileScope(std::string_view name, std::string_view file, int line);
   ~ProfileScope();
 
