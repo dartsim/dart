@@ -104,8 +104,10 @@ gh pr checks <PR_NUMBER>
      git push origin --delete <HEAD_BRANCH>
      git switch main
      git pull --ff-only
-     git branch -d <HEAD_BRANCH>
+     git branch -D <HEAD_BRANCH>
      ```
+     Use force-delete locally only after confirming the PR branch has landed;
+     squash and rebase merges do not preserve the branch tip in `main` ancestry.
 
 ## Output
 
