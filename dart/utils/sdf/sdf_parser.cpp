@@ -989,8 +989,7 @@ void applyMimicConstraints(
       continue;
     }
 
-    joint->setMimicJointDofs(
-        std::span<const dynamics::MimicDofProperties>(props));
+    joint->setMimicJointDofs(props);
     joint->setActuatorType(dynamics::Joint::MIMIC);
     joint->setUseCouplerConstraint(useCoupler);
   }

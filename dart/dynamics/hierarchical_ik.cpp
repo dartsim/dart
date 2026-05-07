@@ -244,7 +244,7 @@ std::span<const Eigen::MatrixXd> HierarchicalIK::computeNullSpaces() const
   // indexing and changes in Joint / BodyNode properties.
 
   if (!recompute) {
-    return std::span<const Eigen::MatrixXd>(mNullSpaceCache);
+    return mNullSpaceCache;
   }
 
   const IKHierarchy& hierarchy = getIKHierarchy();
@@ -300,7 +300,7 @@ std::span<const Eigen::MatrixXd> HierarchicalIK::computeNullSpaces() const
     }
   }
 
-  return std::span<const Eigen::MatrixXd>(mNullSpaceCache);
+  return mNullSpaceCache;
 }
 
 //==============================================================================

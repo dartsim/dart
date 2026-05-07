@@ -263,13 +263,13 @@ std::span<const std::size_t> IkFast::getDofs() const
     }
   }
 
-  return std::span<const std::size_t>(mDofs);
+  return mDofs;
 }
 
 //==============================================================================
 std::span<const std::size_t> IkFast::getFreeDofs() const
 {
-  return std::span<const std::size_t>(mFreeDofs);
+  return mFreeDofs;
 }
 
 //==============================================================================
@@ -401,8 +401,7 @@ IkFast::computeSolutions(const Eigen::Isometry3d& desiredBodyTf)
           "This analytical IK was not able to configure properly, so it will "
           "not be able to compute solutions. Returning an empty list of "
           "solutions.");
-      return std::span<const InverseKinematics::Analytical::Solution>(
-          mSolutions);
+      return mSolutions;
     }
   }
 
@@ -432,7 +431,7 @@ IkFast::computeSolutions(const Eigen::Isometry3d& desiredBodyTf)
         mSolutions);
   }
 
-  return std::span<const InverseKinematics::Analytical::Solution>(mSolutions);
+  return mSolutions;
 }
 
 //==============================================================================

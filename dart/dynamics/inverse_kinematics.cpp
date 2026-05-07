@@ -1061,7 +1061,7 @@ std::span<const IK::Analytical::Solution> IK::Analytical::getSolutions(
 
   setPositions(mRestoreConfigCache);
 
-  return std::span<const IK::Analytical::Solution>(mSolutions);
+  return mSolutions;
 }
 
 //==============================================================================
@@ -1395,13 +1395,13 @@ void InverseKinematics::setDofs(std::span<const std::size_t> _dofs)
 //==============================================================================
 std::span<const std::size_t> InverseKinematics::getDofs() const
 {
-  return std::span<const std::size_t>(mDofs);
+  return mDofs;
 }
 
 //==============================================================================
 std::span<const int> InverseKinematics::getDofMap() const
 {
-  return std::span<const int>(mDofMap);
+  return mDofMap;
 }
 
 //==============================================================================

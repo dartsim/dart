@@ -258,7 +258,7 @@ const PointMass* SoftBodyNode::getPointMass(std::size_t _idx) const
 //==============================================================================
 std::span<PointMass* const> SoftBodyNode::getPointMasses() const
 {
-  return std::span<PointMass* const>(mPointMasses);
+  return mPointMasses;
 }
 
 //==============================================================================
