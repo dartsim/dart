@@ -36,6 +36,7 @@
 #include <dart/simd/fwd.hpp>
 
 #include <algorithm>
+#include <bit>
 
 #include <cmath>
 #include <cstddef>
@@ -262,6 +263,18 @@ struct IntTypeFor<double>
 template <typename T>
 using int_type_for_t = typename IntTypeFor<T>::type;
 
+template <typename T>
+[[nodiscard]] DART_SIMD_INLINE int_type_for_t<T> toBits(T value) noexcept
+{
+  return std::bit_cast<int_type_for_t<T>>(value);
+}
+
+template <typename T>
+[[nodiscard]] DART_SIMD_INLINE T fromBits(int_type_for_t<T> bits) noexcept
+{
+  return std::bit_cast<T>(bits);
+}
+
 } // namespace detail
 
 template <typename T, std::size_t W>
@@ -274,11 +287,9 @@ template <typename T, std::size_t W>
   a.store(aArr);
   b.store(bArr);
   for (std::size_t i = 0; i < W; ++i) {
-    Int ai, bi;
-    std::memcpy(&ai, &aArr[i], sizeof(T));
-    std::memcpy(&bi, &bArr[i], sizeof(T));
-    Int ri = ai & bi;
-    std::memcpy(&rArr[i], &ri, sizeof(T));
+    const Int ai = detail::toBits(aArr[i]);
+    const Int bi = detail::toBits(bArr[i]);
+    rArr[i] = detail::fromBits<T>(ai & bi);
   }
   return Vec<T, W>::load(rArr);
 }
@@ -293,11 +304,9 @@ template <typename T, std::size_t W>
   a.store(aArr);
   b.store(bArr);
   for (std::size_t i = 0; i < W; ++i) {
-    Int ai, bi;
-    std::memcpy(&ai, &aArr[i], sizeof(T));
-    std::memcpy(&bi, &bArr[i], sizeof(T));
-    Int ri = ai | bi;
-    std::memcpy(&rArr[i], &ri, sizeof(T));
+    const Int ai = detail::toBits(aArr[i]);
+    const Int bi = detail::toBits(bArr[i]);
+    rArr[i] = detail::fromBits<T>(ai | bi);
   }
   return Vec<T, W>::load(rArr);
 }
@@ -312,11 +321,9 @@ template <typename T, std::size_t W>
   a.store(aArr);
   b.store(bArr);
   for (std::size_t i = 0; i < W; ++i) {
-    Int ai, bi;
-    std::memcpy(&ai, &aArr[i], sizeof(T));
-    std::memcpy(&bi, &bArr[i], sizeof(T));
-    Int ri = ai ^ bi;
-    std::memcpy(&rArr[i], &ri, sizeof(T));
+    const Int ai = detail::toBits(aArr[i]);
+    const Int bi = detail::toBits(bArr[i]);
+    rArr[i] = detail::fromBits<T>(ai ^ bi);
   }
   return Vec<T, W>::load(rArr);
 }
@@ -331,11 +338,9 @@ template <typename T, std::size_t W>
   a.store(aArr);
   b.store(bArr);
   for (std::size_t i = 0; i < W; ++i) {
-    Int ai, bi;
-    std::memcpy(&ai, &aArr[i], sizeof(T));
-    std::memcpy(&bi, &bArr[i], sizeof(T));
-    Int ri = ai & (~bi);
-    std::memcpy(&rArr[i], &ri, sizeof(T));
+    const Int ai = detail::toBits(aArr[i]);
+    const Int bi = detail::toBits(bArr[i]);
+    rArr[i] = detail::fromBits<T>(ai & (~bi));
   }
   return Vec<T, W>::load(rArr);
 }
@@ -503,8 +508,7 @@ frexpSimd(const Vec<float, W>& v)
   v.store(vArr);
 
   for (std::size_t i = 0; i < W; ++i) {
-    std::uint32_t bits;
-    std::memcpy(&bits, &vArr[i], sizeof(float));
+    std::uint32_t bits = std::bit_cast<std::uint32_t>(vArr[i]);
 
     std::int32_t biasedExp = static_cast<std::int32_t>((bits & expMask) >> 23);
     std::int32_t expAdjust = 0;
@@ -522,14 +526,14 @@ frexpSimd(const Vec<float, W>& v)
         continue;
       }
       float normalized = vArr[i] * 8388608.0f;
-      std::memcpy(&bits, &normalized, sizeof(float));
+      bits = std::bit_cast<std::uint32_t>(normalized);
       biasedExp = static_cast<std::int32_t>((bits & expMask) >> 23);
       expAdjust = -23;
     }
 
     expArr[i] = biasedExp - 127 + expAdjust;
     std::uint32_t mantissaBits = (bits & (signMask | mantissaMask)) | halfExp;
-    std::memcpy(&mantArr[i], &mantissaBits, sizeof(float));
+    mantArr[i] = std::bit_cast<float>(mantissaBits);
   }
   return {Vec<float, W>::load(mantArr), Vec<std::int32_t, W>::load(expArr)};
 }
@@ -548,9 +552,7 @@ template <std::size_t W>
     } else {
       std::uint32_t pow2Bits = static_cast<std::uint32_t>(expArr[i] + 0x7f)
                                << 23;
-      float pow2;
-      std::memcpy(&pow2, &pow2Bits, sizeof(float));
-      rArr[i] = xArr[i] * pow2;
+      rArr[i] = xArr[i] * std::bit_cast<float>(pow2Bits);
     }
   }
   return Vec<float, W>::load(rArr);

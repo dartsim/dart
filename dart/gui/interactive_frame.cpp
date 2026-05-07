@@ -37,6 +37,8 @@
 #include "dart/dynamics/line_segment_shape.hpp"
 #include "dart/dynamics/mesh_shape.hpp"
 
+#include <algorithm>
+
 namespace dart {
 namespace gui {
 
@@ -279,7 +281,7 @@ void InteractiveFrame::createStandardVisualizationShapes(
 {
   const auto pi = math::pi;
 
-  thickness = std::min(10.0, std::max(0.0, thickness));
+  thickness = std::clamp(thickness, 0.0, 10.0);
   std::size_t resolution = 72;
   double ring_outer_scale = 0.7 * size;
   double ring_inner_scale = ring_outer_scale * (1 - 0.1 * thickness);
