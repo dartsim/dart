@@ -218,6 +218,15 @@ TEST_F(SimdAlignmentTest, IsAlignedCheck)
   EXPECT_TRUE(is_aligned(aligned16, 16));
 }
 
+TEST_F(SimdAlignmentTest, AssumeAligned)
+{
+  alignas(32) float aligned[8] = {};
+  EXPECT_EQ(assume_aligned<32>(aligned), aligned);
+
+  alignas(32) const float constAligned[8] = {};
+  EXPECT_EQ(assume_aligned<32>(constAligned), constAligned);
+}
+
 class SimdMathEdgeCases : public ::testing::Test
 {
 };
