@@ -48,6 +48,7 @@
 #include <benchmark/benchmark.h>
 
 #include <random>
+#include <ranges>
 
 #include <cmath>
 
@@ -58,8 +59,8 @@ Eigen::MatrixXd generateRandomMatrix(int rows, int cols, int seed = 42)
   std::mt19937 gen(seed);
   std::uniform_real_distribution<double> dist(-100.0, 100.0);
   Eigen::MatrixXd m(rows, cols);
-  for (int i = 0; i < rows; ++i) {
-    for (int j = 0; j < cols; ++j) {
+  for (const auto i : std::views::iota(0, rows)) {
+    for (const auto j : std::views::iota(0, cols)) {
       m(i, j) = dist(gen);
     }
   }
@@ -77,8 +78,8 @@ static void BM_isNan_Baseline(benchmark::State& state)
 
   for (auto _ : state) {
     bool result = false;
-    for (int i = 0; i < m.rows(); ++i) {
-      for (int j = 0; j < m.cols(); ++j) {
+    for (const auto i : std::views::iota(Eigen::Index{0}, m.rows())) {
+      for (const auto j : std::views::iota(Eigen::Index{0}, m.cols())) {
         if (std::isnan(m(i, j))) {
           result = true;
           break;

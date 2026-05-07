@@ -34,6 +34,8 @@
 
 #include <gtest/gtest.h>
 
+#include <ranges>
+
 #include <cmath>
 
 using namespace dart;
@@ -59,7 +61,7 @@ TEST(PolygonMeshTests, TriangulateQuad)
   const auto& vertices = triMesh.getVertices();
   const auto& face = mesh.getFaces()[0];
   double polygonArea = 0.0;
-  for (std::size_t i = 0; i < face.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, face.size())) {
     const auto& p = vertices[face[i]];
     const auto& q = vertices[face[(i + 1) % face.size()]];
     polygonArea += p.x() * q.y() - q.x() * p.y();
@@ -98,7 +100,7 @@ TEST(PolygonMeshTests, TriangulateConcave)
   const auto& vertices = triMesh.getVertices();
   const auto& face = mesh.getFaces()[0];
   double polygonArea = 0.0;
-  for (std::size_t i = 0; i < face.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, face.size())) {
     const auto& p = vertices[face[i]];
     const auto& q = vertices[face[(i + 1) % face.size()]];
     polygonArea += p.x() * q.y() - q.x() * p.y();
