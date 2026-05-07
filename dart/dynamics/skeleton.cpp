@@ -50,6 +50,7 @@
 #include "dart/math/helpers.hpp"
 
 #include <algorithm>
+#include <format>
 #include <iterator>
 #include <queue>
 #include <span>
@@ -1131,8 +1132,7 @@ std::span<BodyNode* const> Skeleton::getTreeBodyNodes(std::size_t _treeIdx)
         "Requesting an invalid tree ({}) {}",
         _treeIdx,
         (count > 0
-             ? (std::string("when the max tree index is (")
-                + std::to_string(count - 1) + ")\n")
+             ? std::format("when the max tree index is ({})\n", count - 1)
              : std::string("when there are no trees in this Skeleton\n")));
     DART_ASSERT(false);
   }

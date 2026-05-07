@@ -55,9 +55,9 @@
 #include <atomic>
 #include <chrono>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <map>
-#include <sstream>
 #include <stdexcept>
 #include <string_view>
 #include <system_error>
@@ -105,23 +105,24 @@ std::filesystem::path makeTemporaryTexturePath(std::string_view extension)
   const auto tempDir = std::filesystem::temp_directory_path();
 
   for (std::size_t attempt = 0; attempt < 64; ++attempt) {
-    std::stringstream name;
-    name << "dart_texture_"
-         << std::chrono::high_resolution_clock::now().time_since_epoch().count()
-         << '_' << counter.fetch_add(1, std::memory_order_relaxed);
+    auto name = std::format(
+        "dart_texture_{}_{}",
+        std::chrono::high_resolution_clock::now().time_since_epoch().count(),
+        counter.fetch_add(1, std::memory_order_relaxed));
     if (attempt > 0) {
-      name << '_' << attempt;
+      name += std::format("_{}", attempt);
     }
 
     if (!extension.empty()) {
       if (extension.front() == '.') {
-        name << extension;
+        name += extension;
       } else {
-        name << '.' << extension;
+        name += '.';
+        name += extension;
       }
     }
 
-    const auto candidate = tempDir / name.str();
+    const auto candidate = tempDir / name;
     std::error_code ec;
     if (!std::filesystem::exists(candidate, ec)) {
       return candidate;

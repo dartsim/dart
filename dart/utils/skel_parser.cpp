@@ -77,6 +77,7 @@
 #include <Eigen/StdVector>
 
 #include <algorithm>
+#include <format>
 #include <optional>
 #include <string_view>
 #include <unordered_map>
@@ -1948,7 +1949,7 @@ void readJointDynamicsAndLimit(
   // axis
   for (std::size_t i = 0; i < _numAxis; ++i) {
     if (i != 0) {
-      axisName = "axis" + std::to_string(i + 1);
+      axisName = std::format("axis{}", i + 1);
     }
 
     if (hasElement(_jointElement, axisName)) {

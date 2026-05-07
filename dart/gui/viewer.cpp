@@ -48,7 +48,7 @@
 #include <osg/OperationThread>
 #include <osgDB/WriteFile>
 
-#include <iomanip>
+#include <format>
 
 namespace dart {
 namespace gui {
@@ -89,16 +89,17 @@ public:
 
     if (mViewer->mRecording) {
       if (!mViewer->mImageDirectory.empty()) {
-        std::stringstream str;
-        str << mViewer->mImageDirectory << "/" << mViewer->mImagePrefix
-            << std::setfill('0')
-            << std::setw(static_cast<int>(mViewer->mImageDigits))
-            << mViewer->mImageSequenceNum << std::setw(0) << ".png";
+        const auto path = std::format(
+            "{}/{}{:0{}}.png",
+            mViewer->mImageDirectory,
+            mViewer->mImagePrefix,
+            mViewer->mImageSequenceNum,
+            static_cast<int>(mViewer->mImageDigits));
 
-        if (::osgDB::writeImageFile(*mImage, str.str())) {
+        if (::osgDB::writeImageFile(*mImage, path)) {
           ++mViewer->mImageSequenceNum;
         } else {
-          DART_WARN("Unable to save image to file named: {}", str.str());
+          DART_WARN("Unable to save image to file named: {}", path);
 
           // Toggle off recording if the file cannot be saved.
           mViewer->mRecording = false;

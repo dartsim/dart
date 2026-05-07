@@ -37,6 +37,7 @@
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/skeleton.hpp>
 
+#include <format>
 #include <utility>
 
 namespace dart {
@@ -155,7 +156,7 @@ ShapeNode* BodyNode::createShapeNode(
 {
   if (automaticName) {
     properties.mName
-        = getName() + "_ShapeNode_" + std::to_string(getNumShapeNodes());
+        = std::format("{}_ShapeNode_{}", getName(), getNumShapeNodes());
   }
 
   return createNode<ShapeNode>(properties);
@@ -188,7 +189,7 @@ template <class... Aspects>
 ShapeNode* BodyNode::createShapeNodeWith(const ShapePtr& shape)
 {
   return createShapeNodeWith<Aspects...>(
-      shape, getName() + "_ShapeNode_" + std::to_string(getNumShapeNodes()));
+      shape, std::format("{}_ShapeNode_{}", getName(), getNumShapeNodes()));
 }
 
 //==============================================================================
