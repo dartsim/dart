@@ -41,6 +41,29 @@
 
 using namespace dart::common;
 
+namespace {
+
+class BareMemoryAllocator final : public MemoryAllocator
+{
+public:
+  std::string_view getType() const override
+  {
+    return "BareMemoryAllocator";
+  }
+
+  void* allocate(size_t) noexcept override
+  {
+    return nullptr;
+  }
+
+  void deallocate(void*, size_t) override
+  {
+    // Do nothing.
+  }
+};
+
+} // namespace
+
 TEST(MemoryAllocatorTest, DefaultAllocatorIsStable)
 {
   MemoryAllocator& allocator1 = MemoryAllocator::GetDefault();
@@ -68,3 +91,24 @@ TEST(MemoryAllocatorTest, PrintWritesMessages)
   EXPECT_NE(viaStream.str().find("[CAllocator]"), std::string::npos);
 }
 #endif // !DART_OS_WINDOWS
+
+TEST(MemoryAllocatorTest, BasePrintFallbackWritesMessages)
+{
+  BareMemoryAllocator allocator;
+
+  std::ostringstream noIndent;
+  allocator.print(noIndent, 0);
+  EXPECT_NE(
+      noIndent.str().find("[*::print is not implemented]"), std::string::npos);
+
+  std::ostringstream withIndent;
+  allocator.print(withIndent, 2);
+  EXPECT_NE(
+      withIndent.str().find("  *::print is not implemented:"),
+      std::string::npos);
+
+  std::ostringstream viaStream;
+  viaStream << allocator;
+  EXPECT_NE(
+      viaStream.str().find("[*::print is not implemented]"), std::string::npos);
+}
