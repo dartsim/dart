@@ -37,6 +37,7 @@
 
 #include <boost/pfr.hpp>
 
+#include <concepts>
 #include <iostream>
 #include <type_traits>
 
@@ -89,20 +90,20 @@ void autoSerialize(
     using FieldType = std::remove_cvref_t<decltype(field)>;
 
     // Handle different field types
-    if constexpr (std::is_same_v<FieldType, std::string>) {
+    if constexpr (std::same_as<FieldType, std::string>) {
       writeString(out, field);
-    } else if constexpr (std::is_same_v<FieldType, Eigen::Vector3d>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::Vector3d>) {
       writeVector3d(out, field);
-    } else if constexpr (std::is_same_v<FieldType, Eigen::Isometry3d>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::Isometry3d>) {
       writeIsometry3d(out, field);
-    } else if constexpr (std::is_same_v<FieldType, Eigen::Quaterniond>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::Quaterniond>) {
       writePOD(out, field.w());
       writePOD(out, field.x());
       writePOD(out, field.y());
       writePOD(out, field.z());
-    } else if constexpr (std::is_same_v<FieldType, Eigen::VectorXd>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::VectorXd>) {
       writeVectorXd(out, field);
-    } else if constexpr (std::is_same_v<FieldType, Eigen::Matrix3d>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::Matrix3d>) {
       // Write 3x3 matrix (symmetric, so store 6 unique values)
       for (int i = 0; i < 3; ++i) {
         for (int j = i; j < 3; ++j) {
@@ -127,22 +128,22 @@ void autoDeserialize(std::istream& in, T& component)
     using FieldType = std::remove_cvref_t<decltype(field)>;
 
     // Handle different field types
-    if constexpr (std::is_same_v<FieldType, std::string>) {
+    if constexpr (std::same_as<FieldType, std::string>) {
       readString(in, field);
-    } else if constexpr (std::is_same_v<FieldType, Eigen::Vector3d>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::Vector3d>) {
       readVector3d(in, field);
-    } else if constexpr (std::is_same_v<FieldType, Eigen::Isometry3d>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::Isometry3d>) {
       readIsometry3d(in, field);
-    } else if constexpr (std::is_same_v<FieldType, Eigen::Quaterniond>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::Quaterniond>) {
       double w, x, y, z;
       readPOD(in, w);
       readPOD(in, x);
       readPOD(in, y);
       readPOD(in, z);
       field = Eigen::Quaterniond(w, x, y, z);
-    } else if constexpr (std::is_same_v<FieldType, Eigen::VectorXd>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::VectorXd>) {
       readVectorXd(in, field);
-    } else if constexpr (std::is_same_v<FieldType, Eigen::Matrix3d>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::Matrix3d>) {
       // Read 3x3 symmetric matrix
       for (int i = 0; i < 3; ++i) {
         for (int j = i; j < 3; ++j) {
@@ -177,14 +178,14 @@ void autoSerialize(
   boost::pfr::for_each_field(component, [&](const auto& field) {
     using FieldType = std::remove_cvref_t<decltype(field)>;
 
-    if constexpr (std::is_same_v<FieldType, entt::entity>) {
+    if constexpr (std::same_as<FieldType, entt::entity>) {
       // Single entity field - always remap
       std::uint32_t mappedId
           = (field != entt::null)
                 ? static_cast<std::uint32_t>(entityMap.at(field))
                 : static_cast<std::uint32_t>(entt::null);
       writePOD(out, mappedId);
-    } else if constexpr (std::is_same_v<FieldType, std::vector<entt::entity>>) {
+    } else if constexpr (std::same_as<FieldType, std::vector<entt::entity>>) {
       // Vector of entities - always remap each
       std::size_t count = field.size();
       writePOD(out, count);
@@ -195,21 +196,21 @@ void autoSerialize(
                   : static_cast<std::uint32_t>(entt::null);
         writePOD(out, mappedId);
       }
-    } else if constexpr (std::is_same_v<FieldType, std::string>) {
+    } else if constexpr (std::same_as<FieldType, std::string>) {
       writeString(out, field);
-    } else if constexpr (std::is_same_v<FieldType, Eigen::Vector3d>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::Vector3d>) {
       writeVector3d(out, field);
-    } else if constexpr (std::is_same_v<FieldType, Eigen::Isometry3d>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::Isometry3d>) {
       writeIsometry3d(out, field);
-    } else if constexpr (std::is_same_v<FieldType, Eigen::VectorXd>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::VectorXd>) {
       writeVectorXd(out, field);
-    } else if constexpr (std::is_same_v<FieldType, Eigen::Matrix3d>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::Matrix3d>) {
       for (int i = 0; i < 3; ++i) {
         for (int j = i; j < 3; ++j) {
           writePOD(out, field(i, j));
         }
       }
-    } else if constexpr (std::is_same_v<FieldType, Eigen::Quaterniond>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::Quaterniond>) {
       writePOD(out, field.w());
       writePOD(out, field.x());
       writePOD(out, field.y());
@@ -230,12 +231,12 @@ void autoDeserialize(std::istream& in, T& component)
   boost::pfr::for_each_field(component, [&](auto& field) {
     using FieldType = std::remove_cvref_t<decltype(field)>;
 
-    if constexpr (std::is_same_v<FieldType, entt::entity>) {
+    if constexpr (std::same_as<FieldType, entt::entity>) {
       // Read entity ID (will be remapped in second pass)
       std::uint32_t entityId;
       readPOD(in, entityId);
       field = static_cast<entt::entity>(entityId);
-    } else if constexpr (std::is_same_v<FieldType, std::vector<entt::entity>>) {
+    } else if constexpr (std::same_as<FieldType, std::vector<entt::entity>>) {
       // Read vector of entities
       std::size_t count;
       readPOD(in, count);
@@ -245,15 +246,15 @@ void autoDeserialize(std::istream& in, T& component)
         readPOD(in, entityId);
         entity = static_cast<entt::entity>(entityId);
       }
-    } else if constexpr (std::is_same_v<FieldType, std::string>) {
+    } else if constexpr (std::same_as<FieldType, std::string>) {
       readString(in, field);
-    } else if constexpr (std::is_same_v<FieldType, Eigen::Vector3d>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::Vector3d>) {
       readVector3d(in, field);
-    } else if constexpr (std::is_same_v<FieldType, Eigen::Isometry3d>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::Isometry3d>) {
       readIsometry3d(in, field);
-    } else if constexpr (std::is_same_v<FieldType, Eigen::VectorXd>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::VectorXd>) {
       readVectorXd(in, field);
-    } else if constexpr (std::is_same_v<FieldType, Eigen::Matrix3d>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::Matrix3d>) {
       for (int i = 0; i < 3; ++i) {
         for (int j = i; j < 3; ++j) {
           readPOD(in, field(i, j));
@@ -285,13 +286,13 @@ void autoSerialize(
   boost::pfr::for_each_field(value, [&](const auto& field) {
     using FieldType = std::remove_cvref_t<decltype(field)>;
 
-    if constexpr (std::is_same_v<FieldType, std::string>) {
+    if constexpr (std::same_as<FieldType, std::string>) {
       writeString(out, field);
-    } else if constexpr (std::is_same_v<FieldType, Eigen::VectorXd>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::VectorXd>) {
       writeVectorXd(out, field);
-    } else if constexpr (std::is_same_v<FieldType, Eigen::Vector3d>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::Vector3d>) {
       writeVector3d(out, field);
-    } else if constexpr (std::is_same_v<FieldType, Eigen::Matrix3d>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::Matrix3d>) {
       for (int i = 0; i < 3; ++i) {
         for (int j = i; j < 3; ++j) {
           writePOD(out, field(i, j));
@@ -314,13 +315,13 @@ void autoDeserialize(std::istream& in, T& value)
   boost::pfr::for_each_field(value, [&](auto& field) {
     using FieldType = std::remove_cvref_t<decltype(field)>;
 
-    if constexpr (std::is_same_v<FieldType, std::string>) {
+    if constexpr (std::same_as<FieldType, std::string>) {
       readString(in, field);
-    } else if constexpr (std::is_same_v<FieldType, Eigen::VectorXd>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::VectorXd>) {
       readVectorXd(in, field);
-    } else if constexpr (std::is_same_v<FieldType, Eigen::Vector3d>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::Vector3d>) {
       readVector3d(in, field);
-    } else if constexpr (std::is_same_v<FieldType, Eigen::Matrix3d>) {
+    } else if constexpr (std::same_as<FieldType, Eigen::Matrix3d>) {
       for (int i = 0; i < 3; ++i) {
         for (int j = i; j < 3; ++j) {
           readPOD(in, field(i, j));

@@ -186,13 +186,9 @@ namespace detail {
 template <typename Float>
 using FloatByteArray = std::array<std::byte, sizeof(Float)>;
 
-template <typename Float>
+template <std::floating_point Float>
 inline bool valueEqualFloating(Float lhs, Float rhs)
 {
-  static_assert(
-      std::is_floating_point_v<Float>,
-      "valueEqualFloating expects floating point");
-
   if (std::isnan(lhs) || std::isnan(rhs)) {
     return false;
   }

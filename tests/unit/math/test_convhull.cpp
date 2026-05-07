@@ -34,6 +34,7 @@
 
 #include <gtest/gtest.h>
 
+#include <concepts>
 #include <iterator>
 #include <set>
 #include <span>
@@ -404,7 +405,7 @@ TYPED_TEST(ConvexHullTest, NoInternalVertices)
   // For double precision, internal point should definitely not be on hull
   // For float precision with noise, it might rarely appear on hull due to
   // perturbation
-  if (std::is_same<Scalar, double>::value) {
+  if constexpr (std::same_as<Scalar, double>) {
     EXPECT_FALSE(usedVertices.contains(8))
         << "Internal point should not be on the convex hull (double precision)";
   }
