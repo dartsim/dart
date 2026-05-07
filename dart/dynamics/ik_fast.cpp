@@ -39,6 +39,7 @@
 #include "dart/dynamics/revolute_joint.hpp"
 
 #include <algorithm>
+#include <utility>
 
 namespace dart {
 namespace dynamics {
@@ -356,7 +357,7 @@ void IkFast::configure() const
   const auto ikFastNumFreeJoints = getNumFreeParameters();
   const auto ikFastNumNonFreeJoints = ikFastNumJoints - ikFastNumFreeJoints;
 
-  if (static_cast<std::size_t>(ikFastNumNonFreeJoints) != mDofs.size()) {
+  if (!std::cmp_equal(ikFastNumNonFreeJoints, mDofs.size())) {
     DART_ERROR(
         "Failed to configure. Received a joint map of size '{}' but the actual "
         "dofs IkFast is '{}'.",
@@ -365,7 +366,7 @@ void IkFast::configure() const
     return;
   }
 
-  if (static_cast<std::size_t>(ikFastNumFreeJoints) != mFreeDofs.size()) {
+  if (!std::cmp_equal(ikFastNumFreeJoints, mFreeDofs.size())) {
     DART_ERROR(
         "Failed to configure. Received a free joint map of size '{}' but the "
         "actual dofs IkFast is '{}'.",
@@ -440,7 +441,7 @@ Eigen::Isometry3d IkFast::computeFk(const Eigen::VectorXd& parameters)
 {
   const std::size_t ikFastNumNonFreeJoints
       = getNumJoints2() - getNumFreeParameters2();
-  if (static_cast<std::size_t>(parameters.size()) != ikFastNumNonFreeJoints) {
+  if (!std::cmp_equal(parameters.size(), ikFastNumNonFreeJoints)) {
     DART_WARN(
         "The dimension of given joint positions doesn't agree with the number "
         "of joints of this IkFast solver. Returning identity.");

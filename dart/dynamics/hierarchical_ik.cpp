@@ -39,6 +39,8 @@
 #include "dart/dynamics/skeleton.hpp"
 #include "dart/math/optimization/gradient_descent_solver.hpp"
 
+#include <utility>
+
 namespace dart {
 namespace dynamics {
 
@@ -227,7 +229,7 @@ std::span<const Eigen::MatrixXd> HierarchicalIK::computeNullSpaces() const
   bool recompute = false;
   const ConstSkeletonPtr& skel = getSkeleton();
   const std::size_t nDofs = skel->getNumDofs();
-  if (static_cast<std::size_t>(mLastPositions.size()) != nDofs) {
+  if (!std::cmp_equal(mLastPositions.size(), nDofs)) {
     recompute = true;
   } else {
     for (std::size_t i = 0; i < nDofs; ++i) {

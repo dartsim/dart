@@ -46,6 +46,7 @@
 
 #include <algorithm>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <cmath>
@@ -2575,9 +2576,10 @@ void BodyNode::updateBodyJacobian() const
   // Parent Jacobian
   if (mParentBodyNode) {
     DART_ASSERT(
-        static_cast<std::size_t>(mParentBodyNode->getJacobian().cols())
-            + mParentJoint->getNumDofs()
-        == static_cast<std::size_t>(mBodyJacobian.cols()));
+        std::cmp_equal(
+            mParentBodyNode->getJacobian().cols()
+                + static_cast<Eigen::Index>(mParentJoint->getNumDofs()),
+            mBodyJacobian.cols()));
 
     DART_ASSERT(mParentJoint);
     mBodyJacobian.leftCols(ascendantDof) = math::AdInvTJac(
@@ -2629,8 +2631,10 @@ void BodyNode::updateBodyJacobianSpatialDeriv() const
     const auto& dJ_parent = mParentBodyNode->getJacobianSpatialDeriv();
 
     DART_ASSERT(
-        static_cast<std::size_t>(dJ_parent.cols()) + mParentJoint->getNumDofs()
-        == static_cast<std::size_t>(mBodyJacobianSpatialDeriv.cols()));
+        std::cmp_equal(
+            dJ_parent.cols()
+                + static_cast<Eigen::Index>(mParentJoint->getNumDofs()),
+            mBodyJacobianSpatialDeriv.cols()));
 
     mBodyJacobianSpatialDeriv.leftCols(numParentDOFs)
         = math::AdInvTJac(mParentJoint->getRelativeTransform(), dJ_parent);
@@ -2688,8 +2692,10 @@ void BodyNode::updateWorldJacobianClassicDeriv() const
               .eval();
 
     DART_ASSERT(
-        static_cast<std::size_t>(dJ_parent.cols()) + mParentJoint->getNumDofs()
-        == static_cast<std::size_t>(mWorldJacobianClassicDeriv.cols()));
+        std::cmp_equal(
+            dJ_parent.cols()
+                + static_cast<Eigen::Index>(mParentJoint->getNumDofs()),
+            mWorldJacobianClassicDeriv.cols()));
 
     // dJr
     mWorldJacobianClassicDeriv.block(0, 0, 3, numParentDOFs)

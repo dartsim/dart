@@ -41,6 +41,7 @@
 #include <algorithm>
 #include <limits>
 #include <span>
+#include <utility>
 
 namespace dart {
 namespace math {
@@ -100,11 +101,9 @@ std::size_t Problem::getDimension() const
 //==============================================================================
 void Problem::setInitialGuess(const Eigen::VectorXd& _initGuess)
 {
-  DART_ASSERT(
-      static_cast<std::size_t>(_initGuess.size()) == mDimension
-      && "Invalid size.");
+  DART_ASSERT(std::cmp_equal(_initGuess.size(), mDimension) && "Invalid size.");
 
-  if (_initGuess.size() != static_cast<int>(mDimension)) {
+  if (!std::cmp_equal(_initGuess.size(), mDimension)) {
     DART_ERROR(
         "Attempting to set the initial guess of a Problem of dimension [{}] to "
         "a vector of dimension [{}]. This initial guess will not be used!",
@@ -186,8 +185,7 @@ void Problem::clearAllSeeds()
 //==============================================================================
 void Problem::setLowerBounds(const Eigen::VectorXd& _lb)
 {
-  DART_ASSERT(
-      static_cast<std::size_t>(_lb.size()) == mDimension && "Invalid size.");
+  DART_ASSERT(std::cmp_equal(_lb.size(), mDimension) && "Invalid size.");
   mLowerBounds = _lb;
 }
 
@@ -200,8 +198,7 @@ const Eigen::VectorXd& Problem::getLowerBounds() const
 //==============================================================================
 void Problem::setUpperBounds(const Eigen::VectorXd& _ub)
 {
-  DART_ASSERT(
-      static_cast<std::size_t>(_ub.size()) == mDimension && "Invalid size.");
+  DART_ASSERT(std::cmp_equal(_ub.size(), mDimension) && "Invalid size.");
   mUpperBounds = _ub;
 }
 
@@ -307,9 +304,7 @@ double Problem::getOptimumValue() const
 //==============================================================================
 void Problem::setOptimalSolution(const Eigen::VectorXd& _optParam)
 {
-  DART_ASSERT(
-      static_cast<std::size_t>(_optParam.size()) == mDimension
-      && "Invalid size.");
+  DART_ASSERT(std::cmp_equal(_optParam.size(), mDimension) && "Invalid size.");
   mOptimalSolution = _optParam;
 }
 
