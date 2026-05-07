@@ -34,6 +34,7 @@
 
 #include <dart/simd/config.hpp>
 
+#include <concepts>
 #include <limits>
 #include <numbers>
 #include <type_traits>
@@ -62,8 +63,7 @@ template <typename T>
 struct MathConstants
 {
   static_assert(
-      std::is_floating_point_v<T>,
-      "MathConstants requires floating point type");
+      std::floating_point<T>, "MathConstants requires floating point type");
 
   // Pi and related constants
   static constexpr T pi = std::numbers::pi_v<T>;
@@ -103,7 +103,7 @@ struct MathConstants
   // These are used for argument reduction: x = x - n * (c1 + c2 + c3)
   // where c1 + c2 + c3 = pi/2 with high precision
   static constexpr T pio2_1 = []() {
-    if constexpr (std::is_same_v<T, float>) {
+    if constexpr (std::same_as<T, float>) {
       return T(0.78515625);
     } else {
       return T(7.85398125648498535156e-1);
@@ -111,7 +111,7 @@ struct MathConstants
   }();
 
   static constexpr T pio2_2 = []() {
-    if constexpr (std::is_same_v<T, float>) {
+    if constexpr (std::same_as<T, float>) {
       return T(2.4187564849853515625e-4);
     } else {
       return T(3.77489470793079817668e-8);
@@ -119,7 +119,7 @@ struct MathConstants
   }();
 
   static constexpr T pio2_3 = []() {
-    if constexpr (std::is_same_v<T, float>) {
+    if constexpr (std::same_as<T, float>) {
       return T(3.77489497744594108e-8);
     } else {
       return T(2.69515142907905952645e-15);
@@ -128,7 +128,7 @@ struct MathConstants
 
   // Range reduction constants for exp
   static constexpr T expHi = []() {
-    if constexpr (std::is_same_v<T, float>) {
+    if constexpr (std::same_as<T, float>) {
       return T(88.3762626647949f);
     } else {
       return T(709.43613930310391424428);
@@ -136,7 +136,7 @@ struct MathConstants
   }();
 
   static constexpr T expLo = []() {
-    if constexpr (std::is_same_v<T, float>) {
+    if constexpr (std::same_as<T, float>) {
       return T(-88.3762626647949f);
     } else {
       return T(-709.43613930310391424428);
@@ -145,7 +145,7 @@ struct MathConstants
 
   // Log constants
   static constexpr T logLo = []() {
-    if constexpr (std::is_same_v<T, float>) {
+    if constexpr (std::same_as<T, float>) {
       return T(1.1754943508e-38f); // FLT_MIN
     } else {
       return T(2.2250738585072014e-308); // DBL_MIN
