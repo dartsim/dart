@@ -16,6 +16,8 @@
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 
+#include <format>
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -116,9 +118,9 @@ void defBodyNode(nb::module_& m)
             fields.emplace_back(
                 "parent", parent ? repr_string(parent->getName()) : "None");
             fields.emplace_back(
-                "child_joints", std::to_string(self.getNumChildJoints()));
+                "child_joints", std::format("{}", self.getNumChildJoints()));
             fields.emplace_back(
-                "shape_nodes", std::to_string(self.getNumShapeNodes()));
+                "shape_nodes", std::format("{}", self.getNumShapeNodes()));
             return format_repr("BodyNode", fields);
           })
       .def(

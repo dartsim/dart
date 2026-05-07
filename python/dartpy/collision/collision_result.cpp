@@ -5,6 +5,8 @@
 
 #include <nanobind/nanobind.h>
 
+#include <format>
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -21,7 +23,8 @@ void defCollisionResult(nb::module_& m)
       .def("__repr__", [](const CollisionResult& self) {
         std::vector<std::pair<std::string, std::string>> fields;
         fields.emplace_back("is_collision", repr_bool(self.isCollision()));
-        fields.emplace_back("contacts", std::to_string(self.getNumContacts()));
+        fields.emplace_back(
+            "contacts", std::format("{}", self.getNumContacts()));
         return format_repr("CollisionResult", fields);
       });
 }

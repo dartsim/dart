@@ -8,6 +8,8 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 
+#include <format>
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -58,7 +60,7 @@ void defCollisionOption(nb::module_& m)
         std::vector<std::pair<std::string, std::string>> fields;
         fields.emplace_back("enable_contact", repr_bool(self.enableContact));
         fields.emplace_back(
-            "max_contacts", std::to_string(self.maxNumContacts));
+            "max_contacts", std::format("{}", self.maxNumContacts));
         fields.emplace_back(
             "allow_negative_penetration_depth_contacts",
             repr_bool(self.allowNegativePenetrationDepthContacts));

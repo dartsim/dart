@@ -12,6 +12,8 @@
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 
+#include <format>
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -118,7 +120,7 @@ void defInverseKinematics(nb::module_& m)
         fields.emplace_back(
             "target", target ? repr_string(target->getName()) : "None");
         fields.emplace_back("active", repr_bool(self.isActive()));
-        fields.emplace_back("dofs", std::to_string(self.getDofs().size()));
+        fields.emplace_back("dofs", std::format("{}", self.getDofs().size()));
         return format_repr("InverseKinematics", fields);
       });
 

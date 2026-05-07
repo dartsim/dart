@@ -25,6 +25,7 @@
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 
+#include <format>
 #include <memory>
 #include <utility>
 
@@ -165,9 +166,10 @@ void defSkeleton(nb::module_& m)
   skeletonClass.def("__repr__", [](const Skeleton& self) {
     std::vector<std::pair<std::string, std::string>> fields;
     fields.emplace_back("name", repr_string(self.getName()));
-    fields.emplace_back("body_nodes", std::to_string(self.getNumBodyNodes()));
-    fields.emplace_back("joints", std::to_string(self.getNumJoints()));
-    fields.emplace_back("dofs", std::to_string(self.getNumDofs()));
+    fields.emplace_back(
+        "body_nodes", std::format("{}", self.getNumBodyNodes()));
+    fields.emplace_back("joints", std::format("{}", self.getNumJoints()));
+    fields.emplace_back("dofs", std::format("{}", self.getNumDofs()));
     return format_repr("Skeleton", fields);
   });
 
