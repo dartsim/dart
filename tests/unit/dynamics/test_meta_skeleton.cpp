@@ -44,6 +44,7 @@
 
 #include <gtest/gtest.h>
 
+#include <iterator>
 #include <vector>
 
 #include <cmath>
@@ -658,7 +659,7 @@ TEST(MetaSkeletonTests, MassMatrix)
   // Mass matrix should be positive semi-definite (all eigenvalues >= 0)
   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigensolver(M);
   Eigen::VectorXd eigenvalues = eigensolver.eigenvalues();
-  for (int i = 0; i < eigenvalues.size(); ++i) {
+  for (auto i = 0; i < std::ssize(eigenvalues); ++i) {
     EXPECT_GE(eigenvalues[i], -1e-10); // Allow small numerical error
   }
 }
