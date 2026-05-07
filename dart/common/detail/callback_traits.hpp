@@ -30,49 +30,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_DETAIL_CONSTRAINTSOVER_IMPL_HPP_
-#define DART_CONSTRAINT_DETAIL_CONSTRAINTSOVER_IMPL_HPP_
+#ifndef DART_COMMON_DETAIL_CALLBACK_TRAITS_HPP_
+#define DART_COMMON_DETAIL_CALLBACK_TRAITS_HPP_
 
-#include <dart/constraint/constraint_solver.hpp>
+#include <concepts>
+#include <type_traits>
 
-#include <dart/common/detail/callback_traits.hpp>
-
-namespace dart::constraint {
-
-//==============================================================================
-template <typename Func>
-void ConstraintSolver::eachConstraint(Func func) const
-{
-  if constexpr (common::detail::ReturnsBool<Func, const ConstraintBase*>) {
-    for (auto i = 0u; i < getNumConstraints(); ++i) {
-      if (!func(getConstraint(i))) {
-        return;
-      }
-    }
-  } else {
-    for (auto i = 0u; i < getNumConstraints(); ++i) {
-      func(getConstraint(i));
-    }
-  }
-}
+namespace dart::common::detail {
 
 //==============================================================================
-template <typename Func>
-void ConstraintSolver::eachConstraint(Func func)
-{
-  if constexpr (common::detail::ReturnsBool<Func, ConstraintBase*>) {
-    for (auto i = 0u; i < getNumConstraints(); ++i) {
-      if (!func(getConstraint(i))) {
-        return;
-      }
-    }
-  } else {
-    for (auto i = 0u; i < getNumConstraints(); ++i) {
-      func(getConstraint(i));
-    }
-  }
-}
+template <typename Func, typename... Args>
+concept ReturnsBool = std::same_as<std::invoke_result_t<Func, Args...>, bool>;
 
-} // namespace dart::constraint
+} // namespace dart::common::detail
 
-#endif // DART_CONSTRAINT_DETAIL_CONSTRAINTSOVER_IMPL_HPP_
+#endif // DART_COMMON_DETAIL_CALLBACK_TRAITS_HPP_
