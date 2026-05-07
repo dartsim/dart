@@ -34,6 +34,22 @@
 
 #include <algorithm>
 
+#include <cctype>
+
+namespace {
+
+char toUpperChar(unsigned char c)
+{
+  return static_cast<char>(std::toupper(c));
+}
+
+char toLowerChar(unsigned char c)
+{
+  return static_cast<char>(std::tolower(c));
+}
+
+} // namespace
+
 namespace dart::common {
 
 //==============================================================================
@@ -46,7 +62,7 @@ std::string toUpper(std::string str)
 //==============================================================================
 void toUpperInPlace(std::string& str)
 {
-  std::ranges::transform(str, str.begin(), ::toupper);
+  std::ranges::transform(str, str.begin(), toUpperChar);
 }
 
 //==============================================================================
@@ -59,7 +75,7 @@ std::string toLower(std::string str)
 //==============================================================================
 void toLowerInPlace(std::string& str)
 {
-  std::ranges::transform(str, str.begin(), ::tolower);
+  std::ranges::transform(str, str.begin(), toLowerChar);
 }
 
 //==============================================================================

@@ -62,6 +62,7 @@
 #include <unordered_map>
 #include <utility>
 
+#include <cctype>
 #include <cstring>
 
 namespace dart {
@@ -1552,7 +1553,9 @@ bool hasColladaExtension(std::string_view path)
   }
 
   std::string extension(path.substr(extensionIndex));
-  std::ranges::transform(extension, extension.begin(), ::tolower);
+  std::ranges::transform(extension, extension.begin(), [](unsigned char c) {
+    return static_cast<char>(std::tolower(c));
+  });
   return extension == ".dae" || extension == ".zae";
 }
 
