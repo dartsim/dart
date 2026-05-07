@@ -35,6 +35,7 @@
 #include <dart/all.hpp>
 #include <dart/io/read.hpp>
 
+#include <algorithm>
 #include <chrono>
 #include <numeric>
 
@@ -162,11 +163,8 @@ void print_results(const std::vector<double>& result)
   double mean = sum / result.size();
   std::cout << "Average: " << mean << "\n";
   std::vector<double> diff(result.size());
-  std::transform(
-      result.begin(),
-      result.end(),
-      diff.begin(),
-      std::bind(std::minus<double>(), mean, std::placeholders::_1));
+  std::ranges::transform(
+      result, diff.begin(), [mean](double value) { return mean - value; });
   double stddev = std::sqrt(
       std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0)
       / result.size());
