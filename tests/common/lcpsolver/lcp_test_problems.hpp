@@ -35,6 +35,7 @@
 
 #include <Eigen/Dense>
 
+#include <format>
 #include <random>
 
 #include <cstdint>
@@ -296,7 +297,7 @@ public:
     std::uniform_real_distribution<double> dist(0.1, 1.0);
 
     LCPProblem problem(
-        dimension, "Random" + std::to_string(dimension) + "D_WellFormed");
+        dimension, std::format("Random{}D_WellFormed", dimension));
 
     // Create a positive definite matrix using A = M^T * M + lambda * I
     // where M is a random matrix and lambda ensures positive definiteness
@@ -331,7 +332,7 @@ public:
 
     LCPProblem problem(
         dimension,
-        "Random" + std::to_string(dimension) + "D_IllFormed",
+        std::format("Random{}D_IllFormed", dimension),
         LCPProblemIssue::NotPositiveDefinite);
 
     // Create a symmetric but NOT positive definite matrix

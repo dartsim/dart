@@ -65,6 +65,7 @@
 #include <benchmark/benchmark.h>
 
 #include <atomic>
+#include <format>
 #include <numbers>
 #include <queue>
 #include <thread>
@@ -175,14 +176,14 @@ inline BodyNode::Properties makeBodyProps(
 template <typename JointType>
 SkeletonPtr makeSerialChain(int N, const std::string& prefix = "serial")
 {
-  auto skel = Skeleton::create(prefix + "_" + std::to_string(N));
+  auto skel = Skeleton::create(std::format("{}_{}", prefix, N));
   BodyNode* parent = nullptr;
   for (int i = 0; i < N; ++i) {
     typename JointType::Properties jprops;
-    jprops.mName = prefix + "_j" + std::to_string(i);
+    jprops.mName = std::format("{}_j{}", prefix, i);
     setJointOffset<JointType>(jprops, i);
 
-    auto bprops = makeBodyProps(prefix + "_b" + std::to_string(i));
+    auto bprops = makeBodyProps(std::format("{}_b{}", prefix, i));
     auto [joint, body]
         = skel->createJointAndBodyNodePair<JointType>(parent, jprops, bprops);
 
@@ -199,7 +200,7 @@ SkeletonPtr makeSerialChain(int N, const std::string& prefix = "serial")
 template <typename JointType>
 SkeletonPtr makeBinaryTree(int N, const std::string& prefix = "btree")
 {
-  auto skel = Skeleton::create(prefix + "_" + std::to_string(N));
+  auto skel = Skeleton::create(std::format("{}_{}", prefix, N));
 
   if (N <= 0) {
     return skel;
@@ -228,9 +229,9 @@ SkeletonPtr makeBinaryTree(int N, const std::string& prefix = "btree")
       break;
     }
     typename JointType::Properties ljprops;
-    ljprops.mName = prefix + "_j" + std::to_string(count);
+    ljprops.mName = std::format("{}_j{}", prefix, count);
     setJointOffset<JointType>(ljprops, count);
-    auto lbprops = makeBodyProps(prefix + "_b" + std::to_string(count));
+    auto lbprops = makeBodyProps(std::format("{}_b{}", prefix, count));
     auto [lj, lb]
         = skel->createJointAndBodyNodePair<JointType>(parent, ljprops, lbprops);
     lj->setTransformFromParentBodyNode(
@@ -243,9 +244,9 @@ SkeletonPtr makeBinaryTree(int N, const std::string& prefix = "btree")
       break;
     }
     typename JointType::Properties rjprops;
-    rjprops.mName = prefix + "_j" + std::to_string(count);
+    rjprops.mName = std::format("{}_j{}", prefix, count);
     setJointOffset<JointType>(rjprops, count);
-    auto rbprops = makeBodyProps(prefix + "_b" + std::to_string(count));
+    auto rbprops = makeBodyProps(std::format("{}_b{}", prefix, count));
     auto [rj, rb]
         = skel->createJointAndBodyNodePair<JointType>(parent, rjprops, rbprops);
     rj->setTransformFromParentBodyNode(
@@ -260,7 +261,7 @@ SkeletonPtr makeBinaryTree(int N, const std::string& prefix = "btree")
 template <typename JointType>
 SkeletonPtr makeStar(int N, const std::string& prefix = "star")
 {
-  auto skel = Skeleton::create(prefix + "_" + std::to_string(N));
+  auto skel = Skeleton::create(std::format("{}_{}", prefix, N));
 
   if (N <= 0) {
     return skel;
@@ -279,9 +280,9 @@ SkeletonPtr makeStar(int N, const std::string& prefix = "star")
   // All remaining bodies are children of root
   for (int i = 1; i < N; ++i) {
     typename JointType::Properties cjprops;
-    cjprops.mName = prefix + "_j" + std::to_string(i);
+    cjprops.mName = std::format("{}_j{}", prefix, i);
     setJointOffset<JointType>(cjprops, i);
-    auto cbprops = makeBodyProps(prefix + "_b" + std::to_string(i));
+    auto cbprops = makeBodyProps(std::format("{}_b{}", prefix, i));
     auto [cj, cb] = skel->createJointAndBodyNodePair<JointType>(
         rootBody, cjprops, cbprops);
 
@@ -871,7 +872,7 @@ static void BM_MultiSkeleton_WorldStep(benchmark::State& state)
   world->setTimeStep(0.001);
 
   for (int i = 0; i < numSkeletons; ++i) {
-    auto skel = makeSerialChain<RevoluteJoint>(20, "ms" + std::to_string(i));
+    auto skel = makeSerialChain<RevoluteJoint>(20, std::format("ms{}", i));
     randomizeState(skel);
     world->addSkeleton(skel);
   }
@@ -905,10 +906,10 @@ static void BM_ParallelWorlds(benchmark::State& state)
   // Build independent worlds (one per thread) — outside timed loop
   std::vector<WorldPtr> worlds(numThreads);
   for (int t = 0; t < numThreads; ++t) {
-    worlds[t] = World::create("pw_" + std::to_string(t));
+    worlds[t] = World::create(std::format("pw_{}", t));
     worlds[t]->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
     worlds[t]->setTimeStep(0.001);
-    auto skel = makeSerialChain<RevoluteJoint>(20, "pw_s" + std::to_string(t));
+    auto skel = makeSerialChain<RevoluteJoint>(20, std::format("pw_s{}", t));
     randomizeState(skel);
     worlds[t]->addSkeleton(skel);
   }
@@ -1060,10 +1061,10 @@ static void BM_Contact_StackedBoxes_WorldStep(benchmark::State& state)
   world->addSkeleton(makeGroundPlane());
 
   for (int i = 0; i < numBoxes; ++i) {
-    auto box = Skeleton::create("box_" + std::to_string(i));
+    auto box = Skeleton::create(std::format("box_{}", i));
     auto [joint, body] = box->createJointAndBodyNodePair<FreeJoint>(nullptr);
-    joint->setName("box_joint_" + std::to_string(i));
-    body->setName("box_body_" + std::to_string(i));
+    joint->setName(std::format("box_joint_{}", i));
+    body->setName(std::format("box_body_{}", i));
 
     auto shape = std::make_shared<BoxShape>(Eigen::Vector3d(0.3, 0.3, 0.3));
     body->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
@@ -1109,11 +1110,11 @@ static void BM_Contact_ChainOnGround_WorldStep(benchmark::State& state)
   BodyNode* parent = nullptr;
   for (int i = 0; i < N; ++i) {
     RevoluteJoint::Properties jprops;
-    jprops.mName = "chain_j" + std::to_string(i);
+    jprops.mName = std::format("chain_j{}", i);
     jprops.mAxis = Eigen::Vector3d::UnitZ();
 
     BodyNode::Properties bprops;
-    bprops.mName = "chain_b" + std::to_string(i);
+    bprops.mName = std::format("chain_b{}", i);
     bprops.mInertia.setMass(1.0);
     bprops.mInertia.setMoment(0.1 * Eigen::Matrix3d::Identity());
 
@@ -1204,7 +1205,7 @@ static void BM_Lifecycle_CreateDestroy_Repeated(benchmark::State& state)
     skels.reserve(10);
     for (int i = 0; i < 10; ++i) {
       skels.push_back(
-          makeSerialChain<RevoluteJoint>(N, "lc_churn_" + std::to_string(i)));
+          makeSerialChain<RevoluteJoint>(N, std::format("lc_churn_{}", i)));
     }
     skels.clear();
     benchmark::ClobberMemory();
@@ -1338,10 +1339,10 @@ static void BM_AllocMetrics_WorldStep_Contact10(benchmark::State& state)
   world->addSkeleton(makeGroundPlane());
 
   for (int i = 0; i < 10; ++i) {
-    auto box = Skeleton::create("abox_" + std::to_string(i));
+    auto box = Skeleton::create(std::format("abox_{}", i));
     auto [joint, body] = box->createJointAndBodyNodePair<FreeJoint>(nullptr);
-    joint->setName("abox_j_" + std::to_string(i));
-    body->setName("abox_b_" + std::to_string(i));
+    joint->setName(std::format("abox_j_{}", i));
+    body->setName(std::format("abox_b_{}", i));
 
     auto shape = std::make_shared<BoxShape>(Eigen::Vector3d(0.3, 0.3, 0.3));
     body->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
