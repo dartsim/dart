@@ -65,6 +65,7 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <iterator>
 #include <memory>
 #include <vector>
 
@@ -3894,8 +3895,8 @@ TEST(SkeletonAccessors, MultiTreeMassMatricesAndCaches)
 
   const auto& M0 = skeleton->getMassMatrix(0);
   const auto& M1 = skeleton->getMassMatrix(1);
-  EXPECT_EQ(M0.rows(), static_cast<int>(tree0Dofs.size()));
-  EXPECT_EQ(M1.cols(), static_cast<int>(tree1Dofs.size()));
+  EXPECT_EQ(M0.rows(), std::ssize(tree0Dofs));
+  EXPECT_EQ(M1.cols(), std::ssize(tree1Dofs));
   EXPECT_TRUE(M0.allFinite());
   EXPECT_TRUE(M1.allFinite());
 
