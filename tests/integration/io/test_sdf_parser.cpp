@@ -60,6 +60,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <map>
 #include <sstream>
 #include <string>
@@ -98,15 +99,15 @@ public:
 
   bool seek(ptrdiff_t offset, SeekType origin) override
   {
-    std::size_t base = 0;
+    ptrdiff_t base = 0;
     if (origin == SEEKTYPE_CUR) {
-      base = mOffset;
+      base = static_cast<ptrdiff_t>(mOffset);
     } else if (origin == SEEKTYPE_END) {
-      base = mData.size();
+      base = std::ssize(mData);
     }
 
-    const auto next = static_cast<long long>(base) + offset;
-    if (next < 0 || next > static_cast<long long>(mData.size())) {
+    const auto next = base + offset;
+    if (next < 0 || next > std::ssize(mData)) {
       return false;
     }
 
