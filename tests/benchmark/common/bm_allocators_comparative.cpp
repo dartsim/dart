@@ -233,7 +233,7 @@ static void BM_Stack_StdPmr(benchmark::State& state)
   const auto size = static_cast<size_t>(state.range(0));
   const auto count = static_cast<size_t>(state.range(1));
   const size_t arenaSize = count * (size + 32) + 4096;
-  auto backing = std::make_unique<char[]>(arenaSize);
+  auto backing = std::make_unique_for_overwrite<char[]>(arenaSize);
 
   for (auto _ : state) {
     // Reconstruct each iteration (monotonic_buffer_resource has no reset())
@@ -598,7 +598,7 @@ static void BM_FrameBulk_StdPmr(benchmark::State& state)
 {
   const auto count = static_cast<size_t>(state.range(0));
   const size_t arenaSize = count * 512 + 4096;
-  auto backing = std::make_unique<char[]>(arenaSize);
+  auto backing = std::make_unique_for_overwrite<char[]>(arenaSize);
 
   lcgState = 55u;
   for (auto _ : state) {
@@ -691,7 +691,7 @@ static void BM_StlVector_StdPmr(benchmark::State& state)
 {
   const auto n = static_cast<size_t>(state.range(0));
   const size_t arenaSize = n * sizeof(int) * 4 + 4096;
-  auto backing = std::make_unique<char[]>(arenaSize);
+  auto backing = std::make_unique_for_overwrite<char[]>(arenaSize);
 
   for (auto _ : state) {
     std::pmr::monotonic_buffer_resource mono(
