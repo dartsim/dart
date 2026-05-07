@@ -41,6 +41,7 @@
 #include <algorithm>
 #include <iterator>
 #include <limits>
+#include <ranges>
 #include <string>
 #include <vector>
 
@@ -240,13 +241,17 @@ LcpResult MprgpSolver::solve(
   std::vector<int> activePrev(n, 0);
   bool resetDirection = true;
 
-  for (int iter = 0; iter < maxIterations && !converged; ++iter) {
+  for (const auto iter : std::views::iota(0, maxIterations)) {
+    if (converged) {
+      break;
+    }
+
     iterationsUsed = iter + 1;
 
     w = A * x - b;
     pg = w;
 
-    for (int i = 0; i < n; ++i) {
+    for (const auto i : std::views::iota(0, static_cast<int>(n))) {
       if (x[i] <= 0.0 && w[i] > 0.0) {
         active[i] = 1;
         x[i] = 0.0;
@@ -274,7 +279,7 @@ LcpResult MprgpSolver::solve(
       p = -pg + beta * pPrev;
     }
 
-    for (int i = 0; i < n; ++i) {
+    for (const auto i : std::views::iota(0, static_cast<int>(n))) {
       if (active[i]) {
         p[i] = 0.0;
       }
@@ -301,7 +306,7 @@ LcpResult MprgpSolver::solve(
     }
 
     double alphaMax = std::numeric_limits<double>::infinity();
-    for (int i = 0; i < n; ++i) {
+    for (const auto i : std::views::iota(0, static_cast<int>(n))) {
       if (p[i] < 0.0) {
         alphaMax = std::min(alphaMax, -x[i] / p[i]);
       }
