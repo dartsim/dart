@@ -38,6 +38,7 @@
 #include <Eigen/Dense>
 #include <benchmark/benchmark.h>
 
+#include <iterator>
 #include <limits>
 #include <random>
 #include <sstream>
@@ -215,8 +216,8 @@ void AddShockPropagationCounters(
     benchmark::State& state,
     const dart::math::ShockPropagationSolver::Parameters& params)
 {
-  const int blockCount = static_cast<int>(params.blockSizes.size());
-  int layerCount = static_cast<int>(params.layers.size());
+  const auto blockCount = std::ssize(params.blockSizes);
+  auto layerCount = std::ssize(params.layers);
   if (layerCount == 0 && blockCount > 0) {
     layerCount = 1;
   }
@@ -226,11 +227,10 @@ void AddShockPropagationCounters(
     maxBlockSize = std::max(maxBlockSize, size);
   }
 
-  int maxBlocksPerLayer = 0;
+  std::ptrdiff_t maxBlocksPerLayer = 0;
   if (!params.layers.empty()) {
     for (const auto& layer : params.layers) {
-      maxBlocksPerLayer
-          = std::max(maxBlocksPerLayer, static_cast<int>(layer.size()));
+      maxBlocksPerLayer = std::max(maxBlocksPerLayer, std::ssize(layer));
     }
   } else {
     maxBlocksPerLayer = blockCount;
@@ -337,7 +337,7 @@ static void BM_LcpCompare_ShockPropagation_Standard(benchmark::State& state)
 
   params.layers.clear();
   params.layers.reserve(params.blockSizes.size());
-  for (int i = 0; i < static_cast<int>(params.blockSizes.size()); ++i) {
+  for (int i = 0; i < std::ssize(params.blockSizes); ++i) {
     params.layers.push_back({i});
   }
 

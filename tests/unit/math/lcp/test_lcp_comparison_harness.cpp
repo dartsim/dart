@@ -34,6 +34,8 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include <iterator>
+
 namespace {
 
 using dart::math::LcpOptions;
@@ -156,7 +158,7 @@ TEST(LcpComparisonHarness, ShockPropagationOnStandardFixtures)
       continue;
     }
 
-    const int n = static_cast<int>(fixture.problem.b.size());
+    const int n = static_cast<int>(std::ssize(fixture.problem.b));
 
     dart::math::ShockPropagationSolver::Parameters params;
     params.blockSizes = {n};
@@ -181,7 +183,7 @@ TEST(LcpComparisonHarness, ShockPropagationOnFrictionIndexFixtures)
   dart::math::ShockPropagationSolver solver;
 
   for (const auto& fixture : dart::test::getFrictionIndexFixtures()) {
-    const int n = static_cast<int>(fixture.problem.b.size());
+    const int n = static_cast<int>(std::ssize(fixture.problem.b));
     if (n % 3 != 0) {
       continue;
     }
@@ -319,7 +321,7 @@ TEST(LcpComparisonHarness, BgsOnStandardFixtureWithExplicitBlocks)
     if (fixture.kind != dart::test::LcpFixtureKind::Standard) {
       continue;
     }
-    const int n = static_cast<int>(fixture.problem.b.size());
+    const int n = static_cast<int>(std::ssize(fixture.problem.b));
     if (n > 3) {
       continue;
     }
@@ -366,7 +368,7 @@ TEST(LcpComparisonHarness, BlockedJacobiOnStandardFixtureWithExplicitBlocks)
     if (fixture.kind != dart::test::LcpFixtureKind::Standard) {
       continue;
     }
-    const int n = static_cast<int>(fixture.problem.b.size());
+    const int n = static_cast<int>(std::ssize(fixture.problem.b));
     if (n > 3) {
       continue;
     }

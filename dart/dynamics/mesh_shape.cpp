@@ -108,7 +108,7 @@ public:
     if (next < 0) {
       return false;
     }
-    if (static_cast<std::size_t>(next) > mData.size()) {
+    if (next > std::ssize(mData)) {
       return false;
     }
 

@@ -61,6 +61,7 @@
 #include <fmt/ostream.h>
 
 #include <algorithm>
+#include <memory>
 
 #include <cmath>
 
@@ -1254,7 +1255,7 @@ void ConstraintSolver::print(
   }
   std::cout << std::endl;
 
-  auto* Ax = new double[n];
+  auto Ax = std::make_unique_for_overwrite<double[]>(n);
   for (std::size_t i = 0; i < n; ++i) {
     Ax[i] = 0.0;
   }
@@ -1275,8 +1276,6 @@ void ConstraintSolver::print(
     std::cout << b[i] + w[i] << " ";
   }
   std::cout << std::endl;
-
-  delete[] Ax;
 }
 
 } // namespace constraint
