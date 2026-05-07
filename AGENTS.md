@@ -58,6 +58,8 @@ and OpenCode. In Codex, use the generated equivalent skills as `$dart-*`
 | `/dart-fix-issue <#>`          | `$dart-fix-issue <#>`          | Resolve a GitHub issue              |
 | `/dart-fix-ci`                 | `$dart-fix-ci`                 | Debug and fix CI failures           |
 | `/dart-review-pr`              | `$dart-review-pr`              | Review or address PR feedback       |
+| `/dart-pr`                     | `$dart-pr`                     | Create a DART pull request          |
+| `/dart-manage-pr`              | `$dart-manage-pr`              | Manage CI, review, and cleanup      |
 | `/dart-merge-pr`               | `$dart-merge-pr`               | Monitor CI and merge a ready PR     |
 | `/dart-docs-update`            | `$dart-docs-update`            | Update documentation                |
 | `/dart-improve-docs`           | `$dart-improve-docs`           | Capture durable docs learnings      |
@@ -95,7 +97,7 @@ Skills are in `.claude/skills/` (synced to `.codex/skills/` for Codex).
 
 - **Bug fixes**: Require PRs to BOTH `release-6.16` AND `main` branches. See `docs/onboarding/contributing.md`.
 - **Multi-phase tasks**: Create `docs/dev_tasks/<task>/` for tracking. See `docs/dev_tasks/README.md` for criteria.
-- **AI reviews**: NEVER reply to AI-generated review comments (usernames ending in `[bot]` like `chatgpt-codex-connector[bot]`, `github-actions[bot]`, `copilot[bot]`). No `gh pr comment`, no PR comment replies. Just push the fix silently, then re-trigger with `@codex review`. See `docs/onboarding/ai-tools.md`.
+- **AI reviews**: NEVER reply to AI-generated review comments (usernames ending in `[bot]` like `chatgpt-codex-connector[bot]`, `github-actions[bot]`, `copilot[bot]`). No inline replies and no acknowledgment comments. Just push the fix silently, then re-trigger with a top-level `@codex review` comment when needed. See `docs/onboarding/ai-tools.md`.
 - **Commands**: Use `pixi run ...` tasks; don't invent new entry points.
 - **Formatting**: Run `pixi run lint` before committing (auto-fixes).
 - **Commit/PR titles**: Do not prefix commit messages or PR titles with agent tags like `[codex]`; use plain descriptive titles.
