@@ -201,14 +201,14 @@ bool SolveLCP(
     const int nskip = padding(n);
     const std::size_t nSize = static_cast<std::size_t>(n);
     const std::size_t nskipSize = static_cast<std::size_t>(nskip);
-    auto d = std::make_unique<Scalar[]>(n);
+    auto d = std::make_unique_for_overwrite<Scalar[]>(nSize);
     SetZero(d.get(), n);
 
     std::unique_ptr<Scalar[]> A_storage;
     Scalar* A_work = nullptr;
 
     if (n != nskip) {
-      A_storage.reset(new Scalar[nSize * nskipSize]);
+      A_storage = std::make_unique_for_overwrite<Scalar[]>(nSize * nskipSize);
       for (int i = 0; i < n; ++i) {
         const std::size_t rowOffset = static_cast<std::size_t>(i) * nskipSize;
         memcpy(&A_storage[rowOffset], &A[rowOffset], nSize * sizeof(Scalar));
@@ -233,7 +233,7 @@ bool SolveLCP(
   Scalar* A_work = nullptr;
 
   if (n != nskip) {
-    A_storage.reset(new Scalar[nSize * nskipSize]);
+    A_storage = std::make_unique_for_overwrite<Scalar[]>(nSize * nskipSize);
     for (int i = 0; i < n; ++i) {
       const std::size_t rowOffset = static_cast<std::size_t>(i) * nskipSize;
       memcpy(&A_storage[rowOffset], &A[rowOffset], nSize * sizeof(Scalar));
@@ -251,7 +251,7 @@ bool SolveLCP(
   std::unique_ptr<Scalar[]> wStorage;
   Scalar* w = outer_w;
   if (!w) {
-    wStorage.reset(new Scalar[n]);
+    wStorage = std::make_unique_for_overwrite<Scalar[]>(n);
     w = wStorage.get();
   }
   auto delta_w = std::make_unique<Scalar[]>(n);
