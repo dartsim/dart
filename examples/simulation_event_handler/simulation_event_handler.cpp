@@ -41,6 +41,7 @@
 
 #include <iomanip>
 #include <iostream>
+#include <ranges>
 
 using namespace dart::common;
 using namespace dart::dynamics;
@@ -440,7 +441,8 @@ void SimulationEventHandler::resetSimulation()
   }
 
   // Reset all skeletons to initial state
-  for (std::size_t i = 0; i < mWorld->getNumSkeletons(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, mWorld->getNumSkeletons())) {
     auto skel = mWorld->getSkeleton(i);
     skel->resetPositions();
     skel->resetVelocities();
@@ -549,10 +551,12 @@ std::vector<BodyNodePtr> SimulationEventHandler::getRigidBodies()
     return rigidBodies;
   }
 
-  for (std::size_t i = 0; i < mWorld->getNumSkeletons(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, mWorld->getNumSkeletons())) {
     auto skel = mWorld->getSkeleton(i);
 
-    for (std::size_t j = 0; j < skel->getNumBodyNodes(); ++j) {
+    for (const auto j :
+         std::views::iota(std::size_t{0}, skel->getNumBodyNodes())) {
       auto body = skel->getBodyNode(j);
       auto joint = body->getParentJoint();
 
