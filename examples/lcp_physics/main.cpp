@@ -45,6 +45,7 @@
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
+#include <iterator>
 #include <random>
 #include <sstream>
 #include <string>
@@ -631,7 +632,7 @@ private:
     if (ImGui::CollapsingHeader("Scenario", ImGuiTreeNodeFlags_DefaultOpen)) {
       int prevScenario = mCurrentScenario;
 
-      for (int i = 0; i < static_cast<int>(mScenarios.size()); ++i) {
+      for (int i = 0; i < std::ssize(mScenarios); ++i) {
         if (ImGui::RadioButton(
                 mScenarios[i].name.c_str(), &mCurrentScenario, i)) {
           if (prevScenario != mCurrentScenario) {
@@ -650,7 +651,7 @@ private:
     if (ImGui::CollapsingHeader("LCP Solver", ImGuiTreeNodeFlags_DefaultOpen)) {
       int prevSolver = mCurrentSolver;
 
-      for (int i = 0; i < static_cast<int>(mSolvers.size()); ++i) {
+      for (int i = 0; i < std::ssize(mSolvers); ++i) {
         if (ImGui::RadioButton(mSolvers[i].name.c_str(), &mCurrentSolver, i)) {
           if (prevSolver != mCurrentSolver) {
             applySolver(mWorld, mSolvers[mCurrentSolver].type);
@@ -697,7 +698,7 @@ private:
         ImGui::PlotLines(
             "##steptime",
             history.data(),
-            static_cast<int>(history.size()),
+            static_cast<int>(std::ssize(history)),
             0,
             nullptr,
             0.0f,
@@ -708,7 +709,7 @@ private:
         for (float t : history) {
           avgTime += t;
         }
-        avgTime /= static_cast<float>(history.size());
+        avgTime /= static_cast<float>(std::ssize(history));
         ImGui::Text("Avg: %.2f ms, Max: %.2f ms", avgTime, maxTime / 1.2f);
       }
     }
@@ -815,7 +816,7 @@ void listSolvers()
 int parseScenario(const std::string& name)
 {
   auto scenarios = GetScenarios();
-  for (int i = 0; i < static_cast<int>(scenarios.size()); ++i) {
+  for (int i = 0; i < std::ssize(scenarios); ++i) {
     std::string lowerName = scenarios[i].name;
     std::ranges::transform(lowerName, lowerName.begin(), ::tolower);
     std::string lowerInput = name;
@@ -830,7 +831,7 @@ int parseScenario(const std::string& name)
 int parseSolver(const std::string& name)
 {
   auto solvers = GetSolvers();
-  for (int i = 0; i < static_cast<int>(solvers.size()); ++i) {
+  for (int i = 0; i < std::ssize(solvers); ++i) {
     std::string lowerName = solvers[i].name;
     std::ranges::transform(lowerName, lowerName.begin(), ::tolower);
     std::string lowerInput = name;
