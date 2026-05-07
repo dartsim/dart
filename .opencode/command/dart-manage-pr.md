@@ -51,13 +51,13 @@ gh pr checks <PR_NUMBER>
    watching unless the user asked only for status.
 3. Fix failures:
    - Inspect the newest failed run or job, not an older cancelled run.
-   - Use `$dart-fix-ci` for non-trivial CI debugging.
+   - Use the `dart-fix-ci` workflow for non-trivial CI debugging.
    - Reproduce locally with the relevant `pixi run ...` task or focused test.
    - Before committing fixes, run `pixi run lint`; also run build or tests when
      code or behavior changed.
    - Commit only intended files, push, and continue monitoring the PR.
 4. Address reviews:
-   - Use `$dart-review-pr` for substantive review feedback.
+   - Use the `dart-review-pr` workflow for substantive review feedback.
    - Never reply to AI-generated review comments from bot users such as
      `chatgpt-codex-connector[bot]`, `github-actions[bot]`, or `copilot[bot]`.
    - Push AI-review fixes silently. Resolve threads when needed, then request a
