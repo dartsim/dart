@@ -79,7 +79,7 @@ double computeStepSize(
 
 double clampValue(double value, double lo, double hi)
 {
-  return std::min(std::max(value, lo), hi);
+  return std::clamp(value, lo, hi);
 }
 
 } // namespace
@@ -171,7 +171,7 @@ LcpResult InteriorPointSolver::solve(
   const double stepScale = clampValue(params->stepScale, 1e-3, 1.0);
 
   const double initScale = std::max(1.0, vectorInfinityNorm(b));
-  const double minVal = std::max(1e-8, std::min(1.0, 1e-6 * initScale));
+  const double minVal = std::clamp(1e-6 * initScale, 1e-8, 1.0);
 
   if (x.size() != n || !options.warmStart || !x.allFinite()) {
     x = Eigen::VectorXd::Constant(n, minVal);
