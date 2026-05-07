@@ -43,6 +43,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <ranges>
 #include <vector>
 
 #include <cmath>
@@ -88,9 +89,8 @@ int LemkeImpl(
   bas.clear();
   nonbas.clear();
 
-  for (int i = 0; i < n; ++i) {
-    nonbas.push_back(i);
-  }
+  nonbas.reserve(static_cast<std::size_t>(n));
+  std::ranges::copy(std::views::iota(0, n), std::back_inserter(nonbas));
 
   Eigen::MatrixXd B = -Eigen::MatrixXd::Identity(n, n);
 
@@ -125,9 +125,9 @@ int LemkeImpl(
   Eigen::VectorXd minuxX = -x;
   int lvindex;
   double tval = minuxX.maxCoeff(&lvindex);
-  for (std::size_t i = 0; i < nonbas.size(); ++i) {
-    bas.push_back(nonbas[i] + n);
-  }
+  bas.reserve(nonbas.size());
+  std::ranges::transform(
+      nonbas, std::back_inserter(bas), [n](int index) { return index + n; });
   leaving = bas[lvindex];
 
   bas[lvindex] = t; // pivoting in the artificial variable

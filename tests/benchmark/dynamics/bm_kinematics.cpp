@@ -42,7 +42,9 @@
 
 #include <benchmark/benchmark.h>
 
+#include <algorithm>
 #include <chrono>
+#include <iterator>
 #include <numeric>
 
 using namespace dart;
@@ -79,9 +81,11 @@ std::vector<dart::simulation::WorldPtr> getWorlds()
 {
   std::vector<std::string> sceneFiles = getSceneFiles();
   std::vector<dart::simulation::WorldPtr> worlds;
-  for (std::size_t i = 0; i < sceneFiles.size(); ++i) {
-    worlds.push_back(dart::io::readWorld(dart::common::Uri(sceneFiles[i])));
-  }
+  worlds.reserve(sceneFiles.size());
+  std::ranges::transform(
+      sceneFiles, std::back_inserter(worlds), [](const std::string& sceneFile) {
+        return dart::io::readWorld(dart::common::Uri(sceneFile));
+      });
 
   return worlds;
 }
