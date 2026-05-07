@@ -1124,19 +1124,21 @@ bool dSolveLCP (int n, dReal *A, dReal *x, dReal *b,
 size_t dEstimateSolveLCPMemoryReq(int n, bool outer_w_avail)
 {
   const int nskip = dPAD(n);
+  const size_t nSize = static_cast<size_t>(n);
+  const size_t nskipSize = static_cast<size_t>(nskip);
 
   size_t res = 0;
 
-  res += (sizeof(dReal) * (n * nskip)); // for L
-  res += 5 * (sizeof(dReal) * n); // for d, delta_w, delta_x, Dell, ell
+  res += (sizeof(dReal) * (nSize * nskipSize)); // for L
+  res += 5 * (sizeof(dReal) * nSize); // for d, delta_w, delta_x, Dell, ell
   if (!outer_w_avail) {
-    res += (sizeof(dReal) * n); // for w
+    res += (sizeof(dReal) * nSize); // for w
   }
 #ifdef ROWPTRS
-  res += (sizeof(dReal *) * n); // for Arows
+  res += (sizeof(dReal *) * nSize); // for Arows
 #endif
-  res += 2 * (sizeof(int) * n); // for p, C
-  res += (sizeof(bool) * n); // for state
+  res += 2 * (sizeof(int) * nSize); // for p, C
+  res += (sizeof(bool) * nSize); // for state
 
   // Use n instead of nC as nC varies at runtime while n is greater or equal to nC
   size_t lcp_transfer_req = dLCP::estimate_transfer_i_from_C_to_N_mem_req(n, nskip);

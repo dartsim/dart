@@ -218,15 +218,20 @@ PURE_INLINE size_t _dEstimateSolveCholeskyTmpbufSize(int n)
 
 PURE_INLINE size_t _dEstimateInvertPDMatrixTmpbufSize(int n)
 {
+  const size_t nSize = static_cast<size_t>(n);
+  const size_t nskipSize = static_cast<size_t>(dPAD(n));
   size_t FactorCholesky_size = _dEstimateFactorCholeskyTmpbufSize(n);
   size_t SolveCholesky_size = _dEstimateSolveCholeskyTmpbufSize(n);
   size_t MaxCholesky_size = FactorCholesky_size > SolveCholesky_size ? FactorCholesky_size : SolveCholesky_size;
-  return dPAD(n) * (n + 1) * sizeof(dReal) + MaxCholesky_size;
+  return nskipSize * (nSize + 1) * sizeof(dReal) + MaxCholesky_size;
 }
 
 PURE_INLINE size_t _dEstimateIsPositiveDefiniteTmpbufSize(int n)
 {
-  return dPAD(n) * n * sizeof(dReal) + _dEstimateFactorCholeskyTmpbufSize(n);
+  const size_t nSize = static_cast<size_t>(n);
+  const size_t nskipSize = static_cast<size_t>(dPAD(n));
+  return nskipSize * nSize * sizeof(dReal)
+         + _dEstimateFactorCholeskyTmpbufSize(n);
 }
 
 PURE_INLINE size_t _dEstimateLDLTAddTLTmpbufSize(int nskip)
