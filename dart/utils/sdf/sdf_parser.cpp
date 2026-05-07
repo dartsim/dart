@@ -66,6 +66,7 @@
 #include <Eigen/StdVector>
 #include <sdf/sdf.hh>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <filesystem>
@@ -74,6 +75,7 @@
 #include <iostream>
 #include <map>
 #include <numeric>
+#include <ranges>
 #include <span>
 #include <sstream>
 #include <stdexcept>
@@ -951,9 +953,8 @@ void applyMimicConstraints(
 
     const auto existingProps = joint->getMimicDofProperties();
     std::vector<dynamics::MimicDofProperties> props(joint->getNumDofs());
-    for (std::size_t i = 0; i < existingProps.size() && i < props.size(); ++i) {
-      props[i] = existingProps[i];
-    }
+    std::ranges::copy(
+        existingProps | std::views::take(props.size()), props.begin());
 
     bool applied = false;
     bool useCoupler = false;

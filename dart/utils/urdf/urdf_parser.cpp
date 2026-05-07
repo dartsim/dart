@@ -59,6 +59,7 @@
 #include <iostream>
 #include <map>
 #include <numeric>
+#include <ranges>
 #include <unordered_map>
 
 #include <cmath>
@@ -201,8 +202,7 @@ simulation::WorldPtr UrdfParser::parseWorldString(
 
   simulation::WorldPtr world = simulation::World::create();
 
-  for (std::size_t i = 0; i < worldInterface->models.size(); ++i) {
-    const urdf_parsing::Entity& entity = worldInterface->models[i];
+  for (const auto& entity : worldInterface->models) {
     std::string modelContent;
     readFileToString(resourceRetriever, entity.uri, modelContent);
     ParseContext context;
@@ -211,15 +211,13 @@ simulation::WorldPtr UrdfParser::parseWorldString(
         entity.model.get(), entity.uri, resourceRetriever, mOptions, &context);
 
     if (!skeleton) {
-      DART_WARN(
-          "Robot {} was not correctly parsed!",
-          worldInterface->models[i].model->getName());
+      DART_WARN("Robot {} was not correctly parsed!", entity.model->getName());
       continue;
     }
 
     // Initialize position and RPY
     dynamics::Joint* rootJoint = skeleton->getRootBodyNode()->getParentJoint();
-    Eigen::Isometry3d transform = toEigen(worldInterface->models[i].origin);
+    Eigen::Isometry3d transform = toEigen(entity.origin);
 
     if (dynamic_cast<dynamics::FreeJoint*>(rootJoint)) {
       rootJoint->setPositions(
@@ -258,11 +256,11 @@ dynamics::SkeletonPtr UrdfParser::modelInterfaceToSkeleton(
         "the URDF standard. Please consider changing the robot model as a "
         "single tree robot.");
 
-    for (std::size_t i = 0; i < root->child_links.size(); i++) {
+    for (const auto& childLink : root->child_links) {
       if (!createSkeletonRecursive(
               model,
               skeleton,
-              root->child_links[i].get(),
+              childLink.get(),
               nullptr,
               baseUri,
               resourceRetriever,
@@ -284,8 +282,8 @@ dynamics::SkeletonPtr UrdfParser::modelInterfaceToSkeleton(
   }
 
   // Find mimic joints
-  for (std::size_t i = 0; i < root->child_links.size(); i++) {
-    addMimicJointsRecursive(model, skeleton, root->child_links[i].get());
+  for (const auto& childLink : root->child_links) {
+    addMimicJointsRecursive(model, skeleton, childLink.get());
   }
 
   const std::vector<TransmissionInfo> empty;
@@ -334,11 +332,11 @@ bool UrdfParser::createSkeletonRecursive(
     return false;
   }
 
-  for (std::size_t i = 0; i < lk->child_links.size(); ++i) {
+  for (const auto& childLink : lk->child_links) {
     if (!createSkeletonRecursive(
             model,
             skel,
-            lk->child_links[i].get(),
+            childLink.get(),
             node,
             baseUri,
             resourceRetriever,
@@ -386,8 +384,8 @@ bool UrdfParser::addMimicJointsRecursive(
     joint->setMimicJoint(mimicJoint, multiplier, offset);
   }
 
-  for (std::size_t i = 0; i < _lk->child_links.size(); ++i) {
-    if (!addMimicJointsRecursive(model, _skel, _lk->child_links[i].get())) {
+  for (const auto& childLink : _lk->child_links) {
+    if (!addMimicJointsRecursive(model, _skel, childLink.get())) {
       return false;
     }
   }
@@ -555,9 +553,8 @@ void UrdfParser::applyTransmissions(
     dynamics::Joint* referenceJoint = valid.front().second;
     const double referenceReduction = referenceInfo->mMechanicalReduction;
 
-    for (std::size_t i = 1; i < valid.size(); ++i) {
-      const auto* followerInfo = valid[i].first;
-      dynamics::Joint* followerJoint = valid[i].second;
+    for (const auto& [followerInfo, followerJoint] :
+         valid | std::views::drop(1)) {
       const double followerReduction = followerInfo->mMechanicalReduction;
 
       const double multiplier = referenceReduction / followerReduction;
