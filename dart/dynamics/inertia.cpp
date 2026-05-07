@@ -35,6 +35,8 @@
 #include "dart/common/logging.hpp"
 #include "dart/math/geometry.hpp"
 
+#include <ranges>
+
 namespace dart {
 namespace dynamics {
 
@@ -148,7 +150,7 @@ void Inertia::setMoment(const Eigen::Matrix3d& _moment)
       "Passing in an invalid moment of inertia matrix. Results might not by "
       "physically accurate or meaningful.");
 
-  for (std::size_t i = 0; i < 3; ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, std::size_t{3})) {
     mMoment[i] = _moment(i, i);
   }
 
@@ -182,7 +184,7 @@ void Inertia::setMoment(
 Eigen::Matrix3d Inertia::getMoment() const
 {
   Eigen::Matrix3d I;
-  for (int i = 0; i < 3; ++i) {
+  for (const auto i : std::views::iota(0, 3)) {
     I(i, i) = mMoment[i];
   }
 
@@ -239,7 +241,7 @@ bool Inertia::verifyMoment(
     const Eigen::Matrix3d& _moment, bool _printWarnings, double _tolerance)
 {
   bool valid = true;
-  for (int i = 0; i < 3; ++i) {
+  for (const auto i : std::views::iota(0, 3)) {
     if (_moment(i, i) <= 0) {
       valid = false;
       DART_WARN_IF(
@@ -252,8 +254,8 @@ bool Inertia::verifyMoment(
     }
   }
 
-  for (int i = 0; i < 3; ++i) {
-    for (int j = i + 1; j < 3; ++j) {
+  for (const auto i : std::views::iota(0, 3)) {
+    for (const auto j : std::views::iota(i + 1, 3)) {
       if (std::abs(_moment(i, j) - _moment(j, i)) > _tolerance) {
         valid = false;
         DART_WARN_IF(
@@ -279,7 +281,7 @@ bool Inertia::verifySpatialTensor(
 {
   bool valid = true;
 
-  for (std::size_t i = 0; i < 6; ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, std::size_t{6})) {
     if (_spatial(i, i) <= 0) {
       valid = false;
       if (_printWarnings) {
@@ -296,8 +298,8 @@ bool Inertia::verifySpatialTensor(
   }
 
   // Off-diagonals of top left block
-  for (std::size_t i = 0; i < 3; ++i) {
-    for (std::size_t j = i + 1; j < 3; ++j) {
+  for (const auto i : std::views::iota(std::size_t{0}, std::size_t{3})) {
+    for (const auto j : std::views::iota(i + 1, std::size_t{3})) {
       if (std::abs(_spatial(i, j) - _spatial(j, i)) > _tolerance) {
         valid = false;
         DART_WARN(
@@ -314,8 +316,8 @@ bool Inertia::verifySpatialTensor(
   }
 
   // Off-diagonals of bottom right block
-  for (std::size_t i = 3; i < 6; ++i) {
-    for (std::size_t j = i + 1; j < 6; ++j) {
+  for (const auto i : std::views::iota(std::size_t{3}, std::size_t{6})) {
+    for (const auto j : std::views::iota(i + 1, std::size_t{6})) {
       if (_spatial(i, j) != 0) {
         valid = false;
         DART_WARN_IF(
@@ -339,8 +341,8 @@ bool Inertia::verifySpatialTensor(
   }
 
   // Diagonals of the bottom left and top right blocks
-  for (std::size_t k = 0; k < 2; ++k) {
-    for (std::size_t i = 0; i < 3; ++i) {
+  for (const auto k : std::views::iota(std::size_t{0}, std::size_t{2})) {
+    for (const auto i : std::views::iota(std::size_t{0}, std::size_t{3})) {
       std::size_t i1 = k == 0 ? i + 3 : i;
       std::size_t i2 = k == 0 ? i : i + 3;
       if (_spatial(i1, i2) != 0) {
@@ -356,9 +358,9 @@ bool Inertia::verifySpatialTensor(
   }
 
   // Check skew-symmetry in bottom left and top right
-  for (std::size_t k = 0; k < 2; ++k) {
-    for (std::size_t i = 0; i < 3; ++i) {
-      for (std::size_t j = i + 1; j < 3; ++j) {
+  for (const auto k : std::views::iota(std::size_t{0}, std::size_t{2})) {
+    for (const auto i : std::views::iota(std::size_t{0}, std::size_t{3})) {
+      for (const auto j : std::views::iota(i + 1, std::size_t{3})) {
         std::size_t i1 = k == 0 ? i + 3 : i;
         std::size_t j1 = k == 0 ? j : j + 3;
 
@@ -387,8 +389,8 @@ bool Inertia::verifySpatialTensor(
   // Note that we only need to check three of the components from each block,
   // because the last test ensures that both blocks are skew-symmetric
   // themselves
-  for (std::size_t i = 0; i < 3; ++i) {
-    for (std::size_t j = i + 1; j < 3; ++j) {
+  for (const auto i : std::views::iota(std::size_t{0}, std::size_t{3})) {
+    for (const auto j : std::views::iota(i + 1, std::size_t{3})) {
       std::size_t i1 = i;
       std::size_t j1 = j + 3;
 
@@ -456,7 +458,7 @@ void Inertia::computeParameters()
   mCenterOfMass[2] = -C(0, 1);
 
   Eigen::Matrix3d I = mSpatialTensor.block<3, 3>(0, 0) + mMass * C * C;
-  for (std::size_t i = 0; i < 3; ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, std::size_t{3})) {
     mMoment[i] = I(i, i);
   }
 

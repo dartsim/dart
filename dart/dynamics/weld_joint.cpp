@@ -39,6 +39,7 @@
 #include "dart/math/geometry.hpp"
 #include "dart/math/helpers.hpp"
 
+#include <ranges>
 #include <string>
 #include <vector>
 
@@ -156,7 +157,8 @@ BodyNode* WeldJoint::merge()
   // Reparent grandchildren while keeping their world transforms intact.
   std::vector<BodyNode*> grandchildren;
   grandchildren.reserve(child->getNumChildBodyNodes());
-  for (std::size_t i = 0; i < child->getNumChildBodyNodes(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, child->getNumChildBodyNodes())) {
     grandchildren.push_back(child->getChildBodyNode(i));
   }
 

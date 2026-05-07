@@ -38,6 +38,8 @@
 #include "dart/dynamics/degree_of_freedom.hpp"
 #include "dart/dynamics/joint.hpp"
 
+#include <ranges>
+
 namespace dart {
 namespace dynamics {
 
@@ -280,7 +282,8 @@ bool Group::addComponent(BodyNode* _bn, bool _warning)
 
   added |= addBodyNode(_bn, false);
 
-  for (std::size_t i = 0; i < _bn->getParentJoint()->getNumDofs(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, _bn->getParentJoint()->getNumDofs())) {
     added |= addDof(_bn->getParentJoint()->getDof(i), false);
   }
 
@@ -328,7 +331,8 @@ bool Group::removeComponent(BodyNode* _bn, bool _warning)
 
   removed |= removeBodyNode(_bn, false);
 
-  for (std::size_t i = 0; i < _bn->getParentJoint()->getNumDofs(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, _bn->getParentJoint()->getNumDofs())) {
     removed |= removeDof(_bn->getParentJoint()->getDof(i), false);
   }
 
@@ -467,7 +471,8 @@ bool Group::addJoint(Joint* _joint, bool _addDofs, bool _warning)
   }
 
   if (_addDofs) {
-    for (std::size_t i = 0; i < _joint->getNumDofs(); ++i) {
+    for (const auto i :
+         std::views::iota(std::size_t{0}, _joint->getNumDofs())) {
       added |= addDof(_joint->getDof(i), false, false);
     }
   }
@@ -533,7 +538,8 @@ bool Group::removeJoint(Joint* _joint, bool _removeDofs, bool _warning)
   }
 
   if (_removeDofs) {
-    for (std::size_t i = 0; i < _joint->getNumDofs(); ++i) {
+    for (const auto i :
+         std::views::iota(std::size_t{0}, _joint->getNumDofs())) {
       removed |= removeDof(_joint->getDof(i), false, false);
     }
   }
@@ -667,7 +673,7 @@ bool Group::removeDof(DegreeOfFreedom* _dof, bool _cleanupJoint, bool _warning)
     // Check whether any DOFs belonging to the Joint are remaining in the Group
     bool performCleanup = true;
     Joint* joint = _dof->getJoint();
-    for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, joint->getNumDofs())) {
       if (getIndexOf(joint->getDof(i), false) == INVALID_INDEX) {
         performCleanup = false;
         break;
@@ -727,15 +733,16 @@ Group::Group(
   addBodyNodes(bodyNodes);
 
   if (includeDofs || includeJoints) {
-    for (std::size_t i = 0; i < bodyNodes.size(); ++i) {
-      Joint* joint = bodyNodes[i]->getParentJoint();
+    for (BodyNode* bodyNode : bodyNodes) {
+      Joint* joint = bodyNode->getParentJoint();
 
       if (includeJoints) {
         addJoint(joint, false);
       }
 
       if (includeDofs) {
-        for (std::size_t j = 0; j < joint->getNumDofs(); ++j) {
+        for (const auto j :
+             std::views::iota(std::size_t{0}, joint->getNumDofs())) {
           addDof(joint->getDof(j));
         }
       }
@@ -754,8 +761,7 @@ Group::Group(
   addDofs(dofs, includeJoints);
 
   if (includeBodyNodes) {
-    for (std::size_t i = 0; i < dofs.size(); ++i) {
-      DegreeOfFreedom* dof = dofs[i];
+    for (DegreeOfFreedom* dof : dofs) {
       addBodyNode(dof->getChildBodyNode(), false);
     }
   }
@@ -767,15 +773,18 @@ Group::Group(const std::string& _name, const MetaSkeletonPtr& _metaSkeleton)
   setName(_name);
 
   if (_metaSkeleton) {
-    for (std::size_t i = 0; i < _metaSkeleton->getNumBodyNodes(); ++i) {
+    for (const auto i :
+         std::views::iota(std::size_t{0}, _metaSkeleton->getNumBodyNodes())) {
       addBodyNode(_metaSkeleton->getBodyNode(i));
     }
 
-    for (std::size_t i = 0; i < _metaSkeleton->getNumJoints(); ++i) {
+    for (const auto i :
+         std::views::iota(std::size_t{0}, _metaSkeleton->getNumJoints())) {
       addJoint(_metaSkeleton->getJoint(i), false);
     }
 
-    for (std::size_t i = 0; i < _metaSkeleton->getNumDofs(); ++i) {
+    for (const auto i :
+         std::views::iota(std::size_t{0}, _metaSkeleton->getNumDofs())) {
       addDof(_metaSkeleton->getDof(i), false);
     }
   }
