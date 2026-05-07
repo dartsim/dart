@@ -37,6 +37,8 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <array>
 #include <memory>
 
 #include <cmath>
@@ -247,18 +249,15 @@ TEST(JointLimitConstraintTests, GetInformation)
   ASSERT_TRUE(constraint.isActive());
 
   constraint::ConstraintInfo info;
-  double lo[6], hi[6], b[6], w[6], x[6];
-  int findex[6];
-  for (int i = 0; i < 6; ++i) {
-    lo[i] = hi[i] = b[i] = w[i] = x[i] = 0.0;
-    findex[i] = -1;
-  }
-  info.lo = lo;
-  info.hi = hi;
-  info.b = b;
-  info.w = w;
-  info.x = x;
-  info.findex = findex;
+  std::array<double, 6> lo{}, hi{}, b{}, w{}, x{};
+  std::array<int, 6> findex;
+  std::ranges::fill(findex, -1);
+  info.lo = lo.data();
+  info.hi = hi.data();
+  info.b = b.data();
+  info.w = w.data();
+  info.x = x.data();
+  info.findex = findex.data();
   info.invTimeStep = 1000.0;
 
   // Ensure non-zero error allowance
@@ -284,13 +283,13 @@ TEST(JointLimitConstraintTests, ApplyImpulseAndVelocityChange)
   skeleton->computeForwardDynamics();
   constraint.update();
 
-  double delVel[6] = {0, 0, 0, 0, 0, 0};
+  std::array<double, 6> delVel{};
   constraint.applyUnitImpulse(0);
   skeleton->computeImpulseForwardDynamics();
-  constraint.getVelocityChange(delVel, true);
+  constraint.getVelocityChange(delVel.data(), true);
 
-  double lambda[1] = {1.0};
-  constraint.applyImpulse(lambda);
+  auto lambda = std::to_array<double>({1.0});
+  constraint.applyImpulse(lambda.data());
 
   constraint.excite();
   constraint.unexcite();
@@ -381,18 +380,15 @@ TEST(JointLimitConstraintTests, GetInformationForVelocityViolation)
   ASSERT_TRUE(constraint.isActive());
 
   constraint::ConstraintInfo info;
-  double lo[6], hi[6], b[6], w[6], x[6];
-  int findex[6];
-  for (int i = 0; i < 6; ++i) {
-    lo[i] = hi[i] = b[i] = w[i] = x[i] = 0.0;
-    findex[i] = -1;
-  }
-  info.lo = lo;
-  info.hi = hi;
-  info.b = b;
-  info.w = w;
-  info.x = x;
-  info.findex = findex;
+  std::array<double, 6> lo{}, hi{}, b{}, w{}, x{};
+  std::array<int, 6> findex;
+  std::ranges::fill(findex, -1);
+  info.lo = lo.data();
+  info.hi = hi.data();
+  info.b = b.data();
+  info.w = w.data();
+  info.x = x.data();
+  info.findex = findex.data();
   info.invTimeStep = 1000.0;
 
   constraint.getInformation(&info);
@@ -415,13 +411,13 @@ TEST(
   constraint.update();
   ASSERT_TRUE(constraint.isActive());
 
-  double delVel[6] = {0, 0, 0, 0, 0, 0};
+  std::array<double, 6> delVel{};
   constraint.applyUnitImpulse(0);
   skeleton->computeImpulseForwardDynamics();
-  constraint.getVelocityChange(delVel, true);
+  constraint.getVelocityChange(delVel.data(), true);
 
-  double lambda[1] = {1.0};
-  constraint.applyImpulse(lambda);
+  auto lambda = std::to_array<double>({1.0});
+  constraint.applyImpulse(lambda.data());
 }
 
 TEST(JointLimitConstraintTests, UpperVelocityViolation)
@@ -449,10 +445,10 @@ TEST(JointLimitConstraintTests, GetVelocityChangeWithoutCfm)
   constraint.update();
   ASSERT_TRUE(constraint.isActive());
 
-  double delVel[6] = {0, 0, 0, 0, 0, 0};
+  std::array<double, 6> delVel{};
   constraint.applyUnitImpulse(0);
   skeleton->computeImpulseForwardDynamics();
-  constraint.getVelocityChange(delVel, false);
+  constraint.getVelocityChange(delVel.data(), false);
 }
 
 TEST(JointLimitConstraintTests, GetVelocityChangeWhenImpulseNotApplied)
@@ -469,8 +465,8 @@ TEST(JointLimitConstraintTests, GetVelocityChangeWhenImpulseNotApplied)
 
   skeleton->setImpulseApplied(false);
 
-  double delVel[6] = {0, 0, 0, 0, 0, 0};
-  constraint.getVelocityChange(delVel, false);
+  std::array<double, 6> delVel{};
+  constraint.getVelocityChange(delVel.data(), false);
 
   EXPECT_DOUBLE_EQ(delVel[0], 0.0);
 }
