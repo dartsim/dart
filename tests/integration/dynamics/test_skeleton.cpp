@@ -45,6 +45,7 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <utility>
 
 using namespace dart;
 using namespace math;
@@ -837,7 +838,7 @@ TEST(Skeleton, Configurations)
 
   c2 = twoLink->getConfiguration(Skeleton::CONFIG_VELOCITIES);
   EXPECT_TRUE(c2.mPositions.size() == 0);
-  EXPECT_TRUE(c2.mVelocities.size() == static_cast<int>(twoLink->getNumDofs()));
+  EXPECT_TRUE(std::cmp_equal(c2.mVelocities.size(), twoLink->getNumDofs()));
   EXPECT_TRUE(c2.mAccelerations.size() == 0);
 }
 
