@@ -37,6 +37,7 @@
 #include <atomic>
 #include <chrono>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <stdexcept>
 #include <vector>
@@ -77,9 +78,8 @@ private:
       const auto stamp
           = std::chrono::steady_clock::now().time_since_epoch().count();
       const auto unique = counter.fetch_add(1, std::memory_order_relaxed);
-      const auto path = dir
-                        / ("dart-localres-test-" + std::to_string(stamp) + "-"
-                           + std::to_string(unique));
+      const auto path
+          = dir / std::format("dart-localres-test-{}-{}", stamp, unique);
 
       if (std::filesystem::exists(path)) {
         continue;

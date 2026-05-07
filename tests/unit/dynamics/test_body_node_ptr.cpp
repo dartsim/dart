@@ -37,6 +37,7 @@
 
 #include <gtest/gtest.h>
 
+#include <format>
 #include <utility>
 
 using namespace dart;
@@ -69,10 +70,10 @@ SkeletonPtr createChainSkeleton(std::size_t numBodies)
   BodyNode* parent = nullptr;
   for (std::size_t i = 0; i < numBodies; ++i) {
     BodyNode::Properties bodyProps;
-    bodyProps.mName = "body_" + std::to_string(i);
+    bodyProps.mName = std::format("body_{}", i);
 
     RevoluteJoint::Properties jointProps;
-    jointProps.mName = "joint_" + std::to_string(i);
+    jointProps.mName = std::format("joint_{}", i);
 
     auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>(
         parent, jointProps, bodyProps);

@@ -44,6 +44,7 @@
 
 #include <gtest/gtest.h>
 
+#include <format>
 #include <vector>
 
 #include <cmath>
@@ -64,8 +65,8 @@ SkeletonPtr createChainSkeleton(
     auto pair = skel->createJointAndBodyNodePair<RevoluteJoint>(
         parent,
         RevoluteJoint::Properties(),
-        BodyNode::AspectProperties("body_" + std::to_string(i)));
-    pair.first->setName("joint_" + std::to_string(i));
+        BodyNode::AspectProperties(std::format("body_{}", i)));
+    pair.first->setName(std::format("joint_{}", i));
 
     // Set mass properties
     Inertia inertia;
@@ -188,7 +189,7 @@ TEST(MetaSkeletonTests, StructuralProperties)
   for (std::size_t i = 0; i < 5; ++i) {
     auto* body = skel->getBodyNode(i);
     ASSERT_NE(body, nullptr);
-    EXPECT_EQ(body->getName(), "body_" + std::to_string(i));
+    EXPECT_EQ(body->getName(), std::format("body_{}", i));
   }
 
   // Get BodyNode by name
@@ -200,7 +201,7 @@ TEST(MetaSkeletonTests, StructuralProperties)
   for (std::size_t i = 0; i < 5; ++i) {
     auto* joint = skel->getJoint(i);
     ASSERT_NE(joint, nullptr);
-    EXPECT_EQ(joint->getName(), "joint_" + std::to_string(i));
+    EXPECT_EQ(joint->getName(), std::format("joint_{}", i));
   }
 
   // Get Joint by name

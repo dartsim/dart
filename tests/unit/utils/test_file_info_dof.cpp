@@ -9,6 +9,7 @@
 
 #include <chrono>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <string>
 
@@ -22,7 +23,7 @@ std::filesystem::path makeTempPath(const std::string& suffix)
 {
   const auto now = std::chrono::steady_clock::now().time_since_epoch().count();
   return std::filesystem::temp_directory_path()
-         / ("dart_file_info_dof_" + std::to_string(now) + suffix);
+         / std::format("dart_file_info_dof_{}{}", now, suffix);
 }
 
 } // namespace
