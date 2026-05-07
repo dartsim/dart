@@ -36,6 +36,8 @@
 
 #include <gtest/gtest.h>
 
+#include <iterator>
+
 using namespace dart::math;
 
 namespace {
@@ -65,7 +67,7 @@ public:
   double eval(const Eigen::VectorXd& x) override
   {
     double sum = 0.0;
-    for (int i = 0; i < x.size() - 1; ++i) {
+    for (int i = 0; i < std::ssize(x) - 1; ++i) {
       double t1 = x[i + 1] - x[i] * x[i];
       double t2 = 1.0 - x[i];
       sum += 100.0 * t1 * t1 + t2 * t2;
@@ -77,7 +79,7 @@ public:
       const Eigen::VectorXd& x, Eigen::Map<Eigen::VectorXd> grad) override
   {
     grad.setZero();
-    for (int i = 0; i < x.size() - 1; ++i) {
+    for (int i = 0; i < std::ssize(x) - 1; ++i) {
       double t1 = x[i + 1] - x[i] * x[i];
       grad[i] += -400.0 * x[i] * t1 - 2.0 * (1.0 - x[i]);
       grad[i + 1] += 200.0 * t1;

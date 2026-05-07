@@ -249,7 +249,7 @@ const Eigen::Vector6d& InverseKinematics::ErrorMethod::evalError(
 
   if (_q.size() == mLastPositions.size()) {
     bool repeat = true;
-    for (int i = 0; i < mLastPositions.size(); ++i) {
+    for (int i = 0; i < std::ssize(mLastPositions); ++i) {
       if (_q[i] != mLastPositions[i]) {
         repeat = false;
         break;
@@ -643,7 +643,7 @@ void InverseKinematics::GradientMethod::evalGradient(
 
   if (_q.size() == mLastPositions.size()) {
     bool repeat = true;
-    for (int i = 0; i < mLastPositions.size(); ++i) {
+    for (int i = 0; i < std::ssize(mLastPositions); ++i) {
       if (_q[i] != mLastPositions[i]) {
         repeat = false;
         break;
@@ -673,7 +673,7 @@ const std::string& InverseKinematics::GradientMethod::getMethodName() const
 void InverseKinematics::GradientMethod::clampGradient(
     Eigen::VectorXd& _grad) const
 {
-  for (int i = 0; i < _grad.size(); ++i) {
+  for (int i = 0; i < std::ssize(_grad); ++i) {
     if (std::abs(_grad[i]) > mGradientP.mComponentWiseClamp) {
       _grad[i] = _grad[i] > 0 ? mGradientP.mComponentWiseClamp
                               : -mGradientP.mComponentWiseClamp;
