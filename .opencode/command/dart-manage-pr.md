@@ -71,13 +71,18 @@ gh pr checks <PR_NUMBER>
    - Confirm required checks are passing and review requirements are satisfied.
    - If the PR is draft and ready, mark it ready only when the user or task asks.
    - Do not merge unless explicitly asked or the workflow clearly includes merge.
+   - Confirm the merge method from repository settings or the user. Recent DART
+     `main` PRs use single-parent PR-title commits, so prefer squash/rebase
+     over merge commits unless the repository settings or user request differ.
+   - Use the current head SHA when merging so a moved branch cannot be merged
+     accidentally.
 6. Clean up after merge:
    - Confirm the PR merged and identify the head branch before deleting.
-   - Prefer merge-time deletion with the requested merge method:
+   - Prefer merge-time deletion with the requested merge method and head SHA:
      ```bash
-     gh pr merge <PR_NUMBER> --merge --delete-branch
+     gh pr merge <PR_NUMBER> --squash --match-head-commit <HEAD_SHA> --delete-branch
      ```
-     Use `--squash` or `--rebase` instead of `--merge` when requested.
+     Use `--rebase` or `--merge` instead of `--squash` when requested.
    - Otherwise delete only the PR branch after confirming it has landed:
      ```bash
      git push origin --delete <HEAD_BRANCH>
