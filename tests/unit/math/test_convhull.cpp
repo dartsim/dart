@@ -34,6 +34,7 @@
 
 #include <gtest/gtest.h>
 
+#include <iterator>
 #include <set>
 #include <span>
 #include <unordered_set>
@@ -173,7 +174,7 @@ TYPED_TEST(ConvexHullTest, Cube)
   std::set<int> usedVertices;
   for (const auto& idx : faces) {
     ASSERT_GE(idx, 0) << "Vertex index must be non-negative";
-    ASSERT_LT(idx, static_cast<int>(vertices.size()))
+    ASSERT_LT(idx, std::ssize(vertices))
         << "Vertex index must be < number of vertices";
     usedVertices.insert(idx);
   }
@@ -245,7 +246,7 @@ TYPED_TEST(ConvexHullTest, Octahedron)
   std::set<int> usedVertices;
   for (const auto& idx : faces) {
     ASSERT_GE(idx, 0) << "Vertex index must be non-negative";
-    ASSERT_LT(idx, static_cast<int>(vertices.size()))
+    ASSERT_LT(idx, std::ssize(vertices))
         << "Vertex index must be < number of vertices";
     usedVertices.insert(idx);
   }
@@ -334,7 +335,7 @@ TYPED_TEST(ConvexHullTest, AllFaceIndicesValid)
   // All face indices must be valid
   for (const auto& idx : faces) {
     EXPECT_GE(idx, 0) << "Face index must be non-negative";
-    EXPECT_LT(idx, static_cast<int>(vertices.size()))
+    EXPECT_LT(idx, std::ssize(vertices))
         << "Face index must be < number of vertices";
   }
 }

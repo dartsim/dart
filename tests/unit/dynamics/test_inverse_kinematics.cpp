@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <span>
@@ -93,8 +94,7 @@ public:
   {
     (void)desiredTf;
     mSolutions.clear();
-    Eigen::VectorXd config
-        = Eigen::VectorXd::Zero(static_cast<int>(mDofs.size()));
+    Eigen::VectorXd config = Eigen::VectorXd::Zero(std::ssize(mDofs));
     if (!mDofs.empty()) {
       config[0]
           = mIK->getNode()->getSkeleton()->getDof(mDofs[0])->getPosition();
@@ -160,7 +160,7 @@ TEST(InverseKinematics, ConfigurationAndClone)
   auto& gradient = ik->getGradientMethod();
   gradient.setComponentWiseClamp(0.25);
   gradient.setComponentWeights(
-      Eigen::VectorXd::Constant(static_cast<int>(ik->getDofs().size()), 1.0));
+      Eigen::VectorXd::Constant(std::ssize(ik->getDofs()), 1.0));
   EXPECT_EQ(gradient.getMethodName().empty(), false);
 
   auto clone = ik->clone(fixture.root);
@@ -190,7 +190,7 @@ TEST(InverseKinematics, FindSolutionPaths)
 
   solution.resize(0);
   ik->findSolution(solution);
-  EXPECT_EQ(solution.size(), static_cast<int>(ik->getDofs().size()));
+  EXPECT_EQ(solution.size(), std::ssize(ik->getDofs()));
 }
 
 TEST(InverseKinematics, SolveAllowIncompleteFalse)
@@ -233,9 +233,9 @@ TEST(InverseKinematics, FindSolutionUsesProvidedConfig)
   ik->setSolver(solver);
 
   Eigen::VectorXd config
-      = Eigen::VectorXd::Constant(static_cast<int>(ik->getDofs().size()), 0.1);
+      = Eigen::VectorXd::Constant(std::ssize(ik->getDofs()), 0.1);
   ik->findSolution(config);
-  EXPECT_EQ(config.size(), static_cast<int>(ik->getDofs().size()));
+  EXPECT_EQ(config.size(), std::ssize(ik->getDofs()));
 }
 
 TEST(InverseKinematics, TaskSpaceRegionReferenceFrameError)
@@ -330,16 +330,16 @@ TEST(InverseKinematics, SolveWithJacobianMethods)
   dls.setDampingCoefficient(0.15);
   Eigen::VectorXd dlsSolution;
   EXPECT_TRUE(ik->findSolution(dlsSolution) || dlsSolution.size() > 0);
-  EXPECT_EQ(dlsSolution.size(), static_cast<int>(ik->getDofs().size()));
+  EXPECT_EQ(dlsSolution.size(), std::ssize(ik->getDofs()));
 
   auto& transpose
       = ik->setGradientMethod<InverseKinematics::JacobianTranspose>();
   transpose.setComponentWiseClamp(0.05);
   transpose.setComponentWeights(
-      Eigen::VectorXd::Constant(static_cast<int>(ik->getDofs().size()), 0.8));
+      Eigen::VectorXd::Constant(std::ssize(ik->getDofs()), 0.8));
   Eigen::VectorXd jtSolution;
   EXPECT_TRUE(ik->findSolution(jtSolution) || jtSolution.size() > 0);
-  EXPECT_EQ(jtSolution.size(), static_cast<int>(ik->getDofs().size()));
+  EXPECT_EQ(jtSolution.size(), std::ssize(ik->getDofs()));
 }
 
 TEST(InverseKinematics, AnalyticalGradientAndWeights)
@@ -366,8 +366,7 @@ TEST(InverseKinematics, AnalyticalGradientAndWeights)
 
   const auto solutions = analyticalPtr->getSolutions();
   ASSERT_EQ(solutions.size(), 1u);
-  EXPECT_EQ(
-      solutions[0].mConfig.size(), static_cast<int>(ik->getDofs().size()));
+  EXPECT_EQ(solutions[0].mConfig.size(), std::ssize(ik->getDofs()));
 
   Eigen::VectorXd q = ik->getPositions();
   Eigen::VectorXd grad = Eigen::VectorXd::Zero(q.size());
@@ -482,7 +481,7 @@ TEST(InverseKinematics, AnalyticalExtraDofsAndGradientCaching)
   analytical.setExtraErrorLengthClamp(0.2);
   analytical.setComponentWiseClamp(0.05);
   analytical.setComponentWeights(
-      Eigen::VectorXd::Constant(static_cast<int>(ik->getDofs().size()), 1.0));
+      Eigen::VectorXd::Constant(std::ssize(ik->getDofs()), 1.0));
 
   Eigen::VectorXd q = ik->getPositions();
   Eigen::VectorXd grad = Eigen::VectorXd::Zero(q.size());
@@ -501,9 +500,7 @@ TEST(InverseKinematics, AnalyticalExtraDofsAndGradientCaching)
       analytical.getExtraDofUtilization(),
       InverseKinematics::Analytical::PRE_ANALYTICAL);
   EXPECT_DOUBLE_EQ(analytical.getComponentWiseClamp(), 0.05);
-  EXPECT_EQ(
-      analytical.getComponentWeights().size(),
-      static_cast<int>(ik->getDofs().size()));
+  EXPECT_EQ(analytical.getComponentWeights().size(), std::ssize(ik->getDofs()));
 }
 
 TEST(InverseKinematics, ObjectiveAndConstraintEvaluation)
@@ -575,7 +572,7 @@ TEST(InverseKinematics, ResetProblemAndSolveAndApply)
   ASSERT_NE(problem, nullptr);
 
   const auto dofs = ik->getDofs();
-  Eigen::VectorXd seed = Eigen::VectorXd::Zero(static_cast<int>(dofs.size()));
+  Eigen::VectorXd seed = Eigen::VectorXd::Zero(std::ssize(dofs));
   problem->addSeed(seed);
   EXPECT_EQ(problem->getSeeds().size(), 1u);
 
@@ -591,7 +588,7 @@ TEST(InverseKinematics, ResetProblemAndSolveAndApply)
   ik->setOffset(Eigen::Vector3d(0.1, 0.0, 0.0));
   const auto jac = ik->computeJacobian();
   EXPECT_EQ(jac.rows(), 6);
-  EXPECT_EQ(jac.cols(), static_cast<int>(dofs.size()));
+  EXPECT_EQ(jac.cols(), std::ssize(dofs));
 
   ik->setOffset(Eigen::Vector3d::Zero());
   auto solver = std::make_shared<math::GradientDescentSolver>();
@@ -603,7 +600,7 @@ TEST(InverseKinematics, ResetProblemAndSolveAndApply)
 
   Eigen::VectorXd positions;
   EXPECT_TRUE(ik->solveAndApply(positions, false));
-  EXPECT_EQ(positions.size(), static_cast<int>(dofs.size()));
+  EXPECT_EQ(positions.size(), std::ssize(dofs));
 }
 
 TEST(HierarchicalIK, CompositeAndWholeBody)
@@ -973,7 +970,7 @@ TEST(InverseKinematics, AccessorsAndConfiguration)
       = ik->setGradientMethod<InverseKinematics::JacobianTranspose>();
   transpose.setComponentWiseClamp(0.1);
   transpose.setComponentWeights(
-      Eigen::VectorXd::Constant(static_cast<int>(ik->getDofs().size()), 1.0));
+      Eigen::VectorXd::Constant(std::ssize(ik->getDofs()), 1.0));
 
   Eigen::VectorXd grad = Eigen::VectorXd::Zero(q.size());
   Eigen::Map<Eigen::VectorXd> gradMap(grad.data(), grad.size());
@@ -992,7 +989,7 @@ TEST(InverseKinematics, AccessorsAndConfiguration)
 
   Eigen::VectorXd solution;
   EXPECT_TRUE(ik->findSolution(solution) || solution.size() > 0);
-  EXPECT_EQ(solution.size(), static_cast<int>(ik->getDofs().size()));
+  EXPECT_EQ(solution.size(), std::ssize(ik->getDofs()));
 }
 
 TEST(InverseKinematics, ConstAccessorsAndProblemSetup)
@@ -1074,7 +1071,7 @@ TEST(InverseKinematics, ConstAccessorsAndProblemSetup)
 
   Eigen::VectorXd solution;
   ik->solveAndApply(solution, true);
-  EXPECT_EQ(solution.size(), static_cast<int>(ik->getDofs().size()));
+  EXPECT_EQ(solution.size(), std::ssize(ik->getDofs()));
 }
 
 TEST(InverseKinematics, AnalyticalConfigurationAndClone)
@@ -1392,8 +1389,7 @@ TEST(InverseKinematics, ErrorMethodDesiredTransformAndAnalyticalSolutions)
   auto& analytical = ik->setGradientMethod<DummyAnalytical>();
   const auto solutions = analytical.getSolutions();
   ASSERT_EQ(solutions.size(), 1u);
-  EXPECT_EQ(
-      solutions[0].mConfig.size(), static_cast<int>(ik->getDofs().size()));
+  EXPECT_EQ(solutions[0].mConfig.size(), std::ssize(ik->getDofs()));
 }
 
 TEST(InverseKinematics, TaskSpaceRegionCenterBoundsAndOffset)
@@ -1544,7 +1540,7 @@ TEST(InverseKinematics, EndEffectorCreateIkSolveGradientDescent)
 
   Eigen::VectorXd solution;
   ik->solveAndApply(solution, true);
-  EXPECT_EQ(solution.size(), static_cast<int>(ik->getDofs().size()));
+  EXPECT_EQ(solution.size(), std::ssize(ik->getDofs()));
 }
 
 TEST(InverseKinematics, EndEffectorCreateIkSolveAnalytical)
@@ -1567,7 +1563,7 @@ TEST(InverseKinematics, EndEffectorCreateIkSolveAnalytical)
 
   Eigen::VectorXd positions;
   ik->solveAndApply(positions, true);
-  EXPECT_EQ(positions.size(), static_cast<int>(ik->getDofs().size()));
+  EXPECT_EQ(positions.size(), std::ssize(ik->getDofs()));
   EXPECT_NE(ik->getAnalytical(), nullptr);
 }
 
