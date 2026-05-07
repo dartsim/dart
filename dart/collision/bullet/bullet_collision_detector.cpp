@@ -59,6 +59,7 @@
 #include "dart/dynamics/sphere_shape.hpp"
 
 #include <algorithm>
+#include <concepts>
 #include <vector>
 
 #include <cmath>
@@ -1119,7 +1120,7 @@ std::unique_ptr<BulletCollisionShape> createBulletCollisionShapeFromHeightmap(
 
   // determine which data type (float or double) is to be used for the field
   PHY_ScalarType scalarType = PHY_FLOAT;
-  if (std::is_same<typename HeightmapShapeT::S, double>::value) {
+  if constexpr (std::same_as<typename HeightmapShapeT::S, double>) {
     DART_ERROR("Bullet does not support DOUBLE as heightmap field yet.");
     return nullptr;
     // take this back in as soon as it is supported
