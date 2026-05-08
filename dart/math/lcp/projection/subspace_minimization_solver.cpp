@@ -262,14 +262,7 @@ LcpResult SubspaceMinimizationSolver::solve(
 
       for (int r = 0; r < fSize; ++r) {
         const int i = freeIndices[r];
-        double value = xFree[r];
-        if (std::isfinite(loEff[i])) {
-          value = std::max(value, loEff[i]);
-        }
-        if (std::isfinite(hiEff[i])) {
-          value = std::min(value, hiEff[i]);
-        }
-        x[i] = value;
+        x[i] = detail::projectToBounds(xFree[r], loEff[i], hiEff[i]);
       }
     }
 

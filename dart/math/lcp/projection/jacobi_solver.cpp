@@ -204,14 +204,7 @@ LcpResult JacobiSolver::solve(
         value = std::lerp(x[i], step, relaxation);
       }
 
-      if (std::isfinite(loEff[i])) {
-        value = std::max(value, loEff[i]);
-      }
-      if (std::isfinite(hiEff[i])) {
-        value = std::min(value, hiEff[i]);
-      }
-
-      xNew[i] = value;
+      xNew[i] = detail::projectToBounds(value, loEff[i], hiEff[i]);
     }
 
     x = xNew;
