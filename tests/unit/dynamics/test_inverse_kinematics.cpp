@@ -389,7 +389,7 @@ TEST(InverseKinematics, JacobianDlsGradientAndDofs)
 
   const auto dofs = ik->getDofs();
   ASSERT_GT(dofs.size(), 0u);
-  ik->setDofs(std::span<const std::size_t>(dofs.data(), 1u));
+  ik->setDofs(dofs.first(1u));
   EXPECT_EQ(ik->getDofs().size(), 1u);
 
   Eigen::VectorXd q = ik->getPositions();
@@ -937,8 +937,7 @@ TEST(InverseKinematics, AccessorsAndConfiguration)
   if (wholeBodyDofs.size() > 1) {
     subsetDofs.push_back(wholeBodyDofs[1]);
   }
-  ik->setDofs(
-      std::span<const std::size_t>(subsetDofs.data(), subsetDofs.size()));
+  ik->setDofs(subsetDofs);
   EXPECT_EQ(ik->getDofs().size(), subsetDofs.size());
 
   auto& tsr = ik->setErrorMethod<InverseKinematics::TaskSpaceRegion>();

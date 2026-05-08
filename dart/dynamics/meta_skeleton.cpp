@@ -40,6 +40,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <utility>
 
 namespace dart {
 namespace dynamics {
@@ -144,7 +145,7 @@ static void setAllValuesFromVector(
     const std::string& _vname)
 {
   std::size_t nDofs = skel->getNumDofs();
-  if (_values.size() != static_cast<int>(skel->getNumDofs())) {
+  if (!std::cmp_equal(_values.size(), skel->getNumDofs())) {
     DART_ERROR(
         "Invalid number of entries ({}) in {} for MetaSkeleton named [{}] "
         "({}). Must be equal to ({}). Nothing will be set!",

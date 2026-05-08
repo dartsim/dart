@@ -55,6 +55,7 @@
 
 #include <tinyxml2.h>
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -256,17 +257,18 @@ dynamics::SkeletonPtr UrdfParser::modelInterfaceToSkeleton(
         "the URDF standard. Please consider changing the robot model as a "
         "single tree robot.");
 
-    for (const auto& childLink : root->child_links) {
-      if (!createSkeletonRecursive(
-              model,
-              skeleton,
-              childLink.get(),
-              nullptr,
-              baseUri,
-              resourceRetriever,
-              options)) {
-        return nullptr;
-      }
+    const auto createChildSkeleton = [&](const auto& childLink) {
+      return createSkeletonRecursive(
+          model,
+          skeleton,
+          childLink.get(),
+          nullptr,
+          baseUri,
+          resourceRetriever,
+          options);
+    };
+    if (!std::ranges::all_of(root->child_links, createChildSkeleton)) {
+      return nullptr;
     }
   } else {
     if (!createSkeletonRecursive(
@@ -282,9 +284,9 @@ dynamics::SkeletonPtr UrdfParser::modelInterfaceToSkeleton(
   }
 
   // Find mimic joints
-  for (const auto& childLink : root->child_links) {
+  std::ranges::for_each(root->child_links, [&](const auto& childLink) {
     addMimicJointsRecursive(model, skeleton, childLink.get());
-  }
+  });
 
   const std::vector<TransmissionInfo> empty;
   const auto& transmissions
@@ -332,19 +334,16 @@ bool UrdfParser::createSkeletonRecursive(
     return false;
   }
 
-  for (const auto& childLink : lk->child_links) {
-    if (!createSkeletonRecursive(
-            model,
-            skel,
-            childLink.get(),
-            node,
-            baseUri,
-            resourceRetriever,
-            options)) {
-      return false;
-    }
-  }
-  return true;
+  return std::ranges::all_of(lk->child_links, [&](const auto& childLink) {
+    return createSkeletonRecursive(
+        model,
+        skel,
+        childLink.get(),
+        node,
+        baseUri,
+        resourceRetriever,
+        options);
+  });
 }
 
 bool UrdfParser::addMimicJointsRecursive(
@@ -384,13 +383,9 @@ bool UrdfParser::addMimicJointsRecursive(
     joint->setMimicJoint(mimicJoint, multiplier, offset);
   }
 
-  for (const auto& childLink : _lk->child_links) {
-    if (!addMimicJointsRecursive(model, _skel, childLink.get())) {
-      return false;
-    }
-  }
-
-  return true;
+  return std::ranges::all_of(_lk->child_links, [&](const auto& childLink) {
+    return addMimicJointsRecursive(model, _skel, childLink.get());
+  });
 }
 
 //==============================================================================
@@ -505,13 +500,13 @@ void UrdfParser::applyTransmissions(
     grouped[tx.mActuatorName].push_back(tx);
   }
 
-  for (const auto& actuatorPair : grouped) {
-    const auto& entries = actuatorPair.second;
+  for (const auto& [actuatorName, entries] : grouped) {
     if (entries.size() < 2) {
       continue;
     }
 
     std::vector<std::pair<const TransmissionInfo*, dynamics::Joint*>> valid;
+    valid.reserve(entries.size());
     for (const auto& tx : entries) {
       auto* joint = skel->getJoint(tx.mJointName);
       if (!joint) {
@@ -527,7 +522,7 @@ void UrdfParser::applyTransmissions(
         DART_WARN(
             "[UrdfParser] Transmission [{}] targets joint [{}] with {} DoFs; "
             "only single-DoF joints are supported for transmission coupling.",
-            actuatorPair.first,
+            actuatorName,
             tx.mJointName,
             joint->getNumDofs());
         continue;
@@ -537,7 +532,7 @@ void UrdfParser::applyTransmissions(
         DART_WARN(
             "[UrdfParser] Transmission [{}] targets joint [{}] that already "
             "has a mimic actuator; skipping to avoid conflict.",
-            actuatorPair.first,
+            actuatorName,
             tx.mJointName);
         continue;
       }
@@ -564,7 +559,7 @@ void UrdfParser::applyTransmissions(
             "actuator [{}]; skipping follower.",
             referenceJoint->getName(),
             followerJoint->getName(),
-            actuatorPair.first);
+            actuatorName);
         continue;
       }
 
@@ -922,7 +917,7 @@ bool UrdfParser::createShapeNodes(
     const common::ResourceRetrieverPtr& resourceRetriever)
 {
   // Set visual information
-  for (auto visual : lk->visual_array) {
+  for (const auto& visual : lk->visual_array) {
     dynamics::ShapePtr shape
         = createShape(visual.get(), baseUri, resourceRetriever);
 
@@ -940,7 +935,7 @@ bool UrdfParser::createShapeNodes(
   }
 
   // Set collision information
-  for (auto collision : lk->collision_array) {
+  for (const auto& collision : lk->collision_array) {
     dynamics::ShapePtr shape
         = createShape(collision.get(), baseUri, resourceRetriever);
 

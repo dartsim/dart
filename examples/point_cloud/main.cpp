@@ -147,7 +147,7 @@ public:
     // Update point cloud colors
     auto colors = generatePointCloudColors(pointCloud);
     DART_ASSERT(pointCloud.size() == colors.size());
-    mPointCloudShape->setColors(std::span<const Eigen::Vector4d>(colors));
+    mPointCloudShape->setColors(colors);
 
     // Update voxel
     mVoxelGridShape->updateOccupancy(pointCloud, sensorPos);
