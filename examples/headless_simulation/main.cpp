@@ -72,7 +72,7 @@ void printUsage(const char* argv0)
 
 bool parseSizeT(std::string_view value, std::size_t& output)
 {
-  if (value.empty() || value.front() == '-') {
+  if (value.empty() || value.starts_with('-')) {
     return false;
   }
 
@@ -93,7 +93,7 @@ bool parseSizeT(std::string_view value, std::size_t& output)
 
 bool parseUnsignedInt(std::string_view value, unsigned int& output)
 {
-  if (value.empty() || value.front() == '-') {
+  if (value.empty() || value.starts_with('-')) {
     return false;
   }
 
