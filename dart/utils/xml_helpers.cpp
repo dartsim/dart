@@ -40,6 +40,7 @@
 #include <fmt/format.h>
 
 #include <iostream>
+#include <ranges>
 #include <stdexcept>
 #include <vector>
 
@@ -133,160 +134,86 @@ char toChar(std::string_view str)
   return str[0];
 }
 
-//==============================================================================
-Eigen::Vector2d toVector2d(std::string_view str)
+namespace {
+
+template <typename Vector>
+void assignDoublePieces(
+    Vector& vector,
+    const std::vector<std::string>& pieces,
+    std::string_view scalarType,
+    std::string_view vectorType)
 {
-  Eigen::Vector2d ret;
-
-  const std::vector<std::string> pieces = common::split(common::trim(str));
-  DART_ASSERT(pieces.size() == 2);
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, pieces.size())) {
     if (pieces[i] != "") {
       try {
-        ret[i] = toDouble(pieces[i]);
+        vector[static_cast<Eigen::Index>(i)] = toDouble(pieces[i]);
       } catch (std::exception& e) {
         DART_ERROR(
-            "value [{}] is not a valid double for Eigen::Vector2d[{}]: {}",
+            "value [{}] is not a valid {} for {}[{}]: {}",
             pieces[i],
+            scalarType,
+            vectorType,
             i,
             e.what());
         throw;
       }
     }
   }
+}
 
+template <typename Vector>
+Vector toFixedVector(
+    std::string_view str,
+    std::size_t expectedSize,
+    std::string_view scalarType,
+    std::string_view vectorType)
+{
+  Vector ret;
+
+  const std::vector<std::string> pieces = common::split(common::trim(str));
+  DART_ASSERT(pieces.size() == expectedSize);
+  (void)expectedSize;
+
+  assignDoublePieces(ret, pieces, scalarType, vectorType);
   return ret;
+}
+
+} // namespace
+
+//==============================================================================
+Eigen::Vector2d toVector2d(std::string_view str)
+{
+  return toFixedVector<Eigen::Vector2d>(str, 2, "double", "Eigen::Vector2d");
 }
 
 //==============================================================================
 Eigen::Vector2i toVector2i(std::string_view str)
 {
-  Eigen::Vector2i ret;
-
-  const std::vector<std::string> pieces = common::split(common::trim(str));
-  DART_ASSERT(pieces.size() == 2);
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
-    if (pieces[i] != "") {
-      try {
-        ret[i] = toDouble(pieces[i]);
-      } catch (std::exception& e) {
-        DART_ERROR(
-            "value [{}] is not a valid double for Eigen::Vector2i[{}]: {}",
-            pieces[i],
-            i,
-            e.what());
-        throw;
-      }
-    }
-  }
-
-  return ret;
+  return toFixedVector<Eigen::Vector2i>(str, 2, "double", "Eigen::Vector2i");
 }
 
 //==============================================================================
 Eigen::Vector3d toVector3d(std::string_view str)
 {
-  Eigen::Vector3d ret;
-
-  const std::vector<std::string> pieces = common::split(common::trim(str));
-  DART_ASSERT(pieces.size() == 3);
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
-    if (pieces[i] != "") {
-      try {
-        ret[i] = toDouble(pieces[i]);
-      } catch (std::exception& e) {
-        DART_ERROR(
-            "value [{}] is not a valid double for Eigen::Vector3d[{}]: {}",
-            pieces[i],
-            i,
-            e.what());
-        throw;
-      }
-    }
-  }
-
-  return ret;
+  return toFixedVector<Eigen::Vector3d>(str, 3, "double", "Eigen::Vector3d");
 }
 
 //==============================================================================
 Eigen::Vector3i toVector3i(std::string_view str)
 {
-  Eigen::Vector3i ret;
-
-  const std::vector<std::string> pieces = common::split(common::trim(str));
-  DART_ASSERT(pieces.size() == 3);
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
-    if (pieces[i] != "") {
-      try {
-        ret[i] = toDouble(pieces[i]);
-      } catch (std::exception& e) {
-        DART_ERROR(
-            "value [{}] is not a valid int for Eigen::Vector3i[{}]: {}",
-            pieces[i],
-            i,
-            e.what());
-        throw;
-      }
-    }
-  }
-
-  return ret;
+  return toFixedVector<Eigen::Vector3i>(str, 3, "int", "Eigen::Vector3i");
 }
 
 //==============================================================================
 Eigen::Vector4d toVector4d(std::string_view str)
 {
-  Eigen::Vector4d ret;
-
-  const std::vector<std::string> pieces = common::split(common::trim(str));
-  DART_ASSERT(pieces.size() == 4);
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
-    if (pieces[i] != "") {
-      try {
-        ret[i] = toDouble(pieces[i]);
-      } catch (std::exception& e) {
-        DART_ERROR(
-            "value [{}] is not a valid double for Eigen::Vector4d[{}]: {}",
-            pieces[i],
-            i,
-            e.what());
-        throw;
-      }
-    }
-  }
-
-  return ret;
+  return toFixedVector<Eigen::Vector4d>(str, 4, "double", "Eigen::Vector4d");
 }
 
 //==============================================================================
 Eigen::Vector6d toVector6d(std::string_view str)
 {
-  Eigen::Vector6d ret;
-
-  const std::vector<std::string> pieces = common::split(common::trim(str));
-  DART_ASSERT(pieces.size() == 6);
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
-    if (pieces[i] != "") {
-      try {
-        ret[i] = toDouble(pieces[i]);
-      } catch (std::exception& e) {
-        DART_ERROR(
-            "value [{}] is not a valid double for Eigen::Vector6d[{}]: {}",
-            pieces[i],
-            i,
-            e.what());
-        throw;
-      }
-    }
-  }
-
-  return ret;
+  return toFixedVector<Eigen::Vector6d>(str, 6, "double", "Eigen::Vector6d");
 }
 
 //==============================================================================
@@ -296,22 +223,7 @@ Eigen::VectorXd toVectorXd(std::string_view str)
   DART_ASSERT(pieces.size() > 0);
 
   Eigen::VectorXd ret(pieces.size());
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
-    if (pieces[i] != "") {
-      try {
-        ret[i] = toDouble(pieces[i]);
-      } catch (std::exception& e) {
-        DART_ERROR(
-            "value [{}] is not a valid double for Eigen::VectorXd[{}]: {}",
-            pieces[i],
-            i,
-            e.what());
-        throw;
-      }
-    }
-  }
-
+  assignDoublePieces(ret, pieces, "double", "Eigen::VectorXd");
   return ret;
 }
 
@@ -322,21 +234,7 @@ Eigen::Isometry3d toIsometry3d(std::string_view str)
   Eigen::Vector6d elements = Eigen::Vector6d::Zero();
   const std::vector<std::string> pieces = common::split(common::trim(str));
   DART_ASSERT(pieces.size() == 6);
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
-    if (pieces[i] != "") {
-      try {
-        elements[i] = toDouble(pieces[i]);
-      } catch (std::exception& e) {
-        DART_ERROR(
-            "value [{}] is not a valid double for SE3[{}]: {}",
-            pieces[i],
-            i,
-            e.what());
-        throw;
-      }
-    }
-  }
+  assignDoublePieces(elements, pieces, "double", "SE3");
 
   T.linear() = math::eulerXYZToMatrix(elements.tail<3>());
   T.translation() = elements.head<3>();
@@ -350,21 +248,7 @@ Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(std::string_view str)
   Eigen::Vector6d elements = Eigen::Vector6d::Zero();
   const std::vector<std::string> pieces = common::split(common::trim(str));
   DART_ASSERT(pieces.size() == 6);
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
-    if (pieces[i] != "") {
-      try {
-        elements[i] = toDouble(pieces[i]);
-      } catch (std::exception& e) {
-        DART_ERROR(
-            "value [{}] is not a valid double for SE3[{}]: {}",
-            pieces[i],
-            i,
-            e.what());
-        throw;
-      }
-    }
-  }
+  assignDoublePieces(elements, pieces, "double", "SE3");
 
   Eigen::Vector3d reverseEulerAngles(
       elements.tail<3>()[2], elements.tail<3>()[1], elements.tail<3>()[0]);

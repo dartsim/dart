@@ -203,7 +203,7 @@ simulation::WorldPtr UrdfParser::parseWorldString(
 
   simulation::WorldPtr world = simulation::World::create();
 
-  for (const urdf_parsing::Entity& entity : worldInterface->models) {
+  for (const auto& entity : worldInterface->models) {
     std::string modelContent;
     readFileToString(resourceRetriever, entity.uri, modelContent);
     ParseContext context;

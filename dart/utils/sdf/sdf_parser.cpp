@@ -953,10 +953,8 @@ void applyMimicConstraints(
 
     const auto existingProps = joint->getMimicDofProperties();
     std::vector<dynamics::MimicDofProperties> props(joint->getNumDofs());
-    std::ranges::copy_n(
-        existingProps.begin(),
-        std::min(existingProps.size(), props.size()),
-        props.begin());
+    std::ranges::copy(
+        existingProps | std::views::take(props.size()), props.begin());
 
     bool applied = false;
     bool useCoupler = false;
