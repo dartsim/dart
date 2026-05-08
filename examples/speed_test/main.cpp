@@ -37,6 +37,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <functional>
 #include <numeric>
 
 double testForwardKinematicSpeed(
@@ -164,7 +165,7 @@ void print_results(const std::vector<double>& result)
   std::cout << "Average: " << mean << "\n";
   std::vector<double> diff(result.size());
   std::ranges::transform(
-      result, diff.begin(), [mean](double value) { return mean - value; });
+      result, diff.begin(), std::bind_front(std::minus<double>(), mean));
   double stddev = std::sqrt(
       std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0)
       / result.size());

@@ -162,8 +162,8 @@ TEST(BulletCollisionCoverage, CollideWithShapesAndFilter)
 
   auto group = detector->createCollisionGroup();
   group->addShapeFrame(planeFrame.get());
-  const std::array<const ShapeFrame*, 2> initialFrames{
-      sphereFrame.get(), boxFrame.get()};
+  const auto initialFrames
+      = std::to_array<const ShapeFrame*>({sphereFrame.get(), boxFrame.get()});
   group->addShapeFrames(initialFrames);
   group->addShapeFrame(capsuleFrame.get());
   group->addShapeFrame(cylinderFrame.get());

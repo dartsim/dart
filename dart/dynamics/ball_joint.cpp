@@ -264,11 +264,9 @@ void BallJoint::integratePositions(
 //==============================================================================
 void BallJoint::updateDegreeOfFreedomNames()
 {
-  std::array<std::string, 3> affixes{"_x", "_y", "_z"};
-
-  if (getCoordinateChart() == CoordinateChart::EULER_ZYX) {
-    affixes = {"_z", "_y", "_x"};
-  }
+  const auto affixes = getCoordinateChart() == CoordinateChart::EULER_ZYX
+                           ? std::to_array<std::string>({"_z", "_y", "_x"})
+                           : std::to_array<std::string>({"_x", "_y", "_z"});
 
   for (std::size_t i = 0; i < affixes.size(); ++i) {
     if (!mDofs[i]->isNamePreserved()) {

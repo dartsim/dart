@@ -35,6 +35,8 @@
 #include <dart/simd/config.hpp>
 #include <dart/simd/detail/avx/vec.hpp>
 
+#include <bit>
+
 #include <cstddef>
 #include <cstdint>
 
@@ -90,13 +92,7 @@ struct VecMask<float, 8>
 
   [[nodiscard]] DART_SIMD_INLINE int popcount() const
   {
-    int mask = _mm256_movemask_ps(data);
-    int count = 0;
-    while (mask) {
-      count += mask & 1;
-      mask >>= 1;
-    }
-    return count;
+    return std::popcount(bitmask());
   }
 
   [[nodiscard]] DART_SIMD_INLINE std::uint32_t bitmask() const
@@ -217,13 +213,7 @@ struct VecMask<double, 4>
 
   [[nodiscard]] DART_SIMD_INLINE int popcount() const
   {
-    int mask = _mm256_movemask_pd(data);
-    int count = 0;
-    while (mask) {
-      count += mask & 1;
-      mask >>= 1;
-    }
-    return count;
+    return std::popcount(bitmask());
   }
 
   [[nodiscard]] DART_SIMD_INLINE std::uint32_t bitmask() const

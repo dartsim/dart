@@ -222,7 +222,7 @@ void runRandomizedConvexMeshCollisionChecks(
   const auto box = std::make_shared<dart::dynamics::BoxShape>(
       Eigen::Vector3d::Constant(0.2));
 
-  const std::array<unsigned int, 3> seeds = {11u, 29u, 71u};
+  const auto seeds = std::to_array<unsigned int>({11u, 29u, 71u});
   for (const auto seed : seeds) {
     std::mt19937 rng(seed);
     auto convexShape = makeRandomConvexMeshShape(rng, 0.05, 0.2, 5);
