@@ -49,6 +49,7 @@
 #include <assimp/postprocess.h>
 
 #include <algorithm>
+#include <array>
 #include <filesystem>
 #include <iomanip>
 #include <iterator>
@@ -1386,18 +1387,18 @@ void MeshShape::extractMaterialsFromScene(
 
     // Extract texture paths for all texture types
     // Check common texture types and store them
-    const aiTextureType textureTypes[]
-        = {aiTextureType_DIFFUSE,
-           aiTextureType_SPECULAR,
-           aiTextureType_NORMALS,
-           aiTextureType_AMBIENT,
-           aiTextureType_EMISSIVE,
-           aiTextureType_HEIGHT,
-           aiTextureType_SHININESS,
-           aiTextureType_OPACITY,
-           aiTextureType_DISPLACEMENT,
-           aiTextureType_LIGHTMAP,
-           aiTextureType_REFLECTION};
+    constexpr auto textureTypes = std::to_array<aiTextureType>(
+        {aiTextureType_DIFFUSE,
+         aiTextureType_SPECULAR,
+         aiTextureType_NORMALS,
+         aiTextureType_AMBIENT,
+         aiTextureType_EMISSIVE,
+         aiTextureType_HEIGHT,
+         aiTextureType_SHININESS,
+         aiTextureType_OPACITY,
+         aiTextureType_DISPLACEMENT,
+         aiTextureType_LIGHTMAP,
+         aiTextureType_REFLECTION});
 
     for (const auto& type : textureTypes) {
       const auto count = aiMat->GetTextureCount(type);
