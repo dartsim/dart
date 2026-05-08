@@ -165,14 +165,14 @@ std::span<const std::string> PackageResourceRetriever::getPackagePaths(
   // Lookup the corresponding package path.
   const auto it = mPackageMap.find(packageNameString);
   if (it != std::end(mPackageMap)) {
-    return std::span<const std::string>(it->second);
+    return it->second;
   } else {
     DART_WARN(
         "{}{}{}",
         "Unable to resolvepath to package '",
         packageNameString,
         "'. Did you call addPackageDirectory(~) for this package name?\n");
-    return std::span<const std::string>(empty_placeholder);
+    return empty_placeholder;
   }
 }
 

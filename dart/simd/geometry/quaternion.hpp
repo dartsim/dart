@@ -42,13 +42,9 @@
 namespace dart::simd {
 
 // Storage: [x, y, z, w] matching Eigen::Quaternion internal order
-template <typename T>
+template <FloatType T>
 struct Quaternion
 {
-  static_assert(
-      std::is_same_v<T, float> || std::is_same_v<T, double>,
-      "Quaternion only supports float or double");
-
   Vec<T, 4> data;
 
   Quaternion() = default;
@@ -231,14 +227,14 @@ struct Quaternion
   }
 };
 
-template <typename T>
+template <FloatType T>
 [[nodiscard]] DART_SIMD_INLINE T
 dot(const Quaternion<T>& a, const Quaternion<T>& b)
 {
   return hsum(a.data * b.data);
 }
 
-template <typename T>
+template <FloatType T>
 [[nodiscard]] DART_SIMD_INLINE Quaternion<T> slerp(
     const Quaternion<T>& a, const Quaternion<T>& b, T t)
 {

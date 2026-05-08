@@ -1237,7 +1237,7 @@ TEST(SkelParser, ReadWorldFromFileMeshShape)
   meshFile.close();
 
   std::string meshPathStr = meshPath.string();
-  std::replace(meshPathStr.begin(), meshPathStr.end(), '\\', '/');
+  std::ranges::replace(meshPathStr, '\\', '/');
   const std::string skelXml = std::string(R"(<skel version="1.0">
   <world name="world">
     <skeleton name="skel">
@@ -2191,7 +2191,7 @@ TEST(SkelParser, WorldXmlParsesJointAndShapeVariants)
 
   // Use absolute path with forward slashes so Windows resolves the mesh file
   std::string meshPathStr = meshPath.string();
-  std::replace(meshPathStr.begin(), meshPathStr.end(), '\\', '/');
+  std::ranges::replace(meshPathStr, '\\', '/');
 
   const std::string skelXml = std::string(R"(
 <skel version="1.0">
@@ -4001,7 +4001,7 @@ TEST(SkelParser, ParsesRigidShapeVariantsFromXml)
 
   // Use absolute path with forward slashes so Windows resolves the mesh file
   std::string meshPathStr = meshPath.string();
-  std::replace(meshPathStr.begin(), meshPathStr.end(), '\\', '/');
+  std::ranges::replace(meshPathStr, '\\', '/');
 
   const auto skelPath = tempDir / "shapes.skel";
   const std::string skelXml = std::string(R"(<?xml version="1.0" ?>

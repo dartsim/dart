@@ -78,13 +78,9 @@ namespace dart::simd {
 /// operations while maintaining a 3D vector interface.
 ///
 /// @tparam T Scalar type (float or double)
-template <typename T>
+template <FloatType T>
 struct Vector3
 {
-  static_assert(
-      std::is_same_v<T, float> || std::is_same_v<T, double>,
-      "Vector3 only supports float or double");
-
   /// Internal storage: [x, y, z, 0]
   Vec<T, 4> data;
 
@@ -311,7 +307,7 @@ struct Vector3
 // =============================================================================
 
 /// Dot product
-template <typename T>
+template <FloatType T>
 [[nodiscard]] DART_SIMD_INLINE T dot(const Vector3<T>& a, const Vector3<T>& b)
 {
   Vec<T, 4> prod = a.data * b.data;
@@ -319,7 +315,7 @@ template <typename T>
 }
 
 /// Cross product
-template <typename T>
+template <FloatType T>
 [[nodiscard]] DART_SIMD_INLINE Vector3<T> cross(
     const Vector3<T>& a, const Vector3<T>& b)
 {
@@ -331,7 +327,7 @@ template <typename T>
 }
 
 /// Component-wise minimum
-template <typename T>
+template <FloatType T>
 [[nodiscard]] DART_SIMD_INLINE Vector3<T> min(
     const Vector3<T>& a, const Vector3<T>& b)
 {
@@ -339,7 +335,7 @@ template <typename T>
 }
 
 /// Component-wise maximum
-template <typename T>
+template <FloatType T>
 [[nodiscard]] DART_SIMD_INLINE Vector3<T> max(
     const Vector3<T>& a, const Vector3<T>& b)
 {
@@ -347,14 +343,14 @@ template <typename T>
 }
 
 /// Component-wise absolute value
-template <typename T>
+template <FloatType T>
 [[nodiscard]] DART_SIMD_INLINE Vector3<T> abs(const Vector3<T>& v)
 {
   return Vector3<T>(abs(v.data));
 }
 
 /// Linear interpolation: a + t * (b - a)
-template <typename T>
+template <FloatType T>
 [[nodiscard]] DART_SIMD_INLINE Vector3<T> lerp(
     const Vector3<T>& a, const Vector3<T>& b, T t)
 {
@@ -362,7 +358,7 @@ template <typename T>
 }
 
 /// Distance between two points
-template <typename T>
+template <FloatType T>
 [[nodiscard]] DART_SIMD_INLINE T
 distance(const Vector3<T>& a, const Vector3<T>& b)
 {
@@ -370,7 +366,7 @@ distance(const Vector3<T>& a, const Vector3<T>& b)
 }
 
 /// Squared distance between two points (faster)
-template <typename T>
+template <FloatType T>
 [[nodiscard]] DART_SIMD_INLINE T
 squaredDistance(const Vector3<T>& a, const Vector3<T>& b)
 {
@@ -378,7 +374,7 @@ squaredDistance(const Vector3<T>& a, const Vector3<T>& b)
 }
 
 /// Reflect vector v around normal n (n must be normalized)
-template <typename T>
+template <FloatType T>
 [[nodiscard]] DART_SIMD_INLINE Vector3<T> reflect(
     const Vector3<T>& v, const Vector3<T>& n)
 {
@@ -386,7 +382,7 @@ template <typename T>
 }
 
 /// Project vector a onto vector b
-template <typename T>
+template <FloatType T>
 [[nodiscard]] DART_SIMD_INLINE Vector3<T> project(
     const Vector3<T>& a, const Vector3<T>& b)
 {
