@@ -45,6 +45,7 @@
 
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <cmath>
@@ -113,14 +114,11 @@ void SoftBodyNodeUniqueProperties::addFace(const Eigen::Vector3i& _newFace)
   DART_ASSERT(_newFace[1] != _newFace[2]);
   DART_ASSERT(_newFace[2] != _newFace[0]);
   DART_ASSERT(
-      0 <= _newFace[0]
-      && static_cast<std::size_t>(_newFace[0]) < mPointProps.size());
+      0 <= _newFace[0] && std::cmp_less(_newFace[0], mPointProps.size()));
   DART_ASSERT(
-      0 <= _newFace[1]
-      && static_cast<std::size_t>(_newFace[1]) < mPointProps.size());
+      0 <= _newFace[1] && std::cmp_less(_newFace[1], mPointProps.size()));
   DART_ASSERT(
-      0 <= _newFace[2]
-      && static_cast<std::size_t>(_newFace[2]) < mPointProps.size());
+      0 <= _newFace[2] && std::cmp_less(_newFace[2], mPointProps.size()));
   mFaces.push_back(_newFace);
 }
 
@@ -258,7 +256,7 @@ const PointMass* SoftBodyNode::getPointMass(std::size_t _idx) const
 //==============================================================================
 std::span<PointMass* const> SoftBodyNode::getPointMasses() const
 {
-  return std::span<PointMass* const>(mPointMasses);
+  return mPointMasses;
 }
 
 //==============================================================================

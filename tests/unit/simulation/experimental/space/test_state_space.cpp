@@ -100,7 +100,7 @@ TEST(StateSpace, AddMultipleScalarsHelper)
 {
   StateSpace space;
   const std::vector<std::string> names = {"x", "y", "z"};
-  space.addVariables(std::span<const std::string>(names), -1.0, 1.0);
+  space.addVariables(names, -1.0, 1.0);
 
   EXPECT_EQ(space.getDimension(), 3);
   EXPECT_EQ(space.getNumVariables(), 3);

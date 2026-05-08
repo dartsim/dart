@@ -226,8 +226,7 @@ TEST(Geometry, ComputeConvexHullUsesSortedAngles)
   points.emplace_back(0.0, 1.0);
 
   std::vector<std::size_t> indices;
-  const auto hull
-      = computeConvexHull(indices, std::span<const Eigen::Vector2d>(points));
+  const auto hull = computeConvexHull(indices, points);
 
   EXPECT_EQ(hull.size(), 3u);
   EXPECT_EQ(indices.size(), 3u);
@@ -242,8 +241,7 @@ TEST(Geometry, ComputeConvexHullCollinearDuplicates)
   points.emplace_back(3.0, 3.0);
 
   std::vector<std::size_t> indices;
-  const auto hull
-      = computeConvexHull(indices, std::span<const Eigen::Vector2d>(points));
+  const auto hull = computeConvexHull(indices, points);
 
   ASSERT_EQ(hull.size(), 2u);
   ASSERT_EQ(indices.size(), 2u);
@@ -261,8 +259,7 @@ TEST(Geometry, ComputeConvexHullDropsInteriorPoint)
   points.emplace_back(1.0, 1.0); // interior point
 
   std::vector<std::size_t> indices;
-  const auto hull
-      = computeConvexHull(indices, std::span<const Eigen::Vector2d>(points));
+  const auto hull = computeConvexHull(indices, points);
 
   EXPECT_EQ(hull.size(), 4u);
   EXPECT_EQ(indices.size(), 4u);
@@ -870,8 +867,7 @@ TEST(Geometry, ComputeConvexHullBacktracksRightTurn)
   points.emplace_back(0.0, 2.0);
 
   std::vector<std::size_t> indices;
-  const auto hull
-      = computeConvexHull(indices, std::span<const Eigen::Vector2d>(points));
+  const auto hull = computeConvexHull(indices, points);
 
   bool hasInterior = false;
   for (const auto& p : hull) {
@@ -1863,7 +1859,7 @@ TEST(Geometry, ComputeConvexHullWrapper)
   points.emplace_back(1.0, 1.0);
   points.emplace_back(0.0, 1.0);
 
-  const auto hull = computeConvexHull(std::span<const Eigen::Vector2d>(points));
+  const auto hull = computeConvexHull(points);
   EXPECT_EQ(hull.size(), 4u);
 }
 
@@ -1916,8 +1912,7 @@ TEST(Geometry, ComputeConvexHullRightTurnBacktrack)
   points.emplace_back(0.0, 2.0);
 
   std::vector<std::size_t> indices;
-  const auto hull
-      = computeConvexHull(indices, std::span<const Eigen::Vector2d>(points));
+  const auto hull = computeConvexHull(indices, points);
 
   EXPECT_EQ(hull.size(), 4u);
   EXPECT_EQ(indices.size(), 4u);

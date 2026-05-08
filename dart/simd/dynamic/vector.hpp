@@ -47,13 +47,9 @@
 
 namespace dart::simd {
 
-template <typename T>
+template <FloatType T>
 class DynamicVector
 {
-  static_assert(
-      std::is_same_v<T, float> || std::is_same_v<T, double>,
-      "DynamicVector only supports float or double");
-
 public:
   using scalar_type = T;
   static constexpr std::size_t simd_width = preferred_width_v<T>;
