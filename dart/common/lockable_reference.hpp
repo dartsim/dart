@@ -33,11 +33,33 @@
 #ifndef DART_COMMON_LOCKABLEREFERENCE_HPP_
 #define DART_COMMON_LOCKABLEREFERENCE_HPP_
 
+#include <concepts>
+#include <iterator>
 #include <memory>
+#include <type_traits>
 #include <vector>
 
 namespace dart {
 namespace common {
+
+namespace detail {
+
+template <typename T>
+concept LockableObject = requires(T lockable) {
+  { lockable.lock() } -> std::same_as<void>;
+  { lockable.try_lock() } -> std::convertible_to<bool>;
+  { lockable.unlock() } -> std::same_as<void>;
+};
+
+template <typename Iterator, typename Lockable>
+concept LockablePointerInputIterator
+    = std::input_iterator<Iterator>
+      && std::same_as<
+          std::remove_pointer_t<std::remove_cvref_t<
+              typename std::iterator_traits<Iterator>::value_type>>,
+          Lockable>;
+
+} // namespace detail
 
 /// LockableReference is a wrapper class of single or multiple Lockable
 /// object(s) to provide unified interface that guarantees deadlock-free locking
@@ -75,7 +97,7 @@ protected:
 /// This class references a single lockable.
 ///
 /// @tparam LockableT The standard C++ Lockable concept object type.
-template <typename LockableT>
+template <detail::LockableObject LockableT>
 class SingleLockableReference final : public LockableReference
 {
 public:
@@ -114,7 +136,7 @@ private:
 /// deadlock.
 ///
 /// @tparam LockableT The standard C++ Lockable concept object type.
-template <typename LockableT>
+template <detail::LockableObject LockableT>
 class MultiLockableReference final : public LockableReference
 {
 public:
@@ -127,7 +149,7 @@ public:
   /// lockable holder is not destructed.
   /// @param[in] first First iterator of lockable to be added to this class.
   /// @param[in] last Last iterator of lockable to be added to this class.
-  template <typename InputIterator>
+  template <detail::LockablePointerInputIterator<Lockable> InputIterator>
   MultiLockableReference(
       std::weak_ptr<const void> lockableHolder,
       InputIterator first,
