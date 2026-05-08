@@ -35,6 +35,8 @@
 #include "dart/common/macros.hpp"
 #include "dart/dynamics/free_joint.hpp"
 
+#include <ranges>
+
 namespace dart {
 namespace dynamics {
 
@@ -210,7 +212,9 @@ bool Chain::isStillChain() const
 
   // Make sure there are no Branches and no parent FreeJoints on the BodyNodes
   // on the inside of the chain
-  for (std::size_t i = 1; i < mBodyNodes.size() - 1; ++i) {
+  const auto interiorEnd
+      = mBodyNodes.size() > 2 ? mBodyNodes.size() - 1 : std::size_t{1};
+  for (const auto i : std::views::iota(std::size_t{1}, interiorEnd)) {
     if (mBodyNodes[i]->getNumChildBodyNodes() > 1) {
       return false;
     }

@@ -36,6 +36,7 @@
 #include "dart/dynamics/body_node.hpp"
 
 #include <algorithm>
+#include <ranges>
 
 #define REPORT_INVALID_NODE(func)                                              \
   DART_ERROR(                                                                  \
@@ -285,7 +286,7 @@ void Node::stageForRemoval()
   destructors.erase(destructor_iter);
 
   // Reset all the Node indices that have been altered
-  for (std::size_t i = mIndexInBodyNode; i < nodes.size(); ++i) {
+  for (const auto i : std::views::iota(mIndexInBodyNode, nodes.size())) {
     nodes[i]->mIndexInBodyNode = i;
   }
 
