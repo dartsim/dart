@@ -83,9 +83,10 @@ struct MathConstants
   // Square roots
   static constexpr T sqrt2 = std::numbers::sqrt2_v<T>;
   static constexpr T invSqrt2 = T(1) / std::numbers::sqrt2_v<T>;
-  static constexpr T sqrtPi = T(1.77245385090551602729816748334114518);
+  static constexpr T sqrtPi = T(1) / std::numbers::inv_sqrtpi_v<T>;
   static constexpr T invSqrtPi = std::numbers::inv_sqrtpi_v<T>;
-  static constexpr T sqrt2Pi = T(2.50662827463100050241576528481104525);
+  static constexpr T sqrt2Pi
+      = std::numbers::sqrt2_v<T> / std::numbers::inv_sqrtpi_v<T>;
 
   // Special values
   static constexpr T infinity = std::numeric_limits<T>::infinity();
