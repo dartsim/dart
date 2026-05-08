@@ -40,6 +40,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <ranges>
 #include <sstream>
 #include <string>
 
@@ -91,7 +92,7 @@ inline double ComputeBoundViolation(
     const Eigen::VectorXd& x)
 {
   double violation = 0.0;
-  for (Eigen::Index i = 0; i < x.size(); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, x.size())) {
     if (std::isfinite(lo[i])) {
       violation = std::max(violation, lo[i] - x[i]);
     }

@@ -42,8 +42,8 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
-#include <iterator>
 #include <limits>
+#include <ranges>
 
 #include <cmath>
 
@@ -173,7 +173,7 @@ LcpProblem makeLargeCoupledProblem(int n)
 
 void ExpectNonnegative(const Eigen::VectorXd& x, double tol)
 {
-  for (int i = 0; i < std::ssize(x); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, x.size())) {
     EXPECT_GE(x[i], -tol);
   }
 }
@@ -184,7 +184,7 @@ void ExpectBoxed(
     const Eigen::VectorXd& hi,
     double tol)
 {
-  for (int i = 0; i < std::ssize(x); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, x.size())) {
     if (std::isfinite(lo[i])) {
       EXPECT_GE(x[i], lo[i] - tol);
     }

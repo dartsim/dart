@@ -40,8 +40,8 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
-#include <iterator>
 #include <limits>
+#include <ranges>
 
 #include <cmath>
 
@@ -184,7 +184,7 @@ LcpProblem makeInfeasibleProblem()
 void expectDiagonalSolution(const Eigen::VectorXd& x, double expected)
 {
   EXPECT_TRUE(x.array().isFinite().all());
-  for (Eigen::Index i = 0; i < std::ssize(x); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, x.size())) {
     EXPECT_NEAR(x[i], expected, 1e-6);
   }
 }
@@ -240,7 +240,7 @@ TEST(FischerBurmeisterNewtonSolver, SolveBoxedProblem)
 
   EXPECT_EQ(result.status, LcpSolverStatus::Success);
   EXPECT_TRUE(x.array().isFinite().all());
-  for (int i = 0; i < std::ssize(x); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, x.size())) {
     EXPECT_GE(x[i], -1e-6);
     EXPECT_LE(x[i], 0.6 + 1e-6);
   }
@@ -261,7 +261,7 @@ TEST(FischerBurmeisterNewtonSolver, SolveFrictionProblem)
   EXPECT_TRUE(x.array().isFinite().all());
   const double mu = 0.4;
   EXPECT_GE(x[0], -1e-6);
-  for (int i = 1; i < 4; ++i) {
+  for (const auto i : std::views::iota(1, 4)) {
     EXPECT_LE(std::abs(x[i]), mu * std::abs(x[0]) + 1e-6);
   }
 }
@@ -360,7 +360,7 @@ TEST(PenalizedFischerBurmeisterNewtonSolver, SolveBoxedProblem)
 
   EXPECT_EQ(result.status, LcpSolverStatus::Success);
   EXPECT_TRUE(x.array().isFinite().all());
-  for (int i = 0; i < std::ssize(x); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, x.size())) {
     EXPECT_GE(x[i], -1e-6);
     EXPECT_LE(x[i], 0.6 + 1e-6);
   }
@@ -381,7 +381,7 @@ TEST(PenalizedFischerBurmeisterNewtonSolver, SolveFrictionProblem)
   EXPECT_TRUE(x.array().isFinite().all());
   const double mu = 0.4;
   EXPECT_GE(x[0], -1e-6);
-  for (int i = 1; i < 4; ++i) {
+  for (const auto i : std::views::iota(1, 4)) {
     EXPECT_LE(std::abs(x[i]), mu * std::abs(x[0]) + 1e-6);
   }
 }
@@ -469,7 +469,7 @@ TEST(MinimumMapNewtonSolver, SolveSpdProblem)
   EXPECT_EQ(result.status, LcpSolverStatus::Success);
   EXPECT_TRUE(x.array().isFinite().all());
   const Eigen::VectorXd expected = problem.A.ldlt().solve(problem.b);
-  for (int i = 0; i < std::ssize(expected); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, expected.size())) {
     EXPECT_NEAR(x[i], expected[i], 1e-5);
   }
 }
@@ -487,7 +487,7 @@ TEST(MinimumMapNewtonSolver, SolveBoxedProblem)
 
   EXPECT_EQ(result.status, LcpSolverStatus::Success);
   EXPECT_TRUE(x.array().isFinite().all());
-  for (int i = 0; i < std::ssize(x); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, x.size())) {
     EXPECT_GE(x[i], -1e-6);
     EXPECT_LE(x[i], 0.6 + 1e-6);
   }
@@ -508,7 +508,7 @@ TEST(MinimumMapNewtonSolver, SolveFrictionProblem)
   EXPECT_TRUE(x.array().isFinite().all());
   const double mu = 0.4;
   EXPECT_GE(x[0], -1e-6);
-  for (int i = 1; i < 4; ++i) {
+  for (const auto i : std::views::iota(1, 4)) {
     EXPECT_LE(std::abs(x[i]), mu * std::abs(x[0]) + 1e-6);
   }
 }
@@ -656,7 +656,7 @@ TEST(InteriorPointSolver, SolveDiagonalProblem)
 
   EXPECT_EQ(result.status, LcpSolverStatus::Success);
   EXPECT_TRUE(x.array().isFinite().all());
-  for (int i = 0; i < std::ssize(x); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, x.size())) {
     EXPECT_NEAR(x[i], 0.5, 1e-4);
   }
 }
@@ -675,7 +675,7 @@ TEST(InteriorPointSolver, SolveSpdProblem)
   EXPECT_EQ(result.status, LcpSolverStatus::Success);
   EXPECT_TRUE(x.array().isFinite().all());
   const Eigen::VectorXd expected = problem.A.ldlt().solve(problem.b);
-  for (int i = 0; i < std::ssize(expected); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, expected.size())) {
     EXPECT_NEAR(x[i], expected[i], 1e-4);
   }
 }
@@ -693,7 +693,7 @@ TEST(InteriorPointSolver, SolveBoxedProblem)
 
   EXPECT_EQ(result.status, LcpSolverStatus::Success);
   EXPECT_TRUE(x.array().isFinite().all());
-  for (int i = 0; i < std::ssize(x); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, x.size())) {
     EXPECT_GE(x[i], -1e-6);
     EXPECT_LE(x[i], 0.6 + 1e-6);
   }
@@ -714,7 +714,7 @@ TEST(InteriorPointSolver, SolveFrictionProblem)
   EXPECT_TRUE(x.array().isFinite().all());
   const double mu = 0.4;
   EXPECT_GE(x[0], -1e-6);
-  for (int i = 1; i < 4; ++i) {
+  for (const auto i : std::views::iota(1, 4)) {
     EXPECT_LE(std::abs(x[i]), mu * std::abs(x[0]) + 1e-6);
   }
 }
@@ -803,7 +803,7 @@ TEST(LemkeSolver, SolveSpdProblem)
   EXPECT_EQ(result.status, LcpSolverStatus::Success);
   EXPECT_TRUE(x.array().isFinite().all());
   const Eigen::VectorXd expected = problem.A.ldlt().solve(problem.b);
-  for (int i = 0; i < std::ssize(expected); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, expected.size())) {
     EXPECT_NEAR(x[i], expected[i], 1e-5);
   }
 }
@@ -821,7 +821,7 @@ TEST(LemkeSolver, SolveBoxedProblem)
 
   EXPECT_EQ(result.status, LcpSolverStatus::Success);
   EXPECT_TRUE(x.array().isFinite().all());
-  for (int i = 0; i < std::ssize(x); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, x.size())) {
     EXPECT_GE(x[i], -1e-6);
     EXPECT_LE(x[i], 0.6 + 1e-6);
   }
@@ -842,7 +842,7 @@ TEST(LemkeSolver, SolveFrictionProblem)
   EXPECT_TRUE(x.array().isFinite().all());
   const double mu = 0.4;
   EXPECT_GE(x[0], -1e-6);
-  for (int i = 1; i < 4; ++i) {
+  for (const auto i : std::views::iota(1, 4)) {
     EXPECT_LE(std::abs(x[i]), mu * std::abs(x[0]) + 1e-6);
   }
 }

@@ -36,6 +36,7 @@
 #include <Eigen/Dense>
 
 #include <random>
+#include <ranges>
 
 #include <cstdint>
 
@@ -361,7 +362,7 @@ public:
     std::vector<LCPProblem> problems;
     problems.reserve(dimensions.size());
 
-    for (size_t i = 0; i < dimensions.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, dimensions.size())) {
       problems.push_back(generateRandomWellFormed(dimensions[i], baseSeed + i));
     }
 
@@ -375,7 +376,7 @@ public:
     std::vector<LCPProblem> problems;
     problems.reserve(dimensions.size());
 
-    for (size_t i = 0; i < dimensions.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, dimensions.size())) {
       problems.push_back(
           generateRandomIllFormed(dimensions[i], baseSeed + i * 100));
     }

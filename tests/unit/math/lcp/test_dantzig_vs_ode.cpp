@@ -47,6 +47,7 @@
 
 #include <gtest/gtest.h>
 
+#include <ranges>
 #include <vector>
 
 #include <cmath>
@@ -118,7 +119,7 @@ bool solutionsMatch(
     return false;
   }
 
-  for (size_t i = 0; i < x1.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, x1.size())) {
     if (std::abs(x1[i] - x2[i]) > tolerance) {
       return false;
     }
