@@ -50,13 +50,24 @@ namespace dart::simulation::experimental::space {
 
 namespace detail {
 
-template <typename T>
-concept ArithmeticField = std::integral<T> || std::floating_point<T>;
+template <typename Field>
+concept ArithmeticField = std::integral<std::remove_cvref_t<Field>>
+                          || std::floating_point<std::remove_cvref_t<Field>>;
+
+template <typename Field>
+concept EnumField = std::is_enum_v<std::remove_cvref_t<Field>>;
+
+template <typename Field>
+concept ScalarField = ArithmeticField<Field> || EnumField<Field>;
+
+template <typename Field>
+concept AggregateField = std::is_aggregate_v<std::remove_cvref_t<Field>>;
 
 template <typename T>
-concept IsometryField
-    = std::same_as<T, Eigen::Isometry3d>
-      || std::derived_from<T, Eigen::Transform<double, 3, Eigen::Isometry>>;
+concept IsometryField = std::same_as<std::remove_cvref_t<T>, Eigen::Isometry3d>
+                        || std::derived_from<
+                            std::remove_cvref_t<T>,
+                            Eigen::Transform<double, 3, Eigen::Isometry>>;
 
 } // namespace detail
 
@@ -106,7 +117,7 @@ size_t extractFieldToVector(
     vec[offset + 2] = field.y();
     vec[offset + 3] = field.z();
     count = 4;
-  } else if constexpr (std::is_enum_v<FieldType>) {
+  } else if constexpr (detail::EnumField<FieldType>) {
     // Enums as integers
     vec[offset] = static_cast<double>(static_cast<int>(field));
     count = 1;
@@ -160,7 +171,7 @@ size_t injectVectorToField(
     field.y() = vec[offset + 2];
     field.z() = vec[offset + 3];
     count = 4;
-  } else if constexpr (std::is_enum_v<FieldType>) {
+  } else if constexpr (detail::EnumField<FieldType>) {
     field = static_cast<FieldType>(static_cast<int>(vec[offset]));
     count = 1;
   } else {
@@ -179,8 +190,7 @@ constexpr size_t getFieldDimension()
 {
   using FieldType = std::remove_cvref_t<Field>;
 
-  if constexpr (
-      detail::ArithmeticField<FieldType> || std::is_enum_v<FieldType>) {
+  if constexpr (detail::ScalarField<FieldType>) {
     return 1;
   } else if constexpr (std::same_as<FieldType, Eigen::Vector2d>) {
     return 2;
@@ -188,11 +198,11 @@ constexpr size_t getFieldDimension()
     return 3;
   } else if constexpr (std::same_as<FieldType, Eigen::Quaterniond>) {
     return 4;
-  } else if constexpr (std::same_as<FieldType, Eigen::Isometry3d>) {
+  } else if constexpr (detail::IsometryField<FieldType>) {
     return 7; // Translation (3) + Quaternion (4)
   } else if constexpr (std::same_as<FieldType, Eigen::VectorXd>) {
     return 0; // Dynamic size - must be computed at runtime
-  } else if constexpr (std::is_aggregate_v<FieldType>) {
+  } else if constexpr (detail::AggregateField<FieldType>) {
     // Nested aggregate struct - sum dimensions of all fields
     size_t total = 0;
     boost::pfr::for_each_field(FieldType{}, [&](const auto& field) {

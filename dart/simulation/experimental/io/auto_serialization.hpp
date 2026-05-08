@@ -110,7 +110,7 @@ void autoSerialize(
           writePOD(out, field(i, j));
         }
       }
-    } else if constexpr (std::is_trivially_copyable_v<FieldType>) {
+    } else if constexpr (detail::TriviallyCopyable<FieldType>) {
       // POD types (int, double, bool, enums, etc.)
       writePOD(out, field);
     } else {
@@ -153,7 +153,7 @@ void autoDeserialize(std::istream& in, T& component)
           }
         }
       }
-    } else if constexpr (std::is_trivially_copyable_v<FieldType>) {
+    } else if constexpr (detail::TriviallyCopyable<FieldType>) {
       // POD types
       readPOD(in, field);
     } else {
@@ -215,7 +215,7 @@ void autoSerialize(
       writePOD(out, field.x());
       writePOD(out, field.y());
       writePOD(out, field.z());
-    } else if constexpr (std::is_trivially_copyable_v<FieldType>) {
+    } else if constexpr (detail::TriviallyCopyable<FieldType>) {
       writePOD(out, field);
     } else {
       // Complex nested type
@@ -263,7 +263,7 @@ void autoDeserialize(std::istream& in, T& component)
           }
         }
       }
-    } else if constexpr (std::is_trivially_copyable_v<FieldType>) {
+    } else if constexpr (detail::TriviallyCopyable<FieldType>) {
       readPOD(in, field);
     } else {
       // Complex nested type
@@ -298,7 +298,7 @@ void autoSerialize(
           writePOD(out, field(i, j));
         }
       }
-    } else if constexpr (std::is_trivially_copyable_v<FieldType>) {
+    } else if constexpr (detail::TriviallyCopyable<FieldType>) {
       writePOD(out, field);
     } else {
       // Recursively serialize nested structs
@@ -330,7 +330,7 @@ void autoDeserialize(std::istream& in, T& value)
           }
         }
       }
-    } else if constexpr (std::is_trivially_copyable_v<FieldType>) {
+    } else if constexpr (detail::TriviallyCopyable<FieldType>) {
       readPOD(in, field);
     } else {
       // Recursively deserialize nested structs
