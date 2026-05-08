@@ -119,12 +119,14 @@ public:
   static Eigen::Vector3d convertToPositions(
       const RotationType& _rotation, CoordinateChart chart)
   {
+    using enum CoordinateChart;
+
     switch (chart) {
-      case CoordinateChart::EXP_MAP:
+      case EXP_MAP:
         return math::logMap(_rotation);
-      case CoordinateChart::EULER_XYZ:
+      case EULER_XYZ:
         return math::matrixToEulerXYZ(_rotation);
-      case CoordinateChart::EULER_ZYX:
+      case EULER_ZYX:
         return math::matrixToEulerZYX(_rotation);
       default:
         DART_WARN(
