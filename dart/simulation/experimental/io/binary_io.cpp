@@ -45,7 +45,8 @@ void writeString(std::ostream& out, std::string_view str)
   std::size_t size = str.size();
   writePOD(out, size);
   if (size > 0) {
-    out.write(str.data(), size);
+    detail::writeBytes(
+        out, std::as_bytes(std::span<const char>(str.data(), str.size())));
   }
 }
 
@@ -56,7 +57,8 @@ void readString(std::istream& in, std::string& str)
   readPOD(in, size);
   str.resize(size);
   if (size > 0) {
-    in.read(str.data(), size);
+    detail::readBytes(
+        in, std::as_writable_bytes(std::span<char>(str.data(), str.size())));
   }
 }
 

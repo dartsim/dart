@@ -41,9 +41,11 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <unordered_map>
 #include <vector>
 
+#include <cstddef>
 #include <cstdint>
 
 namespace dart::simulation::experimental::io {
@@ -67,6 +69,36 @@ constexpr std::uint32_t kBinaryFormatVersion = 1;
 // Low-level Binary I/O for POD types
 //==============================================================================
 
+namespace detail {
+
+inline void writeBytes(std::ostream& out, std::span<const std::byte> bytes)
+{
+  out.write(
+      reinterpret_cast<const char*>(bytes.data()),
+      static_cast<std::streamsize>(bytes.size()));
+}
+
+inline void readBytes(std::istream& in, std::span<std::byte> bytes)
+{
+  in.read(
+      reinterpret_cast<char*>(bytes.data()),
+      static_cast<std::streamsize>(bytes.size()));
+}
+
+template <typename T>
+std::span<const std::byte> asBytes(const T& value)
+{
+  return std::as_bytes(std::span<const T>(&value, 1u));
+}
+
+template <typename T>
+std::span<std::byte> asWritableBytes(T& value)
+{
+  return std::as_writable_bytes(std::span<T>(&value, 1u));
+}
+
+} // namespace detail
+
 // Write a POD (Plain Old Data) type to binary stream
 template <typename T>
 void writePOD(std::ostream& out, const T& value)
@@ -74,7 +106,7 @@ void writePOD(std::ostream& out, const T& value)
   static_assert(
       std::is_trivially_copyable_v<T>,
       "writePOD requires trivially copyable type");
-  out.write(reinterpret_cast<const char*>(&value), sizeof(T));
+  detail::writeBytes(out, detail::asBytes(value));
 }
 
 // Read a POD (Plain Old Data) type from binary stream
@@ -84,7 +116,7 @@ void readPOD(std::istream& in, T& value)
   static_assert(
       std::is_trivially_copyable_v<T>,
       "readPOD requires trivially copyable type");
-  in.read(reinterpret_cast<char*>(&value), sizeof(T));
+  detail::readBytes(in, detail::asWritableBytes(value));
 }
 
 //==============================================================================
@@ -145,7 +177,7 @@ void writeVector(std::ostream& out, std::span<const T> vec)
   std::size_t size = vec.size();
   writePOD(out, size);
   if (size > 0) {
-    out.write(reinterpret_cast<const char*>(vec.data()), size * sizeof(T));
+    detail::writeBytes(out, std::as_bytes(vec));
   }
 }
 
@@ -160,7 +192,8 @@ void readVector(std::istream& in, std::vector<T>& vec)
   readPOD(in, size);
   vec.resize(size);
   if (size > 0) {
-    in.read(reinterpret_cast<char*>(vec.data()), size * sizeof(T));
+    detail::readBytes(
+        in, std::as_writable_bytes(std::span<T>(vec.data(), vec.size())));
   }
 }
 
