@@ -1557,7 +1557,10 @@ bool hasColladaExtension(std::string_view path)
   std::ranges::transform(extension, extension.begin(), [](unsigned char c) {
     return static_cast<char>(std::tolower(c));
   });
-  return extension == ".dae" || extension == ".zae";
+  constexpr auto colladaExtensions
+      = std::to_array<std::string_view>({".dae", ".zae"});
+  return std::ranges::find(colladaExtensions, std::string_view{extension})
+         != colladaExtensions.end();
 }
 
 bool isColladaResource(
