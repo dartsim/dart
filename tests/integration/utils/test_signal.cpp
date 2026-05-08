@@ -40,6 +40,7 @@
 #include <atomic>
 #include <numeric>
 #include <thread>
+#include <vector>
 
 using namespace std;
 using namespace Eigen;
@@ -406,40 +407,45 @@ TEST(Signal, ConcurrentUsage)
 
   Signal<void()> signal;
 
-  std::atomic<bool> keepRaising{true};
   std::atomic<int> raiseCount{0};
   std::atomic<int> callbackCount{0};
 
-  std::thread raiser([&]() {
-    while (keepRaising.load(std::memory_order_relaxed)) {
-      signal.raise();
-      raiseCount.fetch_add(1, std::memory_order_relaxed);
-    }
-  });
-
-  while (raiseCount.load(std::memory_order_relaxed) == 0) {
-    std::this_thread::yield();
-  }
-
-  std::vector<std::thread> workers;
-  workers.reserve(kNumThreads);
-  for (int t = 0; t < kNumThreads; ++t) {
-    workers.emplace_back([&]() {
-      for (int i = 0; i < kIterationsPerThread; ++i) {
-        Connection conn = signal.connect(
-            [&]() { callbackCount.fetch_add(1, std::memory_order_relaxed); });
+  {
+    std::atomic<bool> stopRequested{false};
+    std::thread raiser([&]() {
+      while (!stopRequested.load(std::memory_order_relaxed)) {
         signal.raise();
-        conn.disconnect();
+        raiseCount.fetch_add(1, std::memory_order_relaxed);
       }
     });
-  }
 
-  for (auto& thread : workers) {
-    thread.join();
-  }
+    while (raiseCount.load(std::memory_order_relaxed) == 0) {
+      std::this_thread::yield();
+    }
 
-  keepRaising.store(false, std::memory_order_relaxed);
-  raiser.join();
+    {
+      std::vector<std::thread> workers;
+      workers.reserve(kNumThreads);
+      for (int t = 0; t < kNumThreads; ++t) {
+        workers.emplace_back([&]() {
+          for (int i = 0; i < kIterationsPerThread; ++i) {
+            Connection conn = signal.connect([&]() {
+              callbackCount.fetch_add(1, std::memory_order_relaxed);
+            });
+            signal.raise();
+            conn.disconnect();
+          }
+        });
+      }
+
+      for (std::thread& worker : workers) {
+        worker.join();
+      }
+    }
+
+    stopRequested.store(true, std::memory_order_relaxed);
+    raiser.join();
+  }
 
   EXPECT_EQ(signal.getNumConnections(), 0u);
   EXPECT_GE(callbackCount.load(), kNumThreads * kIterationsPerThread);
