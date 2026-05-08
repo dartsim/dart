@@ -164,16 +164,16 @@ std::span<const PickInfo> DefaultEventHandler::getButtonPicks(
     MouseButton button, MouseButtonEvent event) const
 {
   if (BUTTON_NOTHING == event) {
-    return std::span<const PickInfo>(mMovePicks);
+    return mMovePicks;
   }
 
-  return std::span<const PickInfo>(mButtonPicks[button][event]);
+  return mButtonPicks[button][event];
 }
 
 //==============================================================================
 std::span<const PickInfo> DefaultEventHandler::getMovePicks() const
 {
-  return std::span<const PickInfo>(mMovePicks);
+  return mMovePicks;
 }
 
 //==============================================================================

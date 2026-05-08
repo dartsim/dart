@@ -34,6 +34,7 @@
 
 #include <gtest/gtest.h>
 
+#include <concepts>
 #include <limits>
 
 #include <cmath>
@@ -50,9 +51,9 @@ protected:
 
   static constexpr scalar_type tolerance()
   {
-    if constexpr (std::is_same_v<scalar_type, float>) {
+    if constexpr (std::same_as<scalar_type, float>) {
       return 1e-6f;
-    } else if constexpr (std::is_same_v<scalar_type, double>) {
+    } else if constexpr (std::same_as<scalar_type, double>) {
       return 1e-15;
     } else {
       return scalar_type{0};
@@ -61,7 +62,7 @@ protected:
 
   void expect_near(scalar_type a, scalar_type b)
   {
-    if constexpr (std::is_floating_point_v<scalar_type>) {
+    if constexpr (std::floating_point<scalar_type>) {
       EXPECT_NEAR(a, b, tolerance());
     } else {
       EXPECT_EQ(a, b);

@@ -35,6 +35,8 @@
 #include "dart/common/macros.hpp"
 #include "terminal_condition.hpp"
 
+#include <utility>
+
 // Macro for functions not implemented yet
 #define NOT_YET(FUNCTION)                                                      \
   std::cout << #FUNCTION << "Not implemented yet." << std::endl;
@@ -643,7 +645,7 @@ double State::getDerivativeGain(int _idx) const
 void State::setFeedbackSagittalCOMDistance(std::size_t _index, double _val)
 {
   DART_ASSERT(
-      static_cast<int>(_index) <= mSagittalCd.size() && "Invalid index.");
+      std::cmp_less_equal(_index, mSagittalCd.size()) && "Invalid index.");
 
   mSagittalCd[_index] = _val;
 }
@@ -652,7 +654,7 @@ void State::setFeedbackSagittalCOMDistance(std::size_t _index, double _val)
 void State::setFeedbackSagittalCOMVelocity(std::size_t _index, double _val)
 {
   DART_ASSERT(
-      static_cast<int>(_index) <= mSagittalCv.size() && "Invalid index.");
+      std::cmp_less_equal(_index, mSagittalCv.size()) && "Invalid index.");
 
   mSagittalCv[_index] = _val;
 }
@@ -661,7 +663,7 @@ void State::setFeedbackSagittalCOMVelocity(std::size_t _index, double _val)
 void State::setFeedbackCoronalCOMDistance(std::size_t _index, double _val)
 {
   DART_ASSERT(
-      static_cast<int>(_index) <= mCoronalCd.size() && "Invalid index.");
+      std::cmp_less_equal(_index, mCoronalCd.size()) && "Invalid index.");
 
   mCoronalCd[_index] = _val;
 }
@@ -670,7 +672,7 @@ void State::setFeedbackCoronalCOMDistance(std::size_t _index, double _val)
 void State::setFeedbackCoronalCOMVelocity(std::size_t _index, double _val)
 {
   DART_ASSERT(
-      static_cast<int>(_index) <= mCoronalCv.size() && "Invalid index.");
+      std::cmp_less_equal(_index, mCoronalCv.size()) && "Invalid index.");
 
   mCoronalCv[_index] = _val;
 }

@@ -59,12 +59,9 @@ struct HasFullIntegerSimd<8> : std::false_type
 
 /// Mathematical constants for SIMD operations
 /// All constants are provided as constexpr template variables for float/double
-template <typename T>
+template <std::floating_point T>
 struct MathConstants
 {
-  static_assert(
-      std::floating_point<T>, "MathConstants requires floating point type");
-
   // Pi and related constants
   static constexpr T pi = std::numbers::pi_v<T>;
   static constexpr T twoPi = T(2) * std::numbers::pi_v<T>;
@@ -154,43 +151,43 @@ struct MathConstants
 };
 
 // Convenience aliases
-template <typename T>
+template <std::floating_point T>
 inline constexpr T Pi = MathConstants<T>::pi;
 
-template <typename T>
+template <std::floating_point T>
 inline constexpr T TwoPi = MathConstants<T>::twoPi;
 
-template <typename T>
+template <std::floating_point T>
 inline constexpr T HalfPi = MathConstants<T>::halfPi;
 
-template <typename T>
+template <std::floating_point T>
 inline constexpr T InvPi = MathConstants<T>::invPi;
 
-template <typename T>
+template <std::floating_point T>
 inline constexpr T FourOverPi = MathConstants<T>::fourOverPi;
 
-template <typename T>
+template <std::floating_point T>
 inline constexpr T E = MathConstants<T>::e;
 
-template <typename T>
+template <std::floating_point T>
 inline constexpr T Ln2 = MathConstants<T>::ln2;
 
-template <typename T>
+template <std::floating_point T>
 inline constexpr T InvLn2 = MathConstants<T>::invLn2;
 
-template <typename T>
+template <std::floating_point T>
 inline constexpr T Log2E = MathConstants<T>::log2E;
 
-template <typename T>
+template <std::floating_point T>
 inline constexpr T Sqrt2 = MathConstants<T>::sqrt2;
 
-template <typename T>
+template <std::floating_point T>
 inline constexpr T InvSqrt2 = MathConstants<T>::invSqrt2;
 
-template <typename T>
+template <std::floating_point T>
 inline constexpr T Infinity = MathConstants<T>::infinity;
 
-template <typename T>
+template <std::floating_point T>
 inline constexpr T NaN = MathConstants<T>::nan;
 
 } // namespace dart::simd

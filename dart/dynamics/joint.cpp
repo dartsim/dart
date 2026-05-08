@@ -497,7 +497,7 @@ double Joint::getMimicOffset(std::size_t index) const
 //==============================================================================
 std::span<const MimicDofProperties> Joint::getMimicDofProperties() const
 {
-  return std::span<const MimicDofProperties>(mAspectProperties.mMimicDofProps);
+  return mAspectProperties.mMimicDofProps;
 }
 
 //==============================================================================
