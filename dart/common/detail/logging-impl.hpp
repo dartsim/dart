@@ -208,6 +208,14 @@ inline std::string makeLogPrefix(
   return {};
 }
 
+inline std::string makeLogPrefix(const std::source_location& location)
+{
+  return makeLogPrefix(
+      location.file_name(),
+      static_cast<int>(location.line()),
+      location.function_name());
+}
+
 #if DART_HAVE_spdlog
 inline constexpr spdlog::level::level_enum toSpdlogLevel(LogLevel level)
 {
@@ -303,6 +311,21 @@ void log(
       toAnsiColor(level),
       std::forward<Args>(args)...);
 #endif
+}
+
+template <typename S, typename... Args>
+void log(
+    LogLevel level,
+    const std::source_location& location,
+    const S& format_str,
+    Args&&... args)
+{
+  log(level,
+      location.file_name(),
+      static_cast<int>(location.line()),
+      location.function_name(),
+      format_str,
+      std::forward<Args>(args)...);
 }
 
 } // namespace detail
