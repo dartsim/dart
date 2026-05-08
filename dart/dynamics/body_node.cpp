@@ -386,8 +386,8 @@ void BodyNode::duplicateNodes(const BodyNode* otherBodyNode)
   }
 
   const NodeMap& otherMap = otherBodyNode->mNodeMap;
-  for (const auto& vec : otherMap) {
-    for (const auto& node : vec.second) {
+  for (const auto& nodes : otherMap | std::views::values) {
+    for (const auto& node : nodes) {
       node->cloneNode(this)->attach();
     }
   }
@@ -415,8 +415,8 @@ void BodyNode::matchNodes(const BodyNode* otherBodyNode)
 std::vector<Node*> BodyNode::getNodes()
 {
   std::vector<Node*> nodes;
-  for (auto& nodeType : mNodeMap) {
-    nodes.insert(nodes.end(), nodeType.second.begin(), nodeType.second.end());
+  for (auto& nodeGroup : mNodeMap | std::views::values) {
+    nodes.insert(nodes.end(), nodeGroup.begin(), nodeGroup.end());
   }
 
   return nodes;
@@ -426,8 +426,8 @@ std::vector<Node*> BodyNode::getNodes()
 std::vector<const Node*> BodyNode::getNodes() const
 {
   std::vector<const Node*> nodes;
-  for (const auto& nodeType : mNodeMap) {
-    nodes.insert(nodes.end(), nodeType.second.begin(), nodeType.second.end());
+  for (const auto& nodeGroup : mNodeMap | std::views::values) {
+    nodes.insert(nodes.end(), nodeGroup.begin(), nodeGroup.end());
   }
 
   return nodes;
