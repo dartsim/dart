@@ -42,6 +42,10 @@
 
 #include <osg/Depth>
 
+#include <algorithm>
+#include <iterator>
+#include <ranges>
+
 namespace dart {
 namespace gui {
 
@@ -442,15 +446,17 @@ void GridVisual::refresh()
 
     mMajorLineFaces->clear();
     mMajorLineFaces->reserve(mMajorLineVertices->size());
-    for (auto i = 0u; i < mMajorLineVertices->size(); ++i) {
-      mMajorLineFaces->push_back(i);
-    }
+    std::ranges::copy(
+        std::views::iota(
+            0u, static_cast<unsigned int>(mMajorLineVertices->size())),
+        std::back_inserter(*mMajorLineFaces));
 
     mMinorLineFaces->clear();
     mMinorLineFaces->reserve(mMinorLineVertices->size());
-    for (auto i = 0u; i < mMinorLineVertices->size(); ++i) {
-      mMinorLineFaces->push_back(i);
-    }
+    std::ranges::copy(
+        std::views::iota(
+            0u, static_cast<unsigned int>(mMinorLineVertices->size())),
+        std::back_inserter(*mMinorLineFaces));
 
     mMinorLineGeom->setVertexArray(mMinorLineVertices);
     mMinorLineGeom->getOrCreateStateSet()->setAttributeAndModes(

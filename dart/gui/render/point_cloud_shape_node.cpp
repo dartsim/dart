@@ -174,7 +174,7 @@ public:
     const auto ratio = 2.0f * pi / segmentCount;
 
     mVertices->resize(segmentCount);
-    for (auto i = 0u; i < segmentCount; ++i) {
+    for (const auto i : std::views::iota(0u, segmentCount)) {
       const auto angle = i * ratio;
       mVertices->at(i) = ::osg::Vec3(
           mRadius * ::std::cos(angle), 0, mRadius * ::std::sin(angle));
@@ -385,7 +385,7 @@ public:
     // Update position of cache boxes. The number of being updated boxes is
     // whichever the lower number of cache boxes and new points.
     const auto numUpdatingPoints = std::min(mPointNodes.size(), points.size());
-    for (auto i = 0u; i < numUpdatingPoints; ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, numUpdatingPoints)) {
       mPointNodes[i]->updateCenter(points[i]);
       mPointNodes[i]->updateSize(visualSize);
       if (useVisualAspectColor
@@ -400,7 +400,7 @@ public:
 
     // If the number of new points is greater than cache box, then create new
     // boxes that many.
-    for (auto i = mPointNodes.size(); i < points.size(); ++i) {
+    for (const auto i : std::views::iota(mPointNodes.size(), points.size())) {
       ::osg::ref_ptr<PointNode> pointNode;
       if (useVisualAspectColor
           || colorMode == dynamics::PointCloudShape::USE_SHAPE_COLOR) {

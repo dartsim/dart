@@ -59,6 +59,7 @@
 #include <fstream>
 #include <iterator>
 #include <map>
+#include <ranges>
 #include <span>
 #include <sstream>
 #include <stdexcept>
@@ -1115,7 +1116,8 @@ void MeshShapeGeometry::extractData(bool firstTime)
 
     const auto imagePaths
         = mMainNode->getTextureImagePaths(mAiMesh->mMaterialIndex);
-    for (auto i = 0u; i < imagePaths.size(); ++i) {
+    for (const auto i :
+         std::views::iota(0u, static_cast<unsigned int>(imagePaths.size()))) {
       if (imagePaths[i].empty()) {
         continue;
       }
