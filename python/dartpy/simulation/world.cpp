@@ -20,8 +20,8 @@
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 
-#include <format>
 #include <memory>
+#include <string>
 
 namespace nb = nanobind;
 
@@ -257,7 +257,7 @@ void defWorld(nb::module_& m)
         std::vector<std::pair<std::string, std::string>> fields;
         fields.emplace_back("name", repr_string(self.getName()));
         fields.emplace_back(
-            "skeletons", std::format("{}", self.getNumSkeletons()));
+            "skeletons", std::to_string(self.getNumSkeletons()));
         fields.emplace_back("time", repr_double(self.getTime()));
         fields.emplace_back("time_step", repr_double(self.getTimeStep()));
         return format_repr("World", fields);

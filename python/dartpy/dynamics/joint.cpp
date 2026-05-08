@@ -14,8 +14,8 @@
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 
-#include <format>
 #include <span>
+#include <string>
 
 namespace nb = nanobind;
 
@@ -80,7 +80,7 @@ void defJoint(nb::module_& m)
             std::vector<std::pair<std::string, std::string>> fields;
             fields.emplace_back("name", repr_string(self.getName()));
             fields.emplace_back("type", repr_string(self.getType()));
-            fields.emplace_back("dofs", std::format("{}", self.getNumDofs()));
+            fields.emplace_back("dofs", std::to_string(self.getNumDofs()));
             fields.emplace_back(
                 "parent", parent ? repr_string(parent->getName()) : "None");
             fields.emplace_back(

@@ -9,7 +9,7 @@
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 
-#include <format>
+#include <string>
 
 namespace nb = nanobind;
 
@@ -50,9 +50,9 @@ void defDegreeOfFreedom(nb::module_& m)
             std::vector<std::pair<std::string, std::string>> fields;
             fields.emplace_back("name", repr_string(self.getName()));
             fields.emplace_back(
-                "index", std::format("{}", self.getIndexInSkeleton()));
+                "index", std::to_string(self.getIndexInSkeleton()));
             fields.emplace_back(
-                "index_in_joint", std::format("{}", self.getIndexInJoint()));
+                "index_in_joint", std::to_string(self.getIndexInJoint()));
             fields.emplace_back(
                 "joint", joint ? repr_string(joint->getName()) : "None");
             fields.emplace_back(

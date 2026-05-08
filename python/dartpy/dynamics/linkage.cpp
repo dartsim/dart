@@ -10,7 +10,7 @@
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 
-#include <format>
+#include <string>
 
 namespace nb = nanobind;
 
@@ -75,10 +75,9 @@ void defLinkage(nb::module_& m)
             std::vector<std::pair<std::string, std::string>> fields;
             fields.emplace_back("name", repr_string(self.getName()));
             fields.emplace_back(
-                "body_nodes", std::format("{}", self.getNumBodyNodes()));
-            fields.emplace_back(
-                "joints", std::format("{}", self.getNumJoints()));
-            fields.emplace_back("dofs", std::format("{}", self.getNumDofs()));
+                "body_nodes", std::to_string(self.getNumBodyNodes()));
+            fields.emplace_back("joints", std::to_string(self.getNumJoints()));
+            fields.emplace_back("dofs", std::to_string(self.getNumDofs()));
             fields.emplace_back("assembled", repr_bool(self.isAssembled()));
             return format_repr("Linkage", fields);
           })
