@@ -770,7 +770,7 @@ TEST(SkeletonMassMatrix, MassMatrixPositiveDefinite)
   // All eigenvalues should be positive for a positive definite matrix
   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(massMatrix);
   const auto eigenvalues = solver.eigenvalues();
-  for (int i = 0; i < eigenvalues.size(); ++i) {
+  for (int i = 0; i < std::ssize(eigenvalues); ++i) {
     EXPECT_GT(eigenvalues(i), 0.0);
   }
 }
