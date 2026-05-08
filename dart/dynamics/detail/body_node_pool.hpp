@@ -56,7 +56,7 @@ public:
       "BodyNodePool requires sizeof(T) >= sizeof(void*).");
 
   static constexpr std::size_t kSlotAlignment
-      = alignof(T) > 32 ? alignof(T) : 32;
+      = std::max<std::size_t>(alignof(T), 32);
   static_assert(
       std::has_single_bit(kSlotAlignment),
       "BodyNodePool requires a power-of-two slot alignment.");

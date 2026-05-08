@@ -51,6 +51,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <memory>
 #include <queue>
 #include <ranges>
 #include <span>
@@ -452,10 +453,10 @@ Skeleton::~Skeleton()
 {
   for (BodyNode* bn : mSkelCache.mBodyNodes) {
     if (mBodyNodePool->owns(bn)) {
-      bn->~BodyNode();
+      std::destroy_at(bn);
       mBodyNodePool->deallocate(bn);
     } else if (mSoftBodyNodePool->owns(bn)) {
-      bn->~BodyNode();
+      std::destroy_at(bn);
       mSoftBodyNodePool->deallocate(bn);
     } else {
       // Either heap-allocated or from a borrowed chunk (cross-skeleton move).
@@ -467,7 +468,7 @@ Skeleton::~Skeleton()
       } else {
         // Memory lives in a borrowed chunk — just destruct, chunk ref handles
         // memory lifetime
-        bn->~BodyNode();
+        std::destroy_at(bn);
       }
     }
   }
