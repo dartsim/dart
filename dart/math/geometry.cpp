@@ -39,6 +39,7 @@
 #include <dart/simd/simd.hpp>
 
 #include <algorithm>
+#include <array>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -1237,8 +1238,8 @@ Eigen::Matrix3d eulerZYZToMatrix(const Eigen::Vector3d& _angle)
 Eigen::Isometry3d expMap(const Eigen::Vector6d& _S)
 {
   Eigen::Isometry3d ret = Eigen::Isometry3d::Identity();
-  double s2[] = {_S[0] * _S[0], _S[1] * _S[1], _S[2] * _S[2]};
-  double s3[] = {_S[0] * _S[1], _S[1] * _S[2], _S[2] * _S[0]};
+  const auto s2 = std::to_array({_S[0] * _S[0], _S[1] * _S[1], _S[2] * _S[2]});
+  const auto s3 = std::to_array({_S[0] * _S[1], _S[1] * _S[2], _S[2] * _S[0]});
   double theta = sqrt(s2[0] + s2[1] + s2[2]);
   double cos_t = cos(theta), alpha, beta, gamma;
 
@@ -1281,8 +1282,8 @@ Eigen::Isometry3d expMap(const Eigen::Vector6d& _S)
 Eigen::Isometry3d expAngular(const Eigen::Vector3d& _s)
 {
   Eigen::Isometry3d ret = Eigen::Isometry3d::Identity();
-  double s2[] = {_s[0] * _s[0], _s[1] * _s[1], _s[2] * _s[2]};
-  double s3[] = {_s[0] * _s[1], _s[1] * _s[2], _s[2] * _s[0]};
+  const auto s2 = std::to_array({_s[0] * _s[0], _s[1] * _s[1], _s[2] * _s[2]});
+  const auto s3 = std::to_array({_s[0] * _s[1], _s[1] * _s[2], _s[2] * _s[0]});
   double theta = sqrt(s2[0] + s2[1] + s2[2]);
   double cos_t = cos(theta);
   double alpha = 0.0;
