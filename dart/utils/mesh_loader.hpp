@@ -50,6 +50,7 @@
 #include <assimp/scene.h>
 
 #include <algorithm>
+#include <array>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -264,7 +265,10 @@ typename MeshLoader<S>::aiScenePtr MeshLoader<S>::loadScene(
     std::ranges::transform(extension, extension.begin(), [](unsigned char c) {
       return static_cast<char>(std::tolower(c));
     });
-    return extension == ".dae" || extension == ".zae";
+    constexpr auto colladaExtensions
+        = std::to_array<std::string_view>({".dae", ".zae"});
+    return std::ranges::find(colladaExtensions, std::string_view{extension})
+           != colladaExtensions.end();
   };
 
   auto isColladaResource = [&](std::string_view uri) -> bool {

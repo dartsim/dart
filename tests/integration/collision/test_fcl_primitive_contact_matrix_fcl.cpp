@@ -38,6 +38,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <array>
 #include <memory>
 #include <string>
 #include <vector>
@@ -138,8 +139,9 @@ bool isPlane(ShapeKind kind)
 
 bool isEdgeVertexKind(ShapeKind kind)
 {
-  return kind == ShapeKind::Box || kind == ShapeKind::Cylinder
-         || kind == ShapeKind::Cone;
+  constexpr auto kinds
+      = std::to_array({ShapeKind::Box, ShapeKind::Cylinder, ShapeKind::Cone});
+  return std::ranges::find(kinds, kind) != kinds.end();
 }
 
 std::shared_ptr<fcl::CollisionGeometry<double>> makeGeometry(ShapeKind kind)
