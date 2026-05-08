@@ -346,7 +346,7 @@ void Linkage::Criteria::expandToTarget(
     trimBodyNodes(newBns, _target.mChain, true);
   } else if (target_bn->descendsFrom(start_bn)) {
     newBns = climbToTarget(target_bn, start_bn);
-    std::reverse(newBns.begin(), newBns.end());
+    std::ranges::reverse(newBns);
     trimBodyNodes(newBns, _target.mChain, false);
   } else {
     newBns = climbToCommonRoot(_start, _target, _target.mChain);
@@ -416,7 +416,7 @@ std::vector<BodyNode*> Linkage::Criteria::climbToCommonRoot(
   }
 
   std::vector<BodyNode*> bnTarget = climbToTarget(target_bn, root);
-  std::reverse(bnTarget.begin(), bnTarget.end());
+  std::ranges::reverse(bnTarget);
   trimBodyNodes(bnTarget, _chain, false);
 
   std::vector<BodyNode*> bnAll;

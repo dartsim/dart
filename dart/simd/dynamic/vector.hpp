@@ -38,6 +38,7 @@
 
 #include <Eigen/Core>
 
+#include <algorithm>
 #include <initializer_list>
 #include <numeric>
 
@@ -265,7 +266,7 @@ public:
   [[nodiscard]] static DynamicVector fromEigen(const Eigen::VectorX<T>& v)
   {
     DynamicVector result(static_cast<std::size_t>(v.size()));
-    std::copy(v.data(), v.data() + v.size(), result.data_.data());
+    std::ranges::copy_n(v.data(), v.size(), result.data_.data());
     return result;
   }
 };

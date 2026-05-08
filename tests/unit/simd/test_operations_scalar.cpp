@@ -34,6 +34,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <concepts>
 
 #include <cmath>
@@ -336,7 +337,7 @@ TYPED_TEST(OperationsScalarTest, Hmin)
   }
 
   auto v = vec_type::loadu(data.data());
-  scalar_type expected = *std::min_element(data.begin(), data.end());
+  scalar_type expected = *std::ranges::min_element(data);
   this->expect_near(hmin(v), expected);
 }
 
@@ -352,7 +353,7 @@ TYPED_TEST(OperationsScalarTest, Hmax)
   }
 
   auto v = vec_type::loadu(data.data());
-  scalar_type expected = *std::max_element(data.begin(), data.end());
+  scalar_type expected = *std::ranges::max_element(data);
   this->expect_near(hmax(v), expected);
 }
 

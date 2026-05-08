@@ -36,6 +36,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <atomic>
 #include <numeric>
 #include <thread>
@@ -296,7 +297,7 @@ TEST(Signal, ReturnValues)
   signal1.connect(&quotient);
   signal1.connect(&sum);
   signal1.connect(&difference);
-  EXPECT_EQ(signal1(5, 3), *std::max_element(res.begin(), res.end()));
+  EXPECT_EQ(signal1(5, 3), *std::ranges::max_element(res));
 
   // signal_sum
   Signal<float(float, float), signal_sum> signal2;
