@@ -40,7 +40,9 @@
 
 #include "dart/dynamics/skeleton.hpp"
 
+#include <algorithm>
 #include <iostream>
+#include <iterator>
 
 namespace dart {
 namespace simulation {
@@ -48,17 +50,20 @@ namespace simulation {
 //==============================================================================
 Recording::Recording(std::span<const dynamics::SkeletonPtr> skeletons)
 {
-  for (std::size_t i = 0; i < skeletons.size(); i++) {
-    mNumGenCoordsForSkeletons.push_back(skeletons[i]->getNumDofs());
-  }
+  mNumGenCoordsForSkeletons.reserve(skeletons.size());
+  std::ranges::transform(
+      skeletons,
+      std::back_inserter(mNumGenCoordsForSkeletons),
+      [](const dynamics::SkeletonPtr& skeleton) {
+        return skeleton->getNumDofs();
+      });
 }
 
 //==============================================================================
 Recording::Recording(std::span<const int> skelDofs)
 {
-  for (std::size_t i = 0; i < skelDofs.size(); i++) {
-    mNumGenCoordsForSkeletons.push_back(skelDofs[i]);
-  }
+  mNumGenCoordsForSkeletons.reserve(skelDofs.size());
+  std::ranges::copy(skelDofs, std::back_inserter(mNumGenCoordsForSkeletons));
 }
 
 //==============================================================================
@@ -149,9 +154,13 @@ void Recording::updateNumGenCoords(
     std::span<const dynamics::SkeletonPtr> skeletons)
 {
   mNumGenCoordsForSkeletons.clear();
-  for (std::size_t i = 0; i < skeletons.size(); ++i) {
-    mNumGenCoordsForSkeletons.push_back(skeletons[i]->getNumDofs());
-  }
+  mNumGenCoordsForSkeletons.reserve(skeletons.size());
+  std::ranges::transform(
+      skeletons,
+      std::back_inserter(mNumGenCoordsForSkeletons),
+      [](const dynamics::SkeletonPtr& skeleton) {
+        return skeleton->getNumDofs();
+      });
 }
 
 } // namespace simulation

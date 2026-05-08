@@ -35,9 +35,12 @@
 
 #include <Eigen/Dense>
 
+#include <algorithm>
+#include <iterator>
 #include <random>
 #include <ranges>
 
+#include <cstddef>
 #include <cstdint>
 
 namespace dart {
@@ -362,9 +365,13 @@ public:
     std::vector<LCPProblem> problems;
     problems.reserve(dimensions.size());
 
-    for (const auto i : std::views::iota(std::size_t{0}, dimensions.size())) {
-      problems.push_back(generateRandomWellFormed(dimensions[i], baseSeed + i));
-    }
+    std::ranges::transform(
+        std::views::iota(std::size_t{0}, dimensions.size()),
+        std::back_inserter(problems),
+        [&](std::size_t i) {
+          return generateRandomWellFormed(
+              dimensions[i], baseSeed + static_cast<unsigned int>(i));
+        });
 
     return problems;
   }
@@ -376,10 +383,13 @@ public:
     std::vector<LCPProblem> problems;
     problems.reserve(dimensions.size());
 
-    for (const auto i : std::views::iota(std::size_t{0}, dimensions.size())) {
-      problems.push_back(
-          generateRandomIllFormed(dimensions[i], baseSeed + i * 100));
-    }
+    std::ranges::transform(
+        std::views::iota(std::size_t{0}, dimensions.size()),
+        std::back_inserter(problems),
+        [&](std::size_t i) {
+          return generateRandomIllFormed(
+              dimensions[i], baseSeed + 100u * static_cast<unsigned int>(i));
+        });
 
     return problems;
   }
