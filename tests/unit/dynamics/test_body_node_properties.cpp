@@ -51,7 +51,6 @@
 #include <Eigen/Core>
 #include <gtest/gtest.h>
 
-#include <format>
 #include <optional>
 
 using namespace dart::dynamics;
@@ -435,7 +434,7 @@ static SkeletonPtr createChainSkeleton(const std::string& name, int numBodies)
 
   for (int i = 0; i < numBodies; ++i) {
     BodyNode::Properties bodyProps;
-    bodyProps.mName = std::format("body{}", i);
+    bodyProps.mName = "body" + std::to_string(i);
     bodyProps.mInertia.setMass(1.0);
 
     if (i == 0) {
@@ -446,7 +445,7 @@ static SkeletonPtr createChainSkeleton(const std::string& name, int numBodies)
     } else {
       // Subsequent bodies use RevoluteJoint
       RevoluteJoint::Properties jointProps;
-      jointProps.mName = std::format("joint{}", i);
+      jointProps.mName = "joint" + std::to_string(i);
       jointProps.mAxis = Eigen::Vector3d::UnitZ();
       jointProps.mT_ParentBodyToJoint.translation()
           = Eigen::Vector3d(0, 0, 0.5);

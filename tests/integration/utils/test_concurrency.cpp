@@ -38,7 +38,6 @@
 #include <gtest/gtest.h>
 
 #include <chrono>
-#include <format>
 #include <future>
 
 using namespace dart;
@@ -52,7 +51,8 @@ void createAndDestroyFrames(int threadNum)
     EXPECT_EQ(Frame::World()->getNumChildFrames(), 0);
 
     SimpleFrame someFrame(
-        Frame::World(), std::format("Frame_{}{}", threadNum, i));
+        Frame::World(),
+        "Frame_" + std::to_string(threadNum) + std::to_string(i));
 
     EXPECT_EQ(Frame::World()->getNumChildEntities(), 0);
     EXPECT_EQ(Frame::World()->getNumChildFrames(), 0);

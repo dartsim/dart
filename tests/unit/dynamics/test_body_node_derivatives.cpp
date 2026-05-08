@@ -35,7 +35,6 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
-#include <format>
 
 #include <cmath>
 
@@ -86,7 +85,7 @@ SkeletonPtr createChainSkeleton(const std::string& name, int numBodies)
 
   for (int i = 0; i < numBodies; ++i) {
     BodyNode::Properties bodyProps;
-    bodyProps.mName = std::format("body{}", i);
+    bodyProps.mName = "body" + std::to_string(i);
 
     if (i == 0) {
       auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>(
@@ -94,7 +93,7 @@ SkeletonPtr createChainSkeleton(const std::string& name, int numBodies)
       parent = pair.second;
     } else {
       RevoluteJoint::Properties jointProps;
-      jointProps.mName = std::format("joint{}", i);
+      jointProps.mName = "joint" + std::to_string(i);
       jointProps.mAxis = Eigen::Vector3d::UnitZ();
       auto pair = skeleton->createJointAndBodyNodePair<RevoluteJoint>(
           parent, jointProps, bodyProps);

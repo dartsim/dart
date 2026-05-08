@@ -43,8 +43,6 @@
 
 #include <gtest/gtest.h>
 
-#include <format>
-
 using namespace dart;
 using namespace dart::dynamics;
 
@@ -90,8 +88,8 @@ SkeletonPtr createChainSkeleton(std::size_t numBodies)
     auto pair = skel->createJointAndBodyNodePair<RevoluteJoint>(
         parent,
         RevoluteJoint::Properties(),
-        BodyNode::AspectProperties(std::format("body_{}", i)));
-    pair.first->setName(std::format("joint_{}", i));
+        BodyNode::AspectProperties("body_" + std::to_string(i)));
+    pair.first->setName("joint_" + std::to_string(i));
     parent = pair.second;
   }
 

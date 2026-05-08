@@ -44,7 +44,6 @@
 
 #include <gtest/gtest.h>
 
-#include <format>
 #include <iostream>
 
 using namespace dart;
@@ -755,7 +754,7 @@ TEST(Skeleton, CloneNodeOrdering)
   // Add Nodes in the reverse order, so that their indexing is different from
   // the BodyNodes they are attached to
   for (int i = skel->getNumBodyNodes() - 1; i > 0; --i) {
-    skel->getBodyNode(i)->createEndEffector(std::format("manip_{}", i));
+    skel->getBodyNode(i)->createEndEffector("manip_" + std::to_string(i));
   }
 
   skel->getBodyNode(1)->createEndEffector("other_manip");

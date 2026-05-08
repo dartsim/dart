@@ -10,8 +10,9 @@
 
 #include <chrono>
 #include <filesystem>
-#include <format>
 #include <fstream>
+#include <iomanip>
+#include <sstream>
 #include <string>
 
 #include <cstdint>
@@ -54,7 +55,9 @@ std::string computeHash(std::string_view input)
     hash *= 1099511628211ULL;
   }
 
-  return std::format("{:016x}", hash);
+  std::ostringstream oss;
+  oss << std::hex << std::setw(16) << std::setfill('0') << hash;
+  return oss.str();
 }
 
 std::filesystem::path computeCachePath(
@@ -95,7 +98,7 @@ std::filesystem::path makeTempDir(const std::string& suffix)
 {
   const auto now = std::chrono::steady_clock::now().time_since_epoch().count();
   return std::filesystem::temp_directory_path()
-         / std::format("dart_http_cache_test_{}{}", now, suffix);
+         / ("dart_http_cache_test_" + std::to_string(now) + suffix);
 }
 
 } // namespace

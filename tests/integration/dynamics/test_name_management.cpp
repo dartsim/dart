@@ -39,7 +39,6 @@
 
 #include <gtest/gtest.h>
 
-#include <format>
 #include <iostream>
 
 using namespace dart;
@@ -242,19 +241,19 @@ TEST(NameManagement, Regression554)
   std::shared_ptr<int> int2(new int(2));
   std::shared_ptr<int> int_another0(new int(0));
 
-  test_mgr.issueNewNameAndAdd(std::format("{}", *int0), int0);
-  test_mgr.issueNewNameAndAdd(std::format("{}", *int1), int1);
-  test_mgr.issueNewNameAndAdd(std::format("{}", *int2), int2);
+  test_mgr.issueNewNameAndAdd(std::to_string(*int0), int0);
+  test_mgr.issueNewNameAndAdd(std::to_string(*int1), int1);
+  test_mgr.issueNewNameAndAdd(std::to_string(*int2), int2);
 
   EXPECT_TRUE(test_mgr.getObject("0") == int0);
   EXPECT_TRUE(test_mgr.getObject("1") == int1);
   EXPECT_TRUE(test_mgr.getObject("2") == int2);
 
-  bool res1 = test_mgr.addName(std::format("{}", *int_another0), int_another0);
+  bool res1 = test_mgr.addName(std::to_string(*int_another0), int_another0);
   EXPECT_FALSE(res1);
 
-  test_mgr.removeEntries(std::format("{}", *int_another0), int_another0);
-  bool res2 = test_mgr.addName(std::format("{}", *int_another0), int_another0);
+  test_mgr.removeEntries(std::to_string(*int_another0), int_another0);
+  bool res2 = test_mgr.addName(std::to_string(*int_another0), int_another0);
   EXPECT_TRUE(res2);
 
   EXPECT_TRUE(test_mgr.getObject("0") == int_another0);

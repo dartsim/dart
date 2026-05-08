@@ -14,7 +14,6 @@
 #include <atomic>
 #include <chrono>
 #include <filesystem>
-#include <format>
 #include <fstream>
 #include <iterator>
 #include <memory>
@@ -838,7 +837,8 @@ TEST(MeshShapeTest, TriMeshGetMeshPreservesTextureCoords)
   const auto tempDir = std::filesystem::temp_directory_path();
   const auto timestamp
       = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-  const auto baseName = std::format("dart_meshshape_texcoords_{}", timestamp);
+  const auto baseName
+      = std::string("dart_meshshape_texcoords_") + std::to_string(timestamp);
   const auto objPath = tempDir / (baseName + ".obj");
 
   {
@@ -899,7 +899,8 @@ TEST(MeshShapeTest, TriMeshGetMeshPreservesMaterialIndices)
   const auto tempDir = std::filesystem::temp_directory_path();
   const auto timestamp
       = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-  const auto baseName = std::format("dart_meshshape_materials_{}", timestamp);
+  const auto baseName
+      = std::string("dart_meshshape_materials_") + std::to_string(timestamp);
   const auto objPath = tempDir / (baseName + ".obj");
   const auto mtlPath = tempDir / (baseName + ".mtl");
 
@@ -994,7 +995,7 @@ TEST(MeshShapeTest, TriMeshGetMeshPreservesMaterialIndices)
 
   std::set<std::string> expectedMaterialNames;
   for (std::size_t index = 0; index < shape.getMaterials().size(); ++index) {
-    expectedMaterialNames.insert(std::format("material_{}", index));
+    expectedMaterialNames.insert("material_" + std::to_string(index));
   }
   for (const auto& name : usedMaterialNames) {
     EXPECT_TRUE(expectedMaterialNames.contains(name)) << materialSummary.str();
@@ -1158,7 +1159,8 @@ TEST(MeshShapeTest, ConvertToAssimpMeshUsesEmbeddedMaterials)
   const auto tempDir = std::filesystem::temp_directory_path();
   const auto timestamp
       = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-  const auto baseName = std::format("dart_meshshape_embedded_{}", timestamp);
+  const auto baseName
+      = std::string("dart_meshshape_embedded_") + std::to_string(timestamp);
   const auto objPath = tempDir / (baseName + ".obj");
   const auto mtlPath = tempDir / (baseName + ".mtl");
 
@@ -1519,7 +1521,8 @@ TEST(MeshShapeTest, LoadMeshFromTempObjAndUriMetadata)
   const auto tempDir = std::filesystem::temp_directory_path();
   const auto timestamp
       = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-  const auto baseName = std::format("dart_meshshape_load_{}", timestamp);
+  const auto baseName
+      = std::string("dart_meshshape_load_") + std::to_string(timestamp);
   const auto objPath = tempDir / (baseName + ".obj");
 
   {
@@ -1563,8 +1566,8 @@ TEST(MeshShapeTest, ExtractMaterialsResolvesTexturePaths)
   const auto tempDir = std::filesystem::temp_directory_path();
   const auto timestamp
       = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-  const auto baseName
-      = std::format("dart_meshshape_materials_tex_{}", timestamp);
+  const auto baseName = std::string("dart_meshshape_materials_tex_")
+                        + std::to_string(timestamp);
   const auto objPath = tempDir / (baseName + ".obj");
   const auto mtlPath = tempDir / (baseName + ".mtl");
   const auto texPath = tempDir / (baseName + ".png");
@@ -2087,7 +2090,8 @@ TEST(MeshShapeTest, TriMeshConstructorPreservesTexturePaths)
   const auto tempDir = std::filesystem::temp_directory_path();
   const auto timestamp
       = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-  const auto baseName = std::format("dart_meshshape_textures_{}", timestamp);
+  const auto baseName
+      = std::string("dart_meshshape_textures_") + std::to_string(timestamp);
   const auto objPath = tempDir / (baseName + ".obj");
 
   {
