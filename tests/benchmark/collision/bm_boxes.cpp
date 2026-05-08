@@ -42,8 +42,6 @@
 
 #include <benchmark/benchmark.h>
 
-#include <format>
-
 using namespace dart;
 using dart::simulation::CollisionDetectorType;
 
@@ -56,7 +54,7 @@ namespace {
     = dart::math::Random::uniform<Eigen::Vector3d>(0.0, 1.0))
 {
   static size_t index = 0;
-  auto boxSkel = dynamics::Skeleton::create(std::format("box{}", index++));
+  auto boxSkel = dynamics::Skeleton::create("box" + std::to_string(index++));
 
   // Give the floor a body
   auto boxBody
