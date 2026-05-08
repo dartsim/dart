@@ -184,7 +184,7 @@ LcpProblem makeInfeasibleProblem()
 void expectDiagonalSolution(const Eigen::VectorXd& x, double expected)
 {
   EXPECT_TRUE(x.array().isFinite().all());
-  for (Eigen::Index i = 0; i < x.size(); ++i) {
+  for (Eigen::Index i = 0; i < std::ssize(x); ++i) {
     EXPECT_NEAR(x[i], expected, 1e-6);
   }
 }

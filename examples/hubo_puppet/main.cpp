@@ -208,7 +208,7 @@ public:
         DART_WARN(
             "This analytical IK was not able to configure properly, so it will "
             "not be able to compute solutions");
-        return {mSolutions.data(), mSolutions.size()};
+        return mSolutions;
       }
     }
 
@@ -218,13 +218,13 @@ public:
           "Attempting to perform an IK on a limb that no longer exists [{}]!",
           getMethodName());
       DART_ASSERT(false);
-      return {mSolutions.data(), mSolutions.size()};
+      return mSolutions;
     }
 
     if (nullptr == mWristEnd) {
       DART_ERROR("Attempting to perform IK without a wrist!");
       DART_ASSERT(false);
-      return {mSolutions.data(), mSolutions.size()};
+      return mSolutions;
     }
 
     const std::size_t SP = 0;
@@ -347,7 +347,7 @@ public:
 
     checkSolutionJointLimits();
 
-    return {mSolutions.data(), mSolutions.size()};
+    return mSolutions;
   }
 
   std::span<const std::size_t> getDofs() const override
@@ -356,7 +356,7 @@ public:
       configure();
     }
 
-    return {mDofs.data(), mDofs.size()};
+    return mDofs;
   }
 
   const double zeroSize = 1e-8;
@@ -490,7 +490,7 @@ public:
         DART_WARN(
             "This analytical IK was not able to configure properly, so it will "
             "not be able to compute solutions");
-        return {mSolutions.data(), mSolutions.size()};
+        return mSolutions;
       }
     }
 
@@ -498,7 +498,7 @@ public:
     if (nullptr == base) {
       DART_ERROR("Attempting to perform IK on a limb that no longer exists!");
       DART_ASSERT(false);
-      return {mSolutions.data(), mSolutions.size()};
+      return mSolutions;
     }
 
     double nx, ny, sx, sy, ax, ay, az, px, py, pz;
@@ -596,7 +596,7 @@ public:
 
     checkSolutionJointLimits();
 
-    return {mSolutions.data(), mSolutions.size()};
+    return mSolutions;
   }
 
   std::span<const std::size_t> getDofs() const override
@@ -605,7 +605,7 @@ public:
       configure();
     }
 
-    return {mDofs.data(), mDofs.size()};
+    return mDofs;
   }
 
   const double zeroSize = 1e-8;

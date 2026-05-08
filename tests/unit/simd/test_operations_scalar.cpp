@@ -34,6 +34,8 @@
 
 #include <gtest/gtest.h>
 
+#include <concepts>
+
 #include <cmath>
 
 namespace dart::simd {
@@ -49,7 +51,7 @@ protected:
 
   static constexpr scalar_type tolerance()
   {
-    if constexpr (std::is_same_v<scalar_type, float>) {
+    if constexpr (std::same_as<scalar_type, float>) {
       return 1e-5f;
     } else {
       return 1e-12;

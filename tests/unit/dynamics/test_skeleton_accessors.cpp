@@ -2749,11 +2749,10 @@ TEST(SkeletonConfiguration, ConfigurationFlagsAndSegments)
 
   const auto config = skeleton->getConfiguration(
       indices, Skeleton::CONFIG_POSITIONS | Skeleton::CONFIG_FORCES);
-  EXPECT_EQ(
-      config.mPositions.size(), static_cast<Eigen::Index>(indices.size()));
+  EXPECT_EQ(config.mPositions.size(), std::ssize(indices));
   EXPECT_EQ(config.mVelocities.size(), 0);
   EXPECT_EQ(config.mAccelerations.size(), 0);
-  EXPECT_EQ(config.mForces.size(), static_cast<Eigen::Index>(indices.size()));
+  EXPECT_EQ(config.mForces.size(), std::ssize(indices));
   EXPECT_EQ(config.mCommands.size(), 0);
   EXPECT_TRUE(config.mPositions.isApprox(posSubset));
   EXPECT_TRUE(config.mForces.isApprox(forceSubset));

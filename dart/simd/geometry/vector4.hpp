@@ -42,13 +42,9 @@ namespace dart::simd {
 
 /// @brief SIMD-backed 4D vector using native Vec<T, 4> storage
 /// @tparam T Scalar type (float or double)
-template <typename T>
+template <FloatType T>
 struct Vector4
 {
-  static_assert(
-      std::is_same_v<T, float> || std::is_same_v<T, double>,
-      "Vector4 only supports float or double");
-
   Vec<T, 4> data;
 
   Vector4() = default;
@@ -199,33 +195,33 @@ struct Vector4
   }
 };
 
-template <typename T>
+template <FloatType T>
 [[nodiscard]] DART_SIMD_INLINE T dot(const Vector4<T>& a, const Vector4<T>& b)
 {
   return hsum(a.data * b.data);
 }
 
-template <typename T>
+template <FloatType T>
 [[nodiscard]] DART_SIMD_INLINE Vector4<T> min(
     const Vector4<T>& a, const Vector4<T>& b)
 {
   return Vector4<T>(min(a.data, b.data));
 }
 
-template <typename T>
+template <FloatType T>
 [[nodiscard]] DART_SIMD_INLINE Vector4<T> max(
     const Vector4<T>& a, const Vector4<T>& b)
 {
   return Vector4<T>(max(a.data, b.data));
 }
 
-template <typename T>
+template <FloatType T>
 [[nodiscard]] DART_SIMD_INLINE Vector4<T> abs(const Vector4<T>& v)
 {
   return Vector4<T>(abs(v.data));
 }
 
-template <typename T>
+template <FloatType T>
 [[nodiscard]] DART_SIMD_INLINE Vector4<T> lerp(
     const Vector4<T>& a, const Vector4<T>& b, T t)
 {

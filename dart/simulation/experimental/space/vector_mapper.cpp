@@ -36,6 +36,7 @@
 
 #include <format>
 #include <stdexcept>
+#include <utility>
 
 namespace dart::simulation::experimental {
 
@@ -91,7 +92,7 @@ void VectorMapper::toVector(
 void VectorMapper::toEigen(
     const entt::registry& registry, Eigen::VectorXd& output) const
 {
-  if (static_cast<size_t>(output.size()) < m_space.getDimension()) {
+  if (std::cmp_less(output.size(), m_space.getDimension())) {
     throw std::invalid_argument(
         std::format(
             "Output vector size ({}) < required dimension ({})",
@@ -137,7 +138,7 @@ void VectorMapper::fromVector(
 void VectorMapper::fromEigen(
     entt::registry& registry, const Eigen::VectorXd& vec)
 {
-  if (static_cast<size_t>(vec.size()) < m_space.getDimension()) {
+  if (std::cmp_less(vec.size(), m_space.getDimension())) {
     throw std::invalid_argument(
         std::format(
             "Input vector size ({}) < required dimension ({})",

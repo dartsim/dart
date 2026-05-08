@@ -39,6 +39,7 @@
 
 #include <iostream>
 #include <iterator>
+#include <utility>
 
 namespace dart {
 namespace math {
@@ -433,7 +434,7 @@ void GradientDescentSolver::randomizeConfiguration(Eigen::VectorXd& _x)
     return;
   }
 
-  if (_x.size() < static_cast<int>(mProperties.mProblem->getDimension())) {
+  if (std::cmp_less(_x.size(), mProperties.mProblem->getDimension())) {
     _x = Eigen::VectorXd::Zero(mProperties.mProblem->getDimension());
   }
 
@@ -457,7 +458,7 @@ void GradientDescentSolver::clampToBoundary(Eigen::VectorXd& _x)
     return;
   }
 
-  if (_x.size() != static_cast<int>(mProperties.mProblem->getDimension())) {
+  if (!std::cmp_equal(_x.size(), mProperties.mProblem->getDimension())) {
     DART_ERROR(
         "Mismatch between configuration size [{}] and the dimension of the "
         "Problem [{}]",

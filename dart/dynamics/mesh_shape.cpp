@@ -108,7 +108,7 @@ public:
     if (next < 0) {
       return false;
     }
-    if (next > std::ssize(mData)) {
+    if (std::cmp_greater(next, mData.size())) {
       return false;
     }
 
