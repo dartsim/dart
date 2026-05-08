@@ -38,12 +38,37 @@
 
 #include <Eigen/Core>
 
+#include <algorithm>
 #include <limits>
 #include <string>
 
 #include <cmath>
 
 namespace dart::math::detail {
+
+inline double projectToBounds(double value, double lo, double hi)
+{
+  const bool hasLo = std::isfinite(lo);
+  const bool hasUpper = std::isfinite(hi);
+
+  if (hasLo && hasUpper) {
+    if (lo <= hi) {
+      return std::clamp(value, lo, hi);
+    }
+
+    return std::min(std::max(value, lo), hi);
+  }
+
+  if (hasLo) {
+    return std::max(value, lo);
+  }
+
+  if (hasUpper) {
+    return std::min(value, hi);
+  }
+
+  return value;
+}
 
 inline bool validateProblem(
     const LcpProblem& problem, std::string* message = nullptr)
@@ -186,13 +211,7 @@ inline double naturalResidualInfinityNorm(
   double maxResidual = 0.0;
 
   for (Eigen::Index i = 0; i < n; ++i) {
-    double projected = x[i] - w[i];
-    if (std::isfinite(lo[i])) {
-      projected = std::max(projected, lo[i]);
-    }
-    if (std::isfinite(hi[i])) {
-      projected = std::min(projected, hi[i]);
-    }
+    const double projected = projectToBounds(x[i] - w[i], lo[i], hi[i]);
 
     const double residual = x[i] - projected;
     maxResidual = std::max(maxResidual, std::abs(residual));

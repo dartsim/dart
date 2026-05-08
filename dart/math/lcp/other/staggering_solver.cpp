@@ -211,13 +211,7 @@ LcpResult StaggeringSolver::solve(
           for (int k = 0; k < std::ssize(indices); ++k) {
             const int idx = indices[k];
             double updated = std::lerp(x[idx], values[k], relaxation);
-            if (std::isfinite(lo[idx])) {
-              updated = std::max(updated, lo[idx]);
-            }
-            if (std::isfinite(hi[idx])) {
-              updated = std::min(updated, hi[idx]);
-            }
-            x[idx] = updated;
+            x[idx] = detail::projectToBounds(updated, lo[idx], hi[idx]);
           }
         };
 
@@ -228,13 +222,7 @@ LcpResult StaggeringSolver::solve(
     for (int k = 0; k < std::ssize(indices); ++k) {
       const int idx = indices[k];
       double updated = std::lerp(x[idx], values[k], relaxation);
-      if (std::isfinite(loEff[idx])) {
-        updated = std::max(updated, loEff[idx]);
-      }
-      if (std::isfinite(hiEff[idx])) {
-        updated = std::min(updated, hiEff[idx]);
-      }
-      x[idx] = updated;
+      x[idx] = detail::projectToBounds(updated, loEff[idx], hiEff[idx]);
     }
   };
 
