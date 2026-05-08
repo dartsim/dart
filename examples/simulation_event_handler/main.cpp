@@ -39,6 +39,7 @@
 #include <dart/all.hpp>
 
 #include <iostream>
+#include <ranges>
 
 using namespace dart::common;
 using namespace dart::dynamics;
@@ -380,7 +381,8 @@ int main()
   std::cout << "\n=== Simulation Event Handler Demo ===" << std::endl;
   std::cout << "World created with " << world->getNumSkeletons()
             << " skeletons:" << std::endl;
-  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, world->getNumSkeletons())) {
     std::cout << "  " << (i + 1) << ". " << world->getSkeleton(i)->getName()
               << std::endl;
   }

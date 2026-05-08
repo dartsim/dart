@@ -35,6 +35,8 @@
 #include "dart/common/macros.hpp"
 #include "state.hpp"
 
+#include <ranges>
+
 // Macro for functions not implemented yet
 #define NOT_YET(FUNCTION)                                                      \
   std::cout << #FUNCTION << "Not implemented yet." << std::endl;
@@ -93,7 +95,8 @@ bool BodyContactCondition::isSatisfied()
 {
   SoftBodyNode* soft = dynamic_cast<SoftBodyNode*>(mBodyNode);
   if (soft) {
-    for (std::size_t i = 0; i < soft->getNumPointMasses(); ++i) {
+    for (const auto i :
+         std::views::iota(std::size_t{0}, soft->getNumPointMasses())) {
       PointMass* pm = soft->getPointMass(i);
       if (pm->isColliding()) {
         return true;

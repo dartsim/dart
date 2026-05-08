@@ -35,6 +35,7 @@
 #include <dart/all.hpp>
 
 #include <random>
+#include <ranges>
 
 const double default_shape_density = 1000;  // kg/m^3
 const double default_shape_height = 0.1;    // m
@@ -78,7 +79,7 @@ void setupRing(const SkeletonPtr& ring)
 {
   // snippet:cpp-collisions-lesson4a-ring-stiffness-start
   // Set the spring and damping coefficients for the degrees of freedom
-  for (std::size_t i = 6; i < ring->getNumDofs(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{6}, ring->getNumDofs())) {
     DegreeOfFreedom* dof = ring->getDof(i);
     dof->setSpringStiffness(ring_spring_stiffness);
     dof->setDampingCoefficient(ring_damping_coefficient);
@@ -91,7 +92,7 @@ void setupRing(const SkeletonPtr& ring)
   double angle = 2 * dart::math::pi / numEdges;
 
   // Set the BallJoints so that they have the correct rest position angle
-  for (std::size_t i = 1; i < ring->getNumJoints(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{1}, ring->getNumJoints())) {
     Joint* joint = ring->getJoint(i);
     Eigen::AngleAxisd rotation(angle, Eigen::Vector3d(0, 1, 0));
     Eigen::Vector3d restPos
@@ -105,7 +106,7 @@ void setupRing(const SkeletonPtr& ring)
 
   // snippet:cpp-collisions-lesson4c-ring-rest-state-start
   // Set the Joints to be in their rest positions
-  for (std::size_t i = 6; i < ring->getNumDofs(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{6}, ring->getNumDofs())) {
     DegreeOfFreedom* dof = ring->getDof(i);
     dof->setPosition(dof->getRestPosition());
   }
@@ -290,7 +291,8 @@ protected:
   /// it, if one existed
   void removeSkeleton(const SkeletonPtr& skel)
   {
-    for (std::size_t i = 0; i < mJointConstraints.size(); ++i) {
+    for (const auto i :
+         std::views::iota(std::size_t{0}, mJointConstraints.size())) {
       const dart::constraint::DynamicJointConstraintPtr& constraint
           = mJointConstraints[i];
 
@@ -417,7 +419,7 @@ BodyNode* addRigidBody(
   // Set damping to make the simulation more stable
   if (parent) {
     Joint* joint = bn->getParentJoint();
-    for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, joint->getNumDofs())) {
       joint->getDof(i)->setDampingCoefficient(default_damping_coefficient);
     }
   }
