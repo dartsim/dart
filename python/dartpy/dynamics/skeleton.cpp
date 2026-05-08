@@ -26,6 +26,7 @@
 #include <nanobind/stl/string.h>
 
 #include <memory>
+#include <string>
 #include <utility>
 
 namespace nb = nanobind;

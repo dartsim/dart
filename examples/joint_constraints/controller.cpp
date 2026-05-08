@@ -32,6 +32,9 @@
 
 #include "controller.hpp"
 
+#include <algorithm>
+#include <ranges>
+
 using namespace dart;
 using namespace dynamics;
 using namespace math;
@@ -52,26 +55,26 @@ Controller::Controller(
 
   mTorques.resize(nDof);
   mDesiredDofs.resize(nDof);
-  for (int i = 0; i < nDof; i++) {
+  for (const auto i : std::views::iota(0, nDof)) {
     mTorques[i] = 0.0;
     mDesiredDofs[i] = mSkel->getPosition(i);
   }
 
   // using SPD results in simple Kp coefficients
-  for (int i = 0; i < 6; i++) {
+  for (const auto i : std::views::iota(0, 6)) {
     mKp(i, i) = 0.0;
     mKd(i, i) = 0.0;
   }
-  for (int i = 6; i < 22; i++) {
+  for (const auto i : std::views::iota(6, 22)) {
     mKp(i, i) = 200.0; // lower body + lower back
   }
-  for (int i = 22; i < nDof; i++) {
+  for (const auto i : std::views::iota(22, std::max(22, nDof))) {
     mKp(i, i) = 20.0;
   }
-  for (int i = 6; i < 22; i++) {
+  for (const auto i : std::views::iota(6, 22)) {
     mKd(i, i) = 100.0;
   }
-  for (int i = 22; i < nDof; i++) {
+  for (const auto i : std::views::iota(22, std::max(22, nDof))) {
     mKd(i, i) = 10.0;
   }
 
@@ -107,7 +110,7 @@ void Controller::computeTorques(
   }
 
   // Just to make sure no illegal torque is used
-  for (int i = 0; i < 6; i++) {
+  for (const auto i : std::views::iota(0, 6)) {
     mTorques[i] = 0.0;
   }
 

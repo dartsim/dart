@@ -43,6 +43,8 @@
 #include <memory>
 #include <numeric>
 
+#include <cmath>
+
 namespace dart {
 namespace collision {
 
@@ -556,7 +558,7 @@ int dBoxBox(
 #undef TST
 #define TST(expr1, expr2, n1, n2, n3, cc)                                      \
   s2 = std::abs(expr1) - (expr2);                                              \
-  l = sqrt((n1) * (n1) + (n2) * (n2) + (n3) * (n3));                           \
+  l = std::hypot((n1), (n2), (n3));                                            \
   if (l > 0) {                                                                 \
     s2 /= l;                                                                   \
     if (s2 * fudge_factor > s) {                                               \
@@ -1289,7 +1291,7 @@ int collideCylinderSphere(
 {
   Eigen::Vector3d center = T0.inverse() * T1.translation();
 
-  double dist = sqrt(center[0] * center[0] + center[1] * center[1]);
+  double dist = std::hypot(center[0], center[1]);
 
   if (dist < cyl_rad && std::abs(center[2]) < half_height + sphere_rad) {
     Contact contact;

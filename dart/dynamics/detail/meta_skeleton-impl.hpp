@@ -35,13 +35,15 @@
 
 #include <dart/dynamics/meta_skeleton.hpp>
 
+#include <concepts>
+
 namespace dart::dynamics {
 
 //==============================================================================
 template <typename Func>
 void MetaSkeleton::eachBodyNode(Func func) const
 {
-  if constexpr (std::is_same_v<
+  if constexpr (std::same_as<
                     std::invoke_result_t<Func, const dynamics::BodyNode*>,
                     bool>) {
     for (auto i = 0u; i < getNumBodyNodes(); ++i) {
@@ -60,7 +62,7 @@ void MetaSkeleton::eachBodyNode(Func func) const
 template <typename Func>
 void MetaSkeleton::eachBodyNode(Func func)
 {
-  if constexpr (std::is_same_v<
+  if constexpr (std::same_as<
                     std::invoke_result_t<Func, dynamics::BodyNode*>,
                     bool>) {
     for (auto i = 0u; i < getNumBodyNodes(); ++i) {
@@ -79,7 +81,7 @@ void MetaSkeleton::eachBodyNode(Func func)
 template <typename Func>
 void MetaSkeleton::eachJoint(Func func) const
 {
-  if constexpr (std::is_same_v<
+  if constexpr (std::same_as<
                     std::invoke_result_t<Func, const dynamics::Joint*>,
                     bool>) {
     for (auto i = 0u; i < getNumJoints(); ++i) {
@@ -98,7 +100,7 @@ void MetaSkeleton::eachJoint(Func func) const
 template <typename Func>
 void MetaSkeleton::eachJoint(Func func)
 {
-  if constexpr (std::is_same_v<
+  if constexpr (std::same_as<
                     std::invoke_result_t<Func, dynamics::Joint*>,
                     bool>) {
     for (auto i = 0u; i < getNumJoints(); ++i) {
@@ -117,7 +119,7 @@ void MetaSkeleton::eachJoint(Func func)
 template <typename Func>
 void MetaSkeleton::eachDof(Func func) const
 {
-  if constexpr (std::is_same_v<
+  if constexpr (std::same_as<
                     std::
                         invoke_result_t<Func, const dynamics::DegreeOfFreedom*>,
                     bool>) {
@@ -137,7 +139,7 @@ void MetaSkeleton::eachDof(Func func) const
 template <typename Func>
 void MetaSkeleton::eachDof(Func func)
 {
-  if constexpr (std::is_same_v<
+  if constexpr (std::same_as<
                     std::invoke_result_t<Func, dynamics::DegreeOfFreedom*>,
                     bool>) {
     for (auto i = 0u; i < getNumDofs(); ++i) {

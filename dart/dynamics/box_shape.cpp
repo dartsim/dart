@@ -34,8 +34,6 @@
 
 #include "dart/common/macros.hpp"
 
-#include <cmath>
-
 namespace dart {
 namespace dynamics {
 
@@ -78,9 +76,10 @@ Eigen::Matrix3d BoxShape::computeInertia(
 {
   Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
 
-  inertia(0, 0) = mass / 12.0 * (std::pow(size[1], 2) + std::pow(size[2], 2));
-  inertia(1, 1) = mass / 12.0 * (std::pow(size[0], 2) + std::pow(size[2], 2));
-  inertia(2, 2) = mass / 12.0 * (std::pow(size[0], 2) + std::pow(size[1], 2));
+  const auto sizeSquared = size.cwiseProduct(size);
+  inertia(0, 0) = mass / 12.0 * (sizeSquared[1] + sizeSquared[2]);
+  inertia(1, 1) = mass / 12.0 * (sizeSquared[0] + sizeSquared[2]);
+  inertia(2, 2) = mass / 12.0 * (sizeSquared[0] + sizeSquared[1]);
 
   return inertia;
 }

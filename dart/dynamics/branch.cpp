@@ -35,6 +35,9 @@
 #include "dart/common/macros.hpp"
 #include "dart/dynamics/body_node.hpp"
 
+#include <algorithm>
+#include <iterator>
+
 namespace dart {
 namespace dynamics {
 
@@ -134,14 +137,10 @@ bool Branch::isStillBranch() const
     return false;
   }
 
-  for (std::size_t i = 0; i < mBodyNodes.size(); ++i) {
-    BodyNode* bn = mBodyNodes[i];
-    if (bn->getNumChildBodyNodes() != mNumChildNodes[i]) {
-      return false;
-    }
-  }
-
-  return true;
+  return std::ranges::equal(
+      mBodyNodes, mNumChildNodes, {}, [](const BodyNode* bn) {
+        return bn->getNumChildBodyNodes();
+      });
 }
 
 //==============================================================================
@@ -158,9 +157,10 @@ void Branch::update()
 
   mNumChildNodes.clear();
   mNumChildNodes.reserve(mBodyNodes.size());
-  for (std::size_t i = 0; i < mBodyNodes.size(); ++i) {
-    mNumChildNodes.push_back(mBodyNodes[i]->getNumChildBodyNodes());
-  }
+  std::ranges::transform(
+      mBodyNodes, std::back_inserter(mNumChildNodes), [](const BodyNode* bn) {
+        return bn->getNumChildBodyNodes();
+      });
 }
 
 } // namespace dynamics

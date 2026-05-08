@@ -74,8 +74,7 @@ Errors appendBodyAttributes(
 
   // Check if multiple orientation representations present
   const Errors orientationErrors = checkOrientationValidity(element);
-  errors.insert(
-      errors.end(), orientationErrors.begin(), orientationErrors.end());
+  appendErrorRange(errors, orientationErrors);
 
   // quat
   if (hasAttribute(element, "quat")) {
@@ -140,7 +139,7 @@ Errors appendBodyAttributes(
     DART_ASSERT(inertialElement);
     attributes.mInertial = Inertial();
     const Errors inertialErrors = attributes.mInertial->read(inertialElement);
-    errors.insert(errors.end(), inertialErrors.begin(), inertialErrors.end());
+    appendErrorRange(errors, inertialErrors);
   }
 
   return errors;

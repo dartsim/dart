@@ -38,6 +38,7 @@
 #include <dart/common/logging.hpp>
 
 #include <algorithm>
+#include <concepts>
 #include <limits>
 
 #include <cmath>
@@ -50,7 +51,7 @@ template <typename S>
 HeightmapShape<S>::HeightmapShape() : Shape(HEIGHTMAP), mScale(1, 1, 1)
 {
   static_assert(
-      std::is_same<S, float>::value || std::is_same<S, double>::value,
+      std::same_as<S, float> || std::same_as<S, double>,
       "Height field needs to be double or float");
 }
 

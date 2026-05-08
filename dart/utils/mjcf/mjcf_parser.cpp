@@ -467,29 +467,31 @@ dynamics::ShapePtr createShape(const GeomOrSite& geomOrSite)
 {
   dynamics::ShapePtr shape = nullptr;
 
+  using enum detail::GeomType;
+
   switch (geomOrSite.getType()) {
-    case detail::GeomType::SPHERE: {
+    case SPHERE: {
       shape = std::make_shared<dynamics::SphereShape>(
           geomOrSite.getSphereRadius());
       break;
     }
-    case detail::GeomType::CAPSULE: {
+    case CAPSULE: {
       shape = std::make_shared<dynamics::CapsuleShape>(
           geomOrSite.getCapsuleRadius(), geomOrSite.getCapsuleLength());
       break;
     }
-    case detail::GeomType::ELLIPSOID: {
+    case ELLIPSOID: {
       // DART takes diameters while MJCF has radii
       shape = std::make_shared<dynamics::EllipsoidShape>(
           geomOrSite.getEllipsoidDiameters());
       break;
     }
-    case detail::GeomType::CYLINDER: {
+    case CYLINDER: {
       shape = std::make_shared<dynamics::CylinderShape>(
           geomOrSite.getCylinderRadius(), geomOrSite.getCylinderLength());
       break;
     }
-    case detail::GeomType::BOX: {
+    case BOX: {
       // DART takes full-sizes while MJCF has half-sizes
       shape = std::make_shared<dynamics::BoxShape>(geomOrSite.getBoxSize());
       break;
@@ -508,8 +510,10 @@ dynamics::ShapePtr createShape(
 {
   dynamics::ShapePtr shape = nullptr;
 
+  using enum detail::GeomType;
+
   switch (geom.getType()) {
-    case detail::GeomType::PLANE: {
+    case PLANE: {
       // TODO(JS): Needs to properly parse PLANE.
       Eigen::Vector3d size;
       size.head<2>() = 2.0 * geom.getPlaneHalfSize();
@@ -517,11 +521,11 @@ dynamics::ShapePtr createShape(
       shape = std::make_shared<dynamics::BoxShape>(size);
       break;
     }
-    case detail::GeomType::HFIELD: {
+    case HFIELD: {
       DART_ERROR("[MjcfParser] Not implemented for 'HFIELD' geom type.");
       break;
     }
-    case detail::GeomType::MESH: {
+    case MESH: {
       const detail::Mesh* mjcfMesh = mjcfAsset.getMesh(geom.getMesh());
       DART_ASSERT(mjcfMesh);
       shape = mjcfMesh->getMeshShape();
@@ -790,17 +794,19 @@ simulation::WorldPtr createWorld(
       continue;
     }
 
+    using enum detail::ActuatorType;
+
     switch (entry.mType) {
-      case detail::ActuatorType::MOTOR:
+      case MOTOR:
         dartJoint->setActuatorType(dynamics::Joint::FORCE);
         break;
-      case detail::ActuatorType::POSITION:
+      case POSITION:
         dartJoint->setActuatorType(dynamics::Joint::SERVO);
         break;
-      case detail::ActuatorType::VELOCITY:
+      case VELOCITY:
         dartJoint->setActuatorType(dynamics::Joint::VELOCITY);
         break;
-      case detail::ActuatorType::GENERAL:
+      case GENERAL:
         // General actuator — default to FORCE, log for transparency
         dartJoint->setActuatorType(dynamics::Joint::FORCE);
         DART_WARN(

@@ -42,6 +42,7 @@ If this fails, see `docs/onboarding/ci-cd.md` for troubleshooting.
 | Build system    | @docs/onboarding/build-system.md                            |
 | AI tools        | @docs/onboarding/ai-tools.md                                |
 | PR reviews      | @docs/onboarding/ai-tools.md (AI review handling rules)     |
+| Release work    | @docs/onboarding/release-management.md                      |
 | Dev tasks       | @docs/dev_tasks/README.md (when to create, cleanup rules)   |
 
 ## Workflow Commands
@@ -50,14 +51,28 @@ Use `/dart-*` commands for consistent, context-aware workflows in Claude Code
 and OpenCode. In Codex, use the generated equivalent skills as `$dart-*`
 (for example, `$dart-fix-ci`).
 
-| Claude/OpenCode       | Codex                 | Purpose                             |
-| --------------------- | --------------------- | ----------------------------------- |
-| `/dart-new-task`      | `$dart-new-task`      | Start new feature/bugfix/refactor   |
-| `/dart-resume`        | `$dart-resume`        | Continue work from previous session |
-| `/dart-fix-issue <#>` | `$dart-fix-issue <#>` | Resolve a GitHub issue              |
-| `/dart-fix-ci`        | `$dart-fix-ci`        | Debug and fix CI failures           |
-| `/dart-review-pr`     | `$dart-review-pr`     | Review or address PR feedback       |
-| `/dart-docs-update`   | `$dart-docs-update`   | Update documentation                |
+| Claude/OpenCode                | Codex                          | Purpose                             |
+| ------------------------------ | ------------------------------ | ----------------------------------- |
+| `/dart-new-task`               | `$dart-new-task`               | Start new feature/bugfix/refactor   |
+| `/dart-resume`                 | `$dart-resume`                 | Continue work from previous session |
+| `/dart-fix-issue <#>`          | `$dart-fix-issue <#>`          | Resolve a GitHub issue              |
+| `/dart-fix-ci`                 | `$dart-fix-ci`                 | Debug and fix CI failures           |
+| `/dart-review-pr`              | `$dart-review-pr`              | Review or address PR feedback       |
+| `/dart-pr`                     | `$dart-pr`                     | Create a DART pull request          |
+| `/dart-manage-pr`              | `$dart-manage-pr`              | Manage CI, review, and cleanup      |
+| `/dart-merge-pr`               | `$dart-merge-pr`               | Monitor CI and merge a ready PR     |
+| `/dart-docs-update`            | `$dart-docs-update`            | Update documentation                |
+| `/dart-improve-docs`           | `$dart-improve-docs`           | Capture durable docs learnings      |
+| `/dart-audit-agent-compliance` | `$dart-audit-agent-compliance` | Fix gaps when agents miss rules     |
+| `/dart-mechanical-refactor`    | `$dart-mechanical-refactor`    | Behavior-preserving refactor        |
+| `/dart-branch-cleanup`         | `$dart-branch-cleanup`         | Analyze or clean stale branches     |
+| `/dart-triage-issue`           | `$dart-triage-issue`           | Triage a GitHub issue               |
+| `/dart-close-issue`            | `$dart-close-issue`            | Draft/post issue closing message    |
+| `/dart-downstream-fix`         | `$dart-downstream-fix`         | Fix downstream-reported DART issue  |
+| `/dart-backport-pr`            | `$dart-backport-pr`            | Backport merged `main` PR           |
+| `/dart-release-ci-fix`         | `$dart-release-ci-fix`         | Fix release branch CI               |
+| `/dart-release-merge-main`     | `$dart-release-merge-main`     | Merge release branch into `main`    |
+| `/dart-release-packaging`      | `$dart-release-packaging`      | Prepare release packaging PR        |
 
 Commands are defined in `.claude/commands/` and synced to
 `.opencode/command/`. Codex workflow skills are generated from the same command
@@ -82,7 +97,7 @@ Skills are in `.claude/skills/` (synced to `.codex/skills/` for Codex).
 
 - **Bug fixes**: Require PRs to BOTH `release-6.16` AND `main` branches. See `docs/onboarding/contributing.md`.
 - **Multi-phase tasks**: Create `docs/dev_tasks/<task>/` for tracking. See `docs/dev_tasks/README.md` for criteria.
-- **AI reviews**: NEVER reply to AI-generated review comments (usernames ending in `[bot]` like `chatgpt-codex-connector[bot]`, `github-actions[bot]`, `copilot[bot]`). No `gh pr comment`, no PR comment replies. Just push the fix silently, then re-trigger with `@codex review`. See `docs/onboarding/ai-tools.md`.
+- **AI reviews**: NEVER reply to AI-generated review comments (usernames ending in `[bot]` like `chatgpt-codex-connector[bot]`, `github-actions[bot]`, `copilot[bot]`). No inline replies and no acknowledgment comments. Just push the fix silently, then re-trigger with a top-level `@codex review` comment when needed. See `docs/onboarding/ai-tools.md`.
 - **Commands**: Use `pixi run ...` tasks; don't invent new entry points.
 - **Formatting**: Run `pixi run lint` before committing (auto-fixes).
 - **Commit/PR titles**: Do not prefix commit messages or PR titles with agent tags like `[codex]`; use plain descriptive titles.
@@ -115,19 +130,12 @@ Shortcut: `pixi run test-all` runs lint + build + all tests.
 >
 > See `docs/onboarding/ai-tools.md` for detailed compatibility notes.
 
-| Tool            | Instructions               | Commands             | Skills            |
-| --------------- | -------------------------- | -------------------- | ----------------- |
-| **Claude Code** | `CLAUDE.md` -> `AGENTS.md` | `.claude/commands/`  | `.claude/skills/` |
-| **OpenCode**    | `AGENTS.md`                | `.opencode/command/` | `.claude/skills/` |
-| **Codex**       | `AGENTS.md`                | `.codex/skills/`     | `.codex/skills/`  |
-| **Gemini CLI**  | `GEMINI.md` -> `AGENTS.md` | Read manually        | Read manually     |
-
-## Prompt Templates (Reference)
-
-> [`docs/prompts/`](docs/prompts/AGENTS.md) contains prompt template documentation.
-> **Prefer slash commands** over manual prompts when available.
-
-Index: [`docs/prompts/AGENTS.md`](docs/prompts/AGENTS.md)
+| Tool            | Instructions               | Commands                          | Skills                          |
+| --------------- | -------------------------- | --------------------------------- | ------------------------------- |
+| **Claude Code** | `CLAUDE.md` -> `AGENTS.md` | `.claude/commands/`               | `.claude/skills/`               |
+| **OpenCode**    | `AGENTS.md`                | `.opencode/command/`              | `.claude/skills/`               |
+| **Codex**       | `AGENTS.md`                | `.codex/skills/`                  | `.codex/skills/`                |
+| **Gemini CLI**  | `GEMINI.md` -> `AGENTS.md` | Read `.claude/commands/` manually | Read `.claude/skills/` manually |
 
 <skills_system priority="1">
 

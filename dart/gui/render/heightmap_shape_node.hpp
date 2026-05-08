@@ -53,6 +53,9 @@
 #include <osg/MatrixTransform>
 #include <osg/ShapeDrawable>
 
+#include <concepts>
+#include <type_traits>
+
 namespace dart {
 namespace gui {
 
@@ -89,18 +92,16 @@ class HeightmapShapeDrawable : public ::osg::Geometry
 public:
   using Vector3 = Eigen::Matrix<S, 3, 1>;
 
-  using osgVec3 = typename std::conditional<
-      std::is_same<S, float>::value,
-      ::osg::Vec3f,
-      ::osg::Vec3d>::type;
-  using Vec3Array = typename std::conditional<
-      std::is_same<S, float>::value,
+  using osgVec3
+      = std::conditional_t<std::same_as<S, float>, ::osg::Vec3f, ::osg::Vec3d>;
+  using Vec3Array = std::conditional_t<
+      std::same_as<S, float>,
       ::osg::Vec3Array,
-      ::osg::Vec3dArray>::type;
-  using Vec4Array = typename std::conditional<
-      std::is_same<S, float>::value,
+      ::osg::Vec3dArray>;
+  using Vec4Array = std::conditional_t<
+      std::same_as<S, float>,
       ::osg::Vec4Array,
-      ::osg::Vec4dArray>::type;
+      ::osg::Vec4dArray>;
 
   HeightmapShapeDrawable(
       dynamics::HeightmapShape<S>* shape,
@@ -252,14 +253,14 @@ HeightmapShapeDrawable<S>::HeightmapShapeDrawable(
   : mHeightmapShape(shape), mVisualAspect(visualAspect), mParent(parent)
 {
   static_assert(
-      std::is_same<S, float>::value || std::is_same<S, double>::value,
+      std::same_as<S, float> || std::same_as<S, double>,
       "Scalar type should be float or double");
 
   // See:
   // https://osg-users.openscenegraph.narkive.com/VY16YIMs/crash-due-to-triangle-functor-does-not-support-vec3d-vertex-arrays
   // https://github.com/openscenegraph/OpenSceneGraph/blob/5b688eb99dd5db94f7068ee18fb94f120720e3d1/include/osg/TriangleFunctor#L73
   static_assert(
-      !std::is_same<S, double>::value,
+      !std::same_as<S, double>,
       "OpenSceneGraph currently doesn't support double precision for "
       "Heightmap");
 

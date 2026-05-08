@@ -43,6 +43,8 @@
 
 #include <gtest/gtest.h>
 
+#include <iterator>
+
 using namespace dart;
 using namespace dart::dynamics;
 
@@ -501,13 +503,13 @@ TEST(LinkageTests, PositionOperations)
   Eigen::VectorXd result = linkage->getPositions();
   EXPECT_EQ(result.size(), static_cast<int>(linkage->getNumDofs()));
 
-  for (int i = 0; i < result.size(); ++i) {
+  for (int i = 0; i < std::ssize(result); ++i) {
     EXPECT_DOUBLE_EQ(result[i], 1.0);
   }
 
   linkage->resetPositions();
   result = linkage->getPositions();
-  for (int i = 0; i < result.size(); ++i) {
+  for (int i = 0; i < std::ssize(result); ++i) {
     EXPECT_DOUBLE_EQ(result[i], 0.0);
   }
 }
@@ -528,13 +530,13 @@ TEST(LinkageTests, VelocityOperations)
   linkage->setVelocities(velocities);
 
   Eigen::VectorXd result = linkage->getVelocities();
-  for (int i = 0; i < result.size(); ++i) {
+  for (int i = 0; i < std::ssize(result); ++i) {
     EXPECT_DOUBLE_EQ(result[i], 2.0);
   }
 
   linkage->resetVelocities();
   result = linkage->getVelocities();
-  for (int i = 0; i < result.size(); ++i) {
+  for (int i = 0; i < std::ssize(result); ++i) {
     EXPECT_DOUBLE_EQ(result[i], 0.0);
   }
 }

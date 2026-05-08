@@ -170,7 +170,7 @@ LcpResult PgsSolver::solve(
 
     newX /= Adata[static_cast<std::size_t>(nSkip * i + i)];
 
-    newX = oldX + relaxation * (newX - oldX);
+    newX = std::lerp(oldX, newX, relaxation);
 
     if (findexData[static_cast<std::size_t>(i)] >= 0) {
       const double hiTmp = std::abs(
@@ -242,7 +242,7 @@ LcpResult PgsSolver::solve(
           newX -= APtr[j] * xdata[static_cast<std::size_t>(j)];
         }
 
-        newX = oldX + relaxation * (newX - oldX);
+        newX = std::lerp(oldX, newX, relaxation);
 
         if (findexData[static_cast<std::size_t>(index)] >= 0) {
           const double hiTmp = std::abs(

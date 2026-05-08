@@ -69,7 +69,7 @@ Errors Equality::read(tinyxml2::XMLElement* element, const Defaults& defaults)
   while (weldElements.next()) {
     Weld weld = Weld();
     const Errors bodyErrors = weld.read(weldElements.get(), defaults);
-    errors.insert(errors.end(), bodyErrors.begin(), bodyErrors.end());
+    appendErrorRange(errors, bodyErrors);
     mWelds.emplace_back(std::move(weld));
   }
 

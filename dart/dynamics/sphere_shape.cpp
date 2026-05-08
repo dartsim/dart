@@ -94,7 +94,8 @@ double SphereShape::getRadius() const
 //==============================================================================
 double SphereShape::computeVolume(double radius)
 {
-  return math::pi * 4.0 / 3.0 * std::pow(radius, 3);
+  const auto radiusSquared = radius * radius;
+  return math::pi * 4.0 / 3.0 * radiusSquared * radius;
 }
 
 //==============================================================================
@@ -102,7 +103,7 @@ Eigen::Matrix3d SphereShape::computeInertia(double radius, double mass)
 {
   Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
 
-  inertia(0, 0) = 2.0 / 5.0 * mass * std::pow(radius, 2);
+  inertia(0, 0) = 2.0 / 5.0 * mass * radius * radius;
   inertia(1, 1) = inertia(0, 0);
   inertia(2, 2) = inertia(0, 0);
 

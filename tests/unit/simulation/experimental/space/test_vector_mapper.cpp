@@ -168,7 +168,7 @@ TEST(VectorMapper, RoundTripWithPositionMapper)
   }
 
   // Write back
-  mapper.fromVector(registry, std::span<const double>(vec2));
+  mapper.fromVector(registry, vec2);
 
   // Verify modifications - all values should be 10x original
   const auto& pos1 = registry.get<Position>(entity1);
@@ -336,9 +336,7 @@ TEST(VectorMapper, InputVectorTooSmall)
   entt::registry registry;
   std::vector<double> tooSmall(3); // Should be at least 5
 
-  EXPECT_THROW(
-      mapper.fromVector(registry, std::span<const double>(tooSmall)),
-      std::invalid_argument);
+  EXPECT_THROW(mapper.fromVector(registry, tooSmall), std::invalid_argument);
 }
 
 TEST(VectorMapper, NoMapperFillsZeros)

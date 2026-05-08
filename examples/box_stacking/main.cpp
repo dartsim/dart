@@ -43,6 +43,7 @@
 #include <CLI/CLI.hpp>
 
 #include <iostream>
+#include <ranges>
 
 using namespace dart;
 
@@ -83,7 +84,7 @@ std::vector<dynamics::SkeletonPtr> createBoxStack(
 {
   std::vector<dynamics::SkeletonPtr> boxSkels(numBoxes);
 
-  for (auto i = 0u; i < numBoxes; ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, numBoxes)) {
     boxSkels[i] = createBox(
         Eigen::Vector3d(0.0, 0.0, heightFromGround + 0.25 + i * 0.5));
   }

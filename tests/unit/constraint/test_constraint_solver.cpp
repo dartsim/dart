@@ -1686,7 +1686,7 @@ TEST(ConstraintSolver, EachConstraintConstAndNonConst)
 
   std::vector<constraint::ConstraintBase*> seen;
   solver.eachConstraint([&](auto constraint) {
-    using ConstraintType = std::decay_t<decltype(constraint)>;
+    using ConstraintType = std::remove_cvref_t<decltype(constraint)>;
     if constexpr (std::is_pointer_v<ConstraintType>) {
       seen.push_back(constraint);
     } else {

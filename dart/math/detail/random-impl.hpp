@@ -33,6 +33,7 @@
 #include <dart/math/random.hpp>
 
 #include <concepts>
+#include <ranges>
 #include <type_traits>
 
 namespace dart {
@@ -137,8 +138,8 @@ struct UniformMatrixImpl<Derived>
     const auto minEval = min.eval();
     const auto maxEval = max.eval();
     typename Derived::PlainObject result(minEval.rows(), minEval.cols());
-    for (Eigen::Index i = 0; i < minEval.rows(); ++i) {
-      for (Eigen::Index j = 0; j < minEval.cols(); ++j) {
+    for (const auto i : std::views::iota(Eigen::Index{0}, minEval.rows())) {
+      for (const auto j : std::views::iota(Eigen::Index{0}, minEval.cols())) {
         result(i, j) = Random::uniform<typename Derived::Scalar>(
             minEval(i, j), maxEval(i, j));
       }
@@ -162,7 +163,7 @@ struct UniformMatrixImpl<Derived>
     const auto minEval = min.eval();
     const auto maxEval = max.eval();
     typename Derived::PlainObject result(minEval.size());
-    for (Eigen::Index i = 0; i < minEval.size(); ++i) {
+    for (const auto i : std::views::iota(Eigen::Index{0}, minEval.size())) {
       result[i]
           = Random::uniform<typename Derived::Scalar>(minEval[i], maxEval[i]);
     }
@@ -185,8 +186,8 @@ struct UniformMatrixImpl<Derived>
     const auto minEval = min.eval();
     const auto maxEval = max.eval();
     typename Derived::PlainObject result;
-    for (Eigen::Index i = 0; i < minEval.rows(); ++i) {
-      for (Eigen::Index j = 0; j < minEval.cols(); ++j) {
+    for (const auto i : std::views::iota(Eigen::Index{0}, minEval.rows())) {
+      for (const auto j : std::views::iota(Eigen::Index{0}, minEval.cols())) {
         result(i, j) = Random::uniform<typename Derived::Scalar>(
             minEval(i, j), maxEval(i, j));
       }
@@ -210,7 +211,7 @@ struct UniformMatrixImpl<Derived>
     const auto minEval = min.eval();
     const auto maxEval = max.eval();
     typename Derived::PlainObject result;
-    for (Eigen::Index i = 0; i < minEval.size(); ++i) {
+    for (const auto i : std::views::iota(Eigen::Index{0}, minEval.size())) {
       result[i]
           = Random::uniform<typename Derived::Scalar>(minEval[i], maxEval[i]);
     }

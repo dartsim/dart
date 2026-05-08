@@ -115,10 +115,9 @@ RollingResult runRollingTrial(
   double support = shape->getBoundingBox().getMax()[2];
   if (const auto ellipsoid = std::dynamic_pointer_cast<EllipsoidShape>(shape)) {
     const Eigen::Vector3d radii = ellipsoid->getRadii();
-    const double denom = std::pow(normal[0] / radii[0], 2)
-                         + std::pow(normal[1] / radii[1], 2)
-                         + std::pow(normal[2] / radii[2], 2);
-    support = 1.0 / std::sqrt(denom);
+    const double denom = std::hypot(
+        normal[0] / radii[0], normal[1] / radii[1], normal[2] / radii[2]);
+    support = 1.0 / denom;
   }
 
   Eigen::Isometry3d objectTf = Eigen::Isometry3d::Identity();

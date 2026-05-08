@@ -38,7 +38,11 @@
 
 #include <Eigen/Geometry>
 
+#include <algorithm>
+#include <ranges>
 #include <span>
+
+#include <cstddef>
 
 namespace dart {
 namespace math {
@@ -133,8 +137,8 @@ void TriMesh<S>::computeVertexNormals()
   this->mVertexNormals.clear();
   this->mVertexNormals.resize(this->mVertices.size(), Vector3::Zero());
 
-  for (auto i = 0u; i < mTriangles.size(); ++i) {
-    auto& triangle = mTriangles[i];
+  for (const auto i : std::views::iota(std::size_t{0}, mTriangles.size())) {
+    const auto& triangle = mTriangles[i];
     this->mVertexNormals[triangle[0]] += mTriangleNormals[i];
     this->mVertexNormals[triangle[1]] += mTriangleNormals[i];
     this->mVertexNormals[triangle[2]] += mTriangleNormals[i];
@@ -213,9 +217,10 @@ TriMesh<S>& TriMesh<S>::operator+=(const TriMesh& other)
 
   const Triangle offset = Triangle::Constant(oldNumVertices);
   mTriangles.resize(mTriangles.size() + other.mTriangles.size());
-  for (auto i = 0u; i < other.mTriangles.size(); ++i) {
-    mTriangles[i + oldNumTriangles] = other.mTriangles[i] + offset;
-  }
+  std::ranges::transform(
+      other.mTriangles,
+      mTriangles.begin() + static_cast<std::ptrdiff_t>(oldNumTriangles),
+      [&](const Triangle& triangle) { return triangle + offset; });
 
   return *this;
 }
@@ -243,14 +248,14 @@ void TriMesh<S>::computeTriangleNormals()
 {
   mTriangleNormals.resize(mTriangles.size());
 
-  for (auto i = 0u; i < mTriangles.size(); ++i) {
-    auto& triangle = mTriangles[i];
-    const Vector3 v01
-        = this->mVertices[triangle[1]] - this->mVertices[triangle[0]];
-    const Vector3 v02
-        = this->mVertices[triangle[2]] - this->mVertices[triangle[0]];
-    mTriangleNormals[i] = v01.cross(v02);
-  }
+  std::ranges::transform(
+      mTriangles, mTriangleNormals.begin(), [&](const Triangle& triangle) {
+        const Vector3 v01
+            = this->mVertices[triangle[1]] - this->mVertices[triangle[0]];
+        const Vector3 v02
+            = this->mVertices[triangle[2]] - this->mVertices[triangle[0]];
+        return v01.cross(v02);
+      });
 
   normalizeTriangleNormals();
 }

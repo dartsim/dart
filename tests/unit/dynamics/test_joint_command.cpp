@@ -35,6 +35,7 @@
 #include <gtest/gtest.h>
 
 #include <limits>
+#include <ranges>
 
 using namespace dart;
 using namespace dart::dynamics;
@@ -163,13 +164,13 @@ TEST(JointCommand, SimulationDoesNotCrashWithInfAccelerationCommand)
   });
 
   Eigen::VectorXd positions = skel->getPositions();
-  for (Eigen::Index i = 0; i < positions.size(); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, positions.size())) {
     EXPECT_TRUE(std::isfinite(positions[i]))
         << "Position " << i << " should be finite after simulation";
   }
 
   Eigen::VectorXd velocities = skel->getVelocities();
-  for (Eigen::Index i = 0; i < velocities.size(); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, velocities.size())) {
     EXPECT_TRUE(std::isfinite(velocities[i]))
         << "Velocity " << i << " should be finite after simulation";
   }

@@ -65,7 +65,7 @@ template <std::size_t W>
   using MaskT = VecMask<float, W>;
 
   constexpr float range = 88.3762588501f;
-  constexpr float invLog2 = 1.44269504088896341f;
+  constexpr float invLog2 = MathConstants<float>::log2E;
   constexpr float nlog2Hi = -0.693359375f;
   constexpr float nlog2Lo = 2.12194440e-4f;
 
@@ -135,7 +135,7 @@ template <std::size_t W>
   using MaskT = VecMask<double, W>;
 
   constexpr double range = 709.43613930310391424428;
-  constexpr double invLog2 = 1.44269504088896340736;
+  constexpr double invLog2 = MathConstants<double>::log2E;
   constexpr double nlog2Hi = -0.693145751953125;
   constexpr double nlog2Lo = -1.42860682030941723212e-6;
 

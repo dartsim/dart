@@ -9,6 +9,7 @@
 #include <benchmark/benchmark.h>
 
 #include <random>
+#include <ranges>
 #include <vector>
 
 using dReal = double;
@@ -63,7 +64,7 @@ public:
 
     a.resize(N);
     b.resize(N);
-    for (int i = 0; i < N; ++i) {
+    for (const int i : std::views::iota(0, N)) {
       a[i] = dis(gen);
       b[i] = dis(gen);
     }

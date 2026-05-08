@@ -35,7 +35,12 @@
 
 #include <dart/utils/export.hpp>
 
+#include <algorithm>
+#include <concepts>
+#include <iterator>
+#include <ranges>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace dart {
@@ -87,6 +92,28 @@ private:
 };
 
 using Errors = std::vector<Error>;
+
+template <typename Range>
+concept ErrorRange = std::ranges::input_range<Range>
+                     && std::same_as<
+                         std::remove_cvref_t<std::ranges::range_value_t<Range>>,
+                         Error>;
+
+template <ErrorRange Range>
+void appendErrorRange(Errors& errors, Range&& newErrors)
+{
+  if constexpr (std::ranges::sized_range<Range>) {
+    errors.reserve(errors.size() + std::ranges::size(newErrors));
+  }
+
+  if constexpr (
+      std::is_rvalue_reference_v<Range&&>
+      && !std::is_const_v<std::remove_reference_t<Range>>) {
+    std::ranges::move(newErrors, std::back_inserter(errors));
+  } else {
+    std::ranges::copy(newErrors, std::back_inserter(errors));
+  }
+}
 
 } // namespace detail
 } // namespace MjcfParser

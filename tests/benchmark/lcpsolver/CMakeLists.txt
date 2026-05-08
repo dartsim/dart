@@ -32,6 +32,17 @@ add_executable(BM_MATRIX_MULTIPLY bm_matrix_multiply.cpp)
 target_link_libraries(BM_MATRIX_MULTIPLY dart benchmark::benchmark)
 set_target_properties(BM_MATRIX_MULTIPLY PROPERTIES FOLDER "Benchmarks")
 
+foreach(benchmark_target IN ITEMS
+  BM_LCPSOLVER
+  BM_LCPSOLVER_SOLVERS
+  BM_LCP_COMPARE
+  BM_ROW_SWAPPING
+  BM_DOT_PRODUCT
+  BM_MATRIX_MULTIPLY
+)
+  target_compile_features(${benchmark_target} PRIVATE cxx_std_20)
+endforeach()
+
 # Add to formatting
 dart_format_add(
   bm_lcpsolver.cpp

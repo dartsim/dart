@@ -4,6 +4,8 @@
 
 #include <gtest/gtest.h>
 
+#include <ranges>
+
 using namespace dart::dynamics;
 
 //==============================================================================
@@ -255,7 +257,8 @@ TEST(MultiSphereConvexHullShapeTest, Clone)
   const auto& originalSpheres = shape->getSpheres();
   const auto& clonedSpheres = clonedShape->getSpheres();
 
-  for (std::size_t i = 0; i < originalSpheres.size(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, originalSpheres.size())) {
     EXPECT_DOUBLE_EQ(clonedSpheres[i].first, originalSpheres[i].first);
     EXPECT_TRUE(clonedSpheres[i].second.isApprox(originalSpheres[i].second));
   }

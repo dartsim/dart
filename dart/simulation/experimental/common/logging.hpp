@@ -38,6 +38,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <source_location>
 #include <string>
 
 #define DART_EXPERIMENTAL_DETAIL_PP_CONCAT_IMPL(a, b) a##b
@@ -253,22 +254,35 @@ inline std::string makeContext(const char* file, int line, const char* function)
   return {};
 }
 
-template <typename Format, typename... Args>
+inline std::string makeContext(const std::source_location& location)
+{
+  return makeContext(
+      location.file_name(),
+      static_cast<int>(location.line()),
+      location.function_name());
+}
+
+template <typename S, typename... Args>
 void log(
     LogLevel level,
     const char* file,
     int line,
     const char* function,
-    Format&& format,
+    const S& format,
     Args&&... args)
 {
   auto& logger = Logger::instance();
+  const auto spdlogLevel = toSpdlogLevel(level);
+  if (!logger->should_log(spdlogLevel)) {
+    return;
+  }
+
+  fmt::basic_string_view<char> fmt_view(format);
+  auto message = fmt::vformat(fmt_view, fmt::make_format_args(args...));
 #ifndef NDEBUG
   std::string prefix = makeContext(file, line, function);
   if (!prefix.empty()) {
-    auto message = fmt::format(
-        std::forward<Format>(format), std::forward<Args>(args)...);
-    logger->log(toSpdlogLevel(level), "{}{}", prefix, message);
+    logger->log(spdlogLevel, "{}{}", prefix, message);
     return;
   }
 #else
@@ -276,9 +290,21 @@ void log(
   (void)line;
   (void)function;
 #endif
-  logger->log(
-      toSpdlogLevel(level),
-      std::forward<Format>(format),
+  logger->log(spdlogLevel, "{}", message);
+}
+
+template <typename S, typename... Args>
+void log(
+    LogLevel level,
+    const std::source_location& location,
+    const S& format,
+    Args&&... args)
+{
+  log(level,
+      location.file_name(),
+      static_cast<int>(location.line()),
+      location.function_name(),
+      format,
       std::forward<Args>(args)...);
 }
 
@@ -301,9 +327,7 @@ inline void initializeLogging()
 #ifndef NDEBUG
   detail::log(
       LogLevel::Info,
-      __FILE__,
-      __LINE__,
-      __func__,
+      std::source_location::current(),
       "simulation-experimental logging initialized");
 #endif
 }
@@ -326,49 +350,37 @@ inline LogLevel getLogLevel()
 #define DART_EXPERIMENTAL_TRACE(...)                                           \
   ::dart::simulation::experimental::common::detail::log(                       \
       ::dart::simulation::experimental::common::LogLevel::Trace,               \
-      __FILE__,                                                                \
-      __LINE__,                                                                \
-      __func__,                                                                \
+      ::std::source_location::current(),                                       \
       __VA_ARGS__)
 
 #define DART_EXPERIMENTAL_DEBUG(...)                                           \
   ::dart::simulation::experimental::common::detail::log(                       \
       ::dart::simulation::experimental::common::LogLevel::Debug,               \
-      __FILE__,                                                                \
-      __LINE__,                                                                \
-      __func__,                                                                \
+      ::std::source_location::current(),                                       \
       __VA_ARGS__)
 
 #define DART_EXPERIMENTAL_INFO(...)                                            \
   ::dart::simulation::experimental::common::detail::log(                       \
       ::dart::simulation::experimental::common::LogLevel::Info,                \
-      __FILE__,                                                                \
-      __LINE__,                                                                \
-      __func__,                                                                \
+      ::std::source_location::current(),                                       \
       __VA_ARGS__)
 
 #define DART_EXPERIMENTAL_WARN(...)                                            \
   ::dart::simulation::experimental::common::detail::log(                       \
       ::dart::simulation::experimental::common::LogLevel::Warn,                \
-      __FILE__,                                                                \
-      __LINE__,                                                                \
-      __func__,                                                                \
+      ::std::source_location::current(),                                       \
       __VA_ARGS__)
 
 #define DART_EXPERIMENTAL_ERROR(...)                                           \
   ::dart::simulation::experimental::common::detail::log(                       \
       ::dart::simulation::experimental::common::LogLevel::Error,               \
-      __FILE__,                                                                \
-      __LINE__,                                                                \
-      __func__,                                                                \
+      ::std::source_location::current(),                                       \
       __VA_ARGS__)
 
 #define DART_EXPERIMENTAL_CRITICAL(...)                                        \
   ::dart::simulation::experimental::common::detail::log(                       \
       ::dart::simulation::experimental::common::LogLevel::Critical,            \
-      __FILE__,                                                                \
-      __LINE__,                                                                \
-      __func__,                                                                \
+      ::std::source_location::current(),                                       \
       __VA_ARGS__)
 
 // Conditional logging

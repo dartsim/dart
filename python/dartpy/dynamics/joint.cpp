@@ -15,6 +15,7 @@
 #include <nanobind/stl/vector.h>
 
 #include <span>
+#include <string>
 
 namespace nb = nanobind;
 
@@ -102,7 +103,7 @@ void defJoint(nb::module_& m)
       .def(
           "setActuatorTypes",
           [](Joint& self, const std::vector<ActuatorType>& actuatorTypes) {
-            self.setActuatorTypes(std::span<const ActuatorType>(actuatorTypes));
+            self.setActuatorTypes(actuatorTypes);
           },
           nb::arg("actuator_types"))
       .def(

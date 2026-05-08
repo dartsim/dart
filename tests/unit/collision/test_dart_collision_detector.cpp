@@ -336,7 +336,8 @@ TEST(DARTCollisionGroup, EngineDataCallbacks)
   group.addCollisionObjectToEngine(objectA.get());
   EXPECT_EQ(group.getNumObjects(), 1u);
 
-  std::array<CollisionObject*, 2> objects{objectA.get(), objectB.get()};
+  auto objects
+      = std::to_array<CollisionObject*>({objectA.get(), objectB.get()});
   group.addCollisionObjectsToEngine(objects);
   EXPECT_EQ(group.getNumObjects(), 2u);
 

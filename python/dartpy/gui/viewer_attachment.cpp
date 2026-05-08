@@ -74,7 +74,7 @@ void defPolyhedronVisual(nb::module_& m)
           "setVertices",
           [](PolyhedronVisual& self,
              const std::vector<Eigen::Vector3d>& vertices) {
-            self.setVertices(std::span<const Eigen::Vector3d>(vertices));
+            self.setVertices(vertices);
           })
       .def(
           "setVerticesMatrix",

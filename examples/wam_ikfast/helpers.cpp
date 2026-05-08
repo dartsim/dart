@@ -38,6 +38,7 @@
 
 #include <dart/io/read.hpp>
 
+#include <ranges>
 #include <sstream>
 
 //==============================================================================
@@ -134,11 +135,13 @@ void enableDragAndDrops(
     dart::gui::Viewer& viewer, const dart::dynamics::SkeletonPtr& wam)
 {
   // Turn on drag-and-drop for the whole Skeleton
-  for (std::size_t i = 0; i < wam->getNumBodyNodes(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, wam->getNumBodyNodes())) {
     viewer.enableDragAndDrop(wam->getBodyNode(i), false, false);
   }
 
-  for (std::size_t i = 0; i < wam->getNumEndEffectors(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, wam->getNumEndEffectors())) {
     dart::dynamics::EndEffector* ee = wam->getEndEffector(i);
     if (!ee->getIK()) {
       continue;

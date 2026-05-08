@@ -30,10 +30,11 @@
    - IKFAST_NAMESPACE - Enclose all functions and classes in this namespace, the ``main`` function is excluded.
 
  */
-#include <vector>
-#include <list>
-#include <stdexcept>
 #include <cmath>
+#include <list>
+#include <numbers>
+#include <stdexcept>
+#include <vector>
 
 #ifndef IKFAST_HEADER_COMMON
 #define IKFAST_HEADER_COMMON
@@ -169,11 +170,14 @@ public:
                 solution[i] = _vbasesol[i].foffset;
             else {
                 solution[i] = freevalues[_vbasesol[i].freeind]*_vbasesol[i].fmul + _vbasesol[i].foffset;
-                if( solution[i] > T(3.14159265358979) ) {
-                    solution[i] -= T(6.28318530717959);
+                const T pi = T(std::numbers::pi_v<long double>);
+                const T negativePi = T(-std::numbers::pi_v<long double>);
+                const T twoPi = T(2 * std::numbers::pi_v<long double>);
+                if( solution[i] > pi ) {
+                    solution[i] -= twoPi;
                 }
-                else if( solution[i] < T(-3.14159265358979) ) {
-                    solution[i] += T(6.28318530717959);
+                else if( solution[i] < negativePi ) {
+                    solution[i] += twoPi;
                 }
             }
         }

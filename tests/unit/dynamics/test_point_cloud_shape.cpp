@@ -47,7 +47,7 @@ TEST(PointCloudShape, PointsAndBoundingBox)
   EXPECT_VECTOR_NEAR(bbox.getMin(), Eigen::Vector3d(-2.0, -1.5, -1.0), 1e-12);
   EXPECT_VECTOR_NEAR(bbox.getMax(), Eigen::Vector3d(1.0, 3.0, 2.0), 1e-12);
 
-  std::array<Eigen::Vector3d, 1> replacement = {Eigen::Vector3d(4.0, 5.0, 6.0)};
+  auto replacement = std::to_array({Eigen::Vector3d(4.0, 5.0, 6.0)});
   shape.setPoint(replacement);
   EXPECT_EQ(shape.getNumPoints(), 1u);
   EXPECT_TRUE(shape.getPoints()[0].isApprox(replacement[0]));
@@ -78,8 +78,9 @@ TEST(PointCloudShape, ColorsAndClone)
   shape.setOverallColor(overall);
   EXPECT_VECTOR_NEAR(shape.getOverallColor(), overall, 1e-12);
 
-  std::array<Eigen::Vector4d, 2> colors = {
-      Eigen::Vector4d(0.8, 0.1, 0.1, 1.0), Eigen::Vector4d(0.2, 0.9, 0.2, 1.0)};
+  auto colors = std::to_array(
+      {Eigen::Vector4d(0.8, 0.1, 0.1, 1.0),
+       Eigen::Vector4d(0.2, 0.9, 0.2, 1.0)});
   shape.setColors(colors);
   const auto colorSpan = shape.getColors();
   EXPECT_EQ(colorSpan.size(), 2u);

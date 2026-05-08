@@ -42,6 +42,7 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <ranges>
 
 using namespace dart;
 using namespace dart::common;
@@ -1292,7 +1293,7 @@ Jacobian AdTJac1(const Eigen::Isometry3d& _T, const Jacobian& _J)
 {
   Jacobian res = Jacobian::Zero(6, _J.cols());
 
-  for (int i = 0; i < _J.cols(); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, _J.cols())) {
     res.col(i) = AdT(_T, _J.col(i));
   }
   return res;
@@ -1310,7 +1311,7 @@ typename Derived::PlainObject AdTJac2(
 
   typename Derived::PlainObject ret(_J.rows(), _J.cols());
 
-  for (int i = 0; i < _J.cols(); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, _J.cols())) {
     ret.col(i) = AdT(_T, _J.col(i));
   }
 

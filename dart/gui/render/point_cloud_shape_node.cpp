@@ -47,7 +47,10 @@
 #include <osg/ShapeDrawable>
 #include <osg/Texture2D>
 
+#include <ranges>
 #include <span>
+
+#include <cstddef>
 
 namespace dart {
 namespace gui {
@@ -484,7 +487,7 @@ public:
         = shouldUseVisualAspectColor(points, colors, colorMode);
 
     mVertices->resize(points.size());
-    for (auto i = 0u; i < points.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, points.size())) {
       const auto& point = points[i];
       mVertices->at(i).set(
           static_cast<float>(point.x()),
@@ -513,7 +516,7 @@ public:
       mGeometry->setColorArray(mColors, ::osg::Array::BIND_OVERALL);
     } else if (colorMode == dynamics::PointCloudShape::BIND_PER_POINT) {
       mColors->resize(colors.size());
-      for (auto i = 0u; i < colors.size(); ++i) {
+      for (const auto i : std::views::iota(std::size_t{0}, colors.size())) {
         const auto& color = colors[i];
         mColors->at(i).set(
             static_cast<float>(color[0]),

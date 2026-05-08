@@ -65,6 +65,7 @@
 #include <sstream>
 #include <string>
 
+#include <cctype>
 #include <cstring>
 
 #if DART_HAVE_spdlog
@@ -911,8 +912,9 @@ TEST(SdfParser, WarnsOnTinyMassAndDefaultsInertia)
     EXPECT_TRUE(hasSmallMassWarning)
         << "Expected warning about tiny mass clamping in logs: " << logs;
     std::string logsLower = logs;
-    std::transform(
-        logsLower.begin(), logsLower.end(), logsLower.begin(), ::tolower);
+    std::ranges::transform(logsLower, logsLower.begin(), [](unsigned char c) {
+      return static_cast<char>(std::tolower(c));
+    });
     EXPECT_NE(logsLower.find("clamping to"), std::string::npos)
         << "Expected warning about tiny mass clamping in logs: " << logs;
     EXPECT_NE(logs.find("defines <mass> but no <inertia>"), std::string::npos)

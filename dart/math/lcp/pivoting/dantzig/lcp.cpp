@@ -247,20 +247,20 @@ bool SolveLCP(
   PivotMatrix<Scalar> A_pivot(n, n, A_work, nskip);
 
   auto L = std::make_unique_for_overwrite<Scalar[]>(nSize * nskipSize);
-  auto d = std::make_unique_for_overwrite<Scalar[]>(n);
+  auto d = std::make_unique_for_overwrite<Scalar[]>(nSize);
   std::unique_ptr<Scalar[]> wStorage;
   Scalar* w = outer_w;
   if (!w) {
     wStorage = std::make_unique_for_overwrite<Scalar[]>(n);
     w = wStorage.get();
   }
-  auto delta_w = std::make_unique_for_overwrite<Scalar[]>(n);
-  auto delta_x = std::make_unique_for_overwrite<Scalar[]>(n);
-  auto Dell = std::make_unique_for_overwrite<Scalar[]>(n);
-  auto ell = std::make_unique_for_overwrite<Scalar[]>(n);
-  auto p = std::make_unique_for_overwrite<int[]>(n);
-  auto C = std::make_unique_for_overwrite<int[]>(n);
-  auto state = std::make_unique<bool[]>(n);
+  auto delta_w = std::make_unique_for_overwrite<Scalar[]>(nSize);
+  auto delta_x = std::make_unique_for_overwrite<Scalar[]>(nSize);
+  auto Dell = std::make_unique_for_overwrite<Scalar[]>(nSize);
+  auto ell = std::make_unique_for_overwrite<Scalar[]>(nSize);
+  auto p = std::make_unique_for_overwrite<int[]>(nSize);
+  auto C = std::make_unique_for_overwrite<int[]>(nSize);
+  auto state = std::make_unique<bool[]>(nSize);
 
   // create LCP object. note that tmp is set to delta_w to save space, this
   // optimization relies on knowledge of how tmp is used, so be careful!
