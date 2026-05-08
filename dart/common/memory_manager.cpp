@@ -117,9 +117,10 @@ FrameAllocator& MemoryManager::getFrameAllocator()
 void* MemoryManager::allocate(Type type, size_t bytes)
 {
   switch (type) {
-    case Type::Base:
+    using enum Type;
+    case Base:
       return mBaseAllocator.allocate(bytes);
-    case Type::Free:
+    case Free:
       if (mUseDebugAllocators) {
         DART_ASSERT(mFreeListAllocatorWithDebug != nullptr);
         return mFreeListAllocatorWithDebug->allocate(bytes);
@@ -127,7 +128,7 @@ void* MemoryManager::allocate(Type type, size_t bytes)
 
       DART_ASSERT(mFreeListAllocator != nullptr);
       return mFreeListAllocator->allocate(bytes);
-    case Type::Pool:
+    case Pool:
       if (mUseDebugAllocators) {
         DART_ASSERT(mPoolAllocatorWithDebug != nullptr);
         return mPoolAllocatorWithDebug->allocate(bytes);
@@ -135,7 +136,7 @@ void* MemoryManager::allocate(Type type, size_t bytes)
 
       DART_ASSERT(mPoolAllocator != nullptr);
       return mPoolAllocator->allocate(bytes);
-    case Type::Frame:
+    case Frame:
       DART_ASSERT(mFrameAllocator != nullptr);
       return mFrameAllocator->allocate(bytes);
   }
@@ -158,10 +159,11 @@ void* MemoryManager::allocateUsingPool(size_t bytes)
 void MemoryManager::deallocate(Type type, void* pointer, size_t bytes)
 {
   switch (type) {
-    case Type::Base:
+    using enum Type;
+    case Base:
       mBaseAllocator.deallocate(pointer, bytes);
       break;
-    case Type::Free:
+    case Free:
       if (mUseDebugAllocators) {
         DART_ASSERT(mFreeListAllocatorWithDebug != nullptr);
         mFreeListAllocatorWithDebug->deallocate(pointer, bytes);
@@ -171,7 +173,7 @@ void MemoryManager::deallocate(Type type, void* pointer, size_t bytes)
       DART_ASSERT(mFreeListAllocator != nullptr);
       mFreeListAllocator->deallocate(pointer, bytes);
       break;
-    case Type::Pool:
+    case Pool:
       if (mUseDebugAllocators) {
         DART_ASSERT(mPoolAllocatorWithDebug != nullptr);
         mPoolAllocatorWithDebug->deallocate(pointer, bytes);
@@ -181,7 +183,7 @@ void MemoryManager::deallocate(Type type, void* pointer, size_t bytes)
       DART_ASSERT(mPoolAllocator != nullptr);
       mPoolAllocator->deallocate(pointer, bytes);
       break;
-    case Type::Frame:
+    case Frame:
       DART_ASSERT(mFrameAllocator != nullptr);
       mFrameAllocator->deallocate(pointer, bytes);
       break;

@@ -158,9 +158,10 @@ Eigen::Matrix3d EulerJoint::convertToRotation(
     const Eigen::Vector3d& _positions, AxisOrder _ordering)
 {
   switch (_ordering) {
-    case AxisOrder::XYZ:
+    using enum AxisOrder;
+    case XYZ:
       return math::eulerXYZToMatrix(_positions);
-    case AxisOrder::ZYX:
+    case ZYX:
       return math::eulerZYXToMatrix(_positions);
     default: {
       DART_ERROR(
@@ -200,7 +201,8 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
   Eigen::Vector6d J2 = Eigen::Vector6d::Zero();
 
   switch (getAxisOrder()) {
-    case AxisOrder::XYZ: {
+    using enum AxisOrder;
+    case XYZ: {
       //------------------------------------------------------------------------
       // S = [    c1*c2, s2,  0
       //       -(c1*s2), c2,  0
@@ -224,7 +226,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
 
       break;
     }
-    case AxisOrder::ZYX: {
+    case ZYX: {
       //------------------------------------------------------------------------
       // S = [   -s1,    0,   1
       //       s2*c1,   c2,   0
@@ -301,12 +303,13 @@ void EulerJoint::updateDegreeOfFreedomNames()
 {
   std::vector<std::string> affixes;
   switch (getAxisOrder()) {
-    case AxisOrder::ZYX:
+    using enum AxisOrder;
+    case ZYX:
       affixes.push_back("_z");
       affixes.push_back("_y");
       affixes.push_back("_x");
       break;
-    case AxisOrder::XYZ:
+    case XYZ:
       affixes.push_back("_x");
       affixes.push_back("_y");
       affixes.push_back("_z");
