@@ -36,7 +36,9 @@
 #include <dart/simd/detail/avx2/vec.hpp>
 #include <dart/simd/detail/avx2/vec_mask.hpp>
 
-#include <cstring>
+#include <bit>
+
+#include <cstddef>
 
 #if defined(DART_SIMD_AVX2)
 
@@ -530,8 +532,7 @@ frexpSimd(const Vec<float, 8>& v)
     v.store(vArr);
 
     for (std::size_t i = 0; i < 8; ++i) {
-      std::uint32_t b;
-      std::memcpy(&b, &vArr[i], sizeof(float));
+      std::uint32_t b = std::bit_cast<std::uint32_t>(vArr[i]);
 
       std::int32_t biasedExp
           = static_cast<std::int32_t>((b & 0x7F800000) >> 23);
@@ -550,14 +551,14 @@ frexpSimd(const Vec<float, 8>& v)
           continue;
         }
         float normalized = vArr[i] * 8388608.0f;
-        std::memcpy(&b, &normalized, sizeof(float));
+        b = std::bit_cast<std::uint32_t>(normalized);
         biasedExp = static_cast<std::int32_t>((b & 0x7F800000) >> 23);
         expAdjust = -23;
       }
 
       expArr[i] = biasedExp - 127 + expAdjust;
       std::uint32_t mantResult = (b & 0x807FFFFF) | 0x3F000000;
-      std::memcpy(&mantArr[i], &mantResult, sizeof(float));
+      mantArr[i] = std::bit_cast<float>(mantResult);
     }
     return {Vec<float, 8>::load(mantArr), Vec<std::int32_t, 8>::load(expArr)};
   }
