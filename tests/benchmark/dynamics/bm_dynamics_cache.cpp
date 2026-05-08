@@ -914,7 +914,7 @@ static void BM_ParallelWorlds(benchmark::State& state)
   }
 
   for (auto _ : state) {
-    std::vector<std::jthread> threads;
+    std::vector<std::thread> threads;
     threads.reserve(numThreads);
     for (int t = 0; t < numThreads; ++t) {
       threads.emplace_back([&worlds, t, stepsPerThread]() {
@@ -922,6 +922,9 @@ static void BM_ParallelWorlds(benchmark::State& state)
           worlds[t]->step();
         }
       });
+    }
+    for (auto& thread : threads) {
+      thread.join();
     }
   }
   state.SetItemsProcessed(
