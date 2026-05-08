@@ -47,6 +47,7 @@
 #include <osg/ShapeDrawable>
 #include <osg/Texture2D>
 
+#include <algorithm>
 #include <ranges>
 #include <span>
 
@@ -487,13 +488,13 @@ public:
         = shouldUseVisualAspectColor(points, colors, colorMode);
 
     mVertices->resize(points.size());
-    for (const auto i : std::views::iota(std::size_t{0}, points.size())) {
-      const auto& point = points[i];
-      mVertices->at(i).set(
-          static_cast<float>(point.x()),
-          static_cast<float>(point.y()),
-          static_cast<float>(point.z()));
-    }
+    std::ranges::transform(
+        points, mVertices->begin(), [](const Eigen::Vector3d& point) {
+          return ::osg::Vec3(
+              static_cast<float>(point.x()),
+              static_cast<float>(point.y()),
+              static_cast<float>(point.z()));
+        });
 
     if (useVisualAspectColor
         || colorMode == dynamics::PointCloudShape::USE_SHAPE_COLOR) {
@@ -516,14 +517,14 @@ public:
       mGeometry->setColorArray(mColors, ::osg::Array::BIND_OVERALL);
     } else if (colorMode == dynamics::PointCloudShape::BIND_PER_POINT) {
       mColors->resize(colors.size());
-      for (const auto i : std::views::iota(std::size_t{0}, colors.size())) {
-        const auto& color = colors[i];
-        mColors->at(i).set(
-            static_cast<float>(color[0]),
-            static_cast<float>(color[1]),
-            static_cast<float>(color[2]),
-            static_cast<float>(color[3]));
-      }
+      std::ranges::transform(
+          colors, mColors->begin(), [](const Eigen::Vector4d& color) {
+            return ::osg::Vec4(
+                static_cast<float>(color[0]),
+                static_cast<float>(color[1]),
+                static_cast<float>(color[2]),
+                static_cast<float>(color[3]));
+          });
       mGeometry->setColorArray(mColors, ::osg::Array::BIND_PER_VERTEX);
     }
 

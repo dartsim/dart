@@ -44,6 +44,7 @@
 #include <osg/LineWidth>
 #include <osg/ShapeDrawable>
 
+#include <algorithm>
 #include <ranges>
 
 #include <cstddef>
@@ -236,9 +237,10 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
       mVertices->resize(vertices.size());
     }
 
-    for (const auto i : std::views::iota(std::size_t{0}, vertices.size())) {
-      (*mVertices)[i] = eigToOsgVec3(vertices[i]);
-    }
+    std::ranges::transform(
+        vertices, mVertices->begin(), [](const Eigen::Vector3d& vertex) {
+          return eigToOsgVec3(vertex);
+        });
 
     setVertexArray(mVertices);
   }
