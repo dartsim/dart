@@ -2217,7 +2217,7 @@ void DynamicsTest::testImpulseBasedDynamics(const common::Uri& uri)
 
       // Set random impulses
       VectorXd impulses = VectorXd::Zero(dof);
-      for (int k = 0; k < std::ssize(impulses); ++k) {
+      for (auto k = 0; k < std::ssize(impulses); ++k) {
         impulses[k] = Random::uniform(lb, ub);
       }
       skel->setJointConstraintImpulses(impulses);

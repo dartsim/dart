@@ -101,7 +101,7 @@ public:
 
     if (enforceIdealPosture) {
       // Try to get the robot into the best possible posture
-      for (int i = 0; i < std::ssize(_x); ++i) {
+      for (auto i = 0; i < std::ssize(_x); ++i) {
         if (mIdeal.size() <= i) {
           break;
         }
@@ -110,7 +110,7 @@ public:
       }
     } else {
       // Only adjust the posture if it is really bad
-      for (int i = 0; i < std::ssize(_x); ++i) {
+      for (auto i = 0; i < std::ssize(_x); ++i) {
         if (mIdeal.size() <= i) {
           break;
         }

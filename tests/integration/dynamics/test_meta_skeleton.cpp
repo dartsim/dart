@@ -152,7 +152,7 @@ TEST(MetaSkeleton, Referential)
       Eigen::VectorXd ddq = tree->getAccelerations();
 
       for (std::size_t k = 0; k < numIterations; ++k) {
-        for (int r = 0; r < std::ssize(q); ++r) {
+        for (auto r = 0; r < std::ssize(q); ++r) {
           q[r] = math::Random::uniform<double>(-10, 10);
           dq[r] = math::Random::uniform<double>(-10, 10);
           ddq[r] = math::Random::uniform<double>(-10, 10);
