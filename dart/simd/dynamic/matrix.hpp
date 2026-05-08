@@ -39,6 +39,8 @@
 
 #include <Eigen/Core>
 
+#include <algorithm>
+
 namespace dart::simd {
 
 template <typename T>
@@ -110,7 +112,7 @@ public:
 
   void setZero()
   {
-    std::fill(data_.begin(), data_.end(), T(0));
+    std::ranges::fill(data_, T(0));
   }
 
   void setIdentity()
@@ -291,7 +293,7 @@ public:
   {
     DynamicMatrix result(
         static_cast<std::size_t>(m.rows()), static_cast<std::size_t>(m.cols()));
-    std::copy(m.data(), m.data() + m.size(), result.data_.data());
+    std::ranges::copy_n(m.data(), m.size(), result.data_.data());
     return result;
   }
 };
