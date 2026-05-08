@@ -146,12 +146,14 @@ std::vector<SolverTestCase> createAllSolvers()
 
 bool canSolve(const SolverTestCase& solver, const FactoryProblem& problem)
 {
+  using enum ProblemCategory;
+
   switch (problem.category) {
-    case ProblemCategory::Standard:
+    case Standard:
       return solver.supportsStandard;
-    case ProblemCategory::Boxed:
+    case Boxed:
       return solver.supportsBoxed;
-    case ProblemCategory::BoxedFriction:
+    case BoxedFriction:
       return solver.supportsFindex;
   }
   return false;

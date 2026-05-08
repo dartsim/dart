@@ -203,8 +203,7 @@ void retargetMimicsToBaseline(
         // Leave the baseline uncoupled so it serves as the reference.
         std::vector<dart::dynamics::MimicDofProperties> clearedProps(
             joint->getNumDofs());
-        joint->setMimicJointDofs(
-            std::span<const dart::dynamics::MimicDofProperties>(clearedProps));
+        joint->setMimicJointDofs(clearedProps);
         joint->setActuatorType(dart::dynamics::Joint::FORCE);
         joint->setUseCouplerConstraint(false);
         continue;

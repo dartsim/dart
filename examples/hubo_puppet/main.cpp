@@ -42,6 +42,7 @@
 #include <dart/all.hpp>
 #include <dart/io/read.hpp>
 
+#include <iterator>
 #include <span>
 
 using namespace dart::math;
@@ -99,7 +100,7 @@ public:
     mResultVector.setZero();
 
     if (enforceIdealPosture) {
-      for (int i = 0; i < _x.size(); ++i) {
+      for (auto i = 0; i < std::ssize(_x); ++i) {
         if (mIdeal.size() <= i) {
           break;
         }
@@ -107,7 +108,7 @@ public:
         mResultVector[i] = mWeights[i] * (_x[i] - mIdeal[i]);
       }
     } else {
-      for (int i = 0; i < _x.size(); ++i) {
+      for (auto i = 0; i < std::ssize(_x); ++i) {
         if (mIdeal.size() <= i) {
           break;
         }
@@ -207,7 +208,7 @@ public:
         DART_WARN(
             "This analytical IK was not able to configure properly, so it will "
             "not be able to compute solutions");
-        return {mSolutions.data(), mSolutions.size()};
+        return mSolutions;
       }
     }
 
@@ -217,13 +218,13 @@ public:
           "Attempting to perform an IK on a limb that no longer exists [{}]!",
           getMethodName());
       DART_ASSERT(false);
-      return {mSolutions.data(), mSolutions.size()};
+      return mSolutions;
     }
 
     if (nullptr == mWristEnd) {
       DART_ERROR("Attempting to perform IK without a wrist!");
       DART_ASSERT(false);
-      return {mSolutions.data(), mSolutions.size()};
+      return mSolutions;
     }
 
     const std::size_t SP = 0;
@@ -346,7 +347,7 @@ public:
 
     checkSolutionJointLimits();
 
-    return {mSolutions.data(), mSolutions.size()};
+    return mSolutions;
   }
 
   std::span<const std::size_t> getDofs() const override
@@ -355,7 +356,7 @@ public:
       configure();
     }
 
-    return {mDofs.data(), mDofs.size()};
+    return mDofs;
   }
 
   const double zeroSize = 1e-8;
@@ -489,7 +490,7 @@ public:
         DART_WARN(
             "This analytical IK was not able to configure properly, so it will "
             "not be able to compute solutions");
-        return {mSolutions.data(), mSolutions.size()};
+        return mSolutions;
       }
     }
 
@@ -497,7 +498,7 @@ public:
     if (nullptr == base) {
       DART_ERROR("Attempting to perform IK on a limb that no longer exists!");
       DART_ASSERT(false);
-      return {mSolutions.data(), mSolutions.size()};
+      return mSolutions;
     }
 
     double nx, ny, sx, sy, ax, ay, az, px, py, pz;
@@ -583,7 +584,7 @@ public:
       testQ[4] = q5;
       testQ[5] = q6;
 
-      for (int k = 0; k < testQ.size(); ++k) {
+      for (auto k = 0; k < std::ssize(testQ); ++k) {
         if (fabs(testQ[k]) < zeroSize) {
           testQ[k] = 0;
         }
@@ -595,7 +596,7 @@ public:
 
     checkSolutionJointLimits();
 
-    return {mSolutions.data(), mSolutions.size()};
+    return mSolutions;
   }
 
   std::span<const std::size_t> getDofs() const override
@@ -604,7 +605,7 @@ public:
       configure();
     }
 
-    return {mDofs.data(), mDofs.size()};
+    return mDofs;
   }
 
   const double zeroSize = 1e-8;

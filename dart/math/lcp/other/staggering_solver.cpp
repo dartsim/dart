@@ -210,7 +210,7 @@ LcpResult StaggeringSolver::solve(
       = [&](std::span<const int> indices, const Eigen::VectorXd& values) {
           for (int k = 0; k < std::ssize(indices); ++k) {
             const int idx = indices[k];
-            double updated = x[idx] + relaxation * (values[k] - x[idx]);
+            double updated = std::lerp(x[idx], values[k], relaxation);
             if (std::isfinite(lo[idx])) {
               updated = std::max(updated, lo[idx]);
             }
@@ -227,7 +227,7 @@ LcpResult StaggeringSolver::solve(
                                     const Eigen::VectorXd& hiEff) {
     for (int k = 0; k < std::ssize(indices); ++k) {
       const int idx = indices[k];
-      double updated = x[idx] + relaxation * (values[k] - x[idx]);
+      double updated = std::lerp(x[idx], values[k], relaxation);
       if (std::isfinite(loEff[idx])) {
         updated = std::max(updated, loEff[idx]);
       }

@@ -37,6 +37,7 @@
 #include <Eigen/Cholesky>
 
 #include <algorithm>
+#include <ranges>
 
 #include <cmath>
 
@@ -141,7 +142,7 @@ LcpResult AdmmSolver::solve(
 
     // z-update: z = clamp(x + y/rho, lo, hi) with findex handling
     Eigen::VectorXd xTilde = x + y / rho;
-    for (Eigen::Index i = 0; i < n; ++i) {
+    for (const auto i : std::views::iota(Eigen::Index{0}, n)) {
       double loVal = lo[i];
       double hiVal = hi[i];
       if (findex[i] >= 0) {

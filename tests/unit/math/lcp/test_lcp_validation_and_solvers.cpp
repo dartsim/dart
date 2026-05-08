@@ -35,6 +35,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <limits>
 #include <string>
 #include <vector>
@@ -1103,8 +1104,8 @@ TEST(DantzigMatrixCoverage, MultiplyVariantsMatchEigen)
 
   Eigen::Matrix<double, p, q, Eigen::RowMajor> Be;
   Eigen::Matrix<double, q, r, Eigen::RowMajor> Ce;
-  std::copy(B.begin(), B.end(), Be.data());
-  std::copy(C.begin(), C.end(), Ce.data());
+  std::ranges::copy(B, Be.data());
+  std::ranges::copy(C, Ce.data());
   Eigen::Matrix<double, p, r, Eigen::RowMajor> expected0 = Be * Ce;
   for (int i = 0; i < p * r; ++i) {
     EXPECT_NEAR(A0[static_cast<std::size_t>(i)], expected0.data()[i], 1e-12);
@@ -1117,8 +1118,8 @@ TEST(DantzigMatrixCoverage, MultiplyVariantsMatchEigen)
 
   Eigen::Matrix<double, q, p, Eigen::RowMajor> Be1;
   Eigen::Matrix<double, q, r, Eigen::RowMajor> Ce1;
-  std::copy(B1.begin(), B1.end(), Be1.data());
-  std::copy(C1.begin(), C1.end(), Ce1.data());
+  std::ranges::copy(B1, Be1.data());
+  std::ranges::copy(C1, Ce1.data());
   Eigen::Matrix<double, p, r, Eigen::RowMajor> expected1
       = Be1.transpose() * Ce1;
   for (int i = 0; i < p * r; ++i) {
@@ -1132,8 +1133,8 @@ TEST(DantzigMatrixCoverage, MultiplyVariantsMatchEigen)
 
   Eigen::Matrix<double, p, q, Eigen::RowMajor> Be2;
   Eigen::Matrix<double, r, q, Eigen::RowMajor> Ce2;
-  std::copy(B2.begin(), B2.end(), Be2.data());
-  std::copy(C2.begin(), C2.end(), Ce2.data());
+  std::ranges::copy(B2, Be2.data());
+  std::ranges::copy(C2, Ce2.data());
   Eigen::Matrix<double, p, r, Eigen::RowMajor> expected2
       = Be2 * Ce2.transpose();
   for (int i = 0; i < p * r; ++i) {

@@ -35,6 +35,7 @@
 #include <dart/all.hpp>
 
 #include <random>
+#include <ranges>
 
 [[maybe_unused]] const double default_shape_density = 1000;  // kg/m^3
 [[maybe_unused]] const double default_shape_height = 0.1;    // m
@@ -203,7 +204,8 @@ protected:
   /// it, if one existed
   void removeSkeleton(const SkeletonPtr& skel)
   {
-    for (std::size_t i = 0; i < mJointConstraints.size(); ++i) {
+    for (const auto i :
+         std::views::iota(std::size_t{0}, mJointConstraints.size())) {
       const dart::constraint::DynamicJointConstraintPtr& constraint
           = mJointConstraints[i];
 

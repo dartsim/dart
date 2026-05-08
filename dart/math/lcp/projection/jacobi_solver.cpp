@@ -201,7 +201,7 @@ LcpResult JacobiSolver::solve(
       const double diag = A(i, i);
       if (std::isfinite(diag) && std::abs(diag) >= params->epsilonForDivision) {
         const double step = x[i] - w[i] / diag;
-        value = x[i] + relaxation * (step - x[i]);
+        value = std::lerp(x[i], step, relaxation);
       }
 
       if (std::isfinite(loEff[i])) {

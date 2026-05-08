@@ -34,6 +34,8 @@
 
 #include "wam_world.hpp"
 
+#include <ranges>
+
 //==============================================================================
 InputHandler::InputHandler(
     dart::gui::Viewer* viewer,
@@ -50,7 +52,8 @@ void InputHandler::initialize()
 {
   mRestConfig = mWam->getPositions();
 
-  for (std::size_t i = 0; i < mWam->getNumEndEffectors(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, mWam->getNumEndEffectors())) {
     const InverseKinematicsPtr ik = mWam->getEndEffector(i)->getIK();
     if (ik) {
       mDefaultBounds.push_back(ik->getErrorMethod().getBounds());
@@ -71,7 +74,8 @@ bool InputHandler::handle(
 
   if (::osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType()) {
     if (ea.getKey() == 'p' || ea.getKey() == 'P') {
-      for (std::size_t i = 0; i < mWam->getNumDofs(); ++i) {
+      for (const auto i :
+           std::views::iota(std::size_t{0}, mWam->getNumDofs())) {
         std::cout << mWam->getDof(i)->getName() << ": "
                   << mWam->getDof(i)->getPosition() << std::endl;
       }

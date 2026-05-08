@@ -43,6 +43,7 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
+#include <ranges>
 #include <span>
 
 namespace dart {
@@ -232,7 +233,7 @@ typename Derived::PlainObject AdTJac(
   typename Derived::PlainObject ret(_J.rows(), _J.cols());
 
   // Compute AdT column by column
-  for (int i = 0; i < _J.cols(); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, _J.cols())) {
     ret.col(i) = AdT(_T, _J.col(i));
   }
 

@@ -21,6 +21,7 @@
 #include <nanobind/stl/vector.h>
 
 #include <memory>
+#include <string>
 
 namespace nb = nanobind;
 

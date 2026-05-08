@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <bit>
+#include <memory>
 #include <new>
 #include <vector>
 
@@ -64,6 +66,9 @@ public:
   using is_always_equal = std::true_type;
 
   static constexpr std::size_t alignment = Alignment;
+
+  static_assert(
+      std::has_single_bit(Alignment), "Alignment must be a power of two.");
 
   constexpr AlignedAllocator() noexcept = default;
 
@@ -143,14 +148,9 @@ template <typename T>
 template <std::size_t Alignment, typename T>
 [[nodiscard]] inline T* assume_aligned(T* ptr) noexcept
 {
-#if defined(__GNUC__) || defined(__clang__)
-  return static_cast<T*>(__builtin_assume_aligned(ptr, Alignment));
-#elif defined(_MSC_VER)
-  __assume((reinterpret_cast<std::uintptr_t>(ptr) & (Alignment - 1)) == 0);
-  return ptr;
-#else
-  return ptr;
-#endif
+  static_assert(
+      std::has_single_bit(Alignment), "Alignment must be a power of two.");
+  return std::assume_aligned<Alignment>(ptr);
 }
 
 } // namespace dart::simd

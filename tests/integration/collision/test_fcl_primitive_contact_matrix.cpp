@@ -227,21 +227,20 @@ bool getExtentAlongDirection(
   if (const auto* ellipsoid
       = dynamic_cast<const dart::dynamics::EllipsoidShape*>(&shape)) {
     const Eigen::Vector3d radii = ellipsoid->getRadii();
-    extent = std::sqrt(
-        std::pow(radii.x() * dir.x(), 2) + std::pow(radii.y() * dir.y(), 2)
-        + std::pow(radii.z() * dir.z(), 2));
+    extent = std::hypot(
+        radii.x() * dir.x(), radii.y() * dir.y(), radii.z() * dir.z());
     return true;
   }
   if (const auto* cylinder
       = dynamic_cast<const dart::dynamics::CylinderShape*>(&shape)) {
-    const double xy = std::sqrt(dir.x() * dir.x() + dir.y() * dir.y());
+    const double xy = std::hypot(dir.x(), dir.y());
     extent = cylinder->getRadius() * xy
              + 0.5 * cylinder->getHeight() * std::abs(dir.z());
     return true;
   }
   if (const auto* cone
       = dynamic_cast<const dart::dynamics::ConeShape*>(&shape)) {
-    const double xy = std::sqrt(dir.x() * dir.x() + dir.y() * dir.y());
+    const double xy = std::hypot(dir.x(), dir.y());
     const double apex = 0.5 * cone->getHeight() * dir.z();
     const double base
         = -0.5 * cone->getHeight() * dir.z() + cone->getRadius() * xy;

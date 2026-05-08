@@ -35,6 +35,7 @@
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
 
+#include <algorithm>
 #include <regex>
 #include <sstream>
 #include <string_view>
@@ -255,7 +256,7 @@ bool Uri::fromPath(std::string_view path)
 #ifdef _WIN32
   // Replace backslashes (from Windows paths) with forward slashes.
   std::string unixPath = pathString;
-  std::replace(std::begin(unixPath), std::end(unixPath), '\\', '/');
+  std::ranges::replace(unixPath, '\\', '/');
 
   return fromString(fileScheme + "/" + pathString);
 #else

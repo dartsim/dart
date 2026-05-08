@@ -35,6 +35,8 @@
 
 #include <dart/dynamics/detail/entity_node_aspect.hpp>
 
+#include <concepts>
+
 namespace dart {
 namespace dynamics {
 
@@ -42,7 +44,7 @@ namespace dynamics {
 template <class Base>
 class EntityNode
   : public detail::
-        EntityNodeBase<Base, std::is_base_of<common::Composite, Base>::value>
+        EntityNodeBase<Base, std::derived_from<Base, common::Composite>>
 {
 public:
   using NameAspect = typename detail::EntityNodeAspectBase<Base>::Aspect;
@@ -50,9 +52,8 @@ public:
   /// Forwarding constructor
   template <typename... Args>
   EntityNode(Args&&... args)
-    : detail::
-          EntityNodeBase<Base, std::is_base_of<common::Composite, Base>::value>(
-              std::forward<Args>(args)...)
+    : detail::EntityNodeBase<Base, std::derived_from<Base, common::Composite>>(
+          std::forward<Args>(args)...)
   {
     this->template createAspect<NameAspect>();
   }

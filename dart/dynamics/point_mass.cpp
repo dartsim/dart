@@ -39,6 +39,8 @@
 #include "dart/math/geometry.hpp"
 #include "dart/math/helpers.hpp"
 
+#include <ranges>
+
 using namespace Eigen;
 
 namespace dart {
@@ -859,7 +861,8 @@ void PointMass::updateBiasForceFD(double _dt, const Eigen::Vector3d& _gravity)
   mAlpha = state.mForces - (kv + nN * ke) * getPositions()
            - (_dt * (kv + nN * ke) + kd) * getVelocities()
            - getMass() * getPartialAccelerations() - mB;
-  for (std::size_t i = 0; i < getNumConnectedPointMasses(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, getNumConnectedPointMasses())) {
     const State& i_state = getConnectedPointMass(i)->getState();
     mAlpha += ke * (i_state.mPositions + _dt * i_state.mVelocities);
   }

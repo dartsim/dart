@@ -39,6 +39,7 @@
 #include <iterator>
 #include <limits>
 #include <memory>
+#include <ranges>
 #include <sstream>
 #include <thread>
 #include <unordered_map>
@@ -380,7 +381,7 @@ void Profiler::printNode(
         return lhs->inclusiveNs > rhs->inclusiveNs;
       });
 
-  for (std::size_t idx = 0; idx < children.size(); ++idx) {
+  for (const auto idx : std::views::iota(std::size_t{0}, children.size())) {
     const auto* child = children[idx];
     const auto pct = percentage(child->inclusiveNs, threadTotalNs);
     if (pct < minPercent && child->inclusiveNs < 1'000'000) {
@@ -500,7 +501,7 @@ void Profiler::printSummary(std::ostream& os)
     const std::size_t hotLabelWidth
         = std::clamp<std::size_t>(maxHotLabel, 16, 48);
 
-    for (std::size_t i = 0; i < hotspotCount; ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, hotspotCount)) {
       const auto& entry = hotspots[i];
       const auto pct = percentage(entry.inclusiveNs, totalNs);
       const bool isHot = (i < 3) || (pct >= 20.0);

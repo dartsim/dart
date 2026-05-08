@@ -13,6 +13,8 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include <ranges>
+
 namespace {
 
 TEST(LCPTestProblems, allProblemsExist)
@@ -31,7 +33,7 @@ TEST(LCPTestProblems, randomWellFormedGeneration)
 
   EXPECT_EQ(problems.size(), dimensions.size());
 
-  for (size_t i = 0; i < problems.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, problems.size())) {
     EXPECT_EQ(problems[i].dimension, dimensions[i]);
     EXPECT_TRUE(problems[i].isWellFormed());
 
@@ -49,7 +51,7 @@ TEST(LCPTestProblems, randomWellFormedGeneration)
   auto problems2
       = dart::test::LCPTestProblems::generateRandomWellFormedProblems(
           dimensions, baseSeed);
-  for (size_t i = 0; i < problems.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, problems.size())) {
     EXPECT_TRUE(problems[i].A.isApprox(problems2[i].A, 1e-15))
         << "Random generation should be deterministic with same seed";
     EXPECT_TRUE(problems[i].b.isApprox(problems2[i].b, 1e-15))
@@ -65,7 +67,7 @@ TEST(LCPTestProblems, randomIllFormedGeneration)
 
   EXPECT_EQ(problems.size(), dimensions.size());
 
-  for (size_t i = 0; i < problems.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, problems.size())) {
     EXPECT_EQ(problems[i].dimension, dimensions[i]);
     EXPECT_FALSE(problems[i].isWellFormed());
     EXPECT_TRUE(

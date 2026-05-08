@@ -37,6 +37,7 @@
 #include <iostream>
 #include <limits>
 #include <string>
+#include <utility>
 
 using namespace dart;
 using namespace dart::dynamics;
@@ -698,7 +699,7 @@ void exerciseConstOverloads(const std::string& name)
   typename JointType::Vector q2Static = q2;
   const auto diffStatic
       = constJoint->getPositionDifferencesStatic(q2Static, q1Static);
-  EXPECT_EQ(static_cast<Eigen::Index>(diffStatic.size()), ndofs);
+  EXPECT_TRUE(std::cmp_equal(diffStatic.size(), ndofs));
 
   const auto jac = constJoint->getRelativeJacobian();
   EXPECT_EQ(jac.cols(), ndofs);

@@ -66,14 +66,17 @@
 #include <Eigen/StdVector>
 #include <sdf/sdf.hh>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <iterator>
 #include <map>
 #include <numeric>
+#include <ranges>
 #include <span>
 #include <sstream>
 #include <stdexcept>
@@ -938,8 +941,7 @@ NextResult getNextJointAndNodePair(
 void applyMimicConstraints(
     const dynamics::SkeletonPtr& skeleton, const JointMap& sdfJoints)
 {
-  for (const auto& entry : sdfJoints) {
-    const auto& jointInfo = entry.second;
+  for (const auto& jointInfo : sdfJoints | std::views::values) {
     if (jointInfo.mimicInfos.empty()) {
       continue;
     }
@@ -951,9 +953,8 @@ void applyMimicConstraints(
 
     const auto existingProps = joint->getMimicDofProperties();
     std::vector<dynamics::MimicDofProperties> props(joint->getNumDofs());
-    for (std::size_t i = 0; i < existingProps.size() && i < props.size(); ++i) {
-      props[i] = existingProps[i];
-    }
+    std::ranges::copy(
+        existingProps | std::views::take(props.size()), props.begin());
 
     bool applied = false;
     bool useCoupler = false;
@@ -989,8 +990,7 @@ void applyMimicConstraints(
       continue;
     }
 
-    joint->setMimicJointDofs(
-        std::span<const dynamics::MimicDofProperties>(props));
+    joint->setMimicJointDofs(props);
     joint->setActuatorType(dynamics::Joint::MIMIC);
     joint->setUseCouplerConstraint(useCoupler);
   }
@@ -1612,18 +1612,16 @@ SDFJoint readJoint(
   // Mimic metadata (captured before joint creation)
   if (hasElement(_jointElement, "axis")) {
     const ElementPtr& axisElement = getElement(_jointElement, "axis");
-    const auto mimics = readMimicElements(axisElement);
-    newJoint.mimicInfos.insert(
-        newJoint.mimicInfos.end(), mimics.begin(), mimics.end());
+    auto mimics = readMimicElements(axisElement);
+    std::ranges::move(mimics, std::back_inserter(newJoint.mimicInfos));
   }
   if (hasElement(_jointElement, "axis2")) {
     const ElementPtr& axis2Element = getElement(_jointElement, "axis2");
     auto mimics = readMimicElements(axis2Element);
-    for (auto& m : mimics) {
-      m.referenceDof = 1u; // axis2 maps to the second DoF
-    }
-    newJoint.mimicInfos.insert(
-        newJoint.mimicInfos.end(), mimics.begin(), mimics.end());
+    std::ranges::for_each(mimics, [](auto& mimic) {
+      mimic.referenceDof = 1u; // axis2 maps to the second DoF
+    });
+    std::ranges::move(mimics, std::back_inserter(newJoint.mimicInfos));
   }
 
   //--------------------------------------------------------------------------

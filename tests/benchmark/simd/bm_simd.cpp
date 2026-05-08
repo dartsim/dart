@@ -38,6 +38,8 @@
 #include <random>
 #include <vector>
 
+#include <cmath>
+
 using namespace dart::simd;
 
 namespace {
@@ -1851,7 +1853,7 @@ static void BM_Vector3Reflect_Batch_DART_f32(benchmark::State& state)
     vz[i] = dist(gen);
     // Pre-normalize the normals
     float nnx = dist(gen), nny = dist(gen), nnz = dist(gen);
-    float len = std::sqrt(nnx * nnx + nny * nny + nnz * nnz);
+    float len = std::hypot(nnx, nny, nnz);
     nx[i] = nnx / len;
     ny[i] = nny / len;
     nz[i] = nnz / len;

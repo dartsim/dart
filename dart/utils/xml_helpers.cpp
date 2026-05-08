@@ -40,6 +40,7 @@
 #include <fmt/format.h>
 
 #include <iostream>
+#include <ranges>
 #include <stdexcept>
 #include <vector>
 
@@ -133,160 +134,86 @@ char toChar(std::string_view str)
   return str[0];
 }
 
-//==============================================================================
-Eigen::Vector2d toVector2d(std::string_view str)
+namespace {
+
+template <typename Vector>
+void assignDoublePieces(
+    Vector& vector,
+    const std::vector<std::string>& pieces,
+    std::string_view scalarType,
+    std::string_view vectorType)
 {
-  Eigen::Vector2d ret;
-
-  const std::vector<std::string> pieces = common::split(common::trim(str));
-  DART_ASSERT(pieces.size() == 2);
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, pieces.size())) {
     if (pieces[i] != "") {
       try {
-        ret[i] = toDouble(pieces[i]);
+        vector[static_cast<Eigen::Index>(i)] = toDouble(pieces[i]);
       } catch (std::exception& e) {
         DART_ERROR(
-            "value [{}] is not a valid double for Eigen::Vector2d[{}]: {}",
+            "value [{}] is not a valid {} for {}[{}]: {}",
             pieces[i],
+            scalarType,
+            vectorType,
             i,
             e.what());
         throw;
       }
     }
   }
+}
 
+template <typename Vector>
+Vector toFixedVector(
+    std::string_view str,
+    std::size_t expectedSize,
+    std::string_view scalarType,
+    std::string_view vectorType)
+{
+  Vector ret;
+
+  const std::vector<std::string> pieces = common::split(common::trim(str));
+  DART_ASSERT(pieces.size() == expectedSize);
+  (void)expectedSize;
+
+  assignDoublePieces(ret, pieces, scalarType, vectorType);
   return ret;
+}
+
+} // namespace
+
+//==============================================================================
+Eigen::Vector2d toVector2d(std::string_view str)
+{
+  return toFixedVector<Eigen::Vector2d>(str, 2, "double", "Eigen::Vector2d");
 }
 
 //==============================================================================
 Eigen::Vector2i toVector2i(std::string_view str)
 {
-  Eigen::Vector2i ret;
-
-  const std::vector<std::string> pieces = common::split(common::trim(str));
-  DART_ASSERT(pieces.size() == 2);
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
-    if (pieces[i] != "") {
-      try {
-        ret[i] = toDouble(pieces[i]);
-      } catch (std::exception& e) {
-        DART_ERROR(
-            "value [{}] is not a valid double for Eigen::Vector2i[{}]: {}",
-            pieces[i],
-            i,
-            e.what());
-        throw;
-      }
-    }
-  }
-
-  return ret;
+  return toFixedVector<Eigen::Vector2i>(str, 2, "double", "Eigen::Vector2i");
 }
 
 //==============================================================================
 Eigen::Vector3d toVector3d(std::string_view str)
 {
-  Eigen::Vector3d ret;
-
-  const std::vector<std::string> pieces = common::split(common::trim(str));
-  DART_ASSERT(pieces.size() == 3);
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
-    if (pieces[i] != "") {
-      try {
-        ret[i] = toDouble(pieces[i]);
-      } catch (std::exception& e) {
-        DART_ERROR(
-            "value [{}] is not a valid double for Eigen::Vector3d[{}]: {}",
-            pieces[i],
-            i,
-            e.what());
-        throw;
-      }
-    }
-  }
-
-  return ret;
+  return toFixedVector<Eigen::Vector3d>(str, 3, "double", "Eigen::Vector3d");
 }
 
 //==============================================================================
 Eigen::Vector3i toVector3i(std::string_view str)
 {
-  Eigen::Vector3i ret;
-
-  const std::vector<std::string> pieces = common::split(common::trim(str));
-  DART_ASSERT(pieces.size() == 3);
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
-    if (pieces[i] != "") {
-      try {
-        ret[i] = toDouble(pieces[i]);
-      } catch (std::exception& e) {
-        DART_ERROR(
-            "value [{}] is not a valid int for Eigen::Vector3i[{}]: {}",
-            pieces[i],
-            i,
-            e.what());
-        throw;
-      }
-    }
-  }
-
-  return ret;
+  return toFixedVector<Eigen::Vector3i>(str, 3, "int", "Eigen::Vector3i");
 }
 
 //==============================================================================
 Eigen::Vector4d toVector4d(std::string_view str)
 {
-  Eigen::Vector4d ret;
-
-  const std::vector<std::string> pieces = common::split(common::trim(str));
-  DART_ASSERT(pieces.size() == 4);
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
-    if (pieces[i] != "") {
-      try {
-        ret[i] = toDouble(pieces[i]);
-      } catch (std::exception& e) {
-        DART_ERROR(
-            "value [{}] is not a valid double for Eigen::Vector4d[{}]: {}",
-            pieces[i],
-            i,
-            e.what());
-        throw;
-      }
-    }
-  }
-
-  return ret;
+  return toFixedVector<Eigen::Vector4d>(str, 4, "double", "Eigen::Vector4d");
 }
 
 //==============================================================================
 Eigen::Vector6d toVector6d(std::string_view str)
 {
-  Eigen::Vector6d ret;
-
-  const std::vector<std::string> pieces = common::split(common::trim(str));
-  DART_ASSERT(pieces.size() == 6);
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
-    if (pieces[i] != "") {
-      try {
-        ret[i] = toDouble(pieces[i]);
-      } catch (std::exception& e) {
-        DART_ERROR(
-            "value [{}] is not a valid double for Eigen::Vector6d[{}]: {}",
-            pieces[i],
-            i,
-            e.what());
-        throw;
-      }
-    }
-  }
-
-  return ret;
+  return toFixedVector<Eigen::Vector6d>(str, 6, "double", "Eigen::Vector6d");
 }
 
 //==============================================================================
@@ -296,22 +223,7 @@ Eigen::VectorXd toVectorXd(std::string_view str)
   DART_ASSERT(pieces.size() > 0);
 
   Eigen::VectorXd ret(pieces.size());
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
-    if (pieces[i] != "") {
-      try {
-        ret[i] = toDouble(pieces[i]);
-      } catch (std::exception& e) {
-        DART_ERROR(
-            "value [{}] is not a valid double for Eigen::VectorXd[{}]: {}",
-            pieces[i],
-            i,
-            e.what());
-        throw;
-      }
-    }
-  }
-
+  assignDoublePieces(ret, pieces, "double", "Eigen::VectorXd");
   return ret;
 }
 
@@ -322,21 +234,7 @@ Eigen::Isometry3d toIsometry3d(std::string_view str)
   Eigen::Vector6d elements = Eigen::Vector6d::Zero();
   const std::vector<std::string> pieces = common::split(common::trim(str));
   DART_ASSERT(pieces.size() == 6);
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
-    if (pieces[i] != "") {
-      try {
-        elements[i] = toDouble(pieces[i]);
-      } catch (std::exception& e) {
-        DART_ERROR(
-            "value [{}] is not a valid double for SE3[{}]: {}",
-            pieces[i],
-            i,
-            e.what());
-        throw;
-      }
-    }
-  }
+  assignDoublePieces(elements, pieces, "double", "SE3");
 
   T.linear() = math::eulerXYZToMatrix(elements.tail<3>());
   T.translation() = elements.head<3>();
@@ -350,21 +248,7 @@ Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(std::string_view str)
   Eigen::Vector6d elements = Eigen::Vector6d::Zero();
   const std::vector<std::string> pieces = common::split(common::trim(str));
   DART_ASSERT(pieces.size() == 6);
-
-  for (std::size_t i = 0; i < pieces.size(); ++i) {
-    if (pieces[i] != "") {
-      try {
-        elements[i] = toDouble(pieces[i]);
-      } catch (std::exception& e) {
-        DART_ERROR(
-            "value [{}] is not a valid double for SE3[{}]: {}",
-            pieces[i],
-            i,
-            e.what());
-        throw;
-      }
-    }
-  }
+  assignDoublePieces(elements, pieces, "double", "SE3");
 
   Eigen::Vector3d reverseEulerAngles(
       elements.tail<3>()[2], elements.tail<3>()[1], elements.tail<3>()[0]);
@@ -611,43 +495,44 @@ tinyxml2::XMLElement* getElement(
 std::string toString(tinyxml2::XMLError errorCode)
 {
   switch (errorCode) {
-    case tinyxml2::XMLError::XML_SUCCESS:
+    using enum tinyxml2::XMLError;
+    case XML_SUCCESS:
       return "XML_SUCCESS";
-    case tinyxml2::XMLError::XML_NO_ATTRIBUTE:
+    case XML_NO_ATTRIBUTE:
       return "XML_NO_ATTRIBUTE";
-    case tinyxml2::XMLError::XML_WRONG_ATTRIBUTE_TYPE:
+    case XML_WRONG_ATTRIBUTE_TYPE:
       return "XML_WRONG_ATTRIBUTE_TYPE";
-    case tinyxml2::XMLError::XML_ERROR_FILE_NOT_FOUND:
+    case XML_ERROR_FILE_NOT_FOUND:
       return "XML_ERROR_FILE_NOT_FOUND";
-    case tinyxml2::XMLError::XML_ERROR_FILE_COULD_NOT_BE_OPENED:
+    case XML_ERROR_FILE_COULD_NOT_BE_OPENED:
       return "XML_ERROR_FILE_COULD_NOT_BE_OPENED";
-    case tinyxml2::XMLError::XML_ERROR_FILE_READ_ERROR:
+    case XML_ERROR_FILE_READ_ERROR:
       return "XML_ERROR_FILE_READ_ERROR";
-    case tinyxml2::XMLError::XML_ERROR_PARSING_ELEMENT:
+    case XML_ERROR_PARSING_ELEMENT:
       return "XML_ERROR_PARSING_ELEMENT";
-    case tinyxml2::XMLError::XML_ERROR_PARSING_ATTRIBUTE:
+    case XML_ERROR_PARSING_ATTRIBUTE:
       return "XML_ERROR_PARSING_ATTRIBUTE";
-    case tinyxml2::XMLError::XML_ERROR_PARSING_TEXT:
+    case XML_ERROR_PARSING_TEXT:
       return "XML_ERROR_PARSING_TEXT";
-    case tinyxml2::XMLError::XML_ERROR_PARSING_CDATA:
+    case XML_ERROR_PARSING_CDATA:
       return "XML_ERROR_PARSING_CDATA";
-    case tinyxml2::XMLError::XML_ERROR_PARSING_COMMENT:
+    case XML_ERROR_PARSING_COMMENT:
       return "XML_ERROR_PARSING_COMMENT";
-    case tinyxml2::XMLError::XML_ERROR_PARSING_DECLARATION:
+    case XML_ERROR_PARSING_DECLARATION:
       return "XML_ERROR_PARSING_DECLARATION";
-    case tinyxml2::XMLError::XML_ERROR_PARSING_UNKNOWN:
+    case XML_ERROR_PARSING_UNKNOWN:
       return "XML_ERROR_PARSING_UNKNOWN";
-    case tinyxml2::XMLError::XML_ERROR_EMPTY_DOCUMENT:
+    case XML_ERROR_EMPTY_DOCUMENT:
       return "XML_ERROR_EMPTY_DOCUMENT";
-    case tinyxml2::XMLError::XML_ERROR_MISMATCHED_ELEMENT:
+    case XML_ERROR_MISMATCHED_ELEMENT:
       return "XML_ERROR_MISMATCHED_ELEMENT";
-    case tinyxml2::XMLError::XML_ERROR_PARSING:
+    case XML_ERROR_PARSING:
       return "XML_ERROR_PARSING";
-    case tinyxml2::XMLError::XML_CAN_NOT_CONVERT_TEXT:
+    case XML_CAN_NOT_CONVERT_TEXT:
       return "XML_CAN_NOT_CONVERT_TEXT";
-    case tinyxml2::XMLError::XML_NO_TEXT_NODE:
+    case XML_NO_TEXT_NODE:
       return "XML_NO_TEXT_NODE";
-    case tinyxml2::XMLError::XML_ERROR_COUNT:
+    case XML_ERROR_COUNT:
       return "XML_ERROR_COUNT";
     default:
       return "Unknown error";

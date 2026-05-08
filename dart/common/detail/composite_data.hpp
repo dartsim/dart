@@ -37,7 +37,9 @@
 
 #include <Eigen/Core>
 
+#include <concepts>
 #include <map>
+#include <type_traits>
 #include <typeindex>
 #include <typeinfo>
 #include <unordered_set>
@@ -77,8 +79,7 @@ template <class AspectT>
 struct GetAspect
 {
   using Type =
-      typename GetAspectImpl<AspectT, std::is_base_of<Aspect, AspectT>::value>::
-          Type;
+      typename GetAspectImpl<AspectT, std::derived_from<AspectT, Aspect>>::Type;
 };
 
 //==============================================================================
@@ -231,19 +232,19 @@ public:
   template <typename Arg>
   struct ConvertIfData
   {
-    using Type = typename std::conditional<
-        std::is_base_of<typename Base::Data, Arg>::value,
+    using Type = std::conditional_t<
+        std::derived_from<Arg, typename Base::Data>,
         typename Base::Data,
-        Arg>::type;
+        Arg>;
   };
 
   template <typename Arg>
   struct ConvertIfComposite
   {
-    using Type = typename std::conditional<
-        std::is_base_of<CompositeType, Arg>::value,
+    using Type = std::conditional_t<
+        std::derived_from<Arg, CompositeType>,
         CompositeType,
-        Arg>::type;
+        Arg>;
   };
 
   // To get byte-aligned Eigen vectors

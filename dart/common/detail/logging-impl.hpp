@@ -40,6 +40,7 @@
 #if DART_HAVE_spdlog
   #include <spdlog/spdlog.h>
 
+  #include <concepts>
   #include <type_traits>
   #include <utility>
   // Check if spdlog is using fmt or std::format backend
@@ -90,8 +91,8 @@ auto normalize(T&& arg)
   if constexpr (std::is_pointer_v<Decayed>) {
     using Pointee = std::remove_cv_t<std::remove_pointer_t<Decayed>>;
     if constexpr (
-        !std::is_same_v<Pointee, char> && !std::is_same_v<Pointee, signed char>
-        && !std::is_same_v<Pointee, unsigned char>) {
+        !std::same_as<Pointee, char> && !std::same_as<Pointee, signed char>
+        && !std::same_as<Pointee, unsigned char>) {
       return fmt::ptr(arg);
     } else {
       return std::forward<T>(arg);
@@ -101,8 +102,8 @@ auto normalize(T&& arg)
         = std::remove_reference_t<decltype(std::declval<Decayed&>().get())>;
     using Pointee = std::remove_cv_t<std::remove_pointer_t<RawPointer>>;
     if constexpr (
-        !std::is_same_v<Pointee, char> && !std::is_same_v<Pointee, signed char>
-        && !std::is_same_v<Pointee, unsigned char>) {
+        !std::same_as<Pointee, char> && !std::same_as<Pointee, signed char>
+        && !std::same_as<Pointee, unsigned char>) {
       return fmt::ptr(arg.get());
     } else {
       return std::forward<T>(arg);
@@ -207,6 +208,14 @@ inline std::string makeLogPrefix(
   return {};
 }
 
+inline std::string makeLogPrefix(const std::source_location& location)
+{
+  return makeLogPrefix(
+      location.file_name(),
+      static_cast<int>(location.line()),
+      location.function_name());
+}
+
 #if DART_HAVE_spdlog
 inline constexpr spdlog::level::level_enum toSpdlogLevel(LogLevel level)
 {
@@ -302,6 +311,21 @@ void log(
       toAnsiColor(level),
       std::forward<Args>(args)...);
 #endif
+}
+
+template <typename S, typename... Args>
+void log(
+    LogLevel level,
+    const std::source_location& location,
+    const S& format_str,
+    Args&&... args)
+{
+  log(level,
+      location.file_name(),
+      static_cast<int>(location.line()),
+      location.function_name(),
+      format_str,
+      std::forward<Args>(args)...);
 }
 
 } // namespace detail

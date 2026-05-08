@@ -44,6 +44,7 @@
 #include <osgShadow/ShadowedScene>
 
 #include <deque>
+#include <ranges>
 
 namespace dart {
 namespace gui {
@@ -112,8 +113,7 @@ void WorldNode::setWorld(std::shared_ptr<dart::simulation::World> newWorld)
 //==============================================================================
 void WorldNode::clearAllShapeFrameNodes()
 {
-  for (auto& node_pair : mFrameToNode) {
-    ShapeFrameNode* node = node_pair.second;
+  for (ShapeFrameNode* node : std::views::values(mFrameToNode)) {
     if (node) {
       mNormalGroup->removeChild(node);
       mShadowedGroup->removeChild(node);
@@ -214,33 +214,24 @@ void WorldNode::setupViewer()
 //==============================================================================
 void WorldNode::clearChildUtilizationFlags()
 {
-  for (auto& node_pair : mFrameToNode) {
-    node_pair.second->clearUtilization();
+  for (ShapeFrameNode* node : std::views::values(mFrameToNode)) {
+    node->clearUtilization();
   }
 }
 
 //==============================================================================
 void WorldNode::clearUnusedNodes()
 {
-  std::vector<dart::dynamics::Frame*> unused;
-  unused.reserve(mFrameToNode.size());
-
-  // Find unused ShapeFrameNodes
-  for (auto& node_pair : mFrameToNode) {
-    ShapeFrameNode* node = node_pair.second;
-    if (node && !node->wasUtilized()) {
-      unused.push_back(node_pair.first);
+  std::erase_if(mFrameToNode, [&](const auto& nodePair) {
+    ShapeFrameNode* node = nodePair.second;
+    if (!node || node->wasUtilized()) {
+      return false;
     }
-  }
 
-  // Clear unused ShapeFrameNodes
-  for (dart::dynamics::Frame* frame : unused) {
-    NodeMap::iterator it = mFrameToNode.find(frame);
-    ShapeFrameNode* node = it->second;
     mNormalGroup->removeChild(node);
     mShadowedGroup->removeChild(node);
-    mFrameToNode.erase(it);
-  }
+    return true;
+  });
 }
 
 //==============================================================================

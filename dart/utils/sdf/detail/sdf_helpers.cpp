@@ -445,9 +445,7 @@ Eigen::VectorXd getValueVectorXd(
     const auto values = parseArray<double>(text);
     if (!values.empty()) {
       Eigen::VectorXd result(values.size());
-      for (std::size_t i = 0; i < values.size(); ++i) {
-        result[static_cast<Eigen::Index>(i)] = sanitizeParsedValue(values[i]);
-      }
+      std::ranges::transform(values, result.data(), sanitizeParsedValue);
       return result;
     }
   }

@@ -41,6 +41,8 @@
 #include <iterator>
 #include <limits>
 
+#include <cmath>
+
 namespace dart::math {
 namespace {
 
@@ -74,7 +76,7 @@ void computeFbFunction(
   for (Eigen::Index i = 0; i < n; ++i) {
     const double xi = x[i];
     const double yi = y[i];
-    const double r = std::sqrt(xi * xi + yi * yi + epsilon * epsilon);
+    const double r = std::hypot(xi, yi, epsilon);
     const double invR = (r > 0.0) ? (1.0 / r) : 0.0;
     phi[i] = r - xi - yi;
     p[i] = xi * invR - 1.0;

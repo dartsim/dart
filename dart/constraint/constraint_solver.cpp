@@ -61,7 +61,9 @@
 #include <fmt/ostream.h>
 
 #include <algorithm>
+#include <iterator>
 #include <memory>
+#include <ranges>
 
 #include <cmath>
 
@@ -762,14 +764,17 @@ void ConstraintSolver::solvePositionConstrainedGroups()
   // Preserve velocity-impulse flags across the position pass.
   mImpulseAppliedStates.clear();
   mImpulseAppliedStates.reserve(mSkeletons.size());
-  for (const auto& skeleton : mSkeletons) {
-    mImpulseAppliedStates.push_back(skeleton->isImpulseApplied());
-  }
+  std::ranges::copy(
+      mSkeletons | std::views::transform([](const auto& skeleton) {
+        return skeleton->isImpulseApplied();
+      }),
+      std::back_inserter(mImpulseAppliedStates));
 
   for (auto& constraintGroup : mConstrainedGroups) {
     mPositionConstraints.clear();
     mPositionConstraints.reserve(constraintGroup.getNumConstraints());
-    for (std::size_t i = 0; i < constraintGroup.getNumConstraints(); ++i) {
+    for (const auto i : std::views::iota(
+             std::size_t{0}, constraintGroup.getNumConstraints())) {
       const ConstraintBasePtr& constraint = constraintGroup.getConstraint(i);
       if (std::dynamic_pointer_cast<ContactConstraint>(constraint)) {
         mPositionConstraints.push_back(constraint);
@@ -786,7 +791,7 @@ void ConstraintSolver::solvePositionConstrainedGroups()
     }
   }
 
-  for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, mSkeletons.size())) {
     mSkeletons[i]->setImpulseApplied(mImpulseAppliedStates[i]);
   }
 }

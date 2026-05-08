@@ -4,6 +4,7 @@
 #include <nanobind/stl/string.h>
 
 #include <iomanip>
+#include <ranges>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -45,7 +46,7 @@ inline std::string format_repr(
   oss << type_name;
   if (!fields.empty()) {
     oss << "(";
-    for (std::size_t i = 0; i < fields.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, fields.size())) {
       if (i != 0) {
         oss << ", ";
       }

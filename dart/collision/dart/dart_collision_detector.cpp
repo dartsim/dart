@@ -43,6 +43,10 @@
 #include "dart/dynamics/shape_frame.hpp"
 #include "dart/dynamics/sphere_shape.hpp"
 
+#include <ranges>
+
+#include <cstddef>
+
 namespace dart {
 namespace collision {
 
@@ -151,10 +155,10 @@ bool DARTCollisionDetector::collide(
   auto collisionFound = false;
   const auto& filter = option.collisionFilter;
 
-  for (auto i = 0u; i < objects.size() - 1; ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, objects.size() - 1)) {
     auto* collObj1 = objects[i];
 
-    for (auto j = i + 1u; j < objects.size(); ++j) {
+    for (const auto j : std::views::iota(i + 1, objects.size())) {
       auto* collObj2 = objects[j];
 
       if (filter && filter->ignoresCollision(collObj1, collObj2)) [[unlikely]] {
@@ -219,12 +223,8 @@ bool DARTCollisionDetector::collide(
   auto collisionFound = false;
   const auto& filter = option.collisionFilter;
 
-  for (auto i = 0u; i < objects1.size(); ++i) {
-    auto* collObj1 = objects1[i];
-
-    for (auto j = 0u; j < objects2.size(); ++j) {
-      auto* collObj2 = objects2[j];
-
+  for (auto* collObj1 : objects1) {
+    for (auto* collObj2 : objects2) {
       if (filter && filter->ignoresCollision(collObj1, collObj2)) {
         continue;
       }

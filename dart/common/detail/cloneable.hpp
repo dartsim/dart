@@ -637,7 +637,7 @@ std::vector<T>& CloneableVector<T>::getVector()
 template <typename T>
 std::span<const T> CloneableVector<T>::getVector() const
 {
-  return std::span<const T>(mVector);
+  return mVector;
 }
 
 } // namespace common

@@ -131,6 +131,28 @@ TEST(Profiler, ColorizedOutput)
   EXPECT_NE(output.find("\033["), std::string::npos);
 }
 
+TEST(Profiler, SourceLocationScope)
+{
+  auto& profiler = common::profile::Profiler::instance();
+  profiler.reset();
+
+  ScopedEnvVar env("DART_PROFILE_COLOR", "0");
+
+  {
+    common::profile::ProfileScope scope("SourceLocationScope");
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+
+  profiler.markFrame();
+
+  std::ostringstream oss;
+  profiler.printSummary(oss);
+
+  const std::string output = oss.str();
+  EXPECT_NE(output.find("SourceLocationScope"), std::string::npos);
+  EXPECT_NE(output.find("test_profiler.cpp"), std::string::npos);
+}
+
 TEST(Profiler, UseColorEnvVarVariants)
 {
   {
@@ -262,21 +284,21 @@ TEST(Profiler, SummaryMultipleThreads)
 
   ScopedEnvVar env("DART_PROFILE_COLOR", "0");
 
-  std::thread worker([]() {
-    common::profile::ProfileScope scope("WorkerScope", __FILE__, __LINE__);
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
-  });
-
   {
-    common::profile::ProfileScope scope("MainScope", __FILE__, __LINE__);
+    std::jthread worker([]() {
+      common::profile::ProfileScope scope("WorkerScope", __FILE__, __LINE__);
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    });
+
+    {
+      common::profile::ProfileScope scope("MainScope", __FILE__, __LINE__);
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+
+    profiler.markFrame();
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    profiler.markFrame();
   }
-
-  profiler.markFrame();
-  std::this_thread::sleep_for(std::chrono::milliseconds(1));
-  profiler.markFrame();
-
-  worker.join();
 
   std::ostringstream oss;
   profiler.printSummary(oss);

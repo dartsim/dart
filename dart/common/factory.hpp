@@ -38,6 +38,7 @@
 
 #include <functional>
 #include <memory>
+#include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -67,10 +68,8 @@ public:
   using This = Factory<KeyT, BaseT, HeldT>;
   using Creator = std::function<HeldT(Args...)>;
   template <typename Key>
-  using HashType = typename std::conditional<
-      std::is_enum<Key>::value,
-      EnumClassHash,
-      std::hash<Key>>::type;
+  using HashType
+      = std::conditional_t<std::is_enum_v<Key>, EnumClassHash, std::hash<Key>>;
   using CreatorMap = std::unordered_map<KeyT, Creator, HashType<KeyT>>;
 
   /// Default constructor.

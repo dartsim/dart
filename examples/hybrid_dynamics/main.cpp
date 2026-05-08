@@ -40,6 +40,7 @@
 #include <dart/io/read.hpp>
 
 #include <iostream>
+#include <ranges>
 
 using namespace dart::common;
 using namespace dart::dynamics;
@@ -149,7 +150,8 @@ int main(int /*argc*/, char* /*argv*/[])
 
   Joint* joint0 = skel->getJoint(0);
   joint0->setActuatorType(Joint::PASSIVE);
-  for (std::size_t i = 1; i < skel->getNumBodyNodes(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{1}, skel->getNumBodyNodes())) {
     Joint* joint = skel->getJoint(i);
     joint->setActuatorType(Joint::VELOCITY);
   }

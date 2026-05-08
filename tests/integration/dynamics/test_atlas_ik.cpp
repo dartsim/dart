@@ -42,6 +42,7 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <ranges>
 
 using namespace Eigen;
 using namespace dart;
@@ -154,7 +155,7 @@ TEST(AtlasIK, TightBoundsProduceNonZeroError)
   // Compute error manually using the correct DOFs
   const auto dofs = ik->getDofs();
   Eigen::VectorXd q(dofs.size());
-  for (std::size_t i = 0; i < dofs.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, dofs.size())) {
     q[i] = atlas->getDof(dofs[i])->getPosition();
   }
 

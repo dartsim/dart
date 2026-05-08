@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include <ranges>
 #include <vector>
 
 #include <cmath>
@@ -294,7 +295,7 @@ TEST(SoftBodyNode, PointMassSpan)
   auto pointMasses = softBody->getPointMasses();
   EXPECT_EQ(pointMasses.size(), softBody->getNumPointMasses());
 
-  for (std::size_t i = 0; i < pointMasses.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, pointMasses.size())) {
     EXPECT_EQ(pointMasses[i], softBody->getPointMass(i));
   }
 }
@@ -533,7 +534,8 @@ TEST(SoftBodyNode, MultiStepSimulation)
   }
 
   // All point masses should have finite positions
-  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, softBody->getNumPointMasses())) {
     auto* pm = softBody->getPointMass(i);
     EXPECT_TRUE(pm->getPositions().array().isFinite().all());
     EXPECT_TRUE(pm->getVelocities().array().isFinite().all());
@@ -551,7 +553,8 @@ TEST(SoftBodyNode, WorldStepWithDampingAndConstraints)
   skeleton->setPositions(Eigen::VectorXd::Zero(dofs));
   skeleton->setVelocities(Eigen::VectorXd::Zero(dofs));
 
-  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, softBody->getNumPointMasses())) {
     auto* pm = softBody->getPointMass(i);
     pm->setVelocities(Eigen::Vector3d(0.2, -0.1, 0.05));
     pm->setConstraintImpulse(Eigen::Vector3d::UnitX(), false);
@@ -563,7 +566,8 @@ TEST(SoftBodyNode, WorldStepWithDampingAndConstraints)
   world->setTimeStep(1e-3);
   world->step();
 
-  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, softBody->getNumPointMasses())) {
     const auto* pm = softBody->getPointMass(i);
     EXPECT_TRUE(pm->getForces().array().isFinite().all());
     EXPECT_TRUE(pm->getConstraintImpulses().array().isFinite().all());
@@ -669,7 +673,8 @@ TEST(SoftBodyNode, ChildBodyNodeDynamicsPaths)
   skeleton->setPositions(positions);
   skeleton->setVelocities(velocities);
 
-  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, softBody->getNumPointMasses())) {
     auto* pm = softBody->getPointMass(i);
     ASSERT_NE(pm, nullptr);
     pm->setVelocities(Eigen::Vector3d(0.1, -0.2, 0.05));
@@ -730,7 +735,8 @@ TEST(SoftBodyNode, DerivativeUpdatesWithWorldStep)
   skeleton->setVelocities(Eigen::VectorXd::LinSpaced(dofs, 0.1, 0.2));
   skeleton->setAccelerations(Eigen::VectorXd::Constant(dofs, -0.05));
 
-  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, softBody->getNumPointMasses())) {
     auto* pm = softBody->getPointMass(i);
     ASSERT_NE(pm, nullptr);
     pm->setVelocities(Eigen::Vector3d(0.1, -0.2, 0.3));
@@ -959,7 +965,8 @@ TEST(SoftBodyNode, BiasImpulseAndConstrainedTermUpdates)
       0.08);
 
   softBody->setConstraintImpulse(Eigen::Vector6d::Ones());
-  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, softBody->getNumPointMasses())) {
     auto* pm = softBody->getPointMass(i);
     pm->setConstraintImpulse(Eigen::Vector3d::UnitX());
     pm->setVelocityChange(0, 0.1);
@@ -969,7 +976,8 @@ TEST(SoftBodyNode, BiasImpulseAndConstrainedTermUpdates)
   skeleton->updateVelocityChange();
   skeleton->computePositionVelocityChanges();
 
-  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, softBody->getNumPointMasses())) {
     const auto* pm = softBody->getPointMass(i);
     EXPECT_TRUE(pm->getVelocities().array().isFinite().all());
     EXPECT_TRUE(pm->getAccelerations().array().isFinite().all());

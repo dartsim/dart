@@ -45,8 +45,10 @@
 #include "dart/math/helpers.hpp"
 
 #include <iostream>
+#include <ranges>
 
 #include <cmath>
+#include <cstddef>
 
 #define DART_EPSILON 1e-6
 #define DART_ERROR_ALLOWANCE 0.0
@@ -195,7 +197,7 @@ SoftContactConstraint::SoftContactConstraint(
     Eigen::Vector3d bodyPoint1;
     Eigen::Vector3d bodyPoint2;
 
-    for (std::size_t i = 0; i < mContacts.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, mContacts.size())) {
       collision::Contact* ct = mContacts[i];
 
       // TODO(JS): Assumed that the number of tangent basis is 2.
@@ -284,7 +286,7 @@ SoftContactConstraint::SoftContactConstraint(
     Eigen::Vector3d bodyPoint1;
     Eigen::Vector3d bodyPoint2;
 
-    for (std::size_t i = 0; i < mContacts.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, mContacts.size())) {
       collision::Contact* ct = mContacts[i];
 
       bodyDirection1.noalias()
@@ -445,7 +447,7 @@ void SoftContactConstraint::getInformation(ConstraintInfo* _info)
   //----------------------------------------------------------------------------
   if (mIsFrictionOn) {
     std::size_t index = 0;
-    for (std::size_t i = 0; i < mContacts.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, mContacts.size())) {
       // Bias term, w, should be zero
       DART_ASSERT(_info->w[index] == 0.0);
       DART_ASSERT(_info->w[index + 1] == 0.0);
@@ -523,7 +525,7 @@ void SoftContactConstraint::getInformation(ConstraintInfo* _info)
   // Frictionless case
   //----------------------------------------------------------------------------
   else {
-    for (std::size_t i = 0; i < mContacts.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, mContacts.size())) {
       // Bias term, w, should be zero
       _info->w[i] = 0.0;
 
@@ -719,7 +721,7 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
   if (mIsFrictionOn) {
     std::size_t index = 0;
 
-    for (std::size_t i = 0; i < mContacts.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, mContacts.size())) {
       //      std::cout << "_lambda1: " << _lambda[_idx] << std::endl;
       //      std::cout << "_lambda2: " << _lambda[_idx + 1] << std::endl;
       //      std::cout << "_lambda3: " << _lambda[_idx + 2] << std::endl;
@@ -816,7 +818,7 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
   // Frictionless case
   //----------------------------------------------------------------------------
   else {
-    for (std::size_t i = 0; i < mContacts.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, mContacts.size())) {
       // Normal impulsive force
       //			pContactPts[i]->lambda[0] = _lambda[i];
 

@@ -85,7 +85,7 @@ DART_SIMD_INLINE void sincosImplSimd(
   using VecI = Vec<std::int32_t, W>;
   using MaskT = VecMask<float, W>;
 
-  constexpr float fourOverPi = 1.2732395447351626862f;
+  constexpr float fourOverPi = MathConstants<float>::fourOverPi;
 
   VecI xSign;
   if constexpr (ComputeSin) {

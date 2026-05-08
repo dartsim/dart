@@ -41,16 +41,17 @@ namespace detail {
 PlanarJointUniqueProperties::PlanarJointUniqueProperties(PlaneType _planeType)
 {
   switch (_planeType) {
-    case PlaneType::ARBITRARY:
-    case PlaneType::XY:
+    using enum PlaneType;
+    case ARBITRARY:
+    case XY:
       setXYPlane();
       mPlaneType
           = _planeType; // In case the PlaneType was supposed to be arbitrary
       break;
-    case PlaneType::YZ:
+    case YZ:
       setYZPlane();
       break;
-    case PlaneType::ZX:
+    case ZX:
       setZXPlane();
       break;
   }
@@ -68,16 +69,17 @@ PlanarJointUniqueProperties::PlanarJointUniqueProperties(
     const PlanarJointUniqueProperties& other)
 {
   switch (other.mPlaneType) {
-    case PlaneType::ARBITRARY:
+    using enum PlaneType;
+    case ARBITRARY:
       setArbitraryPlane(other.mTransAxis1, other.mTransAxis2);
       break;
-    case PlaneType::XY:
+    case XY:
       setXYPlane();
       break;
-    case PlaneType::YZ:
+    case YZ:
       setYZPlane();
       break;
-    case PlaneType::ZX:
+    case ZX:
       setZXPlane();
       break;
   }
@@ -89,16 +91,17 @@ PlanarJointUniqueProperties& PlanarJointUniqueProperties::operator=(
 {
   if (this != &other) {
     switch (other.mPlaneType) {
-      case PlaneType::ARBITRARY:
+      using enum PlaneType;
+      case ARBITRARY:
         setArbitraryPlane(other.mTransAxis1, other.mTransAxis2);
         break;
-      case PlaneType::XY:
+      case XY:
         setXYPlane();
         break;
-      case PlaneType::YZ:
+      case YZ:
         setYZPlane();
         break;
-      case PlaneType::ZX:
+      case ZX:
         setZXPlane();
         break;
     }

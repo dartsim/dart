@@ -690,8 +690,7 @@ private:
       if (!mStepTimeHistory.empty()) {
         std::vector<float> history(
             mStepTimeHistory.begin(), mStepTimeHistory.end());
-        float maxTime
-            = *std::max_element(history.begin(), history.end()) * 1.2f;
+        float maxTime = *std::ranges::max_element(history) * 1.2f;
         maxTime = std::max(maxTime, 1.0f);
 
         ImGui::Text("Step time (ms):");

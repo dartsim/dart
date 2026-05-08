@@ -38,10 +38,12 @@
 
 #include <entt/entity/registry.hpp>
 
+#include <concepts>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <unordered_map>
 
 namespace dart::simulation::experimental::io {
@@ -153,17 +155,24 @@ private:
 //   static constexpr bool serializable = false;
 //
 // Default behavior (no serializable member): component IS serialized
-template <typename ComponentT, typename = void>
+namespace detail {
+
+template <typename ComponentT>
+concept HasSerializableFlag = requires {
+  { ComponentT::serializable } -> std::convertible_to<bool>;
+};
+
+} // namespace detail
+
+template <typename ComponentT>
 struct IsSerializable : std::true_type
 {
 };
 
 // Specialization for components with 'serializable' member
 template <typename ComponentT>
-struct IsSerializable<
-    ComponentT,
-    std::void_t<decltype(ComponentT::serializable)>>
-  : std::bool_constant<ComponentT::serializable>
+  requires detail::HasSerializableFlag<ComponentT>
+struct IsSerializable<ComponentT> : std::bool_constant<ComponentT::serializable>
 {
 };
 

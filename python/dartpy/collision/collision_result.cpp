@@ -5,6 +5,8 @@
 
 #include <nanobind/nanobind.h>
 
+#include <string>
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {

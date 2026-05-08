@@ -8,6 +8,8 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/shared_ptr.h>
 
+#include <string>
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {

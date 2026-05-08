@@ -39,6 +39,8 @@
 
 #include <osgViewer/Viewer>
 
+#include <ranges>
+
 using namespace dart::dynamics;
 
 class RecordingWorld : public dart::gui::RealTimeWorldNode
@@ -56,13 +58,15 @@ public:
     TimeSlice slice;
     slice.reserve(mWorld->getNumSkeletons());
 
-    for (std::size_t i = 0; i < mWorld->getNumSkeletons(); ++i) {
+    for (const auto i :
+         std::views::iota(std::size_t{0}, mWorld->getNumSkeletons())) {
       const SkeletonPtr& skeleton = mWorld->getSkeleton(i);
       State state;
       state.mConfig = skeleton->getConfiguration();
       state.mAspectStates.reserve(skeleton->getNumBodyNodes());
 
-      for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j) {
+      for (const auto j :
+           std::views::iota(std::size_t{0}, skeleton->getNumBodyNodes())) {
         BodyNode* bn = skeleton->getBodyNode(j);
         state.mAspectStates.push_back(bn->getCompositeState());
       }
@@ -98,13 +102,14 @@ public:
     std::cout << "Moving to time step #" << index << std::endl;
 
     const TimeSlice& slice = mHistory[index];
-    for (std::size_t i = 0; i < slice.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, slice.size())) {
       const State& state = slice[i];
       const SkeletonPtr& skeleton = mWorld->getSkeleton(i);
 
       skeleton->setConfiguration(state.mConfig);
 
-      for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j) {
+      for (const auto j :
+           std::views::iota(std::size_t{0}, skeleton->getNumBodyNodes())) {
         BodyNode* bn = skeleton->getBodyNode(j);
         bn->setCompositeState(state.mAspectStates[j]);
       }

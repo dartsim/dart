@@ -32,7 +32,7 @@ TEST(ReferentialSkeleton, BodyNodeLookupAndIndexing)
   auto* rootB = rootPairB.second;
   rootB->setName("dup");
 
-  std::array<BodyNode*, 2> bodyNodes = {rootA, rootB};
+  auto bodyNodes = std::to_array<BodyNode*>({rootA, rootB});
   auto group = Group::create("ref-group", bodyNodes);
 
   EXPECT_EQ(group->getNumBodyNodes(), 2u);
@@ -62,7 +62,8 @@ TEST(ReferentialSkeleton, GroupChainLinkageHasAndIndex)
   auto grandPair
       = childPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
 
-  std::array<BodyNode*, 2> groupNodes = {rootPair.second, childPair.second};
+  auto groupNodes
+      = std::to_array<BodyNode*>({rootPair.second, childPair.second});
   auto group = Group::create("group_has", groupNodes);
 
   EXPECT_TRUE(group->hasBodyNode(rootPair.second));
@@ -116,7 +117,8 @@ TEST(ReferentialSkeleton, JacobianDerivativesOnGroup)
   auto childPair
       = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
 
-  std::array<BodyNode*, 2> bodyNodes = {rootPair.second, childPair.second};
+  auto bodyNodes
+      = std::to_array<BodyNode*>({rootPair.second, childPair.second});
   auto group = Group::create("jac_group", bodyNodes);
 
   const auto jacClassic = group->getJacobianClassicDeriv(childPair.second);
@@ -153,7 +155,7 @@ TEST(ReferentialSkeleton, DofsJacobianAndComputation)
   bodyB->setMass(3.0);
   pairB.first->setAxis(Eigen::Vector3d::UnitZ());
 
-  std::array<BodyNode*, 2> bodyNodes = {bodyA, bodyB};
+  auto bodyNodes = std::to_array<BodyNode*>({bodyA, bodyB});
   auto group = Group::create("ref-group-ik", bodyNodes);
 
   EXPECT_EQ(group->getNumSkeletons(), 2u);
@@ -207,7 +209,7 @@ TEST(ReferentialSkeleton, JacobiansAndDynamics)
   pairB.second->setName("body_b");
   pairB.second->setMass(3.0);
 
-  std::array<BodyNode*, 2> bodyNodes = {pairA.second, pairB.second};
+  auto bodyNodes = std::to_array<BodyNode*>({pairA.second, pairB.second});
   auto group = Group::create("ref-group-ops", bodyNodes);
 
   EXPECT_NEAR(group->getMass(), 5.0, 1e-12);
@@ -313,7 +315,8 @@ TEST(ReferentialSkeleton, ConstAccessors)
   childPair.first->setName("joint_dup");
   const std::string childName = childPair.second->getName();
 
-  std::array<BodyNode*, 2> bodyNodes = {rootPair.second, childPair.second};
+  auto bodyNodes
+      = std::to_array<BodyNode*>({rootPair.second, childPair.second});
   auto group = Group::create("ref_const_group", bodyNodes);
 
   const Group* constGroup = group.get();
@@ -341,7 +344,8 @@ TEST(ReferentialSkeleton, JointVectorsAndLookup)
       = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
   childPair.first->setName("child_joint");
 
-  std::array<BodyNode*, 2> bodyNodes = {rootPair.second, childPair.second};
+  auto bodyNodes
+      = std::to_array<BodyNode*>({rootPair.second, childPair.second});
   auto group = Group::create("ref_joint_group", bodyNodes);
 
   auto joints = group->getJoints();
@@ -359,7 +363,7 @@ TEST(ReferentialSkeleton, DofIndexingAccessors)
   auto skeleton = Skeleton::create("ref_dof");
   auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
 
-  std::array<BodyNode*, 1> bodyNodes = {rootPair.second};
+  auto bodyNodes = std::to_array<BodyNode*>({rootPair.second});
   auto group = Group::create("ref_dof_group", bodyNodes);
 
   EXPECT_EQ(group->getNumDofs(), rootPair.first->getNumDofs());
@@ -381,7 +385,7 @@ TEST(ReferentialSkeleton, BodyNodeNameLookupEmpty)
   auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
   rootPair.second->setName("root");
 
-  std::array<BodyNode*, 1> bodyNodes = {rootPair.second};
+  auto bodyNodes = std::to_array<BodyNode*>({rootPair.second});
   auto group = Group::create("ref_name_group", bodyNodes);
 
   EXPECT_TRUE(group->getBodyNodes("missing").empty());
@@ -438,7 +442,7 @@ TEST(ReferentialSkeleton, LockableReferenceAndRename)
   auto skeleton = Skeleton::create("lockable_skel");
   auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
 
-  std::array<BodyNode*, 1> bodyNodes = {rootPair.second};
+  auto bodyNodes = std::to_array<BodyNode*>({rootPair.second});
   auto group = Group::create("lockable_group", bodyNodes);
 
   auto lockable = group->getLockableReference();
@@ -457,7 +461,8 @@ TEST(ReferentialSkeletonGroup, AddRemoveMultipleBodies)
   auto childPair
       = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
 
-  std::array<BodyNode*, 2> bodyNodes = {rootPair.second, childPair.second};
+  auto bodyNodes
+      = std::to_array<BodyNode*>({rootPair.second, childPair.second});
   auto group = Group::create("group_multi_body");
 
   EXPECT_TRUE(group->addBodyNodes(bodyNodes, false));
@@ -475,7 +480,7 @@ TEST(ReferentialSkeletonGroup, AddRemoveMultipleJoints)
       = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
   childPair.first->setAxis(Eigen::Vector3d::UnitZ());
 
-  std::array<Joint*, 2> joints = {rootPair.first, childPair.first};
+  auto joints = std::to_array<Joint*>({rootPair.first, childPair.first});
   auto group = Group::create("group_multi_joint");
 
   EXPECT_TRUE(group->addJoints(joints, true, false));
@@ -496,7 +501,8 @@ TEST(ReferentialSkeleton, BodyNodeSpanAccessors)
   auto childPair
       = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
 
-  std::array<BodyNode*, 2> bodyNodes = {rootPair.second, childPair.second};
+  auto bodyNodes
+      = std::to_array<BodyNode*>({rootPair.second, childPair.second});
   auto group = Group::create("ref_span_group", bodyNodes);
 
   auto& mutableNodes = group->getBodyNodes();
@@ -515,7 +521,8 @@ TEST(ReferentialSkeleton, RemoveBodyNodeUpdatesIndices)
   auto childPair
       = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
 
-  std::array<BodyNode*, 2> bodyNodes = {rootPair.second, childPair.second};
+  auto bodyNodes
+      = std::to_array<BodyNode*>({rootPair.second, childPair.second});
   auto group = Group::create("ref_remove_group", bodyNodes);
   EXPECT_EQ(group->getNumBodyNodes(), 2u);
 
@@ -532,7 +539,8 @@ TEST(ReferentialSkeleton, ConstJointAndDofLookups)
       = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
   childPair.first->setAxis(Eigen::Vector3d::UnitZ());
 
-  std::array<BodyNode*, 2> bodyNodes = {rootPair.second, childPair.second};
+  auto bodyNodes
+      = std::to_array<BodyNode*>({rootPair.second, childPair.second});
   auto group = Group::create("ref_const_access_group", bodyNodes);
 
   const Group* constGroup = group.get();
@@ -552,7 +560,8 @@ TEST(ReferentialSkeletonGroup, ComponentBatchOperations)
   auto childPair
       = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
 
-  std::array<BodyNode*, 2> bodyNodes = {rootPair.second, childPair.second};
+  auto bodyNodes
+      = std::to_array<BodyNode*>({rootPair.second, childPair.second});
   auto group = Group::create("component_batch");
 
   EXPECT_TRUE(group->addComponents(bodyNodes, false));
@@ -600,7 +609,8 @@ TEST(ReferentialSkeleton, ConstIndexAccessors)
       = rootPair.second->createChildJointAndBodyNodePair<RevoluteJoint>();
   childPair.first->setAxis(Eigen::Vector3d::UnitZ());
 
-  std::array<BodyNode*, 2> bodyNodes = {rootPair.second, childPair.second};
+  auto bodyNodes
+      = std::to_array<BodyNode*>({rootPair.second, childPair.second});
   auto group = Group::create("ref_const_index_group", bodyNodes);
 
   const Group* constGroup = group.get();

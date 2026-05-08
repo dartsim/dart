@@ -36,6 +36,8 @@
 
 #include <dart/all.hpp>
 
+#include <ranges>
+
 const double default_height = 1.0; // m
 const double default_width = 0.2;  // m
 const double default_depth = 0.2;  // m
@@ -106,7 +108,8 @@ public:
   void changeRestPosition(double delta)
   {
     // snippet:cpp-lesson2a-rest-position-start
-    for (std::size_t i = 0; i < mPendulum->getNumDofs(); ++i) {
+    for (const auto i :
+         std::views::iota(std::size_t{0}, mPendulum->getNumDofs())) {
       DegreeOfFreedom* dof = mPendulum->getDof(i);
       double q0 = dof->getRestPosition() + delta;
 
@@ -129,7 +132,8 @@ public:
   void changeStiffness(double delta)
   {
     // snippet:cpp-lesson2b-stiffness-start
-    for (std::size_t i = 0; i < mPendulum->getNumDofs(); ++i) {
+    for (const auto i :
+         std::views::iota(std::size_t{0}, mPendulum->getNumDofs())) {
       DegreeOfFreedom* dof = mPendulum->getDof(i);
       double stiffness = dof->getSpringStiffness() + delta;
       if (stiffness < 0.0) {
@@ -143,7 +147,8 @@ public:
   void changeDamping(double delta)
   {
     // snippet:cpp-lesson2c-damping-start
-    for (std::size_t i = 0; i < mPendulum->getNumDofs(); ++i) {
+    for (const auto i :
+         std::views::iota(std::size_t{0}, mPendulum->getNumDofs())) {
       DegreeOfFreedom* dof = mPendulum->getDof(i);
       double damping = dof->getDampingCoefficient() + delta;
       if (damping < 0.0) {
@@ -192,7 +197,8 @@ public:
   {
     // Reset all the shapes to be Blue
     // snippet:cpp-lesson1a-reset-start
-    for (std::size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i) {
+    for (const auto i :
+         std::views::iota(std::size_t{0}, mPendulum->getNumBodyNodes())) {
       BodyNode* bn = mPendulum->getBodyNode(i);
 
       // If we have three visualization shapes, that means the arrow is
@@ -212,7 +218,8 @@ public:
 
     if (!mBodyForce) {
       // Apply joint torques based on user input, and color the Joint shape red
-      for (std::size_t i = 0; i < mPendulum->getNumDofs(); ++i) {
+      for (const auto i :
+           std::views::iota(std::size_t{0}, mPendulum->getNumDofs())) {
         if (mForceCountDown[i] > 0) {
           // snippet:cpp-lesson1b-joint-force-start
           DegreeOfFreedom* dof = mPendulum->getDof(i);
@@ -228,7 +235,8 @@ public:
       }
     } else {
       // Apply body forces based on user input, and color the body shape red
-      for (std::size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i) {
+      for (const auto i :
+           std::views::iota(std::size_t{0}, mPendulum->getNumBodyNodes())) {
         if (mForceCountDown[i] > 0) {
           // snippet:cpp-lesson1c-body-force-start
           BodyNode* bn = mPendulum->getBodyNode(i);

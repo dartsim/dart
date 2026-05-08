@@ -40,6 +40,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include <ranges>
 #include <type_traits>
 
 #include <cmath>
@@ -176,8 +177,8 @@ bool equals(
   using CommonScalar
       = std::common_type_t<typename T1::Scalar, typename T2::Scalar, double>;
 
-  for (Eigen::Index i = 0; i < expected.rows(); ++i) {
-    for (Eigen::Index j = 0; j < expected.cols(); ++j) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, expected.rows())) {
+    for (const auto j : std::views::iota(Eigen::Index{0}, expected.cols())) {
       const CommonScalar lhs = static_cast<CommonScalar>(expected(i, j));
       const CommonScalar rhs = static_cast<CommonScalar>(actual(i, j));
 

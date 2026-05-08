@@ -45,6 +45,7 @@
 #include <dart/math/helpers.hpp>
 
 #include <sstream>
+#include <utility>
 
 #include <cmath>
 
@@ -494,7 +495,7 @@ double GenericJoint<ConfigSpaceT>::getCommand(size_t index) const
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setCommands(const Eigen::VectorXd& commands)
 {
-  if (static_cast<size_t>(commands.size()) != getNumDofs()) {
+  if (!std::cmp_equal(commands.size(), getNumDofs())) {
     GenericJoint_REPORT_DIM_MISMATCH(setCommands, commands);
     return;
   }
@@ -557,7 +558,7 @@ double GenericJoint<ConfigSpaceT>::getPosition(size_t index) const
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setPositions(const Eigen::VectorXd& positions)
 {
-  if (static_cast<size_t>(positions.size()) != getNumDofs()) {
+  if (!std::cmp_equal(positions.size(), getNumDofs())) {
     GenericJoint_REPORT_DIM_MISMATCH(setPositions, positions);
     return;
   }
@@ -602,7 +603,7 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setPositionLowerLimits(
     const Eigen::VectorXd& lowerLimits)
 {
-  if (static_cast<size_t>(lowerLimits.size()) != getNumDofs()) {
+  if (!std::cmp_equal(lowerLimits.size(), getNumDofs())) {
     GenericJoint_REPORT_DIM_MISMATCH(setPositionLowerLimits, lowerLimits);
     return;
   }
@@ -647,7 +648,7 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setPositionUpperLimits(
     const Eigen::VectorXd& upperLimits)
 {
-  if (static_cast<size_t>(upperLimits.size()) != getNumDofs()) {
+  if (!std::cmp_equal(upperLimits.size(), getNumDofs())) {
     GenericJoint_REPORT_DIM_MISMATCH(setPositionUpperLimits, upperLimits);
     return;
   }
@@ -724,7 +725,7 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setInitialPositions(
     const Eigen::VectorXd& initial)
 {
-  if (static_cast<size_t>(initial.size()) != getNumDofs()) {
+  if (!std::cmp_equal(initial.size(), getNumDofs())) {
     GenericJoint_REPORT_DIM_MISMATCH(setInitialPositions, initial);
     return;
   }
@@ -846,7 +847,7 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setVelocities(
     const Eigen::VectorXd& velocities)
 {
-  if (static_cast<size_t>(velocities.size()) != getNumDofs()) {
+  if (!std::cmp_equal(velocities.size(), getNumDofs())) {
     GenericJoint_REPORT_DIM_MISMATCH(setVelocities, velocities);
     return;
   }
@@ -897,7 +898,7 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setVelocityLowerLimits(
     const Eigen::VectorXd& lowerLimits)
 {
-  if (static_cast<size_t>(lowerLimits.size()) != getNumDofs()) {
+  if (!std::cmp_equal(lowerLimits.size(), getNumDofs())) {
     GenericJoint_REPORT_DIM_MISMATCH(setVelocityLowerLimits, lowerLimits);
     return;
   }
@@ -942,7 +943,7 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setVelocityUpperLimits(
     const Eigen::VectorXd& upperLimits)
 {
-  if (static_cast<size_t>(upperLimits.size()) != getNumDofs()) {
+  if (!std::cmp_equal(upperLimits.size(), getNumDofs())) {
     GenericJoint_REPORT_DIM_MISMATCH(setVelocityUpperLimits, upperLimits);
     return;
   }
@@ -1006,7 +1007,7 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setInitialVelocities(
     const Eigen::VectorXd& initial)
 {
-  if (static_cast<size_t>(initial.size()) != getNumDofs()) {
+  if (!std::cmp_equal(initial.size(), getNumDofs())) {
     GenericJoint_REPORT_DIM_MISMATCH(setInitialVelocities, initial);
     return;
   }
@@ -1064,7 +1065,7 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setAccelerations(
     const Eigen::VectorXd& accelerations)
 {
-  if (static_cast<size_t>(accelerations.size()) != getNumDofs()) {
+  if (!std::cmp_equal(accelerations.size(), getNumDofs())) {
     GenericJoint_REPORT_DIM_MISMATCH(setAccelerations, accelerations);
     return;
   }
@@ -1115,7 +1116,7 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setAccelerationLowerLimits(
     const Eigen::VectorXd& lowerLimits)
 {
-  if (static_cast<size_t>(lowerLimits.size()) != getNumDofs()) {
+  if (!std::cmp_equal(lowerLimits.size(), getNumDofs())) {
     GenericJoint_REPORT_DIM_MISMATCH(setAccelerationLowerLimits, lowerLimits);
     return;
   }
@@ -1159,7 +1160,7 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setAccelerationUpperLimits(
     const Eigen::VectorXd& upperLimits)
 {
-  if (static_cast<size_t>(upperLimits.size()) != getNumDofs()) {
+  if (!std::cmp_equal(upperLimits.size(), getNumDofs())) {
     GenericJoint_REPORT_DIM_MISMATCH(setAccelerationUpperLimits, upperLimits);
     return;
   }
@@ -1213,7 +1214,7 @@ double GenericJoint<ConfigSpaceT>::getForce(size_t index) const
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setForces(const Eigen::VectorXd& forces)
 {
-  if (static_cast<size_t>(forces.size()) != getNumDofs()) {
+  if (!std::cmp_equal(forces.size(), getNumDofs())) {
     GenericJoint_REPORT_DIM_MISMATCH(setForces, forces);
     return;
   }
@@ -1263,7 +1264,7 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setForceLowerLimits(
     const Eigen::VectorXd& lowerLimits)
 {
-  if (static_cast<size_t>(lowerLimits.size()) != getNumDofs()) {
+  if (!std::cmp_equal(lowerLimits.size(), getNumDofs())) {
     GenericJoint_REPORT_DIM_MISMATCH(setForceLowerLimits, lowerLimits);
     return;
   }
@@ -1307,7 +1308,7 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setForceUpperLimits(
     const Eigen::VectorXd& upperLimits)
 {
-  if (static_cast<size_t>(upperLimits.size()) != getNumDofs()) {
+  if (!std::cmp_equal(upperLimits.size(), getNumDofs())) {
     GenericJoint_REPORT_DIM_MISMATCH(setForceUpperLimits, upperLimits);
     return;
   }
@@ -1419,8 +1420,8 @@ void GenericJoint<ConfigSpaceT>::integratePositions(
     double dt,
     Eigen::VectorXd& result) const
 {
-  if (static_cast<std::size_t>(q0.size()) != getNumDofs()
-      || static_cast<std::size_t>(v.size()) != getNumDofs()) {
+  if (!std::cmp_equal(q0.size(), getNumDofs())
+      || !std::cmp_equal(v.size(), getNumDofs())) {
     DART_ERROR(
         "q0's size [{}] and v's size [{}] must both equal the dof [{}] for "
         "Joint [{}].",
@@ -1460,8 +1461,8 @@ template <class ConfigSpaceT>
 Eigen::VectorXd GenericJoint<ConfigSpaceT>::getPositionDifferences(
     const Eigen::VectorXd& q2, const Eigen::VectorXd& q1) const
 {
-  if (static_cast<size_t>(q1.size()) != getNumDofs()
-      || static_cast<size_t>(q2.size()) != getNumDofs()) {
+  if (!std::cmp_equal(q1.size(), getNumDofs())
+      || !std::cmp_equal(q2.size(), getNumDofs())) {
     DART_ERROR(
         "q1's size [{}] or q2's size [{}] must both equal the dof [{}] for "
         "Joint [{}].",
@@ -1549,7 +1550,7 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setRestPositions(
     const Eigen::VectorXd& restPositions)
 {
-  if (static_cast<size_t>(restPositions.size()) != getNumDofs()) {
+  if (!std::cmp_equal(restPositions.size(), getNumDofs())) {
     GenericJoint_REPORT_DIM_MISMATCH(setRestPositions, restPositions);
     return;
   }
@@ -1604,7 +1605,7 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setDampingCoefficients(
     const Eigen::VectorXd& dampingCoefficients)
 {
-  if (static_cast<size_t>(dampingCoefficients.size()) != getNumDofs()) {
+  if (!std::cmp_equal(dampingCoefficients.size(), getNumDofs())) {
     GenericJoint_REPORT_DIM_MISMATCH(
         setDampingCoefficients, dampingCoefficients);
     return;
@@ -1671,7 +1672,7 @@ double GenericJoint<ConfigSpaceT>::getCoulombFriction(size_t index) const
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setFrictions(const Eigen::VectorXd& frictions)
 {
-  if (static_cast<size_t>(frictions.size()) != getNumDofs()) {
+  if (!std::cmp_equal(frictions.size(), getNumDofs())) {
     GenericJoint_REPORT_DIM_MISMATCH(setFrictions, frictions);
     return;
   }

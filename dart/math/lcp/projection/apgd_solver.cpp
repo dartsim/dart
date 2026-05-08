@@ -202,7 +202,7 @@ LcpResult ApgdSolver::solve(
       }
 
       const double oldX = xdata[idx];
-      newX = oldX + relaxation * (newX - oldX);
+      newX = std::lerp(oldX, newX, relaxation);
 
       if (findexData[idx] >= 0) {
         const double hiTmp = std::abs(

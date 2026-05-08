@@ -39,6 +39,7 @@
 #include "dart/dynamics/soft_body_node.hpp"
 
 #include <algorithm>
+#include <ranges>
 #include <span>
 
 namespace dart {
@@ -136,9 +137,7 @@ static std::vector<T2>& convertVector(
     std::span<const T1> t1_vec, std::vector<T2>& t2_vec)
 {
   t2_vec.resize(t1_vec.size());
-  for (std::size_t i = 0; i < t1_vec.size(); ++i) {
-    t2_vec[i] = t1_vec[i];
-  }
+  std::ranges::copy(t1_vec, t2_vec.begin());
   return t2_vec;
 }
 
@@ -1262,7 +1261,7 @@ void ReferentialSkeleton::unregisterBodyNode(
   mBodyNodes.erase(mBodyNodes.begin() + bnIndex);
   indexing.mBodyNodeIndex = INVALID_INDEX;
 
-  for (std::size_t i = bnIndex; i < mBodyNodes.size(); ++i) {
+  for (const auto i : std::views::iota(bnIndex, mBodyNodes.size())) {
     // Re-index all the BodyNodes in this ReferentialSkeleton which came after
     // the one that was removed.
     IndexMap& alteredIndexing = mIndexMap[mBodyNodes[i]];
@@ -1270,7 +1269,8 @@ void ReferentialSkeleton::unregisterBodyNode(
   }
 
   if (_unregisterDofs) {
-    for (std::size_t i = 0; i < indexing.mDofIndices.size(); ++i) {
+    for (const auto i :
+         std::views::iota(std::size_t{0}, indexing.mDofIndices.size())) {
       if (indexing.mDofIndices[i] != INVALID_INDEX) {
         unregisterDegreeOfFreedom(_bn, i);
       }
@@ -1318,7 +1318,7 @@ void ReferentialSkeleton::unregisterJoint(BodyNode* _child)
   mJoints.erase(mJoints.begin() + jointIndex);
   it->second.mJointIndex = INVALID_INDEX;
 
-  for (std::size_t i = jointIndex; i < mJoints.size(); ++i) {
+  for (const auto i : std::views::iota(jointIndex, mJoints.size())) {
     // Re-index all of the Joints in this ReferentialSkeleton which came after
     // the Joint that was removed.
     JointPtr alteredJoint = mJoints[i];
@@ -1370,7 +1370,7 @@ void ReferentialSkeleton::unregisterDegreeOfFreedom(
   mDofs.erase(mDofs.begin() + dofIndex);
   it->second.mDofIndices[_localIndex] = INVALID_INDEX;
 
-  for (std::size_t i = dofIndex; i < mDofs.size(); ++i) {
+  for (const auto i : std::views::iota(dofIndex, mDofs.size())) {
     // Re-index all the DOFs in this ReferentialSkeleton which came after the
     // DOF that was removed.
     DegreeOfFreedomPtr dof = mDofs[i];
@@ -1472,13 +1472,8 @@ bool ReferentialSkeleton::IndexMap::isExpired() const
     return false;
   }
 
-  for (std::size_t i = 0; i < mDofIndices.size(); ++i) {
-    if (mDofIndices[i] != INVALID_INDEX) {
-      return false;
-    }
-  }
-
-  return true;
+  return !std::ranges::any_of(
+      mDofIndices, [](const auto index) { return index != INVALID_INDEX; });
 }
 
 } // namespace dynamics

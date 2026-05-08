@@ -39,19 +39,20 @@ namespace math {
 std::string toString(LcpSolverStatus status)
 {
   switch (status) {
-    case LcpSolverStatus::Success:
+    using enum LcpSolverStatus;
+    case Success:
       return "Success";
-    case LcpSolverStatus::Failed:
+    case Failed:
       return "Failed";
-    case LcpSolverStatus::MaxIterations:
+    case MaxIterations:
       return "MaxIterations";
-    case LcpSolverStatus::NumericalError:
+    case NumericalError:
       return "NumericalError";
-    case LcpSolverStatus::InvalidProblem:
+    case InvalidProblem:
       return "InvalidProblem";
-    case LcpSolverStatus::Degenerate:
+    case Degenerate:
       return "Degenerate";
-    case LcpSolverStatus::NotSolved:
+    case NotSolved:
       return "NotSolved";
     default:
       return "Unknown";

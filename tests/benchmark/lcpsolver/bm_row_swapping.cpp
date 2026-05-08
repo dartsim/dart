@@ -36,6 +36,7 @@
 
 #include <algorithm>
 #include <random>
+#include <ranges>
 #include <vector>
 
 #include <cstring>
@@ -64,7 +65,7 @@ public:
 
     // Create row pointers
     rows_.resize(n);
-    for (int i = 0; i < n; ++i) {
+    for (const int i : std::views::iota(0, n)) {
       rows_[i] = data_.data() + i * nskip_;
     }
   }
@@ -132,7 +133,7 @@ public:
   {
     // Initialize row pointers to point into Eigen matrix
     rows_.resize(n);
-    for (int i = 0; i < n; ++i) {
+    for (const int i : std::views::iota(0, n)) {
       rows_[i] = matrix_.data() + i * n; // Eigen is column-major, need stride
     }
   }
@@ -171,7 +172,7 @@ std::vector<std::pair<int, int>> generateSwapPairs(int n, int num_swaps)
   std::vector<std::pair<int, int>> swaps;
   swaps.reserve(num_swaps);
 
-  for (int i = 0; i < num_swaps; ++i) {
+  for ([[maybe_unused]] const int ignored : std::views::iota(0, num_swaps)) {
     int i1 = dist(rng);
     int i2 = dist(rng);
     if (i1 > i2) {

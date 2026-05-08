@@ -75,15 +75,16 @@ std::string toLower(std::string_view value)
 const char* formatToString(dart::io::ModelFormat format)
 {
   switch (format) {
-    case dart::io::ModelFormat::Auto:
+    using enum dart::io::ModelFormat;
+    case Auto:
       return "auto";
-    case dart::io::ModelFormat::Skel:
+    case Skel:
       return "skel";
-    case dart::io::ModelFormat::Sdf:
+    case Sdf:
       return "sdf";
-    case dart::io::ModelFormat::Urdf:
+    case Urdf:
       return "urdf";
-    case dart::io::ModelFormat::Mjcf:
+    case Mjcf:
       return "mjcf";
   }
   return "unknown";
@@ -92,9 +93,10 @@ const char* formatToString(dart::io::ModelFormat format)
 const char* rootJointTypeToString(dart::io::RootJointType type)
 {
   switch (type) {
-    case dart::io::RootJointType::Floating:
+    using enum dart::io::RootJointType;
+    case Floating:
       return "floating";
-    case dart::io::RootJointType::Fixed:
+    case Fixed:
       return "fixed";
   }
   return "unknown";

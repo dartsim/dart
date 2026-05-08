@@ -47,8 +47,10 @@
 #include <osg/RenderInfo>
 
 #include <algorithm>
+#include <ranges>
 
 #include <cmath>
+#include <cstddef>
 
 namespace dart {
 namespace gui {
@@ -668,7 +670,7 @@ void ImGuiHandler::newFrame(::osg::RenderInfo& renderInfo)
   mTime = currentTime;
   DART_ASSERT(mTime >= 0.0);
 
-  for (auto i = 0u; i < mMousePressed.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, mMousePressed.size())) {
     io.MouseDown[i] = mMousePressed[i];
   }
 

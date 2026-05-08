@@ -60,6 +60,7 @@
 
 #include <algorithm>
 #include <concepts>
+#include <iterator>
 #include <vector>
 
 #include <cmath>
@@ -411,7 +412,7 @@ bool BulletCollisionDetector::raycast(
         return true;
       }
 
-      for (int i = 0; i < callback.m_collisionObjects.size(); ++i) {
+      for (int i = 0; i < std::ssize(callback.m_collisionObjects); ++i) {
         const auto* collObj = static_cast<BulletCollisionObject*>(
             callback.m_collisionObjects[i]->getUserPointer());
         if (option.passesFilter(collObj)) {
@@ -429,8 +430,8 @@ bool BulletCollisionDetector::raycast(
         if (option.mSortByClosest) {
           result->mRayHits.resize(1);
         } else {
-          const auto closest = std::min_element(
-              result->mRayHits.begin(), result->mRayHits.end(), lessFraction);
+          const auto closest
+              = std::ranges::min_element(result->mRayHits, lessFraction);
           const RayHit closestHit = *closest;
           result->mRayHits.clear();
           result->mRayHits.emplace_back(closestHit);

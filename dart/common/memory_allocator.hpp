@@ -40,6 +40,7 @@
 #include <dart/export.hpp>
 
 #include <iostream>
+#include <memory>
 #include <string_view>
 
 #include <cstddef>
