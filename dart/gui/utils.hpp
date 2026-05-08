@@ -39,6 +39,9 @@
 #include <osg/Camera>
 #include <osg/Matrix>
 
+#include <concepts>
+#include <type_traits>
+
 namespace dart::gui {
 
 /// Returns the alpha threshold for demining if the object is a transparent
@@ -66,10 +69,10 @@ template <typename Derived>
 /// Converts Eigen::MatrixBase to osg::Vec3f or osg::Vec3d based on the scalar
 /// type
 template <typename Derived>
-typename std::conditional<
-    std::is_same<typename Derived::Scalar, float>::value,
+std::conditional_t<
+    std::same_as<typename Derived::Scalar, float>,
     ::osg::Vec3f,
-    ::osg::Vec3d>::type
+    ::osg::Vec3d>
 eigToOsgVec3(const Eigen::MatrixBase<Derived>& vec);
 
 /// Converts osg::Vec3f to Eigen::Vector3f
@@ -89,8 +92,8 @@ template <typename Derived>
 /// Converts Eigen::MatrixBase to osg::Vec4f or osg::Vec4d based on the scalar
 /// type
 template <typename Derived>
-std::conditional<
-    std::is_same<typename Derived::Scalar, float>::value,
+std::conditional_t<
+    std::same_as<typename Derived::Scalar, float>,
     ::osg::Vec4f,
     ::osg::Vec4d>
 eigToOsgVec4(const Eigen::MatrixBase<Derived>& vec);
