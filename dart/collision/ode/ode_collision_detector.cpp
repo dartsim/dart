@@ -428,29 +428,22 @@ void reportContacts(
   const auto pair = MakeNewPair(b1, b2);
   auto& pastContacsVec = FindPairInHist(*history, pair);
   auto results_vec_copy = result.getContacts();
+  const auto isCurrentPairContact = [&](const Contact& contact) {
+    return MakeNewPair(contact.collisionObject1, contact.collisionObject2)
+           == pair;
+  };
+  auto pairContacts
+      = results_vec_copy | std::views::filter(isCurrentPairContact);
 
-  bool sliding = false;
   constexpr double slidingThreshold = 1e-3;
-  std::size_t pairContactCount = 0u;
-  for (const auto& curr_cont : results_vec_copy) {
-    const auto current_pair
-        = MakeNewPair(curr_cont.collisionObject1, curr_cont.collisionObject2);
-    if (current_pair != pair) {
-      continue;
-    }
-
-    ++pairContactCount;
-
-    if (computeTangentialSpeed(curr_cont) > slidingThreshold) {
-      sliding = true;
-      break;
-    }
-  }
-
-  if (sliding) {
+  if (std::ranges::any_of(pairContacts, [](const Contact& contact) {
+        return computeTangentialSpeed(contact) > slidingThreshold;
+      })) {
     return;
   }
 
+  const auto pairContactCount
+      = static_cast<std::size_t>(std::ranges::distance(pairContacts));
   const std::size_t pairTarget
       = std::min<std::size_t>(3u, option.maxNumContacts);
   if (pairContactCount >= pairTarget) {
@@ -469,12 +462,7 @@ void reportContacts(
       break;
     }
 
-    for (const auto& curr_cont : results_vec_copy) {
-      const auto res_pair
-          = MakeNewPair(curr_cont.collisionObject1, curr_cont.collisionObject2);
-      if (res_pair != pair) {
-        continue;
-      }
+    for (const auto& curr_cont : pairContacts) {
       auto dist_v = past_cont.point - curr_cont.point;
       const auto dist_m = (dist_v.transpose() * dist_v).coeff(0, 0);
       if (dist_m < 0.01) {
@@ -492,12 +480,8 @@ void reportContacts(
       break;
     }
   }
-  for (const auto& item : results_vec_copy) {
-    const auto res_pair
-        = MakeNewPair(item.collisionObject1, item.collisionObject2);
-    if (res_pair == pair) {
-      pastContacsVec.push_back(item);
-    }
+  for (const auto& item : pairContacts) {
+    pastContacsVec.push_back(item);
   }
 
   const auto size = pastContacsVec.size();
@@ -593,16 +577,13 @@ void OdeCollisionDetector::pruneContactHistory(const CollisionResult& result)
 
   const auto& contacts = result.getContacts();
   for (auto& pastContact : mContactHistory) {
-    bool clear = true;
-    for (const auto& current : contacts) {
-      auto currentPair
-          = MakeNewPair(current.collisionObject1, current.collisionObject2);
-      if (pastContact.pair == currentPair) {
-        clear = false;
-        break;
-      }
-    }
-    if (clear) {
+    const auto hasCurrentContact
+        = std::ranges::any_of(contacts, [&](const Contact& current) {
+            auto currentPair = MakeNewPair(
+                current.collisionObject1, current.collisionObject2);
+            return pastContact.pair == currentPair;
+          });
+    if (!hasCurrentContact) {
       pastContact.history.clear();
     }
   }
