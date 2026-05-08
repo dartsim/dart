@@ -48,6 +48,15 @@
 
 namespace dart::simulation::experimental::space {
 
+namespace detail {
+
+template <typename T>
+concept IsometryField
+    = std::same_as<T, Eigen::Isometry3d>
+      || std::derived_from<T, Eigen::Transform<double, 3, Eigen::Isometry>>;
+
+} // namespace detail
+
 /// Automatically extract scalars from a field for vector mapping
 /// Handles POD types, Eigen vectors, and nested structs
 template <typename Field>
@@ -61,11 +70,7 @@ size_t extractFieldToVector(
     // Scalar types (double, float, int, etc.)
     vec[offset] = static_cast<double>(field);
     count = 1;
-  } else if constexpr (
-      std::same_as<FieldType, Eigen::Isometry3d>
-      || std::is_base_of_v<
-          Eigen::Transform<double, 3, Eigen::Isometry>,
-          FieldType>) {
+  } else if constexpr (detail::IsometryField<FieldType>) {
     // Extract translation (3) + rotation as quaternion (4)
     // Handle early to avoid confusion with other Eigen types
     auto translation = field.translation();
@@ -123,11 +128,7 @@ size_t injectVectorToField(
   if constexpr (std::is_arithmetic_v<FieldType>) {
     field = static_cast<FieldType>(vec[offset]);
     count = 1;
-  } else if constexpr (
-      std::same_as<FieldType, Eigen::Isometry3d>
-      || std::is_base_of_v<
-          Eigen::Transform<double, 3, Eigen::Isometry>,
-          FieldType>) {
+  } else if constexpr (detail::IsometryField<FieldType>) {
     // Handle Isometry3d (before other Eigen types)
     Eigen::Vector3d translation(
         vec[offset + 0], vec[offset + 1], vec[offset + 2]);
