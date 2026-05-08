@@ -39,6 +39,7 @@
 
 #include <chrono>
 #include <future>
+#include <ranges>
 
 using namespace dart;
 using namespace dynamics;
@@ -69,7 +70,7 @@ TEST(Concurrency, FrameDeletion)
         std::async(std::launch::async, &createAndDestroyFrames, i));
   }
 
-  for (std::size_t i = 0; i < futures.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, futures.size())) {
     EXPECT_EQ(Frame::World()->getNumChildEntities(), 0);
     EXPECT_EQ(Frame::World()->getNumChildFrames(), 0);
     futures[i].get();

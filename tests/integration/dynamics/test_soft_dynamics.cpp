@@ -48,6 +48,7 @@
 #include <gtest/gtest.h>
 
 #include <limits>
+#include <ranges>
 #include <string>
 #include <vector>
 
@@ -540,7 +541,8 @@ TEST(SoftDynamics, StepSoftBodyExercisesPhysicsPaths)
 
   dynamics::SoftBodyNode* softBody = nullptr;
   dynamics::SkeletonPtr softSkel;
-  for (std::size_t s = 0; s < world->getNumSkeletons(); ++s) {
+  for (const auto s :
+       std::views::iota(std::size_t{0}, world->getNumSkeletons())) {
     auto skel = world->getSkeleton(s);
     if (skel->getNumSoftBodyNodes() > 0) {
       softBody = skel->getSoftBodyNode(0);
@@ -566,7 +568,8 @@ TEST(SoftDynamics, GravityToggleAndExternalForce)
 
   dynamics::SoftBodyNode* softBody = nullptr;
   dynamics::SkeletonPtr softSkel;
-  for (std::size_t s = 0; s < world->getNumSkeletons(); ++s) {
+  for (const auto s :
+       std::views::iota(std::size_t{0}, world->getNumSkeletons())) {
     auto skel = world->getSkeleton(s);
     if (skel->getNumSoftBodyNodes() > 0) {
       softBody = skel->getSoftBodyNode(0);
@@ -585,7 +588,8 @@ TEST(SoftDynamics, GravityToggleAndExternalForce)
   world->step();
   EXPECT_TRUE(softSkel->getPositions().array().isFinite().all());
 
-  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, softBody->getNumPointMasses())) {
     auto* pm = softBody->getPointMass(i);
     pm->addExtForce(Eigen::Vector3d(0.0, 0.0, 0.1));
   }
@@ -659,7 +663,8 @@ TEST(SoftDynamics, MultipleSoftSkeletonsInteract)
     world->step();
   }
 
-  for (std::size_t s = 0; s < world->getNumSkeletons(); ++s) {
+  for (const auto s :
+       std::views::iota(std::size_t{0}, world->getNumSkeletons())) {
     auto skel = world->getSkeleton(s);
     EXPECT_TRUE(skel->getPositions().array().isFinite().all());
   }

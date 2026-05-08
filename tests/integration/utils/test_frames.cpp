@@ -39,6 +39,8 @@
 
 #include <gtest/gtest.h>
 
+#include <ranges>
+
 using namespace dart;
 using namespace dart::dynamics;
 using namespace dart::math;
@@ -68,7 +70,7 @@ void randomize_transform(
 
 void randomize_transforms(common::aligned_vector<Eigen::Isometry3d>& tfs)
 {
-  for (std::size_t i = 0; i < tfs.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, tfs.size())) {
     randomize_transform(tfs[i]);
   }
 }
@@ -157,15 +159,15 @@ TEST(Frames, ForwardKinematicsChain)
 
   randomize_transforms(tfs);
 
-  for (std::size_t i = 0; i < frames.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, frames.size())) {
     SimpleFrame* F = frames[i];
     F->setRelativeTransform(tfs[i]);
   }
 
-  for (std::size_t i = 0; i < frames.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, frames.size())) {
     Frame* F = frames[i];
     Eigen::Isometry3d expectation(Eigen::Isometry3d::Identity());
-    for (std::size_t j = 0; j <= i; ++j) {
+    for (const auto j : std::views::iota(std::size_t{0}, i + 1)) {
       expectation = expectation * tfs[j];
     }
 
@@ -174,13 +176,13 @@ TEST(Frames, ForwardKinematicsChain)
   }
 
   randomize_transforms(tfs);
-  for (std::size_t i = 0; i < frames.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, frames.size())) {
     SimpleFrame* F = frames[i];
     F->setRelativeTransform(tfs[i]);
   }
 
   Eigen::Isometry3d expectation(Eigen::Isometry3d::Identity());
-  for (std::size_t j = 0; j < frames.size(); ++j) {
+  for (const auto j : std::views::iota(std::size_t{0}, frames.size())) {
     expectation = expectation * tfs[j];
   }
 
@@ -193,7 +195,7 @@ TEST(Frames, ForwardKinematicsChain)
     common::aligned_vector<Eigen::Vector6d> v_rels(frames.size());
     common::aligned_vector<Eigen::Vector6d> v_total(frames.size());
 
-    for (std::size_t i = 0; i < frames.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, frames.size())) {
       v_rels[i] = random_vec<6>();
 
       SimpleFrame* F = frames[i];
@@ -211,7 +213,7 @@ TEST(Frames, ForwardKinematicsChain)
       }
     }
 
-    for (std::size_t i = 0; i < frames.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, frames.size())) {
       SimpleFrame* F = frames[i];
 
       Eigen::Vector6d v_actual = F->getSpatialVelocity();
@@ -228,7 +230,7 @@ TEST(Frames, ForwardKinematicsChain)
     std::vector<Eigen::Vector3d> v_total(frames.size());
     std::vector<Eigen::Vector3d> w_total(frames.size());
 
-    for (std::size_t i = 0; i < frames.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, frames.size())) {
       v_rels[i] = random_vec<3>();
       w_rels[i] = random_vec<3>();
 
@@ -263,7 +265,7 @@ TEST(Frames, ForwardKinematicsChain)
       }
     }
 
-    for (std::size_t i = 0; i < frames.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, frames.size())) {
       SimpleFrame* F = frames[i];
       Eigen::Vector3d v_actual = F->getLinearVelocity();
       Eigen::Vector3d w_actual = F->getAngularVelocity();
@@ -283,7 +285,7 @@ TEST(Frames, ForwardKinematicsChain)
     common::aligned_vector<Eigen::Vector6d> v_total(frames.size());
     common::aligned_vector<Eigen::Vector6d> a_total(frames.size());
 
-    for (std::size_t i = 0; i < frames.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, frames.size())) {
       v_rels[i] = random_vec<6>();
       a_rels[i] = random_vec<6>();
 
@@ -309,7 +311,7 @@ TEST(Frames, ForwardKinematicsChain)
       }
     }
 
-    for (std::size_t i = 0; i < frames.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, frames.size())) {
       SimpleFrame* F = frames[i];
 
       Eigen::Vector6d a_actual = F->getSpatialAcceleration();
@@ -318,7 +320,7 @@ TEST(Frames, ForwardKinematicsChain)
     }
 
     // Test relative computations
-    for (std::size_t i = 0; i < frames.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, frames.size())) {
       Frame* F = frames[i];
       Frame* P = F->getParentFrame();
 
@@ -330,7 +332,7 @@ TEST(Frames, ForwardKinematicsChain)
     }
 
     // Test offset computations
-    for (std::size_t i = 0; i < frames.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, frames.size())) {
       Eigen::Vector3d offset = random_vec<3>();
       Frame* F = frames[i];
 
@@ -383,7 +385,7 @@ TEST(Frames, ForwardKinematicsChain)
     std::vector<Eigen::Vector3d> a_total(frames.size());
     std::vector<Eigen::Vector3d> alpha_total(frames.size());
 
-    for (std::size_t i = 0; i < frames.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, frames.size())) {
       v_rels[i] = random_vec<3>();
       w_rels[i] = random_vec<3>();
       a_rels[i] = random_vec<3>();
@@ -447,7 +449,7 @@ TEST(Frames, ForwardKinematicsChain)
       }
     }
 
-    for (std::size_t i = 0; i < frames.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, frames.size())) {
       SimpleFrame* F = frames[i];
       Eigen::Vector3d v_actual = F->getLinearVelocity();
       Eigen::Vector3d w_actual = F->getAngularVelocity();
@@ -461,7 +463,7 @@ TEST(Frames, ForwardKinematicsChain)
     }
 
     // Test relative computations
-    for (std::size_t i = 0; i < frames.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, frames.size())) {
       SimpleFrame* F = frames[i];
       Frame* P = F->getParentFrame();
       Eigen::Vector3d v_rel = F->getLinearVelocity(P, P);
@@ -480,7 +482,7 @@ TEST(Frames, ForwardKinematicsChain)
 void randomize_target_values(
     const std::vector<SimpleFrame*>& targets, bool spatial)
 {
-  for (std::size_t i = 0; i < targets.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, targets.size())) {
     SimpleFrame* T = targets[i];
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
@@ -506,7 +508,7 @@ void set_relative_values(
     const std::vector<SimpleFrame*>& followers,
     bool spatial)
 {
-  for (std::size_t i = 0; i < targets.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, targets.size())) {
     Frame* T = targets[i];
     SimpleFrame* F = followers[i];
     Frame* P = F->getParentFrame();
@@ -530,7 +532,7 @@ void check_world_values(
     const std::vector<SimpleFrame*>& followers,
     double tolerance)
 {
-  for (std::size_t i = 0; i < targets.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, targets.size())) {
     Frame* T = targets[i];
     Frame* F = followers[i];
 
@@ -572,7 +574,7 @@ void check_values(
     const Frame* inCoordinatesOf,
     double tolerance)
 {
-  for (std::size_t i = 0; i < targets.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, targets.size())) {
     Frame* T = targets[i];
     Frame* F = followers[i];
 
@@ -624,7 +626,7 @@ void check_offset_computations(
     const Frame* inCoordinatesOf,
     double tolerance)
 {
-  for (std::size_t i = 0; i < targets.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, targets.size())) {
     Frame* T = targets[i];
     Frame* F = followers[i];
 
@@ -755,9 +757,9 @@ void test_relative_values(bool spatial_targets, bool spatial_followers)
   check_world_values(targets, followers, tolerance);
 
   // Check every combination of relative values
-  for (std::size_t i = 0; i < targets.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, targets.size())) {
     Frame* T = targets[i];
-    for (std::size_t j = 0; j < followers.size(); ++j) {
+    for (const auto j : std::views::iota(std::size_t{0}, followers.size())) {
       Frame* F = followers[j];
 
       check_values(targets, followers, T, F, tolerance);
@@ -767,8 +769,8 @@ void test_relative_values(bool spatial_targets, bool spatial_followers)
   }
 
   // Test SimpleFrame::setTransform()
-  for (std::size_t i = 0; i < followers.size(); ++i) {
-    for (std::size_t j = 0; j < followers.size(); ++j) {
+  for (const auto i : std::views::iota(std::size_t{0}, followers.size())) {
+    for (const auto j : std::views::iota(std::size_t{0}, followers.size())) {
       SimpleFrame* F = followers[i];
       SimpleFrame* T = followers[j];
       Eigen::Isometry3d tf;
