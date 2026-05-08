@@ -1083,43 +1083,64 @@ void MeshShapeGeometry::extractData(bool firstTime)
 
   // Load textures on the first pass through
   if (firstTime) {
-    unsigned int unit = 0;
-    const aiVector3D* aiTexCoords = mAiMesh->mTextureCoords[unit];
+    const std::span<aiVector3D* const> textureCoordSets{
+        mAiMesh->mTextureCoords, AI_MAX_NUMBER_OF_TEXTURECOORDS};
+    const std::span<const unsigned int> textureCoordComponents{
+        mAiMesh->mNumUVComponents, textureCoordSets.size()};
 
-    while (nullptr != aiTexCoords) {
-      switch (mAiMesh->mNumUVComponents[unit]) {
+    for (const auto unit :
+         std::views::iota(std::size_t{0}, textureCoordSets.size())) {
+      if (nullptr == textureCoordSets[unit]) {
+        break;
+      }
+
+      const std::span<const aiVector3D> texCoords{
+          textureCoordSets[unit], mAiMesh->mNumVertices};
+
+      switch (textureCoordComponents[unit]) {
         case 1: {
           ::osg::ref_ptr<::osg::FloatArray> texture
-              = new ::osg::FloatArray(mAiMesh->mNumVertices);
-          for (std::size_t i = 0; i < mAiMesh->mNumVertices; ++i) {
-            (*texture)[i] = aiTexCoords[i].x;
+              = new ::osg::FloatArray(texCoords.size());
+          for (const auto i :
+               std::views::iota(std::size_t{0}, texCoords.size())) {
+            (*texture)[i] = texCoords[i].x;
           }
-          setTexCoordArray(unit, texture, ::osg::Array::BIND_PER_VERTEX);
+          setTexCoordArray(
+              static_cast<unsigned int>(unit),
+              texture,
+              ::osg::Array::BIND_PER_VERTEX);
           break;
         }
         case 2: {
           ::osg::ref_ptr<::osg::Vec2Array> texture
-              = new ::osg::Vec2Array(mAiMesh->mNumVertices);
-          for (std::size_t i = 0; i < mAiMesh->mNumVertices; ++i) {
-            const aiVector3D& t = aiTexCoords[i];
+              = new ::osg::Vec2Array(texCoords.size());
+          for (const auto i :
+               std::views::iota(std::size_t{0}, texCoords.size())) {
+            const aiVector3D& t = texCoords[i];
             (*texture)[i] = ::osg::Vec2(t.x, t.y);
           }
-          setTexCoordArray(unit, texture, ::osg::Array::BIND_PER_VERTEX);
+          setTexCoordArray(
+              static_cast<unsigned int>(unit),
+              texture,
+              ::osg::Array::BIND_PER_VERTEX);
           break;
         }
         case 3: {
           ::osg::ref_ptr<::osg::Vec3Array> texture
-              = new ::osg::Vec3Array(mAiMesh->mNumVertices);
-          for (std::size_t i = 0; i < mAiMesh->mNumVertices; ++i) {
-            const aiVector3D& t = aiTexCoords[i];
+              = new ::osg::Vec3Array(texCoords.size());
+          for (const auto i :
+               std::views::iota(std::size_t{0}, texCoords.size())) {
+            const aiVector3D& t = texCoords[i];
             (*texture)[i] = ::osg::Vec3(t.x, t.y, t.z);
           }
-          setTexCoordArray(unit, texture, ::osg::Array::BIND_PER_VERTEX);
+          setTexCoordArray(
+              static_cast<unsigned int>(unit),
+              texture,
+              ::osg::Array::BIND_PER_VERTEX);
           break;
         }
-      } // switch(mAiMesh->mNumUVComponents[unit])
-      aiTexCoords = mAiMesh->mTextureCoords[++unit];
-    } // while(nullptr != aiTexCoords)
+      } // switch(textureCoordComponents[unit])
+    }
 
     const auto imagePaths
         = mMainNode->getTextureImagePaths(mAiMesh->mMaterialIndex);
