@@ -36,7 +36,9 @@
 #include <dart/math/polygon_mesh.hpp>
 
 #include <algorithm>
+#include <iterator>
 #include <limits>
+#include <ranges>
 #include <span>
 #include <utility>
 
@@ -165,15 +167,15 @@ bool triangulateFaceEarClipping(
   }
   const bool isCCW = area2 > 0.0;
 
-  std::vector<std::size_t> polygon(count);
-  for (std::size_t i = 0; i < count; ++i) {
-    polygon[i] = i;
-  }
+  std::vector<std::size_t> polygon;
+  polygon.reserve(count);
+  std::ranges::copy(
+      std::views::iota(std::size_t{0}, count), std::back_inserter(polygon));
 
   bool removedColinear = true;
   while (removedColinear && polygon.size() > 3) {
     removedColinear = false;
-    for (std::size_t i = 0; i < polygon.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, polygon.size())) {
       const std::size_t prev
           = polygon[(i + polygon.size() - 1) % polygon.size()];
       const std::size_t curr = polygon[i];
@@ -217,7 +219,7 @@ bool triangulateFaceEarClipping(
 
   while (polygon.size() > 3 && iterations < maxIterations) {
     bool earFound = false;
-    for (std::size_t i = 0; i < polygon.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, polygon.size())) {
       const std::size_t prev
           = polygon[(i + polygon.size() - 1) % polygon.size()];
       const std::size_t curr = polygon[i];
@@ -227,17 +229,13 @@ bool triangulateFaceEarClipping(
         continue;
       }
 
-      bool hasInteriorPoint = false;
-      for (std::size_t j = 0; j < polygon.size(); ++j) {
-        const std::size_t idx = polygon[j];
-        if (idx == prev || idx == curr || idx == next) {
-          continue;
-        }
-        if (containsPoint(prev, curr, next, idx)) {
-          hasInteriorPoint = true;
-          break;
-        }
-      }
+      const bool hasInteriorPoint
+          = std::ranges::any_of(polygon, [&](std::size_t idx) {
+              if (idx == prev || idx == curr || idx == next) {
+                return false;
+              }
+              return containsPoint(prev, curr, next, idx);
+            });
       if (hasInteriorPoint) {
         continue;
       }
@@ -408,7 +406,7 @@ typename PolygonMesh<S>::TriMeshType PolygonMesh<S>::triangulate() const
             std::span<const Vector3>{this->mVertices},
             triangles)) {
       const Index v0 = face[0];
-      for (std::size_t i = 1; i + 1 < face.size(); ++i) {
+      for (const auto i : std::views::iota(std::size_t{1}, face.size() - 1)) {
         triMesh.addTriangle(v0, face[i], face[i + 1]);
       }
       continue;
