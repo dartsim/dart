@@ -38,6 +38,9 @@
 #include <dart/common/aspect.hpp>
 #include <dart/common/stl_helpers.hpp>
 
+#include <concepts>
+#include <type_traits>
+
 namespace dart {
 namespace common {
 namespace detail {
@@ -106,8 +109,8 @@ public:
   template <typename T>
   struct ConvertIfState
   {
-    using type = typename std::
-        conditional<std::is_base_of<StateData, T>::value, StateData, T>::type;
+    using type
+        = std::conditional_t<std::derived_from<T, StateData>, StateData, T>;
   };
 
   /// Construct this Aspect without affecting the State.
@@ -275,10 +278,8 @@ public:
   template <typename T>
   struct ConvertIfProperties
   {
-    using type = typename std::conditional<
-        std::is_base_of<PropertiesData, T>::value,
-        PropertiesData,
-        T>::type;
+    using type = std::
+        conditional_t<std::derived_from<T, PropertiesData>, PropertiesData, T>;
   };
 
   /// Construct this Aspect without affecting the Properties.
