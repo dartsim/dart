@@ -46,7 +46,8 @@ namespace dart::simulation::experimental {
 namespace detail {
 
 template <typename Field>
-concept ArithmeticField = std::is_arithmetic_v<std::remove_cvref_t<Field>>;
+concept ArithmeticField = std::integral<std::remove_cvref_t<Field>>
+                          || std::floating_point<std::remove_cvref_t<Field>>;
 
 template <typename Field>
 concept EigenVectorField = requires(Field field, Eigen::Index i) {
