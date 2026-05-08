@@ -261,8 +261,8 @@ typename MeshLoader<S>::aiScenePtr MeshLoader<S>::loadScene(
     }
 
     std::string extension(path.substr(extensionIndex));
-    std::ranges::transform(extension, extension.begin(), [](unsigned char ch) {
-      return static_cast<char>(std::tolower(ch));
+    std::ranges::transform(extension, extension.begin(), [](unsigned char c) {
+      return static_cast<char>(std::tolower(c));
     });
     return extension == ".dae" || extension == ".zae";
   };

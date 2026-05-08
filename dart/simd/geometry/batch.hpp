@@ -54,13 +54,10 @@ namespace dart::simd {
 /// - m00, m10, m20 = column 0
 /// - m01, m11, m21 = column 1
 /// - m02, m12, m22 = column 2
-template <typename T, std::size_t N>
+template <FloatType T, std::size_t N>
 struct Matrix3x3SoA
 {
   static_assert(N >= 1 && N <= 16, "N must be between 1 and 16");
-  static_assert(
-      std::is_same_v<T, float> || std::is_same_v<T, double>,
-      "Matrix3x3SoA only supports float or double");
 
   // Column 0
   Vec<T, N> m00, m10, m20;
@@ -241,13 +238,10 @@ using Matrix3x3SoAd4 = Matrix3x3SoA<double, 4>;
 // =============================================================================
 
 /// @brief SoA layout for N 4x4 matrices
-template <typename T, std::size_t N>
+template <FloatType T, std::size_t N>
 struct Matrix4x4SoA
 {
   static_assert(N >= 1 && N <= 16, "N must be between 1 and 16");
-  static_assert(
-      std::is_same_v<T, float> || std::is_same_v<T, double>,
-      "Matrix4x4SoA only supports float or double");
 
   // Column 0
   Vec<T, N> m00, m10, m20, m30;
@@ -437,13 +431,10 @@ using Matrix4x4SoAd4 = Matrix4x4SoA<double, 4>;
 // =============================================================================
 
 /// @brief SoA layout for N 3D vectors - extends EigenSoA3 with more operations
-template <typename T, std::size_t N>
+template <FloatType T, std::size_t N>
 struct Vector3SoA
 {
   static_assert(N >= 1 && N <= 16, "N must be between 1 and 16");
-  static_assert(
-      std::is_same_v<T, float> || std::is_same_v<T, double>,
-      "Vector3SoA only supports float or double");
 
   Vec<T, N> x, y, z;
 
@@ -529,7 +520,7 @@ struct Vector3SoA
 };
 
 /// Batch dot product: returns N dot products
-template <typename T, std::size_t N>
+template <FloatType T, std::size_t N>
 [[nodiscard]] inline Vec<T, N> dot(
     const Vector3SoA<T, N>& a, const Vector3SoA<T, N>& b) noexcept
 {
@@ -537,7 +528,7 @@ template <typename T, std::size_t N>
 }
 
 /// Batch cross product: returns N cross products
-template <typename T, std::size_t N>
+template <FloatType T, std::size_t N>
 [[nodiscard]] inline Vector3SoA<T, N> cross(
     const Vector3SoA<T, N>& a, const Vector3SoA<T, N>& b) noexcept
 {
@@ -548,7 +539,7 @@ template <typename T, std::size_t N>
 }
 
 /// Batch squared norm: returns N squared norms
-template <typename T, std::size_t N>
+template <FloatType T, std::size_t N>
 [[nodiscard]] inline Vec<T, N> squaredNorm(const Vector3SoA<T, N>& v) noexcept
 {
   return fmadd(v.x, v.x, fmadd(v.y, v.y, v.z * v.z));
@@ -556,7 +547,7 @@ template <typename T, std::size_t N>
 
 /// Batch normalize: returns N normalized vectors
 /// Returns zero for zero-length vectors (matching scalar Vector3::normalized())
-template <typename T, std::size_t N>
+template <FloatType T, std::size_t N>
 [[nodiscard]] inline Vector3SoA<T, N> normalize(
     const Vector3SoA<T, N>& v) noexcept
 {
@@ -571,7 +562,7 @@ template <typename T, std::size_t N>
 }
 
 /// Batch outer product: returns N outer products (3x3 matrices)
-template <typename T, std::size_t N>
+template <FloatType T, std::size_t N>
 [[nodiscard]] inline Matrix3x3SoA<T, N> outer(
     const Vector3SoA<T, N>& a, const Vector3SoA<T, N>& b) noexcept
 {
@@ -593,7 +584,7 @@ template <typename T, std::size_t N>
 
 /// Batch reflect: v - 2*(v·n)*n for each of N vectors
 /// Assumes n is normalized
-template <typename T, std::size_t N>
+template <FloatType T, std::size_t N>
 [[nodiscard]] inline Vector3SoA<T, N> reflect(
     const Vector3SoA<T, N>& v, const Vector3SoA<T, N>& n) noexcept
 {
@@ -605,7 +596,7 @@ template <typename T, std::size_t N>
 
 /// Batch project: (a·b / b·b) * b for each of N vectors
 /// Returns zero when b is zero-length (avoiding division by zero)
-template <typename T, std::size_t N>
+template <FloatType T, std::size_t N>
 [[nodiscard]] inline Vector3SoA<T, N> project(
     const Vector3SoA<T, N>& a, const Vector3SoA<T, N>& b) noexcept
 {

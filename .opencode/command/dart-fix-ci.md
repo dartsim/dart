@@ -16,8 +16,27 @@ Fix CI failure: $ARGUMENTS
 
 ## Workflow
 
-1. `gh pr checks $1` or `gh run view <RUN_ID>`
-2. `gh run view <RUN_ID> --log-failed`
-3. Reproduce: `pixi run test` or `ctest -R <TEST>`
-4. Fix (formatting: `pixi run lint`, infra: `gh run rerun --failed`)
-5. Push and `gh run watch <RUN_ID> --interval 30`
+1. Identify failing checks: `gh pr checks <PR_NUMBER>` or `gh run view <RUN_ID>`.
+2. Inspect the first real failure:
+   ```bash
+   gh run view <RUN_ID> --log-failed
+   gh run view <RUN_ID> --job <JOB_ID> --log
+   ```
+3. If a job is still in progress, wait for logs instead of guessing.
+4. Reproduce locally with the smallest relevant command:
+   - formatting: `pixi run lint`
+   - tests: `pixi run test`, `pixi run test-unit`, or `ctest -R <TEST>`
+   - coverage: add targeted tests for uncovered changed lines
+5. Fix the root cause with minimal scope.
+6. If the failure is infrastructure-only, rerun the failed job or run:
+   ```bash
+   gh run rerun <RUN_ID> --failed
+   ```
+7. Push and watch CI until the PR is green.
+
+## Output
+
+- Root cause
+- Fix or rerun action
+- Commands run
+- Current CI status

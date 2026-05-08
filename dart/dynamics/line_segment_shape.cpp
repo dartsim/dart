@@ -218,7 +218,7 @@ const Eigen::Vector3d& LineSegmentShape::getVertex(std::size_t _idx) const
 //==============================================================================
 std::span<const Eigen::Vector3d> LineSegmentShape::getVertices() const
 {
-  return std::span<const Eigen::Vector3d>(mVertices);
+  return mVertices;
 }
 
 //==============================================================================
@@ -287,7 +287,7 @@ void LineSegmentShape::removeConnection(std::size_t _connectionIdx)
 //==============================================================================
 std::span<const Eigen::Vector2i> LineSegmentShape::getConnections() const
 {
-  return std::span<const Eigen::Vector2i>(mConnections);
+  return mConnections;
 }
 
 //==============================================================================

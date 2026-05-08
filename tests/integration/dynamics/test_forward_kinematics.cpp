@@ -39,6 +39,7 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <iterator>
 
 using namespace dart::test;
 
@@ -130,7 +131,7 @@ Eigen::MatrixXd finiteDifferenceJacobian(
     JacobianNode* node)
 {
   Eigen::MatrixXd J(3, q.size());
-  for (int i = 0; i < q.size(); ++i) {
+  for (auto i = 0; i < std::ssize(q); ++i) {
     const double dq = 1e-4;
 
     Eigen::VectorXd q_up = q;
@@ -165,7 +166,7 @@ Eigen::MatrixXd standardJacobian(
   Eigen::MatrixXd J = skeleton->getJacobian(node).bottomRows<3>();
 
   Eigen::MatrixXd reduced_J(3, q.size());
-  for (int i = 0; i < q.size(); ++i) {
+  for (auto i = 0; i < std::ssize(q); ++i) {
     reduced_J.col(i) = J.col(active_indices[i]);
   }
 

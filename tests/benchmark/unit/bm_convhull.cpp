@@ -63,7 +63,7 @@ std::vector<Eigen::Matrix<S, 3, 1>> generateRandomPoints(
 template <typename T>
 std::span<const T> asSpan(const std::vector<T>& values)
 {
-  return std::span<const T>(values);
+  return values;
 }
 
 //==============================================================================

@@ -35,7 +35,7 @@ Fix GitHub issue: $ARGUMENTS
 1. `gh issue view $1` - Validate issue
 2. `git checkout -b fix/issue-$1 origin/main`
 3. Fix with minimal changes + add regression test
-4. `pixi run test-all && pixi run lint`
+4. `pixi run lint`, then run the smallest relevant tests; use `pixi run test-all` before finalizing when feasible
 5. `git push -u origin HEAD && gh pr create`
 6. **Before PR**: If task used `docs/dev_tasks/<task>/`, remove the folder (include in this PR, not after merge)
 
