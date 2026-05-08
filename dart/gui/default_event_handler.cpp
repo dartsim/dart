@@ -42,7 +42,9 @@
 
 #include <osgGA/GUIEventAdapter>
 
+#include <algorithm>
 #include <iostream>
+#include <span>
 
 namespace dart {
 namespace gui {
@@ -55,10 +57,8 @@ DefaultEventHandler::DefaultEventHandler(Viewer* _viewer)
   mViewer->addInstructionText("Spacebar:     Turn simulation on/off\n");
   mViewer->addInstructionText("Ctrl+H:       Turn headlights on/off\n");
 
-  for (std::size_t i = 0; i < NUM_MOUSE_BUTTONS; ++i) {
-    for (std::size_t j = 0; j < BUTTON_NOTHING; ++j) {
-      mSuppressButtonPicks[i][j] = false;
-    }
+  for (auto& suppressedEvents : mSuppressButtonPicks) {
+    std::ranges::fill(suppressedEvents, false);
   }
   mSuppressMovePicks = false;
 
@@ -423,9 +423,8 @@ void DefaultEventHandler::eventPick(const ::osgGA::GUIEventAdapter& ea)
 //==============================================================================
 void DefaultEventHandler::clearButtonEvents()
 {
-  for (std::size_t i = 0; i < NUM_MOUSE_BUTTONS; ++i) {
-    mLastButtonEvent[i] = BUTTON_NOTHING;
-  }
+  std::ranges::fill(
+      std::span{mLastButtonEvent, NUM_MOUSE_BUTTONS}, BUTTON_NOTHING);
 }
 
 //==============================================================================
@@ -434,9 +433,7 @@ void DefaultEventHandler::handleDestructionNotification(
 {
   MouseEventHandler* meh = const_cast<MouseEventHandler*>(
       dynamic_cast<const MouseEventHandler*>(_subject));
-  if (mMouseEventHandlers.contains(meh)) {
-    mMouseEventHandlers.erase(meh);
-  }
+  mMouseEventHandlers.erase(meh);
 }
 
 } // namespace gui
