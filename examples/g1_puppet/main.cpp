@@ -149,7 +149,7 @@ std::optional<std::string> getLastPathSegment(std::string value)
     value.erase(terminator);
   }
 
-  while (!value.empty() && (value.back() == '/' || value.back() == '\\')) {
+  while (value.ends_with('/') || value.ends_with('\\')) {
     value.pop_back();
   }
 
