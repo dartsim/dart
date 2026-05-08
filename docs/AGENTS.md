@@ -32,19 +32,18 @@ Knowledge Base
 └── docs/
     ├── onboarding/        ← Developer guides
     │   └── ai-tools.md    ← Tool compatibility notes
-    ├── prompts/           ← Template reference
     └── readthedocs/       ← User documentation
 ```
 
 ## Quick Navigation
 
-| Directory                     | Purpose                                            |
-| ----------------------------- | -------------------------------------------------- |
-| `onboarding/`                 | Developer guides (architecture, building, testing) |
-| `onboarding/ai-tools.md`      | AI tool compatibility notes                        |
-| [prompts/](prompts/AGENTS.md) | Prompt templates (prefer slash commands)           |
-| `dev_tasks/`                  | Active development task tracking                   |
-| `readthedocs/`                | Published user documentation (Sphinx/RST)          |
+| Directory                          | Purpose                                            |
+| ---------------------------------- | -------------------------------------------------- |
+| `onboarding/`                      | Developer guides (architecture, building, testing) |
+| `onboarding/ai-tools.md`           | AI tool compatibility notes                        |
+| `onboarding/release-management.md` | Release workflow guidance                          |
+| `dev_tasks/`                       | Active development task tracking                   |
+| `readthedocs/`                     | Published user documentation (Sphinx/RST)          |
 
 ## By Task
 
@@ -55,6 +54,7 @@ Knowledge Base
 - **Working on dartpy?** → `onboarding/python-bindings.md` or load skill `dart-python`
 - **Understanding architecture?** → `onboarding/architecture.md`
 - **Contributing?** → `onboarding/contributing.md` or load skill `dart-contribute`
+- **Release workflow?** → `onboarding/release-management.md` or use `/dart-release-*`
 - **Adding docs?** → `readthedocs/README.md`
 - **AI tool issues?** → `onboarding/ai-tools.md`
 

@@ -32,7 +32,6 @@
 
 #include "dart/simulation/experimental/io/binary_io.hpp"
 
-#include <format>
 #include <stdexcept>
 
 namespace dart::simulation::experimental::io {
@@ -194,11 +193,10 @@ std::uint32_t readFormatHeader(std::istream& in)
   // Check version compatibility
   if (version > kBinaryFormatVersion) {
     throw std::runtime_error(
-        std::format(
-            "Unsupported simulation-experimental binary format version: file "
-            "version {} is newer than supported version {}",
-            version,
-            kBinaryFormatVersion));
+        "Unsupported simulation-experimental binary format version: file "
+        "version "
+        + std::to_string(version) + " is newer than supported version "
+        + std::to_string(kBinaryFormatVersion));
   }
 
   return version;

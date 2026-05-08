@@ -37,8 +37,6 @@
 #include "dart/utils/mjcf/detail/utils.hpp"
 #include "dart/utils/xml_helpers.hpp"
 
-#include <format>
-
 namespace dart {
 namespace utils {
 namespace MjcfParser {
@@ -122,9 +120,8 @@ Errors appendBodyAttributes(
     if (user.size() != size->getNUserBody()) {
       errors.emplace_back(
           ErrorCode::ATTRIBUTE_INVALID,
-          std::format(
-              "The size of 'user' is different from <size nuser_body={}>",
-              size->getNUserBody()));
+          "The size of 'user' is different from <size nuser_body="
+              + std::to_string(size->getNUserBody()) + ">");
       return errors;
     }
 

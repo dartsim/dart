@@ -43,11 +43,11 @@
 #include <chrono>
 #include <deque>
 #include <filesystem>
-#include <format>
 #include <iomanip>
 #include <iostream>
 #include <iterator>
 #include <random>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -304,7 +304,7 @@ WorldPtr createBoxStackScenario()
       Eigen::Vector3d color(0.3 + 0.5 * hue, 0.5, 0.8 - 0.5 * hue);
 
       world->addSkeleton(createBox(
-          std::format("box_{}", boxIndex),
+          "box_" + std::to_string(boxIndex),
           Eigen::Vector3d(boxSize, boxSize, boxSize),
           1.0,
           Eigen::Vector3d(x, y, 0),
@@ -340,7 +340,7 @@ WorldPtr createBallDropScenario()
         Eigen::Vector3d color(0.8 - 0.4 * hue, 0.4 + 0.4 * hue, 0.4);
 
         world->addSkeleton(createSphere(
-            std::format("ball_{}", ballIndex),
+            "ball_" + std::to_string(ballIndex),
             radius,
             0.5,
             Eigen::Vector3d(px, py, pz),
@@ -372,7 +372,7 @@ WorldPtr createDominosScenario()
     Eigen::Vector3d color(0.2 + 0.6 * hue, 0.3, 0.8 - 0.5 * hue);
 
     auto domino = createBox(
-        std::format("domino_{}", i),
+        "domino_" + std::to_string(i),
         Eigen::Vector3d(width, height, depth),
         0.5,
         Eigen::Vector3d(x, height / 2.0, 0),
@@ -854,7 +854,9 @@ bool writeHeadlessFrame(
     return false;
   }
 
-  const auto path = std::format("{}/frame_{:06}.png", outDir, frameIndex);
+  std::ostringstream path;
+  path << outDir << "/frame_" << std::setfill('0') << std::setw(6) << frameIndex
+       << std::setw(0) << ".png";
 
   ::osg::ref_ptr<::osg::Image> image = new ::osg::Image;
   image->setImage(
@@ -867,7 +869,7 @@ bool writeHeadlessFrame(
       const_cast<unsigned char*>(pixels.data()),
       ::osg::Image::NO_DELETE);
 
-  return ::osgDB::writeImageFile(*image, path);
+  return ::osgDB::writeImageFile(*image, path.str());
 }
 
 int runHeadless(

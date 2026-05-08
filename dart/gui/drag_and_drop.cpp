@@ -714,7 +714,7 @@ void BodyNodeDnD::move()
       }
     }
 
-    mIK->setDofs(std::span<const std::size_t>(dofs));
+    mIK->setDofs(dofs);
   } else {
     if (mUseWholeBody) {
       mIK->useWholeBody();

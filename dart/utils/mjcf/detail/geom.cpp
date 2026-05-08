@@ -42,8 +42,6 @@
 #include "dart/utils/mjcf/detail/utils.hpp"
 #include "dart/utils/xml_helpers.hpp"
 
-#include <format>
-
 namespace dart {
 namespace utils {
 namespace MjcfParser {
@@ -114,7 +112,7 @@ Errors Geom::preprocess(const Compiler& compiler, bool autoName)
     mName = *mAttributes.mName;
   } else if (autoName) {
     static unsigned int index = 0;
-    mName = std::format("geom ({})", index++);
+    mName = "geom (" + std::to_string(index++) + ")";
   }
 
   mType = mAttributes.mType;

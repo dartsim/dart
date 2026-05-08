@@ -22,6 +22,7 @@
 #include <string>
 #include <system_error>
 #include <unordered_map>
+#include <utility>
 
 #include <cmath>
 #include <cstring>
@@ -139,7 +140,7 @@ public:
     if (next < 0) {
       return false;
     }
-    if (next > std::ssize(mData)) {
+    if (std::cmp_greater(next, mData.size())) {
       return false;
     }
 

@@ -51,7 +51,6 @@
 #include <Eigen/Dense>
 
 #include <algorithm>
-#include <format>
 #include <limits>
 #include <unordered_set>
 #include <vector>
@@ -76,7 +75,8 @@ dynamics::BodyNode::Properties createBodyProperties(
   if (!mjcfBody.getName().empty()) {
     bodyProps.mName = mjcfBody.getName();
   } else {
-    bodyProps.mName = std::format("Nonamed ({})", skel->getNumBodyNodes());
+    bodyProps.mName
+        = "Nonamed (" + std::to_string(skel->getNumBodyNodes()) + ")";
   }
 
   // Inertial

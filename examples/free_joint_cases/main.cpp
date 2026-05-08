@@ -42,7 +42,8 @@
 #include <CLI/CLI.hpp>
 
 #include <algorithm>
-#include <format>
+#include <iomanip>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -98,7 +99,9 @@ struct FreeJointCase
 
 std::string formatDouble(double value, int precision = 3)
 {
-  return std::format("{:.{}f}", value, precision);
+  std::ostringstream stream;
+  stream << std::fixed << std::setprecision(precision) << value;
+  return stream.str();
 }
 
 FreeJointCase makeCase(
@@ -398,7 +401,7 @@ public:
   {
     const int scaleKey = static_cast<int>(std::lround(guiScale * 100.0));
     mWindowLabel
-        = std::format("FreeJoint cases##free_joint_cases_{}", scaleKey);
+        = "FreeJoint cases##free_joint_cases_" + std::to_string(scaleKey);
 
     applyInertiaMode();
     applyGroundTruthVisibility();

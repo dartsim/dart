@@ -37,7 +37,7 @@
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/skeleton.hpp>
 
-#include <format>
+#include <concepts>
 #include <utility>
 
 namespace dart {
@@ -156,7 +156,7 @@ ShapeNode* BodyNode::createShapeNode(
 {
   if (automaticName) {
     properties.mName
-        = std::format("{}_ShapeNode_{}", getName(), getNumShapeNodes());
+        = getName() + "_ShapeNode_" + std::to_string(getNumShapeNodes());
   }
 
   return createNode<ShapeNode>(properties);
@@ -189,7 +189,7 @@ template <class... Aspects>
 ShapeNode* BodyNode::createShapeNodeWith(const ShapePtr& shape)
 {
   return createShapeNodeWith<Aspects...>(
-      shape, std::format("{}_ShapeNode_{}", getName(), getNumShapeNodes()));
+      shape, getName() + "_ShapeNode_" + std::to_string(getNumShapeNodes()));
 }
 
 //==============================================================================
@@ -299,7 +299,7 @@ void BodyNode::removeAllShapeNodesWith()
 template <typename AspectT, typename Func>
 void BodyNode::eachShapeNodeWith(Func func) const
 {
-  if constexpr (std::is_same_v<
+  if constexpr (std::same_as<
                     std::invoke_result_t<Func, const ShapeNode*>,
                     bool>) {
     for (auto i = 0u; i < getNumShapeNodes(); ++i) {
@@ -324,7 +324,7 @@ void BodyNode::eachShapeNodeWith(Func func) const
 template <typename AspectT, typename Func>
 void BodyNode::eachShapeNodeWith(Func func)
 {
-  if constexpr (std::is_same_v<std::invoke_result_t<Func, ShapeNode*>, bool>) {
+  if constexpr (std::same_as<std::invoke_result_t<Func, ShapeNode*>, bool>) {
     for (auto i = 0u; i < getNumShapeNodes(); ++i) {
       ShapeNode* shapeNode = getShapeNode(i);
       if (shapeNode->has<AspectT>()) {

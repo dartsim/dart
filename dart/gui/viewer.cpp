@@ -48,7 +48,10 @@
 #include <osg/OperationThread>
 #include <osgDB/WriteFile>
 
-#include <format>
+#include <algorithm>
+#include <iomanip>
+#include <ranges>
+#include <sstream>
 
 namespace dart {
 namespace gui {
@@ -89,12 +92,11 @@ public:
 
     if (mViewer->mRecording) {
       if (!mViewer->mImageDirectory.empty()) {
-        const auto path = std::format(
-            "{}/{}{:0{}}.png",
-            mViewer->mImageDirectory,
-            mViewer->mImagePrefix,
-            mViewer->mImageSequenceNum,
-            static_cast<int>(mViewer->mImageDigits));
+        std::stringstream str;
+        str << mViewer->mImageDirectory << "/" << mViewer->mImagePrefix
+            << std::setfill('0') << std::setw(mViewer->mImageDigits)
+            << mViewer->mImageSequenceNum << std::setw(0) << ".png";
+        const auto path = str.str();
 
         if (::osgDB::writeImageFile(*mImage, path)) {
           ++mViewer->mImageSequenceNum;
@@ -564,18 +566,11 @@ void Viewer::removeWorldNode(std::shared_ptr<dart::simulation::World> _oldWorld)
 WorldNode* Viewer::getWorldNode(
     std::shared_ptr<dart::simulation::World> _world) const
 {
-  auto it = mWorldNodes.cbegin();
-  auto end = mWorldNodes.cend();
-  WorldNode* node = nullptr;
-  for (; it != end; ++it) {
-    WorldNode* checkNode = it->first;
-    if (checkNode->getWorld() == _world) {
-      node = checkNode;
-      break;
-    }
-  }
+  const auto it = std::ranges::find_if(mWorldNodes, [&](const auto& nodePair) {
+    return nodePair.first->getWorld() == _world;
+  });
 
-  return node;
+  return it != mWorldNodes.cend() ? it->first : nullptr;
 }
 
 //==============================================================================
@@ -792,21 +787,13 @@ static sfs_dnd::iterator getSimpleFrameShapeDnDFromMultimap(
 {
   using namespace sfs_dnd;
 
-  std::pair<iterator, iterator> range = map.equal_range(_shape);
-  iterator it = range.first, end = range.second;
-  while (it != map.end()) {
-    SimpleFrameShapeDnD* dnd = it->second;
-    if (dnd->getSimpleFrame() == _frame) {
-      return it;
-    }
+  auto [first, last] = map.equal_range(_shape);
+  auto shapeDnDs = std::ranges::subrange(first, last);
+  auto it = std::ranges::find_if(shapeDnDs, [_frame](const auto& entry) {
+    return entry.second->getSimpleFrame() == _frame;
+  });
 
-    if (it == end) {
-      break;
-    }
-    ++it;
-  }
-
-  return map.end();
+  return it != shapeDnDs.end() ? it : map.end();
 }
 
 //==============================================================================
@@ -992,23 +979,19 @@ void Viewer::updateViewer()
 //==============================================================================
 void Viewer::updateDragAndDrops()
 {
-  for (auto& dnd_pair : mSimpleFrameDnDMap) {
-    SimpleFrameDnD* dnd = dnd_pair.second;
+  for (SimpleFrameDnD* dnd : std::views::values(mSimpleFrameDnDMap)) {
     dnd->update();
   }
 
-  for (auto& dnd_pair : mSimpleFrameShapeDnDMap) {
-    SimpleFrameShapeDnD* dnd = dnd_pair.second;
+  for (SimpleFrameShapeDnD* dnd : std::views::values(mSimpleFrameShapeDnDMap)) {
     dnd->update();
   }
 
-  for (auto& dnd_pair : mInteractiveFrameDnDMap) {
-    InteractiveFrameDnD* dnd = dnd_pair.second;
+  for (InteractiveFrameDnD* dnd : std::views::values(mInteractiveFrameDnDMap)) {
     dnd->update();
   }
 
-  for (auto& dnd_pair : mBodyNodeDnDMap) {
-    BodyNodeDnD* dnd = dnd_pair.second;
+  for (BodyNodeDnD* dnd : std::views::values(mBodyNodeDnDMap)) {
     dnd->update();
   }
 }

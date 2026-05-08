@@ -52,12 +52,15 @@
 #include <osgDB/ReadFile>
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <filesystem>
-#include <format>
 #include <fstream>
+#include <iterator>
 #include <map>
+#include <span>
+#include <sstream>
 #include <stdexcept>
 #include <string_view>
 #include <system_error>
@@ -105,24 +108,23 @@ std::filesystem::path makeTemporaryTexturePath(std::string_view extension)
   const auto tempDir = std::filesystem::temp_directory_path();
 
   for (std::size_t attempt = 0; attempt < 64; ++attempt) {
-    auto name = std::format(
-        "dart_texture_{}_{}",
-        std::chrono::high_resolution_clock::now().time_since_epoch().count(),
-        counter.fetch_add(1, std::memory_order_relaxed));
+    std::stringstream name;
+    name << "dart_texture_"
+         << std::chrono::high_resolution_clock::now().time_since_epoch().count()
+         << "_" << counter.fetch_add(1, std::memory_order_relaxed);
     if (attempt > 0) {
-      name += std::format("_{}", attempt);
+      name << "_" << attempt;
     }
 
     if (!extension.empty()) {
       if (extension.front() == '.') {
-        name += extension;
+        name << extension;
       } else {
-        name += '.';
-        name += extension;
+        name << "." << extension;
       }
     }
 
-    const auto candidate = tempDir / name;
+    const auto candidate = tempDir / name.str();
     std::error_code ec;
     if (!std::filesystem::exists(candidate, ec)) {
       return candidate;
@@ -773,17 +775,19 @@ void MeshShapeGeometry::extractData(bool firstTime)
 
   if (mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
       || firstTime) {
-    ::osg::ref_ptr<::osg::DrawElementsUInt> elements[3];
-    elements[0] = new ::osg::DrawElementsUInt(GL_POINTS);
-    elements[1] = new ::osg::DrawElementsUInt(GL_LINES);
-    elements[2] = new ::osg::DrawElementsUInt(GL_TRIANGLES);
+    const std::array<::osg::ref_ptr<::osg::DrawElementsUInt>, 3> elements{
+        new ::osg::DrawElementsUInt(GL_POINTS),
+        new ::osg::DrawElementsUInt(GL_LINES),
+        new ::osg::DrawElementsUInt(GL_TRIANGLES)};
 
     std::vector<Eigen::Vector3d> vertices;
-    vertices.reserve(mAiMesh->mNumVertices);
-    for (std::size_t i = 0; i < mAiMesh->mNumVertices; ++i) {
-      const aiVector3D& vertex = mAiMesh->mVertices[i];
-      vertices.emplace_back(vertex.x, vertex.y, vertex.z);
-    }
+    const std::span<const aiVector3D> aiVertices{
+        mAiMesh->mVertices, mAiMesh->mNumVertices};
+    vertices.reserve(aiVertices.size());
+    std::ranges::transform(
+        aiVertices, std::back_inserter(vertices), [](const aiVector3D& vertex) {
+          return Eigen::Vector3d(vertex.x, vertex.y, vertex.z);
+        });
 
     std::vector<std::size_t> polygon;
     std::vector<
@@ -791,34 +795,29 @@ void MeshShapeGeometry::extractData(bool firstTime)
         Eigen::aligned_allocator<Eigen::Matrix<std::size_t, 3, 1>>>
         triangles;
 
-    for (std::size_t i = 0; i < mAiMesh->mNumFaces; ++i) {
-      const aiFace& face = mAiMesh->mFaces[i];
-
+    const std::span<const aiFace> aiFaces{mAiMesh->mFaces, mAiMesh->mNumFaces};
+    for (const aiFace& face : aiFaces) {
       if (face.mNumIndices == 0) {
         continue;
       }
 
+      const std::span<const unsigned int> faceIndices{
+          face.mIndices, face.mNumIndices};
+
       if (face.mNumIndices < 3) {
-        ::osg::DrawElementsUInt* elem = elements[face.mNumIndices - 1];
-        for (std::size_t j = 0; j < face.mNumIndices; ++j) {
-          elem->push_back(face.mIndices[j]);
-        }
+        std::ranges::copy(
+            faceIndices, std::back_inserter(*elements[face.mNumIndices - 1]));
         continue;
       }
 
       if (face.mNumIndices == 3) {
-        ::osg::DrawElementsUInt* elem = elements[2];
-        for (std::size_t j = 0; j < face.mNumIndices; ++j) {
-          elem->push_back(face.mIndices[j]);
-        }
+        std::ranges::copy(faceIndices, std::back_inserter(*elements[2]));
         continue;
       }
 
       polygon.clear();
-      polygon.reserve(face.mNumIndices);
-      for (std::size_t j = 0; j < face.mNumIndices; ++j) {
-        polygon.push_back(face.mIndices[j]);
-      }
+      polygon.reserve(faceIndices.size());
+      std::ranges::copy(faceIndices, std::back_inserter(polygon));
 
       triangles.clear();
       if (!dart::math::detail::triangulateFaceEarClipping(
@@ -841,9 +840,9 @@ void MeshShapeGeometry::extractData(bool firstTime)
       }
     }
 
-    for (std::size_t i = 0; i < 3; ++i) {
-      if (elements[i]->size() > 0) {
-        addPrimitiveSet(elements[i]);
+    for (const auto& element : elements) {
+      if (!element->empty()) {
+        addPrimitiveSet(element);
       }
     }
   }

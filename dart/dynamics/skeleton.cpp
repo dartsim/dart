@@ -50,11 +50,11 @@
 #include "dart/math/helpers.hpp"
 
 #include <algorithm>
-#include <format>
 #include <iterator>
 #include <queue>
 #include <span>
 #include <string>
+#include <utility>
 #include <vector>
 
 #define SET_ALL_FLAGS(X)                                                       \
@@ -73,7 +73,7 @@
 #define CHECK_CONFIG_VECTOR_SIZE(V)                                            \
   if (V.size() > 0) {                                                          \
     if (nonzero_size != INVALID_INDEX                                          \
-        && V.size() != static_cast<int>(nonzero_size)) {                       \
+        && !std::cmp_equal(V.size(), nonzero_size)) {                          \
       DART_ERROR(                                                              \
           "Mismatch in size of vector [{}] "                                   \
           "(expected {} | found {})",                                          \
@@ -1132,7 +1132,8 @@ std::span<BodyNode* const> Skeleton::getTreeBodyNodes(std::size_t _treeIdx)
         "Requesting an invalid tree ({}) {}",
         _treeIdx,
         (count > 0
-             ? std::format("when the max tree index is ({})\n", count - 1)
+             ? "when the max tree index is (" + std::to_string(count - 1)
+                   + ")\n"
              : std::string("when there are no trees in this Skeleton\n")));
     DART_ASSERT(false);
   }
@@ -1631,7 +1632,7 @@ void Skeleton::integratePositions(
     return;
   }
 
-  if (velocityChanges.size() != static_cast<Eigen::Index>(getNumDofs())) {
+  if (!std::cmp_equal(velocityChanges.size(), getNumDofs())) {
     DART_ASSERT(false);
     integratePositions(_dt);
     return;
@@ -1681,8 +1682,8 @@ void Skeleton::integrateVelocities(double _dt)
 Eigen::VectorXd Skeleton::getPositionDifferences(
     const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const
 {
-  if (static_cast<std::size_t>(_q2.size()) != getNumDofs()
-      || static_cast<std::size_t>(_q1.size()) != getNumDofs()) {
+  if (!std::cmp_equal(_q2.size(), getNumDofs())
+      || !std::cmp_equal(_q1.size(), getNumDofs())) {
     DART_ERROR(
         "Skeleton::getPositionsDifference: q1's size[{}] or q2's size[{}is "
         "different with the dof [{}].",
@@ -1713,8 +1714,8 @@ Eigen::VectorXd Skeleton::getPositionDifferences(
 Eigen::VectorXd Skeleton::getVelocityDifferences(
     const Eigen::VectorXd& _dq2, const Eigen::VectorXd& _dq1) const
 {
-  if (static_cast<std::size_t>(_dq2.size()) != getNumDofs()
-      || static_cast<std::size_t>(_dq1.size()) != getNumDofs()) {
+  if (!std::cmp_equal(_dq2.size(), getNumDofs())
+      || !std::cmp_equal(_dq1.size(), getNumDofs())) {
     DART_ERROR(
         "Skeleton::getPositionsDifference: dq1's size[{}] or dq2's size[{}is "
         "different with the dof [{}].",
@@ -3383,7 +3384,7 @@ void Skeleton::updateCoriolisForces(std::size_t _treeIdx) const
 {
   DataCache& cache = mTreeCache[_treeIdx];
   std::size_t dof = cache.mDofs.size();
-  DART_ASSERT(static_cast<std::size_t>(cache.mCvec.size()) == dof);
+  DART_ASSERT(std::cmp_equal(cache.mCvec.size(), dof));
   if (dof == 0) {
     cache.mDirty.mCoriolisForces = false;
     return;
@@ -3411,7 +3412,7 @@ void Skeleton::updateCoriolisForces(std::size_t _treeIdx) const
 void Skeleton::updateCoriolisForces() const
 {
   std::size_t dof = mSkelCache.mDofs.size();
-  DART_ASSERT(static_cast<std::size_t>(mSkelCache.mCvec.size()) == dof);
+  DART_ASSERT(std::cmp_equal(mSkelCache.mCvec.size(), dof));
   if (dof == 0) {
     mSkelCache.mDirty.mCoriolisForces = false;
     return;
@@ -3437,7 +3438,7 @@ void Skeleton::updateGravityForces(std::size_t _treeIdx) const
 {
   DataCache& cache = mTreeCache[_treeIdx];
   std::size_t dof = cache.mDofs.size();
-  DART_ASSERT(static_cast<std::size_t>(cache.mG.size()) == dof);
+  DART_ASSERT(std::cmp_equal(cache.mG.size(), dof));
   if (dof == 0) {
     cache.mDirty.mGravityForces = false;
     return;
@@ -3459,7 +3460,7 @@ void Skeleton::updateGravityForces(std::size_t _treeIdx) const
 void Skeleton::updateGravityForces() const
 {
   std::size_t dof = mSkelCache.mDofs.size();
-  DART_ASSERT(static_cast<std::size_t>(mSkelCache.mG.size()) == dof);
+  DART_ASSERT(std::cmp_equal(mSkelCache.mG.size(), dof));
   if (dof == 0) {
     mSkelCache.mDirty.mGravityForces = false;
     return;
@@ -3485,7 +3486,7 @@ void Skeleton::updateCoriolisAndGravityForces(std::size_t _treeIdx) const
 {
   DataCache& cache = mTreeCache[_treeIdx];
   std::size_t dof = cache.mDofs.size();
-  DART_ASSERT(static_cast<std::size_t>(cache.mCg.size()) == dof);
+  DART_ASSERT(std::cmp_equal(cache.mCg.size(), dof));
   if (dof == 0) {
     cache.mDirty.mCoriolisAndGravityForces = false;
     return;
@@ -3513,7 +3514,7 @@ void Skeleton::updateCoriolisAndGravityForces(std::size_t _treeIdx) const
 void Skeleton::updateCoriolisAndGravityForces() const
 {
   std::size_t dof = mSkelCache.mDofs.size();
-  DART_ASSERT(static_cast<std::size_t>(mSkelCache.mCg.size()) == dof);
+  DART_ASSERT(std::cmp_equal(mSkelCache.mCg.size(), dof));
   if (dof == 0) {
     mSkelCache.mDirty.mCoriolisAndGravityForces = false;
     return;
@@ -3539,7 +3540,7 @@ void Skeleton::updateExternalForces(std::size_t _treeIdx) const
 {
   DataCache& cache = mTreeCache[_treeIdx];
   std::size_t dof = cache.mDofs.size();
-  DART_ASSERT(static_cast<std::size_t>(cache.mFext.size()) == dof);
+  DART_ASSERT(std::cmp_equal(cache.mFext.size(), dof));
   if (dof == 0) {
     cache.mDirty.mExternalForces = false;
     return;
@@ -3593,7 +3594,7 @@ void Skeleton::updateExternalForces(std::size_t _treeIdx) const
 void Skeleton::updateExternalForces() const
 {
   std::size_t dof = mSkelCache.mDofs.size();
-  DART_ASSERT(static_cast<std::size_t>(mSkelCache.mFext.size()) == dof);
+  DART_ASSERT(std::cmp_equal(mSkelCache.mFext.size(), dof));
   if (dof == 0) {
     mSkelCache.mDirty.mExternalForces = false;
     return;
@@ -3618,7 +3619,7 @@ void Skeleton::updateExternalForces() const
 const Eigen::VectorXd& Skeleton::computeConstraintForces(DataCache& cache) const
 {
   const std::size_t dof = cache.mDofs.size();
-  DART_ASSERT(static_cast<std::size_t>(cache.mFc.size()) == dof);
+  DART_ASSERT(std::cmp_equal(cache.mFc.size(), dof));
 
   // Body constraint impulses
   for (std::vector<BodyNode*>::reverse_iterator it = cache.mBodyNodes.rbegin();

@@ -34,7 +34,7 @@
 
 #include <algorithm>
 #include <chrono>
-#include <format>
+#include <iomanip>
 #include <iostream>
 #include <iterator>
 #include <limits>
@@ -137,7 +137,8 @@ void Profiler::pushScope(
     int line)
 {
   auto* parent = record.stack.empty() ? &record.root : record.stack.back().node;
-  const std::string source = std::format("{}:{}", file, line);
+  const std::string source
+      = std::string(file) + ":" + std::to_string(static_cast<long long>(line));
   auto* node = findOrCreateChild(*parent, label, source);
   record.stack.push_back(
       {node, std::chrono::steady_clock::now(), /*childTimeNs=*/0});
@@ -202,56 +203,70 @@ void Profiler::markFrame()
 
 std::string Profiler::formatDuration(std::uint64_t ns)
 {
+  std::ostringstream oss;
   if (ns >= 1'000'000'000ULL) {
     const double s = static_cast<double>(ns) / 1'000'000'000.0;
-    return std::format("{:.{}f} s", s, s >= 10.0 ? 1 : 3);
+    oss << std::fixed << std::setprecision(s >= 10.0 ? 1 : 3) << s << " s";
   } else if (ns >= 1'000'000ULL) {
     const double ms = static_cast<double>(ns) / 1'000'000.0;
-    return std::format("{:.{}f} ms", ms, ms >= 10.0 ? 2 : 3);
+    oss << std::fixed << std::setprecision(ms >= 10.0 ? 2 : 3) << ms << " ms";
+  } else {
+    const double us = static_cast<double>(ns) / 1'000.0;
+    oss << std::fixed << std::setprecision(us >= 10.0 ? 2 : 3) << us << " µs";
   }
-
-  const double us = static_cast<double>(ns) / 1'000.0;
-  return std::format("{:.{}f} µs", us, us >= 10.0 ? 2 : 3);
+  return oss.str();
 }
 
 std::string Profiler::formatDurationAligned(std::uint64_t ns)
 {
+  std::ostringstream oss;
   if (ns >= 1'000'000'000ULL) {
     const double s = static_cast<double>(ns) / 1'000'000'000.0;
-    return std::format("{:8.{}f} s ", s, s >= 10.0 ? 2 : 3);
+    oss << std::setw(8) << std::fixed << std::setprecision(s >= 10.0 ? 2 : 3)
+        << s << " s ";
   } else if (ns >= 1'000'000ULL) {
     const double ms = static_cast<double>(ns) / 1'000'000.0;
-    return std::format("{:8.{}f} ms", ms, ms >= 10.0 ? 2 : 3);
+    oss << std::setw(8) << std::fixed << std::setprecision(ms >= 10.0 ? 2 : 3)
+        << ms << " ms";
   } else if (ns >= 1'000ULL) {
     const double us = static_cast<double>(ns) / 1'000.0;
-    return std::format("{:8.{}f} µs", us, us >= 10.0 ? 2 : 3);
+    oss << std::setw(8) << std::fixed << std::setprecision(us >= 10.0 ? 2 : 3)
+        << us << " µs";
+  } else {
+    oss << std::setw(8) << ns << " ns";
   }
-
-  return std::format("{:8} ns", ns);
+  return oss.str();
 }
 
 std::string Profiler::formatFps(double fps)
 {
+  std::ostringstream oss;
   if (fps >= 1000000.0) {
-    return std::format("{:.1f}M", fps / 1000000.0);
+    oss << std::fixed << std::setprecision(1) << fps / 1000000.0 << "M";
   } else if (fps >= 1000.0) {
-    return std::format("{:.1f}k", fps / 1000.0);
+    oss << std::fixed << std::setprecision(1) << fps / 1000.0 << "k";
+  } else {
+    oss << std::fixed << std::setprecision(fps >= 100.0 ? 0 : 1) << fps;
   }
-
-  return std::format("{:.{}f}", fps, fps >= 100.0 ? 0 : 1);
+  return oss.str();
 }
 
 std::string Profiler::formatCount(std::uint64_t v)
 {
+  std::ostringstream oss;
   if (v >= 1'000'000'000ULL) {
-    return std::format("{:.1f}B", static_cast<double>(v) / 1'000'000'000.0);
+    oss << std::fixed << std::setprecision(1)
+        << static_cast<double>(v) / 1'000'000'000.0 << "B";
   } else if (v >= 1'000'000ULL) {
-    return std::format("{:.1f}M", static_cast<double>(v) / 1'000'000.0);
+    oss << std::fixed << std::setprecision(1)
+        << static_cast<double>(v) / 1'000'000.0 << "M";
   } else if (v >= 1'000ULL) {
-    return std::format("{:.1f}K", static_cast<double>(v) / 1'000.0);
+    oss << std::fixed << std::setprecision(1)
+        << static_cast<double>(v) / 1'000.0 << "K";
+  } else {
+    oss << v;
   }
-
-  return std::format("{}", v);
+  return oss.str();
 }
 
 std::size_t Profiler::maxLabelWidth(
@@ -274,7 +289,9 @@ double Profiler::percentage(std::uint64_t part, std::uint64_t total)
 
 std::string Profiler::formatPercent(double pct)
 {
-  return std::format("{:.{}f}%", pct, pct >= 10.0 ? 1 : 2);
+  std::ostringstream oss;
+  oss << std::fixed << std::setprecision(pct >= 10.0 ? 1 : 2) << pct << '%';
+  return oss.str();
 }
 
 std::string Profiler::padRight(std::string_view text, std::size_t width)
@@ -378,21 +395,19 @@ void Profiler::printNode(
     const std::string childIndent = indent + (isLast ? "    " : "|   ");
     const auto color = heatColor(pct);
 
-    auto line = std::format(
-        "{}{}{} total {} self {} per-call {} calls {:8} share {}",
-        indent,
-        connector,
-        colorize(padRight(child->label, labelWidth), color),
-        formatDurationAligned(child->inclusiveNs),
-        formatDurationAligned(child->selfNs),
-        formatDurationAligned(avgNs),
-        child->callCount,
-        padRight(colorize(formatPercent(pct), color), 6));
+    std::ostringstream line;
+    line << indent << connector
+         << colorize(padRight(child->label, labelWidth), color) << ' '
+         << "total " << formatDurationAligned(child->inclusiveNs) << ' '
+         << "self " << formatDurationAligned(child->selfNs) << ' '
+         << "per-call " << formatDurationAligned(avgNs) << ' ' << "calls "
+         << std::setw(8) << child->callCount << ' ' << "share "
+         << padRight(colorize(formatPercent(pct), color), 6);
     if (!child->source.empty()) {
-      line += std::format(" src {}", child->source);
+      line << " src " << child->source;
     }
 
-    os << line << '\n';
+    os << line.str() << '\n';
 
     printNode(
         os, *child, threadTotalNs, childIndent, minPercent * 0.65, labelWidth);
