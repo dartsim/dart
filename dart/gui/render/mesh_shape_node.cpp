@@ -575,8 +575,8 @@ void osgAiNode::extractData(bool firstTime)
     setMatrix(::osg::Matrixf((float*)(&M)));
   }
 
-  for (std::size_t i = 0; i < mAiNode->mNumChildren; ++i) {
-    aiNode* child = mAiNode->mChildren[i];
+  const std::span<aiNode*> children{mAiNode->mChildren, mAiNode->mNumChildren};
+  for (aiNode* child : children) {
     std::map<const aiNode*, osgAiNode*>::iterator it = mChildNodes.find(child);
 
     if (it == mChildNodes.end()) {
@@ -608,9 +608,9 @@ osgAiNode::~osgAiNode()
 //==============================================================================
 void osgAiNode::clearChildUtilizationFlags()
 {
-  for (auto& node_pair : mChildNodes) {
-    node_pair.second->clearUtilization();
-  }
+  std::ranges::for_each(mChildNodes | std::views::values, [](osgAiNode* node) {
+    node->clearUtilization();
+  });
 }
 
 //==============================================================================
@@ -663,8 +663,10 @@ void MeshShapeGeode::extractData(bool)
   DART_SUPPRESS_DEPRECATED_BEGIN
   const aiScene* scene = mMeshShape->getMesh();
   DART_SUPPRESS_DEPRECATED_END
-  for (std::size_t i = 0; i < mAiNode->mNumMeshes; ++i) {
-    aiMesh* mesh = scene->mMeshes[mAiNode->mMeshes[i]];
+  const std::span<const unsigned int> meshIndices{
+      mAiNode->mMeshes, mAiNode->mNumMeshes};
+  for (const unsigned int meshIndex : meshIndices) {
+    aiMesh* mesh = scene->mMeshes[meshIndex];
 
     std::map<const aiMesh*, MeshShapeGeometry*>::iterator it
         = mMeshes.find(mesh);
@@ -691,10 +693,9 @@ MeshShapeGeode::~MeshShapeGeode()
 //==============================================================================
 void MeshShapeGeode::clearChildUtilizationFlags()
 {
-  for (auto& node_pair : mMeshes) {
-    MeshShapeGeometry* geom = node_pair.second;
-    geom->clearUtilization();
-  }
+  std::ranges::for_each(
+      mMeshes | std::views::values,
+      [](MeshShapeGeometry* geom) { geom->clearUtilization(); });
 }
 
 //==============================================================================
@@ -851,22 +852,26 @@ void MeshShapeGeometry::extractData(bool firstTime)
   if (mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_VERTICES)
       || mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
       || firstTime) {
-    if (mVertices->size() != mAiMesh->mNumVertices) {
-      mVertices->resize(mAiMesh->mNumVertices);
+    const std::span<const aiVector3D> aiVertices{
+        mAiMesh->mVertices, mAiMesh->mNumVertices};
+    if (mVertices->size() != aiVertices.size()) {
+      mVertices->resize(aiVertices.size());
     }
 
-    if (mNormals->size() != mAiMesh->mNumVertices) {
-      mNormals->resize(mAiMesh->mNumVertices);
+    if (mNormals->size() != aiVertices.size()) {
+      mNormals->resize(aiVertices.size());
     }
 
     const Eigen::Vector3f s = mMeshShape->getScale().cast<float>();
+    const std::span<const aiVector3D> aiNormals{
+        mAiMesh->mNormals, mAiMesh->mNormals ? aiVertices.size() : 0u};
 
-    for (std::size_t i = 0; i < mAiMesh->mNumVertices; ++i) {
-      const aiVector3D& v = mAiMesh->mVertices[i];
+    for (const auto i : std::views::iota(std::size_t{0}, aiVertices.size())) {
+      const aiVector3D& v = aiVertices[i];
       (*mVertices)[i] = ::osg::Vec3(v.x, v.y, v.z);
 
-      if (mAiMesh->mNormals) {
-        const aiVector3D& n = mAiMesh->mNormals[i];
+      if (!aiNormals.empty()) {
+        const aiVector3D& n = aiNormals[i];
         (*mNormals)[i] = ::osg::Vec3(n.x * s[0], n.y * s[1], n.z * s[2]);
       }
       // TODO(MXG): Consider computing normals for meshes that don't come with
@@ -904,8 +909,10 @@ void MeshShapeGeometry::extractData(bool firstTime)
           mColors->resize(mVertices->size());
         }
 
-        for (std::size_t i = 0; i < mAiMesh->mNumVertices; ++i) {
-          const aiColor4D& c = colors[i];
+        const std::span<const aiColor4D> aiColors{
+            colors, mAiMesh->mNumVertices};
+        for (const auto i : std::views::iota(std::size_t{0}, aiColors.size())) {
+          const aiColor4D& c = aiColors[i];
           if (mMeshShape->getAlphaMode() == dynamics::MeshShape::SHAPE_ALPHA) {
             (*mColors)[i] = ::osg::Vec4(
                 c.r, c.g, c.b, static_cast<float>(mVisualAspect->getAlpha()));
