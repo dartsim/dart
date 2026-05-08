@@ -174,7 +174,7 @@ void DartResourceRetriever::addDataDirectory(std::string_view dataDirectory)
 {
   // Strip a trailing slash.
   std::string normalizedDataDirectory;
-  if (!dataDirectory.empty() && dataDirectory.back() == '/') {
+  if (dataDirectory.ends_with('/')) {
     normalizedDataDirectory
         = std::string(dataDirectory.substr(0, dataDirectory.size() - 1));
   } else {

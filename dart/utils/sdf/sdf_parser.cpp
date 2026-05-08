@@ -594,7 +594,7 @@ bool requiresBaseUriResolution(std::string_view requested)
     return false;
   }
 
-  if (requested.front() == '/') {
+  if (requested.starts_with('/')) {
     return false;
   }
 

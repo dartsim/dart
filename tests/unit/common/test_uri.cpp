@@ -408,6 +408,10 @@ TEST(UriHelpers, removeDotSegments_RemovesDotAndDotDotSegments)
 {
   EXPECT_EQ(Uri::removeDotSegments("/.."), "/");
   EXPECT_EQ(Uri::removeDotSegments(".."), "");
+  EXPECT_EQ(Uri::removeDotSegments("/./g"), "/g");
+  EXPECT_EQ(Uri::removeDotSegments("a/b/./c"), "a/b/c");
+  EXPECT_EQ(Uri::removeDotSegments("/a/b/../c"), "/a/c");
+  EXPECT_EQ(Uri::removeDotSegments("mid/content=5/../6"), "mid/6");
 }
 
 TEST(UriHelpers, fromRelativeUri_StringViewOverload)
