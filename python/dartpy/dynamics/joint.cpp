@@ -15,6 +15,7 @@
 #include <nanobind/stl/vector.h>
 
 #include <span>
+#include <string>
 
 namespace nb = nanobind;
 
