@@ -35,6 +35,8 @@
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
 
+#include <memory>
+
 namespace dart::common {
 
 //==============================================================================
@@ -63,7 +65,7 @@ FreeListAllocator::~FreeListAllocator()
       DART_ASSERT(!curr->mIsAllocated); // pointers should already be freed
       MemoryBlockHeader* next = curr->mNext;
 
-      curr->~MemoryBlockHeader();
+      std::destroy_at(curr);
       curr = next;
     }
   }
@@ -301,12 +303,12 @@ void FreeListAllocator::MemoryBlockHeader::split(size_t sizeToSplit)
 
   unsigned char* new_block_addr
       = asCharPtr() + sizeof(MemoryBlockHeader) + sizeToSplit;
-  MemoryBlockHeader* new_block
-      = new (static_cast<void*>(new_block_addr)) MemoryBlockHeader(
-          mSize - sizeof(MemoryBlockHeader) - sizeToSplit,
-          this,
-          mNext,
-          mIsNextContiguous);
+  MemoryBlockHeader* new_block = std::construct_at(
+      reinterpret_cast<MemoryBlockHeader*>(new_block_addr),
+      mSize - sizeof(MemoryBlockHeader) - sizeToSplit,
+      this,
+      mNext,
+      mIsNextContiguous);
   mNext = new_block;
   if (new_block->mNext) {
     new_block->mNext->mPrev = new_block;
@@ -336,7 +338,7 @@ void FreeListAllocator::MemoryBlockHeader::merge(MemoryBlockHeader* other)
   }
   mIsNextContiguous = other->mIsNextContiguous;
 
-  other->~MemoryBlockHeader(); // TODO(JS): Need this?
+  std::destroy_at(other); // TODO(JS): Need this?
 
   DART_ASSERT(isValid());
 }

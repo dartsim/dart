@@ -49,13 +49,12 @@ T* MemoryManager::construct(Type type, Args&&... args) noexcept
 
   // Call constructor. Return nullptr if failed.
   try {
-    new (object) T(std::forward<Args>(args)...);
+    return std::construct_at(
+        static_cast<T*>(object), std::forward<Args>(args)...);
   } catch (...) {
     deallocate(type, object, sizeof(T));
     return nullptr;
   }
-
-  return reinterpret_cast<T*>(object);
 }
 
 //==============================================================================
@@ -86,7 +85,7 @@ void MemoryManager::destroy(Type type, T* object) noexcept
   if (!object) {
     return;
   }
-  object->~T();
+  std::destroy_at(object);
   deallocate(type, object, sizeof(T));
 }
 
