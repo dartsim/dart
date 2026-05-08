@@ -216,9 +216,7 @@ static void computeNormals(
     std::vector<Eigen::Vector3d>& normals,
     const dart::dynamics::SoftBodyNode* bn)
 {
-  for (std::size_t i = 0; i < normals.size(); ++i) {
-    normals[i] = Eigen::Vector3d::Zero();
-  }
+  std::ranges::fill(normals, Eigen::Vector3d::Zero());
 
   for (std::size_t i = 0; i < bn->getNumFaces(); ++i) {
     const Eigen::Vector3i& face = bn->getFace(i);
@@ -227,9 +225,7 @@ static void computeNormals(
     }
   }
 
-  for (std::size_t i = 0; i < normals.size(); ++i) {
-    normals[i].normalize();
-  }
+  std::ranges::for_each(normals, [](auto& normal) { normal.normalize(); });
 }
 
 //==============================================================================

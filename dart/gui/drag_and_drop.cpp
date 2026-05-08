@@ -43,6 +43,7 @@
 #include "dart/gui/viewer.hpp"
 #include "dart/math/helpers.hpp"
 
+#include <algorithm>
 #include <span>
 
 namespace dart {
@@ -581,11 +582,10 @@ void InteractiveFrameDnD::update()
   }
 
   mAmMoving = false;
-  for (std::size_t i = 0; i < mDnDs.size(); ++i) {
-    DragAndDrop* dnd = mDnDs[i];
+  std::ranges::for_each(mDnDs, [this](DragAndDrop* dnd) {
     dnd->update();
-    mAmMoving |= dnd->isMoving();
-  }
+    mAmMoving = mAmMoving || dnd->isMoving();
+  });
 
   if (mAmMoving) {
     for (std::size_t i = 0; i < InteractiveTool::NUM_TYPES; ++i) {
@@ -595,9 +595,9 @@ void InteractiveFrameDnD::update()
             = mInteractiveFrame->getTool((InteractiveTool::Type)i, j);
         if (!dnd->isMoving() && tool->getEnabled()) {
           const auto shapeFrames = tool->getShapeFrames();
-          for (std::size_t s = 0; s < shapeFrames.size(); ++s) {
-            shapeFrames[s]->getVisualAspect(true)->setHidden(true);
-          }
+          std::ranges::for_each(shapeFrames, [](auto* shapeFrame) {
+            shapeFrame->getVisualAspect(true)->setHidden(true);
+          });
         }
       }
     }
@@ -608,9 +608,9 @@ void InteractiveFrameDnD::update()
             = mInteractiveFrame->getTool((InteractiveTool::Type)i, j);
         if (tool->getEnabled()) {
           const auto shapeFrames = tool->getShapeFrames();
-          for (std::size_t s = 0; s < shapeFrames.size(); ++s) {
-            shapeFrames[s]->getVisualAspect(true)->setHidden(false);
-          }
+          std::ranges::for_each(shapeFrames, [](auto* shapeFrame) {
+            shapeFrame->getVisualAspect(true)->setHidden(false);
+          });
         }
       }
     }

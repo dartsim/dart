@@ -490,10 +490,10 @@ void InteractiveFrame::createStandardVisualizationShapes(
   for (std::size_t i = 0; i < InteractiveTool::NUM_TYPES; ++i) {
     for (std::size_t j = 0; j < 3; ++j) {
       const auto& shapesFrames = mTools[i][j]->getShapeFrames();
-      for (std::size_t s = 0; s < shapesFrames.size(); ++s) {
-        shapesFrames[s]->getShape()->setDataVariance(
+      std::ranges::for_each(shapesFrames, [](auto* shapeFrame) {
+        shapeFrame->getShape()->setDataVariance(
             dart::dynamics::Shape::DYNAMIC_COLOR);
-      }
+      });
     }
   }
 
