@@ -178,7 +178,7 @@ void Profiler::popScope(Profiler::ThreadRecord& record)
 std::uint64_t Profiler::sumInclusiveChildren(const ProfileNode& node)
 {
   std::uint64_t total = 0;
-  for (const auto& [_, child] : node.children) {
+  for (const auto& child : node.children | std::views::values) {
     total += child->inclusiveNs;
   }
   return total;
@@ -274,7 +274,7 @@ std::size_t Profiler::maxLabelWidth(
     const ProfileNode& node, std::size_t minWidth, std::size_t maxWidth)
 {
   std::size_t width = node.label.size();
-  for (const auto& [_, child] : node.children) {
+  for (const auto& child : node.children | std::views::values) {
     width = std::max(width, maxLabelWidth(*child, minWidth, maxWidth));
   }
   return std::clamp<std::size_t>(width, minWidth, maxWidth);
@@ -355,7 +355,7 @@ void Profiler::collectHotspots(
        node.inclusiveNs,
        node.selfNs,
        node.callCount});
-  for (const auto& [_, child] : node.children) {
+  for (const auto& child : node.children | std::views::values) {
     const auto childPath
         = path.empty() ? child->label : (path + " > " + child->label);
     collectHotspots(*child, childPath, threadLabel, out);
@@ -565,7 +565,7 @@ void Profiler::clearNode(ProfileNode& node)
   node.selfNs = 0;
   node.minNs = Profiler::kUnsetDuration;
   node.maxNs = 0;
-  for (auto& [_, child] : node.children) {
+  for (auto& child : node.children | std::views::values) {
     clearNode(*child);
   }
   node.children.clear();
