@@ -52,6 +52,7 @@
 #include <algorithm>
 #include <iterator>
 #include <queue>
+#include <ranges>
 #include <span>
 #include <string>
 #include <utility>
@@ -2919,11 +2920,9 @@ std::vector<BodyNode*> Skeleton::extractBodyNodeTree(BodyNode* _bodyNode)
 {
   std::vector<BodyNode*> tree = constructBodyNodeTree(_bodyNode);
 
-  // Go backwards to minimize the number of shifts needed
-  std::vector<BodyNode*>::reverse_iterator rit;
   // Go backwards to minimize the amount of element shifting in the vectors
-  for (rit = tree.rbegin(); rit != tree.rend(); ++rit) {
-    unregisterBodyNode(*rit);
+  for (auto* bodyNode : std::views::reverse(tree)) {
+    unregisterBodyNode(bodyNode);
   }
 
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i) {
@@ -2979,11 +2978,8 @@ void Skeleton::updateCacheDimensions(std::size_t _treeIdx)
 void Skeleton::updateArticulatedInertia(std::size_t _tree) const
 {
   DataCache& cache = mTreeCache[_tree];
-  for (std::vector<BodyNode*>::const_reverse_iterator it
-       = cache.mBodyNodes.rbegin();
-       it != cache.mBodyNodes.rend();
-       ++it) {
-    (*it)->updateArtInertia(mAspectProperties.mTimeStep);
+  for (auto* bodyNode : std::views::reverse(cache.mBodyNodes)) {
+    bodyNode->updateArtInertia(mAspectProperties.mTimeStep);
   }
 
   cache.mDirty.mArticulatedInertia = false;
@@ -3038,14 +3034,11 @@ void Skeleton::updateMassMatrix(std::size_t _treeIdx) const
     }
 
     // Mass matrix
-    for (std::vector<BodyNode*>::const_reverse_iterator it
-         = cache.mBodyNodes.rbegin();
-         it != cache.mBodyNodes.rend();
-         ++it) {
-      (*it)->aggregateMassMatrix(cache.mM, j);
-      std::size_t localDof = (*it)->mParentJoint->getNumDofs();
+    for (auto* bodyNode : std::views::reverse(cache.mBodyNodes)) {
+      bodyNode->aggregateMassMatrix(cache.mM, j);
+      std::size_t localDof = bodyNode->mParentJoint->getNumDofs();
       if (localDof > 0) {
-        std::size_t iStart = (*it)->mParentJoint->getIndexInTree(0);
+        std::size_t iStart = bodyNode->mParentJoint->getIndexInTree(0);
 
         if (iStart + localDof < j) {
           break;
@@ -3131,15 +3124,12 @@ void Skeleton::updateAugMassMatrix(std::size_t _treeIdx) const
     }
 
     // Augmented Mass matrix
-    for (std::vector<BodyNode*>::const_reverse_iterator it
-         = cache.mBodyNodes.rbegin();
-         it != cache.mBodyNodes.rend();
-         ++it) {
-      (*it)->aggregateAugMassMatrix(
+    for (auto* bodyNode : std::views::reverse(cache.mBodyNodes)) {
+      bodyNode->aggregateAugMassMatrix(
           cache.mAugM, j, mAspectProperties.mTimeStep);
-      std::size_t localDof = (*it)->mParentJoint->getNumDofs();
+      std::size_t localDof = bodyNode->mParentJoint->getNumDofs();
       if (localDof > 0) {
-        std::size_t iStart = (*it)->mParentJoint->getIndexInTree(0);
+        std::size_t iStart = bodyNode->mParentJoint->getIndexInTree(0);
 
         if (iStart + localDof < j) {
           break;
@@ -3219,11 +3209,8 @@ void Skeleton::updateInvMassMatrix(std::size_t _treeIdx) const
     cache.mDofs[j]->setForce(1.0);
 
     // Prepare cache data
-    for (std::vector<BodyNode*>::const_reverse_iterator it
-         = cache.mBodyNodes.rbegin();
-         it != cache.mBodyNodes.rend();
-         ++it) {
-      (*it)->updateInvMassMatrix();
+    for (auto* bodyNode : std::views::reverse(cache.mBodyNodes)) {
+      bodyNode->updateInvMassMatrix();
     }
 
     // Inverse of mass matrix
@@ -3313,11 +3300,8 @@ void Skeleton::updateInvAugMassMatrix(std::size_t _treeIdx) const
     cache.mDofs[j]->setForce(1.0);
 
     // Prepare cache data
-    for (std::vector<BodyNode*>::const_reverse_iterator it
-         = cache.mBodyNodes.rbegin();
-         it != cache.mBodyNodes.rend();
-         ++it) {
-      (*it)->updateInvAugMassMatrix();
+    for (auto* bodyNode : std::views::reverse(cache.mBodyNodes)) {
+      bodyNode->updateInvAugMassMatrix();
     }
 
     // Inverse of augmented mass matrix
@@ -3398,11 +3382,8 @@ void Skeleton::updateCoriolisForces(std::size_t _treeIdx) const
     (*it)->updateCombinedVector();
   }
 
-  for (std::vector<BodyNode*>::const_reverse_iterator it
-       = cache.mBodyNodes.rbegin();
-       it != cache.mBodyNodes.rend();
-       ++it) {
-    (*it)->aggregateCoriolisForceVector(cache.mCvec);
+  for (auto* bodyNode : std::views::reverse(cache.mBodyNodes)) {
+    bodyNode->aggregateCoriolisForceVector(cache.mCvec);
   }
 
   cache.mDirty.mCoriolisForces = false;
@@ -3446,11 +3427,8 @@ void Skeleton::updateGravityForces(std::size_t _treeIdx) const
 
   cache.mG.setZero();
 
-  for (std::vector<BodyNode*>::const_reverse_iterator it
-       = cache.mBodyNodes.rbegin();
-       it != cache.mBodyNodes.rend();
-       ++it) {
-    (*it)->aggregateGravityForceVector(cache.mG, mAspectProperties.mGravity);
+  for (auto* bodyNode : std::views::reverse(cache.mBodyNodes)) {
+    bodyNode->aggregateGravityForceVector(cache.mG, mAspectProperties.mGravity);
   }
 
   cache.mDirty.mGravityForces = false;
@@ -3500,11 +3478,8 @@ void Skeleton::updateCoriolisAndGravityForces(std::size_t _treeIdx) const
     (*it)->updateCombinedVector();
   }
 
-  for (std::vector<BodyNode*>::const_reverse_iterator it
-       = cache.mBodyNodes.rbegin();
-       it != cache.mBodyNodes.rend();
-       ++it) {
-    (*it)->aggregateCombinedVector(cache.mCg, mAspectProperties.mGravity);
+  for (auto* bodyNode : std::views::reverse(cache.mBodyNodes)) {
+    bodyNode->aggregateCombinedVector(cache.mCg, mAspectProperties.mGravity);
   }
 
   cache.mDirty.mCoriolisAndGravityForces = false;
@@ -3549,11 +3524,8 @@ void Skeleton::updateExternalForces(std::size_t _treeIdx) const
   // Clear external force.
   cache.mFext.setZero();
 
-  for (std::vector<BodyNode*>::const_reverse_iterator itr
-       = cache.mBodyNodes.rbegin();
-       itr != cache.mBodyNodes.rend();
-       ++itr) {
-    (*itr)->aggregateExternalForces(cache.mFext);
+  for (auto* bodyNode : std::views::reverse(cache.mBodyNodes)) {
+    bodyNode->aggregateExternalForces(cache.mFext);
   }
 
   // TODO(JS): Not implemented yet
@@ -3622,11 +3594,9 @@ const Eigen::VectorXd& Skeleton::computeConstraintForces(DataCache& cache) const
   DART_ASSERT(std::cmp_equal(cache.mFc.size(), dof));
 
   // Body constraint impulses
-  for (std::vector<BodyNode*>::reverse_iterator it = cache.mBodyNodes.rbegin();
-       it != cache.mBodyNodes.rend();
-       ++it) {
-    (*it)->aggregateSpatialToGeneralized(
-        cache.mFc, (*it)->getConstraintImpulse());
+  for (auto* bodyNode : std::views::reverse(cache.mBodyNodes)) {
+    bodyNode->aggregateSpatialToGeneralized(
+        cache.mFc, bodyNode->getConstraintImpulse());
   }
 
   // Joint constraint impulses
@@ -3855,10 +3825,8 @@ void Skeleton::computeForwardDynamics()
   // Note: Articulated Inertias will be updated automatically when
   // getArtInertiaImplicit() is called in BodyNode::updateBiasForce()
 
-  for (auto it = mSkelCache.mBodyNodes.rbegin();
-       it != mSkelCache.mBodyNodes.rend();
-       ++it) {
-    (*it)->updateBiasForce(
+  for (auto* bodyNode : std::views::reverse(mSkelCache.mBodyNodes)) {
+    bodyNode->updateBiasForce(
         mAspectProperties.mGravity, mAspectProperties.mTimeStep);
   }
 
@@ -3880,12 +3848,10 @@ void Skeleton::computeInverseDynamics(
   }
 
   // Backward recursion
-  for (auto it = mSkelCache.mBodyNodes.rbegin();
-       it != mSkelCache.mBodyNodes.rend();
-       ++it) {
-    (*it)->updateTransmittedForceID(
+  for (auto* bodyNode : std::views::reverse(mSkelCache.mBodyNodes)) {
+    bodyNode->updateTransmittedForceID(
         mAspectProperties.mGravity, _withExternalForces);
-    (*it)->updateJointForceID(
+    bodyNode->updateJointForceID(
         mAspectProperties.mTimeStep, _withDampingForces, _withSpringForces);
   }
 }
@@ -4118,10 +4084,8 @@ void Skeleton::computePositionVelocityChanges()
   }
 
   // Backward recursion
-  for (auto it = mSkelCache.mBodyNodes.rbegin();
-       it != mSkelCache.mBodyNodes.rend();
-       ++it) {
-    (*it)->updateBiasImpulseFromPositionImpulse();
+  for (auto* bodyNode : std::views::reverse(mSkelCache.mBodyNodes)) {
+    bodyNode->updateBiasImpulseFromPositionImpulse();
   }
 
   // Forward recursion
@@ -4184,10 +4148,8 @@ void Skeleton::computeImpulseForwardDynamics()
   // BodyNode::getArticulatedInertia()
 
   // Backward recursion
-  for (auto it = mSkelCache.mBodyNodes.rbegin();
-       it != mSkelCache.mBodyNodes.rend();
-       ++it) {
-    (*it)->updateBiasImpulse();
+  for (auto* bodyNode : std::views::reverse(mSkelCache.mBodyNodes)) {
+    bodyNode->updateBiasImpulse();
   }
 
   // Forward recursion

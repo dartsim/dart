@@ -45,6 +45,7 @@
 #include "dart/math/helpers.hpp"
 
 #include <algorithm>
+#include <ranges>
 #include <string>
 #include <utility>
 #include <vector>
@@ -1123,12 +1124,10 @@ const std::vector<const DegreeOfFreedom*> BodyNode::getChainDofs() const
   std::vector<BodyNode*> bn_chain = criteria.satisfy();
   std::vector<const DegreeOfFreedom*> dofs;
   dofs.reserve(getNumDependentGenCoords());
-  for (std::vector<BodyNode*>::reverse_iterator rit = bn_chain.rbegin();
-       rit != bn_chain.rend();
-       ++rit) {
-    std::size_t nDofs = (*rit)->getParentJoint()->getNumDofs();
+  for (auto* bodyNode : std::views::reverse(bn_chain)) {
+    std::size_t nDofs = bodyNode->getParentJoint()->getNumDofs();
     for (std::size_t i = 0; i < nDofs; ++i) {
-      dofs.push_back((*rit)->getParentJoint()->getDof(i));
+      dofs.push_back(bodyNode->getParentJoint()->getDof(i));
     }
   }
 

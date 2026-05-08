@@ -37,6 +37,7 @@
 
 #include <concepts>
 #include <iterator>
+#include <ranges>
 #include <type_traits>
 
 namespace dart {
@@ -142,8 +143,8 @@ void MultiLockableReference<Lockable>::unlock() noexcept
     return;
   }
 
-  for (auto it = mLockables.rbegin(); it != mLockables.rend(); ++it) {
-    (*it)->unlock();
+  for (auto* lockable : std::views::reverse(mLockables)) {
+    lockable->unlock();
   }
 }
 
