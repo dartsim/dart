@@ -38,7 +38,6 @@
 #include <Eigen/Core>
 #include <Eigen/QR>
 
-#include <format>
 #include <limits>
 #include <optional>
 #include <random>
@@ -325,7 +324,7 @@ public:
     Eigen::VectorXd b = A * xStar;
 
     return FactoryProblem{
-        std::format("random_standard_{}d", n),
+        "random_standard_" + std::to_string(n) + "d",
         dart::math::LcpProblem(
             A,
             b,
