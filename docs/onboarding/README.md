@@ -82,10 +82,12 @@ This onboarding guide is organized into several focused documents:
 
 - **Gazebo / gz-physics integration**: See [build-system.md](build-system.md#gazebo-integration-feature).
 
-### Prompt Templates
+### AI Workflow Commands
 
-> **Note:** Prompt templates in `docs/prompts/` are for humans to start new agent sessions.
-> Agents should NOT execute these as tasks. See [docs/prompts/README.md](../prompts/README.md).
+Repeatable AI workflows live in `.claude/commands/` and are synced to
+OpenCode and Codex. Use `/dart-*` in Claude Code/OpenCode and `$dart-*` in
+Codex. See [ai-tools.md](ai-tools.md) for compatibility details and
+[release-management.md](release-management.md) for release-specific workflows.
 
 ### Purpose and Problem Solved
 

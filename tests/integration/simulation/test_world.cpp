@@ -47,6 +47,7 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -442,7 +443,7 @@ TEST(World, Cloning)
 
         // Generate a random command vector
         Eigen::VectorXd commands = skel->getCommands();
-        for (int q = 0; q < commands.size(); ++q) {
+        for (auto q = 0; q < std::ssize(commands); ++q) {
           commands[q] = Random::uniform(-0.1, 0.1);
         }
 

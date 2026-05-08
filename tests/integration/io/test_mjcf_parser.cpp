@@ -1478,7 +1478,7 @@ TEST(MjcfParserTest, ComplexMjcfCoversDetails)
 
   const std::string meshFileName = meshPath.filename().string();
   std::string meshDirStr = tempDir.string();
-  std::replace(meshDirStr.begin(), meshDirStr.end(), '\\', '/');
+  std::ranges::replace(meshDirStr, '\\', '/');
   std::string xml = R"(
 <?xml version="1.0" ?>
 <mujoco model="complex_mjcf">
@@ -1617,7 +1617,7 @@ TEST(MjcfParserTest, CustomModelParsesBodiesGeomsAndActuators)
 
   const std::string meshFileName = meshPath.filename().string();
   std::string meshDirStr = tempDir.string();
-  std::replace(meshDirStr.begin(), meshDirStr.end(), '\\', '/');
+  std::ranges::replace(meshDirStr, '\\', '/');
   std::string xml = R"(
 <?xml version="1.0" ?>
 <mujoco model="custom_parser">

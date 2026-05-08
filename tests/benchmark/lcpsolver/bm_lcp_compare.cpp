@@ -44,6 +44,8 @@
 #include <sstream>
 #include <string>
 
+#include <cstddef>
+
 namespace {
 
 using dart::math::LcpOptions;
@@ -227,7 +229,7 @@ void AddShockPropagationCounters(
     maxBlockSize = std::max(maxBlockSize, size);
   }
 
-  std::ptrdiff_t maxBlocksPerLayer = 0;
+  auto maxBlocksPerLayer = std::ptrdiff_t{0};
   if (!params.layers.empty()) {
     for (const auto& layer : params.layers) {
       maxBlocksPerLayer = std::max(maxBlocksPerLayer, std::ssize(layer));
@@ -337,8 +339,8 @@ static void BM_LcpCompare_ShockPropagation_Standard(benchmark::State& state)
 
   params.layers.clear();
   params.layers.reserve(params.blockSizes.size());
-  for (int i = 0; i < std::ssize(params.blockSizes); ++i) {
-    params.layers.push_back({i});
+  for (auto i = 0; i < std::ssize(params.blockSizes); ++i) {
+    params.layers.push_back({static_cast<int>(i)});
   }
 
   auto options = MakeBenchmarkOptions(100);

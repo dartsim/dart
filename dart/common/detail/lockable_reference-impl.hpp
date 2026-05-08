@@ -35,6 +35,7 @@
 
 #include <dart/common/lockable_reference.hpp>
 
+#include <concepts>
 #include <iterator>
 #include <type_traits>
 
@@ -98,7 +99,7 @@ MultiLockableReference<Lockable>::MultiLockableReference(
       = std::remove_pointer_t<std::remove_cvref_t<IteratorValueType>>;
 
   static_assert(
-      std::is_same_v<Lockable, IteratorLockable>,
+      std::same_as<Lockable, IteratorLockable>,
       "Lockable of this class and the lockable of InputIterator are not the "
       "same.");
 }

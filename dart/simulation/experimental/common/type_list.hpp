@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <concepts>
 #include <type_traits>
 
 namespace dart::simulation::experimental {
@@ -65,7 +66,7 @@ struct Contains;
 
 template <typename T, typename... Types>
 struct Contains<T, TypeList<Types...>>
-  : std::bool_constant<(std::is_same_v<T, Types> || ...)>
+  : std::bool_constant<(std::same_as<T, Types> || ...)>
 {
 };
 
