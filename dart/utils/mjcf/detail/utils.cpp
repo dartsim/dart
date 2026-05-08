@@ -249,11 +249,11 @@ std::vector<dynamics::BodyNode*> getBodyNodes(
 //==============================================================================
 void warnUnknownElements(
     const tinyxml2::XMLElement* parentElement,
-    const std::vector<std::string>& knownChildNames)
+    std::initializer_list<std::string_view> knownChildNames)
 {
   const tinyxml2::XMLElement* child = parentElement->FirstChildElement();
   while (child != nullptr) {
-    const std::string childName = child->Name();
+    const std::string_view childName = child->Name();
     const bool known = std::ranges::find(knownChildNames, childName)
                        != knownChildNames.end();
 
@@ -272,11 +272,11 @@ void warnUnknownElements(
 //==============================================================================
 void warnUnknownAttributes(
     const tinyxml2::XMLElement* element,
-    const std::vector<std::string>& knownAttrNames)
+    std::initializer_list<std::string_view> knownAttrNames)
 {
   const tinyxml2::XMLAttribute* attr = element->FirstAttribute();
   while (attr != nullptr) {
-    const std::string attrName = attr->Name();
+    const std::string_view attrName = attr->Name();
     const bool known
         = std::ranges::find(knownAttrNames, attrName) != knownAttrNames.end();
 

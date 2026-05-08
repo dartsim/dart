@@ -129,7 +129,7 @@ Errors Asset::read(tinyxml2::XMLElement* element)
   while (meshElements.next()) {
     Mesh mesh = Mesh();
     const auto bodyErrors = mesh.read(meshElements.get());
-    errors.insert(errors.end(), bodyErrors.begin(), bodyErrors.end());
+    appendErrorRange(errors, bodyErrors);
 
     if (bodyErrors.empty()) {
       mMeshes.emplace_back(std::move(mesh));
@@ -141,7 +141,7 @@ Errors Asset::read(tinyxml2::XMLElement* element)
   while (textureElements.next()) {
     Texture texture = Texture();
     const auto textureErrors = texture.read(textureElements.get());
-    errors.insert(errors.end(), textureErrors.begin(), textureErrors.end());
+    appendErrorRange(errors, textureErrors);
 
     if (textureErrors.empty()) {
       mTextures.emplace_back(std::move(texture));
@@ -153,7 +153,7 @@ Errors Asset::read(tinyxml2::XMLElement* element)
   while (materialElements.next()) {
     Material material = Material();
     const auto materialErrors = material.read(materialElements.get());
-    errors.insert(errors.end(), materialErrors.begin(), materialErrors.end());
+    appendErrorRange(errors, materialErrors);
 
     if (materialErrors.empty()) {
       mMaterials.emplace_back(std::move(material));
@@ -172,7 +172,7 @@ Errors Asset::preprocess(const Compiler& compiler)
 
   for (Mesh& mesh : mMeshes) {
     const Errors meshErrors = mesh.preprocess(compiler);
-    errors.insert(errors.end(), meshErrors.begin(), meshErrors.end());
+    appendErrorRange(errors, meshErrors);
   }
 
   return errors;
@@ -187,7 +187,7 @@ Errors Asset::compile(const Compiler& compiler)
     mMeshMap[mesh.getName()] = &mesh;
 
     const Errors meshErrors = mesh.compile(compiler);
-    errors.insert(errors.end(), meshErrors.begin(), meshErrors.end());
+    appendErrorRange(errors, meshErrors);
   }
 
   for (Texture& texture : mTextures) {
@@ -208,7 +208,7 @@ Errors Asset::postprocess(const Compiler& compiler)
 
   for (Mesh& mesh : mMeshes) {
     const Errors meshErrors = mesh.postprocess(compiler);
-    errors.insert(errors.end(), meshErrors.begin(), meshErrors.end());
+    appendErrorRange(errors, meshErrors);
   }
 
   return errors;

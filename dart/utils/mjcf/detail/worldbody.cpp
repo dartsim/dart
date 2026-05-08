@@ -78,7 +78,7 @@ Errors Worldbody::read(
 
   // Handle multiple <include>
   const Errors includeErrors = handleInclude(element, baseUri, retriever);
-  errors.insert(errors.end(), includeErrors.begin(), includeErrors.end());
+  appendErrorRange(errors, includeErrors);
 
   warnUnknownElements(element, {"body", "geom", "site", "include"});
 
@@ -88,7 +88,7 @@ Errors Worldbody::read(
     Geom geom = Geom();
     const auto geomErrors = geom.read(
         geomElements.get(), defaults, currentDefault->getGeomAttributes());
-    errors.insert(errors.end(), geomErrors.begin(), geomErrors.end());
+    appendErrorRange(errors, geomErrors);
 
     if (geomErrors.empty()) {
       mGeoms.emplace_back(std::move(geom));
@@ -100,7 +100,7 @@ Errors Worldbody::read(
   while (siteElements.next()) {
     Site site = Site();
     const auto siteErrors = site.read(geomElements.get());
-    errors.insert(errors.end(), siteErrors.begin(), siteErrors.end());
+    appendErrorRange(errors, siteErrors);
 
     if (siteErrors.empty()) {
       mSites.emplace_back(std::move(site));
@@ -113,7 +113,7 @@ Errors Worldbody::read(
     Body rootBody = Body();
     const auto bodyErrors
         = rootBody.read(bodyElements.get(), size, defaults, currentDefault);
-    errors.insert(errors.end(), bodyErrors.begin(), bodyErrors.end());
+    appendErrorRange(errors, bodyErrors);
 
     if (bodyErrors.empty()) {
       mRootBodies.emplace_back(std::move(rootBody));
@@ -130,12 +130,12 @@ Errors Worldbody::preprocess(const Compiler& compiler)
 
   for (Geom& geom : mGeoms) {
     const Errors geomErrors = geom.preprocess(compiler);
-    errors.insert(errors.end(), geomErrors.begin(), geomErrors.end());
+    appendErrorRange(errors, geomErrors);
   }
 
   for (Body& body : mRootBodies) {
     const Errors bodyErrors = body.preprocess(compiler);
-    errors.insert(errors.end(), bodyErrors.begin(), bodyErrors.end());
+    appendErrorRange(errors, bodyErrors);
   }
 
   return errors;
@@ -148,12 +148,12 @@ Errors Worldbody::compile(const Compiler& compiler)
 
   for (Geom& geom : mGeoms) {
     const Errors geomErrors = geom.compile(compiler);
-    errors.insert(errors.end(), geomErrors.begin(), geomErrors.end());
+    appendErrorRange(errors, geomErrors);
   }
 
   for (Body& body : mRootBodies) {
     const Errors bodyErrors = body.compile(compiler);
-    errors.insert(errors.end(), bodyErrors.begin(), bodyErrors.end());
+    appendErrorRange(errors, bodyErrors);
   }
 
   return errors;
@@ -166,12 +166,12 @@ Errors Worldbody::postprocess(const Compiler& compiler)
 
   for (Geom& geom : mGeoms) {
     const Errors geomErrors = geom.postprocess(nullptr, compiler);
-    errors.insert(errors.end(), geomErrors.begin(), geomErrors.end());
+    appendErrorRange(errors, geomErrors);
   }
 
   for (Body& body : mRootBodies) {
     const Errors bodyErrors = body.postprocess(nullptr, compiler);
-    errors.insert(errors.end(), bodyErrors.begin(), bodyErrors.end());
+    appendErrorRange(errors, bodyErrors);
   }
 
   return errors;

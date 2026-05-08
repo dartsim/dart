@@ -61,7 +61,7 @@ Errors MujocoModel::read(
 
   // Handle <include>s
   const Errors includeErrors = handleInclude(element, baseUri, retriever);
-  errors.insert(errors.end(), includeErrors.begin(), includeErrors.end());
+  appendErrorRange(errors, includeErrors);
 
   warnUnknownElements(
       element,
@@ -87,7 +87,7 @@ Errors MujocoModel::read(
     auto compilerElement = getElement(element, "compiler");
     DART_ASSERT(compilerElement);
     const auto compilerErrors = mCompiler.read(compilerElement);
-    errors.insert(errors.end(), compilerErrors.begin(), compilerErrors.end());
+    appendErrorRange(errors, compilerErrors);
   }
   mCompiler.setBaseUri(baseUri);
   mCompiler.setResourceRetriever(retriever);
@@ -97,7 +97,7 @@ Errors MujocoModel::read(
     auto optionElement = getElement(element, "option");
     DART_ASSERT(optionElement);
     const auto optionErrors = mOption.read(optionElement);
-    errors.insert(errors.end(), optionErrors.begin(), optionErrors.end());
+    appendErrorRange(errors, optionErrors);
   }
 
   // Read <size>
@@ -105,7 +105,7 @@ Errors MujocoModel::read(
     auto sizeElement = getElement(element, "size");
     DART_ASSERT(sizeElement);
     const auto sizeErrors = mSize.read(sizeElement);
-    errors.insert(errors.end(), sizeErrors.begin(), sizeErrors.end());
+    appendErrorRange(errors, sizeErrors);
   }
 
   // Read <asset>
@@ -113,7 +113,7 @@ Errors MujocoModel::read(
     auto assetElement = getElement(element, "asset");
     DART_ASSERT(assetElement);
     const auto assetErrors = mAsset.read(assetElement);
-    errors.insert(errors.end(), assetErrors.begin(), assetErrors.end());
+    appendErrorRange(errors, assetErrors);
   }
 
   // Read <default>
@@ -121,7 +121,7 @@ Errors MujocoModel::read(
     auto defaultElement = getElement(element, "default");
     DART_ASSERT(defaultElement);
     const auto defaultErrors = mDefaults.read(defaultElement, nullptr);
-    errors.insert(errors.end(), defaultErrors.begin(), defaultErrors.end());
+    appendErrorRange(errors, defaultErrors);
   }
 
   // Read <worldbody>
@@ -136,7 +136,7 @@ Errors MujocoModel::read(
         mDefaults.getRootDefault(),
         baseUri,
         retriever);
-    errors.insert(errors.end(), worldbodyErrors.begin(), worldbodyErrors.end());
+    appendErrorRange(errors, worldbodyErrors);
   }
 
   // Read <actuator>
@@ -144,7 +144,7 @@ Errors MujocoModel::read(
     auto actuatorElement = getElement(element, "actuator");
     DART_ASSERT(actuatorElement);
     const auto actuatorErrors = mActuator.read(actuatorElement, mDefaults);
-    errors.insert(errors.end(), actuatorErrors.begin(), actuatorErrors.end());
+    appendErrorRange(errors, actuatorErrors);
   }
 
   // Read <contact>
@@ -152,47 +152,33 @@ Errors MujocoModel::read(
     auto contactElement = getElement(element, "contact");
     DART_ASSERT(contactElement);
     const auto contactErrors = mContact.read(contactElement);
-    errors.insert(errors.end(), contactErrors.begin(), contactErrors.end());
+    appendErrorRange(errors, contactErrors);
   }
 
   const Errors assetPreprocessErrors = mAsset.preprocess(mCompiler);
-  errors.insert(
-      errors.end(), assetPreprocessErrors.begin(), assetPreprocessErrors.end());
+  appendErrorRange(errors, assetPreprocessErrors);
 
   const Errors assetCompileErrors = mAsset.compile(mCompiler);
-  errors.insert(
-      errors.end(), assetCompileErrors.begin(), assetCompileErrors.end());
+  appendErrorRange(errors, assetCompileErrors);
 
   const Errors assetPostprocessErrors = mAsset.postprocess(mCompiler);
-  errors.insert(
-      errors.end(),
-      assetPostprocessErrors.begin(),
-      assetPostprocessErrors.end());
+  appendErrorRange(errors, assetPostprocessErrors);
 
   const Errors worldbodyPreprocessErrors = mWorldbody.preprocess(mCompiler);
-  errors.insert(
-      errors.end(),
-      worldbodyPreprocessErrors.begin(),
-      worldbodyPreprocessErrors.end());
+  appendErrorRange(errors, worldbodyPreprocessErrors);
 
   const Errors worldbodyCompileErrors = mWorldbody.compile(mCompiler);
-  errors.insert(
-      errors.end(),
-      worldbodyCompileErrors.begin(),
-      worldbodyCompileErrors.end());
+  appendErrorRange(errors, worldbodyCompileErrors);
 
   const Errors worldbodyPostprocessErrors = mWorldbody.postprocess(mCompiler);
-  errors.insert(
-      errors.end(),
-      worldbodyPostprocessErrors.begin(),
-      worldbodyPostprocessErrors.end());
+  appendErrorRange(errors, worldbodyPostprocessErrors);
 
   // Read <equality>
   if (hasElement(element, "equality")) {
     auto equalityElement = getElement(element, "equality");
     DART_ASSERT(equalityElement);
     const auto equalityErrors = mEquality.read(equalityElement, mDefaults);
-    errors.insert(errors.end(), equalityErrors.begin(), equalityErrors.end());
+    appendErrorRange(errors, equalityErrors);
   }
 
   return errors;
@@ -231,7 +217,7 @@ Errors MujocoModel::read(
 
   // Parse <mujoco> element
   const Errors readErrors = read(mujocoElement, uri, retriever);
-  errors.insert(errors.end(), readErrors.begin(), readErrors.end());
+  appendErrorRange(errors, readErrors);
 
   return errors;
 }

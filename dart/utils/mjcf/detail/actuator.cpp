@@ -85,7 +85,7 @@ Errors Actuator::read(tinyxml2::XMLElement* element, const Defaults& defaults)
     }
 
     const Errors appendErrors = appendActuatorAttributes(attrs, child);
-    errors.insert(errors.end(), appendErrors.begin(), appendErrors.end());
+    appendErrorRange(errors, appendErrors);
 
     if (attrs.mJoint.empty()) {
       errors.push_back(Error(
