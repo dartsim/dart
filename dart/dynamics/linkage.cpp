@@ -37,6 +37,7 @@
 
 #include <algorithm>
 #include <unordered_set>
+#include <utility>
 
 namespace dart {
 namespace dynamics {
@@ -258,13 +259,13 @@ void Linkage::Criteria::expandDownstream(
   }
   recorder.push_back(Recording(_start, 0));
 
-  while (recorder.size() > 0) {
+  while (!recorder.empty()) {
     Recording& r = recorder.back();
-    if (r.mCount < static_cast<int>(r.mNode->getNumChildBodyNodes())) {
+    if (std::cmp_less(r.mCount, r.mNode->getNumChildBodyNodes())) {
       stepToNextChild(recorder, _bns, r, mMapOfTerminals, 0);
     } else {
       recorder.pop_back();
-      if (recorder.size() > 0) {
+      if (!recorder.empty()) {
         ++recorder.back().mCount;
       }
     }
@@ -283,7 +284,7 @@ void Linkage::Criteria::expandUpstream(
   }
   recorder.push_back(Recording(_start, -1));
 
-  while (recorder.size() > 0) {
+  while (!recorder.empty()) {
     Recording& r = recorder.back();
 
     if (r.mCount == -1) {
@@ -303,7 +304,7 @@ void Linkage::Criteria::expandUpstream(
         // If we originally came from this node, then just continue to the next
         ++r.mCount;
       }
-    } else if (r.mCount < static_cast<int>(r.mNode->getNumChildBodyNodes())) {
+    } else if (std::cmp_less(r.mCount, r.mNode->getNumChildBodyNodes())) {
       // Greater than -1 means we need to add the children
 
       if (recorder.size() == 1) {
@@ -323,7 +324,7 @@ void Linkage::Criteria::expandUpstream(
       // If we've iterated through all the children of this node, pop it
       recorder.pop_back();
       // Move on to the next child
-      if (recorder.size() > 0) {
+      if (!recorder.empty()) {
         ++recorder.back().mCount;
       }
     }
