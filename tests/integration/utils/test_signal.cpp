@@ -38,8 +38,8 @@
 
 #include <atomic>
 #include <numeric>
-#include <stop_token>
 #include <thread>
+#include <vector>
 
 using namespace std;
 using namespace Eigen;
@@ -410,8 +410,9 @@ TEST(Signal, ConcurrentUsage)
   std::atomic<int> callbackCount{0};
 
   {
-    std::jthread raiser([&](std::stop_token stopToken) {
-      while (!stopToken.stop_requested()) {
+    std::atomic<bool> stopRequested{false};
+    std::thread raiser([&]() {
+      while (!stopRequested.load(std::memory_order_relaxed)) {
         signal.raise();
         raiseCount.fetch_add(1, std::memory_order_relaxed);
       }
@@ -422,7 +423,7 @@ TEST(Signal, ConcurrentUsage)
     }
 
     {
-      std::vector<std::jthread> workers;
+      std::vector<std::thread> workers;
       workers.reserve(kNumThreads);
       for (int t = 0; t < kNumThreads; ++t) {
         workers.emplace_back([&]() {
@@ -435,9 +436,14 @@ TEST(Signal, ConcurrentUsage)
           }
         });
       }
+
+      for (std::thread& worker : workers) {
+        worker.join();
+      }
     }
 
-    raiser.request_stop();
+    stopRequested.store(true, std::memory_order_relaxed);
+    raiser.join();
   }
 
   EXPECT_EQ(signal.getNumConnections(), 0u);
