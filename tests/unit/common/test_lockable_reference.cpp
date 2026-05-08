@@ -34,11 +34,28 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <iterator>
 #include <mutex>
 #include <vector>
 
 using namespace dart;
 using namespace dart::common;
+
+namespace {
+
+std::vector<std::mutex*> makeMutexPointers(std::vector<std::mutex>& mutexes)
+{
+  std::vector<std::mutex*> mutexPtrs;
+  mutexPtrs.reserve(mutexes.size());
+  std::ranges::transform(
+      mutexes, std::back_inserter(mutexPtrs), [](auto& mutex) {
+        return &mutex;
+      });
+  return mutexPtrs;
+}
+
+} // namespace
 
 //==============================================================================
 TEST(SingleLockableReference, LockAndUnlock)
@@ -144,10 +161,7 @@ TEST(MultiLockableReference, LockAndUnlockMultipleMutexes)
 {
   auto holder = std::make_shared<int>(42);
   std::vector<std::mutex> mutexes(3);
-  std::vector<std::mutex*> mutexPtrs;
-  for (auto& m : mutexes) {
-    mutexPtrs.push_back(&m);
-  }
+  auto mutexPtrs = makeMutexPointers(mutexes);
 
   MultiLockableReference<std::mutex> lockRef(
       holder, mutexPtrs.begin(), mutexPtrs.end());
@@ -170,10 +184,7 @@ TEST(MultiLockableReference, TryLockSucceedsWhenAllUnlocked)
 {
   auto holder = std::make_shared<int>(42);
   std::vector<std::mutex> mutexes(2);
-  std::vector<std::mutex*> mutexPtrs;
-  for (auto& m : mutexes) {
-    mutexPtrs.push_back(&m);
-  }
+  auto mutexPtrs = makeMutexPointers(mutexes);
 
   MultiLockableReference<std::mutex> lockRef(
       holder, mutexPtrs.begin(), mutexPtrs.end());
@@ -186,10 +197,7 @@ TEST(MultiLockableReference, TryLockFailsWhenOneLocked)
 {
   auto holder = std::make_shared<int>(42);
   std::vector<std::mutex> mutexes(3);
-  std::vector<std::mutex*> mutexPtrs;
-  for (auto& m : mutexes) {
-    mutexPtrs.push_back(&m);
-  }
+  auto mutexPtrs = makeMutexPointers(mutexes);
 
   mutexes[1].lock();
 
@@ -205,10 +213,7 @@ TEST(MultiLockableReference, WorksWithStdLockGuard)
 {
   auto holder = std::make_shared<int>(42);
   std::vector<std::mutex> mutexes(2);
-  std::vector<std::mutex*> mutexPtrs;
-  for (auto& m : mutexes) {
-    mutexPtrs.push_back(&m);
-  }
+  auto mutexPtrs = makeMutexPointers(mutexes);
 
   MultiLockableReference<std::mutex> lockRef(
       holder, mutexPtrs.begin(), mutexPtrs.end());
@@ -229,10 +234,7 @@ TEST(MultiLockableReference, WorksWithStdLockGuard)
 TEST(MultiLockableReference, LockNoOpWhenHolderExpired)
 {
   std::vector<std::mutex> mutexes(2);
-  std::vector<std::mutex*> mutexPtrs;
-  for (auto& m : mutexes) {
-    mutexPtrs.push_back(&m);
-  }
+  auto mutexPtrs = makeMutexPointers(mutexes);
 
   MultiLockableReference<std::mutex>* lockRef = nullptr;
 
@@ -255,10 +257,7 @@ TEST(MultiLockableReference, LockNoOpWhenHolderExpired)
 TEST(MultiLockableReference, TryLockReturnsFalseWhenHolderExpired)
 {
   std::vector<std::mutex> mutexes(2);
-  std::vector<std::mutex*> mutexPtrs;
-  for (auto& m : mutexes) {
-    mutexPtrs.push_back(&m);
-  }
+  auto mutexPtrs = makeMutexPointers(mutexes);
 
   MultiLockableReference<std::mutex>* lockRef = nullptr;
 
