@@ -51,6 +51,9 @@ namespace dart::simulation::experimental::space {
 namespace detail {
 
 template <typename T>
+concept ArithmeticField = std::integral<T> || std::floating_point<T>;
+
+template <typename T>
 concept IsometryField
     = std::same_as<T, Eigen::Isometry3d>
       || std::derived_from<T, Eigen::Transform<double, 3, Eigen::Isometry>>;
@@ -66,7 +69,7 @@ size_t extractFieldToVector(
   using FieldType = std::remove_cvref_t<Field>;
   size_t count = 0;
 
-  if constexpr (std::is_arithmetic_v<FieldType>) {
+  if constexpr (detail::ArithmeticField<FieldType>) {
     // Scalar types (double, float, int, etc.)
     vec[offset] = static_cast<double>(field);
     count = 1;
@@ -125,7 +128,7 @@ size_t injectVectorToField(
   using FieldType = std::remove_cvref_t<Field>;
   size_t count = 0;
 
-  if constexpr (std::is_arithmetic_v<FieldType>) {
+  if constexpr (detail::ArithmeticField<FieldType>) {
     field = static_cast<FieldType>(vec[offset]);
     count = 1;
   } else if constexpr (detail::IsometryField<FieldType>) {
@@ -176,7 +179,8 @@ constexpr size_t getFieldDimension()
 {
   using FieldType = std::remove_cvref_t<Field>;
 
-  if constexpr (std::is_arithmetic_v<FieldType> || std::is_enum_v<FieldType>) {
+  if constexpr (
+      detail::ArithmeticField<FieldType> || std::is_enum_v<FieldType>) {
     return 1;
   } else if constexpr (std::same_as<FieldType, Eigen::Vector2d>) {
     return 2;
