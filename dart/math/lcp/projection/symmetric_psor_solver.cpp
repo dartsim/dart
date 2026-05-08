@@ -221,7 +221,7 @@ LcpResult SymmetricPsorSolver::solve(
     if (std::isfinite(diag) && std::abs(diag) >= params->epsilonForDivision) {
       const double residualEntry = A.row(i).dot(x) - b[i];
       const double step = x[i] - residualEntry / diag;
-      value = x[i] + relaxation * (step - x[i]);
+      value = std::lerp(x[i], step, relaxation);
     } else {
       value = 0.0;
     }

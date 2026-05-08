@@ -60,6 +60,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <ranges>
 #include <string>
 
 #include <cstdint>
@@ -552,9 +553,10 @@ template <typename BV>
   faces[4].set(1, 3, 2);
   faces[5].set(1, 4, 3);
 
-  for (unsigned int i = 0; i < points.size(); ++i) {
-    points[i] = pose * points[i];
-  }
+  std::ranges::transform(
+      points, points.begin(), [&](const fcl::Vector3& point) {
+        return pose * point;
+      });
 
   model->beginModel();
   model->addSubModel(points, faces);

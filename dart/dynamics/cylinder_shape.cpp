@@ -35,8 +35,6 @@
 #include "dart/common/macros.hpp"
 #include "dart/math/helpers.hpp"
 
-#include <cmath>
-
 namespace dart {
 namespace dynamics {
 
@@ -98,7 +96,7 @@ void CylinderShape::setHeight(double _height)
 //==============================================================================
 double CylinderShape::computeVolume(double radius, double height)
 {
-  return math::pi * std::pow(radius, 2) * height;
+  return math::pi * radius * radius * height;
 }
 
 //==============================================================================
@@ -107,10 +105,11 @@ Eigen::Matrix3d CylinderShape::computeInertia(
 {
   Eigen::Matrix3d inertia = Eigen::Matrix3d::Zero();
 
-  inertia(0, 0)
-      = mass * (3.0 * std::pow(radius, 2) + std::pow(height, 2)) / 12.0;
+  const auto radiusSquared = radius * radius;
+  const auto heightSquared = height * height;
+  inertia(0, 0) = mass * (3.0 * radiusSquared + heightSquared) / 12.0;
   inertia(1, 1) = inertia(0, 0);
-  inertia(2, 2) = 0.5 * mass * radius * radius;
+  inertia(2, 2) = 0.5 * mass * radiusSquared;
 
   return inertia;
 }

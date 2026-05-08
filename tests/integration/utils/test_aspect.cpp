@@ -52,6 +52,7 @@
 
 #include <gtest/gtest.h>
 
+#include <ranges>
 #include <vector>
 
 #include <cstddef>
@@ -381,7 +382,8 @@ static std::vector<LifecycleEvent> lifecycleEvents;
 static std::size_t findLifecycleEventIndex(
     const int tag, const int id, const LifecycleEvent::Type type)
 {
-  for (std::size_t i = 0; i < lifecycleEvents.size(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, lifecycleEvents.size())) {
     const auto& event = lifecycleEvents[i];
     if (event.tag == tag && event.id == id && event.type == type) {
       return i;
@@ -596,7 +598,7 @@ TEST(Aspect, MatchAspectsNotifiesRemovedLifecycle)
   EXPECT_LT(loseAspect2Index, destroyAspect2Index);
 
   bool sawSetAfter = false;
-  for (std::size_t i = eventsBefore; i < lifecycleEvents.size(); ++i) {
+  for (const auto i : std::views::iota(eventsBefore, lifecycleEvents.size())) {
     if (lifecycleEvents[i].tag == 1
         && lifecycleEvents[i].type == LifecycleEvent::Type::SetComposite) {
       sawSetAfter = true;

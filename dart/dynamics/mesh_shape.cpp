@@ -62,6 +62,7 @@
 #include <unordered_map>
 #include <utility>
 
+#include <cctype>
 #include <cstring>
 
 namespace dart {
@@ -108,7 +109,7 @@ public:
     if (next < 0) {
       return false;
     }
-    if (next > std::ssize(mData)) {
+    if (std::cmp_greater(next, mData.size())) {
       return false;
     }
 
@@ -1552,7 +1553,9 @@ bool hasColladaExtension(std::string_view path)
   }
 
   std::string extension(path.substr(extensionIndex));
-  std::ranges::transform(extension, extension.begin(), ::tolower);
+  std::ranges::transform(extension, extension.begin(), [](unsigned char c) {
+    return static_cast<char>(std::tolower(c));
+  });
   return extension == ".dae" || extension == ".zae";
 }
 

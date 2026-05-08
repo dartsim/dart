@@ -1021,8 +1021,8 @@ bool createJointAndNodePair(
   newJoint->setForces(joint.force);
 
   dynamics::BodyNode* bn = pair.second;
-  for (std::size_t i = 0; i < body.markers.size(); ++i) {
-    bn->createNode<dynamics::Marker>(body.markers[i]);
+  for (const auto& marker : body.markers) {
+    bn->createNode<dynamics::Marker>(marker);
   }
 
   return true;

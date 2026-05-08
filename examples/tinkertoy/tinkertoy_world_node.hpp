@@ -39,6 +39,8 @@
 
 #include <dart/all.hpp>
 
+#include <ranges>
+
 const double DefaultBlockLength = 0.5;
 const double DefaultBlockWidth = 0.075;
 const double DefaultJointRadius = 1.5 * DefaultBlockWidth / 2.0;
@@ -175,7 +177,8 @@ public:
     }
 
     dart::dynamics::SkeletonPtr temporary = mPickedNode->remove();
-    for (size_t i = 0; i < temporary->getNumBodyNodes(); ++i) {
+    for (const auto i :
+         std::views::iota(std::size_t{0}, temporary->getNumBodyNodes())) {
       mViewer->disableDragAndDrop(
           mViewer->enableDragAndDrop(temporary->getBodyNode(i)));
     }
@@ -258,7 +261,7 @@ public:
     joint->setName("joint_#" + std::to_string(skel->getNumJoints()));
 
     joint->setTransformFromParentBodyNode(relTf);
-    for (size_t i = 0; i < joint->getNumDofs(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, joint->getNumDofs())) {
       joint->getDof(i)->setDampingCoefficient(DefaultDamping);
     }
 

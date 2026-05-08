@@ -9,6 +9,8 @@
 
 #include <dart/simd/config.hpp>
 
+#include <bit>
+
 #if defined(DART_SIMD_SVE)
 
   #include <cstddef>
@@ -62,13 +64,7 @@ struct VecMask<float, 4>
 
   [[nodiscard]] DART_SIMD_INLINE int popcount() const
   {
-    int count = 0;
-    for (std::size_t i = 0; i < width; ++i) {
-      if (data[i]) {
-        ++count;
-      }
-    }
-    return count;
+    return std::popcount(bitmask());
   }
 
   [[nodiscard]] DART_SIMD_INLINE std::uint32_t bitmask() const
@@ -212,7 +208,7 @@ struct VecMask<double, 2>
 
   [[nodiscard]] DART_SIMD_INLINE int popcount() const
   {
-    return (data[0] ? 1 : 0) + (data[1] ? 1 : 0);
+    return std::popcount(bitmask());
   }
 
   [[nodiscard]] DART_SIMD_INLINE std::uint32_t bitmask() const
@@ -348,13 +344,7 @@ struct VecMask<std::int32_t, 4>
 
   [[nodiscard]] DART_SIMD_INLINE int popcount() const
   {
-    int count = 0;
-    for (std::size_t i = 0; i < width; ++i) {
-      if (data[i]) {
-        ++count;
-      }
-    }
-    return count;
+    return std::popcount(bitmask());
   }
 
   [[nodiscard]] DART_SIMD_INLINE std::uint32_t bitmask() const
@@ -508,13 +498,7 @@ struct VecMask<std::uint32_t, 4>
 
   [[nodiscard]] DART_SIMD_INLINE int popcount() const
   {
-    int count = 0;
-    for (std::size_t i = 0; i < width; ++i) {
-      if (data[i]) {
-        ++count;
-      }
-    }
-    return count;
+    return std::popcount(bitmask());
   }
 
   [[nodiscard]] DART_SIMD_INLINE std::uint32_t bitmask() const

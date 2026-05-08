@@ -38,6 +38,8 @@
 #include "dart/math/optimization/problem.hpp"
 
 #include <iostream>
+#include <iterator>
+#include <utility>
 
 namespace dart {
 namespace math {
@@ -432,11 +434,11 @@ void GradientDescentSolver::randomizeConfiguration(Eigen::VectorXd& _x)
     return;
   }
 
-  if (_x.size() < static_cast<int>(mProperties.mProblem->getDimension())) {
+  if (std::cmp_less(_x.size(), mProperties.mProblem->getDimension())) {
     _x = Eigen::VectorXd::Zero(mProperties.mProblem->getDimension());
   }
 
-  for (int i = 0; i < _x.size(); ++i) {
+  for (int i = 0; i < std::ssize(_x); ++i) {
     double lower = mProperties.mProblem->getLowerBounds()[i];
     double upper = mProperties.mProblem->getUpperBounds()[i];
     double step = upper - lower;
@@ -456,7 +458,7 @@ void GradientDescentSolver::clampToBoundary(Eigen::VectorXd& _x)
     return;
   }
 
-  if (_x.size() != static_cast<int>(mProperties.mProblem->getDimension())) {
+  if (!std::cmp_equal(_x.size(), mProperties.mProblem->getDimension())) {
     DART_ERROR(
         "Mismatch between configuration size [{}] and the dimension of the "
         "Problem [{}]",
@@ -469,7 +471,7 @@ void GradientDescentSolver::clampToBoundary(Eigen::VectorXd& _x)
   DART_ASSERT(mProperties.mProblem->getLowerBounds().size() == _x.size());
   DART_ASSERT(mProperties.mProblem->getUpperBounds().size() == _x.size());
 
-  for (int i = 0; i < _x.size(); ++i) {
+  for (int i = 0; i < std::ssize(_x); ++i) {
     _x[i] = math::clip(
         _x[i],
         mProperties.mProblem->getLowerBounds()[i],

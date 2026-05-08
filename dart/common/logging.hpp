@@ -33,6 +33,8 @@
 #ifndef DART_COMMON_LOGGING_HPP_
 #define DART_COMMON_LOGGING_HPP_
 
+#include <source_location>
+
 #include <cstdint>
 
 // clang-format off
@@ -109,15 +111,20 @@ void log(
     const S& format_str,
     Args&&... args);
 
+template <typename S, typename... Args>
+void log(
+    LogLevel level,
+    const std::source_location& location,
+    const S& format_str,
+    Args&&... args);
+
 } // namespace dart::common::detail
 
 #if DART_ACTIVE_LOG_LEVEL <= DART_LOG_LEVEL_TRACE
   #define DART_TRACE(...)                                                      \
     ::dart::common::detail::log(                                               \
         ::dart::common::detail::LogLevel::Trace,                               \
-        __FILE__,                                                              \
-        __LINE__,                                                              \
-        __func__,                                                              \
+        ::std::source_location::current(),                                     \
         __VA_ARGS__)
   #define DART_TRACE_IF(condition, ...)                                        \
     do {                                                                       \
@@ -139,9 +146,7 @@ void log(
   #define DART_DEBUG(...)                                                      \
     ::dart::common::detail::log(                                               \
         ::dart::common::detail::LogLevel::Debug,                               \
-        __FILE__,                                                              \
-        __LINE__,                                                              \
-        __func__,                                                              \
+        ::std::source_location::current(),                                     \
         __VA_ARGS__)
   #define DART_DEBUG_IF(condition, ...)                                        \
     do {                                                                       \
@@ -163,9 +168,7 @@ void log(
   #define DART_INFO(...)                                                       \
     ::dart::common::detail::log(                                               \
         ::dart::common::detail::LogLevel::Info,                                \
-        __FILE__,                                                              \
-        __LINE__,                                                              \
-        __func__,                                                              \
+        ::std::source_location::current(),                                     \
         __VA_ARGS__)
   #define DART_INFO_IF(condition, ...)                                         \
     do {                                                                       \
@@ -187,9 +190,7 @@ void log(
   #define DART_WARN(...)                                                       \
     ::dart::common::detail::log(                                               \
         ::dart::common::detail::LogLevel::Warn,                                \
-        __FILE__,                                                              \
-        __LINE__,                                                              \
-        __func__,                                                              \
+        ::std::source_location::current(),                                     \
         __VA_ARGS__)
   #define DART_WARN_IF(condition, ...)                                         \
     do {                                                                       \
@@ -211,9 +212,7 @@ void log(
   #define DART_ERROR(...)                                                      \
     ::dart::common::detail::log(                                               \
         ::dart::common::detail::LogLevel::Error,                               \
-        __FILE__,                                                              \
-        __LINE__,                                                              \
-        __func__,                                                              \
+        ::std::source_location::current(),                                     \
         __VA_ARGS__)
   #define DART_ERROR_IF(condition, ...)                                        \
     do {                                                                       \
@@ -235,9 +234,7 @@ void log(
   #define DART_FATAL(...)                                                      \
     ::dart::common::detail::log(                                               \
         ::dart::common::detail::LogLevel::Fatal,                               \
-        __FILE__,                                                              \
-        __LINE__,                                                              \
-        __func__,                                                              \
+        ::std::source_location::current(),                                     \
         __VA_ARGS__)
   #define DART_FATAL_IF(condition, ...)                                        \
     do {                                                                       \

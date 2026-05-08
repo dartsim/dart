@@ -37,6 +37,8 @@
 #include "dart/dynamics/line_segment_shape.hpp"
 #include "dart/dynamics/mesh_shape.hpp"
 
+#include <algorithm>
+
 namespace dart {
 namespace gui {
 

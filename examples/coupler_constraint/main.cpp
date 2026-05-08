@@ -65,6 +65,7 @@
 #include <vector>
 
 #include <cassert>
+#include <cmath>
 #include <cstdlib>
 
 using dart::dynamics::BodyNode;
@@ -77,6 +78,15 @@ using dart::simulation::World;
 using dart::simulation::WorldPtr;
 
 namespace {
+
+Eigen::Vector3d lerpColor(
+    const Eigen::Vector3d& a, const Eigen::Vector3d& b, double t)
+{
+  return Eigen::Vector3d(
+      std::lerp(a.x(), b.x(), t),
+      std::lerp(a.y(), b.y(), t),
+      std::lerp(a.z(), b.z(), t));
+}
 
 struct MimicAssembly
 {
@@ -453,11 +463,11 @@ private:
     if (pair.usesCoupler) {
       const Eigen::Vector3d good(0.6, 0.95, 0.4);
       const Eigen::Vector3d bad(1.0, 0.6, 0.2);
-      color = good + severity * (bad - good);
+      color = lerpColor(good, bad, severity);
     } else {
       const Eigen::Vector3d base(0.7, 0.7, 0.85);
       const Eigen::Vector3d alert(1.0, 0.4, 0.3);
-      color = base + severity * (alert - base);
+      color = lerpColor(base, alert, severity);
     }
     pair.linkVisual->setColor(color);
   }

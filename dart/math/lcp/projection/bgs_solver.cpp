@@ -39,7 +39,7 @@
 #include <algorithm>
 #include <iterator>
 #include <limits>
-#include <numeric>
+#include <ranges>
 #include <span>
 #include <string>
 #include <utility>
@@ -171,11 +171,8 @@ bool buildBlocks(
 
     int offset = 0;
     for (const int size : params.blockSizes) {
-      std::vector<int> indices;
-      indices.reserve(static_cast<std::size_t>(size));
-      for (int i = 0; i < size; ++i) {
-        indices.push_back(offset + i);
-      }
+      const auto indexRange = std::views::iota(offset, offset + size);
+      std::vector<int> indices(indexRange.begin(), indexRange.end());
       offset += size;
 
       BlockData block;
@@ -196,8 +193,8 @@ bool buildBlocks(
     return true;
   }
 
-  std::vector<int> parent(n);
-  std::iota(parent.begin(), parent.end(), 0);
+  const auto problemIndices = std::views::iota(0, static_cast<int>(n));
+  std::vector<int> parent(problemIndices.begin(), problemIndices.end());
 
   auto findRoot = [&](int v) {
     while (parent[v] != v) {

@@ -4,6 +4,7 @@
 
 #include <nanobind/nanobind.h>
 
+#include <concepts>
 #include <type_traits>
 
 #include "dart/dynamics/frame.hpp"
@@ -186,11 +187,10 @@ struct type_caster<dart::dynamics::Joint>
 };
 
 template <typename JointT>
-struct type_caster<
-    JointT,
-    std::enable_if_t<
-        std::is_base_of_v<dart::dynamics::Joint, JointT>
-        && !std::is_same_v<dart::dynamics::Joint, JointT>>>
+  requires(
+      std::derived_from<JointT, dart::dynamics::Joint>
+      && !std::same_as<JointT, dart::dynamics::Joint>)
+struct type_caster<JointT, int>
     : polymorphic_type_caster<JointT>
 {
   template <typename T>

@@ -1,0 +1,39 @@
+---
+description: merge the active release branch back into main
+agent: build
+---
+
+Merge release branch into main: $ARGUMENTS
+
+## Required Reading
+
+@AGENTS.md
+@docs/onboarding/release-management.md
+@docs/onboarding/ci-cd.md
+
+## Workflow
+
+1. Auto-detect or confirm the active release branch and release version:
+   ```bash
+   git fetch origin
+   git branch -r | grep -oE 'origin/release-[0-9]+\.[0-9]+' | sort -V | tail -1
+   ```
+2. Verify the clone is not shallow and a merge base exists.
+3. Create `merge/<release-branch>-into-main` from `origin/main`.
+4. Merge the release branch with a title like `Merge release-6.16 into main (v6.16.x)`.
+5. Resolve conflicts using `docs/onboarding/release-management.md`:
+   - deleted in main, updated in release: keep deleted
+   - added in both: prefer main unless release has unique needed content
+   - content conflicts: prefer main modernization except for manually reviewed changelog entries
+   - files only on release: keep if still relevant to main
+6. Verify no unresolved conflicts remain.
+7. Run `pixi run lint` and relevant checks.
+8. Push and create a PR targeting `main` with milestone `DART 7.0`.
+9. Monitor CI until green.
+
+## Output
+
+- PR URL and CI status
+- Release branch and release version
+- Conflict counts and resolution summary
+- Any manual changelog decisions

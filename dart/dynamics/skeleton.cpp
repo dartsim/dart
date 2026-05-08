@@ -52,8 +52,10 @@
 #include <algorithm>
 #include <iterator>
 #include <queue>
+#include <ranges>
 #include <span>
 #include <string>
+#include <utility>
 #include <vector>
 
 #define SET_ALL_FLAGS(X)                                                       \
@@ -72,7 +74,7 @@
 #define CHECK_CONFIG_VECTOR_SIZE(V)                                            \
   if (V.size() > 0) {                                                          \
     if (nonzero_size != INVALID_INDEX                                          \
-        && V.size() != static_cast<int>(nonzero_size)) {                       \
+        && !std::cmp_equal(V.size(), nonzero_size)) {                          \
       DART_ERROR(                                                              \
           "Mismatch in size of vector [{}] "                                   \
           "(expected {} | found {})",                                          \
@@ -1131,8 +1133,8 @@ std::span<BodyNode* const> Skeleton::getTreeBodyNodes(std::size_t _treeIdx)
         "Requesting an invalid tree ({}) {}",
         _treeIdx,
         (count > 0
-             ? (std::string("when the max tree index is (")
-                + std::to_string(count - 1) + ")\n")
+             ? "when the max tree index is (" + std::to_string(count - 1)
+                   + ")\n"
              : std::string("when there are no trees in this Skeleton\n")));
     DART_ASSERT(false);
   }
@@ -1631,7 +1633,7 @@ void Skeleton::integratePositions(
     return;
   }
 
-  if (velocityChanges.size() != static_cast<Eigen::Index>(getNumDofs())) {
+  if (!std::cmp_equal(velocityChanges.size(), getNumDofs())) {
     DART_ASSERT(false);
     integratePositions(_dt);
     return;
@@ -1681,8 +1683,8 @@ void Skeleton::integrateVelocities(double _dt)
 Eigen::VectorXd Skeleton::getPositionDifferences(
     const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const
 {
-  if (static_cast<std::size_t>(_q2.size()) != getNumDofs()
-      || static_cast<std::size_t>(_q1.size()) != getNumDofs()) {
+  if (!std::cmp_equal(_q2.size(), getNumDofs())
+      || !std::cmp_equal(_q1.size(), getNumDofs())) {
     DART_ERROR(
         "Skeleton::getPositionsDifference: q1's size[{}] or q2's size[{}is "
         "different with the dof [{}].",
@@ -1713,8 +1715,8 @@ Eigen::VectorXd Skeleton::getPositionDifferences(
 Eigen::VectorXd Skeleton::getVelocityDifferences(
     const Eigen::VectorXd& _dq2, const Eigen::VectorXd& _dq1) const
 {
-  if (static_cast<std::size_t>(_dq2.size()) != getNumDofs()
-      || static_cast<std::size_t>(_dq1.size()) != getNumDofs()) {
+  if (!std::cmp_equal(_dq2.size(), getNumDofs())
+      || !std::cmp_equal(_dq1.size(), getNumDofs())) {
     DART_ERROR(
         "Skeleton::getPositionsDifference: dq1's size[{}] or dq2's size[{}is "
         "different with the dof [{}].",
@@ -2918,11 +2920,9 @@ std::vector<BodyNode*> Skeleton::extractBodyNodeTree(BodyNode* _bodyNode)
 {
   std::vector<BodyNode*> tree = constructBodyNodeTree(_bodyNode);
 
-  // Go backwards to minimize the number of shifts needed
-  std::vector<BodyNode*>::reverse_iterator rit;
   // Go backwards to minimize the amount of element shifting in the vectors
-  for (rit = tree.rbegin(); rit != tree.rend(); ++rit) {
-    unregisterBodyNode(*rit);
+  for (auto* bodyNode : std::views::reverse(tree)) {
+    unregisterBodyNode(bodyNode);
   }
 
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i) {
@@ -2978,11 +2978,8 @@ void Skeleton::updateCacheDimensions(std::size_t _treeIdx)
 void Skeleton::updateArticulatedInertia(std::size_t _tree) const
 {
   DataCache& cache = mTreeCache[_tree];
-  for (std::vector<BodyNode*>::const_reverse_iterator it
-       = cache.mBodyNodes.rbegin();
-       it != cache.mBodyNodes.rend();
-       ++it) {
-    (*it)->updateArtInertia(mAspectProperties.mTimeStep);
+  for (auto* bodyNode : std::views::reverse(cache.mBodyNodes)) {
+    bodyNode->updateArtInertia(mAspectProperties.mTimeStep);
   }
 
   cache.mDirty.mArticulatedInertia = false;
@@ -3007,8 +3004,8 @@ void Skeleton::updateMassMatrix(std::size_t _treeIdx) const
   DataCache& cache = mTreeCache[_treeIdx];
   std::size_t dof = cache.mDofs.size();
   DART_ASSERT(
-      static_cast<std::size_t>(cache.mM.cols()) == dof
-      && static_cast<std::size_t>(cache.mM.rows()) == dof);
+      std::cmp_equal(cache.mM.cols(), dof)
+      && std::cmp_equal(cache.mM.rows(), dof));
   if (dof == 0) {
     cache.mDirty.mMassMatrix = false;
     return;
@@ -3037,14 +3034,11 @@ void Skeleton::updateMassMatrix(std::size_t _treeIdx) const
     }
 
     // Mass matrix
-    for (std::vector<BodyNode*>::const_reverse_iterator it
-         = cache.mBodyNodes.rbegin();
-         it != cache.mBodyNodes.rend();
-         ++it) {
-      (*it)->aggregateMassMatrix(cache.mM, j);
-      std::size_t localDof = (*it)->mParentJoint->getNumDofs();
+    for (auto* bodyNode : std::views::reverse(cache.mBodyNodes)) {
+      bodyNode->aggregateMassMatrix(cache.mM, j);
+      std::size_t localDof = bodyNode->mParentJoint->getNumDofs();
       if (localDof > 0) {
-        std::size_t iStart = (*it)->mParentJoint->getIndexInTree(0);
+        std::size_t iStart = bodyNode->mParentJoint->getIndexInTree(0);
 
         if (iStart + localDof < j) {
           break;
@@ -3068,8 +3062,8 @@ void Skeleton::updateMassMatrix() const
 {
   std::size_t dof = mSkelCache.mDofs.size();
   DART_ASSERT(
-      static_cast<std::size_t>(mSkelCache.mM.cols()) == dof
-      && static_cast<std::size_t>(mSkelCache.mM.rows()) == dof);
+      std::cmp_equal(mSkelCache.mM.cols(), dof)
+      && std::cmp_equal(mSkelCache.mM.rows(), dof));
   if (dof == 0) {
     mSkelCache.mDirty.mMassMatrix = false;
     return;
@@ -3100,8 +3094,8 @@ void Skeleton::updateAugMassMatrix(std::size_t _treeIdx) const
   DataCache& cache = mTreeCache[_treeIdx];
   std::size_t dof = cache.mDofs.size();
   DART_ASSERT(
-      static_cast<std::size_t>(cache.mAugM.cols()) == dof
-      && static_cast<std::size_t>(cache.mAugM.rows()) == dof);
+      std::cmp_equal(cache.mAugM.cols(), dof)
+      && std::cmp_equal(cache.mAugM.rows(), dof));
   if (dof == 0) {
     cache.mDirty.mAugMassMatrix = false;
     return;
@@ -3130,15 +3124,12 @@ void Skeleton::updateAugMassMatrix(std::size_t _treeIdx) const
     }
 
     // Augmented Mass matrix
-    for (std::vector<BodyNode*>::const_reverse_iterator it
-         = cache.mBodyNodes.rbegin();
-         it != cache.mBodyNodes.rend();
-         ++it) {
-      (*it)->aggregateAugMassMatrix(
+    for (auto* bodyNode : std::views::reverse(cache.mBodyNodes)) {
+      bodyNode->aggregateAugMassMatrix(
           cache.mAugM, j, mAspectProperties.mTimeStep);
-      std::size_t localDof = (*it)->mParentJoint->getNumDofs();
+      std::size_t localDof = bodyNode->mParentJoint->getNumDofs();
       if (localDof > 0) {
-        std::size_t iStart = (*it)->mParentJoint->getIndexInTree(0);
+        std::size_t iStart = bodyNode->mParentJoint->getIndexInTree(0);
 
         if (iStart + localDof < j) {
           break;
@@ -3162,8 +3153,8 @@ void Skeleton::updateAugMassMatrix() const
 {
   std::size_t dof = mSkelCache.mDofs.size();
   DART_ASSERT(
-      static_cast<std::size_t>(mSkelCache.mAugM.cols()) == dof
-      && static_cast<std::size_t>(mSkelCache.mAugM.rows()) == dof);
+      std::cmp_equal(mSkelCache.mAugM.cols(), dof)
+      && std::cmp_equal(mSkelCache.mAugM.rows(), dof));
   if (dof == 0) {
     mSkelCache.mDirty.mMassMatrix = false;
     return;
@@ -3194,8 +3185,8 @@ void Skeleton::updateInvMassMatrix(std::size_t _treeIdx) const
   DataCache& cache = mTreeCache[_treeIdx];
   std::size_t dof = cache.mDofs.size();
   DART_ASSERT(
-      static_cast<std::size_t>(cache.mInvM.cols()) == dof
-      && static_cast<std::size_t>(cache.mInvM.rows()) == dof);
+      std::cmp_equal(cache.mInvM.cols(), dof)
+      && std::cmp_equal(cache.mInvM.rows(), dof));
   if (dof == 0) {
     cache.mDirty.mInvMassMatrix = false;
     return;
@@ -3218,11 +3209,8 @@ void Skeleton::updateInvMassMatrix(std::size_t _treeIdx) const
     cache.mDofs[j]->setForce(1.0);
 
     // Prepare cache data
-    for (std::vector<BodyNode*>::const_reverse_iterator it
-         = cache.mBodyNodes.rbegin();
-         it != cache.mBodyNodes.rend();
-         ++it) {
-      (*it)->updateInvMassMatrix();
+    for (auto* bodyNode : std::views::reverse(cache.mBodyNodes)) {
+      bodyNode->updateInvMassMatrix();
     }
 
     // Inverse of mass matrix
@@ -3256,8 +3244,8 @@ void Skeleton::updateInvMassMatrix() const
 {
   std::size_t dof = mSkelCache.mDofs.size();
   DART_ASSERT(
-      static_cast<std::size_t>(mSkelCache.mInvM.cols()) == dof
-      && static_cast<std::size_t>(mSkelCache.mInvM.rows()) == dof);
+      std::cmp_equal(mSkelCache.mInvM.cols(), dof)
+      && std::cmp_equal(mSkelCache.mInvM.rows(), dof));
   if (dof == 0) {
     mSkelCache.mDirty.mInvMassMatrix = false;
     return;
@@ -3288,8 +3276,8 @@ void Skeleton::updateInvAugMassMatrix(std::size_t _treeIdx) const
   DataCache& cache = mTreeCache[_treeIdx];
   std::size_t dof = cache.mDofs.size();
   DART_ASSERT(
-      static_cast<std::size_t>(cache.mInvAugM.cols()) == dof
-      && static_cast<std::size_t>(cache.mInvAugM.rows()) == dof);
+      std::cmp_equal(cache.mInvAugM.cols(), dof)
+      && std::cmp_equal(cache.mInvAugM.rows(), dof));
   if (dof == 0) {
     cache.mDirty.mInvAugMassMatrix = false;
     return;
@@ -3312,11 +3300,8 @@ void Skeleton::updateInvAugMassMatrix(std::size_t _treeIdx) const
     cache.mDofs[j]->setForce(1.0);
 
     // Prepare cache data
-    for (std::vector<BodyNode*>::const_reverse_iterator it
-         = cache.mBodyNodes.rbegin();
-         it != cache.mBodyNodes.rend();
-         ++it) {
-      (*it)->updateInvAugMassMatrix();
+    for (auto* bodyNode : std::views::reverse(cache.mBodyNodes)) {
+      bodyNode->updateInvAugMassMatrix();
     }
 
     // Inverse of augmented mass matrix
@@ -3352,8 +3337,8 @@ void Skeleton::updateInvAugMassMatrix() const
 {
   std::size_t dof = mSkelCache.mDofs.size();
   DART_ASSERT(
-      static_cast<std::size_t>(mSkelCache.mInvAugM.cols()) == dof
-      && static_cast<std::size_t>(mSkelCache.mInvAugM.rows()) == dof);
+      std::cmp_equal(mSkelCache.mInvAugM.cols(), dof)
+      && std::cmp_equal(mSkelCache.mInvAugM.rows(), dof));
   if (dof == 0) {
     mSkelCache.mDirty.mInvAugMassMatrix = false;
     return;
@@ -3383,7 +3368,7 @@ void Skeleton::updateCoriolisForces(std::size_t _treeIdx) const
 {
   DataCache& cache = mTreeCache[_treeIdx];
   std::size_t dof = cache.mDofs.size();
-  DART_ASSERT(static_cast<std::size_t>(cache.mCvec.size()) == dof);
+  DART_ASSERT(std::cmp_equal(cache.mCvec.size(), dof));
   if (dof == 0) {
     cache.mDirty.mCoriolisForces = false;
     return;
@@ -3397,11 +3382,8 @@ void Skeleton::updateCoriolisForces(std::size_t _treeIdx) const
     (*it)->updateCombinedVector();
   }
 
-  for (std::vector<BodyNode*>::const_reverse_iterator it
-       = cache.mBodyNodes.rbegin();
-       it != cache.mBodyNodes.rend();
-       ++it) {
-    (*it)->aggregateCoriolisForceVector(cache.mCvec);
+  for (auto* bodyNode : std::views::reverse(cache.mBodyNodes)) {
+    bodyNode->aggregateCoriolisForceVector(cache.mCvec);
   }
 
   cache.mDirty.mCoriolisForces = false;
@@ -3411,7 +3393,7 @@ void Skeleton::updateCoriolisForces(std::size_t _treeIdx) const
 void Skeleton::updateCoriolisForces() const
 {
   std::size_t dof = mSkelCache.mDofs.size();
-  DART_ASSERT(static_cast<std::size_t>(mSkelCache.mCvec.size()) == dof);
+  DART_ASSERT(std::cmp_equal(mSkelCache.mCvec.size(), dof));
   if (dof == 0) {
     mSkelCache.mDirty.mCoriolisForces = false;
     return;
@@ -3437,7 +3419,7 @@ void Skeleton::updateGravityForces(std::size_t _treeIdx) const
 {
   DataCache& cache = mTreeCache[_treeIdx];
   std::size_t dof = cache.mDofs.size();
-  DART_ASSERT(static_cast<std::size_t>(cache.mG.size()) == dof);
+  DART_ASSERT(std::cmp_equal(cache.mG.size(), dof));
   if (dof == 0) {
     cache.mDirty.mGravityForces = false;
     return;
@@ -3445,11 +3427,8 @@ void Skeleton::updateGravityForces(std::size_t _treeIdx) const
 
   cache.mG.setZero();
 
-  for (std::vector<BodyNode*>::const_reverse_iterator it
-       = cache.mBodyNodes.rbegin();
-       it != cache.mBodyNodes.rend();
-       ++it) {
-    (*it)->aggregateGravityForceVector(cache.mG, mAspectProperties.mGravity);
+  for (auto* bodyNode : std::views::reverse(cache.mBodyNodes)) {
+    bodyNode->aggregateGravityForceVector(cache.mG, mAspectProperties.mGravity);
   }
 
   cache.mDirty.mGravityForces = false;
@@ -3459,7 +3438,7 @@ void Skeleton::updateGravityForces(std::size_t _treeIdx) const
 void Skeleton::updateGravityForces() const
 {
   std::size_t dof = mSkelCache.mDofs.size();
-  DART_ASSERT(static_cast<std::size_t>(mSkelCache.mG.size()) == dof);
+  DART_ASSERT(std::cmp_equal(mSkelCache.mG.size(), dof));
   if (dof == 0) {
     mSkelCache.mDirty.mGravityForces = false;
     return;
@@ -3485,7 +3464,7 @@ void Skeleton::updateCoriolisAndGravityForces(std::size_t _treeIdx) const
 {
   DataCache& cache = mTreeCache[_treeIdx];
   std::size_t dof = cache.mDofs.size();
-  DART_ASSERT(static_cast<std::size_t>(cache.mCg.size()) == dof);
+  DART_ASSERT(std::cmp_equal(cache.mCg.size(), dof));
   if (dof == 0) {
     cache.mDirty.mCoriolisAndGravityForces = false;
     return;
@@ -3499,11 +3478,8 @@ void Skeleton::updateCoriolisAndGravityForces(std::size_t _treeIdx) const
     (*it)->updateCombinedVector();
   }
 
-  for (std::vector<BodyNode*>::const_reverse_iterator it
-       = cache.mBodyNodes.rbegin();
-       it != cache.mBodyNodes.rend();
-       ++it) {
-    (*it)->aggregateCombinedVector(cache.mCg, mAspectProperties.mGravity);
+  for (auto* bodyNode : std::views::reverse(cache.mBodyNodes)) {
+    bodyNode->aggregateCombinedVector(cache.mCg, mAspectProperties.mGravity);
   }
 
   cache.mDirty.mCoriolisAndGravityForces = false;
@@ -3513,7 +3489,7 @@ void Skeleton::updateCoriolisAndGravityForces(std::size_t _treeIdx) const
 void Skeleton::updateCoriolisAndGravityForces() const
 {
   std::size_t dof = mSkelCache.mDofs.size();
-  DART_ASSERT(static_cast<std::size_t>(mSkelCache.mCg.size()) == dof);
+  DART_ASSERT(std::cmp_equal(mSkelCache.mCg.size(), dof));
   if (dof == 0) {
     mSkelCache.mDirty.mCoriolisAndGravityForces = false;
     return;
@@ -3539,7 +3515,7 @@ void Skeleton::updateExternalForces(std::size_t _treeIdx) const
 {
   DataCache& cache = mTreeCache[_treeIdx];
   std::size_t dof = cache.mDofs.size();
-  DART_ASSERT(static_cast<std::size_t>(cache.mFext.size()) == dof);
+  DART_ASSERT(std::cmp_equal(cache.mFext.size(), dof));
   if (dof == 0) {
     cache.mDirty.mExternalForces = false;
     return;
@@ -3548,11 +3524,8 @@ void Skeleton::updateExternalForces(std::size_t _treeIdx) const
   // Clear external force.
   cache.mFext.setZero();
 
-  for (std::vector<BodyNode*>::const_reverse_iterator itr
-       = cache.mBodyNodes.rbegin();
-       itr != cache.mBodyNodes.rend();
-       ++itr) {
-    (*itr)->aggregateExternalForces(cache.mFext);
+  for (auto* bodyNode : std::views::reverse(cache.mBodyNodes)) {
+    bodyNode->aggregateExternalForces(cache.mFext);
   }
 
   // TODO(JS): Not implemented yet
@@ -3593,7 +3566,7 @@ void Skeleton::updateExternalForces(std::size_t _treeIdx) const
 void Skeleton::updateExternalForces() const
 {
   std::size_t dof = mSkelCache.mDofs.size();
-  DART_ASSERT(static_cast<std::size_t>(mSkelCache.mFext.size()) == dof);
+  DART_ASSERT(std::cmp_equal(mSkelCache.mFext.size(), dof));
   if (dof == 0) {
     mSkelCache.mDirty.mExternalForces = false;
     return;
@@ -3618,14 +3591,12 @@ void Skeleton::updateExternalForces() const
 const Eigen::VectorXd& Skeleton::computeConstraintForces(DataCache& cache) const
 {
   const std::size_t dof = cache.mDofs.size();
-  DART_ASSERT(static_cast<std::size_t>(cache.mFc.size()) == dof);
+  DART_ASSERT(std::cmp_equal(cache.mFc.size(), dof));
 
   // Body constraint impulses
-  for (std::vector<BodyNode*>::reverse_iterator it = cache.mBodyNodes.rbegin();
-       it != cache.mBodyNodes.rend();
-       ++it) {
-    (*it)->aggregateSpatialToGeneralized(
-        cache.mFc, (*it)->getConstraintImpulse());
+  for (auto* bodyNode : std::views::reverse(cache.mBodyNodes)) {
+    bodyNode->aggregateSpatialToGeneralized(
+        cache.mFc, bodyNode->getConstraintImpulse());
   }
 
   // Joint constraint impulses
@@ -3854,10 +3825,8 @@ void Skeleton::computeForwardDynamics()
   // Note: Articulated Inertias will be updated automatically when
   // getArtInertiaImplicit() is called in BodyNode::updateBiasForce()
 
-  for (auto it = mSkelCache.mBodyNodes.rbegin();
-       it != mSkelCache.mBodyNodes.rend();
-       ++it) {
-    (*it)->updateBiasForce(
+  for (auto* bodyNode : std::views::reverse(mSkelCache.mBodyNodes)) {
+    bodyNode->updateBiasForce(
         mAspectProperties.mGravity, mAspectProperties.mTimeStep);
   }
 
@@ -3879,12 +3848,10 @@ void Skeleton::computeInverseDynamics(
   }
 
   // Backward recursion
-  for (auto it = mSkelCache.mBodyNodes.rbegin();
-       it != mSkelCache.mBodyNodes.rend();
-       ++it) {
-    (*it)->updateTransmittedForceID(
+  for (auto* bodyNode : std::views::reverse(mSkelCache.mBodyNodes)) {
+    bodyNode->updateTransmittedForceID(
         mAspectProperties.mGravity, _withExternalForces);
-    (*it)->updateJointForceID(
+    bodyNode->updateJointForceID(
         mAspectProperties.mTimeStep, _withDampingForces, _withSpringForces);
   }
 }
@@ -4117,10 +4084,8 @@ void Skeleton::computePositionVelocityChanges()
   }
 
   // Backward recursion
-  for (auto it = mSkelCache.mBodyNodes.rbegin();
-       it != mSkelCache.mBodyNodes.rend();
-       ++it) {
-    (*it)->updateBiasImpulseFromPositionImpulse();
+  for (auto* bodyNode : std::views::reverse(mSkelCache.mBodyNodes)) {
+    bodyNode->updateBiasImpulseFromPositionImpulse();
   }
 
   // Forward recursion
@@ -4183,10 +4148,8 @@ void Skeleton::computeImpulseForwardDynamics()
   // BodyNode::getArticulatedInertia()
 
   // Backward recursion
-  for (auto it = mSkelCache.mBodyNodes.rbegin();
-       it != mSkelCache.mBodyNodes.rend();
-       ++it) {
-    (*it)->updateBiasImpulse();
+  for (auto* bodyNode : std::views::reverse(mSkelCache.mBodyNodes)) {
+    bodyNode->updateBiasImpulse();
   }
 
   // Forward recursion

@@ -39,6 +39,8 @@
 #include <dart/all.hpp>
 #include <dart/io/read.hpp>
 
+#include <ranges>
+
 using namespace dart;
 using namespace math;
 using namespace dynamics;
@@ -65,7 +67,7 @@ private:
     int nDof = mWorld->getSkeleton(0)->getNumDofs();
     // add damping to each joint; twist-dof has smaller damping
     Eigen::VectorXd damping = -0.01 * mWorld->getSkeleton(0)->getVelocities();
-    for (int i = 0; i < nDof; i++) {
+    for (const auto i : std::views::iota(0, nDof)) {
       if (i % 3 == 1) {
         damping[i] *= 0.1;
       }

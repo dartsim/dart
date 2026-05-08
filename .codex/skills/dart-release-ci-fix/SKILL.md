@@ -1,0 +1,59 @@
+---
+name: dart-release-ci-fix
+description: "DART Release CI Fix: debug and fix CI failures on a release branch"
+---
+<!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
+<!-- Source: .claude/commands/dart-release-ci-fix.md -->
+<!-- Sync script: scripts/sync_ai_commands.py -->
+<!-- Run `pixi run sync-ai-commands` to update -->
+
+# dart-release-ci-fix
+
+Use this skill in Codex when you want the same workflow that Claude Code and
+OpenCode expose as `/dart-release-ci-fix`.
+
+## Invocation
+
+- Claude Code/OpenCode: `/dart-release-ci-fix <arguments>`
+- Codex: `$dart-release-ci-fix <arguments>`
+
+Treat the text after the skill name as `$ARGUMENTS`. When the workflow
+references `$1`, `$2`, etc., map those to the positional values supplied by the
+user.
+
+## Command Body
+
+Fix release-branch CI: $ARGUMENTS
+
+## Required Reading
+
+@AGENTS.md
+@docs/onboarding/ci-cd.md
+@docs/onboarding/release-management.md
+
+## Workflow
+
+1. Inspect the failing run:
+   ```bash
+   gh run view <RUN_ID> --log-failed
+   gh run view <RUN_ID> --job <JOB_ID> --log
+   ```
+2. Check whether an equivalent fix already exists on `main`.
+3. If continuing an existing PR, fetch and checkout that branch. Otherwise branch from the release branch:
+   ```bash
+   git fetch origin <RELEASE_BRANCH>
+   git checkout -B fix/<issue>-<release-branch> origin/<RELEASE_BRANCH>
+   ```
+4. Prefer cherry-picking a proven `main` fix. If a new fix is required, keep it release-scoped and minimal.
+5. Explain why the failure was not caught earlier and whether workflow coverage should change.
+6. Run `pixi run lint` and release-relevant build/tests.
+7. Push and create or update the release-branch PR with the current release milestone.
+8. Monitor CI until green.
+
+## Output
+
+- Root cause
+- Fix summary
+- PR URL
+- CI status
+- Prevention recommendation, if any

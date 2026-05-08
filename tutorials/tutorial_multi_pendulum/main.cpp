@@ -36,6 +36,8 @@
 
 #include <dart/all.hpp>
 
+#include <ranges>
+
 const double default_height = 1.0; // m
 const double default_width = 0.2;  // m
 const double default_depth = 0.2;  // m
@@ -161,7 +163,8 @@ public:
 
     if (!mBodyForce) {
       // Apply joint torques based on user input, and color the Joint shape red
-      for (std::size_t i = 0; i < mPendulum->getNumDofs(); ++i) {
+      for (const auto i :
+           std::views::iota(std::size_t{0}, mPendulum->getNumDofs())) {
         if (mForceCountDown[i] > 0) {
           // snippet:lesson1b-joint-force-start
           // Lesson 1b implementation lives in the finished tutorial.
@@ -172,7 +175,8 @@ public:
       }
     } else {
       // Apply body forces based on user input, and color the body shape red
-      for (std::size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i) {
+      for (const auto i :
+           std::views::iota(std::size_t{0}, mPendulum->getNumBodyNodes())) {
         if (mForceCountDown[i] > 0) {
           // snippet:lesson1c-body-force-start
           // Lesson 1c implementation lives in the finished tutorial.

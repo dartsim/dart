@@ -36,7 +36,10 @@
 #include <dart/math/detail/convhull.hpp>
 #include <dart/math/geometry.hpp>
 
+#include <ranges>
 #include <unordered_map>
+
+#include <cstddef>
 
 namespace dart {
 namespace math {
@@ -60,13 +63,13 @@ discardUnusedVertices(
       Eigen::aligned_allocator<Eigen::Matrix<Index, 3, 1>>>();
   newTriangles.resize(triangles.size());
   auto indexMap = std::unordered_map<Index, Index>();
-  auto newIndex = 0;
+  auto newIndex = Index{0};
 
-  for (auto i = 0u; i < triangles.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, triangles.size())) {
     const auto& triangle = triangles[i];
     auto& newTriangle = newTriangles[i];
 
-    for (auto j = 0u; j < 3; ++j) {
+    for (const auto j : std::views::iota(0, 3)) {
       const auto result
           = indexMap.insert(std::make_pair(triangle[j], newIndex));
       const bool& inserted = result.second;

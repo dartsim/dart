@@ -327,7 +327,7 @@ template <typename Scalar>
 inline void SetValue(Scalar* a, size_t n, Scalar value)
 {
   DART_ASSERT(a);
-  std::fill(a, a + n, value);
+  std::ranges::fill_n(a, n, value);
 }
 
 /// Set an Eigen vector/matrix to a specific value (Eigen version)

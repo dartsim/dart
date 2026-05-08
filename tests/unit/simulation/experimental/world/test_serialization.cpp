@@ -46,7 +46,7 @@
 
 #include <gtest/gtest.h>
 
-#include <iterator>
+#include <ranges>
 #include <sstream>
 
 //==============================================================================
@@ -682,7 +682,7 @@ TEST(Serialization, StateSerializedCorrectly)
   auto& registry2 = world2.getRegistry();
   auto view
       = registry2.view<dart::simulation::experimental::comps::FreeFrameTag>();
-  EXPECT_EQ(std::distance(view.begin(), view.end()), 2)
+  EXPECT_EQ(std::ranges::distance(view), 2)
       << "Should have restored 2 FreeFrames";
 
   // Verify that FrameState components exist
@@ -845,7 +845,7 @@ TEST(Serialization, CloneDeepCopy)
   auto cloneView = cloneReg.view<
       dart::simulation::experimental::comps::Name,
       dart::simulation::experimental::comps::FreeFrameProperties>();
-  EXPECT_EQ(std::distance(cloneView.begin(), cloneView.end()), 2);
+  EXPECT_EQ(std::ranges::distance(cloneView), 2);
 
   for (auto entity : cloneView) {
     auto& props

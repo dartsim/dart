@@ -37,6 +37,7 @@
 #include <Eigen/Cholesky>
 
 #include <algorithm>
+#include <ranges>
 
 #include <cmath>
 
@@ -51,7 +52,7 @@ double computeBarrierCost(
     double reg)
 {
   double cost = 0.0;
-  for (Eigen::Index i = 0; i < x.size(); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, x.size())) {
     if (x[i] < lo[i]) {
       const double diff = lo[i] - x[i];
       cost += 0.5 * diff * diff / reg;
@@ -70,7 +71,7 @@ void computeBarrierGradient(
     double reg,
     Eigen::VectorXd& grad)
 {
-  for (Eigen::Index i = 0; i < x.size(); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, x.size())) {
     if (x[i] < lo[i]) {
       grad[i] += (x[i] - lo[i]) / reg;
     } else if (x[i] > hi[i]) {
@@ -86,7 +87,7 @@ void addBarrierHessianDiagonal(
     double reg,
     Eigen::VectorXd& diagAdd)
 {
-  for (Eigen::Index i = 0; i < x.size(); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, x.size())) {
     if (x[i] < lo[i] || x[i] > hi[i]) {
       diagAdd[i] += 1.0 / reg;
     }
@@ -165,7 +166,7 @@ LcpResult SapSolver::solve(
 
   Eigen::VectorXd loEff = lo;
   Eigen::VectorXd hiEff = hi;
-  for (Eigen::Index i = 0; i < n; ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, n)) {
     if (findex[i] >= 0) {
       loEff[i] = -std::numeric_limits<double>::infinity();
       hiEff[i] = std::numeric_limits<double>::infinity();
@@ -178,7 +179,7 @@ LcpResult SapSolver::solve(
     x.setZero();
   }
 
-  for (Eigen::Index i = 0; i < n; ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, n)) {
     x[i] = std::clamp(x[i], loEff[i], hiEff[i]);
   }
 
@@ -190,10 +191,10 @@ LcpResult SapSolver::solve(
   int iterationsUsed = 0;
   bool converged = false;
 
-  for (int iter = 0; iter < maxIterations; ++iter) {
+  for ([[maybe_unused]] const auto iter : std::views::iota(0, maxIterations)) {
     ++iterationsUsed;
 
-    for (Eigen::Index i = 0; i < n; ++i) {
+    for (const auto i : std::views::iota(Eigen::Index{0}, n)) {
       if (findex[i] >= 0) {
         const double fricLimit = std::abs(hi[i] * x[findex[i]]);
         loEff[i] = -fricLimit;
@@ -238,7 +239,7 @@ LcpResult SapSolver::solve(
     for (int ls = 0; ls < maxLs; ++ls) {
       xNew = x + alpha * dx;
 
-      for (Eigen::Index i = 0; i < n; ++i) {
+      for (const auto i : std::views::iota(Eigen::Index{0}, n)) {
         if (findex[i] >= 0) {
           const double fricLimit = std::abs(hi[i] * xNew[findex[i]]);
           loEff[i] = -fricLimit;
@@ -259,7 +260,7 @@ LcpResult SapSolver::solve(
     x = x + alpha * dx;
   }
 
-  for (Eigen::Index i = 0; i < n; ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, n)) {
     if (findex[i] >= 0) {
       const double fricLimit = std::abs(hi[i] * x[findex[i]]);
       loEff[i] = -fricLimit;

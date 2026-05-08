@@ -116,7 +116,7 @@ Errors Weld::read(tinyxml2::XMLElement* element, const Defaults& defaults)
 
   // Read attributes
   const Errors attrErrors = appendWeldAttributes(mAttributes, element);
-  errors.insert(errors.end(), attrErrors.begin(), attrErrors.end());
+  appendErrorRange(errors, attrErrors);
 
   if (mAttributes.mName) {
     mName = *mAttributes.mName;

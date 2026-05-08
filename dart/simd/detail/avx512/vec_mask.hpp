@@ -34,6 +34,8 @@
 
 #include <dart/simd/config.hpp>
 
+#include <bit>
+
 #include <cstddef>
 #include <cstdint>
 
@@ -72,7 +74,7 @@ struct VecMask<float, 16>
 
   [[nodiscard]] DART_SIMD_INLINE int popcount() const
   {
-    return _mm_popcnt_u32(data);
+    return std::popcount(bitmask());
   }
 
   [[nodiscard]] DART_SIMD_INLINE std::uint32_t bitmask() const
@@ -175,7 +177,7 @@ struct VecMask<double, 8>
 
   [[nodiscard]] DART_SIMD_INLINE int popcount() const
   {
-    return _mm_popcnt_u32(data);
+    return std::popcount(bitmask());
   }
 
   [[nodiscard]] DART_SIMD_INLINE std::uint32_t bitmask() const
@@ -278,7 +280,7 @@ struct VecMask<std::int32_t, 16>
 
   [[nodiscard]] DART_SIMD_INLINE int popcount() const
   {
-    return _mm_popcnt_u32(data);
+    return std::popcount(bitmask());
   }
 
   [[nodiscard]] DART_SIMD_INLINE std::uint32_t bitmask() const

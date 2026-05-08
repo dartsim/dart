@@ -43,6 +43,8 @@
 #include <osg/Geode>
 #include <osg/Geometry>
 
+#include <algorithm>
+
 namespace dart {
 namespace gui {
 

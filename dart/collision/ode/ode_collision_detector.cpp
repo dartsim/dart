@@ -57,6 +57,7 @@
 #include <algorithm>
 #include <deque>
 #include <functional>
+#include <ranges>
 #include <utility>
 
 namespace dart {
@@ -463,10 +464,11 @@ void reportContacts(
     return;
   }
 
-  for (auto it = pastContacsVec.rbegin();
-       it != pastContacsVec.rend() && missing > 0u;
-       ++it) {
-    auto past_cont = *it;
+  for (const auto& past_cont : std::views::reverse(pastContacsVec)) {
+    if (missing == 0u) {
+      break;
+    }
+
     for (const auto& curr_cont : results_vec_copy) {
       const auto res_pair
           = MakeNewPair(curr_cont.collisionObject1, curr_cont.collisionObject2);

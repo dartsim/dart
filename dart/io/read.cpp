@@ -96,18 +96,20 @@ std::string getLowercaseExtension(const common::Uri& uri)
 
 std::optional<ModelFormat> inferFormatFromExtension(const common::Uri& uri)
 {
+  using enum ModelFormat;
+
   const auto ext = getLowercaseExtension(uri);
   if (ext == ".skel") {
-    return ModelFormat::Skel;
+    return Skel;
   }
   if (ext == ".sdf" || ext == ".world") {
-    return ModelFormat::Sdf;
+    return Sdf;
   }
   if (ext == ".urdf") {
-    return ModelFormat::Urdf;
+    return Urdf;
   }
   if (ext == ".mjcf") {
-    return ModelFormat::Mjcf;
+    return Mjcf;
   }
 
   // Extensions like ".xml" are ambiguous across multiple formats.
@@ -241,9 +243,10 @@ simulation::WorldPtr readWorld(
     const common::Uri& uri, const ReadOptions& options)
 {
   const auto resolved = resolveOptions(options);
+  using enum ModelFormat;
 
   ModelFormat format = resolved.format;
-  if (format == ModelFormat::Auto) {
+  if (format == Auto) {
     const auto inferred = inferFormat(uri, resolved.resourceRetriever);
     if (!inferred) {
       DART_ERROR(
@@ -255,9 +258,9 @@ simulation::WorldPtr readWorld(
   }
 
   switch (format) {
-    case ModelFormat::Skel:
+    case Skel:
       return utils::SkelParser::readWorld(uri, resolved.resourceRetriever);
-    case ModelFormat::Sdf:
+    case Sdf:
 #if DART_HAS_SDFORMAT
     {
       auto sdfOptions = utils::SdfParser::Options(resolved.resourceRetriever);
@@ -274,10 +277,10 @@ simulation::WorldPtr readWorld(
           uri.toString());
       return nullptr;
 #endif
-    case ModelFormat::Mjcf:
+    case Mjcf:
       return utils::MjcfParser::readWorld(
           uri, utils::MjcfParser::Options(resolved.resourceRetriever));
-    case ModelFormat::Urdf:
+    case Urdf:
 #if DART_IO_HAS_URDF
       return readUrdfWorld(uri, resolved);
 #else
@@ -287,7 +290,7 @@ simulation::WorldPtr readWorld(
           uri.toString());
       return nullptr;
 #endif
-    case ModelFormat::Auto:
+    case Auto:
       break;
   }
 
@@ -302,9 +305,10 @@ dynamics::SkeletonPtr readSkeleton(
     const common::Uri& uri, const ReadOptions& options)
 {
   const auto resolved = resolveOptions(options);
+  using enum ModelFormat;
 
   ModelFormat format = resolved.format;
-  if (format == ModelFormat::Auto) {
+  if (format == Auto) {
     const auto inferred = inferFormat(uri, resolved.resourceRetriever);
     if (!inferred) {
       DART_ERROR(
@@ -317,7 +321,7 @@ dynamics::SkeletonPtr readSkeleton(
   }
 
   switch (format) {
-    case ModelFormat::Skel: {
+    case Skel: {
       const auto world
           = utils::SkelParser::readWorld(uri, resolved.resourceRetriever);
       if (world) {
@@ -338,7 +342,7 @@ dynamics::SkeletonPtr readSkeleton(
 
       return utils::SkelParser::readSkeleton(uri, resolved.resourceRetriever);
     }
-    case ModelFormat::Sdf:
+    case Sdf:
 #if DART_HAS_SDFORMAT
     {
       auto sdfOptions = utils::SdfParser::Options(resolved.resourceRetriever);
@@ -355,7 +359,7 @@ dynamics::SkeletonPtr readSkeleton(
           uri.toString());
       return nullptr;
 #endif
-    case ModelFormat::Urdf:
+    case Urdf:
 #if DART_IO_HAS_URDF
       return readUrdfSkeleton(uri, resolved);
 #else
@@ -365,13 +369,13 @@ dynamics::SkeletonPtr readSkeleton(
           uri.toString());
       return nullptr;
 #endif
-    case ModelFormat::Mjcf:
+    case Mjcf:
       DART_ERROR(
           "[dart::io::readSkeleton] MJCF does not support direct skeleton "
           "parsing. URI=[{}]",
           uri.toString());
       return nullptr;
-    case ModelFormat::Auto:
+    case Auto:
       break;
   }
 

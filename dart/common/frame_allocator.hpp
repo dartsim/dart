@@ -39,6 +39,7 @@
 #include <dart/export.hpp>
 
 #include <algorithm>
+#include <memory>
 #include <new>
 #include <stdexcept>
 #include <utility>
@@ -145,7 +146,8 @@ public:
     if (memory == nullptr) {
       return nullptr;
     }
-    return new (memory) T(std::forward<Args>(args)...);
+    return std::construct_at(
+        static_cast<T*>(memory), std::forward<Args>(args)...);
   }
 
   [[nodiscard]] size_t capacity() const noexcept;

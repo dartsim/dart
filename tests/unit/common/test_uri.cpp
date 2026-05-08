@@ -683,7 +683,7 @@ TEST(UriHelpers, UriComponent_ArrowOperator)
 {
   UriComponent component("test_value");
   EXPECT_EQ(component->length(), 10u);
-  EXPECT_EQ(component->substr(0, 4), "test");
+  EXPECT_TRUE(component->starts_with("test"));
 }
 
 TEST(UriHelpers, getPath_ReturnsPathComponent)

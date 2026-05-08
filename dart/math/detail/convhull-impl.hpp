@@ -169,8 +169,8 @@ template <typename S>
   c[1] = dz1 * dx2 - dx1 * dz2;
   c[2] = dx1 * dy2 - dy1 * dx2;
 
-  // Normalize (use x*x instead of pow for speed)
-  const S normC = std::sqrt(c[0] * c[0] + c[1] * c[1] + c[2] * c[2]);
+  // Normalize.
+  const S normC = std::hypot(c[0], c[1], c[2]);
   const S invNormC = static_cast<S>(1.0) / normC;
   c[0] *= invNormC;
   c[1] *= invNormC;

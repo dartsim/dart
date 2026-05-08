@@ -40,12 +40,22 @@
 #include <boost/pfr.hpp>
 #include <entt/entt.hpp>
 
+#include <concepts>
 #include <span>
 #include <type_traits>
 
 #include <cstddef>
 
 namespace dart::simulation::experimental::space {
+
+namespace detail {
+
+template <typename T>
+concept IsometryField
+    = std::same_as<T, Eigen::Isometry3d>
+      || std::derived_from<T, Eigen::Transform<double, 3, Eigen::Isometry>>;
+
+} // namespace detail
 
 /// Automatically extract scalars from a field for vector mapping
 /// Handles POD types, Eigen vectors, and nested structs
@@ -60,11 +70,7 @@ size_t extractFieldToVector(
     // Scalar types (double, float, int, etc.)
     vec[offset] = static_cast<double>(field);
     count = 1;
-  } else if constexpr (
-      std::is_same_v<FieldType, Eigen::Isometry3d>
-      || std::is_base_of_v<
-          Eigen::Transform<double, 3, Eigen::Isometry>,
-          FieldType>) {
+  } else if constexpr (detail::IsometryField<FieldType>) {
     // Extract translation (3) + rotation as quaternion (4)
     // Handle early to avoid confusion with other Eigen types
     auto translation = field.translation();
@@ -77,21 +83,21 @@ size_t extractFieldToVector(
     vec[offset + 5] = rotation.y();
     vec[offset + 6] = rotation.z();
     count = 7;
-  } else if constexpr (std::is_same_v<FieldType, Eigen::Vector2d>) {
+  } else if constexpr (std::same_as<FieldType, Eigen::Vector2d>) {
     vec[offset + 0] = field.x();
     vec[offset + 1] = field.y();
     count = 2;
-  } else if constexpr (std::is_same_v<FieldType, Eigen::Vector3d>) {
+  } else if constexpr (std::same_as<FieldType, Eigen::Vector3d>) {
     vec[offset + 0] = field.x();
     vec[offset + 1] = field.y();
     vec[offset + 2] = field.z();
     count = 3;
-  } else if constexpr (std::is_same_v<FieldType, Eigen::VectorXd>) {
+  } else if constexpr (std::same_as<FieldType, Eigen::VectorXd>) {
     for (Eigen::Index i = 0; i < field.size(); ++i) {
       vec[offset + i] = field[i];
     }
     count = field.size();
-  } else if constexpr (std::is_same_v<FieldType, Eigen::Quaterniond>) {
+  } else if constexpr (std::same_as<FieldType, Eigen::Quaterniond>) {
     vec[offset + 0] = field.w();
     vec[offset + 1] = field.x();
     vec[offset + 2] = field.y();
@@ -122,11 +128,7 @@ size_t injectVectorToField(
   if constexpr (std::is_arithmetic_v<FieldType>) {
     field = static_cast<FieldType>(vec[offset]);
     count = 1;
-  } else if constexpr (
-      std::is_same_v<FieldType, Eigen::Isometry3d>
-      || std::is_base_of_v<
-          Eigen::Transform<double, 3, Eigen::Isometry>,
-          FieldType>) {
+  } else if constexpr (detail::IsometryField<FieldType>) {
     // Handle Isometry3d (before other Eigen types)
     Eigen::Vector3d translation(
         vec[offset + 0], vec[offset + 1], vec[offset + 2]);
@@ -135,21 +137,21 @@ size_t injectVectorToField(
     field.translation() = translation;
     field.linear() = rotation.toRotationMatrix();
     count = 7;
-  } else if constexpr (std::is_same_v<FieldType, Eigen::Vector2d>) {
+  } else if constexpr (std::same_as<FieldType, Eigen::Vector2d>) {
     field.x() = vec[offset + 0];
     field.y() = vec[offset + 1];
     count = 2;
-  } else if constexpr (std::is_same_v<FieldType, Eigen::Vector3d>) {
+  } else if constexpr (std::same_as<FieldType, Eigen::Vector3d>) {
     field.x() = vec[offset + 0];
     field.y() = vec[offset + 1];
     field.z() = vec[offset + 2];
     count = 3;
-  } else if constexpr (std::is_same_v<FieldType, Eigen::VectorXd>) {
+  } else if constexpr (std::same_as<FieldType, Eigen::VectorXd>) {
     for (Eigen::Index i = 0; i < field.size(); ++i) {
       field[i] = vec[offset + i];
     }
     count = field.size();
-  } else if constexpr (std::is_same_v<FieldType, Eigen::Quaterniond>) {
+  } else if constexpr (std::same_as<FieldType, Eigen::Quaterniond>) {
     field.w() = vec[offset + 0];
     field.x() = vec[offset + 1];
     field.y() = vec[offset + 2];
@@ -176,15 +178,15 @@ constexpr size_t getFieldDimension()
 
   if constexpr (std::is_arithmetic_v<FieldType> || std::is_enum_v<FieldType>) {
     return 1;
-  } else if constexpr (std::is_same_v<FieldType, Eigen::Vector2d>) {
+  } else if constexpr (std::same_as<FieldType, Eigen::Vector2d>) {
     return 2;
-  } else if constexpr (std::is_same_v<FieldType, Eigen::Vector3d>) {
+  } else if constexpr (std::same_as<FieldType, Eigen::Vector3d>) {
     return 3;
-  } else if constexpr (std::is_same_v<FieldType, Eigen::Quaterniond>) {
+  } else if constexpr (std::same_as<FieldType, Eigen::Quaterniond>) {
     return 4;
-  } else if constexpr (std::is_same_v<FieldType, Eigen::Isometry3d>) {
+  } else if constexpr (std::same_as<FieldType, Eigen::Isometry3d>) {
     return 7; // Translation (3) + Quaternion (4)
-  } else if constexpr (std::is_same_v<FieldType, Eigen::VectorXd>) {
+  } else if constexpr (std::same_as<FieldType, Eigen::VectorXd>) {
     return 0; // Dynamic size - must be computed at runtime
   } else if constexpr (std::is_aggregate_v<FieldType>) {
     // Nested aggregate struct - sum dimensions of all fields

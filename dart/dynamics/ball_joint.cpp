@@ -39,6 +39,7 @@
 
 #include <array>
 #include <string>
+#include <utility>
 
 namespace dart {
 namespace dynamics {
@@ -237,8 +238,8 @@ void BallJoint::integratePositions(
     double dt,
     Eigen::VectorXd& result) const
 {
-  if (static_cast<std::size_t>(q0.size()) != getNumDofs()
-      || static_cast<std::size_t>(v.size()) != getNumDofs()) {
+  if (!std::cmp_equal(q0.size(), getNumDofs())
+      || !std::cmp_equal(v.size(), getNumDofs())) {
     DART_ERROR(
         "q0's size [{}] and v's size [{}] must both equal the dof [{}] for "
         "Joint [{}].",
@@ -263,11 +264,9 @@ void BallJoint::integratePositions(
 //==============================================================================
 void BallJoint::updateDegreeOfFreedomNames()
 {
-  std::array<std::string, 3> affixes{"_x", "_y", "_z"};
-
-  if (getCoordinateChart() == CoordinateChart::EULER_ZYX) {
-    affixes = {"_z", "_y", "_x"};
-  }
+  const auto affixes = getCoordinateChart() == CoordinateChart::EULER_ZYX
+                           ? std::to_array<std::string>({"_z", "_y", "_x"})
+                           : std::to_array<std::string>({"_x", "_y", "_z"});
 
   for (std::size_t i = 0; i < affixes.size(); ++i) {
     if (!mDofs[i]->isNamePreserved()) {

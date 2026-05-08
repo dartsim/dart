@@ -79,7 +79,7 @@ Errors Geom::read(
 
   // Read attributes
   const Errors attrErrors = appendGeomAttributes(mAttributes, element);
-  errors.insert(errors.end(), attrErrors.begin(), attrErrors.end());
+  appendErrorRange(errors, attrErrors);
 
   return errors;
 }

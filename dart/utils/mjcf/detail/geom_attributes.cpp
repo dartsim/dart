@@ -178,8 +178,7 @@ Errors appendGeomAttributes(
 
   // Check if multiple orientation representations present
   const Errors orientationErrors = checkOrientationValidity(element);
-  errors.insert(
-      errors.end(), orientationErrors.begin(), orientationErrors.end());
+  appendErrorRange(errors, orientationErrors);
 
   // quat
   if (hasAttribute(element, "quat")) {

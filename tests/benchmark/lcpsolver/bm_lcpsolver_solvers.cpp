@@ -17,6 +17,7 @@
 
 #include <limits>
 #include <random>
+#include <ranges>
 
 namespace {
 
@@ -29,8 +30,8 @@ LcpProblem makeStandardSpdProblem(int n, unsigned seed)
   std::uniform_real_distribution<double> dist(-1.0, 1.0);
 
   Eigen::MatrixXd M(n, n);
-  for (int r = 0; r < n; ++r) {
-    for (int c = 0; c < n; ++c) {
+  for (const int r : std::views::iota(0, n)) {
+    for (const int c : std::views::iota(0, n)) {
       M(r, c) = dist(rng);
     }
   }
@@ -40,7 +41,7 @@ LcpProblem makeStandardSpdProblem(int n, unsigned seed)
         + static_cast<double>(n) * Eigen::MatrixXd::Identity(n, n);
 
   Eigen::VectorXd xStar(n);
-  for (int i = 0; i < n; ++i) {
+  for (const int i : std::views::iota(0, n)) {
     xStar[i] = std::abs(dist(rng)) + 0.1;
   }
 
@@ -64,8 +65,8 @@ LcpProblem makeBoxedActiveBoundsSpdProblem(int n, unsigned seed)
   std::uniform_real_distribution<double> slackDist(0.1, 1.0);
 
   Eigen::MatrixXd M(n, n);
-  for (int r = 0; r < n; ++r) {
-    for (int c = 0; c < n; ++c) {
+  for (const int r : std::views::iota(0, n)) {
+    for (const int c : std::views::iota(0, n)) {
       M(r, c) = dist(rng);
     }
   }
@@ -80,7 +81,7 @@ LcpProblem makeBoxedActiveBoundsSpdProblem(int n, unsigned seed)
 
   Eigen::VectorXd xStar(n);
   Eigen::VectorXd w = Eigen::VectorXd::Zero(n);
-  for (int i = 0; i < n; ++i) {
+  for (const int i : std::views::iota(0, n)) {
     const int mode = i % 3;
     if (mode == 0) {
       xStar[i] = lo[i];
@@ -112,8 +113,8 @@ LcpProblem makeFrictionIndexSpdProblem(int numContacts, unsigned seed)
   std::uniform_real_distribution<double> muDist(0.2, 1.0);
 
   Eigen::MatrixXd M(n, n);
-  for (int r = 0; r < n; ++r) {
-    for (int c = 0; c < n; ++c) {
+  for (const int r : std::views::iota(0, n)) {
+    for (const int c : std::views::iota(0, n)) {
       M(r, c) = dist(rng);
     }
   }
@@ -127,7 +128,7 @@ LcpProblem makeFrictionIndexSpdProblem(int numContacts, unsigned seed)
   Eigen::VectorXd hi = Eigen::VectorXd::Zero(n);
   Eigen::VectorXi findex = Eigen::VectorXi::Constant(n, -1);
 
-  for (int c = 0; c < numContacts; ++c) {
+  for (const int c : std::views::iota(0, numContacts)) {
     const int base = 3 * c;
     const double normal = std::abs(dist(rng)) + 0.5;
     const double mu = muDist(rng);

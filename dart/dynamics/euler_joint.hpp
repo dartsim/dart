@@ -107,10 +107,12 @@ public:
   static Eigen::Vector3d convertToPositions(
       const RotationType& _rotation, AxisOrder _ordering)
   {
+    using enum AxisOrder;
+
     switch (_ordering) {
-      case AxisOrder::XYZ:
+      case XYZ:
         return math::matrixToEulerXYZ(_rotation);
-      case AxisOrder::ZYX:
+      case ZYX:
         return math::matrixToEulerZYX(_rotation);
       default:
         DART_WARN(

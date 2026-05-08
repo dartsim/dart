@@ -278,18 +278,20 @@ void setVertices(
   int axis1 = 0;
   int axis2 = 1;
 
+  using enum GridVisual::PlaneType;
+
   switch (planeType) {
-    case GridVisual::PlaneType::XY: {
+    case XY: {
       axis1 = 0;
       axis2 = 1;
       break;
     }
-    case GridVisual::PlaneType::YZ: {
+    case YZ: {
       axis1 = 1;
       axis2 = 2;
       break;
     }
-    case GridVisual::PlaneType::ZX: {
+    case ZX: {
       axis1 = 2;
       axis2 = 0;
       break;
@@ -502,18 +504,20 @@ void GridVisual::refresh()
     static const ::osg::Vec4 yAxisLineColor(0.1f, 0.9f, 0.1f, 1.0f);
     static const ::osg::Vec4 zAxisLineColor(0.1f, 0.1f, 0.9f, 1.0f);
 
+    using enum GridVisual::PlaneType;
+
     switch (mPlaneType) {
-      case GridVisual::PlaneType::XY: {
+      case XY: {
         mAxisLineColor->at(0) = xAxisLineColor;
         mAxisLineColor->at(2) = yAxisLineColor;
         break;
       }
-      case GridVisual::PlaneType::YZ: {
+      case YZ: {
         mAxisLineColor->at(0) = yAxisLineColor;
         mAxisLineColor->at(2) = zAxisLineColor;
         break;
       }
-      case GridVisual::PlaneType::ZX: {
+      case ZX: {
         mAxisLineColor->at(0) = zAxisLineColor;
         mAxisLineColor->at(2) = xAxisLineColor;
         break;

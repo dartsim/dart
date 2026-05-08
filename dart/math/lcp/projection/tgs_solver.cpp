@@ -175,7 +175,7 @@ LcpResult TgsSolver::solve(
       newX *= invDiag[idx];
 
       const double oldX = xdata[idx];
-      newX = oldX + relaxation * (newX - oldX);
+      newX = std::lerp(oldX, newX, relaxation);
 
       double loVal = loData[idx];
       double hiVal = hiData[idx];

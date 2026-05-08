@@ -37,6 +37,9 @@
 #include <dart/all.hpp>
 #include <dart/io/read.hpp>
 
+#include <algorithm>
+#include <ranges>
+
 using namespace dart;
 
 //==============================================================================
@@ -70,14 +73,14 @@ public:
     mDesiredDofs = mBiped->getPositions();
 
     // using SPD results in simple Kp coefficients
-    for (int i = 0; i < 6; i++) {
+    for (const auto i : std::views::iota(0, 6)) {
       mKp(i, i) = 0.0;
       mKd(i, i) = 0.0;
     }
-    for (int i = 6; i < nDof; i++) {
+    for (const auto i : std::views::iota(6, std::max(6, nDof))) {
       mKp(i, i) = 400.0;
     }
-    for (int i = 6; i < nDof; i++) {
+    for (const auto i : std::views::iota(6, std::max(6, nDof))) {
       mKd(i, i) = 40.0;
     }
 
@@ -154,7 +157,7 @@ public:
     }
 
     // Just to make sure no illegal torque is used
-    for (int i = 0; i < 6; i++) {
+    for (const auto i : std::views::iota(0, 6)) {
       mTorques[i] = 0.0;
     }
 

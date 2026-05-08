@@ -42,16 +42,17 @@ TranslationalJoint2DUniqueProperties::TranslationalJoint2DUniqueProperties(
     PlaneType planeType)
 {
   switch (planeType) {
-    case PlaneType::ARBITRARY:
-    case PlaneType::XY:
+    using enum PlaneType;
+    case ARBITRARY:
+    case XY:
       setXYPlane();
       mPlaneType
           = planeType; // In case the PlaneType was supposed to be arbitrary
       break;
-    case PlaneType::YZ:
+    case YZ:
       setYZPlane();
       break;
-    case PlaneType::ZX:
+    case ZX:
       setZXPlane();
       break;
   }
@@ -76,16 +77,17 @@ TranslationalJoint2DUniqueProperties::TranslationalJoint2DUniqueProperties(
     const TranslationalJoint2DUniqueProperties& other)
 {
   switch (other.mPlaneType) {
-    case PlaneType::ARBITRARY:
+    using enum PlaneType;
+    case ARBITRARY:
       setArbitraryPlane(other.mTransAxes);
       break;
-    case PlaneType::XY:
+    case XY:
       setXYPlane();
       break;
-    case PlaneType::YZ:
+    case YZ:
       setYZPlane();
       break;
-    case PlaneType::ZX:
+    case ZX:
       setZXPlane();
       break;
   }
@@ -98,16 +100,17 @@ TranslationalJoint2DUniqueProperties::operator=(
 {
   if (this != &other) {
     switch (other.mPlaneType) {
-      case PlaneType::ARBITRARY:
+      using enum PlaneType;
+      case ARBITRARY:
         setArbitraryPlane(other.mTransAxes);
         break;
-      case PlaneType::XY:
+      case XY:
         setXYPlane();
         break;
-      case PlaneType::YZ:
+      case YZ:
         setYZPlane();
         break;
-      case PlaneType::ZX:
+      case ZX:
         setZXPlane();
         break;
     }

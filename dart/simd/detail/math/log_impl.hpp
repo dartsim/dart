@@ -63,7 +63,7 @@ template <std::size_t W>
   using VecT = Vec<float, W>;
   using MaskT = VecMask<float, W>;
 
-  constexpr float invSqrt2 = 0.70710678118654752440f;
+  constexpr float invSqrt2 = MathConstants<float>::invSqrt2;
   constexpr float log2Hi = 0.693359375f;
   constexpr float log2Lo = -2.121944400546905827679e-4f;
 
