@@ -712,15 +712,10 @@ void ConstraintSolver::buildConstrainedGroups()
   // Build constraint groups
   //----------------------------------------------------------------------------
   for (const auto& activeConstraint : mActiveConstraints) {
-    bool found = false;
     const auto& skel = activeConstraint->getRootSkeleton();
-
-    for (const auto& constrainedGroup : mConstrainedGroups) {
-      if (constrainedGroup.mRootSkeleton == skel) {
-        found = true;
-        break;
-      }
-    }
+    const bool found = std::ranges::any_of(
+        mConstrainedGroups,
+        [&](const auto& group) { return group.mRootSkeleton == skel; });
 
     if (found) {
       continue;

@@ -39,6 +39,8 @@
 #include "dart/dynamics/skeleton.hpp"
 #include "dart/math/optimization/gradient_descent_solver.hpp"
 
+#include <algorithm>
+#include <ranges>
 #include <utility>
 
 namespace dart {
@@ -226,19 +228,14 @@ const IKHierarchy& HierarchicalIK::getIKHierarchy() const
 //==============================================================================
 std::span<const Eigen::MatrixXd> HierarchicalIK::computeNullSpaces() const
 {
-  bool recompute = false;
   const ConstSkeletonPtr& skel = getSkeleton();
   const std::size_t nDofs = skel->getNumDofs();
-  if (!std::cmp_equal(mLastPositions.size(), nDofs)) {
-    recompute = true;
-  } else {
-    for (std::size_t i = 0; i < nDofs; ++i) {
-      if (mLastPositions[i] != skel->getDof(i)->getPosition()) {
-        recompute = true;
-        break;
-      }
-    }
-  }
+  const bool recompute
+      = !std::cmp_equal(mLastPositions.size(), nDofs)
+        || std::ranges::any_of(
+            std::views::iota(std::size_t{0}, nDofs), [&](std::size_t i) {
+              return mLastPositions[i] != skel->getDof(i)->getPosition();
+            });
 
   // TODO(MXG): When deciding whether we need to recompute, we should also check
   // the "version" of the Skeleton, as soon as the Skeleton versioning features
