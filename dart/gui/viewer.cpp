@@ -51,6 +51,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <ranges>
+#include <sstream>
 
 namespace dart {
 namespace gui {
@@ -93,14 +94,14 @@ public:
       if (!mViewer->mImageDirectory.empty()) {
         std::stringstream str;
         str << mViewer->mImageDirectory << "/" << mViewer->mImagePrefix
-            << std::setfill('0')
-            << std::setw(static_cast<int>(mViewer->mImageDigits))
+            << std::setfill('0') << std::setw(mViewer->mImageDigits)
             << mViewer->mImageSequenceNum << std::setw(0) << ".png";
+        const auto path = str.str();
 
-        if (::osgDB::writeImageFile(*mImage, str.str())) {
+        if (::osgDB::writeImageFile(*mImage, path)) {
           ++mViewer->mImageSequenceNum;
         } else {
-          DART_WARN("Unable to save image to file named: {}", str.str());
+          DART_WARN("Unable to save image to file named: {}", path);
 
           // Toggle off recording if the file cannot be saved.
           mViewer->mRecording = false;

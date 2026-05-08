@@ -111,16 +111,16 @@ std::filesystem::path makeTemporaryTexturePath(std::string_view extension)
     std::stringstream name;
     name << "dart_texture_"
          << std::chrono::high_resolution_clock::now().time_since_epoch().count()
-         << '_' << counter.fetch_add(1, std::memory_order_relaxed);
+         << "_" << counter.fetch_add(1, std::memory_order_relaxed);
     if (attempt > 0) {
-      name << '_' << attempt;
+      name << "_" << attempt;
     }
 
     if (!extension.empty()) {
       if (extension.front() == '.') {
         name << extension;
       } else {
-        name << '.' << extension;
+        name << "." << extension;
       }
     }
 

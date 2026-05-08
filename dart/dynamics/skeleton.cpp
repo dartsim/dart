@@ -1132,8 +1132,8 @@ std::span<BodyNode* const> Skeleton::getTreeBodyNodes(std::size_t _treeIdx)
         "Requesting an invalid tree ({}) {}",
         _treeIdx,
         (count > 0
-             ? (std::string("when the max tree index is (")
-                + std::to_string(count - 1) + ")\n")
+             ? "when the max tree index is (" + std::to_string(count - 1)
+                   + ")\n"
              : std::string("when there are no trees in this Skeleton\n")));
     DART_ASSERT(false);
   }
