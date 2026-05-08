@@ -896,10 +896,19 @@ void MeshShapeGeometry::extractData(bool firstTime)
         index = AI_MAX_NUMBER_OF_COLOR_SETS - 1;
       }
 
-      aiColor4D* colors = nullptr;
-      while (nullptr == colors && index >= 0) {
-        colors = mAiMesh->mColors[index];
-        --index;
+      const aiColor4D* colors = nullptr;
+      if (index >= 0) {
+        const std::span<aiColor4D* const> colorSets{
+            mAiMesh->mColors, AI_MAX_NUMBER_OF_COLOR_SETS};
+        const auto candidateColorSets
+            = colorSets.first(static_cast<std::size_t>(index) + 1)
+              | std::views::reverse;
+        const auto colorSet = std::ranges::find_if(
+            candidateColorSets,
+            [](const auto* channel) { return channel != nullptr; });
+        if (colorSet != std::ranges::end(candidateColorSets)) {
+          colors = *colorSet;
+        }
       }
 
       if (colors) {
