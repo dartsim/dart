@@ -48,7 +48,7 @@ private:
     if (isSampleUri(uri)) {
       std::filesystem::path path = mDataRoot;
       std::string relative = uri.getPath();
-      if (!relative.empty() && relative.front() == '/') {
+      if (relative.starts_with('/')) {
         relative.erase(0, 1);
       }
       path /= relative;
