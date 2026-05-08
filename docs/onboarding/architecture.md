@@ -178,14 +178,17 @@ DART follows a **modular layered architecture** with clear separation of concern
 
 **Key Components:**
 
-- **pivoting/LemkeSolver.hpp** - Lemke's algorithm for solving LCPs
-  - `int Lemke(M, q, z)` - Main solver
-  - `bool validate(M, z, q)` - Solution validation
+- **LcpSolver.hpp** - Dynamics-agnostic solver interface
+- **LcpTypes.hpp** - `LcpProblem`, `LcpOptions`, `LcpResult`, and status codes
+- Solver families under `pivoting/`, `projection/`, `newton/`, and `other/`
 
 **Mathematical Foundation:**
-LCP formulation: Find `z ≥ 0` such that `w = Mz + q ≥ 0` and `z^T w = 0`
+LCP formulation: solve for bounded impulses `x` with DART convention
+`w = A*x - b`, lower/upper bounds, and optional friction-index coupling.
 
-Used by constraint solvers to compute contact forces, joint limits, and other constraints.
+Used by constraint solvers to compute contact forces, joint limits, and other
+constraints. Solver implementations stay in `dart/math/lcp/`; constraint code
+selects solvers through the `math::LcpSolver` contract.
 
 ---
 
