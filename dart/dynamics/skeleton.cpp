@@ -2508,8 +2508,7 @@ void Skeleton::destructOldTree(std::size_t tree)
     }
   }
 
-  for (auto& nodeType : mSpecializedTreeNodes) {
-    std::vector<NodeMap::iterator>* nodeRepo = nodeType.second;
+  for (auto* nodeRepo : mSpecializedTreeNodes | std::views::values) {
     nodeRepo->erase(nodeRepo->begin() + tree);
   }
 }
