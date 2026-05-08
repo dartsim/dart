@@ -63,9 +63,9 @@ concept UniformIntCompatible
 
 /// Check whether T is derived from Eigen::MatrixBase
 template <typename T>
-concept EigenMatrix = std::is_base_of_v<
-    Eigen::MatrixBase<std::remove_cvref_t<T>>,
-    std::remove_cvref_t<T>>;
+concept EigenMatrix = std::derived_from<
+    std::remove_cvref_t<T>,
+    Eigen::MatrixBase<std::remove_cvref_t<T>>>;
 
 //==============================================================================
 // Kept for backward compatibility if needed elsewhere
