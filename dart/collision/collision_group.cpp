@@ -317,8 +317,8 @@ void CollisionGroup::removeDeletedShapeFrames()
           static_cast<const dynamics::MetaSkeleton*>(source));
       if (skelSearch != mSkeletonSources.end()) {
         skelSearch->second.mObjects.erase(shapeFrame);
-        for (auto& child : skelSearch->second.mChildren) {
-          child.second.mFrames.erase(shapeFrame);
+        for (auto& child : skelSearch->second.mChildren | std::views::values) {
+          child.mFrames.erase(shapeFrame);
         }
       }
 
