@@ -53,35 +53,28 @@ void print_duration_if_non_zero(
 } // namespace
 
 //==============================================================================
-template <typename UnitType, typename ClockType>
+template <detail::StopwatchUnit UnitType, typename ClockType>
 Stopwatch<UnitType, ClockType>::Stopwatch(bool start)
   : mStart(ClockType::now()), mElapsed(0), mPaused(!start)
 {
-  // clang-format off
-  static_assert(std::same_as<UnitType, std::chrono::seconds>
-      || std::same_as<UnitType, std::chrono::milliseconds>
-      || std::same_as<UnitType, std::chrono::microseconds>
-      || std::same_as<UnitType, std::chrono::nanoseconds>,
-      "Invalid unit");
-  // clang-format on
 }
 
 //==============================================================================
-template <typename UnitType, typename ClockType>
+template <detail::StopwatchUnit UnitType, typename ClockType>
 Stopwatch<UnitType, ClockType>::~Stopwatch()
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename UnitType, typename ClockType>
+template <detail::StopwatchUnit UnitType, typename ClockType>
 bool Stopwatch<UnitType, ClockType>::isStarted() const
 {
   return !mPaused;
 }
 
 //==============================================================================
-template <typename UnitType, typename ClockType>
+template <detail::StopwatchUnit UnitType, typename ClockType>
 void Stopwatch<UnitType, ClockType>::start()
 {
   if (!mPaused) {
@@ -93,7 +86,7 @@ void Stopwatch<UnitType, ClockType>::start()
 }
 
 //==============================================================================
-template <typename UnitType, typename ClockType>
+template <detail::StopwatchUnit UnitType, typename ClockType>
 void Stopwatch<UnitType, ClockType>::stop()
 {
   if (mPaused) {
@@ -105,7 +98,7 @@ void Stopwatch<UnitType, ClockType>::stop()
 }
 
 //==============================================================================
-template <typename UnitType, typename ClockType>
+template <detail::StopwatchUnit UnitType, typename ClockType>
 void Stopwatch<UnitType, ClockType>::reset()
 {
   mStart = ClockType::now();
@@ -113,7 +106,7 @@ void Stopwatch<UnitType, ClockType>::reset()
 }
 
 //==============================================================================
-template <typename UnitType, typename ClockType>
+template <detail::StopwatchUnit UnitType, typename ClockType>
 double Stopwatch<UnitType, ClockType>::elapsedS() const
 {
   if constexpr (std::same_as<UnitType, std::chrono::nanoseconds>) {
@@ -128,7 +121,7 @@ double Stopwatch<UnitType, ClockType>::elapsedS() const
 }
 
 //==============================================================================
-template <typename UnitType, typename ClockType>
+template <detail::StopwatchUnit UnitType, typename ClockType>
 double Stopwatch<UnitType, ClockType>::elapsedMS() const
 {
   if constexpr (std::same_as<UnitType, std::chrono::nanoseconds>) {
@@ -144,7 +137,7 @@ double Stopwatch<UnitType, ClockType>::elapsedMS() const
 }
 
 //==============================================================================
-template <typename UnitType, typename ClockType>
+template <detail::StopwatchUnit UnitType, typename ClockType>
 double Stopwatch<UnitType, ClockType>::elapsedUS() const
 {
   if constexpr (std::same_as<UnitType, std::chrono::nanoseconds>) {
@@ -160,7 +153,7 @@ double Stopwatch<UnitType, ClockType>::elapsedUS() const
 }
 
 //==============================================================================
-template <typename UnitType, typename ClockType>
+template <detail::StopwatchUnit UnitType, typename ClockType>
 double Stopwatch<UnitType, ClockType>::elapsedNS() const
 {
   if constexpr (std::same_as<UnitType, std::chrono::nanoseconds>) {
@@ -175,7 +168,7 @@ double Stopwatch<UnitType, ClockType>::elapsedNS() const
 }
 
 //==============================================================================
-template <typename UnitType, typename ClockType>
+template <detail::StopwatchUnit UnitType, typename ClockType>
 UnitType Stopwatch<UnitType, ClockType>::duration() const
 {
   if (mPaused) {
@@ -188,7 +181,7 @@ UnitType Stopwatch<UnitType, ClockType>::duration() const
 }
 
 //==============================================================================
-template <typename UnitType, typename ClockType>
+template <detail::StopwatchUnit UnitType, typename ClockType>
 void Stopwatch<UnitType, ClockType>::print(std::ostream& os) const
 {
   auto t = duration();
@@ -233,7 +226,7 @@ void Stopwatch<UnitType, ClockType>::print(std::ostream& os) const
 }
 
 //==============================================================================
-template <typename UnitType, typename ClockType>
+template <detail::StopwatchUnit UnitType, typename ClockType>
 std::ostream& operator<<(
     std::ostream& os, const Stopwatch<UnitType, ClockType>& sw)
 {
