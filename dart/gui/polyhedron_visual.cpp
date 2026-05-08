@@ -37,6 +37,7 @@
 
 #include <osg/StateSet>
 
+#include <algorithm>
 #include <limits>
 #include <set>
 #include <span>
@@ -332,10 +333,12 @@ void PolyhedronVisual::updateGeometry()
 
   mSurfaceVertices->resize(hullVertices.size());
   mSurfaceNormals->resize(hullVertices.size());
-  for (std::size_t i = 0; i < hullVertices.size(); ++i) {
-    const Eigen::Vector3d& v = hullVertices[i];
-    (*mSurfaceVertices)[i] = ::osg::Vec3(v[0], v[1], v[2]);
-  }
+  std::ranges::transform(
+      hullVertices,
+      mSurfaceVertices->begin(),
+      [](const Eigen::Vector3d& vertex) {
+        return ::osg::Vec3(vertex[0], vertex[1], vertex[2]);
+      });
 
   mSurfaceIndices->clear();
   mWireframeIndices->clear();
@@ -365,10 +368,13 @@ void PolyhedronVisual::updateGeometry()
     edges.insert(makeOrderedEdge(i2, i0));
   }
 
-  for (std::size_t i = 0; i < vertexNormals.size(); ++i) {
-    const Eigen::Vector3d normal = computeSafeNormal(vertexNormals[i]);
-    (*mSurfaceNormals)[i] = ::osg::Vec3(normal[0], normal[1], normal[2]);
-  }
+  std::ranges::transform(
+      vertexNormals,
+      mSurfaceNormals->begin(),
+      [](const Eigen::Vector3d& vertexNormal) {
+        const Eigen::Vector3d normal = computeSafeNormal(vertexNormal);
+        return ::osg::Vec3(normal[0], normal[1], normal[2]);
+      });
 
   for (const auto& edge : edges) {
     mWireframeIndices->push_back(static_cast<unsigned int>(edge.first));
