@@ -583,15 +583,15 @@ void ConstraintSolver::updateConstraints()
       }
 
       const std::size_t dof = joint->getNumDofs();
-      for (std::size_t j = 0; j < dof; ++j) {
-        if (joint->getCoulombFriction(j) != 0.0) {
-          mJointCoulombFrictionConstraints.push_back(
-              std::allocate_shared<JointCoulombFrictionConstraint>(
-                  common::FrameStlAllocator<JointCoulombFrictionConstraint>(
-                      *mFrameAllocator),
-                  joint));
-          break;
-        }
+      const bool hasCoulombFriction = std::ranges::any_of(
+          std::views::iota(std::size_t{0}, dof),
+          [&](std::size_t j) { return joint->getCoulombFriction(j) != 0.0; });
+      if (hasCoulombFriction) {
+        mJointCoulombFrictionConstraints.push_back(
+            std::allocate_shared<JointCoulombFrictionConstraint>(
+                common::FrameStlAllocator<JointCoulombFrictionConstraint>(
+                    *mFrameAllocator),
+                joint));
       }
 
       if (joint->areLimitsEnforced()
