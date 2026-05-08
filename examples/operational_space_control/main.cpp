@@ -38,6 +38,8 @@
 #include <dart/all.hpp>
 #include <dart/io/read.hpp>
 
+#include <ranges>
+
 using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::math;
@@ -55,12 +57,12 @@ public:
     // Setup gain matrices
     std::size_t dofs = mEndEffector->getNumDependentGenCoords();
     mKp.setZero();
-    for (std::size_t i = 0; i < 3; ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, std::size_t{3})) {
       mKp(i, i) = 50.0;
     }
 
     mKd.setZero(dofs, dofs);
-    for (std::size_t i = 0; i < dofs; ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, dofs)) {
       mKd(i, i) = 5.0;
     }
 
@@ -159,7 +161,7 @@ public:
 
   void clearConstraints()
   {
-    for (std::size_t i = 0; i < 3; ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, std::size_t{3})) {
       mConstrained[i] = false;
     }
   }
@@ -219,7 +221,7 @@ public:
     }
 
     std::size_t constraintDofs = 0;
-    for (std::size_t i = 0; i < 3; ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, std::size_t{3})) {
       if (mConstrained[i]) {
         ++constraintDofs;
       }
@@ -229,7 +231,7 @@ public:
       mDnD->unconstrain();
     } else if (constraintDofs == 1) {
       Eigen::Vector3d v(Eigen::Vector3d::Zero());
-      for (std::size_t i = 0; i < 3; ++i) {
+      for (const auto i : std::views::iota(std::size_t{0}, std::size_t{3})) {
         if (mConstrained[i]) {
           v[i] = 1.0;
         }
@@ -238,7 +240,7 @@ public:
       mDnD->constrainToLine(v);
     } else if (constraintDofs == 2) {
       Eigen::Vector3d v(Eigen::Vector3d::Zero());
-      for (std::size_t i = 0; i < 3; ++i) {
+      for (const auto i : std::views::iota(std::size_t{0}, std::size_t{3})) {
         if (!mConstrained[i]) {
           v[i] = 1.0;
         }
