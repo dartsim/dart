@@ -42,6 +42,7 @@
 #include <dart/all.hpp>
 #include <dart/io/read.hpp>
 
+#include <iterator>
 #include <span>
 
 using namespace dart::math;
@@ -99,7 +100,7 @@ public:
     mResultVector.setZero();
 
     if (enforceIdealPosture) {
-      for (int i = 0; i < _x.size(); ++i) {
+      for (int i = 0; i < std::ssize(_x); ++i) {
         if (mIdeal.size() <= i) {
           break;
         }
@@ -107,7 +108,7 @@ public:
         mResultVector[i] = mWeights[i] * (_x[i] - mIdeal[i]);
       }
     } else {
-      for (int i = 0; i < _x.size(); ++i) {
+      for (int i = 0; i < std::ssize(_x); ++i) {
         if (mIdeal.size() <= i) {
           break;
         }
@@ -583,7 +584,7 @@ public:
       testQ[4] = q5;
       testQ[5] = q6;
 
-      for (int k = 0; k < testQ.size(); ++k) {
+      for (int k = 0; k < std::ssize(testQ); ++k) {
         if (fabs(testQ[k]) < zeroSize) {
           testQ[k] = 0;
         }

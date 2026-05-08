@@ -40,6 +40,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include <iterator>
 #include <limits>
 
 #include <cmath>
@@ -239,7 +240,7 @@ TEST(FischerBurmeisterNewtonSolver, SolveBoxedProblem)
 
   EXPECT_EQ(result.status, LcpSolverStatus::Success);
   EXPECT_TRUE(x.array().isFinite().all());
-  for (int i = 0; i < x.size(); ++i) {
+  for (int i = 0; i < std::ssize(x); ++i) {
     EXPECT_GE(x[i], -1e-6);
     EXPECT_LE(x[i], 0.6 + 1e-6);
   }
@@ -359,7 +360,7 @@ TEST(PenalizedFischerBurmeisterNewtonSolver, SolveBoxedProblem)
 
   EXPECT_EQ(result.status, LcpSolverStatus::Success);
   EXPECT_TRUE(x.array().isFinite().all());
-  for (int i = 0; i < x.size(); ++i) {
+  for (int i = 0; i < std::ssize(x); ++i) {
     EXPECT_GE(x[i], -1e-6);
     EXPECT_LE(x[i], 0.6 + 1e-6);
   }
@@ -468,7 +469,7 @@ TEST(MinimumMapNewtonSolver, SolveSpdProblem)
   EXPECT_EQ(result.status, LcpSolverStatus::Success);
   EXPECT_TRUE(x.array().isFinite().all());
   const Eigen::VectorXd expected = problem.A.ldlt().solve(problem.b);
-  for (int i = 0; i < expected.size(); ++i) {
+  for (int i = 0; i < std::ssize(expected); ++i) {
     EXPECT_NEAR(x[i], expected[i], 1e-5);
   }
 }
@@ -486,7 +487,7 @@ TEST(MinimumMapNewtonSolver, SolveBoxedProblem)
 
   EXPECT_EQ(result.status, LcpSolverStatus::Success);
   EXPECT_TRUE(x.array().isFinite().all());
-  for (int i = 0; i < x.size(); ++i) {
+  for (int i = 0; i < std::ssize(x); ++i) {
     EXPECT_GE(x[i], -1e-6);
     EXPECT_LE(x[i], 0.6 + 1e-6);
   }
@@ -655,7 +656,7 @@ TEST(InteriorPointSolver, SolveDiagonalProblem)
 
   EXPECT_EQ(result.status, LcpSolverStatus::Success);
   EXPECT_TRUE(x.array().isFinite().all());
-  for (int i = 0; i < x.size(); ++i) {
+  for (int i = 0; i < std::ssize(x); ++i) {
     EXPECT_NEAR(x[i], 0.5, 1e-4);
   }
 }
@@ -674,7 +675,7 @@ TEST(InteriorPointSolver, SolveSpdProblem)
   EXPECT_EQ(result.status, LcpSolverStatus::Success);
   EXPECT_TRUE(x.array().isFinite().all());
   const Eigen::VectorXd expected = problem.A.ldlt().solve(problem.b);
-  for (int i = 0; i < expected.size(); ++i) {
+  for (int i = 0; i < std::ssize(expected); ++i) {
     EXPECT_NEAR(x[i], expected[i], 1e-4);
   }
 }
@@ -692,7 +693,7 @@ TEST(InteriorPointSolver, SolveBoxedProblem)
 
   EXPECT_EQ(result.status, LcpSolverStatus::Success);
   EXPECT_TRUE(x.array().isFinite().all());
-  for (int i = 0; i < x.size(); ++i) {
+  for (int i = 0; i < std::ssize(x); ++i) {
     EXPECT_GE(x[i], -1e-6);
     EXPECT_LE(x[i], 0.6 + 1e-6);
   }
@@ -802,7 +803,7 @@ TEST(LemkeSolver, SolveSpdProblem)
   EXPECT_EQ(result.status, LcpSolverStatus::Success);
   EXPECT_TRUE(x.array().isFinite().all());
   const Eigen::VectorXd expected = problem.A.ldlt().solve(problem.b);
-  for (int i = 0; i < expected.size(); ++i) {
+  for (int i = 0; i < std::ssize(expected); ++i) {
     EXPECT_NEAR(x[i], expected[i], 1e-5);
   }
 }
@@ -820,7 +821,7 @@ TEST(LemkeSolver, SolveBoxedProblem)
 
   EXPECT_EQ(result.status, LcpSolverStatus::Success);
   EXPECT_TRUE(x.array().isFinite().all());
-  for (int i = 0; i < x.size(); ++i) {
+  for (int i = 0; i < std::ssize(x); ++i) {
     EXPECT_GE(x[i], -1e-6);
     EXPECT_LE(x[i], 0.6 + 1e-6);
   }

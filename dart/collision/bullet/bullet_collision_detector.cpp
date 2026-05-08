@@ -59,6 +59,7 @@
 #include "dart/dynamics/sphere_shape.hpp"
 
 #include <algorithm>
+#include <iterator>
 #include <vector>
 
 #include <cmath>
@@ -410,7 +411,7 @@ bool BulletCollisionDetector::raycast(
         return true;
       }
 
-      for (int i = 0; i < callback.m_collisionObjects.size(); ++i) {
+      for (int i = 0; i < std::ssize(callback.m_collisionObjects); ++i) {
         const auto* collObj = static_cast<BulletCollisionObject*>(
             callback.m_collisionObjects[i]->getUserPointer());
         if (option.passesFilter(collObj)) {
