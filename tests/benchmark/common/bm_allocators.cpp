@@ -54,6 +54,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include <array>
 #include <vector>
 
 #include <cstddef>
@@ -671,8 +672,8 @@ BENCHMARK(BM_StlContainer_Frame)
 // Section 8: Multi-Size Realistic Workload
 // =============================================================================
 
-static constexpr size_t kRealisticSizes[] = {16, 32, 64, 128, 256, 512, 1024};
-static constexpr size_t kRealisticSizeCount = 7;
+static constexpr auto kRealisticSizes
+    = std::to_array<size_t>({16, 32, 64, 128, 256, 512, 1024});
 static constexpr size_t kRealisticOps = 1000;
 
 static void BM_RealisticWorkload_Std(benchmark::State& state)
@@ -685,7 +686,7 @@ static void BM_RealisticWorkload_Std(benchmark::State& state)
   for (auto _ : state) {
     size_t totalBytes = 0;
     for (size_t i = 0; i < kRealisticOps; ++i) {
-      const size_t sz = kRealisticSizes[lcgNext() % kRealisticSizeCount];
+      const size_t sz = kRealisticSizes[lcgNext() % kRealisticSizes.size()];
       ptrs[i] = {alloc.allocate(sz), sz};
       benchmark::DoNotOptimize(ptrs[i].first);
       totalBytes += sz;
@@ -716,7 +717,7 @@ static void BM_RealisticWorkload_FreeList(benchmark::State& state)
   for (auto _ : state) {
     size_t totalBytes = 0;
     for (size_t i = 0; i < kRealisticOps; ++i) {
-      const size_t sz = kRealisticSizes[lcgNext() % kRealisticSizeCount];
+      const size_t sz = kRealisticSizes[lcgNext() % kRealisticSizes.size()];
       ptrs[i] = {alloc.allocate(sz), sz};
       benchmark::DoNotOptimize(ptrs[i].first);
       totalBytes += sz;
@@ -746,7 +747,7 @@ static void BM_RealisticWorkload_Pool(benchmark::State& state)
   for (auto _ : state) {
     size_t totalBytes = 0;
     for (size_t i = 0; i < kRealisticOps; ++i) {
-      const size_t sz = kRealisticSizes[lcgNext() % kRealisticSizeCount];
+      const size_t sz = kRealisticSizes[lcgNext() % kRealisticSizes.size()];
       ptrs[i] = {alloc.allocate(sz), sz};
       benchmark::DoNotOptimize(ptrs[i].first);
       totalBytes += sz;

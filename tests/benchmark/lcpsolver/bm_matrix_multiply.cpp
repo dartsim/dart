@@ -35,6 +35,7 @@
 #include <Eigen/Dense>
 #include <benchmark/benchmark.h>
 
+#include <algorithm>
 #include <random>
 #include <vector>
 
@@ -55,12 +56,8 @@ public:
     B.resize(size * size);
     C.resize(size * size);
 
-    for (auto& val : A) {
-      val = dist(rng);
-    }
-    for (auto& val : B) {
-      val = dist(rng);
-    }
+    std::ranges::generate(A, [&] { return dist(rng); });
+    std::ranges::generate(B, [&] { return dist(rng); });
   }
 
   void TearDown(const ::benchmark::State&) override
