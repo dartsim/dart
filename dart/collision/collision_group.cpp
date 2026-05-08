@@ -647,10 +647,10 @@ bool CollisionGroup::updateBodyNodeSource(BodyNodeSources::value_type& entry)
 
   // Remove from this group and ShapeFrames that no longer belong to the
   // BodyNode
-  for (const auto& unusedFrame : unusedFrames) {
+  for (const auto* unusedFrame : unusedFrames | std::views::keys) {
     updateNeeded = true;
-    removeShapeFrameInternal(unusedFrame.first, bn.get());
-    source.mObjects.erase(unusedFrame.first);
+    removeShapeFrameInternal(unusedFrame, bn.get());
+    source.mObjects.erase(unusedFrame);
   }
 
   return updateNeeded;
