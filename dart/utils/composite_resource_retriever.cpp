@@ -38,6 +38,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <iterator>
 
 namespace dart {
 namespace utils {
@@ -130,14 +131,10 @@ CompositeResourceRetriever::getRetrievers(const common::Uri& uri) const
 
   const auto it = mResourceRetrievers.find(schema);
   if (it != std::end(mResourceRetrievers)) {
-    retrievers.insert(
-        std::end(retrievers), std::begin(it->second), std::end(it->second));
+    std::ranges::copy(it->second, std::back_inserter(retrievers));
   }
 
-  retrievers.insert(
-      std::end(retrievers),
-      std::begin(mDefaultResourceRetrievers),
-      std::end(mDefaultResourceRetrievers));
+  std::ranges::copy(mDefaultResourceRetrievers, std::back_inserter(retrievers));
 
   DART_WARN_IF(
       retrievers.empty(),

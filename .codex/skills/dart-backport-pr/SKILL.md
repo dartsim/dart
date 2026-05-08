@@ -1,0 +1,59 @@
+---
+name: dart-backport-pr
+description: "DART Backport PR: backport a merged main PR to a release branch"
+---
+<!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
+<!-- Source: .claude/commands/dart-backport-pr.md -->
+<!-- Sync script: scripts/sync_ai_commands.py -->
+<!-- Run `pixi run sync-ai-commands` to update -->
+
+# dart-backport-pr
+
+Use this skill in Codex when you want the same workflow that Claude Code and
+OpenCode expose as `/dart-backport-pr`.
+
+## Invocation
+
+- Claude Code/OpenCode: `/dart-backport-pr <arguments>`
+- Codex: `$dart-backport-pr <arguments>`
+
+Treat the text after the skill name as `$ARGUMENTS`. When the workflow
+references `$1`, `$2`, etc., map those to the positional values supplied by the
+user.
+
+## Command Body
+
+Backport PR or commits: $ARGUMENTS
+
+## Required Reading
+
+@AGENTS.md
+@docs/onboarding/contributing.md
+@docs/onboarding/release-management.md
+
+## Workflow
+
+1. Verify the source PR or commit is merged to `main`:
+   ```bash
+   gh pr view <SOURCE_PR> --json state,mergedAt,baseRefName,mergeCommit
+   ```
+2. Check whether an equivalent change already exists on the release branch:
+   ```bash
+   git fetch origin <RELEASE_BRANCH> main
+   git cherry -v --abbrev=40 origin/<RELEASE_BRANCH> origin/main | grep <COMMIT_HASH>
+   ```
+3. Create a release branch from the release target:
+   ```bash
+   git checkout -B backport/<SOURCE_PR>-to-<RELEASE_BRANCH> origin/<RELEASE_BRANCH>
+   ```
+4. Cherry-pick with provenance: `git cherry-pick -x <COMMIT_HASH>`.
+5. Resolve conflicts minimally; stop and ask if conflicts are broad or change behavior.
+6. Run `pixi run lint` and the smallest relevant release-branch checks.
+7. Push and open a PR against the release branch with milestone `DART 6.16.x` or the current patch milestone.
+
+## Output
+
+- Backport PR URL
+- Source PR/commit
+- Conflicts resolved, if any
+- Checks run and CI status

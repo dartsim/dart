@@ -124,7 +124,7 @@ const Eigen::VectorXd& Problem::getInitialGuess() const
 //==============================================================================
 void Problem::addSeed(const Eigen::VectorXd& _seed)
 {
-  if (_seed.size() == static_cast<int>(mDimension)) {
+  if (std::cmp_equal(_seed.size(), mDimension)) {
     mSeeds.push_back(_seed);
   } else {
     DART_WARN(
@@ -173,7 +173,7 @@ std::vector<Eigen::VectorXd>& Problem::getSeeds()
 //==============================================================================
 std::span<const Eigen::VectorXd> Problem::getSeeds() const
 {
-  return std::span<const Eigen::VectorXd>(mSeeds);
+  return mSeeds;
 }
 
 //==============================================================================

@@ -73,7 +73,7 @@
 #define CHECK_CONFIG_VECTOR_SIZE(V)                                            \
   if (V.size() > 0) {                                                          \
     if (nonzero_size != INVALID_INDEX                                          \
-        && V.size() != static_cast<int>(nonzero_size)) {                       \
+        && !std::cmp_equal(V.size(), nonzero_size)) {                          \
       DART_ERROR(                                                              \
           "Mismatch in size of vector [{}] "                                   \
           "(expected {} | found {})",                                          \
@@ -1632,7 +1632,7 @@ void Skeleton::integratePositions(
     return;
   }
 
-  if (velocityChanges.size() != static_cast<Eigen::Index>(getNumDofs())) {
+  if (!std::cmp_equal(velocityChanges.size(), getNumDofs())) {
     DART_ASSERT(false);
     integratePositions(_dt);
     return;

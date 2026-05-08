@@ -35,13 +35,15 @@
 
 #include <dart/constraint/constraint_solver.hpp>
 
+#include <concepts>
+
 namespace dart::constraint {
 
 //==============================================================================
 template <typename Func>
 void ConstraintSolver::eachConstraint(Func func) const
 {
-  if constexpr (std::is_same_v<
+  if constexpr (std::same_as<
                     std::invoke_result_t<Func, const ConstraintBase*>,
                     bool>) {
     for (auto i = 0u; i < getNumConstraints(); ++i) {
@@ -60,7 +62,7 @@ void ConstraintSolver::eachConstraint(Func func) const
 template <typename Func>
 void ConstraintSolver::eachConstraint(Func func)
 {
-  if constexpr (std::is_same_v<
+  if constexpr (std::same_as<
                     std::invoke_result_t<Func, ConstraintBase*>,
                     bool>) {
     for (auto i = 0u; i < getNumConstraints(); ++i) {
