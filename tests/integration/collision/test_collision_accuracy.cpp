@@ -47,6 +47,8 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
+
 using namespace dart::test;
 using dart::simulation::CollisionDetectorType;
 
@@ -86,17 +88,19 @@ TEST(Issue1184, Accuracy)
   };
 
 #if !defined(NDEBUG)
-  const auto groundInfoFunctions = {makePlaneGround};
-  const auto objectShapeFunctions = {makeSphereObject};
-  const auto halfsizes = {10.0};
-  const auto fallingModes = {true};
+  const auto groundInfoFunctions = std::to_array({makePlaneGround});
+  const auto objectShapeFunctions = std::to_array({makeSphereObject});
+  const auto halfsizes = std::to_array({10.0});
+  const auto fallingModes = std::to_array({true});
   const double dropHeight = 0.1;
   const double relativeTolerance = 1e-3; // 0.1% relative error
 #else
-  const auto groundInfoFunctions = {makePlaneGround, makeBoxGround};
-  const auto objectShapeFunctions = {makeBoxObject, makeSphereObject};
-  const auto halfsizes = {0.25, 1.0, 5.0, 10.0, 20.0};
-  const auto fallingModes = {true, false};
+  const auto groundInfoFunctions
+      = std::to_array({makePlaneGround, makeBoxGround});
+  const auto objectShapeFunctions
+      = std::to_array({makeBoxObject, makeSphereObject});
+  const auto halfsizes = std::to_array({0.25, 1.0, 5.0, 10.0, 20.0});
+  const auto fallingModes = std::to_array({true, false});
   const double dropHeight = 1.0;
   const double relativeTolerance = 1e-3; // 0.1% relative error
 #endif
