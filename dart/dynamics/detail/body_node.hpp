@@ -37,6 +37,8 @@
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/skeleton.hpp>
 
+#include <dart/common/detail/callback_traits.hpp>
+
 #include <utility>
 
 namespace dart {
@@ -298,9 +300,7 @@ void BodyNode::removeAllShapeNodesWith()
 template <typename AspectT, typename Func>
 void BodyNode::eachShapeNodeWith(Func func) const
 {
-  if constexpr (std::is_same_v<
-                    std::invoke_result_t<Func, const ShapeNode*>,
-                    bool>) {
+  if constexpr (common::detail::ReturnsBool<Func, const ShapeNode*>) {
     for (auto i = 0u; i < getNumShapeNodes(); ++i) {
       const ShapeNode* shapeNode = getShapeNode(i);
       if (shapeNode->has<AspectT>()) {
@@ -323,7 +323,7 @@ void BodyNode::eachShapeNodeWith(Func func) const
 template <typename AspectT, typename Func>
 void BodyNode::eachShapeNodeWith(Func func)
 {
-  if constexpr (std::is_same_v<std::invoke_result_t<Func, ShapeNode*>, bool>) {
+  if constexpr (common::detail::ReturnsBool<Func, ShapeNode*>) {
     for (auto i = 0u; i < getNumShapeNodes(); ++i) {
       ShapeNode* shapeNode = getShapeNode(i);
       if (shapeNode->has<AspectT>()) {

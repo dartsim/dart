@@ -38,6 +38,7 @@
 #include <dart/dynamics/node.hpp>
 
 #include <dart/common/class_with_virtual_base.hpp>
+#include <dart/common/detail/callback_traits.hpp>
 #include <dart/common/empty.hpp>
 #include <dart/common/name_manager.hpp>
 
@@ -299,9 +300,7 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
   template <typename Func>                                                     \
   void each##AspectName(Func func) const                                       \
   {                                                                            \
-    if constexpr (std::is_same_v<                                              \
-                      std::invoke_result_t<Func, const AspectName*>,           \
-                      bool>) {                                                 \
+    if constexpr (common::detail::ReturnsBool<Func, const AspectName*>) {      \
       for (auto i = 0u; i < getNum##PluralAspectName(); ++i) {                 \
         if (!func(get##AspectName(i)))                                         \
           return;                                                              \
@@ -315,9 +314,7 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
   template <typename Func>                                                     \
   void each##AspectName(Func func)                                             \
   {                                                                            \
-    if constexpr (std::is_same_v<                                              \
-                      std::invoke_result_t<Func, AspectName*>,                 \
-                      bool>) {                                                 \
+    if constexpr (common::detail::ReturnsBool<Func, AspectName*>) {            \
       for (auto i = 0u; i < getNum##PluralAspectName(); ++i) {                 \
         if (!func(get##AspectName(i)))                                         \
           return;                                                              \
@@ -363,9 +360,7 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
   template <typename Func>                                                     \
   void each##AspectName(std::size_t treeIndex, Func func) const                \
   {                                                                            \
-    if constexpr (std::is_same_v<                                              \
-                      std::invoke_result_t<Func, const AspectName*>,           \
-                      bool>) {                                                 \
+    if constexpr (common::detail::ReturnsBool<Func, const AspectName*>) {      \
       for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i) {        \
         if (!func(get##AspectName(treeIndex, i)))                              \
           return;                                                              \
@@ -379,9 +374,7 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
   template <typename Func>                                                     \
   void each##AspectName(std::size_t treeIndex, Func func)                      \
   {                                                                            \
-    if constexpr (std::is_same_v<                                              \
-                      std::invoke_result_t<Func, AspectName*>,                 \
-                      bool>) {                                                 \
+    if constexpr (common::detail::ReturnsBool<Func, AspectName*>) {            \
       for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i) {        \
         if (!func(get##AspectName(treeIndex, i)))                              \
           return;                                                              \
@@ -407,9 +400,7 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
   template <typename Func>                                                     \
   void each##AspectName(Func func) const                                       \
   {                                                                            \
-    if constexpr (std::is_same_v<                                              \
-                      std::invoke_result_t<Func, const AspectName*>,           \
-                      bool>) {                                                 \
+    if constexpr (common::detail::ReturnsBool<Func, const AspectName*>) {      \
       for (auto i = 0u; i < getNum##PluralAspectName(); ++i) {                 \
         if (!func(get##AspectName(i)))                                         \
           return;                                                              \
@@ -423,9 +414,7 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
   template <typename Func>                                                     \
   void each##AspectName(Func func)                                             \
   {                                                                            \
-    if constexpr (std::is_same_v<                                              \
-                      std::invoke_result_t<Func, AspectName*>,                 \
-                      bool>) {                                                 \
+    if constexpr (common::detail::ReturnsBool<Func, AspectName*>) {            \
       for (auto i = 0u; i < getNum##PluralAspectName(); ++i) {                 \
         if (!func(get##AspectName(i)))                                         \
           return;                                                              \
@@ -458,9 +447,7 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
   template <typename Func>                                                     \
   void each##AspectName(std::size_t treeIndex, Func func) const                \
   {                                                                            \
-    if constexpr (std::is_same_v<                                              \
-                      std::invoke_result_t<Func, const AspectName*>,           \
-                      bool>) {                                                 \
+    if constexpr (common::detail::ReturnsBool<Func, const AspectName*>) {      \
       for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i) {        \
         if (!func(get##AspectName(treeIndex, i)))                              \
           return;                                                              \
@@ -474,9 +461,7 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
   template <typename Func>                                                     \
   void each##AspectName(std::size_t treeIndex, Func func)                      \
   {                                                                            \
-    if constexpr (std::is_same_v<                                              \
-                      std::invoke_result_t<Func, AspectName*>,                 \
-                      bool>) {                                                 \
+    if constexpr (common::detail::ReturnsBool<Func, AspectName*>) {            \
       for (auto i = 0u; i < getNum##PluralAspectName(treeIndex); ++i) {        \
         if (!func(get##AspectName(treeIndex, i)))                              \
           return;                                                              \

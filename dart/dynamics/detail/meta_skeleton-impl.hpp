@@ -35,15 +35,15 @@
 
 #include <dart/dynamics/meta_skeleton.hpp>
 
+#include <dart/common/detail/callback_traits.hpp>
+
 namespace dart::dynamics {
 
 //==============================================================================
 template <typename Func>
 void MetaSkeleton::eachBodyNode(Func func) const
 {
-  if constexpr (std::is_same_v<
-                    std::invoke_result_t<Func, const dynamics::BodyNode*>,
-                    bool>) {
+  if constexpr (common::detail::ReturnsBool<Func, const dynamics::BodyNode*>) {
     for (auto i = 0u; i < getNumBodyNodes(); ++i) {
       if (!func(getBodyNode(i))) {
         return;
@@ -60,9 +60,7 @@ void MetaSkeleton::eachBodyNode(Func func) const
 template <typename Func>
 void MetaSkeleton::eachBodyNode(Func func)
 {
-  if constexpr (std::is_same_v<
-                    std::invoke_result_t<Func, dynamics::BodyNode*>,
-                    bool>) {
+  if constexpr (common::detail::ReturnsBool<Func, dynamics::BodyNode*>) {
     for (auto i = 0u; i < getNumBodyNodes(); ++i) {
       if (!func(getBodyNode(i))) {
         return;
@@ -79,9 +77,7 @@ void MetaSkeleton::eachBodyNode(Func func)
 template <typename Func>
 void MetaSkeleton::eachJoint(Func func) const
 {
-  if constexpr (std::is_same_v<
-                    std::invoke_result_t<Func, const dynamics::Joint*>,
-                    bool>) {
+  if constexpr (common::detail::ReturnsBool<Func, const dynamics::Joint*>) {
     for (auto i = 0u; i < getNumJoints(); ++i) {
       if (!func(getJoint(i))) {
         return;
@@ -98,9 +94,7 @@ void MetaSkeleton::eachJoint(Func func) const
 template <typename Func>
 void MetaSkeleton::eachJoint(Func func)
 {
-  if constexpr (std::is_same_v<
-                    std::invoke_result_t<Func, dynamics::Joint*>,
-                    bool>) {
+  if constexpr (common::detail::ReturnsBool<Func, dynamics::Joint*>) {
     for (auto i = 0u; i < getNumJoints(); ++i) {
       if (!func(getJoint(i))) {
         return;
@@ -117,10 +111,8 @@ void MetaSkeleton::eachJoint(Func func)
 template <typename Func>
 void MetaSkeleton::eachDof(Func func) const
 {
-  if constexpr (std::is_same_v<
-                    std::
-                        invoke_result_t<Func, const dynamics::DegreeOfFreedom*>,
-                    bool>) {
+  if constexpr (common::detail::
+                    ReturnsBool<Func, const dynamics::DegreeOfFreedom*>) {
     for (auto i = 0u; i < getNumDofs(); ++i) {
       if (!func(getDof(i))) {
         return;
@@ -137,9 +129,7 @@ void MetaSkeleton::eachDof(Func func) const
 template <typename Func>
 void MetaSkeleton::eachDof(Func func)
 {
-  if constexpr (std::is_same_v<
-                    std::invoke_result_t<Func, dynamics::DegreeOfFreedom*>,
-                    bool>) {
+  if constexpr (common::detail::ReturnsBool<Func, dynamics::DegreeOfFreedom*>) {
     for (auto i = 0u; i < getNumDofs(); ++i) {
       if (!func(getDof(i))) {
         return;
