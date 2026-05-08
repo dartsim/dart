@@ -3008,8 +3008,8 @@ void Skeleton::updateMassMatrix(std::size_t _treeIdx) const
   DataCache& cache = mTreeCache[_treeIdx];
   std::size_t dof = cache.mDofs.size();
   DART_ASSERT(
-      static_cast<std::size_t>(cache.mM.cols()) == dof
-      && static_cast<std::size_t>(cache.mM.rows()) == dof);
+      std::cmp_equal(cache.mM.cols(), dof)
+      && std::cmp_equal(cache.mM.rows(), dof));
   if (dof == 0) {
     cache.mDirty.mMassMatrix = false;
     return;
@@ -3069,8 +3069,8 @@ void Skeleton::updateMassMatrix() const
 {
   std::size_t dof = mSkelCache.mDofs.size();
   DART_ASSERT(
-      static_cast<std::size_t>(mSkelCache.mM.cols()) == dof
-      && static_cast<std::size_t>(mSkelCache.mM.rows()) == dof);
+      std::cmp_equal(mSkelCache.mM.cols(), dof)
+      && std::cmp_equal(mSkelCache.mM.rows(), dof));
   if (dof == 0) {
     mSkelCache.mDirty.mMassMatrix = false;
     return;
@@ -3101,8 +3101,8 @@ void Skeleton::updateAugMassMatrix(std::size_t _treeIdx) const
   DataCache& cache = mTreeCache[_treeIdx];
   std::size_t dof = cache.mDofs.size();
   DART_ASSERT(
-      static_cast<std::size_t>(cache.mAugM.cols()) == dof
-      && static_cast<std::size_t>(cache.mAugM.rows()) == dof);
+      std::cmp_equal(cache.mAugM.cols(), dof)
+      && std::cmp_equal(cache.mAugM.rows(), dof));
   if (dof == 0) {
     cache.mDirty.mAugMassMatrix = false;
     return;
@@ -3163,8 +3163,8 @@ void Skeleton::updateAugMassMatrix() const
 {
   std::size_t dof = mSkelCache.mDofs.size();
   DART_ASSERT(
-      static_cast<std::size_t>(mSkelCache.mAugM.cols()) == dof
-      && static_cast<std::size_t>(mSkelCache.mAugM.rows()) == dof);
+      std::cmp_equal(mSkelCache.mAugM.cols(), dof)
+      && std::cmp_equal(mSkelCache.mAugM.rows(), dof));
   if (dof == 0) {
     mSkelCache.mDirty.mMassMatrix = false;
     return;
@@ -3195,8 +3195,8 @@ void Skeleton::updateInvMassMatrix(std::size_t _treeIdx) const
   DataCache& cache = mTreeCache[_treeIdx];
   std::size_t dof = cache.mDofs.size();
   DART_ASSERT(
-      static_cast<std::size_t>(cache.mInvM.cols()) == dof
-      && static_cast<std::size_t>(cache.mInvM.rows()) == dof);
+      std::cmp_equal(cache.mInvM.cols(), dof)
+      && std::cmp_equal(cache.mInvM.rows(), dof));
   if (dof == 0) {
     cache.mDirty.mInvMassMatrix = false;
     return;
@@ -3257,8 +3257,8 @@ void Skeleton::updateInvMassMatrix() const
 {
   std::size_t dof = mSkelCache.mDofs.size();
   DART_ASSERT(
-      static_cast<std::size_t>(mSkelCache.mInvM.cols()) == dof
-      && static_cast<std::size_t>(mSkelCache.mInvM.rows()) == dof);
+      std::cmp_equal(mSkelCache.mInvM.cols(), dof)
+      && std::cmp_equal(mSkelCache.mInvM.rows(), dof));
   if (dof == 0) {
     mSkelCache.mDirty.mInvMassMatrix = false;
     return;
@@ -3289,8 +3289,8 @@ void Skeleton::updateInvAugMassMatrix(std::size_t _treeIdx) const
   DataCache& cache = mTreeCache[_treeIdx];
   std::size_t dof = cache.mDofs.size();
   DART_ASSERT(
-      static_cast<std::size_t>(cache.mInvAugM.cols()) == dof
-      && static_cast<std::size_t>(cache.mInvAugM.rows()) == dof);
+      std::cmp_equal(cache.mInvAugM.cols(), dof)
+      && std::cmp_equal(cache.mInvAugM.rows(), dof));
   if (dof == 0) {
     cache.mDirty.mInvAugMassMatrix = false;
     return;
@@ -3353,8 +3353,8 @@ void Skeleton::updateInvAugMassMatrix() const
 {
   std::size_t dof = mSkelCache.mDofs.size();
   DART_ASSERT(
-      static_cast<std::size_t>(mSkelCache.mInvAugM.cols()) == dof
-      && static_cast<std::size_t>(mSkelCache.mInvAugM.rows()) == dof);
+      std::cmp_equal(mSkelCache.mInvAugM.cols(), dof)
+      && std::cmp_equal(mSkelCache.mInvAugM.rows(), dof));
   if (dof == 0) {
     mSkelCache.mDirty.mInvAugMassMatrix = false;
     return;

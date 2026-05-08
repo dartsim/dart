@@ -612,7 +612,8 @@ bool World::hasSkeleton(std::string_view skeletonName) const
 //==============================================================================
 int World::getIndex(int _index) const
 {
-  if (_index < 0 || std::cmp_greater_equal(_index, mIndices.size())) {
+  if (std::cmp_less(_index, 0)
+      || std::cmp_greater_equal(_index, mIndices.size())) {
     DART_ERROR(
         "World::getIndex: index [{}] is out of range. Valid range is [0, {}).",
         _index,
