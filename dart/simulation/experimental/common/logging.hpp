@@ -272,12 +272,17 @@ void log(
     Args&&... args)
 {
   auto& logger = Logger::instance();
+  const auto spdlogLevel = toSpdlogLevel(level);
+  if (!logger->should_log(spdlogLevel)) {
+    return;
+  }
+
   fmt::basic_string_view<char> fmt_view(format);
   auto message = fmt::vformat(fmt_view, fmt::make_format_args(args...));
 #ifndef NDEBUG
   std::string prefix = makeContext(file, line, function);
   if (!prefix.empty()) {
-    logger->log(toSpdlogLevel(level), "{}{}", prefix, message);
+    logger->log(spdlogLevel, "{}{}", prefix, message);
     return;
   }
 #else
@@ -285,7 +290,7 @@ void log(
   (void)line;
   (void)function;
 #endif
-  logger->log(toSpdlogLevel(level), "{}", message);
+  logger->log(spdlogLevel, "{}", message);
 }
 
 template <typename S, typename... Args>

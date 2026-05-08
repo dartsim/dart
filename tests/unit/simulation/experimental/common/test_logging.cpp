@@ -35,8 +35,29 @@
 #include <gtest/gtest.h>
 
 #include <source_location>
+#include <string_view>
 
 using namespace dart::simulation::experimental::common;
+
+namespace {
+
+struct CountingValue
+{
+  int* formatCount;
+};
+
+} // namespace
+
+template <>
+struct fmt::formatter<CountingValue> : fmt::formatter<std::string_view>
+{
+  template <typename FormatContext>
+  auto format(const CountingValue& value, FormatContext& ctx) const
+  {
+    ++*value.formatCount;
+    return fmt::formatter<std::string_view>::format("value", ctx);
+  }
+};
 
 // Test logging initialization
 TEST(Logging, Initialization)
@@ -109,6 +130,22 @@ TEST(Logging, AllLevels)
   DART_EXPERIMENTAL_WARN("Warning message");
   DART_EXPERIMENTAL_ERROR("Error message");
   DART_EXPERIMENTAL_CRITICAL("Critical message");
+}
+
+TEST(Logging, DisabledLevelsDoNotFormatArguments)
+{
+  initializeLogging();
+
+  setLogLevel(LogLevel::Error);
+
+  int formatCount = 0;
+  DART_EXPERIMENTAL_DEBUG("{}", CountingValue{&formatCount});
+  EXPECT_EQ(formatCount, 0);
+
+  DART_EXPERIMENTAL_ERROR("{}", CountingValue{&formatCount});
+  EXPECT_EQ(formatCount, 1);
+
+  setLogLevel(LogLevel::Info);
 }
 
 TEST(Logging, SourceLocationDetailHelpers)
