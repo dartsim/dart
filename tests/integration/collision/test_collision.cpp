@@ -39,6 +39,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <iostream>
 #include <limits>
 #if DART_HAVE_ODE
@@ -1908,12 +1909,12 @@ TEST_F(Collision, CollisionOfPrescribedJointsRejectsInvalidTimeStep)
   const double originalTimeStep = world->getTimeStep();
   ASSERT_GT(originalTimeStep, 0.0);
 
-  const double invalidValues[]
-      = {std::numeric_limits<double>::quiet_NaN(),
-         std::numeric_limits<double>::infinity(),
-         -std::numeric_limits<double>::infinity(),
-         0.0,
-         -1.0};
+  const auto invalidValues = std::to_array(
+      {std::numeric_limits<double>::quiet_NaN(),
+       std::numeric_limits<double>::infinity(),
+       -std::numeric_limits<double>::infinity(),
+       0.0,
+       -1.0});
 
   for (double invalid : invalidValues) {
     world->setTimeStep(invalid);
