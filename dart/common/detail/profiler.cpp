@@ -372,9 +372,10 @@ void Profiler::printNode(
 {
   std::vector<const ProfileNode*> children;
   children.reserve(node.children.size());
-  for (const auto& [_, child] : node.children) {
-    children.push_back(child.get());
-  }
+  std::ranges::transform(
+      node.children | std::views::values,
+      std::back_inserter(children),
+      [](const auto& child) { return child.get(); });
 
   std::ranges::sort(
       children, [](const ProfileNode* lhs, const ProfileNode* rhs) {
@@ -479,7 +480,7 @@ void Profiler::printSummary(std::ostream& os)
   // Build hotspot list.
   std::vector<Flattened> hotspots;
   for (const auto& record : threads) {
-    for (const auto& [_, child] : record->root.children) {
+    for (const auto& child : record->root.children | std::views::values) {
       collectHotspots(*child, child->label, record->label, hotspots);
     }
   }
