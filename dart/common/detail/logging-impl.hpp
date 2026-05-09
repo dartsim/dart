@@ -58,30 +58,14 @@
 
 namespace detail_log_arg {
 
-template <typename Stream, typename T, typename = void>
-struct is_stream_insertable : std::false_type
-{
-};
-
 template <typename Stream, typename T>
-struct is_stream_insertable<
-    Stream,
-    T,
-    std::void_t<decltype(std::declval<Stream&>() << std::declval<const T&>())>>
-  : std::true_type
-{
-};
-
-template <typename T, typename = void>
-struct has_pointer_get : std::false_type
-{
-};
+concept StreamInsertable
+    = requires(Stream& stream, const T& value) { stream << value; };
 
 template <typename T>
-struct has_pointer_get<T, std::void_t<decltype(std::declval<T&>().get())>>
-  : std::bool_constant<std::is_pointer_v<
-        std::remove_reference_t<decltype(std::declval<T&>().get())>>>
-{
+concept PointerLikeGet = requires(T& value) {
+  value.get();
+  requires std::is_pointer_v<std::remove_reference_t<decltype(value.get())>>;
 };
 
 template <typename T>
@@ -97,7 +81,7 @@ auto normalize(T&& arg)
     } else {
       return std::forward<T>(arg);
     }
-  } else if constexpr (has_pointer_get<Decayed>::value) {
+  } else if constexpr (PointerLikeGet<Decayed>) {
     using RawPointer
         = std::remove_reference_t<decltype(std::declval<Decayed&>().get())>;
     using Pointee = std::remove_cv_t<std::remove_pointer_t<RawPointer>>;
@@ -115,7 +99,7 @@ auto normalize(T&& arg)
       return static_cast<std::underlying_type_t<Decayed>>(arg);
     } else if constexpr (kHasFormatter) {
       return std::forward<T>(arg);
-    } else if constexpr (is_stream_insertable<std::ostream, Decayed>::value) {
+    } else if constexpr (StreamInsertable<std::ostream, Decayed>) {
       return fmt::streamed(std::forward<T>(arg));
     } else {
       return std::forward<T>(arg);

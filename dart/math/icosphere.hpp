@@ -37,6 +37,7 @@
 
 #include <Eigen/Core>
 
+#include <concepts>
 #include <map>
 #include <vector>
 
@@ -45,7 +46,7 @@ namespace math {
 
 /// The class Icosphere represents an icosphere where the subdivision and radius
 /// are configurable.
-template <typename S_>
+template <std::floating_point S_>
 class Icosphere : public TriMesh<S_>
 {
 public:
