@@ -83,10 +83,10 @@ void SingleLockableReference<Lockable>::unlock() noexcept
 }
 
 //==============================================================================
-template <detail::LockableObject Lockable>
+template <detail::LockableObject LockableT>
 template <typename InputIterator>
-  requires detail::LockablePointerInputIterator<InputIterator, Lockable>
-MultiLockableReference<Lockable>::MultiLockableReference(
+  requires detail::LockablePointerInputIterator<InputIterator, LockableT>
+MultiLockableReference<LockableT>::MultiLockableReference(
     std::weak_ptr<const void> lockableHolder,
     InputIterator first,
     InputIterator last)
