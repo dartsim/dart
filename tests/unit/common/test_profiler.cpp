@@ -285,7 +285,7 @@ TEST(Profiler, SummaryMultipleThreads)
   ScopedEnvVar env("DART_PROFILE_COLOR", "0");
 
   {
-    std::thread worker([]() {
+    std::jthread worker([]() {
       common::profile::ProfileScope scope("WorkerScope", __FILE__, __LINE__);
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
     });
@@ -298,8 +298,6 @@ TEST(Profiler, SummaryMultipleThreads)
     profiler.markFrame();
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
     profiler.markFrame();
-
-    worker.join();
   }
 
   std::ostringstream oss;
