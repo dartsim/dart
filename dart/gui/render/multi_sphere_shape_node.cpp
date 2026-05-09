@@ -45,6 +45,7 @@
 #include <osg/Light>
 #include <osg/Material>
 
+#include <algorithm>
 #include <ranges>
 
 #include <cstddef>
@@ -237,12 +238,14 @@ void MultiSphereShapeDrawable::refresh(bool firstTime)
     // Convert the convex hull to OSG data types
     mVertices->resize(meshVertices.size());
     mNormals->resize(meshVertices.size());
-    for (const auto i : std::views::iota(std::size_t{0}, meshVertices.size())) {
-      const auto& v = meshVertices[i];
-      const auto& n = meshNormals[i];
-      (*mVertices)[i] = ::osg::Vec3(v[0], v[1], v[2]);
-      (*mNormals)[i] = ::osg::Vec3(n[0], n[1], n[2]);
-    }
+    std::ranges::transform(
+        meshVertices, mVertices->begin(), [](const Eigen::Vector3d& vertex) {
+          return ::osg::Vec3(vertex[0], vertex[1], vertex[2]);
+        });
+    std::ranges::transform(
+        meshNormals, mNormals->begin(), [](const Eigen::Vector3d& normal) {
+          return ::osg::Vec3(normal[0], normal[1], normal[2]);
+        });
     setVertexArray(mVertices);
     setNormalArray(mNormals, ::osg::Array::BIND_PER_VERTEX);
 

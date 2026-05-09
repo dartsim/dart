@@ -44,6 +44,7 @@
 #include <osg/Geometry>
 
 #include <algorithm>
+#include <ranges>
 
 namespace dart {
 namespace gui {
@@ -272,10 +273,16 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
     }
 
     computeNormals(mEigNormals, bn);
-    for (std::size_t i = 0; i < bn->getNumPointMasses(); ++i) {
-      (*mVertices)[i] = eigToOsgVec3(bn->getPointMass(i)->getLocalPosition());
-      (*mNormals)[i] = eigToOsgVec3(mEigNormals[i]);
-    }
+    std::ranges::transform(
+        std::views::iota(std::size_t{0}, bn->getNumPointMasses()),
+        mVertices->begin(),
+        [bn](const std::size_t i) {
+          return eigToOsgVec3(bn->getPointMass(i)->getLocalPosition());
+        });
+    std::ranges::transform(
+        mEigNormals, mNormals->begin(), [](const Eigen::Vector3d& normal) {
+          return eigToOsgVec3(normal);
+        });
 
     setVertexArray(mVertices);
     setNormalArray(mNormals, ::osg::Array::BIND_PER_VERTEX);
