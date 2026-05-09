@@ -79,27 +79,14 @@ namespace {
 //==============================================================================
 bool isTransparent(const ::osg::Material* material)
 {
-  if (std::abs(material->getAmbient(::osg::Material::FRONT).a())
-      < 1 - getAlphaThreshold<float>()) {
-    return true;
-  }
-
-  if (std::abs(material->getDiffuse(::osg::Material::FRONT).a())
-      < 1 - getAlphaThreshold<float>()) {
-    return true;
-  }
-
-  if (std::abs(material->getSpecular(::osg::Material::FRONT).a())
-      < 1 - getAlphaThreshold<float>()) {
-    return true;
-  }
-
-  if (std::abs(material->getEmission(::osg::Material::FRONT).a())
-      < 1 - getAlphaThreshold<float>()) {
-    return true;
-  }
-
-  return false;
+  const std::array alphas{
+      material->getAmbient(::osg::Material::FRONT).a(),
+      material->getDiffuse(::osg::Material::FRONT).a(),
+      material->getSpecular(::osg::Material::FRONT).a(),
+      material->getEmission(::osg::Material::FRONT).a()};
+  return std::ranges::any_of(alphas, [](const auto alpha) {
+    return std::abs(alpha) < 1 - getAlphaThreshold<float>();
+  });
 }
 
 std::filesystem::path makeTemporaryTexturePath(std::string_view extension)
