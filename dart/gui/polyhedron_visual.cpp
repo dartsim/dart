@@ -37,7 +37,10 @@
 
 #include <osg/StateSet>
 
+#include <algorithm>
+#include <iterator>
 #include <limits>
+#include <ranges>
 #include <set>
 #include <span>
 #include <tuple>
@@ -107,14 +110,22 @@ void PolyhedronVisual::setVertices(
 
   if (vertices.rows() == 3) {
     converted.reserve(vertices.cols());
-    for (int i = 0; i < vertices.cols(); ++i) {
-      converted.emplace_back(vertices(0, i), vertices(1, i), vertices(2, i));
-    }
+    std::ranges::transform(
+        std::views::iota(Eigen::Index{0}, vertices.cols()),
+        std::back_inserter(converted),
+        [&vertices](const Eigen::Index i) {
+          return Eigen::Vector3d(
+              vertices(0, i), vertices(1, i), vertices(2, i));
+        });
   } else if (vertices.cols() == 3) {
     converted.reserve(vertices.rows());
-    for (int i = 0; i < vertices.rows(); ++i) {
-      converted.emplace_back(vertices(i, 0), vertices(i, 1), vertices(i, 2));
-    }
+    std::ranges::transform(
+        std::views::iota(Eigen::Index{0}, vertices.rows()),
+        std::back_inserter(converted),
+        [&vertices](const Eigen::Index i) {
+          return Eigen::Vector3d(
+              vertices(i, 0), vertices(i, 1), vertices(i, 2));
+        });
   } else {
     DART_WARN(
         "[PolyhedronVisual::setVertices] Expected either a 3xN or Nx3 matrix. "
@@ -332,10 +343,12 @@ void PolyhedronVisual::updateGeometry()
 
   mSurfaceVertices->resize(hullVertices.size());
   mSurfaceNormals->resize(hullVertices.size());
-  for (std::size_t i = 0; i < hullVertices.size(); ++i) {
-    const Eigen::Vector3d& v = hullVertices[i];
-    (*mSurfaceVertices)[i] = ::osg::Vec3(v[0], v[1], v[2]);
-  }
+  std::ranges::transform(
+      hullVertices,
+      mSurfaceVertices->begin(),
+      [](const Eigen::Vector3d& vertex) {
+        return ::osg::Vec3(vertex[0], vertex[1], vertex[2]);
+      });
 
   mSurfaceIndices->clear();
   mWireframeIndices->clear();
@@ -365,10 +378,13 @@ void PolyhedronVisual::updateGeometry()
     edges.insert(makeOrderedEdge(i2, i0));
   }
 
-  for (std::size_t i = 0; i < vertexNormals.size(); ++i) {
-    const Eigen::Vector3d normal = computeSafeNormal(vertexNormals[i]);
-    (*mSurfaceNormals)[i] = ::osg::Vec3(normal[0], normal[1], normal[2]);
-  }
+  std::ranges::transform(
+      vertexNormals,
+      mSurfaceNormals->begin(),
+      [](const Eigen::Vector3d& vertexNormal) {
+        const Eigen::Vector3d normal = computeSafeNormal(vertexNormal);
+        return ::osg::Vec3(normal[0], normal[1], normal[2]);
+      });
 
   for (const auto& edge : edges) {
     mWireframeIndices->push_back(static_cast<unsigned int>(edge.first));

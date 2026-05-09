@@ -670,9 +670,7 @@ void ImGuiHandler::newFrame(::osg::RenderInfo& renderInfo)
   mTime = currentTime;
   DART_ASSERT(mTime >= 0.0);
 
-  for (const auto i : std::views::iota(std::size_t{0}, mMousePressed.size())) {
-    io.MouseDown[i] = mMousePressed[i];
-  }
+  std::ranges::copy(mMousePressed, io.MouseDown);
 
   io.MouseWheel = mMouseWheel;
   mMouseWheel = 0.0f;

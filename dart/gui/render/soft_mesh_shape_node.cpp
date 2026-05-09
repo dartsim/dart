@@ -44,6 +44,7 @@
 #include <osg/Geometry>
 
 #include <algorithm>
+#include <ranges>
 
 namespace dart {
 namespace gui {
@@ -216,9 +217,7 @@ static void computeNormals(
     std::vector<Eigen::Vector3d>& normals,
     const dart::dynamics::SoftBodyNode* bn)
 {
-  for (std::size_t i = 0; i < normals.size(); ++i) {
-    normals[i] = Eigen::Vector3d::Zero();
-  }
+  std::ranges::fill(normals, Eigen::Vector3d::Zero());
 
   for (std::size_t i = 0; i < bn->getNumFaces(); ++i) {
     const Eigen::Vector3i& face = bn->getFace(i);
@@ -227,9 +226,7 @@ static void computeNormals(
     }
   }
 
-  for (std::size_t i = 0; i < normals.size(); ++i) {
-    normals[i].normalize();
-  }
+  std::ranges::for_each(normals, [](auto& normal) { normal.normalize(); });
 }
 
 //==============================================================================
@@ -276,10 +273,16 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
     }
 
     computeNormals(mEigNormals, bn);
-    for (std::size_t i = 0; i < bn->getNumPointMasses(); ++i) {
-      (*mVertices)[i] = eigToOsgVec3(bn->getPointMass(i)->getLocalPosition());
-      (*mNormals)[i] = eigToOsgVec3(mEigNormals[i]);
-    }
+    std::ranges::transform(
+        std::views::iota(std::size_t{0}, bn->getNumPointMasses()),
+        mVertices->begin(),
+        [bn](const std::size_t i) {
+          return eigToOsgVec3(bn->getPointMass(i)->getLocalPosition());
+        });
+    std::ranges::transform(
+        mEigNormals, mNormals->begin(), [](const Eigen::Vector3d& normal) {
+          return eigToOsgVec3(normal);
+        });
 
     setVertexArray(mVertices);
     setNormalArray(mNormals, ::osg::Array::BIND_PER_VERTEX);
