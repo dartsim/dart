@@ -44,6 +44,18 @@
 
 namespace dart::gui {
 
+template <typename Derived>
+using OsgVec3ForEigenScalar = std::conditional_t<
+    std::same_as<typename Derived::Scalar, float>,
+    ::osg::Vec3f,
+    ::osg::Vec3d>;
+
+template <typename Derived>
+using OsgVec4ForEigenScalar = std::conditional_t<
+    std::same_as<typename Derived::Scalar, float>,
+    ::osg::Vec4f,
+    ::osg::Vec4d>;
+
 /// Returns the alpha threshold for demining if the object is a transparent
 /// object or not
 template <typename T = double>
@@ -69,11 +81,8 @@ template <typename Derived>
 /// Converts Eigen::MatrixBase to osg::Vec3f or osg::Vec3d based on the scalar
 /// type
 template <typename Derived>
-std::conditional_t<
-    std::same_as<typename Derived::Scalar, float>,
-    ::osg::Vec3f,
-    ::osg::Vec3d>
-eigToOsgVec3(const Eigen::MatrixBase<Derived>& vec);
+OsgVec3ForEigenScalar<Derived> eigToOsgVec3(
+    const Eigen::MatrixBase<Derived>& vec);
 
 /// Converts osg::Vec3f to Eigen::Vector3f
 DART_GUI_API Eigen::Vector3f osgToEigVec3(const ::osg::Vec3f& vec);
@@ -92,11 +101,8 @@ template <typename Derived>
 /// Converts Eigen::MatrixBase to osg::Vec4f or osg::Vec4d based on the scalar
 /// type
 template <typename Derived>
-std::conditional_t<
-    std::same_as<typename Derived::Scalar, float>,
-    ::osg::Vec4f,
-    ::osg::Vec4d>
-eigToOsgVec4(const Eigen::MatrixBase<Derived>& vec);
+OsgVec4ForEigenScalar<Derived> eigToOsgVec4(
+    const Eigen::MatrixBase<Derived>& vec);
 
 /// Converts osg::Vec4f to Eigen::Vector4f
 DART_GUI_API Eigen::Vector4f osgToEigVec4(const ::osg::Vec4f& vec);

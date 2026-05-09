@@ -113,18 +113,10 @@ template <typename Derived>
 
 //==============================================================================
 template <typename Derived>
-std::conditional_t<
-    std::same_as<typename Derived::Scalar, float>,
-    ::osg::Vec3f,
-    ::osg::Vec3d>
-eigToOsgVec3(const Eigen::MatrixBase<Derived>& vec)
+OsgVec3ForEigenScalar<Derived> eigToOsgVec3(
+    const Eigen::MatrixBase<Derived>& vec)
 {
-  using Vec3 = std::conditional_t<
-      std::same_as<typename Derived::Scalar, float>,
-      ::osg::Vec3f,
-      ::osg::Vec3d>;
-
-  return Vec3(vec[0], vec[1], vec[2]);
+  return OsgVec3ForEigenScalar<Derived>(vec[0], vec[1], vec[2]);
 }
 
 //==============================================================================
@@ -143,18 +135,10 @@ template <typename Derived>
 
 //==============================================================================
 template <typename Derived>
-std::conditional_t<
-    std::same_as<typename Derived::Scalar, float>,
-    ::osg::Vec4f,
-    ::osg::Vec4d>
-eigToOsgVec4(const Eigen::MatrixBase<Derived>& vec)
+OsgVec4ForEigenScalar<Derived> eigToOsgVec4(
+    const Eigen::MatrixBase<Derived>& vec)
 {
-  using Vec4 = std::conditional_t<
-      std::same_as<typename Derived::Scalar, float>,
-      ::osg::Vec4f,
-      ::osg::Vec4d>;
-
-  return Vec4(vec[0], vec[1], vec[2], vec[3]);
+  return OsgVec4ForEigenScalar<Derived>(vec[0], vec[1], vec[2], vec[3]);
 }
 
 } // namespace dart::gui

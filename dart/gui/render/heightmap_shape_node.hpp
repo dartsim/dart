@@ -62,9 +62,12 @@ namespace gui {
 namespace render {
 
 template <typename S>
+concept HeightmapScalar = std::same_as<S, float> || std::same_as<S, double>;
+
+template <HeightmapScalar S>
 class HeightmapShapeGeode;
 
-template <typename S_>
+template <HeightmapScalar S_>
 class HeightmapShapeNode : public ShapeNode, public ::osg::MatrixTransform
 {
 public:
@@ -86,7 +89,7 @@ protected:
 };
 
 //==============================================================================
-template <typename S>
+template <HeightmapScalar S>
 class HeightmapShapeDrawable : public ::osg::Geometry
 {
 public:
@@ -125,7 +128,7 @@ private:
 };
 
 //==============================================================================
-template <typename S>
+template <HeightmapScalar S>
 class HeightmapShapeGeode : public ShapeNode, public ::osg::Geode
 {
 public:
@@ -146,7 +149,7 @@ protected:
 };
 
 //==============================================================================
-template <typename S>
+template <HeightmapScalar S>
 HeightmapShapeNode<S>::HeightmapShapeNode(
     std::shared_ptr<dynamics::HeightmapShape<S>> shape, ShapeFrameNode* parent)
   : ShapeNode(shape, parent, this),
@@ -159,7 +162,7 @@ HeightmapShapeNode<S>::HeightmapShapeNode(
 }
 
 //==============================================================================
-template <typename S>
+template <HeightmapScalar S>
 void HeightmapShapeNode<S>::refresh()
 {
   mUtilized = true;
@@ -177,7 +180,7 @@ void HeightmapShapeNode<S>::refresh()
 }
 
 //==============================================================================
-template <typename S>
+template <HeightmapScalar S>
 void HeightmapShapeNode<S>::extractData(bool /*firstTime*/)
 {
   if (nullptr == mGeode) {
@@ -191,14 +194,14 @@ void HeightmapShapeNode<S>::extractData(bool /*firstTime*/)
 }
 
 //==============================================================================
-template <typename S>
+template <HeightmapScalar S>
 HeightmapShapeNode<S>::~HeightmapShapeNode()
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename S>
+template <HeightmapScalar S>
 HeightmapShapeGeode<S>::HeightmapShapeGeode(
     dynamics::HeightmapShape<S>* shape,
     ShapeFrameNode* parentShapeFrame,
@@ -215,7 +218,7 @@ HeightmapShapeGeode<S>::HeightmapShapeGeode(
 }
 
 //==============================================================================
-template <typename S>
+template <HeightmapScalar S>
 void HeightmapShapeGeode<S>::refresh()
 {
   mUtilized = true;
@@ -224,7 +227,7 @@ void HeightmapShapeGeode<S>::refresh()
 }
 
 //==============================================================================
-template <typename S>
+template <HeightmapScalar S>
 void HeightmapShapeGeode<S>::extractData()
 {
   if (nullptr == mDrawable) {
@@ -238,24 +241,20 @@ void HeightmapShapeGeode<S>::extractData()
 }
 
 //==============================================================================
-template <typename S>
+template <HeightmapScalar S>
 HeightmapShapeGeode<S>::~HeightmapShapeGeode()
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename S>
+template <HeightmapScalar S>
 HeightmapShapeDrawable<S>::HeightmapShapeDrawable(
     dynamics::HeightmapShape<S>* shape,
     dynamics::VisualAspect* visualAspect,
     HeightmapShapeGeode<S>* parent)
   : mHeightmapShape(shape), mVisualAspect(visualAspect), mParent(parent)
 {
-  static_assert(
-      std::same_as<S, float> || std::same_as<S, double>,
-      "Scalar type should be float or double");
-
   // See:
   // https://osg-users.openscenegraph.narkive.com/VY16YIMs/crash-due-to-triangle-functor-does-not-support-vec3d-vertex-arrays
   // https://github.com/openscenegraph/OpenSceneGraph/blob/5b688eb99dd5db94f7068ee18fb94f120720e3d1/include/osg/TriangleFunctor#L73
@@ -302,7 +301,7 @@ inline ::osg::Vec3d getNormal(
 }
 
 //==============================================================================
-template <typename S>
+template <HeightmapScalar S>
 void setVertices(
     const typename dynamics::HeightmapShape<S>::HeightField& heightmap,
     typename HeightmapShapeDrawable<S>::Vec3Array& vertices,
@@ -445,7 +444,7 @@ void setVertices(
 }
 
 //==============================================================================
-template <typename S>
+template <HeightmapScalar S>
 void HeightmapShapeDrawable<S>::refresh(bool /*firstTime*/)
 {
   if (mHeightmapShape->getDataVariance() == dynamics::Shape::STATIC) {
