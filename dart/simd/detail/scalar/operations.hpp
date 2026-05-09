@@ -37,6 +37,7 @@
 
 #include <algorithm>
 #include <bit>
+#include <concepts>
 
 #include <cmath>
 #include <cstddef>
@@ -346,7 +347,7 @@ template <typename T, std::size_t W>
 }
 
 template <typename T, std::size_t W>
-  requires std::is_integral_v<T>
+  requires std::integral<T>
 [[nodiscard]] DART_SIMD_INLINE Vec<T, W> bitAnd(
     const Vec<T, W>& a, const Vec<T, W>& b)
 {
@@ -360,7 +361,7 @@ template <typename T, std::size_t W>
 }
 
 template <typename T, std::size_t W>
-  requires std::is_integral_v<T>
+  requires std::integral<T>
 [[nodiscard]] DART_SIMD_INLINE Vec<T, W> bitOr(
     const Vec<T, W>& a, const Vec<T, W>& b)
 {
@@ -374,7 +375,7 @@ template <typename T, std::size_t W>
 }
 
 template <typename T, std::size_t W>
-  requires std::is_integral_v<T>
+  requires std::integral<T>
 [[nodiscard]] DART_SIMD_INLINE Vec<T, W> bitXor(
     const Vec<T, W>& a, const Vec<T, W>& b)
 {
@@ -388,7 +389,7 @@ template <typename T, std::size_t W>
 }
 
 template <typename T, std::size_t W>
-  requires std::is_integral_v<T>
+  requires std::integral<T>
 [[nodiscard]] DART_SIMD_INLINE Vec<T, W> bitNot(const Vec<T, W>& v)
 {
   alignas(64) T vArr[W], rArr[W];
@@ -400,7 +401,7 @@ template <typename T, std::size_t W>
 }
 
 template <int N, typename T, std::size_t W>
-  requires std::is_integral_v<T>
+  requires std::integral<T>
 [[nodiscard]] DART_SIMD_INLINE Vec<T, W> shiftLeft(const Vec<T, W>& v)
 {
   alignas(64) T vArr[W], rArr[W];
@@ -412,7 +413,7 @@ template <int N, typename T, std::size_t W>
 }
 
 template <int N, typename T, std::size_t W>
-  requires std::is_integral_v<T>
+  requires std::integral<T>
 [[nodiscard]] DART_SIMD_INLINE Vec<T, W> shiftRight(const Vec<T, W>& v)
 {
   alignas(64) T vArr[W], rArr[W];

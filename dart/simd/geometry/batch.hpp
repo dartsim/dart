@@ -39,6 +39,7 @@
 #include <dart/simd/memory.hpp>
 
 #include <array>
+#include <concepts>
 
 namespace dart::simd {
 

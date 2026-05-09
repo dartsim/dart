@@ -37,6 +37,8 @@
 
 #include <Eigen/Geometry>
 
+#include <concepts>
+
 #include <cmath>
 
 namespace dart::simd {
