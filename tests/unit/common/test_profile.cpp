@@ -41,6 +41,7 @@
   #include <sstream>
   #include <string>
   #include <thread>
+  #include <version>
 
 using dart::common::profile::Profiler;
 using dart::common::profile::ProfileScope;
@@ -86,10 +87,17 @@ TEST_F(ProfileTest, CapturesMultipleThreads)
   }
 
   {
+  #if defined(__cpp_lib_jthread)
     std::jthread worker([] {
+  #else
+    std::thread worker([] {
+  #endif
       ProfileScope workerScope("worker-work", __FILE__, __LINE__);
       std::this_thread::sleep_for(std::chrono::milliseconds(3));
     });
+  #if !defined(__cpp_lib_jthread)
+    worker.join();
+  #endif
   }
 
   std::stringstream ss;
