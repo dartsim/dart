@@ -38,7 +38,9 @@
 #include <osg/StateSet>
 
 #include <algorithm>
+#include <iterator>
 #include <limits>
+#include <ranges>
 #include <set>
 #include <span>
 #include <tuple>
@@ -108,14 +110,22 @@ void PolyhedronVisual::setVertices(
 
   if (vertices.rows() == 3) {
     converted.reserve(vertices.cols());
-    for (int i = 0; i < vertices.cols(); ++i) {
-      converted.emplace_back(vertices(0, i), vertices(1, i), vertices(2, i));
-    }
+    std::ranges::transform(
+        std::views::iota(Eigen::Index{0}, vertices.cols()),
+        std::back_inserter(converted),
+        [&vertices](const Eigen::Index i) {
+          return Eigen::Vector3d(
+              vertices(0, i), vertices(1, i), vertices(2, i));
+        });
   } else if (vertices.cols() == 3) {
     converted.reserve(vertices.rows());
-    for (int i = 0; i < vertices.rows(); ++i) {
-      converted.emplace_back(vertices(i, 0), vertices(i, 1), vertices(i, 2));
-    }
+    std::ranges::transform(
+        std::views::iota(Eigen::Index{0}, vertices.rows()),
+        std::back_inserter(converted),
+        [&vertices](const Eigen::Index i) {
+          return Eigen::Vector3d(
+              vertices(i, 0), vertices(i, 1), vertices(i, 2));
+        });
   } else {
     DART_WARN(
         "[PolyhedronVisual::setVertices] Expected either a 3xN or Nx3 matrix. "

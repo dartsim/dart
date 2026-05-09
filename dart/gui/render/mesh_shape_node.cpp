@@ -440,10 +440,13 @@ void MeshShapeNode::extractData(bool firstTime)
       std::vector<std::string> textureImageArray;
       textureImageArray.reserve(meshMat.textureImagePaths.size());
 
-      for (const auto& texturePath : meshMat.textureImagePaths) {
-        textureImageArray.emplace_back(materializeTextureImage(
-            texturePath, meshUriPtr, retriever, mTemporaryTextureFiles));
-      }
+      std::ranges::transform(
+          meshMat.textureImagePaths,
+          std::back_inserter(textureImageArray),
+          [&](const auto& texturePath) {
+            return materializeTextureImage(
+                texturePath, meshUriPtr, retriever, mTemporaryTextureFiles);
+          });
 
       mTextureImageArrays.emplace_back(std::move(textureImageArray));
     }
@@ -866,17 +869,20 @@ void MeshShapeGeometry::extractData(bool firstTime)
     const std::span<const aiVector3D> aiNormals{
         mAiMesh->mNormals, mAiMesh->mNormals ? aiVertices.size() : 0u};
 
-    for (const auto i : std::views::iota(std::size_t{0}, aiVertices.size())) {
-      const aiVector3D& v = aiVertices[i];
-      (*mVertices)[i] = ::osg::Vec3(v.x, v.y, v.z);
+    std::ranges::transform(
+        aiVertices, mVertices->begin(), [](const aiVector3D& vertex) {
+          return ::osg::Vec3(vertex.x, vertex.y, vertex.z);
+        });
 
-      if (!aiNormals.empty()) {
-        const aiVector3D& n = aiNormals[i];
-        (*mNormals)[i] = ::osg::Vec3(n.x * s[0], n.y * s[1], n.z * s[2]);
-      }
-      // TODO(MXG): Consider computing normals for meshes that don't come with
-      // normal data per vertex
+    if (!aiNormals.empty()) {
+      std::ranges::transform(
+          aiNormals, mNormals->begin(), [s](const aiVector3D& normal) {
+            return ::osg::Vec3(
+                normal.x * s[0], normal.y * s[1], normal.z * s[2]);
+          });
     }
+    // TODO(MXG): Consider computing normals for meshes that don't come with
+    // normal data per vertex
 
     setVertexArray(mVertices);
     if (mAiMesh->mNormals) {
@@ -920,21 +926,22 @@ void MeshShapeGeometry::extractData(bool firstTime)
 
         const std::span<const aiColor4D> aiColors{
             colors, mAiMesh->mNumVertices};
-        for (const auto i : std::views::iota(std::size_t{0}, aiColors.size())) {
-          const aiColor4D& c = aiColors[i];
-          if (mMeshShape->getAlphaMode() == dynamics::MeshShape::SHAPE_ALPHA) {
-            (*mColors)[i] = ::osg::Vec4(
-                c.r, c.g, c.b, static_cast<float>(mVisualAspect->getAlpha()));
-          } else if (mMeshShape->getAlphaMode() == dynamics::MeshShape::BLEND) {
-            (*mColors)[i] = ::osg::Vec4(
-                c.r,
-                c.g,
-                c.b,
-                c.a * static_cast<float>(mVisualAspect->getAlpha()));
-          } else {
-            (*mColors)[i] = ::osg::Vec4(c.r, c.g, c.b, c.a);
-          }
-        }
+        const auto alphaMode = mMeshShape->getAlphaMode();
+        const auto visualAlpha = static_cast<float>(mVisualAspect->getAlpha());
+        std::ranges::transform(
+            aiColors,
+            mColors->begin(),
+            [alphaMode, visualAlpha](const aiColor4D& color) {
+              if (alphaMode == dynamics::MeshShape::SHAPE_ALPHA) {
+                return ::osg::Vec4(color.r, color.g, color.b, visualAlpha);
+              }
+              if (alphaMode == dynamics::MeshShape::BLEND) {
+                return ::osg::Vec4(
+                    color.r, color.g, color.b, color.a * visualAlpha);
+              }
+
+              return ::osg::Vec4(color.r, color.g, color.b, color.a);
+            });
 
         setColorArray(mColors);
         setColorBinding(::osg::Geometry::BIND_PER_VERTEX);
