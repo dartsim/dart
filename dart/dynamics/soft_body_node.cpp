@@ -84,7 +84,7 @@ bool SoftBodyNodeUniqueProperties::connectPointMasses(
     std::size_t i1, std::size_t i2)
 {
   if (i1 >= mPointProps.size() || i2 >= mPointProps.size()) {
-    if (mPointProps.size() == 0) {
+    if (mPointProps.empty()) {
       DART_WARN(
           "Attempting to add a connection between indices {} and {}, but there "
           "are currently no entries in mPointProps!",

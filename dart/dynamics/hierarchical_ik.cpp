@@ -423,7 +423,7 @@ void HierarchicalIK::Objective::evalGradient(
     hik->setPositions(_x);
 
     const auto nullspaces = hik->computeNullSpaces();
-    if (nullspaces.size() > 0) {
+    if (!nullspaces.empty()) {
       // Project through the deepest null space
       mGradCache = nullspaces.back() * mGradCache;
     }
@@ -685,7 +685,7 @@ CompositeIK::ConstModuleSet CompositeIK::getModuleSet() const
 //==============================================================================
 void CompositeIK::refreshIKHierarchy()
 {
-  if (mModuleSet.size() == 0) {
+  if (mModuleSet.empty()) {
     mHierarchy.clear();
     return;
   }

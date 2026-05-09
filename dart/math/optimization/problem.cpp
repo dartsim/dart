@@ -142,7 +142,7 @@ Eigen::VectorXd& Problem::getSeed(std::size_t _index)
     return mSeeds[_index];
   }
 
-  if (mSeeds.size() == 0) {
+  if (mSeeds.empty()) {
     DART_WARN(
         "Requested seed at index [{}], but there are currently no seeds. "
         "Returning the problem's initial guess instead.",
