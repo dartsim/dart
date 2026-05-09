@@ -86,11 +86,10 @@ TEST_F(ProfileTest, CapturesMultipleThreads)
   }
 
   {
-    std::thread worker([] {
+    std::jthread worker([] {
       ProfileScope workerScope("worker-work", __FILE__, __LINE__);
       std::this_thread::sleep_for(std::chrono::milliseconds(3));
     });
-    worker.join();
   }
 
   std::stringstream ss;
