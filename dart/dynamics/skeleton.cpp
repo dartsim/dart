@@ -911,7 +911,7 @@ BodyNode* Skeleton::getRootBodyNode(std::size_t _treeIdx)
     return mTreeCache[_treeIdx].mBodyNodes[0];
   }
 
-  if (mTreeCache.size() == 0) {
+  if (mTreeCache.empty()) {
     DART_THROW_T(
         common::OutOfRangeException,
         "Requested a root BodyNode from Skeleton '{}' with no BodyNodes",
@@ -3668,7 +3668,7 @@ static void computeSupportPolygon(
     ee_indices[i] = originalEE_map[vertex_indices[i]];
   }
 
-  if (polygon.size() > 0) {
+  if (!polygon.empty()) {
     centroid = math::computeCentroidOfHull(polygon);
   } else {
     centroid = Eigen::Vector2d::Constant(std::nan(""));
