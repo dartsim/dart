@@ -1632,7 +1632,7 @@ SupportPolygon computeConvexHull(std::span<const Eigen::Vector2d> points)
 //==============================================================================
 Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull)
 {
-  if (_convexHull.size() == 0) {
+  if (_convexHull.empty()) {
     Eigen::Vector2d invalid = Eigen::Vector2d::Constant(std::nan(""));
     std::ostringstream invalidStream;
     invalidStream << invalid.transpose();
@@ -1907,7 +1907,7 @@ bool isInsideSupportPolygon(
     const SupportPolygon& _support,
     bool _includeEdge)
 {
-  if (_support.size() == 0) {
+  if (_support.empty()) {
     return false;
   }
 
@@ -2022,7 +2022,7 @@ Eigen::Vector2d computeClosestPointOnSupportPolygon(
     const Eigen::Vector2d& _p,
     const SupportPolygon& _support)
 {
-  if (_support.size() == 0) {
+  if (_support.empty()) {
     _index1 = static_cast<std::size_t>(-1);
     _index2 = _index1;
     return _p;

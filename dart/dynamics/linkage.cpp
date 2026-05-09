@@ -47,7 +47,7 @@ std::vector<BodyNode*> Linkage::Criteria::satisfy() const
   std::vector<BodyNode*> bns;
 
   if (nullptr == mStart.mNode.lock()) {
-    if (mTargets.size() == 0) {
+    if (mTargets.empty()) {
       return bns;
     }
 
@@ -258,13 +258,13 @@ void Linkage::Criteria::expandDownstream(
   }
   recorder.push_back(Recording(_start, 0));
 
-  while (recorder.size() > 0) {
+  while (!recorder.empty()) {
     Recording& r = recorder.back();
     if (r.mCount < static_cast<int>(r.mNode->getNumChildBodyNodes())) {
       stepToNextChild(recorder, _bns, r, mMapOfTerminals, 0);
     } else {
       recorder.pop_back();
-      if (recorder.size() > 0) {
+      if (!recorder.empty()) {
         ++recorder.back().mCount;
       }
     }
@@ -283,7 +283,7 @@ void Linkage::Criteria::expandUpstream(
   }
   recorder.push_back(Recording(_start, -1));
 
-  while (recorder.size() > 0) {
+  while (!recorder.empty()) {
     Recording& r = recorder.back();
 
     if (r.mCount == -1) {
@@ -323,7 +323,7 @@ void Linkage::Criteria::expandUpstream(
       // If we've iterated through all the children of this node, pop it
       recorder.pop_back();
       // Move on to the next child
-      if (recorder.size() > 0) {
+      if (!recorder.empty()) {
         ++recorder.back().mCount;
       }
     }
@@ -353,13 +353,13 @@ void Linkage::Criteria::expandToTarget(
   }
 
   // Remove the start BodyNode if it's supposed to be excluded
-  if (EXCLUDE == _start.mPolicy && newBns.size() > 0
+  if (EXCLUDE == _start.mPolicy && !newBns.empty()
       && newBns.front() == start_bn) {
     newBns.erase(newBns.begin());
   }
 
   // Remove the target BodyNode if it's supposed to be excluded
-  if (EXCLUDE == _target.mPolicy && newBns.size() > 0
+  if (EXCLUDE == _target.mPolicy && !newBns.empty()
       && newBns.back() == target_bn) {
     newBns.pop_back();
   }
