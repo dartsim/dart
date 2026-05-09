@@ -149,7 +149,8 @@ public:
   /// lockable holder is not destructed.
   /// @param[in] first First iterator of lockable to be added to this class.
   /// @param[in] last Last iterator of lockable to be added to this class.
-  template <detail::LockablePointerInputIterator<Lockable> InputIterator>
+  template <typename InputIterator>
+    requires detail::LockablePointerInputIterator<InputIterator, Lockable>
   MultiLockableReference(
       std::weak_ptr<const void> lockableHolder,
       InputIterator first,
