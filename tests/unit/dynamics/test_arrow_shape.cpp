@@ -6,6 +6,9 @@
 #include <gtest/gtest.h>
 
 #include <filesystem>
+#include <limits>
+
+#include <cmath>
 
 namespace dart {
 namespace utils {
@@ -212,6 +215,19 @@ TEST(ArrowShapeTest, PropertiesClampedToValidRange)
   EXPECT_GE(clampedProps.mMinHeadLength, 0.0);
   EXPECT_GE(clampedProps.mMaxHeadLength, 0.0);
   EXPECT_GE(clampedProps.mHeadRadiusScale, 1.0);
+}
+
+//==============================================================================
+TEST(ArrowShapeTest, NaNHeadLengthScaleFallsBackToUpperBound)
+{
+  ArrowShape::Properties props;
+  props.mHeadLengthScale = std::numeric_limits<double>::quiet_NaN();
+
+  ArrowShape arrow(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitX(), props);
+
+  const auto& clamped = arrow.getProperties();
+  EXPECT_FALSE(std::isnan(clamped.mHeadLengthScale));
+  EXPECT_DOUBLE_EQ(clamped.mHeadLengthScale, 1.0);
 }
 
 //==============================================================================

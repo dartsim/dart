@@ -71,6 +71,10 @@ constexpr std::uint32_t kBinaryFormatVersion = 1;
 
 namespace detail {
 
+template <typename T>
+concept TriviallyCopyable
+    = std::is_trivially_copyable_v<std::remove_cvref_t<T>>;
+
 inline void writeBytes(std::ostream& out, std::span<const std::byte> bytes)
 {
   out.write(
@@ -100,22 +104,16 @@ std::span<std::byte> asWritableBytes(T& value)
 } // namespace detail
 
 // Write a POD (Plain Old Data) type to binary stream
-template <typename T>
+template <detail::TriviallyCopyable T>
 void writePOD(std::ostream& out, const T& value)
 {
-  static_assert(
-      std::is_trivially_copyable_v<T>,
-      "writePOD requires trivially copyable type");
   detail::writeBytes(out, detail::asBytes(value));
 }
 
 // Read a POD (Plain Old Data) type from binary stream
-template <typename T>
+template <detail::TriviallyCopyable T>
 void readPOD(std::istream& in, T& value)
 {
-  static_assert(
-      std::is_trivially_copyable_v<T>,
-      "readPOD requires trivially copyable type");
   detail::readBytes(in, detail::asWritableBytes(value));
 }
 
@@ -168,12 +166,9 @@ void DART_EXPERIMENTAL_API readMatrixXd(std::istream& in, Eigen::MatrixXd& mat);
 //==============================================================================
 
 // Write a POD span to binary stream (size-prefixed)
-template <typename T>
+template <detail::TriviallyCopyable T>
 void writeVector(std::ostream& out, std::span<const T> vec)
 {
-  static_assert(
-      std::is_trivially_copyable_v<T>,
-      "writeVector requires trivially copyable type");
   std::size_t size = vec.size();
   writePOD(out, size);
   if (size > 0) {
@@ -182,12 +177,9 @@ void writeVector(std::ostream& out, std::span<const T> vec)
 }
 
 // Read std::vector of POD types from binary stream
-template <typename T>
+template <detail::TriviallyCopyable T>
 void readVector(std::istream& in, std::vector<T>& vec)
 {
-  static_assert(
-      std::is_trivially_copyable_v<T>,
-      "readVector requires trivially copyable type");
   std::size_t size;
   readPOD(in, size);
   vec.resize(size);

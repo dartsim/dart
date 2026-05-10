@@ -34,9 +34,13 @@
 
 #include "dart/simulation/experimental/common/exceptions.hpp"
 
+#include <algorithm>
 #include <format>
+#include <iterator>
 #include <stdexcept>
 #include <utility>
+
+#include <cstddef>
 
 namespace dart::simulation::experimental {
 
@@ -82,9 +86,11 @@ void VectorMapper::toVector(
       offset += written;
     } else {
       // No mapper for this variable, fill with zeros
-      for (size_t j = 0; j < variables[i].dimension; ++j) {
-        output[offset++] = 0.0;
-      }
+      std::ranges::fill_n(
+          std::next(output.begin(), static_cast<std::ptrdiff_t>(offset)),
+          static_cast<std::ptrdiff_t>(variables[i].dimension),
+          0.0);
+      offset += variables[i].dimension;
     }
   }
 }
@@ -105,9 +111,7 @@ void VectorMapper::toEigen(
   toVector(registry, temp);
 
   // Copy to Eigen vector
-  for (size_t i = 0; i < temp.size(); ++i) {
-    output[i] = temp[i];
-  }
+  std::ranges::copy(temp, output.data());
 }
 
 void VectorMapper::fromVector(

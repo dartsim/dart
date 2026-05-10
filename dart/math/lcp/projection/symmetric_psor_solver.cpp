@@ -205,14 +205,7 @@ LcpResult SymmetricPsorSolver::solve(
       return value;
     }
 
-    double projected = value;
-    if (std::isfinite(lo[i])) {
-      projected = std::max(projected, lo[i]);
-    }
-    if (std::isfinite(hi[i])) {
-      projected = std::min(projected, hi[i]);
-    }
-    return projected;
+    return detail::projectToBounds(value, lo[i], hi[i]);
   };
 
   auto updateIndex = [&](int i) {

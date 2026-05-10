@@ -69,6 +69,7 @@
 #include <queue>
 #include <thread>
 #include <vector>
+#include <version>
 
 #include <cassert>
 #include <cmath>
@@ -914,7 +915,11 @@ static void BM_ParallelWorlds(benchmark::State& state)
   }
 
   for (auto _ : state) {
+#if defined(__cpp_lib_jthread)
+    std::vector<std::jthread> threads;
+#else
     std::vector<std::thread> threads;
+#endif
     threads.reserve(numThreads);
     for (int t = 0; t < numThreads; ++t) {
       threads.emplace_back([&worlds, t, stepsPerThread]() {
@@ -923,9 +928,11 @@ static void BM_ParallelWorlds(benchmark::State& state)
         }
       });
     }
+#if !defined(__cpp_lib_jthread)
     for (auto& thread : threads) {
       thread.join();
     }
+#endif
   }
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations()) * numThreads * stepsPerThread);

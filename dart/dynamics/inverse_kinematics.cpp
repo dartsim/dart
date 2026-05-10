@@ -42,6 +42,7 @@
 #include <iterator>
 #include <numeric>
 #include <unordered_map>
+#include <utility>
 
 namespace dart {
 namespace dynamics {
@@ -1077,7 +1078,7 @@ void InverseKinematics::Analytical::addExtraDofGradient(
   for (std::size_t i = 0; i < mExtraDofs.size(); ++i) {
     std::size_t depIndex = mExtraDofs[i];
     int gradIndex = gradMap[depIndex];
-    if (gradIndex == -1) {
+    if (gradIndex < 0) {
       continue;
     }
 
@@ -1089,13 +1090,14 @@ void InverseKinematics::Analytical::addExtraDofGradient(
   for (std::size_t i = 0; i < mExtraDofs.size(); ++i) {
     std::size_t depIndex = mExtraDofs[i];
     int gradIndex = gradMap[depIndex];
-    if (gradIndex == -1) {
+    if (gradIndex < 0) {
       continue;
     }
 
-    double weight = mGradientP.mComponentWeights.size() > gradIndex
-                        ? mGradientP.mComponentWeights[gradIndex]
-                        : 1.0;
+    double weight
+        = std::cmp_less(gradIndex, mGradientP.mComponentWeights.size())
+              ? mGradientP.mComponentWeights[gradIndex]
+              : 1.0;
 
     double dq = weight * mExtraDofGradCache[i];
 

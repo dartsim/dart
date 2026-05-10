@@ -41,6 +41,11 @@
 #include <numeric>
 #include <thread>
 #include <vector>
+#include <version>
+
+#if defined(__cpp_lib_jthread)
+  #include <stop_token>
+#endif
 
 using namespace std;
 using namespace Eigen;
@@ -411,6 +416,14 @@ TEST(Signal, ConcurrentUsage)
   std::atomic<int> callbackCount{0};
 
   {
+#if defined(__cpp_lib_jthread)
+    std::jthread raiser([&](std::stop_token stopToken) {
+      while (!stopToken.stop_requested()) {
+        signal.raise();
+        raiseCount.fetch_add(1, std::memory_order_relaxed);
+      }
+    });
+#else
     std::atomic<bool> stopRequested{false};
     std::thread raiser([&]() {
       while (!stopRequested.load(std::memory_order_relaxed)) {
@@ -418,13 +431,18 @@ TEST(Signal, ConcurrentUsage)
         raiseCount.fetch_add(1, std::memory_order_relaxed);
       }
     });
+#endif
 
     while (raiseCount.load(std::memory_order_relaxed) == 0) {
       std::this_thread::yield();
     }
 
     {
+#if defined(__cpp_lib_jthread)
+      std::vector<std::jthread> workers;
+#else
       std::vector<std::thread> workers;
+#endif
       workers.reserve(kNumThreads);
       for (int t = 0; t < kNumThreads; ++t) {
         workers.emplace_back([&]() {
@@ -437,14 +455,19 @@ TEST(Signal, ConcurrentUsage)
           }
         });
       }
-
+#if !defined(__cpp_lib_jthread)
       for (std::thread& worker : workers) {
         worker.join();
       }
+#endif
     }
 
+#if defined(__cpp_lib_jthread)
+    raiser.request_stop();
+#else
     stopRequested.store(true, std::memory_order_relaxed);
     raiser.join();
+#endif
   }
 
   EXPECT_EQ(signal.getNumConnections(), 0u);

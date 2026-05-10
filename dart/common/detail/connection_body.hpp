@@ -35,6 +35,7 @@
 
 #include <dart/export.hpp>
 
+#include <iterator>
 #include <memory>
 
 namespace dart {
@@ -138,7 +139,7 @@ struct DefaultCombiner
 {
   using result_type = T;
 
-  template <typename InputIterator>
+  template <std::bidirectional_iterator InputIterator>
   static T process(InputIterator first, InputIterator last)
   {
     // If there are no slots to call, just return the
