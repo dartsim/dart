@@ -14,7 +14,7 @@
 
   * Fix spdlog/fmt 12 builds by treating DART logging format parameters as runtime format strings. ([#2540](https://github.com/dartsim/dart/pull/2540), [#2538](https://github.com/dartsim/dart/issues/2538))
 
-  * Fix PoolAllocator leaking old memory block tables when the table grows.
+  * Fix PoolAllocator leaking old memory block tables when the table grows. ([#2646](https://github.com/dartsim/dart/pull/2646))
 
 * Simulation
 
