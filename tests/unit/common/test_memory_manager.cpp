@@ -204,6 +204,23 @@ TEST(MemoryManagerTest, AllocateByTypePool)
 }
 
 //==============================================================================
+TEST(MemoryManagerTest, AllocateByTypeFrame)
+{
+  auto mm = MemoryManager();
+
+  auto* ptr = mm.allocate(MemoryManager::Type::Frame, sizeof(int));
+  ASSERT_NE(ptr, nullptr);
+  mm.deallocate(MemoryManager::Type::Frame, ptr, sizeof(int));
+
+  auto* framePtr = mm.allocateUsingFrame(sizeof(double));
+  ASSERT_NE(framePtr, nullptr);
+  mm.deallocateUsingFrame(framePtr, sizeof(double));
+
+  auto& frameAllocator = mm.getFrameAllocator();
+  EXPECT_EQ(&frameAllocator.getBaseAllocator(), &mm.getBaseAllocator());
+}
+
+//==============================================================================
 TEST(MemoryManagerTest, GetDefault)
 {
   // GetDefault should return the same instance
@@ -345,5 +362,20 @@ TEST(MemoryManagerTest, ConstructAndDestroyWithTypeBase)
 
   // Destroy using Base type dispatch
   mm.destroy<LifecycleTracker>(MemoryManager::Type::Base, obj);
+  EXPECT_EQ(LifecycleTracker::destructCount, 1);
+}
+
+//==============================================================================
+TEST(MemoryManagerTest, ConstructAndDestroyUsingFrame)
+{
+  auto mm = MemoryManager();
+  LifecycleTracker::reset();
+
+  auto* obj = mm.constructUsingFrame<LifecycleTracker>(123);
+  ASSERT_NE(obj, nullptr);
+  EXPECT_EQ(LifecycleTracker::constructCount, 1);
+  EXPECT_EQ(obj->value, 123);
+
+  mm.destroyUsingFrame(obj);
   EXPECT_EQ(LifecycleTracker::destructCount, 1);
 }

@@ -496,15 +496,19 @@ dart_get_tests(integration_tests "integration")
 
 Areas that commonly need additional test coverage (identified from test-coverage-audit):
 
-| Pattern                | What to Test                                                         | Example                                               |
-| ---------------------- | -------------------------------------------------------------------- | ----------------------------------------------------- |
-| **Smart pointers**     | Lifecycle, expiration, owner lifetime                                | `BodyNodePtr`, `NodePtr`, `WeakPtr` variants          |
-| **Aspect system**      | `has<T>()`, `get<T>()`, `removeAspect<T>()`, `isSpecializedFor<T>()` | Composite template methods                            |
-| **Constraint solvers** | Empty inputs, duplicate skeletons, timestep changes, null detectors  | `ConstraintSolver` edge cases                         |
-| **Collision filters**  | Self-collision, blacklist edge cases, composite behavior             | `CollisionFilter` combinations                        |
-| **Template classes**   | All template instantiations, not just common types                   | `TemplateBodyNodePtr<BodyNode>` vs `<const BodyNode>` |
+| Pattern                | What to Test                                                         | Example                                                |
+| ---------------------- | -------------------------------------------------------------------- | ------------------------------------------------------ |
+| **Smart pointers**     | Lifecycle, expiration, owner lifetime                                | `BodyNodePtr`, `NodePtr`, `WeakPtr` variants           |
+| **Aspect system**      | `has<T>()`, `get<T>()`, `removeAspect<T>()`, `isSpecializedFor<T>()` | Composite template methods                             |
+| **Constraint solvers** | Empty inputs, duplicate skeletons, timestep changes, null detectors  | `ConstraintSolver` edge cases                          |
+| **Collision filters**  | Self-collision, blacklist edge cases, composite behavior             | `CollisionFilter` combinations                         |
+| **Template classes**   | All template instantiations, not just common types                   | `TemplateBodyNodePtr<BodyNode>` vs `<const BodyNode>`  |
+| **Allocators**         | Dispatch variants, no-op deallocation, growth, overflow, printing    | `MemoryManager`, `FreeListAllocator`, `FrameAllocator` |
+| **Optimization APIs**  | Null/no-objective problems, base copy paths, wrapper dispatch        | `Problem`, `Solver`, `GradientDescentSolver`           |
 
 **Key insight**: Template classes and smart pointer wrappers often have lower coverage because tests only exercise common instantiations. Add explicit tests for const variants, weak references, and edge cases like expired pointers.
+
+Coverage audits are most useful when tests exercise meaningful API branches rather than just line counts. Prefer focused tests for public dispatch paths and backend helpers that are linked into core modules but missed by higher-level workflows.
 
 ## Common Pitfalls and Solutions
 

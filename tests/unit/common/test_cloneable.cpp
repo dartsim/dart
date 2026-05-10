@@ -34,7 +34,9 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <map>
+#include <span>
 #include <string>
 
 using namespace dart::common;
@@ -206,6 +208,23 @@ TEST(MakeCloneable, CopyMethod)
 
   EXPECT_EQ(target.value, 111);
   EXPECT_EQ(target.name, "source");
+}
+
+//==============================================================================
+TEST(MakeCloneable, CopyThroughBaseInterface)
+{
+  SimpleMakeCloneable source;
+  source.value = 222;
+  source.name = "base_source";
+
+  SimpleMakeCloneable target;
+  SimpleBase& targetBase = target;
+  const SimpleBase& sourceBase = source;
+
+  targetBase.copy(sourceBase);
+
+  EXPECT_EQ(target.value, 222);
+  EXPECT_EQ(target.name, "base_source");
 }
 
 //==============================================================================
@@ -394,6 +413,31 @@ TEST(CloneableVector, CopyUpdatesExistingEntriesInPlace)
 }
 
 //==============================================================================
+TEST(CloneableVector, CloneAndSpanConstructor)
+{
+  std::vector<SimplePtr> raw;
+  raw.push_back(makeSimpleCloneable(31, "thirty_one"));
+  raw.push_back(makeSimpleCloneable(32, "thirty_two"));
+
+  CloneableVector<SimplePtr> source(std::move(raw));
+  auto cloned = source.clone();
+  ASSERT_NE(cloned, nullptr);
+
+  const auto& clonedVector = cloned->getVector();
+  ASSERT_EQ(clonedVector.size(), 2u);
+  ASSERT_NE(clonedVector[0], nullptr);
+  ASSERT_NE(clonedVector[1], nullptr);
+  EXPECT_EQ(
+      static_cast<const SimpleMakeCloneable*>(clonedVector[0].get())->value,
+      31);
+
+  const std::array<int, 3> values{1, 2, 3};
+  CloneableVector<int> ints{std::span<const int>(values)};
+  EXPECT_EQ(ints.getVector().size(), values.size());
+  EXPECT_EQ(ints.getVector()[2], 3);
+}
+
+//==============================================================================
 TEST(CloneableMap, MoveAndMerge)
 {
   using SimpleMap = std::map<std::string, SimplePtr>;
@@ -421,6 +465,41 @@ TEST(CloneableMap, MoveAndMerge)
 
   movedHolder.copy(incoming, false);
   EXPECT_EQ(movedHolder.getMap()["replace"], nullptr);
+}
+
+//==============================================================================
+TEST(CloneableMap, CopyHandlesOrderingBranchesAndEraseTail)
+{
+  using SimpleMap = std::map<std::string, SimplePtr>;
+
+  SimpleMap targetMap;
+  targetMap["a"] = makeSimpleCloneable(1, "a");
+  targetMap["c"] = makeSimpleCloneable(3, "old_c");
+  targetMap["e"] = makeSimpleCloneable(5, "e");
+  CloneableMap<SimpleMap> target(targetMap);
+
+  const auto* originalC = target.getMap().at("c").get();
+
+  SimpleMap sourceMap;
+  sourceMap["b"] = makeSimpleCloneable(2, "b");
+  sourceMap["c"] = makeSimpleCloneable(30, "new_c");
+  sourceMap["d"] = makeSimpleCloneable(4, "d");
+
+  target.copy(sourceMap, false);
+
+  const auto& result = target.getMap();
+  ASSERT_TRUE(result.contains("a"));
+  EXPECT_EQ(result.at("a"), nullptr);
+  ASSERT_TRUE(result.contains("b"));
+  ASSERT_NE(result.at("b"), nullptr);
+  ASSERT_TRUE(result.contains("c"));
+  ASSERT_NE(result.at("c"), nullptr);
+  EXPECT_EQ(result.at("c").get(), originalC);
+  EXPECT_EQ(
+      static_cast<const SimpleMakeCloneable*>(result.at("c").get())->value, 30);
+  ASSERT_TRUE(result.contains("d"));
+  ASSERT_NE(result.at("d"), nullptr);
+  EXPECT_FALSE(result.contains("e"));
 }
 
 //==============================================================================
@@ -568,4 +647,25 @@ TEST(ProxyCloneable, CopyAndMoveConstructors)
 
   EXPECT_EQ(owner.data.value, 8);
   EXPECT_EQ(owner.data.name, "updated");
+}
+
+//==============================================================================
+TEST(ProxyCloneable, CopyThroughBaseInterfaceAndClone)
+{
+  SimpleProxy source(SimpleData{11, "source_proxy"});
+  SimpleProxy target;
+
+  ProxyBase& targetBase = target;
+  const ProxyBase& sourceBase = source;
+  targetBase.copy(sourceBase);
+
+  EXPECT_EQ(target.get().value, 11);
+  EXPECT_EQ(target.get().name, "source_proxy");
+
+  auto cloned = sourceBase.clone();
+  ASSERT_NE(cloned, nullptr);
+  auto* proxy = dynamic_cast<SimpleProxy*>(cloned.get());
+  ASSERT_NE(proxy, nullptr);
+  EXPECT_EQ(proxy->get().value, 11);
+  EXPECT_EQ(proxy->get().name, "source_proxy");
 }

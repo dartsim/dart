@@ -35,6 +35,7 @@
   #include <dart/collision/collision_group.hpp>
   #include <dart/collision/collision_option.hpp>
   #include <dart/collision/collision_result.hpp>
+  #include <dart/collision/ode/detail/ode_cylinder_mesh.hpp>
   #include <dart/collision/ode/ode_collision_detector.hpp>
 
   #include <dart/dynamics/box_shape.hpp>
@@ -83,6 +84,30 @@ bool collidePair(
 }
 
 } // namespace
+
+//==============================================================================
+TEST(OdeCylinderMesh, DetailMeshBuildsPlaceableTriMesh)
+{
+  auto ode = OdeCollisionDetector::create();
+  ASSERT_TRUE(ode);
+
+  dart::collision::detail::OdeCylinderMesh mesh(nullptr, 0.5, 1.0, 4, 2);
+  EXPECT_EQ(mesh.getParentCollisionObject(), nullptr);
+  ASSERT_NE(mesh.getOdeGeomId(), nullptr);
+  EXPECT_EQ(dGeomGetClass(mesh.getOdeGeomId()), dTriMeshClass);
+  EXPECT_TRUE(mesh.isPlaceable());
+
+  mesh.updateEngineData();
+
+  dReal aabb[6];
+  dGeomGetAABB(mesh.getOdeGeomId(), aabb);
+  EXPECT_LE(aabb[0], -0.5);
+  EXPECT_GE(aabb[1], 0.5);
+  EXPECT_LE(aabb[2], -0.5);
+  EXPECT_GE(aabb[3], 0.5);
+  EXPECT_LE(aabb[4], -0.5);
+  EXPECT_GE(aabb[5], 0.5);
+}
 
 //==============================================================================
 TEST(OdeCylinderMesh, CylinderSphereCollision)
