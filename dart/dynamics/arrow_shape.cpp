@@ -152,7 +152,7 @@ void ArrowShape::configureArrow(
   mProperties = _properties;
 
   mProperties.mHeadLengthScale
-      = std::max(0.0, std::min(1.0, mProperties.mHeadLengthScale));
+      = std::clamp(mProperties.mHeadLengthScale, 0.0, 1.0);
   mProperties.mMinHeadLength = std::max(0.0, mProperties.mMinHeadLength);
   mProperties.mMaxHeadLength = std::max(0.0, mProperties.mMaxHeadLength);
   mProperties.mHeadRadiusScale = std::max(1.0, mProperties.mHeadRadiusScale);

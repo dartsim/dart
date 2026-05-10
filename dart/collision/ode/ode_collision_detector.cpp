@@ -593,16 +593,13 @@ void OdeCollisionDetector::pruneContactHistory(const CollisionResult& result)
 
   const auto& contacts = result.getContacts();
   for (auto& pastContact : mContactHistory) {
-    bool clear = true;
-    for (const auto& current : contacts) {
-      auto currentPair
-          = MakeNewPair(current.collisionObject1, current.collisionObject2);
-      if (pastContact.pair == currentPair) {
-        clear = false;
-        break;
-      }
-    }
-    if (clear) {
+    const auto hasCurrentContact
+        = std::ranges::any_of(contacts, [&](const Contact& current) {
+            auto currentPair = MakeNewPair(
+                current.collisionObject1, current.collisionObject2);
+            return pastContact.pair == currentPair;
+          });
+    if (!hasCurrentContact) {
       pastContact.history.clear();
     }
   }

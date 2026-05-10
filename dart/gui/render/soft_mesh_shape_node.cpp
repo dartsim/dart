@@ -208,7 +208,7 @@ static Eigen::Vector3d normalFromVertex(
   const Eigen::Vector3d n = dv1.cross(dv2);
 
   double weight = n.norm() / (dv1.norm() * dv2.norm());
-  weight = std::max(-1.0, std::min(1.0, weight));
+  weight = std::clamp(weight, -1.0, 1.0);
 
   return n.normalized() * asin(weight);
 }

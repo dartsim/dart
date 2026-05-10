@@ -277,7 +277,7 @@ void SupportPolygonVisual::refresh()
   if (mDisplayCentroid) {
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
 
-    if (poly.size() > 0) {
+    if (!poly.empty()) {
       const Eigen::Vector2d& Cp = (dart::dynamics::INVALID_INDEX == mTreeIndex)
                                       ? skel->getSupportCentroid()
                                       : skel->getSupportCentroid(mTreeIndex);

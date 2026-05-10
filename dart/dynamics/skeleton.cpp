@@ -540,8 +540,8 @@ SkeletonPtr Skeleton::cloneSkeleton(const std::string& cloneName) const
 
   // Clone over the nodes in such a way that their indexing will match up with
   // the original
-  for (const auto& nodeType : mNodeMap) {
-    for (const auto& node : nodeType.second) {
+  for (const auto& nodes : mNodeMap | std::views::values) {
+    for (const auto& node : nodes) {
       const BodyNode* originalBn = node->getBodyNodePtr();
       BodyNode* newBn = skelClone->getBodyNode(originalBn->getName());
       node->cloneNode(newBn)->attach();
@@ -912,7 +912,7 @@ BodyNode* Skeleton::getRootBodyNode(std::size_t _treeIdx)
     return mTreeCache[_treeIdx].mBodyNodes[0];
   }
 
-  if (mTreeCache.size() == 0) {
+  if (mTreeCache.empty()) {
     DART_THROW_T(
         common::OutOfRangeException,
         "Requested a root BodyNode from Skeleton '{}' with no BodyNodes",
@@ -1352,8 +1352,7 @@ bool Skeleton::checkIndexingConsistency() const
     }
 
     const BodyNode::NodeMap& nodeMap = bn->mNodeMap;
-    for (const auto& nodeType : nodeMap) {
-      const std::vector<Node*>& nodes = nodeType.second;
+    for (const auto& nodes : nodeMap | std::views::values) {
       for (std::size_t k = 0; k < nodes.size(); ++k) {
         const Node* node = nodes[k];
         if (node->getBodyNodePtr() != bn) {
@@ -1427,8 +1426,7 @@ bool Skeleton::checkIndexingConsistency() const
   // Check each Node in the Skeleton-scope NodeMap
   {
     const Skeleton::NodeMap& nodeMap = mNodeMap;
-    for (const auto& nodeType : nodeMap) {
-      const std::vector<Node*>& nodes = nodeType.second;
+    for (const auto& nodes : nodeMap | std::views::values) {
       for (std::size_t k = 0; k < nodes.size(); ++k) {
         const Node* node = nodes[k];
         if (node->getSkeleton().get() != this) {
@@ -1529,8 +1527,7 @@ bool Skeleton::checkIndexingConsistency() const
   for (std::size_t i = 0; i < mTreeNodeMaps.size(); ++i) {
     const NodeMap& nodeMap = mTreeNodeMaps[i];
 
-    for (const auto& nodeType : nodeMap) {
-      const std::vector<Node*>& nodes = nodeType.second;
+    for (const auto& nodes : nodeMap | std::views::values) {
       for (std::size_t k = 0; k < nodes.size(); ++k) {
         const Node* node = nodes[k];
         if (node->getBodyNodePtr()->mTreeIndex != i) {
@@ -2354,8 +2351,8 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
   _newBodyNode->init(getPtr());
 
   BodyNode::NodeMap& nodeMap = _newBodyNode->mNodeMap;
-  for (auto& nodeType : nodeMap) {
-    for (auto& node : nodeType.second) {
+  for (auto& nodes : nodeMap | std::views::values) {
+    for (auto& node : nodes) {
       registerNode(node);
     }
   }
@@ -2512,8 +2509,7 @@ void Skeleton::destructOldTree(std::size_t tree)
     }
   }
 
-  for (auto& nodeType : mSpecializedTreeNodes) {
-    std::vector<NodeMap::iterator>* nodeRepo = nodeType.second;
+  for (auto* nodeRepo : mSpecializedTreeNodes | std::views::values) {
     nodeRepo->erase(nodeRepo->begin() + tree);
   }
 }
@@ -2524,8 +2520,8 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
   unregisterJoint(_oldBodyNode->getParentJoint());
 
   BodyNode::NodeMap& nodeMap = _oldBodyNode->mNodeMap;
-  for (auto& nodeType : nodeMap) {
-    for (auto& node : nodeType.second) {
+  for (auto& nodes : nodeMap | std::views::values) {
+    for (auto& node : nodes) {
       unregisterNode(node);
     }
   }
@@ -3669,7 +3665,7 @@ static void computeSupportPolygon(
     ee_indices[i] = originalEE_map[vertex_indices[i]];
   }
 
-  if (polygon.size() > 0) {
+  if (!polygon.empty()) {
     centroid = math::computeCentroidOfHull(polygon);
   } else {
     centroid = Eigen::Vector2d::Constant(std::nan(""));

@@ -37,6 +37,7 @@
 #include <dart/simd/detail/math/polynomial.hpp>
 #include <dart/simd/fwd.hpp>
 
+#include <algorithm>
 #include <utility>
 
 #include <cmath>
@@ -140,18 +141,13 @@ DART_SIMD_INLINE void sincosImplSimd(
   alignas(A) float xArr[W];
   alignas(A) float scalarSin[W];
   alignas(A) float scalarCos[W];
-  bool needScalar = false;
-  {
+  const bool needScalar = [&] {
     alignas(A) float inRangeArr[W];
     select(inRange, VecT::broadcast(1.0f), VecT::broadcast(0.0f))
         .store(inRangeArr);
-    for (std::size_t i = 0; i < W; ++i) {
-      if (inRangeArr[i] == 0.0f) {
-        needScalar = true;
-        break;
-      }
-    }
-  }
+    return std::ranges::any_of(
+        inRangeArr, [](float value) { return value == 0.0f; });
+  }();
   if (needScalar) {
     x.store(xArr);
     for (std::size_t i = 0; i < W; ++i) {

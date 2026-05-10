@@ -63,8 +63,7 @@ void PackageResourceRetriever::addPackageDirectory(
 {
   // Strip a trailing slash.
   std::string_view normalizedPackageDirectory = packageDirectory;
-  if (!normalizedPackageDirectory.empty()
-      && normalizedPackageDirectory.back() == '/') {
+  if (normalizedPackageDirectory.ends_with('/')) {
     normalizedPackageDirectory = normalizedPackageDirectory.substr(
         0, normalizedPackageDirectory.size() - 1);
   }

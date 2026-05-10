@@ -213,7 +213,7 @@ private:
       if (byPath != mData.end()) {
         return &byPath->second;
       }
-      if (!path.empty() && path.front() == '/') {
+      if (path.starts_with('/')) {
         const auto byTrim = mData.find(path.substr(1));
         if (byTrim != mData.end()) {
           return &byTrim->second;

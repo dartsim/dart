@@ -391,7 +391,7 @@ public:
 
       if (BUTTON_RELEASE == event || BUTTON_NOTHING == event) {
         const auto picks = mEventHandler->getMovePicks();
-        if (picks.size() > 0) {
+        if (!picks.empty()) {
           const PickInfo& pick = picks[0];
           if (pick.frame->getParentFrame()
               != mFrame->getTool((InteractiveTool::Type)mTool, mCoordinate)) {
@@ -418,7 +418,7 @@ public:
       }
 
       const auto picks = mEventHandler->getMovePicks();
-      if (picks.size() == 0) {
+      if (picks.empty()) {
         return;
       }
 
