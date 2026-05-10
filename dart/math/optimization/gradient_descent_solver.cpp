@@ -127,7 +127,7 @@ bool GradientDescentSolver::solve()
   }
 
   Eigen::VectorXd x = problem->getInitialGuess();
-  DART_ASSERT(x.size() == static_cast<int>(dim));
+  DART_ASSERT(std::cmp_equal(x.size(), dim));
 
   Eigen::VectorXd lastx = x;
   Eigen::VectorXd dx(x.size());
@@ -183,8 +183,7 @@ bool GradientDescentSolver::solve()
       if (objective) {
         objective->evalGradient(x, dxMap);
       }
-      for (int i = 0; i < static_cast<int>(problem->getNumEqConstraints());
-           ++i) {
+      for (std::size_t i = 0; i < problem->getNumEqConstraints(); ++i) {
         if (std::abs(mEqConstraintCostCache[i]) < tol) {
           continue;
         }
@@ -193,7 +192,7 @@ bool GradientDescentSolver::solve()
 
         // Get the user-specified weight if available, otherwise use the default
         // weight value
-        double weight = mGradientP.mEqConstraintWeights.size() > i
+        double weight = std::cmp_less(i, mGradientP.mEqConstraintWeights.size())
                             ? mGradientP.mEqConstraintWeights[i]
                             : mGradientP.mDefaultConstraintWeight;
 
@@ -204,8 +203,7 @@ bool GradientDescentSolver::solve()
         dx += weight * grad * math::sign(mEqConstraintCostCache[i]);
       }
 
-      for (int i = 0; i < static_cast<int>(problem->getNumIneqConstraints());
-           ++i) {
+      for (std::size_t i = 0; i < problem->getNumIneqConstraints(); ++i) {
         if (mIneqConstraintCostCache[i] < tol) {
           continue;
         }
@@ -214,9 +212,10 @@ bool GradientDescentSolver::solve()
 
         // Get the user-specified weight if available, otherwise use the
         // default weight value
-        double weight = mGradientP.mIneqConstraintWeights.size() > i
-                            ? mGradientP.mIneqConstraintWeights[i]
-                            : mGradientP.mDefaultConstraintWeight;
+        double weight
+            = std::cmp_less(i, mGradientP.mIneqConstraintWeights.size())
+                  ? mGradientP.mIneqConstraintWeights[i]
+                  : mGradientP.mDefaultConstraintWeight;
 
         dx += weight * grad;
       }

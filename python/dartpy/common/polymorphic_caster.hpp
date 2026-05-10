@@ -2,6 +2,7 @@
 
 #include <nanobind/nanobind.h>
 
+#include <concepts>
 #include <string>
 #include <typeindex>
 #include <unordered_map>
@@ -123,7 +124,7 @@ private:
 
 } // namespace detail
 
-template <typename Base, typename Derived>
+template <typename Base, std::derived_from<Base> Derived>
 inline void registerPolymorphicCaster()
 {
   detail::PolymorphicCasterRegistry<Base>::registerType(

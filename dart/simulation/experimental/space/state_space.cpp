@@ -34,8 +34,12 @@
 
 #include "dart/simulation/experimental/common/exceptions.hpp"
 
+#include <algorithm>
 #include <format>
+#include <iterator>
 #include <stdexcept>
+
+#include <cstddef>
 
 namespace dart::simulation::experimental {
 
@@ -134,9 +138,10 @@ std::vector<double> StateSpace::getLowerBounds() const
   bounds.reserve(m_totalDimension);
 
   for (const auto& var : m_variables) {
-    for (size_t i = 0; i < var.dimension; ++i) {
-      bounds.push_back(var.lowerBound);
-    }
+    std::ranges::fill_n(
+        std::back_inserter(bounds),
+        static_cast<std::ptrdiff_t>(var.dimension),
+        var.lowerBound);
   }
 
   return bounds;
@@ -148,9 +153,10 @@ std::vector<double> StateSpace::getUpperBounds() const
   bounds.reserve(m_totalDimension);
 
   for (const auto& var : m_variables) {
-    for (size_t i = 0; i < var.dimension; ++i) {
-      bounds.push_back(var.upperBound);
-    }
+    std::ranges::fill_n(
+        std::back_inserter(bounds),
+        static_cast<std::ptrdiff_t>(var.dimension),
+        var.upperBound);
   }
 
   return bounds;

@@ -36,13 +36,25 @@
 #include <dart/export.hpp>
 
 #include <chrono>
+#include <concepts>
 #include <iostream>
 
 namespace dart::common {
 
+namespace detail {
+
+/// Returns true for the supported Stopwatch duration units.
+template <typename UnitType>
+concept StopwatchUnit = std::same_as<UnitType, std::chrono::seconds>
+                        || std::same_as<UnitType, std::chrono::milliseconds>
+                        || std::same_as<UnitType, std::chrono::microseconds>
+                        || std::same_as<UnitType, std::chrono::nanoseconds>;
+
+} // namespace detail
+
 /// Simple stopwatch implementation
 template <
-    typename UnitType,
+    detail::StopwatchUnit UnitType,
     typename ClockType = std::chrono::high_resolution_clock>
 class Stopwatch final
 {
@@ -87,7 +99,7 @@ public:
   void print(std::ostream& os = std::cout) const;
 
   /// Prints state of the stopwatch
-  template <typename T, typename U>
+  template <detail::StopwatchUnit T, typename U>
   friend std::ostream& operator<<(std::ostream& os, const Stopwatch<T, U>& sw);
 
 private:

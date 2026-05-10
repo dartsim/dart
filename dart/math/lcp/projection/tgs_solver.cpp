@@ -37,6 +37,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <span>
 #include <vector>
 
 #include <cmath>
@@ -112,23 +113,51 @@ LcpResult TgsSolver::solve(
                                        ? options.relativeTolerance
                                        : mDefaultOptions.relativeTolerance;
 
-  std::vector<double> Adata(static_cast<std::size_t>(n * nSkip), 0.0);
-  std::vector<double> xdata(static_cast<std::size_t>(n), 0.0);
-  std::vector<double> bdata(static_cast<std::size_t>(n), 0.0);
-  std::vector<double> loData(static_cast<std::size_t>(n), 0.0);
-  std::vector<double> hiData(static_cast<std::size_t>(n), 0.0);
-  std::vector<int> findexData(static_cast<std::size_t>(n), -1);
+  const auto problemSize = static_cast<std::size_t>(n);
+  const auto paddedSize = static_cast<std::size_t>(nSkip);
+
+  std::vector<double> Adata(problemSize * paddedSize, 0.0);
+  std::vector<double> xdata(problemSize, 0.0);
+  std::vector<double> bdata(problemSize, 0.0);
+  std::vector<double> loData(problemSize, 0.0);
+  std::vector<double> hiData(problemSize, 0.0);
+  std::vector<int> findexData(problemSize, -1);
+
+  std::span<double> aValues{Adata};
+  std::span<double> xValues{xdata};
+  std::span<double> bValues{bdata};
+  std::span<double> loValues{loData};
+  std::span<double> hiValues{hiData};
+  std::span<int> findexValues{findexData};
+
+  auto aRow = [&](int row) -> std::span<double> {
+    return aValues.subspan(
+        static_cast<std::size_t>(row) * paddedSize, problemSize);
+  };
+
+  auto projectIntoBounds = [&](double value, std::size_t idx) {
+    if (findexValues[idx] >= 0) {
+      const auto frictionIndex = static_cast<std::size_t>(findexValues[idx]);
+      const double frictionLimit
+          = std::abs(hiValues[idx] * xValues[frictionIndex]);
+      return std::clamp(value, -frictionLimit, frictionLimit);
+    }
+
+    return std::clamp(value, loValues[idx], hiValues[idx]);
+  };
 
   for (int r = 0; r < n; ++r) {
-    bdata[static_cast<std::size_t>(r)] = b[r];
+    const auto idx = static_cast<std::size_t>(r);
+    std::span<double> row = aRow(r);
+    bValues[idx] = b[r];
     const double initVal
         = (options.warmStart && std::isfinite(x[r])) ? x[r] : 0.0;
-    xdata[static_cast<std::size_t>(r)] = initVal;
-    loData[static_cast<std::size_t>(r)] = lo[r];
-    hiData[static_cast<std::size_t>(r)] = hi[r];
-    findexData[static_cast<std::size_t>(r)] = findex[r];
+    xValues[idx] = initVal;
+    loValues[idx] = lo[r];
+    hiValues[idx] = hi[r];
+    findexValues[idx] = findex[r];
     for (int c = 0; c < n; ++c) {
-      Adata[static_cast<std::size_t>(r * nSkip + c)] = A(r, c);
+      row[static_cast<std::size_t>(c)] = A(r, c);
     }
   }
 
@@ -136,18 +165,21 @@ LcpResult TgsSolver::solve(
   order.reserve(static_cast<std::size_t>(n));
 
   for (int i = 0; i < n; ++i) {
-    if (Adata[static_cast<std::size_t>(nSkip * i + i)]
-        >= params->epsilonForDivision) {
+    const auto idx = static_cast<std::size_t>(i);
+    const std::span<double> row = aRow(i);
+    if (row[idx] >= params->epsilonForDivision) {
       order.push_back(i);
     } else {
-      xdata[static_cast<std::size_t>(i)] = 0.0;
+      xValues[idx] = 0.0;
     }
   }
 
-  std::vector<double> invDiag(static_cast<std::size_t>(n), 0.0);
+  std::vector<double> invDiag(problemSize, 0.0);
+  std::span<double> invDiagValues{invDiag};
   for (const auto& index : order) {
-    invDiag[static_cast<std::size_t>(index)]
-        = 1.0 / Adata[static_cast<std::size_t>(nSkip * index + index)];
+    const auto idx = static_cast<std::size_t>(index);
+    const std::span<double> row = aRow(index);
+    invDiagValues[idx] = 1.0 / row[idx];
   }
 
   int iterationsUsed = 0;
@@ -163,31 +195,23 @@ LcpResult TgsSolver::solve(
 
     for (const auto& index : order) {
       const std::size_t idx = static_cast<std::size_t>(index);
-      const double* APtr = Adata.data() + nSkip * index;
+      const std::span<double> row = aRow(index);
 
-      double newX = bdata[idx];
+      double newX = bValues[idx];
       for (int j = 0; j < index; ++j) {
-        newX -= APtr[j] * xdata[static_cast<std::size_t>(j)];
+        newX -= row[static_cast<std::size_t>(j)]
+                * xValues[static_cast<std::size_t>(j)];
       }
       for (int j = index + 1; j < n; ++j) {
-        newX -= APtr[j] * xdata[static_cast<std::size_t>(j)];
+        newX -= row[static_cast<std::size_t>(j)]
+                * xValues[static_cast<std::size_t>(j)];
       }
-      newX *= invDiag[idx];
+      newX *= invDiagValues[idx];
 
-      const double oldX = xdata[idx];
+      const double oldX = xValues[idx];
       newX = std::lerp(oldX, newX, relaxation);
-
-      double loVal = loData[idx];
-      double hiVal = hiData[idx];
-      if (findexData[idx] >= 0) {
-        const double fricLimit = std::abs(
-            hiData[idx] * xdata[static_cast<std::size_t>(findexData[idx])]);
-        loVal = -fricLimit;
-        hiVal = fricLimit;
-      }
-
-      newX = std::clamp(newX, loVal, hiVal);
-      xdata[idx] = newX;
+      newX = projectIntoBounds(newX, idx);
+      xValues[idx] = newX;
 
       if (possibleToTerminate && std::abs(newX) > params->epsilonForDivision) {
         const double relativeDelta = std::abs((newX - oldX) / newX);

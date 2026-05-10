@@ -37,6 +37,7 @@
 
 #include <algorithm>
 #include <unordered_set>
+#include <utility>
 
 namespace dart {
 namespace dynamics {
@@ -260,7 +261,7 @@ void Linkage::Criteria::expandDownstream(
 
   while (!recorder.empty()) {
     Recording& r = recorder.back();
-    if (r.mCount < static_cast<int>(r.mNode->getNumChildBodyNodes())) {
+    if (std::cmp_less(r.mCount, r.mNode->getNumChildBodyNodes())) {
       stepToNextChild(recorder, _bns, r, mMapOfTerminals, 0);
     } else {
       recorder.pop_back();
@@ -303,7 +304,7 @@ void Linkage::Criteria::expandUpstream(
         // If we originally came from this node, then just continue to the next
         ++r.mCount;
       }
-    } else if (r.mCount < static_cast<int>(r.mNode->getNumChildBodyNodes())) {
+    } else if (std::cmp_less(r.mCount, r.mNode->getNumChildBodyNodes())) {
       // Greater than -1 means we need to add the children
 
       if (recorder.size() == 1) {
