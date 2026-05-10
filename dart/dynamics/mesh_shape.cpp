@@ -55,6 +55,7 @@
 #include <iterator>
 #include <limits>
 #include <locale>
+#include <numeric>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -650,21 +651,31 @@ const aiScene* MeshShape::convertToAssimpMesh() const
   const bool hasSubMeshes = !mSubMeshRanges.empty() && mMaterials.size() > 1;
   bool useSubMeshes = hasSubMeshes;
   if (useSubMeshes) {
-    std::size_t totalVertices = 0;
-    std::size_t totalTriangles = 0;
-    for (const auto& range : mSubMeshRanges) {
-      if (range.vertexOffset + range.vertexCount > vertices.size()
-          || range.triangleOffset + range.triangleCount > triangles.size()) {
-        useSubMeshes = false;
-        break;
-      }
-      totalVertices += range.vertexCount;
-      totalTriangles += range.triangleCount;
-    }
-    if (useSubMeshes
-        && (totalVertices != vertices.size()
-            || totalTriangles != triangles.size())) {
+    const bool rangesWithinMesh
+        = std::ranges::all_of(mSubMeshRanges, [&](const auto& range) {
+            return range.vertexOffset + range.vertexCount <= vertices.size()
+                   && range.triangleOffset + range.triangleCount
+                          <= triangles.size();
+          });
+    if (!rangesWithinMesh) {
       useSubMeshes = false;
+    } else {
+      const std::size_t totalVertices = std::accumulate(
+          mSubMeshRanges.begin(),
+          mSubMeshRanges.end(),
+          std::size_t{0},
+          [](std::size_t total, const auto& range) {
+            return total + range.vertexCount;
+          });
+      const std::size_t totalTriangles = std::accumulate(
+          mSubMeshRanges.begin(),
+          mSubMeshRanges.end(),
+          std::size_t{0},
+          [](std::size_t total, const auto& range) {
+            return total + range.triangleCount;
+          });
+      useSubMeshes = totalVertices == vertices.size()
+                     && totalTriangles == triangles.size();
     }
   }
 
@@ -893,16 +904,20 @@ std::shared_ptr<math::PolygonMesh<double>> MeshShape::convertAssimpPolygonMesh(
 
   auto polygonMesh = std::make_shared<math::PolygonMesh<double>>();
 
-  std::size_t totalVertices = 0;
-  std::size_t totalFaces = 0;
-  for (std::size_t i = 0; i < scene->mNumMeshes; ++i) {
-    const aiMesh* assimpMesh = scene->mMeshes[i];
-    if (!assimpMesh) {
-      continue;
-    }
-    totalVertices += assimpMesh->mNumVertices;
-    totalFaces += assimpMesh->mNumFaces;
-  }
+  const std::size_t totalVertices = std::accumulate(
+      scene->mMeshes,
+      scene->mMeshes + scene->mNumMeshes,
+      std::size_t{0},
+      [](std::size_t total, const aiMesh* assimpMesh) {
+        return assimpMesh ? total + assimpMesh->mNumVertices : total;
+      });
+  const std::size_t totalFaces = std::accumulate(
+      scene->mMeshes,
+      scene->mMeshes + scene->mNumMeshes,
+      std::size_t{0},
+      [](std::size_t total, const aiMesh* assimpMesh) {
+        return assimpMesh ? total + assimpMesh->mNumFaces : total;
+      });
 
   polygonMesh->reserveVertices(totalVertices);
   polygonMesh->reserveFaces(totalFaces);
