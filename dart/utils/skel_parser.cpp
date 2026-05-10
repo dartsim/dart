@@ -1068,8 +1068,7 @@ dynamics::SkeletonPtr readSkeleton(
     SkelBodyNode newBodyNode = readSoftBodyNode(
         xmlBodies.get(), skeletonFrame, _baseUri, _retriever);
 
-    BodyMap::const_iterator it = bodyNodes.find(newBodyNode.properties->mName);
-    if (it != bodyNodes.end()) {
+    if (bodyNodes.contains(newBodyNode.properties->mName)) {
       DART_ERROR(
           "[readSkeleton] Skeleton named [{}] has multiple BodyNodes with the "
           "name [{}], but BodyNode names must be unique! We will discard all "

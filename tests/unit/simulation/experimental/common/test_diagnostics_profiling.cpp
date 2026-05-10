@@ -35,7 +35,11 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <array>
 #include <chrono>
+#include <string>
+#include <string_view>
 #include <thread>
 
 using namespace dart::simulation::experimental::common;
@@ -44,22 +48,23 @@ TEST(Diagnostics, GetCompilerInfo_ReturnsNonEmpty)
 {
   std::string info = getCompilerInfo();
   EXPECT_FALSE(info.empty());
+  constexpr auto compilerNames
+      = std::to_array<std::string_view>({"GCC", "Clang", "MSVC", "Unknown"});
   EXPECT_TRUE(
-      info.find("GCC") != std::string::npos
-      || info.find("Clang") != std::string::npos
-      || info.find("MSVC") != std::string::npos
-      || info.find("Unknown") != std::string::npos);
+      std::ranges::any_of(compilerNames, [&](std::string_view compilerName) {
+        return info.find(compilerName) != std::string::npos;
+      }));
 }
 
 TEST(Diagnostics, GetCxxABI_ReturnsNonEmpty)
 {
   std::string abi = getCxxABI();
   EXPECT_FALSE(abi.empty());
-  EXPECT_TRUE(
-      abi.find("libstdc++") != std::string::npos
-      || abi.find("libc++") != std::string::npos
-      || abi.find("MSVC") != std::string::npos
-      || abi.find("unknown") != std::string::npos);
+  constexpr auto abiNames = std::to_array<std::string_view>(
+      {"libstdc++", "libc++", "MSVC", "unknown"});
+  EXPECT_TRUE(std::ranges::any_of(abiNames, [&](std::string_view abiName) {
+    return abi.find(abiName) != std::string::npos;
+  }));
 }
 
 TEST(Diagnostics, GetCxxStandard_ReturnsValidValue)

@@ -220,7 +220,7 @@ Eigen::Vector6d toVector6d(std::string_view str)
 Eigen::VectorXd toVectorXd(std::string_view str)
 {
   const std::vector<std::string> pieces = common::split(common::trim(str));
-  DART_ASSERT(pieces.size() > 0);
+  DART_ASSERT(!pieces.empty());
 
   Eigen::VectorXd ret(pieces.size());
   assignDoublePieces(ret, pieces, "double", "Eigen::VectorXd");

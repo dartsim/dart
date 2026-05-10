@@ -41,7 +41,6 @@
 
 #include <cmath>
 #include <cstddef>
-#include <cstring>
 
 namespace dart::simd {
 
@@ -431,7 +430,9 @@ template <std::size_t W>
   alignas(64) float srcArr[W];
   alignas(64) std::int32_t dstArr[W];
   v.store(srcArr);
-  std::memcpy(dstArr, srcArr, sizeof(float) * W);
+  for (std::size_t i = 0; i < W; ++i) {
+    dstArr[i] = detail::toBits(srcArr[i]);
+  }
   return Vec<std::int32_t, W>::load(dstArr);
 }
 
@@ -442,7 +443,9 @@ template <std::size_t W>
   alignas(64) std::int32_t srcArr[W];
   alignas(64) float dstArr[W];
   v.store(srcArr);
-  std::memcpy(dstArr, srcArr, sizeof(float) * W);
+  for (std::size_t i = 0; i < W; ++i) {
+    dstArr[i] = detail::fromBits<float>(srcArr[i]);
+  }
   return Vec<float, W>::load(dstArr);
 }
 
@@ -453,7 +456,9 @@ template <std::size_t W>
   alignas(64) double srcArr[W];
   alignas(64) std::int64_t dstArr[W];
   v.store(srcArr);
-  std::memcpy(dstArr, srcArr, sizeof(double) * W);
+  for (std::size_t i = 0; i < W; ++i) {
+    dstArr[i] = detail::toBits(srcArr[i]);
+  }
   return Vec<std::int64_t, W>::load(dstArr);
 }
 
@@ -464,7 +469,9 @@ template <std::size_t W>
   alignas(64) std::int64_t srcArr[W];
   alignas(64) double dstArr[W];
   v.store(srcArr);
-  std::memcpy(dstArr, srcArr, sizeof(double) * W);
+  for (std::size_t i = 0; i < W; ++i) {
+    dstArr[i] = detail::fromBits<double>(srcArr[i]);
+  }
   return Vec<double, W>::load(dstArr);
 }
 
