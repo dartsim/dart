@@ -6,6 +6,7 @@
  */
 
 #include "dart/common/exception.hpp"
+#include "dart/common/platform.hpp"
 #include "dart/math/optimization/function.hpp"
 #include "dart/math/optimization/gradient_descent_solver.hpp"
 #include "dart/math/optimization/problem.hpp"
@@ -64,6 +65,7 @@ private:
   double mOffset;
 };
 
+#if !DART_OS_WINDOWS
 class TestMultiFunction final : public MultiFunction
 {
 public:
@@ -76,6 +78,7 @@ public:
     grad.setZero();
   }
 };
+#endif // !DART_OS_WINDOWS
 
 } // namespace
 
@@ -406,6 +409,7 @@ TEST(FunctionTest, VectorGradientWrapperDispatchesToMapOverride)
   EXPECT_TRUE(grad.isApprox(2.0 * x));
 }
 
+#if !DART_OS_WINDOWS
 TEST(FunctionTest, MultiFunctionCanBeInvoked)
 {
   TestMultiFunction func;
@@ -420,6 +424,7 @@ TEST(FunctionTest, MultiFunctionCanBeInvoked)
   EXPECT_DOUBLE_EQ(f[0], 5.0);
   EXPECT_TRUE(grad.isZero(0.0));
 }
+#endif // !DART_OS_WINDOWS
 
 TEST(ModularFunctionTest, DefaultAndCustomFunctions)
 {

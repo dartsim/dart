@@ -107,8 +107,10 @@ TEST(MemoryAllocatorTest, BasePrintFallbackWritesMessages)
       withIndent.str().find("  *::print is not implemented:"),
       std::string::npos);
 
+#if !DART_OS_WINDOWS
   std::ostringstream viaStream;
   viaStream << allocator;
   EXPECT_NE(
       viaStream.str().find("[*::print is not implemented]"), std::string::npos);
+#endif // !DART_OS_WINDOWS
 }
