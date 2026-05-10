@@ -140,10 +140,10 @@ LcpResult TgsSolver::solve(
       const auto frictionIndex = static_cast<std::size_t>(findexValues[idx]);
       const double frictionLimit
           = std::abs(hiValues[idx] * xValues[frictionIndex]);
-      return std::clamp(value, -frictionLimit, frictionLimit);
+      return detail::projectToBounds(value, -frictionLimit, frictionLimit);
     }
 
-    return std::clamp(value, loValues[idx], hiValues[idx]);
+    return detail::projectToBounds(value, loValues[idx], hiValues[idx]);
   };
 
   for (int r = 0; r < n; ++r) {
