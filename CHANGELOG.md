@@ -14,6 +14,8 @@
 
   * Fix spdlog/fmt 12 builds by treating DART logging format parameters as runtime format strings. ([#2540](https://github.com/dartsim/dart/pull/2540), [#2538](https://github.com/dartsim/dart/issues/2538))
 
+  * Fix PoolAllocator leaking old memory block tables when the table grows. ([#2646](https://github.com/dartsim/dart/pull/2646))
+
 * Simulation
 
   * Reject NaN, infinite, zero, and negative `World::setTimeStep()` values to prevent invalid timesteps from reaching the ODE LCP solver. ([#2532](https://github.com/dartsim/dart/pull/2532), [#2531](https://github.com/dartsim/dart/issues/2531))
