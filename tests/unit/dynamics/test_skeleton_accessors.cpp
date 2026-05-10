@@ -1484,8 +1484,7 @@ TEST(JointAccessors, CopyPropertiesAndWrenchQueries)
   (void)extendedProps;
   (void)movedProps;
 
-  std::array<Joint::ActuatorType, 3> types
-      = {Joint::FORCE, Joint::MIMIC, Joint::FORCE};
+  const auto types = std::to_array({Joint::FORCE, Joint::MIMIC, Joint::FORCE});
   auto skeletonC = Skeleton::create("joint_actuator_types");
   auto pairC = skeletonC->createJointAndBodyNodePair<BallJoint>();
   pairC.first->setActuatorTypes(types);

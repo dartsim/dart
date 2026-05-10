@@ -48,7 +48,7 @@ std::vector<BodyNode*> Linkage::Criteria::satisfy() const
   std::vector<BodyNode*> bns;
 
   if (nullptr == mStart.mNode.lock()) {
-    if (mTargets.size() == 0) {
+    if (mTargets.empty()) {
       return bns;
     }
 
@@ -354,13 +354,13 @@ void Linkage::Criteria::expandToTarget(
   }
 
   // Remove the start BodyNode if it's supposed to be excluded
-  if (EXCLUDE == _start.mPolicy && newBns.size() > 0
+  if (EXCLUDE == _start.mPolicy && !newBns.empty()
       && newBns.front() == start_bn) {
     newBns.erase(newBns.begin());
   }
 
   // Remove the target BodyNode if it's supposed to be excluded
-  if (EXCLUDE == _target.mPolicy && newBns.size() > 0
+  if (EXCLUDE == _target.mPolicy && !newBns.empty()
       && newBns.back() == target_bn) {
     newBns.pop_back();
   }

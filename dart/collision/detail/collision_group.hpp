@@ -40,6 +40,8 @@
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/skeleton.hpp>
 
+#include <ranges>
+
 namespace dart {
 namespace collision {
 
@@ -248,8 +250,8 @@ void CollisionGroup::unsubscribeFrom(
 {
   auto it = mBodyNodeSources.find(bodyNode);
   if (it != mBodyNodeSources.end()) {
-    for (const auto& entry : it->second.mObjects) {
-      removeShapeFrameInternal(entry.first, bodyNode);
+    for (const auto* shapeFrame : it->second.mObjects | std::views::keys) {
+      removeShapeFrameInternal(shapeFrame, bodyNode);
     }
 
     mBodyNodeSources.erase(it);
@@ -265,8 +267,8 @@ void CollisionGroup::unsubscribeFrom(
 {
   auto it = mSkeletonSources.find(skeleton);
   if (it != mSkeletonSources.end()) {
-    for (const auto& entry : it->second.mObjects) {
-      removeShapeFrameInternal(entry.first, skeleton);
+    for (const auto* shapeFrame : it->second.mObjects | std::views::keys) {
+      removeShapeFrameInternal(shapeFrame, skeleton);
     }
 
     mSkeletonSources.erase(it);

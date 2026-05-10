@@ -105,7 +105,7 @@ std::filesystem::path makeTemporaryTexturePath(std::string_view extension)
     }
 
     if (!extension.empty()) {
-      if (extension.front() == '.') {
+      if (extension.starts_with('.')) {
         name << extension;
       } else {
         name << "." << extension;

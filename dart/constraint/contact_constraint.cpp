@@ -40,6 +40,7 @@
 #include "dart/math/constants.hpp"
 #include "dart/math/helpers.hpp"
 
+#include <algorithm>
 #include <iostream>
 
 namespace dart {
@@ -248,10 +249,9 @@ void ContactConstraint::setErrorAllowance(double allowance)
     DART_WARN(
         "Error reduction parameter[{}] is lower than 0.0. It is set to 0.0.",
         allowance);
-    allowance = 0.0;
   }
 
-  mErrorAllowance = allowance;
+  mErrorAllowance = std::max(allowance, 0.0);
 }
 
 //==============================================================================
@@ -268,16 +268,14 @@ void ContactConstraint::setErrorReductionParameter(double erp)
     DART_WARN(
         "Error reduction parameter[{}] is lower than 0.0. It is set to 0.0.",
         erp);
-    erp = 0.0;
   }
   if (erp > 1.0) {
     DART_WARN(
         "Error reduction parameter[{}] is greater than 1.0. It is set to 1.0.",
         erp);
-    erp = 1.0;
   }
 
-  mErrorReductionParameter = erp;
+  mErrorReductionParameter = std::clamp(erp, 0.0, 1.0);
 }
 
 //==============================================================================
@@ -295,10 +293,9 @@ void ContactConstraint::setMaxErrorReductionVelocity(double erv)
         "Maximum error reduction velocity[{}] is lower than 0.0. It is set to "
         "0.0.",
         erv);
-    erv = 0.0;
   }
 
-  mMaxErrorReductionVelocity = erv;
+  mMaxErrorReductionVelocity = std::max(erv, 0.0);
 }
 
 //==============================================================================
@@ -316,10 +313,9 @@ void ContactConstraint::setConstraintForceMixing(double cfm)
         "Constraint force mixing parameter[{}] is lower than 1e-9. It is set "
         "to 1e-9.",
         cfm);
-    cfm = 1e-9;
   }
 
-  mConstraintForceMixing = cfm;
+  mConstraintForceMixing = std::max(cfm, 1e-9);
 }
 
 //==============================================================================

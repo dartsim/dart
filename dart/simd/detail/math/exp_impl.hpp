@@ -37,6 +37,8 @@
 #include <dart/simd/detail/math/polynomial.hpp>
 #include <dart/simd/fwd.hpp>
 
+#include <algorithm>
+
 #include <cmath>
 
 namespace dart::simd::detail::math {
@@ -98,13 +100,8 @@ template <std::size_t W>
   alignas(A) float inRangeArr[W];
   select(inSimdRange, VecT::broadcast(1.0f), VecT::broadcast(0.0f))
       .store(inRangeArr);
-  bool needScalar = false;
-  for (std::size_t i = 0; i < W; ++i) {
-    if (inRangeArr[i] == 0.0f) {
-      needScalar = true;
-      break;
-    }
-  }
+  const bool needScalar = std::ranges::any_of(
+      inRangeArr, [](float value) { return value == 0.0f; });
   if (needScalar) {
     alignas(A) float xArr[W];
     alignas(A) float scalarArr[W];
@@ -185,13 +182,8 @@ template <std::size_t W>
   alignas(A) double inRangeArr[W];
   select(inSimdRange, VecT::broadcast(1.0), VecT::broadcast(0.0))
       .store(inRangeArr);
-  bool needScalar = false;
-  for (std::size_t i = 0; i < W; ++i) {
-    if (inRangeArr[i] == 0.0) {
-      needScalar = true;
-      break;
-    }
-  }
+  const bool needScalar = std::ranges::any_of(
+      inRangeArr, [](double value) { return value == 0.0; });
   if (needScalar) {
     alignas(A) double xArr[W];
     alignas(A) double scalarArr[W];

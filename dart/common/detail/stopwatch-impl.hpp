@@ -116,62 +116,28 @@ void Stopwatch<UnitType, ClockType>::reset()
 template <typename UnitType, typename ClockType>
 double Stopwatch<UnitType, ClockType>::elapsedS() const
 {
-  if constexpr (std::same_as<UnitType, std::chrono::nanoseconds>) {
-    return duration().count() * 1e-9;
-  } else if constexpr (std::same_as<UnitType, std::chrono::microseconds>) {
-    return duration().count() * 1e-6;
-  } else if constexpr (std::same_as<UnitType, std::chrono::milliseconds>) {
-    return duration().count() * 1e-3;
-  } else if constexpr (std::same_as<UnitType, std::chrono::seconds>) {
-    return duration().count();
-  }
+  return std::chrono::duration<double>(duration()).count();
 }
 
 //==============================================================================
 template <typename UnitType, typename ClockType>
 double Stopwatch<UnitType, ClockType>::elapsedMS() const
 {
-  if constexpr (std::same_as<UnitType, std::chrono::nanoseconds>) {
-    return duration().count() * 1e-6;
-  } else if constexpr (std::same_as<UnitType, std::chrono::microseconds>) {
-    return duration().count() * 1e-3;
-  } else if constexpr (std::same_as<UnitType, std::chrono::milliseconds>) {
-    return duration().count();
-  } else if constexpr (std::same_as<UnitType, std::chrono::seconds>) {
-    return duration().count() * 1e+3;
-    ;
-  }
+  return std::chrono::duration<double, std::milli>(duration()).count();
 }
 
 //==============================================================================
 template <typename UnitType, typename ClockType>
 double Stopwatch<UnitType, ClockType>::elapsedUS() const
 {
-  if constexpr (std::same_as<UnitType, std::chrono::nanoseconds>) {
-    return duration().count() * 1e-3;
-  } else if constexpr (std::same_as<UnitType, std::chrono::microseconds>) {
-    return duration().count();
-  } else if constexpr (std::same_as<UnitType, std::chrono::milliseconds>) {
-    return duration().count() * 1e+3;
-  } else if constexpr (std::same_as<UnitType, std::chrono::seconds>) {
-    return duration().count() * 1e+6;
-    ;
-  }
+  return std::chrono::duration<double, std::micro>(duration()).count();
 }
 
 //==============================================================================
 template <typename UnitType, typename ClockType>
 double Stopwatch<UnitType, ClockType>::elapsedNS() const
 {
-  if constexpr (std::same_as<UnitType, std::chrono::nanoseconds>) {
-    return duration().count();
-  } else if constexpr (std::same_as<UnitType, std::chrono::microseconds>) {
-    return duration().count() * 1e+3;
-  } else if constexpr (std::same_as<UnitType, std::chrono::milliseconds>) {
-    return duration().count() * 1e+6;
-  } else if constexpr (std::same_as<UnitType, std::chrono::seconds>) {
-    return duration().count() * 1e+9;
-  }
+  return std::chrono::duration<double, std::nano>(duration()).count();
 }
 
 //==============================================================================
