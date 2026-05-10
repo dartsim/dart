@@ -138,6 +138,7 @@ void* PoolAllocator::allocate(size_t bytes) noexcept
 
   if (mCurrentMemoryBlockIndex == mMemoryBlocksSize) {
     MemoryBlock* currentMemoryBlocks = mMemoryBlocks;
+    const int currentMemoryBlocksSize = mMemoryBlocksSize;
     mMemoryBlocksSize += 64;
     mMemoryBlocks = mBaseAllocator.allocateAs<MemoryBlock>(mMemoryBlocksSize);
     std::memcpy(
@@ -146,6 +147,8 @@ void* PoolAllocator::allocate(size_t bytes) noexcept
         mCurrentMemoryBlockIndex * sizeof(MemoryBlock));
     std::memset(
         mMemoryBlocks + mCurrentMemoryBlockIndex, 0, 64 * sizeof(MemoryBlock));
+    mBaseAllocator.deallocate(
+        currentMemoryBlocks, currentMemoryBlocksSize * sizeof(MemoryBlock));
   }
 
   MemoryBlock* newBlock = mMemoryBlocks + mCurrentMemoryBlockIndex;

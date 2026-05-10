@@ -36,6 +36,11 @@
 
 #include <gtest/gtest.h>
 
+#include <utility>
+#include <vector>
+
+#include <cstddef>
+
 using namespace dart;
 using namespace common;
 
@@ -110,4 +115,26 @@ TEST(PoolAllocatorTest, Allocate)
   a.deallocate(ptr5, 2048);
 
   EXPECT_TRUE(a.isEmpty());
+}
+
+//==============================================================================
+TEST(PoolAllocatorTest, RawAllocatorGrowsMemoryBlockTable)
+{
+  PoolAllocator allocator;
+
+  const PoolAllocator& constAllocator = allocator;
+  EXPECT_EQ(&constAllocator.getBaseAllocator(), &MemoryAllocator::GetDefault());
+
+  std::vector<std::pair<void*, std::size_t>> allocations;
+  for (std::size_t size = 8; size <= 8 * 65; size += 8) {
+    auto* ptr = allocator.allocate(size);
+    ASSERT_NE(ptr, nullptr);
+    allocations.emplace_back(ptr, size);
+  }
+
+  EXPECT_EQ(allocator.getNumAllocatedMemoryBlocks(), 65);
+
+  for (const auto& allocation : allocations) {
+    allocator.deallocate(allocation.first, allocation.second);
+  }
 }
