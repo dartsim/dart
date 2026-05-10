@@ -57,6 +57,7 @@
 #include <sdf/sdf.hh>
 
 #include <algorithm>
+#include <array>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -64,6 +65,7 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <string_view>
 
 #include <cctype>
 #include <cstring>
@@ -906,9 +908,12 @@ TEST(SdfParser, WarnsOnTinyMassAndDefaultsInertia)
   const auto logs = capture.contents();
   const bool warningsCaptured = !logs.empty();
   if (warningsCaptured) {
-    const bool hasSmallMassWarning
-        = logs.find("very small mass") != std::string::npos
-          || logs.find("non-positive mass") != std::string::npos;
+    constexpr auto massWarningSnippets = std::to_array<std::string_view>(
+        {"very small mass", "non-positive mass"});
+    const bool hasSmallMassWarning = std::ranges::any_of(
+        massWarningSnippets, [&](std::string_view snippet) {
+          return logs.find(snippet) != std::string::npos;
+        });
     EXPECT_TRUE(hasSmallMassWarning)
         << "Expected warning about tiny mass clamping in logs: " << logs;
     std::string logsLower = logs;
@@ -2789,8 +2794,11 @@ f 1 2 3
 
   const auto logs = capture.contents();
   // Warning text for malformed <pose> varies by libsdformat version/platform
-  if (logs.find("must have 6 values") != std::string::npos
-      || logs.find("expected 3 values") != std::string::npos) {
+  constexpr auto poseWarningSnippets = std::to_array<std::string_view>(
+      {"must have 6 values", "expected 3 values"});
+  if (std::ranges::any_of(poseWarningSnippets, [&](std::string_view snippet) {
+        return logs.find(snippet) != std::string::npos;
+      })) {
     SUCCEED();
   }
 }

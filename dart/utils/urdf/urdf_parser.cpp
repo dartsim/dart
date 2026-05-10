@@ -56,6 +56,7 @@
 #include <tinyxml2.h>
 
 #include <algorithm>
+#include <array>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -421,8 +422,17 @@ std::vector<UrdfParser::TransmissionInfo> UrdfParser::parseTransmissions(
     const std::string type
         = typeElement && typeElement->GetText() ? typeElement->GetText() : "";
 
-    if (!type.empty() && type.find("SimpleTransmission") == std::string::npos
-        && type.find("simple_transmission") == std::string::npos) {
+    constexpr auto supportedTransmissionTypeNames
+        = std::to_array<std::string_view>(
+            {"SimpleTransmission", "simple_transmission"});
+    const bool supportedTransmissionType
+        = type.empty()
+          || std::ranges::any_of(
+              supportedTransmissionTypeNames,
+              [&](std::string_view supportedName) {
+                return type.find(supportedName) != std::string::npos;
+              });
+    if (!supportedTransmissionType) {
       DART_WARN(
           "[UrdfParser] Transmission [{}] has unsupported type [{}]; skipping.",
           tx->Attribute("name") ? tx->Attribute("name") : "",

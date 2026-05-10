@@ -374,7 +374,7 @@ public:
 
     // snippet:cpp-dominoes-lesson1a-last-start
     const SkeletonPtr& lastDomino
-        = mDominoes.size() > 0 ? mDominoes.back() : mFirstDomino;
+        = !mDominoes.empty() ? mDominoes.back() : mFirstDomino;
     // snippet:cpp-dominoes-lesson1a-last-end
 
     // Compute the position for the new domino
@@ -443,7 +443,7 @@ public:
   void deleteLastDomino()
   {
     // snippet:cpp-dominoes-lesson1c-delete-start
-    if (mDominoes.size() > 0) {
+    if (!mDominoes.empty()) {
       SkeletonPtr lastDomino = mDominoes.back();
       mDominoes.pop_back();
       mWorld->removeSkeleton(lastDomino);

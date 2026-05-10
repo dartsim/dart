@@ -36,6 +36,7 @@
 #include "dart/common/macros.hpp"
 
 #include <iostream>
+#include <ranges>
 
 #include <cassert>
 
@@ -246,8 +247,8 @@ void Composite::matchAspects(const Composite* otherComposite)
     return;
   }
 
-  for (auto& aspect : mAspectMap) {
-    _replaceAspect(aspect.second, nullptr);
+  for (auto& aspect : mAspectMap | std::views::values) {
+    _replaceAspect(aspect, nullptr);
   }
 
   duplicateAspects(otherComposite);

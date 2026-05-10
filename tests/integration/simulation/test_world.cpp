@@ -770,7 +770,7 @@ TEST(World, SetNewConstraintSolver)
 
   auto solver1 = std::make_unique<constraint::ConstraintSolver>(
       std::make_shared<math::DantzigSolver>());
-  EXPECT_TRUE(solver1->getSkeletons().size() == 0);
+  EXPECT_TRUE(solver1->getSkeletons().empty());
   EXPECT_TRUE(solver1->getNumConstraints() == 0);
 
   world->setConstraintSolver(std::move(solver1));
@@ -779,7 +779,7 @@ TEST(World, SetNewConstraintSolver)
 
   auto solver2 = std::make_unique<constraint::ConstraintSolver>(
       std::make_shared<math::PgsSolver>());
-  EXPECT_TRUE(solver2->getSkeletons().size() == 0);
+  EXPECT_TRUE(solver2->getSkeletons().empty());
   EXPECT_TRUE(solver2->getNumConstraints() == 0);
 
   world->setConstraintSolver(std::move(solver2));

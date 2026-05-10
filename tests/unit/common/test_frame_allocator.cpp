@@ -38,6 +38,8 @@
 #include <Eigen/Core>
 #include <gtest/gtest.h>
 
+#include <array>
+
 #include <cstdint>
 
 using namespace dart::common;
@@ -60,7 +62,7 @@ TEST_F(FrameAllocatorTest, BasicAllocate)
 {
   FrameAllocator allocator;
   size_t previousUsed = 0;
-  const size_t sizes[] = {8, 64, 256, 1024};
+  const auto sizes = std::to_array<size_t>({8, 64, 256, 1024});
   for (size_t size : sizes) {
     void* ptr = allocator.allocate(size);
     EXPECT_NE(ptr, nullptr);
@@ -73,7 +75,7 @@ TEST_F(FrameAllocatorTest, BasicAllocate)
 TEST_F(FrameAllocatorTest, Alignment)
 {
   FrameAllocator allocator;
-  const size_t alignments[] = {16, 32, 64};
+  const auto alignments = std::to_array<size_t>({16, 32, 64});
   for (size_t alignment : alignments) {
     void* ptr = allocator.allocateAligned(32, alignment);
     EXPECT_NE(ptr, nullptr);

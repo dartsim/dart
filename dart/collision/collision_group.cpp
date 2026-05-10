@@ -39,6 +39,7 @@
 #include "dart/dynamics/skeleton.hpp"
 
 #include <algorithm>
+#include <ranges>
 
 #include <cassert>
 #include <cstdint>
@@ -316,8 +317,8 @@ void CollisionGroup::removeDeletedShapeFrames()
           static_cast<const dynamics::MetaSkeleton*>(source));
       if (skelSearch != mSkeletonSources.end()) {
         skelSearch->second.mObjects.erase(shapeFrame);
-        for (auto& child : skelSearch->second.mChildren) {
-          child.second.mFrames.erase(shapeFrame);
+        for (auto& child : skelSearch->second.mChildren | std::views::values) {
+          child.mFrames.erase(shapeFrame);
         }
       }
 
@@ -490,8 +491,8 @@ bool CollisionGroup::updateSkeletonSource(SkeletonSources::value_type& entry)
   if (!meta) {
     // This skeleton no longer exists, so we should remove all its contents from
     // the CollisionGroup.
-    for (const auto& object : source.mObjects) {
-      removeShapeFrameInternal(object.second->mFrame, entry.first);
+    for (const auto& object : source.mObjects | std::views::values) {
+      removeShapeFrameInternal(object->mFrame, entry.first);
     }
 
     return true;
@@ -646,10 +647,10 @@ bool CollisionGroup::updateBodyNodeSource(BodyNodeSources::value_type& entry)
 
   // Remove from this group and ShapeFrames that no longer belong to the
   // BodyNode
-  for (const auto& unusedFrame : unusedFrames) {
+  for (const auto* unusedFrame : unusedFrames | std::views::keys) {
     updateNeeded = true;
-    removeShapeFrameInternal(unusedFrame.first, bn.get());
-    source.mObjects.erase(unusedFrame.first);
+    removeShapeFrameInternal(unusedFrame, bn.get());
+    source.mObjects.erase(unusedFrame);
   }
 
   return updateNeeded;
