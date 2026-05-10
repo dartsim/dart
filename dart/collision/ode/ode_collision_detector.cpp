@@ -100,16 +100,15 @@ std::deque<Contact>& FindPairInHist(
     std::vector<OdeCollisionDetector::ContactHistoryItem>& cache,
     const OdeCollisionDetector::CollObjPair& pair)
 {
-  for (auto& item : cache) {
-    if (pair.first == item.pair.first && pair.second == item.pair.second) {
-      return item.history;
-    }
+  auto item = std::ranges::find_if(cache, [&pair](const auto& candidate) {
+    return pair.first == candidate.pair.first
+           && pair.second == candidate.pair.second;
+  });
+  if (item != cache.end()) {
+    return item->history;
   }
-  auto newItem
-      = OdeCollisionDetector::ContactHistoryItem{pair, std::deque<Contact>()};
-  cache.push_back(newItem);
 
-  return cache.back().history;
+  return cache.emplace_back(pair, std::deque<Contact>{}).history;
 }
 
 void eraseHistoryForObject(
