@@ -18,31 +18,41 @@ Analyze or clean branches: $ARGUMENTS
 ## Modes
 
 - `analyze`: inspect only, no deletions
-- `action`: delete or prepare follow-up only when ownership and safety are clear
+- `action`: prepare follow-up, or delete only after ownership/safety are clear
+  and the maintainer/user gives explicit approval for each local or remote
+  branch deletion
 
 Default to `analyze` if the requested mode is ambiguous.
 
 ## Workflow
 
-1. `git fetch --all --prune`
-2. Determine target branch, usually `origin/main`.
-3. For each branch:
+1. `git fetch --all --no-prune`
+2. List stale remote-tracking refs without deleting them:
+   ```bash
+   git remote prune origin --dry-run
+   ```
+3. Determine target branch, usually `origin/main`.
+4. For each branch:
    ```bash
    git rev-list --left-right --count <TARGET>...<BRANCH>
    git log --oneline <TARGET>..<BRANCH>
    git diff --stat <TARGET>..<BRANCH>
    git cherry -v <TARGET> <BRANCH>
    ```
-4. Classify:
+5. Classify recommendations only; deleting a candidate requires explicit
+   maintainer/user approval:
    - `ahead=0`: safe deletion candidate
    - equivalent commits already landed: deletion candidate
    - small, current, useful diff: keep or rebase into PR
    - large or unclear diff: document follow-up before action
-5. Ask before deleting when ownership, branch purpose, or remote impact is unclear.
+6. Ask for explicit maintainer/user approval before pruning refs or deleting any
+   local or remote branch, even when ownership, branch purpose, and remote
+   impact look clear.
 
 ## Output
 
 - Branch summary with ahead/behind count and last commit date
 - Useful commits or risks
 - Recommendation: delete, keep, rebase, or needs follow-up
-- Actions taken, if action mode was explicitly requested
+- Actions taken after explicit maintainer/user approval, if action mode was
+  explicitly requested

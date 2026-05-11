@@ -12,8 +12,8 @@ Load this skill when writing or debugging tests.
 ```bash
 pixi run test         # Quick test run
 pixi run test-all     # Full validation
-ctest -R <pattern>    # Run specific tests
-ctest -V              # Verbose output
+pixi run test-unit    # Unit tests
+pixi run test-py      # Python tests
 ```
 
 ## Full Documentation
@@ -46,8 +46,8 @@ pixi run test-all     # Must pass
 ## Debugging Test Failures
 
 ```bash
-# Run single test with verbose output
-ctest -R TestName -V
+# Run the smallest existing Pixi test task that covers the failure
+pixi run test-unit
 
 # Get CI logs
 gh run view <RUN_ID> --log-failed

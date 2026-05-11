@@ -29,7 +29,9 @@ Backport PR or commits: $ARGUMENTS
 4. Cherry-pick with provenance: `git cherry-pick -x <COMMIT_HASH>`.
 5. Resolve conflicts minimally; stop and ask if conflicts are broad or change behavior.
 6. Run `pixi run lint` and the smallest relevant release-branch checks.
-7. Push and open a PR against the release branch with milestone `DART 6.16.x` or the current patch milestone.
+7. Ask for explicit maintainer/user approval before pushing or opening the PR.
+   After approval, open the PR against the release branch with milestone
+   `DART 6.16.x` or the current patch milestone and use the PR template.
 
 ## Output
 

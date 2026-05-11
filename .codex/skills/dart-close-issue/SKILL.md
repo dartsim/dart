@@ -9,8 +9,9 @@ description: "DART Close Issue: draft and optionally post a GitHub issue closing
 
 # dart-close-issue
 
-Use this skill in Codex when you want the same workflow that Claude Code and
-OpenCode expose as `/dart-close-issue`.
+Use this skill in Codex to run the DART `dart-close-issue` workflow. The editable
+workflow source currently lives in `.claude/commands/`, and this generated
+Codex skill is a first-class Codex entrypoint.
 
 ## Invocation
 
@@ -42,7 +43,8 @@ Close or prepare closing message for issue: $ARGUMENTS
    - thank the reporter
    - state the concrete resolution
    - link the fixing PR or relevant docs when available
-4. Only post and close if the user explicitly requested action:
+4. Only post and close if the user explicitly requested action and explicit
+   maintainer/user approval has been given:
    ```bash
    gh issue comment <ISSUE_NUMBER> --body "<message>"
    gh issue close <ISSUE_NUMBER>

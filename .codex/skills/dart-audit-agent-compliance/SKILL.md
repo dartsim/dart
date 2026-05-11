@@ -9,8 +9,9 @@ description: "DART Audit Agent Compliance: audit and fix gaps when agents miss d
 
 # dart-audit-agent-compliance
 
-Use this skill in Codex when you want the same workflow that Claude Code and
-OpenCode expose as `/dart-audit-agent-compliance`.
+Use this skill in Codex to run the DART `dart-audit-agent-compliance` workflow. The editable
+workflow source currently lives in `.claude/commands/`, and this generated
+Codex skill is a first-class Codex entrypoint.
 
 ## Invocation
 

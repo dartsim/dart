@@ -9,8 +9,9 @@ description: "DART Release Packaging: create a release version bump and changelo
 
 # dart-release-packaging
 
-Use this skill in Codex when you want the same workflow that Claude Code and
-OpenCode expose as `/dart-release-packaging`.
+Use this skill in Codex to run the DART `dart-release-packaging` workflow. The editable
+workflow source currently lives in `.claude/commands/`, and this generated
+Codex skill is a first-class Codex entrypoint.
 
 ## Invocation
 
@@ -23,7 +24,7 @@ user.
 
 ## Command Body
 
-Create release packaging PR: $ARGUMENTS
+Create release packaging PR after explicit maintainer/user approval: $ARGUMENTS
 
 ## Required Reading
 
@@ -45,8 +46,11 @@ Create release packaging PR: $ARGUMENTS
 6. Add the `CHANGELOG.md` release section with the release date and milestone link.
 7. Run `pixi run lint` and relevant packaging checks.
 8. Commit as `Packaging <NEW_VERSION>`.
-9. Push and create a PR against the release branch.
-10. Set the release milestone, for example `DART 6.16.x` or the specific version milestone if available.
+9. Ask for explicit maintainer/user approval before pushing, creating the PR,
+   or setting milestones.
+10. After approval, create the PR against the release branch with the release
+    milestone, for example `DART 6.16.x` or the specific version milestone if
+    available.
 
 ## Output
 

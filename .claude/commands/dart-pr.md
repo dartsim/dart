@@ -3,7 +3,8 @@ description: create a branch, commit, push, and open a DART pull request
 agent: build
 ---
 
-Prepare or open a DART pull request: $ARGUMENTS
+Prepare or open a DART pull request after explicit maintainer/user approval:
+$ARGUMENTS
 
 ## Required Reading
 
@@ -64,14 +65,16 @@ Use these practices:
    git checkout -b <type>/<topic> origin/<target-branch>
    ```
 7. Commit only intended files with a plain descriptive commit title.
-8. Push and open a draft PR:
+8. Ask for explicit maintainer/user approval before pushing or opening the draft
+   PR. If approved:
    ```bash
    git push -u origin HEAD
    gh pr create --draft --base <target-branch> --milestone "<milestone>" \
      --title "<plain title>" --body-file <filled-template-file>
    ```
-9. If `CHANGELOG.md` needs the PR number, add the changelog entry in a
-   follow-up commit after opening the draft PR.
+9. If `CHANGELOG.md` needs the PR number, keep the follow-up changelog commit
+   local until explicit maintainer/user approval is given for the additional
+   push or PR update.
 10. Monitor CI:
     ```bash
     gh pr checks <PR_NUMBER>
@@ -81,5 +84,5 @@ Use these practices:
 
 Never reply to AI-generated review comments from bot users such as
 `chatgpt-codex-connector[bot]`, `github-actions[bot]`, or `copilot[bot]`.
-Push fixes silently and ask for a new AI review with `@codex review` only when
-needed.
+Make fixes silently. Push and ask for a new AI review with `@codex review` only
+after explicit maintainer/user approval.

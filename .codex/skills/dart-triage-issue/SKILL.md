@@ -9,8 +9,9 @@ description: "DART Triage Issue: triage a GitHub issue and recommend next action
 
 # dart-triage-issue
 
-Use this skill in Codex when you want the same workflow that Claude Code and
-OpenCode expose as `/dart-triage-issue`.
+Use this skill in Codex to run the DART `dart-triage-issue` workflow. The editable
+workflow source currently lives in `.claude/commands/`, and this generated
+Codex skill is a first-class Codex entrypoint.
 
 ## Invocation
 

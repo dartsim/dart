@@ -9,8 +9,9 @@ description: "DART Resume: continue work from a previous session"
 
 # dart-resume
 
-Use this skill in Codex when you want the same workflow that Claude Code and
-OpenCode expose as `/dart-resume`.
+Use this skill in Codex to run the DART `dart-resume` workflow. The editable
+workflow source currently lives in `.claude/commands/`, and this generated
+Codex skill is a first-class Codex entrypoint.
 
 ## Invocation
 
@@ -53,7 +54,8 @@ and ask.
 - Continue with minimal scope and preserve existing user changes.
 - Run `pixi run lint` before committing.
 - Run relevant tests; use `pixi run test-all` before done when feasible.
-- Push with `git push -u origin HEAD` and create/update the PR.
+- Push with `git push -u origin HEAD` and create/update the PR only after
+  explicit maintainer/user approval.
 
 ## Safety
 
