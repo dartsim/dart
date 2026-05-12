@@ -61,6 +61,41 @@
   uses that path for a legacy-style `SimpleFrame` anchor, child frame, and axis
   marker layout.
 
+## Quick Run
+
+From the repository root:
+
+```bash
+pixi run ex filament_gui
+```
+
+This single command configures and builds the experimental example with
+`DART_BUILD_GUI_FILAMENT=ON`, then runs `examples/filament_gui`. On Linux
+x86_64 it uses the pinned explicit Filament fetch fallback by default, so it
+does not require a Filament conda package. On platforms where that upstream
+archive is unavailable, provide `Filament_ROOT` or a packaged Filament build and
+set `DART_FETCH_FILAMENT_OVERRIDE=OFF`.
+
+If `DISPLAY` is not set on Linux, the command automatically uses the headless
+path, runs through `xvfb-run` when available, and writes a binary PPM screenshot
+to `build/<pixi-env>/filament_gui_mvp.ppm`.
+
+To run the interaction fixture:
+
+```bash
+pixi run ex filament_gui --scene drag-and-drop
+```
+
+To capture both built-in fixtures for PR screenshots:
+
+```bash
+pixi run ex filament_gui --headless --scene all
+```
+
+The capture paths are `build/<pixi-env>/filament_gui_mvp.ppm` and
+`build/<pixi-env>/filament_gui_drag_and_drop.ppm` unless
+`DART_FILAMENT_GUI_SCREENSHOT` is set.
+
 ## Build Instructions
 
 From the repository root:
@@ -99,6 +134,15 @@ LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
 ```
 
 ## Execute Instructions
+
+The recommended repo-local entry point is:
+
+```bash
+pixi run ex filament_gui
+```
+
+The lower-level executable can also be run directly after configuring and
+building:
 
 ```bash
 LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \

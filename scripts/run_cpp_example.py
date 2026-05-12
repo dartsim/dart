@@ -4,9 +4,31 @@ from __future__ import annotations
 
 import argparse
 import os
+import platform
+import shutil
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
+
+FILAMENT_SMOKE_PATTERN = (
+    "EXAMPLE_filament_gui_headless_smoke|"
+    "EXAMPLE_filament_gui_drag_and_drop_headless_smoke"
+)
+
+
+@dataclass(frozen=True)
+class ExampleSpec:
+    build_target: str
+    binary_name: str
+    requirements: tuple[str, ...] = ()
+
+
+EXAMPLE_SPECS = {
+    "raylib": ExampleSpec("dart_raylib", "raylib", ("raylib",)),
+    "dart_raylib": ExampleSpec("dart_raylib", "raylib", ("raylib",)),
+    "filament_gui": ExampleSpec("dart_filament_gui", "filament_gui", ("filament",)),
+}
 
 
 def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
@@ -22,8 +44,13 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
     )
     parser.add_argument(
         "--build-type",
-        default="Release",
-        help="CMake build type to use (default: Release)",
+        default=os.environ.get("BUILD_TYPE", "Release"),
+        help="CMake build type to use (default: BUILD_TYPE or Release)",
+    )
+    parser.add_argument(
+        "--pixi-smoke",
+        action="store_true",
+        help="Run this example's registered smoke tests instead of the binary.",
     )
     parser.add_argument(
         "--pixi-help",
@@ -46,10 +73,13 @@ def _normalize_target(target: str) -> str:
     return target
 
 
-def _resolve_build_and_binary(target: str) -> tuple[str, str]:
-    if target in {"raylib", "dart_raylib"}:
-        return "dart_raylib", "raylib"
-    return target, target
+def _resolve_example(target: str) -> ExampleSpec:
+    return EXAMPLE_SPECS.get(target, ExampleSpec(target, target))
+
+
+def _build_dir(build_type: str) -> Path:
+    env_name = os.environ.get("PIXI_ENVIRONMENT_NAME", "default")
+    return Path("build") / env_name / "cpp" / build_type
 
 
 def _cmake_cache_bool(build_dir: Path, option: str) -> bool | None:
@@ -71,32 +101,133 @@ def _cmake_cache_bool(build_dir: Path, option: str) -> bool | None:
     return None
 
 
-def _ensure_target_requirements(
-    build_dir: Path, target: str, env: dict[str, str]
-) -> None:
-    if target not in {"raylib", "dart_raylib"}:
+def _cache_bool_matches(build_dir: Path, option: str, desired: str) -> bool:
+    value = _cmake_cache_bool(build_dir, option)
+    if value is None:
+        return False
+    return value == (desired.upper() in {"ON", "TRUE", "1"})
+
+
+def _env_option(env: dict[str, str], name: str, default: str) -> str:
+    return env.get(name, default)
+
+
+def _is_linux_x86_64() -> bool:
+    machine = platform.machine().lower()
+    return sys.platform.startswith("linux") and machine in {"x86_64", "amd64"}
+
+
+def _has_filament_root(env: dict[str, str]) -> bool:
+    return bool(env.get("Filament_ROOT") or env.get("FILAMENT_ROOT"))
+
+
+def _default_fetch_filament(env: dict[str, str]) -> str:
+    if _has_filament_root(env):
+        return "OFF"
+    return "ON" if _is_linux_x86_64() else "OFF"
+
+
+def _default_use_system_filament(fetch_filament: str) -> str:
+    return "OFF" if fetch_filament.upper() == "ON" else "ON"
+
+
+def _prepend_env_path(env: dict[str, str], name: str, value: Path) -> None:
+    current = env.get(name)
+    env[name] = f"{value}{os.pathsep}{current}" if current else str(value)
+
+
+def _apply_libcxx_prefix(env: dict[str, str]) -> None:
+    prefix = env.get("LIBCXX_PREFIX")
+    if not prefix:
         return
 
-    enabled = _cmake_cache_bool(build_dir, "DART_BUILD_GUI_RAYLIB")
-    if enabled:
+    lib_dir = Path(prefix) / "lib"
+    _prepend_env_path(env, "CMAKE_LIBRARY_PATH", lib_dir)
+    if sys.platform.startswith("linux"):
+        _prepend_env_path(env, "LD_LIBRARY_PATH", lib_dir)
+    elif sys.platform == "darwin":
+        _prepend_env_path(env, "DYLD_LIBRARY_PATH", lib_dir)
+    elif os.name == "nt":
+        _prepend_env_path(env, "PATH", Path(prefix) / "bin")
+
+
+def _configure(
+    build_dir: Path, definitions: dict[str, str], env: dict[str, str]
+) -> None:
+    cmd = ["cmake", "-S", ".", "-B", str(build_dir)]
+    cmd.extend(f"-D{name}={value}" for name, value in definitions.items())
+    subprocess.run(cmd, check=True, env=env)
+
+
+def _ensure_raylib(build_dir: Path, env: dict[str, str]) -> None:
+    if _cache_bool_matches(build_dir, "DART_BUILD_GUI_RAYLIB", "ON"):
         return
 
     print(
         "Enabling experimental Raylib backend (DART_BUILD_GUI_RAYLIB=ON) for this build...",
         file=sys.stderr,
     )
-    subprocess.run(
-        [
-            "cmake",
-            "-S",
-            ".",
-            "-B",
-            str(build_dir),
-            "-DDART_BUILD_GUI_RAYLIB=ON",
-        ],
-        check=True,
-        env=env,
+    _configure(build_dir, {"DART_BUILD_GUI_RAYLIB": "ON"}, env)
+
+
+def _option_override(
+    definitions: dict[str, str],
+    env: dict[str, str],
+    option: str,
+    env_name: str,
+) -> None:
+    if env_name in env:
+        definitions[option] = env[env_name]
+
+
+def _ensure_filament(build_dir: Path, env: dict[str, str], smoke: bool) -> None:
+    fetch_filament = _env_option(
+        env, "DART_FETCH_FILAMENT_OVERRIDE", _default_fetch_filament(env)
     )
+    use_system_filament = _env_option(
+        env,
+        "DART_USE_SYSTEM_FILAMENT_OVERRIDE",
+        _default_use_system_filament(fetch_filament),
+    )
+
+    desired = {
+        "DART_BUILD_GUI_FILAMENT": "ON",
+        "DART_BUILD_EXAMPLES": "ON",
+        "DART_BUILD_TUTORIALS": "OFF",
+        "DART_USE_SYSTEM_FILAMENT": use_system_filament,
+        "DART_FETCH_FILAMENT": fetch_filament,
+    }
+    if smoke:
+        desired["DART_BUILD_TESTS"] = "ON"
+        desired["DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS"] = "ON"
+
+    _option_override(desired, env, "DART_BUILD_DARTPY", "DART_BUILD_DARTPY_OVERRIDE")
+    _option_override(desired, env, "DART_BUILD_GUI", "DART_BUILD_GUI_OVERRIDE")
+    _option_override(desired, env, "DART_BUILD_TESTS", "DART_BUILD_TESTS_OVERRIDE")
+
+    definitions = {
+        option: value
+        for option, value in desired.items()
+        if not _cache_bool_matches(build_dir, option, value)
+    }
+    if not definitions:
+        return
+
+    print(
+        "Configuring Filament example requirements "
+        f"({', '.join(f'{k}={v}' for k, v in definitions.items())})...",
+        file=sys.stderr,
+    )
+    _configure(build_dir, definitions, env)
+
+
+def _ensure_target_requirements(
+    build_dir: Path, spec: ExampleSpec, env: dict[str, str], smoke: bool
+) -> None:
+    if "raylib" in spec.requirements:
+        _ensure_raylib(build_dir, env)
+    if "filament" in spec.requirements:
+        _ensure_filament(build_dir, env, smoke)
 
 
 def ensure_build_exists(build_dir: Path, build_type: str) -> None:
@@ -111,21 +242,7 @@ def ensure_build_exists(build_dir: Path, build_type: str) -> None:
     raise SystemExit(msg)
 
 
-def run(target: str, build_type: str, run_args: list[str]) -> int:
-    env_name = os.environ.get("PIXI_ENVIRONMENT_NAME", "default")
-    build_dir = Path("build") / env_name / "cpp" / build_type
-
-    ensure_build_exists(build_dir, build_type)
-
-    target = _normalize_target(target)
-    build_target, binary_name = _resolve_build_and_binary(target)
-
-    env = os.environ.copy()
-    env["BUILD_TYPE"] = build_type
-    env["CMAKE_BUILD_DIR"] = str(build_dir)
-
-    _ensure_target_requirements(build_dir, build_target, env)
-
+def _build_example(build_dir: Path, build_target: str, env: dict[str, str]) -> None:
     subprocess.run(
         [
             sys.executable,
@@ -139,18 +256,210 @@ def run(target: str, build_type: str, run_args: list[str]) -> int:
         env=env,
     )
 
-    binary = build_dir / "bin" / binary_name
+
+def _binary_path(build_dir: Path, binary_name: str) -> Path:
+    suffix = ".exe" if os.name == "nt" else ""
+    return build_dir / "bin" / f"{binary_name}{suffix}"
+
+
+def _has_arg(run_args: list[str], *names: str) -> bool:
+    return any(arg in names for arg in run_args)
+
+
+def _filament_screenshot_path(scene: str) -> Path:
+    env_name = os.environ.get("PIXI_ENVIRONMENT_NAME", "default")
+    scene_suffix = scene.replace("-", "_")
+    return Path("build") / env_name / f"filament_gui_{scene_suffix}.ppm"
+
+
+def _split_filament_scenes(run_args: list[str]) -> tuple[list[str], list[str]]:
+    args = list(run_args)
+    for index, arg in enumerate(args):
+        if arg != "--scene" or index + 1 >= len(args):
+            continue
+        scene = args[index + 1]
+        del args[index : index + 2]
+        if scene == "all":
+            return ["mvp", "drag-and-drop"], args
+        return [scene], args
+    return ["mvp"], args
+
+
+def _path_with_scene(path: Path, scene: str) -> Path:
+    scene_suffix = scene.replace("-", "_")
+    return path.with_name(f"{path.stem}_{scene_suffix}{path.suffix}")
+
+
+def _prepare_filament_run_args(
+    run_args: list[str], scene: str, multiple_scenes: bool
+) -> list[str]:
+    args = list(run_args)
+    if _has_arg(args, "--help", "-h"):
+        return args
+
+    headless = _has_arg(args, "--headless") or (
+        sys.platform.startswith("linux") and not os.environ.get("DISPLAY")
+    )
+    if scene != "mvp" and not _has_arg(args, "--scene"):
+        args.extend(["--scene", scene])
+    if headless and not _has_arg(args, "--headless"):
+        args.append("--headless")
+    if headless and not _has_arg(args, "--frames"):
+        args.extend(["--frames", os.environ.get("DART_FILAMENT_GUI_FRAMES", "10")])
+    if not _has_arg(args, "--width"):
+        args.extend(
+            [
+                "--width",
+                os.environ.get(
+                    "DART_FILAMENT_GUI_WIDTH", "640" if headless else "1280"
+                ),
+            ]
+        )
+    if not _has_arg(args, "--height"):
+        args.extend(
+            [
+                "--height",
+                os.environ.get(
+                    "DART_FILAMENT_GUI_HEIGHT", "480" if headless else "720"
+                ),
+            ]
+        )
+    if headless:
+        screenshot = os.environ.get("DART_FILAMENT_GUI_SCREENSHOT")
+        if _has_arg(args, "--screenshot"):
+            if multiple_scenes:
+                for index, arg in enumerate(args):
+                    if arg == "--screenshot" and index + 1 < len(args):
+                        path = _path_with_scene(Path(args[index + 1]), scene)
+                        args[index + 1] = str(path)
+                        path.parent.mkdir(parents=True, exist_ok=True)
+                        break
+            return args
+
+        path = Path(screenshot) if screenshot else _filament_screenshot_path(scene)
+        if multiple_scenes and screenshot:
+            path = _path_with_scene(path, scene)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        args.extend(["--screenshot", str(path)])
+    return args
+
+
+def _runtime_env(env: dict[str, str], software_gl: bool) -> dict[str, str]:
+    runtime_env = env.copy()
+    _apply_libcxx_prefix(runtime_env)
+    if software_gl:
+        runtime_env.setdefault("LIBGL_ALWAYS_SOFTWARE", "1")
+        runtime_env.setdefault("MESA_LOADER_DRIVER_OVERRIDE", "llvmpipe")
+        egl_vendor = Path("/usr/share/glvnd/egl_vendor.d/50_mesa.json")
+        if egl_vendor.is_file():
+            runtime_env.setdefault("__EGL_VENDOR_LIBRARY_FILENAMES", str(egl_vendor))
+    return runtime_env
+
+
+def _uses_headless_filament(run_args: list[str]) -> bool:
+    return _has_arg(run_args, "--headless") or (
+        sys.platform.startswith("linux") and not os.environ.get("DISPLAY")
+    )
+
+
+def _run_with_optional_xvfb(
+    command: list[str], env: dict[str, str], use_xvfb: bool
+) -> None:
+    final_command = command
+    if use_xvfb:
+        xvfb_run = shutil.which("xvfb-run")
+        if not xvfb_run:
+            raise SystemExit(
+                "Filament GUI examples need DISPLAY or xvfb-run for "
+                "Filament's OpenGL backend on Linux."
+            )
+        final_command = [
+            xvfb_run,
+            "-a",
+            "-s",
+            "-screen 0 1280x720x24",
+            *command,
+        ]
+
+    subprocess.run(final_command, check=True, env=env)
+
+
+def _run_filament_smoke(build_dir: Path, env: dict[str, str]) -> None:
+    runtime_env = _runtime_env(env, software_gl=True)
+    command = [
+        "ctest",
+        "--test-dir",
+        str(build_dir),
+        "-R",
+        FILAMENT_SMOKE_PATTERN,
+        "--output-on-failure",
+    ]
+    use_xvfb = sys.platform.startswith("linux") and not os.environ.get("DISPLAY")
+    _run_with_optional_xvfb(command, runtime_env, use_xvfb)
+
+
+def _run_example_binary(
+    build_dir: Path,
+    spec: ExampleSpec,
+    run_args: list[str],
+    env: dict[str, str],
+) -> None:
+    binary = _binary_path(build_dir, spec.binary_name)
     if not binary.exists():
         raise SystemExit(f"Binary not found: {binary}")
 
-    cmd = [str(binary), *run_args]
-    subprocess.run(cmd, check=True, env=env)
+    if "filament" not in spec.requirements:
+        subprocess.run([str(binary), *run_args], check=True, env=env)
+        return
+
+    scenes, base_args = _split_filament_scenes(run_args)
+    multiple_scenes = len(scenes) > 1
+    for scene in scenes:
+        prepared_args = _prepare_filament_run_args(base_args, scene, multiple_scenes)
+        headless = _uses_headless_filament(prepared_args)
+        runtime_env = _runtime_env(env, software_gl=headless)
+        command = [str(binary), *prepared_args]
+        print("Running:", " ".join(command))
+        use_xvfb = (
+            headless
+            and sys.platform.startswith("linux")
+            and not os.environ.get("DISPLAY")
+        )
+        _run_with_optional_xvfb(command, runtime_env, use_xvfb)
+
+
+def run(
+    target: str,
+    build_type: str,
+    run_args: list[str],
+    smoke: bool,
+) -> int:
+    build_dir = _build_dir(build_type)
+    ensure_build_exists(build_dir, build_type)
+
+    target = _normalize_target(target)
+    spec = _resolve_example(target)
+
+    env = os.environ.copy()
+    env["BUILD_TYPE"] = build_type
+    env["CMAKE_BUILD_DIR"] = str(build_dir)
+    _apply_libcxx_prefix(env)
+
+    _ensure_target_requirements(build_dir, spec, env, smoke)
+    _build_example(build_dir, spec.build_target, env)
+
+    if smoke:
+        if "filament" not in spec.requirements:
+            raise SystemExit(f"No smoke mode is registered for example {target!r}")
+        _run_filament_smoke(build_dir, env)
+    else:
+        _run_example_binary(build_dir, spec, run_args, env)
     return 0
 
 
 def main(argv: list[str]) -> int:
     args, run_args = parse_args(argv)
-    return run(args.target, args.build_type, run_args)
+    return run(args.target, args.build_type, run_args, args.pixi_smoke)
 
 
 if __name__ == "__main__":

@@ -706,112 +706,13 @@ python scripts/pixi_test_py.py
 ] }
 
 test-filament-gui-smoke = { cmd = [
-  "bash",
-  "-lc",
-  """
-set -euo pipefail
-BUILD_TYPE=${BUILD_TYPE:-Release}
-PARALLEL_JOBS=${DART_PARALLEL_JOBS:-2}
-
-if [ "$(uname -s)" != "Linux" ] || [ "$(uname -m)" != "x86_64" ]; then
-  echo "test-filament-gui-smoke currently supports Linux x86_64 because DART_FETCH_FILAMENT uses the pinned upstream Linux archive." >&2
-  exit 1
-fi
-
-LIBCXX_PREFIX=${LIBCXX_PREFIX:-}
-if [ -n "${LIBCXX_PREFIX}" ]; then
-  export CMAKE_LIBRARY_PATH="${LIBCXX_PREFIX}/lib${CMAKE_LIBRARY_PATH:+:${CMAKE_LIBRARY_PATH}}"
-  export LD_LIBRARY_PATH="${LIBCXX_PREFIX}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
-fi
-
-DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
-if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
-  DART_DISABLE_COMPILER_CACHE_VALUE=ON
-  unset DART_COMPILER_CACHE
-  unset CMAKE_C_COMPILER_LAUNCHER
-  unset CMAKE_CXX_COMPILER_LAUNCHER
-fi
-if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
-  if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
-    && command -v sccache >/dev/null 2>&1; then
-    CMAKE_C_COMPILER_LAUNCHER=sccache
-    CMAKE_CXX_COMPILER_LAUNCHER=sccache
-  elif command -v ccache >/dev/null 2>&1; then
-    CMAKE_C_COMPILER_LAUNCHER=ccache
-    CMAKE_CXX_COMPILER_LAUNCHER=ccache
-  fi
-fi
-LAUNCHER_DEFS=""
-if [ -n "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
-  LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_C_COMPILER_LAUNCHER=${CMAKE_C_COMPILER_LAUNCHER}"
-fi
-if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
-  LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
-fi
-
-NANOBIND_CMAKE_DIR=$(python -m nanobind --cmake_dir)
-cmake \
-  -G Ninja \
-  -S . \
-  -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
-  -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-  -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
-  -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-  -DDART_BUILD_DARTPY=OFF \
-  -DDART_BUILD_SIMULATION_EXPERIMENTAL=ON \
-  -DDART_BUILD_COLLISION_BULLET=ON \
-  -DDART_BUILD_COLLISION_ODE=ON \
-  -DDART_BUILD_GUI=OFF \
-  -DDART_BUILD_GUI_FILAMENT=ON \
-  -DDART_BUILD_EXAMPLES=ON \
-  -DDART_BUILD_TUTORIALS=OFF \
-  -DDART_BUILD_TESTS=ON \
-  -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} \
-  -DDART_BUILD_PROFILE=ON \
-  -DDART_PROFILE_BUILTIN=ON \
-  -DDART_PROFILE_TRACY=ON \
-  -DDART_ENABLE_ASAN=OFF \
-  -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
-  -DDART_USE_SYSTEM_GOOGLETEST=ON \
-  -DDART_USE_SYSTEM_IMGUI=ON \
-  -DDART_USE_SYSTEM_FILAMENT=OFF \
-  -DDART_FETCH_FILAMENT=ON \
-  -DDART_ENABLE_FILAMENT_GUI_SMOKE_TESTS=ON \
-  -DDART_USE_SYSTEM_NANOBIND=OFF \
-  -DDART_USE_SYSTEM_TRACY=ON \
-  -DDART_VERBOSE=${DART_VERBOSE} \
-  -Dnanobind_DIR=${NANOBIND_CMAKE_DIR} \
-  $LAUNCHER_DEFS
-
-CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
-  python scripts/cmake_build.py --target dart_filament_gui --parallel ${PARALLEL_JOBS}
-
-ctest_command=(
-  ctest
-  --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
-  -R 'EXAMPLE_filament_gui_headless_smoke|EXAMPLE_filament_gui_drag_and_drop_headless_smoke' \
-  --output-on-failure
-)
-
-if [ -f /usr/share/glvnd/egl_vendor.d/50_mesa.json ]; then
-  export __EGL_VENDOR_LIBRARY_FILENAMES=${__EGL_VENDOR_LIBRARY_FILENAMES:-/usr/share/glvnd/egl_vendor.d/50_mesa.json}
-fi
-
-if [ -z "${DISPLAY:-}" ]; then
-  if ! command -v xvfb-run >/dev/null 2>&1; then
-    echo "test-filament-gui-smoke needs DISPLAY or xvfb-run for Filament's OpenGL backend." >&2
-    exit 1
-  fi
-  LIBGL_ALWAYS_SOFTWARE=1 \
-  MESA_LOADER_DRIVER_OVERRIDE=llvmpipe \
-  xvfb-run -a -s "-screen 0 1280x720x24" "${ctest_command[@]}"
-else
-  LIBGL_ALWAYS_SOFTWARE=1 \
-  MESA_LOADER_DRIVER_OVERRIDE=llvmpipe \
-  "${ctest_command[@]}"
-fi
-""",
-], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF" } }
+  "python",
+  "scripts/run_cpp_example.py",
+  "filament_gui",
+  "--pixi-smoke",
+], depends-on = [
+  "config",
+], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "OFF", DART_FETCH_FILAMENT_OVERRIDE = "ON", DART_USE_SYSTEM_FILAMENT_OVERRIDE = "OFF" } }
 
 test-capsule-ground-contact = { cmd = """
     ctest \
