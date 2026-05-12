@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -381,6 +382,48 @@ def _run_with_optional_xvfb(
     subprocess.run(final_command, check=True, env=env)
 
 
+def _parse_cmake_version(output: str) -> tuple[int, int, int] | None:
+    match = re.search(r"\bversion\s+(\d+)\.(\d+)(?:\.(\d+))?", output)
+    if not match:
+        return None
+    patch = match.group(3)
+    return (int(match.group(1)), int(match.group(2)), int(patch or 0))
+
+
+def _ctest_supports_no_tests_error() -> bool:
+    result = subprocess.run(
+        ["ctest", "--version"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    version = _parse_cmake_version(result.stdout + result.stderr)
+    return version is not None and version >= (3, 26, 0)
+
+
+def _validate_filament_smoke_tests_discovered(
+    build_dir: Path, env: dict[str, str]
+) -> None:
+    result = subprocess.run(
+        [
+            "ctest",
+            "--test-dir",
+            str(build_dir),
+            "-N",
+            "-R",
+            FILAMENT_SMOKE_PATTERN,
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    output = result.stdout + result.stderr
+    match = re.search(r"Total Tests:\s*(\d+)", output)
+    if match is None or int(match.group(1)) == 0:
+        raise SystemExit("No Filament GUI smoke tests were discovered.")
+
+
 def _run_filament_smoke(build_dir: Path, env: dict[str, str]) -> None:
     runtime_env = _runtime_env(env, software_gl=True)
     command = [
@@ -389,9 +432,12 @@ def _run_filament_smoke(build_dir: Path, env: dict[str, str]) -> None:
         str(build_dir),
         "-R",
         FILAMENT_SMOKE_PATTERN,
-        "--no-tests=error",
         "--output-on-failure",
     ]
+    if _ctest_supports_no_tests_error():
+        command.insert(-1, "--no-tests=error")
+    else:
+        _validate_filament_smoke_tests_discovered(build_dir, runtime_env)
     use_xvfb = sys.platform.startswith("linux") and not os.environ.get("DISPLAY")
     _run_with_optional_xvfb(command, runtime_env, use_xvfb)
 
