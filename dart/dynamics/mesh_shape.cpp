@@ -1490,7 +1490,7 @@ void MeshShape::extractMaterialsFromScene(
     if (aiGetMaterialFloatArray(
             aiMat, AI_MATKEY_ROUGHNESS_FACTOR, &factor, &maxValue)
         == AI_SUCCESS) {
-      material.roughnessFactor = std::clamp(factor, 0.04f, 1.0f);
+      material.roughnessFactor = std::clamp(factor, 0.0f, 1.0f);
     }
 
     material.baseColorTexturePath

@@ -39,6 +39,7 @@ set(_command
   --frames "${_frames}"
   --width "${_width}"
   --height "${_height}"
+  --profile
   --screenshot "${DART_FILAMENT_GUI_SCREENSHOT}"
 )
 

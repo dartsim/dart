@@ -2359,7 +2359,7 @@ TEST(MeshShapeTest, ExtractMaterialsPreservesPbrMetadata)
       scene->mMaterials[0]->AddProperty(
           &metallic, 1u, AI_MATKEY_METALLIC_FACTOR),
       AI_SUCCESS);
-  float roughness = 0.31f;
+  float roughness = 0.0f;
   ASSERT_EQ(
       scene->mMaterials[0]->AddProperty(
           &roughness, 1u, AI_MATKEY_ROUGHNESS_FACTOR),
