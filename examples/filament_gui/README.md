@@ -48,11 +48,11 @@
   alpha-bearing solid, textured, and mesh visuals through transparent lit
   material variants. Broader robot/environment visual review is still future
   promotion work.
-- The view enables HDR buffer quality, screen-space ambient occlusion, and
-  multi-sample anti-aliasing for windowed runs in the current visual smoke
-  fixture. Temporal anti-aliasing, FXAA, and temporal dithering are disabled so
-  labels, wire meshes, and authored texture details stay crisp during visual
-  review.
+- The view enables HDR buffer quality, screen-space ambient occlusion,
+  multi-sample anti-aliasing, FXAA, and higher-resolution shadow maps for
+  windowed runs in the current visual smoke fixture. Temporal anti-aliasing and
+  temporal dithering are disabled so labels, wire meshes, and authored texture
+  details stay crisp during visual review.
 - Imported WAM and Atlas robot fixtures are included as static visual reference
   objects in the default scene. Their collision and gravity participation are
   disabled so they do not dominate example frame time.

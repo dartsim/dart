@@ -2997,8 +2997,8 @@ int main(int argc, char* argv[])
   view->setShadowType(
       options.headless ? filament::ShadowType::PCF : filament::ShadowType::PCSS);
   filament::SoftShadowOptions softShadowOptions;
-  softShadowOptions.penumbraScale = 2.2f;
-  softShadowOptions.penumbraRatioScale = 2.8f;
+  softShadowOptions.penumbraScale = options.headless ? 1.6f : 1.15f;
+  softShadowOptions.penumbraRatioScale = options.headless ? 2.0f : 1.35f;
   view->setSoftShadowOptions(softShadowOptions);
   auto* indirectLight = createNeutralIndirectLight(*engine);
   auto* skybox = createNeutralSkybox(*engine);
@@ -3021,7 +3021,7 @@ int main(int argc, char* argv[])
     multiSampleAntiAliasingOptions.enabled = true;
     multiSampleAntiAliasingOptions.sampleCount = 4;
     view->setMultiSampleAntiAliasingOptions(multiSampleAntiAliasingOptions);
-    view->setAntiAliasing(filament::AntiAliasing::NONE);
+    view->setAntiAliasing(filament::AntiAliasing::FXAA);
     view->setDithering(filament::Dithering::NONE);
   }
 
@@ -3327,16 +3327,16 @@ int main(int argc, char* argv[])
 
   auto lightEntity = EntityManager::get().create();
   filament::LightManager::ShadowOptions shadowOptions;
-  shadowOptions.mapSize = options.headless ? 512 : 2048;
+  shadowOptions.mapSize = options.headless ? 512 : 4096;
   shadowOptions.shadowCascades = options.headless ? 1 : 4;
   shadowOptions.cascadeSplitPositions[0] = 0.08f;
   shadowOptions.cascadeSplitPositions[1] = 0.22f;
   shadowOptions.cascadeSplitPositions[2] = 0.55f;
-  shadowOptions.shadowFar = options.headless ? 12.0f : 20.0f;
-  shadowOptions.shadowFarHint = options.headless ? 8.0f : 10.0f;
-  shadowOptions.screenSpaceContactShadows = !options.headless;
-  shadowOptions.maxShadowDistance = 0.8f;
-  shadowOptions.shadowBulbRadius = 0.16f;
+  shadowOptions.shadowFar = options.headless ? 12.0f : 16.0f;
+  shadowOptions.shadowFarHint = options.headless ? 8.0f : 8.0f;
+  shadowOptions.screenSpaceContactShadows = false;
+  shadowOptions.maxShadowDistance = options.headless ? 0.8f : 0.25f;
+  shadowOptions.shadowBulbRadius = options.headless ? 0.16f : 0.08f;
   filament::LightManager::Builder(filament::LightManager::Type::SUN)
       .color({1.0f, 0.96f, 0.88f})
       .intensity(82000.0f)
