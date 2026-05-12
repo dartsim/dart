@@ -2980,6 +2980,11 @@ int main(int argc, char* argv[])
 
   auto* engine = filament::Engine::create(filament::Engine::Backend::OPENGL);
   auto* renderer = engine->createRenderer();
+  if (options.headless) {
+    filament::Renderer::DisplayInfo displayInfo;
+    displayInfo.refreshRate = 0.0f;
+    renderer->setDisplayInfo(displayInfo);
+  }
   auto* swapChain = options.headless
                         ? engine->createSwapChain(
                               static_cast<std::uint32_t>(options.width),
@@ -3451,23 +3456,22 @@ int main(int argc, char* argv[])
 
     const auto renderFrameStart = ProfileAccumulator::Clock::now();
     const bool shouldRenderFrame = renderer->beginFrame(swapChain);
-    if (!shouldRenderFrame && !options.headless) {
+    profile.beginFrameMs += elapsedMs(renderFrameStart);
+    if (!shouldRenderFrame) {
       markFrameSkipped(lifecycle);
       ++profile.skippedFrames;
-      profile.beginFrameMs += elapsedMs(renderFrameStart);
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
-      const double frameMs = elapsedMs(frameStart);
-      profile.frameMs += frameMs;
-      profile.maxFrameMs = std::max(profile.maxFrameMs, frameMs);
-      ++profile.frames;
-      continue;
+      if (!options.headless || !renderer->shouldRenderFrame()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        const double frameMs = elapsedMs(frameStart);
+        profile.frameMs += frameMs;
+        profile.maxFrameMs = std::max(profile.maxFrameMs, frameMs);
+        ++profile.frames;
+        continue;
+      }
+      // Filament allows callers to ignore a pacing-only false return. Headless
+      // software GL can report skips almost every frame, so keep deterministic
+      // offscreen captures while still skipping backend failures above.
     }
-    if (!shouldRenderFrame) {
-      // Headless smoke tests need deterministic offscreen frames even when
-      // Filament's frame pacing says an interactive frame could be skipped.
-      ++profile.skippedFrames;
-    }
-    profile.beginFrameMs += elapsedMs(renderFrameStart);
 
     std::size_t simulationStepsToRun = 0;
     if (shouldAdvanceSimulation(lifecycle)) {
