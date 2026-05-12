@@ -220,10 +220,13 @@ Known current result:
   fetch path. The task configures with `DART_BUILD_GUI=OFF`,
   `DART_BUILD_DARTPY=OFF`, `DART_FETCH_FILAMENT=ON`, and
   `DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS=ON`, builds `dart_filament_gui`, and
-  runs both headless CTest smokes.
+  runs both headless CTest smokes. When `DISPLAY` is unset, the task runs CTest
+  under `xvfb-run` and prefers Mesa's EGL vendor file when available so the
+  OpenGL backend uses software rendering on headless Linux workers.
 - `.github/workflows/ci_ubuntu.yml` now includes a `filament-gui-smoke` job
-  that installs Mesa plus libc++/libc++abi development packages and runs
-  `pixi run test-filament-gui-smoke`. Hosted CI evidence is still pending.
+  that installs Mesa, Xvfb, and libc++/libc++abi development packages and runs
+  `pixi run test-filament-gui-smoke` without relying on a Filament conda
+  package. Hosted CI evidence is still pending.
 - The Filament example also configured, linked, and ran with
   `DART_BUILD_GUI=OFF` and `DART_BUILD_DARTPY=OFF` using
   `pixi run config OFF`, proving the experimental Filament path no longer needs

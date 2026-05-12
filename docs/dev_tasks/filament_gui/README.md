@@ -99,8 +99,10 @@
 - `pixi run test-filament-gui-smoke` now exercises the explicit pinned
   `DART_FETCH_FILAMENT=ON` path on Linux x86_64, builds without the legacy OSG
   GUI target, and runs the default plus drag-and-drop headless CTest smokes.
-  The Ubuntu CI workflow has a matching opt-in smoke job that gets libc++ and
-  libc++abi from system packages instead of relying on a Filament package.
+  When no display server is available, the task runs the smokes under Xvfb and
+  prefers Mesa's EGL vendor file for software rendering. The Ubuntu CI workflow
+  has a matching opt-in smoke job that gets Xvfb, libc++, and libc++abi from
+  system packages instead of relying on a Filament package.
 - Local Linux CPython 3.12, 3.13, and 3.14 wheel builds now repair with
   `auditwheel` and pass installed-wheel testing. The smoke confirms
   `dartpy.gui.experimental` is present in the wheel and can extract a one-box

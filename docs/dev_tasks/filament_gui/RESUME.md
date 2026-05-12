@@ -133,10 +133,11 @@ headless context, while the dedicated headless construction test remains.
 `pixi run test-filament-gui-smoke` now wraps the explicit pinned fetch fallback
 for Linux x86_64. It configures with `DART_BUILD_GUI=OFF` and
 `DART_BUILD_DARTPY=OFF`, builds `dart_filament_gui`, and runs the default plus
-drag-and-drop headless CTest smokes. The Ubuntu CI workflow has a matching
-`filament-gui-smoke` job that installs Mesa plus libc++/libc++abi development
-packages from apt and runs that task without relying on a Filament conda
-package. Hosted CI evidence is still pending.
+drag-and-drop headless CTest smokes. When `DISPLAY` is absent, the task uses
+Xvfb and prefers Mesa's EGL vendor file for software rendering. The Ubuntu CI
+workflow has a matching `filament-gui-smoke` job that installs Mesa, Xvfb, and
+libc++/libc++abi development packages from apt and runs that task without
+relying on a Filament conda package. Hosted CI evidence is still pending.
 
 `docs/dev_tasks/filament_gui/07-completion-audit.md` maps the current
 implementation, verification evidence, and missing promotion gates. Use that

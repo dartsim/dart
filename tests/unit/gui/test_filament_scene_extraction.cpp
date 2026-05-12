@@ -34,8 +34,11 @@
 
 #include <dart/simulation/world.hpp>
 
+#include <dart/collision/collision_group.hpp>
+#include <dart/collision/collision_option.hpp>
 #include <dart/collision/collision_result.hpp>
 #include <dart/collision/contact.hpp>
+#include <dart/collision/dart/dart_collision_detector.hpp>
 
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
@@ -567,12 +570,30 @@ TEST(FilamentSceneExtraction, ExtractDebugLines_ReturnsCenterOfMassMarker)
 
 TEST(FilamentSceneExtraction, ExtractContactDebugLines_ReturnsMarkersAndVectors)
 {
+  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto skeletonA = Skeleton::create("contact_a");
+  auto skeletonB = Skeleton::create("contact_b");
+  auto* bodyA = skeletonA->createJointAndBodyNodePair<FreeJoint>().second;
+  auto* bodyB = skeletonB->createJointAndBodyNodePair<FreeJoint>().second;
+  auto* shapeA = bodyA->createShapeNodeWith<dart::dynamics::CollisionAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.5)));
+  auto* shapeB = bodyB->createShapeNodeWith<dart::dynamics::CollisionAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.5)));
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(shapeA);
+  group->addShapeFrame(shapeB);
+
   dart::collision::CollisionResult result;
-  dart::collision::Contact contact;
+  dart::collision::CollisionOption collisionOptions;
+  collisionOptions.maxNumContacts = 1u;
+  ASSERT_TRUE(group->collide(collisionOptions, &result));
+  ASSERT_LT(0u, result.getNumContacts());
+
+  auto& contact = result.getContact(0);
   contact.point = Eigen::Vector3d(1.0, 2.0, 3.0);
   contact.normal = Eigen::Vector3d::UnitZ();
   contact.force = Eigen::Vector3d(10.0, 0.0, 0.0);
-  result.addContact(contact);
 
   dart::gui::experimental::DebugDrawOptions options;
   options.contactMarkerHalfExtent = 0.1;

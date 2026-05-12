@@ -318,7 +318,7 @@ jobs:
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1.6.0
         with:
-          packages: libgl1-mesa-dev libglu1-mesa-dev mesa-utils libc++-dev libc++abi-dev
+          packages: libgl1-mesa-dev libglu1-mesa-dev mesa-utils libc++-dev libc++abi-dev xvfb
           version: 1
 
       - name: Configure environment for compiler cache

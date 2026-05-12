@@ -786,11 +786,30 @@ cmake \
 CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
   python scripts/cmake_build.py --target dart_filament_gui --parallel ${PARALLEL_JOBS}
 
-LIBGL_ALWAYS_SOFTWARE=1 \
-MESA_LOADER_DRIVER_OVERRIDE=llvmpipe \
-ctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
+ctest_command=(
+  ctest
+  --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
   -R 'EXAMPLE_filament_gui_headless_smoke|EXAMPLE_filament_gui_drag_and_drop_headless_smoke' \
   --output-on-failure
+)
+
+if [ -f /usr/share/glvnd/egl_vendor.d/50_mesa.json ]; then
+  export __EGL_VENDOR_LIBRARY_FILENAMES=${__EGL_VENDOR_LIBRARY_FILENAMES:-/usr/share/glvnd/egl_vendor.d/50_mesa.json}
+fi
+
+if [ -z "${DISPLAY:-}" ]; then
+  if ! command -v xvfb-run >/dev/null 2>&1; then
+    echo "test-filament-gui-smoke needs DISPLAY or xvfb-run for Filament's OpenGL backend." >&2
+    exit 1
+  fi
+  LIBGL_ALWAYS_SOFTWARE=1 \
+  MESA_LOADER_DRIVER_OVERRIDE=llvmpipe \
+  xvfb-run -a -s "-screen 0 1280x720x24" "${ctest_command[@]}"
+else
+  LIBGL_ALWAYS_SOFTWARE=1 \
+  MESA_LOADER_DRIVER_OVERRIDE=llvmpipe \
+  "${ctest_command[@]}"
+fi
 """,
 ], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF" } }
 
