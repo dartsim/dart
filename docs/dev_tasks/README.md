@@ -9,13 +9,13 @@ Working documentation for multi-phase development tasks in DART.
 
 **Create `docs/dev_tasks/<task>/` when:**
 
-| Signal                             | Example                                                                |
-| ---------------------------------- | ---------------------------------------------------------------------- |
-| **Multi-phase work**               | raylib backend: architecture → API design → implementation → migration |
-| **Spans multiple sessions**        | Work that will take multiple days/weeks with context handoff           |
-| **Requires design decisions**      | New subsystem with tradeoffs to document                               |
-| **Has dependencies between steps** | Step 2 blocked until step 1 reviewed                                   |
-| **Needs milestone tracking**       | "Phase 1: vertical slice, Phase 2: feature parity"                     |
+| Signal                             | Example                                                       |
+| ---------------------------------- | ------------------------------------------------------------- |
+| **Multi-phase work**               | Filament GUI: MVP → architecture → implementation → migration |
+| **Spans multiple sessions**        | Work that will take multiple days/weeks with context handoff  |
+| **Requires design decisions**      | New subsystem with tradeoffs to document                      |
+| **Has dependencies between steps** | Step 2 blocked until step 1 reviewed                          |
+| **Needs milestone tracking**       | "Phase 1: vertical slice, Phase 2: feature parity"            |
 
 **Do NOT create for:**
 
@@ -118,7 +118,7 @@ Then: <specific instruction, e.g., "Continue implementing X in file Y" or "Run t
 
 ### Examples (Active Tasks)
 
-- `raylib/` - Multi-phase GUI backend replacement (architecture, milestones, migration, testing docs)
+- `filament_gui/` - Filament + GLFW + Dear ImGui GUI replacement plan (MVP, architecture, visual quality, milestones, migration, testing docs)
 - `world_split/` - ECS world separation (design, migration docs)
 
 ## Structure

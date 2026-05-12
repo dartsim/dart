@@ -68,9 +68,9 @@ TEST(HeadlessViewerTest, ViewerConfigSoftwareRendererDefault)
 
 TEST(HeadlessViewerTest, ViewerCreateFactory)
 {
-  auto config = dart::gui::ViewerConfig::headless(640, 480);
+  dart::gui::ViewerConfig config;
   auto viewer = dart::gui::Viewer::create(config);
 
   ASSERT_NE(viewer, nullptr);
-  EXPECT_TRUE(viewer->isHeadless());
+  EXPECT_FALSE(viewer->isHeadless());
 }

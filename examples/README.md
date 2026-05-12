@@ -64,6 +64,8 @@
 - `add_delete_skels`
 - `drag_and_drop`
 - `empty`
+- `filament_gui`
+- `gui_scene_diagnostics`
 - `imgui`
 - `polyhedron_visual`
 - `raylib`

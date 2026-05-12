@@ -36,7 +36,11 @@
 #include "constraint/module.hpp"
 #include "dart/config.hpp"
 #include "dynamics/module.hpp"
-#include "gui/module.hpp"
+
+#if defined(DARTPY_HAS_GUI)
+  #include "gui/module.hpp"
+#endif
+
 #include "math/module.hpp"
 #include "optimizer/module.hpp"
 #include "simulation/module.hpp"
@@ -85,7 +89,8 @@ NB_MODULE(_dartpy, m)
   auto optimizer = m.def_submodule("optimizer", "Optimization utilities");
   dart::python_nb::defOptimizerModule(optimizer);
 
-  auto gui = m.def_submodule(
-      "gui", "GUI utilities (OpenSceneGraph + ImGui) backed by nanobind");
+#if defined(DARTPY_HAS_GUI)
+  auto gui = m.def_submodule("gui", "GUI utilities backed by nanobind");
   dart::python_nb::defGuiModule(gui);
+#endif
 }

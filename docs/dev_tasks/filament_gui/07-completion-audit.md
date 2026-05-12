@@ -1,0 +1,273 @@
+# Filament GUI Replacement - Completion Audit
+
+## Objective
+
+Execute `docs/dev_tasks/filament_gui/` fully: evaluate Filament as DART's
+single built-in visualization direction under `dart::gui`, implement the
+experimental path far enough to validate the visual-debugging requirements, and
+identify whether it is ready for first-class promotion.
+
+## Current Decision
+
+This task is not complete. The experimental Linux implementation has enough
+evidence to continue with Filament, but it is not ready to replace the existing
+`dart::gui` implementation.
+
+Do not promote the Filament path or remove legacy GUI code until every
+promotion gate below is satisfied.
+
+## Prompt-to-Artifact Checklist
+
+| Requirement                                                                              | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Status                                                                                |
+| ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Keep the public direction as `dart::gui`, not a new user-facing namespace.               | `dart-gui-experimental` lives under `dart::gui::experimental`; docs state the final component remains `dart::gui`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Satisfied for the experimental layer.                                                 |
+| Avoid committing to multiple maintained rendering backends.                              | Filament is the preferred candidate in `00-renderer-selection.md`; old Raylib dev-task docs were removed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Satisfied for this plan; legacy code still exists until replacement.                  |
+| Use Filament only if it can meet high-quality visual-debugging needs, including shadows. | `06-visual-quality.md` lists required gates; the example configures PCSS/cascaded sun shadows, contact shadows, neutral sky/indirect lighting, high-quality color grading, anisotropic texture sampling, lit materials, textures, debug overlays, and screenshot readback.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Partially satisfied; local evidence exists, but promotion gates remain.               |
+| Provide experimental build plumbing.                                                     | `DART_BUILD_GUI_FILAMENT`, `DART_USE_SYSTEM_FILAMENT`, `DART_FETCH_FILAMENT`, `cmake/dart_find_filament.cmake`, and material embedding exist.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Satisfied for Linux experiments.                                                      |
+| Keep Filament optional and explicit.                                                     | Default configure keeps `DART_BUILD_GUI_FILAMENT=OFF`; fetch requires explicit opt-in.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Satisfied.                                                                            |
+| Provide package-manager path or explicit fallback.                                       | Pinned CMake fetch works locally with compatible libc++/libc++abi. `pixi search filament` still reports no installable conda-forge package, but `conda-forge/staged-recipes#33297` is an open ready-for-review PR for Filament 1.71.3 with `filament` and `filament-static` outputs.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Partially satisfied; package PR is not merged.                                        |
+| Build a maintained Filament MVP example.                                                 | `examples/filament_gui` builds and runs with the explicit fetch path.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Satisfied on local Linux.                                                             |
+| Render visible dynamic shadows.                                                          | Local windowed and headless screenshot smokes produced nonblank images from the shadow-enabled fixture, and the opt-in headless CTest now verifies scene-region luminance contrast from that fixture.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Satisfied for local Linux smoke; visual review/CI still pending.                      |
+| Render common primitives and DART mesh shapes.                                           | The renderer consumes box, sphere, ellipsoid, cylinder, cone, capsule, TriMesh-backed `MeshShape`, and finite `PlaneShape` descriptors.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Satisfied for MVP coverage.                                                           |
+| Preserve useful mesh material data.                                                      | `MeshMaterial` now preserves typed base-color, metallic, roughness, combined metallic-roughness, normal, occlusion, and emissive texture paths plus PBR scalar factors; `MeshShape` exposes submesh ranges; the example consumes per-part materials with color-space-aware Filament textures and fallback samplers; `data/gltf/pbr_triangle.gltf` and `data/gltf/pbr_multi_material.gltf` cover authored glTF PBR texture slots, alpha-bearing factors, UV metadata, and single-/multi-material submesh ranges through the real Assimp importer; the Filament smoke fixture now requires the glTF fixtures, the full WAM URDF skeleton with a minimum WAM mesh descriptor/renderable count, a larger Atlas DAE torso mesh descriptor/renderable, a full Atlas SDF robot fixture with at least twenty visible mesh descriptors/renderables, and a four-panel glTF/PBR environment fixture. | Satisfied for MVP coverage; broader human visual review remains.                      |
+| Provide renderer-hidden scene extraction.                                                | `dart/gui/experimental/scene.hpp` and `.cpp` expose renderable descriptors without Filament types; `UNIT_gui_FilamentSceneExtraction` covers the path.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Satisfied for the constrained experimental API.                                       |
+| Provide debug overlays for physics state.                                                | Grid, world/body frames, centers of mass, contacts, normals, force vectors, and selection bounds are generated as debug descriptors and rendered by the example. The Filament debug-line material uses transparent blending for alpha-bearing overlay colors.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Satisfied for MVP coverage; broader scenario coverage remains.                        |
+| Render transparent debug and visual elements.                                            | Debug-line, solid-lit, and textured-lit transparent material paths exist. The Filament smoke fixture includes alpha-bearing visual aspects and an alpha-bearing glTF mesh material.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Satisfied for MVP coverage; broader visual review remains.                            |
+| Decide how to handle the MVP ImGui overlay.                                              | `01-architecture.md` keeps the current Filament-native ImGui draw-data path example-local for built-in controls only and requires DART-owned panel/tool abstractions, or a strictly internal overlay, before first-class promotion.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Satisfied as a design decision; promoted overlay implementation remains.              |
+| Provide basic interaction.                                                               | Click-to-select, highlight tint, selection bounds, pause/resume, single-step, keyboard nudging, and Ctrl-left camera-plane dragging for selected dynamic bodies and `SimpleFrame` visuals exist in the example; `--scene drag-and-drop` exercises a first interaction-heavy `SimpleFrame` fixture; viewer lifecycle state, free-joint, simple-frame, combined frame-translation, and plane-drag helpers have C++ and Python coverage.                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Satisfied for MVP coverage; broader interaction-heavy workflows remain.               |
+| Provide screenshot and bounded-run smoke behavior.                                       | `--frames`, `--screenshot`, and `--headless` exist; local smokes produced PPM files; the reusable RGBA-to-PPM writer lives in `dart-gui-experimental` with C++ and Python coverage; an opt-in CTest smoke hook validates the header, size, nonzero samples, and scene-region luminance contrast.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Satisfied locally; CI workflow integration remains.                                   |
+| Keep public headers free of Filament/GLFW/ImGui types.                                   | `dart-gui-experimental` descriptors and Python bindings do not expose renderer/windowing types.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Satisfied for the constrained API.                                                    |
+| Add Python access only for constrained backend-hidden APIs.                              | `dartpy.gui.experimental` exposes descriptors, picking, frame-translation helpers, plane-drag helpers, debug lines, run options, viewer lifecycle state, screenshot storage, and orbit-camera helpers; focused Python tests pass in both default and OSG-free Filament configures. `scripts/test_wheel.py` now exercises a small `dartpy.gui.experimental` scene-descriptor smoke when that submodule is present in a wheel, and the repaired Linux CPython 3.12, 3.13, and 3.14 wheels pass that installed-wheel smoke locally.                                                                                                                                                                                                                                                                                                                                                          | Satisfied for constrained bindings; full cross-platform wheel matrix remains pending. |
+| Provide at least two experimental API consumers.                                         | `examples/filament_gui` and `examples/gui_scene_diagnostics` both consume `dart-gui-experimental`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Satisfied.                                                                            |
+| Validate OSG-free experimental path.                                                     | The Filament example can configure/build with `DART_BUILD_GUI=OFF` and `DART_BUILD_DARTPY=OFF`; `dartpy.gui.experimental` also builds/tests with `DART_BUILD_GUI=OFF`, `DART_BUILD_GUI_FILAMENT=ON`, and `DART_BUILD_DARTPY=ON`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Satisfied locally.                                                                    |
+| Validate platform support.                                                               | Local Linux builds/smokes pass.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Not satisfied for macOS and Windows.                                                  |
+| Integrate CI.                                                                            | Suggested CI stages are documented; `pixi run test-filament-gui-smoke` exercises the explicit pinned fetch path with `DART_BUILD_GUI=OFF`, builds `dart_filament_gui`, and runs the default plus drag-and-drop headless CTest smokes. `.github/workflows/ci_ubuntu.yml` now has a `filament-gui-smoke` job that installs Mesa plus libc++/libc++abi development packages and runs that task without relying on a Filament conda package.                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Partially satisfied; hosted CI evidence is still pending.                             |
+| Promote to first-class `dart::gui`.                                                      | Promotion criteria are documented.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Not satisfied.                                                                        |
+| Remove legacy OSG/Raylib paths.                                                          | Legacy removal is documented as a future phase.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Not satisfied.                                                                        |
+
+## Verified Commands
+
+Recent local evidence:
+
+```bash
+pixi run lint
+python -m json.tool data/gltf/pbr_triangle.gltf >/dev/null
+python -m json.tool data/gltf/pbr_multi_material.gltf >/dev/null
+cmake --build build/default/cpp/Release --target gui_scene_diagnostics UNIT_gui_FilamentSceneExtraction UNIT_dynamics_MeshShape -j2
+ctest --test-dir build/default/cpp/Release -R UNIT_gui_FilamentSceneExtraction --output-on-failure
+ctest --test-dir build/default/cpp/Release -R UNIT_dynamics_MeshShape --output-on-failure
+./build/default/cpp/Release/bin/gui_scene_diagnostics --frames 5 --width 640 --height 480
+pixi run build-py-dev
+PYTHONPATH=build/default/cpp/Release/python:${PYTHONPATH:-} pixi run python -m pytest python/tests/unit/gui/test_experimental_scene.py -q
+LIBCXX_PREFIX=/home/jeongseok/.cache/rattler/cache/cached-envs-v0/f00a128274527791 pixi run test-filament-gui-smoke
+pixi run python -m py_compile scripts/test_wheel.py
+PYTHONPATH=build/default/cpp/Release/python:${PYTHONPATH:-} pixi run python -c "import numpy as np; import dartpy; gui = dartpy.gui; world = dartpy.World.create('wheel_gui_experimental'); skel = dartpy.Skeleton('robot'); _, body = skel.create_free_joint_and_body_node_pair(); shape = dartpy.BoxShape(np.array([1.0, 1.0, 1.0])); node = body.create_shape_node(shape); node.create_visual_aspect(); world.add_skeleton(skel); renderables = gui.experimental.extract_renderables(world); assert len(renderables) == 1; assert renderables[0].geometry.kind == gui.experimental.ShapeKind.Box"
+pixi run -e py312-wheel wheel-build
+pixi run -e py312-wheel wheel-repair
+pixi run -e py312-wheel wheel-verify
+pixi run -e py312-wheel wheel-test
+pixi run -e py313-wheel wheel-build
+pixi run -e py313-wheel wheel-repair
+pixi run -e py313-wheel wheel-verify
+pixi run -e py313-wheel wheel-test
+pixi run -e py314-wheel wheel-build
+pixi run -e py314-wheel wheel-repair
+pixi run -e py314-wheel wheel-verify
+pixi run -e py314-wheel wheel-test
+DART_PARALLEL_JOBS=2 CTEST_PARALLEL_LEVEL=2 pixi run test-all
+pixi search filament
+gh repo view conda-forge/filament-feedstock --json name,url,description,isArchived
+gh pr list --repo conda-forge/staged-recipes --state open --search "filament" \
+  --json number,title,state,isDraft,url,headRefName,updatedAt --limit 20
+gh pr checks 33297 --repo conda-forge/staged-recipes \
+  --json name,state,bucket,workflow,link
+```
+
+OSG-free Python evidence:
+
+```bash
+CMAKE_LIBRARY_PATH="$LIBCXX_PREFIX/lib" \
+  DART_BUILD_GUI_OVERRIDE=OFF \
+  DART_BUILD_GUI_FILAMENT_OVERRIDE=ON \
+  DART_FETCH_FILAMENT_OVERRIDE=ON \
+  DART_USE_SYSTEM_FILAMENT_OVERRIDE=OFF \
+  DART_BUILD_DARTPY_OVERRIDE=ON \
+  DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS_OVERRIDE=ON \
+  pixi run config
+LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
+  cmake --build build/default/cpp/Release --target dart_filament_gui dartpy -j2
+LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
+  ctest --test-dir build/default/cpp/Release \
+  -R 'EXAMPLE_filament_gui_headless_smoke|EXAMPLE_filament_gui_drag_and_drop_headless_smoke' \
+  --output-on-failure
+LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
+  PYTHONPATH=build/default/cpp/Release/python:${PYTHONPATH:-} \
+  pixi run python -m pytest python/tests/unit/gui/test_experimental_scene.py -q
+```
+
+Explicit fetch smoke evidence:
+
+```bash
+LIBCXX_PREFIX=/home/jeongseok/.cache/rattler/cache/cached-envs-v0/f00a128274527791
+CMAKE_LIBRARY_PATH="$LIBCXX_PREFIX/lib" \
+  DART_BUILD_GUI_FILAMENT_OVERRIDE=ON \
+  DART_FETCH_FILAMENT_OVERRIDE=ON \
+  DART_USE_SYSTEM_FILAMENT_OVERRIDE=OFF \
+  pixi run config
+LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
+  cmake --build build/default/cpp/Release --target dart_filament_gui -j2
+LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
+  LIBGL_ALWAYS_SOFTWARE=1 \
+  MESA_LOADER_DRIVER_OVERRIDE=llvmpipe \
+  ./build/default/cpp/Release/bin/filament_gui --headless --frames 10 \
+  --screenshot /tmp/dart_filament_gui_quality_headless.ppm
+LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
+  LIBGL_ALWAYS_SOFTWARE=1 \
+  MESA_LOADER_DRIVER_OVERRIDE=llvmpipe \
+  ./build/default/cpp/Release/bin/filament_gui --frames 10 \
+  --screenshot /tmp/dart_filament_gui_quality_windowed.ppm
+CMAKE_LIBRARY_PATH="$LIBCXX_PREFIX/lib" \
+  DART_BUILD_GUI_FILAMENT_OVERRIDE=ON \
+  DART_FETCH_FILAMENT_OVERRIDE=ON \
+  DART_USE_SYSTEM_FILAMENT_OVERRIDE=OFF \
+  DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS_OVERRIDE=ON \
+  pixi run config
+LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
+  cmake --build build/default/cpp/Release --target dart_filament_gui -j2
+LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
+  ctest --test-dir build/default/cpp/Release \
+  -R 'EXAMPLE_filament_gui_headless_smoke|EXAMPLE_filament_gui_drag_and_drop_headless_smoke' \
+  --output-on-failure
+CMAKE_LIBRARY_PATH="$LIBCXX_PREFIX/lib" \
+  DART_BUILD_GUI_OVERRIDE=OFF \
+  DART_BUILD_GUI_FILAMENT_OVERRIDE=ON \
+  DART_FETCH_FILAMENT_OVERRIDE=ON \
+  DART_USE_SYSTEM_FILAMENT_OVERRIDE=OFF \
+  pixi run config OFF
+LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
+  cmake --build build/default/cpp/Release --target dart_filament_gui -j2
+```
+
+CI-oriented explicit fetch smoke evidence:
+
+```bash
+LIBCXX_PREFIX=/home/jeongseok/.cache/rattler/cache/cached-envs-v0/f00a128274527791 \
+  pixi run test-filament-gui-smoke
+```
+
+The headless and windowed smoke outputs were nonblank 1280x720 PPM files.
+The opt-in headless CTest smoke passed locally and verified a 640x480 PPM
+generated by the same headless path, including a scene-region luminance
+contrast check from the shadowed fixture. After adding the neutral skybox,
+spherical harmonics indirect lighting, high-quality color grading, anisotropic
+texture sampling, the full Atlas SDF robot fixture, and the four-panel
+glTF/PBR environment fixture, the analyzer reported
+`dark=59741, mid=6841, bright=10229, p05=1.2, p95=200.3, spread=199.1`.
+The opt-in smoke was rerun after adding the multi-material glTF fixture, full
+WAM URDF robot fixture, required Atlas DAE torso mesh fixture, full Atlas SDF
+robot fixture, four-panel glTF/PBR environment fixture, selected-body
+manipulation, and the screenshot analyzer to the example. The non-rendering
+diagnostics example now also exercises a world-owned `SimpleFrame` visual, and
+the Filament example includes a selectable `SimpleFrame` visual that shares the
+same frame-translation helpers as selected free-joint bodies. The Filament
+example now also has a selectable `--scene drag-and-drop` fixture, and the
+opt-in CTest smoke set includes a dedicated headless run for that fixture.
+The `pixi run test-filament-gui-smoke` shortcut now runs that same CTest set
+after configuring the Linux x86_64 explicit fetch fallback with the legacy OSG
+GUI target disabled.
+Viewer lifecycle state for pause/resume, single-step, screenshot request
+tracking, rendered/skipped frame accounting, and bounded-run stop checks now
+lives in `dart-gui-experimental` with C++ and Python coverage. The Filament
+example uses that state in its main loop, and the explicit fetch smoke passed
+after this refactor.
+
+Linux CPython 3.12 wheel evidence:
+
+- `pixi run -e py312-wheel wheel-build` produced
+  `dartpy-7.0.0-cp312-cp312-linux_x86_64.whl` with
+  `DARTPY_HAS_EXPERIMENTAL_GUI=1`.
+- `pixi run -e py312-wheel wheel-repair` repaired it with `auditwheel` into
+  `dartpy-7.0.0-cp312-cp312-manylinux_2_39_x86_64.whl`.
+- `pixi run -e py312-wheel wheel-verify` confirmed the repaired wheel version.
+- `pixi run -e py312-wheel wheel-test` installed the repaired wheel into a
+  temporary virtual environment, imported `dartpy`, checked required
+  submodules, confirmed `dartpy.gui.Viewer` and `dartpy.gui.experimental`, and
+  passed the one-box experimental scene descriptor smoke.
+
+Linux CPython 3.13 wheel evidence:
+
+- `pixi run -e py313-wheel wheel-build` produced
+  `dartpy-7.0.0-cp313-cp313-linux_x86_64.whl` with
+  `DARTPY_HAS_EXPERIMENTAL_GUI=1`.
+- `pixi run -e py313-wheel wheel-repair` repaired it with `auditwheel` into
+  `dartpy-7.0.0-cp313-cp313-manylinux_2_39_x86_64.whl`.
+- `pixi run -e py313-wheel wheel-verify` confirmed the repaired wheel version.
+- `pixi run -e py313-wheel wheel-test` installed the repaired wheel into a
+  temporary virtual environment, imported `dartpy`, checked required
+  submodules, confirmed `dartpy.gui.Viewer` and `dartpy.gui.experimental`, and
+  passed the one-box experimental scene descriptor smoke.
+
+Linux CPython 3.14 wheel evidence:
+
+- `pixi run -e py314-wheel wheel-build` produced
+  `dartpy-7.0.0-cp314-cp314-linux_x86_64.whl` with
+  `DARTPY_HAS_EXPERIMENTAL_GUI=1`.
+- `pixi run -e py314-wheel wheel-repair` repaired it with `auditwheel` into
+  `dartpy-7.0.0-cp314-cp314-manylinux_2_39_x86_64.whl`.
+- `pixi run -e py314-wheel wheel-verify` confirmed the repaired wheel version.
+- `pixi run -e py314-wheel wheel-test` installed the repaired wheel into a
+  temporary virtual environment, imported `dartpy`, checked required
+  submodules, confirmed `dartpy.gui.Viewer` and `dartpy.gui.experimental`, and
+  passed the one-box experimental scene descriptor smoke.
+
+Full default validation evidence:
+
+- After moving viewer lifecycle state into `dart-gui-experimental`,
+  `DART_PARALLEL_JOBS=2 CTEST_PARALLEL_LEVEL=2 pixi run test-all` passed
+  locally, including lint, Release/Debug builds, default C++ tests,
+  simulation-experimental tests, Python tests, and documentation.
+- The first full-suite attempt exposed a local Mesa GLX hang in
+  `UNIT_gui_HeadlessViewer` when the same test binary created a second
+  headless pbuffer context. The factory test now covers the factory path with a
+  window-mode config, while the dedicated headless construction test still
+  covers headless viewer creation. The focused `UNIT_gui_HeadlessViewer` binary
+  and the subsequent full `pixi run test-all` both passed.
+
+Packaging evidence:
+
+- `conda-forge/filament-feedstock` does not exist yet.
+- `conda-forge/staged-recipes#33297` is open and ready for review at head
+  `1f786fb3c668d4906201084f5386960b9bc41d5d`; it builds Filament 1.71.3 from
+  the official source tarball and splits tools into `filament` and headers/libs
+  into `filament-static`. `@conda-forge/help-c-cpp` has been pinged.
+- At latest inspection, the current PR head was still open and behind the target
+  branch; the Windows build, skip check, staged-recipes linter, and
+  conda-forge linter passed while Linux, macOS, and the aggregate Azure check
+  were still pending on the latest run. The previous Linux failure came from using
+  `source_files: test-cmake`; the current head uses `files: test-cmake` for the
+  recipe-local CMake consumer test and links that test through CMake OpenGL
+  package targets. The PR is still not merged, so no installable feedstock
+  exists yet.
+
+## Remaining Required Work
+
+- Let the new Ubuntu Filament smoke job run on hosted CI and fix any runner
+  differences in the explicit pinned fetch path.
+- Land and consume the staged conda-forge Filament package path when available.
+  DART should depend on the `filament-static` output once available because it
+  provides the headers/static libraries and pulls the matching `matc` tool
+  output, but Linux smoke coverage no longer waits on that package.
+- Validate macOS and Windows configure/build/runtime behavior.
+- Expand CI beyond the current Ubuntu explicit-fetch smoke once the package
+  path and cross-platform dependency story are stable.
+- Expand visual material validation to broader robot/environment assets with
+  larger authored glTF/PBR environment scenes and human visual review beyond the
+  current WAM, Atlas, and PBR panel fixtures.
+- Finish interaction-heavy workflow migration beyond the current selected-body,
+  `SimpleFrame`, and drag-and-drop fixture baseline.
+- Implement any promoted DART-owned panel/tool abstraction if the built-in-only
+  overlay is not enough for first-class `dart::gui`.
+- Complete macOS, Windows, and GUI option-matrix wheel coverage.
+- Promote the stable API to `dart::gui` only after all promotion gates pass.
+- Remove OSG/Raylib legacy paths only after the deprecation and replacement
+  plan is accepted.
