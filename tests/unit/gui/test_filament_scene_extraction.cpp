@@ -65,6 +65,7 @@
 #include <fstream>
 #include <iterator>
 #include <limits>
+#include <system_error>
 #include <vector>
 
 #include <cstdint>
@@ -698,6 +699,7 @@ TEST(FilamentSceneExtraction, WriteRgbaPpm_DropsAlphaAndHandlesBottomLeftOrigin)
   ASSERT_TRUE(in);
   const std::vector<char> bytes(
       (std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+  in.close();
   const std::vector<char> expected = {
       'P',
       '6',
@@ -731,7 +733,8 @@ TEST(FilamentSceneExtraction, WriteRgbaPpm_DropsAlphaAndHandlesBottomLeftOrigin)
           path.string(), 2, 2, {255, 0, 0, 255}, false, &error));
   EXPECT_FALSE(error.empty());
 
-  std::filesystem::remove(path);
+  std::error_code cleanupError;
+  std::filesystem::remove(path, cleanupError);
 }
 
 TEST(FilamentSceneExtraction, OrbitCamera_UpdateBasisAndPickingAreStable)
