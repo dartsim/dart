@@ -55,8 +55,8 @@ struct MeshMaterial
   float shininess{0.0f};
 
   /// PBR metallic-roughness factors.
-  float metallicFactor{0.0f};
-  float roughnessFactor{0.55f};
+  float metallicFactor{1.0f};
+  float roughnessFactor{1.0f};
 
   /// Typed texture image paths or URIs.
   std::string baseColorTexturePath;

@@ -104,3 +104,27 @@ def test_ensure_target_requirements_noop_when_enabled(run_cpp_example, tmp_path,
     run_cpp_example._ensure_target_requirements(
         tmp_path, spec, {"EXAMPLE": "1"}, smoke=False
     )
+
+
+def test_run_filament_smoke_fails_when_no_tests_discovered(
+    run_cpp_example, tmp_path, monkeypatch
+):
+    calls = []
+
+    def fake_run_with_optional_xvfb(command, env, use_xvfb):
+        calls.append((command, env, use_xvfb))
+
+    monkeypatch.setenv("DISPLAY", ":99")
+    monkeypatch.setattr(
+        run_cpp_example, "_run_with_optional_xvfb", fake_run_with_optional_xvfb
+    )
+
+    env = {"EXAMPLE": "1"}
+    run_cpp_example._run_filament_smoke(tmp_path, env)
+
+    assert len(calls) == 1
+    command, runtime_env, use_xvfb = calls[0]
+    assert command[:3] == ["ctest", "--test-dir", str(tmp_path)]
+    assert "--no-tests=error" in command
+    assert runtime_env["EXAMPLE"] == "1"
+    assert use_xvfb is False

@@ -171,10 +171,7 @@ def _ensure_raylib(build_dir: Path, env: dict[str, str]) -> None:
 
 
 def _option_override(
-    definitions: dict[str, str],
-    env: dict[str, str],
-    option: str,
-    env_name: str,
+    definitions: dict[str, str], env: dict[str, str], option: str, env_name: str
 ) -> None:
     if env_name in env:
         definitions[option] = env[env_name]
@@ -392,6 +389,7 @@ def _run_filament_smoke(build_dir: Path, env: dict[str, str]) -> None:
         str(build_dir),
         "-R",
         FILAMENT_SMOKE_PATTERN,
+        "--no-tests=error",
         "--output-on-failure",
     ]
     use_xvfb = sys.platform.startswith("linux") and not os.environ.get("DISPLAY")
