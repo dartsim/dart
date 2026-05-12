@@ -616,6 +616,14 @@ std::string resolveRequestedUri(
     return std::string(requested);
   }
 
+  if (baseUri.mScheme.get_value_or("file") == "file") {
+    const auto basePath = std::filesystem::path(baseUri.getFilesystemPath());
+    if (basePath.has_parent_path()) {
+      return (basePath.parent_path() / std::filesystem::path(requested))
+          .string();
+    }
+  }
+
   const auto merged = common::Uri::getRelativeUri(baseUri, requested);
   if (!merged.empty()) {
     return merged;
@@ -835,6 +843,9 @@ dynamics::SkeletonPtr readSkeleton(
         DART_WARN(
             "Unsupported root joint type [{}]. Using FLOATING by default.",
             static_cast<int>(options.defaultRootJointType));
+        rootJoint.properties = dynamics::FreeJoint::Properties::createShared(
+            dynamics::Joint::Properties("root", body->second.initTransform));
+        rootJoint.type = "free";
       }
 
       if (!createPair(newSkeleton, nullptr, rootJoint, body->second)) {

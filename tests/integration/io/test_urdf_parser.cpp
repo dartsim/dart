@@ -42,6 +42,7 @@
 #include "dart/dynamics/weld_joint.hpp"
 #include "dart/simulation/world.hpp"
 #include "dart/utils/urdf/urdf_parser.hpp"
+#include "dart/utils/urdf/urdf_world_parser.hpp"
 
 #include <dart/all.hpp>
 
@@ -266,6 +267,14 @@ TEST(UrdfParser, parseWorld)
 }
 
 //==============================================================================
+TEST(UrdfParser, parseWorld_NonExistentPathReturnsNull)
+{
+  UrdfParser parser;
+  EXPECT_EQ(
+      nullptr, parser.parseWorld("dart://sample/urdf/test/missing_world.urdf"));
+}
+
+//==============================================================================
 TEST(UrdfParser, parseWorld_ResolvesIncludedModel)
 {
   UrdfParser parser;
@@ -309,6 +318,99 @@ TEST(UrdfParser, parseWorld_MissingIncludeReturnsNull)
   EXPECT_EQ(parser.parseWorldString(worldXml, baseUri), nullptr);
 
   std::filesystem::remove_all(tempDir);
+}
+
+//==============================================================================
+TEST(UrdfParser, parseWorld_BlankStringReturnsNull)
+{
+  UrdfParser parser;
+  EXPECT_EQ(parser.parseWorldString("", ""), nullptr);
+}
+
+//==============================================================================
+TEST(UrdfParser, parseWorld_InvalidIncludedModelReturnsNull)
+{
+  UrdfParser parser;
+
+  const auto tempDir = makeTempDir("dart-urdf-world-invalid-model");
+  const auto modelPath = tempDir / "invalid.urdf";
+
+  std::ofstream modelFile(modelPath);
+  ASSERT_TRUE(modelFile.is_open());
+  modelFile << "<not_a_robot/>";
+  modelFile.close();
+
+  const std::string worldXml = R"(
+<world name="world">
+  <include filename="invalid.urdf" model_name="invalid_model"/>
+  <entity name="entity1" model="invalid_model"/>
+</world>
+)";
+
+  const Uri baseUri = Uri::createFromPath((tempDir / "world.urdf").string());
+  EXPECT_EQ(parser.parseWorldString(worldXml, baseUri), nullptr);
+
+  std::filesystem::remove_all(tempDir);
+}
+
+//==============================================================================
+TEST(UrdfParser, parseWorld_InvalidEntityOriginReturnsEmptyWorld)
+{
+  UrdfParser parser;
+
+  const auto tempDir = makeTempDir("dart-urdf-world-invalid-origin");
+  const auto modelPath = tempDir / "model.urdf";
+
+  std::ofstream modelFile(modelPath);
+  ASSERT_TRUE(modelFile.is_open());
+  modelFile << "<robot name=\"model\"><link name=\"link\"/></robot>";
+  modelFile.close();
+
+  struct TestCase
+  {
+    std::string name;
+    std::string originAttributes;
+  };
+
+  const std::vector<TestCase> testCases{
+      {"invalid xyz", "xyz=\"bad 0 0\""}, {"invalid rpy", "rpy=\"0 bad 0\""}};
+
+  const Uri baseUri = Uri::createFromPath((tempDir / "world.urdf").string());
+  for (const auto& testCase : testCases) {
+    const std::string worldXml = R"(
+<world name="world">
+  <include filename="model.urdf" model_name="model1"/>
+  <entity name="entity1" model="model1">
+    <origin )" + testCase.originAttributes
+                                 + R"( />
+  </entity>
+</world>
+)";
+
+    const auto world = parser.parseWorldString(worldXml, baseUri);
+    ASSERT_NE(world, nullptr) << testCase.name;
+    EXPECT_EQ(world->getNumSkeletons(), 0u) << testCase.name;
+  }
+
+  std::filesystem::remove_all(tempDir);
+}
+
+//==============================================================================
+TEST(UrdfParser, UrdfWorldEntityCopiesSourceEntity)
+{
+  urdf::Entity source;
+  source.model
+      = urdf::parseURDF("<robot name=\"copied\"><link name=\"link\"/></robot>");
+  ASSERT_NE(source.model, nullptr);
+  source.origin.position.init("1 2 3");
+  source.origin.rotation.init("0.1 0.2 0.3");
+
+  const dart::utils::urdf_parsing::Entity entity(source);
+  ASSERT_NE(entity.model, nullptr);
+  EXPECT_EQ(entity.model->getName(), "copied");
+  EXPECT_DOUBLE_EQ(entity.origin.position.x, 1.0);
+  EXPECT_DOUBLE_EQ(entity.origin.position.y, 2.0);
+  EXPECT_DOUBLE_EQ(entity.origin.position.z, 3.0);
 }
 
 //==============================================================================
@@ -654,6 +756,14 @@ TEST(UrdfParser, parseUrdfWithoutWorldLink)
   EXPECT_EQ(
       robot3->getRootJoint()->getType(), dynamics::WeldJoint::getStaticType());
   EXPECT_EQ(robot3->getRootJoint()->getName(), "rootJoint");
+
+  options.mDefaultRootJointType = static_cast<UrdfParser::RootJointType>(99);
+  parser.setOptions(options);
+  auto robot4 = parser.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(nullptr != robot4);
+  EXPECT_EQ(
+      robot4->getRootJoint()->getType(), dynamics::FreeJoint::getStaticType());
+  EXPECT_EQ(robot4->getRootJoint()->getName(), "rootJoint");
 }
 
 //==============================================================================
@@ -803,6 +913,115 @@ TEST(UrdfParser, transmissionsCreateCoupledMimicJoints)
   EXPECT_TRUE(follower->isUsingCouplerConstraint());
   EXPECT_DOUBLE_EQ(follower->getMimicMultiplier(), 0.5);
   EXPECT_DOUBLE_EQ(follower->getMimicOffset(), 0.0);
+}
+
+//==============================================================================
+TEST(UrdfParser, TransmissionsUseJointReductionAndSkipMissingJoint)
+{
+  const std::string urdfStr = R"(
+    <robot name="transmission_joint_reduction">
+      <link name="base"/>
+      <link name="link1"/>
+      <joint name="j1" type="continuous">
+        <parent link="base"/>
+        <child link="link1"/>
+        <axis xyz="0 0 1"/>
+      </joint>
+      <link name="link2"/>
+      <joint name="j2" type="continuous">
+        <parent link="link1"/>
+        <child link="link2"/>
+        <axis xyz="0 0 1"/>
+      </joint>
+
+      <transmission name="tx1">
+        <type>transmission_interface/SimpleTransmission</type>
+        <actuator name="motor"/>
+        <joint name="j1">
+          <mechanicalReduction>2.0</mechanicalReduction>
+        </joint>
+      </transmission>
+      <transmission name="tx_missing_joint">
+        <type>transmission_interface/SimpleTransmission</type>
+        <actuator name="motor">
+          <mechanicalReduction>3.0</mechanicalReduction>
+        </actuator>
+        <joint name="missing_joint"/>
+      </transmission>
+      <transmission name="tx2">
+        <type>transmission_interface/SimpleTransmission</type>
+        <actuator name="motor">
+          <mechanicalReduction>8.0</mechanicalReduction>
+        </actuator>
+        <joint name="j2"/>
+      </transmission>
+    </robot>
+  )";
+
+  UrdfParser parser;
+  const auto robot = parser.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+
+  auto* reference = robot->getJoint("j1");
+  auto* follower = robot->getJoint("j2");
+  ASSERT_NE(reference, nullptr);
+  ASSERT_NE(follower, nullptr);
+
+  EXPECT_EQ(follower->getActuatorType(), dynamics::Joint::MIMIC);
+  EXPECT_EQ(follower->getMimicJoint(), reference);
+  EXPECT_DOUBLE_EQ(follower->getMimicMultiplier(), 0.25);
+}
+
+//==============================================================================
+TEST(UrdfParser, TransmissionsSkipExistingMimicTargets)
+{
+  const std::string urdfStr = R"(
+    <robot name="transmission_mimic_conflict">
+      <link name="base"/>
+      <link name="link1"/>
+      <joint name="j1" type="continuous">
+        <parent link="base"/>
+        <child link="link1"/>
+        <axis xyz="0 0 1"/>
+      </joint>
+      <link name="link2"/>
+      <joint name="j2" type="continuous">
+        <parent link="link1"/>
+        <child link="link2"/>
+        <axis xyz="0 0 1"/>
+        <mimic joint="j1" multiplier="3.0" offset="0.5"/>
+      </joint>
+
+      <transmission name="tx1">
+        <type>transmission_interface/SimpleTransmission</type>
+        <actuator name="motor">
+          <mechanicalReduction>2.0</mechanicalReduction>
+        </actuator>
+        <joint name="j1"/>
+      </transmission>
+      <transmission name="tx2">
+        <type>transmission_interface/SimpleTransmission</type>
+        <actuator name="motor">
+          <mechanicalReduction>4.0</mechanicalReduction>
+        </actuator>
+        <joint name="j2"/>
+      </transmission>
+    </robot>
+  )";
+
+  UrdfParser parser;
+  const auto robot = parser.parseSkeletonString(urdfStr, "");
+  ASSERT_TRUE(robot);
+
+  auto* reference = robot->getJoint("j1");
+  auto* follower = robot->getJoint("j2");
+  ASSERT_NE(reference, nullptr);
+  ASSERT_NE(follower, nullptr);
+
+  EXPECT_EQ(follower->getActuatorType(), dynamics::Joint::MIMIC);
+  EXPECT_EQ(follower->getMimicJoint(), reference);
+  EXPECT_DOUBLE_EQ(follower->getMimicMultiplier(), 3.0);
+  EXPECT_DOUBLE_EQ(follower->getMimicOffset(), 0.5);
 }
 
 //==============================================================================
@@ -1578,29 +1797,51 @@ TEST(UrdfParser, MemoryResourceRetrieverJointLimitsAndTransmissions)
 }
 
 //==============================================================================
-TEST(UrdfParser, ParsePlanarJointAxisXMapsToYZ)
+TEST(UrdfParser, ParsePlanarJointCardinalAxesMapToExpectedPlanes)
 {
-  const std::string urdfStr = R"(
-    <robot name="planar_example">
-      <link name="base"/>
-      <link name="tip"/>
-      <joint name="planar_joint" type="planar">
-        <parent link="base"/>
-        <child link="tip"/>
-        <axis xyz="1 0 0"/>
-      </joint>
-    </robot>
-  )";
+  struct TestCase
+  {
+    std::string name;
+    std::string axis;
+    dynamics::PlanarJoint::PlaneType planeType;
+    Eigen::Vector3d rotationalAxis;
+  };
+
+  const std::vector<TestCase> testCases{
+      {"x axis",
+       "1 0 0",
+       dynamics::PlanarJoint::PlaneType::YZ,
+       Eigen::Vector3d::UnitX()},
+      {"y axis",
+       "0 1 0",
+       dynamics::PlanarJoint::PlaneType::ZX,
+       Eigen::Vector3d::UnitY()}};
 
   UrdfParser parser;
-  auto robot = parser.parseSkeletonString(urdfStr, "");
-  ASSERT_TRUE(robot);
+  for (const auto& testCase : testCases) {
+    SCOPED_TRACE(testCase.name);
+    const std::string urdfStr = R"(
+      <robot name="planar_example">
+        <link name="base"/>
+        <link name="tip"/>
+        <joint name="planar_joint" type="planar">
+          <parent link="base"/>
+          <child link="tip"/>
+          <axis xyz=")" + testCase.axis
+                                + R"("/>
+        </joint>
+      </robot>
+    )";
 
-  auto* joint
-      = dynamic_cast<dynamics::PlanarJoint*>(robot->getJoint("planar_joint"));
-  ASSERT_TRUE(joint);
-  EXPECT_EQ(joint->getPlaneType(), dynamics::PlanarJoint::PlaneType::YZ);
-  EXPECT_TRUE(joint->getRotationalAxis().isApprox(Eigen::Vector3d::UnitX()));
+    auto robot = parser.parseSkeletonString(urdfStr, "");
+    ASSERT_TRUE(robot);
+
+    auto* joint
+        = dynamic_cast<dynamics::PlanarJoint*>(robot->getJoint("planar_joint"));
+    ASSERT_TRUE(joint);
+    EXPECT_EQ(joint->getPlaneType(), testCase.planeType);
+    EXPECT_TRUE(joint->getRotationalAxis().isApprox(testCase.rotationalAxis));
+  }
 }
 
 //==============================================================================
@@ -2084,6 +2325,39 @@ TEST(UrdfParser, TransmissionsSkipMissingElements)
         <actuator name="motor">
           <mechanicalReduction>2.0</mechanicalReduction>
         </actuator>
+      </transmission>
+      <transmission name="tx_missing_joint_name">
+        <type>transmission_interface/SimpleTransmission</type>
+        <actuator name="motor">
+          <mechanicalReduction>2.0</mechanicalReduction>
+        </actuator>
+        <joint/>
+      </transmission>
+      <transmission name="tx_missing_actuator_name">
+        <type>transmission_interface/SimpleTransmission</type>
+        <actuator/>
+        <joint name="j1"/>
+      </transmission>
+      <transmission name="tx_lone_valid">
+        <type>transmission_interface/SimpleTransmission</type>
+        <actuator name="lone_motor">
+          <mechanicalReduction>2.0</mechanicalReduction>
+        </actuator>
+        <joint name="j1"/>
+      </transmission>
+      <transmission name="tx_one_valid_entry">
+        <type>transmission_interface/SimpleTransmission</type>
+        <actuator name="partially_valid_motor">
+          <mechanicalReduction>2.0</mechanicalReduction>
+        </actuator>
+        <joint name="j1"/>
+      </transmission>
+      <transmission name="tx_one_missing_entry">
+        <type>transmission_interface/SimpleTransmission</type>
+        <actuator name="partially_valid_motor">
+          <mechanicalReduction>3.0</mechanicalReduction>
+        </actuator>
+        <joint name="missing_joint"/>
       </transmission>
     </robot>
   )";

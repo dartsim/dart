@@ -537,6 +537,16 @@ TEST(UriHelpers, merge_RootPath)
   EXPECT_EQ("http://example.com/relative", mergedUri.toString());
 }
 
+TEST(UriHelpers, merge_BasePathWithoutSlashUsesRelativePath)
+{
+  Uri baseUri, relativeUri, mergedUri;
+  ASSERT_TRUE(baseUri.fromString("base"));
+  ASSERT_TRUE(relativeUri.fromString("relative"));
+
+  ASSERT_TRUE(mergedUri.fromRelativeUri(baseUri, relativeUri, true));
+  EXPECT_EQ("relative", mergedUri.toString());
+}
+
 TEST(UriHelpers, merge_RelativeWithAbsolutePath)
 {
   Uri baseUri, relativeUri, mergedUri;

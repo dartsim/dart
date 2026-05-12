@@ -529,3 +529,27 @@ TEST(DantzigMatrixImpl, FactorLDLTOddSizeTriggersTailCase)
     EXPECT_NE(d[i], 0.0);
   }
 }
+
+//==============================================================================
+TEST(DantzigMatrixImpl, FactorLDLTLargeOddSizeUsesBlockedTail)
+{
+  constexpr int n = 7;
+  constexpr int nskip = 8;
+
+  std::vector<double> A(static_cast<std::size_t>(n * nskip), 0.0);
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < n; ++j) {
+      A[static_cast<std::size_t>(i * nskip + j)]
+          = (i == j) ? 10.0 + static_cast<double>(i)
+                     : 0.02 * static_cast<double>(1 + i + j);
+    }
+  }
+
+  std::vector<double> d(n, 0.0);
+  dFactorLDLT(A.data(), d.data(), n, nskip);
+
+  for (int i = 0; i < n; ++i) {
+    EXPECT_TRUE(std::isfinite(d[i]));
+    EXPECT_NE(d[i], 0.0);
+  }
+}

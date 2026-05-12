@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_MESH_HPP_
 #define DART_UTILS_MJCF_DETAIL_MESH_HPP_
 
+#include <dart/utils/export.hpp>
 #include <dart/utils/mjcf/detail/compiler.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
 #include <dart/utils/mjcf/detail/mesh_attributes.hpp>
@@ -46,7 +47,7 @@ namespace utils {
 namespace MjcfParser {
 namespace detail {
 
-class Mesh final
+class DART_UTILS_API Mesh final
 {
 public:
   /// Default constructor
@@ -62,10 +63,6 @@ public:
 
   /// \}
 
-private:
-  // Private members used by Asset class
-  friend class Asset;
-  friend class Default;
   Errors read(tinyxml2::XMLElement* element);
 
   /// Updates attributes and elements that doesn't require any other elements.
@@ -78,9 +75,12 @@ private:
   /// Updates attributes and elements that require the compiled parent element.
   Errors postprocess(const Compiler& compiler);
 
+private:
+  friend class Asset;
+  friend class Default;
+
   dynamics::MeshShapePtr createMeshShape() const;
 
-private:
   MeshAttributes mAttributes;
 
   /// Name of this Mesh

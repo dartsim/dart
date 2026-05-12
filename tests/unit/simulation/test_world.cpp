@@ -85,6 +85,13 @@ TEST(WorldTests, CreateWithConfig)
   auto world = World::create(config);
 
   EXPECT_EQ(world->getName(), "configured_world");
+
+  const WorldConfig constConfig("const_config_world");
+  auto constConfigWorld = World::create(constConfig);
+  EXPECT_EQ(constConfigWorld->getName(), "const_config_world");
+
+  World directWorld("direct_world");
+  EXPECT_EQ(directWorld.getName(), "direct_world");
 }
 
 //==============================================================================
@@ -149,6 +156,14 @@ TEST(WorldTests, AddSkeleton)
 }
 
 //==============================================================================
+TEST(WorldTests, AddSkeletonRejectsNullptr)
+{
+  auto world = World::create();
+
+  EXPECT_THROW(world->addSkeleton(nullptr), dart::common::NullPointerException);
+}
+
+//==============================================================================
 TEST(WorldTests, RemoveSkeleton)
 {
   auto world = World::create();
@@ -204,6 +219,29 @@ TEST(WorldTests, ClonePreservesSkeletonsAndFrames)
   EXPECT_NE(clone->getSimpleFrame(0).get(), frame.get());
   EXPECT_EQ(clone->getSkeleton(0)->getName(), "clone_skel");
   EXPECT_EQ(clone->getSimpleFrame(0)->getName(), "clone_frame");
+}
+
+//==============================================================================
+TEST(WorldTests, CloneReparentsSimpleFrameHierarchy)
+{
+  auto world = World::create("source_world");
+
+  auto parent = SimpleFrame::createShared(Frame::World(), "parent_frame");
+  auto child = SimpleFrame::createShared(parent.get(), "child_frame");
+
+  world->addSimpleFrame(parent);
+  world->addSimpleFrame(child);
+
+  auto clone = world->clone();
+  ASSERT_NE(clone, nullptr);
+
+  auto clonedParent = clone->getSimpleFrame("parent_frame");
+  auto clonedChild = clone->getSimpleFrame("child_frame");
+
+  ASSERT_NE(clonedParent, nullptr);
+  ASSERT_NE(clonedChild, nullptr);
+  EXPECT_EQ(clonedChild->getParentFrame(), clonedParent.get());
+  EXPECT_NE(clonedChild->getParentFrame(), parent.get());
 }
 
 //==============================================================================
@@ -290,6 +328,17 @@ TEST(WorldTests, SimpleFrame)
 
   world->removeSimpleFrame(frame);
   EXPECT_EQ(world->getNumSimpleFrames(), 0u);
+}
+
+//==============================================================================
+TEST(WorldTests, SimpleFrameRejectsNullptr)
+{
+  auto world = World::create();
+
+  EXPECT_THROW(
+      world->addSimpleFrame(nullptr), dart::common::NullPointerException);
+  EXPECT_THROW(
+      world->removeSimpleFrame(nullptr), dart::common::NullPointerException);
 }
 
 //==============================================================================
@@ -401,6 +450,18 @@ TEST(WorldTests, ConstraintSolver)
 }
 
 //==============================================================================
+TEST(WorldTests, MemoryManagerAccessorsReturnSameManager)
+{
+  auto world = World::create();
+
+  auto& memoryManager = world->getMemoryManager();
+  const auto& constWorld = *world;
+  const auto& constMemoryManager = constWorld.getMemoryManager();
+
+  EXPECT_EQ(&constMemoryManager, &memoryManager);
+}
+
+//==============================================================================
 TEST(WorldTests, CollisionDetector)
 {
   auto world = World::create();
@@ -436,6 +497,10 @@ TEST(WorldTests, SetCollisionDetector)
   world->setCollisionDetector(CollisionDetectorType::Fcl);
   auto fclDetector = world->getCollisionDetector();
   ASSERT_NE(fclDetector, nullptr);
+
+  world->setCollisionDetector(CollisionDetectorType::Ode);
+  auto odeDetector = world->getCollisionDetector();
+  ASSERT_NE(odeDetector, nullptr);
 }
 
 //==============================================================================
@@ -745,12 +810,19 @@ class TestSensor : public sensor::Sensor
 public:
   using Sensor::Sensor;
   int updateCount = 0;
+  bool wasReset = false;
 
 protected:
   void updateImpl(
       const simulation::World&, const sensor::SensorUpdateContext&) override
   {
     ++updateCount;
+  }
+
+  void resetImpl() override
+  {
+    wasReset = true;
+    Sensor::resetImpl();
   }
 };
 
@@ -858,6 +930,38 @@ TEST(WorldTests, RemoveAllSensors)
   EXPECT_TRUE(removed.contains(sensor1));
   EXPECT_TRUE(removed.contains(sensor2));
   EXPECT_TRUE(removed.contains(sensor3));
+}
+
+//==============================================================================
+TEST(WorldTests, StepUpdatesSensorsAndResetResetsThem)
+{
+  auto world = World::create();
+  world->setTimeStep(0.002);
+
+  sensor::Sensor::Properties props;
+  props.name = "stepped_sensor";
+  auto sensor = std::make_shared<TestSensor>(props);
+
+  world->addSensor(sensor);
+
+  EXPECT_FALSE(sensor->hasUpdate());
+
+  world->step();
+
+  EXPECT_EQ(sensor->updateCount, 1);
+  EXPECT_TRUE(sensor->hasUpdate());
+
+  const auto& context = sensor->getLastUpdateContext();
+  EXPECT_DOUBLE_EQ(context.time, world->getTime());
+  EXPECT_DOUBLE_EQ(context.timeStep, world->getTimeStep());
+  EXPECT_EQ(context.frame, world->getSimFrames());
+
+  world->reset();
+
+  EXPECT_TRUE(sensor->wasReset);
+  EXPECT_FALSE(sensor->hasUpdate());
+  EXPECT_DOUBLE_EQ(world->getTime(), 0.0);
+  EXPECT_EQ(world->getSimFrames(), 0);
 }
 
 //==============================================================================

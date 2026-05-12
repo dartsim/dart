@@ -97,12 +97,12 @@ public:
   /// Returns the parsed <contact> element
   const Contact& getContact() const;
 
-private:
   Errors read(
       tinyxml2::XMLElement* element,
       const common::Uri& baseUri,
       const common::ResourceRetrieverPtr& retriever);
 
+private:
   /// The name of the model.
   std::string mModel{"MuJoCo Model"};
 

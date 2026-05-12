@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_MESHATTRIBUTES_HPP_
 #define DART_UTILS_MJCF_DETAIL_MESHATTRIBUTES_HPP_
 
+#include <dart/utils/export.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
 
 #include <Eigen/Core>
@@ -47,7 +48,7 @@ namespace detail {
 
 /// Intermediate raw data read from the XML file. For the details, see
 /// http://www.mujoco.org/book/XMLreference.html#mesh
-struct MeshAttributes final
+struct DART_UTILS_API MeshAttributes final
 {
   /// Name of the Asset
   std::optional<std::string> mName;
@@ -57,8 +58,8 @@ struct MeshAttributes final
   Eigen::Vector3d mScale{Eigen::Vector3d::Ones()};
 };
 
-Errors appendMeshAttributes(
-    MeshAttributes& attributes, tinyxml2::XMLElement* element);
+DART_UTILS_API Errors
+appendMeshAttributes(MeshAttributes& attributes, tinyxml2::XMLElement* element);
 
 } // namespace detail
 } // namespace MjcfParser

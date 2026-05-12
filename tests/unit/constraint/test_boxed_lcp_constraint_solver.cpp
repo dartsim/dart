@@ -184,6 +184,14 @@ TEST(DantzigBoxedLcpSolver, AcceptsNullFindex)
 
   EXPECT_TRUE(success);
   EXPECT_NEAR(x[0], target, 1e-8);
+
+  int findex[kSize] = {-1};
+  x[0] = 0.0;
+  const bool successWithFindex
+      = solver.solve(kSize, A, x, b, 0, lo, hi, findex, true);
+
+  EXPECT_TRUE(successWithFindex);
+  EXPECT_NEAR(x[0], target, 1e-8);
 }
 
 //==============================================================================
@@ -203,6 +211,59 @@ TEST(PgsBoxedLcpSolver, AcceptsNullFindex)
 
   EXPECT_TRUE(success);
   EXPECT_NEAR(x[0], target, 1e-6);
+
+  int findex[kSize] = {-1};
+  x[0] = 0.0;
+  const bool successWithFindex
+      = solver.solve(kSize, A, x, b, 0, lo, hi, findex, true);
+
+  EXPECT_TRUE(successWithFindex);
+  EXPECT_NEAR(x[0], target, 1e-6);
+}
+
+//==============================================================================
+TEST(DantzigBoxedLcpSolver, TypeCanSolveAndRejectsInvalidInputs)
+{
+  constraint::DantzigBoxedLcpSolver solver;
+  double a = 1.0;
+
+  EXPECT_EQ(
+      solver.getTypeView(), constraint::DantzigBoxedLcpSolver::getStaticType());
+  EXPECT_TRUE(solver.canSolve(0, &a));
+  EXPECT_TRUE(solver.canSolve(1, &a));
+  EXPECT_FALSE(solver.canSolve(-1, &a));
+  EXPECT_FALSE(solver.canSolve(1, nullptr));
+  EXPECT_FALSE(solver.solve(
+      0, nullptr, nullptr, nullptr, 0, nullptr, nullptr, nullptr, false));
+}
+
+//==============================================================================
+TEST(PgsBoxedLcpSolver, TypeCanSolveOptionsAndRejectsInvalidInputs)
+{
+  constraint::PgsBoxedLcpSolver solver;
+  double a = 1.0;
+
+  EXPECT_EQ(
+      solver.getTypeView(), constraint::PgsBoxedLcpSolver::getStaticType());
+  EXPECT_TRUE(solver.canSolve(0, &a));
+  EXPECT_TRUE(solver.canSolve(1, &a));
+  EXPECT_FALSE(solver.canSolve(-1, &a));
+  EXPECT_FALSE(solver.canSolve(1, nullptr));
+  EXPECT_FALSE(solver.solve(
+      0, nullptr, nullptr, nullptr, 0, nullptr, nullptr, nullptr, false));
+
+  const constraint::PgsBoxedLcpSolver::Option option(
+      4, 1e-8, 1e-6, 1e-10, true);
+  solver.setOption(option);
+  EXPECT_EQ(solver.getOption().mMaxIteration, option.mMaxIteration);
+  EXPECT_DOUBLE_EQ(
+      solver.getOption().mDeltaXThreshold, option.mDeltaXThreshold);
+  EXPECT_DOUBLE_EQ(
+      solver.getOption().mRelativeDeltaXTolerance,
+      option.mRelativeDeltaXTolerance);
+  EXPECT_DOUBLE_EQ(
+      solver.getOption().mEpsilonForDivision, option.mEpsilonForDivision);
+  EXPECT_TRUE(solver.getOption().mRandomizeConstraintOrder);
 }
 
 //==============================================================================
@@ -307,6 +368,16 @@ TEST(BoxedLcpConstraintSolver, AdapterLogic)
   ASSERT_TRUE(adapter != nullptr);
   EXPECT_EQ(adapter->getCategory(), "Boxed");
   EXPECT_EQ(adapter->getName(), "DummyBoxedLcpSolver");
+
+  solver.setBoxedLcpSolver(dummy);
+  EXPECT_EQ(solver.getLcpSolver(), adapter);
+
+  auto secondaryDummy = std::make_shared<DummyBoxedLcpSolver>();
+  solver.setSecondaryBoxedLcpSolver(secondaryDummy);
+  auto secondaryAdapter = solver.getSecondaryLcpSolver();
+  ASSERT_TRUE(secondaryAdapter != nullptr);
+  EXPECT_EQ(secondaryAdapter->getCategory(), "Boxed");
+  EXPECT_EQ(secondaryAdapter->getName(), "DummyBoxedLcpSolver");
 
   // Trigger solve through adapter
   math::LcpProblem problem(

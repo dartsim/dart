@@ -59,6 +59,9 @@
 #include <functional>
 #include <ranges>
 #include <utility>
+#include <vector>
+
+#include <cmath>
 
 namespace dart {
 namespace collision {
@@ -86,6 +89,14 @@ double computeTangentialSpeed(const Contact& contact);
 
 bool shouldUseContactHistory(
     const CollisionObject* object1, const CollisionObject* object2);
+
+bool isContactUsableForHistory(const Contact& contact);
+
+bool isContactFromPair(
+    const Contact& contact, const OdeCollisionDetector::CollObjPair& pair);
+
+bool hasNearbyContact(
+    const Contact& contact, const std::vector<Contact>& contacts);
 
 OdeCollisionDetector::CollObjPair MakeNewPair(
     CollisionObject* o1, CollisionObject* o2)
@@ -420,26 +431,24 @@ void reportContacts(
     return;
   }
 
-  if (!history || !shouldUseContactHistory(b1, b2)) {
+  if (!option.enableContact || !history || !shouldUseContactHistory(b1, b2)) {
     return;
   }
 
   const auto pair = MakeNewPair(b1, b2);
   auto& pastContacsVec = FindPairInHist(*history, pair);
-  auto results_vec_copy = result.getContacts();
+  std::vector<Contact> freshPairContacts;
+  freshPairContacts.reserve(result.getNumContacts());
+
+  for (const auto& contact : result.getContacts()) {
+    if (isContactFromPair(contact, pair)) {
+      freshPairContacts.push_back(contact);
+    }
+  }
 
   bool sliding = false;
   constexpr double slidingThreshold = 1e-3;
-  std::size_t pairContactCount = 0u;
-  for (const auto& curr_cont : results_vec_copy) {
-    const auto current_pair
-        = MakeNewPair(curr_cont.collisionObject1, curr_cont.collisionObject2);
-    if (current_pair != pair) {
-      continue;
-    }
-
-    ++pairContactCount;
-
+  for (const auto& curr_cont : freshPairContacts) {
     if (computeTangentialSpeed(curr_cont) > slidingThreshold) {
       sliding = true;
       break;
@@ -452,6 +461,7 @@ void reportContacts(
 
   const std::size_t pairTarget
       = std::min<std::size_t>(3u, option.maxNumContacts);
+  const auto pairContactCount = freshPairContacts.size();
   if (pairContactCount >= pairTarget) {
     return;
   }
@@ -463,38 +473,29 @@ void reportContacts(
     return;
   }
 
+  auto contactCandidates = freshPairContacts;
   for (const auto& past_cont : std::views::reverse(pastContacsVec)) {
     if (missing == 0u) {
       break;
     }
 
-    for (const auto& curr_cont : results_vec_copy) {
-      const auto res_pair
-          = MakeNewPair(curr_cont.collisionObject1, curr_cont.collisionObject2);
-      if (res_pair != pair) {
-        continue;
-      }
-      auto dist_v = past_cont.point - curr_cont.point;
-      const auto dist_m = (dist_v.transpose() * dist_v).coeff(0, 0);
-      if (dist_m < 0.01) {
-        continue;
-      }
-      if (result.getNumContacts() >= option.maxNumContacts) {
-        return;
-      }
-      result.addContact(past_cont);
-      if (--missing == 0u) {
-        break;
-      }
+    if (!isContactUsableForHistory(past_cont)
+        || hasNearbyContact(past_cont, contactCandidates)) {
+      continue;
     }
-    if (missing == 0u) {
+
+    if (result.getNumContacts() >= option.maxNumContacts) {
+      return;
+    }
+    result.addContact(past_cont);
+    contactCandidates.push_back(past_cont);
+    if (--missing == 0u) {
       break;
     }
   }
-  for (const auto& item : results_vec_copy) {
-    const auto res_pair
-        = MakeNewPair(item.collisionObject1, item.collisionObject2);
-    if (res_pair == pair) {
+
+  for (const auto& item : freshPairContacts) {
+    if (isContactUsableForHistory(item)) {
       pastContacsVec.push_back(item);
     }
   }
@@ -579,6 +580,37 @@ bool shouldUseContactHistory(
   // detector runs. The sliding/tangential-speed checks later will filter cases
   // where the cache should not be reused.
   return object1 != nullptr && object2 != nullptr;
+}
+
+bool isContactUsableForHistory(const Contact& contact)
+{
+  return contact.collisionObject1 != nullptr
+         && contact.collisionObject2 != nullptr && contact.point.allFinite()
+         && contact.normal.allFinite()
+         && std::isfinite(contact.penetrationDepth)
+         && contact.normal.squaredNorm() > 0.0;
+}
+
+bool isContactFromPair(
+    const Contact& contact, const OdeCollisionDetector::CollObjPair& pair)
+{
+  return MakeNewPair(contact.collisionObject1, contact.collisionObject2)
+         == pair;
+}
+
+bool hasNearbyContact(
+    const Contact& contact, const std::vector<Contact>& contacts)
+{
+  constexpr double duplicateContactDistanceSquared = 0.01;
+
+  return std::ranges::any_of(contacts, [&](const Contact& other) {
+    if (!isContactUsableForHistory(other)) {
+      return false;
+    }
+
+    return (contact.point - other.point).squaredNorm()
+           < duplicateContactDistanceSquared;
+  });
 }
 
 } // anonymous namespace

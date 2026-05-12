@@ -103,6 +103,7 @@ Errors Default::read(tinyxml2::XMLElement* element, const Default* parent)
     mGeomAttributes = parent->mGeomAttributes;
     mJointAttributes = parent->mJointAttributes;
     mMeshAttributes = parent->mMeshAttributes;
+    mWeldAttributes = parent->mWeldAttributes;
   }
 
   if (hasElement(element, "motor")) {

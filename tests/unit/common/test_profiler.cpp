@@ -323,6 +323,10 @@ namespace dart::common::profile {
 class ProfilerTestAccess
 {
 public:
+  static std::string color(std::string_view text, const char* code)
+  {
+    return Profiler::colorize(text, code);
+  }
   static std::string fd(std::uint64_t ns)
   {
     return Profiler::formatDuration(ns);
@@ -338,6 +342,22 @@ public:
   static std::string fc(std::uint64_t v)
   {
     return Profiler::formatCount(v);
+  }
+  static std::string fp(double pct)
+  {
+    return Profiler::formatPercent(pct);
+  }
+  static const char* heat(double pct)
+  {
+    return Profiler::heatColor(pct);
+  }
+  static std::string pad(std::string_view text, std::size_t width)
+  {
+    return Profiler::padRight(text, width);
+  }
+  static double pct(std::uint64_t part, std::uint64_t total)
+  {
+    return Profiler::percentage(part, total);
   }
   static void popEmpty(Profiler& p)
   {
@@ -385,6 +405,19 @@ TEST(Profiler, FormatCountScales)
   EXPECT_NE(PTA::fc(5'000'000ULL).find("M"), std::string::npos);
   EXPECT_NE(PTA::fc(5'000ULL).find("K"), std::string::npos);
   EXPECT_EQ(PTA::fc(42ULL), "42");
+}
+
+TEST(Profiler, FormattingHelperBoundaries)
+{
+  EXPECT_DOUBLE_EQ(PTA::pct(10, 0), 0.0);
+  EXPECT_EQ(PTA::fp(9.5), "9.50%");
+  EXPECT_EQ(PTA::fp(12.0), "12.0%");
+  EXPECT_EQ(PTA::pad("already-wide", 4), "already-wide");
+
+  dart::test::ScopedEnvVar env("DART_PROFILE_COLOR", "1");
+  EXPECT_STREQ(PTA::heat(10.0), "\033[33m");
+  EXPECT_STREQ(PTA::heat(1.0), "\033[36m");
+  EXPECT_EQ(PTA::color("label", "\033[31m"), "\033[31mlabel\033[0m");
 }
 
 TEST(Profiler, PopScopeOnEmptyStack)

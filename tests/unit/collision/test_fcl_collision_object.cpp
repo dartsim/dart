@@ -73,6 +73,14 @@ TEST(FCLCollisionObject, RefreshRetainsUserData)
       static_cast<void*>(fclObj),
       fclObj->getFCLCollisionObject()->getUserData());
 
+  const dart::collision::CollisionObject* constObj = obj.get();
+  EXPECT_EQ(&detector, constObj->getCollisionDetector());
+
+  const auto* constFclObj = fclObj;
+  EXPECT_EQ(
+      static_cast<void*>(fclObj),
+      constFclObj->getFCLCollisionObject()->getUserData());
+
   shape->setRadius(0.6);
   detector.refreshCollisionObject(fclObj);
 

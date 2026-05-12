@@ -97,6 +97,27 @@ std::unique_ptr<CollisionGroup> makeOverlappingGroup(
   return group;
 }
 
+struct CollidableBody
+{
+  SkeletonPtr skeleton;
+  BodyNode* body;
+  ShapeNode* shapeNode;
+};
+
+CollidableBody createCollidableBody(const std::string& name)
+{
+  CollidableBody data;
+  data.skeleton = Skeleton::create(name);
+  auto pair = data.skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+      nullptr,
+      dynamics::FreeJoint::Properties(),
+      dynamics::BodyNode::AspectProperties("body"));
+  data.body = pair.second;
+  data.shapeNode = data.body->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  return data;
+}
+
 } // namespace
 
 //==============================================================================
@@ -678,4 +699,58 @@ TEST(CollisionGroupTests, SubscribedSkeletonTracksNewBody)
 
   group->update();
   EXPECT_EQ(group->getNumShapeFrames(), 2u);
+}
+
+//==============================================================================
+TEST(CollisionGroupTests, RemovingSubscribedSkeletonFrameUnsubscribesSource)
+{
+  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+  auto body = createCollidableBody("remove_skel_source");
+
+  group->subscribeTo(dynamics::ConstMetaSkeletonPtr(body.skeleton));
+  ASSERT_EQ(group->getNumShapeFrames(), 1u);
+  ASSERT_TRUE(group->isSubscribedTo(body.skeleton.get()));
+
+  group->removeShapeFrame(body.shapeNode);
+
+  EXPECT_EQ(group->getNumShapeFrames(), 0u);
+  EXPECT_FALSE(group->isSubscribedTo(body.skeleton.get()));
+
+  group->update();
+  EXPECT_EQ(group->getNumShapeFrames(), 0u);
+}
+
+//==============================================================================
+TEST(CollisionGroupTests, SubscribedSkeletonTracksRemovedShapeNode)
+{
+  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+  auto body = createCollidableBody("remove_skel_shape_node");
+
+  group->subscribeTo(dynamics::ConstMetaSkeletonPtr(body.skeleton));
+  ASSERT_EQ(group->getNumShapeFrames(), 1u);
+
+  body.shapeNode->remove();
+  group->update();
+
+  EXPECT_EQ(group->getNumShapeFrames(), 0u);
+  EXPECT_TRUE(group->isSubscribedTo(body.skeleton.get()));
+}
+
+//==============================================================================
+TEST(CollisionGroupTests, SubscribedBodyNodeTracksRemovedShapeNode)
+{
+  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+  auto body = createCollidableBody("remove_body_shape_node");
+
+  group->subscribeTo(dynamics::ConstBodyNodePtr(body.body));
+  ASSERT_EQ(group->getNumShapeFrames(), 1u);
+
+  body.shapeNode->remove();
+  group->update();
+
+  EXPECT_EQ(group->getNumShapeFrames(), 0u);
+  EXPECT_TRUE(group->isSubscribedTo(body.body));
 }

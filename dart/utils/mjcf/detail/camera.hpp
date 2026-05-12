@@ -57,9 +57,10 @@ public:
   const std::string& getMode() const;
   const std::string& getTarget() const;
 
+  Errors read(tinyxml2::XMLElement* element);
+
 private:
   friend class Body;
-  Errors read(tinyxml2::XMLElement* element);
 
   std::string mName;
   double mFovy{45.0};

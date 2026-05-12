@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_WELDATTRIBUTES_HPP_
 #define DART_UTILS_MJCF_DETAIL_WELDATTRIBUTES_HPP_
 
+#include <dart/utils/export.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
 
 #include <Eigen/Core>
@@ -45,7 +46,7 @@ namespace utils {
 namespace MjcfParser {
 namespace detail {
 
-struct WeldAttributes final
+struct DART_UTILS_API WeldAttributes final
 {
   std::optional<std::string> mName;
   bool mActive{true};
@@ -58,8 +59,8 @@ struct WeldAttributes final
   WeldAttributes();
 };
 
-Errors appendWeldAttributes(
-    WeldAttributes& attributes, tinyxml2::XMLElement* element);
+DART_UTILS_API Errors
+appendWeldAttributes(WeldAttributes& attributes, tinyxml2::XMLElement* element);
 
 } // namespace detail
 } // namespace MjcfParser
