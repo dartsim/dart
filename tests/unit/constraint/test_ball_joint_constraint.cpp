@@ -38,8 +38,11 @@
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/weld_joint.hpp>
 
 #include <gtest/gtest.h>
+
+#include <vector>
 
 using namespace dart;
 using namespace dart::dynamics;
@@ -54,6 +57,60 @@ SkeletonPtr createFreeSkeleton(const std::string& name)
   skel->createJointAndBodyNodePair<FreeJoint>();
   return skel;
 }
+
+struct LcpBuffers
+{
+  std::vector<double> x;
+  std::vector<double> lo;
+  std::vector<double> hi;
+  std::vector<double> b;
+  std::vector<double> w;
+  std::vector<int> findex;
+};
+
+void prepareConstraintInfo(
+    ConstraintInfo& info,
+    LcpBuffers& buffers,
+    std::size_t dim,
+    double invTimeStep)
+{
+  buffers.x.assign(dim, 0.0);
+  buffers.lo.assign(dim, 0.0);
+  buffers.hi.assign(dim, 0.0);
+  buffers.b.assign(dim, 0.0);
+  buffers.w.assign(dim, 0.0);
+  buffers.findex.assign(dim, -1);
+
+  info.x = buffers.x.data();
+  info.lo = buffers.lo.data();
+  info.hi = buffers.hi.data();
+  info.b = buffers.b.data();
+  info.w = buffers.w.data();
+  info.findex = buffers.findex.data();
+  info.invTimeStep = invTimeStep;
+  info.phase = ConstraintPhase::Velocity;
+  info.useSplitImpulse = false;
+}
+
+class ExposedBallJointConstraint final : public BallJointConstraint
+{
+public:
+  using BallJointConstraint::applyImpulse;
+  using BallJointConstraint::applyUnitImpulse;
+  using BallJointConstraint::BallJointConstraint;
+  using BallJointConstraint::excite;
+  using BallJointConstraint::getInformation;
+  using BallJointConstraint::getVelocityChange;
+  using BallJointConstraint::isActive;
+  using BallJointConstraint::unexcite;
+  using BallJointConstraint::uniteSkeletons;
+  using BallJointConstraint::update;
+
+  SkeletonPtr exposedGetRootSkeleton() const
+  {
+    return getRootSkeleton();
+  }
+};
 
 } // namespace
 
@@ -137,6 +194,122 @@ TEST(BallJointConstraint, StaticSettings)
   BallJointConstraint::setErrorReductionParameter(originalErp);
   BallJointConstraint::setMaxErrorReductionVelocity(originalErv);
   BallJointConstraint::setConstraintForceMixing(originalCfm);
+}
+
+TEST(BallJointConstraint, OneBodyCallbackPipeline)
+{
+  auto skel = createFreeSkeleton("one_body_callbacks");
+  auto* body = skel->getBodyNode(0);
+  ASSERT_NE(body, nullptr);
+
+  ExposedBallJointConstraint constraint(body, Eigen::Vector3d::Zero());
+  constraint.update();
+  ASSERT_TRUE(constraint.isActive());
+  ASSERT_EQ(constraint.getDimension(), 3u);
+  EXPECT_EQ(constraint.exposedGetRootSkeleton(), skel);
+
+  ConstraintInfo info{};
+  LcpBuffers buffers;
+  prepareConstraintInfo(info, buffers, constraint.getDimension(), 1000.0);
+  constraint.getInformation(&info);
+  EXPECT_TRUE(Eigen::Map<Eigen::Vector3d>(buffers.b.data()).allFinite());
+
+  constraint.applyUnitImpulse(0);
+  skel->computeForwardDynamics();
+  constraint.excite();
+  EXPECT_TRUE(skel->isImpulseApplied());
+
+  std::vector<double> vel(constraint.getDimension(), 0.0);
+  constraint.getVelocityChange(vel.data(), true);
+  EXPECT_TRUE(Eigen::Map<Eigen::Vector3d>(vel.data()).allFinite());
+
+  std::vector<double> lambda = {0.1, -0.2, 0.3};
+  constraint.applyImpulse(lambda.data());
+  constraint.unexcite();
+  EXPECT_FALSE(skel->isImpulseApplied());
+
+  LcpBuffers warmStartBuffers;
+  prepareConstraintInfo(
+      info, warmStartBuffers, constraint.getDimension(), 1000.0);
+  constraint.getInformation(&info);
+  EXPECT_DOUBLE_EQ(warmStartBuffers.x[0], 0.1);
+  EXPECT_DOUBLE_EQ(warmStartBuffers.x[1], -0.2);
+  EXPECT_DOUBLE_EQ(warmStartBuffers.x[2], 0.3);
+}
+
+TEST(BallJointConstraint, TwoBodyCallbackPipelineAndUnion)
+{
+  auto skel1 = createFreeSkeleton("two_body_callbacks_1");
+  auto skel2 = createFreeSkeleton("two_body_callbacks_2");
+  auto* body1 = skel1->getBodyNode(0);
+  auto* body2 = skel2->getBodyNode(0);
+  ASSERT_NE(body1, nullptr);
+  ASSERT_NE(body2, nullptr);
+
+  ExposedBallJointConstraint constraint(
+      body1, body2, Eigen::Vector3d(0.2, -0.1, 0.3));
+  constraint.update();
+  ASSERT_TRUE(constraint.isActive());
+
+  ConstraintInfo info{};
+  LcpBuffers buffers;
+  prepareConstraintInfo(info, buffers, constraint.getDimension(), 1000.0);
+  constraint.getInformation(&info);
+  EXPECT_TRUE(Eigen::Map<Eigen::Vector3d>(buffers.b.data()).allFinite());
+
+  constraint.applyUnitImpulse(0);
+  skel1->computeForwardDynamics();
+  skel2->computeForwardDynamics();
+  constraint.excite();
+  EXPECT_TRUE(skel1->isImpulseApplied());
+  EXPECT_TRUE(skel2->isImpulseApplied());
+
+  std::vector<double> vel(constraint.getDimension(), 0.0);
+  constraint.getVelocityChange(vel.data(), true);
+  EXPECT_TRUE(Eigen::Map<Eigen::Vector3d>(vel.data()).allFinite());
+
+  std::vector<double> lambda = {0.05, 0.04, -0.03};
+  constraint.applyImpulse(lambda.data());
+  constraint.unexcite();
+  EXPECT_FALSE(skel1->isImpulseApplied());
+  EXPECT_FALSE(skel2->isImpulseApplied());
+
+  constraint.uniteSkeletons();
+  EXPECT_EQ(skel2->mUnionRootSkeleton.lock(), skel1);
+}
+
+TEST(BallJointConstraint, NonReactiveFirstBodyUsesReactiveSecondBody)
+{
+  auto skel = Skeleton::create("non_reactive_first_body");
+  auto [weldJoint, body1] = skel->createJointAndBodyNodePair<WeldJoint>();
+  auto [freeJoint, body2] = skel->createJointAndBodyNodePair<FreeJoint>(body1);
+  (void)weldJoint;
+  (void)freeJoint;
+  ASSERT_NE(body1, nullptr);
+  ASSERT_NE(body2, nullptr);
+  ASSERT_FALSE(body1->isReactive());
+  ASSERT_TRUE(body2->isReactive());
+
+  ExposedBallJointConstraint constraint(
+      body1, body2, Eigen::Vector3d(0.0, 0.0, 0.0));
+  EXPECT_TRUE(constraint.isActive());
+  EXPECT_EQ(constraint.exposedGetRootSkeleton(), skel);
+  constraint.update();
+
+  constraint.applyUnitImpulse(0);
+  skel->computeForwardDynamics();
+
+  constraint.excite();
+  EXPECT_TRUE(skel->isImpulseApplied());
+  constraint.unexcite();
+  EXPECT_FALSE(skel->isImpulseApplied());
+
+  std::vector<double> lambda = {0.01, 0.02, 0.03};
+  constraint.applyImpulse(lambda.data());
+  EXPECT_TRUE(body2->getConstraintImpulse().allFinite());
+
+  constraint.uniteSkeletons();
+  EXPECT_EQ(skel->mUnionRootSkeleton.lock(), skel);
 }
 
 TEST(BallJointConstraint, SimulateWithTwoBodies)

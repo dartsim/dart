@@ -72,9 +72,10 @@ public:
   std::size_t getNumEntries() const;
   const Entry& getEntry(std::size_t index) const;
 
+  Errors read(tinyxml2::XMLElement* element, const class Defaults& defaults);
+
 private:
   friend class MujocoModel;
-  Errors read(tinyxml2::XMLElement* element, const class Defaults& defaults);
 
   std::vector<Entry> mEntries;
 };

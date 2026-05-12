@@ -181,3 +181,65 @@ TEST(PolygonMeshTests, TriangulateIgnoresSmallFaces)
   const auto triMesh = mesh.triangulate();
   EXPECT_EQ(triMesh.getTriangles().size(), 0u);
 }
+
+//==============================================================================
+TEST(PolygonMeshTests, TriangulateVerticalFaces)
+{
+  PolygonMeshd yzMesh;
+  yzMesh.addVertex(0.0, 0.0, 0.0);
+  yzMesh.addVertex(0.0, 1.0, 0.0);
+  yzMesh.addVertex(0.0, 1.0, 1.0);
+  yzMesh.addVertex(0.0, 0.0, 1.0);
+  yzMesh.addFace({0, 1, 2, 3});
+
+  const auto yzTriMesh = yzMesh.triangulate();
+  EXPECT_EQ(yzTriMesh.getTriangles().size(), 2u);
+  EXPECT_TRUE(yzTriMesh.hasVertexNormals());
+
+  PolygonMeshd xzMesh;
+  xzMesh.addVertex(0.0, 0.0, 0.0);
+  xzMesh.addVertex(1.0, 0.0, 0.0);
+  xzMesh.addVertex(1.0, 0.0, 1.0);
+  xzMesh.addVertex(0.0, 0.0, 1.0);
+  xzMesh.addFace({0, 3, 2, 1});
+
+  const auto xzTriMesh = xzMesh.triangulate();
+  EXPECT_EQ(xzTriMesh.getTriangles().size(), 2u);
+  EXPECT_TRUE(xzTriMesh.hasVertexNormals());
+}
+
+//==============================================================================
+TEST(PolygonMeshTests, TriangulateColinearVerticesAndClear)
+{
+  PolygonMeshd mesh;
+  mesh.addVertex(0.0, 0.0, 0.0);
+  mesh.addVertex(0.5, 0.0, 0.0);
+  mesh.addVertex(1.0, 0.0, 0.0);
+  mesh.addVertex(1.0, 1.0, 0.0);
+  mesh.addVertex(0.0, 1.0, 0.0);
+  mesh.addFace({0, 1, 2, 3, 4});
+
+  const auto triMesh = mesh.triangulate();
+  EXPECT_EQ(triMesh.getTriangles().size(), 2u);
+
+  ASSERT_TRUE(mesh.hasFaces());
+  ASSERT_FALSE(mesh.getVertices().empty());
+  mesh.clear();
+  EXPECT_FALSE(mesh.hasFaces());
+  EXPECT_TRUE(mesh.getFaces().empty());
+  EXPECT_TRUE(mesh.getVertices().empty());
+}
+
+//==============================================================================
+TEST(PolygonMeshTests, TriangulateSmallCoordinateFace)
+{
+  PolygonMeshd mesh;
+  mesh.addVertex(0.0, 0.0, 0.0);
+  mesh.addVertex(0.25, 0.0, 0.0);
+  mesh.addVertex(0.25, 0.25, 0.0);
+  mesh.addVertex(0.0, 0.25, 0.0);
+  mesh.addFace({0, 1, 2, 3});
+
+  const auto triMesh = mesh.triangulate();
+  EXPECT_EQ(triMesh.getTriangles().size(), 2u);
+}

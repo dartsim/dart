@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_ACTUATORATTRIBUTES_HPP_
 #define DART_UTILS_MJCF_DETAIL_ACTUATORATTRIBUTES_HPP_
 
+#include <dart/utils/export.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
 #include <dart/utils/mjcf/detail/types.hpp>
 
@@ -49,7 +50,7 @@ namespace utils {
 namespace MjcfParser {
 namespace detail {
 
-struct ActuatorAttributes final
+struct DART_UTILS_API ActuatorAttributes final
 {
   std::optional<std::string> mName;
   std::string mJoint;
@@ -63,7 +64,7 @@ struct ActuatorAttributes final
   Eigen::Vector3d mBiasPrm{Eigen::Vector3d::Zero()};
 };
 
-Errors appendActuatorAttributes(
+DART_UTILS_API Errors appendActuatorAttributes(
     ActuatorAttributes& attributes, tinyxml2::XMLElement* element);
 
 } // namespace detail

@@ -8,6 +8,7 @@
 #include <dart/collision/distance_result.hpp>
 #include <dart/collision/fcl/fcl_collision_detector.hpp>
 #include <dart/collision/fcl/fcl_collision_group.hpp>
+#include <dart/collision/fcl/fcl_types.hpp>
 
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/cone_shape.hpp>
@@ -167,6 +168,15 @@ TEST(FCLCollisionDetector, ContactPointComputationMethod)
   EXPECT_EQ(
       detector->getContactPointComputationMethod(),
       FCLCollisionDetector::ContactPointComputationMethod::DART);
+}
+
+TEST(FCLCollisionDetector, ConvertsEigenMatrixToFclMatrix)
+{
+  const Eigen::Matrix3d rotation
+      = Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+
+  const auto converted = FCLTypes::convertMatrix3x3(rotation);
+  EXPECT_TRUE(converted.isApprox(rotation));
 }
 
 TEST(FCLCollisionDetector, BasicCollisionSphereSphere)
@@ -473,5 +483,8 @@ TEST(FCLCollisionGroup, GetFCLCollisionManager)
 
   auto* manager = exposedGroup->getFCLCollisionManager();
   EXPECT_NE(manager, nullptr);
+
+  const auto* constGroup = exposedGroup;
+  EXPECT_EQ(manager, constGroup->getFCLCollisionManager());
 }
 #endif // !DART_OS_WINDOWS

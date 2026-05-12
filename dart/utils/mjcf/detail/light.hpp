@@ -58,9 +58,10 @@ public:
   const Eigen::Vector3d& getSpecular() const;
   bool getDirectional() const;
 
+  Errors read(tinyxml2::XMLElement* element);
+
 private:
   friend class Body;
-  Errors read(tinyxml2::XMLElement* element);
 
   std::string mName;
   Eigen::Vector3d mPos{Eigen::Vector3d::Zero()};

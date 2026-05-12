@@ -8,6 +8,7 @@
 #include "helpers/dynamics_helpers.hpp"
 
 #include "dart/constraint/ball_joint_constraint.hpp"
+#include "dart/constraint/dynamic_joint_constraint.hpp"
 #include "dart/constraint/weld_joint_constraint.hpp"
 #include "dart/dynamics/skeleton.hpp"
 
@@ -156,4 +157,16 @@ TEST(DynamicJointConstraint, GetBodyNodes)
   auto weldConstraint = std::make_shared<WeldJointConstraint>(body1, body2);
   EXPECT_EQ(weldConstraint->getBodyNode1(), body1);
   EXPECT_EQ(weldConstraint->getBodyNode2(), body2);
+}
+
+//==============================================================================
+TEST(DynamicJointConstraint, CurrentCompatibilityForHighErrorReductionParameter)
+{
+  const double originalErp
+      = DynamicJointConstraint::getErrorReductionParameter();
+
+  DynamicJointConstraint::setErrorReductionParameter(2.0);
+  EXPECT_DOUBLE_EQ(DynamicJointConstraint::getErrorReductionParameter(), 2.0);
+
+  DynamicJointConstraint::setErrorReductionParameter(originalErp);
 }

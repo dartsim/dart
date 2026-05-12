@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_BODYATTRIBUTES_HPP_
 #define DART_UTILS_MJCF_DETAIL_BODYATTRIBUTES_HPP_
 
+#include <dart/utils/export.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
 #include <dart/utils/mjcf/detail/inertial.hpp>
 
@@ -53,7 +54,7 @@ class Size;
 
 /// Intermediate raw data read from the XML file. For the details, see
 /// http://www.mujoco.org/book/XMLreference.html#body
-struct BodyAttributes final
+struct DART_UTILS_API BodyAttributes final
 {
   /// Name of the body.
   std::optional<std::string> mName;
@@ -98,7 +99,7 @@ struct BodyAttributes final
   std::optional<Inertial> mInertial;
 };
 
-Errors appendBodyAttributes(
+DART_UTILS_API Errors appendBodyAttributes(
     BodyAttributes& attributes,
     tinyxml2::XMLElement* element,
     const std::optional<Size>& size);

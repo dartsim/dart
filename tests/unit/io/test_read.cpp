@@ -41,7 +41,106 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <array>
+#include <string>
+#include <utility>
+
 using namespace dart;
+
+namespace {
+
+class StringResource final : public common::Resource
+{
+public:
+  explicit StringResource(std::string content)
+    : mContent(std::move(content)), mCursor(0)
+  {
+  }
+
+  std::size_t getSize() override
+  {
+    return mContent.size();
+  }
+
+  std::size_t tell() override
+  {
+    return mCursor;
+  }
+
+  bool seek(ptrdiff_t offset, SeekType origin) override
+  {
+    ptrdiff_t base = 0;
+    if (origin == SEEKTYPE_CUR) {
+      base = static_cast<ptrdiff_t>(mCursor);
+    } else if (origin == SEEKTYPE_END) {
+      base = static_cast<ptrdiff_t>(mContent.size());
+    }
+
+    const auto next = base + offset;
+    if (next < 0 || next > static_cast<ptrdiff_t>(mContent.size())) {
+      return false;
+    }
+
+    mCursor = static_cast<std::size_t>(next);
+    return true;
+  }
+
+  std::size_t read(void* buffer, std::size_t size, std::size_t count) override
+  {
+    if (size == 0 || count == 0) {
+      return 0;
+    }
+
+    const auto available = mContent.size() - mCursor;
+    const auto elements = std::min(count, available / size);
+    const auto bytes = elements * size;
+    std::copy_n(mContent.data() + mCursor, bytes, static_cast<char*>(buffer));
+    mCursor += bytes;
+    return elements;
+  }
+
+private:
+  std::string mContent;
+  std::size_t mCursor;
+};
+
+class StringResourceRetriever final : public common::ResourceRetriever
+{
+public:
+  explicit StringResourceRetriever(std::string content)
+    : mContent(std::move(content))
+  {
+  }
+
+  bool exists(const common::Uri&) override
+  {
+    return true;
+  }
+
+  common::ResourcePtr retrieve(const common::Uri&) override
+  {
+    return std::make_shared<StringResource>(mContent);
+  }
+
+  std::string readAll(const common::Uri&) override
+  {
+    return mContent;
+  }
+
+private:
+  std::string mContent;
+};
+
+io::ReadOptions optionsWithContent(std::string content)
+{
+  io::ReadOptions options;
+  options.resourceRetriever
+      = std::make_shared<StringResourceRetriever>(std::move(content));
+  return options;
+}
+
+} // namespace
 
 //==============================================================================
 TEST(ReadUnit, ReadsSkelSkeletonFromWorldFile)
@@ -141,6 +240,64 @@ TEST(ReadUnit, ReturnsNullForUnknownExtension)
 }
 
 //==============================================================================
+TEST(ReadUnit, ReturnsNullForUnsupportedExplicitFormat)
+{
+  io::ReadOptions options;
+  options.format = static_cast<io::ModelFormat>(-1);
+  const common::Uri uri("memory://unsupported.xml");
+
+  EXPECT_EQ(io::readWorld(uri, options), nullptr);
+  EXPECT_EQ(io::readSkeleton(uri, options), nullptr);
+}
+
+//==============================================================================
+TEST(ReadUnit, ReturnsNullForInvalidAmbiguousXmlContent)
+{
+  struct InvalidXmlCase
+  {
+    const char* name;
+    const char* content;
+  };
+
+  const std::array cases
+      = {InvalidXmlCase{"empty", ""},
+         InvalidXmlCase{"invalid", "<skel>"},
+         InvalidXmlCase{"rootless", "<?xml version=\"1.0\"?>"},
+         InvalidXmlCase{"unknown_root", "<unknown />"}};
+
+  for (const auto& testCase : cases) {
+    const auto options = optionsWithContent(testCase.content);
+    const common::Uri uri(std::string("memory://") + testCase.name + ".xml");
+
+    EXPECT_EQ(io::readWorld(uri, options), nullptr) << testCase.name;
+    EXPECT_EQ(io::readSkeleton(uri, options), nullptr) << testCase.name;
+  }
+}
+
+//==============================================================================
+TEST(ReadUnit, InfersSkelWorldFromAmbiguousXmlRoot)
+{
+  const auto options = optionsWithContent(
+      "<skel version=\"1.0\"><world name=\"empty_world\" /></skel>");
+  const common::Uri uri("memory://empty_skel.xml");
+
+  const auto world = io::readWorld(uri, options);
+  ASSERT_NE(world, nullptr);
+  EXPECT_EQ(world->getNumSkeletons(), 0u);
+  EXPECT_EQ(io::readSkeleton(uri, options), nullptr);
+}
+
+//==============================================================================
+TEST(ReadUnit, InfersUrdfFromAmbiguousXmlRootBeforeParseFailure)
+{
+  const auto options = optionsWithContent("<robot />");
+  const common::Uri uri("memory://invalid_urdf.xml");
+
+  EXPECT_EQ(io::readWorld(uri, options), nullptr);
+  EXPECT_EQ(io::readSkeleton(uri, options), nullptr);
+}
+
+//==============================================================================
 TEST(ReadUnit, TryReadSkeletonReturnsErrorForInvalidPath)
 {
   const auto result = io::tryReadSkeleton("/nonexistent/robot.urdf");
@@ -226,9 +383,10 @@ TEST(ReadUnit, SkelWorldWithMultipleSkeletonsReturnsFirst)
 {
   io::ReadOptions options;
   options.format = io::ModelFormat::Skel;
-  const auto skeleton = io::readSkeleton(
-      "dart://sample/skel/test/single_pendulum.skel", options);
-  EXPECT_NE(skeleton, nullptr);
+  const auto skeleton
+      = io::readSkeleton("dart://sample/skel/test/test_shapes.skel", options);
+  ASSERT_NE(skeleton, nullptr);
+  EXPECT_EQ(skeleton->getName(), "ground skeleton");
 }
 
 //==============================================================================

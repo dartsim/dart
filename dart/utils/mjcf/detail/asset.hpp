@@ -90,9 +90,6 @@ public:
 
   /// \}
 
-private:
-  // Private members used by MujocoModel class
-  friend class MujocoModel;
   Errors read(tinyxml2::XMLElement* element);
 
   /// Updates attributes and elements that doesn't require any other elements.
@@ -106,6 +103,8 @@ private:
   Errors postprocess(const Compiler& compiler);
 
 private:
+  friend class MujocoModel;
+
   std::vector<Mesh> mMeshes;
   std::unordered_map<std::string, Mesh*> mMeshMap;
   std::vector<Texture> mTextures;

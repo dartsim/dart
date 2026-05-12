@@ -55,9 +55,10 @@ public:
   const std::string& getFile() const;
   const std::string& getBuiltin() const;
 
+  Errors read(tinyxml2::XMLElement* element);
+
 private:
   friend class Asset;
-  Errors read(tinyxml2::XMLElement* element);
 
   std::string mName;
   std::string mType{"2d"};

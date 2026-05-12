@@ -432,7 +432,7 @@ TEST(DistanceResult, FoundReturnsTrueWhenShapeFramesSet)
 }
 
 //==============================================================================
-TEST(DistanceResult, IsMinDistanceClampedDetectsClamping)
+TEST(DistanceResult, ReportsWhetherDistanceMatchesUnclampedDistance)
 {
   auto fcl = FCLCollisionDetector::create();
   auto frame1 = SimpleFrame::createShared(Frame::World());
@@ -455,6 +455,13 @@ TEST(DistanceResult, IsMinDistanceClampedDetectsClamping)
 
   EXPECT_TRUE(result.found());
   EXPECT_GE(result.minDistance, option.distanceLowerBound);
+  EXPECT_TRUE(result.isMinDistanceClamped());
+
+  result.unclampedMinDistance = result.minDistance + 0.25;
+  EXPECT_FALSE(result.isMinDistanceClamped());
+
+  result.unclampedMinDistance = result.minDistance;
+  EXPECT_TRUE(result.isMinDistanceClamped());
 }
 
 //==============================================================================

@@ -58,9 +58,10 @@ public:
   double getShininess() const;
   double getReflectance() const;
 
+  Errors read(tinyxml2::XMLElement* element);
+
 private:
   friend class Asset;
-  Errors read(tinyxml2::XMLElement* element);
 
   std::string mName;
   std::string mTexture;

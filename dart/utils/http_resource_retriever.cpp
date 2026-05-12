@@ -364,11 +364,13 @@ bool HttpResourceRetriever::download(
 
   if (code != CURLE_OK) {
     DART_WARN("Failed downloading '{}': {}", url, curl_easy_strerror(code));
+    file.reset();
     std::error_code ec;
     std::filesystem::remove(destination, ec);
     return false;
   }
 
+  file.reset();
   return true;
 #else
   DART_UNUSED(uri);

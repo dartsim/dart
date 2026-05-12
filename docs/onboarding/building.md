@@ -167,6 +167,18 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    $env:N=[math]::Floor([Environment]::ProcessorCount*2/3)
    ```
 
+   For memory-constrained machines, lower the same platform-derived `N` instead
+   of editing build files or pixi tasks. Use `N=1` for heavy one-target builds
+   or when the machine starts swapping:
+
+   ```bash
+   DART_PARALLEL_JOBS=$N CMAKE_BUILD_PARALLEL_LEVEL=$N CTEST_PARALLEL_LEVEL=1 \
+     cmake --build build/default/cpp/Release --target <TARGET> -j "$N"
+   CTEST_PARALLEL_LEVEL=1 \
+     ctest --test-dir build/default/cpp/Release -R <TEST_REGEX> \
+       --output-on-failure -j 1
+   ```
+
    Suggested (Unverified):
 
    ```bash
