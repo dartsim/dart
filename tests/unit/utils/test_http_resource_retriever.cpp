@@ -151,12 +151,59 @@ TEST(HttpResourceRetriever, CacheHitAndOptions)
   // Ignore cleanup errors on Windows where file locks can linger
 }
 
+TEST(HttpResourceRetriever, DefaultOptionsAndRootCacheHit)
+{
+  HttpResourceRetriever retriever;
+  EXPECT_EQ(retriever.getOptions().userAgent, "dart-http-resource-retriever");
+
+  HttpResourceRetriever::Options updatedOptions = retriever.getOptions();
+  updatedOptions.followRedirects = false;
+  updatedOptions.userAgent = "dart-http-updated";
+  retriever.setOptions(updatedOptions);
+  EXPECT_FALSE(retriever.getOptions().followRedirects);
+  EXPECT_EQ(retriever.getOptions().userAgent, updatedOptions.userAgent);
+
+  const auto cacheDir = makeTempDir("_root_cache");
+  retriever.setCacheDirectory(cacheDir);
+  EXPECT_EQ(retriever.getCacheDirectory(), cacheDir);
+
+  common::Uri uri;
+  ASSERT_TRUE(uri.fromString("https://example.com"));
+
+  const auto cachePath = computeCachePath(cacheDir, uri);
+  EXPECT_TRUE(cachePath.filename().string().ends_with("_resource"));
+  std::filesystem::create_directories(cachePath.parent_path());
+
+  const std::string payload = "root cached data";
+  {
+    std::ofstream out(cachePath, std::ios::binary);
+    out << payload;
+  }
+
+  EXPECT_TRUE(retriever.exists(uri));
+  auto resource = retriever.retrieve(uri);
+  ASSERT_NE(resource, nullptr);
+  EXPECT_EQ(resource->readAll(), payload);
+
+  common::Uri unsupportedUri;
+  ASSERT_TRUE(unsupportedUri.fromString("ftp://example.com/resource.txt"));
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  EXPECT_TRUE(retriever.getFilePath(unsupportedUri).empty());
+  DART_SUPPRESS_DEPRECATED_END
+
+  std::error_code ec;
+  std::filesystem::remove_all(cacheDir, ec);
+}
+
 TEST(HttpResourceRetriever, UnsupportedAndRemoteFailures)
 {
   HttpResourceRetriever::Options options;
   options.connectTimeout = std::chrono::milliseconds(5);
   options.transferTimeout = std::chrono::milliseconds(5);
   HttpResourceRetriever retriever(options);
+
+  const auto cacheDir = makeTempDir("_remote_failure_cache");
+  retriever.setCacheDirectory(cacheDir);
 
   common::Uri fileUri;
   ASSERT_TRUE(fileUri.fromString("file:///tmp/does-not-exist.txt"));
@@ -165,8 +212,45 @@ TEST(HttpResourceRetriever, UnsupportedAndRemoteFailures)
 
   common::Uri remoteUri;
   ASSERT_TRUE(remoteUri.fromString("http://127.0.0.1:9/missing"));
+  const auto cachePath = computeCachePath(cacheDir, remoteUri);
+
   EXPECT_FALSE(retriever.exists(remoteUri));
   EXPECT_EQ(retriever.retrieve(remoteUri), nullptr);
+  EXPECT_FALSE(std::filesystem::exists(cachePath));
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  EXPECT_TRUE(retriever.getFilePath(remoteUri).empty());
+  DART_SUPPRESS_DEPRECATED_END
+  EXPECT_FALSE(std::filesystem::exists(cachePath));
+
+  std::error_code ec;
+  std::filesystem::remove_all(cacheDir, ec);
+}
+
+TEST(HttpResourceRetriever, InvalidCacheDirectoryShortCircuitsRetrieval)
+{
+  HttpResourceRetriever retriever;
+  const auto tempDir = makeTempDir("_blocked_cache");
+  std::filesystem::create_directories(tempDir);
+
+  const auto blocker = tempDir / "not_a_directory";
+  {
+    std::ofstream out(blocker, std::ios::binary);
+    out << "blocking file";
+  }
+
+  retriever.setCacheDirectory(blocker / "child");
+
+  common::Uri uri;
+  ASSERT_TRUE(uri.fromString("http://example.com/resource.txt"));
+  EXPECT_EQ(retriever.retrieve(uri), nullptr);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  EXPECT_TRUE(retriever.getFilePath(uri).empty());
+  DART_SUPPRESS_DEPRECATED_END
+
+  std::error_code ec;
+  std::filesystem::remove_all(tempDir, ec);
 }
 
 } // namespace dart::test

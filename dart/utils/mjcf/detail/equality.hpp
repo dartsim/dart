@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_EQUALITY_HPP_
 #define DART_UTILS_MJCF_DETAIL_EQUALITY_HPP_
 
+#include <dart/utils/export.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
 #include <dart/utils/mjcf/detail/weld.hpp>
 
@@ -45,7 +46,7 @@ namespace utils {
 namespace MjcfParser {
 namespace detail {
 
-class Equality final
+class DART_UTILS_API Equality final
 {
 public:
   Equality() = default;
@@ -53,12 +54,11 @@ public:
   std::size_t getNumWelds() const;
   const Weld& getWeld(std::size_t index) const;
 
-private:
-  // Private members used by MujocoModel class
-  friend class MujocoModel;
   Errors read(tinyxml2::XMLElement* element, const Defaults& defaults);
 
 private:
+  friend class MujocoModel;
+
   std::vector<Weld> mWelds;
 };
 

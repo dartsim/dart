@@ -62,12 +62,11 @@ public:
   int getNUserActuator() const;
   int getNUserSensor() const;
 
-private:
-  // Private members used by MujocoModel class
-  friend class MujocoModel;
   Errors read(tinyxml2::XMLElement* element);
 
 private:
+  friend class MujocoModel;
+
   int mMJMax{-1};
   int mNConMax{-1};
   int mNStack{-1};

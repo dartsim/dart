@@ -45,8 +45,10 @@
 #include "tests/baseline/odelcpsolver/lcp.h"
 #include "tests/common/lcpsolver/lcp_test_problems.hpp"
 
+#include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include <limits>
 #include <ranges>
 #include <vector>
 
@@ -76,6 +78,36 @@ extern bool dSolveLCP(
 } // namespace dart
 
 namespace {
+
+std::vector<dReal> makePaddedMatrix(const Eigen::MatrixXd& matrix, int stride)
+{
+  std::vector<dReal> data(
+      static_cast<std::size_t>(stride)
+          * static_cast<std::size_t>(matrix.rows()),
+      0.0);
+
+  for (int i = 0; i < matrix.rows(); ++i) {
+    for (int j = 0; j < matrix.cols(); ++j) {
+      data[static_cast<std::size_t>(i * stride + j)] = matrix(i, j);
+    }
+  }
+
+  return data;
+}
+
+std::vector<dReal> makeDenseRowMajorMatrix(const Eigen::MatrixXd& matrix)
+{
+  std::vector<dReal> data(
+      static_cast<std::size_t>(matrix.rows() * matrix.cols()), 0.0);
+
+  for (int i = 0; i < matrix.rows(); ++i) {
+    for (int j = 0; j < matrix.cols(); ++j) {
+      data[static_cast<std::size_t>(i * matrix.cols() + j)] = matrix(i, j);
+    }
+  }
+
+  return data;
+}
 
 // Helper function to verify complementarity conditions
 // For LCP: A*x = b+w, where x >= lo, w >= 0 (for unbounded case), and x'*w = 0
@@ -134,7 +166,7 @@ void testDantzigVsODE(dart::test::LCPProblem problem)
   const int stride = dart::math::padding(n);
 
   // Prepare data for ODE baseline
-  std::vector<dReal> A_ode(stride * n, 0.0);
+  std::vector<dReal> A_ode = makePaddedMatrix(problem.A, stride);
   std::vector<dReal> b_ode(n);
   std::vector<dReal> x_ode(n, 0.0);
   std::vector<dReal> w_ode(n, 0.0);
@@ -142,22 +174,16 @@ void testDantzigVsODE(dart::test::LCPProblem problem)
   std::vector<dReal> hi_ode(n, 1e10);
 
   // Prepare data for Dantzig solver
-  std::vector<dReal> A_dantzig(stride * n, 0.0);
+  std::vector<dReal> A_dantzig = makePaddedMatrix(problem.A, stride);
   std::vector<dReal> b_dantzig(n);
   std::vector<dReal> x_dantzig(n, 0.0);
   std::vector<dReal> w_dantzig(n, 0.0);
   std::vector<dReal> lo_dantzig(n, 0.0); // Standard LCP: x >= 0
   std::vector<dReal> hi_dantzig(n, 1e10);
-  std::vector<dReal> A_dense(n * n, 0.0);
+  std::vector<dReal> A_dense = makeDenseRowMajorMatrix(problem.A);
 
   // Copy data
   for (int i = 0; i < n; ++i) {
-    for (int j = 0; j < n; ++j) {
-      const dReal value = problem.A(i, j);
-      A_dense[i * n + j] = value;
-      A_ode[i * stride + j] = value;
-      A_dantzig[i * stride + j] = value;
-    }
     b_ode[i] = problem.b(i);
     b_dantzig[i] = problem.b(i);
   }
@@ -207,6 +233,83 @@ void testDantzigVsODE(dart::test::LCPProblem problem)
 }
 
 } // anonymous namespace
+
+//==============================================================================
+TEST(DantzigLowLevel, FullyUnboundedProblemUsesDirectSolvePath)
+{
+  constexpr int n = 3;
+  const int stride = dart::math::padding(n);
+
+  Eigen::MatrixXd A(n, n);
+  A << 4.0, 1.0, 0.5, 1.0, 3.0, 0.25, 0.5, 0.25, 2.0;
+
+  Eigen::VectorXd target(n);
+  target << 0.5, -0.25, 0.75;
+  const Eigen::VectorXd b = A * target;
+
+  std::vector<dReal> A_data = makePaddedMatrix(A, stride);
+  std::vector<dReal> b_data(b.data(), b.data() + b.size());
+  std::vector<dReal> x(n, 0.0);
+  std::vector<dReal> w(n, 0.0);
+  std::vector<dReal> lo(n, -std::numeric_limits<dReal>::infinity());
+  std::vector<dReal> hi(n, std::numeric_limits<dReal>::infinity());
+  std::vector<int> findex(n, -1);
+
+  const bool success = dart::math::SolveLCP<dReal>(
+      n,
+      A_data.data(),
+      x.data(),
+      b_data.data(),
+      w.data(),
+      n,
+      lo.data(),
+      hi.data(),
+      findex.data(),
+      false);
+
+  ASSERT_TRUE(success);
+  for (int i = 0; i < n; ++i) {
+    EXPECT_NEAR(x[static_cast<std::size_t>(i)], target[i], 1e-10);
+  }
+}
+
+//==============================================================================
+TEST(DantzigLowLevel, ComplementarityOutputCanBeOmitted)
+{
+  constexpr int n = 2;
+  const int stride = dart::math::padding(n);
+
+  Eigen::MatrixXd A(n, n);
+  A << 2.0, 0.25, 0.25, 1.5;
+
+  Eigen::VectorXd target(n);
+  target << 0.3, 0.2;
+  const Eigen::VectorXd b = A * target;
+
+  std::vector<dReal> A_data = makePaddedMatrix(A, stride);
+  std::vector<dReal> b_data(b.data(), b.data() + b.size());
+  std::vector<dReal> x(n, 0.0);
+  std::vector<dReal> lo(n, 0.0);
+  std::vector<dReal> hi(n, std::numeric_limits<dReal>::infinity());
+  std::vector<int> findex(n, -1);
+
+  const bool success = dart::math::SolveLCP<dReal>(
+      n,
+      A_data.data(),
+      x.data(),
+      b_data.data(),
+      nullptr,
+      0,
+      lo.data(),
+      hi.data(),
+      findex.data(),
+      false);
+
+  ASSERT_TRUE(success);
+  for (int i = 0; i < n; ++i) {
+    EXPECT_NEAR(x[static_cast<std::size_t>(i)], target[i], 1e-10);
+  }
+}
 
 //==============================================================================
 TEST(DantzigVsODE, Problem1D)

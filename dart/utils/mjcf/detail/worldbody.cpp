@@ -99,7 +99,7 @@ Errors Worldbody::read(
   ElementEnumerator siteElements(element, "site");
   while (siteElements.next()) {
     Site site = Site();
-    const auto siteErrors = site.read(geomElements.get());
+    const auto siteErrors = site.read(siteElements.get());
     appendErrorRange(errors, siteErrors);
 
     if (siteErrors.empty()) {
@@ -133,6 +133,11 @@ Errors Worldbody::preprocess(const Compiler& compiler)
     appendErrorRange(errors, geomErrors);
   }
 
+  for (Site& site : mSites) {
+    const Errors siteErrors = site.preprocess(compiler);
+    appendErrorRange(errors, siteErrors);
+  }
+
   for (Body& body : mRootBodies) {
     const Errors bodyErrors = body.preprocess(compiler);
     appendErrorRange(errors, bodyErrors);
@@ -151,6 +156,11 @@ Errors Worldbody::compile(const Compiler& compiler)
     appendErrorRange(errors, geomErrors);
   }
 
+  for (Site& site : mSites) {
+    const Errors siteErrors = site.compile(compiler);
+    appendErrorRange(errors, siteErrors);
+  }
+
   for (Body& body : mRootBodies) {
     const Errors bodyErrors = body.compile(compiler);
     appendErrorRange(errors, bodyErrors);
@@ -167,6 +177,11 @@ Errors Worldbody::postprocess(const Compiler& compiler)
   for (Geom& geom : mGeoms) {
     const Errors geomErrors = geom.postprocess(nullptr, compiler);
     appendErrorRange(errors, geomErrors);
+  }
+
+  for (Site& site : mSites) {
+    const Errors siteErrors = site.postprocess(nullptr, compiler);
+    appendErrorRange(errors, siteErrors);
   }
 
   for (Body& body : mRootBodies) {

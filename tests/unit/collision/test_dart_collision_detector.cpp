@@ -66,6 +66,7 @@ public:
   using DARTCollisionGroup::removeAllCollisionObjectsFromEngine;
   using DARTCollisionGroup::removeCollisionObjectFromEngine;
   using DARTCollisionGroup::updateCollisionGroupEngineData;
+  using DARTCollisionGroup::updateEngineData;
 
   std::size_t getNumObjects() const
   {
@@ -186,6 +187,15 @@ TEST(DARTCollisionDetector, SupportedShapePairs)
   result = runCollision(sphere, sphere2, separate);
   EXPECT_FALSE(result.first);
   EXPECT_EQ(result.second, 0u);
+}
+
+TEST(DARTCollisionDetector, CloneWithoutCollisionObjects)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto clone = detector->cloneWithoutCollisionObjects();
+
+  ASSERT_NE(clone, nullptr);
+  EXPECT_EQ(DARTCollisionDetector::getStaticType(), clone->getTypeView());
 }
 
 TEST(DARTCollisionDetector, UnsupportedShapePairReturnsFalse)
@@ -332,6 +342,13 @@ TEST(DARTCollisionGroup, EngineDataCallbacks)
   auto objectA = detector->claimCollisionObject(setupA.shapeNode);
   auto objectB = detector->claimCollisionObject(setupB.shapeNode);
 
+  group.addShapeFrame(setupA.shapeNode);
+  ASSERT_EQ(group.getNumObjects(), 1u);
+  group.updateEngineData();
+
+  group.removeAllShapeFrames();
+  ASSERT_EQ(group.getNumObjects(), 0u);
+
   group.initializeEngineData();
   group.addCollisionObjectToEngine(objectA.get());
   EXPECT_EQ(group.getNumObjects(), 1u);
@@ -341,6 +358,7 @@ TEST(DARTCollisionGroup, EngineDataCallbacks)
   group.addCollisionObjectsToEngine(objects);
   EXPECT_EQ(group.getNumObjects(), 2u);
 
+  group.updateEngineData();
   group.updateCollisionGroupEngineData();
   group.removeCollisionObjectFromEngine(objectA.get());
   EXPECT_EQ(group.getNumObjects(), 1u);

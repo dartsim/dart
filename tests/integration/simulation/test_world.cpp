@@ -116,6 +116,51 @@ private:
   bool mDisabled{false};
 };
 
+class ScopedCollisionFactoryOverride
+{
+public:
+  using Factory = collision::CollisionDetector::Factory;
+  using Creator = Factory::Creator;
+
+  ScopedCollisionFactoryOverride(
+      std::string_view key, Creator overrideCreator, Creator restorer)
+    : mFactory(collision::CollisionDetector::getFactory()),
+      mKey(key),
+      mRestorer(std::move(restorer))
+  {
+    if (!mFactory || !mFactory->canCreate(mKey)) {
+      return;
+    }
+
+    mOverridden = true;
+    mFactory->registerCreator(mKey, std::move(overrideCreator));
+  }
+
+  ScopedCollisionFactoryOverride(const ScopedCollisionFactoryOverride&)
+      = delete;
+  ScopedCollisionFactoryOverride& operator=(
+      const ScopedCollisionFactoryOverride&)
+      = delete;
+
+  ~ScopedCollisionFactoryOverride()
+  {
+    if (mFactory && mOverridden && mRestorer) {
+      mFactory->registerCreator(mKey, mRestorer);
+    }
+  }
+
+  bool wasOverridden() const
+  {
+    return mOverridden;
+  }
+
+private:
+  Factory* mFactory;
+  std::string mKey;
+  Creator mRestorer;
+  bool mOverridden{false};
+};
+
 } // namespace
 
 //==============================================================================
@@ -634,6 +679,29 @@ TEST(World, TypedSetterFallsBackWhenDetectorUnavailable)
   auto current = world->getCollisionDetector();
   ASSERT_TRUE(current);
   EXPECT_EQ(current->getTypeView(), original->getTypeView());
+}
+
+//==============================================================================
+TEST(World, TypedSetterKeepsCurrentDetectorWhenFactoryReturnsNull)
+{
+  ScopedCollisionFactoryOverride overrideDart(
+      collision::DARTCollisionDetector::getStaticType(),
+      []() -> collision::CollisionDetectorPtr { return nullptr; },
+      []() -> collision::CollisionDetectorPtr {
+        return collision::DARTCollisionDetector::create();
+      });
+
+  if (!overrideDart.wasOverridden()) {
+    GTEST_SKIP() << "dart collision detector is not registered in this build";
+  }
+
+  auto world = World::create();
+  auto original = world->getCollisionDetector();
+  ASSERT_TRUE(original);
+
+  world->setCollisionDetector(CollisionDetectorType::Dart);
+
+  EXPECT_EQ(world->getCollisionDetector(), original);
 }
 
 //==============================================================================

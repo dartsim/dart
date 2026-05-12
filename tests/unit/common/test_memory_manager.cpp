@@ -32,7 +32,9 @@
 
 #include "../../helpers/gtest_utils.hpp"
 
+#define private public
 #include <dart/common/memory_manager.hpp>
+#undef private
 
 #include <dart/all.hpp>
 
@@ -40,6 +42,23 @@
 
 using namespace dart;
 using namespace common;
+
+namespace {
+
+void usePlainAllocators(MemoryManager& mm)
+{
+  mm.mPoolAllocatorWithDebug.reset();
+  mm.mFreeListAllocatorWithDebug.reset();
+  mm.mPoolAllocator.reset();
+  mm.mFreeListAllocator.reset();
+
+  mm.mUseDebugAllocators = false;
+  mm.mFreeListAllocator
+      = std::make_unique<FreeListAllocator>(mm.mBaseAllocator);
+  mm.mPoolAllocator = std::make_unique<PoolAllocator>(*mm.mFreeListAllocator);
+}
+
+} // namespace
 
 //==============================================================================
 TEST(MemoryManagerTest, BaseAllocator)
@@ -378,4 +397,35 @@ TEST(MemoryManagerTest, ConstructAndDestroyUsingFrame)
 
   mm.destroyUsingFrame(obj);
   EXPECT_EQ(LifecycleTracker::destructCount, 1);
+}
+
+//==============================================================================
+TEST(MemoryManagerTest, PlainAllocatorRouting)
+{
+  auto mm = MemoryManager();
+  usePlainAllocators(mm);
+
+  auto& freeListAllocator = mm.getFreeListAllocator();
+  auto& poolAllocator = mm.getPoolAllocator();
+  EXPECT_EQ(&freeListAllocator.getBaseAllocator(), &mm.getBaseAllocator());
+  EXPECT_EQ(&poolAllocator.getBaseAllocator(), &freeListAllocator);
+
+  auto* freePtr = mm.allocate(MemoryManager::Type::Free, sizeof(double));
+  ASSERT_NE(freePtr, nullptr);
+  EXPECT_FALSE(mm.hasAllocated(freePtr, sizeof(double)));
+  mm.deallocate(MemoryManager::Type::Free, freePtr, sizeof(double));
+
+  auto* poolPtr = mm.allocate(MemoryManager::Type::Pool, sizeof(double));
+  ASSERT_NE(poolPtr, nullptr);
+  EXPECT_FALSE(mm.hasAllocated(poolPtr, sizeof(double)));
+  mm.deallocate(MemoryManager::Type::Pool, poolPtr, sizeof(double));
+
+  EXPECT_EQ(
+      nullptr,
+      mm.allocate(static_cast<MemoryManager::Type>(999), sizeof(double)));
+
+  std::ostringstream oss;
+  mm.print(oss);
+  EXPECT_NE(oss.str().find("free_allocator"), std::string::npos);
+  EXPECT_NE(oss.str().find("pool_allocator"), std::string::npos);
 }

@@ -37,11 +37,15 @@
 #include "dart/dynamics/mimic_dof_properties.hpp"
 #include "dart/dynamics/revolute_joint.hpp"
 #include "dart/dynamics/skeleton.hpp"
+#include "dart/dynamics/universal_joint.hpp"
 #include "dart/simulation/world.hpp"
 
 #include <gtest/gtest.h>
 
+#include <limits>
 #include <vector>
+
+#include <cmath>
 
 using namespace dart;
 
@@ -58,7 +62,13 @@ public:
   using CouplerConstraint::getVelocityChange;
   using CouplerConstraint::isActive;
   using CouplerConstraint::unexcite;
+  using CouplerConstraint::uniteSkeletons;
   using CouplerConstraint::update;
+
+  dynamics::SkeletonPtr exposedGetRootSkeleton() const
+  {
+    return getRootSkeleton();
+  }
 };
 
 struct LcpBuffers
@@ -97,7 +107,334 @@ void prepareConstraintInfo(
   info.useSplitImpulse = useSplitImpulse;
 }
 
+struct SingleDofCouplerSetup
+{
+  dynamics::SkeletonPtr referenceSkeleton;
+  dynamics::SkeletonPtr dependentSkeleton;
+  dynamics::RevoluteJoint* referenceJoint{nullptr};
+  dynamics::RevoluteJoint* dependentJoint{nullptr};
+  std::vector<dynamics::MimicDofProperties> mimicProps;
+};
+
+dynamics::BodyNode::Properties createBodyProperties()
+{
+  dynamics::BodyNode::Properties bodyProps;
+  bodyProps.mInertia.setMass(1.0);
+  return bodyProps;
+}
+
+void configureMimicProperty(
+    dynamics::MimicDofProperties& mimicProp,
+    const dynamics::Joint* referenceJoint,
+    std::size_t referenceDof,
+    double multiplier = 1.0,
+    double offset = 0.0)
+{
+  mimicProp.mReferenceJoint = referenceJoint;
+  mimicProp.mReferenceDofIndex = referenceDof;
+  mimicProp.mMultiplier = multiplier;
+  mimicProp.mOffset = offset;
+  mimicProp.mConstraintType = dynamics::MimicConstraintType::Coupler;
+}
+
+SingleDofCouplerSetup createSingleDofCouplerSetup(
+    const std::string& name, bool sameSkeleton = false)
+{
+  SingleDofCouplerSetup setup;
+  const auto bodyProps = createBodyProperties();
+
+  dynamics::RevoluteJoint::Properties refProps;
+  refProps.mName = name + "_reference_joint";
+  refProps.mAxis = Eigen::Vector3d::UnitZ();
+
+  dynamics::RevoluteJoint::Properties depProps;
+  depProps.mName = name + "_dependent_joint";
+  depProps.mAxis = Eigen::Vector3d::UnitZ();
+
+  if (sameSkeleton) {
+    setup.referenceSkeleton = dynamics::Skeleton::create(name + "_skeleton");
+    setup.dependentSkeleton = setup.referenceSkeleton;
+
+    auto refPair = setup.referenceSkeleton
+                       ->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+                           nullptr, refProps, bodyProps);
+    auto depPair = setup.referenceSkeleton
+                       ->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+                           refPair.second, depProps, bodyProps);
+    setup.referenceJoint = refPair.first;
+    setup.dependentJoint = depPair.first;
+  } else {
+    setup.referenceSkeleton
+        = dynamics::Skeleton::create(name + "_reference_skeleton");
+    setup.dependentSkeleton
+        = dynamics::Skeleton::create(name + "_dependent_skeleton");
+
+    auto refPair = setup.referenceSkeleton
+                       ->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+                           nullptr, refProps, bodyProps);
+    auto depPair = setup.dependentSkeleton
+                       ->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+                           nullptr, depProps, bodyProps);
+    setup.referenceJoint = refPair.first;
+    setup.dependentJoint = depPair.first;
+  }
+
+  setup.dependentJoint->setActuatorType(dynamics::Joint::MIMIC);
+  setup.mimicProps.resize(1);
+  configureMimicProperty(
+      setup.mimicProps[0], setup.referenceJoint, 0, 1.0, 0.0);
+
+  return setup;
+}
+
+SingleDofCouplerSetup createDependentCouplerForReference(
+    const std::string& name, const dynamics::RevoluteJoint* referenceJoint)
+{
+  SingleDofCouplerSetup setup;
+  setup.referenceJoint = const_cast<dynamics::RevoluteJoint*>(referenceJoint);
+  setup.referenceSkeleton = std::const_pointer_cast<dynamics::Skeleton>(
+      referenceJoint->getSkeleton());
+  setup.dependentSkeleton
+      = dynamics::Skeleton::create(name + "_dependent_skeleton");
+
+  dynamics::RevoluteJoint::Properties depProps;
+  depProps.mName = name + "_dependent_joint";
+  depProps.mAxis = Eigen::Vector3d::UnitZ();
+  auto depPair = setup.dependentSkeleton
+                     ->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+                         nullptr, depProps, createBodyProperties());
+  setup.dependentJoint = depPair.first;
+  setup.dependentJoint->setActuatorType(dynamics::Joint::MIMIC);
+
+  setup.mimicProps.resize(1);
+  configureMimicProperty(
+      setup.mimicProps[0], setup.referenceJoint, 0, 1.0, 0.0);
+
+  return setup;
+}
+
 } // namespace
+
+TEST(CouplerConstraint, TypeAndConstraintForceMixingAccessors)
+{
+  auto setup = createSingleDofCouplerSetup("coupler_type");
+  ExposedCouplerConstraint constraint(setup.dependentJoint, setup.mimicProps);
+
+  EXPECT_EQ(
+      constraint.getType(), constraint::CouplerConstraint::getStaticType());
+  EXPECT_EQ(constraint.exposedGetRootSkeleton(), setup.dependentSkeleton);
+
+  const double prevCfm
+      = constraint::CouplerConstraint::getConstraintForceMixing();
+  constraint::CouplerConstraint::setConstraintForceMixing(0.0);
+  EXPECT_DOUBLE_EQ(
+      constraint::CouplerConstraint::getConstraintForceMixing(), 1e-9);
+
+  constraint::CouplerConstraint::setConstraintForceMixing(3e-6);
+  EXPECT_DOUBLE_EQ(
+      constraint::CouplerConstraint::getConstraintForceMixing(), 3e-6);
+
+  constraint::CouplerConstraint::setConstraintForceMixing(prevCfm);
+}
+
+TEST(CouplerConstraint, UpdateFallbackLimitsAndWarmStart)
+{
+  auto setup = createSingleDofCouplerSetup("coupler_fallback");
+  setup.dependentSkeleton->setTimeStep(0.01);
+  setup.referenceJoint->setPosition(0, 10.0);
+  setup.dependentJoint->setPosition(0, 0.0);
+  setup.dependentJoint->setVelocity(0, 0.0);
+  setup.dependentJoint->setVelocityLowerLimit(
+      0, -std::numeric_limits<double>::infinity());
+  setup.dependentJoint->setVelocityUpperLimit(
+      0, std::numeric_limits<double>::infinity());
+  setup.dependentJoint->setForceLowerLimit(
+      0, -std::numeric_limits<double>::infinity());
+  setup.dependentJoint->setForceUpperLimit(
+      0, std::numeric_limits<double>::infinity());
+
+  ExposedCouplerConstraint constraint(setup.dependentJoint, setup.mimicProps);
+  constraint.update();
+  ASSERT_TRUE(constraint.isActive());
+  ASSERT_EQ(constraint.getDimension(), 1u);
+
+  constraint::ConstraintInfo info{};
+  LcpBuffers buffers;
+  prepareConstraintInfo(
+      info,
+      buffers,
+      constraint.getDimension(),
+      1.0 / setup.dependentSkeleton->getTimeStep(),
+      constraint::ConstraintPhase::Velocity,
+      false);
+  constraint.getInformation(&info);
+
+  EXPECT_DOUBLE_EQ(buffers.b[0], 50.0);
+  EXPECT_DOUBLE_EQ(buffers.lo[0], -8.0);
+  EXPECT_DOUBLE_EQ(buffers.hi[0], 8.0);
+  EXPECT_DOUBLE_EQ(buffers.x[0], 0.0);
+
+  std::vector<double> lambda(constraint.getDimension(), 0.25);
+  constraint.applyImpulse(lambda.data());
+
+  constraint.update();
+  LcpBuffers warmStartBuffers;
+  prepareConstraintInfo(
+      info,
+      warmStartBuffers,
+      constraint.getDimension(),
+      1.0 / setup.dependentSkeleton->getTimeStep(),
+      constraint::ConstraintPhase::Velocity,
+      false);
+  constraint.getInformation(&info);
+
+  EXPECT_DOUBLE_EQ(warmStartBuffers.x[0], 0.25);
+}
+
+TEST(CouplerConstraint, InactiveDofsAreSkippedAcrossCallbacks)
+{
+  auto referenceSkeleton
+      = dynamics::Skeleton::create("coupler_inactive_reference");
+  auto dependentSkeleton
+      = dynamics::Skeleton::create("coupler_inactive_dependent");
+  const auto bodyProps = createBodyProperties();
+
+  dynamics::RevoluteJoint::Properties refProps;
+  refProps.mName = "reference_joint";
+  refProps.mAxis = Eigen::Vector3d::UnitZ();
+  auto refPair
+      = referenceSkeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+          nullptr, refProps, bodyProps);
+
+  auto depPair
+      = dependentSkeleton->createJointAndBodyNodePair<dynamics::UniversalJoint>(
+          nullptr, dynamics::UniversalJoint::Properties(), bodyProps);
+
+  auto* referenceJoint = refPair.first;
+  auto* dependentJoint = depPair.first;
+  ASSERT_NE(referenceJoint, nullptr);
+  ASSERT_NE(dependentJoint, nullptr);
+
+  referenceJoint->setPosition(0, 0.4);
+  dependentJoint->setPosition(1, 0.0);
+  dependentJoint->setActuatorType(1, dynamics::Joint::MIMIC);
+
+  std::vector<dynamics::MimicDofProperties> mimicProps(2);
+  configureMimicProperty(mimicProps[0], referenceJoint, 0, 1.0, 0.0);
+  configureMimicProperty(mimicProps[1], referenceJoint, 0, 1.0, 0.0);
+
+  ExposedCouplerConstraint constraint(dependentJoint, mimicProps);
+  constraint.update();
+  ASSERT_TRUE(constraint.isActive());
+  ASSERT_EQ(constraint.getDimension(), 1u);
+
+  constraint::ConstraintInfo info{};
+  LcpBuffers buffers;
+  prepareConstraintInfo(
+      info,
+      buffers,
+      constraint.getDimension(),
+      1.0 / dependentSkeleton->getTimeStep(),
+      constraint::ConstraintPhase::Velocity,
+      false);
+  constraint.getInformation(&info);
+  EXPECT_TRUE(std::isfinite(buffers.b[0]));
+
+  constraint.applyUnitImpulse(0);
+  std::vector<double> vel(constraint.getDimension(), 0.0);
+  constraint.getVelocityChange(vel.data(), false);
+  EXPECT_TRUE(std::isfinite(vel[0]));
+
+  constraint.excite();
+  EXPECT_TRUE(referenceSkeleton->isImpulseApplied());
+  EXPECT_TRUE(dependentSkeleton->isImpulseApplied());
+  constraint.unexcite();
+  EXPECT_FALSE(referenceSkeleton->isImpulseApplied());
+  EXPECT_FALSE(dependentSkeleton->isImpulseApplied());
+
+  std::vector<double> lambda(constraint.getDimension(), 0.125);
+  constraint.applyImpulse(lambda.data());
+  EXPECT_DOUBLE_EQ(dependentJoint->getConstraintImpulse(0), 0.0);
+  EXPECT_DOUBLE_EQ(dependentJoint->getConstraintImpulse(1), 0.125);
+  EXPECT_DOUBLE_EQ(referenceJoint->getConstraintImpulse(0), -0.125);
+}
+
+TEST(CouplerConstraint, UniteSkeletonsSkipsNonReactiveAndNonMimicJoints)
+{
+  auto nonReactiveDependent
+      = createSingleDofCouplerSetup("coupler_non_reactive_dependent");
+  nonReactiveDependent.dependentSkeleton->setMobile(false);
+  ExposedCouplerConstraint inactiveDependentConstraint(
+      nonReactiveDependent.dependentJoint, nonReactiveDependent.mimicProps);
+  inactiveDependentConstraint.uniteSkeletons();
+  EXPECT_EQ(
+      nonReactiveDependent.referenceSkeleton->mUnionRootSkeleton.lock(),
+      nonReactiveDependent.referenceSkeleton);
+  EXPECT_EQ(
+      nonReactiveDependent.dependentSkeleton->mUnionRootSkeleton.lock(),
+      nonReactiveDependent.dependentSkeleton);
+
+  auto nonReactiveReference
+      = createSingleDofCouplerSetup("coupler_non_reactive_reference");
+  nonReactiveReference.referenceSkeleton->setMobile(false);
+  ExposedCouplerConstraint inactiveReferenceConstraint(
+      nonReactiveReference.dependentJoint, nonReactiveReference.mimicProps);
+  inactiveReferenceConstraint.uniteSkeletons();
+  EXPECT_EQ(
+      nonReactiveReference.referenceSkeleton->mUnionRootSkeleton.lock(),
+      nonReactiveReference.referenceSkeleton);
+  EXPECT_EQ(
+      nonReactiveReference.dependentSkeleton->mUnionRootSkeleton.lock(),
+      nonReactiveReference.dependentSkeleton);
+
+  auto forceActuator = createSingleDofCouplerSetup("coupler_force_actuator");
+  forceActuator.dependentJoint->setActuatorType(dynamics::Joint::FORCE);
+  ExposedCouplerConstraint forceActuatorConstraint(
+      forceActuator.dependentJoint, forceActuator.mimicProps);
+  forceActuatorConstraint.uniteSkeletons();
+  EXPECT_EQ(
+      forceActuator.referenceSkeleton->mUnionRootSkeleton.lock(),
+      forceActuator.referenceSkeleton);
+  EXPECT_EQ(
+      forceActuator.dependentSkeleton->mUnionRootSkeleton.lock(),
+      forceActuator.dependentSkeleton);
+}
+
+TEST(CouplerConstraint, UniteSkeletonsHandlesSameAndCrossSkeletonRoots)
+{
+  auto sameSkeleton = createSingleDofCouplerSetup("coupler_same", true);
+  ExposedCouplerConstraint sameSkeletonConstraint(
+      sameSkeleton.dependentJoint, sameSkeleton.mimicProps);
+  sameSkeletonConstraint.uniteSkeletons();
+  EXPECT_EQ(
+      sameSkeleton.dependentSkeleton->mUnionRootSkeleton.lock(),
+      sameSkeleton.dependentSkeleton);
+
+  auto crossSkeleton = createSingleDofCouplerSetup("coupler_cross");
+  ExposedCouplerConstraint crossSkeletonConstraint(
+      crossSkeleton.dependentJoint, crossSkeleton.mimicProps);
+  crossSkeletonConstraint.uniteSkeletons();
+  EXPECT_EQ(
+      crossSkeleton.referenceSkeleton->mUnionRootSkeleton.lock(),
+      crossSkeleton.dependentSkeleton);
+
+  auto seed = createSingleDofCouplerSetup("coupler_seed");
+  ExposedCouplerConstraint seedConstraint(seed.dependentJoint, seed.mimicProps);
+  seedConstraint.uniteSkeletons();
+  ASSERT_EQ(
+      seed.referenceSkeleton->mUnionRootSkeleton.lock(),
+      seed.dependentSkeleton);
+
+  auto dependentToLargerReference = createDependentCouplerForReference(
+      "coupler_dependent_to_larger_reference", seed.referenceJoint);
+  ExposedCouplerConstraint largerReferenceConstraint(
+      dependentToLargerReference.dependentJoint,
+      dependentToLargerReference.mimicProps);
+  largerReferenceConstraint.uniteSkeletons();
+  EXPECT_EQ(
+      dependentToLargerReference.dependentSkeleton->mUnionRootSkeleton.lock(),
+      seed.dependentSkeleton);
+}
 
 TEST(CouplerConstraint, CouplerConstraintMaintainsMimic)
 {

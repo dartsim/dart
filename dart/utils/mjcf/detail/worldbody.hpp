@@ -75,9 +75,6 @@ public:
   /// Returns a root <site> element at @c index in <worldbody>.
   const Site& getSite(std::size_t index) const;
 
-private:
-  // Private members used by MujocoModel class
-  friend class MujocoModel;
   Errors read(
       tinyxml2::XMLElement* element,
       const std::optional<Size>& size,
@@ -97,6 +94,8 @@ private:
   Errors postprocess(const Compiler& compiler);
 
 private:
+  friend class MujocoModel;
+
   std::optional<std::string> mChildClass;
   std::vector<Geom> mGeoms;
   std::vector<Site> mSites;

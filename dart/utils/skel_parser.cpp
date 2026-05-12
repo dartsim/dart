@@ -923,6 +923,13 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
             body);
   }
 
+  else if (std::string("screw") == joint.type) {
+    return skeleton->createJointAndBodyNodePair<dynamics::ScrewJoint, BodyType>(
+        parent,
+        static_cast<const dynamics::ScrewJoint::Properties&>(*joint.properties),
+        body);
+  }
+
   else if (std::string("universal") == joint.type) {
     return skeleton
         ->createJointAndBodyNodePair<dynamics::UniversalJoint, BodyType>(
@@ -951,6 +958,15 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
         ->createJointAndBodyNodePair<dynamics::TranslationalJoint, BodyType>(
             parent,
             static_cast<const dynamics::TranslationalJoint::Properties&>(
+                *joint.properties),
+            body);
+  }
+
+  else if (std::string("translational2d") == joint.type) {
+    return skeleton
+        ->createJointAndBodyNodePair<dynamics::TranslationalJoint2D, BodyType>(
+            parent,
+            static_cast<const dynamics::TranslationalJoint2D::Properties&>(
                 *joint.properties),
             body);
   }

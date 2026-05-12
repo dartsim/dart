@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_GEOMATTRIBUTES_HPP_
 #define DART_UTILS_MJCF_DETAIL_GEOMATTRIBUTES_HPP_
 
+#include <dart/utils/export.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
 #include <dart/utils/mjcf/detail/types.hpp>
 
@@ -50,7 +51,7 @@ namespace detail {
 
 /// Intermediate raw data read from the XML file. For the details, see
 /// http://www.mujoco.org/book/XMLreference.html#geom
-struct GeomAttributes final
+struct DART_UTILS_API GeomAttributes final
 {
   /// Name of the geom
   std::optional<std::string> mName;
@@ -130,8 +131,8 @@ struct GeomAttributes final
   double mFitScale{1};
 };
 
-Errors appendGeomAttributes(
-    GeomAttributes& attributes, tinyxml2::XMLElement* element);
+DART_UTILS_API Errors
+appendGeomAttributes(GeomAttributes& attributes, tinyxml2::XMLElement* element);
 
 } // namespace detail
 } // namespace MjcfParser

@@ -72,9 +72,10 @@ public:
   std::size_t getNumExcludes() const;
   const Exclude& getExclude(std::size_t index) const;
 
+  Errors read(tinyxml2::XMLElement* element);
+
 private:
   friend class MujocoModel;
-  Errors read(tinyxml2::XMLElement* element);
 
   std::vector<Pair> mPairs;
   std::vector<Exclude> mExcludes;

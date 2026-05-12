@@ -46,7 +46,11 @@ TEST(FileInfoDof, SaveAndLoadRoundTrip)
   EXPECT_TRUE(reader.loadFile(path.string().c_str()));
   EXPECT_EQ(reader.getNumFrames(), 1);
   EXPECT_DOUBLE_EQ(reader.getDofAt(0, 0), frame[0]);
+  EXPECT_TRUE(reader.getPoseAtFrame(0).isApprox(frame));
   EXPECT_DOUBLE_EQ(reader.getFPS(), 120.0);
+  reader.setFPS(240.0);
+  EXPECT_DOUBLE_EQ(reader.getFPS(), 240.0);
+  EXPECT_EQ(reader.getSkel(), skeleton.get());
 
   std::filesystem::remove(path);
 }
@@ -58,6 +62,8 @@ TEST(FileInfoDof, SaveRejectsInvalidRange)
 
   FileInfoDof writer(skeleton.get(), 60.0);
   EXPECT_FALSE(writer.saveFile("/tmp/does_not_matter.dof", 2, 1, 0.0));
+  EXPECT_FALSE(writer.saveFile(
+      std::filesystem::temp_directory_path().string().c_str(), 0, 0, 0.0));
 }
 
 TEST(FileInfoDof, LoadRejectsMismatchedDofs)
@@ -76,6 +82,29 @@ TEST(FileInfoDof, LoadRejectsMismatchedDofs)
 
   FileInfoDof reader(skeleton.get(), 30.0);
   EXPECT_FALSE(reader.loadFile(path.string().c_str()));
+
+  std::filesystem::remove(path);
+}
+
+TEST(FileInfoDof, LoadRejectsMissingFileAndNullSkeleton)
+{
+  auto skeleton = Skeleton::create("dof_skeleton_missing");
+  skeleton->createJointAndBodyNodePair<FreeJoint>();
+
+  FileInfoDof missingReader(skeleton.get(), 30.0);
+  const auto missingPath = makeTempPath("_missing.dof");
+  EXPECT_FALSE(missingReader.loadFile(missingPath.string().c_str()));
+
+  const auto path = makeTempPath("_null_skeleton.dof");
+  {
+    std::ofstream out(path);
+    out << "frames = 1 dofs = 0\n";
+    out << "\n";
+    out << "FPS 60\n";
+  }
+
+  FileInfoDof nullReader(nullptr, 30.0);
+  EXPECT_FALSE(nullReader.loadFile(path.string().c_str()));
 
   std::filesystem::remove(path);
 }

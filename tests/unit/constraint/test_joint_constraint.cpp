@@ -40,6 +40,7 @@
 #include "dart/constraint/revolute_joint_constraint.hpp"
 #include "dart/dynamics/revolute_joint.hpp"
 #include "dart/dynamics/skeleton.hpp"
+#include "dart/dynamics/universal_joint.hpp"
 #include "dart/dynamics/weld_joint.hpp"
 #include "dart/simulation/world.hpp"
 
@@ -132,6 +133,26 @@ public:
   using RevoluteJointConstraint::RevoluteJointConstraint;
   using RevoluteJointConstraint::unexcite;
   using RevoluteJointConstraint::update;
+};
+
+class ExposedJointCoulombFrictionConstraint final
+  : public JointCoulombFrictionConstraint
+{
+public:
+  using JointCoulombFrictionConstraint::applyImpulse;
+  using JointCoulombFrictionConstraint::applyUnitImpulse;
+  using JointCoulombFrictionConstraint::excite;
+  using JointCoulombFrictionConstraint::getInformation;
+  using JointCoulombFrictionConstraint::getVelocityChange;
+  using JointCoulombFrictionConstraint::isActive;
+  using JointCoulombFrictionConstraint::JointCoulombFrictionConstraint;
+  using JointCoulombFrictionConstraint::unexcite;
+  using JointCoulombFrictionConstraint::update;
+
+  dynamics::SkeletonPtr exposedGetRootSkeleton() const
+  {
+    return getRootSkeleton();
+  }
 };
 
 TEST(JointConstraintTests, InvalidPositionLimitsDoNotCrash)
@@ -601,6 +622,125 @@ TEST(JointCoulombFrictionConstraint, WorldStepAppliesCoulombFriction)
   EXPECT_LE(
       std::abs(impulse),
       joint->getCoulombFriction(0) * world->getTimeStep() + 1e-12);
+}
+
+TEST(JointCoulombFrictionConstraint, CallbackPipelineAndWarmStart)
+{
+  auto skeleton = makeSingleRevoluteSkeleton();
+  skeleton->setTimeStep(0.01);
+
+  auto* joint = static_cast<RevoluteJoint*>(skeleton->getJoint(0));
+  ASSERT_NE(joint, nullptr);
+  joint->setCoulombFriction(0, 0.8);
+  joint->setVelocity(0, 1.5);
+
+  ExposedJointCoulombFrictionConstraint constraint(joint);
+  EXPECT_EQ(
+      constraint.getType(), JointCoulombFrictionConstraint::getStaticType());
+  EXPECT_EQ(constraint.exposedGetRootSkeleton(), skeleton);
+
+  const double prevCfm
+      = JointCoulombFrictionConstraint::getConstraintForceMixing();
+  JointCoulombFrictionConstraint::setConstraintForceMixing(2e-5);
+  EXPECT_DOUBLE_EQ(
+      JointCoulombFrictionConstraint::getConstraintForceMixing(), 2e-5);
+
+  constraint.update();
+  ASSERT_TRUE(constraint.isActive());
+  ASSERT_EQ(constraint.getDimension(), 1u);
+
+  constraint::ConstraintInfo info{};
+  LcpBuffers buffers;
+  prepareConstraintInfo(
+      info,
+      buffers,
+      constraint.getDimension(),
+      1.0 / skeleton->getTimeStep(),
+      constraint::ConstraintPhase::Velocity,
+      false);
+  constraint.getInformation(&info);
+
+  EXPECT_DOUBLE_EQ(buffers.b[0], -1.5);
+  EXPECT_DOUBLE_EQ(buffers.lo[0], -0.008);
+  EXPECT_DOUBLE_EQ(buffers.hi[0], 0.008);
+  EXPECT_DOUBLE_EQ(buffers.x[0], 0.0);
+
+  constraint.applyUnitImpulse(0);
+  skeleton->computeForwardDynamics();
+  constraint.excite();
+  EXPECT_TRUE(skeleton->isImpulseApplied());
+
+  std::vector<double> vel(constraint.getDimension(), 0.0);
+  constraint.getVelocityChange(vel.data(), true);
+  EXPECT_TRUE(std::isfinite(vel[0]));
+
+  std::vector<double> lambda(constraint.getDimension(), 0.004);
+  constraint.applyImpulse(lambda.data());
+
+  constraint.unexcite();
+  EXPECT_FALSE(skeleton->isImpulseApplied());
+
+  constraint.update();
+  LcpBuffers warmStartBuffers;
+  prepareConstraintInfo(
+      info,
+      warmStartBuffers,
+      constraint.getDimension(),
+      1.0 / skeleton->getTimeStep(),
+      constraint::ConstraintPhase::Velocity,
+      false);
+  constraint.getInformation(&info);
+  EXPECT_DOUBLE_EQ(warmStartBuffers.x[0], 0.004);
+
+  JointCoulombFrictionConstraint::setConstraintForceMixing(prevCfm);
+}
+
+TEST(JointCoulombFrictionConstraint, InactiveDofsAreSkipped)
+{
+  auto skeleton = Skeleton::create("two_dof_coulomb_friction");
+  skeleton->setTimeStep(0.01);
+  auto pair = skeleton->createJointAndBodyNodePair<UniversalJoint>();
+  auto* joint = pair.first;
+  ASSERT_NE(joint, nullptr);
+  pair.second->setMass(1.0);
+
+  joint->setCoulombFriction(0, 0.5);
+  joint->setCoulombFriction(1, 0.6);
+  joint->setVelocity(0, 0.0);
+  joint->setVelocity(1, 2.0);
+
+  ExposedJointCoulombFrictionConstraint constraint(joint);
+  constraint.update();
+  ASSERT_TRUE(constraint.isActive());
+  ASSERT_EQ(constraint.getDimension(), 1u);
+
+  constraint::ConstraintInfo info{};
+  LcpBuffers buffers;
+  prepareConstraintInfo(
+      info,
+      buffers,
+      constraint.getDimension(),
+      1.0 / skeleton->getTimeStep(),
+      constraint::ConstraintPhase::Velocity,
+      false);
+  constraint.getInformation(&info);
+
+  EXPECT_DOUBLE_EQ(buffers.b[0], -2.0);
+  EXPECT_DOUBLE_EQ(buffers.lo[0], -0.006);
+  EXPECT_DOUBLE_EQ(buffers.hi[0], 0.006);
+
+  constraint.applyUnitImpulse(0);
+  skeleton->computeForwardDynamics();
+
+  std::vector<double> vel(constraint.getDimension(), 0.0);
+  constraint.getVelocityChange(vel.data(), false);
+  EXPECT_TRUE(std::isfinite(vel[0]));
+
+  std::vector<double> lambda(constraint.getDimension(), 0.003);
+  constraint.applyImpulse(lambda.data());
+
+  EXPECT_DOUBLE_EQ(joint->getConstraintImpulse(0), 0.0);
+  EXPECT_DOUBLE_EQ(joint->getConstraintImpulse(1), 0.003);
 }
 
 TEST(JointConstraintTests, RevoluteJointConstraintWorldStepConverges)

@@ -44,6 +44,18 @@ using dart::utils::CompositeResourceRetriever;
 
 DART_SUPPRESS_DEPRECATED_BEGIN
 
+TEST(CompositeResourceRetriever, addSchemaRetrieverRejectsInvalidEntries)
+{
+  CompositeResourceRetriever retriever;
+
+  EXPECT_FALSE(retriever.addSchemaRetriever(
+      "package", std::shared_ptr<ResourceRetriever>()));
+  EXPECT_FALSE(retriever.addSchemaRetriever(
+      "package://", std::make_shared<PresentResourceRetriever>()));
+
+  EXPECT_FALSE(retriever.exists(Uri::createFromString("package://test/foo")));
+}
+
 TEST(CompositeResourceRetriever, exists_NothingRegistered_ReturnsFalse)
 {
   CompositeResourceRetriever retriever;
