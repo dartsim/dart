@@ -1,4 +1,5 @@
 import importlib.util
+import sys
 from pathlib import Path
 
 import pytest
@@ -14,6 +15,7 @@ def run_cpp_example():
     assert spec.loader is not None
 
     module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
 
@@ -31,19 +33,21 @@ def test_normalize_target_passthrough(run_cpp_example, capsys):
 
 
 @pytest.mark.parametrize(
-    ("target", "build_target", "binary_name"),
+    ("target", "build_target", "binary_name", "requirements"),
     [
-        ("raylib", "dart_raylib", "raylib"),
-        ("dart_raylib", "dart_raylib", "raylib"),
-        ("atlas_simbicon", "atlas_simbicon", "atlas_simbicon"),
+        ("raylib", "dart_raylib", "raylib", ("raylib",)),
+        ("dart_raylib", "dart_raylib", "raylib", ("raylib",)),
+        ("filament_gui", "dart_filament_gui", "filament_gui", ("filament",)),
+        ("atlas_simbicon", "atlas_simbicon", "atlas_simbicon", ()),
     ],
 )
-def test_resolve_build_and_binary(target, build_target, binary_name, run_cpp_example):
-    resolved_build_target, resolved_binary = run_cpp_example._resolve_build_and_binary(
-        target
-    )
-    assert resolved_build_target == build_target
-    assert resolved_binary == binary_name
+def test_resolve_example(
+    target, build_target, binary_name, requirements, run_cpp_example
+):
+    spec = run_cpp_example._resolve_example(target)
+    assert spec.build_target == build_target
+    assert spec.binary_name == binary_name
+    assert spec.requirements == requirements
 
 
 def test_cmake_cache_bool(run_cpp_example, tmp_path):
@@ -75,7 +79,8 @@ def test_ensure_target_requirements_enables_raylib(run_cpp_example, tmp_path, mo
     monkeypatch.setattr(run_cpp_example.subprocess, "run", fake_run)
 
     env = {"EXAMPLE": "1"}
-    run_cpp_example._ensure_target_requirements(tmp_path, "raylib", env)
+    spec = run_cpp_example._resolve_example("raylib")
+    run_cpp_example._ensure_target_requirements(tmp_path, spec, env, smoke=False)
 
     assert len(calls) == 1
     cmd, args, kwargs = calls[0]
@@ -95,5 +100,7 @@ def test_ensure_target_requirements_noop_when_enabled(run_cpp_example, tmp_path,
 
     monkeypatch.setattr(run_cpp_example.subprocess, "run", fail_run)
 
-    run_cpp_example._ensure_target_requirements(tmp_path, "raylib", {"EXAMPLE": "1"})
-
+    spec = run_cpp_example._resolve_example("raylib")
+    run_cpp_example._ensure_target_requirements(
+        tmp_path, spec, {"EXAMPLE": "1"}, smoke=False
+    )
