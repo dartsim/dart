@@ -2381,12 +2381,14 @@ TEST(MeshShapeTest, ExtractMaterialsPreservesPbrMetadata)
           &roughnessTexture,
           AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE_ROUGHNESS, 0)),
       AI_SUCCESS);
+#if DART_ASSIMP_VERSION_MAJOR >= 6
   aiString metallicRoughnessTexture("textures/metallic_roughness.png");
   ASSERT_EQ(
       scene->mMaterials[0]->AddProperty(
           &metallicRoughnessTexture,
           AI_MATKEY_TEXTURE(aiTextureType_GLTF_METALLIC_ROUGHNESS, 0)),
       AI_SUCCESS);
+#endif
   aiString normalTexture("textures/normal.png");
   ASSERT_EQ(
       scene->mMaterials[0]->AddProperty(
@@ -2454,10 +2456,14 @@ TEST(MeshShapeTest, ExtractMaterialsPreservesPbrMetadata)
   EXPECT_NE(
       material->roughnessTexturePath.find("textures/roughness.png"),
       std::string::npos);
+#if DART_ASSIMP_VERSION_MAJOR >= 6
   EXPECT_NE(
       material->metallicRoughnessTexturePath.find(
           "textures/metallic_roughness.png"),
       std::string::npos);
+#else
+  EXPECT_TRUE(material->metallicRoughnessTexturePath.empty());
+#endif
   EXPECT_NE(
       material->normalTexturePath.find("textures/normal.png"),
       std::string::npos);
@@ -2467,7 +2473,11 @@ TEST(MeshShapeTest, ExtractMaterialsPreservesPbrMetadata)
   EXPECT_NE(
       material->emissiveTexturePath.find("textures/emissive.png"),
       std::string::npos);
+#if DART_ASSIMP_VERSION_MAJOR >= 6
   EXPECT_GE(material->textureImagePaths.size(), 7u);
+#else
+  EXPECT_GE(material->textureImagePaths.size(), 6u);
+#endif
 
   std::error_code ec;
   std::filesystem::remove(objPath, ec);
