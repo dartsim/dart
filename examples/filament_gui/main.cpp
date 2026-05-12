@@ -354,10 +354,10 @@ filament::ColorGrading* createDebugColorGrading(filament::Engine& engine)
 filament::IndirectLight* createNeutralIndirectLight(filament::Engine& engine)
 {
   static constexpr std::array<float3, 9> kDiffuseIrradiance = {{
+      {0.070f, 0.076f, 0.086f},
+      {-0.004f, -0.004f, -0.004f},
       {0.018f, 0.020f, 0.024f},
-      {0.000f, 0.000f, 0.000f},
-      {0.002f, 0.003f, 0.004f},
-      {0.000f, 0.000f, 0.000f},
+      {0.006f, 0.007f, 0.008f},
       {0.000f, 0.000f, 0.000f},
       {0.000f, 0.000f, 0.000f},
       {0.000f, 0.000f, 0.000f},
@@ -367,14 +367,14 @@ filament::IndirectLight* createNeutralIndirectLight(filament::Engine& engine)
 
   return filament::IndirectLight::Builder()
       .irradiance(3, kDiffuseIrradiance.data())
-      .intensity(25000.0f)
+      .intensity(36000.0f)
       .build(engine);
 }
 
 filament::Skybox* createNeutralSkybox(filament::Engine& engine)
 {
   return filament::Skybox::Builder()
-      .color({0.025f, 0.029f, 0.035f, 1.0f})
+      .color({0.055f, 0.064f, 0.074f, 1.0f})
       .showSun(true)
       .build(engine);
 }
@@ -387,6 +387,40 @@ filament::TextureSampler makeRepeatTextureSampler()
       filament::TextureSampler::WrapMode::REPEAT);
   sampler.setAnisotropy(8.0f);
   return sampler;
+}
+
+void loadImGuiFont(ImGuiIO& io)
+{
+  std::vector<std::filesystem::path> candidates;
+  if (const char* fontPath = std::getenv("DART_FILAMENT_GUI_FONT");
+      fontPath != nullptr && std::strlen(fontPath) > 0) {
+    candidates.emplace_back(fontPath);
+  }
+
+  candidates.emplace_back("/usr/share/fonts/dejavu-sans-fonts/DejaVuSans.ttf");
+  candidates.emplace_back("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf");
+  candidates.emplace_back(
+      "/usr/share/fonts/liberation-sans-fonts/LiberationSans-Regular.ttf");
+  candidates.emplace_back("/System/Library/Fonts/Supplemental/Arial.ttf");
+  candidates.emplace_back("/Library/Fonts/Arial.ttf");
+  candidates.emplace_back("C:/Windows/Fonts/segoeui.ttf");
+
+  ImFontConfig config;
+  config.OversampleH = 3;
+  config.OversampleV = 2;
+  config.PixelSnapH = false;
+  for (const auto& path : candidates) {
+    std::error_code ec;
+    if (!std::filesystem::is_regular_file(path, ec)) {
+      continue;
+    }
+    if (io.Fonts->AddFontFromFileTTF(path.string().c_str(), 15.0f, &config)
+        != nullptr) {
+      return;
+    }
+  }
+
+  io.Fonts->AddFontDefault();
 }
 
 std::string lowerExtension(const std::filesystem::path& path)
@@ -2508,23 +2542,23 @@ ImGuiOverlay createImGuiOverlay(filament::Engine& engine)
   unsigned char* pixels = nullptr;
   int width = 0;
   int height = 0;
-  ImGui::GetIO().Fonts->GetTexDataAsAlpha8(&pixels, &width, &height);
+  ImGui::GetIO().Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
   std::vector<std::uint8_t> fontPixels(
-      pixels, pixels + static_cast<std::size_t>(width) * height);
+      pixels, pixels + static_cast<std::size_t>(width) * height * 4);
 
   overlay.fontTexture = filament::Texture::Builder()
                             .width(static_cast<std::uint32_t>(width))
                             .height(static_cast<std::uint32_t>(height))
                             .levels(1)
                             .sampler(filament::Texture::Sampler::SAMPLER_2D)
-                            .format(filament::Texture::InternalFormat::R8)
+                            .format(filament::Texture::InternalFormat::RGBA8)
                             .build(engine);
   overlay.fontTexture->setImage(
       engine,
       0,
       makePixelBufferDescriptor(
           std::move(fontPixels),
-          filament::backend::PixelDataFormat::R,
+          filament::backend::PixelDataFormat::RGBA,
           filament::backend::PixelDataType::UBYTE));
 
   const filament::TextureSampler sampler(
@@ -2574,7 +2608,7 @@ void updateImGuiOverlay(
       vertices.push_back(
           ImGuiVertex{
               {vertex.pos.x - displayPos.x, vertex.pos.y - displayPos.y, 0.0f},
-              {vertex.uv.x, vertex.uv.y},
+              {vertex.uv.x, 1.0f - vertex.uv.y},
               vertex.col});
     }
 
@@ -2689,7 +2723,7 @@ void saveScreenshot(const ScreenshotCapture& capture, const std::string& path)
           capture.width,
           capture.height,
           capture.pixels,
-          true,
+          false,
           &error)) {
     std::cerr << error << "\n";
     std::exit(1);
@@ -2800,10 +2834,11 @@ int main(int argc, char* argv[])
   auto* colorGrading = createDebugColorGrading(*engine);
   view->setColorGrading(colorGrading);
   view->setShadowingEnabled(true);
-  view->setShadowType(filament::ShadowType::PCSS);
+  view->setShadowType(
+      options.headless ? filament::ShadowType::PCF : filament::ShadowType::PCSS);
   filament::SoftShadowOptions softShadowOptions;
-  softShadowOptions.penumbraScale = 1.5f;
-  softShadowOptions.penumbraRatioScale = 2.0f;
+  softShadowOptions.penumbraScale = 2.2f;
+  softShadowOptions.penumbraRatioScale = 2.8f;
   view->setSoftShadowOptions(softShadowOptions);
   auto* indirectLight = createNeutralIndirectLight(*engine);
   auto* skybox = createNeutralSkybox(*engine);
@@ -3145,12 +3180,12 @@ int main(int argc, char* argv[])
   shadowOptions.cascadeSplitPositions[2] = 0.55f;
   shadowOptions.shadowFar = 20.0f;
   shadowOptions.shadowFarHint = 10.0f;
-  shadowOptions.screenSpaceContactShadows = true;
-  shadowOptions.maxShadowDistance = 0.5f;
-  shadowOptions.shadowBulbRadius = 0.08f;
+  shadowOptions.screenSpaceContactShadows = !options.headless;
+  shadowOptions.maxShadowDistance = 0.8f;
+  shadowOptions.shadowBulbRadius = 0.16f;
   filament::LightManager::Builder(filament::LightManager::Type::SUN)
       .color({1.0f, 0.96f, 0.88f})
-      .intensity(100000.0f)
+      .intensity(76000.0f)
       .direction({-0.45f, -0.55f, -1.0f})
       .castShadows(true)
       .shadowOptions(shadowOptions)
@@ -3160,16 +3195,25 @@ int main(int argc, char* argv[])
   auto fillLightEntity = EntityManager::get().create();
   filament::LightManager::Builder(filament::LightManager::Type::DIRECTIONAL)
       .color({0.75f, 0.82f, 1.0f})
-      .intensity(18000.0f)
+      .intensity(36000.0f)
       .direction({0.35f, -0.25f, -0.7f})
       .castShadows(false)
       .build(*engine, fillLightEntity);
   scene->addEntity(fillLightEntity);
 
+  auto rimLightEntity = EntityManager::get().create();
+  filament::LightManager::Builder(filament::LightManager::Type::DIRECTIONAL)
+      .color({0.82f, 0.88f, 1.0f})
+      .intensity(24000.0f)
+      .direction({-0.55f, 0.35f, -0.45f})
+      .castShadows(false)
+      .build(*engine, rimLightEntity);
+  scene->addEntity(rimLightEntity);
+
   ImGui::CreateContext();
   ImGui::StyleColorsDark();
   auto& imguiIo = ImGui::GetIO();
-  imguiIo.Fonts->AddFontDefault();
+  loadImGuiFont(imguiIo);
   imguiIo.Fonts->Build();
   ImGuiOverlay imguiOverlay = createImGuiOverlay(*engine);
 
@@ -3494,6 +3538,7 @@ int main(int argc, char* argv[])
 
   scene->remove(lightEntity);
   scene->remove(fillLightEntity);
+  scene->remove(rimLightEntity);
   scene->setIndirectLight(nullptr);
   scene->setSkybox(nullptr);
   view->setColorGrading(nullptr);
@@ -3511,8 +3556,10 @@ int main(int argc, char* argv[])
   }
   engine->destroy(lightEntity);
   engine->destroy(fillLightEntity);
+  engine->destroy(rimLightEntity);
   EntityManager::get().destroy(lightEntity);
   EntityManager::get().destroy(fillLightEntity);
+  EntityManager::get().destroy(rimLightEntity);
   engine->destroy(indirectLight);
   engine->destroy(skybox);
   engine->destroy(colorGrading);

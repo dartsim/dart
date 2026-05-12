@@ -16,12 +16,13 @@
   `MeshShape` descriptors and a finite `PlaneShape` proxy, and applies DART
   visual-aspect shadow flags to Filament renderables.
 - The example configures Filament view quality features needed by the MVP gate:
-  PCSS/cascaded SUN shadows, contact shadows, a neutral skybox, spherical
-  harmonics indirect lighting, high-quality color grading, anisotropic texture
-  sampling, HDR buffer quality, screen-space ambient occlusion, temporal and
-  multi-sample anti-aliasing, FXAA, and temporal dithering. The higher-cost
-  post-process options are kept to windowed runs because they prevent frame
-  acquisition on the current headless OpenGL software path.
+  cascaded SUN shadows, contact shadows for windowed runs, deterministic PCF
+  shadows for headless screenshots, a neutral skybox, spherical harmonics
+  indirect lighting, high-quality color grading, anisotropic texture sampling,
+  HDR buffer quality, screen-space ambient occlusion, temporal and multi-sample
+  anti-aliasing, FXAA, and temporal dithering. The higher-cost post-process
+  options are kept to windowed runs because they prevent frame acquisition on
+  the current headless OpenGL software path.
 - The fixture includes a procedural checker-textured plane path through a
   Filament sampler material. It also loads an existing textured WAM Collada
   mesh, the full WAM URDF skeleton, a required Atlas DAE torso mesh, and a full
@@ -58,6 +59,8 @@
   accounting, and perspective pick rays.
 - The experimental scene layer owns reusable RGBA-to-PPM screenshot storage,
   while the Filament example remains responsible only for renderer readback.
+  The current Filament readback path writes top-left-origin screenshots so
+  headless captures are directly reviewable without a manual vertical flip.
 - `dartpy.gui.experimental` now exposes the constrained backend-hidden
   descriptor, picking, frame-translation, debug-line, run-option, viewer
   lifecycle, screenshot storage, and orbit-camera APIs used by the current C++
