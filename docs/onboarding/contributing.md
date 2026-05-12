@@ -91,23 +91,19 @@ git checkout -b feature/my-awesome-feature
 ### 4. Build and Test
 
 ```bash
-# Using pixi (recommended)
 pixi run build
 pixi run test
-
-# Or manually
-cmake --build build/
-cmake --build build/ --target test
 ```
+
+Use the more focused `pixi run ...` test tasks documented in
+`docs/onboarding/testing.md` when a full test run is not needed. Manual CMake
+commands are covered in `docs/onboarding/building.md` for advanced build-system
+debugging, but contributor workflow steps should use Pixi tasks.
 
 ### 5. Format Your Code
 
 ```bash
-# Using pixi
 pixi run lint
-
-# Or manually
-cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/Release --target format
 ```
 
 Rule of thumb: run `pixi run lint` before committing so auto-fixes are captured.
@@ -134,7 +130,8 @@ All contributions must include appropriate tests:
 
 - Located in `tests/unit/`
 - Use Google Test framework
-- Run with: `pixi run test` or `cmake --build build/ --target test`
+- Run with: `pixi run test`, `pixi run test-unit`, or a more focused
+  `pixi run ...` test task
 
 ### Integration Tests
 
@@ -147,11 +144,7 @@ All contributions must include appropriate tests:
 If modifying Python bindings:
 
 ```bash
-# Run Python tests
 pixi run test-py
-
-# Or manually
-python -m pytest python/tests/
 ```
 
 ### Coverage
@@ -159,11 +152,7 @@ python -m pytest python/tests/
 Check test coverage:
 
 ```bash
-# Generate coverage report
 pixi run coverage-view
-
-# Or manually
-cmake --build build/ --target coverage_view
 ```
 
 ## Code Review Process
@@ -302,6 +291,15 @@ Before submitting your pull request, verify:
 - [ ] Commit messages are clear and descriptive
 - [ ] No merge conflicts with main branch
 - [ ] PR description includes summary, motivation, and testing notes
+- [ ] PR description uses `.github/PULL_REQUEST_TEMPLATE.md`
+- [ ] Milestone is set for the target branch (`DART 7.0` for `main`,
+      `DART 6.16.x` for `release-6.16`)
+- [ ] `CHANGELOG.md` is updated when required, or the PR records why no entry is
+      needed
+- [ ] Bug fixes that apply to the release line have a `release-6.16` PR first,
+      then a `main` PR
+- [ ] Any `docs/dev_tasks/<task>/` folder used for tracking is removed after
+      durable notes move to onboarding docs
 
 ## Getting Help
 

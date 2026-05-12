@@ -9,8 +9,9 @@ description: "DART Mechanical Refactor: perform a behavior-preserving mechanical
 
 # dart-mechanical-refactor
 
-Use this skill in Codex when you want the same workflow that Claude Code and
-OpenCode expose as `/dart-mechanical-refactor`.
+Use this skill in Codex to run the DART `dart-mechanical-refactor` workflow. The editable
+workflow source currently lives in `.claude/commands/`, and this generated
+Codex skill is a first-class Codex entrypoint.
 
 ## Invocation
 
@@ -43,7 +44,9 @@ Perform mechanical refactor: $ARGUMENTS
    - `pixi run build`
    - `pixi run test-unit`
    - `pixi run test-all` when feasible
-7. Open a PR with a clear scope statement and no behavior-change claim unless tested.
+7. Ask for explicit maintainer/user approval before pushing or opening a PR.
+   After approval, open a PR with a clear scope statement and no
+   behavior-change claim unless tested.
 
 ## Output
 

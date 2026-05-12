@@ -22,7 +22,8 @@ Close or prepare closing message for issue: $ARGUMENTS
    - thank the reporter
    - state the concrete resolution
    - link the fixing PR or relevant docs when available
-4. Only post and close if the user explicitly requested action:
+4. Only post and close if the user explicitly requested action and explicit
+   maintainer/user approval has been given:
    ```bash
    gh issue comment <ISSUE_NUMBER> --body "<message>"
    gh issue close <ISSUE_NUMBER>

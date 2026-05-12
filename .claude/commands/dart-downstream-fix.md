@@ -21,16 +21,18 @@ Use for downstream issues in gz-physics, Gazebo, or gz-sim that trace back to DA
 2. Identify the DART API, component, and invalid usage pattern involved.
 3. Search for related validation and recovery patterns in DART.
 4. Plan the smallest fix and the regression test location.
-5. Implement on `main` first for DART 7:
-   - branch: `fix/<downstream-project>-<issue-number>-<brief-description>`
+5. Decide whether the bug applies to the active release line. For applicable
+   bug fixes, implement on `release-6.16` first, then cherry-pick or reapply to
+   `main` for DART 7:
+   - branch: `fix/<downstream-project>-<issue-number>-<brief-description>-6.16`
    - add a regression test that reproduces the downstream symptom
    - keep the fix minimal; no unrelated refactors
 6. Run `pixi run lint` and relevant tests; use `pixi run test-all` when feasible.
-7. Create a `main` PR with milestone `DART 7.0` and reference the downstream issue.
-8. If this is a bug fix applicable to the release line, create the release-branch PR too:
-   - branch from `release-6.16`
-   - adapt API differences if needed
-   - milestone `DART 6.16.x`
+7. Ask for explicit maintainer/user approval before pushing or creating PRs.
+   After approval, create the release-branch PR with milestone `DART 6.16.x`
+   and reference the downstream issue.
+8. Create the matching `main` PR with milestone `DART 7.0`; adapt API
+   differences if needed.
 
 ## Release-Line Differences
 

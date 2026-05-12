@@ -221,6 +221,10 @@ check-lint-yaml = { cmd = """
     prettier --check '**/*.{yml,yaml}' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**'
 """ }
 
+check-lint-md = { cmd = """
+    prettier --check '**/*.md' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**' '!.codex/**' '!.opencode/**'
+""" }
+
 check-lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
 
 check-lint-spell = { cmd = "codespell --config .codespellrc" }
@@ -239,6 +243,7 @@ check-lint = { depends-on = [
   "check-lint-simulation-experimental",
   "check-lint-py",
   "check-lint-yaml",
+  "check-lint-md",
   "check-lint-rst",
   "check-lint-spell",
   "check-docs-policy",
@@ -1471,7 +1476,9 @@ lint = { depends-on = [
   "lint-cpp",
   "lint-py",
   "lint-yaml",
+  "lint-md",
   "lint-rst",
+  "sync-ai-commands",
 ] }
 
 check-lint-py = { cmd = """
@@ -1486,9 +1493,11 @@ check-lint = { depends-on = [
   "check-lint-cpp",
   "check-lint-py",
   "check-lint-yaml",
+  "check-lint-md",
   "check-lint-rst",
   "check-lint-spell",
   "check-docs-policy",
+  "check-ai-commands",
 ] }
 
 build = { cmd = """

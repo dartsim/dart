@@ -7,7 +7,8 @@ agent: build
 <!-- Sync script: scripts/sync_ai_commands.py -->
 <!-- Run `pixi run sync-ai-commands` to update -->
 
-Manage an open DART pull request: $ARGUMENTS
+Manage an open DART pull request after explicit maintainer/user approval for
+mutations: $ARGUMENTS
 
 ## Required Reading
 
@@ -55,13 +56,15 @@ gh pr checks <PR_NUMBER>
    - Reproduce locally with the relevant `pixi run ...` task or focused test.
    - Before committing fixes, run `pixi run lint`; also run build or tests when
      code or behavior changed.
-   - Commit only intended files, push, and continue monitoring the PR.
+   - Commit only intended files. Push only after explicit maintainer/user
+     approval, then continue monitoring the PR.
 4. Address reviews:
    - Use the `dart-review-pr` workflow for substantive review feedback.
    - Never reply to AI-generated review comments from bot users such as
      `chatgpt-codex-connector[bot]`, `github-actions[bot]`, or `copilot[bot]`.
-   - Push AI-review fixes silently. Resolve threads when needed, then request a
-     fresh AI review only after the branch is ready:
+   - Apply AI-review fixes silently. After explicit maintainer/user approval
+     and after the branch is ready, push, resolve reviewed and addressed
+     threads, and request a fresh AI review:
      ```bash
      gh pr comment <PR_NUMBER> --body "@codex review"
      ```
@@ -71,6 +74,9 @@ gh pr checks <PR_NUMBER>
    - Confirm required checks are passing and review requirements are satisfied.
    - If the PR is draft and ready, mark it ready only when the user or task asks.
    - Do not merge unless explicitly asked or the workflow clearly includes merge.
+   - PR comments, review re-triggers, thread resolution, reviewer requests,
+     ready-for-review transitions, merges, and branch deletion are external
+     mutations and require explicit maintainer/user approval.
    - Confirm the merge method from repository settings or the user. Recent DART
      `main` PRs use single-parent PR-title commits, so prefer squash/rebase
      over merge commits unless the repository settings or user request differ.
@@ -78,20 +84,23 @@ gh pr checks <PR_NUMBER>
      accidentally.
 6. Clean up after merge:
    - Confirm the PR merged and identify the head branch before deleting.
-   - Prefer merge-time deletion with the requested merge method and head SHA:
+   - After explicit maintainer/user approval, prefer merge-time deletion with
+     the approved merge method and head SHA:
      ```bash
      gh pr merge <PR_NUMBER> --squash --match-head-commit <HEAD_SHA> --delete-branch
      ```
      Use `--rebase` or `--merge` instead of `--squash` when requested.
-   - Otherwise delete only the PR branch after confirming it has landed:
+   - After explicit maintainer/user approval, otherwise delete only the PR
+     branch after confirming it has landed:
      ```bash
      git push origin --delete <HEAD_BRANCH>
      git switch main
      git pull --ff-only
      git branch -D <HEAD_BRANCH>
      ```
-     Use force-delete locally only after confirming the PR branch has landed;
-     squash and rebase merges do not preserve the branch tip in `main` ancestry.
+     Use force-delete locally only after explicit maintainer/user approval and
+     after confirming the PR branch has landed; squash and rebase merges do not
+     preserve the branch tip in `main` ancestry.
 
 ## Output
 

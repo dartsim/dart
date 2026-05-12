@@ -23,7 +23,7 @@ gh run view <RUN_ID> --json status,conclusion,url
 gh run view <RUN_ID> --job <JOB_ID> --log-failed
 gh run view <RUN_ID> --json jobs --jq '.jobs[] | {name, databaseId}'
 
-# Rerun failed jobs
+# Rerun failed jobs only after explicit maintainer/user approval
 gh run rerun <RUN_ID> --failed
 gh run rerun <RUN_ID> --job <DATABASE_ID>
 ```
@@ -36,7 +36,7 @@ For complete CI/CD guide: `docs/onboarding/ci-cd.md`
 
 | Failure Type         | Solution                                                 |
 | -------------------- | -------------------------------------------------------- |
-| Formatting fails     | `pixi run lint` then push                                |
+| Formatting fails     | `pixi run lint`; push only after approval                |
 | Codecov patch fails  | Add tests for uncovered lines                            |
 | FreeBSD RTTI fails   | Use type enums + `static_cast` instead of `dynamic_cast` |
 | macOS ARM64 SEGFAULT | Replace `alloca()`/VLAs with `std::vector<T>`            |
@@ -59,7 +59,8 @@ For complete CI/CD guide: `docs/onboarding/ci-cd.md`
 1. Identify failing step from job logs
 2. Reproduce locally with same build toggles
 3. Fix the smallest failing test
-4. Push and monitor: `gh run watch <RUN_ID>`
+4. Push only after explicit maintainer/user approval, then monitor:
+   `gh run watch <RUN_ID>`
 
 ## Caching
 

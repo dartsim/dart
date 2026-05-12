@@ -37,7 +37,8 @@ and ask.
 - Continue with minimal scope and preserve existing user changes.
 - Run `pixi run lint` before committing.
 - Run relevant tests; use `pixi run test-all` before done when feasible.
-- Push with `git push -u origin HEAD` and create/update the PR.
+- Push with `git push -u origin HEAD` and create/update the PR only after
+  explicit maintainer/user approval.
 
 ## Safety
 

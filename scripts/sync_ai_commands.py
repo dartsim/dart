@@ -6,7 +6,8 @@ Different AI coding tools read from different directories:
 - OpenCode: .opencode/command/
 - Codex: .codex/skills/ (domain skills plus command-derived workflow skills)
 
-This script keeps them in sync using .claude/ as the source of truth.
+This script keeps them in sync using .claude/ as the current editable source
+for workflow commands and domain skills.
 It also verifies that every supported agent has the same effective DART
 capability set, even when tools expose workflows through different UI concepts
 (commands vs skills).
@@ -353,6 +354,653 @@ def validate_style_and_budget(repo_root: Path) -> bool:
     return True
 
 
+def parse_workflow_rows(workflow_content: str) -> dict[str, list[str]]:
+    """Extract user-invoked workflow table rows keyed by capability name."""
+    rows: dict[str, list[str]] = {}
+    in_user_table = False
+
+    for line in workflow_content.splitlines():
+        if line.startswith("## User-Invoked Workflows"):
+            in_user_table = True
+            continue
+        if in_user_table and line.startswith("## "):
+            break
+        if not in_user_table or not line.startswith("| `dart-"):
+            continue
+
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) < 5:
+            continue
+        match = re.fullmatch(r"`(dart-[a-z0-9-]+)`", cells[0])
+        if match:
+            rows[match.group(1)] = cells
+
+    return rows
+
+
+def parse_agents_workflow_rows(agents_content: str) -> dict[str, list[str]]:
+    """Extract AGENTS.md workflow command rows keyed by capability name."""
+    rows: dict[str, list[str]] = {}
+    in_workflow_table = False
+
+    for line in agents_content.splitlines():
+        if line.startswith("## Workflow Commands"):
+            in_workflow_table = True
+            continue
+        if in_workflow_table and line.startswith("## "):
+            break
+        if not in_workflow_table or not line.startswith("| `/dart-"):
+            continue
+
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) < 3:
+            continue
+        match = re.fullmatch(r"`/(dart-[a-z0-9-]+)(?: [^`]*)?`", cells[0])
+        if match:
+            rows[match.group(1)] = cells
+
+    return rows
+
+
+def parse_agents_skill_rows(agents_content: str) -> dict[str, list[str]]:
+    """Extract AGENTS.md domain skill rows keyed by skill name."""
+    rows: dict[str, list[str]] = {}
+    in_skill_table = False
+
+    for line in agents_content.splitlines():
+        if line.startswith("## Skills (On-Demand Knowledge)"):
+            in_skill_table = True
+            continue
+        if in_skill_table and line.startswith("## "):
+            break
+        if not in_skill_table or not line.startswith("| `dart-"):
+            continue
+
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) < 2:
+            continue
+        match = re.fullmatch(r"`(dart-[a-z0-9-]+)`", cells[0])
+        if match:
+            rows[match.group(1)] = cells
+
+    return rows
+
+
+def extract_required_reading_from_content(content: str) -> list[str]:
+    """Extract @file entries from a command Required Reading section."""
+    readings: list[str] = []
+    in_required_reading = False
+
+    for line in content.splitlines():
+        if line.startswith("## Required Reading"):
+            in_required_reading = True
+            continue
+        if in_required_reading and line.startswith("## "):
+            break
+        if not in_required_reading:
+            continue
+
+        match = re.match(r"@([^\s]+)", line.strip())
+        if match:
+            readings.append(match.group(1))
+
+    return readings
+
+
+def extract_required_reading(command_path: Path) -> list[str]:
+    """Extract @file entries from a command's Required Reading section."""
+    return extract_required_reading_from_content(command_path.read_text())
+
+
+def missing_required_reading_errors(
+    workflow_path_label: str,
+    name: str,
+    public_path: str,
+    required_reading: list[str],
+) -> list[str]:
+    """Return workflow row errors for required reading not in public path."""
+    return [
+        f"{workflow_path_label}: `{name}` missing required reading `{required}`"
+        for required in required_reading
+        if required != "AGENTS.md" and required not in public_path
+    ]
+
+
+def has_gate_evidence(gate_cell: str) -> bool:
+    """Return whether a workflow gate cell names a local gate or exception."""
+    accepted_markers = [
+        "pixi run",
+        "git status",
+        "local reproduction",
+        "focused build/test",
+        "focused tests",
+        "target-specific gates",
+        "release-target focused tests",
+        "regression test",
+        "CI/review green",
+        "CI is green",
+        "Read-only",
+        "read-only",
+        "No local gate",
+        "Maintainer-only",
+        "release verification",
+        "Relevant docs/AI checks",
+    ]
+    return any(marker in gate_cell for marker in accepted_markers)
+
+
+def validate_approval_boundary(repo_root: Path) -> list[str]:
+    """Check GitHub/remote mutation commands explicitly require approval."""
+    errors: list[str] = []
+    mutation_pattern_strings = [
+        r"\bgit push\b",
+        r"\bgh pr create\b",
+        r"\bgh pr comment\b",
+        r"\bgh pr edit\b",
+        r"\bgh pr merge\b",
+        r"\bgh pr ready\b",
+        r"\bgh pr review\b",
+        r"\bgh issue comment\b",
+        r"\bgh issue close\b",
+        r"\bgh issue edit\b",
+        r"\bgh run rerun\b",
+        r"\bgh pr update-branch\b",
+        r"\bgh api\b(?!\s+graphql\b)[^\n;|&]*(?:(?:--method(?:=|\s+)|-X\s*)"
+        + r"(?:POST|PATCH|PUT|DELETE)\b|(?:--field|-f)\s+\w+=)",
+        r"\bgh api graphql\b[^\n;|&]*\bmutation\b",
+        r"^\s*mutation(?:\s+\w+)?\s*\{",
+        r"\bgit fetch\b[^\n;|&]*(?:--prune\b|-[A-Za-z]*p[A-Za-z]*\b)",
+        r"\bgit remote update\b[^\n;|&]*(?:--prune\b|-[A-Za-z]*p[A-Za-z]*\b)",
+        r"\bgit remote prune\b",
+        r"\bgit branch\b[^\n;|&]*(?:-[A-Za-z]*[dD][A-Za-z]*\b|--delete\b)",
+        r"\bresolveReviewThread\b",
+        r"--delete-branch\b",
+        r"\borigin --delete\b",
+        r"^\s*(?:\d+\.\s*)?(?:[-*]\s*)?(?:if approved,\s*)?push\b",
+        r"\bpush(?:ing)? (?:the )?(?:fix(?:es)?|change|changes|commit|commits|branch)\b",
+        r"\bpush(?:ing)? and (?:ask|create|creating|monitor|open|opening|watch)\b",
+        r"\bpush(?:ing)?, (?:comment|resolve|re-trigger|retrigger)\b",
+        r"\bpush(?:es|ing)?\b.{0,120}\b(?:PRs?|pull requests?)\b",
+        r"\b(?:create|creating|open|opening)\b.{0,80}\b(?:PRs?|pull requests?)\b",
+        r"\bcreate or update (?:a |the )?.{0,120}(?:PRs?|pull requests?)\b",
+        r"\bcreate/update (?:a |the )?.{0,120}(?:PRs?|pull requests?)\b",
+        r"\bupdate (?:a |the )?.{0,120}(?:PRs?|pull requests?)\b",
+        r"\bupdating (?:a |the )?.{0,120}(?:PRs?|pull requests?)\b",
+        r"\b(?:PRs?|pull requests?) update\b",
+        r"\bset(?:ting)? (?:the )?.{0,120}milestones?\b",
+        r"\brerun(?:ning)? (?:the )?(?:failed )?(?:CI|check|job|jobs|workflow)\b",
+        r"\bmerg(?:e|ing) (?:the )?(?:PR|pull request)\b",
+        r"\bresolv(?:e|ing) (?:only )?(?:the )?(?:addressed |reviewed |reviewed and addressed |reviewed, addressed )?(?:review )?(?:thread IDs?|threads?|conversations?)\b",
+        r"\bdelet(?:e|ing)\b.{0,80}\bbranch(?:es)?\b",
+        r"\bbranch(?:es)? (?:is |are )?(?:a )?deletion candidate(?:s)?\b",
+        r"\bdeletion candidate(?:s)?\b",
+        r"\bprun(?:e|ing)\b.{0,80}\brefs?\b",
+        r"\bforce-delete locally\b",
+    ]
+    mutation_pattern = re.compile(
+        "|".join(f"(?:{pattern})" for pattern in mutation_pattern_strings), re.I
+    )
+    mutation_examples = {
+        "Open a PR with the release milestone": "uppercase PR opening prose",
+        "opening the release-branch PR": "gerund PR opening prose",
+        "After approval, push the fix": "non-line-initial push prose",
+        "pushing fixes to the PR": "gerund push prose",
+        "pushes to PRs": "plural push/PR prose",
+        "open a pull request": "pull request opening prose",
+        "update the pull request": "pull request update prose",
+        "open a DART pull request": "qualified pull request opening prose",
+        "Create release packaging PR": "qualified PR opening prose",
+        "gh pr update-branch": "PR update-branch command",
+        "gh api --method POST repos/dartsim/dart/issues/1/comments": "mutating gh api command",
+        "gh api --method=PATCH repos/dartsim/dart/issues/1": "mutating gh api equals method command",
+        "gh api -X DELETE repos/dartsim/dart/git/refs/heads/tmp": "mutating gh api short method command",
+        "gh api -XPOST repos/dartsim/dart/issues": "mutating gh api attached short method command",
+        "gh api repos/dartsim/dart/issues/1/comments -f body=x": "implicit mutating gh api field command",
+        'gh api graphql -f query="mutation { foo }"': "mutating gh api graphql command",
+        "mutation { resolveReviewThread": "GraphQL mutation block",
+        "git fetch --all --prune": "fetch prune command",
+        "git fetch origin --prune": "fetch remote prune command",
+        "git fetch origin -p": "fetch remote short prune command",
+        "git fetch -p": "fetch short prune command",
+        "git remote update --prune": "remote update prune command",
+        "git remote update origin --prune": "remote update remote prune command",
+        "git remote update -p": "remote update short prune command",
+        "git remote prune origin": "remote prune command",
+        "pruning refs": "pruning refs prose",
+        "Deleting stale branches": "branch deletion prose",
+        "delete any branch": "any branch deletion prose",
+        "deleting any local or remote branch": "local-or-remote branch deletion prose",
+        "git branch -D <HEAD_BRANCH>": "local branch deletion command",
+        "git branch -df <HEAD_BRANCH>": "combined branch force-delete command",
+        "git branch -rd origin/foo": "combined remote branch delete command",
+        "git branch --delete --force <HEAD_BRANCH>": "long-form branch deletion command",
+        "Branch is a deletion candidate": "branch deletion candidate prose",
+        "resolve the thread": "singular thread resolution prose",
+        "resolve only reviewed and addressed thread IDs": "reviewed thread ID resolution prose",
+        "update the PR after editing": "PR update prose",
+        "PR update after changelog edit": "noun PR update prose",
+        "After opening the PR, merge PR": "compound PR mutation prose",
+        "Rerunning failed jobs": "gerund CI rerun prose",
+        "Merging PR after checks pass": "gerund merge prose",
+        "Resolving addressed threads via GraphQL": "gerund thread-resolution prose",
+    }
+    for example, label in mutation_examples.items():
+        if not mutation_pattern.search(example):
+            errors.append(f"internal mutation pattern self-check failed: {label}")
+
+    approval_pattern = re.compile(r"explicit\s+(?:maintainer/user\s+)?approval", re.I)
+
+    def build_scan_text(lines: list[str], index: int, in_fence: bool) -> str:
+        """Join a Markdown paragraph or wrapped list item for prose scanning."""
+        current = lines[index]
+        current_stripped = current.strip()
+        if not current_stripped:
+            return ""
+
+        parts = [current_stripped]
+        current_indent = len(current) - len(current.lstrip())
+        current_is_list = bool(re.match(r"(?:[-*]|\d+\.)\s", current_stripped))
+        current_is_block = current_stripped.startswith(("#", "|", "```", "---"))
+
+        if current_is_block or in_fence:
+            return current_stripped
+
+        for next_line in lines[index + 1 : index + 5]:
+            next_stripped = next_line.strip()
+            if not next_stripped or next_stripped.startswith(("#", "|", "```", "---")):
+                break
+
+            next_indent = len(next_line) - len(next_line.lstrip())
+            next_is_list = bool(re.match(r"(?:[-*]|\d+\.)\s", next_stripped))
+            if current_is_list:
+                if next_indent <= current_indent:
+                    break
+            elif next_is_list:
+                break
+
+            parts.append(next_stripped)
+
+        return " ".join(parts)
+
+    def strip_safe_prune_commands(scan_text: str) -> str:
+        """Remove explicitly safe prune inspection commands before scanning."""
+        scan_text = re.sub(
+            r"\bgit fetch\b[^\n;|&]*--no-prune\b",
+            "",
+            scan_text,
+            flags=re.I,
+        )
+        scan_text = re.sub(
+            r"\bgit remote prune\b[^\n;|&]*--dry-run\b",
+            "",
+            scan_text,
+            flags=re.I,
+        )
+        return scan_text
+
+    def scan_lines(label: str, lines: list[str]) -> None:
+        frontmatter_end = 0
+        if lines and lines[0].strip() == "---":
+            for line_index, frontmatter_line in enumerate(lines[1:], start=1):
+                if frontmatter_line.strip() == "---":
+                    frontmatter_end = line_index + 1
+                    break
+
+        in_fence = False
+        for index, line in enumerate(lines):
+            stripped = line.strip()
+            if stripped.startswith("```"):
+                in_fence = not in_fence
+                continue
+            if index < frontmatter_end:
+                continue
+            if re.search(r"\bwhy resolve after\b", line, re.I):
+                continue
+            scan_text = strip_safe_prune_commands(
+                build_scan_text(lines, index, in_fence).replace("$ARGUMENTS", "")
+            )
+            if not mutation_pattern.search(scan_text):
+                continue
+
+            start = max(0, index - 6)
+            end = min(len(lines), index + 8)
+            context = "\n".join(lines[start:end])
+            if approval_pattern.search(context):
+                continue
+
+            errors.append(
+                f"{label}:{index + 1}: mutation command lacks "
+                "nearby explicit approval boundary"
+            )
+
+    before_self_check = len(errors)
+    scan_lines(
+        "internal approval-boundary self-check",
+        ["Push changes: $ARGUMENTS"],
+    )
+    if len(errors) == before_self_check:
+        errors.append(
+            "internal approval-boundary self-check failed: same-line "
+            "$ARGUMENTS hid mutation prose"
+        )
+    else:
+        del errors[before_self_check:]
+
+    before_self_check = len(errors)
+    scan_lines("internal approval-boundary self-check", ["git fetch --all --prune"])
+    if len(errors) == before_self_check:
+        errors.append(
+            "internal approval-boundary self-check failed: fetch prune command "
+            "was not detected"
+        )
+    else:
+        del errors[before_self_check:]
+
+    before_self_check = len(errors)
+    scan_lines("internal approval-boundary self-check", ["git remote prune origin"])
+    if len(errors) == before_self_check:
+        errors.append(
+            "internal approval-boundary self-check failed: remote prune command "
+            "was not detected"
+        )
+    else:
+        del errors[before_self_check:]
+
+    before_self_check = len(errors)
+    scan_lines("internal approval-boundary self-check", ["git fetch --all --no-prune"])
+    if len(errors) != before_self_check:
+        del errors[before_self_check:]
+        errors.append(
+            "internal approval-boundary self-check failed: --no-prune command "
+            "was flagged"
+        )
+
+    before_self_check = len(errors)
+    scan_lines(
+        "internal approval-boundary self-check",
+        [
+            "```bash",
+            "git fetch origin <RELEASE_BRANCH>",
+            "git checkout -B release/<NEW_VERSION>-version-bump origin/<RELEASE_BRANCH>",
+            "```",
+        ],
+    )
+    if len(errors) != before_self_check:
+        del errors[before_self_check:]
+        errors.append(
+            "internal approval-boundary self-check failed: fenced safe fetch "
+            "was flagged"
+        )
+
+    before_self_check = len(errors)
+    scan_lines(
+        "internal approval-boundary self-check",
+        ["git fetch --all --no-prune && git push"],
+    )
+    if len(errors) == before_self_check:
+        errors.append(
+            "internal approval-boundary self-check failed: --no-prune hid "
+            "compound mutation"
+        )
+    else:
+        del errors[before_self_check:]
+
+    before_self_check = len(errors)
+    scan_lines(
+        "internal approval-boundary self-check",
+        ["git remote prune origin --dry-run"],
+    )
+    if len(errors) != before_self_check:
+        del errors[before_self_check:]
+        errors.append(
+            "internal approval-boundary self-check failed: prune dry-run command "
+            "was flagged"
+        )
+
+    before_self_check = len(errors)
+    scan_lines(
+        "internal approval-boundary self-check",
+        ["git remote prune origin --dry-run; gh pr merge"],
+    )
+    if len(errors) == before_self_check:
+        errors.append(
+            "internal approval-boundary self-check failed: prune dry-run hid "
+            "compound mutation"
+        )
+    else:
+        del errors[before_self_check:]
+
+    before_self_check = len(errors)
+    scan_lines(
+        "internal approval-boundary self-check",
+        ["gh api graphql -f query='", "  query { repository { id } }"],
+    )
+    if len(errors) != before_self_check:
+        del errors[before_self_check:]
+        errors.append(
+            "internal approval-boundary self-check failed: read-only GraphQL "
+            "query was flagged"
+        )
+
+    before_self_check = len(errors)
+    scan_lines(
+        "internal approval-boundary self-check",
+        [
+            "- `action`: delete only after ownership is clear",
+            "  and the branch deletion is requested",
+        ],
+    )
+    if len(errors) == before_self_check:
+        errors.append(
+            "internal approval-boundary self-check failed: wrapped branch "
+            "deletion prose was not detected"
+        )
+    else:
+        del errors[before_self_check:]
+
+    scan_paths = [
+        *sorted((repo_root / ".claude" / "commands").glob("*.md")),
+        *sorted((repo_root / ".claude" / "skills").glob("*/SKILL.md")),
+        *sorted((repo_root / "docs" / "ai").glob("*.md")),
+        repo_root / "docs" / "onboarding" / "ai-tools.md",
+    ]
+
+    for path in scan_paths:
+        scan_lines(display_path(path), path.read_text().splitlines())
+
+    for command_path in sorted((repo_root / ".claude" / "commands").glob("*.md")):
+        rendered_wrapper = render_codex_command_skill(command_path).split(
+            "\n## Command Body\n", 1
+        )[0]
+        scan_lines(
+            f"generated Codex wrapper for {command_path.stem}",
+            rendered_wrapper.splitlines(),
+        )
+
+    ai_tools = repo_root / "docs" / "onboarding" / "ai-tools.md"
+    if ai_tools.exists() and re.search(
+        r"resolve (?:all|every) unresolved thread", ai_tools.read_text(), re.I
+    ):
+        errors.append(
+            f"{display_path(ai_tools)}: bulk review-thread resolution is forbidden"
+        )
+
+    return errors
+
+
+def validate_ai_docs(repo_root: Path) -> bool:
+    """Validate the checked AI-native docs that index generated capabilities."""
+    errors: list[str] = []
+    docs_dir = repo_root / "docs" / "ai"
+    required_files = [
+        docs_dir / "README.md",
+        docs_dir / "workflows.md",
+        docs_dir / "verification.md",
+        docs_dir / "sessions.md",
+        docs_dir / "components.md",
+    ]
+
+    for path in required_files:
+        if not path.exists():
+            errors.append(f"{display_path(path)}: missing required AI doc")
+
+    agents_content = (repo_root / "AGENTS.md").read_text()
+    docs_readme_content = (repo_root / "docs" / "README.md").read_text()
+    if "docs/ai/README.md" not in agents_content:
+        errors.append("AGENTS.md: missing docs/ai/README.md pointer")
+    if "ai/README.md" not in docs_readme_content:
+        errors.append("docs/README.md: missing ai/README.md index link")
+
+    workflows_path = docs_dir / "workflows.md"
+    if workflows_path.exists():
+        workflow_content = workflows_path.read_text()
+        command_names = list_command_names(repo_root / ".claude" / "commands")
+        skill_names, skill_errors = list_skill_names(repo_root / ".claude" / "skills")
+        errors.extend(skill_errors)
+        expected = command_names | skill_names
+        workflow_rows = parse_workflow_rows(workflow_content)
+        agents_workflow_rows = parse_agents_workflow_rows(agents_content)
+        agents_skill_rows = parse_agents_skill_rows(agents_content)
+
+        if has_gate_evidence("explicit approval before push"):
+            errors.append(
+                "internal workflow gate self-check failed: approval-only gate accepted"
+            )
+
+        fake_required = extract_required_reading_from_content(
+            """
+## Required Reading
+
+@AGENTS.md
+@docs/onboarding/required.md (inline note)
+@docs/onboarding/extra.md
+
+## Workflow
+"""
+        )
+        fake_missing = missing_required_reading_errors(
+            "docs/ai/workflows.md",
+            "dart-fake",
+            "docs/onboarding/required.md",
+            fake_required,
+        )
+        if len(fake_missing) != 1 or "docs/onboarding/extra.md" not in fake_missing[0]:
+            errors.append(
+                "internal workflow docs self-check failed: missing required "
+                "reading was not detected"
+            )
+
+        for name in sorted(expected):
+            if f"`{name}`" not in workflow_content:
+                errors.append(
+                    f"{display_path(workflows_path)}: missing capability `{name}`"
+                )
+
+        for name in sorted(command_names):
+            cells = workflow_rows.get(name)
+            if not cells:
+                errors.append(
+                    f"{display_path(workflows_path)}: missing workflow row `{name}`"
+                )
+                continue
+            public_path = cells[3]
+            gate = cells[4]
+            if not public_path or public_path == "-":
+                errors.append(
+                    f"{display_path(workflows_path)}: `{name}` missing public path"
+                )
+            if not gate or not has_gate_evidence(gate):
+                errors.append(
+                    f"{display_path(workflows_path)}: `{name}` missing gate evidence"
+                )
+
+            errors.extend(
+                missing_required_reading_errors(
+                    display_path(workflows_path),
+                    name,
+                    public_path,
+                    extract_required_reading(
+                        repo_root / ".claude" / "commands" / f"{name}.md"
+                    ),
+                )
+            )
+
+        approval_workflows = {
+            "dart-backport-pr",
+            "dart-branch-cleanup",
+            "dart-close-issue",
+            "dart-docs-update",
+            "dart-downstream-fix",
+            "dart-fix-ci",
+            "dart-fix-issue",
+            "dart-manage-pr",
+            "dart-merge-pr",
+            "dart-mechanical-refactor",
+            "dart-new-task",
+            "dart-pr",
+            "dart-release-ci-fix",
+            "dart-release-merge-main",
+            "dart-release-packaging",
+            "dart-resume",
+            "dart-review-pr",
+            "dart-triage-issue",
+        }
+        for name in sorted(approval_workflows & command_names):
+            cells = workflow_rows.get(name)
+            row_text = " ".join(cells) if cells else ""
+            if cells and not ("explicit" in row_text and "approval" in row_text):
+                errors.append(
+                    f"{display_path(workflows_path)}: `{name}` missing approval gate"
+                )
+
+        documented = set(re.findall(r"`(dart-[a-z0-9-]+)`", workflow_content))
+        extra = documented - expected
+        for name in sorted(extra):
+            errors.append(
+                f"{display_path(workflows_path)}: unknown capability `{name}`"
+            )
+
+        for name in sorted(command_names):
+            cells = agents_workflow_rows.get(name)
+            if not cells:
+                errors.append(f"AGENTS.md: missing workflow command `{name}`")
+                continue
+            codex_cell = cells[1] if len(cells) > 1 else ""
+            codex_entry_pattern = rf"`\${re.escape(name)}(?: [^`]*)?`"
+            if not re.search(codex_entry_pattern, codex_cell):
+                errors.append(f"AGENTS.md: workflow `{name}` missing Codex skill")
+
+        extra_agent_workflows = set(agents_workflow_rows) - command_names
+        for name in sorted(extra_agent_workflows):
+            errors.append(f"AGENTS.md: unknown workflow command `{name}`")
+
+        for name in sorted(skill_names):
+            if name not in agents_skill_rows:
+                errors.append(f"AGENTS.md: missing domain skill `{name}`")
+
+        extra_agent_skills = set(agents_skill_rows) - skill_names
+        for name in sorted(extra_agent_skills):
+            errors.append(f"AGENTS.md: unknown domain skill `{name}`")
+
+    errors.extend(validate_approval_boundary(repo_root))
+
+    private_pattern = re.compile(r"(?:/home/|/Users/|~/|fbsource|arvr/libraries)")
+    for path in docs_dir.glob("*.md"):
+        for line_number, line in enumerate(path.read_text().splitlines(), start=1):
+            if private_pattern.search(line):
+                errors.append(
+                    f"{display_path(path)}:{line_number}: private path reference"
+                )
+
+    if errors:
+        for error in errors:
+            print(f"  AI DOC ERROR: {error}")
+        return False
+
+    print("  OK: docs/ai entrypoint, workflow index, and public paths are valid")
+    return True
+
+
 def has_auto_gen_header(content: str) -> bool:
     """Check if content has the auto-generated header."""
     return "<!-- AUTO-GENERATED FILE" in content
@@ -482,8 +1130,9 @@ description: {json.dumps(skill_description)}
 
 # {command_name}
 
-Use this skill in Codex when you want the same workflow that Claude Code and
-OpenCode expose as `/{command_name}`.
+Use this skill in Codex to run the DART `{command_name}` workflow. The editable
+workflow source currently lives in `.claude/commands/`, and this generated
+Codex skill is a first-class Codex entrypoint.
 
 ## Invocation
 
@@ -649,6 +1298,11 @@ def sync_all(check_only: bool = False) -> bool:
 
     print("Skill and command style:")
     if not validate_style_and_budget(repo_root):
+        all_synced = False
+    print()
+
+    print("AI docs:")
+    if not validate_ai_docs(repo_root):
         all_synced = False
     print()
 

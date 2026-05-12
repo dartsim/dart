@@ -9,8 +9,9 @@ description: "DART Improve Docs: capture completed-task learnings into durable d
 
 # dart-improve-docs
 
-Use this skill in Codex when you want the same workflow that Claude Code and
-OpenCode expose as `/dart-improve-docs`.
+Use this skill in Codex to run the DART `dart-improve-docs` workflow. The editable
+workflow source currently lives in `.claude/commands/`, and this generated
+Codex skill is a first-class Codex entrypoint.
 
 ## Invocation
 
