@@ -354,10 +354,10 @@ filament::ColorGrading* createDebugColorGrading(filament::Engine& engine)
 filament::IndirectLight* createNeutralIndirectLight(filament::Engine& engine)
 {
   static constexpr std::array<float3, 9> kDiffuseIrradiance = {{
-      {0.070f, 0.076f, 0.086f},
-      {-0.004f, -0.004f, -0.004f},
+      {0.22f, 0.24f, 0.28f},
+      {-0.01f, -0.01f, -0.01f},
+      {0.04f, 0.045f, 0.052f},
       {0.018f, 0.020f, 0.024f},
-      {0.006f, 0.007f, 0.008f},
       {0.000f, 0.000f, 0.000f},
       {0.000f, 0.000f, 0.000f},
       {0.000f, 0.000f, 0.000f},
@@ -367,14 +367,14 @@ filament::IndirectLight* createNeutralIndirectLight(filament::Engine& engine)
 
   return filament::IndirectLight::Builder()
       .irradiance(3, kDiffuseIrradiance.data())
-      .intensity(36000.0f)
+      .intensity(52000.0f)
       .build(engine);
 }
 
 filament::Skybox* createNeutralSkybox(filament::Engine& engine)
 {
   return filament::Skybox::Builder()
-      .color({0.055f, 0.064f, 0.074f, 1.0f})
+      .color({0.46f, 0.50f, 0.56f, 1.0f})
       .showSun(true)
       .build(engine);
 }
@@ -797,6 +797,8 @@ struct AppOptions
 {
   RunOptions run;
   ExampleScene scene = ExampleScene::Mvp;
+  bool showUi = true;
+  bool showUiExplicit = false;
 };
 
 constexpr const char* kWamFixtureSkeletonName = "visual_wam_robot";
@@ -835,10 +837,15 @@ OrbitCamera initialCameraForScene(ExampleScene scene)
 {
   OrbitCamera camera;
   if (scene == ExampleScene::DragAndDrop) {
-    camera.target = Eigen::Vector3d(1.0, 1.0, 1.2);
-    camera.yaw = -0.8;
-    camera.pitch = 0.48;
-    camera.distance = 15.0;
+    camera.target = Eigen::Vector3d(0.35, 0.15, 0.9);
+    camera.yaw = -0.72;
+    camera.pitch = 0.58;
+    camera.distance = 9.5;
+  } else {
+    camera.target = Eigen::Vector3d(0.15, 0.55, 0.75);
+    camera.yaw = -0.95;
+    camera.pitch = 0.38;
+    camera.distance = 7.2;
   }
   return camera;
 }
@@ -999,6 +1006,12 @@ AppOptions parseOptions(int argc, char* argv[])
       options.run.screenshotPath = argv[++i];
     } else if (arg == "--headless") {
       options.run.headless = true;
+    } else if (arg == "--hide-ui") {
+      options.showUi = false;
+      options.showUiExplicit = true;
+    } else if (arg == "--show-ui") {
+      options.showUi = true;
+      options.showUiExplicit = true;
     } else if (arg == "--scene" && i + 1 < argc) {
       const std::string_view sceneArg(argv[++i]);
       if (!parseSceneName(sceneArg, options.scene)) {
@@ -1010,11 +1023,15 @@ AppOptions parseOptions(int argc, char* argv[])
       std::cout << "Usage: " << argv[0]
                 << " [--frames N] [--width N] [--height N]"
                    " [--screenshot PATH] [--headless]"
+                   " [--hide-ui|--show-ui]"
                    " [--scene mvp|drag-and-drop]\n";
       std::exit(0);
     }
   }
   normalizeRunOptions(options.run);
+  if (options.run.headless && !options.showUiExplicit) {
+    options.showUi = false;
+  }
   return options;
 }
 
@@ -1351,6 +1368,30 @@ float3 rgb(const float4& color)
 float4 withRgb(const float4& color, const float3& newRgb)
 {
   return {newRgb.x, newRgb.y, newRgb.z, color.w};
+}
+
+float luminance(const float3& color)
+{
+  return 0.2126f * color.x + 0.7152f * color.y + 0.0722f * color.z;
+}
+
+float4 ensureReadableDisplayColor(const float4& color)
+{
+  constexpr float kMinLuminance = 0.18f;
+  const float3 colorRgb = rgb(color);
+  const float currentLuminance = luminance(colorRgb);
+  if (currentLuminance >= kMinLuminance || color.w <= 0.0f) {
+    return color;
+  }
+
+  constexpr float3 kNeutralMeshColor{0.46f, 0.48f, 0.52f};
+  const float blend
+      = std::clamp((kMinLuminance - currentLuminance) / kMinLuminance, 0.0f, 1.0f);
+  return {
+      std::clamp(color.x * (1.0f - blend) + kNeutralMeshColor.x * blend, 0.0f, 1.0f),
+      std::clamp(color.y * (1.0f - blend) + kNeutralMeshColor.y * blend, 0.0f, 1.0f),
+      std::clamp(color.z * (1.0f - blend) + kNeutralMeshColor.z * blend, 0.0f, 1.0f),
+      color.w};
 }
 
 bool isTransparent(const float4& color)
@@ -2194,6 +2235,7 @@ std::optional<Renderable> createMeshRenderable(
       }
     }
 
+    state.baseColor = ensureReadableDisplayColor(state.baseColor);
     return state;
   };
 
@@ -2852,8 +2894,8 @@ int main(int argc, char* argv[])
     ambientOcclusionOptions.enabled = true;
     ambientOcclusionOptions.aoType = filament::AmbientOcclusionOptions::
         AmbientOcclusionType::GTAO;
-    ambientOcclusionOptions.radius = 0.45f;
-    ambientOcclusionOptions.intensity = 0.75f;
+    ambientOcclusionOptions.radius = 0.35f;
+    ambientOcclusionOptions.intensity = 0.38f;
     ambientOcclusionOptions.quality = filament::QualityLevel::MEDIUM;
     ambientOcclusionOptions.lowPassFilter = filament::QualityLevel::HIGH;
     view->setAmbientOcclusionOptions(ambientOcclusionOptions);
@@ -3185,8 +3227,8 @@ int main(int argc, char* argv[])
   shadowOptions.shadowBulbRadius = 0.16f;
   filament::LightManager::Builder(filament::LightManager::Type::SUN)
       .color({1.0f, 0.96f, 0.88f})
-      .intensity(76000.0f)
-      .direction({-0.45f, -0.55f, -1.0f})
+      .intensity(82000.0f)
+      .direction({-0.30f, -0.42f, -1.0f})
       .castShadows(true)
       .shadowOptions(shadowOptions)
       .build(*engine, lightEntity);
@@ -3194,24 +3236,27 @@ int main(int argc, char* argv[])
 
   auto fillLightEntity = EntityManager::get().create();
   filament::LightManager::Builder(filament::LightManager::Type::DIRECTIONAL)
-      .color({0.75f, 0.82f, 1.0f})
-      .intensity(36000.0f)
-      .direction({0.35f, -0.25f, -0.7f})
+      .color({0.80f, 0.88f, 1.0f})
+      .intensity(62000.0f)
+      .direction({0.42f, 0.18f, -0.7f})
       .castShadows(false)
       .build(*engine, fillLightEntity);
   scene->addEntity(fillLightEntity);
 
   auto rimLightEntity = EntityManager::get().create();
   filament::LightManager::Builder(filament::LightManager::Type::DIRECTIONAL)
-      .color({0.82f, 0.88f, 1.0f})
-      .intensity(24000.0f)
-      .direction({-0.55f, 0.35f, -0.45f})
+      .color({0.88f, 0.93f, 1.0f})
+      .intensity(42000.0f)
+      .direction({-0.65f, 0.40f, -0.45f})
       .castShadows(false)
       .build(*engine, rimLightEntity);
   scene->addEntity(rimLightEntity);
 
   ImGui::CreateContext();
   ImGui::StyleColorsDark();
+  auto& imguiStyle = ImGui::GetStyle();
+  imguiStyle.WindowRounding = 4.0f;
+  imguiStyle.Colors[ImGuiCol_WindowBg].w = 0.72f;
   auto& imguiIo = ImGui::GetIO();
   loadImGuiFont(imguiIo);
   imguiIo.Fonts->Build();
@@ -3432,54 +3477,59 @@ int main(int argc, char* argv[])
     }
     refreshSelectionDebugOverlay(descriptors, selectedRenderableId);
 
-    ImGui::NewFrame();
-    ImGui::SetNextWindowPos({20.0f, 20.0f}, ImGuiCond_Always);
-    ImGui::SetNextWindowSize({340.0f, 265.0f}, ImGuiCond_Always);
-    ImGui::Begin("DART");
-    ImGui::Text("scene: %s", sceneName(appOptions.scene));
-    ImGui::Text("time: %.3f", dartScene.world->getTime());
-    ImGui::Text(
-        "contacts: %zu",
-        dartScene.world->getLastCollisionResult().getNumContacts());
-    ImGui::TextWrapped("selected: %s", selectedLabel.c_str());
-    if (ImGui::Button(lifecycle.paused ? "Resume" : "Pause")) {
-      togglePaused(lifecycle);
+    if (appOptions.showUi) {
+      ImGui::NewFrame();
+      ImGui::SetNextWindowPos({20.0f, 20.0f}, ImGuiCond_Always);
+      ImGui::SetNextWindowBgAlpha(0.72f);
+      ImGui::Begin(
+          "DART",
+          nullptr,
+          ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
+      ImGui::Text("scene: %s", sceneName(appOptions.scene));
+      ImGui::Text("time: %.3f", dartScene.world->getTime());
+      ImGui::Text(
+          "contacts: %zu",
+          dartScene.world->getLastCollisionResult().getNumContacts());
+      ImGui::TextWrapped("selected: %s", selectedLabel.c_str());
+      if (ImGui::Button(lifecycle.paused ? "Resume" : "Pause")) {
+        togglePaused(lifecycle);
+      }
+      ImGui::SameLine();
+      if (ImGui::Button("Step")) {
+        requestSingleStep(lifecycle);
+      }
+      bool debugOptionsChanged = false;
+      debugOptionsChanged
+          |= ImGui::Checkbox("Grid", &staticDebugOptions.drawGrid);
+      ImGui::SameLine();
+      debugOptionsChanged
+          |= ImGui::Checkbox("World", &staticDebugOptions.drawWorldFrame);
+      ImGui::SameLine();
+      debugOptionsChanged
+          |= ImGui::Checkbox("Body", &staticDebugOptions.drawBodyFrames);
+      debugOptionsChanged
+          |= ImGui::Checkbox("COM", &staticDebugOptions.drawCentersOfMass);
+      ImGui::SameLine();
+      debugOptionsChanged
+          |= ImGui::Checkbox("Contacts", &contactDebugOptions.drawContacts);
+      debugOptionsChanged |= ImGui::Checkbox(
+          "Normals", &contactDebugOptions.drawContactNormals);
+      ImGui::SameLine();
+      debugOptionsChanged
+          |= ImGui::Checkbox("Forces", &contactDebugOptions.drawContactForces);
+      if (debugOptionsChanged) {
+        refreshDebugOverlay();
+        refreshContactDebugOverlay();
+      }
+      ImGui::End();
+      ImGui::Render();
+      updateImGuiOverlay(
+          *engine,
+          imguiOverlay,
+          ImGui::GetDrawData(),
+          static_cast<std::uint32_t>(width),
+          static_cast<std::uint32_t>(height));
     }
-    ImGui::SameLine();
-    if (ImGui::Button("Step")) {
-      requestSingleStep(lifecycle);
-    }
-    bool debugOptionsChanged = false;
-    debugOptionsChanged
-        |= ImGui::Checkbox("Grid", &staticDebugOptions.drawGrid);
-    ImGui::SameLine();
-    debugOptionsChanged
-        |= ImGui::Checkbox("World", &staticDebugOptions.drawWorldFrame);
-    ImGui::SameLine();
-    debugOptionsChanged
-        |= ImGui::Checkbox("Body", &staticDebugOptions.drawBodyFrames);
-    debugOptionsChanged
-        |= ImGui::Checkbox("COM", &staticDebugOptions.drawCentersOfMass);
-    ImGui::SameLine();
-    debugOptionsChanged
-        |= ImGui::Checkbox("Contacts", &contactDebugOptions.drawContacts);
-    debugOptionsChanged |= ImGui::Checkbox(
-        "Normals", &contactDebugOptions.drawContactNormals);
-    ImGui::SameLine();
-    debugOptionsChanged
-        |= ImGui::Checkbox("Forces", &contactDebugOptions.drawContactForces);
-    if (debugOptionsChanged) {
-      refreshDebugOverlay();
-      refreshContactDebugOverlay();
-    }
-    ImGui::End();
-    ImGui::Render();
-    updateImGuiOverlay(
-        *engine,
-        imguiOverlay,
-        ImGui::GetDrawData(),
-        static_cast<std::uint32_t>(width),
-        static_cast<std::uint32_t>(height));
 
     const bool shouldCaptureScreenshot
         = shouldRequestScreenshot(options, lifecycle);
@@ -3487,7 +3537,9 @@ int main(int argc, char* argv[])
     bool didRenderFrame = false;
     if (renderer->beginFrame(swapChain)) {
       renderer->render(view);
-      renderer->render(imguiOverlay.view);
+      if (appOptions.showUi) {
+        renderer->render(imguiOverlay.view);
+      }
       if (shouldCaptureScreenshot) {
         requestScreenshot(
             *renderer,

@@ -29,6 +29,35 @@ if(DEFINED ENV{FILAMENT_ROOT} AND NOT "$ENV{FILAMENT_ROOT}" STREQUAL "")
   list(APPEND _dart_filament_roots "$ENV{FILAMENT_ROOT}")
 endif()
 
+macro(_dart_filament_unset_missing_cache_path variable)
+  if(DEFINED ${variable}
+      AND NOT "${${variable}}" STREQUAL ""
+      AND NOT "${${variable}}" MATCHES "-NOTFOUND$"
+      AND NOT EXISTS "${${variable}}")
+    unset(${variable} CACHE)
+    unset(${variable})
+  endif()
+endmacro()
+
+foreach(_dart_filament_cache_var IN ITEMS
+    Filament_INCLUDE_DIR
+    Filament_MATC_EXECUTABLE
+    Filament_filament_LIBRARY
+    Filament_backend_LIBRARY
+    Filament_filabridge_LIBRARY
+    Filament_filaflat_LIBRARY
+    Filament_utils_LIBRARY
+    Filament_geometry_LIBRARY
+    Filament_bluegl_LIBRARY
+    Filament_bluevk_LIBRARY
+    Filament_smol_v_LIBRARY
+    Filament_shaders_LIBRARY
+    Filament_zstd_LIBRARY
+    Filament_cxx_LIBRARY
+    Filament_cxxabi_LIBRARY)
+  _dart_filament_unset_missing_cache_path(${_dart_filament_cache_var})
+endforeach()
+
 find_package(filament CONFIG QUIET)
 find_package(Filament CONFIG QUIET)
 
@@ -44,6 +73,8 @@ find_path(Filament_INCLUDE_DIR
   HINTS ${_dart_filament_roots}
   PATH_SUFFIXES include
 )
+
+set(Filament_LIBRARIES)
 
 set(_dart_filament_library_suffixes
   lib
