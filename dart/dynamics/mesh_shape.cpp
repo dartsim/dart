@@ -1502,8 +1502,10 @@ void MeshShape::extractMaterialsFromScene(
     material.metallicTexturePath = getFirstTexturePath(aiTextureType_METALNESS);
     material.roughnessTexturePath
         = getFirstTexturePath(aiTextureType_DIFFUSE_ROUGHNESS);
+#if DART_ASSIMP_VERSION_MAJOR >= 6
     material.metallicRoughnessTexturePath
         = getFirstTexturePath(aiTextureType_GLTF_METALLIC_ROUGHNESS);
+#endif
     material.normalTexturePath = getFirstTexturePath(aiTextureType_NORMALS);
     if (material.normalTexturePath.empty()) {
       material.normalTexturePath
@@ -1523,25 +1525,28 @@ void MeshShape::extractMaterialsFromScene(
 
     // Extract texture paths for all texture types
     // Check common texture types and store them
-    constexpr auto textureTypes = std::to_array<aiTextureType>(
-        {aiTextureType_BASE_COLOR,
-         aiTextureType_DIFFUSE,
-         aiTextureType_SPECULAR,
-         aiTextureType_NORMALS,
-         aiTextureType_NORMAL_CAMERA,
-         aiTextureType_AMBIENT,
-         aiTextureType_EMISSIVE,
-         aiTextureType_EMISSION_COLOR,
-         aiTextureType_HEIGHT,
-         aiTextureType_SHININESS,
-         aiTextureType_OPACITY,
-         aiTextureType_DISPLACEMENT,
-         aiTextureType_LIGHTMAP,
-         aiTextureType_REFLECTION,
-         aiTextureType_METALNESS,
-         aiTextureType_DIFFUSE_ROUGHNESS,
-         aiTextureType_AMBIENT_OCCLUSION,
-         aiTextureType_GLTF_METALLIC_ROUGHNESS});
+    constexpr auto textureTypes = std::to_array<aiTextureType>({
+        aiTextureType_BASE_COLOR,
+        aiTextureType_DIFFUSE,
+        aiTextureType_SPECULAR,
+        aiTextureType_NORMALS,
+        aiTextureType_NORMAL_CAMERA,
+        aiTextureType_AMBIENT,
+        aiTextureType_EMISSIVE,
+        aiTextureType_EMISSION_COLOR,
+        aiTextureType_HEIGHT,
+        aiTextureType_SHININESS,
+        aiTextureType_OPACITY,
+        aiTextureType_DISPLACEMENT,
+        aiTextureType_LIGHTMAP,
+        aiTextureType_REFLECTION,
+        aiTextureType_METALNESS,
+        aiTextureType_DIFFUSE_ROUGHNESS,
+        aiTextureType_AMBIENT_OCCLUSION,
+#if DART_ASSIMP_VERSION_MAJOR >= 6
+        aiTextureType_GLTF_METALLIC_ROUGHNESS,
+#endif
+    });
 
     for (const auto& type : textureTypes) {
       const auto count = aiMat->GetTextureCount(type);
