@@ -405,6 +405,27 @@ TEST(
 
 TEST(
     FilamentSceneExtraction,
+    TranslateFreeJointRenderable_RemovedShapeNode_ReturnsFalse)
+{
+  auto world = World::create("world");
+  auto skeleton = Skeleton::create("robot");
+  auto [joint, body] = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  (void)joint;
+  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d::Ones());
+  body->createShapeNodeWith<VisualAspect>(shape, "box_visual");
+  world->addSkeleton(skeleton);
+
+  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  ASSERT_EQ(renderables.size(), 1u);
+
+  body->removeAllShapeNodes();
+  EXPECT_FALSE(
+      dart::gui::experimental::translateFreeJointRenderable(
+          renderables.front(), Eigen::Vector3d(1.0, 0.0, 0.0)));
+}
+
+TEST(
+    FilamentSceneExtraction,
     TranslateSimpleFrameRenderable_SelectedFrame_UpdatesFrameTransform)
 {
   auto world = World::create("world");
@@ -437,6 +458,28 @@ TEST(
       dart::gui::experimental::translateSimpleFrameRenderable(
           renderables.front(),
           Eigen::Vector3d(std::numeric_limits<double>::quiet_NaN(), 0.0, 0.0)));
+}
+
+TEST(
+    FilamentSceneExtraction,
+    TranslateSimpleFrameRenderable_RemovedFrame_ReturnsFalse)
+{
+  auto world = World::create("world");
+
+  auto frame = SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), "interactive_target");
+  frame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  frame->getVisualAspect(true);
+  world->addSimpleFrame(frame);
+
+  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  ASSERT_EQ(renderables.size(), 1u);
+
+  world->removeSimpleFrame(frame);
+  frame.reset();
+  EXPECT_FALSE(
+      dart::gui::experimental::translateSimpleFrameRenderable(
+          renderables.front(), Eigen::Vector3d(1.0, 0.0, 0.0)));
 }
 
 TEST(FilamentSceneExtraction, PlaneDragHelpers_ReturnExpectedTranslation)

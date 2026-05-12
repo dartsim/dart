@@ -9,6 +9,7 @@ import re
 import shutil
 import subprocess
 import sys
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -288,6 +289,10 @@ def _path_with_scene(path: Path, scene: str) -> Path:
     return path.with_name(f"{path.stem}_{scene_suffix}{path.suffix}")
 
 
+def _has_linux_display(env: Mapping[str, str]) -> bool:
+    return bool(env.get("DISPLAY") or env.get("WAYLAND_DISPLAY"))
+
+
 def _prepare_filament_run_args(
     run_args: list[str], scene: str, multiple_scenes: bool
 ) -> list[str]:
@@ -296,7 +301,7 @@ def _prepare_filament_run_args(
         return args
 
     headless = _has_arg(args, "--headless") or (
-        sys.platform.startswith("linux") and not os.environ.get("DISPLAY")
+        sys.platform.startswith("linux") and not _has_linux_display(os.environ)
     )
     if scene != "mvp" and not _has_arg(args, "--scene"):
         args.extend(["--scene", scene])
@@ -356,7 +361,7 @@ def _runtime_env(env: dict[str, str], software_gl: bool) -> dict[str, str]:
 
 def _uses_headless_filament(run_args: list[str]) -> bool:
     return _has_arg(run_args, "--headless") or (
-        sys.platform.startswith("linux") and not os.environ.get("DISPLAY")
+        sys.platform.startswith("linux") and not _has_linux_display(os.environ)
     )
 
 
@@ -438,7 +443,7 @@ def _run_filament_smoke(build_dir: Path, env: dict[str, str]) -> None:
         command.insert(-1, "--no-tests=error")
     else:
         _validate_filament_smoke_tests_discovered(build_dir, runtime_env)
-    use_xvfb = sys.platform.startswith("linux") and not os.environ.get("DISPLAY")
+    use_xvfb = sys.platform.startswith("linux") and not _has_linux_display(os.environ)
     _run_with_optional_xvfb(command, runtime_env, use_xvfb)
 
 
@@ -467,7 +472,7 @@ def _run_example_binary(
         use_xvfb = (
             headless
             and sys.platform.startswith("linux")
-            and not os.environ.get("DISPLAY")
+            and not _has_linux_display(os.environ)
         )
         _run_with_optional_xvfb(command, runtime_env, use_xvfb)
 

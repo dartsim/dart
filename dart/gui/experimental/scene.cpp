@@ -352,7 +352,8 @@ std::optional<RenderableDescriptor> makeRenderableDescriptor(
     const dynamics::VisualAspect& visualAspect,
     const std::string& skeletonName,
     const std::string& bodyName,
-    const std::string& shapeNodeName)
+    const std::string& shapeNodeName,
+    const dynamics::WeakConstSimpleFramePtr& simpleFrame = {})
 {
   const auto shape = shapeFrame.getShape();
   if (!shape) {
@@ -369,6 +370,10 @@ std::optional<RenderableDescriptor> makeRenderableDescriptor(
   descriptor.shapeFrame = &shapeFrame;
   descriptor.shapeNode = shapeFrame.asShapeNode();
   descriptor.shape = shape.get();
+  if (descriptor.shapeNode != nullptr) {
+    descriptor.skeleton = descriptor.shapeNode->getSkeleton();
+  }
+  descriptor.simpleFrame = simpleFrame;
   descriptor.skeletonName = skeletonName;
   descriptor.bodyName = bodyName;
   descriptor.shapeFrameName = shapeFrame.getName();
@@ -416,17 +421,18 @@ std::vector<RenderableDescriptor> extractRenderables(
     });
   }
 
-  world.eachSimpleFrame([&](const dynamics::SimpleFrame* simpleFrame) {
+  for (std::size_t i = 0; i < world.getNumSimpleFrames(); ++i) {
+    const auto simpleFrame = world.getSimpleFrame(i);
     if (simpleFrame == nullptr || !simpleFrame->hasVisualAspect()) {
-      return;
+      continue;
     }
 
     auto descriptor = makeRenderableDescriptor(
-        *simpleFrame, *simpleFrame->getVisualAspect(), {}, {}, {});
+        *simpleFrame, *simpleFrame->getVisualAspect(), {}, {}, {}, simpleFrame);
     if (descriptor) {
       renderables.push_back(std::move(*descriptor));
     }
-  });
+  }
 
   return renderables;
 }
@@ -531,13 +537,30 @@ bool translateFreeJointRenderable(
     const RenderableDescriptor& renderable,
     const Eigen::Vector3d& worldTranslation)
 {
-  if (!renderable.shapeNode || !worldTranslation.allFinite()) {
+  if (!worldTranslation.allFinite()) {
     return false;
   }
 
-  const auto* bodyNode = dynamic_cast<const dynamics::BodyNode*>(
-      renderable.shapeNode->getParentFrame());
+  const auto skeleton = renderable.skeleton.lock();
+  if (!skeleton || renderable.bodyName.empty()
+      || renderable.shapeNodeName.empty()) {
+    return false;
+  }
+
+  const auto* bodyNode = skeleton->getBodyNode(renderable.bodyName);
   if (bodyNode == nullptr) {
+    return false;
+  }
+  const dynamics::ShapeNode* shapeNode = nullptr;
+  bodyNode->eachShapeNode([&](const dynamics::ShapeNode* candidate) {
+    if (candidate->getName() == renderable.shapeNodeName) {
+      shapeNode = candidate;
+      return false;
+    }
+    return true;
+  });
+  if (shapeNode == nullptr || shapeNode != renderable.shapeNode
+      || shapeNode->getVersion() != renderable.shapeNodeVersion) {
     return false;
   }
 
@@ -557,17 +580,18 @@ bool translateSimpleFrameRenderable(
     const RenderableDescriptor& renderable,
     const Eigen::Vector3d& worldTranslation)
 {
-  if (!renderable.shapeFrame || !worldTranslation.allFinite()) {
+  if (!worldTranslation.allFinite()) {
     return false;
   }
 
-  const auto* simpleFrame
-      = dynamic_cast<const dynamics::SimpleFrame*>(renderable.shapeFrame);
-  if (simpleFrame == nullptr) {
+  const auto simpleFrame = renderable.simpleFrame.lock();
+  if (simpleFrame == nullptr || simpleFrame.get() != renderable.shapeFrame
+      || simpleFrame->getVersion() != renderable.shapeFrameVersion) {
     return false;
   }
 
-  auto* mutableSimpleFrame = const_cast<dynamics::SimpleFrame*>(simpleFrame);
+  auto* mutableSimpleFrame
+      = const_cast<dynamics::SimpleFrame*>(simpleFrame.get());
   Eigen::Isometry3d transform = mutableSimpleFrame->getWorldTransform();
   transform.translation() += worldTranslation;
   mutableSimpleFrame->setTransform(transform, dynamics::Frame::World());

@@ -176,3 +176,16 @@ def test_run_filament_smoke_probes_tests_for_old_ctest(
 )
 def test_parse_cmake_version(run_cpp_example, output, expected):
     assert run_cpp_example._parse_cmake_version(output) == expected
+
+
+@pytest.mark.parametrize(
+    ("env", "expected"),
+    [
+        ({}, False),
+        ({"DISPLAY": ":99"}, True),
+        ({"WAYLAND_DISPLAY": "wayland-0"}, True),
+        ({"DISPLAY": "", "WAYLAND_DISPLAY": ""}, False),
+    ],
+)
+def test_has_linux_display(run_cpp_example, env, expected):
+    assert run_cpp_example._has_linux_display(env) is expected

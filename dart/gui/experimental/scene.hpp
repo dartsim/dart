@@ -100,6 +100,8 @@ struct RenderableDescriptor
   const dynamics::ShapeFrame* shapeFrame = nullptr;
   const dynamics::ShapeNode* shapeNode = nullptr;
   const dynamics::Shape* shape = nullptr;
+  dynamics::WeakConstSkeletonPtr skeleton;
+  dynamics::WeakConstSimpleFramePtr simpleFrame;
   std::string skeletonName;
   std::string bodyName;
   std::string shapeFrameName;
