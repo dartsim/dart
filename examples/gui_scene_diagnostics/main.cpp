@@ -73,8 +73,9 @@ bool parseInt(std::string_view value, int& output)
     return false;
   }
 
+  const std::string str(value);
   char* end = nullptr;
-  const long result = std::strtol(std::string(value).c_str(), &end, 10);
+  const long result = std::strtol(str.c_str(), &end, 10);
   if (!end || *end != '\0') {
     return false;
   }
