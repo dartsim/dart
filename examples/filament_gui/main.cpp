@@ -275,6 +275,33 @@ struct ScreenshotCapture
   bool done = false;
 };
 
+struct ProfileAccumulator
+{
+  using Clock = std::chrono::steady_clock;
+
+  std::size_t frames = 0;
+  std::size_t renderedFrames = 0;
+  std::size_t skippedFrames = 0;
+  std::size_t simulationSteps = 0;
+  double frameMs = 0.0;
+  double simulatedMs = 0.0;
+  double inputMs = 0.0;
+  double viewportCameraMs = 0.0;
+  double simulationMs = 0.0;
+  double contactDebugMs = 0.0;
+  double extractionMs = 0.0;
+  double syncMs = 0.0;
+  double interactionMs = 0.0;
+  double selectionDebugMs = 0.0;
+  double uiMs = 0.0;
+  double beginFrameMs = 0.0;
+  double renderMs = 0.0;
+  double screenshotWaitMs = 0.0;
+  double screenshotSaveMs = 0.0;
+  double maxFrameMs = 0.0;
+  double maxRenderMs = 0.0;
+};
+
 struct CameraController
 {
   OrbitCamera camera;
@@ -338,6 +365,68 @@ filament::backend::PixelBufferDescriptor makePixelBufferDescriptor(
         delete static_cast<std::vector<std::uint8_t>*>(user);
       },
       owned);
+}
+
+double elapsedMs(ProfileAccumulator::Clock::time_point start)
+{
+  return std::chrono::duration<double, std::milli>(
+             ProfileAccumulator::Clock::now() - start)
+      .count();
+}
+
+void printProfile(const ProfileAccumulator& profile)
+{
+  if (profile.frames == 0) {
+    return;
+  }
+
+  const double frames = static_cast<double>(profile.frames);
+  const double renderedFrames
+      = static_cast<double>(std::max<std::size_t>(profile.renderedFrames, 1));
+  const double averageFrameMs = profile.frameMs / frames;
+  const double fps = averageFrameMs > 0.0 ? 1000.0 / averageFrameMs : 0.0;
+  const double renderedFps
+      = profile.frameMs > 0.0
+            ? 1000.0 * static_cast<double>(profile.renderedFrames)
+                  / profile.frameMs
+            : 0.0;
+  const auto avg = [&](double value) { return value / frames; };
+  const auto avgRendered = [&](double value) { return value / renderedFrames; };
+
+  std::cout << "Profile frames: " << profile.frames
+            << " rendered=" << profile.renderedFrames
+            << " skipped=" << profile.skippedFrames << "\n";
+  std::cout << "Profile average: frame=" << averageFrameMs
+            << " ms loop_fps=" << fps << " rendered_fps=" << renderedFps
+            << " max_frame=" << profile.maxFrameMs
+            << " ms max_render=" << profile.maxRenderMs << " ms\n";
+  std::cout << "Profile phases (ms/frame): input=" << avg(profile.inputMs)
+            << " viewport_camera=" << avg(profile.viewportCameraMs)
+            << " simulation=" << avg(profile.simulationMs)
+            << " contact_debug=" << avg(profile.contactDebugMs)
+            << " extraction=" << avg(profile.extractionMs)
+            << " sync=" << avg(profile.syncMs)
+            << " interaction=" << avg(profile.interactionMs)
+            << " selection_debug=" << avg(profile.selectionDebugMs)
+            << " ui=" << avg(profile.uiMs)
+            << " begin_frame=" << avg(profile.beginFrameMs)
+            << " render=" << avg(profile.renderMs) << "\n";
+  std::cout << "Profile per rendered frame (ms): elapsed="
+            << avgRendered(profile.frameMs)
+            << " begin_frame=" << avgRendered(profile.beginFrameMs)
+            << " simulation=" << avgRendered(profile.simulationMs)
+            << " extraction=" << avgRendered(profile.extractionMs)
+            << " sync=" << avgRendered(profile.syncMs)
+            << " render=" << avgRendered(profile.renderMs) << "\n";
+  const double realTimeFactor
+      = profile.frameMs > 0.0 ? profile.simulatedMs / profile.frameMs : 0.0;
+  std::cout << "Profile simulation: steps=" << profile.simulationSteps
+            << " simulated=" << profile.simulatedMs
+            << " ms real_time_factor=" << realTimeFactor << "\n";
+  if (profile.screenshotWaitMs > 0.0 || profile.screenshotSaveMs > 0.0) {
+    std::cout << "Profile screenshot: wait=" << profile.screenshotWaitMs
+              << " ms save=" << profile.screenshotSaveMs << " ms\n";
+  }
 }
 
 filament::ColorGrading* createDebugColorGrading(filament::Engine& engine)
@@ -799,6 +888,7 @@ struct AppOptions
   ExampleScene scene = ExampleScene::Mvp;
   bool showUi = true;
   bool showUiExplicit = false;
+  bool profile = false;
 };
 
 constexpr const char* kWamFixtureSkeletonName = "visual_wam_robot";
@@ -896,6 +986,28 @@ std::shared_ptr<MeshShape> loadRequiredExampleMeshShape(
   return meshShape;
 }
 
+void makeVisualOnlySkeleton(const dart::dynamics::SkeletonPtr& skeleton)
+{
+  if (!skeleton) {
+    return;
+  }
+
+  skeleton->setMobile(false);
+  skeleton->disableSelfCollisionCheck();
+  skeleton->setAdjacentBodyCheck(false);
+  for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
+    auto* body = skeleton->getBodyNode(i);
+    if (body == nullptr) {
+      continue;
+    }
+    body->setCollidable(false);
+    body->setGravityMode(false);
+    body->eachShapeNodeWith<CollisionAspect>([](ShapeNode* shapeNode) {
+      shapeNode->getCollisionAspect()->setCollidable(false);
+    });
+  }
+}
+
 dart::dynamics::SkeletonPtr loadRequiredWamRobotSkeleton()
 {
   dart::io::ReadOptions options;
@@ -927,6 +1039,7 @@ dart::dynamics::SkeletonPtr loadRequiredWamRobotSkeleton()
     dof->setPosition(position);
   }
 
+  makeVisualOnlySkeleton(wam);
   return wam;
 }
 
@@ -949,6 +1062,7 @@ dart::dynamics::SkeletonPtr loadRequiredAtlasRobotSkeleton()
     FreeJoint::setTransformOf(rootBody, transform);
   }
 
+  makeVisualOnlySkeleton(atlas);
   return atlas;
 }
 
@@ -1012,6 +1126,8 @@ AppOptions parseOptions(int argc, char* argv[])
     } else if (arg == "--show-ui") {
       options.showUi = true;
       options.showUiExplicit = true;
+    } else if (arg == "--profile") {
+      options.profile = true;
     } else if (arg == "--scene" && i + 1 < argc) {
       const std::string_view sceneArg(argv[++i]);
       if (!parseSceneName(sceneArg, options.scene)) {
@@ -1024,6 +1140,7 @@ AppOptions parseOptions(int argc, char* argv[])
                 << " [--frames N] [--width N] [--height N]"
                    " [--screenshot PATH] [--headless]"
                    " [--hide-ui|--show-ui]"
+                   " [--profile]"
                    " [--scene mvp|drag-and-drop]\n";
       std::exit(0);
     }
@@ -2899,18 +3016,12 @@ int main(int argc, char* argv[])
     ambientOcclusionOptions.quality = filament::QualityLevel::MEDIUM;
     ambientOcclusionOptions.lowPassFilter = filament::QualityLevel::HIGH;
     view->setAmbientOcclusionOptions(ambientOcclusionOptions);
-    filament::TemporalAntiAliasingOptions temporalAntiAliasingOptions;
-    temporalAntiAliasingOptions.enabled = true;
-    temporalAntiAliasingOptions.feedback = 0.10f;
-    temporalAntiAliasingOptions.jitterPattern = filament::
-        TemporalAntiAliasingOptions::JitterPattern::HALTON_23_X16;
-    view->setTemporalAntiAliasingOptions(temporalAntiAliasingOptions);
     filament::MultiSampleAntiAliasingOptions multiSampleAntiAliasingOptions;
     multiSampleAntiAliasingOptions.enabled = true;
     multiSampleAntiAliasingOptions.sampleCount = 4;
     view->setMultiSampleAntiAliasingOptions(multiSampleAntiAliasingOptions);
-    view->setAntiAliasing(filament::AntiAliasing::FXAA);
-    view->setDithering(filament::Dithering::TEMPORAL);
+    view->setAntiAliasing(filament::AntiAliasing::NONE);
+    view->setDithering(filament::Dithering::NONE);
   }
 
   auto* material
@@ -3278,8 +3389,14 @@ int main(int argc, char* argv[])
   bool screenshotSucceeded = options.screenshotPath.empty();
   ScreenshotCapture screenshotCapture;
   bool renderUnavailable = false;
+  ProfileAccumulator profile;
+  auto lastSimulationClock = ProfileAccumulator::Clock::now();
+  double simulationAccumulator = 0.0;
+  constexpr std::size_t kMaxSimulationStepsPerRenderedFrame = 64;
 
   while (options.headless || !glfwWindowShouldClose(window)) {
+    const auto frameStart = ProfileAccumulator::Clock::now();
+    auto phaseStart = ProfileAccumulator::Clock::now();
     if (window != nullptr) {
       glfwPollEvents();
       if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
@@ -3298,7 +3415,9 @@ int main(int argc, char* argv[])
       }
       wasStepPressed = isStepPressed;
     }
+    profile.inputMs += elapsedMs(phaseStart);
 
+    phaseStart = ProfileAccumulator::Clock::now();
     int width = options.width;
     int height = options.height;
     if (window != nullptr) {
@@ -3328,15 +3447,77 @@ int main(int argc, char* argv[])
          cameraController.camera.target.y(),
          cameraController.camera.target.z()},
         {0.0, 0.0, 1.0});
+    profile.viewportCameraMs += elapsedMs(phaseStart);
 
+    const auto renderFrameStart = ProfileAccumulator::Clock::now();
+    if (!renderer->beginFrame(swapChain)) {
+      markFrameSkipped(lifecycle);
+      ++profile.skippedFrames;
+      profile.beginFrameMs += elapsedMs(renderFrameStart);
+      if (options.headless && lifecycle.skippedFrames > 1000) {
+        std::cerr << "No headless Filament frame was available\n";
+        renderUnavailable = true;
+        break;
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      const double frameMs = elapsedMs(frameStart);
+      profile.frameMs += frameMs;
+      profile.maxFrameMs = std::max(profile.maxFrameMs, frameMs);
+      ++profile.frames;
+      continue;
+    }
+    profile.beginFrameMs += elapsedMs(renderFrameStart);
+
+    std::size_t simulationStepsToRun = 0;
     if (shouldAdvanceSimulation(lifecycle)) {
-      dartScene.world->step();
+      if (options.headless || lifecycle.stepOnce) {
+        simulationStepsToRun = 1;
+      } else {
+        const auto now = ProfileAccumulator::Clock::now();
+        simulationAccumulator += std::chrono::duration<double>(
+                                     now - lastSimulationClock)
+                                     .count();
+        lastSimulationClock = now;
+        const double timeStep = dartScene.world->getTimeStep();
+        if (timeStep > 0.0) {
+          simulationAccumulator = std::min(
+              simulationAccumulator,
+              timeStep
+                  * static_cast<double>(kMaxSimulationStepsPerRenderedFrame));
+          while (simulationStepsToRun < kMaxSimulationStepsPerRenderedFrame
+                 && simulationAccumulator + 1e-12 >= timeStep) {
+            ++simulationStepsToRun;
+            simulationAccumulator -= timeStep;
+          }
+        }
+      }
+    } else {
+      lastSimulationClock = ProfileAccumulator::Clock::now();
+      simulationAccumulator = 0.0;
+    }
+
+    if (simulationStepsToRun > 0) {
+      phaseStart = ProfileAccumulator::Clock::now();
+      for (std::size_t i = 0; i < simulationStepsToRun; ++i) {
+        const double timeStep = dartScene.world->getTimeStep();
+        dartScene.world->step();
+        profile.simulatedMs += timeStep * 1000.0;
+      }
       markSimulationAdvanced(lifecycle);
+      profile.simulationSteps += simulationStepsToRun;
+      profile.simulationMs += elapsedMs(phaseStart);
+
+      phaseStart = ProfileAccumulator::Clock::now();
       refreshContactDebugOverlay();
+      profile.contactDebugMs += elapsedMs(phaseStart);
     }
 
     auto& transforms = engine->getTransformManager();
+    phaseStart = ProfileAccumulator::Clock::now();
     auto descriptors = extractRenderables(*dartScene.world);
+    profile.extractionMs += elapsedMs(phaseStart);
+
+    phaseStart = ProfileAccumulator::Clock::now();
     if (window != nullptr && selectedRenderableId != 0) {
       const Eigen::Vector3d nudge = selectedNudgeFromKeyboard(
           window, cameraController.camera, 0.035);
@@ -3354,6 +3535,9 @@ int main(int argc, char* argv[])
         }
       }
     }
+    profile.interactionMs += elapsedMs(phaseStart);
+
+    phaseStart = ProfileAccumulator::Clock::now();
     bool selectedRenderableStillVisible = selectedRenderableId == 0;
     for (SceneRenderable& sceneRenderable : sceneRenderables) {
       const auto descriptor = std::find_if(
@@ -3382,7 +3566,9 @@ int main(int argc, char* argv[])
       selectedRenderableId = 0;
       selectedLabel = "none";
     }
+    profile.syncMs += elapsedMs(phaseStart);
 
+    phaseStart = ProfileAccumulator::Clock::now();
     if (window != nullptr) {
       double cursorX = 0.0;
       double cursorY = 0.0;
@@ -3475,9 +3661,14 @@ int main(int argc, char* argv[])
       }
       wasLeftMousePressed = isLeftMousePressed;
     }
+    profile.interactionMs += elapsedMs(phaseStart);
+
+    phaseStart = ProfileAccumulator::Clock::now();
     refreshSelectionDebugOverlay(descriptors, selectedRenderableId);
+    profile.selectionDebugMs += elapsedMs(phaseStart);
 
     if (appOptions.showUi) {
+      phaseStart = ProfileAccumulator::Clock::now();
       ImGui::NewFrame();
       ImGui::SetNextWindowPos({20.0f, 20.0f}, ImGuiCond_Always);
       ImGui::SetNextWindowBgAlpha(0.72f);
@@ -3529,42 +3720,38 @@ int main(int argc, char* argv[])
           ImGui::GetDrawData(),
           static_cast<std::uint32_t>(width),
           static_cast<std::uint32_t>(height));
+      profile.uiMs += elapsedMs(phaseStart);
     }
 
     const bool shouldCaptureScreenshot
         = shouldRequestScreenshot(options, lifecycle);
 
-    bool didRenderFrame = false;
-    if (renderer->beginFrame(swapChain)) {
-      renderer->render(view);
-      if (appOptions.showUi) {
-        renderer->render(imguiOverlay.view);
-      }
-      if (shouldCaptureScreenshot) {
-        requestScreenshot(
-            *renderer,
-            screenshotCapture,
-            static_cast<std::uint32_t>(width),
-            static_cast<std::uint32_t>(height));
-        markScreenshotRequested(lifecycle);
-      }
-      renderer->endFrame();
-      didRenderFrame = true;
-    } else {
-      markFrameSkipped(lifecycle);
-      if (options.headless && lifecycle.skippedFrames > 1000) {
-        std::cerr << "No headless Filament frame was available\n";
-        renderUnavailable = true;
-        break;
-      }
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    phaseStart = ProfileAccumulator::Clock::now();
+    renderer->render(view);
+    if (appOptions.showUi) {
+      renderer->render(imguiOverlay.view);
     }
+    if (shouldCaptureScreenshot) {
+      requestScreenshot(
+          *renderer,
+          screenshotCapture,
+          static_cast<std::uint32_t>(width),
+          static_cast<std::uint32_t>(height));
+      markScreenshotRequested(lifecycle);
+    }
+    renderer->endFrame();
+    ++profile.renderedFrames;
+    const double renderMs = elapsedMs(phaseStart);
+    profile.renderMs += renderMs;
+    profile.maxRenderMs = std::max(profile.maxRenderMs, renderMs);
 
-    if (didRenderFrame) {
-      markFrameRendered(lifecycle);
-      if (shouldStopAfterFrame(options, lifecycle)) {
-        break;
-      }
+    const double frameMs = elapsedMs(frameStart);
+    profile.frameMs += frameMs;
+    profile.maxFrameMs = std::max(profile.maxFrameMs, frameMs);
+    ++profile.frames;
+    markFrameRendered(lifecycle);
+    if (shouldStopAfterFrame(options, lifecycle)) {
+      break;
     }
   }
 
@@ -3572,9 +3759,13 @@ int main(int argc, char* argv[])
     std::cerr << "No rendered frame was available for screenshot capture\n";
   }
   if (lifecycle.screenshotRequested) {
+    const auto screenshotWaitStart = ProfileAccumulator::Clock::now();
     screenshotSucceeded = waitForScreenshot(*engine, screenshotCapture);
+    profile.screenshotWaitMs += elapsedMs(screenshotWaitStart);
     if (screenshotSucceeded) {
+      const auto screenshotSaveStart = ProfileAccumulator::Clock::now();
       saveScreenshot(screenshotCapture, options.screenshotPath);
+      profile.screenshotSaveMs += elapsedMs(screenshotSaveStart);
     } else {
       std::cerr << "Timed out waiting for Filament screenshot readback\n";
     }
@@ -3583,6 +3774,9 @@ int main(int argc, char* argv[])
     std::cout << "Final contacts: "
               << dartScene.world->getLastCollisionResult().getNumContacts()
               << "\n";
+  }
+  if (appOptions.profile) {
+    printProfile(profile);
   }
 
   destroyImGuiOverlay(*engine, imguiOverlay);

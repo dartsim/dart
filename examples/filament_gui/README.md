@@ -16,7 +16,9 @@
   rendered frame count. Use
   `--screenshot <path>` to write a binary PPM capture, and `--headless` to use
   Filament's headless swap-chain path without creating a GLFW window. Use
-  `--scene drag-and-drop` to run the interaction fixture.
+  `--hide-ui` or `--show-ui` to control the status panel in captures,
+  `--profile` to print per-phase frame timings, and `--scene drag-and-drop` to
+  run the interaction fixture.
 
 ## Notes
 
@@ -46,9 +48,17 @@
   alpha-bearing solid, textured, and mesh visuals through transparent lit
   material variants. Broader robot/environment visual review is still future
   promotion work.
-- The view enables HDR buffer quality, screen-space ambient occlusion, temporal
-  anti-aliasing, FXAA, temporal dithering, and multi-sample anti-aliasing for
-  windowed runs in the current visual smoke fixture.
+- The view enables HDR buffer quality, screen-space ambient occlusion, and
+  multi-sample anti-aliasing for windowed runs in the current visual smoke
+  fixture. Temporal anti-aliasing, FXAA, and temporal dithering are disabled so
+  labels, wire meshes, and authored texture details stay crisp during visual
+  review.
+- Imported WAM and Atlas robot fixtures are included as static visual reference
+  objects in the default scene. Their collision and gravity participation are
+  disabled so they do not dominate example frame time.
+- Windowed playback advances physics against wall-clock time with a bounded
+  catch-up step budget. Headless captures remain deterministic and advance one
+  simulation step for each rendered frame.
 - A simple 3D grid, world/body frame axes, contact markers, contact normals,
   and contact force vectors are generated as `dart-gui-experimental` debug
   descriptors and rendered as Filament line primitives. The debug-line material
@@ -154,6 +164,13 @@ To run the interaction fixture:
 ```bash
 LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
   ./build/default/cpp/Release/bin/filament_gui --scene drag-and-drop --frames 300
+```
+
+To profile the example by frame phase:
+
+```bash
+LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
+  ./build/default/cpp/Release/bin/filament_gui --headless --profile --frames 120
 ```
 
 For software-rendered local smoke checks:
