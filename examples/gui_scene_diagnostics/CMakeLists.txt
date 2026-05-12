@@ -19,7 +19,11 @@ if(DART_IN_SOURCE_BUILD)
   return()
 endif()
 
-find_package(DART 7.0.0 REQUIRED COMPONENTS ${required_components} CONFIG)
+find_package(DART 7.0.0 QUIET COMPONENTS ${required_components} CONFIG)
+if(NOT TARGET dart-gui-experimental)
+  message(STATUS "Skipping ${example_name} example (dart-gui-experimental unavailable)")
+  return()
+endif()
 
 file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${example_name} ${srcs})
