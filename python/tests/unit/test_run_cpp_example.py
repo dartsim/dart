@@ -32,6 +32,26 @@ def test_normalize_target_passthrough(run_cpp_example, capsys):
     assert capsys.readouterr().err == ""
 
 
+def test_parse_args_requires_target(run_cpp_example, capsys):
+    with pytest.raises(SystemExit) as exc:
+        run_cpp_example.parse_args([])
+
+    assert exc.value.code == 2
+    captured = capsys.readouterr()
+    assert "usage:" in captured.err
+    assert "required: target" in captured.err
+
+
+def test_parse_args_allows_pixi_help_without_target(run_cpp_example, capsys):
+    with pytest.raises(SystemExit) as exc:
+        run_cpp_example.parse_args(["--pixi-help"])
+
+    assert exc.value.code == 0
+    captured = capsys.readouterr()
+    assert "CMake target / example binary name" in captured.out
+    assert captured.err == ""
+
+
 @pytest.mark.parametrize(
     ("target", "build_target", "binary_name", "requirements"),
     [

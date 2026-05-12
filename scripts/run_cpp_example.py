@@ -61,9 +61,15 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
     )
     known, unknown = parser.parse_known_args(argv)
 
-    if known.pixi_help or known.target is None:
+    if known.pixi_help:
         parser.print_help()
         sys.exit(0)
+    if known.target is None:
+        parser.print_usage(sys.stderr)
+        parser.exit(
+            2,
+            f"{parser.prog}: error: the following arguments are required: target\n",
+        )
 
     return known, unknown
 
