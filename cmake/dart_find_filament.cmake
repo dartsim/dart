@@ -67,6 +67,12 @@ endif()
 if(TARGET filament AND NOT TARGET Filament::filament)
   add_library(Filament::filament ALIAS filament)
 endif()
+if(TARGET filament::matc AND NOT TARGET Filament::matc)
+  add_executable(Filament::matc ALIAS filament::matc)
+endif()
+if(TARGET matc AND NOT TARGET Filament::matc)
+  add_executable(Filament::matc ALIAS matc)
+endif()
 
 find_path(Filament_INCLUDE_DIR
   NAMES filament/Engine.h
@@ -117,17 +123,6 @@ if(CMAKE_NM AND Filament_utils_LIBRARY)
   endif()
 endif()
 
-set(_dart_filament_required_vars
-  Filament_INCLUDE_DIR
-  Filament_filament_LIBRARY
-  Filament_backend_LIBRARY
-  Filament_filabridge_LIBRARY
-  Filament_filaflat_LIBRARY
-  Filament_utils_LIBRARY
-  Filament_geometry_LIBRARY
-  Filament_MATC_EXECUTABLE
-)
-
 if(_dart_filament_requires_libcxx)
   find_library(Filament_cxx_LIBRARY
     NAMES c++
@@ -146,12 +141,6 @@ if(_dart_filament_requires_libcxx)
   if(Filament_cxxabi_LIBRARY)
     list(APPEND Filament_LIBRARIES "${Filament_cxxabi_LIBRARY}")
   endif()
-
-  list(APPEND
-    _dart_filament_required_vars
-    Filament_cxx_LIBRARY
-    Filament_cxxabi_LIBRARY
-  )
 endif()
 
 find_program(Filament_MATC_EXECUTABLE
@@ -160,11 +149,38 @@ find_program(Filament_MATC_EXECUTABLE
   PATH_SUFFIXES bin
 )
 
-find_package_handle_standard_args(Filament
-  REQUIRED_VARS ${_dart_filament_required_vars}
-  REASON_FAILURE_MESSAGE
-    "Install a Filament development package such as conda-forge filament-static, set Filament_ROOT to a Filament install tree, or provide an upstream archive plus any required libc++/libc++abi libraries."
-)
+set(_dart_filament_required_vars)
+if(NOT TARGET Filament::filament)
+  list(APPEND _dart_filament_required_vars
+    Filament_INCLUDE_DIR
+    Filament_filament_LIBRARY
+    Filament_backend_LIBRARY
+    Filament_filabridge_LIBRARY
+    Filament_filaflat_LIBRARY
+    Filament_utils_LIBRARY
+    Filament_geometry_LIBRARY
+  )
+endif()
+if(NOT TARGET Filament::matc)
+  list(APPEND _dart_filament_required_vars Filament_MATC_EXECUTABLE)
+endif()
+if(_dart_filament_requires_libcxx AND NOT TARGET Filament::filament)
+  list(APPEND
+    _dart_filament_required_vars
+    Filament_cxx_LIBRARY
+    Filament_cxxabi_LIBRARY
+  )
+endif()
+
+if(TARGET Filament::filament AND TARGET Filament::matc)
+  set(Filament_FOUND TRUE)
+else()
+  find_package_handle_standard_args(Filament
+    REQUIRED_VARS ${_dart_filament_required_vars}
+    REASON_FAILURE_MESSAGE
+      "Install a Filament development package such as conda-forge filament-static, set Filament_ROOT to a Filament install tree, or provide an upstream archive plus any required libc++/libc++abi libraries."
+  )
+endif()
 
 if(Filament_FOUND AND NOT TARGET Filament::filament)
   find_package(Threads REQUIRED)
