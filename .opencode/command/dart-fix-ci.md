@@ -25,14 +25,18 @@ Fix CI failure: $ARGUMENTS
 3. If a job is still in progress, wait for logs instead of guessing.
 4. Reproduce locally with the smallest relevant command:
    - formatting: `pixi run lint`
-   - tests: `pixi run test`, `pixi run test-unit`, or `ctest -R <TEST>`
+   - tests: `pixi run test`, `pixi run test-unit`, or another existing
+     focused `pixi run ...` test task
    - coverage: add targeted tests for uncovered changed lines
 5. Fix the root cause with minimal scope.
-6. If the failure is infrastructure-only, rerun the failed job or run:
+6. If the failure is infrastructure-only, ask for explicit maintainer/user
+   approval before rerunning the failed job or running:
    ```bash
    gh run rerun <RUN_ID> --failed
    ```
-7. Push and watch CI until the PR is green.
+7. Ask for explicit maintainer/user approval before pushing, CI re-triggers, or
+   other GitHub mutations; after approval, push and watch CI until the PR is
+   green.
 
 ## Output
 

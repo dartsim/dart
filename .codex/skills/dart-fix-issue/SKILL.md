@@ -9,8 +9,9 @@ description: "DART Fix Issue: resolve a GitHub issue with a fix and regression t
 
 # dart-fix-issue
 
-Use this skill in Codex when you want the same workflow that Claude Code and
-OpenCode expose as `/dart-fix-issue`.
+Use this skill in Codex to run the DART `dart-fix-issue` workflow. The editable
+workflow source currently lives in `.claude/commands/`, and this generated
+Codex skill is a first-class Codex entrypoint.
 
 ## Invocation
 
@@ -33,11 +34,16 @@ Fix GitHub issue: $ARGUMENTS
 ## Workflow
 
 1. `gh issue view $1` - Validate issue
-2. `git checkout -b fix/issue-$1 origin/main`
-3. Fix with minimal changes + add regression test
+2. Classify whether the issue is a bug fix that applies to `release-6.16`.
+   For applicable bug fixes, start from `origin/release-6.16`; otherwise start
+   from `origin/main`.
+3. Fix with minimal changes + add regression test. For dual-PR bug fixes, fix
+   `release-6.16` first, then cherry-pick or reapply to `main`.
 4. `pixi run lint`, then run the smallest relevant tests; use `pixi run test-all` before finalizing when feasible
-5. `git push -u origin HEAD && gh pr create`
-6. **Before PR**: If task used `docs/dev_tasks/<task>/`, remove the folder (include in this PR, not after merge)
+5. Before PR creation, decide whether `CHANGELOG.md` needs an entry and fill
+   `.github/PULL_REQUEST_TEMPLATE.md`.
+6. After explicit maintainer/user approval, `git push -u origin HEAD && gh pr create --base <target-branch> --milestone "<milestone>"`
+7. **Before PR**: If task used `docs/dev_tasks/<task>/`, remove the folder (include in this PR, not after merge)
 
 ## CRITICAL: Dual-PR for Bug Fixes
 

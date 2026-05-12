@@ -27,7 +27,9 @@ Perform mechanical refactor: $ARGUMENTS
    - `pixi run build`
    - `pixi run test-unit`
    - `pixi run test-all` when feasible
-7. Open a PR with a clear scope statement and no behavior-change claim unless tested.
+7. Ask for explicit maintainer/user approval before pushing or opening a PR.
+   After approval, open a PR with a clear scope statement and no
+   behavior-change claim unless tested.
 
 ## Output
 

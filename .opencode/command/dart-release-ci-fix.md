@@ -31,7 +31,9 @@ Fix release-branch CI: $ARGUMENTS
 4. Prefer cherry-picking a proven `main` fix. If a new fix is required, keep it release-scoped and minimal.
 5. Explain why the failure was not caught earlier and whether workflow coverage should change.
 6. Run `pixi run lint` and release-relevant build/tests.
-7. Push and create or update the release-branch PR with the current release milestone.
+7. Ask for explicit maintainer/user approval before pushing, creating, or
+   updating the release-branch PR; after approval, use the current release
+   milestone and PR template.
 8. Monitor CI until green.
 
 ## Output

@@ -28,7 +28,9 @@ Merge release branch into main: $ARGUMENTS
    - files only on release: keep if still relevant to main
 6. Verify no unresolved conflicts remain.
 7. Run `pixi run lint` and relevant checks.
-8. Push and create a PR targeting `main` with milestone `DART 7.0`.
+8. Ask for explicit maintainer/user approval before pushing or creating the PR.
+   After approval, create a PR targeting `main` with milestone `DART 7.0` and
+   use the PR template.
 9. Monitor CI until green.
 
 ## Output

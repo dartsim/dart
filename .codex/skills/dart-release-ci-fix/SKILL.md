@@ -9,8 +9,9 @@ description: "DART Release CI Fix: debug and fix CI failures on a release branch
 
 # dart-release-ci-fix
 
-Use this skill in Codex when you want the same workflow that Claude Code and
-OpenCode expose as `/dart-release-ci-fix`.
+Use this skill in Codex to run the DART `dart-release-ci-fix` workflow. The editable
+workflow source currently lives in `.claude/commands/`, and this generated
+Codex skill is a first-class Codex entrypoint.
 
 ## Invocation
 
@@ -47,7 +48,9 @@ Fix release-branch CI: $ARGUMENTS
 4. Prefer cherry-picking a proven `main` fix. If a new fix is required, keep it release-scoped and minimal.
 5. Explain why the failure was not caught earlier and whether workflow coverage should change.
 6. Run `pixi run lint` and release-relevant build/tests.
-7. Push and create or update the release-branch PR with the current release milestone.
+7. Ask for explicit maintainer/user approval before pushing, creating, or
+   updating the release-branch PR; after approval, use the current release
+   milestone and PR template.
 8. Monitor CI until green.
 
 ## Output
