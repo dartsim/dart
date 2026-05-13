@@ -209,40 +209,6 @@ void projectTorqueFreeAngularVelocityInvariants(
   }
 }
 
-bool canUseConstantTorqueFreeVelocity(
-    const Eigen::Matrix3d& inertia,
-    const Eigen::Vector3d& angularVelocityBody,
-    const Eigen::Vector3d& angularVelocityWorld,
-    const Eigen::Vector3d& comOffsetWorld,
-    const Eigen::Vector6d& acceleration)
-{
-  Eigen::LDLT<Eigen::Matrix3d> inertiaSolver(inertia);
-  if (inertiaSolver.info() != Eigen::Success || !inertiaSolver.isPositive()) {
-    return false;
-  }
-
-  const Eigen::Vector3d angularMomentumBody = inertia * angularVelocityBody;
-  const Eigen::Vector3d gyroscopicTerm
-      = angularVelocityBody.cross(angularMomentumBody);
-  if (!angularMomentumBody.allFinite() || !gyroscopicTerm.allFinite()) {
-    return false;
-  }
-
-  const double scale
-      = std::max(1.0, angularVelocityBody.norm() * angularMomentumBody.norm());
-  if (gyroscopicTerm.norm() > kTorqueFreeTolerance * scale) {
-    return false;
-  }
-
-  Eigen::Vector6d expectedAcceleration = Eigen::Vector6d::Zero();
-  expectedAcceleration.tail<3>()
-      = -angularVelocityWorld.cross(angularVelocityWorld.cross(comOffsetWorld));
-  const Eigen::Vector6d error = acceleration - expectedAcceleration;
-  const double accelerationScale
-      = std::max(1.0, expectedAcceleration.cwiseAbs().maxCoeff());
-  return error.cwiseAbs().maxCoeff() <= 1e-9 * accelerationScale;
-}
-
 bool canUseTorqueFreeIntegration(const FreeJoint& joint)
 {
   if (joint.getParentBodyNode() != nullptr) {
@@ -1155,24 +1121,6 @@ void FreeJoint::integrateVelocities(double _dt)
     const Eigen::Matrix3d inertia = bodyNode->getInertia().getMoment();
 
     Eigen::Vector3d nextAngularVelocityBody;
-    if (canUseConstantTorqueFreeVelocity(
-            inertia,
-            angularVelocityBody,
-            getVelocitiesStatic().head<3>(),
-            comOffset,
-            getAccelerationsStatic())) {
-      mUseTorqueFreePositionIntegration = true;
-      mTorqueFreeInitialPositions = getPositionsStatic();
-      mTorqueFreeIntegratedVelocities = getVelocitiesStatic();
-      mTorqueFreeMidpointAngularVelocityBody = angularVelocityBody;
-      mTorqueFreeNextAngularVelocityBody = angularVelocityBody;
-      mTorqueFreeInitialAngularMomentumWorld
-          = rotation * inertia * angularVelocityBody;
-      mTorqueFreeNextAngularMomentumBody = inertia * angularVelocityBody;
-      mTorqueFreeComLinearVelocityWorld = comLinearVelocityWorld;
-      return;
-    }
-
     if (isConsistentWithTorqueFreeAcceleration(
             *this, *bodyNode, rotation, comOffset)
         && integrateTorqueFreeAngularVelocity(

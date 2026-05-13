@@ -3196,6 +3196,157 @@ TEST_F(Joints, FreeJointWorldJacobianClassicDerivMatchesFiniteDifference)
 }
 
 //==============================================================================
+TEST_F(Joints, FreeJointNestedArticulatedKinematicsDifferentiationDynamics)
+{
+  SkeletonPtr skel = Skeleton::create("nested_freejoint_general_semantics");
+  skel->disableSelfCollisionCheck();
+
+  FreeJoint::Properties rootJointProperties;
+  rootJointProperties.mName = "root_free_joint";
+  BodyNode::Properties rootBodyProperties;
+  rootBodyProperties.mName = "root_body";
+  auto rootPair = skel->createJointAndBodyNodePair<FreeJoint>(
+      nullptr, rootJointProperties, rootBodyProperties);
+  FreeJoint* rootJoint = rootPair.first;
+  BodyNode* rootBody = rootPair.second;
+  rootJoint->setTransformFromParentBodyNode(random_transform(0.2, 0.3));
+  rootJoint->setTransformFromChildBodyNode(random_transform(0.2, 0.3));
+  rootBody->setMass(1.3);
+  rootBody->setLocalCOM(Eigen::Vector3d(0.02, -0.03, 0.04));
+  rootBody->setMomentOfInertia(0.4, 0.5, 0.7, 0.02, -0.01, 0.015);
+
+  RevoluteJoint::Properties revoluteProperties;
+  revoluteProperties.mName = "middle_revolute";
+  revoluteProperties.mAxis = Eigen::Vector3d(0.2, 1.0, -0.1).normalized();
+  revoluteProperties.mT_ParentBodyToJoint = random_transform(0.3, 0.2);
+  revoluteProperties.mT_ChildBodyToJoint = random_transform(0.2, 0.2);
+
+  BodyNode::Properties middleBodyProperties;
+  middleBodyProperties.mName = "middle_body";
+  middleBodyProperties.mInertia.setMass(0.9);
+  middleBodyProperties.mInertia.setLocalCOM(Eigen::Vector3d(0.0, 0.04, -0.2));
+  middleBodyProperties.mInertia.setMoment(0.2, 0.25, 0.3, 0.0, 0.0, 0.0);
+
+  auto middlePair = rootBody->createChildJointAndBodyNodePair<RevoluteJoint>(
+      revoluteProperties, middleBodyProperties);
+  RevoluteJoint* middleJoint = middlePair.first;
+  BodyNode* middleBody = middlePair.second;
+  middleJoint->setDampingCoefficient(0, 0.0);
+  middleJoint->setCoulombFriction(0, 0.0);
+  middleJoint->setSpringStiffness(0, 0.0);
+  middleJoint->setLimitEnforcement(false);
+
+  FreeJoint::Properties childJointProperties;
+  childJointProperties.mName = "child_free_joint";
+  BodyNode::Properties childBodyProperties;
+  childBodyProperties.mName = "child_body";
+  auto childPair = middleBody->createChildJointAndBodyNodePair<FreeJoint>(
+      childJointProperties, childBodyProperties);
+  FreeJoint* childJoint = childPair.first;
+  BodyNode* childBody = childPair.second;
+  childJoint->setTransformFromParentBodyNode(random_transform(0.2, 0.2));
+  childJoint->setTransformFromChildBodyNode(random_transform(0.2, 0.2));
+  childBody->setMass(0.8);
+  childBody->setLocalCOM(Eigen::Vector3d(-0.03, 0.02, 0.05));
+  childBody->setMomentOfInertia(0.25, 0.35, 0.45, -0.01, 0.015, 0.02);
+
+  for (Joint* joint :
+       {static_cast<Joint*>(rootJoint), static_cast<Joint*>(childJoint)}) {
+    for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+      joint->setDampingCoefficient(i, 0.0);
+      joint->setCoulombFriction(i, 0.0);
+      joint->setSpringStiffness(i, 0.0);
+    }
+  }
+
+  Eigen::VectorXd q0 = Eigen::VectorXd::Zero(skel->getNumDofs());
+  Eigen::VectorXd v0 = Eigen::VectorXd::Zero(skel->getNumDofs());
+  q0.segment<6>(0) = FreeJoint::convertToPositions(random_transform(0.5, 0.5));
+  q0[6] = 0.35;
+  q0.segment<6>(7) = FreeJoint::convertToPositions(random_transform(0.4, 0.4));
+  v0.head<6>() = random_vec<6>(0.5);
+  v0[6] = 0.7;
+  v0.segment<6>(7) = random_vec<6>(0.4);
+  skel->setPositions(q0);
+  skel->setVelocities(v0);
+
+  const Eigen::Vector3d offset(0.06, -0.04, 0.09);
+  const math::Jacobian J = childBody->getWorldJacobian(offset);
+  constexpr double jacobianDt = 1e-8;
+  constexpr double jacobianTolerance = 1e-5;
+
+  for (std::size_t i = 0; i < skel->getNumDofs(); ++i) {
+    SCOPED_TRACE(testing::Message() << "jacobian column = " << i);
+    Eigen::VectorXd velocities = Eigen::VectorXd::Zero(skel->getNumDofs());
+    velocities[i] = 1.0;
+    skel->setPositions(q0);
+    skel->setVelocities(velocities);
+
+    const Eigen::Isometry3d T0 = childBody->getWorldTransform();
+    const Eigen::Matrix3d R0 = T0.linear();
+    const Eigen::Vector3d p0 = T0 * offset;
+
+    skel->integratePositions(jacobianDt);
+
+    const Eigen::Isometry3d T1 = childBody->getWorldTransform();
+    const Eigen::Matrix3d R1 = T1.linear();
+    const Eigen::Vector3d p1 = T1 * offset;
+
+    Eigen::Vector6d numeric;
+    numeric.head<3>() = math::logMap(R1 * R0.transpose()) / jacobianDt;
+    numeric.tail<3>() = (p1 - p0) / jacobianDt;
+
+    EXPECT_LT(
+        (numeric - J.col(static_cast<Eigen::Index>(i))).cwiseAbs().maxCoeff(),
+        jacobianTolerance);
+  }
+
+  skel->setPositions(q0);
+  skel->setVelocities(v0);
+
+  const math::Jacobian dJ = childBody->getJacobianClassicDeriv(offset);
+  constexpr double derivativeDt = 1e-6;
+  constexpr double derivativeTolerance = 2e-3;
+
+  skel->integratePositions(derivativeDt);
+  const Eigen::Vector6d VPlus
+      = childBody->getSpatialVelocity(offset, Frame::World(), Frame::World());
+  skel->setPositions(q0);
+
+  skel->integratePositions(-derivativeDt);
+  const Eigen::Vector6d VMinus
+      = childBody->getSpatialVelocity(offset, Frame::World(), Frame::World());
+  skel->setPositions(q0);
+
+  const Eigen::Vector6d numericDerivative
+      = (VPlus - VMinus) / (2.0 * derivativeDt);
+  const Eigen::Vector6d predictedDerivative = dJ * v0;
+  EXPECT_LT(
+      (numericDerivative - predictedDerivative).cwiseAbs().maxCoeff(),
+      derivativeTolerance);
+
+  auto world = World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->setTimeStep(1e-4);
+  world->addSkeleton(skel);
+  skel->setPositions(q0);
+  skel->setVelocities(v0);
+
+  skel->computeForwardDynamics();
+  EXPECT_TRUE(skel->getAccelerations().allFinite());
+  EXPECT_GT(skel->getAccelerations().norm(), 1e-8);
+
+  const double energy0 = skel->computeKineticEnergy();
+  world->stepUnconstrainedRungeKutta4();
+  EXPECT_TRUE(skel->getPositions().allFinite());
+  EXPECT_TRUE(skel->getVelocities().allFinite());
+  EXPECT_TRUE(std::isfinite(skel->computeKineticEnergy()));
+  EXPECT_GT(skel->computeKineticEnergy(), 0.0);
+  EXPECT_GT(skel->getPositionDifferences(skel->getPositions(), q0).norm(), 0.0);
+  EXPECT_LT(std::abs(skel->computeKineticEnergy() - energy0), 1e-3);
+}
+
+//==============================================================================
 TEST_F(Joints, FreeJointEnergyConservationNoForces)
 {
   simulation::WorldPtr world = simulation::World::create();

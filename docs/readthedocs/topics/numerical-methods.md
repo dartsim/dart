@@ -56,6 +56,10 @@ frame offsets. That case has a closed torque-free rigid-body structure, so DART
 can preserve kinetic energy and world angular momentum without changing the
 public stepping API.
 
+The shortcut uses one torque-free rigid-body update for all inertia shapes; it
+does not branch on spherical inertia, principal-axis spin, or other visual
+subcases.
+
 Any nonzero user-supplied force, command, coefficient, gravity vector, or frame
 offset keeps the normal dynamics path. Even very small applied torques are
 treated as real input instead of numerical noise, because they can accumulate
