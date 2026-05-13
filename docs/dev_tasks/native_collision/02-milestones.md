@@ -168,9 +168,11 @@ reference benchmarks to `OFF`; reference comparison jobs opt in through
 through the main debug, dartpy, install, coverage, ASAN, Windows, and wheel
 configure entry points. Core native-only link and installed package-export
 inspection now show no old collision component targets or old collision runtime
-libraries in the native-only install metadata. Broader dependency-metadata,
-wheel-artifact, and downstream-component inspection are still required before
-this phase is complete.
+libraries in the native-only install metadata. A fresh native-only runtime
+install probe now also covers the installed shared libraries and dartpy module
+for old-engine runtime links. Broader dependency-metadata, wheel-artifact, and
+downstream-component inspection are still required before this phase is
+complete.
 
 Success criteria:
 
@@ -209,8 +211,10 @@ old collision component target files. The latest package-export cleanup also
 removes the default `collision-fcl` fallback and the generated
 `collision-bullet`/`collision-ode` compatibility text from native-only
 installed CMake metadata; the install probe now reports only
-`DART_BUILD_COLLISION_*` variables as `OFF`. Remaining work includes base
-dependency metadata cleanup, wheel artifact inspection, and gz-physics
+`DART_BUILD_COLLISION_*` variables as `OFF`. A fresh install of the normal
+runtime components has no FCL, Bullet, ODE, or libccd runtime links from
+installed shared libraries or the built dartpy module. Remaining work includes
+base dependency metadata cleanup, wheel artifact inspection, and gz-physics
 compatibility for any retained legacy component facades.
 
 Success criteria:

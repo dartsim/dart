@@ -21,7 +21,11 @@ only `DART_BUILD_COLLISION_*` variables as `OFF` in searched installed
 CMake/pkg-config metadata. Normal pixi configure paths now also default FCL,
 Bullet, ODE, reference correctness tests, and reference benchmarks to `OFF`,
 while explicit `DART_BUILD_COLLISION_*_OVERRIDE=ON` settings restore the
-reference component, test, and benchmark targets for comparison jobs.
+reference component, test, and benchmark targets for comparison jobs. A fresh
+native-only runtime install probe now also shows no old collision component
+files, no old collision package-export references beyond `OFF` state variables,
+and no FCL, Bullet, ODE, or libccd runtime links from installed shared
+libraries or the built dartpy extension.
 
 ## Current Branch
 
@@ -51,8 +55,9 @@ the branch adds `DART_BUILD_COLLISION_REFERENCE_TESTS` and
 reference-disabled and reference-enabled configurations locally, propagates the
 toggles through the major configure entry points, defaults normal pixi configure
 paths to native-only collision, and has core native-only link evidence. It
-still needs full target/package export inspection, dependency metadata cleanup,
-wheel artifact inspection, and downstream-component checks.
+now also has fresh runtime-link and package-export inspection evidence. It
+still needs dependency metadata cleanup, wheel artifact inspection, and
+downstream-component checks.
 Collision abstraction cleanup has also started: `DartCollisionDetector` owns
 native-backed public factory aliases for `experimental`, `fcl`, `fcl_mesh`,
 `bullet`, and `ode`; the FCL/Bullet/ODE component registrars also publish
@@ -66,7 +71,9 @@ deprecated Bullet/ODE collision component text, and a native-only install probe
 found no old collision component/library names in searched installed
 CMake/pkg-config metadata beyond `DART_BUILD_COLLISION_*` variables set to
 `OFF`. Normal pixi configure paths now request the same native-only default;
-old engines and reference harnesses are opt-in through override variables.
+old engines and reference harnesses are opt-in through override variables. A
+fresh install probe built the normal native runtime components plus dartpy from
+an empty build tree and found no old-engine runtime links.
 
 ## Context That Would Be Lost
 
@@ -90,6 +97,13 @@ old engines and reference harnesses are opt-in through override variables.
   `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` to `OFF`. A default configure,
   target-help probe, native/default build, and focused detector CTest passed in
   that state.
+- A fresh native-only runtime install probe built and installed `libdart`,
+  `libdart-collision-native`, utils, URDF, IO, GUI, VSG GUI,
+  simulation-experimental, and dartpy with old engines/reference harnesses off.
+  Installed files, installed CMake/pkg-config metadata, installed shared-object
+  `ldd`, dartpy `ldd`, and target-help inspection found no FCL, Bullet, ODE,
+  libccd, old collision component, or reference-only target leakage beyond
+  `DART_BUILD_COLLISION_*` variables reporting `OFF`.
 - Explicit `DART_BUILD_COLLISION_*_OVERRIDE=ON` opt-in restores the old
   component targets, reference consistency tests, and comparative benchmark
   targets for comparison jobs.
@@ -168,7 +182,9 @@ old engines and reference harnesses are opt-in through override variables.
   `collision-fcl` fallback from default package initialization and removed old
   Bullet/ODE component text from generated component metadata; the follow-up
   install metadata search found only `DART_BUILD_COLLISION_*` variables set to
-  `OFF`.
+  `OFF`. The fresh runtime install probe now broadens that evidence to all
+  installed native shared libraries, dartpy, target-help, and installed package
+  metadata from a clean build tree.
 - Factory-level abstraction cleanup has focused evidence:
   `UNIT_collision_DartCollisionDetector`, `UNIT_simulation_World`,
   `INTEGRATION_collision_Collision`, `INTEGRATION_collision_CollisionGroups`,

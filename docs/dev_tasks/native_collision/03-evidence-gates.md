@@ -59,7 +59,7 @@ These gates are still required before the single north-star PR is complete.
 | CI native-only build        | CI passes with FCL, Bullet, and ODE disabled                | Local equivalent passed; awaiting CI evidence |
 | CI gz-physics compatibility | gz-physics CI passes with optional legacy components built  | Required in this PR                           |
 | Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Started; default-off + opt-in evidence        |
-| Packaging removal           | Default packages/wheels have no old collision runtime deps  | Started; pixi/install/export evidence         |
+| Packaging removal           | Default packages/wheels have no old collision runtime deps  | Started; pixi/link/install proof              |
 | Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Started; DART alias coverage                  |
 | Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Factory keys done; classes/components remain  |
 | Built-in architecture       | API-clean, scalable, performance-oriented native layer      | Started; design checklist documented          |
@@ -1024,6 +1024,71 @@ build/default/cpp/Release --output-on-failure -R
   - Result: passed. Build completed the core, dartpy, native collision tests,
     and focused detector targets with only the known third-party OctoMap
     `<ciso646>` warning. CTest passed 2/2.
+
+## Runtime Link And Package Export Inspection Runs
+
+- `pixi run -- bash -lc 'rm -rf build/native_collision_runtime_probe &&
+NANOBIND_CMAKE_DIR=$(python -m nanobind --cmake_dir) && cmake -G Ninja -S .
+-B build/native_collision_runtime_probe/cpp -DCMAKE_BUILD_TYPE=Release
+-DCMAKE_INSTALL_PREFIX=$PWD/build/native_collision_runtime_probe/install
+-DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=ON
+-DDART_BUILD_SIMULATION_EXPERIMENTAL=ON -DDART_BUILD_COLLISION_FCL=OFF
+-DDART_BUILD_COLLISION_BULLET=OFF -DDART_BUILD_COLLISION_ODE=OFF
+-DDART_BUILD_COLLISION_REFERENCE_TESTS=OFF
+-DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=OFF -DDART_BUILD_GUI=ON
+-DDART_BUILD_GUI_RAYLIB=OFF -DDART_BUILD_GUI_VSG=ON
+-DDART_BUILD_EXAMPLES=OFF -DDART_BUILD_TUTORIALS=OFF -DDART_BUILD_TESTS=OFF
+-DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON
+-DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_NANOBIND=OFF
+-DDART_USE_SYSTEM_TRACY=ON -Dnanobind_DIR=$NANOBIND_CMAKE_DIR &&
+cmake --build build/native_collision_runtime_probe/cpp --target install
+--parallel 8'`
+  - Commit: working tree after native-only pixi default checkpoint.
+  - Result: passed from a fresh build directory. Configure reported FCL,
+    Bullet, ODE, reference tests, and reference benchmarks all `OFF`; FCL was
+    absent from the required and optional package lists. The install built and
+    installed `libdart`, `libdart-collision-native`, `libdart-utils`,
+    `libdart-utils-urdf`, `libdart-io`, `libdart-gui`, `libdart-gui-vsg`,
+    `libdart-simulation-experimental`, and dartpy. Only known third-party
+    OctoMap `<ciso646>` warnings appeared.
+- `find build/native_collision_runtime_probe/install \( -type f -o -type l \)
+| rg -i
+'collision-(fcl|bullet|ode)|libdart-collision-(fcl|bullet|ode)|lib(fcl|bullet|ode|ccd)'
+|| true`
+  - Commit: working tree after fresh native-only runtime install.
+  - Result: no matching installed files or symlinks.
+- `rg -n
+'collision-(fcl|bullet|ode)|libdart-collision-(fcl|bullet|ode)|lib(fcl|bullet|ode|ccd)|DART_BUILD_COLLISION'
+build/native_collision_runtime_probe/install/share/dart/cmake
+build/native_collision_runtime_probe/install/lib64/pkgconfig
+build/native_collision_runtime_probe/install/lib/pkgconfig 2>/dev/null ||
+true`
+  - Commit: working tree after fresh native-only runtime install.
+  - Result: the only matches were `DART_BUILD_COLLISION_BULLET`,
+    `DART_BUILD_COLLISION_FCL`, and `DART_BUILD_COLLISION_ODE` set to `OFF` in
+    `DARTConfig.cmake`. No old collision component, old collision library, FCL,
+    Bullet, ODE, or libccd references appeared in searched installed
+    CMake/pkg-config metadata.
+- `find build/native_collision_runtime_probe/install -type f \( -name '*.so' -o
+-name '*.so.*' \) -print | sort | while read -r lib; do hits=$(ldd "$lib"
+2>/dev/null | grep -Ei 'lib(fcl|bullet|ode|ccd)' || true); if [ -n "$hits"
+]; then printf '## %s\n%s\n' "$lib" "$hits"; fi; done`
+  - Commit: working tree after fresh native-only runtime install.
+  - Result: no installed shared library linked FCL, Bullet, ODE, or libccd.
+- `find build/native_collision_runtime_probe/cpp -path '*_dartpy*.so' -o -path
+'*/python/dartpy/*.so' | sort | while read -r lib; do hits=$(ldd "$lib"
+2>/dev/null | grep -Ei 'lib(fcl|bullet|ode|ccd)' || true); if [ -n "$hits"
+]; then printf '## %s\n%s\n' "$lib" "$hits"; fi; done`
+  - Commit: working tree after fresh native-only runtime install.
+  - Result: the built dartpy extension did not link FCL, Bullet, ODE, or
+    libccd.
+- `pixi run -- cmake --build build/native_collision_runtime_probe/cpp --target
+help | rg
+'dart-collision-(fcl|bullet|ode)|test_reference_backends|bm_comparative|bm_scenarios_(mixed_primitives|mesh_heavy)|INTEGRATION_simulation_MimicConstraint'
+|| true`
+  - Commit: working tree after fresh native-only runtime install.
+  - Result: no legacy collision component or reference-only targets were
+    listed in the fresh native-only build tree.
 
 ## Known Risks
 

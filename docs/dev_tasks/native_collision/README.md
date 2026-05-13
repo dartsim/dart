@@ -29,6 +29,10 @@
 - [x] Native-only install metadata no longer advertises old collision
       component targets or old collision runtime libraries; the remaining
       installed collision option variables are `OFF` state reporting.
+- [x] A fresh native-only runtime install probe with `dartpy`, GUI, VSG GUI, IO,
+      utils, URDF, simulation-experimental, and `dart-collision-native` built
+      and installed shows no old collision component files and no FCL, Bullet,
+      ODE, or libccd runtime links.
 - [ ] The single north-star PR is not complete yet. The checkpoint commit proves
       native default, feature parity, gz-physics compatibility, performance,
       disabled-legacy-backend builds, native-only pixi defaults, and explicit
@@ -133,7 +137,8 @@ The current checkpoint is a validated middle state, not a final PR boundary.
 2. Finish reference-engine isolation by auditing target links, dependency
    metadata, wheel artifacts, and remaining downstream-component paths after
    the CMake test/benchmark opt-out, normal pixi default-off, explicit
-   reference opt-in, core-link, and package-export evidence.
+   reference opt-in, core-link, fresh runtime-link, and package-export
+   evidence.
 3. Remove FCL, Bullet, and ODE from default package/runtime surfaces while
    preserving explicit reference test/benchmark jobs and native-backed
    compatibility facades.
@@ -170,11 +175,12 @@ collision stack.
      collision, and uses override variables for explicit reference opt-in.
      The toggles propagate through the main debug, dartpy, install, coverage,
      ASAN, Windows, and wheel configure entry points.
-   - Core native-only link, install-tree, and installed CMake/pkg-config
-     metadata inspection show no FCL, Bullet, ODE, libccd, or old collision
-     component targets in the normal native install. Remaining work is broader
-     dependency-metadata, wheel-artifact, and downstream-component inspection
-     so reference engines cannot leak into normal runtime targets.
+   - Core native-only link, fresh runtime install, and installed
+     CMake/pkg-config metadata inspection show no FCL, Bullet, ODE, libccd, or
+     old collision component targets in the normal native install. Remaining
+     work is broader dependency-metadata, wheel-artifact, and
+     downstream-component inspection so reference engines cannot leak into
+     normal runtime targets.
 3. **Backend Removal From Defaults**
    - Move FCL, Bullet, and ODE out of default packaging/runtime surfaces.
    - Keep old backends only in explicit reference/benchmark jobs while they are
