@@ -73,6 +73,9 @@
 #cmakedefine01 DART_HAVE_OCTOMAP
 #cmakedefine01 DART_HAVE_SDFORMAT
 
+#cmakedefine01 DART_BUILD_COLLISION_REFERENCE_TESTS
+#cmakedefine01 DART_BUILD_COLLISION_REFERENCE_BENCHMARKS
+
 #cmakedefine01 DART_ENABLE_SIMD
 
 // Workaround for the fact that Bullet does not add the definition to

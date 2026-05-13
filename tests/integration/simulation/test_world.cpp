@@ -49,11 +49,16 @@
 #include <string>
 #include <string_view>
 #include <utility>
-#if DART_HAVE_BULLET
+
+#ifndef DART_ENABLE_COLLISION_REFERENCE_TESTS
+  #define DART_ENABLE_COLLISION_REFERENCE_TESTS 0
+#endif
+
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_BULLET
   #include "dart/collision/bullet/All.hpp"
 #endif
 #include "dart/collision/dart/dart_collision_detector.hpp"
-#if DART_HAVE_FCL
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
   #include "dart/collision/fcl/fcl_collision_detector.hpp"
 #endif
 #include "dart/constraint/ball_joint_constraint.hpp"
@@ -398,7 +403,7 @@ TEST(World, ValidatingClones)
     worlds.push_back(dart::io::readWorld(fileList[i]));
 
     // Set non default collision detector
-#if DART_HAVE_BULLET
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_BULLET
     worlds.back()->setCollisionDetector(CollisionDetectorType::Bullet);
 #else
     worlds.back()->setCollisionDetector(CollisionDetectorType::Dart);
@@ -481,7 +486,7 @@ TEST(World, DefaultWorldUsesDart)
 }
 
 //==============================================================================
-#if DART_HAVE_FCL
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
 TEST(World, TypedSetterConfiguresFclPrimitive)
 {
   auto factory = collision::CollisionDetector::getFactory();
@@ -553,7 +558,7 @@ TEST(World, ConfigFallbacksWhenPreferredDetectorUnavailable)
 }
 
 //==============================================================================
-#if DART_HAVE_FCL
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
 TEST(World, ConfigWarnsWhenPreferredAndFallbackUnavailable)
 {
   ScopedCollisionFactoryDisabler disableDart(

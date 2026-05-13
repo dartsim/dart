@@ -35,7 +35,6 @@
 #include "dart/collision/collision_object.hpp"
 #include "dart/collision/dart/dart_collision_group.hpp"
 #include "dart/collision/dart/dart_collision_object.hpp"
-#include "dart/collision/dart/dart_query_helper.hpp"
 #include "dart/collision/dart/shape_adapter.hpp"
 #include "dart/collision/native/persistent_manifold_cache.hpp"
 #include "dart/common/logging.hpp"
@@ -63,13 +62,11 @@ bool checkGroupValidity(DartCollisionDetector* cd, CollisionGroup* group)
   return true;
 }
 
-std::size_t objectId(const CollisionObject* object)
-{
-  return reinterpret_cast<std::size_t>(object);
-}
-
+template <typename IdResolver>
 void warmStartContacts(
-    CollisionResult* result, native::PersistentManifoldCache* manifoldCache)
+    CollisionResult* result,
+    native::PersistentManifoldCache* manifoldCache,
+    IdResolver&& resolveId)
 {
   if (!result || !manifoldCache) {
     return;
@@ -94,8 +91,12 @@ void warmStartContacts(
     cached.normal = contact.normal;
     cached.penetrationDepth = contact.penetrationDepth;
 
-    const auto id1 = objectId(object1);
-    const auto id2 = objectId(object2);
+    const auto id1 = resolveId(object1);
+    const auto id2 = resolveId(object2);
+    if (id1 == 0u || id2 == 0u) {
+      continue;
+    }
+
     auto& manifold = manifoldCache->getOrCreate(id1, id2);
     manifold.addOrReplace(cached);
     manifold.refresh(tf1, tf2);
@@ -116,9 +117,11 @@ void warmStartContacts(
   }
 }
 
+template <typename IdResolver>
 void refreshManifoldCache(
     const std::vector<CollisionObject*>& objects,
-    native::PersistentManifoldCache* manifoldCache)
+    native::PersistentManifoldCache* manifoldCache,
+    IdResolver&& resolveId)
 {
   if (!manifoldCache) {
     return;
@@ -127,7 +130,10 @@ void refreshManifoldCache(
   std::unordered_map<std::size_t, CollisionObject*> objectsById;
   objectsById.reserve(objects.size());
   for (auto* object : objects) {
-    objectsById[objectId(object)] = object;
+    const auto id = resolveId(object);
+    if (id != 0u) {
+      objectsById[id] = object;
+    }
   }
 
   manifoldCache->refreshAll(
@@ -143,10 +149,12 @@ void refreshManifoldCache(
       });
 }
 
+template <typename IdResolver>
 void refreshManifoldCache(
     const std::vector<CollisionObject*>& objects1,
     const std::vector<CollisionObject*>& objects2,
-    native::PersistentManifoldCache* manifoldCache)
+    native::PersistentManifoldCache* manifoldCache,
+    IdResolver&& resolveId)
 {
   if (!manifoldCache) {
     return;
@@ -155,10 +163,16 @@ void refreshManifoldCache(
   std::unordered_map<std::size_t, CollisionObject*> objectsById;
   objectsById.reserve(objects1.size() + objects2.size());
   for (auto* object : objects1) {
-    objectsById[objectId(object)] = object;
+    const auto id = resolveId(object);
+    if (id != 0u) {
+      objectsById[id] = object;
+    }
   }
   for (auto* object : objects2) {
-    objectsById[objectId(object)] = object;
+    const auto id = resolveId(object);
+    if (id != 0u) {
+      objectsById[id] = object;
+    }
   }
 
   manifoldCache->refreshAll(
@@ -236,17 +250,19 @@ bool DartCollisionDetector::collide(
   }
 
   auto* castedGroup = static_cast<DartCollisionGroup*>(group);
-  const auto collision = dartCollide(
-      castedGroup->mCollisionObjects,
-      castedGroup->mCollisionObjects,
-      option,
-      result);
+  const auto collision
+      = castedGroup->collideSelf(option, result, mManifoldCache.get());
+
+  const auto resolveId = [&](CollisionObject* object) {
+    return castedGroup->getManifoldCacheId(object);
+  };
 
   if (collision && option.enableContact) {
-    warmStartContacts(result, mManifoldCache.get());
+    warmStartContacts(result, mManifoldCache.get(), resolveId);
   }
 
-  refreshManifoldCache(castedGroup->mCollisionObjects, mManifoldCache.get());
+  refreshManifoldCache(
+      castedGroup->mCollisionObjects, mManifoldCache.get(), resolveId);
   return collision;
 }
 
@@ -268,20 +284,23 @@ bool DartCollisionDetector::collide(
   auto* castedGroup1 = static_cast<DartCollisionGroup*>(group1);
   auto* castedGroup2 = static_cast<DartCollisionGroup*>(group2);
 
-  const auto collision = dartCollide(
-      castedGroup1->mCollisionObjects,
-      castedGroup2->mCollisionObjects,
-      option,
-      result);
+  const auto collision = castedGroup1->collideWith(
+      *castedGroup2, option, result, mManifoldCache.get());
+
+  const auto resolveId = [&](CollisionObject* object) {
+    const auto id = castedGroup1->getManifoldCacheId(object);
+    return id != 0u ? id : castedGroup2->getManifoldCacheId(object);
+  };
 
   if (collision && option.enableContact) {
-    warmStartContacts(result, mManifoldCache.get());
+    warmStartContacts(result, mManifoldCache.get(), resolveId);
   }
 
   refreshManifoldCache(
       castedGroup1->mCollisionObjects,
       castedGroup2->mCollisionObjects,
-      mManifoldCache.get());
+      mManifoldCache.get(),
+      resolveId);
   return collision;
 }
 
@@ -293,12 +312,8 @@ double DartCollisionDetector::distance(
     return 0.0;
   }
 
-  const auto* castedGroup = static_cast<DartCollisionGroup*>(group);
-  return dartDistance(
-      castedGroup->mCollisionObjects,
-      castedGroup->mCollisionObjects,
-      option,
-      result);
+  auto* castedGroup = static_cast<DartCollisionGroup*>(group);
+  return castedGroup->distanceSelf(option, result);
 }
 
 //==============================================================================
@@ -316,14 +331,10 @@ double DartCollisionDetector::distance(
     return 0.0;
   }
 
-  const auto* castedGroup1 = static_cast<DartCollisionGroup*>(group1);
-  const auto* castedGroup2 = static_cast<DartCollisionGroup*>(group2);
+  auto* castedGroup1 = static_cast<DartCollisionGroup*>(group1);
+  auto* castedGroup2 = static_cast<DartCollisionGroup*>(group2);
 
-  return dartDistance(
-      castedGroup1->mCollisionObjects,
-      castedGroup2->mCollisionObjects,
-      option,
-      result);
+  return castedGroup1->distanceWith(*castedGroup2, option, result);
 }
 
 //==============================================================================
@@ -339,7 +350,7 @@ bool DartCollisionDetector::raycast(
   }
 
   auto* castedGroup = static_cast<DartCollisionGroup*>(group);
-  return dartRaycast(castedGroup->mCollisionObjects, from, to, option, result);
+  return castedGroup->raycast(from, to, option, result);
 }
 
 //==============================================================================

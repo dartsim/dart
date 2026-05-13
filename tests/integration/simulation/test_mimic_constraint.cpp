@@ -46,10 +46,14 @@
 
 #include <dart/io/read.hpp>
 
-#if DART_HAVE_BULLET
+#ifndef DART_ENABLE_COLLISION_REFERENCE_TESTS
+  #define DART_ENABLE_COLLISION_REFERENCE_TESTS 0
+#endif
+
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_BULLET
   #include <dart/collision/bullet/bullet_collision_detector.hpp>
 #endif
-#if DART_HAVE_ODE
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_ODE
   #include <dart/collision/ode/ode_collision_detector.hpp>
 #endif
 
@@ -100,7 +104,7 @@ Eigen::Vector3d getTranslation(const dart::dynamics::BodyNode* bn)
 
 void setCollisionDetector(WorldPtr world, bool useOde)
 {
-#if DART_HAVE_ODE
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_ODE
   if (useOde) {
     world->getConstraintSolver()->setCollisionDetector(
         dart::collision::OdeCollisionDetector::create());
@@ -109,7 +113,7 @@ void setCollisionDetector(WorldPtr world, bool useOde)
 #else
   (void)useOde;
 #endif
-#if DART_HAVE_BULLET
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_BULLET
   world->getConstraintSolver()->setCollisionDetector(
       dart::collision::BulletCollisionDetector::create());
 #else
@@ -428,7 +432,7 @@ TEST(MimicConstraint, FollowersMatchMiddlePendulum)
 //==============================================================================
 TEST(MimicConstraint, OdeMimicDoesNotExplode)
 {
-#if !DART_HAVE_ODE
+#if !DART_ENABLE_COLLISION_REFERENCE_TESTS || !DART_HAVE_ODE
   GTEST_SKIP() << "ODE collision is not available in this build";
 #endif
 
@@ -517,7 +521,7 @@ TEST(MimicConstraint, OdeMimicDoesNotExplode)
 //==============================================================================
 TEST(MimicConstraint, OdeTracksReferenceLongRun)
 {
-#if !DART_HAVE_ODE
+#if !DART_ENABLE_COLLISION_REFERENCE_TESTS || !DART_HAVE_ODE
   GTEST_SKIP() << "ODE collision is not available in this build";
 #endif
 

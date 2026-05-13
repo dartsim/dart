@@ -1,0 +1,237 @@
+# Reference Capability Gap Analysis
+
+This document turns the north-star plan into implementation-ready gaps. It is
+not a request to keep external collision engines as runtime backends. Bullet,
+FCL, and ODE are treated here as reference baselines for API shape, feature
+coverage, correctness tests, and performance benchmarks only.
+
+## Current Built-In Inventory
+
+The current built-in stack already has substantial native infrastructure:
+
+- Public detector path: `DartCollisionDetector` registers the canonical `dart`
+  key and keeps `experimental` as a compatibility alias.
+- Public group path: `DartCollisionGroup` owns the DART `CollisionObject*`
+  membership list used by collision, distance, and raycast calls.
+- DART adapter: `adaptShape()` converts many DART `dynamics::Shape` types into
+  native shapes, including primitive shapes, mesh-backed shapes, convex mesh,
+  soft mesh, heightmap triangulation, cone/pyramid/ellipsoid convex
+  approximations, multi-sphere convex hull approximation, and voxel-grid
+  compound boxes.
+- Native scene core: `native::CollisionWorld` has object handles, ECS storage,
+  object IDs, broadphase selection, dirty updates, batch storage, cached
+  broadphase snapshots, collision, distance, raycast, and sphere/capsule casts.
+- Native broadphase choices: brute force, AABB tree, spatial hash, and
+  sweep-and-prune implementations exist behind the `BroadPhase` interface.
+- Native query data: `CollisionOption`, `DistanceOption`, `RaycastOption`,
+  `CcdOption`, result structs, contact manifolds, and persistent manifold cache
+  exist in the native layer.
+- Native narrowphase: supported work includes primitives, convex support
+  shapes, meshes with BVH data, SDF distance, raycast, distance, GJK/MPR paths,
+  and sphere/capsule cast internals.
+- Reference tests and comparative benchmarks already exist. The working tree
+  now starts isolating them with explicit CMake opt-out options for reference
+  tests and reference benchmarks.
+
+The first DART adapter limitation is now addressed in the working tree:
+`DartCollisionGroup` owns persistent native scene state, syncs dirty transforms
+and shape revisions, and routes public collision, distance, and raycast calls
+through that scene. Public raycast now uses native broadphase segment-AABB
+candidate pruning before narrowphase, and public distance uses scene AABB
+lower-bound pruning to skip narrowphase pairs that cannot beat the current best
+distance. Manifold warm-starting is now keyed by scene-issued cache IDs, so
+shape replacement or object removal drops stale solver impulses instead of
+reusing DART object addresses. Dynamic-vertex and dynamic-element shapes now
+force scene geometry resync, with soft-mesh mutation coverage proving that
+in-place point-mass motion does not leave stale native mesh data behind. The
+public DART collision filter now adapts into a native filter callback for
+scene-owned native objects, so collision filtering is part of the native pair
+check before narrowphase. The remaining adapter limitation is recurring
+benchmark/profiling checks for the public DART API path.
+
+## Reference Capability Baseline
+
+These capabilities define the bar the built-in layer should meet or exceed.
+
+| Area       | Baseline capability to preserve or beat                                                                                  |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------ |
+| API shape  | Collision worlds/managers own objects, expose group/self/cross-group queries, and keep callback/filter semantics local.  |
+| Broadphase | Persistent object registration, explicit update paths, dirty-AABB handling, self-query and cross-manager query support.  |
+| Filtering  | Bitmask/category filtering plus callback-level filtering before narrowphase work.                                        |
+| Contact    | Contact normal, point, penetration depth, object identity, triangle/side identity where relevant, and contact limits.    |
+| Manifolds  | Persistent contact/manifold data that supports stable stacking and solver warm-starting.                                 |
+| Distance   | Nearest points, signed/penetration-aware semantics where supported, upper/lower-bound early exits, and error tolerances. |
+| Raycast    | Closest-hit and all-hit modes, broadphase-accelerated ray traversal, hit fraction, point, normal, and filtering.         |
+| Sweeps     | Convex/sphere/capsule sweep support where DART needs continuous or predictive collision behavior.                        |
+| Geometry   | Primitive, convex, compound, triangle mesh, heightfield/terrain, voxel/octree-like occupancy, and DART-specific shapes.  |
+| Scaling    | Large dynamic worlds should update dirty objects without full rebuilds and avoid duplicate pair testing.                 |
+| Perf       | Hot paths avoid per-pair allocation, expose benchmark/profiler breakdowns, and reuse acceleration structures.            |
+
+## Gap Matrix
+
+| Gap                                | Current state                                                                                                                                                      | North-star target                                                                                                      | Next implementation step                                                                                               |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| DART adapter scene lifecycle       | Working tree has persistent native scene state owned by `DartCollisionGroup` and public adapter-path benchmark coverage.                                           | Public DART queries use persistent native scene state, dirty updates, cached snapshots, and broadphase pruning.        | Broaden shape/filter invalidation coverage and add recurring JSON regression checks.                                   |
+| Cross-group broadphase             | Working tree prunes group-vs-group collision with each group's persistent native broadphase.                                                                       | Self-group and group-vs-group queries both prune with native broadphase data and avoid duplicate pair testing.         | Add a reusable cross-snapshot query API if the current adapter-local traversal becomes duplicated or too narrow.       |
+| Shape adapter cache                | Working tree covers primitive, mesh-scale, soft-mesh, heightmap, voxel-grid, and point-cloud invalidation/behavior tests.                                          | Shape geometry is cached per DART collision object and invalidated only when shape data changes.                       | Replace conservative dynamic-vertex rebuilds with direct native dynamic-mesh updates if soft-mesh benchmarks require.  |
+| Direct DART shape coverage         | Cone, pyramid, ellipsoid, heightmap, multi-sphere, and voxel-grid are adapted; point clouds are explicitly non-collidable.                                         | Approximations are explicit and tested; high-volume terrain/voxel cases get direct native representations if needed.   | Add native `HeightFieldShape` and sparse voxel acceleration if benchmarks require.                                     |
+| Native type cleanup                | Native `ShapeType` includes direct `Cone`, `HeightField`, and `PointCloud` values without direct classes.                                                          | Native shape taxonomy matches real supported code paths and does not imply unsupported direct semantics.               | Either implement direct classes or remove/mark unused enum values during collision abstraction cleanup.                |
+| Filtering integration              | Working tree adapts DART collision filters into native pair checks before narrowphase; distance/raycast filters stay public-query specific.                        | Filtering decisions are pushed into native pair traversal before narrowphase, with DART filters adapted cleanly.       | Extend the native filter adapter to distance/raycast if native query APIs gain filter hooks for those query types.     |
+| Contact identity and warm-starting | Working tree maps DART objects to scene-issued manifold cache IDs and changes IDs when scene geometry is recreated.                                                | Persistent manifolds are keyed by stable scene object IDs and flushed when objects or shapes disappear.                | Consider moving cache ownership fully into scene/query context when the detector-level cache becomes a cleanup burden. |
+| Distance pruning                   | Working tree skips public DART distance narrowphase pairs whose scene AABB lower bound cannot improve the best distance.                                           | Distance queries use broadphase AABB distance ordering, upper/lower bounds, and nearest-pair early exit.               | Add ordered broadphase/AABB-distance traversal if benchmarks show pair-order-preserving pruning is not enough.         |
+| Raycast scaling                    | Working tree prunes public DART raycasts with native broadphase segment-AABB candidates.                                                                           | Public DART raycast uses native broadphase ray/AABB traversal, closest-hit pruning, all-hit collection, and filtering. | Add ordered closest-hit traversal/profiling if benchmarks show segment-AABB pruning is too broad.                      |
+| Batch and parallel query path      | Native batch settings/stats exist, but public DART queries do not expose the optimized path.                                                                       | Large worlds can run deterministic batched pair testing with reusable scratch and visible stats.                       | Add internal `QueryContext` with `BatchSettings`, deterministic merge, stats, and no public API churn.                 |
+| Reference harness isolation        | Working tree adds reference test/benchmark CMake options, propagates them through major configure paths, and has focused reference-off/on plus core-link evidence. | Reference engines are enabled only for test/benchmark targets and can be disabled without affecting runtime targets.   | Finish package-export, dependency-metadata, wheel-artifact, and downstream-component inspection.                       |
+| Performance guardrails             | Benchmark evidence now includes public DART adapter collision, distance, raycast, and dirty-world paths.                                                           | Benchmarks cover primitive, mesh-heavy, mixed, raycast, distance, batch, dirty-world, and DART adapter API paths.      | Add recurring JSON checks for native core plus public `DartCollisionDetector` query paths.                             |
+
+## Implementation Architecture For Next Step
+
+The next implementation step should not start by deleting legacy backends. It
+should first make the built-in DART path use the scalable native layer.
+
+### 1. `DartCollisionScene`
+
+Create an internal adapter-owned scene object in `dart/collision/dart/`:
+
+- Owns one `native::CollisionWorld`.
+- Maps each DART `CollisionObject*` to stable native and manifold-cache IDs.
+- Tracks dirty object membership, transform changes, shape changes, filter
+  changes, and object removals.
+- Caches one deterministic `native::BroadPhaseSnapshot` per synced group.
+- Owns or references the persistent manifold cache for that group's native
+  object IDs.
+- Exposes `sync(objects)`, `collideSelf()`, `collideAgainst(other)`,
+  `distanceSelf()`, `distanceAgainst(other)`, `raycast()`, and `clear()`.
+
+`DartCollisionGroup` should own this scene, while `DartCollisionDetector`
+continues to own factory registration and compatibility behavior. This keeps
+public APIs stable and prevents the detector from becoming a hidden global
+world.
+
+### 2. Native Query Snapshot API
+
+Extend the native core only where the current snapshot API is too narrow:
+
+- Keep `BroadPhaseSnapshot` for self-query pairs, but add enough metadata for
+  cross-snapshot queries or introduce a `QuerySnapshot` that carries object IDs,
+  AABBs, transforms, shape pointers, deterministic ordering, and a revision.
+- Add a cross-snapshot candidate generator for group-vs-group collision and
+  distance queries.
+- Add ray-AABB candidate traversal so closest-hit raycasts can prune farther
+  objects.
+- Keep result assembly separate from traversal so public DART result ordering
+  stays deterministic.
+
+### 3. Shape And Geometry Cache
+
+Shape adaptation should become an explicit cache with invalidation rules:
+
+- Cache native shape data in `DartCollisionObject`.
+- Add a shape revision or equivalent dirty marker when DART shape geometry
+  mutates.
+- Treat dynamic-vertex and dynamic-element shapes as geometry-dirty until the
+  native core has a direct dynamic-mesh update path.
+- Rebuild mesh BVHs, heightfield data, voxel compounds, and convex
+  approximations only when their source geometry changes.
+- Preserve approximation metadata for cone, ellipsoid, pyramid, and
+  multi-sphere so correctness tests can distinguish expected approximation
+  behavior from native query bugs.
+- Add `PointCloudShape` coverage or document it as non-collidable if DART does
+  not require collision behavior for it.
+
+### 4. Filter Adapter
+
+Filtering should be applied before expensive native work:
+
+- Convert DART `CollisionFilter` and `DistanceFilter` decisions into native
+  callbacks that can run during pair visitation.
+- Preserve DART's existing semantics for self-collision, category/mask
+  filtering, callback filters, and raycast filters.
+- Keep fast bitmask checks in native data and call DART callbacks only after
+  cheap rejection passes.
+
+### 5. Contact And Manifold Ownership
+
+The manifold cache should follow stable scene object identity:
+
+- Use scene-issued object/cache IDs, not transient query objects or DART object
+  addresses, as the primary cache key.
+- Remove cache entries when either object leaves the scene or when incompatible
+  shape geometry changes.
+- Preserve cached normal/friction impulses during result conversion.
+- Keep deterministic contact reduction and ordering as a solver-facing
+  correctness gate.
+
+### 6. Performance And Benchmark Hooks
+
+The built-in architecture should make performance visible before optimization:
+
+- Record timings for sync, broadphase update, candidate generation,
+  narrowphase, result merge, and public result conversion.
+- Add public-DART-path benchmarks in addition to native-core benchmarks; the
+  adapter path is the one users exercise by default.
+- Add dirty-world benchmarks that move a small subset of many objects.
+- Add raycast and distance benchmarks that validate broadphase pruning, not only
+  pairwise narrowphase speed.
+- Keep reference-engine comparisons optional and keep native-only baselines for
+  long-term regression tracking.
+
+## Implementation Order
+
+1. Done in working tree: add `DartCollisionScene` and route public
+   `collide(group)` through persistent native world sync while preserving
+   current results.
+2. Done in working tree: route `collide(group1, group2)` through cross-scene
+   candidate generation.
+3. Done in working tree: public distance and raycast use persistent scene
+   state; raycast has segment-AABB broadphase pruning, and distance skips
+   narrowphase pairs using scene AABB lower bounds.
+4. Done in working tree: move manifold cache keys to stable scene-issued IDs
+   and verify shape replacement invalidates stale solver warm-start data.
+5. Done in working tree: add public adapter-path benchmarks for collision,
+   dirty-world collision, distance, and raycast.
+6. Done in working tree: add shape-cache invalidation/behavior tests for mesh
+   scale mutation, soft-mesh vertex mutation, heightmap mutation, voxel-grid
+   occupancy mutation when OctoMap is enabled, and explicitly non-collidable
+   point clouds.
+7. Done in working tree: adapt DART collision filters into native pair checks
+   before narrowphase.
+8. Started in working tree: split reference tests/benchmarks from runtime
+   backend CMake targets with CMake opt-out options and focused validation.
+   Finish link/package inspection before marking the gate complete.
+9. Only after these pass, continue legacy backend abstraction cleanup and final
+   runtime backend deletion.
+
+## Ready-To-Implement Checklist
+
+- [x] Internal `DartCollisionScene` helper exists in the DART adapter path.
+- [x] `DartCollisionGroup` owns and syncs a `DartCollisionScene`.
+- [x] Public collision, distance, and raycast APIs use persistent scene state.
+- [x] Cross-group native collision candidate generation exists and is
+      deterministic.
+- [x] Public raycast uses native broadphase segment-AABB candidate pruning.
+- [x] Public distance uses scene AABB lower bounds to prune narrowphase pairs
+      that cannot improve the current best distance.
+- [x] Shape adaptation invalidation is covered for primitive DART shape
+      replacement and in-place mutation.
+- [x] Shape adaptation invalidation coverage exists for mesh scale, heightmap,
+      and voxel-grid mutation.
+- [x] Shape adaptation invalidation coverage exists for soft mesh behavior.
+- [x] `PointCloudShape` behavior is implemented or explicitly documented as
+      non-collidable.
+- [x] Filter adapter applies DART collision filters before narrowphase.
+- [x] Manifold cache keys are stable across frames and cleaned on removal or
+      scene geometry replacement.
+- [x] Adapter-path benchmarks exist for collision, distance, raycast, and dirty
+      worlds.
+- [x] CMake reference test/benchmark opt-out options exist and focused
+      reference-off/reference-on validation passes locally.
+- [x] Debug, dartpy, install, coverage, ASAN, Windows, and wheel configure paths
+      carry the reference test/benchmark toggles.
+- [x] Native-only install-style core build produces `libdart.so` without FCL,
+      Bullet, ODE, or libccd runtime links.
+- [x] Native-only install probe installs no FCL, Bullet, ODE, or libccd
+      libraries and no old collision component target files.
+- [ ] Full target-by-target runtime link and package-export inspection proves
+      reference engines are absent from normal runtime targets.
+- [ ] Reference-engine tests and benchmarks are optional CMake targets only.

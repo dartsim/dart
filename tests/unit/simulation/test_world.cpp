@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/config.hpp>
+
 #include <dart/all.hpp>
 
 #include <gtest/gtest.h>
@@ -39,6 +41,10 @@
 using namespace dart;
 using namespace dart::simulation;
 using namespace dart::dynamics;
+
+#ifndef DART_ENABLE_COLLISION_REFERENCE_TESTS
+  #define DART_ENABLE_COLLISION_REFERENCE_TESTS 0
+#endif
 
 //==============================================================================
 SkeletonPtr createSimpleSkeleton(const std::string& name)
@@ -1086,6 +1092,7 @@ TEST(WorldTests, GetSimpleFrameOutOfRange)
   EXPECT_EQ(world->getSimpleFrame(999), nullptr);
 }
 
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_BULLET
 //==============================================================================
 TEST(WorldTests, CreateWithBulletCollisionDetector)
 {
@@ -1096,6 +1103,7 @@ TEST(WorldTests, CreateWithBulletCollisionDetector)
   EXPECT_EQ(world->getName(), "bullet_world");
   EXPECT_NE(world->getCollisionDetector(), nullptr);
 }
+#endif
 
 TEST(WorldTests, AddDuplicateSimpleFrame)
 {

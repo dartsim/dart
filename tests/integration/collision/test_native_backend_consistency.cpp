@@ -35,7 +35,12 @@
 #include <dart/collision/CollisionResult.hpp>
 #include <dart/collision/DistanceResult.hpp>
 #include <dart/collision/collision_detector.hpp>
-#if DART_HAVE_FCL
+
+#ifndef DART_ENABLE_COLLISION_REFERENCE_TESTS
+  #define DART_ENABLE_COLLISION_REFERENCE_TESTS 0
+#endif
+
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
   #include <dart/collision/fcl/FCLCollisionDetector.hpp>
 #endif
 #include <dart/collision/native/narrow_phase/box_box.hpp>
@@ -52,11 +57,11 @@
 #include <dart/dynamics/CapsuleShape.hpp>
 #include <dart/dynamics/SphereShape.hpp>
 
-#if DART_HAVE_BULLET
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_BULLET
   #include <dart/collision/bullet/BulletCollisionDetector.hpp>
 #endif
 
-#if DART_HAVE_ODE
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_ODE
   #include <dart/collision/ode/OdeCollisionDetector.hpp>
 #endif
 
@@ -509,21 +514,21 @@ TEST(NativeCollision, CrossBackendConsistency)
   };
 
   std::vector<Backend> backends;
-#if DART_HAVE_FCL
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
   {
     auto detector = dart::collision::FCLCollisionDetector::create();
     backends.push_back(
         {"FCL", detector, CapabilitiesFor(detector->getTypeView())});
   }
 #endif
-#if DART_HAVE_BULLET
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_BULLET
   {
     auto detector = dart::collision::BulletCollisionDetector::create();
     backends.push_back(
         {"Bullet", detector, CapabilitiesFor(detector->getTypeView())});
   }
 #endif
-#if DART_HAVE_ODE
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_ODE
   {
     auto detector = dart::collision::OdeCollisionDetector::create();
     backends.push_back(

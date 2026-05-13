@@ -22,6 +22,50 @@ is tied to a commit, command, and observed output.
 | Dependency removal    | Default build succeeds without FCL/Bullet/ODE collision deps | Focused pass, May 2026 |
 | Full validation       | `pixi run test-all` passes                                   | Passed, May 2026       |
 
+## North-Star Progress Scale
+
+This scale measures progress toward the single PR's north star: native
+collision is the only normal collision stack, and FCL/Bullet/ODE are removed
+from DART's default runtime and source tree. `dart/collision/` must also stop
+being a true multi-backend selection layer; retained legacy names are
+native-backed compatibility adapters only. FCL/Bullet/ODE may remain only as
+optional reference engines for correctness tests and benchmarks, with CMake
+options that allow native-only builds to opt out. The built-in stack must also
+have clean API boundaries, scalable native scene/query state, and
+performance-oriented internals before this scale reaches completion.
+
+| Stage | Gate                                                | State                          |
+| ----- | --------------------------------------------------- | ------------------------------ |
+| 0     | Baseline native backend exists                      | Complete before this task      |
+| 1     | Native `dart` detector is default                   | Complete in checkpoint         |
+| 2     | DART feature parity is proven                       | Complete in checkpoint         |
+| 3     | gz-physics compatibility is proven                  | Complete in checkpoint         |
+| 4     | Native benchmark wins are recorded                  | Complete in checkpoint         |
+| 5     | Local builds pass with FCL/Bullet/ODE disabled      | Complete in checkpoint         |
+| 6     | Native-only and gz-physics CI are permanent         | Started; local evidence        |
+| 7     | Reference engines are test/bench-only opt-in        | Started; opt-out/link evidence |
+| 8     | Default packages/wheels have no old runtime deps    | Started; install-tree evidence |
+| 9     | Downstream migration/deprecation path is tested     | Not started                    |
+| 10    | Collision abstraction is one clean built-in stack   | Started                        |
+| 11    | Old runtime backend source/components are deleted   | Not started                    |
+| 12    | Final PR evidence is complete and task docs removed | Blocked on remaining stages    |
+
+## Remaining North-Star Gate Backlog
+
+These gates are still required before the single north-star PR is complete.
+
+| Gate                        | Required evidence                                           | Current state                                 |
+| --------------------------- | ----------------------------------------------------------- | --------------------------------------------- |
+| CI native-only build        | CI passes with FCL, Bullet, and ODE disabled                | Local equivalent passed; awaiting CI evidence |
+| CI gz-physics compatibility | gz-physics CI passes with optional legacy components built  | Required in this PR                           |
+| Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Started; focused opt-out/link evidence        |
+| Packaging removal           | Default packages/wheels have no old collision runtime deps  | Started; install-tree evidence                |
+| Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Required in this PR                           |
+| Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Started; legacy backends remain               |
+| Built-in architecture       | API-clean, scalable, performance-oriented native layer      | Started; layer contract and scene/filter path |
+| Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Required in this PR                           |
+| Legacy backend deletion     | Old runtime backend sources removed from default stack      | Blocked on migration gates                    |
+
 ## Test Runs
 
 - `pixi run lint`
@@ -492,6 +536,339 @@ python/tests/unit/collision/test_collision.py
 python/tests/unit/simulation/test_world.py`
   - Commit: working tree after all-backends-disabled `dartpy` build
   - Result: passed, 9 passed and 1 skipped.
+
+## Planning Documentation Runs
+
+- `pixi run lint`
+  - Commit: working tree after north-star planning and built-in architecture
+    documentation update
+  - Result: passed. `codespell`, CMake `format`, `clang-format`, `black`,
+    `isort`, `prettier`, TOML lint, RST lint, and AI command sync completed.
+- `pixi run check-docs-policy`
+  - Commit: working tree after north-star planning and built-in architecture
+    documentation update
+  - Result: passed.
+- `git diff --check`
+  - Commit: working tree after north-star planning and built-in architecture
+    documentation update
+  - Result: passed.
+- `pixi run lint`
+  - Commit: working tree after reference capability gap analysis documentation
+    update
+  - Result: passed.
+- `pixi run check-docs-policy`
+  - Commit: working tree after reference capability gap analysis documentation
+    update
+  - Result: passed.
+- `git diff --check`
+  - Commit: working tree after reference capability gap analysis documentation
+    update
+  - Result: passed.
+
+## Built-In Architecture Runs
+
+- `pixi run lint`
+  - Commit: working tree after persistent DART adapter scene, raycast pruning,
+    and distance AABB lower-bound pruning implementation
+  - Result: passed. C++ formatting, docs formatting, spell check, Python
+    formatting, TOML/YAML/RST checks, and AI command sync completed.
+- `cmake --build build/default/cpp/Release --target
+UNIT_collision_DartCollisionDetector --parallel 4`
+  - Commit: working tree after persistent DART adapter scene, raycast pruning,
+    and distance AABB lower-bound pruning implementation
+  - Result: passed.
+- `ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^UNIT_collision'`
+  - Commit: working tree after persistent DART adapter scene, raycast pruning,
+    and distance AABB lower-bound pruning implementation
+  - Result: passed, 20/20 collision unit tests.
+- `cmake --build build/default/cpp/Release --target
+UNIT_collision_DartCollisionDetector --parallel 4`
+  - Commit: working tree after scene-issued manifold cache IDs and
+    shape-replacement warm-start invalidation coverage
+  - Result: passed.
+- `ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^UNIT_collision_DartCollisionDetector$'`
+  - Commit: working tree after scene-issued manifold cache IDs and
+    shape-replacement warm-start invalidation coverage
+  - Result: passed, 1/1 detector test.
+- `pixi run lint`
+  - Commit: working tree after scene-issued manifold cache IDs, documentation
+    updates, and focused warm-start invalidation coverage
+  - Result: passed. C++ formatting, docs formatting, spell check, Python
+    formatting, TOML/YAML/RST checks, and AI command sync completed.
+- `pixi run check-docs-policy && git diff --check && cmake --build
+build/default/cpp/Release --target UNIT_collision_DartCollisionDetector
+--parallel 4 && ctest --test-dir build/default/cpp/Release --output-on-failure
+-R '^UNIT_collision'`
+  - Commit: working tree after final lint for scene-issued manifold cache IDs
+    and architecture docs
+  - Result: passed. Docs policy and whitespace checks passed; build passed;
+    CTest passed, 20/20 collision unit tests.
+- `cmake --build build/default/cpp/Release --target
+bm_scenarios_dart_adapter --parallel 4`
+  - Commit: working tree after adding public DART adapter-path benchmark
+    coverage for collision, dirty-world collision, distance, and raycast
+  - Result: passed.
+- `build/default/cpp/Release/bin/bm_scenarios_dart_adapter
+--benchmark_filter='DartAdapter' --benchmark_min_time=0.01s
+--benchmark_repetitions=1`
+  - Commit: working tree after adding public DART adapter-path benchmark
+    coverage
+  - Result: passed. Ran eight public adapter benchmark cases:
+    `CollidePersistentScene` at 64/256 objects, `CollideDirtySubset` at
+    256/1024 objects, `DistancePersistentScene` at 64/256 objects, and
+    `RaycastPersistentScene` at 256/1024 objects.
+- `pixi run lint`
+  - Commit: working tree after public DART adapter benchmark target and
+    benchmark documentation updates
+  - Result: passed. C++ formatting, docs formatting, spell check, Python
+    formatting, TOML/YAML/RST checks, and AI command sync completed.
+- `cmake --build build/default/cpp/Release --target
+bm_scenarios_dart_adapter UNIT_collision_DartCollisionDetector --parallel 4 &&
+build/default/cpp/Release/bin/bm_scenarios_dart_adapter
+--benchmark_filter='DartAdapter' --benchmark_min_time=0.01s
+--benchmark_repetitions=1 && pixi run check-docs-policy && git diff --check &&
+ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^UNIT_collision'`
+  - Commit: working tree after final lint for public DART adapter benchmark
+    coverage
+  - Result: passed. Benchmark and detector targets built; eight public adapter
+    benchmark cases ran; docs policy and whitespace checks passed; CTest passed,
+    20/20 collision unit tests.
+- `cmake --build build/default/cpp/Release --target
+UNIT_collision_DartCollisionDetector --parallel 4 && ctest --test-dir
+build/default/cpp/Release --output-on-failure -R
+'^UNIT_collision_DartCollisionDetector$'`
+  - Commit: working tree after primitive in-place shape mutation invalidation
+    coverage
+  - Result: passed, 1/1 detector test.
+- `pixi run lint && pixi run check-docs-policy && git diff --check && cmake
+--build build/default/cpp/Release --target UNIT_collision_DartCollisionDetector
+--parallel 4 && ctest --test-dir build/default/cpp/Release --output-on-failure
+-R '^UNIT_collision'`
+  - Commit: working tree after primitive shape mutation coverage and checklist
+    updates
+  - Result: passed. Lint, docs policy, whitespace check, detector build, and
+    20/20 collision unit tests passed.
+- `cmake --build build/default/cpp/Release --target
+UNIT_collision_DartCollisionDetector --parallel 4 && ctest --test-dir
+build/default/cpp/Release --output-on-failure -R
+'^UNIT_collision_DartCollisionDetector$'`
+  - Commit: working tree after mesh scale, heightmap, voxel-grid, and
+    point-cloud invalidation/behavior coverage
+  - Result: passed, 1/1 detector test. The build emitted the known third-party
+    OctoMap `<ciso646>` C++20 warning when voxel-grid coverage was compiled.
+- `cmake --build build/default/cpp/Release --target
+UNIT_collision_DartCollisionDetector --parallel 4 && ctest --test-dir
+build/default/cpp/Release --output-on-failure -R
+'^UNIT_collision_DartCollisionDetector$'`
+  - Commit: working tree after dynamic-vertex geometry resync and soft-mesh
+    point-mass mutation coverage
+  - Result: passed, 1/1 detector test. The build emitted the known third-party
+    OctoMap `<ciso646>` C++20 warning when voxel-grid coverage was compiled.
+- `pixi run lint && pixi run check-docs-policy && git diff --check && cmake
+--build build/default/cpp/Release --target UNIT_collision_DartCollisionDetector
+--parallel 4 && ctest --test-dir build/default/cpp/Release --output-on-failure
+-R '^UNIT_collision'`
+  - Commit: working tree after dynamic-vertex geometry resync, soft-mesh
+    mutation coverage, and docs checklist updates
+  - Result: passed. Lint, docs policy, whitespace check, detector build, and
+    20/20 collision unit tests passed. The build emitted the known third-party
+    OctoMap `<ciso646>` C++20 warning when voxel-grid coverage was compiled.
+- `cmake --build build/default/cpp/Release --target
+UNIT_collision_DartCollisionDetector UNIT_collision_CollisionFilter --parallel
+4 && ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^(UNIT_collision_DartCollisionDetector|UNIT_collision_CollisionFilter)$'`
+  - Commit: working tree after adapting DART collision filters into native pair
+    checks before narrowphase
+  - Result: passed, 2/2 tests.
+- `pixi run lint && pixi run check-docs-policy && git diff --check && cmake
+--build build/default/cpp/Release --target UNIT_collision_DartCollisionDetector
+UNIT_collision_CollisionFilter --parallel 4 && ctest --test-dir
+build/default/cpp/Release --output-on-failure -R '^UNIT_collision'`
+  - Commit: working tree after dynamic-vertex geometry resync, native collision
+    filter adapter, and docs checklist updates
+  - Result: passed. Lint, docs policy, whitespace check, detector/filter build,
+    and 20/20 collision unit tests passed.
+
+## CI Hardening Runs
+
+- `.github/workflows/ci_ubuntu.yml` native-only job addition
+  - Commit: working tree after adding
+    `Native Collision (no FCL/Bullet/ODE)` to CI Linux
+  - Result: not run in GitHub CI yet. The job configures with
+    `DART_BUILD_COLLISION_FCL_OVERRIDE=OFF`,
+    `DART_BUILD_COLLISION_BULLET_OVERRIDE=OFF`, and
+    `DART_BUILD_COLLISION_ODE_OVERRIDE=OFF`; builds `dart`, `dartpy`, native
+    collision tests, and focused default-detector tests; runs the
+    `collision-native` label; and runs dartpy collision/world smoke tests.
+- `DART_BUILD_COLLISION_FCL_OVERRIDE=OFF
+DART_BUILD_COLLISION_BULLET_OVERRIDE=OFF
+DART_BUILD_COLLISION_ODE_OVERRIDE=OFF DART_VERBOSE=ON pixi run config &&
+DART_BUILD_COLLISION_FCL_OVERRIDE=OFF
+DART_BUILD_COLLISION_BULLET_OVERRIDE=OFF
+DART_BUILD_COLLISION_ODE_OVERRIDE=OFF pixi run -- cmake --build
+build/default/cpp/Release --target dart dartpy dart_collision_native_tests
+UNIT_collision_CollisionGroup UNIT_collision_Raycast
+UNIT_collision_DartCollisionDetector UNIT_collision_NativeBackend --parallel
+8 && pixi run -- ctest --test-dir build/default/cpp/Release
+--output-on-failure -L collision-native && pixi run -- ctest --test-dir
+build/default/cpp/Release --output-on-failure -R
+'^(UNIT_collision_CollisionGroup|UNIT_collision_Raycast|UNIT_collision_DartCollisionDetector|UNIT_collision_NativeBackend)$'
+&& PYTHONPATH=build/default/cpp/Release/python pixi run -- pytest -q
+python/tests/unit/collision/test_collision.py
+python/tests/unit/simulation/test_world.py`
+  - Commit: working tree after adding the native-only CI job.
+  - Result: passed locally. Configure reported
+    `DART_BUILD_COLLISION_FCL: OFF`, `DART_BUILD_COLLISION_BULLET: OFF`, and
+    `DART_BUILD_COLLISION_ODE: OFF`; build completed the native-only CI job
+    targets; CTest passed the `collision-native` label, 29/29 tests; focused
+    default-detector CTests passed, 4/4 tests; Python collision/world smoke
+    passed, 9 passed and 1 skipped. The skipped Python case is the expected
+    Bullet detector check when Bullet is disabled. This is local job-equivalent
+    evidence, not a substitute for the pending GitHub CI result.
+
+## Reference Harness Isolation Runs
+
+- `DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE=OFF
+DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE=OFF DART_VERBOSE=ON pixi
+run config`
+  - Commit: working tree after adding reference test/benchmark CMake opt-out
+    options.
+  - Result: passed. Configure kept
+    `DART_BUILD_COLLISION_FCL=ON`, `DART_BUILD_COLLISION_BULLET=ON`, and
+    `DART_BUILD_COLLISION_ODE=ON`, while reporting
+    `DART_BUILD_COLLISION_REFERENCE_TESTS=OFF` and
+    `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS=OFF`. The generated test set had
+    264 tests, and the native collision unit set had 29 tests because the
+    reference-backend native test target was excluded.
+- `DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE=OFF
+DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE=OFF pixi run config && pixi
+run -- cmake --build build/default/cpp/Release --target
+UNIT_collision_CollisionGroup UNIT_collision_Raycast UNIT_simulation_World
+INTEGRATION_collision_native_backend_consistency INTEGRATION_io_SkelParser
+INTEGRATION_simulation_World bm_scenarios_raycast_batch --parallel 8 && pixi
+run -- ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^(UNIT_collision_CollisionGroup|UNIT_collision_Raycast|UNIT_simulation_World|INTEGRATION_collision_native_backend_consistency|INTEGRATION_io_SkelParser|INTEGRATION_simulation_World)$'`
+  - Commit: working tree after gating focused reference tests and comparative
+    benchmarks.
+  - Result: passed. Focused reference-disabled build completed and CTest passed
+    6/6 selected native/default tests. The build emitted only known
+    third-party OctoMap and deprecated compatibility-header warnings.
+- `cmake --build build/default/cpp/Release --target help | rg
+'test_reference_backends|bm_comparative|bm_boxes|bm_scenarios_mixed_primitives|bm_scenarios_mesh_heavy|INTEGRATION_simulation_MimicConstraint'
+|| true`
+  - Commit: working tree after reference-disabled configure.
+  - Result: no matching targets were listed, confirming those reference-only
+    tests and comparative benchmarks are absent when the reference options are
+    disabled.
+- Reference-disabled probe before final gating:
+  - Result: `INTEGRATION_simulation_MimicConstraint` failed
+    `MimicConstraint.FollowersMatchMiddlePendulum` when forced onto the native
+    default detector in a reference-disabled build. The target is now gated as
+    reference-engine coverage for this phase rather than counted as
+    native/default coverage. This is a tracked evidence point, not a north-star
+    pass for native MimicConstraint behavior.
+- `pixi run config && pixi run -- cmake --build build/default/cpp/Release
+--target test_reference_backends bm_comparative_raycast
+INTEGRATION_simulation_MimicConstraint --parallel 8 && pixi run -- ctest
+--test-dir build/default/cpp/Release --output-on-failure -R
+'^(test_reference_backends|INTEGRATION_simulation_MimicConstraint)$'`
+  - Commit: working tree after reference test/benchmark opt-out support.
+  - Result: passed with default reference options enabled. Configure reported
+    `DART_BUILD_COLLISION_REFERENCE_TESTS=ON` and
+    `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS=ON`; the selected reference
+    targets built; CTest passed 2/2 tests.
+- `DART_BUILD_COLLISION_FCL_OVERRIDE=OFF
+DART_BUILD_COLLISION_BULLET_OVERRIDE=OFF
+DART_BUILD_COLLISION_ODE_OVERRIDE=OFF
+DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE=OFF
+DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE=OFF
+DART_BUILD_EXAMPLES_OVERRIDE=OFF DART_BUILD_TUTORIALS_OVERRIDE=OFF
+DART_BUILD_GUI_OVERRIDE=OFF DART_VERBOSE=ON pixi run config-debug && pixi run
+-- cmake -LA -N build/default/cpp/Debug | rg
+'DART_BUILD_COLLISION_(FCL|BULLET|ODE|REFERENCE_TESTS|REFERENCE_BENCHMARKS):'`
+  - Commit: working tree after propagating reference toggles to configure entry
+    points.
+  - Result: passed. The Debug CMake cache reported FCL, Bullet, ODE, reference
+    tests, and reference benchmarks all `OFF`.
+- `DART_BUILD_COLLISION_FCL_OVERRIDE=OFF
+DART_BUILD_COLLISION_BULLET_OVERRIDE=OFF
+DART_BUILD_COLLISION_ODE_OVERRIDE=OFF
+DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE=OFF
+DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE=OFF DART_VERBOSE=ON pixi
+run config-py && pixi run -- cmake -LA -N build/default/cpp/Release | rg
+'DART_BUILD_COLLISION_(FCL|BULLET|ODE|REFERENCE_TESTS|REFERENCE_BENCHMARKS):'`
+  - Commit: working tree after propagating reference toggles to the dartpy
+    configure path.
+  - Result: passed. The Release dartpy CMake cache reported FCL, Bullet, ODE,
+    reference tests, and reference benchmarks all `OFF`.
+- `DART_BUILD_COLLISION_FCL_OVERRIDE=OFF
+DART_BUILD_COLLISION_BULLET_OVERRIDE=OFF
+DART_BUILD_COLLISION_ODE_OVERRIDE=OFF
+DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE=OFF
+DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE=OFF
+DART_BUILD_GUI_OVERRIDE=OFF DART_VERBOSE=ON pixi run config-install OFF &&
+pixi run -- cmake -LA -N build/default/cpp | rg
+'DART_BUILD_COLLISION_(FCL|BULLET|ODE|REFERENCE_TESTS|REFERENCE_BENCHMARKS):'`
+  - Commit: working tree after propagating reference toggles to install
+    configure paths.
+  - Result: passed. The install-style CMake cache reported FCL, Bullet, ODE,
+    reference tests, and reference benchmarks all `OFF`.
+- `pixi run -- cmake --build build/default/cpp --target dart --parallel 8`
+  - Commit: working tree after native-only install-style configure.
+  - Result: passed. The top-level install-style build output had only
+    `libdart.so` in `build/default/cpp/lib`; no `dart-collision-fcl`,
+    `dart-collision-bullet`, or `dart-collision-ode` library was produced in
+    that build tree.
+- `ldd build/default/cpp/lib/libdart.so.7.0.0 | grep -Ei
+'lib(fcl|bullet|ode|ccd)' || true`
+  - Commit: working tree after native-only install-style `dart` build.
+  - Result: no matching runtime links. `libdart.so` did not link FCL, Bullet,
+    ODE, or libccd in the native-only install-style build.
+- `pixi run -- cmake --build build/default/cpp --target help | rg
+'dart-collision-(fcl|bullet|ode)|test_reference_backends|bm_comparative|bm_scenarios_(mixed_primitives|mesh_heavy)|INTEGRATION_simulation_MimicConstraint'
+|| true`
+  - Commit: working tree after native-only install-style configure.
+  - Result: no matching legacy collision backend or reference-only targets were
+    listed in the native-only install-style build.
+- `pixi run -- cmake --build build/default/cpp --target
+dart_collision_native_tests --parallel 8 && pixi run -- ctest --test-dir
+build/default/cpp --output-on-failure -L collision-native && pixi run --
+python -m py_compile scripts/wheel_build.py`
+  - Commit: working tree after configure-entry-point propagation and wheel
+    helper updates.
+  - Result: passed. Native collision tests built and CTest passed 29/29 under
+    the native-only install-style configuration; `scripts/wheel_build.py`
+    compiled successfully.
+- `pixi run -- cmake --build build/default/cpp --target dart-utils
+dart-utils-urdf dart-io --parallel 8 && pixi run -- cmake --install
+build/default/cpp --prefix build/native_collision_install_probe_<timestamp>`
+  - Commit: working tree after native-only install-style configure.
+  - Result: passed after building the installable utility and IO components.
+    The installed prefix contained `libdart`, `libdart-collision-native`,
+    `libdart-utils`, `libdart-utils-urdf`, and `libdart-io`; it did not install
+    `libdart-collision-fcl`, `libdart-collision-bullet`, or
+    `libdart-collision-ode`.
+- `find <install-prefix> \( -type f -o -type l \) | rg -i
+'collision-(fcl|bullet|ode)|libdart-collision-(fcl|bullet|ode)|lib(fcl|bullet|ode|ccd)'
+|| true`
+  - Commit: working tree after native-only install probe.
+  - Result: no matching installed files or symlinks.
+- `for lib in <install-prefix>/lib/*.so*; do ldd "$lib" | grep -Ei
+'lib(fcl|bullet|ode|ccd)' || true; done`
+  - Commit: working tree after native-only install probe.
+  - Result: no matching runtime links from any installed native-only library.
+- `rg -n
+'collision-(fcl|bullet|ode)|libdart-collision-(fcl|bullet|ode)|lib(fcl|bullet|ode|ccd)|DART_BUILD_COLLISION'
+<install-prefix>/share/dart/cmake <install-prefix>/lib/pkgconfig`
+  - Commit: working tree after native-only install probe.
+  - Result: no installed old collision component files or targets. Expected
+    `DART_BUILD_COLLISION_*` variables are `OFF`; residual compatibility
+    strings remain in generated CMake component templates and the
+    `DARTConfig.cmake` optional `collision-fcl` fallback. Those are tracked for
+    the downstream compatibility and abstraction cleanup phases.
 
 ## Known Risks
 

@@ -35,8 +35,18 @@
 
 #include <dart/collision/collision_group.hpp>
 
+#include <memory>
+
+#include <cstddef>
+
 namespace dart {
 namespace collision {
+
+namespace native {
+class PersistentManifoldCache;
+} // namespace native
+
+class DartCollisionScene;
 
 class DartCollisionGroup : public CollisionGroup
 {
@@ -47,7 +57,7 @@ public:
   DartCollisionGroup(const CollisionDetectorPtr& collisionDetector);
 
   /// Destructor
-  virtual ~DartCollisionGroup() = default;
+  ~DartCollisionGroup() override;
 
 protected:
   // Documentation inherited
@@ -69,9 +79,37 @@ protected:
   // Documentation inherited
   void updateCollisionGroupEngineData() override;
 
+  bool collideSelf(
+      const CollisionOption& option,
+      CollisionResult* result,
+      native::PersistentManifoldCache* manifoldCache);
+
+  bool collideWith(
+      DartCollisionGroup& other,
+      const CollisionOption& option,
+      CollisionResult* result,
+      native::PersistentManifoldCache* manifoldCache);
+
+  double distanceSelf(const DistanceOption& option, DistanceResult* result);
+
+  double distanceWith(
+      DartCollisionGroup& other,
+      const DistanceOption& option,
+      DistanceResult* result);
+
+  bool raycast(
+      const Eigen::Vector3d& from,
+      const Eigen::Vector3d& to,
+      const RaycastOption& option,
+      RaycastResult* result);
+
+  std::size_t getManifoldCacheId(CollisionObject* object) const;
+
 protected:
   /// CollisionObjects added to this DartCollisionGroup
   std::vector<CollisionObject*> mCollisionObjects;
+
+  std::unique_ptr<DartCollisionScene> mScene;
 };
 
 } // namespace collision

@@ -227,6 +227,18 @@ dart_option(DART_BUILD_GUI_VSG "Build experimental VSG (VulkanSceneGraph) GUI ba
 dart_option(DART_BUILD_COLLISION_FCL "Build the FCL collision backend" OFF CATEGORY build)
 dart_option(DART_BUILD_COLLISION_BULLET "Build the Bullet collision backend" OFF CATEGORY build)
 dart_option(DART_BUILD_COLLISION_ODE "Build the ODE collision backend" OFF CATEGORY build)
+dart_option(
+  DART_BUILD_COLLISION_REFERENCE_TESTS
+  "Build collision tests that use FCL, Bullet, or ODE as reference engines"
+  ON
+  CATEGORY build
+)
+dart_option(
+  DART_BUILD_COLLISION_REFERENCE_BENCHMARKS
+  "Build collision benchmarks that compare native collision against FCL, Bullet, or ODE"
+  ON
+  CATEGORY build
+)
 dart_option(DART_BUILD_EXAMPLES "Build example targets" ON CATEGORY build)
 dart_option(DART_BUILD_TUTORIALS "Build tutorial targets" ON CATEGORY build)
 dart_option(DART_BUILD_TESTS "Build C++ tests" ON CATEGORY build)

@@ -32,25 +32,686 @@
 
 #include "dart/collision/dart/dart_collision_group.hpp"
 
+#include "dart/collision/collision_filter.hpp"
 #include "dart/collision/collision_object.hpp"
+#include "dart/collision/contact.hpp"
+#include "dart/collision/dart/dart_collision_object.hpp"
+#include "dart/collision/dart/shape_adapter.hpp"
+#include "dart/collision/distance_filter.hpp"
+#include "dart/collision/native/collision_filter.hpp"
+#include "dart/collision/native/collision_world.hpp"
+#include "dart/collision/native/narrow_phase/narrow_phase.hpp"
+#include "dart/common/logging.hpp"
+#include "dart/dynamics/shape.hpp"
 
 #include <algorithm>
+#include <atomic>
+#include <limits>
+#include <unordered_map>
+#include <unordered_set>
+
+#include <cmath>
 
 namespace dart {
 namespace collision {
 
+namespace {
+
+bool isSameTransform(const Eigen::Isometry3d& lhs, const Eigen::Isometry3d& rhs)
+{
+  return lhs.matrix().isApprox(rhs.matrix(), 1e-12);
+}
+
+bool requiresDynamicGeometrySync(const dynamics::Shape& shape)
+{
+  return shape.checkDataVariance(dynamics::Shape::DYNAMIC_VERTICES)
+         || shape.checkDataVariance(dynamics::Shape::DYNAMIC_ELEMENTS);
+}
+
+class DartCollisionFilterAdapter final : public native::CollisionFilter
+{
+public:
+  explicit DartCollisionFilterAdapter(
+      const dart::collision::CollisionFilter* filter)
+    : mFilter(filter)
+  {
+  }
+
+  bool ignoresCollision(
+      const native::CollisionObject& object1,
+      const native::CollisionObject& object2) const override
+  {
+    if (!mFilter) {
+      return false;
+    }
+
+    const auto* dartObject1
+        = static_cast<const CollisionObject*>(object1.getUserData());
+    const auto* dartObject2
+        = static_cast<const CollisionObject*>(object2.getUserData());
+    if (!dartObject1 || !dartObject2) {
+      return false;
+    }
+
+    return mFilter->ignoresCollision(dartObject1, dartObject2);
+  }
+
+private:
+  const dart::collision::CollisionFilter* mFilter;
+};
+
+bool addContacts(
+    const CollisionOption& option,
+    CollisionObject* object1,
+    CollisionObject* object2,
+    const native::CollisionResult& nativeResult,
+    CollisionResult& result)
+{
+  if (!option.enableContact) {
+    Contact contact;
+    contact.collisionObject1 = object1;
+    contact.collisionObject2 = object2;
+    result.addContact(contact);
+    return result.getNumContacts() >= option.maxNumContacts;
+  }
+
+  const auto numContacts = nativeResult.numContacts();
+  for (auto i = 0u; i < numContacts; ++i) {
+    const auto& cp = nativeResult.getContact(i);
+
+    if (!option.allowNegativePenetrationDepthContacts && cp.depth < 0.0) {
+      continue;
+    }
+
+    if (Contact::isZeroNormal(cp.normal)) {
+      continue;
+    }
+
+    Contact contact;
+    contact.point = cp.position;
+    contact.normal = cp.normal;
+    contact.penetrationDepth = cp.depth;
+    contact.collisionObject1 = object1;
+    contact.collisionObject2 = object2;
+    result.addContact(contact);
+
+    if (result.getNumContacts() >= option.maxNumContacts) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+native::CollisionOption makeNativeCollisionOption(
+    const CollisionOption& option, const native::CollisionFilter* filter)
+{
+  native::CollisionOption nativeOption;
+  nativeOption.enableContact = option.enableContact;
+  nativeOption.maxNumContacts = option.maxNumContacts;
+  nativeOption.collisionFilter = filter;
+  return nativeOption;
+}
+
+native::DistanceOption makeNativeDistanceOption(
+    const DistanceOption& option, double upperBound)
+{
+  native::DistanceOption nativeOption;
+  nativeOption.upperBound = upperBound;
+  nativeOption.enableNearestPoints = option.enableNearestPoints;
+  return nativeOption;
+}
+
+double aabbDistance(const native::Aabb& a, const native::Aabb& b)
+{
+  double squaredDistance = 0.0;
+  for (auto i = 0; i < 3; ++i) {
+    double delta = 0.0;
+    if (a.max[i] < b.min[i]) {
+      delta = b.min[i] - a.max[i];
+    } else if (b.max[i] < a.min[i]) {
+      delta = a.min[i] - b.max[i];
+    }
+    squaredDistance += delta * delta;
+  }
+  return std::sqrt(squaredDistance);
+}
+
+std::size_t allocateManifoldCacheId()
+{
+  static std::atomic_size_t nextId{1u};
+  return nextId.fetch_add(1u, std::memory_order_relaxed);
+}
+
+} // namespace
+
+class DartCollisionScene
+{
+public:
+  void sync(const std::vector<CollisionObject*>& objects)
+  {
+    std::unordered_set<CollisionObject*> activeObjects;
+    activeObjects.reserve(objects.size());
+    for (auto* object : objects) {
+      if (object) {
+        activeObjects.insert(object);
+      }
+    }
+
+    for (auto it = mEntries.begin(); it != mEntries.end();) {
+      if (!activeObjects.contains(it->first)) {
+        it = removeEntry(it);
+      } else {
+        ++it;
+      }
+    }
+
+    mWorld.reserveObjects(activeObjects.size());
+
+    std::vector<native::ObjectId> dirtyIds;
+    dirtyIds.reserve(objects.size());
+
+    mObjectsInOrder.clear();
+    mObjectsInOrder.reserve(objects.size());
+    for (auto* object : objects) {
+      if (syncObject(object, dirtyIds)) {
+        mObjectsInOrder.push_back(object);
+      }
+    }
+
+    if (!dirtyIds.empty()) {
+      (void)mWorld.updateDirty(dirtyIds);
+    }
+  }
+
+  void remove(CollisionObject* object)
+  {
+    const auto it = mEntries.find(object);
+    if (it != mEntries.end()) {
+      removeEntry(it);
+    }
+    std::erase(mObjectsInOrder, object);
+  }
+
+  void clear()
+  {
+    mEntries.clear();
+    mObjectsByNativeId.clear();
+    mObjectsInOrder.clear();
+    mWorld.clear();
+  }
+
+  bool collideSelf(
+      const CollisionOption& option,
+      CollisionResult* result,
+      native::PersistentManifoldCache* /*manifoldCache*/)
+  {
+    if (result) {
+      result->clear();
+    }
+
+    if (!checkMaxContacts(option)) {
+      return false;
+    }
+
+    if (mEntries.size() < 2u) {
+      return false;
+    }
+
+    const auto snapshot = mWorld.buildBroadPhaseSnapshot();
+    const DartCollisionFilterAdapter filterAdapter(
+        option.collisionFilter.get());
+    const auto nativeFilter = option.collisionFilter ? &filterAdapter : nullptr;
+    const auto nativeOption = makeNativeCollisionOption(option, nativeFilter);
+    bool collisionFound = false;
+
+    for (const auto& pair : snapshot.pairs) {
+      const auto* entry1 = findEntry(pair.first);
+      const auto* entry2 = findEntry(pair.second);
+      if (!entry1 || !entry2) {
+        continue;
+      }
+
+      native::CollisionResult pairResult;
+      if (!mWorld.collide(
+              entry1->nativeObject,
+              entry2->nativeObject,
+              nativeOption,
+              pairResult)) {
+        continue;
+      }
+
+      collisionFound = true;
+      if (!result) {
+        return true;
+      }
+
+      if (addContacts(
+              option, entry1->object, entry2->object, pairResult, *result)) {
+        return true;
+      }
+    }
+
+    return collisionFound;
+  }
+
+  bool collideAgainst(
+      DartCollisionScene& other,
+      const CollisionOption& option,
+      CollisionResult* result,
+      native::PersistentManifoldCache* manifoldCache)
+  {
+    if (&other == this) {
+      return collideSelf(option, result, manifoldCache);
+    }
+
+    if (result) {
+      result->clear();
+    }
+
+    if (!checkMaxContacts(option)) {
+      return false;
+    }
+
+    if (mEntries.empty() || other.mEntries.empty()) {
+      return false;
+    }
+
+    const DartCollisionFilterAdapter filterAdapter(
+        option.collisionFilter.get());
+    const auto nativeFilter = option.collisionFilter ? &filterAdapter : nullptr;
+    const auto nativeOption = makeNativeCollisionOption(option, nativeFilter);
+    bool collisionFound = false;
+
+    for (auto* object1 : mObjectsInOrder) {
+      const auto* entry1 = findEntry(object1);
+      if (!entry1) {
+        continue;
+      }
+
+      auto candidates = other.mWorld.getBroadPhase().queryOverlapping(
+          entry1->nativeObject.computeAabb());
+      std::sort(candidates.begin(), candidates.end());
+
+      for (const auto id2 : candidates) {
+        const auto* entry2 = other.findEntry(id2);
+        if (!entry2) {
+          continue;
+        }
+
+        native::CollisionResult pairResult;
+        if (!mWorld.collide(
+                entry1->nativeObject,
+                entry2->nativeObject,
+                nativeOption,
+                pairResult)) {
+          continue;
+        }
+
+        collisionFound = true;
+        if (!result) {
+          return true;
+        }
+
+        if (addContacts(
+                option, entry1->object, entry2->object, pairResult, *result)) {
+          return true;
+        }
+      }
+    }
+
+    return collisionFound;
+  }
+
+  double distanceSelf(const DistanceOption& option, DistanceResult* result)
+  {
+    if (result) {
+      result->clear();
+    }
+
+    return distanceImpl(*this, true, option, result);
+  }
+
+  double distanceAgainst(
+      DartCollisionScene& other,
+      const DistanceOption& option,
+      DistanceResult* result)
+  {
+    if (&other == this) {
+      return distanceSelf(option, result);
+    }
+
+    if (result) {
+      result->clear();
+    }
+
+    return distanceImpl(other, false, option, result);
+  }
+
+  bool raycast(
+      const Eigen::Vector3d& from,
+      const Eigen::Vector3d& to,
+      const RaycastOption& option,
+      RaycastResult* result)
+  {
+    if (result) {
+      result->clear();
+    }
+
+    const auto delta = to - from;
+    const auto totalLength = delta.norm();
+    if (totalLength <= 0.0) {
+      return false;
+    }
+
+    const native::Ray ray(from, delta, totalLength);
+    const auto nativeOption = native::RaycastOption::unlimited();
+    const native::Aabb rayAabb(from.cwiseMin(to), from.cwiseMax(to));
+    const auto candidateIds = mWorld.getBroadPhase().queryOverlapping(rayAabb);
+    if (candidateIds.empty()) {
+      return false;
+    }
+
+    std::unordered_set<native::ObjectId> candidates;
+    candidates.reserve(candidateIds.size());
+    candidates.insert(candidateIds.begin(), candidateIds.end());
+
+    bool hitFound = false;
+    RayHit closestHit;
+    auto closestFraction = std::numeric_limits<double>::max();
+    std::vector<RayHit> hits;
+    hits.reserve(mObjectsInOrder.size());
+
+    for (auto* object : mObjectsInOrder) {
+      if (!option.passesFilter(object)) {
+        continue;
+      }
+
+      const auto* entry = findEntry(object);
+      if (!entry) {
+        continue;
+      }
+      if (!candidates.contains(entry->nativeObject.getId())) {
+        continue;
+      }
+
+      native::RaycastResult pairResult;
+      if (!native::NarrowPhase::raycast(
+              ray, entry->nativeObject, nativeOption, pairResult)) {
+        continue;
+      }
+
+      hitFound = true;
+
+      RayHit hit;
+      hit.mCollisionObject = object;
+      hit.mPoint = pairResult.point;
+      hit.mNormal = pairResult.normal;
+      hit.mFraction = pairResult.distance / totalLength;
+
+      if (option.mEnableAllHits) {
+        hits.push_back(hit);
+      } else if (hit.mFraction < closestFraction) {
+        closestFraction = hit.mFraction;
+        closestHit = hit;
+      }
+    }
+
+    if (!hitFound) {
+      return false;
+    }
+
+    if (!result) {
+      return true;
+    }
+
+    if (option.mEnableAllHits) {
+      if (option.mSortByClosest) {
+        std::sort(
+            hits.begin(), hits.end(), [](const RayHit& lhs, const RayHit& rhs) {
+              return lhs.mFraction < rhs.mFraction;
+            });
+      }
+      result->mRayHits = std::move(hits);
+    } else {
+      result->mRayHits.push_back(closestHit);
+    }
+
+    return result->hasHit();
+  }
+
+  std::size_t getManifoldCacheId(CollisionObject* object) const
+  {
+    const auto* entry = findEntry(object);
+    return entry ? entry->manifoldCacheId : 0u;
+  }
+
+private:
+  struct Entry
+  {
+    CollisionObject* object = nullptr;
+    native::CollisionObject nativeObject;
+    std::size_t manifoldCacheId = 0u;
+    std::size_t shapeId = 0u;
+    std::size_t shapeVersion = 0u;
+    std::size_t shapeRevision = 0u;
+  };
+
+  using EntryMap = std::unordered_map<CollisionObject*, Entry>;
+
+  bool syncObject(
+      CollisionObject* object, std::vector<native::ObjectId>& dirtyIds)
+  {
+    if (!object || !object->getShapeFrame()) {
+      remove(object);
+      return false;
+    }
+
+    const auto shape = object->getShape();
+    if (!shape) {
+      remove(object);
+      return false;
+    }
+
+    auto* dartObject = static_cast<DartCollisionObject*>(object);
+    const auto shapeId = shape->getID();
+    const auto shapeVersion = shape->getVersion();
+    const auto shapeRevision = dartObject->getNativeShapeRevision();
+    const bool dynamicGeometry = requiresDynamicGeometrySync(*shape);
+    auto it = mEntries.find(object);
+    if (it == mEntries.end() || dynamicGeometry || it->second.shapeId != shapeId
+        || it->second.shapeVersion != shapeVersion
+        || it->second.shapeRevision != shapeRevision
+        || !it->second.nativeObject.isValid()) {
+      if (it != mEntries.end()) {
+        removeEntry(it);
+      }
+
+      auto nativeShape = adaptShape(shape);
+      if (!nativeShape) {
+        return false;
+      }
+
+      auto nativeObject
+          = mWorld.createObject(std::move(nativeShape), object->getTransform());
+      if (!nativeObject.isValid()) {
+        return false;
+      }
+
+      nativeObject.setUserData(object);
+      const auto nativeId = nativeObject.getId();
+      mObjectsByNativeId[nativeId] = object;
+      mEntries.emplace(
+          object,
+          Entry{
+              object,
+              nativeObject,
+              allocateManifoldCacheId(),
+              shapeId,
+              shapeVersion,
+              shapeRevision});
+      return true;
+    }
+
+    auto& nativeObject = it->second.nativeObject;
+    const auto& transform = object->getTransform();
+    if (!isSameTransform(nativeObject.getTransform(), transform)) {
+      nativeObject.setTransform(transform);
+      dirtyIds.push_back(nativeObject.getId());
+    }
+
+    return true;
+  }
+
+  EntryMap::iterator removeEntry(EntryMap::iterator it)
+  {
+    if (it->second.nativeObject.isValid()) {
+      mObjectsByNativeId.erase(it->second.nativeObject.getId());
+      mWorld.destroyObject(it->second.nativeObject);
+    }
+    return mEntries.erase(it);
+  }
+
+  const Entry* findEntry(native::ObjectId id) const
+  {
+    const auto objectIt = mObjectsByNativeId.find(id);
+    if (objectIt == mObjectsByNativeId.end()) {
+      return nullptr;
+    }
+    return findEntry(objectIt->second);
+  }
+
+  const Entry* findEntry(CollisionObject* object) const
+  {
+    const auto entryIt = mEntries.find(object);
+    if (entryIt == mEntries.end()) {
+      return nullptr;
+    }
+    return &entryIt->second;
+  }
+
+  bool checkMaxContacts(const CollisionOption& option) const
+  {
+    if (0u == option.maxNumContacts) {
+      DART_WARN(
+          "CollisionOption::maxNumContacts is 0; skipping collision "
+          "detection. Use maxNumContacts >= 1 for binary checks.");
+      return false;
+    }
+    return true;
+  }
+
+  double distanceImpl(
+      DartCollisionScene& other,
+      bool selfQuery,
+      const DistanceOption& option,
+      DistanceResult* result)
+  {
+    if (mEntries.empty() || other.mEntries.empty()) {
+      return std::max(0.0, option.distanceLowerBound);
+    }
+
+    double bestDistance = std::numeric_limits<double>::max();
+    native::DistanceResult bestPairResult;
+    CollisionObject* bestObject1 = nullptr;
+    CollisionObject* bestObject2 = nullptr;
+    bool found = false;
+
+    auto shouldStop = [&]() {
+      return found && bestDistance <= option.distanceLowerBound;
+    };
+
+    for (auto i = 0u; i < mObjectsInOrder.size(); ++i) {
+      const auto* entry1 = findEntry(mObjectsInOrder[i]);
+      if (!entry1) {
+        continue;
+      }
+      const auto aabb1 = entry1->nativeObject.computeAabb();
+
+      const auto jStart = selfQuery ? i + 1u : 0u;
+      for (auto j = jStart; j < other.mObjectsInOrder.size(); ++j) {
+        const auto* entry2 = other.findEntry(other.mObjectsInOrder[j]);
+        if (!entry2) {
+          continue;
+        }
+
+        if (option.distanceFilter
+            && !option.distanceFilter->needDistance(
+                entry1->object, entry2->object)) {
+          continue;
+        }
+
+        if (found
+            && aabbDistance(aabb1, entry2->nativeObject.computeAabb())
+                   > bestDistance) {
+          continue;
+        }
+
+        native::DistanceResult pairResult;
+        const auto distance = native::NarrowPhase::distance(
+            entry1->nativeObject,
+            entry2->nativeObject,
+            makeNativeDistanceOption(option, bestDistance),
+            pairResult);
+
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestPairResult = pairResult;
+          bestObject1 = entry1->object;
+          bestObject2 = entry2->object;
+          found = true;
+        }
+
+        if (shouldStop()) {
+          break;
+        }
+      }
+
+      if (shouldStop()) {
+        break;
+      }
+    }
+
+    if (!found) {
+      return std::max(0.0, option.distanceLowerBound);
+    }
+
+    if (result) {
+      result->unclampedMinDistance = bestDistance;
+      result->minDistance = std::max(bestDistance, option.distanceLowerBound);
+      result->shapeFrame1
+          = bestObject1 ? bestObject1->getShapeFrame() : nullptr;
+      result->shapeFrame2
+          = bestObject2 ? bestObject2->getShapeFrame() : nullptr;
+      result->nearestPoint1 = bestPairResult.pointOnObject1;
+      result->nearestPoint2 = bestPairResult.pointOnObject2;
+    }
+
+    return std::max(bestDistance, option.distanceLowerBound);
+  }
+
+  native::CollisionWorld mWorld;
+  EntryMap mEntries;
+  std::unordered_map<native::ObjectId, CollisionObject*> mObjectsByNativeId;
+  std::vector<CollisionObject*> mObjectsInOrder;
+};
+
 //==============================================================================
 DartCollisionGroup::DartCollisionGroup(
     const CollisionDetectorPtr& collisionDetector)
-  : CollisionGroup(collisionDetector)
+  : CollisionGroup(collisionDetector),
+    mScene(std::make_unique<DartCollisionScene>())
 {
   // Do nothing
 }
 
 //==============================================================================
+DartCollisionGroup::~DartCollisionGroup() = default;
+
+//==============================================================================
 void DartCollisionGroup::initializeEngineData()
 {
-  // Do nothing
+  mScene->clear();
 }
 
 //==============================================================================
@@ -75,18 +736,79 @@ void DartCollisionGroup::removeCollisionObjectFromEngine(
     CollisionObject* object)
 {
   std::erase(mCollisionObjects, object);
+  mScene->remove(object);
 }
 
 //==============================================================================
 void DartCollisionGroup::removeAllCollisionObjectsFromEngine()
 {
   mCollisionObjects.clear();
+  mScene->clear();
 }
 
 //==============================================================================
 void DartCollisionGroup::updateCollisionGroupEngineData()
 {
-  // Do nothing
+  mScene->sync(mCollisionObjects);
+}
+
+//==============================================================================
+bool DartCollisionGroup::collideSelf(
+    const CollisionOption& option,
+    CollisionResult* result,
+    native::PersistentManifoldCache* manifoldCache)
+{
+  mScene->sync(mCollisionObjects);
+  return mScene->collideSelf(option, result, manifoldCache);
+}
+
+//==============================================================================
+bool DartCollisionGroup::collideWith(
+    DartCollisionGroup& other,
+    const CollisionOption& option,
+    CollisionResult* result,
+    native::PersistentManifoldCache* manifoldCache)
+{
+  mScene->sync(mCollisionObjects);
+  other.mScene->sync(other.mCollisionObjects);
+  return mScene->collideAgainst(*other.mScene, option, result, manifoldCache);
+}
+
+//==============================================================================
+double DartCollisionGroup::distanceSelf(
+    const DistanceOption& option, DistanceResult* result)
+{
+  mScene->sync(mCollisionObjects);
+  return mScene->distanceSelf(option, result);
+}
+
+//==============================================================================
+double DartCollisionGroup::distanceWith(
+    DartCollisionGroup& other,
+    const DistanceOption& option,
+    DistanceResult* result)
+{
+  mScene->sync(mCollisionObjects);
+  other.mScene->sync(other.mCollisionObjects);
+  return mScene->distanceAgainst(*other.mScene, option, result);
+}
+
+//==============================================================================
+bool DartCollisionGroup::raycast(
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& to,
+    const RaycastOption& option,
+    RaycastResult* result)
+{
+  mScene->sync(mCollisionObjects);
+  return mScene->raycast(from, to, option, result);
+}
+
+//==============================================================================
+std::size_t DartCollisionGroup::getManifoldCacheId(
+    CollisionObject* object) const
+{
+  return mScene->getManifoldCacheId(object);
 }
 
 } // namespace collision

@@ -38,6 +38,8 @@
 
 #include <memory>
 
+#include <cstddef>
+
 namespace dart {
 namespace collision {
 
@@ -47,6 +49,8 @@ public:
   friend class DartCollisionDetector;
 
   const native::Shape* getNativeShape() const;
+
+  std::size_t getNativeShapeRevision() const;
 
 protected:
   /// Constructor
@@ -62,6 +66,7 @@ protected:
 
 private:
   std::unique_ptr<native::Shape> mShape;
+  std::size_t mShapeRevision;
 };
 
 } // namespace collision

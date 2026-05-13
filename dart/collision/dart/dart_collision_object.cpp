@@ -40,7 +40,9 @@ DartCollisionObject::DartCollisionObject(
     CollisionDetector* collisionDetector,
     const dynamics::ShapeFrame* shapeFrame,
     std::unique_ptr<native::Shape> shape)
-  : CollisionObject(collisionDetector, shapeFrame), mShape(std::move(shape))
+  : CollisionObject(collisionDetector, shapeFrame),
+    mShape(std::move(shape)),
+    mShapeRevision(mShape ? 1u : 0u)
 {
   // Do nothing
 }
@@ -58,9 +60,16 @@ const native::Shape* DartCollisionObject::getNativeShape() const
 }
 
 //==============================================================================
+std::size_t DartCollisionObject::getNativeShapeRevision() const
+{
+  return mShapeRevision;
+}
+
+//==============================================================================
 void DartCollisionObject::setNativeShape(std::unique_ptr<native::Shape> shape)
 {
   mShape = std::move(shape);
+  ++mShapeRevision;
 }
 
 } // namespace collision

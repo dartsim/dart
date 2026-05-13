@@ -39,10 +39,15 @@
 #include "dart/collision/distance_option.hpp"
 #include "dart/collision/distance_result.hpp"
 #include "dart/config.hpp"
-#if DART_HAVE_FCL
+
+#ifndef DART_ENABLE_COLLISION_REFERENCE_TESTS
+  #define DART_ENABLE_COLLISION_REFERENCE_TESTS 0
+#endif
+
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
   #include "dart/collision/fcl/fcl_collision_detector.hpp"
 #endif
-#if DART_HAVE_BULLET
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_BULLET
   #include "dart/collision/bullet/bullet_collision_detector.hpp"
 #endif
 #include "dart/collision/raycast_option.hpp"
@@ -325,7 +330,7 @@ TEST(CollisionGroupTests, CollisionBetweenGroups)
 }
 
 //==============================================================================
-#if DART_HAVE_FCL
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
 TEST(CollisionGroupTests, DistanceQuery)
 {
   auto detector = dart::collision::FCLCollisionDetector::create();
@@ -348,7 +353,7 @@ TEST(CollisionGroupTests, DistanceQuery)
 #endif
 
 //==============================================================================
-#if DART_HAVE_FCL
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
 TEST(CollisionGroupTests, DistanceBetweenGroups)
 {
   auto detector = dart::collision::FCLCollisionDetector::create();
@@ -372,7 +377,7 @@ TEST(CollisionGroupTests, DistanceBetweenGroups)
 #endif
 
 //==============================================================================
-#if DART_HAVE_BULLET
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_BULLET
 TEST(CollisionGroupTests, RaycastBasic)
 {
   auto detector = dart::collision::BulletCollisionDetector::create();
@@ -433,7 +438,7 @@ TEST(CollisionGroupTests, EmptyGroupOperations)
 }
 
 //==============================================================================
-#if DART_HAVE_FCL
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
 TEST(CollisionGroupTests, EmptyGroupWithFCL)
 {
   auto detector = dart::collision::FCLCollisionDetector::create();

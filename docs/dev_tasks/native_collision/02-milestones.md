@@ -1,5 +1,29 @@
 # Native Collision Milestones
 
+## PR Scope
+
+This milestone plan is for a single north-star PR. Phase 1 through Phase 6 are
+the validated native-default checkpoint. Phase 7 onward are still required in
+the same PR before the PR can be considered complete. The final PR state has
+one built-in collision detector implementation behind `dart/collision/`; any
+legacy names that remain for compatibility are native-backed wrappers/adapters,
+not selectable external backends.
+
+The quality order is intentional: implement feature coverage first, lock
+correctness through tests, and then use benchmarks to gradually optimize native
+until it beats the reference engines on required workloads. FCL, Bullet, and
+ODE may remain only as optional reference engines for tests and benchmarks, with
+CMake options that allow native-only builds to opt out.
+
+The architecture order is also intentional: the final API should be clean, the
+built-in component should scale, and performance hooks should be part of the
+native design. Public DART APIs and compatibility facades sit outside a DART
+adapter layer, while `dart/collision/native/` owns scene state, broadphase,
+narrowphase, query algorithms, cache lifetimes, and profiling.
+
+`04-reference-gap-analysis.md` tracks the detailed feature/API/performance gaps
+that make the next implementation step concrete.
+
 ## Phase 1: Native Default Path
 
 Success criteria:
@@ -79,18 +103,276 @@ Verification:
 - Install-tree inspection for unwanted runtime links.
 - Public headers still satisfy gz-physics compatibility requirements.
 
-## Phase 6: Cleanup And PR Readiness
+## Phase 6: Checkpoint Evidence And PR Continuation
 
 Success criteria:
 
 - Stale `experimental` wording is gone except for compatibility aliases and
   simulation-experimental code.
 - Dev-task learnings are condensed into onboarding docs.
-- This folder is removed in the completion PR.
+- The checkpoint evidence is complete enough to continue toward the remaining
+  north-star phases in the same PR.
 
 Verification:
 
 - `pixi run lint`.
 - `pixi run test-all` when feasible.
 - `pixi run -e gazebo test-gz`.
-- PR description includes evidence from `03-evidence-gates.md`.
+- `03-evidence-gates.md` records checkpoint evidence and remaining gates.
+
+## Phase 7: CI Hardening
+
+Purpose: make native-default and no-legacy-backend configurations visible in
+continuous integration so future changes cannot silently reintroduce
+FCL/Bullet/ODE runtime requirements.
+
+Success criteria:
+
+- CI has a native-default job with FCL, Bullet, and ODE disabled. The initial
+  Linux job is in the working tree and awaits CI evidence.
+- CI builds `dart`, `dartpy`, and native collision tests in that configuration.
+- CI runs the `collision-native` label, focused default-detector C++ tests, and
+  a dartpy import/simulation smoke.
+- gz-physics compatibility remains covered by a job that builds all optional
+  legacy components needed by downstream package exports.
+- Separate reference jobs can enable FCL, Bullet, and ODE only for correctness
+  comparisons and benchmarks.
+
+Verification:
+
+- CI job definitions explicitly set
+  `DART_BUILD_COLLISION_FCL=OFF`,
+  `DART_BUILD_COLLISION_BULLET=OFF`, and
+  `DART_BUILD_COLLISION_ODE=OFF`.
+- The disabled-backend job passes on Linux before old collision dependencies
+  are removed from any wider build environment.
+- gz-physics CI passes against the same branch without local downstream
+  patches.
+- Reference correctness and benchmark jobs prove their old-engine dependencies
+  are scoped to test/benchmark targets.
+
+## Phase 8: Reference Test And Benchmark Harness
+
+Purpose: keep the high correctness and performance bar after runtime backends
+are removed. FCL, Bullet, and ODE are reference engines only; they are not
+selectable collision backends.
+
+Current working-tree status: this phase is started. The branch now has
+`DART_BUILD_COLLISION_REFERENCE_TESTS` and
+`DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` CMake options, gates focused
+reference-only tests and comparative benchmarks behind them, and has local
+reference-disabled/reference-enabled evidence in `03-evidence-gates.md`.
+The reference toggles now propagate through the main debug, dartpy, install,
+coverage, ASAN, Windows, and wheel configure entry points. Core native-only
+link inspection has started; broader package-export and downstream-component
+inspection are still required before this phase is complete.
+
+Success criteria:
+
+- Correctness tests compare native against reference engines where the reference
+  behavior is useful and well-defined.
+- Benchmarks compare native against Bullet, FCL, and ODE while native is being
+  optimized.
+- Reference engines are isolated to test and benchmark targets.
+- Reference harnesses consume public DART collision APIs or explicit test-only
+  adapters; they do not become dependencies of the runtime native core.
+- CMake exposes option paths that allow reference-engine jobs to opt in and
+  native-only jobs to opt out.
+- Native-only correctness tests and native-only benchmark baselines still run
+  when all reference engines are disabled.
+
+Verification:
+
+- Build with reference engines enabled runs reference consistency tests and
+  comparative benchmarks.
+- Build with reference engines disabled still passes native correctness tests,
+  native benchmarks, dartpy smoke, and gz-physics compatibility.
+- Link inspection confirms normal runtime targets do not depend on FCL, Bullet,
+  or ODE.
+
+## Phase 9: Backend Removal From Default Packaging
+
+Purpose: make native collision the only normal runtime collision stack while
+retaining legacy backends only where they are intentionally requested for
+reference or benchmark work.
+
+Current working-tree status: this phase is started, not complete. Wheel CMake
+defaults now explicitly disable FCL, Bullet, ODE, and reference harnesses, and
+a native-only install-style build/install produced no old collision libraries
+or old collision component target files. Remaining work includes dependency
+metadata cleanup, wheel artifact inspection, residual compatibility metadata
+cleanup, and gz-physics compatibility for any retained legacy component
+facades.
+
+Success criteria:
+
+- Default packages do not depend on FCL, Bullet, or ODE for collision
+  detection.
+- CMake package exports do not add optional legacy components unless those
+  components were built and installed.
+- Examples, Python wheels, and normal source builds work without legacy
+  collision libraries installed.
+- Reference engines remain available only through explicit test/benchmark
+  options for validation and performance work.
+
+Verification:
+
+- Fresh configure/build/test from an environment without FCL, Bullet, and ODE.
+- Installed package inspection shows no unwanted default runtime links to old
+  collision libraries.
+- Wheel/source-build jobs pass with native collision only.
+
+## Phase 10: Downstream Migration
+
+Purpose: remove downstream reliance on legacy detector names and factory keys
+without breaking gz-physics or other packages that include DART compatibility
+headers.
+
+Success criteria:
+
+- gz-physics has a documented path to lowercase native APIs and the `"dart"`
+  factory key.
+- Legacy uppercase detector facades remain source-compatible during the
+  migration window.
+- Any behavior that intentionally differs between legacy facades and native
+  lowercase APIs has DART-side regression coverage.
+- A deprecation policy exists for `"experimental"` and legacy backend factory
+  aliases.
+
+Verification:
+
+- `pixi run -e gazebo test-gz` passes at each migration step.
+- Downstream failures are reduced to DART tests before fixes land.
+- Documentation states which compatibility names are temporary and which names
+  are stable.
+
+## Phase 11: Collision Abstraction Cleanup
+
+Purpose: remove the real multi-backend abstraction from `dart/collision/` so
+the completed PR has one built-in collision implementation. Legacy names may
+remain only as source-compatible wrappers or adapters for gz-physics and other
+downstream code. This phase also locks the built-in component architecture:
+API-clean public surfaces, a focused DART adapter layer, scalable native
+scene/query state, and performance-oriented internals.
+
+Success criteria:
+
+- `dart/collision/` no longer exposes FCL, Bullet, or ODE as real runtime
+  backend implementations.
+- Any retained legacy detector class, header, factory key, or component name
+  resolves to the built-in DART detector or a thin native-backed adapter.
+- Selecting a legacy backend name cannot instantiate or link FCL, Bullet, or
+  ODE collision code.
+- Public collision APIs express DART semantics, options, filters, and results
+  without engine-specific types or algorithm knobs.
+- The internal layer split is explicit in code ownership: compatibility shell,
+  `dart/collision/dart/` adapter, `dart/collision/native/` scene/query core, and
+  optional reference harnesses outside runtime targets.
+- The native core supports scalable scene updates through stable handles,
+  dirty transform/shape tracking, persistent broadphase state, reusable query
+  snapshots, and deterministic result ordering.
+- The native core is performance-oriented: shape-specialized fast paths,
+  compact native geometry data, clear cache invalidation, low-allocation hot
+  loops, and independent profiling/benchmark labels for broadphase,
+  narrowphase, distance, raycast, and solver-facing contact generation.
+- Public compatibility behavior needed by gz-physics is covered by DART tests.
+- Documentation distinguishes stable native APIs from temporary compatibility
+  wrappers.
+- `04-reference-gap-analysis.md` gaps are either implemented, explicitly
+  deferred with a DART-specific rationale, or converted into smaller checked
+  tasks before final deletion.
+
+Verification:
+
+- Factory tests prove `dart`, `experimental`, and any retained legacy keys all
+  resolve to native behavior.
+- API review verifies installed headers and exported CMake targets expose the
+  built-in DART collision surface without FCL, Bullet, or ODE types.
+- Native scene/update tests cover dirty-object updates, batched queries, cache
+  invalidation, and deterministic ordering.
+- Benchmark labels or profiler scopes show broadphase, narrowphase, distance,
+  raycast, and contact-generation costs separately.
+- Link inspection shows compatibility wrappers do not link FCL, Bullet, or ODE.
+- `pixi run -e gazebo test-gz` passes after the wrapper/adaptor cleanup.
+- Repository search shows no remaining real legacy backend dispatch path in
+  `dart/collision/`.
+
+## Phase 12: Performance Guardrails
+
+Purpose: convert the one-time benchmark evidence into repeatable regression
+protection.
+
+Success criteria:
+
+- Comparative benchmark suites can run in CI or scheduled jobs with structured
+  output.
+- Native remains at least as fast as the best legacy backend on the required
+  benchmark set while reference backends are still available.
+- Native-only baselines exist for future work after old backends are deleted.
+- Larger dirty-world and simulation-style workloads are included, not only
+  narrow microbenchmarks.
+- Correctness tests stay the prerequisite for accepting any performance
+  optimization.
+- Benchmark failures drive gradual optimization work; they do not justify
+  weakening feature coverage or semantics.
+
+Verification:
+
+- Benchmark jobs record JSON artifacts for primitive, narrow-phase, supported
+  distance, raycast, batch-raycast, mesh-heavy, mixed-primitive, and
+  dirty-world workloads.
+- Benchmark parsers fail the job or file an explicit follow-up when native
+  regresses beyond the accepted tolerance.
+- Performance evidence is linked from release notes or PR descriptions for
+  collision-sensitive changes.
+
+## Phase 13: Final Legacy Backend Deletion
+
+Purpose: remove FCL, Bullet, and ODE from the runtime backend layer once native
+has CI, downstream, packaging, correctness, and performance guardrails in place.
+
+Success criteria:
+
+- FCL, Bullet, and ODE collision backend source/components are deleted from
+  production runtime backend paths.
+- Legacy package dependencies are removed from normal package metadata and
+  build environments.
+- Compatibility facades that remain are native-backed and do not link old
+  libraries.
+- CMake, package exports, tests, examples, and docs describe a single native
+  collision stack.
+- Optional test/benchmark reference harnesses, if retained, are clearly outside
+  the runtime backend layer and can be disabled by CMake.
+
+Verification:
+
+- Full `pixi run test-all` passes after deletion.
+- gz-physics compatibility passes after deletion or after downstream migration
+  lands.
+- No default target links FCL, Bullet, or ODE collision libraries.
+- Repository search shows old backend names only in changelog, migration notes,
+  intentionally retained compatibility aliases, or optional reference
+  test/benchmark harnesses.
+
+## Phase 14: Final PR Packaging
+
+Purpose: convert the completed north-star work into a reviewable single PR
+without carrying temporary task docs.
+
+Success criteria:
+
+- The PR description includes the final evidence from `03-evidence-gates.md`.
+- Durable architecture notes remain in onboarding docs.
+- This dev-task folder is removed in the same PR.
+- The branch contains no temporary benchmark artifacts or local-only notes.
+
+Verification:
+
+- `pixi run lint`.
+- `pixi run test-all`.
+- `pixi run -e gazebo test-gz`.
+- Native-only CI passes with FCL, Bullet, and ODE disabled.
+- Packaging/runtime dependency inspection confirms old collision libraries are
+  absent from default builds.
+- Optional reference-engine tests and benchmarks are documented as test-only or
+  benchmark-only and can be disabled.

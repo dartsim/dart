@@ -44,7 +44,11 @@
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/SphereShape.hpp>
 
-#if DART_HAVE_BULLET
+#ifndef DART_ENABLE_COLLISION_REFERENCE_BENCHMARKS
+  #define DART_ENABLE_COLLISION_REFERENCE_BENCHMARKS 0
+#endif
+
+#if DART_ENABLE_COLLISION_REFERENCE_BENCHMARKS && DART_HAVE_BULLET
   #include <dart/collision/bullet/BulletCollisionDetector.hpp>
 #endif
 
@@ -292,7 +296,7 @@ static void BM_Scenario_RaycastBatch_Sparse_Native(benchmark::State& state)
 }
 BENCHMARK(BM_Scenario_RaycastBatch_Sparse_Native)->Arg(1000)->Arg(2000);
 
-#if DART_HAVE_BULLET
+#if DART_ENABLE_COLLISION_REFERENCE_BENCHMARKS && DART_HAVE_BULLET
 static void BM_Scenario_RaycastBatch_Dense_Bullet(benchmark::State& state)
 {
   auto detector = dart::collision::BulletCollisionDetector::create();

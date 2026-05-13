@@ -1,5 +1,7 @@
 // Copyright (c) 2011, The DART development contributors
 
+#include <dart/config.hpp>
+
 #include <dart/collision/collision_group.hpp>
 #include <dart/collision/collision_option.hpp>
 #include <dart/collision/collision_result.hpp>
@@ -14,9 +16,20 @@
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/heightmap_shape.hpp>
+#include <dart/dynamics/mesh_shape.hpp>
+#include <dart/dynamics/point_cloud_shape.hpp>
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/soft_body_node.hpp>
+#include <dart/dynamics/soft_mesh_shape.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
+
+#include <dart/math/tri_mesh.hpp>
+
+#if DART_HAVE_OCTOMAP
+  #include <dart/dynamics/voxel_grid_shape.hpp>
+#endif
 
 #include <gtest/gtest.h>
 
@@ -36,6 +49,13 @@ struct ShapeSetup
 {
   SkeletonPtr skeleton;
   BodyNode* body{nullptr};
+  ShapeNode* shapeNode{nullptr};
+};
+
+struct SoftShapeSetup
+{
+  SkeletonPtr skeleton;
+  SoftBodyNode* body{nullptr};
   ShapeNode* shapeNode{nullptr};
 };
 
@@ -83,6 +103,57 @@ ShapeSetup makeShapeSetup(const std::string& name, const ShapePtr& shape)
   setup.body = pair.second;
   setup.shapeNode = setup.body->createShapeNodeWith<CollisionAspect>(shape);
   return setup;
+}
+
+SoftShapeSetup makeSoftBoxSetup(const std::string& name)
+{
+  SoftShapeSetup setup;
+  setup.skeleton = Skeleton::create(name);
+  auto pair
+      = setup.skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  setup.body = pair.second;
+  SoftBodyNodeHelper::setBox(
+      setup.body,
+      Eigen::Vector3d::Constant(1.0),
+      Eigen::Isometry3d::Identity(),
+      Eigen::Vector3i(3, 3, 3),
+      1.0,
+      10.0,
+      10.0,
+      0.01);
+  setup.shapeNode = setup.body->getShapeNode(0);
+  return setup;
+}
+
+std::shared_ptr<math::TriMesh<double>> makeCubeTriMesh()
+{
+  auto mesh = std::make_shared<math::TriMesh<double>>();
+  math::TriMesh<double>::Vertices vertices;
+  vertices.emplace_back(-0.5, -0.5, -0.5);
+  vertices.emplace_back(0.5, -0.5, -0.5);
+  vertices.emplace_back(0.5, 0.5, -0.5);
+  vertices.emplace_back(-0.5, 0.5, -0.5);
+  vertices.emplace_back(-0.5, -0.5, 0.5);
+  vertices.emplace_back(0.5, -0.5, 0.5);
+  vertices.emplace_back(0.5, 0.5, 0.5);
+  vertices.emplace_back(-0.5, 0.5, 0.5);
+
+  math::TriMesh<double>::Triangles triangles;
+  triangles.emplace_back(0, 1, 2);
+  triangles.emplace_back(0, 2, 3);
+  triangles.emplace_back(4, 6, 5);
+  triangles.emplace_back(4, 7, 6);
+  triangles.emplace_back(0, 5, 1);
+  triangles.emplace_back(0, 4, 5);
+  triangles.emplace_back(2, 7, 3);
+  triangles.emplace_back(2, 6, 7);
+  triangles.emplace_back(0, 3, 7);
+  triangles.emplace_back(0, 7, 4);
+  triangles.emplace_back(1, 5, 6);
+  triangles.emplace_back(1, 6, 2);
+  mesh->setTriangles(vertices, triangles);
+
+  return mesh;
 }
 
 std::pair<bool, std::size_t> runCollision(
@@ -341,6 +412,335 @@ TEST(DartCollisionDetector, DistanceQueriesReturnZero)
 
   EXPECT_DOUBLE_EQ(groupA->distance(option, &result), 0.0);
   EXPECT_DOUBLE_EQ(groupA->distance(groupB.get(), option, &result), 0.0);
+}
+
+TEST(DartCollisionGroup, PersistentSceneTracksMovedObjects)
+{
+  auto detector = DartCollisionDetector::create();
+  auto setupA = makeShapeSetup("shape_a", std::make_shared<SphereShape>(0.5));
+  auto setupB = makeShapeSetup("shape_b", std::make_shared<SphereShape>(0.5));
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setupA.shapeNode);
+  group->addShapeFrame(setupB.shapeNode);
+
+  CollisionOption option;
+  option.maxNumContacts = 10u;
+
+  CollisionResult result;
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_LT(0u, result.getNumContacts());
+
+  Eigen::Isometry3d separated = Eigen::Isometry3d::Identity();
+  separated.translation() = Eigen::Vector3d(4.0, 0.0, 0.0);
+  FreeJoint::setTransformOf(setupB.body, separated);
+
+  result.clear();
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+
+  Eigen::Isometry3d overlapping = Eigen::Isometry3d::Identity();
+  overlapping.translation() = Eigen::Vector3d(0.2, 0.0, 0.0);
+  FreeJoint::setTransformOf(setupB.body, overlapping);
+
+  result.clear();
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_LT(0u, result.getNumContacts());
+}
+
+TEST(DartCollisionGroup, PersistentSceneRebuildsAfterShapeChange)
+{
+  auto detector = DartCollisionDetector::create();
+  auto setupA = makeShapeSetup("shape_a", std::make_shared<SphereShape>(0.2));
+  auto setupB = makeShapeSetup("shape_b", std::make_shared<SphereShape>(0.2));
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(1.0, 0.0, 0.0);
+  FreeJoint::setTransformOf(setupB.body, tf);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setupA.shapeNode);
+  group->addShapeFrame(setupB.shapeNode);
+
+  CollisionOption option;
+  option.maxNumContacts = 10u;
+
+  CollisionResult result;
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+
+  setupA.shapeNode->setShape(std::make_shared<SphereShape>(1.0));
+
+  result.clear();
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_LT(0u, result.getNumContacts());
+}
+
+TEST(DartCollisionGroup, PersistentSceneRebuildsAfterShapeMutation)
+{
+  auto detector = DartCollisionDetector::create();
+  auto sphereA = std::make_shared<SphereShape>(0.2);
+  auto setupA = makeShapeSetup("shape_a", sphereA);
+  auto setupB = makeShapeSetup("shape_b", std::make_shared<SphereShape>(0.2));
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(1.0, 0.0, 0.0);
+  FreeJoint::setTransformOf(setupB.body, tf);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setupA.shapeNode);
+  group->addShapeFrame(setupB.shapeNode);
+
+  CollisionOption option;
+  option.maxNumContacts = 10u;
+
+  CollisionResult result;
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+
+  sphereA->setRadius(1.0);
+
+  result.clear();
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_LT(0u, result.getNumContacts());
+}
+
+TEST(DartCollisionGroup, PersistentSceneRebuildsAfterMeshScaleMutation)
+{
+  auto detector = DartCollisionDetector::create();
+  auto meshShape = std::make_shared<MeshShape>(
+      Eigen::Vector3d::Constant(0.2), makeCubeTriMesh());
+  auto setupA = makeShapeSetup("mesh", meshShape);
+  auto setupB = makeShapeSetup("sphere", std::make_shared<SphereShape>(0.25));
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0.9, 0.0, 0.0);
+  FreeJoint::setTransformOf(setupB.body, tf);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setupA.shapeNode);
+  group->addShapeFrame(setupB.shapeNode);
+
+  CollisionOption option;
+  option.maxNumContacts = 10u;
+
+  CollisionResult result;
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+
+  meshShape->setScale(Eigen::Vector3d::Constant(2.0));
+
+  result.clear();
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_LT(0u, result.getNumContacts());
+}
+
+TEST(DartCollisionGroup, PersistentSceneRebuildsAfterHeightmapMutation)
+{
+  auto detector = DartCollisionDetector::create();
+  auto heightmap = std::make_shared<HeightmapShaped>();
+  HeightmapShaped::HeightField heights(2, 2);
+  heights.setZero();
+  heightmap->setHeightField(heights);
+
+  auto setupA = makeShapeSetup("heightmap", heightmap);
+  auto setupB = makeShapeSetup("sphere", std::make_shared<SphereShape>(0.25));
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0.0, 0.0, 1.2);
+  FreeJoint::setTransformOf(setupB.body, tf);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setupA.shapeNode);
+  group->addShapeFrame(setupB.shapeNode);
+
+  CollisionOption option;
+  option.maxNumContacts = 10u;
+
+  CollisionResult result;
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+
+  heights.setConstant(1.1);
+  heightmap->setHeightField(heights);
+
+  result.clear();
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_LT(0u, result.getNumContacts());
+}
+
+#if DART_HAVE_OCTOMAP
+TEST(DartCollisionGroup, PersistentSceneRebuildsAfterVoxelGridMutation)
+{
+  auto detector = DartCollisionDetector::create();
+  auto voxelGrid = std::make_shared<VoxelGridShape>(0.5);
+  auto setupA = makeShapeSetup("voxel", voxelGrid);
+  auto setupB = makeShapeSetup("sphere", std::make_shared<SphereShape>(0.1));
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setupA.shapeNode);
+  group->addShapeFrame(setupB.shapeNode);
+
+  CollisionOption option;
+  option.maxNumContacts = 10u;
+
+  CollisionResult result;
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+
+  voxelGrid->updateOccupancy(Eigen::Vector3d::Zero(), true);
+
+  result.clear();
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_LT(0u, result.getNumContacts());
+}
+#endif
+
+TEST(DartCollisionGroup, PointCloudShapeIsExplicitlyNonCollidable)
+{
+  auto detector = DartCollisionDetector::create();
+  auto pointCloud = std::make_shared<PointCloudShape>(1.0);
+  pointCloud->addPoint(Eigen::Vector3d::Zero());
+  auto setupA = makeShapeSetup("point_cloud", pointCloud);
+  auto setupB = makeShapeSetup("sphere", std::make_shared<SphereShape>(0.5));
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setupA.shapeNode);
+  group->addShapeFrame(setupB.shapeNode);
+
+  CollisionOption option;
+  option.maxNumContacts = 10u;
+
+  CollisionResult result;
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+
+  pointCloud->addPoint(Eigen::Vector3d(0.25, 0.0, 0.0));
+
+  result.clear();
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+}
+
+TEST(DartCollisionGroup, PersistentSceneRebuildsAfterSoftMeshMutation)
+{
+  auto detector = DartCollisionDetector::create();
+  auto softSetup = makeSoftBoxSetup("soft");
+  auto boxSetup = makeShapeSetup(
+      "box", std::make_shared<BoxShape>(Eigen::Vector3d::Constant(2.0)));
+
+  ASSERT_NE(nullptr, softSetup.shapeNode);
+  ASSERT_NE(nullptr, softSetup.shapeNode->getShape()->as<SoftMeshShape>());
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(softSetup.shapeNode);
+  group->addShapeFrame(boxSetup.shapeNode);
+
+  CollisionOption option;
+  option.maxNumContacts = 10u;
+
+  CollisionResult result;
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_LT(0u, result.getNumContacts());
+
+  for (std::size_t i = 0; i < softSetup.body->getNumPointMasses(); ++i) {
+    softSetup.body->getPointMass(i)->setPositions(
+        Eigen::Vector3d(3.0, 0.0, 0.0));
+  }
+
+  result.clear();
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+}
+
+TEST(DartCollisionGroup, PersistentSceneShapeChangeInvalidatesWarmStartCache)
+{
+  auto detector = DartCollisionDetector::create();
+  auto setupA = makeShapeSetup("shape_a", std::make_shared<SphereShape>(0.5));
+  auto setupB = makeShapeSetup("shape_b", std::make_shared<SphereShape>(0.5));
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0.75, 0.0, 0.0);
+  FreeJoint::setTransformOf(setupB.body, tf);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setupA.shapeNode);
+  group->addShapeFrame(setupB.shapeNode);
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u;
+
+  CollisionResult first;
+  ASSERT_TRUE(group->collide(option, &first));
+  ASSERT_GT(first.getNumContacts(), 0u);
+
+  auto& firstContact = first.getContact(0);
+  ASSERT_NE(nullptr, firstContact.userData);
+  auto* cached = static_cast<native::CachedContact*>(firstContact.userData);
+  cached->cachedNormalImpulse = 3.0;
+  cached->cachedFrictionImpulse1 = -1.0;
+  cached->cachedFrictionImpulse2 = 0.5;
+
+  setupA.shapeNode->setShape(std::make_shared<SphereShape>(0.75));
+
+  CollisionResult second;
+  ASSERT_TRUE(group->collide(option, &second));
+  ASSERT_GT(second.getNumContacts(), 0u);
+
+  const auto& secondContact = second.getContact(0);
+  EXPECT_DOUBLE_EQ(0.0, secondContact.cachedNormalImpulse);
+  EXPECT_DOUBLE_EQ(0.0, secondContact.cachedFrictionImpulse1);
+  EXPECT_DOUBLE_EQ(0.0, secondContact.cachedFrictionImpulse2);
+}
+
+TEST(DartCollisionGroup, PersistentSceneDropsRemovedObjects)
+{
+  auto detector = DartCollisionDetector::create();
+  auto setupA = makeShapeSetup("shape_a", std::make_shared<SphereShape>(0.5));
+  auto setupB = makeShapeSetup("shape_b", std::make_shared<SphereShape>(0.5));
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setupA.shapeNode);
+  group->addShapeFrame(setupB.shapeNode);
+
+  CollisionOption option;
+  option.maxNumContacts = 10u;
+
+  CollisionResult result;
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_LT(0u, result.getNumContacts());
+
+  group->removeShapeFrame(setupB.shapeNode);
+
+  result.clear();
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+}
+
+TEST(DartCollisionGroup, PersistentSceneRaycastTracksMovedObjects)
+{
+  auto detector = DartCollisionDetector::create();
+  auto setup = makeShapeSetup("shape", std::make_shared<SphereShape>(0.5));
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setup.shapeNode);
+
+  RaycastOption option;
+  RaycastResult result;
+  const Eigen::Vector3d from(0.0, 0.0, 2.0);
+  const Eigen::Vector3d to(0.0, 0.0, -2.0);
+
+  EXPECT_TRUE(group->raycast(from, to, option, &result));
+  EXPECT_TRUE(result.hasHit());
+
+  Eigen::Isometry3d moved = Eigen::Isometry3d::Identity();
+  moved.translation() = Eigen::Vector3d(5.0, 0.0, 0.0);
+  FreeJoint::setTransformOf(setup.body, moved);
+
+  result.clear();
+  EXPECT_FALSE(group->raycast(from, to, option, &result));
+  EXPECT_FALSE(result.hasHit());
 }
 
 TEST(DartCollisionGroup, EngineDataCallbacks)

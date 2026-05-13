@@ -40,11 +40,15 @@
 
 #include <dart/all.hpp>
 
-#if DART_HAVE_FCL
+#ifndef DART_ENABLE_COLLISION_REFERENCE_TESTS
+  #define DART_ENABLE_COLLISION_REFERENCE_TESTS 0
+#endif
+
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
   #include <dart/collision/fcl/fcl_collision_detector.hpp>
 #endif
 
-#if DART_HAVE_FCL
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
 namespace {
 // Force-link dart-collision-fcl.so so that its static Registrar triggers
 // factory registration.  We reference create() which is defined only in the
@@ -721,7 +725,7 @@ TEST(SkelParser, SoftBodiesWorldProperties)
 
   const auto detector = world->getConstraintSolver()->getCollisionDetector();
   ASSERT_NE(detector, nullptr);
-#if DART_HAVE_FCL
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
   EXPECT_EQ(detector->getTypeView(), "fcl");
 #else
   EXPECT_TRUE(
@@ -882,7 +886,7 @@ TEST(SkelParser, ReadWorldXmlPhysicsAndCollisionDetector)
 
   const auto detector = world->getConstraintSolver()->getCollisionDetector();
   ASSERT_NE(detector, nullptr);
-#if DART_HAVE_FCL
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
   EXPECT_EQ(detector->getTypeView(), "fcl");
 #else
   EXPECT_TRUE(
@@ -1086,7 +1090,7 @@ TEST(SkelParser, ReadWorldXmlFclMeshCollisionDetector)
 
   const auto detector = world->getConstraintSolver()->getCollisionDetector();
   ASSERT_NE(detector, nullptr);
-#if DART_HAVE_FCL
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
   EXPECT_EQ(detector->getTypeView(), "fcl");
   const auto fclDetector
       = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(detector);

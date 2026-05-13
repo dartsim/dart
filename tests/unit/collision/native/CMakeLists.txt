@@ -44,7 +44,7 @@ if(DART_BUILD_TESTS AND TARGET GTest::gtest)
   if(NOT DART_TESTS_LIBCCD_FOUND)
     list(FILTER test_files EXCLUDE REGEX "test_libccd_.*\\.cpp$")
   endif()
-  if(NOT TARGET dart-collision-fcl)
+  if(NOT DART_BUILD_COLLISION_REFERENCE_TESTS OR NOT TARGET dart-collision-fcl)
     list(FILTER test_files EXCLUDE REGEX "test_reference_backends\\.cpp$")
   endif()
   list(APPEND test_files "${CMAKE_CURRENT_SOURCE_DIR}/test_parallel_determinism.cpp")
@@ -66,6 +66,10 @@ if(DART_BUILD_TESTS AND TARGET GTest::gtest)
     endif()
     if(test_name STREQUAL "test_reference_backends")
       target_link_libraries(${test_name} PRIVATE dart)
+      target_compile_definitions(
+        ${test_name}
+        PRIVATE DART_ENABLE_COLLISION_REFERENCE_TESTS=1
+      )
       if(TARGET dart-collision-fcl)
         target_link_libraries(${test_name} PRIVATE
           -Wl,--no-as-needed dart-collision-fcl -Wl,--as-needed)
