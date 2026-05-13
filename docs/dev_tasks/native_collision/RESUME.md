@@ -25,13 +25,16 @@ reference component, test, and benchmark targets for comparison jobs. A fresh
 native-only runtime install probe now also shows no old collision component
 files, no old collision package-export references beyond `OFF` state variables,
 and no FCL, Bullet, ODE, or libccd runtime links from installed shared
-libraries or the built dartpy extension.
+libraries or the built dartpy extension. Default and wheel Pixi dependency
+metadata now omit FCL, Bullet, ODE, and their FCL transitive packages; the
+explicit `collision-reference` environment owns those packages and its focused
+`test_reference_backends` target builds and passes.
 
 ## Current Branch
 
-`feature/new_coll` - local branch tracking `origin/feature/new_coll`, expected
-to be ahead by five checkpoint commits after the native-only pixi default
-checkpoint.
+`feature/new_coll` - local branch tracking `origin/feature/new_coll`, ahead by
+the native-collision checkpoint commits in this task. Use `git status -sb` for
+the exact count.
 
 ## Immediate Next Step
 
@@ -55,9 +58,9 @@ the branch adds `DART_BUILD_COLLISION_REFERENCE_TESTS` and
 reference-disabled and reference-enabled configurations locally, propagates the
 toggles through the major configure entry points, defaults normal pixi configure
 paths to native-only collision, and has core native-only link evidence. It
-now also has fresh runtime-link and package-export inspection evidence. It
-still needs dependency metadata cleanup, wheel artifact inspection, and
-downstream-component checks.
+now also has fresh runtime-link, package-export, default/wheel Pixi dependency
+metadata, and explicit `collision-reference` environment evidence. It still
+needs built wheel artifact inspection and downstream-component checks.
 Collision abstraction cleanup has also started: `DartCollisionDetector` owns
 native-backed public factory aliases for `experimental`, `fcl`, `fcl_mesh`,
 `bullet`, and `ode`; the FCL/Bullet/ODE component registrars also publish
@@ -73,7 +76,10 @@ CMake/pkg-config metadata beyond `DART_BUILD_COLLISION_*` variables set to
 `OFF`. Normal pixi configure paths now request the same native-only default;
 old engines and reference harnesses are opt-in through override variables. A
 fresh install probe built the normal native runtime components plus dartpy from
-an empty build tree and found no old-engine runtime links.
+an empty build tree and found no old-engine runtime links. The latest Pixi
+metadata split removes old collision engines from default and wheel
+environments and adds `collision-reference` for reference-only package
+availability.
 
 ## Context That Would Be Lost
 
@@ -104,6 +110,12 @@ an empty build tree and found no old-engine runtime links.
   `ldd`, dartpy `ldd`, and target-help inspection found no FCL, Bullet, ODE,
   libccd, old collision component, or reference-only target leakage beyond
   `DART_BUILD_COLLISION_*` variables reporting `OFF`.
+- Pixi dependency metadata now matches the native-only runtime direction:
+  `default`, `py312-wheel`, `py313-wheel`, and `py314-wheel` list no
+  `bullet-cpp`, `fcl`, `libode`, `libccd-double`, `flann`, or `hdf5` packages
+  in the lock. The explicit `collision-reference` environment lists those
+  packages, configures FCL/Bullet/ODE plus reference tests/benchmarks `ON`,
+  and builds/runs `test_reference_backends` successfully.
 - Explicit `DART_BUILD_COLLISION_*_OVERRIDE=ON` opt-in restores the old
   component targets, reference consistency tests, and comparative benchmark
   targets for comparison jobs.
@@ -183,8 +195,8 @@ an empty build tree and found no old-engine runtime links.
   Bullet/ODE component text from generated component metadata; the follow-up
   install metadata search found only `DART_BUILD_COLLISION_*` variables set to
   `OFF`. The fresh runtime install probe now broadens that evidence to all
-  installed native shared libraries, dartpy, target-help, and installed package
-  metadata from a clean build tree.
+  installed native shared libraries, dartpy, target-help, installed package
+  metadata from a clean build tree, and Pixi default/wheel lock metadata.
 - Factory-level abstraction cleanup has focused evidence:
   `UNIT_collision_DartCollisionDetector`, `UNIT_simulation_World`,
   `INTEGRATION_collision_Collision`, `INTEGRATION_collision_CollisionGroups`,

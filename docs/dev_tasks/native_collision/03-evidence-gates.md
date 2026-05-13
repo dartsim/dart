@@ -43,8 +43,8 @@ performance-oriented internals before this scale reaches completion.
 | 4     | Native benchmark wins are recorded                  | Complete in checkpoint           |
 | 5     | Local builds pass with FCL/Bullet/ODE disabled      | Complete in checkpoint           |
 | 6     | Native-only and gz-physics CI are permanent         | Started; local evidence          |
-| 7     | Reference engines are test/bench-only opt-in        | Started; default-off + opt-in    |
-| 8     | Default packages/wheels have no old runtime deps    | Started; pixi/install proof      |
+| 7     | Reference engines are test/bench-only opt-in        | Started; opt-in env/test proven  |
+| 8     | Default packages/wheels have no old runtime deps    | Mostly complete; wheel artifacts |
 | 9     | Downstream migration/deprecation path is tested     | Started; DART alias coverage     |
 | 10    | Collision abstraction is one clean built-in stack   | Started; architecture documented |
 | 11    | Old runtime backend source/components are deleted   | Not started                      |
@@ -58,8 +58,8 @@ These gates are still required before the single north-star PR is complete.
 | --------------------------- | ----------------------------------------------------------- | --------------------------------------------- |
 | CI native-only build        | CI passes with FCL, Bullet, and ODE disabled                | Local equivalent passed; awaiting CI evidence |
 | CI gz-physics compatibility | gz-physics CI passes with optional legacy components built  | Required in this PR                           |
-| Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Started; default-off + opt-in evidence        |
-| Packaging removal           | Default packages/wheels have no old collision runtime deps  | Started; pixi/link/install proof              |
+| Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Started; opt-in env/test evidence             |
+| Packaging removal           | Default packages/wheels have no old collision runtime deps  | Metadata/link/install done; wheels pending    |
 | Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Started; DART alias coverage                  |
 | Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Factory keys done; classes/components remain  |
 | Built-in architecture       | API-clean, scalable, performance-oriented native layer      | Started; design checklist documented          |
@@ -1090,16 +1090,99 @@ help | rg
   - Result: no legacy collision component or reference-only targets were
     listed in the fresh native-only build tree.
 
+## Pixi Dependency Metadata And Reference Environment Runs
+
+- `pixi lock --no-install`
+  - Commit: working tree after moving old collision engines out of default
+    Pixi dependencies and adding the `collision-reference` environment.
+  - Result: passed and updated `pixi.lock` from schema v6 to v7. The lock
+    update removed `bullet-cpp`, `fcl`, `libode`, `libccd-double`, `flann`,
+    `hdf5`, and related FCL transitive packages from the `default` environment
+    on all supported platforms. It removed the same old collision packages from
+    the `py312-wheel`, `py313-wheel`, and `py314-wheel` environments. The new
+    `collision-reference` environment explicitly added `bullet-cpp`, `fcl`,
+    `libode`, and their transitive packages for comparison work.
+- `pixi list --no-install --json -e default
+'^(bullet-cpp|fcl|libode|libccd-double|flann|hdf5)$'`
+  - Commit: working tree after Pixi dependency metadata split.
+  - Result: `[]`.
+- `pixi list --no-install --json -e py312-wheel
+'^(bullet-cpp|fcl|libode|libccd-double|flann|hdf5)$'`
+  - Commit: working tree after Pixi dependency metadata split.
+  - Result: `[]`.
+- `pixi list --no-install --json -e py313-wheel
+'^(bullet-cpp|fcl|libode|libccd-double|flann|hdf5)$'`
+  - Commit: working tree after Pixi dependency metadata split.
+  - Result: `[]`.
+- `pixi list --no-install --json -e py314-wheel
+'^(bullet-cpp|fcl|libode|libccd-double|flann|hdf5)$'`
+  - Commit: working tree after Pixi dependency metadata split.
+  - Result: `[]`.
+- `pixi list --no-install --json -e collision-reference
+'^(bullet-cpp|fcl|libode|libccd-double|flann|hdf5)$'`
+  - Commit: working tree after Pixi dependency metadata split.
+  - Result: returned explicit `bullet-cpp`, `fcl`, and `libode`, plus
+    transitive `libccd-double`, `flann`, and `hdf5`. This is the intended
+    opt-in reference-engine environment, not a default runtime dependency.
+- `pixi list --no-install --json -e gazebo
+'^(bullet-cpp|fcl|libode|libccd-double|flann|hdf5)$'`
+  - Commit: working tree after Pixi dependency metadata split.
+  - Result: returned explicit old-engine packages and transitive FCL packages.
+    This remains a temporary downstream compatibility environment until the
+    retained legacy component facades are cleaned up and gz-physics no longer
+    needs the old component package surface.
+- `DART_VERBOSE=ON pixi run --locked config`
+  - Commit: working tree after Pixi dependency metadata split.
+  - Result: passed. Configure reported `DART_BUILD_COLLISION_FCL: OFF`,
+    `DART_BUILD_COLLISION_BULLET: OFF`, `DART_BUILD_COLLISION_ODE: OFF`,
+    `DART_BUILD_COLLISION_REFERENCE_TESTS: OFF`, and
+    `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS: OFF`. FCL was not listed in
+    the found package set, CMake added only the normal native component set,
+    and native collision test count remained 29.
+- `DART_VERBOSE=ON pixi run --locked -e collision-reference config`
+  - Commit: working tree after Pixi dependency metadata split.
+  - Result: passed. Configure reported FCL, Bullet, ODE, reference tests, and
+    reference benchmarks all `ON`; CMake found `fcl`, configured
+    `dart/collision/fcl`, `dart/collision/ode`, and
+    `dart/collision/bullet`, added 10 components, and increased the native
+    collision unit count to 30.
+- `pixi run --locked -e collision-reference -- cmake --build
+build/collision-reference/cpp/Release --target help | rg
+'dart-collision-(fcl|bullet|ode)|test_reference_backends'`
+  - Commit: working tree after Pixi dependency metadata split.
+  - Result: matched the old reference component targets and
+    `test_reference_backends`, proving the explicit reference environment
+    restores comparison targets.
+- `pixi run --locked -- cmake --build build/default/cpp/Release --target help
+| rg
+'dart-collision-(fcl|bullet|ode)|test_reference_backends|bm_comparative|bm_scenarios_(mixed_primitives|mesh_heavy)|INTEGRATION_simulation_MimicConstraint'
+|| true`
+  - Commit: working tree after Pixi dependency metadata split.
+  - Result: no old collision component or reference-only targets were listed in
+    the default environment.
+- `pixi run --locked -e collision-reference -- cmake --build
+build/collision-reference/cpp/Release --target test_reference_backends
+--parallel 8`
+  - Commit: working tree after Pixi dependency metadata split.
+  - Result: passed. The target built the native core, DART core,
+    `dart-collision-fcl`, `dart-collision-ode`, `dart-collision-bullet`, and
+    `bin/test_reference_backends`; only known third-party/deprecated-header
+    warnings appeared.
+- `pixi run --locked -e collision-reference -- ctest --test-dir
+build/collision-reference/cpp/Release --output-on-failure -R
+test_reference_backends`
+  - Commit: working tree after Pixi dependency metadata split.
+  - Result: passed, 1/1 test in 0.40 seconds.
+
 ## Known Risks
 
 - Direct legacy detector classes and component libraries still contain real FCL,
   Bullet, and ODE implementations for reference work. The public factory route
   is now native-backed, but direct class/header/component cleanup is still a
   north-star gate.
-- Normal pixi configure paths now default the old engines and reference
-  harnesses to `OFF`, but package/dependency metadata still needs a separate
-  audit so FCL, Bullet, ODE, and Bullet wheel dependencies do not remain in
-  default runtime surfaces accidentally.
+- Normal pixi configure paths and default/wheel Pixi lock metadata now exclude
+  the old collision engines, but built wheel artifacts still need inspection so
+  packaging cannot reintroduce FCL, Bullet, ODE, or libccd runtime links.
 - Compatibility-alias checks can silently bypass native-only paths if they are
   used outside explicit backward-compatibility tests.
 - Scenario-scale collision manager performance now passes the recorded

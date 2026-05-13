@@ -10,7 +10,6 @@ platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
 assimp = ">=5.4.3,<6"
 benchmark = ">=1.9.4,<2"
 black = ">=25.12.0,<26"
-bullet-cpp = ">=3.25,<4"
 clang-format = ">=21.1.7,<22"
 cli11 = ">=2.6.0,<3"
 cmake = ">=4.2.1,<5"
@@ -19,7 +18,6 @@ console_bridge = ">=1.0.2,<2"
 doxygen = ">=1.13.2,<2"
 eigen = ">=3.4.0,<4"
 entt = ">=3.16.0,<4"
-fcl = ">=0.7.0,<0.8"
 foonathan-memory = ">=0.7.3,<0.8"
 fmt = ">=11.2.0,<13"
 gtest = ">=1.17.0,<2"
@@ -27,7 +25,6 @@ imgui = ">=1.92.3,<2"
 isort = ">=7.0.0,<8"
 jinja2 = ">=3.1.6,<4"
 libboost-devel = ">=1.88.0,<2"
-libode = ">=0.16.6,<0.17"
 libsdformat = ">=16.0.0,<17"
 myst-parser = ">=4.0.1,<5"
 nanobind = ">=2.10.2,<3"
@@ -1818,6 +1815,35 @@ config-install = { cmd = """
 
 tracy = { cmd = "tracy-profiler.exe" }
 
+#============================
+# Feature: Collision Reference
+#============================
+#
+# Optional reference engines for native collision correctness tests and
+# comparative benchmarks. These packages are intentionally not part of the base
+# environment because normal DART builds should use built-in collision only.
+#
+# Usage:
+#   pixi run -e collision-reference config
+#   pixi run -e collision-reference -- cmake --build build/collision-reference/cpp/Release --target test_reference_backends
+#
+
+[feature.collision-reference]
+channels = ["conda-forge"]
+platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
+
+[feature.collision-reference.activation.env]
+DART_BUILD_COLLISION_FCL_OVERRIDE = "ON"
+DART_BUILD_COLLISION_BULLET_OVERRIDE = "ON"
+DART_BUILD_COLLISION_ODE_OVERRIDE = "ON"
+DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE = "ON"
+DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE = "ON"
+
+[feature.collision-reference.dependencies]
+bullet-cpp = ">=3.25,<4"
+fcl = ">=0.7.0,<0.8"
+libode = ">=0.16.6,<0.17"
+
 #=================
 # Feature: Gazebo
 #=================
@@ -1865,6 +1891,7 @@ libgz-utils = ">=4.0.0,<5"
 libsdformat = ">=16.0.0,<17"
 eigen = ">=3.4.0,<4"
 assimp = ">=5.4.3,<6"
+fcl = ">=0.7.0,<0.8"
 libode = ">=0.16.6,<0.17"
 bullet-cpp = ">=3.25,<4"
 
@@ -2002,7 +2029,6 @@ nanobind = ">=2.10.2,<3"
 cmake = ">=4.2.1,<5"
 ninja = ">=1.13.2,<2"
 assimp = ">=5.4.3,<6"
-bullet-cpp = ">=3.25,<4"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
 fmt = ">=12.0.0,<13"
@@ -2129,7 +2155,6 @@ nanobind = ">=2.10.2,<3"
 cmake = ">=4.2.1,<5"
 ninja = ">=1.13.2,<2"
 assimp = ">=5.4.3,<6"
-bullet-cpp = ">=3.25,<4"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
 fmt = ">=12.0.0,<13"
@@ -2256,7 +2281,6 @@ nanobind = ">=2.10.2,<3"
 cmake = ">=4.2.1,<5"
 ninja = ">=1.13.2,<2"
 assimp = ">=5.4.3,<6"
-bullet-cpp = ">=3.25,<4"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
 fmt = ">=12.0.0,<13"
@@ -2373,6 +2397,7 @@ wheel-repair = { depends-on = [
 
 [environments]
 default = ["py-default"]
+collision-reference = ["py-default", "collision-reference"]
 gazebo = ["gazebo"]
 py312-wheel = ["py312-wheel"]
 py313-wheel = ["py313-wheel"]

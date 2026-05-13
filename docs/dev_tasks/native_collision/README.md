@@ -33,11 +33,19 @@
       utils, URDF, simulation-experimental, and `dart-collision-native` built
       and installed shows no old collision component files and no FCL, Bullet,
       ODE, or libccd runtime links.
+- [x] Default and wheel Pixi dependency metadata no longer carry FCL, Bullet,
+      ODE, or their FCL transitive packages. The new `collision-reference`
+      environment is the explicit opt-in path for reference-engine correctness
+      tests and benchmarks.
+- [x] The `collision-reference` environment configures with FCL, Bullet, ODE,
+      reference tests, and reference benchmarks enabled, and the focused
+      `test_reference_backends` target builds and passes.
 - [ ] The single north-star PR is not complete yet. The checkpoint commit proves
       native default, feature parity, gz-physics compatibility, performance,
       disabled-legacy-backend builds, native-only pixi defaults, and explicit
-      reference opt-in locally; the remaining work is CI hardening,
-      packaging/runtime dependency removal, remaining `dart/collision/`
+      reference opt-in locally. The current dependency-metadata slice also
+      proves default/wheel Pixi metadata isolation. The remaining work is CI
+      hardening, wheel artifact inspection, remaining `dart/collision/`
       class/component cleanup into one built-in detector, downstream migration
       safety, recurring performance guardrails, and final legacy backend
       deletion.
@@ -89,8 +97,8 @@ The current checkpoint is a validated middle state, not a final PR boundary.
 | 4     | Native beats legacy backends in benchmarks   | Complete in checkpoint           |
 | 5     | FCL/Bullet/ODE are optional for local builds | Complete in checkpoint           |
 | 6     | Native-only and gz-physics CI are permanent  | Started; local evidence          |
-| 7     | Reference engines are test/bench-only        | Started; default-off + opt-in    |
-| 8     | Default packages have no old runtime deps    | Started; pixi/install proof      |
+| 7     | Reference engines are test/bench-only        | Started; opt-in env/test proven  |
+| 8     | Default packages have no old runtime deps    | Mostly complete; wheel artifacts |
 | 9     | Downstream migration/deprecation path exists | Started; DART alias coverage     |
 | 10    | Collision abstraction is one clean stack     | Started; architecture documented |
 | 11    | Old runtime backend source is deleted        | Not started                      |
@@ -137,11 +145,11 @@ The current checkpoint is a validated middle state, not a final PR boundary.
 2. Finish reference-engine isolation by auditing target links, dependency
    metadata, wheel artifacts, and remaining downstream-component paths after
    the CMake test/benchmark opt-out, normal pixi default-off, explicit
-   reference opt-in, core-link, fresh runtime-link, and package-export
-   evidence.
-3. Remove FCL, Bullet, and ODE from default package/runtime surfaces while
-   preserving explicit reference test/benchmark jobs and native-backed
-   compatibility facades.
+   reference opt-in, core-link, fresh runtime-link, package-export, and
+   Pixi dependency-metadata evidence.
+3. Finish removing FCL, Bullet, and ODE from default package/runtime surfaces
+   by inspecting built wheel artifacts while preserving explicit reference
+   test/benchmark jobs and native-backed compatibility facades.
 4. Continue collapsing `dart/collision/` so retained legacy classes, headers,
    and component names are native-backed compatibility facades or explicit
    reference-only surfaces; factory keys are already native-backed aliases.
@@ -177,8 +185,9 @@ collision stack.
      ASAN, Windows, and wheel configure entry points.
    - Core native-only link, fresh runtime install, and installed
      CMake/pkg-config metadata inspection show no FCL, Bullet, ODE, libccd, or
-     old collision component targets in the normal native install. Remaining
-     work is broader dependency-metadata, wheel-artifact, and
+     old collision component targets in the normal native install. Default and
+     wheel Pixi lock metadata no longer include old collision engines or their
+     FCL transitive packages. Remaining work is built wheel artifact and
      downstream-component inspection so reference engines cannot leak into
      normal runtime targets.
 3. **Backend Removal From Defaults**
@@ -188,6 +197,9 @@ collision stack.
    - Normal pixi configure entry points now request native-only collision by
      default; old engines and comparison harnesses are enabled only by
      override.
+   - Default and wheel Pixi environments no longer lock FCL, Bullet, ODE, or
+     their FCL transitive packages; the explicit `collision-reference`
+     environment owns those packages for comparison work.
    - Default `find_package(DART)` now adds only the `dart` component; it no
      longer auto-adds legacy collision components or emits deprecated
      Bullet/ODE component text from generated native-only package exports.

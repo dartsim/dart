@@ -140,6 +140,9 @@ backends:
   compatibility facade over the built-in detector or an explicitly named
   reference-only target. It must not silently select an external runtime
   backend.
+- Default package environments, including wheel build environments, should not
+  carry FCL, Bullet, ODE, or their transitive collision packages. A separate
+  reference environment may carry them for comparison tests and benchmarks.
 - Reference-engine build options may report whether FCL, Bullet, and ODE were
   enabled, but `OFF` option state in installed metadata is state reporting, not
   a runtime dependency.
