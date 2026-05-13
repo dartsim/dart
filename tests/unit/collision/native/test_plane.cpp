@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/collision/native/narrow_phase/mesh_mesh.hpp>
 #include <dart/collision/native/narrow_phase/plane_sphere.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
 
@@ -208,4 +209,46 @@ TEST(PlaneCapsule, Lying)
   EXPECT_TRUE(collided);
   EXPECT_EQ(result.numContacts(), 1u);
   EXPECT_NEAR(result.getContact(0).depth, 0.2, 1e-6);
+}
+
+TEST(PlaneMesh, NoCollision)
+{
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  MeshShape mesh(
+      {Eigen::Vector3d(-0.5, -0.5, 0.0),
+       Eigen::Vector3d(0.5, -0.5, 0.0),
+       Eigen::Vector3d(0.0, 0.5, 0.0)},
+      {{0, 1, 2}});
+
+  Eigen::Isometry3d tfPlane = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfMesh = Eigen::Isometry3d::Identity();
+  tfMesh.translation() = Eigen::Vector3d(0, 0, 1.0);
+
+  CollisionResult result;
+  const bool collided = collidePlaneMesh(plane, tfPlane, mesh, tfMesh, result);
+
+  EXPECT_FALSE(collided);
+  EXPECT_EQ(result.numContacts(), 0u);
+}
+
+TEST(PlaneMesh, Penetrating)
+{
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  MeshShape mesh(
+      {Eigen::Vector3d(-0.5, -0.5, 0.0),
+       Eigen::Vector3d(0.5, -0.5, 0.0),
+       Eigen::Vector3d(0.0, 0.5, 0.0)},
+      {{0, 1, 2}});
+
+  Eigen::Isometry3d tfPlane = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfMesh = Eigen::Isometry3d::Identity();
+  tfMesh.translation() = Eigen::Vector3d(0, 0, -0.25);
+
+  CollisionResult result;
+  const bool collided = collidePlaneMesh(plane, tfPlane, mesh, tfMesh, result);
+
+  EXPECT_TRUE(collided);
+  EXPECT_EQ(result.numContacts(), 3u);
+  EXPECT_NEAR(result.getContact(0).depth, 0.25, 1e-10);
+  EXPECT_TRUE(result.getContact(0).normal.isApprox(Eigen::Vector3d::UnitZ()));
 }

@@ -36,6 +36,8 @@
 #include <dart/collision/dart/dart_collision_detector.hpp>
 #include <dart/collision/dart/dart_collision_group.hpp>
 
+#include <string>
+
 namespace dart {
 namespace collision {
 
@@ -64,6 +66,17 @@ public:
   static std::shared_ptr<FCLCollisionDetector> create()
   {
     return std::shared_ptr<FCLCollisionDetector>(new FCLCollisionDetector());
+  }
+
+  const std::string& getType() const override
+  {
+    return getStaticType();
+  }
+
+  static const std::string& getStaticType()
+  {
+    static const std::string type = "fcl";
+    return type;
   }
 
   std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()

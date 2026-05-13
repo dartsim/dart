@@ -36,6 +36,8 @@
 #include <dart/collision/dart/dart_collision_detector.hpp>
 #include <dart/collision/dart/dart_collision_group.hpp>
 
+#include <string>
+
 namespace dart {
 namespace collision {
 
@@ -52,6 +54,17 @@ public:
   {
     return std::shared_ptr<BulletCollisionDetector>(
         new BulletCollisionDetector());
+  }
+
+  const std::string& getType() const override
+  {
+    return getStaticType();
+  }
+
+  static const std::string& getStaticType()
+  {
+    static const std::string type = "bullet";
+    return type;
   }
 
   std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()

@@ -543,15 +543,15 @@ bool collideCylinderPlane(
   const Eigen::Vector3d cylBot = cylCenter - cylAxis * cylHalfHeight;
 
   const double dotAxis = cylAxis.dot(worldNormal);
-  const Eigen::Vector3d radialDir
-      = (worldNormal - cylAxis * dotAxis).normalized();
+  const Eigen::Vector3d radialRaw = worldNormal - cylAxis * dotAxis;
 
   Eigen::Vector3d deepestPoint;
-  if (radialDir.squaredNorm() < 1e-10) {
+  if (radialRaw.squaredNorm() < 1e-10) {
     const double distTop = worldNormal.dot(cylTop - planePoint);
     const double distBot = worldNormal.dot(cylBot - planePoint);
     deepestPoint = (distTop < distBot) ? cylTop : cylBot;
   } else {
+    const Eigen::Vector3d radialDir = radialRaw.normalized();
     const Eigen::Vector3d rimOffset = -radialDir * cylRadius;
     const Eigen::Vector3d topRim = cylTop + rimOffset;
     const Eigen::Vector3d botRim = cylBot + rimOffset;

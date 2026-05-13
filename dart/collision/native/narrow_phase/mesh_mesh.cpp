@@ -1033,4 +1033,75 @@ bool collidePrimitiveMesh(
   return hit;
 }
 
+bool collidePlaneMesh(
+    const PlaneShape& plane,
+    const Eigen::Isometry3d& planeTransform,
+    const MeshShape& mesh,
+    const Eigen::Isometry3d& meshTransform,
+    CollisionResult& result,
+    const CollisionOption& option)
+{
+  if (result.numContacts() >= option.maxNumContacts) {
+    return false;
+  }
+
+  const Eigen::Vector3d worldNormal
+      = planeTransform.rotation() * plane.getNormal();
+  const Eigen::Vector3d planePoint
+      = planeTransform.translation() + worldNormal * plane.getOffset();
+
+  struct MeshPlaneContact
+  {
+    Eigen::Vector3d point;
+    double depth = 0.0;
+  };
+
+  std::vector<MeshPlaneContact> contacts;
+  const std::size_t remaining = option.maxNumContacts - result.numContacts();
+  const std::size_t contactLimit = std::min<std::size_t>(remaining, 4u);
+  contacts.reserve(contactLimit);
+
+  for (const auto& localVertex : mesh.getVertices()) {
+    const Eigen::Vector3d worldVertex = meshTransform * localVertex;
+    const double signedDistance = worldNormal.dot(worldVertex - planePoint);
+    if (signedDistance > 0.0) {
+      continue;
+    }
+
+    MeshPlaneContact candidate{worldVertex, -signedDistance};
+    const auto insertPos = std::lower_bound(
+        contacts.begin(),
+        contacts.end(),
+        candidate,
+        [](const MeshPlaneContact& lhs, const MeshPlaneContact& rhs) {
+          return lhs.depth > rhs.depth;
+        });
+
+    if (contacts.size() < contactLimit) {
+      contacts.insert(insertPos, candidate);
+    } else if (insertPos != contacts.end()) {
+      contacts.insert(insertPos, candidate);
+      contacts.pop_back();
+    }
+  }
+
+  if (contacts.empty()) {
+    return false;
+  }
+
+  const std::size_t numContacts = contacts.size();
+  for (std::size_t i = 0; i < numContacts; ++i) {
+    const auto& meshContact = contacts[i];
+
+    ContactPoint contact;
+    contact.position
+        = meshContact.point + worldNormal * (meshContact.depth * 0.5);
+    contact.normal = worldNormal;
+    contact.depth = meshContact.depth;
+    result.addContact(contact);
+  }
+
+  return true;
+}
+
 } // namespace dart::collision::native

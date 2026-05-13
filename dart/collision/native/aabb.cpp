@@ -129,6 +129,10 @@ Aabb Aabb::forCylinder(double radius, double height)
 
 Aabb Aabb::transformed(const Aabb& local, const Eigen::Isometry3d& transform)
 {
+  if (!local.min.allFinite() || !local.max.allFinite()) {
+    return local;
+  }
+
   const Eigen::Vector3d localCenter = local.center();
   const Eigen::Vector3d localHalfExtents = local.halfExtents();
 

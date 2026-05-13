@@ -12,16 +12,16 @@ is tied to a commit, command, and observed output.
 
 ## Gate Matrix
 
-| Gate                  | Required evidence                                            | Current state          |
-| --------------------- | ------------------------------------------------------------ | ---------------------- |
-| Native default        | Focused test showing default detector type is `dart`         | Focused pass, May 2026 |
-| Feature parity        | Native unit and integration collision tests pass             | Passed, May 2026       |
-| Reference consistency | Native-vs-FCL/Bullet/ODE consistency tests pass              | Opt-in pass, May 2026  |
-| gz-physics            | `pixi run -e gazebo test-gz` passes without patches          | Focused pass, May 2026 |
-| Performance           | Comparative benchmarks show native >= best legacy backend    | Focused pass, May 2026 |
-| Dependency removal    | Default build succeeds without FCL/Bullet/ODE collision deps | Focused pass, May 2026 |
-| Source isolation      | Lint blocks old-engine runtime includes/source leakage       | Local pass, May 2026   |
-| Full validation       | `pixi run test-all` passes                                   | Passed, May 2026       |
+| Gate                  | Required evidence                                            | Current state                     |
+| --------------------- | ------------------------------------------------------------ | --------------------------------- |
+| Native default        | Focused test showing default detector type is `dart`         | Focused pass, May 2026            |
+| Feature parity        | Native unit and integration collision tests pass             | Passed, May 2026                  |
+| Reference consistency | Native-vs-FCL/Bullet/ODE consistency tests pass              | Opt-in pass, May 2026             |
+| gz-physics            | `pixi run -e gazebo test-gz` passes without patches          | Reopened; latest focused failures |
+| Performance           | Comparative benchmarks show native >= best legacy backend    | Focused pass, May 2026            |
+| Dependency removal    | Default build succeeds without FCL/Bullet/ODE collision deps | Focused pass, May 2026            |
+| Source isolation      | Lint blocks old-engine runtime includes/source leakage       | Local pass, May 2026              |
+| Full validation       | `pixi run test-all` passes                                   | Passed, May 2026                  |
 
 ## North-Star Progress Scale
 
@@ -40,10 +40,10 @@ performance-oriented internals before this scale reaches completion.
 | 0     | Baseline native backend exists                      | Complete before this task         |
 | 1     | Native `dart` detector is default                   | Complete in checkpoint            |
 | 2     | DART feature parity is proven                       | Complete in checkpoint            |
-| 3     | gz-physics compatibility is proven                  | Complete in checkpoint            |
+| 3     | gz-physics compatibility is proven                  | Reopened by current gz failures   |
 | 4     | Native benchmark wins are recorded                  | Complete in checkpoint            |
 | 5     | Local builds pass with FCL/Bullet/ODE disabled      | Complete in checkpoint            |
-| 6     | Native-only and gz-physics CI are permanent         | Started; local evidence           |
+| 6     | Native-only and gz-physics CI are permanent         | Started; gz local gate failing    |
 | 7     | Reference engines are test/bench-only opt-in        | Local target split proven         |
 | 8     | Default packages/wheels have no old runtime deps    | Local pass; CI wheel matrix left  |
 | 9     | Downstream migration/deprecation path is tested     | Started; alias/component coverage |
@@ -58,10 +58,10 @@ These gates are still required before the single north-star PR is complete.
 | Gate                        | Required evidence                                           | Current state                                  |
 | --------------------------- | ----------------------------------------------------------- | ---------------------------------------------- |
 | CI native-only build        | CI passes with FCL, Bullet, and ODE disabled                | Local equivalent passed; awaiting CI evidence  |
-| CI gz-physics compatibility | gz-physics CI passes with optional legacy components built  | Required in this PR                            |
+| CI gz-physics compatibility | gz-physics CI passes with optional legacy components built  | Latest focused local run failing               |
 | Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Local reference target split passes            |
 | Packaging removal           | Default packages/wheels have no old collision runtime deps  | Verifier wired; CI matrix evidence left        |
-| Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Migration plan documented; run evidence left   |
+| Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Migration plan documented; gz fixes left       |
 | Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Source/package facades done                    |
 | Built-in architecture       | `01-design.md` layer table passes API, scaling, perf gates  | Source split done; CI/perf gates remain        |
 | Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Scheduled/manual CI guard added; evidence left |
@@ -1350,10 +1350,13 @@ build/collision-reference/cpp/Release --output-on-failure -R
   - Commit: working tree after direct public C++ legacy `create()` paths were
     changed to return `DartCollisionDetector`.
   - Result: passed, 5/5 tests. The new `test_reference_backends` coverage
-    checks that `FCLCollisionDetector::create()`,
+    checked that `FCLCollisionDetector::create()`,
     `BulletCollisionDetector::create()`, and `OdeCollisionDetector::create()`
-    return detector type `dart`, while `createReference()` still returns the
-    explicit `fcl`, `bullet`, and `ode` reference detectors.
+    returned detector type `dart` at that checkpoint, while
+    `createReference()` still returned the explicit `fcl`, `bullet`, and `ode`
+    reference detectors. Later gz-physics compatibility work narrowed this:
+    direct C++ facades may preserve legacy display strings while staying
+    native-backed.
 - `pixi run --locked -e collision-reference -- cmake --build
 build/collision-reference/cpp/Release --target boxes mimic_pendulums
 capsule_ground_contact heightmap --parallel 8`
@@ -1767,15 +1770,90 @@ dart_component_collision-ode dart --parallel 8`
     documentation updates.
   - Result: passed.
 
+## Current Compatibility Cleanup Runs
+
+- `pixi run --locked -e collision-reference -- cmake --build
+build/collision-reference/cpp/Release --target test_reference_backends
+test_legacy_compat_facades --parallel 13`
+  - Commit: working tree after preserving legacy direct C++ facade display
+    names while keeping them native-backed.
+  - Result: passed. The focused reference build kept explicit
+    `createReference()` old-engine coverage and built the new public
+    compatibility facade test.
+- `pixi run --locked -e collision-reference -- ctest --test-dir
+build/collision-reference/cpp/Release --output-on-failure -R
+'^(test_reference_backends|test_legacy_compat_facades)$'`
+  - Commit: working tree after preserving legacy direct C++ facade display
+    names while keeping them native-backed.
+  - Result: passed, 2/2 tests. Direct C++ legacy facade objects report legacy
+    display strings for gz-physics compatibility while deriving from
+    `DartCollisionDetector`; public factory aliases still canonicalize to
+    `dart`.
+- `DART_PARALLEL_JOBS=13 CTEST_PARALLEL_LEVEL=13 pixi run -e gazebo test-gz`
+  - Commit: working tree after legacy facade display-name compatibility.
+  - Result: failed. Display-name checks that previously failed now pass, but
+    5 gz-physics tests still failed: `COMMON_TEST_collisions_dartsim`
+    `MeshAndPlane` free-fell to z `-4.9099` instead of stopping near `-1.91`,
+    `COMMON_TEST_detachable_joint_dartsim`,
+    `COMMON_TEST_joint_features_dartsim`,
+    `COMMON_TEST_joint_transmitted_wrench_features_dartsim`, and
+    `COMMON_TEST_simulation_features_dartsim`.
+- `pixi run --locked -e collision-reference -- cmake --build
+build/collision-reference/cpp/Release --target test_aabb test_collision_world
+UNIT_collision_DartCollisionDetector test_plane test_cylinder
+test_legacy_compat_facades test_reference_backends --parallel 13`
+  - Commit: working tree after adding unbounded-plane AABB transform coverage,
+    native plane/mesh dispatch, and a cylinder/plane parallel-axis guard.
+  - Result: passed.
+- `pixi run --locked -e collision-reference -- ctest --test-dir
+build/collision-reference/cpp/Release --output-on-failure -R
+'^(test_aabb|test_collision_world|UNIT_collision_DartCollisionDetector|test_plane|test_cylinder|test_legacy_compat_facades|test_reference_backends)$'`
+  - Commit: working tree after adding unbounded-plane AABB transform coverage,
+    native plane/mesh dispatch, and a cylinder/plane parallel-axis guard.
+  - Result: passed, 7/7 tests.
+- `pixi run -e gazebo install OFF`
+  - Commit: working tree after the same native collision fixes.
+  - Result: passed. The updated DART build installed into the gazebo
+    environment before rerunning focused gz-physics tests.
+- Focused gz-physics subset:
+  `pixi run -e gazebo -- bash -lc 'set -euo pipefail; export
+LD_LIBRARY_PATH=.deps/gz-physics/build/lib:$CONDA_PREFIX/lib:${LD_LIBRARY_PATH:-};
+cd .deps/gz-physics/build; ctest --output-on-failure -R
+"^(COMMON_TEST_collisions_dartsim|COMMON_TEST_detachable_joint_dartsim|COMMON_TEST_joint_features_dartsim|COMMON_TEST_joint_transmitted_wrench_features_dartsim)$"'`
+  - Commit: working tree after native plane/mesh and AABB fixes.
+  - Result: failed. `COMMON_TEST_collisions_dartsim` timed out in
+    `MeshAndPlane`, and the detachable-joint, joint-feature, and transmitted
+    wrench tests still failed with contact/solver-facing differences.
+- `pixi run --locked -e collision-reference -- cmake --build
+build/collision-reference/cpp/Release --target test_plane
+UNIT_collision_DartCollisionDetector test_collision_world --parallel 13 &&
+pixi run --locked -e collision-reference -- ctest --test-dir
+build/collision-reference/cpp/Release --output-on-failure -R
+'^(test_plane|UNIT_collision_DartCollisionDetector|test_collision_world)$'`
+  - Commit: working tree after capping plane/mesh generated contacts.
+  - Result: passed, 3/3 tests.
+- `pixi run -e gazebo -- bash -lc 'set -euo pipefail; export
+LD_LIBRARY_PATH=.deps/gz-physics/build/lib:$CONDA_PREFIX/lib:${LD_LIBRARY_PATH:-};
+cd .deps/gz-physics/build; timeout 90s ctest --output-on-failure -R
+"^COMMON_TEST_collisions_dartsim$"'`
+  - Commit: working tree after capping plane/mesh generated contacts and
+    reinstalling DART into the gazebo environment.
+  - Result: failed quickly instead of timing out. Static collision cases pass,
+    but `MeshAndPlane` still free-falls to z `-4.909904999999969` instead of
+    the expected `-1.91`. This is the current first downstream correctness
+    blocker to reduce to a DART-side regression test.
+
 ## Known Risks
 
-- Direct public C++ legacy detector `create()` entry points now return the
-  built-in detector, matching the public factory and Python compatibility
-  routes. Legacy package component names are now native-backed interface
-  facades, old-engine shared libraries are explicitly reference-named, and
-  top-level source-tree legacy detector/group headers are native-backed
-  facades. Old FCL, Bullet, and ODE implementation files still exist only as
-  explicit reference test/benchmark surfaces under `reference/` paths.
+- Direct public C++ legacy detector `create()` entry points now return
+  native-backed detector facades. They may preserve legacy display type strings
+  for gz-physics compatibility, while the public factory and Python
+  compatibility routes still canonicalize to `dart`. Legacy package component
+  names are now native-backed interface facades, old-engine shared libraries
+  are explicitly reference-named, and top-level source-tree legacy
+  detector/group headers are native-backed facades. Old FCL, Bullet, and ODE
+  implementation files still exist only as explicit reference test/benchmark
+  surfaces under `reference/` paths.
 - Normal pixi configure paths, default/wheel Pixi lock metadata, and the
   repaired py312 wheel artifact now exclude the old collision engines. CI
   wheel-matrix artifacts still need inspection so packaging cannot reintroduce
@@ -1791,7 +1869,9 @@ dart_component_collision-ode dart --parallel 8`
   voxel grids may need a dedicated acceleration path if they become hot
   simulation workloads.
 - gz-physics depends on legacy detector names and compatibility headers; keep
-  facade behavior covered while native lowercase APIs evolve.
+  facade behavior covered while native lowercase APIs evolve. The latest
+  focused gz-physics run is not green: legacy display-name compatibility is
+  fixed, but `MeshAndPlane` and joint/contact solver-facing cases still fail.
 - Installed-package compatibility remains important: native-backed
   compatibility component files must keep downstream packages such as
   gz-physics linking without making FCL, Bullet, or ODE required for native

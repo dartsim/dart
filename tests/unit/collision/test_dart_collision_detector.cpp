@@ -18,6 +18,7 @@
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/heightmap_shape.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
+#include <dart/dynamics/plane_shape.hpp>
 #include <dart/dynamics/point_cloud_shape.hpp>
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/skeleton.hpp>
@@ -283,6 +284,31 @@ TEST(DartCollisionDetector, SupportedShapePairs)
   result = runCollision(sphere, sphere2, separate);
   EXPECT_FALSE(result.first);
   EXPECT_EQ(result.second, 0u);
+}
+
+TEST(DartCollisionGroup, MeshPlaneCollisionUsesBroadphase)
+{
+  auto detector = DartCollisionDetector::create();
+  auto planeSetup = makeShapeSetup(
+      "plane", std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+  auto meshSetup = makeShapeSetup(
+      "mesh",
+      std::make_shared<MeshShape>(Eigen::Vector3d::Ones(), makeCubeTriMesh()));
+
+  Eigen::Isometry3d meshTf = Eigen::Isometry3d::Identity();
+  meshTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.25);
+  FreeJoint::setTransformOf(meshSetup.body, meshTf);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(planeSetup.shapeNode);
+  group->addShapeFrame(meshSetup.shapeNode);
+
+  CollisionOption option;
+  option.maxNumContacts = 10u;
+
+  CollisionResult result;
+  ASSERT_TRUE(group->collide(option, &result));
+  EXPECT_GT(result.getNumContacts(), 0u);
 }
 
 TEST(DartCollisionDetector, CylinderBoxPairIsSupported)

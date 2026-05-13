@@ -153,9 +153,11 @@ follow-up nice-to-haves.
   guard the source boundary so non-reference DART source paths cannot include
   old-engine or reference-backend headers.
 - Compatibility facade gate: gz-physics-required legacy names still compile
-  during the migration window, but construction, factory selection, and Python
-  access all route to the built-in detector unless the call site is an
-  explicitly named reference test/benchmark harness.
+  during the migration window. Factory selection and Python access route to the
+  canonical built-in `dart` detector; direct C++ legacy facade objects may keep
+  legacy display type strings when gz-physics depends on them, but their
+  algorithms and scene state still come from `DartCollisionDetector` unless the
+  call site is an explicitly named reference test/benchmark harness.
 
 ## Current Design Status
 
@@ -167,9 +169,10 @@ compatibility names are native-backed, and normal package/wheel surfaces no
 longer carry old collision dependencies. Reference tests and benchmarks now
 call explicit `createReference()` methods on the FCL, Bullet, and ODE detector
 classes when they intentionally need old-engine comparisons. Direct public C++
-legacy detector `create()` entry points now return the built-in detector, so
-ordinary source code that selects an old detector class still lands on native
-collision.
+legacy detector `create()` entry points now return native-backed facades over
+`DartCollisionDetector`; those facade objects may keep legacy display type
+strings for downstream compatibility, but ordinary source code that selects an
+old detector class still lands on native collision algorithms and state.
 
 The component boundary has been split: retained package component names
 `collision-fcl`, `collision-bullet`, and `collision-ode` are native-backed
@@ -187,8 +190,11 @@ isolation is now checked by lint so non-reference DART source paths cannot
 include old-engine or reference-backend headers, and legacy implementation
 sources cannot move back outside `reference/` paths. The remaining design gaps
 are CI and packaging evidence at matrix scale, downstream migration/deprecation
-evidence, and broader recurring correctness/performance guardrails across the
-public DART adapter and native core paths. The completed PR must make it
+evidence, solver-facing gz-physics contact correctness, and broader recurring
+correctness/performance guardrails across the public DART adapter and native
+core paths. The latest focused gz-physics run still fails mesh-plane and
+joint/contact feature cases, so compatibility facades are structurally correct
+but downstream correctness is not complete. The completed PR must make it
 impossible for ordinary DART collision runtime selection to instantiate or link
 FCL, Bullet, or ODE.
 

@@ -38,6 +38,7 @@
 #include <dart/collision/dart/dart_collision_group.hpp>
 
 #include <deque>
+#include <string>
 #include <utility>
 
 namespace dart {
@@ -64,6 +65,17 @@ public:
   static std::shared_ptr<OdeCollisionDetector> create()
   {
     return std::shared_ptr<OdeCollisionDetector>(new OdeCollisionDetector());
+  }
+
+  const std::string& getType() const override
+  {
+    return getStaticType();
+  }
+
+  static const std::string& getStaticType()
+  {
+    static const std::string type = "ode";
+    return type;
   }
 
   std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()

@@ -262,8 +262,11 @@ selection routes to `DartCollisionDetector`, including a reference-enabled
 build where legacy component libraries are linked. The Python detector
 compatibility names now also resolve to `DartCollisionDetector`, and dartpy no
 longer links legacy collision component targets even in a reference-enabled
-build. gz-physics migration documentation and fresh gz-physics validation are
-still required.
+build. Direct public C++ legacy facades keep legacy display strings for
+gz-physics compatibility while remaining native-backed. The latest focused
+gz-physics run is not green: `MeshAndPlane` still free-falls and joint/contact
+feature tests still fail, so fresh gz-physics validation and DART-side
+regression reductions are required before this phase can complete.
 
 Success criteria:
 
@@ -304,10 +307,14 @@ compatibility names now resolve to `DartCollisionDetector` and dartpy no
 longer links legacy collision component targets. Reference tests and
 benchmarks now use explicit `createReference()` APIs for old-engine
 comparisons. Direct public C++ legacy detector `create()` paths now resolve to
-`DartCollisionDetector`. Top-level source-tree FCL, Bullet, and ODE
+native-backed `DartCollisionDetector` facades; any legacy display type string
+is compatibility metadata, not backend selection. Top-level source-tree FCL, Bullet, and ODE
 detector/group headers are native-backed facades, while real FCL/Bullet/ODE
 implementation headers and sources live under explicit `reference/` paths for
-reference-only tests and benchmarks. Lint now enforces that split by rejecting
+reference-only tests and benchmarks. DART-side public facade tests cover the
+direct C++ display-name compatibility needed by gz-physics, but the latest
+focused gz-physics run still fails `MeshAndPlane` and joint/contact cases, so
+downstream correctness remains open. Lint now enforces that split by rejecting
 old-engine includes from non-reference DART source paths and rejecting legacy
 implementation sources outside `reference/` paths. CI, downstream migration,
 and broader performance guardrail evidence remain before this phase can

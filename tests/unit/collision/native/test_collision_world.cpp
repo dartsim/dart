@@ -170,6 +170,31 @@ TEST(CollisionWorld, MixedShapes)
   EXPECT_GE(result.numContacts(), 1u);
 }
 
+TEST(CollisionWorld, PlaneBroadphasePairsFiniteObjects)
+{
+  CollisionWorld world;
+
+  auto plane = world.createObject(
+      std::make_unique<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0),
+      Eigen::Isometry3d::Identity());
+
+  Eigen::Isometry3d sphereTf = Eigen::Isometry3d::Identity();
+  sphereTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.5);
+  auto sphere
+      = world.createObject(std::make_unique<SphereShape>(1.0), sphereTf);
+
+  ASSERT_TRUE(plane.isValid());
+  ASSERT_TRUE(sphere.isValid());
+
+  auto snapshot = world.buildBroadPhaseSnapshot();
+  ASSERT_EQ(snapshot.pairs.size(), 1u);
+
+  CollisionOption option;
+  CollisionResult result;
+  EXPECT_TRUE(world.collideAll(snapshot, option, result));
+  EXPECT_GE(result.numContacts(), 1u);
+}
+
 TEST(CollisionWorld, UpdateObject)
 {
   CollisionWorld world;

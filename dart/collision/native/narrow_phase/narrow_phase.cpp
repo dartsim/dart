@@ -301,6 +301,18 @@ bool collideShapes(
     return collideMeshMesh(*m1, tf1, *m2, tf2, result, option);
   }
 
+  if (type1 == ShapeType::Mesh && type2 == ShapeType::Plane) {
+    const auto* mesh = static_cast<const MeshShape*>(shape1);
+    const auto* plane = static_cast<const PlaneShape*>(shape2);
+    return collidePlaneMesh(*plane, tf2, *mesh, tf1, result, option);
+  }
+
+  if (type1 == ShapeType::Plane && type2 == ShapeType::Mesh) {
+    const auto* plane = static_cast<const PlaneShape*>(shape1);
+    const auto* mesh = static_cast<const MeshShape*>(shape2);
+    return collidePlaneMesh(*plane, tf1, *mesh, tf2, result, option);
+  }
+
   if (type1 == ShapeType::Mesh && type2 != ShapeType::Convex) {
     const auto* mesh = static_cast<const MeshShape*>(shape1);
     return collidePrimitiveMesh(*shape2, tf2, *mesh, tf1, result, option);
@@ -965,6 +977,10 @@ bool NarrowPhase::isDistanceSupported(ShapeType type1, ShapeType type2)
   }
   if ((type1 == ShapeType::Plane && isSupportShape(type2))
       || (type2 == ShapeType::Plane && isSupportShape(type1))) {
+    return true;
+  }
+  if ((type1 == ShapeType::Plane && type2 == ShapeType::Mesh)
+      || (type1 == ShapeType::Mesh && type2 == ShapeType::Plane)) {
     return true;
   }
   if ((type1 == ShapeType::Cylinder || type2 == ShapeType::Cylinder)

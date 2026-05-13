@@ -77,6 +77,13 @@ The latest runtime-isolation slice adds
 `check-lint` so non-reference DART source paths cannot include FCL, Bullet,
 ODE, libccd, or explicit collision reference backend headers, and legacy engine
 implementation sources cannot move back outside `reference/` paths.
+The latest compatibility cleanup preserves legacy direct C++ facade display
+strings for gz-physics while keeping those facades native-backed. It also adds
+native plane/mesh dispatch, unbounded-plane AABB coverage, and focused DART
+mesh-plane regression tests. Focused DART tests pass, but the latest
+gz-physics runs are not green: `COMMON_TEST_collisions_dartsim`
+`MeshAndPlane` still free-falls, and detachable-joint, joint-feature, and
+transmitted-wrench tests still show solver-facing contact differences.
 
 ## Current Branch
 
@@ -87,6 +94,13 @@ the exact count.
 ## Immediate Next Step
 
 Continue from `docs/dev_tasks/native_collision/04-reference-gap-analysis.md`.
+The immediate blocker is the current gz-physics regression. Reduce
+`COMMON_TEST_collisions_dartsim` `MeshAndPlane` to a DART-side test using the
+gz custom mesh shape path or equivalent mesh data, inspect the generated
+contacts, and fix native contact generation or adapter conversion before
+rerunning the focused gz subset.
+After that, continue the broader plan below.
+
 The persistent DART adapter scene path is now started: public collision,
 distance, and raycast calls use synced native scene state owned by
 `DartCollisionGroup`, and public raycast uses native broadphase segment-AABB
@@ -223,7 +237,10 @@ libraries.
 - `pixi run test-all` passes after the native voxel-grid work and GUI headless
   fixes. The fresh full run passed lint, build, Release C++ tests,
   simulation-experimental tests, Python tests, and docs.
-- A fresh gz-physics run passed 65/65 tests and the plugin link check.
+- A previous gz-physics run passed 65/65 tests and the plugin link check. That
+  remains historical evidence for the earlier checkpoint, but it does not close
+  the current source state because the latest focused gz-physics run fails
+  `MeshAndPlane` and joint/contact feature cases.
 - Tests and benchmark comments now use native collision naming except for the
   explicit `"experimental"` compatibility alias.
 - gz-physics compatibility and performance parity are explicit gates, not

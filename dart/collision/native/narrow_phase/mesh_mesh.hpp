@@ -40,7 +40,7 @@
 
 namespace dart::collision::native {
 
-DART_COLLISION_NATIVE_API bool collideMeshMesh(
+[[nodiscard]] DART_COLLISION_NATIVE_API bool collideMeshMesh(
     const MeshShape& mesh1,
     const Eigen::Isometry3d& tf1,
     const MeshShape& mesh2,
@@ -48,7 +48,7 @@ DART_COLLISION_NATIVE_API bool collideMeshMesh(
     CollisionResult& result,
     const CollisionOption& option);
 
-DART_COLLISION_NATIVE_API double distanceMeshMesh(
+[[nodiscard]] DART_COLLISION_NATIVE_API double distanceMeshMesh(
     const MeshShape& mesh1,
     const Eigen::Isometry3d& tf1,
     const MeshShape& mesh2,
@@ -56,12 +56,20 @@ DART_COLLISION_NATIVE_API double distanceMeshMesh(
     DistanceResult& result,
     const DistanceOption& option);
 
-DART_COLLISION_NATIVE_API bool collidePrimitiveMesh(
+[[nodiscard]] DART_COLLISION_NATIVE_API bool collidePrimitiveMesh(
     const Shape& primitive,
     const Eigen::Isometry3d& tfPrim,
     const MeshShape& mesh,
     const Eigen::Isometry3d& tfMesh,
     CollisionResult& result,
     const CollisionOption& option);
+
+[[nodiscard]] DART_COLLISION_NATIVE_API bool collidePlaneMesh(
+    const PlaneShape& plane,
+    const Eigen::Isometry3d& planeTransform,
+    const MeshShape& mesh,
+    const Eigen::Isometry3d& meshTransform,
+    CollisionResult& result,
+    const CollisionOption& option = CollisionOption());
 
 } // namespace dart::collision::native

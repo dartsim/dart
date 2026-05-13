@@ -34,6 +34,8 @@
 
 #include <gtest/gtest.h>
 
+#include <limits>
+
 using namespace dart::collision::native;
 
 TEST(Aabb, DefaultConstruction)
@@ -275,4 +277,22 @@ TEST(Aabb, Transformed_Rotation45_Grows)
   EXPECT_NEAR(world.min.y(), -sqrt2, 1e-10);
   EXPECT_NEAR(world.max.x(), sqrt2, 1e-10);
   EXPECT_NEAR(world.max.y(), sqrt2, 1e-10);
+}
+
+TEST(Aabb, Transformed_Unbounded)
+{
+  const double inf = std::numeric_limits<double>::infinity();
+  Aabb local(Eigen::Vector3d(-inf, -inf, -inf), Eigen::Vector3d(inf, inf, inf));
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translate(Eigen::Vector3d(1.0, 2.0, 3.0));
+  transform.rotate(Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitX()));
+
+  auto world = Aabb::transformed(local, transform);
+
+  EXPECT_FALSE(world.min.allFinite());
+  EXPECT_FALSE(world.max.allFinite());
+  EXPECT_EQ(world.min, local.min);
+  EXPECT_EQ(world.max, local.max);
+  EXPECT_TRUE(world.overlaps(
+      Aabb(Eigen::Vector3d(-1.0, -1.0, -1.0), Eigen::Vector3d(1.0, 1.0, 1.0))));
 }
