@@ -443,6 +443,7 @@ TEST(WorldTests, SetCollisionDetector)
   world->setCollisionDetector(CollisionDetectorType::Fcl);
   auto fclDetector = world->getCollisionDetector();
   ASSERT_NE(fclDetector, nullptr);
+  EXPECT_EQ(fclDetector->getTypeView(), "dart");
 }
 
 //==============================================================================
@@ -1199,10 +1200,12 @@ TEST(WorldTests, DartCollisionDetectorBoxContact)
   EXPECT_GT(result.getNumContacts(), 0u);
 }
 
-TEST(WorldTests, FclCollisionDetectorBoxContact)
+TEST(WorldTests, FclAliasUsesDartCollisionDetectorForBoxContact)
 {
   auto world = World::create();
   world->setCollisionDetector(CollisionDetectorType::Fcl);
+  ASSERT_NE(world->getCollisionDetector(), nullptr);
+  EXPECT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
 
   auto skel1 = createBoxSkeleton("fcl_box1", Eigen::Vector3d::Zero());
   auto skel2 = createBoxSkeleton("fcl_box2", Eigen::Vector3d(0.3, 0.0, 0.0));

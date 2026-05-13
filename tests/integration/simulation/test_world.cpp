@@ -486,8 +486,7 @@ TEST(World, DefaultWorldUsesDart)
 }
 
 //==============================================================================
-#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
-TEST(World, TypedSetterConfiguresFclPrimitive)
+TEST(World, TypedSetterFclAliasesToDart)
 {
   auto factory = collision::CollisionDetector::getFactory();
   ASSERT_NE(factory, nullptr);
@@ -500,14 +499,10 @@ TEST(World, TypedSetterConfiguresFclPrimitive)
   world->setCollisionDetector(CollisionDetectorType::Dart);
   world->setCollisionDetector(CollisionDetectorType::Fcl);
 
-  auto fclDetector = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(
-      world->getCollisionDetector());
-  ASSERT_TRUE(fclDetector);
-  EXPECT_EQ(
-      fclDetector->getPrimitiveShapeType(),
-      collision::FCLCollisionDetector::PRIMITIVE);
+  auto detector = world->getCollisionDetector();
+  ASSERT_TRUE(detector);
+  EXPECT_EQ(detector->getTypeView(), "dart");
 }
-#endif
 
 //==============================================================================
 TEST(World, TypedSetterFallsBackWhenDetectorUnavailable)

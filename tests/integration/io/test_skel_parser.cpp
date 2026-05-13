@@ -40,31 +40,6 @@
 
 #include <dart/all.hpp>
 
-#ifndef DART_ENABLE_COLLISION_REFERENCE_TESTS
-  #define DART_ENABLE_COLLISION_REFERENCE_TESTS 0
-#endif
-
-#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
-  #include <dart/collision/fcl/fcl_collision_detector.hpp>
-#endif
-
-#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
-namespace {
-// Force-link dart-collision-fcl.so so that its static Registrar triggers
-// factory registration.  We reference create() which is defined only in the
-// .so (not inlined from headers), guaranteeing the linker pulls it in.
-struct ForceFclLink
-{
-  ForceFclLink()
-  {
-    volatile auto fn = &dart::collision::FCLCollisionDetector::create;
-    (void)fn;
-  }
-};
-static ForceFclLink kForceFclLink;
-} // namespace
-#endif
-
 #include <gtest/gtest.h>
 
 #include <algorithm>
@@ -725,13 +700,7 @@ TEST(SkelParser, SoftBodiesWorldProperties)
 
   const auto detector = world->getConstraintSolver()->getCollisionDetector();
   ASSERT_NE(detector, nullptr);
-#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
-  EXPECT_EQ(detector->getTypeView(), "fcl");
-#else
-  EXPECT_TRUE(
-      detector->getTypeView() == "dart"
-      || detector->getTypeView() == "experimental");
-#endif
+  EXPECT_EQ(detector->getTypeView(), "dart");
 
   const auto skel = world->getSkeleton("skeleton 1");
   ASSERT_NE(skel, nullptr);
@@ -886,13 +855,7 @@ TEST(SkelParser, ReadWorldXmlPhysicsAndCollisionDetector)
 
   const auto detector = world->getConstraintSolver()->getCollisionDetector();
   ASSERT_NE(detector, nullptr);
-#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
-  EXPECT_EQ(detector->getTypeView(), "fcl");
-#else
-  EXPECT_TRUE(
-      detector->getTypeView() == "dart"
-      || detector->getTypeView() == "experimental");
-#endif
+  EXPECT_EQ(detector->getTypeView(), "dart");
 }
 
 //==============================================================================
@@ -1090,22 +1053,7 @@ TEST(SkelParser, ReadWorldXmlFclMeshCollisionDetector)
 
   const auto detector = world->getConstraintSolver()->getCollisionDetector();
   ASSERT_NE(detector, nullptr);
-#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
-  EXPECT_EQ(detector->getTypeView(), "fcl");
-  const auto fclDetector
-      = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(detector);
-  ASSERT_NE(fclDetector, nullptr);
-  EXPECT_EQ(
-      fclDetector->getPrimitiveShapeType(),
-      collision::FCLCollisionDetector::MESH);
-  EXPECT_EQ(
-      fclDetector->getContactPointComputationMethod(),
-      collision::FCLCollisionDetector::DART);
-#else
-  EXPECT_TRUE(
-      detector->getTypeView() == "dart"
-      || detector->getTypeView() == "experimental");
-#endif
+  EXPECT_EQ(detector->getTypeView(), "dart");
 }
 
 //==============================================================================

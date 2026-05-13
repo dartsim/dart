@@ -207,6 +207,35 @@ DartCollisionDetector::Registrar<DartCollisionDetector>
           return dart::collision::DartCollisionDetector::create();
         }};
 
+// Backward compatibility: legacy factory keys are aliases, not backend
+// selection. They preserve older config files and downstream source paths
+// while keeping all runtime queries on the built-in DART detector.
+DartCollisionDetector::Registrar<DartCollisionDetector>
+    DartCollisionDetector::mRegistrarFclAlias{
+        "fcl", []() -> std::shared_ptr<dart::collision::DartCollisionDetector> {
+          return dart::collision::DartCollisionDetector::create();
+        }};
+
+DartCollisionDetector::Registrar<DartCollisionDetector>
+    DartCollisionDetector::mRegistrarFclMeshAlias{
+        "fcl_mesh",
+        []() -> std::shared_ptr<dart::collision::DartCollisionDetector> {
+          return dart::collision::DartCollisionDetector::create();
+        }};
+
+DartCollisionDetector::Registrar<DartCollisionDetector>
+    DartCollisionDetector::mRegistrarBulletAlias{
+        "bullet",
+        []() -> std::shared_ptr<dart::collision::DartCollisionDetector> {
+          return dart::collision::DartCollisionDetector::create();
+        }};
+
+DartCollisionDetector::Registrar<DartCollisionDetector>
+    DartCollisionDetector::mRegistrarOdeAlias{
+        "ode", []() -> std::shared_ptr<dart::collision::DartCollisionDetector> {
+          return dart::collision::DartCollisionDetector::create();
+        }};
+
 //==============================================================================
 std::shared_ptr<DartCollisionDetector> DartCollisionDetector::create()
 {

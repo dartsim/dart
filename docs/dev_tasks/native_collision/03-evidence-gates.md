@@ -45,8 +45,8 @@ performance-oriented internals before this scale reaches completion.
 | 6     | Native-only and gz-physics CI are permanent         | Started; local evidence        |
 | 7     | Reference engines are test/bench-only opt-in        | Started; opt-out/link evidence |
 | 8     | Default packages/wheels have no old runtime deps    | Started; install-tree evidence |
-| 9     | Downstream migration/deprecation path is tested     | Not started                    |
-| 10    | Collision abstraction is one clean built-in stack   | Started                        |
+| 9     | Downstream migration/deprecation path is tested     | Started; DART alias coverage   |
+| 10    | Collision abstraction is one clean built-in stack   | Started; factory aliases done  |
 | 11    | Old runtime backend source/components are deleted   | Not started                    |
 | 12    | Final PR evidence is complete and task docs removed | Blocked on remaining stages    |
 
@@ -60,8 +60,8 @@ These gates are still required before the single north-star PR is complete.
 | CI gz-physics compatibility | gz-physics CI passes with optional legacy components built  | Required in this PR                           |
 | Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Started; focused opt-out/link evidence        |
 | Packaging removal           | Default packages/wheels have no old collision runtime deps  | Started; install-tree evidence                |
-| Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Required in this PR                           |
-| Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Started; legacy backends remain               |
+| Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Started; DART alias coverage                  |
+| Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Factory keys done; classes/components remain  |
 | Built-in architecture       | API-clean, scalable, performance-oriented native layer      | Started; layer contract and scene/filter path |
 | Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Required in this PR                           |
 | Legacy backend deletion     | Old runtime backend sources removed from default stack      | Blocked on migration gates                    |
@@ -870,9 +870,59 @@ build/default/cpp --prefix build/native_collision_install_probe_<timestamp>`
     `DARTConfig.cmake` optional `collision-fcl` fallback. Those are tracked for
     the downstream compatibility and abstraction cleanup phases.
 
+## Collision Abstraction And Alias Runs
+
+- `pixi run -- cmake --build build/default/cpp/Release --target
+UNIT_collision_DartCollisionDetector UNIT_simulation_World
+INTEGRATION_collision_Collision INTEGRATION_collision_CollisionGroups
+INTEGRATION_io_SkelParser INTEGRATION_simulation_World --parallel 8`
+  - Commit: working tree after making retained factory keys native-backed
+    aliases.
+  - Result: passed in the reference-enabled build. The build linked the legacy
+    FCL, Bullet, and ODE component libraries for the integration factory test,
+    proving their static registrars no longer restore real backend selection
+    through the public factory.
+- `pixi run -- ctest --test-dir build/default/cpp/Release
+--output-on-failure -R
+'^(UNIT_collision_DartCollisionDetector|UNIT_simulation_World|INTEGRATION_collision_Collision|INTEGRATION_collision_CollisionGroups|INTEGRATION_io_SkelParser|INTEGRATION_simulation_World)$'`
+  - Commit: working tree after making retained factory keys native-backed
+    aliases and updating stale SKEL/world expectations.
+  - Result: passed, 6/6. Coverage includes public factory keys `dart`,
+    `experimental`, `fcl`, `fcl_mesh`, `bullet`, and `ode`, SKEL parser
+    handling of `fcl` and `fcl_mesh`, world typed setter behavior for
+    `CollisionDetectorType::Fcl`, and collision-group tests parameterized over
+    legacy key names.
+- `DART_BUILD_COLLISION_FCL_OVERRIDE=OFF
+DART_BUILD_COLLISION_BULLET_OVERRIDE=OFF
+DART_BUILD_COLLISION_ODE_OVERRIDE=OFF
+DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE=OFF
+DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE=OFF DART_VERBOSE=ON pixi
+run config && pixi run -- cmake --build build/default/cpp/Release --target
+UNIT_collision_DartCollisionDetector INTEGRATION_io_SkelParser
+UNIT_simulation_World --parallel 8 && pixi run -- ctest --test-dir
+build/default/cpp/Release --output-on-failure -R
+'^(UNIT_collision_DartCollisionDetector|INTEGRATION_io_SkelParser|UNIT_simulation_World)$'`
+  - Commit: working tree after making retained factory keys native-backed
+    aliases.
+  - Result: passed, 3/3 in a native-only configure. Configure reported FCL,
+    Bullet, ODE, reference tests, and reference benchmarks all `OFF`; the
+    alias test still proved all retained factory keys create
+    `DartCollisionDetector`.
+- `pixi run -- cmake --build build/default/cpp/Release --target help | rg
+'dart-collision-(fcl|bullet|ode)|INTEGRATION_collision_Collision$|test_reference_backends|bm_comparative'
+|| true`
+  - Commit: working tree after native-only configure and factory-alias cleanup.
+  - Result: no matching old collision component or reference-only targets were
+    listed.
+
 ## Known Risks
 
-- Compatibility-alias checks can silently bypass native-only paths if they are used outside explicit backward-compatibility tests.
+- Direct legacy detector classes and component libraries still contain real FCL,
+  Bullet, and ODE implementations for reference work. The public factory route
+  is now native-backed, but direct class/header/component cleanup is still a
+  north-star gate.
+- Compatibility-alias checks can silently bypass native-only paths if they are
+  used outside explicit backward-compatibility tests.
 - Scenario-scale collision manager performance now passes the recorded
   benchmark set. Dirty-world streaming traversal remains a watch point for
   future simulation-style benchmarks because the dense 1000 win relies on

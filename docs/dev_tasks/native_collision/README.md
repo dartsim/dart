@@ -5,6 +5,9 @@
 - [x] Native collision core exists under `dart/collision/native/`.
 - [x] DART adapter exists under `dart/collision/dart/`.
 - [x] Legacy `"experimental"` factory key is retained as a compatibility alias.
+- [x] Retained legacy factory keys `"fcl"`, `"fcl_mesh"`, `"bullet"`, and
+      `"ode"` now resolve to the built-in `DartCollisionDetector` in both
+      native-only and reference-enabled builds.
 - [x] `dart` is the first-choice default detector in core world, constraint,
       and SKEL-loading paths.
 - [x] Native coverage is proven against the DART feature surface currently
@@ -23,10 +26,10 @@
 - [ ] The single north-star PR is not complete yet. The checkpoint commit proves
       native default, feature parity, gz-physics compatibility, performance,
       and disabled-legacy-backend builds locally; the remaining work is CI
-      hardening, packaging/runtime dependency removal, `dart/collision/`
-      abstraction cleanup into one built-in detector, downstream migration
-      safety, recurring performance guardrails, and final legacy backend
-      deletion.
+      hardening, packaging/runtime dependency removal, remaining
+      `dart/collision/` class/component cleanup into one built-in detector,
+      downstream migration safety, recurring performance guardrails, and final
+      legacy backend deletion.
 
 ## Goal
 
@@ -77,8 +80,8 @@ The current checkpoint is a validated middle state, not a final PR boundary.
 | 6     | Native-only and gz-physics CI are permanent  | Started; local evidence        |
 | 7     | Reference engines are test/bench-only        | Started; opt-out/link evidence |
 | 8     | Default packages have no old runtime deps    | Started; install-tree evidence |
-| 9     | Downstream migration/deprecation path exists | Not started                    |
-| 10    | Collision abstraction is one clean stack     | Started                        |
+| 9     | Downstream migration/deprecation path exists | Started; DART alias coverage   |
+| 10    | Collision abstraction is one clean stack     | Started; factory aliases done  |
 | 11    | Old runtime backend source is deleted        | Not started                    |
 | 12    | Final one-PR validation and PR packaging     | Blocked on stages 6-11         |
 
@@ -125,8 +128,9 @@ The current checkpoint is a validated middle state, not a final PR boundary.
    test/benchmark opt-out and core-link evidence.
 3. Remove FCL, Bullet, and ODE from default package/runtime surfaces while
    preserving explicit reference test/benchmark jobs.
-4. Collapse `dart/collision/` so retained legacy names and factory keys always
-   route to the built-in detector.
+4. Continue collapsing `dart/collision/` so retained legacy classes, headers,
+   and component names are native-backed compatibility facades; factory keys
+   are already native-backed aliases.
 5. Define and test the downstream migration/deprecation path for legacy detector
    names and factory aliases.
 6. Add recurring benchmark guardrails, then delete legacy runtime backend
@@ -168,8 +172,10 @@ collision stack.
 4. **Collision Abstraction Cleanup**
    - Replace real legacy backend selection in `dart/collision/` with one
      built-in detector implementation.
-   - Make any retained legacy factory key, detector class, or component resolve
-     to native behavior through a wrapper/adaptor.
+   - The retained factory keys now resolve to `DartCollisionDetector` even when
+     legacy reference components are linked. Remaining work is direct legacy
+     detector class/header/component cleanup so those surfaces are wrappers or
+     explicit reference-only APIs.
    - Preserve a clean internal architecture: public API/compatibility shell,
      DART adapter layer, native scene/query core, and optional reference
      harnesses outside runtime targets.

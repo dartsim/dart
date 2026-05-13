@@ -35,6 +35,7 @@
 #include "dart/collision/collision_filter.hpp"
 #include "dart/collision/collision_object.hpp"
 #include "dart/collision/dart/dart_collide.hpp"
+#include "dart/collision/dart/dart_collision_detector.hpp"
 #include "dart/collision/distance_filter.hpp"
 #include "dart/collision/fcl/fcl_collision_group.hpp"
 #include "dart/collision/fcl/fcl_collision_object.hpp"
@@ -645,18 +646,15 @@ template <class BV>
 FCLCollisionDetector::Registrar<FCLCollisionDetector>
     FCLCollisionDetector::mRegistrar{
         std::string(FCLCollisionDetector::getStaticType()),
-        []() -> std::shared_ptr<FCLCollisionDetector> {
-          return FCLCollisionDetector::create();
+        []() -> std::shared_ptr<CollisionDetector> {
+          return DartCollisionDetector::create();
         }};
 
 FCLCollisionDetector::Registrar<FCLCollisionDetector>
     FCLCollisionDetector::mMeshRegistrar{
         std::string("fcl_mesh"),
-        []() -> std::shared_ptr<FCLCollisionDetector> {
-          auto detector = FCLCollisionDetector::create();
-          detector->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-          detector->setContactPointComputationMethod(FCLCollisionDetector::DART);
-          return detector;
+        []() -> std::shared_ptr<CollisionDetector> {
+          return DartCollisionDetector::create();
         }};
 
 //==============================================================================

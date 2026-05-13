@@ -12,13 +12,14 @@ isolation with CMake opt-out options for reference tests and benchmarks, with
 focused reference-disabled and reference-enabled validation recorded. The
 reference toggles now propagate through the major configure entry points, wheel
 build defaults are explicitly native-only, and core native-only link inspection
-shows `libdart.so` does not link FCL, Bullet, ODE, or libccd.
+shows `libdart.so` does not link FCL, Bullet, ODE, or libccd. The public
+factory keys `fcl`, `fcl_mesh`, `bullet`, and `ode` now resolve to the built-in
+`DartCollisionDetector` in both native-only and reference-enabled builds.
 
 ## Current Branch
 
 `feature/new_coll` - local branch tracking `origin/feature/new_coll`, ahead by
-one checkpoint commit with substantial uncommitted north-star continuation
-work.
+two checkpoint commits with uncommitted factory-alias cleanup work.
 
 ## Immediate Next Step
 
@@ -43,11 +44,18 @@ reference-disabled and reference-enabled configurations locally, propagates the
 toggles through the major configure entry points, and has core native-only link
 evidence. It still needs full target/package export inspection, dependency
 metadata cleanup, wheel artifact inspection, and downstream-component checks.
+Collision abstraction cleanup has also started: `DartCollisionDetector` owns
+native-backed public factory aliases for `experimental`, `fcl`, `fcl_mesh`,
+`bullet`, and `ode`; the FCL/Bullet/ODE component registrars also publish
+native-backed creators so linking old reference component libraries cannot
+restore public backend selection. Direct legacy detector classes, headers, and
+CMake component surfaces still contain real reference-engine implementations
+and remain a north-star cleanup gate.
 
 ## Context That Would Be Lost
 
-- `DartCollisionDetector::getStaticType()` returns `dart`; `experimental` is
-  kept as a factory alias for compatibility.
+- `DartCollisionDetector::getStaticType()` returns `dart`; `experimental`,
+  `fcl`, `fcl_mesh`, `bullet`, and `ode` are factory aliases for compatibility.
 - `ConstraintSolver`, `WorldConfig`, and SKEL loading now prefer `dart`.
 - Native box-box face contacts now emit a contact patch when `maxNumContacts`
   allows it; this fixed the default solver expanded-manifold regression.
@@ -131,6 +139,16 @@ metadata cleanup, wheel artifact inspection, and downstream-component checks.
   target files. Residual CMake compatibility strings remain in generated
   component metadata and are still part of downstream migration/abstraction
   cleanup.
+- Factory-level abstraction cleanup has focused evidence:
+  `UNIT_collision_DartCollisionDetector`, `UNIT_simulation_World`,
+  `INTEGRATION_collision_Collision`, `INTEGRATION_collision_CollisionGroups`,
+  `INTEGRATION_io_SkelParser`, and `INTEGRATION_simulation_World` passed in a
+  reference-enabled build after old component registrars were changed to
+  native-backed creators. A native-only configure/build/test with FCL, Bullet,
+  ODE, reference tests, and reference benchmarks all disabled also passed
+  `UNIT_collision_DartCollisionDetector`, `INTEGRATION_io_SkelParser`, and
+  `UNIT_simulation_World`; native-only target-help inspection listed no old
+  collision component or reference-only targets.
 - A reference-disabled probe showed
   `INTEGRATION_simulation_MimicConstraint` failing on the native/default
   detector before the target was gated under reference tests. Treat that as a

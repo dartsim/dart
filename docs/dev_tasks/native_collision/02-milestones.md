@@ -228,6 +228,12 @@ Purpose: remove downstream reliance on legacy detector names and factory keys
 without breaking gz-physics or other packages that include DART compatibility
 headers.
 
+Current working-tree status: this phase is started. DART-side factory and SKEL
+parser coverage now proves `"fcl"`, `"fcl_mesh"`, `"bullet"`, and `"ode"`
+selection routes to `DartCollisionDetector`, including a reference-enabled
+build where legacy component libraries are linked. gz-physics migration
+documentation and fresh gz-physics validation are still required.
+
 Success criteria:
 
 - gz-physics has a documented path to lowercase native APIs and the `"dart"`
@@ -254,6 +260,13 @@ remain only as source-compatible wrappers or adapters for gz-physics and other
 downstream code. This phase also locks the built-in component architecture:
 API-clean public surfaces, a focused DART adapter layer, scalable native
 scene/query state, and performance-oriented internals.
+
+Current working-tree status: this phase is started. Factory-level backend
+selection is now native-backed: `dart`, `experimental`, `fcl`, `fcl_mesh`,
+`bullet`, and `ode` all create `DartCollisionDetector` through the public
+factory. The old direct detector classes and component libraries still contain
+real FCL/Bullet/ODE implementations for reference work, so class/header/CMake
+component cleanup remains before this phase can complete.
 
 Success criteria:
 

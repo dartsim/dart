@@ -41,6 +41,7 @@
 #include "dart/collision/bullet/detail/bullet_overlap_filter_callback.hpp"
 #include "dart/collision/collision_filter.hpp"
 #include "dart/collision/collision_object.hpp"
+#include "dart/collision/dart/dart_collision_detector.hpp"
 #if DART_BULLET_HAS_DART
   #include "dart/collision/dart/dart_query_helper.hpp"
 #endif
@@ -120,8 +121,8 @@ bool isConvex(const math::TriMesh<double>& mesh, float threshold = 0.001f);
 BulletCollisionDetector::Registrar<BulletCollisionDetector>
     BulletCollisionDetector::mRegistrar{
         std::string(BulletCollisionDetector::getStaticType()),
-        []() -> std::shared_ptr<dart::collision::BulletCollisionDetector> {
-          return dart::collision::BulletCollisionDetector::create();
+        []() -> std::shared_ptr<dart::collision::CollisionDetector> {
+          return DartCollisionDetector::create();
         }};
 
 //==============================================================================

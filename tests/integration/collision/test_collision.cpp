@@ -39,6 +39,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <iostream>
 #include <limits>
 #if DART_HAVE_ODE
@@ -2029,42 +2030,23 @@ TEST_F(Collision, CollisionOfPrescribedJointsRejectsInvalidTimeStep)
 //==============================================================================
 TEST_F(Collision, Factory)
 {
-  EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("fcl"));
-  EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("dart"));
+  auto* factory = collision::CollisionDetector::getFactory();
+  ASSERT_NE(factory, nullptr);
 
-#if DART_HAVE_BULLET
-  // Force-load the Bullet collision plugin on platforms (e.g., Windows) where
-  // the DLL is otherwise not loaded unless a symbol is referenced.
-  auto bulletDetector = collision::BulletCollisionDetector::create();
-  ASSERT_NE(bulletDetector, nullptr);
-  collision::CollisionDetector::getFactory()->registerCreator(
-      std::string(bulletDetector->getTypeView()),
-      []() -> std::shared_ptr<collision::CollisionDetector> {
-        return collision::BulletCollisionDetector::create();
-      });
-  EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("bullet"));
-#else
-  EXPECT_TRUE(!collision::CollisionDetector::getFactory()->canCreate("bullet"));
-#endif
+  constexpr std::array<const char*, 6> keys{
+      "dart", "experimental", "fcl", "fcl_mesh", "bullet", "ode"};
 
-#if DART_HAVE_ODE
-  auto odeDetector = collision::OdeCollisionDetector::create();
-  ASSERT_NE(odeDetector, nullptr);
-  collision::CollisionDetector::getFactory()->registerCreator(
-      std::string(odeDetector->getTypeView()),
-      []() -> std::shared_ptr<collision::CollisionDetector> {
-        return collision::OdeCollisionDetector::create();
-      });
-  EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("ode"));
-#else
-  EXPECT_TRUE(!collision::CollisionDetector::getFactory()->canCreate("ode"));
-#endif
+  for (const auto* key : keys) {
+    ASSERT_TRUE(factory->canCreate(key)) << key;
 
-#ifdef DART_HAS_DART_COLLISION
-  EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("dart"));
-  EXPECT_TRUE(
-      collision::CollisionDetector::getFactory()->canCreate("experimental"));
-#endif
+    auto detector = factory->create(key);
+    ASSERT_NE(detector, nullptr) << key;
+    EXPECT_EQ(detector->getTypeView(), "dart") << key;
+    EXPECT_NE(
+        dynamic_cast<collision::DartCollisionDetector*>(detector.get()),
+        nullptr)
+        << key;
+  }
 }
 
 #if DART_HAVE_ODE

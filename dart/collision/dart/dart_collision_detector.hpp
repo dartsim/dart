@@ -115,6 +115,10 @@ protected:
 private:
   static Registrar<DartCollisionDetector> mRegistrar;
   static Registrar<DartCollisionDetector> mRegistrarExperimental;
+  static Registrar<DartCollisionDetector> mRegistrarFclAlias;
+  static Registrar<DartCollisionDetector> mRegistrarFclMeshAlias;
+  static Registrar<DartCollisionDetector> mRegistrarBulletAlias;
+  static Registrar<DartCollisionDetector> mRegistrarOdeAlias;
 
   std::unique_ptr<native::PersistentManifoldCache> mManifoldCache;
 };

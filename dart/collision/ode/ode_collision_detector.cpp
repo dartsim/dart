@@ -34,6 +34,7 @@
 
 #include "dart/collision/collision_filter.hpp"
 #include "dart/collision/contact.hpp"
+#include "dart/collision/dart/dart_collision_detector.hpp"
 #if DART_ODE_HAS_DART
   #include "dart/collision/dart/dart_query_helper.hpp"
 #endif
@@ -185,8 +186,8 @@ struct OdeCollisionCallbackData
 OdeCollisionDetector::Registrar<OdeCollisionDetector>
     OdeCollisionDetector::mRegistrar{
         std::string(OdeCollisionDetector::getStaticType()),
-        []() -> std::shared_ptr<dart::collision::OdeCollisionDetector> {
-          return dart::collision::OdeCollisionDetector::create();
+        []() -> std::shared_ptr<dart::collision::CollisionDetector> {
+          return DartCollisionDetector::create();
         }};
 
 //==============================================================================

@@ -208,6 +208,30 @@ std::pair<bool, CollisionResult> runCollisionWithTransforms(
 
 } // namespace
 
+TEST(DartCollisionDetector, LegacyFactoryKeysResolveToBuiltInDetector)
+{
+  auto* factory = CollisionDetector::getFactory();
+  ASSERT_NE(factory, nullptr);
+
+  constexpr std::array<const char*, 6> keys{
+      "dart", "experimental", "fcl", "fcl_mesh", "bullet", "ode"};
+
+  for (const auto* key : keys) {
+    ASSERT_TRUE(factory->canCreate(key)) << key;
+
+    const auto detector = factory->create(key);
+    ASSERT_NE(detector, nullptr) << key;
+    EXPECT_EQ(detector->getTypeView(), DartCollisionDetector::getStaticType())
+        << key;
+    EXPECT_NE(dynamic_cast<DartCollisionDetector*>(detector.get()), nullptr)
+        << key;
+
+    auto group = detector->createCollisionGroup();
+    ASSERT_NE(group, nullptr) << key;
+    EXPECT_NE(dynamic_cast<DartCollisionGroup*>(group.get()), nullptr) << key;
+  }
+}
+
 TEST(DartCollisionDetector, SupportedShapePairs)
 {
   const Eigen::Vector3d overlap(0.6, 0.0, 0.0);
