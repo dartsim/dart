@@ -54,17 +54,17 @@ performance-oriented internals before this scale reaches completion.
 
 These gates are still required before the single north-star PR is complete.
 
-| Gate                        | Required evidence                                           | Current state                                 |
-| --------------------------- | ----------------------------------------------------------- | --------------------------------------------- |
-| CI native-only build        | CI passes with FCL, Bullet, and ODE disabled                | Local equivalent passed; awaiting CI evidence |
-| CI gz-physics compatibility | gz-physics CI passes with optional legacy components built  | Required in this PR                           |
-| Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Local reference target split passes           |
-| Packaging removal           | Default packages/wheels have no old collision runtime deps  | Metadata/link/install/py312 wheel passed      |
-| Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Started; alias/component coverage             |
-| Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Source/package facades done                   |
-| Built-in architecture       | `01-design.md` layer table passes API, scaling, perf gates  | Source split done; CI/perf gates remain       |
-| Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Broad local guard passes; CI/schedule left    |
-| Legacy backend deletion     | Old runtime backend sources removed from default stack      | Runtime source is reference-only locally      |
+| Gate                        | Required evidence                                           | Current state                                  |
+| --------------------------- | ----------------------------------------------------------- | ---------------------------------------------- |
+| CI native-only build        | CI passes with FCL, Bullet, and ODE disabled                | Local equivalent passed; awaiting CI evidence  |
+| CI gz-physics compatibility | gz-physics CI passes with optional legacy components built  | Required in this PR                            |
+| Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Local reference target split passes            |
+| Packaging removal           | Default packages/wheels have no old collision runtime deps  | Metadata/link/install/py312 wheel passed       |
+| Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Started; alias/component coverage              |
+| Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Source/package facades done                    |
+| Built-in architecture       | `01-design.md` layer table passes API, scaling, perf gates  | Source split done; CI/perf gates remain        |
+| Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Scheduled/manual CI guard added; evidence left |
+| Legacy backend deletion     | Old runtime backend sources removed from default stack      | Runtime source is reference-only locally       |
 
 ## Test Runs
 
@@ -1645,6 +1645,29 @@ build/collision-reference/cpp/Release -R
   - Result: passed.
 - `git diff --check`
   - Commit: working tree after broadening the collision benchmark guard.
+  - Result: passed.
+- `.github/workflows/ci_ubuntu.yml` `Collision Benchmark Guard`
+  - Commit: working tree after adding scheduled/manual CI benchmark guard.
+  - Result: workflow job added. It runs
+    `pixi run --locked -e collision-reference bm-collision-check` on schedule
+    and `workflow_dispatch`, then uploads
+    `.benchmark_results/collision_check_*.json` artifacts. GitHub run evidence
+    is still required before the north-star PR can treat this as a completed
+    CI gate.
+- `python - <<'PY' ... yaml.safe_load(.github/workflows/ci_ubuntu.yml) ... PY`
+  - Commit: working tree after adding scheduled/manual CI benchmark guard.
+  - Result: passed. The edited CI Linux workflow parsed as YAML. `actionlint`
+    was not installed in this environment.
+- `pixi run lint`
+  - Commit: working tree after adding scheduled/manual CI benchmark guard.
+  - Result: passed. CMake configure, C++ formatting, docs formatting, spell
+    check, Python formatting, TOML/YAML/RST checks, and AI command sync
+    completed.
+- `pixi run check-docs-policy`
+  - Commit: working tree after adding scheduled/manual CI benchmark guard.
+  - Result: passed.
+- `git diff --check`
+  - Commit: working tree after adding scheduled/manual CI benchmark guard.
   - Result: passed.
 - `pixi run config`
   - Commit: working tree after adding source-tree top-level All/PascalCase

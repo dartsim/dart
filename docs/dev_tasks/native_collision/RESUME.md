@@ -56,6 +56,11 @@ update makes the built-in collision component/layer design explicit: the
 north-star layer table now tracks public API cleanliness, compatibility
 facades, the DART adapter, the native scene/query core, and optional reference
 harnesses as separate review gates.
+The latest CI/performance slice adds a scheduled/manual CI Linux
+`Collision Benchmark Guard` job that runs the broad
+`pixi run --locked -e collision-reference bm-collision-check` guard and uploads
+`.benchmark_results/collision_check_*.json` artifacts. It still needs GitHub
+run evidence.
 
 ## Current Branch
 
@@ -207,8 +212,9 @@ libraries.
   needs CI hardening, wheel-matrix artifact evidence, downstream
   migration/deprecation coverage, built-in collision layer hardening for API
   cleanliness, scalable native scene/query state and performance-oriented
-  internals, CI/scheduled adoption of the broadened benchmark guard, final
-  legacy runtime backend deletion validation, and then final PR packaging.
+  internals, GitHub run/artifact evidence for the scheduled benchmark guard,
+  final legacy runtime backend deletion validation, and then final PR
+  packaging.
 - Quality order for the remaining work: feature coverage first, correctness
   tests as the permanent gate, then gradual benchmark-driven performance work
   until native beats Bullet, FCL, and ODE on required workloads.
@@ -228,8 +234,9 @@ libraries.
   grids, and point clouds. DART collision filters now flow through a native
   filter adapter before narrowphase. The recurring benchmark guard now also
   runs public DART adapter collision, dirty-world collision, distance, and
-  raycast scenarios; remaining benchmark work is CI/scheduled execution and
-  adding new workloads as native capabilities land.
+  raycast scenarios; CI Linux has a scheduled/manual benchmark job for the
+  broad guard, and remaining benchmark work is GitHub run/artifact evidence
+  plus adding new workloads as native capabilities land.
 - CI hardening has started: `.github/workflows/ci_ubuntu.yml` now includes
   `Native Collision (no FCL/Bullet/ODE)`, which configures with all legacy
   collision backends disabled, builds `dart`, `dartpy`, native collision tests,
