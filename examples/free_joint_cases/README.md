@@ -5,7 +5,8 @@
 - Goal: compare free-joint integration against reference models in zero gravity.
 - Concepts/APIs: `dynamics::FreeJoint`, Jacobian checks, ImGui viewer.
 - Expected output: multiple colored bodies with transparent reference boxes.
-- Controls: use the ImGui panel; CLI flags tune the reference model.
+- Controls: use the ImGui panel; CLI flags tune the reference model,
+  integration mode, substeps, and live plots.
 
 ## Details
 
@@ -16,6 +17,7 @@ Each case shows:
 
 - An actively simulated body (colored box)
 - A kinematic reference body (slightly larger, transparent box)
+- Live energy drift, reference pose error, and simulation step-rate plots
 
 The reference pose can be computed using either:
 
@@ -34,8 +36,13 @@ Run from a build tree:
 ./free_joint_cases --simulation-substeps 4
 # Use the unconstrained fourth-order world step:
 ./free_joint_cases --integration-mode rk4
+# Stress the default single-step visual path:
+./free_joint_cases --integration-mode step --ground-truth torque-free
 ```
 
 Controls are available in the ImGui window for toggling simulation, selecting
 the integration mode, resetting the cases, and running numeric checks (analytic
-vs. finite-difference Jacobians).
+vs. finite-difference Jacobians). The "Energy and reference" panel plots the
+maximum relative kinetic-energy drift and maximum pose error against the
+reference bodies. The "Performance" panel shows render FPS, simulated steps per
+second, real-time factor, and a step-rate history plot.

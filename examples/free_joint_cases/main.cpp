@@ -42,6 +42,8 @@
 #include <CLI/CLI.hpp>
 
 #include <algorithm>
+#include <array>
+#include <chrono>
 #include <iomanip>
 #include <sstream>
 #include <string>
@@ -105,10 +107,25 @@ struct FreeJointCase
   CaseMetrics metrics;
 };
 
+struct LiveCaseMetrics
+{
+  double energy{0.0};
+  double relativeEnergyDrift{0.0};
+  double referenceTranslationError{0.0};
+  double referenceRotationError{0.0};
+};
+
 std::string formatDouble(double value, int precision = 3)
 {
   std::ostringstream stream;
   stream << std::fixed << std::setprecision(precision) << value;
+  return stream.str();
+}
+
+std::string formatScientific(double value, int precision = 3)
+{
+  std::ostringstream stream;
+  stream << std::scientific << std::setprecision(precision) << value;
   return stream.str();
 }
 
@@ -499,14 +516,15 @@ public:
   {
     advanceTorqueFreeGroundTruth();
     updateGroundTruth();
+    updatePerformanceAndHistory();
 
     const float windowScale = static_cast<float>(mGuiScale);
     const ImGuiIO& io = ImGui::GetIO();
     const ImVec2 displaySize = io.DisplaySize;
 
     const ImVec2 desiredPos(10.0f * windowScale, 20.0f * windowScale);
-    const ImVec2 desiredSize(520.0f * windowScale, 540.0f * windowScale);
-    constexpr float kMaxDisplayWidthFraction = 0.45f;
+    const ImVec2 desiredSize(620.0f * windowScale, 680.0f * windowScale);
+    constexpr float kMaxDisplayWidthFraction = 0.50f;
     const ImVec2 maxSize(
         std::max(
             1.0f, (displaySize.x - desiredPos.x) * kMaxDisplayWidthFraction),
@@ -606,6 +624,65 @@ public:
     }
 
     if (ImGui::CollapsingHeader(
+            "Energy and reference", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::Text(
+          "Max |dKE/KE0|: %s",
+          formatScientific(mMaxAbsRelativeEnergyDrift).c_str());
+      ImGui::Text(
+          "Max reference translation: %s m",
+          formatScientific(mMaxReferenceTranslationError).c_str());
+      ImGui::Text(
+          "Max reference rotation: %s rad",
+          formatScientific(mMaxReferenceRotationError).c_str());
+
+      const float energyScale
+          = static_cast<float>(std::max(1e-14, 1.2 * mEnergyPlotMax));
+      ImGui::PlotLines(
+          "Energy drift",
+          mEnergyDriftHistory.data(),
+          static_cast<int>(mHistoryCount),
+          0,
+          nullptr,
+          0.0f,
+          energyScale,
+          ImVec2(-1.0f, 58.0f * windowScale));
+
+      const float referenceScale
+          = static_cast<float>(std::max(1e-14, 1.2 * mReferencePlotMax));
+      ImGui::PlotLines(
+          "Reference error",
+          mReferenceErrorHistory.data(),
+          static_cast<int>(mHistoryCount),
+          0,
+          nullptr,
+          0.0f,
+          referenceScale,
+          ImVec2(-1.0f, 58.0f * windowScale));
+    }
+
+    if (ImGui::CollapsingHeader(
+            "Performance", ImGuiTreeNodeFlags_DefaultOpen)) {
+      ImGui::Text("Render FPS: %s", formatDouble(mRenderFps, 1).c_str());
+      ImGui::Text(
+          "Simulation steps/s: %s",
+          formatDouble(mSimulationStepsPerSecond, 1).c_str());
+      ImGui::Text(
+          "Real-time factor: %s", formatDouble(mRealtimeFactor, 2).c_str());
+
+      const float stepRateScale
+          = static_cast<float>(std::max(1.0, 1.2 * mStepRatePlotMax));
+      ImGui::PlotLines(
+          "Simulation steps/s",
+          mStepRateHistory.data(),
+          static_cast<int>(mHistoryCount),
+          0,
+          nullptr,
+          0.0f,
+          stepRateScale,
+          ImVec2(-1.0f, 58.0f * windowScale));
+    }
+
+    if (ImGui::CollapsingHeader(
             "Ground truth", ImGuiTreeNodeFlags_DefaultOpen)) {
       if (ImGui::Checkbox("Show reference bodies", &mShowGroundTruth)) {
         applyGroundTruthVisibility();
@@ -650,13 +727,44 @@ public:
 
     if (ImGui::CollapsingHeader("Cases", ImGuiTreeNodeFlags_DefaultOpen)) {
       if (ImGui::BeginTable(
-              "freejoint_cases_table",
-              7,
+              "freejoint_live_cases_table",
+              4,
               ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg
                   | ImGuiTableFlags_SizingFixedFit)) {
         ImGui::TableSetupColumn("Case");
-        ImGui::TableSetupColumn("KE");
         ImGui::TableSetupColumn("dKE/KE0");
+        ImGui::TableSetupColumn("|dx-ref|");
+        ImGui::TableSetupColumn("|dR-ref|");
+        ImGui::TableHeadersRow();
+
+        for (const auto& c : mCases) {
+          const LiveCaseMetrics live = computeLiveMetrics(c);
+
+          ImGui::TableNextRow();
+          ImGui::TableNextColumn();
+          ImGui::TextUnformatted(c.name.c_str());
+          ImGui::TableNextColumn();
+          ImGui::TextUnformatted(
+              formatScientific(live.relativeEnergyDrift).c_str());
+          ImGui::TableNextColumn();
+          ImGui::TextUnformatted(
+              formatScientific(live.referenceTranslationError).c_str());
+          ImGui::TableNextColumn();
+          ImGui::TextUnformatted(
+              formatScientific(live.referenceRotationError).c_str());
+        }
+
+        ImGui::EndTable();
+      }
+    }
+
+    if (ImGui::CollapsingHeader("Numeric checks")) {
+      if (ImGui::BeginTable(
+              "freejoint_numeric_checks_table",
+              6,
+              ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg
+                  | ImGuiTableFlags_SizingFixedFit)) {
+        ImGui::TableSetupColumn("Case");
         ImGui::TableSetupColumn("|Jt-I|inf");
         ImGui::TableSetupColumn("|Jnum-J|inf");
         ImGui::TableSetupColumn("|dVdot-FD|inf");
@@ -664,30 +772,22 @@ public:
         ImGui::TableHeadersRow();
 
         for (const auto& c : mCases) {
-          const double energy = c.skeleton->computeKineticEnergy();
-          const double denom = std::max(1.0, c.initialEnergy);
-          const double relEnergyError = (energy - c.initialEnergy) / denom;
-
           ImGui::TableNextRow();
           ImGui::TableNextColumn();
           ImGui::TextUnformatted(c.name.c_str());
           ImGui::TableNextColumn();
-          ImGui::TextUnformatted(formatDouble(energy, 4).c_str());
-          ImGui::TableNextColumn();
-          ImGui::TextUnformatted(formatDouble(relEnergyError, 4).c_str());
+          ImGui::TextUnformatted(
+              formatScientific(c.metrics.translationalBlockError).c_str());
           ImGui::TableNextColumn();
           ImGui::TextUnformatted(
-              formatDouble(c.metrics.translationalBlockError, 3).c_str());
+              formatScientific(c.metrics.worldJacobianMaxError).c_str());
           ImGui::TableNextColumn();
           ImGui::TextUnformatted(
-              formatDouble(c.metrics.worldJacobianMaxError, 3).c_str());
-          ImGui::TableNextColumn();
-          ImGui::TextUnformatted(
-              formatDouble(c.metrics.worldJacobianClassicDerivMaxError, 3)
+              formatScientific(c.metrics.worldJacobianClassicDerivMaxError)
                   .c_str());
           ImGui::TableNextColumn();
           ImGui::TextUnformatted(
-              formatDouble(c.metrics.relativeJacobianDotMaxError, 3).c_str());
+              formatScientific(c.metrics.relativeJacobianDotMaxError).c_str());
         }
 
         ImGui::EndTable();
@@ -733,6 +833,7 @@ private:
 
     resetTorqueFreeGroundTruth();
     updateGroundTruth();
+    resetHistory();
   }
 
   void applyGroundTruthVisibility()
@@ -817,11 +918,164 @@ private:
     }
   }
 
+  Eigen::Isometry3d computeGroundTruthTransform(const FreeJointCase& c) const
+  {
+    const double t = mWorld->getTime();
+
+    if (mGroundTruthModel == GroundTruthModel::TorqueFreeRigidBody) {
+      Eigen::Isometry3d expected = Eigen::Isometry3d::Identity();
+      expected.linear() = c.torqueFreeState.orientation.toRotationMatrix();
+      expected.translation()
+          = c.initialPositions.tail<3>() + c.initialVelocities.tail<3>() * t;
+      return expected;
+    }
+
+    return computeConstantTwistTransform(c, t);
+  }
+
+  LiveCaseMetrics computeLiveMetrics(const FreeJointCase& c) const
+  {
+    LiveCaseMetrics live;
+
+    live.energy = c.skeleton->computeKineticEnergy();
+    const double energyScale = std::max(1.0, c.initialEnergy);
+    live.relativeEnergyDrift = (live.energy - c.initialEnergy) / energyScale;
+
+    const Eigen::Isometry3d actual = c.body->getWorldTransform();
+    const Eigen::Isometry3d expected = computeGroundTruthTransform(c);
+    live.referenceTranslationError
+        = (actual.translation() - expected.translation()).norm();
+    live.referenceRotationError
+        = dart::math::logMap(actual.linear() * expected.linear().transpose())
+              .norm();
+
+    return live;
+  }
+
+  void updatePerformanceAndHistory()
+  {
+    const auto now = std::chrono::steady_clock::now();
+    const double worldTime = mWorld->getTime();
+
+    if (mHavePerformanceSample) {
+      const double wallDt
+          = std::chrono::duration<double>(now - mLastPerformanceSampleTime)
+                .count();
+      if (wallDt > 0.0) {
+        const double simDt
+            = std::max(0.0, worldTime - mLastPerformanceWorldTime);
+        const double stepRate
+            = (mSimulationDt > 0.0) ? (simDt / mSimulationDt) / wallDt : 0.0;
+
+        updateSmoothedValue(mRenderFps, 1.0 / wallDt);
+        updateSmoothedValue(mSimulationStepsPerSecond, stepRate);
+        updateSmoothedValue(mRealtimeFactor, simDt / wallDt);
+      }
+    } else {
+      mHavePerformanceSample = true;
+    }
+
+    mLastPerformanceSampleTime = now;
+    mLastPerformanceWorldTime = worldTime;
+
+    double maxAbsRelativeEnergyDrift = 0.0;
+    double maxReferenceTranslationError = 0.0;
+    double maxReferenceRotationError = 0.0;
+    for (const auto& c : mCases) {
+      const LiveCaseMetrics live = computeLiveMetrics(c);
+      maxAbsRelativeEnergyDrift = std::max(
+          maxAbsRelativeEnergyDrift, std::abs(live.relativeEnergyDrift));
+      maxReferenceTranslationError = std::max(
+          maxReferenceTranslationError, live.referenceTranslationError);
+      maxReferenceRotationError
+          = std::max(maxReferenceRotationError, live.referenceRotationError);
+    }
+
+    mMaxAbsRelativeEnergyDrift
+        = std::max(mMaxAbsRelativeEnergyDrift, maxAbsRelativeEnergyDrift);
+    mMaxReferenceTranslationError
+        = std::max(mMaxReferenceTranslationError, maxReferenceTranslationError);
+    mMaxReferenceRotationError
+        = std::max(mMaxReferenceRotationError, maxReferenceRotationError);
+
+    const double referenceError
+        = std::max(maxReferenceTranslationError, maxReferenceRotationError);
+    mEnergyPlotMax = std::max(mEnergyPlotMax, maxAbsRelativeEnergyDrift);
+    mReferencePlotMax = std::max(mReferencePlotMax, referenceError);
+    mStepRatePlotMax = std::max(mStepRatePlotMax, mSimulationStepsPerSecond);
+
+    appendHistorySamples(
+        maxAbsRelativeEnergyDrift, referenceError, mSimulationStepsPerSecond);
+  }
+
+  void updateSmoothedValue(double& value, double sample)
+  {
+    constexpr double alpha = 0.12;
+    if (!(value > 0.0)) {
+      value = sample;
+      return;
+    }
+    value += alpha * (sample - value);
+  }
+
+  void appendHistorySamples(
+      double energyDrift, double referenceError, double stepRate)
+  {
+    const float energySample = static_cast<float>(std::min(energyDrift, 1e12));
+    const float referenceSample
+        = static_cast<float>(std::min(referenceError, 1e12));
+    const float stepRateSample = static_cast<float>(std::min(stepRate, 1e12));
+
+    if (mHistoryCount < kHistoryLength) {
+      mEnergyDriftHistory[mHistoryCount] = energySample;
+      mReferenceErrorHistory[mHistoryCount] = referenceSample;
+      mStepRateHistory[mHistoryCount] = stepRateSample;
+      ++mHistoryCount;
+      return;
+    }
+
+    std::move(
+        mEnergyDriftHistory.begin() + 1,
+        mEnergyDriftHistory.end(),
+        mEnergyDriftHistory.begin());
+    std::move(
+        mReferenceErrorHistory.begin() + 1,
+        mReferenceErrorHistory.end(),
+        mReferenceErrorHistory.begin());
+    std::move(
+        mStepRateHistory.begin() + 1,
+        mStepRateHistory.end(),
+        mStepRateHistory.begin());
+    mEnergyDriftHistory.back() = energySample;
+    mReferenceErrorHistory.back() = referenceSample;
+    mStepRateHistory.back() = stepRateSample;
+  }
+
+  void resetHistory()
+  {
+    mHistoryCount = 0;
+    mEnergyDriftHistory.fill(0.0f);
+    mReferenceErrorHistory.fill(0.0f);
+    mStepRateHistory.fill(0.0f);
+    mMaxAbsRelativeEnergyDrift = 0.0;
+    mMaxReferenceTranslationError = 0.0;
+    mMaxReferenceRotationError = 0.0;
+    mEnergyPlotMax = 0.0;
+    mReferencePlotMax = 0.0;
+    mStepRatePlotMax = 0.0;
+    mHavePerformanceSample = false;
+    mLastPerformanceWorldTime = mWorld ? mWorld->getTime() : 0.0;
+    mRenderFps = 0.0;
+    mSimulationStepsPerSecond = 0.0;
+    mRealtimeFactor = 0.0;
+  }
+
   osg::ref_ptr<dart::gui::ImGuiViewer> mViewer;
   osg::ref_ptr<dart::gui::GridVisual> mGrid;
   osg::ref_ptr<SubsteppingWorldNode> mNode;
   dart::simulation::WorldPtr mWorld;
   std::vector<FreeJointCase> mCases;
+  static constexpr std::size_t kHistoryLength = 240;
   double mNumericDt;
   double mSimulationDt;
   GroundTruthModel mGroundTruthModel;
@@ -833,6 +1087,23 @@ private:
   std::string mWindowLabel;
   bool mShowGroundTruth{true};
   double mTorqueFreeTime{0.0};
+  bool mHavePerformanceSample{false};
+  std::chrono::steady_clock::time_point mLastPerformanceSampleTime{
+      std::chrono::steady_clock::now()};
+  double mLastPerformanceWorldTime{0.0};
+  double mRenderFps{0.0};
+  double mSimulationStepsPerSecond{0.0};
+  double mRealtimeFactor{0.0};
+  double mMaxAbsRelativeEnergyDrift{0.0};
+  double mMaxReferenceTranslationError{0.0};
+  double mMaxReferenceRotationError{0.0};
+  double mEnergyPlotMax{0.0};
+  double mReferencePlotMax{0.0};
+  double mStepRatePlotMax{0.0};
+  std::size_t mHistoryCount{0};
+  std::array<float, kHistoryLength> mEnergyDriftHistory{};
+  std::array<float, kHistoryLength> mReferenceErrorHistory{};
+  std::array<float, kHistoryLength> mStepRateHistory{};
 };
 
 int main(int argc, char* argv[])
