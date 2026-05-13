@@ -20,6 +20,8 @@ built-in component should scale, and performance hooks should be part of the
 native design. Public DART APIs and compatibility facades sit outside a DART
 adapter layer, while `dart/collision/native/` owns scene state, broadphase,
 narrowphase, query algorithms, cache lifetimes, and profiling.
+`01-design.md` is the canonical architecture contract for those boundaries and
+must be satisfied before the collision abstraction cleanup phase is complete.
 
 `04-reference-gap-analysis.md` tracks the detailed feature/API/performance gaps
 that make the next implementation step concrete.
@@ -253,8 +255,11 @@ headers.
 Current working-tree status: this phase is started. DART-side factory and SKEL
 parser coverage now proves `"fcl"`, `"fcl_mesh"`, `"bullet"`, and `"ode"`
 selection routes to `DartCollisionDetector`, including a reference-enabled
-build where legacy component libraries are linked. gz-physics migration
-documentation and fresh gz-physics validation are still required.
+build where legacy component libraries are linked. The Python detector
+compatibility names now also resolve to `DartCollisionDetector`, and dartpy no
+longer links legacy collision component targets even in a reference-enabled
+build. gz-physics migration documentation and fresh gz-physics validation are
+still required.
 
 Success criteria:
 
@@ -288,9 +293,11 @@ selection is now native-backed: `dart`, `experimental`, `fcl`, `fcl_mesh`,
 `bullet`, and `ode` all create `DartCollisionDetector` through the public
 factory. Default package exports now also point users at the `dart` component
 without auto-adding old collision components. The target built-in architecture
-is documented as public API and compatibility facades outside a
+is documented in `01-design.md` as public API and compatibility facades outside a
 `dart/collision/dart/` adapter, with `dart/collision/native/` owning scalable
-scene/query state and performance instrumentation. The old direct detector
+scene/query state and performance instrumentation. Python detector
+compatibility names now resolve to `DartCollisionDetector` and dartpy no
+longer links legacy collision component targets. The old direct C++ detector
 classes and component libraries still contain real FCL/Bullet/ODE
 implementations for reference work, so class/header/CMake component cleanup
 remains before this phase can complete.
@@ -336,6 +343,9 @@ Verification:
 - `pixi run -e gazebo test-gz` passes after the wrapper/adaptor cleanup.
 - Repository search shows no remaining real legacy backend dispatch path in
   `dart/collision/`.
+- The `01-design.md` layer acceptance gates pass for API cleanliness,
+  scalability, performance hooks, reference isolation, and compatibility
+  facades.
 
 ## Phase 12: Performance Guardrails
 

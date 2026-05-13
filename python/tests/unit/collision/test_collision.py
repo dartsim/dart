@@ -121,6 +121,20 @@ def collision_groups_tester(cd):
 _COLLISION_IDS = [name for name, _ in _COLLISION_DETECTORS]
 
 
+def test_legacy_collision_detector_names_are_native_backed():
+    native_type = dart.DartCollisionDetector().get_type()
+
+    for detector_name in (
+        "DARTCollisionDetector",
+        "FCLCollisionDetector",
+        "BulletCollisionDetector",
+        "OdeCollisionDetector",
+    ):
+        detector = getattr(dart, detector_name)()
+        assert detector.get_type() == native_type
+        assert detector.get_static_type() == native_type
+
+
 @pytest.mark.parametrize("name, cd_factory", _COLLISION_DETECTORS, ids=_COLLISION_IDS)
 def test_collision_groups(name, cd_factory):
     collision_groups_tester(cd_factory())

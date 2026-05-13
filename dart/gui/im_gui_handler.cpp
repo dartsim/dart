@@ -129,17 +129,21 @@ ConvertedKey convertFromOSGKey(int key)
     case KeySymbol::KEY_Escape:
       return ImGuiKey_Escape;
     case KeySymbol::KEY_Control_L:
+      return ImGuiKey_LeftCtrl;
     case KeySymbol::KEY_Control_R:
-      return ImGuiKey_ModCtrl;
+      return ImGuiKey_RightCtrl;
     case KeySymbol::KEY_Shift_L:
+      return ImGuiKey_LeftShift;
     case KeySymbol::KEY_Shift_R:
-      return ImGuiKey_ModShift;
+      return ImGuiKey_RightShift;
     case KeySymbol::KEY_Alt_L:
+      return ImGuiKey_LeftAlt;
     case KeySymbol::KEY_Alt_R:
-      return ImGuiKey_ModAlt;
+      return ImGuiKey_RightAlt;
     case KeySymbol::KEY_Super_L:
+      return ImGuiKey_LeftSuper;
     case KeySymbol::KEY_Super_R:
-      return ImGuiKey_ModSuper;
+      return ImGuiKey_RightSuper;
     case KeySymbol::KEY_A:
       return ImGuiKey_A;
     case KeySymbol::KEY_C:

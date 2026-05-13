@@ -46,7 +46,7 @@ performance-oriented internals before this scale reaches completion.
 | 7     | Reference engines are test/bench-only opt-in        | Started; opt-in env/test proven  |
 | 8     | Default packages/wheels have no old runtime deps    | Local pass; CI wheel matrix left |
 | 9     | Downstream migration/deprecation path is tested     | Started; DART alias coverage     |
-| 10    | Collision abstraction is one clean built-in stack   | Started; architecture documented |
+| 10    | Collision abstraction is one clean built-in stack   | Started; design/factory/Python   |
 | 11    | Old runtime backend source/components are deleted   | Not started                      |
 | 12    | Final PR evidence is complete and task docs removed | Blocked on remaining stages      |
 
@@ -54,17 +54,17 @@ performance-oriented internals before this scale reaches completion.
 
 These gates are still required before the single north-star PR is complete.
 
-| Gate                        | Required evidence                                           | Current state                                 |
-| --------------------------- | ----------------------------------------------------------- | --------------------------------------------- |
-| CI native-only build        | CI passes with FCL, Bullet, and ODE disabled                | Local equivalent passed; awaiting CI evidence |
-| CI gz-physics compatibility | gz-physics CI passes with optional legacy components built  | Required in this PR                           |
-| Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Started; opt-in env/test evidence             |
-| Packaging removal           | Default packages/wheels have no old collision runtime deps  | Metadata/link/install/py312 wheel passed      |
-| Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Started; DART alias coverage                  |
-| Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Factory keys done; classes/components remain  |
-| Built-in architecture       | API-clean, scalable, performance-oriented native layer      | Started; design checklist documented          |
-| Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Required in this PR                           |
-| Legacy backend deletion     | Old runtime backend sources removed from default stack      | Blocked on migration gates                    |
+| Gate                        | Required evidence                                           | Current state                                   |
+| --------------------------- | ----------------------------------------------------------- | ----------------------------------------------- |
+| CI native-only build        | CI passes with FCL, Bullet, and ODE disabled                | Local equivalent passed; awaiting CI evidence   |
+| CI gz-physics compatibility | gz-physics CI passes with optional legacy components built  | Required in this PR                             |
+| Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Started; opt-in env/test evidence               |
+| Packaging removal           | Default packages/wheels have no old collision runtime deps  | Metadata/link/install/py312 wheel passed        |
+| Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Started; DART alias coverage                    |
+| Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Factory/Python aliases done; C++ classes remain |
+| Built-in architecture       | API-clean, scalable, performance-oriented native layer      | Started; `01-design.md` gates documented        |
+| Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Required in this PR                             |
+| Legacy backend deletion     | Old runtime backend sources removed from default stack      | Blocked on migration gates                      |
 
 ## Test Runs
 
@@ -1228,12 +1228,58 @@ dist/dartpy-7.0.0-cp312-cp312-manylinux_2_39_x86_64.whl | rg -i
   - Result: no old collision dynamic or static libraries were present in the
     repaired wheel.
 
+## Python Compatibility Facade Runs
+
+- `pixi run -- cmake --build build/default/cpp/Release --target dartpy
+--parallel 8`
+  - Commit: working tree after Python detector compatibility aliases and
+    dartpy link cleanup.
+  - Result: passed in the default native-only configuration. Configure reported
+    FCL, Bullet, ODE, reference tests, and reference benchmarks all `OFF`;
+    dartpy built without linking legacy collision component targets.
+- `PYTHONPATH=build/default/cpp/Release/python pixi run pytest -q
+python/tests/unit/collision/test_collision.py
+python/tests/unit/simulation/test_world.py`
+  - Commit: working tree after Python detector compatibility aliases and
+    dartpy link cleanup.
+  - Result: passed, 17/17 tests. The new regression test proves
+    `DARTCollisionDetector`, `FCLCollisionDetector`, `BulletCollisionDetector`,
+    and `OdeCollisionDetector` all construct and report the built-in `dart`
+    detector.
+- `pixi run --locked -e collision-reference -- cmake --build
+build/collision-reference/cpp/Release --target dartpy --parallel 8`
+  - Commit: working tree after Python detector compatibility aliases and
+    dartpy link cleanup.
+  - Result: passed in a reference-enabled configuration where FCL, Bullet, ODE,
+    reference tests, and reference benchmarks were all `ON`. The build also
+    verified the GUI key mapping against ImGui 1.92.8, where the old
+    `ImGuiKey_Mod*` aliases are no longer declared.
+- `find build/collision-reference/cpp/Release/python -type f -name '*.so'
+-print | sort | while IFS= read -r lib; do hits=$(ldd "$lib" 2>/dev/null |
+grep -Ei 'lib(fcl|bullet|ode|ccd)' || true); if [ -n "$hits" ]; then printf
+'%s\n%s\n' "$lib" "$hits"; fi; done`
+  - Commit: working tree after reference-enabled dartpy build.
+  - Result: no built dartpy shared object linked FCL, Bullet, ODE, or libccd
+    even though the reference components existed in the build.
+- `PYTHONPATH=build/collision-reference/cpp/Release/python pixi run --locked
+-e collision-reference pytest -q python/tests/unit/collision/test_collision.py
+python/tests/unit/simulation/test_world.py`
+  - Commit: working tree after reference-enabled dartpy build.
+  - Result: passed, 17/17 tests.
+- `PYTHONPATH=build/collision-reference/cpp/Release/python pixi run --locked
+-e collision-reference python - <<'PY' ...`
+  - Commit: working tree after reference-enabled dartpy build.
+  - Result: `DartCollisionDetector`, `DARTCollisionDetector`,
+    `FCLCollisionDetector`, `BulletCollisionDetector`, and
+    `OdeCollisionDetector` all printed `dart dart` for instance type and static
+    type.
+
 ## Known Risks
 
 - Direct legacy detector classes and component libraries still contain real FCL,
   Bullet, and ODE implementations for reference work. The public factory route
-  is now native-backed, but direct class/header/component cleanup is still a
-  north-star gate.
+  and Python compatibility route are now native-backed, but direct C++
+  class/header/component cleanup is still a north-star gate.
 - Normal pixi configure paths, default/wheel Pixi lock metadata, and the
   repaired py312 wheel artifact now exclude the old collision engines. CI
   wheel-matrix artifacts still need inspection so packaging cannot reintroduce

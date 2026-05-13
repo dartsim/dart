@@ -42,6 +42,11 @@
       dartpy modules, and contains no old collision component headers, old
       collision component libraries, old collision CMake exports, or FCL,
       Bullet, ODE, or libccd runtime links.
+- [x] `dartpy` no longer links legacy collision component targets. The Python
+      compatibility names `DARTCollisionDetector`, `FCLCollisionDetector`,
+      `BulletCollisionDetector`, and `OdeCollisionDetector` now construct and
+      report the built-in `dart` detector even in a reference-enabled build
+      where FCL, Bullet, and ODE components exist.
 - [x] The `collision-reference` environment configures with FCL, Bullet, ODE,
       reference tests, and reference benchmarks enabled, and the focused
       `test_reference_backends` target builds and passes.
@@ -50,8 +55,10 @@
       disabled-legacy-backend builds, native-only pixi defaults, and explicit
       reference opt-in locally. The current dependency-metadata slice also
       proves default/wheel Pixi metadata isolation and a repaired py312 wheel
-      artifact inspection. The remaining work is CI hardening, full wheel
-      matrix/CI artifact evidence, remaining `dart/collision/` class/component
+      artifact inspection. The current API-cleanup slice also proves
+      native-backed Python compatibility aliases and reference-enabled dartpy
+      link isolation. The remaining work is CI hardening, full wheel matrix/CI
+      artifact evidence, remaining C++ `dart/collision/` class/component
       cleanup into one built-in detector, downstream migration safety,
       recurring performance guardrails, and final legacy backend deletion.
 
@@ -105,9 +112,24 @@ The current checkpoint is a validated middle state, not a final PR boundary.
 | 7     | Reference engines are test/bench-only        | Started; opt-in env/test proven  |
 | 8     | Default packages have no old runtime deps    | Local pass; CI wheel matrix left |
 | 9     | Downstream migration/deprecation path exists | Started; DART alias coverage     |
-| 10    | Collision abstraction is one clean stack     | Started; architecture documented |
+| 10    | Collision abstraction is one clean stack     | Started; design/factory/Python   |
 | 11    | Old runtime backend source is deleted        | Not started                      |
 | 12    | Final one-PR validation and PR packaging     | Blocked on stages 6-11           |
+
+## Where To Check Progress
+
+- `README.md`: live north-star status, progress scale, immediate next steps,
+  and remaining single-PR epics.
+- `01-design.md`: canonical built-in collision architecture and design review
+  gates for API cleanliness, scalability, performance, reference isolation, and
+  compatibility facades.
+- `02-milestones.md`: phase-by-phase success criteria and verification gates.
+- `03-evidence-gates.md`: command evidence, observed outputs, and the same
+  north-star progress scale tied to validation runs.
+- `04-reference-gap-analysis.md`: detailed capability gaps, implementation
+  order, and ready-to-implement checklist.
+- `RESUME.md`: compact handoff state for continuing the same PR without losing
+  the latest evidence.
 
 ## Non-Goals For This Tracking Task
 
@@ -136,6 +158,10 @@ The current checkpoint is a validated middle state, not a final PR boundary.
   compatibility facades stay clean, `dart/collision/dart/` adapts DART shapes
   and results, and `dart/collision/native/` owns scalable scene state,
   broadphase, narrowphase, query algorithms, caching, and profiling.
+- `01-design.md` is the canonical design contract for the built-in collision
+  component. Phase 11 cannot complete until its API-cleanliness, scalability,
+  performance, reference-isolation, and compatibility-facade gates are all
+  satisfied by code and evidence.
 - FCL, Bullet, and ODE may remain only as optional reference engines for tests
   and benchmarks. Native-only builds must be able to opt out through CMake, and
   no default runtime target may depend on them.
@@ -159,7 +185,9 @@ The current checkpoint is a validated middle state, not a final PR boundary.
    compatibility facades, and wheel/package evidence across CI.
 4. Continue collapsing `dart/collision/` so retained legacy classes, headers,
    and component names are native-backed compatibility facades or explicit
-   reference-only surfaces; factory keys are already native-backed aliases.
+   reference-only surfaces; factory keys and Python detector names are already
+   native-backed aliases. Use `01-design.md` as the architecture checklist for
+   this cleanup.
 5. Define and test the downstream migration/deprecation path for legacy detector
    names and factory aliases.
 6. Add recurring benchmark guardrails, then delete legacy runtime backend
@@ -218,7 +246,9 @@ collision stack.
    - Replace real legacy backend selection in `dart/collision/` with one
      built-in detector implementation.
    - The retained factory keys now resolve to `DartCollisionDetector` even when
-     legacy reference components are linked. Remaining work is direct legacy
+     legacy reference components are linked. Python detector compatibility
+     names also resolve to `DartCollisionDetector` and dartpy no longer links
+     legacy collision component targets. Remaining work is direct C++ legacy
      detector class/header/component cleanup so those surfaces are wrappers or
      explicit reference-only APIs.
    - Preserve a clean internal architecture: public API/compatibility shell,

@@ -4,27 +4,45 @@ Agent guidelines for the collision module.
 
 ## Overview
 
-Pluggable collision detection with multiple backends.
+DART collision is converging on one built-in runtime collision stack. The
+canonical detector is `dart`, implemented by `dart/collision/dart/` over the
+native core in `dart/collision/native/`.
+
+Legacy backend names are compatibility surfaces or optional reference harnesses
+for tests and benchmarks. Do not add new runtime backend selection paths.
 
 ## Backends
 
-| Backend    | Directory | Status    | Notes                        |
-| ---------- | --------- | --------- | ---------------------------- |
-| **DART**   | `dart/`   | Default   | Built-in native backend      |
-| **FCL**    | `fcl/`    | Reference | Flexible Collision Library   |
-| **Bullet** | `bullet/` | Reference | Bullet Physics backend       |
-| **ODE**    | `ode/`    | Reference | Open Dynamics Engine backend |
+| Surface    | Directory | Status                  | Notes                                    |
+| ---------- | --------- | ----------------------- | ---------------------------------------- |
+| **DART**   | `dart/`   | Default runtime         | Built-in native-backed detector          |
+| **Native** | `native/` | Internal engine         | Geometry, broadphase, narrowphase, query |
+| **FCL**    | `fcl/`    | Reference/compatibility | Optional correctness/benchmark reference |
+| **Bullet** | `bullet/` | Reference/compatibility | Optional correctness/benchmark reference |
+| **ODE**    | `ode/`    | Reference/compatibility | Optional correctness/benchmark reference |
 
 ## Key Concepts
 
-- **CollisionDetector**: Abstract interface for backends
+- **CollisionDetector**: Public DART collision interface
 - **CollisionGroup**: Broad-phase optimization via grouping
 - **CollisionObject**: Wrapper for shapes in collision system
 - **Contact**: Point, normal, penetration depth
 
 ## Code Patterns
 
-- Use `DartCollisionDetector::create()` or factory key `"dart"` for default
+- Use `DartCollisionDetector::create()` or factory key `"dart"` for runtime
+  code.
+- Legacy factory keys/classes must route to the built-in detector unless they
+  are explicitly part of an opt-in reference test or benchmark target.
+- Keep the runtime layer split clean: public API and compatibility facades call
+  into `dart/collision/dart/`, while `dart/collision/native/` owns geometry,
+  broadphase, narrowphase, distance, raycast, contact persistence, cache
+  invalidation, and profiling.
+- Do not expose FCL, Bullet, ODE, or native-core implementation knobs through
+  public collision options or results. Add DART-semantic options instead.
+- Design new native hot paths around persistent scene state, stable handles,
+  dirty shape/transform updates, deterministic query snapshots, low allocation,
+  and benchmark/profiler visibility.
 - `CollisionGroup::collide()` for collision queries
 - Filter pairs via `CollisionFilter` for performance
 

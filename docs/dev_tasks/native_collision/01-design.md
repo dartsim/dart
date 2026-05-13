@@ -99,6 +99,52 @@ dirty membership, transform, and shape data before queries. This keeps the
 public API stable while allowing the native core to evolve toward better
 broadphase traversal, batch queries, and low-allocation hot paths.
 
+## Layer Acceptance Gates
+
+These gates define what "clean built-in collision layer" means for this PR.
+They are completion criteria for the collision abstraction cleanup, not
+follow-up nice-to-haves.
+
+- API cleanliness gate: public headers, factory keys, Python bindings, CMake
+  package exports, and compatibility headers present `dart` as the canonical
+  collision detector. Retained `experimental`, FCL, Bullet, and ODE spellings
+  must be aliases or native-backed compatibility facades, and public query
+  options/results must avoid engine-specific types and knobs.
+- Scalability gate: the DART adapter owns persistent scene state with stable
+  handles, dirty membership/transform/shape synchronization, reusable
+  broadphase/query snapshots, deterministic result ordering, and clear cache
+  invalidation for object removal and dynamic geometry mutation.
+- Performance gate: native hot paths use compact geometry data,
+  shape-specialized dispatch, persistent broadphase state, reusable scratch,
+  contact/manifold caches with explicit lifetimes, and profiler/benchmark
+  labels for adapter sync, broadphase update, candidate traversal,
+  narrowphase, distance, raycast, contact generation, and result conversion.
+- Reference isolation gate: FCL, Bullet, and ODE are reachable only from
+  explicit reference correctness tests and comparative benchmarks. Native-only
+  runtime, dartpy, wheel, installed-package, and downstream compatibility paths
+  must not link or advertise old collision runtime engines.
+- Compatibility facade gate: gz-physics-required legacy names still compile
+  during the migration window, but construction, factory selection, and Python
+  access all route to the built-in detector unless the call site is an
+  explicitly named reference test/benchmark harness.
+
+## Current Design Status
+
+The codebase already implements the core shape of this design: native geometry
+and query infrastructure live in `dart/collision/native/`, the public DART
+adapter lives in `dart/collision/dart/`, the `dart` factory key is canonical,
+retained factory aliases route to `DartCollisionDetector`, Python detector
+compatibility names are native-backed, and normal package/wheel surfaces no
+longer carry old collision dependencies.
+
+The remaining design gap is direct C++ legacy surface cleanup. The old FCL,
+Bullet, and ODE detector classes, headers, and component targets still contain
+real reference-engine implementations for comparison work. Before Phase 11 can
+complete, those surfaces must either become thin native-backed compatibility
+facades or move behind explicitly named reference-only test/benchmark targets.
+The completed PR must make it impossible for ordinary DART collision runtime
+selection to instantiate or link FCL, Bullet, or ODE.
+
 ## Code Ownership Map
 
 The final code layout should make the layer boundary visible during review:

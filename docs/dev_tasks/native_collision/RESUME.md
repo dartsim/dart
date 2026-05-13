@@ -31,7 +31,10 @@ explicit `collision-reference` environment owns those packages and its focused
 `test_reference_backends` target builds and passes. A repaired py312 wheel
 artifact built with old collision engines and reference harnesses disabled
 imports successfully and contains no old collision component files, old
-collision CMake exports, or FCL, Bullet, ODE, or libccd runtime links.
+collision CMake exports, or FCL, Bullet, ODE, or libccd runtime links. Python
+detector compatibility names now resolve to `DartCollisionDetector`, and
+dartpy no longer links legacy collision component targets even in a
+reference-enabled build.
 
 ## Current Branch
 
@@ -69,9 +72,17 @@ Collision abstraction cleanup has also started: `DartCollisionDetector` owns
 native-backed public factory aliases for `experimental`, `fcl`, `fcl_mesh`,
 `bullet`, and `ode`; the FCL/Bullet/ODE component registrars also publish
 native-backed creators so linking old reference component libraries cannot
-restore public backend selection. Direct legacy detector classes, headers, and
-CMake component surfaces still contain real reference-engine implementations
-and remain a north-star cleanup gate.
+restore public backend selection; and the Python compatibility names
+`DARTCollisionDetector`, `FCLCollisionDetector`, `BulletCollisionDetector`, and
+`OdeCollisionDetector` now construct/report the built-in `dart` detector.
+Direct C++ legacy detector classes, headers, and CMake component surfaces still
+contain real reference-engine implementations and remain a north-star cleanup
+gate.
+`docs/dev_tasks/native_collision/01-design.md` is the canonical architecture
+contract for that remaining cleanup: public API and compatibility facades
+outside the DART adapter, `dart/collision/native/` as the scene/query core, and
+explicit gates for API cleanliness, scalability, performance hooks, reference
+isolation, and gz-physics-safe compatibility facades.
 Package-export cleanup has also started: native-only `find_package(DART)` now
 defaults to `dart` only, generated component templates no longer emit
 deprecated Bullet/ODE collision component text, and a native-only install probe
@@ -126,6 +137,15 @@ availability.
   component headers, old collision component libraries, old collision CMake
   exports, or FCL/Bullet/ODE/libccd runtime libraries; extracted shared-object
   `ldd` checks found no FCL, Bullet, ODE, or libccd links.
+- dartpy no longer links `dart-collision-fcl`, `dart-collision-bullet`, or
+  `dart-collision-ode`. Default dartpy build and Python collision/world tests
+  passed. A reference-enabled dartpy build also passed with FCL/Bullet/ODE
+  components present, built dartpy shared-object `ldd` checks found no
+  FCL/Bullet/ODE/libccd links, and the Python compatibility names printed
+  `dart dart` for instance and static detector type.
+- The reference-enabled dartpy build required a GUI compatibility fix because
+  ImGui 1.92.8 removed the obsolete `ImGuiKey_Mod*` aliases. DART now submits
+  left/right modifier keys directly in `im_gui_handler.cpp`.
 - Explicit `DART_BUILD_COLLISION_*_OVERRIDE=ON` opt-in restores the old
   component targets, reference consistency tests, and comparative benchmark
   targets for comparison jobs.

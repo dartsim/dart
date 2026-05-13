@@ -286,10 +286,6 @@ target_include_directories(dartpy
     ${CMAKE_BINARY_DIR}
 )
 
-if(BULLET_INCLUDE_DIR)
-  target_include_directories(dartpy SYSTEM PRIVATE ${BULLET_INCLUDE_DIR})
-endif()
-
 set(dartpy_libraries
   dart
   dart-utils
@@ -308,18 +304,6 @@ foreach(lib ${dartpy_libraries})
     message(FATAL_ERROR "Required DART library not found: ${lib}")
   endif()
 endforeach()
-
-if(DART_BUILD_COLLISION_FCL)
-  target_link_libraries(dartpy PRIVATE dart-collision-fcl)
-endif()
-
-if(DART_BUILD_COLLISION_BULLET)
-  target_link_libraries(dartpy PRIVATE dart-collision-bullet)
-endif()
-
-if(DART_BUILD_COLLISION_ODE)
-  target_link_libraries(dartpy PRIVATE dart-collision-ode)
-endif()
 
 if(TARGET dart-gui)
   target_link_libraries(dartpy PRIVATE dart-gui)
