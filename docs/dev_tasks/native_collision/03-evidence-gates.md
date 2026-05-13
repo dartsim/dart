@@ -59,7 +59,7 @@ These gates are still required before the single north-star PR is complete.
 | CI native-only build        | CI passes with FCL, Bullet, and ODE disabled                | Local equivalent passed; awaiting CI evidence  |
 | CI gz-physics compatibility | gz-physics CI passes with optional legacy components built  | Required in this PR                            |
 | Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Local reference target split passes            |
-| Packaging removal           | Default packages/wheels have no old collision runtime deps  | Metadata/link/install/py312 wheel passed       |
+| Packaging removal           | Default packages/wheels have no old collision runtime deps  | Verifier wired; CI matrix evidence left        |
 | Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Started; alias/component coverage              |
 | Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Source/package facades done                    |
 | Built-in architecture       | `01-design.md` layer table passes API, scaling, perf gates  | Source split done; CI/perf gates remain        |
@@ -1668,6 +1668,32 @@ build/collision-reference/cpp/Release -R
   - Result: passed.
 - `git diff --check`
   - Commit: working tree after adding scheduled/manual CI benchmark guard.
+  - Result: passed.
+- `python scripts/verify_wheel_collision_isolation.py dist/dartpy-*.whl`
+  - Commit: working tree after adding dartpy wheel collision-isolation
+    verification.
+  - Result: passed. The existing repaired
+    `dartpy-7.0.0-cp312-cp312-manylinux_2_39_x86_64.whl` was inspected across
+    1843 wheel entries and contained no legacy collision runtime artifacts.
+- `pixi run --locked -e py312-wheel wheel-verify`
+  - Commit: working tree after wiring collision-isolation checks into
+    `wheel-verify-core`.
+  - Result: passed. The task verified the cp312 wheel version and ran
+    `scripts/verify_wheel_collision_isolation.py` on the repaired py312 Linux
+    wheel.
+- `pixi run lint`
+  - Commit: working tree after wiring collision-isolation checks into
+    `wheel-verify-core`.
+  - Result: passed. CMake configure, C++ formatting, docs formatting, spell
+    check, Python formatting, TOML/YAML/RST checks, and AI command sync
+    completed.
+- `pixi run check-docs-policy`
+  - Commit: working tree after wiring collision-isolation checks into
+    `wheel-verify-core`.
+  - Result: passed.
+- `git diff --check`
+  - Commit: working tree after wiring collision-isolation checks into
+    `wheel-verify-core`.
   - Result: passed.
 - `pixi run config`
   - Commit: working tree after adding source-tree top-level All/PascalCase

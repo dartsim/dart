@@ -61,6 +61,12 @@ The latest CI/performance slice adds a scheduled/manual CI Linux
 `pixi run --locked -e collision-reference bm-collision-check` guard and uploads
 `.benchmark_results/collision_check_*.json` artifacts. It still needs GitHub
 run evidence.
+The latest wheel-isolation slice adds `scripts/verify_wheel_collision_isolation.py`
+and wires it into `wheel-verify-core` so every dartpy wheel verify rejects old
+FCL/Bullet/ODE collision component exports, reference collision libraries, and
+FCL, Bullet, ODE, or libccd runtime libraries. The existing repaired py312
+Linux wheel passes the new verifier locally; the full CI wheel matrix still
+needs run/artifact evidence.
 
 ## Current Branch
 
@@ -180,7 +186,9 @@ libraries.
   `wheel-test` passed. Precise wheel-content checks found no old collision
   component headers, old collision component libraries, old collision CMake
   exports, or FCL/Bullet/ODE/libccd runtime libraries; extracted shared-object
-  `ldd` checks found no FCL, Bullet, ODE, or libccd links.
+  `ldd` checks found no FCL, Bullet, ODE, or libccd links. `wheel-verify` now
+  also runs a wheel-content collision-isolation check for every wheel matrix
+  entry.
 - dartpy no longer links `dart-collision-fcl`, `dart-collision-bullet`, or
   `dart-collision-ode`. Default dartpy build and Python collision/world tests
   passed. A reference-enabled dartpy build also passed with FCL/Bullet/ODE
@@ -209,7 +217,7 @@ libraries.
 - gz-physics compatibility and performance parity are explicit gates, not
   optional follow-up work.
 - The next work is no longer feature-parity implementation. The single PR still
-  needs CI hardening, wheel-matrix artifact evidence, downstream
+  needs CI hardening, wheel-matrix run/artifact evidence, downstream
   migration/deprecation coverage, built-in collision layer hardening for API
   cleanliness, scalable native scene/query state and performance-oriented
   internals, GitHub run/artifact evidence for the scheduled benchmark guard,

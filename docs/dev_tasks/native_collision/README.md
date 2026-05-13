@@ -42,6 +42,11 @@
       dartpy modules, and contains no old collision component headers, old
       collision component libraries, old collision CMake exports, or FCL,
       Bullet, ODE, or libccd runtime links.
+- [x] `wheel-verify` now includes a collision-isolation check that rejects old
+      FCL/Bullet/ODE collision component exports, reference collision
+      libraries, and FCL, Bullet, ODE, or libccd runtime libraries from dartpy
+      wheel artifacts. The existing repaired py312 Linux wheel passes that
+      check locally.
 - [x] `dartpy` no longer links legacy collision component targets. The Python
       compatibility names `DARTCollisionDetector`, `FCLCollisionDetector`,
       `BulletCollisionDetector`, and `OdeCollisionDetector` now construct and
@@ -110,8 +115,9 @@
       Installed and source-tree legacy detector headers are also native-backed
       facades, with old-engine implementation files under explicit reference
       paths. The remaining work is CI hardening, full wheel matrix/CI artifact
-      evidence, downstream migration safety, GitHub evidence for the scheduled
-      performance guard, and final legacy backend deletion.
+      evidence from the wired verifier, downstream migration safety, GitHub
+      evidence for the scheduled performance guard, and final legacy backend
+      deletion.
 
 ## Goal
 
@@ -161,7 +167,7 @@ The current checkpoint is a validated middle state, not a final PR boundary.
 | 5     | FCL/Bullet/ODE are optional for local builds | Complete in checkpoint            |
 | 6     | Native-only and gz-physics CI are permanent  | Started; local evidence           |
 | 7     | Reference engines are test/bench-only        | Local target split proven         |
-| 8     | Default packages have no old runtime deps    | Local pass; CI wheel matrix left  |
+| 8     | Default packages have no old runtime deps    | Local pass; CI verifier wired     |
 | 9     | Downstream migration/deprecation path exists | Started; alias/component coverage |
 | 10    | Collision abstraction is one clean stack     | Source/package facades proven     |
 | 11    | Old runtime backend source is reference-only | Local reference path split proven |
@@ -196,7 +202,7 @@ single checkpoint built locally.
 | API cleanliness         | `dart` is the canonical public detector; legacy keys, classes, headers, and package components are compatibility facades only; public options/results describe DART semantics instead of backend-specific modes. | Factory aliases, Python names, public C++ legacy `create()` paths, installed headers, source-tree top-level legacy headers, examples, and retained package components are native-backed. CI/downstream migration evidence is still needed before this is final.                                                                                                                        |
 | Scalability             | Public collision, distance, and raycast use persistent adapter scene state with stable IDs, dirty transform/shape sync, reusable broadphase/query data, cache invalidation, and deterministic ordering.          | Persistent `DartCollisionGroup` scene state, broadphase-pruned raycast, AABB-pruned distance, native filter adaptation, dynamic-shape invalidation coverage, and scene-issued manifold cache IDs are implemented locally. Broader CI and recurring benchmark evidence remain.                                                                                                          |
 | Performance orientation | Native hot paths use compact geometry, shape-specialized dispatch, persistent broadphase data, reusable scratch, clear cache lifetimes, and profiling/benchmark labels for each query stage.                     | Recorded benchmarks show native wins on the measured primitive, narrowphase, supported distance, raycast, batch, mesh-heavy, and mixed-primitive set. The recurring benchmark guard now covers checked native-vs-reference subsets plus public DART adapter collision, dirty-world, distance, and raycast scenarios, and CI Linux has a scheduled/manual artifact-producing guard job. |
-| Reference isolation     | FCL, Bullet, and ODE exist only as optional reference engines for tests and benchmarks, with native-only builds able to opt out.                                                                                 | CMake opt-out options, native-only Pixi defaults, explicit `collision-reference` opt-in, `collision-reference-*` targets, reference-path source split, package/wheel metadata cleanup, and local install/wheel evidence are in place. CI wheel-matrix evidence remains.                                                                                                                |
+| Reference isolation     | FCL, Bullet, and ODE exist only as optional reference engines for tests and benchmarks, with native-only builds able to opt out.                                                                                 | CMake opt-out options, native-only Pixi defaults, explicit `collision-reference` opt-in, `collision-reference-*` targets, reference-path source split, package/wheel metadata cleanup, local install/wheel evidence, and wheel artifact verifier wiring are in place. CI wheel-matrix run evidence remains.                                                                            |
 | Compatibility           | gz-physics and downstream source-compatible legacy names keep building during migration, but cannot select an external runtime engine.                                                                           | Legacy detector headers/classes, factory aliases, Python names, and retained package components route to native. Fresh gz-physics and downstream migration/deprecation evidence are still final gates.                                                                                                                                                                                 |
 
 ## Where To Check Progress
@@ -261,8 +267,9 @@ single checkpoint built locally.
    test/benchmark opt-out, normal pixi default-off, explicit reference opt-in,
    reference target split, native-backed compatibility component facades,
    core-link, fresh runtime-link, package-export, and Pixi dependency-metadata
-   evidence. Local py312 wheel artifact inspection is now complete; CI wheel
-   matrix artifacts still need coverage.
+   evidence. Local py312 wheel artifact inspection is now complete and the
+   wheel verifier enforces collision-runtime isolation; CI wheel matrix
+   artifacts still need run evidence.
 3. Finish removing FCL, Bullet, and ODE from default package/runtime surfaces
    by preserving explicit reference test/benchmark jobs, native-backed
    compatibility facades, and wheel/package evidence across CI.
@@ -315,9 +322,10 @@ collision stack.
      component targets are native-backed interface facades. Default and wheel
      Pixi lock metadata no longer include old collision engines or their FCL
      transitive packages. The repaired py312 wheel artifact has also been
-     inspected for old component files and runtime links. Remaining work is CI
-     wheel-matrix inspection so reference engines cannot leak into normal
-     runtime targets.
+     inspected for old component files and runtime links, and `wheel-verify`
+     now rejects those files for every matrix entry. Remaining work is CI
+     wheel-matrix run/artifact evidence so reference engines cannot leak into
+     normal runtime targets.
 3. **Backend Removal From Defaults**
    - Move FCL, Bullet, and ODE out of default packaging/runtime surfaces.
    - Keep old backends only in explicit reference/benchmark jobs while they are
@@ -330,7 +338,8 @@ collision stack.
      environment owns those packages for comparison work.
    - A repaired py312 wheel has no old collision component headers, old
      collision component libraries, old collision CMake exports, or FCL,
-     Bullet, ODE, or libccd runtime links.
+     Bullet, ODE, or libccd runtime links; the wheel verifier now checks those
+     forbidden artifacts for each wheel matrix entry.
    - Default `find_package(DART)` now adds only the `dart` component; it no
      longer auto-adds legacy collision components or emits deprecated
      Bullet/ODE component text from generated native-only package exports.
