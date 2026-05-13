@@ -28,7 +28,10 @@ and no FCL, Bullet, ODE, or libccd runtime links from installed shared
 libraries or the built dartpy extension. Default and wheel Pixi dependency
 metadata now omit FCL, Bullet, ODE, and their FCL transitive packages; the
 explicit `collision-reference` environment owns those packages and its focused
-`test_reference_backends` target builds and passes.
+`test_reference_backends` target builds and passes. A repaired py312 wheel
+artifact built with old collision engines and reference harnesses disabled
+imports successfully and contains no old collision component files, old
+collision CMake exports, or FCL, Bullet, ODE, or libccd runtime links.
 
 ## Current Branch
 
@@ -59,8 +62,9 @@ reference-disabled and reference-enabled configurations locally, propagates the
 toggles through the major configure entry points, defaults normal pixi configure
 paths to native-only collision, and has core native-only link evidence. It
 now also has fresh runtime-link, package-export, default/wheel Pixi dependency
-metadata, and explicit `collision-reference` environment evidence. It still
-needs built wheel artifact inspection and downstream-component checks.
+metadata, explicit `collision-reference` environment evidence, and repaired
+py312 wheel artifact evidence. It still needs CI wheel-matrix artifact
+evidence and downstream-component checks.
 Collision abstraction cleanup has also started: `DartCollisionDetector` owns
 native-backed public factory aliases for `experimental`, `fcl`, `fcl_mesh`,
 `bullet`, and `ode`; the FCL/Bullet/ODE component registrars also publish
@@ -116,6 +120,12 @@ availability.
   in the lock. The explicit `collision-reference` environment lists those
   packages, configures FCL/Bullet/ODE plus reference tests/benchmarks `ON`,
   and builds/runs `test_reference_backends` successfully.
+- The repaired py312 wheel was built with FCL, Bullet, ODE, reference tests,
+  and reference benchmarks all disabled. `wheel-repair`, `wheel-verify`, and
+  `wheel-test` passed. Precise wheel-content checks found no old collision
+  component headers, old collision component libraries, old collision CMake
+  exports, or FCL/Bullet/ODE/libccd runtime libraries; extracted shared-object
+  `ldd` checks found no FCL, Bullet, ODE, or libccd links.
 - Explicit `DART_BUILD_COLLISION_*_OVERRIDE=ON` opt-in restores the old
   component targets, reference consistency tests, and comparative benchmark
   targets for comparison jobs.

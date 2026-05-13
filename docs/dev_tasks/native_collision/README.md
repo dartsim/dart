@@ -37,6 +37,11 @@
       ODE, or their FCL transitive packages. The new `collision-reference`
       environment is the explicit opt-in path for reference-engine correctness
       tests and benchmarks.
+- [x] A repaired `py312-wheel` artifact built with old collision engines and
+      reference harnesses disabled imports successfully, exposes the expected
+      dartpy modules, and contains no old collision component headers, old
+      collision component libraries, old collision CMake exports, or FCL,
+      Bullet, ODE, or libccd runtime links.
 - [x] The `collision-reference` environment configures with FCL, Bullet, ODE,
       reference tests, and reference benchmarks enabled, and the focused
       `test_reference_backends` target builds and passes.
@@ -44,11 +49,11 @@
       native default, feature parity, gz-physics compatibility, performance,
       disabled-legacy-backend builds, native-only pixi defaults, and explicit
       reference opt-in locally. The current dependency-metadata slice also
-      proves default/wheel Pixi metadata isolation. The remaining work is CI
-      hardening, wheel artifact inspection, remaining `dart/collision/`
-      class/component cleanup into one built-in detector, downstream migration
-      safety, recurring performance guardrails, and final legacy backend
-      deletion.
+      proves default/wheel Pixi metadata isolation and a repaired py312 wheel
+      artifact inspection. The remaining work is CI hardening, full wheel
+      matrix/CI artifact evidence, remaining `dart/collision/` class/component
+      cleanup into one built-in detector, downstream migration safety,
+      recurring performance guardrails, and final legacy backend deletion.
 
 ## Goal
 
@@ -98,7 +103,7 @@ The current checkpoint is a validated middle state, not a final PR boundary.
 | 5     | FCL/Bullet/ODE are optional for local builds | Complete in checkpoint           |
 | 6     | Native-only and gz-physics CI are permanent  | Started; local evidence          |
 | 7     | Reference engines are test/bench-only        | Started; opt-in env/test proven  |
-| 8     | Default packages have no old runtime deps    | Mostly complete; wheel artifacts |
+| 8     | Default packages have no old runtime deps    | Local pass; CI wheel matrix left |
 | 9     | Downstream migration/deprecation path exists | Started; DART alias coverage     |
 | 10    | Collision abstraction is one clean stack     | Started; architecture documented |
 | 11    | Old runtime backend source is deleted        | Not started                      |
@@ -146,10 +151,12 @@ The current checkpoint is a validated middle state, not a final PR boundary.
    metadata, wheel artifacts, and remaining downstream-component paths after
    the CMake test/benchmark opt-out, normal pixi default-off, explicit
    reference opt-in, core-link, fresh runtime-link, package-export, and
-   Pixi dependency-metadata evidence.
+   Pixi dependency-metadata evidence. Local py312 wheel artifact inspection is
+   now complete; CI wheel matrix artifacts and downstream-component paths still
+   need coverage.
 3. Finish removing FCL, Bullet, and ODE from default package/runtime surfaces
-   by inspecting built wheel artifacts while preserving explicit reference
-   test/benchmark jobs and native-backed compatibility facades.
+   by preserving explicit reference test/benchmark jobs, native-backed
+   compatibility facades, and wheel/package evidence across CI.
 4. Continue collapsing `dart/collision/` so retained legacy classes, headers,
    and component names are native-backed compatibility facades or explicit
    reference-only surfaces; factory keys are already native-backed aliases.
@@ -187,9 +194,10 @@ collision stack.
      CMake/pkg-config metadata inspection show no FCL, Bullet, ODE, libccd, or
      old collision component targets in the normal native install. Default and
      wheel Pixi lock metadata no longer include old collision engines or their
-     FCL transitive packages. Remaining work is built wheel artifact and
-     downstream-component inspection so reference engines cannot leak into
-     normal runtime targets.
+     FCL transitive packages. The repaired py312 wheel artifact has also been
+     inspected for old component files and runtime links. Remaining work is
+     downstream-component and CI wheel-matrix inspection so reference engines
+     cannot leak into normal runtime targets.
 3. **Backend Removal From Defaults**
    - Move FCL, Bullet, and ODE out of default packaging/runtime surfaces.
    - Keep old backends only in explicit reference/benchmark jobs while they are
@@ -200,6 +208,9 @@ collision stack.
    - Default and wheel Pixi environments no longer lock FCL, Bullet, ODE, or
      their FCL transitive packages; the explicit `collision-reference`
      environment owns those packages for comparison work.
+   - A repaired py312 wheel has no old collision component headers, old
+     collision component libraries, old collision CMake exports, or FCL,
+     Bullet, ODE, or libccd runtime links.
    - Default `find_package(DART)` now adds only the `dart` component; it no
      longer auto-adds legacy collision components or emits deprecated
      Bullet/ODE component text from generated native-only package exports.

@@ -173,8 +173,10 @@ install probe now also covers the installed shared libraries and dartpy module
 for old-engine runtime links. Default and wheel Pixi lock metadata now exclude
 FCL, Bullet, ODE, and the FCL transitive packages; the explicit
 `collision-reference` environment owns those packages and restores the focused
-reference target. Built wheel artifact and downstream-component inspection are
-still required before this phase is complete.
+reference target. A repaired py312 wheel artifact built with old collision
+engines disabled now imports successfully and has no old collision component
+files or runtime links. Downstream-component inspection and CI wheel-matrix
+evidence are still required before this phase is complete.
 
 Success criteria:
 
@@ -218,9 +220,11 @@ runtime components has no FCL, Bullet, ODE, or libccd runtime links from
 installed shared libraries or the built dartpy module. Default and wheel Pixi
 dependency metadata now also omit FCL, Bullet, ODE, and the FCL transitive
 packages, while `collision-reference` is the explicit opt-in package
-environment for reference comparisons. Remaining work includes wheel artifact
-inspection and gz-physics compatibility for any retained legacy component
-facades.
+environment for reference comparisons. A repaired py312 wheel artifact has no
+old collision component headers, old collision component libraries, old
+collision CMake exports, or FCL, Bullet, ODE, or libccd runtime links.
+Remaining work includes CI wheel-matrix evidence and gz-physics compatibility
+for any retained legacy component facades.
 
 Success criteria:
 

@@ -44,7 +44,7 @@ performance-oriented internals before this scale reaches completion.
 | 5     | Local builds pass with FCL/Bullet/ODE disabled      | Complete in checkpoint           |
 | 6     | Native-only and gz-physics CI are permanent         | Started; local evidence          |
 | 7     | Reference engines are test/bench-only opt-in        | Started; opt-in env/test proven  |
-| 8     | Default packages/wheels have no old runtime deps    | Mostly complete; wheel artifacts |
+| 8     | Default packages/wheels have no old runtime deps    | Local pass; CI wheel matrix left |
 | 9     | Downstream migration/deprecation path is tested     | Started; DART alias coverage     |
 | 10    | Collision abstraction is one clean built-in stack   | Started; architecture documented |
 | 11    | Old runtime backend source/components are deleted   | Not started                      |
@@ -59,7 +59,7 @@ These gates are still required before the single north-star PR is complete.
 | CI native-only build        | CI passes with FCL, Bullet, and ODE disabled                | Local equivalent passed; awaiting CI evidence |
 | CI gz-physics compatibility | gz-physics CI passes with optional legacy components built  | Required in this PR                           |
 | Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Started; opt-in env/test evidence             |
-| Packaging removal           | Default packages/wheels have no old collision runtime deps  | Metadata/link/install done; wheels pending    |
+| Packaging removal           | Default packages/wheels have no old collision runtime deps  | Metadata/link/install/py312 wheel passed      |
 | Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Started; DART alias coverage                  |
 | Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Factory keys done; classes/components remain  |
 | Built-in architecture       | API-clean, scalable, performance-oriented native layer      | Started; design checklist documented          |
@@ -1174,15 +1174,70 @@ test_reference_backends`
   - Commit: working tree after Pixi dependency metadata split.
   - Result: passed, 1/1 test in 0.40 seconds.
 
+## Wheel Artifact Inspection Runs
+
+- `pixi run --locked -e py312-wheel wheel-build`
+  - Commit: working tree after Pixi dependency metadata split.
+  - Result: passed and produced
+    `dist/dartpy-7.0.0-cp312-cp312-linux_x86_64.whl`. The wheel build
+    command set `DART_BUILD_COLLISION_FCL=OFF`,
+    `DART_BUILD_COLLISION_BULLET=OFF`, `DART_BUILD_COLLISION_ODE=OFF`,
+    `DART_BUILD_COLLISION_REFERENCE_TESTS=OFF`, and
+    `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS=OFF`. Configure did not report
+    FCL, Bullet, ODE, or libccd as found runtime packages; the build completed
+    with only known third-party OctoMap `<ciso646>` warnings.
+- `pixi run --locked -e py312-wheel wheel-repair`
+  - Commit: working tree after py312 wheel build.
+  - Result: passed. `auditwheel` rewrote the wheel tag from
+    `linux_x86_64` to `manylinux_2_39_x86_64` and wrote
+    `dist/dartpy-7.0.0-cp312-cp312-manylinux_2_39_x86_64.whl`.
+- `pixi run --locked -e py312-wheel wheel-verify`
+  - Commit: working tree after py312 wheel repair.
+  - Result: passed. `package.xml` and the repaired wheel both reported
+    version `7.0.0`.
+- `pixi run --locked -e py312-wheel wheel-test`
+  - Commit: working tree after py312 wheel repair.
+  - Result: passed. The repaired wheel installed into a fresh Python 3.12
+    virtual environment, imported `dartpy 7.0.0`, exposed the required
+    `collision`, `common`, `constraint`, `dynamics`, `math`, `simulation`, and
+    `utils` submodules, exposed optional `gui.Viewer`, and constructed a
+    basic `dartpy.simulation.World`.
+- `ls -lh dist/*.whl`
+  - Commit: working tree after py312 wheel repair.
+  - Result: one repaired wheel was present:
+    `dist/dartpy-7.0.0-cp312-cp312-manylinux_2_39_x86_64.whl`, 70M.
+- `unzip -Z1
+dist/dartpy-7.0.0-cp312-cp312-manylinux_2_39_x86_64.whl | rg -i
+'(^|/)(include/dart/collision/(fcl|bullet|ode)(/|$)|lib/libdart-collision-(fcl|bullet|ode)|dartpy\.libs/lib(fcl|bullet|ode|ccd)|lib/cmake/dart/.*collision-(fcl|bullet|ode))'`
+  - Commit: working tree after py312 wheel repair.
+  - Result: no matches. The repaired wheel did not bundle old collision
+    component headers, old collision component libraries, old collision CMake
+    exports, or old FCL/Bullet/ODE/libccd runtime libraries.
+- `tmpdir=$(mktemp -d); unzip -q
+dist/dartpy-7.0.0-cp312-cp312-manylinux_2_39_x86_64.whl -d "$tmpdir";
+find "$tmpdir" -type f -name '*.so*' -print | while IFS= read -r lib; do
+hits=$(ldd "$lib" 2>/dev/null | grep -Ei 'lib(fcl|bullet|ode|ccd)' ||
+true); if [ -n "$hits" ]; then printf '%s\n%s\n' "$lib" "$hits"; fi;
+done; rm -rf "$tmpdir"`
+  - Commit: working tree after py312 wheel repair.
+  - Result: no extracted shared object linked FCL, Bullet, ODE, or libccd.
+- `unzip -Z1
+dist/dartpy-7.0.0-cp312-cp312-manylinux_2_39_x86_64.whl | rg -i
+'(^|/)lib(fcl|bullet|ode|ccd)[^/]*\.(so|dylib|dll|a)$|(^|/).*collision-(fcl|bullet|ode).*\.(so|dylib|dll|a)$'`
+  - Commit: working tree after py312 wheel repair.
+  - Result: no old collision dynamic or static libraries were present in the
+    repaired wheel.
+
 ## Known Risks
 
 - Direct legacy detector classes and component libraries still contain real FCL,
   Bullet, and ODE implementations for reference work. The public factory route
   is now native-backed, but direct class/header/component cleanup is still a
   north-star gate.
-- Normal pixi configure paths and default/wheel Pixi lock metadata now exclude
-  the old collision engines, but built wheel artifacts still need inspection so
-  packaging cannot reintroduce FCL, Bullet, ODE, or libccd runtime links.
+- Normal pixi configure paths, default/wheel Pixi lock metadata, and the
+  repaired py312 wheel artifact now exclude the old collision engines. CI
+  wheel-matrix artifacts still need inspection so packaging cannot reintroduce
+  FCL, Bullet, ODE, or libccd runtime links on another Python/platform build.
 - Compatibility-alias checks can silently bypass native-only paths if they are
   used outside explicit backward-compatibility tests.
 - Scenario-scale collision manager performance now passes the recorded
