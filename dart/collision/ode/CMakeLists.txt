@@ -1,6 +1,14 @@
 # Dependency checks
+file(GLOB compat_hdrs "compat/*.hpp")
+dart_format_add(${compat_hdrs})
+
 if(NOT DART_BUILD_COLLISION_ODE)
   set(DART_HAVE_ODE FALSE CACHE BOOL "Check if ODE found." FORCE)
+  install(
+    FILES ${compat_hdrs}
+    DESTINATION include/dart/collision/ode
+    COMPONENT headers
+  )
   return()
 endif()
 

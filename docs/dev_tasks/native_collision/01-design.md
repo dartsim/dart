@@ -146,14 +146,16 @@ The component boundary has been split: retained package component names
 `collision-fcl`, `collision-bullet`, and `collision-ode` are native-backed
 interface facades, while old-engine libraries/components are explicitly named
 `collision-reference-fcl`, `collision-reference-bullet`, and
-`collision-reference-ode`. The remaining design gap is legacy detector
-header/source cleanup. The old FCL, Bullet, and ODE detector classes and
-headers still contain real reference-engine implementations for explicit
-`createReference()` use. Before Phase 11 can complete, retained public header
-surfaces must either become thin native-backed compatibility facades or move
-behind explicitly named reference-only test/benchmark targets. The completed PR
-must make it impossible for ordinary DART collision runtime selection to
-instantiate or link FCL, Bullet, or ODE.
+`collision-reference-ode`. Native-only installed FCL, Bullet, and ODE detector
+headers are compatibility facades over `DartCollisionDetector`. The remaining
+design gap is source-tree legacy detector header/source cleanup: the old FCL,
+Bullet, and ODE detector classes and headers still contain real
+reference-engine implementations for explicit `createReference()` use in
+reference-enabled builds. Before Phase 11 can complete, retained public header
+surfaces in the source tree must either become thin native-backed compatibility
+facades or move behind explicitly named reference-only test/benchmark targets.
+The completed PR must make it impossible for ordinary DART collision runtime
+selection to instantiate or link FCL, Bullet, or ODE.
 
 ## Code Ownership Map
 
@@ -197,6 +199,8 @@ backends:
   facades. External-engine comparison targets must use explicit
   `collision-reference-*` names and must not silently select an external
   runtime backend.
+- Native-only installed legacy detector headers must compile without FCL,
+  Bullet, or ODE headers and construct native-backed detector facades.
 - Default package environments, including wheel build environments, should not
   carry FCL, Bullet, ODE, or their transitive collision packages. A separate
   reference environment may carry them for comparison tests and benchmarks.

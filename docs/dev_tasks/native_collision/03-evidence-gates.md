@@ -46,7 +46,7 @@ performance-oriented internals before this scale reaches completion.
 | 7     | Reference engines are test/bench-only opt-in        | Local target split proven         |
 | 8     | Default packages/wheels have no old runtime deps    | Local pass; CI wheel matrix left  |
 | 9     | Downstream migration/deprecation path is tested     | Started; alias/component coverage |
-| 10    | Collision abstraction is one clean built-in stack   | Started; factory/Python/C++/CMake |
+| 10    | Collision abstraction is one clean built-in stack   | Started; factories/CMake/headers  |
 | 11    | Old runtime backend source/components are deleted   | Not started                       |
 | 12    | Final PR evidence is complete and task docs removed | Blocked on remaining stages       |
 
@@ -61,7 +61,7 @@ These gates are still required before the single north-star PR is complete.
 | Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Local reference target split passes           |
 | Packaging removal           | Default packages/wheels have no old collision runtime deps  | Metadata/link/install/py312 wheel passed      |
 | Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Started; alias/component coverage             |
-| Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Factory/Python/C++ create/CMake facades done  |
+| Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Factories/C++/CMake/header facades done       |
 | Built-in architecture       | API-clean, scalable, performance-oriented native layer      | Started; `01-design.md` gates documented      |
 | Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Required in this PR                           |
 | Legacy backend deletion     | Old runtime backend sources removed from default stack      | Blocked on migration gates                    |
@@ -1473,27 +1473,75 @@ build/native-compat-install`
     FCL, Bullet, ODE, or libccd collision runtime libraries.
 - Native compatibility package smoke:
   - Command:
-    `pixi run -- cmake -S build/native-compat-smoke -B
-    build/native-compat-smoke/build -DCMAKE_PREFIX_PATH="$PWD/build/native-compat-install;$CONDA_PREFIX"
-&& pixi run -- cmake --build build/native-compat-smoke/build --parallel 4
-&& build/native-compat-smoke/build/native_collision_compat_smoke`
+    `pixi run -- bash -lc 'set -euo pipefail; rm -rf
+build/native-compat-install; cmake --install build/default/cpp/Release
+--prefix build/native-compat-install --component headers; cmake --install
+build/default/cpp/Release --prefix build/native-compat-install; rm -rf
+build/native-compat-smoke/build; cmake -S build/native-compat-smoke -B
+build/native-compat-smoke/build
+-DCMAKE_PREFIX_PATH="$PWD/build/native-compat-install;$CONDA_PREFIX";
+cmake --build build/native-compat-smoke/build --parallel 4;
+build/native-compat-smoke/build/native_collision_compat_smoke'`
   - Commit: working tree after adding native-backed compatibility component
-    facades.
+    and detector-header facades.
   - Result: passed. A downstream-style project using
     `find_package(DART REQUIRED COMPONENTS collision-fcl collision-bullet
-collision-ode)` linked the compatibility interface targets and verified
-    factory keys `fcl`, `bullet`, and `ode` all construct detectors reporting
-    type `dart`.
+collision-ode)` linked the compatibility interface targets, included the
+    installed legacy detector headers, and verified factory keys plus
+    `FCLCollisionDetector::create()`, `BulletCollisionDetector::create()`, and
+    `OdeCollisionDetector::create()` all construct detectors reporting type
+    `dart`.
+- `pixi run config && pixi run -- cmake --build build/default/cpp/Release
+--target dart_component_collision-fcl dart_component_collision-bullet
+dart_component_collision-ode dart --parallel 8 && pixi run -- bash -lc
+'set -euo pipefail; rm -rf build/native-compat-install; cmake --install
+build/default/cpp/Release --prefix build/native-compat-install --component
+headers; cmake --install build/default/cpp/Release --prefix
+build/native-compat-install; rm -rf build/native-compat-smoke/build; cmake -S
+build/native-compat-smoke -B build/native-compat-smoke/build
+-DCMAKE_PREFIX_PATH="$PWD/build/native-compat-install;$CONDA_PREFIX"; cmake
+--build build/native-compat-smoke/build --parallel 4;
+build/native-compat-smoke/build/native_collision_compat_smoke; if find
+build/native-compat-install/lib -maxdepth 1 \( -type f -o -type l \) | sort |
+rg "dart-collision-reference|lib(fcl|bullet|ode|ccd)"; then exit 1; fi'`
+  - Commit: working tree after adding native-only installed legacy detector
+    header facades.
+  - Result: passed. Default configure kept old collision engines and reference
+    tests/benchmarks `OFF`; the compatibility component targets built, the
+    installed downstream smoke included FCL/Bullet/ODE detector compatibility
+    headers and verified factory keys plus legacy `create()` calls report
+    `dart`, and the installed library directory contained no reference
+    collision libraries or FCL/Bullet/ODE/libccd runtime links.
+- `pixi run --locked -e collision-reference -- cmake --build
+build/collision-reference/cpp/Release --target dart-collision-reference-fcl
+dart-collision-reference-bullet dart-collision-reference-ode
+test_reference_backends UNIT_collision_FCLCollisionDetector
+UNIT_collision_BulletCollisionShapes UNIT_collision_OdeHeightmap
+UNIT_collision_OdeCylinderMesh --parallel 8`
+  - Commit: working tree after adding native-only installed legacy detector
+    header facades.
+  - Result: passed. The explicit reference libraries and focused reference
+    detector targets still build with only known deprecated compatibility-header
+    warnings.
+- `pixi run --locked -e collision-reference -- ctest --test-dir
+build/collision-reference/cpp/Release -R
+'test_reference_backends|UNIT_collision_FCLCollisionDetector|UNIT_collision_BulletCollisionShapes|UNIT_collision_OdeHeightmap|UNIT_collision_OdeCylinderMesh'
+--output-on-failure`
+  - Commit: working tree after adding native-only installed legacy detector
+    header facades.
+  - Result: passed, 5/5 tests.
 - `pixi run lint`
-  - Commit: working tree after reference target split, compatibility component
-    facades, and docs update.
+  - Commit: working tree after native-only installed legacy detector header
+    facades and docs update.
   - Result: passed. This reran the default native-only configure and formatting
-    suite after the CMake target rename.
+    suite after the compatibility header install change.
 - `pixi run check-docs-policy`
-  - Commit: working tree after reference target split docs update.
+  - Commit: working tree after native-only installed legacy detector header
+    facades and docs update.
   - Result: passed.
 - `git diff --check`
-  - Commit: working tree after reference target split docs update.
+  - Commit: working tree after native-only installed legacy detector header
+    facades and docs update.
   - Result: passed.
 
 ## Known Risks

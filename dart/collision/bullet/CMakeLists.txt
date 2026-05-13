@@ -1,8 +1,16 @@
 # Dependency checks
+file(GLOB compat_hdrs "compat/*.hpp")
+dart_format_add(${compat_hdrs})
+
 if(NOT DART_BUILD_COLLISION_BULLET)
   set(DART_HAVE_BULLET FALSE CACHE BOOL "Check if BULLET found." FORCE)
   unset(BT_USE_DOUBLE_PRECISION CACHE)
   unset(BT_USE_DOUBLE_PRECISION)
+  install(
+    FILES ${compat_hdrs}
+    DESTINATION include/dart/collision/bullet
+    COMPONENT headers
+  )
   return()
 endif()
 

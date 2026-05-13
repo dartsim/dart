@@ -1,9 +1,16 @@
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
+file(GLOB compat_hdrs "compat/*.hpp")
+dart_format_add(${compat_hdrs})
 
 if(NOT DART_BUILD_COLLISION_FCL)
   set(DART_HAVE_FCL FALSE CACHE BOOL "Check if fcl found." FORCE)
+  install(
+    FILES ${compat_hdrs}
+    DESTINATION include/dart/collision/fcl
+    COMPONENT headers
+  )
   return()
 endif()
 
