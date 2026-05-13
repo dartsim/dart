@@ -108,6 +108,68 @@ SegmentClosestResult closestPointsBetweenSegments(
   return result;
 }
 
+bool collideParallelCylinders(
+    double r1,
+    double h1,
+    const Eigen::Vector3d& axis1,
+    const Eigen::Vector3d& center1,
+    double r2,
+    double h2,
+    const Eigen::Vector3d& center2,
+    CollisionResult& result)
+{
+  constexpr double eps = 1e-10;
+
+  const Eigen::Vector3d centerDelta = center2 - center1;
+  const double axialOffset = centerDelta.dot(axis1);
+  const Eigen::Vector3d lateralOffset = centerDelta - axis1 * axialOffset;
+  const double lateralDist = lateralOffset.norm();
+
+  const double axialOverlap = h1 + h2 - std::abs(axialOffset);
+  const double lateralOverlap = r1 + r2 - lateralDist;
+  if (axialOverlap < -eps || lateralOverlap < -eps) {
+    return false;
+  }
+
+  const bool useAxialContact
+      = lateralDist < eps || axialOverlap <= lateralOverlap;
+
+  ContactPoint contact;
+  if (useAxialContact) {
+    const double direction = axialOffset >= 0.0 ? 1.0 : -1.0;
+    const Eigen::Vector3d normal = -direction * axis1;
+
+    const Eigen::Vector3d cap1 = center1 + axis1 * (direction * h1);
+    const Eigen::Vector3d cap2 = center2 - axis1 * (direction * h2);
+
+    contact.position = (cap1 + cap2) * 0.5;
+    contact.normal = normal;
+    contact.depth = std::max(0.0, axialOverlap);
+  } else {
+    const Eigen::Vector3d lateralDir = lateralOffset / lateralDist;
+    const Eigen::Vector3d normal = -lateralDir;
+
+    const double min1 = -h1;
+    const double max1 = h1;
+    const double min2 = axialOffset - h2;
+    const double max2 = axialOffset + h2;
+    const double contactAxial
+        = 0.5 * (std::max(min1, min2) + std::min(max1, max2));
+
+    const Eigen::Vector3d point1
+        = center1 + axis1 * contactAxial + lateralDir * r1;
+    const Eigen::Vector3d point2
+        = center1 + axis1 * contactAxial + lateralOffset - lateralDir * r2;
+
+    contact.position = (point1 + point2) * 0.5;
+    contact.normal = normal;
+    contact.depth = std::max(0.0, lateralOverlap);
+  }
+
+  result.addContact(contact);
+  return true;
+}
+
 } // namespace
 
 bool collideCylinders(
@@ -131,6 +193,11 @@ bool collideCylinders(
   const Eigen::Vector3d axis2 = transform2.rotation().col(2);
   const Eigen::Vector3d center1 = transform1.translation();
   const Eigen::Vector3d center2 = transform2.translation();
+
+  if (std::abs(axis1.dot(axis2)) > 1.0 - 1e-6) {
+    return collideParallelCylinders(
+        r1, h1, axis1, center1, r2, h2, center2, result);
+  }
 
   const Eigen::Vector3d top1 = center1 + axis1 * h1;
   const Eigen::Vector3d bot1 = center1 - axis1 * h1;

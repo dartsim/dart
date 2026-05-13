@@ -53,6 +53,38 @@ namespace dart::collision::native {
 
 namespace {
 
+template <typename CollideFn>
+bool collideWithFlippedNormals(
+    CollisionResult& result,
+    const CollisionOption& option,
+    CollideFn&& collideFn)
+{
+  const auto existingContacts = result.numContacts();
+  if (option.enableContact && existingContacts >= option.maxNumContacts) {
+    return false;
+  }
+
+  CollisionOption localOption = option;
+  if (option.enableContact) {
+    localOption.maxNumContacts = option.maxNumContacts - existingContacts;
+  }
+
+  CollisionResult localResult;
+  const bool hit = collideFn(localResult, localOption);
+  if (!hit) {
+    return false;
+  }
+
+  const auto numContacts = localResult.numContacts();
+  for (std::size_t i = 0; i < numContacts; ++i) {
+    ContactPoint contact = localResult.getContact(i);
+    contact.normal = -contact.normal;
+    result.addContact(contact);
+  }
+
+  return true;
+}
+
 bool collideShapes(
     const Shape* shape1,
     const Eigen::Isometry3d& tf1,
@@ -166,7 +198,12 @@ bool collideShapes(
   if (type1 == ShapeType::Sphere && type2 == ShapeType::Box) {
     const auto* s = static_cast<const SphereShape*>(shape1);
     const auto* b = static_cast<const BoxShape*>(shape2);
-    return collideSphereBox(*s, tf1, *b, tf2, result, option);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collideSphereBox(*s, tf1, *b, tf2, local, opt);
+        });
   }
 
   if (type1 == ShapeType::Box && type2 == ShapeType::Sphere) {
@@ -190,13 +227,23 @@ bool collideShapes(
   if (type1 == ShapeType::Sphere && type2 == ShapeType::Capsule) {
     const auto* s = static_cast<const SphereShape*>(shape1);
     const auto* c = static_cast<const CapsuleShape*>(shape2);
-    return collideCapsuleSphere(*c, tf2, *s, tf1, result, option);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collideCapsuleSphere(*c, tf2, *s, tf1, local, opt);
+        });
   }
 
   if (type1 == ShapeType::Capsule && type2 == ShapeType::Box) {
     const auto* c = static_cast<const CapsuleShape*>(shape1);
     const auto* b = static_cast<const BoxShape*>(shape2);
-    return collideCapsuleBox(*c, tf1, *b, tf2, result, option);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collideCapsuleBox(*c, tf1, *b, tf2, local, opt);
+        });
   }
 
   if (type1 == ShapeType::Box && type2 == ShapeType::Capsule) {
@@ -208,7 +255,12 @@ bool collideShapes(
   if (type1 == ShapeType::Plane && type2 == ShapeType::Sphere) {
     const auto* p = static_cast<const PlaneShape*>(shape1);
     const auto* s = static_cast<const SphereShape*>(shape2);
-    return collidePlaneSphere(*p, tf1, *s, tf2, result, option);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collidePlaneSphere(*p, tf1, *s, tf2, local, opt);
+        });
   }
 
   if (type1 == ShapeType::Sphere && type2 == ShapeType::Plane) {
@@ -220,7 +272,12 @@ bool collideShapes(
   if (type1 == ShapeType::Plane && type2 == ShapeType::Box) {
     const auto* p = static_cast<const PlaneShape*>(shape1);
     const auto* b = static_cast<const BoxShape*>(shape2);
-    return collidePlaneBox(*p, tf1, *b, tf2, result, option);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collidePlaneBox(*p, tf1, *b, tf2, local, opt);
+        });
   }
 
   if (type1 == ShapeType::Box && type2 == ShapeType::Plane) {
@@ -232,7 +289,12 @@ bool collideShapes(
   if (type1 == ShapeType::Plane && type2 == ShapeType::Capsule) {
     const auto* p = static_cast<const PlaneShape*>(shape1);
     const auto* c = static_cast<const CapsuleShape*>(shape2);
-    return collidePlaneCapsule(*p, tf1, *c, tf2, result, option);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collidePlaneCapsule(*p, tf1, *c, tf2, local, opt);
+        });
   }
 
   if (type1 == ShapeType::Capsule && type2 == ShapeType::Plane) {
@@ -256,7 +318,12 @@ bool collideShapes(
   if (type1 == ShapeType::Sphere && type2 == ShapeType::Cylinder) {
     const auto* s = static_cast<const SphereShape*>(shape1);
     const auto* c = static_cast<const CylinderShape*>(shape2);
-    return collideCylinderSphere(*c, tf2, *s, tf1, result, option);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collideCylinderSphere(*c, tf2, *s, tf1, local, opt);
+        });
   }
 
   if (type1 == ShapeType::Cylinder && type2 == ShapeType::Box) {
@@ -268,7 +335,12 @@ bool collideShapes(
   if (type1 == ShapeType::Box && type2 == ShapeType::Cylinder) {
     const auto* b = static_cast<const BoxShape*>(shape1);
     const auto* c = static_cast<const CylinderShape*>(shape2);
-    return collideCylinderBox(*c, tf2, *b, tf1, result, option);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collideCylinderBox(*c, tf2, *b, tf1, local, opt);
+        });
   }
 
   if (type1 == ShapeType::Cylinder && type2 == ShapeType::Capsule) {
@@ -280,7 +352,12 @@ bool collideShapes(
   if (type1 == ShapeType::Capsule && type2 == ShapeType::Cylinder) {
     const auto* cap = static_cast<const CapsuleShape*>(shape1);
     const auto* cyl = static_cast<const CylinderShape*>(shape2);
-    return collideCylinderCapsule(*cyl, tf2, *cap, tf1, result, option);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collideCylinderCapsule(*cyl, tf2, *cap, tf1, local, opt);
+        });
   }
 
   if (type1 == ShapeType::Cylinder && type2 == ShapeType::Plane) {
@@ -292,7 +369,12 @@ bool collideShapes(
   if (type1 == ShapeType::Plane && type2 == ShapeType::Cylinder) {
     const auto* p = static_cast<const PlaneShape*>(shape1);
     const auto* c = static_cast<const CylinderShape*>(shape2);
-    return collideCylinderPlane(*c, tf2, *p, tf1, result, option);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collideCylinderPlane(*c, tf2, *p, tf1, local, opt);
+        });
   }
 
   if (type1 == ShapeType::Mesh && type2 == ShapeType::Mesh) {
@@ -310,7 +392,12 @@ bool collideShapes(
   if (type1 == ShapeType::Plane && type2 == ShapeType::Mesh) {
     const auto* plane = static_cast<const PlaneShape*>(shape1);
     const auto* mesh = static_cast<const MeshShape*>(shape2);
-    return collidePlaneMesh(*plane, tf1, *mesh, tf2, result, option);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collidePlaneMesh(*plane, tf1, *mesh, tf2, local, opt);
+        });
   }
 
   if (type1 == ShapeType::Mesh && type2 != ShapeType::Convex) {

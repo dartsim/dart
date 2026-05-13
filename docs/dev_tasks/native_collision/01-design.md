@@ -99,6 +99,16 @@ dirty membership, transform, and shape data before queries. This keeps the
 public API stable while allowing the native core to evolve toward better
 broadphase traversal, batch queries, and low-allocation hot paths.
 
+The native query result contract is also part of the layer boundary. Public
+DART contacts must be expressed in collision object order: `collisionObject1`
+and `collisionObject2` identify the pair as reported to the caller, and the
+contact normal must follow that same order even when the native dispatcher calls
+a canonical shape-specialized function in the opposite order. Canonical
+narrowphase functions should stay shape-specialized and small; dispatch or
+result assembly is responsible for flipping normals when object order differs.
+This keeps the public API clean and deterministic without duplicating
+narrowphase algorithms for every symmetric pair.
+
 ## North-Star Layer Design
 
 This table is the review contract for the built-in collision component. A row
@@ -125,6 +135,9 @@ The design has four invariants:
 - One optimization surface: performance work adds native capabilities,
   profiler labels, and benchmarks without exposing engine-specific knobs in
   public APIs.
+- One contact convention: native and public tests must pin contact normals,
+  points, and depths to DART pair-order semantics so solver-facing downstream
+  behavior is not an accident of broadphase pair order.
 
 ## Layer Acceptance Gates
 
@@ -140,12 +153,16 @@ follow-up nice-to-haves.
 - Scalability gate: the DART adapter owns persistent scene state with stable
   handles, dirty membership/transform/shape synchronization, reusable
   broadphase/query snapshots, deterministic result ordering, and clear cache
-  invalidation for object removal and dynamic geometry mutation.
+  invalidation for object removal and dynamic geometry mutation. Pair-order
+  contact normal tests must cover direct native dispatch and the public DART
+  adapter path.
 - Performance gate: native hot paths use compact geometry data,
   shape-specialized dispatch, persistent broadphase state, reusable scratch,
   contact/manifold caches with explicit lifetimes, and profiler/benchmark
   labels for adapter sync, broadphase update, candidate traversal,
   narrowphase, distance, raycast, contact generation, and result conversion.
+  Symmetric-pair handling should reuse canonical narrowphase functions and keep
+  object-order normal fixes in thin dispatch/result wrappers.
 - Reference isolation gate: FCL, Bullet, and ODE are reachable only from
   explicit reference correctness tests and comparative benchmarks. Native-only
   runtime, dartpy, wheel, installed-package, and downstream compatibility paths
@@ -188,15 +205,16 @@ facades, and old-engine implementation headers/sources live under explicit
 `reference/` paths used by reference tests and benchmarks. Runtime source
 isolation is now checked by lint so non-reference DART source paths cannot
 include old-engine or reference-backend headers, and legacy implementation
-sources cannot move back outside `reference/` paths. The remaining design gaps
-are CI and packaging evidence at matrix scale, downstream migration/deprecation
-evidence, solver-facing gz-physics contact correctness, and broader recurring
+sources cannot move back outside `reference/` paths. The native dispatcher now
+has focused tests for pair-order contact normals across direct narrowphase,
+snapshot collision, and public DART collision group paths; custom mesh-plane
+and stacked parallel-cylinder gz regressions are reduced and fixed on the DART
+side. The remaining design gaps are CI and packaging evidence at matrix scale,
+downstream migration/deprecation evidence, the focused gz-physics
+`JointDetach` exact-zero velocity residual, and broader recurring
 correctness/performance guardrails across the public DART adapter and native
-core paths. The latest focused gz-physics run still fails mesh-plane and
-joint/contact feature cases, so compatibility facades are structurally correct
-but downstream correctness is not complete. The completed PR must make it
-impossible for ordinary DART collision runtime selection to instantiate or link
-FCL, Bullet, or ODE.
+core paths. The completed PR must make it impossible for ordinary DART
+collision runtime selection to instantiate or link FCL, Bullet, or ODE.
 
 ## Code Ownership Map
 
@@ -213,7 +231,9 @@ The final code layout should make the layer boundary visible during review:
 - `dart/collision/native/`: built-in scene/query engine. This layer owns
   compact geometry, object handles, broadphase state, narrowphase dispatch,
   distance, raycast, contact/manifold generation, cache invalidation,
-  profiling scopes, and benchmark-facing statistics.
+  profiling scopes, benchmark-facing statistics, and canonical shape-pair
+  functions whose results are oriented by dispatch/result wrappers when the
+  public pair order differs.
 - Reference harnesses: optional tests and benchmarks that compare public DART
   behavior against FCL, Bullet, or ODE. These harnesses must not be reachable
   from default runtime targets.

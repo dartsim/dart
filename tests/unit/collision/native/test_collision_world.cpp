@@ -89,6 +89,31 @@ TEST(CollisionWorld, TwoSpheres_Colliding)
   EXPECT_GE(result.numContacts(), 1u);
 }
 
+TEST(CollisionWorld, SnapshotSphereBoxNormalFollowsPairOrder)
+{
+  CollisionWorld world;
+
+  Eigen::Isometry3d tfSphere = Eigen::Isometry3d::Identity();
+  tfSphere.translation() = Eigen::Vector3d(1.25, 0.0, 0.0);
+  auto sphere
+      = world.createObject(std::make_unique<SphereShape>(1.0), tfSphere);
+  auto box
+      = world.createObject(std::make_unique<BoxShape>(Eigen::Vector3d::Ones()));
+
+  BroadPhaseSnapshot snapshot;
+  snapshot.pairs.push_back({sphere.getId(), box.getId()});
+  snapshot.numObjects = 2u;
+
+  CollisionOption option;
+  CollisionResult result;
+
+  const bool hasCollision = world.collideAll(snapshot, option, result);
+
+  EXPECT_TRUE(hasCollision);
+  ASSERT_GT(result.numContacts(), 0u);
+  EXPECT_GT(result.getContact(0).normal.x(), 0.9);
+}
+
 TEST(CollisionWorld, TwoSpheres_Separated)
 {
   CollisionWorld world;

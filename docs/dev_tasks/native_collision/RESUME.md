@@ -79,11 +79,16 @@ ODE, libccd, or explicit collision reference backend headers, and legacy engine
 implementation sources cannot move back outside `reference/` paths.
 The latest compatibility cleanup preserves legacy direct C++ facade display
 strings for gz-physics while keeping those facades native-backed. It also adds
-native plane/mesh dispatch, unbounded-plane AABB coverage, and focused DART
-mesh-plane regression tests. Focused DART tests pass, but the latest
-gz-physics runs are not green: `COMMON_TEST_collisions_dartsim`
-`MeshAndPlane` still free-falls, and detachable-joint, joint-feature, and
-transmitted-wrench tests still show solver-facing contact differences.
+native plane/mesh dispatch, unbounded-plane AABB coverage, focused DART
+mesh-plane regression tests, pair-order contact normal tests, and
+parallel-cylinder cap/side contact handling for stacked support. Focused DART
+tests pass. The latest focused gz-physics run now passes
+`COMMON_TEST_collisions_dartsim`, `COMMON_TEST_detachable_joint_dartsim`, and
+`COMMON_TEST_joint_transmitted_wrench_features_dartsim`. The remaining focused
+gz blocker is `COMMON_TEST_joint_features_dartsim`
+`JointFeaturesDetachTest/0.JointDetach`, which reports tiny off-axis velocity
+components against exact-zero tolerances after richer box/cylinder contact
+support.
 
 ## Current Branch
 
@@ -94,11 +99,13 @@ the exact count.
 ## Immediate Next Step
 
 Continue from `docs/dev_tasks/native_collision/04-reference-gap-analysis.md`.
-The immediate blocker is the current gz-physics regression. Reduce
-`COMMON_TEST_collisions_dartsim` `MeshAndPlane` to a DART-side test using the
-gz custom mesh shape path or equivalent mesh data, inspect the generated
-contacts, and fix native contact generation or adapter conversion before
-rerunning the focused gz subset.
+The immediate blocker is now the remaining gz-physics `JointDetach` residual.
+Reduce `COMMON_TEST_joint_features_dartsim`
+`JointFeaturesDetachTest/0.JointDetach` to DART/gz contact evidence, decide
+whether the tiny off-axis velocity components come from a native contact bug,
+model-level filtering semantics, or downstream exact-zero tolerance debt, then
+fix or document the accepted downstream-compatible path before rerunning the
+full gz gate.
 After that, continue the broader plan below.
 
 The persistent DART adapter scene path is now started: public collision,
@@ -153,7 +160,11 @@ unavailable.
 contract for that remaining cleanup: public API and compatibility facades
 outside the DART adapter, `dart/collision/native/` as the scene/query core, and
 explicit gates for API cleanliness, scalability, performance hooks, reference
-isolation, and gz-physics-safe compatibility facades.
+isolation, and gz-physics-safe compatibility facades. The latest design update
+also pins the contact result contract: native contacts reported through public
+DART APIs must follow collision object pair order, with canonical
+shape-specialized narrowphase functions wrapped by dispatch/result orientation
+when needed.
 Package-export cleanup has also started: native-only `find_package(DART)` now
 defaults to `dart` only, generated component templates no longer emit
 deprecated Bullet/ODE collision component text, and a native-only install probe
@@ -239,8 +250,8 @@ libraries.
   simulation-experimental tests, Python tests, and docs.
 - A previous gz-physics run passed 65/65 tests and the plugin link check. That
   remains historical evidence for the earlier checkpoint, but it does not close
-  the current source state because the latest focused gz-physics run fails
-  `MeshAndPlane` and joint/contact feature cases.
+  the current source state because the latest focused gz-physics run still has
+  the `JointDetach` exact-zero velocity residual.
 - Tests and benchmark comments now use native collision naming except for the
   explicit `"experimental"` compatibility alias.
 - gz-physics compatibility and performance parity are explicit gates, not

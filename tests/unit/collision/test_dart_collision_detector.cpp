@@ -309,6 +309,7 @@ TEST(DartCollisionGroup, MeshPlaneCollisionUsesBroadphase)
   CollisionResult result;
   ASSERT_TRUE(group->collide(option, &result));
   EXPECT_GT(result.getNumContacts(), 0u);
+  EXPECT_LT(result.getContact(0).normal.z(), -0.9);
 }
 
 TEST(DartCollisionDetector, CylinderBoxPairIsSupported)

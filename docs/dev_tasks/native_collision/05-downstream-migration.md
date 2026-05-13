@@ -23,10 +23,12 @@ compatibility display strings, but those strings do not select external
 runtime engines.
 
 Current status: the DART-side compatibility facade tests cover those display
-strings, but the latest focused gz-physics run is not green. `MeshAndPlane`
-still free-falls through the plane, and joint/contact feature tests still fail.
-Those failures must be fixed before this migration plan can be treated as
-validated downstream evidence.
+strings, and the latest focused gz-physics run now passes
+`COMMON_TEST_collisions_dartsim`, `COMMON_TEST_detachable_joint_dartsim`, and
+`COMMON_TEST_joint_transmitted_wrench_features_dartsim` through the built-in
+detector. `COMMON_TEST_joint_features_dartsim` still fails the
+`JointDetach` exact-zero off-axis velocity checks, so the migration plan is not
+yet validated downstream evidence.
 
 ## Downstream Work
 
@@ -49,7 +51,9 @@ Downstream runtime code should migrate in this order:
 The north-star PR cannot delete retained compatibility facades until these
 checks pass:
 
-1. `pixi run -e gazebo test-gz` passes without downstream patches.
+1. `pixi run -e gazebo test-gz` passes without downstream patches. The latest
+   focused run passes collisions, detachable joints, and transmitted wrench
+   features; `JointDetach` remains the current blocker.
 2. A downstream package smoke that requests `collision-fcl`,
    `collision-bullet`, and `collision-ode` links only the built-in `dart` stack.
 3. Python compatibility names construct and report detector type `dart`.

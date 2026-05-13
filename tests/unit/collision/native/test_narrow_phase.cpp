@@ -152,6 +152,28 @@ TEST(NarrowPhase, SphereBox_Colliding)
   EXPECT_GE(result.numContacts(), 1u);
 }
 
+TEST(NarrowPhase, SphereBox_NormalFollowsObjectOrder)
+{
+  CollisionWorld world;
+
+  Eigen::Isometry3d tfSphere = Eigen::Isometry3d::Identity();
+  tfSphere.translation() = Eigen::Vector3d(1.25, 0.0, 0.0);
+  auto sphereObj
+      = world.createObject(std::make_unique<SphereShape>(1.0), tfSphere);
+
+  auto boxObj
+      = world.createObject(std::make_unique<BoxShape>(Eigen::Vector3d::Ones()));
+
+  CollisionOption option;
+  CollisionResult result;
+
+  const bool hit = NarrowPhase::collide(sphereObj, boxObj, option, result);
+
+  EXPECT_TRUE(hit);
+  ASSERT_GT(result.numContacts(), 0u);
+  EXPECT_GT(result.getContact(0).normal.x(), 0.9);
+}
+
 TEST(NarrowPhase, BoxSphere_Colliding)
 {
   CollisionWorld world;
@@ -171,6 +193,32 @@ TEST(NarrowPhase, BoxSphere_Colliding)
   EXPECT_GE(result.numContacts(), 1u);
 
   EXPECT_NEAR(result.getContact(0).normal.x(), -1.0, 0.01);
+}
+
+TEST(NarrowPhase, PlaneMesh_NormalFollowsObjectOrder)
+{
+  CollisionWorld world;
+  auto planeObj = world.createObject(
+      std::make_unique<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+
+  auto mesh = std::make_unique<MeshShape>(
+      std::vector<Eigen::Vector3d>{
+          Eigen::Vector3d(-0.5, -0.5, 0.0),
+          Eigen::Vector3d(0.5, -0.5, 0.0),
+          Eigen::Vector3d(0.0, 0.5, 0.0)},
+      std::vector<Eigen::Vector3i>{Eigen::Vector3i(0, 1, 2)});
+  Eigen::Isometry3d meshTf = Eigen::Isometry3d::Identity();
+  meshTf.translation() = Eigen::Vector3d(0.0, 0.0, -0.25);
+  auto meshObj = world.createObject(std::move(mesh), meshTf);
+
+  CollisionOption option;
+  CollisionResult result;
+
+  const bool hit = NarrowPhase::collide(planeObj, meshObj, option, result);
+
+  EXPECT_TRUE(hit);
+  ASSERT_GT(result.numContacts(), 0u);
+  EXPECT_LT(result.getContact(0).normal.z(), -0.9);
 }
 
 TEST(NarrowPhase, InvalidHandle_NoCollision)

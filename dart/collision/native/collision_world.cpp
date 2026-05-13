@@ -59,6 +59,38 @@ constexpr int pairKey(ShapeType type1, ShapeType type2)
   return (static_cast<int>(type1) << 8) | static_cast<int>(type2);
 }
 
+template <typename CollideFn>
+bool collideWithFlippedNormals(
+    CollisionResult& result,
+    const CollisionOption& option,
+    CollideFn&& collideFn)
+{
+  const auto existingContacts = result.numContacts();
+  if (option.enableContact && existingContacts >= option.maxNumContacts) {
+    return false;
+  }
+
+  CollisionOption localOption = option;
+  if (option.enableContact) {
+    localOption.maxNumContacts = option.maxNumContacts - existingContacts;
+  }
+
+  CollisionResult localResult;
+  const bool hit = collideFn(localResult, localOption);
+  if (!hit) {
+    return false;
+  }
+
+  const auto numContacts = localResult.numContacts();
+  for (std::size_t i = 0; i < numContacts; ++i) {
+    ContactPoint contact = localResult.getContact(i);
+    contact.normal = -contact.normal;
+    result.addContact(contact);
+  }
+
+  return true;
+}
+
 bool collideShapePair(
     const Shape* shape1,
     const Eigen::Isometry3d& tf1,
@@ -88,13 +120,18 @@ bool collideShapePair(
           result,
           option);
     case pairKey(ShapeType::Sphere, ShapeType::Box):
-      return collideSphereBox(
-          *static_cast<const SphereShape*>(shape1),
-          tf1,
-          *static_cast<const BoxShape*>(shape2),
-          tf2,
+      return collideWithFlippedNormals(
           result,
-          option);
+          option,
+          [&](CollisionResult& local, const CollisionOption& opt) {
+            return collideSphereBox(
+                *static_cast<const SphereShape*>(shape1),
+                tf1,
+                *static_cast<const BoxShape*>(shape2),
+                tf2,
+                local,
+                opt);
+          });
     case pairKey(ShapeType::Box, ShapeType::Sphere):
       return collideSphereBox(
           *static_cast<const SphereShape*>(shape2),
@@ -120,21 +157,31 @@ bool collideShapePair(
           result,
           option);
     case pairKey(ShapeType::Sphere, ShapeType::Capsule):
-      return collideCapsuleSphere(
-          *static_cast<const CapsuleShape*>(shape2),
-          tf2,
-          *static_cast<const SphereShape*>(shape1),
-          tf1,
+      return collideWithFlippedNormals(
           result,
-          option);
+          option,
+          [&](CollisionResult& local, const CollisionOption& opt) {
+            return collideCapsuleSphere(
+                *static_cast<const CapsuleShape*>(shape2),
+                tf2,
+                *static_cast<const SphereShape*>(shape1),
+                tf1,
+                local,
+                opt);
+          });
     case pairKey(ShapeType::Capsule, ShapeType::Box):
-      return collideCapsuleBox(
-          *static_cast<const CapsuleShape*>(shape1),
-          tf1,
-          *static_cast<const BoxShape*>(shape2),
-          tf2,
+      return collideWithFlippedNormals(
           result,
-          option);
+          option,
+          [&](CollisionResult& local, const CollisionOption& opt) {
+            return collideCapsuleBox(
+                *static_cast<const CapsuleShape*>(shape1),
+                tf1,
+                *static_cast<const BoxShape*>(shape2),
+                tf2,
+                local,
+                opt);
+          });
     case pairKey(ShapeType::Box, ShapeType::Capsule):
       return collideCapsuleBox(
           *static_cast<const CapsuleShape*>(shape2),

@@ -67,6 +67,8 @@ TEST(CylinderCylinder, ParallelOverlap)
 
   EXPECT_TRUE(collided);
   EXPECT_GE(result.numContacts(), 1u);
+  EXPECT_LT(result.getContact(0).normal.x(), -0.9);
+  EXPECT_NEAR(result.getContact(0).depth, 0.2, 1e-9);
 }
 
 TEST(CylinderCylinder, StackedOnTop)
@@ -83,6 +85,9 @@ TEST(CylinderCylinder, StackedOnTop)
 
   EXPECT_TRUE(collided);
   EXPECT_GE(result.numContacts(), 1u);
+  EXPECT_LT(result.getContact(0).normal.z(), -0.9);
+  EXPECT_NEAR(result.getContact(0).depth, 0.2, 1e-9);
+  EXPECT_NEAR(result.getContact(0).position.z(), 0.9, 1e-9);
 }
 
 TEST(CylinderCylinder, Perpendicular)
