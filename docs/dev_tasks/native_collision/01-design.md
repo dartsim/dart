@@ -99,6 +99,32 @@ dirty membership, transform, and shape data before queries. This keeps the
 public API stable while allowing the native core to evolve toward better
 broadphase traversal, batch queries, and low-allocation hot paths.
 
+## Code Ownership Map
+
+The final code layout should make the layer boundary visible during review:
+
+- `dart/collision/`: stable public DART collision concepts plus temporary
+  compatibility facades. This layer may define detector/group/query/filter and
+  result APIs, but it should not expose FCL, Bullet, ODE, or native-core
+  implementation details.
+- `dart/collision/dart/`: DART adapter implementation. This layer owns
+  `DartCollisionDetector`, `DartCollisionGroup`, adapter-owned scene sync,
+  DART shape/result/filter conversion, factory registration, legacy factory
+  alias routing, deterministic ordering, and compatibility-name behavior.
+- `dart/collision/native/`: built-in scene/query engine. This layer owns
+  compact geometry, object handles, broadphase state, narrowphase dispatch,
+  distance, raycast, contact/manifold generation, cache invalidation,
+  profiling scopes, and benchmark-facing statistics.
+- Reference harnesses: optional tests and benchmarks that compare public DART
+  behavior against FCL, Bullet, or ODE. These harnesses must not be reachable
+  from default runtime targets.
+
+The dependency rule is one-way: public and compatibility surfaces call into the
+DART adapter; the DART adapter calls the native core; the native core never
+includes old runtime backend headers. This is what keeps the API clean while
+still allowing the native implementation to use specialized internal data
+structures.
+
 ## Installed Package And API Boundary
 
 The installed package surface is part of the architecture contract. Downstream
@@ -192,6 +218,28 @@ APIs:
 - Treat comparative benchmarks as optimization guidance and native-only
   benchmarks as long-term regression protection after old runtime backends are
   removed.
+
+## Architecture Review Checklist
+
+Use this checklist before marking the collision abstraction cleanup complete:
+
+- API cleanliness: public headers, factory keys, and installed package exports
+  present `dart` as the canonical detector; retained legacy names are visibly
+  compatibility facades or explicit reference-only surfaces.
+- Source compatibility: gz-physics-required names still compile, but selecting
+  those names cannot instantiate an external runtime engine.
+- Layering: `dart/collision/dart/` owns DART adaptation and compatibility
+  routing; `dart/collision/native/` owns algorithms and query state; reference
+  engines are absent from default runtime target links.
+- Scalability: public DART queries use persistent scene state, stable handles,
+  dirty transform/shape synchronization, persistent broadphase data, reusable
+  query snapshots, and deterministic result ordering.
+- Performance: hot paths avoid external-engine virtual dispatch and repeated
+  allocation; benchmark/profiler labels expose adapter sync, broadphase,
+  candidate traversal, narrowphase, distance, raycast, contact generation, and
+  result conversion costs.
+- Correctness: every feature path kept in the public API has native tests, and
+  reference comparisons are optional gates rather than runtime dependencies.
 
 ## Feature Surface To Cover
 

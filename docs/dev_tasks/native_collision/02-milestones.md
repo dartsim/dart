@@ -162,13 +162,15 @@ Current working-tree status: this phase is started. The branch now has
 `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` CMake options, gates focused
 reference-only tests and comparative benchmarks behind them, and has local
 reference-disabled/reference-enabled evidence in `03-evidence-gates.md`.
-The reference toggles now propagate through the main debug, dartpy, install,
-coverage, ASAN, Windows, and wheel configure entry points. Core native-only
-link and installed package-export inspection now show no old collision
-component targets or old collision runtime libraries in the native-only install
-metadata. Broader dependency-metadata, wheel-artifact, and
-downstream-component inspection are still required before this phase is
-complete.
+Normal pixi configure paths now default FCL, Bullet, ODE, reference tests, and
+reference benchmarks to `OFF`; reference comparison jobs opt in through
+`DART_BUILD_COLLISION_*_OVERRIDE=ON`. The reference toggles now propagate
+through the main debug, dartpy, install, coverage, ASAN, Windows, and wheel
+configure entry points. Core native-only link and installed package-export
+inspection now show no old collision component targets or old collision runtime
+libraries in the native-only install metadata. Broader dependency-metadata,
+wheel-artifact, and downstream-component inspection are still required before
+this phase is complete.
 
 Success criteria:
 
@@ -199,14 +201,15 @@ Purpose: make native collision the only normal runtime collision stack while
 retaining legacy backends only where they are intentionally requested for
 reference or benchmark work.
 
-Current working-tree status: this phase is started, not complete. Wheel CMake
-defaults now explicitly disable FCL, Bullet, ODE, and reference harnesses, and
-a native-only install-style build/install produced no old collision libraries
-or old collision component target files. The latest package-export cleanup also
+Current working-tree status: this phase is started, not complete. Normal pixi
+configure paths now request native-only collision by default, wheel CMake
+defaults explicitly disable FCL, Bullet, ODE, and reference harnesses, and a
+native-only install-style build/install produced no old collision libraries or
+old collision component target files. The latest package-export cleanup also
 removes the default `collision-fcl` fallback and the generated
 `collision-bullet`/`collision-ode` compatibility text from native-only
 installed CMake metadata; the install probe now reports only
-`DART_BUILD_COLLISION_*` variables as `OFF`. Remaining work includes
+`DART_BUILD_COLLISION_*` variables as `OFF`. Remaining work includes base
 dependency metadata cleanup, wheel artifact inspection, and gz-physics
 compatibility for any retained legacy component facades.
 
@@ -271,10 +274,13 @@ Current working-tree status: this phase is started. Factory-level backend
 selection is now native-backed: `dart`, `experimental`, `fcl`, `fcl_mesh`,
 `bullet`, and `ode` all create `DartCollisionDetector` through the public
 factory. Default package exports now also point users at the `dart` component
-without auto-adding old collision components. The old direct detector classes
-and component libraries still contain real FCL/Bullet/ODE implementations for
-reference work, so class/header/CMake component cleanup remains before this
-phase can complete.
+without auto-adding old collision components. The target built-in architecture
+is documented as public API and compatibility facades outside a
+`dart/collision/dart/` adapter, with `dart/collision/native/` owning scalable
+scene/query state and performance instrumentation. The old direct detector
+classes and component libraries still contain real FCL/Bullet/ODE
+implementations for reference work, so class/header/CMake component cleanup
+remains before this phase can complete.
 
 Success criteria:
 

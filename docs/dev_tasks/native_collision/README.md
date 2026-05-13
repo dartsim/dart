@@ -23,16 +23,20 @@
 - [x] FCL, Bullet, and ODE are no longer required collision dependencies. A
       core `dart` build, focused native/default C++ tests, and `dartpy` now
       build with all three disabled.
+- [x] Normal pixi configure paths now default FCL, Bullet, ODE, reference
+      correctness tests, and reference benchmarks to `OFF`; comparison jobs
+      opt in with `DART_BUILD_COLLISION_*_OVERRIDE=ON`.
 - [x] Native-only install metadata no longer advertises old collision
       component targets or old collision runtime libraries; the remaining
       installed collision option variables are `OFF` state reporting.
 - [ ] The single north-star PR is not complete yet. The checkpoint commit proves
       native default, feature parity, gz-physics compatibility, performance,
-      and disabled-legacy-backend builds locally; the remaining work is CI
-      hardening, packaging/runtime dependency removal, remaining
-      `dart/collision/` class/component cleanup into one built-in detector,
-      downstream migration safety, recurring performance guardrails, and final
-      legacy backend deletion.
+      disabled-legacy-backend builds, native-only pixi defaults, and explicit
+      reference opt-in locally; the remaining work is CI hardening,
+      packaging/runtime dependency removal, remaining `dart/collision/`
+      class/component cleanup into one built-in detector, downstream migration
+      safety, recurring performance guardrails, and final legacy backend
+      deletion.
 
 ## Goal
 
@@ -72,21 +76,21 @@ engines on required workloads.
 This task is scoped as one PR that continues until the north star is reached.
 The current checkpoint is a validated middle state, not a final PR boundary.
 
-| Stage | Progress marker                              | Status                          |
-| ----- | -------------------------------------------- | ------------------------------- |
-| 0     | Baseline native backend exists               | Complete before this task       |
-| 1     | Native `dart` detector is the default path   | Complete in checkpoint          |
-| 2     | DART feature parity gaps are closed          | Complete in checkpoint          |
-| 3     | gz-physics compatibility is proven           | Complete in checkpoint          |
-| 4     | Native beats legacy backends in benchmarks   | Complete in checkpoint          |
-| 5     | FCL/Bullet/ODE are optional for local builds | Complete in checkpoint          |
-| 6     | Native-only and gz-physics CI are permanent  | Started; local evidence         |
-| 7     | Reference engines are test/bench-only        | Started; opt-out/link evidence  |
-| 8     | Default packages have no old runtime deps    | Started; install/export proof   |
-| 9     | Downstream migration/deprecation path exists | Started; DART alias coverage    |
-| 10    | Collision abstraction is one clean stack     | Started; aliases/export cleanup |
-| 11    | Old runtime backend source is deleted        | Not started                     |
-| 12    | Final one-PR validation and PR packaging     | Blocked on stages 6-11          |
+| Stage | Progress marker                              | Status                           |
+| ----- | -------------------------------------------- | -------------------------------- |
+| 0     | Baseline native backend exists               | Complete before this task        |
+| 1     | Native `dart` detector is the default path   | Complete in checkpoint           |
+| 2     | DART feature parity gaps are closed          | Complete in checkpoint           |
+| 3     | gz-physics compatibility is proven           | Complete in checkpoint           |
+| 4     | Native beats legacy backends in benchmarks   | Complete in checkpoint           |
+| 5     | FCL/Bullet/ODE are optional for local builds | Complete in checkpoint           |
+| 6     | Native-only and gz-physics CI are permanent  | Started; local evidence          |
+| 7     | Reference engines are test/bench-only        | Started; default-off + opt-in    |
+| 8     | Default packages have no old runtime deps    | Started; pixi/install proof      |
+| 9     | Downstream migration/deprecation path exists | Started; DART alias coverage     |
+| 10    | Collision abstraction is one clean stack     | Started; architecture documented |
+| 11    | Old runtime backend source is deleted        | Not started                      |
+| 12    | Final one-PR validation and PR packaging     | Blocked on stages 6-11           |
 
 ## Non-Goals For This Tracking Task
 
@@ -128,14 +132,14 @@ The current checkpoint is a validated middle state, not a final PR boundary.
 1. Run and harden the new native-only CI job alongside existing gz-physics CI.
 2. Finish reference-engine isolation by auditing target links, dependency
    metadata, wheel artifacts, and remaining downstream-component paths after
-   the initial CMake test/benchmark opt-out, core-link, and package-export
-   evidence.
+   the CMake test/benchmark opt-out, normal pixi default-off, explicit
+   reference opt-in, core-link, and package-export evidence.
 3. Remove FCL, Bullet, and ODE from default package/runtime surfaces while
    preserving explicit reference test/benchmark jobs and native-backed
    compatibility facades.
 4. Continue collapsing `dart/collision/` so retained legacy classes, headers,
-   and component names are native-backed compatibility facades; factory keys
-   are already native-backed aliases.
+   and component names are native-backed compatibility facades or explicit
+   reference-only surfaces; factory keys are already native-backed aliases.
 5. Define and test the downstream migration/deprecation path for legacy detector
    names and factory aliases.
 6. Add recurring benchmark guardrails, then delete legacy runtime backend
@@ -162,9 +166,10 @@ collision stack.
      benchmark comparisons.
    - The working tree adds CMake opt-out paths for reference tests and
      benchmarks, validates both reference-disabled and reference-enabled
-     focused builds locally, and now propagates the toggles through the main
-     debug, dartpy, install, coverage, ASAN, Windows, and wheel configure
-     entry points.
+     focused builds locally, defaults normal pixi configure paths to native-only
+     collision, and uses override variables for explicit reference opt-in.
+     The toggles propagate through the main debug, dartpy, install, coverage,
+     ASAN, Windows, and wheel configure entry points.
    - Core native-only link, install-tree, and installed CMake/pkg-config
      metadata inspection show no FCL, Bullet, ODE, libccd, or old collision
      component targets in the normal native install. Remaining work is broader
@@ -174,6 +179,9 @@ collision stack.
    - Move FCL, Bullet, and ODE out of default packaging/runtime surfaces.
    - Keep old backends only in explicit reference/benchmark jobs while they are
      still useful for regression detection.
+   - Normal pixi configure entry points now request native-only collision by
+     default; old engines and comparison harnesses are enabled only by
+     override.
    - Default `find_package(DART)` now adds only the `dart` component; it no
      longer auto-adds legacy collision components or emits deprecated
      Bullet/ODE component text from generated native-only package exports.
@@ -186,7 +194,8 @@ collision stack.
      explicit reference-only APIs.
    - Preserve a clean internal architecture: public API/compatibility shell,
      DART adapter layer, native scene/query core, and optional reference
-     harnesses outside runtime targets.
+     harnesses outside runtime targets. This is an API cleanliness,
+     scalability, and performance gate, not only a naming cleanup.
    - Require scalable native scene state, persistent broadphase data, batched
      query paths, clear cache invalidation including dynamic-vertex shapes,
      DART filters adapted into native pair checks before narrowphase,

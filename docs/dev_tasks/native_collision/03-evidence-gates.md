@@ -16,7 +16,7 @@ is tied to a commit, command, and observed output.
 | --------------------- | ------------------------------------------------------------ | ---------------------- |
 | Native default        | Focused test showing default detector type is `dart`         | Focused pass, May 2026 |
 | Feature parity        | Native unit and integration collision tests pass             | Passed, May 2026       |
-| Reference consistency | Native-vs-FCL/Bullet/ODE consistency tests pass              | Focused pass, May 2026 |
+| Reference consistency | Native-vs-FCL/Bullet/ODE consistency tests pass              | Opt-in pass, May 2026  |
 | gz-physics            | `pixi run -e gazebo test-gz` passes without patches          | Focused pass, May 2026 |
 | Performance           | Comparative benchmarks show native >= best legacy backend    | Focused pass, May 2026 |
 | Dependency removal    | Default build succeeds without FCL/Bullet/ODE collision deps | Focused pass, May 2026 |
@@ -34,21 +34,21 @@ options that allow native-only builds to opt out. The built-in stack must also
 have clean API boundaries, scalable native scene/query state, and
 performance-oriented internals before this scale reaches completion.
 
-| Stage | Gate                                                | State                           |
-| ----- | --------------------------------------------------- | ------------------------------- |
-| 0     | Baseline native backend exists                      | Complete before this task       |
-| 1     | Native `dart` detector is default                   | Complete in checkpoint          |
-| 2     | DART feature parity is proven                       | Complete in checkpoint          |
-| 3     | gz-physics compatibility is proven                  | Complete in checkpoint          |
-| 4     | Native benchmark wins are recorded                  | Complete in checkpoint          |
-| 5     | Local builds pass with FCL/Bullet/ODE disabled      | Complete in checkpoint          |
-| 6     | Native-only and gz-physics CI are permanent         | Started; local evidence         |
-| 7     | Reference engines are test/bench-only opt-in        | Started; opt-out/link/export    |
-| 8     | Default packages/wheels have no old runtime deps    | Started; install/export proof   |
-| 9     | Downstream migration/deprecation path is tested     | Started; DART alias coverage    |
-| 10    | Collision abstraction is one clean built-in stack   | Started; aliases/export cleanup |
-| 11    | Old runtime backend source/components are deleted   | Not started                     |
-| 12    | Final PR evidence is complete and task docs removed | Blocked on remaining stages     |
+| Stage | Gate                                                | State                            |
+| ----- | --------------------------------------------------- | -------------------------------- |
+| 0     | Baseline native backend exists                      | Complete before this task        |
+| 1     | Native `dart` detector is default                   | Complete in checkpoint           |
+| 2     | DART feature parity is proven                       | Complete in checkpoint           |
+| 3     | gz-physics compatibility is proven                  | Complete in checkpoint           |
+| 4     | Native benchmark wins are recorded                  | Complete in checkpoint           |
+| 5     | Local builds pass with FCL/Bullet/ODE disabled      | Complete in checkpoint           |
+| 6     | Native-only and gz-physics CI are permanent         | Started; local evidence          |
+| 7     | Reference engines are test/bench-only opt-in        | Started; default-off + opt-in    |
+| 8     | Default packages/wheels have no old runtime deps    | Started; pixi/install proof      |
+| 9     | Downstream migration/deprecation path is tested     | Started; DART alias coverage     |
+| 10    | Collision abstraction is one clean built-in stack   | Started; architecture documented |
+| 11    | Old runtime backend source/components are deleted   | Not started                      |
+| 12    | Final PR evidence is complete and task docs removed | Blocked on remaining stages      |
 
 ## Remaining North-Star Gate Backlog
 
@@ -58,11 +58,11 @@ These gates are still required before the single north-star PR is complete.
 | --------------------------- | ----------------------------------------------------------- | --------------------------------------------- |
 | CI native-only build        | CI passes with FCL, Bullet, and ODE disabled                | Local equivalent passed; awaiting CI evidence |
 | CI gz-physics compatibility | gz-physics CI passes with optional legacy components built  | Required in this PR                           |
-| Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Started; opt-out/link/export evidence         |
-| Packaging removal           | Default packages/wheels have no old collision runtime deps  | Started; install/export evidence              |
+| Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Started; default-off + opt-in evidence        |
+| Packaging removal           | Default packages/wheels have no old collision runtime deps  | Started; pixi/install/export evidence         |
 | Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Started; DART alias coverage                  |
 | Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Factory keys done; classes/components remain  |
-| Built-in architecture       | API-clean, scalable, performance-oriented native layer      | Started; layer/package boundary documented    |
+| Built-in architecture       | API-clean, scalable, performance-oriented native layer      | Started; design checklist documented          |
 | Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Required in this PR                           |
 | Legacy backend deletion     | Old runtime backend sources removed from default stack      | Blocked on migration gates                    |
 
@@ -891,6 +891,59 @@ build/default/cpp --prefix build/native_collision_install_probe_<timestamp>
     `libdart-collision-bullet`, `libdart-collision-ode`, `libfcl`,
     `libbullet`, `libode`, or `libccd` strings were reported from the searched
     install metadata.
+- `DART_VERBOSE=ON pixi run config`
+  - Commit: working tree after defaulting normal pixi configure paths to
+    native-only collision.
+  - Result: passed. Configure reported
+    `DART_BUILD_COLLISION_FCL: OFF [default]`,
+    `DART_BUILD_COLLISION_BULLET: OFF [default]`,
+    `DART_BUILD_COLLISION_ODE: OFF [default]`,
+    `DART_BUILD_COLLISION_REFERENCE_TESTS: OFF`, and
+    `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS: OFF`. FCL was not listed in
+    the found package set, CMake added the default `dart` component, generated
+    264 tests, and kept the native collision unit count at 29.
+- `pixi run -- cmake --build build/default/cpp/Release --target help | rg
+'dart-collision-(fcl|bullet|ode)|test_reference_backends|bm_comparative|bm_scenarios_(mixed_primitives|mesh_heavy)|INTEGRATION_simulation_MimicConstraint'
+|| true`
+  - Commit: working tree after native-only pixi default configure.
+  - Result: no matching legacy collision component or reference-only targets
+    were listed in the default pixi build.
+- `pixi run -- cmake --build build/default/cpp/Release --target dart dartpy
+dart_collision_native_tests UNIT_collision_DartCollisionDetector
+UNIT_collision_NativeBackend --parallel 8`
+  - Commit: working tree after native-only pixi default configure.
+  - Result: passed. Build observed only known third-party OctoMap `<ciso646>`
+    C++20 warnings.
+- `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure
+-R '^(UNIT_collision_DartCollisionDetector|UNIT_collision_NativeBackend)$'`
+  - Commit: working tree after native-only pixi default build.
+  - Result: passed, 2/2 tests.
+- `DART_BUILD_COLLISION_FCL_OVERRIDE=ON
+DART_BUILD_COLLISION_BULLET_OVERRIDE=ON DART_BUILD_COLLISION_ODE_OVERRIDE=ON
+DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE=ON
+DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE=ON DART_VERBOSE=ON pixi
+run config`
+  - Commit: working tree after native-only pixi default configure.
+  - Result: passed. Configure reported FCL, Bullet, ODE, reference tests, and
+    reference benchmarks all `ON`, proving comparison jobs can still opt in.
+- `pixi run -- cmake --build build/default/cpp/Release --target help | rg
+'dart-collision-(fcl|bullet|ode)|test_reference_backends|bm_comparative|bm_scenarios_(mixed_primitives|mesh_heavy)|INTEGRATION_simulation_MimicConstraint'`
+  - Commit: working tree after explicit reference opt-in configure.
+  - Result: matched `dart-collision-fcl`, `dart-collision-bullet`,
+    `dart-collision-ode`, `test_reference_backends`, comparative benchmark
+    targets, `bm_scenarios_mixed_primitives`, `bm_scenarios_mesh_heavy`, and
+    `INTEGRATION_simulation_MimicConstraint`.
+- `DART_VERBOSE=ON pixi run config && pixi run -- cmake --build
+build/default/cpp/Release --target help | rg
+'dart-collision-(fcl|bullet|ode)|test_reference_backends|bm_comparative|bm_scenarios_(mixed_primitives|mesh_heavy)|INTEGRATION_simulation_MimicConstraint'
+|| true && pixi run -- cmake --build build/default/cpp/Release --target dart
+dartpy dart_collision_native_tests UNIT_collision_DartCollisionDetector
+UNIT_collision_NativeBackend --parallel 8`
+  - Commit: working tree after restoring the normal native-only pixi default.
+  - Result: passed. Configure again reported FCL, Bullet, ODE, reference tests,
+    and reference benchmarks `OFF`; target-help inspection again listed no old
+    collision component or reference-only targets; native/default build targets
+    passed with only known third-party OctoMap warnings.
 
 ## Collision Abstraction And Alias Runs
 
@@ -937,12 +990,51 @@ build/default/cpp/Release --output-on-failure -R
   - Result: no matching old collision component or reference-only targets were
     listed.
 
+## Native-Only Pixi Default Checkpoint Runs
+
+- `pixi run lint`
+  - Commit: working tree after native-only pixi defaults and built-in
+    architecture docs.
+  - Result: passed. The configure phase reported
+    `DART_BUILD_COLLISION_FCL: OFF [default]`,
+    `DART_BUILD_COLLISION_BULLET: OFF [default]`,
+    `DART_BUILD_COLLISION_ODE: OFF [default]`,
+    `DART_BUILD_COLLISION_REFERENCE_TESTS: OFF`, and
+    `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS: OFF`.
+- `pixi run check-docs-policy`
+  - Commit: working tree after native-only pixi defaults and built-in
+    architecture docs.
+  - Result: passed.
+- `git diff --check`
+  - Commit: working tree after native-only pixi defaults and built-in
+    architecture docs.
+  - Result: passed.
+- `pixi run -- cmake --build build/default/cpp/Release --target help | rg
+'dart-collision-(fcl|bullet|ode)|test_reference_backends|bm_comparative|bm_scenarios_(mixed_primitives|mesh_heavy)|INTEGRATION_simulation_MimicConstraint'
+|| true`
+  - Commit: working tree after native-only pixi default lint configure.
+  - Result: no matching legacy collision component or reference-only targets
+    were listed.
+- `pixi run -- cmake --build build/default/cpp/Release --target dart dartpy
+dart_collision_native_tests UNIT_collision_DartCollisionDetector
+UNIT_collision_NativeBackend --parallel 8 && pixi run -- ctest --test-dir
+build/default/cpp/Release --output-on-failure -R
+'^(UNIT_collision_DartCollisionDetector|UNIT_collision_NativeBackend)$'`
+  - Commit: working tree after native-only pixi default lint configure.
+  - Result: passed. Build completed the core, dartpy, native collision tests,
+    and focused detector targets with only the known third-party OctoMap
+    `<ciso646>` warning. CTest passed 2/2.
+
 ## Known Risks
 
 - Direct legacy detector classes and component libraries still contain real FCL,
   Bullet, and ODE implementations for reference work. The public factory route
   is now native-backed, but direct class/header/component cleanup is still a
   north-star gate.
+- Normal pixi configure paths now default the old engines and reference
+  harnesses to `OFF`, but package/dependency metadata still needs a separate
+  audit so FCL, Bullet, ODE, and Bullet wheel dependencies do not remain in
+  default runtime surfaces accidentally.
 - Compatibility-alias checks can silently bypass native-only paths if they are
   used outside explicit backward-compatibility tests.
 - Scenario-scale collision manager performance now passes the recorded

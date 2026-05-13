@@ -18,12 +18,15 @@ factory keys `fcl`, `fcl_mesh`, `bullet`, and `ode` now resolve to the built-in
 The native-only package-export cleanup now removes the default `collision-fcl`
 fallback and generated old collision component text; the install probe reports
 only `DART_BUILD_COLLISION_*` variables as `OFF` in searched installed
-CMake/pkg-config metadata.
+CMake/pkg-config metadata. Normal pixi configure paths now also default FCL,
+Bullet, ODE, reference correctness tests, and reference benchmarks to `OFF`,
+while explicit `DART_BUILD_COLLISION_*_OVERRIDE=ON` settings restore the
+reference component, test, and benchmark targets for comparison jobs.
 
 ## Current Branch
 
 `feature/new_coll` - local branch tracking `origin/feature/new_coll`, expected
-to be ahead by four checkpoint commits after the package-export cleanup
+to be ahead by five checkpoint commits after the native-only pixi default
 checkpoint.
 
 ## Immediate Next Step
@@ -46,9 +49,10 @@ still needs GitHub CI evidence. Reference test/benchmark isolation has started:
 the branch adds `DART_BUILD_COLLISION_REFERENCE_TESTS` and
 `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS`, validates focused
 reference-disabled and reference-enabled configurations locally, propagates the
-toggles through the major configure entry points, and has core native-only link
-evidence. It still needs full target/package export inspection, dependency
-metadata cleanup, wheel artifact inspection, and downstream-component checks.
+toggles through the major configure entry points, defaults normal pixi configure
+paths to native-only collision, and has core native-only link evidence. It
+still needs full target/package export inspection, dependency metadata cleanup,
+wheel artifact inspection, and downstream-component checks.
 Collision abstraction cleanup has also started: `DartCollisionDetector` owns
 native-backed public factory aliases for `experimental`, `fcl`, `fcl_mesh`,
 `bullet`, and `ode`; the FCL/Bullet/ODE component registrars also publish
@@ -61,7 +65,8 @@ defaults to `dart` only, generated component templates no longer emit
 deprecated Bullet/ODE collision component text, and a native-only install probe
 found no old collision component/library names in searched installed
 CMake/pkg-config metadata beyond `DART_BUILD_COLLISION_*` variables set to
-`OFF`.
+`OFF`. Normal pixi configure paths now request the same native-only default;
+old engines and reference harnesses are opt-in through override variables.
 
 ## Context That Would Be Lost
 
@@ -80,6 +85,14 @@ CMake/pkg-config metadata beyond `DART_BUILD_COLLISION_*` variables set to
 - FCL, Bullet, and ODE can be disabled for a core `dart` build. Focused
   native/default C++ tests and `dartpy` also build and pass in that
   configuration.
+- Normal pixi configure paths now default FCL, Bullet, ODE,
+  `DART_BUILD_COLLISION_REFERENCE_TESTS`, and
+  `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` to `OFF`. A default configure,
+  target-help probe, native/default build, and focused detector CTest passed in
+  that state.
+- Explicit `DART_BUILD_COLLISION_*_OVERRIDE=ON` opt-in restores the old
+  component targets, reference consistency tests, and comparative benchmark
+  targets for comparison jobs.
 - The last audited native feature gap was `VoxelGridShape`; native now adapts
   occupied OctoMap leaves into a compound of box cells and has unit plus
   integration coverage.
@@ -133,15 +146,19 @@ CMake/pkg-config metadata beyond `DART_BUILD_COLLISION_*` variables set to
   path accepts matching override environment variables. Focused
   reference-disabled builds/tests passed with old runtime backend options still
   ON but reference tests/benchmarks OFF; reference-only targets were absent in
-  that configuration. Default reference-enabled builds/tests also passed for
-  `test_reference_backends` and `INTEGRATION_simulation_MimicConstraint`.
+  that configuration. Normal pixi configure paths now default FCL, Bullet,
+  ODE, reference tests, and reference benchmarks to `OFF`. An explicit
+  all-`ON` override configure restored old component targets,
+  `test_reference_backends`, comparative benchmarks, mixed/mesh scenario
+  benchmarks, and `INTEGRATION_simulation_MimicConstraint`.
 - Configure-entry-point propagation has started: the main debug, dartpy,
   install, coverage, ASAN, Windows, and wheel paths now carry the reference
   test/benchmark toggles. Local `config-debug`, `config-py`, and
   `config-install` probes with FCL, Bullet, ODE, reference tests, and reference
   benchmarks all disabled reported those CMake cache values as `OFF`.
 - Package/default runtime removal has started: wheel CMake defaults now
-  explicitly disable FCL, Bullet, ODE, and reference harnesses. A native-only
+  explicitly disable FCL, Bullet, ODE, and reference harnesses, and normal pixi
+  configure paths now use those native-only defaults. A native-only
   install-style build produced only `libdart.so` in the top-level lib directory;
   `ldd` found no FCL, Bullet, ODE, or libccd runtime links; and the
   `collision-native` label passed 29/29 in that configuration. After building
