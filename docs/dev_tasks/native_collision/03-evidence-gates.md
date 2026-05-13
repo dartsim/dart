@@ -62,7 +62,7 @@ These gates are still required before the single north-star PR is complete.
 | Packaging removal           | Default packages/wheels have no old collision runtime deps  | Metadata/link/install/py312 wheel passed      |
 | Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Started; alias/component coverage             |
 | Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Source/package facades done                   |
-| Built-in architecture       | API-clean, scalable, performance-oriented native layer      | Source split done; CI/perf gates remain       |
+| Built-in architecture       | `01-design.md` layer table passes API, scaling, perf gates  | Source split done; CI/perf gates remain       |
 | Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Focused guard added; broaden in this PR       |
 | Legacy backend deletion     | Old runtime backend sources removed from default stack      | Runtime source is reference-only locally      |
 
@@ -563,6 +563,17 @@ python/tests/unit/simulation/test_world.py`
 - `git diff --check`
   - Commit: working tree after reference capability gap analysis documentation
     update
+  - Result: passed.
+- `pixi run lint`
+  - Commit: working tree after north-star layer design documentation update
+  - Result: passed. CMake configure, C++ formatting, docs formatting, spell
+    check, Python formatting, TOML/YAML/RST checks, and AI command sync
+    completed.
+- `pixi run check-docs-policy`
+  - Commit: working tree after north-star layer design documentation update
+  - Result: passed.
+- `git diff --check`
+  - Commit: working tree after north-star layer design documentation update
   - Result: passed.
 
 ## Built-In Architecture Runs

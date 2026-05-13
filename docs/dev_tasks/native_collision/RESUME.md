@@ -47,7 +47,11 @@ native narrowphase benchmark JSON against the best enabled reference backend.
 The latest source-cleanup slice makes top-level source-tree FCL, Bullet, and
 ODE detector/group, All, PascalCase, and component headers native-backed
 facades and moves old-engine implementation headers/sources under explicit
-`reference/` paths used by reference tests and benchmarks.
+`reference/` paths used by reference tests and benchmarks. The latest planning
+update makes the built-in collision component/layer design explicit: the
+north-star layer table now tracks public API cleanliness, compatibility
+facades, the DART adapter, the native scene/query core, and optional reference
+harnesses as separate review gates.
 
 ## Current Branch
 

@@ -328,6 +328,10 @@ Success criteria:
   compact native geometry data, clear cache invalidation, low-allocation hot
   loops, and independent profiling/benchmark labels for broadphase,
   narrowphase, distance, raycast, and solver-facing contact generation.
+- The `01-design.md` north-star layer table is satisfied: every layer has a
+  narrow owner, forbidden dependencies are absent, and completion evidence is
+  recorded for public API cleanliness, compatibility facades, the DART adapter,
+  the native core, and optional reference harnesses.
 - Public compatibility behavior needed by gz-physics is covered by DART tests.
 - Documentation distinguishes stable native APIs from temporary compatibility
   wrappers.

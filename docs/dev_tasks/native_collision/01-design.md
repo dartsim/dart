@@ -99,6 +99,33 @@ dirty membership, transform, and shape data before queries. This keeps the
 public API stable while allowing the native core to evolve toward better
 broadphase traversal, batch queries, and low-allocation hot paths.
 
+## North-Star Layer Design
+
+This table is the review contract for the built-in collision component. A row
+is not complete until code, tests, package metadata, and benchmark/profiling
+evidence all match the intended ownership boundary.
+
+| Layer                   | Owns                                                                                                                                                                                                                                         | Must not own                                                                                                                                                   | Completion evidence                                                                                                                                                                       |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public DART API         | `CollisionDetector`, `CollisionGroup`, query options, filters, results, canonical factory keys, and stable DART collision semantics.                                                                                                         | FCL, Bullet, ODE types; external-engine algorithm modes; user-visible backend selection knobs.                                                                 | Public headers and bindings expose `dart` as canonical; retained keys and Python/C++ names construct/report the built-in detector; result semantics are covered by tests.                 |
+| Compatibility shell     | Temporary legacy headers, class names, package component names, and factory aliases needed by gz-physics or source-compatible downstreams.                                                                                                   | Collision algorithms, external-engine state, hidden package links, or behavior that differs from the built-in detector except documented compatibility quirks. | Legacy names compile without FCL/Bullet/ODE headers, route to the built-in detector, and pass gz-physics/downstream smoke coverage.                                                       |
+| DART adapter            | `CollisionObject` membership, `ShapeFrame` access, shape/result/filter adaptation, persistent adapter scene state, stable IDs, dirty sync, deterministic result conversion, and factory registration.                                        | Narrowphase algorithms, broadphase data structures, external backend calls, or public API churn for internal optimization.                                     | Collision, distance, raycast, filter, dynamic-shape invalidation, cache invalidation, and deterministic ordering tests exercise the public DART path.                                     |
+| Native scene/query core | Compact geometry, object handles, broadphase state, snapshots/query contexts, candidate traversal, narrowphase dispatch, distance, raycast, CCD/sweeps, contact/manifold generation, scratch reuse, cache invalidation, and profiler labels. | DART public object ownership, gz-physics compatibility policy, package metadata, or legacy backend dependencies.                                               | Native tests cover the feature surface; benchmarks expose adapter sync, broadphase, candidate traversal, narrowphase, distance, raycast, contact generation, and result conversion costs. |
+| Reference harness       | Optional FCL/Bullet/ODE correctness comparisons and comparative benchmarks.                                                                                                                                                                  | Runtime collision target links, default package dependencies, installed compatibility headers, or public backend selection.                                    | CMake opt-in jobs build `collision-reference-*` targets; native-only builds opt out cleanly; benchmark JSON compares native to the best enabled reference engine.                         |
+
+The design has four invariants:
+
+- One public implementation: every normal factory key, package component, C++
+  compatibility class, and Python compatibility name resolves to the built-in
+  detector. Explicit reference APIs are the only path to old engines.
+- One data direction: DART objects and compatibility policy stay outside the
+  native core; the adapter passes compact, versioned native state inward.
+- One scalability boundary: adapter-owned scenes synchronize dirty state
+  incrementally and keep persistent broadphase/query data across public calls.
+- One optimization surface: performance work adds native capabilities,
+  profiler labels, and benchmarks without exposing engine-specific knobs in
+  public APIs.
+
 ## Layer Acceptance Gates
 
 These gates define what "clean built-in collision layer" means for this PR.
