@@ -41,9 +41,13 @@ reference builds/tests and a default native-only downstream package smoke
 passed with that split. Installed legacy detector headers now compile without
 FCL, Bullet, or ODE and provide native-backed detector facades in both
 native-only and reference-enabled installs. The latest performance-guard slice
-adds `scripts/check_collision_benchmarks.py` and
-`pixi run -e collision-reference bm-collision-check`, which compare focused
-native narrowphase benchmark JSON against the best enabled reference backend.
+adds `scripts/check_collision_benchmarks.py` and broadens
+`pixi run -e collision-reference bm-collision-check` across checked
+narrowphase, distance, raycast, mixed-primitive, mesh-heavy, raycast-batch, and
+public DART adapter benchmark subsets. Native/reference subsets compare JSON
+against the best enabled reference backend, while the public adapter subset
+records JSON for collision, dirty-world collision, distance, and raycast
+through `DartCollisionDetector`.
 The latest source-cleanup slice makes top-level source-tree FCL, Bullet, and
 ODE detector/group, All, PascalCase, and component headers native-backed
 facades and moves old-engine implementation headers/sources under explicit
@@ -203,8 +207,8 @@ libraries.
   needs CI hardening, wheel-matrix artifact evidence, downstream
   migration/deprecation coverage, built-in collision layer hardening for API
   cleanliness, scalable native scene/query state and performance-oriented
-  internals, broader recurring performance guardrails, final legacy runtime
-  backend deletion validation, and then final PR packaging.
+  internals, CI/scheduled adoption of the broadened benchmark guard, final
+  legacy runtime backend deletion validation, and then final PR packaging.
 - Quality order for the remaining work: feature coverage first, correctness
   tests as the permanent gate, then gradual benchmark-driven performance work
   until native beats Bullet, FCL, and ODE on required workloads.
@@ -222,8 +226,10 @@ libraries.
   dirty-world collision, distance, and raycast. Shape invalidation/behavior
   coverage now covers primitives, mesh scale, soft meshes, heightmaps, voxel
   grids, and point clouds. DART collision filters now flow through a native
-  filter adapter before narrowphase. Remaining adapter gaps include recurring
-  benchmark/profiling guardrails for the public DART API path.
+  filter adapter before narrowphase. The recurring benchmark guard now also
+  runs public DART adapter collision, dirty-world collision, distance, and
+  raycast scenarios; remaining benchmark work is CI/scheduled execution and
+  adding new workloads as native capabilities land.
 - CI hardening has started: `.github/workflows/ci_ubuntu.yml` now includes
   `Native Collision (no FCL/Bullet/ODE)`, which configures with all legacy
   collision backends disabled, builds `dart`, `dartpy`, native collision tests,

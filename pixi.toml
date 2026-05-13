@@ -918,9 +918,19 @@ bm = { cmd = "python scripts/run_cpp_benchmark.py", depends-on = ["config"] }
 bm-check = { cmd = "python scripts/check_allocator_benchmarks.py", depends-on = [
   "config",
 ] }
-bm-collision-check = { cmd = """
+bm-collision-check = { depends-on = [
+  "bm-collision-check-narrow",
+  "bm-collision-check-distance",
+  "bm-collision-check-raycast",
+  "bm-collision-check-mixed",
+  "bm-collision-check-mesh",
+  "bm-collision-check-raycast-batch",
+  "bm-collision-check-adapter",
+] }
+bm-collision-check-narrow = { cmd = """
     python scripts/check_collision_benchmarks.py \
       --target bm_comparative_narrow_phase \
+      --output .benchmark_results/collision_check_narrow.json \
       --benchmark-filter 'BM_NarrowPhase_(SphereSphere|BoxBox|SphereBox)_(Native|FCL|Bullet|ODE)$' \
       --max-native-ratio 1.10 \
       -- \
@@ -929,6 +939,75 @@ bm-collision-check = { cmd = """
 """, depends-on = [
   "config",
 ] }
+bm-collision-check-distance = { cmd = """
+    python scripts/check_collision_benchmarks.py \
+      --target bm_comparative_distance \
+      --output .benchmark_results/collision_check_distance.json \
+      --benchmark-filter 'BM_Distance_(SphereSphere|BoxBox|CapsuleCapsule)_(Native|FCL|Bullet)$' \
+      --max-native-ratio 1.10 \
+      -- \
+      --benchmark_min_time=1ms \
+      --benchmark_repetitions=3
+""", depends-on = [
+  "config",
+] }
+bm-collision-check-raycast = { cmd = """
+    python scripts/check_collision_benchmarks.py \
+      --target bm_comparative_raycast \
+      --output .benchmark_results/collision_check_raycast.json \
+      --benchmark-filter 'BM_Raycast_(Sphere|Box|Capsule|Cylinder|Plane)_(Native|Bullet)$' \
+      --max-native-ratio 1.10 \
+      -- \
+      --benchmark_min_time=1ms \
+      --benchmark_repetitions=3
+""", depends-on = [
+  "config",
+] }
+bm-collision-check-mixed = { cmd = """
+    python scripts/check_collision_benchmarks.py \
+      --target bm_scenarios_mixed_primitives \
+      --output .benchmark_results/collision_check_mixed.json \
+      --benchmark-filter 'BM_Scenario_MixedPrimitives_(Dense|Sparse)_(Native|FCL|Bullet|ODE)/(100|1000)$' \
+      --max-native-ratio 1.10 \
+      -- \
+      --benchmark_min_time=1ms \
+      --benchmark_repetitions=3
+""", depends-on = [
+  "config",
+] }
+bm-collision-check-mesh = { cmd = """
+    python scripts/check_collision_benchmarks.py \
+      --target bm_scenarios_mesh_heavy \
+      --output .benchmark_results/collision_check_mesh.json \
+      --benchmark-filter 'BM_Scenario_MeshHeavy_(Native|FCL|Bullet)/1000$' \
+      --max-native-ratio 1.10 \
+      -- \
+      --benchmark_min_time=1ms \
+      --benchmark_repetitions=3
+""", depends-on = ["config"] }
+bm-collision-check-raycast-batch = { cmd = """
+    python scripts/check_collision_benchmarks.py \
+      --target bm_scenarios_raycast_batch \
+      --output .benchmark_results/collision_check_raycast_batch.json \
+      --benchmark-filter 'BM_Scenario_RaycastBatch_(Dense|Sparse)_(Native|Bullet)/1000$' \
+      --max-native-ratio 1.10 \
+      -- \
+      --benchmark_min_time=1ms \
+      --benchmark_repetitions=3
+""", depends-on = [
+  "config",
+] }
+bm-collision-check-adapter = { cmd = """
+    python scripts/cmake_build.py \
+      --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp/Release \
+      --target bm_scenarios_dart_adapter
+    build/$PIXI_ENVIRONMENT_NAME/cpp/Release/bin/bm_scenarios_dart_adapter \
+      --benchmark_filter='DartAdapter' \
+      --benchmark_out=.benchmark_results/collision_check_adapter.json \
+      --benchmark_out_format=json \
+      --benchmark_min_time=1ms \
+      --benchmark_repetitions=3
+""", depends-on = ["config"] }
 
 test-joints = { cmd = [
   "bash",

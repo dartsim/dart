@@ -63,7 +63,7 @@ These gates are still required before the single north-star PR is complete.
 | Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Started; alias/component coverage             |
 | Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Source/package facades done                   |
 | Built-in architecture       | `01-design.md` layer table passes API, scaling, perf gates  | Source split done; CI/perf gates remain       |
-| Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Focused guard added; broaden in this PR       |
+| Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Broad local guard passes; CI/schedule left    |
 | Legacy backend deletion     | Old runtime backend sources removed from default stack      | Runtime source is reference-only locally      |
 
 ## Test Runs
@@ -1617,6 +1617,35 @@ build/collision-reference/cpp/Release -R
   - Result: passed. The recurring focused benchmark guard rebuilt the
     reference-path comparative narrowphase benchmark and reported
     `collision benchmark check: 3 passed, 0 failed, 0 skipped`.
+- `pixi run --locked -e collision-reference bm-collision-check`
+  - Commit: working tree after broadening the collision benchmark guard.
+  - Result: passed. The task configured the reference environment, built and
+    ran checked narrowphase, distance, raycast, mixed-primitive, mesh-heavy,
+    raycast-batch, and public DART adapter benchmark subsets.
+  - Native/reference check results:
+    | Subset | Result |
+    | --- | --- |
+    | Narrowphase | `3 passed, 0 failed, 0 skipped` |
+    | Distance | `3 passed, 0 failed, 0 skipped` |
+    | Raycast | `5 passed, 0 failed, 0 skipped` |
+    | Mixed primitives | `4 passed, 0 failed, 0 skipped` |
+    | Mesh-heavy | `1 passed, 0 failed, 0 skipped` |
+    | Raycast batch | `2 passed, 0 failed, 0 skipped` |
+  - The public adapter subset wrote
+    `.benchmark_results/collision_check_adapter.json` for collision,
+    dirty-world collision, distance, and raycast through
+    `DartCollisionDetector`.
+- `pixi run lint`
+  - Commit: working tree after broadening the collision benchmark guard.
+  - Result: passed. CMake configure, C++ formatting, docs formatting, spell
+    check, Python formatting, TOML/YAML/RST checks, and AI command sync
+    completed.
+- `pixi run check-docs-policy`
+  - Commit: working tree after broadening the collision benchmark guard.
+  - Result: passed.
+- `git diff --check`
+  - Commit: working tree after broadening the collision benchmark guard.
+  - Result: passed.
 - `pixi run config`
   - Commit: working tree after adding source-tree top-level All/PascalCase
     compatibility facades for FCL, Bullet, and ODE.
