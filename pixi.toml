@@ -918,6 +918,17 @@ bm = { cmd = "python scripts/run_cpp_benchmark.py", depends-on = ["config"] }
 bm-check = { cmd = "python scripts/check_allocator_benchmarks.py", depends-on = [
   "config",
 ] }
+bm-collision-check = { cmd = """
+    python scripts/check_collision_benchmarks.py \
+      --target bm_comparative_narrow_phase \
+      --benchmark-filter 'BM_NarrowPhase_(SphereSphere|BoxBox|SphereBox)_(Native|FCL|Bullet|ODE)$' \
+      --max-native-ratio 1.10 \
+      -- \
+      --benchmark_min_time=1ms \
+      --benchmark_repetitions=3
+""", depends-on = [
+  "config",
+] }
 
 test-joints = { cmd = [
   "bash",

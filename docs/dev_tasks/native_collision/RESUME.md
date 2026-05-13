@@ -40,7 +40,10 @@ libraries/components use explicit `collision-reference-*` names. Focused
 reference builds/tests and a default native-only downstream package smoke
 passed with that split. Installed legacy detector headers now compile without
 FCL, Bullet, or ODE and provide native-backed detector facades in both
-native-only and reference-enabled installs.
+native-only and reference-enabled installs. The latest performance-guard slice
+adds `scripts/check_collision_benchmarks.py` and
+`pixi run -e collision-reference bm-collision-check`, which compare focused
+native narrowphase benchmark JSON against the best enabled reference backend.
 
 ## Current Branch
 
@@ -193,8 +196,8 @@ libraries.
   migration/deprecation coverage, `dart/collision/` abstraction cleanup so all
   retained legacy names route to the built-in detector, built-in collision
   layer cleanup for API cleanliness, scalable native scene/query state and
-  performance-oriented internals, recurring performance guardrails, final
-  legacy runtime backend deletion, and then final PR packaging.
+  performance-oriented internals, broader recurring performance guardrails,
+  final legacy runtime backend deletion, and then final PR packaging.
 - Quality order for the remaining work: feature coverage first, correctness
   tests as the permanent gate, then gradual benchmark-driven performance work
   until native beats Bullet, FCL, and ODE on required workloads.

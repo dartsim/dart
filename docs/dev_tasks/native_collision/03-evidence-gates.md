@@ -63,7 +63,7 @@ These gates are still required before the single north-star PR is complete.
 | Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Started; alias/component coverage             |
 | Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Factories/C++/CMake/installed headers done    |
 | Built-in architecture       | API-clean, scalable, performance-oriented native layer      | Started; `01-design.md` gates documented      |
-| Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Required in this PR                           |
+| Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Focused guard added; broaden in this PR       |
 | Legacy backend deletion     | Old runtime backend sources removed from default stack      | Blocked on migration gates                    |
 
 ## Test Runs
@@ -1568,6 +1568,15 @@ build/collision-reference/cpp/Release -R
   - Commit: working tree after making reference-enabled installs use
     native-backed legacy detector header facades.
   - Result: passed, 5/5 tests.
+- `pixi run --locked -e collision-reference bm-collision-check`
+  - Commit: working tree after adding the focused collision benchmark JSON
+    checker.
+  - Result: passed. The task configured the reference environment, built
+    `bm_comparative_narrow_phase`, ran a focused SphereSphere/BoxBox/SphereBox
+    native-vs-FCL/Bullet/ODE benchmark subset with three repetitions, wrote
+    `.benchmark_results/collision_check.json`, and reported
+    `collision benchmark check: 3 passed, 0 failed, 0 skipped` with native
+    faster than the best enabled reference backend for all checked families.
 - `pixi run lint`
   - Commit: working tree after installed legacy detector header facades and
     docs update.

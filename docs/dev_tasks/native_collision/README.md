@@ -79,6 +79,10 @@
       reference-enabled installs. The downstream package/header smokes include
       the installed legacy detector headers and verify factory keys plus legacy
       class `create()` calls all report detector type `dart`.
+- [x] An initial recurring benchmark guard exists:
+      `pixi run -e collision-reference bm-collision-check` builds a focused
+      comparative narrowphase subset, emits Google Benchmark JSON, and checks
+      native timings against the best enabled FCL/Bullet/ODE reference result.
 - [ ] The single north-star PR is not complete yet. The checkpoint commit proves
       native default, feature parity, gz-physics compatibility, performance,
       disabled-legacy-backend builds, native-only pixi defaults, and explicit
@@ -94,8 +98,8 @@
       Installed legacy detector headers are also native-backed facades. The
       remaining work is CI hardening, full wheel matrix/CI artifact evidence,
       retained source-tree legacy detector header/source cleanup,
-      downstream migration safety, recurring performance guardrails, and final
-      legacy backend deletion.
+      downstream migration safety, broader recurring performance guardrails,
+      and final legacy backend deletion.
 
 ## Goal
 
@@ -150,6 +154,24 @@ The current checkpoint is a validated middle state, not a final PR boundary.
 | 10    | Collision abstraction is one clean stack     | Started; factories/CMake/headers  |
 | 11    | Old runtime backend source is deleted        | Not started                       |
 | 12    | Final one-PR validation and PR packaging     | Blocked on stages 6-11            |
+
+## Built-In Architecture Status
+
+`01-design.md` is the architecture and design contract for the built-in
+collision component. The target layer shape is public DART collision APIs and
+temporary compatibility facades at the outside, `dart/collision/dart/` as the
+DART shape/result/filter adapter, and `dart/collision/native/` as the scalable
+scene/query core for geometry, broadphase, narrowphase, distance, raycast,
+contact/manifold caching, deterministic results, profiling, and benchmarks.
+
+The implementation already satisfies part of that design: public factory keys,
+Python compatibility names, retained package components, installed legacy
+headers, and direct legacy `create()` entry points route to the built-in `dart`
+detector, while reference engines have explicit test/benchmark targets. The
+architecture gate remains open until source-tree legacy detector headers and
+old-engine source placement are also native-backed facades or explicitly
+reference-only surfaces, and until broader correctness/performance guardrails
+cover the public DART adapter and native core paths.
 
 ## Where To Check Progress
 
@@ -227,7 +249,8 @@ The current checkpoint is a validated middle state, not a final PR boundary.
    architecture checklist for this cleanup.
 5. Define and test the downstream migration/deprecation path for legacy detector
    names and factory aliases.
-6. Add recurring benchmark guardrails, then delete legacy runtime backend
+6. Broaden recurring benchmark guardrails across native core and public
+   `DartCollisionDetector` scenarios, then delete legacy runtime backend
    source/components once the gates pass.
 7. Only then package the final PR: transfer evidence from this folder into the
    PR description and remove this working folder in the same PR.
