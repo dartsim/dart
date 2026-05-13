@@ -64,6 +64,16 @@
       collision component targets. Examples/tutorials that previously selected
       Bullet or ODE now use the built-in detector/default collision path;
       legacy engine dependencies are kept to reference tests and benchmarks.
+- [x] Optional old-engine CMake targets and components are now explicitly
+      reference-named: `dart-collision-reference-fcl`,
+      `dart-collision-reference-bullet`, `dart-collision-reference-ode`, and
+      matching `collision-reference-*` package components.
+- [x] Retained legacy package component names `collision-fcl`,
+      `collision-bullet`, and `collision-ode` are native-backed interface
+      facades. A default native-only install/export probe and downstream
+      `find_package(DART COMPONENTS collision-fcl collision-bullet
+  collision-ode)` smoke test prove those names link the built-in `dart`
+      stack and do not install old collision libraries.
 - [ ] The single north-star PR is not complete yet. The checkpoint commit proves
       native default, feature parity, gz-physics compatibility, performance,
       disabled-legacy-backend builds, native-only pixi defaults, and explicit
@@ -74,8 +84,10 @@
       link isolation, explicit C++ reference-detector creation for
       tests/benchmarks, and native-backed direct C++ legacy `create()` entry
       points. User-facing examples/tutorials have also been moved off old
-      collision components. The remaining work is CI hardening, full wheel
-      matrix/CI artifact evidence, retained legacy component/source cleanup,
+      collision components, and package component names are now split into
+      native-backed compatibility facades versus explicit reference targets.
+      The remaining work is CI hardening, full wheel matrix/CI artifact
+      evidence, retained legacy detector header/source cleanup,
       downstream migration safety, recurring performance guardrails, and final
       legacy backend deletion.
 
@@ -117,21 +129,21 @@ engines on required workloads.
 This task is scoped as one PR that continues until the north star is reached.
 The current checkpoint is a validated middle state, not a final PR boundary.
 
-| Stage | Progress marker                              | Status                             |
-| ----- | -------------------------------------------- | ---------------------------------- |
-| 0     | Baseline native backend exists               | Complete before this task          |
-| 1     | Native `dart` detector is the default path   | Complete in checkpoint             |
-| 2     | DART feature parity gaps are closed          | Complete in checkpoint             |
-| 3     | gz-physics compatibility is proven           | Complete in checkpoint             |
-| 4     | Native beats legacy backends in benchmarks   | Complete in checkpoint             |
-| 5     | FCL/Bullet/ODE are optional for local builds | Complete in checkpoint             |
-| 6     | Native-only and gz-physics CI are permanent  | Started; local evidence            |
-| 7     | Reference engines are test/bench-only        | Started; opt-in env/test proven    |
-| 8     | Default packages have no old runtime deps    | Local pass; CI wheel matrix left   |
-| 9     | Downstream migration/deprecation path exists | Started; DART alias coverage       |
-| 10    | Collision abstraction is one clean stack     | Started; factory/Python/C++ create |
-| 11    | Old runtime backend source is deleted        | Not started                        |
-| 12    | Final one-PR validation and PR packaging     | Blocked on stages 6-11             |
+| Stage | Progress marker                              | Status                            |
+| ----- | -------------------------------------------- | --------------------------------- |
+| 0     | Baseline native backend exists               | Complete before this task         |
+| 1     | Native `dart` detector is the default path   | Complete in checkpoint            |
+| 2     | DART feature parity gaps are closed          | Complete in checkpoint            |
+| 3     | gz-physics compatibility is proven           | Complete in checkpoint            |
+| 4     | Native beats legacy backends in benchmarks   | Complete in checkpoint            |
+| 5     | FCL/Bullet/ODE are optional for local builds | Complete in checkpoint            |
+| 6     | Native-only and gz-physics CI are permanent  | Started; local evidence           |
+| 7     | Reference engines are test/bench-only        | Local target split proven         |
+| 8     | Default packages have no old runtime deps    | Local pass; CI wheel matrix left  |
+| 9     | Downstream migration/deprecation path exists | Started; alias/component coverage |
+| 10    | Collision abstraction is one clean stack     | Started; factory/Python/C++/CMake |
+| 11    | Old runtime backend source is deleted        | Not started                       |
+| 12    | Final one-PR validation and PR packaging     | Blocked on stages 6-11            |
 
 ## Where To Check Progress
 
@@ -191,21 +203,21 @@ The current checkpoint is a validated middle state, not a final PR boundary.
 
 1. Run and harden the new native-only CI job alongside existing gz-physics CI.
 2. Finish reference-engine isolation by auditing target links, dependency
-   metadata, wheel artifacts, and remaining downstream-component paths after
-   the CMake test/benchmark opt-out, normal pixi default-off, explicit
-   reference opt-in, core-link, fresh runtime-link, package-export, and
-   Pixi dependency-metadata evidence. Local py312 wheel artifact inspection is
-   now complete; CI wheel matrix artifacts and downstream-component paths still
-   need coverage.
+   metadata, wheel artifacts, and remaining downstream paths after the CMake
+   test/benchmark opt-out, normal pixi default-off, explicit reference opt-in,
+   reference target split, native-backed compatibility component facades,
+   core-link, fresh runtime-link, package-export, and Pixi dependency-metadata
+   evidence. Local py312 wheel artifact inspection is now complete; CI wheel
+   matrix artifacts still need coverage.
 3. Finish removing FCL, Bullet, and ODE from default package/runtime surfaces
    by preserving explicit reference test/benchmark jobs, native-backed
    compatibility facades, and wheel/package evidence across CI.
-4. Continue collapsing `dart/collision/` so retained legacy classes, headers,
-   component names, and old-engine source files are native-backed compatibility
+4. Continue collapsing `dart/collision/` so retained legacy detector classes,
+   headers, and old-engine source files are native-backed compatibility
    facades or explicit reference-only surfaces; factory keys, Python detector
-   names, direct public C++ legacy `create()` entry points, and user-facing
-   examples/tutorials are already native-backed. Use `01-design.md` as the
-   architecture checklist for this cleanup.
+   names, direct public C++ legacy `create()` entry points, package component
+   names, and user-facing examples/tutorials are already native-backed. Use
+   `01-design.md` as the architecture checklist for this cleanup.
 5. Define and test the downstream migration/deprecation path for legacy detector
    names and factory aliases.
 6. Add recurring benchmark guardrails, then delete legacy runtime backend
@@ -242,12 +254,14 @@ collision stack.
      ASAN, Windows, and wheel configure entry points.
    - Core native-only link, fresh runtime install, and installed
      CMake/pkg-config metadata inspection show no FCL, Bullet, ODE, libccd, or
-     old collision component targets in the normal native install. Default and
-     wheel Pixi lock metadata no longer include old collision engines or their
-     FCL transitive packages. The repaired py312 wheel artifact has also been
-     inspected for old component files and runtime links. Remaining work is
-     downstream-component and CI wheel-matrix inspection so reference engines
-     cannot leak into normal runtime targets.
+     reference-engine runtime targets in the normal native install. Retained
+     `collision-fcl`, `collision-bullet`, and `collision-ode` package
+     component targets are native-backed interface facades. Default and wheel
+     Pixi lock metadata no longer include old collision engines or their FCL
+     transitive packages. The repaired py312 wheel artifact has also been
+     inspected for old component files and runtime links. Remaining work is CI
+     wheel-matrix inspection so reference engines cannot leak into normal
+     runtime targets.
 3. **Backend Removal From Defaults**
    - Move FCL, Bullet, and ODE out of default packaging/runtime surfaces.
    - Keep old backends only in explicit reference/benchmark jobs while they are
@@ -264,6 +278,10 @@ collision stack.
    - Default `find_package(DART)` now adds only the `dart` component; it no
      longer auto-adds legacy collision components or emits deprecated
      Bullet/ODE component text from generated native-only package exports.
+   - Retained `collision-fcl`, `collision-bullet`, and `collision-ode` package
+     components are native-backed interface facades for downstream source
+     compatibility; old-engine comparison libraries/components use explicit
+     `collision-reference-*` names.
    - User-facing examples/tutorials no longer require or link old collision
      component targets in their CMake. Source that previously selected Bullet
      or ODE now requests `CollisionDetectorType::Dart` or keeps the default

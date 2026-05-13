@@ -11,7 +11,7 @@ message(STATUS "Configuring dart/collision/fcl (DART_BUILD_COLLISION_FCL=${DART_
 
 set(DART_HAVE_FCL TRUE CACHE BOOL "Check if fcl found." FORCE)
 
-set(target_name ${PROJECT_NAME}-collision-fcl)
+set(target_name ${PROJECT_NAME}-collision-reference-fcl)
 
 dart_add_library(${target_name} ${srcs})
 target_include_directories(${target_name}
@@ -33,9 +33,9 @@ target_compile_definitions(${target_name}
     DART_BUILDING_COLLISION_FCL
 )
 
-add_component_targets(${PROJECT_NAME} collision-fcl ${target_name})
-add_component_dependencies(${PROJECT_NAME} collision-fcl dart)
-add_component_dependency_packages(${PROJECT_NAME} collision-fcl fcl)
+add_component_targets(${PROJECT_NAME} collision-reference-fcl ${target_name})
+add_component_dependencies(${PROJECT_NAME} collision-reference-fcl dart)
+add_component_dependency_packages(${PROJECT_NAME} collision-reference-fcl fcl)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "collision_fcl headers" ${hdrs})

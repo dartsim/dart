@@ -15,26 +15,30 @@ build defaults are explicitly native-only, and core native-only link inspection
 shows `libdart.so` does not link FCL, Bullet, ODE, or libccd. The public
 factory keys `fcl`, `fcl_mesh`, `bullet`, and `ode` now resolve to the built-in
 `DartCollisionDetector` in both native-only and reference-enabled builds.
-The native-only package-export cleanup now removes the default `collision-fcl`
-fallback and generated old collision component text; the install probe reports
-only `DART_BUILD_COLLISION_*` variables as `OFF` in searched installed
-CMake/pkg-config metadata. Normal pixi configure paths now also default FCL,
-Bullet, ODE, reference correctness tests, and reference benchmarks to `OFF`,
-while explicit `DART_BUILD_COLLISION_*_OVERRIDE=ON` settings restore the
-reference component, test, and benchmark targets for comparison jobs. A fresh
-native-only runtime install probe now also shows no old collision component
-files, no old collision package-export references beyond `OFF` state variables,
-and no FCL, Bullet, ODE, or libccd runtime links from installed shared
-libraries or the built dartpy extension. Default and wheel Pixi dependency
-metadata now omit FCL, Bullet, ODE, and their FCL transitive packages; the
-explicit `collision-reference` environment owns those packages and its focused
+The native-only package-export cleanup now keeps default `find_package(DART)`
+on the `dart` component and retains `collision-fcl`, `collision-bullet`, and
+`collision-ode` only as native-backed compatibility component facades. Normal
+pixi configure paths now also default FCL, Bullet, ODE, reference correctness
+tests, and reference benchmarks to `OFF`, while explicit
+`DART_BUILD_COLLISION_*_OVERRIDE=ON` settings restore the reference component,
+test, and benchmark targets for comparison jobs. A fresh native-only runtime
+install probe now also shows no old-engine/reference collision libraries and no
+FCL, Bullet, ODE, or libccd runtime links from installed shared libraries or
+the built dartpy extension. Default and wheel Pixi dependency metadata now omit
+FCL, Bullet, ODE, and their FCL transitive packages; the explicit
+`collision-reference` environment owns those packages and its focused
 `test_reference_backends` target builds and passes. A repaired py312 wheel
 artifact built with old collision engines and reference harnesses disabled
 imports successfully and contains no old collision component files, old
 collision CMake exports, or FCL, Bullet, ODE, or libccd runtime links. Python
 detector compatibility names now resolve to `DartCollisionDetector`, and
 dartpy no longer links legacy collision component targets even in a
-reference-enabled build.
+reference-enabled build. The latest slice splits retained package component
+names from old-engine comparison targets: `collision-fcl`, `collision-bullet`,
+and `collision-ode` are native-backed interface facades, while old-engine
+libraries/components use explicit `collision-reference-*` names. Focused
+reference builds/tests and a default native-only downstream package smoke
+passed with that split.
 
 ## Current Branch
 
@@ -67,7 +71,7 @@ paths to native-only collision, and has core native-only link evidence. It
 now also has fresh runtime-link, package-export, default/wheel Pixi dependency
 metadata, explicit `collision-reference` environment evidence, and repaired
 py312 wheel artifact evidence. It still needs CI wheel-matrix artifact
-evidence and downstream-component checks.
+evidence.
 Collision abstraction cleanup has also started: `DartCollisionDetector` owns
 native-backed public factory aliases for `experimental`, `fcl`, `fcl_mesh`,
 `bullet`, and `ode`; the FCL/Bullet/ODE component registrars also publish
@@ -77,10 +81,11 @@ restore public backend selection; and the Python compatibility names
 `OdeCollisionDetector` now construct/report the built-in `dart` detector.
 Reference tests and benchmarks now use explicit `createReference()` APIs on the
 FCL, Bullet, and ODE detector classes, and direct public C++ legacy detector
-`create()` paths now return the built-in `DartCollisionDetector`. Legacy C++
-detector classes, headers, CMake component surfaces, and old-engine source
-placement still contain explicit reference-engine implementations and remain a
-north-star cleanup gate.
+`create()` paths now return the built-in `DartCollisionDetector`. Retained
+legacy package component names are native-backed CMake interface facades, and
+old-engine libraries/components use `collision-reference-*` names. Legacy C++
+detector classes, headers, and old-engine source placement still contain
+explicit reference-engine implementations and remain a north-star cleanup gate.
 User-facing examples/tutorials have also been moved off the old collision
 components: their CMake no longer requires `collision-bullet`/`collision-ode`,
 source no longer includes or selects Bullet/ODE/FCL detector APIs, and affected
@@ -103,7 +108,12 @@ fresh install probe built the normal native runtime components plus dartpy from
 an empty build tree and found no old-engine runtime links. The latest Pixi
 metadata split removes old collision engines from default and wheel
 environments and adds `collision-reference` for reference-only package
-availability.
+availability. The newest native-only install/export probe also confirms
+`dart_collision-fclComponent.cmake`, `dart_collision-bulletComponent.cmake`,
+and `dart_collision-odeComponent.cmake` import interface targets linking
+`dart`, while the installed lib directory contains no
+`libdart-collision-reference-*`, FCL, Bullet, ODE, or libccd collision runtime
+libraries.
 
 ## Context That Would Be Lost
 
@@ -232,14 +242,14 @@ availability.
   `ldd` found no FCL, Bullet, ODE, or libccd runtime links; and the
   `collision-native` label passed 29/29 in that configuration. After building
   installable utility and IO components, a native-only install probe installed
-  no FCL, Bullet, ODE, or libccd libraries and no old collision component
-  target files. The latest package-export cleanup also removed the implicit
-  `collision-fcl` fallback from default package initialization and removed old
-  Bullet/ODE component text from generated component metadata; the follow-up
-  install metadata search found only `DART_BUILD_COLLISION_*` variables set to
-  `OFF`. The fresh runtime install probe now broadens that evidence to all
-  installed native shared libraries, dartpy, target-help, installed package
-  metadata from a clean build tree, and Pixi default/wheel lock metadata.
+  no FCL, Bullet, ODE, libccd, or `libdart-collision-reference-*` libraries.
+  The latest package-export cleanup also keeps retained `collision-fcl`,
+  `collision-bullet`, and `collision-ode` component names as native-backed
+  interface facades and moves old-engine component exports to explicit
+  `collision-reference-*` names. The fresh runtime install probe now broadens
+  that evidence to all installed native shared libraries, dartpy, target-help,
+  installed package metadata from a clean build tree, and Pixi default/wheel
+  lock metadata.
 - Factory-level abstraction cleanup has focused evidence:
   `UNIT_collision_DartCollisionDetector`, `UNIT_simulation_World`,
   `INTEGRATION_collision_Collision`, `INTEGRATION_collision_CollisionGroups`,

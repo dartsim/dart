@@ -34,21 +34,21 @@ options that allow native-only builds to opt out. The built-in stack must also
 have clean API boundaries, scalable native scene/query state, and
 performance-oriented internals before this scale reaches completion.
 
-| Stage | Gate                                                | State                              |
-| ----- | --------------------------------------------------- | ---------------------------------- |
-| 0     | Baseline native backend exists                      | Complete before this task          |
-| 1     | Native `dart` detector is default                   | Complete in checkpoint             |
-| 2     | DART feature parity is proven                       | Complete in checkpoint             |
-| 3     | gz-physics compatibility is proven                  | Complete in checkpoint             |
-| 4     | Native benchmark wins are recorded                  | Complete in checkpoint             |
-| 5     | Local builds pass with FCL/Bullet/ODE disabled      | Complete in checkpoint             |
-| 6     | Native-only and gz-physics CI are permanent         | Started; local evidence            |
-| 7     | Reference engines are test/bench-only opt-in        | Started; opt-in env/test proven    |
-| 8     | Default packages/wheels have no old runtime deps    | Local pass; CI wheel matrix left   |
-| 9     | Downstream migration/deprecation path is tested     | Started; DART alias coverage       |
-| 10    | Collision abstraction is one clean built-in stack   | Started; factory/Python/C++ create |
-| 11    | Old runtime backend source/components are deleted   | Not started                        |
-| 12    | Final PR evidence is complete and task docs removed | Blocked on remaining stages        |
+| Stage | Gate                                                | State                             |
+| ----- | --------------------------------------------------- | --------------------------------- |
+| 0     | Baseline native backend exists                      | Complete before this task         |
+| 1     | Native `dart` detector is default                   | Complete in checkpoint            |
+| 2     | DART feature parity is proven                       | Complete in checkpoint            |
+| 3     | gz-physics compatibility is proven                  | Complete in checkpoint            |
+| 4     | Native benchmark wins are recorded                  | Complete in checkpoint            |
+| 5     | Local builds pass with FCL/Bullet/ODE disabled      | Complete in checkpoint            |
+| 6     | Native-only and gz-physics CI are permanent         | Started; local evidence           |
+| 7     | Reference engines are test/bench-only opt-in        | Local target split proven         |
+| 8     | Default packages/wheels have no old runtime deps    | Local pass; CI wheel matrix left  |
+| 9     | Downstream migration/deprecation path is tested     | Started; alias/component coverage |
+| 10    | Collision abstraction is one clean built-in stack   | Started; factory/Python/C++/CMake |
+| 11    | Old runtime backend source/components are deleted   | Not started                       |
+| 12    | Final PR evidence is complete and task docs removed | Blocked on remaining stages       |
 
 ## Remaining North-Star Gate Backlog
 
@@ -58,10 +58,10 @@ These gates are still required before the single north-star PR is complete.
 | --------------------------- | ----------------------------------------------------------- | --------------------------------------------- |
 | CI native-only build        | CI passes with FCL, Bullet, and ODE disabled                | Local equivalent passed; awaiting CI evidence |
 | CI gz-physics compatibility | gz-physics CI passes with optional legacy components built  | Required in this PR                           |
-| Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Started; opt-in env/test evidence             |
+| Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Local reference target split passes           |
 | Packaging removal           | Default packages/wheels have no old collision runtime deps  | Metadata/link/install/py312 wheel passed      |
-| Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Started; DART alias coverage                  |
-| Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Factory/Python/C++ create aliases done        |
+| Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Started; alias/component coverage             |
+| Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Factory/Python/C++ create/CMake facades done  |
 | Built-in architecture       | API-clean, scalable, performance-oriented native layer      | Started; `01-design.md` gates documented      |
 | Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Required in this PR                           |
 | Legacy backend deletion     | Old runtime backend sources removed from default stack      | Blocked on migration gates                    |
@@ -1411,13 +1411,100 @@ build/default/cpp/Release/bin/tutorial_biped_finished | rg -i
   - Result: no matches; affected default-built tutorials do not link old
     collision engines or old collision component libraries.
 
+## Reference Component Split Runs
+
+- `pixi run config`
+  - Commit: working tree after splitting optional old-engine components into
+    native-backed compatibility components and reference-named targets.
+  - Result: passed. Default configure kept `DART_BUILD_COLLISION_FCL`,
+    `DART_BUILD_COLLISION_BULLET`, `DART_BUILD_COLLISION_ODE`, reference tests,
+    and reference benchmarks `OFF`; CMake generated 10 components, including
+    native-backed `collision-fcl`, `collision-bullet`, and `collision-ode`
+    compatibility components.
+- `pixi run --locked -e collision-reference config`
+  - Commit: working tree after reference target rename.
+  - Result: passed. Reference configure kept FCL, Bullet, ODE, reference tests,
+    and reference benchmarks `ON`; CMake generated 13 components, including
+    compatibility `collision-*` components and explicit
+    `collision-reference-*` components.
+- `ninja -C build/default/cpp/Release -t targets | rg
+"dart-collision-(fcl|bullet|ode|reference-fcl|reference-bullet|reference-ode)|dart_component_collision"`
+  - Commit: working tree after reference target rename.
+  - Result: default native-only build exposed only phony compatibility
+    components `dart_component_collision-fcl`,
+    `dart_component_collision-bullet`, `dart_component_collision-ode`, and
+    `dart_component_collision-native`; no old-engine shared-library or
+    reference targets were present.
+- `ninja -C build/collision-reference/cpp/Release -t targets | rg
+"dart-collision-(fcl|bullet|ode|reference-fcl|reference-bullet|reference-ode)|dart_component_collision"`
+  - Commit: working tree after reference target rename.
+  - Result: reference build exposed `libdart-collision-reference-fcl`,
+    `libdart-collision-reference-bullet`, `libdart-collision-reference-ode`,
+    `dart_component_collision-reference-*`, and the native-backed
+    compatibility component phony targets.
+- `pixi run --locked -e collision-reference -- cmake --build
+build/collision-reference/cpp/Release --target dart-collision-reference-fcl
+dart-collision-reference-bullet dart-collision-reference-ode
+test_reference_backends UNIT_collision_FCLCollisionDetector
+UNIT_collision_BulletCollisionShapes UNIT_collision_OdeHeightmap
+UNIT_collision_OdeCylinderMesh --parallel 8`
+  - Commit: working tree after reference target rename.
+  - Result: passed. The old-engine comparison libraries now build under
+    reference target names; focused reference tests linked successfully with
+    only known deprecated compatibility-header warnings.
+- `pixi run --locked -e collision-reference -- ctest --test-dir
+build/collision-reference/cpp/Release -R
+'test_reference_backends|UNIT_collision_FCLCollisionDetector|UNIT_collision_BulletCollisionShapes|UNIT_collision_OdeHeightmap|UNIT_collision_OdeCylinderMesh'
+--output-on-failure`
+  - Commit: working tree after reference target rename.
+  - Result: passed, 5/5 tests.
+- `rm -rf build/native-compat-install && pixi run -- cmake --install
+build/default/cpp/Release --prefix build/native-compat-install --component
+headers && pixi run -- cmake --install build/default/cpp/Release --prefix
+build/native-compat-install`
+  - Commit: working tree after adding native-backed compatibility component
+    facades.
+  - Result: passed. The default install contains
+    `dart_collision-fclComponent.cmake`,
+    `dart_collision-bulletComponent.cmake`, and
+    `dart_collision-odeComponent.cmake` with imported interface targets linking
+    `dart`; `build/native-compat-install/lib` contains
+    `libdart-collision-native.so` and no `libdart-collision-reference-*`,
+    FCL, Bullet, ODE, or libccd collision runtime libraries.
+- Native compatibility package smoke:
+  - Command:
+    `pixi run -- cmake -S build/native-compat-smoke -B
+    build/native-compat-smoke/build -DCMAKE_PREFIX_PATH="$PWD/build/native-compat-install;$CONDA_PREFIX"
+&& pixi run -- cmake --build build/native-compat-smoke/build --parallel 4
+&& build/native-compat-smoke/build/native_collision_compat_smoke`
+  - Commit: working tree after adding native-backed compatibility component
+    facades.
+  - Result: passed. A downstream-style project using
+    `find_package(DART REQUIRED COMPONENTS collision-fcl collision-bullet
+collision-ode)` linked the compatibility interface targets and verified
+    factory keys `fcl`, `bullet`, and `ode` all construct detectors reporting
+    type `dart`.
+- `pixi run lint`
+  - Commit: working tree after reference target split, compatibility component
+    facades, and docs update.
+  - Result: passed. This reran the default native-only configure and formatting
+    suite after the CMake target rename.
+- `pixi run check-docs-policy`
+  - Commit: working tree after reference target split docs update.
+  - Result: passed.
+- `git diff --check`
+  - Commit: working tree after reference target split docs update.
+  - Result: passed.
+
 ## Known Risks
 
 - Direct public C++ legacy detector `create()` entry points now return the
   built-in detector, matching the public factory and Python compatibility
-  routes. Legacy detector classes and component libraries still contain real
-  FCL, Bullet, and ODE implementations for explicit `createReference()` work,
-  so class/header/component cleanup is still a north-star gate.
+  routes. Legacy package component names are now native-backed interface
+  facades, and old-engine shared libraries are explicitly reference-named.
+  Legacy detector classes, headers, and source files still contain real FCL,
+  Bullet, and ODE implementations for explicit `createReference()` work, so
+  class/header/source cleanup is still a north-star gate.
 - Normal pixi configure paths, default/wheel Pixi lock metadata, and the
   repaired py312 wheel artifact now exclude the old collision engines. CI
   wheel-matrix artifacts still need inspection so packaging cannot reintroduce
@@ -1434,7 +1521,7 @@ build/default/cpp/Release/bin/tutorial_biped_finished | rg -i
   simulation workloads.
 - gz-physics depends on legacy detector names and compatibility headers; keep
   facade behavior covered while native lowercase APIs evolve.
-- Installed-package compatibility remains important: optional legacy component
-  files must keep downstream packages such as gz-physics linking when those
-  components are built, without making FCL, Bullet, or ODE required for native
+- Installed-package compatibility remains important: native-backed
+  compatibility component files must keep downstream packages such as
+  gz-physics linking without making FCL, Bullet, or ODE required for native
   default builds.

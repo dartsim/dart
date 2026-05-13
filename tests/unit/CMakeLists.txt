@@ -1,7 +1,6 @@
 # Copyright (c) 2011, The DART development contributors
 
 # See tests/integration/CMakeLists.txt for documentation on why this is needed.
-# See tests/integration/CMakeLists.txt for documentation.
 function(dart_force_link_collision_backend target backend)
   if(NOT TARGET ${backend})
     return()
@@ -27,11 +26,11 @@ endfunction()
 # ==============================================================================
 # Collision Tests
 # ==============================================================================
-if(DART_BUILD_COLLISION_REFERENCE_TESTS AND TARGET dart-collision-fcl)
+if(DART_BUILD_COLLISION_REFERENCE_TESTS AND TARGET dart-collision-reference-fcl)
   dart_add_test("unit" UNIT_collision_Distance collision/test_distance.cpp)
-  target_link_libraries(UNIT_collision_Distance dart-collision-fcl)
-  if(TARGET dart-collision-bullet)
-    target_link_libraries(UNIT_collision_Distance dart-collision-bullet)
+  target_link_libraries(UNIT_collision_Distance dart-collision-reference-fcl)
+  if(TARGET dart-collision-reference-bullet)
+    target_link_libraries(UNIT_collision_Distance dart-collision-reference-bullet)
   endif()
 endif()
 
@@ -43,11 +42,11 @@ if(DART_BUILD_COLLISION_REFERENCE_TESTS)
     UNIT_collision_CollisionGroup
     PRIVATE DART_ENABLE_COLLISION_REFERENCE_TESTS=1
   )
-  if(TARGET dart-collision-fcl)
-    target_link_libraries(UNIT_collision_CollisionGroup dart-collision-fcl)
+  if(TARGET dart-collision-reference-fcl)
+    target_link_libraries(UNIT_collision_CollisionGroup dart-collision-reference-fcl)
   endif()
-  if(TARGET dart-collision-bullet)
-    target_link_libraries(UNIT_collision_CollisionGroup dart-collision-bullet)
+  if(TARGET dart-collision-reference-bullet)
+    target_link_libraries(UNIT_collision_CollisionGroup dart-collision-reference-bullet)
   endif()
 endif()
 
@@ -61,11 +60,11 @@ if(DART_BUILD_COLLISION_REFERENCE_TESTS)
     UNIT_collision_Raycast
     PRIVATE DART_ENABLE_COLLISION_REFERENCE_TESTS=1
   )
-  if(TARGET dart-collision-fcl)
-    target_link_libraries(UNIT_collision_Raycast dart-collision-fcl)
+  if(TARGET dart-collision-reference-fcl)
+    target_link_libraries(UNIT_collision_Raycast dart-collision-reference-fcl)
   endif()
-  if(TARGET dart-collision-bullet)
-    target_link_libraries(UNIT_collision_Raycast dart-collision-bullet)
+  if(TARGET dart-collision-reference-bullet)
+    target_link_libraries(UNIT_collision_Raycast dart-collision-reference-bullet)
   endif()
 endif()
 
@@ -73,20 +72,20 @@ dart_add_test("unit" UNIT_collision_CollisionResult collision/test_collision_res
 dart_add_test(
   "unit" UNIT_collision_NativeBackend collision/test_native_backend.cpp)
 if(DART_BUILD_COLLISION_REFERENCE_TESTS
-   AND (TARGET dart-collision-fcl OR TARGET dart-collision-bullet OR TARGET dart-collision-ode)
+   AND (TARGET dart-collision-reference-fcl OR TARGET dart-collision-reference-bullet OR TARGET dart-collision-reference-ode)
 )
   dart_add_test(
     "unit"
     UNIT_collision_ConvexMesh
     collision/test_convex_mesh_shape_collision.cpp)
-  if(TARGET dart-collision-fcl)
-    target_link_libraries(UNIT_collision_ConvexMesh dart-collision-fcl)
+  if(TARGET dart-collision-reference-fcl)
+    target_link_libraries(UNIT_collision_ConvexMesh dart-collision-reference-fcl)
   endif()
-  if(TARGET dart-collision-bullet)
-    target_link_libraries(UNIT_collision_ConvexMesh dart-collision-bullet)
+  if(TARGET dart-collision-reference-bullet)
+    target_link_libraries(UNIT_collision_ConvexMesh dart-collision-reference-bullet)
   endif()
-  if(TARGET dart-collision-ode)
-    target_link_libraries(UNIT_collision_ConvexMesh dart-collision-ode)
+  if(TARGET dart-collision-reference-ode)
+    target_link_libraries(UNIT_collision_ConvexMesh dart-collision-reference-ode)
   endif()
 endif()
 
@@ -94,27 +93,27 @@ dart_add_test("unit" UNIT_collision_Contact collision/test_contact.cpp)
 
 if(DART_BUILD_COLLISION_REFERENCE_TESTS AND DART_HAVE_BULLET)
   dart_add_test("unit" UNIT_collision_BulletContact collision/test_bullet_contact.cpp)
-  target_link_libraries(UNIT_collision_BulletContact dart-collision-bullet)
+  target_link_libraries(UNIT_collision_BulletContact dart-collision-reference-bullet)
   dart_add_test(
     "unit" UNIT_collision_BulletCollisionShapes collision/test_bullet_collision_shapes.cpp)
-  target_link_libraries(UNIT_collision_BulletCollisionShapes dart-collision-bullet)
+  target_link_libraries(UNIT_collision_BulletCollisionShapes dart-collision-reference-bullet)
 endif()
 
 if(DART_BUILD_COLLISION_REFERENCE_TESTS AND DART_HAVE_ODE)
   dart_add_test("unit" UNIT_collision_OdeHeightmap collision/test_ode_heightmap.cpp)
-  target_link_libraries(UNIT_collision_OdeHeightmap dart-collision-ode)
+  target_link_libraries(UNIT_collision_OdeHeightmap dart-collision-reference-ode)
   dart_add_test(
     "unit" UNIT_collision_OdeCylinderMesh collision/test_ode_cylinder_mesh.cpp)
-  target_link_libraries(UNIT_collision_OdeCylinderMesh dart-collision-ode)
+  target_link_libraries(UNIT_collision_OdeCylinderMesh dart-collision-reference-ode)
 endif()
 
-if(DART_BUILD_COLLISION_REFERENCE_TESTS AND TARGET dart-collision-fcl)
+if(DART_BUILD_COLLISION_REFERENCE_TESTS AND TARGET dart-collision-reference-fcl)
   dart_add_test(
     "unit" UNIT_collision_FCLCollisionObject collision/test_fcl_collision_object.cpp)
   dart_add_test(
     "unit" UNIT_collision_FCLCollisionDetector collision/test_fcl_collision_detector.cpp)
-  target_link_libraries(UNIT_collision_FCLCollisionObject dart-collision-fcl)
-  target_link_libraries(UNIT_collision_FCLCollisionDetector dart-collision-fcl)
+  target_link_libraries(UNIT_collision_FCLCollisionObject dart-collision-reference-fcl)
+  target_link_libraries(UNIT_collision_FCLCollisionDetector dart-collision-reference-fcl)
 endif()
 dart_add_test("unit" UNIT_collision_CollisionOption collision/test_collision_option.cpp)
 dart_add_test("unit" UNIT_collision_CollisionFilter collision/test_collision_filter.cpp)
@@ -175,7 +174,7 @@ dart_build_tests(
 # ==============================================================================
 dart_add_test("unit" UNIT_constraint_ConstraintSolver constraint/test_constraint_solver.cpp)
 if(DART_BUILD_COLLISION_REFERENCE_TESTS)
-  dart_force_link_collision_backend(UNIT_constraint_ConstraintSolver dart-collision-fcl)
+  dart_force_link_collision_backend(UNIT_constraint_ConstraintSolver dart-collision-reference-fcl)
 endif()
 dart_add_test(
   "unit" UNIT_constraint_BoxedLcpConstraintSolver constraint/test_boxed_lcp_constraint_solver.cpp)
@@ -188,7 +187,7 @@ dart_add_test(
 dart_add_test(
   "unit" UNIT_constraint_ContactSurface constraint/test_contact_surface.cpp)
 if(DART_BUILD_COLLISION_REFERENCE_TESTS)
-  dart_force_link_collision_backend(UNIT_constraint_ContactSurface dart-collision-fcl)
+  dart_force_link_collision_backend(UNIT_constraint_ContactSurface dart-collision-reference-fcl)
 endif()
 dart_add_test("unit" UNIT_constraint_JointConstraints constraint/test_joint_constraints.cpp)
 dart_add_test("unit" UNIT_constraint_MotorConstraints constraint/test_motor_constraints.cpp)
@@ -199,7 +198,7 @@ dart_add_test("unit" UNIT_constraint_ConstrainedGroup constraint/test_constraine
 dart_add_test(
   "unit" UNIT_constraint_SoftContactConstraint constraint/test_soft_contact_constraint.cpp)
 if(DART_BUILD_COLLISION_REFERENCE_TESTS)
-  dart_force_link_collision_backend(UNIT_constraint_SoftContactConstraint dart-collision-fcl)
+  dart_force_link_collision_backend(UNIT_constraint_SoftContactConstraint dart-collision-reference-fcl)
 endif()
 dart_add_test(
   "unit" UNIT_constraint_CouplerConstraint constraint/test_coupler_constraint.cpp)
@@ -423,8 +422,8 @@ if(DART_BUILD_COLLISION_REFERENCE_TESTS)
     UNIT_simulation_World
     PRIVATE DART_ENABLE_COLLISION_REFERENCE_TESTS=1
   )
-  if(TARGET dart-collision-bullet)
-    target_link_libraries(UNIT_simulation_World dart-collision-bullet)
+  if(TARGET dart-collision-reference-bullet)
+    target_link_libraries(UNIT_simulation_World dart-collision-reference-bullet)
   endif()
 endif()
 dart_add_test("unit" UNIT_simulation_Recording simulation/test_recording.cpp)

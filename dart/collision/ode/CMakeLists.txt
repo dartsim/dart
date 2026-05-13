@@ -38,7 +38,7 @@ file(GLOB srcs "*.cpp")
 file(GLOB detail_hdrs "detail/*.hpp")
 file(GLOB detail_srcs "detail/*.cpp")
 
-set(target_name ${PROJECT_NAME}-collision-ode)
+set(target_name ${PROJECT_NAME}-collision-reference-ode)
 dart_add_library(${target_name} ${srcs} ${detail_srcs})
 target_include_directories(${target_name}
   PUBLIC
@@ -65,9 +65,9 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   target_compile_options(${target_name} PRIVATE -Wno-deprecated-enum-enum-conversion)
 endif()
 
-add_component_targets(${PROJECT_NAME} collision-ode ${target_name})
-add_component_dependencies(${PROJECT_NAME} collision-ode dart)
-add_component_dependency_packages(${PROJECT_NAME} collision-ode ODE)
+add_component_targets(${PROJECT_NAME} collision-reference-ode ${target_name})
+add_component_dependencies(${PROJECT_NAME} collision-reference-ode dart)
+add_component_dependency_packages(${PROJECT_NAME} collision-reference-ode ODE)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "collision_ode headers" ${hdrs})

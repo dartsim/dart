@@ -50,20 +50,26 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # collision-fcl - (dart), {dart-collision-fcl}
 # collision-bullet - (dart), {dart-collision-bullet}
 # collision-ode - (dart), {dart-collision-ode}
+# collision-reference-fcl - (dart), {dart-collision-reference-fcl}
+# collision-reference-bullet - (dart), {dart-collision-reference-bullet}
+# collision-reference-ode - (dart), {dart-collision-reference-ode}
 
 # Component. This should be called before adding subdirectories.
 add_component(${PROJECT_NAME} dart)
+add_component(${PROJECT_NAME} collision-fcl)
+add_component(${PROJECT_NAME} collision-bullet)
+add_component(${PROJECT_NAME} collision-ode)
 
 if(DART_BUILD_COLLISION_FCL)
-  add_component(${PROJECT_NAME} collision-fcl)
+  add_component(${PROJECT_NAME} collision-reference-fcl)
 endif()
 
 if(DART_BUILD_COLLISION_BULLET)
-  add_component(${PROJECT_NAME} collision-bullet)
+  add_component(${PROJECT_NAME} collision-reference-bullet)
 endif()
 
 if(DART_BUILD_COLLISION_ODE)
-  add_component(${PROJECT_NAME} collision-ode)
+  add_component(${PROJECT_NAME} collision-reference-ode)
 endif()
 
 function(dart_add_core_headers)
@@ -273,6 +279,26 @@ if(spdlog_FOUND)
   add_component_dependency_packages(${PROJECT_NAME} dart spdlog)
 endif()
 add_component_dependencies(${PROJECT_NAME} dart collision-native)
+
+# Legacy collision component names are compatibility facades. They no longer
+# select external runtime backends; linking any of these components gives
+# downstream projects the canonical built-in DART collision stack.
+foreach(_dart_legacy_collision_component fcl bullet ode)
+  set(_dart_legacy_collision_target
+    "${PROJECT_NAME}-collision-${_dart_legacy_collision_component}")
+  add_library(${_dart_legacy_collision_target} INTERFACE)
+  target_link_libraries(${_dart_legacy_collision_target} INTERFACE dart)
+  add_component_targets(
+    ${PROJECT_NAME}
+    collision-${_dart_legacy_collision_component}
+    ${_dart_legacy_collision_target})
+  add_component_dependencies(
+    ${PROJECT_NAME}
+    collision-${_dart_legacy_collision_component}
+    dart)
+endforeach()
+unset(_dart_legacy_collision_component)
+unset(_dart_legacy_collision_target)
 
 if(MSVC)
   set_target_properties(

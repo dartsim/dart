@@ -142,14 +142,18 @@ legacy detector `create()` entry points now return the built-in detector, so
 ordinary source code that selects an old detector class still lands on native
 collision.
 
-The remaining design gap is legacy component/source cleanup. The old FCL,
-Bullet, and ODE detector classes, headers, and component targets still contain
-real reference-engine implementations for explicit `createReference()` use.
-Before Phase 11 can complete, retained public component/header surfaces must
-either become thin native-backed compatibility facades or move behind
-explicitly named reference-only test/benchmark targets. The completed PR must
-make it impossible for ordinary DART collision runtime selection to instantiate
-or link FCL, Bullet, or ODE.
+The component boundary has been split: retained package component names
+`collision-fcl`, `collision-bullet`, and `collision-ode` are native-backed
+interface facades, while old-engine libraries/components are explicitly named
+`collision-reference-fcl`, `collision-reference-bullet`, and
+`collision-reference-ode`. The remaining design gap is legacy detector
+header/source cleanup. The old FCL, Bullet, and ODE detector classes and
+headers still contain real reference-engine implementations for explicit
+`createReference()` use. Before Phase 11 can complete, retained public header
+surfaces must either become thin native-backed compatibility facades or move
+behind explicitly named reference-only test/benchmark targets. The completed PR
+must make it impossible for ordinary DART collision runtime selection to
+instantiate or link FCL, Bullet, or ODE.
 
 ## Code Ownership Map
 
@@ -186,12 +190,13 @@ backends:
 - `find_package(DART)` should default to the `dart` component and the built-in
   detector. It should not auto-add FCL, Bullet, or ODE collision components.
 - Installed CMake component files, pkg-config metadata, and default runtime
-  libraries should not advertise old collision component targets or old
-  collision libraries in native-only builds.
-- If a legacy component name remains for source compatibility, it must be a
-  compatibility facade over the built-in detector or an explicitly named
-  reference-only target. It must not silently select an external runtime
-  backend.
+  libraries should not advertise external-engine collision libraries in
+  native-only builds.
+- Retained legacy component names such as `collision-fcl`,
+  `collision-bullet`, and `collision-ode` must be native-backed compatibility
+  facades. External-engine comparison targets must use explicit
+  `collision-reference-*` names and must not silently select an external
+  runtime backend.
 - Default package environments, including wheel build environments, should not
   carry FCL, Bullet, ODE, or their transitive collision packages. A separate
   reference environment may carry them for comparison tests and benchmarks.

@@ -94,7 +94,7 @@ if(NOT _dart_bullet_link_items)
 endif()
 set(_dart_bullet_include_dirs ${BULLET_INCLUDE_DIRS})
 
-set(target_name ${PROJECT_NAME}-collision-bullet)
+set(target_name ${PROJECT_NAME}-collision-reference-bullet)
 dart_add_library(${target_name} ${srcs} ${detail_srcs})
 target_include_directories(${target_name}
   PUBLIC
@@ -121,9 +121,9 @@ if(BT_USE_DOUBLE_PRECISION)
   target_compile_definitions(${target_name} PUBLIC BT_USE_DOUBLE_PRECISION)
 endif()
 
-add_component_targets(${PROJECT_NAME} collision-bullet ${target_name})
-add_component_dependencies(${PROJECT_NAME} collision-bullet dart)
-add_component_dependency_packages(${PROJECT_NAME} collision-bullet Bullet)
+add_component_targets(${PROJECT_NAME} collision-reference-bullet ${target_name})
+add_component_dependencies(${PROJECT_NAME} collision-reference-bullet dart)
+add_component_dependency_packages(${PROJECT_NAME} collision-reference-bullet Bullet)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "collision_bullet headers" ${hdrs})
