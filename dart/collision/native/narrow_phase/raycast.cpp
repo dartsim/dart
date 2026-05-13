@@ -168,7 +168,7 @@ bool raycastBox(
   double tHit = tMin;
   int hitAxis = hitAxisMin;
   int hitSign = hitSignMin;
-  if (tHit < 0.0) {
+  if (hitAxis < 0 || tHit < 0.0) {
     if (tMax < 0.0) {
       return false;
     }
@@ -219,16 +219,33 @@ bool raycastCapsule(
   const double dy = localDir.y();
   const double ox = localOrigin.x();
   const double oy = localOrigin.y();
+  const double radiusSquared = radius * radius;
+  const double radialSquared = ox * ox + oy * oy;
+  const bool originInsideCylinder = radialSquared <= radiusSquared + kEpsilon
+                                    && localOrigin.z() >= -halfHeight - kEpsilon
+                                    && localOrigin.z() <= halfHeight + kEpsilon;
+  const bool originInsideTopCap
+      = (localOrigin - Eigen::Vector3d(0, 0, halfHeight)).squaredNorm()
+        <= radiusSquared + kEpsilon;
+  const bool originInsideBottomCap
+      = (localOrigin - Eigen::Vector3d(0, 0, -halfHeight)).squaredNorm()
+        <= radiusSquared + kEpsilon;
+  const bool originInsideCapsule
+      = originInsideCylinder || originInsideTopCap || originInsideBottomCap;
+
+  auto acceptsHitDistance = [originInsideCapsule](double t) {
+    return originInsideCapsule ? t > kEpsilon : t >= 0.0;
+  };
 
   double a = dx * dx + dy * dy;
   double b = 2.0 * (ox * dx + oy * dy);
-  double c = ox * ox + oy * oy - radius * radius;
+  double c = radialSquared - radiusSquared;
 
   if (a > kEpsilon) {
     double t0, t1;
     if (solveQuadratic(a, b, c, t0, t1) >= 0.0) {
       for (double t : {t0, t1}) {
-        if (t >= 0.0 && t < bestT) {
+        if (acceptsHitDistance(t) && t < bestT) {
           double z = localOrigin.z() + t * localDir.z();
           if (z >= -halfHeight && z <= halfHeight) {
             Eigen::Vector3d hitPoint = localOrigin + t * localDir;
@@ -247,12 +264,12 @@ bool raycastCapsule(
     Eigen::Vector3d oc = localOrigin - center;
     double a2 = localDir.squaredNorm();
     double b2 = 2.0 * oc.dot(localDir);
-    double c2 = oc.squaredNorm() - radius * radius;
+    double c2 = oc.squaredNorm() - radiusSquared;
 
     double t0, t1;
     if (solveQuadratic(a2, b2, c2, t0, t1) >= 0.0) {
       for (double t : {t0, t1}) {
-        if (t >= 0.0 && t < bestT) {
+        if (acceptsHitDistance(t) && t < bestT) {
           bestT = t;
           Eigen::Vector3d hitPoint = localOrigin + t * localDir;
           bestNormal = (hitPoint - center).normalized();

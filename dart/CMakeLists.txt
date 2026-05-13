@@ -34,8 +34,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # Targets - {dependency targets}, source directories, [external dependency libs]
 #===============================================================================
 # dart - common, math (including math/optimization), lcpsolver, dynamics,
-#        collision (fcl + optional Bullet/ODE), constraint, simulation, sensor, utils,
-#        gui, [assimp, eigen3, fcl, fmt]
+#        collision (native + optional FCL/Bullet/ODE), constraint, simulation,
+#        sensor, utils, gui, [assimp, eigen3, fmt]
 # dart-utils - {dart}, utils, utils/sdf, [tinyxml2]
 # dart-utils-urdf - {dart-utils}, utils/urdf, [urdfdom]
 # dart-gui - {dart-utils}, gui, gui/render, [openscenegraph]
@@ -47,11 +47,16 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # utils - (dart), {dart-utils}
 # utils-urdf - (utils), {dart-utils-urdf}
 # gui - (utils), {dart-gui}
-# collision-bullet - (dart), {dart} [compat]
-# collision-ode - (dart), {dart} [compat]
+# collision-fcl - (dart), {dart-collision-fcl}
+# collision-bullet - (dart), {dart-collision-bullet}
+# collision-ode - (dart), {dart-collision-ode}
 
 # Component. This should be called before adding subdirectories.
 add_component(${PROJECT_NAME} dart)
+
+if(DART_BUILD_COLLISION_FCL)
+  add_component(${PROJECT_NAME} collision-fcl)
+endif()
 
 if(DART_BUILD_COLLISION_BULLET)
   add_component(${PROJECT_NAME} collision-bullet)

@@ -33,7 +33,9 @@
 #include <dart/collision/native/narrow_phase/box_box.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
 
+#include <algorithm>
 #include <array>
+#include <utility>
 
 #include <cmath>
 
@@ -120,6 +122,118 @@ Eigen::Vector3d computeContactPoint(
   }
 
   return (point1 + point2) * 0.5;
+}
+
+std::array<double, 2> projectInterval(
+    const Eigen::Vector3d& center,
+    const Eigen::Vector3d& halfExtents,
+    const Eigen::Matrix3d& rotation,
+    const Eigen::Vector3d& axis)
+{
+  const auto centerProjection = center.dot(axis);
+  const auto radius = projectBox(halfExtents, rotation, axis);
+  return {centerProjection - radius, centerProjection + radius};
+}
+
+std::size_t addCoordinatePair(
+    double minValue, double maxValue, std::array<double, 2>& coords)
+{
+  coords[0] = minValue;
+  coords[1] = maxValue;
+  return (maxValue - minValue > kEpsilon) ? 2u : 1u;
+}
+
+bool addFacePatchContacts(
+    const Eigen::Vector3d& center1,
+    const Eigen::Vector3d& halfExtents1,
+    const Eigen::Matrix3d& rotation1,
+    const Eigen::Vector3d& center2,
+    const Eigen::Vector3d& halfExtents2,
+    const Eigen::Matrix3d& rotation2,
+    const Eigen::Vector3d& normal,
+    const SatResult& best,
+    CollisionResult& result,
+    const CollisionOption& option)
+{
+  if (best.axisIndex < 0 || best.axisIndex >= 6) {
+    return false;
+  }
+
+  const auto contactsBefore = result.numContacts();
+  if (contactsBefore >= option.maxNumContacts) {
+    return false;
+  }
+
+  const auto referenceAxisIndex
+      = (best.axisIndex < 3) ? best.axisIndex : best.axisIndex - 3;
+  const auto& referenceRotation = (best.axisIndex < 3) ? rotation1 : rotation2;
+  const auto& incidentRotation = (best.axisIndex < 3) ? rotation2 : rotation1;
+  double incidentFaceAlignment = 0.0;
+  for (int i = 0; i < 3; ++i) {
+    incidentFaceAlignment = std::max(
+        incidentFaceAlignment, std::abs(normal.dot(incidentRotation.col(i))));
+  }
+  if (incidentFaceAlignment < 1.0 - 1e-6) {
+    return false;
+  }
+
+  const auto tangent1 = referenceRotation.col((referenceAxisIndex + 1) % 3);
+  const auto tangent2 = referenceRotation.col((referenceAxisIndex + 2) % 3);
+
+  const auto interval1T1
+      = projectInterval(center1, halfExtents1, rotation1, tangent1);
+  const auto interval2T1
+      = projectInterval(center2, halfExtents2, rotation2, tangent1);
+  const auto interval1T2
+      = projectInterval(center1, halfExtents1, rotation1, tangent2);
+  const auto interval2T2
+      = projectInterval(center2, halfExtents2, rotation2, tangent2);
+
+  const auto minT1 = std::max(interval1T1[0], interval2T1[0]);
+  const auto maxT1 = std::min(interval1T1[1], interval2T1[1]);
+  const auto minT2 = std::max(interval1T2[0], interval2T2[0]);
+  const auto maxT2 = std::min(interval1T2[1], interval2T2[1]);
+  if (maxT1 < minT1 || maxT2 < minT2) {
+    return false;
+  }
+
+  const auto interval1Normal
+      = projectInterval(center1, halfExtents1, rotation1, normal);
+  const auto interval2Normal
+      = projectInterval(center2, halfExtents2, rotation2, normal);
+  const auto contactNormalCoord
+      = 0.5 * (interval1Normal[0] + interval2Normal[1]);
+
+  std::array<double, 2> coordsT1{};
+  std::array<double, 2> coordsT2{};
+  const auto numT1 = addCoordinatePair(minT1, maxT1, coordsT1);
+  const auto numT2 = addCoordinatePair(minT2, maxT2, coordsT2);
+
+  ContactManifold manifold;
+  manifold.setType(ContactType::Face);
+
+  const auto remaining = option.maxNumContacts - contactsBefore;
+  for (std::size_t i = 0; i < numT1; ++i) {
+    for (std::size_t j = 0; j < numT2; ++j) {
+      if (manifold.numContacts() >= remaining) {
+        break;
+      }
+
+      ContactPoint contact;
+      contact.position = contactNormalCoord * normal + coordsT1[i] * tangent1
+                         + coordsT2[j] * tangent2;
+      contact.normal = normal;
+      contact.depth = best.penetration;
+      manifold.addContact(contact);
+    }
+  }
+
+  if (!manifold.hasContacts()) {
+    return false;
+  }
+
+  result.addManifold(std::move(manifold));
+  return true;
 }
 
 } // namespace
@@ -213,6 +327,20 @@ bool collideBoxes(
   contact.position = contactPoint;
   contact.normal = normal;
   contact.depth = best.penetration;
+
+  if (addFacePatchContacts(
+          center1,
+          halfExtents1,
+          rotation1,
+          center2,
+          halfExtents2,
+          rotation2,
+          normal,
+          best,
+          result,
+          option)) {
+    return true;
+  }
 
   result.addContact(contact);
 

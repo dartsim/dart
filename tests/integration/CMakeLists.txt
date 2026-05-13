@@ -50,12 +50,10 @@ if(TARGET dart-collision-ode)
   target_link_libraries(INTEGRATION_collision_CollisionGroups dart-collision-ode)
 endif()
 
-if(TARGET dart-io)
+if(TARGET dart-io AND TARGET dart-collision-fcl)
   dart_add_test("integration" INTEGRATION_collision_Collision collision/test_collision.cpp)
   target_link_libraries(INTEGRATION_collision_Collision dart-io)
-  if(TARGET dart-collision-fcl)
-    target_link_libraries(INTEGRATION_collision_Collision dart-collision-fcl)
-  endif()
+  target_link_libraries(INTEGRATION_collision_Collision dart-collision-fcl)
   if(TARGET dart-collision-bullet)
     target_link_libraries(INTEGRATION_collision_Collision dart-collision-bullet)
   endif()
@@ -73,24 +71,22 @@ if(TARGET dart-collision-fcl)
     collision/test_mesh_contact_regression.cpp)
   target_link_libraries(INTEGRATION_collision_MeshContactRegression dart-collision-fcl)
 endif()
-dart_add_test(
-  "integration"
-  INTEGRATION_collision_FclPrimitiveContactMatrix
-  collision/test_fcl_primitive_contact_matrix.cpp)
 if(TARGET dart-collision-fcl)
+  dart_add_test(
+    "integration"
+    INTEGRATION_collision_FclPrimitiveContactMatrix
+    collision/test_fcl_primitive_contact_matrix.cpp)
   target_link_libraries(INTEGRATION_collision_FclPrimitiveContactMatrix dart-collision-fcl)
-endif()
-dart_add_test(
-  "integration"
-  INTEGRATION_collision_FclPrimitiveContactMatrixFcl
-  collision/test_fcl_primitive_contact_matrix_fcl.cpp)
-if(TARGET dart-collision-fcl)
+  dart_add_test(
+    "integration"
+    INTEGRATION_collision_FclPrimitiveContactMatrixFcl
+    collision/test_fcl_primitive_contact_matrix_fcl.cpp)
   target_link_libraries(INTEGRATION_collision_FclPrimitiveContactMatrixFcl dart-collision-fcl)
-endif()
-# Suppress <ciso646> deprecation warning from octomap headers (GCC 15+)
-# This file directly includes <fcl/fcl.h> which pulls in octomap's OcTreeKey.h
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15)
-  target_compile_options(INTEGRATION_collision_FclPrimitiveContactMatrixFcl PRIVATE -Wno-cpp)
+  # Suppress <ciso646> deprecation warning from octomap headers (GCC 15+)
+  # This file directly includes <fcl/fcl.h> which pulls in octomap's OcTreeKey.h
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15)
+    target_compile_options(INTEGRATION_collision_FclPrimitiveContactMatrixFcl PRIVATE -Wno-cpp)
+  endif()
 endif()
 
 dart_add_test(
@@ -127,17 +123,15 @@ if(DART_BUILD_COLLISION_BULLET)
   target_link_libraries(INTEGRATION_collision_BulletBoxStack dart-collision-bullet)
 endif()
 
-if(DART_BUILD_COLLISION_BULLET AND DART_BUILD_COLLISION_ODE)
+if(DART_BUILD_COLLISION_BULLET AND DART_BUILD_COLLISION_ODE AND TARGET dart-collision-fcl)
   dart_add_test("integration" INTEGRATION_collision_PlaneShapeCollision collision/test_plane_shape_collision.cpp)
   target_link_libraries(
     INTEGRATION_collision_PlaneShapeCollision
     dart-utils
     dart-collision-bullet
     dart-collision-ode
+    dart-collision-fcl
   )
-  if(TARGET dart-collision-fcl)
-    target_link_libraries(INTEGRATION_collision_PlaneShapeCollision dart-collision-fcl)
-  endif()
 
   if(TARGET dart-io)
     dart_add_test("integration" INTEGRATION_collision_ContactGrouping collision/test_contact_grouping.cpp)

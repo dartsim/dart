@@ -128,7 +128,10 @@ TEST(StateSpace, GetBounds)
 {
   StateSpace space;
   space.addVariable(
-      "pos", 2, -dart::simulation::native::pi, dart::simulation::native::pi);
+      "pos",
+      2,
+      -dart::simulation::experimental::pi,
+      dart::simulation::experimental::pi);
   space.addVariable("vel", 2, -10.0, 10.0);
 
   auto lowerBounds = space.getLowerBounds();
@@ -138,10 +141,10 @@ TEST(StateSpace, GetBounds)
   ASSERT_EQ(upperBounds.size(), 4);
 
   // First variable (pos)
-  EXPECT_DOUBLE_EQ(lowerBounds[0], -dart::simulation::native::pi);
-  EXPECT_DOUBLE_EQ(lowerBounds[1], -dart::simulation::native::pi);
-  EXPECT_DOUBLE_EQ(upperBounds[0], dart::simulation::native::pi);
-  EXPECT_DOUBLE_EQ(upperBounds[1], dart::simulation::native::pi);
+  EXPECT_DOUBLE_EQ(lowerBounds[0], -dart::simulation::experimental::pi);
+  EXPECT_DOUBLE_EQ(lowerBounds[1], -dart::simulation::experimental::pi);
+  EXPECT_DOUBLE_EQ(upperBounds[0], dart::simulation::experimental::pi);
+  EXPECT_DOUBLE_EQ(upperBounds[1], dart::simulation::experimental::pi);
 
   // Second variable (vel)
   EXPECT_DOUBLE_EQ(lowerBounds[2], -10.0);

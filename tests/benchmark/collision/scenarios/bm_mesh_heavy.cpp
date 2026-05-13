@@ -34,9 +34,9 @@
 
 #include <dart/collision/CollisionOption.hpp>
 #include <dart/collision/CollisionResult.hpp>
+#include <dart/collision/fcl/FCLCollisionDetector.hpp>
 #include <dart/collision/native/collision_world.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
-#include <dart/collision/fcl/FCLCollisionDetector.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/CapsuleShape.hpp>
@@ -134,7 +134,7 @@ MeshData BuildGridMesh(int subdivisions, double halfExtent)
   return data;
 }
 
-std::unique_ptr<Shape> MakeExperimentalPrimitive(ShapeKind kind)
+std::unique_ptr<Shape> MakeNativePrimitive(ShapeKind kind)
 {
   switch (kind) {
     case ShapeKind::Sphere:
@@ -163,7 +163,7 @@ std::shared_ptr<dart::dynamics::Shape> MakeDynamicsPrimitive(ShapeKind kind)
   return std::make_shared<dart::dynamics::SphereShape>(kSphereRadius);
 }
 
-void BuildExperimentalScene(
+void BuildNativeScene(
     std::size_t primitiveCount,
     const MeshData& mesh,
     CollisionWorld& world,
@@ -195,7 +195,7 @@ void BuildExperimentalScene(
     auto transform = dart::benchmark::collision::RandomTransformWithRotation(
         rng, kSceneRange);
     objects.emplace_back(
-        world.createObject(MakeExperimentalPrimitive(kind), transform));
+        world.createObject(MakeNativePrimitive(kind), transform));
   }
 }
 
@@ -245,13 +245,13 @@ void BuildDetectorScene(
   }
 }
 
-void RunExperimentalMeshScenario(benchmark::State& state, const MeshData& mesh)
+void RunNativeMeshScenario(benchmark::State& state, const MeshData& mesh)
 {
   const std::size_t primitiveCount = static_cast<std::size_t>(state.range(0));
 
   CollisionWorld world;
   std::vector<CollisionObject> objects;
-  BuildExperimentalScene(primitiveCount, mesh, world, objects);
+  BuildNativeScene(primitiveCount, mesh, world, objects);
 
   CollisionOption option = CollisionOption::fullContacts(
       MaxContactsForCount(kMeshCount + primitiveCount));
@@ -291,16 +291,13 @@ void RunDetectorMeshScenario(
 
 } // namespace
 
-static void BM_Scenario_MeshHeavy_Experimental(benchmark::State& state)
+static void BM_Scenario_MeshHeavy_Native(benchmark::State& state)
 {
   static const MeshData mesh
       = BuildGridMesh(kMeshSubdivisions, kMeshHalfExtent);
-  RunExperimentalMeshScenario(state, mesh);
+  RunNativeMeshScenario(state, mesh);
 }
-BENCHMARK(BM_Scenario_MeshHeavy_Experimental)
-    ->Arg(1000)
-    ->Arg(5000)
-    ->Complexity();
+BENCHMARK(BM_Scenario_MeshHeavy_Native)->Arg(1000)->Arg(5000)->Complexity();
 
 static void BM_Scenario_MeshHeavy_FCL(benchmark::State& state)
 {

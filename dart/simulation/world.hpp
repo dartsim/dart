@@ -111,7 +111,7 @@ struct WorldConfig final
   std::string name = "world";
 
   /// Preferred collision detector for the world.
-  CollisionDetectorType collisionDetector = CollisionDetectorType::Fcl;
+  CollisionDetectorType collisionDetector = CollisionDetectorType::Dart;
 
   /// Primary LCP solver for constraint resolution.
   LcpSolverType primaryLcpSolver = LcpSolverType::Dantzig;

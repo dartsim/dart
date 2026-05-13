@@ -27,6 +27,7 @@ endif()
 @PACKAGE_INIT@
 
 set(DART_BUILD_COLLISION_BULLET "@DART_BUILD_COLLISION_BULLET@")
+set(DART_BUILD_COLLISION_FCL "@DART_BUILD_COLLISION_FCL@")
 set(DART_BUILD_COLLISION_ODE "@DART_BUILD_COLLISION_ODE@")
 
 #===============================================================================
@@ -147,9 +148,11 @@ endfunction()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 
-# Default components: dart and collision-fcl (FCL was previously part of
-# libdart.so; always include it for backward compatibility with consumers
-# that link only ${DART_LIBRARIES}).
+# Default components: dart and collision-fcl when that optional component was
+# installed. FCL used to be part of libdart.so, and downstream consumers such
+# as gz-physics include FCL headers while requesting only legacy Bullet/ODE
+# components. Keep that installed-package compatibility without requiring FCL
+# in builds that disable the collision-fcl component.
 list(APPEND @PROJECT_NAME_UPPERCASE@_FIND_COMPONENTS dart)
 if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@_collision-fclComponent.cmake")
   list(APPEND @PROJECT_NAME_UPPERCASE@_FIND_COMPONENTS collision-fcl)

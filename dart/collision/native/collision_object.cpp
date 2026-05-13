@@ -145,6 +145,7 @@ void CollisionObject::setCollisionGroup(std::uint32_t group)
       = registry.try_get<comps::CollisionFilterComponent>(m_entity);
   if (filterComp) {
     filterComp->filterData.collisionGroup = group;
+    m_world->notifyCollisionFilterChanged();
   }
 }
 
@@ -169,6 +170,7 @@ void CollisionObject::setCollisionMask(std::uint32_t mask)
       = registry.try_get<comps::CollisionFilterComponent>(m_entity);
   if (filterComp) {
     filterComp->filterData.collisionMask = mask;
+    m_world->notifyCollisionFilterChanged();
   }
 }
 
@@ -184,6 +186,7 @@ void CollisionObject::setCollisionFilter(
   if (filterComp) {
     filterComp->filterData.collisionGroup = group;
     filterComp->filterData.collisionMask = mask;
+    m_world->notifyCollisionFilterChanged();
   }
 }
 
@@ -210,6 +213,7 @@ void CollisionObject::setCollisionFilterData(
       = registry.try_get<comps::CollisionFilterComponent>(m_entity);
   if (filterComp) {
     filterComp->filterData = filterData;
+    m_world->notifyCollisionFilterChanged();
   }
 }
 

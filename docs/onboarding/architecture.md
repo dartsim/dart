@@ -257,22 +257,50 @@ CollisionDetector (Factory)
 
 #### Collision Detection Backends:
 
-DART supports **4 pluggable backends** via Strategy Pattern:
+DART supports pluggable backends via Strategy Pattern while the built-in native
+backend is being promoted to the default path:
 
-| Backend    | Directory | Purpose                    | Pros                                           | Cons                            |
-| ---------- | --------- | -------------------------- | ---------------------------------------------- | ------------------------------- |
-| **FCL**    | `fcl/`    | Flexible Collision Library | Fast, good broadphase (AABB tree), **default** | FCL bugs in contact computation |
-| **Bullet** | `bullet/` | Bullet Physics             | Robust, well-tested                            | Heavier dependency              |
-| **DART**   | `dart/`   | Native implementation      | No dependencies, lightweight                   | Limited features                |
-| **ODE**    | `ode/`    | Open Dynamics Engine       | Good for ODE integration                       | No distance queries             |
+| Backend    | Directory | Purpose                    | Pros                                 | Cons                            |
+| ---------- | --------- | -------------------------- | ------------------------------------ | ------------------------------- |
+| **DART**   | `dart/`   | Native implementation      | Default, no external dependency      | Keep benchmark coverage current |
+| **FCL**    | `fcl/`    | Flexible Collision Library | Reference coverage and compatibility | Optional external dependency    |
+| **Bullet** | `bullet/` | Bullet Physics             | Reference coverage and compatibility | Optional external dependency    |
+| **ODE**    | `ode/`    | Open Dynamics Engine       | Reference coverage and compatibility | Optional external dependency    |
 
-**Default backend:** The experimental built-in backend is the default. FCL is the fallback if experimental is not available.
+**Default backend:** The built-in native DART backend is the default factory key
+(`"dart"`). The legacy `"experimental"` key is retained as a compatibility alias
+during the transition. FCL, Bullet, and ODE are optional reference and
+compatibility backends, not native-default runtime requirements.
 
 **Backend-specific implementations:**
 
 - Each backend implements `CollisionDetector` and `CollisionGroup`
-- Factory registration allows runtime selection: `CollisionDetector::getFactory()->create("experimental")`
-- FCL, Bullet, and ODE are decoupled into separate `.so` files (`dart-collision-fcl`, etc.) and are not linked into `libdart.so`
+- Factory registration allows runtime selection: `CollisionDetector::getFactory()->create("dart")`
+- FCL, Bullet, and ODE are decoupled into separate `.so` files
+  (`dart-collision-fcl`, etc.) and are kept as optional validation and
+  compatibility backends
+
+**Native-readiness gates:**
+
+- Native must cover the DART collision feature surface previously supplied by
+  FCL, Bullet, and ODE, including primitive, convex, mesh, heightmap,
+  ellipsoid, cone, multi-sphere, soft mesh, voxel grid, collision filtering,
+  distance, raycast, and solver contact-manifold paths.
+- Native-vs-reference consistency tests remain the guardrail for contact sign,
+  normal direction, penetration depth, distance, nearest-point, and raycast
+  semantics when reference backends are available.
+- gz-physics compatibility is a release gate. Legacy detector names and
+  compatibility headers stay source-compatible while gz-physics still includes
+  or links against them.
+- Default native builds must configure, build, test, and import through
+  `dartpy` with FCL, Bullet, and ODE disabled. Installed package exports should
+  still include optional legacy components when those components are built, so
+  downstream packages that use `${DART_LIBRARIES}` continue to link.
+- Performance claims are evidence driven: comparative benchmark runs must show
+  native matching or beating the best legacy backend for required primitive,
+  narrow-phase, supported distance, raycast, batch-raycast, mesh-heavy, and
+  mixed-primitive workloads before old backends are treated as validation-only
+  dependencies.
 
 **Collision→Dynamics Dependency (Bridge Pattern):**
 
@@ -283,11 +311,11 @@ DART supports **4 pluggable backends** via Strategy Pattern:
 
 **Files:**
 
+- Native core: `dart/collision/native/`
+- DART adapter: `dart/collision/dart/dart_collision_detector.hpp`
 - FCL: `dart/collision/fcl/fcl_collision_detector.hpp` (separate `dart-collision-fcl.so`)
 - Bullet: `dart/collision/bullet/bullet_collision_detector.hpp` (separate `dart-collision-bullet.so`)
-- DART: `dart/collision/dart/dart_collision_detector.hpp`
 - ODE: `dart/collision/ode/ode_collision_detector.hpp` (separate `dart-collision-ode.so`)
-- Experimental: `dart/collision/experimental/` (separate `dart-collision-experimental.so`)
 - Bridge files: `dart/dynamics/detail/*_bridge.cpp` (collision→dynamics glue)
 
 ---
@@ -920,9 +948,9 @@ CollisionDetector
 | Library                   | Purpose             | Usage                      |
 | ------------------------- | ------------------- | -------------------------- |
 | **Eigen**                 | Linear algebra      | Math operations throughout |
-| **FCL** (optional)        | Collision detection | Default collision backend  |
-| **Bullet** (optional)     | Collision detection | Alternative backend        |
-| **ODE** (optional)        | Collision/physics   | Alternative backend        |
+| **FCL** (optional)        | Collision detection | Reference backend          |
+| **Bullet** (optional)     | Collision detection | Reference backend          |
+| **ODE** (optional)        | Collision/physics   | Reference backend          |
 | **urdfdom** (optional)    | URDF parsing        | Robot model loading        |
 | **tinyxml2** (optional)   | XML parsing         | File I/O                   |
 | **OpenGL/OSG** (optional) | Visualization       | GUI applications           |

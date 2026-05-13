@@ -140,6 +140,7 @@ struct DART_COLLISION_NATIVE_API BatchView
   std::span<const std::uint8_t> flags;
   std::span<const std::size_t> idToIndex;
   std::size_t invalidIndex = std::numeric_limits<std::size_t>::max();
+  bool denseIds = false;
 
   [[nodiscard]] std::size_t size() const
   {
@@ -148,6 +149,9 @@ struct DART_COLLISION_NATIVE_API BatchView
 
   [[nodiscard]] std::size_t indexForId(ObjectId id) const
   {
+    if (denseIds) {
+      return id < ids.size() ? id : invalidIndex;
+    }
     if (id >= idToIndex.size()) {
       return invalidIndex;
     }
@@ -194,6 +198,7 @@ struct DART_COLLISION_NATIVE_API BatchStorage
   std::vector<Aabb, Eigen::aligned_allocator<Aabb>> aabbs;
   std::vector<std::uint8_t> flags;
   std::vector<std::size_t> idToIndex;
+  bool denseIds = true;
 
   void clear()
   {
@@ -203,6 +208,7 @@ struct DART_COLLISION_NATIVE_API BatchStorage
     aabbs.clear();
     flags.clear();
     idToIndex.clear();
+    denseIds = true;
   }
 
   void reserve(std::size_t count)
@@ -235,6 +241,9 @@ struct DART_COLLISION_NATIVE_API BatchStorage
       update(id, shape, transform, aabb);
       return;
     }
+    if (id != ids.size()) {
+      denseIds = false;
+    }
     idToIndex[id] = ids.size();
     ids.push_back(id);
     shapes.push_back(shape);
@@ -252,6 +261,7 @@ struct DART_COLLISION_NATIVE_API BatchStorage
     if (id >= idToIndex.size()) {
       return;
     }
+    denseIds = false;
     const std::size_t index = idToIndex[id];
     if (index == kInvalidIndex || index >= ids.size()) {
       return;
@@ -299,6 +309,7 @@ struct DART_COLLISION_NATIVE_API BatchStorage
     view.idToIndex
         = std::span<const std::size_t>(idToIndex.data(), idToIndex.size());
     view.invalidIndex = kInvalidIndex;
+    view.denseIds = denseIds;
     return view;
   }
 };

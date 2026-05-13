@@ -95,7 +95,7 @@ TEST(BoxBox, Touching_AlongX)
       Eigen::Vector3d(1, 1, 1), t1, Eigen::Vector3d(1, 1, 1), t2, result);
 
   EXPECT_TRUE(collided);
-  ASSERT_EQ(result.numContacts(), 1);
+  ASSERT_GE(result.numContacts(), 1u);
   EXPECT_NEAR(result.getContact(0).depth, 0.0, 1e-10);
 }
 
@@ -111,7 +111,7 @@ TEST(BoxBox, Overlapping_AlongX)
       Eigen::Vector3d(1, 1, 1), t1, Eigen::Vector3d(1, 1, 1), t2, result);
 
   EXPECT_TRUE(collided);
-  ASSERT_EQ(result.numContacts(), 1);
+  ASSERT_GE(result.numContacts(), 1u);
   EXPECT_NEAR(result.getContact(0).depth, 0.5, 1e-10);
 }
 
@@ -127,8 +127,35 @@ TEST(BoxBox, Overlapping_AlongY)
       Eigen::Vector3d(1, 1, 1), t1, Eigen::Vector3d(1, 1, 1), t2, result);
 
   EXPECT_TRUE(collided);
-  ASSERT_EQ(result.numContacts(), 1);
+  ASSERT_GE(result.numContacts(), 1u);
   EXPECT_NEAR(result.getContact(0).depth, 0.5, 1e-10);
+}
+
+TEST(BoxBox, OverlappingFacePatch_AlongY)
+{
+  CollisionResult result;
+  CollisionOption option;
+  option.maxNumContacts = 8;
+
+  Eigen::Isometry3d t1 = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d t2 = Eigen::Isometry3d::Identity();
+  t2.translation() = Eigen::Vector3d(0, 1.5, 0);
+
+  bool collided = collideBoxes(
+      Eigen::Vector3d(1, 1, 1),
+      t1,
+      Eigen::Vector3d(1, 1, 1),
+      t2,
+      result,
+      option);
+
+  EXPECT_TRUE(collided);
+  ASSERT_GE(result.numContacts(), 2u);
+  ASSERT_LE(result.numContacts(), 4u);
+  for (std::size_t i = 0; i < result.numContacts(); ++i) {
+    EXPECT_NEAR(result.getContact(i).depth, 0.5, 1e-10);
+    EXPECT_NEAR(std::abs(result.getContact(i).normal.y()), 1.0, 1e-10);
+  }
 }
 
 TEST(BoxBox, Overlapping_AlongZ)
@@ -143,7 +170,7 @@ TEST(BoxBox, Overlapping_AlongZ)
       Eigen::Vector3d(1, 1, 1), t1, Eigen::Vector3d(1, 1, 1), t2, result);
 
   EXPECT_TRUE(collided);
-  ASSERT_EQ(result.numContacts(), 1);
+  ASSERT_GE(result.numContacts(), 1u);
   EXPECT_NEAR(result.getContact(0).depth, 0.5, 1e-10);
 }
 
@@ -158,7 +185,7 @@ TEST(BoxBox, Coincident)
       Eigen::Vector3d(1, 1, 1), t1, Eigen::Vector3d(1, 1, 1), t2, result);
 
   EXPECT_TRUE(collided);
-  ASSERT_EQ(result.numContacts(), 1);
+  ASSERT_GE(result.numContacts(), 1u);
   EXPECT_NEAR(result.getContact(0).depth, 2.0, 1e-10);
 }
 
@@ -174,7 +201,7 @@ TEST(BoxBox, DifferentSizes)
       Eigen::Vector3d(1, 1, 1), t1, Eigen::Vector3d(2, 2, 2), t2, result);
 
   EXPECT_TRUE(collided);
-  ASSERT_EQ(result.numContacts(), 1);
+  ASSERT_GE(result.numContacts(), 1u);
   EXPECT_NEAR(result.getContact(0).depth, 1.0, 1e-10);
 }
 
@@ -191,7 +218,7 @@ TEST(BoxBox, Rotated90_AlongX)
       Eigen::Vector3d(1, 1, 1), t1, Eigen::Vector3d(1, 1, 1), t2, result);
 
   EXPECT_TRUE(collided);
-  ASSERT_EQ(result.numContacts(), 1);
+  ASSERT_GE(result.numContacts(), 1u);
   EXPECT_NEAR(result.getContact(0).depth, 0.5, 1e-10);
 }
 
@@ -212,7 +239,7 @@ TEST(BoxBox, Rotated45_Diagonal)
 
   if (expectedPenetration > 0) {
     EXPECT_TRUE(collided);
-    ASSERT_EQ(result.numContacts(), 1);
+    ASSERT_GE(result.numContacts(), 1u);
     EXPECT_NEAR(result.getContact(0).depth, expectedPenetration, 1e-6);
   } else {
     EXPECT_FALSE(collided);
@@ -234,7 +261,7 @@ TEST(BoxBox, BothRotated)
       Eigen::Vector3d(1, 1, 1), t1, Eigen::Vector3d(1, 1, 1), t2, result);
 
   EXPECT_TRUE(collided);
-  ASSERT_EQ(result.numContacts(), 1);
+  ASSERT_GE(result.numContacts(), 1u);
 }
 
 TEST(BoxBox, SmallBoxes)
@@ -253,7 +280,7 @@ TEST(BoxBox, SmallBoxes)
       result);
 
   EXPECT_TRUE(collided);
-  ASSERT_EQ(result.numContacts(), 1);
+  ASSERT_GE(result.numContacts(), 1u);
   EXPECT_NEAR(result.getContact(0).depth, 0.0005, 1e-10);
 }
 
@@ -273,7 +300,7 @@ TEST(BoxBox, LargeBoxes)
       result);
 
   EXPECT_TRUE(collided);
-  ASSERT_EQ(result.numContacts(), 1);
+  ASSERT_GE(result.numContacts(), 1u);
   EXPECT_NEAR(result.getContact(0).depth, 500.0, 1e-6);
 }
 
@@ -311,7 +338,7 @@ TEST(BoxBox, NormalDirection)
       Eigen::Vector3d(1, 1, 1), t1, Eigen::Vector3d(1, 1, 1), t2, result);
 
   EXPECT_TRUE(collided);
-  ASSERT_EQ(result.numContacts(), 1);
+  ASSERT_GE(result.numContacts(), 1u);
 
   const auto& normal = result.getContact(0).normal;
   EXPECT_NEAR(std::abs(normal.x()), 1.0, 1e-10);
@@ -333,7 +360,7 @@ TEST(BoxBox, UsingShapeObjects)
   bool collided = collideBoxes(box1, t1, box2, t2, result);
 
   EXPECT_TRUE(collided);
-  ASSERT_EQ(result.numContacts(), 1);
+  ASSERT_GE(result.numContacts(), 1u);
   EXPECT_NEAR(result.getContact(0).depth, 0.5, 1e-10);
 }
 
@@ -360,7 +387,7 @@ TEST(BoxBox, Determinism)
         result);
 
     EXPECT_TRUE(collided);
-    ASSERT_EQ(result.numContacts(), 1);
+    ASSERT_GE(result.numContacts(), 1u);
     contacts.push_back(result.getContact(0));
   }
 

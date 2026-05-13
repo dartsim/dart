@@ -83,6 +83,26 @@ std::vector<BroadPhasePair> BruteForceBroadPhase::queryPairs() const
   return pairs;
 }
 
+bool BruteForceBroadPhase::visitPairs(
+    const BroadPhasePairVisitor& visitor) const
+{
+  for (std::size_t i = 0; i < orderedIds_.size(); ++i) {
+    for (std::size_t j = i + 1; j < orderedIds_.size(); ++j) {
+      const std::size_t id1 = orderedIds_[i];
+      const std::size_t id2 = orderedIds_[j];
+
+      const Aabb& aabb1 = objects_.at(id1);
+      const Aabb& aabb2 = objects_.at(id2);
+
+      if (aabb1.overlaps(aabb2) && !visitor(id1, id2)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
 std::vector<std::size_t> BruteForceBroadPhase::queryOverlapping(
     const Aabb& aabb) const
 {

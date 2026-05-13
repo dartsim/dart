@@ -53,6 +53,8 @@ public:
       const Aabb& aabb) const override;
   [[nodiscard]] std::size_t size() const override;
 
+  bool visitPairs(const BroadPhasePairVisitor& visitor) const override;
+
   using BroadPhase::build;
   using BroadPhase::queryPairs;
   using BroadPhase::updateRange;

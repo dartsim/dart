@@ -37,7 +37,13 @@
 #include <dart/collision/native/collision_filter.hpp>
 #include <dart/collision/native/collision_world.hpp>
 #include <dart/collision/native/comps/collision_object.hpp>
+#include <dart/collision/native/narrow_phase/box_box.hpp>
+#include <dart/collision/native/narrow_phase/capsule_box.hpp>
+#include <dart/collision/native/narrow_phase/capsule_capsule.hpp>
+#include <dart/collision/native/narrow_phase/capsule_sphere.hpp>
 #include <dart/collision/native/narrow_phase/narrow_phase.hpp>
+#include <dart/collision/native/narrow_phase/sphere_box.hpp>
+#include <dart/collision/native/narrow_phase/sphere_sphere.hpp>
 
 #include <algorithm>
 #include <limits>
@@ -45,6 +51,104 @@
 #include <utility>
 
 namespace dart::collision::native {
+
+namespace {
+
+constexpr int pairKey(ShapeType type1, ShapeType type2)
+{
+  return (static_cast<int>(type1) << 8) | static_cast<int>(type2);
+}
+
+bool collideShapePair(
+    const Shape* shape1,
+    const Eigen::Isometry3d& tf1,
+    const Shape* shape2,
+    const Eigen::Isometry3d& tf2,
+    const CollisionOption& option,
+    CollisionResult& result)
+{
+  const ShapeType type1 = shape1->getType();
+  const ShapeType type2 = shape2->getType();
+
+  switch (pairKey(type1, type2)) {
+    case pairKey(ShapeType::Sphere, ShapeType::Sphere):
+      return collideSpheres(
+          *static_cast<const SphereShape*>(shape1),
+          tf1,
+          *static_cast<const SphereShape*>(shape2),
+          tf2,
+          result,
+          option);
+    case pairKey(ShapeType::Box, ShapeType::Box):
+      return collideBoxes(
+          *static_cast<const BoxShape*>(shape1),
+          tf1,
+          *static_cast<const BoxShape*>(shape2),
+          tf2,
+          result,
+          option);
+    case pairKey(ShapeType::Sphere, ShapeType::Box):
+      return collideSphereBox(
+          *static_cast<const SphereShape*>(shape1),
+          tf1,
+          *static_cast<const BoxShape*>(shape2),
+          tf2,
+          result,
+          option);
+    case pairKey(ShapeType::Box, ShapeType::Sphere):
+      return collideSphereBox(
+          *static_cast<const SphereShape*>(shape2),
+          tf2,
+          *static_cast<const BoxShape*>(shape1),
+          tf1,
+          result,
+          option);
+    case pairKey(ShapeType::Capsule, ShapeType::Capsule):
+      return collideCapsules(
+          *static_cast<const CapsuleShape*>(shape1),
+          tf1,
+          *static_cast<const CapsuleShape*>(shape2),
+          tf2,
+          result,
+          option);
+    case pairKey(ShapeType::Capsule, ShapeType::Sphere):
+      return collideCapsuleSphere(
+          *static_cast<const CapsuleShape*>(shape1),
+          tf1,
+          *static_cast<const SphereShape*>(shape2),
+          tf2,
+          result,
+          option);
+    case pairKey(ShapeType::Sphere, ShapeType::Capsule):
+      return collideCapsuleSphere(
+          *static_cast<const CapsuleShape*>(shape2),
+          tf2,
+          *static_cast<const SphereShape*>(shape1),
+          tf1,
+          result,
+          option);
+    case pairKey(ShapeType::Capsule, ShapeType::Box):
+      return collideCapsuleBox(
+          *static_cast<const CapsuleShape*>(shape1),
+          tf1,
+          *static_cast<const BoxShape*>(shape2),
+          tf2,
+          result,
+          option);
+    case pairKey(ShapeType::Box, ShapeType::Capsule):
+      return collideCapsuleBox(
+          *static_cast<const CapsuleShape*>(shape2),
+          tf2,
+          *static_cast<const BoxShape*>(shape1),
+          tf1,
+          result,
+          option);
+    default:
+      return NarrowPhase::collide(shape1, tf1, shape2, tf2, option, result);
+  }
+}
+
+} // namespace
 
 CollisionWorld::CollisionWorld(BroadPhaseType broadPhaseType)
   : m_broadPhaseType(broadPhaseType),
@@ -68,6 +172,11 @@ std::unique_ptr<BroadPhase> CollisionWorld::createBroadPhase(
       return std::make_unique<SweepAndPruneBroadPhase>();
   }
   return std::make_unique<AabbTreeBroadPhase>();
+}
+
+void CollisionWorld::notifyCollisionFilterChanged()
+{
+  m_hasCustomCollisionFilters = true;
 }
 
 CollisionObject CollisionWorld::createObject(
@@ -391,18 +500,28 @@ bool CollisionWorld::collideAll(
   }
 
   auto view = getBatchView();
+  const bool needsFilterCheck
+      = m_hasCustomCollisionFilters || option.collisionFilter != nullptr;
   if (settings.maxThreads <= 1 || snapshot.pairs.size() < settings.grainSize) {
     for (const auto& pair : snapshot.pairs) {
-      const auto* shape1 = view.shape(pair.first);
-      const auto* shape2 = view.shape(pair.second);
-      const auto* tf1 = view.transform(pair.first);
-      const auto* tf2 = view.transform(pair.second);
-
-      if (!shape1 || !shape2 || !tf1 || !tf2) {
+      const auto index1 = view.indexForId(pair.first);
+      const auto index2 = view.indexForId(pair.second);
+      if (index1 == view.invalidIndex || index2 == view.invalidIndex
+          || index1 >= view.shapes.size() || index2 >= view.shapes.size()
+          || index1 >= view.transforms.size()
+          || index2 >= view.transforms.size()) {
         continue;
       }
 
-      if (pair.first < m_idToEntity.size()
+      const auto* shape1 = view.shapes[index1];
+      const auto* shape2 = view.shapes[index2];
+      if (!shape1 || !shape2) {
+        continue;
+      }
+      const auto& tf1 = view.transforms[index1];
+      const auto& tf2 = view.transforms[index2];
+
+      if (needsFilterCheck && pair.first < m_idToEntity.size()
           && pair.second < m_idToEntity.size()) {
         auto entity1 = m_idToEntity[pair.first];
         auto entity2 = m_idToEntity[pair.second];
@@ -412,7 +531,8 @@ bool CollisionWorld::collideAll(
           auto* filter2
               = m_registry.try_get<comps::CollisionFilterComponent>(entity2);
           if (filter1 && filter2) {
-            if (!shouldCollide(filter1->filterData, filter2->filterData)) {
+            if (m_hasCustomCollisionFilters
+                && !shouldCollide(filter1->filterData, filter2->filterData)) {
               continue;
             }
             if (option.collisionFilter) {
@@ -430,7 +550,7 @@ bool CollisionWorld::collideAll(
         ++stats->numPairsTested;
       }
 
-      if (NarrowPhase::collide(shape1, *tf1, shape2, *tf2, option, result)) {
+      if (collideShapePair(shape1, tf1, shape2, tf2, option, result)) {
         hasCollision = true;
         if (option.enableContact == false
             || (option.maxNumContacts > 0
@@ -479,16 +599,24 @@ bool CollisionWorld::collideAll(
 
         for (std::size_t i = begin; i < end; ++i) {
           const auto& pair = snapshot.pairs[i];
-          const auto* shape1 = view.shape(pair.first);
-          const auto* shape2 = view.shape(pair.second);
-          const auto* tf1 = view.transform(pair.first);
-          const auto* tf2 = view.transform(pair.second);
-
-          if (!shape1 || !shape2 || !tf1 || !tf2) {
+          const auto index1 = view.indexForId(pair.first);
+          const auto index2 = view.indexForId(pair.second);
+          if (index1 == view.invalidIndex || index2 == view.invalidIndex
+              || index1 >= view.shapes.size() || index2 >= view.shapes.size()
+              || index1 >= view.transforms.size()
+              || index2 >= view.transforms.size()) {
             continue;
           }
 
-          if (pair.first < m_idToEntity.size()
+          const auto* shape1 = view.shapes[index1];
+          const auto* shape2 = view.shapes[index2];
+          if (!shape1 || !shape2) {
+            continue;
+          }
+          const auto& tf1 = view.transforms[index1];
+          const auto& tf2 = view.transforms[index2];
+
+          if (needsFilterCheck && pair.first < m_idToEntity.size()
               && pair.second < m_idToEntity.size()) {
             auto entity1 = m_idToEntity[pair.first];
             auto entity2 = m_idToEntity[pair.second];
@@ -500,7 +628,9 @@ bool CollisionWorld::collideAll(
                   = m_registry.try_get<comps::CollisionFilterComponent>(
                       entity2);
               if (filter1 && filter2) {
-                if (!shouldCollide(filter1->filterData, filter2->filterData)) {
+                if (m_hasCustomCollisionFilters
+                    && !shouldCollide(
+                        filter1->filterData, filter2->filterData)) {
                   continue;
                 }
                 if (option.collisionFilter) {
@@ -517,8 +647,7 @@ bool CollisionWorld::collideAll(
           ++localPairsTested;
 
           const std::size_t manifoldsBefore = localResult.numManifolds();
-          if (NarrowPhase::collide(
-                  shape1, *tf1, shape2, *tf2, option, localResult)) {
+          if (collideShapePair(shape1, tf1, shape2, tf2, option, localResult)) {
             localHasCollision = true;
             const std::size_t manifoldsAfter = localResult.numManifolds();
             for (std::size_t m = manifoldsBefore; m < manifoldsAfter; ++m) {
@@ -619,53 +748,75 @@ bool CollisionWorld::collideAll(
 bool CollisionWorld::collide(
     const CollisionOption& option, CollisionResult& result)
 {
+  if (!m_snapshotDirty) {
+    return collideAll(m_cachedSnapshot, option, result);
+  }
+
   result.clear();
   bool hasCollision = false;
 
-  auto pairs = m_broadPhase->queryPairs();
-
   auto view = getBatchView();
-  for (const auto& pair : pairs) {
-    const auto* shape1 = view.shape(pair.first);
-    const auto* shape2 = view.shape(pair.second);
-    const auto* tf1 = view.transform(pair.first);
-    const auto* tf2 = view.transform(pair.second);
-
-    if (!shape1 || !shape2 || !tf1 || !tf2) {
-      continue;
+  const bool needsFilterCheck
+      = m_hasCustomCollisionFilters || option.collisionFilter != nullptr;
+  auto visitPair = [&](std::size_t first, std::size_t second) {
+    const auto index1 = view.indexForId(first);
+    const auto index2 = view.indexForId(second);
+    if (index1 == view.invalidIndex || index2 == view.invalidIndex
+        || index1 >= view.shapes.size() || index2 >= view.shapes.size()
+        || index1 >= view.transforms.size()
+        || index2 >= view.transforms.size()) {
+      return true;
     }
 
-    if (pair.first < m_idToEntity.size() && pair.second < m_idToEntity.size()) {
-      auto entity1 = m_idToEntity[pair.first];
-      auto entity2 = m_idToEntity[pair.second];
+    const auto* shape1 = view.shapes[index1];
+    const auto* shape2 = view.shapes[index2];
+    if (!shape1 || !shape2) {
+      return true;
+    }
+    const auto& tf1 = view.transforms[index1];
+    const auto& tf2 = view.transforms[index2];
+
+    if (needsFilterCheck && first < m_idToEntity.size()
+        && second < m_idToEntity.size()) {
+      auto entity1 = m_idToEntity[first];
+      auto entity2 = m_idToEntity[second];
       if (entity1 != entt::null && entity2 != entt::null) {
         auto* filter1
             = m_registry.try_get<comps::CollisionFilterComponent>(entity1);
         auto* filter2
             = m_registry.try_get<comps::CollisionFilterComponent>(entity2);
         if (filter1 && filter2) {
-          if (!shouldCollide(filter1->filterData, filter2->filterData)) {
-            continue;
+          if (m_hasCustomCollisionFilters
+              && !shouldCollide(filter1->filterData, filter2->filterData)) {
+            return true;
           }
           if (option.collisionFilter) {
             CollisionObject obj1(entity1, this);
             CollisionObject obj2(entity2, this);
             if (option.collisionFilter->ignoresCollision(obj1, obj2)) {
-              continue;
+              return true;
             }
           }
         }
       }
     }
 
-    if (NarrowPhase::collide(shape1, *tf1, shape2, *tf2, option, result)) {
+    if (collideShapePair(shape1, tf1, shape2, tf2, option, result)) {
       hasCollision = true;
       if (option.enableContact == false
           || (option.maxNumContacts > 0
               && result.numContacts() >= option.maxNumContacts)) {
-        break;
+        return false;
       }
     }
+    return true;
+  };
+
+  if (m_broadPhaseType == BroadPhaseType::AabbTree) {
+    static_cast<const AabbTreeBroadPhase*>(m_broadPhase.get())
+        ->visitPairsFast(visitPair);
+  } else {
+    m_broadPhase->visitPairs(visitPair);
   }
 
   return hasCollision;

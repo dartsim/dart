@@ -202,18 +202,15 @@ Eigen::Vector3d computeShapeCenter(
 
 } // namespace
 
-bool collideConvexConvex(
-    const Shape& shape1,
-    const Eigen::Isometry3d& tf1,
-    const Shape& shape2,
-    const Eigen::Isometry3d& tf2,
+bool collideSupportFunctions(
+    const SupportFunction& supportA,
+    const Eigen::Vector3d& centerA,
+    const SupportFunction& supportB,
+    const Eigen::Vector3d& centerB,
     CollisionResult& result,
     const CollisionOption& option)
 {
-  auto supportA = makeSupportFunction(shape1, tf1);
-  auto supportB = makeSupportFunction(shape2, tf2);
-
-  Eigen::Vector3d initialDir = tf2.translation() - tf1.translation();
+  Eigen::Vector3d initialDir = centerB - centerA;
   if (initialDir.squaredNorm() < 1e-10) {
     initialDir = Eigen::Vector3d::UnitX();
   }
@@ -240,8 +237,6 @@ bool collideConvexConvex(
     pointA = epaResult.pointOnA;
     pointB = epaResult.pointOnB;
   } else {
-    const Eigen::Vector3d centerA = computeShapeCenter(shape1, tf1);
-    const Eigen::Vector3d centerB = computeShapeCenter(shape2, tf2);
     MprResult mprResult
         = Mpr::penetration(supportA, supportB, centerA, centerB);
     if (mprResult.success) {
@@ -269,6 +264,22 @@ bool collideConvexConvex(
 
   result.addContact(contact);
   return true;
+}
+
+bool collideConvexConvex(
+    const Shape& shape1,
+    const Eigen::Isometry3d& tf1,
+    const Shape& shape2,
+    const Eigen::Isometry3d& tf2,
+    CollisionResult& result,
+    const CollisionOption& option)
+{
+  auto supportA = makeSupportFunction(shape1, tf1);
+  auto supportB = makeSupportFunction(shape2, tf2);
+  const Eigen::Vector3d centerA = computeShapeCenter(shape1, tf1);
+  const Eigen::Vector3d centerB = computeShapeCenter(shape2, tf2);
+  return collideSupportFunctions(
+      supportA, centerA, supportB, centerB, result, option);
 }
 
 double distanceConvexConvex(

@@ -187,12 +187,16 @@ public:
   }
 
 private:
+  friend class CollisionObject;
+
   static std::unique_ptr<BroadPhase> createBroadPhase(BroadPhaseType type);
+  void notifyCollisionFilterChanged();
 
   entt::registry m_registry;
   BroadPhaseType m_broadPhaseType;
   std::unique_ptr<BroadPhase> m_broadPhase;
   std::size_t m_nextObjectId = 0;
+  bool m_hasCustomCollisionFilters = false;
   std::vector<entt::entity> m_idToEntity;
   BatchStorage m_batchStorage;
   mutable BroadPhaseSnapshot m_cachedSnapshot;

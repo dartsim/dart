@@ -8,12 +8,12 @@ Pluggable collision detection with multiple backends.
 
 ## Backends
 
-| Backend    | Directory | Status   | Notes                        |
-| ---------- | --------- | -------- | ---------------------------- |
-| **FCL**    | `fcl/`    | Default  | Flexible Collision Library   |
-| **Bullet** | `bullet/` | Optional | Bullet Physics backend       |
-| **ODE**    | `ode/`    | Optional | Open Dynamics Engine backend |
-| **DART**   | `dart/`   | Native   | Built-in primitive support   |
+| Backend    | Directory | Status    | Notes                        |
+| ---------- | --------- | --------- | ---------------------------- |
+| **DART**   | `dart/`   | Default   | Built-in native backend      |
+| **FCL**    | `fcl/`    | Reference | Flexible Collision Library   |
+| **Bullet** | `bullet/` | Reference | Bullet Physics backend       |
+| **ODE**    | `ode/`    | Reference | Open Dynamics Engine backend |
 
 ## Key Concepts
 
@@ -24,7 +24,7 @@ Pluggable collision detection with multiple backends.
 
 ## Code Patterns
 
-- Use `FCLCollisionDetector::create()` for default
+- Use `DartCollisionDetector::create()` or factory key `"dart"` for default
 - `CollisionGroup::collide()` for collision queries
 - Filter pairs via `CollisionFilter` for performance
 

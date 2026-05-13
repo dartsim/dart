@@ -33,11 +33,11 @@
 #include <dart/gui/vsg/collision_scene_builder.hpp>
 #include <dart/gui/vsg/simple_viewer.hpp>
 
-#include <dart/collision/experimental/aabb.hpp>
-#include <dart/collision/experimental/collision_object.hpp>
-#include <dart/collision/experimental/collision_world.hpp>
-#include <dart/collision/experimental/shapes/shape.hpp>
-#include <dart/collision/experimental/types.hpp>
+#include <dart/collision/native/aabb.hpp>
+#include <dart/collision/native/collision_object.hpp>
+#include <dart/collision/native/collision_world.hpp>
+#include <dart/collision/native/shapes/shape.hpp>
+#include <dart/collision/native/types.hpp>
 
 #include <iostream>
 
@@ -72,7 +72,7 @@ Controls (windowed mode):
 
 int main(int argc, char** argv)
 {
-  namespace collision = dart::collision::experimental;
+  namespace collision = dart::collision::native;
   namespace vsg = dart::gui::vsg;
 
   bool headlessMode = false;

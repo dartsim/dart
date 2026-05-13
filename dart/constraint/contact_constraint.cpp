@@ -641,7 +641,12 @@ void ContactConstraint::applyImpulse(double* lambda)
     }
 
     const auto* detector = mContact.collisionObject1->getCollisionDetector();
-    if (!detector || detector->getTypeView() != "experimental") {
+    if (!detector) {
+      return;
+    }
+
+    const auto detectorType = detector->getTypeView();
+    if (detectorType != "dart" && detectorType != "experimental") {
       return;
     }
 

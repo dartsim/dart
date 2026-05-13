@@ -34,8 +34,10 @@
 
 #include <dart/collision/native/broad_phase/broad_phase.hpp>
 
+#include <algorithm>
 #include <limits>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace dart::collision::native {
@@ -62,6 +64,11 @@ public:
   [[nodiscard]] std::size_t size() const override;
 
   void queryPairs(std::vector<BroadPhasePair>& out) const override;
+  bool visitPairs(const BroadPhasePairVisitor& visitor) const override;
+
+  template <typename Visitor>
+  bool visitPairsFast(Visitor&& visitor) const;
+
   void build(
       std::span<const std::size_t> ids, std::span<const Aabb> aabbs) override;
   void updateRange(
@@ -117,6 +124,15 @@ private:
       std::size_t nodeB,
       std::vector<BroadPhasePair>& pairs) const;
 
+  [[nodiscard]] bool visitPairsRecursive(
+      std::size_t nodeA,
+      std::size_t nodeB,
+      const BroadPhasePairVisitor& visitor) const;
+
+  template <typename Visitor>
+  [[nodiscard]] bool visitPairsRecursiveFast(
+      std::size_t nodeA, std::size_t nodeB, Visitor& visitor) const;
+
   void queryOverlappingRecursive(
       std::size_t nodeIndex,
       const Aabb& aabb,
@@ -125,5 +141,62 @@ private:
   [[nodiscard]] std::size_t computeHeight(std::size_t nodeIndex) const;
   [[nodiscard]] bool validateStructure(std::size_t nodeIndex) const;
 };
+
+template <typename Visitor>
+bool AabbTreeBroadPhase::visitPairsFast(Visitor&& visitor) const
+{
+  if (root_ == kNullNode) {
+    return true;
+  }
+
+  auto&& visitorRef = visitor;
+  return visitPairsRecursiveFast(root_, root_, visitorRef);
+}
+
+template <typename Visitor>
+bool AabbTreeBroadPhase::visitPairsRecursiveFast(
+    std::size_t nodeA, std::size_t nodeB, Visitor& visitor) const
+{
+  if (nodeA == kNullNode || nodeB == kNullNode) {
+    return true;
+  }
+
+  if (nodeA == nodeB) {
+    if (nodes_[nodeA].isLeaf()) {
+      return true;
+    }
+
+    return visitPairsRecursiveFast(
+               nodes_[nodeA].left, nodes_[nodeA].right, visitor)
+           && visitPairsRecursiveFast(
+               nodes_[nodeA].left, nodes_[nodeA].left, visitor)
+           && visitPairsRecursiveFast(
+               nodes_[nodeA].right, nodes_[nodeA].right, visitor);
+  }
+
+  if (!nodes_[nodeA].fatAabb.overlaps(nodes_[nodeB].fatAabb)) {
+    return true;
+  }
+
+  if (nodes_[nodeA].isLeaf() && nodes_[nodeB].isLeaf()) {
+    if (!nodes_[nodeA].tightAabb.overlaps(nodes_[nodeB].tightAabb)) {
+      return true;
+    }
+
+    const std::size_t id1 = nodes_[nodeA].objectId;
+    const std::size_t id2 = nodes_[nodeB].objectId;
+    return visitor(std::min(id1, id2), std::max(id1, id2));
+  }
+
+  if (nodes_[nodeB].isLeaf()
+      || (!nodes_[nodeA].isLeaf()
+          && nodes_[nodeA].height > nodes_[nodeB].height)) {
+    return visitPairsRecursiveFast(nodes_[nodeA].left, nodeB, visitor)
+           && visitPairsRecursiveFast(nodes_[nodeA].right, nodeB, visitor);
+  }
+
+  return visitPairsRecursiveFast(nodeA, nodes_[nodeB].left, visitor)
+         && visitPairsRecursiveFast(nodeA, nodes_[nodeB].right, visitor);
+}
 
 } // namespace dart::collision::native

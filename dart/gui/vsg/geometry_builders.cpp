@@ -40,13 +40,9 @@ namespace dart::gui::vsg {
 
 namespace {
 
-::vsg::ref_ptr<::vsg::Builder> getSharedBuilder()
+::vsg::ref_ptr<::vsg::Builder> createBuilder()
 {
-  static ::vsg::ref_ptr<::vsg::Builder> builder;
-  if (!builder) {
-    builder = ::vsg::Builder::create();
-  }
-  return builder;
+  return ::vsg::Builder::create();
 }
 
 ::vsg::GeometryInfo makeGeometryInfo(const GeometryOptions& options)
@@ -74,7 +70,7 @@ namespace {
 ::vsg::ref_ptr<::vsg::Node> createSphere(
     double radius, const GeometryOptions& options)
 {
-  auto builder = getSharedBuilder();
+  auto builder = createBuilder();
   auto geomInfo = makeGeometryInfo(options);
   auto stateInfo = makeStateInfo(options);
 
@@ -89,7 +85,7 @@ namespace {
 ::vsg::ref_ptr<::vsg::Node> createBox(
     const Eigen::Vector3d& size, const GeometryOptions& options)
 {
-  auto builder = getSharedBuilder();
+  auto builder = createBuilder();
   auto geomInfo = makeGeometryInfo(options);
   auto stateInfo = makeStateInfo(options);
 
@@ -104,7 +100,7 @@ namespace {
 ::vsg::ref_ptr<::vsg::Node> createCapsule(
     double radius, double height, const GeometryOptions& options)
 {
-  auto builder = getSharedBuilder();
+  auto builder = createBuilder();
   auto geomInfo = makeGeometryInfo(options);
   auto stateInfo = makeStateInfo(options);
 
@@ -119,7 +115,7 @@ namespace {
 ::vsg::ref_ptr<::vsg::Node> createCylinder(
     double radius, double height, const GeometryOptions& options)
 {
-  auto builder = getSharedBuilder();
+  auto builder = createBuilder();
   auto geomInfo = makeGeometryInfo(options);
   auto stateInfo = makeStateInfo(options);
 
@@ -134,7 +130,7 @@ namespace {
 ::vsg::ref_ptr<::vsg::Node> createCone(
     double radius, double height, const GeometryOptions& options)
 {
-  auto builder = getSharedBuilder();
+  auto builder = createBuilder();
   auto geomInfo = makeGeometryInfo(options);
   auto stateInfo = makeStateInfo(options);
 
@@ -149,7 +145,7 @@ namespace {
 ::vsg::ref_ptr<::vsg::Node> createPlane(
     double width, double height, const GeometryOptions& options)
 {
-  auto builder = getSharedBuilder();
+  auto builder = createBuilder();
   auto geomInfo = makeGeometryInfo(options);
   auto stateInfo = makeStateInfo(options);
 

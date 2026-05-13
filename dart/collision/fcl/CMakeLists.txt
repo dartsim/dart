@@ -2,7 +2,14 @@
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
 
-set(DART_BUILD_COLLISION_FCL TRUE CACHE BOOL "Build FCL collision backend." FORCE)
+if(NOT DART_BUILD_COLLISION_FCL)
+  set(DART_HAVE_FCL FALSE CACHE BOOL "Check if fcl found." FORCE)
+  return()
+endif()
+
+message(STATUS "Configuring dart/collision/fcl (DART_BUILD_COLLISION_FCL=${DART_BUILD_COLLISION_FCL})")
+
+set(DART_HAVE_FCL TRUE CACHE BOOL "Check if fcl found." FORCE)
 
 set(target_name ${PROJECT_NAME}-collision-fcl)
 
@@ -26,7 +33,6 @@ target_compile_definitions(${target_name}
     DART_BUILDING_COLLISION_FCL
 )
 
-add_component(${PROJECT_NAME} collision-fcl)
 add_component_targets(${PROJECT_NAME} collision-fcl ${target_name})
 add_component_dependencies(${PROJECT_NAME} collision-fcl dart)
 add_component_dependency_packages(${PROJECT_NAME} collision-fcl fcl)

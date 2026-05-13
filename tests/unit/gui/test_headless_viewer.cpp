@@ -29,6 +29,19 @@
 
 #include <gtest/gtest.h>
 
+#include <cstdlib>
+
+namespace {
+
+void enableSoftwareRenderingForHeadlessTest()
+{
+#if defined(__linux__)
+  setenv("LIBGL_ALWAYS_SOFTWARE", "1", 0);
+#endif
+}
+
+} // namespace
+
 TEST(HeadlessViewerTest, ViewerConfigHeadlessFactory)
 {
   auto config = dart::gui::ViewerConfig::headless(800, 600);
@@ -48,6 +61,8 @@ TEST(HeadlessViewerTest, ViewerConfigDefaults)
 
 TEST(HeadlessViewerTest, HeadlessViewerCreation)
 {
+  enableSoftwareRenderingForHeadlessTest();
+
   auto config = dart::gui::ViewerConfig::headless();
   dart::gui::Viewer viewer(config);
 
@@ -68,6 +83,8 @@ TEST(HeadlessViewerTest, ViewerConfigSoftwareRendererDefault)
 
 TEST(HeadlessViewerTest, ViewerCreateFactory)
 {
+  enableSoftwareRenderingForHeadlessTest();
+
   auto config = dart::gui::ViewerConfig::headless(640, 480);
   auto viewer = dart::gui::Viewer::create(config);
 

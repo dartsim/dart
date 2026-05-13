@@ -482,8 +482,8 @@ TEST_F(Collision, SimpleFrames)
   testSimpleFrames(dart);
 
 #ifdef DART_HAS_DART_COLLISION
-  auto experimental = DartCollisionDetector::create();
-  testSimpleFrames(experimental);
+  auto native = DartCollisionDetector::create();
+  testSimpleFrames(native);
 #endif
 }
 
@@ -631,8 +631,8 @@ TEST_F(Collision, SphereSphere)
 #ifdef DART_HAS_DART_COLLISION
   {
     SCOPED_TRACE("DartCollisionDetector");
-    auto experimental = DartCollisionDetector::create();
-    testSphereSphere(experimental);
+    auto native = DartCollisionDetector::create();
+    testSphereSphere(native);
   }
 #endif
 }
@@ -749,8 +749,8 @@ TEST_F(Collision, BoxBox)
   testBoxBox(dart);
 
 #ifdef DART_HAS_DART_COLLISION
-  auto experimental = DartCollisionDetector::create();
-  testBoxBox(experimental);
+  auto native = DartCollisionDetector::create();
+  testBoxBox(native);
 #endif
 }
 
@@ -1399,7 +1399,7 @@ TEST_F(Collision, testHeightmapBox)
 #if DART_HAVE_ODE
   #ifdef DART_HAS_DART_COLLISION
   GTEST_SKIP() << "ODE/Bullet heightmap tests skipped: backends route through "
-                  "experimental narrow phase which uses mesh approximation for "
+                  "native narrow phase which uses mesh approximation for "
                   "heightmaps (known limitation)";
   #else
   auto ode = OdeCollisionDetector::create();
@@ -1638,7 +1638,7 @@ TEST_F(Collision, Options)
   testOptions(dart);
 
 #ifdef DART_HAS_DART_COLLISION
-  // Experimental backend uses GJK/EPA which may return fewer contacts per pair
+  // Native backend uses GJK/EPA which may return fewer contacts per pair
   // than mesh-based backends. Verify core option behavior (maxNumContacts cap,
   // binary check, zero-max short-circuit) with relaxed contact counts.
   {
@@ -1798,8 +1798,8 @@ TEST_F(Collision, Filter)
   testFilter(dart);
 
 #ifdef DART_HAS_DART_COLLISION
-  auto experimental = DartCollisionDetector::create();
-  testFilter(experimental);
+  auto native = DartCollisionDetector::create();
+  testFilter(native);
 #endif
 }
 
@@ -1903,8 +1903,8 @@ TEST_F(Collision, CreateCollisionGroupFromVariousObject)
   testCreateCollisionGroups(dart);
 
 #ifdef DART_HAS_DART_COLLISION
-  auto experimental = DartCollisionDetector::create();
-  testCreateCollisionGroups(experimental);
+  auto native = DartCollisionDetector::create();
+  testCreateCollisionGroups(native);
 #endif
 }
 
@@ -2192,10 +2192,6 @@ TEST(Issue1654, OdeHonorsMaxNumContacts)
 #if DART_HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 TEST_F(Collision, VoxelGrid)
 {
-  #ifdef DART_HAS_DART_COLLISION
-  GTEST_SKIP() << "VoxelGridShape not yet supported by experimental backend";
-  #endif
-
   auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
   auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
 
@@ -2205,7 +2201,11 @@ TEST_F(Collision, VoxelGrid)
   simpleFrame1->setShape(shape1);
   simpleFrame2->setShape(shape2);
 
+  #ifdef DART_HAS_DART_COLLISION
+  auto cd = DartCollisionDetector::create();
+  #else
   auto cd = FCLCollisionDetector::create();
+  #endif
   auto group = cd->createCollisionGroup(simpleFrame1.get(), simpleFrame2.get());
 
   EXPECT_EQ(group->getNumShapeFrames(), 2u);

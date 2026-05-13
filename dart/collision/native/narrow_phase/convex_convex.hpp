@@ -59,6 +59,14 @@ DART_COLLISION_NATIVE_API SupportFunction makeCapsuleSupportFunction(
 DART_COLLISION_NATIVE_API SupportFunction makeCylinderSupportFunction(
     const CylinderShape& shape, const Eigen::Isometry3d& transform);
 
+DART_COLLISION_NATIVE_API bool collideSupportFunctions(
+    const SupportFunction& supportA,
+    const Eigen::Vector3d& centerA,
+    const SupportFunction& supportB,
+    const Eigen::Vector3d& centerB,
+    CollisionResult& result,
+    const CollisionOption& option);
+
 DART_COLLISION_NATIVE_API bool collideConvexConvex(
     const Shape& shape1,
     const Eigen::Isometry3d& tf1,

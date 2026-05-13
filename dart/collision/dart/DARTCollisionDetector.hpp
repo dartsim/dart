@@ -33,9 +33,36 @@
 #pragma once
 
 #include <dart/collision/dart/dart_collision_detector.hpp>
+#include <dart/collision/native/persistent_manifold_cache.hpp>
 
 namespace dart::collision {
 
-using DARTCollisionDetector = DartCollisionDetector;
+class DARTCollisionDetector : public DartCollisionDetector
+{
+public:
+  static std::shared_ptr<DARTCollisionDetector> create()
+  {
+    return std::shared_ptr<DARTCollisionDetector>(new DARTCollisionDetector());
+  }
 
-}
+  std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()
+      const override
+  {
+    return DARTCollisionDetector::create();
+  }
+
+  bool raycast(
+      CollisionGroup* group,
+      const Eigen::Vector3d& from,
+      const Eigen::Vector3d& to,
+      const RaycastOption& option = RaycastOption(),
+      RaycastResult* result = nullptr) override
+  {
+    return CollisionDetector::raycast(group, from, to, option, result);
+  }
+
+protected:
+  DARTCollisionDetector() = default;
+};
+
+} // namespace dart::collision

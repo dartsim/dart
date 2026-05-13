@@ -34,6 +34,7 @@
 
 #include "dart/collision/collision_filter.hpp"
 #include "dart/collision/collision_object.hpp"
+#include "dart/collision/dart/dart_collide.hpp"
 #include "dart/collision/distance_filter.hpp"
 #include "dart/collision/fcl/fcl_collision_group.hpp"
 #include "dart/collision/fcl/fcl_collision_object.hpp"
@@ -114,7 +115,8 @@ void postProcessDART(
     fcl::CollisionObject* o1,
     fcl::CollisionObject* o2,
     const CollisionOption& option,
-    CollisionResult& result);
+    CollisionResult& result,
+    bool preferPrimitiveContacts);
 
 void interpreteDistanceResult(
     const fcl::DistanceResult& fclResult,
@@ -645,6 +647,16 @@ FCLCollisionDetector::Registrar<FCLCollisionDetector>
         std::string(FCLCollisionDetector::getStaticType()),
         []() -> std::shared_ptr<FCLCollisionDetector> {
           return FCLCollisionDetector::create();
+        }};
+
+FCLCollisionDetector::Registrar<FCLCollisionDetector>
+    FCLCollisionDetector::mMeshRegistrar{
+        std::string("fcl_mesh"),
+        []() -> std::shared_ptr<FCLCollisionDetector> {
+          auto detector = FCLCollisionDetector::create();
+          detector->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+          detector->setContactPointComputationMethod(FCLCollisionDetector::DART);
+          return detector;
         }};
 
 //==============================================================================
@@ -1321,7 +1333,8 @@ bool collisionCallback(
             "mesh contact handler.");
       }
 
-      postProcessDART(fclResult, o1, o2, option, *result);
+      postProcessDART(
+          fclResult, o1, o2, option, *result, forcingMeshFallback);
     } else {
       postProcessFCL(fclResult, o1, o2, option, *result);
     }
@@ -1564,12 +1577,38 @@ void postProcessDART(
     fcl::CollisionObject* o1,
     fcl::CollisionObject* o2,
     const CollisionOption& option,
-    CollisionResult& result)
+    CollisionResult& result,
+    bool preferPrimitiveContacts)
 {
   const auto numFilteredContacts = fclResult.numContacts();
 
   if (0u == numFilteredContacts) {
     return;
+  }
+
+  if (preferPrimitiveContacts) {
+    auto* dartObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
+    auto* dartObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
+    CollisionResult primitiveResult;
+    if (dart::collision::collide(dartObject1, dartObject2, primitiveResult) > 0) {
+      const auto* fclObj1 = static_cast<FCLCollisionObject*>(o1->getUserData());
+      const auto* fclObj2 = static_cast<FCLCollisionObject*>(o2->getUserData());
+      const bool shouldSwap = shouldSwapDeterministically(fclObj1, fclObj2);
+
+      for (auto i = 0u; i < primitiveResult.getNumContacts(); ++i) {
+        if (result.getNumContacts() >= option.maxNumContacts) {
+          return;
+        }
+
+        auto contact = primitiveResult.getContact(i);
+        if (shouldSwap) {
+          applyDeterministicSwap(contact);
+        }
+        result.addContact(contact);
+      }
+
+      return;
+    }
   }
 
   auto numContacts = 0u;

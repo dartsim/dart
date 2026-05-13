@@ -115,6 +115,70 @@ Eigen::Vector3d closestPointOnBox(
       std::clamp(point.z(), -halfExtents.z(), halfExtents.z()));
 }
 
+bool distanceSameOrientationBoxes(
+    const Eigen::Vector3d& half1,
+    const Eigen::Isometry3d& transform1,
+    const Eigen::Vector3d& half2,
+    const Eigen::Isometry3d& transform2,
+    DistanceResult& result,
+    const DistanceOption& option)
+{
+  const Eigen::Matrix3d relRot
+      = transform1.linear().transpose() * transform2.linear();
+  if (!relRot.isApprox(Eigen::Matrix3d::Identity(), 1e-12)) {
+    return false;
+  }
+
+  const Eigen::Vector3d center2
+      = transform1.linear().transpose()
+        * (transform2.translation() - transform1.translation());
+  const Eigen::Vector3d combinedHalf = half1 + half2;
+  const Eigen::Vector3d separation
+      = (center2.cwiseAbs() - combinedHalf).cwiseMax(0.0);
+  const double dist = separation.norm();
+
+  result.distance = dist;
+  if (dist > option.upperBound) {
+    return true;
+  }
+
+  if (!option.enableNearestPoints) {
+    return true;
+  }
+
+  Eigen::Vector3d point1Local = Eigen::Vector3d::Zero();
+  Eigen::Vector3d point2Local = Eigen::Vector3d::Zero();
+
+  for (int axis = 0; axis < 3; ++axis) {
+    if (center2[axis] > combinedHalf[axis]) {
+      point1Local[axis] = half1[axis];
+      point2Local[axis] = -half2[axis];
+    } else if (center2[axis] < -combinedHalf[axis]) {
+      point1Local[axis] = -half1[axis];
+      point2Local[axis] = half2[axis];
+    } else {
+      const double overlapMin
+          = std::max(-half1[axis], center2[axis] - half2[axis]);
+      const double overlapMax
+          = std::min(half1[axis], center2[axis] + half2[axis]);
+      point1Local[axis] = 0.5 * (overlapMin + overlapMax);
+      point2Local[axis] = point1Local[axis] - center2[axis];
+    }
+  }
+
+  result.pointOnObject1 = transform1 * point1Local;
+  result.pointOnObject2 = transform2 * point2Local;
+
+  const Eigen::Vector3d diff = result.pointOnObject2 - result.pointOnObject1;
+  if (diff.squaredNorm() > 1e-10) {
+    result.normal = diff.normalized();
+  } else {
+    result.normal = Eigen::Vector3d::UnitX();
+  }
+
+  return true;
+}
+
 constexpr double kSupportEps = 1e-12;
 
 bool supportPointOnShape(
@@ -328,6 +392,11 @@ double distanceBoxBox(
 {
   const Eigen::Vector3d& half1 = box1.getHalfExtents();
   const Eigen::Vector3d& half2 = box2.getHalfExtents();
+
+  if (distanceSameOrientationBoxes(
+          half1, transform1, half2, transform2, result, option)) {
+    return result.distance;
+  }
 
   const Eigen::Isometry3d inv1 = transform1.inverse();
   const Eigen::Isometry3d box2In1 = inv1 * transform2;

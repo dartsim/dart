@@ -11,8 +11,8 @@ from datetime import date
 from pathlib import Path
 
 TARGET = "bm_scenarios_pipeline_breakdown"
-RESULTS_DIR = Path("docs/dev_tasks/experimental_collision/results")
-SUMMARY_PATH = Path("docs/dev_tasks/experimental_collision/benchmark_results.md")
+RESULTS_DIR = Path("docs/dev_tasks/native_collision/results")
+SUMMARY_PATH = Path("docs/dev_tasks/native_collision/benchmark_results.md")
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -37,7 +37,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--out",
         type=Path,
         default=None,
-        help="Path to JSON output (defaults to docs/dev_tasks/experimental_collision/results/)",
+        help="Path to JSON output (defaults to docs/dev_tasks/native_collision/results/)",
     )
     parser.add_argument(
         "benchmark_args",
@@ -134,6 +134,8 @@ def append_summary(
     summary_path: Path, output_path: Path, build_dir: Path, summary_lines: list[str]
 ) -> None:
     today = date.today().isoformat()
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
+    existing = summary_path.read_text() if summary_path.exists() else ""
     section = [
         "",
         f"## Run {today} — Pipeline breakdown",
@@ -145,7 +147,7 @@ def append_summary(
     section.extend(summary_lines or ["(no matching benchmarks found)"])
     section.extend(["```", ""])
 
-    summary_path.write_text(summary_path.read_text() + "\n".join(section))
+    summary_path.write_text(existing + "\n".join(section))
 
 
 def main(argv: list[str]) -> int:

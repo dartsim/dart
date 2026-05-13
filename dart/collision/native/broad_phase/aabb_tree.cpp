@@ -134,6 +134,15 @@ void AabbTreeBroadPhase::queryPairs(std::vector<BroadPhasePair>& out) const
   out.erase(std::unique(out.begin(), out.end()), out.end());
 }
 
+bool AabbTreeBroadPhase::visitPairs(const BroadPhasePairVisitor& visitor) const
+{
+  if (root_ == kNullNode) {
+    return true;
+  }
+
+  return visitPairsRecursive(root_, root_, visitor);
+}
+
 void AabbTreeBroadPhase::build(
     std::span<const std::size_t> ids, std::span<const Aabb> aabbs)
 {
@@ -522,6 +531,52 @@ void AabbTreeBroadPhase::queryPairsRecursive(
     queryPairsRecursive(nodeA, nodes_[nodeB].left, pairs);
     queryPairsRecursive(nodeA, nodes_[nodeB].right, pairs);
   }
+}
+
+bool AabbTreeBroadPhase::visitPairsRecursive(
+    std::size_t nodeA,
+    std::size_t nodeB,
+    const BroadPhasePairVisitor& visitor) const
+{
+  if (nodeA == kNullNode || nodeB == kNullNode) {
+    return true;
+  }
+
+  if (nodeA == nodeB) {
+    if (nodes_[nodeA].isLeaf()) {
+      return true;
+    }
+
+    return visitPairsRecursive(nodes_[nodeA].left, nodes_[nodeA].right, visitor)
+           && visitPairsRecursive(
+               nodes_[nodeA].left, nodes_[nodeA].left, visitor)
+           && visitPairsRecursive(
+               nodes_[nodeA].right, nodes_[nodeA].right, visitor);
+  }
+
+  if (!nodes_[nodeA].fatAabb.overlaps(nodes_[nodeB].fatAabb)) {
+    return true;
+  }
+
+  if (nodes_[nodeA].isLeaf() && nodes_[nodeB].isLeaf()) {
+    if (!nodes_[nodeA].tightAabb.overlaps(nodes_[nodeB].tightAabb)) {
+      return true;
+    }
+
+    const std::size_t id1 = nodes_[nodeA].objectId;
+    const std::size_t id2 = nodes_[nodeB].objectId;
+    return visitor(std::min(id1, id2), std::max(id1, id2));
+  }
+
+  if (nodes_[nodeB].isLeaf()
+      || (!nodes_[nodeA].isLeaf()
+          && nodes_[nodeA].height > nodes_[nodeB].height)) {
+    return visitPairsRecursive(nodes_[nodeA].left, nodeB, visitor)
+           && visitPairsRecursive(nodes_[nodeA].right, nodeB, visitor);
+  }
+
+  return visitPairsRecursive(nodeA, nodes_[nodeB].left, visitor)
+         && visitPairsRecursive(nodeA, nodes_[nodeB].right, visitor);
 }
 
 void AabbTreeBroadPhase::queryOverlappingRecursive(

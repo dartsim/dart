@@ -51,6 +51,8 @@ public:
 
   static std::shared_ptr<DartCollisionDetector> create();
 
+  ~DartCollisionDetector() override;
+
   // Documentation inherited
   std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()
       const override;

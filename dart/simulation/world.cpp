@@ -86,7 +86,7 @@ std::string toCollisionDetectorKey(CollisionDetectorType type)
   DART_FATAL(
       "Encountered unsupported CollisionDetectorType value: {}.",
       static_cast<int>(type));
-  return "experimental";
+  return "dart";
 }
 
 CollisionDetectorPtr tryCreateCollisionDetector(const std::string& requestedKey)
@@ -127,29 +127,31 @@ CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
     return detector;
   }
 
-  // Fallback chain: requested → experimental → fcl
-  if (requestedType != CollisionDetectorType::Experimental) {
+  const auto tryFallback
+      = [&](CollisionDetectorType fallbackType) -> CollisionDetectorPtr {
+    if (requestedType == fallbackType) {
+      return nullptr;
+    }
+
+    const auto fallbackKey = toCollisionDetectorKey(fallbackType);
     DART_WARN(
         "WorldConfig requested collision detector '{}', but it is not "
-        "available. Falling back to 'experimental'.",
-        requestedKey);
+        "available. Falling back to '{}'.",
+        requestedKey,
+        fallbackKey);
 
-    if (auto fallback
-        = tryCreateCollisionDetector(CollisionDetectorType::Experimental)) {
-      return fallback;
-    }
+    return tryCreateCollisionDetector(fallbackType);
+  };
+
+  // Fallback chain: requested -> dart -> experimental -> fcl
+  if (auto fallback = tryFallback(CollisionDetectorType::Dart)) {
+    return fallback;
   }
-
-  if (requestedType != CollisionDetectorType::Fcl) {
-    DART_WARN(
-        "Collision detector '{}' and 'experimental' are not available. "
-        "Falling back to 'fcl'.",
-        requestedKey);
-
-    if (auto fallback
-        = tryCreateCollisionDetector(CollisionDetectorType::Fcl)) {
-      return fallback;
-    }
+  if (auto fallback = tryFallback(CollisionDetectorType::Experimental)) {
+    return fallback;
+  }
+  if (auto fallback = tryFallback(CollisionDetectorType::Fcl)) {
+    return fallback;
   }
 
   DART_WARN(

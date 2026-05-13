@@ -205,6 +205,8 @@ private:
   ShapeMap mShapeMap;
 
   static Registrar<FCLCollisionDetector> mRegistrar;
+
+  static Registrar<FCLCollisionDetector> mMeshRegistrar;
 };
 
 } // namespace collision

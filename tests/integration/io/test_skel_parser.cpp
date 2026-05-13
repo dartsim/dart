@@ -34,12 +34,17 @@
 
 #include "dart/utils/All.hpp"
 
-#include <dart/utils/skel_parser.hpp>
+#include <dart/config.hpp>
 
-#include <dart/collision/fcl/fcl_collision_detector.hpp>
+#include <dart/utils/skel_parser.hpp>
 
 #include <dart/all.hpp>
 
+#if DART_HAVE_FCL
+  #include <dart/collision/fcl/fcl_collision_detector.hpp>
+#endif
+
+#if DART_HAVE_FCL
 namespace {
 // Force-link dart-collision-fcl.so so that its static Registrar triggers
 // factory registration.  We reference create() which is defined only in the
@@ -54,6 +59,7 @@ struct ForceFclLink
 };
 static ForceFclLink kForceFclLink;
 } // namespace
+#endif
 
 #include <gtest/gtest.h>
 
@@ -715,7 +721,13 @@ TEST(SkelParser, SoftBodiesWorldProperties)
 
   const auto detector = world->getConstraintSolver()->getCollisionDetector();
   ASSERT_NE(detector, nullptr);
+#if DART_HAVE_FCL
   EXPECT_EQ(detector->getTypeView(), "fcl");
+#else
+  EXPECT_TRUE(
+      detector->getTypeView() == "dart"
+      || detector->getTypeView() == "experimental");
+#endif
 
   const auto skel = world->getSkeleton("skeleton 1");
   ASSERT_NE(skel, nullptr);
@@ -870,7 +882,13 @@ TEST(SkelParser, ReadWorldXmlPhysicsAndCollisionDetector)
 
   const auto detector = world->getConstraintSolver()->getCollisionDetector();
   ASSERT_NE(detector, nullptr);
+#if DART_HAVE_FCL
   EXPECT_EQ(detector->getTypeView(), "fcl");
+#else
+  EXPECT_TRUE(
+      detector->getTypeView() == "dart"
+      || detector->getTypeView() == "experimental");
+#endif
 }
 
 //==============================================================================
@@ -1068,7 +1086,22 @@ TEST(SkelParser, ReadWorldXmlFclMeshCollisionDetector)
 
   const auto detector = world->getConstraintSolver()->getCollisionDetector();
   ASSERT_NE(detector, nullptr);
+#if DART_HAVE_FCL
   EXPECT_EQ(detector->getTypeView(), "fcl");
+  const auto fclDetector
+      = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(detector);
+  ASSERT_NE(fclDetector, nullptr);
+  EXPECT_EQ(
+      fclDetector->getPrimitiveShapeType(),
+      collision::FCLCollisionDetector::MESH);
+  EXPECT_EQ(
+      fclDetector->getContactPointComputationMethod(),
+      collision::FCLCollisionDetector::DART);
+#else
+  EXPECT_TRUE(
+      detector->getTypeView() == "dart"
+      || detector->getTypeView() == "experimental");
+#endif
 }
 
 //==============================================================================

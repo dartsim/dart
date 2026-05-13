@@ -42,6 +42,7 @@
 #include "dart/collision/native/persistent_manifold_cache.hpp"
 #include "dart/collision/raycast_option.hpp"
 #include "dart/collision/raycast_result.hpp"
+#include "dart/config.hpp"
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/cone_shape.hpp"
 #include "dart/dynamics/ellipsoid_shape.hpp"
@@ -49,6 +50,10 @@
 #include "dart/dynamics/multi_sphere_convex_hull_shape.hpp"
 #include "dart/dynamics/simple_frame.hpp"
 #include "dart/dynamics/sphere_shape.hpp"
+
+#if DART_HAVE_OCTOMAP
+  #include "dart/dynamics/voxel_grid_shape.hpp"
+#endif
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
@@ -548,3 +553,52 @@ TEST(DartCollisionBackend, MultiSphereConvexHullShapeAdapter)
   const auto* convex = static_cast<const native::ConvexShape*>(adapted.get());
   EXPECT_EQ(12u, convex->getVertices().size());
 }
+
+//==============================================================================
+#if DART_HAVE_OCTOMAP
+TEST(DartCollisionBackend, VoxelGridShapeAdapter)
+{
+  auto voxelGrid = std::make_shared<VoxelGridShape>(0.1);
+  voxelGrid->updateOccupancy(Eigen::Vector3d::Zero(), true);
+
+  dynamics::ShapePtr voxelShape = voxelGrid;
+  auto adapted = adaptShape(voxelShape);
+  ASSERT_NE(nullptr, adapted);
+  EXPECT_EQ(native::ShapeType::Compound, adapted->getType());
+
+  const auto* compound
+      = static_cast<const native::CompoundShape*>(adapted.get());
+  EXPECT_EQ(1u, compound->numChildren());
+  EXPECT_EQ(native::ShapeType::Box, compound->childShape(0).getType());
+}
+
+//==============================================================================
+TEST(DartCollisionBackend, VoxelGridCollidesAfterOccupancyUpdate)
+{
+  auto detector = DartCollisionDetector::create();
+
+  auto voxelGrid = std::make_shared<VoxelGridShape>(0.1);
+  auto voxelFrame = std::make_shared<SimpleFrame>(Frame::World(), "voxel_grid");
+  voxelFrame->setShape(voxelGrid);
+
+  auto sphereFrame = createSphereFrame("sphere", 0.02, Eigen::Vector3d::Zero());
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(voxelFrame.get());
+  group->addShapeFrame(sphereFrame.get());
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 4u;
+
+  CollisionResult result;
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+
+  voxelGrid->updateOccupancy(Eigen::Vector3d::Zero(), true);
+
+  result.clear();
+  ASSERT_TRUE(group->collide(option, &result));
+  EXPECT_GT(result.getNumContacts(), 0u);
+}
+#endif

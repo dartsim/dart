@@ -16,7 +16,7 @@
 
 #include <gtest/gtest.h>
 
-#ifdef DART_EXPERIMENTAL_HAVE_VOXBLOX
+#ifdef DART_NATIVE_HAVE_VOXBLOX
   #include <voxblox/core/common.h>
   #include <voxblox/core/esdf_map.h>
   #include <voxblox/core/layer.h>
@@ -111,7 +111,7 @@ std::vector<Eigen::Vector3d> makeQueryPoints(std::size_t count)
   return points;
 }
 
-#ifdef DART_EXPERIMENTAL_HAVE_VOXBLOX
+#ifdef DART_NATIVE_HAVE_VOXBLOX
 std::shared_ptr<voxblox::EsdfMap> buildVoxbloxMap()
 {
   constexpr int kVoxelsPerSide = 16;
@@ -220,7 +220,7 @@ TEST(EsdfDenseField, BuildsFromTsdf)
   }
 }
 
-#ifdef DART_EXPERIMENTAL_HAVE_VOXBLOX
+#ifdef DART_NATIVE_HAVE_VOXBLOX
 TEST(SdfDenseField, MatchesVoxbloxEsdf)
 {
   auto dense = buildDenseField();

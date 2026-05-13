@@ -17,13 +17,17 @@ dart_check_required_package(fmt "libfmt")
 dart_find_package(Eigen3)
 dart_check_required_package(EIGEN3 "eigen3")
 
-# FCL
-dart_find_package(fcl)
-dart_check_required_package(fcl "fcl")
-
 # ASSIMP
 dart_find_package(assimp)
 dart_check_required_package(assimp "assimp")
+
+# FCL
+if(DART_BUILD_COLLISION_FCL)
+  dart_find_package(fcl)
+  dart_check_required_package(fcl "fcl")
+else()
+  set(DART_HAVE_FCL FALSE CACHE BOOL "Check if fcl found." FORCE)
+endif()
 
 #=======================
 # Optional dependencies

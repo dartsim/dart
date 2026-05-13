@@ -100,7 +100,7 @@ DART addresses the need for:
 ### Key Features
 
 - **Advanced Dynamics**: Articulated body simulation with 10+ joint types, contact resolution, constraint solving
-- **Multiple Collision Backends**: FCL (default), Bullet, DART native, ODE
+- **Multiple Collision Backends**: DART native (default), FCL, Bullet, ODE
 - **3D Visualization**: OpenSceneGraph-based rendering with shadows, materials, and real-time updates
 - **Interactive Manipulation**: Drag-and-drop, inverse kinematics, interactive frames with visual handles
 - **ImGui Integration**: Modern immediate-mode GUI for controls, debugging, and custom widgets
@@ -119,7 +119,7 @@ DART addresses the need for:
 | **Build System**        | CMake 3.22.1+         | Cross-platform builds     |
 | **Python Bindings**     | nanobind 2.9.x        | Python API                |
 | **Linear Algebra**      | Eigen 3.4.0+          | Math operations           |
-| **Collision Detection** | FCL 0.7.0+            | Primary collision backend |
+| **Collision Detection** | DART native           | Default collision backend |
 | **3D Rendering**        | OpenSceneGraph 3.0.0+ | Visualization             |
 | **GUI Framework**       | Dear ImGui 1.91.9     | Immediate-mode UI         |
 | **Model Loading**       | assimp 5.4.3+         | 3D asset import           |
@@ -553,9 +553,9 @@ graph TB
 
 **Key Backends**:
 
-- [`FCLCollisionDetector`](dart/collision/fcl/FCLCollisionDetector.hpp) - Default, uses FCL library
+- [`DARTCollisionDetector`](dart/collision/dart/DARTCollisionDetector.hpp) - Default native implementation
+- [`FCLCollisionDetector`](dart/collision/fcl/FCLCollisionDetector.hpp) - Optional FCL reference backend
 - [`BulletCollisionDetector`](dart/collision/bullet/BulletCollisionDetector.hpp) - Uses Bullet physics
-- [`DARTCollisionDetector`](dart/collision/dart/DARTCollisionDetector.hpp) - Native implementation
 - [`OdeCollisionDetector`](dart/collision/ode/OdeCollisionDetector.hpp) - Uses ODE library
 
 **Key Elements**:
@@ -567,7 +567,7 @@ graph TB
 **Depends On**:
 
 - **Internal**: Shape, CollisionObject
-- **External**: FCL, Bullet, or ODE depending on backend
+- **External**: Optional FCL, Bullet, or ODE depending on backend
 
 ---
 

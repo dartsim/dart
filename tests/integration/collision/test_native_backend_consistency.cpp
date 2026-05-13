@@ -34,7 +34,10 @@
 
 #include <dart/collision/CollisionResult.hpp>
 #include <dart/collision/DistanceResult.hpp>
-#include <dart/collision/fcl/FCLCollisionDetector.hpp>
+#include <dart/collision/collision_detector.hpp>
+#if DART_HAVE_FCL
+  #include <dart/collision/fcl/FCLCollisionDetector.hpp>
+#endif
 #include <dart/collision/native/narrow_phase/box_box.hpp>
 #include <dart/collision/native/narrow_phase/capsule_box.hpp>
 #include <dart/collision/native/narrow_phase/capsule_capsule.hpp>
@@ -150,7 +153,7 @@ double NormalAlignment(
   return std::abs(normal1.dot(normal2) / (n1 * n2));
 }
 
-BackendCapabilities CapabilitiesFor(std::string_view type)
+[[maybe_unused]] BackendCapabilities CapabilitiesFor(std::string_view type)
 {
   BackendCapabilities caps;
   if (type == "fcl") {
@@ -224,7 +227,7 @@ std::vector<CaseSpec> BuildCases()
   return cases;
 }
 
-Outcome EvaluateExperimental(const CaseSpec& spec)
+Outcome EvaluateNative(const CaseSpec& spec)
 {
   using namespace dart::collision::native;
   using dart::benchmark::collision::MakeBoxBoxTransforms;
@@ -454,46 +457,42 @@ Outcome EvaluateReference(
 }
 
 void ExpectConsistent(
-    const Outcome& experimental, const Outcome& reference, const CaseSpec& spec)
+    const Outcome& native, const Outcome& reference, const CaseSpec& spec)
 {
   const double contactEps = ContactEpsilon(spec.scale);
   if (spec.edge == EdgeCase::kGrazing
-      && (!experimental.hasDistance || !reference.hasDistance)) {
+      && (!native.hasDistance || !reference.hasDistance)) {
     return;
   }
-  const bool expContact = IsContactForEdge(experimental, spec, contactEps);
+  const bool nativeContact = IsContactForEdge(native, spec, contactEps);
   const bool refContact = IsContactForEdge(reference, spec, contactEps);
 
   if (spec.edge == EdgeCase::kDeepPenetration) {
-    EXPECT_TRUE(expContact);
+    EXPECT_TRUE(nativeContact);
     EXPECT_TRUE(refContact);
-  } else if (expContact != refContact) {
-    if (!expContact && experimental.hasDistance) {
-      EXPECT_LE(std::abs(experimental.distance), contactEps);
+  } else if (nativeContact != refContact) {
+    if (!nativeContact && native.hasDistance) {
+      EXPECT_LE(std::abs(native.distance), contactEps);
     }
     if (!refContact && reference.hasDistance) {
       EXPECT_LE(std::abs(reference.distance), contactEps);
     }
   } else {
-    EXPECT_EQ(expContact, refContact);
+    EXPECT_EQ(nativeContact, refContact);
   }
 
-  if (!expContact && !refContact) {
-    if (experimental.hasDistance && reference.hasDistance) {
+  if (!nativeContact && !refContact) {
+    if (native.hasDistance && reference.hasDistance) {
       EXPECT_NEAR(
-          reference.distance,
-          experimental.distance,
-          DistanceTolerance(spec.scale));
+          reference.distance, native.distance, DistanceTolerance(spec.scale));
     }
     return;
   }
 
-  if (ShouldCompareDepth(spec) && experimental.depth > 0.0
-      && reference.depth > 0.0) {
-    EXPECT_NEAR(
-        reference.depth, experimental.depth, DepthTolerance(spec.scale));
-    if (experimental.hasNormal && reference.hasNormal) {
-      EXPECT_GE(NormalAlignment(experimental.normal, reference.normal), 0.98);
+  if (ShouldCompareDepth(spec) && native.depth > 0.0 && reference.depth > 0.0) {
+    EXPECT_NEAR(reference.depth, native.depth, DepthTolerance(spec.scale));
+    if (native.hasNormal && reference.hasNormal) {
+      EXPECT_GE(NormalAlignment(native.normal, reference.normal), 0.98);
     }
   }
 }
@@ -510,11 +509,13 @@ TEST(NativeCollision, CrossBackendConsistency)
   };
 
   std::vector<Backend> backends;
+#if DART_HAVE_FCL
   {
     auto detector = dart::collision::FCLCollisionDetector::create();
     backends.push_back(
         {"FCL", detector, CapabilitiesFor(detector->getTypeView())});
   }
+#endif
 #if DART_HAVE_BULLET
   {
     auto detector = dart::collision::BulletCollisionDetector::create();
@@ -536,7 +537,7 @@ TEST(NativeCollision, CrossBackendConsistency)
 
   const auto cases = BuildCases();
   for (const auto& spec : cases) {
-    const Outcome experimental = EvaluateExperimental(spec);
+    const Outcome native = EvaluateNative(spec);
 
     for (const auto& backend : backends) {
       if (!backend.caps.supportsCapsule && PairUsesCapsule(spec.pair)) {
@@ -556,7 +557,7 @@ TEST(NativeCollision, CrossBackendConsistency)
 
       const Outcome reference
           = EvaluateReference(backend.detector, spec, backend.caps);
-      ExpectConsistent(experimental, reference, spec);
+      ExpectConsistent(native, reference, spec);
     }
   }
 }

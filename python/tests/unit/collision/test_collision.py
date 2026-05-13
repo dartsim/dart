@@ -4,7 +4,10 @@ import pytest
 
 
 def _collision_detector_factories():
-    detectors = [("fcl", dart.FCLCollisionDetector)]
+    detectors = []
+
+    if hasattr(dart, "FCLCollisionDetector"):
+        detectors.append(("fcl", dart.FCLCollisionDetector))
 
     if hasattr(dart, "DARTCollisionDetector"):
         detectors.append(("dart", dart.DARTCollisionDetector))

@@ -34,11 +34,11 @@
 #include <dart/gui/vsg/im_gui_viewer.hpp>
 #include <dart/gui/vsg/simple_viewer.hpp>
 
-#include <dart/collision/experimental/aabb.hpp>
-#include <dart/collision/experimental/collision_object.hpp>
-#include <dart/collision/experimental/collision_world.hpp>
-#include <dart/collision/experimental/shapes/shape.hpp>
-#include <dart/collision/experimental/types.hpp>
+#include <dart/collision/native/aabb.hpp>
+#include <dart/collision/native/collision_object.hpp>
+#include <dart/collision/native/collision_world.hpp>
+#include <dart/collision/native/shapes/shape.hpp>
+#include <dart/collision/native/types.hpp>
 
 #include <CLI/CLI.hpp>
 
@@ -46,7 +46,7 @@
 
 #include <cstdio>
 
-namespace collision = dart::collision::experimental;
+namespace collision = dart::collision::native;
 namespace guivsg = dart::gui::vsg;
 
 enum class DemoMode

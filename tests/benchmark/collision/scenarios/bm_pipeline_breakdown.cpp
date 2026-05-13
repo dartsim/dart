@@ -118,7 +118,7 @@ std::vector<ShapeSpec> MakeSphereScene(
   return specs;
 }
 
-std::unique_ptr<Shape> MakeExperimentalShape(const ShapeSpec& spec)
+std::unique_ptr<Shape> MakeNativeShape(const ShapeSpec& spec)
 {
   switch (spec.kind) {
     case ShapeKind::Sphere:
@@ -132,7 +132,7 @@ std::unique_ptr<Shape> MakeExperimentalShape(const ShapeSpec& spec)
   return std::make_unique<SphereShape>(kSphereRadius);
 }
 
-void BuildExperimentalWorld(
+void BuildNativeWorld(
     const std::vector<ShapeSpec>& specs,
     CollisionWorld& world,
     std::vector<CollisionObject>& objects,
@@ -144,7 +144,7 @@ void BuildExperimentalWorld(
   for (const auto& spec : specs) {
     baseTransforms.push_back(spec.transform);
     objects.emplace_back(
-        world.createObject(MakeExperimentalShape(spec), spec.transform));
+        world.createObject(MakeNativeShape(spec), spec.transform));
   }
 }
 
@@ -163,7 +163,7 @@ void RunPipelineBenchmark(
   CollisionWorld world;
   std::vector<CollisionObject> objects;
   std::vector<Eigen::Isometry3d> baseTransforms;
-  BuildExperimentalWorld(specs, world, objects, baseTransforms);
+  BuildNativeWorld(specs, world, objects, baseTransforms);
 
   CollisionOption option
       = CollisionOption::fullContacts(MaxContactsForCount(count));
@@ -263,12 +263,11 @@ void RunPipelineBenchmark(
 
 } // namespace
 
-static void BM_Scenario_PipelineBreakdown_Dense_Experimental(
-    benchmark::State& state)
+static void BM_Scenario_PipelineBreakdown_Dense_Native(benchmark::State& state)
 {
   RunPipelineBenchmark(state, kDenseRange, MakeMixedScene);
 }
-BENCHMARK(BM_Scenario_PipelineBreakdown_Dense_Experimental)
+BENCHMARK(BM_Scenario_PipelineBreakdown_Dense_Native)
     ->Args({1000, 1})
     ->Args({1000, 2})
     ->Args({1000, 4})
@@ -277,12 +276,11 @@ BENCHMARK(BM_Scenario_PipelineBreakdown_Dense_Experimental)
     ->Args({10000, 4})
     ->Complexity();
 
-static void BM_Scenario_PipelineBreakdown_Sparse_Experimental(
-    benchmark::State& state)
+static void BM_Scenario_PipelineBreakdown_Sparse_Native(benchmark::State& state)
 {
   RunPipelineBenchmark(state, kSparseRange, MakeMixedScene);
 }
-BENCHMARK(BM_Scenario_PipelineBreakdown_Sparse_Experimental)
+BENCHMARK(BM_Scenario_PipelineBreakdown_Sparse_Native)
     ->Args({1000, 1})
     ->Args({1000, 2})
     ->Args({1000, 4})
@@ -291,12 +289,12 @@ BENCHMARK(BM_Scenario_PipelineBreakdown_Sparse_Experimental)
     ->Args({10000, 4})
     ->Complexity();
 
-static void BM_Scenario_PipelineBreakdown_RP3D_Dense_Spheres_Experimental(
+static void BM_Scenario_PipelineBreakdown_RP3D_Dense_Spheres_Native(
     benchmark::State& state)
 {
   RunPipelineBenchmark(state, kRp3dDenseRange, MakeSphereScene);
 }
-BENCHMARK(BM_Scenario_PipelineBreakdown_RP3D_Dense_Spheres_Experimental)
+BENCHMARK(BM_Scenario_PipelineBreakdown_RP3D_Dense_Spheres_Native)
     ->Args({1000, 1})
     ->Args({1000, 2})
     ->Args({1000, 4})
@@ -305,12 +303,12 @@ BENCHMARK(BM_Scenario_PipelineBreakdown_RP3D_Dense_Spheres_Experimental)
     ->Args({10000, 4})
     ->Complexity();
 
-static void BM_Scenario_PipelineBreakdown_RP3D_Sparse_Spheres_Experimental(
+static void BM_Scenario_PipelineBreakdown_RP3D_Sparse_Spheres_Native(
     benchmark::State& state)
 {
   RunPipelineBenchmark(state, kRp3dSparseRange, MakeSphereScene);
 }
-BENCHMARK(BM_Scenario_PipelineBreakdown_RP3D_Sparse_Spheres_Experimental)
+BENCHMARK(BM_Scenario_PipelineBreakdown_RP3D_Sparse_Spheres_Native)
     ->Args({1000, 1})
     ->Args({1000, 2})
     ->Args({1000, 4})

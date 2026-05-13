@@ -175,8 +175,14 @@ TEST(Simulation, ClonedWorldsStayDeterministic)
 
     for (std::size_t w = 1; w < worlds.size(); ++w) {
       const auto otherSkel = worlds[w]->getSkeleton(1);
-      EXPECT_TRUE(refPos.isApprox(otherSkel->getPositions(), tol));
-      EXPECT_TRUE(refVel.isApprox(otherSkel->getVelocities(), tol));
+      EXPECT_TRUE(refPos.isApprox(otherSkel->getPositions(), tol))
+          << "Position mismatch at step " << i << " for world " << w
+          << " max abs diff: "
+          << (refPos - otherSkel->getPositions()).cwiseAbs().maxCoeff();
+      EXPECT_TRUE(refVel.isApprox(otherSkel->getVelocities(), tol))
+          << "Velocity mismatch at step " << i << " for world " << w
+          << " max abs diff: "
+          << (refVel - otherSkel->getVelocities()).cwiseAbs().maxCoeff();
       EXPECT_DOUBLE_EQ(refWorld->getTime(), worlds[w]->getTime());
 
       const auto& contacts = worlds[w]->getLastCollisionResult().getContacts();

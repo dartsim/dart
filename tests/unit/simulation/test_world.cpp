@@ -407,6 +407,7 @@ TEST(WorldTests, CollisionDetector)
 
   auto detector = world->getCollisionDetector();
   ASSERT_NE(detector, nullptr);
+  EXPECT_EQ(detector->getTypeView(), "dart");
 }
 
 //==============================================================================

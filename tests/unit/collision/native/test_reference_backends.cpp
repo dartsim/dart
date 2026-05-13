@@ -345,31 +345,31 @@ TEST_F(ReferenceBackends, SphereSphereIntersecting)
   const double expectedDepth = r1 + r2 - (pos2 - pos1).norm();
   EXPECT_NEAR(mpr.depth, expectedDepth, kTol);
 
-  auto experimental = queryNative(
+  auto native = queryNative(
       pos1,
       std::make_unique<expc::SphereShape>(r1),
       pos2,
       std::make_unique<expc::SphereShape>(r2));
-  EXPECT_TRUE(experimental.colliding);
-  EXPECT_NEAR(experimental.penetration, expectedDepth, kTol);
+  EXPECT_TRUE(native.colliding);
+  EXPECT_NEAR(native.penetration, expectedDepth, kTol);
 
   auto fcl = queryFCL(pos1, sphere1_, pos2, sphere2_);
   EXPECT_TRUE(fcl.colliding);
   EXPECT_NEAR(fcl.penetration, expectedDepth, kLooseTol);
-  EXPECT_NEAR(experimental.penetration, fcl.penetration, kLooseTol);
+  EXPECT_NEAR(native.penetration, fcl.penetration, kLooseTol);
 
 #if DART_HAVE_BULLET
   auto bullet = queryBullet(pos1, sphere1_, pos2, sphere2_);
   EXPECT_TRUE(bullet.colliding);
   EXPECT_NEAR(bullet.penetration, expectedDepth, kLooseTol);
-  EXPECT_NEAR(experimental.penetration, bullet.penetration, kLooseTol);
+  EXPECT_NEAR(native.penetration, bullet.penetration, kLooseTol);
 #endif
 
 #if DART_HAVE_ODE
   auto ode = queryODE(pos1, sphere1_, pos2, sphere2_);
   EXPECT_TRUE(ode.colliding);
   EXPECT_NEAR(ode.penetration, expectedDepth, kLooseTol);
-  EXPECT_NEAR(experimental.penetration, ode.penetration, kLooseTol);
+  EXPECT_NEAR(native.penetration, ode.penetration, kLooseTol);
 #endif
 }
 
@@ -388,18 +388,18 @@ TEST_F(ReferenceBackends, SphereSphereSeparated)
   const double expectedDist = (pos2 - pos1).norm() - r1 - r2;
   EXPECT_NEAR(gjk.distance, expectedDist, kTol);
 
-  auto experimental = queryNative(
+  auto native = queryNative(
       pos1,
       std::make_unique<expc::SphereShape>(r1),
       pos2,
       std::make_unique<expc::SphereShape>(r2));
-  EXPECT_FALSE(experimental.colliding);
-  EXPECT_NEAR(experimental.distance, expectedDist, kTol);
+  EXPECT_FALSE(native.colliding);
+  EXPECT_NEAR(native.distance, expectedDist, kTol);
 
   auto fcl = queryFCL(pos1, sphere1_, pos2, sphere2_);
   EXPECT_FALSE(fcl.colliding);
   EXPECT_NEAR(fcl.distance, expectedDist, kLooseTol);
-  EXPECT_NEAR(experimental.distance, fcl.distance, kLooseTol);
+  EXPECT_NEAR(native.distance, fcl.distance, kLooseTol);
 
 #if DART_HAVE_BULLET
   auto bullet = queryBullet(pos1, sphere1_, pos2, sphere2_);
@@ -428,29 +428,29 @@ TEST_F(ReferenceBackends, BoxBoxIntersecting)
   const double overlapZ = 2.0 - std::abs(pos2.z() - pos1.z());
   const double expectedDepth = std::min({overlapX, overlapY, overlapZ});
 
-  auto experimental = queryNative(
+  auto native = queryNative(
       pos1,
       std::make_unique<expc::BoxShape>(halfExt),
       pos2,
       std::make_unique<expc::BoxShape>(halfExt));
-  EXPECT_TRUE(experimental.colliding);
-  EXPECT_NEAR(experimental.penetration, expectedDepth, kLooseTol);
+  EXPECT_TRUE(native.colliding);
+  EXPECT_NEAR(native.penetration, expectedDepth, kLooseTol);
 
   auto fcl = queryFCL(pos1, box1_, pos2, box2_);
   EXPECT_TRUE(fcl.colliding);
   EXPECT_NEAR(fcl.penetration, expectedDepth, kLooseTol);
-  EXPECT_NEAR(experimental.penetration, fcl.penetration, kLooseTol);
+  EXPECT_NEAR(native.penetration, fcl.penetration, kLooseTol);
 
 #if DART_HAVE_BULLET
   auto bullet = queryBullet(pos1, box1_, pos2, box2_);
   EXPECT_TRUE(bullet.colliding);
-  EXPECT_NEAR(experimental.penetration, bullet.penetration, kLooseTol);
+  EXPECT_NEAR(native.penetration, bullet.penetration, kLooseTol);
 #endif
 
 #if DART_HAVE_ODE
   auto ode = queryODE(pos1, box1_, pos2, box2_);
   EXPECT_TRUE(ode.colliding);
-  EXPECT_NEAR(experimental.penetration, ode.penetration, kLooseTol);
+  EXPECT_NEAR(native.penetration, ode.penetration, kLooseTol);
 #endif
 }
 
@@ -469,18 +469,18 @@ TEST_F(ReferenceBackends, BoxBoxSeparated)
   const double expectedDist = (pos2 - pos1).norm() - 2.0;
   EXPECT_NEAR(gjk.distance, expectedDist, kTol);
 
-  auto experimental = queryNative(
+  auto native = queryNative(
       pos1,
       std::make_unique<expc::BoxShape>(halfExt),
       pos2,
       std::make_unique<expc::BoxShape>(halfExt));
-  EXPECT_FALSE(experimental.colliding);
-  EXPECT_NEAR(experimental.distance, expectedDist, kTol);
+  EXPECT_FALSE(native.colliding);
+  EXPECT_NEAR(native.distance, expectedDist, kTol);
 
   auto fcl = queryFCL(pos1, box1_, pos2, box2_);
   EXPECT_FALSE(fcl.colliding);
   EXPECT_NEAR(fcl.distance, expectedDist, kLooseTol);
-  EXPECT_NEAR(experimental.distance, fcl.distance, kLooseTol);
+  EXPECT_NEAR(native.distance, fcl.distance, kLooseTol);
 
 #if DART_HAVE_BULLET
   auto bullet = queryBullet(pos1, box1_, pos2, box2_);
@@ -506,29 +506,29 @@ TEST_F(ReferenceBackends, SphereBoxIntersecting)
 
   const double expectedDepth = 1.0 - (boxPos.x() - boxHalf.x());
 
-  auto experimental = queryNative(
+  auto native = queryNative(
       spherePos,
       std::make_unique<expc::SphereShape>(1.0),
       boxPos,
       std::make_unique<expc::BoxShape>(boxHalf));
-  EXPECT_TRUE(experimental.colliding);
-  EXPECT_NEAR(experimental.penetration, expectedDepth, kLooseTol);
+  EXPECT_TRUE(native.colliding);
+  EXPECT_NEAR(native.penetration, expectedDepth, kLooseTol);
 
   auto fcl = queryFCL(spherePos, sphere1_, boxPos, box1_);
   EXPECT_TRUE(fcl.colliding);
   EXPECT_NEAR(fcl.penetration, expectedDepth, kLooseTol);
-  EXPECT_NEAR(experimental.penetration, fcl.penetration, kLooseTol);
+  EXPECT_NEAR(native.penetration, fcl.penetration, kLooseTol);
 
 #if DART_HAVE_BULLET
   auto bullet = queryBullet(spherePos, sphere1_, boxPos, box1_);
   EXPECT_TRUE(bullet.colliding);
-  EXPECT_NEAR(experimental.penetration, bullet.penetration, kLooseTol);
+  EXPECT_NEAR(native.penetration, bullet.penetration, kLooseTol);
 #endif
 
 #if DART_HAVE_ODE
   auto ode = queryODE(spherePos, sphere1_, boxPos, box1_);
   EXPECT_TRUE(ode.colliding);
-  EXPECT_NEAR(experimental.penetration, ode.penetration, kLooseTol);
+  EXPECT_NEAR(native.penetration, ode.penetration, kLooseTol);
 #endif
 }
 
@@ -547,18 +547,18 @@ TEST_F(ReferenceBackends, SphereBoxSeparated)
   const double expectedDist = (boxPos.x() - boxHalf.x()) - 1.0;
   EXPECT_NEAR(gjk.distance, expectedDist, kTol);
 
-  auto experimental = queryNative(
+  auto native = queryNative(
       spherePos,
       std::make_unique<expc::SphereShape>(1.0),
       boxPos,
       std::make_unique<expc::BoxShape>(boxHalf));
-  EXPECT_FALSE(experimental.colliding);
-  EXPECT_NEAR(experimental.distance, expectedDist, kTol);
+  EXPECT_FALSE(native.colliding);
+  EXPECT_NEAR(native.distance, expectedDist, kTol);
 
   auto fcl = queryFCL(spherePos, sphere1_, boxPos, box1_);
   EXPECT_FALSE(fcl.colliding);
   EXPECT_NEAR(fcl.distance, expectedDist, kLooseTol);
-  EXPECT_NEAR(experimental.distance, fcl.distance, kLooseTol);
+  EXPECT_NEAR(native.distance, fcl.distance, kLooseTol);
 
 #if DART_HAVE_BULLET
   auto bullet = queryBullet(spherePos, sphere1_, boxPos, box1_);
@@ -588,24 +588,24 @@ TEST_F(ReferenceBackends, DeepPenetration)
   const double expectedDepth = r1 + r2 - (pos2 - pos1).norm();
   EXPECT_NEAR(mpr.depth, expectedDepth, kTol);
 
-  auto experimental = queryNative(
+  auto native = queryNative(
       pos1,
       std::make_unique<expc::SphereShape>(r1),
       pos2,
       std::make_unique<expc::SphereShape>(r2));
-  EXPECT_TRUE(experimental.colliding);
-  EXPECT_NEAR(experimental.penetration, expectedDepth, kTol);
+  EXPECT_TRUE(native.colliding);
+  EXPECT_NEAR(native.penetration, expectedDepth, kTol);
 
   auto fcl = queryFCL(pos1, sphere1_, pos2, sphere2_);
   EXPECT_TRUE(fcl.colliding);
   EXPECT_NEAR(fcl.penetration, expectedDepth, kLooseTol);
-  EXPECT_NEAR(experimental.penetration, fcl.penetration, kLooseTol);
+  EXPECT_NEAR(native.penetration, fcl.penetration, kLooseTol);
 
 #if DART_HAVE_BULLET
   auto bullet = queryBullet(pos1, sphere1_, pos2, sphere2_);
   EXPECT_TRUE(bullet.colliding);
   EXPECT_NEAR(bullet.penetration, expectedDepth, kLooseTol);
-  EXPECT_NEAR(experimental.penetration, bullet.penetration, kLooseTol);
+  EXPECT_NEAR(native.penetration, bullet.penetration, kLooseTol);
 #endif
 }
 
@@ -621,18 +621,18 @@ TEST_F(ReferenceBackends, SmallGap)
   EXPECT_FALSE(gjk.intersecting);
   EXPECT_NEAR(gjk.distance, 0.001, kTol);
 
-  auto experimental = queryNative(
+  auto native = queryNative(
       pos1,
       std::make_unique<expc::SphereShape>(1.0),
       pos2,
       std::make_unique<expc::SphereShape>(1.0));
-  EXPECT_FALSE(experimental.colliding);
-  EXPECT_NEAR(experimental.distance, 0.001, kTol);
+  EXPECT_FALSE(native.colliding);
+  EXPECT_NEAR(native.distance, 0.001, kTol);
 
   auto fcl = queryFCL(pos1, sphere1_, pos2, sphere2_);
   EXPECT_FALSE(fcl.colliding);
   EXPECT_NEAR(fcl.distance, 0.001, kLooseTol);
-  EXPECT_NEAR(experimental.distance, fcl.distance, kLooseTol);
+  EXPECT_NEAR(native.distance, fcl.distance, kLooseTol);
 }
 
 TEST_F(ReferenceBackends, SmallOverlap)
@@ -649,18 +649,18 @@ TEST_F(ReferenceBackends, SmallOverlap)
   ASSERT_TRUE(mpr.success);
   EXPECT_NEAR(mpr.depth, 0.001, kTol);
 
-  auto experimental = queryNative(
+  auto native = queryNative(
       pos1,
       std::make_unique<expc::SphereShape>(1.0),
       pos2,
       std::make_unique<expc::SphereShape>(1.0));
-  EXPECT_TRUE(experimental.colliding);
-  EXPECT_NEAR(experimental.penetration, 0.001, kTol);
+  EXPECT_TRUE(native.colliding);
+  EXPECT_NEAR(native.penetration, 0.001, kTol);
 
   auto fcl = queryFCL(pos1, sphere1_, pos2, sphere2_);
   EXPECT_TRUE(fcl.colliding);
   EXPECT_NEAR(fcl.penetration, 0.001, kLooseTol);
-  EXPECT_NEAR(experimental.penetration, fcl.penetration, kLooseTol);
+  EXPECT_NEAR(native.penetration, fcl.penetration, kLooseTol);
 }
 
 TEST_F(ReferenceBackends, LargeScale)
@@ -678,20 +678,20 @@ TEST_F(ReferenceBackends, LargeScale)
   const double expectedDist = (pos2 - pos1).norm() - r1 - r2;
   EXPECT_NEAR(gjk.distance, expectedDist, kTol);
 
-  auto experimental = queryNative(
+  auto native = queryNative(
       pos1,
       std::make_unique<expc::SphereShape>(r1),
       pos2,
       std::make_unique<expc::SphereShape>(r2));
-  EXPECT_FALSE(experimental.colliding);
-  EXPECT_NEAR(experimental.distance, expectedDist, 1e-6);
+  EXPECT_FALSE(native.colliding);
+  EXPECT_NEAR(native.distance, expectedDist, 1e-6);
 
   auto largeSphere1 = std::make_shared<dart::dynamics::SphereShape>(r1);
   auto largeSphere2 = std::make_shared<dart::dynamics::SphereShape>(r2);
   auto fcl = queryFCL(pos1, largeSphere1, pos2, largeSphere2);
   EXPECT_FALSE(fcl.colliding);
   EXPECT_NEAR(fcl.distance, expectedDist, kLooseTol);
-  EXPECT_NEAR(experimental.distance, fcl.distance, kLooseTol);
+  EXPECT_NEAR(native.distance, fcl.distance, kLooseTol);
 }
 
 TEST_F(ReferenceBackends, SmallScale)
@@ -709,20 +709,20 @@ TEST_F(ReferenceBackends, SmallScale)
   const double expectedDist = (pos2 - pos1).norm() - r1 - r2;
   EXPECT_NEAR(gjk.distance, expectedDist, 1e-6);
 
-  auto experimental = queryNative(
+  auto native = queryNative(
       pos1,
       std::make_unique<expc::SphereShape>(r1),
       pos2,
       std::make_unique<expc::SphereShape>(r2));
-  EXPECT_FALSE(experimental.colliding);
-  EXPECT_NEAR(experimental.distance, expectedDist, 1e-6);
+  EXPECT_FALSE(native.colliding);
+  EXPECT_NEAR(native.distance, expectedDist, 1e-6);
 
   auto smallSphere1 = std::make_shared<dart::dynamics::SphereShape>(r1);
   auto smallSphere2 = std::make_shared<dart::dynamics::SphereShape>(r2);
   auto fcl = queryFCL(pos1, smallSphere1, pos2, smallSphere2);
   EXPECT_FALSE(fcl.colliding);
   EXPECT_NEAR(fcl.distance, expectedDist, 1e-5);
-  EXPECT_NEAR(experimental.distance, fcl.distance, 1e-4);
+  EXPECT_NEAR(native.distance, fcl.distance, 1e-4);
 }
 
 #if DART_HAVE_BULLET
@@ -732,24 +732,24 @@ TEST_F(ReferenceBackends, RaycastSphereAgainstBullet)
   const Eigen::Vector3d from(-2.0, 0.0, 0.0);
   const Eigen::Vector3d to(2.0, 0.0, 0.0);
 
-  auto experimental = queryNativeRaycast(
+  auto native = queryNativeRaycast(
       pos, std::make_unique<expc::SphereShape>(1.0), from, to);
   auto bullet = queryBulletRaycast(pos, sphere1_, from, to);
 
-  ASSERT_TRUE(experimental.hit);
+  ASSERT_TRUE(native.hit);
   ASSERT_TRUE(bullet.hit);
 
-  EXPECT_NEAR(experimental.distance, 1.0, kRayTol);
+  EXPECT_NEAR(native.distance, 1.0, kRayTol);
   EXPECT_NEAR(bullet.distance, 1.0, kRayTol);
-  EXPECT_NEAR(experimental.distance, bullet.distance, kRayTol);
+  EXPECT_NEAR(native.distance, bullet.distance, kRayTol);
 
   EXPECT_TRUE(
-      nearVector(experimental.point, Eigen::Vector3d(-1.0, 0.0, 0.0), kRayTol));
+      nearVector(native.point, Eigen::Vector3d(-1.0, 0.0, 0.0), kRayTol));
   EXPECT_TRUE(
       nearVector(bullet.point, Eigen::Vector3d(-1.0, 0.0, 0.0), kRayTol));
 
   EXPECT_GE(
-      experimental.normal.normalized().dot(bullet.normal.normalized()),
+      native.normal.normalized().dot(bullet.normal.normalized()),
       1.0 - kRayNormalTol);
 }
 
@@ -760,24 +760,24 @@ TEST_F(ReferenceBackends, RaycastBoxAgainstBullet)
   const Eigen::Vector3d to(3.0, 0.0, 0.0);
   const Eigen::Vector3d halfExt(1.0, 1.0, 1.0);
 
-  auto experimental = queryNativeRaycast(
+  auto native = queryNativeRaycast(
       pos, std::make_unique<expc::BoxShape>(halfExt), from, to);
   auto bullet = queryBulletRaycast(pos, box1_, from, to);
 
-  ASSERT_TRUE(experimental.hit);
+  ASSERT_TRUE(native.hit);
   ASSERT_TRUE(bullet.hit);
 
-  EXPECT_NEAR(experimental.distance, 2.0, kRayTol);
+  EXPECT_NEAR(native.distance, 2.0, kRayTol);
   EXPECT_NEAR(bullet.distance, 2.0, kRayTol);
-  EXPECT_NEAR(experimental.distance, bullet.distance, kRayTol);
+  EXPECT_NEAR(native.distance, bullet.distance, kRayTol);
 
   EXPECT_TRUE(
-      nearVector(experimental.point, Eigen::Vector3d(-1.0, 0.0, 0.0), kRayTol));
+      nearVector(native.point, Eigen::Vector3d(-1.0, 0.0, 0.0), kRayTol));
   EXPECT_TRUE(
       nearVector(bullet.point, Eigen::Vector3d(-1.0, 0.0, 0.0), kRayTol));
 
   EXPECT_GE(
-      experimental.normal.normalized().dot(bullet.normal.normalized()),
+      native.normal.normalized().dot(bullet.normal.normalized()),
       1.0 - kRayNormalTol);
 }
 #endif

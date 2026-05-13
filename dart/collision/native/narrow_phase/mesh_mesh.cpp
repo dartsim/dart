@@ -107,6 +107,150 @@ bool isPrimitiveShape(ShapeType type)
   }
 }
 
+Eigen::Vector3d closestPointOnTriangle(
+    const Eigen::Vector3d& point,
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c)
+{
+  const Eigen::Vector3d ab = b - a;
+  const Eigen::Vector3d ac = c - a;
+  const Eigen::Vector3d ap = point - a;
+
+  const double d1 = ab.dot(ap);
+  const double d2 = ac.dot(ap);
+  if (d1 <= 0.0 && d2 <= 0.0) {
+    return a;
+  }
+
+  const Eigen::Vector3d bp = point - b;
+  const double d3 = ab.dot(bp);
+  const double d4 = ac.dot(bp);
+  if (d3 >= 0.0 && d4 <= d3) {
+    return b;
+  }
+
+  const double vc = d1 * d4 - d3 * d2;
+  if (vc <= 0.0 && d1 >= 0.0 && d3 <= 0.0) {
+    const double v = d1 / (d1 - d3);
+    return a + v * ab;
+  }
+
+  const Eigen::Vector3d cp = point - c;
+  const double d5 = ab.dot(cp);
+  const double d6 = ac.dot(cp);
+  if (d6 >= 0.0 && d5 <= d6) {
+    return c;
+  }
+
+  const double vb = d5 * d2 - d1 * d6;
+  if (vb <= 0.0 && d2 >= 0.0 && d6 <= 0.0) {
+    const double w = d2 / (d2 - d6);
+    return a + w * ac;
+  }
+
+  const double va = d3 * d6 - d5 * d4;
+  if (va <= 0.0 && (d4 - d3) >= 0.0 && (d5 - d6) >= 0.0) {
+    const double w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+    return b + w * (c - b);
+  }
+
+  const double denom = 1.0 / (va + vb + vc);
+  const double v = vb * denom;
+  const double w = vc * denom;
+  return a + ab * v + ac * w;
+}
+
+bool collideSphereTriangle(
+    const SphereShape& sphere,
+    const Eigen::Vector3d& sphereCenter,
+    const std::array<Eigen::Vector3d, 3>& triVertices,
+    CollisionResult& result,
+    const CollisionOption& option)
+{
+  if (result.numContacts() >= option.maxNumContacts) {
+    return false;
+  }
+
+  const Eigen::Vector3d closest = closestPointOnTriangle(
+      sphereCenter, triVertices[0], triVertices[1], triVertices[2]);
+  const Eigen::Vector3d sphereToTriangle = closest - sphereCenter;
+  const double distSq = sphereToTriangle.squaredNorm();
+  const double radius = sphere.getRadius();
+  if (distSq > radius * radius) {
+    return false;
+  }
+
+  Eigen::Vector3d normal;
+  double distance = 0.0;
+  if (distSq > kEpsilon * kEpsilon) {
+    distance = std::sqrt(distSq);
+    normal = sphereToTriangle / distance;
+  } else {
+    normal = (triVertices[1] - triVertices[0])
+                 .cross(triVertices[2] - triVertices[0]);
+    if (normal.squaredNorm() < kEpsilon * kEpsilon) {
+      normal = Eigen::Vector3d::UnitZ();
+    } else {
+      normal.normalize();
+      const Eigen::Vector3d triCenter
+          = (triVertices[0] + triVertices[1] + triVertices[2]) / 3.0;
+      if ((sphereCenter - triCenter).dot(normal) > 0.0) {
+        normal = -normal;
+      }
+    }
+  }
+
+  ContactPoint contact;
+  contact.position = closest;
+  contact.normal = normal;
+  contact.depth = radius - distance;
+  result.addContact(contact);
+  return true;
+}
+
+SupportFunction makePrimitiveSupportFunction(
+    const Shape& shape, const Eigen::Isometry3d& transform)
+{
+  switch (shape.getType()) {
+    case ShapeType::Sphere:
+      return makeSphereSupportFunction(
+          static_cast<const SphereShape&>(shape), transform);
+    case ShapeType::Box:
+      return makeBoxSupportFunction(
+          static_cast<const BoxShape&>(shape), transform);
+    case ShapeType::Capsule:
+      return makeCapsuleSupportFunction(
+          static_cast<const CapsuleShape&>(shape), transform);
+    case ShapeType::Cylinder:
+      return makeCylinderSupportFunction(
+          static_cast<const CylinderShape&>(shape), transform);
+    case ShapeType::Convex:
+      return makeConvexSupportFunction(
+          static_cast<const ConvexShape&>(shape), transform);
+    default:
+      return {};
+  }
+}
+
+Eigen::Vector3d primitiveCenter(
+    const Shape& shape, const Eigen::Isometry3d& transform)
+{
+  if (shape.getType() == ShapeType::Convex) {
+    const auto& convex = static_cast<const ConvexShape&>(shape);
+    const auto& vertices = convex.getVertices();
+    if (!vertices.empty()) {
+      Eigen::Vector3d sum = Eigen::Vector3d::Zero();
+      for (const auto& vertex : vertices) {
+        sum += vertex;
+      }
+      return transform * (sum / static_cast<double>(vertices.size()));
+    }
+  }
+
+  return transform.translation();
+}
+
 double aabbDistanceSquared(const Aabb& a, const Aabb& b)
 {
   double distSq = 0.0;
@@ -238,6 +382,126 @@ SegmentClosestResult closestPointsBetweenSegments(
   result.point2 = p2 + d2 * t;
   result.distSq = (result.point1 - result.point2).squaredNorm();
   return result;
+}
+
+struct SegmentTriangleClosestResult
+{
+  Eigen::Vector3d pointSegment = Eigen::Vector3d::Zero();
+  Eigen::Vector3d pointTriangle = Eigen::Vector3d::Zero();
+  double distSq = std::numeric_limits<double>::max();
+};
+
+SegmentTriangleClosestResult closestSegmentTriangle(
+    const Eigen::Vector3d& segStart,
+    const Eigen::Vector3d& segEnd,
+    const std::array<Eigen::Vector3d, 3>& triVertices)
+{
+  SegmentTriangleClosestResult best;
+
+  auto updateBest = [&](const Eigen::Vector3d& pointSegment,
+                        const Eigen::Vector3d& pointTriangle) {
+    const double distSq = (pointSegment - pointTriangle).squaredNorm();
+    if (distSq < best.distSq) {
+      best.pointSegment = pointSegment;
+      best.pointTriangle = pointTriangle;
+      best.distSq = distSq;
+    }
+  };
+
+  const Eigen::Vector3d triNormal = (triVertices[1] - triVertices[0])
+                                        .cross(triVertices[2] - triVertices[0]);
+  const Eigen::Vector3d segDir = segEnd - segStart;
+  const double denom = triNormal.dot(segDir);
+  if (std::abs(denom) > kEpsilon) {
+    const double t = triNormal.dot(triVertices[0] - segStart) / denom;
+    if (t >= 0.0 && t <= 1.0) {
+      const Eigen::Vector3d point = segStart + t * segDir;
+      if (pointInTriangleProjected(
+              point,
+              triVertices[0],
+              triVertices[1],
+              triVertices[2],
+              triNormal)) {
+        best.pointSegment = point;
+        best.pointTriangle = point;
+        best.distSq = 0.0;
+        return best;
+      }
+    }
+  }
+
+  updateBest(
+      segStart,
+      closestPointOnTriangle(
+          segStart, triVertices[0], triVertices[1], triVertices[2]));
+  updateBest(
+      segEnd,
+      closestPointOnTriangle(
+          segEnd, triVertices[0], triVertices[1], triVertices[2]));
+
+  for (int i = 0; i < 3; ++i) {
+    const Eigen::Vector3d& edgeStart = triVertices[static_cast<std::size_t>(i)];
+    const Eigen::Vector3d& edgeEnd
+        = triVertices[static_cast<std::size_t>((i + 1) % 3)];
+    const SegmentClosestResult edgeClosest
+        = closestPointsBetweenSegments(segStart, segEnd, edgeStart, edgeEnd);
+    updateBest(edgeClosest.point1, edgeClosest.point2);
+  }
+
+  return best;
+}
+
+bool collideCapsuleTriangle(
+    const CapsuleShape& capsule,
+    const Eigen::Isometry3d& capsuleTransform,
+    const std::array<Eigen::Vector3d, 3>& triVertices,
+    CollisionResult& result,
+    const CollisionOption& option)
+{
+  if (result.numContacts() >= option.maxNumContacts) {
+    return false;
+  }
+
+  const double halfHeight = capsule.getHeight() * 0.5;
+  const Eigen::Vector3d segStart
+      = capsuleTransform * Eigen::Vector3d(0.0, 0.0, -halfHeight);
+  const Eigen::Vector3d segEnd
+      = capsuleTransform * Eigen::Vector3d(0.0, 0.0, halfHeight);
+  const SegmentTriangleClosestResult closest
+      = closestSegmentTriangle(segStart, segEnd, triVertices);
+
+  const double radius = capsule.getRadius();
+  if (closest.distSq > radius * radius) {
+    return false;
+  }
+
+  Eigen::Vector3d normal = closest.pointTriangle - closest.pointSegment;
+  double distance = 0.0;
+  if (closest.distSq > kEpsilon * kEpsilon) {
+    distance = std::sqrt(closest.distSq);
+    normal /= distance;
+  } else {
+    normal = (triVertices[1] - triVertices[0])
+                 .cross(triVertices[2] - triVertices[0]);
+    if (normal.squaredNorm() < kEpsilon * kEpsilon) {
+      normal = Eigen::Vector3d::UnitZ();
+    } else {
+      normal.normalize();
+      const Eigen::Vector3d triCenter
+          = (triVertices[0] + triVertices[1] + triVertices[2]) / 3.0;
+      const Eigen::Vector3d capsuleCenter = (segStart + segEnd) * 0.5;
+      if ((capsuleCenter - triCenter).dot(normal) > 0.0) {
+        normal = -normal;
+      }
+    }
+  }
+
+  ContactPoint contact;
+  contact.position = closest.pointTriangle;
+  contact.normal = normal;
+  contact.depth = radius - distance;
+  result.addContact(contact);
+  return true;
 }
 
 void addUniquePoint(
@@ -420,26 +684,21 @@ bool collideMeshMesh(
 
   const Eigen::Isometry3d tf2In1 = tf1.inverse() * tf2;
 
-  std::vector<Aabb> mesh2NodesInMesh1(nodes2.size());
-  for (std::size_t i = 0; i < nodes2.size(); ++i) {
-    mesh2NodesInMesh1[i] = Aabb::transformed(nodes2[i].box, tf2In1);
-  }
-
   bool hit = false;
-  std::stack<std::pair<int, int>> stack;
-  stack.push({0, 0});
+  std::vector<std::pair<int, int>> stack;
+  stack.reserve(64);
+  stack.push_back({0, 0});
 
   const auto& triOrder1 = mesh1.bvhTriIndices();
   const auto& triOrder2 = mesh2.bvhTriIndices();
 
   while (!stack.empty()) {
-    const auto [nodeIndex1, nodeIndex2] = stack.top();
-    stack.pop();
+    const auto [nodeIndex1, nodeIndex2] = stack.back();
+    stack.pop_back();
 
     const auto& node1 = nodes1[static_cast<std::size_t>(nodeIndex1)];
     const auto& node2 = nodes2[static_cast<std::size_t>(nodeIndex2)];
-    const Aabb& node2In1
-        = mesh2NodesInMesh1[static_cast<std::size_t>(nodeIndex2)];
+    const Aabb node2In1 = Aabb::transformed(node2.box, tf2In1);
 
     if (!node1.box.overlaps(node2In1)) {
       continue;
@@ -492,11 +751,11 @@ bool collideMeshMesh(
     }
 
     if (leaf1 || (!leaf2 && node2In1.volume() > node1.box.volume())) {
-      stack.push({nodeIndex1, node2.left});
-      stack.push({nodeIndex1, node2.right});
+      stack.push_back({nodeIndex1, node2.left});
+      stack.push_back({nodeIndex1, node2.right});
     } else {
-      stack.push({node1.left, nodeIndex2});
-      stack.push({node1.right, nodeIndex2});
+      stack.push_back({node1.left, nodeIndex2});
+      stack.push_back({node1.right, nodeIndex2});
     }
   }
 
@@ -633,15 +892,36 @@ bool collidePrimitiveMesh(
   const Eigen::Isometry3d primInMesh = tfMesh.inverse() * tfPrim;
   const Aabb primitiveAabbInMesh
       = Aabb::transformed(primitive.computeLocalAabb(), primInMesh);
+  const auto* spherePrimitive
+      = primitive.getType() == ShapeType::Sphere
+            ? static_cast<const SphereShape*>(&primitive)
+            : nullptr;
+  const auto* capsulePrimitive
+      = primitive.getType() == ShapeType::Capsule
+            ? static_cast<const CapsuleShape*>(&primitive)
+            : nullptr;
 
+  SupportFunction primitiveSupport;
+  Eigen::Vector3d primitiveCenterWorld = tfPrim.translation();
+  if (!spherePrimitive && !capsulePrimitive) {
+    primitiveSupport = makePrimitiveSupportFunction(primitive, tfPrim);
+    if (!primitiveSupport) {
+      return false;
+    }
+    primitiveCenterWorld = primitiveCenter(primitive, tfPrim);
+  }
+
+  const auto& vertices = mesh.getVertices();
+  const auto& triangles = mesh.getTriangles();
   const auto& triOrder = mesh.bvhTriIndices();
   bool hit = false;
-  std::stack<int> stack;
-  stack.push(0);
+  std::vector<int> stack;
+  stack.reserve(64);
+  stack.push_back(0);
 
   while (!stack.empty()) {
-    const int nodeIndex = stack.top();
-    stack.pop();
+    const int nodeIndex = stack.back();
+    stack.pop_back();
 
     const auto& node = nodes[static_cast<std::size_t>(nodeIndex)];
     if (!node.box.overlaps(primitiveAabbInMesh)) {
@@ -649,19 +929,28 @@ bool collidePrimitiveMesh(
     }
 
     if (!isLeaf(node)) {
-      stack.push(node.left);
-      stack.push(node.right);
+      stack.push_back(node.left);
+      stack.push_back(node.right);
       continue;
     }
 
     for (int i = 0; i < node.count; ++i) {
       const int triIndex = triOrder[static_cast<std::size_t>(node.first + i)];
-      const auto& tri = mesh.getTriangles()[static_cast<std::size_t>(triIndex)];
-      const auto& vertices = mesh.getVertices();
-      ConvexShape triShape(
-          {vertices[static_cast<std::size_t>(tri[0])],
-           vertices[static_cast<std::size_t>(tri[1])],
-           vertices[static_cast<std::size_t>(tri[2])]});
+      const auto& tri = triangles[static_cast<std::size_t>(triIndex)];
+      const auto& localV0 = vertices[static_cast<std::size_t>(tri[0])];
+      const auto& localV1 = vertices[static_cast<std::size_t>(tri[1])];
+      const auto& localV2 = vertices[static_cast<std::size_t>(tri[2])];
+      const Aabb triangleAabb(
+          localV0.cwiseMin(localV1).cwiseMin(localV2),
+          localV0.cwiseMax(localV1).cwiseMax(localV2));
+      if (!triangleAabb.overlaps(primitiveAabbInMesh)) {
+        continue;
+      }
+
+      const std::array<Eigen::Vector3d, 3> triVertices{
+          tfMesh * localV0, tfMesh * localV1, tfMesh * localV2};
+      const Eigen::Vector3d triCenter
+          = (triVertices[0] + triVertices[1] + triVertices[2]) / 3.0;
 
       CollisionOption localOption = option;
       if (option.enableContact) {
@@ -675,8 +964,61 @@ bool collidePrimitiveMesh(
         localOption.maxNumContacts = remaining;
       }
 
-      if (collideConvexConvex(
-              primitive, tfPrim, triShape, tfMesh, result, localOption)) {
+      if (spherePrimitive) {
+        if (collideSphereTriangle(
+                *spherePrimitive,
+                tfPrim.translation(),
+                triVertices,
+                result,
+                localOption)) {
+          hit = true;
+          if (!option.enableContact) {
+            return true;
+          }
+          if (result.numContacts() >= option.maxNumContacts) {
+            return true;
+          }
+        }
+        continue;
+      }
+
+      if (capsulePrimitive) {
+        if (collideCapsuleTriangle(
+                *capsulePrimitive, tfPrim, triVertices, result, localOption)) {
+          hit = true;
+          if (!option.enableContact) {
+            return true;
+          }
+          if (result.numContacts() >= option.maxNumContacts) {
+            return true;
+          }
+        }
+        continue;
+      }
+
+      const SupportFunction triangleSupport
+          = [&triVertices](const Eigen::Vector3d& dir) {
+              double bestDot = triVertices[0].dot(dir);
+              Eigen::Vector3d best = triVertices[0];
+              const double dot1 = triVertices[1].dot(dir);
+              if (dot1 > bestDot) {
+                bestDot = dot1;
+                best = triVertices[1];
+              }
+              const double dot2 = triVertices[2].dot(dir);
+              if (dot2 > bestDot) {
+                best = triVertices[2];
+              }
+              return best;
+            };
+
+      if (collideSupportFunctions(
+              primitiveSupport,
+              primitiveCenterWorld,
+              triangleSupport,
+              triCenter,
+              result,
+              localOption)) {
         hit = true;
         if (!option.enableContact) {
           return true;

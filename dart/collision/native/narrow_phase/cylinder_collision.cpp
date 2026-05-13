@@ -263,6 +263,80 @@ bool collideCylinderBox(
   const Eigen::Isometry3d cylInv = cylinderTransform.inverse();
   const Eigen::Isometry3d boxInCyl = cylInv * boxTransform;
 
+  if (boxInCyl.linear().isApprox(Eigen::Matrix3d::Identity(), 1e-12)) {
+    const Eigen::Vector3d center = boxInCyl.translation();
+    const double minX = center.x() - boxHalf.x();
+    const double maxX = center.x() + boxHalf.x();
+    const double minY = center.y() - boxHalf.y();
+    const double maxY = center.y() + boxHalf.y();
+    const double minZ = center.z() - boxHalf.z();
+    const double maxZ = center.z() + boxHalf.z();
+
+    const double zOverlap
+        = std::min(cylHalfHeight, maxZ) - std::max(-cylHalfHeight, minZ);
+    if (zOverlap <= 0.0) {
+      return false;
+    }
+
+    const double closestX = std::clamp(0.0, minX, maxX);
+    const double closestY = std::clamp(0.0, minY, maxY);
+    const double lateralDistSq = closestX * closestX + closestY * closestY;
+    if (lateralDistSq > cylRadius * cylRadius) {
+      return false;
+    }
+
+    const double lateralDist = std::sqrt(lateralDistSq);
+    const double lateralPen = cylRadius - lateralDist;
+
+    double penetration = lateralPen;
+    Eigen::Vector3d normalLocal;
+    Eigen::Vector3d contactLocal(
+        closestX, closestY, std::clamp(0.0, minZ, maxZ));
+
+    if (zOverlap < lateralPen) {
+      penetration = zOverlap;
+      normalLocal = Eigen::Vector3d(0, 0, center.z() > 0.0 ? -1.0 : 1.0);
+      contactLocal.z() = center.z() > 0.0 ? minZ : maxZ;
+    } else if (lateralDist > 1e-10) {
+      normalLocal = Eigen::Vector3d(
+          -closestX / lateralDist, -closestY / lateralDist, 0.0);
+    } else {
+      const double distToMinX = std::abs(minX);
+      const double distToMaxX = std::abs(maxX);
+      const double distToMinY = std::abs(minY);
+      const double distToMaxY = std::abs(maxY);
+      const double minSideDist = std::min(
+          std::min(distToMinX, distToMaxX), std::min(distToMinY, distToMaxY));
+
+      if (minSideDist == distToMinX) {
+        normalLocal = Eigen::Vector3d(1, 0, 0);
+        contactLocal.x() = minX;
+      } else if (minSideDist == distToMaxX) {
+        normalLocal = Eigen::Vector3d(-1, 0, 0);
+        contactLocal.x() = maxX;
+      } else if (minSideDist == distToMinY) {
+        normalLocal = Eigen::Vector3d(0, 1, 0);
+        contactLocal.y() = minY;
+      } else {
+        normalLocal = Eigen::Vector3d(0, -1, 0);
+        contactLocal.y() = maxY;
+      }
+    }
+
+    const Eigen::Vector3d normalWorld
+        = cylinderTransform.rotation() * normalLocal;
+    const Eigen::Vector3d contactWorld
+        = cylinderTransform * contactLocal + normalWorld * (penetration * 0.5);
+
+    ContactPoint contact;
+    contact.position = contactWorld;
+    contact.normal = normalWorld;
+    contact.depth = penetration;
+
+    result.addContact(contact);
+    return true;
+  }
+
   double maxPenetration = -std::numeric_limits<double>::max();
   Eigen::Vector3d bestContactPoint;
   Eigen::Vector3d bestNormal;

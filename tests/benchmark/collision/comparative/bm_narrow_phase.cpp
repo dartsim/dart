@@ -32,6 +32,7 @@
 
 #include <dart/config.hpp>
 
+#include <dart/collision/fcl/FCLCollisionDetector.hpp>
 #include <dart/collision/native/narrow_phase/box_box.hpp>
 #include <dart/collision/native/narrow_phase/capsule_box.hpp>
 #include <dart/collision/native/narrow_phase/capsule_capsule.hpp>
@@ -41,7 +42,6 @@
 #include <dart/collision/native/narrow_phase/sphere_box.hpp>
 #include <dart/collision/native/narrow_phase/sphere_sphere.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
-#include <dart/collision/fcl/FCLCollisionDetector.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/CapsuleShape.hpp>
@@ -129,7 +129,7 @@ Eigen::Isometry3d OffsetTransform(double x, double y, double z)
 
 } // namespace
 
-static void BM_NarrowPhase_SphereSphere_Experimental(benchmark::State& state)
+static void BM_NarrowPhase_SphereSphere_Native(benchmark::State& state)
 {
   SphereShape s1(1.0);
   SphereShape s2(1.0);
@@ -145,7 +145,7 @@ static void BM_NarrowPhase_SphereSphere_Experimental(benchmark::State& state)
     benchmark::DoNotOptimize(collideSpheres(s1, tf1, s2, tf2, result, option));
   }
 }
-BENCHMARK(BM_NarrowPhase_SphereSphere_Experimental);
+BENCHMARK(BM_NarrowPhase_SphereSphere_Native);
 
 static void BM_NarrowPhase_SphereSphere_FCL(benchmark::State& state)
 {
@@ -193,7 +193,7 @@ static void BM_NarrowPhase_SphereSphere_ODE(benchmark::State& state)
 BENCHMARK(BM_NarrowPhase_SphereSphere_ODE);
 #endif
 
-static void BM_NarrowPhase_BoxBox_Experimental(benchmark::State& state)
+static void BM_NarrowPhase_BoxBox_Native(benchmark::State& state)
 {
   const Eigen::Vector3d half_extents(0.5, 0.5, 0.5);
   BoxShape b1(half_extents);
@@ -210,7 +210,7 @@ static void BM_NarrowPhase_BoxBox_Experimental(benchmark::State& state)
     benchmark::DoNotOptimize(collideBoxes(b1, tf1, b2, tf2, result, option));
   }
 }
-BENCHMARK(BM_NarrowPhase_BoxBox_Experimental);
+BENCHMARK(BM_NarrowPhase_BoxBox_Native);
 
 static void BM_NarrowPhase_BoxBox_FCL(benchmark::State& state)
 {
@@ -261,7 +261,7 @@ static void BM_NarrowPhase_BoxBox_ODE(benchmark::State& state)
 BENCHMARK(BM_NarrowPhase_BoxBox_ODE);
 #endif
 
-static void BM_NarrowPhase_CapsuleCapsule_Experimental(benchmark::State& state)
+static void BM_NarrowPhase_CapsuleCapsule_Native(benchmark::State& state)
 {
   CapsuleShape c1(0.5, 2.0);
   CapsuleShape c2(0.5, 2.0);
@@ -277,7 +277,7 @@ static void BM_NarrowPhase_CapsuleCapsule_Experimental(benchmark::State& state)
     benchmark::DoNotOptimize(collideCapsules(c1, tf1, c2, tf2, result, option));
   }
 }
-BENCHMARK(BM_NarrowPhase_CapsuleCapsule_Experimental);
+BENCHMARK(BM_NarrowPhase_CapsuleCapsule_Native);
 
 static void BM_NarrowPhase_CapsuleCapsule_FCL(benchmark::State& state)
 {
@@ -325,7 +325,7 @@ static void BM_NarrowPhase_CapsuleCapsule_ODE(benchmark::State& state)
 BENCHMARK(BM_NarrowPhase_CapsuleCapsule_ODE);
 #endif
 
-static void BM_NarrowPhase_SphereBox_Experimental(benchmark::State& state)
+static void BM_NarrowPhase_SphereBox_Native(benchmark::State& state)
 {
   SphereShape sphere(0.5);
   BoxShape box(Eigen::Vector3d(0.5, 0.5, 0.5));
@@ -342,7 +342,7 @@ static void BM_NarrowPhase_SphereBox_Experimental(benchmark::State& state)
         collideSphereBox(sphere, tf_sphere, box, tf_box, result, option));
   }
 }
-BENCHMARK(BM_NarrowPhase_SphereBox_Experimental);
+BENCHMARK(BM_NarrowPhase_SphereBox_Native);
 
 static void BM_NarrowPhase_SphereBox_FCL(benchmark::State& state)
 {
@@ -393,7 +393,7 @@ static void BM_NarrowPhase_SphereBox_ODE(benchmark::State& state)
 BENCHMARK(BM_NarrowPhase_SphereBox_ODE);
 #endif
 
-static void BM_NarrowPhase_CapsuleSphere_Experimental(benchmark::State& state)
+static void BM_NarrowPhase_CapsuleSphere_Native(benchmark::State& state)
 {
   CapsuleShape capsule(0.5, 2.0);
   SphereShape sphere(0.5);
@@ -410,7 +410,7 @@ static void BM_NarrowPhase_CapsuleSphere_Experimental(benchmark::State& state)
         capsule, tf_capsule, sphere, tf_sphere, result, option));
   }
 }
-BENCHMARK(BM_NarrowPhase_CapsuleSphere_Experimental);
+BENCHMARK(BM_NarrowPhase_CapsuleSphere_Native);
 
 static void BM_NarrowPhase_CapsuleSphere_FCL(benchmark::State& state)
 {
@@ -458,7 +458,7 @@ static void BM_NarrowPhase_CapsuleSphere_ODE(benchmark::State& state)
 BENCHMARK(BM_NarrowPhase_CapsuleSphere_ODE);
 #endif
 
-static void BM_NarrowPhase_CapsuleBox_Experimental(benchmark::State& state)
+static void BM_NarrowPhase_CapsuleBox_Native(benchmark::State& state)
 {
   CapsuleShape capsule(0.5, 2.0);
   BoxShape box(Eigen::Vector3d(0.5, 0.5, 0.5));
@@ -475,7 +475,7 @@ static void BM_NarrowPhase_CapsuleBox_Experimental(benchmark::State& state)
         collideCapsuleBox(capsule, tf_capsule, box, tf_box, result, option));
   }
 }
-BENCHMARK(BM_NarrowPhase_CapsuleBox_Experimental);
+BENCHMARK(BM_NarrowPhase_CapsuleBox_Native);
 
 static void BM_NarrowPhase_CapsuleBox_FCL(benchmark::State& state)
 {
@@ -526,8 +526,7 @@ static void BM_NarrowPhase_CapsuleBox_ODE(benchmark::State& state)
 BENCHMARK(BM_NarrowPhase_CapsuleBox_ODE);
 #endif
 
-static void BM_NarrowPhase_CylinderCylinder_Experimental(
-    benchmark::State& state)
+static void BM_NarrowPhase_CylinderCylinder_Native(benchmark::State& state)
 {
   CylinderShape c1(0.5, 2.0);
   CylinderShape c2(0.5, 2.0);
@@ -544,7 +543,7 @@ static void BM_NarrowPhase_CylinderCylinder_Experimental(
         collideCylinders(c1, tf1, c2, tf2, result, option));
   }
 }
-BENCHMARK(BM_NarrowPhase_CylinderCylinder_Experimental);
+BENCHMARK(BM_NarrowPhase_CylinderCylinder_Native);
 
 static void BM_NarrowPhase_CylinderCylinder_FCL(benchmark::State& state)
 {
@@ -592,7 +591,7 @@ static void BM_NarrowPhase_CylinderCylinder_ODE(benchmark::State& state)
 BENCHMARK(BM_NarrowPhase_CylinderCylinder_ODE);
 #endif
 
-static void BM_NarrowPhase_CylinderSphere_Experimental(benchmark::State& state)
+static void BM_NarrowPhase_CylinderSphere_Native(benchmark::State& state)
 {
   CylinderShape cylinder(0.5, 2.0);
   SphereShape sphere(0.5);
@@ -609,7 +608,7 @@ static void BM_NarrowPhase_CylinderSphere_Experimental(benchmark::State& state)
         cylinder, tf_cylinder, sphere, tf_sphere, result, option));
   }
 }
-BENCHMARK(BM_NarrowPhase_CylinderSphere_Experimental);
+BENCHMARK(BM_NarrowPhase_CylinderSphere_Native);
 
 static void BM_NarrowPhase_CylinderSphere_FCL(benchmark::State& state)
 {
@@ -657,7 +656,7 @@ static void BM_NarrowPhase_CylinderSphere_ODE(benchmark::State& state)
 BENCHMARK(BM_NarrowPhase_CylinderSphere_ODE);
 #endif
 
-static void BM_NarrowPhase_CylinderBox_Experimental(benchmark::State& state)
+static void BM_NarrowPhase_CylinderBox_Native(benchmark::State& state)
 {
   CylinderShape cylinder(0.5, 2.0);
   BoxShape box(Eigen::Vector3d(0.5, 0.5, 0.5));
@@ -674,7 +673,7 @@ static void BM_NarrowPhase_CylinderBox_Experimental(benchmark::State& state)
         collideCylinderBox(cylinder, tf_cylinder, box, tf_box, result, option));
   }
 }
-BENCHMARK(BM_NarrowPhase_CylinderBox_Experimental);
+BENCHMARK(BM_NarrowPhase_CylinderBox_Native);
 
 static void BM_NarrowPhase_CylinderBox_FCL(benchmark::State& state)
 {
@@ -725,7 +724,7 @@ static void BM_NarrowPhase_CylinderBox_ODE(benchmark::State& state)
 BENCHMARK(BM_NarrowPhase_CylinderBox_ODE);
 #endif
 
-static void BM_NarrowPhase_CylinderCapsule_Experimental(benchmark::State& state)
+static void BM_NarrowPhase_CylinderCapsule_Native(benchmark::State& state)
 {
   CylinderShape cylinder(0.5, 2.0);
   CapsuleShape capsule(0.5, 2.0);
@@ -742,7 +741,7 @@ static void BM_NarrowPhase_CylinderCapsule_Experimental(benchmark::State& state)
         cylinder, tf_cylinder, capsule, tf_capsule, result, option));
   }
 }
-BENCHMARK(BM_NarrowPhase_CylinderCapsule_Experimental);
+BENCHMARK(BM_NarrowPhase_CylinderCapsule_Native);
 
 static void BM_NarrowPhase_CylinderCapsule_FCL(benchmark::State& state)
 {
@@ -790,7 +789,7 @@ static void BM_NarrowPhase_CylinderCapsule_ODE(benchmark::State& state)
 BENCHMARK(BM_NarrowPhase_CylinderCapsule_ODE);
 #endif
 
-static void BM_NarrowPhase_CylinderPlane_Experimental(benchmark::State& state)
+static void BM_NarrowPhase_CylinderPlane_Native(benchmark::State& state)
 {
   CylinderShape cylinder(0.5, 2.0);
   PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
@@ -807,7 +806,7 @@ static void BM_NarrowPhase_CylinderPlane_Experimental(benchmark::State& state)
         cylinder, tf_cylinder, plane, tf_plane, result, option));
   }
 }
-BENCHMARK(BM_NarrowPhase_CylinderPlane_Experimental);
+BENCHMARK(BM_NarrowPhase_CylinderPlane_Native);
 
 static void BM_NarrowPhase_CylinderPlane_FCL(benchmark::State& state)
 {
@@ -858,7 +857,7 @@ static void BM_NarrowPhase_CylinderPlane_ODE(benchmark::State& state)
 BENCHMARK(BM_NarrowPhase_CylinderPlane_ODE);
 #endif
 
-static void BM_NarrowPhase_PlaneSphere_Experimental(benchmark::State& state)
+static void BM_NarrowPhase_PlaneSphere_Native(benchmark::State& state)
 {
   PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
   SphereShape sphere(0.5);
@@ -875,7 +874,7 @@ static void BM_NarrowPhase_PlaneSphere_Experimental(benchmark::State& state)
         collidePlaneSphere(plane, tf_plane, sphere, tf_sphere, result, option));
   }
 }
-BENCHMARK(BM_NarrowPhase_PlaneSphere_Experimental);
+BENCHMARK(BM_NarrowPhase_PlaneSphere_Native);
 
 static void BM_NarrowPhase_PlaneSphere_FCL(benchmark::State& state)
 {
@@ -926,7 +925,7 @@ static void BM_NarrowPhase_PlaneSphere_ODE(benchmark::State& state)
 BENCHMARK(BM_NarrowPhase_PlaneSphere_ODE);
 #endif
 
-static void BM_NarrowPhase_PlaneBox_Experimental(benchmark::State& state)
+static void BM_NarrowPhase_PlaneBox_Native(benchmark::State& state)
 {
   PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
   BoxShape box(Eigen::Vector3d(0.5, 0.5, 0.5));
@@ -943,7 +942,7 @@ static void BM_NarrowPhase_PlaneBox_Experimental(benchmark::State& state)
         collidePlaneBox(plane, tf_plane, box, tf_box, result, option));
   }
 }
-BENCHMARK(BM_NarrowPhase_PlaneBox_Experimental);
+BENCHMARK(BM_NarrowPhase_PlaneBox_Native);
 
 static void BM_NarrowPhase_PlaneBox_FCL(benchmark::State& state)
 {
@@ -997,7 +996,7 @@ static void BM_NarrowPhase_PlaneBox_ODE(benchmark::State& state)
 BENCHMARK(BM_NarrowPhase_PlaneBox_ODE);
 #endif
 
-static void BM_NarrowPhase_PlaneCapsule_Experimental(benchmark::State& state)
+static void BM_NarrowPhase_PlaneCapsule_Native(benchmark::State& state)
 {
   PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
   CapsuleShape capsule(0.5, 2.0);
@@ -1014,7 +1013,7 @@ static void BM_NarrowPhase_PlaneCapsule_Experimental(benchmark::State& state)
         plane, tf_plane, capsule, tf_capsule, result, option));
   }
 }
-BENCHMARK(BM_NarrowPhase_PlaneCapsule_Experimental);
+BENCHMARK(BM_NarrowPhase_PlaneCapsule_Native);
 
 static void BM_NarrowPhase_PlaneCapsule_FCL(benchmark::State& state)
 {
@@ -1085,7 +1084,7 @@ void AddScaleArgs(benchmark::internal::Benchmark* bench)
   bench->Arg(0)->Arg(1)->Arg(2);
 }
 
-void RunNarrowPhaseCaseExperimental(
+void RunNarrowPhaseCaseNative(
     benchmark::State& state, PairKind pair, EdgeCase edge)
 {
   const double scale = ScaleFromIndex(static_cast<int>(state.range(0)));
@@ -1250,10 +1249,10 @@ void RunNarrowPhaseCaseDetector(
   }
 }
 
-static void BM_NarrowPhase_EdgeCases_Experimental(
+static void BM_NarrowPhase_EdgeCases_Native(
     benchmark::State& state, PairKind pair, EdgeCase edge)
 {
-  RunNarrowPhaseCaseExperimental(state, pair, edge);
+  RunNarrowPhaseCaseNative(state, pair, edge);
 }
 
 static void BM_NarrowPhase_EdgeCases_FCL(
@@ -1316,35 +1315,35 @@ static void RegisterNarrowPhaseEdgeCases()
 
   for (EdgeCase edge : base_edges) {
     RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_Experimental",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_Experimental,
+        "BM_NarrowPhase_EdgeCases_Native",
+        edge_case_bench::BM_NarrowPhase_EdgeCases_Native,
         PairKind::kSphereSphere,
         edge);
     RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_Experimental",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_Experimental,
+        "BM_NarrowPhase_EdgeCases_Native",
+        edge_case_bench::BM_NarrowPhase_EdgeCases_Native,
         PairKind::kCapsuleCapsule,
         edge);
     RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_Experimental",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_Experimental,
+        "BM_NarrowPhase_EdgeCases_Native",
+        edge_case_bench::BM_NarrowPhase_EdgeCases_Native,
         PairKind::kCapsuleSphere,
         edge);
   }
   for (EdgeCase edge : box_edges) {
     RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_Experimental",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_Experimental,
+        "BM_NarrowPhase_EdgeCases_Native",
+        edge_case_bench::BM_NarrowPhase_EdgeCases_Native,
         PairKind::kBoxBox,
         edge);
     RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_Experimental",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_Experimental,
+        "BM_NarrowPhase_EdgeCases_Native",
+        edge_case_bench::BM_NarrowPhase_EdgeCases_Native,
         PairKind::kSphereBox,
         edge);
     RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_Experimental",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_Experimental,
+        "BM_NarrowPhase_EdgeCases_Native",
+        edge_case_bench::BM_NarrowPhase_EdgeCases_Native,
         PairKind::kCapsuleBox,
         edge);
   }
@@ -1473,11 +1472,11 @@ namespace accuracy {
 
 constexpr double kDepthWarn = 0.05;
 
-using ExperimentalRunner = std::function<void(CollisionResult&)>;
+using NativeRunner = std::function<void(CollisionResult&)>;
 
 bool verifyPairAccuracy(
     const char* label,
-    const ExperimentalRunner& runner,
+    const NativeRunner& runner,
     const std::shared_ptr<dart::dynamics::Shape>& shape1,
     const Eigen::Isometry3d& tf1,
     const std::shared_ptr<dart::dynamics::Shape>& shape2,
@@ -1499,8 +1498,8 @@ bool verifyPairAccuracy(
   if (expCollided != fclCollided) {
     std::cerr << "ACCURACY FAIL: " << label
               << " collision detection mismatch\n";
-    std::cerr << "  Experimental: "
-              << (expCollided ? "collided" : "no collision") << "\n";
+    std::cerr << "  Native: " << (expCollided ? "collided" : "no collision")
+              << "\n";
     std::cerr << "  FCL: " << (fclCollided ? "collided" : "no collision")
               << "\n";
     return false;
@@ -1510,10 +1509,11 @@ bool verifyPairAccuracy(
     return true;
   }
 
-  const auto& expContact = expResult.getContact(0);
+  const auto& nativeContact = expResult.getContact(0);
   const auto& fclContact = fclResult.getContact(0);
 
-  double depthDiff = std::abs(expContact.depth - fclContact.penetrationDepth);
+  double depthDiff
+      = std::abs(nativeContact.depth - fclContact.penetrationDepth);
   if (depthDiff > depth_warn) {
     std::cerr << "ACCURACY WARN: " << label << " depth diff " << depthDiff
               << "\n";

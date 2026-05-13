@@ -67,6 +67,6 @@ endif()
 add_subdirectory(csv_logger)
 add_subdirectory(rerun)
 
-# Experimental collision visualization
+# Native collision visualization
 add_subdirectory(collision_viz)
 add_subdirectory(collision_sandbox)

@@ -506,6 +506,16 @@ TEST(ConstraintSolver, SetNullCollisionDetectorIgnored)
 }
 
 //==============================================================================
+TEST(ConstraintSolver, DefaultCollisionDetectorUsesNativeDart)
+{
+  constraint::ConstraintSolver solver;
+  auto detector = solver.getCollisionDetector();
+
+  ASSERT_NE(detector, nullptr);
+  EXPECT_EQ("dart", detector->getTypeView());
+}
+
+//==============================================================================
 TEST(ConstraintSolver, ContactSurfaceHandlerChain)
 {
   constraint::ConstraintSolver solver;

@@ -1,3 +1,3 @@
-# Experimental Benchmarks
+# Native Benchmarks
 
-Microbenchmarks for the experimental collision backend only.
+Microbenchmarks for the native collision backend only.

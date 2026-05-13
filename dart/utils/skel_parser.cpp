@@ -771,7 +771,8 @@ simulation::WorldPtr readWorld(
     if (hasElement(physicsElement, "collision_detector")) {
       const auto cdType = getValueString(physicsElement, "collision_detector");
 
-      if (cdType == "fcl_mesh" || cdType == "fcl") {
+      if (cdType == "fcl_mesh" && !factory->canCreate("fcl_mesh")
+          && factory->canCreate("fcl")) {
         collision_detector = factory->create("fcl");
       } else {
         collision_detector = factory->create(cdType);
@@ -780,18 +781,18 @@ simulation::WorldPtr readWorld(
       DART_WARN_IF(
           !collision_detector,
           "Unknown collision detector[{}]. Default collision "
-          "detector[experimental] will be loaded.",
+          "detector[dart] will be loaded.",
           cdType);
     }
 
+    if (!collision_detector) {
+      collision_detector = factory->create("dart");
+    }
     if (!collision_detector) {
       collision_detector = factory->create("experimental");
     }
     if (!collision_detector) {
       collision_detector = factory->create("fcl");
-    }
-    if (!collision_detector) {
-      collision_detector = factory->create("dart");
     }
 
     newWorld->setCollisionDetector(collision_detector);

@@ -350,6 +350,9 @@ DartCollisionDetector::DartCollisionDetector() : CollisionDetector()
 }
 
 //==============================================================================
+DartCollisionDetector::~DartCollisionDetector() = default;
+
+//==============================================================================
 std::unique_ptr<CollisionObject> DartCollisionDetector::createCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {

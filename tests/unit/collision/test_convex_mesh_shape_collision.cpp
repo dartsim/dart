@@ -30,9 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/fcl_collision_detector.hpp"
-#include "dart/collision/fcl/fcl_collision_object.hpp"
+#include "dart/collision/collision_detector.hpp"
 #include "dart/config.hpp"
+#if DART_HAVE_FCL
+  #include "dart/collision/fcl/fcl_collision_detector.hpp"
+  #include "dart/collision/fcl/fcl_collision_object.hpp"
+#endif
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/convex_mesh_shape.hpp"
@@ -42,11 +45,14 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <fcl/geometry/shape/convex.h>
 #include <gtest/gtest.h>
 
 #include <array>
 #include <random>
+
+#if DART_HAVE_FCL
+  #include <fcl/geometry/shape/convex.h>
+#endif
 
 #if DART_HAVE_BULLET
   #include "dart/collision/bullet/bullet_collision_detector.hpp"
@@ -57,8 +63,10 @@
   #include "dart/collision/ode/ode_collision_object.hpp"
 #endif
 
+#if DART_HAVE_FCL
 using dart::collision::FCLCollisionDetector;
 using dart::collision::FCLCollisionObject;
+#endif
 #if DART_HAVE_BULLET
 using dart::collision::BulletCollisionDetector;
 using dart::collision::BulletCollisionObject;
@@ -74,10 +82,12 @@ namespace {
 
 constexpr double kPi = 3.141592653589793;
 
+#if DART_HAVE_FCL
 struct TestFCLDetector : public FCLCollisionDetector
 {
   using FCLCollisionDetector::claimCollisionObject;
 };
+#endif
 
 #if DART_HAVE_BULLET
 struct TestBulletDetector : public BulletCollisionDetector
@@ -250,6 +260,7 @@ void runRandomizedConvexMeshCollisionChecks(
 } // namespace
 
 // Regression coverage for https://github.com/dartsim/dart/issues/872.
+#if DART_HAVE_FCL
 TEST(ConvexMeshShapeCollision, FclUsesConvexGeometry)
 {
   auto detector = std::make_shared<TestFCLDetector>();
@@ -289,6 +300,7 @@ TEST(ConvexMeshShapeCollision, FclFallsBackWithoutVertices)
 
   EXPECT_NE(fclObj->collisionGeometry()->getNodeType(), ::fcl::GEOM_CONVEX);
 }
+#endif
 
 #if DART_HAVE_BULLET
 TEST(ConvexMeshShapeCollision, BulletUsesConvexHullShape)
@@ -379,11 +391,13 @@ TEST(ConvexMeshShapeCollision, OdeFallsBackWithoutVertices)
 }
 #endif
 
+#if DART_HAVE_FCL
 TEST(ConvexMeshShapeCollision, FclRandomizedCollisionCases)
 {
   auto detector = FCLCollisionDetector::create();
   runRandomizedConvexMeshCollisionChecks(detector, "FCL");
 }
+#endif
 
 #if DART_HAVE_BULLET
 TEST(ConvexMeshShapeCollision, BulletRandomizedCollisionCases)

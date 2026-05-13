@@ -38,7 +38,7 @@
 #include <chrono>
 #include <thread>
 
-using namespace dart::simulation::native::common;
+using namespace dart::simulation::experimental::common;
 
 TEST(Diagnostics, GetCompilerInfo_ReturnsNonEmpty)
 {

@@ -102,7 +102,7 @@ void RunRaycastDetectorBenchmark(
 
 } // namespace
 
-static void BM_Raycast_Sphere_Experimental(benchmark::State& state)
+static void BM_Raycast_Sphere_Native(benchmark::State& state)
 {
   CollisionWorld world;
   auto shape = std::make_unique<SphereShape>(0.5);
@@ -123,7 +123,7 @@ static void BM_Raycast_Sphere_Experimental(benchmark::State& state)
     benchmark::DoNotOptimize(world.raycast(ray, option, result));
   }
 }
-BENCHMARK(BM_Raycast_Sphere_Experimental);
+BENCHMARK(BM_Raycast_Sphere_Native);
 
 #if DART_HAVE_BULLET
 static void BM_Raycast_Sphere_Bullet(benchmark::State& state)
@@ -140,7 +140,7 @@ static void BM_Raycast_Sphere_Bullet(benchmark::State& state)
 BENCHMARK(BM_Raycast_Sphere_Bullet);
 #endif
 
-static void BM_Raycast_Box_Experimental(benchmark::State& state)
+static void BM_Raycast_Box_Native(benchmark::State& state)
 {
   CollisionWorld world;
   auto shape = std::make_unique<BoxShape>(Eigen::Vector3d(0.5, 0.5, 0.5));
@@ -161,7 +161,7 @@ static void BM_Raycast_Box_Experimental(benchmark::State& state)
     benchmark::DoNotOptimize(world.raycast(ray, option, result));
   }
 }
-BENCHMARK(BM_Raycast_Box_Experimental);
+BENCHMARK(BM_Raycast_Box_Native);
 
 #if DART_HAVE_BULLET
 static void BM_Raycast_Box_Bullet(benchmark::State& state)
@@ -179,7 +179,7 @@ static void BM_Raycast_Box_Bullet(benchmark::State& state)
 BENCHMARK(BM_Raycast_Box_Bullet);
 #endif
 
-static void BM_Raycast_Capsule_Experimental(benchmark::State& state)
+static void BM_Raycast_Capsule_Native(benchmark::State& state)
 {
   CollisionWorld world;
   auto shape = std::make_unique<CapsuleShape>(0.5, 2.0);
@@ -200,7 +200,7 @@ static void BM_Raycast_Capsule_Experimental(benchmark::State& state)
     benchmark::DoNotOptimize(world.raycast(ray, option, result));
   }
 }
-BENCHMARK(BM_Raycast_Capsule_Experimental);
+BENCHMARK(BM_Raycast_Capsule_Native);
 
 #if DART_HAVE_BULLET
 static void BM_Raycast_Capsule_Bullet(benchmark::State& state)
@@ -217,7 +217,7 @@ static void BM_Raycast_Capsule_Bullet(benchmark::State& state)
 BENCHMARK(BM_Raycast_Capsule_Bullet);
 #endif
 
-static void BM_Raycast_Cylinder_Experimental(benchmark::State& state)
+static void BM_Raycast_Cylinder_Native(benchmark::State& state)
 {
   CollisionWorld world;
   auto shape = std::make_unique<CylinderShape>(0.5, 2.0);
@@ -238,7 +238,7 @@ static void BM_Raycast_Cylinder_Experimental(benchmark::State& state)
     benchmark::DoNotOptimize(world.raycast(ray, option, result));
   }
 }
-BENCHMARK(BM_Raycast_Cylinder_Experimental);
+BENCHMARK(BM_Raycast_Cylinder_Native);
 
 #if DART_HAVE_BULLET
 static void BM_Raycast_Cylinder_Bullet(benchmark::State& state)
@@ -255,7 +255,7 @@ static void BM_Raycast_Cylinder_Bullet(benchmark::State& state)
 BENCHMARK(BM_Raycast_Cylinder_Bullet);
 #endif
 
-static void BM_Raycast_Plane_Experimental(benchmark::State& state)
+static void BM_Raycast_Plane_Native(benchmark::State& state)
 {
   CollisionWorld world;
   auto shape = std::make_unique<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0);
@@ -276,7 +276,7 @@ static void BM_Raycast_Plane_Experimental(benchmark::State& state)
     benchmark::DoNotOptimize(world.raycast(ray, option, result));
   }
 }
-BENCHMARK(BM_Raycast_Plane_Experimental);
+BENCHMARK(BM_Raycast_Plane_Native);
 
 #if DART_HAVE_BULLET
 static void BM_Raycast_Plane_Bullet(benchmark::State& state)

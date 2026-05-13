@@ -148,7 +148,7 @@ std::vector<RaySegment> MakeRaySegments(
   return segments;
 }
 
-std::unique_ptr<Shape> MakeExperimentalShape(const ShapeSpec& spec)
+std::unique_ptr<Shape> MakeNativeShape(const ShapeSpec& spec)
 {
   switch (spec.kind) {
     case ShapeKind::Sphere:
@@ -177,7 +177,7 @@ std::shared_ptr<dart::dynamics::Shape> MakeDynamicsShape(const ShapeSpec& spec)
   return std::make_shared<dart::dynamics::SphereShape>(kSphereRadius);
 }
 
-void BuildExperimentalWorld(
+void BuildNativeWorld(
     const std::vector<ShapeSpec>& specs,
     CollisionWorld& world,
     std::vector<CollisionObject>& objects)
@@ -186,7 +186,7 @@ void BuildExperimentalWorld(
 
   for (const auto& spec : specs) {
     objects.emplace_back(
-        world.createObject(MakeExperimentalShape(spec), spec.transform));
+        world.createObject(MakeNativeShape(spec), spec.transform));
   }
 }
 
@@ -220,7 +220,7 @@ std::vector<Ray> BuildRays(const std::vector<RaySegment>& segments)
   return rays;
 }
 
-void RunExperimentalRaycastScenario(benchmark::State& state, double range)
+void RunNativeRaycastScenario(benchmark::State& state, double range)
 {
   const std::size_t count = static_cast<std::size_t>(state.range(0));
   auto specs = MakeMixedScene(count, range, 42);
@@ -230,7 +230,7 @@ void RunExperimentalRaycastScenario(benchmark::State& state, double range)
   // Use sweep-and-prune until AABB tree stability improves for raycast.
   CollisionWorld world(BroadPhaseType::SweepAndPrune);
   std::vector<CollisionObject> objects;
-  BuildExperimentalWorld(specs, world, objects);
+  BuildNativeWorld(specs, world, objects);
 
   RaycastOption option = RaycastOption::unlimited();
   RaycastResult result;
@@ -280,18 +280,17 @@ void RunDetectorRaycastScenario(
 
 } // namespace
 
-static void BM_Scenario_RaycastBatch_Dense_Experimental(benchmark::State& state)
+static void BM_Scenario_RaycastBatch_Dense_Native(benchmark::State& state)
 {
-  RunExperimentalRaycastScenario(state, kDenseRange);
+  RunNativeRaycastScenario(state, kDenseRange);
 }
-BENCHMARK(BM_Scenario_RaycastBatch_Dense_Experimental)->Arg(1000)->Arg(2000);
+BENCHMARK(BM_Scenario_RaycastBatch_Dense_Native)->Arg(1000)->Arg(2000);
 
-static void BM_Scenario_RaycastBatch_Sparse_Experimental(
-    benchmark::State& state)
+static void BM_Scenario_RaycastBatch_Sparse_Native(benchmark::State& state)
 {
-  RunExperimentalRaycastScenario(state, kSparseRange);
+  RunNativeRaycastScenario(state, kSparseRange);
 }
-BENCHMARK(BM_Scenario_RaycastBatch_Sparse_Experimental)->Arg(1000)->Arg(2000);
+BENCHMARK(BM_Scenario_RaycastBatch_Sparse_Native)->Arg(1000)->Arg(2000);
 
 #if DART_HAVE_BULLET
 static void BM_Scenario_RaycastBatch_Dense_Bullet(benchmark::State& state)

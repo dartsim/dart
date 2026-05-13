@@ -74,14 +74,14 @@ namespace {
 collision::CollisionDetectorPtr createDefaultCollisionDetector()
 {
   auto* factory = collision::CollisionDetector::getFactory();
+  if (factory->canCreate("dart")) {
+    return factory->create("dart");
+  }
   if (factory->canCreate("experimental")) {
     return factory->create("experimental");
   }
   if (factory->canCreate("fcl")) {
     return factory->create("fcl");
-  }
-  if (factory->canCreate("dart")) {
-    return factory->create("dart");
   }
   return nullptr;
 }

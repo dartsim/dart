@@ -38,13 +38,15 @@
 #include "dart/collision/dart/dart_collision_detector.hpp"
 #include "dart/collision/distance_option.hpp"
 #include "dart/collision/distance_result.hpp"
-#include "dart/collision/fcl/fcl_collision_detector.hpp"
+#include "dart/config.hpp"
+#if DART_HAVE_FCL
+  #include "dart/collision/fcl/fcl_collision_detector.hpp"
+#endif
 #if DART_HAVE_BULLET
   #include "dart/collision/bullet/bullet_collision_detector.hpp"
 #endif
 #include "dart/collision/raycast_option.hpp"
 #include "dart/collision/raycast_result.hpp"
-#include "dart/config.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/free_joint.hpp"
@@ -323,6 +325,7 @@ TEST(CollisionGroupTests, CollisionBetweenGroups)
 }
 
 //==============================================================================
+#if DART_HAVE_FCL
 TEST(CollisionGroupTests, DistanceQuery)
 {
   auto detector = dart::collision::FCLCollisionDetector::create();
@@ -342,8 +345,10 @@ TEST(CollisionGroupTests, DistanceQuery)
   EXPECT_GT(distance, 0.0);
   EXPECT_NEAR(distance, 2.0, 0.1);
 }
+#endif
 
 //==============================================================================
+#if DART_HAVE_FCL
 TEST(CollisionGroupTests, DistanceBetweenGroups)
 {
   auto detector = dart::collision::FCLCollisionDetector::create();
@@ -364,6 +369,7 @@ TEST(CollisionGroupTests, DistanceBetweenGroups)
   EXPECT_GT(distance, 0.0);
   EXPECT_NEAR(distance, 3.0, 0.1);
 }
+#endif
 
 //==============================================================================
 #if DART_HAVE_BULLET
@@ -427,6 +433,7 @@ TEST(CollisionGroupTests, EmptyGroupOperations)
 }
 
 //==============================================================================
+#if DART_HAVE_FCL
 TEST(CollisionGroupTests, EmptyGroupWithFCL)
 {
   auto detector = dart::collision::FCLCollisionDetector::create();
@@ -444,6 +451,7 @@ TEST(CollisionGroupTests, EmptyGroupWithFCL)
   bool hit = group->raycast(from, to, rayOption, &rayResult);
   EXPECT_FALSE(hit);
 }
+#endif
 
 //==============================================================================
 TEST(CollisionGroupTests, SubscribeToSkeleton)

@@ -34,9 +34,9 @@
 
 #include <dart/collision/CollisionOption.hpp>
 #include <dart/collision/CollisionResult.hpp>
+#include <dart/collision/fcl/FCLCollisionDetector.hpp>
 #include <dart/collision/native/collision_world.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
-#include <dart/collision/fcl/FCLCollisionDetector.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/CapsuleShape.hpp>
@@ -127,7 +127,7 @@ std::vector<ShapeSpec> MakeMixedScene(
   return specs;
 }
 
-std::unique_ptr<Shape> MakeExperimentalShape(const ShapeSpec& spec)
+std::unique_ptr<Shape> MakeNativeShape(const ShapeSpec& spec)
 {
   switch (spec.kind) {
     case ShapeKind::Sphere:
@@ -156,7 +156,7 @@ std::shared_ptr<dart::dynamics::Shape> MakeDynamicsShape(const ShapeSpec& spec)
   return std::make_shared<dart::dynamics::SphereShape>(kSphereRadius);
 }
 
-void BuildExperimentalWorld(
+void BuildNativeWorld(
     const std::vector<ShapeSpec>& specs,
     CollisionWorld& world,
     std::vector<CollisionObject>& objects)
@@ -165,7 +165,7 @@ void BuildExperimentalWorld(
 
   for (const auto& spec : specs) {
     objects.emplace_back(
-        world.createObject(MakeExperimentalShape(spec), spec.transform));
+        world.createObject(MakeNativeShape(spec), spec.transform));
   }
 }
 
@@ -188,18 +188,22 @@ void BuildCollisionGroup(
   }
 }
 
-void RunExperimentalScenarioBenchmark(benchmark::State& state, double range)
+void RunNativeScenarioBenchmark(benchmark::State& state, double range)
 {
   const std::size_t count = static_cast<std::size_t>(state.range(0));
   auto specs = MakeMixedScene(count, range, 42);
 
   CollisionWorld world;
   std::vector<CollisionObject> objects;
-  BuildExperimentalWorld(specs, world, objects);
+  BuildNativeWorld(specs, world, objects);
 
   CollisionOption option
       = CollisionOption::fullContacts(MaxContactsForCount(count));
   CollisionResult result;
+  CollisionResult sampleResult;
+  BroadPhaseSnapshot snapshot = world.buildBroadPhaseSnapshot();
+  BatchStats stats;
+  world.collideAll(snapshot, option, sampleResult, &stats);
 
   for (auto _ : state) {
     result.clear();
@@ -208,6 +212,9 @@ void RunExperimentalScenarioBenchmark(benchmark::State& state, double range)
   }
 
   state.SetComplexityN(count);
+  state.counters["pairs"] = static_cast<double>(snapshot.pairs.size());
+  state.counters["pairs_tested"] = static_cast<double>(stats.numPairsTested);
+  state.counters["contacts"] = static_cast<double>(sampleResult.numContacts());
 }
 
 template <typename DetectorPtr>
@@ -224,6 +231,8 @@ void RunDetectorScenarioBenchmark(
   dart::collision::CollisionOption option;
   option.maxNumContacts = MaxContactsForCount(count);
   dart::collision::CollisionResult result;
+  detector->collide(group.get(), option, &result);
+  const auto sampleContacts = result.getNumContacts();
 
   for (auto _ : state) {
     result.clear();
@@ -232,27 +241,26 @@ void RunDetectorScenarioBenchmark(
   }
 
   state.SetComplexityN(count);
+  state.counters["contacts"] = static_cast<double>(sampleContacts);
 }
 
 } // namespace
 
-static void BM_Scenario_MixedPrimitives_Dense_Experimental(
-    benchmark::State& state)
+static void BM_Scenario_MixedPrimitives_Dense_Native(benchmark::State& state)
 {
-  RunExperimentalScenarioBenchmark(state, kDenseRange);
+  RunNativeScenarioBenchmark(state, kDenseRange);
 }
-BENCHMARK(BM_Scenario_MixedPrimitives_Dense_Experimental)
+BENCHMARK(BM_Scenario_MixedPrimitives_Dense_Native)
     ->Arg(100)
     ->Arg(1000)
     ->Arg(10000)
     ->Complexity();
 
-static void BM_Scenario_MixedPrimitives_Sparse_Experimental(
-    benchmark::State& state)
+static void BM_Scenario_MixedPrimitives_Sparse_Native(benchmark::State& state)
 {
-  RunExperimentalScenarioBenchmark(state, kSparseRange);
+  RunNativeScenarioBenchmark(state, kSparseRange);
 }
-BENCHMARK(BM_Scenario_MixedPrimitives_Sparse_Experimental)
+BENCHMARK(BM_Scenario_MixedPrimitives_Sparse_Native)
     ->Arg(100)
     ->Arg(1000)
     ->Arg(10000)

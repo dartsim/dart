@@ -34,9 +34,9 @@
 
 #include <dart/collision/DistanceOption.hpp>
 #include <dart/collision/DistanceResult.hpp>
+#include <dart/collision/fcl/FCLCollisionDetector.hpp>
 #include <dart/collision/native/narrow_phase/distance.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
-#include <dart/collision/fcl/FCLCollisionDetector.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/CapsuleShape.hpp>
@@ -119,7 +119,7 @@ Eigen::Isometry3d OffsetTransform(double x, double y, double z)
   return dart::benchmark::collision::MakeTransform(Eigen::Vector3d(x, y, z));
 }
 
-DistanceOption MakeExperimentalDistanceOption()
+DistanceOption MakeNativeDistanceOption()
 {
   DistanceOption option = DistanceOption::unlimited();
   option.enableNearestPoints = true;
@@ -128,7 +128,7 @@ DistanceOption MakeExperimentalDistanceOption()
 
 } // namespace
 
-static void BM_Distance_SphereSphere_Experimental(benchmark::State& state)
+static void BM_Distance_SphereSphere_Native(benchmark::State& state)
 {
   SphereShape s1(1.0);
   SphereShape s2(1.0);
@@ -137,7 +137,7 @@ static void BM_Distance_SphereSphere_Experimental(benchmark::State& state)
   const Eigen::Isometry3d tf2 = OffsetTransform(5.0, 0.0, 0.0);
 
   DistanceResult result;
-  DistanceOption option = MakeExperimentalDistanceOption();
+  DistanceOption option = MakeNativeDistanceOption();
 
   for (auto _ : state) {
     result.clear();
@@ -145,7 +145,7 @@ static void BM_Distance_SphereSphere_Experimental(benchmark::State& state)
     benchmark::DoNotOptimize(dist);
   }
 }
-BENCHMARK(BM_Distance_SphereSphere_Experimental);
+BENCHMARK(BM_Distance_SphereSphere_Native);
 
 static void BM_Distance_SphereSphere_FCL(benchmark::State& state)
 {
@@ -199,7 +199,7 @@ static void BM_Distance_SphereSphere_ODE(benchmark::State& state)
 BENCHMARK(BM_Distance_SphereSphere_ODE);
 #endif
 
-static void BM_Distance_BoxBox_Experimental(benchmark::State& state)
+static void BM_Distance_BoxBox_Native(benchmark::State& state)
 {
   BoxShape b1(Eigen::Vector3d(0.5, 0.5, 0.5));
   BoxShape b2(Eigen::Vector3d(0.5, 0.5, 0.5));
@@ -208,7 +208,7 @@ static void BM_Distance_BoxBox_Experimental(benchmark::State& state)
   const Eigen::Isometry3d tf2 = OffsetTransform(3.0, 0.0, 0.0);
 
   DistanceResult result;
-  DistanceOption option = MakeExperimentalDistanceOption();
+  DistanceOption option = MakeNativeDistanceOption();
 
   for (auto _ : state) {
     result.clear();
@@ -216,7 +216,7 @@ static void BM_Distance_BoxBox_Experimental(benchmark::State& state)
     benchmark::DoNotOptimize(dist);
   }
 }
-BENCHMARK(BM_Distance_BoxBox_Experimental);
+BENCHMARK(BM_Distance_BoxBox_Native);
 
 static void BM_Distance_BoxBox_FCL(benchmark::State& state)
 {
@@ -276,7 +276,7 @@ static void BM_Distance_BoxBox_ODE(benchmark::State& state)
 BENCHMARK(BM_Distance_BoxBox_ODE);
 #endif
 
-static void BM_Distance_CapsuleCapsule_Experimental(benchmark::State& state)
+static void BM_Distance_CapsuleCapsule_Native(benchmark::State& state)
 {
   CapsuleShape c1(0.5, 2.0);
   CapsuleShape c2(0.5, 2.0);
@@ -285,7 +285,7 @@ static void BM_Distance_CapsuleCapsule_Experimental(benchmark::State& state)
   const Eigen::Isometry3d tf2 = OffsetTransform(3.0, 0.0, 0.0);
 
   DistanceResult result;
-  DistanceOption option = MakeExperimentalDistanceOption();
+  DistanceOption option = MakeNativeDistanceOption();
 
   for (auto _ : state) {
     result.clear();
@@ -293,7 +293,7 @@ static void BM_Distance_CapsuleCapsule_Experimental(benchmark::State& state)
     benchmark::DoNotOptimize(dist);
   }
 }
-BENCHMARK(BM_Distance_CapsuleCapsule_Experimental);
+BENCHMARK(BM_Distance_CapsuleCapsule_Native);
 
 static void BM_Distance_CapsuleCapsule_FCL(benchmark::State& state)
 {
@@ -367,7 +367,7 @@ void AddScaleArgs(benchmark::internal::Benchmark* bench)
   bench->Arg(0)->Arg(1)->Arg(2);
 }
 
-void RunDistanceCaseExperimental(
+void RunDistanceCaseNative(
     benchmark::State& state, PairKind pair, EdgeCase edge)
 {
   const double scale = ScaleFromIndex(static_cast<int>(state.range(0)));
@@ -376,7 +376,7 @@ void RunDistanceCaseExperimental(
   const auto boxSpec = MakeBoxSpec(scale, edge == EdgeCase::kThinFeature);
 
   DistanceResult result;
-  const auto option = MakeExperimentalDistanceOption();
+  const auto option = MakeNativeDistanceOption();
 
   switch (pair) {
     case PairKind::kSphereSphere: {
@@ -544,10 +544,10 @@ void RunDistanceCaseDetector(
   }
 }
 
-static void BM_Distance_EdgeCases_Experimental(
+static void BM_Distance_EdgeCases_Native(
     benchmark::State& state, PairKind pair, EdgeCase edge)
 {
-  RunDistanceCaseExperimental(state, pair, edge);
+  RunDistanceCaseNative(state, pair, edge);
 }
 
 static void BM_Distance_EdgeCases_FCL(
@@ -610,35 +610,35 @@ static void RegisterDistanceEdgeCases()
 
   for (EdgeCase edge : base_edges) {
     RegisterEdgeCaseBenchmark(
-        "BM_Distance_EdgeCases_Experimental",
-        edge_case_bench::BM_Distance_EdgeCases_Experimental,
+        "BM_Distance_EdgeCases_Native",
+        edge_case_bench::BM_Distance_EdgeCases_Native,
         PairKind::kSphereSphere,
         edge);
     RegisterEdgeCaseBenchmark(
-        "BM_Distance_EdgeCases_Experimental",
-        edge_case_bench::BM_Distance_EdgeCases_Experimental,
+        "BM_Distance_EdgeCases_Native",
+        edge_case_bench::BM_Distance_EdgeCases_Native,
         PairKind::kCapsuleCapsule,
         edge);
     RegisterEdgeCaseBenchmark(
-        "BM_Distance_EdgeCases_Experimental",
-        edge_case_bench::BM_Distance_EdgeCases_Experimental,
+        "BM_Distance_EdgeCases_Native",
+        edge_case_bench::BM_Distance_EdgeCases_Native,
         PairKind::kCapsuleSphere,
         edge);
   }
   for (EdgeCase edge : box_edges) {
     RegisterEdgeCaseBenchmark(
-        "BM_Distance_EdgeCases_Experimental",
-        edge_case_bench::BM_Distance_EdgeCases_Experimental,
+        "BM_Distance_EdgeCases_Native",
+        edge_case_bench::BM_Distance_EdgeCases_Native,
         PairKind::kBoxBox,
         edge);
     RegisterEdgeCaseBenchmark(
-        "BM_Distance_EdgeCases_Experimental",
-        edge_case_bench::BM_Distance_EdgeCases_Experimental,
+        "BM_Distance_EdgeCases_Native",
+        edge_case_bench::BM_Distance_EdgeCases_Native,
         PairKind::kSphereBox,
         edge);
     RegisterEdgeCaseBenchmark(
-        "BM_Distance_EdgeCases_Experimental",
-        edge_case_bench::BM_Distance_EdgeCases_Experimental,
+        "BM_Distance_EdgeCases_Native",
+        edge_case_bench::BM_Distance_EdgeCases_Native,
         PairKind::kCapsuleBox,
         edge);
   }
@@ -776,9 +776,9 @@ bool verifySphereSphereDistance()
   const Eigen::Isometry3d tf2 = OffsetTransform(5.0, 0.0, 0.0);
 
   DistanceResult expResult;
-  DistanceOption expOption = MakeExperimentalDistanceOption();
+  DistanceOption nativeOption = MakeNativeDistanceOption();
   double expDist
-      = distanceSphereSphere(exp1, tf1, exp2, tf2, expResult, expOption);
+      = distanceSphereSphere(exp1, tf1, exp2, tf2, expResult, nativeOption);
 
   auto detector = dart::collision::FCLCollisionDetector::create();
   auto shape1 = std::make_shared<dart::dynamics::SphereShape>(1.0);

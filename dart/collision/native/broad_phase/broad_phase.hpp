@@ -35,6 +35,7 @@
 #include <dart/collision/native/aabb.hpp>
 #include <dart/collision/native/export.hpp>
 
+#include <functional>
 #include <span>
 #include <utility>
 #include <vector>
@@ -44,6 +45,8 @@
 namespace dart::collision::native {
 
 using BroadPhasePair = std::pair<std::size_t, std::size_t>;
+using BroadPhasePairVisitor
+    = std::function<bool(std::size_t first, std::size_t second)>;
 
 class DART_COLLISION_NATIVE_API BroadPhase
 {
@@ -64,6 +67,17 @@ public:
   virtual void queryPairs(std::vector<BroadPhasePair>& out) const
   {
     out = queryPairs();
+  }
+
+  virtual bool visitPairs(const BroadPhasePairVisitor& visitor) const
+  {
+    auto allPairs = queryPairs();
+    for (const auto& pair : allPairs) {
+      if (!visitor(pair.first, pair.second)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   template <typename FilterFunc>

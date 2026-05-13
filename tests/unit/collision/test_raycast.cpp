@@ -30,7 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/All.hpp"
+#include "dart/config.hpp"
+
+#if DART_HAVE_FCL
+  #include "dart/collision/fcl/All.hpp"
+#endif
 
 #include <dart/all.hpp>
 
@@ -204,8 +208,10 @@ void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd)
 //==============================================================================
 TEST(Raycast, testBasicInterface)
 {
+#if DART_HAVE_FCL
   auto fcl = FCLCollisionDetector::create();
   testBasicInterface(fcl);
+#endif
 
 #if DART_HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
@@ -288,8 +294,10 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
 //==============================================================================
 TEST(Raycast, testOptions)
 {
+#if DART_HAVE_FCL
   auto fcl = FCLCollisionDetector::create();
   testOptions(fcl);
+#endif
 
 #if DART_HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();

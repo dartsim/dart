@@ -53,7 +53,9 @@
   #include "dart/collision/bullet/All.hpp"
 #endif
 #include "dart/collision/dart/dart_collision_detector.hpp"
-#include "dart/collision/fcl/fcl_collision_detector.hpp"
+#if DART_HAVE_FCL
+  #include "dart/collision/fcl/fcl_collision_detector.hpp"
+#endif
 #include "dart/constraint/ball_joint_constraint.hpp"
 #include "dart/constraint/constraint_solver.hpp"
 #include "dart/constraint/revolute_joint_constraint.hpp"
@@ -457,7 +459,7 @@ TEST(World, ConfiguresCollisionDetectorViaConfig)
 }
 
 //==============================================================================
-TEST(World, DefaultWorldUsesFclOrExperimental)
+TEST(World, DefaultWorldUsesDart)
 {
   auto factory = collision::CollisionDetector::getFactory();
   ASSERT_NE(factory, nullptr);
@@ -467,16 +469,19 @@ TEST(World, DefaultWorldUsesFclOrExperimental)
   ASSERT_TRUE(detector);
 
   const auto type = std::string(detector->getTypeView());
-  if (factory->canCreate("fcl")) {
-    EXPECT_EQ(type, "fcl");
-  } else if (factory->canCreate("dart")) {
+  if (factory->canCreate("dart")) {
     EXPECT_EQ(type, "dart");
+  } else if (factory->canCreate("experimental")) {
+    EXPECT_EQ(type, "dart");
+  } else if (factory->canCreate("fcl")) {
+    EXPECT_EQ(type, "fcl");
   } else {
     EXPECT_EQ(type, "dart");
   }
 }
 
 //==============================================================================
+#if DART_HAVE_FCL
 TEST(World, TypedSetterConfiguresFclPrimitive)
 {
   auto factory = collision::CollisionDetector::getFactory();
@@ -497,6 +502,7 @@ TEST(World, TypedSetterConfiguresFclPrimitive)
       fclDetector->getPrimitiveShapeType(),
       collision::FCLCollisionDetector::PRIMITIVE);
 }
+#endif
 
 //==============================================================================
 TEST(World, TypedSetterFallsBackWhenDetectorUnavailable)
@@ -547,6 +553,7 @@ TEST(World, ConfigFallbacksWhenPreferredDetectorUnavailable)
 }
 
 //==============================================================================
+#if DART_HAVE_FCL
 TEST(World, ConfigWarnsWhenPreferredAndFallbackUnavailable)
 {
   ScopedCollisionFactoryDisabler disableDart(
@@ -579,6 +586,7 @@ TEST(World, ConfigWarnsWhenPreferredAndFallbackUnavailable)
   EXPECT_TRUE(type == "dart" || type == "experimental" || type == "fcl")
       << "Expected dart, experimental, or fcl fallback, got: " << type;
 }
+#endif
 
 //==============================================================================
 simulation::WorldPtr createWorld()

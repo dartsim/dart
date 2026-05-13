@@ -68,10 +68,13 @@ public:
 
 private:
   std::vector<ContactManifold> manifolds_;
+  std::size_t manifoldCount_ = 0;
+  std::size_t contactCount_ = 0;
 
   mutable std::vector<const ContactPoint*> flatContactsCache_;
   mutable bool flatCacheValid_ = false;
 
+  ContactManifold& nextManifold();
   void invalidateCache();
   void updateFlatCache() const;
 };

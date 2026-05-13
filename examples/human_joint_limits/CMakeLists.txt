@@ -40,12 +40,14 @@ if(missing_collision_features)
   return()
 endif()
 
-set(required_components utils-urdf gui io)
+set(required_components utils-urdf gui io collision-bullet collision-ode)
 set(required_libraries
   dart
   dart-io
   dart-utils-urdf
   dart-gui
+  dart-collision-bullet
+  dart-collision-ode
   ${TinyDNN_LIBRARIES}
   Threads::Threads
 )

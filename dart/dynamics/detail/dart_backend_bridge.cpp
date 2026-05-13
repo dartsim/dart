@@ -32,6 +32,7 @@
 
 #include "dart/collision/dart/shape_adapter.hpp"
 #include "dart/common/logging.hpp"
+#include "dart/config.hpp"
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/capsule_shape.hpp"
 #include "dart/dynamics/cone_shape.hpp"
@@ -43,8 +44,13 @@
 #include "dart/dynamics/multi_sphere_convex_hull_shape.hpp"
 #include "dart/dynamics/plane_shape.hpp"
 #include "dart/dynamics/pyramid_shape.hpp"
+#include "dart/dynamics/soft_mesh_shape.hpp"
 #include "dart/dynamics/sphere_shape.hpp"
 #include "dart/math/tri_mesh.hpp"
+
+#if DART_HAVE_OCTOMAP
+  #include "dart/dynamics/voxel_grid_shape.hpp"
+#endif
 
 #include <numbers>
 #include <vector>
@@ -271,6 +277,36 @@ std::unique_ptr<native::Shape> adaptShape(const dynamics::ConstShapePtr& shape)
     return std::make_unique<native::ConvexShape>(std::move(vertices));
   }
 
+#if DART_HAVE_OCTOMAP
+  if (shapeType == dynamics::VoxelGridShape::getStaticType()) {
+    const auto& voxelGrid
+        = std::static_pointer_cast<const dynamics::VoxelGridShape>(shape);
+    const auto octree = voxelGrid->getOctree();
+    if (!octree) {
+      DART_WARN("[DartCollisionDetector] VoxelGridShape has no octree data.");
+      return nullptr;
+    }
+
+    auto compound = std::make_unique<native::CompoundShape>();
+    for (auto it = octree->begin_leafs(), end = octree->end_leafs(); it != end;
+         ++it) {
+      if (!octree->isNodeOccupied(*it)) {
+        continue;
+      }
+
+      Eigen::Isometry3d voxelTransform = Eigen::Isometry3d::Identity();
+      voxelTransform.translation()
+          = Eigen::Vector3d(it.getX(), it.getY(), it.getZ());
+      compound->addChild(
+          std::make_unique<native::BoxShape>(Eigen::Vector3d::Constant(
+              0.5 * static_cast<double>(it.getSize()))),
+          voxelTransform);
+    }
+
+    return compound;
+  }
+#endif
+
   if (shapeType == dynamics::MeshShape::getStaticType()) {
     const auto& mesh
         = std::static_pointer_cast<const dynamics::MeshShape>(shape);
@@ -286,6 +322,36 @@ std::unique_ptr<native::Shape> adaptShape(const dynamics::ConstShapePtr& shape)
     const Eigen::Vector3d scale = mesh->getScale();
     for (const auto& vertex : triMesh->getVertices()) {
       vertices.push_back(vertex.cwiseProduct(scale));
+    }
+
+    std::vector<native::MeshShape::Triangle> triangles;
+    triangles.reserve(triMesh->getTriangles().size());
+    for (const auto& triangle : triMesh->getTriangles()) {
+      triangles.emplace_back(
+          static_cast<int>(triangle[0]),
+          static_cast<int>(triangle[1]),
+          static_cast<int>(triangle[2]));
+    }
+
+    return std::make_unique<native::MeshShape>(
+        std::move(vertices), std::move(triangles));
+  }
+
+  if (shapeType == dynamics::SoftMeshShape::getStaticType()) {
+    const auto& softMesh
+        = std::static_pointer_cast<const dynamics::SoftMeshShape>(shape);
+    const_cast<dynamics::SoftMeshShape*>(softMesh.get())->update();
+
+    const auto triMesh = softMesh->getTriMesh();
+    if (!triMesh) {
+      DART_WARN("[DartCollisionDetector] SoftMeshShape has no TriMesh data.");
+      return nullptr;
+    }
+
+    std::vector<Eigen::Vector3d> vertices;
+    vertices.reserve(triMesh->getVertices().size());
+    for (const auto& vertex : triMesh->getVertices()) {
+      vertices.push_back(vertex);
     }
 
     std::vector<native::MeshShape::Triangle> triangles;

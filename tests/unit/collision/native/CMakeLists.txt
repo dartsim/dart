@@ -16,23 +16,23 @@ enable_testing()
 message(STATUS "collision-native: Configuring unit tests...")
 
 if(DART_BUILD_TESTS AND TARGET GTest::gtest)
-  set(COLLISION_EXPERIMENTAL_TESTS "" CACHE INTERNAL "" FORCE)
+  set(COLLISION_NATIVE_TESTS "" CACHE INTERNAL "" FORCE)
 
-  set(DART_EXPERIMENTAL_VOXBLOX_ROOT "" CACHE PATH "Path to Voxblox for experimental collision tests")
-  if(DART_EXPERIMENTAL_VOXBLOX_ROOT)
+  set(DART_NATIVE_VOXBLOX_ROOT "" CACHE PATH "Path to Voxblox for native collision tests")
+  if(DART_NATIVE_VOXBLOX_ROOT)
     find_path(VOXBLOX_INCLUDE_DIR
       NAMES voxblox/core/esdf_map.h
       PATHS
-        ${DART_EXPERIMENTAL_VOXBLOX_ROOT}
-        ${DART_EXPERIMENTAL_VOXBLOX_ROOT}/voxblox/include
-        ${DART_EXPERIMENTAL_VOXBLOX_ROOT}/include
+        ${DART_NATIVE_VOXBLOX_ROOT}
+        ${DART_NATIVE_VOXBLOX_ROOT}/voxblox/include
+        ${DART_NATIVE_VOXBLOX_ROOT}/include
     )
     find_library(VOXBLOX_LIBRARY
       NAMES voxblox
       PATHS
-        ${DART_EXPERIMENTAL_VOXBLOX_ROOT}/lib
-        ${DART_EXPERIMENTAL_VOXBLOX_ROOT}/build
-        ${DART_EXPERIMENTAL_VOXBLOX_ROOT}/devel/lib
+        ${DART_NATIVE_VOXBLOX_ROOT}/lib
+        ${DART_NATIVE_VOXBLOX_ROOT}/build
+        ${DART_NATIVE_VOXBLOX_ROOT}/devel/lib
     )
   endif()
   set(VOXBLOX_FOUND FALSE)
@@ -44,12 +44,16 @@ if(DART_BUILD_TESTS AND TARGET GTest::gtest)
   if(NOT DART_TESTS_LIBCCD_FOUND)
     list(FILTER test_files EXCLUDE REGEX "test_libccd_.*\\.cpp$")
   endif()
+  if(NOT TARGET dart-collision-fcl)
+    list(FILTER test_files EXCLUDE REGEX "test_reference_backends\\.cpp$")
+  endif()
   list(APPEND test_files "${CMAKE_CURRENT_SOURCE_DIR}/test_parallel_determinism.cpp")
   list(REMOVE_DUPLICATES test_files)
 
   foreach(test_file ${test_files})
     get_filename_component(test_name ${test_file} NAME_WE)
 
+    dart_property_add(DART_unit_TESTS ${test_name})
     add_executable(${test_name} ${test_file})
     target_link_libraries(${test_name}
       PRIVATE
@@ -78,18 +82,18 @@ if(DART_BUILD_TESTS AND TARGET GTest::gtest)
     if(test_name STREQUAL "test_sdf_compare" AND VOXBLOX_FOUND)
       target_include_directories(${test_name} PRIVATE ${VOXBLOX_INCLUDE_DIR})
       target_link_libraries(${test_name} PRIVATE ${VOXBLOX_LIBRARY})
-      target_compile_definitions(${test_name} PRIVATE DART_EXPERIMENTAL_HAVE_VOXBLOX=1)
+      target_compile_definitions(${test_name} PRIVATE DART_NATIVE_HAVE_VOXBLOX=1)
     endif()
 
     add_test(NAME ${test_name} COMMAND ${test_name})
     set_tests_properties(${test_name} PROPERTIES LABELS "collision-native")
 
-    list(APPEND COLLISION_EXPERIMENTAL_TESTS ${test_name})
+    list(APPEND COLLISION_NATIVE_TESTS ${test_name})
   endforeach()
 
-  if(COLLISION_EXPERIMENTAL_TESTS)
+  if(COLLISION_NATIVE_TESTS)
     add_custom_target(dart_collision_native_tests
-      DEPENDS ${COLLISION_EXPERIMENTAL_TESTS}
+      DEPENDS ${COLLISION_NATIVE_TESTS}
       COMMENT "Building all collision-native unit tests"
     )
   endif()

@@ -17,7 +17,7 @@ def test_collision_detector_change():
 
     assert (
         solver.get_collision_detector().get_type()
-        == dart.FCLCollisionDetector().get_static_type()
+        == dart.DARTCollisionDetector().get_static_type()
     )
 
     solver.set_collision_detector(dart.DARTCollisionDetector())
@@ -59,7 +59,7 @@ def test_collision_detector_type_enum():
 def test_world_config():
     config = dart.WorldConfig()
     assert config.name == "world"
-    assert config.collision_detector == dart.CollisionDetectorType.Fcl
+    assert config.collision_detector == dart.CollisionDetectorType.Dart
     assert config.primary_lcp_solver == dart.LcpSolverType.Dantzig
     assert config.secondary_lcp_solver == dart.LcpSolverType.Pgs
 

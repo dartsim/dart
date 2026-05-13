@@ -3,6 +3,7 @@
 #include <dart/collision/collision_group.hpp>
 #include <dart/collision/collision_option.hpp>
 #include <dart/collision/collision_result.hpp>
+#include <dart/collision/dart/DARTCollisionDetector.hpp>
 #include <dart/collision/dart/dart_collision_detector.hpp>
 #include <dart/collision/dart/dart_collision_group.hpp>
 #include <dart/collision/native/persistent_manifold_cache.hpp>
@@ -247,6 +248,27 @@ TEST(DartCollisionDetector, RaycastWorksForSphere)
   const bool hit = group->raycast(from, to, option, &result);
   EXPECT_TRUE(hit);
   EXPECT_TRUE(result.hasHit());
+}
+
+TEST(DartCollisionDetector, LegacyUppercaseHeaderKeepsRaycastUnsupported)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto sphere = std::make_shared<SphereShape>(0.5);
+  auto setup = makeShapeSetup("sphere", sphere);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setup.shapeNode);
+
+  RaycastOption option;
+  RaycastResult result;
+
+  const Eigen::Vector3d from(0.0, 0.0, 2.0);
+  const Eigen::Vector3d to(0.0, 0.0, -2.0);
+
+  const bool hit = group->raycast(from, to, option, &result);
+  EXPECT_EQ("dart", detector->getTypeView());
+  EXPECT_FALSE(hit);
+  EXPECT_FALSE(result.hasHit());
 }
 
 TEST(DartCollisionDetector, MaxNumContactsZeroReturnsFalse)

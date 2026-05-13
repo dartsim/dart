@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-// Comparative benchmarks: Experimental collision vs FCL/Bullet/ODE
+// Comparative benchmarks: Native collision vs FCL/Bullet/ODE
 //
-// PURPOSE: Validate that our experimental collision module outperforms
+// PURPOSE: Validate that our native collision module outperforms
 // existing backends while maintaining accuracy parity.
 //
 // This benchmark compares:
@@ -41,14 +41,14 @@
 
 #include <dart/config.hpp>
 
+#include <dart/collision/fcl/FCLCollisionDetector.hpp>
+#include <dart/collision/fcl/FCLTypes.hpp>
 #include <dart/collision/native/collision_world.hpp>
 #include <dart/collision/native/narrow_phase/box_box.hpp>
 #include <dart/collision/native/narrow_phase/capsule_capsule.hpp>
 #include <dart/collision/native/narrow_phase/distance.hpp>
 #include <dart/collision/native/narrow_phase/sphere_sphere.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
-#include <dart/collision/fcl/FCLCollisionDetector.hpp>
-#include <dart/collision/fcl/FCLTypes.hpp>
 
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/CapsuleShape.hpp>
@@ -112,7 +112,7 @@ dart::dynamics::SkeletonPtr createShapeSkeleton(
 // SPHERE-SPHERE COLLISION BENCHMARKS
 // =============================================================================
 
-static void BM_SphereSphere_Experimental(benchmark::State& state)
+static void BM_SphereSphere_Native(benchmark::State& state)
 {
   SphereShape s1(1.0);
   SphereShape s2(1.0);
@@ -129,7 +129,7 @@ static void BM_SphereSphere_Experimental(benchmark::State& state)
     benchmark::DoNotOptimize(collideSpheres(s1, tf1, s2, tf2, result, option));
   }
 }
-BENCHMARK(BM_SphereSphere_Experimental);
+BENCHMARK(BM_SphereSphere_Native);
 
 static void BM_SphereSphere_FCL(benchmark::State& state)
 {
@@ -223,7 +223,7 @@ BENCHMARK(BM_SphereSphere_ODE);
 // BOX-BOX COLLISION BENCHMARKS
 // =============================================================================
 
-static void BM_BoxBox_Experimental(benchmark::State& state)
+static void BM_BoxBox_Native(benchmark::State& state)
 {
   BoxShape b1(Eigen::Vector3d(0.5, 0.5, 0.5));
   BoxShape b2(Eigen::Vector3d(0.5, 0.5, 0.5));
@@ -240,7 +240,7 @@ static void BM_BoxBox_Experimental(benchmark::State& state)
     benchmark::DoNotOptimize(collideBoxes(b1, tf1, b2, tf2, result, option));
   }
 }
-BENCHMARK(BM_BoxBox_Experimental);
+BENCHMARK(BM_BoxBox_Native);
 
 static void BM_BoxBox_FCL(benchmark::State& state)
 {
@@ -340,7 +340,7 @@ BENCHMARK(BM_BoxBox_ODE);
 // CAPSULE-CAPSULE COLLISION BENCHMARKS
 // =============================================================================
 
-static void BM_CapsuleCapsule_Experimental(benchmark::State& state)
+static void BM_CapsuleCapsule_Native(benchmark::State& state)
 {
   CapsuleShape c1(0.5, 2.0);
   CapsuleShape c2(0.5, 2.0);
@@ -357,7 +357,7 @@ static void BM_CapsuleCapsule_Experimental(benchmark::State& state)
     benchmark::DoNotOptimize(collideCapsules(c1, tf1, c2, tf2, result, option));
   }
 }
-BENCHMARK(BM_CapsuleCapsule_Experimental);
+BENCHMARK(BM_CapsuleCapsule_Native);
 
 static void BM_CapsuleCapsule_FCL(benchmark::State& state)
 {
@@ -451,7 +451,7 @@ BENCHMARK(BM_CapsuleCapsule_ODE);
 // DISTANCE QUERY BENCHMARKS
 // =============================================================================
 
-static void BM_Distance_SphereSphere_Experimental(benchmark::State& state)
+static void BM_Distance_SphereSphere_Native(benchmark::State& state)
 {
   SphereShape s1(1.0);
   SphereShape s2(1.0);
@@ -469,7 +469,7 @@ static void BM_Distance_SphereSphere_Experimental(benchmark::State& state)
         distanceSphereSphere(s1, tf1, s2, tf2, result, option));
   }
 }
-BENCHMARK(BM_Distance_SphereSphere_Experimental);
+BENCHMARK(BM_Distance_SphereSphere_Native);
 
 static void BM_Distance_SphereSphere_FCL(benchmark::State& state)
 {
@@ -531,7 +531,7 @@ BENCHMARK(BM_Distance_SphereSphere_Bullet);
 // N-BODY COLLISION BENCHMARKS (SCALE TEST)
 // =============================================================================
 
-static void BM_NBody_Experimental(benchmark::State& state)
+static void BM_NBody_Native(benchmark::State& state)
 {
   const int n = state.range(0);
   rng.seed(42);
@@ -554,7 +554,7 @@ static void BM_NBody_Experimental(benchmark::State& state)
 
   state.SetComplexityN(n);
 }
-BENCHMARK(BM_NBody_Experimental)->Arg(10)->Arg(50)->Arg(100)->Complexity();
+BENCHMARK(BM_NBody_Native)->Arg(10)->Arg(50)->Arg(100)->Complexity();
 
 static void BM_NBody_FCL(benchmark::State& state)
 {
@@ -650,7 +650,7 @@ BENCHMARK(BM_NBody_ODE)->Arg(10)->Arg(50)->Arg(100)->Complexity();
 // =============================================================================
 // ACCURACY VERIFICATION
 // =============================================================================
-// These functions verify that our experimental module produces results
+// These functions verify that our native module produces results
 // comparable to FCL. They run once before benchmarks to validate correctness.
 
 namespace accuracy {
@@ -667,8 +667,8 @@ bool verifySphereSphereAccuracy()
   tf2.translation() = Eigen::Vector3d(1.5, 0, 0);
 
   CollisionResult expResult;
-  CollisionOption expOption;
-  (void)collideSpheres(expS1, tf1, expS2, tf2, expResult, expOption);
+  CollisionOption nativeOption;
+  (void)collideSpheres(expS1, tf1, expS2, tf2, expResult, nativeOption);
 
   auto detector = dart::collision::FCLCollisionDetector::create();
   auto shape1 = std::make_shared<dart::dynamics::SphereShape>(1.0);
@@ -689,8 +689,8 @@ bool verifySphereSphereAccuracy()
 
   if (expCollided != fclCollided) {
     std::cerr << "ACCURACY FAIL: Sphere-sphere collision detection mismatch\n";
-    std::cerr << "  Experimental: "
-              << (expCollided ? "collided" : "no collision") << "\n";
+    std::cerr << "  Native: " << (expCollided ? "collided" : "no collision")
+              << "\n";
     std::cerr << "  FCL: " << (fclCollided ? "collided" : "no collision")
               << "\n";
     return false;
@@ -700,20 +700,21 @@ bool verifySphereSphereAccuracy()
     return true;
   }
 
-  const auto& expContact = expResult.getContact(0);
+  const auto& nativeContact = expResult.getContact(0);
   const auto& fclContact = fclResult.getContact(0);
 
-  double depthDiff = std::abs(expContact.depth - fclContact.penetrationDepth);
+  double depthDiff
+      = std::abs(nativeContact.depth - fclContact.penetrationDepth);
   if (depthDiff > 0.01) {
     std::cerr << "ACCURACY WARN: Sphere-sphere depth difference: " << depthDiff
               << "\n";
-    std::cerr << "  Experimental: " << expContact.depth << "\n";
+    std::cerr << "  Native: " << nativeContact.depth << "\n";
     std::cerr << "  FCL: " << fclContact.penetrationDepth << "\n";
   }
 
-  if (std::abs(expContact.depth - 0.5) > 0.01) {
+  if (std::abs(nativeContact.depth - 0.5) > 0.01) {
     std::cerr << "ACCURACY FAIL: Sphere-sphere expected depth ~0.5, got "
-              << expContact.depth << "\n";
+              << nativeContact.depth << "\n";
     return false;
   }
 
@@ -730,8 +731,8 @@ bool verifyBoxBoxAccuracy()
   tf2.translation() = Eigen::Vector3d(0.8, 0, 0);
 
   CollisionResult expResult;
-  CollisionOption expOption;
-  (void)collideBoxes(expB1, tf1, expB2, tf2, expResult, expOption);
+  CollisionOption nativeOption;
+  (void)collideBoxes(expB1, tf1, expB2, tf2, expResult, nativeOption);
 
   auto detector = dart::collision::FCLCollisionDetector::create();
   auto shape1
@@ -761,10 +762,10 @@ bool verifyBoxBoxAccuracy()
     return true;
   }
 
-  const auto& expContact = expResult.getContact(0);
-  if (expContact.depth < 0.1 || expContact.depth > 0.3) {
+  const auto& nativeContact = expResult.getContact(0);
+  if (nativeContact.depth < 0.1 || nativeContact.depth > 0.3) {
     std::cerr << "ACCURACY WARN: Box-box depth outside expected range: "
-              << expContact.depth << " (expected ~0.2)\n";
+              << nativeContact.depth << " (expected ~0.2)\n";
   }
 
   return true;
@@ -780,9 +781,9 @@ bool verifyDistanceAccuracy()
   tf2.translation() = Eigen::Vector3d(5.0, 0, 0);
 
   DistanceResult expResult;
-  DistanceOption expOption;
+  DistanceOption nativeOption;
   double expDist
-      = distanceSphereSphere(expS1, tf1, expS2, tf2, expResult, expOption);
+      = distanceSphereSphere(expS1, tf1, expS2, tf2, expResult, nativeOption);
 
   auto detector = dart::collision::FCLCollisionDetector::create();
   auto shape1 = std::make_shared<dart::dynamics::SphereShape>(1.0);

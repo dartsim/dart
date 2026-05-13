@@ -177,7 +177,7 @@ TEST(Frame, RejectCrossWorldParent)
 
   EXPECT_THROW(
       frame1.setParentFrame(frame2),
-      dart::simulation::native::InvalidArgumentException);
+      dart::simulation::experimental::InvalidArgumentException);
 }
 
 // Reject parenting a frame to itself
@@ -188,7 +188,7 @@ TEST(Frame, RejectSelfParent)
 
   EXPECT_THROW(
       frame.setParentFrame(frame),
-      dart::simulation::native::InvalidArgumentException);
+      dart::simulation::experimental::InvalidArgumentException);
 }
 
 // Reject cycles in the frame hierarchy
@@ -200,7 +200,7 @@ TEST(Frame, RejectCyclicParent)
 
   EXPECT_THROW(
       parent.setParentFrame(child),
-      dart::simulation::native::InvalidOperationException);
+      dart::simulation::experimental::InvalidOperationException);
 }
 
 // Mark descendants dirty when reparenting
