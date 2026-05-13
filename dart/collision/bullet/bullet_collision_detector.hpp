@@ -53,6 +53,10 @@ public:
 
   static std::shared_ptr<BulletCollisionDetector> create();
 
+  /// Creates the explicit Bullet reference-engine detector used by comparison
+  /// tests and benchmarks.
+  static std::shared_ptr<BulletCollisionDetector> createReference();
+
   /// Constructor
   ~BulletCollisionDetector() override;
 

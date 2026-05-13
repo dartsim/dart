@@ -197,6 +197,12 @@ std::shared_ptr<OdeCollisionDetector> OdeCollisionDetector::create()
 }
 
 //==============================================================================
+std::shared_ptr<OdeCollisionDetector> OdeCollisionDetector::createReference()
+{
+  return std::shared_ptr<OdeCollisionDetector>(new OdeCollisionDetector());
+}
+
+//==============================================================================
 OdeCollisionDetector::~OdeCollisionDetector()
 {
   dWorldDestroy(mWorldId);

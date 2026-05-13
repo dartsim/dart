@@ -97,7 +97,7 @@ BackendResult queryFCL(
     const Eigen::Vector3d& pos2,
     const dart::dynamics::ShapePtr& shape2)
 {
-  auto cd = dart::collision::FCLCollisionDetector::create();
+  auto cd = dart::collision::FCLCollisionDetector::createReference();
 
   auto frame1 = dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World());
@@ -175,7 +175,7 @@ RaycastBackendResult queryBulletRaycast(
     const Eigen::Vector3d& from,
     const Eigen::Vector3d& to)
 {
-  auto cd = dart::collision::BulletCollisionDetector::create();
+  auto cd = dart::collision::BulletCollisionDetector::createReference();
 
   auto frame = dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World());
@@ -246,7 +246,7 @@ BackendResult queryBullet(
     const Eigen::Vector3d& pos2,
     const dart::dynamics::ShapePtr& shape2)
 {
-  auto cd = dart::collision::BulletCollisionDetector::create();
+  auto cd = dart::collision::BulletCollisionDetector::createReference();
 
   auto frame1 = dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World());
@@ -281,7 +281,7 @@ BackendResult queryODE(
     const Eigen::Vector3d& pos2,
     const dart::dynamics::ShapePtr& shape2)
 {
-  auto cd = dart::collision::OdeCollisionDetector::create();
+  auto cd = dart::collision::OdeCollisionDetector::createReference();
 
   auto frame1 = dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World());

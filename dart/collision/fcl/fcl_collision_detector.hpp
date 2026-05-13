@@ -52,6 +52,10 @@ public:
 
   static std::shared_ptr<FCLCollisionDetector> create();
 
+  /// Creates the explicit FCL reference-engine detector used by comparison
+  /// tests and benchmarks.
+  static std::shared_ptr<FCLCollisionDetector> createReference();
+
   /// Whether to use analytic collision checking for primitive shapes.
   ///
   /// PRIMITIVE: Use FCL's analytic collision checking for primitive shapes.

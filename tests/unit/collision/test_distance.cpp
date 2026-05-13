@@ -153,11 +153,11 @@ void testBasicInterface(
 //==============================================================================
 TEST(Distance, testBasicInterface)
 {
-  auto fcl = FCLCollisionDetector::create();
+  auto fcl = FCLCollisionDetector::createReference();
   testBasicInterface(fcl);
 
 #if DART_HAVE_BULLET
-  auto bullet = BulletCollisionDetector::create();
+  auto bullet = BulletCollisionDetector::createReference();
   testBasicInterface(bullet);
 #endif
 
@@ -265,11 +265,11 @@ void testOptions(
 //==============================================================================
 TEST(Distance, Options)
 {
-  auto fcl = FCLCollisionDetector::create();
+  auto fcl = FCLCollisionDetector::createReference();
   testOptions(fcl);
 
 #if DART_HAVE_BULLET
-  auto bullet = BulletCollisionDetector::create();
+  auto bullet = BulletCollisionDetector::createReference();
   testOptions(bullet);
 #endif
 
@@ -325,11 +325,11 @@ void testSphereSphere(
 //==============================================================================
 TEST(Distance, SphereSphere)
 {
-  auto fcl = FCLCollisionDetector::create();
+  auto fcl = FCLCollisionDetector::createReference();
   testSphereSphere(fcl);
 
 #if DART_HAVE_BULLET
-  auto bullet = BulletCollisionDetector::create();
+  auto bullet = BulletCollisionDetector::createReference();
   testSphereSphere(bullet);
 #endif
 
@@ -340,7 +340,7 @@ TEST(Distance, SphereSphere)
 //==============================================================================
 TEST(Distance, UsesMinimumAcrossPairs)
 {
-  auto fcl = FCLCollisionDetector::create();
+  auto fcl = FCLCollisionDetector::createReference();
 
   auto frame1 = SimpleFrame::createShared(Frame::World());
   auto frame2 = SimpleFrame::createShared(Frame::World());
@@ -410,7 +410,7 @@ TEST(DistanceResult, ClearResetsAllMembers)
 //==============================================================================
 TEST(DistanceResult, FoundReturnsTrueWhenShapeFramesSet)
 {
-  auto fcl = FCLCollisionDetector::create();
+  auto fcl = FCLCollisionDetector::createReference();
   auto frame1 = SimpleFrame::createShared(Frame::World());
   auto frame2 = SimpleFrame::createShared(Frame::World());
 
@@ -434,7 +434,7 @@ TEST(DistanceResult, FoundReturnsTrueWhenShapeFramesSet)
 //==============================================================================
 TEST(DistanceResult, IsMinDistanceClampedDetectsClamping)
 {
-  auto fcl = FCLCollisionDetector::create();
+  auto fcl = FCLCollisionDetector::createReference();
   auto frame1 = SimpleFrame::createShared(Frame::World());
   auto frame2 = SimpleFrame::createShared(Frame::World());
 
@@ -460,7 +460,7 @@ TEST(DistanceResult, IsMinDistanceClampedDetectsClamping)
 //==============================================================================
 TEST(DistanceResult, NearestPointsComputedWhenEnabled)
 {
-  auto fcl = FCLCollisionDetector::create();
+  auto fcl = FCLCollisionDetector::createReference();
   auto frame1 = SimpleFrame::createShared(Frame::World());
   auto frame2 = SimpleFrame::createShared(Frame::World());
 

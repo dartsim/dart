@@ -107,7 +107,7 @@ void setCollisionDetector(WorldPtr world, bool useOde)
 #if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_ODE
   if (useOde) {
     world->getConstraintSolver()->setCollisionDetector(
-        dart::collision::OdeCollisionDetector::create());
+        dart::collision::OdeCollisionDetector::createReference());
     return;
   }
 #else
@@ -115,7 +115,7 @@ void setCollisionDetector(WorldPtr world, bool useOde)
 #endif
 #if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_BULLET
   world->getConstraintSolver()->setCollisionDetector(
-      dart::collision::BulletCollisionDetector::create());
+      dart::collision::BulletCollisionDetector::createReference());
 #else
   (void)world;
 #endif

@@ -135,15 +135,18 @@ and query infrastructure live in `dart/collision/native/`, the public DART
 adapter lives in `dart/collision/dart/`, the `dart` factory key is canonical,
 retained factory aliases route to `DartCollisionDetector`, Python detector
 compatibility names are native-backed, and normal package/wheel surfaces no
-longer carry old collision dependencies.
+longer carry old collision dependencies. Reference tests and benchmarks now
+call explicit `createReference()` methods on the FCL, Bullet, and ODE detector
+classes when they intentionally need old-engine comparisons.
 
 The remaining design gap is direct C++ legacy surface cleanup. The old FCL,
 Bullet, and ODE detector classes, headers, and component targets still contain
-real reference-engine implementations for comparison work. Before Phase 11 can
-complete, those surfaces must either become thin native-backed compatibility
-facades or move behind explicitly named reference-only test/benchmark targets.
-The completed PR must make it impossible for ordinary DART collision runtime
-selection to instantiate or link FCL, Bullet, or ODE.
+real reference-engine implementations behind their public `create()` paths and
+component names. Before Phase 11 can complete, those public surfaces must
+either become thin native-backed compatibility facades or move behind
+explicitly named reference-only test/benchmark targets. The completed PR must
+make it impossible for ordinary DART collision runtime selection to instantiate
+or link FCL, Bullet, or ODE.
 
 ## Code Ownership Map
 

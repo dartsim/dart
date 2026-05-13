@@ -84,7 +84,7 @@ namespace {
   auto world = simulation::World::create();
 
   // Set collision detector type
-  world->setCollisionDetector(collision::BulletCollisionDetector::create());
+  world->setCollisionDetector(collision::BulletCollisionDetector::createReference());
 
   // Create dim x dim x dim boxes
   for (auto i = 0u; i < dim; ++i) {

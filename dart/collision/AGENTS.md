@@ -34,6 +34,9 @@ for tests and benchmarks. Do not add new runtime backend selection paths.
   code.
 - Legacy factory keys/classes must route to the built-in detector unless they
   are explicitly part of an opt-in reference test or benchmark target.
+- Reference tests and benchmarks that intentionally compare against FCL,
+  Bullet, or ODE should use the explicit `createReference()` APIs, not ordinary
+  runtime detector creation.
 - Keep the runtime layer split clean: public API and compatibility facades call
   into `dart/collision/dart/`, while `dart/collision/native/` owns geometry,
   broadphase, narrowphase, distance, raycast, contact persistence, cache

@@ -87,7 +87,7 @@ bool collidePair(
 //==============================================================================
 TEST(OdeCylinderMesh, CylinderSphereCollision)
 {
-  auto ode = OdeCollisionDetector::create();
+  auto ode = OdeCollisionDetector::createReference();
   ASSERT_TRUE(ode);
 
   auto cylinder = std::make_shared<CylinderShape>(0.5, 1.0);
@@ -104,7 +104,7 @@ TEST(OdeCylinderMesh, CylinderSphereCollision)
 //==============================================================================
 TEST(OdeCylinderMesh, CylinderCylinderCollision)
 {
-  auto ode = OdeCollisionDetector::create();
+  auto ode = OdeCollisionDetector::createReference();
   ASSERT_TRUE(ode);
 
   auto cylinder = std::make_shared<CylinderShape>(0.5, 1.0);
@@ -120,7 +120,7 @@ TEST(OdeCylinderMesh, CylinderCylinderCollision)
 //==============================================================================
 TEST(OdeCylinderMesh, CylinderMeshCollision)
 {
-  auto ode = OdeCollisionDetector::create();
+  auto ode = OdeCollisionDetector::createReference();
   ASSERT_TRUE(ode);
 
   auto cylinder = std::make_shared<CylinderShape>(0.5, 1.0);
@@ -170,7 +170,7 @@ TEST(OdeCylinderMesh, CylinderMeshCollision)
 //==============================================================================
 TEST(OdeCylinderMesh, CylinderSeparated)
 {
-  auto ode = OdeCollisionDetector::create();
+  auto ode = OdeCollisionDetector::createReference();
   ASSERT_TRUE(ode);
 
   auto cylinder = std::make_shared<CylinderShape>(0.5, 1.0);

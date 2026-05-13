@@ -213,12 +213,12 @@ void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd)
 TEST(Raycast, testBasicInterface)
 {
 #if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
-  auto fcl = FCLCollisionDetector::create();
+  auto fcl = FCLCollisionDetector::createReference();
   testBasicInterface(fcl);
 #endif
 
 #if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_BULLET
-  auto bullet = BulletCollisionDetector::create();
+  auto bullet = BulletCollisionDetector::createReference();
   testBasicInterface(bullet);
 #endif
 
@@ -299,12 +299,12 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
 TEST(Raycast, testOptions)
 {
 #if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
-  auto fcl = FCLCollisionDetector::create();
+  auto fcl = FCLCollisionDetector::createReference();
   testOptions(fcl);
 #endif
 
 #if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_BULLET
-  auto bullet = BulletCollisionDetector::create();
+  auto bullet = BulletCollisionDetector::createReference();
   testOptions(bullet);
 #endif
 
@@ -393,7 +393,7 @@ void testFilters(const std::shared_ptr<CollisionDetector>& cd)
 TEST(Raycast, testFilters)
 {
 #if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_BULLET
-  auto bullet = BulletCollisionDetector::create();
+  auto bullet = BulletCollisionDetector::createReference();
   testFilters(bullet);
 #else
   GTEST_SKIP() << "Bullet collision detector not available.";

@@ -303,7 +303,7 @@ static void BM_Scenario_MeshHeavy_FCL(benchmark::State& state)
 {
   static const MeshData mesh
       = BuildGridMesh(kMeshSubdivisions, kMeshHalfExtent);
-  auto detector = dart::collision::FCLCollisionDetector::create();
+  auto detector = dart::collision::FCLCollisionDetector::createReference();
   RunDetectorMeshScenario(state, detector, mesh);
 }
 BENCHMARK(BM_Scenario_MeshHeavy_FCL)->Arg(1000)->Arg(5000)->Complexity();
@@ -313,7 +313,7 @@ static void BM_Scenario_MeshHeavy_Bullet(benchmark::State& state)
 {
   static const MeshData mesh
       = BuildGridMesh(kMeshSubdivisions, kMeshHalfExtent);
-  auto detector = dart::collision::BulletCollisionDetector::create();
+  auto detector = dart::collision::BulletCollisionDetector::createReference();
   RunDetectorMeshScenario(state, detector, mesh);
 }
 BENCHMARK(BM_Scenario_MeshHeavy_Bullet)->Arg(1000)->Arg(5000)->Complexity();

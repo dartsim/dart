@@ -178,7 +178,9 @@ FCL, Bullet, ODE, and the FCL transitive packages; the explicit
 reference target. A repaired py312 wheel artifact built with old collision
 engines disabled now imports successfully and has no old collision component
 files or runtime links. Downstream-component inspection and CI wheel-matrix
-evidence are still required before this phase is complete.
+evidence are still required before this phase is complete. C++ reference tests
+and benchmarks now call explicit `createReference()` detector APIs, so
+old-engine comparison intent is visible at each call site.
 
 Success criteria:
 
@@ -297,10 +299,12 @@ is documented in `01-design.md` as public API and compatibility facades outside 
 `dart/collision/dart/` adapter, with `dart/collision/native/` owning scalable
 scene/query state and performance instrumentation. Python detector
 compatibility names now resolve to `DartCollisionDetector` and dartpy no
-longer links legacy collision component targets. The old direct C++ detector
-classes and component libraries still contain real FCL/Bullet/ODE
-implementations for reference work, so class/header/CMake component cleanup
-remains before this phase can complete.
+longer links legacy collision component targets. Reference tests and
+benchmarks now use explicit `createReference()` APIs for old-engine
+comparisons. The old direct C++ public detector `create()` paths and component
+libraries still contain real FCL/Bullet/ODE implementations for reference
+work, so class/header/CMake component cleanup remains before this phase can
+complete.
 
 Success criteria:
 

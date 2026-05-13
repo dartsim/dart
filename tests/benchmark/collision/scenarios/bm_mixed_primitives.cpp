@@ -268,7 +268,7 @@ BENCHMARK(BM_Scenario_MixedPrimitives_Sparse_Native)
 
 static void BM_Scenario_MixedPrimitives_Dense_FCL(benchmark::State& state)
 {
-  auto detector = dart::collision::FCLCollisionDetector::create();
+  auto detector = dart::collision::FCLCollisionDetector::createReference();
   RunDetectorScenarioBenchmark(state, detector, kDenseRange);
 }
 BENCHMARK(BM_Scenario_MixedPrimitives_Dense_FCL)
@@ -279,7 +279,7 @@ BENCHMARK(BM_Scenario_MixedPrimitives_Dense_FCL)
 
 static void BM_Scenario_MixedPrimitives_Sparse_FCL(benchmark::State& state)
 {
-  auto detector = dart::collision::FCLCollisionDetector::create();
+  auto detector = dart::collision::FCLCollisionDetector::createReference();
   RunDetectorScenarioBenchmark(state, detector, kSparseRange);
 }
 BENCHMARK(BM_Scenario_MixedPrimitives_Sparse_FCL)
@@ -291,7 +291,7 @@ BENCHMARK(BM_Scenario_MixedPrimitives_Sparse_FCL)
 #if DART_HAVE_BULLET
 static void BM_Scenario_MixedPrimitives_Dense_Bullet(benchmark::State& state)
 {
-  auto detector = dart::collision::BulletCollisionDetector::create();
+  auto detector = dart::collision::BulletCollisionDetector::createReference();
   RunDetectorScenarioBenchmark(state, detector, kDenseRange);
 }
 BENCHMARK(BM_Scenario_MixedPrimitives_Dense_Bullet)
@@ -302,7 +302,7 @@ BENCHMARK(BM_Scenario_MixedPrimitives_Dense_Bullet)
 
 static void BM_Scenario_MixedPrimitives_Sparse_Bullet(benchmark::State& state)
 {
-  auto detector = dart::collision::BulletCollisionDetector::create();
+  auto detector = dart::collision::BulletCollisionDetector::createReference();
   RunDetectorScenarioBenchmark(state, detector, kSparseRange);
 }
 BENCHMARK(BM_Scenario_MixedPrimitives_Sparse_Bullet)
@@ -315,7 +315,7 @@ BENCHMARK(BM_Scenario_MixedPrimitives_Sparse_Bullet)
 #if DART_HAVE_ODE
 static void BM_Scenario_MixedPrimitives_Dense_ODE(benchmark::State& state)
 {
-  auto detector = dart::collision::OdeCollisionDetector::create();
+  auto detector = dart::collision::OdeCollisionDetector::createReference();
   RunDetectorScenarioBenchmark(state, detector, kDenseRange);
 }
 BENCHMARK(BM_Scenario_MixedPrimitives_Dense_ODE)
@@ -326,7 +326,7 @@ BENCHMARK(BM_Scenario_MixedPrimitives_Dense_ODE)
 
 static void BM_Scenario_MixedPrimitives_Sparse_ODE(benchmark::State& state)
 {
-  auto detector = dart::collision::OdeCollisionDetector::create();
+  auto detector = dart::collision::OdeCollisionDetector::createReference();
   RunDetectorScenarioBenchmark(state, detector, kSparseRange);
 }
 BENCHMARK(BM_Scenario_MixedPrimitives_Sparse_ODE)

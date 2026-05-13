@@ -299,14 +299,14 @@ BENCHMARK(BM_Scenario_RaycastBatch_Sparse_Native)->Arg(1000)->Arg(2000);
 #if DART_ENABLE_COLLISION_REFERENCE_BENCHMARKS && DART_HAVE_BULLET
 static void BM_Scenario_RaycastBatch_Dense_Bullet(benchmark::State& state)
 {
-  auto detector = dart::collision::BulletCollisionDetector::create();
+  auto detector = dart::collision::BulletCollisionDetector::createReference();
   RunDetectorRaycastScenario(state, detector, kDenseRange);
 }
 BENCHMARK(BM_Scenario_RaycastBatch_Dense_Bullet)->Arg(1000)->Arg(2000);
 
 static void BM_Scenario_RaycastBatch_Sparse_Bullet(benchmark::State& state)
 {
-  auto detector = dart::collision::BulletCollisionDetector::create();
+  auto detector = dart::collision::BulletCollisionDetector::createReference();
   RunDetectorRaycastScenario(state, detector, kSparseRange);
 }
 BENCHMARK(BM_Scenario_RaycastBatch_Sparse_Bullet)->Arg(1000)->Arg(2000);

@@ -516,21 +516,21 @@ TEST(NativeCollision, CrossBackendConsistency)
   std::vector<Backend> backends;
 #if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
   {
-    auto detector = dart::collision::FCLCollisionDetector::create();
+    auto detector = dart::collision::FCLCollisionDetector::createReference();
     backends.push_back(
         {"FCL", detector, CapabilitiesFor(detector->getTypeView())});
   }
 #endif
 #if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_BULLET
   {
-    auto detector = dart::collision::BulletCollisionDetector::create();
+    auto detector = dart::collision::BulletCollisionDetector::createReference();
     backends.push_back(
         {"Bullet", detector, CapabilitiesFor(detector->getTypeView())});
   }
 #endif
 #if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_ODE
   {
-    auto detector = dart::collision::OdeCollisionDetector::create();
+    auto detector = dart::collision::OdeCollisionDetector::createReference();
     backends.push_back(
         {"ODE", detector, CapabilitiesFor(detector->getTypeView())});
   }

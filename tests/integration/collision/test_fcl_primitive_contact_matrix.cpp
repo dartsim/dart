@@ -322,7 +322,7 @@ TEST(FclPrimitiveContacts, PairMatrixRespectsDartConventions)
           continue;
         }
 
-        auto detector = dart::collision::FCLCollisionDetector::create();
+        auto detector = dart::collision::FCLCollisionDetector::createReference();
         detector->setPrimitiveShapeType(
             dart::collision::FCLCollisionDetector::PRIMITIVE);
 
@@ -578,7 +578,7 @@ TEST(FclPrimitiveContacts, RotatedPlaneNormal)
 
     SCOPED_TRACE(std::string("Rotated plane vs ") + shapeSpec.name);
 
-    auto detector = dart::collision::FCLCollisionDetector::create();
+    auto detector = dart::collision::FCLCollisionDetector::createReference();
     detector->setPrimitiveShapeType(
         dart::collision::FCLCollisionDetector::PRIMITIVE);
 
@@ -696,7 +696,7 @@ TEST(FclPrimitiveContacts, ContainmentCases)
           std::string("Container: ") + containerSpec.name
           + ", contained: " + containedSpec.name);
 
-      auto detector = dart::collision::FCLCollisionDetector::create();
+      auto detector = dart::collision::FCLCollisionDetector::createReference();
       detector->setPrimitiveShapeType(
           dart::collision::FCLCollisionDetector::PRIMITIVE);
 
@@ -817,7 +817,7 @@ TEST(FclPrimitiveContacts, ConeSideContacts)
           std::string("Pair: ") + shapeA.name + " vs " + shapeB.name
           + ", case: cone_side");
 
-      auto detector = dart::collision::FCLCollisionDetector::create();
+      auto detector = dart::collision::FCLCollisionDetector::createReference();
       detector->setPrimitiveShapeType(
           dart::collision::FCLCollisionDetector::PRIMITIVE);
 

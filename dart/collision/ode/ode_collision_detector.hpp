@@ -75,6 +75,10 @@ public:
 
   static std::shared_ptr<OdeCollisionDetector> create();
 
+  /// Creates the explicit ODE reference-engine detector used by comparison
+  /// tests and benchmarks.
+  static std::shared_ptr<OdeCollisionDetector> createReference();
+
   /// Constructor
   virtual ~OdeCollisionDetector();
 

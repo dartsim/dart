@@ -664,6 +664,12 @@ std::shared_ptr<FCLCollisionDetector> FCLCollisionDetector::create()
 }
 
 //==============================================================================
+std::shared_ptr<FCLCollisionDetector> FCLCollisionDetector::createReference()
+{
+  return std::shared_ptr<FCLCollisionDetector>(new FCLCollisionDetector());
+}
+
+//==============================================================================
 FCLCollisionDetector::~FCLCollisionDetector()
 {
   DART_ASSERT(mShapeMap.empty());

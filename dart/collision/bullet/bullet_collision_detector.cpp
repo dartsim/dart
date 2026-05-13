@@ -133,6 +133,14 @@ std::shared_ptr<BulletCollisionDetector> BulletCollisionDetector::create()
 }
 
 //==============================================================================
+std::shared_ptr<BulletCollisionDetector>
+BulletCollisionDetector::createReference()
+{
+  return std::shared_ptr<BulletCollisionDetector>(
+      new BulletCollisionDetector());
+}
+
+//==============================================================================
 BulletCollisionDetector::~BulletCollisionDetector()
 {
   DART_ASSERT(mShapeMap.empty());

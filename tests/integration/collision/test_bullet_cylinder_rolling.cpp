@@ -76,7 +76,7 @@ RollingResult runRollingTrial()
   auto world = World::create("bullet-cylinder-rolling");
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   world->setTimeStep(0.001);
-  world->setCollisionDetector(BulletCollisionDetector::create());
+  world->setCollisionDetector(BulletCollisionDetector::createReference());
 
   // Ground plane.
   const double groundThickness = 0.1;

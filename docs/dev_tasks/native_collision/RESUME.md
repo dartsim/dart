@@ -78,6 +78,10 @@ restore public backend selection; and the Python compatibility names
 Direct C++ legacy detector classes, headers, and CMake component surfaces still
 contain real reference-engine implementations and remain a north-star cleanup
 gate.
+Reference tests and benchmarks now use explicit `createReference()` APIs on the
+FCL, Bullet, and ODE detector classes, which prepares the public C++ `create()`
+paths to become native-backed compatibility facades without losing old-engine
+comparison coverage.
 `docs/dev_tasks/native_collision/01-design.md` is the canonical architecture
 contract for that remaining cleanup: public API and compatibility facades
 outside the DART adapter, `dart/collision/native/` as the scene/query core, and
@@ -146,6 +150,10 @@ availability.
 - The reference-enabled dartpy build required a GUI compatibility fix because
   ImGui 1.92.8 removed the obsolete `ImGuiKey_Mod*` aliases. DART now submits
   left/right modifier keys directly in `im_gui_handler.cpp`.
+- FCL, Bullet, and ODE detector classes now expose explicit `createReference()`
+  methods. Reference tests and benchmark call sites were mechanically moved to
+  those methods. The reference target build, focused CTest set, and tiny
+  comparative benchmark smoke runs passed.
 - Explicit `DART_BUILD_COLLISION_*_OVERRIDE=ON` opt-in restores the old
   component targets, reference consistency tests, and comparative benchmark
   targets for comparison jobs.

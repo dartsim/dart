@@ -333,7 +333,7 @@ TEST(CollisionGroupTests, CollisionBetweenGroups)
 #if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
 TEST(CollisionGroupTests, DistanceQuery)
 {
-  auto detector = dart::collision::FCLCollisionDetector::create();
+  auto detector = dart::collision::FCLCollisionDetector::createReference();
   auto group = detector->createCollisionGroup();
 
   auto frame1 = createBoxFrame("box1", Eigen::Vector3d(0, 0, 0));
@@ -356,7 +356,7 @@ TEST(CollisionGroupTests, DistanceQuery)
 #if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
 TEST(CollisionGroupTests, DistanceBetweenGroups)
 {
-  auto detector = dart::collision::FCLCollisionDetector::create();
+  auto detector = dart::collision::FCLCollisionDetector::createReference();
   auto group1 = detector->createCollisionGroup();
   auto group2 = detector->createCollisionGroup();
 
@@ -380,7 +380,7 @@ TEST(CollisionGroupTests, DistanceBetweenGroups)
 #if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_BULLET
 TEST(CollisionGroupTests, RaycastBasic)
 {
-  auto detector = dart::collision::BulletCollisionDetector::create();
+  auto detector = dart::collision::BulletCollisionDetector::createReference();
   auto group = detector->createCollisionGroup();
 
   auto frame = createBoxFrame("box", Eigen::Vector3d(0, 0, 0));
@@ -441,7 +441,7 @@ TEST(CollisionGroupTests, EmptyGroupOperations)
 #if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
 TEST(CollisionGroupTests, EmptyGroupWithFCL)
 {
-  auto detector = dart::collision::FCLCollisionDetector::create();
+  auto detector = dart::collision::FCLCollisionDetector::createReference();
   auto group = detector->createCollisionGroup();
 
   DistanceOption distOption;

@@ -149,7 +149,7 @@ BENCHMARK(BM_Distance_SphereSphere_Native);
 
 static void BM_Distance_SphereSphere_FCL(benchmark::State& state)
 {
-  auto detector = dart::collision::FCLCollisionDetector::create();
+  auto detector = dart::collision::FCLCollisionDetector::createReference();
 
   auto shape1 = std::make_shared<dart::dynamics::SphereShape>(1.0);
   auto shape2 = std::make_shared<dart::dynamics::SphereShape>(1.0);
@@ -166,7 +166,7 @@ BENCHMARK(BM_Distance_SphereSphere_FCL);
 #if DART_HAVE_BULLET
 static void BM_Distance_SphereSphere_Bullet(benchmark::State& state)
 {
-  auto detector = dart::collision::BulletCollisionDetector::create();
+  auto detector = dart::collision::BulletCollisionDetector::createReference();
 
   auto shape1 = std::make_shared<dart::dynamics::SphereShape>(1.0);
   auto shape2 = std::make_shared<dart::dynamics::SphereShape>(1.0);
@@ -184,7 +184,7 @@ BENCHMARK(BM_Distance_SphereSphere_Bullet);
 #if DART_HAVE_ODE
 static void BM_Distance_SphereSphere_ODE(benchmark::State& state)
 {
-  auto detector = dart::collision::OdeCollisionDetector::create();
+  auto detector = dart::collision::OdeCollisionDetector::createReference();
 
   auto shape1 = std::make_shared<dart::dynamics::SphereShape>(1.0);
   auto shape2 = std::make_shared<dart::dynamics::SphereShape>(1.0);
@@ -220,7 +220,7 @@ BENCHMARK(BM_Distance_BoxBox_Native);
 
 static void BM_Distance_BoxBox_FCL(benchmark::State& state)
 {
-  auto detector = dart::collision::FCLCollisionDetector::create();
+  auto detector = dart::collision::FCLCollisionDetector::createReference();
 
   auto shape1 = std::make_shared<dart::dynamics::BoxShape>(
       Eigen::Vector3d(1.0, 1.0, 1.0));
@@ -239,7 +239,7 @@ BENCHMARK(BM_Distance_BoxBox_FCL);
 #if DART_HAVE_BULLET
 static void BM_Distance_BoxBox_Bullet(benchmark::State& state)
 {
-  auto detector = dart::collision::BulletCollisionDetector::create();
+  auto detector = dart::collision::BulletCollisionDetector::createReference();
 
   auto shape1 = std::make_shared<dart::dynamics::BoxShape>(
       Eigen::Vector3d(1.0, 1.0, 1.0));
@@ -259,7 +259,7 @@ BENCHMARK(BM_Distance_BoxBox_Bullet);
 #if DART_HAVE_ODE
 static void BM_Distance_BoxBox_ODE(benchmark::State& state)
 {
-  auto detector = dart::collision::OdeCollisionDetector::create();
+  auto detector = dart::collision::OdeCollisionDetector::createReference();
 
   auto shape1 = std::make_shared<dart::dynamics::BoxShape>(
       Eigen::Vector3d(1.0, 1.0, 1.0));
@@ -297,7 +297,7 @@ BENCHMARK(BM_Distance_CapsuleCapsule_Native);
 
 static void BM_Distance_CapsuleCapsule_FCL(benchmark::State& state)
 {
-  auto detector = dart::collision::FCLCollisionDetector::create();
+  auto detector = dart::collision::FCLCollisionDetector::createReference();
 
   auto shape1 = std::make_shared<dart::dynamics::CapsuleShape>(0.5, 2.0);
   auto shape2 = std::make_shared<dart::dynamics::CapsuleShape>(0.5, 2.0);
@@ -314,7 +314,7 @@ BENCHMARK(BM_Distance_CapsuleCapsule_FCL);
 #if DART_HAVE_BULLET
 static void BM_Distance_CapsuleCapsule_Bullet(benchmark::State& state)
 {
-  auto detector = dart::collision::BulletCollisionDetector::create();
+  auto detector = dart::collision::BulletCollisionDetector::createReference();
 
   auto shape1 = std::make_shared<dart::dynamics::CapsuleShape>(0.5, 2.0);
   auto shape2 = std::make_shared<dart::dynamics::CapsuleShape>(0.5, 2.0);
@@ -332,7 +332,7 @@ BENCHMARK(BM_Distance_CapsuleCapsule_Bullet);
 #if DART_HAVE_ODE
 static void BM_Distance_CapsuleCapsule_ODE(benchmark::State& state)
 {
-  auto detector = dart::collision::OdeCollisionDetector::create();
+  auto detector = dart::collision::OdeCollisionDetector::createReference();
 
   auto shape1 = std::make_shared<dart::dynamics::CapsuleShape>(0.5, 2.0);
   auto shape2 = std::make_shared<dart::dynamics::CapsuleShape>(0.5, 2.0);
@@ -362,7 +362,7 @@ using dart::benchmark::collision::MakeSphereSphereTransforms;
 using dart::benchmark::collision::PairKind;
 using dart::benchmark::collision::ScaleFromIndex;
 
-void AddScaleArgs(benchmark::internal::Benchmark* bench)
+void AddScaleArgs(benchmark::Benchmark* bench)
 {
   bench->Arg(0)->Arg(1)->Arg(2);
 }
@@ -553,7 +553,7 @@ static void BM_Distance_EdgeCases_Native(
 static void BM_Distance_EdgeCases_FCL(
     benchmark::State& state, PairKind pair, EdgeCase edge)
 {
-  auto detector = dart::collision::FCLCollisionDetector::create();
+  auto detector = dart::collision::FCLCollisionDetector::createReference();
   RunDistanceCaseDetector(state, detector, pair, edge);
 }
 
@@ -561,7 +561,7 @@ static void BM_Distance_EdgeCases_FCL(
 static void BM_Distance_EdgeCases_Bullet(
     benchmark::State& state, PairKind pair, EdgeCase edge)
 {
-  auto detector = dart::collision::BulletCollisionDetector::create();
+  auto detector = dart::collision::BulletCollisionDetector::createReference();
   RunDistanceCaseDetector(state, detector, pair, edge);
 }
 #endif
@@ -570,7 +570,7 @@ static void BM_Distance_EdgeCases_Bullet(
 static void BM_Distance_EdgeCases_ODE(
     benchmark::State& state, PairKind pair, EdgeCase edge)
 {
-  auto detector = dart::collision::OdeCollisionDetector::create();
+  auto detector = dart::collision::OdeCollisionDetector::createReference();
   RunDistanceCaseDetector(state, detector, pair, edge);
 }
 #endif
@@ -780,7 +780,7 @@ bool verifySphereSphereDistance()
   double expDist
       = distanceSphereSphere(exp1, tf1, exp2, tf2, expResult, nativeOption);
 
-  auto detector = dart::collision::FCLCollisionDetector::create();
+  auto detector = dart::collision::FCLCollisionDetector::createReference();
   auto shape1 = std::make_shared<dart::dynamics::SphereShape>(1.0);
   auto shape2 = std::make_shared<dart::dynamics::SphereShape>(1.0);
   auto ctx = MakePairContext(detector, shape1, tf1, shape2, tf2);

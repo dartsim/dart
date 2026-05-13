@@ -394,7 +394,7 @@ TEST(ConvexMeshShapeCollision, OdeFallsBackWithoutVertices)
 #if DART_HAVE_FCL
 TEST(ConvexMeshShapeCollision, FclRandomizedCollisionCases)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
   runRandomizedConvexMeshCollisionChecks(detector, "FCL");
 }
 #endif
@@ -402,7 +402,7 @@ TEST(ConvexMeshShapeCollision, FclRandomizedCollisionCases)
 #if DART_HAVE_BULLET
 TEST(ConvexMeshShapeCollision, BulletRandomizedCollisionCases)
 {
-  auto detector = BulletCollisionDetector::create();
+  auto detector = BulletCollisionDetector::createReference();
   runRandomizedConvexMeshCollisionChecks(detector, "Bullet");
 }
 #endif
@@ -410,7 +410,7 @@ TEST(ConvexMeshShapeCollision, BulletRandomizedCollisionCases)
 #if DART_HAVE_ODE
 TEST(ConvexMeshShapeCollision, OdeRandomizedCollisionCases)
 {
-  auto detector = OdeCollisionDetector::create();
+  auto detector = OdeCollisionDetector::createReference();
   runRandomizedConvexMeshCollisionChecks(detector, "ODE");
 }
 #endif

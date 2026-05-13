@@ -110,12 +110,12 @@ void runCapsuleGroundContactTest(const DetectorFactory& factory)
 TEST(Issue1654, BulletCapsuleGroundContact)
 {
   runCapsuleGroundContactTest(
-      [] { return dart::collision::BulletCollisionDetector::create(); });
+      [] { return dart::collision::BulletCollisionDetector::createReference(); });
 }
 
 //==============================================================================
 TEST(Issue1654, ODECapsuleGroundContact)
 {
   runCapsuleGroundContactTest(
-      [] { return dart::collision::OdeCollisionDetector::create(); });
+      [] { return dart::collision::OdeCollisionDetector::createReference(); });
 }

@@ -569,7 +569,7 @@ TEST(World, ConfigWarnsWhenPreferredAndFallbackUnavailable)
   ScopedCollisionFactoryDisabler disableFcl(
       collision::FCLCollisionDetector::getStaticType(),
       []() -> collision::CollisionDetectorPtr {
-        return collision::FCLCollisionDetector::create();
+        return collision::FCLCollisionDetector::createReference();
       });
 
   if (!disableFcl.wasDisabled()) {

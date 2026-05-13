@@ -59,7 +59,7 @@ TEST(OdeHeightmap, CollisionCenteredInXY)
   using S = float;
   using Vector3 = Eigen::Matrix<S, 3, 1>;
 
-  auto ode = OdeCollisionDetector::create();
+  auto ode = OdeCollisionDetector::createReference();
   ASSERT_TRUE(ode);
 
   auto terrainFrame = SimpleFrame::createShared(Frame::World());

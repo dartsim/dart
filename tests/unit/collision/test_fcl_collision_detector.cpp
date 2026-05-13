@@ -107,14 +107,14 @@ public:
 
 TEST(FCLCollisionDetector, CreateAndDestroy)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
   EXPECT_NE(detector, nullptr);
   EXPECT_EQ(detector->getTypeView(), "fcl");
 }
 
 TEST(FCLCollisionDetector, CloneWithoutCollisionObjects)
 {
-  auto detector1 = FCLCollisionDetector::create();
+  auto detector1 = FCLCollisionDetector::createReference();
   auto detector2 = detector1->cloneWithoutCollisionObjects();
 
   EXPECT_NE(detector2, nullptr);
@@ -123,14 +123,14 @@ TEST(FCLCollisionDetector, CloneWithoutCollisionObjects)
 
 TEST(FCLCollisionDetector, CreateCollisionGroup)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
   auto group = detector->createCollisionGroup();
   EXPECT_NE(group, nullptr);
 }
 
 TEST(FCLCollisionDetector, PrimitiveShapeType)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
 
   EXPECT_EQ(
       detector->getPrimitiveShapeType(),
@@ -150,7 +150,7 @@ TEST(FCLCollisionDetector, PrimitiveShapeType)
 
 TEST(FCLCollisionDetector, ContactPointComputationMethod)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
 
   EXPECT_EQ(
       detector->getContactPointComputationMethod(),
@@ -171,7 +171,7 @@ TEST(FCLCollisionDetector, ContactPointComputationMethod)
 
 TEST(FCLCollisionDetector, BasicCollisionSphereSphere)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
   auto sphere1 = std::make_shared<SphereShape>(0.5);
   auto sphere2 = std::make_shared<SphereShape>(0.3);
 
@@ -182,7 +182,7 @@ TEST(FCLCollisionDetector, BasicCollisionSphereSphere)
 
 TEST(FCLCollisionDetector, BasicCollisionBoxSphere)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
   auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
   auto sphere = std::make_shared<SphereShape>(0.3);
 
@@ -193,7 +193,7 @@ TEST(FCLCollisionDetector, BasicCollisionBoxSphere)
 
 TEST(FCLCollisionDetector, BasicCollisionBoxBox)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
   auto box1 = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
   auto box2 = std::make_shared<BoxShape>(Eigen::Vector3d(0.5, 0.5, 0.5));
 
@@ -204,7 +204,7 @@ TEST(FCLCollisionDetector, BasicCollisionBoxBox)
 
 TEST(FCLCollisionDetector, MaxNumContactsZeroReturnsFalse)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
   auto sphere1 = std::make_shared<SphereShape>(0.5);
   auto sphere2 = std::make_shared<SphereShape>(0.3);
 
@@ -229,7 +229,7 @@ TEST(FCLCollisionDetector, MaxNumContactsZeroReturnsFalse)
 
 TEST(FCLCollisionDetector, NoCollision)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
   auto sphere1 = std::make_shared<SphereShape>(0.5);
   auto sphere2 = std::make_shared<SphereShape>(0.3);
 
@@ -240,7 +240,7 @@ TEST(FCLCollisionDetector, NoCollision)
 
 TEST(FCLCollisionDetector, DistanceQueriesHonorLowerBound)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
   auto sphere1 = std::make_shared<SphereShape>(0.4);
   auto sphere2 = std::make_shared<SphereShape>(0.4);
 
@@ -271,7 +271,7 @@ TEST(FCLCollisionDetector, DistanceQueriesHonorLowerBound)
 
 TEST(FCLCollisionDetector, SharableCollisionObjectCaching)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
   auto sphere = std::make_shared<SphereShape>(0.5);
   auto setup = makeShapeSetup("sphere", sphere);
 
@@ -306,7 +306,7 @@ TEST(FCLCollisionDetector, SharableCollisionObjectCaching)
 
 TEST(FCLCollisionDetector, ConeShapeCollision)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
   auto cone = std::make_shared<ConeShape>(0.5, 1.0);
   auto sphere = std::make_shared<SphereShape>(0.3);
 
@@ -317,7 +317,7 @@ TEST(FCLCollisionDetector, ConeShapeCollision)
 
 TEST(FCLCollisionDetector, CylinderShapeCollision)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
   auto cylinder = std::make_shared<CylinderShape>(0.5, 1.0);
   auto sphere = std::make_shared<SphereShape>(0.3);
 
@@ -328,7 +328,7 @@ TEST(FCLCollisionDetector, CylinderShapeCollision)
 
 TEST(FCLCollisionDetector, PlaneShapeCollision)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
   auto plane = std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0);
   auto sphere = std::make_shared<SphereShape>(0.5);
 
@@ -339,7 +339,7 @@ TEST(FCLCollisionDetector, PlaneShapeCollision)
 
 TEST(FCLCollisionDetector, PyramidShapeCollision)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
   auto pyramid = std::make_shared<PyramidShape>(1.0, 1.0, 1.0);
   auto sphere = std::make_shared<SphereShape>(0.3);
 
@@ -350,7 +350,7 @@ TEST(FCLCollisionDetector, PyramidShapeCollision)
 
 TEST(FCLCollisionDetector, MeshShapeCollision)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
   auto triMesh = createSimpleTriMesh();
   auto mesh = std::make_shared<MeshShape>(Eigen::Vector3d::Ones(), triMesh, "");
   auto sphere = std::make_shared<SphereShape>(0.3);
@@ -362,7 +362,7 @@ TEST(FCLCollisionDetector, MeshShapeCollision)
 
 TEST(FCLCollisionDetector, EllipsoidShapeCollision)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
   auto ellipsoid
       = std::make_shared<EllipsoidShape>(Eigen::Vector3d(0.5, 0.3, 0.4));
   auto sphere = std::make_shared<SphereShape>(0.3);
@@ -374,7 +374,7 @@ TEST(FCLCollisionDetector, EllipsoidShapeCollision)
 
 TEST(FCLCollisionDetector, PrimitiveShapeTypeAsMesh)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
   detector->setPrimitiveShapeType(FCLCollisionDetector::PrimitiveShape::MESH);
 
   auto sphere = std::make_shared<SphereShape>(0.5);
@@ -387,7 +387,7 @@ TEST(FCLCollisionDetector, PrimitiveShapeTypeAsMesh)
 
 TEST(FCLCollisionDetector, ConeShapeAsMesh)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
   detector->setPrimitiveShapeType(FCLCollisionDetector::PrimitiveShape::MESH);
 
   auto cone = std::make_shared<ConeShape>(0.5, 1.0);
@@ -400,7 +400,7 @@ TEST(FCLCollisionDetector, ConeShapeAsMesh)
 
 TEST(FCLCollisionDetector, PlaneShapeAsMeshUsesHalfspace)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
   detector->setPrimitiveShapeType(FCLCollisionDetector::PrimitiveShape::MESH);
 
   auto plane = std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0);
@@ -413,7 +413,7 @@ TEST(FCLCollisionDetector, PlaneShapeAsMeshUsesHalfspace)
 
 TEST(FCLCollisionDetector, EmptyConvexMeshFallsBackToSphere)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
 
   auto mesh = std::make_shared<ConvexMeshShape::TriMeshType>();
   auto convex = std::make_shared<ConvexMeshShape>(mesh);
@@ -426,7 +426,7 @@ TEST(FCLCollisionDetector, EmptyConvexMeshFallsBackToSphere)
 
 TEST(FCLCollisionDetector, BinaryContactUsesSingleResult)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
   auto sphere1 = std::make_shared<SphereShape>(0.5);
   auto sphere2 = std::make_shared<SphereShape>(0.5);
 
@@ -451,7 +451,7 @@ TEST(FCLCollisionDetector, BinaryContactUsesSingleResult)
 
 TEST(FCLCollisionDetector, CylinderShapeAsMesh)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
   detector->setPrimitiveShapeType(FCLCollisionDetector::PrimitiveShape::MESH);
 
   auto cylinder = std::make_shared<CylinderShape>(0.5, 1.0);
@@ -465,7 +465,7 @@ TEST(FCLCollisionDetector, CylinderShapeAsMesh)
 #if !DART_OS_WINDOWS
 TEST(FCLCollisionGroup, GetFCLCollisionManager)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
   auto baseGroup = detector->createCollisionGroup();
 
   auto* exposedGroup = static_cast<ExposedFCLCollisionGroup*>(baseGroup.get());

@@ -54,17 +54,17 @@ performance-oriented internals before this scale reaches completion.
 
 These gates are still required before the single north-star PR is complete.
 
-| Gate                        | Required evidence                                           | Current state                                   |
-| --------------------------- | ----------------------------------------------------------- | ----------------------------------------------- |
-| CI native-only build        | CI passes with FCL, Bullet, and ODE disabled                | Local equivalent passed; awaiting CI evidence   |
-| CI gz-physics compatibility | gz-physics CI passes with optional legacy components built  | Required in this PR                             |
-| Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Started; opt-in env/test evidence               |
-| Packaging removal           | Default packages/wheels have no old collision runtime deps  | Metadata/link/install/py312 wheel passed        |
-| Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Started; DART alias coverage                    |
-| Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Factory/Python aliases done; C++ classes remain |
-| Built-in architecture       | API-clean, scalable, performance-oriented native layer      | Started; `01-design.md` gates documented        |
-| Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Required in this PR                             |
-| Legacy backend deletion     | Old runtime backend sources removed from default stack      | Blocked on migration gates                      |
+| Gate                        | Required evidence                                           | Current state                                            |
+| --------------------------- | ----------------------------------------------------------- | -------------------------------------------------------- |
+| CI native-only build        | CI passes with FCL, Bullet, and ODE disabled                | Local equivalent passed; awaiting CI evidence            |
+| CI gz-physics compatibility | gz-physics CI passes with optional legacy components built  | Required in this PR                                      |
+| Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Started; opt-in env/test evidence                        |
+| Packaging removal           | Default packages/wheels have no old collision runtime deps  | Metadata/link/install/py312 wheel passed                 |
+| Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Started; DART alias coverage                             |
+| Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Factory/Python aliases done; C++ reference APIs explicit |
+| Built-in architecture       | API-clean, scalable, performance-oriented native layer      | Started; `01-design.md` gates documented                 |
+| Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Required in this PR                                      |
+| Legacy backend deletion     | Old runtime backend sources removed from default stack      | Blocked on migration gates                               |
 
 ## Test Runs
 
@@ -1274,11 +1274,60 @@ python/tests/unit/simulation/test_world.py`
     `OdeCollisionDetector` all printed `dart dart` for instance type and static
     type.
 
+## C++ Reference API Split Runs
+
+- `rg -n "\b(FCL|Bullet|Ode)CollisionDetector::create\(" tests -g
+'*.{cpp,hpp}'`
+  - Commit: working tree after adding explicit reference detector creation APIs
+    and moving tests/benchmarks to them.
+  - Result: no direct public legacy detector `create()` calls remain in
+    `tests/`; reference test and benchmark call sites use `createReference()`.
+- `pixi run --locked -e collision-reference -- cmake --build
+build/collision-reference/cpp/Release --target
+UNIT_collision_FCLCollisionDetector UNIT_collision_BulletCollisionShapes
+UNIT_collision_OdeHeightmap UNIT_collision_OdeCylinderMesh
+test_reference_backends INTEGRATION_collision_native_backend_consistency
+INTEGRATION_collision_Collision INTEGRATION_collision_FclPrimitiveContactMatrix
+INTEGRATION_collision_MeshContactRegression bm_comparative
+bm_comparative_narrow_phase bm_comparative_distance bm_comparative_raycast
+bm_scenarios_mesh_heavy bm_scenarios_mixed_primitives
+bm_scenarios_raycast_batch bm_boxes --parallel 8`
+  - Commit: working tree after explicit reference detector APIs.
+  - Result: passed after replacing the deprecated Google Benchmark helper type
+    `benchmark::internal::Benchmark*` with public `benchmark::Benchmark*` in
+    the comparative distance and narrow-phase benchmark helpers.
+- `pixi run --locked -e collision-reference -- ctest --test-dir
+build/collision-reference/cpp/Release --output-on-failure -R
+'^(UNIT_collision_FCLCollisionDetector|UNIT_collision_BulletCollisionShapes|UNIT_collision_OdeHeightmap|UNIT_collision_OdeCylinderMesh|test_reference_backends|INTEGRATION_collision_native_backend_consistency|INTEGRATION_collision_MeshContactRegression)$'`
+  - Commit: working tree after explicit reference detector APIs.
+  - Result: passed, 7/7 tests.
+- `pixi run --locked -e collision-reference -- bash -lc
+"build/collision-reference/cpp/Release/bin/bm_comparative_distance
+--benchmark_filter='BM_Distance_SphereSphere_(FCL|Bullet|ODE)$'
+--benchmark_min_time=0.001s --benchmark_repetitions=1 &&
+build/collision-reference/cpp/Release/bin/bm_comparative_narrow_phase
+--benchmark_filter='BM_NarrowPhase_SphereSphere_(FCL|Bullet|ODE)$'
+--benchmark_min_time=0.001s --benchmark_repetitions=1"`
+  - Commit: working tree after explicit reference detector APIs.
+  - Result: passed. The smoke run instantiated FCL, Bullet, and ODE through
+    `createReference()` in comparative distance and narrow-phase benchmark
+    entry points. ODE distance still reports its existing unsupported-distance
+    warning and returns the legacy `-1.0` behavior.
+- `pixi run -- cmake --build build/default/cpp/Release --target
+UNIT_collision_DartCollisionDetector dartpy --parallel 8`
+  - Commit: working tree after explicit reference detector APIs.
+  - Result: passed in the default native-only configuration.
+- `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure
+-R '^UNIT_collision_DartCollisionDetector$'`
+  - Commit: working tree after explicit reference detector APIs.
+  - Result: passed, 1/1 test.
+
 ## Known Risks
 
 - Direct legacy detector classes and component libraries still contain real FCL,
   Bullet, and ODE implementations for reference work. The public factory route
-  and Python compatibility route are now native-backed, but direct C++
+  and Python compatibility route are now native-backed, and test/benchmark
+  reference use is explicit through `createReference()`, but direct public C++
   class/header/component cleanup is still a north-star gate.
 - Normal pixi configure paths, default/wheel Pixi lock metadata, and the
   repaired py312 wheel artifact now exclude the old collision engines. CI

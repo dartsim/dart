@@ -53,7 +53,7 @@ constexpr double kVelocityTol = 2e-3;
 std::shared_ptr<World> createWorld()
 {
   auto world = simulation::World::create();
-  world->setCollisionDetector(collision::OdeCollisionDetector::create());
+  world->setCollisionDetector(collision::OdeCollisionDetector::createReference());
   return world;
 }
 

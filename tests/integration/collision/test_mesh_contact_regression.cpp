@@ -50,7 +50,7 @@ using dart::collision::FCLCollisionDetector;
 // touching face.
 TEST(CollisionRegression, MeshMeshContactPointsStayOnContactPlane)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
   detector->setPrimitiveShapeType(FCLCollisionDetector::MESH);
   detector->setContactPointComputationMethod(FCLCollisionDetector::FCL);
 

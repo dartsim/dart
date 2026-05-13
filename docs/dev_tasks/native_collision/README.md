@@ -50,6 +50,12 @@
 - [x] The `collision-reference` environment configures with FCL, Bullet, ODE,
       reference tests, and reference benchmarks enabled, and the focused
       `test_reference_backends` target builds and passes.
+- [x] C++ reference-engine call sites in tests and benchmarks now use explicit
+      `FCLCollisionDetector::createReference()`,
+      `BulletCollisionDetector::createReference()`, and
+      `OdeCollisionDetector::createReference()` APIs. Focused reference
+      unit/integration targets, comparative benchmark targets, CTest, and
+      benchmark smoke runs pass with those APIs.
 - [ ] The single north-star PR is not complete yet. The checkpoint commit proves
       native default, feature parity, gz-physics compatibility, performance,
       disabled-legacy-backend builds, native-only pixi defaults, and explicit
@@ -57,10 +63,12 @@
       proves default/wheel Pixi metadata isolation and a repaired py312 wheel
       artifact inspection. The current API-cleanup slice also proves
       native-backed Python compatibility aliases and reference-enabled dartpy
-      link isolation. The remaining work is CI hardening, full wheel matrix/CI
-      artifact evidence, remaining C++ `dart/collision/` class/component
-      cleanup into one built-in detector, downstream migration safety,
-      recurring performance guardrails, and final legacy backend deletion.
+      link isolation, plus explicit C++ reference-detector creation for
+      tests/benchmarks. The remaining work is CI hardening, full wheel
+      matrix/CI artifact evidence, flipping retained direct C++ legacy
+      detector/component surfaces into native-backed facades, downstream
+      migration safety, recurring performance guardrails, and final legacy
+      backend deletion.
 
 ## Goal
 
@@ -212,6 +220,10 @@ collision stack.
 2. **Reference Test And Benchmark Harness**
    - Keep FCL, Bullet, and ODE available only for correctness comparisons and
      benchmark comparisons.
+   - Reference comparison code now calls explicit `createReference()` APIs on
+     the FCL, Bullet, and ODE detector classes, so the next cleanup can make
+     public legacy `create()` paths native-backed without losing reference
+     coverage.
    - The working tree adds CMake opt-out paths for reference tests and
      benchmarks, validates both reference-disabled and reference-enabled
      focused builds locally, defaults normal pixi configure paths to native-only
@@ -248,9 +260,11 @@ collision stack.
    - The retained factory keys now resolve to `DartCollisionDetector` even when
      legacy reference components are linked. Python detector compatibility
      names also resolve to `DartCollisionDetector` and dartpy no longer links
-     legacy collision component targets. Remaining work is direct C++ legacy
-     detector class/header/component cleanup so those surfaces are wrappers or
-     explicit reference-only APIs.
+     legacy collision component targets. C++ tests and benchmarks now use
+     explicit `createReference()` APIs for old-engine comparisons. Remaining
+     work is direct C++ public legacy detector class/header/component cleanup
+     so those surfaces are native-backed wrappers or explicitly named
+     reference-only APIs.
    - Preserve a clean internal architecture: public API/compatibility shell,
      DART adapter layer, native scene/query core, and optional reference
      harnesses outside runtime targets. This is an API cleanliness,

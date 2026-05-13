@@ -128,7 +128,7 @@ BENCHMARK(BM_Raycast_Sphere_Native);
 #if DART_HAVE_BULLET
 static void BM_Raycast_Sphere_Bullet(benchmark::State& state)
 {
-  auto detector = dart::collision::BulletCollisionDetector::create();
+  auto detector = dart::collision::BulletCollisionDetector::createReference();
   auto shape = std::make_shared<dart::dynamics::SphereShape>(0.5);
 
   const Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
@@ -166,7 +166,7 @@ BENCHMARK(BM_Raycast_Box_Native);
 #if DART_HAVE_BULLET
 static void BM_Raycast_Box_Bullet(benchmark::State& state)
 {
-  auto detector = dart::collision::BulletCollisionDetector::create();
+  auto detector = dart::collision::BulletCollisionDetector::createReference();
   auto shape = std::make_shared<dart::dynamics::BoxShape>(
       Eigen::Vector3d(1.0, 1.0, 1.0));
 
@@ -205,7 +205,7 @@ BENCHMARK(BM_Raycast_Capsule_Native);
 #if DART_HAVE_BULLET
 static void BM_Raycast_Capsule_Bullet(benchmark::State& state)
 {
-  auto detector = dart::collision::BulletCollisionDetector::create();
+  auto detector = dart::collision::BulletCollisionDetector::createReference();
   auto shape = std::make_shared<dart::dynamics::CapsuleShape>(0.5, 2.0);
 
   const Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
@@ -243,7 +243,7 @@ BENCHMARK(BM_Raycast_Cylinder_Native);
 #if DART_HAVE_BULLET
 static void BM_Raycast_Cylinder_Bullet(benchmark::State& state)
 {
-  auto detector = dart::collision::BulletCollisionDetector::create();
+  auto detector = dart::collision::BulletCollisionDetector::createReference();
   auto shape = std::make_shared<dart::dynamics::CylinderShape>(0.5, 2.0);
 
   const Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
@@ -281,7 +281,7 @@ BENCHMARK(BM_Raycast_Plane_Native);
 #if DART_HAVE_BULLET
 static void BM_Raycast_Plane_Bullet(benchmark::State& state)
 {
-  auto detector = dart::collision::BulletCollisionDetector::create();
+  auto detector = dart::collision::BulletCollisionDetector::createReference();
   auto shape = std::make_shared<dart::dynamics::PlaneShape>(
       Eigen::Vector3d::UnitZ(), 0.0);
 
