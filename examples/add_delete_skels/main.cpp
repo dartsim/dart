@@ -36,8 +36,6 @@
 
 #include <dart/utils/All.hpp>
 
-#include <dart/collision/bullet/All.hpp>
-
 #include <dart/all.hpp>
 #include <dart/io/read.hpp>
 
@@ -126,10 +124,7 @@ int main()
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);
 
-  // Set collision detector type
-  if (dart::collision::CollisionDetector::getFactory()->canCreate("bullet")) {
-    myWorld->setCollisionDetector(CollisionDetectorType::Bullet);
-  }
+  myWorld->setCollisionDetector(CollisionDetectorType::Dart);
 
   // Create event handler
   auto handler = new AddDeleteSkelsEventHandler(myWorld);

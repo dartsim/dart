@@ -22,32 +22,12 @@ if(NOT Threads_FOUND)
   return()
 endif()
 
-set(missing_collision_features)
-if(NOT DART_BUILD_COLLISION_ODE)
-  list(APPEND missing_collision_features "DART_BUILD_COLLISION_ODE")
-endif()
-if(NOT DART_BUILD_COLLISION_BULLET)
-  list(APPEND missing_collision_features "DART_BUILD_COLLISION_BULLET")
-endif()
-
-if(missing_collision_features)
-  list(JOIN missing_collision_features ", " _missing_collision_features_string)
-  set(_human_limits_message
-      "${example_name} requires ${_missing_collision_features_string}.")
-  if(DART_VERBOSE OR NOT DART_IN_SOURCE_BUILD)
-    message(STATUS "Skipping ${example_name} example (${_human_limits_message})")
-  endif()
-  return()
-endif()
-
-set(required_components utils-urdf gui io collision-bullet collision-ode)
+set(required_components utils-urdf gui io)
 set(required_libraries
   dart
   dart-io
   dart-utils-urdf
   dart-gui
-  dart-collision-bullet
-  dart-collision-ode
   ${TinyDNN_LIBRARIES}
   Threads::Threads
 )

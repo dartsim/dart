@@ -298,6 +298,8 @@ The built-in architecture should make performance visible before optimization:
       old collision engines as default runtime dependencies.
 - [x] The repaired py312 wheel artifact does not bundle or link old collision
       engines as default runtime dependencies.
+- [x] User-facing examples do not require, include, select, or link old
+      collision components in the default native-only build path.
 - [ ] CI wheel-matrix artifacts do not bundle or link old collision engines as
       default runtime dependencies.
 - [ ] Reference-engine tests and benchmarks are optional CMake targets only.

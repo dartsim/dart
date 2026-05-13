@@ -41,10 +41,6 @@
 #include <dart/utils/All.hpp>
 #include <dart/utils/urdf/All.hpp>
 
-#if DART_HAVE_ODE
-  #include <dart/collision/ode/ode_collision_detector.hpp>
-#endif
-
 #include <dart/all.hpp>
 
 #include <CLI/CLI.hpp>
@@ -248,14 +244,7 @@ void setupAlignmentDemo(const simulation::WorldPtr& world)
 
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   world->setTimeStep(0.001);
-#if DART_HAVE_ODE
-  world->getConstraintSolver()->setCollisionDetector(
-      collision::OdeCollisionDetector::create());
-#else
-  DART_WARN(
-      "Heightmap alignment demo requires ODE; using default collision "
-      "detector.");
-#endif
+  world->setCollisionDetector(simulation::CollisionDetectorType::Dart);
 
   world->addSkeleton(createAlignmentHeightmap(config));
 

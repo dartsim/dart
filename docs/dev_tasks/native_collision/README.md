@@ -60,6 +60,10 @@
       built-in `DartCollisionDetector`. The old FCL, Bullet, and ODE engines
       remain reachable only through explicit `createReference()` APIs in the
       reference-enabled component builds.
+- [x] User-facing examples no longer require or link old collision component
+      targets. Examples that previously selected Bullet or ODE now use the
+      built-in detector/default collision path; legacy engine dependencies are
+      kept to reference tests and benchmarks.
 - [ ] The single north-star PR is not complete yet. The checkpoint commit proves
       native default, feature parity, gz-physics compatibility, performance,
       disabled-legacy-backend builds, native-only pixi defaults, and explicit
@@ -69,10 +73,11 @@
       native-backed Python compatibility aliases and reference-enabled dartpy
       link isolation, explicit C++ reference-detector creation for
       tests/benchmarks, and native-backed direct C++ legacy `create()` entry
-      points. The remaining work is CI hardening, full wheel matrix/CI artifact
-      evidence, retained legacy component/source cleanup, downstream migration
-      safety, recurring performance guardrails, and final legacy backend
-      deletion.
+      points. User-facing examples have also been moved off old collision
+      components. The remaining work is CI hardening, full wheel matrix/CI
+      artifact evidence, retained legacy component/source cleanup, downstream
+      migration safety, recurring performance guardrails, and final legacy
+      backend deletion.
 
 ## Goal
 
@@ -198,9 +203,9 @@ The current checkpoint is a validated middle state, not a final PR boundary.
 4. Continue collapsing `dart/collision/` so retained legacy classes, headers,
    component names, and old-engine source files are native-backed compatibility
    facades or explicit reference-only surfaces; factory keys, Python detector
-   names, and direct public C++ legacy `create()` entry points are already
-   native-backed aliases. Use `01-design.md` as the architecture checklist for
-   this cleanup.
+   names, direct public C++ legacy `create()` entry points, and user-facing
+   examples are already native-backed. Use `01-design.md` as the architecture
+   checklist for this cleanup.
 5. Define and test the downstream migration/deprecation path for legacy detector
    names and factory aliases.
 6. Add recurring benchmark guardrails, then delete legacy runtime backend
@@ -259,6 +264,10 @@ collision stack.
    - Default `find_package(DART)` now adds only the `dart` component; it no
      longer auto-adds legacy collision components or emits deprecated
      Bullet/ODE component text from generated native-only package exports.
+   - User-facing examples no longer require or link old collision component
+     targets in their CMake. Example source that previously selected Bullet or
+     ODE now requests `CollisionDetectorType::Dart` or keeps the default
+     built-in detector path.
 4. **Collision Abstraction Cleanup**
    - Replace real legacy backend selection in `dart/collision/` with one
      built-in detector implementation.

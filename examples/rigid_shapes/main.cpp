@@ -47,7 +47,6 @@
 #include <dart/io/read.hpp>
 
 #include <CLI/CLI.hpp>
-#include <fcl/config.h>
 
 #include <iostream>
 #include <span>
@@ -72,15 +71,15 @@ bool tryParseCollisionDetector(
     return true;
   }
   if (value == "fcl") {
-    detector = CollisionDetectorType::Fcl;
+    detector = CollisionDetectorType::Dart;
     return true;
   }
   if (value == "bullet") {
-    detector = CollisionDetectorType::Bullet;
+    detector = CollisionDetectorType::Dart;
     return true;
   }
   if (value == "ode") {
-    detector = CollisionDetectorType::Ode;
+    detector = CollisionDetectorType::Dart;
     return true;
   }
   return false;
@@ -435,7 +434,8 @@ int main(int argc, char* argv[])
   app.add_option(
       "--collision-detector",
       collisionDetector,
-      "Collision detector backend: file, fcl, bullet, ode, dart");
+      "Collision detector: file or dart; legacy aliases fcl, bullet, and ode "
+      "map to dart");
   app.add_option(
       "--max-contacts",
       maxContacts,

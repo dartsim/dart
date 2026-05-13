@@ -1362,6 +1362,42 @@ UNIT_collision_DartCollisionDetector --parallel 8`
     changed to return `DartCollisionDetector`.
   - Result: passed, 1/1 test.
 
+## User-Facing Example Runtime Cleanup Runs
+
+- `rg -n "#include <dart/collision/(bullet|ode|fcl)|collision/(bullet|ode|fcl)|DART_HAVE_(BULLET|ODE|FCL)|CollisionDetectorType::(Bullet|Ode|Fcl)|CollisionDetector::getFactory\(\)->canCreate\(\"(bullet|ode|fcl)\"\)|dart-collision-(bullet|ode|fcl)|collision-(bullet|ode|fcl)|<fcl/" examples -g 'CMakeLists.txt' -g '*.{cpp,hpp}'`
+  - Commit: working tree after moving examples off old collision components.
+  - Result: no matches.
+- `rg -n "DART_BUILD_COLLISION_(FCL|BULLET|ODE)|dart-collision-(fcl|bullet|ode)|collision-(fcl|bullet|ode)|FCLCollisionDetector|BulletCollisionDetector|OdeCollisionDetector|CollisionDetectorType::(Fcl|Bullet|Ode)" examples -g 'CMakeLists.txt' -g '*.{cpp,hpp,md}'`
+  - Commit: working tree after moving examples off old collision components.
+  - Result: only stale `examples/boxes/README.md` and
+    `examples/capsule_ground_contact/README.md` references were found; those
+    README files were updated to document the built-in detector requirement.
+- `pixi run -- cmake --build build/default/cpp/Release --target boxes
+add_delete_skels fetch capsule_ground_contact heightmap mimic_pendulums
+rigid_shapes human_joint_limits --parallel 8`
+  - Commit: working tree after moving examples off old collision components.
+  - Result: CMake regenerated with old collision components still `OFF` and
+    added the previously skipped examples, then failed only because
+    `human_joint_limits` is not generated in this environment when TinyDNN is
+    unavailable.
+- `pixi run -- cmake --build build/default/cpp/Release --target boxes
+add_delete_skels fetch capsule_ground_contact heightmap mimic_pendulums
+rigid_shapes --parallel 8`
+  - Commit: working tree after moving examples off old collision components.
+  - Result: passed in the default native-only configuration. Build observed
+    only existing third-party OctoMap `<ciso646>` C++20 warnings.
+- `ldd build/default/cpp/Release/bin/boxes
+build/default/cpp/Release/bin/add_delete_skels
+build/default/cpp/Release/bin/fetch
+build/default/cpp/Release/bin/capsule_ground_contact
+build/default/cpp/Release/bin/heightmap
+build/default/cpp/Release/bin/mimic_pendulums
+build/default/cpp/Release/bin/rigid_shapes | rg -i
+"lib(fcl|bullet|ode|ccd)|dart-collision-(fcl|bullet|ode)"`
+  - Commit: working tree after moving examples off old collision components.
+  - Result: no matches; affected default-built examples do not link old
+    collision engines or old collision component libraries.
+
 ## Known Risks
 
 - Direct public C++ legacy detector `create()` entry points now return the

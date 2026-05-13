@@ -32,8 +32,6 @@
 
 #include <dart/gui/all.hpp>
 
-#include <dart/collision/ode/ode_collision_detector.hpp>
-
 #include <dart/all.hpp>
 
 using namespace dart;
@@ -143,8 +141,8 @@ public:
               << "  [H] Reset capsule to horizontal pose\n"
               << "  [V] Reset capsule to vertical pose\n"
               << "  [Space] Clear velocities\n"
-              << "This example uses ODE with persistent manifolds to keep the\n"
-              << "capsule from sinking when lying on its side.\n";
+              << "This example uses the built-in DART collision detector for\n"
+              << "capsule / plane contact.\n";
   }
 
   bool handle(
@@ -189,20 +187,9 @@ private:
 
 int main()
 {
-#if !DART_HAVE_ODE
-  DART_ERROR(
-      "capsule_ground_contact requires DART to be built with ODE support.\n");
-  return 1;
-#endif
-
   auto world = World::create();
   world->setTimeStep(0.001);
-  auto odeDetector = collision::OdeCollisionDetector::create();
-  if (!odeDetector) {
-    DART_ERROR("Failed to create the ODE collision detector.\n");
-    return 1;
-  }
-  world->setCollisionDetector(odeDetector);
+  world->setCollisionDetector(CollisionDetectorType::Dart);
 
   world->addSkeleton(makeGround());
   auto capsule = makeCapsuleSkeleton();

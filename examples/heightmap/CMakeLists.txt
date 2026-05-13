@@ -7,11 +7,6 @@ project(${example_name})
 set(required_components utils-urdf gui)
 set(required_libraries dart dart-utils-urdf dart-gui)
 
-if(DART_BUILD_COLLISION_ODE)
-  list(APPEND required_components collision-ode)
-  list(APPEND required_libraries dart-collision-ode)
-endif()
-
 if(DART_IN_SOURCE_BUILD)
   dart_build_example_in_source(${example_name} LINK_LIBRARIES ${required_libraries})
   return()
