@@ -2252,7 +2252,7 @@ Renderable createCylinderRenderable(
   vertices.reserve((segments + 1) * 4 + 2);
   normals.reserve((segments + 1) * 4 + 2);
 
-  for (const auto [z, v] :
+  for (const auto& [z, v] :
        {std::pair{-halfHeight, 0.0f}, std::pair{halfHeight, 1.0f}}) {
     for (std::uint32_t segment = 0; segment <= segments; ++segment) {
       const double phi = 2.0 * pi * segment / segments;
