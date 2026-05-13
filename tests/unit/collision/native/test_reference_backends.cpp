@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <string>
 
 #include <cmath>
 
@@ -327,6 +328,40 @@ protected:
   dart::dynamics::ShapePtr sphere1_, sphere2_;
   dart::dynamics::ShapePtr box1_, box2_;
 };
+
+TEST_F(ReferenceBackends, LegacyCreateAliasesReturnNativeDetector)
+{
+  auto fclAlias = dart::collision::FCLCollisionDetector::create();
+  ASSERT_NE(fclAlias, nullptr);
+  EXPECT_EQ(std::string(fclAlias->getTypeView()), "dart");
+  EXPECT_EQ(
+      std::string(
+          dart::collision::FCLCollisionDetector::createReference()
+              ->getTypeView()),
+      "fcl");
+
+#if DART_HAVE_BULLET
+  auto bulletAlias = dart::collision::BulletCollisionDetector::create();
+  ASSERT_NE(bulletAlias, nullptr);
+  EXPECT_EQ(std::string(bulletAlias->getTypeView()), "dart");
+  EXPECT_EQ(
+      std::string(
+          dart::collision::BulletCollisionDetector::createReference()
+              ->getTypeView()),
+      "bullet");
+#endif
+
+#if DART_HAVE_ODE
+  auto odeAlias = dart::collision::OdeCollisionDetector::create();
+  ASSERT_NE(odeAlias, nullptr);
+  EXPECT_EQ(std::string(odeAlias->getTypeView()), "dart");
+  EXPECT_EQ(
+      std::string(
+          dart::collision::OdeCollisionDetector::createReference()
+              ->getTypeView()),
+      "ode");
+#endif
+}
 
 TEST_F(ReferenceBackends, SphereSphereIntersecting)
 {

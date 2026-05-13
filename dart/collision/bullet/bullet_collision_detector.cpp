@@ -126,10 +126,9 @@ BulletCollisionDetector::Registrar<BulletCollisionDetector>
         }};
 
 //==============================================================================
-std::shared_ptr<BulletCollisionDetector> BulletCollisionDetector::create()
+std::shared_ptr<CollisionDetector> BulletCollisionDetector::create()
 {
-  return std::shared_ptr<BulletCollisionDetector>(
-      new BulletCollisionDetector());
+  return DartCollisionDetector::create();
 }
 
 //==============================================================================
@@ -151,7 +150,7 @@ BulletCollisionDetector::~BulletCollisionDetector()
 std::shared_ptr<CollisionDetector>
 BulletCollisionDetector::cloneWithoutCollisionObjects() const
 {
-  return BulletCollisionDetector::create();
+  return BulletCollisionDetector::createReference();
 }
 
 //==============================================================================

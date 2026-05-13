@@ -51,7 +51,11 @@ public:
 
   friend class CollisionDetector;
 
-  static std::shared_ptr<BulletCollisionDetector> create();
+  /// Creates the built-in DART collision detector.
+  ///
+  /// This legacy entry point is kept so older backend-selection code still
+  /// compiles, but it no longer selects Bullet as the runtime collision engine.
+  static std::shared_ptr<CollisionDetector> create();
 
   /// Creates the explicit Bullet reference-engine detector used by comparison
   /// tests and benchmarks.

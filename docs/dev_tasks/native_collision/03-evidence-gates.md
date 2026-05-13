@@ -34,37 +34,37 @@ options that allow native-only builds to opt out. The built-in stack must also
 have clean API boundaries, scalable native scene/query state, and
 performance-oriented internals before this scale reaches completion.
 
-| Stage | Gate                                                | State                            |
-| ----- | --------------------------------------------------- | -------------------------------- |
-| 0     | Baseline native backend exists                      | Complete before this task        |
-| 1     | Native `dart` detector is default                   | Complete in checkpoint           |
-| 2     | DART feature parity is proven                       | Complete in checkpoint           |
-| 3     | gz-physics compatibility is proven                  | Complete in checkpoint           |
-| 4     | Native benchmark wins are recorded                  | Complete in checkpoint           |
-| 5     | Local builds pass with FCL/Bullet/ODE disabled      | Complete in checkpoint           |
-| 6     | Native-only and gz-physics CI are permanent         | Started; local evidence          |
-| 7     | Reference engines are test/bench-only opt-in        | Started; opt-in env/test proven  |
-| 8     | Default packages/wheels have no old runtime deps    | Local pass; CI wheel matrix left |
-| 9     | Downstream migration/deprecation path is tested     | Started; DART alias coverage     |
-| 10    | Collision abstraction is one clean built-in stack   | Started; design/factory/Python   |
-| 11    | Old runtime backend source/components are deleted   | Not started                      |
-| 12    | Final PR evidence is complete and task docs removed | Blocked on remaining stages      |
+| Stage | Gate                                                | State                              |
+| ----- | --------------------------------------------------- | ---------------------------------- |
+| 0     | Baseline native backend exists                      | Complete before this task          |
+| 1     | Native `dart` detector is default                   | Complete in checkpoint             |
+| 2     | DART feature parity is proven                       | Complete in checkpoint             |
+| 3     | gz-physics compatibility is proven                  | Complete in checkpoint             |
+| 4     | Native benchmark wins are recorded                  | Complete in checkpoint             |
+| 5     | Local builds pass with FCL/Bullet/ODE disabled      | Complete in checkpoint             |
+| 6     | Native-only and gz-physics CI are permanent         | Started; local evidence            |
+| 7     | Reference engines are test/bench-only opt-in        | Started; opt-in env/test proven    |
+| 8     | Default packages/wheels have no old runtime deps    | Local pass; CI wheel matrix left   |
+| 9     | Downstream migration/deprecation path is tested     | Started; DART alias coverage       |
+| 10    | Collision abstraction is one clean built-in stack   | Started; factory/Python/C++ create |
+| 11    | Old runtime backend source/components are deleted   | Not started                        |
+| 12    | Final PR evidence is complete and task docs removed | Blocked on remaining stages        |
 
 ## Remaining North-Star Gate Backlog
 
 These gates are still required before the single north-star PR is complete.
 
-| Gate                        | Required evidence                                           | Current state                                            |
-| --------------------------- | ----------------------------------------------------------- | -------------------------------------------------------- |
-| CI native-only build        | CI passes with FCL, Bullet, and ODE disabled                | Local equivalent passed; awaiting CI evidence            |
-| CI gz-physics compatibility | gz-physics CI passes with optional legacy components built  | Required in this PR                                      |
-| Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Started; opt-in env/test evidence                        |
-| Packaging removal           | Default packages/wheels have no old collision runtime deps  | Metadata/link/install/py312 wheel passed                 |
-| Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Started; DART alias coverage                             |
-| Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Factory/Python aliases done; C++ reference APIs explicit |
-| Built-in architecture       | API-clean, scalable, performance-oriented native layer      | Started; `01-design.md` gates documented                 |
-| Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Required in this PR                                      |
-| Legacy backend deletion     | Old runtime backend sources removed from default stack      | Blocked on migration gates                               |
+| Gate                        | Required evidence                                           | Current state                                 |
+| --------------------------- | ----------------------------------------------------------- | --------------------------------------------- |
+| CI native-only build        | CI passes with FCL, Bullet, and ODE disabled                | Local equivalent passed; awaiting CI evidence |
+| CI gz-physics compatibility | gz-physics CI passes with optional legacy components built  | Required in this PR                           |
+| Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Started; opt-in env/test evidence             |
+| Packaging removal           | Default packages/wheels have no old collision runtime deps  | Metadata/link/install/py312 wheel passed      |
+| Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Started; DART alias coverage                  |
+| Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Factory/Python/C++ create aliases done        |
+| Built-in architecture       | API-clean, scalable, performance-oriented native layer      | Started; `01-design.md` gates documented      |
+| Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Required in this PR                           |
+| Legacy backend deletion     | Old runtime backend sources removed from default stack      | Blocked on migration gates                    |
 
 ## Test Runs
 
@@ -1322,13 +1322,53 @@ UNIT_collision_DartCollisionDetector dartpy --parallel 8`
   - Commit: working tree after explicit reference detector APIs.
   - Result: passed, 1/1 test.
 
+## C++ Legacy Create Alias Runs
+
+- `pixi run --locked -e collision-reference -- cmake --build
+build/collision-reference/cpp/Release --target test_reference_backends
+UNIT_collision_FCLCollisionDetector UNIT_collision_BulletCollisionShapes
+UNIT_collision_OdeHeightmap UNIT_collision_OdeCylinderMesh --parallel 8`
+  - Commit: working tree after direct public C++ legacy `create()` paths were
+    changed to return `DartCollisionDetector`.
+  - Result: passed. `test_reference_backends` observed only existing deprecated
+    wrapper-header warnings.
+- `pixi run --locked -e collision-reference -- ctest --test-dir
+build/collision-reference/cpp/Release --output-on-failure -R
+'^(test_reference_backends|UNIT_collision_FCLCollisionDetector|UNIT_collision_BulletCollisionShapes|UNIT_collision_OdeHeightmap|UNIT_collision_OdeCylinderMesh)$'`
+  - Commit: working tree after direct public C++ legacy `create()` paths were
+    changed to return `DartCollisionDetector`.
+  - Result: passed, 5/5 tests. The new `test_reference_backends` coverage
+    checks that `FCLCollisionDetector::create()`,
+    `BulletCollisionDetector::create()`, and `OdeCollisionDetector::create()`
+    return detector type `dart`, while `createReference()` still returns the
+    explicit `fcl`, `bullet`, and `ode` reference detectors.
+- `pixi run --locked -e collision-reference -- cmake --build
+build/collision-reference/cpp/Release --target boxes mimic_pendulums
+capsule_ground_contact heightmap --parallel 8`
+  - Commit: working tree after direct public C++ legacy `create()` paths were
+    changed to return `DartCollisionDetector`.
+  - Result: passed. This covers in-repo example call sites that still use the
+    old direct C++ legacy detector `create()` names. The build observed only
+    existing third-party OctoMap `<ciso646>` C++20 warnings.
+- `pixi run -- cmake --build build/default/cpp/Release --target
+UNIT_collision_DartCollisionDetector --parallel 8`
+  - Commit: working tree after direct public C++ legacy `create()` paths were
+    changed to return `DartCollisionDetector`.
+  - Result: passed; Ninja reported no work to do in the default native-only
+    build.
+- `pixi run -- ctest --test-dir build/default/cpp/Release --output-on-failure
+-R '^UNIT_collision_DartCollisionDetector$'`
+  - Commit: working tree after direct public C++ legacy `create()` paths were
+    changed to return `DartCollisionDetector`.
+  - Result: passed, 1/1 test.
+
 ## Known Risks
 
-- Direct legacy detector classes and component libraries still contain real FCL,
-  Bullet, and ODE implementations for reference work. The public factory route
-  and Python compatibility route are now native-backed, and test/benchmark
-  reference use is explicit through `createReference()`, but direct public C++
-  class/header/component cleanup is still a north-star gate.
+- Direct public C++ legacy detector `create()` entry points now return the
+  built-in detector, matching the public factory and Python compatibility
+  routes. Legacy detector classes and component libraries still contain real
+  FCL, Bullet, and ODE implementations for explicit `createReference()` work,
+  so class/header/component cleanup is still a north-star gate.
 - Normal pixi configure paths, default/wheel Pixi lock metadata, and the
   repaired py312 wheel artifact now exclude the old collision engines. CI
   wheel-matrix artifacts still need inspection so packaging cannot reintroduce

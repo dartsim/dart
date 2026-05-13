@@ -50,7 +50,11 @@ class DART_API FCLCollisionDetector : public CollisionDetector
 public:
   using CollisionDetector::createCollisionGroup;
 
-  static std::shared_ptr<FCLCollisionDetector> create();
+  /// Creates the built-in DART collision detector.
+  ///
+  /// This legacy entry point is kept so older backend-selection code still
+  /// compiles, but it no longer selects FCL as the runtime collision engine.
+  static std::shared_ptr<CollisionDetector> create();
 
   /// Creates the explicit FCL reference-engine detector used by comparison
   /// tests and benchmarks.

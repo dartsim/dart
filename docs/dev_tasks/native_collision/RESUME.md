@@ -75,13 +75,12 @@ native-backed creators so linking old reference component libraries cannot
 restore public backend selection; and the Python compatibility names
 `DARTCollisionDetector`, `FCLCollisionDetector`, `BulletCollisionDetector`, and
 `OdeCollisionDetector` now construct/report the built-in `dart` detector.
-Direct C++ legacy detector classes, headers, and CMake component surfaces still
-contain real reference-engine implementations and remain a north-star cleanup
-gate.
 Reference tests and benchmarks now use explicit `createReference()` APIs on the
-FCL, Bullet, and ODE detector classes, which prepares the public C++ `create()`
-paths to become native-backed compatibility facades without losing old-engine
-comparison coverage.
+FCL, Bullet, and ODE detector classes, and direct public C++ legacy detector
+`create()` paths now return the built-in `DartCollisionDetector`. Legacy C++
+detector classes, headers, CMake component surfaces, and old-engine source
+placement still contain explicit reference-engine implementations and remain a
+north-star cleanup gate.
 `docs/dev_tasks/native_collision/01-design.md` is the canonical architecture
 contract for that remaining cleanup: public API and compatibility facades
 outside the DART adapter, `dart/collision/native/` as the scene/query core, and

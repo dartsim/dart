@@ -56,6 +56,10 @@
       `OdeCollisionDetector::createReference()` APIs. Focused reference
       unit/integration targets, comparative benchmark targets, CTest, and
       benchmark smoke runs pass with those APIs.
+- [x] Direct public C++ legacy detector `create()` entry points now return the
+      built-in `DartCollisionDetector`. The old FCL, Bullet, and ODE engines
+      remain reachable only through explicit `createReference()` APIs in the
+      reference-enabled component builds.
 - [ ] The single north-star PR is not complete yet. The checkpoint commit proves
       native default, feature parity, gz-physics compatibility, performance,
       disabled-legacy-backend builds, native-only pixi defaults, and explicit
@@ -63,12 +67,12 @@
       proves default/wheel Pixi metadata isolation and a repaired py312 wheel
       artifact inspection. The current API-cleanup slice also proves
       native-backed Python compatibility aliases and reference-enabled dartpy
-      link isolation, plus explicit C++ reference-detector creation for
-      tests/benchmarks. The remaining work is CI hardening, full wheel
-      matrix/CI artifact evidence, flipping retained direct C++ legacy
-      detector/component surfaces into native-backed facades, downstream
-      migration safety, recurring performance guardrails, and final legacy
-      backend deletion.
+      link isolation, explicit C++ reference-detector creation for
+      tests/benchmarks, and native-backed direct C++ legacy `create()` entry
+      points. The remaining work is CI hardening, full wheel matrix/CI artifact
+      evidence, retained legacy component/source cleanup, downstream migration
+      safety, recurring performance guardrails, and final legacy backend
+      deletion.
 
 ## Goal
 
@@ -108,21 +112,21 @@ engines on required workloads.
 This task is scoped as one PR that continues until the north star is reached.
 The current checkpoint is a validated middle state, not a final PR boundary.
 
-| Stage | Progress marker                              | Status                           |
-| ----- | -------------------------------------------- | -------------------------------- |
-| 0     | Baseline native backend exists               | Complete before this task        |
-| 1     | Native `dart` detector is the default path   | Complete in checkpoint           |
-| 2     | DART feature parity gaps are closed          | Complete in checkpoint           |
-| 3     | gz-physics compatibility is proven           | Complete in checkpoint           |
-| 4     | Native beats legacy backends in benchmarks   | Complete in checkpoint           |
-| 5     | FCL/Bullet/ODE are optional for local builds | Complete in checkpoint           |
-| 6     | Native-only and gz-physics CI are permanent  | Started; local evidence          |
-| 7     | Reference engines are test/bench-only        | Started; opt-in env/test proven  |
-| 8     | Default packages have no old runtime deps    | Local pass; CI wheel matrix left |
-| 9     | Downstream migration/deprecation path exists | Started; DART alias coverage     |
-| 10    | Collision abstraction is one clean stack     | Started; design/factory/Python   |
-| 11    | Old runtime backend source is deleted        | Not started                      |
-| 12    | Final one-PR validation and PR packaging     | Blocked on stages 6-11           |
+| Stage | Progress marker                              | Status                             |
+| ----- | -------------------------------------------- | ---------------------------------- |
+| 0     | Baseline native backend exists               | Complete before this task          |
+| 1     | Native `dart` detector is the default path   | Complete in checkpoint             |
+| 2     | DART feature parity gaps are closed          | Complete in checkpoint             |
+| 3     | gz-physics compatibility is proven           | Complete in checkpoint             |
+| 4     | Native beats legacy backends in benchmarks   | Complete in checkpoint             |
+| 5     | FCL/Bullet/ODE are optional for local builds | Complete in checkpoint             |
+| 6     | Native-only and gz-physics CI are permanent  | Started; local evidence            |
+| 7     | Reference engines are test/bench-only        | Started; opt-in env/test proven    |
+| 8     | Default packages have no old runtime deps    | Local pass; CI wheel matrix left   |
+| 9     | Downstream migration/deprecation path exists | Started; DART alias coverage       |
+| 10    | Collision abstraction is one clean stack     | Started; factory/Python/C++ create |
+| 11    | Old runtime backend source is deleted        | Not started                        |
+| 12    | Final one-PR validation and PR packaging     | Blocked on stages 6-11             |
 
 ## Where To Check Progress
 
@@ -192,8 +196,9 @@ The current checkpoint is a validated middle state, not a final PR boundary.
    by preserving explicit reference test/benchmark jobs, native-backed
    compatibility facades, and wheel/package evidence across CI.
 4. Continue collapsing `dart/collision/` so retained legacy classes, headers,
-   and component names are native-backed compatibility facades or explicit
-   reference-only surfaces; factory keys and Python detector names are already
+   component names, and old-engine source files are native-backed compatibility
+   facades or explicit reference-only surfaces; factory keys, Python detector
+   names, and direct public C++ legacy `create()` entry points are already
    native-backed aliases. Use `01-design.md` as the architecture checklist for
    this cleanup.
 5. Define and test the downstream migration/deprecation path for legacy detector
@@ -221,8 +226,8 @@ collision stack.
    - Keep FCL, Bullet, and ODE available only for correctness comparisons and
      benchmark comparisons.
    - Reference comparison code now calls explicit `createReference()` APIs on
-     the FCL, Bullet, and ODE detector classes, so the next cleanup can make
-     public legacy `create()` paths native-backed without losing reference
+     the FCL, Bullet, and ODE detector classes, and public legacy `create()`
+     paths now return the built-in detector without losing old-engine reference
      coverage.
    - The working tree adds CMake opt-out paths for reference tests and
      benchmarks, validates both reference-disabled and reference-enabled
@@ -260,10 +265,11 @@ collision stack.
    - The retained factory keys now resolve to `DartCollisionDetector` even when
      legacy reference components are linked. Python detector compatibility
      names also resolve to `DartCollisionDetector` and dartpy no longer links
-     legacy collision component targets. C++ tests and benchmarks now use
-     explicit `createReference()` APIs for old-engine comparisons. Remaining
-     work is direct C++ public legacy detector class/header/component cleanup
-     so those surfaces are native-backed wrappers or explicitly named
+     legacy collision component targets. Direct public C++ legacy `create()`
+     entry points now return `DartCollisionDetector`, while C++ tests and
+     benchmarks use explicit `createReference()` APIs for old-engine
+     comparisons. Remaining work is legacy class/header/component cleanup so
+     retained surfaces are native-backed wrappers or explicitly named
      reference-only APIs.
    - Preserve a clean internal architecture: public API/compatibility shell,
      DART adapter layer, native scene/query core, and optional reference

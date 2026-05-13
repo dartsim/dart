@@ -301,10 +301,10 @@ scene/query state and performance instrumentation. Python detector
 compatibility names now resolve to `DartCollisionDetector` and dartpy no
 longer links legacy collision component targets. Reference tests and
 benchmarks now use explicit `createReference()` APIs for old-engine
-comparisons. The old direct C++ public detector `create()` paths and component
-libraries still contain real FCL/Bullet/ODE implementations for reference
-work, so class/header/CMake component cleanup remains before this phase can
-complete.
+comparisons. Direct public C++ legacy detector `create()` paths now resolve to
+`DartCollisionDetector`, while component libraries still contain real
+FCL/Bullet/ODE implementations for explicit reference work. Class/header/CMake
+component cleanup remains before this phase can complete.
 
 Success criteria:
 

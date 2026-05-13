@@ -658,9 +658,9 @@ FCLCollisionDetector::Registrar<FCLCollisionDetector>
         }};
 
 //==============================================================================
-std::shared_ptr<FCLCollisionDetector> FCLCollisionDetector::create()
+std::shared_ptr<CollisionDetector> FCLCollisionDetector::create()
 {
-  return std::shared_ptr<FCLCollisionDetector>(new FCLCollisionDetector());
+  return DartCollisionDetector::create();
 }
 
 //==============================================================================
@@ -679,7 +679,7 @@ FCLCollisionDetector::~FCLCollisionDetector()
 std::shared_ptr<CollisionDetector>
 FCLCollisionDetector::cloneWithoutCollisionObjects() const
 {
-  auto clone = FCLCollisionDetector::create();
+  auto clone = FCLCollisionDetector::createReference();
   clone->setPrimitiveShapeType(mPrimitiveShapeType);
   clone->setContactPointComputationMethod(mContactPointComputationMethod);
   return clone;

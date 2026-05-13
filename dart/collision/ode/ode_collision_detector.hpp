@@ -73,7 +73,11 @@ public:
     std::deque<Contact> history;
   };
 
-  static std::shared_ptr<OdeCollisionDetector> create();
+  /// Creates the built-in DART collision detector.
+  ///
+  /// This legacy entry point is kept so older backend-selection code still
+  /// compiles, but it no longer selects ODE as the runtime collision engine.
+  static std::shared_ptr<CollisionDetector> create();
 
   /// Creates the explicit ODE reference-engine detector used by comparison
   /// tests and benchmarks.

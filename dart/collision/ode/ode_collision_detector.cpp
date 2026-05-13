@@ -191,9 +191,9 @@ OdeCollisionDetector::Registrar<OdeCollisionDetector>
         }};
 
 //==============================================================================
-std::shared_ptr<OdeCollisionDetector> OdeCollisionDetector::create()
+std::shared_ptr<CollisionDetector> OdeCollisionDetector::create()
 {
-  return std::shared_ptr<OdeCollisionDetector>(new OdeCollisionDetector());
+  return DartCollisionDetector::create();
 }
 
 //==============================================================================
@@ -215,7 +215,7 @@ OdeCollisionDetector::~OdeCollisionDetector()
 std::shared_ptr<CollisionDetector>
 OdeCollisionDetector::cloneWithoutCollisionObjects() const
 {
-  return OdeCollisionDetector::create();
+  return OdeCollisionDetector::createReference();
 }
 
 //==============================================================================
