@@ -39,6 +39,13 @@
 namespace dart {
 namespace collision {
 
+/// Compatibility facade for legacy FCL detector code.
+///
+/// This class does not select the FCL engine. Runtime use is backed by the
+/// built-in DART collision detector; the retained FCL-specific settings are
+/// compatibility state for source compatibility only. Reference tests and
+/// benchmarks that intentionally compare against FCL must use the explicit
+/// reference header and `createReference()` API in a reference-enabled target.
 class FCLCollisionDetector : public DartCollisionDetector
 {
 public:

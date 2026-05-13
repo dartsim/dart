@@ -39,6 +39,12 @@
 namespace dart {
 namespace collision {
 
+/// Compatibility facade for legacy Bullet detector code.
+///
+/// This class does not select the Bullet engine. Runtime use is backed by the
+/// built-in DART collision detector. Reference tests and benchmarks that
+/// intentionally compare against Bullet must use the explicit reference header
+/// and `createReference()` API in a reference-enabled target.
 class BulletCollisionDetector : public DartCollisionDetector
 {
 public:

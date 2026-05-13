@@ -43,6 +43,13 @@
 namespace dart {
 namespace collision {
 
+/// Compatibility facade for legacy ODE detector code.
+///
+/// This class does not select the ODE engine. Runtime use is backed by the
+/// built-in DART collision detector; retained ODE-shaped types are
+/// compatibility state for source compatibility only. Reference tests and
+/// benchmarks that intentionally compare against ODE must use the explicit
+/// reference header and `createReference()` API in a reference-enabled target.
 class OdeCollisionDetector : public DartCollisionDetector
 {
 public:

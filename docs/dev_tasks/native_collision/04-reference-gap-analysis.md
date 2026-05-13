@@ -330,6 +330,9 @@ The built-in architecture should make performance visible before optimization:
       collision, dirty-world collision, distance, and raycast scenarios.
 - [x] Source-tree legacy detector classes, headers, and old-engine source
       placement are native-backed facades or explicit reference-only surfaces.
+- [x] Downstream migration contract documents that retained legacy runtime
+      names are native-backed aliases and reference engines require explicit
+      `collision-reference-*` targets plus `createReference()` APIs.
 - [x] Broad recurring benchmark guards cover native core and public
       `DartCollisionDetector` collision, distance, raycast, dirty-world, mesh,
       mixed-shape, and batch scenarios.

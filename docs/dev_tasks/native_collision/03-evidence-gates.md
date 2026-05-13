@@ -60,7 +60,7 @@ These gates are still required before the single north-star PR is complete.
 | CI gz-physics compatibility | gz-physics CI passes with optional legacy components built  | Required in this PR                            |
 | Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Local reference target split passes            |
 | Packaging removal           | Default packages/wheels have no old collision runtime deps  | Verifier wired; CI matrix evidence left        |
-| Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Started; alias/component coverage              |
+| Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Migration plan documented; run evidence left   |
 | Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Source/package facades done                    |
 | Built-in architecture       | `01-design.md` layer table passes API, scaling, perf gates  | Source split done; CI/perf gates remain        |
 | Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Scheduled/manual CI guard added; evidence left |
@@ -1694,6 +1694,20 @@ build/collision-reference/cpp/Release -R
 - `git diff --check`
   - Commit: working tree after wiring collision-isolation checks into
     `wheel-verify-core`.
+  - Result: passed.
+- `pixi run lint`
+  - Commit: working tree after documenting downstream migration and annotating
+    compatibility facades.
+  - Result: passed. CMake configure, C++ formatting, docs formatting, spell
+    check, Python formatting, TOML/YAML/RST checks, and AI command sync
+    completed.
+- `pixi run check-docs-policy`
+  - Commit: working tree after documenting downstream migration and annotating
+    compatibility facades.
+  - Result: passed.
+- `git diff --check`
+  - Commit: working tree after documenting downstream migration and annotating
+    compatibility facades.
   - Result: passed.
 - `pixi run config`
   - Commit: working tree after adding source-tree top-level All/PascalCase

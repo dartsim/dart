@@ -67,6 +67,11 @@ FCL/Bullet/ODE collision component exports, reference collision libraries, and
 FCL, Bullet, ODE, or libccd runtime libraries. The existing repaired py312
 Linux wheel passes the new verifier locally; the full CI wheel matrix still
 needs run/artifact evidence.
+The latest downstream-migration slice documents the compatibility contract in
+`05-downstream-migration.md` and annotates the FCL, Bullet, and ODE
+compatibility facades so downstream users can see that retained legacy runtime
+names route to the built-in detector. The documented migration path still needs
+fresh gz-physics and package-smoke run evidence before final deletion.
 
 ## Current Branch
 
@@ -231,6 +236,12 @@ libraries.
   and `dart/collision/native/` owns scene state, broadphase, narrowphase,
   query algorithms, caches, deterministic results, and profiling/benchmark
   hooks.
+- Downstream migration target: runtime code should move to `dart`,
+  `DartCollisionDetector`, `CollisionDetectorType::Dart`, and the default
+  `dart` package component. Legacy factory keys/classes/components remain
+  native-backed compatibility aliases during the migration window; intentional
+  old-engine comparisons use `collision-reference-*` targets and
+  `createReference()`.
 - `04-reference-gap-analysis.md` captures the concrete gaps found from the
   reference capability comparison. The first adapter gap is started in code:
   `DartCollisionGroup` owns persistent native scene state and routes public
