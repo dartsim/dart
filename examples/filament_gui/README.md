@@ -3,6 +3,9 @@
 ## Summary
 
 - Goal: exercise the experimental Filament + GLFW visualization path.
+- User view: an interactive DART scene viewer for inspecting simulation
+  renderables, camera movement, selection, debug overlays, dynamic shadows, and
+  basic selected-object manipulation.
 - Concepts/APIs: Filament renderer setup, GLFW windowing, DART world stepping,
   dynamic shadows, and bounded headless capture.
 - Expected output: a Filament window with DART boxes falling onto a ground
@@ -17,8 +20,12 @@
   `--screenshot <path>` to write a binary PPM capture, and `--headless` to use
   Filament's headless swap-chain path without creating a GLFW window. Use
   `--hide-ui` or `--show-ui` to control the status panel in captures,
-  `--profile` to print per-phase frame timings, and `--scene drag-and-drop` to
-  run the interaction fixture.
+  `--gui-scale <factor>` to scale the render target and status panel, and
+  `--profile` to print per-phase frame timings. The key light orbits by default
+  for shading diagnostics; toggle it with `--orbit-light`, `--no-orbit-light`,
+  or the panel checkbox, and tune the default 80-second full orbit with
+  `--orbit-light-period <seconds>`.
+  Use `--scene drag-and-drop` to run the interaction fixture.
 
 ## Notes
 
@@ -30,9 +37,9 @@
   `matc`; set `Filament_ROOT` if it is not discoverable.
 - This is an experimental implementation using the constrained
   `dart::gui::experimental` scene layer, not a stable public `dart::gui` API.
-- The upstream Filament Linux archive currently links against libc++. In the
-  default DART Pixi environment, configure needs a compatible Filament build or
-  libc++/libc++abi libraries.
+- The upstream Filament Linux archive currently links against libc++. The Linux
+  Pixi environment includes libc++/libc++abi for that archive; outside Pixi,
+  configure needs a compatible Filament build or those libraries.
 - The ImGui overlay is intentionally minimal. It renders the built-in status
   panel, but does not yet support the full Dear ImGui renderer-backend feature
   set.

@@ -479,7 +479,7 @@ filament::TextureSampler makeRepeatTextureSampler()
   return sampler;
 }
 
-void loadImGuiFont(ImGuiIO& io)
+void loadImGuiFont(ImGuiIO& io, float guiScale)
 {
   std::vector<std::filesystem::path> candidates;
   if (const char* fontPath = std::getenv("DART_FILAMENT_GUI_FONT");
@@ -499,18 +499,20 @@ void loadImGuiFont(ImGuiIO& io)
   config.OversampleH = 3;
   config.OversampleV = 2;
   config.PixelSnapH = false;
+  const float fontSize = 15.0f * guiScale;
   for (const auto& path : candidates) {
     std::error_code ec;
     if (!std::filesystem::is_regular_file(path, ec)) {
       continue;
     }
-    if (io.Fonts->AddFontFromFileTTF(path.string().c_str(), 15.0f, &config)
+    if (io.Fonts->AddFontFromFileTTF(path.string().c_str(), fontSize, &config)
         != nullptr) {
       return;
     }
   }
 
-  io.Fonts->AddFontDefault();
+  config.SizePixels = 13.0f * guiScale;
+  io.Fonts->AddFontDefault(&config);
 }
 
 std::string lowerExtension(const std::filesystem::path& path)
@@ -890,6 +892,9 @@ struct AppOptions
   bool showUi = true;
   bool showUiExplicit = false;
   bool profile = false;
+  bool orbitLight = true;
+  double orbitLightPeriodSeconds = 80.0;
+  float guiScale = 1.0f;
 };
 
 constexpr const char* kWamFixtureSkeletonName = "visual_wam_robot";
@@ -1127,6 +1132,32 @@ AppOptions parseOptions(int argc, char* argv[])
     } else if (arg == "--show-ui") {
       options.showUi = true;
       options.showUiExplicit = true;
+    } else if (arg == "--orbit-light") {
+      options.orbitLight = true;
+    } else if (arg == "--no-orbit-light") {
+      options.orbitLight = false;
+    } else if (arg == "--orbit-light-period" && i + 1 < argc) {
+      char* end = nullptr;
+      const char* value = argv[++i];
+      const double orbitLightPeriodSeconds = std::strtod(value, &end);
+      if (end == value || *end != '\0' || !std::isfinite(orbitLightPeriodSeconds)
+          || orbitLightPeriodSeconds <= 0.0) {
+        std::cerr << "Invalid --orbit-light-period value '" << value
+                  << "'. Expected a positive number of seconds.\n";
+        std::exit(2);
+      }
+      options.orbitLightPeriodSeconds = orbitLightPeriodSeconds;
+    } else if (arg == "--gui-scale" && i + 1 < argc) {
+      char* end = nullptr;
+      const char* value = argv[++i];
+      const float guiScale = std::strtof(value, &end);
+      if (end == value || *end != '\0' || !std::isfinite(guiScale)
+          || guiScale <= 0.0f) {
+        std::cerr << "Invalid --gui-scale value '" << value
+                  << "'. Expected a positive number.\n";
+        std::exit(2);
+      }
+      options.guiScale = std::clamp(guiScale, 0.5f, 4.0f);
     } else if (arg == "--profile") {
       options.profile = true;
     } else if (arg == "--scene" && i + 1 < argc) {
@@ -1141,12 +1172,25 @@ AppOptions parseOptions(int argc, char* argv[])
                 << " [--frames N] [--width N] [--height N]"
                    " [--screenshot PATH] [--headless]"
                    " [--hide-ui|--show-ui]"
+                   " [--orbit-light|--no-orbit-light]"
+                   " [--orbit-light-period SECONDS]"
+                   " [--gui-scale N]"
                    " [--profile]"
                    " [--scene mvp|drag-and-drop]\n";
       std::exit(0);
     }
   }
   normalizeRunOptions(options.run);
+  if (options.guiScale != 1.0f) {
+    options.run.width = std::max(
+        1,
+        static_cast<int>(
+            std::lround(static_cast<float>(options.run.width) * options.guiScale)));
+    options.run.height = std::max(
+        1,
+        static_cast<int>(
+            std::lround(static_cast<float>(options.run.height) * options.guiScale)));
+  }
   if (options.run.headless && !options.showUiExplicit) {
     options.showUi = false;
   }
@@ -1179,6 +1223,55 @@ void handleScroll(GLFWwindow* window, double, double yOffset)
 bool isKeyDown(GLFWwindow* window, int key)
 {
   return window != nullptr && glfwGetKey(window, key) == GLFW_PRESS;
+}
+
+void updateImGuiMouseInput(
+    GLFWwindow* window,
+    ImGuiIO& io,
+    int framebufferWidth,
+    int framebufferHeight)
+{
+  for (bool& mouseDown : io.MouseDown) {
+    mouseDown = false;
+  }
+
+  if (window == nullptr) {
+    const float offscreen = -std::numeric_limits<float>::max();
+    io.MousePos = ImVec2(offscreen, offscreen);
+    io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+    return;
+  }
+
+  int windowWidth = framebufferWidth;
+  int windowHeight = framebufferHeight;
+  glfwGetWindowSize(window, &windowWidth, &windowHeight);
+  const float xScale
+      = windowWidth > 0
+            ? static_cast<float>(framebufferWidth) / static_cast<float>(windowWidth)
+            : 1.0f;
+  const float yScale
+      = windowHeight > 0
+            ? static_cast<float>(framebufferHeight) / static_cast<float>(windowHeight)
+            : 1.0f;
+  io.DisplayFramebufferScale = ImVec2(xScale, yScale);
+
+  double cursorX = 0.0;
+  double cursorY = 0.0;
+  glfwGetCursorPos(window, &cursorX, &cursorY);
+  io.MousePos = ImVec2(
+      static_cast<float>(cursorX) * xScale,
+      static_cast<float>(cursorY) * yScale);
+  io.MouseDown[0] = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+  io.MouseDown[1]
+      = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+  io.MouseDown[2]
+      = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
+}
+
+bool isInsideStatusPanel(double cursorX, double cursorY, float guiScale)
+{
+  return cursorX >= 20.0 * guiScale && cursorX <= 360.0 * guiScale
+         && cursorY >= 20.0 * guiScale && cursorY <= 360.0 * guiScale;
 }
 
 bool isDragModifierDown(GLFWwindow* window)
@@ -1467,6 +1560,95 @@ float3 toFloat3(const Eigen::Vector3d& vector)
       static_cast<float>(vector.x()),
       static_cast<float>(vector.y()),
       static_cast<float>(vector.z())};
+}
+
+float3 normalizeOr(const float3& vector, const float3& fallback)
+{
+  const float lengthSquared = vector.x * vector.x + vector.y * vector.y
+                              + vector.z * vector.z;
+  if (lengthSquared <= 1e-12f) {
+    return fallback;
+  }
+
+  const float inverseLength = 1.0f / std::sqrt(lengthSquared);
+  return {
+      vector.x * inverseLength,
+      vector.y * inverseLength,
+      vector.z * inverseLength};
+}
+
+bool hasUsableTextureCoordinates(const std::vector<Vertex>& vertices)
+{
+  return std::any_of(vertices.begin(), vertices.end(), [](const Vertex& vertex) {
+    return std::abs(vertex.uv.x) > 1e-7f || std::abs(vertex.uv.y) > 1e-7f;
+  });
+}
+
+void generateTangentFrames(
+    std::vector<Vertex>& vertices,
+    const std::vector<filament::math::uint3>& triangles,
+    const std::vector<float3>& normals = {})
+{
+  std::vector<filament::math::float2> uvs;
+  std::vector<float3> positions;
+  if (hasUsableTextureCoordinates(vertices)) {
+    uvs.reserve(vertices.size());
+    positions.reserve(vertices.size());
+    std::transform(
+        vertices.begin(),
+        vertices.end(),
+        std::back_inserter(uvs),
+        [](const Vertex& vertex) { return vertex.uv; });
+    std::transform(
+        vertices.begin(),
+        vertices.end(),
+        std::back_inserter(positions),
+        [](const Vertex& vertex) { return vertex.position; });
+  }
+
+  filament::geometry::SurfaceOrientation::Builder builder;
+  builder.vertexCount(vertices.size())
+      .positions(
+          positions.empty() ? &vertices[0].position : positions.data(),
+          positions.empty() ? sizeof(Vertex) : 0)
+      .triangleCount(triangles.size())
+      .triangles(triangles.data());
+  if (normals.size() == vertices.size()) {
+    builder.normals(normals.data());
+  }
+  if (!uvs.empty()) {
+    builder.uvs(uvs.data());
+  }
+
+  std::unique_ptr<filament::geometry::SurfaceOrientation> orientation(
+      builder.build());
+  if (orientation == nullptr) {
+    std::cerr << "Failed to generate Filament tangent frames\n";
+    std::exit(1);
+  }
+  orientation->getQuats(&vertices[0].tangent, vertices.size(), sizeof(Vertex));
+}
+
+float3 orbitingKeyLightDirection(double elapsedSeconds, double orbitPeriodSeconds)
+{
+  constexpr double pi = 3.14159265358979323846;
+  const double angle
+      = elapsedSeconds * 2.0 * pi / std::max(orbitPeriodSeconds, 1.0);
+  return normalizeOr(
+      {static_cast<float>(0.68 * std::cos(angle)),
+       static_cast<float>(0.68 * std::sin(angle)),
+       -0.74f},
+      {-0.30f, -0.42f, -1.0f});
+}
+
+double perspectiveNearPlane(const OrbitCamera& camera)
+{
+  return std::clamp(camera.distance * 0.01, 0.005, 0.05);
+}
+
+double perspectiveFarPlane(const OrbitCamera& camera)
+{
+  return std::max(100.0, camera.distance + 80.0);
 }
 
 float4 toRgba(const Eigen::Vector4d& rgba)
@@ -1904,6 +2086,7 @@ Renderable createTriangleMeshRenderable(
     std::vector<Vertex> vertices,
     std::vector<std::uint32_t> indices,
     std::vector<filament::math::uint3> triangles,
+    std::vector<float3> normals,
     const float4& color,
     const float3& minBounds,
     const float3& maxBounds,
@@ -1915,18 +2098,7 @@ Renderable createTriangleMeshRenderable(
     bool followsDescriptorColor = true)
 {
   const std::size_t indexCount = indices.size();
-  std::unique_ptr<filament::geometry::SurfaceOrientation> orientation(
-      filament::geometry::SurfaceOrientation::Builder()
-          .vertexCount(vertices.size())
-          .positions(&vertices[0].position, sizeof(Vertex))
-          .triangleCount(triangles.size())
-          .triangles(triangles.data())
-          .build());
-  if (orientation == nullptr) {
-    std::cerr << "Failed to generate Filament tangent frames\n";
-    std::exit(1);
-  }
-  orientation->getQuats(&vertices[0].tangent, vertices.size(), sizeof(Vertex));
+  generateTangentFrames(vertices, triangles, normals);
 
   Renderable renderable;
   renderable.vertexBuffer
@@ -2008,9 +2180,11 @@ Renderable createEllipsoidRenderable(
   const filament::math::short4 tangent = {0, 0, 0, 32767};
 
   std::vector<Vertex> vertices;
+  std::vector<float3> normals;
   std::vector<std::uint32_t> indices;
   std::vector<filament::math::uint3> triangles;
   vertices.reserve((rings + 1) * (segments + 1));
+  normals.reserve((rings + 1) * (segments + 1));
   indices.reserve(rings * segments * 6);
   triangles.reserve(rings * segments * 2);
 
@@ -2025,6 +2199,14 @@ Renderable createEllipsoidRenderable(
                   static_cast<float>(radii.y() * radial * std::sin(phi)),
                   static_cast<float>(radii.z() * z)},
                  tangent});
+      const Eigen::Vector3d normal{
+          radii.x() > 1e-12 ? radial * std::cos(phi) / radii.x() : 0.0,
+          radii.y() > 1e-12 ? radial * std::sin(phi) / radii.y() : 0.0,
+          radii.z() > 1e-12 ? z / radii.z() : 0.0};
+      normals.push_back(toFloat3(
+          normal.squaredNorm() > 1e-12
+              ? normal.normalized()
+              : Eigen::Vector3d(0.0, 0.0, z >= 0.0 ? 1.0 : -1.0)));
     }
   }
 
@@ -2045,6 +2227,7 @@ Renderable createEllipsoidRenderable(
       std::move(vertices),
       std::move(indices),
       std::move(triangles),
+      std::move(normals),
       color,
       toFloat3(-radii),
       toFloat3(radii));
@@ -2063,18 +2246,26 @@ Renderable createCylinderRenderable(
   const float halfHeight = static_cast<float>(height * 0.5);
 
   std::vector<Vertex> vertices;
+  std::vector<float3> normals;
   std::vector<std::uint32_t> indices;
   std::vector<filament::math::uint3> triangles;
   vertices.reserve((segments + 1) * 4 + 2);
+  normals.reserve((segments + 1) * 4 + 2);
 
-  for (const float z : {-halfHeight, halfHeight}) {
+  for (const auto [z, v] :
+       {std::pair{-halfHeight, 0.0f}, std::pair{halfHeight, 1.0f}}) {
     for (std::uint32_t segment = 0; segment <= segments; ++segment) {
       const double phi = 2.0 * pi * segment / segments;
+      const float cosPhi = static_cast<float>(std::cos(phi));
+      const float sinPhi = static_cast<float>(std::sin(phi));
       vertices.push_back(
-          Vertex{{static_cast<float>(radius * std::cos(phi)),
-                  static_cast<float>(radius * std::sin(phi)),
+          Vertex{{static_cast<float>(radius * cosPhi),
+                  static_cast<float>(radius * sinPhi),
                   z},
-                 tangent});
+                 tangent,
+                 {static_cast<float>(segment) / static_cast<float>(segments),
+                  v}});
+      normals.push_back(normalizeOr({cosPhi, sinPhi, 0.0f}, {1.0f, 0.0f, 0.0f}));
     }
   }
 
@@ -2087,18 +2278,53 @@ Renderable createCylinderRenderable(
     appendTriangle(indices, triangles, b, d, c);
   }
 
+  const std::uint32_t bottomCapStart
+      = static_cast<std::uint32_t>(vertices.size());
+  for (std::uint32_t segment = 0; segment <= segments; ++segment) {
+    const double phi = 2.0 * pi * segment / segments;
+    const float cosPhi = static_cast<float>(std::cos(phi));
+    const float sinPhi = static_cast<float>(std::sin(phi));
+    vertices.push_back(
+        Vertex{{static_cast<float>(radius * cosPhi),
+                static_cast<float>(radius * sinPhi),
+                -halfHeight},
+               tangent,
+               {0.5f + 0.5f * cosPhi, 0.5f + 0.5f * sinPhi}});
+    normals.push_back({0.0f, 0.0f, -1.0f});
+  }
+  const std::uint32_t topCapStart
+      = static_cast<std::uint32_t>(vertices.size());
+  for (std::uint32_t segment = 0; segment <= segments; ++segment) {
+    const double phi = 2.0 * pi * segment / segments;
+    const float cosPhi = static_cast<float>(std::cos(phi));
+    const float sinPhi = static_cast<float>(std::sin(phi));
+    vertices.push_back(
+        Vertex{{static_cast<float>(radius * cosPhi),
+                static_cast<float>(radius * sinPhi),
+                halfHeight},
+               tangent,
+               {0.5f + 0.5f * cosPhi, 0.5f + 0.5f * sinPhi}});
+    normals.push_back({0.0f, 0.0f, 1.0f});
+  }
   const std::uint32_t bottomCenter = static_cast<std::uint32_t>(vertices.size());
-  vertices.push_back(Vertex{{0.0f, 0.0f, -halfHeight}, tangent});
+  vertices.push_back(Vertex{{0.0f, 0.0f, -halfHeight}, tangent, {0.5f, 0.5f}});
+  normals.push_back({0.0f, 0.0f, -1.0f});
   const std::uint32_t topCenter = static_cast<std::uint32_t>(vertices.size());
-  vertices.push_back(Vertex{{0.0f, 0.0f, halfHeight}, tangent});
+  vertices.push_back(Vertex{{0.0f, 0.0f, halfHeight}, tangent, {0.5f, 0.5f}});
+  normals.push_back({0.0f, 0.0f, 1.0f});
   for (std::uint32_t segment = 0; segment < segments; ++segment) {
-    appendTriangle(indices, triangles, bottomCenter, segment + 1, segment);
+    appendTriangle(
+        indices,
+        triangles,
+        bottomCenter,
+        bottomCapStart + segment + 1,
+        bottomCapStart + segment);
     appendTriangle(
         indices,
         triangles,
         topCenter,
-        (segments + 1) + segment,
-        (segments + 1) + segment + 1);
+        topCapStart + segment,
+        topCapStart + segment + 1);
   }
 
   const float r = static_cast<float>(radius);
@@ -2108,6 +2334,7 @@ Renderable createCylinderRenderable(
       std::move(vertices),
       std::move(indices),
       std::move(triangles),
+      std::move(normals),
       color,
       {-r, -r, -halfHeight},
       {r, r, halfHeight});
@@ -2126,26 +2353,71 @@ Renderable createConeRenderable(
   const float halfHeight = static_cast<float>(height * 0.5);
 
   std::vector<Vertex> vertices;
+  std::vector<float3> normals;
   std::vector<std::uint32_t> indices;
   std::vector<filament::math::uint3> triangles;
-  vertices.reserve(segments + 3);
+  vertices.reserve(segments * 3 + segments + 2);
+  normals.reserve(segments * 3 + segments + 2);
 
-  for (std::uint32_t segment = 0; segment <= segments; ++segment) {
-    const double phi = 2.0 * pi * segment / segments;
-    vertices.push_back(
-        Vertex{{static_cast<float>(radius * std::cos(phi)),
-                static_cast<float>(radius * std::sin(phi)),
-                -halfHeight},
-               tangent});
-  }
-  const std::uint32_t tip = static_cast<std::uint32_t>(vertices.size());
-  vertices.push_back(Vertex{{0.0f, 0.0f, halfHeight}, tangent});
-  const std::uint32_t center = static_cast<std::uint32_t>(vertices.size());
-  vertices.push_back(Vertex{{0.0f, 0.0f, -halfHeight}, tangent});
+  const auto sideNormal = [&](double phi) {
+    const float cosPhi = static_cast<float>(std::cos(phi));
+    const float sinPhi = static_cast<float>(std::sin(phi));
+    const float z = height > 1e-12 ? static_cast<float>(radius / height) : 0.0f;
+    return normalizeOr({cosPhi, sinPhi, z}, {cosPhi, sinPhi, 0.0f});
+  };
 
   for (std::uint32_t segment = 0; segment < segments; ++segment) {
-    appendTriangle(indices, triangles, segment, segment + 1, tip);
-    appendTriangle(indices, triangles, center, segment + 1, segment);
+    const double phi0 = 2.0 * pi * segment / segments;
+    const double phi1 = 2.0 * pi * (segment + 1) / segments;
+    const double phiMid = 0.5 * (phi0 + phi1);
+    const float u0 = static_cast<float>(segment) / static_cast<float>(segments);
+    const float u1
+        = static_cast<float>(segment + 1) / static_cast<float>(segments);
+    const float cos0 = static_cast<float>(std::cos(phi0));
+    const float sin0 = static_cast<float>(std::sin(phi0));
+    const float cos1 = static_cast<float>(std::cos(phi1));
+    const float sin1 = static_cast<float>(std::sin(phi1));
+    const std::uint32_t base0 = static_cast<std::uint32_t>(vertices.size());
+    vertices.push_back(
+        Vertex{{static_cast<float>(radius * cos0),
+                static_cast<float>(radius * sin0),
+                -halfHeight},
+               tangent,
+               {u0, 0.0f}});
+    normals.push_back(sideNormal(phi0));
+    const std::uint32_t base1 = static_cast<std::uint32_t>(vertices.size());
+    vertices.push_back(
+        Vertex{{static_cast<float>(radius * cos1),
+                static_cast<float>(radius * sin1),
+                -halfHeight},
+               tangent,
+               {u1, 0.0f}});
+    normals.push_back(sideNormal(phi1));
+    const std::uint32_t tip = static_cast<std::uint32_t>(vertices.size());
+    vertices.push_back(Vertex{{0.0f, 0.0f, halfHeight}, tangent, {0.5f * (u0 + u1), 1.0f}});
+    normals.push_back(sideNormal(phiMid));
+    appendTriangle(indices, triangles, base0, base1, tip);
+  }
+
+  const std::uint32_t baseStart = static_cast<std::uint32_t>(vertices.size());
+  for (std::uint32_t segment = 0; segment <= segments; ++segment) {
+    const double phi = 2.0 * pi * segment / segments;
+    const float cosPhi = static_cast<float>(std::cos(phi));
+    const float sinPhi = static_cast<float>(std::sin(phi));
+    vertices.push_back(
+        Vertex{{static_cast<float>(radius * cosPhi),
+                static_cast<float>(radius * sinPhi),
+                -halfHeight},
+               tangent,
+               {0.5f + 0.5f * cosPhi, 0.5f + 0.5f * sinPhi}});
+    normals.push_back({0.0f, 0.0f, -1.0f});
+  }
+  const std::uint32_t center = static_cast<std::uint32_t>(vertices.size());
+  vertices.push_back(Vertex{{0.0f, 0.0f, -halfHeight}, tangent, {0.5f, 0.5f}});
+  normals.push_back({0.0f, 0.0f, -1.0f});
+
+  for (std::uint32_t segment = 0; segment < segments; ++segment) {
+    appendTriangle(indices, triangles, center, baseStart + segment + 1, baseStart + segment);
   }
 
   const float r = static_cast<float>(radius);
@@ -2155,6 +2427,7 @@ Renderable createConeRenderable(
       std::move(vertices),
       std::move(indices),
       std::move(triangles),
+      std::move(normals),
       color,
       {-r, -r, -halfHeight},
       {r, r, halfHeight});
@@ -2194,17 +2467,27 @@ Renderable createCapsuleRenderable(
   }
 
   std::vector<Vertex> vertices;
+  std::vector<float3> normals;
   std::vector<std::uint32_t> indices;
   std::vector<filament::math::uint3> triangles;
   vertices.reserve(rings.size() * (segments + 1));
+  normals.reserve(rings.size() * (segments + 1));
   for (const Ring& ring : rings) {
     for (std::uint32_t segment = 0; segment <= segments; ++segment) {
       const double theta = 2.0 * pi * segment / segments;
+      const float x = static_cast<float>(ring.radius * std::cos(theta));
+      const float y = static_cast<float>(ring.radius * std::sin(theta));
+      const float z = static_cast<float>(ring.z);
       vertices.push_back(
-          Vertex{{static_cast<float>(ring.radius * std::cos(theta)),
-                  static_cast<float>(ring.radius * std::sin(theta)),
-                  static_cast<float>(ring.z)},
-                 tangent});
+          Vertex{{x, y, z},
+                 tangent,
+                 {static_cast<float>(segment) / static_cast<float>(segments),
+                  static_cast<float>(vertices.size() / (segments + 1))
+                      / static_cast<float>(rings.size() - 1)}});
+      const double capCenterZ = std::clamp(ring.z, -height * 0.5, height * 0.5);
+      normals.push_back(normalizeOr(
+          {x, y, static_cast<float>(ring.z - capCenterZ)},
+          {0.0f, 0.0f, ring.z >= 0.0 ? 1.0f : -1.0f}));
     }
   }
 
@@ -2227,6 +2510,7 @@ Renderable createCapsuleRenderable(
       std::move(vertices),
       std::move(indices),
       std::move(triangles),
+      std::move(normals),
       color,
       {-r, -r, -halfTotalHeight},
       {r, r, halfTotalHeight});
@@ -2268,6 +2552,29 @@ std::optional<Renderable> createMeshRenderable(
     }
     vertices.push_back(
         Vertex{toFloat3(scale.cwiseProduct(meshVertices[i])), tangent, uv});
+  }
+
+  std::vector<float3> normals;
+  if (triMesh->hasVertexNormals()
+      && triMesh->getVertexNormals().size() == meshVertices.size()) {
+    normals.reserve(meshVertices.size());
+    for (const Eigen::Vector3d& sourceNormal : triMesh->getVertexNormals()) {
+      Eigen::Vector3d scaledNormal = sourceNormal;
+      for (int axis = 0; axis < 3; ++axis) {
+        if (std::abs(scale[axis]) > 1e-12) {
+          scaledNormal[axis] /= scale[axis];
+        } else {
+          scaledNormal[axis] = 0.0;
+        }
+      }
+      if (scaledNormal.squaredNorm() <= 1e-12) {
+        scaledNormal = sourceNormal;
+      }
+      normals.push_back(toFloat3(
+          scaledNormal.squaredNorm() > 1e-12
+              ? scaledNormal.normalized()
+              : Eigen::Vector3d::UnitZ()));
+    }
   }
 
   std::vector<std::uint32_t> indices;
@@ -2406,6 +2713,7 @@ std::optional<Renderable> createMeshRenderable(
         std::move(vertices),
         std::move(indices),
         std::move(triangles),
+        std::move(normals),
         state.baseColor,
         bounds.min,
         bounds.max,
@@ -2417,18 +2725,7 @@ std::optional<Renderable> createMeshRenderable(
         state.followsDescriptorColor);
   }
 
-  std::unique_ptr<filament::geometry::SurfaceOrientation> orientation(
-      filament::geometry::SurfaceOrientation::Builder()
-          .vertexCount(vertices.size())
-          .positions(&vertices[0].position, sizeof(Vertex))
-          .triangleCount(triangles.size())
-          .triangles(triangles.data())
-          .build());
-  if (orientation == nullptr) {
-    std::cerr << "Failed to generate Filament tangent frames\n";
-    std::exit(1);
-  }
-  orientation->getQuats(&vertices[0].tangent, vertices.size(), sizeof(Vertex));
+  generateTangentFrames(vertices, triangles, normals);
 
   Renderable renderable;
   renderable.vertexBuffer
@@ -2533,6 +2830,7 @@ Renderable createPlaneRenderable(
   };
   std::vector<std::uint32_t> indices;
   std::vector<filament::math::uint3> triangles;
+  const std::vector<float3> normals(4, toFloat3(unitNormal));
   indices.reserve(6);
   triangles.reserve(2);
   appendTriangle(indices, triangles, 0, 1, 2);
@@ -2547,6 +2845,7 @@ Renderable createPlaneRenderable(
       std::move(vertices),
       std::move(indices),
       std::move(triangles),
+      normals,
       color,
       bounds.min,
       bounds.max,
@@ -3342,10 +3641,15 @@ int main(int argc, char* argv[])
   shadowOptions.screenSpaceContactShadows = false;
   shadowOptions.maxShadowDistance = options.headless ? 0.8f : 0.25f;
   shadowOptions.shadowBulbRadius = options.headless ? 0.16f : 0.08f;
+  bool orbitLight = appOptions.orbitLight;
+  const float3 keyLightDirection
+      = orbitLight ? orbitingKeyLightDirection(
+                         0.0, appOptions.orbitLightPeriodSeconds)
+                   : float3{-0.30f, -0.42f, -1.0f};
   filament::LightManager::Builder(filament::LightManager::Type::SUN)
       .color({1.0f, 0.96f, 0.88f})
       .intensity(82000.0f)
-      .direction({-0.30f, -0.42f, -1.0f})
+      .direction(keyLightDirection)
       .castShadows(true)
       .shadowOptions(shadowOptions)
       .build(*engine, lightEntity);
@@ -3372,10 +3676,11 @@ int main(int argc, char* argv[])
   ImGui::CreateContext();
   ImGui::StyleColorsDark();
   auto& imguiStyle = ImGui::GetStyle();
-  imguiStyle.WindowRounding = 4.0f;
+  imguiStyle.ScaleAllSizes(appOptions.guiScale);
+  imguiStyle.WindowRounding = 4.0f * appOptions.guiScale;
   imguiStyle.Colors[ImGuiCol_WindowBg].w = 0.72f;
   auto& imguiIo = ImGui::GetIO();
-  loadImGuiFont(imguiIo);
+  loadImGuiFont(imguiIo, appOptions.guiScale);
   imguiIo.Fonts->Build();
   ImGuiOverlay imguiOverlay = createImGuiOverlay(*engine);
 
@@ -3396,6 +3701,7 @@ int main(int argc, char* argv[])
   ScreenshotCapture screenshotCapture;
   ProfileAccumulator profile;
   auto lastSimulationClock = ProfileAccumulator::Clock::now();
+  const auto orbitStartClock = ProfileAccumulator::Clock::now();
   double simulationAccumulator = 0.0;
   constexpr std::size_t kMaxSimulationStepsPerRenderedFrame = 64;
 
@@ -3441,9 +3747,20 @@ int main(int argc, char* argv[])
     const double aspect
         = static_cast<double>(width) / static_cast<double>(height);
     camera->setProjection(
-        45.0, aspect, 0.05, 100.0, filament::Camera::Fov::VERTICAL);
+        45.0,
+        aspect,
+        perspectiveNearPlane(cameraController.camera),
+        perspectiveFarPlane(cameraController.camera),
+        filament::Camera::Fov::VERTICAL);
     if (window != nullptr) {
-      updateCameraController(window, cameraController, leftMouseStartedDrag);
+      double cursorX = 0.0;
+      double cursorY = 0.0;
+      glfwGetCursorPos(window, &cursorX, &cursorY);
+      const bool suppressCameraOrbit
+          = leftMouseStartedDrag
+            || (appOptions.showUi
+                && isInsideStatusPanel(cursorX, cursorY, appOptions.guiScale));
+      updateCameraController(window, cameraController, suppressCameraOrbit);
     }
     const Eigen::Vector3d eye = cameraEye(cameraController.camera);
     camera->lookAt(
@@ -3453,25 +3770,6 @@ int main(int argc, char* argv[])
          cameraController.camera.target.z()},
         {0.0, 0.0, 1.0});
     profile.viewportCameraMs += elapsedMs(phaseStart);
-
-    const auto renderFrameStart = ProfileAccumulator::Clock::now();
-    const bool shouldRenderFrame = renderer->beginFrame(swapChain);
-    profile.beginFrameMs += elapsedMs(renderFrameStart);
-    if (!shouldRenderFrame) {
-      markFrameSkipped(lifecycle);
-      ++profile.skippedFrames;
-      if (!options.headless || !renderer->shouldRenderFrame()) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        const double frameMs = elapsedMs(frameStart);
-        profile.frameMs += frameMs;
-        profile.maxFrameMs = std::max(profile.maxFrameMs, frameMs);
-        ++profile.frames;
-        continue;
-      }
-      // Filament allows callers to ignore a pacing-only false return. Headless
-      // software GL can report skips almost every frame, so keep deterministic
-      // offscreen captures while still skipping backend failures above.
-    }
 
     std::size_t simulationStepsToRun = 0;
     if (shouldAdvanceSimulation(lifecycle)) {
@@ -3573,6 +3871,18 @@ int main(int argc, char* argv[])
     }
     profile.syncMs += elapsedMs(phaseStart);
 
+    if (orbitLight) {
+      const double orbitElapsedSeconds = std::chrono::duration<double>(
+                                             ProfileAccumulator::Clock::now()
+                                             - orbitStartClock)
+                                             .count();
+      auto& lights = engine->getLightManager();
+      lights.setDirection(
+          lights.getInstance(lightEntity),
+          orbitingKeyLightDirection(
+              orbitElapsedSeconds, appOptions.orbitLightPeriodSeconds));
+    }
+
     phaseStart = ProfileAccumulator::Clock::now();
     if (window != nullptr) {
       double cursorX = 0.0;
@@ -3585,8 +3895,8 @@ int main(int argc, char* argv[])
         leftMousePressY = cursorY;
         leftMouseStartedDrag = false;
         leftMouseStartedOnPanel
-            = cursorX >= 20.0 && cursorX <= 360.0 && cursorY >= 20.0
-              && cursorY <= 285.0;
+            = appOptions.showUi
+              && isInsideStatusPanel(cursorX, cursorY, appOptions.guiScale);
 
         if (!leftMouseStartedOnPanel && selectedRenderableId != 0
             && isDragModifierDown(window)) {
@@ -3674,19 +3984,34 @@ int main(int argc, char* argv[])
 
     if (appOptions.showUi) {
       phaseStart = ProfileAccumulator::Clock::now();
+      updateImGuiMouseInput(window, imguiIo, width, height);
       ImGui::NewFrame();
-      ImGui::SetNextWindowPos({20.0f, 20.0f}, ImGuiCond_Always);
+      ImGui::SetNextWindowPos(
+          {20.0f * appOptions.guiScale, 20.0f * appOptions.guiScale},
+          ImGuiCond_Always);
       ImGui::SetNextWindowBgAlpha(0.72f);
       ImGui::Begin(
           "DART",
           nullptr,
           ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
+      ImGui::PushTextWrapPos(
+          ImGui::GetCursorPosX() + 300.0f * appOptions.guiScale);
+      ImGui::TextWrapped(
+          "DART scene viewer: inspect renderables, shadows, and debug overlays.");
+      ImGui::TextWrapped(
+          "Mouse: left orbit, right/middle pan, wheel zoom, click select.");
+      ImGui::TextWrapped(
+          "Keys: Space pause, N step, arrows/Pg move selected, Esc exit.");
+      ImGui::PopTextWrapPos();
+      ImGui::Separator();
       ImGui::Text("scene: %s", sceneName(appOptions.scene));
       ImGui::Text("time: %.3f", dartScene.world->getTime());
       ImGui::Text(
           "contacts: %zu",
           dartScene.world->getLastCollisionResult().getNumContacts());
-      ImGui::TextWrapped("selected: %s", selectedLabel.c_str());
+      ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 300.0f * appOptions.guiScale);
+      ImGui::Text("selected: %s", selectedLabel.c_str());
+      ImGui::PopTextWrapPos();
       if (ImGui::Button(lifecycle.paused ? "Resume" : "Pause")) {
         togglePaused(lifecycle);
       }
@@ -3694,6 +4019,8 @@ int main(int argc, char* argv[])
       if (ImGui::Button("Step")) {
         requestSingleStep(lifecycle);
       }
+      ImGui::SameLine();
+      ImGui::Checkbox("Orbit light", &orbitLight);
       bool debugOptionsChanged = false;
       debugOptionsChanged
           |= ImGui::Checkbox("Grid", &staticDebugOptions.drawGrid);
@@ -3730,6 +4057,25 @@ int main(int argc, char* argv[])
 
     const bool shouldCaptureScreenshot
         = shouldRequestScreenshot(options, lifecycle);
+
+    const auto renderFrameStart = ProfileAccumulator::Clock::now();
+    const bool shouldRenderFrame = renderer->beginFrame(swapChain);
+    profile.beginFrameMs += elapsedMs(renderFrameStart);
+    if (!shouldRenderFrame) {
+      markFrameSkipped(lifecycle);
+      ++profile.skippedFrames;
+      if (!options.headless || !renderer->shouldRenderFrame()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        const double frameMs = elapsedMs(frameStart);
+        profile.frameMs += frameMs;
+        profile.maxFrameMs = std::max(profile.maxFrameMs, frameMs);
+        ++profile.frames;
+        continue;
+      }
+      // Filament allows callers to ignore a pacing-only false return. Headless
+      // software GL can report skips almost every frame, so keep deterministic
+      // offscreen captures while still skipping backend failures above.
+    }
 
     phaseStart = ProfileAccumulator::Clock::now();
     renderer->render(view);
