@@ -148,15 +148,10 @@ endfunction()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 
-# Default components: dart and collision-fcl when that optional component was
-# installed. FCL used to be part of libdart.so, and downstream consumers such
-# as gz-physics include FCL headers while requesting only legacy Bullet/ODE
-# components. Keep that installed-package compatibility without requiring FCL
-# in builds that disable the collision-fcl component.
+# Default component: dart. Legacy collision component names are no longer added
+# implicitly because the normal runtime collision stack is the built-in DART
+# detector.
 list(APPEND @PROJECT_NAME_UPPERCASE@_FIND_COMPONENTS dart)
-if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@_collision-fclComponent.cmake")
-  list(APPEND @PROJECT_NAME_UPPERCASE@_FIND_COMPONENTS collision-fcl)
-endif()
 
 # Components
 if(@PROJECT_NAME_UPPERCASE@_FIND_COMPONENTS)

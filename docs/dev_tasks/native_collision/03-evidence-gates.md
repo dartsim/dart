@@ -34,21 +34,21 @@ options that allow native-only builds to opt out. The built-in stack must also
 have clean API boundaries, scalable native scene/query state, and
 performance-oriented internals before this scale reaches completion.
 
-| Stage | Gate                                                | State                          |
-| ----- | --------------------------------------------------- | ------------------------------ |
-| 0     | Baseline native backend exists                      | Complete before this task      |
-| 1     | Native `dart` detector is default                   | Complete in checkpoint         |
-| 2     | DART feature parity is proven                       | Complete in checkpoint         |
-| 3     | gz-physics compatibility is proven                  | Complete in checkpoint         |
-| 4     | Native benchmark wins are recorded                  | Complete in checkpoint         |
-| 5     | Local builds pass with FCL/Bullet/ODE disabled      | Complete in checkpoint         |
-| 6     | Native-only and gz-physics CI are permanent         | Started; local evidence        |
-| 7     | Reference engines are test/bench-only opt-in        | Started; opt-out/link evidence |
-| 8     | Default packages/wheels have no old runtime deps    | Started; install-tree evidence |
-| 9     | Downstream migration/deprecation path is tested     | Started; DART alias coverage   |
-| 10    | Collision abstraction is one clean built-in stack   | Started; factory aliases done  |
-| 11    | Old runtime backend source/components are deleted   | Not started                    |
-| 12    | Final PR evidence is complete and task docs removed | Blocked on remaining stages    |
+| Stage | Gate                                                | State                           |
+| ----- | --------------------------------------------------- | ------------------------------- |
+| 0     | Baseline native backend exists                      | Complete before this task       |
+| 1     | Native `dart` detector is default                   | Complete in checkpoint          |
+| 2     | DART feature parity is proven                       | Complete in checkpoint          |
+| 3     | gz-physics compatibility is proven                  | Complete in checkpoint          |
+| 4     | Native benchmark wins are recorded                  | Complete in checkpoint          |
+| 5     | Local builds pass with FCL/Bullet/ODE disabled      | Complete in checkpoint          |
+| 6     | Native-only and gz-physics CI are permanent         | Started; local evidence         |
+| 7     | Reference engines are test/bench-only opt-in        | Started; opt-out/link/export    |
+| 8     | Default packages/wheels have no old runtime deps    | Started; install/export proof   |
+| 9     | Downstream migration/deprecation path is tested     | Started; DART alias coverage    |
+| 10    | Collision abstraction is one clean built-in stack   | Started; aliases/export cleanup |
+| 11    | Old runtime backend source/components are deleted   | Not started                     |
+| 12    | Final PR evidence is complete and task docs removed | Blocked on remaining stages     |
 
 ## Remaining North-Star Gate Backlog
 
@@ -58,11 +58,11 @@ These gates are still required before the single north-star PR is complete.
 | --------------------------- | ----------------------------------------------------------- | --------------------------------------------- |
 | CI native-only build        | CI passes with FCL, Bullet, and ODE disabled                | Local equivalent passed; awaiting CI evidence |
 | CI gz-physics compatibility | gz-physics CI passes with optional legacy components built  | Required in this PR                           |
-| Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Started; focused opt-out/link evidence        |
-| Packaging removal           | Default packages/wheels have no old collision runtime deps  | Started; install-tree evidence                |
+| Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Started; opt-out/link/export evidence         |
+| Packaging removal           | Default packages/wheels have no old collision runtime deps  | Started; install/export evidence              |
 | Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Started; DART alias coverage                  |
 | Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Factory keys done; classes/components remain  |
-| Built-in architecture       | API-clean, scalable, performance-oriented native layer      | Started; layer contract and scene/filter path |
+| Built-in architecture       | API-clean, scalable, performance-oriented native layer      | Started; layer/package boundary documented    |
 | Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Required in this PR                           |
 | Legacy backend deletion     | Old runtime backend sources removed from default stack      | Blocked on migration gates                    |
 
@@ -865,10 +865,32 @@ build/default/cpp --prefix build/native_collision_install_probe_<timestamp>`
 <install-prefix>/share/dart/cmake <install-prefix>/lib/pkgconfig`
   - Commit: working tree after native-only install probe.
   - Result: no installed old collision component files or targets. Expected
-    `DART_BUILD_COLLISION_*` variables are `OFF`; residual compatibility
-    strings remain in generated CMake component templates and the
-    `DARTConfig.cmake` optional `collision-fcl` fallback. Those are tracked for
-    the downstream compatibility and abstraction cleanup phases.
+    `DART_BUILD_COLLISION_*` variables are `OFF`. Before package-export
+    cleanup, generated CMake templates still contained compatibility strings
+    for old collision components.
+- `DART_BUILD_COLLISION_FCL_OVERRIDE=OFF
+DART_BUILD_COLLISION_BULLET_OVERRIDE=OFF
+DART_BUILD_COLLISION_ODE_OVERRIDE=OFF
+DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE=OFF
+DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE=OFF
+DART_BUILD_GUI_OVERRIDE=OFF DART_VERBOSE=ON pixi run config-install OFF &&
+pixi run -- cmake --build build/default/cpp --target dart dart-utils
+dart-utils-urdf dart-io --parallel 8 && pixi run -- cmake --install
+build/default/cpp --prefix build/native_collision_install_probe_<timestamp>
+&& rg -n
+'collision-(fcl|bullet|ode)|libdart-collision-(fcl|bullet|ode)|lib(fcl|bullet|ode|ccd)|DART_BUILD_COLLISION'
+<install-prefix>/share/dart/cmake <install-prefix>/lib/pkgconfig`
+  - Commit: working tree after package-export cleanup.
+  - Result: passed. The install-style configure reported FCL, Bullet, ODE,
+    reference tests, reference benchmarks, and GUI all `OFF`; the install
+    completed after building the installable core, utility, URDF, and IO
+    targets. The installed CMake/pkg-config metadata search reported only
+    `DART_BUILD_COLLISION_BULLET`, `DART_BUILD_COLLISION_FCL`, and
+    `DART_BUILD_COLLISION_ODE` set to `OFF`. No `collision-fcl`,
+    `collision-bullet`, `collision-ode`, `libdart-collision-fcl`,
+    `libdart-collision-bullet`, `libdart-collision-ode`, `libfcl`,
+    `libbullet`, `libode`, or `libccd` strings were reported from the searched
+    install metadata.
 
 ## Collision Abstraction And Alias Runs
 

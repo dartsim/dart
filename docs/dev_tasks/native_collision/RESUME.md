@@ -15,11 +15,16 @@ build defaults are explicitly native-only, and core native-only link inspection
 shows `libdart.so` does not link FCL, Bullet, ODE, or libccd. The public
 factory keys `fcl`, `fcl_mesh`, `bullet`, and `ode` now resolve to the built-in
 `DartCollisionDetector` in both native-only and reference-enabled builds.
+The native-only package-export cleanup now removes the default `collision-fcl`
+fallback and generated old collision component text; the install probe reports
+only `DART_BUILD_COLLISION_*` variables as `OFF` in searched installed
+CMake/pkg-config metadata.
 
 ## Current Branch
 
-`feature/new_coll` - local branch tracking `origin/feature/new_coll`, ahead by
-two checkpoint commits with uncommitted factory-alias cleanup work.
+`feature/new_coll` - local branch tracking `origin/feature/new_coll`, expected
+to be ahead by four checkpoint commits after the package-export cleanup
+checkpoint.
 
 ## Immediate Next Step
 
@@ -51,6 +56,12 @@ native-backed creators so linking old reference component libraries cannot
 restore public backend selection. Direct legacy detector classes, headers, and
 CMake component surfaces still contain real reference-engine implementations
 and remain a north-star cleanup gate.
+Package-export cleanup has also started: native-only `find_package(DART)` now
+defaults to `dart` only, generated component templates no longer emit
+deprecated Bullet/ODE collision component text, and a native-only install probe
+found no old collision component/library names in searched installed
+CMake/pkg-config metadata beyond `DART_BUILD_COLLISION_*` variables set to
+`OFF`.
 
 ## Context That Would Be Lost
 
@@ -136,9 +147,11 @@ and remain a north-star cleanup gate.
   `collision-native` label passed 29/29 in that configuration. After building
   installable utility and IO components, a native-only install probe installed
   no FCL, Bullet, ODE, or libccd libraries and no old collision component
-  target files. Residual CMake compatibility strings remain in generated
-  component metadata and are still part of downstream migration/abstraction
-  cleanup.
+  target files. The latest package-export cleanup also removed the implicit
+  `collision-fcl` fallback from default package initialization and removed old
+  Bullet/ODE component text from generated component metadata; the follow-up
+  install metadata search found only `DART_BUILD_COLLISION_*` variables set to
+  `OFF`.
 - Factory-level abstraction cleanup has focused evidence:
   `UNIT_collision_DartCollisionDetector`, `UNIT_simulation_World`,
   `INTEGRATION_collision_Collision`, `INTEGRATION_collision_CollisionGroups`,

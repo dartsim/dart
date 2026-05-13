@@ -99,6 +99,28 @@ dirty membership, transform, and shape data before queries. This keeps the
 public API stable while allowing the native core to evolve toward better
 broadphase traversal, batch queries, and low-allocation hot paths.
 
+## Installed Package And API Boundary
+
+The installed package surface is part of the architecture contract. Downstream
+users should see a single normal collision stack, not a menu of runtime
+backends:
+
+- `find_package(DART)` should default to the `dart` component and the built-in
+  detector. It should not auto-add FCL, Bullet, or ODE collision components.
+- Installed CMake component files, pkg-config metadata, and default runtime
+  libraries should not advertise old collision component targets or old
+  collision libraries in native-only builds.
+- If a legacy component name remains for source compatibility, it must be a
+  compatibility facade over the built-in detector or an explicitly named
+  reference-only target. It must not silently select an external runtime
+  backend.
+- Reference-engine build options may report whether FCL, Bullet, and ODE were
+  enabled, but `OFF` option state in installed metadata is state reporting, not
+  a runtime dependency.
+- The public API review for the final PR must cover both headers and package
+  exports: users should be guided toward `dart`, and legacy names should read
+  as temporary compatibility.
+
 ## API Cleanliness Rules
 
 The cleaned-up collision API should make the built-in detector feel like the

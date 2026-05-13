@@ -224,9 +224,9 @@ if(NOT _dart_user_set_build_gui_raylib AND DEFINED DART_BUILD_RAYLIB)
 endif()
 unset(_dart_user_set_build_gui_raylib)
 dart_option(DART_BUILD_GUI_VSG "Build experimental VSG (VulkanSceneGraph) GUI backend" OFF CATEGORY build)
-dart_option(DART_BUILD_COLLISION_FCL "Build the FCL collision backend" OFF CATEGORY build)
-dart_option(DART_BUILD_COLLISION_BULLET "Build the Bullet collision backend" OFF CATEGORY build)
-dart_option(DART_BUILD_COLLISION_ODE "Build the ODE collision backend" OFF CATEGORY build)
+dart_option(DART_BUILD_COLLISION_FCL "Build the legacy FCL collision reference component" OFF CATEGORY build)
+dart_option(DART_BUILD_COLLISION_BULLET "Build the legacy Bullet collision reference component" OFF CATEGORY build)
+dart_option(DART_BUILD_COLLISION_ODE "Build the legacy ODE collision reference component" OFF CATEGORY build)
 dart_option(
   DART_BUILD_COLLISION_REFERENCE_TESTS
   "Build collision tests that use FCL, Bullet, or ODE as reference engines"

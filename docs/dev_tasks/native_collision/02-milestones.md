@@ -164,8 +164,11 @@ reference-only tests and comparative benchmarks behind them, and has local
 reference-disabled/reference-enabled evidence in `03-evidence-gates.md`.
 The reference toggles now propagate through the main debug, dartpy, install,
 coverage, ASAN, Windows, and wheel configure entry points. Core native-only
-link inspection has started; broader package-export and downstream-component
-inspection are still required before this phase is complete.
+link and installed package-export inspection now show no old collision
+component targets or old collision runtime libraries in the native-only install
+metadata. Broader dependency-metadata, wheel-artifact, and
+downstream-component inspection are still required before this phase is
+complete.
 
 Success criteria:
 
@@ -199,10 +202,13 @@ reference or benchmark work.
 Current working-tree status: this phase is started, not complete. Wheel CMake
 defaults now explicitly disable FCL, Bullet, ODE, and reference harnesses, and
 a native-only install-style build/install produced no old collision libraries
-or old collision component target files. Remaining work includes dependency
-metadata cleanup, wheel artifact inspection, residual compatibility metadata
-cleanup, and gz-physics compatibility for any retained legacy component
-facades.
+or old collision component target files. The latest package-export cleanup also
+removes the default `collision-fcl` fallback and the generated
+`collision-bullet`/`collision-ode` compatibility text from native-only
+installed CMake metadata; the install probe now reports only
+`DART_BUILD_COLLISION_*` variables as `OFF`. Remaining work includes
+dependency metadata cleanup, wheel artifact inspection, and gz-physics
+compatibility for any retained legacy component facades.
 
 Success criteria:
 
@@ -264,9 +270,11 @@ scene/query state, and performance-oriented internals.
 Current working-tree status: this phase is started. Factory-level backend
 selection is now native-backed: `dart`, `experimental`, `fcl`, `fcl_mesh`,
 `bullet`, and `ode` all create `DartCollisionDetector` through the public
-factory. The old direct detector classes and component libraries still contain
-real FCL/Bullet/ODE implementations for reference work, so class/header/CMake
-component cleanup remains before this phase can complete.
+factory. Default package exports now also point users at the `dart` component
+without auto-adding old collision components. The old direct detector classes
+and component libraries still contain real FCL/Bullet/ODE implementations for
+reference work, so class/header/CMake component cleanup remains before this
+phase can complete.
 
 Success criteria:
 

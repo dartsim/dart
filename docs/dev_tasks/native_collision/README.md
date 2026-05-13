@@ -23,6 +23,9 @@
 - [x] FCL, Bullet, and ODE are no longer required collision dependencies. A
       core `dart` build, focused native/default C++ tests, and `dartpy` now
       build with all three disabled.
+- [x] Native-only install metadata no longer advertises old collision
+      component targets or old collision runtime libraries; the remaining
+      installed collision option variables are `OFF` state reporting.
 - [ ] The single north-star PR is not complete yet. The checkpoint commit proves
       native default, feature parity, gz-physics compatibility, performance,
       and disabled-legacy-backend builds locally; the remaining work is CI
@@ -69,21 +72,21 @@ engines on required workloads.
 This task is scoped as one PR that continues until the north star is reached.
 The current checkpoint is a validated middle state, not a final PR boundary.
 
-| Stage | Progress marker                              | Status                         |
-| ----- | -------------------------------------------- | ------------------------------ |
-| 0     | Baseline native backend exists               | Complete before this task      |
-| 1     | Native `dart` detector is the default path   | Complete in checkpoint         |
-| 2     | DART feature parity gaps are closed          | Complete in checkpoint         |
-| 3     | gz-physics compatibility is proven           | Complete in checkpoint         |
-| 4     | Native beats legacy backends in benchmarks   | Complete in checkpoint         |
-| 5     | FCL/Bullet/ODE are optional for local builds | Complete in checkpoint         |
-| 6     | Native-only and gz-physics CI are permanent  | Started; local evidence        |
-| 7     | Reference engines are test/bench-only        | Started; opt-out/link evidence |
-| 8     | Default packages have no old runtime deps    | Started; install-tree evidence |
-| 9     | Downstream migration/deprecation path exists | Started; DART alias coverage   |
-| 10    | Collision abstraction is one clean stack     | Started; factory aliases done  |
-| 11    | Old runtime backend source is deleted        | Not started                    |
-| 12    | Final one-PR validation and PR packaging     | Blocked on stages 6-11         |
+| Stage | Progress marker                              | Status                          |
+| ----- | -------------------------------------------- | ------------------------------- |
+| 0     | Baseline native backend exists               | Complete before this task       |
+| 1     | Native `dart` detector is the default path   | Complete in checkpoint          |
+| 2     | DART feature parity gaps are closed          | Complete in checkpoint          |
+| 3     | gz-physics compatibility is proven           | Complete in checkpoint          |
+| 4     | Native beats legacy backends in benchmarks   | Complete in checkpoint          |
+| 5     | FCL/Bullet/ODE are optional for local builds | Complete in checkpoint          |
+| 6     | Native-only and gz-physics CI are permanent  | Started; local evidence         |
+| 7     | Reference engines are test/bench-only        | Started; opt-out/link evidence  |
+| 8     | Default packages have no old runtime deps    | Started; install/export proof   |
+| 9     | Downstream migration/deprecation path exists | Started; DART alias coverage    |
+| 10    | Collision abstraction is one clean stack     | Started; aliases/export cleanup |
+| 11    | Old runtime backend source is deleted        | Not started                     |
+| 12    | Final one-PR validation and PR packaging     | Blocked on stages 6-11          |
 
 ## Non-Goals For This Tracking Task
 
@@ -123,11 +126,13 @@ The current checkpoint is a validated middle state, not a final PR boundary.
 ## Immediate Next Steps
 
 1. Run and harden the new native-only CI job alongside existing gz-physics CI.
-2. Finish reference-engine isolation by auditing target links, package exports,
-   and remaining platform/CI configure entry points after the initial CMake
-   test/benchmark opt-out and core-link evidence.
+2. Finish reference-engine isolation by auditing target links, dependency
+   metadata, wheel artifacts, and remaining downstream-component paths after
+   the initial CMake test/benchmark opt-out, core-link, and package-export
+   evidence.
 3. Remove FCL, Bullet, and ODE from default package/runtime surfaces while
-   preserving explicit reference test/benchmark jobs.
+   preserving explicit reference test/benchmark jobs and native-backed
+   compatibility facades.
 4. Continue collapsing `dart/collision/` so retained legacy classes, headers,
    and component names are native-backed compatibility facades; factory keys
    are already native-backed aliases.
@@ -160,15 +165,18 @@ collision stack.
      focused builds locally, and now propagates the toggles through the main
      debug, dartpy, install, coverage, ASAN, Windows, and wheel configure
      entry points.
-   - Core native-only link and install-tree inspection show no FCL, Bullet,
-     ODE, or libccd runtime libraries in the normal native install. Remaining
-     work is broader package-export, dependency-metadata, wheel-artifact, and
-     downstream-component inspection so reference engines cannot leak into
-     normal runtime targets.
+   - Core native-only link, install-tree, and installed CMake/pkg-config
+     metadata inspection show no FCL, Bullet, ODE, libccd, or old collision
+     component targets in the normal native install. Remaining work is broader
+     dependency-metadata, wheel-artifact, and downstream-component inspection
+     so reference engines cannot leak into normal runtime targets.
 3. **Backend Removal From Defaults**
    - Move FCL, Bullet, and ODE out of default packaging/runtime surfaces.
    - Keep old backends only in explicit reference/benchmark jobs while they are
      still useful for regression detection.
+   - Default `find_package(DART)` now adds only the `dart` component; it no
+     longer auto-adds legacy collision components or emits deprecated
+     Bullet/ODE component text from generated native-only package exports.
 4. **Collision Abstraction Cleanup**
    - Replace real legacy backend selection in `dart/collision/` with one
      built-in detector implementation.
