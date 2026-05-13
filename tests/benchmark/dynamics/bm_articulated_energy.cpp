@@ -34,6 +34,7 @@
 
 #include <dart/dynamics/ball_joint.hpp>
 #include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/skeleton.hpp>
 
@@ -213,6 +214,85 @@ dart::dynamics::SkeletonPtr createBallChainPendulum(int numLinks)
   return skeleton;
 }
 
+dart::dynamics::SkeletonPtr createFloatingBaseRevoluteChain(int numChildLinks)
+{
+  auto skeleton = dart::dynamics::Skeleton::create(
+      "floating_base_articulated_energy_" + std::to_string(numChildLinks));
+  skeleton->disableSelfCollisionCheck();
+
+  auto rootPair
+      = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  auto* rootJoint = rootPair.first;
+  auto* parent = rootPair.second;
+
+  parent->setName("floating_base");
+  parent->setMass(1.4);
+  parent->setLocalCOM(Eigen::Vector3d(0.03, -0.02, 0.04));
+  parent->setMomentOfInertia(0.42, 0.55, 0.68, 0.02, -0.01, 0.015);
+
+  for (std::size_t i = 0; i < rootJoint->getNumDofs(); ++i) {
+    rootJoint->setDampingCoefficient(i, 0.0);
+    rootJoint->setCoulombFriction(i, 0.0);
+    rootJoint->setSpringStiffness(i, 0.0);
+  }
+
+  constexpr double mass = 0.7;
+  constexpr double length = 0.55;
+  constexpr double width = 0.06;
+  const double transverseMoment
+      = mass * (length * length + width * width) / 12.0;
+  const double axialMoment = mass * width * width / 6.0;
+
+  for (int i = 0; i < numChildLinks; ++i) {
+    dart::dynamics::RevoluteJoint::Properties jointProperties;
+    jointProperties.mName = "floating_child_joint_" + std::to_string(i);
+    jointProperties.mAxis
+        = (i % 2 == 0) ? Eigen::Vector3d::UnitY() : Eigen::Vector3d::UnitX();
+    jointProperties.mT_ParentBodyToJoint.translation()
+        = Eigen::Vector3d(0.0, 0.0, -length);
+    jointProperties.mT_ChildBodyToJoint = Eigen::Isometry3d::Identity();
+
+    dart::dynamics::BodyNode::Properties bodyProperties;
+    bodyProperties.mName = "floating_child_link_" + std::to_string(i);
+    bodyProperties.mInertia.setMass(mass);
+    bodyProperties.mInertia.setLocalCOM(
+        Eigen::Vector3d(0.0, 0.02, -0.5 * length));
+    bodyProperties.mInertia.setMoment(
+        transverseMoment, transverseMoment, axialMoment, 0.0, 0.0, 0.0);
+
+    auto pair
+        = parent
+              ->createChildJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
+                  jointProperties, bodyProperties);
+    auto* joint = pair.first;
+    parent = pair.second;
+
+    joint->setDampingCoefficient(0, 0.0);
+    joint->setCoulombFriction(0, 0.0);
+    joint->setSpringStiffness(0, 0.0);
+    joint->setLimitEnforcement(false);
+  }
+
+  Eigen::VectorXd positions = Eigen::VectorXd::Zero(skeleton->getNumDofs());
+  Eigen::VectorXd velocities = Eigen::VectorXd::Zero(skeleton->getNumDofs());
+
+  positions.head<3>() = Eigen::Vector3d(0.24, -0.18, 0.11);
+  positions.segment<3>(3) = Eigen::Vector3d(0.0, 0.0, 0.6);
+  velocities.head<3>() = Eigen::Vector3d(0.7, -0.45, 0.35);
+  velocities.segment<3>(3) = Eigen::Vector3d(0.15, -0.08, 0.04);
+
+  for (int i = 0; i < numChildLinks; ++i) {
+    const Eigen::Index index = 6 + i;
+    positions[index] = 0.35 - 0.09 * static_cast<double>(i);
+    velocities[index] = 0.9 - 0.12 * static_cast<double>(i);
+  }
+
+  skeleton->setPositions(positions);
+  skeleton->setVelocities(velocities);
+
+  return skeleton;
+}
+
 dart::simulation::WorldPtr createPendulumWorld(
     int numLinks,
     double dt,
@@ -223,6 +303,22 @@ dart::simulation::WorldPtr createPendulumWorld(
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   world->setTimeStep(dt);
   auto skeleton = factory(numLinks);
+  if (skeletonOut != nullptr) {
+    *skeletonOut = skeleton;
+  }
+  world->addSkeleton(skeleton);
+  return world;
+}
+
+dart::simulation::WorldPtr createFloatingBaseWorld(
+    int numChildLinks,
+    double dt,
+    dart::dynamics::SkeletonPtr* skeletonOut = nullptr)
+{
+  auto world = dart::simulation::World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->setTimeStep(dt);
+  auto skeleton = createFloatingBaseRevoluteChain(numChildLinks);
   if (skeletonOut != nullptr) {
     *skeletonOut = skeleton;
   }
@@ -372,8 +468,72 @@ ReferenceErrorSummary summarizeRungeKutta4ReferenceError(
       = createPendulumWorld(numLinks, referenceDt, factory, &referenceSkeleton);
   runWorldRungeKutta4Steps(referenceWorld, numSteps * referenceSubsteps);
 
-  const Eigen::VectorXd positionError
-      = testedSkeleton->getPositions() - referenceSkeleton->getPositions();
+  const Eigen::VectorXd positionError = testedSkeleton->getPositionDifferences(
+      testedSkeleton->getPositions(), referenceSkeleton->getPositions());
+  const Eigen::VectorXd velocityError
+      = testedSkeleton->getVelocities() - referenceSkeleton->getVelocities();
+
+  ReferenceErrorSummary summary;
+  summary.positionRmsError = rmsNorm(positionError);
+  summary.velocityRmsError = rmsNorm(velocityError);
+  summary.maxAbsPositionError = maxAbsCoeff(positionError);
+  summary.maxAbsVelocityError = maxAbsCoeff(velocityError);
+  summary.referenceSubsteps = referenceSubsteps;
+  return summary;
+}
+
+template <typename Runner>
+EnergyDriftSummary summarizeFloatingBaseEnergyDrift(
+    int numChildLinks, double dt, int numSteps, Runner&& runner)
+{
+  dart::dynamics::SkeletonPtr skeleton;
+  auto world = createFloatingBaseWorld(numChildLinks, dt, &skeleton);
+
+  EnergyDriftSummary summary;
+  summary.initialEnergy = totalEnergy(skeleton);
+  summary.finalEnergy = summary.initialEnergy;
+
+  const double denominator = std::max(1.0, std::abs(summary.initialEnergy));
+  for (int i = 0; i < numSteps; ++i) {
+    runner(world);
+    const double energy = totalEnergy(skeleton);
+
+    if (!std::isfinite(energy)) {
+      summary.maxRelativeEnergyDrift = std::numeric_limits<double>::infinity();
+      summary.finalRelativeEnergyDrift
+          = std::numeric_limits<double>::infinity();
+      summary.finalEnergy = energy;
+      return summary;
+    }
+
+    summary.finalEnergy = energy;
+    const double relativeEnergyDrift
+        = std::abs(energy - summary.initialEnergy) / denominator;
+    summary.maxRelativeEnergyDrift
+        = std::max(summary.maxRelativeEnergyDrift, relativeEnergyDrift);
+  }
+
+  summary.finalRelativeEnergyDrift
+      = (summary.finalEnergy - summary.initialEnergy) / denominator;
+  return summary;
+}
+
+ReferenceErrorSummary summarizeFloatingBaseRungeKutta4ReferenceError(
+    int numChildLinks, double dt, int numSteps, int referenceSubsteps)
+{
+  dart::dynamics::SkeletonPtr testedSkeleton;
+  auto testedWorld
+      = createFloatingBaseWorld(numChildLinks, dt, &testedSkeleton);
+  runWorldRungeKutta4Steps(testedWorld, numSteps);
+
+  dart::dynamics::SkeletonPtr referenceSkeleton;
+  const double referenceDt = dt / static_cast<double>(referenceSubsteps);
+  auto referenceWorld
+      = createFloatingBaseWorld(numChildLinks, referenceDt, &referenceSkeleton);
+  runWorldRungeKutta4Steps(referenceWorld, numSteps * referenceSubsteps);
+
+  const Eigen::VectorXd positionError = testedSkeleton->getPositionDifferences(
+      testedSkeleton->getPositions(), referenceSkeleton->getPositions());
   const Eigen::VectorXd velocityError
       = testedSkeleton->getVelocities() - referenceSkeleton->getVelocities();
 
@@ -599,6 +759,112 @@ static void BM_ArticulatedEnergy_BallChainRungeKutta4(benchmark::State& state)
   state.ResumeTiming();
 }
 
+static void BM_ArticulatedEnergy_FloatingBaseChainWorldStep(
+    benchmark::State& state)
+{
+  const int numChildLinks = linksFromState(state);
+  const double dt = dtFromState(state);
+  const int numSteps = stepsFromState(state);
+
+  for (auto _ : state) {
+    dart::dynamics::SkeletonPtr skeleton;
+    auto world = createFloatingBaseWorld(numChildLinks, dt, &skeleton);
+
+    runWorldSteps(world, numSteps);
+
+    benchmark::DoNotOptimize(skeleton->getPositions().data());
+    benchmark::DoNotOptimize(skeleton->getVelocities().data());
+  }
+
+  state.SetItemsProcessed(
+      state.iterations()
+      * static_cast<int64_t>((6 + numChildLinks) * numSteps));
+  state.counters["child_links"] = numChildLinks;
+  state.counters["substeps"] = 1;
+  state.counters["simulated_seconds"] = dt * static_cast<double>(numSteps);
+  state.PauseTiming();
+  addCounters(
+      state,
+      summarizeFloatingBaseEnergyDrift(
+          numChildLinks, dt, numSteps, [](const auto& world) {
+            world->step();
+          }));
+  state.ResumeTiming();
+}
+
+static void BM_ArticulatedEnergy_FloatingBaseChainSubsteppedWorldStep(
+    benchmark::State& state)
+{
+  const int numChildLinks = linksFromState(state);
+  const double outerDt = dtFromState(state);
+  const int numOuterSteps = stepsFromState(state);
+  const int substeps = substepsFromState(state);
+
+  for (auto _ : state) {
+    dart::dynamics::SkeletonPtr skeleton;
+    auto world = createFloatingBaseWorld(numChildLinks, outerDt, &skeleton);
+
+    runWorldSubsteps(world, numOuterSteps, substeps);
+
+    benchmark::DoNotOptimize(skeleton->getPositions().data());
+    benchmark::DoNotOptimize(skeleton->getVelocities().data());
+  }
+
+  state.SetItemsProcessed(
+      state.iterations()
+      * static_cast<int64_t>((6 + numChildLinks) * numOuterSteps * substeps));
+  state.counters["child_links"] = numChildLinks;
+  state.counters["substeps"] = substeps;
+  state.counters["simulated_seconds"]
+      = outerDt * static_cast<double>(numOuterSteps);
+  state.PauseTiming();
+  addCounters(
+      state,
+      summarizeFloatingBaseEnergyDrift(
+          numChildLinks, outerDt, numOuterSteps, [substeps](const auto& world) {
+            world->stepSubsteps(static_cast<std::size_t>(substeps));
+          }));
+  state.ResumeTiming();
+}
+
+static void BM_ArticulatedEnergy_FloatingBaseChainRungeKutta4(
+    benchmark::State& state)
+{
+  const int numChildLinks = linksFromState(state);
+  const double dt = dtFromState(state);
+  const int numSteps = stepsFromState(state);
+
+  for (auto _ : state) {
+    dart::dynamics::SkeletonPtr skeleton;
+    auto world = createFloatingBaseWorld(numChildLinks, dt, &skeleton);
+
+    runWorldRungeKutta4Steps(world, numSteps);
+
+    benchmark::DoNotOptimize(world.get());
+    benchmark::DoNotOptimize(skeleton->getPositions().data());
+    benchmark::DoNotOptimize(skeleton->getVelocities().data());
+  }
+
+  state.SetItemsProcessed(
+      state.iterations()
+      * static_cast<int64_t>((6 + numChildLinks) * numSteps));
+  state.counters["child_links"] = numChildLinks;
+  state.counters["substeps"] = 1;
+  state.counters["simulated_seconds"] = dt * static_cast<double>(numSteps);
+  state.PauseTiming();
+  addCounters(
+      state,
+      summarizeFloatingBaseEnergyDrift(
+          numChildLinks, dt, numSteps, [](const auto& world) {
+            world->stepUnconstrainedRungeKutta4();
+          }));
+  addReferenceErrorCounters(
+      state,
+      summarizeFloatingBaseRungeKutta4ReferenceError(
+          numChildLinks, dt, numSteps, 10));
+  state.ResumeTiming();
+}
+
 BENCHMARK(BM_ArticulatedEnergy_RevoluteChainWorldStep)
     ->Args({1, 1000, 1000})
     ->Args({2, 1000, 1000})
@@ -623,5 +889,14 @@ BENCHMARK(BM_ArticulatedEnergy_BallChainSubsteppedWorldStep)
     ->Args({3, 5000, 1000, 5});
 
 BENCHMARK(BM_ArticulatedEnergy_BallChainRungeKutta4)->Args({3, 5000, 1000});
+
+BENCHMARK(BM_ArticulatedEnergy_FloatingBaseChainWorldStep)
+    ->Args({3, 5000, 1000});
+
+BENCHMARK(BM_ArticulatedEnergy_FloatingBaseChainSubsteppedWorldStep)
+    ->Args({3, 5000, 1000, 5});
+
+BENCHMARK(BM_ArticulatedEnergy_FloatingBaseChainRungeKutta4)
+    ->Args({3, 5000, 1000});
 
 BENCHMARK_MAIN();

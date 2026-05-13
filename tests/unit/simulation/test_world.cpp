@@ -1241,6 +1241,91 @@ WorldPtr createRevoluteChainWorld(
 }
 
 //==============================================================================
+WorldPtr createFloatingBaseRevoluteChainWorld(
+    const std::string& namePrefix,
+    double timeStep,
+    SkeletonPtr* chainOut = nullptr)
+{
+  auto world = World::create(namePrefix + "_world");
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->setTimeStep(timeStep);
+
+  auto chain = Skeleton::create(namePrefix + "_floating_chain");
+  chain->disableSelfCollisionCheck();
+
+  auto rootPair = chain->createJointAndBodyNodePair<FreeJoint>();
+  auto* rootJoint = rootPair.first;
+  auto* parent = rootPair.second;
+
+  parent->setMass(1.4);
+  parent->setLocalCOM(Eigen::Vector3d(0.03, -0.02, 0.04));
+  parent->setMomentOfInertia(0.42, 0.55, 0.68, 0.02, -0.01, 0.015);
+
+  for (std::size_t i = 0u; i < rootJoint->getNumDofs(); ++i) {
+    rootJoint->setDampingCoefficient(i, 0.0);
+    rootJoint->setCoulombFriction(i, 0.0);
+    rootJoint->setSpringStiffness(i, 0.0);
+  }
+
+  constexpr double mass = 0.7;
+  constexpr double length = 0.55;
+  constexpr double width = 0.06;
+  constexpr double transverseMoment
+      = mass * (length * length + width * width) / 12.0;
+  constexpr double axialMoment = mass * width * width / 6.0;
+  constexpr std::size_t numChildLinks = 3u;
+
+  for (std::size_t i = 0u; i < numChildLinks; ++i) {
+    RevoluteJoint::Properties jointProperties;
+    jointProperties.mName = "floating_child_joint_" + std::to_string(i);
+    jointProperties.mAxis
+        = (i % 2u == 0u) ? Eigen::Vector3d::UnitY() : Eigen::Vector3d::UnitX();
+    jointProperties.mT_ParentBodyToJoint.translation()
+        = Eigen::Vector3d(0.0, 0.0, -length);
+
+    BodyNode::Properties bodyProperties;
+    bodyProperties.mName = "floating_child_link_" + std::to_string(i);
+    bodyProperties.mInertia.setMass(mass);
+    bodyProperties.mInertia.setLocalCOM(
+        Eigen::Vector3d(0.0, 0.02, -0.5 * length));
+    bodyProperties.mInertia.setMoment(
+        transverseMoment, transverseMoment, axialMoment, 0.0, 0.0, 0.0);
+
+    auto pair = parent->createChildJointAndBodyNodePair<RevoluteJoint>(
+        jointProperties, bodyProperties);
+    pair.first->setDampingCoefficient(0, 0.0);
+    pair.first->setCoulombFriction(0, 0.0);
+    pair.first->setSpringStiffness(0, 0.0);
+    pair.first->setLimitEnforcement(false);
+    parent = pair.second;
+  }
+
+  Eigen::VectorXd positions = Eigen::VectorXd::Zero(chain->getNumDofs());
+  Eigen::VectorXd velocities = Eigen::VectorXd::Zero(chain->getNumDofs());
+
+  positions.head<3>() = Eigen::Vector3d(0.24, -0.18, 0.11);
+  positions.segment<3>(3) = Eigen::Vector3d(0.0, 0.0, 0.6);
+  velocities.head<3>() = Eigen::Vector3d(0.7, -0.45, 0.35);
+  velocities.segment<3>(3) = Eigen::Vector3d(0.15, -0.08, 0.04);
+
+  for (std::size_t i = 0u; i < numChildLinks; ++i) {
+    const Eigen::Index index = static_cast<Eigen::Index>(6u + i);
+    positions[index] = 0.35 - 0.09 * static_cast<double>(i);
+    velocities[index] = 0.9 - 0.12 * static_cast<double>(i);
+  }
+
+  chain->setPositions(positions);
+  chain->setVelocities(velocities);
+
+  world->addSkeleton(chain);
+  if (chainOut) {
+    *chainOut = chain;
+  }
+
+  return world;
+}
+
+//==============================================================================
 double totalEnergy(const SkeletonPtr& skeleton)
 {
   return skeleton->computeKineticEnergy() + skeleton->computePotentialEnergy();
@@ -1544,6 +1629,44 @@ TEST(WorldTests, StepUnconstrainedRungeKutta4ReducesArticulatedEnergyDrift)
 
   EXPECT_LT(rungeKuttaDrift, substepDrift * 0.01);
   EXPECT_LT(rungeKuttaDrift, 2e-4);
+}
+
+//==============================================================================
+TEST(
+    WorldTests,
+    StepUnconstrainedRungeKutta4ReducesFloatingBaseArticulatedEnergyDrift)
+{
+  constexpr double timeStep = 0.005;
+  constexpr std::size_t numSteps = 500u;
+  constexpr std::size_t substeps = 5u;
+
+  SkeletonPtr dynamicsChain;
+  auto dynamicsWorld = createFloatingBaseRevoluteChainWorld(
+      "floating_base_dynamics", timeStep, &dynamicsChain);
+  (void)dynamicsWorld;
+  auto* rootJoint = dynamic_cast<FreeJoint*>(dynamicsChain->getJoint(0));
+  ASSERT_NE(rootJoint, nullptr);
+
+  dynamicsChain->computeForwardDynamics();
+  EXPECT_GT(rootJoint->getAccelerations().norm(), 1e-6)
+      << "moving articulated children should couple into the floating-base "
+         "FreeJoint dynamics";
+
+  SkeletonPtr substepChain;
+  auto substepWorld = createFloatingBaseRevoluteChainWorld(
+      "floating_base_substep", timeStep, &substepChain);
+
+  SkeletonPtr rungeKuttaChain;
+  auto rungeKuttaWorld = createFloatingBaseRevoluteChainWorld(
+      "floating_base_rk4", timeStep, &rungeKuttaChain);
+
+  const double substepDrift
+      = maxRelativeEnergyDrift(substepWorld, substepChain, numSteps, substeps);
+  const double rungeKuttaDrift = maxRelativeEnergyDriftRungeKutta4(
+      rungeKuttaWorld, rungeKuttaChain, numSteps);
+
+  EXPECT_LT(rungeKuttaDrift, substepDrift * 0.01);
+  EXPECT_LT(rungeKuttaDrift, 1e-5);
 }
 
 //==============================================================================

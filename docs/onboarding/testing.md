@@ -275,7 +275,7 @@ pixi run physics-bm-check
 
 - `free_body_energy`: torque-free free-body energy and angular momentum drift
 - `free_joint_pose`: free-joint pose integration accuracy and throughput
-- `articulated_energy`: single-axis and multi-axis articulated-chain energy
+- `articulated_energy`: fixed-base and floating-base articulated-chain energy
   drift with default stepping, substeps, and unconstrained Runge-Kutta stepping
 - `contact_stability`: stacked-contact penetration, height drift, frictional
   hold drift, and throughput

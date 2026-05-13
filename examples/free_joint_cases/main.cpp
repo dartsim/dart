@@ -107,6 +107,15 @@ struct FreeJointCase
   CaseMetrics metrics;
 };
 
+struct ArticulatedCase
+{
+  std::string name;
+  dart::dynamics::SkeletonPtr skeleton;
+  Eigen::VectorXd initialPositions;
+  Eigen::VectorXd initialVelocities;
+  double initialEnergy{0.0};
+};
+
 struct LiveCaseMetrics
 {
   double energy{0.0};
@@ -196,6 +205,95 @@ FreeJointCase makeCase(
       Eigen::Isometry3d::Identity());
   data.referenceJoint->setPositions(data.initialPositions);
   data.referenceJoint->setVelocities(Eigen::Vector6d::Zero());
+
+  return data;
+}
+
+ArticulatedCase makeFloatingBaseArticulatedCase()
+{
+  using namespace dart::dynamics;
+
+  ArticulatedCase data;
+  data.name = "Floating articulated chain";
+  data.skeleton = Skeleton::create("floating_articulated_chain");
+  data.skeleton->disableSelfCollisionCheck();
+
+  auto rootPair = data.skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* rootJoint = rootPair.first;
+  auto* parent = rootPair.second;
+
+  parent->setName("floating_base");
+  parent->setMass(1.4);
+  parent->setLocalCOM(Eigen::Vector3d(0.03, -0.02, 0.04));
+  parent->setMomentOfInertia(0.42, 0.55, 0.68, 0.02, -0.01, 0.015);
+  auto rootShape = parent->createShapeNodeWith<VisualAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d(0.38, 0.25, 0.18)));
+  rootShape->getVisualAspect()->setColor(Eigen::Vector4d(0.1, 0.8, 0.9, 0.45));
+
+  for (std::size_t i = 0; i < rootJoint->getNumDofs(); ++i) {
+    rootJoint->setDampingCoefficient(i, 0.0);
+    rootJoint->setCoulombFriction(i, 0.0);
+    rootJoint->setSpringStiffness(i, 0.0);
+  }
+
+  constexpr double mass = 0.7;
+  constexpr double length = 0.55;
+  constexpr double width = 0.06;
+  const double transverseMoment
+      = mass * (length * length + width * width) / 12.0;
+  const double axialMoment = mass * width * width / 6.0;
+  constexpr std::size_t numChildLinks = 3u;
+
+  for (std::size_t i = 0; i < numChildLinks; ++i) {
+    RevoluteJoint::Properties jointProperties;
+    jointProperties.mName = "floating_child_joint_" + std::to_string(i);
+    jointProperties.mAxis
+        = (i % 2u == 0u) ? Eigen::Vector3d::UnitY() : Eigen::Vector3d::UnitX();
+    jointProperties.mT_ParentBodyToJoint.translation()
+        = Eigen::Vector3d(0.0, 0.0, -length);
+
+    BodyNode::Properties bodyProperties;
+    bodyProperties.mName = "floating_child_link_" + std::to_string(i);
+    bodyProperties.mInertia.setMass(mass);
+    bodyProperties.mInertia.setLocalCOM(
+        Eigen::Vector3d(0.0, 0.02, -0.5 * length));
+    bodyProperties.mInertia.setMoment(
+        transverseMoment, transverseMoment, axialMoment, 0.0, 0.0, 0.0);
+
+    auto pair = parent->createChildJointAndBodyNodePair<RevoluteJoint>(
+        jointProperties, bodyProperties);
+    auto* joint = pair.first;
+    parent = pair.second;
+
+    joint->setDampingCoefficient(0, 0.0);
+    joint->setCoulombFriction(0, 0.0);
+    joint->setSpringStiffness(0, 0.0);
+    joint->setLimitEnforcement(false);
+
+    auto linkShape = parent->createShapeNodeWith<VisualAspect>(
+        std::make_shared<BoxShape>(Eigen::Vector3d(0.10, 0.12, length)));
+    linkShape->getVisualAspect()->setColor(
+        (i % 2u == 0u) ? Eigen::Vector4d(0.9, 0.75, 0.1, 0.45)
+                       : Eigen::Vector4d(0.45, 0.25, 0.85, 0.45));
+  }
+
+  data.initialPositions = Eigen::VectorXd::Zero(data.skeleton->getNumDofs());
+  data.initialVelocities = Eigen::VectorXd::Zero(data.skeleton->getNumDofs());
+
+  data.initialPositions.head<3>() = Eigen::Vector3d(0.24, -0.18, 0.11);
+  data.initialPositions.segment<3>(3) = Eigen::Vector3d(1.5, 1.2, 0.8);
+  data.initialVelocities.head<3>() = Eigen::Vector3d(0.7, -0.45, 0.35);
+  data.initialVelocities.segment<3>(3) = Eigen::Vector3d(0.15, -0.08, 0.04);
+
+  for (std::size_t i = 0; i < numChildLinks; ++i) {
+    const Eigen::Index index = static_cast<Eigen::Index>(6u + i);
+    data.initialPositions[index] = 0.35 - 0.09 * static_cast<double>(i);
+    data.initialVelocities[index] = 0.9 - 0.12 * static_cast<double>(i);
+  }
+
+  data.skeleton->setPositions(data.initialPositions);
+  data.skeleton->setVelocities(data.initialVelocities);
+  data.initialEnergy = data.skeleton->computeKineticEnergy();
 
   return data;
 }
@@ -478,6 +576,7 @@ public:
       osg::ref_ptr<SubsteppingWorldNode> node,
       dart::simulation::WorldPtr world,
       std::vector<FreeJointCase> cases,
+      std::vector<ArticulatedCase> articulatedCases,
       double numericDt,
       double simulationDt,
       GroundTruthModel groundTruthModel,
@@ -491,6 +590,7 @@ public:
       mNode(std::move(node)),
       mWorld(std::move(world)),
       mCases(std::move(cases)),
+      mArticulatedCases(std::move(articulatedCases)),
       mNumericDt(numericDt),
       mSimulationDt(simulationDt),
       mGroundTruthModel(groundTruthModel),
@@ -758,6 +858,35 @@ public:
       }
     }
 
+    if (ImGui::CollapsingHeader("Articulated FreeJoint Root")) {
+      if (ImGui::BeginTable(
+              "freejoint_articulated_cases_table",
+              3,
+              ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg
+                  | ImGuiTableFlags_SizingFixedFit)) {
+        ImGui::TableSetupColumn("Case");
+        ImGui::TableSetupColumn("DOFs");
+        ImGui::TableSetupColumn("dKE/KE0");
+        ImGui::TableHeadersRow();
+
+        for (const auto& c : mArticulatedCases) {
+          const double energy = c.skeleton->computeKineticEnergy();
+          const double scale = std::max(1.0, c.initialEnergy);
+          const double relativeEnergyDrift = (energy - c.initialEnergy) / scale;
+
+          ImGui::TableNextRow();
+          ImGui::TableNextColumn();
+          ImGui::TextUnformatted(c.name.c_str());
+          ImGui::TableNextColumn();
+          ImGui::Text("%d", static_cast<int>(c.skeleton->getNumDofs()));
+          ImGui::TableNextColumn();
+          ImGui::TextUnformatted(formatScientific(relativeEnergyDrift).c_str());
+        }
+
+        ImGui::EndTable();
+      }
+    }
+
     if (ImGui::CollapsingHeader("Numeric checks")) {
       if (ImGui::BeginTable(
               "freejoint_numeric_checks_table",
@@ -829,6 +958,14 @@ private:
         c.referenceJoint->setPositions(c.initialPositions);
         c.referenceJoint->setVelocities(Eigen::Vector6d::Zero());
       }
+    }
+
+    for (auto& c : mArticulatedCases) {
+      c.skeleton->setPositions(c.initialPositions);
+      c.skeleton->setVelocities(c.initialVelocities);
+      c.skeleton->setAccelerations(
+          Eigen::VectorXd::Zero(c.skeleton->getNumDofs()));
+      c.initialEnergy = c.skeleton->computeKineticEnergy();
     }
 
     resetTorqueFreeGroundTruth();
@@ -991,6 +1128,14 @@ private:
           = std::max(maxReferenceRotationError, live.referenceRotationError);
     }
 
+    for (const auto& c : mArticulatedCases) {
+      const double energy = c.skeleton->computeKineticEnergy();
+      const double scale = std::max(1.0, c.initialEnergy);
+      maxAbsRelativeEnergyDrift = std::max(
+          maxAbsRelativeEnergyDrift,
+          std::abs((energy - c.initialEnergy) / scale));
+    }
+
     mMaxAbsRelativeEnergyDrift
         = std::max(mMaxAbsRelativeEnergyDrift, maxAbsRelativeEnergyDrift);
     mMaxReferenceTranslationError
@@ -1075,6 +1220,7 @@ private:
   osg::ref_ptr<SubsteppingWorldNode> mNode;
   dart::simulation::WorldPtr mWorld;
   std::vector<FreeJointCase> mCases;
+  std::vector<ArticulatedCase> mArticulatedCases;
   static constexpr std::size_t kHistoryLength = 240;
   double mNumericDt;
   double mSimulationDt;
@@ -1216,9 +1362,15 @@ int main(int argc, char* argv[])
         "High omega multi-axis", pose, vel, dart::Color::Fuchsia(0.3)));
   }
 
+  std::vector<ArticulatedCase> articulatedCases;
+  articulatedCases.push_back(makeFloatingBaseArticulatedCase());
+
   for (const auto& c : cases) {
     world->addSkeleton(c.skeleton);
     world->addSkeleton(c.referenceSkeleton);
+  }
+  for (const auto& c : articulatedCases) {
+    world->addSkeleton(c.skeleton);
   }
 
   osg::ref_ptr<SubsteppingWorldNode> node = new SubsteppingWorldNode(world);
@@ -1242,6 +1394,7 @@ int main(int argc, char* argv[])
           node,
           world,
           cases,
+          articulatedCases,
           numericDt,
           simulationDt,
           groundTruthModel,

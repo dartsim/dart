@@ -44,7 +44,10 @@ BENCHMARK_RUNS = {
             "RevoluteChainRungeKutta4/5/10000/1000|"
             "BallChainWorldStep/3/5000/1000|"
             "BallChainSubsteppedWorldStep/3/5000/1000/5|"
-            "BallChainRungeKutta4/3/5000/1000)$"
+            "BallChainRungeKutta4/3/5000/1000|"
+            "FloatingBaseChainWorldStep/3/5000/1000|"
+            "FloatingBaseChainSubsteppedWorldStep/3/5000/1000/5|"
+            "FloatingBaseChainRungeKutta4/3/5000/1000)$"
         ),
     ),
     "contact": BenchmarkRun(
@@ -532,6 +535,17 @@ def check_articulated(entries: dict[str, dict]) -> tuple[list[str], list[str]]:
     ball_runge_kutta = require_entry(
         entries, "BM_ArticulatedEnergy_BallChainRungeKutta4/3/5000/1000"
     )
+    floating_direct = require_entry(
+        entries, "BM_ArticulatedEnergy_FloatingBaseChainWorldStep/3/5000/1000"
+    )
+    floating_substepped = require_entry(
+        entries,
+        "BM_ArticulatedEnergy_FloatingBaseChainSubsteppedWorldStep/3/5000/1000/5",
+    )
+    floating_runge_kutta = require_entry(
+        entries,
+        "BM_ArticulatedEnergy_FloatingBaseChainRungeKutta4/3/5000/1000",
+    )
 
     direct_drift = require_counter(direct, "max_rel_energy_drift")
     substep_drift = require_counter(substepped, "max_rel_energy_drift")
@@ -539,6 +553,13 @@ def check_articulated(entries: dict[str, dict]) -> tuple[list[str], list[str]]:
     ball_direct_drift = require_counter(ball_direct, "max_rel_energy_drift")
     ball_substep_drift = require_counter(ball_substepped, "max_rel_energy_drift")
     ball_runge_kutta_drift = require_counter(ball_runge_kutta, "max_rel_energy_drift")
+    floating_direct_drift = require_counter(floating_direct, "max_rel_energy_drift")
+    floating_substep_drift = require_counter(
+        floating_substepped, "max_rel_energy_drift"
+    )
+    floating_runge_kutta_drift = require_counter(
+        floating_runge_kutta, "max_rel_energy_drift"
+    )
     check_ratio(
         failures,
         passes,
@@ -696,6 +717,85 @@ def check_articulated(entries: dict[str, dict]) -> tuple[list[str], list[str]]:
         "ball-chain Runge-Kutta max velocity error vs reference",
         require_counter(ball_runge_kutta, "max_abs_velocity_error_vs_ref"),
         1e-4,
+    )
+    check_ratio(
+        failures,
+        passes,
+        "floating-base chain substep energy drift improvement",
+        floating_substep_drift,
+        floating_direct_drift,
+        0.3,
+    )
+    check_less_equal(
+        failures,
+        passes,
+        "floating-base chain substep energy drift",
+        floating_substep_drift,
+        0.01,
+    )
+    check_greater_equal(
+        failures,
+        passes,
+        "floating-base chain substep throughput",
+        require_counter(floating_substepped, "items_per_second"),
+        5e4,
+    )
+    check_ratio(
+        failures,
+        passes,
+        "floating-base chain Runge-Kutta energy drift improvement",
+        floating_runge_kutta_drift,
+        floating_substep_drift,
+        1e-3,
+    )
+    check_less_equal(
+        failures,
+        passes,
+        "floating-base chain Runge-Kutta energy drift",
+        floating_runge_kutta_drift,
+        1e-5,
+    )
+    check_greater_equal(
+        failures,
+        passes,
+        "floating-base chain Runge-Kutta throughput",
+        require_counter(floating_runge_kutta, "items_per_second"),
+        1e4,
+    )
+    check_greater_equal(
+        failures,
+        passes,
+        "floating-base chain Runge-Kutta reference substeps",
+        require_counter(floating_runge_kutta, "reference_substeps"),
+        10,
+    )
+    check_less_equal(
+        failures,
+        passes,
+        "floating-base chain Runge-Kutta position RMS error vs reference",
+        require_counter(floating_runge_kutta, "position_rms_error_vs_ref"),
+        1e-5,
+    )
+    check_less_equal(
+        failures,
+        passes,
+        "floating-base chain Runge-Kutta velocity RMS error vs reference",
+        require_counter(floating_runge_kutta, "velocity_rms_error_vs_ref"),
+        2e-5,
+    )
+    check_less_equal(
+        failures,
+        passes,
+        "floating-base chain Runge-Kutta max position error vs reference",
+        require_counter(floating_runge_kutta, "max_abs_position_error_vs_ref"),
+        2e-5,
+    )
+    check_less_equal(
+        failures,
+        passes,
+        "floating-base chain Runge-Kutta max velocity error vs reference",
+        require_counter(floating_runge_kutta, "max_abs_velocity_error_vs_ref"),
+        5e-5,
     )
     return failures, passes
 

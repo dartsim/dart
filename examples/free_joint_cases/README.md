@@ -18,6 +18,8 @@ Each case shows:
 - An actively simulated body (colored box)
 - A kinematic reference body (slightly larger, transparent box)
 - Live energy drift, reference pose error, and simulation step-rate plots
+- A floating-base articulated chain with a root `FreeJoint` and movable child
+  joints, reported separately in the articulated table
 
 The reference pose can be computed using either:
 
@@ -44,5 +46,7 @@ Controls are available in the ImGui window for toggling simulation, selecting
 the integration mode, resetting the cases, and running numeric checks (analytic
 vs. finite-difference Jacobians). The "Energy and reference" panel plots the
 maximum relative kinetic-energy drift and maximum pose error against the
-reference bodies. The "Performance" panel shows render FPS, simulated steps per
-second, real-time factor, and a step-rate history plot.
+reference bodies. The articulated table reports the floating-base mechanism's
+energy drift without applying the single-body reference model. The "Performance"
+panel shows render FPS, simulated steps per second, real-time factor, and a
+step-rate history plot.

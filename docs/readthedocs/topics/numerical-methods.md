@@ -47,7 +47,7 @@ runtime. Large timesteps are more likely to cause:
 When debugging instability, treat `dt` as a first-class parameter: many control
 gains that are stable at `1/1000 s` will not be stable at `1/60 s`.
 
-## Free-body invariant stepping
+## Free-body invariant shortcut
 
 `World::step()` uses an invariant-preserving update for an exactly unforced,
 single-body root `FreeJoint` when the body has no gravity, external wrench,
@@ -60,6 +60,12 @@ Any nonzero user-supplied force, command, coefficient, gravity vector, or frame
 offset keeps the normal dynamics path. Even very small applied torques are
 treated as real input instead of numerical noise, because they can accumulate
 over long simulations.
+
+This shortcut is not the general articulated-body strategy. A floating-base
+robot or mechanism with movable child joints has coupled generalized
+coordinates, so preserving the root body's single-rigid-body invariants would
+be the wrong model. Use the general timestep controls below for articulated
+systems, including systems whose root joint is a `FreeJoint`.
 
 ## Using substeps
 
@@ -81,8 +87,8 @@ substeps and are reset only after the final substep when the reset flag is true.
 ## Higher-order unconstrained stepping
 
 For rigid articulated worlds that do not need contact or constraint impulses,
-`World::stepUnconstrainedRungeKutta4()` advances mobile skeletons with a
-fourth-order Runge-Kutta integration of forward dynamics:
+`World::stepUnconstrainedRungeKutta4()` advances every mobile rigid `Skeleton`
+with a fourth-order Runge-Kutta integration of forward dynamics:
 
 ```cpp
 world->setTimeStep(1.0 / 100.0);
@@ -92,7 +98,8 @@ while (...) {
 }
 ```
 
-This path uses the same joint-space position integration as DART joints, so
+This path uses the same joint-space position integration as DART joints,
+including floating-base `FreeJoint` roots and downstream articulated joints, so
 rotational coordinates remain on their manifolds. It intentionally does not run
 the constraint solver or collision response; use `World::step()` or
 `World::stepSubsteps()` for scenes that rely on contacts, joint constraints,
