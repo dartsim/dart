@@ -72,6 +72,11 @@ The latest downstream-migration slice documents the compatibility contract in
 compatibility facades so downstream users can see that retained legacy runtime
 names route to the built-in detector. The documented migration path still needs
 fresh gz-physics and package-smoke run evidence before final deletion.
+The latest runtime-isolation slice adds
+`scripts/check_collision_runtime_isolation.py` and wires it into `lint` and
+`check-lint` so non-reference DART source paths cannot include FCL, Bullet,
+ODE, libccd, or explicit collision reference backend headers, and legacy engine
+implementation sources cannot move back outside `reference/` paths.
 
 ## Current Branch
 
@@ -121,7 +126,9 @@ legacy detector headers and source-tree top-level detector/group/All/PascalCase
 headers are native-backed facades in native-only and reference-enabled
 installs. Old-engine FCL, Bullet, and ODE implementation headers/sources now
 live under explicit `reference/` paths and remain available only to reference
-tests and benchmarks.
+tests and benchmarks. Runtime source isolation is now enforced by lint so those
+old-engine includes and implementation sources cannot return to the normal DART
+source paths unnoticed.
 User-facing examples/tutorials have also been moved off the old collision
 components: their CMake no longer requires `collision-bullet`/`collision-ode`,
 source no longer includes or selects Bullet/ODE/FCL detector APIs, and affected

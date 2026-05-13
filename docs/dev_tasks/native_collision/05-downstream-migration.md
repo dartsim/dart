@@ -46,9 +46,12 @@ checks pass:
 3. Python compatibility names construct and report detector type `dart`.
 4. Source-tree and installed legacy detector headers compile without FCL,
    Bullet, or ODE headers in native-only builds.
-5. CI wheel artifacts pass `wheel-verify`, including the collision-isolation
+5. `check-collision-runtime-isolation` passes in lint, proving non-reference
+   DART source paths do not include old-engine or reference-backend headers and
+   legacy implementation sources remain under explicit `reference/` paths.
+6. CI wheel artifacts pass `wheel-verify`, including the collision-isolation
    verifier.
-6. Reference tests and benchmarks still have explicit opt-in access through
+7. Reference tests and benchmarks still have explicit opt-in access through
    `collision-reference-*` targets.
 
 ## Final Removal Sequence

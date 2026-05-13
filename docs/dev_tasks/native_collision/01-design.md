@@ -149,7 +149,9 @@ follow-up nice-to-haves.
 - Reference isolation gate: FCL, Bullet, and ODE are reachable only from
   explicit reference correctness tests and comparative benchmarks. Native-only
   runtime, dartpy, wheel, installed-package, and downstream compatibility paths
-  must not link or advertise old collision runtime engines.
+  must not link or advertise old collision runtime engines. Lint must also
+  guard the source boundary so non-reference DART source paths cannot include
+  old-engine or reference-backend headers.
 - Compatibility facade gate: gz-physics-required legacy names still compile
   during the migration window, but construction, factory selection, and Python
   access all route to the built-in detector unless the call site is an
@@ -180,12 +182,15 @@ longer installed on the public legacy paths. Source-tree legacy headers now
 match that boundary: top-level FCL, Bullet, and ODE detector/group,
 PascalCase, All, and component headers are native-backed compatibility
 facades, and old-engine implementation headers/sources live under explicit
-`reference/` paths used by reference tests and benchmarks. The remaining
-design gaps are CI and packaging evidence at matrix scale, downstream
-migration/deprecation evidence, and broader recurring correctness/performance
-guardrails across the public DART adapter and native core paths. The completed
-PR must make it impossible for ordinary DART collision runtime selection to
-instantiate or link FCL, Bullet, or ODE.
+`reference/` paths used by reference tests and benchmarks. Runtime source
+isolation is now checked by lint so non-reference DART source paths cannot
+include old-engine or reference-backend headers, and legacy implementation
+sources cannot move back outside `reference/` paths. The remaining design gaps
+are CI and packaging evidence at matrix scale, downstream migration/deprecation
+evidence, and broader recurring correctness/performance guardrails across the
+public DART adapter and native core paths. The completed PR must make it
+impossible for ordinary DART collision runtime selection to instantiate or link
+FCL, Bullet, or ODE.
 
 ## Code Ownership Map
 
@@ -209,9 +214,10 @@ The final code layout should make the layer boundary visible during review:
 
 The dependency rule is one-way: public and compatibility surfaces call into the
 DART adapter; the DART adapter calls the native core; the native core never
-includes old runtime backend headers. This is what keeps the API clean while
-still allowing the native implementation to use specialized internal data
-structures.
+includes old runtime backend headers. The lint-time runtime isolation check is
+the local enforcement for that source boundary. This is what keeps the API
+clean while still allowing the native implementation to use specialized
+internal data structures.
 
 ## Installed Package And API Boundary
 

@@ -181,6 +181,8 @@ files or runtime links. Downstream-component inspection and CI wheel-matrix
 evidence are still required before this phase is complete. C++ reference tests
 and benchmarks now call explicit `createReference()` detector APIs, so
 old-engine comparison intent is visible at each call site.
+The runtime source isolation check is wired into lint so non-reference DART
+source paths cannot include old-engine or reference-backend headers.
 
 Success criteria:
 
@@ -305,8 +307,11 @@ comparisons. Direct public C++ legacy detector `create()` paths now resolve to
 `DartCollisionDetector`. Top-level source-tree FCL, Bullet, and ODE
 detector/group headers are native-backed facades, while real FCL/Bullet/ODE
 implementation headers and sources live under explicit `reference/` paths for
-reference-only tests and benchmarks. CI, downstream migration, and broader
-performance guardrail evidence remain before this phase can complete.
+reference-only tests and benchmarks. Lint now enforces that split by rejecting
+old-engine includes from non-reference DART source paths and rejecting legacy
+implementation sources outside `reference/` paths. CI, downstream migration,
+and broader performance guardrail evidence remain before this phase can
+complete.
 
 Success criteria:
 
@@ -350,6 +355,8 @@ Verification:
 - Benchmark labels or profiler scopes show broadphase, narrowphase, distance,
   raycast, and contact-generation costs separately.
 - Link inspection shows compatibility wrappers do not link FCL, Bullet, or ODE.
+- `check-collision-runtime-isolation` passes in lint and rejects old-engine
+  includes or implementation sources outside the explicit reference harness.
 - `pixi run -e gazebo test-gz` passes after the wrapper/adaptor cleanup.
 - Repository search shows no remaining real legacy backend dispatch path in
   `dart/collision/`.
@@ -413,6 +420,8 @@ Verification:
 - Repository search shows old backend names only in changelog, migration notes,
   intentionally retained compatibility aliases, or optional reference
   test/benchmark harnesses.
+- `check-collision-runtime-isolation` remains in lint as the local guard
+  against reintroducing old runtime backend source paths.
 
 ## Phase 14: Final PR Packaging
 

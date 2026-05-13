@@ -20,6 +20,7 @@ is tied to a commit, command, and observed output.
 | gz-physics            | `pixi run -e gazebo test-gz` passes without patches          | Focused pass, May 2026 |
 | Performance           | Comparative benchmarks show native >= best legacy backend    | Focused pass, May 2026 |
 | Dependency removal    | Default build succeeds without FCL/Bullet/ODE collision deps | Focused pass, May 2026 |
+| Source isolation      | Lint blocks old-engine runtime includes/source leakage       | Local pass, May 2026   |
 | Full validation       | `pixi run test-all` passes                                   | Passed, May 2026       |
 
 ## North-Star Progress Scale
@@ -47,7 +48,7 @@ performance-oriented internals before this scale reaches completion.
 | 8     | Default packages/wheels have no old runtime deps    | Local pass; CI wheel matrix left  |
 | 9     | Downstream migration/deprecation path is tested     | Started; alias/component coverage |
 | 10    | Collision abstraction is one clean built-in stack   | Source/package facades proven     |
-| 11    | Old runtime backend source is reference-only        | Local reference path split proven |
+| 11    | Old runtime backend source is reference-only        | Local split; lint guard wired     |
 | 12    | Final PR evidence is complete and task docs removed | Blocked on CI/migration/perf      |
 
 ## Remaining North-Star Gate Backlog
@@ -64,7 +65,7 @@ These gates are still required before the single north-star PR is complete.
 | Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Source/package facades done                    |
 | Built-in architecture       | `01-design.md` layer table passes API, scaling, perf gates  | Source split done; CI/perf gates remain        |
 | Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Scheduled/manual CI guard added; evidence left |
-| Legacy backend deletion     | Old runtime backend sources removed from default stack      | Runtime source is reference-only locally       |
+| Legacy backend deletion     | Old runtime backend sources removed from default stack      | Runtime source guard wired; deletion left      |
 
 ## Test Runs
 
@@ -1746,6 +1747,24 @@ dart_component_collision-ode dart --parallel 8`
 - `git diff --check`
   - Commit: working tree after installed legacy detector header facades and
     docs update.
+  - Result: passed.
+- `python scripts/check_collision_runtime_isolation.py`
+  - Commit: working tree after adding the runtime source isolation verifier.
+  - Result: passed. The verifier found no non-reference DART source includes of
+    FCL, Bullet, ODE, libccd, or explicit collision reference backend headers,
+    and no legacy engine implementation sources outside `reference/` paths.
+- `pixi run lint`
+  - Commit: working tree after adding the runtime source isolation verifier and
+    wiring it into lint tasks.
+  - Result: passed. CMake configure and formatting completed, and
+    `check-collision-runtime-isolation` ran as part of lint and passed.
+- `pixi run check-docs-policy`
+  - Commit: working tree after adding the runtime source isolation verifier and
+    documentation updates.
+  - Result: passed.
+- `git diff --check`
+  - Commit: working tree after adding the runtime source isolation verifier and
+    documentation updates.
   - Result: passed.
 
 ## Known Risks

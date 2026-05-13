@@ -95,6 +95,10 @@
       headers are native-backed compatibility facades, while old-engine
       implementation headers and sources live under explicit `reference/`
       paths used by reference tests and benchmarks.
+- [x] A runtime source isolation check is wired into `lint` and `check-lint`.
+      It fails if non-reference DART source paths include FCL, Bullet, ODE,
+      libccd, or explicit collision reference backend headers, or if legacy
+      engine implementation sources move back outside `reference/` paths.
 - [x] A broad recurring benchmark guard exists:
       `pixi run -e collision-reference bm-collision-check` builds and runs
       checked narrowphase, distance, raycast, mixed-primitive, mesh-heavy,
@@ -119,10 +123,10 @@
       native-backed compatibility facades versus explicit reference targets.
       Installed and source-tree legacy detector headers are also native-backed
       facades, with old-engine implementation files under explicit reference
-      paths. The remaining work is CI hardening, full wheel matrix/CI artifact
-      evidence from the wired verifier, downstream migration run evidence,
-      GitHub evidence for the scheduled performance guard, and final legacy
-      backend deletion.
+      paths, and lint now guards that runtime source isolation. The remaining
+      work is CI hardening, full wheel matrix/CI artifact evidence from the
+      wired verifier, downstream migration run evidence, GitHub evidence for
+      the scheduled performance guard, and final legacy backend deletion.
 
 ## Goal
 
@@ -175,7 +179,7 @@ The current checkpoint is a validated middle state, not a final PR boundary.
 | 8     | Default packages have no old runtime deps    | Local pass; CI verifier wired      |
 | 9     | Downstream migration/deprecation path exists | Plan documented; run evidence left |
 | 10    | Collision abstraction is one clean stack     | Source/package facades proven      |
-| 11    | Old runtime backend source is reference-only | Local reference path split proven  |
+| 11    | Old runtime backend source is reference-only | Local split; lint guard wired      |
 | 12    | Final one-PR validation and PR packaging     | Blocked on CI/migration/deletion   |
 
 ## Built-In Architecture Status
@@ -193,9 +197,11 @@ installed legacy headers, source-tree legacy detector/group/All/PascalCase
 headers, and direct legacy `create()` entry points route to the built-in `dart`
 detector. Old FCL/Bullet/ODE implementation headers and sources live under
 explicit `reference/` paths and build only through reference test/benchmark
-targets. The architecture gate remains open for CI evidence, downstream
-migration evidence, and broader correctness/performance guardrails across the
-public DART adapter and native core paths.
+targets. The `check-collision-runtime-isolation` task now guards the runtime
+source tree against reintroducing direct old-engine includes or non-reference
+implementation sources. The architecture gate remains open for CI evidence,
+downstream migration evidence, and broader correctness/performance guardrails
+across the public DART adapter and native core paths.
 
 ## Design Readiness Tracker
 
@@ -207,7 +213,7 @@ single checkpoint built locally.
 | API cleanliness         | `dart` is the canonical public detector; legacy keys, classes, headers, and package components are compatibility facades only; public options/results describe DART semantics instead of backend-specific modes. | Factory aliases, Python names, public C++ legacy `create()` paths, installed headers, source-tree top-level legacy headers, examples, and retained package components are native-backed. CI/downstream migration evidence is still needed before this is final.                                                                                                                        |
 | Scalability             | Public collision, distance, and raycast use persistent adapter scene state with stable IDs, dirty transform/shape sync, reusable broadphase/query data, cache invalidation, and deterministic ordering.          | Persistent `DartCollisionGroup` scene state, broadphase-pruned raycast, AABB-pruned distance, native filter adaptation, dynamic-shape invalidation coverage, and scene-issued manifold cache IDs are implemented locally. Broader CI and recurring benchmark evidence remain.                                                                                                          |
 | Performance orientation | Native hot paths use compact geometry, shape-specialized dispatch, persistent broadphase data, reusable scratch, clear cache lifetimes, and profiling/benchmark labels for each query stage.                     | Recorded benchmarks show native wins on the measured primitive, narrowphase, supported distance, raycast, batch, mesh-heavy, and mixed-primitive set. The recurring benchmark guard now covers checked native-vs-reference subsets plus public DART adapter collision, dirty-world, distance, and raycast scenarios, and CI Linux has a scheduled/manual artifact-producing guard job. |
-| Reference isolation     | FCL, Bullet, and ODE exist only as optional reference engines for tests and benchmarks, with native-only builds able to opt out.                                                                                 | CMake opt-out options, native-only Pixi defaults, explicit `collision-reference` opt-in, `collision-reference-*` targets, reference-path source split, package/wheel metadata cleanup, local install/wheel evidence, and wheel artifact verifier wiring are in place. CI wheel-matrix run evidence remains.                                                                            |
+| Reference isolation     | FCL, Bullet, and ODE exist only as optional reference engines for tests and benchmarks, with native-only builds able to opt out.                                                                                 | CMake opt-out options, native-only Pixi defaults, explicit `collision-reference` opt-in, `collision-reference-*` targets, reference-path source split, runtime source isolation linting, package/wheel metadata cleanup, local install/wheel evidence, and wheel artifact verifier wiring are in place. CI wheel-matrix run evidence remains.                                          |
 | Compatibility           | gz-physics and downstream source-compatible legacy names keep building during migration, but cannot select an external runtime engine.                                                                           | Legacy detector headers/classes, factory aliases, Python names, retained package components, and the documented migration contract route to native. Fresh gz-physics and downstream run evidence are still final gates.                                                                                                                                                                |
 
 ## Where To Check Progress
@@ -284,9 +290,9 @@ single checkpoint built locally.
    split: factory keys, Python detector names, direct public C++ legacy
    `create()` entry points, package component names, installed/source-tree
    compatibility headers, and user-facing examples/tutorials are native-backed;
-   old-engine implementation files are now explicit reference surfaces. Use
-   `01-design.md` as the architecture checklist for remaining CI, migration,
-   and performance gates.
+   old-engine implementation files are now explicit reference surfaces, with
+   runtime source isolation checked by lint. Use `01-design.md` as the
+   architecture checklist for remaining CI, migration, and performance gates.
 5. Test the documented downstream migration/deprecation path for legacy
    detector names and factory aliases in gz-physics and package smoke jobs.
 6. Run the scheduled/manual CI benchmark guard and collect artifact evidence for
@@ -368,8 +374,9 @@ collision stack.
      entry points now return `DartCollisionDetector`, while C++ tests and
      benchmarks use explicit `reference/` includes and `createReference()` APIs
      for old-engine comparisons. Top-level source-tree detector/group headers
-     are native-backed facades, and old-engine implementation files live under
-     reference-only paths.
+     are native-backed facades, old-engine implementation files live under
+     reference-only paths, and lint fails if runtime DART source includes
+     old-engine or reference-backend headers.
    - Preserve a clean internal architecture: public API/compatibility shell,
      DART adapter layer, native scene/query core, and optional reference
      harnesses outside runtime targets. This is an API cleanliness,
@@ -399,7 +406,9 @@ collision stack.
    - After downstream compatibility windows close, delete old backend
      source/components from the runtime backend layer, remove legacy package
      dependencies from default builds, and simplify CMake and installed-package
-     exports around native collision.
+     exports around native collision. Keep the runtime source isolation check
+     as the local guard that prevents old-engine runtime includes or
+     implementation sources from returning.
 8. **Final PR Packaging**
    - Remove this dev-task folder after transferring its evidence to the PR
      description.
@@ -415,6 +424,8 @@ collision stack.
 - `03-evidence-gates.md`: command evidence and north-star progress scale.
 - `04-reference-gap-analysis.md`: feature/API/performance gap matrix and
   implementation-ready architecture for the next coding phase.
+- `05-downstream-migration.md`: downstream compatibility contract and removal
+  gates for legacy detector names.
 - `RESUME.md`: current branch state and session handoff context.
 
 ## Completion Rules
