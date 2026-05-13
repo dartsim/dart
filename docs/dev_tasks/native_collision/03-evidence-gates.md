@@ -1362,16 +1362,16 @@ UNIT_collision_DartCollisionDetector --parallel 8`
     changed to return `DartCollisionDetector`.
   - Result: passed, 1/1 test.
 
-## User-Facing Example Runtime Cleanup Runs
+## User-Facing Example/Tutorial Runtime Cleanup Runs
 
-- `rg -n "#include <dart/collision/(bullet|ode|fcl)|collision/(bullet|ode|fcl)|DART_HAVE_(BULLET|ODE|FCL)|CollisionDetectorType::(Bullet|Ode|Fcl)|CollisionDetector::getFactory\(\)->canCreate\(\"(bullet|ode|fcl)\"\)|dart-collision-(bullet|ode|fcl)|collision-(bullet|ode|fcl)|<fcl/" examples -g 'CMakeLists.txt' -g '*.{cpp,hpp}'`
-  - Commit: working tree after moving examples off old collision components.
+- `rg -n "#include <dart/collision/(bullet|ode|fcl)|collision/(bullet|ode|fcl)|DART_HAVE_(BULLET|ODE|FCL)|DART_BUILD_COLLISION_(FCL|BULLET|ODE)|CollisionDetectorType::(Bullet|Ode|Fcl)|CollisionDetector::getFactory\(\)->canCreate\(\"(bullet|ode|fcl)\"\)|dart-collision-(bullet|ode|fcl)|collision-(bullet|ode|fcl)|<fcl/" examples tutorials -g 'CMakeLists.txt' -g '*.{cpp,hpp,md}'`
+  - Commit: working tree after moving examples/tutorials off old collision
+    components.
   - Result: no matches.
-- `rg -n "DART_BUILD_COLLISION_(FCL|BULLET|ODE)|dart-collision-(fcl|bullet|ode)|collision-(fcl|bullet|ode)|FCLCollisionDetector|BulletCollisionDetector|OdeCollisionDetector|CollisionDetectorType::(Fcl|Bullet|Ode)" examples -g 'CMakeLists.txt' -g '*.{cpp,hpp,md}'`
-  - Commit: working tree after moving examples off old collision components.
-  - Result: only stale `examples/boxes/README.md` and
-    `examples/capsule_ground_contact/README.md` references were found; those
-    README files were updated to document the built-in detector requirement.
+- `rg -n "DART_BUILD_COLLISION_(FCL|BULLET|ODE)|dart-collision-(fcl|bullet|ode)|collision-(fcl|bullet|ode)|FCLCollisionDetector|BulletCollisionDetector|OdeCollisionDetector|CollisionDetectorType::(Fcl|Bullet|Ode)" examples tutorials -g 'CMakeLists.txt' -g '*.{cpp,hpp,md}'`
+  - Commit: working tree after moving examples/tutorials off old collision
+    components and updating stale example README text.
+  - Result: no matches.
 - `pixi run -- cmake --build build/default/cpp/Release --target boxes
 add_delete_skels fetch capsule_ground_contact heightmap mimic_pendulums
 rigid_shapes human_joint_limits --parallel 8`
@@ -1396,6 +1396,19 @@ build/default/cpp/Release/bin/rigid_shapes | rg -i
 "lib(fcl|bullet|ode|ccd)|dart-collision-(fcl|bullet|ode)"`
   - Commit: working tree after moving examples off old collision components.
   - Result: no matches; affected default-built examples do not link old
+    collision engines or old collision component libraries.
+- `pixi run -- cmake --build build/default/cpp/Release --target
+tutorial_biped tutorial_biped_finished --parallel 8`
+  - Commit: working tree after moving tutorials off old collision components.
+  - Result: passed in the default native-only configuration. CMake regenerated
+    with old collision components still `OFF` and added the previously skipped
+    tutorials. Build observed only existing third-party OctoMap `<ciso646>`
+    C++20 warnings.
+- `ldd build/default/cpp/Release/bin/tutorial_biped
+build/default/cpp/Release/bin/tutorial_biped_finished | rg -i
+"lib(fcl|bullet|ode|ccd)|dart-collision-(fcl|bullet|ode)"`
+  - Commit: working tree after moving tutorials off old collision components.
+  - Result: no matches; affected default-built tutorials do not link old
     collision engines or old collision component libraries.
 
 ## Known Risks

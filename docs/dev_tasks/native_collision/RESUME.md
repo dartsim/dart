@@ -81,11 +81,12 @@ FCL, Bullet, and ODE detector classes, and direct public C++ legacy detector
 detector classes, headers, CMake component surfaces, and old-engine source
 placement still contain explicit reference-engine implementations and remain a
 north-star cleanup gate.
-User-facing examples have also been moved off the old collision components:
-their CMake no longer requires `collision-bullet`/`collision-ode`, source no
-longer includes or selects Bullet/ODE/FCL detector APIs, and affected examples
-build in the default native-only configuration. `human_joint_limits` is still
-skipped in this environment because TinyDNN is unavailable.
+User-facing examples/tutorials have also been moved off the old collision
+components: their CMake no longer requires `collision-bullet`/`collision-ode`,
+source no longer includes or selects Bullet/ODE/FCL detector APIs, and affected
+examples/tutorials build in the default native-only configuration.
+`human_joint_limits` is still skipped in this environment because TinyDNN is
+unavailable.
 `docs/dev_tasks/native_collision/01-design.md` is the canonical architecture
 contract for that remaining cleanup: public API and compatibility facades
 outside the DART adapter, `dart/collision/native/` as the scene/query core, and
