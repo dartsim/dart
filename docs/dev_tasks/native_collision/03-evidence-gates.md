@@ -46,9 +46,9 @@ performance-oriented internals before this scale reaches completion.
 | 7     | Reference engines are test/bench-only opt-in        | Local target split proven         |
 | 8     | Default packages/wheels have no old runtime deps    | Local pass; CI wheel matrix left  |
 | 9     | Downstream migration/deprecation path is tested     | Started; alias/component coverage |
-| 10    | Collision abstraction is one clean built-in stack   | Started; factories/CMake/headers  |
-| 11    | Old runtime backend source/components are deleted   | Not started                       |
-| 12    | Final PR evidence is complete and task docs removed | Blocked on remaining stages       |
+| 10    | Collision abstraction is one clean built-in stack   | Source/package facades proven     |
+| 11    | Old runtime backend source is reference-only        | Local reference path split proven |
+| 12    | Final PR evidence is complete and task docs removed | Blocked on CI/migration/perf      |
 
 ## Remaining North-Star Gate Backlog
 
@@ -61,10 +61,10 @@ These gates are still required before the single north-star PR is complete.
 | Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Local reference target split passes           |
 | Packaging removal           | Default packages/wheels have no old collision runtime deps  | Metadata/link/install/py312 wheel passed      |
 | Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Started; alias/component coverage             |
-| Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Factories/C++/CMake/installed headers done    |
-| Built-in architecture       | API-clean, scalable, performance-oriented native layer      | Started; `01-design.md` gates documented      |
+| Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Source/package facades done                   |
+| Built-in architecture       | API-clean, scalable, performance-oriented native layer      | Source split done; CI/perf gates remain       |
 | Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Focused guard added; broaden in this PR       |
-| Legacy backend deletion     | Old runtime backend sources removed from default stack      | Blocked on migration gates                    |
+| Legacy backend deletion     | Old runtime backend sources removed from default stack      | Runtime source is reference-only locally      |
 
 ## Test Runs
 
@@ -1577,6 +1577,60 @@ build/collision-reference/cpp/Release -R
     `.benchmark_results/collision_check.json`, and reported
     `collision benchmark check: 3 passed, 0 failed, 0 skipped` with native
     faster than the best enabled reference backend for all checked families.
+- `pixi run --locked -e collision-reference config`
+  - Commit: working tree after moving old FCL/Bullet/ODE implementation files
+    under explicit `reference/` source paths and replacing top-level
+    source-tree detector/group headers with native-backed compatibility
+    facades.
+  - Result: passed. The generated reference headers now include
+    `dart/collision/{fcl,bullet,ode}/reference/...` paths while the public
+    source-tree top-level detector/group paths remain compatibility facades.
+- `pixi run --locked -e collision-reference -- cmake --build
+build/collision-reference/cpp/Release --target dart-collision-reference-fcl
+dart-collision-reference-bullet dart-collision-reference-ode
+test_reference_backends UNIT_collision_FCLCollisionDetector
+UNIT_collision_BulletCollisionShapes UNIT_collision_OdeHeightmap
+UNIT_collision_OdeCylinderMesh bm_comparative_narrow_phase --parallel 8`
+  - Commit: working tree after the source-tree reference path split.
+  - Result: passed. The old-engine libraries built from
+    `dart/collision/{fcl,bullet,ode}/reference/` sources, the focused reference
+    tests rebuilt, and the comparative narrowphase benchmark rebuilt.
+- `pixi run --locked -e collision-reference -- ctest --test-dir
+build/collision-reference/cpp/Release -R
+'test_reference_backends|UNIT_collision_FCLCollisionDetector|UNIT_collision_BulletCollisionShapes|UNIT_collision_OdeHeightmap|UNIT_collision_OdeCylinderMesh'
+--output-on-failure`
+  - Commit: working tree after the source-tree reference path split.
+  - Result: passed, 5/5 tests.
+- `pixi run --locked -e collision-reference bm-collision-check`
+  - Commit: working tree after the source-tree reference path split.
+  - Result: passed. The recurring focused benchmark guard rebuilt the
+    reference-path comparative narrowphase benchmark and reported
+    `collision benchmark check: 3 passed, 0 failed, 0 skipped`.
+- `pixi run config`
+  - Commit: working tree after adding source-tree top-level All/PascalCase
+    compatibility facades for FCL, Bullet, and ODE.
+  - Result: passed. Default configure kept
+    `DART_BUILD_COLLISION_FCL/BULLET/ODE` and reference tests/benchmarks `OFF`
+    while seeing only the native-backed source facade headers on the ordinary
+    top-level legacy paths.
+- `${CXX:-c++} -std=c++20 -I. -Ibuild/default/cpp/Release
+-I$CONDA_PREFIX/include -I$CONDA_PREFIX/include/eigen3 -x c++ -c ...`
+  - Commit: working tree after adding source-tree top-level All/PascalCase
+    compatibility facades for FCL, Bullet, and ODE.
+  - Result: passed. A source-tree compile smoke included
+    `dart/collision/fcl/FCLCollisionDetector.hpp`,
+    `dart/collision/bullet/BulletCollisionDetector.hpp`, and
+    `dart/collision/ode/OdeCollisionDetector.hpp` with no FCL/Bullet/ODE
+    include paths and verified all three facade classes derive from
+    `DartCollisionDetector`.
+- `pixi run -- cmake --build build/default/cpp/Release --target
+dart_component_collision-fcl dart_component_collision-bullet
+dart_component_collision-ode dart --parallel 8`
+  - Commit: working tree after adding source-tree top-level All/PascalCase
+    compatibility facades for FCL, Bullet, and ODE.
+  - Result: passed with `ninja: no work to do`, confirming the default
+    native-only component facade targets still exist without rebuilding or
+    linking old collision engines.
 - `pixi run lint`
   - Commit: working tree after installed legacy detector header facades and
     docs update.
@@ -1596,10 +1650,10 @@ build/collision-reference/cpp/Release -R
 - Direct public C++ legacy detector `create()` entry points now return the
   built-in detector, matching the public factory and Python compatibility
   routes. Legacy package component names are now native-backed interface
-  facades, and old-engine shared libraries are explicitly reference-named.
-  Legacy detector classes, headers, and source files still contain real FCL,
-  Bullet, and ODE implementations for explicit `createReference()` work, so
-  class/header/source cleanup is still a north-star gate.
+  facades, old-engine shared libraries are explicitly reference-named, and
+  top-level source-tree legacy detector/group headers are native-backed
+  facades. Old FCL, Bullet, and ODE implementation files still exist only as
+  explicit reference test/benchmark surfaces under `reference/` paths.
 - Normal pixi configure paths, default/wheel Pixi lock metadata, and the
   repaired py312 wheel artifact now exclude the old collision engines. CI
   wheel-matrix artifacts still need inspection so packaging cannot reintroduce

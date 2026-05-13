@@ -41,7 +41,7 @@
 #endif
 
 #if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
-  #include <dart/collision/fcl/FCLCollisionDetector.hpp>
+  #include <dart/collision/fcl/reference/FCLCollisionDetector.hpp>
 #endif
 #include <dart/collision/native/narrow_phase/box_box.hpp>
 #include <dart/collision/native/narrow_phase/capsule_box.hpp>
@@ -58,11 +58,11 @@
 #include <dart/dynamics/SphereShape.hpp>
 
 #if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_BULLET
-  #include <dart/collision/bullet/BulletCollisionDetector.hpp>
+  #include <dart/collision/bullet/reference/BulletCollisionDetector.hpp>
 #endif
 
 #if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_ODE
-  #include <dart/collision/ode/OdeCollisionDetector.hpp>
+  #include <dart/collision/ode/reference/OdeCollisionDetector.hpp>
 #endif
 
 #include "tests/benchmark/collision/fixtures/edge_cases.hpp"

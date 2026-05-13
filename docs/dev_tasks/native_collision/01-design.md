@@ -149,14 +149,15 @@ interface facades, while old-engine libraries/components are explicitly named
 `collision-reference-ode`. Installed FCL, Bullet, and ODE detector headers are
 compatibility facades over `DartCollisionDetector` in both native-only and
 reference-enabled installs, while old-engine object/type/detail headers are no
-longer installed on the public legacy paths. The remaining design gap is
-source-tree legacy detector header/source cleanup: the old FCL, Bullet, and ODE
-detector classes and headers still contain real reference-engine
-implementations for explicit `createReference()` use in reference-enabled
-builds. Before Phase 11 can complete, retained public header surfaces in the
-source tree must either become thin native-backed compatibility facades or move
-behind explicitly named reference-only test/benchmark targets. The completed PR
-must make it impossible for ordinary DART collision runtime selection to
+longer installed on the public legacy paths. Source-tree legacy headers now
+match that boundary: top-level FCL, Bullet, and ODE detector/group,
+PascalCase, All, and component headers are native-backed compatibility
+facades, and old-engine implementation headers/sources live under explicit
+`reference/` paths used by reference tests and benchmarks. The remaining
+design gaps are CI and packaging evidence at matrix scale, downstream
+migration/deprecation evidence, and broader recurring correctness/performance
+guardrails across the public DART adapter and native core paths. The completed
+PR must make it impossible for ordinary DART collision runtime selection to
 instantiate or link FCL, Bullet, or ODE.
 
 ## Code Ownership Map

@@ -6,7 +6,7 @@
 
 #if DART_HAVE_BULLET
 
-  #include "dart/collision/bullet/bullet_collision_detector.hpp"
+  #include "dart/collision/bullet/reference/bullet_collision_detector.hpp"
   #include "dart/collision/collision_filter.hpp"
   #include "dart/collision/collision_group.hpp"
   #include "dart/collision/collision_object.hpp"

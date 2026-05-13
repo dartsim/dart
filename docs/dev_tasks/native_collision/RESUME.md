@@ -44,6 +44,10 @@ native-only and reference-enabled installs. The latest performance-guard slice
 adds `scripts/check_collision_benchmarks.py` and
 `pixi run -e collision-reference bm-collision-check`, which compare focused
 native narrowphase benchmark JSON against the best enabled reference backend.
+The latest source-cleanup slice makes top-level source-tree FCL, Bullet, and
+ODE detector/group, All, PascalCase, and component headers native-backed
+facades and moves old-engine implementation headers/sources under explicit
+`reference/` paths used by reference tests and benchmarks.
 
 ## Current Branch
 
@@ -89,10 +93,11 @@ FCL, Bullet, and ODE detector classes, and direct public C++ legacy detector
 `create()` paths now return the built-in `DartCollisionDetector`. Retained
 legacy package component names are native-backed CMake interface facades, and
 old-engine libraries/components use `collision-reference-*` names. Installed
-legacy detector headers are native-backed facades in native-only and
-reference-enabled installs, but source-tree legacy C++ detector classes,
-headers, and old-engine source placement still contain explicit
-reference-engine implementations and remain a north-star cleanup gate.
+legacy detector headers and source-tree top-level detector/group/All/PascalCase
+headers are native-backed facades in native-only and reference-enabled
+installs. Old-engine FCL, Bullet, and ODE implementation headers/sources now
+live under explicit `reference/` paths and remain available only to reference
+tests and benchmarks.
 User-facing examples/tutorials have also been moved off the old collision
 components: their CMake no longer requires `collision-bullet`/`collision-ode`,
 source no longer includes or selects Bullet/ODE/FCL detector APIs, and affected
@@ -191,13 +196,11 @@ libraries.
 - gz-physics compatibility and performance parity are explicit gates, not
   optional follow-up work.
 - The next work is no longer feature-parity implementation. The single PR still
-  needs CI hardening, optional reference-engine test/benchmark isolation with
-  CMake opt-out support, backend removal from default packaging, downstream
-  migration/deprecation coverage, `dart/collision/` abstraction cleanup so all
-  retained legacy names route to the built-in detector, built-in collision
-  layer cleanup for API cleanliness, scalable native scene/query state and
-  performance-oriented internals, broader recurring performance guardrails,
-  final legacy runtime backend deletion, and then final PR packaging.
+  needs CI hardening, wheel-matrix artifact evidence, downstream
+  migration/deprecation coverage, built-in collision layer hardening for API
+  cleanliness, scalable native scene/query state and performance-oriented
+  internals, broader recurring performance guardrails, final legacy runtime
+  backend deletion validation, and then final PR packaging.
 - Quality order for the remaining work: feature coverage first, correctness
   tests as the permanent gate, then gradual benchmark-driven performance work
   until native beats Bullet, FCL, and ODE on required workloads.

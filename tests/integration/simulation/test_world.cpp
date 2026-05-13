@@ -59,7 +59,7 @@
 #endif
 #include "dart/collision/dart/dart_collision_detector.hpp"
 #if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
-  #include "dart/collision/fcl/fcl_collision_detector.hpp"
+  #include "dart/collision/fcl/reference/fcl_collision_detector.hpp"
 #endif
 #include "dart/constraint/ball_joint_constraint.hpp"
 #include "dart/constraint/constraint_solver.hpp"

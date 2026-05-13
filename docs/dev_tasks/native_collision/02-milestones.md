@@ -302,9 +302,11 @@ compatibility names now resolve to `DartCollisionDetector` and dartpy no
 longer links legacy collision component targets. Reference tests and
 benchmarks now use explicit `createReference()` APIs for old-engine
 comparisons. Direct public C++ legacy detector `create()` paths now resolve to
-`DartCollisionDetector`, while component libraries still contain real
-FCL/Bullet/ODE implementations for explicit reference work. Class/header/CMake
-component cleanup remains before this phase can complete.
+`DartCollisionDetector`. Top-level source-tree FCL, Bullet, and ODE
+detector/group headers are native-backed facades, while real FCL/Bullet/ODE
+implementation headers and sources live under explicit `reference/` paths for
+reference-only tests and benchmarks. CI, downstream migration, and broader
+performance guardrail evidence remain before this phase can complete.
 
 Success criteria:
 

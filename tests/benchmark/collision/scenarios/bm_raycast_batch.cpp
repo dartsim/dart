@@ -49,7 +49,7 @@
 #endif
 
 #if DART_ENABLE_COLLISION_REFERENCE_BENCHMARKS && DART_HAVE_BULLET
-  #include <dart/collision/bullet/BulletCollisionDetector.hpp>
+  #include <dart/collision/bullet/reference/BulletCollisionDetector.hpp>
 #endif
 
 #include "tests/benchmark/collision/fixtures/scene_builders.hpp"

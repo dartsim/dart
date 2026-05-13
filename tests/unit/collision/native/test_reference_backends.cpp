@@ -9,7 +9,7 @@
  */
 
 #include <dart/collision/CollisionDetector.hpp>
-#include <dart/collision/fcl/FCLCollisionDetector.hpp>
+#include <dart/collision/fcl/reference/FCLCollisionDetector.hpp>
 #include <dart/collision/native/collision_world.hpp>
 #include <dart/collision/native/narrow_phase/gjk.hpp>
 #include <dart/collision/native/narrow_phase/mpr.hpp>
@@ -28,11 +28,11 @@
 #include <cmath>
 
 #if DART_HAVE_BULLET
-  #include <dart/collision/bullet/BulletCollisionDetector.hpp>
+  #include <dart/collision/bullet/reference/BulletCollisionDetector.hpp>
 #endif
 
 #if DART_HAVE_ODE
-  #include <dart/collision/ode/OdeCollisionDetector.hpp>
+  #include <dart/collision/ode/reference/OdeCollisionDetector.hpp>
 #endif
 
 using dart::collision::native::Gjk;

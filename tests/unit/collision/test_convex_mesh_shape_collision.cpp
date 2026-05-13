@@ -33,8 +33,8 @@
 #include "dart/collision/collision_detector.hpp"
 #include "dart/config.hpp"
 #if DART_HAVE_FCL
-  #include "dart/collision/fcl/fcl_collision_detector.hpp"
-  #include "dart/collision/fcl/fcl_collision_object.hpp"
+  #include "dart/collision/fcl/reference/fcl_collision_detector.hpp"
+  #include "dart/collision/fcl/reference/fcl_collision_object.hpp"
 #endif
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/box_shape.hpp"
@@ -55,12 +55,12 @@
 #endif
 
 #if DART_HAVE_BULLET
-  #include "dart/collision/bullet/bullet_collision_detector.hpp"
-  #include "dart/collision/bullet/bullet_collision_object.hpp"
+  #include "dart/collision/bullet/reference/bullet_collision_detector.hpp"
+  #include "dart/collision/bullet/reference/bullet_collision_object.hpp"
 #endif
 #if DART_HAVE_ODE
-  #include "dart/collision/ode/ode_collision_detector.hpp"
-  #include "dart/collision/ode/ode_collision_object.hpp"
+  #include "dart/collision/ode/reference/ode_collision_detector.hpp"
+  #include "dart/collision/ode/reference/ode_collision_object.hpp"
 #endif
 
 #if DART_HAVE_FCL

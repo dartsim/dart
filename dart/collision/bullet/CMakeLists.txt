@@ -1,6 +1,7 @@
 # Dependency checks
+file(GLOB facade_hdrs "*.hpp")
 file(GLOB compat_hdrs "compat/*.hpp")
-dart_format_add(${compat_hdrs})
+dart_format_add(${facade_hdrs} ${compat_hdrs})
 
 if(NOT DART_BUILD_COLLISION_BULLET)
   set(DART_HAVE_BULLET FALSE CACHE BOOL "Check if BULLET found." FORCE)
@@ -70,11 +71,13 @@ endif()
 
 set(DART_HAVE_BULLET TRUE CACHE BOOL "Check if BULLET found." FORCE)
 
-# Search all header and source files
-file(GLOB hdrs "*.hpp")
-file(GLOB srcs "*.cpp")
-file(GLOB detail_hdrs "detail/*.hpp")
-file(GLOB detail_srcs "detail/*.cpp")
+# Search all reference-engine header and source files. The top-level headers in
+# this directory are native-backed compatibility facades; old Bullet code lives
+# under reference/ and is built only by the explicit reference target.
+file(GLOB hdrs "reference/*.hpp")
+file(GLOB srcs "reference/*.cpp")
+file(GLOB detail_hdrs "reference/detail/*.hpp")
+file(GLOB detail_srcs "reference/detail/*.cpp")
 
 set(_dart_bullet_link_items ${BULLET_LIBRARIES})
 if(TARGET Bullet::Bullet)
@@ -133,8 +136,12 @@ add_component_targets(${PROJECT_NAME} collision-reference-bullet ${target_name})
 add_component_dependencies(${PROJECT_NAME} collision-reference-bullet dart)
 add_component_dependency_packages(${PROJECT_NAME} collision-reference-bullet Bullet)
 
-# Generate header for this namespace
-dart_get_filename_components(header_names "collision_bullet headers" ${hdrs})
+# Generate reference-only headers for this namespace
+set(header_names)
+foreach(header IN LISTS hdrs)
+  file(RELATIVE_PATH header_name "${CMAKE_CURRENT_SOURCE_DIR}" "${header}")
+  list(APPEND header_names "${header_name}")
+endforeach()
 dart_generate_component_headers(
   COMPONENT_NAME bullet
   TARGET_DIR "dart/collision/bullet/"

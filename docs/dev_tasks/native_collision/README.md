@@ -79,6 +79,12 @@
       reference-enabled installs. The downstream package/header smokes include
       the installed legacy detector headers and verify factory keys plus legacy
       class `create()` calls all report detector type `dart`.
+- [x] Source-tree legacy detector headers are now split the same way as the
+      installed package surface: top-level FCL, Bullet, and ODE detector/group
+      headers, PascalCase compatibility headers, All headers, and component
+      headers are native-backed compatibility facades, while old-engine
+      implementation headers and sources live under explicit `reference/`
+      paths used by reference tests and benchmarks.
 - [x] An initial recurring benchmark guard exists:
       `pixi run -e collision-reference bm-collision-check` builds a focused
       comparative narrowphase subset, emits Google Benchmark JSON, and checks
@@ -95,11 +101,11 @@
       points. User-facing examples/tutorials have also been moved off old
       collision components, and package component names are now split into
       native-backed compatibility facades versus explicit reference targets.
-      Installed legacy detector headers are also native-backed facades. The
-      remaining work is CI hardening, full wheel matrix/CI artifact evidence,
-      retained source-tree legacy detector header/source cleanup,
-      downstream migration safety, broader recurring performance guardrails,
-      and final legacy backend deletion.
+      Installed and source-tree legacy detector headers are also native-backed
+      facades, with old-engine implementation files under explicit reference
+      paths. The remaining work is CI hardening, full wheel matrix/CI artifact
+      evidence, downstream migration safety, broader recurring performance
+      guardrails, and final legacy backend deletion.
 
 ## Goal
 
@@ -151,9 +157,9 @@ The current checkpoint is a validated middle state, not a final PR boundary.
 | 7     | Reference engines are test/bench-only        | Local target split proven         |
 | 8     | Default packages have no old runtime deps    | Local pass; CI wheel matrix left  |
 | 9     | Downstream migration/deprecation path exists | Started; alias/component coverage |
-| 10    | Collision abstraction is one clean stack     | Started; factories/CMake/headers  |
-| 11    | Old runtime backend source is deleted        | Not started                       |
-| 12    | Final one-PR validation and PR packaging     | Blocked on stages 6-11            |
+| 10    | Collision abstraction is one clean stack     | Source/package facades proven     |
+| 11    | Old runtime backend source is reference-only | Local reference path split proven |
+| 12    | Final one-PR validation and PR packaging     | Blocked on CI/migration/perf      |
 
 ## Built-In Architecture Status
 
@@ -164,14 +170,15 @@ DART shape/result/filter adapter, and `dart/collision/native/` as the scalable
 scene/query core for geometry, broadphase, narrowphase, distance, raycast,
 contact/manifold caching, deterministic results, profiling, and benchmarks.
 
-The implementation already satisfies part of that design: public factory keys,
-Python compatibility names, retained package components, installed legacy
+The implementation now satisfies the source/package structure of that design:
+public factory keys, Python compatibility names, retained package components,
+installed legacy headers, source-tree legacy detector/group/All/PascalCase
 headers, and direct legacy `create()` entry points route to the built-in `dart`
-detector, while reference engines have explicit test/benchmark targets. The
-architecture gate remains open until source-tree legacy detector headers and
-old-engine source placement are also native-backed facades or explicitly
-reference-only surfaces, and until broader correctness/performance guardrails
-cover the public DART adapter and native core paths.
+detector. Old FCL/Bullet/ODE implementation headers and sources live under
+explicit `reference/` paths and build only through reference test/benchmark
+targets. The architecture gate remains open for CI evidence, downstream
+migration evidence, and broader correctness/performance guardrails across the
+public DART adapter and native core paths.
 
 ## Where To Check Progress
 
@@ -240,13 +247,13 @@ cover the public DART adapter and native core paths.
 3. Finish removing FCL, Bullet, and ODE from default package/runtime surfaces
    by preserving explicit reference test/benchmark jobs, native-backed
    compatibility facades, and wheel/package evidence across CI.
-4. Continue collapsing `dart/collision/` so retained source-tree legacy
-   detector classes, headers, and old-engine source files are native-backed
-   compatibility facades or explicit reference-only surfaces; factory keys,
-   Python detector names, direct public C++ legacy `create()` entry points,
-   package component names, installed compatibility headers, and user-facing
-   examples/tutorials are already native-backed. Use `01-design.md` as the
-   architecture checklist for this cleanup.
+4. Continue hardening `dart/collision/` as one built-in stack after the source
+   split: factory keys, Python detector names, direct public C++ legacy
+   `create()` entry points, package component names, installed/source-tree
+   compatibility headers, and user-facing examples/tutorials are native-backed;
+   old-engine implementation files are now explicit reference surfaces. Use
+   `01-design.md` as the architecture checklist for remaining CI, migration,
+   and performance gates.
 5. Define and test the downstream migration/deprecation path for legacy detector
    names and factory aliases.
 6. Broaden recurring benchmark guardrails across native core and public
@@ -324,10 +331,10 @@ collision stack.
      names also resolve to `DartCollisionDetector` and dartpy no longer links
      legacy collision component targets. Direct public C++ legacy `create()`
      entry points now return `DartCollisionDetector`, while C++ tests and
-     benchmarks use explicit `createReference()` APIs for old-engine
-     comparisons. Remaining work is legacy class/header/component cleanup so
-     retained surfaces are native-backed wrappers or explicitly named
-     reference-only APIs.
+     benchmarks use explicit `reference/` includes and `createReference()` APIs
+     for old-engine comparisons. Top-level source-tree detector/group headers
+     are native-backed facades, and old-engine implementation files live under
+     reference-only paths.
    - Preserve a clean internal architecture: public API/compatibility shell,
      DART adapter layer, native scene/query core, and optional reference
      harnesses outside runtime targets. This is an API cleanliness,

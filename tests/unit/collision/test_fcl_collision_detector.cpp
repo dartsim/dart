@@ -6,8 +6,8 @@
 #include <dart/collision/collision_result.hpp>
 #include <dart/collision/distance_option.hpp>
 #include <dart/collision/distance_result.hpp>
-#include <dart/collision/fcl/fcl_collision_detector.hpp>
-#include <dart/collision/fcl/fcl_collision_group.hpp>
+#include <dart/collision/fcl/reference/fcl_collision_detector.hpp>
+#include <dart/collision/fcl/reference/fcl_collision_group.hpp>
 
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/cone_shape.hpp>

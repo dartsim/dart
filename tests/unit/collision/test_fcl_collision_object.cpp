@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/fcl_collision_detector.hpp"
-#include "dart/collision/fcl/fcl_collision_object.hpp"
+#include "dart/collision/fcl/reference/fcl_collision_detector.hpp"
+#include "dart/collision/fcl/reference/fcl_collision_object.hpp"
 #include "dart/dynamics/free_joint.hpp"
 #include "dart/dynamics/skeleton.hpp"
 #include "dart/dynamics/sphere_shape.hpp"
