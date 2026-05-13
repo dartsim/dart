@@ -23,6 +23,8 @@
 #include <memory>
 #include <string>
 
+#include <cstddef>
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {
@@ -241,6 +243,32 @@ void defWorld(nb::module_& m)
       .def(
           "step",
           [](World& self, bool resetCommand) { self.step(resetCommand); },
+          nb::arg("reset_command"),
+          nb::call_guard<nb::gil_scoped_release>())
+      .def(
+          "stepUnconstrainedRungeKutta4",
+          [](World& self) { self.stepUnconstrainedRungeKutta4(); },
+          nb::call_guard<nb::gil_scoped_release>())
+      .def(
+          "stepUnconstrainedRungeKutta4",
+          [](World& self, bool resetCommand) {
+            self.stepUnconstrainedRungeKutta4(resetCommand);
+          },
+          nb::arg("reset_command"),
+          nb::call_guard<nb::gil_scoped_release>())
+      .def(
+          "stepSubsteps",
+          [](World& self, std::size_t substeps) {
+            self.stepSubsteps(substeps);
+          },
+          nb::arg("substeps"),
+          nb::call_guard<nb::gil_scoped_release>())
+      .def(
+          "stepSubsteps",
+          [](World& self, std::size_t substeps, bool resetCommand) {
+            self.stepSubsteps(substeps, resetCommand);
+          },
+          nb::arg("substeps"),
           nb::arg("reset_command"),
           nb::call_guard<nb::gil_scoped_release>())
       .def("setTime", &World::setTime, nb::arg("time"))

@@ -49,6 +49,7 @@
 #include <vector>
 
 #include <cmath>
+#include <cstddef>
 
 namespace {
 
@@ -64,6 +65,13 @@ enum class GroundTruthModel
 {
   ConstantWorldTwist,
   TorqueFreeRigidBody,
+};
+
+enum class IntegrationMode
+{
+  DefaultStep,
+  Substeps,
+  UnconstrainedRungeKutta4,
 };
 
 struct TorqueFreeState
@@ -374,12 +382,83 @@ CaseMetrics computeMetrics(const FreeJointCase& data, double dt)
 
 } // namespace
 
+class SubsteppingWorldNode : public dart::gui::WorldNode
+{
+public:
+  explicit SubsteppingWorldNode(dart::simulation::WorldPtr world)
+    : dart::gui::WorldNode(std::move(world))
+  {
+  }
+
+  void setSubsteps(std::size_t substeps)
+  {
+    mSubsteps = std::max<std::size_t>(1u, substeps);
+  }
+
+  void setIntegrationMode(IntegrationMode mode)
+  {
+    mIntegrationMode = mode;
+  }
+
+  IntegrationMode getIntegrationMode() const
+  {
+    return mIntegrationMode;
+  }
+
+  std::size_t getSubsteps() const
+  {
+    return mSubsteps;
+  }
+
+  void refresh() override
+  {
+    customPreRefresh();
+
+    clearChildUtilizationFlags();
+
+    if (mSimulating) {
+      for (std::size_t i = 0; i < mNumStepsPerCycle; ++i) {
+        customPreStep();
+        stepWorld();
+        customPostStep();
+      }
+    }
+
+    refreshSkeletons();
+    refreshSimpleFrames();
+
+    clearUnusedNodes();
+
+    customPostRefresh();
+  }
+
+private:
+  void stepWorld()
+  {
+    switch (mIntegrationMode) {
+      case IntegrationMode::DefaultStep:
+        mWorld->step();
+        break;
+      case IntegrationMode::Substeps:
+        mWorld->stepSubsteps(mSubsteps);
+        break;
+      case IntegrationMode::UnconstrainedRungeKutta4:
+        mWorld->stepUnconstrainedRungeKutta4();
+        break;
+    }
+  }
+
+  IntegrationMode mIntegrationMode{IntegrationMode::Substeps};
+  std::size_t mSubsteps{1u};
+};
+
 class FreeJointCasesWidget : public dart::gui::ImGuiWidget
 {
 public:
   FreeJointCasesWidget(
       osg::ref_ptr<dart::gui::ImGuiViewer> viewer,
       osg::ref_ptr<dart::gui::GridVisual> grid,
+      osg::ref_ptr<SubsteppingWorldNode> node,
       dart::simulation::WorldPtr world,
       std::vector<FreeJointCase> cases,
       double numericDt,
@@ -387,9 +466,12 @@ public:
       GroundTruthModel groundTruthModel,
       bool useSphericalInertia,
       int torqueFreeSubsteps,
+      IntegrationMode integrationMode,
+      int simulationSubsteps,
       double guiScale)
     : mViewer(std::move(viewer)),
       mGrid(std::move(grid)),
+      mNode(std::move(node)),
       mWorld(std::move(world)),
       mCases(std::move(cases)),
       mNumericDt(numericDt),
@@ -397,6 +479,8 @@ public:
       mGroundTruthModel(groundTruthModel),
       mUseSphericalInertia(useSphericalInertia),
       mTorqueFreeSubsteps(std::max(1, torqueFreeSubsteps)),
+      mIntegrationMode(integrationMode),
+      mSimulationSubsteps(std::max(1, simulationSubsteps)),
       mGuiScale(guiScale)
   {
     const int scaleKey = static_cast<int>(std::lround(guiScale * 100.0));
@@ -405,6 +489,8 @@ public:
 
     applyInertiaMode();
     applyGroundTruthVisibility();
+    mNode->setIntegrationMode(mIntegrationMode);
+    mNode->setSubsteps(static_cast<std::size_t>(mSimulationSubsteps));
     resetCases();
     recomputeMetrics();
   }
@@ -469,6 +555,41 @@ public:
       }
 
       ImGui::Text("Time: %s", formatDouble(mWorld->getTime(), 3).c_str());
+
+      int integrationModeIndex = 0;
+      switch (mIntegrationMode) {
+        case IntegrationMode::DefaultStep:
+          integrationModeIndex = 0;
+          break;
+        case IntegrationMode::Substeps:
+          integrationModeIndex = 1;
+          break;
+        case IntegrationMode::UnconstrainedRungeKutta4:
+          integrationModeIndex = 2;
+          break;
+      }
+
+      constexpr const char* integrationModeItems
+          = "Default step\0Substeps\0Unconstrained RK4\0";
+      if (ImGui::Combo(
+              "Integration mode",
+              &integrationModeIndex,
+              integrationModeItems)) {
+        if (integrationModeIndex == 0) {
+          mIntegrationMode = IntegrationMode::DefaultStep;
+        } else if (integrationModeIndex == 1) {
+          mIntegrationMode = IntegrationMode::Substeps;
+        } else {
+          mIntegrationMode = IntegrationMode::UnconstrainedRungeKutta4;
+        }
+        mNode->setIntegrationMode(mIntegrationMode);
+      }
+
+      if (ImGui::SliderInt(
+              "Simulation substeps", &mSimulationSubsteps, 1, 50)) {
+        mSimulationSubsteps = std::max(1, mSimulationSubsteps);
+        mNode->setSubsteps(static_cast<std::size_t>(mSimulationSubsteps));
+      }
 
       if (ImGui::Button("Reset cases")) {
         resetCases();
@@ -698,6 +819,7 @@ private:
 
   osg::ref_ptr<dart::gui::ImGuiViewer> mViewer;
   osg::ref_ptr<dart::gui::GridVisual> mGrid;
+  osg::ref_ptr<SubsteppingWorldNode> mNode;
   dart::simulation::WorldPtr mWorld;
   std::vector<FreeJointCase> mCases;
   double mNumericDt;
@@ -705,6 +827,8 @@ private:
   GroundTruthModel mGroundTruthModel;
   bool mUseSphericalInertia;
   int mTorqueFreeSubsteps;
+  IntegrationMode mIntegrationMode;
+  int mSimulationSubsteps;
   double mGuiScale;
   std::string mWindowLabel;
   bool mShowGroundTruth{true};
@@ -721,7 +845,9 @@ int main(int argc, char* argv[])
   double simulationDt = 1e-3;
   bool sphericalInertia = false;
   std::string groundTruthMode = "torque-free";
+  std::string integrationModeName = "substeps";
   int torqueFreeSubsteps = 10;
+  int simulationSubsteps = 1;
   app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
       ->check(CLI::PositiveNumber);
   app.add_option("--numeric-dt", numericDt, "Finite difference dt for checks")
@@ -743,10 +869,26 @@ int main(int argc, char* argv[])
          torqueFreeSubsteps,
          "Substeps per simulation step for torque-free ground truth")
       ->check(CLI::Range(1, 1000));
+  app.add_option(
+         "--integration-mode",
+         integrationModeName,
+         "Simulation integration mode: step|substeps|rk4")
+      ->check(CLI::IsMember({"step", "substeps", "rk4"}));
+  app.add_option(
+         "--simulation-substeps",
+         simulationSubsteps,
+         "Internal simulation substeps per displayed simulation step")
+      ->check(CLI::Range(1, 1000));
   CLI11_PARSE(app, argc, argv);
   const GroundTruthModel groundTruthModel
       = (groundTruthMode == "constant") ? GroundTruthModel::ConstantWorldTwist
                                         : GroundTruthModel::TorqueFreeRigidBody;
+  IntegrationMode integrationMode = IntegrationMode::Substeps;
+  if (integrationModeName == "step") {
+    integrationMode = IntegrationMode::DefaultStep;
+  } else if (integrationModeName == "rk4") {
+    integrationMode = IntegrationMode::UnconstrainedRungeKutta4;
+  }
 
   simulation::WorldPtr world = simulation::World::create();
   world->setGravity(Eigen::Vector3d::Zero());
@@ -808,7 +950,9 @@ int main(int argc, char* argv[])
     world->addSkeleton(c.referenceSkeleton);
   }
 
-  osg::ref_ptr<gui::WorldNode> node = new gui::WorldNode(world);
+  osg::ref_ptr<SubsteppingWorldNode> node = new SubsteppingWorldNode(world);
+  node->setIntegrationMode(integrationMode);
+  node->setSubsteps(static_cast<std::size_t>(simulationSubsteps));
 
   osg::ref_ptr<gui::ImGuiViewer> viewer = new gui::ImGuiViewer();
   viewer->setImGuiScale(static_cast<float>(guiScale));
@@ -824,6 +968,7 @@ int main(int argc, char* argv[])
       std::make_shared<FreeJointCasesWidget>(
           viewer,
           grid,
+          node,
           world,
           cases,
           numericDt,
@@ -831,6 +976,8 @@ int main(int argc, char* argv[])
           groundTruthModel,
           sphericalInertia,
           torqueFreeSubsteps,
+          integrationMode,
+          simulationSubsteps,
           guiScale));
 
   viewer->setUpViewInWindow(0, 0, 1280, 720);

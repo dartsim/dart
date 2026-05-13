@@ -68,6 +68,8 @@
 #include <utility>
 #include <vector>
 
+#include <cstddef>
+
 namespace dart {
 namespace simulation {
 
@@ -335,6 +337,31 @@ public:
   /// @param[in] _resetCommand True if you want to reset to zero the joint
   /// command after simulation step.
   void step(bool _resetCommand = true);
+
+  /// Calculate unconstrained rigid dynamics using fourth-order Runge-Kutta.
+  ///
+  /// This integrates the forward dynamics of mobile rigid Skeletons without
+  /// running contact or constraint solving. Use step() or stepSubsteps() for
+  /// worlds that rely on contact, joint constraints, joint limits, or other
+  /// impulse-level corrections.
+  ///
+  /// @param[in] _resetCommand True if you want to reset to zero the joint
+  /// command after simulation step.
+  void stepUnconstrainedRungeKutta4(bool _resetCommand = true);
+
+  /// Calculate the dynamics and integrate the world using smaller substeps.
+  ///
+  /// This temporarily divides the current time step by @c _numSubsteps and
+  /// performs @c _numSubsteps regular simulation steps. The public time step is
+  /// restored before this function returns. Commands and forces persist across
+  /// internal substeps and are reset only after the final substep when
+  /// @c _resetCommand is true.
+  ///
+  /// @param[in] _numSubsteps Number of internal steps to perform. Values less
+  /// than one are ignored.
+  /// @param[in] _resetCommand True if you want to reset to zero the joint
+  /// command after the final simulation substep.
+  void stepSubsteps(std::size_t _numSubsteps, bool _resetCommand = true);
 
   /// Set current time
   void setTime(double _time);

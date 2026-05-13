@@ -30,6 +30,12 @@ Run from a build tree:
 ./free_joint_cases --gui-scale 1.0
 # Use spherical inertia so the constant-twist reference is exact:
 ./free_joint_cases --ground-truth constant --spherical-inertia
+# Run each displayed simulation step with smaller internal timesteps:
+./free_joint_cases --simulation-substeps 4
+# Use the unconstrained fourth-order world step:
+./free_joint_cases --integration-mode rk4
 ```
 
-Controls are available in the ImGui window for toggling simulation, resetting the cases, and running numeric checks (analytic vs. finite-difference Jacobians).
+Controls are available in the ImGui window for toggling simulation, selecting
+the integration mode, resetting the cases, and running numeric checks (analytic
+vs. finite-difference Jacobians).

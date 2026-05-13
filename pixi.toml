@@ -844,6 +844,9 @@ bm = { cmd = "python scripts/run_cpp_benchmark.py", depends-on = ["config"] }
 bm-check = { cmd = "python scripts/check_allocator_benchmarks.py", depends-on = [
   "config",
 ] }
+physics-bm-check = { cmd = "python scripts/check_physics_benchmarks.py", depends-on = [
+  "config",
+] }
 
 test-joints = { cmd = [
   "bash",

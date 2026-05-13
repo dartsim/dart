@@ -75,6 +75,46 @@ target_link_libraries(bm_jacobian
 )
 dart_format_add(dynamics/bm_jacobian.cpp)
 
+add_executable(bm_free_joint_pose dynamics/bm_free_joint_pose.cpp)
+target_link_libraries(bm_free_joint_pose
+  dart
+  benchmark::benchmark
+  benchmark::benchmark_main
+)
+dart_format_add(dynamics/bm_free_joint_pose.cpp)
+
+add_executable(bm_free_body_energy dynamics/bm_free_body_energy.cpp)
+target_link_libraries(bm_free_body_energy
+  dart
+  benchmark::benchmark
+  benchmark::benchmark_main
+)
+dart_format_add(dynamics/bm_free_body_energy.cpp)
+
+add_executable(bm_articulated_energy dynamics/bm_articulated_energy.cpp)
+target_link_libraries(bm_articulated_energy
+  dart
+  benchmark::benchmark
+  benchmark::benchmark_main
+)
+dart_format_add(dynamics/bm_articulated_energy.cpp)
+
+add_executable(bm_contact_stability dynamics/bm_contact_stability.cpp)
+target_link_libraries(bm_contact_stability
+  dart
+  benchmark::benchmark
+  benchmark::benchmark_main
+)
+dart_format_add(dynamics/bm_contact_stability.cpp)
+
+add_executable(bm_constraint_stability dynamics/bm_constraint_stability.cpp)
+target_link_libraries(bm_constraint_stability
+  dart
+  benchmark::benchmark
+  benchmark::benchmark_main
+)
+dart_format_add(dynamics/bm_constraint_stability.cpp)
+
 add_executable(bm_dynamics_cache dynamics/bm_dynamics_cache.cpp)
 target_link_libraries(bm_dynamics_cache
   dart

@@ -34,7 +34,12 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <utility>
+#include <vector>
+
 #include <cmath>
+#include <cstddef>
 
 using namespace dart;
 using namespace dart::simulation;
@@ -54,6 +59,22 @@ SkeletonPtr createSimpleSkeleton(const std::string& name)
   pair.second->setInertia(inertia);
 
   return skel;
+}
+
+//==============================================================================
+std::pair<SkeletonPtr, BodyNode*> createFreeBodySkeleton(
+    const std::string& name)
+{
+  auto skel = Skeleton::create(name);
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>(
+      nullptr, FreeJoint::Properties(), BodyNode::AspectProperties("body"));
+
+  Inertia inertia;
+  inertia.setMass(1.5);
+  inertia.setMoment(0.2, 0.25, 0.3, 0.0, 0.0, 0.0);
+  pair.second->setInertia(inertia);
+
+  return {skel, pair.second};
 }
 
 //==============================================================================
@@ -708,6 +729,175 @@ TEST(WorldTests, StepWithPersistForces)
 }
 
 //==============================================================================
+TEST(WorldTests, StepSubstepsMatchesManualSmallerTimeStep)
+{
+  constexpr std::size_t substeps = 10u;
+  constexpr double outerTimeStep = 0.01;
+  constexpr double internalTimeStep
+      = outerTimeStep / static_cast<double>(substeps);
+
+  auto substepWorld = World::create();
+  substepWorld->setGravity(Eigen::Vector3d::Zero());
+  substepWorld->setTimeStep(outerTimeStep);
+  auto [substepSkeleton, substepBody]
+      = createFreeBodySkeleton("substep_free_body");
+  substepWorld->addSkeleton(substepSkeleton);
+
+  auto manualWorld = World::create();
+  manualWorld->setGravity(Eigen::Vector3d::Zero());
+  manualWorld->setTimeStep(internalTimeStep);
+  auto [manualSkeleton, manualBody]
+      = createFreeBodySkeleton("manual_free_body");
+  manualWorld->addSkeleton(manualSkeleton);
+
+  Eigen::Vector6d positions;
+  positions << 0.05, -0.02, 0.03, 0.1, -0.2, 0.3;
+  Eigen::Vector6d velocities;
+  velocities << 0.2, -0.1, 0.15, 0.7, -0.3, 0.4;
+  substepSkeleton->setPositions(positions);
+  manualSkeleton->setPositions(positions);
+  substepSkeleton->setVelocities(velocities);
+  manualSkeleton->setVelocities(velocities);
+
+  const Eigen::Vector3d force(2.0, -1.0, 0.5);
+  const Eigen::Vector3d torque(0.04, -0.02, 0.03);
+  substepBody->addExtForce(force);
+  manualBody->addExtForce(force);
+  substepBody->addExtTorque(torque);
+  manualBody->addExtTorque(torque);
+
+  substepWorld->stepSubsteps(substeps);
+  for (std::size_t i = 0; i < substeps; ++i) {
+    manualWorld->step(i + 1u == substeps);
+  }
+
+  EXPECT_EQ(substepWorld->getSimFrames(), manualWorld->getSimFrames());
+  EXPECT_NEAR(substepWorld->getTime(), manualWorld->getTime(), 1e-15);
+  EXPECT_DOUBLE_EQ(substepWorld->getTimeStep(), outerTimeStep);
+  EXPECT_DOUBLE_EQ(substepSkeleton->getTimeStep(), outerTimeStep);
+  EXPECT_DOUBLE_EQ(
+      substepWorld->getConstraintSolver()->getTimeStep(), outerTimeStep);
+  EXPECT_TRUE(substepSkeleton->getPositions().isApprox(
+      manualSkeleton->getPositions(), 1e-12))
+      << "substepping should match manual smaller-timestep positions";
+  EXPECT_TRUE(substepSkeleton->getVelocities().isApprox(
+      manualSkeleton->getVelocities(), 1e-12))
+      << "substepping should match manual smaller-timestep velocities";
+  EXPECT_DOUBLE_EQ(substepBody->getExternalForceLocal().norm(), 0.0);
+}
+
+//==============================================================================
+TEST(WorldTests, StepSubstepsMatchesManualSmallerTimeStepWithJointCommand)
+{
+  constexpr std::size_t substeps = 8u;
+  constexpr double outerTimeStep = 0.008;
+  constexpr double internalTimeStep
+      = outerTimeStep / static_cast<double>(substeps);
+
+  auto substepWorld = World::create();
+  substepWorld->setGravity(Eigen::Vector3d::Zero());
+  substepWorld->setTimeStep(outerTimeStep);
+  auto substepSkeleton = createSimpleSkeleton("substep_command");
+  auto* substepJoint = substepSkeleton->getJoint(0);
+  substepWorld->addSkeleton(substepSkeleton);
+
+  auto manualWorld = World::create();
+  manualWorld->setGravity(Eigen::Vector3d::Zero());
+  manualWorld->setTimeStep(internalTimeStep);
+  auto manualSkeleton = createSimpleSkeleton("manual_command");
+  auto* manualJoint = manualSkeleton->getJoint(0);
+  manualWorld->addSkeleton(manualSkeleton);
+
+  substepSkeleton->setPosition(0, 0.2);
+  manualSkeleton->setPosition(0, 0.2);
+  substepSkeleton->setVelocity(0, -0.15);
+  manualSkeleton->setVelocity(0, -0.15);
+
+  constexpr double command = 0.7;
+  substepJoint->setCommand(0, command);
+  manualJoint->setCommand(0, command);
+
+  substepWorld->stepSubsteps(substeps);
+  for (std::size_t i = 0; i < substeps; ++i) {
+    manualWorld->step(i + 1u == substeps);
+  }
+
+  EXPECT_EQ(substepWorld->getSimFrames(), manualWorld->getSimFrames());
+  EXPECT_NEAR(substepWorld->getTime(), manualWorld->getTime(), 1e-15);
+  EXPECT_DOUBLE_EQ(substepWorld->getTimeStep(), outerTimeStep);
+  EXPECT_DOUBLE_EQ(substepSkeleton->getTimeStep(), outerTimeStep);
+  EXPECT_DOUBLE_EQ(
+      substepWorld->getConstraintSolver()->getTimeStep(), outerTimeStep);
+  EXPECT_NEAR(
+      substepSkeleton->getPosition(0), manualSkeleton->getPosition(0), 1e-12);
+  EXPECT_NEAR(
+      substepSkeleton->getVelocity(0), manualSkeleton->getVelocity(0), 1e-12);
+  EXPECT_DOUBLE_EQ(substepJoint->getCommand(0), 0.0);
+}
+
+//==============================================================================
+TEST(WorldTests, StepSubstepsResetsForcesOnlyAfterFinalSubstep)
+{
+  auto world = World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->setTimeStep(0.004);
+  auto [skeleton, body] = createFreeBodySkeleton("persist_force_free_body");
+  world->addSkeleton(skeleton);
+
+  body->addExtForce(Eigen::Vector3d(3.0, 0.0, 0.0));
+  world->stepSubsteps(4u, false);
+  EXPECT_GT(body->getExternalForceLocal().norm(), 0.0);
+  EXPECT_DOUBLE_EQ(world->getTimeStep(), 0.004);
+  EXPECT_DOUBLE_EQ(skeleton->getTimeStep(), 0.004);
+  EXPECT_EQ(world->getSimFrames(), 4);
+
+  world->stepSubsteps(4u, true);
+  EXPECT_DOUBLE_EQ(body->getExternalForceLocal().norm(), 0.0);
+  EXPECT_DOUBLE_EQ(world->getTimeStep(), 0.004);
+  EXPECT_DOUBLE_EQ(skeleton->getTimeStep(), 0.004);
+  EXPECT_EQ(world->getSimFrames(), 8);
+}
+
+//==============================================================================
+TEST(WorldTests, StepSubstepsResetsCommandsOnlyAfterFinalSubstep)
+{
+  auto world = World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->setTimeStep(0.004);
+  auto skeleton = createSimpleSkeleton("persist_command");
+  auto* joint = skeleton->getJoint(0);
+  world->addSkeleton(skeleton);
+
+  constexpr double command = 0.5;
+  joint->setCommand(0, command);
+  world->stepSubsteps(4u, false);
+  EXPECT_DOUBLE_EQ(joint->getCommand(0), command);
+  EXPECT_DOUBLE_EQ(world->getTimeStep(), 0.004);
+  EXPECT_DOUBLE_EQ(skeleton->getTimeStep(), 0.004);
+  EXPECT_EQ(world->getSimFrames(), 4);
+
+  world->stepSubsteps(4u, true);
+  EXPECT_DOUBLE_EQ(joint->getCommand(0), 0.0);
+  EXPECT_DOUBLE_EQ(world->getTimeStep(), 0.004);
+  EXPECT_DOUBLE_EQ(skeleton->getTimeStep(), 0.004);
+  EXPECT_EQ(world->getSimFrames(), 8);
+}
+
+//==============================================================================
+TEST(WorldTests, StepSubstepsIgnoresZeroSubsteps)
+{
+  auto world = World::create();
+  world->setTimeStep(0.002);
+  world->setTime(0.5);
+
+  world->stepSubsteps(0u);
+
+  EXPECT_DOUBLE_EQ(world->getTimeStep(), 0.002);
+  EXPECT_DOUBLE_EQ(world->getTime(), 0.5);
+  EXPECT_EQ(world->getSimFrames(), 0);
+}
+
+//==============================================================================
 TEST(WorldTests, AddSkeletonTwice)
 {
   auto world = World::create();
@@ -935,7 +1125,9 @@ SkeletonPtr createBoxSkeleton(
       nullptr, FreeJoint::Properties(), BodyNode::AspectProperties("body"));
 
   auto shape = std::make_shared<BoxShape>(Eigen::Vector3d::Ones());
-  pair.second->createShapeNodeWith<VisualAspect, CollisionAspect>(shape);
+  pair.second
+      ->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
+          shape);
 
   Inertia inertia;
   inertia.setMass(1.0);
@@ -949,6 +1141,462 @@ SkeletonPtr createBoxSkeleton(
   skel->setPositions(pos);
 
   return skel;
+}
+
+//==============================================================================
+WorldPtr createContactSubstepWorld(
+    const std::string& namePrefix,
+    double timeStep,
+    SkeletonPtr* dynamicBoxOut = nullptr)
+{
+  auto world = World::create(namePrefix + "_world");
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->setTimeStep(timeStep);
+
+  auto ground
+      = createBoxSkeleton(namePrefix + "_ground", Eigen::Vector3d(0, 0, -0.5));
+  ground->setMobile(false);
+  ground->getBodyNode(0)->setMomentOfInertia(0.2, 0.2, 0.2);
+
+  auto box
+      = createBoxSkeleton(namePrefix + "_box", Eigen::Vector3d(0, 0, 0.49));
+  box->getBodyNode(0)->setMomentOfInertia(0.2, 0.2, 0.2);
+  Eigen::Vector6d velocity = Eigen::Vector6d::Zero();
+  velocity.head<3>() = Eigen::Vector3d(0.1, -0.2, 0.05);
+  velocity.tail<3>() = Eigen::Vector3d(0.05, 0.0, -0.2);
+  box->setVelocities(velocity);
+
+  world->addSkeleton(ground);
+  world->addSkeleton(box);
+
+  if (dynamicBoxOut) {
+    *dynamicBoxOut = box;
+  }
+
+  return world;
+}
+
+//==============================================================================
+WorldPtr createRevoluteChainWorld(
+    const std::string& namePrefix,
+    double timeStep,
+    SkeletonPtr* chainOut = nullptr)
+{
+  auto world = World::create(namePrefix + "_world");
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world->setTimeStep(timeStep);
+
+  auto chain = Skeleton::create(namePrefix + "_chain");
+  chain->disableSelfCollisionCheck();
+
+  constexpr double mass = 1.0;
+  constexpr double length = 1.0;
+  constexpr double width = 0.05;
+  constexpr double transverseMoment
+      = mass * (length * length + width * width) / 12.0;
+  constexpr double axialMoment = mass * width * width / 6.0;
+  BodyNode* parent = nullptr;
+  constexpr std::size_t numLinks = 5u;
+  for (std::size_t i = 0u; i < numLinks; ++i) {
+    RevoluteJoint::Properties jointProperties;
+    jointProperties.mName = "joint_" + std::to_string(i);
+    jointProperties.mAxis = Eigen::Vector3d::UnitY();
+    if (parent) {
+      jointProperties.mT_ParentBodyToJoint.translation()
+          = Eigen::Vector3d(0.0, 0.0, -length);
+    }
+
+    BodyNode::Properties bodyProperties;
+    bodyProperties.mName = "link_" + std::to_string(i);
+    bodyProperties.mInertia.setMass(mass);
+    bodyProperties.mInertia.setLocalCOM(
+        Eigen::Vector3d(0.0, 0.0, -0.5 * length));
+    bodyProperties.mInertia.setMoment(
+        transverseMoment, transverseMoment, axialMoment, 0.0, 0.0, 0.0);
+
+    auto pair = chain->createJointAndBodyNodePair<RevoluteJoint>(
+        parent, jointProperties, bodyProperties);
+    pair.first->setDampingCoefficient(0, 0.0);
+    pair.first->setCoulombFriction(0, 0.0);
+    pair.first->setSpringStiffness(0, 0.0);
+    pair.first->setLimitEnforcement(false);
+    parent = pair.second;
+  }
+
+  Eigen::VectorXd positions(chain->getNumDofs());
+  Eigen::VectorXd velocities(chain->getNumDofs());
+  for (std::size_t i = 0u; i < numLinks; ++i) {
+    positions[i] = 0.35 - 0.08 * static_cast<double>(i);
+    velocities[i] = 0.4 + 0.05 * static_cast<double>(i);
+  }
+  chain->setPositions(positions);
+  chain->setVelocities(velocities);
+
+  world->addSkeleton(chain);
+  if (chainOut) {
+    *chainOut = chain;
+  }
+
+  return world;
+}
+
+//==============================================================================
+double totalEnergy(const SkeletonPtr& skeleton)
+{
+  return skeleton->computeKineticEnergy() + skeleton->computePotentialEnergy();
+}
+
+//==============================================================================
+double maxRelativeEnergyDrift(
+    const WorldPtr& world,
+    const SkeletonPtr& skeleton,
+    std::size_t numOuterSteps,
+    std::size_t substeps)
+{
+  const double energy0 = totalEnergy(skeleton);
+  const double scale = std::max(1.0, std::abs(energy0));
+  double maxRelativeDrift = 0.0;
+
+  for (std::size_t i = 0u; i < numOuterSteps; ++i) {
+    if (substeps == 1u) {
+      world->step();
+    } else {
+      world->stepSubsteps(substeps);
+    }
+
+    const double energy = totalEnergy(skeleton);
+    EXPECT_TRUE(std::isfinite(energy));
+    maxRelativeDrift
+        = std::max(maxRelativeDrift, std::abs(energy - energy0) / scale);
+  }
+
+  return maxRelativeDrift;
+}
+
+//==============================================================================
+double maxRelativeEnergyDriftRungeKutta4(
+    const WorldPtr& world, const SkeletonPtr& skeleton, std::size_t numSteps)
+{
+  const double energy0 = totalEnergy(skeleton);
+  const double scale = std::max(1.0, std::abs(energy0));
+  double maxRelativeDrift = 0.0;
+
+  for (std::size_t i = 0u; i < numSteps; ++i) {
+    world->stepUnconstrainedRungeKutta4();
+
+    const double energy = totalEnergy(skeleton);
+    EXPECT_TRUE(std::isfinite(energy));
+    maxRelativeDrift
+        = std::max(maxRelativeDrift, std::abs(energy - energy0) / scale);
+  }
+
+  return maxRelativeDrift;
+}
+
+//==============================================================================
+double maxPenetrationDepth(const WorldPtr& world)
+{
+  double maxDepth = 0.0;
+  const auto& contacts
+      = world->getConstraintSolver()->getLastCollisionResult().getContacts();
+  for (const auto& contact : contacts) {
+    maxDepth = std::max(maxDepth, contact.penetrationDepth);
+  }
+
+  return maxDepth;
+}
+
+//==============================================================================
+struct ContactStabilitySummary
+{
+  double maxPenetrationDepth = 0.0;
+  double maxHeightError = 0.0;
+};
+
+//==============================================================================
+ContactStabilitySummary summarizeContactStability(
+    const WorldPtr& world,
+    const SkeletonPtr& dynamicBox,
+    std::size_t numOuterSteps,
+    std::size_t substeps)
+{
+  ContactStabilitySummary summary;
+  for (std::size_t i = 0u; i < numOuterSteps; ++i) {
+    if (substeps == 1u) {
+      world->step();
+    } else {
+      world->stepSubsteps(substeps);
+    }
+
+    summary.maxPenetrationDepth
+        = std::max(summary.maxPenetrationDepth, maxPenetrationDepth(world));
+    summary.maxHeightError = std::max(
+        summary.maxHeightError, std::abs(dynamicBox->getPosition(5) - 0.5));
+  }
+
+  return summary;
+}
+
+//==============================================================================
+constexpr double kContactStabilityBoxSide = 0.4;
+constexpr double kContactStabilityBoxHeight = 0.5;
+constexpr double kContactStabilityGroundThickness = 0.2;
+
+//==============================================================================
+void configureContactStabilityBody(
+    BodyNode* body, const std::shared_ptr<BoxShape>& shape, double mass)
+{
+  Inertia inertia;
+  inertia.setMass(mass);
+  inertia.setMoment(shape->computeInertia(mass));
+  body->setInertia(inertia);
+
+  auto* shapeNode
+      = body->createShapeNodeWith<CollisionAspect, DynamicsAspect>(shape);
+  shapeNode->getDynamicsAspect()->setFrictionCoeff(0.0);
+  shapeNode->getDynamicsAspect()->setRestitutionCoeff(0.0);
+}
+
+//==============================================================================
+SkeletonPtr createContactStabilityGround()
+{
+  auto ground = Skeleton::create("contact_stability_ground");
+  auto pair = ground->createJointAndBodyNodePair<WeldJoint>();
+  auto* body = pair.second;
+
+  auto shape = std::make_shared<BoxShape>(
+      Eigen::Vector3d(6.0, 6.0, kContactStabilityGroundThickness));
+  configureContactStabilityBody(body, shape, 1.0);
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation()
+      = Eigen::Vector3d(0.0, 0.0, -0.5 * kContactStabilityGroundThickness);
+  pair.first->setTransformFromParentBodyNode(transform);
+  ground->setMobile(false);
+
+  return ground;
+}
+
+//==============================================================================
+SkeletonPtr createContactStabilityBox(std::size_t index)
+{
+  auto skeleton
+      = Skeleton::create("contact_stability_box_" + std::to_string(index));
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* body = pair.second;
+
+  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d(
+      kContactStabilityBoxSide,
+      kContactStabilityBoxSide,
+      kContactStabilityBoxHeight));
+  configureContactStabilityBody(body, shape, 1.0);
+
+  Eigen::Vector6d positions = Eigen::Vector6d::Zero();
+  positions[5] = 0.5 * kContactStabilityBoxHeight
+                 + static_cast<double>(index) * kContactStabilityBoxHeight;
+  skeleton->setPositions(positions);
+
+  return skeleton;
+}
+
+//==============================================================================
+WorldPtr createContactStabilityWorld(
+    double timeStep, std::vector<SkeletonPtr>* boxes)
+{
+  auto world = World::create();
+  world->setTimeStep(timeStep);
+  world->addSkeleton(createContactStabilityGround());
+
+  constexpr std::size_t numBoxes = 3u;
+  boxes->clear();
+  boxes->reserve(numBoxes);
+  for (std::size_t i = 0u; i < numBoxes; ++i) {
+    auto box = createContactStabilityBox(i);
+    world->addSkeleton(box);
+    boxes->push_back(std::move(box));
+  }
+
+  return world;
+}
+
+//==============================================================================
+double contactStabilityTopHeightError(const std::vector<SkeletonPtr>& boxes)
+{
+  const double expected
+      = kContactStabilityBoxHeight * (static_cast<double>(boxes.size()) - 0.5);
+  const double actual
+      = boxes.back()->getBodyNode(0)->getWorldTransform().translation().z();
+  return actual - expected;
+}
+
+//==============================================================================
+ContactStabilitySummary summarizeContactStabilityStack(
+    const WorldPtr& world,
+    const std::vector<SkeletonPtr>& boxes,
+    std::size_t numOuterSteps,
+    std::size_t substeps)
+{
+  ContactStabilitySummary summary;
+  for (std::size_t i = 0u; i < numOuterSteps; ++i) {
+    if (substeps == 1u) {
+      world->step();
+    } else {
+      world->stepSubsteps(substeps);
+    }
+
+    summary.maxPenetrationDepth
+        = std::max(summary.maxPenetrationDepth, maxPenetrationDepth(world));
+    summary.maxHeightError = std::max(
+        summary.maxHeightError,
+        std::abs(contactStabilityTopHeightError(boxes)));
+  }
+
+  return summary;
+}
+
+//==============================================================================
+TEST(WorldTests, StepSubstepsMatchesManualSmallerTimeStepWithContact)
+{
+  constexpr std::size_t substeps = 4u;
+  constexpr double outerTimeStep = 0.004;
+  constexpr double internalTimeStep
+      = outerTimeStep / static_cast<double>(substeps);
+
+  SkeletonPtr substepBox;
+  auto substepWorld = createContactSubstepWorld(
+      "substep_contact", outerTimeStep, &substepBox);
+
+  SkeletonPtr manualBox;
+  auto manualWorld = createContactSubstepWorld(
+      "manual_contact", internalTimeStep, &manualBox);
+
+  collision::CollisionOption option(true, 100u);
+  EXPECT_TRUE(substepWorld->checkCollision(option));
+  EXPECT_TRUE(manualWorld->checkCollision(option));
+
+  substepWorld->stepSubsteps(substeps);
+  for (std::size_t i = 0; i < substeps; ++i) {
+    manualWorld->step(i + 1u == substeps);
+  }
+
+  EXPECT_GT(
+      substepWorld->getConstraintSolver()
+          ->getLastCollisionResult()
+          .getNumContacts(),
+      0u);
+  EXPECT_EQ(substepWorld->getSimFrames(), manualWorld->getSimFrames());
+  EXPECT_NEAR(substepWorld->getTime(), manualWorld->getTime(), 1e-15);
+  EXPECT_DOUBLE_EQ(substepWorld->getTimeStep(), outerTimeStep);
+  EXPECT_DOUBLE_EQ(substepBox->getTimeStep(), outerTimeStep);
+  EXPECT_DOUBLE_EQ(
+      substepWorld->getConstraintSolver()->getTimeStep(), outerTimeStep);
+  EXPECT_TRUE(
+      substepBox->getPositions().isApprox(manualBox->getPositions(), 1e-10))
+      << "contact substepping should match manual smaller-timestep positions";
+  EXPECT_TRUE(
+      substepBox->getVelocities().isApprox(manualBox->getVelocities(), 1e-10))
+      << "contact substepping should match manual smaller-timestep velocities";
+}
+
+//==============================================================================
+TEST(WorldTests, StepSubstepsReducesArticulatedEnergyDrift)
+{
+  constexpr double outerTimeStep = 0.01;
+  constexpr std::size_t numOuterSteps = 500u;
+  constexpr std::size_t substeps = 5u;
+
+  SkeletonPtr directChain;
+  auto directWorld
+      = createRevoluteChainWorld("direct_energy", outerTimeStep, &directChain);
+
+  SkeletonPtr substepChain;
+  auto substepWorld = createRevoluteChainWorld(
+      "substep_energy", outerTimeStep, &substepChain);
+
+  const double directDrift
+      = maxRelativeEnergyDrift(directWorld, directChain, numOuterSteps, 1u);
+  const double substepDrift = maxRelativeEnergyDrift(
+      substepWorld, substepChain, numOuterSteps, substeps);
+
+  EXPECT_LT(substepDrift, directDrift * 0.5);
+  EXPECT_LT(substepDrift, 0.05);
+}
+
+//==============================================================================
+TEST(WorldTests, StepUnconstrainedRungeKutta4ReducesArticulatedEnergyDrift)
+{
+  constexpr double timeStep = 0.01;
+  constexpr std::size_t numSteps = 500u;
+  constexpr std::size_t substeps = 5u;
+
+  SkeletonPtr substepChain;
+  auto substepWorld
+      = createRevoluteChainWorld("substep_rk4", timeStep, &substepChain);
+
+  SkeletonPtr rungeKuttaChain;
+  auto rungeKuttaWorld
+      = createRevoluteChainWorld("rk4", timeStep, &rungeKuttaChain);
+
+  const double substepDrift
+      = maxRelativeEnergyDrift(substepWorld, substepChain, numSteps, substeps);
+  const double rungeKuttaDrift = maxRelativeEnergyDriftRungeKutta4(
+      rungeKuttaWorld, rungeKuttaChain, numSteps);
+
+  EXPECT_LT(rungeKuttaDrift, substepDrift * 0.01);
+  EXPECT_LT(rungeKuttaDrift, 2e-4);
+}
+
+//==============================================================================
+TEST(WorldTests, StepUnconstrainedRungeKutta4ResetCommandSemantics)
+{
+  auto world = World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->setTimeStep(0.004);
+  auto [skeleton, body] = createFreeBodySkeleton("rk4_reset_force");
+  world->addSkeleton(skeleton);
+
+  auto commandSkeleton = createSimpleSkeleton("rk4_reset_command");
+  auto* commandJoint = commandSkeleton->getJoint(0);
+  world->addSkeleton(commandSkeleton);
+
+  constexpr double command = 0.5;
+  commandJoint->setCommand(0, command);
+  body->addExtForce(Eigen::Vector3d(3.0, 0.0, 0.0));
+  world->stepUnconstrainedRungeKutta4(false);
+  EXPECT_GT(body->getExternalForceLocal().norm(), 0.0);
+  EXPECT_DOUBLE_EQ(commandJoint->getCommand(0), command);
+  EXPECT_DOUBLE_EQ(world->getTime(), 0.004);
+  EXPECT_EQ(world->getSimFrames(), 1);
+
+  world->stepUnconstrainedRungeKutta4(true);
+  EXPECT_DOUBLE_EQ(body->getExternalForceLocal().norm(), 0.0);
+  EXPECT_DOUBLE_EQ(commandJoint->getCommand(0), 0.0);
+  EXPECT_DOUBLE_EQ(world->getTime(), 0.008);
+  EXPECT_EQ(world->getSimFrames(), 2);
+}
+
+//==============================================================================
+TEST(WorldTests, StepSubstepsReducesContactError)
+{
+  constexpr double outerTimeStep = 0.01;
+  constexpr std::size_t numOuterSteps = 1000u;
+  constexpr std::size_t substeps = 5u;
+
+  std::vector<SkeletonPtr> directBoxes;
+  auto directWorld = createContactStabilityWorld(outerTimeStep, &directBoxes);
+
+  std::vector<SkeletonPtr> substepBoxes;
+  auto substepWorld = createContactStabilityWorld(outerTimeStep, &substepBoxes);
+
+  const ContactStabilitySummary directSummary = summarizeContactStabilityStack(
+      directWorld, directBoxes, numOuterSteps, 1u);
+  const ContactStabilitySummary substepSummary = summarizeContactStabilityStack(
+      substepWorld, substepBoxes, numOuterSteps, substeps);
+
+  EXPECT_LT(
+      substepSummary.maxPenetrationDepth,
+      directSummary.maxPenetrationDepth * 0.5);
+  EXPECT_LT(substepSummary.maxHeightError, directSummary.maxHeightError * 0.5);
 }
 
 //==============================================================================

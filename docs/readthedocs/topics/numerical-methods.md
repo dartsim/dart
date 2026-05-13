@@ -47,6 +47,57 @@ runtime. Large timesteps are more likely to cause:
 When debugging instability, treat `dt` as a first-class parameter: many control
 gains that are stable at `1/1000 s` will not be stable at `1/60 s`.
 
+## Free-body invariant stepping
+
+`World::step()` uses an invariant-preserving update for an exactly unforced,
+single-body root `FreeJoint` when the body has no gravity, external wrench,
+joint command, joint force, damping, spring, friction, child bodies, or joint
+frame offsets. That case has a closed torque-free rigid-body structure, so DART
+can preserve kinetic energy and world angular momentum without changing the
+public stepping API.
+
+Any nonzero user-supplied force, command, coefficient, gravity vector, or frame
+offset keeps the normal dynamics path. Even very small applied torques are
+treated as real input instead of numerical noise, because they can accumulate
+over long simulations.
+
+## Using substeps
+
+If an application wants to keep an outer control/update cadence but integrate
+physics at a smaller internal timestep, use `World::stepSubsteps()`:
+
+```cpp
+world->setTimeStep(1.0 / 60.0);
+while (...) {
+  // Set controls for this outer update.
+  world->stepSubsteps(4); // four internal 1/240 s steps
+}
+```
+
+`stepSubsteps(n)` is equivalent to temporarily using `dt / n` and calling
+`World::step()` `n` times. Commands and forces persist across the internal
+substeps and are reset only after the final substep when the reset flag is true.
+
+## Higher-order unconstrained stepping
+
+For rigid articulated worlds that do not need contact or constraint impulses,
+`World::stepUnconstrainedRungeKutta4()` advances mobile skeletons with a
+fourth-order Runge-Kutta integration of forward dynamics:
+
+```cpp
+world->setTimeStep(1.0 / 100.0);
+while (...) {
+  // Set controls for this unconstrained update.
+  world->stepUnconstrainedRungeKutta4();
+}
+```
+
+This path uses the same joint-space position integration as DART joints, so
+rotational coordinates remain on their manifolds. It intentionally does not run
+the constraint solver or collision response; use `World::step()` or
+`World::stepSubsteps()` for scenes that rely on contacts, joint constraints,
+joint limits, or impulse-level corrections.
+
 ## Constraints, contacts, and implicit impulses
 
 DART handles contacts and other constraints using an implicit, velocity-level

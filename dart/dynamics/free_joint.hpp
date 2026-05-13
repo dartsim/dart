@@ -369,6 +369,17 @@ protected:
   /// Do not use directly! Use getQ() to access this
   mutable Eigen::Isometry3d mQ;
 
+  bool mUseTorqueFreePositionIntegration = false;
+  Eigen::Vector6d mTorqueFreeInitialPositions = Eigen::Vector6d::Zero();
+  Eigen::Vector6d mTorqueFreeIntegratedVelocities = Eigen::Vector6d::Zero();
+  Eigen::Vector3d mTorqueFreeMidpointAngularVelocityBody
+      = Eigen::Vector3d::Zero();
+  Eigen::Vector3d mTorqueFreeNextAngularVelocityBody = Eigen::Vector3d::Zero();
+  Eigen::Vector3d mTorqueFreeInitialAngularMomentumWorld
+      = Eigen::Vector3d::Zero();
+  Eigen::Vector3d mTorqueFreeNextAngularMomentumBody = Eigen::Vector3d::Zero();
+  Eigen::Vector3d mTorqueFreeComLinearVelocityWorld = Eigen::Vector3d::Zero();
+
 public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

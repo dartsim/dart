@@ -259,6 +259,31 @@ python scripts/compare_benchmarks.py baseline.json optimized.json
 The tool supports `--metric cpu_time|real_time` and `--aggregate` options.
 See the script's `--help` for details.
 
+#### Physics Evidence Benchmarks
+
+Use these focused benchmark aliases when changing simulation accuracy,
+stability, or integration behavior:
+
+```bash
+pixi run bm free_body_energy
+pixi run bm free_joint_pose
+pixi run bm articulated_energy
+pixi run bm contact_stability
+pixi run bm constraint_stability
+pixi run physics-bm-check
+```
+
+- `free_body_energy`: torque-free free-body energy and angular momentum drift
+- `free_joint_pose`: free-joint pose integration accuracy and throughput
+- `articulated_energy`: single-axis and multi-axis articulated-chain energy
+  drift with default stepping, substeps, and unconstrained Runge-Kutta stepping
+- `contact_stability`: stacked-contact penetration, height drift, frictional
+  hold drift, and throughput
+- `constraint_stability`: explicit joint-constraint anchor error, joint-limit
+  violation, servo tracking error, and throughput
+- `physics-bm-check`: focused pass/fail thresholds for accuracy, stability, and
+  throughput counters above
+
 ## Adding New Tests
 
 ### Naming Conventions

@@ -2261,6 +2261,31 @@ TEST_F(Joints, FreeJointPositionDifferenceInWorldFrame)
 }
 
 //==============================================================================
+TEST_F(Joints, FreeJointIntegratePositionsUsesWorldTangent)
+{
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+
+  const Eigen::Isometry3d pose = random_transform();
+  const Eigen::Vector6d q0 = FreeJoint::convertToPositions(pose);
+  joint->setPositions(q0);
+
+  Eigen::Vector6d tangent = Eigen::Vector6d::Zero();
+  tangent.head<3>() = Eigen::Vector3d(0.35, -0.25, 0.2);
+  tangent.tail<3>() = Eigen::Vector3d(0.4, -0.15, 0.25);
+
+  const double dt = 0.03;
+  Joint* baseJoint = joint;
+  const Eigen::VectorXd result = baseJoint->integratePositions(q0, tangent, dt);
+
+  const Eigen::Vector6d diff = joint->getPositionDifferences(result, q0);
+
+  EXPECT_TRUE(equals(diff, tangent * dt, 1e-12));
+}
+
+//==============================================================================
 TEST_F(Joints, FreeJointIntegrationMatchesBodyTwist)
 {
   SkeletonPtr skel = Skeleton::create();
@@ -2284,8 +2309,9 @@ TEST_F(Joints, FreeJointIntegrationMatchesBodyTwist)
   const Eigen::Vector6d twistFromStep
       = math::logMap(start.inverse() * end) / dt;
 
-  // Tolerance of 1e-4: integration error is O(dt^2) ~ 1e-12, dividing by
-  // dt=1e-6 amplifies it to O(dt) ~ 1e-6, so 1e-6 sits right at the boundary.
+  // FreeJoint stores translational velocity as a world-frame generalized
+  // velocity. The recovered body twist therefore matches to first order over a
+  // very small pose delta.
   EXPECT_TRUE(equals(twistFromStep, bodyTwist, 1e-4));
 }
 
@@ -2333,6 +2359,501 @@ TEST_F(Joints, FreeJointVelocityIntegratesAcceleration)
 
   const Eigen::Vector6d expected = velocities + accelerations * dt;
   EXPECT_TRUE(equals(joint->getVelocities(), expected));
+}
+
+//==============================================================================
+TEST_F(Joints, FreeJointVelocityIntegratesAccelerationWithExternalForce)
+{
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+  BodyNode* body = pair.second;
+
+  body->setMass(1.0);
+  body->setMomentOfInertia(0.7, 1.0, 1.2);
+  body->setExtForce(Eigen::Vector3d(1.0, -2.0, 3.0));
+
+  const Eigen::Vector6d velocities = random_vec<6>(0.5);
+  const Eigen::Vector6d accelerations = random_vec<6>(0.5);
+  joint->setVelocities(velocities);
+  joint->setAccelerations(accelerations);
+
+  const double dt = 1e-3;
+  skel->integrateVelocities(dt);
+
+  const Eigen::Vector6d expected = velocities + accelerations * dt;
+  EXPECT_TRUE(equals(joint->getVelocities(), expected));
+}
+
+//==============================================================================
+TEST_F(Joints, FreeJointExternalTorqueChangesMomentumAndEnergy)
+{
+  WorldPtr world = World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  const double dt = 1e-4;
+  world->setTimeStep(dt);
+
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+  BodyNode* body = pair.second;
+
+  body->setMass(1.0);
+  body->setMomentOfInertia(0.7, 1.0, 1.2);
+
+  for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+    joint->setDampingCoefficient(i, 0.0);
+    joint->setCoulombFriction(i, 0.0);
+    joint->setSpringStiffness(i, 0.0);
+  }
+
+  joint->setPositions(Eigen::Vector6d::Zero());
+
+  Eigen::Vector6d velocities = Eigen::Vector6d::Zero();
+  velocities.head<3>() = Eigen::Vector3d(0.4, 0.2, -0.1);
+  joint->setVelocities(velocities);
+
+  world->addSkeleton(skel);
+
+  const auto worldMomentum = [](const BodyNode* node) {
+    return math::dAdInvT(
+        node->getWorldTransform(),
+        node->getSpatialInertia() * node->getSpatialVelocity());
+  };
+
+  const Eigen::Vector6d momentum0 = worldMomentum(body);
+  const double energy0 = skel->computeKineticEnergy();
+
+  const Eigen::Vector3d torque(0.8, 0.4, -0.2);
+  body->addExtTorque(torque, false);
+  world->step();
+
+  const Eigen::Vector6d momentum1 = worldMomentum(body);
+  const double energy1 = skel->computeKineticEnergy();
+  const Eigen::Vector3d angularMomentumDelta
+      = momentum1.head<3>() - momentum0.head<3>();
+
+  EXPECT_TRUE(equals(angularMomentumDelta, torque * dt, 1e-6));
+  EXPECT_GT(energy1, energy0);
+}
+
+//==============================================================================
+TEST_F(Joints, FreeJointTinyExternalTorqueChangesMomentum)
+{
+  WorldPtr world = World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  const double dt = 1.0;
+  world->setTimeStep(dt);
+
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+  BodyNode* body = pair.second;
+
+  body->setMass(1.0);
+  body->setMomentOfInertia(0.7, 1.0, 1.2);
+
+  for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+    joint->setDampingCoefficient(i, 0.0);
+    joint->setCoulombFriction(i, 0.0);
+    joint->setSpringStiffness(i, 0.0);
+  }
+
+  joint->setPositions(Eigen::Vector6d::Zero());
+
+  Eigen::Vector6d velocities = Eigen::Vector6d::Zero();
+  velocities.head<3>() = Eigen::Vector3d(0.2, 0.0, 0.0);
+  joint->setVelocities(velocities);
+
+  world->addSkeleton(skel);
+
+  const auto worldMomentum = [](const BodyNode* node) {
+    return math::dAdInvT(
+        node->getWorldTransform(),
+        node->getSpatialInertia() * node->getSpatialVelocity());
+  };
+
+  const Eigen::Vector3d angularMomentum0 = worldMomentum(body).head<3>();
+  const Eigen::Vector3d torque(5e-13, 0.0, 0.0);
+  constexpr std::size_t numSteps = 100;
+
+  for (std::size_t i = 0; i < numSteps; ++i) {
+    body->addExtTorque(torque, false);
+    world->step();
+  }
+
+  const Eigen::Vector3d angularMomentumDelta
+      = worldMomentum(body).head<3>() - angularMomentum0;
+  const Eigen::Vector3d expectedAngularMomentumDelta
+      = torque * dt * static_cast<double>(numSteps);
+
+  EXPECT_TRUE(
+      equals(angularMomentumDelta, expectedAngularMomentumDelta, 1e-13));
+  EXPECT_GT(angularMomentumDelta.norm(), 1e-12);
+}
+
+//==============================================================================
+TEST_F(Joints, FreeJointDampingDissipatesEnergy)
+{
+  WorldPtr world = World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  const double dt = 1e-3;
+  world->setTimeStep(dt);
+
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+  BodyNode* body = pair.second;
+
+  body->setMass(1.5);
+  body->setMomentOfInertia(0.7, 1.0, 1.2);
+
+  for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+    joint->setDampingCoefficient(i, 0.4);
+    joint->setCoulombFriction(i, 0.0);
+    joint->setSpringStiffness(i, 0.0);
+  }
+
+  joint->setPositions(FreeJoint::convertToPositions(random_transform()));
+
+  Eigen::Vector6d velocities = Eigen::Vector6d::Zero();
+  velocities.head<3>() = Eigen::Vector3d(0.8, -0.5, 0.3);
+  velocities.tail<3>() = Eigen::Vector3d(0.4, -0.3, 0.2);
+  joint->setVelocities(velocities);
+
+  world->addSkeleton(skel);
+
+  const double energy0 = skel->computeKineticEnergy();
+  world->step();
+  const double energy1 = skel->computeKineticEnergy();
+
+  EXPECT_LT(energy1, energy0 - 1e-8);
+}
+
+//==============================================================================
+TEST_F(Joints, FreeJointGravityMatchesSemiImplicitBallisticStep)
+{
+  WorldPtr world = World::create();
+  const Eigen::Vector3d gravity(0.0, 0.0, -9.81);
+  world->setGravity(gravity);
+
+  const double dt = 1e-3;
+  world->setTimeStep(dt);
+
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+  BodyNode* body = pair.second;
+
+  body->setMass(1.5);
+  body->setMomentOfInertia(0.7, 1.0, 1.2);
+
+  for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+    joint->setDampingCoefficient(i, 0.0);
+    joint->setCoulombFriction(i, 0.0);
+    joint->setSpringStiffness(i, 0.0);
+  }
+
+  joint->setPositions(Eigen::Vector6d::Zero());
+
+  Eigen::Vector6d velocities = Eigen::Vector6d::Zero();
+  velocities.tail<3>() = Eigen::Vector3d(0.2, -0.1, 1.5);
+  joint->setVelocities(velocities);
+
+  world->addSkeleton(skel);
+  world->step();
+
+  const Eigen::Vector3d expectedVelocity = velocities.tail<3>() + gravity * dt;
+  const Eigen::Vector3d expectedTranslation = expectedVelocity * dt;
+
+  EXPECT_TRUE(
+      equals(joint->getVelocities().tail<3>(), expectedVelocity, 1e-12));
+  EXPECT_TRUE(equals(
+      joint->getRelativeTransform().translation(), expectedTranslation, 1e-12));
+}
+
+//==============================================================================
+TEST_F(Joints, FreeJointGeneralizedForceMatchesSemiImplicitLinearStep)
+{
+  WorldPtr world = World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  const double dt = 1e-3;
+  world->setTimeStep(dt);
+
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+  BodyNode* body = pair.second;
+
+  body->setMass(2.0);
+  body->setMomentOfInertia(0.7, 1.0, 1.2);
+  joint->setActuatorType(Joint::FORCE);
+
+  for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+    joint->setDampingCoefficient(i, 0.0);
+    joint->setCoulombFriction(i, 0.0);
+    joint->setSpringStiffness(i, 0.0);
+  }
+
+  joint->setPositions(Eigen::Vector6d::Zero());
+
+  Eigen::Vector6d velocities = Eigen::Vector6d::Zero();
+  velocities.tail<3>() = Eigen::Vector3d(0.2, -0.1, 0.0);
+  joint->setVelocities(velocities);
+
+  world->addSkeleton(skel);
+
+  const double energy0 = skel->computeKineticEnergy();
+  const Eigen::Vector3d force(1.0, 0.0, 0.0);
+  joint->setForce(3, force.x());
+  world->step();
+
+  const Eigen::Vector3d expectedVelocity
+      = velocities.tail<3>() + (force / body->getMass()) * dt;
+  const Eigen::Vector3d expectedTranslation = expectedVelocity * dt;
+
+  EXPECT_TRUE(
+      equals(joint->getVelocities().tail<3>(), expectedVelocity, 1e-12));
+  EXPECT_TRUE(equals(
+      joint->getRelativeTransform().translation(), expectedTranslation, 1e-12));
+  EXPECT_GT(skel->computeKineticEnergy(), energy0);
+}
+
+//==============================================================================
+TEST_F(Joints, FreeJointAccelerationActuatorMatchesSemiImplicitLinearStep)
+{
+  WorldPtr world = World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  const double dt = 1e-3;
+  world->setTimeStep(dt);
+
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+  BodyNode* body = pair.second;
+
+  body->setMass(2.0);
+  body->setMomentOfInertia(0.7, 1.0, 1.2);
+  joint->setActuatorType(Joint::ACCELERATION);
+
+  for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+    joint->setDampingCoefficient(i, 0.0);
+    joint->setCoulombFriction(i, 0.0);
+    joint->setSpringStiffness(i, 0.0);
+  }
+
+  joint->setPositions(Eigen::Vector6d::Zero());
+
+  Eigen::Vector6d velocities = Eigen::Vector6d::Zero();
+  velocities.tail<3>() = Eigen::Vector3d(0.2, -0.1, 0.0);
+  joint->setVelocities(velocities);
+
+  world->addSkeleton(skel);
+
+  const Eigen::Vector3d acceleration(1.0, 0.0, 0.0);
+  joint->setCommand(3, acceleration.x());
+  world->step();
+
+  const Eigen::Vector3d expectedVelocity
+      = velocities.tail<3>() + acceleration * dt;
+  const Eigen::Vector3d expectedTranslation = expectedVelocity * dt;
+
+  EXPECT_TRUE(
+      equals(joint->getVelocities().tail<3>(), expectedVelocity, 1e-12));
+  EXPECT_TRUE(equals(
+      joint->getRelativeTransform().translation(), expectedTranslation, 1e-12));
+}
+
+//==============================================================================
+TEST_F(Joints, FreeJointWeldedChildMatchesEquivalentSingleBody)
+{
+  const double rootMass = 1.2;
+  const double childMass = 0.8;
+  const Eigen::Vector3d childOffset(0.25, -0.1, 0.05);
+  const Eigen::Matrix3d rootInertia
+      = Eigen::Vector3d(0.7, 0.9, 1.1).asDiagonal();
+  const Eigen::Matrix3d childInertia
+      = Eigen::Vector3d(0.2, 0.3, 0.4).asDiagonal();
+
+  const auto parallelAxis = [](double mass, const Eigen::Vector3d& offset) {
+    return mass
+           * (offset.squaredNorm() * Eigen::Matrix3d::Identity()
+              - offset * offset.transpose());
+  };
+
+  const double totalMass = rootMass + childMass;
+  const Eigen::Vector3d aggregateCom = (childMass / totalMass) * childOffset;
+  const Eigen::Matrix3d aggregateInertia
+      = rootInertia + parallelAxis(rootMass, -aggregateCom) + childInertia
+        + parallelAxis(childMass, childOffset - aggregateCom);
+
+  auto makeRootState = [] {
+    Eigen::Vector6d state = Eigen::Vector6d::Zero();
+    state.head<3>() = Eigen::Vector3d(0.2, -0.1, 0.3);
+    state.tail<3>() = Eigen::Vector3d(0.1, -0.2, 0.15);
+    return state;
+  };
+
+  const Eigen::Vector6d initialPositions = Eigen::Vector6d::Zero();
+  const Eigen::Vector6d initialVelocities = makeRootState();
+
+  SkeletonPtr composite = Skeleton::create();
+  auto compositeRootPair = composite->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* compositeRoot = compositeRootPair.first;
+  BodyNode* rootBody = compositeRootPair.second;
+  rootBody->setMass(rootMass);
+  rootBody->setMomentOfInertia(
+      rootInertia(0, 0), rootInertia(1, 1), rootInertia(2, 2));
+
+  WeldJoint::Properties weldProperties;
+  weldProperties.mT_ParentBodyToJoint.translation() = childOffset;
+  auto childPair = rootBody->createChildJointAndBodyNodePair<WeldJoint>(
+      weldProperties, BodyNode::AspectProperties("welded_child"));
+  BodyNode* childBody = childPair.second;
+  childBody->setMass(childMass);
+  childBody->setMomentOfInertia(
+      childInertia(0, 0), childInertia(1, 1), childInertia(2, 2));
+
+  for (std::size_t i = 0; i < compositeRoot->getNumDofs(); ++i) {
+    compositeRoot->setDampingCoefficient(i, 0.0);
+    compositeRoot->setCoulombFriction(i, 0.0);
+    compositeRoot->setSpringStiffness(i, 0.0);
+  }
+  compositeRoot->setPositions(initialPositions);
+  compositeRoot->setVelocities(initialVelocities);
+
+  SkeletonPtr aggregate = Skeleton::create();
+  auto aggregatePair = aggregate->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* aggregateRoot = aggregatePair.first;
+  BodyNode* aggregateBody = aggregatePair.second;
+  aggregateBody->setMass(totalMass);
+  aggregateBody->setLocalCOM(aggregateCom);
+  aggregateBody->setMomentOfInertia(
+      aggregateInertia(0, 0),
+      aggregateInertia(1, 1),
+      aggregateInertia(2, 2),
+      aggregateInertia(0, 1),
+      aggregateInertia(0, 2),
+      aggregateInertia(1, 2));
+
+  for (std::size_t i = 0; i < aggregateRoot->getNumDofs(); ++i) {
+    aggregateRoot->setDampingCoefficient(i, 0.0);
+    aggregateRoot->setCoulombFriction(i, 0.0);
+    aggregateRoot->setSpringStiffness(i, 0.0);
+  }
+  aggregateRoot->setPositions(initialPositions);
+  aggregateRoot->setVelocities(initialVelocities);
+
+  composite->computeForwardDynamics();
+  aggregate->computeForwardDynamics();
+  EXPECT_TRUE(equals(
+      compositeRoot->getAccelerations(),
+      aggregateRoot->getAccelerations(),
+      1e-10));
+
+  const double dt = 1e-5;
+  WorldPtr compositeWorld = World::create();
+  compositeWorld->setGravity(Eigen::Vector3d::Zero());
+  compositeWorld->setTimeStep(dt);
+  compositeWorld->addSkeleton(composite);
+
+  WorldPtr aggregateWorld = World::create();
+  aggregateWorld->setGravity(Eigen::Vector3d::Zero());
+  aggregateWorld->setTimeStep(dt);
+  aggregateWorld->addSkeleton(aggregate);
+
+  compositeWorld->step();
+  aggregateWorld->step();
+
+  EXPECT_TRUE(equals(
+      compositeRoot->getVelocities(), aggregateRoot->getVelocities(), 1e-9));
+  EXPECT_TRUE(equals(
+      compositeRoot->getRelativeTransform(),
+      aggregateRoot->getRelativeTransform(),
+      1e-9));
+}
+
+//==============================================================================
+TEST_F(Joints, FreeJointVelocityIntegratesManualAccelerationWithValidInertia)
+{
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+  BodyNode* body = pair.second;
+
+  body->setMass(1.0);
+  body->setMomentOfInertia(0.7, 1.0, 1.2);
+
+  const Eigen::Vector6d velocities = random_vec<6>(0.5);
+  Eigen::Vector6d accelerations = random_vec<6>(0.5);
+  accelerations.head<3>() += Eigen::Vector3d(0.7, -0.2, 0.4);
+  joint->setVelocities(velocities);
+  joint->setAccelerations(accelerations);
+
+  const double dt = 1e-3;
+  skel->integrateVelocities(dt);
+
+  const Eigen::Vector6d expected = velocities + accelerations * dt;
+  EXPECT_TRUE(equals(joint->getVelocities(), expected));
+}
+
+//==============================================================================
+TEST_F(Joints, FreeJointTorqueFreePositionStepInvalidatesAfterPoseEdit)
+{
+  simulation::WorldPtr world = simulation::World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  SkeletonPtr skel = Skeleton::create();
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+  BodyNode* body = pair.second;
+
+  body->setMass(1.0);
+  body->setMomentOfInertia(0.7, 1.0, 1.2);
+
+  for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+    joint->setDampingCoefficient(i, 0.0);
+    joint->setCoulombFriction(i, 0.0);
+    joint->setSpringStiffness(i, 0.0);
+  }
+
+  joint->setPositions(FreeJoint::convertToPositions(random_transform()));
+  Eigen::Vector6d velocities = Eigen::Vector6d::Zero();
+  velocities.head<3>() = Eigen::Vector3d(8.0, -4.0, 6.0);
+  joint->setVelocities(velocities);
+
+  world->addSkeleton(skel);
+  skel->computeForwardDynamics();
+
+  const double dt = 1e-3;
+  skel->integrateVelocities(dt);
+
+  const Eigen::Isometry3d editedPose = random_transform();
+  joint->setPositions(FreeJoint::convertToPositions(editedPose));
+
+  const Eigen::Vector6d spatialVelocity = joint->getRelativeSpatialVelocity();
+  Eigen::Isometry3d expected = editedPose;
+  expected.linear()
+      = editedPose.linear() * math::expMapRot(spatialVelocity.head<3>() * dt);
+  expected.translation()
+      += editedPose.linear() * spatialVelocity.tail<3>() * dt;
+
+  skel->integratePositions(dt);
+
+  EXPECT_TRUE(equals(joint->getRelativeTransform(), expected, 1e-10));
 }
 
 //==============================================================================
@@ -2745,6 +3266,133 @@ TEST_F(Joints, FreeJointEnergyConservationNoForces)
 }
 
 //==============================================================================
+TEST_F(Joints, FreeJointTorqueFreeAsymmetricInertiaConservesEnergy)
+{
+  simulation::WorldPtr world = simulation::World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  const double dt = 1e-3;
+  world->setTimeStep(dt);
+
+  struct TestCase
+  {
+    Eigen::Matrix3d inertia;
+    Eigen::Vector3d angularVelocity;
+    Eigen::Vector3d localCom = Eigen::Vector3d::Zero();
+    Eigen::Vector3d linearVelocity = Eigen::Vector3d::Zero();
+  };
+
+  std::array<TestCase, 4> testCases;
+  testCases[0].inertia = Eigen::Vector3d(0.7, 1.0, 1.2).asDiagonal();
+  testCases[0].angularVelocity = Eigen::Vector3d(8.0, -4.0, 6.0);
+  testCases[1].inertia = Eigen::Vector3d(0.4, 1.1, 1.3).asDiagonal();
+  testCases[1].angularVelocity = Eigen::Vector3d(-12.0, 7.0, 3.0);
+  testCases[1].localCom = Eigen::Vector3d(0.03, -0.02, 0.04);
+  testCases[1].linearVelocity = Eigen::Vector3d(0.2, -0.1, 0.05);
+  testCases[2].inertia = Eigen::Vector3d(0.8, 0.9, 1.4).asDiagonal();
+  testCases[2].angularVelocity = Eigen::Vector3d(3.5, 11.0, -5.0);
+  testCases[2].localCom = Eigen::Vector3d(-0.05, 0.02, 0.01);
+  testCases[2].linearVelocity = Eigen::Vector3d(-0.15, 0.08, 0.03);
+  testCases[3].inertia << 0.9, 0.04, -0.03, 0.04, 1.1, 0.02, -0.03, 0.02, 1.3;
+  testCases[3].angularVelocity = Eigen::Vector3d(9.0, -6.0, 4.0);
+  testCases[3].localCom = Eigen::Vector3d(0.08, -0.04, 0.02);
+  testCases[3].linearVelocity = Eigen::Vector3d(0.1, 0.12, -0.07);
+
+  auto worldMomentum = [](const BodyNode* body) {
+    return math::dAdInvT(
+        body->getWorldTransform(),
+        body->getSpatialInertia() * body->getSpatialVelocity());
+  };
+  auto torqueFreeAcceleration = [](const Eigen::Matrix3d& inertia,
+                                   const Eigen::Matrix3d& rotation,
+                                   const Eigen::Vector3d& angularVelocityWorld,
+                                   const Eigen::Vector3d& localCom) {
+    const Eigen::Vector3d angularVelocityBody
+        = rotation.transpose() * angularVelocityWorld;
+    const Eigen::Vector3d angularMomentumBody = inertia * angularVelocityBody;
+    const Eigen::Vector3d angularAccelerationBody
+        = inertia.ldlt().solve(-angularVelocityBody.cross(angularMomentumBody));
+    const Eigen::Vector3d angularAccelerationWorld
+        = rotation * angularAccelerationBody;
+    const Eigen::Vector3d comOffsetWorld = rotation * localCom;
+
+    Eigen::Vector6d acceleration;
+    acceleration.head<3>() = angularAccelerationWorld;
+    acceleration.tail<3>() = -angularAccelerationWorld.cross(comOffsetWorld)
+                             - angularVelocityWorld.cross(
+                                 angularVelocityWorld.cross(comOffsetWorld));
+    return acceleration;
+  };
+
+  for (const TestCase& testCase : testCases) {
+    SkeletonPtr skel = Skeleton::create();
+
+    auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+    FreeJoint* joint = pair.first;
+    BodyNode* body = pair.second;
+
+    body->setMass(1.0);
+    body->setLocalCOM(testCase.localCom);
+    body->setMomentOfInertia(
+        testCase.inertia(0, 0),
+        testCase.inertia(1, 1),
+        testCase.inertia(2, 2),
+        testCase.inertia(0, 1),
+        testCase.inertia(0, 2),
+        testCase.inertia(1, 2));
+
+    for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+      joint->setDampingCoefficient(i, 0.0);
+      joint->setCoulombFriction(i, 0.0);
+      joint->setSpringStiffness(i, 0.0);
+    }
+
+    joint->setPositions(FreeJoint::convertToPositions(random_transform()));
+
+    Eigen::Vector6d velocities = Eigen::Vector6d::Zero();
+    velocities.head<3>() = testCase.angularVelocity;
+    velocities.tail<3>() = testCase.linearVelocity;
+    joint->setVelocities(velocities);
+
+    world->removeAllSkeletons();
+    world->addSkeleton(skel);
+
+    skel->computeForwardDynamics();
+    const Eigen::Matrix3d rotation = body->getWorldTransform().linear();
+    EXPECT_TRUE(equals(
+        joint->getAccelerations(),
+        torqueFreeAcceleration(
+            testCase.inertia,
+            rotation,
+            joint->getVelocities().head<3>(),
+            body->getLocalCOM()),
+        1e-9));
+
+    const double energy0 = skel->computeKineticEnergy();
+    const Eigen::Vector6d momentum0 = worldMomentum(body);
+    double maxRelativeEnergyError = 0.0;
+    double maxRelativeMomentumError = 0.0;
+
+    constexpr std::size_t numSteps = 1000;
+    for (std::size_t i = 0; i < numSteps; ++i) {
+      world->step();
+
+      const double energy = skel->computeKineticEnergy();
+      const Eigen::Vector6d momentum = worldMomentum(body);
+      maxRelativeEnergyError = std::max(
+          maxRelativeEnergyError,
+          std::abs(energy - energy0) / std::max(1.0, std::abs(energy0)));
+      maxRelativeMomentumError = std::max(
+          maxRelativeMomentumError,
+          (momentum - momentum0).norm() / std::max(1.0, momentum0.norm()));
+    }
+
+    EXPECT_LT(maxRelativeEnergyError, 1e-8);
+    EXPECT_LT(maxRelativeMomentumError, 1e-8);
+  }
+}
+
+//==============================================================================
 TEST_F(Joints, FreeJointSphericalInertiaConstantWorldTwistLongHorizon)
 {
   simulation::WorldPtr world = simulation::World::create();
@@ -2794,6 +3442,73 @@ TEST_F(Joints, FreeJointSphericalInertiaConstantWorldTwistLongHorizon)
       = math::expMapRot(velocities.head<3>() * t) * start.linear();
   expected.translation() = start.translation() + velocities.tail<3>() * t;
   EXPECT_TRUE(equals(joint->getRelativeTransform(), expected, 1e-7));
+
+  const double energy = skel->computeKineticEnergy();
+  const double scale = std::max(1.0, energy0);
+  EXPECT_LT(std::abs(energy - energy0) / scale, 1e-6);
+}
+
+//==============================================================================
+TEST_F(Joints, FreeJointPrincipalAxisSpinKeepsConstantWorldTwistLongHorizon)
+{
+  simulation::WorldPtr world = simulation::World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  const double dt = 1e-3;
+  world->setTimeStep(dt);
+
+  SkeletonPtr skel = Skeleton::create();
+
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  FreeJoint* joint = pair.first;
+  BodyNode* body = pair.second;
+
+  body->setMass(2.0);
+  body->setLocalCOM(Eigen::Vector3d(0.03, -0.02, 0.04));
+  body->setMomentOfInertia(0.7, 1.0, 1.2);
+
+  for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+    joint->setDampingCoefficient(i, 0.0);
+    joint->setCoulombFriction(i, 0.0);
+  }
+
+  joint->setPositions(FreeJoint::convertToPositions(random_transform()));
+
+  const Eigen::Isometry3d start = joint->getRelativeTransform();
+  const Eigen::Vector3d startComPosition
+      = start.translation() + start.linear() * body->getLocalCOM();
+  const Eigen::Vector3d bodyAngularVelocity(12.0, 0.0, 0.0);
+  Eigen::Vector6d velocities = Eigen::Vector6d::Zero();
+  velocities.head<3>() = start.linear() * bodyAngularVelocity;
+  velocities.tail<3>() = Eigen::Vector3d(0.5, -0.4, 0.2);
+  joint->setVelocities(velocities);
+  const Eigen::Vector3d comLinearVelocity
+      = velocities.tail<3>()
+        + velocities.head<3>().cross(start.linear() * body->getLocalCOM());
+
+  world->addSkeleton(skel);
+
+  const double energy0 = skel->computeKineticEnergy();
+
+  const std::size_t numSteps = 1000;
+  for (std::size_t i = 0; i < numSteps; ++i) {
+    world->step();
+  }
+
+  const double t = dt * static_cast<double>(numSteps);
+
+  Eigen::Isometry3d expected = Eigen::Isometry3d::Identity();
+  expected.linear() = start.linear() * math::expMapRot(bodyAngularVelocity * t);
+  expected.translation() = startComPosition + comLinearVelocity * t
+                           - expected.linear() * body->getLocalCOM();
+  EXPECT_TRUE(equals(joint->getRelativeTransform(), expected, 1e-7));
+
+  const Eigen::Vector6d velocitiesEnd = joint->getVelocities();
+  Eigen::Vector6d expectedVelocities = velocities;
+  expectedVelocities.tail<3>()
+      = comLinearVelocity
+        - velocities.head<3>().cross(expected.linear() * body->getLocalCOM());
+  EXPECT_TRUE(equals(velocitiesEnd, expectedVelocities, 1e-10));
 
   const double energy = skel->computeKineticEnergy();
   const double scale = std::max(1.0, energy0);

@@ -61,6 +61,7 @@
 #include <vector>
 
 #include <cmath>
+#include <cstddef>
 
 namespace dart {
 namespace simulation {
@@ -204,6 +205,80 @@ std::unique_ptr<constraint::ConstraintSolver> createConstraintSolver(
   }
 
   return solver;
+}
+
+class ScopedWorldTimeStep
+{
+public:
+  ScopedWorldTimeStep(World& world, double timeStep)
+    : mWorld(world), mOriginalTimeStep(world.getTimeStep())
+  {
+    mWorld.setTimeStep(timeStep);
+  }
+
+  ~ScopedWorldTimeStep()
+  {
+    mWorld.setTimeStep(mOriginalTimeStep);
+  }
+
+private:
+  World& mWorld;
+  double mOriginalTimeStep;
+};
+
+Eigen::VectorXd integrateSkeletonPositions(
+    const dynamics::SkeletonPtr& skeleton,
+    const Eigen::VectorXd& positions,
+    const Eigen::VectorXd& velocities,
+    double dt)
+{
+  skeleton->setPositions(positions);
+  skeleton->setVelocities(velocities);
+  skeleton->integratePositions(dt);
+  return skeleton->getPositions();
+}
+
+Eigen::VectorXd computeSkeletonAccelerations(
+    const dynamics::SkeletonPtr& skeleton,
+    const Eigen::VectorXd& positions,
+    const Eigen::VectorXd& velocities)
+{
+  skeleton->setPositions(positions);
+  skeleton->setVelocities(velocities);
+  skeleton->computeForwardDynamics();
+  return skeleton->getAccelerations();
+}
+
+void runUnconstrainedRungeKutta4Step(
+    const dynamics::SkeletonPtr& skeleton, double dt)
+{
+  const Eigen::VectorXd q0 = skeleton->getPositions();
+  const Eigen::VectorXd v0 = skeleton->getVelocities();
+
+  const Eigen::VectorXd a1 = computeSkeletonAccelerations(skeleton, q0, v0);
+  const Eigen::VectorXd v2 = v0 + 0.5 * dt * a1;
+  const Eigen::VectorXd q2
+      = integrateSkeletonPositions(skeleton, q0, v0, 0.5 * dt);
+
+  const Eigen::VectorXd a2 = computeSkeletonAccelerations(skeleton, q2, v2);
+  const Eigen::VectorXd v3 = v0 + 0.5 * dt * a2;
+  const Eigen::VectorXd q3
+      = integrateSkeletonPositions(skeleton, q0, v2, 0.5 * dt);
+
+  const Eigen::VectorXd a3 = computeSkeletonAccelerations(skeleton, q3, v3);
+  const Eigen::VectorXd v4 = v0 + dt * a3;
+  const Eigen::VectorXd q4 = integrateSkeletonPositions(skeleton, q0, v3, dt);
+
+  const Eigen::VectorXd a4 = computeSkeletonAccelerations(skeleton, q4, v4);
+  const Eigen::VectorXd nextVelocity
+      = v0 + (dt / 6.0) * (a1 + 2.0 * a2 + 2.0 * a3 + a4);
+  const Eigen::VectorXd weightedVelocity
+      = (v0 + 2.0 * v2 + 2.0 * v3 + v4) / 6.0;
+  const Eigen::VectorXd nextPosition
+      = integrateSkeletonPositions(skeleton, q0, weightedVelocity, dt);
+
+  skeleton->setPositions(nextPosition);
+  skeleton->setVelocities(nextVelocity);
 }
 
 } // namespace
@@ -403,6 +478,80 @@ void World::step(bool _resetCommand)
   mTime += mTimeStep;
   mFrame++;
   mSensorManager.updateSensors(*this);
+}
+
+//==============================================================================
+void World::stepUnconstrainedRungeKutta4(bool _resetCommand)
+{
+  DART_PROFILE_FRAME;
+
+  DART_WARN_ONCE_IF(
+      mConstraintSolver && mConstraintSolver->getNumConstraints() > 0u,
+      "[World] stepUnconstrainedRungeKutta4() does not solve manually "
+      "registered constraints. Use step() or stepSubsteps() when constraints "
+      "must be enforced.");
+
+  if (mConstraintSolver) {
+    mConstraintSolver->clearLastCollisionResult();
+  }
+
+  for (auto& skel : mSkeletons) {
+    if (!skel->isMobile()) {
+      continue;
+    }
+
+    if (skel->getNumSoftBodyNodes() > 0u) {
+      DART_WARN_ONCE(
+          "[World] stepUnconstrainedRungeKutta4() currently integrates rigid "
+          "Skeleton generalized coordinates only. Soft-body point-mass states "
+          "are not advanced by this method.");
+    } else {
+      runUnconstrainedRungeKutta4Step(skel, mTimeStep);
+    }
+
+    if (_resetCommand) {
+      skel->clearInternalForces();
+      skel->clearExternalForces();
+      skel->resetCommands();
+    }
+  }
+
+  mTime += mTimeStep;
+  mFrame++;
+  mSensorManager.updateSensors(*this);
+}
+
+//==============================================================================
+void World::stepSubsteps(std::size_t _numSubsteps, bool _resetCommand)
+{
+  if (_numSubsteps == 0u) {
+    DART_WARN(
+        "[World] Attempting to step with zero substeps. Ignoring this "
+        "request.");
+    return;
+  }
+
+  if (_numSubsteps == 1u) {
+    step(_resetCommand);
+    return;
+  }
+
+  const double originalTimeStep = getTimeStep();
+  const double substepTimeStep
+      = originalTimeStep / static_cast<double>(_numSubsteps);
+  if (!std::isfinite(substepTimeStep) || substepTimeStep <= 0.0) {
+    DART_WARN(
+        "[World] Attempting to step with an invalid substep timestep ({}). "
+        "Ignoring this request.",
+        substepTimeStep);
+    return;
+  }
+
+  ScopedWorldTimeStep scopedTimeStep(*this, substepTimeStep);
+  for (std::size_t i = 0; i < _numSubsteps; ++i) {
+    const bool resetCommand = _resetCommand && (i + 1u == _numSubsteps);
+    step(resetCommand);
+  }
 }
 
 //==============================================================================

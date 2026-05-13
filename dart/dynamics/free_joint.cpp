@@ -33,16 +33,348 @@
 #include "dart/dynamics/free_joint.hpp"
 
 #include "dart/common/macros.hpp"
+#include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/degree_of_freedom.hpp"
+#include "dart/dynamics/skeleton.hpp"
 #include "dart/math/geometry.hpp"
 #include "dart/math/helpers.hpp"
 
+#include <algorithm>
 #include <array>
 #include <string>
 #include <utility>
 
+#include <cmath>
+
 namespace dart {
 namespace dynamics {
+namespace {
+
+constexpr double kTorqueFreeTolerance = 1e-12;
+constexpr int kTorqueFreeMaxIterations = 32;
+
+template <class Derived>
+bool isExactlyZero(const Eigen::MatrixBase<Derived>& vector)
+{
+  return vector.size() == 0 || vector.cwiseAbs().maxCoeff() == 0.0;
+}
+
+bool isExactlyZero(double value)
+{
+  return value == 0.0;
+}
+
+bool isExactlyIdentity(const Eigen::Isometry3d& transform)
+{
+  return transform.translation().isZero(0.0)
+         && transform.linear().isIdentity(0.0);
+}
+
+bool isTorqueFreeMidpointResidualConverged(
+    const Eigen::Matrix3d& inertia,
+    const Eigen::Vector3d& omega,
+    const Eigen::Vector3d& midpoint,
+    double dt,
+    double residualNorm)
+{
+  constexpr double absoluteTolerance = 1e-13;
+  constexpr double relativeTolerance = 1e-12;
+
+  const Eigen::Vector3d angularMomentum = inertia * midpoint;
+  const double residualScale
+      = ((2.0 / dt) * inertia * (midpoint - omega)).norm()
+        + midpoint.cross(angularMomentum).norm();
+  const double tolerance
+      = absoluteTolerance + relativeTolerance * std::max(1.0, residualScale);
+
+  if (!std::isfinite(residualNorm) || !std::isfinite(tolerance)) {
+    return false;
+  }
+
+  return residualNorm <= tolerance;
+}
+
+bool integrateTorqueFreeAngularVelocity(
+    const Eigen::Matrix3d& inertia,
+    const Eigen::Vector3d& omega,
+    double dt,
+    Eigen::Vector3d& nextOmega)
+{
+  Eigen::LDLT<Eigen::Matrix3d> inertiaSolver(inertia);
+  if (inertiaSolver.info() != Eigen::Success || !inertiaSolver.isPositive()) {
+    return false;
+  }
+
+  Eigen::Vector3d midpoint = omega;
+  bool converged = false;
+
+  for (int i = 0; i < kTorqueFreeMaxIterations; ++i) {
+    const Eigen::Vector3d angularMomentum = inertia * midpoint;
+    const Eigen::Vector3d residual = (2.0 / dt) * inertia * (midpoint - omega)
+                                     + midpoint.cross(angularMomentum);
+    const double residualNorm = residual.norm();
+
+    if (isTorqueFreeMidpointResidualConverged(
+            inertia, omega, midpoint, dt, residualNorm)) {
+      converged = true;
+      break;
+    }
+
+    const Eigen::Matrix3d jacobian
+        = (2.0 / dt) * inertia - math::makeSkewSymmetric(angularMomentum)
+          + math::makeSkewSymmetric(midpoint) * inertia;
+    const Eigen::Vector3d step = jacobian.ldlt().solve(residual);
+
+    if (!step.allFinite()) {
+      return false;
+    }
+
+    midpoint -= step;
+
+    if (step.norm() < 1e-13) {
+      const Eigen::Vector3d nextAngularMomentum = inertia * midpoint;
+      const Eigen::Vector3d nextResidual
+          = (2.0 / dt) * inertia * (midpoint - omega)
+            + midpoint.cross(nextAngularMomentum);
+      converged = isTorqueFreeMidpointResidualConverged(
+          inertia, omega, midpoint, dt, nextResidual.norm());
+      break;
+    }
+  }
+
+  if (!converged) {
+    const Eigen::Vector3d angularMomentum = inertia * midpoint;
+    const Eigen::Vector3d residual = (2.0 / dt) * inertia * (midpoint - omega)
+                                     + midpoint.cross(angularMomentum);
+    converged = isTorqueFreeMidpointResidualConverged(
+        inertia, omega, midpoint, dt, residual.norm());
+  }
+
+  nextOmega = 2.0 * midpoint - omega;
+  return converged && nextOmega.allFinite();
+}
+
+void projectTorqueFreeAngularVelocityInvariants(
+    const Eigen::Matrix3d& inertia,
+    const Eigen::Vector3d& referenceOmega,
+    Eigen::Vector3d& omega)
+{
+  const Eigen::Vector3d referenceAngularMomentum = inertia * referenceOmega;
+  const double targetEnergy2 = referenceOmega.dot(referenceAngularMomentum);
+  const double targetMomentum2 = referenceAngularMomentum.squaredNorm();
+
+  if (!std::isfinite(targetEnergy2) || !std::isfinite(targetMomentum2)
+      || targetEnergy2 <= 0.0 || targetMomentum2 <= 0.0) {
+    return;
+  }
+
+  for (int i = 0; i < 3; ++i) {
+    const Eigen::Vector3d angularMomentum = inertia * omega;
+    const Eigen::Vector2d residual(
+        omega.dot(angularMomentum) - targetEnergy2,
+        angularMomentum.squaredNorm() - targetMomentum2);
+    const double scaledResidual = std::max(
+        std::abs(residual[0]) / std::max(1.0, std::abs(targetEnergy2)),
+        std::abs(residual[1]) / std::max(1.0, std::abs(targetMomentum2)));
+
+    if (!std::isfinite(scaledResidual) || scaledResidual <= 1e-15) {
+      return;
+    }
+
+    Eigen::Matrix<double, 2, 3> jacobian;
+    jacobian.row(0) = (2.0 * angularMomentum).transpose();
+    jacobian.row(1) = (2.0 * inertia * angularMomentum).transpose();
+
+    const Eigen::Matrix2d normal = jacobian * jacobian.transpose();
+    Eigen::LDLT<Eigen::Matrix2d> solver(normal);
+    if (solver.info() != Eigen::Success) {
+      return;
+    }
+
+    const Eigen::Vector2d multipliers = solver.solve(-residual);
+    const Eigen::Vector3d correction = jacobian.transpose() * multipliers;
+    if (!correction.allFinite()) {
+      return;
+    }
+
+    const double correctionScale = std::max(1.0, omega.norm());
+    if (correction.norm() > 1e-9 * correctionScale) {
+      return;
+    }
+
+    omega += correction;
+    if (!omega.allFinite()) {
+      return;
+    }
+  }
+}
+
+bool canUseConstantTorqueFreeVelocity(
+    const Eigen::Matrix3d& inertia,
+    const Eigen::Vector3d& angularVelocityBody,
+    const Eigen::Vector3d& angularVelocityWorld,
+    const Eigen::Vector3d& comOffsetWorld,
+    const Eigen::Vector6d& acceleration)
+{
+  Eigen::LDLT<Eigen::Matrix3d> inertiaSolver(inertia);
+  if (inertiaSolver.info() != Eigen::Success || !inertiaSolver.isPositive()) {
+    return false;
+  }
+
+  const Eigen::Vector3d angularMomentumBody = inertia * angularVelocityBody;
+  const Eigen::Vector3d gyroscopicTerm
+      = angularVelocityBody.cross(angularMomentumBody);
+  if (!angularMomentumBody.allFinite() || !gyroscopicTerm.allFinite()) {
+    return false;
+  }
+
+  const double scale
+      = std::max(1.0, angularVelocityBody.norm() * angularMomentumBody.norm());
+  if (gyroscopicTerm.norm() > kTorqueFreeTolerance * scale) {
+    return false;
+  }
+
+  Eigen::Vector6d expectedAcceleration = Eigen::Vector6d::Zero();
+  expectedAcceleration.tail<3>()
+      = -angularVelocityWorld.cross(angularVelocityWorld.cross(comOffsetWorld));
+  const Eigen::Vector6d error = acceleration - expectedAcceleration;
+  const double accelerationScale
+      = std::max(1.0, expectedAcceleration.cwiseAbs().maxCoeff());
+  return error.cwiseAbs().maxCoeff() <= 1e-9 * accelerationScale;
+}
+
+bool canUseTorqueFreeIntegration(const FreeJoint& joint)
+{
+  if (joint.getParentBodyNode() != nullptr) {
+    return false;
+  }
+
+  const BodyNode* bodyNode = joint.getChildBodyNode();
+  if (bodyNode == nullptr || bodyNode->getNumChildBodyNodes() != 0) {
+    return false;
+  }
+
+  const auto skeleton = joint.getSkeleton();
+  if (skeleton && bodyNode->getGravityMode()
+      && !isExactlyZero(skeleton->getGravity())) {
+    return false;
+  }
+
+  if (!isExactlyZero(bodyNode->getExternalForceLocal())) {
+    return false;
+  }
+
+  if (!isExactlyIdentity(joint.getTransformFromParentBodyNode())
+      || !isExactlyIdentity(joint.getTransformFromChildBodyNode())) {
+    return false;
+  }
+
+  for (std::size_t i = 0; i < joint.getNumDofs(); ++i) {
+    const Joint::ActuatorType actuatorType = joint.getActuatorType(i);
+    if (actuatorType != Joint::FORCE && actuatorType != Joint::PASSIVE) {
+      return false;
+    }
+
+    if (!isExactlyZero(joint.getForce(i)) || !isExactlyZero(joint.getCommand(i))
+        || !isExactlyZero(joint.getSpringStiffness(i))
+        || !isExactlyZero(joint.getDampingCoefficient(i))
+        || !isExactlyZero(joint.getCoulombFriction(i))) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool computeTorqueFreeAcceleration(
+    const Eigen::Matrix3d& inertia,
+    const Eigen::Matrix3d& rotation,
+    const Eigen::Vector3d& angularVelocityWorld,
+    const Eigen::Vector3d& comOffsetWorld,
+    Eigen::Vector6d& acceleration)
+{
+  Eigen::LDLT<Eigen::Matrix3d> inertiaSolver(inertia);
+  if (inertiaSolver.info() != Eigen::Success || !inertiaSolver.isPositive()) {
+    return false;
+  }
+
+  const Eigen::Vector3d angularVelocityBody
+      = rotation.transpose() * angularVelocityWorld;
+  const Eigen::Vector3d angularMomentumBody = inertia * angularVelocityBody;
+  const Eigen::Vector3d angularAccelerationBody
+      = inertiaSolver.solve(-angularVelocityBody.cross(angularMomentumBody));
+
+  if (!angularAccelerationBody.allFinite()) {
+    return false;
+  }
+
+  acceleration.head<3>() = rotation * angularAccelerationBody;
+  acceleration.tail<3>() = -acceleration.head<3>().cross(comOffsetWorld)
+                           - angularVelocityWorld.cross(
+                               angularVelocityWorld.cross(comOffsetWorld));
+
+  return acceleration.allFinite();
+}
+
+bool isConsistentWithTorqueFreeAcceleration(
+    const FreeJoint& joint,
+    const BodyNode& bodyNode,
+    const Eigen::Matrix3d& rotation,
+    const Eigen::Vector3d& comOffsetWorld)
+{
+  Eigen::Vector6d expectedAcceleration;
+  if (!computeTorqueFreeAcceleration(
+          bodyNode.getInertia().getMoment(),
+          rotation,
+          joint.getVelocitiesStatic().head<3>(),
+          comOffsetWorld,
+          expectedAcceleration)) {
+    return false;
+  }
+
+  const Eigen::Vector6d error
+      = joint.getAccelerationsStatic() - expectedAcceleration;
+  const double scale
+      = std::max(1.0, expectedAcceleration.cwiseAbs().maxCoeff());
+
+  return error.cwiseAbs().maxCoeff() <= 1e-9 * scale;
+}
+
+void alignWorldAngularMomentum(
+    Eigen::Matrix3d& rotation,
+    const Eigen::Vector3d& targetWorldAngularMomentum,
+    const Eigen::Vector3d& nextAngularMomentumBody)
+{
+  if (!targetWorldAngularMomentum.allFinite()
+      || !nextAngularMomentumBody.allFinite()) {
+    return;
+  }
+
+  const Eigen::Vector3d currentWorldAngularMomentum
+      = rotation * nextAngularMomentumBody;
+  const double targetNorm = targetWorldAngularMomentum.norm();
+  const double currentNorm = currentWorldAngularMomentum.norm();
+  if (targetNorm <= kTorqueFreeTolerance
+      || currentNorm <= kTorqueFreeTolerance) {
+    return;
+  }
+
+  Eigen::Quaterniond correction = Eigen::Quaterniond::FromTwoVectors(
+      currentWorldAngularMomentum, targetWorldAngularMomentum);
+  correction.normalize();
+
+  if (!correction.coeffs().allFinite()) {
+    return;
+  }
+
+  const Eigen::Matrix3d correctedRotation
+      = correction.toRotationMatrix() * rotation;
+  if (correctedRotation.allFinite()) {
+    rotation = correctedRotation;
+  }
+}
+
+} // namespace
 
 //==============================================================================
 FreeJoint::~FreeJoint()
@@ -686,7 +1018,22 @@ bool FreeJoint::isCyclic(std::size_t _index) const
 //==============================================================================
 void FreeJoint::integratePositions(double _dt)
 {
-  const Eigen::Vector6d spatialVelocity = getRelativeSpatialVelocity();
+  Eigen::Vector6d spatialVelocity = getRelativeSpatialVelocity();
+  const bool useTorqueFreePositionIntegration
+      = mUseTorqueFreePositionIntegration
+        && isExactlyZero(
+            Eigen::Vector6d(getPositionsStatic() - mTorqueFreeInitialPositions))
+        && isExactlyZero(
+            Eigen::Vector6d(
+                getVelocitiesStatic() - mTorqueFreeIntegratedVelocities))
+        && canUseTorqueFreeIntegration(*this);
+
+  if (useTorqueFreePositionIntegration) {
+    spatialVelocity.head<3>() = mTorqueFreeMidpointAngularVelocityBody;
+  }
+
+  mUseTorqueFreePositionIntegration = false;
+
   const Eigen::Isometry3d relativeTransform = getRelativeTransform();
 
   Eigen::Isometry3d nextRelativeTransform = relativeTransform;
@@ -695,6 +1042,24 @@ void FreeJoint::integratePositions(double _dt)
       = rotation * math::expMapRot(spatialVelocity.head<3>() * _dt);
   nextRelativeTransform.translation()
       += rotation * spatialVelocity.tail<3>() * _dt;
+
+  Eigen::Vector3d nextComOffset = Eigen::Vector3d::Zero();
+  if (useTorqueFreePositionIntegration) {
+    Eigen::Matrix3d correctedRotation = nextRelativeTransform.linear();
+    alignWorldAngularMomentum(
+        correctedRotation,
+        mTorqueFreeInitialAngularMomentumWorld,
+        mTorqueFreeNextAngularMomentumBody);
+    nextRelativeTransform.linear() = correctedRotation;
+    nextComOffset
+        = nextRelativeTransform.linear() * getChildBodyNode()->getLocalCOM();
+    const Eigen::Vector3d startComPosition
+        = relativeTransform.translation()
+          + relativeTransform.linear() * getChildBodyNode()->getLocalCOM();
+    nextRelativeTransform.translation()
+        = startComPosition + mTorqueFreeComLinearVelocityWorld * _dt
+          - nextComOffset;
+  }
 
   const Eigen::Isometry3d& parentBodyToJoint
       = Joint::mAspectProperties.mT_ParentBodyToJoint;
@@ -705,6 +1070,20 @@ void FreeJoint::integratePositions(double _dt)
       = parentBodyToJoint.inverse() * nextRelativeTransform * childBodyToJoint;
 
   setPositionsStatic(convertToPositions(nextQ, getCoordinateChart()));
+
+  if (useTorqueFreePositionIntegration) {
+    // FreeJoint stores angular velocity in world coordinates. The midpoint pose
+    // update advances the body frame, so keep the stored velocity consistent
+    // with the final body-frame angular velocity.
+    Eigen::Vector6d correctedVelocities = getVelocitiesStatic();
+    const Eigen::Vector3d nextAngularVelocityWorld
+        = nextRelativeTransform.linear() * mTorqueFreeNextAngularVelocityBody;
+    correctedVelocities.head<3>() = nextAngularVelocityWorld;
+    correctedVelocities.tail<3>()
+        = mTorqueFreeComLinearVelocityWorld
+          - nextAngularVelocityWorld.cross(nextComOffset);
+    setVelocitiesStatic(correctedVelocities);
+  }
 }
 
 //==============================================================================
@@ -760,6 +1139,67 @@ void FreeJoint::integratePositions(
 //==============================================================================
 void FreeJoint::integrateVelocities(double _dt)
 {
+  mUseTorqueFreePositionIntegration = false;
+
+  if (_dt > 0.0 && canUseTorqueFreeIntegration(*this)) {
+    const BodyNode* bodyNode = getChildBodyNode();
+    const Eigen::Isometry3d transform
+        = convertToTransform(getPositionsStatic(), getCoordinateChart());
+    const Eigen::Matrix3d rotation = transform.linear();
+    const Eigen::Vector3d comOffset = rotation * bodyNode->getLocalCOM();
+    const Eigen::Vector3d angularVelocityBody
+        = rotation.transpose() * getVelocitiesStatic().head<3>();
+    const Eigen::Vector3d comLinearVelocityWorld
+        = getVelocitiesStatic().tail<3>()
+          + getVelocitiesStatic().head<3>().cross(comOffset);
+    const Eigen::Matrix3d inertia = bodyNode->getInertia().getMoment();
+
+    Eigen::Vector3d nextAngularVelocityBody;
+    if (canUseConstantTorqueFreeVelocity(
+            inertia,
+            angularVelocityBody,
+            getVelocitiesStatic().head<3>(),
+            comOffset,
+            getAccelerationsStatic())) {
+      mUseTorqueFreePositionIntegration = true;
+      mTorqueFreeInitialPositions = getPositionsStatic();
+      mTorqueFreeIntegratedVelocities = getVelocitiesStatic();
+      mTorqueFreeMidpointAngularVelocityBody = angularVelocityBody;
+      mTorqueFreeNextAngularVelocityBody = angularVelocityBody;
+      mTorqueFreeInitialAngularMomentumWorld
+          = rotation * inertia * angularVelocityBody;
+      mTorqueFreeNextAngularMomentumBody = inertia * angularVelocityBody;
+      mTorqueFreeComLinearVelocityWorld = comLinearVelocityWorld;
+      return;
+    }
+
+    if (isConsistentWithTorqueFreeAcceleration(
+            *this, *bodyNode, rotation, comOffset)
+        && integrateTorqueFreeAngularVelocity(
+            inertia, angularVelocityBody, _dt, nextAngularVelocityBody)) {
+      projectTorqueFreeAngularVelocityInvariants(
+          inertia, angularVelocityBody, nextAngularVelocityBody);
+      Eigen::Vector6d nextVelocities = getVelocitiesStatic();
+      const Eigen::Vector3d nextAngularVelocityWorld
+          = rotation * nextAngularVelocityBody;
+      nextVelocities.head<3>() = nextAngularVelocityWorld;
+      nextVelocities.tail<3>()
+          = comLinearVelocityWorld - nextAngularVelocityWorld.cross(comOffset);
+      setVelocitiesStatic(nextVelocities);
+      mUseTorqueFreePositionIntegration = true;
+      mTorqueFreeInitialPositions = getPositionsStatic();
+      mTorqueFreeIntegratedVelocities = nextVelocities;
+      mTorqueFreeMidpointAngularVelocityBody
+          = 0.5 * (angularVelocityBody + nextAngularVelocityBody);
+      mTorqueFreeNextAngularVelocityBody = nextAngularVelocityBody;
+      mTorqueFreeInitialAngularMomentumWorld
+          = rotation * inertia * angularVelocityBody;
+      mTorqueFreeNextAngularMomentumBody = inertia * nextAngularVelocityBody;
+      mTorqueFreeComLinearVelocityWorld = comLinearVelocityWorld;
+      return;
+    }
+  }
+
   setVelocitiesStatic(
       math::integrateVelocity<math::RealVectorSpace<6>>(
           getVelocitiesStatic(), getAccelerationsStatic(), _dt));
