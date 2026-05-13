@@ -54,9 +54,10 @@ dart_generate_component_headers(
   SOURCE_HEADERS ${hdrs}
 )
 
-# Install
+# Install native-backed compatibility headers on the public legacy path. The
+# FCL implementation target remains explicit reference-only test/benchmark code.
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/fcl.hpp ${DART_GENERATED_COMPAT_HEADERS}
+  FILES ${compat_hdrs}
   DESTINATION include/dart/collision/fcl
   COMPONENT headers
 )

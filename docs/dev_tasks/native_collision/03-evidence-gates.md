@@ -61,7 +61,7 @@ These gates are still required before the single north-star PR is complete.
 | Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Local reference target split passes           |
 | Packaging removal           | Default packages/wheels have no old collision runtime deps  | Metadata/link/install/py312 wheel passed      |
 | Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Started; alias/component coverage             |
-| Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Factories/C++/CMake/header facades done       |
+| Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Factories/C++/CMake/installed headers done    |
 | Built-in architecture       | API-clean, scalable, performance-oriented native layer      | Started; `01-design.md` gates documented      |
 | Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Required in this PR                           |
 | Legacy backend deletion     | Old runtime backend sources removed from default stack      | Blocked on migration gates                    |
@@ -1530,18 +1530,56 @@ build/collision-reference/cpp/Release -R
   - Commit: working tree after adding native-only installed legacy detector
     header facades.
   - Result: passed, 5/5 tests.
+- `pixi run --locked -e collision-reference config && pixi run --locked -e
+collision-reference -- cmake --build build/collision-reference/cpp/Release
+--target dart-collision-reference-fcl dart-collision-reference-bullet
+dart-collision-reference-ode test_reference_backends
+UNIT_collision_FCLCollisionDetector UNIT_collision_BulletCollisionShapes
+UNIT_collision_OdeHeightmap UNIT_collision_OdeCylinderMesh --parallel 8`
+  - Commit: working tree after making reference-enabled installs use
+    native-backed legacy detector header facades.
+  - Result: passed. Reference configure kept FCL, Bullet, ODE, reference tests,
+    and reference benchmarks `ON`; explicit reference libraries and focused
+    reference tests still build with only known deprecated compatibility-header
+    warnings.
+- `pixi run --locked -e collision-reference -- bash -lc 'set -euo pipefail;
+rm -rf build/reference-compat-install; cmake --install
+build/collision-reference/cpp/Release --prefix build/reference-compat-install
+--component headers; if find
+build/reference-compat-install/include/dart/collision -maxdepth 3 -type f |
+sort | rg
+"/(fcl|bullet|ode)/(detail/|fcl_collision_object|bullet_collision_object|ode_collision_object|fcl_types|bullet_types|ode_types|collision_shapes|tri_tri|backward_compatibility|bullet_include|bullet_collision_shape)$";
+then exit 1; fi; ${CXX:-c++} -std=c++20
+-Ibuild/reference-compat-install/include
+-Ibuild/collision-reference/cpp/Release -I$CONDA_PREFIX/include
+-I$CONDA_PREFIX/include/eigen3 -c build/native-compat-smoke/main.cpp -o
+/tmp/dart_ref_header_smoke.o'`
+  - Commit: working tree after making reference-enabled installs use
+    native-backed legacy detector header facades.
+  - Result: passed. A reference-enabled header install exposes only the
+    native-backed legacy detector/group facade headers on the FCL/Bullet/ODE
+    public paths, omits old-engine object/type/detail headers from those paths,
+    and the installed legacy detector headers compile without FCL, Bullet, or
+    ODE include paths.
+- `pixi run --locked -e collision-reference -- ctest --test-dir
+build/collision-reference/cpp/Release -R
+'test_reference_backends|UNIT_collision_FCLCollisionDetector|UNIT_collision_BulletCollisionShapes|UNIT_collision_OdeHeightmap|UNIT_collision_OdeCylinderMesh'
+--output-on-failure`
+  - Commit: working tree after making reference-enabled installs use
+    native-backed legacy detector header facades.
+  - Result: passed, 5/5 tests.
 - `pixi run lint`
-  - Commit: working tree after native-only installed legacy detector header
-    facades and docs update.
+  - Commit: working tree after installed legacy detector header facades and
+    docs update.
   - Result: passed. This reran the default native-only configure and formatting
-    suite after the compatibility header install change.
+    suite after the compatibility header install changes.
 - `pixi run check-docs-policy`
-  - Commit: working tree after native-only installed legacy detector header
-    facades and docs update.
+  - Commit: working tree after installed legacy detector header facades and
+    docs update.
   - Result: passed.
 - `git diff --check`
-  - Commit: working tree after native-only installed legacy detector header
-    facades and docs update.
+  - Commit: working tree after installed legacy detector header facades and
+    docs update.
   - Result: passed.
 
 ## Known Risks

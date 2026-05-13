@@ -87,19 +87,12 @@ dart_generate_component_headers(
   SOURCE_HEADERS ${hdrs}
 )
 
-# Install
+# Install native-backed compatibility headers on the public legacy path. The
+# ODE implementation target remains explicit reference-only test/benchmark code.
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/ode.hpp
+  FILES ${compat_hdrs}
   DESTINATION include/dart/collision/ode
   COMPONENT headers
 )
-
-install(
-  FILES ${detail_hdrs}
-  DESTINATION include/dart/collision/ode/detail
-  COMPONENT headers
-)
-
-dart_install_compat_headers(COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS} DESTINATION_PREFIX include/dart/collision/ode)
 
 dart_format_add(${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs})

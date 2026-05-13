@@ -38,8 +38,9 @@ names from old-engine comparison targets: `collision-fcl`, `collision-bullet`,
 and `collision-ode` are native-backed interface facades, while old-engine
 libraries/components use explicit `collision-reference-*` names. Focused
 reference builds/tests and a default native-only downstream package smoke
-passed with that split. The native-only installed legacy detector headers now
-compile without FCL, Bullet, or ODE and provide native-backed detector facades.
+passed with that split. Installed legacy detector headers now compile without
+FCL, Bullet, or ODE and provide native-backed detector facades in both
+native-only and reference-enabled installs.
 
 ## Current Branch
 
@@ -84,11 +85,11 @@ Reference tests and benchmarks now use explicit `createReference()` APIs on the
 FCL, Bullet, and ODE detector classes, and direct public C++ legacy detector
 `create()` paths now return the built-in `DartCollisionDetector`. Retained
 legacy package component names are native-backed CMake interface facades, and
-old-engine libraries/components use `collision-reference-*` names. Native-only
-installed legacy detector headers are native-backed facades, but source-tree
-legacy C++ detector classes, headers, and old-engine source placement still
-contain explicit reference-engine implementations and remain a north-star
-cleanup gate.
+old-engine libraries/components use `collision-reference-*` names. Installed
+legacy detector headers are native-backed facades in native-only and
+reference-enabled installs, but source-tree legacy C++ detector classes,
+headers, and old-engine source placement still contain explicit
+reference-engine implementations and remain a north-star cleanup gate.
 User-facing examples/tutorials have also been moved off the old collision
 components: their CMake no longer requires `collision-bullet`/`collision-ode`,
 source no longer includes or selects Bullet/ODE/FCL detector APIs, and affected

@@ -143,19 +143,13 @@ dart_generate_component_headers(
   SOURCE_HEADERS ${hdrs}
 )
 
-# Install
+# Install native-backed compatibility headers on the public legacy path. The
+# Bullet implementation target remains explicit reference-only test/benchmark
+# code.
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/All.hpp ${CMAKE_CURRENT_BINARY_DIR}/bullet.hpp
+  FILES ${compat_hdrs}
   DESTINATION include/dart/collision/bullet
   COMPONENT headers
 )
-
-install(
-  FILES ${detail_hdrs}
-  DESTINATION include/dart/collision/bullet/detail
-  COMPONENT headers
-)
-
-dart_install_compat_headers(COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS} DESTINATION_PREFIX include/dart/collision/bullet)
 
 dart_format_add(${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs})

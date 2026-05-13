@@ -74,11 +74,11 @@
       package smoke test that requests `collision-fcl`, `collision-bullet`, and
       `collision-ode` proves those names link the built-in `dart` stack and do
       not install old collision libraries.
-- [x] Native-only installed legacy detector headers for FCL, Bullet, and ODE
-      are now compatibility facades over `DartCollisionDetector`. The
-      downstream package smoke includes the installed legacy detector headers
-      and verifies factory keys plus legacy class `create()` calls all report
-      detector type `dart`.
+- [x] Installed legacy detector headers for FCL, Bullet, and ODE are now
+      compatibility facades over `DartCollisionDetector` in native-only and
+      reference-enabled installs. The downstream package/header smokes include
+      the installed legacy detector headers and verify factory keys plus legacy
+      class `create()` calls all report detector type `dart`.
 - [ ] The single north-star PR is not complete yet. The checkpoint commit proves
       native default, feature parity, gz-physics compatibility, performance,
       disabled-legacy-backend builds, native-only pixi defaults, and explicit
@@ -91,10 +91,9 @@
       points. User-facing examples/tutorials have also been moved off old
       collision components, and package component names are now split into
       native-backed compatibility facades versus explicit reference targets.
-      Native-only installed legacy detector headers are also native-backed
-      facades. The remaining work is CI hardening, full wheel matrix/CI
-      artifact evidence, retained source-tree legacy detector header/source
-      cleanup,
+      Installed legacy detector headers are also native-backed facades. The
+      remaining work is CI hardening, full wheel matrix/CI artifact evidence,
+      retained source-tree legacy detector header/source cleanup,
       downstream migration safety, recurring performance guardrails, and final
       legacy backend deletion.
 
@@ -223,9 +222,9 @@ The current checkpoint is a validated middle state, not a final PR boundary.
    detector classes, headers, and old-engine source files are native-backed
    compatibility facades or explicit reference-only surfaces; factory keys,
    Python detector names, direct public C++ legacy `create()` entry points,
-   package component names, native-only installed compatibility headers, and
-   user-facing examples/tutorials are already native-backed. Use
-   `01-design.md` as the architecture checklist for this cleanup.
+   package component names, installed compatibility headers, and user-facing
+   examples/tutorials are already native-backed. Use `01-design.md` as the
+   architecture checklist for this cleanup.
 5. Define and test the downstream migration/deprecation path for legacy detector
    names and factory aliases.
 6. Add recurring benchmark guardrails, then delete legacy runtime backend
