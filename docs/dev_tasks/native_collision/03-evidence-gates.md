@@ -67,6 +67,42 @@ These gates are still required before the single north-star PR is complete.
 | Benchmark regression guard   | Optional reference benchmarks guide gradual optimization                                                               | Scheduled/manual CI guard added; evidence left |
 | Legacy backend deletion      | Old runtime backend sources removed from default stack                                                                 | Runtime source guard wired; deletion left      |
 
+## PR Publishing And Initial CI Repair
+
+- Draft PR:
+  - URL: https://github.com/dartsim/dart/pull/2652
+  - Head pushed: `feature/new_coll` at `5b08a00d381`
+    (`Record current native collision validation pass`).
+  - Milestone: `DART 7.0`.
+  - Result: GitHub Actions started for the pushed branch. CI evidence is now
+    collectible from PR/job artifacts, but the task remains incomplete until
+    the required native-only, gz-physics, wheel, benchmark, migration, and
+    final cleanup gates are closed.
+- Initial `Asserts enabled (no -DNDEBUG)` CI failure:
+  - Run/job: `25870574281` / `76024440344`.
+  - Result: failed during CMake configure before compilation.
+  - Root cause: the custom asserts-enabled workflow configure still passed
+    `-DDART_BUILD_COLLISION_BULLET=ON` while the default Pixi environment no
+    longer installs Bullet. Bullet now belongs to the explicit
+    `collision-reference` environment.
+  - Observed failure:
+
+    ```text
+    CMake Error at dart/collision/bullet/CMakeLists.txt:28 (message):
+      DART_BUILD_COLLISION_BULLET is ON but Bullet was not found. Please install
+      libbullet-dev (>= 3.25) or disable DART_BUILD_COLLISION_BULLET.
+    ```
+
+- Focused local validation after the workflow repair:
+  - Command: custom `CMAKE_BUILD_TYPE=None` configure matching the
+    asserts-enabled job, with `DART_BUILD_DARTPY=ON`, FCL/Bullet/ODE `OFF`,
+    and collision reference tests/benchmarks `OFF`.
+  - Result: passed. Configure reported `DART_BUILD_COLLISION_FCL: OFF`,
+    `DART_BUILD_COLLISION_BULLET: OFF`, `DART_BUILD_COLLISION_ODE: OFF`,
+    `DART_BUILD_COLLISION_REFERENCE_TESTS: OFF`, and
+    `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS: OFF`, then generated build
+    files in `build/default/cpp/None-ci-asserts-local`.
+
 ## Current Full-Validation Repair
 
 - `pixi run test-all`

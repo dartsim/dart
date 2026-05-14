@@ -195,12 +195,20 @@ again at `864dd56d944c` with
 `DART_PARALLEL_JOBS=15 CTEST_PARALLEL_LEVEL=15 pixi run test-all`. It passed
 all 6 top-level gates: linting, build, unit tests,
 simulation-experimental tests, Python tests, and documentation.
+The branch has now been published and draft PR #2652
+(https://github.com/dartsim/dart/pull/2652) is open against `main` with the
+`DART 7.0` milestone. The first PR CI refresh exposed a workflow-only failure
+in `Asserts enabled (no -DNDEBUG)`: the custom CMake configure still enabled
+Bullet in the default Pixi environment, where Bullet is intentionally absent.
+The latest repair makes that custom asserts configure explicitly native-only
+for FCL, Bullet, ODE, and collision reference harnesses, and the matching local
+`CMAKE_BUILD_TYPE=None` configure now passes.
 
 ## Current Branch
 
-`feature/new_coll` - local branch tracking `origin/feature/new_coll`, ahead by
-the native-collision checkpoint commits in this task. Use `git status -sb` for
-the exact count.
+`feature/new_coll` - local branch tracking `origin/feature/new_coll`; draft
+PR #2652 is open and collecting CI evidence. Use `git status -sb` for the
+exact local/remote state.
 
 ## Immediate Next Step
 
@@ -210,13 +218,15 @@ stale optional libccd cache repair has both targeted and full-suite local
 evidence at `da532729bec`, native type-taxonomy cleanup has focused native test
 evidence at `cd16b64be0b`, and the current VSG stale shape-type switch repair
 has full `test-all` evidence through the latest documented head
-`864dd56d944c`. The immediate next evidence steps are CI native-only/gz
-evidence, wheel matrix artifact evidence from `wheel-verify`, downstream
-migration/deprecation evidence, GitHub evidence for the scheduled benchmark
-guard, PR artifact evidence for the architecture/design gates, dev-task
-cleanup, final full-suite rerun after the PR-complete state, and final runtime
-cleanup. Read `06-completion-audit.md` before deciding whether a future
-checkpoint is complete; it is the prompt-to-artifact checklist for the
+`864dd56d944c`, and the branch was published at `5b08a00d381` before the first
+CI triage slice. The immediate next evidence steps are to push the
+asserts-enabled workflow repair, watch PR #2652 CI, collect native-only/gz and
+wheel matrix artifact evidence, collect GitHub evidence for the scheduled or
+manual benchmark guard, record downstream migration/deprecation evidence,
+perform final runtime cleanup, rerun full validation after the PR-complete
+state, transfer final evidence to the PR, and delete the dev-task folder in
+the completing PR. Read `06-completion-audit.md` before deciding whether a
+future checkpoint is complete; it is the prompt-to-artifact checklist for the
 north-star goal.
 
 The persistent DART adapter scene path is now started: public collision,

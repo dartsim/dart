@@ -24,6 +24,13 @@ unverified external and finalization gates:
 - Full dartpy wheel matrix artifact evidence is still missing.
 - GitHub artifact evidence for the scheduled/manual collision benchmark guard
   is still missing.
+- Draft PR #2652 now exists and CI has started, but the first CI refresh is not
+  green yet. The initial `Asserts enabled (no -DNDEBUG)` Linux job exposed a
+  workflow mismatch: it manually enabled Bullet in the default Pixi
+  environment, where Bullet is intentionally absent after the native-only
+  dependency cleanup. The workflow is being repaired to configure that custom
+  asserts build as native-only unless it installs a reference-engine
+  environment.
 - Downstream migration/deprecation evidence is still missing.
 - Final compatibility-facade retention/deprecation evidence is still missing:
   the documented decision is to delete old external-engine runtime
@@ -48,19 +55,23 @@ unverified external and finalization gates:
 Current audited state:
 
 - Branch: `feature/new_coll`
-- Latest local validation checkpoint: `864dd56d944c`
-  (`Clarify native collision facade policy`), which includes the VSG
-  shape-type switch repair, durable built-in architecture docs, and
-  native-backed compatibility facade policy recorded by this audit.
-- Working tree state: clean after the latest checkpoint commit; the local
-  branch remains ahead of `origin/feature/new_coll`. Use `git status -sb` for
-  the exact ahead count.
-- Remote branch state: `origin/feature/new_coll` is still at
-  `96436fd2503`, so the latest local checkpoint has not been published.
-- GitHub PR state: read-only GitHub search for `head:feature/new_coll` in
-  `dartsim/dart` returned no pull requests at the audit refresh, so no CI or
-  PR artifact evidence exists yet for the current local north-star branch
-  head.
+- Latest published checkpoint before CI repair: `5b08a00d381`
+  (`Record current native collision validation pass`), which records the
+  current local validation pass after the durable built-in architecture docs
+  and compatibility-facade policy cleanup.
+- Remote branch state: `origin/feature/new_coll` is published at
+  `5b08a00d381` for PR evidence collection. A local CI workflow repair is in
+  progress after the first CI run.
+- GitHub PR state: draft PR #2652
+  (https://github.com/dartsim/dart/pull/2652) targets `main`, has the
+  `DART 7.0` milestone, and is collecting CI evidence. The PR is intentionally
+  draft while the audit gates remain open.
+- Initial PR CI state: GitHub Actions started for the pushed head. The first
+  completed failure was `Asserts enabled (no -DNDEBUG)`, run `25870574281`,
+  job `76024440344`, which failed during configure because
+  `DART_BUILD_COLLISION_BULLET=ON` was still set in the default Pixi
+  environment. The local repair changes that custom configure to keep
+  FCL/Bullet/ODE and collision reference tests/benchmarks `OFF`.
 - Follow-up local validation after the audit started from
   `1da52368282` and found that `pixi run test-all` failed in `build-tests`
   because a stale cached `LIBCCD_LIBRARY` pointed at a removed

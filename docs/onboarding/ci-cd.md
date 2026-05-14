@@ -29,7 +29,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Example reorganizations can conflict in `examples/CMakeLists.txt`; reconcile any new example entries and keep the category layout aligned before pushing.
   - GitHub Actions API calls can return `HTTP 406` if you omit required headers; include an explicit `Accept` header.
   - `gh api` writes to stdout and does not support `--output`; redirect to a file when you need to search logs.
-  - The asserts-enabled CI job uses a custom CMake configure (`CMAKE_BUILD_TYPE=None`) instead of pixi tasks; pass required build toggles explicitly (e.g., Bullet collision).
+  - The asserts-enabled CI job uses a custom CMake configure (`CMAKE_BUILD_TYPE=None`) instead of pixi tasks; keep native-only collision toggles explicit unless the job also installs a reference-engine Pixi environment.
   - Deprecated headers that emit `#warning` fail under `-Werror=cpp` (e.g., use `dart/utils/urdf/All.hpp` instead of deprecated `dart/utils/urdf/urdf.hpp`).
   - dartpy test failures can show up as a Python abort with minimal traceback when a C++ `DART_ASSERT` triggers; rerun the single test locally and inspect the C++ assert.
   - Bullet-backed raycast tests require Bullet to be built; skip or enable Bullet if the backend is intentionally disabled.
@@ -150,7 +150,10 @@ rg -n "FAILED|SegFault|Exception|\\bError\\b|✗" /tmp/<RUN_ID>
 The asserts-enabled job uses a custom CMake configure with `CMAKE_BUILD_TYPE=None`
 to keep assertions enabled outside a Debug build.
 
-- Pass build toggles explicitly when bypassing pixi tasks (e.g., `DART_BUILD_COLLISION_BULLET=ON` if Bullet-backed tests are expected).
+- Pass build toggles explicitly when bypassing pixi tasks. The default
+  asserts-enabled job should keep FCL/Bullet/ODE and reference collision
+  harnesses `OFF`; enable them only in a Pixi environment that installs those
+  reference engines.
 - Expect `-Werror=cpp`; any deprecated headers that emit `#warning` will fail the build.
 - If a dartpy test aborts without a Python traceback, the C++ assert message is usually the first useful clue.
 
