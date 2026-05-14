@@ -256,8 +256,8 @@ Purpose: remove downstream reliance on legacy detector names and factory keys
 without breaking gz-physics or other packages that include DART compatibility
 headers.
 
-Current working-tree status: this phase is locally complete and needs CI and
-package smoke evidence. DART-side factory and SKEL
+Current working-tree status: this phase is locally complete and needs CI plus
+downstream migration/deprecation evidence. DART-side factory and SKEL
 parser coverage now proves `"fcl"`, `"fcl_mesh"`, `"bullet"`, and `"ode"`
 selection routes to `DartCollisionDetector`, including a reference-enabled
 build where legacy component libraries are linked. The Python detector
@@ -270,8 +270,11 @@ support remains available. A fresh local `pixi run -e gazebo test-gz` passes
 65/65 tests after DART-side mesh-plane pair-order normal,
 stacked-cylinder contact, axial cylinder-cap/large-box support, tilted
 cylinder/plane-like-box support, and capped large flat box/mesh contact fixes.
-CI evidence is still required before this phase can complete on the release
-gate.
+A current native compatibility package smoke also proves retained
+`collision-fcl`, `collision-bullet`, and `collision-ode` package components and
+installed legacy detector headers link/use the built-in stack without
+installing old-engine runtime libraries. CI evidence is still required before
+this phase can complete on the release gate.
 
 Success criteria:
 

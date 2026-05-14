@@ -23,11 +23,13 @@ compatibility display strings, but those strings do not select external
 runtime engines.
 
 Current status: the DART-side compatibility facade tests cover those display
-strings, FCL/ODE facades preserve gz-required unsupported raycast behavior, and
-a fresh local `pixi run -e gazebo test-gz` run passes 65/65 tests through the
-built-in detector. CI evidence and downstream package smoke evidence are still
-required before retained compatibility facades can be removed or
-hard-deprecated.
+strings, FCL/ODE facades preserve gz-required unsupported raycast behavior, a
+fresh local `pixi run -e gazebo test-gz` run passes 65/65 tests through the
+built-in detector, and a current native compatibility package smoke links the
+retained `collision-fcl`, `collision-bullet`, and `collision-ode` components to
+the built-in stack without installed old-engine runtime libraries. CI evidence
+and downstream migration/deprecation evidence are still required before
+retained compatibility facades can be removed or hard-deprecated.
 
 ## Downstream Work
 
@@ -54,6 +56,8 @@ checks pass:
    complete locally from a fresh gz-physics clone; CI evidence is still needed.
 2. A downstream package smoke that requests `collision-fcl`,
    `collision-bullet`, and `collision-ode` links only the built-in `dart` stack.
+   This is complete locally with the dev-task native compatibility package
+   smoke; downstream CI evidence is still needed.
 3. Python compatibility names construct and report detector type `dart`.
 4. Source-tree and installed legacy detector headers compile without FCL,
    Bullet, or ODE headers in native-only builds.
@@ -72,7 +76,7 @@ checks pass:
 2. Keep one release window where retained DART compatibility facades route to
    built-in `dart`.
 3. Remove or hard-deprecate compatibility facades only after downstream CI and
-   package smoke evidence prove they are no longer needed.
+   migration/deprecation evidence prove they are no longer needed.
 4. Keep optional FCL/Bullet/ODE reference engines available only for tests and
    benchmarks while they remain useful for correctness and performance
    comparisons.

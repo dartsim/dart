@@ -139,6 +139,14 @@ for gz max-contact selection tests, FCL/ODE compatibility facades keep
 gz-required unsupported raycast behavior, focused
 `COMMON_TEST_simulation_features` passes 15/15, and a fresh
 `DART_PARALLEL_JOBS=15 pixi run -e gazebo test-gz` run passes 65/65 tests.
+The latest evidence slice adds a reproducible native compatibility package
+smoke under `docs/dev_tasks/native_collision/smoke/native_compat_package/` and
+reruns it against a current install. The smoke verifies retained
+`collision-fcl`, `collision-bullet`, and `collision-ode` package components
+link the built-in stack, factory keys create the canonical `dart` detector,
+direct legacy class `create()` calls are backed by `DartCollisionDetector`
+while keeping legacy display strings, and the installed library directory has
+no old-engine or reference collision runtime libraries.
 
 ## Current Branch
 
@@ -151,10 +159,10 @@ the exact count.
 Continue from `docs/dev_tasks/native_collision/04-reference-gap-analysis.md`.
 The focused gz `JointDetach` blocker and full local gz gate are repaired. The
 immediate next evidence steps are CI native-only/gz evidence, wheel matrix
-artifact evidence from `wheel-verify`, downstream package/migration evidence,
-GitHub evidence for the scheduled benchmark guard, architecture/design gate
-evidence, final validation, dev-task cleanup, and final legacy backend
-deletion.
+artifact evidence from `wheel-verify`, downstream migration/deprecation
+evidence, GitHub evidence for the scheduled benchmark guard,
+architecture/design gate evidence, final validation, dev-task cleanup, and
+final legacy backend deletion.
 
 The persistent DART adapter scene path is now started: public collision,
 distance, and raycast calls use synced native scene state owned by

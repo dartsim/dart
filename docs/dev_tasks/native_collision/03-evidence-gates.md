@@ -35,21 +35,21 @@ options that allow native-only builds to opt out. The built-in stack must also
 have clean API boundaries, scalable native scene/query state, and
 performance-oriented internals before this scale reaches completion.
 
-| Stage | Gate                                                | State                              |
-| ----- | --------------------------------------------------- | ---------------------------------- |
-| 0     | Baseline native backend exists                      | Complete before this task          |
-| 1     | Native `dart` detector is default                   | Complete in checkpoint             |
-| 2     | DART feature parity is proven                       | Complete in checkpoint             |
-| 3     | gz-physics compatibility is proven                  | Full local `test-gz` pass; CI left |
-| 4     | Native benchmark wins are recorded                  | Complete in checkpoint             |
-| 5     | Local builds pass with FCL/Bullet/ODE disabled      | Complete in checkpoint             |
-| 6     | Native-only and gz-physics CI are permanent         | Started; CI evidence still needed  |
-| 7     | Reference engines are test/bench-only opt-in        | Local target split proven          |
-| 8     | Default packages/wheels have no old runtime deps    | Local pass; CI wheel matrix left   |
-| 9     | Downstream migration/deprecation path is tested     | Started; alias/component coverage  |
-| 10    | Clean built-in API/scaling/perf layer               | Local design evidence; CI left     |
-| 11    | Old runtime backend source is reference-only        | Local split; lint guard wired      |
-| 12    | Final PR evidence is complete and task docs removed | Blocked on CI/migration/perf       |
+| Stage | Gate                                                | State                                 |
+| ----- | --------------------------------------------------- | ------------------------------------- |
+| 0     | Baseline native backend exists                      | Complete before this task             |
+| 1     | Native `dart` detector is default                   | Complete in checkpoint                |
+| 2     | DART feature parity is proven                       | Complete in checkpoint                |
+| 3     | gz-physics compatibility is proven                  | Full local `test-gz` pass; CI left    |
+| 4     | Native benchmark wins are recorded                  | Complete in checkpoint                |
+| 5     | Local builds pass with FCL/Bullet/ODE disabled      | Complete in checkpoint                |
+| 6     | Native-only and gz-physics CI are permanent         | Started; CI evidence still needed     |
+| 7     | Reference engines are test/bench-only opt-in        | Local target split proven             |
+| 8     | Default packages/wheels have no old runtime deps    | Local pass; CI wheel matrix left      |
+| 9     | Downstream migration/deprecation path is tested     | Package smoke pass; CI/migration left |
+| 10    | Clean built-in API/scaling/perf layer               | Local design evidence; CI left        |
+| 11    | Old runtime backend source is reference-only        | Local split; lint guard wired         |
+| 12    | Final PR evidence is complete and task docs removed | Blocked on CI/migration/perf          |
 
 ## Remaining North-Star Gate Backlog
 
@@ -61,7 +61,7 @@ These gates are still required before the single north-star PR is complete.
 | CI gz-physics compatibility  | gz-physics CI passes with optional legacy components built                                                             | Full local `test-gz` passes; CI evidence left  |
 | Reference correctness        | FCL/Bullet/ODE comparison tests are test-only and optional                                                             | Local reference target split passes            |
 | Packaging removal            | Default packages/wheels have no old collision runtime deps                                                             | Verifier wired; CI matrix evidence left        |
-| Downstream migration         | gz-physics has a tested path away from legacy detector APIs                                                            | Full gz pass; package smoke evidence left      |
+| Downstream migration         | gz-physics has a tested path away from legacy detector APIs                                                            | Package smoke pass; CI/migration left          |
 | Collision abstraction        | Legacy keys/classes route only to built-in native behavior                                                             | Source/package facades done                    |
 | Built-in architecture/design | `01-design.md` north-star requirement, layer table, and blueprint pass API-cleanliness, scaling, and performance gates | Source split, cache bridge, gz/full support    |
 | Benchmark regression guard   | Optional reference benchmarks guide gradual optimization                                                               | Scheduled/manual CI guard added; evidence left |
@@ -69,6 +69,39 @@ These gates are still required before the single north-star PR is complete.
 
 ## Test Runs
 
+- Current native compatibility package smoke
+  - Command:
+
+    ```bash
+    pixi run -- bash -lc 'set -euo pipefail
+    rm -rf build/native-compat-install build/native-compat-package-smoke
+    cmake --install build/default/cpp/Release --prefix build/native-compat-install --component headers >/tmp/dart_native_compat_install.log
+    cmake --install build/default/cpp/Release --prefix build/native-compat-install >>/tmp/dart_native_compat_install.log
+    cmake -S docs/dev_tasks/native_collision/smoke/native_compat_package -B build/native-compat-package-smoke -DCMAKE_PREFIX_PATH="$PWD/build/native-compat-install;$CONDA_PREFIX" >/tmp/dart_native_compat_smoke_config.log
+    cmake --build build/native-compat-package-smoke --parallel 4 >/tmp/dart_native_compat_smoke_build.log
+    build/native-compat-package-smoke/native_collision_compat_package_smoke
+    if find build/native-compat-install/lib -maxdepth 1 \( -type f -o -type l \) | sort | rg "dart-collision-reference|lib(fcl|bullet|ode|ccd)"; then
+      exit 1
+    fi
+    echo "native compatibility package smoke passed"'
+    ```
+
+  - Commit: working tree after adding the current native compatibility package
+    smoke source.
+  - Result: passed. The installed package accepted the retained
+    `collision-fcl`, `collision-bullet`, and `collision-ode` package
+    components, linked the component facade targets, included installed
+    FCL/Bullet/ODE detector headers, verified factory keys create the canonical
+    `dart` detector, verified direct legacy class `create()` calls are backed
+    by `DartCollisionDetector` while retaining legacy display strings, and
+    found no installed `libdart-collision-reference-*`, FCL, Bullet, ODE, or
+    libccd runtime libraries.
+
+- `python scripts/check_collision_runtime_isolation.py`
+  - Commit: working tree after the current native compatibility package smoke.
+  - Result: passed. Non-reference DART source paths still do not include FCL,
+    Bullet, ODE, libccd, or explicit collision reference backend headers, and
+    legacy implementation sources remain under explicit `reference/` paths.
 - `cmake --build build/default/cpp/Release --parallel 15 --target
 test_mesh_mesh UNIT_collision_DartCollisionDetector UNIT_collision_DARTCollide`
   - Commit: working tree after capped large flat box/mesh contact patch and
