@@ -181,7 +181,7 @@ Known current result:
   output, and places headers/static archives in the `filament-static` output.
   Once merged, DART's build-time Pixi dependency should use `filament-static`,
   which pulls the matching tool output needed for `matc`.
-- At the latest inspected head `c6ba84e46abb1b00a3ada075bb193e2583e18340`,
+- At the latest inspected head `6b20da57ce864edb5bb4080a2b4a8e312b4c0a22`,
   the PR was still open, ready for review, and behind the target branch.
   Staged-recipes linter, conda-forge-linter, Check Skip, Azure linux_64, osx_64,
   win_64, and aggregate checks passed. The previous Linux failure came from
@@ -225,8 +225,8 @@ Known current result:
 - `.github/workflows/ci_ubuntu.yml` now includes a `filament-gui-smoke` job
   that installs Mesa, Xvfb, and libc++/libc++abi development packages and runs
   `pixi run test-filament-gui-smoke` without relying on a Filament conda
-  package. On PR #2647, the hosted `Filament GUI Smoke (GCC)` and
-  `Filament GUI Smoke (Clang)` jobs pass.
+  package. The MVP PR #2647 merged with hosted
+  `Filament GUI Smoke (GCC)` and `Filament GUI Smoke (Clang)` passing.
 - The Filament example also configured, linked, and ran with
   `DART_BUILD_GUI=OFF` and `DART_BUILD_DARTPY=OFF` using
   `pixi run config OFF`, proving the experimental Filament path no longer needs

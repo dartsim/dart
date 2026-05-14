@@ -101,7 +101,8 @@
   workflows still need visual review before promotion.
 - Windowed screenshot capture and headless swap-chain screenshot capture both
   produce local nonblank smoke images; the hosted Ubuntu GCC/Clang Filament
-  smoke jobs pass on PR #2647. Broader CI coverage remains promotion work.
+  smoke jobs passed on merged MVP PR #2647. Broader CI coverage remains
+  promotion work.
 
 ## Phase 3 - Interaction baseline
 
@@ -135,11 +136,16 @@
 - The Filament example includes a selectable `--scene drag-and-drop` fixture
   that extracts and renders the legacy drag-and-drop example's `SimpleFrame`
   anchor, child frame, and axis markers through the same manipulation path.
+- The Filament example includes a selectable `--scene g1` fixture that loads
+  the Unitree G1 URDF through DART resource retrievers and exposes colored IK
+  targets for both hands and feet. `pixi run ex g1_puppet` routes to this
+  Filament scene by default so the in-tree G1 workflow no longer depends on the
+  legacy OSG viewer path.
 - The same panel provides pause/resume and single-step controls.
 - Phase 3 has an MVP interaction baseline through picking, selection bounds,
-  selected-body and `SimpleFrame` movement, and a first drag-and-drop fixture.
-  Broader interaction-heavy workflows still need migration and visual review
-  before promotion.
+  selected-body and `SimpleFrame` movement, a first drag-and-drop fixture, and
+  a robot IK fixture. Broader interaction-heavy workflows still need migration
+  and visual review before promotion.
 
 ## Phase 4 - Experimental library target
 

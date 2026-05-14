@@ -53,21 +53,53 @@ def test_parse_args_allows_pixi_help_without_target(run_cpp_example, capsys):
 
 
 @pytest.mark.parametrize(
-    ("target", "build_target", "binary_name", "requirements"),
+    ("target", "build_target", "binary_name", "requirements", "default_args"),
     [
-        ("raylib", "dart_raylib", "raylib", ("raylib",)),
-        ("dart_raylib", "dart_raylib", "raylib", ("raylib",)),
-        ("filament_gui", "dart_filament_gui", "filament_gui", ("filament",)),
-        ("atlas_simbicon", "atlas_simbicon", "atlas_simbicon", ()),
+        ("raylib", "dart_raylib", "raylib", ("raylib",), ()),
+        ("dart_raylib", "dart_raylib", "raylib", ("raylib",), ()),
+        ("filament_gui", "dart_filament_gui", "filament_gui", ("filament",), ()),
+        (
+            "g1_puppet",
+            "dart_filament_gui",
+            "filament_gui",
+            ("filament",),
+            ("--scene", "g1"),
+        ),
+        ("atlas_simbicon", "atlas_simbicon", "atlas_simbicon", (), ()),
     ],
 )
 def test_resolve_example(
-    target, build_target, binary_name, requirements, run_cpp_example
+    target,
+    build_target,
+    binary_name,
+    requirements,
+    default_args,
+    run_cpp_example,
 ):
     spec = run_cpp_example._resolve_example(target)
     assert spec.build_target == build_target
     assert spec.binary_name == binary_name
     assert spec.requirements == requirements
+    assert spec.default_args == default_args
+
+
+def test_run_args_with_defaults_uses_g1_scene(run_cpp_example):
+    spec = run_cpp_example._resolve_example("g1_puppet")
+
+    assert run_cpp_example._run_args_with_defaults(spec, ["--frames", "1"]) == [
+        "--scene",
+        "g1",
+        "--frames",
+        "1",
+    ]
+
+
+def test_run_args_with_defaults_preserves_explicit_scene(run_cpp_example):
+    spec = run_cpp_example._resolve_example("g1_puppet")
+
+    assert run_cpp_example._run_args_with_defaults(
+        spec, ["--scene", "mvp", "--frames", "1"]
+    ) == ["--scene", "mvp", "--frames", "1"]
 
 
 def test_cmake_cache_bool(run_cpp_example, tmp_path):

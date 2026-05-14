@@ -80,6 +80,13 @@
   interaction-heavy fixture that carries the legacy `SimpleFrame` anchor, child
   frame, and axis marker layout through the same backend-hidden manipulation
   path.
+- The Filament example now also includes `--scene g1`, which loads the remote
+  Unitree G1 URDF through DART's normal resource-retriever path and exposes
+  colored IK targets for both hands and feet. The in-tree
+  `pixi run ex g1_puppet` runner now routes to that Filament scene while the
+  legacy standalone source remains available for comparison. The G1 scene is
+  intentionally not part of `--scene all` because it fetches remote robot
+  assets by default.
 - The Filament example can render bounded screenshots through Filament's
   headless swap-chain path without creating a GLFW window.
 - `DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS=ON` registers an opt-in CTest smoke
@@ -105,8 +112,9 @@
   When no display server is available, the task runs the smokes under Xvfb and
   prefers Mesa's EGL vendor file for software rendering. The Ubuntu CI workflow
   has a matching opt-in smoke job that gets Xvfb, libc++, and libc++abi from
-  system packages instead of relying on a Filament package. On PR #2647, the
-  hosted `Filament GUI Smoke (GCC)` and `Filament GUI Smoke (Clang)` jobs pass.
+  system packages instead of relying on a Filament package. The MVP PR #2647
+  merged with hosted `Filament GUI Smoke (GCC)` and
+  `Filament GUI Smoke (Clang)` passing.
 - Local Linux CPython 3.12, 3.13, and 3.14 wheel builds now repair with
   `auditwheel` and pass installed-wheel testing. The smoke confirms
   `dartpy.gui.experimental` is present in the wheel and can extract a one-box
@@ -119,7 +127,7 @@
   exposed a local Mesa GLX hang during full-suite validation.
 - A ready-for-review conda-forge staged-recipes PR exists for Filament 1.71.3.
   Its current head is still open and behind the target branch, but the latest
-  inspected head `c6ba84e` is green across staged-recipes linter,
+  inspected head `6b20da5` is green across staged-recipes linter,
   conda-forge-linter, Check Skip, Azure linux_64, osx_64, win_64, and aggregate
   checks. It has not produced an installable feedstock yet, but its planned
   `filament-static` output is the build-time package DART should consume once
@@ -179,8 +187,8 @@ the appropriate major DART release.
    DART-owned concepts only, no public backend types, and no OSG renderer
    source-compatibility promise.
 2. Keep the hosted Ubuntu `Filament GUI Smoke (GCC)` and
-   `Filament GUI Smoke (Clang)` jobs green on PR #2647 when the explicit pinned
-   fetch path changes.
+   `Filament GUI Smoke (Clang)` jobs green on each follow-up PR when the
+   explicit pinned fetch path or Filament example behavior changes.
 3. Add broader human visual review and larger authored environment/PBR assets
    for the visual-quality gate. The current screenshot analyzer is a smoke check
    for shadow/lighting contrast, not a replacement for broader visual review.
@@ -188,8 +196,8 @@ the appropriate major DART release.
    path, but do not block Linux smoke coverage on it. After it merges, add the
    `filament-static` package to the Pixi toolchain and validate that
    `Filament_ROOT=$CONDA_PREFIX` discovers headers, libraries, and `matc`.
-5. Expand debug overlay and interaction scenario coverage beyond the MVP
-   fixture and first drag-and-drop fixture.
+5. Expand debug overlay and interaction scenario coverage beyond the MVP,
+   drag-and-drop, and G1 IK fixtures.
 6. Continue moving reusable viewer state out of the Filament example once the
    API boundary is stable enough.
 7. Keep the MVP ImGui overlay example-local unless promotion needs user

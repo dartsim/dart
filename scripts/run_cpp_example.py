@@ -278,6 +278,19 @@ def _has_arg(run_args: list[str], *names: str) -> bool:
     return any(arg in names for arg in run_args)
 
 
+def _run_args_with_defaults(spec: ExampleSpec, run_args: list[str]) -> list[str]:
+    if not spec.default_args:
+        return list(run_args)
+
+    default_args = list(spec.default_args)
+    if _has_arg(run_args, "--scene") and _has_arg(default_args, "--scene"):
+        for index, arg in enumerate(default_args):
+            if arg == "--scene":
+                del default_args[index : index + 2]
+                break
+    return [*default_args, *run_args]
+
+
 def _filament_screenshot_path(scene: str) -> Path:
     env_name = os.environ.get("PIXI_ENVIRONMENT_NAME", "default")
     scene_suffix = scene.replace("-", "_")
@@ -466,7 +479,7 @@ def _run_example_binary(
     run_args: list[str],
     env: dict[str, str],
 ) -> None:
-    run_args = [*spec.default_args, *run_args]
+    run_args = _run_args_with_defaults(spec, run_args)
     binary = _binary_path(build_dir, spec.binary_name)
     if not binary.exists():
         raise SystemExit(f"Binary not found: {binary}")

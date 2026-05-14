@@ -6,6 +6,27 @@ The DART GUI uses OpenSceneGraph (OSG) as its rendering backend to visualize phy
 
 ---
 
+## Current Renderer Status
+
+The shipped `dart-gui` library is still the OSG implementation described below,
+and its public headers expose OSG types. New GUI work should treat that surface
+as legacy behavior to replace, not as the shape of the next public API.
+
+The Filament experiment lives behind `DART_BUILD_GUI_FILAMENT=ON` and the
+backend-hidden `dart::gui::experimental` descriptor APIs. The MVP merged in
+[#2647](https://github.com/dartsim/dart/pull/2647), including Linux
+explicit-fetch smoke coverage. Follow-up completion work is expected to stay on
+separate branches and must keep public headers free of Filament, GLFW, Dear
+ImGui, OpenGL, Vulkan, Metal, OSG, and Raylib types.
+
+Before promoting Filament to first-class `dart::gui`, complete the remaining
+promotion gates: package-manager availability for Filament, macOS/Windows
+configure/build/runtime evidence, broader robot/environment visual review,
+DART-owned panel/tool abstractions if extension points are needed, and an
+accepted OSG/Raylib deprecation and removal plan.
+
+---
+
 ## Core Architecture Components
 
 ### 1. Viewer (`dart/gui/Viewer.hpp/cpp`)

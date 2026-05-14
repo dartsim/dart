@@ -93,7 +93,7 @@ splits host tools into `filament` and headers/static libraries into
 `filament-static`. That package remains the preferred future Pixi dependency,
 but the current Linux smoke path does not wait for it. At latest inspection, the
 PR was still open and behind the target branch at head
-`c6ba84e46abb1b00a3ada075bb193e2583e18340`; staged-recipes linter,
+`6b20da57ce864edb5bb4080a2b4a8e312b4c0a22`; staged-recipes linter,
 conda-forge-linter, Check Skip, Azure linux_64, osx_64, win_64, and aggregate
 checks passed on that head. The previous Linux failure came from using
 `source_files: test-cmake`; the current head uses `files: test-cmake` for the
@@ -137,14 +137,15 @@ drag-and-drop headless CTest smokes. When `DISPLAY` is absent, the task uses
 Xvfb and prefers Mesa's EGL vendor file for software rendering. The Ubuntu CI
 workflow has a matching `filament-gui-smoke` job that installs Mesa, Xvfb, and
 libc++/libc++abi development packages from apt and runs that task without
-relying on a Filament conda package. On PR #2647, the hosted
-`Filament GUI Smoke (GCC)` and `Filament GUI Smoke (Clang)` jobs pass.
+relying on a Filament conda package. The MVP PR #2647 merged with hosted
+`Filament GUI Smoke (GCC)` and `Filament GUI Smoke (Clang)` passing.
 
-`feature/filament-gui-g1-example` is a checkpoint branch for testing a Filament
-version of the G1 puppet example and related visual-quality follow-ups. It is
-not the final PR scope for the broader Filament GUI task; keep final task
-updates on `feature/filament-gui-experimental` unless the G1 checkpoint is
-explicitly promoted.
+`feature/filament-gui-completion` is the follow-up branch for work beyond the
+MVP. It includes the Filament version of the G1 puppet example: `--scene g1`
+loads the Unitree G1 URDF through DART resource retrievers, exposes colored IK
+targets for both hands and feet, and routes `pixi run ex g1_puppet` through the
+Filament example by default. This branch is intentionally separate from the
+merged MVP PR #2647.
 
 `docs/dev_tasks/filament_gui/07-completion-audit.md` maps the current
 implementation, verification evidence, and missing promotion gates. Use that
@@ -152,13 +153,14 @@ audit before deciding whether the dev task is complete.
 
 ## Current Branch
 
-`feature/filament-gui-experimental`, the head branch for PR #2647. Verify with
+`feature/filament-gui-completion`, stacked on the merged MVP PR #2647. Verify with
 `git status && git branch --show-current` before editing.
 
 ## Immediate Next Step
 
-Keep the hosted Ubuntu GCC/Clang Filament smoke jobs green when the explicit
-pinned fetch fallback changes. Locally, use:
+Keep the hosted Ubuntu GCC/Clang Filament smoke jobs green on every follow-up PR
+that changes the explicit pinned fetch fallback or Filament example behavior.
+Locally, use:
 
 ```bash
 LIBCXX_PREFIX=<prefix-containing-libc++-and-libc++abi>
@@ -173,8 +175,9 @@ After the target links, keep the MVP ImGui overlay example-local unless
 promotion needs user extension points; in that case add DART-owned panel/tool
 abstractions instead of exposing raw ImGui APIs. Add interaction-heavy example
 coverage beyond the current selection/nudging/drag path and first
-drag-and-drop fixture, and add broader human visual review with larger real
-authored environment/PBR assets for the shadow/material promotion gate.
+drag-and-drop and G1 IK fixtures, and add broader human visual review with
+larger real authored environment/PBR assets for the shadow/material promotion
+gate.
 
 ## Context That Would Be Lost
 
@@ -202,8 +205,6 @@ git status
 find docs/dev_tasks/filament_gui -maxdepth 1 -type f -print | sort
 ```
 
-Then start the MVP by adding the build option and example target described in
-`docs/dev_tasks/filament_gui/02-mvp-example.md`, or continue from the existing
-implementation if those files are already present. For the current branch, the
-MVP implementation already exists; use `07-completion-audit.md` and
-`08-north-star-migration.md` to choose the next promotion-gate work.
+For the current branch, the MVP implementation already exists and #2647 is
+merged; use `07-completion-audit.md` and `08-north-star-migration.md` to choose
+the next promotion-gate work. Keep follow-up PRs separate from the MVP branch.
