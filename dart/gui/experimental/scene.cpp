@@ -49,6 +49,7 @@
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/multi_sphere_convex_hull_shape.hpp>
 #include <dart/dynamics/plane_shape.hpp>
+#include <dart/dynamics/point_cloud_shape.hpp>
 #include <dart/dynamics/pyramid_shape.hpp>
 #include <dart/dynamics/shape.hpp>
 #include <dart/dynamics/shape_frame.hpp>
@@ -418,6 +419,48 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
         min = min.cwiseMin(vertex);
         max = max.cwiseMax(vertex);
       }
+      descriptor.size = max - min;
+      setLocalBounds(descriptor, min, max);
+    }
+    return descriptor;
+  }
+
+  if (const auto* pointCloud
+      = dynamic_cast<const dynamics::PointCloudShape*>(&shape)) {
+    descriptor.kind = ShapeKind::PointCloud;
+    descriptor.pointSize = pointCloud->getVisualSize();
+    const auto points = pointCloud->getPoints();
+    descriptor.pointCloudPoints.reserve(points.size());
+    Eigen::Vector3d min = Eigen::Vector3d::Zero();
+    Eigen::Vector3d max = Eigen::Vector3d::Zero();
+    bool hasBounds = false;
+    const Eigen::Vector3d extent
+        = Eigen::Vector3d::Constant(std::max(0.0, descriptor.pointSize) * 0.5);
+    for (const Eigen::Vector3d& point : points) {
+      descriptor.pointCloudPoints.push_back(point);
+      const Eigen::Vector3d pointMin = point - extent;
+      const Eigen::Vector3d pointMax = point + extent;
+      if (!hasBounds) {
+        min = pointMin;
+        max = pointMax;
+        hasBounds = true;
+      } else {
+        min = min.cwiseMin(pointMin);
+        max = max.cwiseMax(pointMax);
+      }
+    }
+
+    const auto colors = pointCloud->getColors();
+    if (pointCloud->getColorMode() == dynamics::PointCloudShape::BIND_OVERALL
+        && !colors.empty()) {
+      descriptor.pointCloudColors.push_back(colors.front());
+    } else if (
+        pointCloud->getColorMode() == dynamics::PointCloudShape::BIND_PER_POINT
+        && colors.size() == points.size()) {
+      descriptor.pointCloudColors.assign(colors.begin(), colors.end());
+    }
+
+    if (hasBounds) {
       descriptor.size = max - min;
       setLocalBounds(descriptor, min, max);
     }

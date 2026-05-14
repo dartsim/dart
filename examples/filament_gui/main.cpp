@@ -131,6 +131,7 @@ using dart::dynamics::InverseKinematics;
 using dart::dynamics::InverseKinematicsPtr;
 using dart::dynamics::MeshShape;
 using dart::dynamics::PlaneShape;
+using dart::dynamics::PointCloudShape;
 using dart::dynamics::Shape;
 using dart::dynamics::ShapePtr;
 using dart::dynamics::ShapeNode;
@@ -932,6 +933,7 @@ constexpr const char* kPyramidFixtureSkeletonName = "visual_pyramid";
 constexpr const char* kMultiSphereFixtureSkeletonName = "visual_multi_sphere";
 constexpr const char* kLineSegmentFixtureSkeletonName = "visual_line_segments";
 constexpr const char* kConvexMeshFixtureSkeletonName = "visual_convex_mesh";
+constexpr const char* kPointCloudFixtureSkeletonName = "visual_point_cloud";
 constexpr const char* kPbrEnvironmentFixtureSkeletonName =
     "visual_pbr_environment";
 constexpr const char* kG1FixtureSkeletonName = "visual_g1_robot";
@@ -1845,6 +1847,18 @@ DartScene createMvpDartScene()
     return shape;
   };
 
+  auto createPointCloudShape = [] {
+    auto shape = std::make_shared<PointCloudShape>(0.14);
+    shape->setPointShapeType(PointCloudShape::BOX);
+    shape->setColorMode(PointCloudShape::BIND_OVERALL);
+    shape->setOverallColor(Eigen::Vector4d(0.48, 0.86, 0.38, 1.0));
+    shape->addPoint(Eigen::Vector3d(-0.24, -0.18, 0.0));
+    shape->addPoint(Eigen::Vector3d(0.0, 0.16, 0.12));
+    shape->addPoint(Eigen::Vector3d(0.24, -0.14, 0.02));
+    shape->addPoint(Eigen::Vector3d(-0.02, -0.02, 0.3));
+    return shape;
+  };
+
   scene.world = World::create("filament_gui_mvp");
   scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   scene.world->addSkeleton(blueBox);
@@ -1894,6 +1908,11 @@ DartScene createMvpDartScene()
       kConvexMeshFixtureSkeletonName,
       std::make_shared<ConvexMeshShape>(createTetraMesh()),
       Eigen::Vector3d(-2.15, 0.55, 0.95),
+      Eigen::Vector3d(0.48, 0.86, 0.38)));
+  scene.world->addSkeleton(createStaticVisual(
+      kPointCloudFixtureSkeletonName,
+      createPointCloudShape(),
+      Eigen::Vector3d(-1.45, 0.55, 0.82),
       Eigen::Vector3d(0.48, 0.86, 0.38)));
   scene.world->addSkeleton(createStaticVisual(
       "visual_ellipsoid",
@@ -3239,6 +3258,119 @@ std::optional<Renderable> createConvexMeshRenderable(
       bounds.max);
 }
 
+void appendPointBoxGeometry(
+    std::vector<Vertex>& vertices,
+    std::vector<float3>& normals,
+    std::vector<std::uint32_t>& indices,
+    std::vector<filament::math::uint3>& triangles,
+    const Eigen::Vector3d& center,
+    double size)
+{
+  const filament::math::short4 tangent = {0, 0, 0, 32767};
+  const float halfSize = static_cast<float>(size * 0.5);
+  const float3 centerPoint = toFloat3(center);
+  const std::array<float3, 8> points = {
+      float3{
+          centerPoint.x - halfSize,
+          centerPoint.y - halfSize,
+          centerPoint.z - halfSize},
+      float3{
+          centerPoint.x + halfSize,
+          centerPoint.y - halfSize,
+          centerPoint.z - halfSize},
+      float3{
+          centerPoint.x + halfSize,
+          centerPoint.y + halfSize,
+          centerPoint.z - halfSize},
+      float3{
+          centerPoint.x - halfSize,
+          centerPoint.y + halfSize,
+          centerPoint.z - halfSize},
+      float3{
+          centerPoint.x - halfSize,
+          centerPoint.y - halfSize,
+          centerPoint.z + halfSize},
+      float3{
+          centerPoint.x + halfSize,
+          centerPoint.y - halfSize,
+          centerPoint.z + halfSize},
+      float3{
+          centerPoint.x + halfSize,
+          centerPoint.y + halfSize,
+          centerPoint.z + halfSize},
+      float3{
+          centerPoint.x - halfSize,
+          centerPoint.y + halfSize,
+          centerPoint.z + halfSize}};
+
+  const auto appendFace = [&](std::uint32_t a,
+                              std::uint32_t b,
+                              std::uint32_t cIndex,
+                              std::uint32_t d,
+                              const float3& normal) {
+    const auto start = static_cast<std::uint32_t>(vertices.size());
+    vertices.push_back(Vertex{points[a], tangent, {0.0f, 0.0f}});
+    vertices.push_back(Vertex{points[b], tangent, {1.0f, 0.0f}});
+    vertices.push_back(Vertex{points[cIndex], tangent, {1.0f, 1.0f}});
+    vertices.push_back(Vertex{points[d], tangent, {0.0f, 1.0f}});
+    normals.push_back(normal);
+    normals.push_back(normal);
+    normals.push_back(normal);
+    normals.push_back(normal);
+    appendTriangle(indices, triangles, start, start + 1u, start + 2u);
+    appendTriangle(indices, triangles, start, start + 2u, start + 3u);
+  };
+
+  appendFace(4, 5, 6, 7, {0.0f, 0.0f, 1.0f});
+  appendFace(0, 3, 2, 1, {0.0f, 0.0f, -1.0f});
+  appendFace(3, 7, 6, 2, {0.0f, 1.0f, 0.0f});
+  appendFace(0, 1, 5, 4, {0.0f, -1.0f, 0.0f});
+  appendFace(1, 2, 6, 5, {1.0f, 0.0f, 0.0f});
+  appendFace(0, 4, 7, 3, {-1.0f, 0.0f, 0.0f});
+}
+
+std::optional<Renderable> createPointCloudRenderable(
+    filament::Engine& engine,
+    const MaterialSet& materials,
+    const RenderableDescriptor& descriptor)
+{
+  if (descriptor.geometry.pointCloudPoints.empty()) {
+    return std::nullopt;
+  }
+
+  float4 color = toRgba(descriptor.material.rgba);
+  if (descriptor.geometry.pointCloudColors.size() == 1u) {
+    color = toRgba(descriptor.geometry.pointCloudColors.front());
+  }
+
+  const double pointSize = std::max(descriptor.geometry.pointSize, 1e-4);
+  std::vector<Vertex> vertices;
+  std::vector<float3> normals;
+  std::vector<std::uint32_t> indices;
+  std::vector<filament::math::uint3> triangles;
+  vertices.reserve(descriptor.geometry.pointCloudPoints.size() * 24u);
+  normals.reserve(descriptor.geometry.pointCloudPoints.size() * 24u);
+  indices.reserve(descriptor.geometry.pointCloudPoints.size() * 36u);
+  triangles.reserve(descriptor.geometry.pointCloudPoints.size() * 12u);
+
+  for (const Eigen::Vector3d& point : descriptor.geometry.pointCloudPoints) {
+    appendPointBoxGeometry(
+        vertices, normals, indices, triangles, point, pointSize);
+  }
+
+  const Bounds bounds = computeBounds(vertices);
+  return createTriangleMeshRenderable(
+      engine,
+      selectLitMaterial(materials, false, color),
+      std::move(vertices),
+      std::move(indices),
+      std::move(triangles),
+      std::move(normals),
+      color,
+      bounds.min,
+      bounds.max);
+}
+
 std::optional<Renderable> createMeshRenderable(
     filament::Engine& engine,
     const MaterialSet& materials,
@@ -3658,6 +3790,9 @@ std::optional<Renderable> createRenderableFromDescriptor(
         renderable = createConvexMeshRenderable(
             engine, solidMaterial, *convexMeshShape, color);
       }
+      break;
+    case ShapeKind::PointCloud:
+      renderable = createPointCloudRenderable(engine, materials, descriptor);
       break;
     case ShapeKind::Mesh:
       if (const auto* meshShape = dynamic_cast<const MeshShape*>(
@@ -4194,6 +4329,15 @@ int main(int argc, char* argv[])
                    && descriptor.material.visible
                    && descriptor.geometry.kind == ShapeKind::ConvexMesh;
           }));
+  const std::size_t pointCloudDescriptorCount = static_cast<std::size_t>(
+      std::count_if(
+          initialDescriptors.begin(),
+          initialDescriptors.end(),
+          [](const RenderableDescriptor& descriptor) {
+            return descriptor.skeletonName == kPointCloudFixtureSkeletonName
+                   && descriptor.material.visible
+                   && descriptor.geometry.kind == ShapeKind::PointCloud;
+          }));
   const std::size_t pbrEnvironmentDescriptorCount = static_cast<std::size_t>(
       std::count_if(
           initialDescriptors.begin(),
@@ -4266,6 +4410,13 @@ int main(int argc, char* argv[])
           << convexMeshDescriptorCount << "\n";
       return 1;
     }
+    if (pointCloudDescriptorCount != 1) {
+      std::cerr
+          << "Expected the point cloud fixture to provide one visible point "
+             "cloud renderable descriptor, but extracted "
+          << pointCloudDescriptorCount << "\n";
+      return 1;
+    }
     if (pbrEnvironmentDescriptorCount < kMinPbrEnvironmentRenderableCount) {
       std::cerr << "Expected the PBR environment fixture to provide at least "
                 << kMinPbrEnvironmentRenderableCount
@@ -4299,6 +4450,7 @@ int main(int argc, char* argv[])
   std::size_t createdMultiSphereRenderableCount = 0;
   std::size_t createdLineSegmentRenderableCount = 0;
   std::size_t createdConvexMeshRenderableCount = 0;
+  std::size_t createdPointCloudRenderableCount = 0;
   std::size_t createdPbrEnvironmentRenderableCount = 0;
   std::size_t createdG1RenderableCount = 0;
   std::size_t createdDragAndDropFrameRenderableCount = 0;
@@ -4339,6 +4491,10 @@ int main(int argc, char* argv[])
     if (descriptor.skeletonName == kConvexMeshFixtureSkeletonName
         && descriptor.geometry.kind == ShapeKind::ConvexMesh) {
       ++createdConvexMeshRenderableCount;
+    }
+    if (descriptor.skeletonName == kPointCloudFixtureSkeletonName
+        && descriptor.geometry.kind == ShapeKind::PointCloud) {
+      ++createdPointCloudRenderableCount;
     }
     if (descriptor.skeletonName == kPbrEnvironmentFixtureSkeletonName
         && descriptor.geometry.kind == ShapeKind::Mesh) {
@@ -4407,6 +4563,12 @@ int main(int argc, char* argv[])
       std::cerr << "Only " << createdConvexMeshRenderableCount << " of "
                 << convexMeshDescriptorCount
                 << " convex mesh renderables were created\n";
+      return 1;
+    }
+    if (createdPointCloudRenderableCount != pointCloudDescriptorCount) {
+      std::cerr << "Only " << createdPointCloudRenderableCount << " of "
+                << pointCloudDescriptorCount
+                << " point cloud renderables were created\n";
       return 1;
     }
     if (createdPbrEnvironmentRenderableCount < pbrEnvironmentDescriptorCount) {

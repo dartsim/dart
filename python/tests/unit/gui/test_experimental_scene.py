@@ -23,6 +23,7 @@ def test_experimental_extract_renderables_from_world():
     assert hasattr(dart.gui.experimental.ShapeKind, "MultiSphere")
     assert hasattr(dart.gui.experimental.ShapeKind, "LineSegments")
     assert hasattr(dart.gui.experimental.ShapeKind, "ConvexMesh")
+    assert hasattr(dart.gui.experimental.ShapeKind, "PointCloud")
     assert np.allclose(descriptor.geometry.size, [1.0, 2.0, 3.0])
     assert descriptor.material.visible is True
 

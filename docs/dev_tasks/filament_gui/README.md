@@ -14,8 +14,9 @@
   without a graphics context.
 - The example renderer consumes box, sphere, ellipsoid, cylinder, cone,
   capsule, pyramid, multi-sphere, line-segment, convex-mesh,
-  TriMesh-backed `MeshShape`, and finite `PlaneShape` descriptors, and applies
-  DART visual-aspect shadow flags to Filament renderables.
+  point-cloud, TriMesh-backed `MeshShape`, and finite `PlaneShape`
+  descriptors, and applies DART visual-aspect shadow flags to Filament
+  renderables.
 - The example configures Filament view quality features needed by the MVP gate:
   cascaded SUN shadows, contact shadows for windowed runs, deterministic PCF
   shadows for headless screenshots, a neutral skybox, spherical harmonics
@@ -134,9 +135,10 @@
   `filament-static` output is the build-time package DART should consume once
   it is available.
 - The north-star migration plan now records the intended complete migration to
-  Filament, the no-renderer-backward-compatibility stance, the OSG and
-  alternative-renderer capability gaps that still need DART-owned abstractions,
-  and the multi-phase path from MVP example to promoted `dart::gui`.
+  Filament, the no-renderer-backward-compatibility stance, the cleanup of
+  multi-backend-only abstraction layers, the OSG and alternative-renderer
+  capability gaps that still need DART-owned concepts, and the multi-phase path
+  from MVP example to promoted `dart::gui`.
 
 ## Goal
 

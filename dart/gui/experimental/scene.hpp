@@ -69,6 +69,7 @@ enum class ShapeKind
   MultiSphere,
   LineSegments,
   ConvexMesh,
+  PointCloud,
   Mesh,
   Plane,
   Unsupported
@@ -86,10 +87,13 @@ struct GeometryDescriptor
   std::vector<double> sphereRadii;
   std::vector<Eigen::Vector3d> lineVertices;
   std::vector<Eigen::Vector2i> lineConnections;
+  std::vector<Eigen::Vector3d> pointCloudPoints;
+  std::vector<Eigen::Vector4d> pointCloudColors;
   double radius = 0.0;
   double height = 0.0;
   double offset = 0.0;
   double lineThickness = 1.0;
+  double pointSize = 1.0;
   bool hasLocalBounds = false;
   std::string meshUri;
   std::string shapeType;

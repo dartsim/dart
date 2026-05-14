@@ -6,11 +6,18 @@ DART's maintained built-in visualization should become a Filament-backed
 `dart::gui` implementation. OpenSceneGraph (OSG) and the Raylib smoke path
 should be removed in the same major-version migration window after the new GUI
 surface is ready.
+This is a full replacement target: both the main visualization API and current
+experimental visualization paths should converge onto Filament, and redundant
+renderer-neutral layers that existed only to keep multiple backends viable
+should be deleted or collapsed after the Filament API boundary is promoted.
 
 The public API should be owned by DART and should describe DART concepts:
 worlds, cameras, renderables, debug draws, selections, tools, panels, frame
 capture, and simulation control. Public headers should not expose Filament,
 GLFW, Dear ImGui, OpenGL, Vulkan, Metal, OSG, or Raylib types.
+Keep abstractions only when they express stable DART concepts or make the
+Filament implementation testable; do not preserve indirection whose only job is
+to support alternate renderer implementations.
 
 The MVP `examples/filament_gui` is only evidence that the renderer can work.
 It is not the target API shape. Future maintained examples should use a clean
@@ -121,14 +128,15 @@ not a drop-in OSG replacement.
   fallback visuals.
 - **Filament gap:** The current experimental descriptor layer only covers box,
   sphere, ellipsoid, cylinder, capsule, cone, pyramid, multi-sphere,
-  line-segment, convex mesh, mesh, finite plane proxy, and unsupported fallback.
-  Filament can render the missing geometry once DART supplies dynamic buffers,
-  materials, and update policies.
+  line-segment, convex mesh, point cloud, mesh, finite plane proxy, and
+  unsupported fallback. Filament can render the missing geometry once DART
+  supplies dynamic buffers, materials, and update policies.
 - **North-star plan:** Complete the descriptor model before promotion:
-  soft mesh as dynamic vertex buffers, point clouds as point or billboard
-  geometry, voxel grids as instanced cubes or generated occupied-cell meshes,
-  heightmaps as generated terrain meshes, and explicit fallback diagnostics for
-  unsupported shapes.
+  soft mesh as dynamic vertex buffers, voxel grids as instanced cubes or
+  generated occupied-cell meshes, heightmaps as generated terrain meshes, and
+  explicit fallback diagnostics for unsupported shapes. Upgrade point clouds
+  from the MVP box-point visual to point or billboard geometry if that is
+  needed for parity with maintained examples.
 
 ### 4. Mesh and material fidelity
 

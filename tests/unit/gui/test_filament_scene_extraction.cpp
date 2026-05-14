@@ -52,6 +52,7 @@
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/multi_sphere_convex_hull_shape.hpp>
 #include <dart/dynamics/plane_shape.hpp>
+#include <dart/dynamics/point_cloud_shape.hpp>
 #include <dart/dynamics/pyramid_shape.hpp>
 #include <dart/dynamics/shape_frame.hpp>
 #include <dart/dynamics/simple_frame.hpp>
@@ -65,6 +66,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -87,6 +89,7 @@ using dart::dynamics::LineSegmentShape;
 using dart::dynamics::MeshShape;
 using dart::dynamics::MultiSphereConvexHullShape;
 using dart::dynamics::PlaneShape;
+using dart::dynamics::PointCloudShape;
 using dart::dynamics::PyramidShape;
 using dart::dynamics::SimpleFrame;
 using dart::dynamics::Skeleton;
@@ -323,6 +326,29 @@ TEST(
   EXPECT_TRUE(
       convexMesh->localBoundsMax.isApprox(Eigen::Vector3d(0.45, 0.35, 0.55)));
   EXPECT_TRUE(convexMesh->size.isApprox(Eigen::Vector3d(0.7, 0.55, 0.65)));
+
+  PointCloudShape pointCloud(0.2);
+  pointCloud.addPoint(Eigen::Vector3d(-0.4, 0.0, 0.1));
+  pointCloud.addPoint(Eigen::Vector3d(0.2, -0.3, 0.5));
+  pointCloud.setColorMode(PointCloudShape::BIND_PER_POINT);
+  const std::array<Eigen::Vector4d, 2> pointColors{
+      Eigen::Vector4d(1.0, 0.0, 0.0, 1.0), Eigen::Vector4d(0.0, 1.0, 0.0, 0.8)};
+  pointCloud.setColors(pointColors);
+  const auto points = describeShape(pointCloud);
+  ASSERT_TRUE(points.has_value());
+  EXPECT_EQ(points->kind, ShapeKind::PointCloud);
+  EXPECT_DOUBLE_EQ(points->pointSize, 0.2);
+  ASSERT_EQ(points->pointCloudPoints.size(), 2u);
+  ASSERT_EQ(points->pointCloudColors.size(), 2u);
+  EXPECT_TRUE(
+      points->pointCloudPoints[0].isApprox(Eigen::Vector3d(-0.4, 0.0, 0.1)));
+  EXPECT_TRUE(points->pointCloudColors[1].isApprox(
+      Eigen::Vector4d(0.0, 1.0, 0.0, 0.8)));
+  ASSERT_TRUE(points->hasLocalBounds);
+  EXPECT_TRUE(
+      points->localBoundsMin.isApprox(Eigen::Vector3d(-0.5, -0.4, 0.0)));
+  EXPECT_TRUE(points->localBoundsMax.isApprox(Eigen::Vector3d(0.3, 0.1, 0.6)));
+  EXPECT_TRUE(points->size.isApprox(Eigen::Vector3d(0.8, 0.5, 0.6)));
 
   auto triMesh = std::make_shared<dart::math::TriMesh<double>>();
   triMesh->addVertex(0.0, 0.0, 0.0);
