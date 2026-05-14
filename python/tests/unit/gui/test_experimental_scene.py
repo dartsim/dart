@@ -48,6 +48,14 @@ def test_experimental_extract_renderables_from_world():
     assert len(selection_lines) == 12
     assert selection_lines[0].label == "selection.bounds"
 
+    ray = dart.gui.experimental.PickRay()
+    ray.origin = np.array([-2.0, 0.0, 0.0])
+    ray.direction = np.array([1.0, 0.0, 0.0])
+    hit = dart.gui.experimental.pick_nearest_renderable(renderables, ray)
+    assert hit is not None
+    assert np.allclose(hit.point, [-0.5, 0.0, 0.0])
+    assert np.allclose(hit.normal, [-1.0, 0.0, 0.0])
+
 
 def test_experimental_extract_renderables_from_simple_frame():
     world = dart.World.create("world")

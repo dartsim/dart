@@ -200,7 +200,8 @@ void defGuiExperimentalModule(nb::module_& m)
       .def_rw("id", &gui::PickHit::id)
       .def_rw("renderable_index", &gui::PickHit::renderableIndex)
       .def_rw("distance", &gui::PickHit::distance)
-      .def_rw("point", &gui::PickHit::point);
+      .def_rw("point", &gui::PickHit::point)
+      .def_rw("normal", &gui::PickHit::normal);
 
   nb::class_<gui::DebugLineDescriptor>(m, "DebugLineDescriptor")
       .def(nb::init<>())

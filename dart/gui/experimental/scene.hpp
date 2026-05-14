@@ -227,6 +227,7 @@ struct PickHit
   std::size_t renderableIndex = 0;
   double distance = 0.0;
   Eigen::Vector3d point = Eigen::Vector3d::Zero();
+  Eigen::Vector3d normal = Eigen::Vector3d::Zero();
 };
 
 struct DebugLineDescriptor

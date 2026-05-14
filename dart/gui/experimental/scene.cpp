@@ -283,7 +283,13 @@ void setPlaneProxyBounds(
   setLocalBounds(descriptor, min, max);
 }
 
-std::optional<double> intersectLocalBounds(
+struct LocalBoundsHit
+{
+  double distance = 0.0;
+  Eigen::Vector3d normal = Eigen::Vector3d::Zero();
+};
+
+std::optional<LocalBoundsHit> intersectLocalBounds(
     const Eigen::Vector3d& origin,
     const Eigen::Vector3d& direction,
     const Eigen::Vector3d& boundsMin,
@@ -293,6 +299,7 @@ std::optional<double> intersectLocalBounds(
 
   double tMin = 0.0;
   double tMax = std::numeric_limits<double>::infinity();
+  Eigen::Vector3d normal = Eigen::Vector3d::Zero();
 
   for (int axis = 0; axis < 3; ++axis) {
     if (std::abs(direction[axis]) < epsilon) {
@@ -304,17 +311,30 @@ std::optional<double> intersectLocalBounds(
 
     double t0 = (boundsMin[axis] - origin[axis]) / direction[axis];
     double t1 = (boundsMax[axis] - origin[axis]) / direction[axis];
+    double normalSign = -1.0;
     if (t0 > t1) {
       std::swap(t0, t1);
+      normalSign = 1.0;
     }
-    tMin = std::max(tMin, t0);
+    if (t0 > tMin) {
+      tMin = t0;
+      normal = Eigen::Vector3d::Zero();
+      normal[axis] = normalSign;
+    }
     tMax = std::min(tMax, t1);
     if (tMax < tMin) {
       return std::nullopt;
     }
   }
 
-  return tMin;
+  if (normal.squaredNorm() <= epsilon) {
+    normal = -direction;
+  }
+
+  LocalBoundsHit hit;
+  hit.distance = tMin;
+  hit.normal = normal.normalized();
+  return hit;
 }
 
 Eigen::Vector4d rgba(double red, double green, double blue, double alpha = 1.0)
@@ -794,11 +814,15 @@ std::optional<double> intersectRenderable(
   const Eigen::Vector3d localDirection
       = (localFromWorld.linear() * direction).normalized();
 
-  return intersectLocalBounds(
+  const auto hit = intersectLocalBounds(
       localOrigin,
       localDirection,
       renderable.geometry.localBoundsMin,
       renderable.geometry.localBoundsMax);
+  if (!hit) {
+    return std::nullopt;
+  }
+  return hit->distance;
 }
 
 std::optional<PickHit> pickNearestRenderable(
@@ -808,17 +832,39 @@ std::optional<PickHit> pickNearestRenderable(
 {
   std::optional<PickHit> nearest;
   for (std::size_t i = 0; i < renderables.size(); ++i) {
-    const std::optional<double> distance
-        = intersectRenderable(renderables[i], ray);
-    if (!distance || *distance > maxDistance) {
+    const auto& renderable = renderables[i];
+    if (!renderable.material.visible || !renderable.geometry.hasLocalBounds) {
       continue;
     }
-    if (!nearest || *distance < nearest->distance) {
+
+    const double directionNorm = ray.direction.norm();
+    if (!std::isfinite(directionNorm) || directionNorm < 1e-12) {
+      continue;
+    }
+
+    const Eigen::Vector3d direction = ray.direction / directionNorm;
+    const Eigen::Isometry3d localFromWorld
+        = renderable.worldTransform.inverse();
+    const Eigen::Vector3d localOrigin = localFromWorld * ray.origin;
+    const Eigen::Vector3d localDirection
+        = (localFromWorld.linear() * direction).normalized();
+
+    const auto localHit = intersectLocalBounds(
+        localOrigin,
+        localDirection,
+        renderable.geometry.localBoundsMin,
+        renderable.geometry.localBoundsMax);
+    if (!localHit || localHit->distance > maxDistance) {
+      continue;
+    }
+    if (!nearest || localHit->distance < nearest->distance) {
       PickHit hit;
-      hit.id = renderables[i].id;
+      hit.id = renderable.id;
       hit.renderableIndex = i;
-      hit.distance = *distance;
-      hit.point = ray.origin + ray.direction.normalized() * *distance;
+      hit.distance = localHit->distance;
+      hit.point = ray.origin + direction * localHit->distance;
+      hit.normal = (renderable.worldTransform.linear() * localHit->normal)
+                       .normalized();
       nearest = hit;
     }
   }

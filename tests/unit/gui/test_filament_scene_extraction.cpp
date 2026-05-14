@@ -663,6 +663,7 @@ TEST(
   EXPECT_EQ(hit->renderableIndex, 0u);
   EXPECT_NEAR(hit->distance, 1.5, 1e-12);
   EXPECT_TRUE(hit->point.isApprox(Eigen::Vector3d(1.5, 0.0, 0.0)));
+  EXPECT_TRUE(hit->normal.isApprox(Eigen::Vector3d(-1.0, 0.0, 0.0)));
 }
 
 TEST(
@@ -702,6 +703,7 @@ TEST(
   ASSERT_TRUE(hit.has_value());
   EXPECT_EQ(hit->id, renderables.back().id);
   EXPECT_NEAR(hit->distance, 3.5, 1e-12);
+  EXPECT_TRUE(hit->normal.isApprox(Eigen::Vector3d(-1.0, 0.0, 0.0)));
 
   const dart::gui::experimental::PickRay missRay{
       Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitY()};

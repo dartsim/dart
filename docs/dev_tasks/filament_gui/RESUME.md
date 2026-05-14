@@ -53,9 +53,10 @@ descriptor path as body shape nodes. It also owns debug line descriptors for the
 grid, world/body frames, center-of-mass markers, contact markers, contact
 normals, and contact force vectors, with graphics-free unit coverage. It also
 has picking bounds and nearest ray-hit tests for visible, hidden, hit, and miss
-cases. The example wires those helpers into basic click-to-select highlighting
-with a selection bounds overlay, and reports the selected DART shape in the
-built-in panel. Backend-hidden free-joint, simple-frame, and combined
+cases, including bounds hit point and normal reporting. The example wires those
+helpers into basic click-to-select highlighting with a selection bounds overlay,
+and reports the selected DART shape in the built-in panel. Backend-hidden
+free-joint, simple-frame, and combined
 frame-renderable translation helpers are covered by C++ and Python tests, and
 the example uses the combined helper for keyboard nudging of selected dynamic
 bodies and `SimpleFrame` visuals. Backend-hidden plane intersection and
