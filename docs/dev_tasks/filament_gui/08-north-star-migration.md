@@ -182,9 +182,9 @@ not a drop-in OSG replacement.
   hit positions, normals, and ordered intersections.
 - **Filament gap:** Filament does not provide DART object picking semantics.
   The current experimental path uses local bounds for most shapes and primitive
-  sphere/ellipsoid/cylinder/capsule/cone/pyramid/multi-sphere plus finite
-  plane-proxy intersections for surface hit points and normals. This is
-  sufficient for an MVP but not precise enough for all
+  sphere/ellipsoid/cylinder/capsule/cone/pyramid/multi-sphere plus point-cloud
+  box-proxy and finite plane-proxy intersections for surface hit points and
+  normals. This is sufficient for an MVP but not precise enough for all
   promoted tools.
 - **North-star plan:** Add renderer-independent picking services. Start with
   bounding volumes, then add triangle or primitive intersection for precise

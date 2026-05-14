@@ -80,8 +80,8 @@
 - The extraction layer includes tested local picking bounds and nearest
   ray-hit helpers for visible renderables, including bounds hit points and hit
   normals plus primitive
-  sphere/ellipsoid/cylinder/capsule/cone/pyramid/multi-sphere/plane surface
-  points and normals.
+  sphere/ellipsoid/cylinder/capsule/cone/pyramid/multi-sphere/point-cloud/plane
+  surface points and normals.
 - Unsupported shape types now remain visible to non-rendering consumers through
   diagnostic descriptors instead of being silently dropped by extraction.
 - Phase 1 is not complete yet because broader human visual review with larger
@@ -200,7 +200,7 @@
   descriptors, material/geometry descriptors including mesh material/submesh
   metadata, renderable set update planning, picking helpers with bounds hit
   normals and primitive
-  sphere/ellipsoid/cylinder/capsule/cone/pyramid/multi-sphere/plane hit
+  sphere/ellipsoid/cylinder/capsule/cone/pyramid/multi-sphere/point-cloud/plane hit
   normals,
   free-joint translation, plane-drag helpers, debug-line descriptor generation
   including support-polygon, inertia-box, and collision-shape-bound overlays,

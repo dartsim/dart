@@ -970,6 +970,39 @@ TEST(FilamentSceneExtraction, PickNearestRenderable_PlaneUsesFiniteProxySurface)
 }
 
 TEST(
+    FilamentSceneExtraction,
+    PickNearestRenderable_PointCloudUsesPerPointBoxSurface)
+{
+  auto world = World::create("world");
+  auto skeleton = Skeleton::create("point_cloud_robot");
+  auto [joint, body] = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto pointCloud = std::make_shared<PointCloudShape>(0.2);
+  pointCloud->addPoint(Eigen::Vector3d(0.0, 0.0, 0.0));
+  pointCloud->addPoint(Eigen::Vector3d(2.0, 0.0, 0.0));
+  body->createShapeNodeWith<VisualAspect>(pointCloud);
+  world->addSkeleton(skeleton);
+
+  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  ASSERT_EQ(renderables.size(), 1u);
+
+  const dart::gui::experimental::PickRay hitRay{
+      Eigen::Vector3d(-2.0, 0.05, 0.0), Eigen::Vector3d::UnitX()};
+  const auto hit
+      = dart::gui::experimental::pickNearestRenderable(renderables, hitRay);
+
+  ASSERT_TRUE(hit.has_value());
+  EXPECT_NEAR(hit->distance, 1.9, 1e-12);
+  EXPECT_TRUE(hit->point.isApprox(Eigen::Vector3d(-0.1, 0.05, 0.0)));
+  EXPECT_TRUE(hit->normal.isApprox(-Eigen::Vector3d::UnitX()));
+
+  const dart::gui::experimental::PickRay gapRay{
+      Eigen::Vector3d(1.0, 0.0, -1.0), Eigen::Vector3d::UnitZ()};
+  EXPECT_FALSE(
+      dart::gui::experimental::pickNearestRenderable(renderables, gapRay)
+          .has_value());
+}
+
+TEST(
     FilamentSceneExtraction, PickNearestRenderable_IgnoresHiddenAndMissedShapes)
 {
   auto world = World::create("world");

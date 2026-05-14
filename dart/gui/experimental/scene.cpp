@@ -532,6 +532,34 @@ std::optional<LocalBoundsHit> intersectLocalMultiSphere(
   return nearest;
 }
 
+std::optional<LocalBoundsHit> intersectLocalBoxCloud(
+    const Eigen::Vector3d& origin,
+    const Eigen::Vector3d& direction,
+    const std::vector<Eigen::Vector3d>& centers,
+    double size)
+{
+  if (!origin.allFinite() || !direction.allFinite() || !std::isfinite(size)) {
+    return std::nullopt;
+  }
+
+  const double halfSize = std::max(size, 1e-4) * 0.5;
+  const Eigen::Vector3d extent = Eigen::Vector3d::Constant(halfSize);
+  std::optional<LocalBoundsHit> nearest;
+  for (const Eigen::Vector3d& center : centers) {
+    if (!center.allFinite()) {
+      continue;
+    }
+
+    const auto hit = intersectLocalBounds(
+        origin, direction, center - extent, center + extent);
+    if (hit && (!nearest || hit->distance < nearest->distance)) {
+      nearest = hit;
+    }
+  }
+
+  return nearest;
+}
+
 std::optional<LocalBoundsHit> intersectLocalCone(
     const Eigen::Vector3d& origin,
     const Eigen::Vector3d& direction,
@@ -820,6 +848,16 @@ std::optional<LocalBoundsHit> intersectLocalGeometry(
   if (geometry.kind == ShapeKind::Plane) {
     return intersectLocalPlaneProxy(
         origin, direction, geometry.normal, geometry.offset);
+  }
+
+  if (geometry.kind == ShapeKind::PointCloud) {
+    return intersectLocalBoxCloud(
+        origin, direction, geometry.pointCloudPoints, geometry.pointSize);
+  }
+
+  if (geometry.kind == ShapeKind::VoxelGrid) {
+    return intersectLocalBoxCloud(
+        origin, direction, geometry.voxelCenters, geometry.voxelSize);
   }
 
   return intersectLocalBounds(
