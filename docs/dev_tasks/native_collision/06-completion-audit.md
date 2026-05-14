@@ -48,9 +48,10 @@ unverified external and finalization gates:
 Current audited state:
 
 - Branch: `feature/new_coll`
-- Latest local validation checkpoint: `48e434ef453`
-  (`Fix native shape taxonomy validation`), which includes the VSG shape-type
-  switch repair recorded by this audit.
+- Latest local validation checkpoint: `864dd56d944c`
+  (`Clarify native collision facade policy`), which includes the VSG
+  shape-type switch repair, durable built-in architecture docs, and
+  native-backed compatibility facade policy recorded by this audit.
 - Working tree state: clean after the latest checkpoint commit; the local
   branch remains ahead of `origin/feature/new_coll`. Use `git status -sb` for
   the exact ahead count.
@@ -104,6 +105,18 @@ Current audited state:
   `geometry_builders.cpp` and linked `libdart-gui-vsgd`. The full test-all
   rerun reported lint, build, unit tests, simulation-experimental tests,
   Python tests, and documentation all passed.
+
+- Follow-up full local validation at `864dd56d944c` after the durable
+  architecture docs and compatibility-facade policy cleanup:
+
+  ```bash
+  DART_PARALLEL_JOBS=15 CTEST_PARALLEL_LEVEL=15 pixi run test-all
+  ```
+
+  Result: passed. The comprehensive suite reported 6/6 top-level gates passed:
+  linting, build, unit tests, simulation-experimental tests, Python tests, and
+  documentation. The final report printed `All tests passed!` and
+  `Ready to submit PR!`.
 
 - Local command run during this audit:
 

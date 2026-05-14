@@ -189,6 +189,12 @@ falls through only through the valid native shape taxonomy. The focused Debug
 `DART_PARALLEL_JOBS=15 CTEST_PARALLEL_LEVEL=15 pixi run test-all` run passes:
 lint, build, unit tests, simulation-experimental tests, Python tests, and
 documentation all passed.
+After seeding durable onboarding architecture docs and clarifying the final
+native-backed compatibility facade policy, the full local gate was refreshed
+again at `864dd56d944c` with
+`DART_PARALLEL_JOBS=15 CTEST_PARALLEL_LEVEL=15 pixi run test-all`. It passed
+all 6 top-level gates: linting, build, unit tests,
+simulation-experimental tests, Python tests, and documentation.
 
 ## Current Branch
 
@@ -203,12 +209,13 @@ The focused gz `JointDetach` blocker and full local gz gate are repaired, the
 stale optional libccd cache repair has both targeted and full-suite local
 evidence at `da532729bec`, native type-taxonomy cleanup has focused native test
 evidence at `cd16b64be0b`, and the current VSG stale shape-type switch repair
-has full `test-all` evidence. The immediate next evidence steps are CI
-native-only/gz evidence, wheel matrix artifact evidence from `wheel-verify`,
-downstream migration/deprecation evidence, GitHub evidence for the scheduled
-benchmark guard, remaining architecture/design gate evidence, dev-task cleanup,
-final full-suite rerun after the PR-complete state, and final legacy backend
-deletion. Read `06-completion-audit.md` before deciding whether a future
+has full `test-all` evidence through the latest documented head
+`864dd56d944c`. The immediate next evidence steps are CI native-only/gz
+evidence, wheel matrix artifact evidence from `wheel-verify`, downstream
+migration/deprecation evidence, GitHub evidence for the scheduled benchmark
+guard, PR artifact evidence for the architecture/design gates, dev-task
+cleanup, final full-suite rerun after the PR-complete state, and final runtime
+cleanup. Read `06-completion-audit.md` before deciding whether a future
 checkpoint is complete; it is the prompt-to-artifact checklist for the
 north-star goal.
 

@@ -159,9 +159,12 @@
       point-cloud native tags. That stale switch is now fixed, the focused
       Debug `dart-gui-vsg` target passes, and a fresh full
       `DART_PARALLEL_JOBS=15 CTEST_PARALLEL_LEVEL=15 pixi run test-all` rerun
-      passes for the current local state. Final validation will still need
-      another full rerun after the remaining CI/migration/deletion work changes
-      the PR state.
+      passes for the current local state. A follow-up full
+      `DART_PARALLEL_JOBS=15 CTEST_PARALLEL_LEVEL=15 pixi run test-all` rerun
+      at `864dd56d944c` also passes after the durable onboarding architecture
+      docs and compatibility-facade policy cleanup. Final validation will still
+      need another full rerun after the remaining CI/migration/runtime-cleanup
+      work changes the PR state.
 
 ## Goal
 

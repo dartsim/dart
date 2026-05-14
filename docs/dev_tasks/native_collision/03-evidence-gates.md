@@ -2229,6 +2229,14 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
   - Result: passed. The comprehensive test suite reported lint, build, unit
     tests, simulation-experimental tests, Python tests, and documentation all
     passed with `All tests passed!`.
+- `DART_PARALLEL_JOBS=15 CTEST_PARALLEL_LEVEL=15 pixi run test-all`
+  - Commit: `864dd56d944c` after seeding durable built-in collision
+    architecture docs and clarifying the native-backed compatibility facade
+    policy.
+  - Result: passed. The comprehensive test suite reported 6/6 top-level gates
+    passed: linting, build, unit tests, simulation-experimental tests, Python
+    tests, and documentation. The final report printed `All tests passed!` and
+    `Ready to submit PR!`.
 
 ## Known Risks
 
