@@ -770,6 +770,36 @@ TEST(
 
 TEST(
     FilamentSceneExtraction,
+    PickNearestRenderable_MultiSphereUsesPrimitiveSurfaceNormal)
+{
+  auto world = World::create("world");
+  auto skeleton = Skeleton::create("multi_sphere_robot");
+  auto [joint, body] = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  const MultiSphereConvexHullShape::Spheres spheres{
+      {0.5, Eigen::Vector3d(-1.0, 0.0, 0.0)},
+      {0.25, Eigen::Vector3d(1.0, 0.0, 0.0)}};
+  body->createShapeNodeWith<VisualAspect>(
+      std::make_shared<MultiSphereConvexHullShape>(spheres));
+  world->addSkeleton(skeleton);
+
+  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  ASSERT_EQ(renderables.size(), 1u);
+
+  const dart::gui::experimental::PickRay ray{
+      Eigen::Vector3d(-3.0, 0.25, 0.0), Eigen::Vector3d::UnitX()};
+  const auto hit
+      = dart::gui::experimental::pickNearestRenderable(renderables, ray);
+
+  const double expectedX = -1.0 - std::sqrt(0.1875);
+  ASSERT_TRUE(hit.has_value());
+  EXPECT_NEAR(hit->distance, 3.0 + expectedX, 1e-12);
+  EXPECT_TRUE(hit->point.isApprox(Eigen::Vector3d(expectedX, 0.25, 0.0)));
+  EXPECT_TRUE(hit->normal.isApprox(
+      Eigen::Vector3d(expectedX + 1.0, 0.25, 0.0).normalized()));
+}
+
+TEST(
+    FilamentSceneExtraction,
     PickNearestRenderable_CylinderUsesPrimitiveSurfaceNormal)
 {
   auto world = World::create("world");

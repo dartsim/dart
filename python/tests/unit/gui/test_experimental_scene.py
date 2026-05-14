@@ -108,6 +108,33 @@ def test_experimental_pick_sphere_uses_surface_normal():
     assert np.allclose(hit.normal, [expected_x, 0.5, 0.0])
 
 
+def test_experimental_pick_multi_sphere_uses_surface_normal():
+    renderable = dart.gui.experimental.RenderableDescriptor()
+    renderable.id = 1
+    renderable.geometry.kind = dart.gui.experimental.ShapeKind.MultiSphere
+    renderable.geometry.sphere_centers = [
+        np.array([-1.0, 0.0, 0.0]),
+        np.array([1.0, 0.0, 0.0]),
+    ]
+    renderable.geometry.sphere_radii = [0.5, 0.25]
+    renderable.geometry.has_local_bounds = True
+    renderable.geometry.local_bounds_min = np.array([-1.5, -0.5, -0.5])
+    renderable.geometry.local_bounds_max = np.array([1.25, 0.5, 0.5])
+
+    ray = dart.gui.experimental.PickRay()
+    ray.origin = np.array([-3.0, 0.25, 0.0])
+    ray.direction = np.array([1.0, 0.0, 0.0])
+    hit = dart.gui.experimental.pick_nearest_renderable([renderable], ray)
+
+    expected_x = -1.0 - np.sqrt(0.1875)
+    expected_normal = np.array([expected_x + 1.0, 0.25, 0.0])
+    expected_normal /= np.linalg.norm(expected_normal)
+    assert hit is not None
+    assert np.isclose(hit.distance, 3.0 + expected_x)
+    assert np.allclose(hit.point, [expected_x, 0.25, 0.0])
+    assert np.allclose(hit.normal, expected_normal)
+
+
 def test_experimental_pick_cylinder_uses_surface_normal():
     renderable = dart.gui.experimental.RenderableDescriptor()
     renderable.id = 1

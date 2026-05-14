@@ -502,6 +502,36 @@ std::optional<LocalBoundsHit> intersectLocalCylinder(
   return nearest;
 }
 
+std::optional<LocalBoundsHit> intersectLocalMultiSphere(
+    const Eigen::Vector3d& origin,
+    const Eigen::Vector3d& direction,
+    const std::vector<Eigen::Vector3d>& centers,
+    const std::vector<double>& radii)
+{
+  if (!origin.allFinite() || !direction.allFinite()) {
+    return std::nullopt;
+  }
+
+  std::optional<LocalBoundsHit> nearest;
+  const std::size_t sphereCount = std::min(centers.size(), radii.size());
+  for (std::size_t i = 0; i < sphereCount; ++i) {
+    const double radius = radii[i];
+    if (!centers[i].allFinite() || !std::isfinite(radius) || radius <= 0.0) {
+      continue;
+    }
+
+    const Eigen::Vector3d localOrigin = origin - centers[i];
+    const Eigen::Vector3d sphereRadii = Eigen::Vector3d::Constant(radius);
+    const auto hit
+        = intersectLocalEllipsoid(localOrigin, direction, sphereRadii);
+    if (hit && (!nearest || hit->distance < nearest->distance)) {
+      nearest = hit;
+    }
+  }
+
+  return nearest;
+}
+
 std::optional<LocalBoundsHit> intersectLocalCone(
     const Eigen::Vector3d& origin,
     const Eigen::Vector3d& direction,
@@ -776,6 +806,11 @@ std::optional<LocalBoundsHit> intersectLocalGeometry(
   if (geometry.kind == ShapeKind::Cone) {
     return intersectLocalCone(
         origin, direction, geometry.radius, geometry.height);
+  }
+
+  if (geometry.kind == ShapeKind::MultiSphere) {
+    return intersectLocalMultiSphere(
+        origin, direction, geometry.sphereCenters, geometry.sphereRadii);
   }
 
   if (geometry.kind == ShapeKind::Pyramid) {
