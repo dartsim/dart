@@ -215,6 +215,21 @@ def test_experimental_center_of_mass_debug_lines():
     assert np.allclose(lines[0].to_point, [0.2, 0.0, 0.0])
 
 
+def test_experimental_support_polygon_debug_options():
+    skeleton = dart.Skeleton("supportless")
+    options = dart.gui.experimental.DebugDrawOptions()
+    options.draw_support_polygons = True
+    options.draw_support_centroids = True
+    options.support_polygon_elevation = 0.03
+    options.support_centroid_marker_radius = 0.04
+
+    lines = dart.gui.experimental.make_support_polygon_debug_lines(
+        skeleton, options, "supportless"
+    )
+
+    assert len(lines) == 0
+
+
 def test_experimental_camera_and_run_helpers():
     options = dart.gui.experimental.RunOptions()
     options.width = 0

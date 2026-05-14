@@ -69,6 +69,7 @@
   #include <dart/dynamics/voxel_grid_shape.hpp>
 #endif
 
+#include <dart/math/geometry.hpp>
 #include <dart/math/tri_mesh.hpp>
 
 #include <algorithm>
@@ -393,31 +394,50 @@ void appendCenterOfMassMarker(
     std::vector<DebugLineDescriptor>& lines,
     const Eigen::Vector3d& center,
     double radius,
-    const std::string& labelPrefix)
+    const std::string& labelPrefix);
+
+void appendAxisMarker(
+    std::vector<DebugLineDescriptor>& lines,
+    const Eigen::Vector3d& center,
+    double radius,
+    const Eigen::Vector4d& color,
+    const std::string& labelPrefix,
+    const std::string& markerName)
 {
-  if (radius <= 0.0 || !std::isfinite(radius)) {
+  if (radius <= 0.0 || !std::isfinite(radius) || !center.allFinite()) {
     return;
   }
 
-  const Eigen::Vector4d color = rgba(0.22, 0.82, 0.86);
+  const std::string markerPrefix
+      = labelPrefix.empty() ? markerName : labelPrefix + "." + markerName;
   appendLine(
       lines,
       center - Eigen::Vector3d::UnitX() * radius,
       center + Eigen::Vector3d::UnitX() * radius,
       color,
-      labelPrefix + ".com.x");
+      markerPrefix + ".x");
   appendLine(
       lines,
       center - Eigen::Vector3d::UnitY() * radius,
       center + Eigen::Vector3d::UnitY() * radius,
       color,
-      labelPrefix + ".com.y");
+      markerPrefix + ".y");
   appendLine(
       lines,
       center - Eigen::Vector3d::UnitZ() * radius,
       center + Eigen::Vector3d::UnitZ() * radius,
       color,
-      labelPrefix + ".com.z");
+      markerPrefix + ".z");
+}
+
+void appendCenterOfMassMarker(
+    std::vector<DebugLineDescriptor>& lines,
+    const Eigen::Vector3d& center,
+    double radius,
+    const std::string& labelPrefix)
+{
+  appendAxisMarker(
+      lines, center, radius, rgba(0.22, 0.82, 0.86), labelPrefix, "com");
 }
 
 bool containsRenderableId(const std::vector<RenderableId>& ids, RenderableId id)
@@ -1375,6 +1395,82 @@ std::vector<DebugLineDescriptor> makeSelectionDebugLines(
   return lines;
 }
 
+std::vector<DebugLineDescriptor> makeSupportPolygonDebugLines(
+    const dynamics::Skeleton& skeleton,
+    const DebugDrawOptions& options,
+    const std::string& labelPrefix)
+{
+  std::vector<DebugLineDescriptor> lines;
+  if (!options.drawSupportPolygons
+      || !std::isfinite(options.supportPolygonElevation)) {
+    return lines;
+  }
+
+  const math::SupportPolygon& polygon = skeleton.getSupportPolygon();
+  if (polygon.empty()) {
+    return lines;
+  }
+
+  const auto& axes = skeleton.getSupportAxes();
+  if (!axes.first.allFinite() || !axes.second.allFinite()) {
+    return lines;
+  }
+
+  const Eigen::Vector3d up = axes.first.cross(axes.second);
+  if (!up.allFinite() || up.squaredNorm() <= 1e-18) {
+    return lines;
+  }
+
+  const Eigen::Vector3d elevation
+      = up.normalized() * options.supportPolygonElevation;
+  const auto toWorldPoint = [&](const Eigen::Vector2d& point) {
+    return axes.first * point.x() + axes.second * point.y() + elevation;
+  };
+
+  const std::size_t edgeCount
+      = polygon.size() == 2u ? 1u : (polygon.size() > 2u ? polygon.size() : 0u);
+  lines.reserve(edgeCount + (options.drawSupportCentroids ? 3u : 0u));
+
+  const Eigen::Vector4d polygonColor = rgba(0.97, 0.78, 0.24, 0.86);
+  const std::string polygonLabel = labelPrefix.empty()
+                                       ? "support_polygon"
+                                       : labelPrefix + ".support_polygon";
+  if (polygon.size() >= 2u) {
+    for (std::size_t i = 0; i + 1u < polygon.size(); ++i) {
+      appendLine(
+          lines,
+          toWorldPoint(polygon[i]),
+          toWorldPoint(polygon[i + 1u]),
+          polygonColor,
+          polygonLabel);
+    }
+
+    if (polygon.size() > 2u) {
+      appendLine(
+          lines,
+          toWorldPoint(polygon.back()),
+          toWorldPoint(polygon.front()),
+          polygonColor,
+          polygonLabel);
+    }
+  }
+
+  if (options.drawSupportCentroids) {
+    const Eigen::Vector2d& centroid = skeleton.getSupportCentroid();
+    if (centroid.allFinite()) {
+      appendAxisMarker(
+          lines,
+          toWorldPoint(centroid),
+          options.supportCentroidMarkerRadius,
+          rgba(0.16, 0.78, 0.58, 0.9),
+          labelPrefix,
+          "support_centroid");
+    }
+  }
+
+  return lines;
+}
+
 std::vector<DebugLineDescriptor> extractContactDebugLines(
     const collision::CollisionResult& result, const DebugDrawOptions& options)
 {
@@ -1475,6 +1571,20 @@ std::vector<DebugLineDescriptor> extractDebugLines(
           skeleton->getCOM(),
           options.centerOfMassMarkerRadius,
           skeleton->getName());
+    }
+  }
+
+  if (options.drawSupportPolygons) {
+    for (std::size_t skeletonIndex = 0; skeletonIndex < world.getNumSkeletons();
+         ++skeletonIndex) {
+      const auto skeleton = world.getSkeleton(skeletonIndex);
+      if (!skeleton) {
+        continue;
+      }
+
+      auto supportLines = makeSupportPolygonDebugLines(
+          *skeleton, options, skeleton->getName());
+      lines.insert(lines.end(), supportLines.begin(), supportLines.end());
     }
   }
 

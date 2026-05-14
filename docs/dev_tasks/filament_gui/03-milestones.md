@@ -74,8 +74,9 @@
   PBR maps on more than isolated mesh samples.
 - `dart-gui-experimental` now owns backend-hidden debug line descriptors for a
   grid, world/body frames, center-of-mass markers, contact markers, contact
-  normals, and contact force vectors. The Filament example converts those
-  descriptors to line primitives.
+  normals, contact force vectors, support-polygon outlines, and
+  support-centroid markers. The Filament example converts those descriptors to
+  line primitives.
 - The extraction layer includes tested local picking bounds and nearest
   ray-hit helpers for visible renderables, including bounds hit points and hit
   normals.
@@ -101,9 +102,10 @@
 - One maintained example can be demonstrated end-to-end on Filament.
 - Screenshots are stable enough for visual smoke checks.
 - The shadow gate in `06-visual-quality.md` passes.
-- Grid, world/body frame, contact, normal, and force-vector overlays render in
-  the MVP; the built-in panel can toggle the current overlay groups. Broader
-  scenario coverage is still needed before Phase 2 is complete.
+- Grid, world/body frame, contact, normal, force-vector, center-of-mass, and
+  support-polygon overlays render in the MVP; the built-in panel can toggle the
+  current overlay groups. Broader scenario coverage is still needed before
+  Phase 2 is complete.
 - Alpha-bearing solid, textured, and mesh visual paths render through
   transparent lit material variants in the MVP scene. Broader transparency
   workflows still need visual review before promotion.
@@ -148,7 +150,9 @@
   the Unitree G1 URDF through DART resource retrievers and exposes colored IK
   targets for both hands and feet. `pixi run ex g1_puppet` routes to this
   Filament scene by default so the in-tree G1 workflow no longer depends on the
-  legacy OSG viewer path.
+  legacy OSG viewer path. The G1 foot targets also register active support
+  geometry so the support-polygon debug overlay can be inspected through the
+  Filament line-rendering path.
 - The same panel provides pause/resume and single-step controls.
 - Phase 3 has an MVP interaction baseline through picking, selection bounds,
   selected-body and `SimpleFrame` movement, a first drag-and-drop fixture, and
@@ -194,8 +198,8 @@
   descriptors, material/geometry descriptors including mesh material/submesh
   metadata, renderable set update planning, picking helpers with bounds hit
   normals, free-joint translation, plane-drag helpers, debug-line descriptor
-  generation, run options, viewer lifecycle state, screenshot storage, and
-  orbit-camera helpers.
+  generation including support-polygon overlays, run options, viewer lifecycle
+  state, screenshot storage, and orbit-camera helpers.
 - `dartpy` can now build the constrained `dartpy.gui.experimental` module with
   `DART_BUILD_GUI=OFF` when `dart-gui-experimental` is present, so the Python
   experimental API is no longer tied to the legacy GUI target.

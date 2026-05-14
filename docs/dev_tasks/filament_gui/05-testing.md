@@ -299,7 +299,10 @@ Known current result:
   normal, and force-vector descriptors. The debug-line material uses
   transparent blending so alpha-bearing overlay colors can be used for
   translucent visual-debugging marks. The bounded local run reports nonzero
-  final contacts from the intentionally contacting fixture body.
+  final contacts from the intentionally contacting fixture body. Support-polygon
+  and support-centroid descriptors have graphics-free C++/Python coverage, and
+  the G1 Filament scene exposes active foot support geometry through the same
+  static debug overlay path.
 - The Filament example panel exposes controls for pause/resume, single-step, and
   toggling the current debug overlay groups. The bounded smoke run verifies that
   these controls compile and render as part of the ImGui overlay path.

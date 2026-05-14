@@ -49,6 +49,7 @@
 #include <dart/dynamics/convex_mesh_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
+#include <dart/dynamics/end_effector.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/heightmap_shape.hpp>
 #include <dart/dynamics/line_segment_shape.hpp>
@@ -70,6 +71,7 @@
   #include <dart/dynamics/voxel_grid_shape.hpp>
 #endif
 
+#include <dart/math/geometry.hpp>
 #include <dart/math/tri_mesh.hpp>
 
 #include <dart/common/uri.hpp>
@@ -89,6 +91,7 @@
 
 namespace {
 
+using dart::dynamics::BodyNode;
 using dart::dynamics::BoxShape;
 using dart::dynamics::CapsuleShape;
 using dart::dynamics::ConeShape;
@@ -115,6 +118,7 @@ using dart::dynamics::SphereShape;
 using dart::dynamics::VisualAspect;
 using dart::dynamics::WeldJoint;
 using dart::gui::experimental::ShapeKind;
+using dart::math::SupportGeometry;
 using dart::simulation::World;
 
 #if DART_HAVE_OCTOMAP
@@ -155,6 +159,33 @@ protected:
     mIsVolumeDirty = false;
   }
 };
+
+SupportGeometry makeSupportFootGeometry()
+{
+  SupportGeometry geometry;
+  geometry.emplace_back(Eigen::Vector3d(0.12, 0.06, 0.0));
+  geometry.emplace_back(Eigen::Vector3d(0.12, -0.06, 0.0));
+  geometry.emplace_back(Eigen::Vector3d(-0.12, -0.06, 0.0));
+  geometry.emplace_back(Eigen::Vector3d(-0.12, 0.06, 0.0));
+  return geometry;
+}
+
+void addSupportEndEffector(
+    BodyNode* parent,
+    const std::string& name,
+    const Eigen::Vector3d& translation,
+    const SupportGeometry& geometry)
+{
+  auto* endEffector = parent->createEndEffector(name);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = translation;
+  endEffector->setDefaultRelativeTransform(transform);
+  endEffector->resetRelativeTransform();
+
+  auto* support = endEffector->getSupport(true);
+  support->setGeometry(geometry);
+  support->setActive(true);
+}
 
 class MeshDescriptorHarness final : public MeshShape
 {
@@ -1013,6 +1044,69 @@ TEST(FilamentSceneExtraction, ExtractDebugLines_ReturnsCenterOfMassMarker)
   EXPECT_TRUE(lines[0].to.isApprox(Eigen::Vector3d(1.2, 2.0, 3.0)));
   EXPECT_EQ(lines[2].label, "robot.com.z");
   EXPECT_TRUE(lines[2].to.isApprox(Eigen::Vector3d(1.0, 2.0, 3.2)));
+}
+
+TEST(
+    FilamentSceneExtraction,
+    MakeSupportPolygonDebugLines_ReturnsOutlineAndCentroid)
+{
+  auto world = World::create("world");
+  auto skeleton = Skeleton::create("support_bot");
+  skeleton->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  auto* body = skeleton->createJointAndBodyNodePair<FreeJoint>().second;
+  body->setName("base");
+  body->setMass(1.0);
+
+  const SupportGeometry supportGeometry = makeSupportFootGeometry();
+  addSupportEndEffector(
+      body, "left_foot", Eigen::Vector3d(-0.35, 0.18, 0.0), supportGeometry);
+  addSupportEndEffector(
+      body, "right_foot", Eigen::Vector3d(0.35, -0.18, 0.0), supportGeometry);
+
+  dart::gui::experimental::DebugDrawOptions options;
+  options.drawGrid = false;
+  options.drawWorldFrame = false;
+  options.drawContacts = false;
+  options.drawSupportPolygons = true;
+  options.drawSupportCentroids = true;
+  options.supportPolygonElevation = 0.04;
+  options.supportCentroidMarkerRadius = 0.05;
+
+  const dart::math::SupportPolygon& polygon = skeleton->getSupportPolygon();
+  ASSERT_GE(polygon.size(), 3u);
+
+  const auto lines = dart::gui::experimental::makeSupportPolygonDebugLines(
+      *skeleton, options, skeleton->getName());
+
+  ASSERT_EQ(lines.size(), polygon.size() + 3u);
+  EXPECT_EQ(lines.front().label, "support_bot.support_polygon");
+  for (std::size_t i = 0; i < polygon.size(); ++i) {
+    EXPECT_NEAR(lines[i].from.z(), options.supportPolygonElevation, 1e-12);
+    EXPECT_NEAR(lines[i].to.z(), options.supportPolygonElevation, 1e-12);
+  }
+
+  const auto& axes = skeleton->getSupportAxes();
+  const Eigen::Vector3d up = axes.first.cross(axes.second).normalized();
+  const Eigen::Vector2d& centroid = skeleton->getSupportCentroid();
+  const Eigen::Vector3d expectedCentroid
+      = axes.first * centroid.x() + axes.second * centroid.y()
+        + up * options.supportPolygonElevation;
+  const std::size_t centroidStart = polygon.size();
+  EXPECT_EQ(lines[centroidStart].label, "support_bot.support_centroid.x");
+  EXPECT_TRUE(
+      lines[centroidStart].from.isApprox(
+          expectedCentroid
+          - Eigen::Vector3d::UnitX() * options.supportCentroidMarkerRadius));
+  EXPECT_TRUE(
+      lines[centroidStart].to.isApprox(
+          expectedCentroid
+          + Eigen::Vector3d::UnitX() * options.supportCentroidMarkerRadius));
+
+  world->addSkeleton(skeleton);
+  const auto extractedLines
+      = dart::gui::experimental::extractDebugLines(*world, options);
+  ASSERT_EQ(extractedLines.size(), lines.size());
+  EXPECT_EQ(extractedLines.front().label, "support_bot.support_polygon");
 }
 
 TEST(FilamentSceneExtraction, ExtractContactDebugLines_ReturnsMarkersAndVectors)

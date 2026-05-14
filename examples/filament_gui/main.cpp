@@ -1393,6 +1393,16 @@ dart::dynamics::SkeletonPtr loadG1Skeleton(const AppOptions& options)
   return robot;
 }
 
+dart::math::SupportGeometry makeG1FootSupportGeometry()
+{
+  dart::math::SupportGeometry geometry;
+  geometry.emplace_back(Eigen::Vector3d(0.12, 0.06, 0.0));
+  geometry.emplace_back(Eigen::Vector3d(0.12, -0.06, 0.0));
+  geometry.emplace_back(Eigen::Vector3d(-0.12, -0.06, 0.0));
+  geometry.emplace_back(Eigen::Vector3d(-0.12, 0.06, 0.0));
+  return geometry;
+}
+
 void addG1IkTargets(
     DartScene& scene, const dart::dynamics::SkeletonPtr& robot)
 {
@@ -1403,29 +1413,35 @@ void addG1IkTargets(
     const char* label;
     int hotkey;
     Eigen::Vector4d color;
+    bool supportContact;
   };
 
+  const auto footSupportGeometry = makeG1FootSupportGeometry();
   const std::array<Config, 4> configs{{
       {"left_rubber_hand",
        "ik_target_left_hand",
        "1 left hand",
        GLFW_KEY_1,
-       {0.18, 0.55, 1.0, 0.92}},
+       {0.18, 0.55, 1.0, 0.92},
+       false},
       {"right_rubber_hand",
        "ik_target_right_hand",
        "2 right hand",
        GLFW_KEY_2,
-       {1.0, 0.40, 0.24, 0.92}},
+       {1.0, 0.40, 0.24, 0.92},
+       false},
       {"left_ankle_roll_link",
        "ik_target_left_foot",
        "3 left foot",
        GLFW_KEY_3,
-       {0.26, 0.86, 0.34, 0.92}},
+       {0.26, 0.86, 0.34, 0.92},
+       true},
       {"right_ankle_roll_link",
        "ik_target_right_foot",
        "4 right foot",
        GLFW_KEY_4,
-       {0.95, 0.72, 0.18, 0.92}},
+       {0.95, 0.72, 0.18, 0.92},
+       true},
   }};
 
   if (!scene.world || !robot) {
@@ -1442,6 +1458,12 @@ void addG1IkTargets(
 
     auto* endEffector = bodyNode->createEndEffector(
         std::string(config.targetName) + "_effector");
+    if (config.supportContact) {
+      auto* support = endEffector->getSupport(true);
+      support->setGeometry(footSupportGeometry);
+      support->setActive(true);
+    }
+
     auto ik = endEffector->getIK(true);
     ik->setGradientMethod<InverseKinematics::JacobianTranspose>();
     ik->getSolver()->setNumMaxIterations(30);
@@ -5141,6 +5163,8 @@ int main(int argc, char* argv[])
   DebugDrawOptions staticDebugOptions;
   staticDebugOptions.drawBodyFrames = true;
   staticDebugOptions.drawCentersOfMass = true;
+  staticDebugOptions.drawSupportPolygons
+      = appOptions.scene == ExampleScene::G1;
   staticDebugOptions.drawContacts = false;
   std::optional<Renderable> debugOverlay;
   auto refreshDebugOverlay = [&]() {
@@ -5641,6 +5665,9 @@ int main(int argc, char* argv[])
       ImGui::SameLine();
       debugOptionsChanged
           |= ImGui::Checkbox("Contacts", &contactDebugOptions.drawContacts);
+      ImGui::SameLine();
+      debugOptionsChanged |= ImGui::Checkbox(
+          "Support", &staticDebugOptions.drawSupportPolygons);
       debugOptionsChanged |= ImGui::Checkbox(
           "Normals", &contactDebugOptions.drawContactNormals);
       ImGui::SameLine();
