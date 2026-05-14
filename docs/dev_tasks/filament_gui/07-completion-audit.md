@@ -237,17 +237,16 @@ Packaging evidence:
 
 - `conda-forge/filament-feedstock` does not exist yet.
 - `conda-forge/staged-recipes#33297` is open and ready for review at head
-  `1f786fb3c668d4906201084f5386960b9bc41d5d`; it builds Filament 1.71.3 from
+  `c6ba84e46abb1b00a3ada075bb193e2583e18340`; it builds Filament 1.71.3 from
   the official source tarball and splits tools into `filament` and headers/libs
   into `filament-static`. `@conda-forge/help-c-cpp` has been pinged.
 - At latest inspection, the current PR head was still open and behind the target
-  branch; the Windows build, skip check, staged-recipes linter, and
-  conda-forge linter passed while Linux, macOS, and the aggregate Azure check
-  were still pending on the latest run. The previous Linux failure came from using
-  `source_files: test-cmake`; the current head uses `files: test-cmake` for the
-  recipe-local CMake consumer test and links that test through CMake OpenGL
-  package targets. The PR is still not merged, so no installable feedstock
-  exists yet.
+  branch; staged-recipes linter, conda-forge-linter, Check Skip, Azure linux_64,
+  osx_64, win_64, and aggregate checks passed on head `c6ba84e`. The previous
+  Linux failure came from using `source_files: test-cmake`; the current head
+  uses `files: test-cmake` for the recipe-local CMake consumer test and links
+  that test through CMake OpenGL package targets. The PR is still not merged,
+  so no installable feedstock exists yet.
 
 ## Remaining Required Work
 

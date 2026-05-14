@@ -93,13 +93,13 @@ splits host tools into `filament` and headers/static libraries into
 `filament-static`. That package remains the preferred future Pixi dependency,
 but the current Linux smoke path does not wait for it. At latest inspection, the
 PR was still open and behind the target branch at head
-`1f786fb3c668d4906201084f5386960b9bc41d5d`; the skip, Windows,
-staged-recipes linter, and conda-forge linter checks passed while Linux, macOS,
-and the aggregate Azure check were still pending on the latest run. The previous
-Linux failure came from using `source_files: test-cmake`; the current head uses
-`files: test-cmake` for the recipe-local CMake consumer test and links that
-test through CMake OpenGL package targets. `@conda-forge/help-c-cpp` has been
-pinged, and the feedstock is not created yet.
+`c6ba84e46abb1b00a3ada075bb193e2583e18340`; staged-recipes linter,
+conda-forge-linter, Check Skip, Azure linux_64, osx_64, win_64, and aggregate
+checks passed on that head. The previous Linux failure came from using
+`source_files: test-cmake`; the current head uses `files: test-cmake` for the
+recipe-local CMake consumer test and links that test through CMake OpenGL
+package targets. `@conda-forge/help-c-cpp` has been pinged, and the feedstock is
+not created yet.
 
 When compatible libc++/libc++abi libraries are supplied, the experimental target
 configures, links, and runs locally with Mesa llvmpipe. The explicit

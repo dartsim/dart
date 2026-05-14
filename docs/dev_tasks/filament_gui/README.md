@@ -118,10 +118,10 @@
   avoid creating a second headless pbuffer in one process after that path
   exposed a local Mesa GLX hang during full-suite validation.
 - A ready-for-review conda-forge staged-recipes PR exists for Filament 1.71.3.
-  Its current head is still open and behind the target branch. The skip,
-  Windows, staged-recipes linter, and conda-forge linter checks pass while
-  Linux, macOS, and the aggregate Azure check are still pending on the latest
-  run. It has not produced an installable feedstock yet, but its planned
+  Its current head is still open and behind the target branch, but the latest
+  inspected head `c6ba84e` is green across staged-recipes linter,
+  conda-forge-linter, Check Skip, Azure linux_64, osx_64, win_64, and aggregate
+  checks. It has not produced an installable feedstock yet, but its planned
   `filament-static` output is the build-time package DART should consume once
   it is available.
 - The north-star migration plan now records the intended complete migration to

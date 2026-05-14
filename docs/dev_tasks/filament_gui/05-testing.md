@@ -181,15 +181,14 @@ Known current result:
   output, and places headers/static archives in the `filament-static` output.
   Once merged, DART's build-time Pixi dependency should use `filament-static`,
   which pulls the matching tool output needed for `matc`.
-- At the latest inspected head `1f786fb3c668d4906201084f5386960b9bc41d5d`,
-  the PR was still open, ready for review, and behind the target branch. The
-  Windows build, skip check, staged-recipes linter, and conda-forge linter
-  passed while Linux, macOS, and the aggregate Azure check were still pending on
-  the latest run. The previous Linux failure came from using
-  `source_files: test-cmake`; the current head uses `files: test-cmake` for the
-  recipe-local CMake consumer test and links that test through CMake OpenGL
-  package targets. The PR is still not merged, so DART still has no installable
-  Filament package to consume.
+- At the latest inspected head `c6ba84e46abb1b00a3ada075bb193e2583e18340`,
+  the PR was still open, ready for review, and behind the target branch.
+  Staged-recipes linter, conda-forge-linter, Check Skip, Azure linux_64, osx_64,
+  win_64, and aggregate checks passed. The previous Linux failure came from
+  using `source_files: test-cmake`; the current head uses `files: test-cmake`
+  for the recipe-local CMake consumer test and links that test through CMake
+  OpenGL package targets. The PR is still not merged, so DART still has no
+  installable Filament package to consume.
 - Upstream Filament release archives include `matc`, headers, and static
   libraries, so `Filament_ROOT` can point at that layout.
 - `DART_FETCH_FILAMENT=ON` explicitly fetches the pinned Linux x86_64
