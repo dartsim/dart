@@ -134,6 +134,7 @@ If you use DART in an academic publication, please consider citing this
    :caption: DART (C++)
 
    dart/user_guide/installation
+   dart/user_guide/api_boundaries
    dart/user_guide/migration_guide
    API Reference <dart/cpp_api_reference>
 
