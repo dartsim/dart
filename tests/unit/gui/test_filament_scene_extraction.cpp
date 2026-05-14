@@ -44,6 +44,7 @@
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/capsule_shape.hpp>
 #include <dart/dynamics/cone_shape.hpp>
+#include <dart/dynamics/convex_mesh_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
@@ -78,6 +79,7 @@ namespace {
 using dart::dynamics::BoxShape;
 using dart::dynamics::CapsuleShape;
 using dart::dynamics::ConeShape;
+using dart::dynamics::ConvexMeshShape;
 using dart::dynamics::CylinderShape;
 using dart::dynamics::EllipsoidShape;
 using dart::dynamics::FreeJoint;
@@ -302,6 +304,25 @@ TEST(
   EXPECT_TRUE(lines->localBoundsMin.isApprox(Eigen::Vector3d(-0.1, -0.3, 0.0)));
   EXPECT_TRUE(lines->localBoundsMax.isApprox(Eigen::Vector3d(0.4, 0.2, 0.3)));
   EXPECT_TRUE(lines->size.isApprox(Eigen::Vector3d(0.5, 0.5, 0.3)));
+
+  auto convexTriMesh = std::make_shared<dart::math::TriMesh<double>>();
+  convexTriMesh->addVertex(-0.25, -0.2, -0.1);
+  convexTriMesh->addVertex(0.45, -0.2, -0.1);
+  convexTriMesh->addVertex(0.0, 0.35, -0.1);
+  convexTriMesh->addVertex(0.0, 0.0, 0.55);
+  convexTriMesh->addTriangle(0, 2, 1);
+  convexTriMesh->addTriangle(0, 1, 3);
+  convexTriMesh->addTriangle(1, 2, 3);
+  convexTriMesh->addTriangle(2, 0, 3);
+  const auto convexMesh = describeShape(ConvexMeshShape(convexTriMesh));
+  ASSERT_TRUE(convexMesh.has_value());
+  EXPECT_EQ(convexMesh->kind, ShapeKind::ConvexMesh);
+  ASSERT_TRUE(convexMesh->hasLocalBounds);
+  EXPECT_TRUE(
+      convexMesh->localBoundsMin.isApprox(Eigen::Vector3d(-0.25, -0.2, -0.1)));
+  EXPECT_TRUE(
+      convexMesh->localBoundsMax.isApprox(Eigen::Vector3d(0.45, 0.35, 0.55)));
+  EXPECT_TRUE(convexMesh->size.isApprox(Eigen::Vector3d(0.7, 0.55, 0.65)));
 
   auto triMesh = std::make_shared<dart::math::TriMesh<double>>();
   triMesh->addVertex(0.0, 0.0, 0.0);

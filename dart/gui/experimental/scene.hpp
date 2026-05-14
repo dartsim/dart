@@ -68,6 +68,7 @@ enum class ShapeKind
   Pyramid,
   MultiSphere,
   LineSegments,
+  ConvexMesh,
   Mesh,
   Plane,
   Unsupported

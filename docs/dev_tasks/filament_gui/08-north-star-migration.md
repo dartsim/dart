@@ -121,8 +121,8 @@ not a drop-in OSG replacement.
   fallback visuals.
 - **Filament gap:** The current experimental descriptor layer only covers box,
   sphere, ellipsoid, cylinder, capsule, cone, pyramid, multi-sphere,
-  line-segment, mesh, finite plane proxy, and unsupported fallback. Filament can
-  render the missing geometry once DART supplies meshes, dynamic buffers,
+  line-segment, convex mesh, mesh, finite plane proxy, and unsupported fallback.
+  Filament can render the missing geometry once DART supplies dynamic buffers,
   materials, and update policies.
 - **North-star plan:** Complete the descriptor model before promotion:
   soft mesh as dynamic vertex buffers, point clouds as point or billboard

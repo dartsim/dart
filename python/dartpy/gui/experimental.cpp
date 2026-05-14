@@ -35,6 +35,7 @@ void defGuiExperimentalModule(nb::module_& m)
       .value("Pyramid", gui::ShapeKind::Pyramid)
       .value("MultiSphere", gui::ShapeKind::MultiSphere)
       .value("LineSegments", gui::ShapeKind::LineSegments)
+      .value("ConvexMesh", gui::ShapeKind::ConvexMesh)
       .value("Mesh", gui::ShapeKind::Mesh)
       .value("Plane", gui::ShapeKind::Plane)
       .value("Unsupported", gui::ShapeKind::Unsupported);

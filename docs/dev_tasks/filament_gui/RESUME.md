@@ -150,8 +150,9 @@ merged MVP PR #2647.
 
 The follow-up branch also extends the backend-hidden shape descriptor and
 renderer path to `PyramidShape`, `MultiSphereConvexHullShape`, and
-`LineSegmentShape`. The MVP scene now includes pyramid, multi-sphere, and
-line-segment fixtures, and the example startup checks that all three
+`LineSegmentShape`, plus generated `ConvexMeshShape` visuals. The MVP scene
+now includes pyramid, multi-sphere, line-segment, and convex-mesh fixtures, and
+the example startup checks that all four
 descriptors are extracted and converted into Filament renderables.
 
 `docs/dev_tasks/filament_gui/07-completion-audit.md` maps the current

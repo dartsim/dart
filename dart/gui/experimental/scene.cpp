@@ -41,6 +41,7 @@
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/capsule_shape.hpp>
 #include <dart/dynamics/cone_shape.hpp>
+#include <dart/dynamics/convex_mesh_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
@@ -400,6 +401,23 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
     }
 
     if (hasBounds) {
+      descriptor.size = max - min;
+      setLocalBounds(descriptor, min, max);
+    }
+    return descriptor;
+  }
+
+  if (const auto* convexMesh
+      = dynamic_cast<const dynamics::ConvexMeshShape*>(&shape)) {
+    descriptor.kind = ShapeKind::ConvexMesh;
+    const auto& mesh = convexMesh->getMesh();
+    if (mesh != nullptr && !mesh->getVertices().empty()) {
+      Eigen::Vector3d min = mesh->getVertices().front();
+      Eigen::Vector3d max = min;
+      for (const Eigen::Vector3d& vertex : mesh->getVertices()) {
+        min = min.cwiseMin(vertex);
+        max = max.cwiseMax(vertex);
+      }
       descriptor.size = max - min;
       setLocalBounds(descriptor, min, max);
     }

@@ -124,6 +124,7 @@ namespace {
 
 using dart::dynamics::BoxShape;
 using dart::dynamics::CollisionAspect;
+using dart::dynamics::ConvexMeshShape;
 using dart::dynamics::DynamicsAspect;
 using dart::dynamics::FreeJoint;
 using dart::dynamics::InverseKinematics;
@@ -930,6 +931,7 @@ constexpr const char* kAtlasRobotFixtureSkeletonName = "visual_atlas_robot";
 constexpr const char* kPyramidFixtureSkeletonName = "visual_pyramid";
 constexpr const char* kMultiSphereFixtureSkeletonName = "visual_multi_sphere";
 constexpr const char* kLineSegmentFixtureSkeletonName = "visual_line_segments";
+constexpr const char* kConvexMeshFixtureSkeletonName = "visual_convex_mesh";
 constexpr const char* kPbrEnvironmentFixtureSkeletonName =
     "visual_pbr_environment";
 constexpr const char* kG1FixtureSkeletonName = "visual_g1_robot";
@@ -1888,6 +1890,11 @@ DartScene createMvpDartScene()
       createLineSegmentShape(),
       Eigen::Vector3d(-2.85, 0.55, 0.88),
       Eigen::Vector3d(0.96, 0.68, 0.22)));
+  scene.world->addSkeleton(createStaticVisual(
+      kConvexMeshFixtureSkeletonName,
+      std::make_shared<ConvexMeshShape>(createTetraMesh()),
+      Eigen::Vector3d(-2.15, 0.55, 0.95),
+      Eigen::Vector3d(0.48, 0.86, 0.38)));
   scene.world->addSkeleton(createStaticVisual(
       "visual_ellipsoid",
       std::make_shared<dart::dynamics::EllipsoidShape>(
@@ -3168,6 +3175,70 @@ Renderable createCapsuleRenderable(
       {r, r, halfTotalHeight});
 }
 
+std::optional<Renderable> createConvexMeshRenderable(
+    filament::Engine& engine,
+    filament::Material& material,
+    const ConvexMeshShape& convexMeshShape,
+    const float4& color)
+{
+  const auto& triMesh = convexMeshShape.getMesh();
+  if (!triMesh || triMesh->getVertices().empty()
+      || triMesh->getTriangles().empty()) {
+    return std::nullopt;
+  }
+  if (triMesh->getVertices().size()
+      > static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max())) {
+    return std::nullopt;
+  }
+
+  const filament::math::short4 tangent = {0, 0, 0, 32767};
+  std::vector<Vertex> vertices;
+  vertices.reserve(triMesh->getVertices().size());
+  for (const Eigen::Vector3d& vertex : triMesh->getVertices()) {
+    vertices.push_back(Vertex{toFloat3(vertex), tangent});
+  }
+
+  std::vector<float3> normals;
+  if (triMesh->hasVertexNormals()
+      && triMesh->getVertexNormals().size() == triMesh->getVertices().size()) {
+    normals.reserve(triMesh->getVertexNormals().size());
+    for (const Eigen::Vector3d& normal : triMesh->getVertexNormals()) {
+      normals.push_back(toFloat3(
+          normal.squaredNorm() > 1e-12 ? normal.normalized()
+                                       : Eigen::Vector3d::UnitZ()));
+    }
+  }
+
+  std::vector<std::uint32_t> indices;
+  std::vector<filament::math::uint3> triangles;
+  indices.reserve(triMesh->getTriangles().size() * 3);
+  triangles.reserve(triMesh->getTriangles().size());
+  for (const auto& triangle : triMesh->getTriangles()) {
+    if (triangle[0] >= vertices.size() || triangle[1] >= vertices.size()
+        || triangle[2] >= vertices.size()) {
+      return std::nullopt;
+    }
+    appendTriangle(
+        indices,
+        triangles,
+        static_cast<std::uint32_t>(triangle[0]),
+        static_cast<std::uint32_t>(triangle[1]),
+        static_cast<std::uint32_t>(triangle[2]));
+  }
+
+  const Bounds bounds = computeBounds(vertices);
+  return createTriangleMeshRenderable(
+      engine,
+      material,
+      std::move(vertices),
+      std::move(indices),
+      std::move(triangles),
+      std::move(normals),
+      color,
+      bounds.min,
+      bounds.max);
+}
+
 std::optional<Renderable> createMeshRenderable(
     filament::Engine& engine,
     const MaterialSet& materials,
@@ -3580,6 +3651,13 @@ std::optional<Renderable> createRenderableFromDescriptor(
           descriptor.geometry.radius,
           descriptor.geometry.height,
           color);
+      break;
+    case ShapeKind::ConvexMesh:
+      if (const auto* convexMeshShape = dynamic_cast<const ConvexMeshShape*>(
+              descriptor.shape)) {
+        renderable = createConvexMeshRenderable(
+            engine, solidMaterial, *convexMeshShape, color);
+      }
       break;
     case ShapeKind::Mesh:
       if (const auto* meshShape = dynamic_cast<const MeshShape*>(
@@ -4107,6 +4185,15 @@ int main(int argc, char* argv[])
                    && descriptor.material.visible
                    && descriptor.geometry.kind == ShapeKind::LineSegments;
           }));
+  const std::size_t convexMeshDescriptorCount = static_cast<std::size_t>(
+      std::count_if(
+          initialDescriptors.begin(),
+          initialDescriptors.end(),
+          [](const RenderableDescriptor& descriptor) {
+            return descriptor.skeletonName == kConvexMeshFixtureSkeletonName
+                   && descriptor.material.visible
+                   && descriptor.geometry.kind == ShapeKind::ConvexMesh;
+          }));
   const std::size_t pbrEnvironmentDescriptorCount = static_cast<std::size_t>(
       std::count_if(
           initialDescriptors.begin(),
@@ -4172,6 +4259,13 @@ int main(int argc, char* argv[])
           << lineSegmentDescriptorCount << "\n";
       return 1;
     }
+    if (convexMeshDescriptorCount != 1) {
+      std::cerr
+          << "Expected the convex mesh fixture to provide one visible convex "
+             "mesh renderable descriptor, but extracted "
+          << convexMeshDescriptorCount << "\n";
+      return 1;
+    }
     if (pbrEnvironmentDescriptorCount < kMinPbrEnvironmentRenderableCount) {
       std::cerr << "Expected the PBR environment fixture to provide at least "
                 << kMinPbrEnvironmentRenderableCount
@@ -4204,6 +4298,7 @@ int main(int argc, char* argv[])
   std::size_t createdPyramidRenderableCount = 0;
   std::size_t createdMultiSphereRenderableCount = 0;
   std::size_t createdLineSegmentRenderableCount = 0;
+  std::size_t createdConvexMeshRenderableCount = 0;
   std::size_t createdPbrEnvironmentRenderableCount = 0;
   std::size_t createdG1RenderableCount = 0;
   std::size_t createdDragAndDropFrameRenderableCount = 0;
@@ -4240,6 +4335,10 @@ int main(int argc, char* argv[])
     if (descriptor.skeletonName == kLineSegmentFixtureSkeletonName
         && descriptor.geometry.kind == ShapeKind::LineSegments) {
       ++createdLineSegmentRenderableCount;
+    }
+    if (descriptor.skeletonName == kConvexMeshFixtureSkeletonName
+        && descriptor.geometry.kind == ShapeKind::ConvexMesh) {
+      ++createdConvexMeshRenderableCount;
     }
     if (descriptor.skeletonName == kPbrEnvironmentFixtureSkeletonName
         && descriptor.geometry.kind == ShapeKind::Mesh) {
@@ -4302,6 +4401,12 @@ int main(int argc, char* argv[])
       std::cerr << "Only " << createdLineSegmentRenderableCount << " of "
                 << lineSegmentDescriptorCount
                 << " line segment renderables were created\n";
+      return 1;
+    }
+    if (createdConvexMeshRenderableCount != convexMeshDescriptorCount) {
+      std::cerr << "Only " << createdConvexMeshRenderableCount << " of "
+                << convexMeshDescriptorCount
+                << " convex mesh renderables were created\n";
       return 1;
     }
     if (createdPbrEnvironmentRenderableCount < pbrEnvironmentDescriptorCount) {
