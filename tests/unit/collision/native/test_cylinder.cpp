@@ -241,6 +241,52 @@ TEST(CylinderBox, CylinderOnTopOfBox)
   EXPECT_GE(result.numContacts(), 1u);
 }
 
+TEST(CylinderBox, AxialCapAgainstLargeBoxCreatesSupportPatch)
+{
+  CylinderShape cylinder(0.8, 0.02);
+  BoxShape box(Eigen::Vector3d(1050.0, 1050.0, 1050.0));
+
+  Eigen::Isometry3d tfCylinder = Eigen::Isometry3d::Identity();
+  tfCylinder.translation() = Eigen::Vector3d(0.0, 0.0, 0.009);
+  Eigen::Isometry3d tfBox = Eigen::Isometry3d::Identity();
+  tfBox.translation() = Eigen::Vector3d(0.0, 0.0, -1050.0);
+
+  CollisionResult result;
+  bool collided = collideCylinderBox(cylinder, tfCylinder, box, tfBox, result);
+
+  EXPECT_TRUE(collided);
+  ASSERT_EQ(result.numContacts(), 4u);
+  for (std::size_t i = 0; i < result.numContacts(); ++i) {
+    const auto& contact = result.getContact(i);
+    EXPECT_NEAR(contact.depth, 0.001, 1e-12);
+    EXPECT_NEAR(contact.normal.x(), 0.0, 1e-12);
+    EXPECT_NEAR(contact.normal.y(), 0.0, 1e-12);
+    EXPECT_NEAR(contact.normal.z(), 1.0, 1e-12);
+    EXPECT_NEAR(contact.position.z(), 0.0005, 1e-12);
+  }
+}
+
+TEST(CylinderBox, AxialCapPatchRespectsMaxContacts)
+{
+  CylinderShape cylinder(0.8, 0.02);
+  BoxShape box(Eigen::Vector3d(1050.0, 1050.0, 1050.0));
+
+  Eigen::Isometry3d tfCylinder = Eigen::Isometry3d::Identity();
+  tfCylinder.translation() = Eigen::Vector3d(0.0, 0.0, 0.009);
+  Eigen::Isometry3d tfBox = Eigen::Isometry3d::Identity();
+  tfBox.translation() = Eigen::Vector3d(0.0, 0.0, -1050.0);
+
+  CollisionOption option;
+  option.maxNumContacts = 2;
+
+  CollisionResult result;
+  bool collided
+      = collideCylinderBox(cylinder, tfCylinder, box, tfBox, result, option);
+
+  EXPECT_TRUE(collided);
+  EXPECT_EQ(result.numContacts(), 2u);
+}
+
 TEST(CylinderCapsule, NoCollision)
 {
   CylinderShape cylinder(0.5, 2.0);

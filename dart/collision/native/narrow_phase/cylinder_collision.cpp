@@ -36,6 +36,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <utility>
 
 #include <cmath>
 
@@ -106,6 +107,108 @@ SegmentClosestResult closestPointsBetweenSegments(
   result.point2 = p2 + d2 * t;
   result.distSq = (result.point1 - result.point2).squaredNorm();
   return result;
+}
+
+bool addAxialCylinderBoxPatchContacts(
+    double cylinderRadius,
+    const Eigen::Isometry3d& cylinderTransform,
+    double minX,
+    double maxX,
+    double minY,
+    double maxY,
+    double contactPlaneZ,
+    const Eigen::Vector3d& normalLocal,
+    double penetration,
+    CollisionResult& result,
+    const CollisionOption& option)
+{
+  const auto contactsBefore = result.numContacts();
+  if (contactsBefore >= option.maxNumContacts) {
+    return false;
+  }
+
+  const double patchMinX = std::max(minX, -cylinderRadius);
+  const double patchMaxX = std::min(maxX, cylinderRadius);
+  const double patchMinY = std::max(minY, -cylinderRadius);
+  const double patchMaxY = std::min(maxY, cylinderRadius);
+  if (patchMaxX < patchMinX || patchMaxY < patchMinY) {
+    return false;
+  }
+
+  ContactManifold manifold;
+  manifold.setType(ContactType::Patch);
+
+  const auto normalWorld = cylinderTransform.rotation() * normalLocal;
+  const double contactZ = contactPlaneZ + normalLocal.z() * penetration * 0.5;
+  const double radiusSq = cylinderRadius * cylinderRadius;
+  const double duplicateThresholdSq = 1e-18;
+
+  const auto addCandidate = [&](double x, double y) {
+    if (x < patchMinX || x > patchMaxX || y < patchMinY || y > patchMaxY) {
+      return;
+    }
+    if (x * x + y * y > radiusSq + 1e-12) {
+      return;
+    }
+
+    const Eigen::Vector3d localPosition(x, y, contactZ);
+    const Eigen::Vector3d worldPosition = cylinderTransform * localPosition;
+    for (const auto& contact : manifold.getContacts()) {
+      if ((contact.position - worldPosition).squaredNorm()
+          <= duplicateThresholdSq) {
+        return;
+      }
+    }
+
+    ContactPoint contact;
+    contact.position = worldPosition;
+    contact.normal = normalWorld;
+    contact.depth = penetration;
+    manifold.addContact(contact);
+  };
+
+  addCandidate(patchMinX, patchMinY);
+  addCandidate(patchMinX, patchMaxY);
+  addCandidate(patchMaxX, patchMinY);
+  addCandidate(patchMaxX, patchMaxY);
+
+  const double inscribed = cylinderRadius / std::sqrt(2.0);
+  addCandidate(-inscribed, -inscribed);
+  addCandidate(-inscribed, inscribed);
+  addCandidate(inscribed, -inscribed);
+  addCandidate(inscribed, inscribed);
+
+  addCandidate(-cylinderRadius, 0.0);
+  addCandidate(cylinderRadius, 0.0);
+  addCandidate(0.0, -cylinderRadius);
+  addCandidate(0.0, cylinderRadius);
+  addCandidate(
+      std::clamp(0.0, patchMinX, patchMaxX),
+      std::clamp(0.0, patchMinY, patchMaxY));
+
+  if (!manifold.hasContacts()) {
+    return false;
+  }
+
+  const auto remaining = option.maxNumContacts - contactsBefore;
+  if (manifold.numContacts() > remaining) {
+    ContactManifold limited;
+    limited.setType(remaining == 1 ? ContactType::Point : ContactType::Patch);
+    for (const auto& contact : manifold.getContacts()) {
+      if (limited.numContacts() >= remaining) {
+        break;
+      }
+      limited.addContact(contact);
+    }
+    result.addManifold(std::move(limited));
+    return true;
+  }
+
+  if (manifold.numContacts() == 1) {
+    manifold.setType(ContactType::Point);
+  }
+  result.addManifold(std::move(manifold));
+  return true;
 }
 
 bool collideParallelCylinders(
@@ -364,6 +467,18 @@ bool collideCylinderBox(
       penetration = zOverlap;
       normalLocal = Eigen::Vector3d(0, 0, center.z() > 0.0 ? -1.0 : 1.0);
       contactLocal.z() = center.z() > 0.0 ? minZ : maxZ;
+      return addAxialCylinderBoxPatchContacts(
+          cylRadius,
+          cylinderTransform,
+          minX,
+          maxX,
+          minY,
+          maxY,
+          contactLocal.z(),
+          normalLocal,
+          penetration,
+          result,
+          option);
     } else if (lateralDist > 1e-10) {
       normalLocal = Eigen::Vector3d(
           -closestX / lateralDist, -closestY / lateralDist, 0.0);
