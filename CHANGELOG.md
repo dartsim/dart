@@ -117,6 +117,12 @@
   - Documented SKEL as a legacy format.
 
 - GUI and Rendering
+  - Added an optional experimental Filament GUI path with backend-hidden
+    `dart::gui::experimental` scene descriptors, bounded/headless smoke support,
+    debug overlays, selection/manipulation helpers, constrained dartpy bindings,
+    a pinned explicit fetch fallback, and GCC/Clang smoke coverage for local and
+    CI validation.
+    ([#2647](https://github.com/dartsim/dart/pull/2647))
   - Fix SEGV in `ImFontAtlas::AddFontFromMemoryCompressedTTF` when null pointer is passed as compressed font data. ([#2516](https://github.com/dartsim/dart/issues/2516))
   - Added headless rendering support via `ViewerConfig` and pbuffer graphics context for CI pipelines and batch frame capture. Includes `Viewer::captureBuffer()` for raw RGBA pixel readback and a new `headless-rendering` CI job. ([#2466](https://github.com/dartsim/dart/pull/2466))
   - Added `ImGuiViewer` construction from `ViewerConfig` to support headless ImGui rendering and example frame capture workflows.

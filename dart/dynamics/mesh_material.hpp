@@ -54,11 +54,22 @@ struct MeshMaterial
   /// Shininess coefficient
   float shininess{0.0f};
 
-  /// Texture image paths or URIs (absolute when resolved on the filesystem)
-  /// Index 0: diffuse texture
-  /// Index 1: specular texture
-  /// Index 2: normal texture
-  /// etc.
+  /// PBR metallic-roughness factors.
+  float metallicFactor{1.0f};
+  float roughnessFactor{1.0f};
+
+  /// Typed texture image paths or URIs.
+  std::string baseColorTexturePath;
+  std::string metallicTexturePath;
+  std::string roughnessTexturePath;
+  std::string metallicRoughnessTexturePath;
+  std::string normalTexturePath;
+  std::string occlusionTexturePath;
+  std::string emissiveTexturePath;
+
+  /// Legacy aggregate texture image paths or URIs.
+  ///
+  /// Prefer the typed texture fields above for new rendering code.
   std::vector<std::string> textureImagePaths;
 
   /// Default constructor

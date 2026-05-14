@@ -105,7 +105,8 @@ imgui.ini
 # Profiling logs
 profiling/*.txt
 
-# Sisyphus agent artifacts
+# AI tool local state
+.omc/
 .sisyphus/
 
 # Benchmark result artifacts

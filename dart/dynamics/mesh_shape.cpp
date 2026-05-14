@@ -745,8 +745,13 @@ const aiScene* MeshShape::convertToAssimpMesh() const
       mtlStream << "Ns " << mat.shininess << '\n';
       mtlStream << "d " << mat.diffuse[3] << '\n';
 
-      if (!mat.textureImagePaths.empty() && !mat.textureImagePaths[0].empty()) {
-        mtlStream << "map_Kd " << mat.textureImagePaths[0] << '\n';
+      const std::string& baseColorTexturePath
+          = !mat.baseColorTexturePath.empty()
+                ? mat.baseColorTexturePath
+                : (!mat.textureImagePaths.empty() ? mat.textureImagePaths[0]
+                                                  : mat.baseColorTexturePath);
+      if (!baseColorTexturePath.empty()) {
+        mtlStream << "map_Kd " << baseColorTexturePath << '\n';
       }
       mtlStream << '\n';
     }
@@ -1270,6 +1275,12 @@ std::span<const MeshMaterial> MeshShape::getMaterials() const
 }
 
 //==============================================================================
+std::span<const MeshShape::SubMeshRange> MeshShape::getSubMeshRanges() const
+{
+  return std::span<const SubMeshRange>(mSubMeshRanges);
+}
+
+//==============================================================================
 std::size_t MeshShape::getNumMaterials() const
 {
   return mMaterials.size();
@@ -1282,6 +1293,18 @@ const MeshMaterial* MeshShape::getMaterial(std::size_t index) const
     return &mMaterials[index];
   }
   return nullptr;
+}
+
+//==============================================================================
+std::span<const Eigen::Vector3d> MeshShape::getTextureCoords() const
+{
+  return std::span<const Eigen::Vector3d>(mTextureCoords);
+}
+
+//==============================================================================
+int MeshShape::getTextureCoordComponents() const
+{
+  return mTextureCoordComponents;
 }
 
 //==============================================================================
@@ -1360,12 +1383,62 @@ void MeshShape::extractMaterialsFromScene(
   const bool meshPathExists = !basePath.empty()
                               && std::filesystem::exists(meshPath, meshPathEc)
                               && !meshPathEc;
+  const auto resolveTexturePath
+      = [&](const std::string& imagePathString) -> std::string {
+    if (imagePathString.empty()) {
+      return {};
+    }
+
+    const std::filesystem::path relativeImagePath = imagePathString;
+    std::error_code ec;
+    bool attemptedCanonicalize = false;
+    if (!basePath.empty() || relativeImagePath.is_absolute()) {
+      const std::filesystem::path absoluteImagePath
+          = std::filesystem::canonical(
+              meshPath.parent_path() / relativeImagePath, ec);
+      attemptedCanonicalize = true;
+      if (!ec) {
+        return absoluteImagePath.string();
+      }
+    }
+
+    if (meshUri.mPath) {
+      common::Uri resolvedUri;
+      if (resolvedUri.fromRelativeUri(
+              meshUri, std::string_view{imagePathString})) {
+        return resolvedUri.toString();
+      }
+    }
+
+    if (meshPathExists && attemptedCanonicalize) {
+      DART_WARN(
+          "[MeshShape::extractMaterialsFromScene] Failed to resolve "
+          "texture image path from (base: `{}`, relative: '{}').",
+          meshPath.parent_path().string(),
+          relativeImagePath.string());
+    }
+
+    return imagePathString;
+  };
 
   for (std::size_t i = 0; i < scene->mNumMaterials; ++i) {
     aiMaterial* aiMat = scene->mMaterials[i];
     assert(aiMat);
 
     MeshMaterial material;
+    const auto getFirstTexturePath
+        = [&](const aiTextureType type) -> std::string {
+      if (aiMat->GetTextureCount(type) == 0u) {
+        return {};
+      }
+
+      aiString imagePath;
+      if (aiMat->GetTexture(type, 0u, &imagePath) != AI_SUCCESS) {
+        return {};
+      }
+
+      return resolveTexturePath(imagePath.C_Str());
+    };
 
     // Extract colors
     aiColor4D c;
@@ -1385,6 +1458,10 @@ void MeshShape::extractMaterialsFromScene(
       material.emissive = Eigen::Vector4f(c.r, c.g, c.b, c.a);
     }
 
+    if (aiGetMaterialColor(aiMat, AI_MATKEY_BASE_COLOR, &c) == AI_SUCCESS) {
+      material.diffuse = Eigen::Vector4f(c.r, c.g, c.b, c.a);
+    }
+
     // Extract shininess
     unsigned int maxValue = 1;
     float shininess = 0.0f, strength = 1.0f;
@@ -1400,66 +1477,86 @@ void MeshShape::extractMaterialsFromScene(
       material.shininess = shininess;
     }
 
+    maxValue = 1;
+    float factor = 0.0f;
+    if (aiGetMaterialFloatArray(
+            aiMat, AI_MATKEY_METALLIC_FACTOR, &factor, &maxValue)
+        == AI_SUCCESS) {
+      material.metallicFactor = std::clamp(factor, 0.0f, 1.0f);
+    }
+
+    maxValue = 1;
+    factor = material.roughnessFactor;
+    if (aiGetMaterialFloatArray(
+            aiMat, AI_MATKEY_ROUGHNESS_FACTOR, &factor, &maxValue)
+        == AI_SUCCESS) {
+      material.roughnessFactor = std::clamp(factor, 0.0f, 1.0f);
+    }
+
+    material.baseColorTexturePath
+        = getFirstTexturePath(aiTextureType_BASE_COLOR);
+    if (material.baseColorTexturePath.empty()) {
+      material.baseColorTexturePath
+          = getFirstTexturePath(aiTextureType_DIFFUSE);
+    }
+    material.metallicTexturePath = getFirstTexturePath(aiTextureType_METALNESS);
+    material.roughnessTexturePath
+        = getFirstTexturePath(aiTextureType_DIFFUSE_ROUGHNESS);
+#if DART_ASSIMP_VERSION_MAJOR >= 6
+    material.metallicRoughnessTexturePath
+        = getFirstTexturePath(aiTextureType_GLTF_METALLIC_ROUGHNESS);
+#endif
+    material.normalTexturePath = getFirstTexturePath(aiTextureType_NORMALS);
+    if (material.normalTexturePath.empty()) {
+      material.normalTexturePath
+          = getFirstTexturePath(aiTextureType_NORMAL_CAMERA);
+    }
+    material.occlusionTexturePath
+        = getFirstTexturePath(aiTextureType_AMBIENT_OCCLUSION);
+    if (material.occlusionTexturePath.empty()) {
+      material.occlusionTexturePath
+          = getFirstTexturePath(aiTextureType_LIGHTMAP);
+    }
+    material.emissiveTexturePath = getFirstTexturePath(aiTextureType_EMISSIVE);
+    if (material.emissiveTexturePath.empty()) {
+      material.emissiveTexturePath
+          = getFirstTexturePath(aiTextureType_EMISSION_COLOR);
+    }
+
     // Extract texture paths for all texture types
     // Check common texture types and store them
-    constexpr auto textureTypes = std::to_array<aiTextureType>(
-        {aiTextureType_DIFFUSE,
-         aiTextureType_SPECULAR,
-         aiTextureType_NORMALS,
-         aiTextureType_AMBIENT,
-         aiTextureType_EMISSIVE,
-         aiTextureType_HEIGHT,
-         aiTextureType_SHININESS,
-         aiTextureType_OPACITY,
-         aiTextureType_DISPLACEMENT,
-         aiTextureType_LIGHTMAP,
-         aiTextureType_REFLECTION});
+    constexpr auto textureTypes = std::to_array<aiTextureType>({
+        aiTextureType_BASE_COLOR,
+        aiTextureType_DIFFUSE,
+        aiTextureType_SPECULAR,
+        aiTextureType_NORMALS,
+        aiTextureType_NORMAL_CAMERA,
+        aiTextureType_AMBIENT,
+        aiTextureType_EMISSIVE,
+        aiTextureType_EMISSION_COLOR,
+        aiTextureType_HEIGHT,
+        aiTextureType_SHININESS,
+        aiTextureType_OPACITY,
+        aiTextureType_DISPLACEMENT,
+        aiTextureType_LIGHTMAP,
+        aiTextureType_REFLECTION,
+        aiTextureType_METALNESS,
+        aiTextureType_DIFFUSE_ROUGHNESS,
+        aiTextureType_AMBIENT_OCCLUSION,
+#if DART_ASSIMP_VERSION_MAJOR >= 6
+        aiTextureType_GLTF_METALLIC_ROUGHNESS,
+#endif
+    });
 
     for (const auto& type : textureTypes) {
       const auto count = aiMat->GetTextureCount(type);
       for (auto j = 0u; j < count; ++j) {
         aiString imagePath;
         if (aiMat->GetTexture(type, j, &imagePath) == AI_SUCCESS) {
-          const std::string imagePathString = imagePath.C_Str();
-          if (imagePathString.empty()) {
-            continue;
-          }
-
-          const std::filesystem::path relativeImagePath = imagePathString;
-          std::error_code ec;
-          bool attemptedCanonicalize = false;
-          if (!basePath.empty() || relativeImagePath.is_absolute()) {
-            const std::filesystem::path absoluteImagePath
-                = std::filesystem::canonical(
-                    meshPath.parent_path() / relativeImagePath, ec);
-            attemptedCanonicalize = true;
-            if (!ec) {
-              material.textureImagePaths.emplace_back(
-                  absoluteImagePath.string());
-              continue;
-            }
-          }
-
-          bool resolved = false;
-          if (meshUri.mPath) {
-            common::Uri resolvedUri;
-            if (resolvedUri.fromRelativeUri(
-                    meshUri, std::string_view{imagePathString})) {
-              material.textureImagePaths.emplace_back(resolvedUri.toString());
-              resolved = true;
-            }
-          }
-
-          if (!resolved) {
-            material.textureImagePaths.emplace_back(imagePathString);
-          }
-
-          if (meshPathExists && attemptedCanonicalize && !resolved) {
-            DART_WARN(
-                "[MeshShape::extractMaterialsFromScene] Failed to resolve "
-                "texture image path from (base: `{}`, relative: '{}').",
-                meshPath.parent_path().string(),
-                relativeImagePath.string());
+          const std::string resolvedPath
+              = resolveTexturePath(imagePath.C_Str());
+          if (!resolvedPath.empty()) {
+            material.textureImagePaths.emplace_back(resolvedPath);
           }
         }
       }

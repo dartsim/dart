@@ -206,6 +206,7 @@ else()
 endif()
 dart_option(DART_BUILD_DARTPY "Build dartpy" OFF CATEGORY build)
 dart_option(DART_BUILD_GUI "Build GUI library" ON CATEGORY build)
+dart_option(DART_BUILD_GUI_FILAMENT "Build experimental Filament GUI example" OFF CATEGORY build)
 set(_dart_user_set_build_gui_raylib FALSE)
 if(DEFINED DART_BUILD_GUI_RAYLIB)
   set(_dart_user_set_build_gui_raylib TRUE)
@@ -228,6 +229,9 @@ dart_option(DART_BUILD_COLLISION_ODE "Embed the ODE collision backend into the c
 dart_option(DART_BUILD_EXAMPLES "Build example targets" ON CATEGORY build)
 dart_option(DART_BUILD_TUTORIALS "Build tutorial targets" ON CATEGORY build)
 dart_option(DART_BUILD_TESTS "Build C++ tests" ON CATEGORY build)
+dart_option(DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS
+  "Register opt-in headless smoke tests for the experimental Filament GUI example" OFF
+  CATEGORY diagnostics)
 dart_option(DART_BUILD_PROFILE "Build DART with profiling options" OFF CATEGORY performance)
 dart_option(DART_PROFILE_BUILTIN "Enable built-in text profiling backend" ON CATEGORY performance)
 dart_option(DART_PROFILE_TRACY "Enable Tracy profiling backend" ON CATEGORY performance)
@@ -264,6 +268,12 @@ dart_option(DART_FORCE_COLORED_OUTPUT
   "Always produce ANSI-colored output (GNU/Clang only)." OFF CATEGORY diagnostics)
 dart_option(DART_USE_SYSTEM_IMGUI
   "Use system-installed ImGui instead of fetching from GitHub (recommended for package distributions)" OFF CATEGORY system)
+dart_option(DART_USE_SYSTEM_FILAMENT
+  "Use system-installed Filament instead of an explicit fetched copy (recommended for package distributions)" ON CATEGORY system)
+dart_option(DART_FETCH_FILAMENT
+  "Allow explicit Filament fetching for experimental local builds" OFF CATEGORY system)
+set(DART_FILAMENT_VERSION "1.71.3" CACHE STRING "Filament version for future explicit fetch support")
+mark_as_advanced(DART_FILAMENT_VERSION)
 dart_option(DART_USE_SYSTEM_RAYLIB
   "Use system-installed Raylib instead of fetching from GitHub (recommended for package distributions)" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF CATEGORY system)
@@ -740,6 +750,19 @@ if(TARGET dart)
     message(STATUS "Skipping Raylib example (DART_BUILD_GUI_RAYLIB == OFF)")
   endif()
 
+  if(DART_BUILD_GUI_FILAMENT)
+    if(MSVC)
+      add_subdirectory(examples/filament_gui)
+    else()
+      add_subdirectory(examples/filament_gui EXCLUDE_FROM_ALL)
+    endif()
+    if(TARGET examples AND TARGET dart_filament_gui)
+      add_dependencies(examples dart_filament_gui)
+    endif()
+  else()
+    message(STATUS "Skipping Filament GUI example (DART_BUILD_GUI_FILAMENT == OFF)")
+  endif()
+
 endif()
 
 add_subdirectory(python)
@@ -769,6 +792,9 @@ foreach(target_candidate IN LISTS tutorials)
 endforeach()
 if(TARGET dart_raylib)
   list(APPEND all_targets dart_raylib)
+endif()
+if(TARGET dart_filament_gui)
+  list(APPEND all_targets dart_filament_gui)
 endif()
 add_custom_target(ALL DEPENDS ${all_targets})
 

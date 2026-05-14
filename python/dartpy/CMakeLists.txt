@@ -228,15 +228,29 @@ set(dartpy_sources
   constraint/joint_coulomb_friction_constraint.cpp
 )
 
-set(dartpy_gui_headers
+set(dartpy_gui_module_headers
   gui/module.hpp
+)
+
+set(dartpy_gui_module_sources
+  gui/module.cpp
+)
+
+set(dartpy_gui_experimental_headers
+  gui/experimental.hpp
+)
+
+set(dartpy_gui_experimental_sources
+  gui/experimental.cpp
+)
+
+set(dartpy_gui_legacy_headers
   gui/gui.hpp
   gui/utils.hpp
   gui/support_polygon_visual.hpp
 )
 
-set(dartpy_gui_sources
-  gui/module.cpp
+set(dartpy_gui_legacy_sources
   gui/gui_event_handler.cpp
   gui/world_node.cpp
   gui/interactive_frame.cpp
@@ -248,11 +262,24 @@ set(dartpy_gui_sources
   gui/imgui.cpp
 )
 
+set(_dartpy_has_legacy_gui FALSE)
+set(_dartpy_has_experimental_gui FALSE)
+
 if(DART_BUILD_GUI)
-  list(APPEND dartpy_headers ${dartpy_gui_headers})
-  list(APPEND dartpy_sources ${dartpy_gui_sources})
-else()
-  message(FATAL_ERROR "Building dartpy requires DART_BUILD_GUI=ON")
+  list(APPEND dartpy_headers ${dartpy_gui_legacy_headers})
+  list(APPEND dartpy_sources ${dartpy_gui_legacy_sources})
+  set(_dartpy_has_legacy_gui TRUE)
+endif()
+
+if(TARGET dart-gui-experimental)
+  list(APPEND dartpy_headers ${dartpy_gui_experimental_headers})
+  list(APPEND dartpy_sources ${dartpy_gui_experimental_sources})
+  set(_dartpy_has_experimental_gui TRUE)
+endif()
+
+if(_dartpy_has_legacy_gui OR _dartpy_has_experimental_gui)
+  list(APPEND dartpy_headers ${dartpy_gui_module_headers})
+  list(APPEND dartpy_sources ${dartpy_gui_module_sources})
 endif()
 
 nanobind_add_module(dartpy
@@ -319,12 +346,32 @@ if(TARGET dart-gui)
   endforeach()
 endif()
 
+if(TARGET dart-gui-experimental)
+  target_link_libraries(dartpy PRIVATE dart-gui-experimental)
+  foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
+    get_target_property(_gui_experimental_includes dart-gui-experimental ${prop})
+    if(_gui_experimental_includes)
+      target_include_directories(dartpy PRIVATE ${_gui_experimental_includes})
+    endif()
+  endforeach()
+endif()
+
 # Surface a version string to Python.
 target_compile_definitions(dartpy
   PRIVATE
     DARTPY_VERSION_INFO="${DART_VERSION}"
 )
 target_compile_options(dartpy PRIVATE "-UNB_COMPACT_ASSERTIONS")
+
+if(_dartpy_has_legacy_gui OR _dartpy_has_experimental_gui)
+  target_compile_definitions(dartpy PRIVATE DARTPY_HAS_GUI=1)
+endif()
+if(_dartpy_has_legacy_gui)
+  target_compile_definitions(dartpy PRIVATE DARTPY_HAS_LEGACY_GUI=1)
+endif()
+if(_dartpy_has_experimental_gui)
+  target_compile_definitions(dartpy PRIVATE DARTPY_HAS_EXPERIMENTAL_GUI=1)
+endif()
 
 set_target_properties(dartpy PROPERTIES
   OUTPUT_NAME "_dartpy"
