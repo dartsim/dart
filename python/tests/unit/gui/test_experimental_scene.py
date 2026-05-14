@@ -42,6 +42,8 @@ def test_experimental_extract_renderables_from_world():
     material_descriptor = dart.gui.experimental.MeshMaterialDescriptor()
     assert hasattr(material_descriptor, "base_color_texture_path")
     assert hasattr(material_descriptor, "metallic_roughness_texture_path")
+    active_state = dart.gui.experimental.ActiveRenderableState()
+    assert hasattr(active_state, "shape_version")
     part_descriptor = dart.gui.experimental.MeshPartDescriptor()
     assert hasattr(part_descriptor, "triangle_count")
     assert hasattr(part_descriptor, "material_index")
@@ -89,6 +91,23 @@ def test_experimental_plan_renderable_set_update():
 
     assert plan.descriptor_indices_to_add == [2]
     assert plan.active_renderable_indices_to_remove == [1, 2, 3, 4]
+
+    visible_a.shape_version = 2
+    visible_b.shape_version = 4
+    stale_a = dart.gui.experimental.ActiveRenderableState()
+    stale_a.id = visible_a.id
+    stale_a.shape_version = 1
+    current_b = dart.gui.experimental.ActiveRenderableState()
+    current_b.id = visible_b.id
+    current_b.shape_version = visible_b.shape_version
+
+    versioned_plan = dart.gui.experimental.plan_renderable_set_update(
+        [visible_a, visible_b],
+        [stale_a, current_b],
+    )
+
+    assert versioned_plan.descriptor_indices_to_add == [0]
+    assert versioned_plan.active_renderable_indices_to_remove == [0]
 
 
 def test_experimental_pick_sphere_uses_surface_normal():

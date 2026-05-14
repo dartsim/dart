@@ -148,6 +148,7 @@ using dart::dynamics::WeldJoint;
 using dart::dynamics::VoxelGridShape;
 #endif
 
+using dart::examples::filament_gui::ActiveRenderableState;
 using dart::examples::filament_gui::DebugDrawOptions;
 using dart::examples::filament_gui::DebugLineDescriptor;
 using dart::examples::filament_gui::GeometryDescriptor;
@@ -266,6 +267,7 @@ struct Renderable
 struct SceneRenderable
 {
   RenderableId id = 0;
+  std::size_t shapeVersion = 0;
   Renderable renderable;
 };
 
@@ -4066,15 +4068,18 @@ bool containsRenderableId(
   return std::find(ids.begin(), ids.end(), id) != ids.end();
 }
 
-std::vector<RenderableId> collectRenderableIds(
+std::vector<ActiveRenderableState> collectActiveRenderableStates(
     const std::vector<SceneRenderable>& sceneRenderables)
 {
-  std::vector<RenderableId> ids;
-  ids.reserve(sceneRenderables.size());
+  std::vector<ActiveRenderableState> states;
+  states.reserve(sceneRenderables.size());
   for (const SceneRenderable& sceneRenderable : sceneRenderables) {
-    ids.push_back(sceneRenderable.id);
+    ActiveRenderableState state;
+    state.id = sceneRenderable.id;
+    state.shapeVersion = sceneRenderable.shapeVersion;
+    states.push_back(state);
   }
-  return ids;
+  return states;
 }
 
 void logUnsupportedRenderableDescriptorOnce(
@@ -4102,7 +4107,7 @@ void synchronizeSceneRenderables(
     std::vector<RenderableId>& loggedUnsupportedRenderableIds)
 {
   const auto plan = planRenderableSetUpdate(
-      descriptors, collectRenderableIds(sceneRenderables));
+      descriptors, collectActiveRenderableStates(sceneRenderables));
 
   for (auto indexIt = plan.activeRenderableIndicesToRemove.rbegin();
        indexIt != plan.activeRenderableIndicesToRemove.rend();
@@ -4136,6 +4141,7 @@ void synchronizeSceneRenderables(
 
     SceneRenderable sceneRenderable;
     sceneRenderable.id = descriptor.id;
+    sceneRenderable.shapeVersion = descriptor.shapeVersion;
     sceneRenderable.renderable = *renderable;
     scene.addEntity(sceneRenderable.renderable.entity);
     engine.getTransformManager().setTransform(

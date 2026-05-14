@@ -175,6 +175,12 @@ struct RenderableSetUpdatePlan
   std::vector<std::size_t> activeRenderableIndicesToRemove;
 };
 
+struct ActiveRenderableState
+{
+  RenderableId id = 0;
+  std::size_t shapeVersion = 0;
+};
+
 struct PickRay
 {
   Eigen::Vector3d origin = Eigen::Vector3d::Zero();
@@ -293,6 +299,10 @@ DART_GUI_API std::vector<RenderableDescriptor> extractRenderables(
 DART_GUI_API RenderableSetUpdatePlan planRenderableSetUpdate(
     const std::vector<RenderableDescriptor>& descriptors,
     const std::vector<RenderableId>& activeRenderableIds);
+
+DART_GUI_API RenderableSetUpdatePlan planRenderableSetUpdate(
+    const std::vector<RenderableDescriptor>& descriptors,
+    const std::vector<ActiveRenderableState>& activeRenderableStates);
 
 DART_GUI_API std::optional<double> intersectRenderable(
     const RenderableDescriptor& renderable, const PickRay& ray);

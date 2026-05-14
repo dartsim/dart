@@ -71,9 +71,11 @@ and `SimpleFrame` visuals. Backend-hidden
 run-option normalization, viewer lifecycle state, and orbit-camera helpers now
 live in `dart-gui-experimental`; the Filament example uses them for bounded
 screenshots, camera placement, headless runs, pause/step behavior, frame
-accounting, and perspective pick rays. Backend-hidden RGBA-to-PPM screenshot
-storage also now lives in `dart-gui-experimental`; the Filament example keeps
-only renderer readback.
+accounting, and perspective pick rays. Backend-hidden renderable set planning
+now also compares active shape versions so descriptor-owned geometry changes
+recreate Filament resources. Backend-hidden RGBA-to-PPM screenshot storage also
+now lives in `dart-gui-experimental`; the Filament example keeps only renderer
+readback.
 `UNIT_dynamics_MeshShape` also loads the checked-in
 `data/gltf/pbr_triangle.gltf` and `data/gltf/pbr_multi_material.gltf` fixtures
 through the real Assimp importer and verifies authored glTF PBR texture slots,

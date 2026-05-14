@@ -117,6 +117,7 @@ using dart::dynamics::SoftMeshShape;
 using dart::dynamics::SphereShape;
 using dart::dynamics::VisualAspect;
 using dart::dynamics::WeldJoint;
+using dart::gui::experimental::ActiveRenderableState;
 using dart::gui::experimental::ShapeKind;
 using dart::math::SupportGeometry;
 using dart::simulation::World;
@@ -730,6 +731,23 @@ TEST(
 
   const std::vector<std::size_t> expectedRemovals{1u, 2u, 3u, 4u};
   EXPECT_EQ(plan.activeRenderableIndicesToRemove, expectedRemovals);
+
+  visibleA.shapeVersion = 2u;
+  visibleB.shapeVersion = 4u;
+  const std::vector<RenderableDescriptor> versionedDescriptors{
+      visibleA, visibleB};
+  const std::vector<ActiveRenderableState> activeStates{
+      ActiveRenderableState{visibleA.id, 1u},
+      ActiveRenderableState{visibleB.id, visibleB.shapeVersion}};
+
+  const auto versionedPlan = dart::gui::experimental::planRenderableSetUpdate(
+      versionedDescriptors, activeStates);
+
+  const std::vector<std::size_t> expectedVersionRemovals{0u};
+  const std::vector<std::size_t> expectedVersionAdds{0u};
+  EXPECT_EQ(
+      versionedPlan.activeRenderableIndicesToRemove, expectedVersionRemovals);
+  EXPECT_EQ(versionedPlan.descriptorIndicesToAdd, expectedVersionAdds);
 }
 
 TEST(

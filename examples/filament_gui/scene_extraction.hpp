@@ -37,9 +37,10 @@
 
 namespace dart::examples::filament_gui {
 
-using gui::experimental::GeometryDescriptor;
+using gui::experimental::ActiveRenderableState;
 using gui::experimental::DebugDrawOptions;
 using gui::experimental::DebugLineDescriptor;
+using gui::experimental::GeometryDescriptor;
 using gui::experimental::MaterialDescriptor;
 using gui::experimental::MeshMaterialDescriptor;
 using gui::experimental::MeshPartDescriptor;

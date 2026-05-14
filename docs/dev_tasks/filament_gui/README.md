@@ -66,6 +66,9 @@
   viewer lifecycle state, and orbit-camera math used by the example for bounded
   screenshots, camera placement, headless mode, pause/step behavior, frame
   accounting, and perspective pick rays.
+- Renderer resource synchronization planning now also compares active renderable
+  shape versions, so descriptor-owned geometry changes recreate Filament
+  resources without exposing renderer handles.
 - The experimental scene layer owns reusable RGBA-to-PPM screenshot storage,
   while the Filament example remains responsible only for renderer readback.
   The current Filament readback path writes top-left-origin screenshots so

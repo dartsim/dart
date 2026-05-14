@@ -1715,6 +1715,30 @@ RenderableSetUpdatePlan planRenderableSetUpdate(
     const std::vector<RenderableDescriptor>& descriptors,
     const std::vector<RenderableId>& activeRenderableIds)
 {
+  std::vector<ActiveRenderableState> activeStates;
+  activeStates.reserve(activeRenderableIds.size());
+  for (const RenderableId id : activeRenderableIds) {
+    ActiveRenderableState state;
+    state.id = id;
+    const auto descriptor = std::find_if(
+        descriptors.begin(),
+        descriptors.end(),
+        [id](const RenderableDescriptor& candidate) {
+          return candidate.material.visible && candidate.id == id;
+        });
+    if (descriptor != descriptors.end()) {
+      state.shapeVersion = descriptor->shapeVersion;
+    }
+    activeStates.push_back(state);
+  }
+
+  return planRenderableSetUpdate(descriptors, activeStates);
+}
+
+RenderableSetUpdatePlan planRenderableSetUpdate(
+    const std::vector<RenderableDescriptor>& descriptors,
+    const std::vector<ActiveRenderableState>& activeRenderableStates)
+{
   RenderableSetUpdatePlan plan;
 
   std::vector<RenderableId> desiredIds;
@@ -1728,11 +1752,21 @@ RenderableSetUpdatePlan planRenderableSetUpdate(
   }
 
   std::vector<RenderableId> retainedActiveIds;
-  retainedActiveIds.reserve(activeRenderableIds.size());
-  for (std::size_t i = 0; i < activeRenderableIds.size(); ++i) {
-    const RenderableId id = activeRenderableIds[i];
+  retainedActiveIds.reserve(activeRenderableStates.size());
+  for (std::size_t i = 0; i < activeRenderableStates.size(); ++i) {
+    const ActiveRenderableState& active = activeRenderableStates[i];
+    const RenderableId id = active.id;
+    const auto descriptor = std::find_if(
+        descriptors.begin(),
+        descriptors.end(),
+        [id](const RenderableDescriptor& candidate) {
+          return candidate.material.visible && candidate.id == id;
+        });
+    const bool versionChanged
+        = descriptor != descriptors.end()
+          && active.shapeVersion != descriptor->shapeVersion;
     if (id == 0 || !containsRenderableId(desiredIds, id)
-        || containsRenderableId(retainedActiveIds, id)) {
+        || containsRenderableId(retainedActiveIds, id) || versionChanged) {
       plan.activeRenderableIndicesToRemove.push_back(i);
       continue;
     }

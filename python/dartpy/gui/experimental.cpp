@@ -161,6 +161,11 @@ void defGuiExperimentalModule(nb::module_& m)
           "active_renderable_indices_to_remove",
           &gui::RenderableSetUpdatePlan::activeRenderableIndicesToRemove);
 
+  nb::class_<gui::ActiveRenderableState>(m, "ActiveRenderableState")
+      .def(nb::init<>())
+      .def_rw("id", &gui::ActiveRenderableState::id)
+      .def_rw("shape_version", &gui::ActiveRenderableState::shapeVersion);
+
   nb::class_<gui::PickRay>(m, "PickRay")
       .def(nb::init<>())
       .def_rw("origin", &gui::PickRay::origin)
@@ -285,9 +290,20 @@ void defGuiExperimentalModule(nb::module_& m)
   m.def("extract_renderables", &gui::extractRenderables, nb::arg("world"));
   m.def(
       "plan_renderable_set_update",
-      &gui::planRenderableSetUpdate,
+      static_cast<gui::RenderableSetUpdatePlan (*)(
+          const std::vector<gui::RenderableDescriptor>&,
+          const std::vector<gui::RenderableId>&)>(
+          &gui::planRenderableSetUpdate),
       nb::arg("descriptors"),
       nb::arg("active_renderable_ids"));
+  m.def(
+      "plan_renderable_set_update",
+      static_cast<gui::RenderableSetUpdatePlan (*)(
+          const std::vector<gui::RenderableDescriptor>&,
+          const std::vector<gui::ActiveRenderableState>&)>(
+          &gui::planRenderableSetUpdate),
+      nb::arg("descriptors"),
+      nb::arg("active_renderable_states"));
   m.def(
       "intersect_renderable",
       &gui::intersectRenderable,
