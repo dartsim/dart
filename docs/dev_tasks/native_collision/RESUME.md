@@ -276,15 +276,27 @@ is closed and still points at old head `714d220d82a`. The current branch state
 includes the nanobind `test-all` helper repair and refreshed full local
 validation evidence. Follow-up branch pushes publish state but do not start the
 main GitHub Actions workflows because the workflow `push` filters exclude
-feature branches.
+feature branches. Manual workflow-dispatch runs for head `658da0edb10` are
+now recorded: CI gz-physics run `25885373580` passed, Publish dartpy run
+`25885373596` passed across the wheel matrix, and CI Linux run `25885373625`
+failed the native-only job in `test_ccd` / `CapsuleCastConvex.DirectHit`.
+The current working tree fixes that failure by replacing endpoint-only
+`capsuleCastConvex()` checks with capsule-support conservative advancement
+against convex targets. The same Linux run passed the benchmark guard command
+but uploaded no artifact because `upload-artifact@v6` skipped the hidden
+`.benchmark_results/` path; the current working tree enables hidden-file
+upload for that artifact step.
 
 ## Immediate Next Step
 
 Continue from `docs/dev_tasks/native_collision/06-completion-audit.md`.
 Current local focused, broad Debug, and full `pixi run test-all` validation is
-green. CI evidence is still blocked until the user provides an allowed trigger
-surface, reopens/creates a PR, or grants a way to dispatch workflows. Next
-collect native-only/gz and wheel matrix artifact evidence, collect GitHub
+green. CI evidence is now being collected from manually dispatched workflow
+runs on `658da0edb10`; gz-physics and the wheel matrix passed, while
+native-only CI failed and has a local focused repair; the benchmark guard
+passed but needs an artifact-upload repair. Finish validation, commit and push
+the repairs without creating a new PR/diff, dispatch fresh CI for the new head,
+then collect native-only/gz and wheel matrix artifact evidence, collect GitHub
 evidence for the scheduled or manual benchmark guard, record downstream
 migration/deprecation evidence, perform final runtime cleanup, rerun full
 validation after the PR-complete state, transfer final evidence to the PR, and
@@ -572,8 +584,29 @@ libraries.
 - PR #2652 is closed per user direction and still points at old head
   `714d220d82a`. Follow-up commits can be pushed to `feature/new_coll`, but
   those pushes do not start the main workflows because the workflow `push`
-  filters exclude feature branches, and manual `workflow_dispatch` attempts
-  failed with HTTP 403 requiring repository admin rights.
+  filters exclude feature branches. Using the `jslee02` token, manual
+  `workflow_dispatch` started CI Linux run `25885373625`, CI gz-physics run
+  `25885373580`, and Publish dartpy run `25885373596` for head
+  `658da0edb10`.
+- Closed-PR manual dispatch evidence and current repair:
+  - CI gz-physics run `25885373580` passed.
+  - Publish dartpy run `25885373596` passed across all nine wheel jobs:
+    Ubuntu, macOS, and Windows for Python 3.12, 3.13, and 3.14.
+  - CI Linux run `25885373625` failed
+    `Native Collision (no FCL/Bullet/ODE)` job `76075528745` in `test_ccd`,
+    `CapsuleCastConvex.DirectHit`.
+  - Root cause: `capsuleCastConvex()` tested only the two capsule endpoint
+    spheres, so a full capsule-body hit against a convex target depended on a
+    numerically fragile grazing endpoint contact.
+  - Current working-tree repair: use a capsule support function and
+    conservative advancement for capsule-vs-convex CCD.
+  - Local validation after the repair: focused `test_ccd` passed, the full
+    `collision-native` label passed 29/29, the native-only CI focused CTest
+    regex passed 4/4, and the Python collision/world smoke passed 17/17.
+  - The same Linux run's `Collision Benchmark Guard` job passed the benchmark
+    command but uploaded no artifact because `upload-artifact@v6` excluded the
+    hidden `.benchmark_results/` directory. The current working tree sets
+    `include-hidden-files: true` for that upload step.
 - The latest local broad Debug validation now passes after one additional
   simulation-experimental logging repair. The broad Debug `tests` target built
   normal C++ tests; the separate `dart_experimental_tests` target was needed

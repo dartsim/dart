@@ -2509,9 +2509,50 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     follow-up commits on `feature/new_coll` are not attached to that PR.
   - Pushing `feature/new_coll` remains useful for publishing branch state, but
     it does not start the main CI workflows because their `push` filters only
-    include protected release/default branches. Manual `workflow_dispatch`
-    attempts from this token failed with HTTP 403 requiring repository admin
-    rights.
+    include protected release/default branches. Using the `jslee02` GitHub
+    token, manual `workflow_dispatch` started CI Linux run `25885373625`, CI
+    gz-physics run `25885373580`, and Publish dartpy run `25885373596` for
+    head `658da0edb10`.
+- Closed-PR manual dispatch evidence on head `658da0edb10`:
+  - Run/job: `25885373580` / `76075525533` (`CI gz-physics` /
+    `GZ Physics Tests`).
+  - Result: passed.
+  - Run: `25885373596` (`Publish dartpy`).
+  - Result: passed across all wheel build, repair, verify, test, and upload
+    jobs for `ubuntu-latest-py312`, `ubuntu-latest-py313`,
+    `ubuntu-latest-py314`, `macos-latest-py312`, `macos-latest-py313`,
+    `macos-latest-py314`, `windows-latest-py312`,
+    `windows-latest-py313`, and `windows-latest-py314`.
+  - Artifact IDs:
+    `7005084819`, `7005010502`, `7005119836`, `7005115921`,
+    `7005173542`, `7005192639`, `7005327157`, `7005361057`,
+    `7005313000`.
+  - Run/job: `25885373625` / `76075528745` (`CI Linux` /
+    `Native Collision (no FCL/Bullet/ODE)`).
+  - Result: failed in `test_ccd`, `CapsuleCastConvex.DirectHit`; build
+    completed successfully, then the `collision-native` label reported 28/29
+    passing tests. Root cause: `capsuleCastConvex()` only tested the two
+    endpoint spheres and could miss or numerically graze a full capsule-body
+    hit against a convex target.
+  - Repair in current working tree: `capsuleCastConvex()` now uses a capsule
+    support function with conservative advancement against the convex support
+    target, so the full capsule shape participates in the cast.
+  - Focused local validation after the repair:
+    `test_ccd` passed, the full `collision-native` label passed 29/29, the
+    native-only CI focused CTest regex passed 4/4, and the Python
+    collision/world smoke passed 17/17.
+  - Run/job: `25885373625` / `76075528749` (`CI Linux` /
+    `Collision Benchmark Guard`).
+  - Result: benchmark command passed, but the upload step found no files
+    because `actions/upload-artifact@v6` excludes hidden paths by default and
+    the guard writes JSON under `.benchmark_results/`.
+  - Repair in current working tree: set `include-hidden-files: true` on the
+    benchmark artifact upload step so
+    `collision-benchmark-guard-${{ github.run_id }}-${{ github.run_attempt }}`
+    includes `.benchmark_results/collision_check_*.json`.
+  - Because the repair changes C++ collision behavior, gz-physics, wheel
+    matrix, native-only, and benchmark guard CI evidence must be refreshed on
+    the next pushed head before the north-star CI gates can close.
 - Broad local Debug validation after the macOS/Linux closed-PR repairs:
   - Command:
     `cmake --build build/default/cpp/Debug --target tests --parallel 5`

@@ -246,6 +246,7 @@ jobs:
           name: collision-benchmark-guard-${{ github.run_id }}-${{ github.run_attempt }}
           path: .benchmark_results/collision_check_*.json
           if-no-files-found: warn
+          include-hidden-files: true
           retention-days: 14
 
   build-debug:

@@ -610,6 +610,55 @@ Eigen::Vector3d getCapsuleEndpoint(
   return transform * localPoint;
 }
 
+Eigen::Isometry3d interpolateTransform(
+    const Eigen::Isometry3d& start, const Eigen::Isometry3d& end, double t)
+{
+  Eigen::Isometry3d result = Eigen::Isometry3d::Identity();
+  result.translation()
+      = (1.0 - t) * start.translation() + t * end.translation();
+
+  Eigen::Quaterniond qStart(start.rotation());
+  Eigen::Quaterniond qEnd(end.rotation());
+  result.linear() = qStart.slerp(t, qEnd).toRotationMatrix();
+
+  return result;
+}
+
+double computeCapsuleMotionBound(
+    const CapsuleShape& capsule,
+    const Eigen::Isometry3d& transformStart,
+    const Eigen::Isometry3d& transformEnd)
+{
+  const double linearVelocity
+      = (transformEnd.translation() - transformStart.translation()).norm();
+
+  const Eigen::Quaterniond qStart(transformStart.rotation());
+  const Eigen::Quaterniond qEnd(transformEnd.rotation());
+  const double angle = qStart.angularDistance(qEnd);
+
+  const double maxRadius = capsule.getHeight() / 2.0 + capsule.getRadius();
+  return linearVelocity + angle * maxRadius;
+}
+
+Eigen::Vector3d getCapsuleSupport(
+    const Eigen::Isometry3d& transform,
+    const CapsuleShape& capsule,
+    const Eigen::Vector3d& direction)
+{
+  Eigen::Vector3d worldDir = direction;
+  if (worldDir.squaredNorm() < kEpsilon) {
+    worldDir = Eigen::Vector3d::UnitZ();
+  } else {
+    worldDir.normalize();
+  }
+
+  const Eigen::Vector3d localDir = transform.rotation().transpose() * worldDir;
+  const double halfHeight = capsule.getHeight() / 2.0;
+  const Eigen::Vector3d localEndpoint(
+      0.0, 0.0, localDir.z() >= 0.0 ? halfHeight : -halfHeight);
+  return transform * localEndpoint + capsule.getRadius() * worldDir;
+}
+
 } // namespace
 
 bool capsuleCastSphere(
@@ -868,42 +917,79 @@ bool capsuleCastConvex(
 {
   result.clear();
 
-  const double capsuleRadius = capsule.getRadius();
-  const double halfHeight = capsule.getHeight() / 2.0;
-
-  double bestT = 2.0;
-  CcdResult bestResult;
-
-  auto testEndpoint = [&](bool top) {
-    Eigen::Vector3d startPos
-        = getCapsuleEndpoint(capsuleStart, halfHeight, top);
-    Eigen::Vector3d endPos = getCapsuleEndpoint(capsuleEnd, halfHeight, top);
-
-    CcdResult localResult;
-    if (sphereCastConvex(
-            startPos,
-            endPos,
-            capsuleRadius,
-            target,
-            targetTransform,
-            option,
-            localResult)) {
-      if (localResult.timeOfImpact < bestT) {
-        bestT = localResult.timeOfImpact;
-        bestResult = localResult;
-      }
-    }
-  };
-
-  testEndpoint(true);
-  testEndpoint(false);
-
-  if (bestT > 1.0) {
-    return false;
+  double motionBound
+      = computeCapsuleMotionBound(capsule, capsuleStart, capsuleEnd);
+  if (motionBound < option.tolerance) {
+    motionBound = option.tolerance;
   }
 
-  result = bestResult;
-  return true;
+  double t = 0.0;
+
+  Eigen::Vector3d initialDir
+      = targetTransform.translation() - capsuleStart.translation();
+  if (initialDir.squaredNorm() < kEpsilon) {
+    initialDir = Eigen::Vector3d::UnitX();
+  }
+
+  for (int iter = 0; iter < option.maxIterations; ++iter) {
+    const Eigen::Isometry3d currentCapsuleTransform
+        = interpolateTransform(capsuleStart, capsuleEnd, t);
+
+    auto supportA = [&](const Eigen::Vector3d& dir) {
+      return getCapsuleSupport(currentCapsuleTransform, capsule, dir);
+    };
+    auto supportB = [&](const Eigen::Vector3d& dir) {
+      return targetTransform
+             * target.support(targetTransform.rotation().transpose() * dir);
+    };
+
+    GjkResult gjkResult = Gjk::query(supportA, supportB, initialDir);
+
+    if (gjkResult.intersecting) {
+      result.hit = true;
+      result.timeOfImpact = t;
+      result.point = supportB(Eigen::Vector3d::UnitX());
+      Eigen::Vector3d normal
+          = supportA(Eigen::Vector3d::UnitX()) - result.point;
+      if (normal.squaredNorm() < kEpsilon) {
+        normal = Eigen::Vector3d::UnitZ();
+      } else {
+        normal.normalize();
+      }
+      result.normal = normal;
+      return true;
+    }
+
+    const Eigen::Vector3d pointA = gjkResult.closestPointA;
+    const Eigen::Vector3d pointB = gjkResult.closestPointB;
+    const double distance = gjkResult.distance;
+
+    Eigen::Vector3d sepAxis = gjkResult.separationAxis;
+    if (sepAxis.squaredNorm() < kEpsilon) {
+      sepAxis = pointB - pointA;
+    }
+    if (sepAxis.squaredNorm() < kEpsilon) {
+      sepAxis = Eigen::Vector3d::UnitX();
+    }
+    sepAxis.normalize();
+
+    if (distance < option.tolerance) {
+      result.hit = true;
+      result.timeOfImpact = t;
+      result.point = pointB;
+      result.normal = sepAxis;
+      return true;
+    }
+
+    t += distance / motionBound;
+    if (t > 1.0) {
+      return false;
+    }
+
+    initialDir = sepAxis;
+  }
+
+  return false;
 }
 
 bool capsuleCastMesh(
@@ -956,20 +1042,6 @@ bool capsuleCastMesh(
 }
 
 namespace {
-
-Eigen::Isometry3d interpolateTransform(
-    const Eigen::Isometry3d& start, const Eigen::Isometry3d& end, double t)
-{
-  Eigen::Isometry3d result = Eigen::Isometry3d::Identity();
-  result.translation()
-      = (1.0 - t) * start.translation() + t * end.translation();
-
-  Eigen::Quaterniond qStart(start.rotation());
-  Eigen::Quaterniond qEnd(end.rotation());
-  result.linear() = qStart.slerp(t, qEnd).toRotationMatrix();
-
-  return result;
-}
 
 double computeMotionBound(
     const ConvexShape& shape,

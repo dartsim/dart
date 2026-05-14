@@ -26,10 +26,15 @@ unverified external and finalization gates:
   is still missing.
 - PR #2652 was used as the initial CI surface, then closed per user direction
   before the latest follow-up commits. The closed PR remains anchored to old
-  head `714d220d82a`; the latest branch head `0dda069d59d` has no GitHub
-  Actions runs because feature-branch pushes do not match the main workflow
-  `push` filters and manual workflow dispatch is blocked by repository
-  permissions. The initial `Asserts enabled (no -DNDEBUG)` Linux job exposed a
+  head `714d220d82a`; the latest published branch head `658da0edb10` does not
+  get automatic GitHub Actions runs because feature-branch pushes do not match
+  the main workflow `push` filters. Manual workflow-dispatch runs on that head
+  passed gz-physics CI and the full dartpy wheel matrix, but Linux native-only
+  CI exposed a `CapsuleCastConvex.DirectHit` failure. The current working-tree
+  repair makes `capsuleCastConvex()` use a capsule support function with
+  conservative advancement against convex targets, and the next pushed head
+  needs refreshed CI evidence. The initial `Asserts enabled (no -DNDEBUG)`
+  Linux job exposed a
   workflow mismatch: it manually enabled Bullet in the default Pixi
   environment, where Bullet is intentionally absent after the native-only
   dependency cleanup. The workflow repair was pushed as `901d56c4260` and
@@ -120,10 +125,36 @@ Current audited state:
   current local validation pass after the durable built-in architecture docs
   and compatibility-facade policy cleanup.
 - Remote branch state: `origin/feature/new_coll` is published at
-  `0dda069d59d` (`Fix simulation experimental debug logging context`).
+  `658da0edb10` (`Fix nanobind test-all source refresh`).
 - GitHub PR state: PR #2652
   (https://github.com/dartsim/dart/pull/2652) is closed, still marked draft,
   and remains anchored to old head `714d220d82a`.
+- Closed-PR workflow-dispatch state for `658da0edb10`:
+  - CI Linux: run `25885373625`
+    (https://github.com/dartsim/dart/actions/runs/25885373625), in progress
+    overall, with `Native Collision (no FCL/Bullet/ODE)` failed at job
+    `76075528745` in `test_ccd` / `CapsuleCastConvex.DirectHit`.
+  - CI gz-physics: run `25885373580`
+    (https://github.com/dartsim/dart/actions/runs/25885373580), passed.
+  - Publish dartpy: run `25885373596`
+    (https://github.com/dartsim/dart/actions/runs/25885373596), passed across
+    all wheel build, repair, verify, test, and upload jobs. Artifact names:
+    `ubuntu-latest-py312`, `ubuntu-latest-py313`, `ubuntu-latest-py314`,
+    `macos-latest-py312`, `macos-latest-py313`, `macos-latest-py314`,
+    `windows-latest-py312`, `windows-latest-py313`,
+    `windows-latest-py314`.
+  - Current working-tree repair after the Linux native-only failure: replace
+    endpoint-only `capsuleCastConvex()` checks with capsule-support
+    conservative advancement against the convex support target. Focused local
+    validation passes `test_ccd`, the 29-test `collision-native` label, the
+    four native-only CI focused CTest executables, and the 17-test Python
+    collision/world smoke.
+  - Same-run benchmark guard state: `Collision Benchmark Guard` job
+    `76075528749` passed its benchmark command, but uploaded no artifact
+    because `actions/upload-artifact@v6` skipped the hidden
+    `.benchmark_results/` directory. The current working tree sets
+    `include-hidden-files: true` for that upload step, so the next dispatch can
+    attach the required `collision_check_*.json` files.
 - Initial PR CI state: GitHub Actions started for the pushed head. The first
   completed failure was `Asserts enabled (no -DNDEBUG)`, run `25870574281`,
   job `76024440344`, which failed during configure because
@@ -384,8 +415,11 @@ Legend:
 
 1. Do not create a new diff or review request until the user asks. PR #2652 is
    closed, so pushing focused fixes to `feature/new_coll` publishes branch
-   state but currently does not trigger the main GitHub Actions workflows.
-   Authoritative CI evidence still needs a permitted trigger surface.
+   state but does not automatically trigger the main GitHub Actions workflows.
+   Manual workflow-dispatch runs for head `658da0edb10` found and locally
+   repaired one native-only CI failure plus one benchmark artifact upload
+   issue. Push the repair and refresh the CI dispatch evidence on the next
+   head before these gates can close.
 2. Collect CI run links and artifact names for:
    - native-only collision/default build jobs,
    - gz-physics compatibility jobs,
