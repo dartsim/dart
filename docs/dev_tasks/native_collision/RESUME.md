@@ -154,6 +154,10 @@ raycast-batch native-vs-reference subsets plus the public adapter JSON subset.
 The generated `.benchmark_results/collision_check_*.json` files are local
 evidence only; GitHub workflow artifact evidence is still required for the CI
 benchmark gate.
+The latest audit slice adds `06-completion-audit.md`, which restates the
+single-PR objective as concrete deliverables and maps every north-star
+requirement to current artifacts, local evidence, missing CI/artifact evidence,
+and final cleanup gates. It records that the task is not complete yet.
 
 ## Current Branch
 
@@ -169,7 +173,9 @@ immediate next evidence steps are CI native-only/gz evidence, wheel matrix
 artifact evidence from `wheel-verify`, downstream migration/deprecation
 evidence, GitHub evidence for the scheduled benchmark guard,
 architecture/design gate evidence, final validation, dev-task cleanup, and
-final legacy backend deletion.
+final legacy backend deletion. Read `06-completion-audit.md` before deciding
+whether a future checkpoint is complete; it is the prompt-to-artifact checklist
+for the north-star goal.
 
 The persistent DART adapter scene path is now started: public collision,
 distance, and raycast calls use synced native scene state owned by
@@ -425,7 +431,9 @@ libraries.
   finishing abstraction cleanup; do not count it as native/default coverage yet.
 - The north-star progress scale lives in `README.md` and `03-evidence-gates.md`;
   the detailed single-PR phase plan lives in `02-milestones.md`; the
-  implementation-ready gap plan lives in `04-reference-gap-analysis.md`.
+  implementation-ready gap plan lives in `04-reference-gap-analysis.md`; the
+  completion audit and missing-evidence checklist lives in
+  `06-completion-audit.md`.
 
 ## How to Resume
 

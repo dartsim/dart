@@ -300,6 +300,8 @@ subcomponents, not only against whether old backend names still compile.
   order, and ready-to-implement checklist.
 - `05-downstream-migration.md`: compatibility contract and migration/removal
   gates for downstream projects such as gz-physics.
+- `06-completion-audit.md`: prompt-to-artifact checklist for deciding whether
+  the north star is actually achieved and what evidence is still missing.
 - `RESUME.md`: compact handoff state for continuing the same PR without losing
   the latest evidence.
 
@@ -516,6 +518,8 @@ collision stack.
   implementation-ready architecture for the next coding phase.
 - `05-downstream-migration.md`: downstream compatibility contract and removal
   gates for legacy detector names.
+- `06-completion-audit.md`: completion audit that maps each north-star
+  requirement to concrete evidence and remaining blockers.
 - `RESUME.md`: current branch state and session handoff context.
 
 ## Completion Rules
