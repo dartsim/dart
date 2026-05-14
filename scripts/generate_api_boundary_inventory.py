@@ -14,12 +14,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_PATH = REPO_ROOT / "docs" / "onboarding" / "api-boundary-inventory.md"
 ALLOWLIST_PATH = REPO_ROOT / "scripts" / "check_api_boundaries_allowlist.txt"
 
-CXX_MODULE_ROOTS = (
-    REPO_ROOT / "dart" / "collision",
-    REPO_ROOT / "dart" / "dynamics",
-    REPO_ROOT / "dart" / "simulation",
-    REPO_ROOT / "dart" / "io",
-)
+CXX_API_ROOT = REPO_ROOT / "dart"
 PYTHON_BINDING_ROOT = REPO_ROOT / "python" / "dartpy"
 HEADER_SUFFIXES = {".h", ".hpp"}
 SOURCE_SUFFIXES = {".cpp", ".h", ".hpp"}
@@ -62,7 +57,9 @@ def rel_path(path: Path) -> str:
 
 def module_name(path: Path) -> str:
     parts = path.relative_to(REPO_ROOT).parts
-    if len(parts) >= 2 and parts[0] == "dart":
+    if parts[0] == "dart":
+        if len(parts) == 2:
+            return "top-level"
         if parts[1] == "simulation" and len(parts) >= 3 and parts[2] == "experimental":
             return "simulation/experimental"
         return parts[1]
@@ -83,8 +80,7 @@ def is_public_header(path: Path) -> bool:
 def iter_public_headers() -> list[Path]:
     return sorted(
         path
-        for root in CXX_MODULE_ROOTS
-        for path in root.rglob("*")
+        for path in CXX_API_ROOT.rglob("*")
         if path.is_file() and is_public_header(path)
     )
 
