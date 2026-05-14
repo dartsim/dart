@@ -1565,7 +1565,11 @@ tracy-profiler-gui = ">=0.12.2,<0.13"
 # Note: DART_MSVC_FORCE_RELEASE_RUNTIME defaults to ON, which forces /MD for all
 # configurations (including Debug) to match conda-forge packages and avoid LNK2038
 # runtime library mismatch errors. Set to OFF if building all deps from source.
-config = { cmd = """
+config = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
     cmake \
         -S . \
         -B build/$PIXI_ENVIRONMENT_NAME/cpp \
@@ -1591,7 +1595,8 @@ config = { cmd = """
         -DDART_USE_SYSTEM_NANOBIND=OFF \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF" }, args = [
+""",
+], env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "dartpy", default = "ON" },
   { arg = "build_profile", default = "ON" },
   { arg = "profile_builtin", default = "ON" },
@@ -1702,7 +1707,11 @@ build-py-dev = { cmd = """
   { arg = "build_type", default = "Release" },
 ] }
 
-config-py = { cmd = """
+config-py = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
     cmake \
         -S . \
         -B build/$PIXI_ENVIRONMENT_NAME/cpp \
@@ -1724,7 +1733,8 @@ config-py = { cmd = """
         -DDART_USE_SYSTEM_IMGUI=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF" }, args = [
+""",
+], env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "build_profile", default = "ON" },
   { arg = "profile_builtin", default = "ON" },
   { arg = "profile_tracy", default = "ON" },
@@ -1872,7 +1882,11 @@ install = { cmd = "python scripts/pixi_install.py {{ dartpy }}", depends-on = [
   { arg = "dartpy", default = "ON" },
 ] }
 
-config-install = { cmd = """
+config-install = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
     cmake \
         -S . \
         -B build/$PIXI_ENVIRONMENT_NAME/cpp \
@@ -1894,7 +1908,8 @@ config-install = { cmd = """
         -DDART_USE_SYSTEM_IMGUI=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [
+""",
+], env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [
   { arg = "dartpy", default = "ON" },
 ] }
 

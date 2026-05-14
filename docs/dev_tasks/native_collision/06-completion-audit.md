@@ -34,6 +34,11 @@ unverified external and finalization gates:
   locally as `3120a4fce9b` and pushed to clear PR mergeability conflicts, with
   focused local configure, build, and anchored CTest evidence already passing
   for the merge-resolved collision, contact, world, and GUI targets.
+  The next PR refresh found a Windows-only Pixi parser failure in
+  `CI Windows` / `Tests (Release)` before CMake ran; Windows `config`,
+  `config-py`, and `config-install` now use `bash -lc` so the native-only
+  collision override defaults are interpreted by Bash rather than by Pixi's
+  Windows shell parser.
 - Downstream migration/deprecation evidence is still missing.
 - Final compatibility-facade retention/deprecation evidence is still missing:
   the documented decision is to delete old external-engine runtime

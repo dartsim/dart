@@ -120,6 +120,19 @@ These gates are still required before the single north-star PR is complete.
     `UNIT_collision_DartCollisionDetector`, `UNIT_constraint_ContactSurface`,
     `UNIT_simulation_World`, and `UNIT_gui_ImGuiWindowScaling` passed; the
     anchored CTest subset for those six unit-test executables passed 6/6.
+- Windows PR CI parser repair:
+  - Run/job: `25873037012` / `76033173338` (`CI Windows` /
+    `Tests (Release)`).
+  - Result: failed before CMake ran while `pixi run test-no-plane OFF` was
+    resolving the Windows `config` task.
+  - Root cause: the Windows task override used Bash parameter expansion such as
+    `${DART_BUILD_COLLISION_FCL_OVERRIDE:-OFF}` inside a raw Pixi shell string.
+    Pixi's Windows task parser rejected that syntax before the command reached
+    a shell.
+  - Repair: wrap the Windows `config`, `config-py`, and `config-install` task
+    bodies in `bash -lc`, matching the existing Windows test tasks, so the
+    collision override defaults are interpreted by Bash rather than by Pixi's
+    Windows shell parser.
 
 ## Current Full-Validation Repair
 

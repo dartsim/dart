@@ -207,7 +207,12 @@ for FCL, Bullet, ODE, and collision reference harnesses, and the matching local
 `origin/main` merge was committed locally as `3120a4fce9b` to clear PR
 mergeability conflicts and pushed to `feature/new_coll`; focused local
 configure, build, and anchored CTest coverage for the merge-resolved native
-collision, contact, world, and GUI targets pass.
+collision, contact, world, and GUI targets pass. The latest PR CI refresh then
+found a Windows-only Pixi task parser failure before CMake ran:
+`CI Windows` / `Tests (Release)` rejected Bash-style collision override
+defaults in the raw Windows `config` task. The working tree now wraps Windows
+`config`, `config-py`, and `config-install` in `bash -lc`, matching the
+existing Windows test tasks.
 
 ## Current Branch
 
@@ -227,8 +232,9 @@ has full `test-all` evidence through the latest documented head
 `864dd56d944c`, the branch was published at `5b08a00d381` before the first CI
 triage slice, the asserts-enabled workflow repair was pushed at
 `901d56c4260`, and the current local work has merged `origin/main` as
-`3120a4fce9b` and pushed it to PR #2652. The immediate next evidence steps are
-to watch PR #2652 CI, collect native-only/gz and wheel matrix artifact
+`3120a4fce9b` and pushed it to PR #2652. The current immediate step is to
+validate, commit, push, and recheck the Windows Pixi parser repair. After that,
+continue watching PR #2652 CI, collect native-only/gz and wheel matrix artifact
 evidence, collect GitHub evidence for the scheduled or manual benchmark guard,
 record downstream migration/deprecation evidence, perform final runtime
 cleanup, rerun full validation after the PR-complete state, transfer final
