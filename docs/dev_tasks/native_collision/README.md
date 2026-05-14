@@ -526,7 +526,8 @@ collision stack.
 8. **Final PR Packaging**
    - Remove this dev-task folder after transferring its evidence to the PR
      description.
-   - Keep durable architecture notes in `docs/onboarding/architecture.md`.
+   - Keep the durable built-in collision architecture notes now seeded in
+     `docs/onboarding/architecture.md`.
    - Preserve final evidence for `pixi run test-all`, gz-physics, native-only
      CI, packaging inspection, and benchmark guardrails.
 
@@ -547,5 +548,6 @@ collision stack.
 ## Completion Rules
 
 This folder is working documentation. When native collision reaches the
-completion criteria, extract only durable design notes into
-`docs/onboarding/architecture.md`, then delete this folder in the same PR.
+completion criteria, keep only durable design notes in onboarding docs, move
+final command evidence to the PR description, then delete this folder in the
+same PR.

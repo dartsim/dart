@@ -100,7 +100,9 @@ DART addresses the need for:
 ### Key Features
 
 - **Advanced Dynamics**: Articulated body simulation with 10+ joint types, contact resolution, constraint solving
-- **Multiple Collision Backends**: DART native (default), FCL, Bullet, ODE
+- **Built-In Collision Detection**: DART native runtime with
+  source-compatible legacy facades and optional reference engines for
+  correctness/performance comparison
 - **3D Visualization**: OpenSceneGraph-based rendering with shadows, materials, and real-time updates
 - **Interactive Manipulation**: Drag-and-drop, inverse kinematics, interactive frames with visual handles
 - **ImGui Integration**: Modern immediate-mode GUI for controls, debugging, and custom widgets
@@ -113,18 +115,18 @@ DART addresses the need for:
 
 ### Technologies Used
 
-| Category                | Technology            | Purpose                   |
-| ----------------------- | --------------------- | ------------------------- |
-| **Core Language**       | C++20                 | Main implementation       |
-| **Build System**        | CMake 3.22.1+         | Cross-platform builds     |
-| **Python Bindings**     | nanobind 2.9.x        | Python API                |
-| **Linear Algebra**      | Eigen 3.4.0+          | Math operations           |
-| **Collision Detection** | DART native           | Default collision backend |
-| **3D Rendering**        | OpenSceneGraph 3.0.0+ | Visualization             |
-| **GUI Framework**       | Dear ImGui 1.91.9     | Immediate-mode UI         |
-| **Model Loading**       | assimp 5.4.3+         | 3D asset import           |
-| **Environment**         | pixi/conda-forge      | Dependency management     |
-| **Graphics API**        | OpenGL 2+             | Rendering backend         |
+| Category                | Technology            | Purpose                    |
+| ----------------------- | --------------------- | -------------------------- |
+| **Core Language**       | C++20                 | Main implementation        |
+| **Build System**        | CMake 3.22.1+         | Cross-platform builds      |
+| **Python Bindings**     | nanobind 2.9.x        | Python API                 |
+| **Linear Algebra**      | Eigen 3.4.0+          | Math operations            |
+| **Collision Detection** | DART native           | Built-in collision runtime |
+| **3D Rendering**        | OpenSceneGraph 3.0.0+ | Visualization              |
+| **GUI Framework**       | Dear ImGui 1.91.9     | Immediate-mode UI          |
+| **Model Loading**       | assimp 5.4.3+         | 3D asset import            |
+| **Environment**         | pixi/conda-forge      | Dependency management      |
+| **Graphics API**        | OpenGL 2+             | Rendering backend          |
 
 ---
 
@@ -260,7 +262,8 @@ graph TB
 
 - **World**: Top-level simulation container with time-stepping
 - **Skeleton**: Articulated body system (robot/character)
-- **Collision Detection**: Multi-backend support (FCL, Bullet, ODE)
+- **Collision Detection**: Built-in native runtime with optional
+  reference-only comparison engines
 - **Constraint Solver**: LCP-based constraint resolution
 - **Integration**: Time-stepping schemes (Euler, Semi-Implicit Euler, RK4)
 
@@ -549,25 +552,28 @@ graph TB
 
 **File**: [`CollisionDetector.hpp`](dart/collision/CollisionDetector.hpp) | [`CollisionGroup.hpp`](dart/collision/CollisionGroup.hpp)
 
-**Purpose**: Pluggable collision detection system supporting multiple backends. Detects collisions between shapes and generates contact points.
+**Purpose**: Built-in collision detection system that detects collisions
+between shapes and generates contact points while preserving source-compatible
+legacy detector names during migration.
 
-**Key Backends**:
+**Key Layers**:
 
-- [`DARTCollisionDetector`](dart/collision/dart/DARTCollisionDetector.hpp) - Default native implementation
-- [`FCLCollisionDetector`](dart/collision/fcl/FCLCollisionDetector.hpp) - Optional FCL reference backend
-- [`BulletCollisionDetector`](dart/collision/bullet/BulletCollisionDetector.hpp) - Uses Bullet physics
-- [`OdeCollisionDetector`](dart/collision/ode/OdeCollisionDetector.hpp) - Uses ODE library
+- [`DartCollisionDetector`](dart/collision/dart/dart_collision_detector.hpp) - Canonical built-in detector
+- `dart/collision/{fcl,bullet,ode}/` - Compatibility facades that route normal runtime use to DART native
+- `dart/collision/native/` - Native geometry, broadphase, narrowphase, distance, raycast, and cache implementation
+- `reference/` targets - Optional FCL/Bullet/ODE comparison harnesses for tests and benchmarks
 
 **Key Elements**:
 
-- [`CollisionDetector::detectCollision()`](dart/collision/CollisionDetector.cpp#L84) - Run collision detection
+- [`CollisionDetector`](dart/collision/CollisionDetector.hpp) - Public collision query interface and factory
 - [`CollisionGroup`](dart/collision/CollisionGroup.hpp) - Groups shapes for broad-phase optimization
 - [`Contact`](dart/collision/Contact.hpp) - Contact point data structure
 
 **Depends On**:
 
 - **Internal**: Shape, CollisionObject
-- **External**: Optional FCL, Bullet, or ODE depending on backend
+- **External**: FCL, Bullet, and ODE only for optional reference tests and
+  benchmarks
 
 ---
 
@@ -1311,7 +1317,7 @@ This repository contains additional detailed analysis documents:
 ### Key Design Patterns Used in DART
 
 - **Factory Pattern**: Skeleton::create(), Joint factories
-- **Strategy Pattern**: Pluggable collision backends, integrators, solvers
+- **Strategy Pattern**: Collision query interface, integrators, solvers
 - **Observer Pattern**: Event handlers, callbacks
 - **Composite Pattern**: Frame hierarchy, BodyNode tree
 - **Aspect Pattern**: Runtime extensibility for entities
@@ -1327,7 +1333,7 @@ This repository contains additional detailed analysis documents:
 
 ✅ **O(n) efficient dynamics** via Featherstone algorithms
 ✅ **Interactive 3D visualization** with OSG + ImGui
-✅ **Multiple collision backends** (FCL, Bullet, ODE)
+✅ **Built-in native collision runtime** with reference-only comparison engines
 ✅ **Python integration** for ML/research workflows
 ✅ **Extensive file format support** (URDF, SDF, MJCF, SKEL)
 ✅ **Cross-platform** with reproducible builds via pixi

@@ -112,7 +112,7 @@ dart/
 ├── lcpsolver/      # LCP solver
 ├── optimizer/      # Deprecated alias headers that forward to math/optimization
 ├── dynamics/       # Dynamics engine
-├── collision/      # Native collision + optional FCL/Bullet/ODE backends
+├── collision/      # Built-in collision + compatibility/reference harnesses
 ├── constraint/     # Constraint handling
 ├── simulation/     # Simulation framework + time stepping
 ├── utils/          # Parsers and helpers (URDF/SDF)
@@ -237,39 +237,42 @@ dart/
 - **Target:** `OpenGL::GL`
 - **Platform:** All (system-provided)
 
-### Collision Engine Dependencies (Optional Components)
+### Collision Reference Dependencies (Optional Components)
 
 #### 10. FCL (Flexible Collision Library)
 
 - **Version:** ≥ 0.7.0, < 0.8
-- **Purpose:** Reference collision backend
+- **Purpose:** Reference collision implementation and compatibility component
 - **Option:** `DART_BUILD_COLLISION_FCL`
 - **Integration:** Builds optional `dart-collision-fcl` component
 - **CMake Module:** `cmake/DARTFindfcl.cmake`
 - **ROS Dependency:** `libfcl-dev`
 - **Failure mode:** Configuration aborts with `FATAL_ERROR` if the option is
   `ON` and FCL is missing.
-- **Disable:** Set `DART_BUILD_COLLISION_FCL=OFF` to omit the backend entirely.
+- **Disable:** Set `DART_BUILD_COLLISION_FCL=OFF` to omit the component
+  entirely.
 
 #### 11. Bullet Physics
 
 - **Version:** ≥ 3.25, < 4
-- **Purpose:** Alternative collision detection
+- **Purpose:** Reference collision implementation and compatibility component
 - **Option:** `DART_BUILD_COLLISION_BULLET`
 - **Integration:** Builds optional `dart-collision-bullet` component
 - **CMake Module:** `cmake/DARTFindBullet.cmake`
 - **Failure mode:** Configuration aborts with `FATAL_ERROR` if the option is `ON` and Bullet is missing.
-- **Disable:** There is no `DART_SKIP_Bullet`; set `DART_BUILD_COLLISION_BULLET=OFF` to omit the backend entirely.
+- **Disable:** There is no `DART_SKIP_Bullet`; set
+  `DART_BUILD_COLLISION_BULLET=OFF` to omit the component entirely.
 
 #### 12. Open Dynamics Engine (ODE)
 
 - **Version:** ≥ 0.13, < 1
-- **Purpose:** Alternative collision detection
+- **Purpose:** Reference collision implementation and compatibility component
 - **Option:** `DART_BUILD_COLLISION_ODE`
 - **Integration:** Builds optional `dart-collision-ode` component
 - **CMake Module:** `cmake/DARTFindODE.cmake`
 - **Failure mode:** Configuration aborts with `FATAL_ERROR` if the option is `ON` and ODE is missing.
-- **Disable:** There is no `DART_SKIP_ODE`; set `DART_BUILD_COLLISION_ODE=OFF` to omit the backend entirely.
+- **Disable:** There is no `DART_SKIP_ODE`; set `DART_BUILD_COLLISION_ODE=OFF`
+  to omit the component entirely.
 
 ### Utility Dependencies
 
@@ -465,10 +468,11 @@ Component Dependency Tree:
 | `gui`              | `dart-gui`              | `dart-utils`, `osg::osg`, `imgui::imgui`                            |
 | `external-imgui`   | `dart-external-imgui`   | `OpenGL::GL`                                                        |
 
-> FCL, Bullet, and ODE collision backends are optional `dart-collision-*`
-> components. `find_package(DART)` defaults to the core `dart` component;
-> request `collision-fcl`, `collision-bullet`, or `collision-ode` explicitly
-> when a reference backend is needed.
+> FCL, Bullet, and ODE collision dependencies are optional `dart-collision-*`
+> compatibility/reference components. `find_package(DART)` defaults to the
+> core `dart` component; request `collision-fcl`, `collision-bullet`, or
+> `collision-ode` explicitly only when downstream compatibility or reference
+> comparison coverage needs those components.
 
 > Advanced optimizer targets (IPOPT, NLopt, pagmo, SNOPT) were moved to [dart-optimization](https://github.com/dartsim/dart-optimization). The `dart/optimizer` directory that remains in this repo only ships deprecated headers that forward to `dart/math/optimization`.
 
@@ -787,7 +791,11 @@ DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz
 - **Missing DART components at configure time.** Example errors:
   - `Could NOT find DART (missing: collision-bullet collision-ode) (Required is at least version "7.0")`
   - `... but it set DART_FOUND to FALSE ...`
-  - **Resolution:** The downstream is requesting optional collision backend components. Use the gazebo pixi environment, which enables the requested backends with `DART_BUILD_COLLISION_BULLET=ON` and `DART_BUILD_COLLISION_ODE=ON`, or update the downstream to depend only on `dart` if it does not use those reference backends.
+  - **Resolution:** The downstream is requesting optional collision
+    compatibility components. Use the gazebo pixi environment, which enables
+    the requested components with `DART_BUILD_COLLISION_BULLET=ON` and
+    `DART_BUILD_COLLISION_ODE=ON`, or update the downstream to depend only on
+    `dart` if it does not use those compatibility/reference components.
 - **No local gz-physics source patches.** Keep `scripts/patch_gz_physics.py` limited to the DART version requirement bump; otherwise this workflow stops catching real compatibility breaks.
 - **gtest header mismatches.** Symptom: link errors like `undefined reference to testing::internal::MakeAndRegisterTestInfo(std::string, ...)` when building gz-physics tests. The `config-gz` task passes `-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:FILEPATH=$PWD/cmake/gz_physics_force_vendor_gtest.cmake` to ensure gz-physics compiles against the vendored headers that match its vendored gtest library; keep that behavior.
 - **Deprecation noise is expected.** When gz-physics exercises deprecated compatibility APIs, CMake or compiler warnings may appear; these are intentional and should be treated as migration pressure for downstreams.
