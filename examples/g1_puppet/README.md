@@ -2,18 +2,37 @@
 
 ## Summary
 
-- Goal: load a remote URDF package and inspect a G1 model with IK handles.
+- Goal: load a remote URDF package and inspect a G1 model with the experimental
+  Filament viewer.
 - Concepts/APIs: `dart::io::readSkeleton`, `HttpResourceRetriever`,
-  `PackageResourceRetriever`.
-- Expected output: a kinematic G1 in an OSG viewer; keys 1-4 toggle IK targets.
-- Controls: drag body nodes with the mouse; press 1-4 to toggle IK targets.
+  `PackageResourceRetriever`, and the experimental Filament GUI scene.
+- Expected output: a kinematic G1 in a Filament viewer.
+- Controls: left drag orbits, right/middle drag pans, wheel zooms, click
+  selects renderables, and Escape exits.
 
 ## Notes
 
 - Override the package/robot source with `--package-uri`, `--robot-uri`, and
   `--package-name`.
-- Requires CLI11 for argument parsing (installed via pixi).
+- Requires CLI11 for the legacy standalone source in this directory.
+- The recommended in-tree runner now uses the Filament scene in
+  `examples/filament_gui`. The standalone source in this directory still
+  carries the legacy OSG IK implementation until the promoted Filament GUI API
+  has equivalent tool abstractions.
 - This example runs in kinematic mode (no physics simulation).
+
+## Run In Tree
+
+From the repository root:
+
+```bash
+pixi run ex g1_puppet --gui-scale 2
+```
+
+This builds and runs `examples/filament_gui --scene g1`, so it uses the same
+Filament renderer path as the other experimental GUI fixtures. The legacy G1
+source accepts the shorter option names; the Filament runner accepts both those
+names and the explicit `--g1-*` names.
 
 ## Build
 

@@ -39,10 +39,15 @@
 #include "transparent_textured_lit_material.hpp"
 
 #include <dart/all.hpp>
+#include <dart/common/local_resource_retriever.hpp>
 #include <dart/common/profile.hpp>
 #include <dart/config.hpp>
 #include <dart/io/read.hpp>
+#include <dart/utils/composite_resource_retriever.hpp>
+#include <dart/utils/dart_resource_retriever.hpp>
+#include <dart/utils/http_resource_retriever.hpp>
 #include <dart/utils/mesh_loader.hpp>
+#include <dart/utils/package_resource_retriever.hpp>
 #include <dart/utils/urdf/All.hpp>
 
 #include <GLFW/glfw3.h>
@@ -883,6 +888,7 @@ enum class ExampleScene
 {
   Mvp,
   DragAndDrop,
+  G1,
 };
 
 struct AppOptions
@@ -895,6 +901,11 @@ struct AppOptions
   bool orbitLight = true;
   double orbitLightPeriodSeconds = 80.0;
   float guiScale = 1.0f;
+  std::string g1PackageName = "g1_description";
+  std::string g1PackageUri
+      = "https://raw.githubusercontent.com/unitreerobotics/unitree_ros/"
+        "master/robots/g1_description";
+  std::string g1RobotUri = "package://g1_description/g1_29dof.urdf";
 };
 
 constexpr const char* kWamFixtureSkeletonName = "visual_wam_robot";
@@ -902,8 +913,10 @@ constexpr const char* kAtlasFixtureSkeletonName = "visual_atlas_torso_mesh";
 constexpr const char* kAtlasRobotFixtureSkeletonName = "visual_atlas_robot";
 constexpr const char* kPbrEnvironmentFixtureSkeletonName =
     "visual_pbr_environment";
+constexpr const char* kG1FixtureSkeletonName = "visual_g1_robot";
 constexpr std::size_t kMinPbrEnvironmentRenderableCount = 4;
 constexpr std::size_t kMinDragAndDropFrameRenderableCount = 5;
+constexpr std::size_t kMinG1RenderableCount = 20;
 
 const char* sceneName(ExampleScene scene)
 {
@@ -912,6 +925,8 @@ const char* sceneName(ExampleScene scene)
       return "mvp";
     case ExampleScene::DragAndDrop:
       return "drag-and-drop";
+    case ExampleScene::G1:
+      return "g1";
   }
   return "mvp";
 }
@@ -926,22 +941,35 @@ bool parseSceneName(std::string_view name, ExampleScene& scene)
     scene = ExampleScene::DragAndDrop;
     return true;
   }
+  if (name == "g1") {
+    scene = ExampleScene::G1;
+    return true;
+  }
   return false;
 }
 
 OrbitCamera initialCameraForScene(ExampleScene scene)
 {
   OrbitCamera camera;
-  if (scene == ExampleScene::DragAndDrop) {
-    camera.target = Eigen::Vector3d(0.35, 0.15, 0.9);
-    camera.yaw = -0.72;
-    camera.pitch = 0.58;
-    camera.distance = 9.5;
-  } else {
-    camera.target = Eigen::Vector3d(0.15, 0.55, 0.75);
-    camera.yaw = -0.95;
-    camera.pitch = 0.38;
-    camera.distance = 7.2;
+  switch (scene) {
+    case ExampleScene::DragAndDrop:
+      camera.target = Eigen::Vector3d(0.35, 0.15, 0.9);
+      camera.yaw = -0.72;
+      camera.pitch = 0.58;
+      camera.distance = 9.5;
+      break;
+    case ExampleScene::G1:
+      camera.target = Eigen::Vector3d(0.0, 0.0, 0.85);
+      camera.yaw = -0.78;
+      camera.pitch = 0.24;
+      camera.distance = 3.4;
+      break;
+    case ExampleScene::Mvp:
+      camera.target = Eigen::Vector3d(0.15, 0.55, 0.75);
+      camera.yaw = -0.95;
+      camera.pitch = 0.38;
+      camera.distance = 7.2;
+      break;
   }
   return camera;
 }
@@ -1111,9 +1139,152 @@ dart::dynamics::SkeletonPtr createRequiredPbrEnvironmentSkeleton()
   return environment;
 }
 
+std::optional<std::string> getLastPathSegment(std::string value)
+{
+  if (value.empty()) {
+    return std::nullopt;
+  }
+
+  const std::size_t terminator = value.find_first_of("?#");
+  if (terminator != std::string::npos) {
+    value.erase(terminator);
+  }
+
+  while (value.ends_with('/') || value.ends_with('\\')) {
+    value.pop_back();
+  }
+
+  if (value.empty()) {
+    return std::nullopt;
+  }
+
+  const std::size_t slash = value.find_last_of("/\\");
+  std::string segment
+      = value.substr(slash == std::string::npos ? 0 : slash + 1);
+
+  if (segment.empty()) {
+    return std::nullopt;
+  }
+
+  return segment;
+}
+
+std::optional<std::string> inferPackageNameFromRobotUri(
+    const std::string& robotUri)
+{
+  if (robotUri.empty()) {
+    return std::nullopt;
+  }
+
+  dart::common::Uri uri;
+  if (!uri.fromStringOrPath(robotUri)) {
+    return std::nullopt;
+  }
+
+  if (!uri.mScheme || *uri.mScheme != "package" || !uri.mAuthority) {
+    return std::nullopt;
+  }
+
+  return uri.mAuthority.get();
+}
+
+std::optional<std::string> inferPackageNameFromPackageUri(
+    const std::string& packageUri)
+{
+  if (packageUri.empty()) {
+    return std::nullopt;
+  }
+
+  dart::common::Uri uri;
+  if (uri.fromStringOrPath(packageUri)) {
+    if (uri.mScheme && *uri.mScheme == "package" && uri.mAuthority) {
+      return uri.mAuthority.get();
+    }
+
+    if (uri.mPath) {
+      if (auto segment = getLastPathSegment(uri.mPath.get())) {
+        return segment;
+      }
+    }
+  }
+
+  return getLastPathSegment(packageUri);
+}
+
+dart::common::ResourceRetrieverPtr createG1ResourceRetriever(
+    const AppOptions& options)
+{
+  auto local = std::make_shared<dart::common::LocalResourceRetriever>();
+  auto dartRetriever = std::make_shared<dart::utils::DartResourceRetriever>();
+  auto http = std::make_shared<dart::utils::HttpResourceRetriever>();
+
+  auto passthrough = std::make_shared<dart::utils::CompositeResourceRetriever>();
+  passthrough->addSchemaRetriever("file", local);
+  passthrough->addSchemaRetriever("dart", dartRetriever);
+  passthrough->addSchemaRetriever("http", http);
+  passthrough->addSchemaRetriever("https", http);
+  passthrough->addDefaultRetriever(local);
+
+  auto packageRetriever
+      = std::make_shared<dart::utils::PackageResourceRetriever>(passthrough);
+  packageRetriever->addPackageDirectory(
+      options.g1PackageName, options.g1PackageUri);
+
+  auto resolver = std::make_shared<dart::utils::CompositeResourceRetriever>();
+  resolver->addSchemaRetriever("package", packageRetriever);
+  resolver->addSchemaRetriever("file", local);
+  resolver->addSchemaRetriever("dart", dartRetriever);
+  resolver->addSchemaRetriever("http", http);
+  resolver->addSchemaRetriever("https", http);
+  resolver->addDefaultRetriever(local);
+
+  return resolver;
+}
+
+dart::dynamics::SkeletonPtr createG1Ground()
+{
+  auto ground = Skeleton::create("g1_ground");
+  auto* body = ground->createJointAndBodyNodePair<WeldJoint>().second;
+
+  constexpr double thickness = 0.04;
+  auto* shapeNode = body->createShapeNodeWith<VisualAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d(4.0, 4.0, thickness)));
+  shapeNode->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, -thickness / 2.0));
+  shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.86, 0.88, 0.9, 1.0));
+  return ground;
+}
+
+dart::dynamics::SkeletonPtr loadG1Skeleton(const AppOptions& options)
+{
+  dart::io::ReadOptions readOptions;
+  readOptions.resourceRetriever = createG1ResourceRetriever(options);
+  const dart::common::Uri robotUri(options.g1RobotUri);
+  auto robot = dart::io::readSkeleton(robotUri, readOptions);
+  if (!robot) {
+    throw std::runtime_error(
+        "Failed to load G1 robot fixture from " + options.g1RobotUri);
+  }
+
+  robot->setName(kG1FixtureSkeletonName);
+  if (auto* rootBody = robot->getRootBodyNode()) {
+    if (auto* freeJoint
+        = dynamic_cast<FreeJoint*>(rootBody->getParentJoint())) {
+      Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+      transform.translation().z() = 0.75;
+      FreeJoint::setTransformOf(freeJoint, transform);
+    }
+  }
+  makeVisualOnlySkeleton(robot);
+  return robot;
+}
+
 AppOptions parseOptions(int argc, char* argv[])
 {
   AppOptions options;
+  bool g1PackageNameExplicit = false;
+  bool g1PackageUriExplicit = false;
+  bool g1RobotUriExplicit = false;
+
   for (int i = 1; i < argc; ++i) {
     const std::string_view arg(argv[i]);
     if (arg == "--frames" && i + 1 < argc) {
@@ -1164,9 +1335,23 @@ AppOptions parseOptions(int argc, char* argv[])
       const std::string_view sceneArg(argv[++i]);
       if (!parseSceneName(sceneArg, options.scene)) {
         std::cerr << "Unknown scene '" << sceneArg
-                  << "'. Expected 'mvp' or 'drag-and-drop'.\n";
+                  << "'. Expected 'mvp', 'drag-and-drop', or 'g1'.\n";
         std::exit(2);
       }
+    } else if (
+        (arg == "--g1-package-uri" || arg == "--package-uri")
+        && i + 1 < argc) {
+      options.g1PackageUri = argv[++i];
+      g1PackageUriExplicit = true;
+    } else if (
+        (arg == "--g1-robot-uri" || arg == "--robot-uri") && i + 1 < argc) {
+      options.g1RobotUri = argv[++i];
+      g1RobotUriExplicit = true;
+    } else if (
+        (arg == "--g1-package-name" || arg == "--package-name")
+        && i + 1 < argc) {
+      options.g1PackageName = argv[++i];
+      g1PackageNameExplicit = true;
     } else if (arg == "--help" || arg == "-h") {
       std::cout << "Usage: " << argv[0]
                 << " [--frames N] [--width N] [--height N]"
@@ -1176,10 +1361,30 @@ AppOptions parseOptions(int argc, char* argv[])
                    " [--orbit-light-period SECONDS]"
                    " [--gui-scale N]"
                    " [--profile]"
-                   " [--scene mvp|drag-and-drop]\n";
+                   " [--scene mvp|drag-and-drop|g1]"
+                   " [--g1-package-uri URI] [--g1-robot-uri URI]"
+                   " [--g1-package-name NAME]\n";
       std::exit(0);
     }
   }
+
+  if (!g1PackageNameExplicit) {
+    if (g1RobotUriExplicit) {
+      if (auto packageName
+          = inferPackageNameFromRobotUri(options.g1RobotUri)) {
+        options.g1PackageName = *packageName;
+      }
+    } else if (g1PackageUriExplicit) {
+      if (auto packageName
+          = inferPackageNameFromPackageUri(options.g1PackageUri)) {
+        options.g1PackageName = *packageName;
+      }
+    } else if (auto packageName
+               = inferPackageNameFromRobotUri(options.g1RobotUri)) {
+      options.g1PackageName = *packageName;
+    }
+  }
+
   normalizeRunOptions(options.run);
   if (options.guiScale != 1.0f) {
     options.run.width = std::max(
@@ -1543,13 +1748,31 @@ DartScene createDragAndDropScene()
   return scene;
 }
 
-DartScene createDartScene(ExampleScene scene)
+DartScene createG1DartScene(const AppOptions& options)
 {
-  switch (scene) {
+  DartScene scene;
+  scene.world = World::create("filament_gui_g1");
+  scene.world->setGravity(Eigen::Vector3d::Zero());
+  scene.world->addSkeleton(createG1Ground());
+
+  auto g1 = loadG1Skeleton(options);
+  std::cout << "Loaded G1 robot from '" << options.g1RobotUri << "'.\n"
+            << "Package root for '" << options.g1PackageName << "' set to '"
+            << options.g1PackageUri << "'.\n";
+  scene.world->addSkeleton(std::move(g1));
+
+  return scene;
+}
+
+DartScene createDartScene(const AppOptions& options)
+{
+  switch (options.scene) {
     case ExampleScene::Mvp:
       return createMvpDartScene();
     case ExampleScene::DragAndDrop:
       return createDragAndDropScene();
+    case ExampleScene::G1:
+      return createG1DartScene(options);
   }
   return createMvpDartScene();
 }
@@ -3380,7 +3603,7 @@ int main(int argc, char* argv[])
       fallbackBinding};
   TextureCache textureCache;
 
-  DartScene dartScene = createDartScene(appOptions.scene);
+  DartScene dartScene = createDartScene(appOptions);
   const auto initialDescriptors = extractRenderables(*dartScene.world);
   const std::size_t wamDescriptorCount = static_cast<std::size_t>(
       std::count_if(
@@ -3418,6 +3641,15 @@ int main(int argc, char* argv[])
                    && descriptor.material.visible
                    && descriptor.geometry.kind == ShapeKind::Mesh;
           }));
+  const std::size_t g1DescriptorCount = static_cast<std::size_t>(
+      std::count_if(
+          initialDescriptors.begin(),
+          initialDescriptors.end(),
+          [](const RenderableDescriptor& descriptor) {
+            return descriptor.skeletonName == kG1FixtureSkeletonName
+                   && descriptor.material.visible
+                   && descriptor.geometry.kind == ShapeKind::Mesh;
+          }));
   const std::size_t dragAndDropFrameDescriptorCount = static_cast<std::size_t>(
       std::count_if(
           initialDescriptors.begin(),
@@ -3452,6 +3684,14 @@ int main(int argc, char* argv[])
                 << pbrEnvironmentDescriptorCount << "\n";
       return 1;
     }
+  } else if (appOptions.scene == ExampleScene::G1) {
+    if (g1DescriptorCount < kMinG1RenderableCount) {
+      std::cerr << "Expected the G1 robot fixture to provide at least "
+                << kMinG1RenderableCount
+                << " visible mesh renderables, but extracted "
+                << g1DescriptorCount << "\n";
+      return 1;
+    }
   } else if (appOptions.scene == ExampleScene::DragAndDrop
              && dragAndDropFrameDescriptorCount
                     < kMinDragAndDropFrameRenderableCount) {
@@ -3467,6 +3707,7 @@ int main(int argc, char* argv[])
   std::size_t createdAtlasRenderableCount = 0;
   std::size_t createdAtlasRobotRenderableCount = 0;
   std::size_t createdPbrEnvironmentRenderableCount = 0;
+  std::size_t createdG1RenderableCount = 0;
   std::size_t createdDragAndDropFrameRenderableCount = 0;
   for (const RenderableDescriptor& descriptor : initialDescriptors) {
     if (!descriptor.material.visible) {
@@ -3493,6 +3734,10 @@ int main(int argc, char* argv[])
     if (descriptor.skeletonName == kPbrEnvironmentFixtureSkeletonName
         && descriptor.geometry.kind == ShapeKind::Mesh) {
       ++createdPbrEnvironmentRenderableCount;
+    }
+    if (descriptor.skeletonName == kG1FixtureSkeletonName
+        && descriptor.geometry.kind == ShapeKind::Mesh) {
+      ++createdG1RenderableCount;
     }
     if (!descriptor.shapeFrameName.empty()) {
       ++createdDragAndDropFrameRenderableCount;
@@ -3535,6 +3780,13 @@ int main(int argc, char* argv[])
       std::cerr << "Only " << createdPbrEnvironmentRenderableCount << " of "
                 << pbrEnvironmentDescriptorCount
                 << " PBR environment mesh renderables were created\n";
+      return 1;
+    }
+  } else if (appOptions.scene == ExampleScene::G1) {
+    if (createdG1RenderableCount < g1DescriptorCount) {
+      std::cerr << "Only " << createdG1RenderableCount << " of "
+                << g1DescriptorCount
+                << " G1 robot mesh renderables were created\n";
       return 1;
     }
   } else if (appOptions.scene == ExampleScene::DragAndDrop
