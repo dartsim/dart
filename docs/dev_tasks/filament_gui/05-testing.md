@@ -226,7 +226,8 @@ Known current result:
 - `.github/workflows/ci_ubuntu.yml` now includes a `filament-gui-smoke` job
   that installs Mesa, Xvfb, and libc++/libc++abi development packages and runs
   `pixi run test-filament-gui-smoke` without relying on a Filament conda
-  package. Hosted CI evidence is still pending.
+  package. On PR #2647, the hosted `Filament GUI Smoke (GCC)` and
+  `Filament GUI Smoke (Clang)` jobs pass.
 - The Filament example also configured, linked, and ran with
   `DART_BUILD_GUI=OFF` and `DART_BUILD_DARTPY=OFF` using
   `pixi run config OFF`, proving the experimental Filament path no longer needs

@@ -105,7 +105,8 @@
   When no display server is available, the task runs the smokes under Xvfb and
   prefers Mesa's EGL vendor file for software rendering. The Ubuntu CI workflow
   has a matching opt-in smoke job that gets Xvfb, libc++, and libc++abi from
-  system packages instead of relying on a Filament package.
+  system packages instead of relying on a Filament package. On PR #2647, the
+  hosted `Filament GUI Smoke (GCC)` and `Filament GUI Smoke (Clang)` jobs pass.
 - Local Linux CPython 3.12, 3.13, and 3.14 wheel builds now repair with
   `auditwheel` and pass installed-wheel testing. The smoke confirms
   `dartpy.gui.experimental` is present in the wheel and can extract a one-box
@@ -177,8 +178,9 @@ the appropriate major DART release.
 1. Use the north-star migration plan as the gate for any new public GUI API:
    DART-owned concepts only, no public backend types, and no OSG renderer
    source-compatibility promise.
-2. Let the new Ubuntu Filament smoke job run on hosted CI and fix any runner
-   differences in the explicit pinned fetch path.
+2. Keep the hosted Ubuntu `Filament GUI Smoke (GCC)` and
+   `Filament GUI Smoke (Clang)` jobs green on PR #2647 when the explicit pinned
+   fetch path changes.
 3. Add broader human visual review and larger authored environment/PBR assets
    for the visual-quality gate. The current screenshot analyzer is a smoke check
    for shadow/lighting contrast, not a replacement for broader visual review.

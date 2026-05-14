@@ -100,7 +100,8 @@
   transparent lit material variants in the MVP scene. Broader transparency
   workflows still need visual review before promotion.
 - Windowed screenshot capture and headless swap-chain screenshot capture both
-  produce local nonblank smoke images; CI integration is still pending.
+  produce local nonblank smoke images; the hosted Ubuntu GCC/Clang Filament
+  smoke jobs pass on PR #2647. Broader CI coverage remains promotion work.
 
 ## Phase 3 - Interaction baseline
 

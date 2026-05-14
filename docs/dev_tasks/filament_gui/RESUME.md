@@ -137,7 +137,14 @@ drag-and-drop headless CTest smokes. When `DISPLAY` is absent, the task uses
 Xvfb and prefers Mesa's EGL vendor file for software rendering. The Ubuntu CI
 workflow has a matching `filament-gui-smoke` job that installs Mesa, Xvfb, and
 libc++/libc++abi development packages from apt and runs that task without
-relying on a Filament conda package. Hosted CI evidence is still pending.
+relying on a Filament conda package. On PR #2647, the hosted
+`Filament GUI Smoke (GCC)` and `Filament GUI Smoke (Clang)` jobs pass.
+
+`feature/filament-gui-g1-example` is a checkpoint branch for testing a Filament
+version of the G1 puppet example and related visual-quality follow-ups. It is
+not the final PR scope for the broader Filament GUI task; keep final task
+updates on `feature/filament-gui-experimental` unless the G1 checkpoint is
+explicitly promoted.
 
 `docs/dev_tasks/filament_gui/07-completion-audit.md` maps the current
 implementation, verification evidence, and missing promotion gates. Use that
@@ -145,14 +152,13 @@ audit before deciding whether the dev task is complete.
 
 ## Current Branch
 
-`main` with uncommitted documentation and experimental example/build changes.
-Verify with
+`feature/filament-gui-experimental`, the head branch for PR #2647. Verify with
 `git status && git branch --show-current` before editing.
 
 ## Immediate Next Step
 
-Let the new Ubuntu Filament smoke job run on hosted CI and fix any runner
-differences in the explicit pinned fetch fallback. Locally, use:
+Keep the hosted Ubuntu GCC/Clang Filament smoke jobs green when the explicit
+pinned fetch fallback changes. Locally, use:
 
 ```bash
 LIBCXX_PREFIX=<prefix-containing-libc++-and-libc++abi>
@@ -198,4 +204,6 @@ find docs/dev_tasks/filament_gui -maxdepth 1 -type f -print | sort
 
 Then start the MVP by adding the build option and example target described in
 `docs/dev_tasks/filament_gui/02-mvp-example.md`, or continue from the existing
-implementation if those files are already present.
+implementation if those files are already present. For the current branch, the
+MVP implementation already exists; use `07-completion-audit.md` and
+`08-north-star-migration.md` to choose the next promotion-gate work.
