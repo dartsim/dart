@@ -126,6 +126,8 @@ using dart::dynamics::BoxShape;
 using dart::dynamics::CollisionAspect;
 using dart::dynamics::DynamicsAspect;
 using dart::dynamics::FreeJoint;
+using dart::dynamics::InverseKinematics;
+using dart::dynamics::InverseKinematicsPtr;
 using dart::dynamics::MeshShape;
 using dart::dynamics::PlaneShape;
 using dart::dynamics::Shape;
@@ -133,6 +135,7 @@ using dart::dynamics::ShapePtr;
 using dart::dynamics::ShapeNode;
 using dart::dynamics::SimpleFrame;
 using dart::dynamics::Skeleton;
+using dart::dynamics::SphereShape;
 using dart::dynamics::VisualAspect;
 using dart::dynamics::WeldJoint;
 using dart::examples::filament_gui::DebugDrawOptions;
@@ -157,6 +160,7 @@ using dart::examples::filament_gui::markScreenshotRequested;
 using dart::examples::filament_gui::markSimulationAdvanced;
 using dart::examples::filament_gui::makeOrbitCameraBasis;
 using dart::examples::filament_gui::makePerspectivePickRay;
+using dart::examples::filament_gui::makeRenderableId;
 using dart::examples::filament_gui::makeSelectionDebugLines;
 using dart::examples::filament_gui::normalizeRunOptions;
 using dart::examples::filament_gui::pickNearestRenderable;
@@ -879,9 +883,19 @@ filament::Texture* createSolidTexture(
   return texture;
 }
 
+struct G1IkHandle
+{
+  RenderableId targetRenderableId = 0;
+  std::string label;
+  int hotkey = 0;
+  std::shared_ptr<SimpleFrame> target;
+  InverseKinematicsPtr ik;
+};
+
 struct DartScene
 {
   dart::simulation::WorldPtr world;
+  std::vector<G1IkHandle> ikHandles;
 };
 
 enum class ExampleScene
@@ -1020,13 +1034,13 @@ std::shared_ptr<MeshShape> loadRequiredExampleMeshShape(
   return meshShape;
 }
 
-void makeVisualOnlySkeleton(const dart::dynamics::SkeletonPtr& skeleton)
+void disableSkeletonCollisionAndGravity(
+    const dart::dynamics::SkeletonPtr& skeleton)
 {
   if (!skeleton) {
     return;
   }
 
-  skeleton->setMobile(false);
   skeleton->disableSelfCollisionCheck();
   skeleton->setAdjacentBodyCheck(false);
   for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
@@ -1040,6 +1054,16 @@ void makeVisualOnlySkeleton(const dart::dynamics::SkeletonPtr& skeleton)
       shapeNode->getCollisionAspect()->setCollidable(false);
     });
   }
+}
+
+void makeVisualOnlySkeleton(const dart::dynamics::SkeletonPtr& skeleton)
+{
+  if (!skeleton) {
+    return;
+  }
+
+  skeleton->setMobile(false);
+  disableSkeletonCollisionAndGravity(skeleton);
 }
 
 dart::dynamics::SkeletonPtr loadRequiredWamRobotSkeleton()
@@ -1254,6 +1278,67 @@ dart::dynamics::SkeletonPtr createG1Ground()
   return ground;
 }
 
+std::optional<std::pair<Eigen::Vector3d, Eigen::Vector3d>>
+computeVisualWorldBounds(const dart::dynamics::SkeletonPtr& skeleton)
+{
+  if (!skeleton) {
+    return std::nullopt;
+  }
+
+  bool hasBounds = false;
+  Eigen::Vector3d min = Eigen::Vector3d::Zero();
+  Eigen::Vector3d max = Eigen::Vector3d::Zero();
+
+  const auto includePoint = [&](const Eigen::Vector3d& point) {
+    if (!hasBounds) {
+      min = point;
+      max = point;
+      hasBounds = true;
+      return;
+    }
+    min = min.cwiseMin(point);
+    max = max.cwiseMax(point);
+  };
+
+  for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
+    auto* body = skeleton->getBodyNode(i);
+    if (body == nullptr) {
+      continue;
+    }
+    body->eachShapeNodeWith<VisualAspect>([&](const ShapeNode* shapeNode) {
+      if (shapeNode == nullptr || shapeNode->getShape() == nullptr
+          || shapeNode->getVisualAspect()->isHidden()) {
+        return;
+      }
+
+      const auto& bounds = shapeNode->getShape()->getBoundingBox();
+      const Eigen::Vector3d localMin = bounds.getMin();
+      const Eigen::Vector3d localMax = bounds.getMax();
+      if (!localMin.allFinite() || !localMax.allFinite()) {
+        return;
+      }
+
+      const Eigen::Isometry3d transform = shapeNode->getWorldTransform();
+      for (int x = 0; x < 2; ++x) {
+        for (int y = 0; y < 2; ++y) {
+          for (int z = 0; z < 2; ++z) {
+            includePoint(transform * Eigen::Vector3d(
+                                         x == 0 ? localMin.x() : localMax.x(),
+                                         y == 0 ? localMin.y() : localMax.y(),
+                                         z == 0 ? localMin.z() : localMax.z()));
+          }
+        }
+      }
+    });
+  }
+
+  if (!hasBounds) {
+    return std::nullopt;
+  }
+
+  return std::make_pair(min, max);
+}
+
 dart::dynamics::SkeletonPtr loadG1Skeleton(const AppOptions& options)
 {
   dart::io::ReadOptions readOptions;
@@ -1270,12 +1355,88 @@ dart::dynamics::SkeletonPtr loadG1Skeleton(const AppOptions& options)
     if (auto* freeJoint
         = dynamic_cast<FreeJoint*>(rootBody->getParentJoint())) {
       Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-      transform.translation().z() = 0.75;
       FreeJoint::setTransformOf(freeJoint, transform);
+      if (const auto bounds = computeVisualWorldBounds(robot)) {
+        constexpr double g1GroundClearance = 0.015;
+        transform.translation().z() = g1GroundClearance - bounds->first.z();
+        FreeJoint::setTransformOf(freeJoint, transform);
+      }
     }
   }
-  makeVisualOnlySkeleton(robot);
+  disableSkeletonCollisionAndGravity(robot);
   return robot;
+}
+
+void addG1IkTargets(
+    DartScene& scene, const dart::dynamics::SkeletonPtr& robot)
+{
+  struct Config
+  {
+    const char* bodyNode;
+    const char* targetName;
+    const char* label;
+    int hotkey;
+    Eigen::Vector4d color;
+  };
+
+  const std::array<Config, 4> configs{{
+      {"left_rubber_hand",
+       "ik_target_left_hand",
+       "1 left hand",
+       GLFW_KEY_1,
+       {0.18, 0.55, 1.0, 0.92}},
+      {"right_rubber_hand",
+       "ik_target_right_hand",
+       "2 right hand",
+       GLFW_KEY_2,
+       {1.0, 0.40, 0.24, 0.92}},
+      {"left_ankle_roll_link",
+       "ik_target_left_foot",
+       "3 left foot",
+       GLFW_KEY_3,
+       {0.26, 0.86, 0.34, 0.92}},
+      {"right_ankle_roll_link",
+       "ik_target_right_foot",
+       "4 right foot",
+       GLFW_KEY_4,
+       {0.95, 0.72, 0.18, 0.92}},
+  }};
+
+  if (!scene.world || !robot) {
+    return;
+  }
+
+  for (const Config& config : configs) {
+    auto* bodyNode = robot->getBodyNode(config.bodyNode);
+    if (bodyNode == nullptr) {
+      std::cerr << "Unable to find G1 body node '" << config.bodyNode
+                << "' for IK target.\n";
+      continue;
+    }
+
+    auto* endEffector = bodyNode->createEndEffector(
+        std::string(config.targetName) + "_effector");
+    auto ik = endEffector->getIK(true);
+    ik->setGradientMethod<InverseKinematics::JacobianTranspose>();
+    ik->getSolver()->setNumMaxIterations(30);
+
+    auto target = SimpleFrame::createShared(
+        dart::dynamics::Frame::World(),
+        config.targetName,
+        endEffector->getWorldTransform());
+    target->setShape(std::make_shared<SphereShape>(0.055));
+    target->getVisualAspect(true)->setRGBA(config.color);
+    scene.world->addSimpleFrame(target);
+    ik->setTarget(target);
+
+    G1IkHandle handle;
+    handle.targetRenderableId = makeRenderableId(*target);
+    handle.label = config.label;
+    handle.hotkey = config.hotkey;
+    handle.target = std::move(target);
+    handle.ik = std::move(ik);
+    scene.ikHandles.push_back(std::move(handle));
+  }
 }
 
 AppOptions parseOptions(int argc, char* argv[])
@@ -1538,6 +1699,65 @@ Eigen::Vector3d selectedNudgeFromKeyboard(
   return nudge;
 }
 
+G1IkHandle* findG1IkHandle(DartScene& scene, RenderableId targetRenderableId)
+{
+  const auto handle = std::find_if(
+      scene.ikHandles.begin(),
+      scene.ikHandles.end(),
+      [&](const G1IkHandle& candidate) {
+        return candidate.targetRenderableId == targetRenderableId;
+      });
+  return handle == scene.ikHandles.end() ? nullptr : &*handle;
+}
+
+const G1IkHandle* findG1IkHandle(
+    const DartScene& scene, RenderableId targetRenderableId)
+{
+  const auto handle = std::find_if(
+      scene.ikHandles.begin(),
+      scene.ikHandles.end(),
+      [&](const G1IkHandle& candidate) {
+        return candidate.targetRenderableId == targetRenderableId;
+      });
+  return handle == scene.ikHandles.end() ? nullptr : &*handle;
+}
+
+std::string selectionLabelForRenderable(
+    const DartScene& scene, const RenderableDescriptor& descriptor)
+{
+  if (const auto* handle = findG1IkHandle(scene, descriptor.id)) {
+    return handle->label + " IK target";
+  }
+
+  std::string label = descriptor.skeletonName.empty()
+                          ? descriptor.shapeFrameName
+                          : descriptor.skeletonName + "/" + descriptor.bodyName;
+  if (!descriptor.shapeNodeName.empty()) {
+    label += "/" + descriptor.shapeNodeName;
+  }
+  label += " (" + descriptor.geometry.shapeType + ")";
+  return label;
+}
+
+bool translateRenderableAndApplyIk(
+    DartScene& scene,
+    const RenderableDescriptor& descriptor,
+    const Eigen::Vector3d& worldTranslation)
+{
+  if (!translateFrameRenderable(descriptor, worldTranslation)) {
+    return false;
+  }
+
+  if (auto* handle = findG1IkHandle(scene, descriptor.id)) {
+    if (handle->ik) {
+      handle->ik->getSolver()->setNumMaxIterations(30);
+      handle->ik->solveAndApply(true);
+    }
+  }
+
+  return true;
+}
+
 DartScene createMvpDartScene()
 {
   DartScene scene;
@@ -1759,7 +1979,8 @@ DartScene createG1DartScene(const AppOptions& options)
   std::cout << "Loaded G1 robot from '" << options.g1RobotUri << "'.\n"
             << "Package root for '" << options.g1PackageName << "' set to '"
             << options.g1PackageUri << "'.\n";
-  scene.world->addSkeleton(std::move(g1));
+  scene.world->addSkeleton(g1);
+  addG1IkTargets(scene, g1);
 
   return scene;
 }
@@ -1866,12 +2087,12 @@ float3 orbitingKeyLightDirection(double elapsedSeconds, double orbitPeriodSecond
 
 double perspectiveNearPlane(const OrbitCamera& camera)
 {
-  return std::clamp(camera.distance * 0.01, 0.005, 0.05);
+  return std::clamp(camera.distance * 0.004, 0.002, 0.025);
 }
 
 double perspectiveFarPlane(const OrbitCamera& camera)
 {
-  return std::max(100.0, camera.distance + 80.0);
+  return std::max(30.0, camera.distance + 35.0);
 }
 
 float4 toRgba(const Eigen::Vector4d& rgba)
@@ -3521,12 +3742,7 @@ int main(int argc, char* argv[])
   auto* colorGrading = createDebugColorGrading(*engine);
   view->setColorGrading(colorGrading);
   view->setShadowingEnabled(true);
-  view->setShadowType(
-      options.headless ? filament::ShadowType::PCF : filament::ShadowType::PCSS);
-  filament::SoftShadowOptions softShadowOptions;
-  softShadowOptions.penumbraScale = options.headless ? 1.6f : 1.15f;
-  softShadowOptions.penumbraRatioScale = options.headless ? 2.0f : 1.35f;
-  view->setSoftShadowOptions(softShadowOptions);
+  view->setShadowType(filament::ShadowType::PCF);
   auto* indirectLight = createNeutralIndirectLight(*engine);
   auto* skybox = createNeutralSkybox(*engine);
   scene->setIndirectLight(indirectLight);
@@ -3883,16 +4099,14 @@ int main(int argc, char* argv[])
 
   auto lightEntity = EntityManager::get().create();
   filament::LightManager::ShadowOptions shadowOptions;
-  shadowOptions.mapSize = options.headless ? 512 : 4096;
-  shadowOptions.shadowCascades = options.headless ? 1 : 4;
-  shadowOptions.cascadeSplitPositions[0] = 0.08f;
-  shadowOptions.cascadeSplitPositions[1] = 0.22f;
-  shadowOptions.cascadeSplitPositions[2] = 0.55f;
-  shadowOptions.shadowFar = options.headless ? 12.0f : 16.0f;
-  shadowOptions.shadowFarHint = options.headless ? 8.0f : 8.0f;
+  shadowOptions.mapSize = options.headless ? 2048 : 4096;
+  shadowOptions.shadowCascades = options.headless ? 3 : 4;
+  shadowOptions.cascadeSplitPositions[0] = 0.10f;
+  shadowOptions.cascadeSplitPositions[1] = 0.30f;
+  shadowOptions.cascadeSplitPositions[2] = 0.62f;
+  shadowOptions.shadowFar = options.headless ? 10.0f : 14.0f;
+  shadowOptions.shadowFarHint = options.headless ? 4.5f : 5.5f;
   shadowOptions.screenSpaceContactShadows = false;
-  shadowOptions.maxShadowDistance = options.headless ? 0.8f : 0.25f;
-  shadowOptions.shadowBulbRadius = options.headless ? 0.16f : 0.08f;
   bool orbitLight = appOptions.orbitLight;
   const float3 keyLightDirection
       = orbitLight ? orbitingKeyLightDirection(
@@ -3977,6 +4191,14 @@ int main(int argc, char* argv[])
         requestSingleStep(lifecycle, false);
       }
       wasStepPressed = isStepPressed;
+
+      for (const auto& handle : dartScene.ikHandles) {
+        if (glfwGetKey(window, handle.hotkey) == GLFW_PRESS) {
+          selectedRenderableId = handle.targetRenderableId;
+          selectedLabel = handle.label + " IK target";
+          lifecycle.paused = true;
+        }
+      }
     }
     profile.inputMs += elapsedMs(phaseStart);
 
@@ -4084,7 +4306,8 @@ int main(int argc, char* argv[])
               return candidate.id == selectedRenderableId;
             });
         if (selectedDescriptor != descriptors.end()
-            && translateFrameRenderable(*selectedDescriptor, nudge)) {
+            && translateRenderableAndApplyIk(
+                dartScene, *selectedDescriptor, nudge)) {
           lifecycle.paused = true;
           descriptors = extractRenderables(*dartScene.world);
         }
@@ -4191,7 +4414,8 @@ int main(int argc, char* argv[])
                 return candidate.id == selectedRenderableId;
               });
           if (selectedDescriptor != descriptors.end()
-              && translateFrameRenderable(*selectedDescriptor, *translation)) {
+              && translateRenderableAndApplyIk(
+                  dartScene, *selectedDescriptor, *translation)) {
             selectedDragLastRay = ray;
             lifecycle.paused = true;
             descriptors = extractRenderables(*dartScene.world);
@@ -4211,14 +4435,7 @@ int main(int argc, char* argv[])
             selectedRenderableId = hit->id;
             const RenderableDescriptor& descriptor
                 = descriptors[hit->renderableIndex];
-            selectedLabel = descriptor.skeletonName.empty()
-                                ? descriptor.shapeFrameName
-                                : descriptor.skeletonName + "/"
-                                      + descriptor.bodyName;
-            if (!descriptor.shapeNodeName.empty()) {
-              selectedLabel += "/" + descriptor.shapeNodeName;
-            }
-            selectedLabel += " (" + descriptor.geometry.shapeType + ")";
+            selectedLabel = selectionLabelForRenderable(dartScene, descriptor);
           } else {
             selectedRenderableId = 0;
             selectedLabel = "none";
@@ -4253,7 +4470,12 @@ int main(int argc, char* argv[])
       ImGui::TextWrapped(
           "Mouse: left orbit, right/middle pan, wheel zoom, click select.");
       ImGui::TextWrapped(
-          "Keys: Space pause, N step, arrows/Pg move selected, Esc exit.");
+          "Keys: Space pause, N step, arrows/Pg or Ctrl-left drag selected, "
+          "Esc exit.");
+      if (!dartScene.ikHandles.empty()) {
+        ImGui::TextWrapped(
+            "G1 IK: press 1-4 or click a colored target, then move it.");
+      }
       ImGui::PopTextWrapPos();
       ImGui::Separator();
       ImGui::Text("scene: %s", sceneName(appOptions.scene));
