@@ -14,8 +14,8 @@
 - Controls: left drag orbits, right/middle drag pans, wheel zooms, Space
   pauses/resumes, `n` steps once while paused, a left click without dragging
   selects a renderable, arrow/PageUp/PageDown keys nudge selected free-joint
-  bodies or `SimpleFrame` visuals, Ctrl-left drag moves selected frame
-  renderables in a camera-facing plane, Escape exits, and `--frames` limits
+  bodies, `SimpleFrame` visuals, and G1 IK targets, Ctrl-left drag moves the
+  selected item in a camera-facing plane, Escape exits, and `--frames` limits
   rendered frame count. Use
   `--screenshot <path>` to write a binary PPM capture, and `--headless` to use
   Filament's headless swap-chain path without creating a GLFW window. Use
@@ -79,9 +79,11 @@
   uses that path for a legacy-style `SimpleFrame` anchor, child frame, and axis
   marker layout.
 - The `--scene g1` fixture loads the remote Unitree G1 URDF through DART's
-  normal resource retriever and renders it with Filament. Override the package
-  or robot source with `--g1-package-uri`, `--g1-robot-uri`, and
-  `--g1-package-name` when testing local G1 assets.
+  normal resource retriever and renders it with Filament. Colored IK target
+  markers are attached to both hands and feet; press `1`-`4` or click a marker,
+  then Ctrl-left drag or use the arrow/PageUp/PageDown keys to move the target
+  and apply IK. Override the package or robot source with `--g1-package-uri`,
+  `--g1-robot-uri`, and `--g1-package-name` when testing local G1 assets.
 
 ## Quick Run
 

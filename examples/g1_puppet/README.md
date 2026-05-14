@@ -8,7 +8,8 @@
   `PackageResourceRetriever`, and the experimental Filament GUI scene.
 - Expected output: a kinematic G1 in a Filament viewer.
 - Controls: left drag orbits, right/middle drag pans, wheel zooms, click
-  selects renderables, and Escape exits.
+  selects renderables, Ctrl-left drag or arrow/PageUp/PageDown nudges selected
+  items, and Escape exits.
 
 ## Notes
 
@@ -16,9 +17,10 @@
   `--package-name`.
 - Requires CLI11 for the legacy standalone source in this directory.
 - The recommended in-tree runner now uses the Filament scene in
-  `examples/filament_gui`. The standalone source in this directory still
-  carries the legacy OSG IK implementation until the promoted Filament GUI API
-  has equivalent tool abstractions.
+  `examples/filament_gui`. It exposes colored IK targets for the hands and
+  feet; press `1`-`4` or click a target marker, then Ctrl-left drag or use the
+  arrow/PageUp/PageDown keys to move the target and solve IK. The standalone
+  source in this directory remains as the legacy OSG version.
 - This example runs in kinematic mode (no physics simulation).
 
 ## Run In Tree
