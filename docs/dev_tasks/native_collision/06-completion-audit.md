@@ -25,8 +25,11 @@ unverified external and finalization gates:
 - GitHub artifact evidence for the scheduled/manual collision benchmark guard
   is still missing.
 - Downstream migration/deprecation evidence is still missing.
-- Final legacy-runtime deletion or hard-deprecation decisions are still
-  pending.
+- Final compatibility-facade retention/deprecation evidence is still missing:
+  the documented decision is to delete old external-engine runtime
+  implementations, keep only native-backed compatibility facades required by
+  downstream migration, and leave FCL/Bullet/ODE access in explicit
+  reference-only test/benchmark APIs.
 - Full local `pixi run test-all` evidence is refreshed for the current local
   state after fixing one stale VSG native `ShapeType` switch left by the native
   taxonomy cleanup. Final `pixi run test-all` evidence after the eventual
@@ -178,9 +181,9 @@ Legend:
 3. Record downstream migration/deprecation evidence proving gz-physics and
    downstream users no longer depend on legacy names as runtime backend
    selectors.
-4. Decide whether retained FCL/Bullet/ODE compatibility facades are removed or
-   hard-deprecated in the final PR state. Preserve only wrappers required for
-   source compatibility, and keep all external engines reference-only.
+4. Apply the documented compatibility-facade policy in the final PR state:
+   preserve only wrappers required for source compatibility, keep them
+   native-backed, and keep all external engines reference-only.
 5. Run final validation after the final code state, including at least
    `pixi run lint` and `pixi run test-all`, plus any CI-specific gates whose
    failures are not covered locally.

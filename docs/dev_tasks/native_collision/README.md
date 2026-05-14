@@ -141,7 +141,9 @@
       wired verifier, downstream migration/deprecation and CI evidence, GitHub
       evidence for the scheduled performance guard, explicit
       API/scalability/performance architecture gate evidence, dev-task
-      cleanup, and final legacy backend deletion.
+      cleanup, and final runtime cleanup that removes old external-engine
+      implementations while preserving only native-backed compatibility
+      facades required by downstream migration.
       A current local `pixi run test-all` rerun exposed a validation
       robustness gap rather than a native-collision behavior regression:
       stale cached optional `libccd` paths could leave the native test build
@@ -266,8 +268,8 @@ in three dimensions:
   scratch/cache lifetimes, and benchmark/profiler labels for each query stage.
 
 That gate remains open for CI evidence, downstream migration/deprecation
-evidence, final legacy-runtime deletion, and broader correctness/performance
-guardrails across the public DART adapter and native core paths.
+evidence, final runtime cleanup, and broader correctness/performance guardrails
+across the public DART adapter and native core paths.
 
 ## Design Readiness Tracker
 
@@ -341,7 +343,7 @@ subcomponents, not only against whether old backend names still compile.
   factory alias only for old saved worlds, tests, and downstream code.
 - `dart/collision/native/` owns backend-independent algorithms and data
   structures; `dart/collision/dart/` owns DART API adaptation.
-- Reference backends are validation tools during migration, not permanent
+- Reference engines are validation tools during migration, not permanent
   runtime dependencies.
 - gz-physics compatibility is a release gate. If gz-physics subclasses or names
   legacy detector classes, DART keeps facade types until gz-physics has a
@@ -516,13 +518,14 @@ collision stack.
      through JSON artifacts.
    - Treat benchmarks as optimization evidence after correctness is locked, not
      as a substitute for correctness tests.
-7. **Final Deletion**
-   - After downstream compatibility windows close, delete old backend
-     source/components from the runtime backend layer, remove legacy package
-     dependencies from default builds, and simplify CMake and installed-package
-     exports around native collision. Keep the runtime source isolation check
-     as the local guard that prevents old-engine runtime includes or
-     implementation sources from returning.
+7. **Final Runtime Cleanup**
+   - After downstream compatibility windows close, delete old external-engine
+     implementation source/components from the runtime layer, retain only
+     native-backed compatibility facades required by downstream migration,
+     remove legacy package dependencies from default builds, and simplify CMake
+     and installed-package exports around native collision. Keep the runtime
+     source isolation check as the local guard that prevents old-engine runtime
+     includes or implementation sources from returning.
 8. **Final PR Packaging**
    - Remove this dev-task folder after transferring its evidence to the PR
      description.

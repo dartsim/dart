@@ -448,15 +448,17 @@ Verification:
 - Performance evidence is linked from release notes or PR descriptions for
   collision-sensitive changes.
 
-## Phase 13: Final Legacy Backend Deletion
+## Phase 13: Final Runtime Cleanup And Facade Policy
 
-Purpose: remove FCL, Bullet, and ODE from the runtime backend layer once native
-has CI, downstream, packaging, correctness, and performance guardrails in place.
+Purpose: remove FCL, Bullet, and ODE implementation paths from the runtime
+layer once native has CI, downstream, packaging, correctness, and performance
+guardrails in place. Compatibility facades may remain only when needed for
+source compatibility, and they must be native-backed.
 
 Success criteria:
 
-- FCL, Bullet, and ODE collision backend source/components are deleted from
-  production runtime backend paths.
+- FCL, Bullet, and ODE collision implementation source/components are deleted
+  from production runtime paths.
 - Legacy package dependencies are removed from normal package metadata and
   build environments.
 - Compatibility facades that remain are native-backed and do not link old
@@ -468,9 +470,9 @@ Success criteria:
 
 Verification:
 
-- Full `pixi run test-all` passes after deletion.
-- gz-physics compatibility passes after deletion or after downstream migration
-  lands.
+- Full `pixi run test-all` passes after runtime cleanup.
+- gz-physics compatibility passes after runtime cleanup or after downstream
+  migration lands.
 - No default target links FCL, Bullet, or ODE collision libraries.
 - Repository search shows old backend names only in changelog, migration notes,
   intentionally retained compatibility aliases, or optional reference
