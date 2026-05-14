@@ -428,6 +428,33 @@ void appendLine(
   lines.push_back(std::move(line));
 }
 
+void appendArrowLines(
+    std::vector<DebugLineDescriptor>& lines,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& to,
+    const Eigen::Vector4d& color,
+    const std::string& label)
+{
+  appendLine(lines, from, to, color, label);
+
+  const Eigen::Vector3d vector = to - from;
+  const double length = vector.norm();
+  if (!std::isfinite(length) || length <= 1e-12) {
+    return;
+  }
+
+  const Eigen::Vector3d direction = vector / length;
+  const Eigen::Vector3d seed = std::abs(direction.z()) < 0.9
+                                   ? Eigen::Vector3d::UnitZ()
+                                   : Eigen::Vector3d::UnitY();
+  const Eigen::Vector3d side = direction.cross(seed).normalized();
+  const double headLength = length * 0.25;
+  const double headWidth = headLength * 0.45;
+  const Eigen::Vector3d base = to - direction * headLength;
+  appendLine(lines, to, base + side * headWidth, color, label);
+  appendLine(lines, to, base - side * headWidth, color, label);
+}
+
 void appendFrameAxes(
     std::vector<DebugLineDescriptor>& lines,
     const Eigen::Isometry3d& transform,
@@ -1544,7 +1571,7 @@ std::vector<DebugLineDescriptor> extractContactDebugLines(
   }
 
   const auto contacts = result.getContacts();
-  lines.reserve(contacts.size() * 4u);
+  lines.reserve(contacts.size() * 8u);
   const Eigen::Vector4d pointColor = rgba(1.0, 0.92, 0.38);
   const Eigen::Vector4d normalColor = rgba(1.0, 0.75, 0.25);
   const Eigen::Vector4d forceColor = rgba(0.93, 0.31, 0.67);
@@ -1566,7 +1593,7 @@ std::vector<DebugLineDescriptor> extractContactDebugLines(
     if (options.drawContactNormals
         && contact.normal.squaredNorm()
                > collision::Contact::getNormalEpsilonSquared()) {
-      appendLine(
+      appendArrowLines(
           lines,
           point,
           point + contact.normal.normalized() * options.contactNormalLength,
@@ -1580,7 +1607,7 @@ std::vector<DebugLineDescriptor> extractContactDebugLines(
           forceNorm * options.contactForceScale,
           options.contactForceMinLength,
           options.contactForceMaxLength);
-      appendLine(
+      appendArrowLines(
           lines,
           point,
           point + contact.force.normalized() * forceLength,

@@ -1175,14 +1175,18 @@ TEST(FilamentSceneExtraction, ExtractContactDebugLines_ReturnsMarkersAndVectors)
   const auto lines
       = dart::gui::experimental::extractContactDebugLines(result, options);
 
-  ASSERT_EQ(lines.size(), 4u);
+  ASSERT_EQ(lines.size(), 8u);
   EXPECT_EQ(lines[0].label, "contact.point");
   EXPECT_TRUE(lines[0].from.isApprox(Eigen::Vector3d(0.9, 2.0, 3.0)));
   EXPECT_TRUE(lines[0].to.isApprox(Eigen::Vector3d(1.1, 2.0, 3.0)));
   EXPECT_EQ(lines[2].label, "contact.normal");
   EXPECT_TRUE(lines[2].to.isApprox(Eigen::Vector3d(1.0, 2.0, 3.3)));
-  EXPECT_EQ(lines[3].label, "contact.force");
-  EXPECT_TRUE(lines[3].to.isApprox(Eigen::Vector3d(1.2, 2.0, 3.0)));
+  EXPECT_EQ(lines[3].label, "contact.normal");
+  EXPECT_TRUE(lines[3].from.isApprox(Eigen::Vector3d(1.0, 2.0, 3.3)));
+  EXPECT_EQ(lines[5].label, "contact.force");
+  EXPECT_TRUE(lines[5].to.isApprox(Eigen::Vector3d(1.2, 2.0, 3.0)));
+  EXPECT_EQ(lines[6].label, "contact.force");
+  EXPECT_TRUE(lines[6].from.isApprox(Eigen::Vector3d(1.2, 2.0, 3.0)));
 }
 
 TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)

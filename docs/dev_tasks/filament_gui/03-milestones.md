@@ -74,7 +74,7 @@
   PBR maps on more than isolated mesh samples.
 - `dart-gui-experimental` now owns backend-hidden debug line descriptors for a
   grid, world/body frames, center-of-mass markers, contact markers, contact
-  normals, contact force vectors, support-polygon outlines, and
+  normal arrows, contact force arrows, support-polygon outlines, and
   support-centroid markers. The Filament example converts those descriptors to
   line primitives.
 - The extraction layer includes tested local picking bounds and nearest
@@ -102,7 +102,7 @@
 - One maintained example can be demonstrated end-to-end on Filament.
 - Screenshots are stable enough for visual smoke checks.
 - The shadow gate in `06-visual-quality.md` passes.
-- Grid, world/body frame, contact, normal, force-vector, center-of-mass, and
+- Grid, world/body frame, contact, normal-arrow, force-arrow, center-of-mass, and
   support-polygon overlays render in the MVP; the built-in panel can toggle the
   current overlay groups. Broader scenario coverage is still needed before
   Phase 2 is complete.

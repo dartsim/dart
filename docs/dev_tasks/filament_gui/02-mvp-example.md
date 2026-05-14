@@ -92,8 +92,8 @@ Implemented:
   The smoke fixture includes a translucent ellipsoid, a translucent
   checker-textured plane, and the alpha-bearing glTF PBR mesh.
 - Backend-hidden debug line descriptors in `dart-gui-experimental` for a grid,
-  world/body frames, center-of-mass markers, contact markers, contact normals,
-  and contact force vectors, with the Filament example translating those
+  world/body frames, center-of-mass markers, contact markers, contact normal
+  arrows, and contact force arrows, with the Filament example translating those
   descriptors into line primitives.
 - Renderer-independent picking bounds, nearest ray-hit helpers, and focused
   unit coverage in the experimental scene layer.
@@ -113,7 +113,7 @@ Implemented:
   through the same backend-hidden extraction and frame-translation path.
 - Built-in panel controls for pause/resume, single-step, and debug overlay
   toggles covering grid, world/body frames, center-of-mass markers, contacts,
-  normals, and force vectors.
+  normal arrows, and force arrows.
 - Backend-hidden run-option normalization and orbit-camera helpers in
   `dart-gui-experimental`, with the Filament example using them for bounded
   screenshots, camera placement, and perspective pick rays.
@@ -143,8 +143,9 @@ Blocked or incomplete:
 - Broader human visual review with larger authored glTF/PBR environment scenes
   beyond the current WAM, Atlas, and PBR panel fixtures is still pending.
 - Debug overlays are still MVP-level and need broader scenario coverage, but
-  their grid/frame/center-of-mass/contact/force data is no longer Filament-only
-  example code and the built-in panel can toggle the current overlay groups.
+  their grid/frame/center-of-mass/contact/force-arrow data is no longer
+  Filament-only example code and the built-in panel can toggle the current
+  overlay groups.
 - Selection/manipulation is still MVP-level: shape picking, bounds overlays,
   body/simple-frame nudging, Ctrl-left camera-plane dragging, and a first
   drag-and-drop fixture exist, but broader interaction-heavy workflows are

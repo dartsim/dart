@@ -297,7 +297,7 @@ Known current result:
   golden-image comparison.
 - The same smoke fixture renders Filament line primitives from
   `dart-gui-experimental` grid, world/body frame, center-of-mass, contact,
-  normal, and force-vector descriptors. The debug-line material uses
+  normal-arrow, and force-arrow descriptors. The debug-line material uses
   transparent blending so alpha-bearing overlay colors can be used for
   translucent visual-debugging marks. The bounded local run reports nonzero
   final contacts from the intentionally contacting fixture body. Support-polygon
