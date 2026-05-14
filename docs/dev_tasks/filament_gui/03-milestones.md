@@ -77,7 +77,10 @@
   normals, and contact force vectors. The Filament example converts those
   descriptors to line primitives.
 - The extraction layer includes tested local picking bounds and nearest
-  ray-hit helpers for visible renderables.
+  ray-hit helpers for visible renderables, including bounds hit points and hit
+  normals.
+- Unsupported shape types now remain visible to non-rendering consumers through
+  diagnostic descriptors instead of being silently dropped by extraction.
 - Phase 1 is not complete yet because broader human visual review with larger
   authored environment and PBR assets beyond the current WAM, Atlas, and PBR
   panel fixtures is still pending.
@@ -184,9 +187,10 @@
   The Filament example keeps only renderer readback and delegates file writing
   to the backend-hidden helper.
 - `dartpy.gui.experimental` exposes constrained bindings for renderable
-  descriptors, material/geometry descriptors, picking helpers, free-joint
-  translation, plane-drag helpers, debug-line descriptor generation, run
-  options, viewer lifecycle state, screenshot storage, and orbit-camera helpers.
+  descriptors, material/geometry descriptors including mesh material/submesh
+  metadata, picking helpers with bounds hit normals, free-joint translation,
+  plane-drag helpers, debug-line descriptor generation, run options, viewer
+  lifecycle state, screenshot storage, and orbit-camera helpers.
 - `dartpy` can now build the constrained `dartpy.gui.experimental` module with
   `DART_BUILD_GUI=OFF` when `dart-gui-experimental` is present, so the Python
   experimental API is no longer tied to the legacy GUI target.

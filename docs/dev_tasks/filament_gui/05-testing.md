@@ -238,8 +238,9 @@ Known current result:
   the shadow-enabled two-box/ground fixture with a visible ImGui overlay.
 - `UNIT_gui_FilamentSceneExtraction` builds and passes. It covers the
   `dart-gui-experimental` extraction layer, including primitive, mesh, plane,
-  material, visibility, shadow, picking, and debug-line descriptors, without
-  requiring Filament or a graphics context.
+  material, visibility, shadow, unsupported-shape diagnostics, picking hit
+  points/normals, and debug-line descriptors, without requiring Filament or a
+  graphics context.
 - After moving viewer lifecycle state into `dart-gui-experimental`,
   `DART_PARALLEL_JOBS=2 CTEST_PARALLEL_LEVEL=2 pixi run test-all` passed
   locally, covering lint, Release/Debug builds, default C++ tests,
