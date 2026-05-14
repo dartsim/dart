@@ -47,6 +47,12 @@ local development until prebuilt wheels become available on RTD.
 
 ## Documentation Surfaces
 
+The generated C++ API reference is a user-facing public API surface. It should
+favor public and compatibility APIs, while implementation details belong under
+`detail/` or `internal/` and should be marked with `@internal` when they must
+appear in public headers. See [api-boundaries.md](api-boundaries.md) for the
+boundary policy.
+
 ### Read the Docs (primary site)
 
 - **URL:** <https://docs.dartsim.org>

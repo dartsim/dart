@@ -41,6 +41,7 @@ Knowledge Base
 | ---------------------------------- | -------------------------------------------------- |
 | `onboarding/`                      | Developer guides (architecture, building, testing) |
 | `onboarding/ai-tools.md`           | AI tool compatibility notes                        |
+| `onboarding/api-boundaries.md`     | Public vs internal API policy                      |
 | `onboarding/release-management.md` | Release workflow guidance                          |
 | `dev_tasks/`                       | Active development task tracking                   |
 | `readthedocs/`                     | Published user documentation (Sphinx/RST)          |
@@ -53,6 +54,7 @@ Knowledge Base
 - **Loading models?** → `onboarding/io-parsing.md` or load skill `dart-io`
 - **Working on dartpy?** → `onboarding/python-bindings.md` or load skill `dart-python`
 - **Understanding architecture?** → `onboarding/architecture.md`
+- **Designing public APIs?** → `onboarding/api-boundaries.md`
 - **Contributing?** → `onboarding/contributing.md` or load skill `dart-contribute`
 - **Release workflow?** → `onboarding/release-management.md` or use `/dart-release-*`
 - **Adding docs?** → `readthedocs/README.md`

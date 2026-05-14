@@ -223,6 +223,9 @@ if(NOT _dart_user_set_build_gui_raylib AND DEFINED DART_BUILD_RAYLIB)
   unset(_dart_build_gui_raylib_value)
 endif()
 unset(_dart_user_set_build_gui_raylib)
+dart_option(DART_STRICT_SYMBOL_VISIBILITY
+  "Build shared libraries with hidden default symbol visibility so exported public ABI must use component *_API macros" OFF
+  CATEGORY build)
 dart_option(DART_BUILD_COLLISION_BULLET "Embed the Bullet collision backend into the core dart target" OFF CATEGORY build)
 dart_option(DART_BUILD_COLLISION_ODE "Embed the ODE collision backend into the core dart target" OFF CATEGORY build)
 dart_option(DART_BUILD_EXAMPLES "Build example targets" ON CATEGORY build)

@@ -311,6 +311,28 @@ function(dart_print_options)
   message(STATUS "")
 endfunction()
 
+function(dart_apply_strict_symbol_visibility _target_name)
+  if(NOT TARGET ${_target_name})
+    message(
+      FATAL_ERROR
+      "dart_apply_strict_symbol_visibility: target "
+      "'${_target_name}' does not exist")
+  endif()
+
+  if(NOT DART_STRICT_SYMBOL_VISIBILITY)
+    return()
+  endif()
+
+  get_target_property(_dart_target_type ${_target_name} TYPE)
+  if(_dart_target_type STREQUAL "SHARED_LIBRARY"
+      OR _dart_target_type STREQUAL "MODULE_LIBRARY")
+    set_target_properties(${_target_name} PROPERTIES
+      CXX_VISIBILITY_PRESET hidden
+      VISIBILITY_INLINES_HIDDEN YES
+    )
+  endif()
+endfunction()
+
 function(dart_library)
   set(prefix _ARG)
   set(options
@@ -350,6 +372,7 @@ function(dart_library)
     ${_ARG_HEADERS}
     ${_ARG_SOURCES}
   )
+  dart_apply_strict_symbol_visibility(${_ARG_NAME})
 
   target_include_directories(${_ARG_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
@@ -1370,6 +1393,7 @@ macro(dart_add_library _name)
     set(_dart_target_build_shared 0)
   endif()
   add_library(${_name} ${ARGN})
+  dart_apply_strict_symbol_visibility(${_name})
   string(REPLACE "-" "_" _dart_export_macro "${_name}")
   string(REPLACE ":" "_" _dart_export_macro "${_dart_export_macro}")
   string(REPLACE "/" "_" _dart_export_macro "${_dart_export_macro}")
@@ -2023,6 +2047,7 @@ function(dart_create_library)
 
   # Create library
   add_library(${ARG_NAME} SHARED ${ARG_SOURCES})
+  dart_apply_strict_symbol_visibility(${ARG_NAME})
 
   # Set C++20 standard (modern CMake approach)
   target_compile_features(${ARG_NAME} PUBLIC cxx_std_20)

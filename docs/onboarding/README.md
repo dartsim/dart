@@ -64,6 +64,8 @@ This onboarding guide is organized into several focused documents:
 - **[testing.md](testing.md)** - Test suite organization, unit vs integration tests, running tests
 - **[ci-cd.md](ci-cd.md)** - CI/CD workflows, caching strategies, and performance optimization
 - **[release-roadmap.md](release-roadmap.md)** - Release/branch strategy and deprecation policy
+- **[api-boundaries.md](api-boundaries.md)** - Public vs internal API policy, Python exposure, and symbol visibility
+- **[api-boundary-inventory.md](api-boundary-inventory.md)** - Generated public-header and dartpy boundary inventory
 - **[architecture.md](architecture.md)** - Deep dive into DART's simulation core
 - **[dynamics.md](dynamics.md)** - Articulated body system and kinematics
 - **[constraints.md](constraints.md)** - Constraint resolution and collision response

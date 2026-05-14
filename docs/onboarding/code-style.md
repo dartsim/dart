@@ -212,6 +212,15 @@ private:
 #endif // DART_EXAMPLE_EXAMPLECLASS_HPP_
 ```
 
+### API Boundary Style
+
+New user-facing API belongs in public module headers and should use the module's
+component export macro when the symbol crosses a shared-library boundary
+(`DART_API`, `DART_GUI_API`, `DART_IO_API`, etc.). Implementation details belong
+under `detail/` or `internal/`; compiled internal symbols should prefer the
+matching `*_LOCAL` macro. See [api-boundaries.md](api-boundaries.md) before
+adding new public headers, exported classes, or Python bindings.
+
 ### Source Style
 
 **Rules:**
