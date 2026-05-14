@@ -77,6 +77,7 @@
 #include <algorithm>
 #include <array>
 #include <fstream>
+#include <functional>
 #include <limits>
 #include <string>
 #include <utility>
@@ -1324,6 +1325,40 @@ bool containsRenderableId(const std::vector<RenderableId>& ids, RenderableId id)
   return std::find(ids.begin(), ids.end(), id) != ids.end();
 }
 
+void hashCombine(std::size_t& seed, std::size_t value)
+{
+  constexpr auto kHashMixConstant
+      = static_cast<std::size_t>(0x9e3779b97f4a7c15ULL);
+  seed ^= value + kHashMixConstant + (seed << 6) + (seed >> 2);
+}
+
+void hashVector3d(std::size_t& seed, const Eigen::Vector3d& value)
+{
+  for (int axis = 0; axis < 3; ++axis) {
+    hashCombine(seed, std::hash<double>{}(value[axis]));
+  }
+}
+
+std::size_t computeRenderResourceVersion(
+    const GeometryDescriptor& geometry, std::size_t shapeVersion)
+{
+  std::size_t seed = shapeVersion;
+  hashCombine(seed, static_cast<std::size_t>(geometry.kind));
+  if (geometry.kind == ShapeKind::SoftMesh) {
+    hashCombine(seed, geometry.triangleVertices.size());
+    for (const Eigen::Vector3d& vertex : geometry.triangleVertices) {
+      hashVector3d(seed, vertex);
+    }
+    hashCombine(seed, geometry.triangleIndices.size());
+    for (const Eigen::Vector3i& triangle : geometry.triangleIndices) {
+      for (int axis = 0; axis < 3; ++axis) {
+        hashCombine(seed, std::hash<int>{}(triangle[axis]));
+      }
+    }
+  }
+  return seed;
+}
+
 } // namespace
 
 std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
@@ -1663,6 +1698,8 @@ std::optional<RenderableDescriptor> makeRenderableDescriptor(
                                     ? descriptor.shapeNode->getVersion()
                                     : 0;
   descriptor.shapeVersion = shape->getVersion();
+  descriptor.renderResourceVersion = computeRenderResourceVersion(
+      descriptor.geometry, descriptor.shapeVersion);
   return descriptor;
 }
 
@@ -1728,6 +1765,7 @@ RenderableSetUpdatePlan planRenderableSetUpdate(
         });
     if (descriptor != descriptors.end()) {
       state.shapeVersion = descriptor->shapeVersion;
+      state.renderResourceVersion = descriptor->renderResourceVersion;
     }
     activeStates.push_back(state);
   }
@@ -1762,11 +1800,14 @@ RenderableSetUpdatePlan planRenderableSetUpdate(
         [id](const RenderableDescriptor& candidate) {
           return candidate.material.visible && candidate.id == id;
         });
-    const bool versionChanged
+    const bool resourceChanged
         = descriptor != descriptors.end()
-          && active.shapeVersion != descriptor->shapeVersion;
+          && (active.renderResourceVersion != 0u
+                  ? active.renderResourceVersion
+                        != descriptor->renderResourceVersion
+                  : active.shapeVersion != descriptor->shapeVersion);
     if (id == 0 || !containsRenderableId(desiredIds, id)
-        || containsRenderableId(retainedActiveIds, id) || versionChanged) {
+        || containsRenderableId(retainedActiveIds, id) || resourceChanged) {
       plan.activeRenderableIndicesToRemove.push_back(i);
       continue;
     }

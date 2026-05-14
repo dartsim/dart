@@ -305,7 +305,65 @@ TEST(
       Eigen::Vector4d(0.7, 0.6, 0.5, 0.4)));
   EXPECT_FALSE(after.front().material.visible);
   EXPECT_NE(before.front().shapeVersion, after.front().shapeVersion);
+  EXPECT_NE(
+      before.front().renderResourceVersion,
+      after.front().renderResourceVersion);
   EXPECT_NE(before.front().shapeNodeVersion, after.front().shapeNodeVersion);
+}
+
+TEST(
+    FilamentSceneExtraction,
+    ExtractRenderables_SoftMeshMotion_UpdatesRenderResourceVersion)
+{
+  auto world = World::create("world");
+  auto skeleton = Skeleton::create("soft_robot");
+  auto [joint, softBody]
+      = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>();
+  (void)joint;
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d(0.4, 0.3, 0.2),
+      Eigen::Isometry3d::Identity(),
+      Eigen::Vector3i(3, 3, 3),
+      1.0,
+      10.0,
+      10.0,
+      0.1);
+  for (std::size_t i = 0; i < softBody->getNumShapeNodes(); ++i) {
+    auto* shapeNode = softBody->getShapeNode(i);
+    ASSERT_NE(shapeNode, nullptr);
+    shapeNode->createVisualAspect();
+  }
+  world->addSkeleton(skeleton);
+
+  const auto findSoftMeshDescriptor =
+      [](const std::vector<dart::gui::experimental::RenderableDescriptor>&
+             descriptors) {
+        return std::find_if(
+            descriptors.begin(), descriptors.end(), [](const auto& descriptor) {
+              return descriptor.geometry.kind == ShapeKind::SoftMesh;
+            });
+      };
+
+  const auto before = dart::gui::experimental::extractRenderables(*world);
+  const auto beforeSoftMesh = findSoftMeshDescriptor(before);
+  ASSERT_NE(beforeSoftMesh, before.end());
+  ASSERT_FALSE(beforeSoftMesh->geometry.triangleVertices.empty());
+
+  ASSERT_GT(softBody->getNumPointMasses(), 0u);
+  softBody->getPointMass(0u)->setPositions(Eigen::Vector3d(0.0, 0.0, 0.2));
+
+  const auto after = dart::gui::experimental::extractRenderables(*world);
+  const auto afterSoftMesh = findSoftMeshDescriptor(after);
+  ASSERT_NE(afterSoftMesh, after.end());
+  ASSERT_FALSE(afterSoftMesh->geometry.triangleVertices.empty());
+
+  EXPECT_EQ(beforeSoftMesh->id, afterSoftMesh->id);
+  EXPECT_NE(
+      beforeSoftMesh->renderResourceVersion,
+      afterSoftMesh->renderResourceVersion);
+  EXPECT_FALSE(beforeSoftMesh->geometry.triangleVertices.front().isApprox(
+      afterSoftMesh->geometry.triangleVertices.front()));
 }
 
 TEST(
@@ -349,6 +407,10 @@ TEST(
   EXPECT_EQ(descriptor.shapeNodeVersion, 0u);
   EXPECT_EQ(descriptor.shapeFrameVersion, frame->getVersion());
   EXPECT_EQ(descriptor.shapeVersion, frame->getShape()->getVersion());
+  EXPECT_EQ(
+      descriptor.renderResourceVersion,
+      secondExtract.front().renderResourceVersion);
+  EXPECT_NE(descriptor.renderResourceVersion, 0u);
 }
 
 TEST(
@@ -733,12 +795,20 @@ TEST(
   EXPECT_EQ(plan.activeRenderableIndicesToRemove, expectedRemovals);
 
   visibleA.shapeVersion = 2u;
+  visibleA.renderResourceVersion = 20u;
   visibleB.shapeVersion = 4u;
+  visibleB.renderResourceVersion = 40u;
   const std::vector<RenderableDescriptor> versionedDescriptors{
       visibleA, visibleB};
-  const std::vector<ActiveRenderableState> activeStates{
-      ActiveRenderableState{visibleA.id, 1u},
-      ActiveRenderableState{visibleB.id, visibleB.shapeVersion}};
+  ActiveRenderableState staleA;
+  staleA.id = visibleA.id;
+  staleA.shapeVersion = visibleA.shapeVersion;
+  staleA.renderResourceVersion = 10u;
+  ActiveRenderableState currentB;
+  currentB.id = visibleB.id;
+  currentB.shapeVersion = visibleB.shapeVersion;
+  currentB.renderResourceVersion = visibleB.renderResourceVersion;
+  const std::vector<ActiveRenderableState> activeStates{staleA, currentB};
 
   const auto versionedPlan = dart::gui::experimental::planRenderableSetUpdate(
       versionedDescriptors, activeStates);
@@ -748,6 +818,18 @@ TEST(
   EXPECT_EQ(
       versionedPlan.activeRenderableIndicesToRemove, expectedVersionRemovals);
   EXPECT_EQ(versionedPlan.descriptorIndicesToAdd, expectedVersionAdds);
+
+  ActiveRenderableState staleShapeOnlyA;
+  staleShapeOnlyA.id = visibleA.id;
+  staleShapeOnlyA.shapeVersion = 1u;
+
+  const auto shapeOnlyPlan = dart::gui::experimental::planRenderableSetUpdate(
+      versionedDescriptors,
+      std::vector<ActiveRenderableState>{staleShapeOnlyA, currentB});
+
+  EXPECT_EQ(
+      shapeOnlyPlan.activeRenderableIndicesToRemove, expectedVersionRemovals);
+  EXPECT_EQ(shapeOnlyPlan.descriptorIndicesToAdd, expectedVersionAdds);
 }
 
 TEST(

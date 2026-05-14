@@ -268,6 +268,7 @@ struct SceneRenderable
 {
   RenderableId id = 0;
   std::size_t shapeVersion = 0;
+  std::size_t renderResourceVersion = 0;
   Renderable renderable;
 };
 
@@ -4077,6 +4078,7 @@ std::vector<ActiveRenderableState> collectActiveRenderableStates(
     ActiveRenderableState state;
     state.id = sceneRenderable.id;
     state.shapeVersion = sceneRenderable.shapeVersion;
+    state.renderResourceVersion = sceneRenderable.renderResourceVersion;
     states.push_back(state);
   }
   return states;
@@ -4142,6 +4144,7 @@ void synchronizeSceneRenderables(
     SceneRenderable sceneRenderable;
     sceneRenderable.id = descriptor.id;
     sceneRenderable.shapeVersion = descriptor.shapeVersion;
+    sceneRenderable.renderResourceVersion = descriptor.renderResourceVersion;
     sceneRenderable.renderable = *renderable;
     scene.addEntity(sceneRenderable.renderable.entity);
     engine.getTransformManager().setTransform(

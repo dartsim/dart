@@ -44,9 +44,11 @@ def test_experimental_extract_renderables_from_world():
     assert hasattr(material_descriptor, "metallic_roughness_texture_path")
     active_state = dart.gui.experimental.ActiveRenderableState()
     assert hasattr(active_state, "shape_version")
+    assert hasattr(active_state, "render_resource_version")
     part_descriptor = dart.gui.experimental.MeshPartDescriptor()
     assert hasattr(part_descriptor, "triangle_count")
     assert hasattr(part_descriptor, "material_index")
+    assert hasattr(descriptor, "render_resource_version")
     assert np.allclose(descriptor.geometry.size, [1.0, 2.0, 3.0])
     assert descriptor.material.visible is True
 
@@ -93,13 +95,17 @@ def test_experimental_plan_renderable_set_update():
     assert plan.active_renderable_indices_to_remove == [1, 2, 3, 4]
 
     visible_a.shape_version = 2
+    visible_a.render_resource_version = 20
     visible_b.shape_version = 4
+    visible_b.render_resource_version = 40
     stale_a = dart.gui.experimental.ActiveRenderableState()
     stale_a.id = visible_a.id
-    stale_a.shape_version = 1
+    stale_a.shape_version = visible_a.shape_version
+    stale_a.render_resource_version = 10
     current_b = dart.gui.experimental.ActiveRenderableState()
     current_b.id = visible_b.id
     current_b.shape_version = visible_b.shape_version
+    current_b.render_resource_version = visible_b.render_resource_version
 
     versioned_plan = dart.gui.experimental.plan_renderable_set_update(
         [visible_a, visible_b],

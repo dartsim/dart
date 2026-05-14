@@ -72,10 +72,10 @@ run-option normalization, viewer lifecycle state, and orbit-camera helpers now
 live in `dart-gui-experimental`; the Filament example uses them for bounded
 screenshots, camera placement, headless runs, pause/step behavior, frame
 accounting, and perspective pick rays. Backend-hidden renderable set planning
-now also compares active shape versions so descriptor-owned geometry changes
-recreate Filament resources. Backend-hidden RGBA-to-PPM screenshot storage also
-now lives in `dart-gui-experimental`; the Filament example keeps only renderer
-readback.
+now also compares active render-resource versions so descriptor-owned geometry
+changes, including dynamic soft-mesh vertex changes, recreate Filament
+resources. Backend-hidden RGBA-to-PPM screenshot storage also now lives in
+`dart-gui-experimental`; the Filament example keeps only renderer readback.
 `UNIT_dynamics_MeshShape` also loads the checked-in
 `data/gltf/pbr_triangle.gltf` and `data/gltf/pbr_multi_material.gltf` fixtures
 through the real Assimp importer and verifies authored glTF PBR texture slots,
@@ -184,16 +184,22 @@ and normals before falling back to local bounds for other shape descriptors.
 implementation, verification evidence, and missing promotion gates. Use that
 audit before deciding whether the dev task is complete.
 
+The latest follow-up added render-resource revision tracking to the
+backend-hidden descriptor/update-plan path. The Filament example now recreates
+renderer resources when descriptor-owned dynamic soft-mesh geometry changes,
+without exposing Filament handles or relying only on `Shape::getVersion()`.
+
 ## Current Branch
 
-`feature/filament-gui-completion`, stacked on the merged MVP PR #2647. Verify with
-`git status && git branch --show-current` before editing.
+`feature/filament-gui-completion`, stacked on the merged MVP PR #2647. Verify
+with `git status && git branch --show-current` before editing.
 
 ## Immediate Next Step
 
-Keep the hosted Ubuntu GCC/Clang Filament smoke jobs green on every follow-up PR
-that changes the explicit pinned fetch fallback or Filament example behavior.
-Locally, use:
+Use `07-completion-audit.md` and `08-north-star-migration.md` to choose the next
+promotion-gate slice. Keep the hosted Ubuntu GCC/Clang Filament smoke jobs green
+on every follow-up PR that changes the explicit pinned fetch fallback or
+Filament example behavior. Locally, use:
 
 ```bash
 LIBCXX_PREFIX=<prefix-containing-libc++-and-libc++abi>

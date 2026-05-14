@@ -167,6 +167,7 @@ struct RenderableDescriptor
   std::size_t shapeFrameVersion = 0;
   std::size_t shapeNodeVersion = 0;
   std::size_t shapeVersion = 0;
+  std::size_t renderResourceVersion = 0;
 };
 
 struct RenderableSetUpdatePlan
@@ -179,6 +180,7 @@ struct ActiveRenderableState
 {
   RenderableId id = 0;
   std::size_t shapeVersion = 0;
+  std::size_t renderResourceVersion = 0;
 };
 
 struct PickRay

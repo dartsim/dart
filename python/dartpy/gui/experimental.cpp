@@ -150,7 +150,10 @@ void defGuiExperimentalModule(nb::module_& m)
           "shape_frame_version", &gui::RenderableDescriptor::shapeFrameVersion)
       .def_rw(
           "shape_node_version", &gui::RenderableDescriptor::shapeNodeVersion)
-      .def_rw("shape_version", &gui::RenderableDescriptor::shapeVersion);
+      .def_rw("shape_version", &gui::RenderableDescriptor::shapeVersion)
+      .def_rw(
+          "render_resource_version",
+          &gui::RenderableDescriptor::renderResourceVersion);
 
   nb::class_<gui::RenderableSetUpdatePlan>(m, "RenderableSetUpdatePlan")
       .def(nb::init<>())
@@ -164,7 +167,10 @@ void defGuiExperimentalModule(nb::module_& m)
   nb::class_<gui::ActiveRenderableState>(m, "ActiveRenderableState")
       .def(nb::init<>())
       .def_rw("id", &gui::ActiveRenderableState::id)
-      .def_rw("shape_version", &gui::ActiveRenderableState::shapeVersion);
+      .def_rw("shape_version", &gui::ActiveRenderableState::shapeVersion)
+      .def_rw(
+          "render_resource_version",
+          &gui::ActiveRenderableState::renderResourceVersion);
 
   nb::class_<gui::PickRay>(m, "PickRay")
       .def(nb::init<>())

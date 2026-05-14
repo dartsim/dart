@@ -66,9 +66,10 @@
   viewer lifecycle state, and orbit-camera math used by the example for bounded
   screenshots, camera placement, headless mode, pause/step behavior, frame
   accounting, and perspective pick rays.
-- Renderer resource synchronization planning now also compares active renderable
-  shape versions, so descriptor-owned geometry changes recreate Filament
-  resources without exposing renderer handles.
+- Renderer resource synchronization planning now compares active renderable
+  render-resource versions, so descriptor-owned geometry changes, including
+  dynamic soft-mesh vertex changes, recreate Filament resources without
+  exposing renderer handles.
 - The experimental scene layer owns reusable RGBA-to-PPM screenshot storage,
   while the Filament example remains responsible only for renderer readback.
   The current Filament readback path writes top-left-origin screenshots so
@@ -155,9 +156,10 @@
 
 Evaluate and, if it passes explicit gates, promote a Filament + GLFW + private
 Dear ImGui implementation as DART's built-in visualization solution under
-`dart::gui`, replacing the current OSG GUI, the Raylib smoke path, and any
+`dart::gui`, replacing the current main OSG GUI, the Raylib smoke path, and any
 temporary experimental visualization paths in the appropriate major DART
-release.
+release while deleting or collapsing multi-backend abstraction layers that no
+longer express stable DART concepts.
 
 ## Non-goals
 
