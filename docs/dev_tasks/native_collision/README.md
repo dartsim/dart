@@ -202,6 +202,9 @@ temporary compatibility facades at the outside, `dart/collision/dart/` as the
 DART shape/result/filter adapter, and `dart/collision/native/` as the scalable
 scene/query core for geometry, broadphase, narrowphase, distance, raycast,
 contact/manifold caching, deterministic results, profiling, and benchmarks.
+Its "Built-In Component Blueprint" is the concrete design checklist for API
+cleanliness, adapter-owned scene state, native query lifecycle, scalability,
+and performance-oriented internals.
 
 The implementation now satisfies the source/package structure of that design:
 public factory keys, Python compatibility names, retained package components,

@@ -306,7 +306,10 @@ factory. Default package exports now also point users at the `dart` component
 without auto-adding old collision components. The target built-in architecture
 is documented in `01-design.md` as public API and compatibility facades outside a
 `dart/collision/dart/` adapter, with `dart/collision/native/` owning scalable
-scene/query state and performance instrumentation. Python detector
+scene/query state and performance instrumentation. The same design contract now
+contains a concrete blueprint for API cleanliness, adapter-owned scene state,
+native scene/query data, query lifecycle, scalability rules, and
+performance-oriented internals. Python detector
 compatibility names now resolve to `DartCollisionDetector` and dartpy no
 longer links legacy collision component targets. Reference tests and
 benchmarks now use explicit `createReference()` APIs for old-engine
@@ -346,6 +349,9 @@ Success criteria:
   compact native geometry data, clear cache invalidation, low-allocation hot
   loops, and independent profiling/benchmark labels for broadphase,
   narrowphase, distance, raycast, and solver-facing contact generation.
+- The built-in component blueprint in `01-design.md` is satisfied without
+  adding public engine-selection knobs or routing performance work through
+  external backend abstractions.
 - The `01-design.md` north-star layer table is satisfied: every layer has a
   narrow owner, forbidden dependencies are absent, and completion evidence is
   recorded for public API cleanliness, compatibility facades, the DART adapter,

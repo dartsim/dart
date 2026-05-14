@@ -161,10 +161,12 @@ contract for that remaining cleanup: public API and compatibility facades
 outside the DART adapter, `dart/collision/native/` as the scene/query core, and
 explicit gates for API cleanliness, scalability, performance hooks, reference
 isolation, and gz-physics-safe compatibility facades. The latest design update
-also pins the contact result contract: native contacts reported through public
-DART APIs must follow collision object pair order, with canonical
-shape-specialized narrowphase functions wrapped by dispatch/result orientation
-when needed.
+adds a concrete built-in component blueprint covering the public API boundary,
+adapter-owned scene model, native scene/query data model, query lifecycle,
+scalability rules, and performance-oriented internals. It also pins the contact
+result contract: native contacts reported through public DART APIs must follow
+collision object pair order, with canonical shape-specialized narrowphase
+functions wrapped by dispatch/result orientation when needed.
 Package-export cleanup has also started: native-only `find_package(DART)` now
 defaults to `dart` only, generated component templates no longer emit
 deprecated Bullet/ODE collision component text, and a native-only install probe

@@ -109,6 +109,157 @@ result assembly is responsible for flipping normals when object order differs.
 This keeps the public API clean and deterministic without duplicating
 narrowphase algorithms for every symmetric pair.
 
+## Built-In Component Blueprint
+
+This blueprint translates the layer contract into implementation rules. It is
+the design target for API cleanliness, scalability, and performance-oriented
+native collision work inside the single north-star PR.
+
+### Public API Boundary
+
+The public DART collision API should describe collision semantics, not backend
+selection mechanics. The final shape is:
+
+- One canonical detector identity: `dart`.
+- Stable public concepts: detector, collision group, collision object, query
+  options, filters, collision/distance/raycast results, and factory
+  registration.
+- Compatibility names: retained `experimental`, FCL, Bullet, and ODE spelling
+  variants compile and route to the built-in detector. They may keep temporary
+  display strings where gz-physics needs them, but they do not change the
+  runtime collision implementation.
+- Reference APIs: any call path that intentionally reaches FCL, Bullet, or ODE
+  must be visibly named as reference/test/benchmark behavior, such as
+  `createReference()` or `collision-reference-*`.
+
+New public options should be semantic and engine-neutral. Examples of valid
+public options are maximum contacts, nearest-point data, raycast hit mode,
+collision filtering, and deterministic result ordering. Examples of invalid
+north-star public options are FCL-specific solver modes, Bullet broadphase
+selection, ODE/libccd tuning knobs, or any enum that asks the user to pick an
+external collision engine.
+
+### Adapter-Owned Scene Model
+
+`dart/collision/dart/` is the scaling boundary between DART objects and compact
+native query state. A `DartCollisionGroup` should own a persistent adapter scene
+with these responsibilities:
+
+- Map `CollisionObject` membership to stable native object handles.
+- Track shape, transform, filter, and collidable-state revisions.
+- Synchronize only dirty membership, transform, and geometry changes before a
+  query.
+- Convert DART shapes into native geometry records without exposing those
+  records through public headers.
+- Adapt DART body-node, self-collision, category/mask, and callback filters
+  into cheap native pair rejection before narrowphase work.
+- Keep deterministic mapping from native result handles back to public DART
+  result objects.
+- Own cache invalidation when a shape changes type, scale, mesh vertices,
+  heightmap data, voxel occupancy, or soft-body point positions.
+
+The adapter must not become a second collision engine. It should not own
+broadphase algorithms, narrowphase math, reference-engine calls, or public API
+policy beyond compatibility-name routing and DART result conversion.
+
+### Native Scene And Query Core
+
+`dart/collision/native/` owns the built-in runtime engine. Its internal data
+model should be optimized for repeated queries and simulation steps:
+
+- `NativeScene`: persistent object tables, broadphase structures, static and
+  dynamic update queues, filter data, and scene-wide generation counters.
+- `NativeGeometry`: compact shape-specific data, derived AABBs, support data,
+  mesh or heightfield acceleration structures, and mutation revision numbers.
+- `QuerySnapshot`: read-only view of synchronized scene state for one public
+  query or batch of queries.
+- `QueryContext`: reusable scratch memory, temporary candidate lists,
+  narrowphase work buffers, profiler scopes, and per-query limits.
+- `ResultBuilder`: deterministic merge/sort, pair-order normal orientation,
+  contact/manifold assembly, distance result assembly, raycast hit ordering,
+  and public-adapter metadata.
+
+This split keeps public API stability independent from native implementation
+choices. The native core can add a better broadphase, manifold cache,
+parallel candidate traversal, or SIMD-oriented shape data without exposing new
+engine choices to users.
+
+### Query Lifecycle
+
+Every public collision, distance, and raycast query should follow the same
+high-level lifecycle:
+
+```text
+DART caller
+  -> public query options and filters
+  -> compatibility facade, if a legacy name was used
+  -> DartCollisionGroup dirty sync
+  -> native scene snapshot
+  -> broadphase or query candidate pruning
+  -> native filter checks
+  -> shape-specialized narrowphase/distance/raycast
+  -> deterministic native result assembly
+  -> DART result conversion in public pair order
+```
+
+The lifecycle should be measurable and testable. The adapter owns sync and
+conversion costs. The native core owns candidate generation and algorithmic
+costs. Result orientation is explicit: public contacts are ordered by the
+reported collision object pair, and dispatch wrappers flip normals when a
+canonical shape-pair function runs in the opposite order.
+
+### Scalability Design
+
+Scalability means public queries should stay efficient as worlds grow, move,
+and mutate. The north-star design requires:
+
+- Persistent broadphase state rather than rebuilding candidate structures per
+  query.
+- Stable object handles so caches survive between simulation steps and are
+  invalidated deliberately.
+- Incremental transform and AABB updates for dirty objects.
+- Explicit geometry-update paths for dynamic meshes, soft meshes, heightmaps,
+  and voxel grids.
+- Separate cheap filter data from expensive callback filters so most rejected
+  pairs never reach narrowphase.
+- Query snapshots that allow collision, distance, and raycast batches to share
+  synchronization and broadphase state.
+- Deterministic result ordering after broadphase pruning, batching, or future
+  parallel traversal.
+- Cache lifetimes tied to scene/object/geometry generations, not raw DART
+  object addresses.
+
+The public API should not change when these scaling mechanisms improve. A
+caller should see the same `DartCollisionDetector` semantics while the adapter
+and native core become more incremental internally.
+
+### Performance-Oriented Internals
+
+The native component should be easy to optimize without reopening API design.
+Performance-sensitive implementation rules are:
+
+- Keep hot data compact and native-owned: shape type tags, transforms, AABBs,
+  filter masks, and geometry payloads should be reachable without public DART
+  object traversal inside per-pair loops.
+- Use a shape-specialized dispatch matrix for common DART pairs and reserve
+  generic convex or mesh paths for cases that need them.
+- Reuse canonical symmetric-pair algorithms and put object-order contact normal
+  fixes in thin dispatch or result-builder wrappers.
+- Reuse scratch storage for candidate lists, support queries, raycast hits,
+  contact points, and manifold generation.
+- Cache derived geometry and acceleration data behind explicit revision checks.
+- Keep solver-facing contact/manifold caches versioned by stable native IDs so
+  shape replacement cannot reuse stale impulses.
+- Expose profiler and benchmark labels for adapter sync, broadphase update,
+  candidate traversal, filtering, narrowphase, distance, raycast, contact
+  generation, manifold update, result merge, and DART result conversion.
+- Keep FCL/Bullet/ODE comparisons in optional reference tests and benchmarks so
+  native hot paths never pay for external-engine abstraction.
+
+Performance acceptance still follows correctness. A benchmark win does not
+justify weaker contact semantics, unstable normals, nondeterministic ordering,
+or skipped dynamic-geometry invalidation.
+
 ## North-Star Layer Design
 
 This table is the review contract for the built-in collision component. A row

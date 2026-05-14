@@ -55,17 +55,17 @@ performance-oriented internals before this scale reaches completion.
 
 These gates are still required before the single north-star PR is complete.
 
-| Gate                        | Required evidence                                           | Current state                                  |
-| --------------------------- | ----------------------------------------------------------- | ---------------------------------------------- |
-| CI native-only build        | CI passes with FCL, Bullet, and ODE disabled                | Local equivalent passed; awaiting CI evidence  |
-| CI gz-physics compatibility | gz-physics CI passes with optional legacy components built  | Focused local run has one residual failure     |
-| Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional  | Local reference target split passes            |
-| Packaging removal           | Default packages/wheels have no old collision runtime deps  | Verifier wired; CI matrix evidence left        |
-| Downstream migration        | gz-physics has a tested path away from legacy detector APIs | Migration plan documented; gz fixes left       |
-| Collision abstraction       | Legacy keys/classes route only to built-in native behavior  | Source/package facades done                    |
-| Built-in architecture       | `01-design.md` layer table passes API, scaling, perf gates  | Source split done; CI/perf gates remain        |
-| Benchmark regression guard  | Optional reference benchmarks guide gradual optimization    | Scheduled/manual CI guard added; evidence left |
-| Legacy backend deletion     | Old runtime backend sources removed from default stack      | Runtime source guard wired; deletion left      |
+| Gate                        | Required evidence                                                      | Current state                                            |
+| --------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------- |
+| CI native-only build        | CI passes with FCL, Bullet, and ODE disabled                           | Local equivalent passed; awaiting CI evidence            |
+| CI gz-physics compatibility | gz-physics CI passes with optional legacy components built             | Focused local run has one residual failure               |
+| Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional             | Local reference target split passes                      |
+| Packaging removal           | Default packages/wheels have no old collision runtime deps             | Verifier wired; CI matrix evidence left                  |
+| Downstream migration        | gz-physics has a tested path away from legacy detector APIs            | Migration plan documented; gz fixes left                 |
+| Collision abstraction       | Legacy keys/classes route only to built-in native behavior             | Source/package facades done                              |
+| Built-in architecture       | `01-design.md` layer table and blueprint pass API, scaling, perf gates | Source split done; blueprint added; CI/perf gates remain |
+| Benchmark regression guard  | Optional reference benchmarks guide gradual optimization               | Scheduled/manual CI guard added; evidence left           |
+| Legacy backend deletion     | Old runtime backend sources removed from default stack                 | Runtime source guard wired; deletion left                |
 
 ## Test Runs
 
