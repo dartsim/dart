@@ -338,6 +338,14 @@ implementation sources outside `reference/` paths. CI, downstream migration,
 and broader performance guardrail evidence remain before this phase can
 complete.
 
+The remaining `JointDetach` failure now has diagnostic direction: temporary
+gz instrumentation showed the upper-link off-axis angular `Y` residual follows
+the base link's angular `Y` support motion, and the upper-link linear `X`
+residual is consistent with that base rotation through the joint offset. Treat
+the next fix as native base-vs-ground support contact/manifold stability for
+gz-physics' plane-as-large-box path, not as a detach-state restoration or
+legacy facade issue.
+
 Success criteria:
 
 - `dart/collision/` no longer exposes FCL, Bullet, or ODE as real runtime
@@ -358,6 +366,10 @@ Success criteria:
   compact native geometry data, clear cache invalidation, low-allocation hot
   loops, and independent profiling/benchmark labels for broadphase,
   narrowphase, distance, raycast, and solver-facing contact generation.
+- Native support contacts are stable enough for downstream articulated
+  simulation gates: manifold generation and solver-facing cache persistence do
+  not inject off-axis base motion into gz-physics `JointDetach` exact-zero
+  checks.
 - The built-in component blueprint in `01-design.md` is satisfied without
   adding public engine-selection knobs or routing performance work through
   external backend abstractions.
@@ -386,6 +398,9 @@ Verification:
 - Solver-facing cache tests prove native manifold cache writeback works through
   native-backed compatibility facades, even when facade display strings are
   legacy names for gz-physics compatibility.
+- A reduced DART or gz-focused test proves the remaining `JointDetach`
+  base-support residual is fixed without weakening the expected upward motion
+  check.
 - Benchmark labels or profiler scopes show broadphase, narrowphase, distance,
   raycast, and contact-generation costs separately.
 - Link inspection shows compatibility wrappers do not link FCL, Bullet, or ODE.

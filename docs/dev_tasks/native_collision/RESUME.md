@@ -115,6 +115,12 @@ tree instead keeps the architecture-valid solver cache bridge fix:
 cache metadata is attached, even if a compatibility detector facade reports a
 legacy display string such as `"ode"`. The focused
 `UNIT_constraint_SoftContactConstraint` regression covers that behavior.
+The newest temporary gz velocity diagnostic also showed that the remaining
+`JointDetach` off-axis residual follows base support motion: at step 9, the
+base angular velocity around `Y` is `-6.6445229724690596e-05`, the upper-link
+angular `Y` is `-6.6438361021132697e-05`, and the upper-link linear `X`
+residual is consistent with that base rotation through the joint offset. The
+diagnostic instrumentation in `.deps/gz-physics` was removed after capture.
 
 ## Current Branch
 
@@ -132,6 +138,11 @@ whether the tiny off-axis velocity components come from a native contact bug,
 model-level filtering semantics, or downstream exact-zero tolerance debt, then
 fix or document the accepted downstream-compatible path before rerunning the
 full gz gate.
+The strongest current lead is native base-vs-ground support stability, not
+detach-state restoration: the upper-link residual follows base angular `Y`
+motion through the upper joint offset. Focus on plane-as-large-box support
+contacts, manifold persistence, solver warm-start behavior, and base pole/plate
+support symmetry.
 Do not retry broad tilted cap support patches without first preserving the
 test's expected `upperLinkLinearVelocity.Z() > 1e-5`; the last two local
 variants overconstrained the base support contacts and failed that earlier

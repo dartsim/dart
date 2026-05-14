@@ -256,6 +256,20 @@ single checkpoint built locally.
 | Reference isolation     | FCL, Bullet, and ODE exist only as optional reference engines for tests and benchmarks, with native-only builds able to opt out.                                                                                                                                  | CMake opt-out options, native-only Pixi defaults, explicit `collision-reference` opt-in, `collision-reference-*` targets, reference-path source split, runtime source isolation linting, package/wheel metadata cleanup, local install/wheel evidence, and wheel artifact verifier wiring are in place. CI wheel-matrix run evidence remains.                                     |
 | Compatibility           | gz-physics and downstream source-compatible legacy names keep building during migration, but cannot select an external runtime engine.                                                                                                                            | Legacy detector headers/classes, factory aliases, Python names, retained package components, and the documented migration contract route to native. Direct legacy facade display strings are covered by DART tests. Focused gz collision, detachable-joint, and transmitted-wrench tests pass; `JointDetach` exact-zero velocity remains open before the gate can close.          |
 
+## Architecture Completion Rubric
+
+Stage 10 on the north-star scale is complete only when the built-in collision
+component is clean as an API, scalable as a scene/query system, and ready for
+performance work without reopening public backend selection.
+
+| Design gate             | Completion bar                                                                                                                                     | Current evidence                                                                                                                 | Still needed                                                                                                |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| API cleanliness         | Public DART APIs expose one canonical `dart` detector; legacy names are native-backed facades; reference engines use explicit test/benchmark APIs. | Factory aliases, Python names, C++ legacy `create()` paths, installed/source headers, and package facades route native.          | CI/package matrix evidence and final search proving no public path can select an external runtime backend.  |
+| Scalable adapter/core   | `DartCollisionGroup` owns persistent scene state, stable IDs, dirty sync, cache invalidation, deterministic results, and reusable query snapshots. | Public adapter tests and benchmarks cover dirty sync, dynamic geometry invalidation, filters, pair-order normals, and cache IDs. | Finish gz `JointDetach` support-contact residual and broaden recurring public-adapter correctness evidence. |
+| Performance orientation | Native hot paths use compact geometry, shape-specialized dispatch, persistent broadphase data, reusable scratch/caches, and measured query stages. | Native-vs-reference benchmarks pass locally across primitive, distance, raycast, batch, mesh-heavy, and mixed workloads.         | CI benchmark artifact evidence and any optimization needed after correctness gates are permanently green.   |
+| Reference isolation     | FCL, Bullet, and ODE are optional reference engines only; native-only builds, installs, wheels, and downstream facades do not link them.           | CMake opt-out, reference targets, lint source isolation, install/package/wheel checks, and wheel verifier wiring exist.          | CI wheel matrix and downstream package smoke evidence.                                                      |
+| Compatibility facade    | gz-physics-required spellings compile and run through the built-in detector while migration removes reliance on legacy names.                      | DART facade tests and focused gz collision, detachable-joint, and transmitted-wrench tests pass.                                 | Full gz gate after the `JointDetach` residual is fixed or accepted through a documented downstream path.    |
+
 ## Architecture Review Targets
 
 `01-design.md` breaks the built-in collision layer into reviewable
@@ -331,6 +345,12 @@ subcomponents, not only against whether old backend names still compile.
    focused gz evidence. Reduce the remaining
    `COMMON_TEST_joint_features_dartsim` `JointDetach` exact-zero velocity
    residual, then rerun the full gz gate without selecting FCL, Bullet, or ODE.
+   The latest temporary diagnostic run shows the upper-link off-axis residual
+   follows base support motion: by step 9 the base angular velocity around
+   `Y` is `-6.6445e-05`, the upper-link angular `Y` is `-6.6438e-05`, and the
+   upper-link linear `X` residual is consistent with that base rotation through
+   the joint offset. Continue the reduction as a base-vs-ground support
+   contact/manifold issue, not as a detach-state restoration issue.
 2. Run and harden the new native-only CI job alongside existing gz-physics CI.
 3. Finish reference-engine isolation by auditing target links, dependency
    metadata, wheel artifacts, and remaining downstream paths after the CMake

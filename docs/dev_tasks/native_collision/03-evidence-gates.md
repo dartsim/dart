@@ -63,7 +63,7 @@ These gates are still required before the single north-star PR is complete.
 | Packaging removal           | Default packages/wheels have no old collision runtime deps             | Verifier wired; CI matrix evidence left        |
 | Downstream migration        | gz-physics has a tested path away from legacy detector APIs            | Migration plan documented; gz fixes left       |
 | Collision abstraction       | Legacy keys/classes route only to built-in native behavior             | Source/package facades done                    |
-| Built-in architecture       | `01-design.md` layer table and blueprint pass API, scaling, perf gates | Source split and cache bridge started          |
+| Built-in architecture       | `01-design.md` layer table and blueprint pass API, scaling, perf gates | Source split, cache bridge, support diagnosis  |
 | Benchmark regression guard  | Optional reference benchmarks guide gradual optimization               | Scheduled/manual CI guard added; evidence left |
 | Legacy backend deletion     | Old runtime backend sources removed from default stack                 | Runtime source guard wired; deletion left      |
 
@@ -117,6 +117,23 @@ cd .deps/gz-physics/build; ./bin/COMMON_TEST_joint_features
     `upperLinkLinearVelocity.Y() = 1.0002864929523347e-06`, and
     `upperLinkAngularVelocity.Y() = -6.6438361021132697e-05` against
     exact-zero tolerances of `1e-6`.
+- `pixi run -e gazebo -- bash -lc 'set -euo pipefail; export
+LD_LIBRARY_PATH=.deps/gz-physics/build/lib:$CONDA_PREFIX/lib:${LD_LIBRARY_PATH:-};
+cd .deps/gz-physics/build; ./bin/COMMON_TEST_joint_features
+./lib/libgz-physics-dartsim-plugin.so.9.0.0
+--gtest_filter="JointFeaturesDetachTest/0.JointDetach" --gtest_brief=1'`
+  - Commit: `e2ee7a88b52`
+    (`Preserve native cache writeback through facades`) with temporary
+    gz-physics test instrumentation only.
+  - Result: failed as expected, but the added per-step velocity trace isolated
+    the residual. At step 9, base angular velocity around `Y` is
+    `-6.6445229724690596e-05`, upper-link angular velocity around `Y` is
+    `-6.6438361021132697e-05`, and upper-link linear velocity `X` is
+    `-0.00013953469787260998`. The upper-link off-axis residual therefore
+    follows base support motion through the joint offset. The next reduction
+    should focus on base-vs-ground native support contact/manifold stability,
+    not on detach-state restoration or legacy facade routing. The temporary
+    `.deps/gz-physics` instrumentation was removed after capture.
 - `cmake --build build/default/cpp/Release --target
 UNIT_constraint_SoftContactConstraint --parallel $(python
 scripts/parallel_jobs.py)`

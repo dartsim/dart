@@ -137,6 +137,22 @@ adapter own collision algorithms, makes the native core depend on legacy engine
 headers, or hides reference-engine links in normal runtime targets, it moves
 away from the north star even if it passes local tests.
 
+The three design axes should be reviewed together:
+
+- API cleanliness: user-visible names, options, package exports, and bindings
+  describe DART collision semantics and canonical `dart` behavior. Legacy
+  spellings are compatibility facades; reference engines are explicitly named
+  as tests or benchmarks.
+- Scalability: public collision, distance, and raycast APIs reuse
+  adapter-owned scene state with stable native handles, dirty synchronization,
+  deterministic result assembly, and explicit cache invalidation. Larger worlds
+  should improve through native data structures, not through new public backend
+  choices.
+- Performance orientation: the native core keeps compact geometry, persistent
+  broadphase/query state, shape-specialized dispatch, reusable scratch and
+  manifold caches, and benchmark/profiler labels at the same layer boundaries
+  used by the implementation.
+
 ### Public API Boundary
 
 The public DART collision API should describe collision semantics, not backend
@@ -432,6 +448,17 @@ scale, downstream migration/deprecation evidence, the focused gz-physics
 correctness/performance guardrails across the public DART adapter and native
 core paths. The completed PR must make it impossible for ordinary DART
 collision runtime selection to instantiate or link FCL, Bullet, or ODE.
+
+The current gz-physics `JointDetach` blocker is now classified as a support
+contact/manifold stability issue within the native scene/query core. A
+temporary downstream diagnostic run showed that the reported upper-link
+off-axis angular `Y` residual follows the base link's angular `Y` motion, and
+the upper-link linear `X` residual follows from that base rotation through the
+joint offset. That evidence keeps the detach compatibility facade and
+state-restoration path out of the primary suspect set; the next reduction
+should focus on native base-vs-ground contact generation, manifold
+persistence, and solver-facing support stability for gz-physics'
+plane-as-large-box model.
 
 ## Code Ownership Map
 
