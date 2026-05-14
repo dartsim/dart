@@ -41,8 +41,8 @@
 
 #include <dart/config.hpp>
 
-#include <dart/collision/fcl/reference/FCLCollisionDetector.hpp>
-#include <dart/collision/fcl/FCLTypes.hpp>
+#include <dart/collision/fcl/reference/fcl_collision_detector.hpp>
+#include <dart/collision/fcl/reference/fcl_types.hpp>
 #include <dart/collision/native/collision_world.hpp>
 #include <dart/collision/native/narrow_phase/box_box.hpp>
 #include <dart/collision/native/narrow_phase/capsule_capsule.hpp>
@@ -50,19 +50,19 @@
 #include <dart/collision/native/narrow_phase/sphere_sphere.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
 
-#include <dart/dynamics/BoxShape.hpp>
-#include <dart/dynamics/CapsuleShape.hpp>
-#include <dart/dynamics/CylinderShape.hpp>
-#include <dart/dynamics/FreeJoint.hpp>
-#include <dart/dynamics/Skeleton.hpp>
-#include <dart/dynamics/SphereShape.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/capsule_shape.hpp>
+#include <dart/dynamics/cylinder_shape.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/sphere_shape.hpp>
 
 #if DART_HAVE_BULLET
-  #include <dart/collision/bullet/reference/BulletCollisionDetector.hpp>
+  #include <dart/collision/bullet/reference/bullet_collision_detector.hpp>
 #endif
 
 #if DART_HAVE_ODE
-  #include <dart/collision/ode/reference/OdeCollisionDetector.hpp>
+  #include <dart/collision/ode/reference/ode_collision_detector.hpp>
 #endif
 
 #include <benchmark/benchmark.h>

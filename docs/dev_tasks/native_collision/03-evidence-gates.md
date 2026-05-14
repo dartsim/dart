@@ -187,6 +187,23 @@ These gates are still required before the single north-star PR is complete.
   - Repair: add `/utf-8` to the root MSVC C++ flags so all Visual Studio C++
     targets, including scikit-build wheel targets, inherit the required source
     and execution charset mode.
+- macOS arm64 release include hygiene repair:
+  - Run/job: `25875811218` / `76044208533` (`CI macOS` /
+    `Release Tests (arm64)`).
+  - Result: failed during the `tests` target build. The first failing target
+    was `INTEGRATION_collision_native_backend_consistency`.
+  - Root cause: the new native collision consistency test and shared collision
+    benchmark fixtures included generated CamelCase compatibility headers.
+    Clang on macOS reports those generated deprecation and non-portable include
+    warnings as errors under the release CI flags.
+  - Repair: switch the native collision integration test and collision
+    benchmark sources/fixtures to lowercase canonical headers, including the
+    explicit `reference/` detector headers for FCL, Bullet, and ODE reference
+    benchmark paths.
+  - Focused local validation: `cmake --build build/default/cpp/Release
+--target INTEGRATION_collision_native_backend_consistency` passed, and
+    `cmake --build build/default/cpp/Release --target
+bm_scenarios_raycast_batch` passed.
 
 ## Current Full-Validation Repair
 

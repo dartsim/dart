@@ -32,24 +32,24 @@
 
 #include <dart/config.hpp>
 
-#include <dart/collision/RaycastOption.hpp>
-#include <dart/collision/RaycastResult.hpp>
 #include <dart/collision/native/collision_world.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
 #include <dart/collision/native/types.hpp>
+#include <dart/collision/raycast_option.hpp>
+#include <dart/collision/raycast_result.hpp>
 
-#include <dart/dynamics/BoxShape.hpp>
-#include <dart/dynamics/CapsuleShape.hpp>
-#include <dart/dynamics/FreeJoint.hpp>
-#include <dart/dynamics/Skeleton.hpp>
-#include <dart/dynamics/SphereShape.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/capsule_shape.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/sphere_shape.hpp>
 
 #ifndef DART_ENABLE_COLLISION_REFERENCE_BENCHMARKS
   #define DART_ENABLE_COLLISION_REFERENCE_BENCHMARKS 0
 #endif
 
 #if DART_ENABLE_COLLISION_REFERENCE_BENCHMARKS && DART_HAVE_BULLET
-  #include <dart/collision/bullet/reference/BulletCollisionDetector.hpp>
+  #include <dart/collision/bullet/reference/bullet_collision_detector.hpp>
 #endif
 
 #include "tests/benchmark/collision/fixtures/scene_builders.hpp"

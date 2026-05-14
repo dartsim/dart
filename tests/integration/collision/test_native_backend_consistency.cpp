@@ -32,16 +32,16 @@
 
 #include <dart/config.hpp>
 
-#include <dart/collision/CollisionResult.hpp>
-#include <dart/collision/DistanceResult.hpp>
 #include <dart/collision/collision_detector.hpp>
+#include <dart/collision/collision_result.hpp>
+#include <dart/collision/distance_result.hpp>
 
 #ifndef DART_ENABLE_COLLISION_REFERENCE_TESTS
   #define DART_ENABLE_COLLISION_REFERENCE_TESTS 0
 #endif
 
 #if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
-  #include <dart/collision/fcl/reference/FCLCollisionDetector.hpp>
+  #include <dart/collision/fcl/reference/fcl_collision_detector.hpp>
 #endif
 #include <dart/collision/native/narrow_phase/box_box.hpp>
 #include <dart/collision/native/narrow_phase/capsule_box.hpp>
@@ -53,16 +53,16 @@
 #include <dart/collision/native/shapes/shape.hpp>
 #include <dart/collision/native/types.hpp>
 
-#include <dart/dynamics/BoxShape.hpp>
-#include <dart/dynamics/CapsuleShape.hpp>
-#include <dart/dynamics/SphereShape.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/capsule_shape.hpp>
+#include <dart/dynamics/sphere_shape.hpp>
 
 #if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_BULLET
-  #include <dart/collision/bullet/reference/BulletCollisionDetector.hpp>
+  #include <dart/collision/bullet/reference/bullet_collision_detector.hpp>
 #endif
 
 #if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_ODE
-  #include <dart/collision/ode/reference/OdeCollisionDetector.hpp>
+  #include <dart/collision/ode/reference/ode_collision_detector.hpp>
 #endif
 
 #include "tests/benchmark/collision/fixtures/edge_cases.hpp"

@@ -32,14 +32,14 @@
 
 #pragma once
 
-#include <dart/collision/CollisionGroup.hpp>
-#include <dart/collision/CollisionOption.hpp>
-#include <dart/collision/DistanceOption.hpp>
+#include <dart/collision/collision_group.hpp>
+#include <dart/collision/collision_option.hpp>
+#include <dart/collision/distance_option.hpp>
 
-#include <dart/dynamics/FreeJoint.hpp>
-#include <dart/dynamics/Shape.hpp>
-#include <dart/dynamics/ShapeNode.hpp>
-#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/shape.hpp>
+#include <dart/dynamics/shape_node.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
 #include <Eigen/Geometry>
 

@@ -56,7 +56,11 @@ unverified external and finalization gates:
   The first EnTT fallback repair got past package discovery but failed CMake
   generation because the fetched EnTT build target was not in DART's export
   set. The fallback now populates EnTT headers only and exposes `EnTT::EnTT` as
-  an imported interface target.
+  an imported interface target. The next PR refresh on head `97a9d3ca6d6`
+  reached macOS release arm64 compilation and failed because new native
+  collision test/benchmark files still included generated CamelCase
+  compatibility headers; those includes now use lowercase canonical headers
+  and explicit lowercase `reference/` detector headers.
 - Downstream migration/deprecation evidence is still missing.
 - Final compatibility-facade retention/deprecation evidence is still missing:
   the documented decision is to delete old external-engine runtime
@@ -126,6 +130,13 @@ compiling with /utf-8'`. The current repair adds `/utf-8` to the root MSVC
   current repair makes the fallback header-only from DART's perspective by
   populating EnTT sources and creating an imported `EnTT::EnTT` interface
   target.
+- Follow-up PR CI state after the export-safe EnTT fallback repair: run
+  `25875811218`, job `76044208533` (`CI macOS` /
+  `Release Tests (arm64)`) failed compiling
+  `INTEGRATION_collision_native_backend_consistency` because several new native
+  collision integration/benchmark sources included generated CamelCase
+  compatibility headers. The current repair replaces those includes with
+  canonical lowercase headers and explicit lowercase reference-backend headers.
 - Follow-up local validation after the audit started from
   `1da52368282` and found that `pixi run test-all` failed in `build-tests`
   because a stale cached `LIBCCD_LIBRARY` pointed at a removed
