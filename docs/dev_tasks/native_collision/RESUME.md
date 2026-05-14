@@ -147,6 +147,13 @@ link the built-in stack, factory keys create the canonical `dart` detector,
 direct legacy class `create()` calls are backed by `DartCollisionDetector`
 while keeping legacy display strings, and the installed library directory has
 no old-engine or reference collision runtime libraries.
+The broad local performance guard was also refreshed at `892e50d02e4` with
+`pixi run --locked -e collision-reference bm-collision-check`; it passed the
+checked narrowphase, distance, raycast, mixed-primitive, mesh-heavy, and
+raycast-batch native-vs-reference subsets plus the public adapter JSON subset.
+The generated `.benchmark_results/collision_check_*.json` files are local
+evidence only; GitHub workflow artifact evidence is still required for the CI
+benchmark gate.
 
 ## Current Branch
 

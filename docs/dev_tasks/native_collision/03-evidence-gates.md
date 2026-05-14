@@ -86,8 +86,8 @@ These gates are still required before the single north-star PR is complete.
     echo "native compatibility package smoke passed"'
     ```
 
-  - Commit: working tree after adding the current native compatibility package
-    smoke source.
+  - Commit: `892e50d02e4`
+    (`Add native compatibility package smoke`).
   - Result: passed. The installed package accepted the retained
     `collision-fcl`, `collision-bullet`, and `collision-ode` package
     components, linked the component facade targets, included installed
@@ -98,10 +98,33 @@ These gates are still required before the single north-star PR is complete.
     libccd runtime libraries.
 
 - `python scripts/check_collision_runtime_isolation.py`
-  - Commit: working tree after the current native compatibility package smoke.
+  - Commit: `892e50d02e4`
+    (`Add native compatibility package smoke`).
   - Result: passed. Non-reference DART source paths still do not include FCL,
     Bullet, ODE, libccd, or explicit collision reference backend headers, and
     legacy implementation sources remain under explicit `reference/` paths.
+- `pixi run --locked -e collision-reference bm-collision-check`
+  - Commit: `892e50d02e4`
+    (`Add native compatibility package smoke`).
+  - Result: passed. The current broad local benchmark guard rebuilt and ran the
+    checked native-vs-reference narrowphase, distance, raycast,
+    mixed-primitive, mesh-heavy, and raycast-batch subsets, plus the public
+    `DartCollisionDetector` adapter JSON subset.
+  - Native/reference check results:
+    | Subset | Result |
+    | --- | --- |
+    | Narrowphase | `3 passed, 0 failed, 0 skipped` |
+    | Distance | `3 passed, 0 failed, 0 skipped` |
+    | Raycast | `5 passed, 0 failed, 0 skipped` |
+    | Mixed primitives | `4 passed, 0 failed, 0 skipped` |
+    | Mesh-heavy | `1 passed, 0 failed, 0 skipped` |
+    | Raycast batch | `2 passed, 0 failed, 0 skipped` |
+  - JSON artifacts were written locally under `.benchmark_results/`:
+    `collision_check_narrow.json`, `collision_check_distance.json`,
+    `collision_check_raycast.json`, `collision_check_mixed.json`,
+    `collision_check_mesh.json`, `collision_check_raycast_batch.json`, and
+    `collision_check_adapter.json`. GitHub run artifact evidence is still
+    required for the CI benchmark gate.
 - `cmake --build build/default/cpp/Release --parallel 15 --target
 test_mesh_mesh UNIT_collision_DartCollisionDetector UNIT_collision_DARTCollide`
   - Commit: working tree after capped large flat box/mesh contact patch and
