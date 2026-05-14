@@ -256,21 +256,22 @@ Purpose: remove downstream reliance on legacy detector names and factory keys
 without breaking gz-physics or other packages that include DART compatibility
 headers.
 
-Current working-tree status: this phase is started. DART-side factory and SKEL
+Current working-tree status: this phase is locally complete and needs CI and
+package smoke evidence. DART-side factory and SKEL
 parser coverage now proves `"fcl"`, `"fcl_mesh"`, `"bullet"`, and `"ode"`
 selection routes to `DartCollisionDetector`, including a reference-enabled
 build where legacy component libraries are linked. The Python detector
 compatibility names now also resolve to `DartCollisionDetector`, and dartpy no
 longer links legacy collision component targets even in a reference-enabled
 build. Direct public C++ legacy facades keep legacy display strings for
-gz-physics compatibility while remaining native-backed. Focused gz-physics
-runs are now locally green after DART-side mesh-plane pair-order normal,
-stacked-cylinder contact, axial cylinder-cap/large-box support-patch, and
-tilted cylinder/plane-like-box support fixes. `COMMON_TEST_joint_features`,
-`COMMON_TEST_collisions`, `COMMON_TEST_detachable_joint`, and
-`COMMON_TEST_joint_transmitted_wrench_features` all pass against the DART
-plugin. Fresh full `pixi run -e gazebo test-gz` and CI evidence are still
-required before this phase can complete.
+gz-physics compatibility while remaining native-backed. FCL/ODE facades now
+preserve gz-required unsupported raycast behavior, while Bullet/native raycast
+support remains available. A fresh local `pixi run -e gazebo test-gz` passes
+65/65 tests after DART-side mesh-plane pair-order normal,
+stacked-cylinder contact, axial cylinder-cap/large-box support, tilted
+cylinder/plane-like-box support, and capped large flat box/mesh contact fixes.
+CI evidence is still required before this phase can complete on the release
+gate.
 
 Success criteria:
 

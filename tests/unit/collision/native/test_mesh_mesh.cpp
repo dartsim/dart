@@ -167,6 +167,31 @@ TEST(PrimitiveMesh, SphereVsMesh)
   EXPECT_GE(result.numContacts(), 1u);
 }
 
+TEST(PrimitiveMesh, LargeFlatBoxMeshContactPatchIsCapped)
+{
+  CollisionWorld world;
+  auto boxObj = world.createObject(
+      std::make_unique<BoxShape>(Eigen::Vector3d(50.0, 50.0, 0.5)));
+
+  Eigen::Isometry3d meshTf = Eigen::Isometry3d::Identity();
+  meshTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.25);
+  auto meshObj = world.createObject(
+      std::make_unique<MeshShape>(makeGridMesh(40, 1.0)), meshTf);
+
+  CollisionOption option;
+  option.maxNumContacts = 1000;
+  CollisionResult result;
+
+  ASSERT_TRUE(NarrowPhase::collide(boxObj, meshObj, option, result));
+  EXPECT_LE(result.numContacts(), 32u);
+  ASSERT_GT(result.numContacts(), 30u);
+  for (std::size_t i = 0; i < result.numContacts(); ++i) {
+    const auto& contact = result.getContact(i);
+    EXPECT_GT(contact.normal.z(), 0.99);
+    EXPECT_NEAR(contact.depth, 0.25, 1e-12);
+  }
+}
+
 TEST(RaycastMesh, BvhTraversalHit)
 {
   MeshShape mesh(makeCubeVertices(1.0), makeCubeTriangles());

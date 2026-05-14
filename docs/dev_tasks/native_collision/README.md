@@ -13,17 +13,16 @@
 - [x] Native coverage is proven against the DART feature surface currently
       served by FCL, Bullet, and ODE, including the final `VoxelGridShape`
       parity gap found by audit.
-- [ ] Full gz-physics compatibility still needs final `test-gz`/CI evidence,
-      but the known focused local blocker is now repaired without downstream
-      patches. The latest focused work fixed the DART/gz custom mesh-plane
-      free-fall by enforcing collision-object-order contact normals through
-      native dispatch, fixed stacked cylinder support by adding
-      parallel-cylinder cap/side contact selection, added axial cylinder-cap
-      support patches against large boxes, and now adds a tilted
-      cylinder-vs-plane-like-box support patch for gz's plane-as-large-box
-      path. Focused gz runs now pass `COMMON_TEST_joint_features`,
-      `COMMON_TEST_collisions`, `COMMON_TEST_detachable_joint`, and
-      `COMMON_TEST_joint_transmitted_wrench_features` against the DART plugin.
+- [x] Full local gz-physics compatibility is proven with
+      `pixi run -e gazebo test-gz` from a fresh downstream clone: 65/65 tests
+      passed. The local fixes cover DART/gz custom mesh-plane free-fall through
+      collision-object-order contact normals, stacked cylinder support through
+      parallel-cylinder cap/side contact selection, axial and tilted
+      cylinder-vs-plane-like-box support for gz's plane-as-large-box path,
+      capped large flat box/mesh contact patches for gz max-contact tests, and
+      legacy FCL/ODE facade raycast behavior required by gz's ray-intersection
+      feature tests. CI evidence is still required before the release gate is
+      permanent.
 - [x] Comparative benchmarks prove native is at least as fast as the best
       legacy backend for required workloads. Primitive, narrow-phase,
       supported distance, raycast, raycast-batch, mesh-heavy, and
@@ -137,9 +136,10 @@
       facades, with old-engine implementation files under explicit reference
       paths, and lint now guards that runtime source isolation. The remaining
       work is CI hardening, full wheel matrix/CI artifact evidence from the
-      wired verifier, downstream migration run evidence, GitHub evidence for
-      the scheduled performance guard, explicit API/scalability/performance
-      architecture gate evidence, and final legacy backend deletion.
+      wired verifier, downstream package/migration evidence, GitHub evidence
+      for the scheduled performance guard, explicit API/scalability/performance
+      architecture gate evidence, final validation, dev-task cleanup, and final
+      legacy backend deletion.
 
 ## Goal
 
@@ -184,14 +184,14 @@ The current checkpoint is a validated middle state, not a final PR boundary.
 | 0     | Baseline native backend exists               | Complete before this task          |
 | 1     | Native `dart` detector is the default path   | Complete in checkpoint             |
 | 2     | DART feature parity gaps are closed          | Complete in checkpoint             |
-| 3     | gz-physics compatibility is proven           | Focused local pass; full gate left |
+| 3     | gz-physics compatibility is proven           | Full local `test-gz` pass; CI left |
 | 4     | Native beats legacy backends in benchmarks   | Complete in checkpoint             |
 | 5     | FCL/Bullet/ODE are optional for local builds | Complete in checkpoint             |
 | 6     | Native-only and gz-physics CI are permanent  | Started; CI evidence still needed  |
 | 7     | Reference engines are test/bench-only        | Local target split proven          |
 | 8     | Default packages have no old runtime deps    | Local pass; CI verifier wired      |
-| 9     | Downstream migration/deprecation path exists | Plan documented; run evidence left |
-| 10    | Clean built-in API/scaling/perf layer        | Facades proven; arch gates open    |
+| 9     | Downstream migration/deprecation path exists | Full gz pass; package smoke left   |
+| 10    | Clean built-in API/scaling/perf layer        | Local design evidence; CI left     |
 | 11    | Old runtime backend source is reference-only | Local split; lint guard wired      |
 | 12    | Final one-PR validation and PR packaging     | Blocked on CI/migration/arch/del   |
 
@@ -241,23 +241,23 @@ dimensions:
   shape-specialized dispatch, persistent broadphase/query state, reusable
   scratch/cache lifetimes, and benchmark/profiler labels for each query stage.
 
-That gate remains open for CI evidence, downstream migration evidence, full
-gz-physics gate evidence, and broader correctness/performance guardrails across
-the public DART adapter and native core paths.
+That gate remains open for CI evidence, downstream package/migration evidence,
+final legacy-runtime deletion, and broader correctness/performance guardrails
+across the public DART adapter and native core paths.
 
 ## Design Readiness Tracker
 
 The status below is measured against the north star, not against whether a
 single checkpoint built locally.
 
-| Design axis             | North-star bar                                                                                                                                                                                                                                                    | Current state                                                                                                                                                                                                                                                                                                                                                                           |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Component layering      | Public DART APIs and compatibility facades sit outside `dart/collision/dart/`; the DART adapter owns scene synchronization and result conversion; `dart/collision/native/` owns algorithms, broadphase, query state, caches, and profiling.                       | The source/package split now matches this shape: legacy public paths are native-backed facades, reference implementation files are under explicit `reference/` paths, and lint guards runtime source isolation. CI/downstream and final deletion evidence remain before the layer is final.                                                                                             |
-| API cleanliness         | `dart` is the canonical public detector; legacy keys, classes, headers, and package components are compatibility facades only; public options/results describe DART semantics instead of backend-specific modes.                                                  | Factory aliases, Python names, public C++ legacy `create()` paths, installed headers, source-tree top-level legacy headers, examples, and retained package components are native-backed. CI/downstream migration evidence is still needed before this is final.                                                                                                                         |
-| Scalability             | Public collision, distance, and raycast use persistent adapter scene state with stable IDs, dirty transform/shape sync, reusable broadphase/query data, cache invalidation, deterministic ordering, and contact results that are stable under pair-order changes. | Persistent `DartCollisionGroup` scene state, broadphase-pruned raycast, AABB-pruned distance, native filter adaptation, dynamic-shape invalidation coverage, scene-issued manifold cache IDs, and pair-order normal tests are implemented locally. Broader CI and recurring benchmark evidence remain.                                                                                  |
-| Performance orientation | Native hot paths use compact geometry, shape-specialized dispatch, persistent broadphase data, reusable scratch, clear cache lifetimes, and profiling/benchmark labels for each query stage.                                                                      | Recorded benchmarks show native wins on the measured primitive, narrowphase, supported distance, raycast, batch, mesh-heavy, and mixed-primitive set. The native dispatcher keeps canonical shape-specialized functions while wrapping only result-normal orientation when needed. The recurring benchmark guard covers checked native-vs-reference and public adapter scenarios.       |
-| Reference isolation     | FCL, Bullet, and ODE exist only as optional reference engines for tests and benchmarks, with native-only builds able to opt out.                                                                                                                                  | CMake opt-out options, native-only Pixi defaults, explicit `collision-reference` opt-in, `collision-reference-*` targets, reference-path source split, runtime source isolation linting, package/wheel metadata cleanup, local install/wheel evidence, and wheel artifact verifier wiring are in place. CI wheel-matrix run evidence remains.                                           |
-| Compatibility           | gz-physics and downstream source-compatible legacy names keep building during migration, but cannot select an external runtime engine.                                                                                                                            | Legacy detector headers/classes, factory aliases, Python names, retained package components, and the documented migration contract route to native. Direct legacy facade display strings are covered by DART tests. Focused gz collision, detachable-joint, joint-feature, and transmitted-wrench tests now pass locally; full `test-gz`/CI evidence remains before the gate can close. |
+| Design axis             | North-star bar                                                                                                                                                                                                                                                    | Current state                                                                                                                                                                                                                                                                                                                                                                     |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Component layering      | Public DART APIs and compatibility facades sit outside `dart/collision/dart/`; the DART adapter owns scene synchronization and result conversion; `dart/collision/native/` owns algorithms, broadphase, query state, caches, and profiling.                       | The source/package split now matches this shape: legacy public paths are native-backed facades, reference implementation files are under explicit `reference/` paths, and lint guards runtime source isolation. CI/downstream and final deletion evidence remain before the layer is final.                                                                                       |
+| API cleanliness         | `dart` is the canonical public detector; legacy keys, classes, headers, and package components are compatibility facades only; public options/results describe DART semantics instead of backend-specific modes.                                                  | Factory aliases, Python names, public C++ legacy `create()` paths, installed headers, source-tree top-level legacy headers, examples, and retained package components are native-backed. CI/downstream migration evidence is still needed before this is final.                                                                                                                   |
+| Scalability             | Public collision, distance, and raycast use persistent adapter scene state with stable IDs, dirty transform/shape sync, reusable broadphase/query data, cache invalidation, deterministic ordering, and contact results that are stable under pair-order changes. | Persistent `DartCollisionGroup` scene state, broadphase-pruned raycast, AABB-pruned distance, native filter adaptation, dynamic-shape invalidation coverage, scene-issued manifold cache IDs, and pair-order normal tests are implemented locally. Broader CI and recurring benchmark evidence remain.                                                                            |
+| Performance orientation | Native hot paths use compact geometry, shape-specialized dispatch, persistent broadphase data, reusable scratch, clear cache lifetimes, and profiling/benchmark labels for each query stage.                                                                      | Recorded benchmarks show native wins on the measured primitive, narrowphase, supported distance, raycast, batch, mesh-heavy, and mixed-primitive set. The native dispatcher keeps canonical shape-specialized functions while wrapping only result-normal orientation when needed. The recurring benchmark guard covers checked native-vs-reference and public adapter scenarios. |
+| Reference isolation     | FCL, Bullet, and ODE exist only as optional reference engines for tests and benchmarks, with native-only builds able to opt out.                                                                                                                                  | CMake opt-out options, native-only Pixi defaults, explicit `collision-reference` opt-in, `collision-reference-*` targets, reference-path source split, runtime source isolation linting, package/wheel metadata cleanup, local install/wheel evidence, and wheel artifact verifier wiring are in place. CI wheel-matrix run evidence remains.                                     |
+| Compatibility           | gz-physics and downstream source-compatible legacy names keep building during migration, but cannot select an external runtime engine.                                                                                                                            | Legacy detector headers/classes, factory aliases, Python names, retained package components, and the documented migration contract route to native. Direct legacy facade display strings are covered by DART tests. A fresh local `pixi run -e gazebo test-gz` passes 65/65 tests; CI evidence remains before the gate can close.                                                 |
 
 ## Architecture Completion Rubric
 
@@ -265,13 +265,13 @@ Stage 10 on the north-star scale is complete only when the built-in collision
 component is clean as an API, scalable as a scene/query system, and ready for
 performance work without reopening public backend selection.
 
-| Design gate             | Completion bar                                                                                                                                     | Current evidence                                                                                                                                                                      | Still needed                                                                                               |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| API cleanliness         | Public DART APIs expose one canonical `dart` detector; legacy names are native-backed facades; reference engines use explicit test/benchmark APIs. | Factory aliases, Python names, C++ legacy `create()` paths, installed/source headers, and package facades route native.                                                               | CI/package matrix evidence and final search proving no public path can select an external runtime backend. |
-| Scalable adapter/core   | `DartCollisionGroup` owns persistent scene state, stable IDs, dirty sync, cache invalidation, deterministic results, and reusable query snapshots. | Public adapter tests and benchmarks cover dirty sync, dynamic geometry invalidation, filters, pair-order normals, cache IDs, and the reduced gz-like tilted cylinder support fixture. | Broaden recurring public-adapter correctness evidence and collect CI/full-gz evidence.                     |
-| Performance orientation | Native hot paths use compact geometry, shape-specialized dispatch, persistent broadphase data, reusable scratch/caches, and measured query stages. | Native-vs-reference benchmarks pass locally across primitive, distance, raycast, batch, mesh-heavy, and mixed workloads.                                                              | CI benchmark artifact evidence and any optimization needed after correctness gates are permanently green.  |
-| Reference isolation     | FCL, Bullet, and ODE are optional reference engines only; native-only builds, installs, wheels, and downstream facades do not link them.           | CMake opt-out, reference targets, lint source isolation, install/package/wheel checks, and wheel verifier wiring exist.                                                               | CI wheel matrix and downstream package smoke evidence.                                                     |
-| Compatibility facade    | gz-physics-required spellings compile and run through the built-in detector while migration removes reliance on legacy names.                      | DART facade tests and focused gz collision, detachable-joint, joint-feature, and transmitted-wrench tests pass locally.                                                               | Full `pixi run -e gazebo test-gz` and CI evidence.                                                         |
+| Design gate             | Completion bar                                                                                                                                     | Current evidence                                                                                                                                                                                                                   | Still needed                                                                                               |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| API cleanliness         | Public DART APIs expose one canonical `dart` detector; legacy names are native-backed facades; reference engines use explicit test/benchmark APIs. | Factory aliases, Python names, C++ legacy `create()` paths, installed/source headers, and package facades route native.                                                                                                            | CI/package matrix evidence and final search proving no public path can select an external runtime backend. |
+| Scalable adapter/core   | `DartCollisionGroup` owns persistent scene state, stable IDs, dirty sync, cache invalidation, deterministic results, and reusable query snapshots. | Public adapter tests and benchmarks cover dirty sync, dynamic geometry invalidation, filters, pair-order normals, cache IDs, the reduced gz-like tilted cylinder support fixture, and the capped large flat box/mesh contact path. | Broaden recurring public-adapter correctness evidence and collect CI evidence.                             |
+| Performance orientation | Native hot paths use compact geometry, shape-specialized dispatch, persistent broadphase data, reusable scratch/caches, and measured query stages. | Native-vs-reference benchmarks pass locally across primitive, distance, raycast, batch, mesh-heavy, and mixed workloads.                                                                                                           | CI benchmark artifact evidence and any optimization needed after correctness gates are permanently green.  |
+| Reference isolation     | FCL, Bullet, and ODE are optional reference engines only; native-only builds, installs, wheels, and downstream facades do not link them.           | CMake opt-out, reference targets, lint source isolation, install/package/wheel checks, and wheel verifier wiring exist.                                                                                                            | CI wheel matrix and downstream package smoke evidence.                                                     |
+| Compatibility facade    | gz-physics-required spellings compile and run through the built-in detector while migration removes reliance on legacy names.                      | DART facade tests pass, FCL/ODE legacy facades keep gz-required unsupported raycast behavior, and fresh local `pixi run -e gazebo test-gz` passes 65/65 tests.                                                                     | CI gz-physics evidence and downstream migration/package smoke evidence.                                    |
 
 ## Architecture Review Targets
 
@@ -342,15 +342,14 @@ subcomponents, not only against whether old backend names still compile.
 
 ## Immediate Next Steps
 
-1. Run the full gz gate without selecting FCL, Bullet, or ODE. The focused
-   custom mesh-plane, stacked-cylinder detachable-joint, axial
-   cylinder-cap/large-box, and tilted cylinder/plane-like-box support paths now
-   have DART-side regressions and focused gz evidence; local
-   `COMMON_TEST_joint_features`, `COMMON_TEST_collisions`,
-   `COMMON_TEST_detachable_joint`, and
-   `COMMON_TEST_joint_transmitted_wrench_features` pass against the DART
-   plugin. The next evidence step is full `pixi run -e gazebo test-gz` or CI.
-2. Run and harden the new native-only CI job alongside existing gz-physics CI.
+1. Run and harden the new native-only CI job alongside existing gz-physics CI.
+   Local gz-physics evidence is now the full fresh `pixi run -e gazebo test-gz`
+   pass, so the next gate is CI visibility for that same downstream build.
+2. Keep the full gz gate green while tightening compatibility facades and
+   downstream migration evidence. The current DART-side regressions cover
+   custom mesh-plane contacts, stacked-cylinder detachable joints, axial and
+   tilted cylinder/plane-like-box support, capped large flat box/mesh contact
+   patches, and FCL/ODE legacy facade raycast compatibility.
 3. Finish reference-engine isolation by auditing target links, dependency
    metadata, wheel artifacts, and remaining downstream paths after the CMake
    test/benchmark opt-out, normal pixi default-off, explicit reference opt-in,
@@ -471,10 +470,9 @@ collision stack.
      legacy detector names and factory aliases.
    - Do not remove compatibility facades until downstream code has a tested
      native-backed path.
-   - Current focused gz-physics evidence is locally green: direct legacy
-     display strings, `MeshAndPlane`, detachable joints, joint features
-     including `JointDetach`, and transmitted wrench features pass against the
-     DART plugin. Full `test-gz`/CI evidence is still required.
+   - Current gz-physics evidence is locally green: a fresh
+     `pixi run -e gazebo test-gz` passed 65/65 tests against the DART plugin.
+     CI evidence is still required.
 6. **Performance Guardrails**
    - The current `bm-collision-check` task runs checked narrowphase, distance,
      raycast, mixed-primitive, mesh-heavy, raycast-batch, and public adapter

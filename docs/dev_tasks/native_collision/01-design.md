@@ -461,29 +461,30 @@ isolation is now checked by lint so non-reference DART source paths cannot
 include old-engine or reference-backend headers, and legacy implementation
 sources cannot move back outside `reference/` paths. The native dispatcher now
 has focused tests for pair-order contact normals across direct narrowphase,
-snapshot collision, and public DART collision group paths; custom mesh-plane
-stacked parallel-cylinder, and axial cylinder-cap/large-box gz contact
+snapshot collision, and public DART collision group paths; custom mesh-plane,
+stacked parallel-cylinder, axial cylinder-cap/large-box,
+tilted-cylinder/plane-like-box, and capped large flat box/mesh gz contact
 regressions are reduced and fixed on the DART side. The solver-facing native
 manifold cache contract is now also tested through a legacy display-name
 facade: a compatibility detector may report a legacy type string while the
 attached native `CachedContact` still receives normal and friction impulse
-writeback. The remaining design gaps are CI and packaging evidence at matrix
-scale, downstream migration/deprecation evidence, the focused gz-physics
-`JointDetach` exact-zero velocity residual, and broader recurring
-correctness/performance guardrails across the public DART adapter and native
-core paths. The completed PR must make it impossible for ordinary DART
-collision runtime selection to instantiate or link FCL, Bullet, or ODE.
+writeback. The full local gz-physics gate passes from a fresh downstream clone;
+FCL/ODE compatibility facades preserve gz-required unsupported raycast
+semantics while still routing collision through the built-in detector. The
+remaining design gaps are CI and packaging evidence at matrix scale,
+downstream package/deprecation evidence, final legacy-runtime deletion, and
+broader recurring correctness/performance guardrails across the public DART
+adapter and native core paths. The completed PR must make it impossible for
+ordinary DART collision runtime selection to instantiate or link FCL, Bullet,
+or ODE.
 
-The current gz-physics `JointDetach` blocker is now classified as a support
-contact/manifold stability issue within the native scene/query core. A
-temporary downstream diagnostic run showed that the reported upper-link
-off-axis angular `Y` residual follows the base link's angular `Y` motion, and
-the upper-link linear `X` residual follows from that base rotation through the
-joint offset. That evidence keeps the detach compatibility facade and
-state-restoration path out of the primary suspect set; the next reduction
-should focus on native base-vs-ground contact generation, manifold
-persistence, and solver-facing support stability for gz-physics'
-plane-as-large-box model.
+The former gz-physics `JointDetach` blocker is now retained as design evidence
+for where support-contact stability belongs: within the native scene/query core
+and solver-facing result contract, not in facade selection or detach-state
+restoration. Temporary downstream diagnostics showed the upper-link off-axis
+motion followed base support motion against gz's plane-as-large-box fallback;
+the retained DART-side support patch and reduced solver regression now keep
+that path covered while preserving the single built-in detector architecture.
 
 ## Code Ownership Map
 

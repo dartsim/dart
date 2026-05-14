@@ -85,21 +85,13 @@ cleanup can be marked complete.
 The latest compatibility cleanup preserves legacy direct C++ facade display
 strings for gz-physics while keeping those facades native-backed. It also adds
 native plane/mesh dispatch, unbounded-plane AABB coverage, focused DART
-mesh-plane regression tests, pair-order contact normal tests, and
-parallel-cylinder cap/side contact handling for stacked support. Commit
-`6e04945b29d6` also adds axial cylinder-cap support patches against large
-boxes, covering gz-physics plane geometry as represented by its DART plugin's
-large-box fallback. Focused DART tests pass. The latest focused gz-physics run
-now passes
-`COMMON_TEST_collisions_dartsim`, `COMMON_TEST_detachable_joint_dartsim`, and
-`COMMON_TEST_joint_transmitted_wrench_features_dartsim`. The remaining focused
-gz blocker is `COMMON_TEST_joint_features_dartsim`
-`JointFeaturesDetachTest/0.JointDetach`, which reports tiny off-axis velocity
-components against exact-zero tolerances after richer box/cylinder contact
-support. Re-running the isolated case at `6e04945b29d6` reports
-`upperLinkLinearVelocity.X() = -0.00013953469787260998`,
-`upperLinkLinearVelocity.Y() = 1.0002864929523347e-06`, and
-`upperLinkAngularVelocity.Y() = -6.6438361021132697e-05` against `1e-6`.
+mesh-plane regression tests, pair-order contact normal tests,
+parallel-cylinder cap/side contact handling for stacked support, axial
+cylinder-cap support patches against large boxes, tilted
+cylinder/plane-like-box support, capped large flat box/mesh contact patches,
+and FCL/ODE legacy facade raycast compatibility. Focused DART tests pass, the
+focused `COMMON_TEST_simulation_features` run passes 15/15, and fresh local
+`pixi run -e gazebo test-gz` passes 65/65.
 Temporary contact logging after that checkpoint showed only base-vs-ground
 contacts during the failing window; the detached upper/lower links were not in
 contact. The support contacts are the base plate cylinder and base pole box
@@ -141,6 +133,12 @@ local `COMMON_TEST_joint_features` binary passes 21/23 with 2 skips, and the
 related `COMMON_TEST_collisions`, `COMMON_TEST_detachable_joint`, and
 `COMMON_TEST_joint_transmitted_wrench_features` binaries pass against the DART
 plugin.
+The newest working-tree slice closes the full local gz gate: native large flat
+box/mesh contacts are capped at 32 while still exposing more than 30 contacts
+for gz max-contact selection tests, FCL/ODE compatibility facades keep
+gz-required unsupported raycast behavior, focused
+`COMMON_TEST_simulation_features` passes 15/15, and a fresh
+`DART_PARALLEL_JOBS=15 pixi run -e gazebo test-gz` run passes 65/65 tests.
 
 ## Current Branch
 
@@ -151,12 +149,12 @@ the exact count.
 ## Immediate Next Step
 
 Continue from `docs/dev_tasks/native_collision/04-reference-gap-analysis.md`.
-The former focused gz `JointDetach` blocker is locally repaired. The immediate
-next evidence step is a full `pixi run -e gazebo test-gz` run or CI equivalent,
-then continue the broader north-star gates: CI native-only/gz evidence, wheel
-matrix artifact evidence from `wheel-verify`, downstream migration evidence,
+The focused gz `JointDetach` blocker and full local gz gate are repaired. The
+immediate next evidence steps are CI native-only/gz evidence, wheel matrix
+artifact evidence from `wheel-verify`, downstream package/migration evidence,
 GitHub evidence for the scheduled benchmark guard, architecture/design gate
-evidence, and final legacy backend deletion.
+evidence, final validation, dev-task cleanup, and final legacy backend
+deletion.
 
 The persistent DART adapter scene path is now started: public collision,
 distance, and raycast calls use synced native scene state owned by
@@ -303,19 +301,19 @@ libraries.
 - `pixi run test-all` passes after the native voxel-grid work and GUI headless
   fixes. The fresh full run passed lint, build, Release C++ tests,
   simulation-experimental tests, Python tests, and docs.
-- A previous gz-physics run passed 65/65 tests and the plugin link check. That
-  remains historical evidence for the earlier checkpoint, but it does not close
-  the current source state because the latest focused gz-physics run still has
-  the `JointDetach` exact-zero velocity residual.
+- The current source state has fresh full gz evidence:
+  `DART_PARALLEL_JOBS=15 pixi run -e gazebo test-gz` passed 65/65 tests from a
+  fresh `.deps/gz-physics` clone.
 - Commit `6e04945b29d6` adds native axial cylinder-cap support patches against
   large boxes and native DART tests for support-patch generation plus
-  `maxNumContacts` limiting. This improves the gz plane-as-large-box contact
-  path but does not close the remaining `JointDetach` exact-zero residual.
+  `maxNumContacts` limiting. The later tilted cylinder/plane-like-box support
+  patch and large flat box/mesh contact cap now close the local gz gate.
 - Rejected diagnostics after `6e04945b29d6`: multi-point and single-point
   near-parallel tilted cylinder-cap/box-face replacements both passed focused
   native tests but made the gz `JointDetach` case fail earlier at
-  `upperLinkLinearVelocity.Z() > 1e-5`. The current blocker is therefore not a
-  simple "more cap contacts" fix.
+  `upperLinkLinearVelocity.Z() > 1e-5`. Those diagnostics ruled out a simple
+  "more cap contacts" fix before the later tilted support/contact-cap changes
+  closed the local gz gate.
 - Tests and benchmark comments now use native collision naming except for the
   explicit `"experimental"` compatibility alias.
 - gz-physics compatibility and performance parity are explicit gates, not

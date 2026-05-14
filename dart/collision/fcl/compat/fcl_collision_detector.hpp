@@ -88,6 +88,16 @@ public:
     return clone;
   }
 
+  bool raycast(
+      CollisionGroup* group,
+      const Eigen::Vector3d& from,
+      const Eigen::Vector3d& to,
+      const RaycastOption& option = RaycastOption(),
+      RaycastResult* result = nullptr) override
+  {
+    return CollisionDetector::raycast(group, from, to, option, result);
+  }
+
   void setPrimitiveShapeType(PrimitiveShape type)
   {
     mPrimitiveShapeType = type;

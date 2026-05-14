@@ -8,7 +8,9 @@
 #include <dart/collision/dart/DARTCollisionDetector.hpp>
 #include <dart/collision/dart/dart_collision_detector.hpp>
 #include <dart/collision/dart/dart_collision_group.hpp>
+#include <dart/collision/fcl/FCLCollisionDetector.hpp>
 #include <dart/collision/native/persistent_manifold_cache.hpp>
+#include <dart/collision/ode/OdeCollisionDetector.hpp>
 #include <dart/collision/raycast_option.hpp>
 #include <dart/collision/raycast_result.hpp>
 
@@ -391,6 +393,30 @@ TEST(DartCollisionDetector, LegacyUppercaseHeaderKeepsRaycastUnsupported)
   EXPECT_EQ("dart", detector->getTypeView());
   EXPECT_FALSE(hit);
   EXPECT_FALSE(result.hasHit());
+}
+
+TEST(DartCollisionDetector, LegacyReferenceFacadesKeepRaycastUnsupported)
+{
+  const std::array<std::shared_ptr<CollisionDetector>, 2> detectors{
+      FCLCollisionDetector::create(), OdeCollisionDetector::create()};
+
+  for (const auto& detector : detectors) {
+    auto sphere = std::make_shared<SphereShape>(0.5);
+    auto setup = makeShapeSetup("sphere", sphere);
+
+    auto group = detector->createCollisionGroup();
+    group->addShapeFrame(setup.shapeNode);
+
+    RaycastOption option;
+    RaycastResult result;
+
+    const Eigen::Vector3d from(0.0, 0.0, 2.0);
+    const Eigen::Vector3d to(0.0, 0.0, -2.0);
+
+    const bool hit = group->raycast(from, to, option, &result);
+    EXPECT_FALSE(hit) << detector->getTypeView();
+    EXPECT_FALSE(result.hasHit()) << detector->getTypeView();
+  }
 }
 
 TEST(DartCollisionDetector, MaxNumContactsZeroReturnsFalse)

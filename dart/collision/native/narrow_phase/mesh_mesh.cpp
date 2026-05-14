@@ -251,6 +251,151 @@ Eigen::Vector3d primitiveCenter(
   return transform.translation();
 }
 
+struct FaceContactCandidate
+{
+  Eigen::Vector3d point;
+  double depth = 0.0;
+};
+
+void addContactCandidate(
+    std::vector<FaceContactCandidate>& contacts,
+    std::size_t contactLimit,
+    const FaceContactCandidate& candidate)
+{
+  const auto insertPos = std::lower_bound(
+      contacts.begin(),
+      contacts.end(),
+      candidate,
+      [](const FaceContactCandidate& lhs, const FaceContactCandidate& rhs) {
+        return lhs.depth > rhs.depth;
+      });
+
+  if (contacts.size() < contactLimit) {
+    contacts.insert(insertPos, candidate);
+  } else if (insertPos != contacts.end()) {
+    contacts.insert(insertPos, candidate);
+    contacts.pop_back();
+  }
+}
+
+bool collideLargeBoxFaceMesh(
+    const BoxShape& box,
+    const Eigen::Isometry3d& tfBox,
+    const MeshShape& mesh,
+    const Eigen::Isometry3d& tfMesh,
+    CollisionResult& result,
+    const CollisionOption& option)
+{
+  if (result.numContacts() >= option.maxNumContacts) {
+    return false;
+  }
+
+  const auto& vertices = mesh.getVertices();
+  if (vertices.empty()) {
+    return false;
+  }
+
+  const Eigen::Isometry3d meshInBox = tfBox.inverse() * tfMesh;
+  Eigen::Vector3d meshMin
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d meshMax
+      = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
+  std::vector<Eigen::Vector3d> verticesInBox;
+  verticesInBox.reserve(vertices.size());
+
+  for (const auto& localVertex : vertices) {
+    const Eigen::Vector3d vertexInBox = meshInBox * localVertex;
+    verticesInBox.push_back(vertexInBox);
+    meshMin = meshMin.cwiseMin(vertexInBox);
+    meshMax = meshMax.cwiseMax(vertexInBox);
+  }
+
+  const Eigen::Vector3d meshCenter = (meshMin + meshMax) * 0.5;
+  const Eigen::Vector3d meshHalfExtents = (meshMax - meshMin) * 0.5;
+  const Eigen::Vector3d& boxHalfExtents = box.getHalfExtents();
+
+  double closestFaceDistance = -std::numeric_limits<double>::infinity();
+  int faceAxis = 2;
+  double faceSign = 1.0;
+  for (int axis = 0; axis < 3; ++axis) {
+    for (double sign : {-1.0, 1.0}) {
+      const double distance
+          = sign * (meshCenter[axis] - sign * boxHalfExtents[axis]);
+      if (distance > closestFaceDistance) {
+        closestFaceDistance = distance;
+        faceAxis = axis;
+        faceSign = sign;
+      }
+    }
+  }
+
+  constexpr double largeFaceScale = 10.0;
+  constexpr double boundsTolerance = 1e-9;
+  for (int axis = 0; axis < 3; ++axis) {
+    if (axis == faceAxis) {
+      continue;
+    }
+
+    const double requiredHalfExtent
+        = std::max(meshHalfExtents[axis], 1e-9) * largeFaceScale;
+    if (boxHalfExtents[axis] < requiredHalfExtent) {
+      return false;
+    }
+  }
+
+  const std::size_t remaining = option.maxNumContacts - result.numContacts();
+  const std::size_t contactLimit = std::min<std::size_t>(remaining, 32u);
+  std::vector<FaceContactCandidate> contacts;
+  contacts.reserve(contactLimit);
+
+  const double faceCoordinate = faceSign * boxHalfExtents[faceAxis];
+  for (const auto& vertexInBox : verticesInBox) {
+    bool insideFaceBounds = true;
+    for (int axis = 0; axis < 3; ++axis) {
+      if (axis == faceAxis) {
+        continue;
+      }
+
+      if (std::abs(vertexInBox[axis])
+          > boxHalfExtents[axis] + boundsTolerance) {
+        insideFaceBounds = false;
+        break;
+      }
+    }
+
+    if (!insideFaceBounds) {
+      continue;
+    }
+
+    const double signedDistance
+        = faceSign * (vertexInBox[faceAxis] - faceCoordinate);
+    if (signedDistance > 0.0) {
+      continue;
+    }
+
+    addContactCandidate(
+        contacts,
+        contactLimit,
+        FaceContactCandidate{tfBox * vertexInBox, -signedDistance});
+  }
+
+  if (contacts.empty()) {
+    return false;
+  }
+
+  const Eigen::Vector3d worldNormal
+      = tfBox.rotation() * (Eigen::Vector3d::Unit(faceAxis) * faceSign);
+  for (const auto& candidate : contacts) {
+    ContactPoint contact;
+    contact.position = candidate.point + worldNormal * (candidate.depth * 0.5);
+    contact.normal = worldNormal;
+    contact.depth = candidate.depth;
+    result.addContact(contact);
+  }
+
+  return true;
+}
+
 double aabbDistanceSquared(const Aabb& a, const Aabb& b)
 {
   double distSq = 0.0;
@@ -900,6 +1045,12 @@ bool collidePrimitiveMesh(
       = primitive.getType() == ShapeType::Capsule
             ? static_cast<const CapsuleShape*>(&primitive)
             : nullptr;
+  if (primitive.getType() == ShapeType::Box) {
+    const auto& box = static_cast<const BoxShape&>(primitive);
+    if (collideLargeBoxFaceMesh(box, tfPrim, mesh, tfMesh, result, option)) {
+      return true;
+    }
+  }
 
   SupportFunction primitiveSupport;
   Eigen::Vector3d primitiveCenterWorld = tfPrim.translation();
