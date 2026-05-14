@@ -99,6 +99,7 @@
   - Native collision: improved broad-phase early exit, contact-count tracking, box-box distance, cylinder-box narrow phase, and primitive-mesh traversal performance.
   - Native collision: stabilized tilted cylinder contacts against plane-like large boxes, matching gz-physics plane fallback behavior without selecting external collision backends.
   - Native collision: capped large flat box/mesh contact patches to keep gz-physics max-contact selection tests expressive without overwhelming the solver, and preserved gz-required unsupported raycast behavior on FCL/ODE compatibility facades while keeping the built-in native detector behind those names.
+  - Restored `BodyNodeDistanceFilter` so distance queries honor body collidability, self-collision, and adjacent-body filtering.
   - Fixed PascalCase ODE compatibility headers to preserve legacy includes such as `OdeCollisionDetector.hpp`. ([#2475](https://github.com/dartsim/dart/pull/2475))
   - Fixed ODE contact history to snapshot current contacts before restoring cached contacts, preventing duplicate or invalid restored contacts from destabilizing capsule-ground simulations. ([#2648](https://github.com/dartsim/dart/pull/2648))
   - Validate `SphereShape::setRadius()` to reject NaN, infinity, and non-positive values with a warning instead of crashing via assertion. ([#2442](https://github.com/dartsim/dart/pull/2442), [gz-physics#843](https://github.com/gazebosim/gz-physics/issues/843))

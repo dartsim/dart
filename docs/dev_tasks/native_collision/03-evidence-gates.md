@@ -204,6 +204,33 @@ These gates are still required before the single north-star PR is complete.
 --target INTEGRATION_collision_native_backend_consistency` passed, and
     `cmake --build build/default/cpp/Release --target
 bm_scenarios_raycast_batch` passed.
+- macOS arm64 debug distance-filter link repair:
+  - Run/job: `25877526350` / `76048820253` (`CI macOS` /
+    `Debug Tests (arm64)`).
+  - Result: after the include cleanup, Debug C++ test build failed linking
+    `UNIT_collision_DistanceFilter`.
+  - Root cause: `BodyNodeDistanceFilter` declarations survived earlier
+    refactors, but `dart/collision/distance_filter.cpp` no longer defined
+    `BodyNodeDistanceFilter::needDistance()` or `areAdjacentBodies()`. Clean
+    macOS Debug builds therefore had no key function or vtable definition for
+    the unit-test target.
+  - Observed failure:
+
+    ```text
+    Undefined symbols for architecture arm64:
+      "dart::collision::BodyNodeDistanceFilter::needDistance(...) const"
+      "vtable for dart::collision::BodyNodeDistanceFilter"
+    ```
+
+  - Repair: restore the historical body-node distance filtering semantics with
+    canonical lowercase includes and null-safe fallback behavior for
+    non-`ShapeNode` frames.
+  - Focused local validation: `cmake --build build/default/cpp/Debug --target
+UNIT_collision_DistanceFilter` passed, `ctest --test-dir
+build/default/cpp/Debug -R '^UNIT_collision_DistanceFilter$'
+--output-on-failure` passed, `cmake --build build/default/cpp/Release
+--target UNIT_collision_DistanceFilter` passed, and the matching Release CTest
+    passed.
 
 ## Current Full-Validation Repair
 

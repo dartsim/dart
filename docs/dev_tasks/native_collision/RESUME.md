@@ -233,7 +233,13 @@ CamelCase compatibility headers. The current working tree switches those files
 to lowercase canonical headers and explicit lowercase `reference/` detector
 headers, with focused local rebuilds of
 `INTEGRATION_collision_native_backend_consistency` and
-`bm_scenarios_raycast_batch` passing.
+`bm_scenarios_raycast_batch` passing. The next PR refresh on `623f0180fa8`
+then reached macOS arm64 Debug linking and failed `UNIT_collision_DistanceFilter`
+because `BodyNodeDistanceFilter` still had public declarations but no compiled
+implementation. The current working tree restores the historical
+`BodyNodeDistanceFilter::needDistance()` and `areAdjacentBodies()` definitions,
+with focused Debug and Release local build/CTest coverage for
+`UNIT_collision_DistanceFilter`.
 
 ## Current Branch
 
@@ -258,16 +264,17 @@ pushed at `7a2795d86ce`, and the Alt Linux Eigen 5 configure repair was pushed
 at `d2f1b7233bd`. The Windows wheel MSVC `/utf-8` repair, Alt Linux direct
 EnTT dependency/fallback repair, and export-safe fetched EnTT repair are pushed
 through `97a9d3ca6d6`. The current working tree has the macOS arm64
-CamelCase-include cleanup after CI run `25875811218`, job `76044208533`; the
-next immediate step is to finish local lint/diff validation, commit, push, and
-recheck PR #2652 CI. After that, continue watching PR #2652 CI, collect
-native-only/gz and wheel matrix artifact evidence, collect GitHub evidence for
-the scheduled or manual benchmark guard, record downstream
-migration/deprecation evidence, perform final runtime cleanup, rerun full
-validation after the PR-complete state, transfer final evidence to the PR, and
-delete the dev-task folder in the completing PR. Read `06-completion-audit.md`
-before deciding whether a future checkpoint is complete; it is the
-prompt-to-artifact checklist for the north-star goal.
+CamelCase-include cleanup after CI run `25875811218`, job `76044208533`, and
+the distance-filter implementation restoration after CI run `25877526350`,
+job `76048820253`; the next immediate step is to finish local lint/diff
+validation, commit, push, and recheck PR #2652 CI. After that, continue
+watching PR #2652 CI, collect native-only/gz and wheel matrix artifact
+evidence, collect GitHub evidence for the scheduled or manual benchmark guard,
+record downstream migration/deprecation evidence, perform final runtime
+cleanup, rerun full validation after the PR-complete state, transfer final
+evidence to the PR, and delete the dev-task folder in the completing PR. Read
+`06-completion-audit.md` before deciding whether a future checkpoint is
+complete; it is the prompt-to-artifact checklist for the north-star goal.
 
 The persistent DART adapter scene path is now started: public collision,
 distance, and raycast calls use synced native scene state owned by

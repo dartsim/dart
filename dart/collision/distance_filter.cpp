@@ -33,9 +33,75 @@
 #include "dart/collision/distance_filter.hpp"
 
 #include "dart/collision/collision_object.hpp"
+#include "dart/common/macros.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/shape_frame.hpp"
+#include "dart/dynamics/shape_node.hpp"
+#include "dart/dynamics/skeleton.hpp"
 
 namespace dart {
 namespace collision {
+
+//==============================================================================
+bool BodyNodeDistanceFilter::needDistance(
+    const collision::CollisionObject* object1,
+    const collision::CollisionObject* object2) const
+{
+  if (object1 == object2) {
+    return false;
+  }
+
+  const auto* shapeFrame1 = object1->getShapeFrame();
+  const auto* shapeFrame2 = object2->getShapeFrame();
+  if (!shapeFrame1 || !shapeFrame2) {
+    return true;
+  }
+
+  auto shapeNode1 = shapeFrame1->asShapeNode();
+  auto shapeNode2 = shapeFrame2->asShapeNode();
+  if (!shapeNode1 || !shapeNode2) {
+    return true;
+  }
+
+  auto bodyNode1 = shapeNode1->getBodyNodePtr();
+  auto bodyNode2 = shapeNode2->getBodyNodePtr();
+  if (!bodyNode1 || !bodyNode2) {
+    return true;
+  }
+
+  if (!bodyNode1->isCollidable() || !bodyNode2->isCollidable()) {
+    return false;
+  }
+
+  if (bodyNode1->getSkeleton() == bodyNode2->getSkeleton()) {
+    const auto& skeleton = bodyNode1->getSkeleton();
+
+    if (!skeleton->isEnabledSelfCollisionCheck()) {
+      return false;
+    }
+
+    if (!skeleton->isEnabledAdjacentBodyCheck()
+        && areAdjacentBodies(bodyNode1, bodyNode2)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+//==============================================================================
+bool BodyNodeDistanceFilter::areAdjacentBodies(
+    const dynamics::BodyNode* bodyNode1,
+    const dynamics::BodyNode* bodyNode2) const
+{
+  if ((bodyNode1->getParentBodyNode() == bodyNode2)
+      || (bodyNode2->getParentBodyNode() == bodyNode1)) {
+    DART_ASSERT(bodyNode1->getSkeleton() == bodyNode2->getSkeleton());
+    return true;
+  }
+
+  return false;
+}
 
 } // namespace collision
 } // namespace dart

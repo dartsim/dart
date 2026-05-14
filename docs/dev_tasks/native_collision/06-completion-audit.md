@@ -60,7 +60,11 @@ unverified external and finalization gates:
   reached macOS release arm64 compilation and failed because new native
   collision test/benchmark files still included generated CamelCase
   compatibility headers; those includes now use lowercase canonical headers
-  and explicit lowercase `reference/` detector headers.
+  and explicit lowercase `reference/` detector headers. The next refresh on
+  head `623f0180fa8` reached macOS Debug linking and failed
+  `UNIT_collision_DistanceFilter` because `BodyNodeDistanceFilter` still had
+  public declarations but no compiled implementation; the current repair
+  restores the body-node distance filter definitions.
 - Downstream migration/deprecation evidence is still missing.
 - Final compatibility-facade retention/deprecation evidence is still missing:
   the documented decision is to delete old external-engine runtime
@@ -137,6 +141,14 @@ compiling with /utf-8'`. The current repair adds `/utf-8` to the root MSVC
   collision integration/benchmark sources included generated CamelCase
   compatibility headers. The current repair replaces those includes with
   canonical lowercase headers and explicit lowercase reference-backend headers.
+- Follow-up PR CI state after the macOS include repair: run `25877526350`,
+  job `76048820253` (`CI macOS` / `Debug Tests (arm64)`) failed linking
+  `UNIT_collision_DistanceFilter` because `BodyNodeDistanceFilter` declared
+  `needDistance()` and `areAdjacentBodies()` but
+  `dart/collision/distance_filter.cpp` did not define them. The current repair
+  restores the historical body-node distance filtering semantics, with focused
+  Debug and Release local build/CTest coverage for
+  `UNIT_collision_DistanceFilter`.
 - Follow-up local validation after the audit started from
   `1da52368282` and found that `pixi run test-all` failed in `build-tests`
   because a stale cached `LIBCCD_LIBRARY` pointed at a removed
