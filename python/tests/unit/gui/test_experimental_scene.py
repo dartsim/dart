@@ -163,6 +163,40 @@ def test_experimental_pick_capsule_uses_surface_normal():
     assert np.allclose(cap_hit.normal, [0.5, 0.0, np.sqrt(0.75)])
 
 
+def test_experimental_pick_cone_uses_surface_normal():
+    renderable = dart.gui.experimental.RenderableDescriptor()
+    renderable.id = 1
+    renderable.geometry.kind = dart.gui.experimental.ShapeKind.Cone
+    renderable.geometry.radius = 1.0
+    renderable.geometry.height = 2.0
+    renderable.geometry.has_local_bounds = True
+    renderable.geometry.local_bounds_min = np.array([-1.0, -1.0, -1.0])
+    renderable.geometry.local_bounds_max = np.array([1.0, 1.0, 1.0])
+
+    side_ray = dart.gui.experimental.PickRay()
+    side_ray.origin = np.array([-2.0, 0.25, 0.0])
+    side_ray.direction = np.array([1.0, 0.0, 0.0])
+    side_hit = dart.gui.experimental.pick_nearest_renderable([renderable], side_ray)
+
+    side_x = -np.sqrt(0.1875)
+    side_normal = np.array([side_x, 0.25, 0.25])
+    side_normal /= np.linalg.norm(side_normal)
+    assert side_hit is not None
+    assert np.isclose(side_hit.distance, 2.0 + side_x)
+    assert np.allclose(side_hit.point, [side_x, 0.25, 0.0])
+    assert np.allclose(side_hit.normal, side_normal)
+
+    base_ray = dart.gui.experimental.PickRay()
+    base_ray.origin = np.array([0.5, 0.0, -4.0])
+    base_ray.direction = np.array([0.0, 0.0, 1.0])
+    base_hit = dart.gui.experimental.pick_nearest_renderable([renderable], base_ray)
+
+    assert base_hit is not None
+    assert np.isclose(base_hit.distance, 3.0)
+    assert np.allclose(base_hit.point, [0.5, 0.0, -1.0])
+    assert np.allclose(base_hit.normal, [0.0, 0.0, -1.0])
+
+
 def test_experimental_extract_renderables_from_simple_frame():
     world = dart.World.create("world")
     transform = dart.Isometry3()

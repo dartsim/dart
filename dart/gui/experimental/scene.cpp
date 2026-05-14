@@ -458,6 +458,84 @@ std::optional<LocalBoundsHit> intersectLocalCylinder(
   return nearest;
 }
 
+std::optional<LocalBoundsHit> intersectLocalCone(
+    const Eigen::Vector3d& origin,
+    const Eigen::Vector3d& direction,
+    double radius,
+    double height)
+{
+  if (!origin.allFinite() || !direction.allFinite() || !std::isfinite(radius)
+      || !std::isfinite(height) || radius <= 0.0 || height <= 0.0) {
+    return std::nullopt;
+  }
+
+  const double halfHeight = height * 0.5;
+  const double slope = radius / height;
+  const double slopeSquared = slope * slope;
+  std::optional<LocalBoundsHit> nearest;
+  const auto considerHit = [&](double distance, const Eigen::Vector3d& normal) {
+    if (distance < 0.0 || !std::isfinite(distance) || !normal.allFinite()
+        || normal.squaredNorm() <= 1e-18) {
+      return;
+    }
+
+    if (!nearest || distance < nearest->distance) {
+      LocalBoundsHit hit;
+      hit.distance = distance;
+      hit.normal = normal.normalized();
+      nearest = hit;
+    }
+  };
+
+  const double originTipOffset = halfHeight - origin.z();
+  const double directionTipOffset = -direction.z();
+  const double a = direction.x() * direction.x() + direction.y() * direction.y()
+                   - slopeSquared * directionTipOffset * directionTipOffset;
+  const double b = 2.0
+                   * (origin.x() * direction.x() + origin.y() * direction.y()
+                      - slopeSquared * originTipOffset * directionTipOffset);
+  const double c = origin.x() * origin.x() + origin.y() * origin.y()
+                   - slopeSquared * originTipOffset * originTipOffset;
+
+  const auto considerSideDistance = [&](double distance) {
+    const Eigen::Vector3d point = origin + direction * distance;
+    if (point.z() < -halfHeight - 1e-12 || point.z() > halfHeight + 1e-12) {
+      return;
+    }
+
+    considerHit(
+        distance,
+        Eigen::Vector3d(
+            point.x(), point.y(), slopeSquared * (halfHeight - point.z())));
+  };
+
+  if (std::isfinite(a) && std::isfinite(b) && std::isfinite(c)) {
+    if (std::abs(a) <= 1e-18) {
+      if (std::abs(b) > 1e-18) {
+        considerSideDistance(-c / b);
+      }
+    } else {
+      const double discriminant = b * b - 4.0 * a * c;
+      if (discriminant >= 0.0 && std::isfinite(discriminant)) {
+        const double sqrtDiscriminant = std::sqrt(discriminant);
+        considerSideDistance((-b - sqrtDiscriminant) / (2.0 * a));
+        considerSideDistance((-b + sqrtDiscriminant) / (2.0 * a));
+      }
+    }
+  }
+
+  if (std::abs(direction.z()) > 1e-12) {
+    const double distance = (-halfHeight - origin.z()) / direction.z();
+    const Eigen::Vector3d point = origin + direction * distance;
+    if (point.x() * point.x() + point.y() * point.y()
+        <= radius * radius + 1e-12) {
+      considerHit(distance, -Eigen::Vector3d::UnitZ());
+    }
+  }
+
+  return nearest;
+}
+
 std::optional<LocalBoundsHit> intersectLocalCapsule(
     const Eigen::Vector3d& origin,
     const Eigen::Vector3d& direction,
@@ -562,6 +640,11 @@ std::optional<LocalBoundsHit> intersectLocalGeometry(
 
   if (geometry.kind == ShapeKind::Capsule) {
     return intersectLocalCapsule(
+        origin, direction, geometry.radius, geometry.height);
+  }
+
+  if (geometry.kind == ShapeKind::Cone) {
+    return intersectLocalCone(
         origin, direction, geometry.radius, geometry.height);
   }
 
