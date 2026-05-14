@@ -95,6 +95,14 @@ support. Re-running the isolated case at `6e04945b29d6` reports
 `upperLinkLinearVelocity.X() = -0.00013953469787260998`,
 `upperLinkLinearVelocity.Y() = 1.0002864929523347e-06`, and
 `upperLinkAngularVelocity.Y() = -6.6438361021132697e-05` against `1e-6`.
+Temporary contact logging after that checkpoint showed only base-vs-ground
+contacts during the failing window; the detached upper/lower links were not in
+contact. The support contacts are the base plate cylinder and base pole box
+against gz-physics' plane-as-large-box fallback. Two local tilted
+cylinder-cap/box-face experiments were rejected because they made
+`JointDetach` fail earlier at the expected upper-link upward-motion check, so
+the retained source state keeps the convex fallback for tilted cap/box and only
+keeps the validated axial cap support patch.
 
 ## Current Branch
 
@@ -112,6 +120,10 @@ whether the tiny off-axis velocity components come from a native contact bug,
 model-level filtering semantics, or downstream exact-zero tolerance debt, then
 fix or document the accepted downstream-compatible path before rerunning the
 full gz gate.
+Do not retry broad tilted cap support patches without first preserving the
+test's expected `upperLinkLinearVelocity.Z() > 1e-5`; the last two local
+variants overconstrained the base support contacts and failed that earlier
+sanity check.
 After that, continue the broader plan below.
 
 The persistent DART adapter scene path is now started: public collision,
@@ -264,6 +276,11 @@ libraries.
   large boxes and native DART tests for support-patch generation plus
   `maxNumContacts` limiting. This improves the gz plane-as-large-box contact
   path but does not close the remaining `JointDetach` exact-zero residual.
+- Rejected diagnostics after `6e04945b29d6`: multi-point and single-point
+  near-parallel tilted cylinder-cap/box-face replacements both passed focused
+  native tests but made the gz `JointDetach` case fail earlier at
+  `upperLinkLinearVelocity.Z() > 1e-5`. The current blocker is therefore not a
+  simple "more cap contacts" fix.
 - Tests and benchmark comments now use native collision naming except for the
   explicit `"experimental"` compatibility alias.
 - gz-physics compatibility and performance parity are explicit gates, not
