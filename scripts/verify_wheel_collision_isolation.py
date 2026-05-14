@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Verify dartpy wheels do not bundle legacy collision runtime artifacts."""
+"""Verify dartpy wheels do not bundle legacy collision runtime artifacts.
+
+Native-backed compatibility component facades such as collision-fcl,
+collision-bullet, and collision-ode are allowed; old runtime and reference
+engine artifacts are not.
+"""
 
 from __future__ import annotations
 
@@ -17,9 +22,6 @@ FORBIDDEN_BASENAME_PATTERNS = (
     "dart-collision-reference-fcl*",
     "dart-collision-reference-bullet*",
     "dart-collision-reference-ode*",
-    "dart_collision-fclcomponent.cmake",
-    "dart_collision-bulletcomponent.cmake",
-    "dart_collision-odecomponent.cmake",
     "dart_collision-reference-fclcomponent.cmake",
     "dart_collision-reference-bulletcomponent.cmake",
     "dart_collision-reference-odecomponent.cmake",
@@ -85,8 +87,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
             "Verify dartpy wheels do not include legacy collision runtime "
-            "libraries, reference collision libraries, or old collision "
-            "component exports."
+            "libraries, reference collision libraries, or old reference "
+            "component exports. Native-backed compatibility component facades "
+            "are allowed."
         )
     )
     parser.add_argument("wheels", nargs="+", help="Wheel path or glob pattern")

@@ -63,10 +63,10 @@ The latest CI/performance slice adds a scheduled/manual CI Linux
 run evidence.
 The latest wheel-isolation slice adds `scripts/verify_wheel_collision_isolation.py`
 and wires it into `wheel-verify-core` so every dartpy wheel verify rejects old
-FCL/Bullet/ODE collision component exports, reference collision libraries, and
-FCL, Bullet, ODE, or libccd runtime libraries. The existing repaired py312
-Linux wheel passes the new verifier locally; the full CI wheel matrix still
-needs run/artifact evidence.
+runtime libraries, reference collision libraries, and reference component
+exports while allowing native-backed FCL/Bullet/ODE compatibility component
+facades. The existing repaired py312 Linux wheel passes the new verifier
+locally; the full CI wheel matrix still needs run/artifact evidence.
 The latest downstream-migration slice documents the compatibility contract in
 `05-downstream-migration.md` and annotates the FCL, Bullet, and ODE
 compatibility facades so downstream users can see that retained legacy runtime
@@ -239,7 +239,19 @@ because `BodyNodeDistanceFilter` still had public declarations but no compiled
 implementation. The current working tree restores the historical
 `BodyNodeDistanceFilter::needDistance()` and `areAdjacentBodies()` definitions,
 with focused Debug and Release local build/CTest coverage for
-`UNIT_collision_DistanceFilter`.
+`UNIT_collision_DistanceFilter`. The next PR refresh on `f726ee5e4ee` reached
+macOS arm64 Release compilation and failed `UNIT_collision_NativeBackend`
+because `DistanceFilter` was a polymorphic `std::shared_ptr` base without a
+virtual destructor; the current working tree adds the destructor. The same
+refresh showed `Wheels | macos-latest Py314` building and delocating
+successfully, then failing `wheel-verify` because the verifier still rejected
+native-backed `dart_collision-{fcl,bullet,ode}Component.cmake` compatibility
+facade files. The current working tree keeps old runtime/reference artifacts
+forbidden while allowing those facade component files. Focused local validation
+for this repair has passed: the Release `UNIT_collision_NativeBackend` target
+and CTest pass, synthetic wheel verifier probes accept the facade files and
+reject reference/runtime artifacts, and the existing repaired py312 Linux wheel
+passes the updated verifier.
 
 ## Current Branch
 
@@ -266,13 +278,17 @@ EnTT dependency/fallback repair, and export-safe fetched EnTT repair are pushed
 through `97a9d3ca6d6`. The current working tree has the macOS arm64
 CamelCase-include cleanup after CI run `25875811218`, job `76044208533`, and
 the distance-filter implementation restoration after CI run `25877526350`,
-job `76048820253`; the next immediate step is to finish local lint/diff
-validation, commit, push, and recheck PR #2652 CI. After that, continue
-watching PR #2652 CI, collect native-only/gz and wheel matrix artifact
-evidence, collect GitHub evidence for the scheduled or manual benchmark guard,
-record downstream migration/deprecation evidence, perform final runtime
-cleanup, rerun full validation after the PR-complete state, transfer final
-evidence to the PR, and delete the dev-task folder in the completing PR. Read
+job `76048820253`; the current working tree also has the macOS Release
+`DistanceFilter` virtual-destructor repair after CI run `25878909676`, job
+`76053447798`, and the macOS py314 wheel verifier policy repair after CI run
+`25878909684`, job `76053782968`. The next immediate step is to finish
+lint/diff validation, commit, push, and recheck PR #2652 CI. After that,
+continue watching PR #2652 CI, collect
+native-only/gz and wheel matrix artifact evidence, collect GitHub evidence for
+the scheduled or manual benchmark guard, record downstream migration/deprecation
+evidence, perform final runtime cleanup, rerun full validation after the
+PR-complete state, transfer final evidence to the PR, and delete the dev-task
+folder in the completing PR. Read
 `06-completion-audit.md` before deciding whether a future checkpoint is
 complete; it is the prompt-to-artifact checklist for the north-star goal.
 

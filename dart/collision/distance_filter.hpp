@@ -43,6 +43,8 @@ namespace collision {
 
 struct DART_API DistanceFilter
 {
+  virtual ~DistanceFilter() = default;
+
   virtual bool needDistance(
       const CollisionObject* object1, const CollisionObject* object2) const
       = 0;

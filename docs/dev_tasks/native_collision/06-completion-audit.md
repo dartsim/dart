@@ -64,7 +64,16 @@ unverified external and finalization gates:
   head `623f0180fa8` reached macOS Debug linking and failed
   `UNIT_collision_DistanceFilter` because `BodyNodeDistanceFilter` still had
   public declarations but no compiled implementation; the current repair
-  restores the body-node distance filter definitions.
+  restores the body-node distance filter definitions. The following refresh on
+  head `f726ee5e4ee` reached macOS Release compilation and failed
+  `UNIT_collision_NativeBackend` because `DistanceFilter` was a polymorphic
+  shared-pointer base without a virtual destructor; that base interface now has
+  a defaulted virtual destructor. The same refresh showed
+  `Wheels | macos-latest Py314` successfully building and delocating the wheel,
+  then rejecting the native-backed `dart_collision-{fcl,bullet,ode}Component`
+  compatibility facade files. The wheel collision-isolation verifier now keeps
+  old runtime/reference artifacts forbidden while allowing those facade
+  component files.
 - Downstream migration/deprecation evidence is still missing.
 - Final compatibility-facade retention/deprecation evidence is still missing:
   the documented decision is to delete old external-engine runtime
@@ -149,6 +158,22 @@ compiling with /utf-8'`. The current repair adds `/utf-8` to the root MSVC
   restores the historical body-node distance filtering semantics, with focused
   Debug and Release local build/CTest coverage for
   `UNIT_collision_DistanceFilter`.
+- Follow-up PR CI state after the body-node distance filter repair: run
+  `25878909676`, job `76053447798` (`CI macOS` /
+  `Release Tests (arm64)`) failed compiling `UNIT_collision_NativeBackend`
+  because `DistanceFilter` had virtual methods but no virtual destructor while
+  tests delete a subclass through `std::shared_ptr<DistanceFilter>`. The
+  current repair adds the base virtual destructor, with focused Release
+  `UNIT_collision_NativeBackend` build and CTest coverage passing locally.
+- Follow-up PR CI state for the py314 macOS wheel: run `25878909684`, job
+  `76053782968` (`Wheels | macos-latest Py314`) failed in `wheel-verify`
+  after delocation because `verify_wheel_collision_isolation.py` still
+  rejected native-backed FCL/Bullet/ODE compatibility component facade files.
+  The current repair allows those facade files while still rejecting old
+  runtime libraries, reference libraries, and reference component exports. A
+  focused synthetic wheel probe and the existing repaired py312 Linux wheel
+  pass locally with the updated policy, while synthetic reference/runtime
+  artifacts are still rejected.
 - Follow-up local validation after the audit started from
   `1da52368282` and found that `pixi run test-all` failed in `build-tests`
   because a stale cached `LIBCCD_LIBRARY` pointed at a removed

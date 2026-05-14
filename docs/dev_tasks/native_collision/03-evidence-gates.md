@@ -232,6 +232,46 @@ build/default/cpp/Debug -R '^UNIT_collision_DistanceFilter$'
 --target UNIT_collision_DistanceFilter` passed, and the matching Release CTest
     passed.
 
+- macOS arm64 release distance-filter ownership repair:
+  - Run/job: `25878909676` / `76053447798` (`CI macOS` /
+    `Release Tests (arm64)`).
+  - Result: after the body-node implementation repair, Release C++ test
+    compilation failed in `UNIT_collision_NativeBackend`.
+  - Root cause: `DistanceFilter` is a polymorphic base used through
+    `std::shared_ptr<DistanceFilter>`, but it had no virtual destructor. Clang
+    promoted deletion of the local `ExcludeFrameDistanceFilter` test subclass
+    through the base interface to `-Wdelete-non-abstract-non-virtual-dtor`
+    under `-Werror`.
+  - Repair: add a defaulted virtual destructor to `DistanceFilter`.
+  - Focused local validation:
+
+    ```bash
+    cmake --build build/default/cpp/Release --target UNIT_collision_NativeBackend --parallel 5
+    ctest --test-dir build/default/cpp/Release -R '^UNIT_collision_NativeBackend$' --output-on-failure -j 5
+    ```
+
+    Result: both passed.
+
+- macOS py314 wheel collision-isolation policy repair:
+  - Run/job: `25878909684` / `76053782968`
+    (`Wheels | macos-latest Py314`).
+  - Result: wheel build, repair, and delocation succeeded, then
+    `wheel-verify` rejected
+    `share/dart/cmake/dart_collision-{fcl,bullet,ode}Component.cmake`.
+  - Root cause: the verifier still treated retained FCL/Bullet/ODE component
+    files as old backend exports, but those component names are now
+    native-backed compatibility facades required for downstream migration.
+  - Repair: keep rejecting old runtime libraries, reference libraries, and
+    reference component exports while allowing the native-backed compatibility
+    component facade files.
+  - Focused local validation: a synthetic wheel containing
+    `dart_collision-{fcl,bullet,ode}Component.cmake` passed the verifier,
+    synthetic wheels containing
+    `dart_collision-reference-fclComponent.cmake` and `libfcl*.dylib` were
+    rejected, and
+    `python scripts/verify_wheel_collision_isolation.py dist/dartpy-*.whl`
+    passed against the repaired local py312 Linux wheel.
+
 ## Current Full-Validation Repair
 
 - `pixi run test-all`

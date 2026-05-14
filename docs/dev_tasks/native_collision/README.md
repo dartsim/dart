@@ -52,10 +52,10 @@
       collision component libraries, old collision CMake exports, or FCL,
       Bullet, ODE, or libccd runtime links.
 - [x] `wheel-verify` now includes a collision-isolation check that rejects old
-      FCL/Bullet/ODE collision component exports, reference collision
-      libraries, and FCL, Bullet, ODE, or libccd runtime libraries from dartpy
-      wheel artifacts. The existing repaired py312 Linux wheel passes that
-      check locally.
+      runtime libraries, reference collision libraries, and reference component
+      exports while allowing native-backed FCL/Bullet/ODE compatibility
+      component facades in dartpy wheel artifacts. The existing repaired py312
+      Linux wheel passes that check locally.
 - [x] `dartpy` no longer links legacy collision component targets. The Python
       compatibility names `DARTCollisionDetector`, `FCLCollisionDetector`,
       `BulletCollisionDetector`, and `OdeCollisionDetector` now construct and

@@ -349,7 +349,8 @@ The built-in architecture should make performance visible before optimization:
 - [x] The repaired py312 wheel artifact does not bundle or link old collision
       engines as default runtime dependencies.
 - [x] `wheel-verify` rejects old collision runtime libraries, reference
-      collision libraries, and old FCL/Bullet/ODE collision component exports.
+      collision libraries, and reference component exports while allowing
+      native-backed FCL/Bullet/ODE compatibility component facades.
 - [x] User-facing examples/tutorials do not require, include, select, or link
       old collision components in the default native-only build path.
 - [ ] CI wheel-matrix artifacts do not bundle or link old collision engines as
