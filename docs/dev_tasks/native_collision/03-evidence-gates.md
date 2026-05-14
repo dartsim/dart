@@ -12,16 +12,16 @@ is tied to a commit, command, and observed output.
 
 ## Gate Matrix
 
-| Gate                  | Required evidence                                            | Current state                     |
-| --------------------- | ------------------------------------------------------------ | --------------------------------- |
-| Native default        | Focused test showing default detector type is `dart`         | Focused pass, May 2026            |
-| Feature parity        | Native unit and integration collision tests pass             | Passed, May 2026                  |
-| Reference consistency | Native-vs-FCL/Bullet/ODE consistency tests pass              | Opt-in pass, May 2026             |
-| gz-physics            | `pixi run -e gazebo test-gz` passes without patches          | Full local pass, May 2026         |
-| Performance           | Comparative benchmarks show native >= best legacy backend    | Focused pass, May 2026            |
-| Dependency removal    | Default build succeeds without FCL/Bullet/ODE collision deps | Focused pass, May 2026            |
-| Source isolation      | Lint blocks old-engine runtime includes/source leakage       | Local pass, May 2026              |
-| Full validation       | `pixi run test-all` passes                                   | Historical pass; final rerun left |
+| Gate                  | Required evidence                                            | Current state                      |
+| --------------------- | ------------------------------------------------------------ | ---------------------------------- |
+| Native default        | Focused test showing default detector type is `dart`         | Focused pass, May 2026             |
+| Feature parity        | Native unit and integration collision tests pass             | Passed, May 2026                   |
+| Reference consistency | Native-vs-FCL/Bullet/ODE consistency tests pass              | Opt-in pass, May 2026              |
+| gz-physics            | `pixi run -e gazebo test-gz` passes without patches          | Full local pass, May 2026          |
+| Performance           | Comparative benchmarks show native >= best legacy backend    | Focused pass, May 2026             |
+| Dependency removal    | Default build succeeds without FCL/Bullet/ODE collision deps | Focused pass, May 2026             |
+| Source isolation      | Lint blocks old-engine runtime includes/source leakage       | Local pass, May 2026               |
+| Full validation       | `pixi run test-all` passes                                   | Fresh current-state pass, May 2026 |
 
 ## North-Star Progress Scale
 
@@ -66,6 +66,42 @@ These gates are still required before the single north-star PR is complete.
 | Built-in architecture/design | `01-design.md` north-star requirement, layer table, and blueprint pass API-cleanliness, scaling, and performance gates | Source split, cache bridge, gz/full support    |
 | Benchmark regression guard   | Optional reference benchmarks guide gradual optimization                                                               | Scheduled/manual CI guard added; evidence left |
 | Legacy backend deletion      | Old runtime backend sources removed from default stack                                                                 | Runtime source guard wired; deletion left      |
+
+## Current Full-Validation Repair
+
+- `pixi run test-all`
+  - Commit: `1da52368282`
+    (`Record native collision PR evidence gap`), before the stale optional
+    libccd cache repair.
+  - Result: failed during `build-tests`. Configure had default native
+    collision reference tests disabled, but the existing CMake cache still
+    pointed `LIBCCD_LIBRARY` at a removed
+    `.pixi/envs/default/lib/libccd.so`, leaving `test_libccd_algorithms` as a
+    generated target with a missing link dependency.
+  - Observed failure:
+
+    ```text
+    ninja: error: '/home/jeongseok/dev/jslee02/dartsim/dart/task_1/.pixi/envs/default/lib/libccd.so', needed by 'bin/test_libccd_algorithms', missing and no known rule to make it
+    ```
+
+- `pixi run build-tests ON Release`
+  - Commit: working tree after adding missing-path cache reset logic to
+    `cmake/dart_test_libccd.cmake`.
+  - Result: passed, 469/469 build steps. Configure generated
+    `collision-native: Total 29 unit test(s)` and added 264 tests, confirming
+    `test_libccd_algorithms` was excluded when optional libccd was not present
+    in the default environment.
+
+- `DART_PARALLEL_JOBS=15 CTEST_PARALLEL_LEVEL=15 pixi run test-all`
+  - Commit: working tree after adding the stale optional libccd cache repair
+    and updating native-collision task docs.
+  - Result: passed. The full local suite passed lint, Release build,
+    Release C++ test build, C++ unit tests, simulation-experimental tests,
+    Python tests, and documentation. Release CTest passed 264/264 tests,
+    including the `collision-native` label summary of 29 tests.
+  - Remaining validation: this refreshes local validation for the current
+    source state. The final north-star PR state still needs a fresh rerun after
+    the remaining CI/migration/deletion work is complete.
 
 ## Test Runs
 

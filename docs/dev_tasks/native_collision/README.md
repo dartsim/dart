@@ -140,8 +140,20 @@
       work is CI hardening, full wheel matrix/CI artifact evidence from the
       wired verifier, downstream migration/deprecation and CI evidence, GitHub
       evidence for the scheduled performance guard, explicit
-      API/scalability/performance architecture gate evidence, final validation,
-      dev-task cleanup, and final legacy backend deletion.
+      API/scalability/performance architecture gate evidence, dev-task
+      cleanup, and final legacy backend deletion.
+      A current local `pixi run test-all` rerun exposed a validation
+      robustness gap rather than a native-collision behavior regression:
+      stale cached optional `libccd` paths could leave the native test build
+      depending on a removed default-environment library. The CMake cache
+      reset repair is in the working tree, and
+      `pixi run build-tests ON Release` now completes with
+      `test_libccd_algorithms` excluded when
+      `libccd` is unavailable. A fresh full
+      `DART_PARALLEL_JOBS=15 CTEST_PARALLEL_LEVEL=15 pixi run test-all` rerun
+      now passes for the current source state. Final validation will still
+      need another rerun after the remaining CI/migration/deletion work
+      changes the PR state.
 
 ## Goal
 
@@ -181,21 +193,21 @@ engines on required workloads.
 This task is scoped as one PR that continues until the north star is reached.
 The current checkpoint is a validated middle state, not a final PR boundary.
 
-| Stage | Progress marker                              | Status                                |
-| ----- | -------------------------------------------- | ------------------------------------- |
-| 0     | Baseline native backend exists               | Complete before this task             |
-| 1     | Native `dart` detector is the default path   | Complete in checkpoint                |
-| 2     | DART feature parity gaps are closed          | Complete in checkpoint                |
-| 3     | gz-physics compatibility is proven           | Full local `test-gz` pass; CI left    |
-| 4     | Native beats legacy backends in benchmarks   | Complete in checkpoint                |
-| 5     | FCL/Bullet/ODE are optional for local builds | Complete in checkpoint                |
-| 6     | Native-only and gz-physics CI are permanent  | Started; CI evidence still needed     |
-| 7     | Reference engines are test/bench-only        | Local target split proven             |
-| 8     | Default packages have no old runtime deps    | Local pass; CI verifier wired         |
-| 9     | Downstream migration/deprecation path exists | Package smoke pass; CI/migration left |
-| 10    | Clean built-in API/scaling/perf layer        | Local design evidence; CI left        |
-| 11    | Old runtime backend source is reference-only | Local split; lint guard wired         |
-| 12    | Final one-PR validation and PR packaging     | Blocked on CI/migration/arch/del      |
+| Stage | Progress marker                              | Status                                   |
+| ----- | -------------------------------------------- | ---------------------------------------- |
+| 0     | Baseline native backend exists               | Complete before this task                |
+| 1     | Native `dart` detector is the default path   | Complete in checkpoint                   |
+| 2     | DART feature parity gaps are closed          | Complete in checkpoint                   |
+| 3     | gz-physics compatibility is proven           | Full local `test-gz` pass; CI left       |
+| 4     | Native beats legacy backends in benchmarks   | Complete in checkpoint                   |
+| 5     | FCL/Bullet/ODE are optional for local builds | Complete in checkpoint                   |
+| 6     | Native-only and gz-physics CI are permanent  | Started; CI evidence still needed        |
+| 7     | Reference engines are test/bench-only        | Local target split proven                |
+| 8     | Default packages have no old runtime deps    | Local pass; CI verifier wired            |
+| 9     | Downstream migration/deprecation path exists | Package smoke pass; CI/migration left    |
+| 10    | Clean built-in API/scaling/perf layer        | Local design evidence; CI left           |
+| 11    | Old runtime backend source is reference-only | Local split; lint guard wired            |
+| 12    | Final one-PR validation and PR packaging     | Current test-all pass; CI/migration left |
 
 ## Built-In Architecture Status
 

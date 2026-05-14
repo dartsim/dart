@@ -27,8 +27,11 @@ unverified external and finalization gates:
 - Downstream migration/deprecation evidence is still missing.
 - Final legacy-runtime deletion or hard-deprecation decisions are still
   pending.
-- Final `pixi run test-all` evidence after the final PR state is still
-  missing.
+- Current-state `pixi run test-all` evidence is refreshed, but final
+  `pixi run test-all` evidence after the eventual PR-complete state is still
+  missing. The current rerun found and repaired a stale optional `libccd` CMake
+  cache issue in the default native-only test build, then passed the full local
+  suite after the repair.
 - The dev-task folder must remain until final PR evidence is transferred to
   the PR description and durable architecture notes are moved to onboarding
   docs.
@@ -47,6 +50,24 @@ Current audited state:
 - GitHub PR state: read-only GitHub search for `head:feature/new_coll` in
   `dartsim/dart` returned no pull requests, so no CI or PR artifact evidence
   exists yet for the current local north-star branch head.
+- Follow-up local validation after the audit started from
+  `1da52368282` and found that `pixi run test-all` failed in `build-tests`
+  because a stale cached `LIBCCD_LIBRARY` pointed at a removed
+  `.pixi/envs/default/lib/libccd.so`. The working-tree repair resets missing
+  cached optional libccd include/library paths, and
+  `pixi run build-tests ON Release` passes with the optional
+  `test_libccd_algorithms` target excluded when libccd is unavailable.
+- Follow-up full local validation:
+
+  ```bash
+  DART_PARALLEL_JOBS=15 CTEST_PARALLEL_LEVEL=15 pixi run test-all
+  ```
+
+  Result: passed for the current source state. The full suite reported lint,
+  build, unit tests, simulation-experimental tests, Python tests, and
+  documentation all passed, with Release CTest passing 264/264 tests including
+  29 `collision-native` label tests.
+
 - Local command run during this audit:
 
   ```bash

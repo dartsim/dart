@@ -8,6 +8,19 @@ endif()
 set(DART_TESTS_LIBCCD_FOUND FALSE)
 set(DART_TESTS_LIBCCD_ROOT "" CACHE PATH "Path to libccd (source or install) for tests/benchmarks")
 
+macro(_dart_reset_missing_libccd_cache)
+  if(LIBCCD_INCLUDE_DIR AND NOT EXISTS "${LIBCCD_INCLUDE_DIR}/ccd/ccd.h")
+    unset(LIBCCD_INCLUDE_DIR CACHE)
+    unset(LIBCCD_INCLUDE_DIR)
+  endif()
+  if(LIBCCD_LIBRARY AND NOT EXISTS "${LIBCCD_LIBRARY}")
+    unset(LIBCCD_LIBRARY CACHE)
+    unset(LIBCCD_LIBRARY)
+  endif()
+endmacro()
+
+_dart_reset_missing_libccd_cache()
+
 if(DART_TESTS_LIBCCD_ROOT)
   if(EXISTS "${DART_TESTS_LIBCCD_ROOT}/CMakeLists.txt")
     set(_dart_prev_build_shared_libs ${BUILD_SHARED_LIBS})
@@ -61,6 +74,8 @@ if(DART_TESTS_LIBCCD_ROOT)
       NO_DEFAULT_PATH
     )
 
+    _dart_reset_missing_libccd_cache()
+
     if(LIBCCD_INCLUDE_DIR AND LIBCCD_LIBRARY)
       add_library(dart_tests_libccd INTERFACE)
       target_include_directories(dart_tests_libccd INTERFACE ${LIBCCD_INCLUDE_DIR})
@@ -86,6 +101,8 @@ if(NOT DART_TESTS_LIBCCD_FOUND)
     NAMES ccd libccd
     HINTS ${PC_LIBCCD_LIBDIR} ${PC_LIBCCD_LIBRARY_DIRS}
   )
+
+  _dart_reset_missing_libccd_cache()
 
   if(LIBCCD_INCLUDE_DIR AND LIBCCD_LIBRARY)
     add_library(dart_tests_libccd INTERFACE)

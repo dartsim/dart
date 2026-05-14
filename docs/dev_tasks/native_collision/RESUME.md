@@ -158,6 +158,21 @@ The latest audit slice adds `06-completion-audit.md`, which restates the
 single-PR objective as concrete deliverables and maps every north-star
 requirement to current artifacts, local evidence, missing CI/artifact evidence,
 and final cleanup gates. It records that the task is not complete yet.
+The newest validation slice reran `pixi run test-all` after the audit and
+found a stale optional libccd cache failure in `build-tests`: CMake still had
+`LIBCCD_LIBRARY` cached to a removed default-environment
+`.pixi/envs/default/lib/libccd.so`, so Ninja generated
+`test_libccd_algorithms` with a missing link dependency even though normal
+native collision reference paths were disabled. The working tree now resets
+missing cached libccd include/library paths in `cmake/dart_test_libccd.cmake`,
+and targeted `pixi run build-tests ON Release` passes with the optional
+libccd comparison target excluded when libccd is unavailable.
+The follow-up full local
+`DART_PARALLEL_JOBS=15 CTEST_PARALLEL_LEVEL=15 pixi run test-all` run now
+passes for the current source state: lint, Release build, Release C++ test
+build, C++ unit tests, simulation-experimental tests, Python tests, and
+documentation all passed, with Release CTest reporting 264/264 tests passed and
+29 `collision-native` label tests.
 
 ## Current Branch
 
@@ -168,14 +183,15 @@ the exact count.
 ## Immediate Next Step
 
 Continue from `docs/dev_tasks/native_collision/04-reference-gap-analysis.md`.
-The focused gz `JointDetach` blocker and full local gz gate are repaired. The
-immediate next evidence steps are CI native-only/gz evidence, wheel matrix
-artifact evidence from `wheel-verify`, downstream migration/deprecation
-evidence, GitHub evidence for the scheduled benchmark guard,
-architecture/design gate evidence, final validation, dev-task cleanup, and
-final legacy backend deletion. Read `06-completion-audit.md` before deciding
-whether a future checkpoint is complete; it is the prompt-to-artifact checklist
-for the north-star goal.
+The focused gz `JointDetach` blocker and full local gz gate are repaired, the
+stale optional libccd cache repair has both targeted and full-suite local
+evidence, and current-state `pixi run test-all` passes. The immediate next
+evidence steps are CI native-only/gz evidence, wheel matrix artifact evidence
+from `wheel-verify`, downstream migration/deprecation evidence, GitHub evidence
+for the scheduled benchmark guard, architecture/design gate evidence, dev-task
+cleanup, and final legacy backend deletion. Read `06-completion-audit.md`
+before deciding whether a future checkpoint is complete; it is the
+prompt-to-artifact checklist for the north-star goal.
 
 The persistent DART adapter scene path is now started: public collision,
 distance, and raycast calls use synced native scene state owned by
