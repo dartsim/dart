@@ -3376,24 +3376,38 @@ std::optional<Renderable> createDescriptorTriangleMeshRenderable(
     return std::nullopt;
   }
 
-  std::vector<float3> normalSums(vertices.size(), {0.0f, 0.0f, 0.0f});
-  for (const auto& triangle : triangles) {
-    const float3 normal = normalizeOr(
-        crossProduct(
-            vertices[triangle.y].position - vertices[triangle.x].position,
-            vertices[triangle.z].position - vertices[triangle.x].position),
-        {0.0f, 0.0f, 1.0f});
-    for (std::uint32_t index : {triangle.x, triangle.y, triangle.z}) {
-      normalSums[index].x += normal.x;
-      normalSums[index].y += normal.y;
-      normalSums[index].z += normal.z;
+  std::vector<float3> normals;
+  if (geometry.triangleNormals.size() == vertices.size()) {
+    normals.reserve(vertices.size());
+    for (const Eigen::Vector3d& sourceNormal : geometry.triangleNormals) {
+      if (!sourceNormal.allFinite() || sourceNormal.squaredNorm() <= 1e-12) {
+        normals.clear();
+        break;
+      }
+      normals.push_back(toFloat3(sourceNormal.normalized()));
     }
   }
 
-  std::vector<float3> normals;
-  normals.reserve(normalSums.size());
-  for (const float3& normal : normalSums) {
-    normals.push_back(normalizeOr(normal, {0.0f, 0.0f, 1.0f}));
+  if (normals.size() != vertices.size()) {
+    std::vector<float3> normalSums(vertices.size(), {0.0f, 0.0f, 0.0f});
+    for (const auto& triangle : triangles) {
+      const float3 normal = normalizeOr(
+          crossProduct(
+              vertices[triangle.y].position - vertices[triangle.x].position,
+              vertices[triangle.z].position - vertices[triangle.x].position),
+          {0.0f, 0.0f, 1.0f});
+      for (std::uint32_t index : {triangle.x, triangle.y, triangle.z}) {
+        normalSums[index].x += normal.x;
+        normalSums[index].y += normal.y;
+        normalSums[index].z += normal.z;
+      }
+    }
+
+    normals.clear();
+    normals.reserve(normalSums.size());
+    for (const float3& normal : normalSums) {
+      normals.push_back(normalizeOr(normal, {0.0f, 0.0f, 1.0f}));
+    }
   }
 
   const Bounds bounds = computeBounds(vertices);
@@ -3565,78 +3579,78 @@ std::optional<Renderable> createMeshRenderable(
     const MaterialSet& materials,
     TextureCache& textureCache,
     const GeometryDescriptor& geometry,
-    const MeshShape& meshShape,
     const float4& color)
 {
-  const auto triMesh = meshShape.getTriMesh();
-  if (!triMesh || triMesh->getVertices().empty()
-      || triMesh->getTriangles().empty()) {
+  const auto& meshVertices = geometry.triangleVertices;
+  const auto& meshTriangles = geometry.triangleIndices;
+  if (meshVertices.empty() || meshTriangles.empty()) {
     return std::nullopt;
   }
-  if (triMesh->getVertices().size()
+  if (meshVertices.size()
       > static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max())) {
     return std::nullopt;
   }
 
-  const Eigen::Vector3d& scale = geometry.scale;
   const filament::math::short4 tangent = {0, 0, 0, 32767};
-  const auto textureCoords = meshShape.getTextureCoords();
   const bool hasTextureCoords
       = geometry.meshTextureCoordComponents >= 2
-        && textureCoords.size() == triMesh->getVertices().size();
+        && geometry.meshTextureCoordinates.size() == meshVertices.size();
 
   std::vector<Vertex> vertices;
-  vertices.reserve(triMesh->getVertices().size());
-  const auto& meshVertices = triMesh->getVertices();
+  vertices.reserve(meshVertices.size());
   for (std::size_t i = 0; i < meshVertices.size(); ++i) {
+    if (!meshVertices[i].allFinite()) {
+      return std::nullopt;
+    }
+
     filament::math::float2 uv = {0.0f, 0.0f};
     if (hasTextureCoords) {
+      const Eigen::Vector3d& textureCoordinate
+          = geometry.meshTextureCoordinates[i];
+      if (!textureCoordinate.allFinite()) {
+        return std::nullopt;
+      }
       uv = {
-          static_cast<float>(textureCoords[i].x()),
-          static_cast<float>(textureCoords[i].y())};
+          static_cast<float>(textureCoordinate.x()),
+          static_cast<float>(textureCoordinate.y())};
     }
-    vertices.push_back(
-        Vertex{toFloat3(scale.cwiseProduct(meshVertices[i])), tangent, uv});
+    vertices.push_back(Vertex{toFloat3(meshVertices[i]), tangent, uv});
   }
 
   std::vector<float3> normals;
-  if (triMesh->hasVertexNormals()
-      && triMesh->getVertexNormals().size() == meshVertices.size()) {
+  if (geometry.triangleNormals.size() == meshVertices.size()) {
     normals.reserve(meshVertices.size());
-    for (const Eigen::Vector3d& sourceNormal : triMesh->getVertexNormals()) {
-      Eigen::Vector3d scaledNormal = sourceNormal;
-      for (int axis = 0; axis < 3; ++axis) {
-        if (std::abs(scale[axis]) > 1e-12) {
-          scaledNormal[axis] /= scale[axis];
-        } else {
-          scaledNormal[axis] = 0.0;
-        }
+    for (const Eigen::Vector3d& sourceNormal : geometry.triangleNormals) {
+      if (!sourceNormal.allFinite() || sourceNormal.squaredNorm() <= 1e-12) {
+        normals.clear();
+        break;
       }
-      if (scaledNormal.squaredNorm() <= 1e-12) {
-        scaledNormal = sourceNormal;
-      }
-      normals.push_back(toFloat3(
-          scaledNormal.squaredNorm() > 1e-12
-              ? scaledNormal.normalized()
-              : Eigen::Vector3d::UnitZ()));
+      normals.push_back(toFloat3(sourceNormal.normalized()));
     }
   }
 
   std::vector<std::uint32_t> indices;
   std::vector<filament::math::uint3> triangles;
-  indices.reserve(triMesh->getTriangles().size() * 3);
-  triangles.reserve(triMesh->getTriangles().size());
-  for (const auto& triangle : triMesh->getTriangles()) {
-    if (triangle[0] >= vertices.size() || triangle[1] >= vertices.size()
-        || triangle[2] >= vertices.size()) {
+  indices.reserve(meshTriangles.size() * 3);
+  triangles.reserve(meshTriangles.size());
+  for (const Eigen::Vector3i& triangle : meshTriangles) {
+    if ((triangle.array() < 0).any()) {
+      return std::nullopt;
+    }
+
+    const auto first = static_cast<std::size_t>(triangle.x());
+    const auto second = static_cast<std::size_t>(triangle.y());
+    const auto third = static_cast<std::size_t>(triangle.z());
+    if (first >= vertices.size() || second >= vertices.size()
+        || third >= vertices.size()) {
       return std::nullopt;
     }
     appendTriangle(
         indices,
         triangles,
-        static_cast<std::uint32_t>(triangle[0]),
-        static_cast<std::uint32_t>(triangle[1]),
-        static_cast<std::uint32_t>(triangle[2]));
+        static_cast<std::uint32_t>(first),
+        static_cast<std::uint32_t>(second),
+        static_cast<std::uint32_t>(third));
   }
 
   struct MeshMaterialState
@@ -3734,8 +3748,7 @@ std::optional<Renderable> createMeshRenderable(
     if (range.triangleCount == 0) {
       continue;
     }
-    if (range.triangleOffset + range.triangleCount
-        > triMesh->getTriangles().size()) {
+    if (range.triangleOffset + range.triangleCount > meshTriangles.size()) {
       useSubMeshes = false;
       break;
     }
@@ -3743,7 +3756,7 @@ std::optional<Renderable> createMeshRenderable(
     parts.push_back(range);
   }
   useSubMeshes = useSubMeshes && !parts.empty()
-                 && coveredTriangleCount == triMesh->getTriangles().size();
+                 && coveredTriangleCount == meshTriangles.size();
   if (!useSubMeshes) {
     const MeshMaterialState state = makeMaterialState(0u);
     const bool usesTextures = hasTextureBindings(state.textures);
@@ -3982,11 +3995,8 @@ std::optional<Renderable> createRenderableFromDescriptor(
       renderable = createVoxelGridRenderable(engine, materials, descriptor);
       break;
     case ShapeKind::Mesh:
-      if (const auto* meshShape = dynamic_cast<const MeshShape*>(
-              descriptor.shape)) {
-        renderable = createMeshRenderable(
-            engine, materials, textureCache, descriptor.geometry, *meshShape, color);
-      }
+      renderable = createMeshRenderable(
+          engine, materials, textureCache, descriptor.geometry, color);
       break;
     case ShapeKind::Plane:
       renderable = createPlaneRenderable(

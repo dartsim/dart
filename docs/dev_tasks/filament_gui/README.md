@@ -17,8 +17,8 @@
   point-cloud, heightmap, soft-mesh, OctoMap-backed voxel-grid,
   TriMesh-backed `MeshShape`, and finite `PlaneShape` descriptors, and applies
   DART visual-aspect shadow flags to Filament renderables. Convex mesh,
-  heightmap, and soft mesh rendering now consumes descriptor-owned triangle data
-  instead of reaching back into concrete shape objects.
+  heightmap, soft mesh, and `MeshShape` rendering now consume descriptor-owned
+  triangle data instead of reaching back into concrete shape objects.
 - The example configures Filament view quality features needed by the MVP gate:
   cascaded SUN shadows, contact shadows for windowed runs, deterministic PCF
   shadows for headless screenshots, a neutral skybox, spherical harmonics
@@ -32,10 +32,11 @@
   mesh, the full WAM URDF skeleton, a required Atlas DAE torso mesh, and a full
   Atlas SDF robot fixture, and a required four-panel glTF/PBR environment
   layout. The experimental scene layer exposes `MeshShape` material base
-  colors, metallic/roughness factors, emissive colors, UV metadata, submesh
-  ranges, and typed PNG/JPEG texture image paths for base color, metallic,
-  roughness, combined metallic-roughness, normal, occlusion, and emissive maps
-  when available, and the Filament example consumes that descriptor metadata.
+  colors, metallic/roughness factors, emissive colors, UV coordinate data,
+  imported vertex normals, submesh ranges, and typed PNG/JPEG texture image
+  paths for base color, metallic, roughness, combined metallic-roughness,
+  normal, occlusion, and emissive maps when available, and the Filament example
+  consumes that descriptor metadata.
   Checked-in glTF PBR fixtures now validate single- and multi-material authored
   texture slots, alpha-bearing material factors, UV metadata, and submesh
   ranges through the real Assimp importer and are loaded by the Filament smoke

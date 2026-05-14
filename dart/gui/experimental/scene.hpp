@@ -120,6 +120,7 @@ struct GeometryDescriptor
   std::vector<Eigen::Vector2i> lineConnections;
   std::vector<Eigen::Vector3d> triangleVertices;
   std::vector<Eigen::Vector3i> triangleIndices;
+  std::vector<Eigen::Vector3d> triangleNormals;
   std::vector<Eigen::Vector3d> pointCloudPoints;
   std::vector<Eigen::Vector4d> pointCloudColors;
   std::vector<Eigen::Vector3d> voxelCenters;
@@ -132,6 +133,7 @@ struct GeometryDescriptor
   bool hasLocalBounds = false;
   bool meshUsesMaterialColors = false;
   int meshTextureCoordComponents = 0;
+  std::vector<Eigen::Vector3d> meshTextureCoordinates;
   std::string meshUri;
   std::string shapeType;
   std::string unsupportedReason;

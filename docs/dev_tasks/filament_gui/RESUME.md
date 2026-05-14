@@ -168,14 +168,15 @@ converted into Filament renderables. Convex mesh, heightmap, and soft mesh
 rendering now consumes descriptor-owned triangle data instead of concrete shape
 dynamic casts. Unsupported shapes now produce diagnostic descriptors instead of
 being silently dropped by the extraction layer.
-`MeshShape` material, texture-path, texture-coordinate, and submesh metadata now
-flow through renderer-hidden descriptors, and the Filament example consumes
-that descriptor metadata for per-part mesh materials. The picking helpers now
-also use primitive sphere/ellipsoid/cylinder/capsule/cone/pyramid/multi-sphere
-plus point-cloud/voxel-grid box-proxy, finite plane-proxy, and
-triangle-backed convex-mesh/heightmap/soft-mesh/MeshShape intersections for
-surface hit points and normals before falling back to local bounds for other
-shape descriptors.
+`MeshShape` triangle geometry, texture coordinates, imported vertex normals,
+material, texture-path, and submesh metadata now flow through renderer-hidden
+descriptors, and the Filament example consumes that descriptor metadata for
+per-part mesh materials without a renderer-side `MeshShape` dynamic cast. The
+picking helpers now also use primitive
+sphere/ellipsoid/cylinder/capsule/cone/pyramid/multi-sphere plus
+point-cloud/voxel-grid box-proxy, finite plane-proxy, and triangle-backed
+convex-mesh/heightmap/soft-mesh/MeshShape intersections for surface hit points
+and normals before falling back to local bounds for other shape descriptors.
 
 `docs/dev_tasks/filament_gui/07-completion-audit.md` maps the current
 implementation, verification evidence, and missing promotion gates. Use that

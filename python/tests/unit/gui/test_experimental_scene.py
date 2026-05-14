@@ -32,9 +32,11 @@ def test_experimental_extract_renderables_from_world():
     assert hasattr(geometry, "voxel_size")
     assert hasattr(geometry, "triangle_vertices")
     assert hasattr(geometry, "triangle_indices")
+    assert hasattr(geometry, "triangle_normals")
     assert hasattr(geometry, "unsupported_reason")
     assert hasattr(geometry, "mesh_uses_material_colors")
     assert hasattr(geometry, "mesh_texture_coord_components")
+    assert hasattr(geometry, "mesh_texture_coordinates")
     assert hasattr(geometry, "mesh_materials")
     assert hasattr(geometry, "mesh_parts")
     material_descriptor = dart.gui.experimental.MeshMaterialDescriptor()
@@ -294,6 +296,16 @@ def test_experimental_pick_triangle_mesh_uses_surface_triangles():
         np.array([0.0, 1.0, 0.0]),
     ]
     renderable.geometry.triangle_indices = [np.array([0, 1, 2], dtype=np.int32)]
+    renderable.geometry.triangle_normals = [
+        np.array([0.0, 0.0, 1.0]),
+        np.array([0.0, 0.0, 1.0]),
+        np.array([0.0, 0.0, 1.0]),
+    ]
+    renderable.geometry.mesh_texture_coordinates = [
+        np.array([0.0, 0.0, 0.0]),
+        np.array([1.0, 0.0, 0.0]),
+        np.array([0.0, 1.0, 0.0]),
+    ]
     renderable.geometry.has_local_bounds = True
     renderable.geometry.local_bounds_min = np.array([0.0, 0.0, -0.1])
     renderable.geometry.local_bounds_max = np.array([1.0, 1.0, 0.1])

@@ -103,6 +103,7 @@ void defGuiExperimentalModule(nb::module_& m)
       .def_rw("line_connections", &gui::GeometryDescriptor::lineConnections)
       .def_rw("triangle_vertices", &gui::GeometryDescriptor::triangleVertices)
       .def_rw("triangle_indices", &gui::GeometryDescriptor::triangleIndices)
+      .def_rw("triangle_normals", &gui::GeometryDescriptor::triangleNormals)
       .def_rw("point_cloud_points", &gui::GeometryDescriptor::pointCloudPoints)
       .def_rw("point_cloud_colors", &gui::GeometryDescriptor::pointCloudColors)
       .def_rw("voxel_centers", &gui::GeometryDescriptor::voxelCenters)
@@ -119,6 +120,9 @@ void defGuiExperimentalModule(nb::module_& m)
       .def_rw(
           "mesh_texture_coord_components",
           &gui::GeometryDescriptor::meshTextureCoordComponents)
+      .def_rw(
+          "mesh_texture_coordinates",
+          &gui::GeometryDescriptor::meshTextureCoordinates)
       .def_rw("mesh_uri", &gui::GeometryDescriptor::meshUri)
       .def_rw("shape_type", &gui::GeometryDescriptor::shapeType)
       .def_rw("unsupported_reason", &gui::GeometryDescriptor::unsupportedReason)

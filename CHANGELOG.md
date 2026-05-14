@@ -131,12 +131,13 @@
     `ConvexMeshShape`, `PointCloudShape`, `HeightmapShape`, and
     `SoftMeshShape`, plus `VoxelGridShape` when OctoMap is available, with the
     MVP scene validating that all enabled shape fixtures are extracted and
-    rendered, `MeshShape` material/submesh metadata exposed through descriptors,
+    rendered, `MeshShape` triangle, material, UV, normal, and submesh metadata
+    exposed through descriptors,
     nearest-pick results reporting bounds hit normals plus primitive
     sphere/ellipsoid/cylinder/capsule/cone/pyramid/multi-sphere/point-cloud/voxel-grid/plane
     hit normals and triangle-backed convex-mesh/heightmap/soft-mesh/MeshShape
     hit normals, descriptor-owned triangle rendering for convex-mesh,
-    heightmap, and soft-mesh descriptors, unsupported shapes producing diagnostic descriptors, and backend-hidden renderable set update planning
+    heightmap, soft-mesh, and `MeshShape` descriptors, unsupported shapes producing diagnostic descriptors, and backend-hidden renderable set update planning
     for dynamic renderer resource synchronization. The
     renderer-hidden debug descriptor path also covers support-polygon outlines
     and support-centroid markers, plus arrowheads for contact normal and force

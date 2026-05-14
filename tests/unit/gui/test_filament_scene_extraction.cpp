@@ -569,6 +569,10 @@ TEST(
   triMesh->addVertex(1.0, 1.0, 0.0);
   triMesh->addTriangle(0, 1, 2);
   triMesh->addTriangle(1, 3, 2);
+  triMesh->addVertexNormal(0.0, 0.0, 1.0);
+  triMesh->addVertexNormal(0.0, 0.0, 1.0);
+  triMesh->addVertexNormal(0.0, 0.0, 1.0);
+  triMesh->addVertexNormal(0.0, 0.0, 1.0);
   MeshDescriptorHarness meshShape(
       Eigen::Vector3d(2.0, 3.0, 4.0), triMesh, dart::common::Uri{});
   meshShape.setColorMode(MeshShape::MATERIAL_COLOR);
@@ -636,8 +640,13 @@ TEST(
   EXPECT_EQ(mesh->meshParts[1].materialIndex, 1u);
   ASSERT_EQ(mesh->triangleVertices.size(), 4u);
   ASSERT_EQ(mesh->triangleIndices.size(), 2u);
+  ASSERT_EQ(mesh->triangleNormals.size(), 4u);
+  ASSERT_EQ(mesh->meshTextureCoordinates.size(), 4u);
   EXPECT_TRUE(
       mesh->triangleVertices[1].isApprox(Eigen::Vector3d(2.0, 0.0, 0.0)));
+  EXPECT_TRUE(mesh->triangleNormals[1].isApprox(Eigen::Vector3d::UnitZ()));
+  EXPECT_TRUE(
+      mesh->meshTextureCoordinates[3].isApprox(Eigen::Vector3d(1.0, 1.0, 0.0)));
   EXPECT_EQ(mesh->triangleIndices[1].x(), 1);
   EXPECT_EQ(mesh->triangleIndices[1].y(), 3);
   EXPECT_EQ(mesh->triangleIndices[1].z(), 2);

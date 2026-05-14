@@ -155,6 +155,33 @@ MeshPartDescriptor makeMeshPartDescriptor(
   return descriptor;
 }
 
+template <typename Derived>
+Eigen::Vector3d makeScaledTriangleNormal(
+    const Eigen::MatrixBase<Derived>& sourceNormal,
+    const Eigen::Vector3d& scale)
+{
+  const Eigen::Vector3d source = sourceNormal.template cast<double>();
+  if (!source.allFinite()) {
+    return Eigen::Vector3d::UnitZ();
+  }
+
+  Eigen::Vector3d scaledNormal = source;
+  for (int axis = 0; axis < 3; ++axis) {
+    if (std::abs(scale[axis]) > 1e-12) {
+      scaledNormal[axis] /= scale[axis];
+    } else {
+      scaledNormal[axis] = 0.0;
+    }
+  }
+
+  if (!scaledNormal.allFinite() || scaledNormal.squaredNorm() <= 1e-12) {
+    scaledNormal = source;
+  }
+
+  return scaledNormal.squaredNorm() > 1e-12 ? scaledNormal.normalized()
+                                            : Eigen::Vector3d::UnitZ();
+}
+
 template <typename S>
 void setTriangleMeshData(
     GeometryDescriptor& descriptor,
@@ -171,6 +198,7 @@ void setTriangleMeshData(
 
   descriptor.triangleVertices.clear();
   descriptor.triangleIndices.clear();
+  descriptor.triangleNormals.clear();
   descriptor.triangleVertices.reserve(vertices.size());
   descriptor.triangleIndices.reserve(triangles.size());
 
@@ -180,9 +208,19 @@ void setTriangleMeshData(
     if (!point.allFinite()) {
       descriptor.triangleVertices.clear();
       descriptor.triangleIndices.clear();
+      descriptor.triangleNormals.clear();
       return;
     }
     descriptor.triangleVertices.push_back(point);
+  }
+
+  if (triMesh.hasVertexNormals()
+      && triMesh.getVertexNormals().size() == vertices.size()) {
+    descriptor.triangleNormals.reserve(triMesh.getVertexNormals().size());
+    for (const auto& normal : triMesh.getVertexNormals()) {
+      descriptor.triangleNormals.push_back(
+          makeScaledTriangleNormal(normal, scale));
+    }
   }
 
   for (const auto& triangle : triangles) {
@@ -220,6 +258,7 @@ void setHeightmapTriangleData(
 
   descriptor.triangleVertices.clear();
   descriptor.triangleIndices.clear();
+  descriptor.triangleNormals.clear();
   descriptor.triangleVertices.reserve(
       static_cast<std::size_t>(heightmap.size()));
   for (Eigen::Index row = 0; row < rows; ++row) {
@@ -269,12 +308,15 @@ void setSoftMeshTriangleData(
 
   descriptor.triangleVertices.clear();
   descriptor.triangleIndices.clear();
+  descriptor.triangleNormals.clear();
   descriptor.triangleVertices.reserve(vertexCount);
   for (std::size_t i = 0u; i < vertexCount; ++i) {
     if (softBody != nullptr) {
       const auto* pointMass = softBody->getPointMass(i);
       if (pointMass == nullptr) {
         descriptor.triangleVertices.clear();
+        descriptor.triangleIndices.clear();
+        descriptor.triangleNormals.clear();
         return;
       }
       descriptor.triangleVertices.push_back(pointMass->getLocalPosition());
@@ -1545,6 +1587,12 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
     const auto triMesh = mesh->getTriMesh();
     if (triMesh != nullptr && !triMesh->getVertices().empty()) {
       setTriangleMeshData(descriptor, *triMesh, descriptor.scale);
+      const auto textureCoords = mesh->getTextureCoords();
+      if (descriptor.meshTextureCoordComponents >= 2
+          && textureCoords.size() == descriptor.triangleVertices.size()) {
+        descriptor.meshTextureCoordinates.assign(
+            textureCoords.begin(), textureCoords.end());
+      }
       Eigen::Vector3d min
           = descriptor.scale.cwiseProduct(triMesh->getVertices().front());
       Eigen::Vector3d max = min;
