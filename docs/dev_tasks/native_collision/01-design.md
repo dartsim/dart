@@ -119,6 +119,24 @@ This is a code design gate, not just a documentation gate. Phase 11 is not
 complete until the public API, compatibility shell, DART adapter, native core,
 package exports, tests, and benchmarks all follow this blueprint.
 
+The intended component shape is reviewable at subcomponent granularity:
+
+| Subcomponent                                | API cleanliness responsibility                                                                                                 | Scalability responsibility                                                                                                             | Performance responsibility                                                                                                 |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Detector and factory surface                | Make `dart` the canonical detector identity; keep retained legacy keys/classes as compatibility aliases or facades only.       | Keep factory behavior independent from optional reference-engine availability.                                                         | Avoid runtime engine-selection branches in hot query paths.                                                                |
+| Compatibility facades                       | Preserve source-compatible FCL, Bullet, ODE, and `experimental` names without exposing their engine types through normal APIs. | Carry no scene state; delegate to the built-in adapter so legacy names cannot create parallel worlds.                                  | Add no extra per-query dispatch beyond the facade-to-native handoff.                                                       |
+| `DartCollisionGroup` adapter scene          | Hide native handles and geometry records from public headers while preserving DART object/filter/result semantics.             | Own stable object IDs, dirty membership/transform/shape sync, filter adaptation, deterministic result mapping, and cache invalidation. | Reuse synchronized scene state across collision, distance, and raycast queries instead of rebuilding native objects.       |
+| Native scene and geometry tables            | Keep native data opaque and backend-independent.                                                                               | Store compact object, geometry, transform, AABB, filter, revision, and cache-generation records.                                       | Keep hot data contiguous enough for broadphase, narrowphase, and batched query traversal.                                  |
+| Broadphase and query snapshots              | Expose no public broadphase selection knobs.                                                                                   | Maintain persistent broadphase state and query snapshots that can serve repeated and batched public queries.                           | Prune candidates before callback filters and narrowphase, with measurable broadphase/candidate traversal costs.            |
+| Narrowphase, distance, and raycast dispatch | Keep result semantics in DART pair order rather than leaking canonical shape-dispatch order.                                   | Centralize symmetric-pair orientation so new shape pairs do not duplicate algorithms or destabilize ordering.                          | Prefer shape-specialized fast paths and reserve generic convex/mesh fallbacks for cases that need them.                    |
+| Result builder and solver cache bridge      | Publish deterministic DART contacts, distances, ray hits, and warm-start data through public result types only.                | Version contact/manifold caches by stable native IDs and invalidate on object or geometry changes.                                     | Reuse contact storage and write solver impulses back to the native manifold cache without detector-type string checks.     |
+| Reference harness                           | Make FCL, Bullet, and ODE access visibly test/benchmark-only through explicit reference APIs and targets.                      | Allow native-only builds to opt out completely while comparison jobs opt in.                                                           | Compare native against the best available reference engine without adding external-engine abstraction to native hot paths. |
+
+The review rule is simple: if a change adds public backend choice, makes the
+adapter own collision algorithms, makes the native core depend on legacy engine
+headers, or hides reference-engine links in normal runtime targets, it moves
+away from the north star even if it passes local tests.
+
 ### Public API Boundary
 
 The public DART collision API should describe collision semantics, not backend
@@ -254,6 +272,10 @@ Performance-sensitive implementation rules are:
 - Cache derived geometry and acceleration data behind explicit revision checks.
 - Keep solver-facing contact/manifold caches versioned by stable native IDs so
   shape replacement cannot reuse stale impulses.
+- Treat solver cache writeback as native cache metadata, not detector
+  display-name behavior. Compatibility facades may report legacy display
+  strings for gz-physics, but any native `CachedContact` attached to a public
+  `Contact` must receive the applied solver impulses.
 - Expose profiler and benchmark labels for adapter sync, broadphase update,
   candidate traversal, filtering, narrowphase, distance, raycast, contact
   generation, manifold update, result merge, and DART result conversion.
@@ -400,13 +422,16 @@ sources cannot move back outside `reference/` paths. The native dispatcher now
 has focused tests for pair-order contact normals across direct narrowphase,
 snapshot collision, and public DART collision group paths; custom mesh-plane
 stacked parallel-cylinder, and axial cylinder-cap/large-box gz contact
-regressions are reduced and fixed on the DART side. The remaining design gaps
-are CI and packaging evidence at matrix scale, downstream
-migration/deprecation evidence, the focused gz-physics `JointDetach`
-exact-zero velocity residual, and broader recurring correctness/performance
-guardrails across the public DART adapter and native core paths. The completed
-PR must make it impossible for ordinary DART collision runtime selection to
-instantiate or link FCL, Bullet, or ODE.
+regressions are reduced and fixed on the DART side. The solver-facing native
+manifold cache contract is now also tested through a legacy display-name
+facade: a compatibility detector may report a legacy type string while the
+attached native `CachedContact` still receives normal and friction impulse
+writeback. The remaining design gaps are CI and packaging evidence at matrix
+scale, downstream migration/deprecation evidence, the focused gz-physics
+`JointDetach` exact-zero velocity residual, and broader recurring
+correctness/performance guardrails across the public DART adapter and native
+core paths. The completed PR must make it impossible for ordinary DART
+collision runtime selection to instantiate or link FCL, Bullet, or ODE.
 
 ## Code Ownership Map
 

@@ -55,17 +55,17 @@ performance-oriented internals before this scale reaches completion.
 
 These gates are still required before the single north-star PR is complete.
 
-| Gate                        | Required evidence                                                      | Current state                                     |
-| --------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------- |
-| CI native-only build        | CI passes with FCL, Bullet, and ODE disabled                           | Local equivalent passed; awaiting CI evidence     |
-| CI gz-physics compatibility | gz-physics CI passes with optional legacy components built             | Focused local run has one residual failure        |
-| Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional             | Local reference target split passes               |
-| Packaging removal           | Default packages/wheels have no old collision runtime deps             | Verifier wired; CI matrix evidence left           |
-| Downstream migration        | gz-physics has a tested path away from legacy detector APIs            | Migration plan documented; gz fixes left          |
-| Collision abstraction       | Legacy keys/classes route only to built-in native behavior             | Source/package facades done                       |
-| Built-in architecture       | `01-design.md` layer table and blueprint pass API, scaling, perf gates | Source split done; API/scaling/perf evidence left |
-| Benchmark regression guard  | Optional reference benchmarks guide gradual optimization               | Scheduled/manual CI guard added; evidence left    |
-| Legacy backend deletion     | Old runtime backend sources removed from default stack                 | Runtime source guard wired; deletion left         |
+| Gate                        | Required evidence                                                      | Current state                                  |
+| --------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------- |
+| CI native-only build        | CI passes with FCL, Bullet, and ODE disabled                           | Local equivalent passed; awaiting CI evidence  |
+| CI gz-physics compatibility | gz-physics CI passes with optional legacy components built             | Focused local run has one residual failure     |
+| Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional             | Local reference target split passes            |
+| Packaging removal           | Default packages/wheels have no old collision runtime deps             | Verifier wired; CI matrix evidence left        |
+| Downstream migration        | gz-physics has a tested path away from legacy detector APIs            | Migration plan documented; gz fixes left       |
+| Collision abstraction       | Legacy keys/classes route only to built-in native behavior             | Source/package facades done                    |
+| Built-in architecture       | `01-design.md` layer table and blueprint pass API, scaling, perf gates | Source split and cache bridge started          |
+| Benchmark regression guard  | Optional reference benchmarks guide gradual optimization               | Scheduled/manual CI guard added; evidence left |
+| Legacy backend deletion     | Old runtime backend sources removed from default stack                 | Runtime source guard wired; deletion left      |
 
 ## Test Runs
 
@@ -117,6 +117,20 @@ cd .deps/gz-physics/build; ./bin/COMMON_TEST_joint_features
     `upperLinkLinearVelocity.Y() = 1.0002864929523347e-06`, and
     `upperLinkAngularVelocity.Y() = -6.6438361021132697e-05` against
     exact-zero tolerances of `1e-6`.
+- `cmake --build build/default/cpp/Release --target
+UNIT_constraint_SoftContactConstraint --parallel $(python
+scripts/parallel_jobs.py)`
+  - Commit: working tree after native cache facade update.
+  - Result: passed. This rebuilds the solver/contact constraint target with a
+    regression for native manifold cache impulse writeback through a
+    native-backed legacy display-name detector facade.
+- `ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^UNIT_constraint_SoftContactConstraint$'`
+  - Commit: working tree after native cache facade update.
+  - Result: passed, 1/1 test. The new
+    `NativeCacheUpdatesThroughCompatibilityFacade` case verifies that a
+    detector facade reporting `"ode"` still writes the applied normal and
+    friction impulses back to the attached native `CachedContact`.
 - `pixi run lint`
   - Commit: working tree after `96436fd2503`
   - Result: passed. `codespell`, CMake `format`, `clang-format`, `black`,
@@ -623,6 +637,20 @@ python/tests/unit/simulation/test_world.py`
   - Result: passed.
 - `git diff --check`
   - Commit: working tree after north-star layer design documentation update
+  - Result: passed.
+- `pixi run lint`
+  - Commit: working tree after architecture subcomponent docs and native cache
+    facade update.
+  - Result: passed. CMake configure, C++ formatting, docs formatting,
+    spell check, Python formatting, TOML/YAML/RST checks, collision runtime
+    isolation, and AI command sync completed.
+- `pixi run check-docs-policy`
+  - Commit: working tree after architecture subcomponent docs and native cache
+    facade update.
+  - Result: passed.
+- `git diff --check`
+  - Commit: working tree after architecture subcomponent docs and native cache
+    facade update.
   - Result: passed.
 
 ## Built-In Architecture Runs

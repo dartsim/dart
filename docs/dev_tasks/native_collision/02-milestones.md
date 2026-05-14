@@ -319,21 +319,24 @@ longer links legacy collision component targets. Reference tests and
 benchmarks now use explicit `createReference()` APIs for old-engine
 comparisons. Direct public C++ legacy detector `create()` paths now resolve to
 native-backed `DartCollisionDetector` facades; any legacy display type string
-is compatibility metadata, not backend selection. Top-level source-tree FCL, Bullet, and ODE
-detector/group headers are native-backed facades, while real FCL/Bullet/ODE
-implementation headers and sources live under explicit `reference/` paths for
-reference-only tests and benchmarks. DART-side public facade tests cover the
-direct C++ display-name compatibility needed by gz-physics, and new pair-order
-normal tests cover direct native dispatch, optimized collision-world dispatch,
-and the public DART collision group path. Native tests also cover axial
-cylinder-cap support patches against large boxes, matching gz's current
-plane-as-box fallback path. Focused gz collision, detachable joint, and
-transmitted-wrench tests now pass; downstream correctness remains open on the
-`JointDetach` exact-zero velocity residual. Lint now enforces the source split
-by rejecting old-engine includes from non-reference DART source paths and
-rejecting legacy implementation sources outside `reference/` paths. CI,
-downstream migration, and broader performance guardrail evidence remain before
-this phase can complete.
+is compatibility metadata, not backend selection. Top-level source-tree FCL,
+Bullet, and ODE detector/group headers are native-backed facades, while real
+FCL/Bullet/ODE implementation headers and sources live under explicit
+`reference/` paths for reference-only tests and benchmarks. DART-side public
+facade tests cover the direct C++ display-name compatibility needed by
+gz-physics, and new pair-order normal tests cover direct native dispatch,
+optimized collision-world dispatch, and the public DART collision group path.
+Native tests also cover axial cylinder-cap support patches against large boxes,
+matching gz's current plane-as-box fallback path. The solver-facing native
+manifold cache bridge is now covered through a legacy display-name facade so
+warm-start impulse writeback is not accidentally disabled by compatibility type
+strings. Focused gz collision, detachable joint, and transmitted-wrench tests
+now pass; downstream correctness remains open on the `JointDetach` exact-zero
+velocity residual. Lint now enforces the source split by rejecting old-engine
+includes from non-reference DART source paths and rejecting legacy
+implementation sources outside `reference/` paths. CI, downstream migration,
+and broader performance guardrail evidence remain before this phase can
+complete.
 
 Success criteria:
 
@@ -380,6 +383,9 @@ Verification:
   built-in DART collision surface without FCL, Bullet, or ODE types.
 - Native scene/update tests cover dirty-object updates, batched queries, cache
   invalidation, and deterministic ordering.
+- Solver-facing cache tests prove native manifold cache writeback works through
+  native-backed compatibility facades, even when facade display strings are
+  legacy names for gz-physics compatibility.
 - Benchmark labels or profiler scopes show broadphase, narrowphase, distance,
   raycast, and contact-generation costs separately.
 - Link inspection shows compatibility wrappers do not link FCL, Bullet, or ODE.

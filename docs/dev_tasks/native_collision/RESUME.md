@@ -108,6 +108,13 @@ cylinder-cap/box-face experiments were rejected because they made
 `JointDetach` fail earlier at the expected upper-link upward-motion check, so
 the retained source state keeps the convex fallback for tilted cap/box and only
 keeps the validated axial cap support patch.
+This session also rejected a narrower mirrored cap-contact experiment because
+it again failed the same expected upward-motion check. The retained working
+tree instead keeps the architecture-valid solver cache bridge fix:
+`ContactConstraint` writes native `CachedContact` impulses whenever native
+cache metadata is attached, even if a compatibility detector facade reports a
+legacy display string such as `"ode"`. The focused
+`UNIT_constraint_SoftContactConstraint` regression covers that behavior.
 
 ## Current Branch
 
@@ -128,7 +135,8 @@ full gz gate.
 Do not retry broad tilted cap support patches without first preserving the
 test's expected `upperLinkLinearVelocity.Z() > 1e-5`; the last two local
 variants overconstrained the base support contacts and failed that earlier
-sanity check.
+sanity check. The later mirrored cap-contact variant failed the same way and
+should also stay rejected unless a new reduction shows a different issue.
 After that, continue the broader plan below.
 
 The persistent DART adapter scene path is now started: public collision,
@@ -186,10 +194,13 @@ explicit gates for API cleanliness, scalability, performance hooks, reference
 isolation, and gz-physics-safe compatibility facades. The latest design update
 adds a concrete built-in component blueprint covering the public API boundary,
 adapter-owned scene model, native scene/query data model, query lifecycle,
-scalability rules, and performance-oriented internals. It also pins the contact
-result contract: native contacts reported through public DART APIs must follow
-collision object pair order, with canonical shape-specialized narrowphase
-functions wrapped by dispatch/result orientation when needed.
+scalability rules, performance-oriented internals, and a subcomponent review
+map for detector/factory surface, compatibility facades, adapter scene, native
+scene/geometry tables, broadphase snapshots, narrowphase dispatch, result
+builder, solver cache bridge, and optional reference harness. It also pins the
+contact result contract: native contacts reported through public DART APIs must
+follow collision object pair order, with canonical shape-specialized
+narrowphase functions wrapped by dispatch/result orientation when needed.
 Package-export cleanup has also started: native-only `find_package(DART)` now
 defaults to `dart` only, generated component templates no longer emit
 deprecated Bullet/ODE collision component text, and a native-only install probe

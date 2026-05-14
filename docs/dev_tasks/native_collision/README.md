@@ -220,9 +220,12 @@ source tree against reintroducing direct old-engine includes or non-reference
 implementation sources. The native core now also documents and tests a
 solver-facing result contract: contacts are reported in public collision pair
 order, and canonical narrowphase functions are wrapped with explicit normal
-flips when dispatch order differs from collision object order. The architecture
-gate remains open until alias cleanup, package cleanup, and native algorithms
-are backed by design evidence in three dimensions:
+flips when dispatch order differs from collision object order. The working
+tree also adds the solver cache bridge part of that contract: native manifold
+cache writeback follows the attached native `CachedContact`, not the detector
+display string preserved by a compatibility facade. The architecture gate
+remains open until alias cleanup, package cleanup, and native algorithms are
+backed by design evidence in three dimensions:
 
 - API cleanliness: ordinary users see one `dart` detector surface, semantic
   DART query options/results, native-backed compatibility names, and explicit
@@ -252,6 +255,17 @@ single checkpoint built locally.
 | Performance orientation | Native hot paths use compact geometry, shape-specialized dispatch, persistent broadphase data, reusable scratch, clear cache lifetimes, and profiling/benchmark labels for each query stage.                                                                      | Recorded benchmarks show native wins on the measured primitive, narrowphase, supported distance, raycast, batch, mesh-heavy, and mixed-primitive set. The native dispatcher keeps canonical shape-specialized functions while wrapping only result-normal orientation when needed. The recurring benchmark guard covers checked native-vs-reference and public adapter scenarios. |
 | Reference isolation     | FCL, Bullet, and ODE exist only as optional reference engines for tests and benchmarks, with native-only builds able to opt out.                                                                                                                                  | CMake opt-out options, native-only Pixi defaults, explicit `collision-reference` opt-in, `collision-reference-*` targets, reference-path source split, runtime source isolation linting, package/wheel metadata cleanup, local install/wheel evidence, and wheel artifact verifier wiring are in place. CI wheel-matrix run evidence remains.                                     |
 | Compatibility           | gz-physics and downstream source-compatible legacy names keep building during migration, but cannot select an external runtime engine.                                                                                                                            | Legacy detector headers/classes, factory aliases, Python names, retained package components, and the documented migration contract route to native. Direct legacy facade display strings are covered by DART tests. Focused gz collision, detachable-joint, and transmitted-wrench tests pass; `JointDetach` exact-zero velocity remains open before the gate can close.          |
+
+## Architecture Review Targets
+
+`01-design.md` breaks the built-in collision layer into reviewable
+subcomponents: detector/factory surface, compatibility facades,
+`DartCollisionGroup` adapter scene, native scene and geometry tables,
+broadphase/query snapshots, narrowphase/distance/raycast dispatch, result
+builder plus solver cache bridge, and the optional reference harness. Each
+subcomponent has an API-cleanliness role, a scalability role, and a
+performance role. Progress on Phase 11 should be reported against those
+subcomponents, not only against whether old backend names still compile.
 
 ## Where To Check Progress
 

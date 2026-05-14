@@ -636,20 +636,12 @@ void ContactConstraint::applyImpulse(double* lambda)
   const auto updateCachedUserData = [&](double normalImpulse,
                                         double frictionImpulse1,
                                         double frictionImpulse2) {
-    if (!mContact.userData || !mContact.collisionObject1) {
+    if (!mContact.userData) {
       return;
     }
 
-    const auto* detector = mContact.collisionObject1->getCollisionDetector();
-    if (!detector) {
-      return;
-    }
-
-    const auto detectorType = detector->getTypeView();
-    if (detectorType != "dart" && detectorType != "experimental") {
-      return;
-    }
-
+    // Native-backed compatibility facades may preserve legacy detector type
+    // strings while still using DartCollisionDetector's manifold cache.
     auto* cached
         = static_cast<collision::native::CachedContact*>(mContact.userData);
     cached->cachedNormalImpulse = normalImpulse;
