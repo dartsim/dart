@@ -55,10 +55,10 @@ normal arrows, contact force arrows, support-polygon outlines,
 support-centroid markers, inertia boxes, and collision-shape bounds, with
 graphics-free unit coverage. It also has nearest ray-hit tests
 for visible, hidden, hit, and miss cases, including bounds hit points/normals
-and primitive sphere/ellipsoid/cylinder/capsule/cone/pyramid surface hit
+and primitive sphere/ellipsoid/cylinder/capsule/cone/pyramid/plane surface hit
 points/normals. The example wires those helpers into basic click-to-select
-highlighting with a selection bounds overlay, and reports the selected DART
-shape in the built-in panel.
+highlighting with a selection bounds overlay, and reports the selected DART shape
+in the built-in panel.
 Backend-hidden free-joint, simple-frame, and combined
 frame-renderable translation helpers are covered by C++ and Python tests, and
 the example uses the combined helper for keyboard nudging of selected dynamic
@@ -167,9 +167,9 @@ descriptors instead of being silently dropped by the extraction layer.
 `MeshShape` material, texture-path, texture-coordinate, and submesh metadata now
 flow through renderer-hidden descriptors, and the Filament example consumes
 that descriptor metadata for per-part mesh materials. The picking helpers now
-also use primitive sphere/ellipsoid/cylinder/capsule/cone/pyramid intersections
-for curved surface hit points and normals before falling back to local bounds for
-other shape descriptors.
+also use primitive sphere/ellipsoid/cylinder/capsule/cone/pyramid plus finite
+plane-proxy intersections for surface hit points and normals before falling back
+to local bounds for other shape descriptors.
 
 `docs/dev_tasks/filament_gui/07-completion-audit.md` maps the current
 implementation, verification evidence, and missing promotion gates. Use that

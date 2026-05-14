@@ -229,6 +229,32 @@ def test_experimental_pick_pyramid_uses_surface_normal():
     assert np.allclose(base_hit.normal, [0.0, 0.0, -1.0])
 
 
+def test_experimental_pick_plane_uses_finite_proxy_surface():
+    renderable = dart.gui.experimental.RenderableDescriptor()
+    renderable.id = 1
+    renderable.geometry.kind = dart.gui.experimental.ShapeKind.Plane
+    renderable.geometry.normal = np.array([0.0, 0.0, 1.0])
+    renderable.geometry.offset = 0.25
+    renderable.geometry.has_local_bounds = True
+    renderable.geometry.local_bounds_min = np.array([-1.0, -1.0, 0.23])
+    renderable.geometry.local_bounds_max = np.array([1.0, 1.0, 0.27])
+
+    hit_ray = dart.gui.experimental.PickRay()
+    hit_ray.origin = np.array([0.25, 0.5, 2.0])
+    hit_ray.direction = np.array([0.0, 0.0, -1.0])
+    hit = dart.gui.experimental.pick_nearest_renderable([renderable], hit_ray)
+
+    assert hit is not None
+    assert np.isclose(hit.distance, 1.75)
+    assert np.allclose(hit.point, [0.25, 0.5, 0.25])
+    assert np.allclose(hit.normal, [0.0, 0.0, 1.0])
+
+    miss_ray = dart.gui.experimental.PickRay()
+    miss_ray.origin = np.array([1.5, 0.0, 2.0])
+    miss_ray.direction = np.array([0.0, 0.0, -1.0])
+    assert dart.gui.experimental.pick_nearest_renderable([renderable], miss_ray) is None
+
+
 def test_experimental_extract_renderables_from_simple_frame():
     world = dart.World.create("world")
     transform = dart.Isometry3()

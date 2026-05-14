@@ -620,6 +620,52 @@ std::optional<LocalBoundsHit> intersectLocalPyramid(
   return nearest;
 }
 
+std::optional<LocalBoundsHit> intersectLocalPlaneProxy(
+    const Eigen::Vector3d& origin,
+    const Eigen::Vector3d& direction,
+    const Eigen::Vector3d& normal,
+    double offset)
+{
+  static constexpr double halfExtent = 1.0;
+
+  if (!origin.allFinite() || !direction.allFinite() || !normal.allFinite()
+      || !std::isfinite(offset)) {
+    return std::nullopt;
+  }
+
+  Eigen::Vector3d unitNormal = normal;
+  if (unitNormal.squaredNorm() < 1e-12) {
+    unitNormal = Eigen::Vector3d::UnitZ();
+  } else {
+    unitNormal.normalize();
+  }
+
+  const Eigen::Vector3d seed = std::abs(unitNormal.z()) < 0.9
+                                   ? Eigen::Vector3d::UnitZ()
+                                   : Eigen::Vector3d::UnitX();
+  const Eigen::Vector3d axisU = seed.cross(unitNormal).normalized();
+  const Eigen::Vector3d axisV = unitNormal.cross(axisU).normalized();
+  const Eigen::Vector3d center = unitNormal * offset;
+  const std::array<Eigen::Vector3d, 4> points
+      = {center - axisU * halfExtent - axisV * halfExtent,
+         center + axisU * halfExtent - axisV * halfExtent,
+         center + axisU * halfExtent + axisV * halfExtent,
+         center - axisU * halfExtent + axisV * halfExtent};
+
+  std::optional<LocalBoundsHit> nearest;
+  for (const auto& face :
+       {std::array<std::size_t, 3>{0u, 1u, 2u},
+        std::array<std::size_t, 3>{0u, 2u, 3u}}) {
+    const auto hit = intersectLocalTriangle(
+        origin, direction, points[face[0]], points[face[1]], points[face[2]]);
+    if (hit && (!nearest || hit->distance < nearest->distance)) {
+      nearest = hit;
+    }
+  }
+
+  return nearest;
+}
+
 std::optional<LocalBoundsHit> intersectLocalCapsule(
     const Eigen::Vector3d& origin,
     const Eigen::Vector3d& direction,
@@ -734,6 +780,11 @@ std::optional<LocalBoundsHit> intersectLocalGeometry(
 
   if (geometry.kind == ShapeKind::Pyramid) {
     return intersectLocalPyramid(origin, direction, geometry.size);
+  }
+
+  if (geometry.kind == ShapeKind::Plane) {
+    return intersectLocalPlaneProxy(
+        origin, direction, geometry.normal, geometry.offset);
   }
 
   return intersectLocalBounds(

@@ -910,6 +910,35 @@ TEST(
   EXPECT_TRUE(baseHit->normal.isApprox(Eigen::Vector3d(0.0, 0.0, -1.0)));
 }
 
+TEST(FilamentSceneExtraction, PickNearestRenderable_PlaneUsesFiniteProxySurface)
+{
+  auto world = World::create("world");
+  auto skeleton = Skeleton::create("plane_robot");
+  auto [joint, body] = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  body->createShapeNodeWith<VisualAspect>(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.25));
+  world->addSkeleton(skeleton);
+
+  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  ASSERT_EQ(renderables.size(), 1u);
+
+  const dart::gui::experimental::PickRay hitRay{
+      Eigen::Vector3d(0.25, 0.5, 2.0), -Eigen::Vector3d::UnitZ()};
+  const auto hit
+      = dart::gui::experimental::pickNearestRenderable(renderables, hitRay);
+
+  ASSERT_TRUE(hit.has_value());
+  EXPECT_NEAR(hit->distance, 1.75, 1e-12);
+  EXPECT_TRUE(hit->point.isApprox(Eigen::Vector3d(0.25, 0.5, 0.25)));
+  EXPECT_TRUE(hit->normal.isApprox(Eigen::Vector3d::UnitZ()));
+
+  const dart::gui::experimental::PickRay missRay{
+      Eigen::Vector3d(1.5, 0.0, 2.0), -Eigen::Vector3d::UnitZ()};
+  EXPECT_FALSE(
+      dart::gui::experimental::pickNearestRenderable(renderables, missRay)
+          .has_value());
+}
+
 TEST(
     FilamentSceneExtraction, PickNearestRenderable_IgnoresHiddenAndMissedShapes)
 {
