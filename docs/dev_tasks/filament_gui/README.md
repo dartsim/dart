@@ -42,8 +42,9 @@
   mesh visual paths; broader robot/environment visual review is still pending.
 - `dart-gui-experimental` now exposes backend-hidden debug line descriptors for
   a 3D grid, world/body frames, center-of-mass markers, contact markers,
-  contact normal arrows, and contact force arrows; the Filament example
-  translates those descriptors into line primitives.
+  inertia boxes, contact normal arrows, contact force arrows, support-polygon
+  outlines, and support-centroid markers; the Filament example translates those
+  descriptors into line primitives.
 - The experimental scene layer includes tested picking bounds and nearest
   ray-hit selection helpers with hit point and bounds-normal reporting. The
   example uses them for basic click-to-select highlighting and a
@@ -79,7 +80,7 @@
   rendering backend.
 - The Filament example's built-in panel now provides pause/step controls and
   debug overlay toggles for grid, frames, center-of-mass markers, contacts,
-  normal arrows, and force arrows.
+  inertia boxes, support polygons, normal arrows, and force arrows.
 - The Filament example also includes `--scene drag-and-drop`, a first
   interaction-heavy fixture that carries the legacy `SimpleFrame` anchor, child
   frame, and axis marker layout through the same backend-hidden manipulation
@@ -146,8 +147,9 @@
 
 Evaluate and, if it passes explicit gates, promote a Filament + GLFW + private
 Dear ImGui implementation as DART's built-in visualization solution under
-`dart::gui`, replacing both the current OSG GUI and the Raylib smoke path in
-the appropriate major DART release.
+`dart::gui`, replacing the current OSG GUI, the Raylib smoke path, and any
+temporary experimental visualization paths in the appropriate major DART
+release.
 
 ## Non-goals
 
@@ -165,9 +167,10 @@ the appropriate major DART release.
   a separate `dart::viz` user-facing surface.
 - Start with a standalone `examples/filament_gui` MVP before adding a public
   API or library target.
-- Use a DART-owned scene/debug-visualization layer between simulation objects
-  and Filament, even though only one backend is planned. This keeps the
-  simulation-side code testable and prevents renderer details from leaking.
+- Use DART-owned scene/debug concepts between simulation objects and Filament
+  while the API is experimental. This keeps simulation-side behavior testable
+  and prevents renderer details from leaking, but promotion should delete or
+  collapse indirection that only exists to preserve multiple renderer backends.
 - Prefer conda-forge/Pixi packaged Filament once available. A pinned CMake fetch
   fallback is available for Linux x86_64 experiments only when explicitly
   requested and should not be the primary release path.

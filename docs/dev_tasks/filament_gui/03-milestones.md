@@ -74,9 +74,9 @@
   PBR maps on more than isolated mesh samples.
 - `dart-gui-experimental` now owns backend-hidden debug line descriptors for a
   grid, world/body frames, center-of-mass markers, contact markers, contact
-  normal arrows, contact force arrows, support-polygon outlines, and
-  support-centroid markers. The Filament example converts those descriptors to
-  line primitives.
+  normal arrows, contact force arrows, support-polygon outlines,
+  support-centroid markers, and inertia boxes. The Filament example converts
+  those descriptors to line primitives.
 - The extraction layer includes tested local picking bounds and nearest
   ray-hit helpers for visible renderables, including bounds hit points and hit
   normals plus primitive sphere/ellipsoid surface points and normals.
@@ -102,10 +102,10 @@
 - One maintained example can be demonstrated end-to-end on Filament.
 - Screenshots are stable enough for visual smoke checks.
 - The shadow gate in `06-visual-quality.md` passes.
-- Grid, world/body frame, contact, normal-arrow, force-arrow, center-of-mass, and
-  support-polygon overlays render in the MVP; the built-in panel can toggle the
-  current overlay groups. Broader scenario coverage is still needed before
-  Phase 2 is complete.
+- Grid, world/body frame, contact, normal-arrow, force-arrow, center-of-mass,
+  support-polygon, and inertia-box overlays render in the MVP; the built-in
+  panel can toggle the current overlay groups. Broader scenario coverage is
+  still needed before Phase 2 is complete.
 - Alpha-bearing solid, textured, and mesh visual paths render through
   transparent lit material variants in the MVP scene. Broader transparency
   workflows still need visual review before promotion.
@@ -199,8 +199,8 @@
   metadata, renderable set update planning, picking helpers with bounds hit
   normals and primitive sphere/ellipsoid hit normals, free-joint translation,
   plane-drag helpers, debug-line descriptor generation including
-  support-polygon overlays, run options, viewer lifecycle state, screenshot
-  storage, and orbit-camera helpers.
+  support-polygon and inertia-box overlays, run options, viewer lifecycle state,
+  screenshot storage, and orbit-camera helpers.
 - `dartpy` can now build the constrained `dartpy.gui.experimental` module with
   `DART_BUILD_GUI=OFF` when `dart-gui-experimental` is present, so the Python
   experimental API is no longer tied to the legacy GUI target.

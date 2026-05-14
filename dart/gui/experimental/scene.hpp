@@ -250,6 +250,7 @@ struct DebugDrawOptions
   bool drawWorldFrame = true;
   bool drawBodyFrames = false;
   bool drawCentersOfMass = false;
+  bool drawInertiaBoxes = false;
   bool drawSupportPolygons = false;
   bool drawSupportCentroids = true;
   bool drawContacts = true;
@@ -261,6 +262,7 @@ struct DebugDrawOptions
   double worldFrameAxisLength = 0.9;
   double bodyFrameAxisLength = 0.22;
   double centerOfMassMarkerRadius = 0.08;
+  double inertiaBoxScale = 1.0;
   double supportPolygonElevation = 0.02;
   double supportCentroidMarkerRadius = 0.06;
   double contactMarkerHalfExtent = 0.035;
@@ -380,6 +382,11 @@ DART_GUI_API std::vector<DebugLineDescriptor> makeFrameDebugLines(
 DART_GUI_API std::vector<DebugLineDescriptor> makeSelectionDebugLines(
     const RenderableDescriptor& renderable,
     const Eigen::Vector4d& rgba = Eigen::Vector4d(1.0, 0.84, 0.18, 1.0),
+    const std::string& labelPrefix = {});
+
+DART_GUI_API std::vector<DebugLineDescriptor> makeInertiaDebugLines(
+    const dynamics::BodyNode& bodyNode,
+    const DebugDrawOptions& options = {},
     const std::string& labelPrefix = {});
 
 DART_GUI_API std::vector<DebugLineDescriptor> makeSupportPolygonDebugLines(

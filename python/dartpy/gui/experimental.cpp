@@ -1,6 +1,7 @@
 #include "gui/experimental.hpp"
 
 #include "dart/collision/collision_result.hpp"
+#include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/shape.hpp"
 #include "dart/dynamics/skeleton.hpp"
 #include "dart/gui/experimental/scene.hpp"
@@ -226,6 +227,7 @@ void defGuiExperimentalModule(nb::module_& m)
       .def_rw("draw_world_frame", &gui::DebugDrawOptions::drawWorldFrame)
       .def_rw("draw_body_frames", &gui::DebugDrawOptions::drawBodyFrames)
       .def_rw("draw_centers_of_mass", &gui::DebugDrawOptions::drawCentersOfMass)
+      .def_rw("draw_inertia_boxes", &gui::DebugDrawOptions::drawInertiaBoxes)
       .def_rw(
           "draw_support_polygons", &gui::DebugDrawOptions::drawSupportPolygons)
       .def_rw(
@@ -246,6 +248,7 @@ void defGuiExperimentalModule(nb::module_& m)
       .def_rw(
           "center_of_mass_marker_radius",
           &gui::DebugDrawOptions::centerOfMassMarkerRadius)
+      .def_rw("inertia_box_scale", &gui::DebugDrawOptions::inertiaBoxScale)
       .def_rw(
           "support_polygon_elevation",
           &gui::DebugDrawOptions::supportPolygonElevation)
@@ -420,6 +423,12 @@ void defGuiExperimentalModule(nb::module_& m)
       },
       nb::arg("renderable"),
       nb::arg("rgba") = Eigen::Vector4d(1.0, 0.84, 0.18, 1.0),
+      nb::arg("label_prefix") = std::string{});
+  m.def(
+      "make_inertia_debug_lines",
+      &gui::makeInertiaDebugLines,
+      nb::arg("body_node"),
+      nb::arg("options") = gui::DebugDrawOptions{},
       nb::arg("label_prefix") = std::string{});
   m.def(
       "make_support_polygon_debug_lines",

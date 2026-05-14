@@ -236,6 +236,34 @@ def test_experimental_center_of_mass_debug_lines():
     assert np.allclose(lines[0].to_point, [0.2, 0.0, 0.0])
 
 
+def test_experimental_inertia_debug_options():
+    world = dart.World.create("world")
+    skeleton = dart.Skeleton("robot")
+    _, body = skeleton.create_free_joint_and_body_node_pair()
+    body.get_inertia().set_mass(12.0)
+    body.get_inertia().set_moment(np.diag([52.0, 40.0, 20.0]))
+    world.add_skeleton(skeleton)
+
+    options = dart.gui.experimental.DebugDrawOptions()
+    options.draw_grid = False
+    options.draw_world_frame = False
+    options.draw_contacts = False
+    options.draw_inertia_boxes = True
+    options.inertia_box_scale = 0.5
+
+    assert options.draw_inertia_boxes is True
+    assert np.isclose(options.inertia_box_scale, 0.5)
+    lines = dart.gui.experimental.make_inertia_debug_lines(
+        body, options, "robot/body"
+    )
+    assert len(lines) == 12
+    assert lines[0].label == "robot/body.inertia"
+
+    extracted_lines = dart.gui.experimental.extract_debug_lines(world, options)
+    assert len(extracted_lines) == 12
+    assert extracted_lines[0].label.endswith(".inertia")
+
+
 def test_experimental_support_polygon_debug_options():
     skeleton = dart.Skeleton("supportless")
     options = dart.gui.experimental.DebugDrawOptions()

@@ -1075,6 +1075,49 @@ TEST(FilamentSceneExtraction, ExtractDebugLines_ReturnsCenterOfMassMarker)
   EXPECT_TRUE(lines[2].to.isApprox(Eigen::Vector3d(1.0, 2.0, 3.2)));
 }
 
+TEST(FilamentSceneExtraction, MakeInertiaDebugLines_ReturnsEquivalentBox)
+{
+  auto world = World::create("world");
+  auto skeleton = Skeleton::create("robot");
+  auto [joint, body] = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  body->setName("body");
+  body->setMass(12.0);
+  body->setMomentOfInertia(52.0, 40.0, 20.0);
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(1.0, 2.0, 3.0);
+  joint->setTransformFromParentBodyNode(transform);
+  world->addSkeleton(skeleton);
+
+  dart::gui::experimental::DebugDrawOptions options;
+  options.drawGrid = false;
+  options.drawWorldFrame = false;
+  options.drawContacts = false;
+  options.drawInertiaBoxes = true;
+
+  const auto lines = dart::gui::experimental::makeInertiaDebugLines(
+      *body, options, "robot/body");
+
+  ASSERT_EQ(lines.size(), 12u);
+  EXPECT_EQ(lines.front().label, "robot/body.inertia");
+
+  Eigen::Vector3d min
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d max
+      = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
+  for (const auto& line : lines) {
+    min = min.cwiseMin(line.from).cwiseMin(line.to);
+    max = max.cwiseMax(line.from).cwiseMax(line.to);
+  }
+  EXPECT_TRUE(min.isApprox(Eigen::Vector3d(0.0, 0.0, 0.0)));
+  EXPECT_TRUE(max.isApprox(Eigen::Vector3d(2.0, 4.0, 6.0)));
+
+  const auto extractedLines
+      = dart::gui::experimental::extractDebugLines(*world, options);
+  ASSERT_EQ(extractedLines.size(), lines.size());
+  EXPECT_EQ(extractedLines.front().label, "robot/body.inertia");
+}
+
 TEST(
     FilamentSceneExtraction,
     MakeSupportPolygonDebugLines_ReturnsOutlineAndCentroid)

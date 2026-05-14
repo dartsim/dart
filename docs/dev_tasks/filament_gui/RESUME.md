@@ -51,8 +51,9 @@ renderer-independent scene layer now also extracts world-owned `SimpleFrame`
 visuals, so drag-and-drop style targets can flow through the same renderable
 descriptor path as body shape nodes. It also owns debug line descriptors for the
 grid, world/body frames, center-of-mass markers, contact markers, contact
-normal arrows, contact force arrows, support-polygon outlines, and support-centroid
-markers, with graphics-free unit coverage. It also has nearest ray-hit tests
+normal arrows, contact force arrows, support-polygon outlines,
+support-centroid markers, and inertia boxes, with graphics-free unit coverage.
+It also has nearest ray-hit tests
 for visible, hidden, hit, and miss cases, including bounds hit points/normals
 and primitive sphere/ellipsoid surface hit points/normals. The example wires
 those helpers into basic click-to-select highlighting with a selection bounds
@@ -82,8 +83,9 @@ non-rendering example consumer for descriptor/debug/camera diagnostics,
 including a `SimpleFrame` visual, without adding another backend. The
 Filament example's built-in panel now exposes pause/resume, single-step, and
 debug overlay toggles for grid, frames, center-of-mass markers, contacts,
-normal arrows, force arrows, and support polygons. The same executable now supports
-`--scene drag-and-drop`, a first interaction-heavy fixture that carries the
+inertia boxes, normal arrows, force arrows, and support polygons. The same
+executable now supports `--scene drag-and-drop`, a first interaction-heavy
+fixture that carries the
 legacy `SimpleFrame` anchor, child frame, and axis markers through the
 backend-hidden extraction and manipulation path.
 

@@ -208,12 +208,12 @@ not a drop-in OSG replacement.
   shapes, labels, and custom nodes.
 - **Filament gap:** Filament can draw these, but DART must own the debug draw
   model. The current experimental descriptors cover grid, frames, COM markers,
-  contacts, normal/force arrows, support-polygon outlines, support-centroid
-  markers, and selection bounds only.
+  inertia boxes, contacts, normal/force arrows, support-polygon outlines,
+  support-centroid markers, and selection bounds only.
 - **North-star plan:** Grow a DART debug overlay registry with stable descriptor
   types for lines, points, arrows, labels, text, frames, contact patches,
-  support polygons, inertia/COM helpers, collision shape toggles, and
-  user-provided debug draw providers.
+  support polygons, additional inertia/COM helpers, collision shape toggles,
+  and user-provided debug draw providers.
 
 ### 10. Text and labels
 

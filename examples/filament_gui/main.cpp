@@ -5163,6 +5163,7 @@ int main(int argc, char* argv[])
   DebugDrawOptions staticDebugOptions;
   staticDebugOptions.drawBodyFrames = true;
   staticDebugOptions.drawCentersOfMass = true;
+  staticDebugOptions.drawInertiaBoxes = false;
   staticDebugOptions.drawSupportPolygons
       = appOptions.scene == ExampleScene::G1;
   staticDebugOptions.drawContacts = false;
@@ -5662,6 +5663,9 @@ int main(int argc, char* argv[])
           |= ImGui::Checkbox("Body", &staticDebugOptions.drawBodyFrames);
       debugOptionsChanged
           |= ImGui::Checkbox("COM", &staticDebugOptions.drawCentersOfMass);
+      ImGui::SameLine();
+      debugOptionsChanged |= ImGui::Checkbox(
+          "Inertia", &staticDebugOptions.drawInertiaBoxes);
       ImGui::SameLine();
       debugOptionsChanged
           |= ImGui::Checkbox("Contacts", &contactDebugOptions.drawContacts);

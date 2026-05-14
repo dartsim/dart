@@ -67,10 +67,11 @@
 - Windowed playback advances physics against wall-clock time with a bounded
   catch-up step budget. Headless captures remain deterministic and advance one
   simulation step for each rendered frame.
-- A simple 3D grid, world/body frame axes, contact markers, contact normals,
-  and contact force vectors are generated as `dart-gui-experimental` debug
-  descriptors and rendered as Filament line primitives. The debug-line material
-  uses transparent blending for alpha-bearing overlay colors.
+- A simple 3D grid, world/body frame axes, center-of-mass markers, inertia
+  boxes, contact markers, contact normals, contact force vectors, and support
+  polygons are generated as `dart-gui-experimental` debug descriptors and
+  rendered as Filament line primitives. The debug-line material uses
+  transparent blending for alpha-bearing overlay colors.
 - Basic click-to-select uses renderer-independent DART descriptor picking and
   reports the selected shape in the built-in panel while drawing a bounds
   overlay around it. Selected free-joint bodies and `SimpleFrame` visuals can

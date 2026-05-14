@@ -72,6 +72,8 @@
 #include <dart/math/geometry.hpp>
 #include <dart/math/tri_mesh.hpp>
 
+#include <Eigen/Eigenvalues>
+
 #include <algorithm>
 #include <array>
 #include <fstream>
@@ -535,6 +537,49 @@ void appendCenterOfMassMarker(
 {
   appendAxisMarker(
       lines, center, radius, rgba(0.22, 0.82, 0.86), labelPrefix, "com");
+}
+
+void appendBoxEdges(
+    std::vector<DebugLineDescriptor>& lines,
+    const Eigen::Vector3d& center,
+    const Eigen::Matrix3d& axes,
+    const Eigen::Vector3d& halfExtents,
+    const Eigen::Vector4d& color,
+    const std::string& label)
+{
+  if (!center.allFinite() || !axes.allFinite() || !halfExtents.allFinite()
+      || (halfExtents.array() <= 0.0).any()) {
+    return;
+  }
+
+  std::array<Eigen::Vector3d, 8> corners;
+  std::size_t index = 0u;
+  for (double x : {-1.0, 1.0}) {
+    for (double y : {-1.0, 1.0}) {
+      for (double z : {-1.0, 1.0}) {
+        corners[index++] = center + axes.col(0) * halfExtents.x() * x
+                           + axes.col(1) * halfExtents.y() * y
+                           + axes.col(2) * halfExtents.z() * z;
+      }
+    }
+  }
+
+  const std::array<std::pair<std::size_t, std::size_t>, 12> edges
+      = {std::pair<std::size_t, std::size_t>{0, 4},
+         {1, 5},
+         {2, 6},
+         {3, 7},
+         {0, 2},
+         {1, 3},
+         {4, 6},
+         {5, 7},
+         {0, 1},
+         {2, 3},
+         {4, 5},
+         {6, 7}};
+  for (const auto& [from, to] : edges) {
+    appendLine(lines, corners[from], corners[to], color, label);
+  }
 }
 
 bool containsRenderableId(const std::vector<RenderableId>& ids, RenderableId id)
@@ -1486,6 +1531,62 @@ std::vector<DebugLineDescriptor> makeSelectionDebugLines(
   return lines;
 }
 
+std::vector<DebugLineDescriptor> makeInertiaDebugLines(
+    const dynamics::BodyNode& bodyNode,
+    const DebugDrawOptions& options,
+    const std::string& labelPrefix)
+{
+  std::vector<DebugLineDescriptor> lines;
+  if (!options.drawInertiaBoxes || options.inertiaBoxScale <= 0.0
+      || !std::isfinite(options.inertiaBoxScale)) {
+    return lines;
+  }
+
+  const double mass = bodyNode.getMass();
+  if (mass <= 0.0 || !std::isfinite(mass)) {
+    return lines;
+  }
+
+  const Eigen::Matrix3d moment = bodyNode.getInertia().getMoment();
+  if (!moment.allFinite()) {
+    return lines;
+  }
+
+  Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> solver(moment);
+  if (solver.info() != Eigen::Success || !solver.eigenvalues().allFinite()
+      || !solver.eigenvectors().allFinite()) {
+    return lines;
+  }
+
+  const Eigen::Vector3d principalMoments = solver.eigenvalues();
+  const Eigen::Vector3d dimensionsSquared
+      = (Eigen::Vector3d(
+             principalMoments.y() + principalMoments.z() - principalMoments.x(),
+             principalMoments.x() + principalMoments.z() - principalMoments.y(),
+             principalMoments.x() + principalMoments.y() - principalMoments.z())
+         * (6.0 / mass));
+  if (!dimensionsSquared.allFinite()
+      || (dimensionsSquared.array() <= 1e-18).any()) {
+    return lines;
+  }
+
+  const Eigen::Vector3d halfExtents
+      = dimensionsSquared.cwiseSqrt() * 0.5 * options.inertiaBoxScale;
+  const Eigen::Matrix3d worldAxes
+      = bodyNode.getWorldTransform().linear() * solver.eigenvectors();
+  const std::string label
+      = labelPrefix.empty() ? "inertia" : labelPrefix + ".inertia";
+  lines.reserve(12u);
+  appendBoxEdges(
+      lines,
+      bodyNode.getCOM(),
+      worldAxes,
+      halfExtents,
+      rgba(0.58, 0.44, 0.95, 0.82),
+      label);
+  return lines;
+}
+
 std::vector<DebugLineDescriptor> makeSupportPolygonDebugLines(
     const dynamics::Skeleton& skeleton,
     const DebugDrawOptions& options,
@@ -1662,6 +1763,23 @@ std::vector<DebugLineDescriptor> extractDebugLines(
           skeleton->getCOM(),
           options.centerOfMassMarkerRadius,
           skeleton->getName());
+    }
+  }
+
+  if (options.drawInertiaBoxes) {
+    for (std::size_t skeletonIndex = 0; skeletonIndex < world.getNumSkeletons();
+         ++skeletonIndex) {
+      const auto skeleton = world.getSkeleton(skeletonIndex);
+      if (!skeleton) {
+        continue;
+      }
+
+      skeleton->eachBodyNode([&](const dynamics::BodyNode* bodyNode) {
+        const std::string label
+            = skeleton->getName() + "/" + bodyNode->getName();
+        auto inertiaLines = makeInertiaDebugLines(*bodyNode, options, label);
+        lines.insert(lines.end(), inertiaLines.begin(), inertiaLines.end());
+      });
     }
   }
 
