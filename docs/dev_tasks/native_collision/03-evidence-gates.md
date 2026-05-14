@@ -134,6 +134,40 @@ cd .deps/gz-physics/build; ./bin/COMMON_TEST_joint_features
     should focus on base-vs-ground native support contact/manifold stability,
     not on detach-state restoration or legacy facade routing. The temporary
     `.deps/gz-physics` instrumentation was removed after capture.
+- Temporary centered cylinder-cap/large-box support-contact experiment
+  - Source base: `f41b1ee3bc5`
+    (`Document native collision architecture rubric`) plus an uncommitted
+    local helper in
+    `dart/collision/native/narrow_phase/cylinder_collision.cpp`; reverted
+    after the run.
+  - Commands: built and ran focused `test_cylinder`, rebuilt the gz DART
+    plugin through the standard gazebo install and focused
+    `gz-physics-dartsim-plugin`/`COMMON_TEST_joint_features` targets, then ran
+    isolated `JointFeaturesDetachTest/0.JointDetach`.
+  - Result: focused native coverage passed, but gz failed earlier at the
+    expected upward-motion check:
+    `upperLinkLinearVelocity.Z() = 1.63203e-06`, below the required `1e-5`.
+    Off-axis values were also still nonzero:
+    `upperLinkLinearVelocity.X() = 7.0895968540904397e-05`,
+    `upperLinkLinearVelocity.Y() = 0.00015833169537646667`, and
+    `upperLinkAngularVelocity.Y() = 3.3759986207481524e-05`. This rejects a
+    centered support point as the next fix direction.
+- Temporary weighted-centroid cylinder-cap/large-box support-contact experiment
+  - Source base: `f41b1ee3bc5`
+    (`Document native collision architecture rubric`) plus an uncommitted
+    local helper in
+    `dart/collision/native/narrow_phase/cylinder_collision.cpp`; reverted
+    after the run.
+  - Commands: built and ran focused `test_cylinder`, rebuilt the gz DART
+    plugin through the standard gazebo install and focused
+    `gz-physics-dartsim-plugin`/`COMMON_TEST_joint_features` targets, then ran
+    isolated `JointFeaturesDetachTest/0.JointDetach`.
+  - Result: focused native coverage passed, but gz again failed the expected
+    upward-motion check:
+    `upperLinkLinearVelocity.Z() = -6.02409e-08`, below the required `1e-5`.
+    This rejects weighted support-centroid shaping as the next fix direction.
+    The retained source state keeps the validated axial cap support patch and
+    the convex fallback for tilted cap/box cases.
 - `cmake --build build/default/cpp/Release --target
 UNIT_constraint_SoftContactConstraint --parallel $(python
 scripts/parallel_jobs.py)`

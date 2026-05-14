@@ -351,6 +351,11 @@ subcomponents, not only against whether old backend names still compile.
    upper-link linear `X` residual is consistent with that base rotation through
    the joint offset. Continue the reduction as a base-vs-ground support
    contact/manifold issue, not as a detach-state restoration issue.
+   Do not retry broad cylinder-cap/large-box support-contact shaping without a
+   new reduction: tilted, mirrored, centered, and weighted-centroid variants all
+   passed or could be made to pass focused native tests but either killed the
+   expected upward `Z` motion in gz `JointDetach` or worsened off-axis support
+   motion.
 2. Run and harden the new native-only CI job alongside existing gz-physics CI.
 3. Finish reference-engine isolation by auditing target links, dependency
    metadata, wheel artifacts, and remaining downstream paths after the CMake

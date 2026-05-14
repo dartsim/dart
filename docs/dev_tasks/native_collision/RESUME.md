@@ -121,6 +121,14 @@ base angular velocity around `Y` is `-6.6445229724690596e-05`, the upper-link
 angular `Y` is `-6.6438361021132697e-05`, and the upper-link linear `X`
 residual is consistent with that base rotation through the joint offset. The
 diagnostic instrumentation in `.deps/gz-physics` was removed after capture.
+Two later local support-contact shaping experiments were also rejected and
+reverted: a centered cylinder-cap/large-box support point made gz fail
+`JointDetach` at `upperLinkLinearVelocity.Z() > 1e-5` with
+`Z = 1.63203e-06` and still left off-axis support motion, and a weighted
+support-centroid variant again failed the same upward-motion check with
+`Z = -6.02409e-08`. Do not retry cylinder-cap support shaping without a new
+reduction that preserves the expected upward motion and reduces base support
+angular drift.
 
 ## Current Branch
 
@@ -147,7 +155,9 @@ Do not retry broad tilted cap support patches without first preserving the
 test's expected `upperLinkLinearVelocity.Z() > 1e-5`; the last two local
 variants overconstrained the base support contacts and failed that earlier
 sanity check. The later mirrored cap-contact variant failed the same way and
-should also stay rejected unless a new reduction shows a different issue.
+should also stay rejected unless a new reduction shows a different issue. The
+centered support-point and weighted support-centroid variants are rejected for
+the same reason and should not be repeated as blind contact-generation changes.
 After that, continue the broader plan below.
 
 The persistent DART adapter scene path is now started: public collision,
