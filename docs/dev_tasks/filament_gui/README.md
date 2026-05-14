@@ -42,9 +42,9 @@
   mesh visual paths; broader robot/environment visual review is still pending.
 - `dart-gui-experimental` now exposes backend-hidden debug line descriptors for
   a 3D grid, world/body frames, center-of-mass markers, contact markers,
-  inertia boxes, contact normal arrows, contact force arrows, support-polygon
-  outlines, and support-centroid markers; the Filament example translates those
-  descriptors into line primitives.
+  inertia boxes, collision-shape bounds, contact normal arrows, contact force
+  arrows, support-polygon outlines, and support-centroid markers; the Filament
+  example translates those descriptors into line primitives.
 - The experimental scene layer includes tested picking bounds and nearest
   ray-hit selection helpers with hit point and bounds-normal reporting. The
   example uses them for basic click-to-select highlighting and a
@@ -80,7 +80,8 @@
   rendering backend.
 - The Filament example's built-in panel now provides pause/step controls and
   debug overlay toggles for grid, frames, center-of-mass markers, contacts,
-  inertia boxes, support polygons, normal arrows, and force arrows.
+  inertia boxes, collision-shape bounds, support polygons, normal arrows, and
+  force arrows.
 - The Filament example also includes `--scene drag-and-drop`, a first
   interaction-heavy fixture that carries the legacy `SimpleFrame` anchor, child
   frame, and axis marker layout through the same backend-hidden manipulation

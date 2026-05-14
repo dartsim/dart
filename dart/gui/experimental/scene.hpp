@@ -251,6 +251,7 @@ struct DebugDrawOptions
   bool drawBodyFrames = false;
   bool drawCentersOfMass = false;
   bool drawInertiaBoxes = false;
+  bool drawCollisionShapeBounds = false;
   bool drawSupportPolygons = false;
   bool drawSupportCentroids = true;
   bool drawContacts = true;
@@ -263,6 +264,7 @@ struct DebugDrawOptions
   double bodyFrameAxisLength = 0.22;
   double centerOfMassMarkerRadius = 0.08;
   double inertiaBoxScale = 1.0;
+  double collisionBoundsPadding = 0.0;
   double supportPolygonElevation = 0.02;
   double supportCentroidMarkerRadius = 0.06;
   double contactMarkerHalfExtent = 0.035;
@@ -386,6 +388,11 @@ DART_GUI_API std::vector<DebugLineDescriptor> makeSelectionDebugLines(
 
 DART_GUI_API std::vector<DebugLineDescriptor> makeInertiaDebugLines(
     const dynamics::BodyNode& bodyNode,
+    const DebugDrawOptions& options = {},
+    const std::string& labelPrefix = {});
+
+DART_GUI_API std::vector<DebugLineDescriptor> makeCollisionShapeDebugLines(
+    const dynamics::ShapeNode& shapeNode,
     const DebugDrawOptions& options = {},
     const std::string& labelPrefix = {});
 

@@ -3,6 +3,7 @@
 #include "dart/collision/collision_result.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/shape.hpp"
+#include "dart/dynamics/shape_node.hpp"
 #include "dart/dynamics/skeleton.hpp"
 #include "dart/gui/experimental/scene.hpp"
 #include "dart/simulation/world.hpp"
@@ -229,6 +230,9 @@ void defGuiExperimentalModule(nb::module_& m)
       .def_rw("draw_centers_of_mass", &gui::DebugDrawOptions::drawCentersOfMass)
       .def_rw("draw_inertia_boxes", &gui::DebugDrawOptions::drawInertiaBoxes)
       .def_rw(
+          "draw_collision_shape_bounds",
+          &gui::DebugDrawOptions::drawCollisionShapeBounds)
+      .def_rw(
           "draw_support_polygons", &gui::DebugDrawOptions::drawSupportPolygons)
       .def_rw(
           "draw_support_centroids",
@@ -249,6 +253,9 @@ void defGuiExperimentalModule(nb::module_& m)
           "center_of_mass_marker_radius",
           &gui::DebugDrawOptions::centerOfMassMarkerRadius)
       .def_rw("inertia_box_scale", &gui::DebugDrawOptions::inertiaBoxScale)
+      .def_rw(
+          "collision_bounds_padding",
+          &gui::DebugDrawOptions::collisionBoundsPadding)
       .def_rw(
           "support_polygon_elevation",
           &gui::DebugDrawOptions::supportPolygonElevation)
@@ -428,6 +435,12 @@ void defGuiExperimentalModule(nb::module_& m)
       "make_inertia_debug_lines",
       &gui::makeInertiaDebugLines,
       nb::arg("body_node"),
+      nb::arg("options") = gui::DebugDrawOptions{},
+      nb::arg("label_prefix") = std::string{});
+  m.def(
+      "make_collision_shape_debug_lines",
+      &gui::makeCollisionShapeDebugLines,
+      nb::arg("shape_node"),
       nb::arg("options") = gui::DebugDrawOptions{},
       nb::arg("label_prefix") = std::string{});
   m.def(

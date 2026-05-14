@@ -264,6 +264,36 @@ def test_experimental_inertia_debug_options():
     assert extracted_lines[0].label.endswith(".inertia")
 
 
+def test_experimental_collision_shape_debug_lines():
+    world = dart.World.create("world")
+    skeleton = dart.Skeleton("robot")
+    _, body = skeleton.create_free_joint_and_body_node_pair()
+    shape_node = body.create_shape_node(dart.BoxShape(np.array([2.0, 4.0, 6.0])))
+    shape_node.create_collision_aspect()
+    world.add_skeleton(skeleton)
+
+    assert len(dart.gui.experimental.extract_renderables(world)) == 0
+
+    options = dart.gui.experimental.DebugDrawOptions()
+    options.draw_grid = False
+    options.draw_world_frame = False
+    options.draw_contacts = False
+    options.draw_collision_shape_bounds = True
+    options.collision_bounds_padding = 0.1
+
+    assert options.draw_collision_shape_bounds is True
+    assert np.isclose(options.collision_bounds_padding, 0.1)
+    lines = dart.gui.experimental.make_collision_shape_debug_lines(
+        shape_node, options, "robot/body/collision"
+    )
+    assert len(lines) == 12
+    assert lines[0].label == "robot/body/collision.collision_bounds"
+
+    extracted_lines = dart.gui.experimental.extract_debug_lines(world, options)
+    assert len(extracted_lines) == 12
+    assert extracted_lines[0].label.endswith(".collision_bounds")
+
+
 def test_experimental_support_polygon_debug_options():
     skeleton = dart.Skeleton("supportless")
     options = dart.gui.experimental.DebugDrawOptions()

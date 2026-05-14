@@ -582,6 +582,57 @@ void appendBoxEdges(
   }
 }
 
+void appendTransformedBoundsEdges(
+    std::vector<DebugLineDescriptor>& lines,
+    const Eigen::Vector3d& boundsMin,
+    const Eigen::Vector3d& boundsMax,
+    const Eigen::Isometry3d& transform,
+    const Eigen::Vector4d& color,
+    const std::string& label)
+{
+  if (!boundsMin.allFinite() || !boundsMax.allFinite()
+      || !transform.matrix().allFinite()) {
+    return;
+  }
+
+  const Eigen::Vector3d min = boundsMin.cwiseMin(boundsMax);
+  const Eigen::Vector3d max = boundsMin.cwiseMax(boundsMax);
+  if ((max - min).cwiseAbs().maxCoeff() < 1e-12) {
+    return;
+  }
+
+  std::array<Eigen::Vector3d, 8> corners
+      = {Eigen::Vector3d(min.x(), min.y(), min.z()),
+         Eigen::Vector3d(max.x(), min.y(), min.z()),
+         Eigen::Vector3d(max.x(), max.y(), min.z()),
+         Eigen::Vector3d(min.x(), max.y(), min.z()),
+         Eigen::Vector3d(min.x(), min.y(), max.z()),
+         Eigen::Vector3d(max.x(), min.y(), max.z()),
+         Eigen::Vector3d(max.x(), max.y(), max.z()),
+         Eigen::Vector3d(min.x(), max.y(), max.z())};
+  for (Eigen::Vector3d& corner : corners) {
+    corner = transform * corner;
+  }
+
+  const std::array<std::pair<std::size_t, std::size_t>, 12> edges
+      = {std::pair<std::size_t, std::size_t>{0, 1},
+         {1, 2},
+         {2, 3},
+         {3, 0},
+         {4, 5},
+         {5, 6},
+         {6, 7},
+         {7, 4},
+         {0, 4},
+         {1, 5},
+         {2, 6},
+         {3, 7}};
+
+  for (const auto& [from, to] : edges) {
+    appendLine(lines, corners[from], corners[to], color, label);
+  }
+}
+
 bool containsRenderableId(const std::vector<RenderableId>& ids, RenderableId id)
 {
   return std::find(ids.begin(), ids.end(), id) != ids.end();
@@ -1481,52 +1532,16 @@ std::vector<DebugLineDescriptor> makeSelectionDebugLines(
     return lines;
   }
 
-  const Eigen::Vector3d boundsMin = renderable.geometry.localBoundsMin;
-  const Eigen::Vector3d boundsMax = renderable.geometry.localBoundsMax;
-  if (!boundsMin.allFinite() || !boundsMax.allFinite()
-      || !renderable.worldTransform.matrix().allFinite()) {
-    return lines;
-  }
-
-  const Eigen::Vector3d min = boundsMin.cwiseMin(boundsMax);
-  const Eigen::Vector3d max = boundsMin.cwiseMax(boundsMax);
-  if ((max - min).cwiseAbs().maxCoeff() < 1e-12) {
-    return lines;
-  }
-
-  std::array<Eigen::Vector3d, 8> corners
-      = {Eigen::Vector3d(min.x(), min.y(), min.z()),
-         Eigen::Vector3d(max.x(), min.y(), min.z()),
-         Eigen::Vector3d(max.x(), max.y(), min.z()),
-         Eigen::Vector3d(min.x(), max.y(), min.z()),
-         Eigen::Vector3d(min.x(), min.y(), max.z()),
-         Eigen::Vector3d(max.x(), min.y(), max.z()),
-         Eigen::Vector3d(max.x(), max.y(), max.z()),
-         Eigen::Vector3d(min.x(), max.y(), max.z())};
-  for (Eigen::Vector3d& corner : corners) {
-    corner = renderable.worldTransform * corner;
-  }
-
   const std::string label
       = labelPrefix.empty() ? "selection.bounds" : labelPrefix + ".bounds";
-  const std::array<std::pair<std::size_t, std::size_t>, 12> edges
-      = {std::pair<std::size_t, std::size_t>{0, 1},
-         {1, 2},
-         {2, 3},
-         {3, 0},
-         {4, 5},
-         {5, 6},
-         {6, 7},
-         {7, 4},
-         {0, 4},
-         {1, 5},
-         {2, 6},
-         {3, 7}};
-
-  lines.reserve(edges.size());
-  for (const auto& [from, to] : edges) {
-    appendLine(lines, corners[from], corners[to], rgba, label);
-  }
+  lines.reserve(12u);
+  appendTransformedBoundsEdges(
+      lines,
+      renderable.geometry.localBoundsMin,
+      renderable.geometry.localBoundsMax,
+      renderable.worldTransform,
+      rgba,
+      label);
 
   return lines;
 }
@@ -1583,6 +1598,48 @@ std::vector<DebugLineDescriptor> makeInertiaDebugLines(
       worldAxes,
       halfExtents,
       rgba(0.58, 0.44, 0.95, 0.82),
+      label);
+  return lines;
+}
+
+std::vector<DebugLineDescriptor> makeCollisionShapeDebugLines(
+    const dynamics::ShapeNode& shapeNode,
+    const DebugDrawOptions& options,
+    const std::string& labelPrefix)
+{
+  std::vector<DebugLineDescriptor> lines;
+  if (!options.drawCollisionShapeBounds
+      || !std::isfinite(options.collisionBoundsPadding)
+      || options.collisionBoundsPadding < 0.0) {
+    return lines;
+  }
+
+  if (shapeNode.getCollisionAspect() == nullptr) {
+    return lines;
+  }
+
+  const auto shape = shapeNode.getShape();
+  if (!shape) {
+    return lines;
+  }
+
+  auto geometry = describeShape(*shape);
+  if (!geometry || !geometry->hasLocalBounds) {
+    return lines;
+  }
+
+  const Eigen::Vector3d padding
+      = Eigen::Vector3d::Constant(options.collisionBoundsPadding);
+  const std::string label = labelPrefix.empty()
+                                ? "collision.bounds"
+                                : labelPrefix + ".collision_bounds";
+  lines.reserve(12u);
+  appendTransformedBoundsEdges(
+      lines,
+      geometry->localBoundsMin - padding,
+      geometry->localBoundsMax + padding,
+      shapeNode.getWorldTransform(),
+      rgba(0.2, 0.86, 0.43, 0.72),
       label);
   return lines;
 }
@@ -1779,6 +1836,28 @@ std::vector<DebugLineDescriptor> extractDebugLines(
             = skeleton->getName() + "/" + bodyNode->getName();
         auto inertiaLines = makeInertiaDebugLines(*bodyNode, options, label);
         lines.insert(lines.end(), inertiaLines.begin(), inertiaLines.end());
+      });
+    }
+  }
+
+  if (options.drawCollisionShapeBounds) {
+    for (std::size_t skeletonIndex = 0; skeletonIndex < world.getNumSkeletons();
+         ++skeletonIndex) {
+      const auto skeleton = world.getSkeleton(skeletonIndex);
+      if (!skeleton) {
+        continue;
+      }
+
+      skeleton->eachBodyNode([&](const dynamics::BodyNode* bodyNode) {
+        bodyNode->eachShapeNodeWith<dynamics::CollisionAspect>(
+            [&](const dynamics::ShapeNode* shapeNode) {
+              const std::string label = skeleton->getName() + "/"
+                                        + bodyNode->getName() + "/"
+                                        + shapeNode->getName();
+              auto boundsLines
+                  = makeCollisionShapeDebugLines(*shapeNode, options, label);
+              lines.insert(lines.end(), boundsLines.begin(), boundsLines.end());
+            });
       });
     }
   }

@@ -1013,6 +1013,55 @@ TEST(FilamentSceneExtraction, MakeSelectionDebugLines_ReturnsWorldSpaceBounds)
           .empty());
 }
 
+TEST(FilamentSceneExtraction, MakeCollisionShapeDebugLines_ReturnsBounds)
+{
+  auto world = World::create("world");
+  auto skeleton = Skeleton::create("robot");
+  auto [joint, body] = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  body->setName("body");
+  auto* shapeNode = body->createShapeNodeWith<dart::dynamics::CollisionAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d(2.0, 4.0, 6.0)));
+  shapeNode->setName("collision_box");
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(1.0, 2.0, 3.0);
+  joint->setTransformFromParentBodyNode(transform);
+  world->addSkeleton(skeleton);
+
+  EXPECT_TRUE(dart::gui::experimental::extractRenderables(*world).empty());
+
+  dart::gui::experimental::DebugDrawOptions options;
+  options.drawGrid = false;
+  options.drawWorldFrame = false;
+  options.drawContacts = false;
+  options.drawCollisionShapeBounds = true;
+  options.collisionBoundsPadding = 0.1;
+
+  const auto lines = dart::gui::experimental::makeCollisionShapeDebugLines(
+      *shapeNode, options, "robot/body/collision_box");
+
+  ASSERT_EQ(lines.size(), 12u);
+  EXPECT_EQ(lines.front().label, "robot/body/collision_box.collision_bounds");
+
+  Eigen::Vector3d min
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d max
+      = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
+  for (const auto& line : lines) {
+    min = min.cwiseMin(line.from).cwiseMin(line.to);
+    max = max.cwiseMax(line.from).cwiseMax(line.to);
+  }
+  EXPECT_TRUE(min.isApprox(Eigen::Vector3d(-0.1, -0.1, -0.1)));
+  EXPECT_TRUE(max.isApprox(Eigen::Vector3d(2.1, 4.1, 6.1)));
+
+  const auto extractedLines
+      = dart::gui::experimental::extractDebugLines(*world, options);
+  ASSERT_EQ(extractedLines.size(), lines.size());
+  EXPECT_EQ(
+      extractedLines.front().label,
+      "robot/body/collision_box.collision_bounds");
+}
+
 TEST(FilamentSceneExtraction, ExtractDebugLines_ReturnsGridAndFrameAxes)
 {
   auto world = World::create("world");
