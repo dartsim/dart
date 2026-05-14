@@ -49,6 +49,7 @@
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/heightmap_shape.hpp>
 #include <dart/dynamics/line_segment_shape.hpp>
+#include <dart/dynamics/mesh_material.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/multi_sphere_convex_hull_shape.hpp>
 #include <dart/dynamics/plane_shape.hpp>
@@ -109,6 +110,46 @@ void setShapeBoundingBoxBounds(
   const auto& bounds = shape.getBoundingBox();
   descriptor.size = bounds.getMax() - bounds.getMin();
   setLocalBounds(descriptor, bounds.getMin(), bounds.getMax());
+}
+
+Eigen::Vector4d toVector4d(const Eigen::Vector4f& value)
+{
+  return value.cast<double>();
+}
+
+MeshMaterialDescriptor makeMeshMaterialDescriptor(
+    const dynamics::MeshMaterial& material)
+{
+  MeshMaterialDescriptor descriptor;
+  descriptor.ambient = toVector4d(material.ambient);
+  descriptor.diffuse = toVector4d(material.diffuse);
+  descriptor.specular = toVector4d(material.specular);
+  descriptor.emissive = toVector4d(material.emissive);
+  descriptor.shininess = material.shininess;
+  descriptor.metallicFactor = material.metallicFactor;
+  descriptor.roughnessFactor = material.roughnessFactor;
+  descriptor.baseColorTexturePath = material.baseColorTexturePath;
+  descriptor.metallicTexturePath = material.metallicTexturePath;
+  descriptor.roughnessTexturePath = material.roughnessTexturePath;
+  descriptor.metallicRoughnessTexturePath
+      = material.metallicRoughnessTexturePath;
+  descriptor.normalTexturePath = material.normalTexturePath;
+  descriptor.occlusionTexturePath = material.occlusionTexturePath;
+  descriptor.emissiveTexturePath = material.emissiveTexturePath;
+  descriptor.textureImagePaths = material.textureImagePaths;
+  return descriptor;
+}
+
+MeshPartDescriptor makeMeshPartDescriptor(
+    const dynamics::MeshShape::SubMeshRange& range)
+{
+  MeshPartDescriptor descriptor;
+  descriptor.vertexOffset = range.vertexOffset;
+  descriptor.vertexCount = range.vertexCount;
+  descriptor.triangleOffset = range.triangleOffset;
+  descriptor.triangleCount = range.triangleCount;
+  descriptor.materialIndex = range.materialIndex;
+  return descriptor;
 }
 
 void setSoftMeshBounds(
@@ -605,6 +646,16 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
     descriptor.kind = ShapeKind::Mesh;
     descriptor.scale = mesh->getScale();
     descriptor.meshUri = mesh->getMeshUri();
+    descriptor.meshUsesMaterialColors
+        = mesh->getColorMode() == dynamics::MeshShape::MATERIAL_COLOR
+          && mesh->getNumMaterials() > 0u;
+    descriptor.meshTextureCoordComponents = mesh->getTextureCoordComponents();
+    for (const auto& material : mesh->getMaterials()) {
+      descriptor.meshMaterials.push_back(makeMeshMaterialDescriptor(material));
+    }
+    for (const auto& range : mesh->getSubMeshRanges()) {
+      descriptor.meshParts.push_back(makeMeshPartDescriptor(range));
+    }
     const auto triMesh = mesh->getTriMesh();
     if (triMesh != nullptr && !triMesh->getVertices().empty()) {
       Eigen::Vector3d min

@@ -52,6 +52,7 @@
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/heightmap_shape.hpp>
 #include <dart/dynamics/line_segment_shape.hpp>
+#include <dart/dynamics/mesh_material.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/multi_sphere_convex_hull_shape.hpp>
 #include <dart/dynamics/plane_shape.hpp>
@@ -81,6 +82,7 @@
 #include <iterator>
 #include <limits>
 #include <system_error>
+#include <utility>
 #include <vector>
 
 #include <cstdint>
@@ -96,6 +98,7 @@ using dart::dynamics::EllipsoidShape;
 using dart::dynamics::FreeJoint;
 using dart::dynamics::HeightmapShaped;
 using dart::dynamics::LineSegmentShape;
+using dart::dynamics::MeshMaterial;
 using dart::dynamics::MeshShape;
 using dart::dynamics::MultiSphereConvexHullShape;
 using dart::dynamics::PlaneShape;
@@ -150,6 +153,29 @@ protected:
   {
     mVolume = 0.0;
     mIsVolumeDirty = false;
+  }
+};
+
+class MeshDescriptorHarness final : public MeshShape
+{
+public:
+  using MeshShape::MeshShape;
+  using MeshShape::SubMeshRange;
+
+  void setMaterials(std::vector<MeshMaterial> materials)
+  {
+    mMaterials = std::move(materials);
+  }
+
+  void setSubMeshRanges(std::vector<SubMeshRange> ranges)
+  {
+    mSubMeshRanges = std::move(ranges);
+  }
+
+  void setTextureCoords(std::vector<Eigen::Vector3d> coords, int components)
+  {
+    mTextureCoords = std::move(coords);
+    mTextureCoordComponents = components;
   }
 };
 
@@ -493,13 +519,74 @@ TEST(
   triMesh->addVertex(0.0, 0.0, 0.0);
   triMesh->addVertex(1.0, 0.0, 0.0);
   triMesh->addVertex(0.0, 1.0, 0.0);
+  triMesh->addVertex(1.0, 1.0, 0.0);
   triMesh->addTriangle(0, 1, 2);
-  const auto mesh = describeShape(
-      MeshShape(Eigen::Vector3d(2.0, 3.0, 4.0), triMesh, dart::common::Uri{}));
+  triMesh->addTriangle(1, 3, 2);
+  MeshDescriptorHarness meshShape(
+      Eigen::Vector3d(2.0, 3.0, 4.0), triMesh, dart::common::Uri{});
+  meshShape.setColorMode(MeshShape::MATERIAL_COLOR);
+
+  std::vector<MeshMaterial> materials(2);
+  materials[0].diffuse = Eigen::Vector4f(0.2f, 0.3f, 0.4f, 0.75f);
+  materials[0].metallicFactor = 0.25f;
+  materials[0].roughnessFactor = 0.65f;
+  materials[0].baseColorTexturePath = "textures/base_color.png";
+  materials[0].metallicRoughnessTexturePath = "textures/metal_rough.png";
+  materials[0].textureImagePaths = {"textures/legacy_base.png"};
+  materials[1].diffuse = Eigen::Vector4f(0.7f, 0.6f, 0.5f, 1.0f);
+  materials[1].emissive = Eigen::Vector4f(0.1f, 0.2f, 0.3f, 1.0f);
+  materials[1].normalTexturePath = "textures/normal.png";
+  meshShape.setMaterials(std::move(materials));
+
+  std::vector<MeshDescriptorHarness::SubMeshRange> ranges(2);
+  ranges[0].vertexOffset = 0u;
+  ranges[0].vertexCount = 3u;
+  ranges[0].triangleOffset = 0u;
+  ranges[0].triangleCount = 1u;
+  ranges[0].materialIndex = 0u;
+  ranges[1].vertexOffset = 1u;
+  ranges[1].vertexCount = 3u;
+  ranges[1].triangleOffset = 1u;
+  ranges[1].triangleCount = 1u;
+  ranges[1].materialIndex = 1u;
+  meshShape.setSubMeshRanges(std::move(ranges));
+  meshShape.setTextureCoords(
+      {Eigen::Vector3d(0.0, 0.0, 0.0),
+       Eigen::Vector3d(1.0, 0.0, 0.0),
+       Eigen::Vector3d(0.0, 1.0, 0.0),
+       Eigen::Vector3d(1.0, 1.0, 0.0)},
+      2);
+
+  const auto mesh = describeShape(meshShape);
   ASSERT_TRUE(mesh.has_value());
   EXPECT_EQ(mesh->kind, ShapeKind::Mesh);
   EXPECT_TRUE(mesh->scale.isApprox(Eigen::Vector3d(2.0, 3.0, 4.0)));
   EXPECT_TRUE(mesh->meshUri.empty());
+  EXPECT_TRUE(mesh->meshUsesMaterialColors);
+  EXPECT_EQ(mesh->meshTextureCoordComponents, 2);
+  ASSERT_EQ(mesh->meshMaterials.size(), 2u);
+  EXPECT_TRUE(mesh->meshMaterials[0].diffuse.isApprox(
+      Eigen::Vector4d(0.2, 0.3, 0.4, 0.75), 1e-6));
+  EXPECT_NEAR(mesh->meshMaterials[0].metallicFactor, 0.25, 1e-6);
+  EXPECT_NEAR(mesh->meshMaterials[0].roughnessFactor, 0.65, 1e-6);
+  EXPECT_EQ(
+      mesh->meshMaterials[0].baseColorTexturePath, "textures/base_color.png");
+  EXPECT_EQ(
+      mesh->meshMaterials[0].metallicRoughnessTexturePath,
+      "textures/metal_rough.png");
+  ASSERT_EQ(mesh->meshMaterials[0].textureImagePaths.size(), 1u);
+  EXPECT_EQ(
+      mesh->meshMaterials[0].textureImagePaths[0], "textures/legacy_base.png");
+  EXPECT_TRUE(mesh->meshMaterials[1].emissive.isApprox(
+      Eigen::Vector4d(0.1, 0.2, 0.3, 1.0), 1e-6));
+  EXPECT_EQ(mesh->meshMaterials[1].normalTexturePath, "textures/normal.png");
+  ASSERT_EQ(mesh->meshParts.size(), 2u);
+  EXPECT_EQ(mesh->meshParts[0].triangleOffset, 0u);
+  EXPECT_EQ(mesh->meshParts[0].triangleCount, 1u);
+  EXPECT_EQ(mesh->meshParts[0].materialIndex, 0u);
+  EXPECT_EQ(mesh->meshParts[1].triangleOffset, 1u);
+  EXPECT_EQ(mesh->meshParts[1].triangleCount, 1u);
+  EXPECT_EQ(mesh->meshParts[1].materialIndex, 1u);
   ASSERT_TRUE(mesh->hasLocalBounds);
   EXPECT_TRUE(mesh->localBoundsMin.isApprox(Eigen::Vector3d(0.0, 0.0, 0.0)));
   EXPECT_TRUE(mesh->localBoundsMax.isApprox(Eigen::Vector3d(2.0, 3.0, 0.0)));

@@ -44,6 +44,48 @@ void defGuiExperimentalModule(nb::module_& m)
       .value("Plane", gui::ShapeKind::Plane)
       .value("Unsupported", gui::ShapeKind::Unsupported);
 
+  nb::class_<gui::MeshMaterialDescriptor>(m, "MeshMaterialDescriptor")
+      .def(nb::init<>())
+      .def_rw("ambient", &gui::MeshMaterialDescriptor::ambient)
+      .def_rw("diffuse", &gui::MeshMaterialDescriptor::diffuse)
+      .def_rw("specular", &gui::MeshMaterialDescriptor::specular)
+      .def_rw("emissive", &gui::MeshMaterialDescriptor::emissive)
+      .def_rw("shininess", &gui::MeshMaterialDescriptor::shininess)
+      .def_rw("metallic_factor", &gui::MeshMaterialDescriptor::metallicFactor)
+      .def_rw("roughness_factor", &gui::MeshMaterialDescriptor::roughnessFactor)
+      .def_rw(
+          "base_color_texture_path",
+          &gui::MeshMaterialDescriptor::baseColorTexturePath)
+      .def_rw(
+          "metallic_texture_path",
+          &gui::MeshMaterialDescriptor::metallicTexturePath)
+      .def_rw(
+          "roughness_texture_path",
+          &gui::MeshMaterialDescriptor::roughnessTexturePath)
+      .def_rw(
+          "metallic_roughness_texture_path",
+          &gui::MeshMaterialDescriptor::metallicRoughnessTexturePath)
+      .def_rw(
+          "normal_texture_path",
+          &gui::MeshMaterialDescriptor::normalTexturePath)
+      .def_rw(
+          "occlusion_texture_path",
+          &gui::MeshMaterialDescriptor::occlusionTexturePath)
+      .def_rw(
+          "emissive_texture_path",
+          &gui::MeshMaterialDescriptor::emissiveTexturePath)
+      .def_rw(
+          "texture_image_paths",
+          &gui::MeshMaterialDescriptor::textureImagePaths);
+
+  nb::class_<gui::MeshPartDescriptor>(m, "MeshPartDescriptor")
+      .def(nb::init<>())
+      .def_rw("vertex_offset", &gui::MeshPartDescriptor::vertexOffset)
+      .def_rw("vertex_count", &gui::MeshPartDescriptor::vertexCount)
+      .def_rw("triangle_offset", &gui::MeshPartDescriptor::triangleOffset)
+      .def_rw("triangle_count", &gui::MeshPartDescriptor::triangleCount)
+      .def_rw("material_index", &gui::MeshPartDescriptor::materialIndex);
+
   nb::class_<gui::GeometryDescriptor>(m, "GeometryDescriptor")
       .def(nb::init<>())
       .def_rw("kind", &gui::GeometryDescriptor::kind)
@@ -66,10 +108,17 @@ void defGuiExperimentalModule(nb::module_& m)
       .def_rw("point_size", &gui::GeometryDescriptor::pointSize)
       .def_rw("voxel_size", &gui::GeometryDescriptor::voxelSize)
       .def_rw("has_local_bounds", &gui::GeometryDescriptor::hasLocalBounds)
+      .def_rw(
+          "mesh_uses_material_colors",
+          &gui::GeometryDescriptor::meshUsesMaterialColors)
+      .def_rw(
+          "mesh_texture_coord_components",
+          &gui::GeometryDescriptor::meshTextureCoordComponents)
       .def_rw("mesh_uri", &gui::GeometryDescriptor::meshUri)
       .def_rw("shape_type", &gui::GeometryDescriptor::shapeType)
-      .def_rw(
-          "unsupported_reason", &gui::GeometryDescriptor::unsupportedReason);
+      .def_rw("unsupported_reason", &gui::GeometryDescriptor::unsupportedReason)
+      .def_rw("mesh_materials", &gui::GeometryDescriptor::meshMaterials)
+      .def_rw("mesh_parts", &gui::GeometryDescriptor::meshParts);
 
   nb::class_<gui::MaterialDescriptor>(m, "MaterialDescriptor")
       .def(nb::init<>())

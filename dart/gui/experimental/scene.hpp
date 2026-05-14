@@ -78,6 +78,34 @@ enum class ShapeKind
   Unsupported
 };
 
+struct MeshMaterialDescriptor
+{
+  Eigen::Vector4d ambient{0.2, 0.2, 0.2, 1.0};
+  Eigen::Vector4d diffuse{0.8, 0.8, 0.8, 1.0};
+  Eigen::Vector4d specular{0.0, 0.0, 0.0, 1.0};
+  Eigen::Vector4d emissive{0.0, 0.0, 0.0, 1.0};
+  double shininess = 0.0;
+  double metallicFactor = 1.0;
+  double roughnessFactor = 1.0;
+  std::string baseColorTexturePath;
+  std::string metallicTexturePath;
+  std::string roughnessTexturePath;
+  std::string metallicRoughnessTexturePath;
+  std::string normalTexturePath;
+  std::string occlusionTexturePath;
+  std::string emissiveTexturePath;
+  std::vector<std::string> textureImagePaths;
+};
+
+struct MeshPartDescriptor
+{
+  std::size_t vertexOffset = 0u;
+  std::size_t vertexCount = 0u;
+  std::size_t triangleOffset = 0u;
+  std::size_t triangleCount = 0u;
+  unsigned int materialIndex = 0u;
+};
+
 struct GeometryDescriptor
 {
   ShapeKind kind = ShapeKind::Unsupported;
@@ -100,9 +128,13 @@ struct GeometryDescriptor
   double pointSize = 1.0;
   double voxelSize = 1.0;
   bool hasLocalBounds = false;
+  bool meshUsesMaterialColors = false;
+  int meshTextureCoordComponents = 0;
   std::string meshUri;
   std::string shapeType;
   std::string unsupportedReason;
+  std::vector<MeshMaterialDescriptor> meshMaterials;
+  std::vector<MeshPartDescriptor> meshParts;
 };
 
 struct MaterialDescriptor

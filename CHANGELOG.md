@@ -131,7 +131,8 @@
     `ConvexMeshShape`, `PointCloudShape`, `HeightmapShape`, and
     `SoftMeshShape`, plus `VoxelGridShape` when OctoMap is available, with the
     MVP scene validating that all enabled shape fixtures are extracted and
-    rendered and unsupported shapes produce diagnostic descriptors.
+    rendered, `MeshShape` material/submesh metadata exposed through descriptors,
+    and unsupported shapes producing diagnostic descriptors.
   - Fix SEGV in `ImFontAtlas::AddFontFromMemoryCompressedTTF` when null pointer is passed as compressed font data. ([#2516](https://github.com/dartsim/dart/issues/2516))
   - Added headless rendering support via `ViewerConfig` and pbuffer graphics context for CI pipelines and batch frame capture. Includes `Viewer::captureBuffer()` for raw RGBA pixel readback and a new `headless-rendering` CI job. ([#2466](https://github.com/dartsim/dart/pull/2466))
   - Added `ImGuiViewer` construction from `ViewerConfig` to support headless ImGui rendering and example frame capture workflows.

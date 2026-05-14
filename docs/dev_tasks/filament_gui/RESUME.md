@@ -158,6 +158,9 @@ convex-mesh, point-cloud, heightmap, soft-mesh, and voxel-grid fixtures, and
 the example startup checks that all enabled descriptors are extracted and
 converted into Filament renderables. Unsupported shapes now produce diagnostic
 descriptors instead of being silently dropped by the extraction layer.
+`MeshShape` material, texture-path, texture-coordinate, and submesh metadata now
+flow through renderer-hidden descriptors, and the Filament example consumes
+that descriptor metadata for per-part mesh materials.
 
 `docs/dev_tasks/filament_gui/07-completion-audit.md` maps the current
 implementation, verification evidence, and missing promotion gates. Use that

@@ -31,6 +31,16 @@ def test_experimental_extract_renderables_from_world():
     assert hasattr(geometry, "voxel_centers")
     assert hasattr(geometry, "voxel_size")
     assert hasattr(geometry, "unsupported_reason")
+    assert hasattr(geometry, "mesh_uses_material_colors")
+    assert hasattr(geometry, "mesh_texture_coord_components")
+    assert hasattr(geometry, "mesh_materials")
+    assert hasattr(geometry, "mesh_parts")
+    material_descriptor = dart.gui.experimental.MeshMaterialDescriptor()
+    assert hasattr(material_descriptor, "base_color_texture_path")
+    assert hasattr(material_descriptor, "metallic_roughness_texture_path")
+    part_descriptor = dart.gui.experimental.MeshPartDescriptor()
+    assert hasattr(part_descriptor, "triangle_count")
+    assert hasattr(part_descriptor, "material_index")
     assert np.allclose(descriptor.geometry.size, [1.0, 2.0, 3.0])
     assert descriptor.material.visible is True
 

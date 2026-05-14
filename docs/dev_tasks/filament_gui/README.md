@@ -29,13 +29,15 @@
   Filament sampler material. It also loads an existing textured WAM Collada
   mesh, the full WAM URDF skeleton, a required Atlas DAE torso mesh, and a full
   Atlas SDF robot fixture, and a required four-panel glTF/PBR environment
-  layout. It uses `MeshShape` material base colors, metallic/roughness factors,
-  emissive colors, UV metadata, and typed PNG/JPEG texture image paths for base
-  color, metallic, roughness, combined metallic-roughness, normal, occlusion,
-  and emissive maps when available. Checked-in glTF PBR fixtures now validate
-  single- and multi-material authored texture slots, alpha-bearing material
-  factors, UV metadata, and submesh ranges through the real Assimp importer and
-  are loaded by the Filament smoke scene.
+  layout. The experimental scene layer exposes `MeshShape` material base
+  colors, metallic/roughness factors, emissive colors, UV metadata, submesh
+  ranges, and typed PNG/JPEG texture image paths for base color, metallic,
+  roughness, combined metallic-roughness, normal, occlusion, and emissive maps
+  when available, and the Filament example consumes that descriptor metadata.
+  Checked-in glTF PBR fixtures now validate single- and multi-material authored
+  texture slots, alpha-bearing material factors, UV metadata, and submesh
+  ranges through the real Assimp importer and are loaded by the Filament smoke
+  scene.
   Transparent lit material variants cover alpha-bearing solid, textured, and
   mesh visual paths; broader robot/environment visual review is still pending.
 - `dart-gui-experimental` now exposes backend-hidden debug line descriptors for
@@ -201,8 +203,8 @@ the appropriate major DART release.
    `Filament_ROOT=$CONDA_PREFIX` discovers headers, libraries, and `matc`.
 5. Expand debug overlay and interaction scenario coverage beyond the MVP,
    drag-and-drop, and G1 IK fixtures.
-6. Continue moving reusable viewer state out of the Filament example once the
-   API boundary is stable enough.
+6. Continue moving reusable renderer resource management out of the Filament
+   example once the API boundary is stable enough.
 7. Keep the MVP ImGui overlay example-local unless promotion needs user
    extension points; then add DART-owned panel/tool abstractions instead of
    exposing raw ImGui APIs.

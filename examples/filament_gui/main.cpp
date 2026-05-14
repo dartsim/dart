@@ -152,6 +152,9 @@ using dart::dynamics::VoxelGridShape;
 
 using dart::examples::filament_gui::DebugDrawOptions;
 using dart::examples::filament_gui::DebugLineDescriptor;
+using dart::examples::filament_gui::GeometryDescriptor;
+using dart::examples::filament_gui::MeshMaterialDescriptor;
+using dart::examples::filament_gui::MeshPartDescriptor;
 using dart::examples::filament_gui::OrbitCamera;
 using dart::examples::filament_gui::OrbitCameraUpdate;
 using dart::examples::filament_gui::PickRay;
@@ -2165,6 +2168,15 @@ float3 toFloat3(const Eigen::Vector3d& vector)
       static_cast<float>(vector.z())};
 }
 
+float4 toFloat4(const Eigen::Vector4d& vector)
+{
+  return {
+      static_cast<float>(vector.x()),
+      static_cast<float>(vector.y()),
+      static_cast<float>(vector.z()),
+      static_cast<float>(vector.w())};
+}
+
 float3 normalizeOr(const float3& vector, const float3& fallback)
 {
   const float lengthSquared = vector.x * vector.x + vector.y * vector.y
@@ -3689,6 +3701,7 @@ std::optional<Renderable> createMeshRenderable(
     filament::Engine& engine,
     const MaterialSet& materials,
     TextureCache& textureCache,
+    const GeometryDescriptor& geometry,
     const MeshShape& meshShape,
     const float4& color)
 {
@@ -3702,11 +3715,11 @@ std::optional<Renderable> createMeshRenderable(
     return std::nullopt;
   }
 
-  const Eigen::Vector3d& scale = meshShape.getScale();
+  const Eigen::Vector3d& scale = geometry.scale;
   const filament::math::short4 tangent = {0, 0, 0, 32767};
   const auto textureCoords = meshShape.getTextureCoords();
   const bool hasTextureCoords
-      = meshShape.getTextureCoordComponents() >= 2
+      = geometry.meshTextureCoordComponents >= 2
         && textureCoords.size() == triMesh->getVertices().size();
 
   std::vector<Vertex> vertices;
@@ -3777,25 +3790,21 @@ std::optional<Renderable> createMeshRenderable(
     MeshMaterialState state;
     state.baseColor = color;
 
-    if (meshShape.getColorMode() != MeshShape::MATERIAL_COLOR
-        || meshShape.getNumMaterials() == 0) {
+    if (!geometry.meshUsesMaterialColors || geometry.meshMaterials.empty()) {
       return state;
     }
 
-    const auto* meshMaterial = meshShape.getMaterial(materialIndex);
-    if (meshMaterial != nullptr) {
+    if (materialIndex < geometry.meshMaterials.size()) {
+      const MeshMaterialDescriptor& meshMaterial
+          = geometry.meshMaterials[materialIndex];
       state.followsDescriptorColor = false;
-      state.baseColor = {
-          meshMaterial->diffuse.x(),
-          meshMaterial->diffuse.y(),
-          meshMaterial->diffuse.z(),
-          meshMaterial->diffuse.w()};
-      state.metallic = meshMaterial->metallicFactor;
-      state.roughness = meshMaterial->roughnessFactor;
+      state.baseColor = toFloat4(meshMaterial.diffuse);
+      state.metallic = static_cast<float>(meshMaterial.metallicFactor);
+      state.roughness = static_cast<float>(meshMaterial.roughnessFactor);
       state.emissiveColor = {
-          meshMaterial->emissive.x(),
-          meshMaterial->emissive.y(),
-          meshMaterial->emissive.z()};
+          static_cast<float>(meshMaterial.emissive.x()),
+          static_cast<float>(meshMaterial.emissive.y()),
+          static_cast<float>(meshMaterial.emissive.z())};
 
       if (hasTextureCoords) {
         const auto loadBinding
@@ -3806,26 +3815,26 @@ std::optional<Renderable> createMeshRenderable(
         };
 
         const std::string& baseColorTexturePath
-            = !meshMaterial->baseColorTexturePath.empty()
-                  ? meshMaterial->baseColorTexturePath
-                  : (!meshMaterial->textureImagePaths.empty()
-                         ? meshMaterial->textureImagePaths[0]
-                         : meshMaterial->baseColorTexturePath);
+            = !meshMaterial.baseColorTexturePath.empty()
+                  ? meshMaterial.baseColorTexturePath
+                  : (!meshMaterial.textureImagePaths.empty()
+                         ? meshMaterial.textureImagePaths[0]
+                         : meshMaterial.baseColorTexturePath);
         state.textures.baseColor = loadBinding(
             baseColorTexturePath, TextureColorSpace::Srgb);
         state.textures.metallic = loadBinding(
-            meshMaterial->metallicTexturePath, TextureColorSpace::Linear);
+            meshMaterial.metallicTexturePath, TextureColorSpace::Linear);
         state.textures.roughness = loadBinding(
-            meshMaterial->roughnessTexturePath, TextureColorSpace::Linear);
+            meshMaterial.roughnessTexturePath, TextureColorSpace::Linear);
         state.textures.metallicRoughness = loadBinding(
-            meshMaterial->metallicRoughnessTexturePath,
+            meshMaterial.metallicRoughnessTexturePath,
             TextureColorSpace::Linear);
         state.textures.normal = loadBinding(
-            meshMaterial->normalTexturePath, TextureColorSpace::Linear);
+            meshMaterial.normalTexturePath, TextureColorSpace::Linear);
         state.textures.occlusion = loadBinding(
-            meshMaterial->occlusionTexturePath, TextureColorSpace::Linear);
+            meshMaterial.occlusionTexturePath, TextureColorSpace::Linear);
         state.textures.emissive = loadBinding(
-            meshMaterial->emissiveTexturePath, TextureColorSpace::Srgb);
+            meshMaterial.emissiveTexturePath, TextureColorSpace::Srgb);
       }
     }
 
@@ -3854,12 +3863,11 @@ std::optional<Renderable> createMeshRenderable(
   };
 
   const Bounds bounds = computeBounds(vertices);
-  const auto subMeshRanges = meshShape.getSubMeshRanges();
-  std::vector<MeshShape::SubMeshRange> parts;
-  parts.reserve(subMeshRanges.size());
+  std::vector<MeshPartDescriptor> parts;
+  parts.reserve(geometry.meshParts.size());
   std::size_t coveredTriangleCount = 0;
-  bool useSubMeshes = !subMeshRanges.empty();
-  for (const MeshShape::SubMeshRange& range : subMeshRanges) {
+  bool useSubMeshes = !geometry.meshParts.empty();
+  for (const MeshPartDescriptor& range : geometry.meshParts) {
     if (range.triangleCount == 0) {
       continue;
     }
@@ -4133,7 +4141,7 @@ std::optional<Renderable> createRenderableFromDescriptor(
       if (const auto* meshShape = dynamic_cast<const MeshShape*>(
               descriptor.shape)) {
         renderable = createMeshRenderable(
-            engine, materials, textureCache, *meshShape, color);
+            engine, materials, textureCache, descriptor.geometry, *meshShape, color);
       }
       break;
     case ShapeKind::Plane:

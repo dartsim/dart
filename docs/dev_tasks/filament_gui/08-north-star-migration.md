@@ -145,13 +145,14 @@ not a drop-in OSG replacement.
 
 - **Existing support:** OSG mesh rendering uses DART's mesh import path and
   visual aspects, but the current public API is tied to OSG render nodes.
-- **Filament gap:** Filament has a stronger PBR renderer, but DART needs a
-  stable material and asset descriptor layer for imported mesh materials,
-  texture slots, alpha behavior, UV sets, emissive terms, resource caching, and
-  update invalidation.
-- **North-star plan:** Promote the mesh/material descriptors out of the MVP
-  example. Make material behavior testable without a graphics context, and
-  keep backend material instances private.
+- **Filament gap:** Filament has a stronger PBR renderer, and the experimental
+  descriptors now carry imported mesh materials, texture paths, texture
+  coordinate availability, and submesh ranges, but DART still needs stable asset
+  descriptors for alpha behavior, UV set policy, resource caching, and update
+  invalidation.
+- **North-star plan:** Continue promoting mesh/material behavior out of the MVP
+  example. Keep material behavior testable without a graphics context, and keep
+  backend material instances private.
 
 ### 5. Lighting, environment, and shadows
 
@@ -351,8 +352,8 @@ experimental surface is ready to promote.
 **Deliverables**
 
 - Complete shape descriptor coverage for DART-maintained examples.
-- Promote material, texture, alpha, UV, and mesh-subset metadata out of the
-  MVP example and into testable descriptor code.
+- Continue promoting material, texture, alpha, UV, and mesh-subset metadata out
+  of the MVP example and into testable descriptor code.
 - Extend fallback diagnostics to unsupported assets.
 
 **Exit criteria**
