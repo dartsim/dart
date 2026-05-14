@@ -123,13 +123,17 @@
   run. It has not produced an installable feedstock yet, but its planned
   `filament-static` output is the build-time package DART should consume once
   it is available.
+- The north-star migration plan now records the intended complete migration to
+  Filament, the no-renderer-backward-compatibility stance, the OSG and
+  alternative-renderer capability gaps that still need DART-owned abstractions,
+  and the multi-phase path from MVP example to promoted `dart::gui`.
 
 ## Goal
 
-Evaluate and, if it passes explicit gates, promote a Filament + GLFW + Dear
-ImGui implementation as DART's built-in visualization solution under
-`dart::gui`, eventually replacing both the current OSG GUI and the Raylib smoke
-path in the appropriate major DART release.
+Evaluate and, if it passes explicit gates, promote a Filament + GLFW + private
+Dear ImGui implementation as DART's built-in visualization solution under
+`dart::gui`, replacing both the current OSG GUI and the Raylib smoke path in
+the appropriate major DART release.
 
 ## Non-goals
 
@@ -138,7 +142,8 @@ path in the appropriate major DART release.
   built-in DART feature.
 - Exposing Filament, GLFW, Dear ImGui, OpenGL, Vulkan, or Metal types in public
   DART headers.
-- Preserving OSG-specific extension points without an explicit migration story.
+- Preserving OSG-specific extension points or renderer source compatibility by
+  default.
 
 ## Key decisions
 
@@ -164,25 +169,29 @@ path in the appropriate major DART release.
 - Testing, CI, and packaging gates: `docs/dev_tasks/filament_gui/05-testing.md`
 - Visual quality requirements: `docs/dev_tasks/filament_gui/06-visual-quality.md`
 - Completion audit: `docs/dev_tasks/filament_gui/07-completion-audit.md`
+- North-star migration plan: `docs/dev_tasks/filament_gui/08-north-star-migration.md`
 - Resume prompt: `docs/dev_tasks/filament_gui/RESUME.md`
 
 ## Immediate next steps
 
-1. Let the new Ubuntu Filament smoke job run on hosted CI and fix any runner
+1. Use the north-star migration plan as the gate for any new public GUI API:
+   DART-owned concepts only, no public backend types, and no OSG renderer
+   source-compatibility promise.
+2. Let the new Ubuntu Filament smoke job run on hosted CI and fix any runner
    differences in the explicit pinned fetch path.
-2. Add broader human visual review and larger authored environment/PBR assets
+3. Add broader human visual review and larger authored environment/PBR assets
    for the visual-quality gate. The current screenshot analyzer is a smoke check
    for shadow/lighting contrast, not a replacement for broader visual review.
-3. Track the conda-forge staged-recipes PR as the preferred future packaging
+4. Track the conda-forge staged-recipes PR as the preferred future packaging
    path, but do not block Linux smoke coverage on it. After it merges, add the
    `filament-static` package to the Pixi toolchain and validate that
    `Filament_ROOT=$CONDA_PREFIX` discovers headers, libraries, and `matc`.
-4. Expand debug overlay and interaction scenario coverage beyond the MVP
+5. Expand debug overlay and interaction scenario coverage beyond the MVP
    fixture and first drag-and-drop fixture.
-5. Continue moving reusable viewer state out of the Filament example once the
+6. Continue moving reusable viewer state out of the Filament example once the
    API boundary is stable enough.
-6. Keep the MVP ImGui overlay example-local unless promotion needs user
+7. Keep the MVP ImGui overlay example-local unless promotion needs user
    extension points; then add DART-owned panel/tool abstractions instead of
    exposing raw ImGui APIs.
-7. Complete remaining platform and GUI option-matrix wheel evidence before
+8. Complete remaining platform and GUI option-matrix wheel evidence before
    promoting anything to `dart-gui`.

@@ -2,9 +2,14 @@
 
 ## Guiding principle
 
-Migrate DART-maintained workflows first. Downstream OSG-specific extension
-points should not define the replacement API unless maintainers explicitly
-accept them as supported long-term workflows.
+Migrate DART-maintained workflows first. Downstream OSG-specific renderer
+extension points should not define the replacement API unless maintainers
+explicitly accept them as supported long-term DART concepts.
+
+The more detailed north-star plan is
+`docs/dev_tasks/filament_gui/08-north-star-migration.md`. That plan is the
+source of truth for the intended complete migration to Filament, the
+no-renderer-backward-compatibility stance, and the multi-phase promotion path.
 
 ## Proposed sequence
 
