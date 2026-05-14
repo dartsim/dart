@@ -69,7 +69,7 @@ renderable descriptors, common primitive descriptors, TriMesh mesh references,
 finite plane proxies, visual shadow flags, debug line descriptors, bounds-based
 picking, simple selection, selected-frame translation, plane dragging, orbit
 camera math, lifecycle state, screenshot storage, constrained Python bindings,
-and headless smoke tests.
+renderable set update planning, and headless smoke tests.
 
 ## Alternative renderer survey
 
@@ -249,7 +249,9 @@ not a drop-in OSG replacement.
 - **Existing support:** OSG scene graph nodes own many renderer resources
   implicitly, and DART's current GUI maps frame lifetimes into node lifetimes.
 - **Filament gap:** Filament resources are explicit and must be destroyed in
-  the correct engine context.
+  the correct engine context. The current experimental API can plan renderable
+  add/remove/visibility updates from descriptor snapshots, but full renderer
+  caches still live in the MVP example.
 - **North-star plan:** Centralize renderer resource caches behind the GUI
   implementation: mesh buffers, material instances, textures, samplers,
   renderable entities, debug buffers, and per-world descriptor snapshots.
