@@ -38,7 +38,13 @@ unverified external and finalization gates:
   `CI Windows` / `Tests (Release)` before CMake ran; Windows `config`,
   `config-py`, and `config-install` now use `bash -lc` so the native-only
   collision override defaults are interpreted by Bash rather than by Pixi's
-  Windows shell parser.
+  Windows shell parser. The following PR refresh reached past that parser
+  failure and exposed an Alt Linux configure failure in
+  `CI Alt Linux (Docker)` / `Alt Linux repro (Docker)`: Eigen 5 satisfies
+  DART's minimum Eigen requirement, but `find_package(Eigen3 3.4 ...)` rejects
+  a different major version. The experimental dependency lookup now follows the
+  core Eigen finder pattern by finding Eigen3 first and then enforcing the
+  explicit `Eigen3_VERSION >= 3.4` check.
 - Downstream migration/deprecation evidence is still missing.
 - Final compatibility-facade retention/deprecation evidence is still missing:
   the documented decision is to delete old external-engine runtime
@@ -81,6 +87,13 @@ Current audited state:
   `DART_BUILD_COLLISION_BULLET=ON` was still set in the default Pixi
   environment. The pushed repair changes that custom configure to keep
   FCL/Bullet/ODE and collision reference tests/benchmarks `OFF`.
+- Follow-up PR CI state after the Windows parser repair: run `25873507050`,
+  job `76034633035` (`CI Alt Linux (Docker)` /
+  `Alt Linux repro (Docker)`) failed during CMake configure because Alt Linux
+  provides Eigen 5.0.0 and the experimental dependency helper requested
+  `find_package(Eigen3 3.4 ...)` directly. The current repair removes the
+  requested version from that `find_package` path and keeps DART's explicit
+  `>=3.4` post-find check.
 - Follow-up local validation after the audit started from
   `1da52368282` and found that `pixi run test-all` failed in `build-tests`
   because a stale cached `LIBCCD_LIBRARY` pointed at a removed

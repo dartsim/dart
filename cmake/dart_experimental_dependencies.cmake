@@ -82,9 +82,11 @@ endif()
 dart_experimental_find_package(
   NAME Eigen3
   PACKAGE Eigen3
-  VERSION 3.4
   REQUIRED
 )
+if(Eigen3_VERSION VERSION_LESS 3.4)
+  message(FATAL_ERROR "Eigen version>=3.4 is required, but found ${Eigen3_VERSION}")
+endif()
 
 # EnTT - Entity Component System library
 dart_experimental_find_package(

@@ -133,6 +133,24 @@ These gates are still required before the single north-star PR is complete.
     bodies in `bash -lc`, matching the existing Windows test tasks, so the
     collision override defaults are interpreted by Bash rather than by Pixi's
     Windows shell parser.
+- Alt Linux PR CI Eigen package compatibility repair:
+  - Run/job: `25873507050` / `76034633035` (`CI Alt Linux (Docker)` /
+    `Alt Linux repro (Docker)`).
+  - Result: failed during CMake configure before compilation.
+  - Root cause: `dart_experimental_dependencies.cmake` requested
+    `find_package(Eigen3 3.4 ...)` through the experimental dependency helper.
+    Alt Linux provides an Eigen 5 CMake config, and Eigen's config-version file
+    rejects a requested lower major version even though Eigen 5 satisfies
+    DART's `>=3.4` minimum requirement.
+  - Repair: find Eigen3 without passing a requested version, then enforce the
+    same explicit `Eigen3_VERSION VERSION_LESS 3.4` minimum check used by the
+    core Eigen finder.
+  - Focused local validation: `pixi run config` passed with the normal Pixi
+    Eigen package and native-only collision defaults. A separate native-only
+    CMake configure against a temporary fake Eigen 5 package whose version
+    file rejects `Eigen3 3.4` requests also passed, with
+    `simulation-experimental: Eigen3✓` and build files generated in
+    `build/default/cpp/Release-fake-eigen5-altlinux`.
 
 ## Current Full-Validation Repair
 
