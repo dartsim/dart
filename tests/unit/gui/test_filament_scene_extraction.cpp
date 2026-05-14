@@ -769,6 +769,36 @@ TEST(
 }
 
 TEST(
+    FilamentSceneExtraction,
+    PickNearestRenderable_CylinderUsesPrimitiveSurfaceNormal)
+{
+  auto world = World::create("world");
+  auto skeleton = Skeleton::create("cylinder_robot");
+  auto [joint, body] = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(2.0, 0.0, 0.0);
+  joint->setTransformFromParentBodyNode(transform);
+  body->createShapeNodeWith<VisualAspect>(
+      std::make_shared<CylinderShape>(1.0, 2.0));
+  world->addSkeleton(skeleton);
+
+  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  ASSERT_EQ(renderables.size(), 1u);
+
+  const dart::gui::experimental::PickRay ray{
+      Eigen::Vector3d(0.0, 0.5, 0.0), Eigen::Vector3d::UnitX()};
+  const auto hit
+      = dart::gui::experimental::pickNearestRenderable(renderables, ray);
+
+  const double expectedX = 2.0 - std::sqrt(0.75);
+  ASSERT_TRUE(hit.has_value());
+  EXPECT_NEAR(hit->distance, expectedX, 1e-12);
+  EXPECT_TRUE(hit->point.isApprox(Eigen::Vector3d(expectedX, 0.5, 0.0)));
+  EXPECT_TRUE(hit->normal.isApprox(
+      Eigen::Vector3d(-std::sqrt(0.75), 0.5, 0.0).normalized()));
+}
+
+TEST(
     FilamentSceneExtraction, PickNearestRenderable_IgnoresHiddenAndMissedShapes)
 {
   auto world = World::create("world");

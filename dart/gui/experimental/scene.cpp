@@ -392,6 +392,72 @@ std::optional<LocalBoundsHit> intersectLocalEllipsoid(
   return hit;
 }
 
+std::optional<LocalBoundsHit> intersectLocalCylinder(
+    const Eigen::Vector3d& origin,
+    const Eigen::Vector3d& direction,
+    double radius,
+    double height)
+{
+  if (!origin.allFinite() || !direction.allFinite() || !std::isfinite(radius)
+      || !std::isfinite(height) || radius <= 0.0 || height <= 0.0) {
+    return std::nullopt;
+  }
+
+  const double halfHeight = height * 0.5;
+  std::optional<LocalBoundsHit> nearest;
+  const auto considerHit = [&](double distance, const Eigen::Vector3d& normal) {
+    if (distance < 0.0 || !std::isfinite(distance) || !normal.allFinite()
+        || normal.squaredNorm() <= 1e-18) {
+      return;
+    }
+
+    if (!nearest || distance < nearest->distance) {
+      LocalBoundsHit hit;
+      hit.distance = distance;
+      hit.normal = normal.normalized();
+      nearest = hit;
+    }
+  };
+
+  const double a
+      = direction.x() * direction.x() + direction.y() * direction.y();
+  const double b
+      = 2.0 * (origin.x() * direction.x() + origin.y() * direction.y());
+  const double c
+      = origin.x() * origin.x() + origin.y() * origin.y() - radius * radius;
+  if (a > 1e-18 && std::isfinite(a) && std::isfinite(b) && std::isfinite(c)) {
+    const double discriminant = b * b - 4.0 * a * c;
+    if (discriminant >= 0.0 && std::isfinite(discriminant)) {
+      const double sqrtDiscriminant = std::sqrt(discriminant);
+      for (double distance :
+           {(-b - sqrtDiscriminant) / (2.0 * a),
+            (-b + sqrtDiscriminant) / (2.0 * a)}) {
+        const Eigen::Vector3d point = origin + direction * distance;
+        if (point.z() >= -halfHeight - 1e-12
+            && point.z() <= halfHeight + 1e-12) {
+          considerHit(distance, Eigen::Vector3d(point.x(), point.y(), 0.0));
+        }
+      }
+    }
+  }
+
+  if (std::abs(direction.z()) > 1e-12) {
+    for (double capZ : {-halfHeight, halfHeight}) {
+      const double distance = (capZ - origin.z()) / direction.z();
+      const Eigen::Vector3d point = origin + direction * distance;
+      if (point.x() * point.x() + point.y() * point.y()
+          <= radius * radius + 1e-12) {
+        const Eigen::Vector3d normal = capZ < 0.0
+                                           ? Eigen::Vector3d(0.0, 0.0, -1.0)
+                                           : Eigen::Vector3d::UnitZ();
+        considerHit(distance, normal);
+      }
+    }
+  }
+
+  return nearest;
+}
+
 std::optional<LocalBoundsHit> intersectLocalGeometry(
     const GeometryDescriptor& geometry,
     const Eigen::Vector3d& origin,
@@ -404,6 +470,11 @@ std::optional<LocalBoundsHit> intersectLocalGeometry(
 
   if (geometry.kind == ShapeKind::Ellipsoid) {
     return intersectLocalEllipsoid(origin, direction, geometry.size * 0.5);
+  }
+
+  if (geometry.kind == ShapeKind::Cylinder) {
+    return intersectLocalCylinder(
+        origin, direction, geometry.radius, geometry.height);
   }
 
   return intersectLocalBounds(

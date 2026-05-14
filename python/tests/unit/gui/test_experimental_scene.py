@@ -108,6 +108,28 @@ def test_experimental_pick_sphere_uses_surface_normal():
     assert np.allclose(hit.normal, [expected_x, 0.5, 0.0])
 
 
+def test_experimental_pick_cylinder_uses_surface_normal():
+    renderable = dart.gui.experimental.RenderableDescriptor()
+    renderable.id = 1
+    renderable.geometry.kind = dart.gui.experimental.ShapeKind.Cylinder
+    renderable.geometry.radius = 1.0
+    renderable.geometry.height = 2.0
+    renderable.geometry.has_local_bounds = True
+    renderable.geometry.local_bounds_min = np.array([-1.0, -1.0, -1.0])
+    renderable.geometry.local_bounds_max = np.array([1.0, 1.0, 1.0])
+
+    ray = dart.gui.experimental.PickRay()
+    ray.origin = np.array([-2.0, 0.5, 0.0])
+    ray.direction = np.array([1.0, 0.0, 0.0])
+    hit = dart.gui.experimental.pick_nearest_renderable([renderable], ray)
+
+    expected_x = -np.sqrt(0.75)
+    assert hit is not None
+    assert np.isclose(hit.distance, 2.0 + expected_x)
+    assert np.allclose(hit.point, [expected_x, 0.5, 0.0])
+    assert np.allclose(hit.normal, [expected_x, 0.5, 0.0])
+
+
 def test_experimental_extract_renderables_from_simple_frame():
     world = dart.World.create("world")
     transform = dart.Isometry3()
