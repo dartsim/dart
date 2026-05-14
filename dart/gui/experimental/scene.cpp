@@ -338,6 +338,76 @@ std::optional<LocalBoundsHit> intersectLocalBounds(
   return hit;
 }
 
+std::optional<LocalBoundsHit> intersectLocalEllipsoid(
+    const Eigen::Vector3d& origin,
+    const Eigen::Vector3d& direction,
+    const Eigen::Vector3d& radii)
+{
+  if (!origin.allFinite() || !direction.allFinite() || !radii.allFinite()
+      || (radii.array() <= 0.0).any()) {
+    return std::nullopt;
+  }
+
+  const Eigen::Vector3d scaledOrigin = origin.cwiseQuotient(radii);
+  const Eigen::Vector3d scaledDirection = direction.cwiseQuotient(radii);
+  const double a = scaledDirection.dot(scaledDirection);
+  const double b = 2.0 * scaledOrigin.dot(scaledDirection);
+  const double c = scaledOrigin.dot(scaledOrigin) - 1.0;
+  if (a <= 1e-18 || !std::isfinite(a) || !std::isfinite(b)
+      || !std::isfinite(c)) {
+    return std::nullopt;
+  }
+
+  const double discriminant = b * b - 4.0 * a * c;
+  if (discriminant < 0.0 || !std::isfinite(discriminant)) {
+    return std::nullopt;
+  }
+
+  const double sqrtDiscriminant = std::sqrt(discriminant);
+  const double t0 = (-b - sqrtDiscriminant) / (2.0 * a);
+  const double t1 = (-b + sqrtDiscriminant) / (2.0 * a);
+  double distance = std::numeric_limits<double>::infinity();
+  if (t0 >= 0.0) {
+    distance = t0;
+  } else if (t1 >= 0.0) {
+    distance = t1;
+  } else {
+    return std::nullopt;
+  }
+
+  const Eigen::Vector3d point = origin + direction * distance;
+  Eigen::Vector3d normal(
+      point.x() / (radii.x() * radii.x()),
+      point.y() / (radii.y() * radii.y()),
+      point.z() / (radii.z() * radii.z()));
+  if (!normal.allFinite() || normal.squaredNorm() <= 1e-18) {
+    normal = -direction;
+  }
+
+  LocalBoundsHit hit;
+  hit.distance = distance;
+  hit.normal = normal.normalized();
+  return hit;
+}
+
+std::optional<LocalBoundsHit> intersectLocalGeometry(
+    const GeometryDescriptor& geometry,
+    const Eigen::Vector3d& origin,
+    const Eigen::Vector3d& direction)
+{
+  if (geometry.kind == ShapeKind::Sphere) {
+    const Eigen::Vector3d radii = Eigen::Vector3d::Constant(geometry.radius);
+    return intersectLocalEllipsoid(origin, direction, radii);
+  }
+
+  if (geometry.kind == ShapeKind::Ellipsoid) {
+    return intersectLocalEllipsoid(origin, direction, geometry.size * 0.5);
+  }
+
+  return intersectLocalBounds(
+      origin, direction, geometry.localBoundsMin, geometry.localBoundsMax);
+}
+
 Eigen::Vector4d rgba(double red, double green, double blue, double alpha = 1.0)
 {
   return {red, green, blue, alpha};
@@ -883,11 +953,8 @@ std::optional<double> intersectRenderable(
   const Eigen::Vector3d localDirection
       = (localFromWorld.linear() * direction).normalized();
 
-  const auto hit = intersectLocalBounds(
-      localOrigin,
-      localDirection,
-      renderable.geometry.localBoundsMin,
-      renderable.geometry.localBoundsMax);
+  const auto hit = intersectLocalGeometry(
+      renderable.geometry, localOrigin, localDirection);
   if (!hit) {
     return std::nullopt;
   }
@@ -918,11 +985,8 @@ std::optional<PickHit> pickNearestRenderable(
     const Eigen::Vector3d localDirection
         = (localFromWorld.linear() * direction).normalized();
 
-    const auto localHit = intersectLocalBounds(
-        localOrigin,
-        localDirection,
-        renderable.geometry.localBoundsMin,
-        renderable.geometry.localBoundsMax);
+    const auto localHit = intersectLocalGeometry(
+        renderable.geometry, localOrigin, localDirection);
     if (!localHit || localHit->distance > maxDistance) {
       continue;
     }

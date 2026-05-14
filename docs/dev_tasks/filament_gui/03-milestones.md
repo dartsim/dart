@@ -79,7 +79,7 @@
   line primitives.
 - The extraction layer includes tested local picking bounds and nearest
   ray-hit helpers for visible renderables, including bounds hit points and hit
-  normals.
+  normals plus primitive sphere/ellipsoid surface points and normals.
 - Unsupported shape types now remain visible to non-rendering consumers through
   diagnostic descriptors instead of being silently dropped by extraction.
 - Phase 1 is not complete yet because broader human visual review with larger
@@ -197,9 +197,10 @@
 - `dartpy.gui.experimental` exposes constrained bindings for renderable
   descriptors, material/geometry descriptors including mesh material/submesh
   metadata, renderable set update planning, picking helpers with bounds hit
-  normals, free-joint translation, plane-drag helpers, debug-line descriptor
-  generation including support-polygon overlays, run options, viewer lifecycle
-  state, screenshot storage, and orbit-camera helpers.
+  normals and primitive sphere/ellipsoid hit normals, free-joint translation,
+  plane-drag helpers, debug-line descriptor generation including
+  support-polygon overlays, run options, viewer lifecycle state, screenshot
+  storage, and orbit-camera helpers.
 - `dartpy` can now build the constrained `dartpy.gui.experimental` module with
   `DART_BUILD_GUI=OFF` when `dart-gui-experimental` is present, so the Python
   experimental API is no longer tied to the legacy GUI target.

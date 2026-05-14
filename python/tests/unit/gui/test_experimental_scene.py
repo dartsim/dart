@@ -87,6 +87,27 @@ def test_experimental_plan_renderable_set_update():
     assert plan.active_renderable_indices_to_remove == [1, 2, 3, 4]
 
 
+def test_experimental_pick_sphere_uses_surface_normal():
+    world = dart.World.create("world")
+    skeleton = dart.Skeleton("sphere_robot")
+    _, body = skeleton.create_free_joint_and_body_node_pair()
+    shape_node = body.create_shape_node(dart.SphereShape(1.0))
+    shape_node.create_visual_aspect()
+    world.add_skeleton(skeleton)
+
+    renderables = dart.gui.experimental.extract_renderables(world)
+    ray = dart.gui.experimental.PickRay()
+    ray.origin = np.array([-2.0, 0.5, 0.0])
+    ray.direction = np.array([1.0, 0.0, 0.0])
+    hit = dart.gui.experimental.pick_nearest_renderable(renderables, ray)
+
+    expected_x = -np.sqrt(0.75)
+    assert hit is not None
+    assert np.isclose(hit.distance, 2.0 + expected_x)
+    assert np.allclose(hit.point, [expected_x, 0.5, 0.0])
+    assert np.allclose(hit.normal, [expected_x, 0.5, 0.0])
+
+
 def test_experimental_extract_renderables_from_simple_frame():
     world = dart.World.create("world")
     transform = dart.Isometry3()

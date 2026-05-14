@@ -132,9 +132,10 @@
     `SoftMeshShape`, plus `VoxelGridShape` when OctoMap is available, with the
     MVP scene validating that all enabled shape fixtures are extracted and
     rendered, `MeshShape` material/submesh metadata exposed through descriptors,
-    nearest-pick results reporting bounds hit normals, unsupported shapes
-    producing diagnostic descriptors, and backend-hidden renderable set update
-    planning for dynamic renderer resource synchronization. The
+    nearest-pick results reporting bounds hit normals plus primitive
+    sphere/ellipsoid hit normals, unsupported shapes producing diagnostic
+    descriptors, and backend-hidden renderable set update planning for dynamic
+    renderer resource synchronization. The
     renderer-hidden debug descriptor path also covers support-polygon outlines
     and support-centroid markers.
   - Fix SEGV in `ImFontAtlas::AddFontFromMemoryCompressedTTF` when null pointer is passed as compressed font data. ([#2516](https://github.com/dartsim/dart/issues/2516))
