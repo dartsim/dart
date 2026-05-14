@@ -102,6 +102,7 @@ struct GeometryDescriptor
   bool hasLocalBounds = false;
   std::string meshUri;
   std::string shapeType;
+  std::string unsupportedReason;
 };
 
 struct MaterialDescriptor

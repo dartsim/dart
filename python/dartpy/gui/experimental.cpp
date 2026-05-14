@@ -58,14 +58,18 @@ void defGuiExperimentalModule(nb::module_& m)
       .def_rw("line_connections", &gui::GeometryDescriptor::lineConnections)
       .def_rw("point_cloud_points", &gui::GeometryDescriptor::pointCloudPoints)
       .def_rw("point_cloud_colors", &gui::GeometryDescriptor::pointCloudColors)
+      .def_rw("voxel_centers", &gui::GeometryDescriptor::voxelCenters)
       .def_rw("radius", &gui::GeometryDescriptor::radius)
       .def_rw("height", &gui::GeometryDescriptor::height)
       .def_rw("offset", &gui::GeometryDescriptor::offset)
       .def_rw("line_thickness", &gui::GeometryDescriptor::lineThickness)
       .def_rw("point_size", &gui::GeometryDescriptor::pointSize)
+      .def_rw("voxel_size", &gui::GeometryDescriptor::voxelSize)
       .def_rw("has_local_bounds", &gui::GeometryDescriptor::hasLocalBounds)
       .def_rw("mesh_uri", &gui::GeometryDescriptor::meshUri)
-      .def_rw("shape_type", &gui::GeometryDescriptor::shapeType);
+      .def_rw("shape_type", &gui::GeometryDescriptor::shapeType)
+      .def_rw(
+          "unsupported_reason", &gui::GeometryDescriptor::unsupportedReason);
 
   nb::class_<gui::MaterialDescriptor>(m, "MaterialDescriptor")
       .def(nb::init<>())

@@ -129,17 +129,17 @@ not a drop-in OSG replacement.
 - **Filament gap:** The current experimental descriptor layer only covers box,
   sphere, ellipsoid, cylinder, capsule, cone, pyramid, multi-sphere,
   line-segment, convex mesh, point cloud, heightmap, soft mesh, voxel grid when
-  OctoMap is available, mesh, finite plane proxy, and unsupported fallback.
-  Filament can render the missing geometry once DART supplies dynamic buffers,
-  materials, and update policies.
-- **North-star plan:** Complete the descriptor model before promotion:
-  explicit fallback diagnostics for unsupported shapes. Upgrade soft meshes
-  from static creation-time triangle buffers to dynamic vertex buffers, voxel
-  grids from generated occupied-cell box meshes to instanced cubes or another
-  GPU-friendly representation, point clouds from the MVP box-point visual to
-  point or billboard geometry, and heightmaps from the MVP generated terrain
-  mesh to streaming terrain buffers, if those are needed for parity with
-  maintained examples.
+  OctoMap is available, mesh, finite plane proxy, and unsupported diagnostic
+  fallback. Filament can render the missing geometry once DART supplies dynamic
+  buffers, materials, and update policies.
+- **North-star plan:** Harden descriptor behavior before promotion: extend
+  fallback diagnostics to unsupported assets, upgrade soft meshes from static
+  creation-time triangle buffers to dynamic vertex buffers, voxel grids from
+  generated occupied-cell box meshes to instanced cubes or another GPU-friendly
+  representation, point clouds from the MVP box-point visual to point or
+  billboard geometry, and heightmaps from the MVP generated terrain mesh to
+  streaming terrain buffers, if those are needed for parity with maintained
+  examples.
 
 ### 4. Mesh and material fidelity
 
@@ -353,7 +353,7 @@ experimental surface is ready to promote.
 - Complete shape descriptor coverage for DART-maintained examples.
 - Promote material, texture, alpha, UV, and mesh-subset metadata out of the
   MVP example and into testable descriptor code.
-- Add fallback diagnostics for unsupported shapes and assets.
+- Extend fallback diagnostics to unsupported assets.
 
 **Exit criteria**
 

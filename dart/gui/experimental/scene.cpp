@@ -628,7 +628,11 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
     return descriptor;
   }
 
-  return std::nullopt;
+  descriptor.kind = ShapeKind::Unsupported;
+  descriptor.unsupportedReason
+      = "Shape type '" + descriptor.shapeType
+        + "' is not supported by dart::gui::experimental";
+  return descriptor;
 }
 
 std::optional<RenderableDescriptor> makeRenderableDescriptor(

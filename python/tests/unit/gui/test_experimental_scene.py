@@ -27,6 +27,10 @@ def test_experimental_extract_renderables_from_world():
     assert hasattr(dart.gui.experimental.ShapeKind, "Heightmap")
     assert hasattr(dart.gui.experimental.ShapeKind, "SoftMesh")
     assert hasattr(dart.gui.experimental.ShapeKind, "VoxelGrid")
+    geometry = dart.gui.experimental.GeometryDescriptor()
+    assert hasattr(geometry, "voxel_centers")
+    assert hasattr(geometry, "voxel_size")
+    assert hasattr(geometry, "unsupported_reason")
     assert np.allclose(descriptor.geometry.size, [1.0, 2.0, 3.0])
     assert descriptor.material.visible is True
 

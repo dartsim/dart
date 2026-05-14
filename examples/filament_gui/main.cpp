@@ -4164,6 +4164,25 @@ std::optional<Renderable> createRenderableFromDescriptor(
   return renderable;
 }
 
+void logUnsupportedRenderableDescriptor(const RenderableDescriptor& descriptor)
+{
+  std::cerr << "Unsupported DART shape";
+  if (!descriptor.geometry.shapeType.empty()) {
+    std::cerr << " '" << descriptor.geometry.shapeType << "'";
+  }
+  if (!descriptor.shapeFrameName.empty()) {
+    std::cerr << " in shape frame '" << descriptor.shapeFrameName << "'";
+  }
+  if (!descriptor.skeletonName.empty()) {
+    std::cerr << " on skeleton '" << descriptor.skeletonName << "'";
+  }
+  std::cerr << " will not be rendered";
+  if (!descriptor.geometry.unsupportedReason.empty()) {
+    std::cerr << ": " << descriptor.geometry.unsupportedReason;
+  }
+  std::cerr << "\n";
+}
+
 void destroyRenderable(filament::Engine& engine, Renderable& renderable)
 {
   engine.destroy(renderable.entity);
@@ -4854,6 +4873,9 @@ int main(int argc, char* argv[])
     auto renderable = createRenderableFromDescriptor(
         *engine, materials, textureCache, descriptor);
     if (!renderable) {
+      if (descriptor.geometry.kind == ShapeKind::Unsupported) {
+        logUnsupportedRenderableDescriptor(descriptor);
+      }
       continue;
     }
     if (descriptor.skeletonName == kWamFixtureSkeletonName

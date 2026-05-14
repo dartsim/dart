@@ -101,6 +101,8 @@ using dart::dynamics::MultiSphereConvexHullShape;
 using dart::dynamics::PlaneShape;
 using dart::dynamics::PointCloudShape;
 using dart::dynamics::PyramidShape;
+using dart::dynamics::Shape;
+using dart::dynamics::ShapePtr;
 using dart::dynamics::SimpleFrame;
 using dart::dynamics::Skeleton;
 using dart::dynamics::SoftBodyNode;
@@ -115,6 +117,41 @@ using dart::simulation::World;
 #if DART_HAVE_OCTOMAP
 using dart::dynamics::VoxelGridShape;
 #endif
+
+class UnsupportedTestShape final : public Shape
+{
+public:
+  UnsupportedTestShape() : Shape(Shape::UNSUPPORTED) {}
+
+  std::string_view getType() const override
+  {
+    return "UnsupportedTestShape";
+  }
+
+  Eigen::Matrix3d computeInertia(double /*mass*/) const override
+  {
+    return Eigen::Matrix3d::Zero();
+  }
+
+  ShapePtr clone() const override
+  {
+    return std::make_shared<UnsupportedTestShape>();
+  }
+
+protected:
+  void updateBoundingBox() const override
+  {
+    mBoundingBox.setMin(Eigen::Vector3d::Zero());
+    mBoundingBox.setMax(Eigen::Vector3d::Zero());
+    mIsBoundingBoxDirty = false;
+  }
+
+  void updateVolume() const override
+  {
+    mVolume = 0.0;
+    mIsVolumeDirty = false;
+  }
+};
 
 std::shared_ptr<const SoftMeshShape> findSoftMeshShape(
     const SoftBodyNode& softBody)
@@ -442,6 +479,16 @@ TEST(
   EXPECT_GT(voxels->size.z(), 0.0);
 #endif
 
+  const auto unsupported = describeShape(UnsupportedTestShape());
+  ASSERT_TRUE(unsupported.has_value());
+  EXPECT_EQ(unsupported->kind, ShapeKind::Unsupported);
+  EXPECT_EQ(unsupported->shapeType, "UnsupportedTestShape");
+  EXPECT_FALSE(unsupported->unsupportedReason.empty());
+  EXPECT_NE(
+      unsupported->unsupportedReason.find("UnsupportedTestShape"),
+      std::string::npos);
+  EXPECT_FALSE(unsupported->hasLocalBounds);
+
   auto triMesh = std::make_shared<dart::math::TriMesh<double>>();
   triMesh->addVertex(0.0, 0.0, 0.0);
   triMesh->addVertex(1.0, 0.0, 0.0);
@@ -465,6 +512,32 @@ TEST(
   ASSERT_TRUE(plane->hasLocalBounds);
   EXPECT_LT(plane->localBoundsMin.z(), 0.25);
   EXPECT_GT(plane->localBoundsMax.z(), 0.25);
+}
+
+TEST(
+    FilamentSceneExtraction,
+    ExtractRenderables_UnsupportedShape_ContainsDiagnosticDescriptor)
+{
+  auto world = World::create("world");
+  auto skeleton = Skeleton::create("robot");
+  auto [joint, body] = skeleton->createJointAndBodyNodePair<WeldJoint>();
+  (void)joint;
+  auto shape = std::make_shared<UnsupportedTestShape>();
+  auto* shapeNode
+      = body->createShapeNodeWith<VisualAspect>(shape, "unsupported_visual");
+  shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.8, 0.2, 0.1, 1.0));
+  world->addSkeleton(skeleton);
+
+  const auto descriptors = dart::gui::experimental::extractRenderables(*world);
+  ASSERT_EQ(descriptors.size(), 1u);
+  const auto& descriptor = descriptors.front();
+  EXPECT_EQ(descriptor.geometry.kind, ShapeKind::Unsupported);
+  EXPECT_EQ(descriptor.geometry.shapeType, "UnsupportedTestShape");
+  EXPECT_NE(
+      descriptor.geometry.unsupportedReason.find("UnsupportedTestShape"),
+      std::string::npos);
+  EXPECT_EQ(descriptor.shapeNodeName, "unsupported_visual");
+  EXPECT_FALSE(descriptor.geometry.hasLocalBounds);
 }
 
 TEST(
