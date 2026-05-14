@@ -82,7 +82,10 @@ unverified external and finalization gates:
   variables, handle initial-overlap CCD without indexing an unset axis, skip
   VSG simple-viewer tests when headless creation throws on a runner, and make
   the world fallback test construct its current detector before overriding the
-  factory.
+  factory. The same closed-PR Linux run also exposed a Debug-only
+  `test_collision_world` dangling-pointer issue in world-level sphere/capsule
+  cast results; the world query layer now keeps stable collision-object handles
+  for raycast, sphere-cast, and capsule-cast result pointers.
 - Downstream migration/deprecation evidence is still missing.
 - Final compatibility-facade retention/deprecation evidence is still missing:
   the documented decision is to delete old external-engine runtime
@@ -198,6 +201,16 @@ compiling with /utf-8'`. The current repair adds `/utf-8` to the root MSVC
   fallback. The current repair handles initial-overlap CCD, skips VSG
   simple-viewer tests when headless creation throws, and moves the world
   factory override after world construction.
+- Follow-up PR CI state on the same Linux head: run `25880337619`, job
+  `76058493678` (`CI Linux` / `Debug Tests`) failed
+  `test_collision_world` after returning sphere-cast and capsule-cast results
+  whose `object` pointers referenced loop-local `CollisionObject` handles.
+  The current repair caches stable world-owned query handles for world-level
+  raycast, sphere-cast, and capsule-cast results.
+- Follow-up PR CI state on the same Linux head: run `25880337619`, job
+  `76058493716` (`CI Linux` / `Native Collision (no FCL/Bullet/ODE)`) failed
+  inside the `collision-native` label. The current local Release
+  `collision-native` label passes after the CCD and query-result repairs.
 - Follow-up local validation after the audit started from
   `1da52368282` and found that `pixi run test-all` failed in `build-tests`
   because a stale cached `LIBCCD_LIBRARY` pointed at a removed

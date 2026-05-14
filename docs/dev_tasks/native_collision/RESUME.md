@@ -562,6 +562,13 @@ libraries.
   factory in the null-creator typed-setter fallback test. Focused local Debug
   build/CTest for those three failing Debug targets passes, and focused
   Release build/CTest for `test_collision_filter` passes.
+- The same closed-PR Linux run exposed a Debug-only
+  `test_collision_world` failure where world-level sphere/capsule cast results
+  pointed at loop-local collision-object handles. The current working tree
+  caches stable world query result handles for raycast, sphere-cast, and
+  capsule-cast results. Focused Debug `test_collision_world`, focused Release
+  `test_ccd`/`test_collision_world`, and the full Release `collision-native`
+  label all pass locally.
 
 ## How to Resume
 

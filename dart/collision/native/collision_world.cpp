@@ -362,6 +362,18 @@ void CollisionWorld::reserveObjects(std::size_t count)
   }
 }
 
+void CollisionWorld::prepareQueryObjectCache()
+{
+  m_queryObjectCache.clear();
+  m_queryObjectCache.reserve(numObjects());
+}
+
+const CollisionObject* CollisionWorld::cacheQueryObject(CollisionObject object)
+{
+  m_queryObjectCache.push_back(object);
+  return &m_queryObjectCache.back();
+}
+
 std::size_t CollisionWorld::updateAll()
 {
   BatchSettings settings;
@@ -896,6 +908,7 @@ bool CollisionWorld::raycast(
     const Ray& ray, const RaycastOption& option, RaycastResult& result)
 {
   result.clear();
+  prepareQueryObjectCache();
 
   RaycastResult closestResult;
   double closestDistance = std::numeric_limits<double>::max();
@@ -905,6 +918,7 @@ bool CollisionWorld::raycast(
     CollisionObject obj(entity, this);
     RaycastResult tempResult;
     if (NarrowPhase::raycast(ray, obj, option, tempResult)) {
+      tempResult.object = cacheQueryObject(obj);
       if (tempResult.distance < closestDistance) {
         closestDistance = tempResult.distance;
         closestResult = tempResult;
@@ -926,12 +940,14 @@ bool CollisionWorld::raycastAll(
     std::vector<RaycastResult>& results)
 {
   results.clear();
+  prepareQueryObjectCache();
 
   auto view = m_registry.view<comps::CollisionObjectTag>();
   for (auto entity : view) {
     CollisionObject obj(entity, this);
     RaycastResult tempResult;
     if (NarrowPhase::raycast(ray, obj, option, tempResult)) {
+      tempResult.object = cacheQueryObject(obj);
       results.push_back(tempResult);
     }
   }
@@ -954,6 +970,7 @@ bool CollisionWorld::sphereCast(
     CcdResult& result)
 {
   result = CcdResult();
+  prepareQueryObjectCache();
 
   CcdResult closestResult;
   double closestToi = std::numeric_limits<double>::max();
@@ -963,6 +980,7 @@ bool CollisionWorld::sphereCast(
     CollisionObject obj(entity, this);
     CcdResult tempResult;
     if (NarrowPhase::sphereCast(start, end, radius, obj, option, tempResult)) {
+      tempResult.object = cacheQueryObject(obj);
       if (tempResult.timeOfImpact < closestToi) {
         closestToi = tempResult.timeOfImpact;
         closestResult = tempResult;
@@ -986,12 +1004,14 @@ bool CollisionWorld::sphereCastAll(
     std::vector<CcdResult>& results)
 {
   results.clear();
+  prepareQueryObjectCache();
 
   auto view = m_registry.view<comps::CollisionObjectTag>();
   for (auto entity : view) {
     CollisionObject obj(entity, this);
     CcdResult tempResult;
     if (NarrowPhase::sphereCast(start, end, radius, obj, option, tempResult)) {
+      tempResult.object = cacheQueryObject(obj);
       results.push_back(tempResult);
     }
   }
@@ -1014,6 +1034,7 @@ bool CollisionWorld::capsuleCast(
     CcdResult& result)
 {
   result = CcdResult();
+  prepareQueryObjectCache();
 
   CcdResult closestResult;
   double closestToi = std::numeric_limits<double>::max();
@@ -1024,6 +1045,7 @@ bool CollisionWorld::capsuleCast(
     CcdResult tempResult;
     if (NarrowPhase::capsuleCast(
             capsuleStart, capsuleEnd, capsule, obj, option, tempResult)) {
+      tempResult.object = cacheQueryObject(obj);
       if (tempResult.timeOfImpact < closestToi) {
         closestToi = tempResult.timeOfImpact;
         closestResult = tempResult;
@@ -1047,6 +1069,7 @@ bool CollisionWorld::capsuleCastAll(
     std::vector<CcdResult>& results)
 {
   results.clear();
+  prepareQueryObjectCache();
 
   auto view = m_registry.view<comps::CollisionObjectTag>();
   for (auto entity : view) {
@@ -1054,6 +1077,7 @@ bool CollisionWorld::capsuleCastAll(
     CcdResult tempResult;
     if (NarrowPhase::capsuleCast(
             capsuleStart, capsuleEnd, capsule, obj, option, tempResult)) {
+      tempResult.object = cacheQueryObject(obj);
       results.push_back(tempResult);
     }
   }

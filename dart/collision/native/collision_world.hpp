@@ -191,6 +191,8 @@ private:
 
   static std::unique_ptr<BroadPhase> createBroadPhase(BroadPhaseType type);
   void notifyCollisionFilterChanged();
+  void prepareQueryObjectCache();
+  const CollisionObject* cacheQueryObject(CollisionObject object);
 
   entt::registry m_registry;
   BroadPhaseType m_broadPhaseType;
@@ -202,6 +204,7 @@ private:
   mutable BroadPhaseSnapshot m_cachedSnapshot;
   mutable bool m_snapshotDirty = true;
   mutable bool m_cachedDeterministic = true;
+  std::vector<CollisionObject> m_queryObjectCache;
 };
 
 } // namespace dart::collision::native

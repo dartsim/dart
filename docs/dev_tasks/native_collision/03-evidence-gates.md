@@ -2472,6 +2472,37 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
   - Command:
     `ctest --test-dir build/default/cpp/Release -R '^test_collision_filter$' --output-on-failure -j 5`
   - Result: passed, 1/1 test.
+- Closed-PR Linux native failure triage from head `714d220d82a`
+  - Run/job: `25880337619` / `76058493678` (`CI Linux` /
+    `Debug Tests`).
+  - Result: after the macOS fixes, the remaining reproduced failure was
+    `test_collision_world` in Debug. World-level sphere-cast and capsule-cast
+    results pointed at loop-local `CollisionObject` handles, so Debug builds
+    exposed dangling result object pointers.
+  - Run/job: `25880337619` / `76058493716` (`CI Linux` /
+    `Native Collision (no FCL/Bullet/ODE)`).
+  - Result: failed inside the `collision-native` label on the old head. The
+    current Release native-collision label was rerun locally after the query
+    result-handle repair and now passes.
+- Focused local validation after the world query result-handle repair:
+  - Command:
+    `cmake --build build/default/cpp/Debug --target test_collision_world --parallel 5`
+  - Result: passed.
+  - Command:
+    `ctest --test-dir build/default/cpp/Debug -R '^test_collision_world$' --output-on-failure -j 5`
+  - Result: passed, 1/1 test.
+  - Command:
+    `cmake --build build/default/cpp/Release --target test_ccd test_collision_world --parallel 5`
+  - Result: passed.
+  - Command:
+    `ctest --test-dir build/default/cpp/Release -R '^(test_ccd|test_collision_world)$' --output-on-failure -j 5`
+  - Result: passed, 2/2 tests.
+  - Command:
+    `cmake --build build/default/cpp/Release --target dart_collision_native_tests --parallel 5`
+  - Result: passed.
+  - Command:
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native -j 5`
+  - Result: passed, 29/29 tests.
 
 ## Known Risks
 

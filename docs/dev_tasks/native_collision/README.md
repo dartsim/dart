@@ -167,8 +167,9 @@
       work changes the PR state. The latest PR CI refresh on head
       `714d220d82a` exposed macOS arm64 Release unused-variable test cleanup
       plus Debug CCD, VSG headless, and world fallback-test robustness gaps;
-      focused local repairs and target validation are recorded in
-      `03-evidence-gates.md`.
+      the same closed-PR Linux Debug run exposed dangling world query result
+      object pointers for native sphere/capsule casts. Focused local repairs
+      and target validation are recorded in `03-evidence-gates.md`.
 
 ## Goal
 
