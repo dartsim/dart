@@ -139,6 +139,9 @@ using dart::dynamics::ShapePtr;
 using dart::dynamics::ShapeNode;
 using dart::dynamics::SimpleFrame;
 using dart::dynamics::Skeleton;
+using dart::dynamics::SoftBodyNode;
+using dart::dynamics::SoftBodyNodeHelper;
+using dart::dynamics::SoftMeshShape;
 using dart::dynamics::SphereShape;
 using dart::dynamics::VisualAspect;
 using dart::dynamics::WeldJoint;
@@ -937,6 +940,7 @@ constexpr const char* kLineSegmentFixtureSkeletonName = "visual_line_segments";
 constexpr const char* kConvexMeshFixtureSkeletonName = "visual_convex_mesh";
 constexpr const char* kPointCloudFixtureSkeletonName = "visual_point_cloud";
 constexpr const char* kHeightmapFixtureSkeletonName = "visual_heightmap";
+constexpr const char* kSoftMeshFixtureSkeletonName = "visual_soft_mesh";
 constexpr const char* kPbrEnvironmentFixtureSkeletonName =
     "visual_pbr_environment";
 constexpr const char* kG1FixtureSkeletonName = "visual_g1_robot";
@@ -1872,6 +1876,50 @@ DartScene createMvpDartScene()
     return shape;
   };
 
+  auto createSoftMeshSkeleton = [] {
+    auto skeleton = Skeleton::create(kSoftMeshFixtureSkeletonName);
+    auto [joint, softBody]
+        = skeleton->createJointAndBodyNodePair<WeldJoint, SoftBodyNode>();
+    Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+    tf.translation() = Eigen::Vector3d(-0.05, 0.55, 0.9);
+    joint->setTransformFromParentBodyNode(tf);
+
+    SoftBodyNodeHelper::setBox(
+        softBody,
+        Eigen::Vector3d(0.42, 0.32, 0.26),
+        Eigen::Isometry3d::Identity(),
+        Eigen::Vector3i(3, 3, 3),
+        1.0,
+        10.0,
+        10.0,
+        0.1);
+
+    for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+      auto* pointMass = softBody->getPointMass(i);
+      if (pointMass == nullptr) {
+        continue;
+      }
+      const Eigen::Vector3d& resting = pointMass->getRestingPosition();
+      pointMass->setPositions(Eigen::Vector3d(
+          0.0,
+          0.0,
+          0.05
+              * std::sin(7.0 * resting.x() + 5.0 * resting.y()
+                         + static_cast<double>(i) * 0.3)));
+    }
+
+    for (std::size_t i = 0; i < softBody->getNumShapeNodes(); ++i) {
+      auto* shapeNode = softBody->getShapeNode(i);
+      if (shapeNode == nullptr || shapeNode->getVisualAspect() == nullptr) {
+        continue;
+      }
+      shapeNode->getVisualAspect()->setRGBA(
+          Eigen::Vector4d(0.88, 0.44, 0.72, 0.82));
+    }
+
+    return skeleton;
+  };
+
   scene.world = World::create("filament_gui_mvp");
   scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   scene.world->addSkeleton(blueBox);
@@ -1932,6 +1980,7 @@ DartScene createMvpDartScene()
       createHeightmapShape(),
       Eigen::Vector3d(-0.75, 0.55, 0.65),
       Eigen::Vector3d(0.42, 0.74, 0.36)));
+  scene.world->addSkeleton(createSoftMeshSkeleton());
   scene.world->addSkeleton(createStaticVisual(
       "visual_ellipsoid",
       std::make_shared<dart::dynamics::EllipsoidShape>(
@@ -3478,6 +3527,94 @@ std::optional<Renderable> createHeightmapRenderable(
       bounds.max);
 }
 
+std::optional<Renderable> createSoftMeshRenderable(
+    filament::Engine& engine,
+    filament::Material& material,
+    const SoftMeshShape& softMeshShape,
+    const float4& color)
+{
+  const auto triMesh = softMeshShape.getTriMesh();
+  if (!triMesh || triMesh->getTriangles().empty()) {
+    return std::nullopt;
+  }
+
+  const auto* softBody = softMeshShape.getSoftBodyNode();
+  const std::size_t vertexCount
+      = softBody != nullptr ? softBody->getNumPointMasses()
+                            : triMesh->getVertices().size();
+  if (vertexCount == 0u
+      || vertexCount
+             > static_cast<std::size_t>(
+                 std::numeric_limits<std::uint32_t>::max())) {
+    return std::nullopt;
+  }
+
+  const filament::math::short4 tangent = {0, 0, 0, 32767};
+  std::vector<Vertex> vertices;
+  vertices.reserve(vertexCount);
+  for (std::size_t i = 0; i < vertexCount; ++i) {
+    if (softBody != nullptr) {
+      const auto* pointMass = softBody->getPointMass(i);
+      if (pointMass == nullptr) {
+        return std::nullopt;
+      }
+      vertices.push_back(
+          Vertex{toFloat3(pointMass->getLocalPosition()), tangent});
+    } else {
+      vertices.push_back(Vertex{toFloat3(triMesh->getVertices()[i]), tangent});
+    }
+  }
+
+  std::vector<std::uint32_t> indices;
+  std::vector<filament::math::uint3> triangles;
+  indices.reserve(triMesh->getTriangles().size() * 3u);
+  triangles.reserve(triMesh->getTriangles().size());
+  for (const auto& triangle : triMesh->getTriangles()) {
+    if (triangle[0] >= vertices.size() || triangle[1] >= vertices.size()
+        || triangle[2] >= vertices.size()) {
+      return std::nullopt;
+    }
+    appendTriangle(
+        indices,
+        triangles,
+        static_cast<std::uint32_t>(triangle[0]),
+        static_cast<std::uint32_t>(triangle[1]),
+        static_cast<std::uint32_t>(triangle[2]));
+  }
+
+  std::vector<float3> normalSums(vertices.size(), {0.0f, 0.0f, 0.0f});
+  for (const auto& triangle : triangles) {
+    const float3 normal = normalizeOr(
+        crossProduct(
+            vertices[triangle.y].position - vertices[triangle.x].position,
+            vertices[triangle.z].position - vertices[triangle.x].position),
+        {0.0f, 0.0f, 1.0f});
+    for (std::uint32_t index : {triangle.x, triangle.y, triangle.z}) {
+      normalSums[index].x += normal.x;
+      normalSums[index].y += normal.y;
+      normalSums[index].z += normal.z;
+    }
+  }
+
+  std::vector<float3> normals;
+  normals.reserve(normalSums.size());
+  for (const float3& normal : normalSums) {
+    normals.push_back(normalizeOr(normal, {0.0f, 0.0f, 1.0f}));
+  }
+
+  const Bounds bounds = computeBounds(vertices);
+  return createTriangleMeshRenderable(
+      engine,
+      material,
+      std::move(vertices),
+      std::move(indices),
+      std::move(triangles),
+      std::move(normals),
+      color,
+      bounds.min,
+      bounds.max);
+}
+
 std::optional<Renderable> createMeshRenderable(
     filament::Engine& engine,
     const MaterialSet& materials,
@@ -3910,6 +4047,13 @@ std::optional<Renderable> createRenderableFromDescriptor(
                  = dynamic_cast<const HeightmapShaped*>(descriptor.shape)) {
         renderable
             = createHeightmapRenderable(engine, solidMaterial, *heightmapShape, color);
+      }
+      break;
+    case ShapeKind::SoftMesh:
+      if (const auto* softMeshShape = dynamic_cast<const SoftMeshShape*>(
+              descriptor.shape)) {
+        renderable = createSoftMeshRenderable(
+            engine, solidMaterial, *softMeshShape, color);
       }
       break;
     case ShapeKind::Mesh:
@@ -4465,6 +4609,15 @@ int main(int argc, char* argv[])
                    && descriptor.material.visible
                    && descriptor.geometry.kind == ShapeKind::Heightmap;
           }));
+  const std::size_t softMeshDescriptorCount = static_cast<std::size_t>(
+      std::count_if(
+          initialDescriptors.begin(),
+          initialDescriptors.end(),
+          [](const RenderableDescriptor& descriptor) {
+            return descriptor.skeletonName == kSoftMeshFixtureSkeletonName
+                   && descriptor.material.visible
+                   && descriptor.geometry.kind == ShapeKind::SoftMesh;
+          }));
   const std::size_t pbrEnvironmentDescriptorCount = static_cast<std::size_t>(
       std::count_if(
           initialDescriptors.begin(),
@@ -4551,6 +4704,13 @@ int main(int argc, char* argv[])
           << heightmapDescriptorCount << "\n";
       return 1;
     }
+    if (softMeshDescriptorCount != 1) {
+      std::cerr
+          << "Expected the soft mesh fixture to provide one visible soft mesh "
+             "renderable descriptor, but extracted "
+          << softMeshDescriptorCount << "\n";
+      return 1;
+    }
     if (pbrEnvironmentDescriptorCount < kMinPbrEnvironmentRenderableCount) {
       std::cerr << "Expected the PBR environment fixture to provide at least "
                 << kMinPbrEnvironmentRenderableCount
@@ -4586,6 +4746,7 @@ int main(int argc, char* argv[])
   std::size_t createdConvexMeshRenderableCount = 0;
   std::size_t createdPointCloudRenderableCount = 0;
   std::size_t createdHeightmapRenderableCount = 0;
+  std::size_t createdSoftMeshRenderableCount = 0;
   std::size_t createdPbrEnvironmentRenderableCount = 0;
   std::size_t createdG1RenderableCount = 0;
   std::size_t createdDragAndDropFrameRenderableCount = 0;
@@ -4634,6 +4795,10 @@ int main(int argc, char* argv[])
     if (descriptor.skeletonName == kHeightmapFixtureSkeletonName
         && descriptor.geometry.kind == ShapeKind::Heightmap) {
       ++createdHeightmapRenderableCount;
+    }
+    if (descriptor.skeletonName == kSoftMeshFixtureSkeletonName
+        && descriptor.geometry.kind == ShapeKind::SoftMesh) {
+      ++createdSoftMeshRenderableCount;
     }
     if (descriptor.skeletonName == kPbrEnvironmentFixtureSkeletonName
         && descriptor.geometry.kind == ShapeKind::Mesh) {
@@ -4714,6 +4879,12 @@ int main(int argc, char* argv[])
       std::cerr << "Only " << createdHeightmapRenderableCount << " of "
                 << heightmapDescriptorCount
                 << " heightmap renderables were created\n";
+      return 1;
+    }
+    if (createdSoftMeshRenderableCount != softMeshDescriptorCount) {
+      std::cerr << "Only " << createdSoftMeshRenderableCount << " of "
+                << softMeshDescriptorCount
+                << " soft mesh renderables were created\n";
       return 1;
     }
     if (createdPbrEnvironmentRenderableCount < pbrEnvironmentDescriptorCount) {

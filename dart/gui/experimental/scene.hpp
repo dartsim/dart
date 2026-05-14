@@ -71,6 +71,7 @@ enum class ShapeKind
   ConvexMesh,
   PointCloud,
   Heightmap,
+  SoftMesh,
   Mesh,
   Plane,
   Unsupported

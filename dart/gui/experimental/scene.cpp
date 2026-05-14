@@ -51,12 +51,15 @@
 #include <dart/dynamics/multi_sphere_convex_hull_shape.hpp>
 #include <dart/dynamics/plane_shape.hpp>
 #include <dart/dynamics/point_cloud_shape.hpp>
+#include <dart/dynamics/point_mass.hpp>
 #include <dart/dynamics/pyramid_shape.hpp>
 #include <dart/dynamics/shape.hpp>
 #include <dart/dynamics/shape_frame.hpp>
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/soft_body_node.hpp>
+#include <dart/dynamics/soft_mesh_shape.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
 
 #include <dart/math/tri_mesh.hpp>
@@ -100,6 +103,45 @@ void setShapeBoundingBoxBounds(
   const auto& bounds = shape.getBoundingBox();
   descriptor.size = bounds.getMax() - bounds.getMin();
   setLocalBounds(descriptor, bounds.getMin(), bounds.getMax());
+}
+
+void setSoftMeshBounds(
+    GeometryDescriptor& descriptor, const dynamics::SoftMeshShape& softMesh)
+{
+  const auto* softBody = softMesh.getSoftBodyNode();
+  if (softBody != nullptr && softBody->getNumPointMasses() > 0u) {
+    const auto* firstPointMass = softBody->getPointMass(0u);
+    if (firstPointMass == nullptr) {
+      return;
+    }
+
+    Eigen::Vector3d min = firstPointMass->getLocalPosition();
+    Eigen::Vector3d max = min;
+    for (std::size_t i = 1u; i < softBody->getNumPointMasses(); ++i) {
+      const auto* pointMass = softBody->getPointMass(i);
+      if (pointMass == nullptr) {
+        continue;
+      }
+      const Eigen::Vector3d& vertex = pointMass->getLocalPosition();
+      min = min.cwiseMin(vertex);
+      max = max.cwiseMax(vertex);
+    }
+    descriptor.size = max - min;
+    setLocalBounds(descriptor, min, max);
+    return;
+  }
+
+  const auto triMesh = softMesh.getTriMesh();
+  if (triMesh != nullptr && !triMesh->getVertices().empty()) {
+    Eigen::Vector3d min = triMesh->getVertices().front();
+    Eigen::Vector3d max = min;
+    for (const Eigen::Vector3d& vertex : triMesh->getVertices()) {
+      min = min.cwiseMin(vertex);
+      max = max.cwiseMax(vertex);
+    }
+    descriptor.size = max - min;
+    setLocalBounds(descriptor, min, max);
+  }
 }
 
 void setSymmetricLocalBounds(
@@ -487,6 +529,13 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
       = dynamic_cast<const dynamics::HeightmapShaped*>(&shape)) {
     descriptor.kind = ShapeKind::Heightmap;
     setShapeBoundingBoxBounds(descriptor, *heightmap);
+    return descriptor;
+  }
+
+  if (const auto* softMesh
+      = dynamic_cast<const dynamics::SoftMeshShape*>(&shape)) {
+    descriptor.kind = ShapeKind::SoftMesh;
+    setSoftMeshBounds(descriptor, *softMesh);
     return descriptor;
   }
 

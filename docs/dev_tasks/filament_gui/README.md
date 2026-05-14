@@ -14,9 +14,9 @@
   without a graphics context.
 - The example renderer consumes box, sphere, ellipsoid, cylinder, cone,
   capsule, pyramid, multi-sphere, line-segment, convex-mesh,
-  point-cloud, heightmap, TriMesh-backed `MeshShape`, and finite `PlaneShape`
-  descriptors, and applies DART visual-aspect shadow flags to Filament
-  renderables.
+  point-cloud, heightmap, soft-mesh, TriMesh-backed `MeshShape`, and finite
+  `PlaneShape` descriptors, and applies DART visual-aspect shadow flags to
+  Filament renderables.
 - The example configures Filament view quality features needed by the MVP gate:
   cascaded SUN shadows, contact shadows for windowed runs, deterministic PCF
   shadows for headless screenshots, a neutral skybox, spherical harmonics

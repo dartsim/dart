@@ -58,6 +58,8 @@
 #include <dart/dynamics/shape_frame.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/soft_body_node.hpp>
+#include <dart/dynamics/soft_mesh_shape.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
@@ -95,11 +97,33 @@ using dart::dynamics::PointCloudShape;
 using dart::dynamics::PyramidShape;
 using dart::dynamics::SimpleFrame;
 using dart::dynamics::Skeleton;
+using dart::dynamics::SoftBodyNode;
+using dart::dynamics::SoftBodyNodeHelper;
+using dart::dynamics::SoftMeshShape;
 using dart::dynamics::SphereShape;
 using dart::dynamics::VisualAspect;
 using dart::dynamics::WeldJoint;
 using dart::gui::experimental::ShapeKind;
 using dart::simulation::World;
+
+std::shared_ptr<const SoftMeshShape> findSoftMeshShape(
+    const SoftBodyNode& softBody)
+{
+  for (std::size_t i = 0; i < softBody.getNumShapeNodes(); ++i) {
+    auto* shapeNode = softBody.getShapeNode(i);
+    if (shapeNode == nullptr) {
+      continue;
+    }
+
+    auto softMesh
+        = std::dynamic_pointer_cast<const SoftMeshShape>(shapeNode->getShape());
+    if (softMesh != nullptr) {
+      return softMesh;
+    }
+  }
+
+  return nullptr;
+}
 
 TEST(
     FilamentSceneExtraction,
@@ -365,6 +389,32 @@ TEST(
   EXPECT_TRUE(
       terrain->localBoundsMax.isApprox(Eigen::Vector3d(0.75, 0.25, 9.0)));
   EXPECT_TRUE(terrain->size.isApprox(Eigen::Vector3d(1.5, 0.5, 7.5)));
+
+  auto softSkeleton = Skeleton::create("soft_skel");
+  auto* softBody
+      = softSkeleton->createJointAndBodyNodePair<WeldJoint, SoftBodyNode>()
+            .second;
+  SoftBodyNodeHelper::setBox(
+      softBody,
+      Eigen::Vector3d(0.4, 0.6, 0.8),
+      Eigen::Isometry3d::Identity(),
+      Eigen::Vector3i(3, 3, 3),
+      1.0,
+      10.0,
+      10.0,
+      0.1);
+  ASSERT_GT(softBody->getNumPointMasses(), 0u);
+  softBody->getPointMass(0u)->setPositions(Eigen::Vector3d(0.0, 0.0, 0.2));
+  auto softMeshShape = findSoftMeshShape(*softBody);
+  ASSERT_NE(softMeshShape, nullptr);
+  const auto softMesh = describeShape(*softMeshShape);
+  ASSERT_TRUE(softMesh.has_value());
+  EXPECT_EQ(softMesh->kind, ShapeKind::SoftMesh);
+  EXPECT_EQ(softMesh->shapeType, "SoftMeshShape");
+  ASSERT_TRUE(softMesh->hasLocalBounds);
+  EXPECT_GT(softMesh->size.x(), 0.0);
+  EXPECT_GT(softMesh->size.y(), 0.0);
+  EXPECT_GT(softMesh->size.z(), 0.0);
 
   auto triMesh = std::make_shared<dart::math::TriMesh<double>>();
   triMesh->addVertex(0.0, 0.0, 0.0);
