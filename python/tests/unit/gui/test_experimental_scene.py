@@ -57,6 +57,36 @@ def test_experimental_extract_renderables_from_world():
     assert np.allclose(hit.normal, [-1.0, 0.0, 0.0])
 
 
+def test_experimental_plan_renderable_set_update():
+    visible_a = dart.gui.experimental.RenderableDescriptor()
+    visible_a.id = 1
+    visible_a.material.visible = True
+
+    hidden = dart.gui.experimental.RenderableDescriptor()
+    hidden.id = 2
+    hidden.material.visible = False
+
+    visible_b = dart.gui.experimental.RenderableDescriptor()
+    visible_b.id = 3
+    visible_b.material.visible = True
+
+    duplicate_visible_a = dart.gui.experimental.RenderableDescriptor()
+    duplicate_visible_a.id = visible_a.id
+    duplicate_visible_a.material.visible = True
+
+    invalid_id = dart.gui.experimental.RenderableDescriptor()
+    invalid_id.id = 0
+    invalid_id.material.visible = True
+
+    plan = dart.gui.experimental.plan_renderable_set_update(
+        [visible_a, hidden, visible_b, duplicate_visible_a, invalid_id],
+        [visible_a.id, hidden.id, 4, visible_a.id, 0],
+    )
+
+    assert plan.descriptor_indices_to_add == [2]
+    assert plan.active_renderable_indices_to_remove == [1, 2, 3, 4]
+
+
 def test_experimental_extract_renderables_from_simple_frame():
     world = dart.World.create("world")
     transform = dart.Isometry3()

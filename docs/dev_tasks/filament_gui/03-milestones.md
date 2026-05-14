@@ -186,11 +186,16 @@
 - `dart-gui-experimental` now owns reusable RGBA-to-PPM screenshot storage.
   The Filament example keeps only renderer readback and delegates file writing
   to the backend-hidden helper.
+- `dart-gui-experimental` now owns renderer-hidden renderable set update
+  planning. The Filament example uses that plan to create and destroy Filament
+  resources when descriptor snapshots gain, lose, hide, or reveal renderables
+  after startup.
 - `dartpy.gui.experimental` exposes constrained bindings for renderable
   descriptors, material/geometry descriptors including mesh material/submesh
-  metadata, picking helpers with bounds hit normals, free-joint translation,
-  plane-drag helpers, debug-line descriptor generation, run options, viewer
-  lifecycle state, screenshot storage, and orbit-camera helpers.
+  metadata, renderable set update planning, picking helpers with bounds hit
+  normals, free-joint translation, plane-drag helpers, debug-line descriptor
+  generation, run options, viewer lifecycle state, screenshot storage, and
+  orbit-camera helpers.
 - `dartpy` can now build the constrained `dartpy.gui.experimental` module with
   `DART_BUILD_GUI=OFF` when `dart-gui-experimental` is present, so the Python
   experimental API is no longer tied to the legacy GUI target.

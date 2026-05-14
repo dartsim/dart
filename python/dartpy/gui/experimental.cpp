@@ -143,6 +143,15 @@ void defGuiExperimentalModule(nb::module_& m)
           "shape_node_version", &gui::RenderableDescriptor::shapeNodeVersion)
       .def_rw("shape_version", &gui::RenderableDescriptor::shapeVersion);
 
+  nb::class_<gui::RenderableSetUpdatePlan>(m, "RenderableSetUpdatePlan")
+      .def(nb::init<>())
+      .def_rw(
+          "descriptor_indices_to_add",
+          &gui::RenderableSetUpdatePlan::descriptorIndicesToAdd)
+      .def_rw(
+          "active_renderable_indices_to_remove",
+          &gui::RenderableSetUpdatePlan::activeRenderableIndicesToRemove);
+
   nb::class_<gui::PickRay>(m, "PickRay")
       .def(nb::init<>())
       .def_rw("origin", &gui::PickRay::origin)
@@ -246,6 +255,11 @@ void defGuiExperimentalModule(nb::module_& m)
 
   m.def("describe_shape", &gui::describeShape, nb::arg("shape"));
   m.def("extract_renderables", &gui::extractRenderables, nb::arg("world"));
+  m.def(
+      "plan_renderable_set_update",
+      &gui::planRenderableSetUpdate,
+      nb::arg("descriptors"),
+      nb::arg("active_renderable_ids"));
   m.def(
       "intersect_renderable",
       &gui::intersectRenderable,

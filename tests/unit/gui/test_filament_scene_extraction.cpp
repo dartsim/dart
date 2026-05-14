@@ -629,6 +629,48 @@ TEST(
 
 TEST(
     FilamentSceneExtraction,
+    PlanRenderableSetUpdate_AddsVisibleAndRemovesStaleResources)
+{
+  using dart::gui::experimental::RenderableDescriptor;
+  using dart::gui::experimental::RenderableId;
+
+  RenderableDescriptor visibleA;
+  visibleA.id = 1u;
+  visibleA.material.visible = true;
+
+  RenderableDescriptor hidden;
+  hidden.id = 2u;
+  hidden.material.visible = false;
+
+  RenderableDescriptor visibleB;
+  visibleB.id = 3u;
+  visibleB.material.visible = true;
+
+  RenderableDescriptor duplicateVisibleA;
+  duplicateVisibleA.id = visibleA.id;
+  duplicateVisibleA.material.visible = true;
+
+  RenderableDescriptor invalidId;
+  invalidId.id = 0u;
+  invalidId.material.visible = true;
+
+  const std::vector<RenderableDescriptor> descriptors{
+      visibleA, hidden, visibleB, duplicateVisibleA, invalidId};
+  const std::vector<RenderableId> activeIds{
+      visibleA.id, hidden.id, 4u, visibleA.id, 0u};
+
+  const auto plan = dart::gui::experimental::planRenderableSetUpdate(
+      descriptors, activeIds);
+
+  ASSERT_EQ(plan.descriptorIndicesToAdd.size(), 1u);
+  EXPECT_EQ(plan.descriptorIndicesToAdd[0], 2u);
+
+  const std::vector<std::size_t> expectedRemovals{1u, 2u, 3u, 4u};
+  EXPECT_EQ(plan.activeRenderableIndicesToRemove, expectedRemovals);
+}
+
+TEST(
+    FilamentSceneExtraction,
     PickNearestRenderable_RayThroughBoxes_ReturnsClosestVisibleShape)
 {
   auto world = World::create("world");

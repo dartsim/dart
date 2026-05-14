@@ -179,6 +179,7 @@ using dart::examples::filament_gui::makeRenderableId;
 using dart::examples::filament_gui::makeSelectionDebugLines;
 using dart::examples::filament_gui::normalizeRunOptions;
 using dart::examples::filament_gui::pickNearestRenderable;
+using dart::examples::filament_gui::planRenderableSetUpdate;
 using dart::examples::filament_gui::requestSingleStep;
 using dart::examples::filament_gui::shouldAdvanceSimulation;
 using dart::examples::filament_gui::shouldRequestScreenshot;
@@ -4206,6 +4207,92 @@ void destroyRenderable(filament::Engine& engine, Renderable& renderable)
   EntityManager::get().destroy(renderable.entity);
 }
 
+bool containsRenderableId(
+    const std::vector<RenderableId>& ids, RenderableId id)
+{
+  return std::find(ids.begin(), ids.end(), id) != ids.end();
+}
+
+std::vector<RenderableId> collectRenderableIds(
+    const std::vector<SceneRenderable>& sceneRenderables)
+{
+  std::vector<RenderableId> ids;
+  ids.reserve(sceneRenderables.size());
+  for (const SceneRenderable& sceneRenderable : sceneRenderables) {
+    ids.push_back(sceneRenderable.id);
+  }
+  return ids;
+}
+
+void logUnsupportedRenderableDescriptorOnce(
+    std::vector<RenderableId>& loggedUnsupportedRenderableIds,
+    const RenderableDescriptor& descriptor)
+{
+  if (descriptor.id != 0
+      && containsRenderableId(loggedUnsupportedRenderableIds, descriptor.id)) {
+    return;
+  }
+
+  logUnsupportedRenderableDescriptor(descriptor);
+  if (descriptor.id != 0) {
+    loggedUnsupportedRenderableIds.push_back(descriptor.id);
+  }
+}
+
+void synchronizeSceneRenderables(
+    filament::Engine& engine,
+    filament::Scene& scene,
+    const MaterialSet& materials,
+    TextureCache& textureCache,
+    const std::vector<RenderableDescriptor>& descriptors,
+    std::vector<SceneRenderable>& sceneRenderables,
+    std::vector<RenderableId>& loggedUnsupportedRenderableIds)
+{
+  const auto plan = planRenderableSetUpdate(
+      descriptors, collectRenderableIds(sceneRenderables));
+
+  for (auto indexIt = plan.activeRenderableIndicesToRemove.rbegin();
+       indexIt != plan.activeRenderableIndicesToRemove.rend();
+       ++indexIt) {
+    const std::size_t index = *indexIt;
+    if (index >= sceneRenderables.size()) {
+      continue;
+    }
+
+    SceneRenderable& sceneRenderable = sceneRenderables[index];
+    scene.remove(sceneRenderable.renderable.entity);
+    destroyRenderable(engine, sceneRenderable.renderable);
+    sceneRenderables.erase(sceneRenderables.begin() + index);
+  }
+
+  for (const std::size_t descriptorIndex : plan.descriptorIndicesToAdd) {
+    if (descriptorIndex >= descriptors.size()) {
+      continue;
+    }
+
+    const RenderableDescriptor& descriptor = descriptors[descriptorIndex];
+    auto renderable = createRenderableFromDescriptor(
+        engine, materials, textureCache, descriptor);
+    if (!renderable) {
+      if (descriptor.geometry.kind == ShapeKind::Unsupported) {
+        logUnsupportedRenderableDescriptorOnce(
+            loggedUnsupportedRenderableIds, descriptor);
+      }
+      continue;
+    }
+
+    SceneRenderable sceneRenderable;
+    sceneRenderable.id = descriptor.id;
+    sceneRenderable.renderable = *renderable;
+    scene.addEntity(sceneRenderable.renderable.entity);
+    engine.getTransformManager().setTransform(
+        engine.getTransformManager().getInstance(
+            sceneRenderable.renderable.entity),
+        toFilamentTransform(descriptor.worldTransform));
+    sceneRenderables.push_back(sceneRenderable);
+  }
+}
+
 void destroyOverlayMesh(
     filament::Engine& engine, filament::Scene* scene, OverlayMesh& mesh)
 {
@@ -4857,6 +4944,7 @@ int main(int argc, char* argv[])
   }
 
   std::vector<SceneRenderable> sceneRenderables;
+  std::vector<RenderableId> loggedUnsupportedRenderableIds;
   std::size_t createdWamRenderableCount = 0;
   std::size_t createdAtlasRenderableCount = 0;
   std::size_t createdAtlasRobotRenderableCount = 0;
@@ -4882,7 +4970,8 @@ int main(int argc, char* argv[])
         *engine, materials, textureCache, descriptor);
     if (!renderable) {
       if (descriptor.geometry.kind == ShapeKind::Unsupported) {
-        logUnsupportedRenderableDescriptor(descriptor);
+        logUnsupportedRenderableDescriptorOnce(
+            loggedUnsupportedRenderableIds, descriptor);
       }
       continue;
     }
@@ -5351,6 +5440,14 @@ int main(int argc, char* argv[])
     profile.interactionMs += elapsedMs(phaseStart);
 
     phaseStart = ProfileAccumulator::Clock::now();
+    synchronizeSceneRenderables(
+        *engine,
+        *scene,
+        materials,
+        textureCache,
+        descriptors,
+        sceneRenderables,
+        loggedUnsupportedRenderableIds);
     bool selectedRenderableStillVisible = selectedRenderableId == 0;
     for (SceneRenderable& sceneRenderable : sceneRenderables) {
       const auto descriptor = std::find_if(

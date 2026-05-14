@@ -420,6 +420,11 @@ void appendCenterOfMassMarker(
       labelPrefix + ".com.z");
 }
 
+bool containsRenderableId(const std::vector<RenderableId>& ids, RenderableId id)
+{
+  return std::find(ids.begin(), ids.end(), id) != ids.end();
+}
+
 } // namespace
 
 std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
@@ -794,6 +799,50 @@ std::vector<RenderableDescriptor> extractRenderables(
   }
 
   return renderables;
+}
+
+RenderableSetUpdatePlan planRenderableSetUpdate(
+    const std::vector<RenderableDescriptor>& descriptors,
+    const std::vector<RenderableId>& activeRenderableIds)
+{
+  RenderableSetUpdatePlan plan;
+
+  std::vector<RenderableId> desiredIds;
+  desiredIds.reserve(descriptors.size());
+  for (const RenderableDescriptor& descriptor : descriptors) {
+    if (!descriptor.material.visible || descriptor.id == 0
+        || containsRenderableId(desiredIds, descriptor.id)) {
+      continue;
+    }
+    desiredIds.push_back(descriptor.id);
+  }
+
+  std::vector<RenderableId> retainedActiveIds;
+  retainedActiveIds.reserve(activeRenderableIds.size());
+  for (std::size_t i = 0; i < activeRenderableIds.size(); ++i) {
+    const RenderableId id = activeRenderableIds[i];
+    if (id == 0 || !containsRenderableId(desiredIds, id)
+        || containsRenderableId(retainedActiveIds, id)) {
+      plan.activeRenderableIndicesToRemove.push_back(i);
+      continue;
+    }
+    retainedActiveIds.push_back(id);
+  }
+
+  std::vector<RenderableId> idsToAdd;
+  idsToAdd.reserve(descriptors.size());
+  for (std::size_t i = 0; i < descriptors.size(); ++i) {
+    const RenderableDescriptor& descriptor = descriptors[i];
+    if (!descriptor.material.visible || descriptor.id == 0
+        || containsRenderableId(retainedActiveIds, descriptor.id)
+        || containsRenderableId(idsToAdd, descriptor.id)) {
+      continue;
+    }
+    plan.descriptorIndicesToAdd.push_back(i);
+    idsToAdd.push_back(descriptor.id);
+  }
+
+  return plan;
 }
 
 std::optional<double> intersectRenderable(

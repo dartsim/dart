@@ -239,8 +239,8 @@ Known current result:
 - `UNIT_gui_FilamentSceneExtraction` builds and passes. It covers the
   `dart-gui-experimental` extraction layer, including primitive, mesh, plane,
   material, visibility, shadow, unsupported-shape diagnostics, picking hit
-  points/normals, and debug-line descriptors, without requiring Filament or a
-  graphics context.
+  points/normals, renderable set update planning, and debug-line descriptors,
+  without requiring Filament or a graphics context.
 - After moving viewer lifecycle state into `dart-gui-experimental`,
   `DART_PARALLEL_JOBS=2 CTEST_PARALLEL_LEVEL=2 pixi run test-all` passed
   locally, covering lint, Release/Debug builds, default C++ tests,
@@ -324,8 +324,8 @@ Known current result:
 - `pixi run build-py-dev` builds the constrained `dartpy.gui.experimental`
   bindings, and `python/tests/unit/gui/test_experimental_scene.py` passes
   against the local build tree, including the camera/run helper,
-  viewer lifecycle, frame-translation, plane-drag helper, and screenshot storage
-  bindings.
+  viewer lifecycle, renderable set update planning, frame-translation,
+  plane-drag helper, and screenshot storage bindings.
 - The same Python test passes against the OSG-free Filament configure with
   `DART_BUILD_GUI=OFF`, `DART_BUILD_GUI_FILAMENT=ON`, and
   `DART_BUILD_DARTPY=ON`, covering the reduced `dartpy.gui.experimental` module
