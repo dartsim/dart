@@ -18,8 +18,15 @@ if(NOT EnTT_FOUND AND NOT TARGET EnTT::EnTT)
     GIT_SHALLOW TRUE
     GIT_PROGRESS TRUE
   )
-  FetchContent_MakeAvailable(entt)
+  FetchContent_GetProperties(entt)
+  if(NOT entt_POPULATED)
+    FetchContent_Populate(entt)
+  endif()
 
-  set(EnTT_FOUND TRUE CACHE BOOL "EnTT found via FetchContent" FORCE)
+  add_library(EnTT::EnTT INTERFACE IMPORTED GLOBAL)
+  set_target_properties(EnTT::EnTT PROPERTIES
+    INTERFACE_INCLUDE_DIRECTORIES "${entt_SOURCE_DIR}/src"
+  )
   set(EnTT_VERSION 3.16.0 CACHE STRING "EnTT version" FORCE)
+  set(EnTT_FOUND TRUE CACHE BOOL "EnTT found via FetchContent" FORCE)
 endif()

@@ -53,6 +53,10 @@ unverified external and finalization gates:
   config; `dart-collision-native` now finds only its direct Eigen/EnTT
   dependencies and uses the EnTT FetchContent fallback when a system package is
   unavailable.
+  The first EnTT fallback repair got past package discovery but failed CMake
+  generation because the fetched EnTT build target was not in DART's export
+  set. The fallback now populates EnTT headers only and exposes `EnTT::EnTT` as
+  an imported interface target.
 - Downstream migration/deprecation evidence is still missing.
 - Final compatibility-facade retention/deprecation evidence is still missing:
   the documented decision is to delete old external-engine runtime
@@ -115,6 +119,13 @@ compiling with /utf-8'`. The current repair adds `/utf-8` to the root MSVC
   `dart-collision-native` from the full simulation-experimental dependency
   bundle and adds an EnTT FetchContent fallback through
   `cmake/dart_find_entt.cmake`.
+- Follow-up PR CI state after the first EnTT fallback repair: run
+  `25875314192`, job `76040846463` got past missing EnTT and failed during
+  CMake generation because `install(EXPORT "dart_component_collision-native"
+...)` saw the fetched EnTT build target outside DART's export set. The
+  current repair makes the fallback header-only from DART's perspective by
+  populating EnTT sources and creating an imported `EnTT::EnTT` interface
+  target.
 - Follow-up local validation after the audit started from
   `1da52368282` and found that `pixi run test-all` failed in `build-tests`
   because a stale cached `LIBCCD_LIBRARY` pointed at a removed

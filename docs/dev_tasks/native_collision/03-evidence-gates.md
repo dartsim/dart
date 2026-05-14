@@ -164,10 +164,18 @@ These gates are still required before the single north-star PR is complete.
   - Repair: make `dart-collision-native` find only Eigen, EnTT, and optional
     benchmark locally, and add an EnTT FetchContent fallback through
     `cmake/dart_find_entt.cmake`.
-  - Focused local validation: a temporary CMake probe including
-    `cmake/dart_find_entt.cmake` with an empty prefix created the
-    `EnTT::EnTT` target successfully, and the normal `pixi run lint`
+  - Focused local validation: a temporary export-style CMake probe including
+    `cmake/dart_find_entt.cmake` with an empty prefix created an
+    `EnTT::EnTT` dependency target and generated an installed export for a
+    target linked against it successfully, and the normal `pixi run lint`
     configure path passed.
+  - Follow-up run/job: `25875314192` / `76040846463` got past missing EnTT but
+    failed CMake generation because the fetched EnTT build target was not in
+    DART's export set.
+  - Follow-up repair: populate fetched EnTT headers only and expose
+    `EnTT::EnTT` as an imported interface target, so generated DART exports
+    reference the package target name rather than trying to export EnTT's build
+    target.
 - Windows wheel MSVC UTF-8 repair:
   - Run/job: `25874275078` / `76037407583`
     (`Wheels | windows-latest Py312`).

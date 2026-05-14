@@ -222,7 +222,11 @@ The next PR refresh then found a Windows wheel compile failure in
 headers require that mode for Unicode support. The same refresh showed the
 Alt Linux Eigen repair got past Eigen, then failed on missing EnTT package
 config because `dart-collision-native` was still using the broader
-simulation-experimental dependency bundle.
+simulation-experimental dependency bundle. The first EnTT fallback repair got
+past package discovery, then failed during CMake generation because EnTT's
+fetched build target was pulled into DART's export set; the current working
+tree changes the fallback to expose an imported interface target over fetched
+headers only.
 
 ## Current Branch
 
