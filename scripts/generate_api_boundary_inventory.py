@@ -94,10 +94,21 @@ def summarize_samples(lines: list[str]) -> tuple[str, ...]:
         if PRIVATE_INCLUDE_PATTERN.search(line) or PRIVATE_REFERENCE_PATTERN.search(
             line
         ):
-            samples.append(re.sub(r"\s+", " ", stripped).replace("|", "\\|"))
+            samples.append(re.sub(r"\s+", " ", stripped))
         if len(samples) == 2:
             break
     return tuple(samples)
+
+
+def format_sample_cell(samples: tuple[str, ...]) -> str:
+    if not samples:
+        return "n/a"
+
+    def code_span(sample: str) -> str:
+        escaped = sample.replace("|", "\\|").replace("`", "\\`")
+        return f"`{escaped}`"
+
+    return "<br>".join(code_span(sample) for sample in samples)
 
 
 def classify_header(path: Path) -> CxxHeaderInventory:
@@ -298,7 +309,7 @@ def render_inventory() -> str:
                 entry.module,
                 str(entry.private_include_count),
                 str(entry.private_reference_count),
-                "<br>".join(entry.samples) if entry.samples else "n/a",
+                format_sample_cell(entry.samples),
             )
             for entry in cxx_debt
         ],
