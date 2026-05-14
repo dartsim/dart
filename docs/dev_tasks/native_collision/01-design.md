@@ -28,6 +28,31 @@ DART API compatibility, but the only implementation behind it is the built-in
 detector. Legacy wrappers exist to preserve downstream source compatibility,
 not to choose a different runtime engine.
 
+## Architecture North-Star Requirement
+
+The built-in detector is not complete just because legacy names route to
+`dart`. The completed PR must also leave a clean component/layer design that
+can carry future feature, correctness, and performance work without reopening
+public backend selection.
+
+The architecture bar has three inseparable axes:
+
+- API cleanliness: ordinary users see DART collision concepts, the canonical
+  `dart` detector identity, engine-neutral options/results, and temporary
+  native-backed compatibility names where downstreams still need them.
+- Scalability: `dart/collision/dart/` owns persistent adapter scene state,
+  stable native IDs, dirty synchronization, deterministic result conversion,
+  and cache invalidation so larger worlds and batched queries improve behind
+  the public API.
+- Performance orientation: `dart/collision/native/` owns compact geometry,
+  broadphase/query state, shape-specialized dispatch, reusable scratch,
+  contact/manifold caches, profiler labels, and benchmark hooks without
+  linking or dispatching through FCL, Bullet, or ODE runtime engines.
+
+Each axis needs code, tests, package/source-boundary checks, and benchmark or
+profiling evidence before the collision abstraction cleanup can be marked
+complete on the north-star progress scale.
+
 ## Built-In Component Architecture
 
 The built-in detector should be designed as a layered component, not as another

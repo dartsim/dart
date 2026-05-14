@@ -193,21 +193,24 @@ The current checkpoint is a validated middle state, not a final PR boundary.
 | 7     | Reference engines are test/bench-only        | Local target split proven          |
 | 8     | Default packages have no old runtime deps    | Local pass; CI verifier wired      |
 | 9     | Downstream migration/deprecation path exists | Plan documented; run evidence left |
-| 10    | Collision abstraction is one clean stack     | Facades proven; arch gates open    |
+| 10    | Clean built-in API/scaling/perf layer        | Facades proven; arch gates open    |
 | 11    | Old runtime backend source is reference-only | Local split; lint guard wired      |
 | 12    | Final one-PR validation and PR packaging     | Blocked on CI/migration/arch/del   |
 
 ## Built-In Architecture Status
 
 `01-design.md` is the architecture and design contract for the built-in
-collision component. The target layer shape is public DART collision APIs and
-temporary compatibility facades at the outside, `dart/collision/dart/` as the
-DART shape/result/filter adapter, and `dart/collision/native/` as the scalable
-scene/query core for geometry, broadphase, narrowphase, distance, raycast,
-contact/manifold caching, deterministic results, profiling, and benchmarks.
-Its "Built-In Component Blueprint" is the concrete design checklist for API
-cleanliness, adapter-owned scene state, native query lifecycle, scalability,
-and performance-oriented internals.
+collision component. This is a north-star completion gate, not background
+context: the PR is not done until the runtime layer is API-clean, scalable, and
+performance-oriented in code and evidence. The target layer shape is public
+DART collision APIs and temporary compatibility facades at the outside,
+`dart/collision/dart/` as the DART shape/result/filter adapter, and
+`dart/collision/native/` as the scalable scene/query core for geometry,
+broadphase, narrowphase, distance, raycast, contact/manifold caching,
+deterministic results, profiling, and benchmarks. Its "Architecture
+North-Star Requirement" and "Built-In Component Blueprint" are the concrete
+design checklists for API cleanliness, adapter-owned scene state, native query
+lifecycle, scalability, and performance-oriented internals.
 
 The implementation now satisfies the source/package structure of that design:
 public factory keys, Python compatibility names, retained package components,

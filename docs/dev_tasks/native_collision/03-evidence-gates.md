@@ -35,37 +35,37 @@ options that allow native-only builds to opt out. The built-in stack must also
 have clean API boundaries, scalable native scene/query state, and
 performance-oriented internals before this scale reaches completion.
 
-| Stage | Gate                                                | State                              |
-| ----- | --------------------------------------------------- | ---------------------------------- |
-| 0     | Baseline native backend exists                      | Complete before this task          |
-| 1     | Native `dart` detector is default                   | Complete in checkpoint             |
-| 2     | DART feature parity is proven                       | Complete in checkpoint             |
-| 3     | gz-physics compatibility is proven                  | Mostly repaired; one focused fail  |
-| 4     | Native benchmark wins are recorded                  | Complete in checkpoint             |
-| 5     | Local builds pass with FCL/Bullet/ODE disabled      | Complete in checkpoint             |
-| 6     | Native-only and gz-physics CI are permanent         | Started; gz focused gate not final |
-| 7     | Reference engines are test/bench-only opt-in        | Local target split proven          |
-| 8     | Default packages/wheels have no old runtime deps    | Local pass; CI wheel matrix left   |
-| 9     | Downstream migration/deprecation path is tested     | Started; alias/component coverage  |
-| 10    | Collision abstraction is one clean built-in stack   | Source/package facades proven      |
-| 11    | Old runtime backend source is reference-only        | Local split; lint guard wired      |
-| 12    | Final PR evidence is complete and task docs removed | Blocked on CI/migration/perf       |
+| Stage | Gate                                                | State                                |
+| ----- | --------------------------------------------------- | ------------------------------------ |
+| 0     | Baseline native backend exists                      | Complete before this task            |
+| 1     | Native `dart` detector is default                   | Complete in checkpoint               |
+| 2     | DART feature parity is proven                       | Complete in checkpoint               |
+| 3     | gz-physics compatibility is proven                  | Mostly repaired; one focused fail    |
+| 4     | Native benchmark wins are recorded                  | Complete in checkpoint               |
+| 5     | Local builds pass with FCL/Bullet/ODE disabled      | Complete in checkpoint               |
+| 6     | Native-only and gz-physics CI are permanent         | Started; gz focused gate not final   |
+| 7     | Reference engines are test/bench-only opt-in        | Local target split proven            |
+| 8     | Default packages/wheels have no old runtime deps    | Local pass; CI wheel matrix left     |
+| 9     | Downstream migration/deprecation path is tested     | Started; alias/component coverage    |
+| 10    | Clean built-in API/scaling/perf layer               | Facades proven; design evidence open |
+| 11    | Old runtime backend source is reference-only        | Local split; lint guard wired        |
+| 12    | Final PR evidence is complete and task docs removed | Blocked on CI/migration/perf         |
 
 ## Remaining North-Star Gate Backlog
 
 These gates are still required before the single north-star PR is complete.
 
-| Gate                        | Required evidence                                                      | Current state                                  |
-| --------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------- |
-| CI native-only build        | CI passes with FCL, Bullet, and ODE disabled                           | Local equivalent passed; awaiting CI evidence  |
-| CI gz-physics compatibility | gz-physics CI passes with optional legacy components built             | Focused local run has one residual failure     |
-| Reference correctness       | FCL/Bullet/ODE comparison tests are test-only and optional             | Local reference target split passes            |
-| Packaging removal           | Default packages/wheels have no old collision runtime deps             | Verifier wired; CI matrix evidence left        |
-| Downstream migration        | gz-physics has a tested path away from legacy detector APIs            | Migration plan documented; gz fixes left       |
-| Collision abstraction       | Legacy keys/classes route only to built-in native behavior             | Source/package facades done                    |
-| Built-in architecture       | `01-design.md` layer table and blueprint pass API, scaling, perf gates | Source split, cache bridge, support diagnosis  |
-| Benchmark regression guard  | Optional reference benchmarks guide gradual optimization               | Scheduled/manual CI guard added; evidence left |
-| Legacy backend deletion     | Old runtime backend sources removed from default stack                 | Runtime source guard wired; deletion left      |
+| Gate                         | Required evidence                                                                                                      | Current state                                  |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| CI native-only build         | CI passes with FCL, Bullet, and ODE disabled                                                                           | Local equivalent passed; awaiting CI evidence  |
+| CI gz-physics compatibility  | gz-physics CI passes with optional legacy components built                                                             | Focused local run has one residual failure     |
+| Reference correctness        | FCL/Bullet/ODE comparison tests are test-only and optional                                                             | Local reference target split passes            |
+| Packaging removal            | Default packages/wheels have no old collision runtime deps                                                             | Verifier wired; CI matrix evidence left        |
+| Downstream migration         | gz-physics has a tested path away from legacy detector APIs                                                            | Migration plan documented; gz fixes left       |
+| Collision abstraction        | Legacy keys/classes route only to built-in native behavior                                                             | Source/package facades done                    |
+| Built-in architecture/design | `01-design.md` north-star requirement, layer table, and blueprint pass API-cleanliness, scaling, and performance gates | Source split, cache bridge, support diagnosis  |
+| Benchmark regression guard   | Optional reference benchmarks guide gradual optimization                                                               | Scheduled/manual CI guard added; evidence left |
+| Legacy backend deletion      | Old runtime backend sources removed from default stack                                                                 | Runtime source guard wired; deletion left      |
 
 ## Test Runs
 
