@@ -458,6 +458,89 @@ std::optional<LocalBoundsHit> intersectLocalCylinder(
   return nearest;
 }
 
+std::optional<LocalBoundsHit> intersectLocalCapsule(
+    const Eigen::Vector3d& origin,
+    const Eigen::Vector3d& direction,
+    double radius,
+    double height)
+{
+  if (!origin.allFinite() || !direction.allFinite() || !std::isfinite(radius)
+      || !std::isfinite(height) || radius <= 0.0 || height < 0.0) {
+    return std::nullopt;
+  }
+
+  const double halfHeight = height * 0.5;
+  std::optional<LocalBoundsHit> nearest;
+  const auto considerHit = [&](double distance, const Eigen::Vector3d& normal) {
+    if (distance < 0.0 || !std::isfinite(distance) || !normal.allFinite()
+        || normal.squaredNorm() <= 1e-18) {
+      return;
+    }
+
+    if (!nearest || distance < nearest->distance) {
+      LocalBoundsHit hit;
+      hit.distance = distance;
+      hit.normal = normal.normalized();
+      nearest = hit;
+    }
+  };
+
+  const double sideA
+      = direction.x() * direction.x() + direction.y() * direction.y();
+  const double sideB
+      = 2.0 * (origin.x() * direction.x() + origin.y() * direction.y());
+  const double sideC
+      = origin.x() * origin.x() + origin.y() * origin.y() - radius * radius;
+  if (sideA > 1e-18 && std::isfinite(sideA) && std::isfinite(sideB)
+      && std::isfinite(sideC)) {
+    const double discriminant = sideB * sideB - 4.0 * sideA * sideC;
+    if (discriminant >= 0.0 && std::isfinite(discriminant)) {
+      const double sqrtDiscriminant = std::sqrt(discriminant);
+      for (double distance :
+           {(-sideB - sqrtDiscriminant) / (2.0 * sideA),
+            (-sideB + sqrtDiscriminant) / (2.0 * sideA)}) {
+        const Eigen::Vector3d point = origin + direction * distance;
+        if (point.z() >= -halfHeight - 1e-12
+            && point.z() <= halfHeight + 1e-12) {
+          considerHit(distance, Eigen::Vector3d(point.x(), point.y(), 0.0));
+        }
+      }
+    }
+  }
+
+  const auto considerCap = [&](const Eigen::Vector3d& center, bool top) {
+    const Eigen::Vector3d offset = origin - center;
+    const double a = direction.dot(direction);
+    const double b = 2.0 * offset.dot(direction);
+    const double c = offset.dot(offset) - radius * radius;
+    if (a <= 1e-18 || !std::isfinite(a) || !std::isfinite(b)
+        || !std::isfinite(c)) {
+      return;
+    }
+
+    const double discriminant = b * b - 4.0 * a * c;
+    if (discriminant < 0.0 || !std::isfinite(discriminant)) {
+      return;
+    }
+
+    const double sqrtDiscriminant = std::sqrt(discriminant);
+    for (double distance :
+         {(-b - sqrtDiscriminant) / (2.0 * a),
+          (-b + sqrtDiscriminant) / (2.0 * a)}) {
+      const Eigen::Vector3d point = origin + direction * distance;
+      if ((top && point.z() < halfHeight - 1e-12)
+          || (!top && point.z() > -halfHeight + 1e-12)) {
+        continue;
+      }
+      considerHit(distance, point - center);
+    }
+  };
+
+  considerCap(Eigen::Vector3d(0.0, 0.0, halfHeight), true);
+  considerCap(Eigen::Vector3d(0.0, 0.0, -halfHeight), false);
+  return nearest;
+}
+
 std::optional<LocalBoundsHit> intersectLocalGeometry(
     const GeometryDescriptor& geometry,
     const Eigen::Vector3d& origin,
@@ -474,6 +557,11 @@ std::optional<LocalBoundsHit> intersectLocalGeometry(
 
   if (geometry.kind == ShapeKind::Cylinder) {
     return intersectLocalCylinder(
+        origin, direction, geometry.radius, geometry.height);
+  }
+
+  if (geometry.kind == ShapeKind::Capsule) {
+    return intersectLocalCapsule(
         origin, direction, geometry.radius, geometry.height);
   }
 

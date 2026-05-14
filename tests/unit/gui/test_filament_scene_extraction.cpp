@@ -799,6 +799,45 @@ TEST(
 }
 
 TEST(
+    FilamentSceneExtraction,
+    PickNearestRenderable_CapsuleUsesPrimitiveSurfaceNormal)
+{
+  auto world = World::create("world");
+  auto skeleton = Skeleton::create("capsule_robot");
+  auto [joint, body] = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  body->createShapeNodeWith<VisualAspect>(
+      std::make_shared<CapsuleShape>(1.0, 2.0));
+  world->addSkeleton(skeleton);
+
+  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  ASSERT_EQ(renderables.size(), 1u);
+
+  const dart::gui::experimental::PickRay sideRay{
+      Eigen::Vector3d(-2.0, 0.5, 0.0), Eigen::Vector3d::UnitX()};
+  const auto sideHit
+      = dart::gui::experimental::pickNearestRenderable(renderables, sideRay);
+
+  const double sideX = -std::sqrt(0.75);
+  ASSERT_TRUE(sideHit.has_value());
+  EXPECT_NEAR(sideHit->distance, 2.0 + sideX, 1e-12);
+  EXPECT_TRUE(sideHit->point.isApprox(Eigen::Vector3d(sideX, 0.5, 0.0)));
+  EXPECT_TRUE(
+      sideHit->normal.isApprox(Eigen::Vector3d(sideX, 0.5, 0.0).normalized()));
+
+  const dart::gui::experimental::PickRay capRay{
+      Eigen::Vector3d(0.5, 0.0, 4.0), -Eigen::Vector3d::UnitZ()};
+  const auto capHit
+      = dart::gui::experimental::pickNearestRenderable(renderables, capRay);
+
+  const double capZ = 1.0 + std::sqrt(0.75);
+  ASSERT_TRUE(capHit.has_value());
+  EXPECT_NEAR(capHit->distance, 4.0 - capZ, 1e-12);
+  EXPECT_TRUE(capHit->point.isApprox(Eigen::Vector3d(0.5, 0.0, capZ)));
+  EXPECT_TRUE(capHit->normal.isApprox(
+      Eigen::Vector3d(0.5, 0.0, std::sqrt(0.75)).normalized()));
+}
+
+TEST(
     FilamentSceneExtraction, PickNearestRenderable_IgnoresHiddenAndMissedShapes)
 {
   auto world = World::create("world");

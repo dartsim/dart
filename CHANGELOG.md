@@ -133,9 +133,9 @@
     MVP scene validating that all enabled shape fixtures are extracted and
     rendered, `MeshShape` material/submesh metadata exposed through descriptors,
     nearest-pick results reporting bounds hit normals plus primitive
-    sphere/ellipsoid/cylinder hit normals, unsupported shapes producing diagnostic
-    descriptors, and backend-hidden renderable set update planning for dynamic
-    renderer resource synchronization. The
+    sphere/ellipsoid/cylinder/capsule hit normals, unsupported shapes producing
+    diagnostic descriptors, and backend-hidden renderable set update planning
+    for dynamic renderer resource synchronization. The
     renderer-hidden debug descriptor path also covers support-polygon outlines
     and support-centroid markers, plus arrowheads for contact normal and force
     overlays, equivalent inertia-box overlays, and collision-shape bounds for
