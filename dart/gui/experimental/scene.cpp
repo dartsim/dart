@@ -155,6 +155,147 @@ MeshPartDescriptor makeMeshPartDescriptor(
   return descriptor;
 }
 
+template <typename S>
+void setTriangleMeshData(
+    GeometryDescriptor& descriptor,
+    const math::TriMesh<S>& triMesh,
+    const Eigen::Vector3d& scale = Eigen::Vector3d::Ones())
+{
+  const auto& vertices = triMesh.getVertices();
+  const auto& triangles = triMesh.getTriangles();
+  if (vertices.empty() || triangles.empty()
+      || vertices.size()
+             > static_cast<std::size_t>(std::numeric_limits<int>::max())) {
+    return;
+  }
+
+  descriptor.triangleVertices.clear();
+  descriptor.triangleIndices.clear();
+  descriptor.triangleVertices.reserve(vertices.size());
+  descriptor.triangleIndices.reserve(triangles.size());
+
+  for (const auto& vertex : vertices) {
+    const Eigen::Vector3d point
+        = scale.cwiseProduct(vertex.template cast<double>());
+    if (!point.allFinite()) {
+      descriptor.triangleVertices.clear();
+      descriptor.triangleIndices.clear();
+      return;
+    }
+    descriptor.triangleVertices.push_back(point);
+  }
+
+  for (const auto& triangle : triangles) {
+    if (triangle[0] >= vertices.size() || triangle[1] >= vertices.size()
+        || triangle[2] >= vertices.size()) {
+      continue;
+    }
+
+    descriptor.triangleIndices.emplace_back(
+        static_cast<int>(triangle[0]),
+        static_cast<int>(triangle[1]),
+        static_cast<int>(triangle[2]));
+  }
+}
+
+template <typename S>
+void setHeightmapTriangleData(
+    GeometryDescriptor& descriptor,
+    const dynamics::HeightmapShape<S>& heightmapShape)
+{
+  const auto& heightmap = heightmapShape.getHeightField();
+  const Eigen::Index rows = heightmap.rows();
+  const Eigen::Index cols = heightmap.cols();
+  if (rows < 2 || cols < 2
+      || static_cast<std::size_t>(heightmap.size())
+             > static_cast<std::size_t>(std::numeric_limits<int>::max())) {
+    return;
+  }
+
+  const auto scale = heightmapShape.getScale().template cast<double>();
+  const double spanX = static_cast<double>(cols - 1) * scale.x();
+  const double spanY = static_cast<double>(rows - 1) * scale.y();
+  const double xOffset = -0.5 * spanX;
+  const double yOffset = 0.5 * spanY;
+
+  descriptor.triangleVertices.clear();
+  descriptor.triangleIndices.clear();
+  descriptor.triangleVertices.reserve(
+      static_cast<std::size_t>(heightmap.size()));
+  for (Eigen::Index row = 0; row < rows; ++row) {
+    for (Eigen::Index col = 0; col < cols; ++col) {
+      descriptor.triangleVertices.emplace_back(
+          static_cast<double>(col) * scale.x() + xOffset,
+          -static_cast<double>(row) * scale.y() + yOffset,
+          static_cast<double>(heightmap(row, col)) * scale.z());
+    }
+  }
+
+  const auto vertexIndex = [cols](Eigen::Index row, Eigen::Index col) {
+    return static_cast<int>(row * cols + col);
+  };
+
+  descriptor.triangleIndices.reserve(
+      static_cast<std::size_t>((rows - 1) * (cols - 1) * 2));
+  for (Eigen::Index row = 1; row < rows; ++row) {
+    for (Eigen::Index col = 1; col < cols; ++col) {
+      const int p1 = vertexIndex(row - 1, col - 1);
+      const int p2 = vertexIndex(row - 1, col);
+      const int p3 = vertexIndex(row, col - 1);
+      const int current = vertexIndex(row, col);
+      descriptor.triangleIndices.emplace_back(p1, p3, p2);
+      descriptor.triangleIndices.emplace_back(p2, p3, current);
+    }
+  }
+}
+
+void setSoftMeshTriangleData(
+    GeometryDescriptor& descriptor, const dynamics::SoftMeshShape& softMesh)
+{
+  const auto triMesh = softMesh.getTriMesh();
+  if (triMesh == nullptr || triMesh->getTriangles().empty()) {
+    return;
+  }
+
+  const auto* softBody = softMesh.getSoftBodyNode();
+  const std::size_t vertexCount = softBody != nullptr
+                                      ? softBody->getNumPointMasses()
+                                      : triMesh->getVertices().size();
+  if (vertexCount == 0u
+      || vertexCount
+             > static_cast<std::size_t>(std::numeric_limits<int>::max())) {
+    return;
+  }
+
+  descriptor.triangleVertices.clear();
+  descriptor.triangleIndices.clear();
+  descriptor.triangleVertices.reserve(vertexCount);
+  for (std::size_t i = 0u; i < vertexCount; ++i) {
+    if (softBody != nullptr) {
+      const auto* pointMass = softBody->getPointMass(i);
+      if (pointMass == nullptr) {
+        descriptor.triangleVertices.clear();
+        return;
+      }
+      descriptor.triangleVertices.push_back(pointMass->getLocalPosition());
+    } else {
+      descriptor.triangleVertices.push_back(triMesh->getVertices()[i]);
+    }
+  }
+
+  descriptor.triangleIndices.reserve(triMesh->getTriangles().size());
+  for (const auto& triangle : triMesh->getTriangles()) {
+    if (triangle[0] >= vertexCount || triangle[1] >= vertexCount
+        || triangle[2] >= vertexCount) {
+      continue;
+    }
+    descriptor.triangleIndices.emplace_back(
+        static_cast<int>(triangle[0]),
+        static_cast<int>(triangle[1]),
+        static_cast<int>(triangle[2]));
+  }
+}
+
 void setSoftMeshBounds(
     GeometryDescriptor& descriptor, const dynamics::SoftMeshShape& softMesh)
 {
@@ -334,6 +475,41 @@ std::optional<LocalBoundsHit> intersectLocalTriangle(
   hit.distance = distance;
   hit.normal = normal.normalized();
   return hit;
+}
+
+std::optional<LocalBoundsHit> intersectLocalTriangleMesh(
+    const Eigen::Vector3d& origin,
+    const Eigen::Vector3d& direction,
+    const std::vector<Eigen::Vector3d>& vertices,
+    const std::vector<Eigen::Vector3i>& triangles)
+{
+  if (!origin.allFinite() || !direction.allFinite() || vertices.empty()
+      || triangles.empty()) {
+    return std::nullopt;
+  }
+
+  std::optional<LocalBoundsHit> nearest;
+  for (const Eigen::Vector3i& triangle : triangles) {
+    if ((triangle.array() < 0).any()) {
+      continue;
+    }
+
+    const auto first = static_cast<std::size_t>(triangle.x());
+    const auto second = static_cast<std::size_t>(triangle.y());
+    const auto third = static_cast<std::size_t>(triangle.z());
+    if (first >= vertices.size() || second >= vertices.size()
+        || third >= vertices.size()) {
+      continue;
+    }
+
+    const auto hit = intersectLocalTriangle(
+        origin, direction, vertices[first], vertices[second], vertices[third]);
+    if (hit && (!nearest || hit->distance < nearest->distance)) {
+      nearest = hit;
+    }
+  }
+
+  return nearest;
 }
 
 std::optional<LocalBoundsHit> intersectLocalBounds(
@@ -850,6 +1026,20 @@ std::optional<LocalBoundsHit> intersectLocalGeometry(
         origin, direction, geometry.normal, geometry.offset);
   }
 
+  if (geometry.kind == ShapeKind::ConvexMesh
+      || geometry.kind == ShapeKind::Heightmap
+      || geometry.kind == ShapeKind::SoftMesh
+      || geometry.kind == ShapeKind::Mesh) {
+    if (!geometry.triangleVertices.empty()
+        && !geometry.triangleIndices.empty()) {
+      return intersectLocalTriangleMesh(
+          origin,
+          direction,
+          geometry.triangleVertices,
+          geometry.triangleIndices);
+    }
+  }
+
   if (geometry.kind == ShapeKind::PointCloud) {
     return intersectLocalBoxCloud(
         origin, direction, geometry.pointCloudPoints, geometry.pointSize);
@@ -1250,6 +1440,7 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
     descriptor.kind = ShapeKind::ConvexMesh;
     const auto& mesh = convexMesh->getMesh();
     if (mesh != nullptr && !mesh->getVertices().empty()) {
+      setTriangleMeshData(descriptor, *mesh);
       Eigen::Vector3d min = mesh->getVertices().front();
       Eigen::Vector3d max = min;
       for (const Eigen::Vector3d& vertex : mesh->getVertices()) {
@@ -1307,6 +1498,7 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
   if (const auto* heightmap
       = dynamic_cast<const dynamics::HeightmapShapef*>(&shape)) {
     descriptor.kind = ShapeKind::Heightmap;
+    setHeightmapTriangleData(descriptor, *heightmap);
     setShapeBoundingBoxBounds(descriptor, *heightmap);
     return descriptor;
   }
@@ -1314,6 +1506,7 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
   if (const auto* heightmap
       = dynamic_cast<const dynamics::HeightmapShaped*>(&shape)) {
     descriptor.kind = ShapeKind::Heightmap;
+    setHeightmapTriangleData(descriptor, *heightmap);
     setShapeBoundingBoxBounds(descriptor, *heightmap);
     return descriptor;
   }
@@ -1321,6 +1514,7 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
   if (const auto* softMesh
       = dynamic_cast<const dynamics::SoftMeshShape*>(&shape)) {
     descriptor.kind = ShapeKind::SoftMesh;
+    setSoftMeshTriangleData(descriptor, *softMesh);
     setSoftMeshBounds(descriptor, *softMesh);
     return descriptor;
   }
@@ -1350,6 +1544,7 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
     }
     const auto triMesh = mesh->getTriMesh();
     if (triMesh != nullptr && !triMesh->getVertices().empty()) {
+      setTriangleMeshData(descriptor, *triMesh, descriptor.scale);
       Eigen::Vector3d min
           = descriptor.scale.cwiseProduct(triMesh->getVertices().front());
       Eigen::Vector3d max = min;

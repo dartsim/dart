@@ -46,9 +46,10 @@
   arrows, support-polygon outlines, and support-centroid markers; the Filament
   example translates those descriptors into line primitives.
 - The experimental scene layer includes tested picking bounds and nearest
-  ray-hit selection helpers with hit point and bounds-normal reporting. The
-  example uses them for basic click-to-select highlighting and a
-  renderer-independent selection bounds overlay without exposing Filament types.
+  ray-hit selection helpers with hit point, bounds-normal, primitive-surface,
+  and triangle-backed mesh surface reporting. The example uses them for basic
+  click-to-select highlighting and a renderer-independent selection bounds
+  overlay without exposing Filament types.
 - The experimental scene layer includes tested free-joint, simple-frame, and
   combined frame-renderable translation helpers for selected renderables. The
   Filament example uses the combined path for keyboard nudging of selected

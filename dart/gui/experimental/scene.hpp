@@ -118,6 +118,8 @@ struct GeometryDescriptor
   std::vector<double> sphereRadii;
   std::vector<Eigen::Vector3d> lineVertices;
   std::vector<Eigen::Vector2i> lineConnections;
+  std::vector<Eigen::Vector3d> triangleVertices;
+  std::vector<Eigen::Vector3i> triangleIndices;
   std::vector<Eigen::Vector3d> pointCloudPoints;
   std::vector<Eigen::Vector4d> pointCloudColors;
   std::vector<Eigen::Vector3d> voxelCenters;

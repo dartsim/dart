@@ -67,9 +67,10 @@ extension points:
 The experimental Filament work already covers a narrower backend-hidden slice:
 renderable descriptors, common primitive descriptors, TriMesh mesh references,
 finite plane proxies, visual shadow flags, debug line descriptors, bounds-based
-picking, simple selection, selected-frame translation, plane dragging, orbit
-camera math, lifecycle state, screenshot storage, constrained Python bindings,
-renderable set update planning, and headless smoke tests.
+picking, primitive and triangle-backed surface picking, simple selection,
+selected-frame translation, plane dragging, orbit camera math, lifecycle state,
+screenshot storage, constrained Python bindings, renderable set update planning,
+and headless smoke tests.
 
 ## Alternative renderer survey
 
@@ -181,11 +182,12 @@ not a drop-in OSG replacement.
 - **Existing support:** OSG intersection visitors return picked shape frames,
   hit positions, normals, and ordered intersections.
 - **Filament gap:** Filament does not provide DART object picking semantics.
-  The current experimental path uses local bounds for most shapes and primitive
-  sphere/ellipsoid/cylinder/capsule/cone/pyramid/multi-sphere plus
-  point-cloud/voxel-grid box-proxy and finite plane-proxy intersections for
-  surface hit points and normals. This is sufficient for an MVP but not precise enough for all
-  promoted tools.
+  The current experimental path uses local bounds for shapes without richer
+  data, primitive sphere/ellipsoid/cylinder/capsule/cone/pyramid/multi-sphere,
+  point-cloud/voxel-grid box-proxy, finite plane-proxy, and triangle-backed
+  convex-mesh/heightmap/soft-mesh/MeshShape intersections for surface hit
+  points and normals. This is sufficient for an MVP but not precise enough for
+  all promoted tools.
 - **North-star plan:** Add renderer-independent picking services. Start with
   bounding volumes, then add triangle or primitive intersection for precise
   hit point/normal data. If GPU ID picking is later needed, keep it behind the

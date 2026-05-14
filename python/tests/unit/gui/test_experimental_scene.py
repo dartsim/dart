@@ -30,6 +30,8 @@ def test_experimental_extract_renderables_from_world():
     geometry = dart.gui.experimental.GeometryDescriptor()
     assert hasattr(geometry, "voxel_centers")
     assert hasattr(geometry, "voxel_size")
+    assert hasattr(geometry, "triangle_vertices")
+    assert hasattr(geometry, "triangle_indices")
     assert hasattr(geometry, "unsupported_reason")
     assert hasattr(geometry, "mesh_uses_material_colors")
     assert hasattr(geometry, "mesh_texture_coord_components")
@@ -278,6 +280,36 @@ def test_experimental_pick_plane_uses_finite_proxy_surface():
 
     miss_ray = dart.gui.experimental.PickRay()
     miss_ray.origin = np.array([1.5, 0.0, 2.0])
+    miss_ray.direction = np.array([0.0, 0.0, -1.0])
+    assert dart.gui.experimental.pick_nearest_renderable([renderable], miss_ray) is None
+
+
+def test_experimental_pick_triangle_mesh_uses_surface_triangles():
+    renderable = dart.gui.experimental.RenderableDescriptor()
+    renderable.id = 1
+    renderable.geometry.kind = dart.gui.experimental.ShapeKind.Mesh
+    renderable.geometry.triangle_vertices = [
+        np.array([0.0, 0.0, 0.0]),
+        np.array([1.0, 0.0, 0.0]),
+        np.array([0.0, 1.0, 0.0]),
+    ]
+    renderable.geometry.triangle_indices = [np.array([0, 1, 2], dtype=np.int32)]
+    renderable.geometry.has_local_bounds = True
+    renderable.geometry.local_bounds_min = np.array([0.0, 0.0, -0.1])
+    renderable.geometry.local_bounds_max = np.array([1.0, 1.0, 0.1])
+
+    hit_ray = dart.gui.experimental.PickRay()
+    hit_ray.origin = np.array([0.25, 0.25, 1.0])
+    hit_ray.direction = np.array([0.0, 0.0, -1.0])
+    hit = dart.gui.experimental.pick_nearest_renderable([renderable], hit_ray)
+
+    assert hit is not None
+    assert np.isclose(hit.distance, 1.0)
+    assert np.allclose(hit.point, [0.25, 0.25, 0.0])
+    assert np.allclose(hit.normal, [0.0, 0.0, 1.0])
+
+    miss_ray = dart.gui.experimental.PickRay()
+    miss_ray.origin = np.array([0.75, 0.75, 1.0])
     miss_ray.direction = np.array([0.0, 0.0, -1.0])
     assert dart.gui.experimental.pick_nearest_renderable([renderable], miss_ray) is None
 

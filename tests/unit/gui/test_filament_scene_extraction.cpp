@@ -456,6 +456,13 @@ TEST(
   EXPECT_TRUE(
       convexMesh->localBoundsMax.isApprox(Eigen::Vector3d(0.45, 0.35, 0.55)));
   EXPECT_TRUE(convexMesh->size.isApprox(Eigen::Vector3d(0.7, 0.55, 0.65)));
+  ASSERT_EQ(convexMesh->triangleVertices.size(), 4u);
+  ASSERT_EQ(convexMesh->triangleIndices.size(), 4u);
+  EXPECT_TRUE(convexMesh->triangleVertices[0].isApprox(
+      Eigen::Vector3d(-0.25, -0.2, -0.1)));
+  EXPECT_EQ(convexMesh->triangleIndices[0].x(), 0);
+  EXPECT_EQ(convexMesh->triangleIndices[0].y(), 2);
+  EXPECT_EQ(convexMesh->triangleIndices[0].z(), 1);
 
   PointCloudShape pointCloud(0.2);
   pointCloud.addPoint(Eigen::Vector3d(-0.4, 0.0, 0.1));
@@ -493,6 +500,13 @@ TEST(
   EXPECT_TRUE(
       terrain->localBoundsMax.isApprox(Eigen::Vector3d(0.75, 0.25, 9.0)));
   EXPECT_TRUE(terrain->size.isApprox(Eigen::Vector3d(1.5, 0.5, 7.5)));
+  ASSERT_EQ(terrain->triangleVertices.size(), 6u);
+  ASSERT_EQ(terrain->triangleIndices.size(), 4u);
+  EXPECT_TRUE(
+      terrain->triangleVertices[0].isApprox(Eigen::Vector3d(-0.5, 0.125, 1.5)));
+  EXPECT_EQ(terrain->triangleIndices[0].x(), 0);
+  EXPECT_EQ(terrain->triangleIndices[0].y(), 3);
+  EXPECT_EQ(terrain->triangleIndices[0].z(), 1);
 
   auto softSkeleton = Skeleton::create("soft_skel");
   auto* softBody
@@ -519,6 +533,8 @@ TEST(
   EXPECT_GT(softMesh->size.x(), 0.0);
   EXPECT_GT(softMesh->size.y(), 0.0);
   EXPECT_GT(softMesh->size.z(), 0.0);
+  EXPECT_FALSE(softMesh->triangleVertices.empty());
+  EXPECT_FALSE(softMesh->triangleIndices.empty());
 
 #if DART_HAVE_OCTOMAP
   VoxelGridShape voxelGrid(0.1);
@@ -618,6 +634,13 @@ TEST(
   EXPECT_EQ(mesh->meshParts[1].triangleOffset, 1u);
   EXPECT_EQ(mesh->meshParts[1].triangleCount, 1u);
   EXPECT_EQ(mesh->meshParts[1].materialIndex, 1u);
+  ASSERT_EQ(mesh->triangleVertices.size(), 4u);
+  ASSERT_EQ(mesh->triangleIndices.size(), 2u);
+  EXPECT_TRUE(
+      mesh->triangleVertices[1].isApprox(Eigen::Vector3d(2.0, 0.0, 0.0)));
+  EXPECT_EQ(mesh->triangleIndices[1].x(), 1);
+  EXPECT_EQ(mesh->triangleIndices[1].y(), 3);
+  EXPECT_EQ(mesh->triangleIndices[1].z(), 2);
   ASSERT_TRUE(mesh->hasLocalBounds);
   EXPECT_TRUE(mesh->localBoundsMin.isApprox(Eigen::Vector3d(0.0, 0.0, 0.0)));
   EXPECT_TRUE(mesh->localBoundsMax.isApprox(Eigen::Vector3d(2.0, 3.0, 0.0)));
@@ -964,6 +987,42 @@ TEST(FilamentSceneExtraction, PickNearestRenderable_PlaneUsesFiniteProxySurface)
 
   const dart::gui::experimental::PickRay missRay{
       Eigen::Vector3d(1.5, 0.0, 2.0), -Eigen::Vector3d::UnitZ()};
+  EXPECT_FALSE(
+      dart::gui::experimental::pickNearestRenderable(renderables, missRay)
+          .has_value());
+}
+
+TEST(
+    FilamentSceneExtraction,
+    PickNearestRenderable_TriangleMeshUsesSurfaceTriangles)
+{
+  dart::gui::experimental::RenderableDescriptor renderable;
+  renderable.id = 1u;
+  renderable.geometry.kind = ShapeKind::Mesh;
+  renderable.geometry.hasLocalBounds = true;
+  renderable.geometry.localBoundsMin = Eigen::Vector3d(0.0, 0.0, -0.1);
+  renderable.geometry.localBoundsMax = Eigen::Vector3d(1.0, 1.0, 0.1);
+  renderable.geometry.triangleVertices
+      = {Eigen::Vector3d(0.0, 0.0, 0.0),
+         Eigen::Vector3d(1.0, 0.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0)};
+  renderable.geometry.triangleIndices = {Eigen::Vector3i(0, 1, 2)};
+
+  const std::vector<dart::gui::experimental::RenderableDescriptor> renderables{
+      renderable};
+
+  const dart::gui::experimental::PickRay hitRay{
+      Eigen::Vector3d(0.25, 0.25, 1.0), -Eigen::Vector3d::UnitZ()};
+  const auto hit
+      = dart::gui::experimental::pickNearestRenderable(renderables, hitRay);
+
+  ASSERT_TRUE(hit.has_value());
+  EXPECT_NEAR(hit->distance, 1.0, 1e-12);
+  EXPECT_TRUE(hit->point.isApprox(Eigen::Vector3d(0.25, 0.25, 0.0)));
+  EXPECT_TRUE(hit->normal.isApprox(Eigen::Vector3d::UnitZ()));
+
+  const dart::gui::experimental::PickRay missRay{
+      Eigen::Vector3d(0.75, 0.75, 1.0), -Eigen::Vector3d::UnitZ()};
   EXPECT_FALSE(
       dart::gui::experimental::pickNearestRenderable(renderables, missRay)
           .has_value());
