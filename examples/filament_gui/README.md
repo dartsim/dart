@@ -48,7 +48,9 @@
   an imported WAM Collada mesh, the full WAM URDF skeleton, an Atlas DAE torso
   mesh, a full Atlas SDF robot fixture, a four-panel glTF/PBR environment
   layout, and a finite checker-textured `PlaneShape` proxy. Mesh rendering uses
-  authored UVs, submesh material ranges, material colors,
+  descriptor triangle data for convex mesh, heightmap, and soft mesh visuals,
+  while `MeshShape` rendering uses authored UVs, submesh material ranges,
+  material colors,
   metallic/roughness factors, emissive color, and typed PNG/JPEG texture images
   for base color, metallic, roughness, combined metallic-roughness, normal,
   occlusion, and emissive maps when `MeshShape` provides them. The scene also

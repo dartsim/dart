@@ -164,8 +164,10 @@ soft-body surface, plus an OctoMap-backed `VoxelGridShape` cell cluster when
 available. The MVP scene now includes pyramid, multi-sphere, line-segment,
 convex-mesh, point-cloud, heightmap, soft-mesh, and voxel-grid fixtures, and
 the example startup checks that all enabled descriptors are extracted and
-converted into Filament renderables. Unsupported shapes now produce diagnostic
-descriptors instead of being silently dropped by the extraction layer.
+converted into Filament renderables. Convex mesh, heightmap, and soft mesh
+rendering now consumes descriptor-owned triangle data instead of concrete shape
+dynamic casts. Unsupported shapes now produce diagnostic descriptors instead of
+being silently dropped by the extraction layer.
 `MeshShape` material, texture-path, texture-coordinate, and submesh metadata now
 flow through renderer-hidden descriptors, and the Filament example consumes
 that descriptor metadata for per-part mesh materials. The picking helpers now

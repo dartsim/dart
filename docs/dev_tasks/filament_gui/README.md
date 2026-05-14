@@ -16,7 +16,9 @@
   capsule, pyramid, multi-sphere, line-segment, convex-mesh,
   point-cloud, heightmap, soft-mesh, OctoMap-backed voxel-grid,
   TriMesh-backed `MeshShape`, and finite `PlaneShape` descriptors, and applies
-  DART visual-aspect shadow flags to Filament renderables.
+  DART visual-aspect shadow flags to Filament renderables. Convex mesh,
+  heightmap, and soft mesh rendering now consumes descriptor-owned triangle data
+  instead of reaching back into concrete shape objects.
 - The example configures Filament view quality features needed by the MVP gate:
   cascaded SUN shadows, contact shadows for windowed runs, deterministic PCF
   shadows for headless screenshots, a neutral skybox, spherical harmonics

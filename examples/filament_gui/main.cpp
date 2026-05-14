@@ -127,7 +127,6 @@ using dart::dynamics::CollisionAspect;
 using dart::dynamics::ConvexMeshShape;
 using dart::dynamics::DynamicsAspect;
 using dart::dynamics::FreeJoint;
-using dart::dynamics::HeightmapShapef;
 using dart::dynamics::HeightmapShaped;
 using dart::dynamics::InverseKinematics;
 using dart::dynamics::InverseKinematicsPtr;
@@ -141,7 +140,6 @@ using dart::dynamics::SimpleFrame;
 using dart::dynamics::Skeleton;
 using dart::dynamics::SoftBodyNode;
 using dart::dynamics::SoftBodyNodeHelper;
-using dart::dynamics::SoftMeshShape;
 using dart::dynamics::SphereShape;
 using dart::dynamics::VisualAspect;
 using dart::dynamics::WeldJoint;
@@ -3328,55 +3326,74 @@ Renderable createCapsuleRenderable(
       {r, r, halfTotalHeight});
 }
 
-std::optional<Renderable> createConvexMeshRenderable(
+std::optional<Renderable> createDescriptorTriangleMeshRenderable(
     filament::Engine& engine,
     filament::Material& material,
-    const ConvexMeshShape& convexMeshShape,
+    const GeometryDescriptor& geometry,
     const float4& color)
 {
-  const auto& triMesh = convexMeshShape.getMesh();
-  if (!triMesh || triMesh->getVertices().empty()
-      || triMesh->getTriangles().empty()) {
+  if (geometry.triangleVertices.empty() || geometry.triangleIndices.empty()) {
     return std::nullopt;
   }
-  if (triMesh->getVertices().size()
+  if (geometry.triangleVertices.size()
       > static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max())) {
     return std::nullopt;
   }
 
   const filament::math::short4 tangent = {0, 0, 0, 32767};
   std::vector<Vertex> vertices;
-  vertices.reserve(triMesh->getVertices().size());
-  for (const Eigen::Vector3d& vertex : triMesh->getVertices()) {
-    vertices.push_back(Vertex{toFloat3(vertex), tangent});
-  }
-
-  std::vector<float3> normals;
-  if (triMesh->hasVertexNormals()
-      && triMesh->getVertexNormals().size() == triMesh->getVertices().size()) {
-    normals.reserve(triMesh->getVertexNormals().size());
-    for (const Eigen::Vector3d& normal : triMesh->getVertexNormals()) {
-      normals.push_back(toFloat3(
-          normal.squaredNorm() > 1e-12 ? normal.normalized()
-                                       : Eigen::Vector3d::UnitZ()));
+  vertices.reserve(geometry.triangleVertices.size());
+  for (const Eigen::Vector3d& vertex : geometry.triangleVertices) {
+    if (!vertex.allFinite()) {
+      return std::nullopt;
     }
+    vertices.push_back(Vertex{toFloat3(vertex), tangent});
   }
 
   std::vector<std::uint32_t> indices;
   std::vector<filament::math::uint3> triangles;
-  indices.reserve(triMesh->getTriangles().size() * 3);
-  triangles.reserve(triMesh->getTriangles().size());
-  for (const auto& triangle : triMesh->getTriangles()) {
-    if (triangle[0] >= vertices.size() || triangle[1] >= vertices.size()
-        || triangle[2] >= vertices.size()) {
+  indices.reserve(geometry.triangleIndices.size() * 3u);
+  triangles.reserve(geometry.triangleIndices.size());
+  for (const Eigen::Vector3i& triangle : geometry.triangleIndices) {
+    if ((triangle.array() < 0).any()) {
+      return std::nullopt;
+    }
+    const auto first = static_cast<std::size_t>(triangle.x());
+    const auto second = static_cast<std::size_t>(triangle.y());
+    const auto third = static_cast<std::size_t>(triangle.z());
+    if (first >= vertices.size() || second >= vertices.size()
+        || third >= vertices.size()) {
       return std::nullopt;
     }
     appendTriangle(
         indices,
         triangles,
-        static_cast<std::uint32_t>(triangle[0]),
-        static_cast<std::uint32_t>(triangle[1]),
-        static_cast<std::uint32_t>(triangle[2]));
+        static_cast<std::uint32_t>(first),
+        static_cast<std::uint32_t>(second),
+        static_cast<std::uint32_t>(third));
+  }
+  if (indices.empty()) {
+    return std::nullopt;
+  }
+
+  std::vector<float3> normalSums(vertices.size(), {0.0f, 0.0f, 0.0f});
+  for (const auto& triangle : triangles) {
+    const float3 normal = normalizeOr(
+        crossProduct(
+            vertices[triangle.y].position - vertices[triangle.x].position,
+            vertices[triangle.z].position - vertices[triangle.x].position),
+        {0.0f, 0.0f, 1.0f});
+    for (std::uint32_t index : {triangle.x, triangle.y, triangle.z}) {
+      normalSums[index].x += normal.x;
+      normalSums[index].y += normal.y;
+      normalSums[index].z += normal.z;
+    }
+  }
+
+  std::vector<float3> normals;
+  normals.reserve(normalSums.size());
+  for (const float3& normal : normalSums) {
+    normals.push_back(normalizeOr(normal, {0.0f, 0.0f, 1.0f}));
   }
 
   const Bounds bounds = computeBounds(vertices);
@@ -3534,183 +3551,6 @@ std::optional<Renderable> createVoxelGridRenderable(
   return createTriangleMeshRenderable(
       engine,
       selectLitMaterial(materials, false, color),
-      std::move(vertices),
-      std::move(indices),
-      std::move(triangles),
-      std::move(normals),
-      color,
-      bounds.min,
-      bounds.max);
-}
-
-template <typename S>
-std::optional<Renderable> createHeightmapRenderable(
-    filament::Engine& engine,
-    filament::Material& material,
-    const dart::dynamics::HeightmapShape<S>& heightmapShape,
-    const float4& color)
-{
-  const auto& heightmap = heightmapShape.getHeightField();
-  const Eigen::Index rows = heightmap.rows();
-  const Eigen::Index cols = heightmap.cols();
-  if (rows < 2 || cols < 2) {
-    return std::nullopt;
-  }
-  if (static_cast<std::size_t>(heightmap.size())
-      > static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max())) {
-    return std::nullopt;
-  }
-
-  const auto& scale = heightmapShape.getScale();
-  const S spanX = static_cast<S>(cols - 1) * scale.x();
-  const S spanY = static_cast<S>(rows - 1) * scale.y();
-  const S xOffset = static_cast<S>(-0.5) * spanX;
-  const S yOffset = static_cast<S>(0.5) * spanY;
-  const filament::math::short4 tangent = {0, 0, 0, 32767};
-
-  std::vector<Vertex> vertices;
-  vertices.reserve(static_cast<std::size_t>(heightmap.size()));
-  for (Eigen::Index row = 0; row < rows; ++row) {
-    for (Eigen::Index col = 0; col < cols; ++col) {
-      vertices.push_back(Vertex{
-          {static_cast<float>(static_cast<S>(col) * scale.x() + xOffset),
-           static_cast<float>(-static_cast<S>(row) * scale.y() + yOffset),
-           static_cast<float>(heightmap(row, col) * scale.z())},
-          tangent});
-    }
-  }
-
-  const auto vertexIndex = [cols](Eigen::Index row, Eigen::Index col) {
-    return static_cast<std::uint32_t>(row * cols + col);
-  };
-
-  std::vector<std::uint32_t> indices;
-  std::vector<filament::math::uint3> triangles;
-  indices.reserve(static_cast<std::size_t>((rows - 1) * (cols - 1) * 6));
-  triangles.reserve(static_cast<std::size_t>((rows - 1) * (cols - 1) * 2));
-  for (Eigen::Index row = 1; row < rows; ++row) {
-    for (Eigen::Index col = 1; col < cols; ++col) {
-      const auto p1 = vertexIndex(row - 1, col - 1);
-      const auto p2 = vertexIndex(row - 1, col);
-      const auto p3 = vertexIndex(row, col - 1);
-      const auto curr = vertexIndex(row, col);
-      appendTriangle(indices, triangles, p1, p3, p2);
-      appendTriangle(indices, triangles, p2, p3, curr);
-    }
-  }
-
-  std::vector<float3> normalSums(vertices.size(), {0.0f, 0.0f, 0.0f});
-  for (const auto& triangle : triangles) {
-    const float3 normal = normalizeOr(
-        crossProduct(
-            vertices[triangle.y].position - vertices[triangle.x].position,
-            vertices[triangle.z].position - vertices[triangle.x].position),
-        {0.0f, 0.0f, 1.0f});
-    for (std::uint32_t index : {triangle.x, triangle.y, triangle.z}) {
-      normalSums[index].x += normal.x;
-      normalSums[index].y += normal.y;
-      normalSums[index].z += normal.z;
-    }
-  }
-
-  std::vector<float3> normals;
-  normals.reserve(normalSums.size());
-  for (const float3& normal : normalSums) {
-    normals.push_back(normalizeOr(normal, {0.0f, 0.0f, 1.0f}));
-  }
-
-  const Bounds bounds = computeBounds(vertices);
-  return createTriangleMeshRenderable(
-      engine,
-      material,
-      std::move(vertices),
-      std::move(indices),
-      std::move(triangles),
-      std::move(normals),
-      color,
-      bounds.min,
-      bounds.max);
-}
-
-std::optional<Renderable> createSoftMeshRenderable(
-    filament::Engine& engine,
-    filament::Material& material,
-    const SoftMeshShape& softMeshShape,
-    const float4& color)
-{
-  const auto triMesh = softMeshShape.getTriMesh();
-  if (!triMesh || triMesh->getTriangles().empty()) {
-    return std::nullopt;
-  }
-
-  const auto* softBody = softMeshShape.getSoftBodyNode();
-  const std::size_t vertexCount
-      = softBody != nullptr ? softBody->getNumPointMasses()
-                            : triMesh->getVertices().size();
-  if (vertexCount == 0u
-      || vertexCount
-             > static_cast<std::size_t>(
-                 std::numeric_limits<std::uint32_t>::max())) {
-    return std::nullopt;
-  }
-
-  const filament::math::short4 tangent = {0, 0, 0, 32767};
-  std::vector<Vertex> vertices;
-  vertices.reserve(vertexCount);
-  for (std::size_t i = 0; i < vertexCount; ++i) {
-    if (softBody != nullptr) {
-      const auto* pointMass = softBody->getPointMass(i);
-      if (pointMass == nullptr) {
-        return std::nullopt;
-      }
-      vertices.push_back(
-          Vertex{toFloat3(pointMass->getLocalPosition()), tangent});
-    } else {
-      vertices.push_back(Vertex{toFloat3(triMesh->getVertices()[i]), tangent});
-    }
-  }
-
-  std::vector<std::uint32_t> indices;
-  std::vector<filament::math::uint3> triangles;
-  indices.reserve(triMesh->getTriangles().size() * 3u);
-  triangles.reserve(triMesh->getTriangles().size());
-  for (const auto& triangle : triMesh->getTriangles()) {
-    if (triangle[0] >= vertices.size() || triangle[1] >= vertices.size()
-        || triangle[2] >= vertices.size()) {
-      return std::nullopt;
-    }
-    appendTriangle(
-        indices,
-        triangles,
-        static_cast<std::uint32_t>(triangle[0]),
-        static_cast<std::uint32_t>(triangle[1]),
-        static_cast<std::uint32_t>(triangle[2]));
-  }
-
-  std::vector<float3> normalSums(vertices.size(), {0.0f, 0.0f, 0.0f});
-  for (const auto& triangle : triangles) {
-    const float3 normal = normalizeOr(
-        crossProduct(
-            vertices[triangle.y].position - vertices[triangle.x].position,
-            vertices[triangle.z].position - vertices[triangle.x].position),
-        {0.0f, 0.0f, 1.0f});
-    for (std::uint32_t index : {triangle.x, triangle.y, triangle.z}) {
-      normalSums[index].x += normal.x;
-      normalSums[index].y += normal.y;
-      normalSums[index].z += normal.z;
-    }
-  }
-
-  std::vector<float3> normals;
-  normals.reserve(normalSums.size());
-  for (const float3& normal : normalSums) {
-    normals.push_back(normalizeOr(normal, {0.0f, 0.0f, 1.0f}));
-  }
-
-  const Bounds bounds = computeBounds(vertices);
-  return createTriangleMeshRenderable(
-      engine,
-      material,
       std::move(vertices),
       std::move(indices),
       std::move(triangles),
@@ -4130,35 +3970,16 @@ std::optional<Renderable> createRenderableFromDescriptor(
           color);
       break;
     case ShapeKind::ConvexMesh:
-      if (const auto* convexMeshShape = dynamic_cast<const ConvexMeshShape*>(
-              descriptor.shape)) {
-        renderable = createConvexMeshRenderable(
-            engine, solidMaterial, *convexMeshShape, color);
-      }
+    case ShapeKind::Heightmap:
+    case ShapeKind::SoftMesh:
+      renderable = createDescriptorTriangleMeshRenderable(
+          engine, solidMaterial, descriptor.geometry, color);
       break;
     case ShapeKind::PointCloud:
       renderable = createPointCloudRenderable(engine, materials, descriptor);
       break;
     case ShapeKind::VoxelGrid:
       renderable = createVoxelGridRenderable(engine, materials, descriptor);
-      break;
-    case ShapeKind::Heightmap:
-      if (const auto* heightmapShape = dynamic_cast<const HeightmapShapef*>(
-              descriptor.shape)) {
-        renderable
-            = createHeightmapRenderable(engine, solidMaterial, *heightmapShape, color);
-      } else if (const auto* heightmapShape
-                 = dynamic_cast<const HeightmapShaped*>(descriptor.shape)) {
-        renderable
-            = createHeightmapRenderable(engine, solidMaterial, *heightmapShape, color);
-      }
-      break;
-    case ShapeKind::SoftMesh:
-      if (const auto* softMeshShape = dynamic_cast<const SoftMeshShape*>(
-              descriptor.shape)) {
-        renderable = createSoftMeshRenderable(
-            engine, solidMaterial, *softMeshShape, color);
-      }
       break;
     case ShapeKind::Mesh:
       if (const auto* meshShape = dynamic_cast<const MeshShape*>(
