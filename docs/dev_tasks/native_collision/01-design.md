@@ -359,13 +359,14 @@ include old-engine or reference-backend headers, and legacy implementation
 sources cannot move back outside `reference/` paths. The native dispatcher now
 has focused tests for pair-order contact normals across direct narrowphase,
 snapshot collision, and public DART collision group paths; custom mesh-plane
-and stacked parallel-cylinder gz regressions are reduced and fixed on the DART
-side. The remaining design gaps are CI and packaging evidence at matrix scale,
-downstream migration/deprecation evidence, the focused gz-physics
-`JointDetach` exact-zero velocity residual, and broader recurring
-correctness/performance guardrails across the public DART adapter and native
-core paths. The completed PR must make it impossible for ordinary DART
-collision runtime selection to instantiate or link FCL, Bullet, or ODE.
+stacked parallel-cylinder, and axial cylinder-cap/large-box gz contact
+regressions are reduced and fixed on the DART side. The remaining design gaps
+are CI and packaging evidence at matrix scale, downstream
+migration/deprecation evidence, the focused gz-physics `JointDetach`
+exact-zero velocity residual, and broader recurring correctness/performance
+guardrails across the public DART adapter and native core paths. The completed
+PR must make it impossible for ordinary DART collision runtime selection to
+instantiate or link FCL, Bullet, or ODE.
 
 ## Code Ownership Map
 

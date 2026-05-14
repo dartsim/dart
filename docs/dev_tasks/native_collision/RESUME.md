@@ -81,14 +81,20 @@ The latest compatibility cleanup preserves legacy direct C++ facade display
 strings for gz-physics while keeping those facades native-backed. It also adds
 native plane/mesh dispatch, unbounded-plane AABB coverage, focused DART
 mesh-plane regression tests, pair-order contact normal tests, and
-parallel-cylinder cap/side contact handling for stacked support. Focused DART
-tests pass. The latest focused gz-physics run now passes
+parallel-cylinder cap/side contact handling for stacked support. Commit
+`6e04945b29d6` also adds axial cylinder-cap support patches against large
+boxes, covering gz-physics plane geometry as represented by its DART plugin's
+large-box fallback. Focused DART tests pass. The latest focused gz-physics run
+now passes
 `COMMON_TEST_collisions_dartsim`, `COMMON_TEST_detachable_joint_dartsim`, and
 `COMMON_TEST_joint_transmitted_wrench_features_dartsim`. The remaining focused
 gz blocker is `COMMON_TEST_joint_features_dartsim`
 `JointFeaturesDetachTest/0.JointDetach`, which reports tiny off-axis velocity
 components against exact-zero tolerances after richer box/cylinder contact
-support.
+support. Re-running the isolated case at `6e04945b29d6` reports
+`upperLinkLinearVelocity.X() = -0.00013953469787260998`,
+`upperLinkLinearVelocity.Y() = 1.0002864929523347e-06`, and
+`upperLinkAngularVelocity.Y() = -6.6438361021132697e-05` against `1e-6`.
 
 ## Current Branch
 
@@ -254,6 +260,10 @@ libraries.
   remains historical evidence for the earlier checkpoint, but it does not close
   the current source state because the latest focused gz-physics run still has
   the `JointDetach` exact-zero velocity residual.
+- Commit `6e04945b29d6` adds native axial cylinder-cap support patches against
+  large boxes and native DART tests for support-patch generation plus
+  `maxNumContacts` limiting. This improves the gz plane-as-large-box contact
+  path but does not close the remaining `JointDetach` exact-zero residual.
 - Tests and benchmark comments now use native collision naming except for the
   explicit `"experimental"` compatibility alias.
 - gz-physics compatibility and performance parity are explicit gates, not

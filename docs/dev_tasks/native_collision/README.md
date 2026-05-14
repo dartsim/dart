@@ -17,7 +17,9 @@
       current source state. The latest focused work fixed the DART/gz custom
       mesh-plane free-fall by enforcing collision-object-order contact normals
       through native dispatch, and fixed stacked cylinder support by adding
-      parallel-cylinder cap/side contact selection. Focused gz runs now pass
+      parallel-cylinder cap/side contact selection. The latest checkpoint also
+      adds axial cylinder-cap support patches against large boxes, matching the
+      gz plane-as-box contact path. Focused gz runs now pass
       `COMMON_TEST_collisions_dartsim`,
       `COMMON_TEST_detachable_joint_dartsim`, and
       `COMMON_TEST_joint_transmitted_wrench_features_dartsim`. The gate remains
@@ -294,8 +296,9 @@ single checkpoint built locally.
 ## Immediate Next Steps
 
 1. Finish the remaining gz-physics compatibility regression: the custom
-   mesh-plane free-fall and stacked-cylinder detachable-joint failures now have
-   DART-side regressions and focused gz passes. Reduce the remaining
+   mesh-plane free-fall, stacked-cylinder detachable-joint, and axial
+   cylinder-cap/large-box support paths now have DART-side regressions and
+   focused gz evidence. Reduce the remaining
    `COMMON_TEST_joint_features_dartsim` `JointDetach` exact-zero velocity
    residual, then rerun the full gz gate without selecting FCL, Bullet, or ODE.
 2. Run and harden the new native-only CI job alongside existing gz-physics CI.

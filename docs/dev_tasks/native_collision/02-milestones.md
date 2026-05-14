@@ -267,10 +267,11 @@ gz-physics compatibility while remaining native-backed. The latest focused
 gz-physics run is partially green: `COMMON_TEST_collisions_dartsim`,
 `COMMON_TEST_detachable_joint_dartsim`, and
 `COMMON_TEST_joint_transmitted_wrench_features_dartsim` pass after DART-side
-mesh-plane pair-order normal and stacked-cylinder contact fixes. The remaining
-focused blocker is `COMMON_TEST_joint_features_dartsim`
-`JointFeaturesDetachTest/0.JointDetach`, so fresh full gz validation and one
-more DART/gz reduction are required before this phase can complete.
+mesh-plane pair-order normal, stacked-cylinder contact, and axial
+cylinder-cap/large-box support-patch fixes. The remaining focused blocker is
+`COMMON_TEST_joint_features_dartsim` `JointFeaturesDetachTest/0.JointDetach`,
+so fresh full gz validation and one more DART/gz reduction are required before
+this phase can complete.
 
 Success criteria:
 
@@ -321,13 +322,15 @@ implementation headers and sources live under explicit `reference/` paths for
 reference-only tests and benchmarks. DART-side public facade tests cover the
 direct C++ display-name compatibility needed by gz-physics, and new pair-order
 normal tests cover direct native dispatch, optimized collision-world dispatch,
-and the public DART collision group path. Focused gz collision, detachable
-joint, and transmitted-wrench tests now pass; downstream correctness remains
-open on the `JointDetach` exact-zero velocity residual. Lint now enforces the
-source split by rejecting old-engine includes from non-reference DART source
-paths and rejecting legacy implementation sources outside `reference/` paths.
-CI, downstream migration, and broader performance guardrail evidence remain
-before this phase can complete.
+and the public DART collision group path. Native tests also cover axial
+cylinder-cap support patches against large boxes, matching gz's current
+plane-as-box fallback path. Focused gz collision, detachable joint, and
+transmitted-wrench tests now pass; downstream correctness remains open on the
+`JointDetach` exact-zero velocity residual. Lint now enforces the source split
+by rejecting old-engine includes from non-reference DART source paths and
+rejecting legacy implementation sources outside `reference/` paths. CI,
+downstream migration, and broader performance guardrail evidence remain before
+this phase can complete.
 
 Success criteria:
 

@@ -73,29 +73,30 @@ These gates are still required before the single north-star PR is complete.
 build/collision-reference/cpp/Release --target test_cylinder test_narrow_phase
 test_collision_world UNIT_collision_DartCollisionDetector --parallel
 $(python scripts/parallel_jobs.py)`
-  - Commit: working tree after pair-order normal fixes and parallel-cylinder
-    cap/side contact handling.
+  - Commit: `6e04945b29d6`
+    (`Improve native cylinder-box axial cap contacts`).
   - Result: passed.
 - `pixi run --locked -e collision-reference -- ctest --test-dir
 build/collision-reference/cpp/Release --output-on-failure -R
 '^(test_cylinder|test_narrow_phase|test_collision_world|UNIT_collision_DartCollisionDetector)$'`
-  - Commit: working tree after pair-order normal fixes and parallel-cylinder
-    cap/side contact handling.
+  - Commit: `6e04945b29d6`
+    (`Improve native cylinder-box axial cap contacts`).
   - Result: passed, 4/4 tests. This covers native cylinder-cylinder stacked
-    cap support, pair-order normal semantics in direct narrowphase, optimized
+    cap support, axial cylinder-cap support patches against large boxes,
+    pair-order normal semantics in direct narrowphase, optimized
     collision-world snapshot dispatch, and public DART mesh-plane collision
     normal orientation.
 - `pixi run -e gazebo install OFF`
-  - Commit: working tree after pair-order normal fixes and parallel-cylinder
-    cap/side contact handling.
+  - Commit: source state that became `6e04945b29d6`
+    (`Improve native cylinder-box axial cap contacts`).
   - Result: passed; the gz environment was reinstalled against the current DART
     build before downstream focused tests.
 - `pixi run -e gazebo -- bash -lc 'export
 LD_LIBRARY_PATH=.deps/gz-physics/build/lib:$CONDA_PREFIX/lib:${LD_LIBRARY_PATH:-};
 cd .deps/gz-physics/build; ctest --output-on-failure -R
 "^COMMON_TEST_(collisions|detachable_joint|joint_features|joint_transmitted_wrench_features)_dartsim$"'`
-  - Commit: working tree after pair-order normal fixes and parallel-cylinder
-    cap/side contact handling.
+  - Commit: source state that became `6e04945b29d6`
+    (`Improve native cylinder-box axial cap contacts`).
   - Result: 3/4 passed. `COMMON_TEST_collisions_dartsim`,
     `COMMON_TEST_detachable_joint_dartsim`, and
     `COMMON_TEST_joint_transmitted_wrench_features_dartsim` passed. The
@@ -104,6 +105,18 @@ cd .deps/gz-physics/build; ctest --output-on-failure -R
     `upperLinkLinearVelocity.X() = -0.00013950340597912903` and
     `upperLinkAngularVelocity.Y() = -6.642346064788122e-05` against exact-zero
     tolerances of `1e-6`. This is now the focused gz compatibility residual.
+- `pixi run -e gazebo -- bash -lc 'set -euo pipefail; export
+LD_LIBRARY_PATH=.deps/gz-physics/build/lib:$CONDA_PREFIX/lib:${LD_LIBRARY_PATH:-};
+cd .deps/gz-physics/build; ./bin/COMMON_TEST_joint_features
+./lib/libgz-physics-dartsim-plugin.so.9.0.0
+--gtest_filter="JointFeaturesDetachTest/0.JointDetach" --gtest_brief=1'`
+  - Commit: `6e04945b29d6`
+    (`Improve native cylinder-box axial cap contacts`).
+  - Result: failed as expected on the focused residual. The remaining failures
+    are `upperLinkLinearVelocity.X() = -0.00013953469787260998`,
+    `upperLinkLinearVelocity.Y() = 1.0002864929523347e-06`, and
+    `upperLinkAngularVelocity.Y() = -6.6438361021132697e-05` against
+    exact-zero tolerances of `1e-6`.
 - `pixi run lint`
   - Commit: working tree after `96436fd2503`
   - Result: passed. `codespell`, CMake `format`, `clang-format`, `black`,

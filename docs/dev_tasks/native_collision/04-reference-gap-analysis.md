@@ -248,32 +248,36 @@ The built-in architecture should make performance visible before optimization:
 9. Done in working tree: add parallel-cylinder cap/side contact selection for
    stacked support and validate it through DART tests plus the focused gz
    detachable-joint test.
-10. Started in working tree: split reference tests/benchmarks from runtime
+10. Done in `6e04945b29d6`: add axial cylinder-cap support patches against
+    large boxes and validate maximum-contact handling through native DART
+    cylinder-box tests. This matches gz-physics plane geometry as represented
+    by its DART plugin's large-box fallback.
+11. Started in working tree: split reference tests/benchmarks from runtime
     backend CMake targets with CMake opt-out options, explicit
     `collision-reference-*` targets, native-backed retained `collision-*`
     package component facades, default/wheel Pixi dependency metadata cleanup,
     repaired py312 wheel artifact inspection, and focused validation. Finish CI
     wheel-matrix inspection before marking the gate complete.
-11. Done in working tree: public factory keys `fcl`, `fcl_mesh`, `bullet`, and
+12. Done in working tree: public factory keys `fcl`, `fcl_mesh`, `bullet`, and
     `ode` resolve to `DartCollisionDetector`, including when legacy reference
     component libraries are linked.
-12. Done in working tree: Python detector compatibility names
+13. Done in working tree: Python detector compatibility names
     `DARTCollisionDetector`, `FCLCollisionDetector`, `BulletCollisionDetector`,
     and `OdeCollisionDetector` resolve to `DartCollisionDetector`, and dartpy
     does not link legacy collision component targets even in a
     reference-enabled build.
-13. Done in working tree: C++ reference tests and benchmarks use explicit
+14. Done in working tree: C++ reference tests and benchmarks use explicit
     `createReference()` APIs on FCL, Bullet, and ODE detector classes.
-14. Done in working tree: direct public C++ legacy detector `create()` paths
+15. Done in working tree: direct public C++ legacy detector `create()` paths
     return the built-in `DartCollisionDetector`.
-15. Done in working tree: top-level source-tree FCL, Bullet, and ODE
+16. Done in working tree: top-level source-tree FCL, Bullet, and ODE
     detector/group, All, PascalCase, and component headers are native-backed
     facades, and old-engine
     implementation files live under explicit `reference/` paths.
-16. Done in working tree: runtime source isolation linting rejects old-engine
+17. Done in working tree: runtime source isolation linting rejects old-engine
     includes from non-reference DART source paths and rejects legacy
     implementation sources outside explicit `reference/` paths.
-17. Continue final CI, downstream migration, GitHub benchmark guard evidence,
+18. Continue final CI, downstream migration, GitHub benchmark guard evidence,
     and runtime backend deletion validation.
 
 ## Ready-To-Implement Checklist
