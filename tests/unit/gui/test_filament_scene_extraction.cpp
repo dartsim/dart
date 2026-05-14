@@ -48,6 +48,7 @@
 #include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
+#include <dart/dynamics/multi_sphere_convex_hull_shape.hpp>
 #include <dart/dynamics/plane_shape.hpp>
 #include <dart/dynamics/pyramid_shape.hpp>
 #include <dart/dynamics/shape_frame.hpp>
@@ -80,6 +81,7 @@ using dart::dynamics::CylinderShape;
 using dart::dynamics::EllipsoidShape;
 using dart::dynamics::FreeJoint;
 using dart::dynamics::MeshShape;
+using dart::dynamics::MultiSphereConvexHullShape;
 using dart::dynamics::PlaneShape;
 using dart::dynamics::PyramidShape;
 using dart::dynamics::SimpleFrame;
@@ -255,6 +257,28 @@ TEST(
       pyramid->localBoundsMin.isApprox(Eigen::Vector3d(-0.35, -0.25, -0.45)));
   EXPECT_TRUE(
       pyramid->localBoundsMax.isApprox(Eigen::Vector3d(0.35, 0.25, 0.45)));
+
+  const MultiSphereConvexHullShape::Spheres spheres{
+      {0.2, Eigen::Vector3d(-0.5, 0.0, 0.1)},
+      {0.35, Eigen::Vector3d(0.25, 0.1, -0.05)}};
+  const auto multiSphere = describeShape(MultiSphereConvexHullShape(spheres));
+  ASSERT_TRUE(multiSphere.has_value());
+  EXPECT_EQ(multiSphere->kind, ShapeKind::MultiSphere);
+  EXPECT_DOUBLE_EQ(multiSphere->radius, 0.35);
+  ASSERT_EQ(multiSphere->sphereCenters.size(), 2u);
+  ASSERT_EQ(multiSphere->sphereRadii.size(), 2u);
+  EXPECT_TRUE(
+      multiSphere->sphereCenters[0].isApprox(Eigen::Vector3d(-0.5, 0.0, 0.1)));
+  EXPECT_DOUBLE_EQ(multiSphere->sphereRadii[0], 0.2);
+  EXPECT_TRUE(multiSphere->sphereCenters[1].isApprox(
+      Eigen::Vector3d(0.25, 0.1, -0.05)));
+  EXPECT_DOUBLE_EQ(multiSphere->sphereRadii[1], 0.35);
+  ASSERT_TRUE(multiSphere->hasLocalBounds);
+  EXPECT_TRUE(
+      multiSphere->localBoundsMin.isApprox(Eigen::Vector3d(-0.7, -0.25, -0.4)));
+  EXPECT_TRUE(
+      multiSphere->localBoundsMax.isApprox(Eigen::Vector3d(0.6, 0.45, 0.3)));
+  EXPECT_TRUE(multiSphere->size.isApprox(Eigen::Vector3d(1.3, 0.7, 0.7)));
 
   auto triMesh = std::make_shared<dart::math::TriMesh<double>>();
   triMesh->addVertex(0.0, 0.0, 0.0);

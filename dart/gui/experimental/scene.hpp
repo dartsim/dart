@@ -66,6 +66,7 @@ enum class ShapeKind
   Capsule,
   Cone,
   Pyramid,
+  MultiSphere,
   Mesh,
   Plane,
   Unsupported
@@ -79,6 +80,8 @@ struct GeometryDescriptor
   Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
   Eigen::Vector3d localBoundsMin = Eigen::Vector3d::Zero();
   Eigen::Vector3d localBoundsMax = Eigen::Vector3d::Zero();
+  std::vector<Eigen::Vector3d> sphereCenters;
+  std::vector<double> sphereRadii;
   double radius = 0.0;
   double height = 0.0;
   double offset = 0.0;

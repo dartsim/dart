@@ -45,6 +45,7 @@
 #include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
+#include <dart/dynamics/multi_sphere_convex_hull_shape.hpp>
 #include <dart/dynamics/plane_shape.hpp>
 #include <dart/dynamics/pyramid_shape.hpp>
 #include <dart/dynamics/shape.hpp>
@@ -325,6 +326,39 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
     descriptor.size = Eigen::Vector3d(
         pyramid->getBaseWidth(), pyramid->getBaseDepth(), pyramid->getHeight());
     setSymmetricLocalBounds(descriptor, descriptor.size * 0.5);
+    return descriptor;
+  }
+
+  if (const auto* multiSphere
+      = dynamic_cast<const dynamics::MultiSphereConvexHullShape*>(&shape)) {
+    descriptor.kind = ShapeKind::MultiSphere;
+    const auto& spheres = multiSphere->getSpheres();
+    descriptor.sphereCenters.reserve(spheres.size());
+    descriptor.sphereRadii.reserve(spheres.size());
+    Eigen::Vector3d min = Eigen::Vector3d::Zero();
+    Eigen::Vector3d max = Eigen::Vector3d::Zero();
+    bool hasBounds = false;
+    for (const auto& [radius, center] : spheres) {
+      if (radius <= 0.0) {
+        continue;
+      }
+      descriptor.sphereRadii.push_back(radius);
+      descriptor.sphereCenters.push_back(center);
+      descriptor.radius = std::max(descriptor.radius, radius);
+      const Eigen::Vector3d extent = Eigen::Vector3d::Constant(radius);
+      if (!hasBounds) {
+        min = center - extent;
+        max = center + extent;
+        hasBounds = true;
+      } else {
+        min = min.cwiseMin(center - extent);
+        max = max.cwiseMax(center + extent);
+      }
+    }
+    if (hasBounds) {
+      descriptor.size = max - min;
+      setLocalBounds(descriptor, min, max);
+    }
     return descriptor;
   }
 

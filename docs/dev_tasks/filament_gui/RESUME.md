@@ -31,8 +31,8 @@ status panel.
 The `dart-gui-experimental` extraction layer has a graphics-free unit test
 covering stable runtime IDs, transforms, geometry descriptors, colors,
 visibility, shadow flags, and version stamps. The renderer consumes box, sphere,
-ellipsoid, cylinder, cone, capsule, pyramid, TriMesh-backed mesh, and finite
-PlaneShape descriptors from that target. The viewer also maps DART
+ellipsoid, cylinder, cone, capsule, pyramid, multi-sphere, TriMesh-backed mesh,
+and finite PlaneShape descriptors from that target. The viewer also maps DART
 visual-aspect shadow flags into Filament renderable shadow settings. The finite
 PlaneShape proxy uses a procedural checker-textured Filament material to
 exercise UVs and sampler binding. The fixture also loads an imported WAM Collada
@@ -149,9 +149,9 @@ Filament example by default. This branch is intentionally separate from the
 merged MVP PR #2647.
 
 The follow-up branch also extends the backend-hidden shape descriptor and
-renderer path to `PyramidShape`. The MVP scene now includes a pyramid fixture,
-and the example startup checks that the pyramid descriptor is extracted and
-converted into a Filament renderable.
+renderer path to `PyramidShape` and `MultiSphereConvexHullShape`. The MVP scene
+now includes pyramid and multi-sphere fixtures, and the example startup checks
+that both descriptors are extracted and converted into Filament renderables.
 
 `docs/dev_tasks/filament_gui/07-completion-audit.md` maps the current
 implementation, verification evidence, and missing promotion gates. Use that

@@ -927,6 +927,7 @@ constexpr const char* kWamFixtureSkeletonName = "visual_wam_robot";
 constexpr const char* kAtlasFixtureSkeletonName = "visual_atlas_torso_mesh";
 constexpr const char* kAtlasRobotFixtureSkeletonName = "visual_atlas_robot";
 constexpr const char* kPyramidFixtureSkeletonName = "visual_pyramid";
+constexpr const char* kMultiSphereFixtureSkeletonName = "visual_multi_sphere";
 constexpr const char* kPbrEnvironmentFixtureSkeletonName =
     "visual_pbr_environment";
 constexpr const char* kG1FixtureSkeletonName = "visual_g1_robot";
@@ -1862,6 +1863,15 @@ DartScene createMvpDartScene()
       Eigen::Vector3d(-2.15, -0.15, 0.82),
       Eigen::Vector3d(0.9, 0.72, 0.24)));
   scene.world->addSkeleton(createStaticVisual(
+      kMultiSphereFixtureSkeletonName,
+      std::make_shared<dart::dynamics::MultiSphereConvexHullShape>(
+          dart::dynamics::MultiSphereConvexHullShape::Spheres{
+              {0.18, Eigen::Vector3d(-0.22, 0.0, 0.0)},
+              {0.26, Eigen::Vector3d(0.16, 0.0, 0.04)},
+              {0.14, Eigen::Vector3d(0.42, 0.0, -0.03)}}),
+      Eigen::Vector3d(-2.85, -0.15, 0.72),
+      Eigen::Vector3d(0.38, 0.74, 0.92)));
+  scene.world->addSkeleton(createStaticVisual(
       "visual_ellipsoid",
       std::make_shared<dart::dynamics::EllipsoidShape>(
           Eigen::Vector3d(0.7, 0.4, 0.32)),
@@ -2627,25 +2637,19 @@ Renderable createTriangleMeshRenderable(
   return renderable;
 }
 
-Renderable createEllipsoidRenderable(
-    filament::Engine& engine,
-    filament::Material& material,
-    const Eigen::Vector3d& radii,
-    const float4& color)
+void appendEllipsoidGeometry(
+    std::vector<Vertex>& vertices,
+    std::vector<float3>& normals,
+    std::vector<std::uint32_t>& indices,
+    std::vector<filament::math::uint3>& triangles,
+    const Eigen::Vector3d& center,
+    const Eigen::Vector3d& radii)
 {
   static constexpr std::uint32_t segments = 32;
   static constexpr std::uint32_t rings = 16;
   static constexpr double pi = 3.14159265358979323846;
   const filament::math::short4 tangent = {0, 0, 0, 32767};
-
-  std::vector<Vertex> vertices;
-  std::vector<float3> normals;
-  std::vector<std::uint32_t> indices;
-  std::vector<filament::math::uint3> triangles;
-  vertices.reserve((rings + 1) * (segments + 1));
-  normals.reserve((rings + 1) * (segments + 1));
-  indices.reserve(rings * segments * 6);
-  triangles.reserve(rings * segments * 2);
+  const std::uint32_t start = static_cast<std::uint32_t>(vertices.size());
 
   for (std::uint32_t ring = 0; ring <= rings; ++ring) {
     const double theta = -pi / 2.0 + pi * ring / rings;
@@ -2654,9 +2658,9 @@ Renderable createEllipsoidRenderable(
     for (std::uint32_t segment = 0; segment <= segments; ++segment) {
       const double phi = 2.0 * pi * segment / segments;
       vertices.push_back(
-          Vertex{{static_cast<float>(radii.x() * radial * std::cos(phi)),
-                  static_cast<float>(radii.y() * radial * std::sin(phi)),
-                  static_cast<float>(radii.z() * z)},
+          Vertex{{static_cast<float>(center.x() + radii.x() * radial * std::cos(phi)),
+                  static_cast<float>(center.y() + radii.y() * radial * std::sin(phi)),
+                  static_cast<float>(center.z() + radii.z() * z)},
                  tangent});
       const Eigen::Vector3d normal{
           radii.x() > 1e-12 ? radial * std::cos(phi) / radii.x() : 0.0,
@@ -2675,10 +2679,32 @@ Renderable createEllipsoidRenderable(
       const std::uint32_t b = a + 1;
       const std::uint32_t c = (ring + 1) * (segments + 1) + segment;
       const std::uint32_t d = c + 1;
-      appendTriangle(indices, triangles, a, b, c);
-      appendTriangle(indices, triangles, b, d, c);
+      appendTriangle(indices, triangles, start + a, start + b, start + c);
+      appendTriangle(indices, triangles, start + b, start + d, start + c);
     }
   }
+}
+
+Renderable createEllipsoidRenderable(
+    filament::Engine& engine,
+    filament::Material& material,
+    const Eigen::Vector3d& radii,
+    const float4& color)
+{
+  static constexpr std::uint32_t segments = 32;
+  static constexpr std::uint32_t rings = 16;
+
+  std::vector<Vertex> vertices;
+  std::vector<float3> normals;
+  std::vector<std::uint32_t> indices;
+  std::vector<filament::math::uint3> triangles;
+  vertices.reserve((rings + 1) * (segments + 1));
+  normals.reserve((rings + 1) * (segments + 1));
+  indices.reserve(rings * segments * 6);
+  triangles.reserve(rings * segments * 2);
+
+  appendEllipsoidGeometry(
+      vertices, normals, indices, triangles, Eigen::Vector3d::Zero(), radii);
 
   return createTriangleMeshRenderable(
       engine,
@@ -2690,6 +2716,61 @@ Renderable createEllipsoidRenderable(
       color,
       toFloat3(-radii),
       toFloat3(radii));
+}
+
+Renderable createMultiSphereRenderable(
+    filament::Engine& engine,
+    filament::Material& material,
+    const std::vector<Eigen::Vector3d>& centers,
+    const std::vector<double>& radii,
+    const float4& color)
+{
+  static constexpr std::uint32_t segments = 32;
+  static constexpr std::uint32_t rings = 16;
+  const std::size_t sphereCount = std::min(centers.size(), radii.size());
+  const std::size_t verticesPerSphere = (rings + 1) * (segments + 1);
+  const std::size_t trianglesPerSphere = rings * segments * 2;
+
+  std::vector<Vertex> vertices;
+  std::vector<float3> normals;
+  std::vector<std::uint32_t> indices;
+  std::vector<filament::math::uint3> triangles;
+  vertices.reserve(sphereCount * verticesPerSphere);
+  normals.reserve(sphereCount * verticesPerSphere);
+  indices.reserve(sphereCount * trianglesPerSphere * 3);
+  triangles.reserve(sphereCount * trianglesPerSphere);
+
+  Eigen::Vector3d minBounds = Eigen::Vector3d::Zero();
+  Eigen::Vector3d maxBounds = Eigen::Vector3d::Zero();
+  bool hasBounds = false;
+  for (std::size_t i = 0; i < sphereCount; ++i) {
+    const double radius = radii[i];
+    if (radius <= 0.0) {
+      continue;
+    }
+    const Eigen::Vector3d extent = Eigen::Vector3d::Constant(radius);
+    appendEllipsoidGeometry(
+        vertices, normals, indices, triangles, centers[i], extent);
+    if (!hasBounds) {
+      minBounds = centers[i] - extent;
+      maxBounds = centers[i] + extent;
+      hasBounds = true;
+    } else {
+      minBounds = minBounds.cwiseMin(centers[i] - extent);
+      maxBounds = maxBounds.cwiseMax(centers[i] + extent);
+    }
+  }
+
+  return createTriangleMeshRenderable(
+      engine,
+      material,
+      std::move(vertices),
+      std::move(indices),
+      std::move(triangles),
+      std::move(normals),
+      color,
+      toFloat3(minBounds),
+      toFloat3(maxBounds));
 }
 
 Renderable createCylinderRenderable(
@@ -3426,6 +3507,21 @@ std::optional<Renderable> createRenderableFromDescriptor(
       renderable = createPyramidRenderable(
           engine, solidMaterial, descriptor.geometry.size, color);
       break;
+    case ShapeKind::MultiSphere:
+      if (descriptor.geometry.sphereCenters.size()
+              == descriptor.geometry.sphereRadii.size()
+          && std::any_of(
+              descriptor.geometry.sphereRadii.begin(),
+              descriptor.geometry.sphereRadii.end(),
+              [](double radius) { return radius > 0.0; })) {
+        renderable = createMultiSphereRenderable(
+            engine,
+            solidMaterial,
+            descriptor.geometry.sphereCenters,
+            descriptor.geometry.sphereRadii,
+            color);
+      }
+      break;
     case ShapeKind::Capsule:
       renderable = createCapsuleRenderable(
           engine,
@@ -3941,6 +4037,15 @@ int main(int argc, char* argv[])
                    && descriptor.material.visible
                    && descriptor.geometry.kind == ShapeKind::Pyramid;
           }));
+  const std::size_t multiSphereDescriptorCount = static_cast<std::size_t>(
+      std::count_if(
+          initialDescriptors.begin(),
+          initialDescriptors.end(),
+          [](const RenderableDescriptor& descriptor) {
+            return descriptor.skeletonName == kMultiSphereFixtureSkeletonName
+                   && descriptor.material.visible
+                   && descriptor.geometry.kind == ShapeKind::MultiSphere;
+          }));
   const std::size_t pbrEnvironmentDescriptorCount = static_cast<std::size_t>(
       std::count_if(
           initialDescriptors.begin(),
@@ -3992,6 +4097,13 @@ int main(int argc, char* argv[])
                 << pyramidDescriptorCount << "\n";
       return 1;
     }
+    if (multiSphereDescriptorCount != 1) {
+      std::cerr
+          << "Expected the multi-sphere fixture to provide one visible "
+             "multi-sphere renderable descriptor, but extracted "
+          << multiSphereDescriptorCount << "\n";
+      return 1;
+    }
     if (pbrEnvironmentDescriptorCount < kMinPbrEnvironmentRenderableCount) {
       std::cerr << "Expected the PBR environment fixture to provide at least "
                 << kMinPbrEnvironmentRenderableCount
@@ -4022,6 +4134,7 @@ int main(int argc, char* argv[])
   std::size_t createdAtlasRenderableCount = 0;
   std::size_t createdAtlasRobotRenderableCount = 0;
   std::size_t createdPyramidRenderableCount = 0;
+  std::size_t createdMultiSphereRenderableCount = 0;
   std::size_t createdPbrEnvironmentRenderableCount = 0;
   std::size_t createdG1RenderableCount = 0;
   std::size_t createdDragAndDropFrameRenderableCount = 0;
@@ -4050,6 +4163,10 @@ int main(int argc, char* argv[])
     if (descriptor.skeletonName == kPyramidFixtureSkeletonName
         && descriptor.geometry.kind == ShapeKind::Pyramid) {
       ++createdPyramidRenderableCount;
+    }
+    if (descriptor.skeletonName == kMultiSphereFixtureSkeletonName
+        && descriptor.geometry.kind == ShapeKind::MultiSphere) {
+      ++createdMultiSphereRenderableCount;
     }
     if (descriptor.skeletonName == kPbrEnvironmentFixtureSkeletonName
         && descriptor.geometry.kind == ShapeKind::Mesh) {
@@ -4100,6 +4217,12 @@ int main(int argc, char* argv[])
       std::cerr << "Only " << createdPyramidRenderableCount << " of "
                 << pyramidDescriptorCount
                 << " pyramid renderables were created\n";
+      return 1;
+    }
+    if (createdMultiSphereRenderableCount != multiSphereDescriptorCount) {
+      std::cerr << "Only " << createdMultiSphereRenderableCount << " of "
+                << multiSphereDescriptorCount
+                << " multi-sphere renderables were created\n";
       return 1;
     }
     if (createdPbrEnvironmentRenderableCount < pbrEnvironmentDescriptorCount) {
