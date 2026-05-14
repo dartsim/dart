@@ -115,6 +115,13 @@ tree instead keeps the architecture-valid solver cache bridge fix:
 cache metadata is attached, even if a compatibility detector facade reports a
 legacy display string such as `"ode"`. The focused
 `UNIT_constraint_SoftContactConstraint` regression covers that behavior.
+The latest working-tree slice also canonicalizes warm-start local points to
+the same scene-cache ID order used by the persistent manifold key. The focused
+`UNIT_collision_NativeBackend` regression now proves cached impulses survive
+when the same pair is queried as group B/A and then A/B. Reinstalling DART into
+the gz environment and rerunning the isolated `JointDetach` case still reports
+the same off-axis residual values, so this is a kept cache correctness fix but
+not the final gz compatibility fix.
 The newest temporary gz velocity diagnostic also showed that the remaining
 `JointDetach` off-axis residual follows base support motion: at step 9, the
 base angular velocity around `Y` is `-6.6445229724690596e-05`, the upper-link

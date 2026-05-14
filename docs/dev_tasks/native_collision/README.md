@@ -223,9 +223,12 @@ order, and canonical narrowphase functions are wrapped with explicit normal
 flips when dispatch order differs from collision object order. The working
 tree also adds the solver cache bridge part of that contract: native manifold
 cache writeback follows the attached native `CachedContact`, not the detector
-display string preserved by a compatibility facade. The architecture gate
-remains open until alias cleanup, package cleanup, and native algorithms are
-backed by design evidence in three dimensions:
+display string preserved by a compatibility facade. Native warm-start contacts
+are now also stored in the canonical scene-cache ID order used by the
+manifold key, so querying the same pair as A/B and B/A preserves refresh and
+matching semantics. The architecture gate remains open until alias cleanup,
+package cleanup, and native algorithms are backed by design evidence in three
+dimensions:
 
 - API cleanliness: ordinary users see one `dart` detector surface, semantic
   DART query options/results, native-backed compatibility names, and explicit

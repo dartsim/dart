@@ -182,6 +182,42 @@ scripts/parallel_jobs.py)`
     `NativeCacheUpdatesThroughCompatibilityFacade` case verifies that a
     detector facade reporting `"ode"` still writes the applied normal and
     friction impulses back to the attached native `CachedContact`.
+- `cmake --build build/default/cpp/Release --parallel $(python
+scripts/parallel_jobs.py) --target UNIT_collision_NativeBackend`
+  - Commit: working tree after canonical manifold cache contact ordering.
+  - Result: passed. This rebuilds the native backend test target with the
+    DART adapter change that stores warm-start local points in the same
+    canonical scene-cache ID order used by the persistent manifold key.
+- `ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^UNIT_collision_NativeBackend$'`
+  - Commit: working tree after canonical manifold cache contact ordering.
+  - Result: passed, 1/1 test. The new
+    `PersistentManifoldCacheWarmStartAcrossGroupOrder` case verifies cached
+    normal and friction impulses survive when the same pair is first queried as
+    group B/A and then as group A/B.
+- `pixi run -e gazebo install OFF && pixi run -e gazebo -- bash -lc 'cmake
+--build .deps/gz-physics/build --parallel $(python scripts/parallel_jobs.py)
+--target gz-physics-dartsim-plugin COMMON_TEST_joint_features'`
+  - Commit: working tree after canonical manifold cache contact ordering.
+  - Result: passed. The gz DART plugin and focused joint feature test binary
+    rebuilt against the current DART install.
+- `pixi run -e gazebo -- bash -lc 'set -euo pipefail; export
+LD_LIBRARY_PATH=.deps/gz-physics/build/lib:$CONDA_PREFIX/lib:${LD_LIBRARY_PATH:-};
+cd .deps/gz-physics/build; ./bin/COMMON_TEST_joint_features
+./lib/libgz-physics-dartsim-plugin.so.9.0.0
+--gtest_filter="JointFeaturesDetachTest/0.JointDetach" --gtest_brief=1'`
+  - Commit: working tree after canonical manifold cache contact ordering.
+  - Result: failed with the same focused residual values:
+    `upperLinkLinearVelocity.X() = -0.00013953469787260998`,
+    `upperLinkLinearVelocity.Y() = 1.0002864929523347e-06`, and
+    `upperLinkAngularVelocity.Y() = -6.6438361021132697e-05`. The canonical
+    cache-order fix is retained as a correctness improvement, but it does not
+    close the `JointDetach` support-stability gate.
+- `pixi run lint`
+  - Commit: working tree after canonical manifold cache contact ordering.
+  - Result: passed. `codespell`, CMake `format`, `clang-format`, `black`,
+    `isort`, `prettier`, TOML lint, RST lint, collision runtime isolation, and
+    AI command sync completed.
 - `pixi run lint`
   - Commit: working tree after `96436fd2503`
   - Result: passed. `codespell`, CMake `format`, `clang-format`, `black`,

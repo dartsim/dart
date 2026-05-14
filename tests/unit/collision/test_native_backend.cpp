@@ -258,6 +258,41 @@ TEST(DartCollisionBackend, PersistentManifoldCacheWarmStartInCollide)
 }
 
 //==============================================================================
+TEST(DartCollisionBackend, PersistentManifoldCacheWarmStartAcrossGroupOrder)
+{
+  auto detector = DartCollisionDetector::create();
+  auto groupA = detector->createCollisionGroup();
+  auto groupB = detector->createCollisionGroup();
+
+  auto sphereA = createSphereFrame("sphereA", 1.0, Eigen::Vector3d::Zero());
+  auto sphereB
+      = createSphereFrame("sphereB", 1.0, Eigen::Vector3d(1.5, 0.0, 0.0));
+  groupA->addShapeFrame(sphereA.get());
+  groupB->addShapeFrame(sphereB.get());
+
+  CollisionResult first;
+  CollisionOption option;
+  option.enableContact = true;
+  ASSERT_TRUE(detector->collide(groupB.get(), groupA.get(), option, &first));
+  ASSERT_GT(first.getNumContacts(), 0u);
+
+  auto& firstContact = first.getContact(0);
+  ASSERT_NE(nullptr, firstContact.userData);
+  auto* cached = static_cast<native::CachedContact*>(firstContact.userData);
+  cached->cachedNormalImpulse = 2.5;
+  cached->cachedFrictionImpulse1 = -0.6;
+  cached->cachedFrictionImpulse2 = 0.3;
+
+  CollisionResult second;
+  ASSERT_TRUE(detector->collide(groupA.get(), groupB.get(), option, &second));
+  ASSERT_GT(second.getNumContacts(), 0u);
+  const auto& warm = second.getContact(0);
+  EXPECT_NEAR(2.5, warm.cachedNormalImpulse, 1e-12);
+  EXPECT_NEAR(-0.6, warm.cachedFrictionImpulse1, 1e-12);
+  EXPECT_NEAR(0.3, warm.cachedFrictionImpulse2, 1e-12);
+}
+
+//==============================================================================
 TEST(DartCollisionBackend, SphereSphereCollide)
 {
   auto detector = DartCollisionDetector::create();

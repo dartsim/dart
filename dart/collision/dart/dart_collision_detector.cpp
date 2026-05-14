@@ -85,21 +85,25 @@ void warmStartContacts(
     const auto tf1Inv = tf1.inverse();
     const auto tf2Inv = tf2.inverse();
 
-    native::CachedContact cached;
-    cached.localPointA = tf1Inv * contact.point;
-    cached.localPointB = tf2Inv * contact.point;
-    cached.normal = contact.normal;
-    cached.penetrationDepth = contact.penetrationDepth;
-
     const auto id1 = resolveId(object1);
     const auto id2 = resolveId(object2);
     if (id1 == 0u || id2 == 0u) {
       continue;
     }
 
+    const bool swapped = id2 < id1;
+
+    native::CachedContact cached;
+    cached.localPointA
+        = swapped ? tf2Inv * contact.point : tf1Inv * contact.point;
+    cached.localPointB
+        = swapped ? tf1Inv * contact.point : tf2Inv * contact.point;
+    cached.normal = contact.normal;
+    cached.penetrationDepth = contact.penetrationDepth;
+
     auto& manifold = manifoldCache->getOrCreate(id1, id2);
     manifold.addOrReplace(cached);
-    manifold.refresh(tf1, tf2);
+    manifold.refresh(swapped ? tf2 : tf1, swapped ? tf1 : tf2);
 
     if (manifold.numContacts == 0) {
       manifoldCache->remove(id1, id2);
