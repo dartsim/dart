@@ -78,6 +78,46 @@ TEST(PackageResourceRetriever, exists_UnableToResolve_ReturnsFalse)
   EXPECT_TRUE(mockRetriever->mRetrieve.empty());
 }
 
+TEST(PackageResourceRetriever, defaultConstructorUsesLocalRetriever)
+{
+  PackageResourceRetriever retriever;
+  retriever.addPackageDirectory("dart_data", makeLocalPath("urdf"));
+
+  const auto uri = Uri::createFromString(
+      "package://dart_data/test/primitive_geometry.urdf");
+
+  EXPECT_TRUE(retriever.exists(uri));
+  EXPECT_FALSE(retriever.getFilePath(uri).empty());
+  EXPECT_NE(nullptr, retriever.retrieve(uri));
+}
+
+TEST(PackageResourceRetriever, malformedPackageUrisDoNotReachDelegate)
+{
+  auto mockRetriever = std::make_shared<PresentResourceRetriever>();
+  PackageResourceRetriever retriever(mockRetriever);
+
+  Uri missingAuthority;
+  missingAuthority.mScheme = "package";
+  missingAuthority.mPath = "/foo";
+
+  Uri missingPath;
+  missingPath.mScheme = "package";
+  missingPath.mAuthority = "test";
+
+  const auto expectMalformedUri = [&](const Uri& uri) {
+    EXPECT_FALSE(retriever.exists(uri));
+    EXPECT_EQ(retriever.getFilePath(uri), "");
+    EXPECT_EQ(retriever.retrieve(uri), nullptr);
+  };
+
+  expectMalformedUri(missingAuthority);
+  expectMalformedUri(missingPath);
+
+  EXPECT_TRUE(mockRetriever->mExists.empty());
+  EXPECT_TRUE(mockRetriever->mGetFilePath.empty());
+  EXPECT_TRUE(mockRetriever->mRetrieve.empty());
+}
+
 TEST(PackageResourceRetriever, exists_DelegateFails_ReturnsFalse)
 {
   // Additional slash is required for Windows because Windows file system

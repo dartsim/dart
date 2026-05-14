@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_DEFAULT_HPP_
 #define DART_UTILS_MJCF_DETAIL_DEFAULT_HPP_
 
+#include <dart/utils/export.hpp>
 #include <dart/utils/mjcf/detail/actuator_attributes.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
 #include <dart/utils/mjcf/detail/geom_attributes.hpp>
@@ -52,7 +53,7 @@ namespace utils {
 namespace MjcfParser {
 namespace detail {
 
-class Default final
+class DART_UTILS_API Default final
 {
 public:
   /// Default constructor
@@ -65,12 +66,11 @@ public:
 
   const WeldAttributes& getWeldAttributes() const;
 
-private:
-  // Private members used by Defaults class
-  friend class Defaults;
   Errors read(tinyxml2::XMLElement* element, const Default* parent);
 
 private:
+  friend class Defaults;
+
   ActuatorAttributes mMotorAttributes;
   ActuatorAttributes mPositionAttributes;
   ActuatorAttributes mVelocityAttributes;
@@ -83,19 +83,18 @@ private:
   WeldAttributes mWeldAttributes;
 };
 
-class Defaults
+class DART_UTILS_API Defaults
 {
 public:
   bool hasDefault(std::string_view className) const;
   const Default* getDefault(std::string_view className) const;
   const Default* getRootDefault() const;
 
-private:
-  // Private members used by MujocoModel class
-  friend class MujocoModel;
   Errors read(tinyxml2::XMLElement* element, const Default* parent);
 
 private:
+  friend class MujocoModel;
+
   //  Default mRootDefault;
   std::string mRootClassName;
   std::unordered_map<std::string, Default> mDefaultMap;

@@ -32,6 +32,7 @@
 
 #include "dart/simulation/experimental/io/binary_io.hpp"
 
+#include <span>
 #include <stdexcept>
 
 namespace dart::simulation::experimental::io {
@@ -45,7 +46,8 @@ void writeString(std::ostream& out, std::string_view str)
   std::size_t size = str.size();
   writePOD(out, size);
   if (size > 0) {
-    out.write(str.data(), size);
+    detail::writeBytes(
+        out, std::as_bytes(std::span<const char>(str.data(), str.size())));
   }
 }
 
@@ -56,7 +58,8 @@ void readString(std::istream& in, std::string& str)
   readPOD(in, size);
   str.resize(size);
   if (size > 0) {
-    in.read(str.data(), size);
+    detail::readBytes(
+        in, std::as_writable_bytes(std::span<char>(str.data(), str.size())));
   }
 }
 
@@ -118,8 +121,9 @@ void writeVectorXd(std::ostream& out, const Eigen::VectorXd& vec)
 {
   std::size_t size = vec.size();
   writePOD(out, size);
-  for (Eigen::Index i = 0; i < vec.size(); ++i) {
-    writePOD(out, vec(i));
+  if (size > 0) {
+    detail::writeBytes(
+        out, std::as_bytes(std::span<const double>(vec.data(), size)));
   }
 }
 
@@ -129,8 +133,9 @@ void readVectorXd(std::istream& in, Eigen::VectorXd& vec)
   std::size_t size;
   readPOD(in, size);
   vec.resize(size);
-  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(size); ++i) {
-    readPOD(in, vec(i));
+  if (size > 0) {
+    detail::readBytes(
+        in, std::as_writable_bytes(std::span<double>(vec.data(), size)));
   }
 }
 

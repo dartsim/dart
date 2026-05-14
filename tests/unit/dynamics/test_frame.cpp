@@ -1066,8 +1066,8 @@ TEST(FrameTest, ChildFramesSets)
 
   const std::set<Frame*>& childFrames = parent->getChildFrames();
   EXPECT_EQ(childFrames.size(), 2u);
-  EXPECT_TRUE(childFrames.count(child1.get()) > 0);
-  EXPECT_TRUE(childFrames.count(child2.get()) > 0);
+  EXPECT_TRUE(childFrames.contains(child1.get()));
+  EXPECT_TRUE(childFrames.contains(child2.get()));
 
   const std::set<const Frame*> constChildFrames
       = static_cast<const Frame*>(parent.get())->getChildFrames();

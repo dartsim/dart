@@ -1,0 +1,57 @@
+---
+name: dart-new-task
+description: "DART New Task: start a feature, bugfix, refactor, docs, build, or test task"
+---
+<!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
+<!-- Source: .claude/commands/dart-new-task.md -->
+<!-- Sync script: scripts/sync_ai_commands.py -->
+<!-- Run `pixi run sync-ai-commands` to update -->
+
+# dart-new-task
+
+Use this skill in Codex to run the DART `dart-new-task` workflow. The editable
+workflow source currently lives in `.claude/commands/`, and this generated
+Codex skill is a first-class Codex entrypoint.
+
+## Invocation
+
+- Claude Code/OpenCode: `/dart-new-task <arguments>`
+- Codex: `$dart-new-task <arguments>`
+
+Treat the text after the skill name as `$ARGUMENTS`. When the workflow
+references `$1`, `$2`, etc., map those to the positional values supplied by the
+user.
+
+## Command Body
+
+Start a new task in DART: $ARGUMENTS
+
+## Required Reading
+
+Read these files first:
+@AGENTS.md
+@docs/onboarding/building.md
+@docs/onboarding/contributing.md
+@docs/onboarding/code-style.md
+
+## Workflow
+
+1. **Understand the task** - Parse: goal, constraints, type (feature|bugfix|refactor|docs)
+2. **Assess scope** - Multi-phase or multi-session? Create `docs/dev_tasks/<task>/` (see `docs/dev_tasks/README.md` for criteria)
+3. **Setup** - Choose the target branch before creating a topic branch:
+   - features/docs/non-bugfix refactors: branch from `origin/main`
+   - bug fixes that apply to the current release line: branch from
+     `origin/release-6.16` first, then cherry-pick or reapply to `main`
+4. **Implement** - Keep commits focused, follow code style
+5. **Verify** - Run `pixi run lint` before committing, then `pixi run test-all`
+6. **PR** - After explicit maintainer/user approval, `git push -u origin HEAD`
+   then `gh pr create --draft --base <target-branch> --milestone "<milestone>"`
+   (`DART 7.0` for `main`, `DART 6.16.x` for `release-6.16`); follow
+   `.github/PULL_REQUEST_TEMPLATE.md`
+7. **Cleanup** - Before PR: if task used `docs/dev_tasks/<task>/`, remove the folder (include in this PR, not after merge)
+
+## Type-Specific
+
+- **Bugfix**: Requires PRs to BOTH `release-6.16` AND `main`
+- **Refactor**: No behavior changes
+- **Feature**: Add tests + docs

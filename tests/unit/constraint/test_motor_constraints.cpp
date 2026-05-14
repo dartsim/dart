@@ -139,7 +139,7 @@ TEST(MimicMotorConstraint, ConstructWithValidJoint)
   mimicProps.mOffset = 0.0;
   mimicProps.mConstraintType = MimicConstraintType::Motor;
 
-  std::array<MimicDofProperties, 1> propsArray = {mimicProps};
+  const auto propsArray = std::to_array({mimicProps});
 
   auto constraint
       = std::make_shared<MimicMotorConstraint>(depJoint, propsArray);
@@ -192,7 +192,7 @@ TEST(MimicMotorConstraint, MimicPropertiesMultiplier)
   mimicProps.mOffset = 0.0;
   mimicProps.mConstraintType = MimicConstraintType::Motor;
 
-  std::array<MimicDofProperties, 1> propsArray = {mimicProps};
+  const auto propsArray = std::to_array({mimicProps});
 
   auto constraint
       = std::make_shared<MimicMotorConstraint>(depJoint, propsArray);
@@ -214,7 +214,7 @@ TEST(MimicMotorConstraint, MimicPropertiesOffset)
   mimicProps.mOffset = 0.5; // 0.5 radian offset
   mimicProps.mConstraintType = MimicConstraintType::Motor;
 
-  std::array<MimicDofProperties, 1> propsArray = {mimicProps};
+  const auto propsArray = std::to_array({mimicProps});
 
   auto constraint
       = std::make_shared<MimicMotorConstraint>(depJoint, propsArray);
@@ -287,7 +287,7 @@ TEST(CouplerConstraint, ConstructWithValidJoint)
   mimicProps.mOffset = 0.0;
   mimicProps.mConstraintType = MimicConstraintType::Coupler;
 
-  std::array<MimicDofProperties, 1> propsArray = {mimicProps};
+  const auto propsArray = std::to_array({mimicProps});
 
   auto constraint = std::make_shared<CouplerConstraint>(depJoint, propsArray);
 

@@ -40,34 +40,56 @@ If this fails, see `docs/onboarding/ci-cd.md` for troubleshooting.
 | Python bindings | @docs/onboarding/python-bindings.md                         |
 | Model loading   | @docs/onboarding/io-parsing.md                              |
 | Build system    | @docs/onboarding/build-system.md                            |
-| AI tools        | @docs/onboarding/ai-tools.md                                |
+| AI tools        | @docs/ai/README.md @docs/onboarding/ai-tools.md             |
 | PR reviews      | @docs/onboarding/ai-tools.md (AI review handling rules)     |
+| Release work    | @docs/onboarding/release-management.md                      |
 | Dev tasks       | @docs/dev_tasks/README.md (when to create, cleanup rules)   |
 
-## Slash Commands
+## Workflow Commands
 
-Use `/dart-*` commands for consistent, context-aware workflows:
+Use `/dart-*` commands for consistent, context-aware workflows in Claude Code
+and OpenCode. In Codex, use the generated equivalent skills as `$dart-*`
+(for example, `$dart-fix-ci`).
 
-| Command               | Purpose                             |
-| --------------------- | ----------------------------------- |
-| `/dart-new-task`      | Start new feature/bugfix/refactor   |
-| `/dart-resume`        | Continue work from previous session |
-| `/dart-fix-issue <#>` | Resolve a GitHub issue              |
-| `/dart-fix-ci`        | Debug and fix CI failures           |
-| `/dart-review-pr`     | Review or address PR feedback       |
-| `/dart-docs-update`   | Update documentation                |
+| Claude/OpenCode                | Codex                          | Purpose                             |
+| ------------------------------ | ------------------------------ | ----------------------------------- |
+| `/dart-new-task`               | `$dart-new-task`               | Start new feature/bugfix/refactor   |
+| `/dart-resume`                 | `$dart-resume`                 | Continue work from previous session |
+| `/dart-fix-issue <#>`          | `$dart-fix-issue <#>`          | Resolve a GitHub issue              |
+| `/dart-fix-ci`                 | `$dart-fix-ci`                 | Debug and fix CI failures           |
+| `/dart-review-pr`              | `$dart-review-pr`              | Review or address PR feedback       |
+| `/dart-pr`                     | `$dart-pr`                     | Create a DART pull request          |
+| `/dart-manage-pr`              | `$dart-manage-pr`              | Manage CI, review, and cleanup      |
+| `/dart-merge-pr`               | `$dart-merge-pr`               | Monitor CI and merge a ready PR     |
+| `/dart-docs-update`            | `$dart-docs-update`            | Update documentation                |
+| `/dart-improve-docs`           | `$dart-improve-docs`           | Capture durable docs learnings      |
+| `/dart-audit-agent-compliance` | `$dart-audit-agent-compliance` | Fix gaps when agents miss rules     |
+| `/dart-mechanical-refactor`    | `$dart-mechanical-refactor`    | Behavior-preserving refactor        |
+| `/dart-branch-cleanup`         | `$dart-branch-cleanup`         | Analyze or clean stale branches     |
+| `/dart-triage-issue`           | `$dart-triage-issue`           | Triage a GitHub issue               |
+| `/dart-close-issue`            | `$dart-close-issue`            | Draft/post issue closing message    |
+| `/dart-downstream-fix`         | `$dart-downstream-fix`         | Fix downstream-reported DART issue  |
+| `/dart-backport-pr`            | `$dart-backport-pr`            | Backport merged `main` PR           |
+| `/dart-release-ci-fix`         | `$dart-release-ci-fix`         | Fix release branch CI               |
+| `/dart-release-merge-main`     | `$dart-release-merge-main`     | Merge release branch into `main`    |
+| `/dart-release-packaging`      | `$dart-release-packaging`      | Prepare release packaging PR        |
 
-Commands are defined in `.claude/commands/` (synced to `.opencode/command/`).
+Commands are defined in `.claude/commands/` and synced to
+`.opencode/command/`. Codex workflow skills are generated from the same command
+files into `.codex/skills/`.
 
 ## Skills (On-Demand Knowledge)
 
 Skills provide domain-specific knowledge loaded when needed:
 
-| Skill             | When to Load                                   |
-| ----------------- | ---------------------------------------------- |
-| `dart-build`      | Build system, CMake, dependencies              |
-| `dart-test`       | Writing tests, debugging failures              |
-| `dart-contribute` | PR workflow, code review, dual-PR for bugfixes |
+| Skill             | When to Load                                    |
+| ----------------- | ----------------------------------------------- |
+| `dart-build`      | Build system, CMake, dependencies               |
+| `dart-ci`         | GitHub Actions and CI troubleshooting           |
+| `dart-test`       | Writing tests, debugging failures               |
+| `dart-io`         | Model loading and URDF/SDF/MJCF/SKEL parsing    |
+| `dart-python`     | dartpy bindings, nanobind, wheels, API patterns |
+| `dart-contribute` | PR workflow, code review, dual-PR for bugfixes  |
 
 Skills are in `.claude/skills/` (synced to `.codex/skills/` for Codex).
 
@@ -75,9 +97,10 @@ Skills are in `.claude/skills/` (synced to `.codex/skills/` for Codex).
 
 - **Bug fixes**: Require PRs to BOTH `release-6.16` AND `main` branches. See `docs/onboarding/contributing.md`.
 - **Multi-phase tasks**: Create `docs/dev_tasks/<task>/` for tracking. See `docs/dev_tasks/README.md` for criteria.
-- **AI reviews**: NEVER reply to AI-generated review comments (usernames ending in `[bot]` like `chatgpt-codex-connector[bot]}`, `github-actions[bot]`, `copilot[bot]`). No `gh pr comment`, no PR comment replies. Just push the fix silently, then re-trigger with `@codex review`. See `docs/onboarding/ai-tools.md`.
+- **AI reviews**: NEVER reply to AI-generated review comments (usernames ending in `[bot]` like `chatgpt-codex-connector[bot]`, `github-actions[bot]`, `copilot[bot]`). No inline replies and no acknowledgment comments. Make local fixes silently. Pushes, PR comments, thread resolution, review re-triggers, and other GitHub mutations require explicit maintainer/user approval. See `docs/onboarding/ai-tools.md`.
 - **Commands**: Use `pixi run ...` tasks; don't invent new entry points.
 - **Formatting**: Run `pixi run lint` before committing (auto-fixes).
+- **Commit/PR titles**: Do not prefix commit messages or PR titles with agent tags like `[codex]`; use plain descriptive titles.
 - **PRs**: Use `.github/PULL_REQUEST_TEMPLATE.md` and set the milestone (`DART 7.0` for `main`, `DART 6.16.x` for `release-6.16`).
 - **Subdirectories**: May have their own `AGENTS.md` for module-specific rules.
 
@@ -97,7 +120,8 @@ Shortcut: `pixi run test-all` runs lint + build + all tests.
 
 ## Tool Compatibility
 
-> **Note**: Tool compatibility assumptions below are based on testing as of Jan 2025.
+> **Note**: Codex command/skill sync was verified in May 2026; other tool
+> compatibility assumptions below are based on testing as of Jan 2025.
 > AI tools evolve rapidly. Verify these assumptions when:
 >
 > - Setting up a new environment
@@ -106,19 +130,12 @@ Shortcut: `pixi run test-all` runs lint + build + all tests.
 >
 > See `docs/onboarding/ai-tools.md` for detailed compatibility notes.
 
-| Tool            | Instructions               | Commands             | Skills            |
-| --------------- | -------------------------- | -------------------- | ----------------- |
-| **Claude Code** | `CLAUDE.md` -> `AGENTS.md` | `.claude/commands/`  | `.claude/skills/` |
-| **OpenCode**    | `AGENTS.md`                | `.opencode/command/` | `.claude/skills/` |
-| **Codex**       | `AGENTS.md`                | `~/.codex/prompts/`  | `.codex/skills/`  |
-| **Gemini CLI**  | `GEMINI.md` -> `AGENTS.md` | Read manually        | Read manually     |
-
-## Prompt Templates (Reference)
-
-> [`docs/prompts/`](docs/prompts/AGENTS.md) contains prompt template documentation.
-> **Prefer slash commands** over manual prompts when available.
-
-Index: [`docs/prompts/AGENTS.md`](docs/prompts/AGENTS.md)
+| Tool            | Instructions               | Commands                          | Skills                          |
+| --------------- | -------------------------- | --------------------------------- | ------------------------------- |
+| **Claude Code** | `CLAUDE.md` -> `AGENTS.md` | `.claude/commands/`               | `.claude/skills/`               |
+| **OpenCode**    | `AGENTS.md`                | `.opencode/command/`              | `.claude/skills/`               |
+| **Codex**       | `AGENTS.md`                | `.codex/skills/`                  | `.codex/skills/`                |
+| **Gemini CLI**  | `GEMINI.md` -> `AGENTS.md` | Read `.claude/commands/` manually | Read `.claude/skills/` manually |
 
 <skills_system priority="1">
 
@@ -146,37 +163,37 @@ Usage notes:
 
 <skill>
 <name>dart-build</name>
-<description>DART build system knowledge - CMake, pixi, dependencies, troubleshooting</description>
+<description>DART Build: CMake, pixi, dependencies, and build troubleshooting</description>
 <location>project</location>
 </skill>
 
 <skill>
 <name>dart-ci</name>
-<description>DART CI/CD troubleshooting - GitHub Actions, cache debugging, platform-specific failures</description>
+<description>DART CI: GitHub Actions, cache debugging, and platform-specific failures</description>
 <location>project</location>
 </skill>
 
 <skill>
 <name>dart-contribute</name>
-<description>DART contribution workflow - branching, PRs, code review, dual-PR for bugfixes</description>
+<description>DART Contribute: branching, PRs, review workflow, and dual-PR bugfixes</description>
 <location>project</location>
 </skill>
 
 <skill>
 <name>dart-io</name>
-<description>DART model loading - URDF, SDF, MJCF, SKEL parsers and dart::io unified API</description>
+<description>DART IO: URDF, SDF, MJCF, SKEL parsers, and dart::io loading</description>
 <location>project</location>
 </skill>
 
 <skill>
 <name>dart-python</name>
-<description>DART Python bindings (dartpy) - nanobind, wheel building, API patterns</description>
+<description>DART Python: dartpy bindings, nanobind, wheels, and API patterns</description>
 <location>project</location>
 </skill>
 
 <skill>
 <name>dart-test</name>
-<description>DART testing patterns - unit tests, integration tests, CI validation</description>
+<description>DART Test: unit tests, integration tests, CI validation, and debugging</description>
 <location>project</location>
 </skill>
 

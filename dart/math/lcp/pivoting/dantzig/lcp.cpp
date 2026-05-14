@@ -161,6 +161,8 @@ rows/columns and manipulate C.
 #include <memory>
 #include <vector>
 
+#include <cstddef>
+
 //***************************************************************************
 // code generation parameters
 
@@ -197,16 +199,19 @@ bool SolveLCP(
   // and return
   if (nub >= n) {
     const int nskip = padding(n);
-    auto d = std::make_unique<Scalar[]>(n);
+    const std::size_t nSize = static_cast<std::size_t>(n);
+    const std::size_t nskipSize = static_cast<std::size_t>(nskip);
+    auto d = std::make_unique_for_overwrite<Scalar[]>(nSize);
     SetZero(d.get(), n);
 
     std::unique_ptr<Scalar[]> A_storage;
     Scalar* A_work = nullptr;
 
     if (n != nskip) {
-      A_storage.reset(new Scalar[n * nskip]);
+      A_storage = std::make_unique_for_overwrite<Scalar[]>(nSize * nskipSize);
       for (int i = 0; i < n; ++i) {
-        memcpy(&A_storage[i * nskip], &A[i * nskip], n * sizeof(Scalar));
+        const std::size_t rowOffset = static_cast<std::size_t>(i) * nskipSize;
+        memcpy(&A_storage[rowOffset], &A[rowOffset], nSize * sizeof(Scalar));
       }
       A_work = A_storage.get();
     } else {
@@ -221,14 +226,17 @@ bool SolveLCP(
   }
 
   const int nskip = padding(n);
+  const std::size_t nSize = static_cast<std::size_t>(n);
+  const std::size_t nskipSize = static_cast<std::size_t>(nskip);
 
   std::unique_ptr<Scalar[]> A_storage;
   Scalar* A_work = nullptr;
 
   if (n != nskip) {
-    A_storage.reset(new Scalar[n * nskip]);
+    A_storage = std::make_unique_for_overwrite<Scalar[]>(nSize * nskipSize);
     for (int i = 0; i < n; ++i) {
-      memcpy(&A_storage[i * nskip], &A[i * nskip], n * sizeof(Scalar));
+      const std::size_t rowOffset = static_cast<std::size_t>(i) * nskipSize;
+      memcpy(&A_storage[rowOffset], &A[rowOffset], nSize * sizeof(Scalar));
     }
     A_work = A_storage.get();
   } else {
@@ -238,21 +246,21 @@ bool SolveLCP(
   // Create PivotMatrix from work array
   PivotMatrix<Scalar> A_pivot(n, n, A_work, nskip);
 
-  auto L = std::make_unique<Scalar[]>(n * nskip);
-  auto d = std::make_unique<Scalar[]>(n);
+  auto L = std::make_unique_for_overwrite<Scalar[]>(nSize * nskipSize);
+  auto d = std::make_unique_for_overwrite<Scalar[]>(nSize);
   std::unique_ptr<Scalar[]> wStorage;
   Scalar* w = outer_w;
   if (!w) {
-    wStorage.reset(new Scalar[n]);
+    wStorage = std::make_unique_for_overwrite<Scalar[]>(n);
     w = wStorage.get();
   }
-  auto delta_w = std::make_unique<Scalar[]>(n);
-  auto delta_x = std::make_unique<Scalar[]>(n);
-  auto Dell = std::make_unique<Scalar[]>(n);
-  auto ell = std::make_unique<Scalar[]>(n);
-  auto p = std::make_unique<int[]>(n);
-  auto C = std::make_unique<int[]>(n);
-  auto state = std::make_unique<bool[]>(n);
+  auto delta_w = std::make_unique_for_overwrite<Scalar[]>(nSize);
+  auto delta_x = std::make_unique_for_overwrite<Scalar[]>(nSize);
+  auto Dell = std::make_unique_for_overwrite<Scalar[]>(nSize);
+  auto ell = std::make_unique_for_overwrite<Scalar[]>(nSize);
+  auto p = std::make_unique_for_overwrite<int[]>(nSize);
+  auto C = std::make_unique_for_overwrite<int[]>(nSize);
+  auto state = std::make_unique<bool[]>(nSize);
 
   // create LCP object. note that tmp is set to delta_w to save space, this
   // optimization relies on knowledge of how tmp is used, so be careful!

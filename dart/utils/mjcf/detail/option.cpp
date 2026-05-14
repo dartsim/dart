@@ -185,7 +185,7 @@ Errors Option::read(tinyxml2::XMLElement* element)
 
   // noslip_iterations
   if (hasAttribute(element, "noslip_iterations")) {
-    mNoSlipTolerance = getAttributeInt(element, "noslip_iterations");
+    mNoSlipIterations = getAttributeInt(element, "noslip_iterations");
   }
 
   // noslip_tolerance

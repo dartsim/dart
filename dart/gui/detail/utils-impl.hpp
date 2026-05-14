@@ -41,9 +41,9 @@ namespace dart::gui {
 template <typename T>
 constexpr T getAlphaThreshold()
 {
-  if constexpr (std::is_same_v<T, float>) {
+  if constexpr (std::same_as<T, float>) {
     return 1e-6;
-  } else if constexpr (std::is_same_v<T, double>) {
+  } else if constexpr (std::same_as<T, double>) {
     return 1e-9;
   } else {
     return 1e-9;
@@ -113,18 +113,10 @@ template <typename Derived>
 
 //==============================================================================
 template <typename Derived>
-typename std::conditional<
-    std::is_same<typename Derived::Scalar, float>::value,
-    ::osg::Vec3f,
-    ::osg::Vec3d>::type
-eigToOsgVec3(const Eigen::MatrixBase<Derived>& vec)
+OsgVec3ForEigenScalar<Derived> eigToOsgVec3(
+    const Eigen::MatrixBase<Derived>& vec)
 {
-  using Vec3 = typename std::conditional<
-      std::is_same<typename Derived::Scalar, float>::value,
-      ::osg::Vec3f,
-      ::osg::Vec3d>::type;
-
-  return Vec3(vec[0], vec[1], vec[2]);
+  return OsgVec3ForEigenScalar<Derived>(vec[0], vec[1], vec[2]);
 }
 
 //==============================================================================
@@ -143,16 +135,10 @@ template <typename Derived>
 
 //==============================================================================
 template <typename Derived>
-std::conditional<
-    std::is_same<typename Derived::Scalar, float>::value,
-    ::osg::Vec4f,
-    ::osg::Vec4d>
-eigToOsgVec4(const Eigen::MatrixBase<Derived>& vec)
+OsgVec4ForEigenScalar<Derived> eigToOsgVec4(
+    const Eigen::MatrixBase<Derived>& vec)
 {
-  return std::conditional<
-      std::is_same<typename Derived::Scalar, float>::value,
-      ::osg::Vec4f,
-      ::osg::Vec4d>(vec[0], vec[1], vec[2], vec[3]);
+  return OsgVec4ForEigenScalar<Derived>(vec[0], vec[1], vec[2], vec[3]);
 }
 
 } // namespace dart::gui

@@ -44,6 +44,7 @@
 
 #include <CLI/CLI.hpp>
 
+#include <array>
 #include <span>
 
 #include <cmath>
@@ -147,7 +148,7 @@ public:
     // Update point cloud colors
     auto colors = generatePointCloudColors(pointCloud);
     DART_ASSERT(pointCloud.size() == colors.size());
-    mPointCloudShape->setColors(std::span<const Eigen::Vector4d>(colors));
+    mPointCloudShape->setColors(colors);
 
     // Update voxel
     mVoxelGridShape->updateOccupancy(pointCloud, sensorPos);
@@ -407,14 +408,14 @@ public:
         if (pcShow) {
           auto pointCloudShape = mNode->getPointCloudShape();
 
-          const char* colorModeItems[]
-              = {"Use shape color", "Bind overall", "Bind per point"};
+          const auto colorModeItems = std::to_array<const char*>(
+              {"Use shape color", "Bind overall", "Bind per point"});
           int colorMode = pointCloudShape->getColorMode();
           if (ImGui::Combo(
                   "Color Mode",
                   &colorMode,
-                  colorModeItems,
-                  IM_ARRAYSIZE(colorModeItems))) {
+                  colorModeItems.data(),
+                  static_cast<int>(colorModeItems.size()))) {
             if (colorMode == 0) {
               pointCloudShape->setColorMode(
                   dynamics::PointCloudShape::USE_SHAPE_COLOR);
@@ -443,14 +444,14 @@ public:
             }
           }
 
-          const char* pointShapeTypeItems[]
-              = {"Box", "Billboard Square", "Billboard Circle", "Point"};
+          const auto pointShapeTypeItems = std::to_array<const char*>(
+              {"Box", "Billboard Square", "Billboard Circle", "Point"});
           int pointShapeType = pointCloudShape->getPointShapeType();
           if (ImGui::Combo(
                   "Point Shape Type",
                   &pointShapeType,
-                  pointShapeTypeItems,
-                  IM_ARRAYSIZE(pointShapeTypeItems))) {
+                  pointShapeTypeItems.data(),
+                  static_cast<int>(pointShapeTypeItems.size()))) {
             if (pointShapeType == 0) {
               pointCloudShape->setPointShapeType(
                   dynamics::PointCloudShape::BOX);

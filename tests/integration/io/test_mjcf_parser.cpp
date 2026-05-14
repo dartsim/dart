@@ -31,9 +31,28 @@
  */
 
 #include "dart/utils/All.hpp"
+#define private public
+#include "dart/utils/mjcf/detail/actuator.hpp"
+#include "dart/utils/mjcf/detail/asset.hpp"
+#include "dart/utils/mjcf/detail/camera.hpp"
+#include "dart/utils/mjcf/detail/contact.hpp"
+#include "dart/utils/mjcf/detail/default.hpp"
+#include "dart/utils/mjcf/detail/equality.hpp"
+#include "dart/utils/mjcf/detail/joint.hpp"
+#include "dart/utils/mjcf/detail/light.hpp"
+#include "dart/utils/mjcf/detail/material.hpp"
+#include "dart/utils/mjcf/detail/mesh.hpp"
 #include "dart/utils/mjcf/detail/mujoco_model.hpp"
+#include "dart/utils/mjcf/detail/size.hpp"
+#include "dart/utils/mjcf/detail/texture.hpp"
+#include "dart/utils/mjcf/detail/weld.hpp"
+#undef private
+#include "dart/utils/mjcf/detail/body_attributes.hpp"
+#include "dart/utils/mjcf/detail/joint_attributes.hpp"
+#include "dart/utils/mjcf/detail/mesh_attributes.hpp"
 #include "dart/utils/mjcf/detail/types.hpp"
 #include "dart/utils/mjcf/detail/utils.hpp"
+#include "dart/utils/mjcf/detail/weld_attributes.hpp"
 
 #include <dart/all.hpp>
 
@@ -43,7 +62,10 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iterator>
+#include <limits>
 #include <map>
+#include <optional>
 #include <string>
 
 #include <cstring>
@@ -72,15 +94,15 @@ public:
 
   bool seek(ptrdiff_t offset, SeekType origin) override
   {
-    std::size_t base = 0;
+    ptrdiff_t base = 0;
     if (origin == SEEKTYPE_CUR) {
-      base = mOffset;
+      base = static_cast<ptrdiff_t>(mOffset);
     } else if (origin == SEEKTYPE_END) {
-      base = mData.size();
+      base = std::ssize(mData);
     }
 
-    const auto next = static_cast<long long>(base) + offset;
-    if (next < 0 || next > static_cast<long long>(mData.size())) {
+    const auto next = base + offset;
+    if (next < 0 || next > std::ssize(mData)) {
       return false;
     }
 
@@ -117,7 +139,7 @@ public:
 
   bool exists(const common::Uri& uri) override
   {
-    return mFiles.count(uri.toString()) > 0;
+    return mFiles.contains(uri.toString());
   }
 
   common::ResourcePtr retrieve(const common::Uri& uri) override
@@ -138,6 +160,28 @@ common::Uri addMemoryFile(
 {
   retriever.add(std::string(uri), std::move(data));
   return common::Uri(std::string(uri));
+}
+
+bool hasErrorCode(const Errors& errors, ErrorCode code)
+{
+  return std::ranges::any_of(
+      errors, [code](const Error& error) { return error.getCode() == code; });
+}
+
+void expectSingleErrorCode(const Errors& errors, ErrorCode code)
+{
+  ASSERT_EQ(errors.size(), 1u);
+  EXPECT_EQ(errors.front().getCode(), code);
+}
+
+tinyxml2::XMLElement* parseRootElement(
+    tinyxml2::XMLDocument& document, const char* xml)
+{
+  if (document.Parse(xml) != tinyxml2::XML_SUCCESS) {
+    return nullptr;
+  }
+
+  return document.RootElement();
 }
 
 const std::string kMjcfPadding(4096, 'x');
@@ -275,6 +319,84 @@ TEST(MjcfParserTest, IncludeDefaultSettings)
   auto cylinderVisualAspect = cylinderShapeNode->getVisualAspect();
   ASSERT_NE(cylinderVisualAspect, nullptr);
   cylinderVisualAspect->getRGBA().isApprox(Eigen::Vector4d(1, 0, 0, 1));
+}
+
+//==============================================================================
+TEST(MjcfParserTest, IncludeErrorsReportMalformedFilesAndRoots)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+
+  retriever->add("memory://mjcf_bad_xml_child.xml", "<mujoco>");
+
+  const auto malformedXmlUri = addMemoryFile(
+      *retriever,
+      "memory://mjcf_malformed_xml_include.xml",
+      R"(
+<?xml version="1.0" ?>
+<mujoco model="malformed_xml_include">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <include file="memory://mjcf_bad_xml_child.xml" />
+  <worldbody />
+</mujoco>
+)");
+
+  auto malformedXmlMujoco = utils::MjcfParser::detail::MujocoModel();
+  const auto malformedXmlErrors
+      = malformedXmlMujoco.read(malformedXmlUri, retriever);
+  ASSERT_FALSE(malformedXmlErrors.empty());
+  EXPECT_TRUE(hasErrorCode(malformedXmlErrors, ErrorCode::FILE_READ));
+  EXPECT_TRUE(hasErrorCode(malformedXmlErrors, ErrorCode::ELEMENT_MISSING));
+  EXPECT_EQ(
+      utils::MjcfParser::readWorld(
+          malformedXmlUri, utils::MjcfParser::Options(retriever)),
+      nullptr);
+
+  retriever->add(
+      "memory://mjcf_not_mujoco_child.xml",
+      R"(
+<?xml version="1.0" ?>
+<not_mujoco />
+)");
+
+  const auto malformedUri = addMemoryFile(
+      *retriever,
+      "memory://mjcf_malformed_include.xml",
+      R"(
+<?xml version="1.0" ?>
+<mujoco model="malformed_include">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <include file="memory://mjcf_not_mujoco_child.xml" />
+  <worldbody />
+</mujoco>
+)");
+
+  auto malformedMujoco = utils::MjcfParser::detail::MujocoModel();
+  const auto malformedErrors = malformedMujoco.read(malformedUri, retriever);
+  ASSERT_FALSE(malformedErrors.empty());
+  EXPECT_TRUE(hasErrorCode(malformedErrors, ErrorCode::ELEMENT_MISSING));
+
+  retriever->add("memory://mjcf_malformed_root.xml", "<mujoco>");
+
+  auto malformedRootMujoco = utils::MjcfParser::detail::MujocoModel();
+  const auto malformedRootErrors = malformedRootMujoco.read(
+      common::Uri("memory://mjcf_malformed_root.xml"), retriever);
+  expectSingleErrorCode(malformedRootErrors, ErrorCode::FILE_READ);
+
+  retriever->add(
+      "memory://mjcf_not_mujoco_root.xml",
+      R"(
+<?xml version="1.0" ?>
+<not_mujoco />
+)");
+
+  auto notMujocoRoot = utils::MjcfParser::detail::MujocoModel();
+  const auto notMujocoRootErrors = notMujocoRoot.read(
+      common::Uri("memory://mjcf_not_mujoco_root.xml"), retriever);
+  expectSingleErrorCode(notMujocoRootErrors, ErrorCode::ELEMENT_MISSING);
 }
 
 //==============================================================================
@@ -530,7 +652,7 @@ TEST(MjcfParserTest, ParsesSitesAndOptions)
 }
 
 //==============================================================================
-TEST(MjcfParserTest, ReportsInvalidOptionAndSiteType)
+TEST(MjcfParserTest, ReportsInvalidOptionAndSiteAttributes)
 {
   const std::string xml = R"(
 <?xml version="1.0" ?>
@@ -543,6 +665,7 @@ TEST(MjcfParserTest, ReportsInvalidOptionAndSiteType)
     <body name="root">
       <geom type="sphere" size="0.1" />
       <site name="bad_site" type="bad_type" size="0.1" />
+      <site name="bad_size_site" type="box" size="0.1 0.2 0.3 0.4" />
     </body>
   </worldbody>
 </mujoco>
@@ -560,14 +683,51 @@ TEST(MjcfParserTest, ReportsInvalidOptionAndSiteType)
   std::filesystem::remove(tempPath, ec);
 
   ASSERT_FALSE(errors.empty());
-  bool hasInvalid = false;
-  for (const auto& error : errors) {
-    if (error.getCode() == ErrorCode::ATTRIBUTE_INVALID) {
-      hasInvalid = true;
-      break;
-    }
+  EXPECT_TRUE(hasErrorCode(errors, ErrorCode::ATTRIBUTE_INVALID));
+}
+
+//==============================================================================
+TEST(MjcfParserTest, OptionInvalidEnumAttributesReportErrors)
+{
+  struct InvalidOptionCase
+  {
+    const char* mUri;
+    const char* mAttributes;
+  };
+
+  const InvalidOptionCase cases[] = {
+      {"memory://mjcf_bad_collision_option.xml", R"(collision="unsupported")"},
+      {"memory://mjcf_bad_cone_option.xml", R"(cone="unsupported")"},
+      {"memory://mjcf_bad_jacobian_option.xml", R"(jacobian="unsupported")"},
+      {"memory://mjcf_bad_solver_option.xml", R"(solver="unsupported")"},
+  };
+
+  for (const auto& optionCase : cases) {
+    SCOPED_TRACE(optionCase.mUri);
+
+    auto retriever = std::make_shared<MemoryResourceRetriever>();
+    const std::string xml = std::string(R"(
+<?xml version="1.0" ?>
+<mujoco model="bad_option">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <option )") + optionCase.mAttributes
+                            + R"( />
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+    </body>
+  </worldbody>
+</mujoco>
+)";
+    const auto uri = addMemoryFile(*retriever, optionCase.mUri, xml);
+
+    auto mujoco = utils::MjcfParser::detail::MujocoModel();
+    const auto errors = mujoco.read(uri, retriever);
+    ASSERT_FALSE(errors.empty());
+    EXPECT_TRUE(hasErrorCode(errors, ErrorCode::ATTRIBUTE_INVALID));
   }
-  EXPECT_TRUE(hasInvalid);
 }
 
 //==============================================================================
@@ -630,6 +790,124 @@ TEST(MjcfParserTest, CompilerAttributesParsed)
 }
 
 //==============================================================================
+TEST(MjcfParserTest, CompilerInertiaFromGeomVariantsAndErrors)
+{
+  struct InertiaFromGeomCase
+  {
+    const char* mUri;
+    const char* mValue;
+    bool mValid;
+    InertiaFromGeom mExpectedValue;
+  };
+
+  const InertiaFromGeomCase cases[] = {
+      {"memory://mjcf_compiler_inertiafromgeom_false.xml",
+       "false",
+       true,
+       InertiaFromGeom::IFG_FALSE},
+      {"memory://mjcf_compiler_inertiafromgeom_true.xml",
+       "true",
+       true,
+       InertiaFromGeom::IFG_TRUE},
+      {"memory://mjcf_compiler_inertiafromgeom_auto.xml",
+       "auto",
+       true,
+       InertiaFromGeom::IFG_AUTO},
+      {"memory://mjcf_compiler_inertiafromgeom_invalid.xml",
+       "unsupported",
+       false,
+       InertiaFromGeom::IFG_AUTO},
+  };
+
+  for (const auto& inertiaCase : cases) {
+    SCOPED_TRACE(inertiaCase.mUri);
+
+    const std::string xml = std::string(R"(
+<?xml version="1.0" ?>
+<mujoco model="compiler_inertiafromgeom">
+  <compiler inertiafromgeom=")")
+                            + inertiaCase.mValue + R"(" />
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+    </body>
+  </worldbody>
+</mujoco>
+)";
+
+    auto retriever = std::make_shared<MemoryResourceRetriever>();
+    const auto uri = addMemoryFile(*retriever, inertiaCase.mUri, xml);
+
+    auto mujoco = utils::MjcfParser::detail::MujocoModel();
+    const auto errors = mujoco.read(uri, retriever);
+    if (inertiaCase.mValid) {
+      ASSERT_TRUE(errors.empty());
+      EXPECT_EQ(
+          mujoco.getCompiler().getInertiaFromGeom(),
+          inertiaCase.mExpectedValue);
+    } else {
+      ASSERT_FALSE(errors.empty());
+      EXPECT_TRUE(hasErrorCode(errors, ErrorCode::ATTRIBUTE_INVALID));
+    }
+  }
+}
+
+//==============================================================================
+TEST(MjcfParserTest, CompileRotationNonFiniteInputsResetToIdentity)
+{
+  const Compiler compiler;
+  const auto nan = std::numeric_limits<double>::quiet_NaN();
+  const Eigen::Quaterniond validQuat = Eigen::Quaterniond::Identity();
+  const std::optional<Eigen::Vector4d> noAxisAngle;
+  const std::optional<Eigen::Vector3d> noEuler;
+  const std::optional<Eigen::Vector6d> noXYAxes;
+  const std::optional<Eigen::Vector3d> noZAxis;
+
+  const auto expectIdentity = [](const Eigen::Matrix3d& rotation) {
+    EXPECT_TRUE(rotation.isApprox(Eigen::Matrix3d::Identity()));
+  };
+
+  expectIdentity(compileRotation(
+      validQuat,
+      std::optional<Eigen::Vector4d>{Eigen::Vector4d(nan, 0, 0, 90)},
+      noEuler,
+      noXYAxes,
+      noZAxis,
+      compiler));
+  expectIdentity(compileRotation(
+      validQuat,
+      noAxisAngle,
+      std::optional<Eigen::Vector3d>{Eigen::Vector3d(nan, 0, 0)},
+      noXYAxes,
+      noZAxis,
+      compiler));
+  expectIdentity(compileRotation(
+      validQuat,
+      noAxisAngle,
+      noEuler,
+      std::optional<Eigen::Vector6d>{Eigen::Vector6d::Zero()},
+      noZAxis,
+      compiler));
+  expectIdentity(compileRotation(
+      validQuat,
+      noAxisAngle,
+      noEuler,
+      noXYAxes,
+      std::optional<Eigen::Vector3d>{Eigen::Vector3d(nan, 0, 0)},
+      compiler));
+  expectIdentity(compileRotation(
+      Eigen::Quaterniond(nan, 0, 0, 0),
+      noAxisAngle,
+      noEuler,
+      noXYAxes,
+      noZAxis,
+      compiler));
+}
+
+//==============================================================================
 TEST(MjcfParserTest, CompilerReportsInvalidAngle)
 {
   const std::string xml = R"(
@@ -659,14 +937,7 @@ TEST(MjcfParserTest, CompilerReportsInvalidAngle)
   std::filesystem::remove(tempPath, ec);
 
   ASSERT_FALSE(errors.empty());
-  bool hasInvalid = false;
-  for (const auto& error : errors) {
-    if (error.getCode() == ErrorCode::ATTRIBUTE_INVALID) {
-      hasInvalid = true;
-      break;
-    }
-  }
-  EXPECT_TRUE(hasInvalid);
+  EXPECT_TRUE(hasErrorCode(errors, ErrorCode::ATTRIBUTE_INVALID));
 }
 
 //==============================================================================
@@ -699,14 +970,7 @@ TEST(MjcfParserTest, CompilerReportsInvalidCoordinate)
   std::filesystem::remove(tempPath, ec);
 
   ASSERT_FALSE(errors.empty());
-  bool hasInvalid = false;
-  for (const auto& error : errors) {
-    if (error.getCode() == ErrorCode::ATTRIBUTE_INVALID) {
-      hasInvalid = true;
-      break;
-    }
-  }
-  EXPECT_TRUE(hasInvalid);
+  EXPECT_TRUE(hasErrorCode(errors, ErrorCode::ATTRIBUTE_INVALID));
 }
 
 //==============================================================================
@@ -779,10 +1043,23 @@ TEST(MjcfParserTest, GeomFromToAndMeshErrors)
   <worldbody>
     <body name="root">
       <geom type="sphere" size="0.1" />
+      <geom name="sphere_fromto" type="sphere" size="0.3"
+            fromto="0 0 0 0 0 5" pos="1 2 3" />
       <geom name="capsule" type="capsule" size="0.2"
             fromto="0 0 0 0 0 2" />
+      <geom name="cylinder_plain" type="cylinder" size="0.4 0.8"
+            pos="2 3 4" />
+      <geom name="ellipsoid_plain" type="ellipsoid" size="0.2 0.3 0.4"
+            pos="3 4 5" />
       <geom name="box" type="box" size="0.1 0.2 0.3"
             fromto="0 0 0 0 0 4" />
+      <geom name="xyaxes_box" type="box" size="0.2 0.3 0.4"
+            pos="4 5 6" xyaxes="0 1 0 -1 0 0" />
+      <geom name="zaxis_box" type="box" size="0.2 0.3 0.4"
+            pos="5 6 7" zaxis="0 1 0" />
+      <geom name="hfield_named" type="hfield" hfield="terrain"
+            size="1 2 0.1" />
+      <geom name="badhfield" type="hfield" size="1 1 0.1" />
       <geom name="badmesh" type="mesh" />
       <geom name="meshfit" type="box" mesh="dummy_mesh" size="0.1 0.1 0.1" />
     </body>
@@ -802,21 +1079,11 @@ TEST(MjcfParserTest, GeomFromToAndMeshErrors)
   std::filesystem::remove(tempPath, ec);
 
   ASSERT_FALSE(errors.empty());
-  bool hasMissing = false;
-  bool hasUndefined = false;
-  for (const auto& error : errors) {
-    if (error.getCode() == ErrorCode::ATTRIBUTE_MISSING) {
-      hasMissing = true;
-    }
-    if (error.getCode() == ErrorCode::UNDEFINED_ERROR) {
-      hasUndefined = true;
-    }
-  }
-  EXPECT_TRUE(hasMissing);
-  EXPECT_TRUE(hasUndefined);
+  EXPECT_TRUE(hasErrorCode(errors, ErrorCode::ATTRIBUTE_MISSING));
+  EXPECT_TRUE(hasErrorCode(errors, ErrorCode::UNDEFINED_ERROR));
 
   const auto& body = mujoco.getWorldbody().getRootBody(0);
-  ASSERT_GE(body.getNumGeoms(), 4u);
+  ASSERT_GE(body.getNumGeoms(), 11u);
 
   const auto findGeom = [&body](const std::string& name) {
     for (std::size_t i = 0; i < body.getNumGeoms(); ++i) {
@@ -828,24 +1095,149 @@ TEST(MjcfParserTest, GeomFromToAndMeshErrors)
     return static_cast<const Geom*>(nullptr);
   };
 
+  const auto* sphereFromTo = findGeom("sphere_fromto");
+  ASSERT_NE(sphereFromTo, nullptr);
+  EXPECT_EQ(sphereFromTo->getType(), GeomType::SPHERE);
+  EXPECT_TRUE(sphereFromTo->getSize().isApprox(Eigen::Vector3d(0.3, 0, 0)));
+  EXPECT_NEAR(sphereFromTo->getSphereRadius(), 0.3, 1e-12);
+  EXPECT_TRUE(sphereFromTo->getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(1, 2, 3)));
+
   const auto* capsule = findGeom("capsule");
   ASSERT_NE(capsule, nullptr);
   EXPECT_EQ(capsule->getType(), GeomType::CAPSULE);
   EXPECT_NEAR(capsule->getCapsuleRadius(), 0.2, 1e-12);
   EXPECT_NEAR(capsule->getCapsuleHalfLength(), 1.0, 1e-12);
+  EXPECT_NEAR(capsule->getCapsuleLength(), 2.0, 1e-12);
   EXPECT_TRUE(capsule->getRelativeTransform().translation().isApprox(
       Eigen::Vector3d(0, 0, 1)));
+
+  const auto* cylinderPlain = findGeom("cylinder_plain");
+  ASSERT_NE(cylinderPlain, nullptr);
+  EXPECT_EQ(cylinderPlain->getType(), GeomType::CYLINDER);
+  EXPECT_NEAR(cylinderPlain->getCylinderRadius(), 0.4, 1e-12);
+  EXPECT_NEAR(cylinderPlain->getCylinderHalfLength(), 0.8, 1e-12);
+  EXPECT_NEAR(cylinderPlain->getCylinderLength(), 1.6, 1e-12);
+  EXPECT_TRUE(cylinderPlain->getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(2, 3, 4)));
+
+  const auto* ellipsoidPlain = findGeom("ellipsoid_plain");
+  ASSERT_NE(ellipsoidPlain, nullptr);
+  EXPECT_EQ(ellipsoidPlain->getType(), GeomType::ELLIPSOID);
+  EXPECT_TRUE(ellipsoidPlain->getEllipsoidRadii().isApprox(
+      Eigen::Vector3d(0.2, 0.3, 0.4)));
+  EXPECT_TRUE(ellipsoidPlain->getEllipsoidDiameters().isApprox(
+      Eigen::Vector3d(0.4, 0.6, 0.8)));
+  EXPECT_GT(ellipsoidPlain->getVolume(), 0.0);
+  EXPECT_TRUE(ellipsoidPlain->getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(3, 4, 5)));
 
   const auto* box = findGeom("box");
   ASSERT_NE(box, nullptr);
   EXPECT_EQ(box->getType(), GeomType::BOX);
   EXPECT_NEAR(box->getBoxHalfSize().z(), 2.0, 1e-12);
+  EXPECT_TRUE(box->getBoxSize().isApprox(Eigen::Vector3d(0.2, 0.4, 4.0)));
+
+  const auto* xyaxesBox = findGeom("xyaxes_box");
+  ASSERT_NE(xyaxesBox, nullptr);
+  EXPECT_EQ(xyaxesBox->getType(), GeomType::BOX);
+  EXPECT_TRUE(xyaxesBox->getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(4, 5, 6)));
+  EXPECT_TRUE(xyaxesBox->getRelativeTransform().linear().col(0).isApprox(
+      Eigen::Vector3d::UnitY()));
+  EXPECT_TRUE(xyaxesBox->getRelativeTransform().linear().col(1).isApprox(
+      -Eigen::Vector3d::UnitX()));
+
+  const auto* zaxisBox = findGeom("zaxis_box");
+  ASSERT_NE(zaxisBox, nullptr);
+  EXPECT_EQ(zaxisBox->getType(), GeomType::BOX);
+  EXPECT_TRUE(zaxisBox->getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(5, 6, 7)));
+  EXPECT_TRUE(zaxisBox->getRelativeTransform().linear().col(2).isApprox(
+      Eigen::Vector3d::UnitY()));
+
+  const auto* hfieldNamed = findGeom("hfield_named");
+  ASSERT_NE(hfieldNamed, nullptr);
+  EXPECT_EQ(hfieldNamed->getType(), GeomType::HFIELD);
+  EXPECT_EQ(hfieldNamed->getHField(), "terrain");
+  EXPECT_TRUE(hfieldNamed->getSize().isApprox(Eigen::Vector3d(1, 2, 0.1)));
+
+  const auto* badHField = findGeom("badhfield");
+  ASSERT_NE(badHField, nullptr);
+  EXPECT_EQ(badHField->getType(), GeomType::HFIELD);
+  EXPECT_TRUE(badHField->getHField().empty());
+  EXPECT_DOUBLE_EQ(badHField->getVolume(), 1.0);
+
+  const auto* badMesh = findGeom("badmesh");
+  ASSERT_NE(badMesh, nullptr);
+  EXPECT_EQ(badMesh->getType(), GeomType::MESH);
+  EXPECT_TRUE(badMesh->getMesh().empty());
+  EXPECT_DOUBLE_EQ(badMesh->getVolume(), 1.0);
 
   const auto* meshfit = findGeom("meshfit");
   ASSERT_NE(meshfit, nullptr);
   EXPECT_EQ(meshfit->getType(), GeomType::BOX);
+  EXPECT_EQ(meshfit->getMesh(), "dummy_mesh");
   EXPECT_TRUE(
       meshfit->getBoxHalfSize().isApprox(Eigen::Vector3d::Constant(0.1)));
+  EXPECT_DOUBLE_EQ(meshfit->getMass(), 1.0);
+  EXPECT_DOUBLE_EQ(meshfit->getVolume(), 1.0);
+  EXPECT_DOUBLE_EQ(meshfit->getDensity(), 1000.0);
+  EXPECT_TRUE(meshfit->getInertia().allFinite());
+
+  auto mutableGeom = *box;
+  Eigen::Isometry3d relative = Eigen::Isometry3d::Identity();
+  relative.translation() = Eigen::Vector3d(4, 5, 6);
+  mutableGeom.setRelativeTransform(relative);
+  EXPECT_TRUE(mutableGeom.getRelativeTransform().isApprox(relative));
+
+  Eigen::Isometry3d world = Eigen::Isometry3d::Identity();
+  world.translation() = Eigen::Vector3d(-4, -5, -6);
+  mutableGeom.setWorldTransform(world);
+  EXPECT_TRUE(mutableGeom.getWorldTransform().isApprox(world));
+}
+
+//==============================================================================
+TEST(MjcfParserTest, InvalidGeomAttributesReportErrors)
+{
+  struct InvalidGeomCase
+  {
+    const char* mUri;
+    const char* mGeomAttributes;
+  };
+
+  const InvalidGeomCase cases[] = {
+      {"memory://mjcf_bad_geom_type.xml", R"(type="unsupported")"},
+      {"memory://mjcf_bad_geom_size.xml", R"(size="0.1 0.2 0.3 0.4")"},
+      {"memory://mjcf_bad_geom_friction.xml", R"(friction="0.1 0.2 0.3 0.4")"},
+  };
+
+  for (const auto& geomCase : cases) {
+    SCOPED_TRACE(geomCase.mUri);
+
+    auto retriever = std::make_shared<MemoryResourceRetriever>();
+    const std::string xml = std::string(R"(
+<?xml version="1.0" ?>
+<mujoco model="bad_geom">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom )") + geomCase.mGeomAttributes
+                            + R"( />
+    </body>
+  </worldbody>
+</mujoco>
+)";
+    const auto uri = addMemoryFile(*retriever, geomCase.mUri, xml);
+
+    auto mujoco = utils::MjcfParser::detail::MujocoModel();
+    const auto errors = mujoco.read(uri, retriever);
+
+    ASSERT_FALSE(errors.empty());
+    EXPECT_TRUE(hasErrorCode(errors, ErrorCode::ATTRIBUTE_INVALID));
+  }
 }
 
 //==============================================================================
@@ -923,14 +1315,7 @@ TEST(MjcfParserTest, BodyUserAttributeMissingSize)
   std::filesystem::remove(tempPath, ec);
 
   ASSERT_FALSE(errors.empty());
-  bool hasInvalid = false;
-  for (const auto& error : errors) {
-    if (error.getCode() == ErrorCode::ATTRIBUTE_INVALID) {
-      hasInvalid = true;
-      break;
-    }
-  }
-  EXPECT_TRUE(hasInvalid);
+  EXPECT_TRUE(hasErrorCode(errors, ErrorCode::ATTRIBUTE_INVALID));
 }
 
 //==============================================================================
@@ -941,12 +1326,18 @@ TEST(MjcfParserTest, JointAttributesParsed)
 <mujoco model="joint_attrs">
   <default class="main">
     <geom type="sphere" size="0.1" />
+    <default class="stiff_slide">
+      <joint type="slide" axis="1 0 0" range="-2 2" limited="true"
+             damping="0.6" springref="0.7" stiffness="3" armature="0.4"
+             frictionloss="0.5" />
+    </default>
   </default>
   <worldbody>
     <body name="root">
       <geom type="sphere" size="0.1" />
       <joint name="hinge_joint" type="hinge" pos="0.1 0.2 0.3"
              axis="0 1 0" range="-0.5 0.5" damping="0.2" springref="0.1" />
+      <joint class="stiff_slide" name="class_joint" />
     </body>
   </worldbody>
 </mujoco>
@@ -965,7 +1356,7 @@ TEST(MjcfParserTest, JointAttributesParsed)
 
   ASSERT_TRUE(errors.empty());
   const auto& body = mujoco.getWorldbody().getRootBody(0);
-  ASSERT_EQ(body.getNumJoints(), 1u);
+  ASSERT_EQ(body.getNumJoints(), 2u);
   const auto& joint = body.getJoint(0);
   EXPECT_EQ(joint.getType(), JointType::HINGE);
   EXPECT_TRUE(joint.getPos().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
@@ -973,6 +1364,65 @@ TEST(MjcfParserTest, JointAttributesParsed)
   EXPECT_TRUE(joint.getRange().isApprox(Eigen::Vector2d(-0.5, 0.5)));
   EXPECT_DOUBLE_EQ(joint.getDamping(), 0.2);
   EXPECT_DOUBLE_EQ(joint.getSpringRef(), 0.1);
+
+  const auto& classJoint = body.getJoint(1);
+  EXPECT_EQ(classJoint.getName(), "class_joint");
+  EXPECT_EQ(classJoint.getType(), JointType::SLIDE);
+  EXPECT_TRUE(classJoint.getAxis().isApprox(Eigen::Vector3d::UnitX()));
+  EXPECT_TRUE(classJoint.getRange().isApprox(Eigen::Vector2d(-2, 2)));
+  ASSERT_TRUE(classJoint.getLimited().has_value());
+  EXPECT_TRUE(*classJoint.getLimited());
+  EXPECT_TRUE(classJoint.isLimited());
+  EXPECT_DOUBLE_EQ(classJoint.getDamping(), 0.6);
+  EXPECT_DOUBLE_EQ(classJoint.getSpringRef(), 0.7);
+  EXPECT_DOUBLE_EQ(classJoint.getStiffness(), 3.0);
+  EXPECT_DOUBLE_EQ(classJoint.getArmature(), 0.4);
+  EXPECT_DOUBLE_EQ(classJoint.getFrictionLoss(), 0.5);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, InvalidJointAttributesReportErrors)
+{
+  struct InvalidJointCase
+  {
+    const char* mUri;
+    const char* mJointAttributes;
+  };
+
+  const InvalidJointCase cases[] = {
+      {"memory://mjcf_bad_joint_type.xml", R"(type="unsupported")"},
+      {"memory://mjcf_bad_joint_limited.xml",
+       R"(type="hinge" limited="maybe")"},
+      {"memory://mjcf_bad_joint_class.xml", R"(class="missing_class")"},
+  };
+
+  for (const auto& jointCase : cases) {
+    SCOPED_TRACE(jointCase.mUri);
+
+    auto retriever = std::make_shared<MemoryResourceRetriever>();
+    const std::string xml = std::string(R"(
+<?xml version="1.0" ?>
+<mujoco model="bad_joint">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <joint )") + jointCase.mJointAttributes
+                            + R"( />
+    </body>
+  </worldbody>
+</mujoco>
+)";
+    const auto uri = addMemoryFile(*retriever, jointCase.mUri, xml);
+
+    auto mujoco = utils::MjcfParser::detail::MujocoModel();
+    const auto errors = mujoco.read(uri, retriever);
+
+    ASSERT_FALSE(errors.empty());
+    EXPECT_TRUE(hasErrorCode(errors, ErrorCode::ATTRIBUTE_INVALID));
+  }
 }
 
 //==============================================================================
@@ -1164,16 +1614,104 @@ TEST(MjcfParserTest, OptionSecondaryAttributesParsed)
   EXPECT_DOUBLE_EQ(option.getTimestep(), 0.005);
   EXPECT_GT(option.getApiRate(), 0.0);
   EXPECT_GT(option.getImpRatio(), 0.0);
-  EXPECT_GE(option.getNoSlipIterations(), 0);
-  EXPECT_GE(option.getNoSlipTolerance(), 0.0);
-  EXPECT_GE(option.getMprIterations(), 0);
-  EXPECT_GE(option.getMprTolerance(), 0.0);
+  EXPECT_EQ(option.getNoSlipIterations(), 5);
+  EXPECT_DOUBLE_EQ(option.getNoSlipTolerance(), 0.0002);
+  EXPECT_EQ(option.getMprIterations(), 6);
+  EXPECT_DOUBLE_EQ(option.getMprTolerance(), 1e-4);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, OptionEnumVariantsParsed)
+{
+  struct OptionCase
+  {
+    const char* mUri;
+    const char* mAttributes;
+    Integrator mIntegrator;
+    CollisionType mCollision;
+    ConeType mCone;
+    JacobianType mJacobian;
+    SolverType mSolver;
+  };
+
+  const OptionCase cases[] = {
+      {"memory://mjcf_option_enum_first.xml",
+       R"(integrator="Euler" collision="all" cone="elliptic"
+          jacobian="dense" solver="PGS")",
+       Integrator::EULER,
+       CollisionType::ALL,
+       ConeType::ELLIPTIC,
+       JacobianType::DENSE,
+       SolverType::PGS},
+      {"memory://mjcf_option_enum_second.xml",
+       R"(integrator="RK4" collision="predefined" cone="pyramidal"
+          jacobian="auto" solver="CG")",
+       Integrator::RK4,
+       CollisionType::PREDEFINED,
+       ConeType::PYRAMIDAL,
+       JacobianType::AUTO,
+       SolverType::CG},
+  };
+
+  for (const auto& optionCase : cases) {
+    SCOPED_TRACE(optionCase.mUri);
+
+    auto retriever = std::make_shared<MemoryResourceRetriever>();
+    const std::string xml = std::string(R"(
+<?xml version="1.0" ?>
+<mujoco model="option_enum">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <option )") + optionCase.mAttributes
+                            + R"( />
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+    </body>
+  </worldbody>
+</mujoco>
+)";
+    const auto uri = addMemoryFile(*retriever, optionCase.mUri, xml);
+
+    auto mujoco = utils::MjcfParser::detail::MujocoModel();
+    const auto errors = mujoco.read(uri, retriever);
+    ASSERT_TRUE(errors.empty());
+
+    const auto& option = mujoco.getOption();
+    EXPECT_EQ(option.getIntegrator(), optionCase.mIntegrator);
+    EXPECT_EQ(option.getCollision(), optionCase.mCollision);
+    EXPECT_EQ(option.getCone(), optionCase.mCone);
+    EXPECT_EQ(option.getJacobian(), optionCase.mJacobian);
+    EXPECT_EQ(option.getSolver(), optionCase.mSolver);
+  }
 }
 
 //==============================================================================
 TEST(MjcfParserTest, SiteOrientationConflictReportsError)
 {
-  const std::string xml = R"(
+  struct OrientationConflictCase
+  {
+    const char* mUri;
+    const char* mAttributes;
+  };
+
+  const OrientationConflictCase cases[] = {
+      {"memory://mjcf_site_quat_euler_conflict.xml",
+       R"(quat="1 0 0 0" euler="0 0 90")"},
+      {"memory://mjcf_site_quat_axisangle_conflict.xml",
+       R"(quat="1 0 0 0" axisangle="1 0 0 45")"},
+      {"memory://mjcf_site_quat_xyaxes_conflict.xml",
+       R"(quat="1 0 0 0" xyaxes="1 0 0 0 1 0")"},
+      {"memory://mjcf_site_quat_zaxis_conflict.xml",
+       R"(quat="1 0 0 0" zaxis="0 0 1")"},
+  };
+
+  for (const auto& conflictCase : cases) {
+    SCOPED_TRACE(conflictCase.mUri);
+
+    auto retriever = std::make_shared<MemoryResourceRetriever>();
+    const std::string xml = std::string(R"(
 <?xml version="1.0" ?>
 <mujoco model="site_orientation_conflict">
   <default>
@@ -1183,32 +1721,20 @@ TEST(MjcfParserTest, SiteOrientationConflictReportsError)
     <body name="root">
       <geom type="sphere" size="0.1" />
       <site name="bad_site" type="box" size="0.1 0.2 0.3"
-            quat="1 0 0 0" euler="0 0 90" />
+            )") + conflictCase.mAttributes
+                            + R"( />
     </body>
   </worldbody>
 </mujoco>
-  )";
+)";
+    const auto uri = addMemoryFile(*retriever, conflictCase.mUri, xml);
 
-  const auto tempPath = std::filesystem::temp_directory_path()
-                        / "dart_mjcf_site_orientation_conflict.xml";
-  std::ofstream output(tempPath.string(), std::ios::binary);
-  output << xml;
-  output.close();
+    auto mujoco = utils::MjcfParser::detail::MujocoModel();
+    const auto errors = mujoco.read(uri, retriever);
 
-  auto mujoco = utils::MjcfParser::detail::MujocoModel();
-  auto errors = mujoco.read(common::Uri(tempPath.string()), createRetriever());
-  std::error_code ec;
-  std::filesystem::remove(tempPath, ec);
-
-  ASSERT_FALSE(errors.empty());
-  bool hasConflict = false;
-  for (const auto& error : errors) {
-    if (error.getCode() == ErrorCode::ATTRIBUTE_CONFLICT) {
-      hasConflict = true;
-      break;
-    }
+    ASSERT_FALSE(errors.empty());
+    EXPECT_TRUE(hasErrorCode(errors, ErrorCode::ATTRIBUTE_CONFLICT));
   }
-  EXPECT_TRUE(hasConflict);
 }
 
 //==============================================================================
@@ -1233,6 +1759,14 @@ TEST(MjcfParserTest, SiteAttributesAndOrientations)
             pos="-1 -2 -3" quat="0.7071068 0 0.7071068 0" />
       <site name="euler_site" type="box" size="0.1 0.1 0.1"
             pos="0 1 0" euler="0 90 0" class="custom" />
+      <site name="cylinder_plain_site" type="cylinder" size="0.25 0.75"
+            pos="2 0 0" />
+      <site name="capsule_plain_site" type="capsule" size="0.12 0.7"
+            pos="3 0 0" />
+      <site name="xyaxes_site" type="box" size="0.2 0.3 0.4"
+            pos="0 2 0" xyaxes="0 1 0 -1 0 0" />
+      <site name="zaxis_site" type="box" size="0.2 0.3 0.4"
+            pos="0 3 0" zaxis="0 1 0" />
     </body>
   </worldbody>
 </mujoco>
@@ -1251,12 +1785,13 @@ TEST(MjcfParserTest, SiteAttributesAndOrientations)
   ASSERT_TRUE(errors.empty());
 
   const auto& body = mujoco.getWorldbody().getRootBody(0);
-  ASSERT_EQ(body.getNumSites(), 5u);
+  ASSERT_EQ(body.getNumSites(), 9u);
 
   const auto& cylinder = body.getSite(0);
   EXPECT_EQ(cylinder.getType(), GeomType::CYLINDER);
   EXPECT_NEAR(cylinder.getCylinderRadius(), 0.2, 1e-12);
   EXPECT_NEAR(cylinder.getCylinderHalfLength(), 1.0, 1e-12);
+  EXPECT_NEAR(cylinder.getCylinderLength(), 2.0, 1e-12);
   EXPECT_EQ(cylinder.getGroup(), 2);
   EXPECT_TRUE(cylinder.getRGBA().isApprox(Eigen::Vector4d(0.1, 0.2, 0.3, 0.4)));
 
@@ -1264,21 +1799,71 @@ TEST(MjcfParserTest, SiteAttributesAndOrientations)
   EXPECT_EQ(capsule.getType(), GeomType::CAPSULE);
   EXPECT_NEAR(capsule.getCapsuleRadius(), 0.1, 1e-12);
   EXPECT_NEAR(capsule.getCapsuleHalfLength(), 0.5, 1e-12);
+  EXPECT_NEAR(capsule.getCapsuleLength(), 1.0, 1e-12);
 
   const auto& ellipsoid = body.getSite(2);
   EXPECT_EQ(ellipsoid.getType(), GeomType::ELLIPSOID);
+  EXPECT_TRUE(
+      ellipsoid.getEllipsoidRadii().isApprox(Eigen::Vector3d(0.2, 0.3, 0.4)));
+  EXPECT_TRUE(ellipsoid.getEllipsoidDiameters().isApprox(
+      Eigen::Vector3d(0.4, 0.6, 0.8)));
   EXPECT_TRUE(ellipsoid.getRelativeTransform().translation().isApprox(
       Eigen::Vector3d(1, 2, 3)));
 
   const auto& box = body.getSite(3);
   EXPECT_EQ(box.getType(), GeomType::BOX);
+  EXPECT_TRUE(box.getBoxSize().isApprox(Eigen::Vector3d(0.2, 0.4, 0.6)));
   EXPECT_TRUE(box.getRelativeTransform().translation().isApprox(
       Eigen::Vector3d(-1, -2, -3)));
 
   const auto& eulerSite = body.getSite(4);
   EXPECT_EQ(eulerSite.getType(), GeomType::BOX);
+  EXPECT_TRUE(eulerSite.getSize().isApprox(Eigen::Vector3d(0.1, 0.1, 0.1)));
   EXPECT_TRUE(eulerSite.getRelativeTransform().translation().isApprox(
       Eigen::Vector3d(0, 1, 0)));
+
+  const auto& cylinderPlain = body.getSite(5);
+  EXPECT_EQ(cylinderPlain.getType(), GeomType::CYLINDER);
+  EXPECT_NEAR(cylinderPlain.getCylinderRadius(), 0.25, 1e-12);
+  EXPECT_NEAR(cylinderPlain.getCylinderHalfLength(), 0.75, 1e-12);
+  EXPECT_NEAR(cylinderPlain.getCylinderLength(), 1.5, 1e-12);
+  EXPECT_TRUE(cylinderPlain.getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(2, 0, 0)));
+
+  const auto& capsulePlain = body.getSite(6);
+  EXPECT_EQ(capsulePlain.getType(), GeomType::CAPSULE);
+  EXPECT_NEAR(capsulePlain.getCapsuleRadius(), 0.12, 1e-12);
+  EXPECT_NEAR(capsulePlain.getCapsuleHalfLength(), 0.7, 1e-12);
+  EXPECT_NEAR(capsulePlain.getCapsuleLength(), 1.4, 1e-12);
+  EXPECT_TRUE(capsulePlain.getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(3, 0, 0)));
+
+  const auto& xyaxesSite = body.getSite(7);
+  EXPECT_EQ(xyaxesSite.getType(), GeomType::BOX);
+  EXPECT_TRUE(xyaxesSite.getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(0, 2, 0)));
+  EXPECT_TRUE(xyaxesSite.getRelativeTransform().linear().col(0).isApprox(
+      Eigen::Vector3d(0, 1, 0)));
+  EXPECT_TRUE(xyaxesSite.getRelativeTransform().linear().col(1).isApprox(
+      Eigen::Vector3d(-1, 0, 0)));
+
+  const auto& zaxisSite = body.getSite(8);
+  EXPECT_EQ(zaxisSite.getType(), GeomType::BOX);
+  EXPECT_TRUE(zaxisSite.getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(0, 3, 0)));
+  EXPECT_TRUE(zaxisSite.getRelativeTransform().linear().col(2).isApprox(
+      Eigen::Vector3d(0, 1, 0)));
+
+  auto mutableSite = box;
+  Eigen::Isometry3d relative = Eigen::Isometry3d::Identity();
+  relative.translation() = Eigen::Vector3d(4, 5, 6);
+  mutableSite.setRelativeTransform(relative);
+  EXPECT_TRUE(mutableSite.getRelativeTransform().isApprox(relative));
+
+  Eigen::Isometry3d world = Eigen::Isometry3d::Identity();
+  world.translation() = Eigen::Vector3d(-4, -5, -6);
+  mutableSite.setWorldTransform(world);
+  EXPECT_TRUE(mutableSite.getWorldTransform().isApprox(world));
 }
 
 //==============================================================================
@@ -1303,6 +1888,9 @@ TEST(MjcfParserTest, EqualitySensorContactActuatorTendonParsing)
   </worldbody>
   <equality>
     <weld body1="body1" body2="body2" />
+    <weld body1="missing_body" body2="body2" />
+    <weld body1="body1" body2="missing_body" />
+    <weld body1="body1" body2="body1" />
   </equality>
   <contact>
     <exclude body1="body1" body2="body2" />
@@ -1334,7 +1922,7 @@ TEST(MjcfParserTest, EqualitySensorContactActuatorTendonParsing)
   std::filesystem::remove(tempPath, ec);
   ASSERT_NE(world, nullptr);
   EXPECT_GT(world->getNumSkeletons(), 0u);
-  EXPECT_GT(world->getConstraintSolver()->getNumConstraints(), 0u);
+  EXPECT_EQ(world->getConstraintSolver()->getNumConstraints(), 1u);
 }
 
 //==============================================================================
@@ -1456,6 +2044,145 @@ TEST(MjcfParserTest, InertialFullInertiaParsing)
 }
 
 //==============================================================================
+TEST(MjcfParserTest, InertialOrientationVariantsAndMutators)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="inertial_orientations">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="euler_body">
+      <geom type="sphere" size="0.1" />
+      <inertial pos="1 0 0" mass="1.0" diaginertia="1 2 3"
+                euler="0 0 1.57079632679" />
+    </body>
+    <body name="xyaxes_body">
+      <geom type="sphere" size="0.1" />
+      <inertial pos="0 2 0" mass="2.0" diaginertia="2 3 4"
+                xyaxes="0 1 0 -1 0 0" />
+    </body>
+    <body name="zaxis_body">
+      <geom type="sphere" size="0.1" />
+      <inertial pos="0 0 3" mass="3.0" diaginertia="3 4 5"
+                zaxis="0 1 0" />
+    </body>
+  </worldbody>
+</mujoco>
+  )";
+
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / "dart_mjcf_inertial_orientations.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  auto errors = mujoco.read(common::Uri(tempPath.string()), createRetriever());
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+  ASSERT_TRUE(errors.empty());
+
+  const auto& worldbody = mujoco.getWorldbody();
+  ASSERT_EQ(worldbody.getNumRootBodies(), 3u);
+
+  const auto& eulerInertial = worldbody.getRootBody(0).getInertial();
+  EXPECT_DOUBLE_EQ(eulerInertial.getMass(), 1.0);
+  EXPECT_TRUE(eulerInertial.getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(1, 0, 0)));
+  EXPECT_TRUE(eulerInertial.getRelativeTransform().linear().allFinite());
+
+  const auto& xyaxesInertial = worldbody.getRootBody(1).getInertial();
+  EXPECT_DOUBLE_EQ(xyaxesInertial.getMass(), 2.0);
+  EXPECT_TRUE(xyaxesInertial.getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(0, 2, 0)));
+  EXPECT_TRUE(xyaxesInertial.getRelativeTransform().linear().allFinite());
+
+  const auto& zaxisInertial = worldbody.getRootBody(2).getInertial();
+  EXPECT_DOUBLE_EQ(zaxisInertial.getMass(), 3.0);
+  EXPECT_TRUE(zaxisInertial.getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(0, 0, 3)));
+  EXPECT_TRUE(zaxisInertial.getRelativeTransform().linear().allFinite());
+
+  auto mutableInertial = eulerInertial;
+  mutableInertial.setMass(4.0);
+  mutableInertial.setDiagInertia(Eigen::Vector3d(4, 5, 6));
+  mutableInertial.setOffDiagInertia(Eigen::Vector3d(0.1, 0.2, 0.3));
+
+  Eigen::Isometry3d relative = Eigen::Isometry3d::Identity();
+  relative.translation() = Eigen::Vector3d(4, 5, 6);
+  mutableInertial.setRelativeTransform(relative);
+
+  Eigen::Isometry3d world = Eigen::Isometry3d::Identity();
+  world.translation() = Eigen::Vector3d(-4, -5, -6);
+  mutableInertial.setWorldTransform(world);
+
+  EXPECT_DOUBLE_EQ(mutableInertial.getMass(), 4.0);
+  EXPECT_TRUE(
+      mutableInertial.getDiagInertia().isApprox(Eigen::Vector3d(4, 5, 6)));
+  EXPECT_TRUE(mutableInertial.getOffDiagInertia().isApprox(
+      Eigen::Vector3d(0.1, 0.2, 0.3)));
+  EXPECT_TRUE(mutableInertial.getRelativeTransform().isApprox(relative));
+  EXPECT_TRUE(mutableInertial.getWorldTransform().isApprox(world));
+}
+
+//==============================================================================
+TEST(MjcfParserTest, InertialRequiredAttributesReportErrors)
+{
+  struct InvalidInertialCase
+  {
+    const char* mUri;
+    const char* mAttributes;
+    ErrorCode mExpectedError;
+  };
+
+  const InvalidInertialCase cases[] = {
+      {"memory://mjcf_inertial_missing_pos.xml",
+       R"(mass="1" diaginertia="1 1 1")",
+       ErrorCode::ATTRIBUTE_MISSING},
+      {"memory://mjcf_inertial_missing_mass.xml",
+       R"(pos="0 0 0" diaginertia="1 1 1")",
+       ErrorCode::ATTRIBUTE_MISSING},
+      {"memory://mjcf_inertial_missing_inertia.xml",
+       R"(pos="0 0 0" mass="1")",
+       ErrorCode::ATTRIBUTE_MISSING},
+      {"memory://mjcf_inertial_conflicting_inertia.xml",
+       R"(pos="0 0 0" mass="1" diaginertia="1 1 1"
+          fullinertia="1 1 1 0 0 0")",
+       ErrorCode::ATTRIBUTE_CONFLICT},
+  };
+
+  for (const auto& inertialCase : cases) {
+    SCOPED_TRACE(inertialCase.mUri);
+
+    auto retriever = std::make_shared<MemoryResourceRetriever>();
+    const std::string xml = std::string(R"(
+<?xml version="1.0" ?>
+<mujoco model="bad_inertial">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <inertial )") + inertialCase.mAttributes
+                            + R"( />
+    </body>
+  </worldbody>
+</mujoco>
+)";
+    const auto uri = addMemoryFile(*retriever, inertialCase.mUri, xml);
+
+    auto mujoco = utils::MjcfParser::detail::MujocoModel();
+    const auto errors = mujoco.read(uri, retriever);
+
+    ASSERT_FALSE(errors.empty());
+    EXPECT_TRUE(hasErrorCode(errors, inertialCase.mExpectedError));
+  }
+}
+
+//==============================================================================
 TEST(MjcfParserTest, ComplexMjcfCoversDetails)
 {
   const auto tempDir = std::filesystem::temp_directory_path();
@@ -1477,7 +2204,7 @@ TEST(MjcfParserTest, ComplexMjcfCoversDetails)
 
   const std::string meshFileName = meshPath.filename().string();
   std::string meshDirStr = tempDir.string();
-  std::replace(meshDirStr.begin(), meshDirStr.end(), '\\', '/');
+  std::ranges::replace(meshDirStr, '\\', '/');
   std::string xml = R"(
 <?xml version="1.0" ?>
 <mujoco model="complex_mjcf">
@@ -1522,6 +2249,14 @@ TEST(MjcfParserTest, ComplexMjcfCoversDetails)
       </body>
       <body name="mocap_body" pos="1 0 0" mocap="true">
         <geom type="sphere" size="0.1" />
+      </body>
+      <body name="inertial_only">
+        <inertial pos="0.25 0.5 0.75" mass="1.0" diaginertia="0.2 0.3 0.4" />
+        <geom type="sphere" size="0.05" />
+      </body>
+      <body name="invalid_inertial_only">
+        <inertial pos="nan 0 0" mass="1.0" diaginertia="0.2 0.3 0.4" />
+        <geom type="sphere" size="0.05" />
       </body>
     </body>
   </worldbody>
@@ -1582,6 +2317,17 @@ TEST(MjcfParserTest, ComplexMjcfCoversDetails)
   EXPECT_EQ(mocapShapeNode->getCollisionAspect(), nullptr);
   EXPECT_EQ(mocapShapeNode->getDynamicsAspect(), nullptr);
 
+  const auto* inertialOnlyBody = skel->getBodyNode("inertial_only");
+  ASSERT_NE(inertialOnlyBody, nullptr);
+  EXPECT_TRUE(inertialOnlyBody->getTransform().translation().isApprox(
+      Eigen::Vector3d(0.25, 0.5, 0.75)));
+
+  const auto* invalidInertialOnlyBody
+      = skel->getBodyNode("invalid_inertial_only");
+  ASSERT_NE(invalidInertialOnlyBody, nullptr);
+  EXPECT_TRUE(invalidInertialOnlyBody->getTransform().isApprox(
+      Eigen::Isometry3d::Identity()));
+
   auto* meshShapeNode = child2->getShapeNode(0);
   ASSERT_NE(meshShapeNode, nullptr);
   EXPECT_NE(meshShapeNode->getShape(), nullptr);
@@ -1616,7 +2362,7 @@ TEST(MjcfParserTest, CustomModelParsesBodiesGeomsAndActuators)
 
   const std::string meshFileName = meshPath.filename().string();
   std::string meshDirStr = tempDir.string();
-  std::replace(meshDirStr.begin(), meshDirStr.end(), '\\', '/');
+  std::ranges::replace(meshDirStr, '\\', '/');
   std::string xml = R"(
 <?xml version="1.0" ?>
 <mujoco model="custom_parser">
@@ -1630,6 +2376,8 @@ TEST(MjcfParserTest, CustomModelParsesBodiesGeomsAndActuators)
     <mesh name="unit_mesh" file="${MESH_FILE}" scale="1 1 1" />
   </asset>
   <worldbody>
+    <site name="world_marker" type="box" size="0.05 0.06 0.07"
+          pos="0.1 0.2 0.3" rgba="0.2 0.4 0.6 0.8" />
     <body name="root" pos="0 0 0">
       <geom name="root_box" type="box" size="0.2 0.2 0.2" />
       <joint name="root_hinge" type="hinge" axis="0 0 1" range="-1 1" />
@@ -1667,8 +2415,9 @@ TEST(MjcfParserTest, CustomModelParsesBodiesGeomsAndActuators)
   output << xml;
   output.close();
 
+  const auto options = utils::MjcfParser::Options();
   const auto world = utils::MjcfParser::readWorld(
-      common::Uri::createFromPath(xmlPath.string()));
+      common::Uri::createFromPath(xmlPath.string()), options);
   std::error_code ec;
   std::filesystem::remove(xmlPath, ec);
   std::filesystem::remove(meshPath, ec);
@@ -1683,6 +2432,17 @@ TEST(MjcfParserTest, CustomModelParsesBodiesGeomsAndActuators)
   EXPECT_NE(skel->getJoint("root_hinge"), nullptr);
   EXPECT_NE(skel->getJoint("child_slide"), nullptr);
   EXPECT_NE(skel->getJoint("grand_ball"), nullptr);
+
+  const auto worldMarkerSkel
+      = world->getSkeleton(options.mSiteSkeletonNamePrefix + "world_marker");
+  ASSERT_NE(worldMarkerSkel, nullptr);
+  EXPECT_FALSE(worldMarkerSkel->isMobile());
+  auto* worldMarkerShapeNode = worldMarkerSkel->getShapeNode(0);
+  ASSERT_NE(worldMarkerShapeNode, nullptr);
+  auto* worldMarkerVisualAspect = worldMarkerShapeNode->getVisualAspect();
+  ASSERT_NE(worldMarkerVisualAspect, nullptr);
+  EXPECT_TRUE(worldMarkerVisualAspect->getRGBA().isApprox(
+      Eigen::Vector4d(0.2, 0.4, 0.6, 0.8)));
 }
 
 //==============================================================================
@@ -1710,6 +2470,9 @@ TEST(MjcfParserTest, InlineWorldCoversDefaultsWorldbodyAndActuators)
     <joint type="hinge" damping="0.2" limited="true" range="-0.5 0.5" />
     <site type="box" size="0.05 0.05 0.05" />
     <motor ctrllimited="true" ctrlrange="-1 1" />
+    <default class="world_defaults">
+      <geom type="box" size="0.2 0.3 0.4" />
+    </default>
   </default>
   <option timestep="0.01" apirate="60" impratio="2"
           gravity="0 0 -9.81" wind="0.1 0.2 0.3" magnetic="0 0 0"
@@ -1719,10 +2482,12 @@ TEST(MjcfParserTest, InlineWorldCoversDefaultsWorldbodyAndActuators)
   <asset>
     <mesh name="coverage_mesh" file="dart_mjcf_coverage_mesh.obj" />
   </asset>
-  <worldbody>
+  <worldbody childclass="world_defaults">
     <light name="light0" pos="0 0 1" />
     <camera name="cam0" pos="0 0 2" />
-    <geom name="ground" type="plane" size="1 1 0.1" />
+    <geom name="ground" />
+    <site name="world_site" type="box" size="0.05 0.06 0.07"
+          pos="0.1 0.2 0.3" rgba="0.2 0.4 0.6 0.8" group="3" />
     <body name="root">
       <geom name="root_box" type="box" size="0.1 0.2 0.3" />
       <site name="sphere_site" type="sphere" size="0.15" />
@@ -1760,12 +2525,59 @@ TEST(MjcfParserTest, InlineWorldCoversDefaultsWorldbodyAndActuators)
 
   ASSERT_TRUE(errors.empty());
   const auto& worldbody = mujoco.getWorldbody();
+  ASSERT_EQ(worldbody.getNumGeoms(), 1u);
+  const auto& ground = worldbody.getGeom(0);
+  EXPECT_EQ(ground.getName(), "ground");
+  EXPECT_EQ(ground.getType(), GeomType::BOX);
+  EXPECT_TRUE(ground.getBoxHalfSize().isApprox(Eigen::Vector3d(0.2, 0.3, 0.4)));
+  ASSERT_EQ(worldbody.getNumSites(), 1u);
+  const auto& worldSite = worldbody.getSite(0);
+  EXPECT_EQ(worldSite.getName(), "world_site");
+  EXPECT_EQ(worldSite.getType(), GeomType::BOX);
+  EXPECT_EQ(worldSite.getGroup(), 3);
+  EXPECT_TRUE(
+      worldSite.getBoxHalfSize().isApprox(Eigen::Vector3d(0.05, 0.06, 0.07)));
+  EXPECT_TRUE(
+      worldSite.getRGBA().isApprox(Eigen::Vector4d(0.2, 0.4, 0.6, 0.8)));
+  EXPECT_TRUE(worldSite.getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(0.1, 0.2, 0.3)));
+  EXPECT_TRUE(worldSite.getWorldTransform().translation().isApprox(
+      Eigen::Vector3d(0.1, 0.2, 0.3)));
   ASSERT_EQ(worldbody.getNumRootBodies(), 1u);
   const auto& rootBody = worldbody.getRootBody(0);
+  EXPECT_EQ(rootBody.getName(), "root");
+  EXPECT_FALSE(rootBody.getMocap());
   ASSERT_GE(rootBody.getNumGeoms(), 1u);
   ASSERT_EQ(rootBody.getNumSites(), 1u);
   const auto& sphereSite = rootBody.getSite(0);
   EXPECT_EQ(sphereSite.getType(), GeomType::SPHERE);
+  ASSERT_EQ(rootBody.getNumChildBodies(), 1u);
+
+  const auto& capsuleBody = rootBody.getChildBody(0);
+  EXPECT_EQ(capsuleBody.getName(), "capsule_body");
+  ASSERT_EQ(capsuleBody.getNumChildBodies(), 1u);
+  const auto& cylinderBody = capsuleBody.getChildBody(0);
+  EXPECT_EQ(cylinderBody.getName(), "cylinder_body");
+
+  auto mutableBody = capsuleBody;
+  Eigen::Isometry3d relative = Eigen::Isometry3d::Identity();
+  relative.translation() = Eigen::Vector3d(1, 2, 3);
+  mutableBody.setRelativeTransform(relative);
+  EXPECT_TRUE(mutableBody.getRelativeTransform().isApprox(relative));
+
+  Eigen::Isometry3d world = Eigen::Isometry3d::Identity();
+  world.translation() = Eigen::Vector3d(4, 5, 6);
+  mutableBody.setWorldTransform(world);
+  EXPECT_TRUE(mutableBody.getWorldTransform().isApprox(world));
+
+  Eigen::Isometry3d invalid = Eigen::Isometry3d::Identity();
+  invalid.translation().x() = std::numeric_limits<double>::quiet_NaN();
+  mutableBody.setRelativeTransform(invalid);
+  EXPECT_TRUE(mutableBody.getRelativeTransform().isApprox(
+      Eigen::Isometry3d::Identity()));
+  mutableBody.setWorldTransform(invalid);
+  EXPECT_TRUE(
+      mutableBody.getWorldTransform().isApprox(Eigen::Isometry3d::Identity()));
 }
 
 //==============================================================================
@@ -1776,19 +2588,42 @@ TEST(MjcfParserTest, DefaultsNestedClassInheritance)
 <mujoco model="nested_defaults">
   <default>
     <geom type="sphere" size="0.1" />
+    <equality>
+      <weld body1="root" body2="middle" active="false"
+            solimp="0.91 0.82 0.003 0.4 1.2" solref="0.03 4"
+            relpose="0.1 0.2 0.3 1 0 0 0" />
+    </equality>
     <default class="outer">
       <geom type="box" size="0.2 0.3 0.4" rgba="0.1 0.2 0.3 0.4"
             friction="0.2 0.3 0.4" />
+      <equality>
+        <weld body1="root" body2="outer_child" solref="0.04 5" />
+      </equality>
       <default class="inner">
         <geom size="0.5 0.6 0.7" rgba="0.9 0.8 0.7 0.6" />
+        <equality>
+          <weld body1="root" active="true"
+                solimp="0.8 0.7 0.002 0.3 1.1"
+                relpose="0.4 0.5 0.6 0.7071067812 0 0.7071067812 0" />
+        </equality>
       </default>
     </default>
   </default>
   <worldbody>
     <body name="root">
       <geom class="inner" />
+      <body name="middle">
+        <geom type="sphere" size="0.1" />
+      </body>
+      <body name="outer_child">
+        <geom type="sphere" size="0.1" />
+      </body>
     </body>
   </worldbody>
+  <equality>
+    <weld name="root_default_weld" body1="root" />
+    <weld name="inner_weld" class="inner" body1="root" />
+  </equality>
 </mujoco>
   )";
 
@@ -1807,6 +2642,90 @@ TEST(MjcfParserTest, DefaultsNestedClassInheritance)
   EXPECT_TRUE(geom.getBoxHalfSize().isApprox(Eigen::Vector3d(0.5, 0.6, 0.7)));
   EXPECT_TRUE(geom.getRGBA().isApprox(Eigen::Vector4d(0.9, 0.8, 0.7, 0.6)));
   EXPECT_TRUE(geom.getFriction().isApprox(Eigen::Vector3d(0.2, 0.3, 0.4)));
+
+  const auto& equality = mujoco.getEquality();
+  ASSERT_EQ(equality.getNumWelds(), 2u);
+
+  Eigen::Matrix<double, 5, 1> expectedRootSolImp;
+  expectedRootSolImp << 0.91, 0.82, 0.003, 0.4, 1.2;
+
+  const auto& rootWeld = equality.getWeld(0);
+  EXPECT_EQ(rootWeld.getName(), "root_default_weld");
+  EXPECT_FALSE(rootWeld.getActive());
+  EXPECT_EQ(rootWeld.getBody1(), "root");
+  EXPECT_EQ(rootWeld.getBody2(), "middle");
+  EXPECT_TRUE(rootWeld.getSolRef().isApprox(Eigen::Vector2d(0.03, 4.0)));
+  EXPECT_TRUE(rootWeld.getSolImp().isApprox(expectedRootSolImp));
+  ASSERT_TRUE(rootWeld.getRelativeTransform());
+  EXPECT_TRUE(rootWeld.getRelativeTransform()->translation().isApprox(
+      Eigen::Vector3d(0.1, 0.2, 0.3)));
+
+  Eigen::Matrix<double, 5, 1> expectedInnerSolImp;
+  expectedInnerSolImp << 0.8, 0.7, 0.002, 0.3, 1.1;
+
+  const auto& innerWeld = equality.getWeld(1);
+  EXPECT_EQ(innerWeld.getName(), "inner_weld");
+  EXPECT_TRUE(innerWeld.getActive());
+  EXPECT_EQ(innerWeld.getBody1(), "root");
+  EXPECT_EQ(innerWeld.getBody2(), "outer_child");
+  EXPECT_TRUE(innerWeld.getSolRef().isApprox(Eigen::Vector2d(0.04, 5.0)));
+  EXPECT_TRUE(innerWeld.getSolImp().isApprox(expectedInnerSolImp));
+  ASSERT_TRUE(innerWeld.getRelativeTransform());
+  EXPECT_TRUE(innerWeld.getRelativeTransform()->translation().isApprox(
+      Eigen::Vector3d(0.4, 0.5, 0.6)));
+}
+
+//==============================================================================
+TEST(MjcfParserTest, EqualityWeldInvalidAttributesReportErrors)
+{
+  struct InvalidWeldCase
+  {
+    const char* mUri;
+    const char* mWeldElement;
+    ErrorCode mExpectedError;
+  };
+
+  const InvalidWeldCase cases[] = {
+      {"memory://mjcf_weld_invalid_solimp.xml",
+       R"(<weld body1="root" body2="child" solimp="1 2 3 4 5 6" />)",
+       ErrorCode::ATTRIBUTE_INVALID},
+      {"memory://mjcf_weld_missing_body1.xml",
+       R"(<weld body2="child" />)",
+       ErrorCode::ATTRIBUTE_MISSING},
+  };
+
+  for (const auto& weldCase : cases) {
+    SCOPED_TRACE(weldCase.mUri);
+
+    const std::string xml = std::string(R"(
+<?xml version="1.0" ?>
+<mujoco model="invalid_weld">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <body name="child">
+        <geom type="sphere" size="0.1" />
+      </body>
+    </body>
+  </worldbody>
+  <equality>
+    )") + weldCase.mWeldElement
+                            + R"(
+  </equality>
+</mujoco>
+)";
+
+    auto retriever = std::make_shared<MemoryResourceRetriever>();
+    const auto uri = addMemoryFile(*retriever, weldCase.mUri, xml);
+
+    auto mujoco = utils::MjcfParser::detail::MujocoModel();
+    const auto errors = mujoco.read(uri, retriever);
+    ASSERT_FALSE(errors.empty());
+    EXPECT_TRUE(hasErrorCode(errors, weldCase.mExpectedError));
+  }
 }
 
 //==============================================================================
@@ -1836,14 +2755,34 @@ TEST(MjcfParserTest, DefaultNestedMissingClassReportsError)
   auto mujoco = utils::MjcfParser::detail::MujocoModel();
   auto errors = mujoco.read(uri, retriever);
   ASSERT_FALSE(errors.empty());
-  bool hasMissing = false;
-  for (const auto& error : errors) {
-    if (error.getCode() == ErrorCode::ATTRIBUTE_MISSING) {
-      hasMissing = true;
-      break;
-    }
-  }
-  EXPECT_TRUE(hasMissing);
+  EXPECT_TRUE(hasErrorCode(errors, ErrorCode::ATTRIBUTE_MISSING));
+}
+
+//==============================================================================
+TEST(MjcfParserTest, BodyMissingChildClassReportsError)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="body_missing_childclass">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root" childclass="missing">
+      <geom type="sphere" size="0.1" />
+    </body>
+  </worldbody>
+</mujoco>
+  )";
+
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const auto uri
+      = addMemoryFile(*retriever, "memory://mjcf_missing_childclass.xml", xml);
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  const auto errors = mujoco.read(uri, retriever);
+  ASSERT_FALSE(errors.empty());
+  EXPECT_TRUE(hasErrorCode(errors, ErrorCode::ATTRIBUTE_INVALID));
 }
 
 //==============================================================================
@@ -1953,14 +2892,7 @@ TEST(MjcfParserTest, GeomClassMissingDefaultReportsError)
   auto mujoco = utils::MjcfParser::detail::MujocoModel();
   auto errors = mujoco.read(uri, retriever);
   ASSERT_FALSE(errors.empty());
-  bool hasInvalid = false;
-  for (const auto& error : errors) {
-    if (error.getCode() == ErrorCode::ATTRIBUTE_INVALID) {
-      hasInvalid = true;
-      break;
-    }
-  }
-  EXPECT_TRUE(hasInvalid);
+  EXPECT_TRUE(hasErrorCode(errors, ErrorCode::ATTRIBUTE_INVALID));
 }
 
 //==============================================================================
@@ -2498,6 +3430,7 @@ TEST(MjcfParserTest, ContactExcludeDisablesCollision)
   </worldbody>
   <contact>
     <exclude body1="body1" body2="body2" />
+    <exclude body1="body1" body2="missing_body" />
   </contact>
 </mujoco>
 )";
@@ -2528,10 +3461,13 @@ TEST(MjcfParserTest, AssetTextureAndMaterialParsing)
     <geom type="sphere" size="0.1" />
   </default>
   <asset>
+    <mesh name="missing_mesh" file="missing.stl" scale="1 2 3" />
     <texture name="grid" type="2d" builtin="checker" rgb1="0.8 0.8 0.8"
-             rgb2="0.2 0.2 0.2" width="512" height="512" />
+             rgb2="0.2 0.2 0.2" width="512" height="512"
+             file="grid.png" />
     <material name="grid_mat" texture="grid" rgba="1 1 1 1"
-              emission="0.1" specular="0.8" shininess="0.9" reflectance="0.2" />
+              emission="0.1" specular="0.8" shininess="0.9"
+              reflectance="0.2" texrepeat="2 3" texuniform="true" />
   </asset>
   <worldbody>
     <body name="root">
@@ -2553,18 +3489,34 @@ TEST(MjcfParserTest, AssetTextureAndMaterialParsing)
   ASSERT_TRUE(errors.empty());
 
   const auto& asset = mujoco.getAsset();
+  ASSERT_EQ(asset.getNumMeshes(), 1u);
+  const auto& mesh = asset.getMesh(0);
+  EXPECT_EQ(mesh.getName(), "missing_mesh");
+  EXPECT_EQ(mesh.getFile(), "missing.stl");
+  EXPECT_TRUE(mesh.getScale().isApprox(Eigen::Vector3d(1, 2, 3)));
+  EXPECT_EQ(mesh.getMeshShape(), nullptr);
+
+  const auto* meshByName = asset.getMesh("missing_mesh");
+  ASSERT_NE(meshByName, nullptr);
+  EXPECT_EQ(meshByName->getName(), "missing_mesh");
+  EXPECT_EQ(asset.getMesh("unknown_mesh"), nullptr);
+
   ASSERT_EQ(asset.getNumTextures(), 1u);
   EXPECT_EQ(asset.getTexture(0).getName(), "grid");
   EXPECT_EQ(asset.getTexture(0).getType(), "2d");
+  EXPECT_EQ(asset.getTexture(0).getFile(), "grid.png");
   EXPECT_EQ(asset.getTexture(0).getBuiltin(), "checker");
 
   const auto* texByName = asset.getTexture("grid");
   ASSERT_NE(texByName, nullptr);
   EXPECT_EQ(texByName->getName(), "grid");
+  EXPECT_EQ(asset.getTexture("missing_texture"), nullptr);
 
   ASSERT_EQ(asset.getNumMaterials(), 1u);
   EXPECT_EQ(asset.getMaterial(0).getName(), "grid_mat");
   EXPECT_EQ(asset.getMaterial(0).getTexture(), "grid");
+  EXPECT_TRUE(
+      asset.getMaterial(0).getRgba().isApprox(Eigen::Vector4d(1, 1, 1, 1)));
   EXPECT_DOUBLE_EQ(asset.getMaterial(0).getEmission(), 0.1);
   EXPECT_DOUBLE_EQ(asset.getMaterial(0).getSpecular(), 0.8);
   EXPECT_DOUBLE_EQ(asset.getMaterial(0).getShininess(), 0.9);
@@ -2573,6 +3525,469 @@ TEST(MjcfParserTest, AssetTextureAndMaterialParsing)
   const auto* matByName = asset.getMaterial("grid_mat");
   ASSERT_NE(matByName, nullptr);
   EXPECT_EQ(matByName->getName(), "grid_mat");
+  EXPECT_EQ(asset.getMaterial("missing_material"), nullptr);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, MeshAttributesReaderHandlesValidAndInvalidElements)
+{
+  tinyxml2::XMLDocument validDocument;
+  ASSERT_EQ(
+      validDocument.Parse(
+          R"(<mesh name="raw_mesh" file="raw.stl" scale="2 3 4" />)"),
+      tinyxml2::XML_SUCCESS);
+  auto* meshElement = validDocument.FirstChildElement("mesh");
+  ASSERT_NE(meshElement, nullptr);
+
+  MeshAttributes attributes;
+  auto errors = appendMeshAttributes(attributes, meshElement);
+  EXPECT_TRUE(errors.empty());
+  ASSERT_TRUE(attributes.mName);
+  EXPECT_EQ(*attributes.mName, "raw_mesh");
+  ASSERT_TRUE(attributes.mFile);
+  EXPECT_EQ(*attributes.mFile, "raw.stl");
+  EXPECT_TRUE(attributes.mScale.isApprox(Eigen::Vector3d(2, 3, 4)));
+
+  tinyxml2::XMLDocument invalidDocument;
+  ASSERT_EQ(
+      invalidDocument.Parse(R"(<geom name="not_mesh" />)"),
+      tinyxml2::XML_SUCCESS);
+  auto* invalidElement = invalidDocument.FirstChildElement("geom");
+  ASSERT_NE(invalidElement, nullptr);
+
+  errors = appendMeshAttributes(attributes, invalidElement);
+  ASSERT_EQ(errors.size(), 1u);
+  EXPECT_TRUE(errors.front());
+  EXPECT_EQ(errors.front().getCode(), ErrorCode::INCORRECT_ELEMENT_TYPE);
+  EXPECT_NE(errors.front().getMessage().find("<mesh>"), std::string::npos);
+
+  EXPECT_FALSE(Error());
+}
+
+//==============================================================================
+TEST(MjcfParserTest, RawDetailReadersHandleInvalidElementTypes)
+{
+  tinyxml2::XMLDocument document;
+  auto* element = parseRootElement(document, R"(<geom name="wrong_type" />)");
+  ASSERT_NE(element, nullptr);
+
+  Default defaultsTemplate;
+  auto errors = defaultsTemplate.read(element, nullptr);
+  expectSingleErrorCode(errors, ErrorCode::INCORRECT_ELEMENT_TYPE);
+
+  Defaults defaults;
+  errors = defaults.read(element, nullptr);
+  expectSingleErrorCode(errors, ErrorCode::INCORRECT_ELEMENT_TYPE);
+
+  Texture texture;
+  errors = texture.read(element);
+  expectSingleErrorCode(errors, ErrorCode::INCORRECT_ELEMENT_TYPE);
+
+  Material material;
+  errors = material.read(element);
+  expectSingleErrorCode(errors, ErrorCode::INCORRECT_ELEMENT_TYPE);
+
+  Camera camera;
+  errors = camera.read(element);
+  expectSingleErrorCode(errors, ErrorCode::INCORRECT_ELEMENT_TYPE);
+
+  Light light;
+  errors = light.read(element);
+  expectSingleErrorCode(errors, ErrorCode::INCORRECT_ELEMENT_TYPE);
+
+  Mesh mesh;
+  errors = mesh.read(element);
+  expectSingleErrorCode(errors, ErrorCode::INCORRECT_ELEMENT_TYPE);
+
+  Asset asset;
+  errors = asset.read(element);
+  expectSingleErrorCode(errors, ErrorCode::INCORRECT_ELEMENT_TYPE);
+
+  Contact contact;
+  errors = contact.read(element);
+  expectSingleErrorCode(errors, ErrorCode::INCORRECT_ELEMENT_TYPE);
+
+  Size size;
+  errors = size.read(element);
+  expectSingleErrorCode(errors, ErrorCode::INCORRECT_ELEMENT_TYPE);
+
+  Equality equality;
+  errors = equality.read(element, defaults);
+  expectSingleErrorCode(errors, ErrorCode::INCORRECT_ELEMENT_TYPE);
+
+  BodyAttributes bodyAttributes;
+  errors = appendBodyAttributes(bodyAttributes, element, std::nullopt);
+  expectSingleErrorCode(errors, ErrorCode::INCORRECT_ELEMENT_TYPE);
+
+  JointAttributes jointAttributes;
+  errors = appendJointAttributes(jointAttributes, element);
+  expectSingleErrorCode(errors, ErrorCode::INCORRECT_ELEMENT_TYPE);
+
+  WeldAttributes weldAttributes;
+  errors = appendWeldAttributes(weldAttributes, element);
+  expectSingleErrorCode(errors, ErrorCode::INCORRECT_ELEMENT_TYPE);
+
+  tinyxml2::XMLDocument defaultDocument;
+  auto* defaultElement
+      = parseRootElement(defaultDocument, R"(<default class="root" />)");
+  ASSERT_NE(defaultElement, nullptr);
+
+  Defaults validDefaults;
+  errors = validDefaults.read(defaultElement, nullptr);
+  ASSERT_TRUE(errors.empty());
+  const Default* rootDefault = validDefaults.getRootDefault();
+  ASSERT_NE(rootDefault, nullptr);
+
+  Body body;
+  errors = body.read(element, std::nullopt, validDefaults, rootDefault);
+  expectSingleErrorCode(errors, ErrorCode::INCORRECT_ELEMENT_TYPE);
+
+  Site site;
+  errors = site.read(element);
+  expectSingleErrorCode(errors, ErrorCode::INCORRECT_ELEMENT_TYPE);
+
+  Joint joint;
+  errors
+      = joint.read(element, validDefaults, rootDefault->getJointAttributes());
+  expectSingleErrorCode(errors, ErrorCode::INCORRECT_ELEMENT_TYPE);
+
+  Weld weld;
+  errors = weld.read(element, validDefaults);
+  expectSingleErrorCode(errors, ErrorCode::INCORRECT_ELEMENT_TYPE);
+
+  Actuator actuator;
+  errors = actuator.read(element, validDefaults);
+  expectSingleErrorCode(errors, ErrorCode::INCORRECT_ELEMENT_TYPE);
+
+  Worldbody worldbody;
+  errors = worldbody.read(
+      element,
+      std::nullopt,
+      validDefaults,
+      rootDefault,
+      common::Uri("memory://raw_invalid.xml"),
+      createRetriever());
+  expectSingleErrorCode(errors, ErrorCode::INCORRECT_ELEMENT_TYPE);
+
+  MujocoModel mujoco;
+  errors = mujoco.read(
+      element, common::Uri("memory://raw_invalid.xml"), createRetriever());
+  expectSingleErrorCode(errors, ErrorCode::INCORRECT_ELEMENT_TYPE);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, RawDetailReadersHandleDefaultsAndAssets)
+{
+  tinyxml2::XMLDocument defaultDocument;
+  auto* defaultElement = parseRootElement(
+      defaultDocument,
+      R"(<default class="root">
+           <mesh name="template_mesh" file="template.stl" scale="1 2 3" />
+           <default class="scaled_child">
+             <mesh scale="4 5 6" />
+           </default>
+         </default>)");
+  ASSERT_NE(defaultElement, nullptr);
+
+  Defaults defaults;
+  auto errors = defaults.read(defaultElement, nullptr);
+  ASSERT_TRUE(errors.empty());
+  EXPECT_TRUE(defaults.hasDefault("root"));
+  EXPECT_TRUE(defaults.hasDefault("scaled_child"));
+  EXPECT_EQ(defaults.getDefault("missing"), nullptr);
+
+  const auto* rootDefault = defaults.getRootDefault();
+  ASSERT_NE(rootDefault, nullptr);
+  const auto& rootMeshAttributes = rootDefault->getMeshAttributes();
+  ASSERT_TRUE(rootMeshAttributes.mName);
+  EXPECT_EQ(*rootMeshAttributes.mName, "template_mesh");
+  ASSERT_TRUE(rootMeshAttributes.mFile);
+  EXPECT_EQ(*rootMeshAttributes.mFile, "template.stl");
+  EXPECT_TRUE(rootMeshAttributes.mScale.isApprox(Eigen::Vector3d(1, 2, 3)));
+
+  const auto* childDefault = defaults.getDefault("scaled_child");
+  ASSERT_NE(childDefault, nullptr);
+  const auto& childMeshAttributes = childDefault->getMeshAttributes();
+  ASSERT_TRUE(childMeshAttributes.mName);
+  EXPECT_EQ(*childMeshAttributes.mName, "template_mesh");
+  ASSERT_TRUE(childMeshAttributes.mFile);
+  EXPECT_EQ(*childMeshAttributes.mFile, "template.stl");
+  EXPECT_TRUE(childMeshAttributes.mScale.isApprox(Eigen::Vector3d(4, 5, 6)));
+
+  tinyxml2::XMLDocument invalidDefaultDocument;
+  auto* invalidDefaultElement = parseRootElement(
+      invalidDefaultDocument,
+      R"(<default class="invalid_geom">
+           <geom type="unknown_geom_type" />
+         </default>)");
+  ASSERT_NE(invalidDefaultElement, nullptr);
+
+  errors = defaults.read(invalidDefaultElement, nullptr);
+  ASSERT_FALSE(errors.empty());
+  EXPECT_TRUE(hasErrorCode(errors, ErrorCode::ATTRIBUTE_INVALID));
+
+  tinyxml2::XMLDocument textureDocument;
+  auto* textureElement = parseRootElement(
+      textureDocument,
+      R"(<texture name="grid" type="cube" file="grid.png"
+                  builtin="checker" rgb1="0.1 0.2 0.3"
+                  rgb2="0.4 0.5 0.6" width="128" height="256" />)");
+  ASSERT_NE(textureElement, nullptr);
+
+  Texture texture;
+  errors = texture.read(textureElement);
+  ASSERT_TRUE(errors.empty());
+  EXPECT_EQ(texture.getName(), "grid");
+  EXPECT_EQ(texture.getType(), "cube");
+  EXPECT_EQ(texture.getFile(), "grid.png");
+  EXPECT_EQ(texture.getBuiltin(), "checker");
+  EXPECT_TRUE(texture.mRgb1.isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+  EXPECT_TRUE(texture.mRgb2.isApprox(Eigen::Vector3d(0.4, 0.5, 0.6)));
+  EXPECT_EQ(texture.mWidth, 128);
+  EXPECT_EQ(texture.mHeight, 256);
+
+  tinyxml2::XMLDocument materialDocument;
+  auto* materialElement = parseRootElement(
+      materialDocument,
+      R"(<material name="mat" texture="grid" texrepeat="2 3"
+                   texuniform="false" rgba="0.2 0.3 0.4 0.5"
+                   emission="0.1" specular="0.2" shininess="0.3"
+                   reflectance="0.4" />)");
+  ASSERT_NE(materialElement, nullptr);
+
+  Material material;
+  errors = material.read(materialElement);
+  ASSERT_TRUE(errors.empty());
+  EXPECT_EQ(material.getName(), "mat");
+  EXPECT_EQ(material.getTexture(), "grid");
+  EXPECT_TRUE(material.mTexRepeat.isApprox(Eigen::Vector2d(2, 3)));
+  EXPECT_FALSE(material.mTexUniform);
+  EXPECT_TRUE(material.getRgba().isApprox(Eigen::Vector4d(0.2, 0.3, 0.4, 0.5)));
+  EXPECT_DOUBLE_EQ(material.getEmission(), 0.1);
+  EXPECT_DOUBLE_EQ(material.getSpecular(), 0.2);
+  EXPECT_DOUBLE_EQ(material.getShininess(), 0.3);
+  EXPECT_DOUBLE_EQ(material.getReflectance(), 0.4);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, RawDetailReadersHandleLifecycleHelpers)
+{
+  Compiler compiler;
+  compiler.setBaseUri(common::Uri("memory://raw_lifecycle/model.xml"));
+  compiler.setResourceRetriever(createRetriever());
+  compiler.mMeshDir = "meshes";
+
+  tinyxml2::XMLDocument assetDocument;
+  auto* assetElement = parseRootElement(
+      assetDocument,
+      R"(<asset extra="ignored">
+           <mesh name="raw_mesh" class="unused_class"
+                 file="mesh.stl" scale="2 3 4" />
+           <texture name="raw_texture" file="texture.png" />
+           <material name="raw_material" texture="raw_texture" />
+           <unknown />
+         </asset>)");
+  ASSERT_NE(assetElement, nullptr);
+
+  warnUnknownElements(assetElement, {"mesh", "texture", "material"});
+  warnUnknownAttributes(assetElement, {"known"});
+
+  Asset asset;
+  auto errors = asset.read(assetElement);
+  ASSERT_TRUE(errors.empty());
+
+  errors = asset.preprocess(compiler);
+  ASSERT_TRUE(errors.empty());
+  ASSERT_EQ(asset.getNumMeshes(), 1u);
+  EXPECT_EQ(asset.getMesh(0).getName(), "raw_mesh");
+  EXPECT_EQ(asset.getMesh(0).getFile(), "mesh.stl");
+  EXPECT_TRUE(asset.getMesh(0).getScale().isApprox(Eigen::Vector3d(2, 3, 4)));
+
+  errors = asset.compile(compiler);
+  ASSERT_TRUE(errors.empty());
+  ASSERT_NE(asset.getMesh("raw_mesh"), nullptr);
+  ASSERT_NE(asset.getTexture("raw_texture"), nullptr);
+  ASSERT_NE(asset.getMaterial("raw_material"), nullptr);
+
+  errors = asset.postprocess(compiler);
+  ASSERT_TRUE(errors.empty());
+
+  tinyxml2::XMLDocument lightDocument;
+  auto* lightElement = parseRootElement(
+      lightDocument, R"(<light directional="false" castshadow="false" />)");
+  ASSERT_NE(lightElement, nullptr);
+
+  Light light;
+  errors = light.read(lightElement);
+  ASSERT_TRUE(errors.empty());
+  EXPECT_FALSE(light.getDirectional());
+  EXPECT_FALSE(light.mCastshadow);
+
+  tinyxml2::XMLDocument boxSiteDocument;
+  auto* boxSiteElement = parseRootElement(
+      boxSiteDocument,
+      R"(<site name="box_site" type="box" size="1 2"
+               fromto="0 0 0 0 0 4" />)");
+  ASSERT_NE(boxSiteElement, nullptr);
+
+  Site boxSite;
+  errors = boxSite.read(boxSiteElement);
+  ASSERT_TRUE(errors.empty());
+  errors = boxSite.preprocess(compiler);
+  ASSERT_TRUE(errors.empty());
+  errors = boxSite.postprocess(nullptr, compiler);
+  ASSERT_TRUE(errors.empty());
+  EXPECT_EQ(boxSite.getName(), "box_site");
+  EXPECT_TRUE(boxSite.getBoxHalfSize().isApprox(Eigen::Vector3d(1, 2, 2)));
+  EXPECT_TRUE(boxSite.getWorldTransform().translation().isApprox(
+      Eigen::Vector3d(0, 0, 2)));
+
+  tinyxml2::XMLDocument sphereSiteDocument;
+  auto* sphereSiteElement = parseRootElement(
+      sphereSiteDocument,
+      R"(<site name="sphere_site" type="sphere" size="0.25" pos="1 2 3"
+               fromto="0 0 0 0 0 4" />)");
+  ASSERT_NE(sphereSiteElement, nullptr);
+
+  Site sphereSite;
+  errors = sphereSite.read(sphereSiteElement);
+  ASSERT_TRUE(errors.empty());
+  errors = sphereSite.preprocess(compiler);
+  ASSERT_TRUE(errors.empty());
+  EXPECT_EQ(sphereSite.getName(), "sphere_site");
+  EXPECT_DOUBLE_EQ(sphereSite.getSphereRadius(), 0.25);
+  EXPECT_TRUE(sphereSite.getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(1, 2, 3)));
+  EXPECT_DOUBLE_EQ(sphereSite.computeVolume(), 1.0);
+  EXPECT_TRUE(
+      sphereSite.computeInertia().isApprox(Eigen::Matrix3d::Identity()));
+
+  Compiler zyxCompiler;
+  zyxCompiler.mEulerSeq = "zyx";
+  const Eigen::Vector3d invalidEuler{
+      std::numeric_limits<double>::infinity(), 0.0, 0.0};
+  EXPECT_TRUE(compileRotation(
+                  Eigen::Quaterniond::Identity(),
+                  std::nullopt,
+                  invalidEuler,
+                  std::nullopt,
+                  std::nullopt,
+                  zyxCompiler)
+                  .isIdentity());
+
+  Compiler invalidSeqCompiler;
+  invalidSeqCompiler.mEulerSeq = "unsupported";
+  EXPECT_TRUE(compileRotation(
+                  Eigen::Quaterniond::Identity(),
+                  std::nullopt,
+                  Eigen::Vector3d::Zero(),
+                  std::nullopt,
+                  std::nullopt,
+                  invalidSeqCompiler)
+                  .isIdentity());
+}
+
+//==============================================================================
+TEST(MjcfParserTest, RawBodyAttributesHandleUserDataSizing)
+{
+  tinyxml2::XMLDocument sizeDocument;
+  auto* sizeElement = parseRootElement(
+      sizeDocument,
+      R"(<size mjmax="10" nconmax="20" nstack="30" nuserdata="40"
+               nkey="2" nuser_body="2" nuser_jnt="3" nuser_geom="4"
+               nuser_site="5" nuser_cam="6" nuser_tendon="7"
+               nuser_actuator="8" nuser_sensor="9" />)");
+  ASSERT_NE(sizeElement, nullptr);
+
+  Size size;
+  auto errors = size.read(sizeElement);
+  ASSERT_TRUE(errors.empty());
+  EXPECT_EQ(size.getMJMax(), 10);
+  EXPECT_EQ(size.getNConMax(), 20);
+  EXPECT_EQ(size.getNStack(), 30);
+  EXPECT_EQ(size.getNUserData(), 40);
+  EXPECT_EQ(size.getNKey(), 2);
+  EXPECT_EQ(size.getNUserBody(), 2);
+  EXPECT_EQ(size.getNUserJnt(), 3);
+  EXPECT_EQ(size.getNUserGeom(), 4);
+  EXPECT_EQ(size.getNUserSite(), 5);
+  EXPECT_EQ(size.getNUserCam(), 6);
+  EXPECT_EQ(size.getNUserTendon(), 7);
+  EXPECT_EQ(size.getNUserActuator(), 8);
+  EXPECT_EQ(size.getNUserSensor(), 9);
+
+  tinyxml2::XMLDocument bodyDocument;
+  auto* bodyElement = parseRootElement(
+      bodyDocument,
+      R"(<body name="raw_body" mocap="true" pos="1 2 3"
+                quat="1 0 0 0" user="4 5" />)");
+  ASSERT_NE(bodyElement, nullptr);
+
+  BodyAttributes bodyAttributes;
+  errors = appendBodyAttributes(bodyAttributes, bodyElement, size);
+  ASSERT_TRUE(errors.empty());
+  ASSERT_TRUE(bodyAttributes.mName);
+  EXPECT_EQ(*bodyAttributes.mName, "raw_body");
+  EXPECT_TRUE(bodyAttributes.mMocap);
+  ASSERT_TRUE(bodyAttributes.mPos);
+  EXPECT_TRUE(bodyAttributes.mPos->isApprox(Eigen::Vector3d(1, 2, 3)));
+  EXPECT_DOUBLE_EQ(bodyAttributes.mQuat.w(), 1.0);
+  EXPECT_TRUE(bodyAttributes.mUser.isApprox(Eigen::Vector2d(4, 5)));
+
+  tinyxml2::XMLDocument missingSizeDocument;
+  auto* missingSizeElement
+      = parseRootElement(missingSizeDocument, R"(<body user="1 2" />)");
+  ASSERT_NE(missingSizeElement, nullptr);
+
+  BodyAttributes missingSizeAttributes;
+  errors = appendBodyAttributes(missingSizeAttributes, missingSizeElement, {});
+  ASSERT_EQ(errors.size(), 1u);
+  EXPECT_EQ(errors.front().getCode(), ErrorCode::ATTRIBUTE_INVALID);
+
+  tinyxml2::XMLDocument noUserDocument;
+  auto* noUserElement = parseRootElement(noUserDocument, R"(<body />)");
+  ASSERT_NE(noUserElement, nullptr);
+
+  BodyAttributes noUserAttributes;
+  errors = appendBodyAttributes(noUserAttributes, noUserElement, {});
+  ASSERT_TRUE(errors.empty());
+  EXPECT_EQ(noUserAttributes.mUser.size(), 0);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, AssetMaterialInvalidBooleanReportsError)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="asset_bad_material">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <asset>
+    <material name="bad_mat" texuniform="maybe" />
+  </asset>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+    </body>
+  </worldbody>
+</mujoco>
+)";
+  const auto tempPath
+      = std::filesystem::temp_directory_path() / "dart_mjcf_asset_bad_mat.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  const auto errors
+      = mujoco.read(common::Uri(tempPath.string()), createRetriever());
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+
+  ASSERT_FALSE(errors.empty());
+  EXPECT_TRUE(hasErrorCode(errors, ErrorCode::ATTRIBUTE_INVALID));
+  EXPECT_EQ(mujoco.getAsset().getNumMaterials(), 0u);
 }
 
 //==============================================================================
@@ -2612,6 +4027,90 @@ TEST(MjcfParserTest, ActuatorDefaultAttributes)
   ASSERT_NE(joint, nullptr);
   EXPECT_DOUBLE_EQ(joint->getForceLowerLimit(0), -150.0);
   EXPECT_DOUBLE_EQ(joint->getForceUpperLimit(0), 150.0);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, ActuatorDefaultsApplyPerActuatorType)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="actuator_defaults_by_type">
+  <default>
+    <geom type="sphere" size="0.1" />
+    <motor ctrllimited="true" ctrlrange="-1 1"
+           forcelimited="true" forcerange="-10 10" gear="2" />
+    <position ctrllimited="true" ctrlrange="-2 2"
+              forcelimited="true" forcerange="-20 20" gear="3" />
+    <velocity ctrlrange="-3 3" forcerange="-30 30" gear="4" />
+    <general ctrlrange="-4 4" forcerange="-40 40" gear="5"
+             gainprm="1 2 3" biasprm="4 5 6" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <joint name="j_motor" type="hinge" axis="0 0 1" />
+      <joint name="j_position" type="hinge" axis="0 1 0" />
+      <joint name="j_velocity" type="hinge" axis="1 0 0" />
+      <joint name="j_general" type="hinge" axis="1 1 0" />
+    </body>
+  </worldbody>
+  <actuator>
+    <motor joint="j_motor" />
+    <position joint="j_position" />
+    <velocity joint="j_velocity" />
+    <general joint="j_general" />
+  </actuator>
+</mujoco>
+)";
+
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const auto uri = addMemoryFile(
+      *retriever, "memory://mjcf_actuator_defaults_by_type.xml", xml);
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  const auto errors = mujoco.read(uri, retriever);
+  ASSERT_TRUE(errors.empty());
+
+  const auto& actuator = mujoco.getActuator();
+  ASSERT_EQ(actuator.getNumEntries(), 4u);
+
+  const auto& motor = actuator.getEntry(0);
+  EXPECT_EQ(motor.mType, ActuatorType::MOTOR);
+  EXPECT_EQ(motor.mJoint, "j_motor");
+  EXPECT_TRUE(motor.mCtrlLimited);
+  EXPECT_TRUE(motor.mForceLimited);
+  EXPECT_TRUE(motor.mCtrlRange.isApprox(Eigen::Vector2d(-1, 1)));
+  EXPECT_TRUE(motor.mForceRange.isApprox(Eigen::Vector2d(-10, 10)));
+  EXPECT_TRUE(motor.mGear.isApprox(Eigen::Vector6d(2, 0, 0, 0, 0, 0)));
+
+  const auto& position = actuator.getEntry(1);
+  EXPECT_EQ(position.mType, ActuatorType::POSITION);
+  EXPECT_EQ(position.mJoint, "j_position");
+  EXPECT_TRUE(position.mCtrlLimited);
+  EXPECT_TRUE(position.mForceLimited);
+  EXPECT_TRUE(position.mCtrlRange.isApprox(Eigen::Vector2d(-2, 2)));
+  EXPECT_TRUE(position.mForceRange.isApprox(Eigen::Vector2d(-20, 20)));
+  EXPECT_TRUE(position.mGear.isApprox(Eigen::Vector6d(3, 0, 0, 0, 0, 0)));
+
+  const auto& velocity = actuator.getEntry(2);
+  EXPECT_EQ(velocity.mType, ActuatorType::VELOCITY);
+  EXPECT_EQ(velocity.mJoint, "j_velocity");
+  EXPECT_TRUE(velocity.mCtrlLimited);
+  EXPECT_TRUE(velocity.mForceLimited);
+  EXPECT_TRUE(velocity.mCtrlRange.isApprox(Eigen::Vector2d(-3, 3)));
+  EXPECT_TRUE(velocity.mForceRange.isApprox(Eigen::Vector2d(-30, 30)));
+  EXPECT_TRUE(velocity.mGear.isApprox(Eigen::Vector6d(4, 0, 0, 0, 0, 0)));
+
+  const auto& general = actuator.getEntry(3);
+  EXPECT_EQ(general.mType, ActuatorType::GENERAL);
+  EXPECT_EQ(general.mJoint, "j_general");
+  EXPECT_TRUE(general.mCtrlLimited);
+  EXPECT_TRUE(general.mForceLimited);
+  EXPECT_TRUE(general.mCtrlRange.isApprox(Eigen::Vector2d(-4, 4)));
+  EXPECT_TRUE(general.mForceRange.isApprox(Eigen::Vector2d(-40, 40)));
+  EXPECT_TRUE(general.mGear.isApprox(Eigen::Vector6d(5, 0, 0, 0, 0, 0)));
+  EXPECT_TRUE(general.mGainPrm.isApprox(Eigen::Vector3d(1, 2, 3)));
+  EXPECT_TRUE(general.mBiasPrm.isApprox(Eigen::Vector3d(4, 5, 6)));
 }
 
 //==============================================================================
@@ -2672,7 +4171,8 @@ TEST(MjcfParserTest, ContactPairParsing)
     </body>
   </worldbody>
   <contact>
-    <pair geom1="geom1" geom2="geom2" condim="4" margin="0.001" gap="0.01" />
+    <pair geom1="geom1" geom2="geom2" condim="4"
+          friction="1 0.5 0.1" margin="0.001" gap="0.01" />
   </contact>
 </mujoco>
  )";
@@ -2694,8 +4194,53 @@ TEST(MjcfParserTest, ContactPairParsing)
   EXPECT_EQ(pair.mGeom1, "geom1");
   EXPECT_EQ(pair.mGeom2, "geom2");
   EXPECT_EQ(pair.mCondim, 4);
+  ASSERT_EQ(pair.mFriction.size(), 3);
+  EXPECT_TRUE(pair.mFriction.isApprox(Eigen::Vector3d(1, 0.5, 0.1)));
   EXPECT_DOUBLE_EQ(pair.mMargin, 0.001);
   EXPECT_DOUBLE_EQ(pair.mGap, 0.01);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, ContactMissingRequiredAttributesReportErrors)
+{
+  const std::string xml = R"(
+<?xml version="1.0" ?>
+<mujoco model="contact_missing_attrs">
+  <default><geom type="sphere" size="0.1" /></default>
+  <worldbody>
+    <body name="body1">
+      <geom name="geom1" type="sphere" size="0.1" />
+    </body>
+    <body name="body2" pos="0 0 1">
+      <geom name="geom2" type="sphere" size="0.1" />
+    </body>
+  </worldbody>
+  <contact>
+    <pair geom1="geom1" />
+    <pair geom2="geom2" />
+    <exclude body1="body1" />
+    <exclude body2="body2" />
+  </contact>
+</mujoco>
+ )";
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / "dart_mjcf_contact_missing_attrs.xml";
+  std::ofstream output(tempPath.string(), std::ios::binary);
+  output << xml;
+  output.close();
+
+  auto mujoco = utils::MjcfParser::detail::MujocoModel();
+  const auto errors
+      = mujoco.read(common::Uri(tempPath.string()), createRetriever());
+  std::error_code ec;
+  std::filesystem::remove(tempPath, ec);
+
+  ASSERT_FALSE(errors.empty());
+  EXPECT_TRUE(hasErrorCode(errors, ErrorCode::ATTRIBUTE_MISSING));
+
+  const auto& contact = mujoco.getContact();
+  EXPECT_EQ(contact.getNumPairs(), 2u);
+  EXPECT_EQ(contact.getNumExcludes(), 2u);
 }
 
 //==============================================================================
@@ -2709,7 +4254,7 @@ TEST(MjcfParserTest, BodyCameraExtendedAttributes)
     <body name="root">
       <geom type="sphere" size="0.1" />
       <camera name="cam_targeted" pos="1 0 0" target="root"
-              quat="1 0 0 0" />
+              mode="targetbody" fovy="60" quat="1 0 0 0" />
     </body>
   </worldbody>
 </mujoco>
@@ -2729,6 +4274,10 @@ TEST(MjcfParserTest, BodyCameraExtendedAttributes)
   const auto& body = mujoco.getWorldbody().getRootBody(0);
   ASSERT_EQ(body.getNumCameras(), 1u);
   const auto& camera = body.getCamera(0);
+  EXPECT_EQ(camera.getName(), "cam_targeted");
+  EXPECT_DOUBLE_EQ(camera.getFovy(), 60.0);
+  EXPECT_TRUE(camera.getPos().isApprox(Eigen::Vector3d(1, 0, 0)));
+  EXPECT_EQ(camera.getMode(), "targetbody");
   EXPECT_EQ(camera.getTarget(), "root");
 }
 
@@ -2744,6 +4293,9 @@ TEST(MjcfParserTest, BodyLightExtendedAttributes)
       <geom type="sphere" size="0.1" />
       <light name="inactive_light" active="false" directional="false"
              pos="0 0 3" dir="0 0 -1" />
+      <light name="directional_light" active="true" directional="true"
+             castshadow="true" pos="1 2 3" dir="0 1 0"
+             diffuse="0.1 0.2 0.3" specular="0.4 0.5 0.6" />
     </body>
   </worldbody>
 </mujoco>
@@ -2761,10 +4313,25 @@ TEST(MjcfParserTest, BodyLightExtendedAttributes)
   ASSERT_TRUE(errors.empty());
 
   const auto& body = mujoco.getWorldbody().getRootBody(0);
-  ASSERT_EQ(body.getNumLights(), 1u);
-  const auto& light = body.getLight(0);
-  EXPECT_FALSE(light.getActive());
-  EXPECT_FALSE(light.getDirectional());
+  ASSERT_EQ(body.getNumLights(), 2u);
+
+  const auto& inactiveLight = body.getLight(0);
+  EXPECT_EQ(inactiveLight.getName(), "inactive_light");
+  EXPECT_FALSE(inactiveLight.getActive());
+  EXPECT_FALSE(inactiveLight.getDirectional());
+  EXPECT_TRUE(inactiveLight.getPos().isApprox(Eigen::Vector3d(0, 0, 3)));
+  EXPECT_TRUE(inactiveLight.getDir().isApprox(Eigen::Vector3d(0, 0, -1)));
+
+  const auto& directionalLight = body.getLight(1);
+  EXPECT_EQ(directionalLight.getName(), "directional_light");
+  EXPECT_TRUE(directionalLight.getActive());
+  EXPECT_TRUE(directionalLight.getDirectional());
+  EXPECT_TRUE(directionalLight.getPos().isApprox(Eigen::Vector3d(1, 2, 3)));
+  EXPECT_TRUE(directionalLight.getDir().isApprox(Eigen::Vector3d(0, 1, 0)));
+  EXPECT_TRUE(
+      directionalLight.getDiffuse().isApprox(Eigen::Vector3d(0.1, 0.2, 0.3)));
+  EXPECT_TRUE(
+      directionalLight.getSpecular().isApprox(Eigen::Vector3d(0.4, 0.5, 0.6)));
 }
 
 //==============================================================================
@@ -2905,14 +4472,7 @@ TEST(MjcfParserTest, MultipleFreeJointsError)
   std::filesystem::remove(tempPath, ec);
 
   ASSERT_FALSE(errors.empty());
-  bool hasInvalid = false;
-  for (const auto& error : errors) {
-    if (error.getCode() == ErrorCode::ELEMENT_INVALID) {
-      hasInvalid = true;
-      break;
-    }
-  }
-  EXPECT_TRUE(hasInvalid);
+  EXPECT_TRUE(hasErrorCode(errors, ErrorCode::ELEMENT_INVALID));
 }
 
 //==============================================================================
@@ -2951,11 +4511,8 @@ TEST(MjcfParserTest, AutoLimitsZeroRangeSetsUnlimited)
 }
 
 //==============================================================================
-TEST(MjcfParserTest, RootBodyUnnamedJointGetsDefaultName)
+TEST(MjcfParserTest, UnnamedJointsGetContextualDefaultNames)
 {
-  // A root body with an unnamed joint should get "root_Joint" as name
-  // (null parent → falls through to "root_Joint" path in
-  // createJointCommonProperties)
   const std::string xml = std::string(R"(
  <?xml version="1.0" ?>
  <mujoco model="root_unnamed_joint">
@@ -2964,9 +4521,13 @@ TEST(MjcfParserTest, RootBodyUnnamedJointGetsDefaultName)
    </default>
    <!-- )") + kMjcfPadding + R"( -->
    <worldbody>
-     <body name="root">
+     <body name="parent">
        <geom type="sphere" size="0.1" />
        <joint type="hinge" range="-1 1" />
+       <body name="child" pos="0 0 1">
+         <geom type="sphere" size="0.05" />
+         <joint type="hinge" axis="0 1 0" range="-1 1" />
+       </body>
      </body>
    </worldbody>
  </mujoco>
@@ -2985,8 +4546,14 @@ TEST(MjcfParserTest, RootBodyUnnamedJointGetsDefaultName)
   auto* skel = world->getSkeleton(0).get();
   ASSERT_NE(skel, nullptr);
   // The unnamed joint on a root body (no parent BodyNode) gets "root_Joint"
-  auto* joint = skel->getJoint("root_Joint");
-  EXPECT_NE(joint, nullptr);
+  EXPECT_NE(skel->getJoint("root_Joint"), nullptr);
+
+  auto* childBody = skel->getBodyNode("child");
+  ASSERT_NE(childBody, nullptr);
+  auto* childJoint = childBody->getParentJoint();
+  ASSERT_NE(childJoint, nullptr);
+  EXPECT_EQ(childJoint->getName(), "parent_Joint");
+  EXPECT_EQ(skel->getJoint("parent_Joint"), childJoint);
 }
 
 //==============================================================================
@@ -3031,7 +4598,7 @@ TEST(MjcfParserTest, ActuatorNegativeGearPreservesForceOrdering)
 }
 
 //==============================================================================
-TEST(MjcfParserTest, ActuatorOverwriteClearsStaleForceLimit)
+TEST(MjcfParserTest, ActuatorOverwriteAndMissingTargetKeepValidJointState)
 {
   const std::string xml = R"(
 <?xml version="1.0" ?>
@@ -3048,6 +4615,7 @@ TEST(MjcfParserTest, ActuatorOverwriteClearsStaleForceLimit)
   <actuator>
     <motor joint="hinge1" forcelimited="true" forcerange="-10 10" />
     <velocity joint="hinge1" />
+    <motor name="missing_target" joint="missing_joint" />
   </actuator>
 </mujoco>
 )";
@@ -3162,6 +4730,9 @@ TEST(MjcfParserTest, DefaultActuatorAttributesInherited)
     <motor ctrllimited="true" ctrlrange="-1 1"
            forcelimited="true" forcerange="-50 50" gear="3" />
     <geom type="sphere" size="0.1" />
+    <default class="strong">
+      <motor forcelimited="true" forcerange="-2 2" gear="4" />
+    </default>
   </default>
   <worldbody>
     <body name="b1">
@@ -3171,11 +4742,16 @@ TEST(MjcfParserTest, DefaultActuatorAttributesInherited)
         <geom type="sphere" size="0.1" />
         <joint name="hinge2" type="hinge" axis="0 1 0" />
       </body>
+      <body name="b3">
+        <geom type="sphere" size="0.1" />
+        <joint name="hinge3" type="hinge" axis="1 0 0" />
+      </body>
     </body>
   </worldbody>
   <actuator>
     <motor joint="hinge1" />
     <motor joint="hinge2" gear="5" forcelimited="false" />
+    <motor class="strong" joint="hinge3" />
   </actuator>
 </mujoco>
 )";
@@ -3203,6 +4779,66 @@ TEST(MjcfParserTest, DefaultActuatorAttributesInherited)
       j2->getForceLowerLimit(0), -std::numeric_limits<double>::infinity());
   EXPECT_DOUBLE_EQ(
       j2->getForceUpperLimit(0), std::numeric_limits<double>::infinity());
+
+  auto* j3 = world->getSkeleton(0)->getJoint("hinge3");
+  ASSERT_NE(j3, nullptr);
+  EXPECT_EQ(j3->getActuatorType(), dynamics::Joint::FORCE);
+  EXPECT_DOUBLE_EQ(j3->getForceLowerLimit(0), -8.0);
+  EXPECT_DOUBLE_EQ(j3->getForceUpperLimit(0), 8.0);
+}
+
+//==============================================================================
+TEST(MjcfParserTest, ActuatorInvalidAttributesReportErrors)
+{
+  struct InvalidActuatorCase
+  {
+    const char* mUri;
+    const char* mActuatorElement;
+    ErrorCode mExpectedError;
+  };
+
+  const InvalidActuatorCase cases[] = {
+      {"memory://mjcf_actuator_invalid_ctrllimited.xml",
+       R"(<motor joint="hinge1" ctrllimited="sometimes" />)",
+       ErrorCode::ATTRIBUTE_INVALID},
+      {"memory://mjcf_actuator_invalid_forcelimited.xml",
+       R"(<motor joint="hinge1" forcelimited="sometimes" />)",
+       ErrorCode::ATTRIBUTE_INVALID},
+      {"memory://mjcf_actuator_missing_joint.xml",
+       R"(<motor />)",
+       ErrorCode::ATTRIBUTE_MISSING},
+  };
+
+  for (const auto& actuatorCase : cases) {
+    SCOPED_TRACE(actuatorCase.mUri);
+
+    const std::string xml = std::string(R"(
+<?xml version="1.0" ?>
+<mujoco model="invalid_actuator">
+  <default>
+    <geom type="sphere" size="0.1" />
+  </default>
+  <worldbody>
+    <body name="root">
+      <geom type="sphere" size="0.1" />
+      <joint name="hinge1" type="hinge" axis="0 0 1" />
+    </body>
+  </worldbody>
+  <actuator>
+    )") + actuatorCase.mActuatorElement
+                            + R"(
+  </actuator>
+</mujoco>
+)";
+
+    auto retriever = std::make_shared<MemoryResourceRetriever>();
+    const auto uri = addMemoryFile(*retriever, actuatorCase.mUri, xml);
+
+    auto mujoco = utils::MjcfParser::detail::MujocoModel();
+    const auto errors = mujoco.read(uri, retriever);
+    ASSERT_FALSE(errors.empty());
+    EXPECT_TRUE(hasErrorCode(errors, actuatorCase.mExpectedError));
+  }
 }
 
 //==============================================================================
@@ -3236,14 +4872,7 @@ TEST(MjcfParserTest, ActuatorUnknownClassEmitsError)
   std::error_code ec;
   std::filesystem::remove(tempPath, ec);
 
-  bool hasInvalid = false;
-  for (const auto& error : errors) {
-    if (error.getCode() == ErrorCode::ATTRIBUTE_INVALID) {
-      hasInvalid = true;
-      break;
-    }
-  }
-  EXPECT_TRUE(hasInvalid);
+  EXPECT_TRUE(hasErrorCode(errors, ErrorCode::ATTRIBUTE_INVALID));
 }
 
 //==============================================================================

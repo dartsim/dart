@@ -897,6 +897,13 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
             body);
   }
 
+  else if (std::string("screw") == joint.type) {
+    return skeleton->createJointAndBodyNodePair<dynamics::ScrewJoint, BodyType>(
+        parent,
+        static_cast<const dynamics::ScrewJoint::Properties&>(*joint.properties),
+        body);
+  }
+
   else if (std::string("universal") == joint.type) {
     return skeleton
         ->createJointAndBodyNodePair<dynamics::UniversalJoint, BodyType>(
@@ -925,6 +932,15 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
         ->createJointAndBodyNodePair<dynamics::TranslationalJoint, BodyType>(
             parent,
             static_cast<const dynamics::TranslationalJoint::Properties&>(
+                *joint.properties),
+            body);
+  }
+
+  else if (std::string("translational2d") == joint.type) {
+    return skeleton
+        ->createJointAndBodyNodePair<dynamics::TranslationalJoint2D, BodyType>(
+            parent,
+            static_cast<const dynamics::TranslationalJoint2D::Properties&>(
                 *joint.properties),
             body);
   }
@@ -995,8 +1011,8 @@ bool createJointAndNodePair(
   newJoint->setForces(joint.force);
 
   dynamics::BodyNode* bn = pair.second;
-  for (std::size_t i = 0; i < body.markers.size(); ++i) {
-    bn->createNode<dynamics::Marker>(body.markers[i]);
+  for (const auto& marker : body.markers) {
+    bn->createNode<dynamics::Marker>(marker);
   }
 
   return true;
@@ -1042,8 +1058,7 @@ dynamics::SkeletonPtr readSkeleton(
     SkelBodyNode newBodyNode = readSoftBodyNode(
         xmlBodies.get(), skeletonFrame, _baseUri, _retriever);
 
-    BodyMap::const_iterator it = bodyNodes.find(newBodyNode.properties->mName);
-    if (it != bodyNodes.end()) {
+    if (bodyNodes.contains(newBodyNode.properties->mName)) {
       DART_ERROR(
           "[readSkeleton] Skeleton named [{}] has multiple BodyNodes with the "
           "name [{}], but BodyNode names must be unique! We will discard all "

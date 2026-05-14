@@ -39,6 +39,10 @@
 #include "dart/dynamics/sphere_shape.hpp"
 #include "dart/math/helpers.hpp"
 
+#include <ranges>
+
+#include <cstddef>
+
 namespace dart {
 namespace gui {
 
@@ -259,7 +263,7 @@ void SupportPolygonVisual::refresh()
   if (mDisplayPolygon) {
     mVertices->resize(poly.size());
     mFaces->resize(poly.size());
-    for (std::size_t i = 0; i < poly.size(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, poly.size())) {
       const Eigen::Vector3d& v = axes.first * poly[i][0]
                                  + axes.second * poly[i][1] + up * mElevation;
       (*mVertices)[i] = ::osg::Vec3(v[0], v[1], v[2]);
@@ -273,7 +277,7 @@ void SupportPolygonVisual::refresh()
   if (mDisplayCentroid) {
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
 
-    if (poly.size() > 0) {
+    if (!poly.empty()) {
       const Eigen::Vector2d& Cp = (dart::dynamics::INVALID_INDEX == mTreeIndex)
                                       ? skel->getSupportCentroid()
                                       : skel->getSupportCentroid(mTreeIndex);
@@ -307,8 +311,7 @@ void SupportPolygonVisual::refresh()
       const auto bns = skel->getTreeBodyNodes(mTreeIndex);
 
       double mass = 0.0;
-      for (std::size_t i = 0; i < bns.size(); ++i) {
-        dart::dynamics::BodyNode* bn = bns[i];
+      for (dart::dynamics::BodyNode* bn : bns) {
         com += bn->getMass() * bn->getCOM();
         mass += bn->getMass();
       }

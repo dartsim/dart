@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <bit>
+#include <memory>
 #include <new>
 #include <vector>
 
@@ -53,6 +55,16 @@ inline constexpr std::size_t default_vector_alignment = 32;
 inline constexpr std::size_t default_vector_alignment = 16;
 #endif
 
+namespace detail {
+
+[[nodiscard]] constexpr std::size_t alignUpToPowerOfTwo(
+    std::size_t value, std::size_t alignment) noexcept
+{
+  return (value + alignment - 1) & ~(alignment - 1);
+}
+
+} // namespace detail
+
 template <typename T, std::size_t Alignment = default_vector_alignment>
 class AlignedAllocator
 {
@@ -64,6 +76,8 @@ public:
   using is_always_equal = std::true_type;
 
   static constexpr std::size_t alignment = Alignment;
+  static_assert(
+      std::has_single_bit(Alignment), "Alignment must be a power of two.");
 
   constexpr AlignedAllocator() noexcept = default;
 
@@ -92,7 +106,7 @@ public:
       ptr = nullptr;
     }
 #else
-    std::size_t aligned_bytes = (bytes + Alignment - 1) & ~(Alignment - 1);
+    std::size_t aligned_bytes = detail::alignUpToPowerOfTwo(bytes, Alignment);
     ptr = std::aligned_alloc(Alignment, aligned_bytes);
 #endif
 
@@ -143,14 +157,9 @@ template <typename T>
 template <std::size_t Alignment, typename T>
 [[nodiscard]] inline T* assume_aligned(T* ptr) noexcept
 {
-#if defined(__GNUC__) || defined(__clang__)
-  return static_cast<T*>(__builtin_assume_aligned(ptr, Alignment));
-#elif defined(_MSC_VER)
-  __assume((reinterpret_cast<std::uintptr_t>(ptr) & (Alignment - 1)) == 0);
-  return ptr;
-#else
-  return ptr;
-#endif
+  static_assert(
+      std::has_single_bit(Alignment), "Alignment must be a power of two.");
+  return std::assume_aligned<Alignment>(ptr);
 }
 
 } // namespace dart::simd

@@ -93,10 +93,6 @@ public:
 
   /// \}
 
-private:
-  // Private members used by Body and WorldBody class
-  friend class Body;
-  friend class Worldbody;
   Errors read(tinyxml2::XMLElement* element);
 
   /// Updates attributes and elements that doesn't require any other elements.
@@ -109,9 +105,12 @@ private:
   /// Updates attributes and elements that require the compiled parent element.
   Errors postprocess(const Body* body, const Compiler& compiler);
 
-private:
   double computeVolume() const;
   Eigen::Matrix3d computeInertia() const;
+
+private:
+  friend class Body;
+  friend class Worldbody;
 
   /// Intermediate raw data read from the XML file. For the details, see
   /// http://www.mujoco.org/book/XMLreference.html#Site

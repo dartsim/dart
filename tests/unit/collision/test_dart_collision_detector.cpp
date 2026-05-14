@@ -85,6 +85,7 @@ public:
   {
   }
 
+  using CollisionGroup::updateEngineData;
   using DartCollisionGroup::addCollisionObjectsToEngine;
   using DartCollisionGroup::addCollisionObjectToEngine;
   using DartCollisionGroup::initializeEngineData;
@@ -312,6 +313,15 @@ TEST(DartCollisionGroup, MeshPlaneCollisionUsesBroadphase)
   ASSERT_TRUE(group->collide(option, &result));
   EXPECT_GT(result.getNumContacts(), 0u);
   EXPECT_LT(result.getContact(0).normal.z(), -0.9);
+}
+
+TEST(DARTCollisionDetector, CloneWithoutCollisionObjects)
+{
+  auto detector = DARTCollisionDetector::create();
+  auto clone = detector->cloneWithoutCollisionObjects();
+
+  ASSERT_NE(clone, nullptr);
+  EXPECT_EQ(DARTCollisionDetector::getStaticType(), clone->getTypeView());
 }
 
 TEST(DartCollisionDetector, CylinderBoxPairIsSupported)
@@ -831,14 +841,23 @@ TEST(DartCollisionGroup, EngineDataCallbacks)
   auto objectA = detector->claimCollisionObject(setupA.shapeNode);
   auto objectB = detector->claimCollisionObject(setupB.shapeNode);
 
+  group.addShapeFrame(setupA.shapeNode);
+  ASSERT_EQ(group.getNumObjects(), 1u);
+  group.updateEngineData();
+
+  group.removeAllShapeFrames();
+  ASSERT_EQ(group.getNumObjects(), 0u);
+
   group.initializeEngineData();
   group.addCollisionObjectToEngine(objectA.get());
   EXPECT_EQ(group.getNumObjects(), 1u);
 
-  std::array<CollisionObject*, 2> objects{objectA.get(), objectB.get()};
+  auto objects
+      = std::to_array<CollisionObject*>({objectA.get(), objectB.get()});
   group.addCollisionObjectsToEngine(objects);
   EXPECT_EQ(group.getNumObjects(), 2u);
 
+  group.updateEngineData();
   group.updateCollisionGroupEngineData();
   group.removeCollisionObjectFromEngine(objectA.get());
   EXPECT_EQ(group.getNumObjects(), 1u);

@@ -44,6 +44,11 @@
 #include <osg/LineWidth>
 #include <osg/ShapeDrawable>
 
+#include <algorithm>
+#include <ranges>
+
+#include <cstddef>
+
 namespace dart {
 namespace gui {
 
@@ -213,8 +218,7 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
     mElements->clear();
     mElements->reserve(2 * connections.size());
 
-    for (std::size_t i = 0; i < connections.size(); ++i) {
-      const Eigen::Vector2i& c = connections[i];
+    for (const Eigen::Vector2i& c : connections) {
       mElements->push_back(static_cast<unsigned int>(c[0]));
       mElements->push_back(static_cast<unsigned int>(c[1]));
     }
@@ -233,9 +237,10 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
       mVertices->resize(vertices.size());
     }
 
-    for (std::size_t i = 0; i < vertices.size(); ++i) {
-      (*mVertices)[i] = eigToOsgVec3(vertices[i]);
-    }
+    std::ranges::transform(
+        vertices, mVertices->begin(), [](const Eigen::Vector3d& vertex) {
+          return eigToOsgVec3(vertex);
+        });
 
     setVertexArray(mVertices);
   }

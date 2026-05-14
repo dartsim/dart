@@ -35,6 +35,8 @@
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
 
+#include <ranges>
+
 #include <cstring>
 
 namespace dart::common {
@@ -48,13 +50,15 @@ PoolAllocator::PoolAllocator(MemoryAllocator& baseAllocator)
       "sizeof(MemoryUnit) should be equal to or greater than 8.");
 
   if (!mInitialized) {
-    for (auto i = 0u; i < HEAP_COUNT; ++i) {
+    for (const auto i :
+         std::views::iota(0u, static_cast<unsigned>(HEAP_COUNT))) {
       mUnitSizes[i] = (i + 1) * 8;
     }
 
     auto j = 0u;
     mMapSizeToHeapIndex[0] = -1;
-    for (auto i = 1u; i <= MAX_UNIT_SIZE; ++i) {
+    for (const auto i :
+         std::views::iota(1u, static_cast<unsigned>(MAX_UNIT_SIZE) + 1u)) {
       if (i <= mUnitSizes[j]) {
         mMapSizeToHeapIndex[i] = j;
       } else {
@@ -78,7 +82,7 @@ PoolAllocator::PoolAllocator(MemoryAllocator& baseAllocator)
 //==============================================================================
 PoolAllocator::~PoolAllocator()
 {
-  for (int i = 0; i < mCurrentMemoryBlockIndex; ++i) {
+  for (const auto i : std::views::iota(0, mCurrentMemoryBlockIndex)) {
     mBaseAllocator.deallocate(mMemoryBlocks[i].mMemoryUnits, BLOCK_SIZE);
   }
   mBaseAllocator.deallocate(
@@ -108,6 +112,7 @@ void* PoolAllocator::allocateSlow(int heapIndex) noexcept
 {
   if (mCurrentMemoryBlockIndex == mMemoryBlocksSize) {
     MemoryBlock* currentMemoryBlocks = mMemoryBlocks;
+    const int currentMemoryBlocksSize = mMemoryBlocksSize;
     mMemoryBlocksSize += 64;
     mMemoryBlocks = mBaseAllocator.allocateAs<MemoryBlock>(mMemoryBlocksSize);
     std::memcpy(
@@ -116,6 +121,8 @@ void* PoolAllocator::allocateSlow(int heapIndex) noexcept
         mCurrentMemoryBlockIndex * sizeof(MemoryBlock));
     std::memset(
         mMemoryBlocks + mCurrentMemoryBlockIndex, 0, 64 * sizeof(MemoryBlock));
+    mBaseAllocator.deallocate(
+        currentMemoryBlocks, currentMemoryBlocksSize * sizeof(MemoryBlock));
   }
 
   MemoryBlock* newBlock = mMemoryBlocks + mCurrentMemoryBlockIndex;
@@ -126,7 +133,8 @@ void* PoolAllocator::allocateSlow(int heapIndex) noexcept
   const unsigned int unitCount = BLOCK_SIZE / unitSize;
   DART_ASSERT(unitCount > 0);
   auto* memoryUnitsBeginChar = reinterpret_cast<char*>(newBlock->mMemoryUnits);
-  for (size_t i = 0u; i < unitCount - 1; ++i) {
+  for (const auto i : std::views::iota(
+           std::size_t{0}, static_cast<std::size_t>(unitCount - 1))) {
     auto* unit
         = reinterpret_cast<MemoryUnit*>(memoryUnitsBeginChar + unitSize * i);
     auto* nextUnit = reinterpret_cast<MemoryUnit*>(

@@ -65,9 +65,11 @@
 #include <benchmark/benchmark.h>
 
 #include <atomic>
+#include <numbers>
 #include <queue>
 #include <thread>
 #include <vector>
+#include <version>
 
 #include <cassert>
 #include <cmath>
@@ -284,7 +286,7 @@ SkeletonPtr makeStar(int N, const std::string& prefix = "star")
     auto [cj, cb] = skel->createJointAndBodyNodePair<JointType>(
         rootBody, cjprops, cbprops);
 
-    const double angle = 2.0 * M_PI * i / (N - 1);
+    const double angle = 2.0 * std::numbers::pi_v<double> * i / (N - 1);
     cj->setTransformFromParentBodyNode(
         Eigen::Isometry3d(
             Eigen::Translation3d(
@@ -913,7 +915,11 @@ static void BM_ParallelWorlds(benchmark::State& state)
   }
 
   for (auto _ : state) {
+#if defined(__cpp_lib_jthread)
+    std::vector<std::jthread> threads;
+#else
     std::vector<std::thread> threads;
+#endif
     threads.reserve(numThreads);
     for (int t = 0; t < numThreads; ++t) {
       threads.emplace_back([&worlds, t, stepsPerThread]() {
@@ -922,9 +928,11 @@ static void BM_ParallelWorlds(benchmark::State& state)
         }
       });
     }
-    for (auto& th : threads) {
-      th.join();
+#if !defined(__cpp_lib_jthread)
+    for (auto& thread : threads) {
+      thread.join();
     }
+#endif
   }
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations()) * numThreads * stepsPerThread);

@@ -35,6 +35,7 @@
 #include "dart/collision/collision_detector.hpp"
 #include "dart/collision/collision_group.hpp"
 #include "dart/collision/dart/dart_collision_detector.hpp"
+#include "dart/constraint/contact_constraint.hpp"
 #include "dart/constraint/contact_surface.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/box_shape.hpp"
@@ -55,6 +56,17 @@ using namespace dart::constraint;
 using namespace dart::test;
 
 namespace {
+
+class ExposedDefaultContactSurfaceHandler : public DefaultContactSurfaceHandler
+{
+public:
+  using DefaultContactSurfaceHandler::computeFrictionCoefficient;
+  using DefaultContactSurfaceHandler::computePrimarySlipCompliance;
+  using DefaultContactSurfaceHandler::computeRestitutionCoefficient;
+  using DefaultContactSurfaceHandler::computeSecondaryFrictionCoefficient;
+  using DefaultContactSurfaceHandler::computeSecondarySlipCompliance;
+  using DefaultContactSurfaceHandler::computeWorldFirstFrictionDir;
+};
 
 SkeletonPtr createBox(
     const std::string& name,
@@ -527,6 +539,122 @@ TEST(ContactSurface, ValidSlipCompliancePassesThrough)
 
   EXPECT_DOUBLE_EQ(params.mPrimarySlipCompliance, 0.2);
   EXPECT_DOUBLE_EQ(params.mSecondarySlipCompliance, 0.4);
+}
+
+//==============================================================================
+// Friction Direction And Missing DynamicsAspect Tests
+//==============================================================================
+
+TEST(ContactSurface, ChoosesOnlyNonzeroFrictionDirection)
+{
+  auto setup = createCollidingBoxes(0.8, 0.2);
+  auto* shapeNodeB = setup.skel2->getBodyNode(0)->getShapeNode(0);
+  ASSERT_NE(shapeNodeB, nullptr);
+
+  shapeNodeB->getDynamicsAspect()->setFirstFrictionDirection(
+      Eigen::Vector3d::UnitY());
+
+  auto result = setup.runCollision();
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  DefaultContactSurfaceHandler handler;
+  auto params = handler.createParams(result.getContact(0), 1);
+
+  EXPECT_TRUE(
+      params.mFirstFrictionalDirection.isApprox(Eigen::Vector3d::UnitY()));
+}
+
+TEST(ContactSurface, ChoosesLowerFrictionDirectionWhenBothAreSet)
+{
+  auto setup = createCollidingBoxes(0.8, 0.2);
+  auto* shapeNodeA = setup.skel1->getBodyNode(0)->getShapeNode(0);
+  auto* shapeNodeB = setup.skel2->getBodyNode(0)->getShapeNode(0);
+  ASSERT_NE(shapeNodeA, nullptr);
+  ASSERT_NE(shapeNodeB, nullptr);
+
+  shapeNodeA->getDynamicsAspect()->setFirstFrictionDirection(
+      Eigen::Vector3d::UnitX());
+  shapeNodeB->getDynamicsAspect()->setFirstFrictionDirection(
+      Eigen::Vector3d::UnitY());
+
+  auto result = setup.runCollision();
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  DefaultContactSurfaceHandler handler;
+  auto params = handler.createParams(result.getContact(0), 1);
+
+  EXPECT_TRUE(
+      params.mFirstFrictionalDirection.isApprox(Eigen::Vector3d::UnitY()));
+}
+
+TEST(ContactSurface, StaticComputationsFallBackWithoutDynamicsAspect)
+{
+  auto skeleton = Skeleton::create("no_dynamics_aspect");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto shapeNode = pair.second->createShapeNodeWith<CollisionAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  ASSERT_NE(shapeNode, nullptr);
+  ASSERT_EQ(shapeNode->getDynamicsAspect(), nullptr);
+
+  EXPECT_DOUBLE_EQ(
+      ExposedDefaultContactSurfaceHandler::computeFrictionCoefficient(
+          shapeNode),
+      DART_DEFAULT_FRICTION_COEFF);
+  EXPECT_DOUBLE_EQ(
+      ExposedDefaultContactSurfaceHandler::computeSecondaryFrictionCoefficient(
+          shapeNode),
+      DART_DEFAULT_FRICTION_COEFF);
+  EXPECT_DOUBLE_EQ(
+      ExposedDefaultContactSurfaceHandler::computePrimarySlipCompliance(
+          shapeNode),
+      DART_DEFAULT_SLIP_COMPLIANCE);
+  EXPECT_DOUBLE_EQ(
+      ExposedDefaultContactSurfaceHandler::computeSecondarySlipCompliance(
+          shapeNode),
+      DART_DEFAULT_SLIP_COMPLIANCE);
+  EXPECT_TRUE(
+      ExposedDefaultContactSurfaceHandler::computeWorldFirstFrictionDir(
+          shapeNode)
+          .isApprox(DART_DEFAULT_FRICTION_DIR));
+  EXPECT_DOUBLE_EQ(
+      ExposedDefaultContactSurfaceHandler::computeRestitutionCoefficient(
+          shapeNode),
+      DART_DEFAULT_RESTITUTION_COEFF);
+}
+
+TEST(ContactSurface, StaticFrictionComputationUsesDynamicsAspect)
+{
+  auto setup = createCollidingBoxes(0.25, 0.5);
+  auto* shapeNode = setup.skel1->getBodyNode(0)->getShapeNode(0);
+  ASSERT_NE(shapeNode, nullptr);
+  ASSERT_NE(shapeNode->getDynamicsAspect(), nullptr);
+
+  EXPECT_DOUBLE_EQ(
+      ExposedDefaultContactSurfaceHandler::computeFrictionCoefficient(
+          shapeNode),
+      0.25);
+
+  shapeNode->getDynamicsAspect()->setFrictionCoeff(-0.25);
+
+  EXPECT_DOUBLE_EQ(
+      ExposedDefaultContactSurfaceHandler::computeFrictionCoefficient(
+          shapeNode),
+      DART_DEFAULT_FRICTION_COEFF);
+}
+
+TEST(ContactSurface, DefaultHandlerCreatesContactConstraint)
+{
+  auto setup = createCollidingBoxesWithSlipCompliance(0.1, 0.2, 0.3, 0.4);
+  auto result = setup.runCollision();
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  auto contact = result.getContact(0);
+
+  DefaultContactSurfaceHandler handler;
+  auto constraint = handler.createConstraint(contact, 3, 0.001);
+
+  ASSERT_NE(constraint, nullptr);
+  EXPECT_EQ(constraint->getType(), ContactConstraint::getStaticType());
 }
 
 //==============================================================================

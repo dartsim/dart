@@ -167,8 +167,7 @@ void retargetMimicJoints(const WorldPtr& world, const std::string& baselineName)
       if (skeleton == baseline) {
         std::vector<dart::dynamics::MimicDofProperties> clearedProps(
             joint->getNumDofs());
-        joint->setMimicJointDofs(
-            std::span<const dart::dynamics::MimicDofProperties>(clearedProps));
+        joint->setMimicJointDofs(clearedProps);
         joint->setActuatorType(dart::dynamics::Joint::FORCE);
         joint->setUseCouplerConstraint(false);
         continue;

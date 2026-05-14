@@ -67,9 +67,6 @@ public:
   double getArmature() const;
   double getFrictionLoss() const;
 
-private:
-  // Private members used by Body class
-  friend class Body;
   Errors read(
       tinyxml2::XMLElement* element,
       const Defaults& defaults,
@@ -86,6 +83,8 @@ private:
   Errors postprocess(const Body* body, const Compiler& compiler);
 
 private:
+  friend class Body;
+
   JointAttributes mAttributes;
 
   std::string mName{""};

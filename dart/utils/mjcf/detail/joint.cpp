@@ -72,7 +72,7 @@ Errors Joint::read(
 
   // Read attributes
   const Errors attrErrors = appendJointAttributes(mAttributes, element);
-  errors.insert(errors.end(), attrErrors.begin(), attrErrors.end());
+  appendErrorRange(errors, attrErrors);
 
   return errors;
 }

@@ -37,6 +37,8 @@
 #include "dart/dynamics/line_segment_shape.hpp"
 #include "dart/dynamics/mesh_shape.hpp"
 
+#include <algorithm>
+
 namespace dart {
 namespace gui {
 
@@ -130,9 +132,9 @@ InteractiveTool::getShapeFrames()
 {
   std::vector<dart::dynamics::SimpleFrame*> frames(mSimpleFrames.size());
 
-  for (auto i = 0u; i < frames.size(); ++i) {
-    frames[i] = mSimpleFrames[i].get();
-  }
+  std::ranges::transform(mSimpleFrames, frames.begin(), [](const auto& frame) {
+    return frame.get();
+  });
 
   return frames;
 }
@@ -143,9 +145,9 @@ InteractiveTool::getShapeFrames() const
 {
   std::vector<const dart::dynamics::SimpleFrame*> frames(mSimpleFrames.size());
 
-  for (auto i = 0u; i < frames.size(); ++i) {
-    frames[i] = mSimpleFrames[i].get();
-  }
+  std::ranges::transform(mSimpleFrames, frames.begin(), [](const auto& frame) {
+    return frame.get();
+  });
 
   return frames;
 }
@@ -247,9 +249,9 @@ InteractiveFrame::getShapeFrames()
 {
   std::vector<dart::dynamics::SimpleFrame*> frames(mSimpleFrames.size());
 
-  for (auto i = 0u; i < frames.size(); ++i) {
-    frames[i] = mSimpleFrames[i].get();
-  }
+  std::ranges::transform(mSimpleFrames, frames.begin(), [](const auto& frame) {
+    return frame.get();
+  });
 
   return frames;
 }
@@ -260,9 +262,9 @@ InteractiveFrame::getShapeFrames() const
 {
   std::vector<const dart::dynamics::SimpleFrame*> frames(mSimpleFrames.size());
 
-  for (auto i = 0u; i < frames.size(); ++i) {
-    frames[i] = mSimpleFrames[i].get();
-  }
+  std::ranges::transform(mSimpleFrames, frames.begin(), [](const auto& frame) {
+    return frame.get();
+  });
 
   return frames;
 }
@@ -279,7 +281,7 @@ void InteractiveFrame::createStandardVisualizationShapes(
 {
   const auto pi = math::pi;
 
-  thickness = std::min(10.0, std::max(0.0, thickness));
+  thickness = std::clamp(thickness, 0.0, 10.0);
   std::size_t resolution = 72;
   double ring_outer_scale = 0.7 * size;
   double ring_inner_scale = ring_outer_scale * (1 - 0.1 * thickness);
@@ -488,10 +490,10 @@ void InteractiveFrame::createStandardVisualizationShapes(
   for (std::size_t i = 0; i < InteractiveTool::NUM_TYPES; ++i) {
     for (std::size_t j = 0; j < 3; ++j) {
       const auto& shapesFrames = mTools[i][j]->getShapeFrames();
-      for (std::size_t s = 0; s < shapesFrames.size(); ++s) {
-        shapesFrames[s]->getShape()->setDataVariance(
+      std::ranges::for_each(shapesFrames, [](auto* shapeFrame) {
+        shapeFrame->getShape()->setDataVariance(
             dart::dynamics::Shape::DYNAMIC_COLOR);
-      }
+      });
     }
   }
 

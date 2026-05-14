@@ -44,6 +44,7 @@
 
 #include <iostream>
 #include <limits>
+#include <ranges>
 
 #define DART_ERROR_ALLOWANCE 0.0
 #define DART_ERP 0.01
@@ -239,7 +240,7 @@ void HumanArmJointLimitConstraint::update()
         auto Wb = l->weights();
         vec_t W = *(Wb[0]);
         in_grad.assign(W.size() / out_grad.size(), 0);
-        for (size_t c = 0; c < in_grad.size(); c++) {
+        for (const auto c : std::views::iota(std::size_t{0}, in_grad.size())) {
           in_grad[c] = vectorize::dot(
               &out_grad[0], &W[c * out_grad.size()], out_grad.size());
         }
@@ -321,7 +322,7 @@ void HumanArmJointLimitConstraint::applyUnitImpulse(std::size_t index)
   const dynamics::SkeletonPtr& skeleton = mShldJoint->getSkeleton();
   skeleton->clearConstraintImpulses();
 
-  for (std::size_t i = 0; i < 3; i++) {
+  for (const auto i : std::views::iota(std::size_t{0}, std::size_t{3})) {
     mShldJoint->setConstraintImpulse(i, mJacobian[i]);
   }
   mElbowJoint->setConstraintImpulse(0, mJacobian[3]);
@@ -331,7 +332,7 @@ void HumanArmJointLimitConstraint::applyUnitImpulse(std::size_t index)
   skeleton->updateBiasImpulse(mLArmNode);
   skeleton->updateVelocityChange();
 
-  for (std::size_t i = 0; i < 3; i++) {
+  for (const auto i : std::views::iota(std::size_t{0}, std::size_t{3})) {
     mShldJoint->setConstraintImpulse(i, 0.0);
   }
   mElbowJoint->setConstraintImpulse(0, 0.0);
@@ -348,7 +349,7 @@ void HumanArmJointLimitConstraint::getVelocityChange(
 
   if (mShldJoint->getSkeleton()->isImpulseApplied()) {
     Eigen::Vector4d delq_d;
-    for (std::size_t i = 0; i < 3; i++) {
+    for (const auto i : std::views::iota(std::size_t{0}, std::size_t{3})) {
       delq_d[i] = mShldJoint->getVelocityChange(i);
     }
     delq_d[3] = mElbowJoint->getVelocityChange(0);
@@ -383,7 +384,7 @@ void HumanArmJointLimitConstraint::applyImpulse(double* lambda)
   auto con_force = lambda[0];
   mOldX = con_force;
 
-  for (std::size_t i = 0; i < 3; i++) {
+  for (const auto i : std::views::iota(std::size_t{0}, std::size_t{3})) {
     mShldJoint->setConstraintImpulse(
         i, mShldJoint->getConstraintImpulse(i) + mJacobian[i] * con_force);
   }

@@ -183,16 +183,15 @@ constexpr T defaultRelTolerance()
 
 namespace detail {
 
+template <typename T>
+concept ArithmeticScalar = std::integral<T> || std::floating_point<T>;
+
 template <typename Float>
 using FloatByteArray = std::array<std::byte, sizeof(Float)>;
 
-template <typename Float>
+template <std::floating_point Float>
 inline bool valueEqualFloating(Float lhs, Float rhs)
 {
-  static_assert(
-      std::is_floating_point_v<Float>,
-      "valueEqualFloating expects floating point");
-
   if (std::isnan(lhs) || std::isnan(rhs)) {
     return false;
   }
@@ -305,8 +304,8 @@ inline bool isApprox(
 
 template <typename DerivedA, typename DerivedB>
   requires(
-      std::is_arithmetic_v<typename DerivedA::Scalar>
-      && std::is_arithmetic_v<typename DerivedB::Scalar>
+      detail::ArithmeticScalar<typename DerivedA::Scalar>
+      && detail::ArithmeticScalar<typename DerivedB::Scalar>
       && !(
           std::floating_point<typename DerivedA::Scalar>
           && std::floating_point<typename DerivedB::Scalar>))

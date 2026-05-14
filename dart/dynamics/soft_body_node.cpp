@@ -45,6 +45,7 @@
 
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <cmath>
@@ -83,7 +84,7 @@ bool SoftBodyNodeUniqueProperties::connectPointMasses(
     std::size_t i1, std::size_t i2)
 {
   if (i1 >= mPointProps.size() || i2 >= mPointProps.size()) {
-    if (mPointProps.size() == 0) {
+    if (mPointProps.empty()) {
       DART_WARN(
           "Attempting to add a connection between indices {} and {}, but there "
           "are currently no entries in mPointProps!",
@@ -113,14 +114,11 @@ void SoftBodyNodeUniqueProperties::addFace(const Eigen::Vector3i& _newFace)
   DART_ASSERT(_newFace[1] != _newFace[2]);
   DART_ASSERT(_newFace[2] != _newFace[0]);
   DART_ASSERT(
-      0 <= _newFace[0]
-      && static_cast<std::size_t>(_newFace[0]) < mPointProps.size());
+      0 <= _newFace[0] && std::cmp_less(_newFace[0], mPointProps.size()));
   DART_ASSERT(
-      0 <= _newFace[1]
-      && static_cast<std::size_t>(_newFace[1]) < mPointProps.size());
+      0 <= _newFace[1] && std::cmp_less(_newFace[1], mPointProps.size()));
   DART_ASSERT(
-      0 <= _newFace[2]
-      && static_cast<std::size_t>(_newFace[2]) < mPointProps.size());
+      0 <= _newFace[2] && std::cmp_less(_newFace[2], mPointProps.size()));
   mFaces.push_back(_newFace);
 }
 
@@ -258,7 +256,7 @@ const PointMass* SoftBodyNode::getPointMass(std::size_t _idx) const
 //==============================================================================
 std::span<PointMass* const> SoftBodyNode::getPointMasses() const
 {
-  return std::span<PointMass* const>(mPointMasses);
+  return mPointMasses;
 }
 
 //==============================================================================
@@ -1730,9 +1728,12 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   //----------------------------------------------------------------------------
   // Faces
   //----------------------------------------------------------------------------
-  std::size_t nFacesX = 2 * (frags[1] - 1) * (frags[2] - 1);
-  std::size_t nFacesY = 2 * (frags[2] - 1) * (frags[0] - 1);
-  std::size_t nFacesZ = 2 * (frags[0] - 1) * (frags[1] - 1);
+  const std::size_t fragmentsX = static_cast<std::size_t>(frags[0]);
+  const std::size_t fragmentsY = static_cast<std::size_t>(frags[1]);
+  const std::size_t fragmentsZ = static_cast<std::size_t>(frags[2]);
+  std::size_t nFacesX = 2 * (fragmentsY - 1) * (fragmentsZ - 1);
+  std::size_t nFacesY = 2 * (fragmentsZ - 1) * (fragmentsX - 1);
+  std::size_t nFacesZ = 2 * (fragmentsX - 1) * (fragmentsY - 1);
   std::size_t nFaces = 2 * nFacesX + 2 * nFacesY + 2 * nFacesZ;
 
   std::vector<Eigen::Vector3i> faces(nFaces, Eigen::Vector3i::Zero());

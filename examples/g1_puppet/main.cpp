@@ -24,6 +24,7 @@
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <vector>
 
@@ -148,7 +149,7 @@ std::optional<std::string> getLastPathSegment(std::string value)
     value.erase(terminator);
   }
 
-  while (!value.empty() && (value.back() == '/' || value.back() == '\\')) {
+  while (value.ends_with('/') || value.ends_with('\\')) {
     value.pop_back();
   }
 
@@ -402,7 +403,8 @@ SkeletonPtr loadG1(
 
 void enableDragAndDrop(dart::gui::Viewer& viewer, const SkeletonPtr& robot)
 {
-  for (std::size_t i = 0; i < robot->getNumBodyNodes(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, robot->getNumBodyNodes())) {
     viewer.enableDragAndDrop(robot->getBodyNode(i), false, false);
   }
 }

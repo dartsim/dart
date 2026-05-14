@@ -36,15 +36,13 @@
 
 #include <Eigen/Geometry>
 
+#include <concepts>
+
 namespace dart::simd {
 
-template <typename T>
+template <FloatType T>
 struct Isometry3
 {
-  static_assert(
-      std::is_same_v<T, float> || std::is_same_v<T, double>,
-      "Isometry3 only supports float or double");
-
   Quaternion<T> rotation;
   Vector3<T> translation;
 
@@ -127,7 +125,7 @@ struct Isometry3
   }
 };
 
-template <typename T>
+template <FloatType T>
 [[nodiscard]] DART_SIMD_INLINE Isometry3<T> lerp(
     const Isometry3<T>& a, const Isometry3<T>& b, T t)
 {

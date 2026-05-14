@@ -8,6 +8,7 @@
 #include <sstream>
 #include <string>
 #include <thread>
+#include <version>
 
 #include <cstdlib>
 
@@ -129,6 +130,28 @@ TEST(Profiler, ColorizedOutput)
   const std::string output = oss.str();
   EXPECT_NE(output.find("ColorScope"), std::string::npos);
   EXPECT_NE(output.find("\033["), std::string::npos);
+}
+
+TEST(Profiler, SourceLocationScope)
+{
+  auto& profiler = common::profile::Profiler::instance();
+  profiler.reset();
+
+  ScopedEnvVar env("DART_PROFILE_COLOR", "0");
+
+  {
+    common::profile::ProfileScope scope("SourceLocationScope");
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+
+  profiler.markFrame();
+
+  std::ostringstream oss;
+  profiler.printSummary(oss);
+
+  const std::string output = oss.str();
+  EXPECT_NE(output.find("SourceLocationScope"), std::string::npos);
+  EXPECT_NE(output.find("test_profiler.cpp"), std::string::npos);
 }
 
 TEST(Profiler, UseColorEnvVarVariants)
@@ -262,21 +285,28 @@ TEST(Profiler, SummaryMultipleThreads)
 
   ScopedEnvVar env("DART_PROFILE_COLOR", "0");
 
-  std::thread worker([]() {
-    common::profile::ProfileScope scope("WorkerScope", __FILE__, __LINE__);
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
-  });
-
   {
-    common::profile::ProfileScope scope("MainScope", __FILE__, __LINE__);
+#if defined(__cpp_lib_jthread)
+    std::jthread worker([]() {
+#else
+    std::thread worker([]() {
+#endif
+      common::profile::ProfileScope scope("WorkerScope", __FILE__, __LINE__);
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    });
+
+    {
+      common::profile::ProfileScope scope("MainScope", __FILE__, __LINE__);
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+
+    profiler.markFrame();
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    profiler.markFrame();
+#if !defined(__cpp_lib_jthread)
+    worker.join();
+#endif
   }
-
-  profiler.markFrame();
-  std::this_thread::sleep_for(std::chrono::milliseconds(1));
-  profiler.markFrame();
-
-  worker.join();
 
   std::ostringstream oss;
   profiler.printSummary(oss);
@@ -293,6 +323,10 @@ namespace dart::common::profile {
 class ProfilerTestAccess
 {
 public:
+  static std::string color(std::string_view text, const char* code)
+  {
+    return Profiler::colorize(text, code);
+  }
   static std::string fd(std::uint64_t ns)
   {
     return Profiler::formatDuration(ns);
@@ -308,6 +342,22 @@ public:
   static std::string fc(std::uint64_t v)
   {
     return Profiler::formatCount(v);
+  }
+  static std::string fp(double pct)
+  {
+    return Profiler::formatPercent(pct);
+  }
+  static const char* heat(double pct)
+  {
+    return Profiler::heatColor(pct);
+  }
+  static std::string pad(std::string_view text, std::size_t width)
+  {
+    return Profiler::padRight(text, width);
+  }
+  static double pct(std::uint64_t part, std::uint64_t total)
+  {
+    return Profiler::percentage(part, total);
   }
   static void popEmpty(Profiler& p)
   {
@@ -355,6 +405,19 @@ TEST(Profiler, FormatCountScales)
   EXPECT_NE(PTA::fc(5'000'000ULL).find("M"), std::string::npos);
   EXPECT_NE(PTA::fc(5'000ULL).find("K"), std::string::npos);
   EXPECT_EQ(PTA::fc(42ULL), "42");
+}
+
+TEST(Profiler, FormattingHelperBoundaries)
+{
+  EXPECT_DOUBLE_EQ(PTA::pct(10, 0), 0.0);
+  EXPECT_EQ(PTA::fp(9.5), "9.50%");
+  EXPECT_EQ(PTA::fp(12.0), "12.0%");
+  EXPECT_EQ(PTA::pad("already-wide", 4), "already-wide");
+
+  dart::test::ScopedEnvVar env("DART_PROFILE_COLOR", "1");
+  EXPECT_STREQ(PTA::heat(10.0), "\033[33m");
+  EXPECT_STREQ(PTA::heat(1.0), "\033[36m");
+  EXPECT_EQ(PTA::color("label", "\033[31m"), "\033[31mlabel\033[0m");
 }
 
 TEST(Profiler, PopScopeOnEmptyStack)

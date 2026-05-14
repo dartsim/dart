@@ -116,9 +116,10 @@ Eigen::Matrix3d EllipsoidShape::computeInertia(
   Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
 
   const auto coeff = mass / 20.0;
-  const auto AA = std::pow(diameters[0], 2);
-  const auto BB = std::pow(diameters[1], 2);
-  const auto CC = std::pow(diameters[2], 2);
+  const auto diametersSquared = diameters.cwiseProduct(diameters);
+  const auto AA = diametersSquared[0];
+  const auto BB = diametersSquared[1];
+  const auto CC = diametersSquared[2];
 
   inertia(0, 0) = coeff * (BB + CC);
   inertia(1, 1) = coeff * (AA + CC);

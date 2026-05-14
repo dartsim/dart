@@ -42,11 +42,14 @@
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
 
+#include <dart/math/constants.hpp>
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <array>
 #include <memory>
 #include <string>
 #include <vector>
@@ -96,7 +99,7 @@ const Eigen::Vector3d kContainerEllipsoidRadii(2.0, 1.5, 1.0);
 const double kContainerCylinderRadius = 2.0;
 const double kContainerCylinderHeight = 4.0;
 const double kContainmentOffset = 0.2;
-const double kYawQuarterTurn = 0.25 * 3.141592653589793;
+const double kYawQuarterTurn = 0.25 * dart::math::pi;
 
 const std::vector<ShapeSpec> kShapeSpecs = {
     {ShapeKind::Box, "box"},
@@ -147,8 +150,9 @@ bool isPlane(ShapeKind kind)
 
 bool isEdgeVertexKind(ShapeKind kind)
 {
-  return kind == ShapeKind::Box || kind == ShapeKind::Cylinder
-         || kind == ShapeKind::Cone;
+  constexpr auto kinds
+      = std::to_array({ShapeKind::Box, ShapeKind::Cylinder, ShapeKind::Cone});
+  return std::ranges::find(kinds, kind) != kinds.end();
 }
 
 dart::dynamics::ShapePtr makeShape(ShapeKind kind)
@@ -225,21 +229,20 @@ bool getExtentAlongDirection(
   if (const auto* ellipsoid
       = dynamic_cast<const dart::dynamics::EllipsoidShape*>(&shape)) {
     const Eigen::Vector3d radii = ellipsoid->getRadii();
-    extent = std::sqrt(
-        std::pow(radii.x() * dir.x(), 2) + std::pow(radii.y() * dir.y(), 2)
-        + std::pow(radii.z() * dir.z(), 2));
+    extent = std::hypot(
+        radii.x() * dir.x(), radii.y() * dir.y(), radii.z() * dir.z());
     return true;
   }
   if (const auto* cylinder
       = dynamic_cast<const dart::dynamics::CylinderShape*>(&shape)) {
-    const double xy = std::sqrt(dir.x() * dir.x() + dir.y() * dir.y());
+    const double xy = std::hypot(dir.x(), dir.y());
     extent = cylinder->getRadius() * xy
              + 0.5 * cylinder->getHeight() * std::abs(dir.z());
     return true;
   }
   if (const auto* cone
       = dynamic_cast<const dart::dynamics::ConeShape*>(&shape)) {
-    const double xy = std::sqrt(dir.x() * dir.x() + dir.y() * dir.y());
+    const double xy = std::hypot(dir.x(), dir.y());
     const double apex = 0.5 * cone->getHeight() * dir.z();
     const double base
         = -0.5 * cone->getHeight() * dir.z() + cone->getRadius() * xy;

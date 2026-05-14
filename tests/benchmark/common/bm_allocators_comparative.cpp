@@ -65,6 +65,7 @@
 #include <foonathan/memory/namespace_alias.hpp>
 #include <foonathan/memory/std_allocator.hpp>
 
+#include <array>
 #include <memory_resource>
 #include <vector>
 
@@ -233,7 +234,7 @@ static void BM_Stack_StdPmr(benchmark::State& state)
   const auto size = static_cast<size_t>(state.range(0));
   const auto count = static_cast<size_t>(state.range(1));
   const size_t arenaSize = count * (size + 32) + 4096;
-  auto backing = std::make_unique<char[]>(arenaSize);
+  auto backing = std::make_unique_for_overwrite<char[]>(arenaSize);
 
   for (auto _ : state) {
     // Reconstruct each iteration (monotonic_buffer_resource has no reset())
@@ -261,8 +262,8 @@ BENCHMARK(BM_Stack_StdPmr)
 // Tests how well each allocator handles heterogeneous allocation patterns.
 // =============================================================================
 
-static constexpr size_t kMultiSizes[] = {16, 32, 64, 128, 256, 512};
-static constexpr size_t kMultiSizeCount = 6;
+static constexpr auto kMultiSizes
+    = std::to_array<size_t>({16, 32, 64, 128, 256, 512});
 static constexpr size_t kMultiOps = 4096;
 
 static void BM_MultiPool_DART(benchmark::State& state)
@@ -273,7 +274,7 @@ static void BM_MultiPool_DART(benchmark::State& state)
   lcgState = 77u;
   for (auto _ : state) {
     for (size_t i = 0; i < kMultiOps; ++i) {
-      const size_t sz = kMultiSizes[lcgNext() % kMultiSizeCount];
+      const size_t sz = kMultiSizes[lcgNext() % kMultiSizes.size()];
       ptrs[i] = {alloc.allocate(sz), sz};
       benchmark::DoNotOptimize(ptrs[i].first);
     }
@@ -294,7 +295,7 @@ static void BM_MultiPool_Foonathan(benchmark::State& state)
   lcgState = 77u;
   for (auto _ : state) {
     for (size_t i = 0; i < kMultiOps; ++i) {
-      const size_t sz = kMultiSizes[lcgNext() % kMultiSizeCount];
+      const size_t sz = kMultiSizes[lcgNext() % kMultiSizes.size()];
       ptrs[i] = {pool.allocate_node(sz), sz};
       benchmark::DoNotOptimize(ptrs[i].first);
     }
@@ -316,7 +317,7 @@ static void BM_MultiPool_StdPmr(benchmark::State& state)
   lcgState = 77u;
   for (auto _ : state) {
     for (size_t i = 0; i < kMultiOps; ++i) {
-      const size_t sz = kMultiSizes[lcgNext() % kMultiSizeCount];
+      const size_t sz = kMultiSizes[lcgNext() % kMultiSizes.size()];
       ptrs[i] = {pool.allocate(sz, alignof(std::max_align_t)), sz};
       benchmark::DoNotOptimize(ptrs[i].first);
     }
@@ -336,8 +337,8 @@ BENCHMARK(BM_MultiPool_StdPmr)->Repetitions(5)->ReportAggregatesOnly(true);
 // Simulates a full physics step allocation pattern.
 // =============================================================================
 
-static constexpr size_t kRealisticSizes[] = {16, 32, 64, 128, 256, 512, 1024};
-static constexpr size_t kRealisticSizeCount = 7;
+static constexpr auto kRealisticSizes
+    = std::to_array<size_t>({16, 32, 64, 128, 256, 512, 1024});
 static constexpr size_t kRealisticOps = 1000;
 
 static void BM_Realistic_DART(benchmark::State& state)
@@ -348,7 +349,7 @@ static void BM_Realistic_DART(benchmark::State& state)
   lcgState = 99u;
   for (auto _ : state) {
     for (size_t i = 0; i < kRealisticOps; ++i) {
-      const size_t sz = kRealisticSizes[lcgNext() % kRealisticSizeCount];
+      const size_t sz = kRealisticSizes[lcgNext() % kRealisticSizes.size()];
       ptrs[i] = {alloc.allocate(sz), sz};
       benchmark::DoNotOptimize(ptrs[i].first);
     }
@@ -376,7 +377,7 @@ static void BM_Realistic_Foonathan(benchmark::State& state)
   lcgState = 99u;
   for (auto _ : state) {
     for (size_t i = 0; i < kRealisticOps; ++i) {
-      const size_t sz = kRealisticSizes[lcgNext() % kRealisticSizeCount];
+      const size_t sz = kRealisticSizes[lcgNext() % kRealisticSizes.size()];
       ptrs[i] = {pool.allocate_node(sz), sz};
       benchmark::DoNotOptimize(ptrs[i].first);
     }
@@ -405,7 +406,7 @@ static void BM_Realistic_StdPmr(benchmark::State& state)
   lcgState = 99u;
   for (auto _ : state) {
     for (size_t i = 0; i < kRealisticOps; ++i) {
-      const size_t sz = kRealisticSizes[lcgNext() % kRealisticSizeCount];
+      const size_t sz = kRealisticSizes[lcgNext() % kRealisticSizes.size()];
       ptrs[i] = {pool.allocate(sz, alignof(std::max_align_t)), sz};
       benchmark::DoNotOptimize(ptrs[i].first);
     }
@@ -542,8 +543,8 @@ BENCHMARK(BM_SteadyState_StdPmr)
 // reset. Tests the exact usage pattern in DART's ConstraintSolver.
 // =============================================================================
 
-static constexpr size_t kFrameSizes[] = {24, 48, 96, 192, 384};
-static constexpr size_t kFrameSizeCount = 5;
+static constexpr auto kFrameSizes
+    = std::to_array<size_t>({24, 48, 96, 192, 384});
 
 static void BM_FrameBulk_DART(benchmark::State& state)
 {
@@ -554,7 +555,7 @@ static void BM_FrameBulk_DART(benchmark::State& state)
   lcgState = 55u;
   for (auto _ : state) {
     for (size_t i = 0; i < count; ++i) {
-      const size_t sz = kFrameSizes[lcgNext() % kFrameSizeCount];
+      const size_t sz = kFrameSizes[lcgNext() % kFrameSizes.size()];
       void* p = alloc.allocateAligned(sz, 32);
       benchmark::DoNotOptimize(p);
     }
@@ -579,7 +580,7 @@ static void BM_FrameBulk_Foonathan(benchmark::State& state)
   for (auto _ : state) {
     auto marker = stack.top();
     for (size_t i = 0; i < count; ++i) {
-      const size_t sz = kFrameSizes[lcgNext() % kFrameSizeCount];
+      const size_t sz = kFrameSizes[lcgNext() % kFrameSizes.size()];
       void* p = stack.allocate(sz, 32);
       benchmark::DoNotOptimize(p);
     }
@@ -598,14 +599,14 @@ static void BM_FrameBulk_StdPmr(benchmark::State& state)
 {
   const auto count = static_cast<size_t>(state.range(0));
   const size_t arenaSize = count * 512 + 4096;
-  auto backing = std::make_unique<char[]>(arenaSize);
+  auto backing = std::make_unique_for_overwrite<char[]>(arenaSize);
 
   lcgState = 55u;
   for (auto _ : state) {
     std::pmr::monotonic_buffer_resource mono(
         backing.get(), arenaSize, std::pmr::null_memory_resource());
     for (size_t i = 0; i < count; ++i) {
-      const size_t sz = kFrameSizes[lcgNext() % kFrameSizeCount];
+      const size_t sz = kFrameSizes[lcgNext() % kFrameSizes.size()];
       void* p = mono.allocate(sz, 32);
       benchmark::DoNotOptimize(p);
     }
@@ -691,7 +692,7 @@ static void BM_StlVector_StdPmr(benchmark::State& state)
 {
   const auto n = static_cast<size_t>(state.range(0));
   const size_t arenaSize = n * sizeof(int) * 4 + 4096;
-  auto backing = std::make_unique<char[]>(arenaSize);
+  auto backing = std::make_unique_for_overwrite<char[]>(arenaSize);
 
   for (auto _ : state) {
     std::pmr::monotonic_buffer_resource mono(

@@ -35,6 +35,9 @@
 
 #include <dart/common/memory_manager.hpp>
 
+#include <memory>
+#include <utility>
+
 namespace dart::common {
 
 //==============================================================================
@@ -48,14 +51,13 @@ T* MemoryManager::construct(Type type, Args&&... args) noexcept
   }
 
   // Call constructor. Return nullptr if failed.
+  T* typedObject = static_cast<T*>(object);
   try {
-    new (object) T(std::forward<Args>(args)...);
+    return std::construct_at(typedObject, std::forward<Args>(args)...);
   } catch (...) {
     deallocate(type, object, sizeof(T));
     return nullptr;
   }
-
-  return reinterpret_cast<T*>(object);
 }
 
 //==============================================================================
@@ -86,7 +88,7 @@ void MemoryManager::destroy(Type type, T* object) noexcept
   if (!object) {
     return;
   }
-  object->~T();
+  std::destroy_at(object);
   deallocate(type, object, sizeof(T));
 }
 

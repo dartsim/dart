@@ -38,6 +38,9 @@
 #include <dart/all.hpp>
 #include <dart/io/read.hpp>
 
+#include <iterator>
+#include <string_view>
+
 using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::simulation;
@@ -98,7 +101,7 @@ public:
 
     if (enforceIdealPosture) {
       // Try to get the robot into the best possible posture
-      for (int i = 0; i < _x.size(); ++i) {
+      for (auto i = 0; i < std::ssize(_x); ++i) {
         if (mIdeal.size() <= i) {
           break;
         }
@@ -107,7 +110,7 @@ public:
       }
     } else {
       // Only adjust the posture if it is really bad
-      for (int i = 0; i < _x.size(); ++i) {
+      for (auto i = 0; i < std::ssize(_x); ++i) {
         if (mIdeal.size() <= i) {
           break;
         }
@@ -288,8 +291,10 @@ public:
 
     mLegs.reserve(12);
     for (std::size_t i = 0; i < mAtlas->getNumDofs(); ++i) {
-      if (mAtlas->getDof(i)->getName().substr(1, 5) == "_leg_") {
-        mLegs.push_back(mAtlas->getDof(i)->getIndexInSkeleton());
+      const auto* dof = mAtlas->getDof(i);
+      const std::string_view name = dof->getName();
+      if (name.size() > 1 && name.substr(1).starts_with("_leg_")) {
+        mLegs.push_back(dof->getIndexInSkeleton());
       }
     }
     // We should also adjust the pelvis when detangling the legs

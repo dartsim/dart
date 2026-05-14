@@ -37,6 +37,7 @@
 
 #include <algorithm>
 #include <unordered_set>
+#include <utility>
 
 namespace dart {
 namespace dynamics {
@@ -47,7 +48,7 @@ std::vector<BodyNode*> Linkage::Criteria::satisfy() const
   std::vector<BodyNode*> bns;
 
   if (nullptr == mStart.mNode.lock()) {
-    if (mTargets.size() == 0) {
+    if (mTargets.empty()) {
       return bns;
     }
 
@@ -258,13 +259,13 @@ void Linkage::Criteria::expandDownstream(
   }
   recorder.push_back(Recording(_start, 0));
 
-  while (recorder.size() > 0) {
+  while (!recorder.empty()) {
     Recording& r = recorder.back();
-    if (r.mCount < static_cast<int>(r.mNode->getNumChildBodyNodes())) {
+    if (std::cmp_less(r.mCount, r.mNode->getNumChildBodyNodes())) {
       stepToNextChild(recorder, _bns, r, mMapOfTerminals, 0);
     } else {
       recorder.pop_back();
-      if (recorder.size() > 0) {
+      if (!recorder.empty()) {
         ++recorder.back().mCount;
       }
     }
@@ -283,7 +284,7 @@ void Linkage::Criteria::expandUpstream(
   }
   recorder.push_back(Recording(_start, -1));
 
-  while (recorder.size() > 0) {
+  while (!recorder.empty()) {
     Recording& r = recorder.back();
 
     if (r.mCount == -1) {
@@ -303,7 +304,7 @@ void Linkage::Criteria::expandUpstream(
         // If we originally came from this node, then just continue to the next
         ++r.mCount;
       }
-    } else if (r.mCount < static_cast<int>(r.mNode->getNumChildBodyNodes())) {
+    } else if (std::cmp_less(r.mCount, r.mNode->getNumChildBodyNodes())) {
       // Greater than -1 means we need to add the children
 
       if (recorder.size() == 1) {
@@ -323,7 +324,7 @@ void Linkage::Criteria::expandUpstream(
       // If we've iterated through all the children of this node, pop it
       recorder.pop_back();
       // Move on to the next child
-      if (recorder.size() > 0) {
+      if (!recorder.empty()) {
         ++recorder.back().mCount;
       }
     }
@@ -346,20 +347,20 @@ void Linkage::Criteria::expandToTarget(
     trimBodyNodes(newBns, _target.mChain, true);
   } else if (target_bn->descendsFrom(start_bn)) {
     newBns = climbToTarget(target_bn, start_bn);
-    std::reverse(newBns.begin(), newBns.end());
+    std::ranges::reverse(newBns);
     trimBodyNodes(newBns, _target.mChain, false);
   } else {
     newBns = climbToCommonRoot(_start, _target, _target.mChain);
   }
 
   // Remove the start BodyNode if it's supposed to be excluded
-  if (EXCLUDE == _start.mPolicy && newBns.size() > 0
+  if (EXCLUDE == _start.mPolicy && !newBns.empty()
       && newBns.front() == start_bn) {
     newBns.erase(newBns.begin());
   }
 
   // Remove the target BodyNode if it's supposed to be excluded
-  if (EXCLUDE == _target.mPolicy && newBns.size() > 0
+  if (EXCLUDE == _target.mPolicy && !newBns.empty()
       && newBns.back() == target_bn) {
     newBns.pop_back();
   }
@@ -416,7 +417,7 @@ std::vector<BodyNode*> Linkage::Criteria::climbToCommonRoot(
   }
 
   std::vector<BodyNode*> bnTarget = climbToTarget(target_bn, root);
-  std::reverse(bnTarget.begin(), bnTarget.end());
+  std::ranges::reverse(bnTarget);
   trimBodyNodes(bnTarget, _chain, false);
 
   std::vector<BodyNode*> bnAll;

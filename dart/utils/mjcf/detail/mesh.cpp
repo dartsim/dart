@@ -67,7 +67,7 @@ Errors Mesh::read(tinyxml2::XMLElement* element)
 
   // Read attributes
   const Errors attrErrors = appendMeshAttributes(mAttributes, element);
-  errors.insert(errors.end(), attrErrors.begin(), attrErrors.end());
+  appendErrorRange(errors, attrErrors);
 
   return errors;
 }

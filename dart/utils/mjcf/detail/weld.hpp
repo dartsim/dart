@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_WELD_HPP_
 #define DART_UTILS_MJCF_DETAIL_WELD_HPP_
 
+#include <dart/utils/export.hpp>
 #include <dart/utils/mjcf/detail/default.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
 #include <dart/utils/mjcf/detail/weld_attributes.hpp>
@@ -44,7 +45,7 @@ namespace utils {
 namespace MjcfParser {
 namespace detail {
 
-class Weld final
+class DART_UTILS_API Weld final
 {
 public:
   Weld() = default;
@@ -57,12 +58,11 @@ public:
   const std::string& getBody2() const;
   const std::optional<Eigen::Isometry3d>& getRelativeTransform() const;
 
-private:
-  // Private members used by MujocoModel class
-  friend class Equality;
   Errors read(tinyxml2::XMLElement* element, const Defaults& defaults);
 
 private:
+  friend class Equality;
+
   WeldAttributes mAttributes;
 
   std::string mName;

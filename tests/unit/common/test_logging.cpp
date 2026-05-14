@@ -39,6 +39,7 @@
 
 #include <iostream>
 #include <memory>
+#include <source_location>
 #include <sstream>
 #include <string>
 
@@ -205,6 +206,18 @@ TEST(LoggingTest, LevelFunctions)
 }
 
 //==============================================================================
+TEST(LoggingTest, RuntimeFormatString)
+{
+  const std::string format = "runtime {}";
+  dart::common::trace(format, 42);
+  dart::common::debug(format, 42);
+  dart::common::info(format, 42);
+  dart::common::warn(format, 42);
+  dart::common::error(format, 42);
+  dart::common::fatal(format, 42);
+}
+
+//==============================================================================
 TEST(LoggingTest, DetailHelpers)
 {
   using dart::common::detail::LogLevel;
@@ -226,6 +239,17 @@ TEST(LoggingTest, DetailHelpers)
   if (!partialPrefix.empty()) {
     EXPECT_NE(partialPrefix.find("file.cpp"), std::string::npos);
   }
+
+  const auto locationPrefix = makeLogPrefix(std::source_location::current());
+  if (!locationPrefix.empty()) {
+    EXPECT_NE(locationPrefix.find("test_logging.cpp"), std::string::npos);
+  }
+
+  dart::common::detail::log(
+      LogLevel::Info,
+      std::source_location::current(),
+      "source location detail log {}",
+      42);
 
   EXPECT_NE(toAnsiColor(LogLevel::Trace), 0);
   EXPECT_NE(toAnsiColor(LogLevel::Debug), 0);

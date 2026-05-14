@@ -38,14 +38,15 @@
 #include <Eigen/Core>
 
 #include <array>
+#include <concepts>
 #include <type_traits>
 
 namespace dart::simd {
 
 template <typename Derived>
-concept EigenDenseBase = std::is_base_of_v<
-    Eigen::DenseBase<std::remove_cvref_t<Derived>>,
-    std::remove_cvref_t<Derived>>;
+concept EigenDenseBase = std::derived_from<
+    std::remove_cvref_t<Derived>,
+    Eigen::DenseBase<std::remove_cvref_t<Derived>>>;
 
 template <typename Derived>
 concept EigenVectorXpr

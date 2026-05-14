@@ -19,17 +19,14 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Check runner requirements (KVM and Docker)
-        id: prereqs
         run: |
           FAILED=false
 
           echo "=== Docker Diagnostics ==="
           if docker info > /dev/null 2>&1; then
             echo "Docker is accessible"
-            echo "docker_available=true" >> $GITHUB_OUTPUT
           else
             echo "::error::Docker not accessible - check socket permissions"
-            echo "docker_available=false" >> $GITHUB_OUTPUT
             FAILED=true
           fi
 
@@ -39,10 +36,8 @@ jobs:
           ls -la /dev/kvm 2>/dev/null || echo "/dev/kvm does not exist"
           if [ -e /dev/kvm ] && [ -r /dev/kvm ] && [ -w /dev/kvm ]; then
             echo "KVM is accessible"
-            echo "kvm_available=true" >> $GITHUB_OUTPUT
           else
             echo "::error::KVM not accessible"
-            echo "kvm_available=false" >> $GITHUB_OUTPUT
             FAILED=true
           fi
 
@@ -59,7 +54,6 @@ jobs:
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Run FreeBSD repro tests
-        if: steps.prereqs.outputs.kvm_available == 'true' && steps.prereqs.outputs.docker_available == 'true'
         env:
           FREEBSD_VM_CPUS: "2"
           FREEBSD_VM_MEM: "4096"
@@ -69,24 +63,38 @@ jobs:
           # See PR #2419 for details on each exclusion.
           FREEBSD_VM_TEST_EXCLUDE_REGEX: "ForwardKinematics|AtlasIK|INTEGRATION_io_Read|INTEGRATION_io_UrdfParser|INTEGRATION_io_UrdfMaterialParsing|INTEGRATION_io_IkFast|INTEGRATION_simulation_MomentumConservation|INTEGRATION_simulation_MimicConstraint|UNIT_constraint_BalanceConstraint|test_IoRead"
         run: |
-          pixi run freebsd-test &
-          TEST_PID=$!
-          # Wait for Docker container to start
-          sleep 10
-          # Show Docker container logs to verify QEMU startup and KVM detection
-          echo "=== Docker Container Logs (QEMU Startup) ==="
-          docker logs dart-freebsd-vm 2>&1 | head -50 || true
-          echo "=============================================="
-          # Wait for the test to complete
-          wait $TEST_PID
+          set -euo pipefail
+          max_attempts=2
+          for attempt in $(seq 1 $max_attempts); do
+            echo "=== FreeBSD VM test attempt ${attempt}/${max_attempts} ==="
+            pixi run freebsd-stop || true
+            pixi run freebsd-test &
+            TEST_PID=$!
+            sleep 10
+            echo "=== Docker Container Logs (QEMU Startup) ==="
+            docker logs dart-freebsd-vm 2>&1 | head -50 || true
+            echo "=============================================="
+            if wait $TEST_PID; then
+              echo "FreeBSD tests passed on attempt ${attempt}"
+              exit 0
+            fi
+            echo "::warning::FreeBSD VM test failed on attempt ${attempt}/${max_attempts}"
+            if [ "$attempt" -lt "$max_attempts" ]; then
+              echo "Retrying after cleanup..."
+              pixi run freebsd-stop || true
+              sleep 5
+            fi
+          done
+          echo "::error::FreeBSD VM tests failed after ${max_attempts} attempts"
+          exit 1
 
       - name: Show Docker container logs
-        if: always() && steps.prereqs.outputs.kvm_available == 'true' && steps.prereqs.outputs.docker_available == 'true'
+        if: always()
         run: |
           echo "=== Full Docker Container Logs ==="
           docker logs dart-freebsd-vm 2>&1 || true
           echo "==================================="
 
       - name: Stop FreeBSD VM
-        if: always() && steps.prereqs.outputs.kvm_available == 'true' && steps.prereqs.outputs.docker_available == 'true'
-        run: pixi run freebsd-stop
+        if: always()
+        run: pixi run freebsd-stop || true

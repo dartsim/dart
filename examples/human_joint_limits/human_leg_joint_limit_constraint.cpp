@@ -44,6 +44,7 @@
 
 #include <iostream>
 #include <limits>
+#include <ranges>
 
 #define DART_ERROR_ALLOWANCE 0.0
 #define DART_ERP 0.01
@@ -245,7 +246,7 @@ void HumanLegJointLimitConstraint::update()
         auto Wb = l->weights();
         vec_t W = *(Wb[0]);
         in_grad.assign(W.size() / out_grad.size(), 0);
-        for (size_t c = 0; c < in_grad.size(); c++) {
+        for (const auto c : std::views::iota(std::size_t{0}, in_grad.size())) {
           in_grad[c] = vectorize::dot(
               &out_grad[0], &W[c * out_grad.size()], out_grad.size());
         }

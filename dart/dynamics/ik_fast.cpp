@@ -38,6 +38,9 @@
 #include "dart/dynamics/ikfast.h"
 #include "dart/dynamics/revolute_joint.hpp"
 
+#include <algorithm>
+#include <utility>
+
 namespace dart {
 namespace dynamics {
 
@@ -210,14 +213,11 @@ bool checkDofMapValidity(
   const auto& dependentDofs = ik->getNode()->getDependentDofs();
 
   for (const auto& dof : dofMap) {
-    bool found = false;
-    for (auto dependentDof : dependentDofs) {
-      const auto dependentDofIndex = dependentDof->getIndexInSkeleton();
-      if (dof == dependentDofIndex) {
-        found = true;
-        break;
-      }
-    }
+    const bool found
+        = std::ranges::any_of(dependentDofs, [dof](auto dependentDof) {
+            const auto dependentDofIndex = dependentDof->getIndexInSkeleton();
+            return dof == dependentDofIndex;
+          });
 
     if (!found) {
       DART_ERROR(
@@ -264,13 +264,13 @@ std::span<const std::size_t> IkFast::getDofs() const
     }
   }
 
-  return std::span<const std::size_t>(mDofs);
+  return mDofs;
 }
 
 //==============================================================================
 std::span<const std::size_t> IkFast::getFreeDofs() const
 {
-  return std::span<const std::size_t>(mFreeDofs);
+  return mFreeDofs;
 }
 
 //==============================================================================
@@ -357,7 +357,7 @@ void IkFast::configure() const
   const auto ikFastNumFreeJoints = getNumFreeParameters();
   const auto ikFastNumNonFreeJoints = ikFastNumJoints - ikFastNumFreeJoints;
 
-  if (static_cast<std::size_t>(ikFastNumNonFreeJoints) != mDofs.size()) {
+  if (!std::cmp_equal(ikFastNumNonFreeJoints, mDofs.size())) {
     DART_ERROR(
         "Failed to configure. Received a joint map of size '{}' but the actual "
         "dofs IkFast is '{}'.",
@@ -366,7 +366,7 @@ void IkFast::configure() const
     return;
   }
 
-  if (static_cast<std::size_t>(ikFastNumFreeJoints) != mFreeDofs.size()) {
+  if (!std::cmp_equal(ikFastNumFreeJoints, mFreeDofs.size())) {
     DART_ERROR(
         "Failed to configure. Received a free joint map of size '{}' but the "
         "actual dofs IkFast is '{}'.",
@@ -402,8 +402,7 @@ IkFast::computeSolutions(const Eigen::Isometry3d& desiredBodyTf)
           "This analytical IK was not able to configure properly, so it will "
           "not be able to compute solutions. Returning an empty list of "
           "solutions.");
-      return std::span<const InverseKinematics::Analytical::Solution>(
-          mSolutions);
+      return mSolutions;
     }
   }
 
@@ -433,7 +432,7 @@ IkFast::computeSolutions(const Eigen::Isometry3d& desiredBodyTf)
         mSolutions);
   }
 
-  return std::span<const InverseKinematics::Analytical::Solution>(mSolutions);
+  return mSolutions;
 }
 
 //==============================================================================
@@ -441,7 +440,7 @@ Eigen::Isometry3d IkFast::computeFk(const Eigen::VectorXd& parameters)
 {
   const std::size_t ikFastNumNonFreeJoints
       = getNumJoints2() - getNumFreeParameters2();
-  if (static_cast<std::size_t>(parameters.size()) != ikFastNumNonFreeJoints) {
+  if (!std::cmp_equal(parameters.size(), ikFastNumNonFreeJoints)) {
     DART_WARN(
         "The dimension of given joint positions doesn't agree with the number "
         "of joints of this IkFast solver. Returning identity.");

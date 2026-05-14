@@ -38,6 +38,9 @@
 #include <Eigen/Core>
 #include <gtest/gtest.h>
 
+#include <array>
+#include <vector>
+
 #include <cstdint>
 
 using namespace dart::common;
@@ -60,7 +63,7 @@ TEST_F(FrameAllocatorTest, BasicAllocate)
 {
   FrameAllocator allocator;
   size_t previousUsed = 0;
-  const size_t sizes[] = {8, 64, 256, 1024};
+  const auto sizes = std::to_array<size_t>({8, 64, 256, 1024});
   for (size_t size : sizes) {
     void* ptr = allocator.allocate(size);
     EXPECT_NE(ptr, nullptr);
@@ -73,7 +76,7 @@ TEST_F(FrameAllocatorTest, BasicAllocate)
 TEST_F(FrameAllocatorTest, Alignment)
 {
   FrameAllocator allocator;
-  const size_t alignments[] = {16, 32, 64};
+  const auto alignments = std::to_array<size_t>({16, 32, 64});
   for (size_t alignment : alignments) {
     void* ptr = allocator.allocateAligned(32, alignment);
     EXPECT_NE(ptr, nullptr);
@@ -175,6 +178,28 @@ TEST_F(FrameAllocatorTest, Construct)
   EXPECT_DOUBLE_EQ((*vec)(0), 1.0);
   EXPECT_DOUBLE_EQ((*vec)(1), 2.0);
   EXPECT_DOUBLE_EQ((*vec)(2), 3.0);
+}
+
+//=============================================================================
+TEST_F(FrameAllocatorTest, StlAllocatorUsesArena)
+{
+  FrameAllocator arena(MemoryAllocator::GetDefault(), 128);
+  FrameStlAllocator<int> intAllocator(arena);
+  FrameStlAllocator<double> doubleAllocator(intAllocator);
+
+  EXPECT_TRUE(intAllocator == doubleAllocator);
+
+  auto* raw = intAllocator.allocate(2);
+  ASSERT_NE(raw, nullptr);
+  intAllocator.deallocate(raw, 2);
+
+  std::vector<int, FrameStlAllocator<int>> values(intAllocator);
+  values.reserve(4);
+  values.push_back(1);
+  values.push_back(2);
+
+  EXPECT_EQ(values.size(), 2u);
+  EXPECT_GT(arena.used(), 0u);
 }
 
 //=============================================================================

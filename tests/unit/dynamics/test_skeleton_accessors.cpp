@@ -65,6 +65,7 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <iterator>
 #include <memory>
 #include <vector>
 
@@ -769,7 +770,7 @@ TEST(SkeletonMassMatrix, MassMatrixPositiveDefinite)
   // All eigenvalues should be positive for a positive definite matrix
   Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(massMatrix);
   const auto eigenvalues = solver.eigenvalues();
-  for (int i = 0; i < eigenvalues.size(); ++i) {
+  for (int i = 0; i < std::ssize(eigenvalues); ++i) {
     EXPECT_GT(eigenvalues(i), 0.0);
   }
 }
@@ -1483,8 +1484,7 @@ TEST(JointAccessors, CopyPropertiesAndWrenchQueries)
   (void)extendedProps;
   (void)movedProps;
 
-  std::array<Joint::ActuatorType, 3> types
-      = {Joint::FORCE, Joint::MIMIC, Joint::FORCE};
+  const auto types = std::to_array({Joint::FORCE, Joint::MIMIC, Joint::FORCE});
   auto skeletonC = Skeleton::create("joint_actuator_types");
   auto pairC = skeletonC->createJointAndBodyNodePair<BallJoint>();
   pairC.first->setActuatorTypes(types);
@@ -2748,11 +2748,10 @@ TEST(SkeletonConfiguration, ConfigurationFlagsAndSegments)
 
   const auto config = skeleton->getConfiguration(
       indices, Skeleton::CONFIG_POSITIONS | Skeleton::CONFIG_FORCES);
-  EXPECT_EQ(
-      config.mPositions.size(), static_cast<Eigen::Index>(indices.size()));
+  EXPECT_EQ(config.mPositions.size(), std::ssize(indices));
   EXPECT_EQ(config.mVelocities.size(), 0);
   EXPECT_EQ(config.mAccelerations.size(), 0);
-  EXPECT_EQ(config.mForces.size(), static_cast<Eigen::Index>(indices.size()));
+  EXPECT_EQ(config.mForces.size(), std::ssize(indices));
   EXPECT_EQ(config.mCommands.size(), 0);
   EXPECT_TRUE(config.mPositions.isApprox(posSubset));
   EXPECT_TRUE(config.mForces.isApprox(forceSubset));
@@ -3894,8 +3893,8 @@ TEST(SkeletonAccessors, MultiTreeMassMatricesAndCaches)
 
   const auto& M0 = skeleton->getMassMatrix(0);
   const auto& M1 = skeleton->getMassMatrix(1);
-  EXPECT_EQ(M0.rows(), static_cast<int>(tree0Dofs.size()));
-  EXPECT_EQ(M1.cols(), static_cast<int>(tree1Dofs.size()));
+  EXPECT_EQ(M0.rows(), std::ssize(tree0Dofs));
+  EXPECT_EQ(M1.cols(), std::ssize(tree1Dofs));
   EXPECT_TRUE(M0.allFinite());
   EXPECT_TRUE(M1.allFinite());
 

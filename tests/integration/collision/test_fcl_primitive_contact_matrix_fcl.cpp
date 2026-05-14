@@ -30,12 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/math/constants.hpp>
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <fcl/fcl.h>
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <array>
 #include <memory>
 #include <string>
 #include <vector>
@@ -85,7 +88,7 @@ const Eigen::Vector3d kContainerEllipsoidRadii(2.0, 1.5, 1.0);
 constexpr double kContainerCylinderRadius = 2.0;
 constexpr double kContainerCylinderHeight = 4.0;
 constexpr double kContainmentOffset = 0.2;
-constexpr double kYawQuarterTurn = 0.25 * 3.141592653589793;
+constexpr double kYawQuarterTurn = 0.25 * dart::math::pi;
 
 const std::vector<ShapeSpec> kShapeSpecs = {
     {ShapeKind::Box, "box"},
@@ -136,8 +139,9 @@ bool isPlane(ShapeKind kind)
 
 bool isEdgeVertexKind(ShapeKind kind)
 {
-  return kind == ShapeKind::Box || kind == ShapeKind::Cylinder
-         || kind == ShapeKind::Cone;
+  constexpr auto kinds
+      = std::to_array({ShapeKind::Box, ShapeKind::Cylinder, ShapeKind::Cone});
+  return std::ranges::find(kinds, kind) != kinds.end();
 }
 
 std::shared_ptr<fcl::CollisionGeometry<double>> makeGeometry(ShapeKind kind)
@@ -210,18 +214,18 @@ bool getExtentAlongDirection(
       extent = kSphereRadius;
       return true;
     case ShapeKind::Cylinder: {
-      const double xy = std::sqrt(dir.x() * dir.x() + dir.y() * dir.y());
+      const double xy = std::hypot(dir.x(), dir.y());
       extent = kCylinderRadius * xy + 0.5 * kCylinderHeight * std::abs(dir.z());
       return true;
     }
     case ShapeKind::Ellipsoid:
-      extent = std::sqrt(
-          std::pow(kEllipsoidRadii.x() * dir.x(), 2)
-          + std::pow(kEllipsoidRadii.y() * dir.y(), 2)
-          + std::pow(kEllipsoidRadii.z() * dir.z(), 2));
+      extent = std::hypot(
+          kEllipsoidRadii.x() * dir.x(),
+          kEllipsoidRadii.y() * dir.y(),
+          kEllipsoidRadii.z() * dir.z());
       return true;
     case ShapeKind::Cone: {
-      const double xy = std::sqrt(dir.x() * dir.x() + dir.y() * dir.y());
+      const double xy = std::hypot(dir.x(), dir.y());
       const double apex = 0.5 * kConeHeight * dir.z();
       const double base = -0.5 * kConeHeight * dir.z() + kConeRadius * xy;
       extent = std::max(apex, base);
@@ -270,16 +274,16 @@ bool getContainerExtentAlongDirection(
       extent = kContainerSphereRadius;
       return true;
     case ShapeKind::Cylinder: {
-      const double xy = std::sqrt(dir.x() * dir.x() + dir.y() * dir.y());
+      const double xy = std::hypot(dir.x(), dir.y());
       extent = kContainerCylinderRadius * xy
                + 0.5 * kContainerCylinderHeight * std::abs(dir.z());
       return true;
     }
     case ShapeKind::Ellipsoid:
-      extent = std::sqrt(
-          std::pow(kContainerEllipsoidRadii.x() * dir.x(), 2)
-          + std::pow(kContainerEllipsoidRadii.y() * dir.y(), 2)
-          + std::pow(kContainerEllipsoidRadii.z() * dir.z(), 2));
+      extent = std::hypot(
+          kContainerEllipsoidRadii.x() * dir.x(),
+          kContainerEllipsoidRadii.y() * dir.y(),
+          kContainerEllipsoidRadii.z() * dir.z());
       return true;
     case ShapeKind::Cone:
     case ShapeKind::Plane:

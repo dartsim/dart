@@ -42,6 +42,8 @@
 #include <osg/Geode>
 #include <osg/Geometry>
 
+#include <algorithm>
+
 namespace dart {
 namespace gui {
 namespace render {
@@ -76,12 +78,12 @@ void computeVertexNormals(
     normals[triangle[2]] += n;
   }
 
-  for (auto& normal : normals) {
+  std::ranges::for_each(normals, [](auto& normal) {
     const double norm = normal.norm();
     if (norm > 1e-12) {
       normal /= norm;
     }
-  }
+  });
 }
 
 } // namespace
@@ -278,9 +280,10 @@ void ConvexMeshShapeDrawable::refresh(bool firstTime)
       mNormals->resize(vertexCount);
     }
 
-    for (std::size_t i = 0; i < vertexCount; ++i) {
-      (*mVertices)[i] = eigToOsgVec3((*vertices)[i]);
-    }
+    std::ranges::transform(
+        *vertices, mVertices->begin(), [](const Eigen::Vector3d& vertex) {
+          return eigToOsgVec3(vertex);
+        });
     setVertexArray(mVertices);
 
     const Normals* normals = nullptr;
@@ -293,9 +296,10 @@ void ConvexMeshShapeDrawable::refresh(bool firstTime)
     }
 
     if (normals) {
-      for (std::size_t i = 0; i < vertexCount; ++i) {
-        (*mNormals)[i] = eigToOsgVec3((*normals)[i]);
-      }
+      std::ranges::transform(
+          *normals, mNormals->begin(), [](const Eigen::Vector3d& normal) {
+            return eigToOsgVec3(normal);
+          });
       setNormalArray(mNormals, ::osg::Array::BIND_PER_VERTEX);
     }
   }

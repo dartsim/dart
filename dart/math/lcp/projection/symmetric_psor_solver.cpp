@@ -205,14 +205,7 @@ LcpResult SymmetricPsorSolver::solve(
       return value;
     }
 
-    double projected = value;
-    if (std::isfinite(lo[i])) {
-      projected = std::max(projected, lo[i]);
-    }
-    if (std::isfinite(hi[i])) {
-      projected = std::min(projected, hi[i]);
-    }
-    return projected;
+    return detail::projectToBounds(value, lo[i], hi[i]);
   };
 
   auto updateIndex = [&](int i) {
@@ -221,7 +214,7 @@ LcpResult SymmetricPsorSolver::solve(
     if (std::isfinite(diag) && std::abs(diag) >= params->epsilonForDivision) {
       const double residualEntry = A.row(i).dot(x) - b[i];
       const double step = x[i] - residualEntry / diag;
-      value = x[i] + relaxation * (step - x[i]);
+      value = std::lerp(x[i], step, relaxation);
     } else {
       value = 0.0;
     }

@@ -39,6 +39,8 @@
 #include <dart/all.hpp>
 #include <dart/io/read.hpp>
 
+#include <ranges>
+
 const double default_speed_increment = 0.5;
 
 const int default_ik_iterations = 4500;
@@ -73,7 +75,8 @@ public:
       mKd(i, i) = 0.0;
     }
 
-    for (std::size_t i = 6; i < mBiped->getNumDofs(); ++i) {
+    for (const auto i :
+         std::views::iota(std::size_t{6}, mBiped->getNumDofs())) {
       mKp(i, i) = 1000;
       mKd(i, i) = 50;
     }
@@ -185,7 +188,8 @@ public:
     // snippet:cpp-biped-lesson6-wheel-commands-start
     int wheelFirstIndex
         = mBiped->getDof("joint_front_left_1")->getIndexInSkeleton();
-    for (std::size_t i = wheelFirstIndex; i < mBiped->getNumDofs(); ++i) {
+    for (const auto i : std::views::iota(
+             static_cast<std::size_t>(wheelFirstIndex), mBiped->getNumDofs())) {
       mKp(i, i) = 0.0;
       mKd(i, i) = 0.0;
     }
@@ -343,7 +347,7 @@ SkeletonPtr loadBiped()
 
   // Set joint limits
   // snippet:cpp-biped-lesson1-limits-start
-  for (std::size_t i = 0; i < biped->getNumJoints(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, biped->getNumJoints())) {
     biped->getJoint(i)->setLimitEnforcement(true);
   }
   // snippet:cpp-biped-lesson1-limits-end

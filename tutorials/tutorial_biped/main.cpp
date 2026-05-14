@@ -39,6 +39,8 @@
 #include <dart/all.hpp>
 #include <dart/io/read.hpp>
 
+#include <ranges>
+
 const double default_speed_increment = 0.5;
 
 [[maybe_unused]] const int default_ik_iterations = 4500;
@@ -73,7 +75,7 @@ public:
       mKd(i, i) = 0.0;
     }
 
-    for (std::size_t i = 6; i < biped->getNumDofs(); ++i) {
+    for (const auto i : std::views::iota(std::size_t{6}, biped->getNumDofs())) {
       mKp(i, i) = 1000;
       mKd(i, i) = 50;
     }

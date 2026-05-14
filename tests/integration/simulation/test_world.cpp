@@ -38,6 +38,7 @@
 #include "dart/common/macros.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/revolute_joint.hpp"
+#include "dart/dynamics/simple_frame.hpp"
 #include "dart/dynamics/skeleton.hpp"
 #include "dart/io/read.hpp"
 #include "dart/math/geometry.hpp"
@@ -46,6 +47,8 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <iterator>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -118,6 +121,51 @@ private:
   std::string mKey;
   Creator mRestorer;
   bool mDisabled{false};
+};
+
+class ScopedCollisionFactoryOverride
+{
+public:
+  using Factory = collision::CollisionDetector::Factory;
+  using Creator = Factory::Creator;
+
+  ScopedCollisionFactoryOverride(
+      std::string_view key, Creator overrideCreator, Creator restorer)
+    : mFactory(collision::CollisionDetector::getFactory()),
+      mKey(key),
+      mRestorer(std::move(restorer))
+  {
+    if (!mFactory || !mFactory->canCreate(mKey)) {
+      return;
+    }
+
+    mOverridden = true;
+    mFactory->registerCreator(mKey, std::move(overrideCreator));
+  }
+
+  ScopedCollisionFactoryOverride(const ScopedCollisionFactoryOverride&)
+      = delete;
+  ScopedCollisionFactoryOverride& operator=(
+      const ScopedCollisionFactoryOverride&)
+      = delete;
+
+  ~ScopedCollisionFactoryOverride()
+  {
+    if (mFactory && mOverridden && mRestorer) {
+      mFactory->registerCreator(mKey, mRestorer);
+    }
+  }
+
+  bool wasOverridden() const
+  {
+    return mOverridden;
+  }
+
+private:
+  Factory* mFactory;
+  std::string mKey;
+  Creator mRestorer;
+  bool mOverridden{false};
 };
 
 } // namespace
@@ -277,6 +325,118 @@ TEST(World, RemoveSkeletonAndAllSkeletons)
 }
 
 //==============================================================================
+TEST(World, EachSkeletonKeepsRemovedSkeletonAliveDuringBoolCallback)
+{
+  {
+    auto world = World::create();
+    auto skeleton = Skeleton::create("skeleton");
+    skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+    std::weak_ptr<Skeleton> weakSkeleton = skeleton;
+
+    world->addSkeleton(skeleton);
+    skeleton.reset();
+
+    bool visited = false;
+    world->eachSkeleton([&](Skeleton* skel) -> bool {
+      visited = true;
+      world->removeAllSkeletons();
+      const auto keptAlive = weakSkeleton.lock();
+      EXPECT_NE(nullptr, keptAlive);
+      if (keptAlive) {
+        EXPECT_EQ(skel, keptAlive.get());
+        EXPECT_EQ("skeleton", keptAlive->getName());
+      }
+      return false;
+    });
+
+    EXPECT_TRUE(visited);
+    EXPECT_TRUE(weakSkeleton.expired());
+  }
+
+  {
+    auto world = World::create();
+    auto skeleton = Skeleton::create("skeleton");
+    skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+    std::weak_ptr<Skeleton> weakSkeleton = skeleton;
+
+    world->addSkeleton(skeleton);
+    skeleton.reset();
+
+    bool visited = false;
+    const auto& constWorld = *world;
+    constWorld.eachSkeleton([&](const Skeleton* skel) -> bool {
+      visited = true;
+      world->removeAllSkeletons();
+      const auto keptAlive = weakSkeleton.lock();
+      EXPECT_NE(nullptr, keptAlive);
+      if (keptAlive) {
+        EXPECT_EQ(skel, keptAlive.get());
+        EXPECT_EQ("skeleton", keptAlive->getName());
+      }
+      return false;
+    });
+
+    EXPECT_TRUE(visited);
+    EXPECT_TRUE(weakSkeleton.expired());
+  }
+}
+
+//==============================================================================
+TEST(World, EachSimpleFrameKeepsRemovedFrameAliveDuringBoolCallback)
+{
+  {
+    auto world = World::create();
+    auto frame = SimpleFrame::createShared(Frame::World(), "frame");
+    std::weak_ptr<SimpleFrame> weakFrame = frame;
+
+    world->addSimpleFrame(frame);
+    frame.reset();
+
+    bool visited = false;
+    world->eachSimpleFrame([&](SimpleFrame* simpleFrame) -> bool {
+      visited = true;
+      world->removeAllSimpleFrames();
+      const auto keptAlive = weakFrame.lock();
+      EXPECT_NE(nullptr, keptAlive);
+      if (keptAlive) {
+        EXPECT_EQ(simpleFrame, keptAlive.get());
+        EXPECT_EQ("frame", keptAlive->getName());
+      }
+      return false;
+    });
+
+    EXPECT_TRUE(visited);
+    EXPECT_TRUE(weakFrame.expired());
+  }
+
+  {
+    auto world = World::create();
+    auto frame = SimpleFrame::createShared(Frame::World(), "frame");
+    std::weak_ptr<SimpleFrame> weakFrame = frame;
+
+    world->addSimpleFrame(frame);
+    frame.reset();
+
+    bool visited = false;
+    const auto& constWorld = *world;
+    constWorld.eachSimpleFrame([&](const SimpleFrame* simpleFrame) -> bool {
+      visited = true;
+      world->removeAllSimpleFrames();
+      const auto keptAlive = weakFrame.lock();
+      EXPECT_NE(nullptr, keptAlive);
+      if (keptAlive) {
+        EXPECT_EQ(simpleFrame, keptAlive.get());
+        EXPECT_EQ("frame", keptAlive->getName());
+      }
+      return false;
+    });
+
+    EXPECT_TRUE(visited);
+    EXPECT_TRUE(weakFrame.expired());
+  }
+}
+
+//==============================================================================
 TEST(World, Cloning)
 {
   // Seed random generator for deterministic tests
@@ -335,7 +495,7 @@ TEST(World, Cloning)
 
         // Generate a random command vector
         Eigen::VectorXd commands = skel->getCommands();
-        for (int q = 0; q < commands.size(); ++q) {
+        for (auto q = 0; q < std::ssize(commands); ++q) {
           commands[q] = Random::uniform(-0.1, 0.1);
         }
 
@@ -529,6 +689,29 @@ TEST(World, TypedSetterFallsBackWhenDetectorUnavailable)
 }
 
 //==============================================================================
+TEST(World, TypedSetterKeepsCurrentDetectorWhenFactoryReturnsNull)
+{
+  ScopedCollisionFactoryOverride overrideDart(
+      collision::DARTCollisionDetector::getStaticType(),
+      []() -> collision::CollisionDetectorPtr { return nullptr; },
+      []() -> collision::CollisionDetectorPtr {
+        return collision::DARTCollisionDetector::create();
+      });
+
+  if (!overrideDart.wasOverridden()) {
+    GTEST_SKIP() << "dart collision detector is not registered in this build";
+  }
+
+  auto world = World::create();
+  auto original = world->getCollisionDetector();
+  ASSERT_TRUE(original);
+
+  world->setCollisionDetector(CollisionDetectorType::Dart);
+
+  EXPECT_EQ(world->getCollisionDetector(), original);
+}
+
+//==============================================================================
 TEST(World, ConfigFallbacksWhenPreferredDetectorUnavailable)
 {
   ScopedCollisionFactoryDisabler disableDart(
@@ -602,10 +785,10 @@ simulation::WorldPtr createWorld()
 
   const auto dof = world->getSkeleton(0)->getNumDofs();
   Eigen::VectorXd initPose = Eigen::VectorXd::Zero(static_cast<int>(dof));
-  initPose[20] = 3.14159 * 0.4;
-  initPose[23] = 3.14159 * 0.4;
-  initPose[26] = 3.14159 * 0.4;
-  initPose[29] = 3.14159 * 0.4;
+  initPose[20] = 0.4 * dart::math::pi;
+  initPose[23] = 0.4 * dart::math::pi;
+  initPose[26] = 0.4 * dart::math::pi;
+  initPose[29] = 0.4 * dart::math::pi;
   world->getSkeleton(0)->setPositions(initPose);
 
   // Create a ball joint constraint
@@ -634,10 +817,10 @@ simulation::WorldPtr createWorldWithRevoluteConstraint()
 
   const auto dof = world->getSkeleton(0)->getNumDofs();
   Eigen::VectorXd initPose = Eigen::VectorXd::Zero(static_cast<int>(dof));
-  initPose[20] = 3.14159 * 0.4;
-  initPose[23] = 3.14159 * 0.4;
-  initPose[26] = 3.14159 * 0.4;
-  initPose[29] = 3.14159 * 0.4;
+  initPose[20] = 0.4 * dart::math::pi;
+  initPose[23] = 0.4 * dart::math::pi;
+  initPose[26] = 0.4 * dart::math::pi;
+  initPose[29] = 0.4 * dart::math::pi;
   world->getSkeleton(0)->setPositions(initPose);
 
   BodyNode* bd1 = world->getSkeleton(0)->getBodyNode("link 6");
@@ -664,7 +847,7 @@ TEST(World, SetNewConstraintSolver)
 
   auto solver1 = std::make_unique<constraint::ConstraintSolver>(
       std::make_shared<math::DantzigSolver>());
-  EXPECT_TRUE(solver1->getSkeletons().size() == 0);
+  EXPECT_TRUE(solver1->getSkeletons().empty());
   EXPECT_TRUE(solver1->getNumConstraints() == 0);
 
   world->setConstraintSolver(std::move(solver1));
@@ -673,7 +856,7 @@ TEST(World, SetNewConstraintSolver)
 
   auto solver2 = std::make_unique<constraint::ConstraintSolver>(
       std::make_shared<math::PgsSolver>());
-  EXPECT_TRUE(solver2->getSkeletons().size() == 0);
+  EXPECT_TRUE(solver2->getSkeletons().empty());
   EXPECT_TRUE(solver2->getNumConstraints() == 0);
 
   world->setConstraintSolver(std::move(solver2));

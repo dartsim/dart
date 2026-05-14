@@ -33,14 +33,14 @@
 #ifndef DART_COMMON_SHAREDLIBRARY_HPP_
 #define DART_COMMON_SHAREDLIBRARY_HPP_
 
-#include <dart/common/filesystem.hpp>
 #include <dart/common/platform.hpp>
 
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <string_view>
 
-#if DART_OS_LINUX
+#if DART_OS_LINUX || DART_OS_FREEBSD
 
   #define DYNLIB_HANDLE void*
 
@@ -56,7 +56,7 @@ using hInstance = HINSTANCE__*;
 
 #endif
 
-#if DART_OS_LINUX
+#if DART_OS_LINUX || DART_OS_FREEBSD
 static constexpr const char* DART_SHARED_LIB_EXTENSION = "so";
 #elif DART_OS_MACOS
 static constexpr const char* DART_SHARED_LIB_EXTENSION = "dylib";
@@ -66,7 +66,7 @@ static constexpr const char* DART_SHARED_LIB_EXTENSION = "dll";
   #error Unhandled platform
 #endif
 
-#if DART_OS_LINUX
+#if DART_OS_LINUX || DART_OS_FREEBSD
 static constexpr const char* DART_SHARED_LIB_PREFIX = "lib";
 #elif DART_OS_MACOS
 static constexpr const char* DART_SHARED_LIB_PREFIX = "lib";
@@ -122,7 +122,7 @@ public:
   virtual ~SharedLibrary();
 
   /// Returns the path to the shared library file.
-  const common::filesystem::path& getCanonicalPath() const;
+  const std::filesystem::path& getCanonicalPath() const;
 
   /// Returns the path to the shared library file.
   const std::string& path() const;
@@ -143,7 +143,7 @@ protected:
   /// Canonical path to the shared library where a canonical path is an absolute
   /// path that has no elements which are symbolic links, and no dot or dot dot
   /// elements such as "/path/../to/yourfile".
-  common::filesystem::path mCanonicalPath;
+  std::filesystem::path mCanonicalPath;
 
   /// Backing string returned by path()
   std::string mPath;

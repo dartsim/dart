@@ -2,6 +2,8 @@
 #
 # Limit CodeQL analysis to first-party sources and ignore vendored or generated
 # content that lives under build artifacts or virtual environments.
+# C++ manual-build SARIF can still include dependency headers; codeql.yml filters
+# those external findings before upload.
 
 name: dart-codeql-config
 

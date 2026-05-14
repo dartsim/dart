@@ -75,7 +75,7 @@ Errors Body::read(
 
   // Read attributes
   const Errors attrErrors = appendBodyAttributes(mAttributes, element, size);
-  errors.insert(errors.end(), attrErrors.begin(), attrErrors.end());
+  appendErrorRange(errors, attrErrors);
 
   // Read <inertial>
   if (hasElement(element, "inertial")) {
@@ -83,7 +83,7 @@ Errors Body::read(
     DART_ASSERT(inertialElement);
     mAttributes.mInertial = Inertial();
     const Errors inertialErrors = mAttributes.mInertial->read(inertialElement);
-    errors.insert(errors.end(), inertialErrors.begin(), inertialErrors.end());
+    appendErrorRange(errors, inertialErrors);
   }
 
   // Read multiple <joint>
@@ -92,7 +92,7 @@ Errors Body::read(
     Joint joint = Joint();
     const Errors jointErrors = joint.read(
         jointElements.get(), defaults, currentDefault->getJointAttributes());
-    errors.insert(errors.end(), jointErrors.begin(), jointErrors.end());
+    appendErrorRange(errors, jointErrors);
     mJoints.emplace_back(std::move(joint));
   }
 
@@ -156,7 +156,7 @@ Errors Body::read(
     Geom geom = Geom();
     const Errors geomErrors = geom.read(
         geomElements.get(), defaults, currentDefault->getGeomAttributes());
-    errors.insert(errors.end(), geomErrors.begin(), geomErrors.end());
+    appendErrorRange(errors, geomErrors);
     mGeoms.emplace_back(std::move(geom));
   }
 
@@ -165,7 +165,7 @@ Errors Body::read(
   while (siteElements.next()) {
     Site site = Site();
     const Errors siteErrors = site.read(siteElements.get());
-    errors.insert(errors.end(), siteErrors.begin(), siteErrors.end());
+    appendErrorRange(errors, siteErrors);
     mSites.emplace_back(std::move(site));
   }
 
@@ -174,7 +174,7 @@ Errors Body::read(
   while (cameraElements.next()) {
     Camera camera = Camera();
     const Errors cameraErrors = camera.read(cameraElements.get());
-    errors.insert(errors.end(), cameraErrors.begin(), cameraErrors.end());
+    appendErrorRange(errors, cameraErrors);
     mCameras.emplace_back(std::move(camera));
   }
 
@@ -183,7 +183,7 @@ Errors Body::read(
   while (lightElements.next()) {
     Light light = Light();
     const Errors lightErrors = light.read(lightElements.get());
-    errors.insert(errors.end(), lightErrors.begin(), lightErrors.end());
+    appendErrorRange(errors, lightErrors);
     mLights.emplace_back(std::move(light));
   }
 
@@ -193,7 +193,7 @@ Errors Body::read(
     Body childBody = Body();
     const Errors bodyErrors
         = childBody.read(bodyElements.get(), size, defaults, currentDefault);
-    errors.insert(errors.end(), bodyErrors.begin(), bodyErrors.end());
+    appendErrorRange(errors, bodyErrors);
     mChildBodies.emplace_back(std::move(childBody));
   }
 
@@ -219,22 +219,22 @@ Errors Body::preprocess(const Compiler& compiler)
 
   for (Geom& geom : mGeoms) {
     const Errors geomErrors = geom.preprocess(compiler, true);
-    errors.insert(errors.end(), geomErrors.begin(), geomErrors.end());
+    appendErrorRange(errors, geomErrors);
   }
 
   for (Site& site : mSites) {
     const Errors siteErrors = site.preprocess(compiler);
-    errors.insert(errors.end(), siteErrors.begin(), siteErrors.end());
+    appendErrorRange(errors, siteErrors);
   }
 
   for (Joint& joint : mJoints) {
     const Errors jointErrors = joint.preprocess(compiler);
-    errors.insert(errors.end(), jointErrors.begin(), jointErrors.end());
+    appendErrorRange(errors, jointErrors);
   }
 
   for (Body& body : mChildBodies) {
     const Errors bodyErrors = body.preprocess(compiler);
-    errors.insert(errors.end(), bodyErrors.begin(), bodyErrors.end());
+    appendErrorRange(errors, bodyErrors);
   }
 
   return errors;
@@ -249,7 +249,7 @@ Errors Body::compile(const Compiler& compiler)
   if (mAttributes.mInertial) {
     mInertial = *mAttributes.mInertial;
     const Errors inertialErrors = mInertial.compile(compiler);
-    errors.insert(errors.end(), inertialErrors.begin(), inertialErrors.end());
+    appendErrorRange(errors, inertialErrors);
   } else {
     for (const Geom& geom : mGeoms) {
       if (geom.getType() == GeomType::MESH) {
@@ -269,22 +269,22 @@ Errors Body::compile(const Compiler& compiler)
 
   for (Geom& geom : mGeoms) {
     const Errors geomErrors = geom.compile(compiler);
-    errors.insert(errors.end(), geomErrors.begin(), geomErrors.end());
+    appendErrorRange(errors, geomErrors);
   }
 
   for (Site& site : mSites) {
     const Errors siteErrors = site.compile(compiler);
-    errors.insert(errors.end(), siteErrors.begin(), siteErrors.end());
+    appendErrorRange(errors, siteErrors);
   }
 
   for (Joint& joint : mJoints) {
     const Errors jointErrors = joint.compile(compiler);
-    errors.insert(errors.end(), jointErrors.begin(), jointErrors.end());
+    appendErrorRange(errors, jointErrors);
   }
 
   for (Body& body : mChildBodies) {
     const Errors bodyErrors = body.compile(compiler);
-    errors.insert(errors.end(), bodyErrors.begin(), bodyErrors.end());
+    appendErrorRange(errors, bodyErrors);
   }
 
   return errors;
@@ -368,22 +368,22 @@ Errors Body::postprocess(const Body* parent, const Compiler& compiler)
 
   for (Geom& geom : mGeoms) {
     const Errors geomErrors = geom.postprocess(this, compiler);
-    errors.insert(errors.end(), geomErrors.begin(), geomErrors.end());
+    appendErrorRange(errors, geomErrors);
   }
 
   for (Site& site : mSites) {
     const Errors siteErrors = site.postprocess(this, compiler);
-    errors.insert(errors.end(), siteErrors.begin(), siteErrors.end());
+    appendErrorRange(errors, siteErrors);
   }
 
   for (Joint& joint : mJoints) {
     const Errors jointErrors = joint.postprocess(this, compiler);
-    errors.insert(errors.end(), jointErrors.begin(), jointErrors.end());
+    appendErrorRange(errors, jointErrors);
   }
 
   for (Body& body : mChildBodies) {
     const Errors bodyErrors = body.postprocess(this, compiler);
-    errors.insert(errors.end(), bodyErrors.begin(), bodyErrors.end());
+    appendErrorRange(errors, bodyErrors);
   }
 
   return errors;

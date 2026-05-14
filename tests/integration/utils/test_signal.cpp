@@ -36,9 +36,16 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <atomic>
 #include <numeric>
 #include <thread>
+#include <vector>
+#include <version>
+
+#if defined(__cpp_lib_jthread)
+  #include <stop_token>
+#endif
 
 using namespace std;
 using namespace Eigen;
@@ -296,7 +303,7 @@ TEST(Signal, ReturnValues)
   signal1.connect(&quotient);
   signal1.connect(&sum);
   signal1.connect(&difference);
-  EXPECT_EQ(signal1(5, 3), *std::max_element(res.begin(), res.end()));
+  EXPECT_EQ(signal1(5, 3), *std::ranges::max_element(res));
 
   // signal_sum
   Signal<float(float, float), signal_sum> signal2;
@@ -405,40 +412,63 @@ TEST(Signal, ConcurrentUsage)
 
   Signal<void()> signal;
 
-  std::atomic<bool> keepRaising{true};
   std::atomic<int> raiseCount{0};
   std::atomic<int> callbackCount{0};
 
-  std::thread raiser([&]() {
-    while (keepRaising.load(std::memory_order_relaxed)) {
-      signal.raise();
-      raiseCount.fetch_add(1, std::memory_order_relaxed);
-    }
-  });
-
-  while (raiseCount.load(std::memory_order_relaxed) == 0) {
-    std::this_thread::yield();
-  }
-
-  std::vector<std::thread> workers;
-  workers.reserve(kNumThreads);
-  for (int t = 0; t < kNumThreads; ++t) {
-    workers.emplace_back([&]() {
-      for (int i = 0; i < kIterationsPerThread; ++i) {
-        Connection conn = signal.connect(
-            [&]() { callbackCount.fetch_add(1, std::memory_order_relaxed); });
+  {
+#if defined(__cpp_lib_jthread)
+    std::jthread raiser([&](std::stop_token stopToken) {
+      while (!stopToken.stop_requested()) {
         signal.raise();
-        conn.disconnect();
+        raiseCount.fetch_add(1, std::memory_order_relaxed);
       }
     });
-  }
+#else
+    std::atomic<bool> stopRequested{false};
+    std::thread raiser([&]() {
+      while (!stopRequested.load(std::memory_order_relaxed)) {
+        signal.raise();
+        raiseCount.fetch_add(1, std::memory_order_relaxed);
+      }
+    });
+#endif
 
-  for (auto& thread : workers) {
-    thread.join();
-  }
+    while (raiseCount.load(std::memory_order_relaxed) == 0) {
+      std::this_thread::yield();
+    }
 
-  keepRaising.store(false, std::memory_order_relaxed);
-  raiser.join();
+    {
+#if defined(__cpp_lib_jthread)
+      std::vector<std::jthread> workers;
+#else
+      std::vector<std::thread> workers;
+#endif
+      workers.reserve(kNumThreads);
+      for (int t = 0; t < kNumThreads; ++t) {
+        workers.emplace_back([&]() {
+          for (int i = 0; i < kIterationsPerThread; ++i) {
+            Connection conn = signal.connect([&]() {
+              callbackCount.fetch_add(1, std::memory_order_relaxed);
+            });
+            signal.raise();
+            conn.disconnect();
+          }
+        });
+      }
+#if !defined(__cpp_lib_jthread)
+      for (std::thread& worker : workers) {
+        worker.join();
+      }
+#endif
+    }
+
+#if defined(__cpp_lib_jthread)
+    raiser.request_stop();
+#else
+    stopRequested.store(true, std::memory_order_relaxed);
+    raiser.join();
+#endif
+  }
 
   EXPECT_EQ(signal.getNumConnections(), 0u);
   EXPECT_GE(callbackCount.load(), kNumThreads * kIterationsPerThread);

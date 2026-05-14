@@ -33,7 +33,6 @@
 #include "dart/dynamics/mesh_shape.hpp"
 
 #include "dart/common/diagnostics.hpp"
-#include "dart/common/filesystem.hpp"
 #include "dart/common/local_resource_retriever.hpp"
 #include "dart/common/logging.hpp"
 #include "dart/common/resource.hpp"
@@ -50,17 +49,22 @@
 #include <assimp/postprocess.h>
 
 #include <algorithm>
+#include <array>
+#include <filesystem>
 #include <iomanip>
 #include <iterator>
 #include <limits>
 #include <locale>
+#include <numeric>
 #include <optional>
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <unordered_map>
 #include <utility>
 
+#include <cctype>
 #include <cstring>
 
 namespace dart {
@@ -107,7 +111,7 @@ public:
     if (next < 0) {
       return false;
     }
-    if (static_cast<std::size_t>(next) > mData.size()) {
+    if (std::cmp_greater(next, mData.size())) {
       return false;
     }
 
@@ -182,7 +186,7 @@ private:
         return &byPath->second;
       }
 
-      if (!path.empty() && path.front() == '/') {
+      if (path.starts_with('/')) {
         const auto byTrim = mData.find(path.substr(1));
         if (byTrim != mData.end()) {
           return &byTrim->second;
@@ -647,21 +651,31 @@ const aiScene* MeshShape::convertToAssimpMesh() const
   const bool hasSubMeshes = !mSubMeshRanges.empty() && mMaterials.size() > 1;
   bool useSubMeshes = hasSubMeshes;
   if (useSubMeshes) {
-    std::size_t totalVertices = 0;
-    std::size_t totalTriangles = 0;
-    for (const auto& range : mSubMeshRanges) {
-      if (range.vertexOffset + range.vertexCount > vertices.size()
-          || range.triangleOffset + range.triangleCount > triangles.size()) {
-        useSubMeshes = false;
-        break;
-      }
-      totalVertices += range.vertexCount;
-      totalTriangles += range.triangleCount;
-    }
-    if (useSubMeshes
-        && (totalVertices != vertices.size()
-            || totalTriangles != triangles.size())) {
+    const bool rangesWithinMesh
+        = std::ranges::all_of(mSubMeshRanges, [&](const auto& range) {
+            return range.vertexOffset + range.vertexCount <= vertices.size()
+                   && range.triangleOffset + range.triangleCount
+                          <= triangles.size();
+          });
+    if (!rangesWithinMesh) {
       useSubMeshes = false;
+    } else {
+      const std::size_t totalVertices = std::accumulate(
+          mSubMeshRanges.begin(),
+          mSubMeshRanges.end(),
+          std::size_t{0},
+          [](std::size_t total, const auto& range) {
+            return total + range.vertexCount;
+          });
+      const std::size_t totalTriangles = std::accumulate(
+          mSubMeshRanges.begin(),
+          mSubMeshRanges.end(),
+          std::size_t{0},
+          [](std::size_t total, const auto& range) {
+            return total + range.triangleCount;
+          });
+      useSubMeshes = totalVertices == vertices.size()
+                     && totalTriangles == triangles.size();
     }
   }
 
@@ -890,16 +904,20 @@ std::shared_ptr<math::PolygonMesh<double>> MeshShape::convertAssimpPolygonMesh(
 
   auto polygonMesh = std::make_shared<math::PolygonMesh<double>>();
 
-  std::size_t totalVertices = 0;
-  std::size_t totalFaces = 0;
-  for (std::size_t i = 0; i < scene->mNumMeshes; ++i) {
-    const aiMesh* assimpMesh = scene->mMeshes[i];
-    if (!assimpMesh) {
-      continue;
-    }
-    totalVertices += assimpMesh->mNumVertices;
-    totalFaces += assimpMesh->mNumFaces;
-  }
+  const std::size_t totalVertices = std::accumulate(
+      scene->mMeshes,
+      scene->mMeshes + scene->mNumMeshes,
+      std::size_t{0},
+      [](std::size_t total, const aiMesh* assimpMesh) {
+        return assimpMesh ? total + assimpMesh->mNumVertices : total;
+      });
+  const std::size_t totalFaces = std::accumulate(
+      scene->mMeshes,
+      scene->mMeshes + scene->mNumMeshes,
+      std::size_t{0},
+      [](std::size_t total, const aiMesh* assimpMesh) {
+        return assimpMesh ? total + assimpMesh->mNumFaces : total;
+      });
 
   polygonMesh->reserveVertices(totalVertices);
   polygonMesh->reserveFaces(totalFaces);
@@ -1337,11 +1355,11 @@ void MeshShape::extractMaterialsFromScene(
   mMaterials.clear();
   mMaterials.reserve(scene->mNumMaterials);
 
-  const common::filesystem::path meshPath = basePath;
+  const std::filesystem::path meshPath = basePath;
   std::error_code meshPathEc;
-  const bool meshPathExists
-      = !basePath.empty() && common::filesystem::exists(meshPath, meshPathEc)
-        && !meshPathEc;
+  const bool meshPathExists = !basePath.empty()
+                              && std::filesystem::exists(meshPath, meshPathEc)
+                              && !meshPathEc;
 
   for (std::size_t i = 0; i < scene->mNumMaterials; ++i) {
     aiMaterial* aiMat = scene->mMaterials[i];
@@ -1384,18 +1402,18 @@ void MeshShape::extractMaterialsFromScene(
 
     // Extract texture paths for all texture types
     // Check common texture types and store them
-    const aiTextureType textureTypes[]
-        = {aiTextureType_DIFFUSE,
-           aiTextureType_SPECULAR,
-           aiTextureType_NORMALS,
-           aiTextureType_AMBIENT,
-           aiTextureType_EMISSIVE,
-           aiTextureType_HEIGHT,
-           aiTextureType_SHININESS,
-           aiTextureType_OPACITY,
-           aiTextureType_DISPLACEMENT,
-           aiTextureType_LIGHTMAP,
-           aiTextureType_REFLECTION};
+    constexpr auto textureTypes = std::to_array<aiTextureType>(
+        {aiTextureType_DIFFUSE,
+         aiTextureType_SPECULAR,
+         aiTextureType_NORMALS,
+         aiTextureType_AMBIENT,
+         aiTextureType_EMISSIVE,
+         aiTextureType_HEIGHT,
+         aiTextureType_SHININESS,
+         aiTextureType_OPACITY,
+         aiTextureType_DISPLACEMENT,
+         aiTextureType_LIGHTMAP,
+         aiTextureType_REFLECTION});
 
     for (const auto& type : textureTypes) {
       const auto count = aiMat->GetTextureCount(type);
@@ -1407,12 +1425,12 @@ void MeshShape::extractMaterialsFromScene(
             continue;
           }
 
-          const common::filesystem::path relativeImagePath = imagePathString;
+          const std::filesystem::path relativeImagePath = imagePathString;
           std::error_code ec;
           bool attemptedCanonicalize = false;
           if (!basePath.empty() || relativeImagePath.is_absolute()) {
-            const common::filesystem::path absoluteImagePath
-                = common::filesystem::canonical(
+            const std::filesystem::path absoluteImagePath
+                = std::filesystem::canonical(
                     meshPath.parent_path() / relativeImagePath, ec);
             attemptedCanonicalize = true;
             if (!ec) {
@@ -1551,9 +1569,13 @@ bool hasColladaExtension(std::string_view path)
   }
 
   std::string extension(path.substr(extensionIndex));
-  std::transform(
-      extension.begin(), extension.end(), extension.begin(), ::tolower);
-  return extension == ".dae" || extension == ".zae";
+  std::ranges::transform(extension, extension.begin(), [](unsigned char c) {
+    return static_cast<char>(std::tolower(c));
+  });
+  constexpr auto colladaExtensions
+      = std::to_array<std::string_view>({".dae", ".zae"});
+  return std::ranges::find(colladaExtensions, std::string_view{extension})
+         != colladaExtensions.end();
 }
 
 bool isColladaResource(
@@ -1586,11 +1608,11 @@ bool isColladaResource(
   buffer.resize(read);
   resource->seek(0, common::Resource::SEEKTYPE_SET);
 
-  const auto upper = buffer.find("COLLADA");
-  const auto lower = buffer.find("collada");
-  const auto mixed = buffer.find("Collada");
-  return upper != std::string::npos || lower != std::string::npos
-         || mixed != std::string::npos;
+  constexpr auto colladaMarkers
+      = std::to_array<std::string_view>({"COLLADA", "Collada", "collada"});
+  return std::ranges::any_of(colladaMarkers, [&](std::string_view marker) {
+    return buffer.find(marker) != std::string::npos;
+  });
 }
 
 } // namespace

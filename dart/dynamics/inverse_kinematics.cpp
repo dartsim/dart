@@ -40,7 +40,9 @@
 
 #include <algorithm>
 #include <iterator>
+#include <numeric>
 #include <unordered_map>
+#include <utility>
 
 namespace dart {
 namespace dynamics {
@@ -248,7 +250,7 @@ const Eigen::Vector6d& InverseKinematics::ErrorMethod::evalError(
 
   if (_q.size() == mLastPositions.size()) {
     bool repeat = true;
-    for (int i = 0; i < mLastPositions.size(); ++i) {
+    for (int i = 0; i < std::ssize(mLastPositions); ++i) {
       if (_q[i] != mLastPositions[i]) {
         repeat = false;
         break;
@@ -524,7 +526,7 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
     if (displacement[i] < min[i]) {
       if (mTaskSpaceP.mComputeErrorFromCenter) {
         if (std::isfinite(max[i])) {
-          error[i] = displacement[i] - (min[i] + max[i]) / 2.0;
+          error[i] = displacement[i] - std::midpoint(min[i], max[i]);
         } else {
           error[i] = displacement[i] - (min[i] + tolerance);
         }
@@ -534,7 +536,7 @@ Eigen::Vector6d InverseKinematics::TaskSpaceRegion::computeError()
     } else if (max[i] < displacement[i]) {
       if (mTaskSpaceP.mComputeErrorFromCenter) {
         if (std::isfinite(min[i])) {
-          error[i] = displacement[i] - (min[i] + max[i]) / 2.0;
+          error[i] = displacement[i] - std::midpoint(min[i], max[i]);
         } else {
           error[i] = displacement[i] - (max[i] - tolerance);
         }
@@ -642,7 +644,7 @@ void InverseKinematics::GradientMethod::evalGradient(
 
   if (_q.size() == mLastPositions.size()) {
     bool repeat = true;
-    for (int i = 0; i < mLastPositions.size(); ++i) {
+    for (int i = 0; i < std::ssize(mLastPositions); ++i) {
       if (_q[i] != mLastPositions[i]) {
         repeat = false;
         break;
@@ -672,7 +674,7 @@ const std::string& InverseKinematics::GradientMethod::getMethodName() const
 void InverseKinematics::GradientMethod::clampGradient(
     Eigen::VectorXd& _grad) const
 {
-  for (int i = 0; i < _grad.size(); ++i) {
+  for (int i = 0; i < std::ssize(_grad); ++i) {
     if (std::abs(_grad[i]) > mGradientP.mComponentWiseClamp) {
       _grad[i] = _grad[i] > 0 ? mGradientP.mComponentWiseClamp
                               : -mGradientP.mComponentWiseClamp;
@@ -1060,7 +1062,7 @@ std::span<const IK::Analytical::Solution> IK::Analytical::getSolutions(
 
   setPositions(mRestoreConfigCache);
 
-  return std::span<const IK::Analytical::Solution>(mSolutions);
+  return mSolutions;
 }
 
 //==============================================================================
@@ -1076,7 +1078,7 @@ void InverseKinematics::Analytical::addExtraDofGradient(
   for (std::size_t i = 0; i < mExtraDofs.size(); ++i) {
     std::size_t depIndex = mExtraDofs[i];
     int gradIndex = gradMap[depIndex];
-    if (gradIndex == -1) {
+    if (gradIndex < 0) {
       continue;
     }
 
@@ -1088,13 +1090,14 @@ void InverseKinematics::Analytical::addExtraDofGradient(
   for (std::size_t i = 0; i < mExtraDofs.size(); ++i) {
     std::size_t depIndex = mExtraDofs[i];
     int gradIndex = gradMap[depIndex];
-    if (gradIndex == -1) {
+    if (gradIndex < 0) {
       continue;
     }
 
-    double weight = mGradientP.mComponentWeights.size() > gradIndex
-                        ? mGradientP.mComponentWeights[gradIndex]
-                        : 1.0;
+    double weight
+        = std::cmp_less(gradIndex, mGradientP.mComponentWeights.size())
+              ? mGradientP.mComponentWeights[gradIndex]
+              : 1.0;
 
     double dq = weight * mExtraDofGradCache[i];
 
@@ -1394,13 +1397,13 @@ void InverseKinematics::setDofs(std::span<const std::size_t> _dofs)
 //==============================================================================
 std::span<const std::size_t> InverseKinematics::getDofs() const
 {
-  return std::span<const std::size_t>(mDofs);
+  return mDofs;
 }
 
 //==============================================================================
 std::span<const int> InverseKinematics::getDofMap() const
 {
-  return std::span<const int>(mDofMap);
+  return mDofMap;
 }
 
 //==============================================================================

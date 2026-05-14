@@ -36,6 +36,8 @@
 
 #include <Eigen/Core>
 
+#include <concepts>
+
 #include <cmath>
 
 namespace dart::simd {
@@ -46,13 +48,9 @@ namespace dart::simd {
 /// Column-major storage matches Eigen's default and is optimal for mat-vec.
 ///
 /// @tparam T Scalar type (float or double)
-template <typename T>
+template <FloatType T>
 struct Matrix3x3
 {
-  static_assert(
-      std::is_same_v<T, float> || std::is_same_v<T, double>,
-      "Matrix3x3 only supports float or double");
-
   Vec<T, 4> col0, col1, col2;
 
   Matrix3x3() = default;
@@ -245,7 +243,7 @@ struct Matrix3x3
 
     T det = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
 
-    constexpr T eps = std::is_same_v<T, float> ? T(1e-6) : T(1e-12);
+    constexpr T eps = std::same_as<T, float> ? T(1e-6) : T(1e-12);
     if (std::abs(det) < eps) {
       return false;
     }
@@ -281,7 +279,7 @@ struct Matrix3x3
 
 /// Outer product: produces a 3x3 matrix from two vectors
 /// result[i][j] = a[i] * b[j]
-template <typename T>
+template <FloatType T>
 [[nodiscard]] DART_SIMD_INLINE Matrix3x3<T> outer(
     const Vector3<T>& a, const Vector3<T>& b)
 {

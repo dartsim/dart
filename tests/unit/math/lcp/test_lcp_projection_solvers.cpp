@@ -33,16 +33,22 @@
 #include <dart/math/lcp/lcp_types.hpp>
 #include <dart/math/lcp/other/mprgp_solver.hpp>
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
+#include <dart/math/lcp/projection/apgd_solver.hpp>
+#include <dart/math/lcp/projection/bgs_solver.hpp>
 #include <dart/math/lcp/projection/blocked_jacobi_solver.hpp>
 #include <dart/math/lcp/projection/jacobi_solver.hpp>
+#include <dart/math/lcp/projection/nncg_solver.hpp>
+#include <dart/math/lcp/projection/pgs_solver.hpp>
 #include <dart/math/lcp/projection/red_black_gauss_seidel_solver.hpp>
 #include <dart/math/lcp/projection/subspace_minimization_solver.hpp>
 #include <dart/math/lcp/projection/symmetric_psor_solver.hpp>
+#include <dart/math/lcp/projection/tgs_solver.hpp>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
 #include <limits>
+#include <ranges>
 
 #include <cmath>
 
@@ -134,6 +140,22 @@ LcpProblem makeZeroRhsProblem(int n)
       std::move(findex));
 }
 
+LcpProblem makeInvalidDimensionProblem()
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2);
+  Eigen::VectorXd b = Eigen::VectorXd::Zero(3);
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd hi
+      = Eigen::VectorXd::Constant(2, std::numeric_limits<double>::infinity());
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(2, -1);
+  return LcpProblem(
+      std::move(A),
+      std::move(b),
+      std::move(lo),
+      std::move(hi),
+      std::move(findex));
+}
+
 LcpProblem makeIdentityProblem(int n)
 {
   Eigen::MatrixXd A = Eigen::MatrixXd::Identity(n, n);
@@ -142,6 +164,25 @@ LcpProblem makeIdentityProblem(int n)
   Eigen::VectorXd hi
       = Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity());
   Eigen::VectorXi findex = Eigen::VectorXi::Constant(n, -1);
+  return LcpProblem(
+      std::move(A),
+      std::move(b),
+      std::move(lo),
+      std::move(hi),
+      std::move(findex));
+}
+
+LcpProblem makeZeroDiagonalProblem()
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(3, 3) * 2.0;
+  A(1, 1) = 0.0;
+  A(0, 1) = 0.1;
+  A(1, 0) = 0.1;
+  Eigen::VectorXd b = -Eigen::VectorXd::Ones(3);
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(3);
+  Eigen::VectorXd hi
+      = Eigen::VectorXd::Constant(3, std::numeric_limits<double>::infinity());
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(3, -1);
   return LcpProblem(
       std::move(A),
       std::move(b),
@@ -172,7 +213,7 @@ LcpProblem makeLargeCoupledProblem(int n)
 
 void ExpectNonnegative(const Eigen::VectorXd& x, double tol)
 {
-  for (int i = 0; i < x.size(); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, x.size())) {
     EXPECT_GE(x[i], -tol);
   }
 }
@@ -183,7 +224,7 @@ void ExpectBoxed(
     const Eigen::VectorXd& hi,
     double tol)
 {
-  for (int i = 0; i < x.size(); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, x.size())) {
     if (std::isfinite(lo[i])) {
       EXPECT_GE(x[i], lo[i] - tol);
     }
@@ -268,6 +309,20 @@ LcpProblem makeDantzigLargeProblem()
 
   return LcpProblem(
       std::move(A), b, std::move(lo), std::move(hi), std::move(findex));
+}
+
+template <typename Solver>
+void expectRejectsInvalidDimensions()
+{
+  Solver solver;
+  auto problem = makeInvalidDimensionProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_FALSE(result.message.empty());
 }
 
 } // namespace
@@ -398,6 +453,22 @@ TEST(MprgpSolver, RejectsNegativeSymmetryTolerance)
 
   EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
   EXPECT_FALSE(result.message.empty());
+}
+
+//==============================================================================
+TEST(ProjectionSolvers, RejectInvalidProblemDimensions)
+{
+  expectRejectsInvalidDimensions<ApgdSolver>();
+  expectRejectsInvalidDimensions<BgsSolver>();
+  expectRejectsInvalidDimensions<BlockedJacobiSolver>();
+  expectRejectsInvalidDimensions<JacobiSolver>();
+  expectRejectsInvalidDimensions<MprgpSolver>();
+  expectRejectsInvalidDimensions<NncgSolver>();
+  expectRejectsInvalidDimensions<PgsSolver>();
+  expectRejectsInvalidDimensions<RedBlackGaussSeidelSolver>();
+  expectRejectsInvalidDimensions<SubspaceMinimizationSolver>();
+  expectRejectsInvalidDimensions<SymmetricPsorSolver>();
+  expectRejectsInvalidDimensions<TgsSolver>();
 }
 
 //==============================================================================
@@ -619,6 +690,24 @@ TEST(SymmetricPsorSolver, SolveEdgeCases)
 }
 
 //==============================================================================
+TEST(SymmetricPsorSolver, HandlesZeroDiagonalEntries)
+{
+  SymmetricPsorSolver solver;
+  auto problem = makeZeroDiagonalProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Constant(3, 0.25);
+
+  LcpOptions options;
+  options.maxIterations = 20;
+  options.warmStart = true;
+  options.validateSolution = false;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
+  ExpectNonnegative(x, kTol);
+}
+
+//==============================================================================
 TEST(SubspaceMinimizationSolver, NameAndCategory)
 {
   SubspaceMinimizationSolver solver;
@@ -775,6 +864,25 @@ TEST(SymmetricPsorSolver, RejectsInvalidRelaxation)
   LcpOptions options;
   options.maxIterations = 10;
   options.relaxation = 2.5;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_FALSE(result.message.empty());
+}
+
+//==============================================================================
+TEST(SymmetricPsorSolver, InvalidDivisionEpsilon)
+{
+  SymmetricPsorSolver solver;
+  SymmetricPsorSolver::Parameters params;
+  params.epsilonForDivision = 0.0;
+  solver.setParameters(params);
+
+  auto problem = makeDiagonalProblem(2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.maxIterations = 10;
   const auto result = solver.solve(problem, x, options);
 
   EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);

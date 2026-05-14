@@ -38,6 +38,7 @@
 #include "dart/dynamics/joint.hpp"
 #include "dart/dynamics/skeleton.hpp"
 
+#include <algorithm>
 #include <iostream>
 
 #include <cmath>
@@ -108,16 +109,14 @@ std::string_view MimicMotorConstraint::getStaticType()
 //==============================================================================
 void MimicMotorConstraint::setConstraintForceMixing(double cfm)
 {
-  double clamped = cfm;
-  if (clamped < 1e-9) {
+  if (cfm < 1e-9) {
     DART_WARN(
         "Constraint force mixing parameter[{}] is lower than 1e-9. It is set "
         "to 1e-9.",
         cfm);
-    clamped = 1e-9;
   }
 
-  mConstraintForceMixing = clamped;
+  mConstraintForceMixing = std::max(cfm, 1e-9);
 }
 
 //==============================================================================
@@ -129,20 +128,17 @@ double MimicMotorConstraint::getConstraintForceMixing()
 //==============================================================================
 void MimicMotorConstraint::setErrorReductionParameter(double erp)
 {
-  double clamped = erp;
-  if (clamped < 0.0) {
+  if (erp < 0.0) {
     DART_WARN(
         "Error reduction parameter [{}] is lower than 0.0. It is set to 0.0.",
         erp);
-    clamped = 0.0;
-  } else if (clamped > 1.0) {
+  } else if (erp > 1.0) {
     DART_WARN(
         "Error reduction parameter [{}] is greater than 1.0. It is set to 1.0.",
         erp);
-    clamped = 1.0;
   }
 
-  mErrorReductionParameter = clamped;
+  mErrorReductionParameter = std::clamp(erp, 0.0, 1.0);
 }
 
 //==============================================================================

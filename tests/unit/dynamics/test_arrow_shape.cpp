@@ -5,6 +5,11 @@
 #include <assimp/cimport.h>
 #include <gtest/gtest.h>
 
+#include <filesystem>
+#include <limits>
+
+#include <cmath>
+
 namespace dart {
 namespace utils {
 } // namespace utils
@@ -44,9 +49,9 @@ private:
   dart::common::Uri toLocalUri(const dart::common::Uri& uri) const
   {
     if (isSampleUri(uri)) {
-      dart::common::filesystem::path path = mDataRoot;
+      std::filesystem::path path = mDataRoot;
       std::string relative = uri.getPath();
-      if (!relative.empty() && relative.front() == '/') {
+      if (relative.starts_with('/')) {
         relative.erase(0, 1);
       }
       path /= relative;
@@ -66,9 +71,9 @@ private:
   dart::common::LocalResourceRetrieverPtr mDelegate;
 };
 
-dart::common::filesystem::path getSampleDataRoot()
+std::filesystem::path getSampleDataRoot()
 {
-  dart::common::filesystem::path here(__FILE__);
+  std::filesystem::path here(__FILE__);
   return here.parent_path().parent_path().parent_path().parent_path() / "data";
 }
 
@@ -210,6 +215,19 @@ TEST(ArrowShapeTest, PropertiesClampedToValidRange)
   EXPECT_GE(clampedProps.mMinHeadLength, 0.0);
   EXPECT_GE(clampedProps.mMaxHeadLength, 0.0);
   EXPECT_GE(clampedProps.mHeadRadiusScale, 1.0);
+}
+
+//==============================================================================
+TEST(ArrowShapeTest, NaNHeadLengthScaleFallsBackToUpperBound)
+{
+  ArrowShape::Properties props;
+  props.mHeadLengthScale = std::numeric_limits<double>::quiet_NaN();
+
+  ArrowShape arrow(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitX(), props);
+
+  const auto& clamped = arrow.getProperties();
+  EXPECT_FALSE(std::isnan(clamped.mHeadLengthScale));
+  EXPECT_DOUBLE_EQ(clamped.mHeadLengthScale, 1.0);
 }
 
 //==============================================================================

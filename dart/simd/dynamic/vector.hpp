@@ -38,6 +38,7 @@
 
 #include <Eigen/Core>
 
+#include <algorithm>
 #include <initializer_list>
 #include <numeric>
 
@@ -46,13 +47,9 @@
 
 namespace dart::simd {
 
-template <typename T>
+template <FloatType T>
 class DynamicVector
 {
-  static_assert(
-      std::is_same_v<T, float> || std::is_same_v<T, double>,
-      "DynamicVector only supports float or double");
-
 public:
   using scalar_type = T;
   static constexpr std::size_t simd_width = preferred_width_v<T>;
@@ -269,7 +266,7 @@ public:
   [[nodiscard]] static DynamicVector fromEigen(const Eigen::VectorX<T>& v)
   {
     DynamicVector result(static_cast<std::size_t>(v.size()));
-    std::copy(v.data(), v.data() + v.size(), result.data_.data());
+    std::ranges::copy_n(v.data(), v.size(), result.data_.data());
     return result;
   }
 };

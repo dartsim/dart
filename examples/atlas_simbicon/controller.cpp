@@ -37,6 +37,8 @@
 #include "state_machine.hpp"
 #include "terminal_condition.hpp"
 
+#include <ranges>
+
 using namespace std;
 
 using namespace Eigen;
@@ -231,7 +233,8 @@ void Controller::printDebugInfo() const
             << " NUM DOF   : " << mAtlasRobot->getNumDofs() << std::endl
             << " NUM JOINTS: " << mAtlasRobot->getNumBodyNodes() << std::endl;
 
-  for (std::size_t i = 0; i < mAtlasRobot->getNumBodyNodes(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{0}, mAtlasRobot->getNumBodyNodes())) {
     Joint* joint = mAtlasRobot->getJoint(i);
     BodyNode* body = mAtlasRobot->getBodyNode(i);
     BodyNode* parentBody = mAtlasRobot->getBodyNode(i)->getParentBodyNode();
@@ -948,10 +951,12 @@ StateMachine* Controller::_createRunningStateMachine()
 //==============================================================================
 void Controller::_setJointDamping()
 {
-  for (std::size_t i = 1; i < mAtlasRobot->getNumBodyNodes(); ++i) {
+  for (const auto i :
+       std::views::iota(std::size_t{1}, mAtlasRobot->getNumBodyNodes())) {
     Joint* joint = mAtlasRobot->getJoint(i);
     if (joint->getNumDofs() > 0) {
-      for (std::size_t j = 0; j < joint->getNumDofs(); ++j) {
+      for (const auto j :
+           std::views::iota(std::size_t{0}, joint->getNumDofs())) {
         joint->setDampingCoefficient(j, 80.0);
       }
     }

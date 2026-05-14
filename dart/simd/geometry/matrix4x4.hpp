@@ -37,6 +37,8 @@
 
 #include <Eigen/Core>
 
+#include <concepts>
+
 #include <cmath>
 
 namespace dart::simd {
@@ -47,13 +49,9 @@ namespace dart::simd {
 /// Column-major storage matches Eigen's default.
 ///
 /// @tparam T Scalar type (float or double)
-template <typename T>
+template <FloatType T>
 struct Matrix4x4
 {
-  static_assert(
-      std::is_same_v<T, float> || std::is_same_v<T, double>,
-      "Matrix4x4 only supports float or double");
-
   Vec<T, 4> col0, col1, col2, col3;
 
   Matrix4x4() = default;
@@ -341,7 +339,7 @@ struct Matrix4x4
 
     T det = s0 * c5 - s1 * c4 + s2 * c3 + s3 * c2 - s4 * c1 + s5 * c0;
 
-    constexpr T eps = std::is_same_v<T, float> ? T(1e-6) : T(1e-12);
+    constexpr T eps = std::same_as<T, float> ? T(1e-6) : T(1e-12);
     if (std::abs(det) < eps) {
       return false;
     }
@@ -387,7 +385,7 @@ struct Matrix4x4
 };
 
 /// Outer product: produces a 4x4 matrix from two vectors
-template <typename T>
+template <FloatType T>
 [[nodiscard]] DART_SIMD_INLINE Matrix4x4<T> outer(
     const Vector4<T>& a, const Vector4<T>& b)
 {

@@ -70,8 +70,8 @@ CouplerConstraint::CouplerConstraint(
   DART_ASSERT(joint->getNumDofs() <= mMimicProps.size());
   DART_ASSERT(mBodyNode);
 
-  std::fill(mLifeTime, mLifeTime + 6, 0);
-  std::fill(mActive, mActive + 6, false);
+  std::ranges::fill(mLifeTime, 0);
+  std::ranges::fill(mActive, false);
 }
 
 //==============================================================================
@@ -96,16 +96,14 @@ std::string_view CouplerConstraint::getStaticType()
 //==============================================================================
 void CouplerConstraint::setConstraintForceMixing(double cfm)
 {
-  double clamped = cfm;
-  if (clamped < 1e-9) {
+  if (cfm < 1e-9) {
     DART_WARN(
         "[CouplerConstraint::setConstraintForceMixing] Constraint force "
         "mixing parameter[{}] is lower than 1e-9. It is set to 1e-9.",
         cfm);
-    clamped = 1e-9;
   }
 
-  mConstraintForceMixing = clamped;
+  mConstraintForceMixing = std::max(cfm, 1e-9);
 }
 
 //==============================================================================

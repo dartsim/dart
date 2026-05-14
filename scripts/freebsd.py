@@ -145,7 +145,8 @@ def ensure_started(args):
 
 
 def build_image(args):
-    run(
+    env = {**os.environ, "DOCKER_BUILDKIT": "0"}
+    subprocess.run(
         [
             "docker",
             "build",
@@ -154,7 +155,9 @@ def build_image(args):
             "-f",
             dockerfile_path(),
             docker_path(),
-        ]
+        ],
+        check=True,
+        env=env,
     )
 
 
@@ -242,11 +245,58 @@ def wait_for_ssh_key(args, timeout=120):
     sys.exit(1)
 
 
+def dump_vm_diagnostics(args):
+    print("=== FreeBSD VM Diagnostics ===", file=sys.stderr, flush=True)
+
+    result = run(
+        ["docker", "inspect", "-f", "{{.State.Status}}", args.container],
+        check=False,
+        capture=True,
+    )
+    status = (result.stdout or "").strip() if result.returncode == 0 else "unknown"
+    print(f"Container status: {status}", file=sys.stderr, flush=True)
+
+    print("--- Container logs (last 50 lines) ---", file=sys.stderr, flush=True)
+    run(
+        ["docker", "logs", "--tail", "50", args.container],
+        check=False,
+    )
+
+    vm_dir = vm_dir_path(args.vm_dir)
+    serial_log = vm_dir / "serial.log"
+    if serial_log.exists():
+        size = serial_log.stat().st_size
+        print(
+            f"--- Serial log ({size} bytes, last 30 lines) ---",
+            file=sys.stderr,
+            flush=True,
+        )
+        try:
+            lines = serial_log.read_text(errors="replace").splitlines()
+            for line in lines[-30:]:
+                print(f"  {line}", file=sys.stderr, flush=True)
+        except Exception as exc:
+            print(f"  (could not read serial log: {exc})", file=sys.stderr, flush=True)
+    else:
+        print("--- Serial log: not found ---", file=sys.stderr, flush=True)
+
+    print("=== End Diagnostics ===", file=sys.stderr, flush=True)
+
+
 def wait_for_ssh(args, user, timeout=600):
     vm_dir = vm_dir_path(args.vm_dir)
     key_path = ssh_key_path(vm_dir)
     deadline = time.time() + timeout
     while time.time() < deadline:
+        if not container_running(args.container):
+            print(
+                f"Container '{args.container}' stopped unexpectedly.",
+                file=sys.stderr,
+                flush=True,
+            )
+            dump_vm_diagnostics(args)
+            sys.exit(1)
+
         result = subprocess.run(
             [
                 "ssh",
@@ -267,6 +317,8 @@ def wait_for_ssh(args, user, timeout=600):
         if result.returncode == 0:
             return
         time.sleep(5)
+
+    dump_vm_diagnostics(args)
     print(
         (
             "Timed out waiting for FreeBSD SSH to become ready. "
@@ -371,7 +423,12 @@ def apply_ports_patches(args):
     remote_dir = args.remote_dir or f"/home/{args.user}/dart"
     for patch_file in patch_files:
         rel_path = os.path.relpath(patch_file, repo_root())
-        command = f"cd {remote_dir} && patch -p0 -N -i {shlex.quote(rel_path)}"
+        command = (
+            f"cd {remote_dir} && "
+            f"patch -p0 -N --dry-run -i {shlex.quote(rel_path)} > /dev/null 2>&1 && "
+            f"patch -p0 -N -i {shlex.quote(rel_path)} || "
+            f"echo 'Skipping patch: {patch_file.name} (already applied or target missing)'"
+        )
         ssh_command(args, command, user=args.user)
 
 

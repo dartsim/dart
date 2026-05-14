@@ -33,11 +33,15 @@
 #include "dart/constraint/joint_limit_constraint.hpp"
 #include "dart/dynamics/revolute_joint.hpp"
 #include "dart/dynamics/skeleton.hpp"
+#include "dart/dynamics/universal_joint.hpp"
 #include "dart/simulation/world.hpp"
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <array>
 #include <memory>
+#include <vector>
 
 #include <cmath>
 
@@ -59,6 +63,35 @@ std::shared_ptr<Skeleton> makeSingleRevoluteSkeleton()
   joint->setVelocityUpperLimit(0, 1.0);
   return skeleton;
 }
+
+struct ConstraintInfoStorage
+{
+  explicit ConstraintInfoStorage(std::size_t dim, double invTimeStep = 1000.0)
+  {
+    lo.assign(dim, 0.0);
+    hi.assign(dim, 0.0);
+    b.assign(dim, 0.0);
+    w.assign(dim, 0.0);
+    x.assign(dim, 0.0);
+    findex.assign(dim, -1);
+
+    info.lo = lo.data();
+    info.hi = hi.data();
+    info.b = b.data();
+    info.w = w.data();
+    info.x = x.data();
+    info.findex = findex.data();
+    info.invTimeStep = invTimeStep;
+  }
+
+  constraint::ConstraintInfo info{};
+  std::vector<double> lo;
+  std::vector<double> hi;
+  std::vector<double> b;
+  std::vector<double> w;
+  std::vector<double> x;
+  std::vector<int> findex;
+};
 
 } // namespace
 
@@ -129,6 +162,22 @@ TEST(JointLimitConstraintTests, GlobalParametersCanBeConfigured)
   JointLimitConstraint::setErrorAllowance(originalAllowance);
   JointLimitConstraint::setErrorReductionParameter(originalErp);
   JointLimitConstraint::setMaxErrorReductionVelocity(originalErv);
+  JointLimitConstraint::setConstraintForceMixing(originalCfm);
+}
+
+//==============================================================================
+TEST(JointLimitConstraintTests, CurrentCompatibilityForOutOfRangeStaticSettings)
+{
+  const double originalErp = JointLimitConstraint::getErrorReductionParameter();
+  const double originalCfm = JointLimitConstraint::getConstraintForceMixing();
+
+  JointLimitConstraint::setErrorReductionParameter(-0.25);
+  EXPECT_DOUBLE_EQ(JointLimitConstraint::getErrorReductionParameter(), -0.25);
+
+  JointLimitConstraint::setConstraintForceMixing(1e-12);
+  EXPECT_DOUBLE_EQ(JointLimitConstraint::getConstraintForceMixing(), 1e-12);
+
+  JointLimitConstraint::setErrorReductionParameter(originalErp);
   JointLimitConstraint::setConstraintForceMixing(originalCfm);
 }
 
@@ -247,18 +296,15 @@ TEST(JointLimitConstraintTests, GetInformation)
   ASSERT_TRUE(constraint.isActive());
 
   constraint::ConstraintInfo info;
-  double lo[6], hi[6], b[6], w[6], x[6];
-  int findex[6];
-  for (int i = 0; i < 6; ++i) {
-    lo[i] = hi[i] = b[i] = w[i] = x[i] = 0.0;
-    findex[i] = -1;
-  }
-  info.lo = lo;
-  info.hi = hi;
-  info.b = b;
-  info.w = w;
-  info.x = x;
-  info.findex = findex;
+  std::array<double, 6> lo{}, hi{}, b{}, w{}, x{};
+  std::array<int, 6> findex;
+  std::ranges::fill(findex, -1);
+  info.lo = lo.data();
+  info.hi = hi.data();
+  info.b = b.data();
+  info.w = w.data();
+  info.x = x.data();
+  info.findex = findex.data();
   info.invTimeStep = 1000.0;
 
   // Ensure non-zero error allowance
@@ -284,13 +330,13 @@ TEST(JointLimitConstraintTests, ApplyImpulseAndVelocityChange)
   skeleton->computeForwardDynamics();
   constraint.update();
 
-  double delVel[6] = {0, 0, 0, 0, 0, 0};
+  std::array<double, 6> delVel{};
   constraint.applyUnitImpulse(0);
   skeleton->computeImpulseForwardDynamics();
-  constraint.getVelocityChange(delVel, true);
+  constraint.getVelocityChange(delVel.data(), true);
 
-  double lambda[1] = {1.0};
-  constraint.applyImpulse(lambda);
+  auto lambda = std::to_array<double>({1.0});
+  constraint.applyImpulse(lambda.data());
 
   constraint.excite();
   constraint.unexcite();
@@ -368,6 +414,118 @@ TEST(JointLimitConstraintTests, LifetimeTrackingAcrossMultipleUpdates)
   EXPECT_TRUE(constraint.isActive());
 }
 
+TEST(JointLimitConstraintTests, WarmStartsAcrossViolationTypes)
+{
+  {
+    auto skeleton = makeSingleRevoluteSkeleton();
+    auto* joint = static_cast<RevoluteJoint*>(skeleton->getJoint(0));
+    ExposedJointLimitConstraint constraint(joint);
+
+    joint->setPosition(0, joint->getPositionLowerLimit(0) - 0.1);
+    constraint.update();
+    ASSERT_TRUE(constraint.isActive());
+    auto lambda = std::to_array<double>({0.2});
+    constraint.applyImpulse(lambda.data());
+    constraint.update();
+
+    ConstraintInfoStorage storage(constraint.getDimension());
+    constraint.getInformation(&storage.info);
+    EXPECT_DOUBLE_EQ(storage.x[0], lambda[0]);
+  }
+
+  {
+    auto skeleton = makeSingleRevoluteSkeleton();
+    auto* joint = static_cast<RevoluteJoint*>(skeleton->getJoint(0));
+    ExposedJointLimitConstraint constraint(joint);
+
+    joint->setPosition(0, 0.0);
+    joint->setVelocity(0, joint->getVelocityLowerLimit(0) - 0.1);
+    constraint.update();
+    ASSERT_TRUE(constraint.isActive());
+    auto lambda = std::to_array<double>({0.3});
+    constraint.applyImpulse(lambda.data());
+    constraint.update();
+
+    ConstraintInfoStorage storage(constraint.getDimension());
+    constraint.getInformation(&storage.info);
+    EXPECT_DOUBLE_EQ(storage.x[0], lambda[0]);
+  }
+
+  {
+    auto skeleton = makeSingleRevoluteSkeleton();
+    auto* joint = static_cast<RevoluteJoint*>(skeleton->getJoint(0));
+    ExposedJointLimitConstraint constraint(joint);
+
+    joint->setPosition(0, 0.0);
+    joint->setVelocity(0, joint->getVelocityUpperLimit(0) + 0.1);
+    constraint.update();
+    ASSERT_TRUE(constraint.isActive());
+    auto lambda = std::to_array<double>({0.4});
+    constraint.applyImpulse(lambda.data());
+    constraint.update();
+
+    ConstraintInfoStorage storage(constraint.getDimension());
+    constraint.getInformation(&storage.info);
+    EXPECT_DOUBLE_EQ(storage.x[0], lambda[0]);
+  }
+}
+
+TEST(JointLimitConstraintTests, MultiDofJointSkipsInactiveDofs)
+{
+  auto skeleton = Skeleton::create("multi_dof_joint_limit");
+  auto pair = skeleton->createJointAndBodyNodePair<UniversalJoint>();
+  auto* joint = pair.first;
+  ASSERT_NE(joint, nullptr);
+  pair.second->setMass(1.0);
+
+  joint->setPositionLowerLimit(0, -0.5);
+  joint->setPositionUpperLimit(0, 0.5);
+  joint->setVelocityLowerLimit(0, -1.0);
+  joint->setVelocityUpperLimit(0, 1.0);
+  joint->setPosition(0, 0.0);
+  joint->setVelocity(0, 0.0);
+
+  joint->setPositionLowerLimit(1, -0.5);
+  joint->setPositionUpperLimit(1, 0.5);
+  joint->setVelocityLowerLimit(1, -1.0);
+  joint->setVelocityUpperLimit(1, 0.5);
+  joint->setPosition(1, 0.0);
+  joint->setVelocity(1, 1.0);
+
+  ExposedJointLimitConstraint constraint(joint);
+  constraint.update();
+  ASSERT_TRUE(constraint.isActive());
+  ASSERT_EQ(constraint.getDimension(), 1u);
+
+  ConstraintInfoStorage storage(
+      constraint.getDimension(), 1.0 / skeleton->getTimeStep());
+  constraint.getInformation(&storage.info);
+  EXPECT_DOUBLE_EQ(storage.b[0], -0.5);
+
+  constraint.applyUnitImpulse(0);
+  skeleton->computeForwardDynamics();
+  constraint.excite();
+  EXPECT_TRUE(skeleton->isImpulseApplied());
+
+  std::vector<double> delVel(constraint.getDimension(), 0.0);
+  constraint.getVelocityChange(delVel.data(), true);
+  EXPECT_TRUE(std::isfinite(delVel[0]));
+
+  auto lambda = std::to_array<double>({0.25});
+  constraint.applyImpulse(lambda.data());
+  EXPECT_DOUBLE_EQ(joint->getConstraintImpulse(0), 0.0);
+  EXPECT_DOUBLE_EQ(joint->getConstraintImpulse(1), lambda[0]);
+
+  constraint.unexcite();
+  EXPECT_FALSE(skeleton->isImpulseApplied());
+
+  constraint.update();
+  ConstraintInfoStorage warmStartStorage(
+      constraint.getDimension(), 1.0 / skeleton->getTimeStep());
+  constraint.getInformation(&warmStartStorage.info);
+  EXPECT_DOUBLE_EQ(warmStartStorage.x[0], lambda[0]);
+}
+
 TEST(JointLimitConstraintTests, GetInformationForVelocityViolation)
 {
   auto skeleton = makeSingleRevoluteSkeleton();
@@ -381,18 +539,15 @@ TEST(JointLimitConstraintTests, GetInformationForVelocityViolation)
   ASSERT_TRUE(constraint.isActive());
 
   constraint::ConstraintInfo info;
-  double lo[6], hi[6], b[6], w[6], x[6];
-  int findex[6];
-  for (int i = 0; i < 6; ++i) {
-    lo[i] = hi[i] = b[i] = w[i] = x[i] = 0.0;
-    findex[i] = -1;
-  }
-  info.lo = lo;
-  info.hi = hi;
-  info.b = b;
-  info.w = w;
-  info.x = x;
-  info.findex = findex;
+  std::array<double, 6> lo{}, hi{}, b{}, w{}, x{};
+  std::array<int, 6> findex;
+  std::ranges::fill(findex, -1);
+  info.lo = lo.data();
+  info.hi = hi.data();
+  info.b = b.data();
+  info.w = w.data();
+  info.x = x.data();
+  info.findex = findex.data();
   info.invTimeStep = 1000.0;
 
   constraint.getInformation(&info);
@@ -415,13 +570,13 @@ TEST(
   constraint.update();
   ASSERT_TRUE(constraint.isActive());
 
-  double delVel[6] = {0, 0, 0, 0, 0, 0};
+  std::array<double, 6> delVel{};
   constraint.applyUnitImpulse(0);
   skeleton->computeImpulseForwardDynamics();
-  constraint.getVelocityChange(delVel, true);
+  constraint.getVelocityChange(delVel.data(), true);
 
-  double lambda[1] = {1.0};
-  constraint.applyImpulse(lambda);
+  auto lambda = std::to_array<double>({1.0});
+  constraint.applyImpulse(lambda.data());
 }
 
 TEST(JointLimitConstraintTests, UpperVelocityViolation)
@@ -449,10 +604,10 @@ TEST(JointLimitConstraintTests, GetVelocityChangeWithoutCfm)
   constraint.update();
   ASSERT_TRUE(constraint.isActive());
 
-  double delVel[6] = {0, 0, 0, 0, 0, 0};
+  std::array<double, 6> delVel{};
   constraint.applyUnitImpulse(0);
   skeleton->computeImpulseForwardDynamics();
-  constraint.getVelocityChange(delVel, false);
+  constraint.getVelocityChange(delVel.data(), false);
 }
 
 TEST(JointLimitConstraintTests, GetVelocityChangeWhenImpulseNotApplied)
@@ -469,8 +624,8 @@ TEST(JointLimitConstraintTests, GetVelocityChangeWhenImpulseNotApplied)
 
   skeleton->setImpulseApplied(false);
 
-  double delVel[6] = {0, 0, 0, 0, 0, 0};
-  constraint.getVelocityChange(delVel, false);
+  std::array<double, 6> delVel{};
+  constraint.getVelocityChange(delVel.data(), false);
 
   EXPECT_DOUBLE_EQ(delVel[0], 0.0);
 }

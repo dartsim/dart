@@ -33,6 +33,8 @@
 #include <dart/math/random.hpp>
 
 #include <concepts>
+#include <ranges>
+#include <type_traits>
 
 namespace dart {
 namespace math {
@@ -46,21 +48,24 @@ namespace detail {
 /// Reference:
 /// https://en.cppreference.com/w/cpp/numeric/random/uniform_int_distribution
 template <typename T>
+using UniformIntType = std::remove_cvref_t<T>;
+
+template <typename T>
 concept UniformIntCompatible
-    = std::same_as<std::remove_cv_t<T>, short>
-      || std::same_as<std::remove_cv_t<T>, int>
-      || std::same_as<std::remove_cv_t<T>, long>
-      || std::same_as<std::remove_cv_t<T>, long long>
-      || std::same_as<std::remove_cv_t<T>, unsigned short>
-      || std::same_as<std::remove_cv_t<T>, unsigned int>
-      || std::same_as<std::remove_cv_t<T>, unsigned long>
-      || std::same_as<std::remove_cv_t<T>, unsigned long long>;
+    = std::same_as<UniformIntType<T>, short>
+      || std::same_as<UniformIntType<T>, int>
+      || std::same_as<UniformIntType<T>, long>
+      || std::same_as<UniformIntType<T>, long long>
+      || std::same_as<UniformIntType<T>, unsigned short>
+      || std::same_as<UniformIntType<T>, unsigned int>
+      || std::same_as<UniformIntType<T>, unsigned long>
+      || std::same_as<UniformIntType<T>, unsigned long long>;
 
 /// Check whether T is derived from Eigen::MatrixBase
 template <typename T>
-concept EigenMatrix = std::is_base_of_v<
-    Eigen::MatrixBase<std::remove_cvref_t<T>>,
-    std::remove_cvref_t<T>>;
+concept EigenMatrix = std::derived_from<
+    std::remove_cvref_t<T>,
+    Eigen::MatrixBase<std::remove_cvref_t<T>>>;
 
 //==============================================================================
 // Kept for backward compatibility if needed elsewhere
@@ -133,8 +138,8 @@ struct UniformMatrixImpl<Derived>
     const auto minEval = min.eval();
     const auto maxEval = max.eval();
     typename Derived::PlainObject result(minEval.rows(), minEval.cols());
-    for (Eigen::Index i = 0; i < minEval.rows(); ++i) {
-      for (Eigen::Index j = 0; j < minEval.cols(); ++j) {
+    for (const auto i : std::views::iota(Eigen::Index{0}, minEval.rows())) {
+      for (const auto j : std::views::iota(Eigen::Index{0}, minEval.cols())) {
         result(i, j) = Random::uniform<typename Derived::Scalar>(
             minEval(i, j), maxEval(i, j));
       }
@@ -158,7 +163,7 @@ struct UniformMatrixImpl<Derived>
     const auto minEval = min.eval();
     const auto maxEval = max.eval();
     typename Derived::PlainObject result(minEval.size());
-    for (Eigen::Index i = 0; i < minEval.size(); ++i) {
+    for (const auto i : std::views::iota(Eigen::Index{0}, minEval.size())) {
       result[i]
           = Random::uniform<typename Derived::Scalar>(minEval[i], maxEval[i]);
     }
@@ -181,8 +186,8 @@ struct UniformMatrixImpl<Derived>
     const auto minEval = min.eval();
     const auto maxEval = max.eval();
     typename Derived::PlainObject result;
-    for (Eigen::Index i = 0; i < minEval.rows(); ++i) {
-      for (Eigen::Index j = 0; j < minEval.cols(); ++j) {
+    for (const auto i : std::views::iota(Eigen::Index{0}, minEval.rows())) {
+      for (const auto j : std::views::iota(Eigen::Index{0}, minEval.cols())) {
         result(i, j) = Random::uniform<typename Derived::Scalar>(
             minEval(i, j), maxEval(i, j));
       }
@@ -206,7 +211,7 @@ struct UniformMatrixImpl<Derived>
     const auto minEval = min.eval();
     const auto maxEval = max.eval();
     typename Derived::PlainObject result;
-    for (Eigen::Index i = 0; i < minEval.size(); ++i) {
+    for (const auto i : std::views::iota(Eigen::Index{0}, minEval.size())) {
       result[i]
           = Random::uniform<typename Derived::Scalar>(minEval[i], maxEval[i]);
     }
@@ -220,7 +225,7 @@ struct UniformImpl;
 
 //==============================================================================
 template <typename T>
-  requires std::is_arithmetic_v<T>
+  requires(std::floating_point<T> || UniformIntCompatible<T>)
 struct UniformImpl<T>
 {
   static T run(T min, T max)
@@ -279,7 +284,7 @@ struct NormalImpl;
 
 //==============================================================================
 template <typename T>
-  requires std::is_arithmetic_v<T>
+  requires(std::floating_point<T> || UniformIntCompatible<T>)
 struct NormalImpl<T>
 {
   static T run(T min, T max)

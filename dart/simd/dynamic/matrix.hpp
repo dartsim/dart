@@ -39,15 +39,13 @@
 
 #include <Eigen/Core>
 
+#include <algorithm>
+
 namespace dart::simd {
 
-template <typename T>
+template <FloatType T>
 class DynamicMatrix
 {
-  static_assert(
-      std::is_same_v<T, float> || std::is_same_v<T, double>,
-      "DynamicMatrix only supports float or double");
-
 public:
   using scalar_type = T;
   static constexpr std::size_t simd_width = preferred_width_v<T>;
@@ -110,7 +108,7 @@ public:
 
   void setZero()
   {
-    std::fill(data_.begin(), data_.end(), T(0));
+    std::ranges::fill(data_, T(0));
   }
 
   void setIdentity()
@@ -291,7 +289,7 @@ public:
   {
     DynamicMatrix result(
         static_cast<std::size_t>(m.rows()), static_cast<std::size_t>(m.cols()));
-    std::copy(m.data(), m.data() + m.size(), result.data_.data());
+    std::ranges::copy_n(m.data(), m.size(), result.data_.data());
     return result;
   }
 };

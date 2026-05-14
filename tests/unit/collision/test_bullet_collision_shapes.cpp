@@ -7,6 +7,7 @@
 #if DART_HAVE_BULLET
 
   #include "dart/collision/bullet/reference/bullet_collision_detector.hpp"
+  #include "dart/collision/bullet/reference/bullet_collision_object.hpp"
   #include "dart/collision/collision_filter.hpp"
   #include "dart/collision/collision_group.hpp"
   #include "dart/collision/collision_object.hpp"
@@ -162,8 +163,8 @@ TEST(BulletCollisionCoverage, CollideWithShapesAndFilter)
 
   auto group = detector->createCollisionGroup();
   group->addShapeFrame(planeFrame.get());
-  const std::array<const ShapeFrame*, 2> initialFrames{
-      sphereFrame.get(), boxFrame.get()};
+  const auto initialFrames
+      = std::to_array<const ShapeFrame*>({sphereFrame.get(), boxFrame.get()});
   group->addShapeFrames(initialFrames);
   group->addShapeFrame(capsuleFrame.get());
   group->addShapeFrame(cylinderFrame.get());
@@ -489,6 +490,12 @@ TEST(BulletCollisionCoverage, CollisionObjectRefreshUpdatesShape)
 
   auto object = detector->createCollisionObject(frame.get());
   ASSERT_NE(object, nullptr);
+
+  const auto* bulletObject
+      = dynamic_cast<const dart::collision::BulletCollisionObject*>(
+          object.get());
+  ASSERT_NE(bulletObject, nullptr);
+  EXPECT_NE(bulletObject->getBulletCollisionObject(), nullptr);
 
   frame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(0.2, 0.2, 0.2)));
   detector->refreshCollisionObject(object.get());

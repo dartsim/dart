@@ -127,7 +127,7 @@ std::size_t LineSegmentShape::addVertex(
   mVertices.push_back(_v);
 
   if (_parent > mVertices.size()) {
-    if (mVertices.size() == 0) {
+    if (mVertices.empty()) {
       DART_WARN(
           "Attempting to add a vertex to be a child of vertex #{}, but no "
           "vertices exist yet. No connection will be created for the new "
@@ -152,7 +152,7 @@ std::size_t LineSegmentShape::addVertex(
 void LineSegmentShape::removeVertex(std::size_t _idx)
 {
   if (_idx >= mVertices.size()) {
-    if (mVertices.size() == 0) {
+    if (mVertices.empty()) {
       DART_WARN(
           "Attempting to remove vertex #{}, but this LineSegmentShape contains "
           "no vertices. No vertex will be removed.",
@@ -175,7 +175,7 @@ void LineSegmentShape::removeVertex(std::size_t _idx)
 void LineSegmentShape::setVertex(std::size_t _idx, const Eigen::Vector3d& _v)
 {
   if (_idx >= mVertices.size()) {
-    if (mVertices.size() == 0) {
+    if (mVertices.empty()) {
       DART_WARN(
           "Attempting to set vertex #{}, but no vertices exist in this "
           "LineSegmentShape yet.",
@@ -218,14 +218,14 @@ const Eigen::Vector3d& LineSegmentShape::getVertex(std::size_t _idx) const
 //==============================================================================
 std::span<const Eigen::Vector3d> LineSegmentShape::getVertices() const
 {
-  return std::span<const Eigen::Vector3d>(mVertices);
+  return mVertices;
 }
 
 //==============================================================================
 void LineSegmentShape::addConnection(std::size_t _idx1, std::size_t _idx2)
 {
   if (_idx1 >= mVertices.size() || _idx2 >= mVertices.size()) {
-    if (mVertices.size() == 0) {
+    if (mVertices.empty()) {
       DART_WARN(
           "Attempted to create a connection between vertex #{} and vertex #{}, "
           "but no vertices exist for this LineSegmentShape yet. No connection "
@@ -265,7 +265,7 @@ void LineSegmentShape::removeConnection(
 void LineSegmentShape::removeConnection(std::size_t _connectionIdx)
 {
   if (_connectionIdx >= mConnections.size()) {
-    if (mConnections.size() == 0) {
+    if (mConnections.empty()) {
       DART_WARN(
           "Attempting to remove connection #{}, but no connections exist yet. "
           "No connection will be removed.",
@@ -287,7 +287,7 @@ void LineSegmentShape::removeConnection(std::size_t _connectionIdx)
 //==============================================================================
 std::span<const Eigen::Vector2i> LineSegmentShape::getConnections() const
 {
-  return std::span<const Eigen::Vector2i>(mConnections);
+  return mConnections;
 }
 
 //==============================================================================

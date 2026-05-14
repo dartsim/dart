@@ -35,6 +35,8 @@
 
 #include <dart/common/memory_allocator.hpp>
 
+#include <algorithm>
+#include <bit>
 #include <memory>
 #include <new>
 #include <vector>
@@ -49,12 +51,17 @@ template <typename T>
 class BodyNodePool
 {
 public:
-  static_assert(alignof(T) <= 32, "BodyNodePool requires alignof(T) <= 32.");
   static_assert(
       sizeof(T) >= sizeof(void*),
       "BodyNodePool requires sizeof(T) >= sizeof(void*).");
 
-  static constexpr std::size_t kSlotSize = ((sizeof(T) + 31) / 32) * 32;
+  static constexpr std::size_t kSlotAlignment
+      = std::max<std::size_t>(alignof(T), 32);
+  static_assert(
+      std::has_single_bit(kSlotAlignment),
+      "BodyNodePool requires a power-of-two slot alignment.");
+  static constexpr std::size_t kSlotSize
+      = ((sizeof(T) + kSlotAlignment - 1) / kSlotAlignment) * kSlotAlignment;
 
   explicit BodyNodePool(
       common::MemoryAllocator& baseAllocator
@@ -68,7 +75,7 @@ public:
   BodyNodePool(BodyNodePool&&) = delete;
   BodyNodePool& operator=(BodyNodePool&&) = delete;
 
-  /// Allocate a raw slot (32-byte aligned, sizeof(T) usable bytes).
+  /// Allocate a raw slot (at least 32-byte aligned, sizeof(T) usable bytes).
   /// Does NOT construct an object. Caller must use placement new.
   [[nodiscard]] void* allocate();
 
@@ -127,12 +134,14 @@ public:
 template <typename T>
 BodyNodePool<T>::Chunk::Chunk(
     common::MemoryAllocator& allocator, std::size_t slotCount)
-  : mAllocator(allocator), mAllocatedSize(slotCount * kSlotSize + 32)
+  : mAllocator(allocator),
+    mAllocatedSize(slotCount * kSlotSize + kSlotAlignment - 1)
 {
   mRawPtr = allocator.allocate(mAllocatedSize);
   if (mRawPtr) {
     auto raw = reinterpret_cast<std::uintptr_t>(mRawPtr);
-    auto aligned = (raw + 31) & ~std::uintptr_t{31};
+    auto aligned
+        = (raw + kSlotAlignment - 1) & ~std::uintptr_t{kSlotAlignment - 1};
     mData = reinterpret_cast<std::byte*>(aligned);
   } else {
     mData = nullptr;
@@ -225,15 +234,11 @@ bool BodyNodePool<T>::owns(const void* ptr) const noexcept
 
   const auto* bytePtr = static_cast<const std::byte*>(ptr);
   const std::size_t chunkBytes = mSlotsPerChunk * kSlotSize;
-  for (const auto& chunk : mChunks) {
+  return std::ranges::any_of(mChunks, [bytePtr, chunkBytes](const auto& chunk) {
     const std::byte* begin = chunk->mData;
     const std::byte* end = begin + chunkBytes;
-    if (bytePtr >= begin && bytePtr < end) {
-      return true;
-    }
-  }
-
-  return false;
+    return bytePtr >= begin && bytePtr < end;
+  });
 }
 
 //==============================================================================

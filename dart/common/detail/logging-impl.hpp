@@ -40,6 +40,7 @@
 #if DART_HAVE_spdlog
   #include <spdlog/spdlog.h>
 
+  #include <concepts>
   #include <type_traits>
   #include <utility>
   // Check if spdlog is using fmt or std::format backend
@@ -47,7 +48,8 @@
     // spdlog uses std::format - no need for runtime wrapper
     #define DART_SPDLOG_RUNTIME(str) str
   #else
-    // spdlog uses fmt - need fmt::runtime for non-compile-time strings
+    // spdlog uses fmt - need its compatibility macro for non-compile-time
+    // strings across supported fmt versions.
     #include <fmt/ostream.h>
     #include <spdlog/fmt/fmt.h>
     #include <spdlog/fmt/ostr.h>
@@ -56,30 +58,14 @@
 
 namespace detail_log_arg {
 
-template <typename Stream, typename T, typename = void>
-struct is_stream_insertable : std::false_type
-{
-};
-
 template <typename Stream, typename T>
-struct is_stream_insertable<
-    Stream,
-    T,
-    std::void_t<decltype(std::declval<Stream&>() << std::declval<const T&>())>>
-  : std::true_type
-{
-};
-
-template <typename T, typename = void>
-struct has_pointer_get : std::false_type
-{
-};
+concept StreamInsertable
+    = requires(Stream& stream, const T& value) { stream << value; };
 
 template <typename T>
-struct has_pointer_get<T, std::void_t<decltype(std::declval<T&>().get())>>
-  : std::bool_constant<std::is_pointer_v<
-        std::remove_reference_t<decltype(std::declval<T&>().get())>>>
-{
+concept PointerLikeGet = requires(T& value) {
+  value.get();
+  requires std::is_pointer_v<std::remove_reference_t<decltype(value.get())>>;
 };
 
 template <typename T>
@@ -89,19 +75,19 @@ auto normalize(T&& arg)
   if constexpr (std::is_pointer_v<Decayed>) {
     using Pointee = std::remove_cv_t<std::remove_pointer_t<Decayed>>;
     if constexpr (
-        !std::is_same_v<Pointee, char> && !std::is_same_v<Pointee, signed char>
-        && !std::is_same_v<Pointee, unsigned char>) {
+        !std::same_as<Pointee, char> && !std::same_as<Pointee, signed char>
+        && !std::same_as<Pointee, unsigned char>) {
       return fmt::ptr(arg);
     } else {
       return std::forward<T>(arg);
     }
-  } else if constexpr (has_pointer_get<Decayed>::value) {
+  } else if constexpr (PointerLikeGet<Decayed>) {
     using RawPointer
         = std::remove_reference_t<decltype(std::declval<Decayed&>().get())>;
     using Pointee = std::remove_cv_t<std::remove_pointer_t<RawPointer>>;
     if constexpr (
-        !std::is_same_v<Pointee, char> && !std::is_same_v<Pointee, signed char>
-        && !std::is_same_v<Pointee, unsigned char>) {
+        !std::same_as<Pointee, char> && !std::same_as<Pointee, signed char>
+        && !std::same_as<Pointee, unsigned char>) {
       return fmt::ptr(arg.get());
     } else {
       return std::forward<T>(arg);
@@ -113,7 +99,7 @@ auto normalize(T&& arg)
       return static_cast<std::underlying_type_t<Decayed>>(arg);
     } else if constexpr (kHasFormatter) {
       return std::forward<T>(arg);
-    } else if constexpr (is_stream_insertable<std::ostream, Decayed>::value) {
+    } else if constexpr (StreamInsertable<std::ostream, Decayed>) {
       return fmt::streamed(std::forward<T>(arg));
     } else {
       return std::forward<T>(arg);
@@ -123,7 +109,7 @@ auto normalize(T&& arg)
 
 } // namespace detail_log_arg
 
-    #define DART_SPDLOG_RUNTIME(str) fmt::runtime(str)
+    #define DART_SPDLOG_RUNTIME(str) SPDLOG_FMT_RUNTIME(str)
   #endif
 #else
   #include <iostream>
@@ -204,6 +190,14 @@ inline std::string makeLogPrefix(
 #endif
 
   return {};
+}
+
+inline std::string makeLogPrefix(const std::source_location& location)
+{
+  return makeLogPrefix(
+      location.file_name(),
+      static_cast<int>(location.line()),
+      location.function_name());
 }
 
 #if DART_HAVE_spdlog
@@ -301,6 +295,21 @@ void log(
       toAnsiColor(level),
       std::forward<Args>(args)...);
 #endif
+}
+
+template <typename S, typename... Args>
+void log(
+    LogLevel level,
+    const std::source_location& location,
+    const S& format_str,
+    Args&&... args)
+{
+  log(level,
+      location.file_name(),
+      static_cast<int>(location.line()),
+      location.function_name(),
+      format_str,
+      std::forward<Args>(args)...);
 }
 
 } // namespace detail

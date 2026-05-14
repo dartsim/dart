@@ -120,7 +120,7 @@ struct WorldConfig final
   /// Set to std::nullopt to disable fallback behavior.
   std::optional<LcpSolverType> secondaryLcpSolver = LcpSolverType::Pgs;
 
-  // TODO(lcp_epic): Consider adding World::setLcpSolver() for runtime changes.
+  // TODO: Consider adding World::setLcpSolver() for runtime changes.
   // Current architecture requires solver to be set at construction time.
 
   /// Optional base allocator for the world's memory manager.

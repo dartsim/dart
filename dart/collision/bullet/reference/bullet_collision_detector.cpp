@@ -63,6 +63,8 @@
 #include "dart/dynamics/sphere_shape.hpp"
 
 #include <algorithm>
+#include <concepts>
+#include <iterator>
 #include <vector>
 
 #include <cmath>
@@ -548,7 +550,7 @@ bool BulletCollisionDetector::raycast(
         return true;
       }
 
-      for (int i = 0; i < callback.m_collisionObjects.size(); ++i) {
+      for (int i = 0; i < std::ssize(callback.m_collisionObjects); ++i) {
         const auto* collObj = static_cast<BulletCollisionObject*>(
             callback.m_collisionObjects[i]->getUserPointer());
         if (option.passesFilter(collObj)) {
@@ -566,8 +568,8 @@ bool BulletCollisionDetector::raycast(
         if (option.mSortByClosest) {
           result->mRayHits.resize(1);
         } else {
-          const auto closest = std::min_element(
-              result->mRayHits.begin(), result->mRayHits.end(), lessFraction);
+          const auto closest
+              = std::ranges::min_element(result->mRayHits, lessFraction);
           const RayHit closestHit = *closest;
           result->mRayHits.clear();
           result->mRayHits.emplace_back(closestHit);
@@ -1257,7 +1259,7 @@ std::unique_ptr<BulletCollisionShape> createBulletCollisionShapeFromHeightmap(
 
   // determine which data type (float or double) is to be used for the field
   PHY_ScalarType scalarType = PHY_FLOAT;
-  if (std::is_same<typename HeightmapShapeT::S, double>::value) {
+  if constexpr (std::same_as<typename HeightmapShapeT::S, double>) {
     DART_ERROR("Bullet does not support DOUBLE as heightmap field yet.");
     return nullptr;
     // take this back in as soon as it is supported

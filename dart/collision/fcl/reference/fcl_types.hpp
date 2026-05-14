@@ -35,12 +35,14 @@
 
 #include <dart/collision/fcl/reference/backward_compatibility.hpp>
 
+#include <dart/export.hpp>
+
 #include <Eigen/Dense>
 
 namespace dart {
 namespace collision {
 
-class FCLTypes
+class DART_API FCLTypes
 {
 public:
   /// Convert FCL vector3 type to Eigen vector3 type

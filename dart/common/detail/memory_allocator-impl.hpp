@@ -35,6 +35,9 @@
 
 #include <dart/common/memory_allocator.hpp>
 
+#include <memory>
+#include <utility>
+
 namespace dart::common {
 
 //==============================================================================
@@ -55,30 +58,28 @@ T* MemoryAllocator::construct(Args&&... args) noexcept
   }
 
   // Call constructor. Return nullptr if failed.
+  T* typedObject = static_cast<T*>(object);
   try {
-    new (object) T(std::forward<Args>(args)...);
+    return std::construct_at(typedObject, std::forward<Args>(args)...);
   } catch (...) {
     deallocate(object, sizeof(T));
     return nullptr;
   }
-
-  return reinterpret_cast<T*>(object);
 }
 
 //==============================================================================
 template <typename T, typename... Args>
 T* MemoryAllocator::constructAt(void* pointer, Args&&... args)
 {
-  return ::new (const_cast<void*>(static_cast<const volatile void*>(pointer)))
-      T(std::forward<Args>(args)...);
+  return std::construct_at(
+      static_cast<T*>(pointer), std::forward<Args>(args)...);
 }
 
 //==============================================================================
 template <typename T, typename... Args>
 T* MemoryAllocator::constructAt(T* pointer, Args&&... args)
 {
-  return ::new (const_cast<void*>(static_cast<const volatile void*>(pointer)))
-      T(std::forward<Args>(args)...);
+  return std::construct_at(pointer, std::forward<Args>(args)...);
 }
 
 //==============================================================================
@@ -88,7 +89,7 @@ void MemoryAllocator::destroy(T* object) noexcept
   if (!object) {
     return;
   }
-  object->~T();
+  std::destroy_at(object);
   deallocate(object, sizeof(T));
 }
 

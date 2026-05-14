@@ -755,8 +755,10 @@ TEST(SkelParser, ReadWorldXMLRejectsMalformedXml)
 }
 
 //==============================================================================
-TEST(SkelParser, ReadWorldXMLMissingWorldElement)
+TEST(SkelParser, ReadWorldXMLMissingRootOrWorldElement)
 {
+  EXPECT_EQ(SkelParser::readWorldXML("<root></root>"), nullptr);
+
   const std::string skelXml = R"(
 <skel version="1.0">
   <skeleton name="missing_world"/>
@@ -1239,7 +1241,7 @@ TEST(SkelParser, ReadWorldFromFileMeshShape)
   meshFile.close();
 
   std::string meshPathStr = meshPath.string();
-  std::replace(meshPathStr.begin(), meshPathStr.end(), '\\', '/');
+  std::ranges::replace(meshPathStr, '\\', '/');
   const std::string skelXml = std::string(R"(<skel version="1.0">
   <world name="world">
     <skeleton name="skel">
@@ -2193,7 +2195,7 @@ TEST(SkelParser, WorldXmlParsesJointAndShapeVariants)
 
   // Use absolute path with forward slashes so Windows resolves the mesh file
   std::string meshPathStr = meshPath.string();
-  std::replace(meshPathStr.begin(), meshPathStr.end(), '\\', '/');
+  std::ranges::replace(meshPathStr, '\\', '/');
 
   const std::string skelXml = std::string(R"(
 <skel version="1.0">
@@ -3778,7 +3780,228 @@ dynamics::SkeletonPtr readSkeletonFromSkelXml(std::string_view xml)
   return skeleton;
 }
 
+std::string inertialBodyXml(std::string_view name, std::string_view extra = {})
+{
+  return "    <body name=\"" + std::string(name) + R"(">
+      <inertia>
+        <mass>1.0</mass>
+        <moment_of_inertia>
+          <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </moment_of_inertia>
+      </inertia>
+)" + std::string(extra)
+         + "    </body>\n";
+}
+
 } // namespace
+
+//==============================================================================
+TEST(SkelParser, HandlesInvalidTopologyAndDofMetadataFromXml)
+{
+  const std::string deprecatedPlaneShape = R"(      <visualization_shape>
+        <geometry>
+          <plane>
+            <normal>0 0 1</normal>
+            <point>0 0 2</point>
+          </plane>
+        </geometry>
+      </visualization_shape>
+)";
+  const std::string missingMeshShape = R"(      <visualization_shape>
+        <geometry>
+          <mesh>
+            <file_name>missing_mesh_for_parser_validation.obj</file_name>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+      </visualization_shape>
+)";
+  const std::string skelXml
+      = std::string(R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <skeleton name="validation_skel">
+)") + inertialBodyXml("base")
+        + inertialBodyXml("base") + inertialBodyXml("invalid_actuator_child")
+        + inertialBodyXml("orphan_parent_child")
+        + inertialBodyXml("orphan_child_parent") + inertialBodyXml("dup_child")
+        + inertialBodyXml("unsupported_joint_child")
+        + inertialBodyXml("dof_invalid_child")
+        + inertialBodyXml("deprecated_plane", deprecatedPlaneShape)
+        + inertialBodyXml("missing_mesh", missingMeshShape)
+        + R"(    <joint type="free" name="root_joint">
+      <parent>world</parent>
+      <child>base</child>
+    </joint>
+    <joint type="revolute" name="invalid_actuator_joint" actuator="torque">
+      <parent>base</parent>
+      <child>invalid_actuator_child</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+      </axis>
+    </joint>
+    <joint type="weld" name="missing_parent_joint">
+      <parent>missing_parent</parent>
+      <child>orphan_parent_child</child>
+    </joint>
+    <joint type="weld" name="missing_child_joint">
+      <parent>base</parent>
+      <child>missing_child</child>
+    </joint>
+    <joint type="weld" name="dup_first">
+      <parent>base</parent>
+      <child>dup_child</child>
+    </joint>
+    <joint type="weld" name="dup_second">
+      <parent>base</parent>
+      <child>dup_child</child>
+    </joint>
+    <joint type="hinge" name="unsupported_joint">
+      <parent>base</parent>
+      <child>unsupported_joint_child</child>
+    </joint>
+    <joint type="ball" name="dof_invalid_joint">
+      <parent>dup_child</parent>
+      <child>dof_invalid_child</child>
+      <dof local_index="3">
+        <position initial="0.4" />
+      </dof>
+      <dof>
+        <position initial="0.5" />
+      </dof>
+      <dof local_index="bad">
+        <position initial="0.6" />
+      </dof>
+    </joint>
+    <joint type="weld" name="deprecated_plane_joint">
+      <parent>dof_invalid_child</parent>
+      <child>deprecated_plane</child>
+    </joint>
+    <joint type="weld" name="missing_mesh_joint">
+      <parent>deprecated_plane</parent>
+      <child>missing_mesh</child>
+    </joint>
+  </skeleton>
+</skel>
+)";
+
+  const auto skel = readSkeletonFromSkelXml(skelXml);
+  ASSERT_NE(skel, nullptr);
+  EXPECT_EQ(skel->getNumBodyNodes(), 6u);
+  EXPECT_EQ(skel->getNumJoints(), 6u);
+
+  auto* invalidActuator = dynamic_cast<dynamics::RevoluteJoint*>(
+      skel->getJoint("invalid_actuator_joint"));
+  ASSERT_NE(invalidActuator, nullptr);
+  EXPECT_TRUE(invalidActuator->getAxis().isApprox(Eigen::Vector3d::UnitZ()));
+
+  EXPECT_EQ(skel->getJoint("missing_parent_joint"), nullptr);
+  EXPECT_EQ(skel->getJoint("missing_child_joint"), nullptr);
+  EXPECT_EQ(skel->getJoint("dup_second"), nullptr);
+  EXPECT_EQ(skel->getJoint("unsupported_joint"), nullptr);
+  EXPECT_EQ(skel->getBodyNode("orphan_parent_child"), nullptr);
+  EXPECT_EQ(skel->getBodyNode("orphan_child_parent"), nullptr);
+  EXPECT_EQ(skel->getBodyNode("unsupported_joint_child"), nullptr);
+
+  auto* duplicateChild = skel->getBodyNode("dup_child");
+  ASSERT_NE(duplicateChild, nullptr);
+  ASSERT_NE(duplicateChild->getParentJoint(), nullptr);
+  EXPECT_EQ(duplicateChild->getParentJoint()->getName(), "dup_first");
+
+  auto* ball
+      = dynamic_cast<dynamics::BallJoint*>(skel->getJoint("dof_invalid_joint"));
+  ASSERT_NE(ball, nullptr);
+  EXPECT_EQ(ball->getNumDofs(), 3u);
+  EXPECT_TRUE(ball->getPositions().isZero(1e-12));
+
+  auto* deprecatedPlane = skel->getBodyNode("deprecated_plane");
+  ASSERT_NE(deprecatedPlane, nullptr);
+  ASSERT_EQ(deprecatedPlane->getNumShapeNodes(), 1u);
+  EXPECT_EQ(deprecatedPlane->getShapeNode(0)->getShape(), nullptr);
+
+  auto* missingMesh = skel->getBodyNode("missing_mesh");
+  ASSERT_NE(missingMesh, nullptr);
+  ASSERT_EQ(missingMesh->getNumShapeNodes(), 1u);
+  EXPECT_EQ(missingMesh->getShapeNode(0)->getShape(), nullptr);
+}
+
+//==============================================================================
+TEST(SkelParser, ParsesTwoDimensionalJointPlaneVariantsFromXml)
+{
+  const std::string skelXml = std::string(R"(<?xml version="1.0" ?>
+<skel version="1.0">
+  <skeleton name="plane_skel">
+)") + inertialBodyXml("base") + inertialBodyXml("link_yz")
+                              + inertialBodyXml("link_zx")
+                              + inertialBodyXml("link_bad")
+                              + inertialBodyXml("link_missing")
+                              + inertialBodyXml("planar_missing")
+                              + R"(    <joint type="free" name="root_joint">
+      <parent>world</parent>
+      <child>base</child>
+    </joint>
+    <joint type="translational2d" name="trans2d_yz">
+      <parent>base</parent>
+      <child>link_yz</child>
+      <plane type="yz" />
+    </joint>
+    <joint type="translational2d" name="trans2d_zx">
+      <parent>link_yz</parent>
+      <child>link_zx</child>
+      <plane type="zx" />
+    </joint>
+    <joint type="translational2d" name="trans2d_bad">
+      <parent>link_zx</parent>
+      <child>link_bad</child>
+      <plane type="bad" />
+    </joint>
+    <joint type="translational2d" name="trans2d_missing">
+      <parent>link_bad</parent>
+      <child>link_missing</child>
+    </joint>
+    <joint type="planar" name="planar_missing">
+      <parent>link_missing</parent>
+      <child>planar_missing</child>
+    </joint>
+  </skeleton>
+</skel>
+)";
+
+  const auto skel = readSkeletonFromSkelXml(skelXml);
+  ASSERT_NE(skel, nullptr);
+
+  auto* trans2dYz = dynamic_cast<dynamics::TranslationalJoint2D*>(
+      skel->getJoint("trans2d_yz"));
+  ASSERT_NE(trans2dYz, nullptr);
+  EXPECT_EQ(
+      trans2dYz->getPlaneType(), dynamics::TranslationalJoint2D::PlaneType::YZ);
+
+  auto* trans2dZx = dynamic_cast<dynamics::TranslationalJoint2D*>(
+      skel->getJoint("trans2d_zx"));
+  ASSERT_NE(trans2dZx, nullptr);
+  EXPECT_EQ(
+      trans2dZx->getPlaneType(), dynamics::TranslationalJoint2D::PlaneType::ZX);
+
+  auto* trans2dBad = dynamic_cast<dynamics::TranslationalJoint2D*>(
+      skel->getJoint("trans2d_bad"));
+  ASSERT_NE(trans2dBad, nullptr);
+  EXPECT_EQ(
+      trans2dBad->getPlaneType(),
+      dynamics::TranslationalJoint2D::PlaneType::XY);
+
+  auto* trans2dMissing = dynamic_cast<dynamics::TranslationalJoint2D*>(
+      skel->getJoint("trans2d_missing"));
+  ASSERT_NE(trans2dMissing, nullptr);
+  EXPECT_EQ(
+      trans2dMissing->getPlaneType(),
+      dynamics::TranslationalJoint2D::PlaneType::XY);
+
+  auto* planarMissing
+      = dynamic_cast<dynamics::PlanarJoint*>(skel->getJoint("planar_missing"));
+  ASSERT_NE(planarMissing, nullptr);
+  EXPECT_EQ(
+      planarMissing->getPlaneType(), dynamics::PlanarJoint::PlaneType::XY);
+}
 
 //==============================================================================
 TEST(SkelParser, ParsesJointTypesLimitsAndDofsFromXml)
@@ -3796,6 +4019,15 @@ TEST(SkelParser, ParsesJointTypesLimitsAndDofsFromXml)
       </inertia>
     </body>
     <body name="link1">
+      <inertia>
+        <mass>1.0</mass>
+        <moment_of_inertia>
+          <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </moment_of_inertia>
+      </inertia>
+    </body>
+    <body name="link2">
       <inertia>
         <mass>1.0</mass>
         <moment_of_inertia>
@@ -3840,6 +4072,15 @@ TEST(SkelParser, ParsesJointTypesLimitsAndDofsFromXml)
         </moment_of_inertia>
       </inertia>
     </body>
+    <body name="link7">
+      <inertia>
+        <mass>1.0</mass>
+        <moment_of_inertia>
+          <ixx>0.1</ixx> <iyy>0.1</iyy> <izz>0.1</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </moment_of_inertia>
+      </inertia>
+    </body>
     <joint type="free" name="root_joint">
       <parent>world</parent>
       <child>base</child>
@@ -3868,8 +4109,29 @@ TEST(SkelParser, ParsesJointTypesLimitsAndDofsFromXml)
         <spring_stiffness>2.5</spring_stiffness>
       </dof>
     </joint>
-    <joint type="translational" name="translational_joint">
+    <joint type="screw" name="screw_joint">
       <parent>link1</parent>
+      <child>link2</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <pitch>0.25</pitch>
+        <limit>
+          <lower>-0.6</lower>
+          <upper>0.8</upper>
+        </limit>
+        <dynamics>
+          <damping>0.35</damping>
+          <spring_stiffness>1.7</spring_stiffness>
+        </dynamics>
+      </axis>
+      <init_pos>0.15</init_pos>
+      <init_vel>-0.25</init_vel>
+      <dof local_index="0" name="screw_dof">
+        <position lower="-0.6" upper="0.8" initial="0.15" />
+      </dof>
+    </joint>
+    <joint type="translational" name="translational_joint">
+      <parent>link2</parent>
       <child>link3</child>
       <init_pos>0.1 0.2 0.3</init_pos>
       <init_vel>-0.4 -0.5 -0.6</init_vel>
@@ -3934,6 +4196,43 @@ TEST(SkelParser, ParsesJointTypesLimitsAndDofsFromXml)
       <init_pos>0.2 0.3 0.4</init_pos>
       <init_vel>-0.2 -0.3 -0.4</init_vel>
     </joint>
+    <joint type="translational2d" name="translational2d_joint">
+      <parent>link6</parent>
+      <child>link7</child>
+      <plane type="arbitrary">
+        <translation_axis1>
+          <xyz>1 0 0</xyz>
+        </translation_axis1>
+        <translation_axis2>
+          <xyz>0 1 0</xyz>
+        </translation_axis2>
+      </plane>
+      <axis>
+        <limit>
+          <lower>-0.7</lower>
+          <upper>0.9</upper>
+        </limit>
+        <dynamics>
+          <damping>0.45</damping>
+          <spring_stiffness>1.9</spring_stiffness>
+        </dynamics>
+      </axis>
+      <axis2>
+        <limit>
+          <lower>-0.8</lower>
+          <upper>1.0</upper>
+        </limit>
+        <dynamics>
+          <damping>0.55</damping>
+          <spring_stiffness>2.1</spring_stiffness>
+        </dynamics>
+      </axis2>
+      <init_pos>0.4 0.5</init_pos>
+      <init_vel>-0.6 -0.7</init_vel>
+      <dof local_index="1" name="translational2d_y">
+        <position lower="-0.8" upper="1.0" initial="0.5" />
+      </dof>
+    </joint>
   </skeleton>
 </skel>
   )";
@@ -3948,6 +4247,18 @@ TEST(SkelParser, ParsesJointTypesLimitsAndDofsFromXml)
   EXPECT_DOUBLE_EQ(prismatic->getPositionUpperLimit(0), 0.4);
   EXPECT_DOUBLE_EQ(prismatic->getDampingCoefficient(0), 0.15);
   EXPECT_DOUBLE_EQ(prismatic->getSpringStiffness(0), 2.5);
+
+  auto* screw
+      = dynamic_cast<dynamics::ScrewJoint*>(skel->getJoint("screw_joint"));
+  ASSERT_NE(screw, nullptr);
+  EXPECT_TRUE(screw->getAxis().isApprox(Eigen::Vector3d::UnitZ()));
+  EXPECT_DOUBLE_EQ(screw->getPitch(), 0.25);
+  EXPECT_DOUBLE_EQ(screw->getPositionLowerLimit(0), -0.6);
+  EXPECT_DOUBLE_EQ(screw->getPositionUpperLimit(0), 0.8);
+  EXPECT_DOUBLE_EQ(screw->getDampingCoefficient(0), 0.35);
+  EXPECT_DOUBLE_EQ(screw->getSpringStiffness(0), 1.7);
+  EXPECT_DOUBLE_EQ(screw->getPosition(0), 0.15);
+  EXPECT_DOUBLE_EQ(screw->getVelocity(0), -0.25);
 
   auto* translational = dynamic_cast<dynamics::TranslationalJoint*>(
       skel->getJoint("translational_joint"));
@@ -3981,6 +4292,29 @@ TEST(SkelParser, ParsesJointTypesLimitsAndDofsFromXml)
   EXPECT_TRUE(planar->getPositions().isApprox(Eigen::Vector3d(0.2, 0.3, 0.4)));
   EXPECT_TRUE(
       planar->getVelocities().isApprox(Eigen::Vector3d(-0.2, -0.3, -0.4)));
+
+  auto* translational2d = dynamic_cast<dynamics::TranslationalJoint2D*>(
+      skel->getJoint("translational2d_joint"));
+  ASSERT_NE(translational2d, nullptr);
+  EXPECT_EQ(
+      translational2d->getPlaneType(),
+      dynamics::TranslationalJoint2D::PlaneType::ARBITRARY);
+  EXPECT_TRUE(translational2d->getTranslationalAxis1().isApprox(
+      Eigen::Vector3d::UnitX()));
+  EXPECT_TRUE(translational2d->getTranslationalAxis2().isApprox(
+      Eigen::Vector3d::UnitY()));
+  EXPECT_DOUBLE_EQ(translational2d->getPositionLowerLimit(0), -0.7);
+  EXPECT_DOUBLE_EQ(translational2d->getPositionUpperLimit(0), 0.9);
+  EXPECT_DOUBLE_EQ(translational2d->getDampingCoefficient(0), 0.45);
+  EXPECT_DOUBLE_EQ(translational2d->getSpringStiffness(0), 1.9);
+  EXPECT_DOUBLE_EQ(translational2d->getPositionLowerLimit(1), -0.8);
+  EXPECT_DOUBLE_EQ(translational2d->getPositionUpperLimit(1), 1.0);
+  EXPECT_DOUBLE_EQ(translational2d->getDampingCoefficient(1), 0.55);
+  EXPECT_DOUBLE_EQ(translational2d->getSpringStiffness(1), 2.1);
+  EXPECT_TRUE(
+      translational2d->getPositions().isApprox(Eigen::Vector2d(0.4, 0.5)));
+  EXPECT_TRUE(
+      translational2d->getVelocities().isApprox(Eigen::Vector2d(-0.6, -0.7)));
 }
 
 //==============================================================================
@@ -4003,7 +4337,7 @@ TEST(SkelParser, ParsesRigidShapeVariantsFromXml)
 
   // Use absolute path with forward slashes so Windows resolves the mesh file
   std::string meshPathStr = meshPath.string();
-  std::replace(meshPathStr.begin(), meshPathStr.end(), '\\', '/');
+  std::ranges::replace(meshPathStr, '\\', '/');
 
   const auto skelPath = tempDir / "shapes.skel";
   const std::string skelXml = std::string(R"(<?xml version="1.0" ?>

@@ -49,6 +49,7 @@
 #include <CLI/CLI.hpp>
 
 #include <iostream>
+#include <ranges>
 #include <span>
 #include <string>
 #include <vector>
@@ -93,7 +94,8 @@ bool updateGroundThickness(const WorldPtr& world, double thickness)
 
   SkeletonPtr groundSkeleton = world->getSkeleton("ground skeleton");
   if (!groundSkeleton) {
-    for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+    for (const auto i :
+         std::views::iota(std::size_t{0}, world->getNumSkeletons())) {
       auto skeleton = world->getSkeleton(i);
       if (skeleton && skeleton->getBodyNode("ground")) {
         groundSkeleton = skeleton;

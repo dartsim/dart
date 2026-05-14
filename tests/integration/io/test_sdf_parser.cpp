@@ -57,13 +57,20 @@
 #include <sdf/sdf.hh>
 
 #include <algorithm>
+#include <array>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <map>
+#include <set>
 #include <sstream>
 #include <string>
+#include <string_view>
+#include <vector>
 
+#include <cctype>
 #include <cstring>
 
 #if DART_HAVE_spdlog
@@ -98,15 +105,15 @@ public:
 
   bool seek(ptrdiff_t offset, SeekType origin) override
   {
-    std::size_t base = 0;
+    ptrdiff_t base = 0;
     if (origin == SEEKTYPE_CUR) {
-      base = mOffset;
+      base = static_cast<ptrdiff_t>(mOffset);
     } else if (origin == SEEKTYPE_END) {
-      base = mData.size();
+      base = std::ssize(mData);
     }
 
-    const auto next = static_cast<long long>(base) + offset;
-    if (next < 0 || next > static_cast<long long>(mData.size())) {
+    const auto next = base + offset;
+    if (next < 0 || next > std::ssize(mData)) {
       return false;
     }
 
@@ -141,14 +148,42 @@ public:
     mFiles.emplace(uri, std::move(data));
   }
 
+  void failOnRetrieve(const std::string& uri)
+  {
+    mFailingUris.insert(uri);
+  }
+
+  bool sawExistsContaining(std::string_view fragment) const
+  {
+    return std::ranges::any_of(mExistsQueries, [&](const auto& query) {
+      return query.find(fragment) != std::string::npos;
+    });
+  }
+
+  bool sawRetrieveContaining(std::string_view fragment) const
+  {
+    return std::ranges::any_of(mRetrieveQueries, [&](const auto& query) {
+      return query.find(fragment) != std::string::npos;
+    });
+  }
+
   bool exists(const common::Uri& uri) override
   {
-    return mFiles.count(uri.toString()) > 0;
+    const auto uriString = uri.toString();
+    mExistsQueries.push_back(uriString);
+    return mFiles.contains(uriString) || mFailingUris.contains(uriString);
   }
 
   common::ResourcePtr retrieve(const common::Uri& uri) override
   {
-    auto it = mFiles.find(uri.toString());
+    const auto uriString = uri.toString();
+    mRetrieveQueries.push_back(uriString);
+    if (mFailingUris.contains(uriString)) {
+      throw std::runtime_error(
+          "intentional retriever failure for " + uriString);
+    }
+
+    auto it = mFiles.find(uriString);
     if (it == mFiles.end()) {
       return nullptr;
     }
@@ -157,6 +192,9 @@ public:
 
 private:
   std::map<std::string, std::string> mFiles;
+  std::set<std::string> mFailingUris;
+  std::vector<std::string> mExistsQueries;
+  std::vector<std::string> mRetrieveQueries;
 };
 
 class LogCapture
@@ -262,6 +300,15 @@ std::filesystem::path writeTempFileWithPrefix(
   std::ofstream output(tempPath.string(), std::ios::binary);
   output << xml;
   output.close();
+  return tempPath;
+}
+
+std::filesystem::path makeTempDirectory(const std::string& tag)
+{
+  const auto now = std::chrono::steady_clock::now().time_since_epoch().count();
+  const auto tempPath = std::filesystem::temp_directory_path()
+                        / ("dart_test_" + tag + "_" + std::to_string(now));
+  std::filesystem::create_directories(tempPath);
   return tempPath;
 }
 
@@ -480,6 +527,110 @@ f 4 5 1
   });
 
   EXPECT_TRUE(foundMesh);
+}
+
+//==============================================================================
+TEST(SdfParser, ResolvesRelativeIncludesFromLocalFile)
+{
+  const auto tempDir = makeTempDirectory("sdf_local_include");
+  const auto worldPath = tempDir / "world.sdf";
+  const auto modelPath = tempDir / "model.sdf";
+
+  {
+    std::ofstream model(modelPath, std::ios::binary);
+    model << R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="local_box">
+    <link name="link">
+      <inertial><mass>1.0</mass></inertial>
+      <visual name="visual">
+        <geometry><box><size>0.1 0.2 0.3</size></box></geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>
+)";
+  }
+
+  {
+    std::ofstream world(worldPath, std::ios::binary);
+    world << R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="local_include_world">
+    <include>
+      <uri>model.sdf</uri>
+    </include>
+  </world>
+</sdf>
+)";
+  }
+
+  const auto world = SdfParser::readWorld(common::Uri(worldPath.string()));
+
+  std::error_code ec;
+  std::filesystem::remove_all(tempDir, ec);
+
+  ASSERT_NE(world, nullptr);
+  ASSERT_EQ(world->getNumSkeletons(), 1u);
+  const auto skeleton = world->getSkeleton(0);
+  ASSERT_NE(skeleton, nullptr);
+  EXPECT_EQ(skeleton->getName(), "local_box");
+  EXPECT_NE(skeleton->getBodyNode("link"), nullptr);
+}
+
+//==============================================================================
+TEST(SdfParser, ReportsMissingAndFailedIncludesFromRetriever)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string missingWorldUri
+      = "memory://pkg/worlds/missing_include.world";
+  const std::string failingWorldUri
+      = "memory://pkg/worlds/failing_include.world";
+  const std::string failingModelUri = "memory://pkg/models/failing/model.sdf";
+
+  retriever->add(
+      missingWorldUri,
+      R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="missing_include">
+    <include>
+      <uri>../models/missing/model.sdf</uri>
+    </include>
+  </world>
+</sdf>
+)");
+
+  retriever->add(
+      failingWorldUri,
+      R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="failing_include">
+    <include>
+      <uri>../models/failing/model.sdf</uri>
+    </include>
+  </world>
+</sdf>
+)");
+  retriever->failOnRetrieve(failingModelUri);
+
+  SdfParser::Options options;
+  options.mResourceRetriever = retriever;
+
+  const auto missingWorld
+      = SdfParser::readWorld(common::Uri(missingWorldUri), options);
+  const auto failingWorld
+      = SdfParser::readWorld(common::Uri(failingWorldUri), options);
+
+  ASSERT_NE(missingWorld, nullptr);
+  ASSERT_NE(failingWorld, nullptr);
+  EXPECT_EQ(missingWorld->getNumSkeletons(), 0u);
+  EXPECT_EQ(failingWorld->getNumSkeletons(), 0u);
+  EXPECT_TRUE(retriever->sawExistsContaining("models/missing/model.sdf"));
+  EXPECT_TRUE(retriever->sawRetrieveContaining("models/failing/model.sdf"));
 }
 
 //==============================================================================
@@ -904,14 +1055,18 @@ TEST(SdfParser, WarnsOnTinyMassAndDefaultsInertia)
   const auto logs = capture.contents();
   const bool warningsCaptured = !logs.empty();
   if (warningsCaptured) {
-    const bool hasSmallMassWarning
-        = logs.find("very small mass") != std::string::npos
-          || logs.find("non-positive mass") != std::string::npos;
+    constexpr auto massWarningSnippets = std::to_array<std::string_view>(
+        {"very small mass", "non-positive mass"});
+    const bool hasSmallMassWarning = std::ranges::any_of(
+        massWarningSnippets, [&](std::string_view snippet) {
+          return logs.find(snippet) != std::string::npos;
+        });
     EXPECT_TRUE(hasSmallMassWarning)
         << "Expected warning about tiny mass clamping in logs: " << logs;
     std::string logsLower = logs;
-    std::transform(
-        logsLower.begin(), logsLower.end(), logsLower.begin(), ::tolower);
+    std::ranges::transform(logsLower, logsLower.begin(), [](unsigned char c) {
+      return static_cast<char>(std::tolower(c));
+    });
     EXPECT_NE(logsLower.find("clamping to"), std::string::npos)
         << "Expected warning about tiny mass clamping in logs: " << logs;
     EXPECT_NE(logs.find("defines <mass> but no <inertia>"), std::string::npos)
@@ -1204,6 +1359,9 @@ TEST(SdfParser, VisualAndCollisionNamesAreApplied)
           <geometry>
             <box><size>0.1 0.1 0.1</size></box>
           </geometry>
+          <material>
+            <diffuse>0.2 0.3 0.4</diffuse>
+          </material>
         </visual>
         <collision name="collision_one">
           <geometry>
@@ -1234,6 +1392,10 @@ TEST(SdfParser, VisualAndCollisionNamesAreApplied)
     ASSERT_NE(shapeNode, nullptr);
     if (shapeNode->getName() == "link - visual_one") {
       foundVisualName = true;
+      const auto* visualAspect = shapeNode->getVisualAspect();
+      ASSERT_NE(visualAspect, nullptr);
+      EXPECT_TRUE(visualAspect->getColor().head<3>().isApprox(
+          Eigen::Vector3d(0.2, 0.3, 0.4)));
     }
     if (shapeNode->getName() == "link - collision_one") {
       foundCollisionName = true;
@@ -1269,6 +1431,161 @@ SkeletonPtr readSkeletonFromSdfString(
 }
 
 } // namespace
+
+//==============================================================================
+TEST(SdfParser, UnsupportedSdfJointTypeStopsAtConstructedParent)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/unsupported_joint/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="unsupported_joint">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="unsupported_child">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <joint name="gearbox_joint" type="gearbox">
+      <parent>base</parent>
+      <child>unsupported_child</child>
+      <gearbox_reference_body>base</gearbox_reference_body>
+      <gearbox_ratio>1.0</gearbox_ratio>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <mimic joint="root" />
+      </axis>
+    </joint>
+  </model>
+</sdf>
+  )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  EXPECT_NE(skeleton->getBodyNode("base"), nullptr);
+  EXPECT_EQ(skeleton->getBodyNode("unsupported_child"), nullptr);
+  EXPECT_EQ(skeleton->getJoint("gearbox_joint"), nullptr);
+}
+
+//==============================================================================
+TEST(SdfParser, DuplicateChildJointKeepsFirstClaim)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/duplicate_child_joint/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="duplicate_child_joint">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="alternate_parent">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="child">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <joint name="first_child_joint" type="fixed">
+      <parent>base</parent>
+      <child>child</child>
+    </joint>
+    <joint name="duplicate_child_joint" type="fixed">
+      <parent>alternate_parent</parent>
+      <child>child</child>
+    </joint>
+  </model>
+</sdf>
+  )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* child = skeleton->getBodyNode("child");
+  ASSERT_NE(child, nullptr);
+  ASSERT_NE(child->getParentJoint(), nullptr);
+  EXPECT_EQ(child->getParentJoint()->getName(), "first_child_joint");
+  EXPECT_NE(skeleton->getJoint("first_child_joint"), nullptr);
+  EXPECT_EQ(skeleton->getJoint("duplicate_child_joint"), nullptr);
+}
+
+//==============================================================================
+TEST(SdfParser, InertialAndMaterialVariantsFromXml)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/inertial_material/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="inertial_material">
+    <link name="base">
+      <inertial>
+        <pose>0.1 0.2 0.3 0 0 0</pose>
+        <mass>0.0</mass>
+        <inertia>
+          <ixx>0.4</ixx>
+          <iyy>0.5</iyy>
+          <izz>0.6</izz>
+          <ixy>0.01</ixy>
+          <ixz>0.02</ixz>
+          <iyz>0.03</iyz>
+        </inertia>
+      </inertial>
+      <visual name="color_visual">
+        <pose>1 2 3 0 0 0</pose>
+        <geometry><box><size>0.1 0.2 0.3</size></box></geometry>
+        <material><diffuse>0.2 0.3 0.4</diffuse></material>
+      </visual>
+      <collision name="offset_collision">
+        <pose>0 0 0.5 0 0 0</pose>
+        <geometry><sphere><radius>0.25</radius></sphere></geometry>
+      </collision>
+    </link>
+    <link name="tiny_gravity_off">
+      <gravity>false</gravity>
+      <inertial>
+        <mass>1e-14</mass>
+      </inertial>
+    </link>
+  </model>
+</sdf>
+  )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* body = skeleton->getBodyNode("base");
+  ASSERT_NE(body, nullptr);
+  EXPECT_DOUBLE_EQ(body->getMass(), 1e-9);
+  EXPECT_TRUE(body->getInertia().getLocalCOM().isApprox(
+      Eigen::Vector3d(0.1, 0.2, 0.3)));
+
+  dynamics::ShapeNode* visual = nullptr;
+  body->eachShapeNodeWith<dynamics::VisualAspect>([&](auto* shapeNode) {
+    if (shapeNode->getName() == "base - color_visual") {
+      visual = shapeNode;
+    }
+  });
+  ASSERT_NE(visual, nullptr);
+  EXPECT_TRUE(visual->getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(1.0, 2.0, 3.0)));
+  EXPECT_TRUE(visual->getVisualAspect()->getRGBA().head<3>().isApprox(
+      Eigen::Vector3d(0.2, 0.3, 0.4)));
+
+  dynamics::ShapeNode* collision = nullptr;
+  body->eachShapeNodeWith<dynamics::CollisionAspect>([&](auto* shapeNode) {
+    if (shapeNode->getName() == "base - offset_collision") {
+      collision = shapeNode;
+    }
+  });
+  ASSERT_NE(collision, nullptr);
+  EXPECT_TRUE(collision->getRelativeTransform().translation().isApprox(
+      Eigen::Vector3d(0.0, 0.0, 0.5)));
+  EXPECT_TRUE(collision->getShape()->is<dynamics::SphereShape>());
+
+  auto* tinyBody = skeleton->getBodyNode("tiny_gravity_off");
+  ASSERT_NE(tinyBody, nullptr);
+  EXPECT_FALSE(tinyBody->getGravityMode());
+  EXPECT_DOUBLE_EQ(tinyBody->getMass(), 1e-9);
+}
 
 //==============================================================================
 TEST(SdfParser, AxisLimitsSetInitialMidpoint)
@@ -1526,6 +1843,66 @@ TEST(SdfParser, MimicAxis2SetsReferenceDof)
   EXPECT_EQ(mimicProps[0].mReferenceDofIndex, 1u);
   EXPECT_DOUBLE_EQ(mimicProps[0].mMultiplier, 1.5);
   EXPECT_DOUBLE_EQ(mimicProps[0].mOffset, -0.25);
+}
+
+//==============================================================================
+TEST(SdfParser, MimicElementOnAxis2ConfiguresSecondFollowerDof)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/mimic_on_axis2/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="mimic_on_axis2">
+    <link name="base">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="link1">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <link name="link2">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+    <joint name="reference_joint" type="universal">
+      <parent>base</parent>
+      <child>link1</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+      </axis>
+      <axis2>
+        <xyz>0 1 0</xyz>
+      </axis2>
+    </joint>
+    <joint name="follower_joint" type="universal">
+      <parent>link1</parent>
+      <child>link2</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+      </axis>
+      <axis2>
+        <xyz>0 1 0</xyz>
+        <mimic joint="reference_joint">
+          <multiplier>0.75</multiplier>
+          <offset>0.125</offset>
+        </mimic>
+      </axis2>
+    </joint>
+  </model>
+</sdf>
+  )";
+
+  const auto skeleton = readSkeletonFromSdfString(uri, modelSdf, retriever);
+  ASSERT_NE(skeleton, nullptr);
+  auto* joint
+      = dynamic_cast<UniversalJoint*>(skeleton->getJoint("follower_joint"));
+  ASSERT_NE(joint, nullptr);
+  EXPECT_EQ(joint->getActuatorType(), dynamics::Joint::MIMIC);
+  const auto mimicProps = joint->getMimicDofProperties();
+  ASSERT_EQ(mimicProps.size(), 2u);
+  EXPECT_EQ(mimicProps[1].mReferenceJoint->getName(), "reference_joint");
+  EXPECT_EQ(mimicProps[1].mReferenceDofIndex, 1u);
+  EXPECT_DOUBLE_EQ(mimicProps[1].mMultiplier, 0.75);
+  EXPECT_DOUBLE_EQ(mimicProps[1].mOffset, 0.125);
 }
 
 //==============================================================================
@@ -2016,6 +2393,33 @@ TEST(SdfParser, FixedRootJointTypeCreatesWeldJoint)
 }
 
 //==============================================================================
+TEST(SdfParser, InvalidRootJointTypeFallsBackToFreeJoint)
+{
+  auto retriever = std::make_shared<MemoryResourceRetriever>();
+  const std::string uri = "memory://pkg/invalid_root/model.sdf";
+  const std::string modelSdf = R"(
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="invalid_root">
+    <link name="link">
+      <inertial><mass>1.0</mass></inertial>
+    </link>
+  </model>
+</sdf>
+  )";
+
+  retriever->add(uri, modelSdf);
+  SdfParser::Options options(
+      retriever, static_cast<SdfParser::RootJointType>(99));
+  const auto skeleton = SdfParser::readSkeleton(common::Uri(uri), options);
+  ASSERT_NE(skeleton, nullptr);
+  ASSERT_EQ(skeleton->getNumBodyNodes(), 1u);
+  auto* joint = skeleton->getRootJoint();
+  ASSERT_NE(joint, nullptr);
+  EXPECT_EQ(joint->getType(), dynamics::FreeJoint::getStaticType());
+}
+
+//==============================================================================
 TEST(SdfParser, HelperUtilitiesParseText)
 {
   using namespace dart::utils::SdfParser::detail;
@@ -2028,7 +2432,12 @@ TEST(SdfParser, HelperUtilitiesParseText)
        <user>1 2 3</user>
        <size>4 5</size>
        <custom>0.1 0.2 0.3 0.4</custom>
+       <custom_vec2>6 7</custom_vec2>
+       <custom_vec3>8 9 10</custom_vec3>
+       <custom_vec3i>11 12 13</custom_vec3i>
+       <custom_pose>1 2 3 0.1 0.2 0.3</custom_pose>
        <bool_flag>true</bool_flag>
+       <false_flag>false</false_flag>
        <visual name="visual">
          <geometry>
            <box><size>0.1 0.2 0.3</size></box>
@@ -2058,8 +2467,17 @@ TEST(SdfParser, HelperUtilitiesParseText)
   const auto size = getValueVector2d(linkElement, "size");
   EXPECT_TRUE(size.isApprox(Eigen::Vector2d(4.0, 5.0)));
 
+  const auto customVec2 = getValueVector2d(linkElement, "custom_vec2");
+  EXPECT_TRUE(customVec2.isApprox(Eigen::Vector2d(6.0, 7.0)));
+
+  const auto customVec3 = getValueVector3d(linkElement, "custom_vec3");
+  EXPECT_TRUE(customVec3.isApprox(Eigen::Vector3d(8.0, 9.0, 10.0)));
+
   const auto vec3i = getValueVector3i(linkElement, "user");
   EXPECT_TRUE(vec3i == Eigen::Vector3i(1, 2, 3));
+
+  const auto customVec3i = getValueVector3i(linkElement, "custom_vec3i");
+  EXPECT_TRUE(customVec3i == Eigen::Vector3i(11, 12, 13));
 
   const auto vecxd = getValueVectorXd(linkElement, "custom");
   ASSERT_EQ(vecxd.size(), 4);
@@ -2069,7 +2487,13 @@ TEST(SdfParser, HelperUtilitiesParseText)
       = getValueIsometry3dWithExtrinsicRotation(linkElement, "pose");
   EXPECT_TRUE(pose.translation().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
 
+  const auto customPose
+      = getValueIsometry3dWithExtrinsicRotation(linkElement, "custom_pose");
+  EXPECT_TRUE(
+      customPose.translation().isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+
   EXPECT_TRUE(getValueBool(linkElement, "bool_flag"));
+  EXPECT_FALSE(getValueBool(linkElement, "false_flag"));
 
   const auto elementText = getElementText(linkElement->GetElement("custom"));
   EXPECT_EQ(elementText, "0.1 0.2 0.3 0.4");
@@ -2082,6 +2506,20 @@ TEST(SdfParser, HelperUtilitiesParseText)
   ASSERT_EQ(color.size(), 4);
   EXPECT_DOUBLE_EQ(color[0], 0.25);
   EXPECT_DOUBLE_EQ(color[2], 0.75);
+
+  bool parsedBool = false;
+  EXPECT_TRUE(parseScalar("true", parsedBool));
+  EXPECT_TRUE(parsedBool);
+  EXPECT_TRUE(parseScalar("false", parsedBool));
+  EXPECT_FALSE(parsedBool);
+
+  ElementEnumerator emptyEnumerator(nullptr, "link");
+  EXPECT_FALSE(emptyEnumerator.next());
+
+  ElementEnumerator visualEnumerator(linkElement, "visual");
+  ASSERT_TRUE(visualEnumerator.next());
+  EXPECT_EQ(visualEnumerator.get(), visualElement);
+  EXPECT_FALSE(visualEnumerator.next());
 }
 
 //==============================================================================
@@ -2786,8 +3224,11 @@ f 1 2 3
 
   const auto logs = capture.contents();
   // Warning text for malformed <pose> varies by libsdformat version/platform
-  if (logs.find("must have 6 values") != std::string::npos
-      || logs.find("expected 3 values") != std::string::npos) {
+  constexpr auto poseWarningSnippets = std::to_array<std::string_view>(
+      {"must have 6 values", "expected 3 values"});
+  if (std::ranges::any_of(poseWarningSnippets, [&](std::string_view snippet) {
+        return logs.find(snippet) != std::string::npos;
+      })) {
     SUCCEED();
   }
 }

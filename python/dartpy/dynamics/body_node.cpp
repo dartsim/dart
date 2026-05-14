@@ -16,6 +16,8 @@
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 
+#include <string>
+
 namespace nb = nanobind;
 
 namespace dart::python_nb {

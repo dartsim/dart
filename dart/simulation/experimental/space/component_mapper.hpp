@@ -35,11 +35,28 @@
 #include <Eigen/Core>
 #include <entt/entt.hpp>
 
+#include <concepts>
 #include <functional>
 #include <span>
+#include <type_traits>
 #include <vector>
 
 namespace dart::simulation::experimental {
+
+namespace detail {
+
+template <typename Field>
+concept ArithmeticField = std::integral<std::remove_cvref_t<Field>>
+                          || std::floating_point<std::remove_cvref_t<Field>>;
+
+template <typename Field>
+concept EigenVectorField = requires(Field field, Eigen::Index i) {
+  { field.size() } -> std::convertible_to<Eigen::Index>;
+  field.data();
+  field[i];
+};
+
+} // namespace detail
 
 /// Abstract interface for extracting component data to/from flat vectors
 ///
@@ -161,15 +178,12 @@ public:
       const Field& field = component.*m_fieldPtr;
 
       // Handle scalar field
-      if constexpr (std::is_arithmetic_v<Field>) {
+      if constexpr (detail::ArithmeticField<Field>) {
         vec[offset + count] = static_cast<double>(field);
         ++count;
       }
       // Handle Eigen vectors
-      else if constexpr (requires {
-                           field.size();
-                           field.data();
-                         }) {
+      else if constexpr (detail::EigenVectorField<Field>) {
         for (Eigen::Index i = 0; i < field.size(); ++i) {
           vec[offset + count] = field[i];
           ++count;
@@ -193,15 +207,12 @@ public:
       Field& field = component.*m_fieldPtr;
 
       // Handle scalar field
-      if constexpr (std::is_arithmetic_v<Field>) {
+      if constexpr (detail::ArithmeticField<Field>) {
         field = static_cast<Field>(vec[offset + count]);
         ++count;
       }
       // Handle Eigen vectors
-      else if constexpr (requires {
-                           field.size();
-                           field.data();
-                         }) {
+      else if constexpr (detail::EigenVectorField<Field>) {
         for (Eigen::Index i = 0; i < field.size(); ++i) {
           field[i] = vec[offset + count];
           ++count;

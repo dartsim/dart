@@ -34,6 +34,8 @@
 
 #include "dart/math/constants.hpp"
 
+#include <algorithm>
+
 namespace dart {
 namespace dynamics {
 

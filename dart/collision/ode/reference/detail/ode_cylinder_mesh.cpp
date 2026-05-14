@@ -38,6 +38,7 @@
 #include <Eigen/Core>
 
 #include <algorithm>
+#include <array>
 
 #include <cmath>
 
@@ -61,7 +62,7 @@ void appendTriangle(
   }
 
   const auto baseIndex = static_cast<int>(vertices.size() / 3);
-  const Eigen::Vector3d points[] = {p1, p2, p3};
+  const auto points = std::to_array<Eigen::Vector3d>({p1, p2, p3});
   for (const auto& point : points) {
     vertices.push_back(point.x());
     vertices.push_back(point.y());

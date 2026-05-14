@@ -42,6 +42,7 @@
 #include <Eigen/Core>
 #include <tinyxml2.h>
 
+#include <initializer_list>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -86,13 +87,13 @@ DART_UTILS_API std::vector<dynamics::BodyNode*> getBodyNodes(
 /// @c knownChildNames.
 DART_UTILS_API void warnUnknownElements(
     const tinyxml2::XMLElement* parentElement,
-    const std::vector<std::string>& knownChildNames);
+    std::initializer_list<std::string_view> knownChildNames);
 
 /// Logs warnings about attributes of @c element that are not in
 /// @c knownAttrNames.
 DART_UTILS_API void warnUnknownAttributes(
     const tinyxml2::XMLElement* element,
-    const std::vector<std::string>& knownAttrNames);
+    std::initializer_list<std::string_view> knownAttrNames);
 
 } // namespace detail
 } // namespace MjcfParser

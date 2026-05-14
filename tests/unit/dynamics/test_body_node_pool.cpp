@@ -47,7 +47,14 @@ struct alignas(32) FakeBodyNode
   char data[1536];
 };
 
+struct alignas(64) Avx512AlignedFakeBodyNode
+{
+  char data[1536];
+};
+
 using Pool = dart::dynamics::detail::BodyNodePool<FakeBodyNode>;
+using Avx512AlignedPool
+    = dart::dynamics::detail::BodyNodePool<Avx512AlignedFakeBodyNode>;
 
 } // namespace
 
@@ -61,7 +68,7 @@ TEST(BodyNodePoolTest, BasicAllocation)
   for (int i = 0; i < 10; ++i) {
     void* ptr = pool.allocate();
     ASSERT_NE(ptr, nullptr);
-    EXPECT_EQ(reinterpret_cast<std::uintptr_t>(ptr) % 32, 0u);
+    EXPECT_EQ(reinterpret_cast<std::uintptr_t>(ptr) % Pool::kSlotAlignment, 0u);
     pointers.push_back(ptr);
   }
 
@@ -161,6 +168,20 @@ TEST(BodyNodePoolTest, Alignment)
   for (int i = 0; i < 500; ++i) {
     void* ptr = pool.allocate();
     ASSERT_NE(ptr, nullptr);
-    EXPECT_EQ(reinterpret_cast<std::uintptr_t>(ptr) % 32, 0u);
+    EXPECT_EQ(reinterpret_cast<std::uintptr_t>(ptr) % Pool::kSlotAlignment, 0u);
+  }
+}
+
+//==============================================================================
+TEST(BodyNodePoolTest, SupportsOverAlignedTypes)
+{
+  Avx512AlignedPool pool;
+  for (int i = 0; i < 500; ++i) {
+    void* ptr = pool.allocate();
+    ASSERT_NE(ptr, nullptr);
+    EXPECT_EQ(
+        reinterpret_cast<std::uintptr_t>(ptr)
+            % Avx512AlignedPool::kSlotAlignment,
+        0u);
   }
 }

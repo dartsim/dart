@@ -6,6 +6,7 @@
  */
 
 #include "dart/common/exception.hpp"
+#include "dart/common/platform.hpp"
 #include "dart/math/optimization/function.hpp"
 #include "dart/math/optimization/gradient_descent_solver.hpp"
 #include "dart/math/optimization/problem.hpp"
@@ -63,6 +64,21 @@ public:
 private:
   double mOffset;
 };
+
+#if !DART_OS_WINDOWS
+class TestMultiFunction final : public MultiFunction
+{
+public:
+  void operator()(
+      const Eigen::VectorXd& x,
+      Eigen::Map<Eigen::VectorXd>& f,
+      Eigen::Map<Eigen::MatrixXd>& grad) override
+  {
+    f.setConstant(x.sum());
+    grad.setZero();
+  }
+};
+#endif // !DART_OS_WINDOWS
 
 } // namespace
 
@@ -235,6 +251,24 @@ TEST(ProblemTest, SeedsManagement)
   EXPECT_EQ(prob.getSeeds().size(), 0u);
 }
 
+TEST(ProblemTest, RejectsMismatchedInitialGuessAndSeeds)
+{
+  Problem prob(2);
+  const Eigen::Vector2d initial = prob.getInitialGuess();
+
+  prob.addSeed(Eigen::Vector3d::Ones());
+  EXPECT_TRUE(prob.getSeeds().empty());
+  EXPECT_TRUE(prob.getSeed(0).isApprox(initial));
+
+  const Eigen::Vector2d seed(1.0, -1.0);
+  prob.addSeed(seed);
+  EXPECT_EQ(prob.getSeeds().size(), 1u);
+  EXPECT_TRUE(prob.getSeed(5).isApprox(initial));
+
+  const Problem& constProb = prob;
+  EXPECT_TRUE(constProb.getSeed(5).isApprox(initial));
+}
+
 TEST(ProblemTest, OptimalSolutionTracking)
 {
   Problem prob(2);
@@ -261,6 +295,20 @@ TEST(GradientDescentSolverTest, SolvesZeroDimensionProblem)
   EXPECT_TRUE(solver.solve());
   EXPECT_EQ(problem->getOptimalSolution().size(), 0);
   EXPECT_DOUBLE_EQ(problem->getOptimumValue(), 0.0);
+}
+
+TEST(GradientDescentSolverTest, SolvesWithoutObjectiveUsesZeroOptimum)
+{
+  auto problem = std::make_shared<Problem>(1);
+  problem->setInitialGuess(Eigen::VectorXd::Constant(1, 0.5));
+
+  GradientDescentSolver solver(problem);
+  solver.setNumMaxIterations(3);
+
+  EXPECT_TRUE(solver.solve());
+  EXPECT_DOUBLE_EQ(problem->getOptimumValue(), 0.0);
+  EXPECT_TRUE(
+      problem->getOptimalSolution().isApprox(problem->getInitialGuess()));
 }
 
 TEST(GradientDescentSolverTest, SolvesWithConstraints)
@@ -319,6 +367,19 @@ TEST(GradientDescentSolverTest, RandomizeAndClamp)
   EXPECT_EQ(clone->getType(), GradientDescentSolver::Type);
 }
 
+TEST(GradientDescentSolverTest, RandomizeAndClampWithoutProblemAreNoOps)
+{
+  GradientDescentSolver solver;
+
+  Eigen::VectorXd x(2);
+  x << 1.0, -2.0;
+  solver.randomizeConfiguration(x);
+  EXPECT_TRUE(x.isApprox(Eigen::Vector2d(1.0, -2.0)));
+
+  solver.clampToBoundary(x);
+  EXPECT_TRUE(x.isApprox(Eigen::Vector2d(1.0, -2.0)));
+}
+
 TEST(FunctionTest, NameAndGradientWrapper)
 {
   SimpleFunction func("custom");
@@ -334,6 +395,36 @@ TEST(FunctionTest, NameAndGradientWrapper)
   func.evalGradient(x, gradMap);
   EXPECT_TRUE(grad.isApprox(2.0 * x));
 }
+
+TEST(FunctionTest, VectorGradientWrapperDispatchesToMapOverride)
+{
+  SimpleFunction func("wrapper");
+  Function& base = func;
+
+  Eigen::Vector2d x(2.0, -3.0);
+  Eigen::VectorXd grad(2);
+  grad.setZero();
+
+  base.evalGradient(x, grad);
+  EXPECT_TRUE(grad.isApprox(2.0 * x));
+}
+
+#if !DART_OS_WINDOWS
+TEST(FunctionTest, MultiFunctionCanBeInvoked)
+{
+  TestMultiFunction func;
+
+  Eigen::Vector2d x(2.0, 3.0);
+  Eigen::VectorXd f(1);
+  Eigen::MatrixXd grad(1, 2);
+  Eigen::Map<Eigen::VectorXd> fMap(f.data(), f.size());
+  Eigen::Map<Eigen::MatrixXd> gradMap(grad.data(), grad.rows(), grad.cols());
+
+  func(x, fMap, gradMap);
+  EXPECT_DOUBLE_EQ(f[0], 5.0);
+  EXPECT_TRUE(grad.isZero(0.0));
+}
+#endif // !DART_OS_WINDOWS
 
 TEST(ModularFunctionTest, DefaultAndCustomFunctions)
 {
@@ -419,4 +510,42 @@ TEST(SolverTest, PropertiesRoundTrip)
 
   solver.setTolerance(props.mTolerance);
   EXPECT_DOUBLE_EQ(solver.getTolerance(), 1e-4);
+}
+
+TEST(SolverTest, CopyAndAssignmentPaths)
+{
+  auto problem1 = std::make_shared<Problem>(1);
+  auto problem2 = std::make_shared<Problem>(2);
+
+  GradientDescentSolver solver(problem1);
+  solver.setNumMaxIterations(11);
+  solver.copy(solver);
+  EXPECT_EQ(solver.getProblem(), problem1);
+  EXPECT_EQ(solver.getNumMaxIterations(), 11u);
+
+  Solver& solverBase = solver;
+  solverBase.copy(solverBase);
+  EXPECT_EQ(solver.getProblem(), problem1);
+  EXPECT_EQ(solver.getNumMaxIterations(), 11u);
+
+  GradientDescentSolver other(problem2);
+  other.setNumMaxIterations(7);
+  other.setIterationsPerPrint(3);
+  other.setPrintFinalResult(true);
+  other.setResultFileName("copy-result.txt");
+
+  solver = other;
+  EXPECT_EQ(solver.getProblem(), problem2);
+  EXPECT_EQ(solver.getNumMaxIterations(), 7u);
+  EXPECT_EQ(solver.getIterationsPerPrint(), 3u);
+  EXPECT_TRUE(solver.getPrintFinalResult());
+  EXPECT_EQ(solver.getResultFileName(), "copy-result.txt");
+
+  GradientDescentSolver baseOther(problem1);
+  baseOther.setNumMaxIterations(13);
+  baseOther.setIterationsPerPrint(5);
+  solverBase = static_cast<const Solver&>(baseOther);
+  EXPECT_EQ(solver.getProblem(), problem1);
+  EXPECT_EQ(solver.getNumMaxIterations(), 13u);
+  EXPECT_EQ(solver.getIterationsPerPrint(), 5u);
 }

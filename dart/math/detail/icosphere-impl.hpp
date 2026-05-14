@@ -36,12 +36,13 @@
 #include <dart/math/icosphere.hpp>
 
 #include <array>
+#include <concepts>
 
 namespace dart {
 namespace math {
 
 //==============================================================================
-template <typename S>
+template <std::floating_point S>
 std::size_t Icosphere<S>::getNumVertices(std::size_t subdivisions)
 {
   std::size_t numVertices = 12;
@@ -52,21 +53,21 @@ std::size_t Icosphere<S>::getNumVertices(std::size_t subdivisions)
 }
 
 //==============================================================================
-template <typename S>
+template <std::floating_point S>
 std::size_t Icosphere<S>::getNumEdges(std::size_t subdivisions)
 {
   return getNumTriangles(subdivisions) / 2 * 3;
 }
 
 //==============================================================================
-template <typename S>
+template <std::floating_point S>
 std::size_t Icosphere<S>::getNumTriangles(std::size_t subdivisions)
 {
   return 20 * std::pow(4, subdivisions);
 }
 
 //==============================================================================
-template <typename S>
+template <std::floating_point S>
 std::pair<typename Icosphere<S>::Vertices, typename Icosphere<S>::Triangles>
 Icosphere<S>::computeIcosahedron(S radius)
 {
@@ -102,34 +103,31 @@ Icosphere<S>::computeIcosahedron(S radius)
 }
 
 //==============================================================================
-template <typename S>
+template <std::floating_point S>
 Icosphere<S>::Icosphere(S radius, std::size_t subdivisions)
   : mRadius(radius), mSubdivisions(subdivisions)
 {
-  static_assert(
-      std::is_floating_point<S>::value,
-      "Scalar must be a floating point type.");
   DART_ASSERT(radius > 0);
 
   build();
 }
 
 //==============================================================================
-template <typename S>
+template <std::floating_point S>
 S Icosphere<S>::getRadius() const
 {
   return mRadius;
 }
 
 //==============================================================================
-template <typename S>
+template <std::floating_point S>
 std::size_t Icosphere<S>::getNumSubdivisions() const
 {
   return mSubdivisions;
 }
 
 //==============================================================================
-template <typename S>
+template <std::floating_point S>
 void Icosphere<S>::build()
 {
   // Reference: https://schneide.blog/2016/07/15/generating-an-icosphere-in-c/

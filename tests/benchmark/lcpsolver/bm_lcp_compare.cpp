@@ -38,10 +38,14 @@
 #include <Eigen/Dense>
 #include <benchmark/benchmark.h>
 
+#include <iterator>
 #include <limits>
 #include <random>
+#include <ranges>
 #include <sstream>
 #include <string>
+
+#include <cstddef>
 
 namespace {
 
@@ -68,8 +72,8 @@ LcpProblem MakeStandardSpdProblem(int n, unsigned seed)
   std::uniform_real_distribution<double> dist(-1.0, 1.0);
 
   Eigen::MatrixXd M(n, n);
-  for (int r = 0; r < n; ++r) {
-    for (int c = 0; c < n; ++c) {
+  for (const int r : std::views::iota(0, n)) {
+    for (const int c : std::views::iota(0, n)) {
       M(r, c) = dist(rng);
     }
   }
@@ -79,7 +83,7 @@ LcpProblem MakeStandardSpdProblem(int n, unsigned seed)
         + static_cast<double>(n) * Eigen::MatrixXd::Identity(n, n);
 
   Eigen::VectorXd xStar(n);
-  for (int i = 0; i < n; ++i) {
+  for (const int i : std::views::iota(0, n)) {
     xStar[i] = std::abs(dist(rng)) + 0.1;
   }
 
@@ -103,8 +107,8 @@ LcpProblem MakeBoxedActiveBoundsProblem(int n, unsigned seed)
   std::uniform_real_distribution<double> slackDist(0.1, 1.0);
 
   Eigen::MatrixXd M(n, n);
-  for (int r = 0; r < n; ++r) {
-    for (int c = 0; c < n; ++c) {
+  for (const int r : std::views::iota(0, n)) {
+    for (const int c : std::views::iota(0, n)) {
       M(r, c) = dist(rng);
     }
   }
@@ -119,7 +123,7 @@ LcpProblem MakeBoxedActiveBoundsProblem(int n, unsigned seed)
 
   Eigen::VectorXd xStar(n);
   Eigen::VectorXd w = Eigen::VectorXd::Zero(n);
-  for (int i = 0; i < n; ++i) {
+  for (const int i : std::views::iota(0, n)) {
     const int mode = i % 3;
     if (mode == 0) {
       xStar[i] = lo[i];
@@ -151,8 +155,8 @@ LcpProblem MakeFrictionIndexProblem(int numContacts, unsigned seed)
   std::uniform_real_distribution<double> muDist(0.2, 1.0);
 
   Eigen::MatrixXd M(n, n);
-  for (int r = 0; r < n; ++r) {
-    for (int c = 0; c < n; ++c) {
+  for (const int r : std::views::iota(0, n)) {
+    for (const int c : std::views::iota(0, n)) {
       M(r, c) = dist(rng);
     }
   }
@@ -166,7 +170,7 @@ LcpProblem MakeFrictionIndexProblem(int numContacts, unsigned seed)
   Eigen::VectorXd hi = Eigen::VectorXd::Zero(n);
   Eigen::VectorXi findex = Eigen::VectorXi::Constant(n, -1);
 
-  for (int c = 0; c < numContacts; ++c) {
+  for (const int c : std::views::iota(0, numContacts)) {
     const int base = 3 * c;
     const double normal = std::abs(dist(rng)) + 0.5;
     const double mu = muDist(rng);
@@ -215,8 +219,8 @@ void AddShockPropagationCounters(
     benchmark::State& state,
     const dart::math::ShockPropagationSolver::Parameters& params)
 {
-  const int blockCount = static_cast<int>(params.blockSizes.size());
-  int layerCount = static_cast<int>(params.layers.size());
+  const auto blockCount = std::ssize(params.blockSizes);
+  auto layerCount = std::ssize(params.layers);
   if (layerCount == 0 && blockCount > 0) {
     layerCount = 1;
   }
@@ -226,11 +230,10 @@ void AddShockPropagationCounters(
     maxBlockSize = std::max(maxBlockSize, size);
   }
 
-  int maxBlocksPerLayer = 0;
+  auto maxBlocksPerLayer = std::ptrdiff_t{0};
   if (!params.layers.empty()) {
     for (const auto& layer : params.layers) {
-      maxBlocksPerLayer
-          = std::max(maxBlocksPerLayer, static_cast<int>(layer.size()));
+      maxBlocksPerLayer = std::max(maxBlocksPerLayer, std::ssize(layer));
     }
   } else {
     maxBlocksPerLayer = blockCount;
@@ -337,8 +340,9 @@ static void BM_LcpCompare_ShockPropagation_Standard(benchmark::State& state)
 
   params.layers.clear();
   params.layers.reserve(params.blockSizes.size());
-  for (int i = 0; i < static_cast<int>(params.blockSizes.size()); ++i) {
-    params.layers.push_back({i});
+  for (const auto i :
+       std::views::iota(std::ptrdiff_t{0}, std::ssize(params.blockSizes))) {
+    params.layers.push_back({static_cast<int>(i)});
   }
 
   auto options = MakeBenchmarkOptions(100);
@@ -830,7 +834,7 @@ static void BM_LcpCompare_ShockPropagation_FrictionIndex(
   params.blockSizes.assign(numContacts, 3);
   params.layers.clear();
   params.layers.reserve(numContacts);
-  for (int i = 0; i < numContacts; ++i) {
+  for (const int i : std::views::iota(0, numContacts)) {
     params.layers.push_back({i});
   }
 

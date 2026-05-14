@@ -1,6 +1,6 @@
 ---
 name: dart-contribute
-description: DART contribution workflow - branching, PRs, code review, dual-PR for bugfixes
+description: "DART Contribute: branching, PRs, review workflow, and dual-PR bugfixes"
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/skills/dart-contribute/SKILL.md -->
@@ -27,25 +27,34 @@ For code style: `docs/onboarding/code-style.md`
 ## PR Workflow
 
 ```bash
-# Create branch
+# Features, docs, and non-bugfix refactors start from main
 git checkout -b <type>/<topic> origin/main
+
+# Bug fixes that apply to the current release line start from release-6.16
+git checkout -b fix/<topic>-6.16 origin/release-6.16
 
 # Make changes, then
 pixi run lint
 pixi run test-all
 
-# Push and create PR
+# After explicit maintainer/user approval, push and create PR
 git push -u origin HEAD
-gh pr create --draft --milestone "DART 7.0"
+gh pr create --draft --base <target-branch> --milestone "<milestone>"
 ```
+
+Use `--base main --milestone "DART 7.0"` for main PRs and
+`--base release-6.16 --milestone "DART 6.16.x"` for release-line PRs.
 
 Rule of thumb: run `pixi run lint` before committing so auto-fixes are included.
 
 Use `.github/PULL_REQUEST_TEMPLATE.md` and ensure the PR description covers Summary, Motivation, Changes, Testing, Breaking Changes, and Related Issues.
 
+Use plain descriptive commit messages and PR titles. Do not prefix them with agent tags such as `[codex]`, `[claude]`, or `[opencode]`.
+
 ## Milestones (Required)
 
-Always set a milestone when creating PRs:
+Always set a milestone when creating PRs after explicit maintainer/user
+approval:
 
 | Target Branch  | Milestone                     |
 | -------------- | ----------------------------- |
@@ -53,7 +62,7 @@ Always set a milestone when creating PRs:
 | `release-6.16` | `DART 6.16.x` (current patch) |
 
 ```bash
-# Set milestone on existing PR
+# After explicit maintainer/user approval, set milestone on existing PR
 gh pr edit <PR#> --milestone "DART 7.0"
 
 # List available milestones
@@ -71,11 +80,11 @@ Steps:
 
 1. Fix on `release-6.16` first
 2. Cherry-pick to `main`
-3. Create separate PRs for each
+3. After explicit maintainer/user approval, create separate PRs for each
 
-## CHANGELOG (After PR Created)
+## CHANGELOG (After Approved PR Exists)
 
-After creating a PR, check if CHANGELOG.md needs updating:
+After the approved PR exists, check if CHANGELOG.md needs updating:
 
 | Change Type                      | Update CHANGELOG?                    |
 | -------------------------------- | ------------------------------------ |
@@ -100,7 +109,8 @@ Format: `- Description. ([#PR](https://github.com/dartsim/dart/pull/PR))`
 - Address all feedback
 - Keep changes minimal
 - Update tests if behavior changed
-- Run full validation before pushing fixes
+- Run full validation, then ask for explicit maintainer/user approval before
+  pushing fixes
 
 ## CI Loop
 

@@ -163,15 +163,16 @@ bool LocalResource::seek(ptrdiff_t _offset, SeekType _mode)
 {
   int origin;
   switch (_mode) {
-    case Resource::SEEKTYPE_CUR:
+    using enum Resource::SeekType;
+    case SEEKTYPE_CUR:
       origin = SEEK_CUR;
       break;
 
-    case Resource::SEEKTYPE_END:
+    case SEEKTYPE_END:
       origin = SEEK_END;
       break;
 
-    case Resource::SEEKTYPE_SET:
+    case SEEKTYPE_SET:
       origin = SEEK_SET;
       break;
 

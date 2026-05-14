@@ -130,9 +130,6 @@ public:
 
   /// \}
 
-private:
-  // Private members used by Worldbody class
-  friend class Worldbody;
   Errors read(
       tinyxml2::XMLElement* element,
       const std::optional<Size>& size,
@@ -150,6 +147,8 @@ private:
   Errors postprocess(const Body* body, const Compiler& compiler);
 
 private:
+  friend class Worldbody;
+
   Inertial computeInertialFromGeoms(
       std::span<const Geom> geoms, const Compiler& compiler);
 

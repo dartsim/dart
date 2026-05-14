@@ -1,6 +1,6 @@
 ---
 name: dart-python
-description: DART Python bindings (dartpy) - nanobind, wheel building, API patterns
+description: "DART Python: dartpy bindings, nanobind, wheels, and API patterns"
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/skills/dart-python/SKILL.md -->

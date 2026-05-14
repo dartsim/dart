@@ -11,6 +11,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Gazebo / gz-physics workflow: [build-system.md](build-system.md#gazebo-integration-feature)
   - PR template checklist: [`.github/PULL_REQUEST_TEMPLATE.md`](../../.github/PULL_REQUEST_TEMPLATE.md)
   - Asserts-enabled CI build (no `-DNDEBUG`): see [Asserts-Enabled CI Build](#asserts-enabled-ci-build-no--dndebug)
+  - Eigen over-alignment CI build: see [Eigen Over-Alignment CI Build](#eigen-over-alignment-ci-build)
   - ASAN testing (memory errors): `pixi run test-asan` (runs in CI for `release-6.16`)
   - CI monitoring commands: see [CI Monitoring (CLI)](#ci-monitoring-cli) and [CI Monitoring (API)](#ci-monitoring-api)
   - Common CI failure fixes: see [Common CI Failure Modes](#common-ci-failure-modes)
@@ -18,7 +19,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Suggested (Unverified): `gh pr checks <PR_NUMBER> --watch --interval 30 --fail-fast`
   - Suggested (Unverified): `gh run view --job <JOB_ID> --log-failed`
 - Gotchas:
-  - `gh run list` can show separate runs for `push` and `pull_request`; for PR gating, watch the `pull_request` run.
+  - PR branch CI should run from `pull_request`; push-triggered CI is reserved for `main`, `release-*`, tags, schedules, and manual runs.
   - `gh run watch` is blocking and can run for a long time; use a persistent shell and re-run it if your terminal session times out.
   - `gh run view --job <JOB_ID> --log-failed` only works after the job completes; use the REST logs endpoint (or wait) when a run is still in progress.
   - If a PR is not mergeable due to conflicts, CI checks may be blocked or fail early (including AppVeyor); resolve conflicts locally and push before re-running CI.
@@ -30,6 +31,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - GitHub Actions API calls can return `HTTP 406` if you omit required headers; include an explicit `Accept` header.
   - `gh api` writes to stdout and does not support `--output`; redirect to a file when you need to search logs.
   - The asserts-enabled CI job uses a custom CMake configure (`CMAKE_BUILD_TYPE=None`) instead of pixi tasks; keep native-only collision toggles explicit unless the job also installs a reference-engine Pixi environment.
+  - The Eigen over-alignment job forces `EIGEN_MAX_ALIGN_BYTES=64` and `EIGEN_MAX_STATIC_ALIGN_BYTES=64`; failures usually indicate allocator, placement-new, or storage code assuming a smaller Eigen alignment.
   - Deprecated headers that emit `#warning` fail under `-Werror=cpp` (e.g., use `dart/utils/urdf/All.hpp` instead of deprecated `dart/utils/urdf/urdf.hpp`).
   - dartpy test failures can show up as a Python abort with minimal traceback when a C++ `DART_ASSERT` triggers; rerun the single test locally and inspect the C++ assert.
   - Bullet-backed raycast tests require Bullet to be built; skip or enable Bullet if the backend is intentionally disabled.
@@ -38,12 +40,13 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - `gh run rerun --job` expects the job `databaseId` (not the numeric ID from the job URL); if `gh run view --json jobs` shows `id: null`, use `databaseId`. Suggested (Unverified): `gh run view <RUN_ID> --json jobs --jq '.jobs[] | {name, databaseId}'`.
   - Job log endpoints can return `log not found`/404 even after a failure; fall back to the run-level logs archive or re-run the job (see CI Monitoring (API)).
   - Review comment metadata is not exposed by `gh pr view --json`; Suggested (Unverified): `gh api /repos/<OWNER>/<REPO>/pulls/comments/<COMMENT_ID>`.
-  - `gh pr checks` may show duplicate entries when workflows run for both `push` and `pull_request` events; compare the run URLs and focus on the newest one.
+  - `gh pr checks` may show duplicate entries from older runs or workflows that still use both `push` and `pull_request`; compare the run URLs and focus on the newest one.
   - Newer runs can cancel older ones; confirm the run status/conclusion before spending time on job logs.
 - zsh can produce parse errors when jq expressions or backtick characters are not fully quoted; quote `gh ... --jq` programs and use a here-doc or `--body-file` when PR bodies include backticks.
   - If `CI gz-physics` fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature).
   - CI jobs can sit in the queue for a long time; re-check the run list and wait for the PR run to start before assuming a failure.
   - Wheel publishing workflows may lag behind other jobs and stay queued longer; keep watching the PR run until all workflows complete.
+  - Alt Linux bootstrap failures while fetching packages from `ftp.altlinux.org` are usually mirror/network flakes; the bootstrap retries package installation in-place, and repeated failures should be rerun after the mirror recovers.
   - Randomized stress tests can diverge across platforms if they rely on library-dependent distributions; prefer deterministic RNG transforms when portability matters.
   - `check-format` failures usually mean formatting drift; run the C++ formatter and commit any diffs before retrying CI. Suggested (Unverified): `pixi run lint-cpp`.
   - Local lint may fail if clang-format is missing or a stale CMake cache references an old version; clean the build directory (`rm -rf build/`) and reconfigure to pick up the pixi-provided clang-format.
@@ -62,6 +65,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
 - macOS ARM64 sporadic SEGFAULT: `alloca()` or VLAs may cause alignment violations; use `std::vector<T>` for proper alignment.
 - RTD build failures: Sphinx extension compatibility issues; use defensive `.get(key, default)` patterns.
 - Case-colliding files after branch merge: When merging `release-*` into `main`, PascalCase files from the release branch can collide with snake_case files in main on case-insensitive filesystems (macOS, Windows). Check for duplicates with `find tests -name "*.cpp" | sort -f | uniq -di` and remove the PascalCase version. Also verify new tests are registered in the appropriate `CMakeLists.txt`.
+- Eigen over-alignment failures: reproduce with `pixi run test-eigen-overalignment`. These failures do not require AVX-512 hardware; the job forces Eigen's 64-byte static alignment contract at compile time.
 
 ## Task Recap (General)
 
@@ -157,6 +161,23 @@ to keep assertions enabled outside a Debug build.
 - Expect `-Werror=cpp`; any deprecated headers that emit `#warning` will fail the build.
 - If a dartpy test aborts without a Python traceback, the C++ assert message is usually the first useful clue.
 
+## Eigen Over-Alignment CI Build
+
+The Eigen over-alignment job runs on Linux PRs and scheduled builds via
+`pixi run test-eigen-overalignment`.
+
+It configures a dedicated `eigen64-align` CMake tree with
+`EIGEN_MAX_ALIGN_BYTES=64` and `EIGEN_MAX_STATIC_ALIGN_BYTES=64`, then builds and
+runs the non-experimental C++ tests in a reduced no-GUI/no-dartpy configuration.
+This catches allocator, placement-new, object-pool, and Eigen storage mistakes
+that otherwise only appear on AVX-512-capable compiler/CPU combinations.
+
+Suggested (Unverified):
+
+```bash
+DART_PARALLEL_JOBS=8 CTEST_PARALLEL_LEVEL=8 pixi run test-eigen-overalignment
+```
+
 ## Next-Time Accelerators
 
 - When running dartpy tests against an in-tree build, set `PYTHONPATH` and `DARTPY_RUNTIME_DIR` to the build output.
@@ -168,16 +189,16 @@ to keep assertions enabled outside a Debug build.
 
 ### Core CI Workflows
 
-| Workflow             | Purpose               | Platforms      | Trigger            | Doc-only skip |
-| -------------------- | --------------------- | -------------- | ------------------ | ------------- |
-| `ci_lint.yml`        | Lint (formatting)     | Ubuntu         | PR, push           | No            |
-| `ci_ubuntu.yml`      | Build, test, coverage | Ubuntu         | PR, push, schedule | Yes           |
-| `ci_macos.yml`       | Build, test           | macOS          | PR, push, schedule | Yes           |
-| `ci_windows.yml`     | Build, test           | Windows        | PR, push, schedule | Yes           |
-| `ci_freebsd.yml`     | Build, test (VM)      | FreeBSD        | Schedule, manual   | N/A           |
-| `ci_altlinux.yml`    | Build, test (Docker)  | Alt Linux      | Schedule, manual   | N/A           |
-| `ci_gz_physics.yml`  | Gazebo integration    | Ubuntu         | PR, push, schedule | Yes           |
-| `publish_dartpy.yml` | Python wheels         | Multi-platform | Push, schedule     | Yes           |
+| Workflow             | Purpose               | Platforms      | Trigger                             | Doc-only skip |
+| -------------------- | --------------------- | -------------- | ----------------------------------- | ------------- |
+| `ci_lint.yml`        | Lint + docs build     | Ubuntu         | PR, main/release push               | No            |
+| `ci_ubuntu.yml`      | Build, test, coverage | Ubuntu         | PR, main/release push, schedule     | Yes           |
+| `ci_macos.yml`       | Build, test           | macOS          | PR, main/release push, schedule     | Yes           |
+| `ci_windows.yml`     | Build, test           | Windows        | PR, main/release push, schedule     | Yes           |
+| `ci_freebsd.yml`     | Build, test (VM)      | FreeBSD        | Schedule, manual                    | N/A           |
+| `ci_altlinux.yml`    | Build, test (Docker)  | Alt Linux      | PR, schedule, manual                | N/A           |
+| `ci_gz_physics.yml`  | Gazebo integration    | Ubuntu         | PR, main/release push, schedule     | Yes           |
+| `publish_dartpy.yml` | Python wheels         | Multi-platform | PR, main/release/tag push, schedule | Yes           |
 
 ### Design Principles
 
@@ -320,69 +341,67 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /permissive- /Zc:twoPhase- /MP /FS
 
 ### Debug Builds
 
-Debug builds are slower and primarily useful for debugging, not CI validation.
-
-**Pattern** (see `ci_ubuntu.yml` and `ci_macos.yml`):
-
-```yaml
-build:
-  name: ${{ matrix.build_type }}
-  runs-on: ubuntu-latest
-  if: matrix.build_type == 'Release' || github.event_name == 'schedule' || github.ref == 'refs/heads/main'
-  strategy:
-    matrix:
-      build_type: ["Release", "Debug"]
-```
+Debug builds are slower, but Ubuntu keeps explicit Debug C++ and dartpy test
+jobs in PR CI because they catch configuration-specific failures. macOS keeps
+Debug C++ coverage, while dartpy is covered by macOS Release and Ubuntu Debug;
+macOS arm64 Debug dartpy builds are too slow for PR feedback on GitHub-hosted
+runners. Windows keeps Release-only tests to keep runtime acceptable.
 
 **Behavior:**
 
-- **PRs**: Only Release builds run
-- **Main branch**: Both Release and Debug run
-- **Scheduled runs**: Both Release and Debug run
-- **Savings**: 30-40 minutes per PR
+- **PRs**: Release and Debug jobs run on Ubuntu/macOS when code paths change
+- **Windows**: Release-only tests run on PRs, pushes, schedules, and manual dispatch
+- **Doc-only changes**: Platform jobs are skipped by path filters; lint/docs still run
 
 ### Python Wheel Builds
 
-Full wheel matrix is expensive (60-90 minutes) and only needed for releases.
+Full wheel matrix is expensive (60-90 minutes), so branch pushes outside `main`
+run only the essential Python version. PRs, `main`, tags, schedules, and manual
+runs keep the full matrix.
 
 **Pattern** (see `publish_dartpy.yml`):
 
 ```yaml
-build_wheels:
-  if: |
-    matrix.release_only == false ||
-    github.ref == 'refs/heads/main' ||
-    startsWith(github.ref, 'refs/tags/') ||
-    github.event_name == 'schedule'
+RUN_WHEEL: >-
+  ${{ matrix.skip-on-commit != true ||
+      github.event_name == 'pull_request' ||
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      github.ref == 'refs/heads/main' ||
+      startsWith(github.ref, 'refs/tags/v') }}
 ```
 
 **Behavior:**
 
-- **PRs**: Only essential configurations build
+- **PRs**: Full matrix builds so wheel breakages are caught before merge
+- **Non-main branch pushes**: Only essential configurations build
 - **Main branch**: Full matrix builds
 - **Release tags**: Full matrix builds
-- **Scheduled runs**: Full matrix builds
+- **Scheduled/manual runs**: Full matrix builds
 
 ### Documentation Builds
 
-Read the Docs now owns all documentation publishing. GitHub Actions no longer
-generates or deploys the API references, so doc validation happens locally:
+Read the Docs owns documentation publishing. GitHub Actions validates that the
+RTD-style documentation still renders once in `ci_lint.yml`, but it does not
+deploy the generated site:
 
 - Run `pixi run docs-build` to render the RTD site (including the C++ Doxygen
-  bundle).
+  bundle) locally.
 - Committers can optionally run `pixi run api-docs-cpp` or `pixi run api-docs-py`
   if they need to inspect the standalone builders.
 - RTD rebuilds automatically whenever `main` changes, keeping the hosted docs in
-  sync without consuming CI minutes.
+  sync without deploying from GitHub Actions.
 
 ## Lint Check Strategy
 
-**Dedicated workflow:** Linting is deterministic and platform-independent, so it runs once in a dedicated `ci_lint.yml` workflow.
+**Dedicated workflow:** Linting is deterministic and platform-independent, so it
+runs once in `ci_lint.yml`. The same workflow also runs one documentation build
+so platform test jobs do not each rebuild docs.
 
 **Key design:**
 
-- `ci_lint.yml` runs on ALL changes (including doc-only changes) to catch formatting issues early
-- FreeBSD and Alt Linux CI (`ci_freebsd.yml`, `ci_altlinux.yml`) run on schedule/manual only to reduce maintenance burden
+- `ci_lint.yml` runs on ALL changes (including doc-only changes) to catch formatting and documentation issues early
+- FreeBSD CI (`ci_freebsd.yml`) runs on schedule/manual only to reduce maintenance burden; Alt Linux also runs on PRs for distro repro coverage
 - Lint is removed from platform-specific workflows since it's covered by the dedicated job
 
 **Doc-only skip patterns** (used by platform CI, NOT by lint CI):
@@ -407,25 +426,30 @@ paths-ignore:
 **Per PR:**
 
 - Ubuntu Release: Full tests + coverage
+- Ubuntu Debug: Debug C++ and dartpy tests
 - macOS Release: Full tests
+- macOS Debug: Debug C++ tests
 - Windows Release: Full tests
 - Gazebo integration: Integration tests
 
 **Scheduled runs:**
 
-- Add Debug builds for all platforms
+- Repeat the PR validation on a fixed cadence
 - Ensure periodic full validation
 
 ### Test Execution
 
-All tests run through `pixi run test-all`, which includes:
+GitHub Actions uses granular pixi tasks instead of `pixi run test-all` so CI
+does not repeat local-only validation in every platform job:
 
-- Linting (check-lint)
-- Unit tests (C++)
-- Python tests (dartpy)
-- Documentation build (optional)
+- `pixi run check-lint` runs once in `ci_lint.yml`
+- `pixi run docs-build` runs once in `ci_lint.yml`
+- Platform jobs run explicit C++ and dartpy test tasks for their selected
+  coverage slice
+- Release jobs build examples and install where that platform covers the path
 
-**Best practice:** Don't duplicate steps already in `test-all`.
+Use `pixi run test-all` for local pre-PR validation; avoid adding it to CI jobs
+unless the duplicated lint/docs/build work is intentional.
 
 ## Monitoring and Maintenance
 

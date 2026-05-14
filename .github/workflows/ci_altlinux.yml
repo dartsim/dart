@@ -1,13 +1,16 @@
 name: CI Alt Linux (Docker)
 
 on:
+  pull_request:
+    branches:
+      - "**"
   schedule:
     - cron: "0 5 * * 1"
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name != 'schedule' && github.ref != 'refs/heads/main' }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 jobs:
   altlinux:

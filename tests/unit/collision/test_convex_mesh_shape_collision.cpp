@@ -42,6 +42,7 @@
 #include "dart/dynamics/free_joint.hpp"
 #include "dart/dynamics/simple_frame.hpp"
 #include "dart/dynamics/skeleton.hpp"
+#include "dart/math/constants.hpp"
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -80,7 +81,7 @@ using dart::dynamics::ConvexMeshShape;
 
 namespace {
 
-constexpr double kPi = 3.141592653589793;
+constexpr double kPi = dart::math::pi;
 
 #if DART_HAVE_FCL
 struct TestFCLDetector : public FCLCollisionDetector
@@ -231,7 +232,7 @@ void runRandomizedConvexMeshCollisionChecks(
   const auto box = std::make_shared<dart::dynamics::BoxShape>(
       Eigen::Vector3d::Constant(0.2));
 
-  const std::array<unsigned int, 3> seeds = {11u, 29u, 71u};
+  const auto seeds = std::to_array<unsigned int>({11u, 29u, 71u});
   for (const auto seed : seeds) {
     std::mt19937 rng(seed);
     auto convexShape = makeRandomConvexMeshShape(rng, 0.05, 0.2, 5);

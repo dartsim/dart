@@ -35,11 +35,11 @@
 
 #include <dart/utils/export.hpp>
 
-#include <dart/common/filesystem.hpp>
 #include <dart/common/local_resource_retriever.hpp>
 #include <dart/common/resource_retriever.hpp>
 
 #include <chrono>
+#include <filesystem>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -101,20 +101,20 @@ public:
   const Options& getOptions() const;
 
   /// Override the cache directory. The directory will be created on demand.
-  void setCacheDirectory(const common::filesystem::path& directory);
+  void setCacheDirectory(const std::filesystem::path& directory);
 
   /// Return the currently configured cache directory.
-  const common::filesystem::path& getCacheDirectory() const;
+  const std::filesystem::path& getCacheDirectory() const;
 
 private:
   bool isSupported(const common::Uri& uri) const;
-  common::filesystem::path buildCachePath(const common::Uri& uri) const;
+  std::filesystem::path buildCachePath(const common::Uri& uri) const;
   bool ensureCacheDirectory() const;
   bool download(const common::Uri& uri, const std::string& destination) const;
   bool performExistsRequest(const common::Uri& uri) const;
 
   Options mOptions;
-  common::filesystem::path mCacheDirectory;
+  std::filesystem::path mCacheDirectory;
   std::shared_ptr<common::LocalResourceRetriever> mLocalRetriever;
 };
 

@@ -102,6 +102,23 @@ These gates are still required before the single north-star PR is complete.
     `DART_BUILD_COLLISION_REFERENCE_TESTS: OFF`, and
     `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS: OFF`, then generated build
     files in `build/default/cpp/None-ci-asserts-local`.
+- Follow-up PR mergeability repair:
+  - The asserts-enabled workflow repair was committed as `901d56c4260`
+    (`Fix native collision asserts CI configure`) and pushed to
+    `feature/new_coll`.
+  - The PR then needed an `origin/main` merge to clear GitHub mergeability
+    conflicts. The merge kept `origin/main` collision group observer/source
+    ownership, restored canonical `CollisionObject`, `CollisionFilter`,
+    `CollisionResult`, and `Contact` definitions, deleted stale
+    feature-branch collision bridge sources, kept the native
+    `DartCollisionDetector` implementation, and regenerated `pixi.lock`.
+  - Focused local validation after the merge: `pixi run config` passed with
+    FCL/Bullet/ODE and collision reference tests/benchmarks all `OFF`;
+    focused build of `dart`, `dart-gui`,
+    `UNIT_collision_CollisionGroup`, `UNIT_collision_DARTCollide`,
+    `UNIT_collision_DartCollisionDetector`, `UNIT_constraint_ContactSurface`,
+    `UNIT_simulation_World`, and `UNIT_gui_ImGuiWindowScaling` passed; the
+    anchored CTest subset for those six unit-test executables passed 6/6.
 
 ## Current Full-Validation Repair
 

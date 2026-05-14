@@ -35,6 +35,7 @@
 #include <dart/simd/config.hpp>
 
 #include <array>
+#include <bit>
 
 #include <cstddef>
 #include <cstdint>
@@ -91,13 +92,7 @@ struct VecMask
 
   [[nodiscard]] DART_SIMD_INLINE constexpr int popcount() const noexcept
   {
-    int count = 0;
-    for (std::size_t i = 0; i < Width; ++i) {
-      if (data[i]) {
-        ++count;
-      }
-    }
-    return count;
+    return std::popcount(bitmask());
   }
 
   [[nodiscard]] DART_SIMD_INLINE constexpr std::uint32_t bitmask()

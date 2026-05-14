@@ -36,6 +36,8 @@
 
 #include <osgShadow/ShadowMap>
 
+#include <ranges>
+
 using namespace dart;
 using dart::simulation::CollisionDetectorType;
 
@@ -81,9 +83,9 @@ int main()
 
   // Create dim x dim x dim boxes
   auto dim = 5;
-  for (auto i = 0; i < dim; ++i) {
-    for (auto j = 0; j < dim; ++j) {
-      for (auto k = 0; k < dim; ++k) {
+  for (const auto i : std::views::iota(0, dim)) {
+    for (const auto j : std::views::iota(0, dim)) {
+      for (const auto k : std::views::iota(0, dim)) {
         auto x = i - dim / 2;
         auto y = j - dim / 2;
         auto z = k + 5;

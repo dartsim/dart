@@ -7,7 +7,7 @@ channels = ["conda-forge"]
 platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
 
 [dependencies]
-assimp = ">=5.4.3,<6"
+assimp = ">=5.4.3,<7"
 benchmark = ">=1.9.4,<2"
 black = ">=25.12.0,<26"
 clang-format = ">=21.1.7,<22"
@@ -93,12 +93,8 @@ fi
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
-  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_C_COMPILER_LAUNCHER
-  fi
-  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_CXX_COMPILER_LAUNCHER
-  fi
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
 fi
 if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
   if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
@@ -231,6 +227,10 @@ check-lint-yaml = { cmd = """
     prettier --check '**/*.{yml,yaml}' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**'
 """ }
 
+check-lint-md = { cmd = """
+    prettier --check '**/*.md' '!**/.pixi/**' '!**/build/**' '!**/external/**' '!**/node_modules/**' '!.codex/**' '!.opencode/**'
+""" }
+
 check-lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
 
 check-lint-spell = { cmd = "codespell --config .codespellrc" }
@@ -249,6 +249,7 @@ check-lint = { depends-on = [
   "check-lint-simulation-experimental",
   "check-lint-py",
   "check-lint-yaml",
+  "check-lint-md",
   "check-lint-rst",
   "check-lint-spell",
   "check-collision-runtime-isolation",
@@ -322,12 +323,8 @@ fi
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
-  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_C_COMPILER_LAUNCHER
-  fi
-  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_CXX_COMPILER_LAUNCHER
-  fi
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
 fi
 if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
   if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
@@ -523,12 +520,8 @@ DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
-  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_C_COMPILER_LAUNCHER
-  fi
-  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_CXX_COMPILER_LAUNCHER
-  fi
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
 fi
 if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
   if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] && command -v sccache >/dev/null 2>&1; then
@@ -737,12 +730,14 @@ test-lcpsolver = { cmd = """
 
 test-unit = { cmd = "python scripts/run_cpp_test.py", depends-on = ["config"] }
 
+test-eigen-overalignment = { cmd = "python scripts/test_eigen_overalignment.py" }
+
 test-py = { cmd = [
   "bash",
   "-lc",
   """
 set -euo pipefail
-BUILD_TYPE={{ build_type }}
+export BUILD_TYPE={{ build_type }}
 python scripts/pixi_test_py.py
 """,
 ], depends-on = [
@@ -794,12 +789,8 @@ DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
-  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_C_COMPILER_LAUNCHER
-  fi
-  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_CXX_COMPILER_LAUNCHER
-  fi
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
 fi
 if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
   if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
@@ -1158,12 +1149,8 @@ DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
-  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_C_COMPILER_LAUNCHER
-  fi
-  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_CXX_COMPILER_LAUNCHER
-  fi
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
 fi
 if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
   if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
@@ -1199,7 +1186,6 @@ cmake \
     -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF} \
     -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} \
     -DDART_BUILD_PROFILE=OFF \
-    -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE:-OFF} \
     -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
     -DDART_USE_SYSTEM_GOOGLETEST=ON \
     -DDART_USE_SYSTEM_IMGUI=ON \
@@ -1398,12 +1384,8 @@ DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
-  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_C_COMPILER_LAUNCHER
-  fi
-  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_CXX_COMPILER_LAUNCHER
-  fi
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
 fi
 if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
   && command -v sccache >/dev/null 2>&1 \
@@ -1644,8 +1626,10 @@ lint = { depends-on = [
   "lint-cpp",
   "lint-py",
   "lint-yaml",
+  "lint-md",
   "lint-rst",
   "check-collision-runtime-isolation",
+  "sync-ai-commands",
 ] }
 
 check-lint-py = { cmd = """
@@ -1660,10 +1644,12 @@ check-lint = { depends-on = [
   "check-lint-cpp",
   "check-lint-py",
   "check-lint-yaml",
+  "check-lint-md",
   "check-lint-rst",
   "check-lint-spell",
   "check-collision-runtime-isolation",
   "check-docs-policy",
+  "check-ai-commands",
 ] }
 
 build = { cmd = """
@@ -1795,7 +1781,7 @@ test-simulation-experimental = { cmd = [
 ] }
 
 test-py = { cmd = """
-    BUILD_TYPE={{ build_type }}
+    export BUILD_TYPE={{ build_type }}
     CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp python scripts/cmake_build.py --config $BUILD_TYPE --target pytest
 """, depends-on = [
   { task = "config", args = [
@@ -2010,12 +1996,8 @@ config-gz = { cmd = [
   """
 set -euo pipefail
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
-  if [ "${CMAKE_C_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_C_COMPILER_LAUNCHER
-  fi
-  if [ "${CMAKE_CXX_COMPILER_LAUNCHER:-}" = "sccache" ]; then
-    unset CMAKE_CXX_COMPILER_LAUNCHER
-  fi
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
 fi
 if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
   && command -v sccache >/dev/null 2>&1 \
@@ -2055,6 +2037,10 @@ build-gz = { cmd = [
   "-lc",
   """
 set -euo pipefail
+if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
+  unset CMAKE_C_COMPILER_LAUNCHER
+  unset CMAKE_CXX_COMPILER_LAUNCHER
+fi
 CMAKE_BUILD_DIR=.deps/gz-physics/build python scripts/cmake_build.py --target all
 """,
 ], depends-on = [
@@ -2064,6 +2050,10 @@ CMAKE_BUILD_DIR=.deps/gz-physics/build python scripts/cmake_build.py --target al
 test-gz = { cmd = """
     bash -c '
         set -euo pipefail
+        if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
+          unset CMAKE_C_COMPILER_LAUNCHER
+          unset CMAKE_CXX_COMPILER_LAUNCHER
+        fi
         DART_PARALLEL_JOBS=${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}
         export DART_PARALLEL_JOBS
         export CTEST_OUTPUT_ON_FAILURE=1
@@ -2127,7 +2117,7 @@ scikit-build-core = ">=0.11.6,<0.12"
 nanobind = ">=2.10.2,<3"
 cmake = ">=4.2.1,<5"
 ninja = ">=1.13.2,<2"
-assimp = ">=5.4.3,<6"
+assimp = ">=6.0.4,<7"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
 fmt = ">=12.0.0,<13"
@@ -2253,7 +2243,7 @@ scikit-build-core = ">=0.11.6,<0.12"
 nanobind = ">=2.10.2,<3"
 cmake = ">=4.2.1,<5"
 ninja = ">=1.13.2,<2"
-assimp = ">=5.4.3,<6"
+assimp = ">=6.0.4,<7"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
 fmt = ">=12.0.0,<13"
@@ -2379,7 +2369,7 @@ scikit-build-core = ">=0.11.6,<0.12"
 nanobind = ">=2.10.2,<3"
 cmake = ">=4.2.1,<5"
 ninja = ">=1.13.2,<2"
-assimp = ">=5.4.3,<6"
+assimp = ">=6.0.4,<7"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
 fmt = ">=12.0.0,<13"
@@ -2503,4 +2493,5 @@ py313-wheel = ["py313-wheel"]
 py314-wheel = ["py314-wheel"]
 
 [feature.py-default.dependencies]
+assimp = ">=6.0.4,<7"
 python = "3.12.*"

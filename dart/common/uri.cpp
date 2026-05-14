@@ -35,16 +35,12 @@
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
 
+#include <algorithm>
 #include <regex>
 #include <sstream>
 #include <string_view>
 
 #include <cassert>
-
-static bool startsWith(std::string_view target, std::string_view prefix)
-{
-  return target.starts_with(prefix);
-}
 
 namespace dart {
 namespace common {
@@ -255,7 +251,7 @@ bool Uri::fromPath(std::string_view path)
 #ifdef _WIN32
   // Replace backslashes (from Windows paths) with forward slashes.
   std::string unixPath = pathString;
-  std::replace(std::begin(unixPath), std::end(unixPath), '\\', '/');
+  std::ranges::replace(unixPath, '\\', '/');
 
   return fromString(fileScheme + "/" + pathString);
 #else
@@ -373,7 +369,7 @@ bool Uri::fromRelativeUri(const Uri& base, const Uri& relative, bool /*strict*/)
           mQuery = base.mQuery;
         }
       } else {
-        if (relative.mPath->front() == '/') {
+        if (relative.mPath->starts_with('/')) {
           mPath = removeDotSegments(*relative.mPath);
         } else {
           mPath = removeDotSegments(mergePaths(base, relative));
@@ -567,7 +563,7 @@ std::string Uri::getFilesystemPath() const
   if (mScheme.get_value_or("") == "file") {
     const std::string& filesystemPath = getPath();
 
-    if (!filesystemPath.empty() && filesystemPath[0] == '/') {
+    if (filesystemPath.starts_with('/')) {
       return filesystemPath.substr(1);
     }
   }
@@ -601,25 +597,26 @@ std::string Uri::removeDotSegments(const std::string& path)
   // 1.  The input buffer is initialized with the now-appended path
   //     components and the output buffer is initialized to the empty
   //     string.
-  std::string input = path;
+  std::string_view input = path;
   std::string output;
+  output.reserve(path.size());
 
   // 2.  While the input buffer is not empty, loop as follows:
   while (!input.empty()) {
     // A.  If the input buffer begins with a prefix of "../" or "./",
     //     then remove that prefix from the input buffer; otherwise,
-    if (startsWith(input, "../")) {
-      input = input.substr(3);
-    } else if (startsWith(input, "./")) {
-      input = input.substr(2);
+    if (input.starts_with("../")) {
+      input.remove_prefix(3);
+    } else if (input.starts_with("./")) {
+      input.remove_prefix(2);
     }
     // B.  if the input buffer begins with a prefix of "/./" or "/.",
     //     where "." is a complete path segment, then replace that
     //     prefix with "/" in the input buffer; otherwise,
     else if (input == "/.") {
       input = "/";
-    } else if (startsWith(input, "/./")) {
-      input = "/" + input.substr(3);
+    } else if (input.starts_with("/./")) {
+      input.remove_prefix(2);
     }
     // C.  if the input buffer begins with a prefix of "/../" or "/..",
     //     where ".." is a complete path segment, then replace that
@@ -635,8 +632,8 @@ std::string Uri::removeDotSegments(const std::string& path)
       } else {
         output = "";
       }
-    } else if (startsWith(input, "/../")) {
-      input = "/" + input.substr(4);
+    } else if (input.starts_with("/../")) {
+      input.remove_prefix(3);
 
       std::size_t index = output.find_last_of('/');
       if (index != std::string::npos) {
@@ -648,7 +645,7 @@ std::string Uri::removeDotSegments(const std::string& path)
     // D.  if the input buffer consists only of "." or "..", then remove
     //     that from the input buffer; otherwise,
     else if (input == "." || input == "..") {
-      input = "";
+      input = {};
     }
     // E.  move the first path segment in the input buffer to the end of
     //     the output buffer, including the initial "/" character (if
@@ -657,12 +654,13 @@ std::string Uri::removeDotSegments(const std::string& path)
     else {
       // Start at index one so we keep the leading '/'.
       std::size_t index = input.find_first_of('/', 1);
-      output += input.substr(0, index);
+      const auto segment = input.substr(0, index);
+      output.append(segment);
 
       if (index != std::string::npos) {
-        input = input.substr(index);
+        input.remove_prefix(index);
       } else {
-        input = "";
+        input = {};
       }
     }
   }

@@ -60,6 +60,9 @@
 #include <fmt/ostream.h>
 
 #include <algorithm>
+#include <iterator>
+#include <memory>
+#include <ranges>
 
 #include <cmath>
 
@@ -594,15 +597,15 @@ void ConstraintSolver::updateConstraints()
       }
 
       const std::size_t dof = joint->getNumDofs();
-      for (std::size_t j = 0; j < dof; ++j) {
-        if (joint->getCoulombFriction(j) != 0.0) {
-          mJointCoulombFrictionConstraints.push_back(
-              std::allocate_shared<JointCoulombFrictionConstraint>(
-                  common::FrameStlAllocator<JointCoulombFrictionConstraint>(
-                      *mFrameAllocator),
-                  joint));
-          break;
-        }
+      const bool hasCoulombFriction = std::ranges::any_of(
+          std::views::iota(std::size_t{0}, dof),
+          [&](std::size_t j) { return joint->getCoulombFriction(j) != 0.0; });
+      if (hasCoulombFriction) {
+        mJointCoulombFrictionConstraints.push_back(
+            std::allocate_shared<JointCoulombFrictionConstraint>(
+                common::FrameStlAllocator<JointCoulombFrictionConstraint>(
+                    *mFrameAllocator),
+                joint));
       }
 
       if (joint->areLimitsEnforced()
@@ -723,15 +726,10 @@ void ConstraintSolver::buildConstrainedGroups()
   // Build constraint groups
   //----------------------------------------------------------------------------
   for (const auto& activeConstraint : mActiveConstraints) {
-    bool found = false;
     const auto& skel = activeConstraint->getRootSkeleton();
-
-    for (const auto& constrainedGroup : mConstrainedGroups) {
-      if (constrainedGroup.mRootSkeleton == skel) {
-        found = true;
-        break;
-      }
-    }
+    const bool found = std::ranges::any_of(
+        mConstrainedGroups,
+        [&](const auto& group) { return group.mRootSkeleton == skel; });
 
     if (found) {
       continue;
@@ -775,14 +773,17 @@ void ConstraintSolver::solvePositionConstrainedGroups()
   // Preserve velocity-impulse flags across the position pass.
   mImpulseAppliedStates.clear();
   mImpulseAppliedStates.reserve(mSkeletons.size());
-  for (const auto& skeleton : mSkeletons) {
-    mImpulseAppliedStates.push_back(skeleton->isImpulseApplied());
-  }
+  std::ranges::copy(
+      mSkeletons | std::views::transform([](const auto& skeleton) {
+        return skeleton->isImpulseApplied();
+      }),
+      std::back_inserter(mImpulseAppliedStates));
 
   for (auto& constraintGroup : mConstrainedGroups) {
     mPositionConstraints.clear();
     mPositionConstraints.reserve(constraintGroup.getNumConstraints());
-    for (std::size_t i = 0; i < constraintGroup.getNumConstraints(); ++i) {
+    for (const auto i : std::views::iota(
+             std::size_t{0}, constraintGroup.getNumConstraints())) {
       const ConstraintBasePtr& constraint = constraintGroup.getConstraint(i);
       if (std::dynamic_pointer_cast<ContactConstraint>(constraint)) {
         mPositionConstraints.push_back(constraint);
@@ -799,7 +800,7 @@ void ConstraintSolver::solvePositionConstrainedGroups()
     }
   }
 
-  for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, mSkeletons.size())) {
     mSkeletons[i]->setImpulseApplied(mImpulseAppliedStates[i]);
   }
 }
@@ -1268,7 +1269,7 @@ void ConstraintSolver::print(
   }
   std::cout << std::endl;
 
-  auto* Ax = new double[n];
+  auto Ax = std::make_unique_for_overwrite<double[]>(n);
   for (std::size_t i = 0; i < n; ++i) {
     Ax[i] = 0.0;
   }
@@ -1289,8 +1290,6 @@ void ConstraintSolver::print(
     std::cout << b[i] + w[i] << " ";
   }
   std::cout << std::endl;
-
-  delete[] Ax;
 }
 
 } // namespace constraint

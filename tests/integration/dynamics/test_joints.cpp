@@ -60,6 +60,7 @@
 #include <algorithm>
 #include <array>
 #include <iostream>
+#include <numeric>
 
 using namespace dart;
 using namespace dart::math;
@@ -470,7 +471,7 @@ void testCommandLimits(dynamics::Joint* joint)
 {
   const double lower = -5.0;
   const double upper = +5.0;
-  const double mid = 0.5 * (lower + upper);
+  const double mid = std::midpoint(lower, upper);
   const double lessThanLower = -10.0;
   const double greaterThanUpper = +10.0;
 
@@ -1403,7 +1404,7 @@ TEST_F(Joints, PartialMimicJoint)
   followerPair.second->setMass(1.0);
 
   const double forceLimit = 1e5;
-  std::array<Joint*, 2> joints = {leaderJoint, followerJoint};
+  auto joints = std::to_array<Joint*>({leaderJoint, followerJoint});
   for (Joint* joint : joints) {
     for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
       joint->setDampingCoefficient(i, 0.0);
@@ -1480,7 +1481,7 @@ TEST_F(Joints, PartialMimicJointWithCouplerFlagFallsBackToMimicMotor)
   followerPair.second->setMass(1.0);
 
   const double forceLimit = 1e5;
-  std::array<Joint*, 2> joints = {leaderJoint, followerJoint};
+  auto joints = std::to_array<Joint*>({leaderJoint, followerJoint});
   for (Joint* joint : joints) {
     for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
       joint->setDampingCoefficient(i, 0.0);

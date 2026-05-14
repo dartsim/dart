@@ -103,37 +103,38 @@ Errors Default::read(tinyxml2::XMLElement* element, const Default* parent)
     mGeomAttributes = parent->mGeomAttributes;
     mJointAttributes = parent->mJointAttributes;
     mMeshAttributes = parent->mMeshAttributes;
+    mWeldAttributes = parent->mWeldAttributes;
   }
 
   if (hasElement(element, "motor")) {
     const Errors e = appendActuatorAttributes(
         mMotorAttributes, getElement(element, "motor"));
-    errors.insert(errors.end(), e.begin(), e.end());
+    appendErrorRange(errors, e);
   }
 
   if (hasElement(element, "position")) {
     const Errors e = appendActuatorAttributes(
         mPositionAttributes, getElement(element, "position"));
-    errors.insert(errors.end(), e.begin(), e.end());
+    appendErrorRange(errors, e);
   }
 
   if (hasElement(element, "velocity")) {
     const Errors e = appendActuatorAttributes(
         mVelocityAttributes, getElement(element, "velocity"));
-    errors.insert(errors.end(), e.begin(), e.end());
+    appendErrorRange(errors, e);
   }
 
   if (hasElement(element, "general")) {
     const Errors e = appendActuatorAttributes(
         mGeneralAttributes, getElement(element, "general"));
-    errors.insert(errors.end(), e.begin(), e.end());
+    appendErrorRange(errors, e);
   }
 
   if (hasElement(element, "geom")) {
     auto geomElement = getElement(element, "geom");
     const Errors geomErrors
         = appendGeomAttributes(mGeomAttributes, geomElement);
-    errors.insert(errors.end(), geomErrors.begin(), geomErrors.end());
+    appendErrorRange(errors, geomErrors);
   }
 
   // Read <joint>
@@ -141,7 +142,7 @@ Errors Default::read(tinyxml2::XMLElement* element, const Default* parent)
     auto jointElement = getElement(element, "joint");
     const Errors jointErrors
         = appendJointAttributes(mJointAttributes, jointElement);
-    errors.insert(errors.end(), jointErrors.begin(), jointErrors.end());
+    appendErrorRange(errors, jointErrors);
   }
 
   // Read <mesh>
@@ -149,7 +150,7 @@ Errors Default::read(tinyxml2::XMLElement* element, const Default* parent)
     auto meshElement = getElement(element, "mesh");
     const Errors meshErrors
         = appendMeshAttributes(mMeshAttributes, meshElement);
-    errors.insert(errors.end(), meshErrors.begin(), meshErrors.end());
+    appendErrorRange(errors, meshErrors);
   }
 
   // Read <mesh>
@@ -160,7 +161,7 @@ Errors Default::read(tinyxml2::XMLElement* element, const Default* parent)
       auto weldElement = getElement(equalityElement, "weld");
       const Errors weldErrors
           = appendWeldAttributes(mWeldAttributes, weldElement);
-      errors.insert(errors.end(), weldErrors.begin(), weldErrors.end());
+      appendErrorRange(errors, weldErrors);
     }
   }
 
@@ -237,7 +238,7 @@ Errors Defaults::read(tinyxml2::XMLElement* element, const Default* parent)
   auto newDefault = Default();
   const Errors defaultErrors = newDefault.read(element, parent);
   if (!defaultErrors.empty()) {
-    errors.insert(errors.end(), defaultErrors.begin(), defaultErrors.end());
+    appendErrorRange(errors, defaultErrors);
     return errors;
   }
   mDefaultMap[className] = newDefault;
@@ -247,7 +248,7 @@ Errors Defaults::read(tinyxml2::XMLElement* element, const Default* parent)
   while (defaultElements.next()) {
     const Errors defaultErrors = read(defaultElements.get(), &newDefault);
     if (!defaultErrors.empty()) {
-      errors.insert(errors.end(), defaultErrors.begin(), defaultErrors.end());
+      appendErrorRange(errors, defaultErrors);
       return errors;
     }
   }

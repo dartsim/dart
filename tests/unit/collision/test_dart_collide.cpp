@@ -14,6 +14,7 @@
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
+#include <array>
 #include <memory>
 
 #include <cmath>
@@ -701,41 +702,47 @@ TEST(DARTCollide, CylinderPlaneAllNegativeDepths)
 
 TEST(DARTCollideHelpers, CullPointsAndIntersectRectQuad)
 {
-  int iret[4] = {-1, -1, -1, -1};
+  auto iret = std::to_array<int>({-1, -1, -1, -1});
 
-  double single[2] = {1.0, 2.0};
-  cullPoints(1, single, 1, 0, iret);
+  auto single = std::to_array<double>({1.0, 2.0});
+  cullPoints(1, single.data(), 1, 0, iret.data());
   EXPECT_EQ(iret[0], 0);
 
-  double segment[4] = {0.0, 0.0, 1.0, 0.0};
-  cullPoints(2, segment, 2, 0, iret);
+  auto segment = std::to_array<double>({0.0, 0.0, 1.0, 0.0});
+  cullPoints(2, segment.data(), 2, 0, iret.data());
   EXPECT_EQ(iret[0], 0);
   EXPECT_EQ(iret[1], 1);
 
-  double quad[8] = {0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0};
-  cullPoints(4, quad, 3, 0, iret);
+  auto quad = std::to_array<double>({0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0});
+  cullPoints(4, quad.data(), 3, 0, iret.data());
   for (int i = 0; i < 3; ++i) {
     EXPECT_GE(iret[i], 0);
     EXPECT_LT(iret[i], 4);
   }
 
-  double h[2] = {1.0, 1.0};
-  double inside[8] = {0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5};
-  double ret[16] = {};
-  const int insideCount = intersectRectQuad(h, inside, ret);
+  auto h = std::to_array<double>({1.0, 1.0});
+  auto inside
+      = std::to_array<double>({0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5});
+  std::array<double, 16> ret{};
+  const int insideCount
+      = intersectRectQuad(h.data(), inside.data(), ret.data());
   EXPECT_EQ(insideCount, 4);
 
-  double outside[8] = {3.0, 3.0, 4.0, 3.0, 4.0, 4.0, 3.0, 4.0};
-  const int outsideCount = intersectRectQuad(h, outside, ret);
+  auto outside
+      = std::to_array<double>({3.0, 3.0, 4.0, 3.0, 4.0, 4.0, 3.0, 4.0});
+  const int outsideCount
+      = intersectRectQuad(h.data(), outside.data(), ret.data());
   EXPECT_EQ(outsideCount, 0);
 }
 
 TEST(DARTCollideHelpers, IntersectRectQuadOverflow)
 {
-  double h[2] = {1.0, 1.0};
-  double ret[16] = {};
-  double overflowQuad[8] = {2.0, 2.0, -2.0, 2.0, 2.0, -2.0, -2.0, -2.0};
-  const int count = intersectRectQuad(h, overflowQuad, ret);
+  auto h = std::to_array<double>({1.0, 1.0});
+  std::array<double, 16> ret{};
+  auto overflowQuad
+      = std::to_array<double>({2.0, 2.0, -2.0, 2.0, 2.0, -2.0, -2.0, -2.0});
+  const int count
+      = intersectRectQuad(h.data(), overflowQuad.data(), ret.data());
   EXPECT_GE(count, 0);
   EXPECT_LE(count, 8);
 }

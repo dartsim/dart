@@ -34,6 +34,9 @@
 
 #include "dart/collision/collision_object.hpp"
 #include "dart/common/macros.hpp"
+#include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/shape_frame.hpp"
+#include "dart/dynamics/shape_node.hpp"
 
 namespace dart {
 namespace collision {
@@ -71,7 +74,14 @@ const Contact& CollisionResult::getContact(std::size_t index) const
 //==============================================================================
 std::span<const Contact> CollisionResult::getContacts() const
 {
-  return std::span<const Contact>(mContacts);
+  return mContacts;
+}
+
+//==============================================================================
+const std::unordered_set<const dynamics::BodyNode*>&
+CollisionResult::getCollidingBodyNodes() const
+{
+  return mCollidingBodyNodes;
 }
 
 //==============================================================================
@@ -79,6 +89,12 @@ const std::unordered_set<const dynamics::ShapeFrame*>&
 CollisionResult::getCollidingShapeFrames() const
 {
   return mCollidingShapeFrames;
+}
+
+//==============================================================================
+bool CollisionResult::inCollision(const dynamics::BodyNode* bn) const
+{
+  return mCollidingBodyNodes.contains(bn);
 }
 
 //==============================================================================
@@ -105,6 +121,27 @@ void CollisionResult::clear()
   mContacts.clear();
   mCollidingShapeFrames.clear();
   mCollidingBodyNodes.clear();
+}
+
+//==============================================================================
+void CollisionResult::addObject(CollisionObject* object)
+{
+  if (!object) {
+    DART_ERROR(
+        "Attempting to add a collision with a nullptr object to a "
+        "CollisionResult instance. This is not allowed. Please report this as "
+        "a bug!");
+    DART_ASSERT(false);
+    return;
+  }
+
+  const dynamics::ShapeFrame* frame = object->getShapeFrame();
+  mCollidingShapeFrames.insert(frame);
+
+  if (frame->isShapeNode()) {
+    const dynamics::ShapeNode* node = frame->asShapeNode();
+    mCollidingBodyNodes.insert(node->getBodyNodePtr());
+  }
 }
 
 } // namespace collision

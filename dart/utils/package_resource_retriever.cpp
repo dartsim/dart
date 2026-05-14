@@ -37,6 +37,7 @@
 #include "dart/common/logging.hpp"
 #include "dart/common/uri.hpp"
 
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 
@@ -62,8 +63,7 @@ void PackageResourceRetriever::addPackageDirectory(
 {
   // Strip a trailing slash.
   std::string_view normalizedPackageDirectory = packageDirectory;
-  if (!normalizedPackageDirectory.empty()
-      && normalizedPackageDirectory.back() == '/') {
+  if (normalizedPackageDirectory.ends_with('/')) {
     normalizedPackageDirectory = normalizedPackageDirectory.substr(
         0, normalizedPackageDirectory.size() - 1);
   }
@@ -80,23 +80,20 @@ bool PackageResourceRetriever::exists(const common::Uri& uri)
     return false;
   }
 
-  for (const std::string& packagePath : getPackagePaths(packageName)) {
-    const std::string resolvedUri = packagePath + relativePath;
-    common::Uri fileUri;
-    if (!fileUri.fromStringOrPath(resolvedUri)) {
-      DART_WARN(
-          "Failed to parse resolved URI '{}' for package '{}'.",
-          resolvedUri,
-          packageName);
-      continue;
-    }
+  return std::ranges::any_of(
+      getPackagePaths(packageName), [&](const auto& packagePath) {
+        const std::string resolvedUri = packagePath + relativePath;
+        common::Uri fileUri;
+        if (!fileUri.fromStringOrPath(resolvedUri)) {
+          DART_WARN(
+              "Failed to parse resolved URI '{}' for package '{}'.",
+              resolvedUri,
+              packageName);
+          return false;
+        }
 
-    if (mLocalRetriever->exists(fileUri)) {
-      return true;
-    }
-  }
-
-  return false;
+        return mLocalRetriever->exists(fileUri);
+      });
 }
 
 //==============================================================================
@@ -167,14 +164,14 @@ std::span<const std::string> PackageResourceRetriever::getPackagePaths(
   // Lookup the corresponding package path.
   const auto it = mPackageMap.find(packageNameString);
   if (it != std::end(mPackageMap)) {
-    return std::span<const std::string>(it->second);
+    return it->second;
   } else {
     DART_WARN(
         "{}{}{}",
         "Unable to resolvepath to package '",
         packageNameString,
         "'. Did you call addPackageDirectory(~) for this package name?\n");
-    return std::span<const std::string>(empty_placeholder);
+    return empty_placeholder;
   }
 }
 

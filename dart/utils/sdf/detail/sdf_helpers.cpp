@@ -34,6 +34,8 @@
 
 #include <dart/common/uri.hpp>
 
+#include <algorithm>
+
 #include <cmath>
 
 #if __has_include(<gz/math/Quaternion.hh>)
@@ -62,10 +64,9 @@ double sanitizeParsedValue(double value)
 std::string toLowerCopy(std::string_view text)
 {
   std::string lower(text);
-  std::transform(
-      lower.begin(), lower.end(), lower.begin(), [](unsigned char c) {
-        return static_cast<char>(std::tolower(c));
-      });
+  std::ranges::transform(lower, lower.begin(), [](unsigned char c) {
+    return static_cast<char>(std::tolower(c));
+  });
   return lower;
 }
 
@@ -444,9 +445,7 @@ Eigen::VectorXd getValueVectorXd(
     const auto values = parseArray<double>(text);
     if (!values.empty()) {
       Eigen::VectorXd result(values.size());
-      for (std::size_t i = 0; i < values.size(); ++i) {
-        result[static_cast<Eigen::Index>(i)] = sanitizeParsedValue(values[i]);
-      }
+      std::ranges::transform(values, result.data(), sanitizeParsedValue);
       return result;
     }
   }

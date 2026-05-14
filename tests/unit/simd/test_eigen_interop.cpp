@@ -37,6 +37,8 @@
 #include <Eigen/Core>
 #include <gtest/gtest.h>
 
+#include <array>
+
 namespace ds = dart::simd;
 
 class EigenInteropTest : public ::testing::Test
@@ -180,11 +182,11 @@ TEST_F(EigenInteropTest, RoundTrip3Padded)
 
 TEST_F(EigenInteropTest, EigenSoA3Construction)
 {
-  std::array<Eigen::Vector3d, 4> aos
-      = {Eigen::Vector3d(1, 2, 3),
-         Eigen::Vector3d(4, 5, 6),
-         Eigen::Vector3d(7, 8, 9),
-         Eigen::Vector3d(10, 11, 12)};
+  const auto aos = std::to_array<Eigen::Vector3d>(
+      {Eigen::Vector3d(1, 2, 3),
+       Eigen::Vector3d(4, 5, 6),
+       Eigen::Vector3d(7, 8, 9),
+       Eigen::Vector3d(10, 11, 12)});
 
   ds::EigenSoA3d4 soa(aos);
 
@@ -206,11 +208,11 @@ TEST_F(EigenInteropTest, EigenSoA3Construction)
 
 TEST_F(EigenInteropTest, EigenSoA3ToAoS)
 {
-  std::array<Eigen::Vector3d, 4> original
-      = {Eigen::Vector3d(1, 2, 3),
-         Eigen::Vector3d(4, 5, 6),
-         Eigen::Vector3d(7, 8, 9),
-         Eigen::Vector3d(10, 11, 12)};
+  const auto original = std::to_array<Eigen::Vector3d>(
+      {Eigen::Vector3d(1, 2, 3),
+       Eigen::Vector3d(4, 5, 6),
+       Eigen::Vector3d(7, 8, 9),
+       Eigen::Vector3d(10, 11, 12)});
 
   ds::EigenSoA3d4 soa(original);
   auto result = soa.toAos();
@@ -239,17 +241,17 @@ TEST_F(EigenInteropTest, EigenSoA3GetSet)
 
 TEST_F(EigenInteropTest, Dot3)
 {
-  std::array<Eigen::Vector3d, 4> a_aos
-      = {Eigen::Vector3d(1, 0, 0),
-         Eigen::Vector3d(0, 1, 0),
-         Eigen::Vector3d(0, 0, 1),
-         Eigen::Vector3d(1, 1, 1)};
+  const auto a_aos = std::to_array<Eigen::Vector3d>(
+      {Eigen::Vector3d(1, 0, 0),
+       Eigen::Vector3d(0, 1, 0),
+       Eigen::Vector3d(0, 0, 1),
+       Eigen::Vector3d(1, 1, 1)});
 
-  std::array<Eigen::Vector3d, 4> b_aos
-      = {Eigen::Vector3d(1, 0, 0),
-         Eigen::Vector3d(0, 1, 0),
-         Eigen::Vector3d(0, 0, 1),
-         Eigen::Vector3d(1, 1, 1)};
+  const auto b_aos = std::to_array<Eigen::Vector3d>(
+      {Eigen::Vector3d(1, 0, 0),
+       Eigen::Vector3d(0, 1, 0),
+       Eigen::Vector3d(0, 0, 1),
+       Eigen::Vector3d(1, 1, 1)});
 
   ds::EigenSoA3d4 a(a_aos);
   ds::EigenSoA3d4 b(b_aos);
@@ -264,17 +266,17 @@ TEST_F(EigenInteropTest, Dot3)
 
 TEST_F(EigenInteropTest, Cross3)
 {
-  std::array<Eigen::Vector3d, 4> a_aos
-      = {Eigen::Vector3d(1, 0, 0),
-         Eigen::Vector3d(0, 1, 0),
-         Eigen::Vector3d(0, 0, 1),
-         Eigen::Vector3d(1, 2, 3)};
+  const auto a_aos = std::to_array<Eigen::Vector3d>(
+      {Eigen::Vector3d(1, 0, 0),
+       Eigen::Vector3d(0, 1, 0),
+       Eigen::Vector3d(0, 0, 1),
+       Eigen::Vector3d(1, 2, 3)});
 
-  std::array<Eigen::Vector3d, 4> b_aos
-      = {Eigen::Vector3d(0, 1, 0),
-         Eigen::Vector3d(0, 0, 1),
-         Eigen::Vector3d(1, 0, 0),
-         Eigen::Vector3d(4, 5, 6)};
+  const auto b_aos = std::to_array<Eigen::Vector3d>(
+      {Eigen::Vector3d(0, 1, 0),
+       Eigen::Vector3d(0, 0, 1),
+       Eigen::Vector3d(1, 0, 0),
+       Eigen::Vector3d(4, 5, 6)});
 
   ds::EigenSoA3d4 a(a_aos);
   ds::EigenSoA3d4 b(b_aos);
@@ -301,11 +303,11 @@ TEST_F(EigenInteropTest, Cross3)
 
 TEST_F(EigenInteropTest, TransposeAoSToSoA)
 {
-  std::array<Eigen::Vector3f, 4> aos
-      = {Eigen::Vector3f(1, 2, 3),
-         Eigen::Vector3f(4, 5, 6),
-         Eigen::Vector3f(7, 8, 9),
-         Eigen::Vector3f(10, 11, 12)};
+  const auto aos = std::to_array<Eigen::Vector3f>(
+      {Eigen::Vector3f(1, 2, 3),
+       Eigen::Vector3f(4, 5, 6),
+       Eigen::Vector3f(7, 8, 9),
+       Eigen::Vector3f(10, 11, 12)});
 
   auto soa = ds::transposeAosToSoa(aos);
 
@@ -334,11 +336,11 @@ TEST_F(EigenInteropTest, TransposeSoAToAoS)
 
 TEST_F(EigenInteropTest, EigenSoA4Construction)
 {
-  std::array<Eigen::Vector4d, 4> aos
-      = {Eigen::Vector4d(1, 2, 3, 4),
-         Eigen::Vector4d(5, 6, 7, 8),
-         Eigen::Vector4d(9, 10, 11, 12),
-         Eigen::Vector4d(13, 14, 15, 16)};
+  const auto aos = std::to_array<Eigen::Vector4d>(
+      {Eigen::Vector4d(1, 2, 3, 4),
+       Eigen::Vector4d(5, 6, 7, 8),
+       Eigen::Vector4d(9, 10, 11, 12),
+       Eigen::Vector4d(13, 14, 15, 16)});
 
   ds::EigenSoA4d4 soa(aos);
 
@@ -365,11 +367,11 @@ TEST_F(EigenInteropTest, EigenSoA4Construction)
 
 TEST_F(EigenInteropTest, EigenSoA4ToAoS)
 {
-  std::array<Eigen::Vector4d, 4> original
-      = {Eigen::Vector4d(1, 2, 3, 4),
-         Eigen::Vector4d(5, 6, 7, 8),
-         Eigen::Vector4d(9, 10, 11, 12),
-         Eigen::Vector4d(13, 14, 15, 16)};
+  const auto original = std::to_array<Eigen::Vector4d>(
+      {Eigen::Vector4d(1, 2, 3, 4),
+       Eigen::Vector4d(5, 6, 7, 8),
+       Eigen::Vector4d(9, 10, 11, 12),
+       Eigen::Vector4d(13, 14, 15, 16)});
 
   ds::EigenSoA4d4 soa(original);
   auto result = soa.toAos();
@@ -401,17 +403,17 @@ TEST_F(EigenInteropTest, EigenSoA4GetSet)
 
 TEST_F(EigenInteropTest, Dot4)
 {
-  std::array<Eigen::Vector4d, 4> a_aos
-      = {Eigen::Vector4d(1, 0, 0, 0),
-         Eigen::Vector4d(0, 1, 0, 0),
-         Eigen::Vector4d(0, 0, 1, 0),
-         Eigen::Vector4d(1, 1, 1, 1)};
+  const auto a_aos = std::to_array<Eigen::Vector4d>(
+      {Eigen::Vector4d(1, 0, 0, 0),
+       Eigen::Vector4d(0, 1, 0, 0),
+       Eigen::Vector4d(0, 0, 1, 0),
+       Eigen::Vector4d(1, 1, 1, 1)});
 
-  std::array<Eigen::Vector4d, 4> b_aos
-      = {Eigen::Vector4d(1, 0, 0, 0),
-         Eigen::Vector4d(0, 1, 0, 0),
-         Eigen::Vector4d(0, 0, 1, 0),
-         Eigen::Vector4d(1, 1, 1, 1)};
+  const auto b_aos = std::to_array<Eigen::Vector4d>(
+      {Eigen::Vector4d(1, 0, 0, 0),
+       Eigen::Vector4d(0, 1, 0, 0),
+       Eigen::Vector4d(0, 0, 1, 0),
+       Eigen::Vector4d(1, 1, 1, 1)});
 
   ds::EigenSoA4d4 a(a_aos);
   ds::EigenSoA4d4 b(b_aos);
@@ -426,11 +428,11 @@ TEST_F(EigenInteropTest, Dot4)
 
 TEST_F(EigenInteropTest, EigenSoA4TransposeAoSToSoA)
 {
-  std::array<Eigen::Vector4f, 4> aos
-      = {Eigen::Vector4f(1, 2, 3, 4),
-         Eigen::Vector4f(5, 6, 7, 8),
-         Eigen::Vector4f(9, 10, 11, 12),
-         Eigen::Vector4f(13, 14, 15, 16)};
+  const auto aos = std::to_array<Eigen::Vector4f>(
+      {Eigen::Vector4f(1, 2, 3, 4),
+       Eigen::Vector4f(5, 6, 7, 8),
+       Eigen::Vector4f(9, 10, 11, 12),
+       Eigen::Vector4f(13, 14, 15, 16)});
 
   auto soa = ds::transposeAosToSoa(aos);
 
@@ -463,11 +465,11 @@ TEST_F(EigenInteropTest, EigenSoA4TransposeSoAToAoS)
 
 TEST_F(EigenInteropTest, TransformPointsBatchIdentity)
 {
-  std::array<Eigen::Vector3d, 4> points_aos
-      = {Eigen::Vector3d(1, 2, 3),
-         Eigen::Vector3d(4, 5, 6),
-         Eigen::Vector3d(7, 8, 9),
-         Eigen::Vector3d(10, 11, 12)};
+  const auto points_aos = std::to_array<Eigen::Vector3d>(
+      {Eigen::Vector3d(1, 2, 3),
+       Eigen::Vector3d(4, 5, 6),
+       Eigen::Vector3d(7, 8, 9),
+       Eigen::Vector3d(10, 11, 12)});
 
   ds::EigenSoA3d4 points(points_aos);
   auto identity = ds::Matrix4x4d::identity();
@@ -484,11 +486,11 @@ TEST_F(EigenInteropTest, TransformPointsBatchIdentity)
 
 TEST_F(EigenInteropTest, TransformPointsBatchTranslation)
 {
-  std::array<Eigen::Vector3d, 4> points_aos
-      = {Eigen::Vector3d(0, 0, 0),
-         Eigen::Vector3d(1, 0, 0),
-         Eigen::Vector3d(0, 1, 0),
-         Eigen::Vector3d(0, 0, 1)};
+  const auto points_aos = std::to_array<Eigen::Vector3d>(
+      {Eigen::Vector3d(0, 0, 0),
+       Eigen::Vector3d(1, 0, 0),
+       Eigen::Vector3d(0, 1, 0),
+       Eigen::Vector3d(0, 0, 1)});
 
   ds::EigenSoA3d4 points(points_aos);
 
@@ -512,11 +514,11 @@ TEST_F(EigenInteropTest, TransformPointsBatchTranslation)
 
 TEST_F(EigenInteropTest, TransformVectorsBatchIdentity)
 {
-  std::array<Eigen::Vector3d, 4> vectors_aos
-      = {Eigen::Vector3d(1, 0, 0),
-         Eigen::Vector3d(0, 1, 0),
-         Eigen::Vector3d(0, 0, 1),
-         Eigen::Vector3d(1, 1, 1)};
+  const auto vectors_aos = std::to_array<Eigen::Vector3d>(
+      {Eigen::Vector3d(1, 0, 0),
+       Eigen::Vector3d(0, 1, 0),
+       Eigen::Vector3d(0, 0, 1),
+       Eigen::Vector3d(1, 1, 1)});
 
   ds::EigenSoA3d4 vectors(vectors_aos);
   auto identity = ds::Matrix4x4d::identity();
@@ -533,11 +535,11 @@ TEST_F(EigenInteropTest, TransformVectorsBatchIdentity)
 
 TEST_F(EigenInteropTest, TransformVectorsIgnoresTranslation)
 {
-  std::array<Eigen::Vector3d, 4> vectors_aos
-      = {Eigen::Vector3d(1, 0, 0),
-         Eigen::Vector3d(0, 1, 0),
-         Eigen::Vector3d(0, 0, 1),
-         Eigen::Vector3d(1, 1, 1)};
+  const auto vectors_aos = std::to_array<Eigen::Vector3d>(
+      {Eigen::Vector3d(1, 0, 0),
+       Eigen::Vector3d(0, 1, 0),
+       Eigen::Vector3d(0, 0, 1),
+       Eigen::Vector3d(1, 1, 1)});
 
   ds::EigenSoA3d4 vectors(vectors_aos);
 
@@ -559,11 +561,11 @@ TEST_F(EigenInteropTest, TransformVectorsIgnoresTranslation)
 
 TEST_F(EigenInteropTest, TransformPointsBatchRotation90Z)
 {
-  std::array<Eigen::Vector3d, 4> points_aos
-      = {Eigen::Vector3d(1, 0, 0),
-         Eigen::Vector3d(0, 1, 0),
-         Eigen::Vector3d(1, 1, 0),
-         Eigen::Vector3d(2, 0, 0)};
+  const auto points_aos = std::to_array<Eigen::Vector3d>(
+      {Eigen::Vector3d(1, 0, 0),
+       Eigen::Vector3d(0, 1, 0),
+       Eigen::Vector3d(1, 1, 0),
+       Eigen::Vector3d(2, 0, 0)});
 
   ds::EigenSoA3d4 points(points_aos);
 

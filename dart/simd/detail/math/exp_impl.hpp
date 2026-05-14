@@ -37,6 +37,8 @@
 #include <dart/simd/detail/math/polynomial.hpp>
 #include <dart/simd/fwd.hpp>
 
+#include <algorithm>
+
 #include <cmath>
 
 namespace dart::simd::detail::math {
@@ -65,7 +67,7 @@ template <std::size_t W>
   using MaskT = VecMask<float, W>;
 
   constexpr float range = 88.3762588501f;
-  constexpr float invLog2 = 1.44269504088896341f;
+  constexpr float invLog2 = MathConstants<float>::log2E;
   constexpr float nlog2Hi = -0.693359375f;
   constexpr float nlog2Lo = 2.12194440e-4f;
 
@@ -98,13 +100,8 @@ template <std::size_t W>
   alignas(A) float inRangeArr[W];
   select(inSimdRange, VecT::broadcast(1.0f), VecT::broadcast(0.0f))
       .store(inRangeArr);
-  bool needScalar = false;
-  for (std::size_t i = 0; i < W; ++i) {
-    if (inRangeArr[i] == 0.0f) {
-      needScalar = true;
-      break;
-    }
-  }
+  const bool needScalar = std::ranges::any_of(
+      inRangeArr, [](float value) { return value == 0.0f; });
   if (needScalar) {
     alignas(A) float xArr[W];
     alignas(A) float scalarArr[W];
@@ -135,7 +132,7 @@ template <std::size_t W>
   using MaskT = VecMask<double, W>;
 
   constexpr double range = 709.43613930310391424428;
-  constexpr double invLog2 = 1.44269504088896340736;
+  constexpr double invLog2 = MathConstants<double>::log2E;
   constexpr double nlog2Hi = -0.693145751953125;
   constexpr double nlog2Lo = -1.42860682030941723212e-6;
 
@@ -185,13 +182,8 @@ template <std::size_t W>
   alignas(A) double inRangeArr[W];
   select(inSimdRange, VecT::broadcast(1.0), VecT::broadcast(0.0))
       .store(inRangeArr);
-  bool needScalar = false;
-  for (std::size_t i = 0; i < W; ++i) {
-    if (inRangeArr[i] == 0.0) {
-      needScalar = true;
-      break;
-    }
-  }
+  const bool needScalar = std::ranges::any_of(
+      inRangeArr, [](double value) { return value == 0.0; });
   if (needScalar) {
     alignas(A) double xArr[W];
     alignas(A) double scalarArr[W];

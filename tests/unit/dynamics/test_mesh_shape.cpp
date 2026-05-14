@@ -13,13 +13,16 @@
 
 #include <atomic>
 #include <chrono>
+#include <filesystem>
 #include <fstream>
 #include <iterator>
 #include <memory>
 #include <set>
 #include <sstream>
 #include <string>
+#include <system_error>
 #include <unordered_map>
+#include <utility>
 
 #include <cmath>
 #include <cstring>
@@ -137,7 +140,7 @@ public:
     if (next < 0) {
       return false;
     }
-    if (static_cast<std::size_t>(next) > mData.size()) {
+    if (std::cmp_greater(next, mData.size())) {
       return false;
     }
 
@@ -210,7 +213,7 @@ private:
       if (byPath != mData.end()) {
         return &byPath->second;
       }
-      if (!path.empty() && path.front() == '/') {
+      if (path.starts_with('/')) {
         const auto byTrim = mData.find(path.substr(1));
         if (byTrim != mData.end()) {
           return &byTrim->second;
@@ -832,7 +835,7 @@ TEST(MeshShapeTest, TriMeshGetMeshCachesImportedScene)
 
 TEST(MeshShapeTest, TriMeshGetMeshPreservesTextureCoords)
 {
-  const auto tempDir = common::filesystem::temp_directory_path();
+  const auto tempDir = std::filesystem::temp_directory_path();
   const auto timestamp
       = std::chrono::high_resolution_clock::now().time_since_epoch().count();
   const auto baseName
@@ -888,13 +891,13 @@ TEST(MeshShapeTest, TriMeshGetMeshPreservesTextureCoords)
   EXPECT_TRUE(hasTexCoord(1.0f, 0.0f));
   EXPECT_TRUE(hasTexCoord(0.0f, 1.0f));
 
-  common::error_code ec;
-  common::filesystem::remove(objPath, ec);
+  std::error_code ec;
+  std::filesystem::remove(objPath, ec);
 }
 
 TEST(MeshShapeTest, TriMeshGetMeshPreservesMaterialIndices)
 {
-  const auto tempDir = common::filesystem::temp_directory_path();
+  const auto tempDir = std::filesystem::temp_directory_path();
   const auto timestamp
       = std::chrono::high_resolution_clock::now().time_since_epoch().count();
   const auto baseName
@@ -996,12 +999,12 @@ TEST(MeshShapeTest, TriMeshGetMeshPreservesMaterialIndices)
     expectedMaterialNames.insert("material_" + std::to_string(index));
   }
   for (const auto& name : usedMaterialNames) {
-    EXPECT_TRUE(expectedMaterialNames.count(name)) << materialSummary.str();
+    EXPECT_TRUE(expectedMaterialNames.contains(name)) << materialSummary.str();
   }
 
-  common::error_code ec;
-  common::filesystem::remove(objPath, ec);
-  common::filesystem::remove(mtlPath, ec);
+  std::error_code ec;
+  std::filesystem::remove(objPath, ec);
+  std::filesystem::remove(mtlPath, ec);
 }
 
 TEST(MeshShapeTest, SetMeshAdoptsCachedSceneWithoutUseAfterFree)
@@ -1154,7 +1157,7 @@ TEST(MeshShapeTest, ConvertAssimpMeshPopulatesSubMeshes)
 
 TEST(MeshShapeTest, ConvertToAssimpMeshUsesEmbeddedMaterials)
 {
-  const auto tempDir = common::filesystem::temp_directory_path();
+  const auto tempDir = std::filesystem::temp_directory_path();
   const auto timestamp
       = std::chrono::high_resolution_clock::now().time_since_epoch().count();
   const auto baseName
@@ -1216,9 +1219,9 @@ TEST(MeshShapeTest, ConvertToAssimpMeshUsesEmbeddedMaterials)
   EXPECT_GE(scene->mNumMeshes, 1u);
   aiReleaseImport(const_cast<aiScene*>(scene));
 
-  common::error_code ec;
-  common::filesystem::remove(objPath, ec);
-  common::filesystem::remove(mtlPath, ec);
+  std::error_code ec;
+  std::filesystem::remove(objPath, ec);
+  std::filesystem::remove(mtlPath, ec);
 }
 
 TEST(MeshShapeTest, ConvertToAssimpMeshUsesMemoryResourceForSubMeshes)
@@ -1516,7 +1519,7 @@ TEST(MeshShapeTest, BoundingBoxVolumeAndColorModes)
 
 TEST(MeshShapeTest, LoadMeshFromTempObjAndUriMetadata)
 {
-  const auto tempDir = common::filesystem::temp_directory_path();
+  const auto tempDir = std::filesystem::temp_directory_path();
   const auto timestamp
       = std::chrono::high_resolution_clock::now().time_since_epoch().count();
   const auto baseName
@@ -1555,13 +1558,13 @@ TEST(MeshShapeTest, LoadMeshFromTempObjAndUriMetadata)
   EXPECT_EQ(uriShape.getMeshUri(), nonFileUri.toString());
   EXPECT_TRUE(uriShape.getMeshPath().empty());
 
-  common::error_code ec;
-  common::filesystem::remove(objPath, ec);
+  std::error_code ec;
+  std::filesystem::remove(objPath, ec);
 }
 
 TEST(MeshShapeTest, ExtractMaterialsResolvesTexturePaths)
 {
-  const auto tempDir = common::filesystem::temp_directory_path();
+  const auto tempDir = std::filesystem::temp_directory_path();
   const auto timestamp
       = std::chrono::high_resolution_clock::now().time_since_epoch().count();
   const auto baseName = std::string("dart_meshshape_materials_tex_")
@@ -1613,8 +1616,8 @@ TEST(MeshShapeTest, ExtractMaterialsResolvesTexturePaths)
       retriever);
   DART_SUPPRESS_DEPRECATED_END
 
-  common::error_code ec;
-  const auto expectedPath = common::filesystem::canonical(texPath, ec).string();
+  std::error_code ec;
+  const auto expectedPath = std::filesystem::canonical(texPath, ec).string();
   ASSERT_FALSE(ec);
 
   bool foundTexture = false;
@@ -1627,9 +1630,9 @@ TEST(MeshShapeTest, ExtractMaterialsResolvesTexturePaths)
   }
   EXPECT_TRUE(foundTexture);
 
-  common::filesystem::remove(objPath, ec);
-  common::filesystem::remove(mtlPath, ec);
-  common::filesystem::remove(texPath, ec);
+  std::filesystem::remove(objPath, ec);
+  std::filesystem::remove(mtlPath, ec);
+  std::filesystem::remove(texPath, ec);
 }
 
 TEST(MeshShapeTest, ConvertToAssimpMeshWithSubMeshesAndTexCoords)
@@ -2085,7 +2088,7 @@ TEST(MeshShapeTest, LoadMeshFromCustomUriWithMaterial)
 
 TEST(MeshShapeTest, TriMeshConstructorPreservesTexturePaths)
 {
-  const auto tempDir = common::filesystem::temp_directory_path();
+  const auto tempDir = std::filesystem::temp_directory_path();
   const auto timestamp
       = std::chrono::high_resolution_clock::now().time_since_epoch().count();
   const auto baseName
@@ -2154,6 +2157,6 @@ TEST(MeshShapeTest, TriMeshConstructorPreservesTexturePaths)
   }
   EXPECT_TRUE(foundTexture);
 
-  common::error_code ec;
-  common::filesystem::remove(objPath, ec);
+  std::error_code ec;
+  std::filesystem::remove(objPath, ec);
 }

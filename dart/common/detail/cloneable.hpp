@@ -36,6 +36,9 @@
 #include <dart/common/cloneable.hpp>
 #include <dart/common/stl_helpers.hpp>
 
+#include <algorithm>
+#include <iterator>
+
 namespace dart {
 namespace common {
 
@@ -601,9 +604,10 @@ std::unique_ptr<CloneableVector<T>> CloneableVector<T>::clone() const
   std::vector<T> clonedVector;
   clonedVector.reserve(mVector.size());
 
-  for (const T& entry : mVector) {
-    clonedVector.push_back(entry->clone());
-  }
+  std::ranges::transform(
+      mVector, std::back_inserter(clonedVector), [](const T& entry) {
+        return entry->clone();
+      });
 
   return std::make_unique<CloneableVector<T>>(std::move(clonedVector));
 }
@@ -637,7 +641,7 @@ std::vector<T>& CloneableVector<T>::getVector()
 template <typename T>
 std::span<const T> CloneableVector<T>::getVector() const
 {
-  return std::span<const T>(mVector);
+  return mVector;
 }
 
 } // namespace common

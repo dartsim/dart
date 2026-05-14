@@ -28,9 +28,12 @@ unverified external and finalization gates:
   green yet. The initial `Asserts enabled (no -DNDEBUG)` Linux job exposed a
   workflow mismatch: it manually enabled Bullet in the default Pixi
   environment, where Bullet is intentionally absent after the native-only
-  dependency cleanup. The workflow is being repaired to configure that custom
-  asserts build as native-only unless it installs a reference-engine
-  environment.
+  dependency cleanup. The workflow repair was pushed as `901d56c4260` and
+  configures that custom asserts build as native-only unless it installs a
+  reference-engine environment. A follow-up `origin/main` merge is in progress
+  to clear PR mergeability conflicts, with focused local configure, build, and
+  anchored CTest evidence already passing for the merge-resolved collision,
+  contact, world, and GUI targets.
 - Downstream migration/deprecation evidence is still missing.
 - Final compatibility-facade retention/deprecation evidence is still missing:
   the documented decision is to delete old external-engine runtime
@@ -60,8 +63,8 @@ Current audited state:
   current local validation pass after the durable built-in architecture docs
   and compatibility-facade policy cleanup.
 - Remote branch state: `origin/feature/new_coll` is published at
-  `5b08a00d381` for PR evidence collection. A local CI workflow repair is in
-  progress after the first CI run.
+  `901d56c4260` after the asserts-enabled workflow repair. A local
+  `origin/main` merge is in progress to clear PR mergeability conflicts.
 - GitHub PR state: draft PR #2652
   (https://github.com/dartsim/dart/pull/2652) targets `main`, has the
   `DART 7.0` milestone, and is collecting CI evidence. The PR is intentionally
@@ -70,7 +73,7 @@ Current audited state:
   completed failure was `Asserts enabled (no -DNDEBUG)`, run `25870574281`,
   job `76024440344`, which failed during configure because
   `DART_BUILD_COLLISION_BULLET=ON` was still set in the default Pixi
-  environment. The local repair changes that custom configure to keep
+  environment. The pushed repair changes that custom configure to keep
   FCL/Bullet/ODE and collision reference tests/benchmarks `OFF`.
 - Follow-up local validation after the audit started from
   `1da52368282` and found that `pixi run test-all` failed in `build-tests`

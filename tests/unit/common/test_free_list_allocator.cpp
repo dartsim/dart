@@ -143,6 +143,40 @@ TEST(FreeListAllocatorTest, AllocateAfterDeallocate)
 }
 
 //==============================================================================
+TEST(FreeListAllocatorTest, RawAllocatorExpandsWhenCurrentBlocksAreFull)
+{
+  FreeListAllocator allocator(MemoryAllocator::GetDefault(), 64);
+
+  auto* first = allocator.allocate(64);
+  ASSERT_NE(first, nullptr);
+
+  auto* second = allocator.allocate(16);
+  ASSERT_NE(second, nullptr);
+
+  allocator.deallocate(first, 64);
+  allocator.deallocate(second, 16);
+}
+
+//==============================================================================
+TEST(FreeListAllocatorTest, RawAllocatorNoOpDeallocateAndPrint)
+{
+  FreeListAllocator allocator(MemoryAllocator::GetDefault(), 128);
+
+  allocator.deallocate(nullptr, 1);
+
+  auto* ptr = allocator.allocate(16);
+  ASSERT_NE(ptr, nullptr);
+
+  allocator.deallocate(ptr, 0);
+
+  std::ostringstream oss;
+  allocator.print(oss);
+  EXPECT_NE(oss.str().find("[FreeListAllocator]"), std::string::npos);
+
+  allocator.deallocate(ptr, 16);
+}
+
+//==============================================================================
 TEST(FreeListAllocatorTest, PrintOutput)
 {
   auto a = FreeListAllocator::Debug();

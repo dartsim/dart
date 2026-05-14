@@ -202,13 +202,18 @@ in `Asserts enabled (no -DNDEBUG)`: the custom CMake configure still enabled
 Bullet in the default Pixi environment, where Bullet is intentionally absent.
 The latest repair makes that custom asserts configure explicitly native-only
 for FCL, Bullet, ODE, and collision reference harnesses, and the matching local
-`CMAKE_BUILD_TYPE=None` configure now passes.
+`CMAKE_BUILD_TYPE=None` configure now passes. That repair was pushed as
+`901d56c4260` (`Fix native collision asserts CI configure`). A follow-up
+`origin/main` merge is in progress to clear PR mergeability conflicts; focused
+local configure, build, and anchored CTest coverage for the merge-resolved
+native collision, contact, world, and GUI targets pass.
 
 ## Current Branch
 
 `feature/new_coll` - local branch tracking `origin/feature/new_coll`; draft
-PR #2652 is open and collecting CI evidence. Use `git status -sb` for the
-exact local/remote state.
+PR #2652 is open and collecting CI evidence. The local branch contains an
+in-progress `origin/main` merge until the merge commit is created and pushed.
+Use `git status -sb` for the exact local/remote state.
 
 ## Immediate Next Step
 
@@ -218,16 +223,17 @@ stale optional libccd cache repair has both targeted and full-suite local
 evidence at `da532729bec`, native type-taxonomy cleanup has focused native test
 evidence at `cd16b64be0b`, and the current VSG stale shape-type switch repair
 has full `test-all` evidence through the latest documented head
-`864dd56d944c`, and the branch was published at `5b08a00d381` before the first
-CI triage slice. The immediate next evidence steps are to push the
-asserts-enabled workflow repair, watch PR #2652 CI, collect native-only/gz and
-wheel matrix artifact evidence, collect GitHub evidence for the scheduled or
-manual benchmark guard, record downstream migration/deprecation evidence,
-perform final runtime cleanup, rerun full validation after the PR-complete
-state, transfer final evidence to the PR, and delete the dev-task folder in
-the completing PR. Read `06-completion-audit.md` before deciding whether a
-future checkpoint is complete; it is the prompt-to-artifact checklist for the
-north-star goal.
+`864dd56d944c`, the branch was published at `5b08a00d381` before the first CI
+triage slice, the asserts-enabled workflow repair was pushed at
+`901d56c4260`, and the current local work is merging `origin/main` into the
+branch. The immediate next evidence steps are to finish and push the merge
+commit, watch PR #2652 CI, collect native-only/gz and wheel matrix artifact
+evidence, collect GitHub evidence for the scheduled or manual benchmark guard,
+record downstream migration/deprecation evidence, perform final runtime
+cleanup, rerun full validation after the PR-complete state, transfer final
+evidence to the PR, and delete the dev-task folder in the completing PR. Read
+`06-completion-audit.md` before deciding whether a future checkpoint is
+complete; it is the prompt-to-artifact checklist for the north-star goal.
 
 The persistent DART adapter scene path is now started: public collision,
 distance, and raycast calls use synced native scene state owned by

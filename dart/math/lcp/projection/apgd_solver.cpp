@@ -37,6 +37,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <span>
 #include <vector>
 
 #include <cmath>
@@ -121,27 +122,57 @@ LcpResult ApgdSolver::solve(
     return result;
   }
 
-  std::vector<double> Adata(static_cast<std::size_t>(n * nSkip), 0.0);
-  std::vector<double> xdata(static_cast<std::size_t>(n), 0.0);
-  std::vector<double> xPrevData(static_cast<std::size_t>(n), 0.0);
-  std::vector<double> ydata(static_cast<std::size_t>(n), 0.0);
-  std::vector<double> bdata(static_cast<std::size_t>(n), 0.0);
-  std::vector<double> loData(static_cast<std::size_t>(n), 0.0);
-  std::vector<double> hiData(static_cast<std::size_t>(n), 0.0);
-  std::vector<int> findexData(static_cast<std::size_t>(n), -1);
+  const auto problemSize = static_cast<std::size_t>(n);
+  const auto paddedSize = static_cast<std::size_t>(nSkip);
+
+  std::vector<double> Adata(problemSize * paddedSize, 0.0);
+  std::vector<double> xdata(problemSize, 0.0);
+  std::vector<double> xPrevData(problemSize, 0.0);
+  std::vector<double> ydata(problemSize, 0.0);
+  std::vector<double> bdata(problemSize, 0.0);
+  std::vector<double> loData(problemSize, 0.0);
+  std::vector<double> hiData(problemSize, 0.0);
+  std::vector<int> findexData(problemSize, -1);
+
+  std::span<double> aValues{Adata};
+  std::span<double> xValues{xdata};
+  std::span<double> xPrevValues{xPrevData};
+  std::span<double> yValues{ydata};
+  std::span<double> bValues{bdata};
+  std::span<double> loValues{loData};
+  std::span<double> hiValues{hiData};
+  std::span<int> findexValues{findexData};
+
+  auto aRow = [&](int row) -> std::span<double> {
+    return aValues.subspan(
+        static_cast<std::size_t>(row) * paddedSize, problemSize);
+  };
+
+  auto projectIntoBounds = [&](double value, std::size_t idx) {
+    if (findexValues[idx] >= 0) {
+      const auto frictionIndex = static_cast<std::size_t>(findexValues[idx]);
+      const double frictionLimit
+          = std::abs(hiValues[idx] * xValues[frictionIndex]);
+      return detail::projectToBounds(value, -frictionLimit, frictionLimit);
+    }
+
+    return detail::projectToBounds(value, loValues[idx], hiValues[idx]);
+  };
 
   for (int r = 0; r < n; ++r) {
-    bdata[static_cast<std::size_t>(r)] = b[r];
+    const auto idx = static_cast<std::size_t>(r);
+    std::span<double> row = aRow(r);
+    bValues[idx] = b[r];
     const double initVal
         = (options.warmStart && std::isfinite(x[r])) ? x[r] : 0.0;
-    xdata[static_cast<std::size_t>(r)] = initVal;
-    xPrevData[static_cast<std::size_t>(r)] = initVal;
-    ydata[static_cast<std::size_t>(r)] = initVal;
-    loData[static_cast<std::size_t>(r)] = lo[r];
-    hiData[static_cast<std::size_t>(r)] = hi[r];
-    findexData[static_cast<std::size_t>(r)] = findex[r];
+    xValues[idx] = initVal;
+    xPrevValues[idx] = initVal;
+    yValues[idx] = initVal;
+    loValues[idx] = lo[r];
+    hiValues[idx] = hi[r];
+    findexValues[idx] = findex[r];
     for (int c = 0; c < n; ++c) {
-      Adata[static_cast<std::size_t>(r * nSkip + c)] = A(r, c);
+      row[static_cast<std::size_t>(c)] = A(r, c);
     }
   }
 
@@ -149,21 +180,23 @@ LcpResult ApgdSolver::solve(
   order.reserve(static_cast<std::size_t>(n));
 
   for (int i = 0; i < n; ++i) {
-    if (Adata[static_cast<std::size_t>(nSkip * i + i)]
-        >= params->epsilonForDivision) {
+    const auto idx = static_cast<std::size_t>(i);
+    std::span<double> row = aRow(i);
+    if (row[idx] >= params->epsilonForDivision) {
       order.push_back(i);
     } else {
-      xdata[static_cast<std::size_t>(i)] = 0.0;
-      ydata[static_cast<std::size_t>(i)] = 0.0;
+      xValues[idx] = 0.0;
+      yValues[idx] = 0.0;
     }
   }
 
   for (const auto& index : order) {
-    const double invDiag
-        = 1.0 / Adata[static_cast<std::size_t>(nSkip * index + index)];
-    bdata[static_cast<std::size_t>(index)] *= invDiag;
+    const auto idx = static_cast<std::size_t>(index);
+    std::span<double> row = aRow(index);
+    const double invDiag = 1.0 / row[idx];
+    bValues[idx] *= invDiag;
     for (int j = 0; j < n; ++j) {
-      Adata[static_cast<std::size_t>(nSkip * index + j)] *= invDiag;
+      row[static_cast<std::size_t>(j)] *= invDiag;
     }
   }
 
@@ -178,58 +211,39 @@ LcpResult ApgdSolver::solve(
                         / static_cast<double>(restartIter + 3);
     for (const auto& index : order) {
       const std::size_t idx = static_cast<std::size_t>(index);
-      ydata[idx] = xdata[idx] + beta * (xdata[idx] - xPrevData[idx]);
+      yValues[idx] = xValues[idx] + beta * (xValues[idx] - xPrevValues[idx]);
     }
 
     for (const auto& index : order) {
-      xPrevData[static_cast<std::size_t>(index)]
-          = xdata[static_cast<std::size_t>(index)];
+      const auto idx = static_cast<std::size_t>(index);
+      xPrevValues[idx] = xValues[idx];
     }
 
     bool possibleToTerminate = true;
 
     for (const auto& index : order) {
       const std::size_t idx = static_cast<std::size_t>(index);
-      const double* APtr = Adata.data() + nSkip * index;
-      double newX = bdata[idx];
+      const std::span<double> row = aRow(index);
+      double newX = bValues[idx];
 
       for (int j = 0; j < index; j++) {
-        newX -= APtr[j] * xdata[static_cast<std::size_t>(j)];
+        newX -= row[static_cast<std::size_t>(j)]
+                * xValues[static_cast<std::size_t>(j)];
       }
 
       for (int j = index + 1; j < n; j++) {
-        newX -= APtr[j] * ydata[static_cast<std::size_t>(j)];
+        newX -= row[static_cast<std::size_t>(j)]
+                * yValues[static_cast<std::size_t>(j)];
       }
 
-      const double oldX = xdata[idx];
-      newX = oldX + relaxation * (newX - oldX);
-
-      if (findexData[idx] >= 0) {
-        const double hiTmp = std::abs(
-            hiData[idx] * xdata[static_cast<std::size_t>(findexData[idx])]);
-        const double loTmp = -hiTmp;
-
-        if (newX > hiTmp) {
-          xdata[idx] = hiTmp;
-        } else if (newX < loTmp) {
-          xdata[idx] = loTmp;
-        } else {
-          xdata[idx] = newX;
-        }
-      } else {
-        if (newX > hiData[idx]) {
-          xdata[idx] = hiData[idx];
-        } else if (newX < loData[idx]) {
-          xdata[idx] = loData[idx];
-        } else {
-          xdata[idx] = newX;
-        }
-      }
+      const double oldX = xValues[idx];
+      newX = std::lerp(oldX, newX, relaxation);
+      xValues[idx] = projectIntoBounds(newX, idx);
 
       if (possibleToTerminate
-          && std::abs(xdata[idx]) > params->epsilonForDivision) {
+          && std::abs(xValues[idx]) > params->epsilonForDivision) {
         const double relativeDeltaX
-            = std::abs((xdata[idx] - oldX) / xdata[idx]);
+            = std::abs((xValues[idx] - oldX) / xValues[idx]);
         if (relativeDeltaX > relativeTolerance) {
           possibleToTerminate = false;
         }
@@ -243,12 +257,14 @@ LcpResult ApgdSolver::solve(
       double residualPrev = 0.0;
       for (const auto& index : order) {
         const std::size_t idx = static_cast<std::size_t>(index);
-        const double* APtr = Adata.data() + nSkip * index;
-        double wNow = -bdata[idx];
-        double wPrev = -bdata[idx];
+        const std::span<double> row = aRow(index);
+        double wNow = -bValues[idx];
+        double wPrev = -bValues[idx];
         for (int j = 0; j < n; ++j) {
-          wNow += APtr[j] * xdata[static_cast<std::size_t>(j)];
-          wPrev += APtr[j] * xPrevData[static_cast<std::size_t>(j)];
+          wNow += row[static_cast<std::size_t>(j)]
+                  * xValues[static_cast<std::size_t>(j)];
+          wPrev += row[static_cast<std::size_t>(j)]
+                   * xPrevValues[static_cast<std::size_t>(j)];
         }
         residualNow += wNow * wNow;
         residualPrev += wPrev * wPrev;

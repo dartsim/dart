@@ -3,7 +3,8 @@ name: CI SIMD Multi-Arch
 on:
   push:
     branches:
-      - "**"
+      - "main"
+      - "release-*"
     paths:
       - "dart/simd/**"
       - "tests/unit/simd/**"
@@ -45,10 +46,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup pixi
-        uses: prefix-dev/setup-pixi@v0.9.4
+      - name: Setup pixi (CI)
+        uses: ./.github/actions/setup-pixi-ci
         with:
-          cache: true
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Install system dependencies
@@ -56,6 +56,9 @@ jobs:
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev
           version: 2
+
+      - name: Configure environment for compiler cache
+        uses: ./.github/actions/configure-compiler-cache
 
       - name: Build SIMD library
         run: |
@@ -98,11 +101,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup pixi
-        uses: prefix-dev/setup-pixi@v0.9.4
+      - name: Setup pixi (CI)
+        uses: ./.github/actions/setup-pixi-ci
         with:
           cache: false
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
+          sccache-continue-on-error: true
+
+      - name: Configure environment for compiler cache
+        uses: ./.github/actions/configure-compiler-cache
 
       - name: Build SIMD library
         run: |

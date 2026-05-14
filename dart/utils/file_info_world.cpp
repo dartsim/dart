@@ -34,6 +34,7 @@
 
 #include "dart/simulation/recording.hpp"
 
+#include <algorithm>
 #include <fstream>
 #include <string>
 
@@ -104,9 +105,7 @@ bool FileInfoWorld::loadFile(const char* _fName)
     }
 
     state.resize(tempState.size());
-    for (std::size_t j = 0; j < tempState.size(); j++) {
-      state[j] = tempState[j];
-    }
+    std::ranges::copy(tempState, state.data());
     mRecord->addState(state);
     tempState.clear();
   }

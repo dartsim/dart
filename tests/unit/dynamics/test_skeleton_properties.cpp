@@ -45,6 +45,8 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <iterator>
+#include <ranges>
 #include <vector>
 
 using namespace dart::dynamics;
@@ -200,9 +202,9 @@ TEST(SkeletonConfiguration, GetConfigWithIndicesAndCommands)
       indices,
       Skeleton::CONFIG_COMMANDS | Skeleton::CONFIG_FORCES
           | Skeleton::CONFIG_ACCELERATIONS);
-  EXPECT_EQ(config.mCommands.size(), static_cast<int>(indices.size()));
-  EXPECT_EQ(config.mForces.size(), static_cast<int>(indices.size()));
-  EXPECT_EQ(config.mAccelerations.size(), static_cast<int>(indices.size()));
+  EXPECT_EQ(config.mCommands.size(), std::ssize(indices));
+  EXPECT_EQ(config.mForces.size(), std::ssize(indices));
+  EXPECT_EQ(config.mAccelerations.size(), std::ssize(indices));
   EXPECT_EQ(config.mPositions.size(), 0);
   EXPECT_EQ(config.mVelocities.size(), 0);
 }
@@ -257,13 +259,13 @@ TEST(SkeletonConfiguration, UpdatesSelectedDofs)
   const Eigen::VectorXd updatedPositions = skeleton->getPositions();
   const Eigen::VectorXd updatedVelocities = skeleton->getVelocities();
 
-  for (std::size_t i = 0; i < indices.size(); ++i) {
+  for (const auto i : std::views::iota(std::size_t{0}, indices.size())) {
     EXPECT_DOUBLE_EQ(updatedPositions[indices[i]], positions[i]);
     EXPECT_DOUBLE_EQ(updatedVelocities[indices[i]], velocities[i]);
   }
 
   for (std::size_t i = 0; i < dofs; ++i) {
-    if (std::find(indices.begin(), indices.end(), i) == indices.end()) {
+    if (std::ranges::find(indices, i) == indices.end()) {
       EXPECT_DOUBLE_EQ(updatedPositions[i], 0.0);
       EXPECT_DOUBLE_EQ(updatedVelocities[i], 0.0);
     }
@@ -347,66 +349,66 @@ TEST(SkeletonProperties, TreeLevelMassMatrixGetters)
   const auto tree1Dofs = skeleton->getTreeDofs(1);
 
   const auto& mass0 = skeleton->getMassMatrix(0);
-  EXPECT_EQ(mass0.rows(), static_cast<int>(tree0Dofs.size()));
-  EXPECT_EQ(mass0.cols(), static_cast<int>(tree0Dofs.size()));
+  EXPECT_EQ(mass0.rows(), std::ssize(tree0Dofs));
+  EXPECT_EQ(mass0.cols(), std::ssize(tree0Dofs));
 
   const auto& augMass0 = skeleton->getAugMassMatrix(0);
-  EXPECT_EQ(augMass0.rows(), static_cast<int>(tree0Dofs.size()));
-  EXPECT_EQ(augMass0.cols(), static_cast<int>(tree0Dofs.size()));
+  EXPECT_EQ(augMass0.rows(), std::ssize(tree0Dofs));
+  EXPECT_EQ(augMass0.cols(), std::ssize(tree0Dofs));
 
   const auto& invMass0 = skeleton->getInvMassMatrix(0);
-  EXPECT_EQ(invMass0.rows(), static_cast<int>(tree0Dofs.size()));
-  EXPECT_EQ(invMass0.cols(), static_cast<int>(tree0Dofs.size()));
+  EXPECT_EQ(invMass0.rows(), std::ssize(tree0Dofs));
+  EXPECT_EQ(invMass0.cols(), std::ssize(tree0Dofs));
 
   const auto& invAugMass0 = skeleton->getInvAugMassMatrix(0);
-  EXPECT_EQ(invAugMass0.rows(), static_cast<int>(tree0Dofs.size()));
-  EXPECT_EQ(invAugMass0.cols(), static_cast<int>(tree0Dofs.size()));
+  EXPECT_EQ(invAugMass0.rows(), std::ssize(tree0Dofs));
+  EXPECT_EQ(invAugMass0.cols(), std::ssize(tree0Dofs));
 
   const auto& coriolis0 = skeleton->getCoriolisForces(0);
-  EXPECT_EQ(coriolis0.size(), static_cast<int>(tree0Dofs.size()));
+  EXPECT_EQ(coriolis0.size(), std::ssize(tree0Dofs));
 
   const auto& gravity0 = skeleton->getGravityForces(0);
-  EXPECT_EQ(gravity0.size(), static_cast<int>(tree0Dofs.size()));
+  EXPECT_EQ(gravity0.size(), std::ssize(tree0Dofs));
 
   const auto& cg0 = skeleton->getCoriolisAndGravityForces(0);
-  EXPECT_EQ(cg0.size(), static_cast<int>(tree0Dofs.size()));
+  EXPECT_EQ(cg0.size(), std::ssize(tree0Dofs));
 
   const auto& ext0 = skeleton->getExternalForces(0);
-  EXPECT_EQ(ext0.size(), static_cast<int>(tree0Dofs.size()));
+  EXPECT_EQ(ext0.size(), std::ssize(tree0Dofs));
 
   const auto& constraint0 = skeleton->getConstraintForces(0);
-  EXPECT_EQ(constraint0.size(), static_cast<int>(tree0Dofs.size()));
+  EXPECT_EQ(constraint0.size(), std::ssize(tree0Dofs));
 
   const auto& mass1 = skeleton->getMassMatrix(1);
-  EXPECT_EQ(mass1.rows(), static_cast<int>(tree1Dofs.size()));
-  EXPECT_EQ(mass1.cols(), static_cast<int>(tree1Dofs.size()));
+  EXPECT_EQ(mass1.rows(), std::ssize(tree1Dofs));
+  EXPECT_EQ(mass1.cols(), std::ssize(tree1Dofs));
 
   const auto& augMass1 = skeleton->getAugMassMatrix(1);
-  EXPECT_EQ(augMass1.rows(), static_cast<int>(tree1Dofs.size()));
-  EXPECT_EQ(augMass1.cols(), static_cast<int>(tree1Dofs.size()));
+  EXPECT_EQ(augMass1.rows(), std::ssize(tree1Dofs));
+  EXPECT_EQ(augMass1.cols(), std::ssize(tree1Dofs));
 
   const auto& invMass1 = skeleton->getInvMassMatrix(1);
-  EXPECT_EQ(invMass1.rows(), static_cast<int>(tree1Dofs.size()));
-  EXPECT_EQ(invMass1.cols(), static_cast<int>(tree1Dofs.size()));
+  EXPECT_EQ(invMass1.rows(), std::ssize(tree1Dofs));
+  EXPECT_EQ(invMass1.cols(), std::ssize(tree1Dofs));
 
   const auto& invAugMass1 = skeleton->getInvAugMassMatrix(1);
-  EXPECT_EQ(invAugMass1.rows(), static_cast<int>(tree1Dofs.size()));
-  EXPECT_EQ(invAugMass1.cols(), static_cast<int>(tree1Dofs.size()));
+  EXPECT_EQ(invAugMass1.rows(), std::ssize(tree1Dofs));
+  EXPECT_EQ(invAugMass1.cols(), std::ssize(tree1Dofs));
 
   const auto& coriolis1 = skeleton->getCoriolisForces(1);
-  EXPECT_EQ(coriolis1.size(), static_cast<int>(tree1Dofs.size()));
+  EXPECT_EQ(coriolis1.size(), std::ssize(tree1Dofs));
 
   const auto& gravity1 = skeleton->getGravityForces(1);
-  EXPECT_EQ(gravity1.size(), static_cast<int>(tree1Dofs.size()));
+  EXPECT_EQ(gravity1.size(), std::ssize(tree1Dofs));
 
   const auto& cg1 = skeleton->getCoriolisAndGravityForces(1);
-  EXPECT_EQ(cg1.size(), static_cast<int>(tree1Dofs.size()));
+  EXPECT_EQ(cg1.size(), std::ssize(tree1Dofs));
 
   const auto& ext1 = skeleton->getExternalForces(1);
-  EXPECT_EQ(ext1.size(), static_cast<int>(tree1Dofs.size()));
+  EXPECT_EQ(ext1.size(), std::ssize(tree1Dofs));
 
   const auto& constraint1 = skeleton->getConstraintForces(1);
-  EXPECT_EQ(constraint1.size(), static_cast<int>(tree1Dofs.size()));
+  EXPECT_EQ(constraint1.size(), std::ssize(tree1Dofs));
 
   Eigen::VectorXd positions = skeleton->getPositions();
   positions[0] += 0.2;

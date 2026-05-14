@@ -38,6 +38,8 @@
 #include "dart/math/optimization/problem.hpp"
 
 #include <iostream>
+#include <iterator>
+#include <utility>
 
 namespace dart {
 namespace math {
@@ -125,7 +127,7 @@ bool GradientDescentSolver::solve()
   }
 
   Eigen::VectorXd x = problem->getInitialGuess();
-  DART_ASSERT(x.size() == static_cast<int>(dim));
+  DART_ASSERT(std::cmp_equal(x.size(), dim));
 
   Eigen::VectorXd lastx = x;
   Eigen::VectorXd dx(x.size());
@@ -181,8 +183,7 @@ bool GradientDescentSolver::solve()
       if (objective) {
         objective->evalGradient(x, dxMap);
       }
-      for (int i = 0; i < static_cast<int>(problem->getNumEqConstraints());
-           ++i) {
+      for (std::size_t i = 0; i < problem->getNumEqConstraints(); ++i) {
         if (std::abs(mEqConstraintCostCache[i]) < tol) {
           continue;
         }
@@ -191,7 +192,7 @@ bool GradientDescentSolver::solve()
 
         // Get the user-specified weight if available, otherwise use the default
         // weight value
-        double weight = mGradientP.mEqConstraintWeights.size() > i
+        double weight = std::cmp_less(i, mGradientP.mEqConstraintWeights.size())
                             ? mGradientP.mEqConstraintWeights[i]
                             : mGradientP.mDefaultConstraintWeight;
 
@@ -202,8 +203,7 @@ bool GradientDescentSolver::solve()
         dx += weight * grad * math::sign(mEqConstraintCostCache[i]);
       }
 
-      for (int i = 0; i < static_cast<int>(problem->getNumIneqConstraints());
-           ++i) {
+      for (std::size_t i = 0; i < problem->getNumIneqConstraints(); ++i) {
         if (mIneqConstraintCostCache[i] < tol) {
           continue;
         }
@@ -212,9 +212,10 @@ bool GradientDescentSolver::solve()
 
         // Get the user-specified weight if available, otherwise use the
         // default weight value
-        double weight = mGradientP.mIneqConstraintWeights.size() > i
-                            ? mGradientP.mIneqConstraintWeights[i]
-                            : mGradientP.mDefaultConstraintWeight;
+        double weight
+            = std::cmp_less(i, mGradientP.mIneqConstraintWeights.size())
+                  ? mGradientP.mIneqConstraintWeights[i]
+                  : mGradientP.mDefaultConstraintWeight;
 
         dx += weight * grad;
       }
@@ -432,11 +433,11 @@ void GradientDescentSolver::randomizeConfiguration(Eigen::VectorXd& _x)
     return;
   }
 
-  if (_x.size() < static_cast<int>(mProperties.mProblem->getDimension())) {
+  if (std::cmp_less(_x.size(), mProperties.mProblem->getDimension())) {
     _x = Eigen::VectorXd::Zero(mProperties.mProblem->getDimension());
   }
 
-  for (int i = 0; i < _x.size(); ++i) {
+  for (int i = 0; i < std::ssize(_x); ++i) {
     double lower = mProperties.mProblem->getLowerBounds()[i];
     double upper = mProperties.mProblem->getUpperBounds()[i];
     double step = upper - lower;
@@ -456,7 +457,7 @@ void GradientDescentSolver::clampToBoundary(Eigen::VectorXd& _x)
     return;
   }
 
-  if (_x.size() != static_cast<int>(mProperties.mProblem->getDimension())) {
+  if (!std::cmp_equal(_x.size(), mProperties.mProblem->getDimension())) {
     DART_ERROR(
         "Mismatch between configuration size [{}] and the dimension of the "
         "Problem [{}]",
@@ -469,7 +470,7 @@ void GradientDescentSolver::clampToBoundary(Eigen::VectorXd& _x)
   DART_ASSERT(mProperties.mProblem->getLowerBounds().size() == _x.size());
   DART_ASSERT(mProperties.mProblem->getUpperBounds().size() == _x.size());
 
-  for (int i = 0; i < _x.size(); ++i) {
+  for (int i = 0; i < std::ssize(_x); ++i) {
     _x[i] = math::clip(
         _x[i],
         mProperties.mProblem->getLowerBounds()[i],

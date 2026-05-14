@@ -112,6 +112,28 @@ BalanceRig makeBalanceRig()
   return {skeleton, ik, sliderJoint->getDof(0)->getIndexInSkeleton()};
 }
 
+BalanceRig makeLowDofBalanceRig()
+{
+  auto skeleton = Skeleton::create("low_dof_balancer");
+  skeleton->setGravity(Eigen::Vector3d(0, 0, -9.81));
+
+  PrismaticJoint::Properties sliderProps;
+  sliderProps.mAxis = Eigen::Vector3d::UnitX();
+  auto [rootJoint, rootBody]
+      = skeleton->createJointAndBodyNodePair<PrismaticJoint>(
+          nullptr, sliderProps, BodyNode::Properties());
+  rootBody->setMass(10.0);
+
+  const auto geometry = makeFootGeometry();
+  addSupportEndEffector(
+      rootBody, "left_foot", Eigen::Vector3d(0.8, 0.15, 0.0), geometry);
+  addSupportEndEffector(
+      rootBody, "right_foot", Eigen::Vector3d(1.0, -0.15, 0.0), geometry);
+
+  auto ik = WholeBodyIK::create(skeleton);
+  return {skeleton, ik, rootJoint->getDof(0)->getIndexInSkeleton()};
+}
+
 Eigen::VectorXd getPositions(const SkeletonPtr& skeleton)
 {
   Eigen::VectorXd q = skeleton->getPositions();
@@ -295,6 +317,23 @@ TEST(BalanceConstraintTests, EvalGradientWithShiftSupportFromEdge)
   Eigen::Map<Eigen::VectorXd> gradMap(gradient.data(), gradient.size());
   constraint.evalGradient(q, gradMap);
 
+  EXPECT_TRUE(gradMap.allFinite());
+}
+
+TEST(BalanceConstraintTests, ShiftComGradientWithLowDofSkeletonIsFinite)
+{
+  auto rig = makeLowDofBalanceRig();
+  BalanceConstraint constraint(
+      rig.ik, BalanceConstraint::SHIFT_COM, BalanceConstraint::FROM_CENTROID);
+
+  auto q = getPositions(rig.skeleton);
+  rig.skeleton->setPositions(q);
+
+  Eigen::VectorXd gradient(rig.skeleton->getNumDofs());
+  Eigen::Map<Eigen::VectorXd> gradMap(gradient.data(), gradient.size());
+  constraint.evalGradient(q, gradMap);
+
+  ASSERT_EQ(gradMap.size(), 1);
   EXPECT_TRUE(gradMap.allFinite());
 }
 

@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_MJCF_DETAIL_JOINTATTRIBUTES_HPP_
 #define DART_UTILS_MJCF_DETAIL_JOINTATTRIBUTES_HPP_
 
+#include <dart/utils/export.hpp>
 #include <dart/utils/mjcf/detail/error.hpp>
 #include <dart/utils/mjcf/detail/types.hpp>
 
@@ -46,7 +47,7 @@ namespace utils {
 namespace MjcfParser {
 namespace detail {
 
-struct JointAttributes final
+struct DART_UTILS_API JointAttributes final
 {
   std::optional<std::string> mName;
 
@@ -89,7 +90,7 @@ struct JointAttributes final
   Eigen::VectorXd mUser;
 };
 
-Errors appendJointAttributes(
+DART_UTILS_API Errors appendJointAttributes(
     JointAttributes& attributes, tinyxml2::XMLElement* element);
 
 } // namespace detail

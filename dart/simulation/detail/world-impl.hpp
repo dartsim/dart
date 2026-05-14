@@ -41,6 +41,9 @@
 
 #include <dart/simulation/world.hpp>
 
+#include <algorithm>
+#include <concepts>
+
 namespace dart {
 namespace simulation {
 
@@ -55,14 +58,11 @@ WorldPtr World::create(Args&&... args)
 template <typename Func>
 void World::eachSkeleton(Func func) const
 {
-  if constexpr (std::is_same_v<
+  if constexpr (std::same_as<
                     std::invoke_result_t<Func, const dynamics::Skeleton*>,
                     bool>) {
-    for (auto skel : mSkeletons) {
-      if (!func(skel.get())) {
-        return;
-      }
-    }
+    (void)std::ranges::all_of(
+        mSkeletons, [&func](auto skel) { return func(skel.get()); });
   } else {
     for (auto skel : mSkeletons) {
       func(skel.get());
@@ -74,14 +74,11 @@ void World::eachSkeleton(Func func) const
 template <typename Func>
 void World::eachSkeleton(Func func)
 {
-  if constexpr (std::is_same_v<
+  if constexpr (std::same_as<
                     std::invoke_result_t<Func, dynamics::Skeleton*>,
                     bool>) {
-    for (auto skel : mSkeletons) {
-      if (!func(skel.get())) {
-        return;
-      }
-    }
+    (void)std::ranges::all_of(
+        mSkeletons, [&func](auto skel) { return func(skel.get()); });
   } else {
     for (auto skel : mSkeletons) {
       func(skel.get());
@@ -93,14 +90,12 @@ void World::eachSkeleton(Func func)
 template <typename Func>
 void World::eachSimpleFrame(Func func) const
 {
-  if constexpr (std::is_same_v<
+  if constexpr (std::same_as<
                     std::invoke_result_t<Func, const dynamics::SimpleFrame*>,
                     bool>) {
-    for (auto simpleFrame : mSimpleFrames) {
-      if (!func(simpleFrame.get())) {
-        return;
-      }
-    }
+    (void)std::ranges::all_of(mSimpleFrames, [&func](auto simpleFrame) {
+      return func(simpleFrame.get());
+    });
   } else {
     for (auto simpleFrame : mSimpleFrames) {
       func(simpleFrame.get());
@@ -112,14 +107,12 @@ void World::eachSimpleFrame(Func func) const
 template <typename Func>
 void World::eachSimpleFrame(Func func)
 {
-  if constexpr (std::is_same_v<
+  if constexpr (std::same_as<
                     std::invoke_result_t<Func, dynamics::SimpleFrame*>,
                     bool>) {
-    for (auto simpleFrame : mSimpleFrames) {
-      if (!func(simpleFrame.get())) {
-        return;
-      }
-    }
+    (void)std::ranges::all_of(mSimpleFrames, [&func](auto simpleFrame) {
+      return func(simpleFrame.get());
+    });
   } else {
     for (auto simpleFrame : mSimpleFrames) {
       func(simpleFrame.get());

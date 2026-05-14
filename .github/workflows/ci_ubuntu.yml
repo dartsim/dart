@@ -5,7 +5,8 @@ name: CI Linux
 on:
   push:
     branches:
-      - "**"
+      - "main"
+      - "release-*"
   pull_request:
     branches:
       - "**"
@@ -24,7 +25,7 @@ jobs:
       code: ${{ steps.filter.outputs.code }}
     steps:
       - uses: actions/checkout@v6
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -75,7 +76,7 @@ jobs:
           pixi run coverage-report
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.info
@@ -108,12 +109,26 @@ jobs:
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
 
-      - name: Test DART and dartpy
+      - name: Run Release C++ tests
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Release \
           DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
-          pixi run test-all
+          pixi run test ON Release
+
+      - name: Run Release Python tests
+        run: |
+          DART_VERBOSE=ON \
+          BUILD_TYPE=Release \
+          DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
+          pixi run test-py ON Release
+
+      - name: Build Release examples
+        run: |
+          DART_VERBOSE=ON \
+          BUILD_TYPE=Release \
+          DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
+          pixi run build-examples ON Release
 
       - name: Test with AddressSanitizer
         run: |
@@ -258,12 +273,19 @@ jobs:
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
 
-      - name: Test DART and dartpy
+      - name: Run Debug C++ tests
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Debug \
           DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
-          pixi run test-all
+          pixi run test ON Debug
+
+      - name: Run Debug Python tests
+        run: |
+          DART_VERBOSE=ON \
+          BUILD_TYPE=Debug \
+          DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
+          pixi run test-py ON Debug
 
   build-asserts:
     needs: changes
@@ -319,6 +341,30 @@ jobs:
               -DDART_VERBOSE=$DART_VERBOSE
             cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j
           '
+
+  eigen-overalignment:
+    needs: changes
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true'
+    name: Eigen 64-byte alignment
+    runs-on: ubuntu-latest
+    env:
+      DART_PARALLEL_JOBS: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pixi (CI)
+        uses: ./.github/actions/setup-pixi-ci
+        with:
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
+
+      - name: Configure environment for compiler cache
+        uses: ./.github/actions/configure-compiler-cache
+
+      - name: Build and test with Eigen over-alignment
+        run: |
+          DART_VERBOSE=ON \
+          pixi run test-eigen-overalignment
 
   headless-rendering:
     needs: changes

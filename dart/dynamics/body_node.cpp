@@ -45,7 +45,9 @@
 #include "dart/math/helpers.hpp"
 
 #include <algorithm>
+#include <ranges>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <cmath>
@@ -384,8 +386,8 @@ void BodyNode::duplicateNodes(const BodyNode* otherBodyNode)
   }
 
   const NodeMap& otherMap = otherBodyNode->mNodeMap;
-  for (const auto& vec : otherMap) {
-    for (const auto& node : vec.second) {
+  for (const auto& nodes : otherMap | std::views::values) {
+    for (const auto& node : nodes) {
       node->cloneNode(this)->attach();
     }
   }
@@ -413,8 +415,8 @@ void BodyNode::matchNodes(const BodyNode* otherBodyNode)
 std::vector<Node*> BodyNode::getNodes()
 {
   std::vector<Node*> nodes;
-  for (auto& nodeType : mNodeMap) {
-    nodes.insert(nodes.end(), nodeType.second.begin(), nodeType.second.end());
+  for (auto& nodeGroup : mNodeMap | std::views::values) {
+    nodes.insert(nodes.end(), nodeGroup.begin(), nodeGroup.end());
   }
 
   return nodes;
@@ -424,8 +426,8 @@ std::vector<Node*> BodyNode::getNodes()
 std::vector<const Node*> BodyNode::getNodes() const
 {
   std::vector<const Node*> nodes;
-  for (const auto& nodeType : mNodeMap) {
-    nodes.insert(nodes.end(), nodeType.second.begin(), nodeType.second.end());
+  for (const auto& nodeGroup : mNodeMap | std::views::values) {
+    nodes.insert(nodes.end(), nodeGroup.begin(), nodeGroup.end());
   }
 
   return nodes;
@@ -1056,10 +1058,7 @@ Marker* BodyNode::createMarker(const Marker::BasicProperties& properties)
 //==============================================================================
 bool BodyNode::dependsOn(std::size_t _genCoordIndex) const
 {
-  return std::binary_search(
-      mDependentGenCoordIndices.begin(),
-      mDependentGenCoordIndices.end(),
-      _genCoordIndex);
+  return std::ranges::binary_search(mDependentGenCoordIndices, _genCoordIndex);
 }
 
 //==============================================================================
@@ -1125,12 +1124,10 @@ const std::vector<const DegreeOfFreedom*> BodyNode::getChainDofs() const
   std::vector<BodyNode*> bn_chain = criteria.satisfy();
   std::vector<const DegreeOfFreedom*> dofs;
   dofs.reserve(getNumDependentGenCoords());
-  for (std::vector<BodyNode*>::reverse_iterator rit = bn_chain.rbegin();
-       rit != bn_chain.rend();
-       ++rit) {
-    std::size_t nDofs = (*rit)->getParentJoint()->getNumDofs();
+  for (auto* bodyNode : std::views::reverse(bn_chain)) {
+    std::size_t nDofs = bodyNode->getParentJoint()->getNumDofs();
     for (std::size_t i = 0; i < nDofs; ++i) {
-      dofs.push_back((*rit)->getParentJoint()->getDof(i));
+      dofs.push_back(bodyNode->getParentJoint()->getDof(i));
     }
   }
 
@@ -2578,9 +2575,10 @@ void BodyNode::updateBodyJacobian() const
   // Parent Jacobian
   if (mParentBodyNode) {
     DART_ASSERT(
-        static_cast<std::size_t>(mParentBodyNode->getJacobian().cols())
-            + mParentJoint->getNumDofs()
-        == static_cast<std::size_t>(mBodyJacobian.cols()));
+        std::cmp_equal(
+            mParentBodyNode->getJacobian().cols()
+                + static_cast<Eigen::Index>(mParentJoint->getNumDofs()),
+            mBodyJacobian.cols()));
 
     DART_ASSERT(mParentJoint);
     mBodyJacobian.leftCols(ascendantDof) = math::AdInvTJac(
@@ -2632,8 +2630,10 @@ void BodyNode::updateBodyJacobianSpatialDeriv() const
     const auto& dJ_parent = mParentBodyNode->getJacobianSpatialDeriv();
 
     DART_ASSERT(
-        static_cast<std::size_t>(dJ_parent.cols()) + mParentJoint->getNumDofs()
-        == static_cast<std::size_t>(mBodyJacobianSpatialDeriv.cols()));
+        std::cmp_equal(
+            dJ_parent.cols()
+                + static_cast<Eigen::Index>(mParentJoint->getNumDofs()),
+            mBodyJacobianSpatialDeriv.cols()));
 
     mBodyJacobianSpatialDeriv.leftCols(numParentDOFs)
         = math::AdInvTJac(mParentJoint->getRelativeTransform(), dJ_parent);
@@ -2691,8 +2691,10 @@ void BodyNode::updateWorldJacobianClassicDeriv() const
               .eval();
 
     DART_ASSERT(
-        static_cast<std::size_t>(dJ_parent.cols()) + mParentJoint->getNumDofs()
-        == static_cast<std::size_t>(mWorldJacobianClassicDeriv.cols()));
+        std::cmp_equal(
+            dJ_parent.cols()
+                + static_cast<Eigen::Index>(mParentJoint->getNumDofs()),
+            mWorldJacobianClassicDeriv.cols()));
 
     // dJr
     mWorldJacobianClassicDeriv.block(0, 0, 3, numParentDOFs)

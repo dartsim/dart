@@ -35,11 +35,13 @@
 
 #include <dart/common/lockable_reference.hpp>
 
+#include <ranges>
+
 namespace dart {
 namespace common {
 
 //==============================================================================
-template <typename Lockable>
+template <detail::LockableObject Lockable>
 SingleLockableReference<Lockable>::SingleLockableReference(
     std::weak_ptr<const void> lockableHolder, Lockable& lockable) noexcept
   : mLockableHolder(std::move(lockableHolder)), mLockable(lockable)
@@ -48,7 +50,7 @@ SingleLockableReference<Lockable>::SingleLockableReference(
 }
 
 //==============================================================================
-template <typename Lockable>
+template <detail::LockableObject Lockable>
 void SingleLockableReference<Lockable>::lock()
 {
   if (mLockableHolder.expired()) {
@@ -59,7 +61,7 @@ void SingleLockableReference<Lockable>::lock()
 }
 
 //==============================================================================
-template <typename Lockable>
+template <detail::LockableObject Lockable>
 bool SingleLockableReference<Lockable>::try_lock() noexcept
 {
   if (mLockableHolder.expired()) {
@@ -70,7 +72,7 @@ bool SingleLockableReference<Lockable>::try_lock() noexcept
 }
 
 //==============================================================================
-template <typename Lockable>
+template <detail::LockableObject Lockable>
 void SingleLockableReference<Lockable>::unlock() noexcept
 {
   if (mLockableHolder.expired()) {
@@ -81,27 +83,20 @@ void SingleLockableReference<Lockable>::unlock() noexcept
 }
 
 //==============================================================================
-template <typename Lockable>
+template <detail::LockableObject LockableT>
 template <typename InputIterator>
-MultiLockableReference<Lockable>::MultiLockableReference(
+  requires detail::LockablePointerInputIterator<InputIterator, LockableT>
+MultiLockableReference<LockableT>::MultiLockableReference(
     std::weak_ptr<const void> lockableHolder,
     InputIterator first,
     InputIterator last)
   : mLockableHolder(std::move(lockableHolder)), mLockables(first, last)
 {
-  using IteratorValueType =
-      typename std::iterator_traits<InputIterator>::value_type;
-  using IteratorLockable = typename std::remove_pointer<
-      typename std::remove_reference<IteratorValueType>::type>::type;
-
-  static_assert(
-      std::is_same<Lockable, IteratorLockable>::value,
-      "Lockable of this class and the lockable of InputIterator are not the "
-      "same.");
+  // Do nothing
 }
 
 //==============================================================================
-template <typename Lockable>
+template <detail::LockableObject Lockable>
 void MultiLockableReference<Lockable>::lock()
 {
   if (mLockableHolder.expired()) {
@@ -114,7 +109,7 @@ void MultiLockableReference<Lockable>::lock()
 }
 
 //==============================================================================
-template <typename Lockable>
+template <detail::LockableObject Lockable>
 bool MultiLockableReference<Lockable>::try_lock() noexcept
 {
   if (mLockableHolder.expired()) {
@@ -131,20 +126,20 @@ bool MultiLockableReference<Lockable>::try_lock() noexcept
 }
 
 //==============================================================================
-template <typename Lockable>
+template <detail::LockableObject Lockable>
 void MultiLockableReference<Lockable>::unlock() noexcept
 {
   if (mLockableHolder.expired()) {
     return;
   }
 
-  for (auto it = mLockables.rbegin(); it != mLockables.rend(); ++it) {
-    (*it)->unlock();
+  for (auto* lockable : std::views::reverse(mLockables)) {
+    lockable->unlock();
   }
 }
 
 //==============================================================================
-template <typename Lockable>
+template <detail::LockableObject Lockable>
 template <typename T>
 T* MultiLockableReference<Lockable>::ptr(T& obj)
 {
@@ -152,7 +147,7 @@ T* MultiLockableReference<Lockable>::ptr(T& obj)
 }
 
 //==============================================================================
-template <typename Lockable>
+template <detail::LockableObject Lockable>
 template <typename T>
 T* MultiLockableReference<Lockable>::ptr(T* obj)
 {

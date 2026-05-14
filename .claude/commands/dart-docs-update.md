@@ -1,5 +1,5 @@
 ---
-description: Update documentation (no code changes)
+description: update documentation without code changes
 agent: build
 ---
 
@@ -9,9 +9,18 @@ Update documentation: $ARGUMENTS
 
 @AGENTS.md
 @docs/README.md
+@docs/onboarding/ai-tools.md
 
 ## Workflow
 
-1. `git checkout -b docs/<topic> origin/main`
-2. Edit only: `docs/**`, `README.md`, `.claude/`
-3. `git push -u origin HEAD && gh pr create`
+1. Create a branch from the target branch: `git checkout -b docs/<topic> origin/main`
+2. Edit docs and AI workflow sources only:
+   - Regular docs: `docs/**`, `README.md`, `AGENTS.md`, `CONTRIBUTING.md`
+   - AI source files: `.claude/commands/**`, `.claude/skills/**`
+3. For AI workflow changes, run `pixi run sync-ai-commands`; do not hand-edit generated `.opencode/` or `.codex/` files
+4. Update indexes and cross-references that point to changed docs
+5. Run `pixi run lint` before committing
+6. Record the CHANGELOG decision for the docs/tooling change.
+7. Ask for explicit maintainer/user approval before pushing or opening the PR.
+   After approval, use `.github/PULL_REQUEST_TEMPLATE.md` and the proper
+   milestone.

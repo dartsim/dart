@@ -41,8 +41,11 @@
 #include "dart/dynamics/shape_frame.hpp"
 
 #include <optional>
+#include <ranges>
 #include <unordered_map>
 #include <vector>
+
+#include <cstddef>
 
 namespace dart {
 namespace collision {

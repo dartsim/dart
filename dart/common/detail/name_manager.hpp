@@ -145,8 +145,8 @@ bool NameManager<T>::addName(std::string_view name, const T& obj)
   }
 
   const std::string nameString(name);
-  mMap.insert(std::pair<std::string, T>(nameString, obj));
-  mReverseMap.insert(std::pair<T, std::string>(obj, nameString));
+  mMap.emplace(nameString, obj);
+  mReverseMap.emplace(obj, nameString);
 
   DART_ASSERT(mReverseMap.size() == mMap.size());
 
@@ -182,7 +182,7 @@ bool NameManager<T>::removeObject(const T& obj)
 {
   DART_ASSERT(mReverseMap.size() == mMap.size());
 
-  typename std::map<T, std::string>::iterator rit = mReverseMap.find(obj);
+  auto rit = mReverseMap.find(obj);
 
   if (rit == mReverseMap.end()) {
     return false;
@@ -254,8 +254,7 @@ std::string NameManager<T>::getName(const T& obj) const
 {
   DART_ASSERT(mReverseMap.size() == mMap.size());
 
-  typename std::map<T, std::string>::const_iterator result
-      = mReverseMap.find(obj);
+  const auto result = mReverseMap.find(obj);
 
   if (result != mReverseMap.end()) {
     return result->second;
@@ -271,7 +270,7 @@ std::string NameManager<T>::changeObjectName(
 {
   DART_ASSERT(mReverseMap.size() == mMap.size());
 
-  typename std::map<T, std::string>::iterator rit = mReverseMap.find(obj);
+  auto rit = mReverseMap.find(obj);
   if (rit == mReverseMap.end()) {
     return std::string(newName);
   }

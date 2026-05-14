@@ -408,6 +408,10 @@ TEST(UriHelpers, removeDotSegments_RemovesDotAndDotDotSegments)
 {
   EXPECT_EQ(Uri::removeDotSegments("/.."), "/");
   EXPECT_EQ(Uri::removeDotSegments(".."), "");
+  EXPECT_EQ(Uri::removeDotSegments("/./g"), "/g");
+  EXPECT_EQ(Uri::removeDotSegments("a/b/./c"), "a/b/c");
+  EXPECT_EQ(Uri::removeDotSegments("/a/b/../c"), "/a/c");
+  EXPECT_EQ(Uri::removeDotSegments("mid/content=5/../6"), "mid/6");
 }
 
 TEST(UriHelpers, fromRelativeUri_StringViewOverload)
@@ -531,6 +535,16 @@ TEST(UriHelpers, merge_RootPath)
   ASSERT_TRUE(relativeUri.fromString("relative"));
   ASSERT_TRUE(mergedUri.fromRelativeUri(baseUri, relativeUri, true));
   EXPECT_EQ("http://example.com/relative", mergedUri.toString());
+}
+
+TEST(UriHelpers, merge_BasePathWithoutSlashUsesRelativePath)
+{
+  Uri baseUri, relativeUri, mergedUri;
+  ASSERT_TRUE(baseUri.fromString("base"));
+  ASSERT_TRUE(relativeUri.fromString("relative"));
+
+  ASSERT_TRUE(mergedUri.fromRelativeUri(baseUri, relativeUri, true));
+  EXPECT_EQ("relative", mergedUri.toString());
 }
 
 TEST(UriHelpers, merge_RelativeWithAbsolutePath)
@@ -683,7 +697,7 @@ TEST(UriHelpers, UriComponent_ArrowOperator)
 {
   UriComponent component("test_value");
   EXPECT_EQ(component->length(), 10u);
-  EXPECT_EQ(component->substr(0, 4), "test");
+  EXPECT_TRUE(component->starts_with("test"));
 }
 
 TEST(UriHelpers, getPath_ReturnsPathComponent)

@@ -1,6 +1,6 @@
 ---
 name: dart-build
-description: DART build system knowledge - CMake, pixi, dependencies, troubleshooting
+description: "DART Build: CMake, pixi, dependencies, and build troubleshooting"
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/skills/dart-build/SKILL.md -->

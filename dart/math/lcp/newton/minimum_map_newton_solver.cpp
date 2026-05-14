@@ -40,6 +40,7 @@
 #include <algorithm>
 #include <iterator>
 #include <limits>
+#include <ranges>
 #include <vector>
 
 namespace dart::math {
@@ -157,7 +158,7 @@ LcpResult MinimumMapNewtonSolver::solve(
   Eigen::VectorXd H(n);
   Eigen::VectorXd dx(n);
 
-  for (int iter = 0; iter < maxIterations; ++iter) {
+  for ([[maybe_unused]] const auto iter : std::views::iota(0, maxIterations)) {
     iterationsUsed = iter + 1;
 
     y = A * x - b;
@@ -180,7 +181,7 @@ LcpResult MinimumMapNewtonSolver::solve(
     active.reserve(static_cast<std::size_t>(n));
     freeSet.reserve(static_cast<std::size_t>(n));
 
-    for (int i = 0; i < n; ++i) {
+    for (const auto i : std::views::iota(0, static_cast<int>(n))) {
       if (y[i] < x[i]) {
         active.push_back(i);
       } else {
@@ -201,18 +202,18 @@ LcpResult MinimumMapNewtonSolver::solve(
       Eigen::VectorXd rhs(aSize);
       Eigen::VectorXd dxF(fSize);
 
-      for (int r = 0; r < aSize; ++r) {
+      for (const auto r : std::views::iota(0, static_cast<int>(aSize))) {
         const int i = active[r];
         rhs[r] = -y[i];
-        for (int c = 0; c < aSize; ++c) {
+        for (const auto c : std::views::iota(0, static_cast<int>(aSize))) {
           A_AA(r, c) = A(i, active[c]);
         }
-        for (int c = 0; c < fSize; ++c) {
+        for (const auto c : std::views::iota(0, static_cast<int>(fSize))) {
           A_AF(r, c) = A(i, freeSet[c]);
         }
       }
 
-      for (int c = 0; c < fSize; ++c) {
+      for (const auto c : std::views::iota(0, static_cast<int>(fSize))) {
         dxF[c] = dx[freeSet[c]];
       }
 
@@ -225,7 +226,7 @@ LcpResult MinimumMapNewtonSolver::solve(
         return result;
       }
 
-      for (int r = 0; r < aSize; ++r) {
+      for (const auto r : std::views::iota(0, static_cast<int>(aSize))) {
         dx[active[r]] = dxA[r];
       }
     }

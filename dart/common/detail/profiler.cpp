@@ -39,6 +39,7 @@
 #include <iterator>
 #include <limits>
 #include <memory>
+#include <ranges>
 #include <sstream>
 #include <thread>
 #include <unordered_map>
@@ -177,7 +178,7 @@ void Profiler::popScope(Profiler::ThreadRecord& record)
 std::uint64_t Profiler::sumInclusiveChildren(const ProfileNode& node)
 {
   std::uint64_t total = 0;
-  for (const auto& [_, child] : node.children) {
+  for (const auto& child : node.children | std::views::values) {
     total += child->inclusiveNs;
   }
   return total;
@@ -273,7 +274,7 @@ std::size_t Profiler::maxLabelWidth(
     const ProfileNode& node, std::size_t minWidth, std::size_t maxWidth)
 {
   std::size_t width = node.label.size();
-  for (const auto& [_, child] : node.children) {
+  for (const auto& child : node.children | std::views::values) {
     width = std::max(width, maxLabelWidth(*child, minWidth, maxWidth));
   }
   return std::clamp<std::size_t>(width, minWidth, maxWidth);
@@ -354,7 +355,7 @@ void Profiler::collectHotspots(
        node.inclusiveNs,
        node.selfNs,
        node.callCount});
-  for (const auto& [_, child] : node.children) {
+  for (const auto& child : node.children | std::views::values) {
     const auto childPath
         = path.empty() ? child->label : (path + " > " + child->label);
     collectHotspots(*child, childPath, threadLabel, out);
@@ -371,16 +372,17 @@ void Profiler::printNode(
 {
   std::vector<const ProfileNode*> children;
   children.reserve(node.children.size());
-  for (const auto& [_, child] : node.children) {
-    children.push_back(child.get());
-  }
+  std::ranges::transform(
+      node.children | std::views::values,
+      std::back_inserter(children),
+      [](const auto& child) { return child.get(); });
 
   std::ranges::sort(
       children, [](const ProfileNode* lhs, const ProfileNode* rhs) {
         return lhs->inclusiveNs > rhs->inclusiveNs;
       });
 
-  for (std::size_t idx = 0; idx < children.size(); ++idx) {
+  for (const auto idx : std::views::iota(std::size_t{0}, children.size())) {
     const auto* child = children[idx];
     const auto pct = percentage(child->inclusiveNs, threadTotalNs);
     if (pct < minPercent && child->inclusiveNs < 1'000'000) {
@@ -478,7 +480,7 @@ void Profiler::printSummary(std::ostream& os)
   // Build hotspot list.
   std::vector<Flattened> hotspots;
   for (const auto& record : threads) {
-    for (const auto& [_, child] : record->root.children) {
+    for (const auto& child : record->root.children | std::views::values) {
       collectHotspots(*child, child->label, record->label, hotspots);
     }
   }
@@ -500,7 +502,7 @@ void Profiler::printSummary(std::ostream& os)
     const std::size_t hotLabelWidth
         = std::clamp<std::size_t>(maxHotLabel, 16, 48);
 
-    for (std::size_t i = 0; i < hotspotCount; ++i) {
+    for (const auto i : std::views::iota(std::size_t{0}, hotspotCount)) {
       const auto& entry = hotspots[i];
       const auto pct = percentage(entry.inclusiveNs, totalNs);
       const bool isHot = (i < 3) || (pct >= 20.0);
@@ -563,7 +565,7 @@ void Profiler::clearNode(ProfileNode& node)
   node.selfNs = 0;
   node.minNs = Profiler::kUnsetDuration;
   node.maxNs = 0;
-  for (auto& [_, child] : node.children) {
+  for (auto& child : node.children | std::views::values) {
     clearNode(*child);
   }
   node.children.clear();

@@ -12,7 +12,10 @@ This directory contains the complete test suite for DART (Dynamic Animation and 
 
 Smallest repeatable local loop before a full CI run.
 
-Choose a parallelism cap around two-thirds of logical cores, then set `DART_PARALLEL_JOBS` and `CTEST_PARALLEL_LEVEL` to that value (see [building.md](building.md) for details).
+Choose a parallelism cap around two-thirds of logical cores, then set
+`DART_PARALLEL_JOBS` and `CTEST_PARALLEL_LEVEL` to that value (see
+[building.md](building.md) for details). On memory-constrained machines, use
+a lower `N` with targeted builds and tests rather than changing build files.
 
 Suggested (Unverified, Linux example):
 
@@ -41,8 +44,10 @@ Example:
 
 ```bash
 pixi run lint
-cmake --build build/default/cpp/Release --target UNIT_gui_MeshShapeNodeMaterialUpdates
-ctest --test-dir build/default/cpp/Release --output-on-failure -R UNIT_gui_MeshShapeNodeMaterialUpdates
+CMAKE_BUILD_PARALLEL_LEVEL=$N cmake --build build/default/cpp/Release \
+  --target UNIT_gui_MeshShapeNodeMaterialUpdates -j "$N"
+CTEST_PARALLEL_LEVEL=1 ctest --test-dir build/default/cpp/Release \
+  --output-on-failure -R UNIT_gui_MeshShapeNodeMaterialUpdates -j 1
 ```
 
 Signals to look for:
@@ -62,6 +67,21 @@ DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run test
 Signals to look for:
 
 - The test runner ends with `100% tests passed`
+
+Alignment-sensitive C++ build/test pass. Run this when allocator, placement-new,
+Eigen storage, SIMD-sensitive math, or object-pool code changes. It forces Eigen
+to use a 64-byte static alignment contract without requiring AVX-512 hardware.
+
+Suggested (Unverified):
+
+```bash
+DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run test-eigen-overalignment
+```
+
+Signals to look for:
+
+- The dedicated `eigen64-align` build configures successfully
+- The C++ tests built in that configuration end with `100% tests passed`
 
 Full validation.
 
@@ -477,19 +497,39 @@ dart_get_tests(integration_tests "integration")
    - `EXPECT_NEAR` for floating-point comparisons
 10. **Update tests with code changes**: Keep tests in sync with the code they verify
 
-## Coverage Patterns
+## Coverage Strategy
+
+### Coverage Organization
+
+Coverage work is test-suite maintenance, not fragmentary line-counting. Start by
+reviewing the existing test layout, fixtures, and nearby coverage before adding
+new tests. Prefer revising, extending, consolidating, splitting, or moving tests
+when that makes behavior ownership clearer, reduces duplicate setup, or keeps
+future code changes easy to cover.
+
+Add a new test file only for a distinct behavior family, dependency boundary, or
+fixture shape. Keep coverage targets focused on meaningful public behavior and
+backend dispatch paths; do not chase brittle coverage for GUI/OpenGL paths,
+experimental simulation code, debug-only fatal assertions, or unreachable
+defensive branches unless the task explicitly calls for them.
+
+### Coverage Patterns
 
 Areas that commonly need additional test coverage (identified from test-coverage-audit):
 
-| Pattern                | What to Test                                                         | Example                                               |
-| ---------------------- | -------------------------------------------------------------------- | ----------------------------------------------------- |
-| **Smart pointers**     | Lifecycle, expiration, owner lifetime                                | `BodyNodePtr`, `NodePtr`, `WeakPtr` variants          |
-| **Aspect system**      | `has<T>()`, `get<T>()`, `removeAspect<T>()`, `isSpecializedFor<T>()` | Composite template methods                            |
-| **Constraint solvers** | Empty inputs, duplicate skeletons, timestep changes, null detectors  | `ConstraintSolver` edge cases                         |
-| **Collision filters**  | Self-collision, blacklist edge cases, composite behavior             | `CollisionFilter` combinations                        |
-| **Template classes**   | All template instantiations, not just common types                   | `TemplateBodyNodePtr<BodyNode>` vs `<const BodyNode>` |
+| Pattern                | What to Test                                                         | Example                                                |
+| ---------------------- | -------------------------------------------------------------------- | ------------------------------------------------------ |
+| **Smart pointers**     | Lifecycle, expiration, owner lifetime                                | `BodyNodePtr`, `NodePtr`, `WeakPtr` variants           |
+| **Aspect system**      | `has<T>()`, `get<T>()`, `removeAspect<T>()`, `isSpecializedFor<T>()` | Composite template methods                             |
+| **Constraint solvers** | Empty inputs, duplicate skeletons, timestep changes, null detectors  | `ConstraintSolver` edge cases                          |
+| **Collision filters**  | Self-collision, blacklist edge cases, composite behavior             | `CollisionFilter` combinations                         |
+| **Template classes**   | All template instantiations, not just common types                   | `TemplateBodyNodePtr<BodyNode>` vs `<const BodyNode>`  |
+| **Allocators**         | Dispatch variants, no-op deallocation, growth, overflow, printing    | `MemoryManager`, `FreeListAllocator`, `FrameAllocator` |
+| **Optimization APIs**  | Null/no-objective problems, base copy paths, wrapper dispatch        | `Problem`, `Solver`, `GradientDescentSolver`           |
 
 **Key insight**: Template classes and smart pointer wrappers often have lower coverage because tests only exercise common instantiations. Add explicit tests for const variants, weak references, and edge cases like expired pointers.
+
+Coverage audits are most useful when tests exercise meaningful API branches rather than just line counts. Prefer focused tests for public dispatch paths and backend helpers that are linked into core modules but missed by higher-level workflows.
 
 ## Common Pitfalls and Solutions
 
@@ -612,7 +652,15 @@ joint->setPositionLimits(0, -dart::math::pi, dart::math::pi);
 
 4. **Use `std::filesystem::temp_directory_path()` instead of `/tmp`**: The `/tmp` path does not exist on Windows.
 
+5. **Compare filesystem paths as paths, not raw strings**: Components may return equivalent Windows paths with different separators. Use `std::filesystem::equivalent()` when the file exists, or compare normalized `std::filesystem::path` values instead of expecting one separator style.
+
+6. **Keep file-backed parser includes rooted in the filesystem**: Tests that write SDF or URDF files with relative includes should exercise local-file loading through the parser. The parser should resolve sibling includes from the parent directory on every platform; avoid masking failures by making the fixture absolute unless the behavior under test is unrelated to include resolution.
+
 **Important:** Do NOT modify `Uri::fromPath()` in `uri.cpp` — the existing behavior (storing backslashes in the URI on Windows) is relied upon by `getFilesystemPath()` round-trip tests.
+
+### Resource Retriever Failure Paths
+
+When testing retrievers that cache remote resources, assert failed retrieval does not leave a cache entry that later becomes a false hit. This is especially important on Windows, where deleting an open file fails while POSIX systems allow unlinking it.
 
 ### Signal Slot Ordering Is Non-Deterministic
 

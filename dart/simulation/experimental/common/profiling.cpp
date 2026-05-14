@@ -36,6 +36,7 @@
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <ranges>
 #include <unordered_map>
 #include <vector>
 
@@ -84,7 +85,7 @@ void ProfileStats::printSummary()
   // Convert to vector for sorting
   std::vector<Entry> sortedEntries;
   sortedEntries.reserve(entries.size());
-  for (const auto& [_, entry] : entries) {
+  for (const auto& entry : entries | std::views::values) {
     sortedEntries.push_back(entry);
   }
 

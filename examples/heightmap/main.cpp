@@ -45,6 +45,7 @@
 
 #include <CLI/CLI.hpp>
 
+#include <ranges>
 #include <string>
 #include <vector>
 
@@ -76,8 +77,8 @@ typename HeightmapShape<S>::HeightField generateHeightField(
     std::size_t xResolution, std::size_t yResolution, S zMin, S zMax)
 {
   typename HeightmapShape<S>::HeightField data(yResolution, xResolution);
-  for (auto i = 0u; i < yResolution; ++i) {
-    for (auto j = 0u; j < xResolution; ++j) {
+  for (const auto i : std::views::iota(std::size_t{0}, yResolution)) {
+    for (const auto j : std::views::iota(std::size_t{0}, xResolution)) {
       data(i, j) = math::Random::uniform(zMin, zMax);
     }
   }
@@ -226,8 +227,8 @@ void addAlignmentBallGrid(
 
   const double step = (count == 1u) ? 0.0 : (2.0 * halfExtent) / (count - 1u);
   std::size_t index = 0u;
-  for (std::size_t row = 0u; row < count; ++row) {
-    for (std::size_t col = 0u; col < count; ++col) {
+  for (const auto row : std::views::iota(std::size_t{0}, count)) {
+    for (const auto col : std::views::iota(std::size_t{0}, count)) {
       const double x = center.x() - halfExtent + step * row;
       const double y = center.y() - halfExtent + step * col;
       const double z = dropHeight;

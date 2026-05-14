@@ -34,8 +34,13 @@
 
 #include "dart/simulation/experimental/common/exceptions.hpp"
 
+#include <algorithm>
 #include <format>
+#include <iterator>
 #include <stdexcept>
+#include <utility>
+
+#include <cstddef>
 
 namespace dart::simulation::experimental {
 
@@ -81,9 +86,11 @@ void VectorMapper::toVector(
       offset += written;
     } else {
       // No mapper for this variable, fill with zeros
-      for (size_t j = 0; j < variables[i].dimension; ++j) {
-        output[offset++] = 0.0;
-      }
+      std::ranges::fill_n(
+          std::next(output.begin(), static_cast<std::ptrdiff_t>(offset)),
+          static_cast<std::ptrdiff_t>(variables[i].dimension),
+          0.0);
+      offset += variables[i].dimension;
     }
   }
 }
@@ -91,7 +98,7 @@ void VectorMapper::toVector(
 void VectorMapper::toEigen(
     const entt::registry& registry, Eigen::VectorXd& output) const
 {
-  if (static_cast<size_t>(output.size()) < m_space.getDimension()) {
+  if (std::cmp_less(output.size(), m_space.getDimension())) {
     throw std::invalid_argument(
         std::format(
             "Output vector size ({}) < required dimension ({})",
@@ -104,9 +111,7 @@ void VectorMapper::toEigen(
   toVector(registry, temp);
 
   // Copy to Eigen vector
-  for (size_t i = 0; i < temp.size(); ++i) {
-    output[i] = temp[i];
-  }
+  std::ranges::copy(temp, output.data());
 }
 
 void VectorMapper::fromVector(
@@ -137,7 +142,7 @@ void VectorMapper::fromVector(
 void VectorMapper::fromEigen(
     entt::registry& registry, const Eigen::VectorXd& vec)
 {
-  if (static_cast<size_t>(vec.size()) < m_space.getDimension()) {
+  if (std::cmp_less(vec.size(), m_space.getDimension())) {
     throw std::invalid_argument(
         std::format(
             "Input vector size ({}) < required dimension ({})",
@@ -145,13 +150,9 @@ void VectorMapper::fromEigen(
             m_space.getDimension()));
   }
 
-  // Convert Eigen to std::vector
-  std::vector<double> temp(vec.size());
-  for (Eigen::Index i = 0; i < vec.size(); ++i) {
-    temp[i] = vec[i];
-  }
-
-  fromVector(registry, std::span<const double>(temp));
+  fromVector(
+      registry,
+      std::span<const double>(vec.data(), static_cast<size_t>(vec.size())));
 }
 
 void VectorMapper::addMapper(

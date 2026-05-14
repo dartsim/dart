@@ -39,7 +39,9 @@
 #include <iomanip>
 #include <memory>
 #include <sstream>
+#include <string>
 #include <string_view>
+#include <system_error>
 #include <utility>
 
 #include <cstdint>
@@ -132,7 +134,7 @@ HttpResourceRetriever::HttpResourceRetriever(const Options& options)
 {
   try {
     mCacheDirectory
-        = common::filesystem::temp_directory_path() / "dart_http_cache";
+        = std::filesystem::temp_directory_path() / "dart_http_cache";
   } catch (const std::exception& e) {
     DART_WARN(
         "Failed to determine a temporary directory for the HTTP cache: {}",
@@ -151,8 +153,8 @@ bool HttpResourceRetriever::exists(const common::Uri& uri)
   }
 
   const auto cachePath = buildCachePath(uri);
-  common::error_code ec;
-  if (common::filesystem::exists(cachePath, ec) && !ec) {
+  std::error_code ec;
+  if (std::filesystem::exists(cachePath, ec) && !ec) {
     return true;
   }
 
@@ -172,8 +174,8 @@ common::ResourcePtr HttpResourceRetriever::retrieve(const common::Uri& uri)
 
   const auto cachePath = buildCachePath(uri);
 
-  common::error_code ec;
-  if (!common::filesystem::exists(cachePath, ec) || ec) {
+  std::error_code ec;
+  if (!std::filesystem::exists(cachePath, ec) || ec) {
     if (!download(uri, cachePath.string())) {
       return nullptr;
     }
@@ -199,8 +201,8 @@ std::string HttpResourceRetriever::getFilePath(const common::Uri& uri)
   }
 
   const auto cachePath = buildCachePath(uri);
-  common::error_code ec;
-  if (common::filesystem::exists(cachePath, ec) && !ec) {
+  std::error_code ec;
+  if (std::filesystem::exists(cachePath, ec) && !ec) {
     return cachePath.string();
   }
 
@@ -226,14 +228,14 @@ const HttpResourceRetriever::Options& HttpResourceRetriever::getOptions() const
 
 //==============================================================================
 void HttpResourceRetriever::setCacheDirectory(
-    const common::filesystem::path& directory)
+    const std::filesystem::path& directory)
 {
   mCacheDirectory = directory;
   ensureCacheDirectory();
 }
 
 //==============================================================================
-const common::filesystem::path& HttpResourceRetriever::getCacheDirectory() const
+const std::filesystem::path& HttpResourceRetriever::getCacheDirectory() const
 {
   return mCacheDirectory;
 }
@@ -246,7 +248,7 @@ bool HttpResourceRetriever::isSupported(const common::Uri& uri) const
 }
 
 //==============================================================================
-common::filesystem::path HttpResourceRetriever::buildCachePath(
+std::filesystem::path HttpResourceRetriever::buildCachePath(
     const common::Uri& uri) const
 {
   std::string url = uri.toString();
@@ -254,11 +256,8 @@ common::filesystem::path HttpResourceRetriever::buildCachePath(
   // Drop fragments when building the cache key.
   if (uri.mFragment) {
     const auto fragment = "#" + uri.mFragment.get_value_or("");
-    if (!fragment.empty() && url.size() >= fragment.size()) {
-      if (url.compare(url.size() - fragment.size(), fragment.size(), fragment)
-          == 0) {
-        url.erase(url.size() - fragment.size());
-      }
+    if (!fragment.empty() && url.ends_with(fragment)) {
+      url.erase(url.size() - fragment.size());
     }
   }
 
@@ -284,7 +283,7 @@ common::filesystem::path HttpResourceRetriever::buildCachePath(
 
   const auto sanitizedLeaf = sanitizeFileName(leaf);
 
-  common::filesystem::path path = mCacheDirectory;
+  std::filesystem::path path = mCacheDirectory;
   path /= hash + "_" + sanitizedLeaf;
   return path;
 }
@@ -292,12 +291,12 @@ common::filesystem::path HttpResourceRetriever::buildCachePath(
 //==============================================================================
 bool HttpResourceRetriever::ensureCacheDirectory() const
 {
-  common::error_code ec;
-  if (common::filesystem::exists(mCacheDirectory, ec) && !ec) {
+  std::error_code ec;
+  if (std::filesystem::exists(mCacheDirectory, ec) && !ec) {
     return true;
   }
 
-  common::filesystem::create_directories(mCacheDirectory, ec);
+  std::filesystem::create_directories(mCacheDirectory, ec);
   if (ec) {
     DART_WARN(
         "Failed creating HTTP cache directory '{}': {}",
@@ -365,11 +364,13 @@ bool HttpResourceRetriever::download(
 
   if (code != CURLE_OK) {
     DART_WARN("Failed downloading '{}': {}", url, curl_easy_strerror(code));
-    common::error_code ec;
-    common::filesystem::remove(destination, ec);
+    file.reset();
+    std::error_code ec;
+    std::filesystem::remove(destination, ec);
     return false;
   }
 
+  file.reset();
   return true;
 #else
   DART_UNUSED(uri);

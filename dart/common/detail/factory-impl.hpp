@@ -37,6 +37,10 @@
 #include <dart/common/logging.hpp>
 #include <dart/common/memory.hpp>
 
+#include <algorithm>
+#include <iterator>
+#include <ranges>
+
 namespace dart {
 namespace common {
 
@@ -153,9 +157,8 @@ template <typename KeyT, typename BaseT, typename HeldT, typename... Args>
 std::unordered_set<KeyT> Factory<KeyT, BaseT, HeldT, Args...>::getKeys() const
 {
   std::unordered_set<KeyT> keys;
-  for (const auto& entry : mCreatorMap) {
-    keys.insert(entry.first);
-  }
+  std::ranges::copy(
+      std::views::keys(mCreatorMap), std::inserter(keys, keys.end()));
 
   return keys;
 }

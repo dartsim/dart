@@ -33,7 +33,14 @@
 #ifndef DART_COLLISION_DETAIL_COLLISIONGROUP_HPP_
 #define DART_COLLISION_DETAIL_COLLISIONGROUP_HPP_
 
+#include "dart/common/macros.hpp"
+
 #include <dart/collision/collision_group.hpp>
+
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/skeleton.hpp>
+
+#include <ranges>
 
 namespace dart {
 namespace collision {
@@ -44,6 +51,7 @@ void CollisionGroup::addShapeFramesOf(
     const dynamics::ShapeFrame* shapeFrame, const Others*... others)
 {
   addShapeFrame(shapeFrame);
+
   addShapeFramesOf(others...);
 }
 
@@ -54,6 +62,7 @@ void CollisionGroup::addShapeFramesOf(
     const Others*... others)
 {
   addShapeFrames(shapeFrames);
+
   addShapeFramesOf(others...);
 }
 
@@ -62,7 +71,14 @@ template <typename... Others>
 void CollisionGroup::addShapeFramesOf(
     const CollisionGroup* otherGroup, const Others*... others)
 {
-  addShapeFramesOfGroup(otherGroup);
+  DART_ASSERT(otherGroup);
+
+  if (otherGroup && this != otherGroup) {
+    for (const auto& info : otherGroup->mObjectInfoList) {
+      addShapeFrame(info->mFrame);
+    }
+  }
+
   addShapeFramesOf(others...);
 }
 
@@ -71,16 +87,28 @@ template <typename... Others>
 void CollisionGroup::addShapeFramesOf(
     const dynamics::BodyNode* bodyNode, const Others*... others)
 {
-  addShapeFramesOfBodyNode(bodyNode);
+  DART_ASSERT(bodyNode);
+
+  bodyNode->eachShapeNodeWith<dynamics::CollisionAspect>(
+      [this](const dynamics::ShapeNode* shapeNode) {
+        addShapeFrame(shapeNode);
+      });
+
   addShapeFramesOf(others...);
 }
 
 //==============================================================================
 template <typename... Others>
 void CollisionGroup::addShapeFramesOf(
-    const dynamics::MetaSkeleton* skeleton, const Others*... others)
+    const dynamics::MetaSkeleton* skel, const Others*... others)
 {
-  addShapeFramesOfMetaSkeleton(skeleton);
+  DART_ASSERT(skel);
+
+  auto numBodyNodes = skel->getNumBodyNodes();
+  for (auto i = 0u; i < numBodyNodes; ++i) {
+    addShapeFramesOf(skel->getBodyNode(i));
+  }
+
   addShapeFramesOf(others...);
 }
 
@@ -89,7 +117,20 @@ template <typename... Others>
 void CollisionGroup::subscribeTo(
     const dynamics::ConstBodyNodePtr& bodyNode, const Others&... others)
 {
-  subscribeToBodyNode(bodyNode);
+  const auto inserted = mBodyNodeSources.insert(
+      BodyNodeSources::value_type(
+          bodyNode.get(),
+          BodyNodeSource(bodyNode.get(), bodyNode->getVersion())));
+
+  if (inserted.second) {
+    const BodyNodeSources::iterator& entry = inserted.first;
+    bodyNode->eachShapeNodeWith<dynamics::CollisionAspect>(
+        [&](const dynamics::ShapeNode* shapeNode) {
+          entry->second.mObjects.insert(
+              {shapeNode, addShapeFrameImpl(shapeNode, bodyNode.get())});
+        });
+  }
+
   subscribeTo(others...);
 }
 
@@ -98,7 +139,35 @@ template <typename... Others>
 void CollisionGroup::subscribeTo(
     const dynamics::ConstMetaSkeletonPtr& metaSkeleton, const Others&... others)
 {
-  subscribeToMetaSkeleton(metaSkeleton);
+  const auto inserted = mSkeletonSources.insert(
+      SkeletonSources::value_type(
+          metaSkeleton.get(),
+          SkeletonSource(
+              metaSkeleton, computeMetaSkeletonVersion(*metaSkeleton))));
+
+  if (inserted.second) {
+    SkeletonSource& entry = inserted.first->second;
+
+    const std::size_t numBodies = metaSkeleton->getNumBodyNodes();
+    for (std::size_t i = 0u; i < numBodies; ++i) {
+      const dynamics::BodyNode* bn = metaSkeleton->getBodyNode(i);
+
+      auto& childInfo
+          = entry.mChildren
+                .insert(
+                    std::make_pair(
+                        bn, SkeletonSource::ChildInfo(bn->getVersion())))
+                .first->second;
+
+      bn->eachShapeNodeWith<dynamics::CollisionAspect>(
+          [&](const dynamics::ShapeNode* shapeNode) {
+            entry.mObjects.insert(
+                {shapeNode, addShapeFrameImpl(shapeNode, metaSkeleton.get())});
+            childInfo.mFrames.insert(shapeNode);
+          });
+    }
+  }
+
   subscribeTo(others...);
 }
 
@@ -108,6 +177,7 @@ void CollisionGroup::removeShapeFramesOf(
     const dynamics::ShapeFrame* shapeFrame, const Others*... others)
 {
   removeShapeFrame(shapeFrame);
+
   removeShapeFramesOf(others...);
 }
 
@@ -118,6 +188,7 @@ void CollisionGroup::removeShapeFramesOf(
     const Others*... others)
 {
   removeShapeFrames(shapeFrames);
+
   removeShapeFramesOf(others...);
 }
 
@@ -126,7 +197,19 @@ template <typename... Others>
 void CollisionGroup::removeShapeFramesOf(
     const CollisionGroup* otherGroup, const Others*... others)
 {
-  removeShapeFramesOfGroup(otherGroup);
+  DART_ASSERT(otherGroup);
+
+  if (otherGroup) {
+    if (this == otherGroup) {
+      removeAllShapeFrames();
+      return;
+    }
+
+    for (const auto& info : otherGroup->mObjectInfoList) {
+      removeShapeFrame(info->mFrame);
+    }
+  }
+
   removeShapeFramesOf(others...);
 }
 
@@ -135,16 +218,28 @@ template <typename... Others>
 void CollisionGroup::removeShapeFramesOf(
     const dynamics::BodyNode* bodyNode, const Others*... others)
 {
-  removeShapeFramesOfBodyNode(bodyNode);
+  DART_ASSERT(bodyNode);
+
+  bodyNode->eachShapeNodeWith<dynamics::CollisionAspect>(
+      [&](const dynamics::ShapeNode* shapeNode) {
+        removeShapeFrame(shapeNode);
+      });
+
   removeShapeFramesOf(others...);
 }
 
 //==============================================================================
 template <typename... Others>
 void CollisionGroup::removeShapeFramesOf(
-    const dynamics::MetaSkeleton* skeleton, const Others*... others)
+    const dynamics::MetaSkeleton* skel, const Others*... others)
 {
-  removeShapeFramesOfMetaSkeleton(skeleton);
+  DART_ASSERT(skel);
+
+  auto numBodyNodes = skel->getNumBodyNodes();
+  for (auto i = 0u; i < numBodyNodes; ++i) {
+    removeShapeFramesOf(skel->getBodyNode(i));
+  }
+
   removeShapeFramesOf(others...);
 }
 
@@ -153,7 +248,15 @@ template <typename... Others>
 void CollisionGroup::unsubscribeFrom(
     const dynamics::BodyNode* bodyNode, const Others*... others)
 {
-  unsubscribeFromBodyNode(bodyNode);
+  auto it = mBodyNodeSources.find(bodyNode);
+  if (it != mBodyNodeSources.end()) {
+    for (const auto* shapeFrame : it->second.mObjects | std::views::keys) {
+      removeShapeFrameInternal(shapeFrame, bodyNode);
+    }
+
+    mBodyNodeSources.erase(it);
+  }
+
   unsubscribeFrom(others...);
 }
 
@@ -162,7 +265,15 @@ template <typename... Others>
 void CollisionGroup::unsubscribeFrom(
     const dynamics::MetaSkeleton* skeleton, const Others*... others)
 {
-  unsubscribeFromMetaSkeleton(skeleton);
+  auto it = mSkeletonSources.find(skeleton);
+  if (it != mSkeletonSources.end()) {
+    for (const auto* shapeFrame : it->second.mObjects | std::views::keys) {
+      removeShapeFrameInternal(shapeFrame, skeleton);
+    }
+
+    mSkeletonSources.erase(it);
+  }
+
   unsubscribeFrom(others...);
 }
 
@@ -171,7 +282,7 @@ template <typename... Others>
 bool CollisionGroup::isSubscribedTo(
     const dynamics::BodyNode* bodyNode, const Others*... others)
 {
-  return isSubscribedToBodyNode(bodyNode) && isSubscribedTo(others...);
+  return mBodyNodeSources.contains(bodyNode) && isSubscribedTo(others...);
 }
 
 //==============================================================================
@@ -179,7 +290,7 @@ template <typename... Others>
 bool CollisionGroup::isSubscribedTo(
     const dynamics::MetaSkeleton* skeleton, const Others*... others)
 {
-  return isSubscribedToMetaSkeleton(skeleton) && isSubscribedTo(others...);
+  return mSkeletonSources.contains(skeleton) && isSubscribedTo(others...);
 }
 
 } // namespace collision

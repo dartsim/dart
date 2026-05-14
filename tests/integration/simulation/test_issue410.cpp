@@ -97,14 +97,14 @@ bool isContactApproxEqual(
 
 std::vector<std::size_t> getJointIndices(const SkeletonPtr& skel)
 {
-  const std::array<const char*, 6> names = {{
+  const auto names = std::to_array<const char*>({
       "j_scapula_left",
       "j_scapula_right",
       "j_forearm_left",
       "j_forearm_right",
       "j_shin_left",
       "j_shin_right",
-  }};
+  });
   std::vector<std::size_t> indices;
   indices.reserve(names.size());
   for (const auto& name : names) {

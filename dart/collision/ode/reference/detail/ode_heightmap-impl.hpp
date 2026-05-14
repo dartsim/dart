@@ -70,14 +70,14 @@ void setOdeHeightfieldDetails(
       odeHeightfieldId,
       heights,
       0,
-      (width - 1) * scale.x(),  // width (in meters)
-      (height - 1) * scale.y(), // height (in meters)
-      width,                    // width (sampling size)
-      height,                   // height (sampling size)
-      scale.z(),                // vertical scaling
-      0.0,                      // vertical offset
-      HF_THICKNESS,             // vertical thickness for closing the mesh
-      0);                       // wrap mode
+      static_cast<dReal>(width - 1) * static_cast<dReal>(scale.x()),
+      static_cast<dReal>(height - 1) * static_cast<dReal>(scale.y()),
+      width,        // width (sampling size)
+      height,       // height (sampling size)
+      scale.z(),    // vertical scaling
+      0.0,          // vertical offset
+      HF_THICKNESS, // vertical thickness for closing the mesh
+      0);           // wrap mode
 }
 
 //==============================================================================
@@ -106,14 +106,14 @@ void setOdeHeightfieldDetails(
       odeHeightfieldId,
       heights,
       0,
-      (width - 1) * scale.x(),  // width (in meters)
-      (height - 1) * scale.y(), // height (in meters)
-      width,                    // width (sampling size)
-      height,                   // height (sampling size)
-      scale.z(),                // vertical scaling
-      0.0,                      // vertical offset
-      HF_THICKNESS,             // vertical thickness for closing the mesh
-      0);                       // wrap mode
+      static_cast<dReal>(width - 1) * static_cast<dReal>(scale.x()),
+      static_cast<dReal>(height - 1) * static_cast<dReal>(scale.y()),
+      width,        // width (sampling size)
+      height,       // height (sampling size)
+      scale.z(),    // vertical scaling
+      0.0,          // vertical offset
+      HF_THICKNESS, // vertical thickness for closing the mesh
+      0);           // wrap mode
 }
 
 //==============================================================================

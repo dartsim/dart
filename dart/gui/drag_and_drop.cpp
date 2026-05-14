@@ -43,6 +43,7 @@
 #include "dart/gui/viewer.hpp"
 #include "dart/math/helpers.hpp"
 
+#include <algorithm>
 #include <span>
 
 namespace dart {
@@ -390,7 +391,7 @@ public:
 
       if (BUTTON_RELEASE == event || BUTTON_NOTHING == event) {
         const auto picks = mEventHandler->getMovePicks();
-        if (picks.size() > 0) {
+        if (!picks.empty()) {
           const PickInfo& pick = picks[0];
           if (pick.frame->getParentFrame()
               != mFrame->getTool((InteractiveTool::Type)mTool, mCoordinate)) {
@@ -417,7 +418,7 @@ public:
       }
 
       const auto picks = mEventHandler->getMovePicks();
-      if (picks.size() == 0) {
+      if (picks.empty()) {
         return;
       }
 
@@ -581,11 +582,10 @@ void InteractiveFrameDnD::update()
   }
 
   mAmMoving = false;
-  for (std::size_t i = 0; i < mDnDs.size(); ++i) {
-    DragAndDrop* dnd = mDnDs[i];
+  std::ranges::for_each(mDnDs, [this](DragAndDrop* dnd) {
     dnd->update();
-    mAmMoving |= dnd->isMoving();
-  }
+    mAmMoving = mAmMoving || dnd->isMoving();
+  });
 
   if (mAmMoving) {
     for (std::size_t i = 0; i < InteractiveTool::NUM_TYPES; ++i) {
@@ -595,9 +595,9 @@ void InteractiveFrameDnD::update()
             = mInteractiveFrame->getTool((InteractiveTool::Type)i, j);
         if (!dnd->isMoving() && tool->getEnabled()) {
           const auto shapeFrames = tool->getShapeFrames();
-          for (std::size_t s = 0; s < shapeFrames.size(); ++s) {
-            shapeFrames[s]->getVisualAspect(true)->setHidden(true);
-          }
+          std::ranges::for_each(shapeFrames, [](auto* shapeFrame) {
+            shapeFrame->getVisualAspect(true)->setHidden(true);
+          });
         }
       }
     }
@@ -608,9 +608,9 @@ void InteractiveFrameDnD::update()
             = mInteractiveFrame->getTool((InteractiveTool::Type)i, j);
         if (tool->getEnabled()) {
           const auto shapeFrames = tool->getShapeFrames();
-          for (std::size_t s = 0; s < shapeFrames.size(); ++s) {
-            shapeFrames[s]->getVisualAspect(true)->setHidden(false);
-          }
+          std::ranges::for_each(shapeFrames, [](auto* shapeFrame) {
+            shapeFrame->getVisualAspect(true)->setHidden(false);
+          });
         }
       }
     }
@@ -714,7 +714,7 @@ void BodyNodeDnD::move()
       }
     }
 
-    mIK->setDofs(std::span<const std::size_t>(dofs));
+    mIK->setDofs(dofs);
   } else {
     if (mUseWholeBody) {
       mIK->useWholeBody();

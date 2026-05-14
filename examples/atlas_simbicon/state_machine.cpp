@@ -35,6 +35,8 @@
 #include "dart/common/macros.hpp"
 #include "state.hpp"
 
+#include <algorithm>
+
 // Macro for functions not implemented yet
 #define NOT_YET(FUNCTION)                                                      \
   std::cout << #FUNCTION << "Not implemented yet." << std::endl;
@@ -60,10 +62,7 @@ StateMachine::StateMachine(const std::string& _name)
 //==============================================================================
 StateMachine::~StateMachine()
 {
-  for (vector<State*>::iterator it = mStates.begin(); it != mStates.end();
-       ++it) {
-    delete *it;
-  }
+  std::ranges::for_each(mStates, [](State* state) { delete state; });
 }
 
 //==============================================================================
@@ -190,14 +189,7 @@ void StateMachine::setVerbosity(bool verbosity)
 //==============================================================================
 bool StateMachine::_containState(const State* _state) const
 {
-  for (vector<State*>::const_iterator it = mStates.begin(); it != mStates.end();
-       ++it) {
-    if (*it == _state) {
-      return true;
-    }
-  }
-
-  return false;
+  return std::ranges::find(mStates, _state) != mStates.end();
 }
 
 //==============================================================================
@@ -209,15 +201,9 @@ bool StateMachine::_containState(const string& _name) const
 //==============================================================================
 State* StateMachine::_findState(const string& _name) const
 {
-  State* state = nullptr;
+  const auto it = std::ranges::find_if(mStates, [&_name](const State* state) {
+    return state->getName() == _name;
+  });
 
-  for (vector<State*>::const_iterator it = mStates.begin(); it != mStates.end();
-       ++it) {
-    if ((*it)->getName() == _name) {
-      state = *it;
-      break;
-    }
-  }
-
-  return state;
+  return it == mStates.end() ? nullptr : *it;
 }

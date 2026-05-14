@@ -50,6 +50,7 @@
 #include <assimp/scene.h>
 
 #include <algorithm>
+#include <array>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -261,9 +262,13 @@ typename MeshLoader<S>::aiScenePtr MeshLoader<S>::loadScene(
     }
 
     std::string extension(path.substr(extensionIndex));
-    std::transform(
-        extension.begin(), extension.end(), extension.begin(), ::tolower);
-    return extension == ".dae" || extension == ".zae";
+    std::ranges::transform(extension, extension.begin(), [](unsigned char c) {
+      return static_cast<char>(std::tolower(c));
+    });
+    constexpr auto colladaExtensions
+        = std::to_array<std::string_view>({".dae", ".zae"});
+    return std::ranges::find(colladaExtensions, std::string_view{extension})
+           != colladaExtensions.end();
   };
 
   auto isColladaResource = [&](std::string_view uri) -> bool {
@@ -295,11 +300,11 @@ typename MeshLoader<S>::aiScenePtr MeshLoader<S>::loadScene(
     buffer.resize(read);
     resource->seek(0, common::Resource::SEEKTYPE_SET);
 
-    const auto upper = buffer.find("COLLADA");
-    const auto lower = buffer.find("collada");
-    const auto mixed = buffer.find("Collada");
-    return upper != std::string::npos || lower != std::string::npos
-           || mixed != std::string::npos;
+    constexpr auto colladaMarkers
+        = std::to_array<std::string_view>({"COLLADA", "Collada", "collada"});
+    return std::ranges::any_of(colladaMarkers, [&](std::string_view marker) {
+      return buffer.find(marker) != std::string::npos;
+    });
   };
 
   const std::string filepathString(filepath);

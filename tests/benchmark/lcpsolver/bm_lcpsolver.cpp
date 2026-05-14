@@ -14,6 +14,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include <algorithm>
 #include <vector>
 
 using dReal = double;
@@ -129,8 +130,8 @@ static void BM_Dantzig_F32_Solver(
 
   for (auto _ : state) {
     // Reset solution vectors
-    std::fill(x_f.begin(), x_f.end(), 0.0f);
-    std::fill(w_f.begin(), w_f.end(), 0.0f);
+    std::ranges::fill(x_f, 0.0f);
+    std::ranges::fill(w_f, 0.0f);
 
     // Solve LCP using template version with float
     bool success = dart::math::SolveLCP<float>(

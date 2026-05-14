@@ -2,7 +2,7 @@
 
 This document tracks AI coding assistant compatibility with DART's documentation structure.
 
-> **Last Verified**: January 2025
+> **Last Verified**: May 2026 for command/skill sync and prompt-template migration; January 2025 for other tool assumptions
 > **Review Cadence**: Verify when updating tool versions or experiencing unexpected behavior.
 
 ## For Collaborators: Tool Selection
@@ -21,18 +21,18 @@ This document tracks AI coding assistant compatibility with DART's documentation
 | **Claude Code** | `CLAUDE.md` auto-loaded; use `/dart-*` commands                              |
 | **OpenCode**    | `AGENTS.md` auto-loaded; use `/dart-*` commands; skills in `.claude/skills/` |
 | **Codex**       | `AGENTS.md` auto-loaded; use `$dart-*` skills in `.codex/skills/`            |
-| **Gemini CLI**  | Read `GEMINI.md` or `AGENTS.md`; copy prompts from `docs/prompts/`           |
+| **Gemini CLI**  | Read `GEMINI.md` or `AGENTS.md`; read `.claude/commands/` manually if needed |
 
 ---
 
 ## Quick Reference
 
-| Tool            | Instructions               | Commands             | Skills            |
-| --------------- | -------------------------- | -------------------- | ----------------- |
-| **Claude Code** | `CLAUDE.md` -> `AGENTS.md` | `.claude/commands/`  | `.claude/skills/` |
-| **OpenCode**    | `AGENTS.md`                | `.opencode/command/` | `.claude/skills/` |
-| **Codex**       | `AGENTS.md`                | `~/.codex/prompts/`  | `.codex/skills/`  |
-| **Gemini CLI**  | `GEMINI.md` -> `AGENTS.md` | Manual               | Manual            |
+| Tool            | Instructions               | Commands                     | Skills                     |
+| --------------- | -------------------------- | ---------------------------- | -------------------------- |
+| **Claude Code** | `CLAUDE.md` -> `AGENTS.md` | `.claude/commands/`          | `.claude/skills/`          |
+| **OpenCode**    | `AGENTS.md`                | `.opencode/command/`         | `.claude/skills/`          |
+| **Codex**       | `AGENTS.md`                | `.codex/skills/`             | `.codex/skills/`           |
+| **Gemini CLI**  | `GEMINI.md` -> `AGENTS.md` | `.claude/commands/` manually | `.claude/skills/` manually |
 
 ---
 
@@ -40,14 +40,18 @@ This document tracks AI coding assistant compatibility with DART's documentation
 
 ### Conventions
 
-| Convention                    | Rule                                                           |
-| ----------------------------- | -------------------------------------------------------------- |
-| **Single source of truth**    | `AGENTS.md` contains all instructions; other files redirect    |
-| **Command naming**            | `dart-` prefix (e.g., `dart-new-task.md`)                      |
-| **Skill naming**              | `dart-` prefix (e.g., `dart-build`)                            |
-| **No tool-specific language** | Use generic terms; avoid "Claude will..." or "Codex should..." |
-| **Placeholders**              | Use `$ARGUMENTS`, `$1`, `$2` for command args                  |
-| **File references**           | Use `@file` syntax for auto-loading context                    |
+| Convention                      | Rule                                                                                               |
+| ------------------------------- | -------------------------------------------------------------------------------------------------- |
+| **Pointer board**               | `AGENTS.md` stays concise and points to durable docs                                               |
+| **AI-native policy**            | `docs/ai/` owns workflow maps, verification, sessions, and component ownership                     |
+| **Command naming**              | `dart-` prefix (e.g., `dart-new-task.md`)                                                          |
+| **Skill naming**                | `dart-` prefix (e.g., `dart-build`)                                                                |
+| **Skill descriptions**          | Start with display name and quote colon values (e.g., `"DART Build: ..."`)                         |
+| **Tool-specific language**      | Use generic terms except in compatibility or routing docs where tool behavior is the subject       |
+| **Placeholders**                | Use `$ARGUMENTS`, `$1`, `$2` for command args                                                      |
+| **Tracked file references**     | Use repo-relative `@file` syntax; home-directory references are only for untracked personal files  |
+| **Workflow source**             | Repeatable workflows currently live in `.claude/commands/` and are generated to Codex/OpenCode     |
+| **Manual public path required** | Every AI workflow must map back to public docs and `pixi run ...` commands for non-AI contributors |
 
 ### @file Import Syntax
 
@@ -77,20 +81,21 @@ The `@path/to/file` syntax tells agents to automatically load referenced files i
 - Paths are relative to repository root
 - Imports are NOT evaluated inside code blocks (use backticks to escape)
 - Recursive imports are supported (imported files can import other files)
-- Use `@~/.claude/file.md` for home directory references
+- Tracked project instructions must use repo-relative paths. Home-directory
+  references are only for untracked personal files.
 
 ### File Ownership
 
-| File/Directory                | Purpose              | When to Update                     |
-| ----------------------------- | -------------------- | ---------------------------------- |
-| `AGENTS.md`                   | Primary instructions | When workflows change              |
-| `CLAUDE.md`, `GEMINI.md`      | Redirects only       | Rarely (keep minimal)              |
-| `.claude/commands/`           | Claude Code commands | When adding workflows              |
-| `.opencode/command/`          | OpenCode commands    | Auto-synced from `.claude/`        |
-| `.claude/skills/`             | Claude/OpenCode      | When adding domain knowledge       |
-| `.codex/skills/`              | Codex skills         | Auto-synced from `.claude/skills/` |
-| `docs/prompts/`               | Fallback templates   | For non-command tools              |
-| `docs/onboarding/ai-tools.md` | This file            | When tool compatibility changes    |
+| File/Directory                | Purpose                      | When to Update                  |
+| ----------------------------- | ---------------------------- | ------------------------------- |
+| `AGENTS.md`                   | Root pointer board           | When workflows or gates change  |
+| `docs/ai/`                    | Durable AI-native policy     | When AI workflow policy changes |
+| `CLAUDE.md`, `GEMINI.md`      | Redirects only               | Rarely (keep minimal)           |
+| `.claude/commands/`           | Editable workflow source     | When adding workflows           |
+| `.opencode/command/`          | Generated OpenCode commands  | Auto-synced from `.claude/`     |
+| `.claude/skills/`             | Editable domain-skill source | When adding domain knowledge    |
+| `.codex/skills/`              | Generated Codex skills       | Auto-generated from `.claude/`  |
+| `docs/onboarding/ai-tools.md` | Tool compatibility details   | When tool compatibility changes |
 
 ### Adding a New Command
 
@@ -98,7 +103,7 @@ The `@path/to/file` syntax tells agents to automatically load referenced files i
 
    ```markdown
    ---
-   description: Brief description
+   description: brief description
    agent: build
    ---
 
@@ -113,11 +118,15 @@ The `@path/to/file` syntax tells agents to automatically load referenced files i
    2. Step two
    ```
 
-2. Sync to OpenCode: `pixi run lint` (includes `sync-ai-commands`)
+2. Sync to OpenCode and Codex: `pixi run lint` (includes `sync-ai-commands`)
 
-3. Update `docs/prompts/AGENTS.md` command table
+3. Update `AGENTS.md` and `docs/ai/workflows.md` if the command should be discoverable in the root workflow table
 
-4. Optionally add fallback to `docs/prompts/` for non-command tools
+4. Put long background material in `docs/onboarding/*.md`; keep command files concise and action-oriented
+
+Codex does not use project slash-command files directly. The sync script
+generates a first-class Codex skill from each command, so `/dart-fix-ci`
+becomes `$dart-fix-ci`.
 
 ### Adding a New Skill
 
@@ -142,7 +151,7 @@ The `@path/to/file` syntax tells agents to automatically load referenced files i
 
 2. Sync to Codex: `pixi run lint` (includes `sync-ai-commands`)
 
-3. Update `AGENTS.md` skills table
+3. Update `AGENTS.md` and `docs/ai/workflows.md` skills tables
 
 ### Skill Design Principles
 
@@ -169,7 +178,7 @@ Follow the pattern of `dart-build` and `dart-test`:
 ```markdown
 ---
 name: dart-<name>
-description: Brief description for skill discovery
+description: "DART <Name>: brief description for skill discovery"
 ---
 
 # Skill Title
@@ -222,14 +231,17 @@ To add a new DART-specific skill:
 
 Skills work across multiple AI tools through automatic syncing:
 
-| Source            | Target           | Tool                  |
-| ----------------- | ---------------- | --------------------- |
-| `.claude/skills/` | (native)         | Claude Code, OpenCode |
-| `.claude/skills/` | `.codex/skills/` | Codex                 |
+| Source              | Target                  | Tool                  |
+| ------------------- | ----------------------- | --------------------- |
+| `.claude/skills/`   | (native)                | Claude Code, OpenCode |
+| `.claude/skills/`   | `.codex/skills/`        | Codex                 |
+| `.claude/commands/` | `.codex/skills/dart-*/` | Codex workflow skills |
 
 **Sync is automatic** via `pixi run lint` (includes `sync-ai-commands`).
 
-**CI verification**: `pixi run check-ai-commands` ensures sync in CI.
+**CI verification**: `pixi run check-ai-commands` ensures sync in CI, checks
+that Claude Code, OpenCode, and Codex expose the same effective DART capability
+set, and validates command/skill description style plus context-budget limits.
 
 #### Acknowledgment
 
@@ -239,7 +251,9 @@ DART skills are original content under BSD 2-Clause license.
 ### Keeping Commands and Skills in Sync
 
 Commands and skills exist in multiple directories because tools don't share paths.
-The `.claude/` directory is the **source of truth**.
+The `.claude/` directory is the current editable source for workflow commands
+and domain skills. Generated Codex/OpenCode files are first-class entrypoints
+for their tools, but they are overwritten by sync.
 
 **Automated sync** (included in `pixi run lint`):
 
@@ -251,10 +265,39 @@ pixi run check-ai-commands  # Check if in sync (CI mode, no changes)
 
 **What gets synced**:
 
-| Source              | Target               | Purpose           |
-| ------------------- | -------------------- | ----------------- |
-| `.claude/commands/` | `.opencode/command/` | OpenCode commands |
-| `.claude/skills/`   | `.codex/skills/`     | Codex skills      |
+| Source              | Target                  | Purpose                       |
+| ------------------- | ----------------------- | ----------------------------- |
+| `.claude/commands/` | `.opencode/command/`    | OpenCode commands             |
+| `.claude/commands/` | `.codex/skills/dart-*/` | Codex command workflow skills |
+| `.claude/skills/`   | `.codex/skills/`        | Codex domain skills           |
+
+Generated Codex skills are first-class Codex entrypoints even when their
+editable workflow source currently lives in `.claude/commands/`.
+
+**Durable AI-native decisions**:
+
+- Keep `AGENTS.md` as the concise pointer board, `docs/ai/` as shared agent
+  policy, and this document as the tool-compatibility reference.
+- Keep public contributor paths available through tracked docs and
+  `pixi run ...` tasks; AI workflows can route work, but must not be the only
+  way to complete it.
+- Treat `docs/dev_tasks/<task>/` folders as temporary working state. When the
+  task completes, move only durable decisions into onboarding docs and delete
+  the task folder in the same PR.
+
+**Effective capability parity**:
+
+Different tools expose the same workflows differently:
+
+- Claude Code: `.claude/commands/` plus `.claude/skills/`
+- OpenCode: `.opencode/command/` plus `.claude/skills/`
+- Codex: `.codex/skills/` for both domain skills and workflow skills
+
+`pixi run check-ai-commands` compares those effective sets and fails if any
+supported agent is missing a command/skill or has an extra one. It also checks
+that skill descriptions begin with the display name, command descriptions stay
+short and lowercase, and command/skill files remain within context-budget line
+limits.
 
 **Sync details**:
 
@@ -262,11 +305,15 @@ pixi run check-ai-commands  # Check if in sync (CI mode, no changes)
 - Target directories (`.codex/`, `.opencode/`) are excluded from prettier to prevent re-sync loops
 - Edit source files only; synced files are overwritten on each sync
 
-**Manual workflow** (if not using sync script):
+**Manual fallback**:
 
-1. Edit files in `.claude/` directory
-2. Copy changes to corresponding tool directories
-3. Verify all match
+If adapter sync is unavailable, fix or run the generator instead of manually
+maintaining generated files. `.codex/` and `.opencode/` outputs are overwritten
+by `pixi run sync-ai-commands`; edit `.claude/` source files, then regenerate
+and verify with `pixi run check-ai-commands`.
+
+Manual-only tools should read the `.claude/commands/dart-*.md` source files
+directly. There is no separate prompt-template folder.
 
 ### Review Cadence
 
@@ -316,33 +363,35 @@ pixi run check-ai-commands  # Check if in sync (CI mode, no changes)
 
 **Tested Version**: Gemini CLI (Jan 2025)
 
-| Feature      | Location    | Status                             |
-| ------------ | ----------- | ---------------------------------- |
-| Instructions | `GEMINI.md` | ✅ Reads, redirects to `AGENTS.md` |
-| Commands     | N/A         | ❌ No native support               |
-| Skills       | N/A         | ❌ No native support               |
+| Feature      | Location                    | Status                             |
+| ------------ | --------------------------- | ---------------------------------- |
+| Instructions | `GEMINI.md`                 | ✅ Reads, redirects to `AGENTS.md` |
+| Commands     | `.claude/commands/*.md`     | Manual reference only              |
+| Skills       | `.claude/skills/*/SKILL.md` | Manual reference only              |
 
 **Notes**:
 
 - Use `GEMINI.md` or `AGENTS.md` as context
-- No slash command support; use `docs/prompts/` templates manually
+- No slash command support; read `.claude/commands/dart-*.md` manually when a workflow recipe is needed
 
 ### OpenAI Codex
 
-**Tested Version**: Codex CLI 0.87.x (Jan 2025)
+**Tested Version**: Codex CLI 0.128.x (May 2026)
 
-| Feature      | Location                   | Status                        |
-| ------------ | -------------------------- | ----------------------------- |
-| Instructions | `AGENTS.md`                | ✅ Primary entry point        |
-| Skills       | `.codex/skills/*/SKILL.md` | ✅ `$dart-*` skills available |
-| Prompts      | `~/.codex/prompts/*.md`    | ✅ User-only (not repo-level) |
+| Feature           | Location                   | Status                                |
+| ----------------- | -------------------------- | ------------------------------------- |
+| Instructions      | `AGENTS.md`                | ✅ Primary entry point                |
+| Skills            | `.codex/skills/*/SKILL.md` | ✅ `$dart-*` skills available         |
+| Workflow commands | `.codex/skills/dart-*/`    | ✅ Generated from `.claude/commands/` |
 
 **Notes**:
 
 - `AGENTS.md` is the standard for Codex (same as Claude Code convention)
 - Supports subdirectory `AGENTS.md` files (walks from root to CWD)
 - Skills use `$skill-name` syntax (e.g., `$dart-build`)
-- Custom prompts are user-specific (`~/.codex/prompts/`), not shared via repo
+- Command workflows use the same syntax (e.g., `$dart-fix-ci <arguments>`)
+- Codex CLI slash commands are built-in controls; project workflows are exposed
+  through skills instead of repo-local `/dart-*` slash files
 - Full documentation: https://developers.openai.com/codex/
 
 ---
@@ -350,22 +399,19 @@ pixi run check-ai-commands  # Check if in sync (CI mode, no changes)
 ## Directory Structure
 
 ```
-.claude/                   # SOURCE OF TRUTH
+.claude/                   # Editable source for workflows and domain skills
 ├── commands/              # Claude Code commands
 │   └── dart-*.md
 └── skills/                # Claude + OpenCode skills
     └── dart-*/SKILL.md
 
-.opencode/                 # Auto-synced from .claude/
+.opencode/                 # Generated OpenCode commands
 └── command/               # OpenCode commands
     └── dart-*.md
 
-.codex/                    # Auto-synced from .claude/
-└── skills/                # Codex skills
-    └── dart-*/SKILL.md
-
-docs/prompts/              # Fallback templates (for tools without commands)
-└── *.md
+.codex/                    # Generated first-class Codex entrypoints
+└── skills/                # Codex domain + workflow skills
+    └── dart-*/SKILL.md    # Includes command-derived $dart-* workflows
 ```
 
 ---
@@ -430,14 +476,15 @@ When AI agents (Claude Code, OpenCode, etc.) work on PRs, they may encounter rev
 - ❌ **NO** `gh pr comment` commands responding to bot feedback
 - ❌ **NO** PR comment replies acknowledging or addressing bot feedback
 - ❌ **NO** comments like "Addressed the Codex review feedback"
-- ✅ **YES** Push the code fix silently
-- ✅ **YES** Re-trigger review with `@codex review` after pushing
+- ✅ **YES** Make the local code fix silently
+- ✅ **YES** Ask for explicit maintainer/user approval before any push, PR
+  comment, thread resolution, reviewer request, merge, or review re-trigger
 
 **The code change IS the response. No acknowledgment needed.**
 
 **Guidance for AI agents addressing automated reviews**:
 
-- Address the feedback in code, then push the fix silently
+- Address the feedback in code locally, then ask before external mutations
 - If the feedback is valid, implement the fix without commenting
 - If the feedback appears incorrect (false positive):
   1. **Verify** the claim is false by running standalone tests or examining the code
@@ -447,7 +494,7 @@ When AI agents (Claude Code, OpenCode, etc.) work on PRs, they may encounter rev
      EXPECT_FLOAT_EQ(result, 210.0f);  // Verify correct behavior
      EXPECT_NE(result, 294.0f);        // Explicitly refute false claim
      ```
-  4. Push the test (no comment needed) - the test serves as permanent documentation
+  4. Add the test locally (no comment needed) - the test serves as permanent documentation
 - **Follow the review-fix loop** (see workflow below)
 
 This avoids noisy bot-to-bot conversations while still leveraging automated verification.
@@ -460,17 +507,20 @@ After identifying an AI-generated review comment to address:
 
 1. **Make the code fix**
 2. **Run `pixi run lint`** — MANDATORY before every commit (auto-fixes formatting)
-3. **Commit and push** silently (no reply to the comment)
-4. **Resolve the thread immediately** using GraphQL (see commands below)
-5. **Re-trigger the review**: `gh pr comment <PR> --body "@codex review"`
-6. **Monitor for results**:
+3. **Ask for explicit maintainer/user approval before external mutations**
+4. **If approved, commit and push** silently (no reply to the comment)
+5. **If approved, resolve the thread** using GraphQL (see commands below)
+6. **If approved, re-trigger the review**: `gh pr comment <PR> --body "@codex review"`
+7. **Monitor for results**:
    - New review comments → repeat from step 1
    - "No issues" or 👍 reaction → done, PR is ready for human review
 
 **Agents MUST:**
 
 - Run `pixi run lint` before EVERY commit (CI will fail otherwise)
-- Resolve threads automatically after pushing fixes (keeps PR clean)
+- Treat PR comments, pushes, thread resolution, reviewer requests, merges, and
+  review re-triggers as external mutations that require explicit approval
+- Keep local fixes read-only with respect to GitHub until that approval exists
 
 ### GraphQL Commands for Thread Resolution
 
@@ -488,7 +538,7 @@ gh api graphql -f query='
   }
 ' --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)'
 
-# Resolve a thread by ID
+# Resolve a thread by ID only after explicit maintainer/user approval
 gh api graphql -f query='
   mutation {
     resolveReviewThread(input: {threadId: "PRRT_xxxx"}) {
@@ -497,11 +547,15 @@ gh api graphql -f query='
   }
 '
 
-# One-liner: resolve all unresolved threads for a PR
-PR=2458; gh api graphql -f query="query { repository(owner: \"dartsim\", name: \"dart\") { pullRequest(number: $PR) { reviewThreads(first: 50) { nodes { id isResolved } } } } }" --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | .id' | while read -r tid; do gh api graphql -f query="mutation { resolveReviewThread(input: {threadId: \"$tid\"}) { thread { isResolved } } }" > /dev/null && echo "Resolved: $tid"; done
+# Resolve only reviewed, addressed thread IDs after approval. Do not
+# bulk-resolve unresolved threads; that can hide human feedback or unresolved
+# bot findings.
 ```
 
-**Why resolve immediately**: Clicking "Resolve conversation" in the UI adds no comment noise. The code change is the response—the resolved thread shows the fix was acknowledged.
+**Why resolve after explicit maintainer/user approval**: Clicking "Resolve
+conversation" in the UI adds no comment noise. The code change is the response;
+the resolved thread shows the fix was acknowledged after the maintainer/user
+approved the PR mutation.
 
 ### Autonomous Review-Fix-Monitor Loop
 
@@ -513,13 +567,14 @@ For agents iterating on automated reviews, the complete loop is:
    a. Implement the fix (or add a test refuting a false positive)
    b. Run `pixi run lint` (MANDATORY)
    c. Build and run relevant tests
-   d. Commit and push silently (no reply to bot comment)
-3. Resolve addressed threads via GraphQL
-4. Re-trigger: `gh pr comment <PR> --body "@codex review"`
-5. Monitor CI: `gh pr checks <PR>`
-6. Wait for new review (poll with `gh api repos/dartsim/dart/pulls/<PR>/reviews`)
-7. If new review has comments → go to step 2
-8. If no new comments AND CI is green → done
+   d. Ask for explicit maintainer/user approval before push or PR mutation
+3. If approved, commit and push silently (no reply to bot comment)
+4. If approved, resolve addressed threads via GraphQL
+5. If approved, re-trigger: `gh pr comment <PR> --body "@codex review"`
+6. Monitor CI: `gh pr checks <PR>`
+7. Wait for new review (poll with `gh api repos/dartsim/dart/pulls/<PR>/reviews`)
+8. If new review has comments → go to step 2
+9. If no new comments AND CI is green → done
 ```
 
 **Checking for new reviews:**
@@ -554,9 +609,12 @@ gh pr checks <PR> --watch
 
 ## Known Limitations
 
-- **No cross-tool command sharing**: Claude Code and OpenCode read different directories
-- **Skill sharing works**: Both tools read `.claude/skills/`
-- **Command duplication required**: Must maintain both `.claude/commands/` and `.opencode/command/`
+- **Generated adapter copies**: Claude Code, OpenCode, and Codex read different
+  directories, so generated adapter copies exist for tool compatibility.
+- **Editable source of truth**: Maintain `.claude/` sources, then run
+  `pixi run sync-ai-commands` and `pixi run check-ai-commands`.
+- **Skill sharing works for manual tools**: Claude Code and OpenCode can read
+  `.claude/skills/` directly.
 
 ---
 

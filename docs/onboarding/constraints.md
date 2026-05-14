@@ -42,13 +42,15 @@ the unified LCP solver API in `dart/math/lcp/`:
 
 - LcpSolver.hpp/cpp - Solver interface (`dart::math::LcpSolver`)
 - LcpTypes.hpp/cpp - `LcpProblem`/`LcpOptions`/`LcpResult` and status codes
-- pivoting/DantzigSolver.hpp/cpp - Boxed LCP + friction index (pivoting)
-- projection/PgsSolver.hpp/cpp - Boxed LCP + friction index (iterative)
-- pivoting/LemkeSolver.hpp/cpp - Standard LCP (boxed/findex delegates)
+- pivoting, projection, Newton, and other solver families
 
-**Dantzig Solver Implementation:**
-ODE-derived principal pivoting BLCP implementation lives in
-`dart/math/lcp/pivoting/dantzig/` and is wrapped by `dart::math::DantzigSolver`.
+The DART 7 LCP API is intentionally dynamics-agnostic: solvers consume
+`math::LcpProblem` data and report `math::LcpResult` without depending on
+`constraint::ConstraintSolver`. Keep new solver implementations in
+`dart/math/lcp/`, use the shared fixtures under `tests/common/lcpsolver`, and
+document algorithm tradeoffs in `docs/background/lcp/`. The ODE-derived
+principal pivoting BLCP implementation lives under the Dantzig pivoting solver
+and remains the default exact boxed-LCP path for constraint solving.
 
 **Utilities:**
 
@@ -353,9 +355,15 @@ scaled by `x[findex[i]]` to model friction limits.
 
 **Available Implementations:**
 
+Constraint solving defaults to a small robust subset:
+
 1. **`math::DantzigSolver`** - Pivoting BLCP solver (boxed + findex, exact)
 2. **`math::PgsSolver`** - Projected Gauss-Seidel / PSOR-style solver (boxed + findex)
 3. **`math::LemkeSolver`** - Standard LCP solver (boxed/findex delegates)
+
+Additional solver implementations live in `dart/math/lcp/` for benchmarking,
+testing, and future selection work. Avoid coupling those algorithms directly to
+`ConstraintSolver`; add them through the `math::LcpSolver` contract first.
 
 **Solver Selection Strategy:**
 
@@ -549,8 +557,9 @@ solver.setSecondaryLcpSolver(std::make_shared<dart::math::PgsSolver>());
 
 1. Inherit from `dart::math::LcpSolver`
 2. Implement `solve(const LcpProblem&, Eigen::VectorXd&, const LcpOptions&)`
-3. Add unit tests under `tests/unit/math/lcp`
-4. Register via `ConstraintSolver::setLcpSolver()` / `setSecondaryLcpSolver()`
+3. Add shared fixtures or problem factories when the solver needs new coverage patterns
+4. Add focused tests under `tests/unit/math/lcp`
+5. Register with `ConstraintSolver` only when it is intended for runtime constraint solving
 
 ## Common Issues and Solutions
 

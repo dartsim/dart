@@ -36,7 +36,9 @@
 #include "dart/common/logging.hpp"
 #include "dart/common/uri.hpp"
 
+#include <algorithm>
 #include <iostream>
+#include <iterator>
 
 namespace dart {
 namespace utils {
@@ -76,13 +78,11 @@ bool CompositeResourceRetriever::addSchemaRetriever(
 //==============================================================================
 bool CompositeResourceRetriever::exists(const common::Uri& uri)
 {
-  for (const common::ResourceRetrieverPtr& resourceRetriever :
-       getRetrievers(uri)) {
-    if (resourceRetriever->exists(uri)) {
-      return true;
-    }
-  }
-  return false;
+  return std::ranges::any_of(
+      getRetrievers(uri),
+      [&uri](const common::ResourceRetrieverPtr& resourceRetriever) {
+        return resourceRetriever->exists(uri);
+      });
 }
 
 //==============================================================================
@@ -131,14 +131,10 @@ CompositeResourceRetriever::getRetrievers(const common::Uri& uri) const
 
   const auto it = mResourceRetrievers.find(schema);
   if (it != std::end(mResourceRetrievers)) {
-    retrievers.insert(
-        std::end(retrievers), std::begin(it->second), std::end(it->second));
+    std::ranges::copy(it->second, std::back_inserter(retrievers));
   }
 
-  retrievers.insert(
-      std::end(retrievers),
-      std::begin(mDefaultResourceRetrievers),
-      std::end(mDefaultResourceRetrievers));
+  std::ranges::copy(mDefaultResourceRetrievers, std::back_inserter(retrievers));
 
   DART_WARN_IF(
       retrievers.empty(),

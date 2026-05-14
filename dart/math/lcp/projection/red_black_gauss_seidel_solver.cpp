@@ -218,14 +218,7 @@ LcpResult RedBlackGaussSeidelSolver::solve(
       return value;
     }
 
-    double projected = value;
-    if (std::isfinite(lo[i])) {
-      projected = std::max(projected, lo[i]);
-    }
-    if (std::isfinite(hi[i])) {
-      projected = std::min(projected, hi[i]);
-    }
-    return projected;
+    return detail::projectToBounds(value, lo[i], hi[i]);
   };
 
   auto updateIndex = [&](int i, const Eigen::VectorXd& xRead) {
@@ -234,7 +227,7 @@ LcpResult RedBlackGaussSeidelSolver::solve(
     if (std::isfinite(diag) && std::abs(diag) >= params->epsilonForDivision) {
       const double residualEntry = A.row(i).dot(xRead) - b[i];
       const double step = xRead[i] - residualEntry / diag;
-      value = xRead[i] + relaxation * (step - xRead[i]);
+      value = std::lerp(xRead[i], step, relaxation);
     } else {
       value = 0.0;
     }

@@ -40,7 +40,25 @@
 
 #include "dart/dynamics/skeleton.hpp"
 
+#include <algorithm>
 #include <iostream>
+#include <iterator>
+#include <numeric>
+
+namespace {
+
+int totalDofs(std::span<const int> skeletonDofs)
+{
+  return std::accumulate(skeletonDofs.begin(), skeletonDofs.end(), 0);
+}
+
+int dofOffset(std::span<const int> skeletonDofs, int skeletonIndex)
+{
+  return std::accumulate(
+      skeletonDofs.begin(), std::next(skeletonDofs.begin(), skeletonIndex), 0);
+}
+
+} // namespace
 
 namespace dart {
 namespace simulation {
@@ -48,17 +66,20 @@ namespace simulation {
 //==============================================================================
 Recording::Recording(std::span<const dynamics::SkeletonPtr> skeletons)
 {
-  for (std::size_t i = 0; i < skeletons.size(); i++) {
-    mNumGenCoordsForSkeletons.push_back(skeletons[i]->getNumDofs());
-  }
+  mNumGenCoordsForSkeletons.reserve(skeletons.size());
+  std::ranges::transform(
+      skeletons,
+      std::back_inserter(mNumGenCoordsForSkeletons),
+      [](const dynamics::SkeletonPtr& skeleton) {
+        return skeleton->getNumDofs();
+      });
 }
 
 //==============================================================================
 Recording::Recording(std::span<const int> skelDofs)
 {
-  for (std::size_t i = 0; i < skelDofs.size(); i++) {
-    mNumGenCoordsForSkeletons.push_back(skelDofs[i]);
-  }
+  mNumGenCoordsForSkeletons.reserve(skelDofs.size());
+  std::ranges::copy(skelDofs, std::back_inserter(mNumGenCoordsForSkeletons));
 }
 
 //==============================================================================
@@ -85,51 +106,42 @@ int Recording::getNumDofs(int _skelIdx) const
 //==============================================================================
 int Recording::getNumContacts(int _frameIdx) const
 {
-  int totalDofs = 0;
-  for (std::size_t i = 0; i < mNumGenCoordsForSkeletons.size(); i++) {
-    totalDofs += mNumGenCoordsForSkeletons[i];
-  }
-  return (mBakedStates[_frameIdx].size() - totalDofs) / 6;
+  return (mBakedStates[_frameIdx].size()
+          - totalDofs(std::span<const int>{mNumGenCoordsForSkeletons}))
+         / 6;
 }
 
 //==============================================================================
 Eigen::VectorXd Recording::getConfig(int _frameIdx, int _skelIdx) const
 {
-  int index = 0;
-  for (int i = 0; i < _skelIdx; i++) {
-    index += mNumGenCoordsForSkeletons[i];
-  }
+  const int index
+      = dofOffset(std::span<const int>{mNumGenCoordsForSkeletons}, _skelIdx);
   return mBakedStates[_frameIdx].segment(index, getNumDofs(_skelIdx));
 }
 
 //==============================================================================
 double Recording::getGenCoord(int _frameIdx, int _skelIdx, int _dofIdx) const
 {
-  int index = 0;
-  for (int i = 0; i < _skelIdx; i++) {
-    index += mNumGenCoordsForSkeletons[i];
-  }
+  const int index
+      = dofOffset(std::span<const int>{mNumGenCoordsForSkeletons}, _skelIdx);
   return mBakedStates[_frameIdx][index + _dofIdx];
 }
 
 //==============================================================================
 Eigen::Vector3d Recording::getContactPoint(int _frameIdx, int _contactIdx) const
 {
-  int totalDofs = 0;
-  for (std::size_t i = 0; i < mNumGenCoordsForSkeletons.size(); i++) {
-    totalDofs += mNumGenCoordsForSkeletons[i];
-  }
-  return mBakedStates[_frameIdx].segment(totalDofs + _contactIdx * 6, 3);
+  const int contactOffset
+      = totalDofs(std::span<const int>{mNumGenCoordsForSkeletons});
+  return mBakedStates[_frameIdx].segment(contactOffset + _contactIdx * 6, 3);
 }
 
 //==============================================================================
 Eigen::Vector3d Recording::getContactForce(int _frameIdx, int _contactIdx) const
 {
-  int totalDofs = 0;
-  for (std::size_t i = 0; i < mNumGenCoordsForSkeletons.size(); i++) {
-    totalDofs += mNumGenCoordsForSkeletons[i];
-  }
-  return mBakedStates[_frameIdx].segment(totalDofs + _contactIdx * 6 + 3, 3);
+  const int contactOffset
+      = totalDofs(std::span<const int>{mNumGenCoordsForSkeletons});
+  return mBakedStates[_frameIdx].segment(
+      contactOffset + _contactIdx * 6 + 3, 3);
 }
 
 //==============================================================================
@@ -149,9 +161,13 @@ void Recording::updateNumGenCoords(
     std::span<const dynamics::SkeletonPtr> skeletons)
 {
   mNumGenCoordsForSkeletons.clear();
-  for (std::size_t i = 0; i < skeletons.size(); ++i) {
-    mNumGenCoordsForSkeletons.push_back(skeletons[i]->getNumDofs());
-  }
+  mNumGenCoordsForSkeletons.reserve(skeletons.size());
+  std::ranges::transform(
+      skeletons,
+      std::back_inserter(mNumGenCoordsForSkeletons),
+      [](const dynamics::SkeletonPtr& skeleton) {
+        return skeleton->getNumDofs();
+      });
 }
 
 } // namespace simulation

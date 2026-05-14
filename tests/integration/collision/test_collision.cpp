@@ -42,6 +42,8 @@
 #include <array>
 #include <iostream>
 #include <limits>
+
+#include <cmath>
 #if DART_HAVE_ODE
   #include "dart/collision/ode/All.hpp"
 #endif
@@ -2003,12 +2005,12 @@ TEST_F(Collision, CollisionOfPrescribedJointsRejectsInvalidTimeStep)
   const double originalTimeStep = world->getTimeStep();
   ASSERT_GT(originalTimeStep, 0.0);
 
-  const double invalidValues[]
-      = {std::numeric_limits<double>::quiet_NaN(),
-         std::numeric_limits<double>::infinity(),
-         -std::numeric_limits<double>::infinity(),
-         0.0,
-         -1.0};
+  const auto invalidValues = std::to_array(
+      {std::numeric_limits<double>::quiet_NaN(),
+       std::numeric_limits<double>::infinity(),
+       -std::numeric_limits<double>::infinity(),
+       0.0,
+       -1.0});
 
   for (double invalid : invalidValues) {
     world->setTimeStep(invalid);
@@ -2167,6 +2169,54 @@ TEST(Issue1654, OdeHonorsMaxNumContacts)
   result.clear();
   ASSERT_TRUE(group->collide(option, &result));
   EXPECT_EQ(1u, result.getNumContacts());
+}
+
+//==============================================================================
+TEST(Issue1654, OdeContactHistoryKeepsFiniteDistinctContacts)
+{
+  auto detector = OdeCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  auto capsuleFrame = std::make_shared<SimpleFrame>(Frame::World(), "capsule");
+  auto planeFrame = std::make_shared<SimpleFrame>(Frame::World(), "plane");
+
+  capsuleFrame->setShape(std::make_shared<CapsuleShape>(0.2, 0.6));
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+
+  group->addShapeFrame(capsuleFrame.get());
+  group->addShapeFrame(planeFrame.get());
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 3u;
+
+  CollisionResult result;
+  const std::array<double, 4> xOffsets = {0.0, 0.15, 0.30, 0.45};
+
+  for (const double x : xOffsets) {
+    const Eigen::Isometry3d transform
+        = Eigen::Translation3d(x, 0.0, 0.2)
+          * Eigen::AngleAxisd(math::half_pi, Eigen::Vector3d::UnitY());
+    capsuleFrame->setRelativeTransform(transform);
+
+    result.clear();
+    ASSERT_TRUE(group->collide(option, &result));
+    ASSERT_LE(result.getNumContacts(), option.maxNumContacts);
+
+    const auto contacts = result.getContacts();
+    for (std::size_t i = 0; i < contacts.size(); ++i) {
+      const auto& contact = contacts[i];
+      EXPECT_TRUE(contact.point.allFinite());
+      EXPECT_TRUE(contact.normal.allFinite());
+      EXPECT_TRUE(std::isfinite(contact.penetrationDepth));
+      EXPECT_GT(contact.normal.squaredNorm(), 0.0);
+
+      for (std::size_t j = 0; j < i; ++j) {
+        EXPECT_GT((contact.point - contacts[j].point).squaredNorm(), 1e-8);
+      }
+    }
+  }
 }
 #endif // DART_HAVE_ODE
 

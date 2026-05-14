@@ -39,6 +39,10 @@
 #include "dart/dynamics/skeleton.hpp"
 #include "dart/math/optimization/gradient_descent_solver.hpp"
 
+#include <algorithm>
+#include <ranges>
+#include <utility>
+
 namespace dart {
 namespace dynamics {
 
@@ -224,19 +228,14 @@ const IKHierarchy& HierarchicalIK::getIKHierarchy() const
 //==============================================================================
 std::span<const Eigen::MatrixXd> HierarchicalIK::computeNullSpaces() const
 {
-  bool recompute = false;
   const ConstSkeletonPtr& skel = getSkeleton();
   const std::size_t nDofs = skel->getNumDofs();
-  if (static_cast<std::size_t>(mLastPositions.size()) != nDofs) {
-    recompute = true;
-  } else {
-    for (std::size_t i = 0; i < nDofs; ++i) {
-      if (mLastPositions[i] != skel->getDof(i)->getPosition()) {
-        recompute = true;
-        break;
-      }
-    }
-  }
+  const bool recompute
+      = !std::cmp_equal(mLastPositions.size(), nDofs)
+        || std::ranges::any_of(
+            std::views::iota(std::size_t{0}, nDofs), [&](std::size_t i) {
+              return mLastPositions[i] != skel->getDof(i)->getPosition();
+            });
 
   // TODO(MXG): When deciding whether we need to recompute, we should also check
   // the "version" of the Skeleton, as soon as the Skeleton versioning features
@@ -244,7 +243,7 @@ std::span<const Eigen::MatrixXd> HierarchicalIK::computeNullSpaces() const
   // indexing and changes in Joint / BodyNode properties.
 
   if (!recompute) {
-    return std::span<const Eigen::MatrixXd>(mNullSpaceCache);
+    return mNullSpaceCache;
   }
 
   const IKHierarchy& hierarchy = getIKHierarchy();
@@ -300,7 +299,7 @@ std::span<const Eigen::MatrixXd> HierarchicalIK::computeNullSpaces() const
     }
   }
 
-  return std::span<const Eigen::MatrixXd>(mNullSpaceCache);
+  return mNullSpaceCache;
 }
 
 //==============================================================================
@@ -421,7 +420,7 @@ void HierarchicalIK::Objective::evalGradient(
     hik->setPositions(_x);
 
     const auto nullspaces = hik->computeNullSpaces();
-    if (nullspaces.size() > 0) {
+    if (!nullspaces.empty()) {
       // Project through the deepest null space
       mGradCache = nullspaces.back() * mGradCache;
     }
@@ -683,7 +682,7 @@ CompositeIK::ConstModuleSet CompositeIK::getModuleSet() const
 //==============================================================================
 void CompositeIK::refreshIKHierarchy()
 {
-  if (mModuleSet.size() == 0) {
+  if (mModuleSet.empty()) {
     mHierarchy.clear();
     return;
   }

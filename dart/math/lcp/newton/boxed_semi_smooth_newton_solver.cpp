@@ -37,6 +37,7 @@
 #include <Eigen/Cholesky>
 
 #include <algorithm>
+#include <ranges>
 
 #include <cmath>
 
@@ -83,7 +84,7 @@ Eigen::VectorXd projectVector(
     const Eigen::VectorXd& hi)
 {
   Eigen::VectorXd result(x.size());
-  for (Eigen::Index i = 0; i < x.size(); ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, x.size())) {
     result[i] = project(x[i], lo[i], hi[i]);
   }
   return result;
@@ -170,7 +171,7 @@ LcpResult BoxedSemiSmoothNewtonSolver::solve(
 
   Eigen::VectorXd loEff = lo;
   Eigen::VectorXd hiEff = hi;
-  for (Eigen::Index i = 0; i < n; ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, n)) {
     if (findex[i] >= 0) {
       loEff[i] = -std::numeric_limits<double>::infinity();
       hiEff[i] = std::numeric_limits<double>::infinity();
@@ -193,10 +194,10 @@ LcpResult BoxedSemiSmoothNewtonSolver::solve(
   bool converged = false;
   bool lineSearchFailed = false;
 
-  for (int iter = 0; iter < maxIterations; ++iter) {
+  for ([[maybe_unused]] const auto iter : std::views::iota(0, maxIterations)) {
     ++iterationsUsed;
 
-    for (Eigen::Index i = 0; i < n; ++i) {
+    for (const auto i : std::views::iota(Eigen::Index{0}, n)) {
       if (findex[i] >= 0) {
         const double fricLimit = std::abs(hi[i] * x[findex[i]]);
         loEff[i] = -fricLimit;
@@ -214,7 +215,7 @@ LcpResult BoxedSemiSmoothNewtonSolver::solve(
     }
 
     J.setZero();
-    for (Eigen::Index i = 0; i < n; ++i) {
+    for (const auto i : std::views::iota(Eigen::Index{0}, n)) {
       const double candidate = x[i] - w[i];
       const ConstraintState state
           = classifyPoint(candidate, w[i], loEff[i], hiEff[i], absTol);
@@ -225,7 +226,7 @@ LcpResult BoxedSemiSmoothNewtonSolver::solve(
           J(i, i) = 1.0;
           break;
         case ConstraintState::Interior:
-          for (Eigen::Index j = 0; j < n; ++j) {
+          for (const auto j : std::views::iota(Eigen::Index{0}, n)) {
             J(i, j) = A(i, j);
           }
           break;
@@ -254,7 +255,7 @@ LcpResult BoxedSemiSmoothNewtonSolver::solve(
     for (int ls = 0; ls < params->maxLineSearchSteps; ++ls) {
       Eigen::VectorXd xNew = projectVector(x + alpha * dx, loEff, hiEff);
 
-      for (Eigen::Index i = 0; i < n; ++i) {
+      for (const auto i : std::views::iota(Eigen::Index{0}, n)) {
         if (findex[i] >= 0) {
           const double fricLimit = std::abs(hi[i] * xNew[findex[i]]);
           loEff[i] = -fricLimit;
@@ -287,7 +288,7 @@ LcpResult BoxedSemiSmoothNewtonSolver::solve(
     }
   }
 
-  for (Eigen::Index i = 0; i < n; ++i) {
+  for (const auto i : std::views::iota(Eigen::Index{0}, n)) {
     if (findex[i] >= 0) {
       const double fricLimit = std::abs(hi[i] * x[findex[i]]);
       loEff[i] = -fricLimit;

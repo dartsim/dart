@@ -36,13 +36,27 @@
 #include "dart/common/macros.hpp"
 
 #include <dart/common/castable.hpp>
-#include <dart/common/metaprogramming.hpp>
+
+#include <concepts>
+#include <string_view>
 
 namespace dart::common {
 
+namespace detail {
+
 //==============================================================================
-DART_CREATE_MEMBER_CHECK(getType);
-DART_CREATE_MEMBER_CHECK(getStaticType);
+template <typename T>
+concept HasTypeString = requires(const T& value) {
+  { value.getType() } -> std::convertible_to<std::string_view>;
+};
+
+//==============================================================================
+template <typename T>
+concept HasStaticTypeString = requires {
+  { T::getStaticType() } -> std::convertible_to<std::string_view>;
+};
+
+} // namespace detail
 
 //==============================================================================
 template <typename Base>
@@ -50,8 +64,7 @@ template <typename Derived>
 bool Castable<Base>::is() const
 {
   if constexpr (
-      has_member_getType<Base>::value
-      && has_member_getStaticType<Derived>::value) {
+      detail::HasTypeString<Base> && detail::HasStaticTypeString<Derived>) {
     return (base().getType() == Derived::getStaticType());
   } else {
     return (dynamic_cast<const Derived*>(&base()) != nullptr);

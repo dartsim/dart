@@ -201,17 +201,10 @@ LcpResult JacobiSolver::solve(
       const double diag = A(i, i);
       if (std::isfinite(diag) && std::abs(diag) >= params->epsilonForDivision) {
         const double step = x[i] - w[i] / diag;
-        value = x[i] + relaxation * (step - x[i]);
+        value = std::lerp(x[i], step, relaxation);
       }
 
-      if (std::isfinite(loEff[i])) {
-        value = std::max(value, loEff[i]);
-      }
-      if (std::isfinite(hiEff[i])) {
-        value = std::min(value, hiEff[i]);
-      }
-
-      xNew[i] = value;
+      xNew[i] = detail::projectToBounds(value, loEff[i], hiEff[i]);
     }
 
     x = xNew;

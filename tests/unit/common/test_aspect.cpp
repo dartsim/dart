@@ -105,6 +105,39 @@ public:
   }
 };
 
+class StateAndPropertiesAspect final
+  : public AspectWithStateAndVersionedProperties<
+        StateAndPropertiesAspect,
+        TestStateData,
+        TestPropertiesData,
+        VersionedComposite>
+{
+public:
+  using Base = AspectWithStateAndVersionedProperties<
+      StateAndPropertiesAspect,
+      TestStateData,
+      TestPropertiesData,
+      VersionedComposite>;
+
+  StateAndPropertiesAspect(
+      const TestStateData& state = TestStateData(),
+      const TestPropertiesData& props = TestPropertiesData())
+    : Base(state, props)
+  {
+  }
+
+  explicit StateAndPropertiesAspect(const TestPropertiesData& props)
+    : Base(props)
+  {
+  }
+
+  StateAndPropertiesAspect(
+      const TestPropertiesData& props, const TestStateData& state)
+    : Base(props, state)
+  {
+  }
+};
+
 } // namespace
 
 //==============================================================================
@@ -321,6 +354,50 @@ TEST(Aspect, PropertiesOnlyIncrementVersionWithoutComposite)
   PropertiesOnlyAspect aspect;
   std::size_t version = aspect.incrementVersion();
   EXPECT_EQ(version, 0u);
+}
+
+TEST(Aspect, StateAndPropertiesConstructionOrders)
+{
+  TestStateData state;
+  state.position = 12.5;
+  state.counter = 5;
+
+  TestPropertiesData props;
+  props.name = "properties_first";
+  props.stiffness = 8.5;
+
+  StateAndPropertiesAspect stateFirst(state, props);
+  EXPECT_DOUBLE_EQ(stateFirst.getState().position, 12.5);
+  EXPECT_EQ(stateFirst.getState().counter, 5);
+  EXPECT_EQ(stateFirst.getProperties().name, "properties_first");
+  EXPECT_DOUBLE_EQ(stateFirst.getProperties().stiffness, 8.5);
+
+  StateAndPropertiesAspect propertiesFirst(props, state);
+  EXPECT_DOUBLE_EQ(propertiesFirst.getState().position, 12.5);
+  EXPECT_EQ(propertiesFirst.getState().counter, 5);
+  EXPECT_EQ(propertiesFirst.getProperties().name, "properties_first");
+  EXPECT_DOUBLE_EQ(propertiesFirst.getProperties().stiffness, 8.5);
+}
+
+TEST(Aspect, StateAndPropertiesCloneKeepsStateAndProperties)
+{
+  TestStateData state;
+  state.position = -4.25;
+  state.counter = 9;
+
+  TestPropertiesData props;
+  props.name = "combined_clone";
+  props.stiffness = 3.5;
+
+  StateAndPropertiesAspect original(state, props);
+  auto cloned = original.cloneAspect();
+
+  auto* clonedAspect = dynamic_cast<StateAndPropertiesAspect*>(cloned.get());
+  ASSERT_NE(clonedAspect, nullptr);
+  EXPECT_DOUBLE_EQ(clonedAspect->getState().position, -4.25);
+  EXPECT_EQ(clonedAspect->getState().counter, 9);
+  EXPECT_EQ(clonedAspect->getProperties().name, "combined_clone");
+  EXPECT_DOUBLE_EQ(clonedAspect->getProperties().stiffness, 3.5);
 }
 
 //==============================================================================

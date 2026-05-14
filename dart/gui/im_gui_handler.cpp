@@ -47,8 +47,10 @@
 #include <osg/RenderInfo>
 
 #include <algorithm>
+#include <ranges>
 
 #include <cmath>
+#include <cstddef>
 
 namespace dart {
 namespace gui {
@@ -131,19 +133,19 @@ ConvertedKey convertFromOSGKey(int key)
     case KeySymbol::KEY_Control_L:
       return ImGuiKey_LeftCtrl;
     case KeySymbol::KEY_Control_R:
-      return ImGuiKey_RightCtrl;
+      return ImGuiMod_Ctrl;
     case KeySymbol::KEY_Shift_L:
       return ImGuiKey_LeftShift;
     case KeySymbol::KEY_Shift_R:
-      return ImGuiKey_RightShift;
+      return ImGuiMod_Shift;
     case KeySymbol::KEY_Alt_L:
       return ImGuiKey_LeftAlt;
     case KeySymbol::KEY_Alt_R:
-      return ImGuiKey_RightAlt;
+      return ImGuiMod_Alt;
     case KeySymbol::KEY_Super_L:
       return ImGuiKey_LeftSuper;
     case KeySymbol::KEY_Super_R:
-      return ImGuiKey_RightSuper;
+      return ImGuiMod_Super;
     case KeySymbol::KEY_A:
       return ImGuiKey_A;
     case KeySymbol::KEY_C:
@@ -672,9 +674,7 @@ void ImGuiHandler::newFrame(::osg::RenderInfo& renderInfo)
   mTime = currentTime;
   DART_ASSERT(mTime >= 0.0);
 
-  for (auto i = 0u; i < mMousePressed.size(); ++i) {
-    io.MouseDown[i] = mMousePressed[i];
-  }
+  std::ranges::copy(mMousePressed, io.MouseDown);
 
   io.MouseWheel = mMouseWheel;
   mMouseWheel = 0.0f;
