@@ -44,13 +44,14 @@ unverified external and finalization gates:
 Current audited state:
 
 - Branch: `feature/new_coll`
-- Head inspected at audit refresh: working tree after `cd16b64be0b`
-  (`Clean up native collision shape taxonomy`) plus the VSG shape-type switch
-  repair recorded by this checkpoint.
-- Working tree at audit refresh: local changes under review, ahead of
-  `origin/feature/new_coll`.
+- Latest local validation checkpoint: `48e434ef453`
+  (`Fix native shape taxonomy validation`), which includes the VSG shape-type
+  switch repair recorded by this audit.
+- Working tree state: clean after the latest checkpoint commit; the local
+  branch remains ahead of `origin/feature/new_coll`. Use `git status -sb` for
+  the exact ahead count.
 - Remote branch state: `origin/feature/new_coll` is still at
-  `96436fd2503`; the local branch is 44 commits ahead at the audit refresh.
+  `96436fd2503`, so the latest local checkpoint has not been published.
 - GitHub PR state: read-only GitHub search for `head:feature/new_coll` in
   `dartsim/dart` returned no pull requests at the audit refresh, so no CI or
   PR artifact evidence exists yet for the current local north-star branch
