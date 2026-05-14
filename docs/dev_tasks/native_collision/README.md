@@ -21,8 +21,9 @@
       cylinder-vs-plane-like-box support for gz's plane-as-large-box path,
       capped large flat box/mesh contact patches for gz max-contact tests, and
       legacy FCL/ODE facade raycast behavior required by gz's ray-intersection
-      feature tests. CI evidence is still required before the release gate is
-      permanent.
+      feature tests. Manual workflow-dispatch reference evidence on
+      `1e1faf6feb1` also passed gz-physics CI, but final PR packaging still
+      needs maintainer-approved evidence transfer because PR #2652 is closed.
 - [x] Comparative benchmarks prove native is at least as fast as the best
       legacy backend for required workloads. Primitive, narrow-phase,
       supported distance, raycast, raycast-batch, mesh-heavy, and
@@ -137,9 +138,8 @@
       Installed and source-tree legacy detector headers are also native-backed
       facades, with old-engine implementation files under explicit reference
       paths, and lint now guards that runtime source isolation. The remaining
-      work is CI hardening, full wheel matrix/CI artifact evidence from the
-      wired verifier, downstream migration/deprecation and CI evidence, GitHub
-      evidence for the scheduled performance guard, explicit
+      work is downstream migration/deprecation evidence, final
+      compatibility-facade/runtime cleanup, PR evidence transfer, explicit
       API/scalability/performance architecture gate evidence, dev-task
       cleanup, and final runtime cleanup that removes old external-engine
       implementations while preserving only native-backed compatibility
@@ -170,6 +170,15 @@
       the same closed-PR Linux Debug run exposed dangling world query result
       object pointers for native sphere/capsule casts. Focused local repairs
       and target validation are recorded in `03-evidence-gates.md`.
+      The latest pushed code/evidence head `1e1faf6feb1` fixes the closed-PR
+      native-only capsule-vs-convex CCD CI failure and the benchmark guard
+      hidden-artifact upload. Primary local validation on that head passed
+      `pixi run lint`, `pixi run build`, and `pixi run test-unit` with
+      277/277 tests, including `test_ccd` and all 29 `collision-native` tests.
+      Manual workflow-dispatch reference evidence on the same head passed
+      native-only CI, gz-physics, the full dartpy wheel matrix, and uploaded
+      `collision-benchmark-guard-25887939088-1`; broad CI Linux Release is
+      still a slow reference-only tail and should not block local progress.
 
 ## Goal
 

@@ -20,20 +20,27 @@ Status: not complete.
 The current branch has strong local evidence, but the north star still has
 unverified external and finalization gates:
 
-- Native-only and gz-physics CI evidence is still missing.
-- Full dartpy wheel matrix artifact evidence is still missing.
-- GitHub artifact evidence for the scheduled/manual collision benchmark guard
-  is still missing.
+- Native-only and gz-physics manual workflow-dispatch evidence is now collected
+  for pushed head `1e1faf6feb1`, but the final PR-complete state still needs
+  whatever CI surface the maintainer chooses because PR #2652 is closed.
+- Full dartpy wheel matrix artifact evidence is now collected for pushed head
+  `1e1faf6feb1`, but final PR packaging still needs the evidence transferred
+  to the PR description or successor review surface.
+- GitHub artifact evidence for the manual collision benchmark guard is now
+  collected for pushed head `1e1faf6feb1`; scheduled/permanent gate evidence is
+  still a finalization item.
 - PR #2652 was used as the initial CI surface, then closed per user direction
   before the latest follow-up commits. The closed PR remains anchored to old
-  head `714d220d82a`; the latest published branch head `658da0edb10` does not
-  get automatic GitHub Actions runs because feature-branch pushes do not match
-  the main workflow `push` filters. Manual workflow-dispatch runs on that head
-  passed gz-physics CI and the full dartpy wheel matrix, but Linux native-only
-  CI exposed a `CapsuleCastConvex.DirectHit` failure. The current working-tree
-  repair makes `capsuleCastConvex()` use a capsule support function with
-  conservative advancement against convex targets, and the next pushed head
-  needs refreshed CI evidence. The initial `Asserts enabled (no -DNDEBUG)`
+  head `714d220d82a`; feature-branch pushes do not match the main workflow
+  `push` filters. Manual workflow-dispatch runs on `658da0edb10` passed
+  gz-physics CI and the full dartpy wheel matrix, but Linux native-only CI
+  exposed a `CapsuleCastConvex.DirectHit` failure. The pushed repair at
+  `1e1faf6feb1` makes `capsuleCastConvex()` use a capsule support function
+  with conservative advancement against convex targets and enables benchmark
+  artifact upload from the hidden `.benchmark_results/` directory. Manual
+  workflow-dispatch reference runs on that repaired head passed the
+  native-only job, gz-physics, the full dartpy wheel matrix, and the benchmark
+  guard artifact upload. The initial `Asserts enabled (no -DNDEBUG)`
   Linux job exposed a
   workflow mismatch: it manually enabled Bullet in the default Pixi
   environment, where Bullet is intentionally absent after the native-only
@@ -124,8 +131,9 @@ Current audited state:
   (`Record current native collision validation pass`), which records the
   current local validation pass after the durable built-in architecture docs
   and compatibility-facade policy cleanup.
-- Remote branch state: `origin/feature/new_coll` is published at
-  `658da0edb10` (`Fix nanobind test-all source refresh`).
+- Branch state: `feature/new_coll` includes a docs-only resume checkpoint on
+  top of the latest code/evidence head `1e1faf6feb1` (`Fix native capsule
+convex casts in CI`).
 - GitHub PR state: PR #2652
   (https://github.com/dartsim/dart/pull/2652) is closed, still marked draft,
   and remains anchored to old head `714d220d82a`.
@@ -155,6 +163,47 @@ Current audited state:
     `.benchmark_results/` directory. The current working tree sets
     `include-hidden-files: true` for that upload step, so the next dispatch can
     attach the required `collision_check_*.json` files.
+- Closed-PR workflow-dispatch state for repaired head `1e1faf6feb1`:
+  - CI Linux: run `25887939088`
+    (https://github.com/dartsim/dart/actions/runs/25887939088). Reference
+    status: still in progress overall because broad `Release Tests` job
+    `76084265182` is in its ASAN tail; do not block local progress on this
+    slow reference-only signal.
+  - CI Linux `Native Collision (no FCL/Bullet/ODE)`: job `76084265248`,
+    passed. This covers the previous `test_ccd` /
+    `CapsuleCastConvex.DirectHit` failure on GitHub.
+  - CI Linux `Collision Benchmark Guard`: job `76084265196`, passed.
+    Uploaded artifact `collision-benchmark-guard-25887939088-1`, id
+    `7006005918`, digest
+    `sha256:c92c993b9d6a2eaf0ac234d7526cc9893c6544992f0ed55fd77a8bf7f02ba2f5`,
+    size `20912` bytes, for head
+    `1e1faf6feb18148c1d9fbc041e75a3cb8da457ef`.
+  - CI gz-physics: run `25887940214`
+    (https://github.com/dartsim/dart/actions/runs/25887940214), passed. The
+    GZ Physics Tests job `76084227295` passed.
+  - Publish dartpy: run `25887941240`
+    (https://github.com/dartsim/dart/actions/runs/25887941240), passed across
+    all wheel build, repair, verify, test, and upload jobs for Ubuntu, macOS,
+    and Windows on Python 3.12, 3.13, and 3.14. The PyPI publish job was
+    skipped as expected for this dispatch.
+  - Wheel artifact IDs from the repaired-head run:
+    `7006040650` (`ubuntu-latest-py312`), `7006017034`
+    (`ubuntu-latest-py313`), `7005950943` (`ubuntu-latest-py314`),
+    `7005940232` (`macos-latest-py312`), `7005904083`
+    (`macos-latest-py313`), `7005879764` (`macos-latest-py314`),
+    `7006075376` (`windows-latest-py312`), `7006153851`
+    (`windows-latest-py313`), and `7006180173`
+    (`windows-latest-py314`).
+- Current pushed-head local validation for `1e1faf6feb1`:
+  - `pixi run lint` passed before the commit.
+  - `pixi run build` passed after the commit was pushed.
+  - `pixi run test-unit` passed after the commit was pushed, reporting
+    277/277 tests passed. The run includes `test_ccd` and all 29
+    `collision-native` tests.
+  - A focused local ASAN attempt is blocked by the local host toolchain, not by
+    a DART test failure: `/usr/lib/gcc/x86_64-redhat-linux/15/libasan.so` is a
+    linker script pointing at missing `/usr/lib64/libasan.so.8.0.0`, so the
+    ASAN build fails at link time before native collision tests can run.
 - Initial PR CI state: GitHub Actions started for the pushed head. The first
   completed failure was `Asserts enabled (no -DNDEBUG)`, run `25870574281`,
   job `76024440344`, which failed during configure because
@@ -416,25 +465,20 @@ Legend:
 1. Do not create a new diff or review request until the user asks. PR #2652 is
    closed, so pushing focused fixes to `feature/new_coll` publishes branch
    state but does not automatically trigger the main GitHub Actions workflows.
-   Manual workflow-dispatch runs for head `658da0edb10` found and locally
-   repaired one native-only CI failure plus one benchmark artifact upload
-   issue. Push the repair and refresh the CI dispatch evidence on the next
-   head before these gates can close.
-2. Collect CI run links and artifact names for:
-   - native-only collision/default build jobs,
-   - gz-physics compatibility jobs,
-   - dartpy wheel jobs that run `wheel-verify`,
-   - `Collision Benchmark Guard` JSON artifacts.
-3. Record downstream migration/deprecation evidence proving gz-physics and
+   Manual workflow-dispatch reference evidence for pushed head `1e1faf6feb1`
+   now covers native-only CI, gz-physics, the wheel matrix, and the collision
+   benchmark guard artifact upload. Treat GitHub CI as reference evidence; use
+   local build/test as the main validation surface.
+2. Record downstream migration/deprecation evidence proving gz-physics and
    downstream users no longer depend on legacy names as runtime backend
    selectors.
-4. Apply the documented compatibility-facade policy in the final PR state:
+3. Apply the documented compatibility-facade policy in the final PR state:
    preserve only wrappers required for source compatibility, keep them
    native-backed, and keep all external engines reference-only.
-5. Run final validation after the final code state, including at least
+4. Run final validation after the final code state, including at least
    `pixi run lint` and `pixi run test-all`, plus any CI-specific gates whose
    failures are not covered locally.
-6. Keep the durable collision architecture summary in onboarding docs, move
+5. Keep the durable collision architecture summary in onboarding docs, move
    final command evidence into the PR description, then delete this dev-task
    folder in the same PR.
 

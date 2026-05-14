@@ -272,35 +272,44 @@ simulation-experimental tests, Python tests, and documentation.
 ## Current Branch
 
 `feature/new_coll` - local branch tracking `origin/feature/new_coll`. PR #2652
-is closed and still points at old head `714d220d82a`. The current branch state
-includes the nanobind `test-all` helper repair and refreshed full local
-validation evidence. Follow-up branch pushes publish state but do not start the
-main GitHub Actions workflows because the workflow `push` filters exclude
-feature branches. Manual workflow-dispatch runs for head `658da0edb10` are
-now recorded: CI gz-physics run `25885373580` passed, Publish dartpy run
-`25885373596` passed across the wheel matrix, and CI Linux run `25885373625`
-failed the native-only job in `test_ccd` / `CapsuleCastConvex.DirectHit`.
-The current working tree fixes that failure by replacing endpoint-only
+is closed and still points at old head `714d220d82a`. The branch now includes
+a docs-only resume checkpoint on top of the latest code/evidence head,
+`1e1faf6feb1` (`Fix native capsule convex casts in CI`). That code commit
+fixes the closed-PR native-only CI failure by replacing endpoint-only
 `capsuleCastConvex()` checks with capsule-support conservative advancement
-against convex targets. The same Linux run passed the benchmark guard command
-but uploaded no artifact because `upload-artifact@v6` skipped the hidden
-`.benchmark_results/` path; the current working tree enables hidden-file
-upload for that artifact step.
+against convex targets, and fixes the benchmark guard artifact upload by
+allowing hidden `.benchmark_results/` files.
+
+Primary local validation on the pushed head is green:
+`pixi run lint` passed before commit, then `pixi run build` and
+`pixi run test-unit` passed after the push; `test-unit` reported 277/277 tests
+passed, including `test_ccd` and all 29 `collision-native` tests. A focused
+local ASAN attempt is blocked by the host toolchain rather than by DART code:
+GCC's `libasan.so` linker script points to missing
+`/usr/lib64/libasan.so.8.0.0`, so ASAN linking fails before tests can run.
+
+Manual workflow-dispatch runs for `1e1faf6feb1` are reference evidence only,
+not the main validation surface. Current status: CI gz-physics run
+`25887940214` passed, Publish dartpy run `25887941240` passed across the full
+wheel matrix, and CI Linux run `25887939088` has already passed
+`Native Collision (no FCL/Bullet/ODE)` job `76084265248` plus
+`Collision Benchmark Guard` job `76084265196`. The benchmark guard uploaded
+artifact `collision-benchmark-guard-25887939088-1`, id `7006005918`, digest
+`sha256:c92c993b9d6a2eaf0ac234d7526cc9893c6544992f0ed55fd77a8bf7f02ba2f5`.
+The broad CI Linux `Release Tests` job is still in progress in its ASAN tail,
+so do not block local progress on that reference-only signal.
 
 ## Immediate Next Step
 
 Continue from `docs/dev_tasks/native_collision/06-completion-audit.md`.
-Current local focused, broad Debug, and full `pixi run test-all` validation is
-green. CI evidence is now being collected from manually dispatched workflow
-runs on `658da0edb10`; gz-physics and the wheel matrix passed, while
-native-only CI failed and has a local focused repair; the benchmark guard
-passed but needs an artifact-upload repair. Finish validation, commit and push
-the repairs without creating a new PR/diff, dispatch fresh CI for the new head,
-then collect native-only/gz and wheel matrix artifact evidence, collect GitHub
-evidence for the scheduled or manual benchmark guard, record downstream
-migration/deprecation evidence, perform final runtime cleanup, rerun full
-validation after the PR-complete state, transfer final evidence to the PR, and
-delete the dev-task folder in the completing PR. Read
+Current local focused validation is green on pushed head `1e1faf6feb1`, and
+manual workflow-dispatch reference evidence now covers native-only CI,
+gz-physics, the wheel matrix, and the benchmark artifact upload for that head.
+Do not create or reopen a PR/diff until the user asks. Continue by recording
+downstream migration/deprecation evidence, deciding the final
+compatibility-facade/runtime cleanup slice, rerunning full local validation
+after any further code changes, then transferring final evidence to the PR
+description and deleting the dev-task folder in the completing PR. Read
 `06-completion-audit.md` before deciding whether a future checkpoint is
 complete; it is the prompt-to-artifact checklist for the north-star goal.
 
