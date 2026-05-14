@@ -48,6 +48,7 @@
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/heightmap_shape.hpp>
 #include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/multi_sphere_convex_hull_shape.hpp>
@@ -85,6 +86,7 @@ using dart::dynamics::ConvexMeshShape;
 using dart::dynamics::CylinderShape;
 using dart::dynamics::EllipsoidShape;
 using dart::dynamics::FreeJoint;
+using dart::dynamics::HeightmapShaped;
 using dart::dynamics::LineSegmentShape;
 using dart::dynamics::MeshShape;
 using dart::dynamics::MultiSphereConvexHullShape;
@@ -349,6 +351,20 @@ TEST(
       points->localBoundsMin.isApprox(Eigen::Vector3d(-0.5, -0.4, 0.0)));
   EXPECT_TRUE(points->localBoundsMax.isApprox(Eigen::Vector3d(0.3, 0.1, 0.6)));
   EXPECT_TRUE(points->size.isApprox(Eigen::Vector3d(0.8, 0.5, 0.6)));
+
+  HeightmapShaped heightmap;
+  const std::array<double, 6> heights{1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
+  heightmap.setHeightField(3u, 2u, heights);
+  heightmap.setScale(Eigen::Vector3d(0.5, 0.25, 1.5));
+  const auto terrain = describeShape(heightmap);
+  ASSERT_TRUE(terrain.has_value());
+  EXPECT_EQ(terrain->kind, ShapeKind::Heightmap);
+  ASSERT_TRUE(terrain->hasLocalBounds);
+  EXPECT_TRUE(
+      terrain->localBoundsMin.isApprox(Eigen::Vector3d(-0.75, -0.25, 1.5)));
+  EXPECT_TRUE(
+      terrain->localBoundsMax.isApprox(Eigen::Vector3d(0.75, 0.25, 9.0)));
+  EXPECT_TRUE(terrain->size.isApprox(Eigen::Vector3d(1.5, 0.5, 7.5)));
 
   auto triMesh = std::make_shared<dart::math::TriMesh<double>>();
   triMesh->addVertex(0.0, 0.0, 0.0);

@@ -45,6 +45,7 @@
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/heightmap_shape.hpp>
 #include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/multi_sphere_convex_hull_shape.hpp>
@@ -91,6 +92,14 @@ void setLocalBounds(
   descriptor.localBoundsMin = min;
   descriptor.localBoundsMax = max;
   descriptor.hasLocalBounds = true;
+}
+
+void setShapeBoundingBoxBounds(
+    GeometryDescriptor& descriptor, const dynamics::Shape& shape)
+{
+  const auto& bounds = shape.getBoundingBox();
+  descriptor.size = bounds.getMax() - bounds.getMin();
+  setLocalBounds(descriptor, bounds.getMin(), bounds.getMax());
 }
 
 void setSymmetricLocalBounds(
@@ -464,6 +473,20 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
       descriptor.size = max - min;
       setLocalBounds(descriptor, min, max);
     }
+    return descriptor;
+  }
+
+  if (const auto* heightmap
+      = dynamic_cast<const dynamics::HeightmapShapef*>(&shape)) {
+    descriptor.kind = ShapeKind::Heightmap;
+    setShapeBoundingBoxBounds(descriptor, *heightmap);
+    return descriptor;
+  }
+
+  if (const auto* heightmap
+      = dynamic_cast<const dynamics::HeightmapShaped*>(&shape)) {
+    descriptor.kind = ShapeKind::Heightmap;
+    setShapeBoundingBoxBounds(descriptor, *heightmap);
     return descriptor;
   }
 

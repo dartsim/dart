@@ -128,15 +128,16 @@ not a drop-in OSG replacement.
   fallback visuals.
 - **Filament gap:** The current experimental descriptor layer only covers box,
   sphere, ellipsoid, cylinder, capsule, cone, pyramid, multi-sphere,
-  line-segment, convex mesh, point cloud, mesh, finite plane proxy, and
+  line-segment, convex mesh, point cloud, heightmap, mesh, finite plane proxy, and
   unsupported fallback. Filament can render the missing geometry once DART
   supplies dynamic buffers, materials, and update policies.
 - **North-star plan:** Complete the descriptor model before promotion:
   soft mesh as dynamic vertex buffers, voxel grids as instanced cubes or
-  generated occupied-cell meshes, heightmaps as generated terrain meshes, and
-  explicit fallback diagnostics for unsupported shapes. Upgrade point clouds
-  from the MVP box-point visual to point or billboard geometry if that is
-  needed for parity with maintained examples.
+  generated occupied-cell meshes, and explicit fallback diagnostics for
+  unsupported shapes. Upgrade point clouds from the MVP box-point visual to
+  point or billboard geometry, and heightmaps from the MVP generated terrain
+  mesh to streaming terrain buffers, if those are needed for parity with
+  maintained examples.
 
 ### 4. Mesh and material fidelity
 

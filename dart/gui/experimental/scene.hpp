@@ -70,6 +70,7 @@ enum class ShapeKind
   LineSegments,
   ConvexMesh,
   PointCloud,
+  Heightmap,
   Mesh,
   Plane,
   Unsupported

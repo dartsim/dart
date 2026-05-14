@@ -128,8 +128,8 @@
     targets for hand and foot manipulation.
   - Extended experimental Filament GUI descriptor and renderer coverage to
     `PyramidShape`, `MultiSphereConvexHullShape`, `LineSegmentShape`, and
-    `ConvexMeshShape`, and `PointCloudShape`, with the MVP scene validating
-    that all five fixtures are extracted and rendered.
+    `ConvexMeshShape`, `PointCloudShape`, and `HeightmapShape`, with the MVP
+    scene validating that all six fixtures are extracted and rendered.
   - Fix SEGV in `ImFontAtlas::AddFontFromMemoryCompressedTTF` when null pointer is passed as compressed font data. ([#2516](https://github.com/dartsim/dart/issues/2516))
   - Added headless rendering support via `ViewerConfig` and pbuffer graphics context for CI pipelines and batch frame capture. Includes `Viewer::captureBuffer()` for raw RGBA pixel readback and a new `headless-rendering` CI job. ([#2466](https://github.com/dartsim/dart/pull/2466))
   - Added `ImGuiViewer` construction from `ViewerConfig` to support headless ImGui rendering and example frame capture workflows.

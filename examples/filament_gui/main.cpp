@@ -127,6 +127,8 @@ using dart::dynamics::CollisionAspect;
 using dart::dynamics::ConvexMeshShape;
 using dart::dynamics::DynamicsAspect;
 using dart::dynamics::FreeJoint;
+using dart::dynamics::HeightmapShapef;
+using dart::dynamics::HeightmapShaped;
 using dart::dynamics::InverseKinematics;
 using dart::dynamics::InverseKinematicsPtr;
 using dart::dynamics::MeshShape;
@@ -934,6 +936,7 @@ constexpr const char* kMultiSphereFixtureSkeletonName = "visual_multi_sphere";
 constexpr const char* kLineSegmentFixtureSkeletonName = "visual_line_segments";
 constexpr const char* kConvexMeshFixtureSkeletonName = "visual_convex_mesh";
 constexpr const char* kPointCloudFixtureSkeletonName = "visual_point_cloud";
+constexpr const char* kHeightmapFixtureSkeletonName = "visual_heightmap";
 constexpr const char* kPbrEnvironmentFixtureSkeletonName =
     "visual_pbr_environment";
 constexpr const char* kG1FixtureSkeletonName = "visual_g1_robot";
@@ -1859,6 +1862,16 @@ DartScene createMvpDartScene()
     return shape;
   };
 
+  auto createHeightmapShape = [] {
+    auto shape = std::make_shared<HeightmapShaped>();
+    const std::array<double, 12> heights{
+        0.02, 0.10, 0.06, 0.12, 0.08, 0.18,
+        0.14, 0.05, 0.10, 0.24, 0.16, 0.08};
+    shape->setHeightField(4u, 3u, heights);
+    shape->setScale(Eigen::Vector3d(0.18, 0.18, 1.0));
+    return shape;
+  };
+
   scene.world = World::create("filament_gui_mvp");
   scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   scene.world->addSkeleton(blueBox);
@@ -1914,6 +1927,11 @@ DartScene createMvpDartScene()
       createPointCloudShape(),
       Eigen::Vector3d(-1.45, 0.55, 0.82),
       Eigen::Vector3d(0.48, 0.86, 0.38)));
+  scene.world->addSkeleton(createStaticVisual(
+      kHeightmapFixtureSkeletonName,
+      createHeightmapShape(),
+      Eigen::Vector3d(-0.75, 0.55, 0.65),
+      Eigen::Vector3d(0.42, 0.74, 0.36)));
   scene.world->addSkeleton(createStaticVisual(
       "visual_ellipsoid",
       std::make_shared<dart::dynamics::EllipsoidShape>(
@@ -3371,6 +3389,95 @@ std::optional<Renderable> createPointCloudRenderable(
       bounds.max);
 }
 
+template <typename S>
+std::optional<Renderable> createHeightmapRenderable(
+    filament::Engine& engine,
+    filament::Material& material,
+    const dart::dynamics::HeightmapShape<S>& heightmapShape,
+    const float4& color)
+{
+  const auto& heightmap = heightmapShape.getHeightField();
+  const Eigen::Index rows = heightmap.rows();
+  const Eigen::Index cols = heightmap.cols();
+  if (rows < 2 || cols < 2) {
+    return std::nullopt;
+  }
+  if (static_cast<std::size_t>(heightmap.size())
+      > static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max())) {
+    return std::nullopt;
+  }
+
+  const auto& scale = heightmapShape.getScale();
+  const S spanX = static_cast<S>(cols - 1) * scale.x();
+  const S spanY = static_cast<S>(rows - 1) * scale.y();
+  const S xOffset = static_cast<S>(-0.5) * spanX;
+  const S yOffset = static_cast<S>(0.5) * spanY;
+  const filament::math::short4 tangent = {0, 0, 0, 32767};
+
+  std::vector<Vertex> vertices;
+  vertices.reserve(static_cast<std::size_t>(heightmap.size()));
+  for (Eigen::Index row = 0; row < rows; ++row) {
+    for (Eigen::Index col = 0; col < cols; ++col) {
+      vertices.push_back(Vertex{
+          {static_cast<float>(static_cast<S>(col) * scale.x() + xOffset),
+           static_cast<float>(-static_cast<S>(row) * scale.y() + yOffset),
+           static_cast<float>(heightmap(row, col) * scale.z())},
+          tangent});
+    }
+  }
+
+  const auto vertexIndex = [cols](Eigen::Index row, Eigen::Index col) {
+    return static_cast<std::uint32_t>(row * cols + col);
+  };
+
+  std::vector<std::uint32_t> indices;
+  std::vector<filament::math::uint3> triangles;
+  indices.reserve(static_cast<std::size_t>((rows - 1) * (cols - 1) * 6));
+  triangles.reserve(static_cast<std::size_t>((rows - 1) * (cols - 1) * 2));
+  for (Eigen::Index row = 1; row < rows; ++row) {
+    for (Eigen::Index col = 1; col < cols; ++col) {
+      const auto p1 = vertexIndex(row - 1, col - 1);
+      const auto p2 = vertexIndex(row - 1, col);
+      const auto p3 = vertexIndex(row, col - 1);
+      const auto curr = vertexIndex(row, col);
+      appendTriangle(indices, triangles, p1, p3, p2);
+      appendTriangle(indices, triangles, p2, p3, curr);
+    }
+  }
+
+  std::vector<float3> normalSums(vertices.size(), {0.0f, 0.0f, 0.0f});
+  for (const auto& triangle : triangles) {
+    const float3 normal = normalizeOr(
+        crossProduct(
+            vertices[triangle.y].position - vertices[triangle.x].position,
+            vertices[triangle.z].position - vertices[triangle.x].position),
+        {0.0f, 0.0f, 1.0f});
+    for (std::uint32_t index : {triangle.x, triangle.y, triangle.z}) {
+      normalSums[index].x += normal.x;
+      normalSums[index].y += normal.y;
+      normalSums[index].z += normal.z;
+    }
+  }
+
+  std::vector<float3> normals;
+  normals.reserve(normalSums.size());
+  for (const float3& normal : normalSums) {
+    normals.push_back(normalizeOr(normal, {0.0f, 0.0f, 1.0f}));
+  }
+
+  const Bounds bounds = computeBounds(vertices);
+  return createTriangleMeshRenderable(
+      engine,
+      material,
+      std::move(vertices),
+      std::move(indices),
+      std::move(triangles),
+      std::move(normals),
+      color,
+      bounds.min,
+      bounds.max);
+}
+
 std::optional<Renderable> createMeshRenderable(
     filament::Engine& engine,
     const MaterialSet& materials,
@@ -3793,6 +3900,17 @@ std::optional<Renderable> createRenderableFromDescriptor(
       break;
     case ShapeKind::PointCloud:
       renderable = createPointCloudRenderable(engine, materials, descriptor);
+      break;
+    case ShapeKind::Heightmap:
+      if (const auto* heightmapShape = dynamic_cast<const HeightmapShapef*>(
+              descriptor.shape)) {
+        renderable
+            = createHeightmapRenderable(engine, solidMaterial, *heightmapShape, color);
+      } else if (const auto* heightmapShape
+                 = dynamic_cast<const HeightmapShaped*>(descriptor.shape)) {
+        renderable
+            = createHeightmapRenderable(engine, solidMaterial, *heightmapShape, color);
+      }
       break;
     case ShapeKind::Mesh:
       if (const auto* meshShape = dynamic_cast<const MeshShape*>(
@@ -4338,6 +4456,15 @@ int main(int argc, char* argv[])
                    && descriptor.material.visible
                    && descriptor.geometry.kind == ShapeKind::PointCloud;
           }));
+  const std::size_t heightmapDescriptorCount = static_cast<std::size_t>(
+      std::count_if(
+          initialDescriptors.begin(),
+          initialDescriptors.end(),
+          [](const RenderableDescriptor& descriptor) {
+            return descriptor.skeletonName == kHeightmapFixtureSkeletonName
+                   && descriptor.material.visible
+                   && descriptor.geometry.kind == ShapeKind::Heightmap;
+          }));
   const std::size_t pbrEnvironmentDescriptorCount = static_cast<std::size_t>(
       std::count_if(
           initialDescriptors.begin(),
@@ -4417,6 +4544,13 @@ int main(int argc, char* argv[])
           << pointCloudDescriptorCount << "\n";
       return 1;
     }
+    if (heightmapDescriptorCount != 1) {
+      std::cerr
+          << "Expected the heightmap fixture to provide one visible heightmap "
+             "renderable descriptor, but extracted "
+          << heightmapDescriptorCount << "\n";
+      return 1;
+    }
     if (pbrEnvironmentDescriptorCount < kMinPbrEnvironmentRenderableCount) {
       std::cerr << "Expected the PBR environment fixture to provide at least "
                 << kMinPbrEnvironmentRenderableCount
@@ -4451,6 +4585,7 @@ int main(int argc, char* argv[])
   std::size_t createdLineSegmentRenderableCount = 0;
   std::size_t createdConvexMeshRenderableCount = 0;
   std::size_t createdPointCloudRenderableCount = 0;
+  std::size_t createdHeightmapRenderableCount = 0;
   std::size_t createdPbrEnvironmentRenderableCount = 0;
   std::size_t createdG1RenderableCount = 0;
   std::size_t createdDragAndDropFrameRenderableCount = 0;
@@ -4495,6 +4630,10 @@ int main(int argc, char* argv[])
     if (descriptor.skeletonName == kPointCloudFixtureSkeletonName
         && descriptor.geometry.kind == ShapeKind::PointCloud) {
       ++createdPointCloudRenderableCount;
+    }
+    if (descriptor.skeletonName == kHeightmapFixtureSkeletonName
+        && descriptor.geometry.kind == ShapeKind::Heightmap) {
+      ++createdHeightmapRenderableCount;
     }
     if (descriptor.skeletonName == kPbrEnvironmentFixtureSkeletonName
         && descriptor.geometry.kind == ShapeKind::Mesh) {
@@ -4569,6 +4708,12 @@ int main(int argc, char* argv[])
       std::cerr << "Only " << createdPointCloudRenderableCount << " of "
                 << pointCloudDescriptorCount
                 << " point cloud renderables were created\n";
+      return 1;
+    }
+    if (createdHeightmapRenderableCount != heightmapDescriptorCount) {
+      std::cerr << "Only " << createdHeightmapRenderableCount << " of "
+                << heightmapDescriptorCount
+                << " heightmap renderables were created\n";
       return 1;
     }
     if (createdPbrEnvironmentRenderableCount < pbrEnvironmentDescriptorCount) {
