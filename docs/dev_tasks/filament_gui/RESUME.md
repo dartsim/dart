@@ -51,12 +51,13 @@ renderer-independent scene layer now also extracts world-owned `SimpleFrame`
 visuals, so drag-and-drop style targets can flow through the same renderable
 descriptor path as body shape nodes. It also owns debug line descriptors for the
 grid, world/body frames, center-of-mass markers, contact markers, contact
-normals, and contact force vectors, with graphics-free unit coverage. It also
-has picking bounds and nearest ray-hit tests for visible, hidden, hit, and miss
-cases, including bounds hit point and normal reporting. The example wires those
-helpers into basic click-to-select highlighting with a selection bounds overlay,
-and reports the selected DART shape in the built-in panel. Backend-hidden
-free-joint, simple-frame, and combined
+normals, contact force vectors, support-polygon outlines, and support-centroid
+markers, with graphics-free unit coverage. It also has nearest ray-hit tests
+for visible, hidden, hit, and miss cases, including bounds hit points/normals
+and primitive sphere/ellipsoid surface hit points/normals. The example wires
+those helpers into basic click-to-select highlighting with a selection bounds
+overlay, and reports the selected DART shape in the built-in panel.
+Backend-hidden free-joint, simple-frame, and combined
 frame-renderable translation helpers are covered by C++ and Python tests, and
 the example uses the combined helper for keyboard nudging of selected dynamic
 bodies and `SimpleFrame` visuals. Backend-hidden plane intersection and
@@ -81,7 +82,7 @@ non-rendering example consumer for descriptor/debug/camera diagnostics,
 including a `SimpleFrame` visual, without adding another backend. The
 Filament example's built-in panel now exposes pause/resume, single-step, and
 debug overlay toggles for grid, frames, center-of-mass markers, contacts,
-normals, and force vectors. The same executable now supports
+normals, force vectors, and support polygons. The same executable now supports
 `--scene drag-and-drop`, a first interaction-heavy fixture that carries the
 legacy `SimpleFrame` anchor, child frame, and axis markers through the
 backend-hidden extraction and manipulation path.
@@ -145,9 +146,10 @@ relying on a Filament conda package. The MVP PR #2647 merged with hosted
 `feature/filament-gui-completion` is the follow-up branch for work beyond the
 MVP. It includes the Filament version of the G1 puppet example: `--scene g1`
 loads the Unitree G1 URDF through DART resource retrievers, exposes colored IK
-targets for both hands and feet, and routes `pixi run ex g1_puppet` through the
-Filament example by default. This branch is intentionally separate from the
-merged MVP PR #2647.
+targets for both hands and feet, registers active support geometry on the foot
+targets for support-polygon overlay inspection, and routes
+`pixi run ex g1_puppet` through the Filament example by default. This branch is
+intentionally separate from the merged MVP PR #2647.
 
 The follow-up branch also extends the backend-hidden shape descriptor and
 renderer path to `PyramidShape`, `MultiSphereConvexHullShape`, and
@@ -161,7 +163,9 @@ converted into Filament renderables. Unsupported shapes now produce diagnostic
 descriptors instead of being silently dropped by the extraction layer.
 `MeshShape` material, texture-path, texture-coordinate, and submesh metadata now
 flow through renderer-hidden descriptors, and the Filament example consumes
-that descriptor metadata for per-part mesh materials.
+that descriptor metadata for per-part mesh materials. The picking helpers now
+also use primitive sphere/ellipsoid intersections for curved surface hit points
+and normals before falling back to local bounds for other shape descriptors.
 
 `docs/dev_tasks/filament_gui/07-completion-audit.md` maps the current
 implementation, verification evidence, and missing promotion gates. Use that
