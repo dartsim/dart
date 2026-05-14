@@ -76,7 +76,8 @@
 #elif defined(DART_COMPILER_CLANG)
   #define DART_SUPPRESS_CPP_WARNING_BEGIN                                      \
     _Pragma("clang diagnostic push")                                           \
-        _Pragma("clang diagnostic ignored \"-W#pragma-messages\"")
+        _Pragma("clang diagnostic ignored \"-W#pragma-messages\"")             \
+            _Pragma("clang diagnostic ignored \"-W#warnings\"")
   #define DART_SUPPRESS_CPP_WARNING_END _Pragma("clang diagnostic pop")
 #elif defined(DART_COMPILER_MSVC)
   #define DART_SUPPRESS_CPP_WARNING_BEGIN __pragma(warning(push))
