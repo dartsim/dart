@@ -32,6 +32,7 @@ void defGuiExperimentalModule(nb::module_& m)
       .value("Cylinder", gui::ShapeKind::Cylinder)
       .value("Capsule", gui::ShapeKind::Capsule)
       .value("Cone", gui::ShapeKind::Cone)
+      .value("Pyramid", gui::ShapeKind::Pyramid)
       .value("Mesh", gui::ShapeKind::Mesh)
       .value("Plane", gui::ShapeKind::Plane)
       .value("Unsupported", gui::ShapeKind::Unsupported);

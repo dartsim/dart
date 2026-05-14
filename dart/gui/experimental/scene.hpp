@@ -65,6 +65,7 @@ enum class ShapeKind
   Cylinder,
   Capsule,
   Cone,
+  Pyramid,
   Mesh,
   Plane,
   Unsupported

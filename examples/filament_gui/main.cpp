@@ -173,6 +173,7 @@ using dart::examples::filament_gui::translateFrameRenderable;
 using dart::examples::filament_gui::updateOrbitCamera;
 using dart::examples::filament_gui::writeRgbaPpm;
 using dart::simulation::World;
+using filament::math::float2;
 using filament::math::float3;
 using filament::math::float4;
 using filament::math::mat4f;
@@ -925,6 +926,7 @@ struct AppOptions
 constexpr const char* kWamFixtureSkeletonName = "visual_wam_robot";
 constexpr const char* kAtlasFixtureSkeletonName = "visual_atlas_torso_mesh";
 constexpr const char* kAtlasRobotFixtureSkeletonName = "visual_atlas_robot";
+constexpr const char* kPyramidFixtureSkeletonName = "visual_pyramid";
 constexpr const char* kPbrEnvironmentFixtureSkeletonName =
     "visual_pbr_environment";
 constexpr const char* kG1FixtureSkeletonName = "visual_g1_robot";
@@ -1855,6 +1857,11 @@ DartScene createMvpDartScene()
       Eigen::Vector3d(0.75, -0.15, 0.8),
       Eigen::Vector3d(0.92, 0.38, 0.2)));
   scene.world->addSkeleton(createStaticVisual(
+      kPyramidFixtureSkeletonName,
+      std::make_shared<dart::dynamics::PyramidShape>(0.55, 0.45, 0.7),
+      Eigen::Vector3d(-2.15, -0.15, 0.82),
+      Eigen::Vector3d(0.9, 0.72, 0.24)));
+  scene.world->addSkeleton(createStaticVisual(
       "visual_ellipsoid",
       std::make_shared<dart::dynamics::EllipsoidShape>(
           Eigen::Vector3d(0.7, 0.4, 0.32)),
@@ -2019,6 +2026,14 @@ float3 normalizeOr(const float3& vector, const float3& fallback)
       vector.x * inverseLength,
       vector.y * inverseLength,
       vector.z * inverseLength};
+}
+
+float3 crossProduct(const float3& lhs, const float3& rhs)
+{
+  return {
+      lhs.y * rhs.z - lhs.z * rhs.y,
+      lhs.z * rhs.x - lhs.x * rhs.z,
+      lhs.x * rhs.y - lhs.y * rhs.x};
 }
 
 bool hasUsableTextureCoordinates(const std::vector<Vertex>& vertices)
@@ -2877,6 +2892,71 @@ Renderable createConeRenderable(
       {r, r, halfHeight});
 }
 
+Renderable createPyramidRenderable(
+    filament::Engine& engine,
+    filament::Material& material,
+    const Eigen::Vector3d& size,
+    const float4& color)
+{
+  const filament::math::short4 tangent = {0, 0, 0, 32767};
+  const float halfWidth = static_cast<float>(size.x() * 0.5);
+  const float halfDepth = static_cast<float>(size.y() * 0.5);
+  const float halfHeight = static_cast<float>(size.z() * 0.5);
+
+  const std::array<float3, 5> points = {
+      float3{0.0f, 0.0f, halfHeight},
+      float3{-halfWidth, -halfDepth, -halfHeight},
+      float3{halfWidth, -halfDepth, -halfHeight},
+      float3{halfWidth, halfDepth, -halfHeight},
+      float3{-halfWidth, halfDepth, -halfHeight}};
+
+  std::vector<Vertex> vertices;
+  std::vector<float3> normals;
+  std::vector<std::uint32_t> indices;
+  std::vector<filament::math::uint3> triangles;
+  vertices.reserve(18);
+  normals.reserve(18);
+  indices.reserve(18);
+  triangles.reserve(6);
+
+  const auto appendFace = [&](std::uint32_t a,
+                              std::uint32_t b,
+                              std::uint32_t c,
+                              float2 uvA,
+                              float2 uvB,
+                              float2 uvC) {
+    const float3 normal = normalizeOr(
+        crossProduct(points[b] - points[a], points[c] - points[a]),
+        {0.0f, 0.0f, 1.0f});
+    const auto start = static_cast<std::uint32_t>(vertices.size());
+    vertices.push_back(Vertex{points[a], tangent, uvA});
+    vertices.push_back(Vertex{points[b], tangent, uvB});
+    vertices.push_back(Vertex{points[c], tangent, uvC});
+    normals.push_back(normal);
+    normals.push_back(normal);
+    normals.push_back(normal);
+    appendTriangle(indices, triangles, start, start + 1u, start + 2u);
+  };
+
+  appendFace(0, 1, 2, {0.5f, 1.0f}, {0.0f, 0.0f}, {1.0f, 0.0f});
+  appendFace(0, 2, 3, {0.5f, 1.0f}, {0.0f, 0.0f}, {1.0f, 0.0f});
+  appendFace(0, 3, 4, {0.5f, 1.0f}, {0.0f, 0.0f}, {1.0f, 0.0f});
+  appendFace(0, 4, 1, {0.5f, 1.0f}, {0.0f, 0.0f}, {1.0f, 0.0f});
+  appendFace(1, 4, 3, {0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f});
+  appendFace(1, 3, 2, {0.0f, 0.0f}, {1.0f, 1.0f}, {1.0f, 0.0f});
+
+  return createTriangleMeshRenderable(
+      engine,
+      material,
+      std::move(vertices),
+      std::move(indices),
+      std::move(triangles),
+      std::move(normals),
+      color,
+      {-halfWidth, -halfDepth, -halfHeight},
+      {halfWidth, halfDepth, halfHeight});
+}
+
 Renderable createCapsuleRenderable(
     filament::Engine& engine,
     filament::Material& material,
@@ -3341,6 +3421,10 @@ std::optional<Renderable> createRenderableFromDescriptor(
           descriptor.geometry.radius,
           descriptor.geometry.height,
           color);
+      break;
+    case ShapeKind::Pyramid:
+      renderable = createPyramidRenderable(
+          engine, solidMaterial, descriptor.geometry.size, color);
       break;
     case ShapeKind::Capsule:
       renderable = createCapsuleRenderable(
@@ -3848,6 +3932,15 @@ int main(int argc, char* argv[])
                    && descriptor.material.visible
                    && descriptor.geometry.kind == ShapeKind::Mesh;
           }));
+  const std::size_t pyramidDescriptorCount = static_cast<std::size_t>(
+      std::count_if(
+          initialDescriptors.begin(),
+          initialDescriptors.end(),
+          [](const RenderableDescriptor& descriptor) {
+            return descriptor.skeletonName == kPyramidFixtureSkeletonName
+                   && descriptor.material.visible
+                   && descriptor.geometry.kind == ShapeKind::Pyramid;
+          }));
   const std::size_t pbrEnvironmentDescriptorCount = static_cast<std::size_t>(
       std::count_if(
           initialDescriptors.begin(),
@@ -3893,6 +3986,12 @@ int main(int argc, char* argv[])
                 << atlasRobotDescriptorCount << "\n";
       return 1;
     }
+    if (pyramidDescriptorCount != 1) {
+      std::cerr << "Expected the pyramid fixture to provide one visible pyramid "
+                   "renderable descriptor, but extracted "
+                << pyramidDescriptorCount << "\n";
+      return 1;
+    }
     if (pbrEnvironmentDescriptorCount < kMinPbrEnvironmentRenderableCount) {
       std::cerr << "Expected the PBR environment fixture to provide at least "
                 << kMinPbrEnvironmentRenderableCount
@@ -3922,6 +4021,7 @@ int main(int argc, char* argv[])
   std::size_t createdWamRenderableCount = 0;
   std::size_t createdAtlasRenderableCount = 0;
   std::size_t createdAtlasRobotRenderableCount = 0;
+  std::size_t createdPyramidRenderableCount = 0;
   std::size_t createdPbrEnvironmentRenderableCount = 0;
   std::size_t createdG1RenderableCount = 0;
   std::size_t createdDragAndDropFrameRenderableCount = 0;
@@ -3946,6 +4046,10 @@ int main(int argc, char* argv[])
     if (descriptor.skeletonName == kAtlasRobotFixtureSkeletonName
         && descriptor.geometry.kind == ShapeKind::Mesh) {
       ++createdAtlasRobotRenderableCount;
+    }
+    if (descriptor.skeletonName == kPyramidFixtureSkeletonName
+        && descriptor.geometry.kind == ShapeKind::Pyramid) {
+      ++createdPyramidRenderableCount;
     }
     if (descriptor.skeletonName == kPbrEnvironmentFixtureSkeletonName
         && descriptor.geometry.kind == ShapeKind::Mesh) {
@@ -3990,6 +4094,12 @@ int main(int argc, char* argv[])
       std::cerr << "Only " << createdAtlasRobotRenderableCount << " of "
                 << atlasRobotDescriptorCount
                 << " Atlas robot mesh renderables were created\n";
+      return 1;
+    }
+    if (createdPyramidRenderableCount != pyramidDescriptorCount) {
+      std::cerr << "Only " << createdPyramidRenderableCount << " of "
+                << pyramidDescriptorCount
+                << " pyramid renderables were created\n";
       return 1;
     }
     if (createdPbrEnvironmentRenderableCount < pbrEnvironmentDescriptorCount) {

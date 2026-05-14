@@ -38,8 +38,8 @@
 - A graphics-free unit test covers descriptor stability, transform propagation,
   property updates, visibility, and common primitive descriptors.
 - The Filament example uses the extraction layer for the dynamic box/ground
-  fixture, additional primitive visual shapes, a generated TriMesh visual, and a
-  finite checker-textured PlaneShape proxy.
+  fixture, additional primitive visual shapes including `PyramidShape`, a
+  generated TriMesh visual, and a finite checker-textured PlaneShape proxy.
 - The visual fixture includes an imported WAM Collada mesh. Filament mesh
   rendering now consumes DART's preserved UV metadata, submesh material ranges,
   material colors, emissive color, metallic/roughness factors, and typed

@@ -49,6 +49,7 @@
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/plane_shape.hpp>
+#include <dart/dynamics/pyramid_shape.hpp>
 #include <dart/dynamics/shape_frame.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/skeleton.hpp>
@@ -80,6 +81,7 @@ using dart::dynamics::EllipsoidShape;
 using dart::dynamics::FreeJoint;
 using dart::dynamics::MeshShape;
 using dart::dynamics::PlaneShape;
+using dart::dynamics::PyramidShape;
 using dart::dynamics::SimpleFrame;
 using dart::dynamics::Skeleton;
 using dart::dynamics::SphereShape;
@@ -242,6 +244,17 @@ TEST(
   ASSERT_TRUE(cone.has_value());
   EXPECT_EQ(cone->kind, ShapeKind::Cone);
   EXPECT_TRUE(cone->size.isApprox(Eigen::Vector3d(0.6, 0.6, 0.8)));
+
+  const auto pyramid = describeShape(PyramidShape(0.7, 0.5, 0.9));
+  ASSERT_TRUE(pyramid.has_value());
+  EXPECT_EQ(pyramid->kind, ShapeKind::Pyramid);
+  EXPECT_DOUBLE_EQ(pyramid->height, 0.9);
+  EXPECT_TRUE(pyramid->size.isApprox(Eigen::Vector3d(0.7, 0.5, 0.9)));
+  ASSERT_TRUE(pyramid->hasLocalBounds);
+  EXPECT_TRUE(
+      pyramid->localBoundsMin.isApprox(Eigen::Vector3d(-0.35, -0.25, -0.45)));
+  EXPECT_TRUE(
+      pyramid->localBoundsMax.isApprox(Eigen::Vector3d(0.35, 0.25, 0.45)));
 
   auto triMesh = std::make_shared<dart::math::TriMesh<double>>();
   triMesh->addVertex(0.0, 0.0, 0.0);

@@ -46,6 +46,7 @@
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/plane_shape.hpp>
+#include <dart/dynamics/pyramid_shape.hpp>
 #include <dart/dynamics/shape.hpp>
 #include <dart/dynamics/shape_frame.hpp>
 #include <dart/dynamics/shape_node.hpp>
@@ -313,6 +314,16 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
     descriptor.height = cone->getHeight();
     descriptor.size = Eigen::Vector3d(
         cone->getRadius() * 2.0, cone->getRadius() * 2.0, cone->getHeight());
+    setSymmetricLocalBounds(descriptor, descriptor.size * 0.5);
+    return descriptor;
+  }
+
+  if (const auto* pyramid
+      = dynamic_cast<const dynamics::PyramidShape*>(&shape)) {
+    descriptor.kind = ShapeKind::Pyramid;
+    descriptor.height = pyramid->getHeight();
+    descriptor.size = Eigen::Vector3d(
+        pyramid->getBaseWidth(), pyramid->getBaseDepth(), pyramid->getHeight());
     setSymmetricLocalBounds(descriptor, descriptor.size * 0.5);
     return descriptor;
   }
