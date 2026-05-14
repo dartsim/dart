@@ -39,8 +39,9 @@
   property updates, visibility, and common primitive descriptors.
 - The Filament example uses the extraction layer for the dynamic box/ground
   fixture, additional primitive visual shapes including `PyramidShape` and
-  `MultiSphereConvexHullShape`, a generated TriMesh visual, and a finite
-  checker-textured PlaneShape proxy.
+  `MultiSphereConvexHullShape`, visual-only line segments from
+  `LineSegmentShape`, a generated TriMesh visual, and a finite checker-textured
+  PlaneShape proxy.
 - The visual fixture includes an imported WAM Collada mesh. Filament mesh
   rendering now consumes DART's preserved UV metadata, submesh material ranges,
   material colors, emissive color, metallic/roughness factors, and typed

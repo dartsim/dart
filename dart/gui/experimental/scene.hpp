@@ -67,6 +67,7 @@ enum class ShapeKind
   Cone,
   Pyramid,
   MultiSphere,
+  LineSegments,
   Mesh,
   Plane,
   Unsupported
@@ -82,9 +83,12 @@ struct GeometryDescriptor
   Eigen::Vector3d localBoundsMax = Eigen::Vector3d::Zero();
   std::vector<Eigen::Vector3d> sphereCenters;
   std::vector<double> sphereRadii;
+  std::vector<Eigen::Vector3d> lineVertices;
+  std::vector<Eigen::Vector2i> lineConnections;
   double radius = 0.0;
   double height = 0.0;
   double offset = 0.0;
+  double lineThickness = 1.0;
   bool hasLocalBounds = false;
   std::string meshUri;
   std::string shapeType;

@@ -44,6 +44,7 @@
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/multi_sphere_convex_hull_shape.hpp>
 #include <dart/dynamics/plane_shape.hpp>
@@ -355,6 +356,49 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
         max = max.cwiseMax(center + extent);
       }
     }
+    if (hasBounds) {
+      descriptor.size = max - min;
+      setLocalBounds(descriptor, min, max);
+    }
+    return descriptor;
+  }
+
+  if (const auto* lineSegments
+      = dynamic_cast<const dynamics::LineSegmentShape*>(&shape)) {
+    descriptor.kind = ShapeKind::LineSegments;
+    descriptor.lineThickness = lineSegments->getThickness();
+    const auto vertices = lineSegments->getVertices();
+    descriptor.lineVertices.reserve(vertices.size());
+    Eigen::Vector3d min = Eigen::Vector3d::Zero();
+    Eigen::Vector3d max = Eigen::Vector3d::Zero();
+    bool hasBounds = false;
+    for (const Eigen::Vector3d& vertex : vertices) {
+      descriptor.lineVertices.push_back(vertex);
+      if (!hasBounds) {
+        min = vertex;
+        max = vertex;
+        hasBounds = true;
+      } else {
+        min = min.cwiseMin(vertex);
+        max = max.cwiseMax(vertex);
+      }
+    }
+
+    const auto connections = lineSegments->getConnections();
+    descriptor.lineConnections.reserve(connections.size());
+    for (const Eigen::Vector2i& connection : connections) {
+      if (connection.x() < 0 || connection.y() < 0) {
+        continue;
+      }
+      const auto first = static_cast<std::size_t>(connection.x());
+      const auto second = static_cast<std::size_t>(connection.y());
+      if (first >= descriptor.lineVertices.size()
+          || second >= descriptor.lineVertices.size()) {
+        continue;
+      }
+      descriptor.lineConnections.push_back(connection);
+    }
+
     if (hasBounds) {
       descriptor.size = max - min;
       setLocalBounds(descriptor, min, max);

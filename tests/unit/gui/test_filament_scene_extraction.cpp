@@ -47,6 +47,7 @@
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/multi_sphere_convex_hull_shape.hpp>
 #include <dart/dynamics/plane_shape.hpp>
@@ -80,6 +81,7 @@ using dart::dynamics::ConeShape;
 using dart::dynamics::CylinderShape;
 using dart::dynamics::EllipsoidShape;
 using dart::dynamics::FreeJoint;
+using dart::dynamics::LineSegmentShape;
 using dart::dynamics::MeshShape;
 using dart::dynamics::MultiSphereConvexHullShape;
 using dart::dynamics::PlaneShape;
@@ -279,6 +281,27 @@ TEST(
   EXPECT_TRUE(
       multiSphere->localBoundsMax.isApprox(Eigen::Vector3d(0.6, 0.45, 0.3)));
   EXPECT_TRUE(multiSphere->size.isApprox(Eigen::Vector3d(1.3, 0.7, 0.7)));
+
+  LineSegmentShape lineSegments(
+      Eigen::Vector3d(-0.1, 0.0, 0.0), Eigen::Vector3d(0.4, 0.2, 0.3), 2.5f);
+  lineSegments.addVertex(Eigen::Vector3d(0.2, -0.3, 0.1), 0);
+  const auto lines = describeShape(lineSegments);
+  ASSERT_TRUE(lines.has_value());
+  EXPECT_EQ(lines->kind, ShapeKind::LineSegments);
+  EXPECT_DOUBLE_EQ(lines->lineThickness, 2.5);
+  ASSERT_EQ(lines->lineVertices.size(), 3u);
+  ASSERT_EQ(lines->lineConnections.size(), 2u);
+  EXPECT_TRUE(lines->lineVertices[0].isApprox(Eigen::Vector3d(-0.1, 0.0, 0.0)));
+  EXPECT_TRUE(lines->lineVertices[1].isApprox(Eigen::Vector3d(0.4, 0.2, 0.3)));
+  EXPECT_TRUE(lines->lineVertices[2].isApprox(Eigen::Vector3d(0.2, -0.3, 0.1)));
+  EXPECT_EQ(lines->lineConnections[0].x(), 0);
+  EXPECT_EQ(lines->lineConnections[0].y(), 1);
+  EXPECT_EQ(lines->lineConnections[1].x(), 0);
+  EXPECT_EQ(lines->lineConnections[1].y(), 2);
+  ASSERT_TRUE(lines->hasLocalBounds);
+  EXPECT_TRUE(lines->localBoundsMin.isApprox(Eigen::Vector3d(-0.1, -0.3, 0.0)));
+  EXPECT_TRUE(lines->localBoundsMax.isApprox(Eigen::Vector3d(0.4, 0.2, 0.3)));
+  EXPECT_TRUE(lines->size.isApprox(Eigen::Vector3d(0.5, 0.5, 0.3)));
 
   auto triMesh = std::make_shared<dart::math::TriMesh<double>>();
   triMesh->addVertex(0.0, 0.0, 0.0);

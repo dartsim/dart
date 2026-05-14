@@ -229,6 +229,7 @@ struct MaterialSet
   filament::Material& texturedLit;
   filament::Material& transparentLit;
   filament::Material& transparentTexturedLit;
+  filament::Material& debugColor;
   TextureBinding checkerTexture;
   TextureBinding fallbackTexture;
 };
@@ -928,6 +929,7 @@ constexpr const char* kAtlasFixtureSkeletonName = "visual_atlas_torso_mesh";
 constexpr const char* kAtlasRobotFixtureSkeletonName = "visual_atlas_robot";
 constexpr const char* kPyramidFixtureSkeletonName = "visual_pyramid";
 constexpr const char* kMultiSphereFixtureSkeletonName = "visual_multi_sphere";
+constexpr const char* kLineSegmentFixtureSkeletonName = "visual_line_segments";
 constexpr const char* kPbrEnvironmentFixtureSkeletonName =
     "visual_pbr_environment";
 constexpr const char* kG1FixtureSkeletonName = "visual_g1_robot";
@@ -1831,6 +1833,16 @@ DartScene createMvpDartScene()
     return skeleton;
   };
 
+  auto createLineSegmentShape = [] {
+    auto shape = std::make_shared<dart::dynamics::LineSegmentShape>(
+        Eigen::Vector3d(-0.35, 0.0, 0.0),
+        Eigen::Vector3d(0.0, 0.25, 0.25),
+        2.0f);
+    shape->addVertex(Eigen::Vector3d(0.35, 0.0, 0.0), 1);
+    shape->addVertex(Eigen::Vector3d(0.0, -0.25, 0.25), 0);
+    return shape;
+  };
+
   scene.world = World::create("filament_gui_mvp");
   scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   scene.world->addSkeleton(blueBox);
@@ -1871,6 +1883,11 @@ DartScene createMvpDartScene()
               {0.14, Eigen::Vector3d(0.42, 0.0, -0.03)}}),
       Eigen::Vector3d(-2.85, -0.15, 0.72),
       Eigen::Vector3d(0.38, 0.74, 0.92)));
+  scene.world->addSkeleton(createStaticVisual(
+      kLineSegmentFixtureSkeletonName,
+      createLineSegmentShape(),
+      Eigen::Vector3d(-2.85, 0.55, 0.88),
+      Eigen::Vector3d(0.96, 0.68, 0.22)));
   scene.world->addSkeleton(createStaticVisual(
       "visual_ellipsoid",
       std::make_shared<dart::dynamics::EllipsoidShape>(
@@ -2547,6 +2564,36 @@ std::optional<Renderable> createDebugLineRenderable(
       .build(engine, renderable.entity);
 
   return renderable;
+}
+
+std::optional<Renderable> createLineSegmentRenderable(
+    filament::Engine& engine,
+    filament::Material& material,
+    const RenderableDescriptor& descriptor)
+{
+  std::vector<DebugLineDescriptor> lines;
+  lines.reserve(descriptor.geometry.lineConnections.size());
+  for (const Eigen::Vector2i& connection :
+       descriptor.geometry.lineConnections) {
+    if (connection.x() < 0 || connection.y() < 0) {
+      continue;
+    }
+    const auto first = static_cast<std::size_t>(connection.x());
+    const auto second = static_cast<std::size_t>(connection.y());
+    if (first >= descriptor.geometry.lineVertices.size()
+        || second >= descriptor.geometry.lineVertices.size()) {
+      continue;
+    }
+
+    DebugLineDescriptor line;
+    line.from = descriptor.geometry.lineVertices[first];
+    line.to = descriptor.geometry.lineVertices[second];
+    line.rgba = descriptor.material.rgba;
+    line.label = descriptor.shapeFrameName;
+    lines.push_back(line);
+  }
+
+  return createDebugLineRenderable(engine, material, lines);
 }
 
 Renderable createTriangleMeshRenderable(
@@ -3522,6 +3569,10 @@ std::optional<Renderable> createRenderableFromDescriptor(
             color);
       }
       break;
+    case ShapeKind::LineSegments:
+      renderable
+          = createLineSegmentRenderable(engine, materials.debugColor, descriptor);
+      break;
     case ShapeKind::Capsule:
       renderable = createCapsuleRenderable(
           engine,
@@ -3995,6 +4046,7 @@ int main(int argc, char* argv[])
       *texturedMaterial,
       *transparentMaterial,
       *transparentTexturedMaterial,
+      *debugMaterial,
       checkerBinding,
       fallbackBinding};
   TextureCache textureCache;
@@ -4045,6 +4097,15 @@ int main(int argc, char* argv[])
             return descriptor.skeletonName == kMultiSphereFixtureSkeletonName
                    && descriptor.material.visible
                    && descriptor.geometry.kind == ShapeKind::MultiSphere;
+          }));
+  const std::size_t lineSegmentDescriptorCount = static_cast<std::size_t>(
+      std::count_if(
+          initialDescriptors.begin(),
+          initialDescriptors.end(),
+          [](const RenderableDescriptor& descriptor) {
+            return descriptor.skeletonName == kLineSegmentFixtureSkeletonName
+                   && descriptor.material.visible
+                   && descriptor.geometry.kind == ShapeKind::LineSegments;
           }));
   const std::size_t pbrEnvironmentDescriptorCount = static_cast<std::size_t>(
       std::count_if(
@@ -4104,6 +4165,13 @@ int main(int argc, char* argv[])
           << multiSphereDescriptorCount << "\n";
       return 1;
     }
+    if (lineSegmentDescriptorCount != 1) {
+      std::cerr
+          << "Expected the line segment fixture to provide one visible line "
+             "renderable descriptor, but extracted "
+          << lineSegmentDescriptorCount << "\n";
+      return 1;
+    }
     if (pbrEnvironmentDescriptorCount < kMinPbrEnvironmentRenderableCount) {
       std::cerr << "Expected the PBR environment fixture to provide at least "
                 << kMinPbrEnvironmentRenderableCount
@@ -4135,6 +4203,7 @@ int main(int argc, char* argv[])
   std::size_t createdAtlasRobotRenderableCount = 0;
   std::size_t createdPyramidRenderableCount = 0;
   std::size_t createdMultiSphereRenderableCount = 0;
+  std::size_t createdLineSegmentRenderableCount = 0;
   std::size_t createdPbrEnvironmentRenderableCount = 0;
   std::size_t createdG1RenderableCount = 0;
   std::size_t createdDragAndDropFrameRenderableCount = 0;
@@ -4167,6 +4236,10 @@ int main(int argc, char* argv[])
     if (descriptor.skeletonName == kMultiSphereFixtureSkeletonName
         && descriptor.geometry.kind == ShapeKind::MultiSphere) {
       ++createdMultiSphereRenderableCount;
+    }
+    if (descriptor.skeletonName == kLineSegmentFixtureSkeletonName
+        && descriptor.geometry.kind == ShapeKind::LineSegments) {
+      ++createdLineSegmentRenderableCount;
     }
     if (descriptor.skeletonName == kPbrEnvironmentFixtureSkeletonName
         && descriptor.geometry.kind == ShapeKind::Mesh) {
@@ -4223,6 +4296,12 @@ int main(int argc, char* argv[])
       std::cerr << "Only " << createdMultiSphereRenderableCount << " of "
                 << multiSphereDescriptorCount
                 << " multi-sphere renderables were created\n";
+      return 1;
+    }
+    if (createdLineSegmentRenderableCount != lineSegmentDescriptorCount) {
+      std::cerr << "Only " << createdLineSegmentRenderableCount << " of "
+                << lineSegmentDescriptorCount
+                << " line segment renderables were created\n";
       return 1;
     }
     if (createdPbrEnvironmentRenderableCount < pbrEnvironmentDescriptorCount) {
