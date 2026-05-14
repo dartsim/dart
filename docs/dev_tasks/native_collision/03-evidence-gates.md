@@ -2204,6 +2204,32 @@ cd .deps/gz-physics/build; timeout 90s ctest --output-on-failure -R
     that checkpoint and was later reduced to pair-order contact normal
     semantics.
 
+## Current Validation Audit Runs
+
+- `DART_PARALLEL_JOBS=15 CTEST_PARALLEL_LEVEL=15 pixi run test-all`
+  - Commit: working tree after `cd16b64be0b` native shape-taxonomy cleanup and
+    before the VSG shape-type switch repair.
+  - Result: failed in `Build Debug`. `dart/gui/vsg/geometry_builders.cpp`
+    still referenced removed native `ShapeType::Cone`,
+    `ShapeType::HeightField`, and `ShapeType::PointCloud` enum values. This
+    was a stale compile-time user of the old native taxonomy, not a collision
+    behavior regression.
+- `rg -n "ShapeType::(Cone|HeightField|PointCloud)" dart tests examples
+tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
+  - Commit: working tree after removing the stale VSG switch cases.
+  - Result: no matches. The removed native shape tags no longer appear in
+    non-generated source paths.
+- `pixi run -- cmake --build build/default/cpp/Debug --target dart-gui-vsg
+--parallel $(python scripts/parallel_jobs.py)`
+  - Commit: working tree after removing the stale VSG switch cases.
+  - Result: passed. The Debug VSG target rebuilt `geometry_builders.cpp` and
+    linked `libdart-gui-vsgd`.
+- `DART_PARALLEL_JOBS=15 CTEST_PARALLEL_LEVEL=15 pixi run test-all`
+  - Commit: working tree after removing the stale VSG switch cases.
+  - Result: passed. The comprehensive test suite reported lint, build, unit
+    tests, simulation-experimental tests, Python tests, and documentation all
+    passed with `All tests passed!`.
+
 ## Known Risks
 
 - Direct public C++ legacy detector `create()` entry points now return

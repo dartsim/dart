@@ -262,9 +262,6 @@ namespace {
       }
       return createMesh(verts, triangles, options);
     }
-    case ShapeType::Cone:
-    case ShapeType::HeightField:
-    case ShapeType::PointCloud:
     default:
       return createSphere(0.1, options);
   }

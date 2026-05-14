@@ -27,11 +27,14 @@ unverified external and finalization gates:
 - Downstream migration/deprecation evidence is still missing.
 - Final legacy-runtime deletion or hard-deprecation decisions are still
   pending.
-- Current-state `pixi run test-all` evidence is refreshed, but final
-  `pixi run test-all` evidence after the eventual PR-complete state is still
-  missing. The current rerun found and repaired a stale optional `libccd` CMake
-  cache issue in the default native-only test build, then passed the full local
-  suite after the repair.
+- Full local `pixi run test-all` evidence is refreshed for the current local
+  state after fixing one stale VSG native `ShapeType` switch left by the native
+  taxonomy cleanup. Final `pixi run test-all` evidence after the eventual
+  PR-complete state is still missing. The refreshed full reruns found and
+  repaired two local validation robustness gaps: a stale optional `libccd`
+  CMake cache issue in the default native-only test build, and stale
+  `ShapeType::Cone`, `ShapeType::HeightField`, and `ShapeType::PointCloud`
+  cases in the VSG geometry builder after those native tags were removed.
 - The dev-task folder must remain until final PR evidence is transferred to
   the PR description and durable architecture notes are moved to onboarding
   docs.
@@ -41,15 +44,17 @@ unverified external and finalization gates:
 Current audited state:
 
 - Branch: `feature/new_coll`
-- Head inspected at audit start: `c502a0391c1`
-  (`Record native collision benchmark guard evidence`)
-- Working tree at audit start: clean, ahead of `origin/feature/new_coll`.
-- Remote branch state: `origin/feature/new_coll` was still at
-  `96436fd2503`; the local branch was 41 commits ahead after the audit
-  checkpoint.
+- Head inspected at audit refresh: working tree after `cd16b64be0b`
+  (`Clean up native collision shape taxonomy`) plus the VSG shape-type switch
+  repair recorded by this checkpoint.
+- Working tree at audit refresh: local changes under review, ahead of
+  `origin/feature/new_coll`.
+- Remote branch state: `origin/feature/new_coll` is still at
+  `96436fd2503`; the local branch is 44 commits ahead at the audit refresh.
 - GitHub PR state: read-only GitHub search for `head:feature/new_coll` in
-  `dartsim/dart` returned no pull requests, so no CI or PR artifact evidence
-  exists yet for the current local north-star branch head.
+  `dartsim/dart` returned no pull requests at the audit refresh, so no CI or
+  PR artifact evidence exists yet for the current local north-star branch
+  head.
 - Follow-up local validation after the audit started from
   `1da52368282` and found that `pixi run test-all` failed in `build-tests`
   because a stale cached `LIBCCD_LIBRARY` pointed at a removed
@@ -57,16 +62,43 @@ Current audited state:
   cached optional libccd include/library paths, and
   `pixi run build-tests ON Release` passes with the optional
   `test_libccd_algorithms` target excluded when libccd is unavailable.
-- Follow-up full local validation:
+- Follow-up full local validation at `da532729bec`:
 
   ```bash
   DART_PARALLEL_JOBS=15 CTEST_PARALLEL_LEVEL=15 pixi run test-all
   ```
 
-  Result: passed for the current source state. The full suite reported lint,
-  build, unit tests, simulation-experimental tests, Python tests, and
-  documentation all passed, with Release CTest passing 264/264 tests including
-  29 `collision-native` label tests.
+  Result: passed before the later native shape-taxonomy cleanup. The full suite
+  reported lint, build, unit tests, simulation-experimental tests, Python
+  tests, and documentation all passed, with Release CTest passing 264/264 tests
+  including 29 `collision-native` label tests.
+
+- Follow-up focused validation at `cd16b64be0b`:
+
+  ```bash
+  cmake --build build/default/cpp/Release --target test_shapes --parallel $(python scripts/parallel_jobs.py)
+  ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_shapes$'
+  cmake --build build/default/cpp/Release --target dart_collision_native_tests --parallel $(python scripts/parallel_jobs.py)
+  ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native
+  pixi run lint
+  ```
+
+  Result: passed. The shape taxonomy cleanup removed unused native
+  `ShapeType` tags for cone, heightfield, and point-cloud while keeping those
+  DART shapes represented through adapter-owned convex, mesh, compound, or
+  non-collidable behavior.
+
+- Follow-up full local validation after the VSG shape-type switch repair:
+
+  ```bash
+  pixi run -- cmake --build build/default/cpp/Debug --target dart-gui-vsg --parallel $(python scripts/parallel_jobs.py)
+  DART_PARALLEL_JOBS=15 CTEST_PARALLEL_LEVEL=15 pixi run test-all
+  ```
+
+  Result: passed. The focused Debug VSG build rebuilt
+  `geometry_builders.cpp` and linked `libdart-gui-vsgd`. The full test-all
+  rerun reported lint, build, unit tests, simulation-experimental tests,
+  Python tests, and documentation all passed.
 
 - Local command run during this audit:
 
