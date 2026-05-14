@@ -365,10 +365,10 @@ The built-in architecture should make performance visible before optimization:
 - [x] Downstream migration contract documents that retained legacy runtime
       names are native-backed aliases and reference engines require explicit
       `collision-reference-*` targets plus `createReference()` APIs.
-- [ ] gz-physics compatibility passes through the built-in detector. The custom
-      mesh/plane and detachable-joint failures are reduced and fixed; the
-      remaining focused blocker is `COMMON_TEST_joint_features_dartsim`
-      `JointDetach`.
+- [ ] gz-physics compatibility passes through the built-in detector. The
+      custom mesh/plane, detachable-joint, joint-feature `JointDetach`, and
+      transmitted-wrench focused gates are reduced and pass locally against the
+      DART plugin; full `test-gz`/CI evidence remains.
 - [x] Broad recurring benchmark guards cover native core and public
       `DartCollisionDetector` collision, distance, raycast, dirty-world, mesh,
       mixed-shape, and batch scenarios.

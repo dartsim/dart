@@ -12,16 +12,16 @@ is tied to a commit, command, and observed output.
 
 ## Gate Matrix
 
-| Gate                  | Required evidence                                            | Current state                     |
-| --------------------- | ------------------------------------------------------------ | --------------------------------- |
-| Native default        | Focused test showing default detector type is `dart`         | Focused pass, May 2026            |
-| Feature parity        | Native unit and integration collision tests pass             | Passed, May 2026                  |
-| Reference consistency | Native-vs-FCL/Bullet/ODE consistency tests pass              | Opt-in pass, May 2026             |
-| gz-physics            | `pixi run -e gazebo test-gz` passes without patches          | Focused mostly green; one failure |
-| Performance           | Comparative benchmarks show native >= best legacy backend    | Focused pass, May 2026            |
-| Dependency removal    | Default build succeeds without FCL/Bullet/ODE collision deps | Focused pass, May 2026            |
-| Source isolation      | Lint blocks old-engine runtime includes/source leakage       | Local pass, May 2026              |
-| Full validation       | `pixi run test-all` passes                                   | Passed, May 2026                  |
+| Gate                  | Required evidence                                            | Current state                      |
+| --------------------- | ------------------------------------------------------------ | ---------------------------------- |
+| Native default        | Focused test showing default detector type is `dart`         | Focused pass, May 2026             |
+| Feature parity        | Native unit and integration collision tests pass             | Passed, May 2026                   |
+| Reference consistency | Native-vs-FCL/Bullet/ODE consistency tests pass              | Opt-in pass, May 2026              |
+| gz-physics            | `pixi run -e gazebo test-gz` passes without patches          | Focused local pass; full gate left |
+| Performance           | Comparative benchmarks show native >= best legacy backend    | Focused pass, May 2026             |
+| Dependency removal    | Default build succeeds without FCL/Bullet/ODE collision deps | Focused pass, May 2026             |
+| Source isolation      | Lint blocks old-engine runtime includes/source leakage       | Local pass, May 2026               |
+| Full validation       | `pixi run test-all` passes                                   | Passed, May 2026                   |
 
 ## North-Star Progress Scale
 
@@ -40,7 +40,7 @@ performance-oriented internals before this scale reaches completion.
 | 0     | Baseline native backend exists                      | Complete before this task            |
 | 1     | Native `dart` detector is default                   | Complete in checkpoint               |
 | 2     | DART feature parity is proven                       | Complete in checkpoint               |
-| 3     | gz-physics compatibility is proven                  | Mostly repaired; one focused fail    |
+| 3     | gz-physics compatibility is proven                  | Focused local pass; full gate left   |
 | 4     | Native benchmark wins are recorded                  | Complete in checkpoint               |
 | 5     | Local builds pass with FCL/Bullet/ODE disabled      | Complete in checkpoint               |
 | 6     | Native-only and gz-physics CI are permanent         | Started; gz focused gate not final   |
@@ -58,17 +58,69 @@ These gates are still required before the single north-star PR is complete.
 | Gate                         | Required evidence                                                                                                      | Current state                                  |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
 | CI native-only build         | CI passes with FCL, Bullet, and ODE disabled                                                                           | Local equivalent passed; awaiting CI evidence  |
-| CI gz-physics compatibility  | gz-physics CI passes with optional legacy components built                                                             | Focused local run has one residual failure     |
+| CI gz-physics compatibility  | gz-physics CI passes with optional legacy components built                                                             | Focused local runs pass; CI evidence left      |
 | Reference correctness        | FCL/Bullet/ODE comparison tests are test-only and optional                                                             | Local reference target split passes            |
 | Packaging removal            | Default packages/wheels have no old collision runtime deps                                                             | Verifier wired; CI matrix evidence left        |
-| Downstream migration         | gz-physics has a tested path away from legacy detector APIs                                                            | Migration plan documented; gz fixes left       |
+| Downstream migration         | gz-physics has a tested path away from legacy detector APIs                                                            | Migration plan documented; full run left       |
 | Collision abstraction        | Legacy keys/classes route only to built-in native behavior                                                             | Source/package facades done                    |
-| Built-in architecture/design | `01-design.md` north-star requirement, layer table, and blueprint pass API-cleanliness, scaling, and performance gates | Source split, cache bridge, support diagnosis  |
+| Built-in architecture/design | `01-design.md` north-star requirement, layer table, and blueprint pass API-cleanliness, scaling, and performance gates | Source split, cache bridge, support fix        |
 | Benchmark regression guard   | Optional reference benchmarks guide gradual optimization                                                               | Scheduled/manual CI guard added; evidence left |
 | Legacy backend deletion      | Old runtime backend sources removed from default stack                                                                 | Runtime source guard wired; deletion left      |
 
 ## Test Runs
 
+- `cmake --build build/default/cpp/Release --parallel $(python
+scripts/parallel_jobs.py) --target UNIT_constraint_ConstraintSolver &&
+build/default/cpp/Release/bin/UNIT_constraint_ConstraintSolver
+--gtest_filter='ConstraintSolver.GzPlaneBoxJointDetachKeepsSupportVelocitySymmetric'
+--gtest_brief=1`
+  - Commit: working tree after tilted cylinder/plane-like-box support patch.
+  - Result: passed. The reduced DART regression covers the gz
+    `JointDetach` support-contact path with gz's plane-as-large-box fallback,
+    preserving the expected upward base/upper-link motion while keeping
+    upper-link `X`, `Y`, angular `Y`, and angular `Z` near zero.
+- `ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^(UNIT_collision_(NativeBackend|DARTCollide|CollisionGroup)|UNIT_constraint_ConstraintSolver)$'`
+  - Commit: working tree after tilted cylinder/plane-like-box support patch.
+  - Result: passed, 4/4 tests. This covers the focused constraint solver
+    regression plus native collision group, public DART collide, and native
+    backend coverage after the narrowphase support-contact change.
+- `pixi run -e gazebo install OFF && pixi run -e gazebo -- bash -lc 'cmake
+--build .deps/gz-physics/build --parallel $(python scripts/parallel_jobs.py)
+--target gz-physics-dartsim-plugin COMMON_TEST_joint_features'`
+  - Commit: working tree after tilted cylinder/plane-like-box support patch.
+  - Result: passed. DART was reinstalled into the gazebo environment and the
+    gz DART plugin plus joint feature test binary rebuilt against it.
+- `pixi run -e gazebo -- bash -lc 'set -euo pipefail; export
+LD_LIBRARY_PATH=.deps/gz-physics/build/lib:$CONDA_PREFIX/lib:${LD_LIBRARY_PATH:-};
+cd .deps/gz-physics/build; ./bin/COMMON_TEST_joint_features
+./lib/libgz-physics-dartsim-plugin.so.9.0.0
+--gtest_filter="JointFeaturesDetachTest/0.JointDetach" --gtest_brief=1'`
+  - Commit: working tree after tilted cylinder/plane-like-box support patch.
+  - Result: passed, 1/1 test. This closes the previously failing
+    `upperLinkLinearVelocity.X()`, `upperLinkLinearVelocity.Y()`, and
+    `upperLinkAngularVelocity.Y()` exact-zero residual.
+- `pixi run -e gazebo -- bash -lc 'set -euo pipefail; export
+LD_LIBRARY_PATH=.deps/gz-physics/build/lib:$CONDA_PREFIX/lib:${LD_LIBRARY_PATH:-};
+cd .deps/gz-physics/build; ./bin/COMMON_TEST_joint_features
+./lib/libgz-physics-dartsim-plugin.so.9.0.0 --gtest_brief=1'`
+  - Commit: working tree after tilted cylinder/plane-like-box support patch.
+  - Result: passed, 21/23 tests passed and 2 skipped. This verifies the full
+    local `COMMON_TEST_joint_features` binary against the DART plugin after
+    closing `JointDetach`.
+- `pixi run -e gazebo -- bash -lc 'cmake --build .deps/gz-physics/build
+--parallel $(python scripts/parallel_jobs.py) --target COMMON_TEST_collisions
+COMMON_TEST_detachable_joint COMMON_TEST_joint_transmitted_wrench_features'`
+  - Commit: working tree after tilted cylinder/plane-like-box support patch.
+  - Result: passed. The three related focused gz test binaries rebuilt.
+- Focused gz smoke runs for related downstream gates:
+  - Commands: `COMMON_TEST_collisions`, `COMMON_TEST_detachable_joint`, and
+    `COMMON_TEST_joint_transmitted_wrench_features` were each run against
+    `./lib/libgz-physics-dartsim-plugin.so.9.0.0` with `--gtest_brief=1`.
+  - Commit: working tree after tilted cylinder/plane-like-box support patch.
+  - Result: passed. `COMMON_TEST_collisions` passed 5/5 tests,
+    `COMMON_TEST_detachable_joint` passed 1/1 test, and
+    `COMMON_TEST_joint_transmitted_wrench_features` passed 5/5 tests.
 - `pixi run --locked -e collision-reference -- cmake --build
 build/collision-reference/cpp/Release --target test_cylinder test_narrow_phase
 test_collision_world UNIT_collision_DartCollisionDetector --parallel
@@ -2040,9 +2092,10 @@ cd .deps/gz-physics/build; timeout 90s ctest --output-on-failure -R
   simulation workloads.
 - gz-physics depends on legacy detector names and compatibility headers; keep
   facade behavior covered while native lowercase APIs evolve. The latest
-  focused gz-physics run is partially green: legacy display-name compatibility,
-  `MeshAndPlane`, detachable joints, and transmitted wrench features are fixed,
-  but the `JointDetach` exact-zero velocity residual still blocks the full gate.
+  focused gz-physics runs are locally green for legacy display-name
+  compatibility, `MeshAndPlane`, detachable joints, joint features including
+  `JointDetach`, and transmitted wrench features; full `test-gz`/CI evidence
+  still blocks the full gate.
 - Installed-package compatibility remains important: native-backed
   compatibility component files must keep downstream packages such as
   gz-physics linking without making FCL, Bullet, or ODE required for native

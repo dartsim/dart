@@ -263,15 +263,14 @@ build where legacy component libraries are linked. The Python detector
 compatibility names now also resolve to `DartCollisionDetector`, and dartpy no
 longer links legacy collision component targets even in a reference-enabled
 build. Direct public C++ legacy facades keep legacy display strings for
-gz-physics compatibility while remaining native-backed. The latest focused
-gz-physics run is partially green: `COMMON_TEST_collisions_dartsim`,
-`COMMON_TEST_detachable_joint_dartsim`, and
-`COMMON_TEST_joint_transmitted_wrench_features_dartsim` pass after DART-side
-mesh-plane pair-order normal, stacked-cylinder contact, and axial
-cylinder-cap/large-box support-patch fixes. The remaining focused blocker is
-`COMMON_TEST_joint_features_dartsim` `JointFeaturesDetachTest/0.JointDetach`,
-so fresh full gz validation and one more DART/gz reduction are required before
-this phase can complete.
+gz-physics compatibility while remaining native-backed. Focused gz-physics
+runs are now locally green after DART-side mesh-plane pair-order normal,
+stacked-cylinder contact, axial cylinder-cap/large-box support-patch, and
+tilted cylinder/plane-like-box support fixes. `COMMON_TEST_joint_features`,
+`COMMON_TEST_collisions`, `COMMON_TEST_detachable_joint`, and
+`COMMON_TEST_joint_transmitted_wrench_features` all pass against the DART
+plugin. Fresh full `pixi run -e gazebo test-gz` and CI evidence are still
+required before this phase can complete.
 
 Success criteria:
 
@@ -327,24 +326,25 @@ facade tests cover the direct C++ display-name compatibility needed by
 gz-physics, and new pair-order normal tests cover direct native dispatch,
 optimized collision-world dispatch, and the public DART collision group path.
 Native tests also cover axial cylinder-cap support patches against large boxes,
-matching gz's current plane-as-box fallback path. The solver-facing native
-manifold cache bridge is now covered through a legacy display-name facade so
-warm-start impulse writeback is not accidentally disabled by compatibility type
-strings. Focused gz collision, detachable joint, and transmitted-wrench tests
-now pass; downstream correctness remains open on the `JointDetach` exact-zero
-velocity residual. Lint now enforces the source split by rejecting old-engine
-includes from non-reference DART source paths and rejecting legacy
+matching gz's current plane-as-box fallback path, and a reduced gz-like
+`JointDetach` support fixture now covers tilted cylinder contacts against the
+same plane-as-large-box fallback. The solver-facing native manifold cache
+bridge is now covered through a legacy display-name facade so warm-start
+impulse writeback is not accidentally disabled by compatibility type strings.
+Focused gz collision, detachable joint, joint feature, and transmitted-wrench
+tests now pass locally against the DART plugin. Lint now enforces the source
+split by rejecting old-engine includes from non-reference DART source paths and
+rejecting legacy
 implementation sources outside `reference/` paths. CI, downstream migration,
 and broader performance guardrail evidence remain before this phase can
 complete.
 
-The remaining `JointDetach` failure now has diagnostic direction: temporary
-gz instrumentation showed the upper-link off-axis angular `Y` residual follows
-the base link's angular `Y` support motion, and the upper-link linear `X`
-residual is consistent with that base rotation through the joint offset. Treat
-the next fix as native base-vs-ground support contact/manifold stability for
-gz-physics' plane-as-large-box path, not as a detach-state restoration or
-legacy facade issue.
+The former `JointDetach` residual was reduced to native base-vs-ground support
+contact stability for gz-physics' plane-as-large-box path. The fix keeps a
+small active two-point support patch for tilted cylinder/plane-like-box
+contacts, which preserves the expected upward motion while canceling the rim
+torque that previously injected off-axis base angular `Y` motion through the
+upper joint offset.
 
 Success criteria:
 
@@ -398,9 +398,8 @@ Verification:
 - Solver-facing cache tests prove native manifold cache writeback works through
   native-backed compatibility facades, even when facade display strings are
   legacy names for gz-physics compatibility.
-- A reduced DART or gz-focused test proves the remaining `JointDetach`
-  base-support residual is fixed without weakening the expected upward motion
-  check.
+- A reduced DART or gz-focused test proves `JointDetach` base support remains
+  stable without weakening the expected upward motion check.
 - Benchmark labels or profiler scopes show broadphase, narrowphase, distance,
   raycast, and contact-generation costs separately.
 - Link inspection shows compatibility wrappers do not link FCL, Bullet, or ODE.

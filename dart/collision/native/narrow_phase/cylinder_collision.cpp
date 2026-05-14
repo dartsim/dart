@@ -211,6 +211,109 @@ bool addAxialCylinderBoxPatchContacts(
   return true;
 }
 
+bool collideCylinderPlaneLikeBox(
+    double cylinderRadius,
+    double cylinderHalfHeight,
+    const Eigen::Isometry3d& cylinderTransform,
+    const Eigen::Vector3d& boxHalfExtents,
+    const Eigen::Isometry3d& boxTransform,
+    CollisionResult& result,
+    const CollisionOption& option)
+{
+  constexpr double planeLikeBoxExtentScale = 100.0;
+  constexpr double planeLikeBoxPatchDepth = 1e-5;
+
+  if (result.numContacts() >= option.maxNumContacts) {
+    return false;
+  }
+
+  const double cylinderExtent = std::max(cylinderRadius, cylinderHalfHeight);
+  if (boxHalfExtents.minCoeff() <= cylinderExtent * planeLikeBoxExtentScale) {
+    return false;
+  }
+
+  const Eigen::Vector3d cylinderCenter = cylinderTransform.translation();
+  const Eigen::Matrix3d boxRotation = boxTransform.rotation();
+
+  double closestFaceDistance = -std::numeric_limits<double>::infinity();
+  Eigen::Vector3d faceNormal = Eigen::Vector3d::UnitZ();
+  Eigen::Vector3d facePoint = Eigen::Vector3d::Zero();
+  int faceAxis = 2;
+
+  for (int axis = 0; axis < 3; ++axis) {
+    for (double sign : {-1.0, 1.0}) {
+      const Eigen::Vector3d normal = boxRotation.col(axis) * sign;
+      const Eigen::Vector3d point
+          = boxTransform.translation() + normal * boxHalfExtents[axis];
+      const double distance = normal.dot(cylinderCenter - point);
+      if (distance > closestFaceDistance) {
+        closestFaceDistance = distance;
+        faceNormal = normal;
+        facePoint = point;
+        faceAxis = axis;
+      }
+    }
+  }
+
+  const Eigen::Vector3d cylinderAxis = cylinderTransform.rotation().col(2);
+  const double axisDot = cylinderAxis.dot(faceNormal);
+
+  Eigen::Vector3d supportOffset
+      = cylinderAxis
+        * (axisDot >= 0.0 ? -cylinderHalfHeight : cylinderHalfHeight);
+  const Eigen::Vector3d radial = faceNormal - cylinderAxis * axisDot;
+  if (radial.squaredNorm() > 1e-20) {
+    supportOffset -= radial.normalized() * cylinderRadius;
+  }
+
+  const Eigen::Vector3d deepestPoint = cylinderCenter + supportOffset;
+  const double signedDistance = faceNormal.dot(deepestPoint - facePoint);
+  if (signedDistance > 0.0) {
+    return false;
+  }
+
+  const Eigen::Vector3d deepestPointInBox
+      = boxTransform.inverse() * deepestPoint;
+  const double boundsTolerance = cylinderExtent + 1e-9;
+  for (int axis = 0; axis < 3; ++axis) {
+    if (axis == faceAxis) {
+      continue;
+    }
+    if (std::abs(deepestPointInBox[axis])
+        > boxHalfExtents[axis] + boundsTolerance) {
+      return false;
+    }
+  }
+
+  // Keep a tiny active patch when a large box is standing in for a plane.
+  const double penetration = std::max(-signedDistance, planeLikeBoxPatchDepth);
+  ContactPoint contact;
+  contact.position = deepestPoint + faceNormal * (penetration * 0.5);
+  contact.normal = faceNormal;
+  contact.depth = penetration;
+
+  ContactManifold manifold;
+  manifold.setType(ContactType::Patch);
+  manifold.addContact(contact);
+
+  const Eigen::Vector3d radialOffset
+      = supportOffset - cylinderAxis * supportOffset.dot(cylinderAxis);
+  const Eigen::Vector3d axialOffset = supportOffset - radialOffset;
+  if (radialOffset.squaredNorm() > 1e-20
+      && result.numContacts() + manifold.numContacts()
+             < option.maxNumContacts) {
+    contact.position = cylinderCenter + axialOffset - radialOffset
+                       + faceNormal * (penetration * 0.5);
+    manifold.addContact(contact);
+  }
+
+  if (manifold.numContacts() == 1) {
+    manifold.setType(ContactType::Point);
+  }
+  result.addManifold(std::move(manifold));
+  return true;
+}
+
 bool collideParallelCylinders(
     double r1,
     double h1,
@@ -569,6 +672,17 @@ bool collideCylinderBox(
   }
 
   if (!foundCollision) {
+    if (collideCylinderPlaneLikeBox(
+            cylRadius,
+            cylHalfHeight,
+            cylinderTransform,
+            boxHalf,
+            boxTransform,
+            result,
+            option)) {
+      return true;
+    }
+
     return collideConvexConvex(
         cylinder, cylinderTransform, box, boxTransform, result, option);
   }

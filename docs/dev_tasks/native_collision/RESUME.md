@@ -119,23 +119,28 @@ The latest working-tree slice also canonicalizes warm-start local points to
 the same scene-cache ID order used by the persistent manifold key. The focused
 `UNIT_collision_NativeBackend` regression now proves cached impulses survive
 when the same pair is queried as group B/A and then A/B. Reinstalling DART into
-the gz environment and rerunning the isolated `JointDetach` case still reports
+the gz environment and rerunning the isolated `JointDetach` case still reported
 the same off-axis residual values, so this is a kept cache correctness fix but
-not the final gz compatibility fix.
-The newest temporary gz velocity diagnostic also showed that the remaining
-`JointDetach` off-axis residual follows base support motion: at step 9, the
-base angular velocity around `Y` is `-6.6445229724690596e-05`, the upper-link
-angular `Y` is `-6.6438361021132697e-05`, and the upper-link linear `X`
-residual is consistent with that base rotation through the joint offset. The
-diagnostic instrumentation in `.deps/gz-physics` was removed after capture.
-Two later local support-contact shaping experiments were also rejected and
-reverted: a centered cylinder-cap/large-box support point made gz fail
-`JointDetach` at `upperLinkLinearVelocity.Z() > 1e-5` with
-`Z = 1.63203e-06` and still left off-axis support motion, and a weighted
-support-centroid variant again failed the same upward-motion check with
-`Z = -6.02409e-08`. Do not retry cylinder-cap support shaping without a new
-reduction that preserves the expected upward motion and reduces base support
-angular drift.
+not by itself the final gz compatibility fix.
+The following gz velocity diagnostic showed that the remaining `JointDetach`
+off-axis residual followed base support motion: at step 9, the base angular
+velocity around `Y` was `-6.6445229724690596e-05`, the upper-link angular `Y`
+was `-6.6438361021132697e-05`, and the upper-link linear `X` residual was
+consistent with that base rotation through the joint offset. The diagnostic
+instrumentation in `.deps/gz-physics` was removed after capture. Two local
+support-contact shaping experiments were rejected and reverted: a centered
+cylinder-cap/large-box support point made gz fail `JointDetach` at
+`upperLinkLinearVelocity.Z() > 1e-5` with `Z = 1.63203e-06` and still left
+off-axis support motion, and a weighted support-centroid variant again failed
+the same upward-motion check with `Z = -6.02409e-08`.
+The latest working-tree slice closes that focused gz blocker with a tilted
+cylinder/plane-like-box support patch: a reduced native
+`ConstraintSolver.GzPlaneBoxJointDetachKeepsSupportVelocitySymmetric` test now
+passes, isolated gz `JointFeaturesDetachTest/0.JointDetach` passes, the full
+local `COMMON_TEST_joint_features` binary passes 21/23 with 2 skips, and the
+related `COMMON_TEST_collisions`, `COMMON_TEST_detachable_joint`, and
+`COMMON_TEST_joint_transmitted_wrench_features` binaries pass against the DART
+plugin.
 
 ## Current Branch
 
@@ -146,26 +151,12 @@ the exact count.
 ## Immediate Next Step
 
 Continue from `docs/dev_tasks/native_collision/04-reference-gap-analysis.md`.
-The immediate blocker is now the remaining gz-physics `JointDetach` residual.
-Reduce `COMMON_TEST_joint_features_dartsim`
-`JointFeaturesDetachTest/0.JointDetach` to DART/gz contact evidence, decide
-whether the tiny off-axis velocity components come from a native contact bug,
-model-level filtering semantics, or downstream exact-zero tolerance debt, then
-fix or document the accepted downstream-compatible path before rerunning the
-full gz gate.
-The strongest current lead is native base-vs-ground support stability, not
-detach-state restoration: the upper-link residual follows base angular `Y`
-motion through the upper joint offset. Focus on plane-as-large-box support
-contacts, manifold persistence, solver warm-start behavior, and base pole/plate
-support symmetry.
-Do not retry broad tilted cap support patches without first preserving the
-test's expected `upperLinkLinearVelocity.Z() > 1e-5`; the last two local
-variants overconstrained the base support contacts and failed that earlier
-sanity check. The later mirrored cap-contact variant failed the same way and
-should also stay rejected unless a new reduction shows a different issue. The
-centered support-point and weighted support-centroid variants are rejected for
-the same reason and should not be repeated as blind contact-generation changes.
-After that, continue the broader plan below.
+The former focused gz `JointDetach` blocker is locally repaired. The immediate
+next evidence step is a full `pixi run -e gazebo test-gz` run or CI equivalent,
+then continue the broader north-star gates: CI native-only/gz evidence, wheel
+matrix artifact evidence from `wheel-verify`, downstream migration evidence,
+GitHub evidence for the scheduled benchmark guard, architecture/design gate
+evidence, and final legacy backend deletion.
 
 The persistent DART adapter scene path is now started: public collision,
 distance, and raycast calls use synced native scene state owned by
