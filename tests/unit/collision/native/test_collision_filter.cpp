@@ -384,11 +384,11 @@ TEST(CollisionWorldFilter, CallbackFilterPreventsCollision)
 {
   CollisionWorld world;
 
-  auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0));
+  world.createObject(std::make_unique<SphereShape>(1.0));
 
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
   tf2.translation() = Eigen::Vector3d(1.5, 0, 0);
-  auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0), tf2);
+  world.createObject(std::make_unique<SphereShape>(1.0), tf2);
 
   CallbackCollisionFilter blockAll(
       [](const CollisionObject&, const CollisionObject&) { return true; });
@@ -407,11 +407,11 @@ TEST(CollisionWorldFilter, CallbackFilterAllowsCollision)
 {
   CollisionWorld world;
 
-  auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0));
+  world.createObject(std::make_unique<SphereShape>(1.0));
 
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
   tf2.translation() = Eigen::Vector3d(1.5, 0, 0);
-  auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0), tf2);
+  world.createObject(std::make_unique<SphereShape>(1.0), tf2);
 
   CallbackCollisionFilter allowAll(
       [](const CollisionObject&, const CollisionObject&) { return false; });

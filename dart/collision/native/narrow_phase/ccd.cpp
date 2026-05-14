@@ -184,7 +184,7 @@ bool sphereCastBox(
     }
   }
 
-  if (tMin < 0.0) {
+  if (hitAxis < 0 || tMin <= 0.0) {
     result.hit = true;
     result.timeOfImpact = 0.0;
     result.point = sphereStart;

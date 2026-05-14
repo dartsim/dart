@@ -2442,6 +2442,36 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     passed: linting, build, unit tests, simulation-experimental tests, Python
     tests, and documentation. The final report printed `All tests passed!` and
     `Ready to submit PR!`.
+- PR CI refresh on head `714d220d82a`
+  - Run/job: `25880337655` / `76058385300` (`CI macOS` /
+    `Release Tests (arm64)`).
+  - Result: failed compiling `test_collision_filter.cpp` because two callback
+    filter tests stored created collision objects in unused local variables.
+    The tests now create those objects without unused bindings.
+  - Run/job: `25880337655` / `76058385388` (`CI macOS` /
+    `Debug Tests (arm64)`).
+  - Result: failed `test_ccd`, `UNIT_gui_vsg_simple_viewer`, and
+    `INTEGRATION_simulation_World`. Local Debug reproduction found:
+    native sphere-box CCD asserted when a sphere cast started inside the
+    expanded box and `hitAxis` remained unset; VSG headless viewer
+    construction can throw on runners without a usable headless backend; and
+    `TypedSetterKeepsCurrentDetectorWhenFactoryReturnsNull` overrode the
+    default `"dart"` creator before constructing the world, so the default
+    constraint solver dereferenced a null detector instead of exercising the
+    typed setter fallback.
+- Focused local validation after the macOS Debug/Release repairs:
+  - Command:
+    `cmake --build build/default/cpp/Debug --target test_ccd UNIT_gui_vsg_simple_viewer INTEGRATION_simulation_World --parallel 5`
+  - Result: passed.
+  - Command:
+    `ctest --test-dir build/default/cpp/Debug -R '^(test_ccd|INTEGRATION_simulation_World|UNIT_gui_vsg_simple_viewer)$' --output-on-failure -j 5`
+  - Result: passed, 3/3 tests.
+  - Command:
+    `cmake --build build/default/cpp/Release --target test_collision_filter --parallel 5`
+  - Result: passed.
+  - Command:
+    `ctest --test-dir build/default/cpp/Release -R '^test_collision_filter$' --output-on-failure -j 5`
+  - Result: passed, 1/1 test.
 
 ## Known Risks
 

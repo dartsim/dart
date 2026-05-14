@@ -549,6 +549,19 @@ libraries.
   implementation-ready gap plan lives in `04-reference-gap-analysis.md`; the
   completion audit and missing-evidence checklist lives in
   `06-completion-audit.md`.
+- Per the latest user direction, do not create a new diff or review request
+  yet. Keep using draft PR #2652 / branch `feature/new_coll` as the CI trigger
+  surface and push focused repair commits there as needed.
+- The latest pushed head before this note was `714d220d82a`. Its macOS arm64
+  refresh reached Release native collision filter compilation and Debug
+  `test_ccd`, `UNIT_gui_vsg_simple_viewer`, and
+  `INTEGRATION_simulation_World`. The current working-tree repairs remove
+  unused callback-filter locals, handle sphere-box CCD initial overlap without
+  indexing an unset axis, skip VSG simple-viewer tests when headless creation
+  throws on a runner, and construct the world before overriding the `"dart"`
+  factory in the null-creator typed-setter fallback test. Focused local Debug
+  build/CTest for those three failing Debug targets passes, and focused
+  Release build/CTest for `test_collision_filter` passes.
 
 ## How to Resume
 

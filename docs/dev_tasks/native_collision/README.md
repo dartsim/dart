@@ -164,7 +164,11 @@
       at `864dd56d944c` also passes after the durable onboarding architecture
       docs and compatibility-facade policy cleanup. Final validation will still
       need another full rerun after the remaining CI/migration/runtime-cleanup
-      work changes the PR state.
+      work changes the PR state. The latest PR CI refresh on head
+      `714d220d82a` exposed macOS arm64 Release unused-variable test cleanup
+      plus Debug CCD, VSG headless, and world fallback-test robustness gaps;
+      focused local repairs and target validation are recorded in
+      `03-evidence-gates.md`.
 
 ## Goal
 

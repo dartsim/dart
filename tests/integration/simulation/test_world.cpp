@@ -691,6 +691,10 @@ TEST(World, TypedSetterFallsBackWhenDetectorUnavailable)
 //==============================================================================
 TEST(World, TypedSetterKeepsCurrentDetectorWhenFactoryReturnsNull)
 {
+  auto world = World::create();
+  auto original = world->getCollisionDetector();
+  ASSERT_TRUE(original);
+
   ScopedCollisionFactoryOverride overrideDart(
       collision::DARTCollisionDetector::getStaticType(),
       []() -> collision::CollisionDetectorPtr { return nullptr; },
@@ -701,10 +705,6 @@ TEST(World, TypedSetterKeepsCurrentDetectorWhenFactoryReturnsNull)
   if (!overrideDart.wasOverridden()) {
     GTEST_SKIP() << "dart collision detector is not registered in this build";
   }
-
-  auto world = World::create();
-  auto original = world->getCollisionDetector();
-  ASSERT_TRUE(original);
 
   world->setCollisionDetector(CollisionDetectorType::Dart);
 

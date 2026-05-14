@@ -73,7 +73,16 @@ unverified external and finalization gates:
   then rejecting the native-backed `dart_collision-{fcl,bullet,ode}Component`
   compatibility facade files. The wheel collision-isolation verifier now keeps
   old runtime/reference artifacts forbidden while allowing those facade
-  component files.
+  component files. The next refresh on head `714d220d82a` reached further into
+  macOS arm64 test coverage: Release failed on unused variables in native
+  collision filter callback tests, while Debug exposed a native sphere-box CCD
+  starting-inside assertion, a VSG headless-backend availability assumption, and
+  a world collision-detector fallback test that overrode the `"dart"` creator
+  before constructing the world. The current repairs remove the unused
+  variables, handle initial-overlap CCD without indexing an unset axis, skip
+  VSG simple-viewer tests when headless creation throws on a runner, and make
+  the world fallback test construct its current detector before overriding the
+  factory.
 - Downstream migration/deprecation evidence is still missing.
 - Final compatibility-facade retention/deprecation evidence is still missing:
   the documented decision is to delete old external-engine runtime
@@ -174,6 +183,21 @@ compiling with /utf-8'`. The current repair adds `/utf-8` to the root MSVC
   focused synthetic wheel probe and the existing repaired py312 Linux wheel
   pass locally with the updated policy, while synthetic reference/runtime
   artifacts are still rejected.
+- Follow-up PR CI state on head `714d220d82a`: run `25880337655`, job
+  `76058385300` (`CI macOS` / `Release Tests (arm64)`) failed compiling
+  `test_collision_filter.cpp` because callback-filter tests retained unused
+  local object variables. The current repair removes the unused bindings.
+- Follow-up PR CI state on the same head: run `25880337655`, job
+  `76058385388` (`CI macOS` / `Debug Tests (arm64)`) failed
+  `test_ccd`, `UNIT_gui_vsg_simple_viewer`, and
+  `INTEGRATION_simulation_World`. Focused local Debug reproduction showed
+  native sphere-box CCD asserted when `hitAxis` stayed unset for an
+  initial-overlap cast, VSG simple-viewer tests assumed headless construction
+  always succeeds, and the world typed-setter test made the default world
+  constructor use a null `"dart"` factory creator before testing setter
+  fallback. The current repair handles initial-overlap CCD, skips VSG
+  simple-viewer tests when headless creation throws, and moves the world
+  factory override after world construction.
 - Follow-up local validation after the audit started from
   `1da52368282` and found that `pixi run test-all` failed in `build-tests`
   because a stale cached `LIBCCD_LIBRARY` pointed at a removed
@@ -296,9 +320,10 @@ Legend:
 
 ## Missing Evidence And Required Next Actions
 
-1. Push or otherwise publish the branch and open/update a PR so GitHub CI can
-   produce authoritative native-only, gz-physics, wheel matrix, and benchmark
-   artifact evidence. The current audit found no PR for `head:feature/new_coll`.
+1. Continue using draft PR #2652 as the CI surface; do not create a new diff or
+   review request until the user asks. Push focused fixes to `feature/new_coll`
+   so GitHub CI can produce authoritative native-only, gz-physics, wheel
+   matrix, and benchmark artifact evidence.
 2. Collect CI run links and artifact names for:
    - native-only collision/default build jobs,
    - gz-physics compatibility jobs,
