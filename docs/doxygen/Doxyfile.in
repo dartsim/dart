@@ -826,8 +826,8 @@ EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       = */detail/* \
                          */internal/* \
                          */simulation/experimental/comps/* \
-                         */simulation/experimental/ecs/*_impl.hpp \
-                         */*-impl.hpp
+                         */*-impl.hpp \
+                         */*_impl.hpp
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
 # (namespaces, classes, functions, etc.) that should be excluded from the

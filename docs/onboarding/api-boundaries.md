@@ -95,7 +95,8 @@ Internal API may change without compatibility guarantees. It includes:
 
 - `detail/` and `internal/` directories.
 - `dart::...::detail` namespaces.
-- `*-impl.hpp` files that exist to support templates or inline definitions.
+- `*-impl.hpp` files, and existing `*_impl.hpp` files, that support templates
+  or inline definitions.
 - Private ECS/storage components such as `dart/simulation/experimental/comps/`.
 - Symbols marked with a component `*_LOCAL` macro.
 - Source-file-local classes, anonymous namespace helpers, and backend adapters.

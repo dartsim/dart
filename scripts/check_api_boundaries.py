@@ -19,10 +19,11 @@ REQUIRED_DOXYFILE_PATTERNS = (
     "*/internal/*",
     "*/simulation/experimental/comps/*",
     "*/*-impl.hpp",
+    "*/*_impl.hpp",
     "*::detail",
     "*::detail::*",
 )
-GENERATED_DOC_PRIVATE_MARKERS = ("detail", "internal", "-impl")
+GENERATED_DOC_PRIVATE_MARKERS = ("detail", "internal", "-impl", "_impl")
 
 
 @dataclass(frozen=True)
