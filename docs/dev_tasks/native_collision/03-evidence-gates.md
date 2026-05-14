@@ -151,6 +151,17 @@ These gates are still required before the single north-star PR is complete.
     file rejects `Eigen3 3.4` requests also passed, with
     `simulation-experimental: Eigen3✓` and build files generated in
     `build/default/cpp/Release-fake-eigen5-altlinux`.
+- Windows wheel MSVC UTF-8 repair:
+  - Run/job: `25874275078` / `76037407583`
+    (`Wheels | windows-latest Py312`).
+  - Result: failed while building the wheel, during compilation of the
+    static `dart-collision-native` target.
+  - Root cause: the wheel build's MSVC compile command did not include
+    `/utf-8`, and the conda-forge `fmt` headers now require MSVC builds with
+    Unicode support to compile in UTF-8 mode.
+  - Repair: add `/utf-8` to the root MSVC C++ flags so all Visual Studio C++
+    targets, including scikit-build wheel targets, inherit the required source
+    and execution charset mode.
 
 ## Current Full-Validation Repair
 

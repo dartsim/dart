@@ -44,7 +44,11 @@ unverified external and finalization gates:
   DART's minimum Eigen requirement, but `find_package(Eigen3 3.4 ...)` rejects
   a different major version. The experimental dependency lookup now follows the
   core Eigen finder pattern by finding Eigen3 first and then enforcing the
-  explicit `Eigen3_VERSION >= 3.4` check.
+  explicit `Eigen3_VERSION >= 3.4` check. The next PR refresh exposed a
+  Windows wheel compile failure in `Wheels | windows-latest Py312`:
+  `dart-collision-native` compiled without `/utf-8`, which conda-forge `fmt`
+  now requires for MSVC Unicode support. The root MSVC C++ flags now include
+  `/utf-8` so normal builds and wheel builds share the fix.
 - Downstream migration/deprecation evidence is still missing.
 - Final compatibility-facade retention/deprecation evidence is still missing:
   the documented decision is to delete old external-engine runtime
@@ -94,6 +98,12 @@ Current audited state:
   `find_package(Eigen3 3.4 ...)` directly. The current repair removes the
   requested version from that `find_package` path and keeps DART's explicit
   `>=3.4` post-find check.
+- Follow-up PR CI state after the Alt Linux Eigen repair: run `25874275078`,
+  job `76037407583` (`Wheels | windows-latest Py312`) failed while compiling
+  the static `dart-collision-native` wheel target because MSVC lacked `/utf-8`
+  and `fmt/base.h` emitted `static_assert failed: 'Unicode support requires
+compiling with /utf-8'`. The current repair adds `/utf-8` to the root MSVC
+  C++ flags.
 - Follow-up local validation after the audit started from
   `1da52368282` and found that `pixi run test-all` failed in `build-tests`
   because a stale cached `LIBCCD_LIBRARY` pointed at a removed

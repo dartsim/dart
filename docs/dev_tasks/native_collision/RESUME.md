@@ -216,7 +216,10 @@ existing Windows test tasks. The next PR refresh reached past that Windows
 parser failure and exposed an Alt Linux configure failure: Eigen 5 is installed
 there, and the experimental dependency helper rejected it by requesting
 `find_package(Eigen3 3.4 ...)` directly instead of using DART's explicit
-minimum-version check pattern.
+minimum-version check pattern. That repair was pushed at `d2f1b7233bd`.
+The next PR refresh then found a Windows wheel compile failure in
+`dart-collision-native`: MSVC did not receive `/utf-8`, and the packaged `fmt`
+headers require that mode for Unicode support.
 
 ## Current Branch
 
@@ -237,8 +240,9 @@ has full `test-all` evidence through the latest documented head
 triage slice, the asserts-enabled workflow repair was pushed at
 `901d56c4260`, and the current local work has merged `origin/main` as
 `3120a4fce9b` and pushed it to PR #2652. The Windows Pixi parser repair was
-pushed at `7a2795d86ce`, and the next immediate step is to validate, commit,
-push, and recheck the Alt Linux Eigen 5 configure repair. After that,
+pushed at `7a2795d86ce`, and the Alt Linux Eigen 5 configure repair was pushed
+at `d2f1b7233bd`. The next immediate step is to validate, commit, push, and
+recheck the Windows wheel MSVC `/utf-8` repair. After that,
 continue watching PR #2652 CI, collect native-only/gz and wheel matrix artifact
 evidence, collect GitHub evidence for the scheduled or manual benchmark guard,
 record downstream migration/deprecation evidence, perform final runtime
