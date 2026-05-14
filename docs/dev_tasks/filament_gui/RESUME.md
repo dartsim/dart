@@ -152,10 +152,11 @@ The follow-up branch also extends the backend-hidden shape descriptor and
 renderer path to `PyramidShape`, `MultiSphereConvexHullShape`, and
 `LineSegmentShape`, plus generated `ConvexMeshShape` and `PointCloudShape`
 visuals, generated `HeightmapShape` terrain, and a generated `SoftMeshShape`
-soft-body surface. The MVP scene now includes pyramid, multi-sphere,
-line-segment, convex-mesh, point-cloud, heightmap, and soft-mesh fixtures, and
-the example startup checks that all seven
-descriptors are extracted and converted into Filament renderables.
+soft-body surface, plus an OctoMap-backed `VoxelGridShape` cell cluster when
+available. The MVP scene now includes pyramid, multi-sphere, line-segment,
+convex-mesh, point-cloud, heightmap, soft-mesh, and voxel-grid fixtures, and
+the example startup checks that all enabled descriptors are extracted and
+converted into Filament renderables.
 
 `docs/dev_tasks/filament_gui/07-completion-audit.md` maps the current
 implementation, verification evidence, and missing promotion gates. Use that

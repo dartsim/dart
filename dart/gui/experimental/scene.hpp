@@ -72,6 +72,7 @@ enum class ShapeKind
   PointCloud,
   Heightmap,
   SoftMesh,
+  VoxelGrid,
   Mesh,
   Plane,
   Unsupported
@@ -91,11 +92,13 @@ struct GeometryDescriptor
   std::vector<Eigen::Vector2i> lineConnections;
   std::vector<Eigen::Vector3d> pointCloudPoints;
   std::vector<Eigen::Vector4d> pointCloudColors;
+  std::vector<Eigen::Vector3d> voxelCenters;
   double radius = 0.0;
   double height = 0.0;
   double offset = 0.0;
   double lineThickness = 1.0;
   double pointSize = 1.0;
+  double voxelSize = 1.0;
   bool hasLocalBounds = false;
   std::string meshUri;
   std::string shapeType;

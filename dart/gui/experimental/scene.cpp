@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/config.hpp>
+
 #include <dart/gui/experimental/scene.hpp>
 
 #include <dart/simulation/world.hpp>
@@ -61,6 +63,10 @@
 #include <dart/dynamics/soft_body_node.hpp>
 #include <dart/dynamics/soft_mesh_shape.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
+
+#if DART_HAVE_OCTOMAP
+  #include <dart/dynamics/voxel_grid_shape.hpp>
+#endif
 
 #include <dart/math/tri_mesh.hpp>
 
@@ -143,6 +149,53 @@ void setSoftMeshBounds(
     setLocalBounds(descriptor, min, max);
   }
 }
+
+#if DART_HAVE_OCTOMAP
+void setVoxelGridData(
+    GeometryDescriptor& descriptor, const dynamics::VoxelGridShape& voxelGrid)
+{
+  const auto tree = voxelGrid.getOctree();
+  if (tree == nullptr) {
+    return;
+  }
+
+  descriptor.voxelSize = tree->getResolution();
+  const Eigen::Vector3d halfExtent
+      = Eigen::Vector3d::Constant(descriptor.voxelSize * 0.5);
+  Eigen::Vector3d min = Eigen::Vector3d::Zero();
+  Eigen::Vector3d max = Eigen::Vector3d::Zero();
+  bool hasBounds = false;
+
+  descriptor.voxelCenters.reserve(tree->getNumLeafNodes());
+  const auto threshold = tree->getOccupancyThres();
+  for (auto it = tree->begin_leafs(), end = tree->end_leafs(); it != end;
+       ++it) {
+    if (it->getOccupancy() < threshold) {
+      continue;
+    }
+
+    const auto coordinate = it.getCoordinate();
+    const Eigen::Vector3d center(
+        static_cast<double>(coordinate.x()),
+        static_cast<double>(coordinate.y()),
+        static_cast<double>(coordinate.z()));
+    descriptor.voxelCenters.push_back(center);
+    if (!hasBounds) {
+      min = center - halfExtent;
+      max = center + halfExtent;
+      hasBounds = true;
+    } else {
+      min = min.cwiseMin(center - halfExtent);
+      max = max.cwiseMax(center + halfExtent);
+    }
+  }
+
+  if (hasBounds) {
+    descriptor.size = max - min;
+    setLocalBounds(descriptor, min, max);
+  }
+}
+#endif
 
 void setSymmetricLocalBounds(
     GeometryDescriptor& descriptor, const Eigen::Vector3d& halfExtents)
@@ -538,6 +591,15 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
     setSoftMeshBounds(descriptor, *softMesh);
     return descriptor;
   }
+
+#if DART_HAVE_OCTOMAP
+  if (const auto* voxelGrid
+      = dynamic_cast<const dynamics::VoxelGridShape*>(&shape)) {
+    descriptor.kind = ShapeKind::VoxelGrid;
+    setVoxelGridData(descriptor, *voxelGrid);
+    return descriptor;
+  }
+#endif
 
   if (const auto* mesh = dynamic_cast<const dynamics::MeshShape*>(&shape)) {
     descriptor.kind = ShapeKind::Mesh;

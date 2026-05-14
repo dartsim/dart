@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/config.hpp>
+
 #include <dart/gui/experimental/scene.hpp>
 
 #include <dart/simulation/world.hpp>
@@ -62,6 +64,10 @@
 #include <dart/dynamics/soft_mesh_shape.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
 #include <dart/dynamics/weld_joint.hpp>
+
+#if DART_HAVE_OCTOMAP
+  #include <dart/dynamics/voxel_grid_shape.hpp>
+#endif
 
 #include <dart/math/tri_mesh.hpp>
 
@@ -105,6 +111,10 @@ using dart::dynamics::VisualAspect;
 using dart::dynamics::WeldJoint;
 using dart::gui::experimental::ShapeKind;
 using dart::simulation::World;
+
+#if DART_HAVE_OCTOMAP
+using dart::dynamics::VoxelGridShape;
+#endif
 
 std::shared_ptr<const SoftMeshShape> findSoftMeshShape(
     const SoftBodyNode& softBody)
@@ -415,6 +425,22 @@ TEST(
   EXPECT_GT(softMesh->size.x(), 0.0);
   EXPECT_GT(softMesh->size.y(), 0.0);
   EXPECT_GT(softMesh->size.z(), 0.0);
+
+#if DART_HAVE_OCTOMAP
+  VoxelGridShape voxelGrid(0.1);
+  voxelGrid.updateOccupancy(Eigen::Vector3d(0.05, 0.05, 0.05));
+  voxelGrid.updateOccupancy(Eigen::Vector3d(0.25, -0.05, 0.15));
+  const auto voxels = describeShape(voxelGrid);
+  ASSERT_TRUE(voxels.has_value());
+  EXPECT_EQ(voxels->kind, ShapeKind::VoxelGrid);
+  EXPECT_EQ(voxels->shapeType, "VoxelGridShape");
+  EXPECT_DOUBLE_EQ(voxels->voxelSize, 0.1);
+  ASSERT_GE(voxels->voxelCenters.size(), 2u);
+  ASSERT_TRUE(voxels->hasLocalBounds);
+  EXPECT_GT(voxels->size.x(), 0.0);
+  EXPECT_GT(voxels->size.y(), 0.0);
+  EXPECT_GT(voxels->size.z(), 0.0);
+#endif
 
   auto triMesh = std::make_shared<dart::math::TriMesh<double>>();
   triMesh->addVertex(0.0, 0.0, 0.0);

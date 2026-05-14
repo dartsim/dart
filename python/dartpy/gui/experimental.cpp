@@ -39,6 +39,7 @@ void defGuiExperimentalModule(nb::module_& m)
       .value("PointCloud", gui::ShapeKind::PointCloud)
       .value("Heightmap", gui::ShapeKind::Heightmap)
       .value("SoftMesh", gui::ShapeKind::SoftMesh)
+      .value("VoxelGrid", gui::ShapeKind::VoxelGrid)
       .value("Mesh", gui::ShapeKind::Mesh)
       .value("Plane", gui::ShapeKind::Plane)
       .value("Unsupported", gui::ShapeKind::Unsupported);

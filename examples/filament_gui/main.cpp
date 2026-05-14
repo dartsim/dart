@@ -145,6 +145,11 @@ using dart::dynamics::SoftMeshShape;
 using dart::dynamics::SphereShape;
 using dart::dynamics::VisualAspect;
 using dart::dynamics::WeldJoint;
+
+#if DART_HAVE_OCTOMAP
+using dart::dynamics::VoxelGridShape;
+#endif
+
 using dart::examples::filament_gui::DebugDrawOptions;
 using dart::examples::filament_gui::DebugLineDescriptor;
 using dart::examples::filament_gui::OrbitCamera;
@@ -941,6 +946,7 @@ constexpr const char* kConvexMeshFixtureSkeletonName = "visual_convex_mesh";
 constexpr const char* kPointCloudFixtureSkeletonName = "visual_point_cloud";
 constexpr const char* kHeightmapFixtureSkeletonName = "visual_heightmap";
 constexpr const char* kSoftMeshFixtureSkeletonName = "visual_soft_mesh";
+constexpr const char* kVoxelGridFixtureSkeletonName = "visual_voxel_grid";
 constexpr const char* kPbrEnvironmentFixtureSkeletonName =
     "visual_pbr_environment";
 constexpr const char* kG1FixtureSkeletonName = "visual_g1_robot";
@@ -1876,6 +1882,24 @@ DartScene createMvpDartScene()
     return shape;
   };
 
+#if DART_HAVE_OCTOMAP
+  auto createVoxelGridShape = [] {
+    auto shape = std::make_shared<VoxelGridShape>(0.12);
+    const std::array<Eigen::Vector3d, 7> occupiedVoxels{
+        Eigen::Vector3d(-0.18, -0.06, 0.0),
+        Eigen::Vector3d(-0.06, -0.06, 0.0),
+        Eigen::Vector3d(0.06, -0.06, 0.0),
+        Eigen::Vector3d(0.18, -0.06, 0.0),
+        Eigen::Vector3d(-0.06, 0.06, 0.12),
+        Eigen::Vector3d(0.06, 0.06, 0.12),
+        Eigen::Vector3d(0.0, 0.18, 0.24)};
+    for (const Eigen::Vector3d& voxel : occupiedVoxels) {
+      shape->updateOccupancy(voxel);
+    }
+    return shape;
+  };
+#endif
+
   auto createSoftMeshSkeleton = [] {
     auto skeleton = Skeleton::create(kSoftMeshFixtureSkeletonName);
     auto [joint, softBody]
@@ -1981,6 +2005,14 @@ DartScene createMvpDartScene()
       Eigen::Vector3d(-0.75, 0.55, 0.65),
       Eigen::Vector3d(0.42, 0.74, 0.36)));
   scene.world->addSkeleton(createSoftMeshSkeleton());
+#if DART_HAVE_OCTOMAP
+  scene.world->addSkeleton(createStaticVisual(
+      kVoxelGridFixtureSkeletonName,
+      createVoxelGridShape(),
+      Eigen::Vector3d(0.55, 0.55, 0.72),
+      Eigen::Vector3d(0.94, 0.55, 0.24),
+      0.78));
+#endif
   scene.world->addSkeleton(createStaticVisual(
       "visual_ellipsoid",
       std::make_shared<dart::dynamics::EllipsoidShape>(
@@ -3438,6 +3470,44 @@ std::optional<Renderable> createPointCloudRenderable(
       bounds.max);
 }
 
+std::optional<Renderable> createVoxelGridRenderable(
+    filament::Engine& engine,
+    const MaterialSet& materials,
+    const RenderableDescriptor& descriptor)
+{
+  if (descriptor.geometry.voxelCenters.empty()) {
+    return std::nullopt;
+  }
+
+  const float4 color = toRgba(descriptor.material.rgba);
+  const double voxelSize = std::max(descriptor.geometry.voxelSize, 1e-4);
+  std::vector<Vertex> vertices;
+  std::vector<float3> normals;
+  std::vector<std::uint32_t> indices;
+  std::vector<filament::math::uint3> triangles;
+  vertices.reserve(descriptor.geometry.voxelCenters.size() * 24u);
+  normals.reserve(descriptor.geometry.voxelCenters.size() * 24u);
+  indices.reserve(descriptor.geometry.voxelCenters.size() * 36u);
+  triangles.reserve(descriptor.geometry.voxelCenters.size() * 12u);
+
+  for (const Eigen::Vector3d& center : descriptor.geometry.voxelCenters) {
+    appendPointBoxGeometry(
+        vertices, normals, indices, triangles, center, voxelSize);
+  }
+
+  const Bounds bounds = computeBounds(vertices);
+  return createTriangleMeshRenderable(
+      engine,
+      selectLitMaterial(materials, false, color),
+      std::move(vertices),
+      std::move(indices),
+      std::move(triangles),
+      std::move(normals),
+      color,
+      bounds.min,
+      bounds.max);
+}
+
 template <typename S>
 std::optional<Renderable> createHeightmapRenderable(
     filament::Engine& engine,
@@ -4038,6 +4108,9 @@ std::optional<Renderable> createRenderableFromDescriptor(
     case ShapeKind::PointCloud:
       renderable = createPointCloudRenderable(engine, materials, descriptor);
       break;
+    case ShapeKind::VoxelGrid:
+      renderable = createVoxelGridRenderable(engine, materials, descriptor);
+      break;
     case ShapeKind::Heightmap:
       if (const auto* heightmapShape = dynamic_cast<const HeightmapShapef*>(
               descriptor.shape)) {
@@ -4618,6 +4691,17 @@ int main(int argc, char* argv[])
                    && descriptor.material.visible
                    && descriptor.geometry.kind == ShapeKind::SoftMesh;
           }));
+#if DART_HAVE_OCTOMAP
+  const std::size_t voxelGridDescriptorCount = static_cast<std::size_t>(
+      std::count_if(
+          initialDescriptors.begin(),
+          initialDescriptors.end(),
+          [](const RenderableDescriptor& descriptor) {
+            return descriptor.skeletonName == kVoxelGridFixtureSkeletonName
+                   && descriptor.material.visible
+                   && descriptor.geometry.kind == ShapeKind::VoxelGrid;
+          }));
+#endif
   const std::size_t pbrEnvironmentDescriptorCount = static_cast<std::size_t>(
       std::count_if(
           initialDescriptors.begin(),
@@ -4711,6 +4795,15 @@ int main(int argc, char* argv[])
           << softMeshDescriptorCount << "\n";
       return 1;
     }
+#if DART_HAVE_OCTOMAP
+    if (voxelGridDescriptorCount != 1) {
+      std::cerr
+          << "Expected the voxel grid fixture to provide one visible voxel "
+             "grid renderable descriptor, but extracted "
+          << voxelGridDescriptorCount << "\n";
+      return 1;
+    }
+#endif
     if (pbrEnvironmentDescriptorCount < kMinPbrEnvironmentRenderableCount) {
       std::cerr << "Expected the PBR environment fixture to provide at least "
                 << kMinPbrEnvironmentRenderableCount
@@ -4747,6 +4840,9 @@ int main(int argc, char* argv[])
   std::size_t createdPointCloudRenderableCount = 0;
   std::size_t createdHeightmapRenderableCount = 0;
   std::size_t createdSoftMeshRenderableCount = 0;
+#if DART_HAVE_OCTOMAP
+  std::size_t createdVoxelGridRenderableCount = 0;
+#endif
   std::size_t createdPbrEnvironmentRenderableCount = 0;
   std::size_t createdG1RenderableCount = 0;
   std::size_t createdDragAndDropFrameRenderableCount = 0;
@@ -4800,6 +4896,12 @@ int main(int argc, char* argv[])
         && descriptor.geometry.kind == ShapeKind::SoftMesh) {
       ++createdSoftMeshRenderableCount;
     }
+#if DART_HAVE_OCTOMAP
+    if (descriptor.skeletonName == kVoxelGridFixtureSkeletonName
+        && descriptor.geometry.kind == ShapeKind::VoxelGrid) {
+      ++createdVoxelGridRenderableCount;
+    }
+#endif
     if (descriptor.skeletonName == kPbrEnvironmentFixtureSkeletonName
         && descriptor.geometry.kind == ShapeKind::Mesh) {
       ++createdPbrEnvironmentRenderableCount;
@@ -4887,6 +4989,14 @@ int main(int argc, char* argv[])
                 << " soft mesh renderables were created\n";
       return 1;
     }
+#if DART_HAVE_OCTOMAP
+    if (createdVoxelGridRenderableCount != voxelGridDescriptorCount) {
+      std::cerr << "Only " << createdVoxelGridRenderableCount << " of "
+                << voxelGridDescriptorCount
+                << " voxel grid renderables were created\n";
+      return 1;
+    }
+#endif
     if (createdPbrEnvironmentRenderableCount < pbrEnvironmentDescriptorCount) {
       std::cerr << "Only " << createdPbrEnvironmentRenderableCount << " of "
                 << pbrEnvironmentDescriptorCount
