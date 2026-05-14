@@ -69,7 +69,23 @@ set(collision_native_sources
 add_library(${target_name} ${collision_native_sources})
 
 include(dart_defs)
-include(dart_experimental_dependencies)
+if(NOT TARGET Eigen3::Eigen)
+  dart_find_package(Eigen3)
+endif()
+if(Eigen3_VERSION VERSION_LESS 3.4)
+  message(FATAL_ERROR "Eigen version>=3.4 is required, but found ${Eigen3_VERSION}")
+endif()
+
+if(NOT TARGET EnTT::EnTT)
+  dart_find_package(EnTT)
+endif()
+if(NOT TARGET EnTT::EnTT)
+  message(FATAL_ERROR "EnTT >= 3.14 is required for dart-collision-native")
+endif()
+
+if(NOT TARGET benchmark::benchmark)
+  find_package(benchmark QUIET CONFIG)
+endif()
 
 target_include_directories(${target_name}
   PUBLIC

@@ -151,6 +151,23 @@ These gates are still required before the single north-star PR is complete.
     file rejects `Eigen3 3.4` requests also passed, with
     `simulation-experimental: Eigen3✓` and build files generated in
     `build/default/cpp/Release-fake-eigen5-altlinux`.
+- Alt Linux PR CI EnTT source-build repair:
+  - Run/job: `25874678072` / `76038637120` (`CI Alt Linux (Docker)` /
+    `Alt Linux repro (Docker)`).
+  - Result: after the Eigen repair, configure reached the next native
+    collision dependency and failed because the Alt Linux container does not
+    provide an `EnTTConfig.cmake` package.
+  - Root cause: `dart-collision-native` included the full
+    simulation-experimental dependency bundle even though it only needs Eigen
+    and EnTT, and EnTT had no source-build fallback on distributions without a
+    packaged config file.
+  - Repair: make `dart-collision-native` find only Eigen, EnTT, and optional
+    benchmark locally, and add an EnTT FetchContent fallback through
+    `cmake/dart_find_entt.cmake`.
+  - Focused local validation: a temporary CMake probe including
+    `cmake/dart_find_entt.cmake` with an empty prefix created the
+    `EnTT::EnTT` target successfully, and the normal `pixi run lint`
+    configure path passed.
 - Windows wheel MSVC UTF-8 repair:
   - Run/job: `25874275078` / `76037407583`
     (`Wheels | windows-latest Py312`).

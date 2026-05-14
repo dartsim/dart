@@ -219,7 +219,10 @@ there, and the experimental dependency helper rejected it by requesting
 minimum-version check pattern. That repair was pushed at `d2f1b7233bd`.
 The next PR refresh then found a Windows wheel compile failure in
 `dart-collision-native`: MSVC did not receive `/utf-8`, and the packaged `fmt`
-headers require that mode for Unicode support.
+headers require that mode for Unicode support. The same refresh showed the
+Alt Linux Eigen repair got past Eigen, then failed on missing EnTT package
+config because `dart-collision-native` was still using the broader
+simulation-experimental dependency bundle.
 
 ## Current Branch
 
@@ -241,8 +244,9 @@ triage slice, the asserts-enabled workflow repair was pushed at
 `901d56c4260`, and the current local work has merged `origin/main` as
 `3120a4fce9b` and pushed it to PR #2652. The Windows Pixi parser repair was
 pushed at `7a2795d86ce`, and the Alt Linux Eigen 5 configure repair was pushed
-at `d2f1b7233bd`. The next immediate step is to validate, commit, push, and
-recheck the Windows wheel MSVC `/utf-8` repair. After that,
+at `d2f1b7233bd`. The current working tree also has the Windows wheel MSVC
+`/utf-8` repair and an Alt Linux EnTT source-build repair; the next immediate
+step is to validate, commit, push, and recheck both repairs. After that,
 continue watching PR #2652 CI, collect native-only/gz and wheel matrix artifact
 evidence, collect GitHub evidence for the scheduled or manual benchmark guard,
 record downstream migration/deprecation evidence, perform final runtime

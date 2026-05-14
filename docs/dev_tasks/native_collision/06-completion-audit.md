@@ -48,7 +48,11 @@ unverified external and finalization gates:
   Windows wheel compile failure in `Wheels | windows-latest Py312`:
   `dart-collision-native` compiled without `/utf-8`, which conda-forge `fmt`
   now requires for MSVC Unicode support. The root MSVC C++ flags now include
-  `/utf-8` so normal builds and wheel builds share the fix.
+  `/utf-8` so normal builds and wheel builds share the fix. The same PR
+  refresh showed Alt Linux got past Eigen and failed on missing EnTT package
+  config; `dart-collision-native` now finds only its direct Eigen/EnTT
+  dependencies and uses the EnTT FetchContent fallback when a system package is
+  unavailable.
 - Downstream migration/deprecation evidence is still missing.
 - Final compatibility-facade retention/deprecation evidence is still missing:
   the documented decision is to delete old external-engine runtime
@@ -104,6 +108,13 @@ Current audited state:
   and `fmt/base.h` emitted `static_assert failed: 'Unicode support requires
 compiling with /utf-8'`. The current repair adds `/utf-8` to the root MSVC
   C++ flags.
+- Follow-up PR CI state for Alt Linux after the Eigen repair: run
+  `25874678072`, job `76038637120` (`CI Alt Linux (Docker)` /
+  `Alt Linux repro (Docker)`) got past Eigen and failed during configure on
+  missing `EnTTConfig.cmake`. The current repair decouples
+  `dart-collision-native` from the full simulation-experimental dependency
+  bundle and adds an EnTT FetchContent fallback through
+  `cmake/dart_find_entt.cmake`.
 - Follow-up local validation after the audit started from
   `1da52368282` and found that `pixi run test-all` failed in `build-tests`
   because a stale cached `LIBCCD_LIBRARY` pointed at a removed
