@@ -291,14 +291,17 @@ Verification:
 - Documentation states which compatibility names are temporary and which names
   are stable.
 
-## Phase 11: Collision Abstraction Cleanup
+## Phase 11: Collision Abstraction And Built-In Architecture Cleanup
 
 Purpose: remove the real multi-backend abstraction from `dart/collision/` so
 the completed PR has one built-in collision implementation. Legacy names may
 remain only as source-compatible wrappers or adapters for gz-physics and other
 downstream code. This phase also locks the built-in component architecture:
 API-clean public surfaces, a focused DART adapter layer, scalable native
-scene/query state, and performance-oriented internals.
+scene/query state, and performance-oriented internals. It is not complete if
+the PR only aliases old names to `dart`; the architecture must also support
+scalable native queries and performance work without reopening public backend
+selection.
 
 Current working-tree status: this phase is started. Factory-level backend
 selection is now native-backed: `dart`, `experimental`, `fcl`, `fcl_mesh`,
@@ -359,6 +362,9 @@ Success criteria:
   narrow owner, forbidden dependencies are absent, and completion evidence is
   recorded for public API cleanliness, compatibility facades, the DART adapter,
   the native core, and optional reference harnesses.
+- The `01-design.md` component design work items are satisfied for API
+  cleanliness, adapter scalability, native core scalability, performance
+  orientation, reference isolation, and compatibility facades.
 - Public compatibility behavior needed by gz-physics is covered by DART tests.
 - Documentation distinguishes stable native APIs from temporary compatibility
   wrappers.
@@ -385,6 +391,9 @@ Verification:
 - The `01-design.md` layer acceptance gates pass for API cleanliness,
   scalability, performance hooks, reference isolation, and compatibility
   facades.
+- `README.md` and `03-evidence-gates.md` show the architecture/design gate
+  status on the same north-star scale used for CI, gz-physics, packaging, and
+  deletion work.
 
 ## Phase 12: Performance Guardrails
 

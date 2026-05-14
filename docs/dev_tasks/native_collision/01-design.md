@@ -115,6 +115,10 @@ This blueprint translates the layer contract into implementation rules. It is
 the design target for API cleanliness, scalability, and performance-oriented
 native collision work inside the single north-star PR.
 
+This is a code design gate, not just a documentation gate. Phase 11 is not
+complete until the public API, compatibility shell, DART adapter, native core,
+package exports, tests, and benchmarks all follow this blueprint.
+
 ### Public API Boundary
 
 The public DART collision API should describe collision semantics, not backend
@@ -260,6 +264,27 @@ Performance acceptance still follows correctness. A benchmark win does not
 justify weaker contact semantics, unstable normals, nondeterministic ordering,
 or skipped dynamic-geometry invalidation.
 
+### Architecture Evidence Plan
+
+Every design axis needs evidence before the north-star PR can close:
+
+- API cleanliness evidence: factory tests, C++ facade tests, Python binding
+  smoke tests, installed-header/package-export inspection, and source searches
+  proving retained legacy names route to native or explicit reference APIs.
+- Scalability evidence: public DART adapter tests for dirty membership,
+  transform and shape updates, dynamic-geometry invalidation, filter
+  adaptation, stable cache IDs, deterministic ordering, pair-order normals,
+  and collision/distance/raycast query reuse.
+- Performance evidence: native and public-adapter benchmark JSON with labels
+  for sync, broadphase, candidate traversal, filtering, narrowphase, distance,
+  raycast, contact/manifold generation, result merge, and DART conversion.
+- Reference isolation evidence: native-only configure/build/install/wheel
+  probes without FCL, Bullet, ODE, or libccd runtime links, plus opt-in
+  reference jobs for correctness comparisons and benchmark guidance.
+- Compatibility evidence: gz-physics and downstream package smokes showing
+  legacy names compile and run through the built-in detector, with any
+  temporary facade behavior documented in `05-downstream-migration.md`.
+
 ## North-Star Layer Design
 
 This table is the review contract for the built-in collision component. A row
@@ -289,6 +314,21 @@ The design has four invariants:
 - One contact convention: native and public tests must pin contact normals,
   points, and depths to DART pair-order semantics so solver-facing downstream
   behavior is not an accident of broadphase pair order.
+
+## Component Design Work Items
+
+These work items are the implementation form of the architecture. They should
+be tracked through `README.md`, `02-milestones.md`, and
+`03-evidence-gates.md` as the PR moves toward completion.
+
+| Design area             | Required implementation shape                                                                                         | Evidence needed before completion                                                                                  |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| API cleanliness         | Canonical `dart` detector; legacy names are native-backed compatibility facades; reference engines use explicit APIs. | Factory, C++, Python, package-export, installed-header, source-search, and downstream smoke evidence.              |
+| Adapter scalability     | `DartCollisionGroup` owns persistent scene state with stable IDs, dirty sync, filter adaptation, and result mapping.  | Collision, distance, raycast, dynamic-shape invalidation, cache invalidation, and deterministic ordering tests.    |
+| Native core scalability | `dart/collision/native/` owns compact geometry, broadphase/query snapshots, dispatch, caches, scratch, and profiling. | Native feature tests, public adapter tests, source-boundary linting, and benchmark/profiler labels.                |
+| Performance orientation | Shape-specialized fast paths, no external-engine hot-loop dispatch, reusable query memory, and benchmark JSON guards. | Native-vs-reference benchmarks while references exist, plus native-only public-adapter regression benchmarks.      |
+| Reference isolation     | FCL/Bullet/ODE live only in optional reference correctness tests and comparative benchmark targets.                   | CMake opt-out builds, native-only install/wheel probes, link inspection, wheel verifier, and CI artifact evidence. |
+| Compatibility facade    | gz-physics-required names compile and route to native without exposing old runtime engines.                           | gz-physics focused/full tests and documented migration/removal gates.                                              |
 
 ## Layer Acceptance Gates
 

@@ -77,6 +77,11 @@ The latest runtime-isolation slice adds
 `check-lint` so non-reference DART source paths cannot include FCL, Bullet,
 ODE, libccd, or explicit collision reference backend headers, and legacy engine
 implementation sources cannot move back outside `reference/` paths.
+The latest documentation slice makes the built-in collision architecture gate
+explicit on the north-star scale: Phase 11 now requires API cleanliness,
+adapter scalability, native core scalability, performance-oriented internals,
+reference isolation, and compatibility facade evidence before the abstraction
+cleanup can be marked complete.
 The latest compatibility cleanup preserves legacy direct C++ facade display
 strings for gz-physics while keeping those facades native-backed. It also adds
 native plane/mesh dispatch, unbounded-plane AABB coverage, focused DART

@@ -140,7 +140,8 @@
       paths, and lint now guards that runtime source isolation. The remaining
       work is CI hardening, full wheel matrix/CI artifact evidence from the
       wired verifier, downstream migration run evidence, GitHub evidence for
-      the scheduled performance guard, and final legacy backend deletion.
+      the scheduled performance guard, explicit API/scalability/performance
+      architecture gate evidence, and final legacy backend deletion.
 
 ## Goal
 
@@ -192,9 +193,9 @@ The current checkpoint is a validated middle state, not a final PR boundary.
 | 7     | Reference engines are test/bench-only        | Local target split proven          |
 | 8     | Default packages have no old runtime deps    | Local pass; CI verifier wired      |
 | 9     | Downstream migration/deprecation path exists | Plan documented; run evidence left |
-| 10    | Collision abstraction is one clean stack     | Source/package facades proven      |
+| 10    | Collision abstraction is one clean stack     | Facades proven; arch gates open    |
 | 11    | Old runtime backend source is reference-only | Local split; lint guard wired      |
-| 12    | Final one-PR validation and PR packaging     | Blocked on CI/migration/deletion   |
+| 12    | Final one-PR validation and PR packaging     | Blocked on CI/migration/arch/del   |
 
 ## Built-In Architecture Status
 
@@ -220,9 +221,23 @@ implementation sources. The native core now also documents and tests a
 solver-facing result contract: contacts are reported in public collision pair
 order, and canonical narrowphase functions are wrapped with explicit normal
 flips when dispatch order differs from collision object order. The architecture
-gate remains open for CI evidence, downstream migration evidence, the remaining
-gz-physics `JointDetach` residual, and broader correctness/performance
-guardrails across the public DART adapter and native core paths.
+gate remains open until alias cleanup, package cleanup, and native algorithms
+are backed by design evidence in three dimensions:
+
+- API cleanliness: ordinary users see one `dart` detector surface, semantic
+  DART query options/results, native-backed compatibility names, and explicit
+  reference-only APIs for old engines.
+- Scalability: public collision, distance, and raycast queries use
+  adapter-owned persistent scene state, stable native IDs, dirty sync,
+  deterministic result assembly, and deliberate cache invalidation.
+- Performance orientation: hot paths use compact native geometry,
+  shape-specialized dispatch, persistent broadphase/query state, reusable
+  scratch/cache lifetimes, and benchmark/profiler labels for each query stage.
+
+That gate remains open for CI evidence, downstream migration evidence, the
+remaining gz-physics `JointDetach` residual, and broader
+correctness/performance guardrails across the public DART adapter and native
+core paths.
 
 ## Design Readiness Tracker
 
@@ -231,6 +246,7 @@ single checkpoint built locally.
 
 | Design axis             | North-star bar                                                                                                                                                                                                                                                    | Current state                                                                                                                                                                                                                                                                                                                                                                     |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Component layering      | Public DART APIs and compatibility facades sit outside `dart/collision/dart/`; the DART adapter owns scene synchronization and result conversion; `dart/collision/native/` owns algorithms, broadphase, query state, caches, and profiling.                       | The source/package split now matches this shape: legacy public paths are native-backed facades, reference implementation files are under explicit `reference/` paths, and lint guards runtime source isolation. CI/downstream and final deletion evidence remain before the layer is final.                                                                                       |
 | API cleanliness         | `dart` is the canonical public detector; legacy keys, classes, headers, and package components are compatibility facades only; public options/results describe DART semantics instead of backend-specific modes.                                                  | Factory aliases, Python names, public C++ legacy `create()` paths, installed headers, source-tree top-level legacy headers, examples, and retained package components are native-backed. CI/downstream migration evidence is still needed before this is final.                                                                                                                   |
 | Scalability             | Public collision, distance, and raycast use persistent adapter scene state with stable IDs, dirty transform/shape sync, reusable broadphase/query data, cache invalidation, deterministic ordering, and contact results that are stable under pair-order changes. | Persistent `DartCollisionGroup` scene state, broadphase-pruned raycast, AABB-pruned distance, native filter adaptation, dynamic-shape invalidation coverage, scene-issued manifold cache IDs, and pair-order normal tests are implemented locally. Broader CI and recurring benchmark evidence remain.                                                                            |
 | Performance orientation | Native hot paths use compact geometry, shape-specialized dispatch, persistent broadphase data, reusable scratch, clear cache lifetimes, and profiling/benchmark labels for each query stage.                                                                      | Recorded benchmarks show native wins on the measured primitive, narrowphase, supported distance, raycast, batch, mesh-heavy, and mixed-primitive set. The native dispatcher keeps canonical shape-specialized functions while wrapping only result-normal orientation when needed. The recurring benchmark guard covers checked native-vs-reference and public adapter scenarios. |
@@ -409,6 +425,10 @@ collision stack.
      DART adapter layer, native scene/query core, and optional reference
      harnesses outside runtime targets. This is an API cleanliness,
      scalability, and performance gate, not only a naming cleanup.
+   - Complete the built-in component design as code, not just documentation:
+     public APIs stay engine-neutral, the adapter owns scalable persistent
+     scene/query synchronization, and native hot paths own compact geometry,
+     broadphase, narrowphase, caches, profiler labels, and benchmark coverage.
    - Require scalable native scene state, persistent broadphase data, batched
      query paths, clear cache invalidation including dynamic-vertex shapes,
      DART filters adapted into native pair checks before narrowphase,
