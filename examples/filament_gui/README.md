@@ -25,7 +25,8 @@
   for shading diagnostics; toggle it with `--orbit-light`, `--no-orbit-light`,
   or the panel checkbox, and tune the default 80-second full orbit with
   `--orbit-light-period <seconds>`.
-  Use `--scene drag-and-drop` to run the interaction fixture.
+  Use `--scene drag-and-drop` to run the interaction fixture, or `--scene g1`
+  to load the Unitree G1 humanoid used in the project README animation.
 
 ## Notes
 
@@ -77,6 +78,10 @@
   same backend-hidden descriptor layer. The `--scene drag-and-drop` fixture
   uses that path for a legacy-style `SimpleFrame` anchor, child frame, and axis
   marker layout.
+- The `--scene g1` fixture loads the remote Unitree G1 URDF through DART's
+  normal resource retriever and renders it with Filament. Override the package
+  or robot source with `--g1-package-uri`, `--g1-robot-uri`, and
+  `--g1-package-name` when testing local G1 assets.
 
 ## Quick Run
 
@@ -103,6 +108,12 @@ To run the interaction fixture:
 pixi run ex filament_gui --scene drag-and-drop
 ```
 
+To run the Unitree G1 fixture:
+
+```bash
+pixi run ex filament_gui --scene g1 --gui-scale 2
+```
+
 To capture both built-in fixtures for PR screenshots:
 
 ```bash
@@ -112,6 +123,8 @@ pixi run ex filament_gui --headless --scene all
 The capture paths are `build/<pixi-env>/filament_gui_mvp.ppm` and
 `build/<pixi-env>/filament_gui_drag_and_drop.ppm` unless
 `DART_FILAMENT_GUI_SCREENSHOT` is set.
+The G1 fixture intentionally stays out of `--scene all` because it fetches a
+remote robot package by default.
 
 ## Build Instructions
 

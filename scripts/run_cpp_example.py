@@ -24,12 +24,19 @@ class ExampleSpec:
     build_target: str
     binary_name: str
     requirements: tuple[str, ...] = ()
+    default_args: tuple[str, ...] = ()
 
 
 EXAMPLE_SPECS = {
     "raylib": ExampleSpec("dart_raylib", "raylib", ("raylib",)),
     "dart_raylib": ExampleSpec("dart_raylib", "raylib", ("raylib",)),
     "filament_gui": ExampleSpec("dart_filament_gui", "filament_gui", ("filament",)),
+    "g1_puppet": ExampleSpec(
+        "dart_filament_gui",
+        "filament_gui",
+        ("filament",),
+        ("--scene", "g1"),
+    ),
 }
 
 
@@ -459,6 +466,7 @@ def _run_example_binary(
     run_args: list[str],
     env: dict[str, str],
 ) -> None:
+    run_args = [*spec.default_args, *run_args]
     binary = _binary_path(build_dir, spec.binary_name)
     if not binary.exists():
         raise SystemExit(f"Binary not found: {binary}")
