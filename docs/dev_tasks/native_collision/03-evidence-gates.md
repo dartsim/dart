@@ -112,7 +112,7 @@ These gates are still required before the single north-star PR is complete.
     `CollisionResult`, and `Contact` definitions, deleted stale
     feature-branch collision bridge sources, kept the native
     `DartCollisionDetector` implementation, regenerated `pixi.lock`, and was
-    committed locally as `3120a4fce9b`.
+    committed locally as `3120a4fce9b` before being pushed to PR #2652.
   - Focused local validation after the merge: `pixi run config` passed with
     FCL/Bullet/ODE and collision reference tests/benchmarks all `OFF`;
     focused build of `dart`, `dart-gui`,

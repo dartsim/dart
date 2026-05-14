@@ -31,9 +31,9 @@ unverified external and finalization gates:
   dependency cleanup. The workflow repair was pushed as `901d56c4260` and
   configures that custom asserts build as native-only unless it installs a
   reference-engine environment. A follow-up `origin/main` merge was committed
-  locally as `3120a4fce9b` to clear PR mergeability conflicts, with focused
-  local configure, build, and anchored CTest evidence already passing for the
-  merge-resolved collision, contact, world, and GUI targets.
+  locally as `3120a4fce9b` and pushed to clear PR mergeability conflicts, with
+  focused local configure, build, and anchored CTest evidence already passing
+  for the merge-resolved collision, contact, world, and GUI targets.
 - Downstream migration/deprecation evidence is still missing.
 - Final compatibility-facade retention/deprecation evidence is still missing:
   the documented decision is to delete old external-engine runtime
@@ -63,9 +63,9 @@ Current audited state:
   current local validation pass after the durable built-in architecture docs
   and compatibility-facade policy cleanup.
 - Remote branch state: `origin/feature/new_coll` is published at
-  `901d56c4260` after the asserts-enabled workflow repair. The local branch
-  has merge commit `3120a4fce9b`, which still needs to be pushed to clear PR
-  mergeability conflicts on GitHub.
+  the latest pushed `feature/new_coll` head after the asserts-enabled workflow
+  repair and follow-up `origin/main` merge. The merge commit `3120a4fce9b`
+  clears the previous GitHub mergeability conflicts.
 - GitHub PR state: draft PR #2652
   (https://github.com/dartsim/dart/pull/2652) targets `main`, has the
   `DART 7.0` milestone, and is collecting CI evidence. The PR is intentionally

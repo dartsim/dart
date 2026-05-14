@@ -205,16 +205,16 @@ for FCL, Bullet, ODE, and collision reference harnesses, and the matching local
 `CMAKE_BUILD_TYPE=None` configure now passes. That repair was pushed as
 `901d56c4260` (`Fix native collision asserts CI configure`). A follow-up
 `origin/main` merge was committed locally as `3120a4fce9b` to clear PR
-mergeability conflicts; focused local configure, build, and anchored CTest
-coverage for the merge-resolved native collision, contact, world, and GUI
-targets pass.
+mergeability conflicts and pushed to `feature/new_coll`; focused local
+configure, build, and anchored CTest coverage for the merge-resolved native
+collision, contact, world, and GUI targets pass.
 
 ## Current Branch
 
 `feature/new_coll` - local branch tracking `origin/feature/new_coll`; draft
-PR #2652 is open and collecting CI evidence. The local branch contains the
-`origin/main` merge commit `3120a4fce9b`, which still needs to be pushed. Use
-`git status -sb` for the exact local/remote state.
+PR #2652 is open and collecting CI evidence. The branch contains the
+`origin/main` merge commit `3120a4fce9b` and the pushed task-note evidence for
+that merge. Use `git status -sb` for the exact local/remote state.
 
 ## Immediate Next Step
 
@@ -227,12 +227,12 @@ has full `test-all` evidence through the latest documented head
 `864dd56d944c`, the branch was published at `5b08a00d381` before the first CI
 triage slice, the asserts-enabled workflow repair was pushed at
 `901d56c4260`, and the current local work has merged `origin/main` as
-`3120a4fce9b`. The immediate next evidence steps are to push the merge commit,
-watch PR #2652 CI, collect native-only/gz and wheel matrix artifact evidence,
-collect GitHub evidence for the scheduled or manual benchmark guard, record
-downstream migration/deprecation evidence, perform final runtime cleanup, rerun
-full validation after the PR-complete state, transfer final evidence to the PR,
-and delete the dev-task folder in the completing PR. Read
+`3120a4fce9b` and pushed it to PR #2652. The immediate next evidence steps are
+to watch PR #2652 CI, collect native-only/gz and wheel matrix artifact
+evidence, collect GitHub evidence for the scheduled or manual benchmark guard,
+record downstream migration/deprecation evidence, perform final runtime
+cleanup, rerun full validation after the PR-complete state, transfer final
+evidence to the PR, and delete the dev-task folder in the completing PR. Read
 `06-completion-audit.md` before deciding whether a future checkpoint is
 complete; it is the prompt-to-artifact checklist for the north-star goal.
 
