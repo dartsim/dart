@@ -114,7 +114,11 @@ TEST(ShapeType, EnumValues)
   EXPECT_NE(ShapeType::Sphere, ShapeType::Box);
   EXPECT_NE(ShapeType::Box, ShapeType::Capsule);
   EXPECT_NE(ShapeType::Capsule, ShapeType::Cylinder);
-  EXPECT_NE(ShapeType::Cylinder, ShapeType::Mesh);
+  EXPECT_NE(ShapeType::Cylinder, ShapeType::Plane);
+  EXPECT_NE(ShapeType::Plane, ShapeType::Mesh);
+  EXPECT_NE(ShapeType::Mesh, ShapeType::Convex);
+  EXPECT_NE(ShapeType::Convex, ShapeType::Sdf);
+  EXPECT_NE(ShapeType::Sdf, ShapeType::Compound);
 }
 
 TEST(CapsuleShape, Construction)

@@ -173,6 +173,13 @@ passes for the current source state: lint, Release build, Release C++ test
 build, C++ unit tests, simulation-experimental tests, Python tests, and
 documentation all passed, with Release CTest reporting 264/264 tests passed and
 29 `collision-native` label tests.
+The latest architecture-cleanup slice removes unused direct native
+`ShapeType` values for cone, heightfield, and point-cloud. Those DART shapes
+remain covered at the adapter layer through explicit convex, mesh, compound, or
+non-collidable behavior, while the native shape taxonomy now names only real
+native shape classes. Focused `test_shapes` and the rebuilt
+`dart_collision_native_tests` aggregate passed; the full `collision-native`
+label passed 29/29 after rebuilding stale test binaries.
 
 ## Current Branch
 
@@ -185,13 +192,14 @@ the exact count.
 Continue from `docs/dev_tasks/native_collision/04-reference-gap-analysis.md`.
 The focused gz `JointDetach` blocker and full local gz gate are repaired, the
 stale optional libccd cache repair has both targeted and full-suite local
-evidence, and current-state `pixi run test-all` passes. The immediate next
-evidence steps are CI native-only/gz evidence, wheel matrix artifact evidence
-from `wheel-verify`, downstream migration/deprecation evidence, GitHub evidence
-for the scheduled benchmark guard, architecture/design gate evidence, dev-task
-cleanup, and final legacy backend deletion. Read `06-completion-audit.md`
-before deciding whether a future checkpoint is complete; it is the
-prompt-to-artifact checklist for the north-star goal.
+evidence, current-state `pixi run test-all` passes, and native type-taxonomy
+cleanup has focused native test evidence. The immediate next evidence steps are
+CI native-only/gz evidence, wheel matrix artifact evidence from `wheel-verify`,
+downstream migration/deprecation evidence, GitHub evidence for the scheduled
+benchmark guard, remaining architecture/design gate evidence, dev-task cleanup,
+and final legacy backend deletion. Read `06-completion-audit.md` before
+deciding whether a future checkpoint is complete; it is the prompt-to-artifact
+checklist for the north-star goal.
 
 The persistent DART adapter scene path is now started: public collision,
 distance, and raycast calls use synced native scene state owned by

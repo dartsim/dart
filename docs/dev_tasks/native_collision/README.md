@@ -241,9 +241,13 @@ cache writeback follows the attached native `CachedContact`, not the detector
 display string preserved by a compatibility facade. Native warm-start contacts
 are now also stored in the canonical scene-cache ID order used by the
 manifold key, so querying the same pair as A/B and B/A preserves refresh and
-matching semantics. The architecture gate remains open until alias cleanup,
-package cleanup, and native algorithms are backed by design evidence in three
-dimensions:
+matching semantics. The native `ShapeType` taxonomy now also names only real
+native shape classes; DART cone, heightmap, point-cloud, and other
+approximated or intentionally non-collidable shapes are represented by the
+adapter's explicit convex, mesh, compound, or non-collidable behavior instead
+of phantom native shape tags. The architecture gate remains open until alias
+cleanup, package cleanup, and native algorithms are backed by design evidence
+in three dimensions:
 
 - API cleanliness: ordinary users see one `dart` detector surface, semantic
   DART query options/results, native-backed compatibility names, and explicit

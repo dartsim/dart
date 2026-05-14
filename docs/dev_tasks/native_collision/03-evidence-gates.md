@@ -921,6 +921,24 @@ scalability, performance orientation, reference isolation, and compatibility
 facade work items in `01-design.md` have matching tests, benchmarks, package
 inspection, source-boundary checks, and downstream/gz evidence.
 
+- `cmake --build build/default/cpp/Release --target test_shapes --parallel
+$(python scripts/parallel_jobs.py) && ctest --test-dir
+build/default/cpp/Release --output-on-failure -R '^test_shapes$'`
+  - Commit: working tree after removing unused direct native `ShapeType`
+    values for cone, heightfield, and point-cloud.
+  - Result: passed. The native shape enum no longer advertises phantom direct
+    shape tags that have no native shape class or dispatch path.
+- `cmake --build build/default/cpp/Release --target
+dart_collision_native_tests --parallel $(python scripts/parallel_jobs.py) &&
+ctest --test-dir build/default/cpp/Release --output-on-failure -L
+collision-native`
+  - Commit: working tree after rebuilding aggregate native tests for the
+    `ShapeType` taxonomy cleanup.
+  - Result: passed, 29/29 `collision-native` tests. A first label run before
+    rebuilding the aggregate tests failed because old test binaries still had
+    the previous enum ordinals compiled in; rebuilding the aggregate target
+    refreshed those binaries and the label passed.
+
 - `pixi run lint`
   - Commit: working tree after persistent DART adapter scene, raycast pruning,
     and distance AABB lower-bound pruning implementation

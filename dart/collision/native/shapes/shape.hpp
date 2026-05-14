@@ -47,13 +47,10 @@ enum class ShapeType
   Box,
   Capsule,
   Cylinder,
-  Cone,
   Plane,
   Mesh,
   Convex,
   Sdf,
-  HeightField,
-  PointCloud,
   Compound
 };
 
