@@ -311,6 +311,35 @@ def test_experimental_pick_point_cloud_uses_per_point_box_surface():
     assert dart.gui.experimental.pick_nearest_renderable([renderable], gap_ray) is None
 
 
+def test_experimental_pick_voxel_grid_uses_per_voxel_box_surface():
+    renderable = dart.gui.experimental.RenderableDescriptor()
+    renderable.id = 1
+    renderable.geometry.kind = dart.gui.experimental.ShapeKind.VoxelGrid
+    renderable.geometry.voxel_centers = [
+        np.array([0.0, 0.0, 0.0]),
+        np.array([2.0, 0.0, 0.0]),
+    ]
+    renderable.geometry.voxel_size = 0.2
+    renderable.geometry.has_local_bounds = True
+    renderable.geometry.local_bounds_min = np.array([-0.1, -0.1, -0.1])
+    renderable.geometry.local_bounds_max = np.array([2.1, 0.1, 0.1])
+
+    hit_ray = dart.gui.experimental.PickRay()
+    hit_ray.origin = np.array([-2.0, 0.05, 0.0])
+    hit_ray.direction = np.array([1.0, 0.0, 0.0])
+    hit = dart.gui.experimental.pick_nearest_renderable([renderable], hit_ray)
+
+    assert hit is not None
+    assert np.isclose(hit.distance, 1.9)
+    assert np.allclose(hit.point, [-0.1, 0.05, 0.0])
+    assert np.allclose(hit.normal, [-1.0, 0.0, 0.0])
+
+    gap_ray = dart.gui.experimental.PickRay()
+    gap_ray.origin = np.array([1.0, 0.0, -1.0])
+    gap_ray.direction = np.array([0.0, 0.0, 1.0])
+    assert dart.gui.experimental.pick_nearest_renderable([renderable], gap_ray) is None
+
+
 def test_experimental_extract_renderables_from_simple_frame():
     world = dart.World.create("world")
     transform = dart.Isometry3()

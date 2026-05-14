@@ -1003,6 +1003,40 @@ TEST(
 }
 
 TEST(
+    FilamentSceneExtraction,
+    PickNearestRenderable_VoxelGridUsesPerVoxelBoxSurface)
+{
+  dart::gui::experimental::RenderableDescriptor renderable;
+  renderable.id = 1;
+  renderable.geometry.kind = ShapeKind::VoxelGrid;
+  renderable.geometry.voxelSize = 0.2;
+  renderable.geometry.voxelCenters
+      = {Eigen::Vector3d(0.0, 0.0, 0.0), Eigen::Vector3d(2.0, 0.0, 0.0)};
+  renderable.geometry.hasLocalBounds = true;
+  renderable.geometry.localBoundsMin = Eigen::Vector3d(-0.1, -0.1, -0.1);
+  renderable.geometry.localBoundsMax = Eigen::Vector3d(2.1, 0.1, 0.1);
+
+  const std::vector<dart::gui::experimental::RenderableDescriptor> renderables{
+      renderable};
+
+  const dart::gui::experimental::PickRay hitRay{
+      Eigen::Vector3d(-2.0, 0.05, 0.0), Eigen::Vector3d::UnitX()};
+  const auto hit
+      = dart::gui::experimental::pickNearestRenderable(renderables, hitRay);
+
+  ASSERT_TRUE(hit.has_value());
+  EXPECT_NEAR(hit->distance, 1.9, 1e-12);
+  EXPECT_TRUE(hit->point.isApprox(Eigen::Vector3d(-0.1, 0.05, 0.0)));
+  EXPECT_TRUE(hit->normal.isApprox(-Eigen::Vector3d::UnitX()));
+
+  const dart::gui::experimental::PickRay gapRay{
+      Eigen::Vector3d(1.0, 0.0, -1.0), Eigen::Vector3d::UnitZ()};
+  EXPECT_FALSE(
+      dart::gui::experimental::pickNearestRenderable(renderables, gapRay)
+          .has_value());
+}
+
+TEST(
     FilamentSceneExtraction, PickNearestRenderable_IgnoresHiddenAndMissedShapes)
 {
   auto world = World::create("world");

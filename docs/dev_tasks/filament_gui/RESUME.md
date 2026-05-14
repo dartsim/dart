@@ -56,7 +56,7 @@ support-centroid markers, inertia boxes, and collision-shape bounds, with
 graphics-free unit coverage. It also has nearest ray-hit tests
 for visible, hidden, hit, and miss cases, including bounds hit points/normals
 and primitive
-sphere/ellipsoid/cylinder/capsule/cone/pyramid/multi-sphere/point-cloud/plane
+sphere/ellipsoid/cylinder/capsule/cone/pyramid/multi-sphere/point-cloud/voxel-grid/plane
 surface hit points/normals. The example wires those helpers into basic
 click-to-select highlighting with a selection bounds overlay, and reports the
 selected DART shape in the built-in panel.
@@ -169,8 +169,8 @@ descriptors instead of being silently dropped by the extraction layer.
 flow through renderer-hidden descriptors, and the Filament example consumes
 that descriptor metadata for per-part mesh materials. The picking helpers now
 also use primitive sphere/ellipsoid/cylinder/capsule/cone/pyramid/multi-sphere
-plus point-cloud box-proxy and finite plane-proxy intersections for surface hit
-points and normals before falling back to local bounds for other shape
+plus point-cloud/voxel-grid box-proxy and finite plane-proxy intersections for
+surface hit points and normals before falling back to local bounds for other shape
 descriptors.
 
 `docs/dev_tasks/filament_gui/07-completion-audit.md` maps the current
