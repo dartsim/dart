@@ -268,6 +268,35 @@ compiling with /utf-8'`. The current repair adds `/utf-8` to the root MSVC
   documentation. The final report printed `All tests passed!` and
   `Ready to submit PR!`.
 
+- Closed-PR follow-up status after user direction to avoid creating a new
+  diff:
+  - PR #2652 is closed and remains anchored to old head `714d220d82a`.
+  - Follow-up fixes are being pushed to `feature/new_coll`, but branch pushes
+    do not start the main workflows because the workflow `push` filters only
+    include protected release/default branches. Manual workflow dispatch was
+    attempted for the relevant workflows and failed with HTTP 403 requiring
+    repository admin rights.
+
+- Follow-up broad local Debug validation after the closed-PR macOS/Linux
+  repairs:
+
+  ```bash
+  cmake --build build/default/cpp/Debug --target tests --parallel 5
+  cmake --build build/default/cpp/Debug --target dart_experimental_tests --parallel 5
+  ctest --test-dir build/default/cpp/Debug --output-on-failure -L simulation-experimental -j 5
+  ctest --test-dir build/default/cpp/Debug --output-on-failure -j 5
+  ```
+
+  Result: passed after one additional simulation-experimental logging repair.
+  The first full CTest attempt showed the native/general Debug tests green but
+  exposed that `tests` does not build the separate
+  `dart_experimental_tests` aggregate; after building it, `test_logging`
+  failed because Debug source context discarded the file name when
+  `DART_EXPERIMENTAL_SOURCE_DIR` was not defined. The logging fallback now
+  preserves the original source path without that macro. The final full Debug
+  CTest rerun passed 277/277 tests, including 29 `collision-native` tests and
+  13 `simulation-experimental` tests.
+
 - Local command run during this audit:
 
   ```bash
@@ -333,10 +362,10 @@ Legend:
 
 ## Missing Evidence And Required Next Actions
 
-1. Continue using draft PR #2652 as the CI surface; do not create a new diff or
-   review request until the user asks. Push focused fixes to `feature/new_coll`
-   so GitHub CI can produce authoritative native-only, gz-physics, wheel
-   matrix, and benchmark artifact evidence.
+1. Do not create a new diff or review request until the user asks. PR #2652 is
+   closed, so pushing focused fixes to `feature/new_coll` publishes branch
+   state but currently does not trigger the main GitHub Actions workflows.
+   Authoritative CI evidence still needs a permitted trigger surface.
 2. Collect CI run links and artifact names for:
    - native-only collision/default build jobs,
    - gz-physics compatibility jobs,

@@ -162,8 +162,7 @@ constexpr const char* stripSourceDir(const char* path)
     return p + 1;
   }
 #else
-  (void)path;
-  return "";
+  return path;
 #endif
   return path;
 }

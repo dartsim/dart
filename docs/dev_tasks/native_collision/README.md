@@ -541,6 +541,11 @@ collision stack.
      `docs/onboarding/architecture.md`.
    - Preserve final evidence for `pixi run test-all`, gz-physics, native-only
      CI, packaging inspection, and benchmark guardrails.
+   - Current PR #2652 is closed per user direction. Continue publishing focused
+     fixes to `feature/new_coll` when useful, but do not create a new diff or
+     review request until explicitly asked; GitHub Actions evidence still needs
+     an allowed trigger surface because feature-branch pushes do not start the
+     main workflows.
 
 ## Detailed Planning Docs
 

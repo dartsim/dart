@@ -569,6 +569,19 @@ libraries.
   capsule-cast results. Focused Debug `test_collision_world`, focused Release
   `test_ccd`/`test_collision_world`, and the full Release `collision-native`
   label all pass locally.
+- PR #2652 is closed per user direction and still points at old head
+  `714d220d82a`. Follow-up commits can be pushed to `feature/new_coll`, but
+  those pushes do not start the main workflows because the workflow `push`
+  filters exclude feature branches, and manual `workflow_dispatch` attempts
+  failed with HTTP 403 requiring repository admin rights.
+- The latest local broad Debug validation now passes after one additional
+  simulation-experimental logging repair. The broad Debug `tests` target built
+  normal C++ tests; the separate `dart_experimental_tests` target was needed
+  for the 13 configured simulation-experimental executables. After preserving
+  the source file path in Debug logging when `DART_EXPERIMENTAL_SOURCE_DIR` is
+  not defined, the Debug simulation-experimental label passed 13/13 and the
+  full Debug CTest rerun passed 277/277, including 29 `collision-native`
+  tests.
 
 ## How to Resume
 

@@ -2503,6 +2503,36 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
   - Command:
     `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native -j 5`
   - Result: passed, 29/29 tests.
+- Closed-PR status and CI trigger limitation:
+  - PR #2652 was closed per user direction at `2026-05-14T19:20:08Z`.
+    GitHub still reports the closed PR head as `714d220d82a`, so pushed
+    follow-up commits on `feature/new_coll` are not attached to that PR.
+  - Pushing `feature/new_coll` remains useful for publishing branch state, but
+    it does not start the main CI workflows because their `push` filters only
+    include protected release/default branches. Manual `workflow_dispatch`
+    attempts from this token failed with HTTP 403 requiring repository admin
+    rights.
+- Broad local Debug validation after the macOS/Linux closed-PR repairs:
+  - Command:
+    `cmake --build build/default/cpp/Debug --target tests --parallel 5`
+  - Result: built the normal Debug C++ test target set. A first full CTest run
+    then passed the native and general tests but reported 13
+    `simulation-experimental` tests as `Not Run` because the `tests` target
+    does not build the separate `dart_experimental_tests` aggregate.
+  - Command:
+    `cmake --build build/default/cpp/Debug --target dart_experimental_tests --parallel 5`
+  - Result: built the 13 configured simulation-experimental test executables.
+  - Follow-up finding: `test_logging` failed because Debug source context
+    dropped the file name when `DART_EXPERIMENTAL_SOURCE_DIR` was not defined.
+    The logging helper now falls back to the original source path when no
+    source-root macro is available.
+  - Command:
+    `ctest --test-dir build/default/cpp/Debug --output-on-failure -L simulation-experimental -j 5`
+  - Result: passed, 13/13 tests.
+  - Command:
+    `ctest --test-dir build/default/cpp/Debug --output-on-failure -j 5`
+  - Result: passed, 277/277 tests. Label summaries included
+    `collision-native` 29 tests and `simulation-experimental` 13 tests.
 
 ## Known Risks
 
