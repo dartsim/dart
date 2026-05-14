@@ -239,8 +239,9 @@ Known current result:
 - `UNIT_gui_FilamentSceneExtraction` builds and passes. It covers the
   `dart-gui-experimental` extraction layer, including primitive, mesh, plane,
   material, visibility, shadow, unsupported-shape diagnostics, picking hit
-  points/normals including primitive sphere/ellipsoid/cylinder/capsule/cone
-  surface hits, renderable set update planning, and debug-line descriptors, without
+  points/normals including primitive
+  sphere/ellipsoid/cylinder/capsule/cone/pyramid surface hits, renderable set
+  update planning, and debug-line descriptors, without
   requiring Filament or a graphics context.
 - After moving viewer lifecycle state into `dart-gui-experimental`,
   `DART_PARALLEL_JOBS=2 CTEST_PARALLEL_LEVEL=2 pixi run test-all` passed
@@ -310,9 +311,10 @@ Known current result:
   toggling the current debug overlay groups. The bounded smoke run verifies that
   these controls compile and render as part of the ImGui overlay path.
 - Renderer-independent nearest-hit picking is unit-tested for visible, hidden,
-  hit, miss, bounds-normal, and primitive sphere/ellipsoid/cylinder/capsule/cone
-  surface-normal cases. The example wires that path into basic click-to-select
-  highlighting plus a selection bounds overlay.
+  hit, miss, bounds-normal, and primitive
+  sphere/ellipsoid/cylinder/capsule/cone/pyramid surface-normal cases. The
+  example wires that path into basic click-to-select highlighting plus a
+  selection bounds overlay.
 - Renderer-independent free-joint and `SimpleFrame` translation are unit-tested
   for selected mutable bodies, fixed-body rejection, and world-owned
   simple-frame visuals. The Filament example wires the combined frame-renderable

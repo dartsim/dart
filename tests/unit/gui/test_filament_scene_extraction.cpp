@@ -875,6 +875,42 @@ TEST(
 }
 
 TEST(
+    FilamentSceneExtraction,
+    PickNearestRenderable_PyramidUsesPrimitiveSurfaceNormal)
+{
+  auto world = World::create("world");
+  auto skeleton = Skeleton::create("pyramid_robot");
+  auto [joint, body] = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  body->createShapeNodeWith<VisualAspect>(
+      std::make_shared<PyramidShape>(2.0, 2.0, 2.0));
+  world->addSkeleton(skeleton);
+
+  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  ASSERT_EQ(renderables.size(), 1u);
+
+  const dart::gui::experimental::PickRay sideRay{
+      Eigen::Vector3d(0.0, -3.0, 0.0), Eigen::Vector3d::UnitY()};
+  const auto sideHit
+      = dart::gui::experimental::pickNearestRenderable(renderables, sideRay);
+
+  ASSERT_TRUE(sideHit.has_value());
+  EXPECT_NEAR(sideHit->distance, 2.5, 1e-12);
+  EXPECT_TRUE(sideHit->point.isApprox(Eigen::Vector3d(0.0, -0.5, 0.0)));
+  EXPECT_TRUE(
+      sideHit->normal.isApprox(Eigen::Vector3d(0.0, -2.0, 1.0).normalized()));
+
+  const dart::gui::experimental::PickRay baseRay{
+      Eigen::Vector3d(0.5, 0.25, -4.0), Eigen::Vector3d::UnitZ()};
+  const auto baseHit
+      = dart::gui::experimental::pickNearestRenderable(renderables, baseRay);
+
+  ASSERT_TRUE(baseHit.has_value());
+  EXPECT_NEAR(baseHit->distance, 3.0, 1e-12);
+  EXPECT_TRUE(baseHit->point.isApprox(Eigen::Vector3d(0.5, 0.25, -1.0)));
+  EXPECT_TRUE(baseHit->normal.isApprox(Eigen::Vector3d(0.0, 0.0, -1.0)));
+}
+
+TEST(
     FilamentSceneExtraction, PickNearestRenderable_IgnoresHiddenAndMissedShapes)
 {
   auto world = World::create("world");

@@ -292,6 +292,50 @@ struct LocalBoundsHit
   Eigen::Vector3d normal = Eigen::Vector3d::Zero();
 };
 
+std::optional<LocalBoundsHit> intersectLocalTriangle(
+    const Eigen::Vector3d& origin,
+    const Eigen::Vector3d& direction,
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c)
+{
+  const Eigen::Vector3d edgeAB = b - a;
+  const Eigen::Vector3d edgeAC = c - a;
+  const Eigen::Vector3d normal = edgeAB.cross(edgeAC);
+  if (!normal.allFinite() || normal.squaredNorm() <= 1e-18) {
+    return std::nullopt;
+  }
+
+  const Eigen::Vector3d p = direction.cross(edgeAC);
+  const double determinant = edgeAB.dot(p);
+  if (std::abs(determinant) <= 1e-12 || !std::isfinite(determinant)) {
+    return std::nullopt;
+  }
+
+  const double inverseDeterminant = 1.0 / determinant;
+  const Eigen::Vector3d offset = origin - a;
+  const double u = offset.dot(p) * inverseDeterminant;
+  if (u < -1e-12 || u > 1.0 + 1e-12 || !std::isfinite(u)) {
+    return std::nullopt;
+  }
+
+  const Eigen::Vector3d q = offset.cross(edgeAB);
+  const double v = direction.dot(q) * inverseDeterminant;
+  if (v < -1e-12 || u + v > 1.0 + 1e-12 || !std::isfinite(v)) {
+    return std::nullopt;
+  }
+
+  const double distance = edgeAC.dot(q) * inverseDeterminant;
+  if (distance < 0.0 || !std::isfinite(distance)) {
+    return std::nullopt;
+  }
+
+  LocalBoundsHit hit;
+  hit.distance = distance;
+  hit.normal = normal.normalized();
+  return hit;
+}
+
 std::optional<LocalBoundsHit> intersectLocalBounds(
     const Eigen::Vector3d& origin,
     const Eigen::Vector3d& direction,
@@ -536,6 +580,46 @@ std::optional<LocalBoundsHit> intersectLocalCone(
   return nearest;
 }
 
+std::optional<LocalBoundsHit> intersectLocalPyramid(
+    const Eigen::Vector3d& origin,
+    const Eigen::Vector3d& direction,
+    const Eigen::Vector3d& size)
+{
+  if (!origin.allFinite() || !direction.allFinite() || !size.allFinite()
+      || (size.array() <= 0.0).any()) {
+    return std::nullopt;
+  }
+
+  const double halfWidth = size.x() * 0.5;
+  const double halfDepth = size.y() * 0.5;
+  const double halfHeight = size.z() * 0.5;
+  const std::array<Eigen::Vector3d, 5> points
+      = {Eigen::Vector3d(0.0, 0.0, halfHeight),
+         Eigen::Vector3d(-halfWidth, -halfDepth, -halfHeight),
+         Eigen::Vector3d(halfWidth, -halfDepth, -halfHeight),
+         Eigen::Vector3d(halfWidth, halfDepth, -halfHeight),
+         Eigen::Vector3d(-halfWidth, halfDepth, -halfHeight)};
+  const std::array<std::array<std::size_t, 3>, 6> faces = {{
+      {0u, 1u, 2u},
+      {0u, 2u, 3u},
+      {0u, 3u, 4u},
+      {0u, 4u, 1u},
+      {1u, 4u, 3u},
+      {1u, 3u, 2u},
+  }};
+
+  std::optional<LocalBoundsHit> nearest;
+  for (const auto& face : faces) {
+    const auto hit = intersectLocalTriangle(
+        origin, direction, points[face[0]], points[face[1]], points[face[2]]);
+    if (hit && (!nearest || hit->distance < nearest->distance)) {
+      nearest = hit;
+    }
+  }
+
+  return nearest;
+}
+
 std::optional<LocalBoundsHit> intersectLocalCapsule(
     const Eigen::Vector3d& origin,
     const Eigen::Vector3d& direction,
@@ -646,6 +730,10 @@ std::optional<LocalBoundsHit> intersectLocalGeometry(
   if (geometry.kind == ShapeKind::Cone) {
     return intersectLocalCone(
         origin, direction, geometry.radius, geometry.height);
+  }
+
+  if (geometry.kind == ShapeKind::Pyramid) {
+    return intersectLocalPyramid(origin, direction, geometry.size);
   }
 
   return intersectLocalBounds(
