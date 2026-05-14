@@ -24,8 +24,12 @@ unverified external and finalization gates:
 - Full dartpy wheel matrix artifact evidence is still missing.
 - GitHub artifact evidence for the scheduled/manual collision benchmark guard
   is still missing.
-- Draft PR #2652 now exists and CI has started, but the first CI refresh is not
-  green yet. The initial `Asserts enabled (no -DNDEBUG)` Linux job exposed a
+- PR #2652 was used as the initial CI surface, then closed per user direction
+  before the latest follow-up commits. The closed PR remains anchored to old
+  head `714d220d82a`; the latest branch head `0dda069d59d` has no GitHub
+  Actions runs because feature-branch pushes do not match the main workflow
+  `push` filters and manual workflow dispatch is blocked by repository
+  permissions. The initial `Asserts enabled (no -DNDEBUG)` Linux job exposed a
   workflow mismatch: it manually enabled Bullet in the default Pixi
   environment, where Bullet is intentionally absent after the native-only
   dependency cleanup. The workflow repair was pushed as `901d56c4260` and
@@ -93,13 +97,14 @@ unverified external and finalization gates:
   downstream migration, and leave FCL/Bullet/ODE access in explicit
   reference-only test/benchmark APIs.
 - Full local `pixi run test-all` evidence is refreshed for the current local
-  state after fixing one stale VSG native `ShapeType` switch left by the native
-  taxonomy cleanup. Final `pixi run test-all` evidence after the eventual
-  PR-complete state is still missing. The refreshed full reruns found and
-  repaired two local validation robustness gaps: a stale optional `libccd`
-  CMake cache issue in the default native-only test build, and stale
-  `ShapeType::Cone`, `ShapeType::HeightField`, and `ShapeType::PointCloud`
-  cases in the VSG geometry builder after those native tags were removed.
+  state. Final `pixi run test-all` evidence after the eventual PR-complete
+  state is still missing. The refreshed full reruns found and repaired three
+  local validation robustness gaps: a stale optional `libccd` CMake cache issue
+  in the default native-only test build, stale `ShapeType::Cone`,
+  `ShapeType::HeightField`, and `ShapeType::PointCloud` cases in the VSG
+  geometry builder after those native tags were removed, and an over-broad
+  nanobind source-refresh marker in `scripts/test_all.py` that could refresh
+  `nb_func.cpp` without rebuilding matching `nb_internals.cpp` objects.
 - The dev-task folder must remain until final PR evidence is transferred to
   the PR description and the folder is deleted in the completing PR. Durable
   architecture notes are now seeded in onboarding docs, but final evidence
@@ -115,13 +120,10 @@ Current audited state:
   current local validation pass after the durable built-in architecture docs
   and compatibility-facade policy cleanup.
 - Remote branch state: `origin/feature/new_coll` is published at
-  the latest pushed `feature/new_coll` head after the asserts-enabled workflow
-  repair and follow-up `origin/main` merge. The merge commit `3120a4fce9b`
-  clears the previous GitHub mergeability conflicts.
-- GitHub PR state: draft PR #2652
-  (https://github.com/dartsim/dart/pull/2652) targets `main`, has the
-  `DART 7.0` milestone, and is collecting CI evidence. The PR is intentionally
-  draft while the audit gates remain open.
+  `0dda069d59d` (`Fix simulation experimental debug logging context`).
+- GitHub PR state: PR #2652
+  (https://github.com/dartsim/dart/pull/2652) is closed, still marked draft,
+  and remains anchored to old head `714d220d82a`.
 - Initial PR CI state: GitHub Actions started for the pushed head. The first
   completed failure was `Asserts enabled (no -DNDEBUG)`, run `25870574281`,
   job `76024440344`, which failed during configure because
@@ -296,6 +298,24 @@ compiling with /utf-8'`. The current repair adds `/utf-8` to the root MSVC
   preserves the original source path without that macro. The final full Debug
   CTest rerun passed 277/277 tests, including 29 `collision-native` tests and
   13 `simulation-experimental` tests.
+
+- Closed-PR follow-up full local validation:
+
+  ```bash
+  DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all
+  ```
+
+  Result: passed after one test-harness repair. The first rerun failed linking
+  `dartpy` because `scripts/test_all.py` treated the valid nanobind line
+  `buf.put(" = ");` as a corruption marker, refreshed `nb_func.cpp`, and left
+  stale `nb_internals.cpp` objects without `internals_inc_ref()` /
+  `internals_dec_ref()`. The helper now only matches the invalid escaped
+  default-argument line, refreshes `nb_internals.cpp` and `nb_internals.h`
+  together with refreshed nanobind sources, and touches internals when
+  `nb_func.cpp` is newer. Focused Release and Debug `dartpy` target rebuilds
+  passed, then the full suite reported 6/6 top-level gates passed: linting,
+  build, unit tests, simulation-experimental tests, Python tests, and
+  documentation.
 
 - Local command run during this audit:
 

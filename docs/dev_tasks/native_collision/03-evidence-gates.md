@@ -2533,6 +2533,28 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     `ctest --test-dir build/default/cpp/Debug --output-on-failure -j 5`
   - Result: passed, 277/277 tests. Label summaries included
     `collision-native` 29 tests and `simulation-experimental` 13 tests.
+- Closed-PR full local validation after the nanobind test harness repair:
+  - Initial finding: `pixi run test-all` failed linking Release and Debug
+    `dartpy` with undefined `nanobind::detail::internals_inc_ref()` and
+    `internals_dec_ref()` symbols. The test harness had refreshed
+    `nb_func.cpp` from upstream because it treated the valid
+    `buf.put(" = ");` line as a bad marker, but the matching
+    `nb_internals.cpp` object stayed stale.
+  - Repair: `scripts/test_all.py` now drops the valid marker, refreshes
+    `nb_internals.cpp` and `nb_internals.h` with any upstream nanobind source
+    refresh, and touches internals when `nb_func.cpp` is newer so Ninja
+    rebuilds the static nanobind objects coherently.
+  - Command:
+    `pixi run cmake --build build/default/cpp/Release --target dartpy --parallel 5`
+  - Result: passed.
+  - Command:
+    `pixi run cmake --build build/default/cpp/Debug --target dartpy --parallel 5`
+  - Result: passed.
+  - Command:
+    `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+  - Result: passed. The comprehensive suite reported 6/6 top-level gates
+    passed: linting, build, unit tests, simulation-experimental tests, Python
+    tests, and documentation.
 
 ## Known Risks
 

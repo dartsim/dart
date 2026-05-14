@@ -195,9 +195,12 @@ again at `864dd56d944c` with
 `DART_PARALLEL_JOBS=15 CTEST_PARALLEL_LEVEL=15 pixi run test-all`. It passed
 all 6 top-level gates: linting, build, unit tests,
 simulation-experimental tests, Python tests, and documentation.
-The branch has now been published and draft PR #2652
-(https://github.com/dartsim/dart/pull/2652) is open against `main` with the
-`DART 7.0` milestone. The first PR CI refresh exposed a workflow-only failure
+The branch was published and draft PR #2652
+(https://github.com/dartsim/dart/pull/2652) was used as the initial CI
+surface. PR #2652 is now closed per user direction and remains anchored to old
+head `714d220d82a`; the latest pushed branch head before the local closed-PR
+follow-up was `0dda069d59d`. The first PR CI refresh exposed a workflow-only
+failure
 in `Asserts enabled (no -DNDEBUG)`: the custom CMake configure still enabled
 Bullet in the default Pixi environment, where Bullet is intentionally absent.
 The latest repair makes that custom asserts configure explicitly native-only
@@ -252,43 +255,40 @@ for this repair has passed: the Release `UNIT_collision_NativeBackend` target
 and CTest pass, synthetic wheel verifier probes accept the facade files and
 reject reference/runtime artifacts, and the existing repaired py312 Linux wheel
 passes the updated verifier.
+After the closed PR direction, follow-up local validation found one
+test-harness problem unrelated to the native collision runtime:
+`pixi run test-all` failed linking `dartpy` because
+`scripts/test_all.py` treated a valid nanobind `buf.put(" = ");` line as a
+corruption marker, refreshed `nb_func.cpp`, and left stale
+`nb_internals.cpp` static-library objects behind. The helper now only matches
+the invalid escaped default-argument source, refreshes `nb_internals.cpp` and
+`nb_internals.h` with any upstream nanobind source refresh, and touches
+internals when `nb_func.cpp` is newer. Focused Release and Debug `dartpy`
+target rebuilds passed, then
+`DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+passed all 6 top-level gates: linting, build, unit tests,
+simulation-experimental tests, Python tests, and documentation.
 
 ## Current Branch
 
-`feature/new_coll` - local branch tracking `origin/feature/new_coll`; draft
-PR #2652 is open and collecting CI evidence. The branch contains the
-`origin/main` merge commit `3120a4fce9b` and the pushed task-note evidence for
-that merge. Use `git status -sb` for the exact local/remote state.
+`feature/new_coll` - local branch tracking `origin/feature/new_coll`. PR #2652
+is closed and still points at old head `714d220d82a`. The current branch state
+includes the nanobind `test-all` helper repair and refreshed full local
+validation evidence. Follow-up branch pushes publish state but do not start the
+main GitHub Actions workflows because the workflow `push` filters exclude
+feature branches.
 
 ## Immediate Next Step
 
-Continue from `docs/dev_tasks/native_collision/04-reference-gap-analysis.md`.
-The focused gz `JointDetach` blocker and full local gz gate are repaired, the
-stale optional libccd cache repair has both targeted and full-suite local
-evidence at `da532729bec`, native type-taxonomy cleanup has focused native test
-evidence at `cd16b64be0b`, and the current VSG stale shape-type switch repair
-has full `test-all` evidence through the latest documented head
-`864dd56d944c`, the branch was published at `5b08a00d381` before the first CI
-triage slice, the asserts-enabled workflow repair was pushed at
-`901d56c4260`, and the current local work has merged `origin/main` as
-`3120a4fce9b` and pushed it to PR #2652. The Windows Pixi parser repair was
-pushed at `7a2795d86ce`, and the Alt Linux Eigen 5 configure repair was pushed
-at `d2f1b7233bd`. The Windows wheel MSVC `/utf-8` repair, Alt Linux direct
-EnTT dependency/fallback repair, and export-safe fetched EnTT repair are pushed
-through `97a9d3ca6d6`. The current working tree has the macOS arm64
-CamelCase-include cleanup after CI run `25875811218`, job `76044208533`, and
-the distance-filter implementation restoration after CI run `25877526350`,
-job `76048820253`; the current working tree also has the macOS Release
-`DistanceFilter` virtual-destructor repair after CI run `25878909676`, job
-`76053447798`, and the macOS py314 wheel verifier policy repair after CI run
-`25878909684`, job `76053782968`. The next immediate step is to finish
-lint/diff validation, commit, push, and recheck PR #2652 CI. After that,
-continue watching PR #2652 CI, collect
-native-only/gz and wheel matrix artifact evidence, collect GitHub evidence for
-the scheduled or manual benchmark guard, record downstream migration/deprecation
-evidence, perform final runtime cleanup, rerun full validation after the
-PR-complete state, transfer final evidence to the PR, and delete the dev-task
-folder in the completing PR. Read
+Continue from `docs/dev_tasks/native_collision/06-completion-audit.md`.
+Current local focused, broad Debug, and full `pixi run test-all` validation is
+green. CI evidence is still blocked until the user provides an allowed trigger
+surface, reopens/creates a PR, or grants a way to dispatch workflows. Next
+collect native-only/gz and wheel matrix artifact evidence, collect GitHub
+evidence for the scheduled or manual benchmark guard, record downstream
+migration/deprecation evidence, perform final runtime cleanup, rerun full
+validation after the PR-complete state, transfer final evidence to the PR, and
+delete the dev-task folder in the completing PR. Read
 `06-completion-audit.md` before deciding whether a future checkpoint is
 complete; it is the prompt-to-artifact checklist for the north-star goal.
 
@@ -550,18 +550,18 @@ libraries.
   completion audit and missing-evidence checklist lives in
   `06-completion-audit.md`.
 - Per the latest user direction, do not create a new diff or review request
-  yet. Keep using draft PR #2652 / branch `feature/new_coll` as the CI trigger
-  surface and push focused repair commits there as needed.
-- The latest pushed head before this note was `714d220d82a`. Its macOS arm64
-  refresh reached Release native collision filter compilation and Debug
+  yet. PR #2652 is closed; keep publishing focused repair commits to
+  `feature/new_coll` as needed, but do not assume those pushes trigger CI.
+- The closed PR head was `714d220d82a`. Its macOS arm64 refresh reached
+  Release native collision filter compilation and Debug
   `test_ccd`, `UNIT_gui_vsg_simple_viewer`, and
-  `INTEGRATION_simulation_World`. The current working-tree repairs remove
-  unused callback-filter locals, handle sphere-box CCD initial overlap without
+  `INTEGRATION_simulation_World`. The follow-up repairs remove unused
+  callback-filter locals, handle sphere-box CCD initial overlap without
   indexing an unset axis, skip VSG simple-viewer tests when headless creation
   throws on a runner, and construct the world before overriding the `"dart"`
   factory in the null-creator typed-setter fallback test. Focused local Debug
-  build/CTest for those three failing Debug targets passes, and focused
-  Release build/CTest for `test_collision_filter` passes.
+  build/CTest for those three failing Debug targets passed, and focused
+  Release build/CTest for `test_collision_filter` passed.
 - The same closed-PR Linux run exposed a Debug-only
   `test_collision_world` failure where world-level sphere/capsule cast results
   pointed at loop-local collision-object handles. The current working tree
@@ -582,6 +582,11 @@ libraries.
   not defined, the Debug simulation-experimental label passed 13/13 and the
   full Debug CTest rerun passed 277/277, including 29 `collision-native`
   tests.
+- The latest full local validation now passes after a nanobind test harness
+  repair in `scripts/test_all.py`. Focused Release and Debug `dartpy` target
+  rebuilds passed, then
+  `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+  passed all 6 top-level gates.
 
 ## How to Resume
 
@@ -598,6 +603,7 @@ Then read:
 - `docs/dev_tasks/native_collision/02-milestones.md`
 - `docs/dev_tasks/native_collision/03-evidence-gates.md`
 - `docs/dev_tasks/native_collision/04-reference-gap-analysis.md`
+- `docs/dev_tasks/native_collision/06-completion-audit.md`
 
 Use `pixi run ...` tasks for validation and update the evidence gates after
 each meaningful test or benchmark run.
