@@ -41,6 +41,12 @@ Current audited state:
 - Head inspected at audit start: `c502a0391c1`
   (`Record native collision benchmark guard evidence`)
 - Working tree at audit start: clean, ahead of `origin/feature/new_coll`.
+- Remote branch state: `origin/feature/new_coll` was still at
+  `96436fd2503`; the local branch was 41 commits ahead after the audit
+  checkpoint.
+- GitHub PR state: read-only GitHub search for `head:feature/new_coll` in
+  `dartsim/dart` returned no pull requests, so no CI or PR artifact evidence
+  exists yet for the current local north-star branch head.
 - Local command run during this audit:
 
   ```bash
@@ -103,8 +109,9 @@ Legend:
 
 ## Missing Evidence And Required Next Actions
 
-1. Push or otherwise publish the branch so GitHub CI can produce authoritative
-   native-only, gz-physics, wheel matrix, and benchmark artifact evidence.
+1. Push or otherwise publish the branch and open/update a PR so GitHub CI can
+   produce authoritative native-only, gz-physics, wheel matrix, and benchmark
+   artifact evidence. The current audit found no PR for `head:feature/new_coll`.
 2. Collect CI run links and artifact names for:
    - native-only collision/default build jobs,
    - gz-physics compatibility jobs,
