@@ -113,7 +113,11 @@
   PBR texture parameter wiring now live in `examples/filament_gui/textures.hpp`
   and `.cpp`; repeat sampler construction stays private to the texture
   implementation so the helper header does not include Filament sampler
-  headers. `main.cpp` still owns higher-level renderable resource assembly.
+  headers.
+- The Filament example's descriptor-to-Filament renderable factory now lives in
+  `examples/filament_gui/renderable_factory.hpp` and `.cpp`, keeping generated
+  mesh buffers, material part assembly, debug-line resource creation, and
+  texture-backed mesh binding out of the main viewer loop.
 - `UNIT_gui_FilamentSceneExtraction` now checks that
   `examples/filament_gui/*.hpp` has no direct Filament header includes, while
   the full north-star metric remains zero direct Filament header includes from

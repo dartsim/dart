@@ -220,9 +220,14 @@ and one headless screenshot example.
 2. The promoted Filament implementation should own renderer resources privately:
    materials, textures, mesh buffers, entity caches, swap chains, windows, and
    optional ImGui draw resources.
-3. Example migration must happen before deletion. Removing legacy examples
+3. The maintained-example include gate is stricter than the current MVP header
+   guard. At full migration, files under `examples/filament_gui/` or its
+   surviving promoted replacement should have zero direct
+   `#include <filament/...>` or `#include "filament/..."` directives; Filament
+   headers should live only in private promoted GUI implementation units.
+4. Example migration must happen before deletion. Removing legacy examples
    first would discard useful coverage for drag-and-drop, support polygons,
    ImGui panels, headless capture, and robotics scenes.
-4. The migration should delete compatibility shims after examples, docs, and
+5. The migration should delete compatibility shims after examples, docs, and
    Python bindings no longer use them. Keeping shims indefinitely would recreate
    the multi-backend abstraction problem under a different name.
