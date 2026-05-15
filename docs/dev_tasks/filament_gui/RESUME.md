@@ -109,6 +109,9 @@ Example-local ImGui font loading lives with the overlay renderer in
 `examples/filament_gui/imgui_overlay.hpp` and `.cpp`.
 Example-local selection label formatting and G1 IK-target translation glue live
 in `examples/filament_gui/selection.hpp` and `.cpp`.
+Example-local Filament renderable state, lit-material setup, shadow flag
+application, and destruction lifecycle helpers live in
+`examples/filament_gui/renderable_resources.hpp` and `.cpp`.
 `UNIT_dynamics_MeshShape` also loads the checked-in
 `data/gltf/pbr_triangle.gltf` and `data/gltf/pbr_multi_material.gltf` fixtures
 through the real Assimp importer and verifies authored glTF PBR texture slots,

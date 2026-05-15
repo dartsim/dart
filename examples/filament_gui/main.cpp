@@ -41,6 +41,7 @@
 #include "native_window.hpp"
 #include "profile.hpp"
 #include "render_environment.hpp"
+#include "renderable_resources.hpp"
 #include "scenes.hpp"
 #include "screenshot.hpp"
 #include "selection.hpp"
@@ -184,12 +185,18 @@ using dart::examples::filament_gui::AppOptions;
 using dart::examples::filament_gui::DartScene;
 using dart::examples::filament_gui::ExampleScene;
 using dart::examples::filament_gui::ImGuiOverlay;
+using dart::examples::filament_gui::MaterialSet;
 using dart::examples::filament_gui::PbrTextureBindings;
 using dart::examples::filament_gui::ProfileAccumulator;
+using dart::examples::filament_gui::Renderable;
 using dart::examples::filament_gui::ScreenshotCapture;
+using dart::examples::filament_gui::SceneRenderable;
 using dart::examples::filament_gui::TextureBinding;
 using dart::examples::filament_gui::TextureCache;
 using dart::examples::filament_gui::TextureColorSpace;
+using dart::examples::filament_gui::addRenderableMaterial;
+using dart::examples::filament_gui::applyRenderableShadowSettings;
+using dart::examples::filament_gui::configureLitMaterialInstance;
 using dart::examples::filament_gui::configureWindowedViewQuality;
 using dart::examples::filament_gui::createDartScene;
 using dart::examples::filament_gui::createCheckerTexture;
@@ -199,6 +206,7 @@ using dart::examples::filament_gui::createNeutralIndirectLight;
 using dart::examples::filament_gui::createNeutralSkybox;
 using dart::examples::filament_gui::createSolidTexture;
 using dart::examples::filament_gui::destroyImGuiOverlay;
+using dart::examples::filament_gui::destroyRenderable;
 using dart::examples::filament_gui::elapsedMs;
 using dart::examples::filament_gui::getOrLoadTextureBinding;
 using dart::examples::filament_gui::handleScroll;
@@ -233,17 +241,17 @@ using dart::examples::filament_gui::sceneName;
 using dart::examples::filament_gui::selectedNudgeFromKeyboard;
 using dart::examples::filament_gui::selectionLabelForRenderable;
 using dart::examples::filament_gui::makeRepeatTextureSampler;
-using dart::examples::filament_gui::setPbrTextureParameters;
+using dart::examples::filament_gui::selectLitMaterial;
 using dart::examples::filament_gui::translateRenderableAndApplyIk;
 using dart::examples::filament_gui::updateCameraController;
 using dart::examples::filament_gui::updateImGuiOverlay;
 using dart::examples::filament_gui::updateImGuiMouseInput;
+using dart::examples::filament_gui::updateRenderableSelection;
 using dart::examples::filament_gui::waitForScreenshot;
 using filament::math::float2;
 using filament::math::float3;
 using filament::math::float4;
 using filament::math::mat4f;
-using utils::Entity;
 using utils::EntityManager;
 
 struct Vertex
@@ -251,40 +259,6 @@ struct Vertex
   float3 position;
   filament::math::short4 tangent;
   filament::math::float2 uv = {0.0f, 0.0f};
-};
-
-struct MaterialSet
-{
-  filament::Material& defaultLit;
-  filament::Material& texturedLit;
-  filament::Material& transparentLit;
-  filament::Material& transparentTexturedLit;
-  filament::Material& debugColor;
-  TextureBinding checkerTexture;
-  TextureBinding fallbackTexture;
-};
-
-struct Renderable
-{
-  Entity entity;
-  filament::VertexBuffer* vertexBuffer = nullptr;
-  filament::IndexBuffer* indexBuffer = nullptr;
-  struct MaterialInstance
-  {
-    filament::MaterialInstance* instance = nullptr;
-    float4 baseColor{0.0f, 0.0f, 0.0f, 1.0f};
-    bool hasBaseColor = false;
-    bool followsDescriptorColor = false;
-  };
-  std::vector<MaterialInstance> materials;
-};
-
-struct SceneRenderable
-{
-  RenderableId id = 0;
-  std::size_t shapeVersion = 0;
-  std::size_t renderResourceVersion = 0;
-  Renderable renderable;
 };
 
 struct DebugVertex
@@ -436,11 +410,6 @@ float3 rgb(const float4& color)
   return {color.x, color.y, color.z};
 }
 
-float4 withRgb(const float4& color, const float3& newRgb)
-{
-  return {newRgb.x, newRgb.y, newRgb.z, color.w};
-}
-
 float luminance(const float3& color)
 {
   return 0.2126f * color.x + 0.7152f * color.y + 0.0722f * color.z;
@@ -465,11 +434,6 @@ float4 ensureReadableDisplayColor(const float4& color)
       color.w};
 }
 
-bool isTransparent(const float4& color)
-{
-  return color.w < 0.999f;
-}
-
 float resolveMeshMaterialAlpha(
     float visualAlpha, float materialAlpha, MeshAlphaMode alphaMode)
 {
@@ -485,14 +449,6 @@ float resolveMeshMaterialAlpha(
   return visualAlpha * materialAlpha;
 }
 
-float3 selectionTint(const float3& color)
-{
-  return {
-      std::min(1.0f, color.x * 0.45f + 0.55f),
-      std::min(1.0f, color.y * 0.45f + 0.48f),
-      std::min(1.0f, color.z * 0.45f + 0.12f)};
-}
-
 mat4f toFilamentTransform(const Eigen::Isometry3d& tf)
 {
   const Eigen::Matrix4d m = tf.matrix();
@@ -503,84 +459,6 @@ mat4f toFilamentTransform(const Eigen::Isometry3d& tf)
     }
   }
   return out;
-}
-
-filament::MaterialInstance* addRenderableMaterial(
-    Renderable& renderable,
-    filament::Material& material,
-    const std::optional<float4>& baseColor = std::nullopt,
-    bool followsDescriptorColor = false)
-{
-  auto* instance = material.createInstance();
-  renderable.materials.push_back(
-      {instance,
-       baseColor.value_or(float4{0.0f, 0.0f, 0.0f, 1.0f}),
-       baseColor.has_value(),
-       followsDescriptorColor});
-  return instance;
-}
-
-void updateRenderableSelection(
-    Renderable& renderable, const float4& descriptorColor, bool selected)
-{
-  for (Renderable::MaterialInstance& material : renderable.materials) {
-    if (material.instance == nullptr || !material.hasBaseColor) {
-      continue;
-    }
-    if (material.followsDescriptorColor) {
-      material.baseColor = descriptorColor;
-    }
-    material.instance->setParameter(
-        "baseColor",
-        selected ? withRgb(material.baseColor, selectionTint(rgb(material.baseColor)))
-                 : material.baseColor);
-  }
-}
-
-void configureLitMaterialInstance(
-    filament::MaterialInstance& material,
-    const float4& color,
-    float metallic,
-    float roughness,
-    const float3& emissiveColor,
-    const PbrTextureBindings& textures = {},
-    const TextureBinding* fallbackTexture = nullptr)
-{
-  material.setParameter("baseColor", color);
-  material.setParameter("metallic", std::clamp(metallic, 0.0f, 1.0f));
-  material.setParameter("roughness", std::clamp(roughness, 0.04f, 1.0f));
-  material.setParameter("reflectance", 0.5f);
-  material.setParameter("emissiveColor", emissiveColor);
-  if (hasTextureBindings(textures)) {
-    if (fallbackTexture == nullptr || fallbackTexture->texture == nullptr) {
-      std::cerr << "Textured Filament material is missing fallback texture\n";
-      std::exit(1);
-    }
-    setPbrTextureParameters(material, *fallbackTexture, textures);
-  }
-}
-
-void applyRenderableShadowSettings(
-    filament::Engine& engine,
-    const Renderable& renderable,
-    const MaterialDescriptor& material)
-{
-  auto& renderables = engine.getRenderableManager();
-  const auto instance = renderables.getInstance(renderable.entity);
-  renderables.setCastShadows(instance, material.castsShadows);
-  renderables.setReceiveShadows(instance, material.receivesShadows);
-  renderables.setScreenSpaceContactShadows(
-      instance, material.castsShadows || material.receivesShadows);
-}
-
-filament::Material& selectLitMaterial(
-    const MaterialSet& materials, bool usesTextures, const float4& color)
-{
-  if (isTransparent(color)) {
-    return usesTextures ? materials.transparentTexturedLit
-                        : materials.transparentLit;
-  }
-  return usesTextures ? materials.texturedLit : materials.defaultLit;
 }
 
 Renderable createBoxRenderable(
@@ -1786,21 +1664,6 @@ void logUnsupportedRenderableDescriptor(const RenderableDescriptor& descriptor)
     std::cerr << ": " << descriptor.geometry.unsupportedReason;
   }
   std::cerr << "\n";
-}
-
-void destroyRenderable(filament::Engine& engine, Renderable& renderable)
-{
-  engine.destroy(renderable.entity);
-  for (Renderable::MaterialInstance& material : renderable.materials) {
-    if (material.instance != nullptr) {
-      engine.destroy(material.instance);
-      material.instance = nullptr;
-    }
-  }
-  renderable.materials.clear();
-  engine.destroy(renderable.vertexBuffer);
-  engine.destroy(renderable.indexBuffer);
-  EntityManager::get().destroy(renderable.entity);
 }
 
 bool containsRenderableId(

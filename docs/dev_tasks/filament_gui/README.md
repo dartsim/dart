@@ -120,6 +120,9 @@
 - The Filament example's selection labels and G1 IK-target translation glue now
   live in `examples/filament_gui/selection.hpp` and `.cpp`; renderer-independent
   selection and translation primitives remain in `dart-gui-experimental`.
+- The Filament example's Filament renderable state, material selection and
+  parameter binding helpers, shadow settings, and destruction lifecycle now live
+  in `examples/filament_gui/renderable_resources.hpp` and `.cpp`.
 - The Filament example's scene option parsing and reusable DART world fixtures
   now live in `examples/filament_gui/scenes.hpp` and `.cpp`; `main.cpp` remains
   focused on renderer resources, synchronization, input, and the built-in panel.
