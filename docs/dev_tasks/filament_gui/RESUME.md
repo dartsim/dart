@@ -97,7 +97,8 @@ descriptor-owned geometry changes, including dynamic soft-mesh vertex changes,
 recreate Filament resources. Supported descriptor kinds that cannot produce
 renderer resources now carry diagnostic reasons that the Filament example logs
 once. Backend-hidden RGBA-to-PPM screenshot storage also now lives in
-`dart-gui-experimental`; Filament renderer readback now lives under
+`dart-gui-experimental`; Filament renderer readback, wait/save finalization,
+and screenshot profile accounting now live under
 `dart/gui/experimental/detail/filament` behind the Filament render context, so
 the screenshot helper header does not expose Filament renderer types.
 Retained Filament renderables also reapply descriptor shadow flags each frame,

@@ -33,6 +33,8 @@
 #ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCREENSHOT_HPP_
 #define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCREENSHOT_HPP_
 
+#include <dart/gui/experimental/profile.hpp>
+
 #include <condition_variable>
 #include <cstdint>
 #include <mutex>
@@ -63,6 +65,13 @@ void requestScreenshot(
 
 bool waitForScreenshot(
     FilamentRenderContext& context, ScreenshotCapture& capture);
+
+bool finalizeScreenshotCapture(
+    FilamentRenderContext& context,
+    ScreenshotCapture& capture,
+    const std::string& path,
+    bool screenshotRequested,
+    dart::gui::experimental::ProfileAccumulator& profile);
 
 } // namespace dart::gui::experimental::filament
 

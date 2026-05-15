@@ -46,6 +46,9 @@
 
 namespace dart::gui::experimental::filament {
 
+using dart::gui::experimental::ProfileAccumulator;
+using dart::gui::experimental::elapsedMs;
+
 void saveScreenshot(const ScreenshotCapture& capture, const std::string& path)
 {
   std::string error;
@@ -108,6 +111,32 @@ bool waitForScreenshot(
   return capture.done || capture.condition.wait_for(lock, 5s, [&capture] {
     return capture.done;
   });
+}
+
+bool finalizeScreenshotCapture(
+    FilamentRenderContext& context,
+    ScreenshotCapture& capture,
+    const std::string& path,
+    bool screenshotRequested,
+    ProfileAccumulator& profile)
+{
+  bool screenshotSucceeded = path.empty();
+  if (!path.empty() && !screenshotRequested) {
+    std::cerr << "No rendered frame was available for screenshot capture\n";
+  }
+  if (screenshotRequested) {
+    const auto screenshotWaitStart = ProfileAccumulator::Clock::now();
+    screenshotSucceeded = waitForScreenshot(context, capture);
+    profile.screenshotWaitMs += elapsedMs(screenshotWaitStart);
+    if (screenshotSucceeded) {
+      const auto screenshotSaveStart = ProfileAccumulator::Clock::now();
+      saveScreenshot(capture, path);
+      profile.screenshotSaveMs += elapsedMs(screenshotSaveStart);
+    } else {
+      std::cerr << "Timed out waiting for Filament screenshot readback\n";
+    }
+  }
+  return screenshotSucceeded;
 }
 
 } // namespace dart::gui::experimental::filament

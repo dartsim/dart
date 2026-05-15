@@ -160,6 +160,7 @@ using dart::gui::experimental::filament::destroyFilamentRenderContext;
 using dart::gui::experimental::filament::destroyConfiguredImGuiOverlay;
 using dart::gui::experimental::filament::destroySceneLights;
 using dart::gui::experimental::filament::detachSceneEnvironment;
+using dart::gui::experimental::filament::finalizeScreenshotCapture;
 using dart::gui::experimental::filament::getNativeWindow;
 using dart::gui::experimental::filament::handleScroll;
 using dart::gui::experimental::filament::isInsideStatusPanel;
@@ -168,7 +169,6 @@ using dart::gui::experimental::filament::renderBuiltInStatusPanel;
 using dart::gui::experimental::filament::renderApplicationFrame;
 using dart::gui::experimental::filament::refreshDebugLineOverlay;
 using dart::gui::experimental::filament::refreshSelectionDebugLineOverlay;
-using dart::gui::experimental::filament::saveScreenshot;
 using dart::gui::experimental::filament::logUnsupportedRenderableDescriptorOnce;
 using dart::gui::experimental::filament::removeRenderableFromScene;
 using dart::gui::experimental::filament::setRenderableTransform;
@@ -178,7 +178,6 @@ using dart::gui::experimental::filament::updateImGuiOverlay;
 using dart::gui::experimental::filament::updateImGuiMouseInput;
 using dart::gui::experimental::filament::updateOrbitingKeyLight;
 using dart::gui::experimental::filament::updateSceneRenderableFromDescriptor;
-using dart::gui::experimental::filament::waitForScreenshot;
 using dart::simulation::World;
 using dart::gui::experimental::filament::AppOptions;
 using dart::gui::experimental::filament::DartScene;
@@ -343,7 +342,6 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
   ViewerLifecycleState lifecycle;
   ApplicationInputState inputState;
   SelectionController selectionController;
-  bool screenshotSucceeded = options.screenshotPath.empty();
   ScreenshotCapture screenshotCapture;
   ProfileAccumulator profile;
   SimulationStepper simulationStepper;
@@ -525,21 +523,12 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
     }
   }
 
-  if (!options.screenshotPath.empty() && !lifecycle.screenshotRequested) {
-    std::cerr << "No rendered frame was available for screenshot capture\n";
-  }
-  if (lifecycle.screenshotRequested) {
-    const auto screenshotWaitStart = ProfileAccumulator::Clock::now();
-    screenshotSucceeded = waitForScreenshot(renderContext, screenshotCapture);
-    profile.screenshotWaitMs += elapsedMs(screenshotWaitStart);
-    if (screenshotSucceeded) {
-      const auto screenshotSaveStart = ProfileAccumulator::Clock::now();
-      saveScreenshot(screenshotCapture, options.screenshotPath);
-      profile.screenshotSaveMs += elapsedMs(screenshotSaveStart);
-    } else {
-      std::cerr << "Timed out waiting for Filament screenshot readback\n";
-    }
-  }
+  const bool screenshotSucceeded = finalizeScreenshotCapture(
+      renderContext,
+      screenshotCapture,
+      options.screenshotPath,
+      lifecycle.screenshotRequested,
+      profile);
   if (options.maxFrames >= 0) {
     std::cout << "Final contacts: "
               << dartScene.world->getLastCollisionResult().getNumContacts()
