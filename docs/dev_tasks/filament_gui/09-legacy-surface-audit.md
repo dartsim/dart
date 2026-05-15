@@ -118,6 +118,11 @@ Surfaces: `dart/gui/grid_visual.hpp`, `dart/gui/polyhedron_visual.hpp`,
 Current public shape: debug/analysis visuals inherit or own OSG geometry and are
 attached as viewer scene nodes.
 
+Current progress: the `polyhedron_visual` in-tree runner now routes to a
+Filament fixture that represents the convex hull and wireframe as
+renderer-hidden DART shape descriptors, while the legacy standalone OSG source
+remains for comparison.
+
 North-star action: replace with debug draw providers/descriptors for grids,
 frames, support polygons, centroids, COM markers, collision bounds, contacts,
 arrows, labels, and user-provided overlays.

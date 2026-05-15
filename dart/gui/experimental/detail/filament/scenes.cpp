@@ -115,6 +115,8 @@ const char* sceneName(ExampleScene scene)
       return "mvp";
     case ExampleScene::DragAndDrop:
       return "drag-and-drop";
+    case ExampleScene::Polyhedron:
+      return "polyhedron";
     case ExampleScene::G1:
       return "g1";
   }
@@ -129,6 +131,10 @@ bool parseSceneName(std::string_view name, ExampleScene& scene)
   }
   if (name == "drag-and-drop") {
     scene = ExampleScene::DragAndDrop;
+    return true;
+  }
+  if (name == "polyhedron") {
+    scene = ExampleScene::Polyhedron;
     return true;
   }
   if (name == "g1") {
@@ -147,6 +153,12 @@ OrbitCamera initialCameraForScene(ExampleScene scene)
       camera.yaw = -0.72;
       camera.pitch = 0.58;
       camera.distance = 9.5;
+      break;
+    case ExampleScene::Polyhedron:
+      camera.target = Eigen::Vector3d(0.0, 0.0, 0.45);
+      camera.yaw = -0.78;
+      camera.pitch = 0.42;
+      camera.distance = 3.0;
       break;
     case ExampleScene::G1:
       camera.target = Eigen::Vector3d(0.0, 0.0, 0.85);
@@ -179,6 +191,75 @@ std::shared_ptr<dart::math::TriMesh<double>> createTetraMesh()
   mesh->addTriangle(2, 0, 3);
   mesh->computeVertexNormals();
   return mesh;
+}
+
+std::array<Eigen::Vector3d, 8> polyhedronFixtureVertices()
+{
+  return {Eigen::Vector3d(-0.5, -0.5, 0.0),
+          Eigen::Vector3d(0.5, -0.5, 0.2),
+          Eigen::Vector3d(0.6, 0.5, 0.1),
+          Eigen::Vector3d(-0.4, 0.6, 0.15),
+          Eigen::Vector3d(-0.2, -0.2, 0.9),
+          Eigen::Vector3d(0.35, -0.3, 0.8),
+          Eigen::Vector3d(0.4, 0.35, 0.75),
+          Eigen::Vector3d(-0.35, 0.4, 0.7)};
+}
+
+std::shared_ptr<dart::math::TriMesh<double>> createPolyhedronMesh()
+{
+  auto mesh = std::make_shared<dart::math::TriMesh<double>>();
+  const auto vertices = polyhedronFixtureVertices();
+  mesh->reserveVertices(vertices.size());
+  mesh->reserveTriangles(12);
+  for (const auto& vertex : vertices) {
+    mesh->addVertex(vertex);
+  }
+
+  mesh->addTriangle(0, 2, 1);
+  mesh->addTriangle(0, 3, 2);
+  mesh->addTriangle(4, 5, 6);
+  mesh->addTriangle(4, 6, 7);
+  mesh->addTriangle(0, 1, 5);
+  mesh->addTriangle(0, 5, 4);
+  mesh->addTriangle(1, 2, 6);
+  mesh->addTriangle(1, 6, 5);
+  mesh->addTriangle(2, 3, 7);
+  mesh->addTriangle(2, 7, 6);
+  mesh->addTriangle(3, 0, 4);
+  mesh->addTriangle(3, 4, 7);
+  mesh->computeVertexNormals();
+  return mesh;
+}
+
+std::shared_ptr<dart::dynamics::LineSegmentShape> createPolyhedronWireframe()
+{
+  auto shape = std::make_shared<dart::dynamics::LineSegmentShape>(2.0f);
+  const auto vertices = polyhedronFixtureVertices();
+  for (const auto& vertex : vertices) {
+    shape->addVertex(vertex);
+  }
+  while (!shape->getConnections().empty()) {
+    shape->removeConnection(0);
+  }
+
+  const std::array<std::pair<std::size_t, std::size_t>, 12> edges{{
+      {0, 1},
+      {1, 2},
+      {2, 3},
+      {3, 0},
+      {4, 5},
+      {5, 6},
+      {6, 7},
+      {7, 4},
+      {0, 4},
+      {1, 5},
+      {2, 6},
+      {3, 7},
+  }};
+  for (const auto& edge : edges) {
+    shape->addConnection(edge.first, edge.second);
+  }
+  return shape;
 }
 
 std::shared_ptr<MeshShape> loadExampleMeshShape(
@@ -695,7 +776,8 @@ AppOptions parseOptions(int argc, char* argv[])
       const std::string_view sceneArg(argv[++i]);
       if (!parseSceneName(sceneArg, options.scene)) {
         std::cerr << "Unknown scene '" << sceneArg
-                  << "'. Expected 'mvp', 'drag-and-drop', or 'g1'.\n";
+                  << "'. Expected 'mvp', 'drag-and-drop', 'polyhedron', or "
+                     "'g1'.\n";
         std::exit(2);
       }
     } else if (
@@ -721,7 +803,7 @@ AppOptions parseOptions(int argc, char* argv[])
                    " [--orbit-light-period SECONDS]"
                    " [--gui-scale N]"
                    " [--profile]"
-                   " [--scene mvp|drag-and-drop|g1]"
+                   " [--scene mvp|drag-and-drop|polyhedron|g1]"
                    " [--g1-package-uri URI] [--g1-robot-uri URI]"
                    " [--g1-package-name NAME]\n";
       std::exit(0);
@@ -760,6 +842,24 @@ AppOptions parseOptions(int argc, char* argv[])
     options.showUi = false;
   }
   return options;
+}
+
+dart::dynamics::SkeletonPtr createStaticVisualSkeleton(
+    const std::string& name,
+    const ShapePtr& shape,
+    const Eigen::Vector3d& position,
+    const Eigen::Vector3d& color,
+    double alpha = 1.0)
+{
+  auto skeleton = Skeleton::create(name);
+  auto* body = skeleton->createJointAndBodyNodePair<WeldJoint>().second;
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = position;
+  auto* shapeNode = body->createShapeNodeWith<VisualAspect>(shape);
+  shapeNode->setRelativeTransform(transform);
+  shapeNode->getVisualAspect()->setRGBA(
+      Eigen::Vector4d(color.x(), color.y(), color.z(), alpha));
+  return skeleton;
 }
 
 DartScene createMvpDartScene()
@@ -820,16 +920,7 @@ DartScene createMvpDartScene()
                                const Eigen::Vector3d& position,
                                const Eigen::Vector3d& color,
                                double alpha = 1.0) {
-    auto skeleton = Skeleton::create(name);
-    auto [joint, body] = skeleton->createJointAndBodyNodePair<WeldJoint>();
-    (void)joint;
-    Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-    tf.translation() = position;
-    auto* shapeNode = body->createShapeNodeWith<VisualAspect>(shape);
-    shapeNode->setRelativeTransform(tf);
-    shapeNode->getVisualAspect()->setRGBA(
-        Eigen::Vector4d(color.x(), color.y(), color.z(), alpha));
-    return skeleton;
+    return createStaticVisualSkeleton(name, shape, position, color, alpha);
   };
 
   auto createLineSegmentShape = [] {
@@ -1114,6 +1205,25 @@ DartScene createDragAndDropScene()
   return scene;
 }
 
+DartScene createPolyhedronScene()
+{
+  DartScene scene;
+  scene.world = World::create("filament_gui_polyhedron");
+  scene.world->setGravity(Eigen::Vector3d::Zero());
+  scene.world->addSkeleton(createStaticVisualSkeleton(
+      kPolyhedronFixtureSkeletonName,
+      std::make_shared<ConvexMeshShape>(createPolyhedronMesh()),
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d(0.1, 0.8, 0.6),
+      0.5));
+  scene.world->addSkeleton(createStaticVisualSkeleton(
+      kPolyhedronWireframeFixtureSkeletonName,
+      createPolyhedronWireframe(),
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d(0.05, 0.05, 0.05)));
+  return scene;
+}
+
 DartScene createG1DartScene(const AppOptions& options)
 {
   DartScene scene;
@@ -1138,6 +1248,8 @@ DartScene createDartScene(const AppOptions& options)
       return createMvpDartScene();
     case ExampleScene::DragAndDrop:
       return createDragAndDropScene();
+    case ExampleScene::Polyhedron:
+      return createPolyhedronScene();
     case ExampleScene::G1:
       return createG1DartScene(options);
   }

@@ -99,9 +99,9 @@ pixi run ex <example-target>
 
 For example, `pixi run ex hello_world` builds and runs `hello_world`. Examples
 with extra CMake requirements or redirected experimental GUI runners, such as
-`raylib`, `filament_gui`, `drag_and_drop`, and `g1_puppet`, declare those
-requirements in `scripts/run_cpp_example.py` so the same command shape can
-remain stable as more examples are added.
+`raylib`, `filament_gui`, `drag_and_drop`, `polyhedron_visual`, and
+`g1_puppet`, declare those requirements in `scripts/run_cpp_example.py` so the
+same command shape can remain stable as more examples are added.
 
 ## Build Examples as One Project
 

@@ -37,6 +37,12 @@ EXAMPLE_SPECS = {
         ("filament",),
         ("--scene", "drag-and-drop"),
     ),
+    "polyhedron_visual": ExampleSpec(
+        "dart_filament_gui",
+        "filament_gui",
+        ("filament",),
+        ("--scene", "polyhedron"),
+    ),
     "g1_puppet": ExampleSpec(
         "dart_filament_gui",
         "filament_gui",
@@ -311,7 +317,7 @@ def _split_filament_scenes(run_args: list[str]) -> tuple[list[str], list[str]]:
         scene = args[index + 1]
         del args[index : index + 2]
         if scene == "all":
-            return ["mvp", "drag-and-drop"], args
+            return ["mvp", "drag-and-drop", "polyhedron"], args
         return [scene], args
     return ["mvp"], args
 

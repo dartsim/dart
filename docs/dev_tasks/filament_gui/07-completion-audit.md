@@ -212,6 +212,11 @@ in-tree `pixi run ex drag_and_drop` runner, so the recommended drag-and-drop
 workflow exercises the Filament renderer path while the standalone source in
 `examples/drag_and_drop` remains as legacy OSG comparison material until the
 promoted GUI API replaces it.
+The Filament example's `--scene polyhedron` fixture now backs the in-tree
+`pixi run ex polyhedron_visual` runner, so the recommended convex-hull visual
+workflow exercises descriptor-owned convex-mesh and line-segment renderables in
+the Filament renderer path while the standalone source in
+`examples/polyhedron_visual` remains as legacy OSG comparison material.
 The Filament example now also has a selectable `--scene g1` fixture that loads
 the Unitree G1 URDF through DART resource retrievers and exposes colored IK
 targets for both hands and feet. `pixi run ex g1_puppet` routes to this

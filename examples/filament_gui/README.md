@@ -115,23 +115,29 @@ To run the interaction fixture:
 pixi run ex filament_gui --scene drag-and-drop
 ```
 
+To run the convex polyhedron fixture:
+
+```bash
+pixi run ex filament_gui --scene polyhedron
+```
+
 To run the Unitree G1 fixture:
 
 ```bash
 pixi run ex filament_gui --scene g1 --gui-scale 2
 ```
 
-To capture both built-in fixtures for PR screenshots:
+To capture the local built-in fixtures for PR screenshots:
 
 ```bash
 pixi run ex filament_gui --headless --scene all
 ```
 
 The capture paths are `build/<pixi-env>/filament_gui_mvp.ppm` and
-`build/<pixi-env>/filament_gui_drag_and_drop.ppm` unless
-`DART_FILAMENT_GUI_SCREENSHOT` is set.
-The G1 fixture intentionally stays out of `--scene all` because it fetches a
-remote robot package by default.
+`build/<pixi-env>/filament_gui_drag_and_drop.ppm`, and
+`build/<pixi-env>/filament_gui_polyhedron.ppm` unless
+`DART_FILAMENT_GUI_SCREENSHOT` is set. The G1 fixture intentionally stays out
+of `--scene all` because it fetches a remote robot package by default.
 
 ## Build Instructions
 

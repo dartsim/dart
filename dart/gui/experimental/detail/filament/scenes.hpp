@@ -67,6 +67,7 @@ enum class ExampleScene
 {
   Mvp,
   DragAndDrop,
+  Polyhedron,
   G1,
 };
 
@@ -99,6 +100,10 @@ inline constexpr const char* kSoftMeshFixtureSkeletonName = "visual_soft_mesh";
 inline constexpr const char* kVoxelGridFixtureSkeletonName = "visual_voxel_grid";
 inline constexpr const char* kPbrEnvironmentFixtureSkeletonName
     = "visual_pbr_environment";
+inline constexpr const char* kPolyhedronFixtureSkeletonName
+    = "visual_polyhedron_surface";
+inline constexpr const char* kPolyhedronWireframeFixtureSkeletonName
+    = "visual_polyhedron_wireframe";
 inline constexpr const char* kG1FixtureSkeletonName = "visual_g1_robot";
 inline constexpr std::size_t kMinPbrEnvironmentRenderableCount = 4;
 inline constexpr std::size_t kMinDragAndDropFrameRenderableCount = 5;

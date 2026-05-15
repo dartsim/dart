@@ -230,6 +230,11 @@
   path. The in-tree `pixi run ex drag_and_drop` runner now routes to that
   Filament scene while the legacy standalone OSG source remains available for
   comparison until the promoted GUI API replaces the old viewer path.
+- The Filament example includes `--scene polyhedron`, a convex-hull and
+  wireframe fixture that carries the legacy `polyhedron_visual` example through
+  descriptor-owned convex-mesh and line-segment renderables. The in-tree
+  `pixi run ex polyhedron_visual` runner now routes to that Filament scene
+  while the legacy standalone OSG source remains available for comparison.
 - The Filament example now also includes `--scene g1`, which loads the remote
   Unitree G1 URDF through DART's normal resource-retriever path and exposes
   colored IK targets for both hands and feet. The in-tree

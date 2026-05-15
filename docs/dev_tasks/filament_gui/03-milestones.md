@@ -152,6 +152,11 @@
   `pixi run ex drag_and_drop` routes to this Filament scene by default so the
   in-tree drag-and-drop workflow no longer depends on the legacy OSG viewer
   path.
+- The Filament example includes a `--scene polyhedron` fixture that renders the
+  legacy polyhedron visual example's convex hull and wireframe through
+  descriptor-owned convex-mesh and line-segment renderables.
+  `pixi run ex polyhedron_visual` routes to this Filament scene by default
+  while the standalone source remains as legacy OSG comparison material.
 - The Filament example includes a selectable `--scene g1` fixture that loads
   the Unitree G1 URDF through DART resource retrievers and exposes colored IK
   targets for both hands and feet. `pixi run ex g1_puppet` routes to this

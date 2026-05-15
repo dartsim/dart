@@ -165,6 +165,14 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Mesh) {
     ++counts.pbrEnvironmentMeshes;
   }
+  if (descriptor.skeletonName == kPolyhedronFixtureSkeletonName
+      && descriptor.geometry.kind == ShapeKind::ConvexMesh) {
+    ++counts.polyhedronSurfaces;
+  }
+  if (descriptor.skeletonName == kPolyhedronWireframeFixtureSkeletonName
+      && descriptor.geometry.kind == ShapeKind::LineSegments) {
+    ++counts.polyhedronWireframes;
+  }
   if (descriptor.skeletonName == kG1FixtureSkeletonName
       && descriptor.geometry.kind == ShapeKind::Mesh) {
     ++counts.g1Meshes;
@@ -316,6 +324,23 @@ bool validateSceneDescriptorContent(
         output);
   }
 
+  if (scene == ExampleScene::Polyhedron) {
+    if (!requireEqual(
+            counts.polyhedronSurfaces,
+            1,
+            "polyhedron fixture",
+            "visible convex-mesh renderable descriptor",
+            output)) {
+      return false;
+    }
+    return requireEqual(
+        counts.polyhedronWireframes,
+        1,
+        "polyhedron wireframe fixture",
+        "visible line renderable descriptor",
+        output);
+  }
+
   if (scene == ExampleScene::DragAndDrop) {
     return requireAtLeast(
         counts.dragAndDropFrames,
@@ -415,6 +440,21 @@ bool validateCreatedSceneContent(
   if (scene == ExampleScene::G1) {
     return requireCreatedAtLeast(
         created.g1Meshes, expected.g1Meshes, "G1 robot mesh renderables", output);
+  }
+
+  if (scene == ExampleScene::Polyhedron) {
+    if (!requireCreatedEqual(
+            created.polyhedronSurfaces,
+            expected.polyhedronSurfaces,
+            "polyhedron surface renderables",
+            output)) {
+      return false;
+    }
+    return requireCreatedEqual(
+        created.polyhedronWireframes,
+        expected.polyhedronWireframes,
+        "polyhedron wireframe renderables",
+        output);
   }
 
   if (scene == ExampleScene::DragAndDrop) {
