@@ -111,7 +111,9 @@ avoids a direct Filament sampler include.
 `UNIT_gui_FilamentSceneExtraction` also checks that any remaining
 `examples/filament_gui/*.hpp` files and the example entry point have no direct
 Filament header includes; this is only an incremental guard, not completion of
-the full example include metric.
+the full example include metric. The same unit now recursively guards that the
+example tree contains no regular files except `CMakeLists.txt`, `README.md`,
+and `main.cpp`, and no C++ source/header files except `main.cpp`.
 The backend-token scan now uses a reusable `scanHeadersForBackendTokens`
 helper with an explicit future hook for promoted `dart/gui/*.hpp` headers once
 the first-class Filament API replaces the legacy OSG-shaped public GUI headers.
@@ -271,8 +273,8 @@ for Linux x86_64. It configures with `DART_BUILD_GUI=OFF` and
 hello-world, boxes, hardcoded-design, rigid-chain, rigid-loop, mixed-chain,
 coupler-constraint, add-delete-skels, vehicle, hybrid-dynamics,
 joint-constraints, free-joint-cases, human-joint-limits, mimic-pendulums,
-atlas-puppet,
-operational-space-control, drag-and-drop,
+atlas-puppet, lcp-physics, hubo-puppet, atlas-simbicon,
+operational-space-control, wam-ikfast, fetch, tinkertoy, drag-and-drop,
 simple-frames, soft-bodies, point-cloud, capsule-ground-contact,
 simulation-event-handler, polyhedron, and heightmap headless CTest smokes.
 When `DISPLAY` is absent, the
@@ -354,6 +356,11 @@ for numeric checks and reference-model controls. It routes
 enables DART joint-limit enforcement, and renders mesh, multi-sphere, box, and
 ground descriptors while keeping the standalone source as legacy comparison
 material for the custom TinyDNN-backed arm and leg constraints. It routes
+`pixi run ex lcp_physics` through the Filament example's selectable
+`--scene lcp-physics` fixture, which renders the legacy contact benchmark's
+mass-ratio boxes, stack boxes, dominoes, falling spheres, and ground
+descriptors while keeping the standalone source as legacy comparison material
+for solver controls, plots, scenario switching, and frame recording. It routes
 `pixi run ex mimic_pendulums` through the Filament example's selectable
 `--scene mimic-pendulums` fixture, which loads the legacy SDF pendulum rigs and
 renders cylinder, box, and ground descriptors while keeping the standalone
@@ -362,14 +369,36 @@ routes `pixi run ex atlas_puppet` through the Filament example's selectable
 `--scene atlas-puppet` fixture, which loads Atlas and renders the robot,
 ground, and selectable hand/foot IK target descriptors while keeping the
 standalone source as legacy OSG comparison material for the teleoperation
-widget and support-polygon visual. It routes
+widget and support-polygon visual. It routes `pixi run ex hubo_puppet` through
+the Filament example's selectable `--scene hubo-puppet` fixture, which loads
+Hubo and renders the robot, ground, and selectable hand, foot, and wrist-peg IK
+target descriptors while keeping the standalone source as legacy OSG
+comparison material for the teleoperation widget, support-polygon visual, and
+keyboard controls. It routes `pixi run ex atlas_simbicon` through the Filament
+example's selectable `--scene atlas-simbicon` fixture, which loads Atlas and
+renders the robot and ground descriptors while keeping the standalone source as
+legacy OSG/ImGui comparison material for the Simbicon gait controller,
+perturbation shortcuts, and panel controls. It routes
 `pixi run ex operational_space_control` through the Filament example's
 selectable `--scene operational-space-control` fixture, which loads the WAM
 arm, renders the ground and selectable red target descriptor, and runs the
 task-space controller through a private scene pre-step hook while keeping the
 standalone source as legacy OSG comparison material for drag-and-drop axis
-constraints. It routes `pixi run ex drag_and_drop` through the Filament
-example's selectable
+constraints. It routes `pixi run ex wam_ikfast` through the Filament example's
+selectable `--scene wam-ikfast` fixture, which loads the WAM arm and renders
+the robot, ground, and end-effector target descriptors while keeping the
+standalone source as legacy OSG comparison material for IKFast solver,
+drag-mode, keyboard-shortcut, and posture-reset comparison. It routes
+`pixi run ex fetch` through the Filament example's selectable `--scene fetch`
+fixture, which loads the legacy MJCF pick-and-place world and renders the
+Fetch robot, object, and mocap target descriptors while keeping the standalone
+source as legacy OSG/ImGui comparison material for panel, drag-control, and
+mocap target update comparison. It routes `pixi run ex tinkertoy` through the
+Filament example's selectable `--scene tinkertoy` fixture, which renders the
+builder's initial block assemblies, target marker, force line, and reference
+axes while keeping the standalone source as legacy OSG/ImGui comparison
+material for panel, mouse-picking, and block-add/delete comparison. It routes
+`pixi run ex drag_and_drop` through the Filament example's selectable
 `--scene drag-and-drop` fixture by default while keeping the standalone source
 as legacy OSG comparison material. It also routes
 `pixi run ex empty` through the same Filament `--scene drag-and-drop` fixture
@@ -404,7 +433,7 @@ comparison material for custom-widget extension points. It also routes
 broad primitive, mesh, point-cloud, heightmap, soft-mesh, and robot visual
 coverage while keeping the standalone source as legacy OSG comparison material
 for shape spawning, contact toggles, and collision-detector controls. It also
-`pixi run ex polyhedron_visual` through the Filament example's
+routes `pixi run ex polyhedron_visual` through the Filament example's
 `--scene polyhedron` fixture, which renders the legacy convex hull and wireframe
 through descriptor-owned convex-mesh and line-segment renderables. It also
 routes `pixi run ex heightmap` through the Filament example's
@@ -438,8 +467,9 @@ DART world fixtures now live in
 Scene content requirement counting and
 MVP/G1/hello-world/boxes/hardcoded-design/rigid-chain/rigid-loop/mixed-chain/
 coupler-constraint/add-delete-skels/vehicle/hybrid-dynamics/joint-constraints/
-free-joint-cases/human-joint-limits/mimic-pendulums/atlas-puppet/
-operational-space-control/drag/
+free-joint-cases/human-joint-limits/lcp-physics/mimic-pendulums/atlas-puppet/
+hubo-puppet/atlas-simbicon/operational-space-control/wam-ikfast/fetch/
+tinkertoy/drag/
 simple-frames/soft-bodies/
 point-cloud/capsule-ground-contact/simulation-event-handler/polyhedron/
 heightmap validation gates, including created-renderable content counting, now live in
@@ -477,14 +507,11 @@ and normals before falling back to local bounds for other shape descriptors.
 implementation, verification evidence, and missing promotion gates. Use that
 audit before deciding whether the dev task is complete.
 
-The latest follow-up added render-resource revision tracking to the
-backend-hidden descriptor/update-plan path. The Filament example now recreates
-renderer resources when descriptor-owned dynamic soft-mesh geometry changes,
-without exposing Filament handles or relying only on `Shape::getVersion()`.
-It also added descriptor diagnostics for supported geometry that has no
-renderable payload, such as empty point clouds or meshes without triangle data.
-The next follow-up centralized Filament shadow flag application and reapplies
-those flags to retained renderables during scene synchronization.
+Recent follow-ups added render-resource revision tracking, descriptor
+diagnostics for supported geometry without renderable payload, retained
+renderable shadow-flag reapplication, the Fetch/Tinkertoy/Hubo routed fixtures,
+and the recursive example-tree boundary guard for the minimal
+`examples/filament_gui` shape.
 
 ## Current Branch
 
