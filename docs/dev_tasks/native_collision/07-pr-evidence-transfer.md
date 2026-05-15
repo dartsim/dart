@@ -43,6 +43,15 @@ must be deleted in the same PR that completes the native-collision migration.
   `collision-ode` are native-backed interface facades.
 - Explicit `collision-reference-*` surfaces retain opt-in access for tests and
   benchmarks.
+- Public DART migration docs now state the DART 7 policy: C++ legacy collision
+  names are native-backed migration facades, dartpy keeps the clean
+  `DartCollisionDetector` API without legacy aliases, and FCL/Bullet/ODE
+  comparison engines are opt-in reference components rather than normal runtime
+  build options.
+- `05-downstream-migration.md` defines the downstream/deprecation evidence
+  acceptance criteria that must be carried on the final PR/downstream CI
+  surface before retained C++ and package facades are removed or
+  hard-deprecated further.
 - Runtime isolation is guarded by `check-collision-runtime-isolation`, which
   rejects non-reference old-engine includes and now also enforces pure
   top-level legacy facade headers.
@@ -114,6 +123,12 @@ Local validation currently recorded in the dev-task evidence:
   - Checked subsets passed for narrow phase, distance, raycast, mixed
     primitives, mesh-heavy, and raycast-batch; the public DART adapter
     benchmark also completed and wrote JSON.
+- Latest docs-policy validation on pushed head `d489292bdf1`:
+  - `pixi run lint` passed after adding the public migration guide language and
+    downstream deprecation evidence acceptance criteria.
+  - Lint configured the default build with reference tests and reference
+    benchmarks `OFF`, then reran `check-collision-runtime-isolation` and
+    `audit-collision-compat-facades`.
 - Later pushed audit/docs/policy heads have no attached GitHub Actions runs
   unless the maintainer chooses a PR or manual workflow surface, because
   `feature/new_coll` pushes do not match the workflow `push` filters.
@@ -151,6 +166,8 @@ Compatibility notes:
   - `06cd27d0163` (`Rename collision reference build options`)
   - `376fd5e686d` (`Remove per-engine collision reference build options`)
   - `d0e23f7b2f1` (`Clarify native collision audit branch state`)
+  - `d790a459850` (`Document collision migration policy`)
+  - `d489292bdf1` (`Define collision deprecation evidence criteria`)
 
 ## Checklist Notes
 

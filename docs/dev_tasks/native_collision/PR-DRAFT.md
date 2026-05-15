@@ -20,6 +20,9 @@ Make native DART collision the default runtime stack
 - Removes per-engine FCL/Bullet/ODE collision build switches from the current
   build surface; explicit reference tests and benchmarks are the only public
   opt-in gates for old-engine comparison components.
+- Documents the DART 7 migration policy in public docs and defines the
+  downstream/deprecation evidence criteria that must be attached before retained
+  C++ and package facades are removed or hard-deprecated further.
 - Adds runtime-isolation, compatibility-facade, wheel/package, downstream, and
   benchmark evidence gates.
 
@@ -49,6 +52,11 @@ Make native DART collision the default runtime stack
   on pushed validation baseline `376fd5e686d`; gz/plugin package-smoke binaries link
   `libdart-collision-native.so` without old collision/reference runtime
   dependencies.
+- `pixi run lint` passed on pushed docs-policy head `d489292bdf1` after adding
+  the public migration guide language and downstream deprecation evidence
+  acceptance criteria. That lint run configured reference tests and benchmarks
+  `OFF`, reran `check-collision-runtime-isolation`, and reran
+  `audit-collision-compat-facades`.
 - `pixi run lint`
 - `pixi run check-lint`
 - `pixi run build`
@@ -62,10 +70,10 @@ manual PR is opened.
 
 ## Evidence Transfer
 
-| Area                        | Evidence source                                                     |
-| --------------------------- | ------------------------------------------------------------------- |
-| Native runtime default      | `docs/dev_tasks/native_collision/README.md`, `03-evidence-gates.md` |
-| Downstream migration policy | `05-downstream-migration.md`                                        |
-| Completion/open gates       | `06-completion-audit.md`                                            |
-| PR body staging             | `07-pr-evidence-transfer.md`                                        |
-| Architecture contract       | `01-design.md`, `docs/onboarding/architecture.md`                   |
+| Area                        | Evidence source                                                                      |
+| --------------------------- | ------------------------------------------------------------------------------------ |
+| Native runtime default      | `docs/dev_tasks/native_collision/README.md`, `03-evidence-gates.md`                  |
+| Downstream migration policy | `05-downstream-migration.md`, `docs/readthedocs/dart/user_guide/migration_guide.rst` |
+| Completion/open gates       | `06-completion-audit.md`                                                             |
+| PR body staging             | `07-pr-evidence-transfer.md`                                                         |
+| Architecture contract       | `01-design.md`, `docs/onboarding/architecture.md`                                    |
