@@ -530,13 +530,13 @@ workflow dispatch, or final dev-task deletion.
   against each box surface, with a named tolerance and pair-order coverage
   for the rotated small-box-on-ground regression. `BoxBox.Determinism` and
   the default-world rest tests pass on the updated contact path.
-- Convexity-backed behavior: the public native adapter keeps
-  `ConvexMeshShape` with missing mesh data on the compatibility fallback
-  path, while valid convex mesh data reaches native convex geometry. Focused
-  detector tests cover both paths.
-- Mesh collision: public `DartCollisionDetector` sphere-mesh collision now
-  has both object orders covered, and the existing convex and mesh native
-  suites pass with the focused detector checks.
+- Convexity-backed behavior: valid convex mesh data reaches native convex
+  geometry. A later Q5 policy update supersedes Round 3's temporary empty-mesh
+  fallback and makes invalid convex/soft mesh data non-collidable with
+  `DART_WARN_ONCE`.
+- Mesh collision: public `DartCollisionDetector` sphere-mesh collision has
+  focused contact coverage, and the existing convex and mesh native suites pass
+  with the focused detector checks.
 - Warning cleanup: `voxel_grid_shape.hpp` suppresses the third-party OctoMap
   `<ciso646>` warning around the public include without changing DART warning
   policy.
@@ -643,7 +643,7 @@ without surfacing the question. Codex MUST:
 6. **Surface as Q5 below** so the user can ratify the convex-mesh
    public-behavior change before it lands.
 
-### Open Question Q5 for User — Empty ConvexMeshShape Policy
+### Open Question Q5 for User — ANSWERED
 
 **Q5 (empty-convex-mesh fallback policy):** When `ConvexMeshShape` has
 no/empty mesh data, the FCL adapter substitutes a 0.1-radius sphere
@@ -670,3 +670,89 @@ native-collision-default rollout. If you pick A, also commit to the
 SoftMeshShape extension (R4-3).
 
 Do NOT commit the convex-mesh slice before Q5 is answered.
+
+**Q5 ANSWER (user, 2026-05-15):** Prefer the cleaner long-term approach
+over backward-compatibility-preserving conservative steps. Concretely:
+adopt a **modified Option B** — revert ConvexMeshShape to `nullptr` on
+native, BUT make that nullptr the consistent policy across all shape
+types, surface it to users via `DART_WARN_ONCE`, and treat FCL's silent
+sphere-substitution as technical debt slated for removal in DART 8.
+
+Codex MUST do all of the following in the standalone "convex-mesh
+slice" commit (NOT bundled with the box-box fix):
+
+1. **Revert Round 3's `adaptShape()` change** in
+   `dart/dynamics/detail/dart_backend_bridge.cpp:371-378` — restore the
+   `nullptr` return for empty/missing `ConvexMeshShape`, but ADD a
+   `DART_WARN_ONCE` so users see the problem.
+2. **Unify policy across shape adapters.** The `SoftMeshShape` branch
+   at `dart_backend_bridge.cpp:349` already returns `nullptr` silently —
+   add the same `DART_WARN_ONCE` to it. Same condition → same behavior
+   AND same observable signal. No silent divergence between shape
+   types.
+3. **Introduce a clean invariant predicate.** Add
+   `ConvexMeshShape::hasValidMesh() const` and
+   `SoftMeshShape::hasValidMesh() const` returning false when mesh
+   pointer is null OR has no vertices/triangles. `adaptShape()` calls
+   that predicate so the "what counts as empty" logic is owned by the
+   shape class, not the adapter. This is the long-term invariant: the
+   shape itself answers "am I collidable."
+4. **Document FCL's 0.1-sphere fallback as legacy.** Edit
+   `dart/collision/fcl/reference/fcl_collision_detector.cpp:1187-1218`
+   with a `// TODO(DART 8): align with native adapter — remove silent
+sphere substitution; return nullptr and emit DART_WARN_ONCE.`
+   Also note this divergence in `05-downstream-migration.md` so
+   downstream users can see the planned removal.
+5. **Fix the new tests accordingly.**
+   - `EmptyConvexMeshUsesFallbackSphere` — rename to
+     `EmptyConvexMeshIsNotCollidable` and assert no contacts in both
+     positions (the previous 0.12 case will now be non-colliding too,
+     because there is no fallback). Also assert that `DART_WARN_ONCE`
+     fires once across the two calls if there's a hook to test that.
+   - `SphereMeshCollisionWorksInBothOrders` — either rename to
+     `SphereMeshCollisionDetectsContact` (drop the order claim that the
+     test doesn't actually exercise) OR rewrite to call the narrow-phase
+     dispatcher directly with both orderings and assert flipped contact
+     normal (matching the new box-box swap test at
+     `test_box_box.cpp:427-436`). Pick rename — it's the smaller delta
+     and the order-handling claim is already covered by the box-box
+     swap test.
+   - `ConvexMeshCollisionUsesNativeConvexGeometry` — keep as-is; this
+     one exercises a real path and the math is correct.
+6. **Apply R4-6 nits.** Remove the now-unused magic `0.1` from
+   `dart_backend_bridge.cpp` entirely (nullptr path needs no constant).
+   For the FCL adapter, leave the `0.1` as a clearly-marked legacy
+   constant `kLegacyEmptyMeshFallbackRadius` with a comment pointing
+   at the DART 8 removal TODO.
+7. **Commit ordering remains 4 sequential commits** per Q3 #10 + the
+   convex-mesh slice as the fourth:
+   (a) box-box fix + tests + narrow-phase JSON refresh,
+   (b) OctoMap warning suppression in `voxel_grid_shape.hpp`,
+   (c) doc updates (README/RESUME/03-evidence/06-audit/SUPERVISOR.md),
+   (d) convex/soft-mesh nullptr-unification + FCL legacy TODO + tests.
+   Each commit passes `pixi run lint` independently.
+
+After all seven items above are done, do NOT push. Surface the result
+in a Round 5 SUPERVISOR.md section so the supervisor can spot-check
+before publish.
+
+### Round 5 Local Completion Notes
+
+Q5 policy is implemented locally:
+
+- `ConvexMeshShape::hasValidMesh()` and `SoftMeshShape::hasValidMesh()` own the
+  valid-mesh predicate for vertices plus triangle indices.
+- Native `DartCollisionDetector` shape adaptation returns `nullptr` for invalid
+  convex/soft mesh data and emits `DART_WARN_ONCE`, rather than creating
+  placeholder collision geometry.
+- FCL reference `ConvexMeshShape` adaptation keeps the legacy 0.1-radius sphere
+  fallback behind `kLegacyEmptyMeshFallbackRadius` and a DART 8 TODO to align
+  with native invalid-mesh behavior.
+- `EmptyConvexMeshUsesFallbackSphere` is renamed to
+  `EmptyConvexMeshIsNotCollidable`; the near and far cases both assert no
+  contacts. `SphereMeshCollisionWorksInBothOrders` is renamed to
+  `SphereMeshCollisionDetectsContact`.
+- `05-downstream-migration.md`, `PR-DRAFT.md`, `07-pr-evidence-transfer.md`,
+  `README.md`, `RESUME.md`, `03-evidence-gates.md`, and `CHANGELOG.md` now
+  describe invalid convex/soft meshes as non-collidable on the native runtime
+  path, with the FCL fallback documented as legacy reference behavior.

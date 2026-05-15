@@ -342,12 +342,13 @@ std::unique_ptr<native::Shape> adaptShape(const dynamics::ConstShapePtr& shape)
         = std::static_pointer_cast<const dynamics::SoftMeshShape>(shape);
     const_cast<dynamics::SoftMeshShape*>(softMesh.get())->update();
 
-    const auto triMesh = softMesh->getTriMesh();
-    if (!triMesh) {
-      DART_WARN("[DartCollisionDetector] SoftMeshShape has no TriMesh data.");
+    if (!softMesh->hasValidMesh()) {
+      DART_WARN_ONCE(
+          "[DartCollisionDetector] SoftMeshShape has no valid TriMesh data.");
       return nullptr;
     }
 
+    const auto triMesh = softMesh->getTriMesh();
     std::vector<Eigen::Vector3d> vertices;
     vertices.reserve(triMesh->getVertices().size());
     for (const auto& vertex : triMesh->getVertices()) {
@@ -370,14 +371,13 @@ std::unique_ptr<native::Shape> adaptShape(const dynamics::ConstShapePtr& shape)
   if (shapeType == dynamics::ConvexMeshShape::getStaticType()) {
     const auto& convex
         = std::static_pointer_cast<const dynamics::ConvexMeshShape>(shape);
-    const auto& mesh = convex->getMesh();
-    if (!mesh || !mesh->hasVertices() || !mesh->hasTriangles()) {
-      DART_WARN(
-          "[DartCollisionDetector] ConvexMeshShape is missing mesh data. "
-          "Using a fallback sphere with radius 0.1.");
-      return std::make_unique<native::SphereShape>(0.1);
+    if (!convex->hasValidMesh()) {
+      DART_WARN_ONCE(
+          "[DartCollisionDetector] ConvexMeshShape has no valid mesh data.");
+      return nullptr;
     }
 
+    const auto& mesh = convex->getMesh();
     std::vector<Eigen::Vector3d> vertices;
     vertices.reserve(mesh->getVertices().size());
     for (const auto& vertex : mesh->getVertices()) {

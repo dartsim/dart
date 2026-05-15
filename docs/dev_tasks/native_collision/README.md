@@ -10,11 +10,11 @@ Final PR CI evidence, evidence transfer, and folder deletion are deferred
 finalization steps.
 
 Latest local follow-up: the current tree fixes the default native box-ground
-contact regression reported from `hello_world`/Atlas-style scenes, keeps
-incomplete `ConvexMeshShape` data on the compatibility fallback path, adds
-focused raw box-box, convex-mesh, mesh, and default-world regression coverage,
-rebuilds `hello_world` without the OctoMap `<ciso646>` warning, and refreshes
-the focused native/reference/benchmark validation evidence in
+contact regression reported from `hello_world`/Atlas-style scenes, makes
+invalid convex/soft mesh data non-collidable with a warning, adds focused raw
+box-box, convex-mesh, mesh, and default-world regression coverage, rebuilds
+`hello_world` without the OctoMap `<ciso646>` warning, and refreshes the
+focused native/reference/benchmark validation evidence in
 `03-evidence-gates.md`.
 
 ## Current Status

@@ -2900,7 +2900,7 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     `./build/default/cpp/Release/bin/test_box_box --gtest_filter='BoxBox.*'`,
     `./build/default/cpp/Release/bin/UNIT_simulation_World --gtest_filter='WorldTests.DefaultNative*BoxRestsOnGround'`,
     `cmake --build build/default/cpp/Release --target UNIT_collision_DartCollisionDetector test_convex test_mesh_mesh --parallel "$JOBS"`,
-    `./build/default/cpp/Release/bin/UNIT_collision_DartCollisionDetector --gtest_filter='DartCollisionDetector.SphereMeshCollisionWorksInBothOrders:DartCollisionDetector.ConvexMeshCollisionUsesNativeConvexGeometry:DartCollisionDetector.EmptyConvexMeshUsesFallbackSphere'`,
+    `./build/default/cpp/Release/bin/UNIT_collision_DartCollisionDetector --gtest_filter='DartCollisionDetector.SphereMeshCollisionDetectsContact:DartCollisionDetector.ConvexMeshCollisionUsesNativeConvexGeometry:DartCollisionDetector.EmptyConvexMeshIsNotCollidable'`,
     `./build/default/cpp/Release/bin/test_convex`,
     `./build/default/cpp/Release/bin/test_mesh_mesh`,
     `CMAKE_BUILD_PARALLEL_LEVEL=$JOBS cmake --build build/default/cpp/Release --target dart_collision_native_tests --parallel "$JOBS"`,
@@ -2919,14 +2919,18 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     passed 20/20, including the direct box-box regression, determinism, and
     swapped-input coverage that keeps contacts for a rotated small box on a
     large ground box near the local overlap instead of the large ground
-    boundary. The default detector now also keeps incomplete
-    `ConvexMeshShape` data on the compatibility fallback path, covers valid
-    convex-mesh contact through native convex geometry, and covers sphere-mesh
-    collision in both object orders. `test_convex` and `test_mesh_mesh`
+    boundary. The default detector covers valid convex-mesh contact through
+    native convex geometry, treats incomplete convex mesh data as
+    non-collidable, and covers sphere-mesh contact detection. `test_convex` and
+    `test_mesh_mesh`
     passed, the full native collision unit label passed 29/29, the focused
-    default/native CTest slice passed 5/5 after the final header cleanup, and
-    the explicit `UNIT_collision_ConvexMesh` plus `test_reference_backends`
-    targets passed 2/2 in the `collision-reference` environment. The raw
+    default/native CTest slice passed 5/5 after the final header cleanup. A
+    later local follow-up unified invalid convex/soft mesh behavior so native
+    adapters return no geometry with `DART_WARN_ONCE` rather than synthesizing
+    fallback contacts, while the reference FCL adapter retains its legacy
+    fallback behind a DART 8 TODO. The explicit `UNIT_collision_ConvexMesh`
+    plus `test_reference_backends` targets passed 2/2 in the
+    `collision-reference` environment. The raw
     narrow-phase benchmark binary's built-in accuracy
     verification passed for Sphere-Sphere, Box-Box, Capsule-Capsule,
     Sphere-Box, Capsule-Sphere, Capsule-Box, Cylinder-Cylinder,

@@ -1189,9 +1189,10 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 
     auto convexMesh
         = static_cast<const dynamics::ConvexMeshShape*>(shape.get());
-    const auto mesh = convexMesh->getMesh();
+    constexpr double kLegacyEmptyMeshFallbackRadius = 0.1;
 
-    if (mesh && mesh->hasVertices() && !mesh->getTriangles().empty()) {
+    if (convexMesh->hasValidMesh()) {
+      const auto mesh = convexMesh->getMesh();
       auto hullVertices
           = std::make_shared<std::vector<::fcl::Vector3<double>>>();
       hullVertices->reserve(mesh->getVertices().size());
@@ -1211,10 +1212,16 @@ FCLCollisionDetector::createFCLCollisionGeometry(
       geom = new ::fcl::Convex<double>(
           hullVertices, static_cast<int>(mesh->getTriangles().size()), faces);
     } else {
+      // TODO(DART 8): Align with the native adapter by returning nullptr and
+      // emitting DART_WARN_ONCE instead of silently creating fallback geometry.
       DART_WARN(
-          "ConvexMeshShape has no vertices; creating a sphere with 0.1 radius "
-          "instead.");
-      geom = createEllipsoid<fcl::OBBRSS>(0.1, 0.1, 0.1);
+          "ConvexMeshShape has no valid mesh data; creating a legacy fallback "
+          "sphere with radius {} instead.",
+          kLegacyEmptyMeshFallbackRadius);
+      geom = createEllipsoid<fcl::OBBRSS>(
+          kLegacyEmptyMeshFallbackRadius,
+          kLegacyEmptyMeshFallbackRadius,
+          kLegacyEmptyMeshFallbackRadius);
     }
   } else if (MeshShape::getStaticType() == shapeType) {
     DART_ASSERT(dynamic_cast<const MeshShape*>(shape.get()));

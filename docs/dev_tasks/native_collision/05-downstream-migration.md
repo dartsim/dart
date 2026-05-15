@@ -34,6 +34,13 @@ surface should stay as narrow as possible: enough for gz-physics and source
 compatible downstream C++/package builds, native-backed everywhere, and never a
 path back to FCL/Bullet/ODE as normal runtime engines.
 
+Invalid convex or soft mesh data is non-collidable on the native runtime path
+and emits a warning once instead of manufacturing placeholder geometry. The FCL
+reference adapter still contains a legacy 0.1-radius sphere fallback for empty
+`ConvexMeshShape` data; that divergence is documented in code as DART 8
+technical debt and should be removed when reference behavior is aligned with
+native.
+
 Current status: the DART-side compatibility facade tests cover those display
 strings, FCL/ODE facades preserve gz-required unsupported raycast behavior, a
 fresh local `pixi run -e gazebo test-gz` run passes 65/65 tests through the

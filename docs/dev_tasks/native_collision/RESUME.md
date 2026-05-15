@@ -37,13 +37,12 @@ dependencies. That docs cleanup is commit `621fca5a1fb` and was validated with
 
 Current unpushed follow-up fixes a native box-box contact-point regression that
 could let a rotated box fall through a large ground box in default-world
-simulation. It also keeps incomplete `ConvexMeshShape` data on the
-compatibility fallback path and adds public-detector coverage for sphere-mesh
-collision in both object orders. The slice adds raw box-box, default-world,
-convex-mesh, and mesh regression tests, rebuilds `hello_world` without the
-OctoMap `<ciso646>` warning, and refreshes focused native/reference validation
-plus raw narrow-phase benchmark evidence. The canonical command list and
-results are recorded in `03-evidence-gates.md`.
+simulation. It also makes invalid convex/soft mesh data non-collidable with a
+warning and adds public-detector coverage for sphere-mesh collision. The slice
+adds raw box-box, default-world, convex-mesh, and mesh regression tests,
+rebuilds `hello_world` without the OctoMap `<ciso646>` warning, and refreshes
+focused native/reference validation plus raw narrow-phase benchmark evidence.
+The canonical command list and results are recorded in `03-evidence-gates.md`.
 
 ## Current Branch
 
@@ -133,12 +132,12 @@ post GitHub comments unless the user explicitly asks.
 - Current local regression refresh after `f8f5663d514`: focused raw
   box-ground tests passed, `test_box_box` passed 20/20 with the new direct
   regression and determinism coverage, `UNIT_collision_DartCollisionDetector`
-  passed the new convex-mesh fallback and sphere-mesh order regressions,
-  `test_convex` and `test_mesh_mesh` passed, full `collision-native` label
-  passed 29/29, the focused default/native CTest slice passed 5/5,
-  `UNIT_collision_ConvexMesh` and `test_reference_backends` passed 2/2 in the
-  `collision-reference` environment, `hello_world` rebuilt without the prior
-  OctoMap `<ciso646>` warning, and
+  passed the new invalid-convex-mesh and sphere-mesh regressions, `test_convex`
+  and `test_mesh_mesh` passed, full `collision-native` label passed 29/29, the
+  focused default/native CTest slice passed 5/5, `UNIT_collision_ConvexMesh`
+  and `test_reference_backends` passed 2/2 in the `collision-reference`
+  environment, `hello_world` rebuilt without the prior OctoMap `<ciso646>`
+  warning, and
   `.benchmark_results/native_collision_raw_narrow_phase.json` was produced by
   the raw narrow-phase benchmark run.
 
