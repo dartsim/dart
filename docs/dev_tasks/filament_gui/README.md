@@ -111,6 +111,9 @@
 - The Filament example's PNG/JPEG texture loading, Filament texture cache, and
   PBR texture parameter wiring now live in `examples/filament_gui/textures.hpp`
   and `.cpp`; `main.cpp` still owns higher-level renderable resource assembly.
+- The Filament example's neutral lighting, color grading, orbiting key-light
+  direction, and windowed view-quality setup now live in
+  `examples/filament_gui/render_environment.hpp` and `.cpp`.
 - The Filament example's scene option parsing and reusable DART world fixtures
   now live in `examples/filament_gui/scenes.hpp` and `.cpp`; `main.cpp` remains
   focused on renderer resources, synchronization, input, and the built-in panel.

@@ -208,6 +208,9 @@
 - The Filament example keeps PNG/JPEG image decoding, Filament texture-cache
   ownership, sampler setup, and PBR material texture parameter binding in
   `examples/filament_gui/textures.hpp` and `.cpp`.
+- The Filament example keeps neutral lighting/color grading, orbiting
+  key-light direction, and windowed view-quality configuration in
+  `examples/filament_gui/render_environment.hpp` and `.cpp`.
 - `dart-gui-experimental` now owns viewer lifecycle state for pause/step
   behavior, screenshot request tracking, rendered/skipped frame counters, and
   bounded-run stop checks. The Filament example uses this state instead of
@@ -240,7 +243,7 @@
 - `examples/filament_gui` now keeps reusable DART world fixtures and scene
   option parsing in `examples/filament_gui/scenes.hpp` and `.cpp`, leaving the
   main executable source focused on Filament renderable resources, scene
-  synchronization, and UI wiring.
+  synchronization, render environment assembly, and UI wiring.
 - Phase 4 is not complete because remaining interaction-heavy workflow
   migration and cross-platform wheel coverage are still pending.
 

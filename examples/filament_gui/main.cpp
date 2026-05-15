@@ -39,6 +39,7 @@
 #include "imgui_overlay.hpp"
 #include "input.hpp"
 #include "profile.hpp"
+#include "render_environment.hpp"
 #include "scenes.hpp"
 #include "screenshot.hpp"
 #include "textures.hpp"
@@ -60,20 +61,15 @@
 #include <GLFW/glfw3.h>
 #include <backend/BufferDescriptor.h>
 #include <filament/Camera.h>
-#include <filament/ColorGrading.h>
 #include <filament/Engine.h>
 #include <filament/IndexBuffer.h>
-#include <filament/IndirectLight.h>
 #include <filament/LightManager.h>
 #include <filament/Material.h>
 #include <filament/MaterialInstance.h>
-#include <filament/Options.h>
 #include <filament/RenderableManager.h>
 #include <filament/Renderer.h>
 #include <filament/Scene.h>
-#include <filament/Skybox.h>
 #include <filament/SwapChain.h>
-#include <filament/ToneMapper.h>
 #include <filament/Texture.h>
 #include <filament/TextureSampler.h>
 #include <filament/TransformManager.h>
@@ -207,9 +203,13 @@ using dart::examples::filament_gui::ScreenshotCapture;
 using dart::examples::filament_gui::TextureBinding;
 using dart::examples::filament_gui::TextureCache;
 using dart::examples::filament_gui::TextureColorSpace;
+using dart::examples::filament_gui::configureWindowedViewQuality;
 using dart::examples::filament_gui::createDartScene;
 using dart::examples::filament_gui::createCheckerTexture;
+using dart::examples::filament_gui::createDebugColorGrading;
 using dart::examples::filament_gui::createImGuiOverlay;
+using dart::examples::filament_gui::createNeutralIndirectLight;
+using dart::examples::filament_gui::createNeutralSkybox;
 using dart::examples::filament_gui::createSolidTexture;
 using dart::examples::filament_gui::destroyImGuiOverlay;
 using dart::examples::filament_gui::elapsedMs;
@@ -235,6 +235,7 @@ using dart::examples::filament_gui::kPyramidFixtureSkeletonName;
 using dart::examples::filament_gui::kSoftMeshFixtureSkeletonName;
 using dart::examples::filament_gui::kVoxelGridFixtureSkeletonName;
 using dart::examples::filament_gui::kWamFixtureSkeletonName;
+using dart::examples::filament_gui::orbitingKeyLightDirection;
 using dart::examples::filament_gui::parseOptions;
 using dart::examples::filament_gui::printProfile;
 using dart::examples::filament_gui::requestScreenshot;
@@ -326,45 +327,6 @@ filament::backend::BufferDescriptor makeBufferDescriptor(std::vector<T>&& data)
         delete static_cast<std::vector<T>*>(user);
       },
       owned);
-}
-
-filament::ColorGrading* createDebugColorGrading(filament::Engine& engine)
-{
-  filament::PBRNeutralToneMapper toneMapper;
-  return filament::ColorGrading::Builder()
-      .quality(filament::ColorGrading::QualityLevel::HIGH)
-      .toneMapper(&toneMapper)
-      .luminanceScaling(true)
-      .gamutMapping(true)
-      .build(engine);
-}
-
-filament::IndirectLight* createNeutralIndirectLight(filament::Engine& engine)
-{
-  static constexpr std::array<float3, 9> kDiffuseIrradiance = {{
-      {0.22f, 0.24f, 0.28f},
-      {-0.01f, -0.01f, -0.01f},
-      {0.04f, 0.045f, 0.052f},
-      {0.018f, 0.020f, 0.024f},
-      {0.000f, 0.000f, 0.000f},
-      {0.000f, 0.000f, 0.000f},
-      {0.000f, 0.000f, 0.000f},
-      {0.000f, 0.000f, 0.000f},
-      {0.000f, 0.000f, 0.000f},
-  }};
-
-  return filament::IndirectLight::Builder()
-      .irradiance(3, kDiffuseIrradiance.data())
-      .intensity(52000.0f)
-      .build(engine);
-}
-
-filament::Skybox* createNeutralSkybox(filament::Engine& engine)
-{
-  return filament::Skybox::Builder()
-      .color({0.46f, 0.50f, 0.56f, 1.0f})
-      .showSun(true)
-      .build(engine);
 }
 
 void loadImGuiFont(ImGuiIO& io, float guiScale)
@@ -576,18 +538,6 @@ void generateTangentFrames(
     std::exit(1);
   }
   orientation->getQuats(&vertices[0].tangent, vertices.size(), sizeof(Vertex));
-}
-
-float3 orbitingKeyLightDirection(double elapsedSeconds, double orbitPeriodSeconds)
-{
-  constexpr double pi = 3.14159265358979323846;
-  const double angle
-      = elapsedSeconds * 2.0 * pi / std::max(orbitPeriodSeconds, 1.0);
-  return normalizeOr(
-      {static_cast<float>(0.68 * std::cos(angle)),
-       static_cast<float>(0.68 * std::sin(angle)),
-       -0.74f},
-      {-0.30f, -0.42f, -1.0f});
 }
 
 float4 toRgba(const Eigen::Vector4d& rgba)
@@ -2131,24 +2081,7 @@ int main(int argc, char* argv[])
   scene->setIndirectLight(indirectLight);
   scene->setSkybox(skybox);
   if (!options.headless) {
-    filament::RenderQuality renderQuality;
-    renderQuality.hdrColorBuffer = filament::QualityLevel::HIGH;
-    view->setRenderQuality(renderQuality);
-    filament::AmbientOcclusionOptions ambientOcclusionOptions;
-    ambientOcclusionOptions.enabled = true;
-    ambientOcclusionOptions.aoType = filament::AmbientOcclusionOptions::
-        AmbientOcclusionType::GTAO;
-    ambientOcclusionOptions.radius = 0.35f;
-    ambientOcclusionOptions.intensity = 0.38f;
-    ambientOcclusionOptions.quality = filament::QualityLevel::MEDIUM;
-    ambientOcclusionOptions.lowPassFilter = filament::QualityLevel::HIGH;
-    view->setAmbientOcclusionOptions(ambientOcclusionOptions);
-    filament::MultiSampleAntiAliasingOptions multiSampleAntiAliasingOptions;
-    multiSampleAntiAliasingOptions.enabled = true;
-    multiSampleAntiAliasingOptions.sampleCount = 4;
-    view->setMultiSampleAntiAliasingOptions(multiSampleAntiAliasingOptions);
-    view->setAntiAliasing(filament::AntiAliasing::FXAA);
-    view->setDithering(filament::Dithering::NONE);
+    configureWindowedViewQuality(*view);
   }
 
   auto* material

@@ -100,6 +100,9 @@ so DART visual-aspect shadow changes are not limited to resource creation.
 Example-local PNG/JPEG image decoding, Filament texture-cache ownership,
 sampler setup, and PBR texture parameter binding live in
 `examples/filament_gui/textures.hpp` and `.cpp`.
+Example-local neutral lighting/color grading, orbiting key-light direction, and
+windowed view-quality setup live in
+`examples/filament_gui/render_environment.hpp` and `.cpp`.
 `UNIT_dynamics_MeshShape` also loads the checked-in
 `data/gltf/pbr_triangle.gltf` and `data/gltf/pbr_multi_material.gltf` fixtures
 through the real Assimp importer and verifies authored glTF PBR texture slots,
