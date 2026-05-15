@@ -121,6 +121,7 @@ using dart::gui::experimental::makeRenderableId;
 using dart::gui::experimental::normalizeRunOptions;
 using dart::gui::experimental::printProfile;
 using dart::gui::experimental::filament::ApplicationInputState;
+using dart::gui::experimental::filament::ApplicationWindow;
 using dart::gui::experimental::filament::FilamentRenderContext;
 using dart::gui::experimental::filament::FrameRenderResult;
 using dart::gui::experimental::filament::FrameViewport;
@@ -144,6 +145,7 @@ using dart::gui::experimental::filament::clearMainViewColorGrading;
 using dart::gui::experimental::filament::configureMainView;
 using dart::gui::experimental::filament::countSceneContent;
 using dart::gui::experimental::filament::createFilamentRenderContext;
+using dart::gui::experimental::filament::createApplicationWindow;
 using dart::gui::experimental::filament::createDebugColorGrading;
 using dart::gui::experimental::filament::createConfiguredImGuiOverlay;
 using dart::gui::experimental::filament::createNeutralIndirectLight;
@@ -194,30 +196,10 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
   const AppOptions appOptions = parseOptions(argc, argv);
   const RunOptions& options = appOptions.run;
 
-  GLFWwindow* window = nullptr;
-#if defined(__linux__)
-  if (!options.headless) {
-    glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
-  }
-#endif
-  if (!options.headless) {
-    if (!glfwInit()) {
-      std::cerr << "Failed to initialize GLFW\n";
-      return 1;
-    }
-
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    window = glfwCreateWindow(
-        options.width,
-        options.height,
-        "DART + Filament (experimental)",
-        nullptr,
-        nullptr);
-    if (window == nullptr) {
-      std::cerr << "Failed to create GLFW window\n";
-      glfwTerminate();
-      return 1;
-    }
+  ApplicationWindow appWindow = createApplicationWindow(options, std::cerr);
+  GLFWwindow* window = appWindow.get();
+  if (!options.headless && window == nullptr) {
+    return 1;
   }
 
   OrbitCameraController cameraController;
@@ -507,10 +489,6 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
   destroyMaterialResources(*engine, materialResources);
   destroyFilamentRenderContext(renderContext);
 
-  if (window != nullptr) {
-    glfwDestroyWindow(window);
-    glfwTerminate();
-  }
   return screenshotSucceeded ? 0 : 1;
 }
 

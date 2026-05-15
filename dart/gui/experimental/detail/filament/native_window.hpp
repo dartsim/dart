@@ -33,9 +33,40 @@
 #ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_NATIVE_WINDOW_HPP_
 #define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_NATIVE_WINDOW_HPP_
 
+#include <iosfwd>
+
 struct GLFWwindow;
 
+namespace dart::gui::experimental {
+
+struct RunOptions;
+
+} // namespace dart::gui::experimental
+
 namespace dart::gui::experimental::filament {
+
+class ApplicationWindow
+{
+public:
+  ApplicationWindow() = default;
+  explicit ApplicationWindow(GLFWwindow* window);
+  ~ApplicationWindow();
+
+  ApplicationWindow(const ApplicationWindow&) = delete;
+  ApplicationWindow& operator=(const ApplicationWindow&) = delete;
+
+  ApplicationWindow(ApplicationWindow&& other) noexcept;
+  ApplicationWindow& operator=(ApplicationWindow&& other) noexcept;
+
+  GLFWwindow* get() const;
+  void reset(GLFWwindow* window = nullptr);
+
+private:
+  GLFWwindow* mWindow = nullptr;
+};
+
+ApplicationWindow createApplicationWindow(
+    const dart::gui::experimental::RunOptions& options, std::ostream& errors);
 
 void* getNativeWindow(GLFWwindow* window);
 

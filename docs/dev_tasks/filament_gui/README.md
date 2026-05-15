@@ -154,8 +154,8 @@
   viewport/camera update dispatch, and camera-controller suppression while
   selection or built-in UI consumes the pointer now live in
   `dart/gui/experimental/detail/filament/frame_viewport.hpp` and `.cpp`.
-- The Filament example's platform-specific GLFW native-window handle selection
-  now lives in
+- The Filament example's GLFW initialization/window lifecycle and
+  platform-specific native-window handle selection now live in
   `dart/gui/experimental/detail/filament/native_window.hpp` and `.cpp`.
 - The Filament example's selection labels, G1 IK-target translation glue, and
   private selection controller state now live in

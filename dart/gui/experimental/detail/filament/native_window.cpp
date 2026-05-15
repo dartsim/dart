@@ -30,7 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "native_window.hpp"
+#include <dart/gui/experimental/detail/filament/native_window.hpp>
+#include <dart/gui/experimental/viewer.hpp>
 
 #include <GLFW/glfw3.h>
 
@@ -45,7 +46,79 @@
   #include <GLFW/glfw3native.h>
 #endif
 
+#include <ostream>
+#include <utility>
+
 namespace dart::gui::experimental::filament {
+
+ApplicationWindow::ApplicationWindow(GLFWwindow* window) : mWindow(window)
+{
+}
+
+ApplicationWindow::~ApplicationWindow()
+{
+  reset();
+}
+
+ApplicationWindow::ApplicationWindow(ApplicationWindow&& other) noexcept
+  : mWindow(std::exchange(other.mWindow, nullptr))
+{
+}
+
+ApplicationWindow& ApplicationWindow::operator=(
+    ApplicationWindow&& other) noexcept
+{
+  if (this != &other) {
+    reset();
+    mWindow = std::exchange(other.mWindow, nullptr);
+  }
+  return *this;
+}
+
+GLFWwindow* ApplicationWindow::get() const
+{
+  return mWindow;
+}
+
+void ApplicationWindow::reset(GLFWwindow* window)
+{
+  if (mWindow != nullptr) {
+    glfwDestroyWindow(mWindow);
+    glfwTerminate();
+  }
+  mWindow = window;
+}
+
+ApplicationWindow createApplicationWindow(
+    const dart::gui::experimental::RunOptions& options, std::ostream& errors)
+{
+  if (options.headless) {
+    return {};
+  }
+
+#if defined(__linux__)
+  glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
+#endif
+  if (!glfwInit()) {
+    errors << "Failed to initialize GLFW\n";
+    return {};
+  }
+
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  GLFWwindow* window = glfwCreateWindow(
+      options.width,
+      options.height,
+      "DART + Filament (experimental)",
+      nullptr,
+      nullptr);
+  if (window == nullptr) {
+    errors << "Failed to create GLFW window\n";
+    glfwTerminate();
+    return {};
+  }
+
+  return ApplicationWindow(window);
+}
 
 void* getNativeWindow(GLFWwindow* window)
 {
