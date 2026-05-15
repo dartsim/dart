@@ -116,10 +116,11 @@ The backend-token scan now uses a reusable `scanHeadersForBackendTokens`
 helper with an explicit future hook for promoted `dart/gui/*.hpp` headers once
 the first-class Filament API replaces the legacy OSG-shaped public GUI headers.
 The full north-star also requires any surviving `examples/filament_gui/` tree
-to shrink to a minimal executable entry point: renderer setup, frame lifecycle,
-material and texture resources, scene synchronization, capture, overlays, input
-translation, and reusable fixture logic should move into `dart::gui` or private
-GUI implementation units rather than remain as example-local architecture.
+to contain only a minimal `main.cpp` executable entry point, plus unavoidable
+build/docs files: renderer setup, frame lifecycle, material and texture
+resources, scene synchronization, capture, overlays, input translation, and
+reusable fixture logic should move into `dart::gui` or private GUI
+implementation units rather than remain as example-local architecture.
 Filament engine, renderer, swap-chain, main view, scene, camera lifecycle, and
 begin/render/end frame calls live in
 `dart/gui/experimental/detail/filament/render_context.hpp` and `.cpp`;

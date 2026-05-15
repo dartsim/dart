@@ -33,11 +33,12 @@ has zero direct Filament header includes. Filament headers should live only in
 private implementation units below the promoted GUI component, while examples
 exercise DART-owned viewer, scene, debug, capture, and tool APIs.
 A companion maintainability metric is that any surviving
-`examples/filament_gui/` tree shrinks to a minimal executable entry point.
-Renderer setup, frame lifecycle, material and texture resources, scene
-synchronization, capture, overlays, input translation, and reusable fixture
-logic should be encapsulated in `dart::gui` or its private implementation
-units rather than remaining as example-local architecture.
+`examples/filament_gui/` tree contains only a minimal `main.cpp` executable
+entry point, plus unavoidable build/docs files. Renderer setup, frame
+lifecycle, material and texture resources, scene synchronization, capture,
+overlays, input translation, and reusable fixture logic should be encapsulated
+in `dart::gui` or its private implementation units rather than remaining as
+example-local architecture.
 
 ## Compatibility position
 

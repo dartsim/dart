@@ -236,9 +236,13 @@ and one headless screenshot example.
    surviving promoted replacement should have zero direct
    `#include <filament/...>` or `#include "filament/..."` directives; Filament
    headers should live only in private promoted GUI implementation units.
-4. Example migration must happen before deletion. Removing legacy examples
+4. The maintained-example shape gate should also keep
+   `examples/filament_gui/` to a minimal `main.cpp` entry point plus
+   unavoidable build/docs files, with renderer and fixture logic encapsulated
+   by `dart::gui` or private GUI implementation units.
+5. Example migration must happen before deletion. Removing legacy examples
    first would discard useful coverage for drag-and-drop, support polygons,
    ImGui panels, headless capture, and robotics scenes.
-5. The migration should delete compatibility shims after examples, docs, and
+6. The migration should delete compatibility shims after examples, docs, and
    Python bindings no longer use them. Keeping shims indefinitely would recreate
    the multi-backend abstraction problem under a different name.

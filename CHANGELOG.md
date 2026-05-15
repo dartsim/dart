@@ -161,27 +161,15 @@
     `shape_descriptions.cpp`, and `scene.cpp`, with focused experimental
     headers for renderable, interaction, debug, geometry, and viewer concepts
     while `scene.hpp` remains an aggregate compatibility include for existing
-    experimental consumers. The Filament example also keeps
-    reusable DART world fixtures in `examples/filament_gui/scenes.hpp` and
-    `.cpp`, and example-local texture loading/caching in
-    `examples/filament_gui/textures.hpp` and `.cpp`. Example-local
-    lighting/color-grading and windowed quality setup now live in
-    `examples/filament_gui/render_environment.hpp` and `.cpp`, and native
-    GLFW window handle selection lives in `examples/filament_gui/native_window.hpp`
-    and `.cpp`. ImGui font loading now lives with the overlay renderer in
-    `examples/filament_gui/imgui_overlay.hpp` and `.cpp`, so `main.cpp`
-    focuses on renderer resources and UI wiring. Example-local selection labels
-    and G1 IK-target translation are also split into
-    `examples/filament_gui/selection.hpp` and `.cpp`. Filament renderable
-    state, material selection/configuration, shadow settings, and destruction
-    helpers now live in `examples/filament_gui/renderable_resources.hpp` and
-    `.cpp`, while descriptor-to-scene synchronization and renderable transform
-    updates live in `examples/filament_gui/renderable_sync.hpp` and `.cpp`.
-    Texture sampler setup is now private to
-    `examples/filament_gui/textures.cpp`, keeping that helper header free of a
-    direct Filament sampler include; the focused GUI unit test now also checks
-    that `examples/filament_gui/*.hpp` does not include Filament headers
-    directly. The
+    experimental consumers. Filament renderer setup, frame lifecycle, material
+    and texture resources, descriptor synchronization, selection state, input
+    translation, simulation stepping, smoke-test registration, material header
+    generation, and reusable scene fixtures now live under private
+    `dart/gui/experimental/detail/filament` implementation units, leaving
+    `examples/filament_gui` as a minimal `main.cpp` entry point plus CMake and
+    README files. The focused GUI unit test now checks that
+    `examples/filament_gui` contains no C++ source/header files other than
+    `main.cpp` and that the example has no direct Filament header includes. The
     north-star audit now also maps the legacy OSG/Raylib GUI surfaces that must
     be replaced, made private, or removed during first-class Filament
     promotion. The renderer-hidden debug descriptor path also covers
