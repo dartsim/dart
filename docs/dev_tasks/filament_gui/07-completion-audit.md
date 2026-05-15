@@ -226,6 +226,12 @@ The in-tree `pixi run ex box_stacking` runner now uses the same Filament
 descriptor-owned dynamic box-stack renderables while the standalone source in
 `examples/box_stacking` remains as legacy OSG/ImGui comparison material for
 solver selection, gravity controls, and custom key callbacks.
+The Filament example's selectable `--scene hardcoded-design` fixture now backs
+the in-tree `pixi run ex hardcoded_design` runner, so the recommended
+hand-built skeleton workflow exercises descriptor-owned box renderables while
+the standalone source in `examples/hardcoded_design` remains as legacy OSG
+comparison material for wireframe rendering and direct key-controlled joint
+motion.
 The Filament example's selectable `--scene drag-and-drop` fixture now backs the
 in-tree `pixi run ex drag_and_drop` runner, so the recommended drag-and-drop
 workflow exercises the Filament renderer path while the standalone source in

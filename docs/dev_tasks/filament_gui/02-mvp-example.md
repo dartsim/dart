@@ -111,6 +111,9 @@ Implemented:
 - A selectable `--scene drag-and-drop` fixture that recreates the legacy
   drag-and-drop example's `SimpleFrame` anchor, child frame, and axis markers
   through the same backend-hidden extraction and frame-translation path.
+- A selectable `--scene hardcoded-design` fixture that recreates the legacy
+  hardcoded-design example's three-link manually constructed skeleton through
+  backend-hidden renderable descriptors.
 - Built-in panel controls for pause/resume, single-step, and debug overlay
   toggles covering grid, world/body frames, center-of-mass markers, contacts,
   normal arrows, and force arrows.

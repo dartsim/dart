@@ -27,6 +27,7 @@
   `--orbit-light-period <seconds>`.
   Use `--scene hello-world` to run the simplest dynamic-box fixture,
   `--scene boxes` to run the dynamic box-grid fixture,
+  `--scene hardcoded-design` to run the hand-built skeleton fixture,
   `--scene drag-and-drop` to run the interaction fixture,
   `--scene simple-frames` to run the frame-hierarchy fixture,
   `--scene soft-bodies` to run the soft-body SKEL fixture,
@@ -83,6 +84,10 @@
 - The `--scene boxes` fixture renders the legacy boxes example's dynamic
   colored box grid and gray ground plane through the same descriptor-driven
   Filament path.
+- The `--scene hardcoded-design` fixture renders the legacy hardcoded-design
+  example's three-link skeleton through the same descriptor-driven Filament
+  path. The standalone source remains comparison material for wireframe and
+  direct key-controlled joint motion.
 - Windowed playback advances physics against wall-clock time with a bounded
   catch-up step budget. Headless captures remain deterministic and advance one
   simulation step for each rendered frame.
@@ -160,6 +165,12 @@ To run the boxes fixture:
 
 ```bash
 pixi run ex filament_gui --scene boxes
+```
+
+To run the hardcoded-design fixture:
+
+```bash
+pixi run ex filament_gui --scene hardcoded-design
 ```
 
 To run the simple-frames fixture:
@@ -323,6 +334,6 @@ DART_BUILD_GUI_FILAMENT_OVERRIDE=ON \
   pixi run config
 cmake --build build/default/cpp/Release --target dart_filament_gui
 ctest --test-dir build/default/cpp/Release \
-  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|drag_and_drop_headless|simple_frames_headless|soft_bodies_headless|point_cloud_headless|capsule_ground_contact_headless|simulation_event_handler_headless|polyhedron_headless|heightmap_headless)_smoke' \
+  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|hardcoded_design_headless|drag_and_drop_headless|simple_frames_headless|soft_bodies_headless|point_cloud_headless|capsule_ground_contact_headless|simulation_event_handler_headless|polyhedron_headless|heightmap_headless)_smoke' \
   --output-on-failure
 ```

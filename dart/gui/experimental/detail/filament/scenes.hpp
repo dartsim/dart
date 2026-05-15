@@ -68,6 +68,7 @@ enum class ExampleScene
   Mvp,
   HelloWorld,
   Boxes,
+  HardcodedDesign,
   DragAndDrop,
   SimpleFrames,
   SoftBodies,
@@ -106,6 +107,8 @@ inline constexpr const char* kBoxesFixtureBoxSkeletonPrefix
     = "visual_boxes_box_";
 inline constexpr const char* kBoxesFixtureGroundSkeletonName
     = "visual_boxes_ground";
+inline constexpr const char* kHardcodedDesignFixtureSkeletonName
+    = "visual_hardcoded_design";
 inline constexpr const char* kPyramidFixtureSkeletonName = "visual_pyramid";
 inline constexpr const char* kMultiSphereFixtureSkeletonName = "visual_multi_sphere";
 inline constexpr const char* kLineSegmentFixtureSkeletonName = "visual_line_segments";
@@ -142,6 +145,7 @@ inline constexpr const char* kSimpleFramesFixtureArrowFrameName
     = "simple_frames_arrow";
 inline constexpr const char* kG1FixtureSkeletonName = "visual_g1_robot";
 inline constexpr std::size_t kBoxesFixtureBoxCount = 125;
+inline constexpr std::size_t kHardcodedDesignFixtureBoxCount = 3;
 inline constexpr std::size_t kSimpleFramesFixtureBoxCount = 3;
 inline constexpr std::size_t kSimpleFramesFixtureEllipsoidCount = 4;
 inline constexpr std::size_t kSoftBodiesFixtureMinSoftMeshCount = 5;

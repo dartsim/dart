@@ -291,6 +291,11 @@ directional force controls and frame-recording options. It routes
 `pixi run ex box_stacking` through the same Filament `--scene boxes` fixture
 while keeping the standalone source as legacy OSG/ImGui comparison material for
 solver selection, gravity controls, and custom key callbacks. It routes
+`pixi run ex hardcoded_design` through the Filament example's
+`--scene hardcoded-design` fixture, which renders the legacy hand-built
+three-link skeleton through backend-hidden descriptors while keeping the
+standalone source as legacy OSG comparison material for wireframe rendering and
+direct key-controlled joint motion. It routes
 `pixi run ex drag_and_drop` through the Filament example's selectable
 `--scene drag-and-drop` fixture by default while keeping the standalone source
 as legacy OSG comparison material. It also routes

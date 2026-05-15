@@ -145,6 +145,10 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Box) {
     ++counts.boxesExampleGrounds;
   }
+  if (descriptor.skeletonName == kHardcodedDesignFixtureSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.hardcodedDesignBoxes;
+  }
   if (descriptor.skeletonName == kPyramidFixtureSkeletonName
       && descriptor.geometry.kind == ShapeKind::Pyramid) {
     ++counts.pyramids;
@@ -416,6 +420,15 @@ bool validateSceneDescriptorContent(
         output);
   }
 
+  if (scene == ExampleScene::HardcodedDesign) {
+    return requireEqual(
+        counts.hardcodedDesignBoxes,
+        kHardcodedDesignFixtureBoxCount,
+        "hardcoded-design scene",
+        "visible manually constructed box renderable descriptors",
+        output);
+  }
+
   if (scene == ExampleScene::Heightmap) {
     return requireEqual(
         counts.heightmaps,
@@ -675,6 +688,14 @@ bool validateCreatedSceneContent(
         created.boxesExampleGrounds,
         expected.boxesExampleGrounds,
         "boxes ground renderables",
+        output);
+  }
+
+  if (scene == ExampleScene::HardcodedDesign) {
+    return requireCreatedEqual(
+        created.hardcodedDesignBoxes,
+        expected.hardcodedDesignBoxes,
+        "hardcoded-design box renderables",
         output);
   }
 

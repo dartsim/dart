@@ -246,6 +246,12 @@
   `--scene boxes` Filament fixture while the legacy standalone OSG/ImGui source
   remains available for solver selection, gravity controls, and custom-key
   callback comparison.
+- The Filament example includes `--scene hardcoded-design`, a hand-built
+  skeleton fixture that carries the legacy `hardcoded_design` example through
+  descriptor-owned box renderables. The in-tree
+  `pixi run ex hardcoded_design` runner now routes to that Filament scene while
+  the legacy standalone OSG source remains available for wireframe and
+  key-controlled joint comparison.
 - The Filament example also includes `--scene drag-and-drop`, a first
   interaction-heavy fixture that carries the legacy `SimpleFrame` anchor, child
   frame, and axis marker layout through the same backend-hidden manipulation

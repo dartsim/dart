@@ -1090,6 +1090,99 @@ DartScene createBoxesScene()
   return scene;
 }
 
+dart::dynamics::SkeletonPtr createHardcodedDesignSkeleton()
+{
+  auto skeleton = Skeleton::create(kHardcodedDesignFixtureSkeletonName);
+  constexpr double mass = 1.0;
+
+  dart::dynamics::BodyNode::Properties body;
+  body.mName = "LHY";
+  body.mInertia.setMass(mass);
+  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d(0.3, 0.3, 1.0));
+
+  dart::dynamics::RevoluteJoint::Properties joint;
+  joint.mName = "LHY";
+  joint.mAxis = Eigen::Vector3d::UnitZ();
+  joint.mPositionLowerLimits[0] = -dart::math::pi;
+  joint.mPositionUpperLimits[0] = dart::math::pi;
+
+  auto [rootJoint, rootBody]
+      = skeleton
+            ->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
+                nullptr, joint, body);
+  (void)rootJoint;
+  auto rootShapeNode = rootBody->createShapeNodeWith<
+      VisualAspect,
+      CollisionAspect,
+      DynamicsAspect>(shape);
+  rootShapeNode->getVisualAspect()->setRGBA(
+      Eigen::Vector4d(0.18, 0.38, 0.92, 0.9));
+  rootBody->setMass(mass);
+
+  body = dart::dynamics::BodyNode::Properties();
+  body.mName = "LHR";
+  body.mInertia.setMass(mass);
+  shape = std::make_shared<BoxShape>(Eigen::Vector3d(0.3, 0.3, 1.0));
+  joint = dart::dynamics::RevoluteJoint::Properties();
+  joint.mName = "LHR";
+  joint.mAxis = Eigen::Vector3d::UnitX();
+  joint.mPositionLowerLimits[0] = -dart::math::pi;
+  joint.mPositionUpperLimits[0] = dart::math::pi;
+  joint.mT_ParentBodyToJoint = Eigen::Translation3d(0.0, 0.0, 0.5);
+
+  auto [hipRollJoint, hipRollBody]
+      = skeleton
+            ->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
+                rootBody, joint, body);
+  (void)hipRollJoint;
+  auto hipRollShapeNode = hipRollBody->createShapeNodeWith<
+      VisualAspect,
+      CollisionAspect,
+      DynamicsAspect>(shape);
+  hipRollShapeNode->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, 0.5));
+  hipRollShapeNode->getVisualAspect()->setRGBA(
+      Eigen::Vector4d(0.95, 0.65, 0.12, 0.9));
+  hipRollBody->setLocalCOM(hipRollShapeNode->getRelativeTranslation());
+  hipRollBody->setMass(mass);
+
+  body = dart::dynamics::BodyNode::Properties();
+  body.mName = "LHP";
+  body.mInertia.setMass(mass);
+  shape = std::make_shared<BoxShape>(Eigen::Vector3d(0.3, 0.3, 1.0));
+  joint = dart::dynamics::RevoluteJoint::Properties();
+  joint.mName = "LHP";
+  joint.mAxis = Eigen::Vector3d::UnitY();
+  joint.mPositionLowerLimits[0] = -dart::math::pi;
+  joint.mPositionUpperLimits[0] = dart::math::pi;
+  joint.mT_ParentBodyToJoint = Eigen::Translation3d(0.0, 0.0, 1.0);
+
+  auto [hipPitchJoint, hipPitchBody]
+      = skeleton
+            ->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
+                hipRollBody, joint, body);
+  (void)hipPitchJoint;
+  auto hipPitchShapeNode = hipPitchBody->createShapeNodeWith<
+      VisualAspect,
+      CollisionAspect,
+      DynamicsAspect>(shape);
+  hipPitchShapeNode->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, 0.5));
+  hipPitchShapeNode->getVisualAspect()->setRGBA(
+      Eigen::Vector4d(0.84, 0.18, 0.18, 0.9));
+  hipPitchBody->setLocalCOM(hipPitchShapeNode->getRelativeTranslation());
+  hipPitchBody->setMass(mass);
+
+  return skeleton;
+}
+
+DartScene createHardcodedDesignScene()
+{
+  DartScene scene;
+  scene.world = World::create("filament_gui_hardcoded_design");
+  scene.world->setGravity(Eigen::Vector3d::Zero());
+  scene.world->addSkeleton(createHardcodedDesignSkeleton());
+  return scene;
+}
+
 DartScene createDragAndDropScene()
 {
   DartScene scene;

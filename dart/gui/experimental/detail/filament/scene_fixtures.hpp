@@ -43,6 +43,8 @@ DartScene createHelloWorldScene();
 
 DartScene createBoxesScene();
 
+DartScene createHardcodedDesignScene();
+
 DartScene createDragAndDropScene();
 
 DartScene createSimpleFramesScene();

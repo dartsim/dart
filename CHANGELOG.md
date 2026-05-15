@@ -189,12 +189,14 @@
     solver and gravity controls. The example tree is left as a minimal
     `main.cpp` entry point plus CMake and README files. The `empty` runner now
     routes to the `--scene drag-and-drop` Filament fixture for minimal
-    interactive-frame coverage. The focused GUI unit test now checks that
-    `examples/filament_gui` contains no C++ source/header files other than
-    `main.cpp` and that the example has no direct Filament header includes. The
-    north-star audit now also maps the legacy OSG/Raylib GUI surfaces that must
-    be replaced, made private, or removed during first-class Filament promotion.
-    The renderer-hidden debug descriptor path also covers
+    interactive-frame coverage. The `hardcoded_design` runner now routes to a
+    `--scene hardcoded-design` Filament fixture for a hand-built three-link
+    skeleton. The focused GUI unit test now checks that `examples/filament_gui`
+    contains no C++ source/header files other than `main.cpp` and that the
+    example has no direct Filament header includes. The north-star audit now
+    also maps the legacy OSG/Raylib GUI surfaces that must be replaced, made
+    private, or removed during first-class Filament promotion. The
+    renderer-hidden debug descriptor path also covers
     support-polygon outlines
     and support-centroid markers, plus arrowheads for contact normal and force
     overlays, equivalent inertia-box overlays, and collision-shape bounds for
