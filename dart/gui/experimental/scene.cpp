@@ -1361,6 +1361,13 @@ void hashVector3d(std::size_t& seed, const Eigen::Vector3d& value)
   }
 }
 
+void hashVector4d(std::size_t& seed, const Eigen::Vector4d& value)
+{
+  for (int axis = 0; axis < 4; ++axis) {
+    hashCombine(seed, std::hash<double>{}(value[axis]));
+  }
+}
+
 std::size_t computeRenderResourceVersion(
     const GeometryDescriptor& geometry,
     const MaterialDescriptor& material,
@@ -1372,6 +1379,13 @@ std::size_t computeRenderResourceVersion(
   if (geometry.kind == ShapeKind::Mesh) {
     hashCombine(seed, geometry.meshUsesMaterialColors ? 1u : 0u);
     hashCombine(seed, static_cast<std::size_t>(geometry.meshAlphaMode));
+  }
+  if (geometry.kind == ShapeKind::PointCloud) {
+    hashCombine(seed, std::hash<double>{}(geometry.pointSize));
+    hashCombine(seed, geometry.pointCloudColors.size());
+    for (const Eigen::Vector4d& color : geometry.pointCloudColors) {
+      hashVector4d(seed, color);
+    }
   }
   if (geometry.kind == ShapeKind::SoftMesh) {
     hashCombine(seed, geometry.triangleVertices.size());

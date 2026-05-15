@@ -18,7 +18,9 @@
   TriMesh-backed `MeshShape`, and finite `PlaneShape` descriptors, and applies
   DART visual-aspect shadow flags to Filament renderables. Convex mesh,
   heightmap, soft mesh, and `MeshShape` rendering now consume descriptor-owned
-  triangle data instead of reaching back into concrete shape objects.
+  triangle data instead of reaching back into concrete shape objects, and
+  point-cloud rendering now consumes descriptor-owned per-point colors when
+  present.
 - The example configures Filament view quality features needed by the MVP gate:
   cascaded SUN shadows, contact shadows for windowed runs, deterministic PCF
   shadows for headless screenshots, a neutral skybox, spherical harmonics

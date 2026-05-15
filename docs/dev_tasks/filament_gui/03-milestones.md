@@ -41,10 +41,10 @@
   fixture, additional primitive visual shapes including `PyramidShape` and
   `MultiSphereConvexHullShape`, visual-only line segments from
   `LineSegmentShape`, a generated `ConvexMeshShape` tetrahedron, a generated
-  `PointCloudShape` box-point cloud, a generated `HeightmapShape` terrain mesh,
-  a generated `SoftMeshShape` soft-body surface, an OctoMap-backed
-  `VoxelGridShape` cell cluster when available, a generated TriMesh visual, and
-  a finite checker-textured PlaneShape proxy.
+  `PointCloudShape` box-point cloud with per-point colors, a generated
+  `HeightmapShape` terrain mesh, a generated `SoftMeshShape` soft-body surface,
+  an OctoMap-backed `VoxelGridShape` cell cluster when available, a generated
+  TriMesh visual, and a finite checker-textured PlaneShape proxy.
 - The visual fixture includes an imported WAM Collada mesh. Filament mesh
   rendering now consumes DART's preserved UV metadata, submesh material ranges,
   material colors, emissive color, metallic/roughness factors, and typed

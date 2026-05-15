@@ -342,6 +342,41 @@ TEST(
 
 TEST(
     FilamentSceneExtraction,
+    ExtractRenderables_PointCloudColorModeChange_UpdatesRenderResourceVersion)
+{
+  auto world = World::create("world");
+  auto skeleton = Skeleton::create("robot");
+  auto [joint, body] = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  (void)joint;
+  auto pointCloud = std::make_shared<PointCloudShape>(0.2);
+  pointCloud->addPoint(Eigen::Vector3d(-0.4, 0.0, 0.1));
+  pointCloud->addPoint(Eigen::Vector3d(0.2, -0.3, 0.5));
+  const std::array<Eigen::Vector4d, 2> pointColors{
+      Eigen::Vector4d(1.0, 0.0, 0.0, 1.0), Eigen::Vector4d(0.0, 1.0, 0.0, 0.8)};
+  pointCloud->setColors(pointColors);
+  pointCloud->setColorMode(PointCloudShape::BIND_OVERALL);
+  body->createShapeNodeWith<VisualAspect>(pointCloud, "points_visual");
+  world->addSkeleton(skeleton);
+
+  const auto before = dart::gui::experimental::extractRenderables(*world);
+  ASSERT_EQ(before.size(), 1u);
+  const auto beforeShapeVersion = before.front().shapeVersion;
+  ASSERT_EQ(before.front().geometry.pointCloudColors.size(), 1u);
+
+  pointCloud->setColorMode(PointCloudShape::BIND_PER_POINT);
+
+  const auto after = dart::gui::experimental::extractRenderables(*world);
+  ASSERT_EQ(after.size(), 1u);
+  ASSERT_EQ(after.front().geometry.pointCloudColors.size(), 2u);
+  EXPECT_EQ(before.front().id, after.front().id);
+  EXPECT_EQ(beforeShapeVersion, after.front().shapeVersion);
+  EXPECT_NE(
+      before.front().renderResourceVersion,
+      after.front().renderResourceVersion);
+}
+
+TEST(
+    FilamentSceneExtraction,
     ExtractRenderables_SoftMeshMotion_UpdatesRenderResourceVersion)
 {
   auto world = World::create("world");

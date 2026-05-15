@@ -144,6 +144,7 @@
     now synchronize changed descriptor shadow flags. `MeshShape` alpha-mode
     policy is also exposed through descriptors and visual alpha changes now
     invalidate renderer resources when material transparency can change. The
+    Filament point-cloud path also consumes per-point color descriptors. The
     renderer-hidden debug descriptor path also covers support-polygon outlines
     and support-centroid markers, plus arrowheads for contact normal and force
     overlays, equivalent inertia-box overlays, and collision-shape bounds for

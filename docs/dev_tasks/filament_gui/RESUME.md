@@ -91,6 +91,9 @@ The scene descriptor now also carries `MeshShape` alpha-mode policy into
 Filament material creation, and alpha-only visual changes participate in the
 renderer resource version so opaque/transparent material resources are recreated
 when needed.
+The Filament point-cloud fixture now exercises `BIND_PER_POINT` colors, and the
+renderer creates per-point material ranges from those descriptor colors instead
+of collapsing the point cloud to one material color.
 `examples/gui_scene_diagnostics` now gives `dart-gui-experimental` a second,
 non-rendering example consumer for descriptor/debug/camera diagnostics,
 including a `SimpleFrame` visual, without adding another backend. The

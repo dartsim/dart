@@ -1892,12 +1892,17 @@ DartScene createMvpDartScene()
   auto createPointCloudShape = [] {
     auto shape = std::make_shared<PointCloudShape>(0.14);
     shape->setPointShapeType(PointCloudShape::BOX);
-    shape->setColorMode(PointCloudShape::BIND_OVERALL);
-    shape->setOverallColor(Eigen::Vector4d(0.48, 0.86, 0.38, 1.0));
+    shape->setColorMode(PointCloudShape::BIND_PER_POINT);
     shape->addPoint(Eigen::Vector3d(-0.24, -0.18, 0.0));
     shape->addPoint(Eigen::Vector3d(0.0, 0.16, 0.12));
     shape->addPoint(Eigen::Vector3d(0.24, -0.14, 0.02));
     shape->addPoint(Eigen::Vector3d(-0.02, -0.02, 0.3));
+    const std::array<Eigen::Vector4d, 4> pointColors{
+        Eigen::Vector4d(0.95, 0.25, 0.20, 1.0),
+        Eigen::Vector4d(0.30, 0.70, 1.00, 0.85),
+        Eigen::Vector4d(0.98, 0.80, 0.25, 1.0),
+        Eigen::Vector4d(0.50, 0.90, 0.38, 0.75)};
+    shape->setColors(pointColors);
     return shape;
   };
 
@@ -3546,17 +3551,100 @@ std::optional<Renderable> createPointCloudRenderable(
   std::vector<float3> normals;
   std::vector<std::uint32_t> indices;
   std::vector<filament::math::uint3> triangles;
+  struct PointRange
+  {
+    std::size_t indexOffset = 0;
+    std::size_t indexCount = 0;
+  };
+  std::vector<PointRange> pointRanges;
   vertices.reserve(descriptor.geometry.pointCloudPoints.size() * 24u);
   normals.reserve(descriptor.geometry.pointCloudPoints.size() * 24u);
   indices.reserve(descriptor.geometry.pointCloudPoints.size() * 36u);
   triangles.reserve(descriptor.geometry.pointCloudPoints.size() * 12u);
+  pointRanges.reserve(descriptor.geometry.pointCloudPoints.size());
 
   for (const Eigen::Vector3d& point : descriptor.geometry.pointCloudPoints) {
+    const std::size_t indexOffset = indices.size();
     appendPointBoxGeometry(
         vertices, normals, indices, triangles, point, pointSize);
+    pointRanges.push_back({indexOffset, indices.size() - indexOffset});
   }
 
   const Bounds bounds = computeBounds(vertices);
+  const bool usePerPointColors
+      = descriptor.geometry.pointCloudColors.size()
+        == descriptor.geometry.pointCloudPoints.size();
+  if (usePerPointColors) {
+    generateTangentFrames(vertices, triangles, normals);
+
+    Renderable renderable;
+    renderable.vertexBuffer
+        = filament::VertexBuffer::Builder()
+              .vertexCount(vertices.size())
+              .bufferCount(1)
+              .attribute(
+                  filament::VertexAttribute::POSITION,
+                  0,
+                  filament::VertexBuffer::AttributeType::FLOAT3,
+                  offsetof(Vertex, position),
+                  sizeof(Vertex))
+              .attribute(
+                  filament::VertexAttribute::TANGENTS,
+                  0,
+                  filament::VertexBuffer::AttributeType::SHORT4,
+                  offsetof(Vertex, tangent),
+                  sizeof(Vertex))
+              .attribute(
+                  filament::VertexAttribute::UV0,
+                  0,
+                  filament::VertexBuffer::AttributeType::FLOAT2,
+                  offsetof(Vertex, uv),
+                  sizeof(Vertex))
+              .normalized(filament::VertexAttribute::TANGENTS)
+              .build(engine);
+    renderable.vertexBuffer->setBufferAt(
+        engine, 0, makeBufferDescriptor(std::move(vertices)));
+
+    renderable.indexBuffer
+        = filament::IndexBuffer::Builder()
+              .indexCount(indices.size())
+              .bufferType(filament::IndexBuffer::IndexType::UINT)
+              .build(engine);
+    renderable.indexBuffer->setBuffer(
+        engine, makeBufferDescriptor(std::move(indices)));
+
+    renderable.entity = EntityManager::get().create();
+    auto builder = filament::RenderableManager::Builder(pointRanges.size());
+    builder.boundingBox({bounds.min, bounds.max})
+        .castShadows(true)
+        .receiveShadows(true);
+    for (std::size_t i = 0; i < pointRanges.size(); ++i) {
+      const float4 pointColor = ensureReadableDisplayColor(
+          toRgba(descriptor.geometry.pointCloudColors[i]));
+      auto* materialInstance = addRenderableMaterial(
+          renderable,
+          selectLitMaterial(materials, false, pointColor),
+          pointColor,
+          false);
+      configureLitMaterialInstance(
+          *materialInstance, pointColor, 0.0f, 0.58f, {0.0f, 0.0f, 0.0f});
+      builder.material(i, materialInstance)
+          .geometry(
+              i,
+              filament::RenderableManager::PrimitiveType::TRIANGLES,
+              renderable.vertexBuffer,
+              renderable.indexBuffer,
+              pointRanges[i].indexOffset,
+              pointRanges[i].indexCount);
+    }
+    builder.build(engine, renderable.entity);
+
+    auto& renderables = engine.getRenderableManager();
+    renderables.setScreenSpaceContactShadows(
+        renderables.getInstance(renderable.entity), true);
+    return renderable;
+  }
+
   return createTriangleMeshRenderable(
       engine,
       selectLitMaterial(materials, false, color),

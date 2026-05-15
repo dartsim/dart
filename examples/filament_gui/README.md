@@ -54,7 +54,8 @@
   colors, metallic/roughness factors, emissive color, and typed PNG/JPEG
   texture images for base color, metallic, roughness, combined
   metallic-roughness, normal, occlusion, and emissive maps when `MeshShape`
-  provides them. The scene also
+  provides them. Point-cloud rendering consumes descriptor-owned per-point
+  colors when present. The scene also
   loads the checked-in single- and multi-material glTF PBR fixtures and routes
   alpha-bearing solid, textured, and mesh visuals through transparent lit
   material variants. Broader robot/environment visual review is still future
