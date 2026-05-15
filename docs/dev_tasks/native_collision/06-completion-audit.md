@@ -111,10 +111,10 @@ unverified external and finalization gates:
   allowed workflow trigger.
 - Local downstream migration evidence is refreshed: fresh gz-physics,
   package-smoke, runtime-isolation, C++ compatibility-name, dartpy clean-API,
-  and direct
-  link-inspection checks all pass on `8c83cd19cb8`. Downstream deprecation
-  policy evidence is still missing before retained facades can be removed or
-  hard-deprecated.
+  direct link-inspection checks, and human-authored stale-backend docs audit all
+  pass. The primary executable/link-smoke evidence is on `8c83cd19cb8`.
+  Downstream deprecation policy evidence is still missing before retained
+  facades can be removed or hard-deprecated.
 - Final compatibility-facade retention/deprecation evidence is still missing:
   the documented decision is to delete old external-engine runtime
   implementations, keep only native-backed compatibility facades required by

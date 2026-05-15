@@ -2797,6 +2797,14 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     `.benchmark_results/collision_check_mesh.json`,
     `.benchmark_results/collision_check_raycast_batch.json`, and
     `.benchmark_results/collision_check_adapter.json`.
+- Current human-authored docs stale-backend audit:
+  - Command:
+    `rg -n "multiple collision detectors|multiple collision detection backends|collision backends|Requires .*Bullet|Requires .*ODE|built with .*Bullet|built with .*ODE|Different collision backends" docs/readthedocs docs/onboarding examples README.md tutorials python -g '!docs/readthedocs/_build/**' -g '!docs/readthedocs/_generated/**'`
+  - Result: no stale normal-runtime backend guidance remains after updating the
+    ReadTheDocs overview and Korean locale source, numerical-methods guidance,
+    constraints onboarding docs, and human-joint-limits / rigid-shapes example
+    READMEs. Intentional architecture and reference-harness docs still mention
+    FCL, Bullet, and ODE as optional reference-comparison inputs.
 
 ## Known Risks
 

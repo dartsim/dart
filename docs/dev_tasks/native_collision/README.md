@@ -47,6 +47,10 @@
       DART, dartpy, gz-physics runtime integration, and the native-backed
       `collision-fcl`/`collision-bullet`/`collision-ode` compatibility facades
       no longer need them.
+- [x] Human-authored user docs no longer describe FCL, Bullet, or ODE as normal
+      runtime collision backends. The public overview, numerical-methods,
+      constraints, and example docs describe the built-in detector as the
+      runtime path and the old engines as optional reference-comparison inputs.
 - [x] Native-only install metadata no longer advertises old collision
       component targets or old collision runtime libraries; the remaining
       installed collision option variables are `OFF` state reporting.
