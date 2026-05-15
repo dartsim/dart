@@ -41,6 +41,9 @@
 - [x] FCL, Bullet, and ODE are no longer required collision dependencies. A
       core `dart` build, focused native/default C++ tests, and `dartpy` now
       build without exposing or requiring per-engine collision build switches.
+      Public source-build prerequisites now keep FCL with Bullet and ODE as
+      optional reference-comparison dependencies rather than required core
+      runtime dependencies.
 - [x] Normal pixi configure paths now default reference correctness tests and
       reference benchmarks to `OFF`; comparison jobs opt in through the
       `collision-reference` environment, which enables

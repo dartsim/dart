@@ -20,6 +20,8 @@ Make native DART collision the default runtime stack
 - Removes per-engine FCL/Bullet/ODE collision build switches from the current
   build surface; explicit reference tests and benchmarks are the only public
   opt-in gates for old-engine comparison components.
+- Keeps FCL/Bullet/ODE out of required source-build prerequisites; they are
+  optional reference-comparison dependencies, not core runtime dependencies.
 - Documents the DART 7 migration policy in public docs and defines the
   downstream/deprecation evidence criteria that must be attached before retained
   C++ and package facades are removed or hard-deprecated further.
@@ -34,11 +36,11 @@ Make native DART collision the default runtime stack
 
 ## Test Plan
 
-- `DART_PARALLEL_JOBS=1 CTEST_PARALLEL_LEVEL=1 CMAKE_BUILD_PARALLEL_LEVEL=1 pixi run test-all`
-  passed on pushed branch head `d0e23f7b2f1` before this evidence-note update;
-  the current default
-  configure path keeps reference tests and benchmarks `OFF` and exposes no
-  per-engine FCL/Bullet/ODE collision build switches.
+- `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+  passed on pushed branch head `930aca64d45` before the source-build
+  prerequisite docs cleanup; the current default configure path keeps reference
+  tests and benchmarks `OFF` and exposes no per-engine FCL/Bullet/ODE collision
+  build switches.
 - `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e collision-reference -- ctest --test-dir build/collision-reference/cpp/Release --output-on-failure -R '^test_reference_backends$' -j 5`
   passed 1/1 after configuring `collision-reference` with reference tests and
   reference benchmarks `ON` and all FCL, Bullet, and ODE reference components

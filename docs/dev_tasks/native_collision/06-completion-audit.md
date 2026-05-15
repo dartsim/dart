@@ -134,11 +134,11 @@ unverified external and finalization gates:
   downstream migration, and leave FCL/Bullet/ODE access in explicit
   reference-only test/benchmark APIs.
 - Full local `pixi run test-all` evidence is refreshed on pushed branch head
-  `d0e23f7b2f1` (`Clarify native collision audit branch state`) before this
-  evidence-note update, with normal native-only defaults keeping only reference
-  tests and reference benchmarks visible and `OFF`. Final `pixi run test-all`
-  evidence after the eventual PR-complete state is still missing. The refreshed
-  full reruns found and repaired three
+  `930aca64d45` (`Sync native collision PR evidence draft`) before the latest
+  source-build prerequisite docs cleanup, with normal native-only defaults
+  keeping only reference tests and reference benchmarks visible and `OFF`.
+  Final `pixi run test-all` evidence after the eventual PR-complete state is
+  still missing. The refreshed full reruns found and repaired three
   local validation robustness gaps: a stale optional `libccd` CMake cache issue
   in the default native-only test build, stale `ShapeType::Cone`,
   `ShapeType::HeightField`, and `ShapeType::PointCloud` cases in the VSG
@@ -192,16 +192,19 @@ Current audited state:
   Actions runs for the later pushes because `feature/new_coll` does not match
   the workflow `push` filters and PR #2652 remains closed.
 - Full local validation run head: pushed branch head `d0e23f7b2f1`
-  (`Clarify native collision audit branch state`) before this evidence-note
-  update. The safe-job full-validation command passed with 6/6 top-level
-  gates: linting, build, unit tests, simulation-experimental tests, Python
-  tests, and documentation. The configure output kept collision reference tests
-  and collision reference benchmarks `OFF`, confirming old-engine comparison
-  components are not compatibility prerequisites for core DART, dartpy,
-  gz-physics runtime integration, or native-backed package component facades.
-  A focused `collision-reference` configure/build/CTest check also passed with
-  reference tests and reference benchmarks `ON` and all FCL, Bullet, and ODE
-  reference components configured internally.
+  (`Clarify native collision audit branch state`) plus a later full refresh on
+  pushed branch head `930aca64d45` (`Sync native collision PR evidence draft`)
+  before the source-build prerequisite docs cleanup. The safe-job
+  full-validation command passed with 6/6 top-level gates: linting, build, unit
+  tests, simulation-experimental tests, Python tests, and documentation. The
+  `930aca64d45` run passed 264/264 C++ Release CTest tests and 147/147 Python
+  tests. The configure output kept collision reference tests and collision
+  reference benchmarks `OFF`, confirming old-engine comparison components are
+  not compatibility prerequisites for core DART, dartpy, gz-physics runtime
+  integration, or native-backed package component facades. A focused
+  `collision-reference` configure/build/CTest check also passed with reference
+  tests and reference benchmarks `ON` and all FCL, Bullet, and ODE reference
+  components configured internally.
 - Benchmark guard record head: `4b155655890`
   (`Record current collision benchmark guard`). The safe-job
   `collision-reference` benchmark guard passed locally, covering narrow phase,

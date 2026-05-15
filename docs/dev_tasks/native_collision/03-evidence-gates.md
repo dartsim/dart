@@ -2860,6 +2860,30 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     constraints onboarding docs, and human-joint-limits / rigid-shapes example
     READMEs. Intentional architecture and reference-harness docs still mention
     FCL, Bullet, and ODE as optional reference-comparison inputs.
+- Current source-build prerequisite docs cleanup:
+  - Commit: working tree after pushed branch head `930aca64d45`
+    (`Sync native collision PR evidence draft`).
+  - Scan:
+    `rg "DART_BUILD_COLLISION_(FCL|BULLET|ODE)|BUILD_COLLISION_(FCL|BULLET|ODE)" -n`
+  - Result: the current CMake/Pixi configure surface has no per-engine
+    FCL/Bullet/ODE collision build switches. Remaining matches are historical
+    dev-task evidence entries from earlier migration checkpoints. Public
+    source-build prerequisites now list FCL with Bullet and ODE as optional
+    reference-comparison dependencies, while core DART, dartpy, and normal
+    runtime builds require no per-engine collision dependency.
+- Current branch-head full local validation refresh:
+  - Commit: `930aca64d45` (`Sync native collision PR evidence draft`), pushed
+    to `origin/feature/new_coll`. This source-build prerequisite docs cleanup
+    is documentation-only on top of that full validation baseline.
+  - Command:
+    `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+  - Result: passed. The comprehensive suite reported 6/6 top-level gates:
+    linting, build, unit tests, simulation-experimental tests, Python tests,
+    and documentation. The C++ Release CTest pass completed 264/264 tests, and
+    Python tests completed 147/147 tests. Configure output exposed only
+    `DART_BUILD_COLLISION_REFERENCE_TESTS` and
+    `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS`, both `OFF` by default, for
+    optional old-engine comparison components.
 
 ## Known Risks
 

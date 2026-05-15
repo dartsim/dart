@@ -48,6 +48,8 @@ must be deleted in the same PR that completes the native-collision migration.
   `DartCollisionDetector` API without legacy aliases, and FCL/Bullet/ODE
   comparison engines are opt-in reference components rather than normal runtime
   build options.
+- Source-build prerequisite docs now keep FCL/Bullet/ODE out of the required
+  dependency set. They are optional reference-comparison dependencies only.
 - `05-downstream-migration.md` defines the downstream/deprecation evidence
   acceptance criteria that must be carried on the final PR/downstream CI
   surface before retained C++ and package facades are removed or
@@ -70,8 +72,9 @@ must be deleted in the same PR that completes the native-collision migration.
 
 Local validation currently recorded in the dev-task evidence:
 
-- `DART_PARALLEL_JOBS=1 CTEST_PARALLEL_LEVEL=1 CMAKE_BUILD_PARALLEL_LEVEL=1 pixi run test-all`
-  passed on pushed branch head `d0e23f7b2f1` before this evidence-note update
+- `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+  passed on pushed branch head `930aca64d45` before the source-build
+  prerequisite docs cleanup
   with 6/6 top-level gates:
   - linting
   - build
@@ -129,6 +132,12 @@ Local validation currently recorded in the dev-task evidence:
   - Lint configured the default build with reference tests and reference
     benchmarks `OFF`, then reran `check-collision-runtime-isolation` and
     `audit-collision-compat-facades`.
+- Latest local full-validation refresh on pushed head `930aca64d45`:
+  - `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+    passed with 6/6 top-level gates: linting, build, unit tests,
+    simulation-experimental tests, Python tests, and documentation.
+  - The C++ Release CTest pass completed 264/264 tests, and Python tests
+    completed 147/147 tests.
 - Later pushed audit/docs/policy heads have no attached GitHub Actions runs
   unless the maintainer chooses a PR or manual workflow surface, because
   `feature/new_coll` pushes do not match the workflow `push` filters.
@@ -168,6 +177,7 @@ Compatibility notes:
   - `d0e23f7b2f1` (`Clarify native collision audit branch state`)
   - `d790a459850` (`Document collision migration policy`)
   - `d489292bdf1` (`Define collision deprecation evidence criteria`)
+  - `930aca64d45` (`Sync native collision PR evidence draft`)
 
 ## Checklist Notes
 
