@@ -91,8 +91,8 @@
 - Retained Filament renderables now reapply descriptor shadow flags each frame,
   so DART visual-aspect shadow changes are not limited to resource creation.
 - The experimental viewer-runtime layer owns reusable RGBA-to-PPM screenshot
-  storage, while the Filament example remains responsible only for renderer
-  readback.
+  storage, while `examples/filament_gui/screenshot.hpp` and `.cpp` isolate the
+  Filament example's renderer readback and capture synchronization.
   The current Filament readback path writes top-left-origin screenshots so
   headless captures are directly reviewable without a manual vertical flip.
 - The Filament example's scene option parsing and reusable DART world fixtures

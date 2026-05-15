@@ -38,6 +38,7 @@
 #include "transparent_textured_lit_material.hpp"
 
 #include "scenes.hpp"
+#include "screenshot.hpp"
 
 #include <dart/all.hpp>
 #include <dart/common/local_resource_retriever.hpp>
@@ -101,7 +102,6 @@
 #include <array>
 #include <cctype>
 #include <chrono>
-#include <condition_variable>
 #include <csetjmp>
 #include <cstdio>
 #include <cstring>
@@ -109,7 +109,6 @@
 #include <iostream>
 #include <limits>
 #include <memory>
-#include <mutex>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -205,12 +204,12 @@ using dart::gui::experimental::shouldStopAfterFrame;
 using dart::gui::experimental::togglePaused;
 using dart::gui::experimental::translateFrameRenderable;
 using dart::gui::experimental::updateOrbitCameraController;
-using dart::gui::experimental::writeRgbaPpm;
 using dart::simulation::World;
 using dart::examples::filament_gui::AppOptions;
 using dart::examples::filament_gui::DartScene;
 using dart::examples::filament_gui::ExampleScene;
 using dart::examples::filament_gui::G1IkHandle;
+using dart::examples::filament_gui::ScreenshotCapture;
 using dart::examples::filament_gui::createDartScene;
 using dart::examples::filament_gui::initialCameraForScene;
 using dart::examples::filament_gui::kAtlasFixtureSkeletonName;
@@ -230,7 +229,10 @@ using dart::examples::filament_gui::kSoftMeshFixtureSkeletonName;
 using dart::examples::filament_gui::kVoxelGridFixtureSkeletonName;
 using dart::examples::filament_gui::kWamFixtureSkeletonName;
 using dart::examples::filament_gui::parseOptions;
+using dart::examples::filament_gui::requestScreenshot;
+using dart::examples::filament_gui::saveScreenshot;
 using dart::examples::filament_gui::sceneName;
+using dart::examples::filament_gui::waitForScreenshot;
 using filament::math::float2;
 using filament::math::float3;
 using filament::math::float4;
@@ -335,16 +337,6 @@ struct DebugVertex
 {
   filament::math::float3 position;
   std::uint32_t color = 0;
-};
-
-struct ScreenshotCapture
-{
-  std::vector<std::uint8_t> pixels;
-  std::mutex mutex;
-  std::condition_variable condition;
-  std::uint32_t width = 0;
-  std::uint32_t height = 0;
-  bool done = false;
 };
 
 struct ProfileAccumulator
@@ -2910,69 +2902,6 @@ void destroyImGuiOverlay(filament::Engine& engine, ImGuiOverlay& overlay)
     engine.destroy(overlay.scene);
     overlay.scene = nullptr;
   }
-}
-
-void saveScreenshot(const ScreenshotCapture& capture, const std::string& path)
-{
-  std::string error;
-  if (!writeRgbaPpm(
-          path,
-          capture.width,
-          capture.height,
-          capture.pixels,
-          false,
-          &error)) {
-    std::cerr << error << "\n";
-    std::exit(1);
-  }
-}
-
-void requestScreenshot(
-    filament::Renderer& renderer,
-    ScreenshotCapture& capture,
-    std::uint32_t width,
-    std::uint32_t height)
-{
-  {
-    std::lock_guard<std::mutex> lock(capture.mutex);
-    capture.width = width;
-    capture.height = height;
-    capture.done = false;
-    capture.pixels.assign(
-        static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4,
-        0);
-  }
-
-  filament::backend::PixelBufferDescriptor pixels(
-      capture.pixels.data(),
-      capture.pixels.size(),
-      filament::backend::PixelBufferDescriptor::PixelDataFormat::RGBA,
-      filament::backend::PixelBufferDescriptor::PixelDataType::UBYTE,
-      1,
-      0,
-      0,
-      width,
-      [](void*, std::size_t, void* user) {
-        auto* capture = static_cast<ScreenshotCapture*>(user);
-        {
-          std::lock_guard<std::mutex> lock(capture->mutex);
-          capture->done = true;
-        }
-        capture->condition.notify_one();
-      },
-      &capture);
-  renderer.readPixels(0, 0, width, height, std::move(pixels));
-}
-
-bool waitForScreenshot(filament::Engine& engine, ScreenshotCapture& capture)
-{
-  using namespace std::chrono_literals;
-  engine.flushAndWait();
-
-  std::unique_lock<std::mutex> lock(capture.mutex);
-  return capture.done || capture.condition.wait_for(lock, 5s, [&capture] {
-    return capture.done;
-  });
 }
 
 } // namespace
