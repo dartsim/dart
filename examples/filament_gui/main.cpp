@@ -41,6 +41,7 @@
 #include <dart/common/local_resource_retriever.hpp>
 #include <dart/common/profile.hpp>
 #include <dart/config.hpp>
+#include <dart/gui/experimental/geometry.hpp>
 #include <dart/gui/experimental/scene.hpp>
 #include <dart/io/read.hpp>
 #include <dart/utils/composite_resource_retriever.hpp>
@@ -154,6 +155,8 @@ using dart::gui::experimental::DebugLineDescriptor;
 using dart::gui::experimental::DirectionalNudgeInput;
 using dart::gui::experimental::GeometryDescriptor;
 using dart::gui::experimental::MaterialDescriptor;
+using dart::gui::experimental::MeshGeometry;
+using dart::gui::experimental::MeshIndexRange;
 using dart::gui::experimental::MeshAlphaMode;
 using dart::gui::experimental::MeshMaterialDescriptor;
 using dart::gui::experimental::MeshPartDescriptor;
@@ -178,6 +181,13 @@ using dart::gui::experimental::markFrameRendered;
 using dart::gui::experimental::markFrameSkipped;
 using dart::gui::experimental::markScreenshotRequested;
 using dart::gui::experimental::markSimulationAdvanced;
+using dart::gui::experimental::appendBoxMeshGeometry;
+using dart::gui::experimental::makeCapsuleMeshGeometry;
+using dart::gui::experimental::makeConeMeshGeometry;
+using dart::gui::experimental::makeCylinderMeshGeometry;
+using dart::gui::experimental::makeEllipsoidMeshGeometry;
+using dart::gui::experimental::makeMultiSphereMeshGeometry;
+using dart::gui::experimental::makePyramidMeshGeometry;
 using dart::gui::experimental::makeOrbitCameraBasis;
 using dart::gui::experimental::makePerspectiveProjection;
 using dart::gui::experimental::makePerspectivePickRay;
@@ -2162,6 +2172,16 @@ float3 toFloat3(const Eigen::Vector3d& vector)
       static_cast<float>(vector.z())};
 }
 
+float3 toFloat3f(const Eigen::Vector3f& vector)
+{
+  return {vector.x(), vector.y(), vector.z()};
+}
+
+float2 toFloat2f(const Eigen::Vector2f& vector)
+{
+  return {vector.x(), vector.y()};
+}
+
 float4 toFloat4(const Eigen::Vector4d& vector)
 {
   return {
@@ -2613,6 +2633,38 @@ Bounds computeDebugBounds(const std::vector<DebugVertex>& vertices)
   return bounds;
 }
 
+struct TriangleMeshBuffers
+{
+  std::vector<Vertex> vertices;
+  std::vector<std::uint32_t> indices;
+  std::vector<filament::math::uint3> triangles;
+  std::vector<float3> normals;
+  Bounds bounds{{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
+};
+
+TriangleMeshBuffers makeTriangleMeshBuffers(MeshGeometry&& geometry)
+{
+  const filament::math::short4 tangent = {0, 0, 0, 32767};
+  TriangleMeshBuffers buffers;
+  buffers.vertices.reserve(geometry.vertices.size());
+  buffers.normals.reserve(geometry.vertices.size());
+  for (const auto& vertex : geometry.vertices) {
+    buffers.vertices.push_back(
+        Vertex{toFloat3f(vertex.position), tangent, toFloat2f(vertex.uv)});
+    buffers.normals.push_back(toFloat3f(vertex.normal));
+  }
+
+  buffers.indices = std::move(geometry.indices);
+  buffers.triangles.reserve(geometry.triangles.size());
+  for (const auto& triangle : geometry.triangles) {
+    buffers.triangles.push_back({triangle.a, triangle.b, triangle.c});
+  }
+
+  buffers.bounds = {
+      toFloat3f(geometry.boundsMin), toFloat3f(geometry.boundsMax)};
+  return buffers;
+}
+
 std::uint8_t toByte(double channel)
 {
   return static_cast<std::uint8_t>(
@@ -2820,52 +2872,23 @@ Renderable createTriangleMeshRenderable(
   return renderable;
 }
 
-void appendEllipsoidGeometry(
-    std::vector<Vertex>& vertices,
-    std::vector<float3>& normals,
-    std::vector<std::uint32_t>& indices,
-    std::vector<filament::math::uint3>& triangles,
-    const Eigen::Vector3d& center,
-    const Eigen::Vector3d& radii)
+Renderable createGeometryMeshRenderable(
+    filament::Engine& engine,
+    filament::Material& material,
+    MeshGeometry geometry,
+    const float4& color)
 {
-  static constexpr std::uint32_t segments = 32;
-  static constexpr std::uint32_t rings = 16;
-  static constexpr double pi = 3.14159265358979323846;
-  const filament::math::short4 tangent = {0, 0, 0, 32767};
-  const std::uint32_t start = static_cast<std::uint32_t>(vertices.size());
-
-  for (std::uint32_t ring = 0; ring <= rings; ++ring) {
-    const double theta = -pi / 2.0 + pi * ring / rings;
-    const double z = std::sin(theta);
-    const double radial = std::cos(theta);
-    for (std::uint32_t segment = 0; segment <= segments; ++segment) {
-      const double phi = 2.0 * pi * segment / segments;
-      vertices.push_back(
-          Vertex{{static_cast<float>(center.x() + radii.x() * radial * std::cos(phi)),
-                  static_cast<float>(center.y() + radii.y() * radial * std::sin(phi)),
-                  static_cast<float>(center.z() + radii.z() * z)},
-                 tangent});
-      const Eigen::Vector3d normal{
-          radii.x() > 1e-12 ? radial * std::cos(phi) / radii.x() : 0.0,
-          radii.y() > 1e-12 ? radial * std::sin(phi) / radii.y() : 0.0,
-          radii.z() > 1e-12 ? z / radii.z() : 0.0};
-      normals.push_back(toFloat3(
-          normal.squaredNorm() > 1e-12
-              ? normal.normalized()
-              : Eigen::Vector3d(0.0, 0.0, z >= 0.0 ? 1.0 : -1.0)));
-    }
-  }
-
-  for (std::uint32_t ring = 0; ring < rings; ++ring) {
-    for (std::uint32_t segment = 0; segment < segments; ++segment) {
-      const std::uint32_t a = ring * (segments + 1) + segment;
-      const std::uint32_t b = a + 1;
-      const std::uint32_t c = (ring + 1) * (segments + 1) + segment;
-      const std::uint32_t d = c + 1;
-      appendTriangle(indices, triangles, start + a, start + b, start + c);
-      appendTriangle(indices, triangles, start + b, start + d, start + c);
-    }
-  }
+  auto buffers = makeTriangleMeshBuffers(std::move(geometry));
+  return createTriangleMeshRenderable(
+      engine,
+      material,
+      std::move(buffers.vertices),
+      std::move(buffers.indices),
+      std::move(buffers.triangles),
+      std::move(buffers.normals),
+      color,
+      buffers.bounds.min,
+      buffers.bounds.max);
 }
 
 Renderable createEllipsoidRenderable(
@@ -2874,31 +2897,8 @@ Renderable createEllipsoidRenderable(
     const Eigen::Vector3d& radii,
     const float4& color)
 {
-  static constexpr std::uint32_t segments = 32;
-  static constexpr std::uint32_t rings = 16;
-
-  std::vector<Vertex> vertices;
-  std::vector<float3> normals;
-  std::vector<std::uint32_t> indices;
-  std::vector<filament::math::uint3> triangles;
-  vertices.reserve((rings + 1) * (segments + 1));
-  normals.reserve((rings + 1) * (segments + 1));
-  indices.reserve(rings * segments * 6);
-  triangles.reserve(rings * segments * 2);
-
-  appendEllipsoidGeometry(
-      vertices, normals, indices, triangles, Eigen::Vector3d::Zero(), radii);
-
-  return createTriangleMeshRenderable(
-      engine,
-      material,
-      std::move(vertices),
-      std::move(indices),
-      std::move(triangles),
-      std::move(normals),
-      color,
-      toFloat3(-radii),
-      toFloat3(radii));
+  return createGeometryMeshRenderable(
+      engine, material, makeEllipsoidMeshGeometry(radii), color);
 }
 
 Renderable createMultiSphereRenderable(
@@ -2908,52 +2908,8 @@ Renderable createMultiSphereRenderable(
     const std::vector<double>& radii,
     const float4& color)
 {
-  static constexpr std::uint32_t segments = 32;
-  static constexpr std::uint32_t rings = 16;
-  const std::size_t sphereCount = std::min(centers.size(), radii.size());
-  const std::size_t verticesPerSphere = (rings + 1) * (segments + 1);
-  const std::size_t trianglesPerSphere = rings * segments * 2;
-
-  std::vector<Vertex> vertices;
-  std::vector<float3> normals;
-  std::vector<std::uint32_t> indices;
-  std::vector<filament::math::uint3> triangles;
-  vertices.reserve(sphereCount * verticesPerSphere);
-  normals.reserve(sphereCount * verticesPerSphere);
-  indices.reserve(sphereCount * trianglesPerSphere * 3);
-  triangles.reserve(sphereCount * trianglesPerSphere);
-
-  Eigen::Vector3d minBounds = Eigen::Vector3d::Zero();
-  Eigen::Vector3d maxBounds = Eigen::Vector3d::Zero();
-  bool hasBounds = false;
-  for (std::size_t i = 0; i < sphereCount; ++i) {
-    const double radius = radii[i];
-    if (radius <= 0.0) {
-      continue;
-    }
-    const Eigen::Vector3d extent = Eigen::Vector3d::Constant(radius);
-    appendEllipsoidGeometry(
-        vertices, normals, indices, triangles, centers[i], extent);
-    if (!hasBounds) {
-      minBounds = centers[i] - extent;
-      maxBounds = centers[i] + extent;
-      hasBounds = true;
-    } else {
-      minBounds = minBounds.cwiseMin(centers[i] - extent);
-      maxBounds = maxBounds.cwiseMax(centers[i] + extent);
-    }
-  }
-
-  return createTriangleMeshRenderable(
-      engine,
-      material,
-      std::move(vertices),
-      std::move(indices),
-      std::move(triangles),
-      std::move(normals),
-      color,
-      toFloat3(minBounds),
-      toFloat3(maxBounds));
+  return createGeometryMeshRenderable(
+      engine, material, makeMultiSphereMeshGeometry(centers, radii), color);
 }
 
 Renderable createCylinderRenderable(
@@ -2963,104 +2919,8 @@ Renderable createCylinderRenderable(
     double height,
     const float4& color)
 {
-  static constexpr std::uint32_t segments = 40;
-  static constexpr double pi = 3.14159265358979323846;
-  const filament::math::short4 tangent = {0, 0, 0, 32767};
-  const float halfHeight = static_cast<float>(height * 0.5);
-
-  std::vector<Vertex> vertices;
-  std::vector<float3> normals;
-  std::vector<std::uint32_t> indices;
-  std::vector<filament::math::uint3> triangles;
-  vertices.reserve((segments + 1) * 4 + 2);
-  normals.reserve((segments + 1) * 4 + 2);
-
-  for (const auto& [z, v] :
-       {std::pair{-halfHeight, 0.0f}, std::pair{halfHeight, 1.0f}}) {
-    for (std::uint32_t segment = 0; segment <= segments; ++segment) {
-      const double phi = 2.0 * pi * segment / segments;
-      const float cosPhi = static_cast<float>(std::cos(phi));
-      const float sinPhi = static_cast<float>(std::sin(phi));
-      vertices.push_back(
-          Vertex{{static_cast<float>(radius * cosPhi),
-                  static_cast<float>(radius * sinPhi),
-                  z},
-                 tangent,
-                 {static_cast<float>(segment) / static_cast<float>(segments),
-                  v}});
-      normals.push_back(normalizeOr({cosPhi, sinPhi, 0.0f}, {1.0f, 0.0f, 0.0f}));
-    }
-  }
-
-  for (std::uint32_t segment = 0; segment < segments; ++segment) {
-    const std::uint32_t a = segment;
-    const std::uint32_t b = segment + 1;
-    const std::uint32_t c = (segments + 1) + segment;
-    const std::uint32_t d = c + 1;
-    appendTriangle(indices, triangles, a, b, c);
-    appendTriangle(indices, triangles, b, d, c);
-  }
-
-  const std::uint32_t bottomCapStart
-      = static_cast<std::uint32_t>(vertices.size());
-  for (std::uint32_t segment = 0; segment <= segments; ++segment) {
-    const double phi = 2.0 * pi * segment / segments;
-    const float cosPhi = static_cast<float>(std::cos(phi));
-    const float sinPhi = static_cast<float>(std::sin(phi));
-    vertices.push_back(
-        Vertex{{static_cast<float>(radius * cosPhi),
-                static_cast<float>(radius * sinPhi),
-                -halfHeight},
-               tangent,
-               {0.5f + 0.5f * cosPhi, 0.5f + 0.5f * sinPhi}});
-    normals.push_back({0.0f, 0.0f, -1.0f});
-  }
-  const std::uint32_t topCapStart
-      = static_cast<std::uint32_t>(vertices.size());
-  for (std::uint32_t segment = 0; segment <= segments; ++segment) {
-    const double phi = 2.0 * pi * segment / segments;
-    const float cosPhi = static_cast<float>(std::cos(phi));
-    const float sinPhi = static_cast<float>(std::sin(phi));
-    vertices.push_back(
-        Vertex{{static_cast<float>(radius * cosPhi),
-                static_cast<float>(radius * sinPhi),
-                halfHeight},
-               tangent,
-               {0.5f + 0.5f * cosPhi, 0.5f + 0.5f * sinPhi}});
-    normals.push_back({0.0f, 0.0f, 1.0f});
-  }
-  const std::uint32_t bottomCenter = static_cast<std::uint32_t>(vertices.size());
-  vertices.push_back(Vertex{{0.0f, 0.0f, -halfHeight}, tangent, {0.5f, 0.5f}});
-  normals.push_back({0.0f, 0.0f, -1.0f});
-  const std::uint32_t topCenter = static_cast<std::uint32_t>(vertices.size());
-  vertices.push_back(Vertex{{0.0f, 0.0f, halfHeight}, tangent, {0.5f, 0.5f}});
-  normals.push_back({0.0f, 0.0f, 1.0f});
-  for (std::uint32_t segment = 0; segment < segments; ++segment) {
-    appendTriangle(
-        indices,
-        triangles,
-        bottomCenter,
-        bottomCapStart + segment + 1,
-        bottomCapStart + segment);
-    appendTriangle(
-        indices,
-        triangles,
-        topCenter,
-        topCapStart + segment,
-        topCapStart + segment + 1);
-  }
-
-  const float r = static_cast<float>(radius);
-  return createTriangleMeshRenderable(
-      engine,
-      material,
-      std::move(vertices),
-      std::move(indices),
-      std::move(triangles),
-      std::move(normals),
-      color,
-      {-r, -r, -halfHeight},
-      {r, r, halfHeight});
+  return createGeometryMeshRenderable(
+      engine, material, makeCylinderMeshGeometry(radius, height), color);
 }
 
 Renderable createConeRenderable(
@@ -3070,90 +2930,8 @@ Renderable createConeRenderable(
     double height,
     const float4& color)
 {
-  static constexpr std::uint32_t segments = 40;
-  static constexpr double pi = 3.14159265358979323846;
-  const filament::math::short4 tangent = {0, 0, 0, 32767};
-  const float halfHeight = static_cast<float>(height * 0.5);
-
-  std::vector<Vertex> vertices;
-  std::vector<float3> normals;
-  std::vector<std::uint32_t> indices;
-  std::vector<filament::math::uint3> triangles;
-  vertices.reserve(segments * 3 + segments + 2);
-  normals.reserve(segments * 3 + segments + 2);
-
-  const auto sideNormal = [&](double phi) {
-    const float cosPhi = static_cast<float>(std::cos(phi));
-    const float sinPhi = static_cast<float>(std::sin(phi));
-    const float z = height > 1e-12 ? static_cast<float>(radius / height) : 0.0f;
-    return normalizeOr({cosPhi, sinPhi, z}, {cosPhi, sinPhi, 0.0f});
-  };
-
-  for (std::uint32_t segment = 0; segment < segments; ++segment) {
-    const double phi0 = 2.0 * pi * segment / segments;
-    const double phi1 = 2.0 * pi * (segment + 1) / segments;
-    const double phiMid = 0.5 * (phi0 + phi1);
-    const float u0 = static_cast<float>(segment) / static_cast<float>(segments);
-    const float u1
-        = static_cast<float>(segment + 1) / static_cast<float>(segments);
-    const float cos0 = static_cast<float>(std::cos(phi0));
-    const float sin0 = static_cast<float>(std::sin(phi0));
-    const float cos1 = static_cast<float>(std::cos(phi1));
-    const float sin1 = static_cast<float>(std::sin(phi1));
-    const std::uint32_t base0 = static_cast<std::uint32_t>(vertices.size());
-    vertices.push_back(
-        Vertex{{static_cast<float>(radius * cos0),
-                static_cast<float>(radius * sin0),
-                -halfHeight},
-               tangent,
-               {u0, 0.0f}});
-    normals.push_back(sideNormal(phi0));
-    const std::uint32_t base1 = static_cast<std::uint32_t>(vertices.size());
-    vertices.push_back(
-        Vertex{{static_cast<float>(radius * cos1),
-                static_cast<float>(radius * sin1),
-                -halfHeight},
-               tangent,
-               {u1, 0.0f}});
-    normals.push_back(sideNormal(phi1));
-    const std::uint32_t tip = static_cast<std::uint32_t>(vertices.size());
-    vertices.push_back(Vertex{{0.0f, 0.0f, halfHeight}, tangent, {0.5f * (u0 + u1), 1.0f}});
-    normals.push_back(sideNormal(phiMid));
-    appendTriangle(indices, triangles, base0, base1, tip);
-  }
-
-  const std::uint32_t baseStart = static_cast<std::uint32_t>(vertices.size());
-  for (std::uint32_t segment = 0; segment <= segments; ++segment) {
-    const double phi = 2.0 * pi * segment / segments;
-    const float cosPhi = static_cast<float>(std::cos(phi));
-    const float sinPhi = static_cast<float>(std::sin(phi));
-    vertices.push_back(
-        Vertex{{static_cast<float>(radius * cosPhi),
-                static_cast<float>(radius * sinPhi),
-                -halfHeight},
-               tangent,
-               {0.5f + 0.5f * cosPhi, 0.5f + 0.5f * sinPhi}});
-    normals.push_back({0.0f, 0.0f, -1.0f});
-  }
-  const std::uint32_t center = static_cast<std::uint32_t>(vertices.size());
-  vertices.push_back(Vertex{{0.0f, 0.0f, -halfHeight}, tangent, {0.5f, 0.5f}});
-  normals.push_back({0.0f, 0.0f, -1.0f});
-
-  for (std::uint32_t segment = 0; segment < segments; ++segment) {
-    appendTriangle(indices, triangles, center, baseStart + segment + 1, baseStart + segment);
-  }
-
-  const float r = static_cast<float>(radius);
-  return createTriangleMeshRenderable(
-      engine,
-      material,
-      std::move(vertices),
-      std::move(indices),
-      std::move(triangles),
-      std::move(normals),
-      color,
-      {-r, -r, -halfHeight},
-      {r, r, halfHeight});
+  return createGeometryMeshRenderable(
+      engine, material, makeConeMeshGeometry(radius, height), color);
 }
 
 Renderable createPyramidRenderable(
@@ -3162,63 +2940,8 @@ Renderable createPyramidRenderable(
     const Eigen::Vector3d& size,
     const float4& color)
 {
-  const filament::math::short4 tangent = {0, 0, 0, 32767};
-  const float halfWidth = static_cast<float>(size.x() * 0.5);
-  const float halfDepth = static_cast<float>(size.y() * 0.5);
-  const float halfHeight = static_cast<float>(size.z() * 0.5);
-
-  const std::array<float3, 5> points = {
-      float3{0.0f, 0.0f, halfHeight},
-      float3{-halfWidth, -halfDepth, -halfHeight},
-      float3{halfWidth, -halfDepth, -halfHeight},
-      float3{halfWidth, halfDepth, -halfHeight},
-      float3{-halfWidth, halfDepth, -halfHeight}};
-
-  std::vector<Vertex> vertices;
-  std::vector<float3> normals;
-  std::vector<std::uint32_t> indices;
-  std::vector<filament::math::uint3> triangles;
-  vertices.reserve(18);
-  normals.reserve(18);
-  indices.reserve(18);
-  triangles.reserve(6);
-
-  const auto appendFace = [&](std::uint32_t a,
-                              std::uint32_t b,
-                              std::uint32_t c,
-                              float2 uvA,
-                              float2 uvB,
-                              float2 uvC) {
-    const float3 normal = normalizeOr(
-        crossProduct(points[b] - points[a], points[c] - points[a]),
-        {0.0f, 0.0f, 1.0f});
-    const auto start = static_cast<std::uint32_t>(vertices.size());
-    vertices.push_back(Vertex{points[a], tangent, uvA});
-    vertices.push_back(Vertex{points[b], tangent, uvB});
-    vertices.push_back(Vertex{points[c], tangent, uvC});
-    normals.push_back(normal);
-    normals.push_back(normal);
-    normals.push_back(normal);
-    appendTriangle(indices, triangles, start, start + 1u, start + 2u);
-  };
-
-  appendFace(0, 1, 2, {0.5f, 1.0f}, {0.0f, 0.0f}, {1.0f, 0.0f});
-  appendFace(0, 2, 3, {0.5f, 1.0f}, {0.0f, 0.0f}, {1.0f, 0.0f});
-  appendFace(0, 3, 4, {0.5f, 1.0f}, {0.0f, 0.0f}, {1.0f, 0.0f});
-  appendFace(0, 4, 1, {0.5f, 1.0f}, {0.0f, 0.0f}, {1.0f, 0.0f});
-  appendFace(1, 4, 3, {0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f});
-  appendFace(1, 3, 2, {0.0f, 0.0f}, {1.0f, 1.0f}, {1.0f, 0.0f});
-
-  return createTriangleMeshRenderable(
-      engine,
-      material,
-      std::move(vertices),
-      std::move(indices),
-      std::move(triangles),
-      std::move(normals),
-      color,
-      {-halfWidth, -halfDepth, -halfHeight},
-      {halfWidth, halfDepth, halfHeight});
+  return createGeometryMeshRenderable(
+      engine, material, makePyramidMeshGeometry(size), color);
 }
 
 Renderable createCapsuleRenderable(
@@ -3228,80 +2951,8 @@ Renderable createCapsuleRenderable(
     double height,
     const float4& color)
 {
-  static constexpr std::uint32_t segments = 32;
-  static constexpr std::uint32_t hemisphereRings = 8;
-  static constexpr double pi = 3.14159265358979323846;
-  const filament::math::short4 tangent = {0, 0, 0, 32767};
-
-  struct Ring
-  {
-    double z;
-    double radius;
-  };
-  std::vector<Ring> rings;
-  rings.reserve(hemisphereRings * 2 + 2);
-  for (std::uint32_t i = 0; i <= hemisphereRings; ++i) {
-    const double phi = pi / 2.0 - (pi / 2.0) * i / hemisphereRings;
-    rings.push_back(
-        {height * 0.5 + radius * std::sin(phi), radius * std::cos(phi)});
-  }
-  if (height > 0.0) {
-    rings.push_back({-height * 0.5, radius});
-  }
-  for (std::uint32_t i = 1; i <= hemisphereRings; ++i) {
-    const double phi = -(pi / 2.0) * i / hemisphereRings;
-    rings.push_back(
-        {-height * 0.5 + radius * std::sin(phi), radius * std::cos(phi)});
-  }
-
-  std::vector<Vertex> vertices;
-  std::vector<float3> normals;
-  std::vector<std::uint32_t> indices;
-  std::vector<filament::math::uint3> triangles;
-  vertices.reserve(rings.size() * (segments + 1));
-  normals.reserve(rings.size() * (segments + 1));
-  for (const Ring& ring : rings) {
-    for (std::uint32_t segment = 0; segment <= segments; ++segment) {
-      const double theta = 2.0 * pi * segment / segments;
-      const float x = static_cast<float>(ring.radius * std::cos(theta));
-      const float y = static_cast<float>(ring.radius * std::sin(theta));
-      const float z = static_cast<float>(ring.z);
-      vertices.push_back(
-          Vertex{{x, y, z},
-                 tangent,
-                 {static_cast<float>(segment) / static_cast<float>(segments),
-                  static_cast<float>(vertices.size() / (segments + 1))
-                      / static_cast<float>(rings.size() - 1)}});
-      const double capCenterZ = std::clamp(ring.z, -height * 0.5, height * 0.5);
-      normals.push_back(normalizeOr(
-          {x, y, static_cast<float>(ring.z - capCenterZ)},
-          {0.0f, 0.0f, ring.z >= 0.0 ? 1.0f : -1.0f}));
-    }
-  }
-
-  for (std::uint32_t ring = 0; ring + 1 < rings.size(); ++ring) {
-    for (std::uint32_t segment = 0; segment < segments; ++segment) {
-      const std::uint32_t a = ring * (segments + 1) + segment;
-      const std::uint32_t b = a + 1;
-      const std::uint32_t c = (ring + 1) * (segments + 1) + segment;
-      const std::uint32_t d = c + 1;
-      appendTriangle(indices, triangles, a, b, c);
-      appendTriangle(indices, triangles, b, d, c);
-    }
-  }
-
-  const float r = static_cast<float>(radius);
-  const float halfTotalHeight = static_cast<float>(height * 0.5 + radius);
-  return createTriangleMeshRenderable(
-      engine,
-      material,
-      std::move(vertices),
-      std::move(indices),
-      std::move(triangles),
-      std::move(normals),
-      color,
-      {-r, -r, -halfTotalHeight},
-      {r, r, halfTotalHeight});
+  return createGeometryMeshRenderable(
+      engine, material, makeCapsuleMeshGeometry(radius, height), color);
 }
 
 std::optional<Renderable> createDescriptorTriangleMeshRenderable(
@@ -3401,77 +3052,6 @@ std::optional<Renderable> createDescriptorTriangleMeshRenderable(
       bounds.max);
 }
 
-void appendPointBoxGeometry(
-    std::vector<Vertex>& vertices,
-    std::vector<float3>& normals,
-    std::vector<std::uint32_t>& indices,
-    std::vector<filament::math::uint3>& triangles,
-    const Eigen::Vector3d& center,
-    double size)
-{
-  const filament::math::short4 tangent = {0, 0, 0, 32767};
-  const float halfSize = static_cast<float>(size * 0.5);
-  const float3 centerPoint = toFloat3(center);
-  const std::array<float3, 8> points = {
-      float3{
-          centerPoint.x - halfSize,
-          centerPoint.y - halfSize,
-          centerPoint.z - halfSize},
-      float3{
-          centerPoint.x + halfSize,
-          centerPoint.y - halfSize,
-          centerPoint.z - halfSize},
-      float3{
-          centerPoint.x + halfSize,
-          centerPoint.y + halfSize,
-          centerPoint.z - halfSize},
-      float3{
-          centerPoint.x - halfSize,
-          centerPoint.y + halfSize,
-          centerPoint.z - halfSize},
-      float3{
-          centerPoint.x - halfSize,
-          centerPoint.y - halfSize,
-          centerPoint.z + halfSize},
-      float3{
-          centerPoint.x + halfSize,
-          centerPoint.y - halfSize,
-          centerPoint.z + halfSize},
-      float3{
-          centerPoint.x + halfSize,
-          centerPoint.y + halfSize,
-          centerPoint.z + halfSize},
-      float3{
-          centerPoint.x - halfSize,
-          centerPoint.y + halfSize,
-          centerPoint.z + halfSize}};
-
-  const auto appendFace = [&](std::uint32_t a,
-                              std::uint32_t b,
-                              std::uint32_t cIndex,
-                              std::uint32_t d,
-                              const float3& normal) {
-    const auto start = static_cast<std::uint32_t>(vertices.size());
-    vertices.push_back(Vertex{points[a], tangent, {0.0f, 0.0f}});
-    vertices.push_back(Vertex{points[b], tangent, {1.0f, 0.0f}});
-    vertices.push_back(Vertex{points[cIndex], tangent, {1.0f, 1.0f}});
-    vertices.push_back(Vertex{points[d], tangent, {0.0f, 1.0f}});
-    normals.push_back(normal);
-    normals.push_back(normal);
-    normals.push_back(normal);
-    normals.push_back(normal);
-    appendTriangle(indices, triangles, start, start + 1u, start + 2u);
-    appendTriangle(indices, triangles, start, start + 2u, start + 3u);
-  };
-
-  appendFace(4, 5, 6, 7, {0.0f, 0.0f, 1.0f});
-  appendFace(0, 3, 2, 1, {0.0f, 0.0f, -1.0f});
-  appendFace(3, 7, 6, 2, {0.0f, 1.0f, 0.0f});
-  appendFace(0, 1, 5, 4, {0.0f, -1.0f, 0.0f});
-  appendFace(1, 2, 6, 5, {1.0f, 0.0f, 0.0f});
-  appendFace(0, 4, 7, 3, {-1.0f, 0.0f, 0.0f});
-}
-
 std::optional<Renderable> createPointCloudRenderable(
     filament::Engine& engine,
     const MaterialSet& materials,
@@ -3487,40 +3067,30 @@ std::optional<Renderable> createPointCloudRenderable(
   }
 
   const double pointSize = std::max(descriptor.geometry.pointSize, 1e-4);
-  std::vector<Vertex> vertices;
-  std::vector<float3> normals;
-  std::vector<std::uint32_t> indices;
-  std::vector<filament::math::uint3> triangles;
-  struct PointRange
-  {
-    std::size_t indexOffset = 0;
-    std::size_t indexCount = 0;
-  };
-  std::vector<PointRange> pointRanges;
-  vertices.reserve(descriptor.geometry.pointCloudPoints.size() * 24u);
-  normals.reserve(descriptor.geometry.pointCloudPoints.size() * 24u);
-  indices.reserve(descriptor.geometry.pointCloudPoints.size() * 36u);
-  triangles.reserve(descriptor.geometry.pointCloudPoints.size() * 12u);
+  MeshGeometry geometry;
+  std::vector<MeshIndexRange> pointRanges;
+  geometry.vertices.reserve(descriptor.geometry.pointCloudPoints.size() * 24u);
+  geometry.indices.reserve(descriptor.geometry.pointCloudPoints.size() * 36u);
+  geometry.triangles.reserve(descriptor.geometry.pointCloudPoints.size() * 12u);
   pointRanges.reserve(descriptor.geometry.pointCloudPoints.size());
 
   for (const Eigen::Vector3d& point : descriptor.geometry.pointCloudPoints) {
-    const std::size_t indexOffset = indices.size();
-    appendPointBoxGeometry(
-        vertices, normals, indices, triangles, point, pointSize);
-    pointRanges.push_back({indexOffset, indices.size() - indexOffset});
+    pointRanges.push_back(appendBoxMeshGeometry(
+        geometry, point, Eigen::Vector3d::Constant(pointSize)));
   }
 
-  const Bounds bounds = computeBounds(vertices);
+  auto buffers = makeTriangleMeshBuffers(std::move(geometry));
+  const Bounds bounds = buffers.bounds;
   const bool usePerPointColors
       = descriptor.geometry.pointCloudColors.size()
         == descriptor.geometry.pointCloudPoints.size();
   if (usePerPointColors) {
-    generateTangentFrames(vertices, triangles, normals);
+    generateTangentFrames(buffers.vertices, buffers.triangles, buffers.normals);
 
     Renderable renderable;
     renderable.vertexBuffer
         = filament::VertexBuffer::Builder()
-              .vertexCount(vertices.size())
+              .vertexCount(buffers.vertices.size())
               .bufferCount(1)
               .attribute(
                   filament::VertexAttribute::POSITION,
@@ -3543,15 +3113,15 @@ std::optional<Renderable> createPointCloudRenderable(
               .normalized(filament::VertexAttribute::TANGENTS)
               .build(engine);
     renderable.vertexBuffer->setBufferAt(
-        engine, 0, makeBufferDescriptor(std::move(vertices)));
+        engine, 0, makeBufferDescriptor(std::move(buffers.vertices)));
 
     renderable.indexBuffer
         = filament::IndexBuffer::Builder()
-              .indexCount(indices.size())
+              .indexCount(buffers.indices.size())
               .bufferType(filament::IndexBuffer::IndexType::UINT)
               .build(engine);
     renderable.indexBuffer->setBuffer(
-        engine, makeBufferDescriptor(std::move(indices)));
+        engine, makeBufferDescriptor(std::move(buffers.indices)));
 
     renderable.entity = EntityManager::get().create();
     auto builder = filament::RenderableManager::Builder(pointRanges.size());
@@ -3588,10 +3158,10 @@ std::optional<Renderable> createPointCloudRenderable(
   return createTriangleMeshRenderable(
       engine,
       selectLitMaterial(materials, false, color),
-      std::move(vertices),
-      std::move(indices),
-      std::move(triangles),
-      std::move(normals),
+      std::move(buffers.vertices),
+      std::move(buffers.indices),
+      std::move(buffers.triangles),
+      std::move(buffers.normals),
       color,
       bounds.min,
       bounds.max);
@@ -3608,28 +3178,25 @@ std::optional<Renderable> createVoxelGridRenderable(
 
   const float4 color = toRgba(descriptor.material.rgba);
   const double voxelSize = std::max(descriptor.geometry.voxelSize, 1e-4);
-  std::vector<Vertex> vertices;
-  std::vector<float3> normals;
-  std::vector<std::uint32_t> indices;
-  std::vector<filament::math::uint3> triangles;
-  vertices.reserve(descriptor.geometry.voxelCenters.size() * 24u);
-  normals.reserve(descriptor.geometry.voxelCenters.size() * 24u);
-  indices.reserve(descriptor.geometry.voxelCenters.size() * 36u);
-  triangles.reserve(descriptor.geometry.voxelCenters.size() * 12u);
+  MeshGeometry geometry;
+  geometry.vertices.reserve(descriptor.geometry.voxelCenters.size() * 24u);
+  geometry.indices.reserve(descriptor.geometry.voxelCenters.size() * 36u);
+  geometry.triangles.reserve(descriptor.geometry.voxelCenters.size() * 12u);
 
   for (const Eigen::Vector3d& center : descriptor.geometry.voxelCenters) {
-    appendPointBoxGeometry(
-        vertices, normals, indices, triangles, center, voxelSize);
+    appendBoxMeshGeometry(
+        geometry, center, Eigen::Vector3d::Constant(voxelSize));
   }
 
-  const Bounds bounds = computeBounds(vertices);
+  auto buffers = makeTriangleMeshBuffers(std::move(geometry));
+  const Bounds bounds = buffers.bounds;
   return createTriangleMeshRenderable(
       engine,
       selectLitMaterial(materials, false, color),
-      std::move(vertices),
-      std::move(indices),
-      std::move(triangles),
-      std::move(normals),
+      std::move(buffers.vertices),
+      std::move(buffers.indices),
+      std::move(buffers.triangles),
+      std::move(buffers.normals),
       color,
       bounds.min,
       bounds.max);

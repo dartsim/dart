@@ -32,6 +32,7 @@
 
 #include <dart/config.hpp>
 
+#include <dart/gui/experimental/geometry.hpp>
 #include <dart/gui/experimental/scene.hpp>
 
 #include <dart/simulation/world.hpp>
@@ -122,6 +123,7 @@ using dart::dynamics::VisualAspect;
 using dart::dynamics::WeldJoint;
 using dart::gui::experimental::ActiveRenderableState;
 using dart::gui::experimental::MeshAlphaMode;
+using dart::gui::experimental::MeshGeometry;
 using dart::gui::experimental::ShapeKind;
 using dart::math::SupportGeometry;
 using dart::simulation::World;
@@ -268,6 +270,27 @@ std::shared_ptr<const SoftMeshShape> findSoftMeshShape(
   return nullptr;
 }
 
+void expectMeshGeometryIsWellFormed(const MeshGeometry& mesh)
+{
+  ASSERT_TRUE(mesh.hasBounds);
+  ASSERT_FALSE(mesh.vertices.empty());
+  ASSERT_FALSE(mesh.indices.empty());
+  EXPECT_EQ(mesh.indices.size(), mesh.triangles.size() * 3u);
+  EXPECT_EQ(mesh.indices.size() % 3u, 0u);
+
+  for (const auto& vertex : mesh.vertices) {
+    EXPECT_TRUE(vertex.position.allFinite());
+    EXPECT_TRUE(vertex.normal.allFinite());
+    EXPECT_TRUE(vertex.uv.allFinite());
+    EXPECT_GT(vertex.normal.squaredNorm(), 0.9f);
+    EXPECT_LT(vertex.normal.squaredNorm(), 1.1f);
+  }
+
+  for (std::uint32_t index : mesh.indices) {
+    EXPECT_LT(index, mesh.vertices.size());
+  }
+}
+
 TEST(FilamentSceneExtraction, ExperimentalPublicHeadersStayBackendHidden)
 {
   const std::array<std::string_view, 18> forbiddenTokens
@@ -302,6 +325,54 @@ TEST(FilamentSceneExtraction, ExperimentalPublicHeadersStayBackendHidden)
           << "`";
     }
   }
+}
+
+TEST(FilamentSceneExtraction, MeshGeometryBuildersProduceBoundedMeshes)
+{
+  const auto ellipsoid = dart::gui::experimental::makeEllipsoidMeshGeometry(
+      Eigen::Vector3d(1.0, 2.0, 3.0));
+  expectMeshGeometryIsWellFormed(ellipsoid);
+  EXPECT_EQ(ellipsoid.vertices.size(), 17u * 33u);
+  EXPECT_EQ(ellipsoid.triangles.size(), 16u * 32u * 2u);
+  EXPECT_TRUE(
+      ellipsoid.boundsMin.isApprox(Eigen::Vector3f(-1.0f, -2.0f, -3.0f)));
+  EXPECT_TRUE(ellipsoid.boundsMax.isApprox(Eigen::Vector3f(1.0f, 2.0f, 3.0f)));
+
+  const auto cylinder
+      = dart::gui::experimental::makeCylinderMeshGeometry(0.5, 1.4);
+  expectMeshGeometryIsWellFormed(cylinder);
+  EXPECT_EQ(cylinder.vertices.size(), 166u);
+  EXPECT_EQ(cylinder.triangles.size(), 160u);
+  EXPECT_TRUE(
+      cylinder.boundsMin.isApprox(Eigen::Vector3f(-0.5f, -0.5f, -0.7f)));
+  EXPECT_TRUE(cylinder.boundsMax.isApprox(Eigen::Vector3f(0.5f, 0.5f, 0.7f)));
+
+  const auto pyramid = dart::gui::experimental::makePyramidMeshGeometry(
+      Eigen::Vector3d(2.0, 4.0, 6.0));
+  expectMeshGeometryIsWellFormed(pyramid);
+  EXPECT_EQ(pyramid.vertices.size(), 18u);
+  EXPECT_EQ(pyramid.triangles.size(), 6u);
+  EXPECT_TRUE(pyramid.boundsMin.isApprox(Eigen::Vector3f(-1.0f, -2.0f, -3.0f)));
+  EXPECT_TRUE(pyramid.boundsMax.isApprox(Eigen::Vector3f(1.0f, 2.0f, 3.0f)));
+}
+
+TEST(FilamentSceneExtraction, BoxMeshAppenderReportsIndexRanges)
+{
+  MeshGeometry mesh;
+  const auto first = dart::gui::experimental::appendBoxMeshGeometry(
+      mesh, Eigen::Vector3d(1.0, 2.0, 3.0), Eigen::Vector3d::Ones());
+  const auto second = dart::gui::experimental::appendBoxMeshGeometry(
+      mesh, Eigen::Vector3d(-1.0, -2.0, -3.0), Eigen::Vector3d::Ones() * 2.0);
+
+  expectMeshGeometryIsWellFormed(mesh);
+  EXPECT_EQ(first.indexOffset, 0u);
+  EXPECT_EQ(first.indexCount, 36u);
+  EXPECT_EQ(second.indexOffset, 36u);
+  EXPECT_EQ(second.indexCount, 36u);
+  EXPECT_EQ(mesh.vertices.size(), 48u);
+  EXPECT_EQ(mesh.triangles.size(), 24u);
+  EXPECT_TRUE(mesh.boundsMin.isApprox(Eigen::Vector3f(-2.0f, -3.0f, -4.0f)));
+  EXPECT_TRUE(mesh.boundsMax.isApprox(Eigen::Vector3f(1.5f, 2.5f, 3.5f)));
 }
 
 TEST(
