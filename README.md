@@ -34,7 +34,7 @@ dynamics.
 
 - **Accuracy & Stability** — Featherstone's Articulated Body Algorithm with proven numerical stability
 - **Unified Format Support** — Load URDF, SDF, MJCF, and SKEL models through a single API
-- **Full-featured Collision** — Multiple collision detection backends (FCL, Bullet, ODE)
+- **Built-in Native Collision** — Integrated collision detection with optional FCL, Bullet, and ODE reference comparisons
 - **Constraint Dynamics** — Joint limits, contacts, and closed-loop constraints solved together
 - **Cross-platform** — Linux, macOS, Windows with Python bindings included
 - **Battle-tested** — Powers [Gazebo](https://gazebosim.org), research labs, and production systems worldwide

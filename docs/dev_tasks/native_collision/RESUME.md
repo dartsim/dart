@@ -79,10 +79,9 @@ The last local guard refresh reported:
   facades, not external runtime backend selectors.
 - dartpy intentionally does not keep the legacy detector aliases through DART 7. The clean Python API is `DartCollisionDetector`.
 - `DART_BUILD_COLLISION_FCL`, `DART_BUILD_COLLISION_BULLET`, and
-  `DART_BUILD_COLLISION_ODE` are only needed for explicit
-  `collision-reference-*` comparison components. Core DART, dartpy,
-  gz-physics runtime integration, and native-backed compatibility facades do
-  not need those options.
+  `DART_BUILD_COLLISION_ODE` only enable explicit `collision-reference-*`
+  comparison components. Core DART, dartpy, gz-physics runtime integration,
+  and native-backed compatibility facades do not need those options.
 - The reference-file cleanup audit found no unreferenced FCL/Bullet/ODE
   implementation files to delete. Remaining files under
   `dart/collision/{fcl,bullet,ode}/reference/` are intentional reference

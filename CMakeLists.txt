@@ -226,19 +226,19 @@ unset(_dart_user_set_build_gui_raylib)
 dart_option(DART_BUILD_GUI_VSG "Build experimental VSG (VulkanSceneGraph) GUI backend" OFF CATEGORY build)
 dart_option(
   DART_BUILD_COLLISION_FCL
-  "Build the optional FCL collision reference component for tests and benchmarks. Core DART, dartpy, gz-physics runtime integration, and compatibility facades do not depend on FCL"
+  "Enable the optional FCL collision reference component for tests and benchmarks. Core DART, dartpy, gz-physics runtime integration, and compatibility facades do not depend on FCL"
   OFF
   CATEGORY build
 )
 dart_option(
   DART_BUILD_COLLISION_BULLET
-  "Build the optional Bullet collision reference component for tests and benchmarks. Core DART, dartpy, gz-physics runtime integration, and compatibility facades do not depend on Bullet"
+  "Enable the optional Bullet collision reference component for tests and benchmarks. Core DART, dartpy, gz-physics runtime integration, and compatibility facades do not depend on Bullet"
   OFF
   CATEGORY build
 )
 dart_option(
   DART_BUILD_COLLISION_ODE
-  "Build the optional ODE collision reference component for tests and benchmarks. Core DART, dartpy, gz-physics runtime integration, and compatibility facades do not depend on ODE collision"
+  "Enable the optional ODE collision reference component for tests and benchmarks. Core DART, dartpy, gz-physics runtime integration, and compatibility facades do not depend on ODE collision"
   OFF
   CATEGORY build
 )

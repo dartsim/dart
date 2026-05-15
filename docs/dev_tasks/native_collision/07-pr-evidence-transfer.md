@@ -158,7 +158,7 @@ Compatibility notes:
   `DART_COLLISION_DEPRECATE_LEGACY_NAMES`; downstreams may turn that option
   off only as a migration aid. Dartpy intentionally takes the clean API path.
 - `DART_BUILD_COLLISION_FCL`, `DART_BUILD_COLLISION_BULLET`, and
-  `DART_BUILD_COLLISION_ODE` are only needed for explicit
-  `collision-reference-*` comparison components. Core DART, dartpy,
-  gz-physics runtime integration, and native-backed compatibility facades do
-  not need those options; do not use these flags as compatibility gates.
+  `DART_BUILD_COLLISION_ODE` only enable explicit `collision-reference-*`
+  comparison components. Core DART, dartpy, gz-physics runtime integration,
+  and native-backed compatibility facades do not need those options; do not use
+  these flags as compatibility gates.
