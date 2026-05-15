@@ -118,6 +118,7 @@ using dart::dynamics::SphereShape;
 using dart::dynamics::VisualAspect;
 using dart::dynamics::WeldJoint;
 using dart::gui::experimental::ActiveRenderableState;
+using dart::gui::experimental::MeshAlphaMode;
 using dart::gui::experimental::ShapeKind;
 using dart::math::SupportGeometry;
 using dart::simulation::World;
@@ -309,6 +310,34 @@ TEST(
       before.front().renderResourceVersion,
       after.front().renderResourceVersion);
   EXPECT_NE(before.front().shapeNodeVersion, after.front().shapeNodeVersion);
+}
+
+TEST(
+    FilamentSceneExtraction,
+    ExtractRenderables_VisualAlphaChange_UpdatesRenderResourceVersion)
+{
+  auto world = World::create("world");
+  auto skeleton = Skeleton::create("robot");
+  auto [joint, body] = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  (void)joint;
+  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d(0.5, 0.5, 0.5));
+  auto* shapeNode
+      = body->createShapeNodeWith<VisualAspect>(shape, "box_visual");
+  world->addSkeleton(skeleton);
+
+  const auto before = dart::gui::experimental::extractRenderables(*world);
+  ASSERT_EQ(before.size(), 1u);
+  const auto beforeShapeVersion = before.front().shapeVersion;
+
+  shapeNode->getVisualAspect()->setAlpha(0.25);
+
+  const auto after = dart::gui::experimental::extractRenderables(*world);
+  ASSERT_EQ(after.size(), 1u);
+  EXPECT_EQ(before.front().id, after.front().id);
+  EXPECT_EQ(beforeShapeVersion, after.front().shapeVersion);
+  EXPECT_NE(
+      before.front().renderResourceVersion,
+      after.front().renderResourceVersion);
 }
 
 TEST(
@@ -646,6 +675,7 @@ TEST(
   MeshDescriptorHarness meshShape(
       Eigen::Vector3d(2.0, 3.0, 4.0), triMesh, dart::common::Uri{});
   meshShape.setColorMode(MeshShape::MATERIAL_COLOR);
+  meshShape.setAlphaMode(MeshShape::SHAPE_ALPHA);
 
   std::vector<MeshMaterial> materials(2);
   materials[0].diffuse = Eigen::Vector4f(0.2f, 0.3f, 0.4f, 0.75f);
@@ -684,6 +714,7 @@ TEST(
   EXPECT_TRUE(mesh->scale.isApprox(Eigen::Vector3d(2.0, 3.0, 4.0)));
   EXPECT_TRUE(mesh->meshUri.empty());
   EXPECT_TRUE(mesh->meshUsesMaterialColors);
+  EXPECT_EQ(mesh->meshAlphaMode, MeshAlphaMode::ShapeAlpha);
   EXPECT_EQ(mesh->meshTextureCoordComponents, 2);
   ASSERT_EQ(mesh->meshMaterials.size(), 2u);
   EXPECT_TRUE(mesh->meshMaterials[0].diffuse.isApprox(

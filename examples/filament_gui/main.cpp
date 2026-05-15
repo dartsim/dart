@@ -153,6 +153,7 @@ using dart::examples::filament_gui::DebugDrawOptions;
 using dart::examples::filament_gui::DebugLineDescriptor;
 using dart::examples::filament_gui::GeometryDescriptor;
 using dart::examples::filament_gui::MaterialDescriptor;
+using dart::examples::filament_gui::MeshAlphaMode;
 using dart::examples::filament_gui::MeshMaterialDescriptor;
 using dart::examples::filament_gui::MeshPartDescriptor;
 using dart::examples::filament_gui::OrbitCamera;
@@ -2347,6 +2348,21 @@ bool isTransparent(const float4& color)
   return color.w < 0.999f;
 }
 
+float resolveMeshMaterialAlpha(
+    float visualAlpha, float materialAlpha, MeshAlphaMode alphaMode)
+{
+  switch (alphaMode) {
+    case MeshAlphaMode::Blend:
+      return visualAlpha * materialAlpha;
+    case MeshAlphaMode::Auto:
+      return materialAlpha;
+    case MeshAlphaMode::ShapeAlpha:
+      return visualAlpha;
+  }
+
+  return visualAlpha * materialAlpha;
+}
+
 float3 selectionTint(const float3& color)
 {
   return {
@@ -3693,6 +3709,8 @@ std::optional<Renderable> createMeshRenderable(
           = geometry.meshMaterials[materialIndex];
       state.followsDescriptorColor = false;
       state.baseColor = toFloat4(meshMaterial.diffuse);
+      state.baseColor.w = resolveMeshMaterialAlpha(
+          color.w, state.baseColor.w, geometry.meshAlphaMode);
       state.metallic = static_cast<float>(meshMaterial.metallicFactor);
       state.roughness = static_cast<float>(meshMaterial.roughnessFactor);
       state.emissiveColor = {

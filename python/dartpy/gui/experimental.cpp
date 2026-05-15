@@ -47,6 +47,11 @@ void defGuiExperimentalModule(nb::module_& m)
       .value("Plane", gui::ShapeKind::Plane)
       .value("Unsupported", gui::ShapeKind::Unsupported);
 
+  nb::enum_<gui::MeshAlphaMode>(m, "MeshAlphaMode")
+      .value("Blend", gui::MeshAlphaMode::Blend)
+      .value("Auto", gui::MeshAlphaMode::Auto)
+      .value("ShapeAlpha", gui::MeshAlphaMode::ShapeAlpha);
+
   nb::class_<gui::MeshMaterialDescriptor>(m, "MeshMaterialDescriptor")
       .def(nb::init<>())
       .def_rw("ambient", &gui::MeshMaterialDescriptor::ambient)
@@ -117,6 +122,7 @@ void defGuiExperimentalModule(nb::module_& m)
       .def_rw(
           "mesh_uses_material_colors",
           &gui::GeometryDescriptor::meshUsesMaterialColors)
+      .def_rw("mesh_alpha_mode", &gui::GeometryDescriptor::meshAlphaMode)
       .def_rw(
           "mesh_texture_coord_components",
           &gui::GeometryDescriptor::meshTextureCoordComponents)

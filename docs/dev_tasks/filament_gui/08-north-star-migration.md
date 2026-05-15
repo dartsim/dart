@@ -22,6 +22,11 @@ to support alternate renderer implementations.
 The MVP `examples/filament_gui` is only evidence that the renderer can work.
 It is not the target API shape. Future maintained examples should use a clean
 GUI layer, not example-local renderer plumbing.
+PR #2647 should be treated as that MVP evidence only. Completing this dev task
+requires the separate north-star branch/PR to finish the Filament promotion,
+replace the main and experimental visualization surfaces with that promoted
+`dart::gui`, and remove backend-agnostic scaffolding whose only remaining
+purpose was to support multiple renderer implementations.
 
 ## Compatibility position
 

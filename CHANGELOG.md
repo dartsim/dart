@@ -141,7 +141,9 @@
     for add/remove/visibility and render-resource synchronization, including
     dynamic soft-mesh vertex changes and diagnostics for supported descriptors
     that cannot produce renderer resources, and retained Filament renderables
-    now synchronize changed descriptor shadow flags. The
+    now synchronize changed descriptor shadow flags. `MeshShape` alpha-mode
+    policy is also exposed through descriptors and visual alpha changes now
+    invalidate renderer resources when material transparency can change. The
     renderer-hidden debug descriptor path also covers support-polygon outlines
     and support-centroid markers, plus arrowheads for contact normal and force
     overlays, equivalent inertia-box overlays, and collision-shape bounds for

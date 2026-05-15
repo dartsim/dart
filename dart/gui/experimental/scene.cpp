@@ -156,6 +156,20 @@ MeshPartDescriptor makeMeshPartDescriptor(
   return descriptor;
 }
 
+MeshAlphaMode makeMeshAlphaMode(dynamics::MeshShape::AlphaMode mode)
+{
+  switch (mode) {
+    case dynamics::MeshShape::BLEND:
+      return MeshAlphaMode::Blend;
+    case dynamics::MeshShape::AUTO:
+      return MeshAlphaMode::Auto;
+    case dynamics::MeshShape::SHAPE_ALPHA:
+      return MeshAlphaMode::ShapeAlpha;
+  }
+
+  return MeshAlphaMode::Blend;
+}
+
 template <typename Derived>
 Eigen::Vector3d makeScaledTriangleNormal(
     const Eigen::MatrixBase<Derived>& sourceNormal,
@@ -1348,10 +1362,17 @@ void hashVector3d(std::size_t& seed, const Eigen::Vector3d& value)
 }
 
 std::size_t computeRenderResourceVersion(
-    const GeometryDescriptor& geometry, std::size_t shapeVersion)
+    const GeometryDescriptor& geometry,
+    const MaterialDescriptor& material,
+    std::size_t shapeVersion)
 {
   std::size_t seed = shapeVersion;
   hashCombine(seed, static_cast<std::size_t>(geometry.kind));
+  hashCombine(seed, std::hash<double>{}(material.rgba.w()));
+  if (geometry.kind == ShapeKind::Mesh) {
+    hashCombine(seed, geometry.meshUsesMaterialColors ? 1u : 0u);
+    hashCombine(seed, static_cast<std::size_t>(geometry.meshAlphaMode));
+  }
   if (geometry.kind == ShapeKind::SoftMesh) {
     hashCombine(seed, geometry.triangleVertices.size());
     for (const Eigen::Vector3d& vertex : geometry.triangleVertices) {
@@ -1658,6 +1679,7 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
     descriptor.meshUsesMaterialColors
         = mesh->getColorMode() == dynamics::MeshShape::MATERIAL_COLOR
           && mesh->getNumMaterials() > 0u;
+    descriptor.meshAlphaMode = makeMeshAlphaMode(mesh->getAlphaMode());
     descriptor.meshTextureCoordComponents = mesh->getTextureCoordComponents();
     for (const auto& material : mesh->getMaterials()) {
       descriptor.meshMaterials.push_back(makeMeshMaterialDescriptor(material));
@@ -1753,7 +1775,7 @@ std::optional<RenderableDescriptor> makeRenderableDescriptor(
                                     : 0;
   descriptor.shapeVersion = shape->getVersion();
   descriptor.renderResourceVersion = computeRenderResourceVersion(
-      descriptor.geometry, descriptor.shapeVersion);
+      descriptor.geometry, descriptor.material, descriptor.shapeVersion);
   return descriptor;
 }
 

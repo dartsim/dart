@@ -42,7 +42,9 @@
   ranges through the real Assimp importer and are loaded by the Filament smoke
   scene.
   Transparent lit material variants cover alpha-bearing solid, textured, and
-  mesh visual paths; broader robot/environment visual review is still pending.
+  mesh visual paths, and `MeshShape` alpha-mode policy now flows through
+  descriptors so Filament can match DART's material-alpha behavior; broader
+  robot/environment visual review is still pending.
 - `dart-gui-experimental` now exposes backend-hidden debug line descriptors for
   a 3D grid, world/body frames, center-of-mass markers, contact markers,
   inertia boxes, collision-shape bounds, contact normal arrows, contact force
@@ -68,8 +70,9 @@
   accounting, and perspective pick rays.
 - Renderer resource synchronization planning now compares active renderable
   render-resource versions, so descriptor-owned geometry changes, including
-  dynamic soft-mesh vertex changes, recreate Filament resources without
-  exposing renderer handles.
+  dynamic soft-mesh vertex changes, `MeshShape` material-color policy changes,
+  and alpha-only visual changes, recreate Filament resources without exposing
+  renderer handles.
 - Supported descriptor kinds that cannot produce renderer resources, such as
   empty point clouds or meshes without triangle data, now carry diagnostic
   reasons and are logged once by the Filament example instead of failing

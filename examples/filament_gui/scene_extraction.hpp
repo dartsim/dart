@@ -42,6 +42,7 @@ using gui::experimental::DebugDrawOptions;
 using gui::experimental::DebugLineDescriptor;
 using gui::experimental::GeometryDescriptor;
 using gui::experimental::MaterialDescriptor;
+using gui::experimental::MeshAlphaMode;
 using gui::experimental::MeshMaterialDescriptor;
 using gui::experimental::MeshPartDescriptor;
 using gui::experimental::OrbitCamera;

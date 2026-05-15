@@ -78,6 +78,13 @@ enum class ShapeKind
   Unsupported
 };
 
+enum class MeshAlphaMode
+{
+  Blend,
+  Auto,
+  ShapeAlpha
+};
+
 struct MeshMaterialDescriptor
 {
   Eigen::Vector4d ambient{0.2, 0.2, 0.2, 1.0};
@@ -132,6 +139,7 @@ struct GeometryDescriptor
   double voxelSize = 1.0;
   bool hasLocalBounds = false;
   bool meshUsesMaterialColors = false;
+  MeshAlphaMode meshAlphaMode = MeshAlphaMode::Blend;
   int meshTextureCoordComponents = 0;
   std::vector<Eigen::Vector3d> meshTextureCoordinates;
   std::string meshUri;

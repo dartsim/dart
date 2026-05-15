@@ -87,6 +87,10 @@ material factors, alpha-bearing material color, UV metadata, and
 single-/multi-material submesh ranges without requiring a graphics context. The
 Filament smoke scene also loads these fixtures and uses transparent lit
 material variants for alpha-bearing solid, textured, and mesh visual paths.
+The scene descriptor now also carries `MeshShape` alpha-mode policy into
+Filament material creation, and alpha-only visual changes participate in the
+renderer resource version so opaque/transparent material resources are recreated
+when needed.
 `examples/gui_scene_diagnostics` now gives `dart-gui-experimental` a second,
 non-rendering example consumer for descriptor/debug/camera diagnostics,
 including a `SimpleFrame` visual, without adding another backend. The
