@@ -250,8 +250,8 @@ longer express stable DART concepts.
    source-compatibility promise. Use the legacy surface audit to decide whether
    an existing GUI surface becomes a stable DART concept, a private Filament
    detail, or a removed/unsupported renderer-specific API. Keep the experimental
-   public-header leakage test passing, and extend that check when APIs move into
-   promoted `dart::gui` headers.
+   public-header leakage test passing; its reusable scan should add promoted
+   `dart/gui/*.hpp` headers when APIs move into first-class `dart::gui`.
 2. Keep the hosted Ubuntu `Filament GUI Smoke (GCC)` and
    `Filament GUI Smoke (Clang)` jobs green on each follow-up PR when the
    explicit pinned fetch path or Filament example behavior changes.

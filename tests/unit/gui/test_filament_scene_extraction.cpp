@@ -217,6 +217,32 @@ public:
   }
 };
 
+constexpr std::array<std::string_view, 18> kForbiddenBackendTokens
+    = {"#include <filament/",
+       "#include \"filament/",
+       "filament::",
+       "Filament::",
+       "GLFW",
+       "ImGui",
+       "imgui",
+       "OpenGL",
+       "Vulkan",
+       "Metal",
+       "osg::",
+       "::osg",
+       "osg/",
+       "osgGA",
+       "osgViewer",
+       "Raylib",
+       "raylib",
+       "rlgl"};
+
+struct BackendTokenViolation
+{
+  std::filesystem::path header;
+  std::string_view token;
+};
+
 std::string readSourceFile(const std::filesystem::path& relativePath)
 {
   const auto path
@@ -231,10 +257,9 @@ std::string readSourceFile(const std::filesystem::path& relativePath)
       std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
 }
 
-std::vector<std::filesystem::path> listExperimentalGuiPublicHeaders()
+std::vector<std::filesystem::path> listPublicHeadersInDirectory(
+    const std::filesystem::path& relativeDirectory)
 {
-  const auto relativeDirectory
-      = std::filesystem::path("dart") / "gui" / "experimental";
   const auto directory
       = std::filesystem::path(dart::config::sourcePath()) / relativeDirectory;
 
@@ -249,6 +274,22 @@ std::vector<std::filesystem::path> listExperimentalGuiPublicHeaders()
 
   std::sort(headers.begin(), headers.end());
   return headers;
+}
+
+std::vector<BackendTokenViolation> scanHeadersForBackendTokens(
+    const std::vector<std::filesystem::path>& headers)
+{
+  std::vector<BackendTokenViolation> violations;
+  for (const auto& header : headers) {
+    const auto contents = readSourceFile(header);
+    for (const auto token : kForbiddenBackendTokens) {
+      if (contents.find(token) != std::string::npos) {
+        violations.push_back({header, token});
+      }
+    }
+  }
+
+  return violations;
 }
 
 std::shared_ptr<const SoftMeshShape> findSoftMeshShape(
@@ -293,36 +334,18 @@ void expectMeshGeometryIsWellFormed(const MeshGeometry& mesh)
 
 TEST(FilamentSceneExtraction, ExperimentalPublicHeadersStayBackendHidden)
 {
-  const std::array<std::string_view, 18> forbiddenTokens
-      = {"#include <filament/",
-         "#include \"filament/",
-         "filament::",
-         "Filament::",
-         "GLFW",
-         "ImGui",
-         "imgui",
-         "OpenGL",
-         "Vulkan",
-         "Metal",
-         "osg::",
-         "::osg",
-         "osg/",
-         "osgGA",
-         "osgViewer",
-         "Raylib",
-         "raylib",
-         "rlgl"};
+  const std::vector<std::filesystem::path> publicHeaderDirectories
+      = {std::filesystem::path("dart") / "gui" / "experimental"};
 
-  const auto headers = listExperimentalGuiPublicHeaders();
-  ASSERT_FALSE(headers.empty());
+  for (const auto& directory : publicHeaderDirectories) {
+    const auto headers = listPublicHeadersInDirectory(directory);
+    ASSERT_FALSE(headers.empty()) << directory;
 
-  for (const auto& header : headers) {
-    const auto contents = readSourceFile(header);
-    ASSERT_FALSE(contents.empty()) << header;
-    for (const auto token : forbiddenTokens) {
-      EXPECT_EQ(std::string::npos, contents.find(token))
-          << header << " exposes backend implementation token `" << token
-          << "`";
+    const auto violations = scanHeadersForBackendTokens(headers);
+    for (const auto& violation : violations) {
+      ADD_FAILURE() << violation.header
+                    << " exposes backend implementation token `"
+                    << violation.token << "`";
     }
   }
 }

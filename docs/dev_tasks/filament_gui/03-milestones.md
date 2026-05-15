@@ -238,6 +238,12 @@
   DART version.
 - Update maintained examples/tutorials and documentation.
 - Keep OSG only as a temporary legacy component if required.
+- Extend the reusable public-header backend-token scan from
+  `dart/gui/experimental/*.hpp` to promoted `dart/gui/*.hpp` before first-class
+  API promotion. The scan must continue rejecting direct backend tokens such as
+  `#include <filament/`, `#include "filament/`, `filament::`, `Filament::`,
+  `GLFW`, `ImGui`, `imgui`, `OpenGL`, `Vulkan`, `Metal`, `osg::`, `::osg`,
+  `osg/`, `osgGA`, `osgViewer`, `Raylib`, `raylib`, and `rlgl`.
 
 **Exit criteria**
 
