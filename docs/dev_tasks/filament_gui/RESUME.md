@@ -24,7 +24,12 @@ Checkpoint `d343c3c64bc` renames the MVP app to `dartsim`, adds
 thin `dart::gui` launchers, updates Linux headless CI to validate the promoted
 `--screenshot` capture path, and was pushed to the tracked remote branch. CI
 was manually dispatched for lint, Linux, macOS, Windows, and CodeQL without
-opening a PR.
+opening a PR. Checkpoint `c9ccedfebe8` adds promoted `dart/gui/*.hpp` wrappers
+and explicit `dart::gui` aliases for renderer-independent scene, viewer,
+geometry, interaction, debug, and profiling concepts. CI Lint on
+`d343c3c64bc` revealed that `examples/simple_frames/CMakeLists.txt` was ignored
+by `.gitignore`'s `*_frames/` rule and missing on GitHub; the immediate repair
+is to force-add that launcher, commit, push, and redispatch CI.
 
 The latest steering is to continue without waiting for CI to finish, document
 scope/design updates in this dev-task folder before acting on them, remove the
@@ -33,18 +38,17 @@ all pre-existing user-facing examples by migrating them to the new
 `dart::gui`, and rename the MVP executable away from `filament_gui` to a
 scope-based name because there is now only one official renderer.
 The latest naming direction also distinguishes library and application brands:
-`DART` is the project/library identity, `libdart` is appropriate in packaging
-contexts, and `dartsim` is the application-level simulator/viewer identity,
-analogous to Isaac Sim.
+`DART` is the project and C++ library family identity, `libdart` is appropriate
+for package/library artifacts, and `dartsim` is the application-level
+simulator/viewer identity, analogous to Isaac Sim.
 
 ## Immediate Next Step
 
-Continue the next promotion slice by introducing promoted `dart/gui/*.hpp`
-forwarding headers and explicit `dart::gui` aliases for the
-renderer-independent scene, viewer, geometry, interaction, debug, and profiling
-concepts already linked through `dart-gui`. Preserve Filament/GLFW/ImGui as
-private implementation details and keep compatibility shims under
-`dart/gui/experimental/*` for this checkpoint.
+Commit and push the force-added `examples/simple_frames/CMakeLists.txt` repair,
+then manually redispatch CI on the tracked branch. After that, continue the
+next promotion slice by moving public-facing bindings and examples away from
+`experimental` names while preserving Filament/GLFW/ImGui as private
+implementation details.
 
 ## Context That Would Be Lost
 

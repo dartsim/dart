@@ -19,24 +19,31 @@ context survives across sessions.
   `dart::gui` API and adding required replacement features.
 - Do not call the MVP executable `filament_gui`; example names should describe
   their scope because there is now only one official renderer.
+- Branding rule: `DART` is the project and library family identity, `libdart`
+  is appropriate for package/library naming, and `dartsim` is the
+  application-level simulator/viewer identity analogous to Isaac Sim.
 
 ## Branch And CI State
 
 - Branch: `feature/filament-gui-full-execution`
 - Upstream: `origin/feature/filament-gui-full-execution`
-- Latest pushed checkpoint: `d343c3c64bc Restore GUI examples through dartsim`
+- Latest pushed checkpoint: `c9ccedfebe8 Promote DART GUI scene headers`
 - GitHub Actions were manually dispatched for the pushed checkpoint without
   opening a PR:
-  - CI Lint: https://github.com/dartsim/dart/actions/runs/25943929994
-  - CI Linux: https://github.com/dartsim/dart/actions/runs/25943929987
-  - CI macOS: https://github.com/dartsim/dart/actions/runs/25943929950
-  - CI Windows: https://github.com/dartsim/dart/actions/runs/25943929974
-  - CodeQL: https://github.com/dartsim/dart/actions/runs/25943929956
+  - CI Lint: https://github.com/dartsim/dart/actions/runs/25944247114
+  - CI Linux: https://github.com/dartsim/dart/actions/runs/25944247147
+  - CI macOS: https://github.com/dartsim/dart/actions/runs/25944247089
+  - CI Windows: https://github.com/dartsim/dart/actions/runs/25944247175
+  - CodeQL: https://github.com/dartsim/dart/actions/runs/25944247115
 - Linux Filament smoke tests passed at the latest inspected run.
 - Linux headless rendering failed earlier because the workflow still invoked the
   legacy `rigid_cubes` executable, which was removed in the earlier example
   cleanup. Restoring legacy example entry points and capture compatibility is
   therefore a concrete CI requirement, not only documentation polish.
+- CI Lint on `d343c3c64bc` also exposed that
+  `examples/simple_frames/CMakeLists.txt` was ignored by the repository
+  `*_frames/` ignore rule and therefore missing on GitHub. The next checkpoint
+  force-adds that launcher so CMake can configure the restored examples on CI.
 - The restored-example repair is pushed:
   - `examples/dartsim` is the renamed app-level viewer.
   - `dart/gui/application.hpp` exposes the narrow promoted launch API.
@@ -59,6 +66,10 @@ context survives across sessions.
 - The maintained renderer implementation still lives behind names such as
   `dart::gui::experimental`; that namespace is now promotion debt. The
   backend-named MVP example has been renamed to `examples/dartsim`.
+- The first promoted-header checkpoint adds stable `dart/gui/*.hpp` wrappers
+  and explicit `dart::gui` aliases for renderer-independent scene, viewer,
+  geometry, interaction, debug, and profiling concepts while keeping
+  `dart/gui/experimental/*` as compatibility shims.
 - Private implementation details live under
   `dart/gui/experimental/detail/filament`. They can remain private while the
   promoted public names move to `dart::gui`.
@@ -82,11 +93,11 @@ context survives across sessions.
 - Backend-named examples should not be treated as official public surfaces.
   `filament_gui` is rejected by the runner with a migration message, and Raylib
   should not be restored as a renderer.
-- Branding direction: `DART` remains the overall project and library identity,
-  with `libdart` remaining appropriate for packaging/library contexts.
-  `dartsim` is the application-level identity, analogous to an application
-  product such as Isaac Sim. Use this distinction when choosing promoted
-  executable names, app documentation, and future GUI packaging language.
+- Branding direction: `DART` names the overall project and the C++ library
+  family. Use `libdart` only where package managers or library artifacts need
+  that convention. Use `dartsim` for application-level simulator/viewer
+  surfaces, analogous to an application product such as Isaac Sim. Do not use
+  renderer backend names for public app or example branding.
 
 ## API Promotion Direction
 
@@ -167,16 +178,16 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Introduce promoted `dart/gui/*.hpp` forwarding headers and explicit
-   `dart::gui` aliases for the renderer-independent scene, viewer, geometry,
-   interaction, debug, and profiling concepts that are already consumed through
-   `dart-gui`.
-2. Move the maintained diagnostic example and public aggregate include to those
-   promoted headers. Keep the existing `dart/gui/experimental/*` headers as
-   compatibility shims for this checkpoint.
-3. Do not expose Filament, GLFW, or Dear ImGui types in the promoted headers.
+1. Commit and push the force-added `examples/simple_frames/CMakeLists.txt`
+   repair, then manually redispatch GitHub Actions on the tracked branch.
+2. Continue removing `experimental` from promoted surfaces. The next likely
+   slice is Python binding promotion from `dartpy.gui.experimental` toward
+   `dartpy.gui` compatibility wrappers, followed by private CMake helper-name
+   cleanup.
+3. Do not expose Filament, GLFW, or Dear ImGui types in promoted headers.
    Private implementation can remain under `dart/gui/experimental/detail` until
    a later file-layout sweep.
-4. Keep multi-frame image sequence and video capture as follow-up capture work.
+4. Keep ImGui Docking, docked 3D widgets, multi-frame image sequences, and
+   video capture as follow-up capture/application work.
 5. Run `pixi run lint` before every checkpoint commit, then push the commit to
    the tracked remote branch.

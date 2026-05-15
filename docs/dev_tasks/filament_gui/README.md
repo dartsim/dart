@@ -10,7 +10,8 @@ tracked in `10-active-execution.md`: remove the remaining
 examples as `dart::gui` examples, and rename the backend-named MVP executable to
 the application-level `dartsim` identity because Filament is no longer an
 alternate backend. `DART` remains the project/library identity, and `libdart`
-remains the packaging/library context name.
+remains the packaging/library context name. `dartsim` is the application-level
+simulator/viewer brand, analogous to an application product such as Isaac Sim.
 
 The completion audit in `07-completion-audit.md` describes the previous
 promotion checkpoint. The detailed progress notes below are retained as

@@ -10,7 +10,7 @@ this folder plus the current code state. Sticky — do not delete; mark items
 `~~done~~` with a one-line evidence pointer when they land, and surface
 disagreement under "Open Issues" instead of editing "Decisions in force".
 
-### Status (verified at d343c3c64bc)
+### Status (verified at c9ccedfebe8)
 
 - `examples/filament_gui/` is renamed to `examples/dartsim/`. The README
   documents `dartsim` as the application-level viewer with legacy launchers as
@@ -33,6 +33,14 @@ disagreement under "Open Issues" instead of editing "Decisions in force".
   surface.
 - CI Lint, CI Linux, CI macOS, CI Windows, and CodeQL were manually dispatched
   for `d343c3c64bc` without opening a PR.
+- `c9ccedfebe8` adds promoted `dart/gui/*.hpp` wrapper headers and explicit
+  `dart::gui` aliases for renderer-independent scene, viewer, geometry,
+  interaction, debug, and profiling concepts, while keeping
+  `dart/gui/experimental/*` as compatibility shims for now.
+- CI Lint on `d343c3c64bc` failed at CMake configure because
+  `examples/simple_frames/CMakeLists.txt` was ignored by `.gitignore`'s
+  `*_frames/` rule. The local repair force-adds that launcher before the next
+  CI dispatch.
 
 ### Decisions in force (do NOT reopen)
 
@@ -42,9 +50,9 @@ disagreement under "Open Issues" instead of editing "Decisions in force".
    No `gui_viewer`, no `filament_gui`, no `dart_filament_gui` in user-facing
    strings. CMake helper symbol may keep `filament_gui` in its name as a
    private detail until a separate rename sweep.
-   Branding distinction: `DART` is the project/library identity, `libdart` is
-   appropriate for packaging/library contexts, and `dartsim` is the
-   application-level simulator/viewer identity.
+   Branding distinction: `DART` is the project and C++ library family identity,
+   `libdart` is appropriate for package/library artifacts, and `dartsim` is the
+   application-level simulator/viewer identity, analogous to Isaac Sim.
 2. **Restoration semantics for legacy examples**: each historical user-facing
    example (`hello_world`, `rigid_cubes`, `drag_and_drop`, `imgui`,
    `simple_frames`, etc.) becomes its own `examples/<name>/` directory that
@@ -99,14 +107,17 @@ disagreement under "Open Issues" instead of editing "Decisions in force".
    promotion debt for a separate sweep.
 5. ~~Rerun `pixi run lint`, commit, and push the checkpoint as usual. Do not
    open a PR.~~ `d343c3c64bc` is pushed to the tracked remote branch.
+6. **Track ignored `simple_frames` launcher**: force-add
+   `examples/simple_frames/CMakeLists.txt`, rerun lint, commit, push, and
+   redispatch CI. This is a Git tracking repair for the restored examples, not
+   a renderer behavior change.
 
 ### Next promoted-header slice
 
-- Add promoted `dart/gui/*.hpp` forwarding headers and explicit `dart::gui`
-  aliases for renderer-independent scene, viewer, geometry, interaction, debug,
-  and profiling concepts.
-- Move maintained examples and public aggregate includes off
-  `dart/gui/experimental/*.hpp` where those concepts are now official.
+- The initial promoted-header checkpoint has landed in `c9ccedfebe8`.
+- Continue moving maintained public-facing examples, tests, and bindings off
+  `dart/gui/experimental/*.hpp` / `dartpy.gui.experimental` where those
+  concepts are now official.
 - Keep `dart/gui/experimental/*.hpp` as compatibility shims for this checkpoint.
 - Keep private Filament/GLFW/ImGui implementation under
   `dart/gui/experimental/detail` until a later file-layout sweep.
