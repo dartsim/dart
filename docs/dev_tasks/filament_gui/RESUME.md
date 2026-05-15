@@ -89,8 +89,8 @@ experimental consumers. Viewer-runtime helpers live in
 `dart/gui/experimental/debug.cpp`, backend-hidden mesh builders live in
 `dart/gui/experimental/geometry.cpp`, shape description extraction lives in
 `dart/gui/experimental/shape_descriptions.cpp`, renderable identity/extraction
-and resource versioning live in `dart/gui/experimental/scene.cpp`, and picking,
-plane dragging, frame translation, and renderable set planning live in
+and resource versioning live in `dart/gui/experimental/renderable.cpp`, and
+picking, plane dragging, frame translation, and renderable set planning live in
 `dart/gui/experimental/interaction.cpp`. Backend-hidden renderable set planning
 now also compares active render-resource versions so
 descriptor-owned geometry changes, including dynamic soft-mesh vertex changes,

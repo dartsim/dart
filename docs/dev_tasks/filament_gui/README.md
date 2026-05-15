@@ -62,7 +62,7 @@
   `geometry.hpp`, `viewer.hpp`, and `profile.hpp`. `scene.hpp` remains an
   aggregate compatibility include, while implementation now separates shape
   description extraction in `shape_descriptions.cpp` from renderable
-  identity/resource extraction in `scene.cpp`.
+  identity/resource extraction in `renderable.cpp`.
 - The experimental interaction layer includes tested picking bounds and nearest
   ray-hit selection helpers with hit point, bounds-normal, primitive-surface,
   and triangle-backed mesh surface reporting. The example uses them for basic

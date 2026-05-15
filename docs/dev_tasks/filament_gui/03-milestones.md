@@ -194,8 +194,8 @@
   focused backend-hidden headers: `renderable.hpp`, `interaction.hpp`,
   `debug.hpp`, `geometry.hpp`, and `viewer.hpp`, while `scene.hpp` remains an
   aggregate compatibility include. Implementation is split by responsibility:
-  renderable identity/extraction and resource versioning in `scene.cpp`, shape
-  description extraction in `shape_descriptions.cpp`, interaction and
+  renderable identity/extraction and resource versioning in `renderable.cpp`,
+  shape description extraction in `shape_descriptions.cpp`, interaction and
   renderable update planning in `interaction.cpp`, debug descriptor generation
   in `debug.cpp`, viewer runtime helpers in `viewer.cpp`, and backend-hidden
   mesh builders in `geometry.cpp`.

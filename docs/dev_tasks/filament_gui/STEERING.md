@@ -19,8 +19,8 @@ recommended maintainability slices:
   now split the constrained public surface while `scene.hpp` remains an
   aggregate compatibility include.
 - `dart/gui/experimental/shape_descriptions.cpp` owns `describeShape`, leaving
-  `scene.cpp` focused on renderable identity, resource versioning, and world
-  extraction.
+  `renderable.cpp` focused on renderable identity, resource versioning, and
+  world extraction.
 - `dart/gui/experimental/profile.hpp` and `.cpp` own viewer-loop profile
   accumulation, and `dart/gui/experimental/detail/filament/render_context.*`
   plus `screenshot.*`, `render_environment.*`, `textures.*`, and
@@ -51,8 +51,9 @@ original "next" ordering below is partially complete.
   `file(GLOB hdrs "*.hpp")` and `file(GLOB srcs "*.cpp")`. No CMake edit
   required — focused experimental headers and sources are picked up
   automatically after reconfigure.
-- **Behavior preservation:** `git show 877fababbc6 -- scene.cpp` had zero
-  added lines, only deletions. Pure mechanical move. Bodies in
+- **Behavior preservation:** `git show 877fababbc6 -- scene.cpp` showed the
+  then-current file had zero added lines, only deletions. Pure mechanical move.
+  Bodies in
   `viewer.cpp` byte-equivalent to deleted bodies.
 - **API symmetry:** All callers (tests, dartpy bindings, example) reach
   the moved symbols transitively through `scene.hpp`. No downstream
@@ -75,8 +76,8 @@ original "next" ordering below is partially complete.
 headers carry the constrained concepts: `renderable.hpp` for descriptors and
 extraction planning, `interaction.hpp` for picking/dragging/translation, and
 `debug.hpp` for debug-line descriptors. `shape_descriptions.cpp` owns
-`describeShape`, while `scene.cpp` owns renderable IDs, render-resource version
-hashing, and `extractRenderables`.
+`describeShape`, while `renderable.cpp` owns renderable IDs, render-resource
+version hashing, and `extractRenderables`.
 
 ## Original recommended priority order
 
@@ -112,8 +113,8 @@ hashing, and `extractRenderables`.
 The docs-sync slice should keep these items current as commits land:
 
 - `RESUME.md` should mention the concrete implementation split so resumed
-  sessions do not treat `scene.cpp` as the only experimental implementation
-  file.
+  sessions do not treat `scene.hpp` as the only experimental implementation
+  surface.
 - `09-legacy-surface-audit.md` should describe the experimental headers in
   `dart/gui/experimental/` as the clean API fence, not only `scene.hpp`.
 - `02-mvp-example.md` and `05-testing.md` should distinguish scene extraction,
