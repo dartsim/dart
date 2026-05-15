@@ -2777,6 +2777,26 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     the compatibility-facade lint/audit guards. This confirms the build flags
     are not required by core DART, dartpy, gz-physics runtime compatibility, or
     the native-backed legacy package component facades.
+- Current local collision benchmark guard refresh:
+  - Commit: `c4fd6e27f8cd620adfc900e83d9b3e5f0f959d19`
+    (`Clarify collision reference option scope`), pushed to
+    `origin/feature/new_coll`.
+  - Command:
+    `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -e collision-reference bm-collision-check`
+  - Result: passed. The `collision-reference` configure intentionally enabled
+    FCL, Bullet, ODE, reference tests, and reference benchmarks as opt-in
+    comparison inputs. Checked subsets passed with no failures or skips for
+    narrow phase (3/3), distance (3/3), raycast (5/5), mixed primitives (4/4),
+    mesh-heavy (1/1), and raycast-batch (2/2), and the public
+    `DartCollisionDetector` adapter benchmark completed successfully.
+  - Local JSON outputs:
+    `.benchmark_results/collision_check_narrow.json`,
+    `.benchmark_results/collision_check_distance.json`,
+    `.benchmark_results/collision_check_raycast.json`,
+    `.benchmark_results/collision_check_mixed.json`,
+    `.benchmark_results/collision_check_mesh.json`,
+    `.benchmark_results/collision_check_raycast_batch.json`, and
+    `.benchmark_results/collision_check_adapter.json`.
 
 ## Known Risks
 

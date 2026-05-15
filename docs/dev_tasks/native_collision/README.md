@@ -139,10 +139,15 @@
       runs the broad `collision-reference` benchmark check and uploads the
       `.benchmark_results/collision_check_*.json` artifacts when a workflow
       surface is available.
-- [ ] Final benchmark-guard evidence on the completing head is still open. The
-      last manual artifact evidence is tied to `1e1faf6feb1`; later
-      feature-branch pushes do not start GitHub Actions while PR #2652 is
-      closed.
+- [x] Current-head local benchmark-guard evidence is refreshed. The
+      `collision-reference` benchmark guard passed on `c4fd6e27f8c`, producing
+      local
+      `.benchmark_results/collision_check_{narrow,distance,raycast,mixed,mesh,raycast_batch,adapter}.json`
+      files.
+- [ ] Final benchmark-guard CI artifact evidence on the completing PR head is
+      still open. The last manual GitHub artifact evidence is tied to
+      `1e1faf6feb1`; later feature-branch pushes do not start GitHub Actions
+      while PR #2652 is closed.
 - [ ] Final PR/CI review surface evidence is still open. The implementation is
       locally validated and prior manual workflow-dispatch runs are reference
       evidence, but the final review surface must be maintainer-selected

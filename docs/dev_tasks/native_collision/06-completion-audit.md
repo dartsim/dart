@@ -28,7 +28,9 @@ unverified external and finalization gates:
   to the PR description or successor review surface.
 - GitHub artifact evidence for the manual collision benchmark guard is now
   collected for pushed head `1e1faf6feb1`; scheduled/permanent gate evidence is
-  still a finalization item.
+  still a finalization item. Current-head local benchmark-guard evidence is
+  refreshed on `c4fd6e27f8c`, but final GitHub artifact evidence still needs a
+  maintainer-selected PR or workflow surface.
 - PR #2652 was used as the initial CI surface, then closed per user direction
   before the latest follow-up commits. The closed PR remains anchored to old
   head `714d220d82a`; feature-branch pushes do not match the main workflow
@@ -167,6 +169,13 @@ Current audited state:
   options are reference-component opt-ins rather than compatibility
   prerequisites for core DART, dartpy, gz-physics runtime integration, or
   native-backed package component facades.
+- Current local benchmark guard head: `c4fd6e27f8c`
+  (`Clarify collision reference option scope`). The safe-job
+  `collision-reference` benchmark guard passed locally, covering narrow phase,
+  distance, raycast, mixed primitives, mesh-heavy, raycast-batch, and public
+  DART adapter benchmark JSON outputs. This is local current-head evidence; it
+  does not replace final PR/CI artifact evidence because feature-branch pushes
+  do not trigger the benchmark workflow while PR #2652 is closed.
 - GitHub PR state: PR #2652
   (https://github.com/dartsim/dart/pull/2652) is closed, still marked draft,
   and remains anchored to old head `714d220d82a`.
