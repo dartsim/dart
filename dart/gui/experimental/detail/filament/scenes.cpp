@@ -61,7 +61,7 @@
 #include <utility>
 #include <vector>
 
-namespace dart::examples::filament_gui {
+namespace dart::gui::experimental::filament {
 
 using dart::dynamics::BoxShape;
 using dart::dynamics::CollisionAspect;
@@ -1144,4 +1144,4 @@ DartScene createDartScene(const AppOptions& options)
   return createMvpDartScene();
 }
 
-} // namespace dart::examples::filament_gui
+} // namespace dart::gui::experimental::filament

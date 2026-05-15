@@ -212,16 +212,16 @@
   PBR material texture parameter binding now live in
   `dart/gui/experimental/detail/filament/textures.hpp` and `.cpp`, with repeat
   sampler construction private to the `.cpp` implementation.
-- `UNIT_gui_FilamentSceneExtraction` now also checks that
-  `examples/filament_gui/*.hpp` has no direct Filament header includes.
+- `UNIT_gui_FilamentSceneExtraction` now also checks that any remaining
+  `examples/filament_gui/*.hpp` files have no direct Filament header includes.
 - Filament neutral lighting/color grading, orbiting key-light direction,
   scene environment binding, viewport/camera application, and windowed
   view-quality configuration now live in
   `dart/gui/experimental/detail/filament/render_environment.hpp` and `.cpp`.
 - Platform-specific GLFW native-window handle selection lives in
   `dart/gui/experimental/detail/filament/native_window.hpp` and `.cpp`.
-- The Filament example keeps selection label formatting and G1 IK-target
-  translation glue in `examples/filament_gui/selection.hpp` and `.cpp`.
+- Selection label formatting and G1 IK-target translation glue live in
+  `dart/gui/experimental/detail/filament/selection.hpp` and `.cpp`.
 - Filament renderable state, lit-material configuration, shadow flag
   application, and destruction lifecycle helpers now live in
   `dart/gui/experimental/detail/filament/renderable_resources.hpp` and `.cpp`.
@@ -257,10 +257,9 @@
 - `examples/gui_scene_diagnostics` is a second example consumer of the
   experimental API. It exercises descriptors, debug lines, run options, camera
   basis, and picking without introducing another renderer.
-- `examples/filament_gui` now keeps reusable DART world fixtures and scene
-  option parsing in `examples/filament_gui/scenes.hpp` and `.cpp`, leaving the
-  main executable source focused on debug/capture coordination, scene
-  synchronization calls, render environment assembly, and UI wiring.
+- Reusable DART world fixtures and scene option parsing now live in
+  `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp`, leaving
+  `examples/filament_gui/main.cpp` as the only C++ source in the example tree.
 - Phase 4 is not complete because remaining interaction-heavy workflow
   migration and cross-platform wheel coverage are still pending.
 

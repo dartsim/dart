@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_FILAMENT_GUI_SELECTION_HPP_
-#define EXAMPLES_FILAMENT_GUI_SELECTION_HPP_
+#ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SELECTION_HPP_
+#define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SELECTION_HPP_
 
 #include <dart/gui/experimental/renderable.hpp>
 
@@ -39,7 +39,7 @@
 
 #include <string>
 
-namespace dart::examples::filament_gui {
+namespace dart::gui::experimental::filament {
 
 struct DartScene;
 struct G1IkHandle;
@@ -60,6 +60,6 @@ bool translateRenderableAndApplyIk(
     const dart::gui::experimental::RenderableDescriptor& descriptor,
     const Eigen::Vector3d& worldTranslation);
 
-} // namespace dart::examples::filament_gui
+} // namespace dart::gui::experimental::filament
 
-#endif // EXAMPLES_FILAMENT_GUI_SELECTION_HPP_
+#endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SELECTION_HPP_

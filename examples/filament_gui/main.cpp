@@ -30,9 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "scenes.hpp"
-#include "selection.hpp"
-
+#include <dart/gui/experimental/detail/filament/scenes.hpp>
+#include <dart/gui/experimental/detail/filament/selection.hpp>
 #include <dart/all.hpp>
 #include <dart/common/local_resource_retriever.hpp>
 #include <dart/common/profile.hpp>
@@ -191,31 +190,31 @@ using dart::gui::experimental::filament::updateOrbitingKeyLight;
 using dart::gui::experimental::filament::updateSceneRenderableFromDescriptor;
 using dart::gui::experimental::filament::waitForScreenshot;
 using dart::simulation::World;
-using dart::examples::filament_gui::AppOptions;
-using dart::examples::filament_gui::DartScene;
-using dart::examples::filament_gui::ExampleScene;
-using dart::examples::filament_gui::createDartScene;
-using dart::examples::filament_gui::initialCameraForScene;
-using dart::examples::filament_gui::kAtlasFixtureSkeletonName;
-using dart::examples::filament_gui::kAtlasRobotFixtureSkeletonName;
-using dart::examples::filament_gui::kConvexMeshFixtureSkeletonName;
-using dart::examples::filament_gui::kG1FixtureSkeletonName;
-using dart::examples::filament_gui::kHeightmapFixtureSkeletonName;
-using dart::examples::filament_gui::kLineSegmentFixtureSkeletonName;
-using dart::examples::filament_gui::kMinDragAndDropFrameRenderableCount;
-using dart::examples::filament_gui::kMinG1RenderableCount;
-using dart::examples::filament_gui::kMinPbrEnvironmentRenderableCount;
-using dart::examples::filament_gui::kMultiSphereFixtureSkeletonName;
-using dart::examples::filament_gui::kPbrEnvironmentFixtureSkeletonName;
-using dart::examples::filament_gui::kPointCloudFixtureSkeletonName;
-using dart::examples::filament_gui::kPyramidFixtureSkeletonName;
-using dart::examples::filament_gui::kSoftMeshFixtureSkeletonName;
-using dart::examples::filament_gui::kVoxelGridFixtureSkeletonName;
-using dart::examples::filament_gui::kWamFixtureSkeletonName;
-using dart::examples::filament_gui::parseOptions;
-using dart::examples::filament_gui::sceneName;
-using dart::examples::filament_gui::selectionLabelForRenderable;
-using dart::examples::filament_gui::translateRenderableAndApplyIk;
+using dart::gui::experimental::filament::AppOptions;
+using dart::gui::experimental::filament::DartScene;
+using dart::gui::experimental::filament::ExampleScene;
+using dart::gui::experimental::filament::createDartScene;
+using dart::gui::experimental::filament::initialCameraForScene;
+using dart::gui::experimental::filament::kAtlasFixtureSkeletonName;
+using dart::gui::experimental::filament::kAtlasRobotFixtureSkeletonName;
+using dart::gui::experimental::filament::kConvexMeshFixtureSkeletonName;
+using dart::gui::experimental::filament::kG1FixtureSkeletonName;
+using dart::gui::experimental::filament::kHeightmapFixtureSkeletonName;
+using dart::gui::experimental::filament::kLineSegmentFixtureSkeletonName;
+using dart::gui::experimental::filament::kMinDragAndDropFrameRenderableCount;
+using dart::gui::experimental::filament::kMinG1RenderableCount;
+using dart::gui::experimental::filament::kMinPbrEnvironmentRenderableCount;
+using dart::gui::experimental::filament::kMultiSphereFixtureSkeletonName;
+using dart::gui::experimental::filament::kPbrEnvironmentFixtureSkeletonName;
+using dart::gui::experimental::filament::kPointCloudFixtureSkeletonName;
+using dart::gui::experimental::filament::kPyramidFixtureSkeletonName;
+using dart::gui::experimental::filament::kSoftMeshFixtureSkeletonName;
+using dart::gui::experimental::filament::kVoxelGridFixtureSkeletonName;
+using dart::gui::experimental::filament::kWamFixtureSkeletonName;
+using dart::gui::experimental::filament::parseOptions;
+using dart::gui::experimental::filament::sceneName;
+using dart::gui::experimental::filament::selectionLabelForRenderable;
+using dart::gui::experimental::filament::translateRenderableAndApplyIk;
 
 
 } // namespace

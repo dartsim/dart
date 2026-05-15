@@ -123,10 +123,11 @@
   `dart/gui/experimental/detail/filament/renderable_factory.hpp` and `.cpp`,
   keeping generated mesh buffers, material part assembly, debug-line resource
   creation, and texture-backed mesh binding out of the main viewer loop.
-- `UNIT_gui_FilamentSceneExtraction` now checks that
-  `examples/filament_gui/*.hpp` and the example entry point have no direct
-  Filament header includes, while the full north-star metric remains zero
-  direct Filament header includes from maintained examples after promotion.
+- `UNIT_gui_FilamentSceneExtraction` now checks that any remaining
+  `examples/filament_gui/*.hpp` files and the example entry point have no
+  direct Filament header includes, while the full north-star metric remains
+  zero direct Filament header includes from maintained examples after
+  promotion.
 - The full north-star also requires any surviving `examples/filament_gui/`
   tree to shrink to a minimal executable entry point: renderer setup, frame
   lifecycle, material and texture resources, scene synchronization, capture,
@@ -147,8 +148,10 @@
   now lives in
   `dart/gui/experimental/detail/filament/native_window.hpp` and `.cpp`.
 - The Filament example's selection labels and G1 IK-target translation glue now
-  live in `examples/filament_gui/selection.hpp` and `.cpp`; renderer-independent
-  selection and translation primitives remain in `dart-gui-experimental`.
+  live in
+  `dart/gui/experimental/detail/filament/selection.hpp` and `.cpp`;
+  renderer-independent selection and translation primitives remain in
+  `dart-gui-experimental`.
 - The Filament material bundle, seed texture resources, renderable state,
   material selection and parameter binding helpers, shadow settings, and
   destruction lifecycle now live in
@@ -158,8 +161,9 @@
   helpers now live in
   `dart/gui/experimental/detail/filament/renderable_sync.hpp` and `.cpp`.
 - The Filament example's scene option parsing and reusable DART world fixtures
-  now live in `examples/filament_gui/scenes.hpp` and `.cpp`; `main.cpp` remains
-  focused on synchronization, input, and the built-in panel.
+  now live in `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp`;
+  `main.cpp` remains focused on synchronization and built-in panel
+  orchestration.
 - `dartpy.gui.experimental` now exposes the constrained backend-hidden
   descriptor, picking, frame-translation, debug-line, run-option, viewer
   lifecycle, screenshot storage, orbit-camera, orbit-camera controller,

@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_FILAMENT_GUI_SCENES_HPP_
-#define EXAMPLES_FILAMENT_GUI_SCENES_HPP_
+#ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCENES_HPP_
+#define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCENES_HPP_
 
 #include <dart/dynamics/fwd.hpp>
 #include <dart/gui/experimental/scene.hpp>
@@ -46,7 +46,7 @@
 
 #include <cstddef>
 
-namespace dart::examples::filament_gui {
+namespace dart::gui::experimental::filament {
 
 struct G1IkHandle
 {
@@ -114,6 +114,6 @@ AppOptions parseOptions(int argc, char* argv[]);
 
 DartScene createDartScene(const AppOptions& options);
 
-} // namespace dart::examples::filament_gui
+} // namespace dart::gui::experimental::filament
 
-#endif // EXAMPLES_FILAMENT_GUI_SCENES_HPP_
+#endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCENES_HPP_

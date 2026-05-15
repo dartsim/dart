@@ -11,8 +11,8 @@ recommended maintainability slices:
 - `dart/gui/experimental/debug.cpp` owns debug descriptor generation.
 - `dart/gui/experimental/geometry.hpp` and `.cpp` own backend-hidden mesh
   builders for generated primitive and descriptor geometry.
-- `examples/filament_gui/scenes.hpp` and `.cpp` own reusable DART scene
-  fixtures and scene option parsing.
+- `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp` own reusable
+  DART scene fixtures and scene option parsing.
 - `dart/gui/experimental/interaction.cpp` owns picking, plane-drag,
   frame-translation, and renderable set update planning helpers.
 - `dart/gui/experimental/renderable.hpp`, `interaction.hpp`, and `debug.hpp`
@@ -91,10 +91,11 @@ hashing, and `extractRenderables`.
      `07-completion-audit.md` row 34 "Provide renderer-hidden scene
      extraction" — currently Satisfied for the constrained API but the
      geometry path is the obvious next descriptor surface.
-2. **Completed: split scene fixtures into `examples/filament_gui/scenes.*`.**
-   `examples/filament_gui/scenes.hpp` and `.cpp` now own scene option parsing
-   plus MVP, drag-and-drop, and G1 DART world fixtures. `main.cpp` is focused
-   on Filament renderer resources, synchronization, input, and the panel.
+2. **Completed: move scene fixtures under private GUI detail.**
+   `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp` now own scene
+   option parsing plus MVP, drag-and-drop, and G1 DART world fixtures.
+   `main.cpp` is focused on Filament frame orchestration and the built-in
+   panel.
 3. **Generalize the public-header leakage scan.**
    `08-north-star-migration.md` Phase A explicitly promises that the
    leakage check will be extended to promoted `dart::gui` headers
@@ -126,8 +127,8 @@ The docs-sync slice should keep these items current as commits land:
 - **Do not draft the promoted `dart::gui::Viewer` / `ViewerOptions`
   public API yet** (the sketch in `08-north-star-migration.md:331-344`).
   Phase H requires Phases C, E, F, G to be substantially complete first.
-  The example still owns Filament resource orchestration, material caches,
-  built-in overlay policy, geometry builders, and scene fixtures. Defining the
+  The example still owns Filament frame orchestration and built-in overlay
+  policy. Defining the
   promoted API now would either bake in MVP-shaped concessions or
   force a second rewrite when Phase C extraction reveals the right
   resource boundaries.

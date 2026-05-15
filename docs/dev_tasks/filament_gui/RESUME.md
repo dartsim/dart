@@ -107,8 +107,8 @@ PBR texture parameter binding live in
 `dart/gui/experimental/detail/filament/textures.hpp` and `.cpp`, with repeat
 sampler construction private to the `.cpp` implementation so the helper header
 avoids a direct Filament sampler include.
-`UNIT_gui_FilamentSceneExtraction` also checks that
-`examples/filament_gui/*.hpp` and the example entry point have no direct
+`UNIT_gui_FilamentSceneExtraction` also checks that any remaining
+`examples/filament_gui/*.hpp` files and the example entry point have no direct
 Filament header includes; this is only an incremental guard, not completion of
 the full example include metric.
 The full north-star also requires any surviving `examples/filament_gui/` tree
@@ -133,8 +133,8 @@ Platform-specific GLFW native-window handle selection lives in
 Filament-native ImGui font loading lives with the overlay renderer in
 `dart/gui/experimental/detail/filament/imgui_overlay.hpp` and `.cpp`; the
 built-in panel policy remains MVP/example-scoped.
-Example-local selection label formatting and G1 IK-target translation glue live
-in `examples/filament_gui/selection.hpp` and `.cpp`.
+Selection label formatting and G1 IK-target translation glue live in
+`dart/gui/experimental/detail/filament/selection.hpp` and `.cpp`.
 Filament material bundle creation, seed texture resources, renderable state,
 lit-material setup, shadow flag application, and destruction lifecycle helpers
 live in `dart/gui/experimental/detail/filament/renderable_resources.hpp` and
@@ -253,9 +253,8 @@ rendering now consumes descriptor-owned triangle data instead of concrete shape
 dynamic casts. Unsupported shapes now produce diagnostic descriptors instead of
 being silently dropped by the extraction layer.
 The Filament example scene option parsing and reusable DART world fixtures now
-live in `examples/filament_gui/scenes.hpp` and `.cpp`, leaving
-`examples/filament_gui/main.cpp` focused on synchronization, input, and the
-built-in panel.
+live in `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp`, leaving
+`examples/filament_gui/main.cpp` as the only C++ source in the example tree.
 `MeshShape` triangle geometry, texture coordinates, imported vertex normals,
 material, texture-path, and submesh metadata now flow through renderer-hidden
 descriptors, and the Filament example consumes that descriptor metadata for

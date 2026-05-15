@@ -39,7 +39,7 @@
 
 #include <algorithm>
 
-namespace dart::examples::filament_gui {
+namespace dart::gui::experimental::filament {
 
 using dart::gui::experimental::RenderableDescriptor;
 using dart::gui::experimental::RenderableId;
@@ -104,4 +104,4 @@ bool translateRenderableAndApplyIk(
   return true;
 }
 
-} // namespace dart::examples::filament_gui
+} // namespace dart::gui::experimental::filament
