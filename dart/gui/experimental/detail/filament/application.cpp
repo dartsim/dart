@@ -33,10 +33,9 @@
 #include <dart/gui/experimental/detail/filament/application.hpp>
 #include <dart/gui/experimental/detail/filament/scenes.hpp>
 #include <dart/gui/experimental/detail/filament/selection.hpp>
-#include <dart/all.hpp>
-#include <dart/common/local_resource_retriever.hpp>
+#include <dart/collision/collision_result.hpp>
 #include <dart/common/profile.hpp>
-#include <dart/config.hpp>
+#include <dart/dynamics/body_node.hpp>
 #include <dart/gui/experimental/detail/filament/debug_overlay.hpp>
 #include <dart/gui/experimental/detail/filament/frame_renderer.hpp>
 #include <dart/gui/experimental/detail/filament/frame_viewport.hpp>
@@ -54,60 +53,21 @@
 #include <dart/gui/experimental/detail/filament/simulation_stepper.hpp>
 #include <dart/gui/experimental/profile.hpp>
 #include <dart/gui/experimental/scene.hpp>
-#include <dart/io/read.hpp>
-#include <dart/utils/composite_resource_retriever.hpp>
-#include <dart/utils/dart_resource_retriever.hpp>
-#include <dart/utils/http_resource_retriever.hpp>
-#include <dart/utils/mesh_loader.hpp>
-#include <dart/utils/package_resource_retriever.hpp>
-#include <dart/utils/urdf/All.hpp>
+#include <dart/simulation/world.hpp>
 
 #include <GLFW/glfw3.h>
 
 #include <imgui.h>
 
-#include <cctype>
 #include <chrono>
-#include <iostream>
-#include <memory>
-#include <optional>
-#include <stdexcept>
-#include <string>
-#include <utility>
-#include <vector>
-
+#include <cstddef>
 #include <cstdint>
-#include <cstdlib>
+#include <iostream>
+#include <optional>
+#include <vector>
 
 namespace {
 
-using dart::dynamics::BoxShape;
-using dart::dynamics::CollisionAspect;
-using dart::dynamics::ConvexMeshShape;
-using dart::dynamics::DynamicsAspect;
-using dart::dynamics::FreeJoint;
-using dart::dynamics::HeightmapShaped;
-using dart::dynamics::InverseKinematics;
-using dart::dynamics::InverseKinematicsPtr;
-using dart::dynamics::MeshShape;
-using dart::dynamics::PlaneShape;
-using dart::dynamics::PointCloudShape;
-using dart::dynamics::Shape;
-using dart::dynamics::ShapePtr;
-using dart::dynamics::ShapeNode;
-using dart::dynamics::SimpleFrame;
-using dart::dynamics::Skeleton;
-using dart::dynamics::SoftBodyNode;
-using dart::dynamics::SoftBodyNodeHelper;
-using dart::dynamics::SphereShape;
-using dart::dynamics::VisualAspect;
-using dart::dynamics::WeldJoint;
-
-#if DART_HAVE_OCTOMAP
-using dart::dynamics::VoxelGridShape;
-#endif
-
-using dart::gui::experimental::OrbitCamera;
 using dart::gui::experimental::OrbitCameraController;
 using dart::gui::experimental::ProfileAccumulator;
 using dart::gui::experimental::RenderableDescriptor;
@@ -117,8 +77,6 @@ using dart::gui::experimental::ShapeKind;
 using dart::gui::experimental::ViewerLifecycleState;
 using dart::gui::experimental::elapsedMs;
 using dart::gui::experimental::extractRenderables;
-using dart::gui::experimental::makeRenderableId;
-using dart::gui::experimental::normalizeRunOptions;
 using dart::gui::experimental::printProfile;
 using dart::gui::experimental::filament::ApplicationInputState;
 using dart::gui::experimental::filament::ApplicationWindow;
@@ -180,7 +138,6 @@ using dart::gui::experimental::filament::updateImGuiOverlay;
 using dart::gui::experimental::filament::updateImGuiMouseInput;
 using dart::gui::experimental::filament::updateOrbitingKeyLight;
 using dart::gui::experimental::filament::updateSceneRenderablesFromDescriptors;
-using dart::simulation::World;
 using dart::gui::experimental::filament::AppOptions;
 using dart::gui::experimental::filament::DartScene;
 using dart::gui::experimental::filament::ExampleScene;

@@ -275,7 +275,9 @@ Scene content requirement counting and MVP/G1/drag validation gates now live in
 The Filament example frame lifecycle, scene synchronization, capture, built-in
 panel wiring, and top-level orchestration now live in
 `dart/gui/experimental/detail/filament/application.hpp` and `.cpp`, leaving
-`examples/filament_gui/main.cpp` as a minimal entry point.
+`examples/filament_gui/main.cpp` as a minimal entry point. The application unit
+depends on the private GUI runtime surfaces directly and leaves DART scene
+fixture/import dependencies in `scenes.hpp` and `.cpp`.
 Frame rendering, skipped-frame accounting, screenshot request dispatch,
 rendered-frame profiling, and bounded-run stop checks now live in
 `dart/gui/experimental/detail/filament/frame_renderer.hpp` and `.cpp`.

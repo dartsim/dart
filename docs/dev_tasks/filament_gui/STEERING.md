@@ -55,6 +55,9 @@ recommended maintainability slices:
 - `dart/gui/experimental/detail/filament/simulation_stepper.hpp` and `.cpp` own
   the bounded realtime simulation step-count accumulator, world-step
   application, lifecycle marking, and simulation profile accounting.
+- `dart/gui/experimental/detail/filament/application.cpp` now depends on the
+  private GUI runtime surfaces directly instead of retaining stale DART scene
+  fixture/import dependencies after the `scenes.*` split.
 - `dart/gui/experimental/profile.hpp` and `.cpp` own viewer-loop profile
   accumulation, and `dart/gui/experimental/detail/filament/render_context.*`
   plus `screenshot.*`, `render_environment.*`, `textures.*`, and
