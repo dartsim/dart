@@ -133,6 +133,9 @@ Implemented:
 - A selectable `--scene vehicle` fixture that loads the legacy vehicle SKEL
   world and renders car body, wheel cylinder, ground, and obstacle descriptors
   through the same backend-hidden extraction path.
+- A selectable `--scene hybrid-dynamics` fixture that loads the legacy fullbody
+  SKEL world, applies the humanoid pose, and renders biped and ground
+  descriptors through the same backend-hidden extraction path.
 - Built-in panel controls for pause/resume, single-step, and debug overlay
   toggles covering grid, world/body frames, center-of-mass markers, contacts,
   normal arrows, and force arrows.

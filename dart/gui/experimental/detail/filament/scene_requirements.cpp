@@ -199,6 +199,14 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Box) {
     ++counts.vehicleObstacles;
   }
+  if (descriptor.skeletonName == kHybridDynamicsFixtureBipedSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.hybridDynamicsBipedBoxes;
+  }
+  if (descriptor.skeletonName == kHybridDynamicsFixtureGroundSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.hybridDynamicsGrounds;
+  }
   if (descriptor.skeletonName == kPyramidFixtureSkeletonName
       && descriptor.geometry.kind == ShapeKind::Pyramid) {
     ++counts.pyramids;
@@ -581,6 +589,23 @@ bool validateSceneDescriptorContent(
         output);
   }
 
+  if (scene == ExampleScene::HybridDynamics) {
+    if (!requireEqual(
+            counts.hybridDynamicsBipedBoxes,
+            kHybridDynamicsFixtureBipedBoxCount,
+            "hybrid-dynamics scene",
+            "visible biped box renderable descriptors",
+            output)) {
+      return false;
+    }
+    return requireEqual(
+        counts.hybridDynamicsGrounds,
+        kHybridDynamicsFixtureGroundCount,
+        "hybrid-dynamics scene",
+        "visible ground renderable descriptor",
+        output);
+  }
+
   if (scene == ExampleScene::Heightmap) {
     return requireEqual(
         counts.heightmaps,
@@ -938,6 +963,21 @@ bool validateCreatedSceneContent(
         created.vehicleObstacles,
         expected.vehicleObstacles,
         "vehicle obstacle renderables",
+        output);
+  }
+
+  if (scene == ExampleScene::HybridDynamics) {
+    if (!requireCreatedEqual(
+            created.hybridDynamicsBipedBoxes,
+            expected.hybridDynamicsBipedBoxes,
+            "hybrid-dynamics biped box renderables",
+            output)) {
+      return false;
+    }
+    return requireCreatedEqual(
+        created.hybridDynamicsGrounds,
+        expected.hybridDynamicsGrounds,
+        "hybrid-dynamics ground renderables",
         output);
   }
 

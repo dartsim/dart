@@ -202,7 +202,9 @@
     `--scene add-delete-skels` Filament fixture for deterministic
     add/delete-style cube skeleton renderables. The `vehicle` runner now routes
     to a `--scene vehicle` Filament fixture for the SKEL-loaded car, wheel,
-    ground, and obstacle renderables. The focused GUI unit test now
+    ground, and obstacle renderables. The `hybrid_dynamics` runner now routes
+    to a `--scene hybrid-dynamics` Filament fixture for the posed fullbody
+    humanoid and ground renderables. The focused GUI unit test now
     checks that
     `examples/filament_gui` contains no C++ source/header
     files other than `main.cpp` and that the example has no direct Filament

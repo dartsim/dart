@@ -1659,6 +1659,78 @@ DartScene createVehicleScene()
   return scene;
 }
 
+DartScene createHybridDynamicsScene()
+{
+  DartScene scene;
+  scene.world = dart::io::readWorld("dart://sample/skel/fullbody1.skel");
+  if (!scene.world) {
+    throw std::runtime_error(
+        "Failed to load hybrid_dynamics fixture from "
+        "dart://sample/skel/fullbody1.skel");
+  }
+  scene.world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  auto ground = scene.world->getSkeleton("ground skeleton");
+  if (!ground) {
+    throw std::runtime_error("hybrid_dynamics fixture is missing ground");
+  }
+  ground->setName(kHybridDynamicsFixtureGroundSkeletonName);
+  if (auto* body = ground->getBodyNode("ground")) {
+    body->setColor(Eigen::Vector3d(0.46, 0.50, 0.46));
+  }
+
+  auto biped = scene.world->getSkeleton("fullbody1");
+  if (!biped) {
+    throw std::runtime_error("hybrid_dynamics fixture is missing fullbody1");
+  }
+  biped->setName(kHybridDynamicsFixtureBipedSkeletonName);
+
+  const std::vector<std::size_t> genCoordIds{
+      1,  // global orientation y
+      6,  // left hip
+      9,  // left knee
+      10, // left ankle
+      13, // right hip
+      16, // right knee
+      17, // right ankle
+      21, // lower back
+  };
+  Eigen::VectorXd initConfig(8);
+  initConfig << -0.2, 0.15, -0.4, 0.25, 0.15, -0.4, 0.25, 0.0;
+  biped->setPositions(genCoordIds, initConfig);
+
+  if (auto* rootJoint = biped->getJoint(0)) {
+    rootJoint->setActuatorType(dart::dynamics::Joint::PASSIVE);
+  }
+  for (std::size_t i = 1; i < biped->getNumJoints(); ++i) {
+    if (auto* joint = biped->getJoint(i)) {
+      joint->setActuatorType(dart::dynamics::Joint::VELOCITY);
+    }
+  }
+
+  for (std::size_t i = 0; i < biped->getNumBodyNodes(); ++i) {
+    auto* body = biped->getBodyNode(i);
+    if (body == nullptr) {
+      continue;
+    }
+    const double t = biped->getNumBodyNodes() <= 1
+                         ? 0.0
+                         : static_cast<double>(i)
+                               / static_cast<double>(
+                                   biped->getNumBodyNodes() - 1);
+    body->setColor(
+        Eigen::Vector3d(0.25 + 0.45 * t, 0.42 + 0.22 * t, 0.78 - 0.35 * t));
+  }
+  if (auto* head = biped->getBodyNode("h_head")) {
+    head->setColor(Eigen::Vector3d(0.88, 0.70, 0.46));
+  }
+  if (auto* spine = biped->getBodyNode("h_spine")) {
+    spine->setColor(Eigen::Vector3d(0.22, 0.48, 0.86));
+  }
+
+  return scene;
+}
+
 DartScene createDragAndDropScene()
 {
   DartScene scene;

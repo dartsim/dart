@@ -24,6 +24,7 @@ FILAMENT_SMOKE_PATTERN = (
     "EXAMPLE_filament_gui_coupler_constraint_headless_smoke|"
     "EXAMPLE_filament_gui_add_delete_skels_headless_smoke|"
     "EXAMPLE_filament_gui_vehicle_headless_smoke|"
+    "EXAMPLE_filament_gui_hybrid_dynamics_headless_smoke|"
     "EXAMPLE_filament_gui_drag_and_drop_headless_smoke|"
     "EXAMPLE_filament_gui_simple_frames_headless_smoke|"
     "EXAMPLE_filament_gui_soft_bodies_headless_smoke|"
@@ -119,6 +120,12 @@ EXAMPLE_SPECS = {
         "filament_gui",
         ("filament",),
         ("--scene", "vehicle"),
+    ),
+    "hybrid_dynamics": ExampleSpec(
+        "dart_filament_gui",
+        "filament_gui",
+        ("filament",),
+        ("--scene", "hybrid-dynamics"),
     ),
     "drag_and_drop": ExampleSpec(
         "dart_filament_gui",
@@ -459,6 +466,7 @@ def _split_filament_scenes(run_args: list[str]) -> tuple[list[str], list[str]]:
                 "coupler-constraint",
                 "add-delete-skels",
                 "vehicle",
+                "hybrid-dynamics",
                 "drag-and-drop",
                 "simple-frames",
                 "soft-bodies",

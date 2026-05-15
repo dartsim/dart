@@ -67,6 +67,8 @@ struct SceneContentCounts
   std::size_t vehicleWheelCylinders = 0;
   std::size_t vehicleGrounds = 0;
   std::size_t vehicleObstacles = 0;
+  std::size_t hybridDynamicsBipedBoxes = 0;
+  std::size_t hybridDynamicsGrounds = 0;
   std::size_t pyramids = 0;
   std::size_t multiSpheres = 0;
   std::size_t lineSegments = 0;

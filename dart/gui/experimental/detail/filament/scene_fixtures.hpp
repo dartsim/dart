@@ -57,6 +57,8 @@ DartScene createAddDeleteSkelsScene();
 
 DartScene createVehicleScene();
 
+DartScene createHybridDynamicsScene();
+
 DartScene createDragAndDropScene();
 
 DartScene createSimpleFramesScene();

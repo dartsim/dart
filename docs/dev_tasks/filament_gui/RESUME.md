@@ -269,9 +269,10 @@ headless context, while the dedicated headless construction test remains.
 for Linux x86_64. It configures with `DART_BUILD_GUI=OFF` and
 `DART_BUILD_DARTPY=OFF`, builds `dart_filament_gui`, and runs the default,
 hello-world, boxes, hardcoded-design, rigid-chain, rigid-loop, mixed-chain,
-coupler-constraint, add-delete-skels, vehicle, drag-and-drop, simple-frames,
-soft-bodies, point-cloud, capsule-ground-contact, simulation-event-handler,
-polyhedron, and heightmap headless CTest smokes. When `DISPLAY` is absent, the
+coupler-constraint, add-delete-skels, vehicle, hybrid-dynamics, drag-and-drop,
+simple-frames, soft-bodies, point-cloud, capsule-ground-contact,
+simulation-event-handler, polyhedron, and heightmap headless CTest smokes. When
+`DISPLAY` is absent, the
 task uses Xvfb and prefers Mesa's EGL vendor file for software rendering. The
 Ubuntu CI
 workflow has a matching `filament-gui-smoke` job that installs Mesa, Xvfb, and
@@ -326,6 +327,11 @@ OSG comparison material for live q/w add-delete controls. It routes
 renders car body, wheel cylinder, ground, and obstacle descriptors while
 keeping the standalone source as legacy OSG comparison material for live
 throttle and steering controls. It routes
+`pixi run ex hybrid_dynamics` through the Filament example's selectable
+`--scene hybrid-dynamics` fixture, which loads the legacy fullbody SKEL world
+and renders posed biped and ground descriptors while keeping the standalone
+source as legacy OSG comparison material for scripted joint commands and
+harness toggling. It routes
 `pixi run ex drag_and_drop` through the Filament example's selectable
 `--scene drag-and-drop` fixture by default while keeping the standalone source
 as legacy OSG comparison material. It also routes
@@ -394,9 +400,10 @@ DART world fixtures now live in
 `dart/gui/experimental/detail/filament/scene_fixtures.hpp` and `.cpp`.
 Scene content requirement counting and
 MVP/G1/hello-world/boxes/hardcoded-design/rigid-chain/rigid-loop/mixed-chain/
-coupler-constraint/add-delete-skels/vehicle/drag/simple-frames/soft-bodies/point-cloud/
-capsule-ground-contact/simulation-event-handler/polyhedron/heightmap validation
-gates, including created-renderable content counting, now live in
+coupler-constraint/add-delete-skels/vehicle/hybrid-dynamics/drag/simple-frames/
+soft-bodies/point-cloud/capsule-ground-contact/simulation-event-handler/
+polyhedron/heightmap validation gates, including created-renderable content
+counting, now live in
 `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.
 The Filament example frame lifecycle, scene synchronization, capture, built-in
 panel wiring, and top-level orchestration now live in

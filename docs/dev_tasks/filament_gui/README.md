@@ -188,9 +188,9 @@
   `dart/gui/experimental/detail/filament/scene_fixtures.hpp` and `.cpp`;
 - The Filament example's scene content requirement counting and
   MVP/G1/hello-world/boxes/hardcoded-design/rigid-chain/rigid-loop/
-  mixed-chain/coupler-constraint/add-delete-skels/vehicle/drag/simple-frames/
-  soft-bodies/point-cloud/capsule-ground-contact/simulation-event-handler/
-  polyhedron/heightmap
+  mixed-chain/coupler-constraint/add-delete-skels/vehicle/hybrid-dynamics/drag/
+  simple-frames/soft-bodies/point-cloud/capsule-ground-contact/
+  simulation-event-handler/polyhedron/heightmap
   validation gates, including created-renderable content counting, now live in
   `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`;
 - Initial scene extraction, startup validation, first renderable
@@ -288,6 +288,12 @@
   `pixi run ex vehicle` runner now routes to that Filament scene while the
   legacy standalone OSG source remains available for live throttle and steering
   control comparison.
+- The Filament example includes `--scene hybrid-dynamics`, a posed fullbody
+  visual fixture that carries the legacy `hybrid_dynamics` example through
+  descriptor-owned biped and ground box renderables. The in-tree
+  `pixi run ex hybrid_dynamics` runner now routes to that Filament scene while
+  the legacy standalone OSG source remains available for scripted joint-command
+  and harness-toggle comparison.
 - The Filament example also includes `--scene drag-and-drop`, a first
   interaction-heavy fixture that carries the legacy `SimpleFrame` anchor, child
   frame, and axis marker layout through the same backend-hidden manipulation
@@ -384,7 +390,7 @@
   `DART_FETCH_FILAMENT=ON` path on Linux x86_64, builds without the legacy OSG
   GUI target, and runs the default, hello-world, boxes, hardcoded-design,
   rigid-chain, rigid-loop, mixed-chain, coupler-constraint, add-delete-skels,
-  vehicle, drag-and-drop, simple-frames, soft-bodies, point-cloud,
+  vehicle, hybrid-dynamics, drag-and-drop, simple-frames, soft-bodies, point-cloud,
   capsule-ground-contact, simulation-event-handler, polyhedron, and heightmap
   headless CTest smokes.
   When no display server is available, the task runs the smokes under Xvfb and
