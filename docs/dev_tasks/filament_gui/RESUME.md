@@ -103,8 +103,9 @@ sampler setup, and PBR texture parameter binding live in
 construction private to the `.cpp` implementation so the helper header avoids a
 direct Filament sampler include.
 `UNIT_gui_FilamentSceneExtraction` also checks that
-`examples/filament_gui/*.hpp` has no direct Filament header includes; this is
-only a header-level guard, not completion of the full example include metric.
+`examples/filament_gui/*.hpp` and the example entry point have no direct
+Filament header includes; this is only an incremental guard, not completion of
+the full example include metric.
 Example-local engine, renderer, swap-chain, main view, scene, camera lifecycle,
 and begin/render/end frame calls live in
 `examples/filament_gui/render_context.hpp` and `.cpp`; `main.cpp` now has zero

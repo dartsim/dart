@@ -242,7 +242,7 @@ constexpr std::array<std::string_view, 2> kForbiddenFilamentIncludeTokens
 
 struct BackendTokenViolation
 {
-  std::filesystem::path header;
+  std::filesystem::path source;
   std::string_view token;
 };
 
@@ -280,16 +280,16 @@ std::vector<std::filesystem::path> listPublicHeadersInDirectory(
 }
 
 template <std::size_t TokenCount>
-std::vector<BackendTokenViolation> scanHeadersForTokens(
-    const std::vector<std::filesystem::path>& headers,
+std::vector<BackendTokenViolation> scanSourceFilesForTokens(
+    const std::vector<std::filesystem::path>& sources,
     const std::array<std::string_view, TokenCount>& tokens)
 {
   std::vector<BackendTokenViolation> violations;
-  for (const auto& header : headers) {
-    const auto contents = readSourceFile(header);
+  for (const auto& source : sources) {
+    const auto contents = readSourceFile(source);
     for (const auto token : tokens) {
       if (contents.find(token) != std::string::npos) {
-        violations.push_back({header, token});
+        violations.push_back({source, token});
       }
     }
   }
@@ -347,9 +347,9 @@ TEST(FilamentSceneExtraction, ExperimentalPublicHeadersStayBackendHidden)
     ASSERT_FALSE(headers.empty()) << directory;
 
     const auto violations
-        = scanHeadersForTokens(headers, kForbiddenBackendTokens);
+        = scanSourceFilesForTokens(headers, kForbiddenBackendTokens);
     for (const auto& violation : violations) {
-      ADD_FAILURE() << violation.header
+      ADD_FAILURE() << violation.source
                     << " exposes backend implementation token `"
                     << violation.token << "`";
     }
@@ -363,9 +363,24 @@ TEST(FilamentSceneExtraction, FilamentExampleHeadersAvoidDirectFilamentIncludes)
   ASSERT_FALSE(headers.empty());
 
   const auto violations
-      = scanHeadersForTokens(headers, kForbiddenFilamentIncludeTokens);
+      = scanSourceFilesForTokens(headers, kForbiddenFilamentIncludeTokens);
   for (const auto& violation : violations) {
-    ADD_FAILURE() << violation.header << " includes Filament header token `"
+    ADD_FAILURE() << violation.source << " includes Filament header token `"
+                  << violation.token << "` directly";
+  }
+}
+
+TEST(
+    FilamentSceneExtraction,
+    FilamentExampleEntryPointAvoidsDirectFilamentIncludes)
+{
+  const std::vector<std::filesystem::path> sources
+      = {std::filesystem::path("examples") / "filament_gui" / "main.cpp"};
+
+  const auto violations
+      = scanSourceFilesForTokens(sources, kForbiddenFilamentIncludeTokens);
+  for (const auto& violation : violations) {
+    ADD_FAILURE() << violation.source << " includes Filament header token `"
                   << violation.token << "` directly";
   }
 }

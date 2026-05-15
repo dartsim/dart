@@ -119,9 +119,9 @@
   mesh buffers, material part assembly, debug-line resource creation, and
   texture-backed mesh binding out of the main viewer loop.
 - `UNIT_gui_FilamentSceneExtraction` now checks that
-  `examples/filament_gui/*.hpp` has no direct Filament header includes, while
-  the full north-star metric remains zero direct Filament header includes from
-  maintained examples after promotion.
+  `examples/filament_gui/*.hpp` and the example entry point have no direct
+  Filament header includes, while the full north-star metric remains zero
+  direct Filament header includes from maintained examples after promotion.
 - The Filament example's engine, renderer, swap-chain, main view, scene,
   camera lifecycle, and begin/render/end frame calls now live in
   `examples/filament_gui/render_context.hpp` and `.cpp`, leaving `main.cpp`
