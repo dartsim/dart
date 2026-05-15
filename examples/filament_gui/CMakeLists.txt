@@ -196,10 +196,12 @@ add_custom_command(
 file(GLOB srcs "*.cpp" "*.hpp")
 set(filament_gui_backend_srcs
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/render_context.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/render_environment.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/screenshot.cpp"
 )
 set(filament_gui_backend_hdrs
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/render_context.hpp"
+  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/render_environment.hpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/screenshot.hpp"
 )
 add_executable(

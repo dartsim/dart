@@ -140,7 +140,8 @@
 - The Filament example's neutral lighting, light entity creation and orbit
   update, scene environment binding, color grading, viewport/camera
   application, and windowed view-quality setup now live in
-  `examples/filament_gui/render_environment.hpp` and `.cpp`.
+  `dart/gui/experimental/detail/filament/render_environment.hpp` and `.cpp`,
+  moving another backend implementation slice out of the example tree.
 - The Filament example's platform-specific GLFW native-window handle selection
   now lives in `examples/filament_gui/native_window.hpp` and `.cpp`.
 - The Filament example's selection labels and G1 IK-target translation glue now

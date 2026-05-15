@@ -212,9 +212,10 @@
   construction private to the `.cpp` implementation.
 - `UNIT_gui_FilamentSceneExtraction` now also checks that
   `examples/filament_gui/*.hpp` has no direct Filament header includes.
-- The Filament example keeps neutral lighting/color grading, orbiting
-  key-light direction, and windowed view-quality configuration in
-  `examples/filament_gui/render_environment.hpp` and `.cpp`.
+- Filament neutral lighting/color grading, orbiting key-light direction,
+  scene environment binding, viewport/camera application, and windowed
+  view-quality configuration now live in
+  `dart/gui/experimental/detail/filament/render_environment.hpp` and `.cpp`.
 - The Filament example keeps platform-specific GLFW native-window handle
   selection in `examples/filament_gui/native_window.hpp` and `.cpp`.
 - The Filament example keeps selection label formatting and G1 IK-target

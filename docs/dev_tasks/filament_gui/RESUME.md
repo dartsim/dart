@@ -121,10 +121,10 @@ begin/render/end frame calls live in
 `dart/gui/experimental/detail/filament/render_context.hpp` and `.cpp`;
 `main.cpp` now has zero direct Filament header includes, and this backend
 implementation slice has moved out of the example tree.
-Example-local neutral lighting/color grading, light entity creation and orbit
+Filament neutral lighting/color grading, light entity creation and orbit
 updates, scene environment binding, viewport/camera application, and windowed
-view-quality setup live in `examples/filament_gui/render_environment.hpp` and
-`.cpp`.
+view-quality setup live in
+`dart/gui/experimental/detail/filament/render_environment.hpp` and `.cpp`.
 Example-local platform-specific GLFW native-window handle selection lives in
 `examples/filament_gui/native_window.hpp` and `.cpp`.
 Example-local ImGui font loading lives with the overlay renderer in

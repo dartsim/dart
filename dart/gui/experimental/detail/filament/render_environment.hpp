@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_FILAMENT_GUI_RENDER_ENVIRONMENT_HPP_
-#define EXAMPLES_FILAMENT_GUI_RENDER_ENVIRONMENT_HPP_
+#ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_RENDER_ENVIRONMENT_HPP_
+#define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_RENDER_ENVIRONMENT_HPP_
 
 #include <utils/Entity.h>
 
@@ -53,7 +53,7 @@ struct OrbitCamera;
 
 } // namespace dart::gui::experimental
 
-namespace dart::examples::filament_gui {
+namespace dart::gui::experimental::filament {
 
 struct SceneLights
 {
@@ -62,54 +62,54 @@ struct SceneLights
   utils::Entity rim;
 };
 
-filament::ColorGrading* createDebugColorGrading(filament::Engine& engine);
+::filament::ColorGrading* createDebugColorGrading(::filament::Engine& engine);
 
-filament::IndirectLight* createNeutralIndirectLight(filament::Engine& engine);
+::filament::IndirectLight* createNeutralIndirectLight(::filament::Engine& engine);
 
-filament::Skybox* createNeutralSkybox(filament::Engine& engine);
+::filament::Skybox* createNeutralSkybox(::filament::Engine& engine);
 
-void configureWindowedViewQuality(filament::View& view);
+void configureWindowedViewQuality(::filament::View& view);
 
 void configureMainView(
-    filament::View& view, filament::ColorGrading* colorGrading, bool headless);
+    ::filament::View& view, ::filament::ColorGrading* colorGrading, bool headless);
 
-void clearMainViewColorGrading(filament::View& view);
+void clearMainViewColorGrading(::filament::View& view);
 
 void configureViewportCamera(
-    filament::View& view,
-    filament::Camera& camera,
+    ::filament::View& view,
+    ::filament::Camera& camera,
     const dart::gui::experimental::OrbitCamera& orbitCamera,
     int width,
     int height);
 
 SceneLights createSceneLights(
-    filament::Engine& engine,
+    ::filament::Engine& engine,
     bool headless,
     bool orbitLight,
     double orbitPeriodSeconds);
 
 void attachSceneEnvironment(
-    filament::Scene& scene,
-    filament::IndirectLight* indirectLight,
-    filament::Skybox* skybox,
+    ::filament::Scene& scene,
+    ::filament::IndirectLight* indirectLight,
+    ::filament::Skybox* skybox,
     const SceneLights& lights);
 
-void detachSceneEnvironment(filament::Scene& scene, const SceneLights& lights);
+void detachSceneEnvironment(::filament::Scene& scene, const SceneLights& lights);
 
-void destroySceneLights(filament::Engine& engine, const SceneLights& lights);
+void destroySceneLights(::filament::Engine& engine, const SceneLights& lights);
 
 void destroyRenderEnvironmentResources(
-    filament::Engine& engine,
-    filament::IndirectLight* indirectLight,
-    filament::Skybox* skybox,
-    filament::ColorGrading* colorGrading);
+    ::filament::Engine& engine,
+    ::filament::IndirectLight* indirectLight,
+    ::filament::Skybox* skybox,
+    ::filament::ColorGrading* colorGrading);
 
 void updateOrbitingKeyLight(
-    filament::Engine& engine,
+    ::filament::Engine& engine,
     const SceneLights& sceneLights,
     double elapsedSeconds,
     double orbitPeriodSeconds);
 
-} // namespace dart::examples::filament_gui
+} // namespace dart::gui::experimental::filament
 
-#endif // EXAMPLES_FILAMENT_GUI_RENDER_ENVIRONMENT_HPP_
+#endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_RENDER_ENVIRONMENT_HPP_

@@ -54,10 +54,10 @@
 #include <cmath>
 #include <cstdint>
 
-namespace dart::examples::filament_gui {
+namespace dart::gui::experimental::filament {
 namespace {
 
-using filament::math::float3;
+using ::filament::math::float3;
 
 float3 normalizeOr(const float3& vector, const float3& fallback)
 {
@@ -76,18 +76,18 @@ float3 normalizeOr(const float3& vector, const float3& fallback)
 
 } // namespace
 
-filament::ColorGrading* createDebugColorGrading(filament::Engine& engine)
+::filament::ColorGrading* createDebugColorGrading(::filament::Engine& engine)
 {
-  filament::PBRNeutralToneMapper toneMapper;
-  return filament::ColorGrading::Builder()
-      .quality(filament::ColorGrading::QualityLevel::HIGH)
+  ::filament::PBRNeutralToneMapper toneMapper;
+  return ::filament::ColorGrading::Builder()
+      .quality(::filament::ColorGrading::QualityLevel::HIGH)
       .toneMapper(&toneMapper)
       .luminanceScaling(true)
       .gamutMapping(true)
       .build(engine);
 }
 
-filament::IndirectLight* createNeutralIndirectLight(filament::Engine& engine)
+::filament::IndirectLight* createNeutralIndirectLight(::filament::Engine& engine)
 {
   static constexpr std::array<float3, 9> kDiffuseIrradiance = {{
       {0.22f, 0.24f, 0.28f},
@@ -101,63 +101,63 @@ filament::IndirectLight* createNeutralIndirectLight(filament::Engine& engine)
       {0.000f, 0.000f, 0.000f},
   }};
 
-  return filament::IndirectLight::Builder()
+  return ::filament::IndirectLight::Builder()
       .irradiance(3, kDiffuseIrradiance.data())
       .intensity(52000.0f)
       .build(engine);
 }
 
-filament::Skybox* createNeutralSkybox(filament::Engine& engine)
+::filament::Skybox* createNeutralSkybox(::filament::Engine& engine)
 {
-  return filament::Skybox::Builder()
+  return ::filament::Skybox::Builder()
       .color({0.46f, 0.50f, 0.56f, 1.0f})
       .showSun(true)
       .build(engine);
 }
 
-void configureWindowedViewQuality(filament::View& view)
+void configureWindowedViewQuality(::filament::View& view)
 {
-  filament::RenderQuality renderQuality;
-  renderQuality.hdrColorBuffer = filament::QualityLevel::HIGH;
+  ::filament::RenderQuality renderQuality;
+  renderQuality.hdrColorBuffer = ::filament::QualityLevel::HIGH;
   view.setRenderQuality(renderQuality);
 
-  filament::AmbientOcclusionOptions ambientOcclusionOptions;
+  ::filament::AmbientOcclusionOptions ambientOcclusionOptions;
   ambientOcclusionOptions.enabled = true;
   ambientOcclusionOptions.aoType
-      = filament::AmbientOcclusionOptions::AmbientOcclusionType::GTAO;
+      = ::filament::AmbientOcclusionOptions::AmbientOcclusionType::GTAO;
   ambientOcclusionOptions.radius = 0.35f;
   ambientOcclusionOptions.intensity = 0.38f;
-  ambientOcclusionOptions.quality = filament::QualityLevel::MEDIUM;
-  ambientOcclusionOptions.lowPassFilter = filament::QualityLevel::HIGH;
+  ambientOcclusionOptions.quality = ::filament::QualityLevel::MEDIUM;
+  ambientOcclusionOptions.lowPassFilter = ::filament::QualityLevel::HIGH;
   view.setAmbientOcclusionOptions(ambientOcclusionOptions);
 
-  filament::MultiSampleAntiAliasingOptions multiSampleAntiAliasingOptions;
+  ::filament::MultiSampleAntiAliasingOptions multiSampleAntiAliasingOptions;
   multiSampleAntiAliasingOptions.enabled = true;
   multiSampleAntiAliasingOptions.sampleCount = 4;
   view.setMultiSampleAntiAliasingOptions(multiSampleAntiAliasingOptions);
-  view.setAntiAliasing(filament::AntiAliasing::FXAA);
-  view.setDithering(filament::Dithering::NONE);
+  view.setAntiAliasing(::filament::AntiAliasing::FXAA);
+  view.setDithering(::filament::Dithering::NONE);
 }
 
 void configureMainView(
-    filament::View& view, filament::ColorGrading* colorGrading, bool headless)
+    ::filament::View& view, ::filament::ColorGrading* colorGrading, bool headless)
 {
   view.setColorGrading(colorGrading);
   view.setShadowingEnabled(true);
-  view.setShadowType(filament::ShadowType::PCF);
+  view.setShadowType(::filament::ShadowType::PCF);
   if (!headless) {
     configureWindowedViewQuality(view);
   }
 }
 
-void clearMainViewColorGrading(filament::View& view)
+void clearMainViewColorGrading(::filament::View& view)
 {
   view.setColorGrading(nullptr);
 }
 
 void configureViewportCamera(
-    filament::View& view,
-    filament::Camera& camera,
+    ::filament::View& view,
+    ::filament::Camera& camera,
     const dart::gui::experimental::OrbitCamera& orbitCamera,
     int width,
     int height)
@@ -175,7 +175,7 @@ void configureViewportCamera(
       projection.aspectRatio,
       projection.nearPlane,
       projection.farPlane,
-      filament::Camera::Fov::VERTICAL);
+      ::filament::Camera::Fov::VERTICAL);
   const Eigen::Vector3d eye
       = dart::gui::experimental::cameraEye(orbitCamera);
   camera.lookAt(
@@ -198,7 +198,7 @@ float3 orbitingKeyLightDirection(
 }
 
 SceneLights createSceneLights(
-    filament::Engine& engine,
+    ::filament::Engine& engine,
     bool headless,
     bool orbitLight,
     double orbitPeriodSeconds)
@@ -208,7 +208,7 @@ SceneLights createSceneLights(
       utils::EntityManager::get().create(),
       utils::EntityManager::get().create()};
 
-  filament::LightManager::ShadowOptions shadowOptions;
+  ::filament::LightManager::ShadowOptions shadowOptions;
   shadowOptions.mapSize = headless ? 2048 : 4096;
   shadowOptions.shadowCascades = headless ? 3 : 4;
   shadowOptions.cascadeSplitPositions[0] = 0.10f;
@@ -221,7 +221,7 @@ SceneLights createSceneLights(
   const float3 keyLightDirection
       = orbitLight ? orbitingKeyLightDirection(0.0, orbitPeriodSeconds)
                    : float3{-0.30f, -0.42f, -1.0f};
-  filament::LightManager::Builder(filament::LightManager::Type::SUN)
+  ::filament::LightManager::Builder(::filament::LightManager::Type::SUN)
       .color({1.0f, 0.96f, 0.88f})
       .intensity(82000.0f)
       .direction(keyLightDirection)
@@ -229,14 +229,14 @@ SceneLights createSceneLights(
       .shadowOptions(shadowOptions)
       .build(engine, lights.key);
 
-  filament::LightManager::Builder(filament::LightManager::Type::DIRECTIONAL)
+  ::filament::LightManager::Builder(::filament::LightManager::Type::DIRECTIONAL)
       .color({0.80f, 0.88f, 1.0f})
       .intensity(62000.0f)
       .direction({0.42f, 0.18f, -0.7f})
       .castShadows(false)
       .build(engine, lights.fill);
 
-  filament::LightManager::Builder(filament::LightManager::Type::DIRECTIONAL)
+  ::filament::LightManager::Builder(::filament::LightManager::Type::DIRECTIONAL)
       .color({0.88f, 0.93f, 1.0f})
       .intensity(42000.0f)
       .direction({-0.65f, 0.40f, -0.45f})
@@ -247,9 +247,9 @@ SceneLights createSceneLights(
 }
 
 void attachSceneEnvironment(
-    filament::Scene& scene,
-    filament::IndirectLight* indirectLight,
-    filament::Skybox* skybox,
+    ::filament::Scene& scene,
+    ::filament::IndirectLight* indirectLight,
+    ::filament::Skybox* skybox,
     const SceneLights& lights)
 {
   scene.setIndirectLight(indirectLight);
@@ -259,7 +259,7 @@ void attachSceneEnvironment(
   scene.addEntity(lights.rim);
 }
 
-void detachSceneEnvironment(filament::Scene& scene, const SceneLights& lights)
+void detachSceneEnvironment(::filament::Scene& scene, const SceneLights& lights)
 {
   scene.remove(lights.key);
   scene.remove(lights.fill);
@@ -268,7 +268,7 @@ void detachSceneEnvironment(filament::Scene& scene, const SceneLights& lights)
   scene.setSkybox(nullptr);
 }
 
-void destroySceneLights(filament::Engine& engine, const SceneLights& lights)
+void destroySceneLights(::filament::Engine& engine, const SceneLights& lights)
 {
   engine.destroy(lights.key);
   engine.destroy(lights.fill);
@@ -279,10 +279,10 @@ void destroySceneLights(filament::Engine& engine, const SceneLights& lights)
 }
 
 void destroyRenderEnvironmentResources(
-    filament::Engine& engine,
-    filament::IndirectLight* indirectLight,
-    filament::Skybox* skybox,
-    filament::ColorGrading* colorGrading)
+    ::filament::Engine& engine,
+    ::filament::IndirectLight* indirectLight,
+    ::filament::Skybox* skybox,
+    ::filament::ColorGrading* colorGrading)
 {
   engine.destroy(indirectLight);
   engine.destroy(skybox);
@@ -290,7 +290,7 @@ void destroyRenderEnvironmentResources(
 }
 
 void updateOrbitingKeyLight(
-    filament::Engine& engine,
+    ::filament::Engine& engine,
     const SceneLights& sceneLights,
     double elapsedSeconds,
     double orbitPeriodSeconds)
@@ -301,4 +301,4 @@ void updateOrbitingKeyLight(
       orbitingKeyLightDirection(elapsedSeconds, orbitPeriodSeconds));
 }
 
-} // namespace dart::examples::filament_gui
+} // namespace dart::gui::experimental::filament
