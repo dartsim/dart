@@ -78,6 +78,7 @@ enum class ExampleScene
   AddDeleteSkels,
   Vehicle,
   HybridDynamics,
+  JointConstraints,
   MimicPendulums,
   AtlasPuppet,
   OperationalSpaceControl,
@@ -153,6 +154,10 @@ inline constexpr const char* kHybridDynamicsFixtureBipedSkeletonName
     = "visual_hybrid_dynamics_biped";
 inline constexpr const char* kHybridDynamicsFixtureGroundSkeletonName
     = "visual_hybrid_dynamics_ground";
+inline constexpr const char* kJointConstraintsFixtureBipedSkeletonName
+    = "visual_joint_constraints_biped";
+inline constexpr const char* kJointConstraintsFixtureGroundSkeletonName
+    = "visual_joint_constraints_ground";
 inline constexpr const char* kMimicPendulumsFixtureSkeletonPrefix
     = "visual_mimic_pendulums_";
 inline constexpr const char* kMimicPendulumsFixtureGroundSkeletonName
@@ -208,6 +213,8 @@ inline constexpr std::size_t kVehicleFixtureGroundCount = 1;
 inline constexpr std::size_t kVehicleFixtureObstacleCount = 2;
 inline constexpr std::size_t kHybridDynamicsFixtureBipedBoxCount = 20;
 inline constexpr std::size_t kHybridDynamicsFixtureGroundCount = 1;
+inline constexpr std::size_t kJointConstraintsFixtureBipedBoxCount = 20;
+inline constexpr std::size_t kJointConstraintsFixtureGroundCount = 1;
 inline constexpr std::size_t kMimicPendulumsFixtureBoxCount = 4;
 inline constexpr std::size_t kMimicPendulumsFixtureCylinderCount = 15;
 inline constexpr std::size_t kMimicPendulumsFixtureGroundCount = 1;

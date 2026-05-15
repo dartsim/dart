@@ -270,7 +270,8 @@ for Linux x86_64. It configures with `DART_BUILD_GUI=OFF` and
 `DART_BUILD_DARTPY=OFF`, builds `dart_filament_gui`, and runs the default,
 hello-world, boxes, hardcoded-design, rigid-chain, rigid-loop, mixed-chain,
 coupler-constraint, add-delete-skels, vehicle, hybrid-dynamics,
-mimic-pendulums, atlas-puppet, operational-space-control, drag-and-drop,
+joint-constraints, mimic-pendulums, atlas-puppet,
+operational-space-control, drag-and-drop,
 simple-frames, soft-bodies, point-cloud, capsule-ground-contact,
 simulation-event-handler, polyhedron, and heightmap headless CTest smokes.
 When `DISPLAY` is absent, the
@@ -335,6 +336,12 @@ source as legacy OSG comparison material for scripted joint commands and
 harness toggling. It routes `pixi run ex biped_stand` through the same
 Filament fixture while keeping the standalone source as legacy OSG comparison
 material for SPD control and perturbation controls. It routes
+`pixi run ex joint_constraints` through the Filament example's selectable
+`--scene joint-constraints` fixture, which loads the legacy fullbody SKEL world,
+renders standing biped and ground descriptors, and runs the SPD balance
+controller through a private scene pre-step hook while keeping the standalone
+source as legacy OSG comparison material for perturbation shortcuts and harness
+toggling. It routes
 `pixi run ex mimic_pendulums` through the Filament example's selectable
 `--scene mimic-pendulums` fixture, which loads the legacy SDF pendulum rigs and
 renders cylinder, box, and ground descriptors while keeping the standalone
@@ -418,8 +425,9 @@ DART world fixtures now live in
 `dart/gui/experimental/detail/filament/scene_fixtures.hpp` and `.cpp`.
 Scene content requirement counting and
 MVP/G1/hello-world/boxes/hardcoded-design/rigid-chain/rigid-loop/mixed-chain/
-coupler-constraint/add-delete-skels/vehicle/hybrid-dynamics/mimic-pendulums/
-atlas-puppet/operational-space-control/drag/simple-frames/soft-bodies/
+coupler-constraint/add-delete-skels/vehicle/hybrid-dynamics/joint-constraints/
+mimic-pendulums/atlas-puppet/operational-space-control/drag/simple-frames/
+soft-bodies/
 point-cloud/capsule-ground-contact/simulation-event-handler/polyhedron/
 heightmap validation gates, including created-renderable content counting, now live in
 `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.

@@ -103,8 +103,9 @@ with extra CMake requirements or redirected experimental GUI runners, such as
 `box_stacking`, `rigid_cubes`, `hardcoded_design`, `rigid_chain`,
 `rigid_loop`, `mixed_chain`, `coupler_constraint`, `drag_and_drop`,
 `add_delete_skels`, `vehicle`, `hybrid_dynamics`, `biped_stand`,
-`mimic_pendulums`, `atlas_puppet`, `operational_space_control`,
-`simple_frames`, `soft_bodies`, `point_cloud`, `empty`,
+`joint_constraints`, `mimic_pendulums`, `atlas_puppet`,
+`operational_space_control`, `simple_frames`, `soft_bodies`, `point_cloud`,
+`empty`,
 `capsule_ground_contact`, `simulation_event_handler`, `polyhedron_visual`,
 `heightmap`, and `g1_puppet`, declare those requirements in
 `scripts/run_cpp_example.py` so the same command shape can remain stable as

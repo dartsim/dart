@@ -212,6 +212,12 @@
   route to this Filament scene by default while the standalone sources remain
   as legacy OSG comparison material for scripted joint commands,
   harness toggling, SPD control, and perturbation controls.
+- The Filament example includes a selectable `--scene joint-constraints`
+  fixture that loads the legacy fullbody SKEL world, applies the standing pose,
+  and runs the SPD balance controller through a private scene pre-step hook.
+  `pixi run ex joint_constraints` routes to this Filament scene by default
+  while the standalone source remains as legacy OSG comparison material for
+  perturbation shortcuts and harness toggling.
 - The Filament example includes a selectable `--scene mimic-pendulums` fixture
   that loads the legacy mimic-pendulums SDF world and renders the three
   pendulum rigs plus ground through descriptor-owned renderables.
@@ -408,8 +414,9 @@
   `dart/gui/experimental/detail/filament/debug_overlay.hpp` and `.cpp`.
 - Scene content requirement counting and MVP/G1/hello-world/boxes/
   hardcoded-design/rigid-chain/rigid-loop/mixed-chain/coupler-constraint/
-  add-delete-skels/vehicle/hybrid-dynamics/mimic-pendulums/atlas-puppet/
-  operational-space-control/drag/simple-frames/soft-bodies/point-cloud/
+  add-delete-skels/vehicle/hybrid-dynamics/joint-constraints/
+  mimic-pendulums/atlas-puppet/operational-space-control/drag/simple-frames/
+  soft-bodies/point-cloud/
   capsule-ground-contact/simulation-event-handler/polyhedron/heightmap
   validation gates now live in
   `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.

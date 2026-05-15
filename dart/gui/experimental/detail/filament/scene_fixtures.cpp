@@ -48,6 +48,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <filesystem>
@@ -2000,6 +2001,104 @@ DartScene createVehicleScene()
   return scene;
 }
 
+class JointConstraintsControllerState
+{
+public:
+  JointConstraintsControllerState(
+      dart::dynamics::SkeletonPtr biped,
+      double timeStep)
+    : mBiped(std::move(biped)), mTimeStep(timeStep)
+  {
+    if (!mBiped) {
+      throw std::runtime_error("joint_constraints fixture is missing biped");
+    }
+
+    mHeelLeft = mBiped->getBodyNode("h_heel_left");
+    if (mHeelLeft == nullptr) {
+      throw std::runtime_error(
+          "joint_constraints fixture is missing h_heel_left");
+    }
+
+    const std::size_t dofs = mBiped->getNumDofs();
+    mKp = Eigen::MatrixXd::Identity(dofs, dofs);
+    mKd = Eigen::MatrixXd::Identity(dofs, dofs);
+    mTorques = Eigen::VectorXd::Zero(dofs);
+    mDesiredDofs = mBiped->getPositions();
+    mConstraintForces = Eigen::VectorXd::Zero(dofs);
+
+    for (std::size_t i = 0; i < std::min<std::size_t>(6, dofs); ++i) {
+      mKp(i, i) = 0.0;
+      mKd(i, i) = 0.0;
+    }
+    for (std::size_t i = 6; i < std::min<std::size_t>(22, dofs); ++i) {
+      mKp(i, i) = 200.0;
+      mKd(i, i) = 100.0;
+    }
+    for (std::size_t i = 22; i < dofs; ++i) {
+      mKp(i, i) = 20.0;
+      mKd(i, i) = 10.0;
+    }
+  }
+
+  void preStep()
+  {
+    computeTorques(mBiped->getPositions(), mBiped->getVelocities());
+    mBiped->setForces(mTorques);
+  }
+
+private:
+  void computeTorques(
+      const Eigen::VectorXd& positions,
+      const Eigen::VectorXd& velocities)
+  {
+    const Eigen::MatrixXd inverseMass
+        = (mBiped->getMassMatrix() + mKd * mTimeStep).inverse();
+    const Eigen::VectorXd proportional
+        = -mKp * (positions + velocities * mTimeStep - mDesiredDofs);
+    const Eigen::VectorXd derivative = -mKd * velocities;
+    const Eigen::VectorXd acceleration
+        = inverseMass
+          * (-mBiped->getCoriolisAndGravityForces() + proportional + derivative
+             + mConstraintForces);
+    mTorques = proportional + derivative - mKd * acceleration * mTimeStep;
+
+    const Eigen::Vector3d centerOfMass = mBiped->getCOM();
+    const Eigen::Vector3d centerOfPressure
+        = mHeelLeft->getTransform() * Eigen::Vector3d(0.05, 0.0, 0.0);
+    const Eigen::Vector2d offset(
+        centerOfMass[0] - centerOfPressure[0],
+        centerOfMass[2] - centerOfPressure[2]);
+    if (mTorques.size() > 26 && offset[0] < 0.1) {
+      const double sagittalOffset = centerOfMass[0] - centerOfPressure[0];
+      constexpr double kAnkleHipGain = 20.0;
+      constexpr double kBackGain = 10.0;
+      constexpr double kDerivativeGain = 100.0;
+      const double correction
+          = kDerivativeGain * (mPreviousSagittalOffset - sagittalOffset);
+      mTorques[17] += -kAnkleHipGain * sagittalOffset + correction;
+      mTorques[25] += -kBackGain * sagittalOffset + correction;
+      mTorques[19] += -kAnkleHipGain * sagittalOffset + correction;
+      mTorques[26] += -kBackGain * sagittalOffset + correction;
+      mPreviousSagittalOffset = sagittalOffset;
+    }
+
+    for (std::size_t i = 0; i < std::min<std::size_t>(6, mTorques.size());
+         ++i) {
+      mTorques[i] = 0.0;
+    }
+  }
+
+  dart::dynamics::SkeletonPtr mBiped;
+  dart::dynamics::BodyNode* mHeelLeft = nullptr;
+  double mTimeStep = 0.0;
+  double mPreviousSagittalOffset = 0.0;
+  Eigen::VectorXd mTorques;
+  Eigen::VectorXd mDesiredDofs;
+  Eigen::MatrixXd mKp;
+  Eigen::MatrixXd mKd;
+  Eigen::VectorXd mConstraintForces;
+};
+
 DartScene createHybridDynamicsScene()
 {
   DartScene scene;
@@ -2068,6 +2167,76 @@ DartScene createHybridDynamicsScene()
   if (auto* spine = biped->getBodyNode("h_spine")) {
     spine->setColor(Eigen::Vector3d(0.22, 0.48, 0.86));
   }
+
+  return scene;
+}
+
+DartScene createJointConstraintsScene()
+{
+  DartScene scene;
+  scene.world = dart::io::readWorld("dart://sample/skel/fullbody1.skel");
+  if (!scene.world) {
+    throw std::runtime_error(
+        "Failed to load joint_constraints fixture from "
+        "dart://sample/skel/fullbody1.skel");
+  }
+  scene.world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  auto ground = scene.world->getSkeleton("ground skeleton");
+  if (!ground) {
+    throw std::runtime_error("joint_constraints fixture is missing ground");
+  }
+  ground->setName(kJointConstraintsFixtureGroundSkeletonName);
+  if (auto* body = ground->getBodyNode("ground")) {
+    body->setColor(Eigen::Vector3d(0.42, 0.46, 0.44));
+  }
+
+  auto biped = scene.world->getSkeleton("fullbody1");
+  if (!biped) {
+    throw std::runtime_error("joint_constraints fixture is missing fullbody1");
+  }
+  biped->setName(kJointConstraintsFixtureBipedSkeletonName);
+
+  const std::vector<std::size_t> genCoordIds{
+      1,  // global orientation y
+      4,  // global position y
+      6,  // left hip
+      9,  // left knee
+      10, // left ankle
+      13, // right hip
+      16, // right knee
+      17, // right ankle
+      21, // lower back
+  };
+  Eigen::VectorXd initConfig(9);
+  initConfig << -0.1, 0.2, 0.2, -0.5, 0.3, 0.2, -0.5, 0.3, -0.1;
+  biped->setPositions(genCoordIds, initConfig);
+
+  for (std::size_t i = 0; i < biped->getNumBodyNodes(); ++i) {
+    auto* body = biped->getBodyNode(i);
+    if (body == nullptr) {
+      continue;
+    }
+    const double t = biped->getNumBodyNodes() <= 1
+                         ? 0.0
+                         : static_cast<double>(i)
+                               / static_cast<double>(
+                                   biped->getNumBodyNodes() - 1);
+    body->setColor(
+        Eigen::Vector3d(0.24 + 0.34 * t, 0.52 - 0.20 * t, 0.34 + 0.24 * t));
+  }
+  if (auto* head = biped->getBodyNode("h_head")) {
+    head->setColor(Eigen::Vector3d(0.84, 0.68, 0.50));
+  }
+  if (auto* spine = biped->getBodyNode("h_spine")) {
+    spine->setColor(Eigen::Vector3d(0.30, 0.58, 0.34));
+  }
+
+  auto controller = std::make_shared<JointConstraintsControllerState>(
+      biped, scene.world->getTimeStep());
+  scene.preStep = [controller = std::move(controller)]() {
+    controller->preStep();
+  };
 
   return scene;
 }

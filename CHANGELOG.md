@@ -218,6 +218,9 @@
     `--scene operational-space-control` Filament fixture that loads the WAM arm,
     runs the task-space controller through a private scene pre-step hook, and
     exposes the red target as a selectable `SimpleFrame`.
+    The `joint_constraints` runner now routes to a `--scene joint-constraints`
+    Filament fixture that loads the legacy fullbody world and runs the SPD
+    balance controller through the same private scene pre-step hook.
     The focused GUI unit test now
     checks that
     `examples/filament_gui` contains no C++ source/header

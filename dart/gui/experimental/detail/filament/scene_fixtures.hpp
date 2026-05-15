@@ -59,6 +59,8 @@ DartScene createVehicleScene();
 
 DartScene createHybridDynamicsScene();
 
+DartScene createJointConstraintsScene();
+
 DartScene createMimicPendulumsScene();
 
 DartScene createAtlasPuppetScene();

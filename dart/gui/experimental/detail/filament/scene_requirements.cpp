@@ -227,6 +227,14 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Box) {
     ++counts.hybridDynamicsGrounds;
   }
+  if (descriptor.skeletonName == kJointConstraintsFixtureBipedSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.jointConstraintsBipedBoxes;
+  }
+  if (descriptor.skeletonName == kJointConstraintsFixtureGroundSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.jointConstraintsGrounds;
+  }
   if (descriptor.skeletonName.starts_with(kMimicPendulumsFixtureSkeletonPrefix)
       && descriptor.skeletonName != kMimicPendulumsFixtureGroundSkeletonName
       && descriptor.geometry.kind == ShapeKind::Box) {
@@ -690,6 +698,23 @@ bool validateSceneDescriptorContent(
         output);
   }
 
+  if (scene == ExampleScene::JointConstraints) {
+    if (!requireEqual(
+            counts.jointConstraintsBipedBoxes,
+            kJointConstraintsFixtureBipedBoxCount,
+            "joint-constraints scene",
+            "visible biped box renderable descriptors",
+            output)) {
+      return false;
+    }
+    return requireEqual(
+        counts.jointConstraintsGrounds,
+        kJointConstraintsFixtureGroundCount,
+        "joint-constraints scene",
+        "visible ground renderable descriptor",
+        output);
+  }
+
   if (scene == ExampleScene::MimicPendulums) {
     if (!requireEqual(
             counts.mimicPendulumsBoxes,
@@ -1131,6 +1156,21 @@ bool validateCreatedSceneContent(
         created.hybridDynamicsGrounds,
         expected.hybridDynamicsGrounds,
         "hybrid-dynamics ground renderables",
+        output);
+  }
+
+  if (scene == ExampleScene::JointConstraints) {
+    if (!requireCreatedEqual(
+            created.jointConstraintsBipedBoxes,
+            expected.jointConstraintsBipedBoxes,
+            "joint-constraints biped box renderables",
+            output)) {
+      return false;
+    }
+    return requireCreatedEqual(
+        created.jointConstraintsGrounds,
+        expected.jointConstraintsGrounds,
+        "joint-constraints ground renderables",
         output);
   }
 

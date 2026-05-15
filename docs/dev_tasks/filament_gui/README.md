@@ -189,7 +189,8 @@
 - The Filament example's scene content requirement counting and
   MVP/G1/hello-world/boxes/hardcoded-design/rigid-chain/rigid-loop/
   mixed-chain/coupler-constraint/add-delete-skels/vehicle/hybrid-dynamics/
-  mimic-pendulums/atlas-puppet/operational-space-control/drag/simple-frames/
+  joint-constraints/mimic-pendulums/atlas-puppet/operational-space-control/drag/
+  simple-frames/
   soft-bodies/point-cloud/capsule-ground-contact/simulation-event-handler/
   polyhedron/heightmap
   validation gates, including created-renderable content counting, now live in
@@ -296,6 +297,13 @@
   now route to that Filament scene while the legacy standalone OSG sources
   remain available for scripted joint-command, harness-toggle, SPD-controller,
   and perturbation-control comparison.
+- The Filament example includes `--scene joint-constraints`, a fullbody SPD
+  control fixture that carries the legacy `joint_constraints` visual workflow
+  through descriptor-owned biped and ground box renderables. The fixture runs
+  the standing controller through a private scene pre-step hook before each
+  DART step. The in-tree `pixi run ex joint_constraints` runner now routes to
+  that Filament scene while the legacy standalone OSG source remains available
+  for perturbation-shortcut and harness-toggle comparison.
 - The Filament example includes `--scene mimic-pendulums`, an SDF-loaded
   pendulum-rig fixture that carries the legacy `mimic_pendulums` example
   through descriptor-owned cylinder, box, and ground renderables. The in-tree
@@ -412,7 +420,7 @@
   `DART_FETCH_FILAMENT=ON` path on Linux x86_64, builds without the legacy OSG
   GUI target, and runs the default, hello-world, boxes, hardcoded-design,
   rigid-chain, rigid-loop, mixed-chain, coupler-constraint, add-delete-skels,
-  vehicle, hybrid-dynamics, mimic-pendulums, atlas-puppet,
+  vehicle, hybrid-dynamics, joint-constraints, mimic-pendulums, atlas-puppet,
   operational-space-control, drag-and-drop, simple-frames, soft-bodies,
   point-cloud, capsule-ground-contact, simulation-event-handler, polyhedron,
   and heightmap headless CTest smokes.

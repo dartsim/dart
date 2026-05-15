@@ -149,6 +149,8 @@ const char* sceneName(ExampleScene scene)
       return "vehicle";
     case ExampleScene::HybridDynamics:
       return "hybrid-dynamics";
+    case ExampleScene::JointConstraints:
+      return "joint-constraints";
     case ExampleScene::MimicPendulums:
       return "mimic-pendulums";
     case ExampleScene::AtlasPuppet:
@@ -221,6 +223,10 @@ bool parseSceneName(std::string_view name, ExampleScene& scene)
   }
   if (name == "hybrid-dynamics") {
     scene = ExampleScene::HybridDynamics;
+    return true;
+  }
+  if (name == "joint-constraints") {
+    scene = ExampleScene::JointConstraints;
     return true;
   }
   if (name == "mimic-pendulums") {
@@ -340,6 +346,12 @@ dart::gui::experimental::OrbitCamera initialCameraForScene(ExampleScene scene)
       break;
     case ExampleScene::HybridDynamics:
       camera.target = Eigen::Vector3d(0.0, 0.15, 0.0);
+      camera.yaw = -0.82;
+      camera.pitch = 0.32;
+      camera.distance = 4.2;
+      break;
+    case ExampleScene::JointConstraints:
+      camera.target = Eigen::Vector3d(0.0, 0.45, 0.0);
       camera.yaw = -0.82;
       camera.pitch = 0.32;
       camera.distance = 4.2;
@@ -482,7 +494,7 @@ AppOptions parseOptions(int argc, char* argv[])
                      "'hardcoded-design', 'rigid-chain', 'rigid-loop', "
                      "'mixed-chain', 'coupler-constraint', "
                      "'add-delete-skels', 'vehicle', 'hybrid-dynamics', "
-                     "'mimic-pendulums', 'atlas-puppet', "
+                     "'joint-constraints', 'mimic-pendulums', 'atlas-puppet', "
                      "'operational-space-control', 'drag-and-drop', "
                      "'simple-frames', 'soft-bodies', 'point-cloud', "
                      "'capsule-ground-contact', "
@@ -513,7 +525,7 @@ AppOptions parseOptions(int argc, char* argv[])
                    " [--orbit-light-period SECONDS]"
                    " [--gui-scale N]"
                    " [--profile]"
-                   " [--scene mvp|hello-world|boxes|hardcoded-design|rigid-chain|rigid-loop|mixed-chain|coupler-constraint|add-delete-skels|vehicle|hybrid-dynamics|mimic-pendulums|atlas-puppet|operational-space-control|drag-and-drop|simple-frames|soft-bodies|point-cloud|capsule-ground-contact|simulation-event-handler|polyhedron|heightmap|g1]"
+                   " [--scene mvp|hello-world|boxes|hardcoded-design|rigid-chain|rigid-loop|mixed-chain|coupler-constraint|add-delete-skels|vehicle|hybrid-dynamics|joint-constraints|mimic-pendulums|atlas-puppet|operational-space-control|drag-and-drop|simple-frames|soft-bodies|point-cloud|capsule-ground-contact|simulation-event-handler|polyhedron|heightmap|g1]"
                    " [--g1-package-uri URI] [--g1-robot-uri URI]"
                    " [--g1-package-name NAME]\n";
       std::exit(0);
@@ -579,6 +591,8 @@ DartScene createDartScene(const AppOptions& options)
       return createVehicleScene();
     case ExampleScene::HybridDynamics:
       return createHybridDynamicsScene();
+    case ExampleScene::JointConstraints:
+      return createJointConstraintsScene();
     case ExampleScene::MimicPendulums:
       return createMimicPendulumsScene();
     case ExampleScene::AtlasPuppet:
