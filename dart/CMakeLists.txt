@@ -34,7 +34,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # Targets - {dependency targets}, source directories, [external dependency libs]
 #===============================================================================
 # dart - common, math (including math/optimization), lcpsolver, dynamics,
-#        collision (native + optional FCL/Bullet/ODE), constraint, simulation,
+#        collision (native + optional FCL/Bullet/ODE reference engines), constraint, simulation,
 #        sensor, utils, gui, [assimp, eigen3, fmt]
 # dart-utils - {dart}, utils, utils/sdf, [tinyxml2]
 # dart-utils-urdf - {dart-utils}, utils/urdf, [urdfdom]

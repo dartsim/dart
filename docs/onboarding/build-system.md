@@ -513,9 +513,9 @@ dart/
 ├── dynamics/        # Dynamics engine (bodies, joints, skeletons)
 ├── collision/       # Collision detection framework
 │   ├── dart/       # Native collision engine
-│   ├── fcl/        # FCL collision engine
-│   ├── bullet/     # Bullet collision engine (optional)
-│   └── ode/        # ODE collision engine (optional)
+│   ├── fcl/        # Native-backed facade + optional FCL reference code
+│   ├── bullet/     # Native-backed facade + optional Bullet reference code
+│   └── ode/        # Native-backed facade + optional ODE collision reference code
 ├── constraint/      # Constraint solver
 ├── simulation/      # Simulation world, integration, and time stepping
 ├── io/              # Unified model loading (readWorld/readSkeleton)
