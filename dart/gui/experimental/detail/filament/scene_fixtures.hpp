@@ -53,6 +53,8 @@ DartScene createMixedChainScene();
 
 DartScene createCouplerConstraintScene();
 
+DartScene createAddDeleteSkelsScene();
+
 DartScene createDragAndDropScene();
 
 DartScene createSimpleFramesScene();

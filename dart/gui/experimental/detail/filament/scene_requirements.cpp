@@ -174,6 +174,15 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::LineSegments) {
     ++counts.couplerConstraintLines;
   }
+  if (descriptor.skeletonName.starts_with(
+          kAddDeleteSkelsFixtureCubeSkeletonPrefix)
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.addDeleteSkelsCubes;
+  }
+  if (descriptor.skeletonName == kAddDeleteSkelsFixtureGroundSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.addDeleteSkelsGrounds;
+  }
   if (descriptor.skeletonName == kPyramidFixtureSkeletonName
       && descriptor.geometry.kind == ShapeKind::Pyramid) {
     ++counts.pyramids;
@@ -506,6 +515,23 @@ bool validateSceneDescriptorContent(
         output);
   }
 
+  if (scene == ExampleScene::AddDeleteSkels) {
+    if (!requireEqual(
+            counts.addDeleteSkelsCubes,
+            kAddDeleteSkelsFixtureCubeCount,
+            "add-delete-skels scene",
+            "visible cube renderable descriptors",
+            output)) {
+      return false;
+    }
+    return requireEqual(
+        counts.addDeleteSkelsGrounds,
+        kAddDeleteSkelsFixtureGroundCount,
+        "add-delete-skels scene",
+        "visible ground renderable descriptor",
+        output);
+  }
+
   if (scene == ExampleScene::Heightmap) {
     return requireEqual(
         counts.heightmaps,
@@ -819,6 +845,21 @@ bool validateCreatedSceneContent(
         created.couplerConstraintLines,
         expected.couplerConstraintLines,
         "coupler-constraint line renderables",
+        output);
+  }
+
+  if (scene == ExampleScene::AddDeleteSkels) {
+    if (!requireCreatedEqual(
+            created.addDeleteSkelsCubes,
+            expected.addDeleteSkelsCubes,
+            "add-delete-skels cube renderables",
+            output)) {
+      return false;
+    }
+    return requireCreatedEqual(
+        created.addDeleteSkelsGrounds,
+        expected.addDeleteSkelsGrounds,
+        "add-delete-skels ground renderables",
         output);
   }
 

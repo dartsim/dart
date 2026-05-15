@@ -4,11 +4,18 @@
 
 - Goal: spawn and remove skeletons at runtime via keyboard input.
 - Concepts/APIs: `simulation::World`, event handlers, dynamic skeleton creation.
-- Expected output: a viewer where you can add/remove cubes on demand.
+- Expected output: a Filament viewer with a deterministic set of cube skeletons.
 - Controls: q spawns a cube; w deletes the most recent cube; space toggles sim.
 
-This project is dependent on DART. Please make sure a proper version of DART is
-installed before building this project.
+The recommended in-tree runner now opens the shared Filament viewer:
+
+```bash
+pixi run ex add_delete_skels
+```
+
+The standalone source in this directory remains legacy OSG comparison material
+for the live q/w add-delete controls until the promoted `dart::gui` API
+replaces the remaining viewer-specific example code.
 
 ## Build Instructions
 
@@ -21,7 +28,13 @@ From this directory:
 
 ## Execute Instructions
 
-Launch the executable from the build directory above:
+From the DART repository root:
+
+```bash
+pixi run ex add_delete_skels
+```
+
+Or launch the legacy standalone executable from the build directory above:
 
     $ ./{generated_executable}
 

@@ -1549,6 +1549,58 @@ DartScene createCouplerConstraintScene()
   return scene;
 }
 
+DartScene createAddDeleteSkelsScene()
+{
+  DartScene scene;
+  scene.world = dart::io::readWorld("dart://sample/skel/ground.skel");
+  if (!scene.world) {
+    throw std::runtime_error(
+        "Failed to load add_delete_skels fixture from "
+        "dart://sample/skel/ground.skel");
+  }
+  scene.world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  auto ground = scene.world->getSkeleton(0);
+  if (!ground) {
+    throw std::runtime_error("add_delete_skels fixture did not contain ground");
+  }
+  ground->setName(kAddDeleteSkelsFixtureGroundSkeletonName);
+
+  const std::array<Eigen::Vector3d, kAddDeleteSkelsFixtureCubeCount> positions{
+          Eigen::Vector3d(-0.8, 0.65, -0.7),
+          Eigen::Vector3d(-0.35, 1.05, 0.25),
+          Eigen::Vector3d(0.15, 0.75, -0.15),
+          Eigen::Vector3d(0.55, 1.25, 0.55),
+          Eigen::Vector3d(0.9, 0.95, -0.45),
+      };
+  const std::array<Eigen::Vector3d, kAddDeleteSkelsFixtureCubeCount> sizes{
+      Eigen::Vector3d(0.25, 0.22, 0.30),
+      Eigen::Vector3d(0.18, 0.28, 0.22),
+      Eigen::Vector3d(0.32, 0.18, 0.24),
+      Eigen::Vector3d(0.22, 0.34, 0.20),
+      Eigen::Vector3d(0.28, 0.24, 0.18),
+  };
+  const std::array<Eigen::Vector3d, kAddDeleteSkelsFixtureCubeCount> colors{
+      Eigen::Vector3d(0.85, 0.30, 0.24),
+      Eigen::Vector3d(0.25, 0.55, 0.90),
+      Eigen::Vector3d(0.95, 0.72, 0.25),
+      Eigen::Vector3d(0.35, 0.78, 0.45),
+      Eigen::Vector3d(0.68, 0.38, 0.85),
+  };
+
+  for (std::size_t i = 0; i < kAddDeleteSkelsFixtureCubeCount; ++i) {
+    scene.world->addSkeleton(createDynamicBoxSkeleton(
+        std::string(kAddDeleteSkelsFixtureCubeSkeletonPrefix)
+            + std::to_string(i),
+        sizes[i],
+        positions[i],
+        colors[i],
+        0.0));
+  }
+
+  return scene;
+}
+
 DartScene createDragAndDropScene()
 {
   DartScene scene;

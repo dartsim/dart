@@ -73,6 +73,7 @@ enum class ExampleScene
   RigidLoop,
   MixedChain,
   CouplerConstraint,
+  AddDeleteSkels,
   DragAndDrop,
   SimpleFrames,
   SoftBodies,
@@ -121,6 +122,10 @@ inline constexpr const char* kCouplerConstraintFixtureSkeletonPrefix
     = "visual_coupler_constraint_";
 inline constexpr const char* kCouplerConstraintFixtureFramePrefix
     = "visual_coupler_constraint_";
+inline constexpr const char* kAddDeleteSkelsFixtureCubeSkeletonPrefix
+    = "visual_add_delete_skels_cube_";
+inline constexpr const char* kAddDeleteSkelsFixtureGroundSkeletonName
+    = "visual_add_delete_skels_ground";
 inline constexpr const char* kPyramidFixtureSkeletonName = "visual_pyramid";
 inline constexpr const char* kMultiSphereFixtureSkeletonName = "visual_multi_sphere";
 inline constexpr const char* kLineSegmentFixtureSkeletonName = "visual_line_segments";
@@ -164,6 +169,8 @@ inline constexpr std::size_t kMixedChainFixtureBoxCount = 10;
 inline constexpr std::size_t kMixedChainFixtureSoftMeshCount = 5;
 inline constexpr std::size_t kCouplerConstraintFixtureBoxCount = 4;
 inline constexpr std::size_t kCouplerConstraintFixtureLineCount = 6;
+inline constexpr std::size_t kAddDeleteSkelsFixtureCubeCount = 5;
+inline constexpr std::size_t kAddDeleteSkelsFixtureGroundCount = 1;
 inline constexpr std::size_t kSimpleFramesFixtureBoxCount = 3;
 inline constexpr std::size_t kSimpleFramesFixtureEllipsoidCount = 4;
 inline constexpr std::size_t kSoftBodiesFixtureMinSoftMeshCount = 5;

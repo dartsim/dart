@@ -127,6 +127,9 @@ Implemented:
 - A selectable `--scene coupler-constraint` fixture that builds the legacy
   paired mimic/coupler rig layout and renders link boxes plus guide lines
   through the same backend-hidden extraction path.
+- A selectable `--scene add-delete-skels` fixture that loads the legacy ground
+  world and adds deterministic cube skeletons through the same backend-hidden
+  extraction path.
 - Built-in panel controls for pause/resume, single-step, and debug overlay
   toggles covering grid, world/body frames, center-of-mass markers, contacts,
   normal arrows, and force arrows.

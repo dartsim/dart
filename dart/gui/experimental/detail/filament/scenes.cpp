@@ -143,6 +143,8 @@ const char* sceneName(ExampleScene scene)
       return "mixed-chain";
     case ExampleScene::CouplerConstraint:
       return "coupler-constraint";
+    case ExampleScene::AddDeleteSkels:
+      return "add-delete-skels";
     case ExampleScene::DragAndDrop:
       return "drag-and-drop";
     case ExampleScene::SimpleFrames:
@@ -197,6 +199,10 @@ bool parseSceneName(std::string_view name, ExampleScene& scene)
   }
   if (name == "coupler-constraint") {
     scene = ExampleScene::CouplerConstraint;
+    return true;
+  }
+  if (name == "add-delete-skels") {
+    scene = ExampleScene::AddDeleteSkels;
     return true;
   }
   if (name == "drag-and-drop") {
@@ -289,6 +295,12 @@ dart::gui::experimental::OrbitCamera initialCameraForScene(ExampleScene scene)
       camera.yaw = -0.77;
       camera.pitch = 0.52;
       camera.distance = 2.4;
+      break;
+    case ExampleScene::AddDeleteSkels:
+      camera.target = Eigen::Vector3d(0.0, 0.65, 0.0);
+      camera.yaw = -0.78;
+      camera.pitch = 0.42;
+      camera.distance = 3.3;
       break;
     case ExampleScene::SimpleFrames:
       camera.target = Eigen::Vector3d(0.05, 0.0, 0.06);
@@ -408,7 +420,8 @@ AppOptions parseOptions(int argc, char* argv[])
         std::cerr << "Unknown scene '" << sceneArg
                   << "'. Expected 'mvp', 'hello-world', 'boxes', "
                      "'hardcoded-design', 'rigid-chain', 'rigid-loop', "
-                     "'mixed-chain', 'coupler-constraint', 'drag-and-drop', "
+                     "'mixed-chain', 'coupler-constraint', "
+                     "'add-delete-skels', 'drag-and-drop', "
                      "'simple-frames', 'soft-bodies', 'point-cloud', "
                      "'capsule-ground-contact', "
                      "'simulation-event-handler', 'polyhedron', "
@@ -438,7 +451,7 @@ AppOptions parseOptions(int argc, char* argv[])
                    " [--orbit-light-period SECONDS]"
                    " [--gui-scale N]"
                    " [--profile]"
-                   " [--scene mvp|hello-world|boxes|hardcoded-design|rigid-chain|rigid-loop|mixed-chain|coupler-constraint|drag-and-drop|simple-frames|soft-bodies|point-cloud|capsule-ground-contact|simulation-event-handler|polyhedron|heightmap|g1]"
+                   " [--scene mvp|hello-world|boxes|hardcoded-design|rigid-chain|rigid-loop|mixed-chain|coupler-constraint|add-delete-skels|drag-and-drop|simple-frames|soft-bodies|point-cloud|capsule-ground-contact|simulation-event-handler|polyhedron|heightmap|g1]"
                    " [--g1-package-uri URI] [--g1-robot-uri URI]"
                    " [--g1-package-name NAME]\n";
       std::exit(0);
@@ -498,6 +511,8 @@ DartScene createDartScene(const AppOptions& options)
       return createMixedChainScene();
     case ExampleScene::CouplerConstraint:
       return createCouplerConstraintScene();
+    case ExampleScene::AddDeleteSkels:
+      return createAddDeleteSkelsScene();
     case ExampleScene::DragAndDrop:
       return createDragAndDropScene();
     case ExampleScene::SimpleFrames:
