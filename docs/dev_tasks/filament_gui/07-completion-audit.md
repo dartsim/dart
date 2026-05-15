@@ -240,6 +240,10 @@ falling body and sensor-marker renderables in the Filament renderer path while
 the standalone source in `examples/simulation_event_handler` remains as legacy
 OSG comparison material for force/torque controls and force-arrow
 visualization.
+The in-tree `pixi run ex imgui` runner now uses the Filament viewer's private
+built-in status panel by default while the standalone source in `examples/imgui`
+remains as legacy OSG/ImGui comparison material for custom-widget extension
+points.
 The Filament example's `--scene polyhedron` fixture now backs the in-tree
 `pixi run ex polyhedron_visual` runner, so the recommended convex-hull visual
 workflow exercises descriptor-owned convex-mesh and line-segment renderables in

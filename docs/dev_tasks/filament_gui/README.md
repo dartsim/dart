@@ -274,6 +274,10 @@
   `pixi run ex simulation_event_handler` runner now routes to that Filament
   scene while the legacy standalone OSG source remains available for
   force/torque controls and force-arrow visualization.
+- The in-tree `pixi run ex imgui` runner now routes to the Filament example's
+  default viewer and private built-in status panel while the legacy standalone
+  OSG/ImGui source remains available for custom-widget comparison until a
+  promoted DART-owned panel/tool API exists.
 - The Filament example includes `--scene polyhedron`, a convex-hull and
   wireframe fixture that carries the legacy `polyhedron_visual` example through
   descriptor-owned convex-mesh and line-segment renderables. The in-tree

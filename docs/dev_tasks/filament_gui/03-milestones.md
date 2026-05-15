@@ -193,6 +193,9 @@
   renderables. `pixi run ex simulation_event_handler` routes to this Filament
   scene by default while the standalone source remains as legacy OSG comparison
   material for force/torque controls and force-arrow visualization.
+- `pixi run ex imgui` routes to the Filament example's default viewer and
+  private built-in status panel by default while the standalone source remains
+  as legacy OSG/ImGui comparison material for custom-widget extension points.
 - The Filament example includes a `--scene polyhedron` fixture that renders the
   legacy polyhedron visual example's convex hull and wireframe through
   descriptor-owned convex-mesh and line-segment renderables.

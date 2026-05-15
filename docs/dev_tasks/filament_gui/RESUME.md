@@ -310,6 +310,9 @@ material for the pose-reset controls. It also routes
 sensor-marker descriptors while keeping the standalone source as legacy OSG
 comparison material for force/torque controls and force-arrow visualization.
 It also routes
+`pixi run ex imgui` through the Filament example's default viewer and private
+built-in status panel while keeping the standalone source as legacy OSG/ImGui
+comparison material for custom-widget extension points. It also routes
 `pixi run ex polyhedron_visual` through the Filament example's
 `--scene polyhedron` fixture, which renders the legacy convex hull and wireframe
 through descriptor-owned convex-mesh and line-segment renderables. It also

@@ -179,8 +179,9 @@
     and ground descriptors through Filament. The `simulation_event_handler`
     runner now routes to a `--scene simulation-event-handler` fixture that
     renders falling bodies and sensor marker descriptors through Filament. The
-    example tree is left as a minimal `main.cpp` entry point plus CMake and
-    README files. The focused GUI unit test now checks that
+    `imgui` runner now routes to the same Filament viewer and private built-in
+    status panel. The example tree is left as a minimal `main.cpp` entry point
+    plus CMake and README files. The focused GUI unit test now checks that
     `examples/filament_gui` contains no C++ source/header files other than
     `main.cpp` and that the example has no direct Filament header includes. The
     north-star audit now also maps the legacy OSG/Raylib GUI surfaces that must
