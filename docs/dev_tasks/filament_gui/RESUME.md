@@ -256,8 +256,9 @@ shadowed fixture region for dark, mid-tone, and bright pixels plus luminance
 spread, so a flat-but-nonblank default frame fails the smoke gate. The
 scene-specific headless smokes also run the analyzer in a basic full-image
 nonzero mode, so each generated scene smoke verifies more than just the sampled
-CMake pixel prefix. The Filament example also builds through
-`dart-gui-experimental` with
+CMake pixel prefix. Focused Python unit coverage checks both analyzer modes and
+the default CLI mode against synthetic PPMs. The Filament example also builds
+through `dart-gui-experimental` with
 `DART_BUILD_GUI=OFF` and `DART_BUILD_DARTPY=OFF`, proving the path does not
 require the legacy OSG GUI target. Constrained `dartpy.gui.experimental`
 bindings now expose the backend-hidden descriptor, picking, frame-translation,

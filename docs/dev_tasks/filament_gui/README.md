@@ -460,7 +460,8 @@
 - The default headless smoke check validates more than a nonblank image: it
   samples the shadowed fixture region for dark, mid-tone, and bright pixels plus
   a minimum luminance spread. The generated scene-specific smokes also run the
-  analyzer in a basic mode that scans each full PPM for nonzero pixels.
+  analyzer in a basic mode that scans each full PPM for nonzero pixels. Focused
+  Python unit coverage checks those analyzer modes against synthetic PPMs.
 - Filament is the preferred renderer candidate for the next experiment because
   it provides modern real-time rendering features while keeping DART's built-in
   visualization scope maintainable.

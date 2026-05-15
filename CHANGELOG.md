@@ -273,7 +273,9 @@
     loop-generated CMake Filament smoke scene registrations stay aligned.
     All generated Filament headless scene smokes now run the screenshot
     analyzer in a basic full-image nonzero mode, while the default shadowed
-    fixture keeps its stricter luminance-contrast gate.
+    fixture keeps its stricter luminance-contrast gate. Focused Python unit
+    coverage now checks the analyzer's basic mode, contrast mode, and default
+    CLI mode against synthetic PPM fixtures.
     The north-star audit now also maps the legacy OSG/Raylib
     GUI surfaces that must be replaced, made private, or removed during
     first-class Filament promotion. The renderer-hidden debug descriptor path

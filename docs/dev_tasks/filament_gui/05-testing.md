@@ -429,7 +429,9 @@ Known current result:
   analyzer's basic mode, which scans each full image for nonzero pixels without
   imposing shadow-fixture thresholds. This catches flat shadowed-fixture
   regressions while keeping broad scene coverage less brittle than
-  golden-image comparisons.
+  golden-image comparisons. Focused Python unit coverage now imports the
+  analyzer directly and checks accepted/rejected synthetic PPMs for basic mode,
+  contrast mode, and the default CLI mode.
 - The same smoke fixture renders Filament line primitives from
   `dart-gui-experimental` grid, world/body frame, center-of-mass, contact,
   inertia-box, normal-arrow, and force-arrow descriptors. The debug-line
