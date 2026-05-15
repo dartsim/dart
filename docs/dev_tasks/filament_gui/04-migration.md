@@ -6,6 +6,11 @@ Migrate DART-maintained workflows first. Downstream OSG-specific renderer
 extension points should not define the replacement API unless maintainers
 explicitly accept them as supported long-term DART concepts.
 
+Current steering tightens this principle: Filament with GLFW3 and Dear ImGui is
+the only official built-in renderer, not an experimental alternate backend.
+Public names should therefore be `dart::gui` and scope-based example names, not
+`dart::gui::experimental` or backend-named examples such as `filament_gui`.
+
 The more detailed north-star plan is
 `docs/dev_tasks/filament_gui/08-north-star-migration.md`. That plan is the
 source of truth for the intended complete migration to Filament, the
@@ -32,16 +37,23 @@ no-renderer-backward-compatibility stance, and the multi-phase promotion path.
    - Add Python bindings only for constrained descriptor/debug APIs that are
      stable enough to test without committing to a full viewer surface.
 
-4. **Promotion**
+4. **Promotion and example restoration**
    - Promote the experimental API to primary `dart::gui` in a major DART
      version.
-   - Keep old OSG APIs deprecated or isolated during the transition if needed.
+   - Rename the MVP executable by scope, currently planned as
+     `examples/gui_viewer` / `dart_gui_viewer` / `gui_viewer`.
+   - Restore all pre-existing user-facing examples as `dart::gui` examples
+     before deleting their old OSG implementations. Each restored example
+     should keep its historical example entry point and teach the new DART GUI
+     surface, while renderer setup remains private.
+   - Keep backend-only example names out of the official surface. Do not
+     restore Raylib as a renderer.
 
 5. **Removal**
-   - Remove the OSG implementation and public OSG-shaped APIs after the
-     deprecation window.
-   - Remove the Raylib smoke example and related build options in the same major
-     cleanup window unless maintainers choose to keep it as an external example.
+   - Remove the OSG implementation and public OSG-shaped APIs after examples,
+     docs, tests, and Python bindings no longer depend on them.
+   - Remove Raylib build options, dependency discovery, and backend-specific
+     runner aliases in the same major cleanup window.
 
 ## Compatibility notes
 

@@ -1,8 +1,8 @@
 # Resume: Filament GUI Replacement
 
-This resume file is retained as historical handoff material from the migration
-work. See `07-completion-audit.md` for the current promotion-branch state and
-remaining follow-up scope.
+This resume file is active handoff material for the current promotion branch.
+Read `10-active-execution.md` first; it records the latest maintainer steering,
+checkpoint-push policy, CI state, and immediate example/API migration plan.
 
 ## Live Supervisor Steering
 
@@ -11,6 +11,53 @@ file. Read it before picking the next slice; it records the live steering
 context for the post-MVP branch and should be kept in sync when slices land.
 
 ## Last Session Summary
+
+The branch is `feature/filament-gui-full-execution`, tracking
+`origin/feature/filament-gui-full-execution`. Recent pushed checkpoints promote
+Filament as the maintained GUI renderer, remove legacy OSG/Raylib renderer
+surfaces, document Filament as official, and make the default GUI build respect
+the platform support matrix. GitHub CI was manually dispatched without opening
+a PR; Linux headless rendering exposed a concrete restoration gap because the
+old `rigid_cubes` executable was removed while the workflow still invokes it.
+
+The latest steering is to continue without waiting for CI to finish, document
+scope/design updates in this dev-task folder before acting on them, remove the
+remaining `experimental` naming from promoted Filament GUI concepts, restore
+all pre-existing user-facing examples by migrating them to the new
+`dart::gui`, and rename the MVP executable away from `filament_gui` to a
+scope-based name because there is now only one official renderer.
+The latest naming direction also distinguishes library and application brands:
+`DART` is the project/library identity, `libdart` is appropriate in packaging
+contexts, and `dartsim` is the application-level simulator/viewer identity,
+analogous to Isaac Sim.
+
+## Immediate Next Step
+
+Update the code to make the MVP executable scope- or app-named, with
+`dartsim` now the branding candidate for an application-level simulator/viewer
+and `gui_viewer` the neutral fallback example name. Then restore legacy example
+entry points as `dart::gui` launchers with default scenes. Preserve
+Filament/GLFW/ImGui as private implementation details and keep all
+public/example includes on DART-owned `dart::gui` headers.
+
+## Context That Would Be Lost
+
+- Do not open a PR. Push checkpoint commits directly to the tracked remote
+  branch so GitHub Actions can run.
+- `rigid_cubes --headless --frames 10 --out /tmp/headless_output` failed in
+  CI because the executable no longer exists. Restoring legacy example
+  executables and capture compatibility is part of the next slice.
+- `filament_gui` is now the wrong example name. The executable should describe
+  its role or use the application-level `dartsim` brand, not the renderer
+  backend.
+- The stretch direction is ImGui Docking with the 3D scene shown as a docked
+  window/widget, plus offscreen rendering and automated image/video capture.
+- The current code still has promoted concepts under `dart::gui::experimental`
+  and private implementation under `dart/gui/experimental/detail/filament`;
+  promotion should make stable includes/names live under `dart::gui` while
+  keeping backend objects private.
+
+## Historical Summary
 
 The GUI replacement plan was redirected from Raylib to a Filament + GLFW + Dear
 ImGui experiment. The active working docs now describe an MVP example-first

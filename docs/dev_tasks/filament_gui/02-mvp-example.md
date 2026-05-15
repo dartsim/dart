@@ -10,10 +10,26 @@ It should not introduce a stable public API yet.
 
 ## Proposed target
 
-- Directory: `examples/filament_gui/`
-- Target: `dart_filament_gui`
+The original MVP name was backend-oriented because Filament was being evaluated
+as an experiment. That is no longer the right public shape. The maintained
+example should be named for its scope, not its implementation backend:
+
+- Directory: `examples/gui_viewer/`
+- Target: `dart_gui_viewer`
+- Binary: `gui_viewer`
 - Build option: `DART_BUILD_GUI_FILAMENT=ON`
 - Initial dependencies: `dart`, Filament, GLFW, Dear ImGui
+
+Filament, GLFW, and Dear ImGui remain the official implementation stack, but
+they should not appear in the example name or public example API now that there
+is only one maintained built-in renderer.
+
+Branding direction: `DART` remains the project/library name, `libdart` remains
+appropriate for packaging/library contexts, and `dartsim` is the
+application-level simulator/viewer identity. If the MVP executable is promoted
+from example to application, prefer `dartsim` over `gui_viewer`; keep
+`gui_viewer` only as a neutral example name if the app branding is not ready for
+the immediate slice.
 
 Start example-local, then move reusable code into `dart/gui/experimental` only
 after the API and lifetime boundaries become clear. The scene extraction and

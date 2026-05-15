@@ -2,14 +2,18 @@
 
 ## Current status
 
-This task has been executed in the current promotion branch. The completion
-audit in `07-completion-audit.md` is the current source of truth: Filament with
-GLFW3 and Dear ImGui is promoted as the maintained `dart::gui` renderer, and
-the legacy OpenSceneGraph/Raylib build, example, tutorial, Python, and
-dependency surfaces were removed.
+This task is active again on the promotion branch. Filament with GLFW3 and Dear
+ImGui is the only official renderer direction, and legacy OpenSceneGraph/Raylib
+renderer surfaces have been removed from the branch. The next execution slice is
+tracked in `10-active-execution.md`: remove the remaining
+`dart::gui::experimental` promotion gap, restore the pre-existing user-facing
+examples as `dart::gui` examples, and rename the backend-named MVP executable to
+a scope-named GUI viewer because Filament is no longer an alternate backend.
 
-The detailed progress notes below are retained as migration history and may
-describe intermediate states that no longer exist in the source tree.
+The completion audit in `07-completion-audit.md` describes the previous
+promotion checkpoint. The detailed progress notes below are retained as
+migration history and may describe intermediate states that no longer exist in
+the source tree.
 
 - `DART_BUILD_GUI` now builds the Filament-backed GUI component, and
   `DART_BUILD_GUI_FILAMENT` builds the official Filament visual runner.
