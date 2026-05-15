@@ -128,6 +128,9 @@
   `DART_BUILD_DARTPY=OFF`. The example now includes the
   `dart::gui::experimental` API directly instead of carrying an example-local
   namespace re-export header.
+- Checked-in dartpy stubs now list `dartpy.gui.experimental` and include a
+  backend-hidden stub surface for descriptor, picking, debug-line, run-loop,
+  camera, and screenshot helpers.
 - Promotion requires explicit visual-quality gates, including dynamic shadows.
 - The current Pixi environment does not provide Filament. The upstream Filament
   Linux archive can be discovered with `Filament_ROOT`. It links and runs in

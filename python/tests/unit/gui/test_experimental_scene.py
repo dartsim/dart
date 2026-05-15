@@ -1,7 +1,32 @@
 import numpy as np
 import pytest
+from pathlib import Path
 
 import dartpy as dart
+
+
+def test_experimental_stub_surface_is_backend_hidden():
+    repo_root = Path(__file__).resolve().parents[4]
+    gui_stub = repo_root / "python" / "stubs" / "dartpy" / "gui" / "__init__.pyi"
+    experimental_stub = (
+        repo_root / "python" / "stubs" / "dartpy" / "gui" / "experimental.pyi"
+    )
+
+    assert "from . import experimental" in gui_stub.read_text()
+    text = experimental_stub.read_text()
+    for token in (
+        "Filament",
+        "GLFW",
+        "ImGui",
+        "OpenGL",
+        "Vulkan",
+        "Metal",
+        "OSG",
+        "Raylib",
+        "osg::",
+        "filament::",
+    ):
+        assert token not in text
 
 
 def test_experimental_extract_renderables_from_world():
