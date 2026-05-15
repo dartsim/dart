@@ -167,6 +167,10 @@
   multi-backend-only abstraction layers, the OSG and alternative-renderer
   capability gaps that still need DART-owned concepts, and the multi-phase path
   from MVP example to promoted `dart::gui`.
+- The legacy surface audit now maps the current public OSG GUI headers, legacy
+  dartpy GUI bindings, Raylib build/example support, and maintained examples
+  into DART-owned concepts to keep, renderer details to make private, and
+  renderer-specific surfaces to remove or explicitly leave unsupported.
 
 ## Goal
 
@@ -213,15 +217,18 @@ longer express stable DART concepts.
 - Visual quality requirements: `docs/dev_tasks/filament_gui/06-visual-quality.md`
 - Completion audit: `docs/dev_tasks/filament_gui/07-completion-audit.md`
 - North-star migration plan: `docs/dev_tasks/filament_gui/08-north-star-migration.md`
+- Legacy surface audit: `docs/dev_tasks/filament_gui/09-legacy-surface-audit.md`
 - Resume prompt: `docs/dev_tasks/filament_gui/RESUME.md`
 
 ## Immediate next steps
 
 1. Use the north-star migration plan as the gate for any new public GUI API:
    DART-owned concepts only, no public backend types, and no OSG renderer
-   source-compatibility promise. Keep the experimental public-header leakage
-   test passing, and extend that check when APIs move into promoted
-   `dart::gui` headers.
+   source-compatibility promise. Use the legacy surface audit to decide whether
+   an existing GUI surface becomes a stable DART concept, a private Filament
+   detail, or a removed/unsupported renderer-specific API. Keep the experimental
+   public-header leakage test passing, and extend that check when APIs move into
+   promoted `dart::gui` headers.
 2. Keep the hosted Ubuntu `Filament GUI Smoke (GCC)` and
    `Filament GUI Smoke (Clang)` jobs green on each follow-up PR when the
    explicit pinned fetch path or Filament example behavior changes.

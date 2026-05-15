@@ -77,6 +77,10 @@ selected-frame translation, plane dragging, orbit camera math, lifecycle state,
 screenshot storage, constrained Python bindings, renderable set update planning,
 and headless smoke tests.
 
+`09-legacy-surface-audit.md` maps these legacy surfaces at the file/API level
+into DART concepts to keep, Filament-private implementation details, and
+renderer-specific surfaces to remove or leave unsupported.
+
 ## Alternative renderer survey
 
 Filament remains the best north-star candidate for the built-in GUI, but it is
@@ -355,7 +359,8 @@ experimental surface is ready to promote.
 - Public header leakage checks cover the experimental GUI headers and should be
   extended to the promoted `dart::gui` headers before first-class promotion.
 - Existing OSG GUI surfaces are audited into supported DART concepts,
-  unsupported renderer-specific behaviors, and optional future extensions.
+  unsupported renderer-specific behaviors, and optional future extensions. The
+  current file-level audit lives in `09-legacy-surface-audit.md`.
 
 **Exit criteria**
 
