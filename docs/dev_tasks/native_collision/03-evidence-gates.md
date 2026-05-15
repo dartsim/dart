@@ -2763,8 +2763,8 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     reference comparison code for `createReference()`, reference tests, and
     comparative benchmarks.
 - Current full local validation refresh:
-  - Commit: `9ed54f2c49192343aee9418ea7d7835880731556`
-    (`Align native collision PR handoff wording`), pushed to
+  - Commit: `778cc98c5f2a9ffde5bee8b25c530ef29d765596`
+    (`Clarify collision reference flag scope`), pushed to
     `origin/feature/new_coll`.
   - Command:
     `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run test-all`

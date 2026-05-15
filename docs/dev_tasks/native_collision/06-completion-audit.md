@@ -120,7 +120,7 @@ unverified external and finalization gates:
   implementations, keep only native-backed compatibility facades required by
   downstream migration, and leave FCL/Bullet/ODE access in explicit
   reference-only test/benchmark APIs.
-- Full local `pixi run test-all` evidence is refreshed at `9ed54f2c491`, with
+- Full local `pixi run test-all` evidence is refreshed at `778cc98c5f2`, with
   normal native-only defaults keeping FCL, Bullet, ODE, reference tests, and
   reference benchmarks `OFF`. Final `pixi run test-all` evidence after the
   eventual PR-complete state is still missing. The refreshed full reruns found
@@ -155,12 +155,12 @@ Current audited state:
   evidence transfer draft, the closed-PR CI trigger evidence at `6be640e7007`,
   the clean dartpy collision API, default-on C++ compatibility facade
   deprecations, and docs clarifying that `DART_BUILD_COLLISION_FCL`,
-  `DART_BUILD_COLLISION_BULLET`, and `DART_BUILD_COLLISION_ODE` are only
-  needed for explicit `collision-reference-*` comparison components. GitHub
-  reports no Actions runs for the later pushes because `feature/new_coll` does
-  not match the workflow `push` filters and PR #2652 remains closed.
-- Full local validation run head: `9ed54f2c491`
-  (`Align native collision PR handoff wording`). The safe-job full-validation
+  `DART_BUILD_COLLISION_BULLET`, and `DART_BUILD_COLLISION_ODE` only enable
+  explicit `collision-reference-*` comparison components. GitHub reports no
+  Actions runs for the later pushes because `feature/new_coll` does not match
+  the workflow `push` filters and PR #2652 remains closed.
+- Full local validation run head: `778cc98c5f2`
+  (`Clarify collision reference flag scope`). The safe-job full-validation
   command passed with 6/6 top-level gates: linting, build, unit tests,
   simulation-experimental tests, Python tests, and documentation. The configure
   output kept `DART_BUILD_COLLISION_FCL`,
