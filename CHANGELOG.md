@@ -265,7 +265,9 @@
     direct Filament header includes, and that `main.cpp` stays a single-include
     delegated entry point without backend implementation tokens. The
     `run_cpp_example.py` unit coverage now also checks that migrated visual
-    runners resolve to their Filament scenes instead of stale legacy binaries.
+    runners resolve to their Filament scenes instead of stale legacy binaries,
+    and that the `--scene all` runner list, smoke-test regex, and CMake
+    registered Filament smoke scenes stay aligned.
     The north-star audit now also maps the legacy OSG/Raylib
     GUI surfaces that must be replaced, made private, or removed during
     first-class Filament promotion. The renderer-hidden debug descriptor path

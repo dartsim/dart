@@ -517,7 +517,10 @@ Recent follow-ups added render-resource revision tracking, descriptor
 diagnostics for supported geometry without renderable payload, retained
 renderable shadow-flag reapplication, the Fetch/Tinkertoy/Hubo routed fixtures,
 and the recursive example-tree boundary guard for the minimal
-`examples/filament_gui` shape.
+`examples/filament_gui` shape. The runner now keeps the `--scene all` and
+CTest smoke scene set in one `FILAMENT_ALL_SCENES` list, with
+`python/tests/unit/test_run_cpp_example.py` checking migrated runner defaults,
+the smoke regex, and CMake smoke registration for drift.
 
 ## Current Branch
 

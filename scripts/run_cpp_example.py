@@ -13,38 +13,52 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
-FILAMENT_SMOKE_PATTERN = (
-    "EXAMPLE_filament_gui_headless_smoke|"
-    "EXAMPLE_filament_gui_hello_world_headless_smoke|"
-    "EXAMPLE_filament_gui_boxes_headless_smoke|"
-    "EXAMPLE_filament_gui_hardcoded_design_headless_smoke|"
-    "EXAMPLE_filament_gui_rigid_chain_headless_smoke|"
-    "EXAMPLE_filament_gui_rigid_loop_headless_smoke|"
-    "EXAMPLE_filament_gui_mixed_chain_headless_smoke|"
-    "EXAMPLE_filament_gui_coupler_constraint_headless_smoke|"
-    "EXAMPLE_filament_gui_add_delete_skels_headless_smoke|"
-    "EXAMPLE_filament_gui_vehicle_headless_smoke|"
-    "EXAMPLE_filament_gui_hybrid_dynamics_headless_smoke|"
-    "EXAMPLE_filament_gui_joint_constraints_headless_smoke|"
-    "EXAMPLE_filament_gui_free_joint_cases_headless_smoke|"
-    "EXAMPLE_filament_gui_human_joint_limits_headless_smoke|"
-    "EXAMPLE_filament_gui_lcp_physics_headless_smoke|"
-    "EXAMPLE_filament_gui_mimic_pendulums_headless_smoke|"
-    "EXAMPLE_filament_gui_atlas_puppet_headless_smoke|"
-    "EXAMPLE_filament_gui_hubo_puppet_headless_smoke|"
-    "EXAMPLE_filament_gui_atlas_simbicon_headless_smoke|"
-    "EXAMPLE_filament_gui_operational_space_control_headless_smoke|"
-    "EXAMPLE_filament_gui_wam_ikfast_headless_smoke|"
-    "EXAMPLE_filament_gui_fetch_headless_smoke|"
-    "EXAMPLE_filament_gui_tinkertoy_headless_smoke|"
-    "EXAMPLE_filament_gui_drag_and_drop_headless_smoke|"
-    "EXAMPLE_filament_gui_simple_frames_headless_smoke|"
-    "EXAMPLE_filament_gui_soft_bodies_headless_smoke|"
-    "EXAMPLE_filament_gui_point_cloud_headless_smoke|"
-    "EXAMPLE_filament_gui_capsule_ground_contact_headless_smoke|"
-    "EXAMPLE_filament_gui_simulation_event_handler_headless_smoke|"
-    "EXAMPLE_filament_gui_polyhedron_headless_smoke|"
-    "EXAMPLE_filament_gui_heightmap_headless_smoke"
+FILAMENT_ALL_SCENES = (
+    "mvp",
+    "hello-world",
+    "boxes",
+    "hardcoded-design",
+    "rigid-chain",
+    "rigid-loop",
+    "mixed-chain",
+    "coupler-constraint",
+    "add-delete-skels",
+    "vehicle",
+    "hybrid-dynamics",
+    "joint-constraints",
+    "free-joint-cases",
+    "human-joint-limits",
+    "lcp-physics",
+    "mimic-pendulums",
+    "atlas-puppet",
+    "hubo-puppet",
+    "atlas-simbicon",
+    "operational-space-control",
+    "wam-ikfast",
+    "fetch",
+    "tinkertoy",
+    "drag-and-drop",
+    "simple-frames",
+    "soft-bodies",
+    "point-cloud",
+    "capsule-ground-contact",
+    "simulation-event-handler",
+    "polyhedron",
+    "heightmap",
+)
+FILAMENT_EXTRA_KNOWN_SCENES = ("g1",)
+FILAMENT_KNOWN_SCENES = (*FILAMENT_ALL_SCENES, *FILAMENT_EXTRA_KNOWN_SCENES)
+
+
+def _filament_smoke_test_name(scene: str) -> str:
+    if scene == "mvp":
+        return "EXAMPLE_filament_gui_headless_smoke"
+    suffix = scene.replace("-", "_")
+    return f"EXAMPLE_filament_gui_{suffix}_headless_smoke"
+
+
+FILAMENT_SMOKE_PATTERN = "|".join(
+    _filament_smoke_test_name(scene) for scene in FILAMENT_ALL_SCENES
 )
 
 
@@ -545,39 +559,7 @@ def _split_filament_scenes(run_args: list[str]) -> tuple[list[str], list[str]]:
         scene = args[index + 1]
         del args[index : index + 2]
         if scene == "all":
-            return [
-                "mvp",
-                "hello-world",
-                "boxes",
-                "hardcoded-design",
-                "rigid-chain",
-                "rigid-loop",
-                "mixed-chain",
-                "coupler-constraint",
-                "add-delete-skels",
-                "vehicle",
-                "hybrid-dynamics",
-                "joint-constraints",
-                "free-joint-cases",
-                "human-joint-limits",
-                "lcp-physics",
-                "mimic-pendulums",
-                "atlas-puppet",
-                "hubo-puppet",
-                "atlas-simbicon",
-                "operational-space-control",
-                "wam-ikfast",
-                "fetch",
-                "tinkertoy",
-                "drag-and-drop",
-                "simple-frames",
-                "soft-bodies",
-                "point-cloud",
-                "capsule-ground-contact",
-                "simulation-event-handler",
-                "polyhedron",
-                "heightmap",
-            ], args
+            return list(FILAMENT_ALL_SCENES), args
         return [scene], args
     return ["mvp"], args
 

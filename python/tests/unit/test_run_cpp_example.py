@@ -1,4 +1,5 @@
 import importlib.util
+import re
 import sys
 from pathlib import Path
 
@@ -142,6 +143,71 @@ def test_filament_routed_examples_resolve_to_filament(
     assert spec.binary_name == "filament_gui"
     assert spec.requirements == ("filament",)
     assert spec.default_args == default_args
+
+
+def _scene_from_default_args(default_args):
+    args = list(default_args)
+    if "--scene" not in args:
+        return "mvp"
+
+    index = args.index("--scene")
+    assert index + 1 < len(args)
+    return args[index + 1]
+
+
+def test_filament_routed_scene_defaults_are_known(run_cpp_example):
+    routed_scenes = {
+        _scene_from_default_args(default_args)
+        for default_args in FILAMENT_ROUTED_EXAMPLES.values()
+    }
+
+    assert routed_scenes <= set(run_cpp_example.FILAMENT_KNOWN_SCENES)
+
+
+def test_split_filament_scene_all_uses_smoke_scene_list(run_cpp_example):
+    scenes, args = run_cpp_example._split_filament_scenes(
+        ["--frames", "1", "--scene", "all", "--width", "320"]
+    )
+
+    assert tuple(scenes) == run_cpp_example.FILAMENT_ALL_SCENES
+    assert args == ["--frames", "1", "--width", "320"]
+    assert "g1" not in scenes
+
+
+def test_filament_smoke_pattern_uses_scene_all_list(run_cpp_example):
+    assert run_cpp_example.FILAMENT_SMOKE_PATTERN == "|".join(
+        run_cpp_example._filament_smoke_test_name(scene)
+        for scene in run_cpp_example.FILAMENT_ALL_SCENES
+    )
+
+
+def test_filament_scene_all_matches_registered_smoke_tests(run_cpp_example):
+    repo_root = Path(run_cpp_example.__file__).resolve().parents[1]
+    cmake_path = (
+        repo_root
+        / "dart"
+        / "gui"
+        / "experimental"
+        / "detail"
+        / "filament"
+        / "filament_sources.cmake"
+    )
+    cmake_text = cmake_path.read_text(encoding="utf-8")
+
+    registered_scenes = tuple(
+        re.findall(r"-DDART_FILAMENT_GUI_SCENE=([a-z0-9-]+)", cmake_text)
+    )
+    registered_tests = tuple(
+        dict.fromkeys(
+            re.findall(
+                r"EXAMPLE_filament_gui(?:_[a-z0-9_]+)?_headless_smoke",
+                cmake_text,
+            )
+        )
+    )
+
+    assert registered_scenes == run_cpp_example.FILAMENT_ALL_SCENES[1:]
+    assert registered_tests == tuple(run_cpp_example.FILAMENT_SMOKE_PATTERN.split("|"))
 
 
 def test_run_args_with_defaults_uses_g1_scene(run_cpp_example):

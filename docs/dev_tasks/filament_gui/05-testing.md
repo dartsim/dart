@@ -457,7 +457,9 @@ Known current result:
   Ctrl-X/Y/Z-left constrained dragging.
 - `python/tests/unit/test_run_cpp_example.py` verifies that the migrated visual
   example runners resolve to `dart_filament_gui` with their intended
-  `--scene` defaults, so stale legacy-runner expectations fail locally.
+  `--scene` defaults, so stale legacy-runner expectations fail locally. It
+  also checks that the runner's `--scene all` list, smoke-test regex, and
+  CMake-registered Filament smoke scenes stay aligned.
 - `UNIT_gui_FilamentSceneExtraction` also covers run-option normalization,
   viewer lifecycle state, bounded screenshot/frame gates, RGBA-to-PPM
   screenshot storage, orbit-camera basis/update behavior, and perspective
