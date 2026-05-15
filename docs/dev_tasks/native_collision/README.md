@@ -333,6 +333,21 @@ performance work without reopening public backend selection.
 | Reference isolation     | FCL, Bullet, and ODE are optional reference engines only; native-only builds, installs, wheels, and downstream facades do not link them.                                                                     | CMake opt-out, reference targets, lint source isolation, install/package/wheel checks, current package smoke, package-smoke `readelf`, and wheel verifier wiring exist.                                                                                                                            | Final wheel/package evidence and downstream deprecation policy evidence.                                     |
 | Compatibility facade    | gz-physics-required spellings compile and run through the built-in detector while migration removes reliance on legacy names.                                                                                | DART facade tests pass, FCL/ODE legacy facades keep gz-required unsupported raycast behavior, current package smoke verifies native-backed component/header facades, fresh local `pixi run -e gazebo test-gz` passes 65/65 tests, and gz/plugin `readelf` shows only the native collision library. | Downstream deprecation policy evidence and final PR evidence transfer.                                       |
 
+## Final CI Closure Map
+
+Use this map after the maintainer opens the successor PR or explicitly chooses
+another workflow surface. Feature-branch pushes to `feature/new_coll` do not
+start these workflows while PR #2652 is closed.
+
+| Open gate                    | Workflow / job evidence                                                                                                                                     | Notes                                                                                                                              |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Lint and docs                | `CI Lint` / `Lint`; `CI Lint` / `Documentation`                                                                                                             | Confirms `check-lint`, docs build, runtime isolation, and compatibility facade audits on review head.                              |
+| Native-only runtime          | `CI Linux` / `Native Collision (no FCL/Bullet/ODE)`; `CI Linux` / `Release Tests`; `CI Linux` / `Debug Tests`; `CI Linux` / `Asserts enabled (no -DNDEBUG)` | Confirms normal builds keep reference gates off and old engines out of runtime paths.                                              |
+| Collision benchmark artifact | `CI Linux` / `Collision Benchmark Guard`                                                                                                                    | This job runs on schedule or manual dispatch; collect the uploaded `collision-benchmark-guard-*` JSON artifact for final evidence. |
+| gz-physics downstream        | `CI gz-physics` / `GZ Physics Tests`                                                                                                                        | Confirms downstream runtime compatibility on the review head.                                                                      |
+| dartpy wheels                | `Publish dartpy` / `Wheels \| ${{ matrix.os }} Py${{ matrix.python-version }}`                                                                              | Confirms wheel build, repair, verify, test, upload, and collision isolation across the wheel matrix.                               |
+| Platform coverage            | `CI macOS` / `Release Tests (arm64)`; `CI macOS` / `Debug Tests (arm64)`; `CI Windows` / `Tests (Release)`                                                  | Confirms the platform-specific repairs still hold on review head.                                                                  |
+
 ## Architecture Review Targets
 
 `01-design.md` breaks the built-in collision layer into reviewable

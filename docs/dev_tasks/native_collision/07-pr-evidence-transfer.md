@@ -153,6 +153,17 @@ Final PR-complete testing still needs whatever CI surface the maintainer chooses
 after the maintainer-opened successor PR or another explicit review surface
 exists.
 
+Final CI closure map for the maintainer-selected surface:
+
+| Open gate                    | Workflow / job evidence                                                                                                                                     |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lint and docs                | `CI Lint` / `Lint`; `CI Lint` / `Documentation`                                                                                                             |
+| Native-only runtime          | `CI Linux` / `Native Collision (no FCL/Bullet/ODE)`; `CI Linux` / `Release Tests`; `CI Linux` / `Debug Tests`; `CI Linux` / `Asserts enabled (no -DNDEBUG)` |
+| Collision benchmark artifact | `CI Linux` / `Collision Benchmark Guard` with uploaded `collision-benchmark-guard-*` JSON artifact                                                          |
+| gz-physics downstream        | `CI gz-physics` / `GZ Physics Tests`                                                                                                                        |
+| dartpy wheels                | `Publish dartpy` / `Wheels \| ${{ matrix.os }} Py${{ matrix.python-version }}`                                                                              |
+| Platform coverage            | `CI macOS` / `Release Tests (arm64)`; `CI macOS` / `Debug Tests (arm64)`; `CI Windows` / `Tests (Release)`                                                  |
+
 ## Breaking Changes
 
 - [x] Dartpy no longer exposes legacy detector aliases
