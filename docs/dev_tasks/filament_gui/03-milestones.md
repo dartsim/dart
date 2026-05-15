@@ -157,6 +157,9 @@
   ground plane through the same descriptor-driven Filament path.
   `pixi run ex boxes` routes to this Filament scene by default so the in-tree
   multi-box visual workflow no longer depends on the legacy OSG viewer path.
+- `pixi run ex rigid_cubes` also routes to the `--scene boxes` Filament fixture
+  by default while the standalone source remains as legacy OSG comparison
+  material for directional force controls and frame-recording options.
 - The Filament example includes a selectable `--scene drag-and-drop` fixture
   that extracts and renders the legacy drag-and-drop example's `SimpleFrame`
   anchor, child frame, and axis markers through the same manipulation path.

@@ -238,6 +238,10 @@
   renderables. The in-tree `pixi run ex boxes` runner now routes to that
   Filament scene while the legacy standalone OSG/Bullet source remains
   available for comparison.
+- The in-tree `pixi run ex rigid_cubes` runner now routes to the same
+  `--scene boxes` Filament fixture while the legacy standalone OSG source
+  remains available for directional force controls and frame-recording
+  comparison.
 - The Filament example also includes `--scene drag-and-drop`, a first
   interaction-heavy fixture that carries the legacy `SimpleFrame` anchor, child
   frame, and axis marker layout through the same backend-hidden manipulation

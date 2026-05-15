@@ -2,13 +2,16 @@
 
 ## Summary
 
-- Goal: apply external forces to a simple rigid-cube scene in an OSG viewer.
-- Concepts/APIs: `dart::io::readWorld`, `gui::Viewer`,
-  `gui::RealTimeWorldNode`, custom event handling.
-- Expected output: an OSG viewer with cubes falling under gravity; key presses
-  nudge a cube with directional forces.
+- Goal: inspect a dynamic cube-grid scene in the maintained Filament path.
+- Concepts/APIs: Filament GUI dynamic body descriptors, `dart::io::readWorld`,
+  `gui::Viewer`, `gui::RealTimeWorldNode`, and legacy custom event handling.
+- Expected output: a Filament viewer with colored cubes falling under gravity.
+- Controls: left drag orbits, right/middle drag pans, wheel zooms, Space
+  pauses/resumes, `n` steps once while paused, click selects renderables,
+  Ctrl-left drag or arrow/PageUp/PageDown keys move selectable items, and
+  Escape exits.
 
-## Controls (Interactive Mode)
+## Legacy Controls (Standalone)
 
 - Space: toggle simulation on/off.
 - p: toggle playback/stop mode.
@@ -17,6 +20,8 @@
 - 3/4: apply negative/positive Z force.
 
 ## Command-Line Options
+
+These options apply to the standalone legacy OSG executable:
 
 ```
 --headless        Run without display window (for CI/testing)
@@ -27,7 +32,23 @@
 -h, --help        Show help
 ```
 
-### Headless Mode Example
+The recommended in-tree runner uses the Filament scene in
+`examples/filament_gui`, so prefer `--screenshot <path>` instead of the legacy
+`--out <dir>` frame-recording option when running through `pixi run ex`.
+
+## Run In Tree
+
+From the repository root:
+
+```bash
+pixi run ex rigid_cubes
+```
+
+This builds and runs `examples/filament_gui --scene boxes`, so the recommended
+visual path no longer depends on the legacy OSG viewer. On Linux without a
+display, the runner automatically uses headless defaults.
+
+### Legacy Headless Mode Example
 
 ```bash
 # Run for 100 frames and save to ./output/
@@ -37,7 +58,7 @@
 ./rigid_cubes --headless --frames 50 --out ./output/ --width 1920 --height 1080
 ```
 
-### Creating Video from Frames
+### Creating Video from Legacy Frames
 
 Use ffmpeg to convert captured PNG frames to video:
 
@@ -77,7 +98,8 @@ OpenGL support. Performance characteristics:
 
 ## Build Instructions
 
-This project requires DART with OSG support. From this directory:
+This project requires DART with OSG support when building the standalone legacy
+executable. From this directory:
 
 ```bash
 mkdir build
@@ -94,4 +116,5 @@ Launch the executable from the build directory:
 ./rigid_cubes
 ```
 
-Follow the control instructions displayed in the console and viewer window.
+This launches the legacy OSG viewer. Follow the control instructions displayed
+in the console and viewer window for force controls and frame recording.

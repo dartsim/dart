@@ -216,6 +216,11 @@ The Filament example's selectable `--scene boxes` fixture now backs the in-tree
 `pixi run ex boxes` runner, so the recommended multi-box workflow exercises the
 Filament renderer path while the standalone source in `examples/boxes` remains
 as legacy OSG/Bullet comparison material until the promoted GUI API replaces it.
+The in-tree `pixi run ex rigid_cubes` runner now uses the same Filament
+`--scene boxes` fixture by default, so its recommended visual path also
+exercises descriptor-owned dynamic cube-grid renderables while the standalone
+source in `examples/rigid_cubes` remains as legacy OSG comparison material for
+directional force controls and frame-recording options.
 The Filament example's selectable `--scene drag-and-drop` fixture now backs the
 in-tree `pixi run ex drag_and_drop` runner, so the recommended drag-and-drop
 workflow exercises the Filament renderer path while the standalone source in
