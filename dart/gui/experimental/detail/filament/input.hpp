@@ -30,8 +30,8 @@
  *   DAMAGE.
  */
 
-#ifndef EXAMPLES_FILAMENT_GUI_INPUT_HPP_
-#define EXAMPLES_FILAMENT_GUI_INPUT_HPP_
+#ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_INPUT_HPP_
+#define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_INPUT_HPP_
 
 #include <dart/gui/experimental/viewer.hpp>
 
@@ -40,7 +40,7 @@
 struct GLFWwindow;
 struct ImGuiIO;
 
-namespace dart::examples::filament_gui {
+namespace dart::gui::experimental::filament {
 
 void handleScroll(GLFWwindow* window, double xOffset, double yOffset);
 
@@ -66,6 +66,6 @@ void updateCameraController(
     dart::gui::experimental::OrbitCameraController& controller,
     bool suppressLeftMouseOrbit = false);
 
-} // namespace dart::examples::filament_gui
+} // namespace dart::gui::experimental::filament
 
-#endif // EXAMPLES_FILAMENT_GUI_INPUT_HPP_
+#endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_INPUT_HPP_

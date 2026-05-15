@@ -37,7 +37,7 @@
 
 #include <limits>
 
-namespace dart::examples::filament_gui {
+namespace dart::gui::experimental::filament {
 
 using dart::gui::experimental::DirectionalNudgeInput;
 using dart::gui::experimental::OrbitCameraControllerInput;
@@ -164,4 +164,4 @@ void updateCameraController(
   updateOrbitCameraController(controller, input);
 }
 
-} // namespace dart::examples::filament_gui
+} // namespace dart::gui::experimental::filament

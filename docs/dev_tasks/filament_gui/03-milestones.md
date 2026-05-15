@@ -199,9 +199,10 @@
   renderable update planning in `interaction.cpp`, debug descriptor generation
   in `debug.cpp`, viewer runtime helpers in `viewer.cpp`, and backend-hidden
   mesh builders in `geometry.cpp`.
-- The Filament example keeps its backend-specific GLFW/ImGui input polling and
-  status-panel hit testing in `examples/filament_gui/input.hpp` and `.cpp`,
-  while reusable nudge/orbit/manipulation math remains in `dart-gui-experimental`.
+- Backend-specific GLFW/ImGui input polling and status-panel hit testing live
+  in `dart/gui/experimental/detail/filament/input.hpp` and `.cpp`, while
+  reusable nudge/orbit/manipulation math remains in
+  `dart-gui-experimental`.
 - The Filament-native ImGui overlay renderer, font loading, and draw-data
   upload live in
   `dart/gui/experimental/detail/filament/imgui_overlay.hpp` and `.cpp`; panel

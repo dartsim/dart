@@ -78,9 +78,9 @@
   camera-plane dragging of selected dynamic bodies and `SimpleFrame` visuals
   without exposing Filament input types.
 - The Filament example's GLFW/ImGui input bridge now lives in
-  `examples/filament_gui/input.hpp` and `.cpp`, keeping backend-specific input
-  polling out of the main viewer loop while the reusable manipulation math
-  remains in `dart-gui-experimental`.
+  `dart/gui/experimental/detail/filament/input.hpp` and `.cpp`, keeping
+  backend-specific input polling out of the main viewer loop while the
+  reusable manipulation math remains in `dart-gui-experimental`.
 - The Filament-native ImGui overlay renderer, font loading, and draw-data
   upload now live in
   `dart/gui/experimental/detail/filament/imgui_overlay.hpp` and `.cpp`; the
