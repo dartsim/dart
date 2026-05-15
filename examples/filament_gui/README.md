@@ -123,6 +123,9 @@
   applies the same initial humanoid pose, and renders the biped and ground
   boxes through the same descriptor-driven Filament path. The standalone source
   remains comparison material for scripted joint commands and harness toggling.
+  The `biped_stand` runner reuses this fixture for its standing fullbody visual
+  workflow while the standalone source remains comparison material for SPD
+  perturbation controls.
 - Windowed playback advances physics against wall-clock time with a bounded
   catch-up step budget. Headless captures remain deterministic and advance one
   simulation step for each rendered frame.

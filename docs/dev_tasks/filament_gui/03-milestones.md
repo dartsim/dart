@@ -208,9 +208,10 @@
 - The Filament example includes a selectable `--scene hybrid-dynamics` fixture
   that loads the legacy fullbody SKEL world, applies the same initial humanoid
   pose, and renders the biped plus ground boxes through descriptor-owned
-  renderables. `pixi run ex hybrid_dynamics` routes to this Filament scene by
-  default while the standalone source remains as legacy OSG comparison material
-  for scripted joint commands and harness toggling.
+  renderables. `pixi run ex hybrid_dynamics` and `pixi run ex biped_stand`
+  route to this Filament scene by default while the standalone sources remain
+  as legacy OSG comparison material for scripted joint commands,
+  harness toggling, SPD control, and perturbation controls.
 - The Filament example includes a selectable `--scene drag-and-drop` fixture
   that extracts and renders the legacy drag-and-drop example's `SimpleFrame`
   anchor, child frame, and axis markers through the same manipulation path.

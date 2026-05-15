@@ -165,7 +165,8 @@ version hashing, and `extractRenderables`.
    mixed-chain, coupler-constraint, add-delete-skels, vehicle,
    hybrid-dynamics, drag-and-drop, simple-frames, soft-bodies, point-cloud,
    capsule-ground-contact, simulation-event-handler, polyhedron, heightmap, and
-   G1 DART world fixtures.
+   G1 DART world fixtures. The `biped_stand` runner reuses the
+   hybrid-dynamics fullbody fixture rather than adding duplicate scene code.
    `dart/gui/experimental/detail/filament/application.hpp` and `.cpp` now own
    Filament frame orchestration and the built-in panel, leaving `main.cpp` as a
    minimal entry point.
@@ -174,7 +175,9 @@ version hashing, and `extractRenderables`.
    hardcoded-design/rigid-chain/rigid-loop/mixed-chain/coupler-constraint/
    add-delete-skels/vehicle/hybrid-dynamics/drag/simple-frames/soft-bodies/
    point-cloud/capsule-ground-contact/simulation-event-handler/polyhedron/heightmap
-   validation gates.
+   validation gates. Runner-only reuse, such as `biped_stand` using
+   hybrid-dynamics, should stay in the runner/docs layer unless it needs a
+   distinct scene fixture.
 3. **Completed: generalize the public-header leakage scan.**
    `UNIT_gui_FilamentSceneExtraction` now routes the backend-token check
    through `scanHeadersForBackendTokens`, and

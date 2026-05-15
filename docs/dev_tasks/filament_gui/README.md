@@ -289,11 +289,12 @@
   legacy standalone OSG source remains available for live throttle and steering
   control comparison.
 - The Filament example includes `--scene hybrid-dynamics`, a posed fullbody
-  visual fixture that carries the legacy `hybrid_dynamics` example through
-  descriptor-owned biped and ground box renderables. The in-tree
-  `pixi run ex hybrid_dynamics` runner now routes to that Filament scene while
-  the legacy standalone OSG source remains available for scripted joint-command
-  and harness-toggle comparison.
+  visual fixture that carries the legacy `hybrid_dynamics` and `biped_stand`
+  examples through descriptor-owned biped and ground box renderables. The
+  in-tree `pixi run ex hybrid_dynamics` and `pixi run ex biped_stand` runners
+  now route to that Filament scene while the legacy standalone OSG sources
+  remain available for scripted joint-command, harness-toggle, SPD-controller,
+  and perturbation-control comparison.
 - The Filament example also includes `--scene drag-and-drop`, a first
   interaction-heavy fixture that carries the legacy `SimpleFrame` anchor, child
   frame, and axis marker layout through the same backend-hidden manipulation

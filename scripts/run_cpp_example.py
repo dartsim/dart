@@ -127,6 +127,12 @@ EXAMPLE_SPECS = {
         ("filament",),
         ("--scene", "hybrid-dynamics"),
     ),
+    "biped_stand": ExampleSpec(
+        "dart_filament_gui",
+        "filament_gui",
+        ("filament",),
+        ("--scene", "hybrid-dynamics"),
+    ),
     "drag_and_drop": ExampleSpec(
         "dart_filament_gui",
         "filament_gui",

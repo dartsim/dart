@@ -331,7 +331,9 @@ throttle and steering controls. It routes
 `--scene hybrid-dynamics` fixture, which loads the legacy fullbody SKEL world
 and renders posed biped and ground descriptors while keeping the standalone
 source as legacy OSG comparison material for scripted joint commands and
-harness toggling. It routes
+harness toggling. It routes `pixi run ex biped_stand` through the same
+Filament fixture while keeping the standalone source as legacy OSG comparison
+material for SPD control and perturbation controls. It routes
 `pixi run ex drag_and_drop` through the Filament example's selectable
 `--scene drag-and-drop` fixture by default while keeping the standalone source
 as legacy OSG comparison material. It also routes

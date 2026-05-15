@@ -264,11 +264,12 @@ workflow exercises descriptor-owned car body, wheel cylinder, ground, and
 obstacle renderables while the standalone source in `examples/vehicle` remains
 as legacy OSG comparison material for live throttle and steering controls.
 The Filament example's selectable `--scene hybrid-dynamics` fixture now backs
-the in-tree `pixi run ex hybrid_dynamics` runner, so the recommended hybrid
-dynamics visual workflow exercises descriptor-owned fullbody biped and ground
-renderables while the standalone source in `examples/hybrid_dynamics` remains
-as legacy OSG comparison material for scripted joint commands and harness
-toggling.
+the in-tree `pixi run ex hybrid_dynamics` and `pixi run ex biped_stand`
+runners, so the recommended fullbody visual workflows exercise
+descriptor-owned biped and ground renderables while the standalone sources in
+`examples/hybrid_dynamics` and `examples/biped_stand` remain as legacy OSG
+comparison material for scripted joint commands, harness toggling, SPD control,
+and perturbation controls.
 The Filament example's selectable `--scene drag-and-drop` fixture now backs the
 in-tree `pixi run ex drag_and_drop` runner, so the recommended drag-and-drop
 workflow exercises the Filament renderer path while the standalone source in

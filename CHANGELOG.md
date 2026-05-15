@@ -204,7 +204,10 @@
     to a `--scene vehicle` Filament fixture for the SKEL-loaded car, wheel,
     ground, and obstacle renderables. The `hybrid_dynamics` runner now routes
     to a `--scene hybrid-dynamics` Filament fixture for the posed fullbody
-    humanoid and ground renderables. The focused GUI unit test now
+    humanoid and ground renderables. The `biped_stand` runner also routes to
+    that Filament fixture for a standing fullbody visual workflow while the
+    legacy standalone source remains available for SPD perturbation controls.
+    The focused GUI unit test now
     checks that
     `examples/filament_gui` contains no C++ source/header
     files other than `main.cpp` and that the example has no direct Filament
