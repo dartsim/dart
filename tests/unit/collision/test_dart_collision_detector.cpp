@@ -15,6 +15,7 @@
 #include <dart/collision/raycast_result.hpp>
 
 #include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/convex_mesh_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
@@ -158,6 +159,22 @@ std::shared_ptr<math::TriMesh<double>> makeCubeTriMesh()
   mesh->setTriangles(vertices, triangles);
 
   return mesh;
+}
+
+std::shared_ptr<ConvexMeshShape> makeTetraConvexMeshShape()
+{
+  ConvexMeshShape::Vertices vertices
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::UnitX(),
+         Eigen::Vector3d::UnitY(),
+         Eigen::Vector3d::UnitZ()};
+  ConvexMeshShape::Triangles triangles
+      = {ConvexMeshShape::TriMeshType::Triangle(0, 1, 2),
+         ConvexMeshShape::TriMeshType::Triangle(0, 1, 3),
+         ConvexMeshShape::TriMeshType::Triangle(0, 2, 3),
+         ConvexMeshShape::TriMeshType::Triangle(1, 2, 3)};
+
+  return std::make_shared<ConvexMeshShape>(vertices, triangles);
 }
 
 std::pair<bool, std::size_t> runCollision(
@@ -313,6 +330,68 @@ TEST(DartCollisionGroup, MeshPlaneCollisionUsesBroadphase)
   ASSERT_TRUE(group->collide(option, &result));
   EXPECT_GT(result.getNumContacts(), 0u);
   EXPECT_LT(result.getContact(0).normal.z(), -0.9);
+}
+
+TEST(DartCollisionDetector, SphereMeshCollisionWorksInBothOrders)
+{
+  auto sphere = std::make_shared<SphereShape>(0.25);
+  auto mesh
+      = std::make_shared<MeshShape>(Eigen::Vector3d::Ones(), makeCubeTriMesh());
+
+  Eigen::Isometry3d sphereTf = Eigen::Isometry3d::Identity();
+  sphereTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.65);
+  const Eigen::Isometry3d meshTf = Eigen::Isometry3d::Identity();
+
+  auto result = runCollisionWithTransforms(sphere, mesh, sphereTf, meshTf);
+  ASSERT_TRUE(result.first);
+  ASSERT_GT(result.second.getNumContacts(), 0u);
+  EXPECT_GT(result.second.getContact(0).normal.norm(), 0.9);
+  EXPECT_GT(result.second.getContact(0).penetrationDepth, 0.0);
+
+  result = runCollisionWithTransforms(mesh, sphere, meshTf, sphereTf);
+  ASSERT_TRUE(result.first);
+  ASSERT_GT(result.second.getNumContacts(), 0u);
+  EXPECT_GT(result.second.getContact(0).normal.norm(), 0.9);
+  EXPECT_GT(result.second.getContact(0).penetrationDepth, 0.0);
+}
+
+TEST(DartCollisionDetector, ConvexMeshCollisionUsesNativeConvexGeometry)
+{
+  auto convex = makeTetraConvexMeshShape();
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.2));
+
+  Eigen::Isometry3d tfConvex = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfBox = Eigen::Isometry3d::Identity();
+  tfBox.translation() = Eigen::Vector3d(1.0, 0.0, 0.0);
+
+  auto result = runCollisionWithTransforms(convex, box, tfConvex, tfBox);
+  EXPECT_TRUE(result.first);
+  EXPECT_GT(result.second.getNumContacts(), 0u);
+
+  tfBox.translation() = Eigen::Vector3d(2.0, 0.0, 0.0);
+  result = runCollisionWithTransforms(convex, box, tfConvex, tfBox);
+  EXPECT_FALSE(result.first);
+  EXPECT_EQ(result.second.getNumContacts(), 0u);
+}
+
+TEST(DartCollisionDetector, EmptyConvexMeshUsesFallbackSphere)
+{
+  auto convex = std::make_shared<ConvexMeshShape>(
+      std::make_shared<ConvexMeshShape::TriMeshType>());
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.04));
+
+  Eigen::Isometry3d tfConvex = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfBox = Eigen::Isometry3d::Identity();
+  tfBox.translation() = Eigen::Vector3d(0.12, 0.0, 0.0);
+
+  auto result = runCollisionWithTransforms(convex, box, tfConvex, tfBox);
+  EXPECT_TRUE(result.first);
+  EXPECT_GT(result.second.getNumContacts(), 0u);
+
+  tfBox.translation() = Eigen::Vector3d(0.16, 0.0, 0.0);
+  result = runCollisionWithTransforms(convex, box, tfConvex, tfBox);
+  EXPECT_FALSE(result.first);
+  EXPECT_EQ(result.second.getNumContacts(), 0u);
 }
 
 TEST(DARTCollisionDetector, CloneWithoutCollisionObjects)

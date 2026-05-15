@@ -371,9 +371,11 @@ std::unique_ptr<native::Shape> adaptShape(const dynamics::ConstShapePtr& shape)
     const auto& convex
         = std::static_pointer_cast<const dynamics::ConvexMeshShape>(shape);
     const auto& mesh = convex->getMesh();
-    if (!mesh) {
-      DART_WARN("[DartCollisionDetector] ConvexMeshShape has no mesh data.");
-      return nullptr;
+    if (!mesh || !mesh->hasVertices() || !mesh->hasTriangles()) {
+      DART_WARN(
+          "[DartCollisionDetector] ConvexMeshShape is missing mesh data. "
+          "Using a fallback sphere with radius 0.1.");
+      return std::make_unique<native::SphereShape>(0.1);
     }
 
     std::vector<Eigen::Vector3d> vertices;
