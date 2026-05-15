@@ -457,9 +457,10 @@
 - `DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS=ON` registers an opt-in CTest smoke
   check for the headless screenshot path. This is a CI hook, not a default test
   yet.
-- The headless smoke check validates more than a nonblank image: it also samples
-  the shadowed fixture region for dark, mid-tone, and bright pixels plus a
-  minimum luminance spread.
+- The default headless smoke check validates more than a nonblank image: it
+  samples the shadowed fixture region for dark, mid-tone, and bright pixels plus
+  a minimum luminance spread. The generated scene-specific smokes also run the
+  analyzer in a basic mode that scans each full PPM for nonzero pixels.
 - Filament is the preferred renderer candidate for the next experiment because
   it provides modern real-time rendering features while keeping DART's built-in
   visualization scope maintainable.

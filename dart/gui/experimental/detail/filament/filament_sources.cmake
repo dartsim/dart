@@ -269,7 +269,7 @@ function(_dart_filament_gui_add_headless_smoke_test test_name example_target)
   cmake_parse_arguments(
     DART_FILAMENT_GUI_SMOKE
     "ANALYZE"
-    "BINARY_DIR;FRAMES;SCENE"
+    "ANALYSIS_MODE;BINARY_DIR;FRAMES;SCENE"
     ""
     ${ARGN}
   )
@@ -299,11 +299,21 @@ function(_dart_filament_gui_add_headless_smoke_test test_name example_target)
     )
   endif()
   if(DART_FILAMENT_GUI_SMOKE_ANALYZE)
+    if(NOT DART_FILAMENT_GUI_SMOKE_ANALYSIS_MODE)
+      set(DART_FILAMENT_GUI_SMOKE_ANALYSIS_MODE contrast)
+    endif()
+    if(NOT DART_FILAMENT_GUI_SMOKE_ANALYSIS_MODE MATCHES "^(basic|contrast)$")
+      message(
+        FATAL_ERROR
+        "ANALYSIS_MODE must be 'basic' or 'contrast' for ${test_name}"
+      )
+    endif()
     list(
       APPEND
       _command
       "-DDART_FILAMENT_GUI_PYTHON=${Python3_EXECUTABLE}"
       "-DDART_FILAMENT_GUI_ANALYZER=${DART_FILAMENT_GUI_TESTING_DIR}/analyze_headless_smoke.py"
+      "-DDART_FILAMENT_GUI_ANALYSIS_MODE=${DART_FILAMENT_GUI_SMOKE_ANALYSIS_MODE}"
     )
   endif()
 
@@ -330,6 +340,7 @@ function(dart_filament_gui_add_smoke_tests example_target)
     BINARY_DIR "${DART_FILAMENT_GUI_BINARY_DIR}"
     FRAMES 10
     ANALYZE
+    ANALYSIS_MODE contrast
   )
 
   list(LENGTH DART_FILAMENT_GUI_SMOKE_SCENE_PAIRS _smoke_pair_count)
@@ -349,6 +360,8 @@ function(dart_filament_gui_add_smoke_tests example_target)
       ${example_target}
       BINARY_DIR "${DART_FILAMENT_GUI_BINARY_DIR}"
       SCENE "${_scene_name}"
+      ANALYZE
+      ANALYSIS_MODE basic
     )
   endforeach()
 endfunction()

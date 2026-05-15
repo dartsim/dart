@@ -272,9 +272,11 @@ Known current result:
 - `DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS=ON` registers
   `EXAMPLE_filament_gui_headless_smoke`, an opt-in CTest that runs the default
   scene through the headless path and verifies the generated PPM header,
-  dimensions, expected byte count, nonzero sampled pixel data, and
-  scene-region luminance contrast from the shadowed fixture. The same option
-  also registers `EXAMPLE_filament_gui_hello_world_headless_smoke`, which runs
+  dimensions, expected byte count, nonzero sampled pixel data, full-image
+  nonzero pixels, and scene-region luminance contrast from the shadowed
+  fixture. The same option also registers scene-specific CTest smokes that run
+  the same PPM structure, sampled-pixel, and full-image nonzero analyzer gates:
+  `EXAMPLE_filament_gui_hello_world_headless_smoke`, which runs
   `--scene hello-world`,
   `EXAMPLE_filament_gui_boxes_headless_smoke`, which runs `--scene boxes`,
   `EXAMPLE_filament_gui_hardcoded_design_headless_smoke`, which runs
@@ -421,10 +423,13 @@ Known current result:
   environment descriptor fails to create a Filament renderable.
 - The opt-in headless smoke now runs
   `dart/gui/experimental/detail/filament/testing/analyze_headless_smoke.py` on
-  the rendered PPM. The analyzer samples the fixture region and requires dark,
-  mid-tone, and bright pixels plus a minimum luminance spread. This catches
-  regressions that would flatten the shadowed lighting fixture while staying
-  less brittle than a golden-image comparison.
+  the rendered PPM. The default smoke uses the analyzer's contrast mode, which
+  samples the fixture region and requires dark, mid-tone, and bright pixels
+  plus a minimum luminance spread. The scene-specific smoke matrix uses the
+  analyzer's basic mode, which scans each full image for nonzero pixels without
+  imposing shadow-fixture thresholds. This catches flat shadowed-fixture
+  regressions while keeping broad scene coverage less brittle than
+  golden-image comparisons.
 - The same smoke fixture renders Filament line primitives from
   `dart-gui-experimental` grid, world/body frame, center-of-mass, contact,
   inertia-box, normal-arrow, and force-arrow descriptors. The debug-line

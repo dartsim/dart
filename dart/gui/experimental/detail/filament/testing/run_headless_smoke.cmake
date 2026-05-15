@@ -107,6 +107,17 @@ if(NOT _pixel_sample MATCHES "[1-9a-fA-F]")
 endif()
 
 if(DEFINED DART_FILAMENT_GUI_PYTHON AND DEFINED DART_FILAMENT_GUI_ANALYZER)
+  set(_analysis_mode contrast)
+  if(DEFINED DART_FILAMENT_GUI_ANALYSIS_MODE)
+    set(_analysis_mode "${DART_FILAMENT_GUI_ANALYSIS_MODE}")
+  endif()
+  if(NOT "${_analysis_mode}" MATCHES "^(basic|contrast)$")
+    message(
+      FATAL_ERROR
+      "DART_FILAMENT_GUI_ANALYSIS_MODE must be 'basic' or 'contrast'"
+    )
+  endif()
+
   execute_process(
     COMMAND
       "${DART_FILAMENT_GUI_PYTHON}"
@@ -114,6 +125,7 @@ if(DEFINED DART_FILAMENT_GUI_PYTHON AND DEFINED DART_FILAMENT_GUI_ANALYZER)
       "${DART_FILAMENT_GUI_SCREENSHOT}"
       --width "${_width}"
       --height "${_height}"
+      --mode "${_analysis_mode}"
     RESULT_VARIABLE _analyzer_result
     OUTPUT_VARIABLE _analyzer_stdout
     ERROR_VARIABLE _analyzer_stderr

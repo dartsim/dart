@@ -36,8 +36,27 @@ def _scene_region(width: int, height: int) -> tuple[int, int, int, int]:
     )
 
 
-def analyze(path: Path, width: int, height: int) -> None:
+def _require_nonzero_pixels(pixels: bytes) -> None:
+    total_pixels = len(pixels) // 3
+    nonzero_pixels = 0
+    for offset in range(0, len(pixels), 3):
+        if any(pixels[offset : offset + 3]):
+            nonzero_pixels += 1
+
+    if nonzero_pixels == 0:
+        raise RuntimeError("image contains only zero-valued pixels")
+
+    print(f"image nonzero pixels: {nonzero_pixels}/{total_pixels}")
+
+
+def analyze_basic(path: Path, width: int, height: int) -> None:
     pixels = _read_ppm(path, width, height)
+    _require_nonzero_pixels(pixels)
+
+
+def analyze_contrast(path: Path, width: int, height: int) -> None:
+    pixels = _read_ppm(path, width, height)
+    _require_nonzero_pixels(pixels)
     x0, y0, x1, y1 = _scene_region(width, height)
     values = []
     for y in range(y0, y1):
@@ -89,8 +108,12 @@ def main() -> None:
     parser.add_argument("path", type=Path)
     parser.add_argument("--width", type=int, required=True)
     parser.add_argument("--height", type=int, required=True)
+    parser.add_argument("--mode", choices=("basic", "contrast"), default="contrast")
     args = parser.parse_args()
-    analyze(args.path, args.width, args.height)
+    if args.mode == "basic":
+        analyze_basic(args.path, args.width, args.height)
+    else:
+        analyze_contrast(args.path, args.width, args.height)
 
 
 if __name__ == "__main__":

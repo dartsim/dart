@@ -271,6 +271,9 @@
     runners resolve to their Filament scenes instead of stale legacy binaries,
     and that the `--scene all` runner list, smoke-test regex, and
     loop-generated CMake Filament smoke scene registrations stay aligned.
+    All generated Filament headless scene smokes now run the screenshot
+    analyzer in a basic full-image nonzero mode, while the default shadowed
+    fixture keeps its stricter luminance-contrast gate.
     The north-star audit now also maps the legacy OSG/Raylib
     GUI surfaces that must be replaced, made private, or removed during
     first-class Filament promotion. The renderer-hidden debug descriptor path
