@@ -23,6 +23,9 @@ must be deleted in the same PR that completes the native-collision migration.
   benchmark surfaces.
 - Adds source, package, wheel, downstream, benchmark, and lint guards to keep
   normal builds native-only.
+- Fixes the latest native box-ground contact regression, makes invalid
+  convex/soft mesh data non-collidable with a warning, and adds focused raw,
+  convex, mesh, and default-world regression coverage.
 
 ## Motivation / Problem
 
@@ -71,6 +74,12 @@ must be deleted in the same PR that completes the native-collision migration.
 - Native/reference benchmark checks cover primitive, narrow-phase, distance,
   raycast, raycast-batch, mesh-heavy, mixed-primitive, and public adapter
   surfaces.
+- Native box-box contact points now stay local to the overlap for upright and
+  rotated boxes on large ground boxes; invalid convex/soft mesh data is
+  non-collidable with a warning, and sphere-mesh public-detector coverage is
+  focused on contact detection.
+- The public OctoMap include is wrapped with DART's warning-suppression helper
+  so `hello_world` rebuilds without the third-party `<ciso646>` C++20 warning.
 - Durable architecture notes are seeded in onboarding docs; working
   `docs/dev_tasks/native_collision/` notes remain only until final completion.
 
@@ -78,6 +87,27 @@ must be deleted in the same PR that completes the native-collision migration.
 
 Local validation currently recorded in the dev-task evidence:
 
+- Latest local committed follow-up, not yet pushed because this environment
+  rejects `git push`, contains:
+  - `beea226cf8d` (`Stabilize native box-box contact points`)
+  - `0839874dffb` (`Unify invalid mesh collision handling`)
+  - `5e8a2c67d78` (`Fix native box-box ground contacts`)
+  - `3ff258d3bf2` (`Preserve native convex mesh fallback`) — superseded by
+    `0839874dffb` for invalid mesh data
+  - `6853e86f9a6` (`Suppress OctoMap include warning`)
+  - `bb4b48c1eff` (`Refresh native collision evidence notes`)
+- `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-all`
+  passed after the face-overlap box-box follow-up with 6/6 top-level gates:
+  linting, build, unit tests, simulation-experimental tests, Python tests, and
+  documentation.
+- Focused local regression validation for the latest follow-up passed:
+  - `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_box_box|UNIT_collision_DartCollisionDetector|test_convex|test_mesh_mesh)$' --repeat until-fail:20`
+  - `UNIT_simulation_World --gtest_filter='WorldTests.DefaultNative*BoxRestsOnGround'`
+  - `UNIT_collision_DartCollisionDetector --gtest_filter='DartCollisionDetector.SphereMeshCollisionDetectsContact:DartCollisionDetector.ConvexMeshCollisionUsesNativeConvexGeometry:DartCollisionDetector.EmptyConvexMeshIsNotCollidable'`
+  - `test_convex`
+  - `test_mesh_mesh`
+  - `ctest -L collision-native`
+  - `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target hello_world`
 - `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run test-all`
   passed on pushed branch head `64abc65a032`
   (`Clarify native collision progress gates`)
@@ -193,6 +223,16 @@ Compatibility notes:
 
 - PR #2652: `https://github.com/dartsim/dart/pull/2652`
 - Latest audited branch evidence:
+  - `beea226cf8d` (`Stabilize native box-box contact points`) — local only;
+    push is blocked by the current execution policy.
+  - `0839874dffb` (`Unify invalid mesh collision handling`) — local only; push
+    is blocked by the current execution policy.
+  - `bb4b48c1eff` (`Refresh native collision evidence notes`) — local only;
+    push is blocked by the current execution policy.
+  - `6853e86f9a6` (`Suppress OctoMap include warning`) — local only.
+  - `3ff258d3bf2` (`Preserve native convex mesh fallback`) — local only;
+    superseded by `0839874dffb` for invalid mesh data.
+  - `5e8a2c67d78` (`Fix native box-box ground contacts`) — local only.
   - `ec6f6f43112` (`Clean dartpy collision API and deprecate C++ facades`)
   - `aa3ccce70c7` (`Clarify collision reference build options`)
   - `06cd27d0163` (`Rename collision reference build options`)
