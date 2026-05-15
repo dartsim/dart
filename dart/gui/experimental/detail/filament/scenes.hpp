@@ -71,6 +71,7 @@ enum class ExampleScene
   DragAndDrop,
   SimpleFrames,
   SoftBodies,
+  PointCloud,
   Polyhedron,
   Heightmap,
   G1,

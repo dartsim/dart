@@ -49,6 +49,8 @@ DartScene createSimpleFramesScene();
 
 DartScene createSoftBodiesScene();
 
+DartScene createPointCloudScene();
+
 DartScene createPolyhedronScene();
 
 DartScene createHeightmapScene();

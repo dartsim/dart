@@ -459,6 +459,27 @@ bool validateSceneDescriptorContent(
         output);
   }
 
+  if (scene == ExampleScene::PointCloud) {
+    if (!requireEqual(
+            counts.pointClouds,
+            1,
+            "point-cloud scene",
+            "visible point-cloud renderable descriptor",
+            output)) {
+      return false;
+    }
+#if DART_HAVE_OCTOMAP
+    return requireEqual(
+        counts.voxelGrids,
+        1,
+        "point-cloud scene",
+        "visible voxel-grid renderable descriptor",
+        output);
+#else
+    return true;
+#endif
+  }
+
   return true;
 }
 
@@ -637,6 +658,25 @@ bool validateCreatedSceneContent(
         expected.softBodyMeshes,
         "soft-bodies soft-mesh renderables",
         output);
+  }
+
+  if (scene == ExampleScene::PointCloud) {
+    if (!requireCreatedEqual(
+            created.pointClouds,
+            expected.pointClouds,
+            "point-cloud renderables",
+            output)) {
+      return false;
+    }
+#if DART_HAVE_OCTOMAP
+    return requireCreatedEqual(
+        created.voxelGrids,
+        expected.voxelGrids,
+        "point-cloud voxel-grid renderables",
+        output);
+#else
+    return true;
+#endif
   }
 
   return true;

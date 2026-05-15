@@ -175,6 +175,12 @@
   `pixi run ex soft_bodies` routes to this Filament scene by default so the
   in-tree soft-body visual workflow no longer depends on the legacy OSG viewer
   path.
+- The Filament example includes a selectable `--scene point-cloud` fixture
+  that renders the legacy point-cloud example's visual point cloud and, when
+  OctoMap is enabled, a voxel-grid cell cluster through descriptor-owned
+  point-cloud and voxel-grid renderables. `pixi run ex point_cloud` routes to
+  this Filament scene by default while the standalone source remains as legacy
+  OSG/ImGui comparison material for the robot-mesh sampling controls.
 - The Filament example includes a `--scene polyhedron` fixture that renders the
   legacy polyhedron visual example's convex hull and wireframe through
   descriptor-owned convex-mesh and line-segment renderables.
@@ -305,8 +311,9 @@
 - Debug-line overlay refresh and cleanup now live in
   `dart/gui/experimental/detail/filament/debug_overlay.hpp` and `.cpp`.
 - Scene content requirement counting and MVP/G1/hello-world/boxes/drag/
-  simple-frames/soft-bodies/polyhedron/heightmap validation gates now live in
-  `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.
+  simple-frames/soft-bodies/point-cloud/polyhedron/heightmap validation gates
+  now live in `dart/gui/experimental/detail/filament/scene_requirements.hpp`
+  and `.cpp`.
 - Private built-in status panel rendering now lives in
   `dart/gui/experimental/detail/filament/panel.hpp` and `.cpp`; promoted
   panel/tool API design remains deferred.

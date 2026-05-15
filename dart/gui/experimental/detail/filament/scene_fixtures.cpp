@@ -1140,6 +1140,77 @@ DartScene createSoftBodiesScene()
   return scene;
 }
 
+DartScene createPointCloudScene()
+{
+  DartScene scene;
+  scene.world = World::create("filament_gui_point_cloud");
+  scene.world->setGravity(Eigen::Vector3d::Zero());
+
+  auto pointCloudShape = std::make_shared<PointCloudShape>(0.055);
+  pointCloudShape->setPointShapeType(PointCloudShape::BOX);
+  pointCloudShape->setColorMode(PointCloudShape::BIND_PER_POINT);
+
+  std::vector<Eigen::Vector3d> points;
+  std::vector<Eigen::Vector4d> colors;
+  points.reserve(48);
+  colors.reserve(48);
+  for (int x = 0; x < 8; ++x) {
+    for (int y = 0; y < 6; ++y) {
+      const double xf = -0.42 + 0.12 * static_cast<double>(x);
+      const double yf = -0.30 + 0.12 * static_cast<double>(y);
+      const double zf
+          = 0.05 * std::sin(5.0 * xf) + 0.06 * std::cos(4.0 * yf);
+      points.emplace_back(xf, yf, zf);
+
+      const double mix = static_cast<double>(x + y) / 12.0;
+      colors.emplace_back(0.18 + 0.70 * mix, 0.28, 0.92 - 0.55 * mix, 0.82);
+    }
+  }
+  pointCloudShape->addPoint(points);
+  pointCloudShape->setColors(colors);
+
+  scene.world->addSkeleton(createStaticVisualSkeleton(
+      kPointCloudFixtureSkeletonName,
+      pointCloudShape,
+      Eigen::Vector3d(-0.38, -0.05, 0.55),
+      Eigen::Vector3d(0.25, 0.48, 0.95),
+      0.82));
+
+#if DART_HAVE_OCTOMAP
+  auto voxelGridShape = std::make_shared<VoxelGridShape>(0.11);
+  const std::array<Eigen::Vector3d, 9> voxelCenters{{
+      Eigen::Vector3d(-0.22, -0.10, 0.00),
+      Eigen::Vector3d(-0.11, -0.10, 0.00),
+      Eigen::Vector3d(0.00, -0.10, 0.00),
+      Eigen::Vector3d(0.11, -0.10, 0.00),
+      Eigen::Vector3d(-0.11, 0.01, 0.11),
+      Eigen::Vector3d(0.00, 0.01, 0.11),
+      Eigen::Vector3d(0.11, 0.01, 0.11),
+      Eigen::Vector3d(0.00, 0.12, 0.22),
+      Eigen::Vector3d(0.11, 0.12, 0.22),
+  }};
+  for (const Eigen::Vector3d& voxel : voxelCenters) {
+    voxelGridShape->updateOccupancy(voxel);
+  }
+  scene.world->addSkeleton(createStaticVisualSkeleton(
+      kVoxelGridFixtureSkeletonName,
+      voxelGridShape,
+      Eigen::Vector3d(0.45, 0.06, 0.48),
+      Eigen::Vector3d(0.94, 0.52, 0.20),
+      0.72));
+#endif
+
+  Eigen::Isometry3d sensorTransform = Eigen::Isometry3d::Identity();
+  sensorTransform.translation() = Eigen::Vector3d(0.72, -0.42, 0.76);
+  auto sensor = SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), "point_cloud_sensor", sensorTransform);
+  sensor->setShape(std::make_shared<SphereShape>(0.055));
+  sensor->getVisualAspect(true)->setRGBA(Eigen::Vector4d(0.95, 0.18, 0.12, 1.0));
+  scene.world->addSimpleFrame(sensor);
+
+  return scene;
+}
+
 DartScene createPolyhedronScene()
 {
   DartScene scene;

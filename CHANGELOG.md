@@ -172,7 +172,9 @@
     hierarchy, marker ellipsoids, and arrow marker through backend-hidden
     descriptors, and the `soft_bodies` runner now routes to a
     `--scene soft-bodies` fixture that loads `softBodies.skel` through
-    backend-hidden soft-mesh descriptors. The example tree is left as a minimal
+    backend-hidden soft-mesh descriptors. The `point_cloud` runner now routes
+    to a `--scene point-cloud` fixture that renders point-cloud and voxel-grid
+    descriptors through Filament. The example tree is left as a minimal
     `main.cpp` entry point plus CMake and README files. The focused GUI unit
     test now checks that
     `examples/filament_gui` contains no C++ source/header files other than

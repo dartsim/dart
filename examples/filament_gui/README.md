@@ -30,6 +30,7 @@
   `--scene drag-and-drop` to run the interaction fixture,
   `--scene simple-frames` to run the frame-hierarchy fixture,
   `--scene soft-bodies` to run the soft-body SKEL fixture,
+  `--scene point-cloud` to run the point-cloud/voxel-grid fixture,
   `--scene polyhedron` or `--scene heightmap` to inspect focused legacy visual
   fixtures, or `--scene g1` to load the Unitree G1 humanoid used in the
   project README animation.
@@ -101,6 +102,9 @@
 - The `--scene soft-bodies` fixture loads the legacy `softBodies.skel` data
   through DART's regular IO path and renders the resulting soft meshes through
   backend-hidden descriptors.
+- The `--scene point-cloud` fixture renders a colored point cloud and, when
+  OctoMap is available, a voxel occupancy grid through backend-hidden
+  descriptors.
 - The `--scene heightmap` fixture renders a local heightmap surface and
   reference markers through descriptor-owned heightmap renderables. It carries
   the visual side of the legacy `heightmap` example while the standalone source
@@ -162,6 +166,12 @@ To run the soft-bodies fixture:
 pixi run ex filament_gui --scene soft-bodies
 ```
 
+To run the point-cloud fixture:
+
+```bash
+pixi run ex filament_gui --scene point-cloud
+```
+
 To run the convex polyhedron fixture:
 
 ```bash
@@ -192,6 +202,7 @@ The capture paths are `build/<pixi-env>/filament_gui_mvp.ppm` and
 `build/<pixi-env>/filament_gui_drag_and_drop.ppm`,
 `build/<pixi-env>/filament_gui_simple_frames.ppm`,
 `build/<pixi-env>/filament_gui_soft_bodies.ppm`,
+`build/<pixi-env>/filament_gui_point_cloud.ppm`,
 `build/<pixi-env>/filament_gui_polyhedron.ppm`, and
 `build/<pixi-env>/filament_gui_heightmap.ppm` unless
 `DART_FILAMENT_GUI_SCREENSHOT` is set. The G1 fixture intentionally stays out
@@ -290,6 +301,6 @@ DART_BUILD_GUI_FILAMENT_OVERRIDE=ON \
   pixi run config
 cmake --build build/default/cpp/Release --target dart_filament_gui
 ctest --test-dir build/default/cpp/Release \
-  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|drag_and_drop_headless|simple_frames_headless|soft_bodies_headless|polyhedron_headless|heightmap_headless)_smoke' \
+  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|drag_and_drop_headless|simple_frames_headless|soft_bodies_headless|point_cloud_headless|polyhedron_headless|heightmap_headless)_smoke' \
   --output-on-failure
 ```

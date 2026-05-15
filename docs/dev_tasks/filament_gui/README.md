@@ -187,8 +187,9 @@
   reusable DART world fixtures now live in
   `dart/gui/experimental/detail/filament/scene_fixtures.hpp` and `.cpp`;
 - The Filament example's scene content requirement counting and
-  MVP/G1/hello-world/boxes/drag/simple-frames/soft-bodies/polyhedron/heightmap
-  validation gates, including created-renderable content counting, now live in
+  MVP/G1/hello-world/boxes/drag/simple-frames/soft-bodies/point-cloud/
+  polyhedron/heightmap validation gates, including created-renderable content
+  counting, now live in
   `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`;
 - Initial scene extraction, startup validation, first renderable
   synchronization, and startup debug-overlay validation now live in
@@ -254,6 +255,12 @@
   soft-mesh renderables. The in-tree `pixi run ex soft_bodies` runner now
   routes to that Filament scene while the legacy standalone OSG recorded
   playback source remains available for comparison.
+- The Filament example includes `--scene point-cloud`, a visual point cloud and
+  voxel-grid fixture that carries the legacy `point_cloud` example through
+  descriptor-owned point-cloud and voxel-grid renderables. The in-tree
+  `pixi run ex point_cloud` runner now routes to that Filament scene while the
+  legacy standalone OSG/ImGui source remains available for the robot-mesh
+  sampling controls.
 - The Filament example includes `--scene polyhedron`, a convex-hull and
   wireframe fixture that carries the legacy `polyhedron_visual` example through
   descriptor-owned convex-mesh and line-segment renderables. The in-tree
@@ -300,11 +307,12 @@
 - `pixi run test-filament-gui-smoke` now exercises the explicit pinned
   `DART_FETCH_FILAMENT=ON` path on Linux x86_64, builds without the legacy OSG
   GUI target, and runs the default, hello-world, boxes, drag-and-drop,
-  simple-frames, soft-bodies, polyhedron, and heightmap headless CTest smokes.
-  When no display server is available, the task runs the smokes under Xvfb and
-  prefers Mesa's EGL vendor file for software rendering. The Ubuntu CI workflow
-  has a matching opt-in smoke job that gets Xvfb, libc++, and libc++abi from
-  system packages instead of relying on a Filament package. The MVP PR #2647
+  simple-frames, soft-bodies, point-cloud, polyhedron, and heightmap headless
+  CTest smokes. When no display server is available, the task runs the smokes
+  under Xvfb and prefers Mesa's EGL vendor file for software rendering. The
+  Ubuntu CI workflow has a matching opt-in smoke job that gets Xvfb, libc++,
+  and libc++abi from system packages instead of relying on a Filament package.
+  The MVP PR #2647
   merged with hosted `Filament GUI Smoke (GCC)` and
   `Filament GUI Smoke (Clang)` passing.
 - Local Linux CPython 3.12, 3.13, and 3.14 wheel builds now repair with

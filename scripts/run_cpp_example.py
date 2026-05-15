@@ -20,6 +20,7 @@ FILAMENT_SMOKE_PATTERN = (
     "EXAMPLE_filament_gui_drag_and_drop_headless_smoke|"
     "EXAMPLE_filament_gui_simple_frames_headless_smoke|"
     "EXAMPLE_filament_gui_soft_bodies_headless_smoke|"
+    "EXAMPLE_filament_gui_point_cloud_headless_smoke|"
     "EXAMPLE_filament_gui_polyhedron_headless_smoke|"
     "EXAMPLE_filament_gui_heightmap_headless_smoke"
 )
@@ -66,6 +67,12 @@ EXAMPLE_SPECS = {
         "filament_gui",
         ("filament",),
         ("--scene", "soft-bodies"),
+    ),
+    "point_cloud": ExampleSpec(
+        "dart_filament_gui",
+        "filament_gui",
+        ("filament",),
+        ("--scene", "point-cloud"),
     ),
     "polyhedron_visual": ExampleSpec(
         "dart_filament_gui",
@@ -360,6 +367,7 @@ def _split_filament_scenes(run_args: list[str]) -> tuple[list[str], list[str]]:
                 "drag-and-drop",
                 "simple-frames",
                 "soft-bodies",
+                "point-cloud",
                 "polyhedron",
                 "heightmap",
             ], args

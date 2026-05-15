@@ -139,6 +139,8 @@ const char* sceneName(ExampleScene scene)
       return "simple-frames";
     case ExampleScene::SoftBodies:
       return "soft-bodies";
+    case ExampleScene::PointCloud:
+      return "point-cloud";
     case ExampleScene::Polyhedron:
       return "polyhedron";
     case ExampleScene::Heightmap:
@@ -173,6 +175,10 @@ bool parseSceneName(std::string_view name, ExampleScene& scene)
   }
   if (name == "soft-bodies") {
     scene = ExampleScene::SoftBodies;
+    return true;
+  }
+  if (name == "point-cloud") {
+    scene = ExampleScene::PointCloud;
     return true;
   }
   if (name == "polyhedron") {
@@ -223,6 +229,12 @@ dart::gui::experimental::OrbitCamera initialCameraForScene(ExampleScene scene)
       camera.yaw = -0.72;
       camera.pitch = 0.50;
       camera.distance = 2.8;
+      break;
+    case ExampleScene::PointCloud:
+      camera.target = Eigen::Vector3d(0.0, 0.05, 0.25);
+      camera.yaw = -0.72;
+      camera.pitch = 0.46;
+      camera.distance = 2.3;
       break;
     case ExampleScene::Polyhedron:
       camera.target = Eigen::Vector3d(0.0, 0.0, 0.45);
@@ -312,7 +324,7 @@ AppOptions parseOptions(int argc, char* argv[])
         std::cerr << "Unknown scene '" << sceneArg
                   << "'. Expected 'mvp', 'hello-world', 'boxes', "
                      "'drag-and-drop', 'simple-frames', 'soft-bodies', "
-                     "'polyhedron', 'heightmap', or 'g1'.\n";
+                     "'point-cloud', 'polyhedron', 'heightmap', or 'g1'.\n";
         std::exit(2);
       }
     } else if (
@@ -338,7 +350,7 @@ AppOptions parseOptions(int argc, char* argv[])
                    " [--orbit-light-period SECONDS]"
                    " [--gui-scale N]"
                    " [--profile]"
-                   " [--scene mvp|hello-world|boxes|drag-and-drop|simple-frames|soft-bodies|polyhedron|heightmap|g1]"
+                   " [--scene mvp|hello-world|boxes|drag-and-drop|simple-frames|soft-bodies|point-cloud|polyhedron|heightmap|g1]"
                    " [--g1-package-uri URI] [--g1-robot-uri URI]"
                    " [--g1-package-name NAME]\n";
       std::exit(0);
@@ -394,6 +406,8 @@ DartScene createDartScene(const AppOptions& options)
       return createSimpleFramesScene();
     case ExampleScene::SoftBodies:
       return createSoftBodiesScene();
+    case ExampleScene::PointCloud:
+      return createPointCloudScene();
     case ExampleScene::Polyhedron:
       return createPolyhedronScene();
     case ExampleScene::Heightmap:
