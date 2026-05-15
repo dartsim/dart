@@ -254,6 +254,8 @@ dynamic casts. Unsupported shapes now produce diagnostic descriptors instead of
 being silently dropped by the extraction layer.
 The Filament example scene option parsing and reusable DART world fixtures now
 live in `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp`.
+Scene content requirement counting and MVP/G1/drag validation gates now live in
+`dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.
 The Filament example frame lifecycle, scene synchronization, capture, built-in
 panel wiring, and top-level orchestration now live in
 `dart/gui/experimental/detail/filament/application.hpp` and `.cpp`, leaving

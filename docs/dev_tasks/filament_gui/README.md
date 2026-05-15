@@ -162,6 +162,9 @@
   `dart/gui/experimental/detail/filament/renderable_sync.hpp` and `.cpp`.
 - The Filament example's scene option parsing and reusable DART world fixtures
   now live in `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp`;
+- The Filament example's scene content requirement counting and MVP/G1/drag
+  validation gates now live in
+  `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`;
 - The Filament example's frame lifecycle, scene synchronization, capture,
   and top-level orchestration now live in
   `dart/gui/experimental/detail/filament/application.hpp` and `.cpp`, leaving

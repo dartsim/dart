@@ -101,6 +101,8 @@ version hashing, and `extractRenderables`.
    `dart/gui/experimental/detail/filament/application.hpp` and `.cpp` now own
    Filament frame orchestration and the built-in panel, leaving `main.cpp` as a
    minimal entry point.
+   `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`
+   now own scene fixture requirement counting and MVP/G1/drag validation gates.
 3. **Generalize the public-header leakage scan.**
    `08-north-star-migration.md` Phase A explicitly promises that the
    leakage check will be extended to promoted `dart::gui` headers

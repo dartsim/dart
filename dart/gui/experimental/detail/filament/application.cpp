@@ -46,6 +46,7 @@
 #include <dart/gui/experimental/detail/filament/renderable_sync.hpp>
 #include <dart/gui/experimental/detail/filament/render_environment.hpp>
 #include <dart/gui/experimental/detail/filament/render_context.hpp>
+#include <dart/gui/experimental/detail/filament/scene_requirements.hpp>
 #include <dart/gui/experimental/detail/filament/screenshot.hpp>
 #include <dart/gui/experimental/profile.hpp>
 #include <dart/gui/experimental/scene.hpp>
@@ -148,12 +149,15 @@ using dart::gui::experimental::filament::Renderable;
 using dart::gui::experimental::filament::SceneRenderable;
 using dart::gui::experimental::filament::SceneLights;
 using dart::gui::experimental::filament::ScreenshotCapture;
+using dart::gui::experimental::filament::SceneContentCounts;
 using dart::gui::experimental::filament::addRenderableToScene;
+using dart::gui::experimental::filament::accumulateSceneContent;
 using dart::gui::experimental::filament::attachSceneEnvironment;
 using dart::gui::experimental::filament::beginFilamentFrame;
 using dart::gui::experimental::filament::clearMainViewColorGrading;
 using dart::gui::experimental::filament::configureMainView;
 using dart::gui::experimental::filament::configureViewportCamera;
+using dart::gui::experimental::filament::countSceneContent;
 using dart::gui::experimental::filament::createFilamentRenderContext;
 using dart::gui::experimental::filament::createDebugColorGrading;
 using dart::gui::experimental::filament::createDebugLineRenderable;
@@ -198,26 +202,12 @@ using dart::gui::experimental::filament::DartScene;
 using dart::gui::experimental::filament::ExampleScene;
 using dart::gui::experimental::filament::createDartScene;
 using dart::gui::experimental::filament::initialCameraForScene;
-using dart::gui::experimental::filament::kAtlasFixtureSkeletonName;
-using dart::gui::experimental::filament::kAtlasRobotFixtureSkeletonName;
-using dart::gui::experimental::filament::kConvexMeshFixtureSkeletonName;
-using dart::gui::experimental::filament::kG1FixtureSkeletonName;
-using dart::gui::experimental::filament::kHeightmapFixtureSkeletonName;
-using dart::gui::experimental::filament::kLineSegmentFixtureSkeletonName;
-using dart::gui::experimental::filament::kMinDragAndDropFrameRenderableCount;
-using dart::gui::experimental::filament::kMinG1RenderableCount;
-using dart::gui::experimental::filament::kMinPbrEnvironmentRenderableCount;
-using dart::gui::experimental::filament::kMultiSphereFixtureSkeletonName;
-using dart::gui::experimental::filament::kPbrEnvironmentFixtureSkeletonName;
-using dart::gui::experimental::filament::kPointCloudFixtureSkeletonName;
-using dart::gui::experimental::filament::kPyramidFixtureSkeletonName;
-using dart::gui::experimental::filament::kSoftMeshFixtureSkeletonName;
-using dart::gui::experimental::filament::kVoxelGridFixtureSkeletonName;
-using dart::gui::experimental::filament::kWamFixtureSkeletonName;
 using dart::gui::experimental::filament::parseOptions;
 using dart::gui::experimental::filament::sceneName;
 using dart::gui::experimental::filament::selectionLabelForRenderable;
 using dart::gui::experimental::filament::translateRenderableAndApplyIk;
+using dart::gui::experimental::filament::validateCreatedSceneContent;
+using dart::gui::experimental::filament::validateSceneDescriptorContent;
 
 int runFilamentGuiApplicationImpl(int argc, char* argv[])
 {
@@ -273,252 +263,16 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
 
   DartScene dartScene = createDartScene(appOptions);
   const auto initialDescriptors = extractRenderables(*dartScene.world);
-  const std::size_t wamDescriptorCount = static_cast<std::size_t>(
-      std::count_if(
-          initialDescriptors.begin(),
-          initialDescriptors.end(),
-          [](const RenderableDescriptor& descriptor) {
-            return descriptor.skeletonName == kWamFixtureSkeletonName
-                   && descriptor.material.visible
-                   && descriptor.geometry.kind == ShapeKind::Mesh;
-          }));
-  const std::size_t atlasDescriptorCount = static_cast<std::size_t>(
-      std::count_if(
-          initialDescriptors.begin(),
-          initialDescriptors.end(),
-          [](const RenderableDescriptor& descriptor) {
-            return descriptor.skeletonName == kAtlasFixtureSkeletonName
-                   && descriptor.material.visible
-                   && descriptor.geometry.kind == ShapeKind::Mesh;
-          }));
-  const std::size_t atlasRobotDescriptorCount = static_cast<std::size_t>(
-      std::count_if(
-          initialDescriptors.begin(),
-          initialDescriptors.end(),
-          [](const RenderableDescriptor& descriptor) {
-            return descriptor.skeletonName == kAtlasRobotFixtureSkeletonName
-                   && descriptor.material.visible
-                   && descriptor.geometry.kind == ShapeKind::Mesh;
-          }));
-  const std::size_t pyramidDescriptorCount = static_cast<std::size_t>(
-      std::count_if(
-          initialDescriptors.begin(),
-          initialDescriptors.end(),
-          [](const RenderableDescriptor& descriptor) {
-            return descriptor.skeletonName == kPyramidFixtureSkeletonName
-                   && descriptor.material.visible
-                   && descriptor.geometry.kind == ShapeKind::Pyramid;
-          }));
-  const std::size_t multiSphereDescriptorCount = static_cast<std::size_t>(
-      std::count_if(
-          initialDescriptors.begin(),
-          initialDescriptors.end(),
-          [](const RenderableDescriptor& descriptor) {
-            return descriptor.skeletonName == kMultiSphereFixtureSkeletonName
-                   && descriptor.material.visible
-                   && descriptor.geometry.kind == ShapeKind::MultiSphere;
-          }));
-  const std::size_t lineSegmentDescriptorCount = static_cast<std::size_t>(
-      std::count_if(
-          initialDescriptors.begin(),
-          initialDescriptors.end(),
-          [](const RenderableDescriptor& descriptor) {
-            return descriptor.skeletonName == kLineSegmentFixtureSkeletonName
-                   && descriptor.material.visible
-                   && descriptor.geometry.kind == ShapeKind::LineSegments;
-          }));
-  const std::size_t convexMeshDescriptorCount = static_cast<std::size_t>(
-      std::count_if(
-          initialDescriptors.begin(),
-          initialDescriptors.end(),
-          [](const RenderableDescriptor& descriptor) {
-            return descriptor.skeletonName == kConvexMeshFixtureSkeletonName
-                   && descriptor.material.visible
-                   && descriptor.geometry.kind == ShapeKind::ConvexMesh;
-          }));
-  const std::size_t pointCloudDescriptorCount = static_cast<std::size_t>(
-      std::count_if(
-          initialDescriptors.begin(),
-          initialDescriptors.end(),
-          [](const RenderableDescriptor& descriptor) {
-            return descriptor.skeletonName == kPointCloudFixtureSkeletonName
-                   && descriptor.material.visible
-                   && descriptor.geometry.kind == ShapeKind::PointCloud;
-          }));
-  const std::size_t heightmapDescriptorCount = static_cast<std::size_t>(
-      std::count_if(
-          initialDescriptors.begin(),
-          initialDescriptors.end(),
-          [](const RenderableDescriptor& descriptor) {
-            return descriptor.skeletonName == kHeightmapFixtureSkeletonName
-                   && descriptor.material.visible
-                   && descriptor.geometry.kind == ShapeKind::Heightmap;
-          }));
-  const std::size_t softMeshDescriptorCount = static_cast<std::size_t>(
-      std::count_if(
-          initialDescriptors.begin(),
-          initialDescriptors.end(),
-          [](const RenderableDescriptor& descriptor) {
-            return descriptor.skeletonName == kSoftMeshFixtureSkeletonName
-                   && descriptor.material.visible
-                   && descriptor.geometry.kind == ShapeKind::SoftMesh;
-          }));
-#if DART_HAVE_OCTOMAP
-  const std::size_t voxelGridDescriptorCount = static_cast<std::size_t>(
-      std::count_if(
-          initialDescriptors.begin(),
-          initialDescriptors.end(),
-          [](const RenderableDescriptor& descriptor) {
-            return descriptor.skeletonName == kVoxelGridFixtureSkeletonName
-                   && descriptor.material.visible
-                   && descriptor.geometry.kind == ShapeKind::VoxelGrid;
-          }));
-#endif
-  const std::size_t pbrEnvironmentDescriptorCount = static_cast<std::size_t>(
-      std::count_if(
-          initialDescriptors.begin(),
-          initialDescriptors.end(),
-          [](const RenderableDescriptor& descriptor) {
-            return descriptor.skeletonName == kPbrEnvironmentFixtureSkeletonName
-                   && descriptor.material.visible
-                   && descriptor.geometry.kind == ShapeKind::Mesh;
-          }));
-  const std::size_t g1DescriptorCount = static_cast<std::size_t>(
-      std::count_if(
-          initialDescriptors.begin(),
-          initialDescriptors.end(),
-          [](const RenderableDescriptor& descriptor) {
-            return descriptor.skeletonName == kG1FixtureSkeletonName
-                   && descriptor.material.visible
-                   && descriptor.geometry.kind == ShapeKind::Mesh;
-          }));
-  const std::size_t dragAndDropFrameDescriptorCount = static_cast<std::size_t>(
-      std::count_if(
-          initialDescriptors.begin(),
-          initialDescriptors.end(),
-          [](const RenderableDescriptor& descriptor) {
-            return !descriptor.shapeFrameName.empty()
-                   && descriptor.material.visible;
-          }));
-  if (appOptions.scene == ExampleScene::Mvp) {
-    if (wamDescriptorCount < 5) {
-      std::cerr << "Expected the WAM robot fixture to provide at least five "
-                   "visible mesh renderables, but extracted "
-                << wamDescriptorCount << "\n";
-      return 1;
-    }
-    if (atlasDescriptorCount != 1) {
-      std::cerr << "Expected the Atlas mesh fixture to provide one visible mesh "
-                   "renderable, but extracted "
-                << atlasDescriptorCount << "\n";
-      return 1;
-    }
-    if (atlasRobotDescriptorCount < 20) {
-      std::cerr << "Expected the Atlas robot fixture to provide at least twenty "
-                   "visible mesh renderables, but extracted "
-                << atlasRobotDescriptorCount << "\n";
-      return 1;
-    }
-    if (pyramidDescriptorCount != 1) {
-      std::cerr << "Expected the pyramid fixture to provide one visible pyramid "
-                   "renderable descriptor, but extracted "
-                << pyramidDescriptorCount << "\n";
-      return 1;
-    }
-    if (multiSphereDescriptorCount != 1) {
-      std::cerr
-          << "Expected the multi-sphere fixture to provide one visible "
-             "multi-sphere renderable descriptor, but extracted "
-          << multiSphereDescriptorCount << "\n";
-      return 1;
-    }
-    if (lineSegmentDescriptorCount != 1) {
-      std::cerr
-          << "Expected the line segment fixture to provide one visible line "
-             "renderable descriptor, but extracted "
-          << lineSegmentDescriptorCount << "\n";
-      return 1;
-    }
-    if (convexMeshDescriptorCount != 1) {
-      std::cerr
-          << "Expected the convex mesh fixture to provide one visible convex "
-             "mesh renderable descriptor, but extracted "
-          << convexMeshDescriptorCount << "\n";
-      return 1;
-    }
-    if (pointCloudDescriptorCount != 1) {
-      std::cerr
-          << "Expected the point cloud fixture to provide one visible point "
-             "cloud renderable descriptor, but extracted "
-          << pointCloudDescriptorCount << "\n";
-      return 1;
-    }
-    if (heightmapDescriptorCount != 1) {
-      std::cerr
-          << "Expected the heightmap fixture to provide one visible heightmap "
-             "renderable descriptor, but extracted "
-          << heightmapDescriptorCount << "\n";
-      return 1;
-    }
-    if (softMeshDescriptorCount != 1) {
-      std::cerr
-          << "Expected the soft mesh fixture to provide one visible soft mesh "
-             "renderable descriptor, but extracted "
-          << softMeshDescriptorCount << "\n";
-      return 1;
-    }
-#if DART_HAVE_OCTOMAP
-    if (voxelGridDescriptorCount != 1) {
-      std::cerr
-          << "Expected the voxel grid fixture to provide one visible voxel "
-             "grid renderable descriptor, but extracted "
-          << voxelGridDescriptorCount << "\n";
-      return 1;
-    }
-#endif
-    if (pbrEnvironmentDescriptorCount < kMinPbrEnvironmentRenderableCount) {
-      std::cerr << "Expected the PBR environment fixture to provide at least "
-                << kMinPbrEnvironmentRenderableCount
-                << " visible mesh renderables, but extracted "
-                << pbrEnvironmentDescriptorCount << "\n";
-      return 1;
-    }
-  } else if (appOptions.scene == ExampleScene::G1) {
-    if (g1DescriptorCount < kMinG1RenderableCount) {
-      std::cerr << "Expected the G1 robot fixture to provide at least "
-                << kMinG1RenderableCount
-                << " visible mesh renderables, but extracted "
-                << g1DescriptorCount << "\n";
-      return 1;
-    }
-  } else if (appOptions.scene == ExampleScene::DragAndDrop
-             && dragAndDropFrameDescriptorCount
-                    < kMinDragAndDropFrameRenderableCount) {
-    std::cerr << "Expected the drag-and-drop scene to provide at least "
-              << kMinDragAndDropFrameRenderableCount
-              << " visible frame renderables, but extracted "
-              << dragAndDropFrameDescriptorCount << "\n";
+  const SceneContentCounts expectedSceneContent
+      = countSceneContent(initialDescriptors);
+  if (!validateSceneDescriptorContent(
+          appOptions.scene, expectedSceneContent, std::cerr)) {
     return 1;
   }
 
   std::vector<SceneRenderable> sceneRenderables;
   std::vector<RenderableId> loggedUnsupportedRenderableIds;
-  std::size_t createdWamRenderableCount = 0;
-  std::size_t createdAtlasRenderableCount = 0;
-  std::size_t createdAtlasRobotRenderableCount = 0;
-  std::size_t createdPyramidRenderableCount = 0;
-  std::size_t createdMultiSphereRenderableCount = 0;
-  std::size_t createdLineSegmentRenderableCount = 0;
-  std::size_t createdConvexMeshRenderableCount = 0;
-  std::size_t createdPointCloudRenderableCount = 0;
-  std::size_t createdHeightmapRenderableCount = 0;
-  std::size_t createdSoftMeshRenderableCount = 0;
-#if DART_HAVE_OCTOMAP
-  std::size_t createdVoxelGridRenderableCount = 0;
-#endif
-  std::size_t createdPbrEnvironmentRenderableCount = 0;
-  std::size_t createdG1RenderableCount = 0;
-  std::size_t createdDragAndDropFrameRenderableCount = 0;
+  SceneContentCounts createdSceneContent;
   for (const RenderableDescriptor& descriptor : initialDescriptors) {
     if (!descriptor.material.visible) {
       continue;
@@ -533,63 +287,7 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
       }
       continue;
     }
-    if (descriptor.skeletonName == kWamFixtureSkeletonName
-        && descriptor.geometry.kind == ShapeKind::Mesh) {
-      ++createdWamRenderableCount;
-    }
-    if (descriptor.skeletonName == kAtlasFixtureSkeletonName
-        && descriptor.geometry.kind == ShapeKind::Mesh) {
-      ++createdAtlasRenderableCount;
-    }
-    if (descriptor.skeletonName == kAtlasRobotFixtureSkeletonName
-        && descriptor.geometry.kind == ShapeKind::Mesh) {
-      ++createdAtlasRobotRenderableCount;
-    }
-    if (descriptor.skeletonName == kPyramidFixtureSkeletonName
-        && descriptor.geometry.kind == ShapeKind::Pyramid) {
-      ++createdPyramidRenderableCount;
-    }
-    if (descriptor.skeletonName == kMultiSphereFixtureSkeletonName
-        && descriptor.geometry.kind == ShapeKind::MultiSphere) {
-      ++createdMultiSphereRenderableCount;
-    }
-    if (descriptor.skeletonName == kLineSegmentFixtureSkeletonName
-        && descriptor.geometry.kind == ShapeKind::LineSegments) {
-      ++createdLineSegmentRenderableCount;
-    }
-    if (descriptor.skeletonName == kConvexMeshFixtureSkeletonName
-        && descriptor.geometry.kind == ShapeKind::ConvexMesh) {
-      ++createdConvexMeshRenderableCount;
-    }
-    if (descriptor.skeletonName == kPointCloudFixtureSkeletonName
-        && descriptor.geometry.kind == ShapeKind::PointCloud) {
-      ++createdPointCloudRenderableCount;
-    }
-    if (descriptor.skeletonName == kHeightmapFixtureSkeletonName
-        && descriptor.geometry.kind == ShapeKind::Heightmap) {
-      ++createdHeightmapRenderableCount;
-    }
-    if (descriptor.skeletonName == kSoftMeshFixtureSkeletonName
-        && descriptor.geometry.kind == ShapeKind::SoftMesh) {
-      ++createdSoftMeshRenderableCount;
-    }
-#if DART_HAVE_OCTOMAP
-    if (descriptor.skeletonName == kVoxelGridFixtureSkeletonName
-        && descriptor.geometry.kind == ShapeKind::VoxelGrid) {
-      ++createdVoxelGridRenderableCount;
-    }
-#endif
-    if (descriptor.skeletonName == kPbrEnvironmentFixtureSkeletonName
-        && descriptor.geometry.kind == ShapeKind::Mesh) {
-      ++createdPbrEnvironmentRenderableCount;
-    }
-    if (descriptor.skeletonName == kG1FixtureSkeletonName
-        && descriptor.geometry.kind == ShapeKind::Mesh) {
-      ++createdG1RenderableCount;
-    }
-    if (!descriptor.shapeFrameName.empty()) {
-      ++createdDragAndDropFrameRenderableCount;
-    }
+    accumulateSceneContent(createdSceneContent, descriptor);
 
     SceneRenderable sceneRenderable;
     sceneRenderable.id = descriptor.id;
@@ -603,94 +301,11 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
     std::cerr << "No supported visible DART renderables were extracted\n";
     return 1;
   }
-  if (appOptions.scene == ExampleScene::Mvp) {
-    if (createdWamRenderableCount < wamDescriptorCount) {
-      std::cerr << "Only " << createdWamRenderableCount << " of "
-                << wamDescriptorCount
-                << " WAM robot mesh renderables were created\n";
-      return 1;
-    }
-    if (createdAtlasRenderableCount != atlasDescriptorCount) {
-      std::cerr << "Only " << createdAtlasRenderableCount << " of "
-                << atlasDescriptorCount
-                << " Atlas mesh renderables were created\n";
-      return 1;
-    }
-    if (createdAtlasRobotRenderableCount < atlasRobotDescriptorCount) {
-      std::cerr << "Only " << createdAtlasRobotRenderableCount << " of "
-                << atlasRobotDescriptorCount
-                << " Atlas robot mesh renderables were created\n";
-      return 1;
-    }
-    if (createdPyramidRenderableCount != pyramidDescriptorCount) {
-      std::cerr << "Only " << createdPyramidRenderableCount << " of "
-                << pyramidDescriptorCount
-                << " pyramid renderables were created\n";
-      return 1;
-    }
-    if (createdMultiSphereRenderableCount != multiSphereDescriptorCount) {
-      std::cerr << "Only " << createdMultiSphereRenderableCount << " of "
-                << multiSphereDescriptorCount
-                << " multi-sphere renderables were created\n";
-      return 1;
-    }
-    if (createdLineSegmentRenderableCount != lineSegmentDescriptorCount) {
-      std::cerr << "Only " << createdLineSegmentRenderableCount << " of "
-                << lineSegmentDescriptorCount
-                << " line segment renderables were created\n";
-      return 1;
-    }
-    if (createdConvexMeshRenderableCount != convexMeshDescriptorCount) {
-      std::cerr << "Only " << createdConvexMeshRenderableCount << " of "
-                << convexMeshDescriptorCount
-                << " convex mesh renderables were created\n";
-      return 1;
-    }
-    if (createdPointCloudRenderableCount != pointCloudDescriptorCount) {
-      std::cerr << "Only " << createdPointCloudRenderableCount << " of "
-                << pointCloudDescriptorCount
-                << " point cloud renderables were created\n";
-      return 1;
-    }
-    if (createdHeightmapRenderableCount != heightmapDescriptorCount) {
-      std::cerr << "Only " << createdHeightmapRenderableCount << " of "
-                << heightmapDescriptorCount
-                << " heightmap renderables were created\n";
-      return 1;
-    }
-    if (createdSoftMeshRenderableCount != softMeshDescriptorCount) {
-      std::cerr << "Only " << createdSoftMeshRenderableCount << " of "
-                << softMeshDescriptorCount
-                << " soft mesh renderables were created\n";
-      return 1;
-    }
-#if DART_HAVE_OCTOMAP
-    if (createdVoxelGridRenderableCount != voxelGridDescriptorCount) {
-      std::cerr << "Only " << createdVoxelGridRenderableCount << " of "
-                << voxelGridDescriptorCount
-                << " voxel grid renderables were created\n";
-      return 1;
-    }
-#endif
-    if (createdPbrEnvironmentRenderableCount < pbrEnvironmentDescriptorCount) {
-      std::cerr << "Only " << createdPbrEnvironmentRenderableCount << " of "
-                << pbrEnvironmentDescriptorCount
-                << " PBR environment mesh renderables were created\n";
-      return 1;
-    }
-  } else if (appOptions.scene == ExampleScene::G1) {
-    if (createdG1RenderableCount < g1DescriptorCount) {
-      std::cerr << "Only " << createdG1RenderableCount << " of "
-                << g1DescriptorCount
-                << " G1 robot mesh renderables were created\n";
-      return 1;
-    }
-  } else if (appOptions.scene == ExampleScene::DragAndDrop
-             && createdDragAndDropFrameRenderableCount
-                    < dragAndDropFrameDescriptorCount) {
-    std::cerr << "Only " << createdDragAndDropFrameRenderableCount << " of "
-              << dragAndDropFrameDescriptorCount
-              << " drag-and-drop frame renderables were created\n";
+  if (!validateCreatedSceneContent(
+          appOptions.scene,
+          expectedSceneContent,
+          createdSceneContent,
+          std::cerr)) {
     return 1;
   }
 
