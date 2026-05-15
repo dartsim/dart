@@ -150,10 +150,12 @@ unverified external and finalization gates:
 Current audited state:
 
 - Branch: `feature/new_coll`
-- Latest pushed validation baseline:
+- Latest clean reference/downstream validation baseline:
   `376fd5e686d` (`Remove per-engine collision reference build options`). This
-  is the latest commit with full local validation evidence. Current branch head
-  may include docs-only evidence refresh commits on top; verify it with
+  is the latest commit with the full clean-reference, gz-physics, package-smoke,
+  and link-inspection validation bundle. The latest full local `test-all`
+  baseline is recorded separately below. Current branch head may include
+  docs-only evidence refresh commits on top; verify it with
   `git status --short --branch`, `git rev-parse HEAD`, and
   `git rev-parse origin/feature/new_coll` before acting. PR #2652 is still
   closed and anchored to old head `714d220d82a`, and GitHub reported no
