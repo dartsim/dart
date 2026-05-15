@@ -103,15 +103,11 @@ version hashing, and `extractRenderables`.
    minimal entry point.
    `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`
    now own scene fixture requirement counting and MVP/G1/drag validation gates.
-3. **Generalize the public-header leakage scan.**
-   `08-north-star-migration.md` Phase A explicitly promises that the
-   leakage check will be extended to promoted `dart::gui` headers
-   "before first-class promotion." Refactor
-   `tests/unit/gui/test_filament_scene_extraction.cpp:232-291` into a
-   reusable `scan_headers_for_backend_tokens` helper, document the
-   forbidden-token list in `03-milestones.md` Phase 5, and reserve a
-   hook for `dart/gui/*.hpp`. Doc-heavy, small code, unblocks future
-   promotion PRs.
+3. **Completed: generalize the public-header leakage scan.**
+   `UNIT_gui_FilamentSceneExtraction` now routes the backend-token check
+   through `scanHeadersForBackendTokens`, and
+   `guiHeaderDirectoriesForBackendTokenScan` is the reserved hook for promoted
+   `dart/gui/*.hpp` headers before first-class promotion.
 
 ## Doc hygiene notes
 

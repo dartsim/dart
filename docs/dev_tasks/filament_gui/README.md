@@ -128,6 +128,10 @@
   direct Filament header includes, while the full north-star metric remains
   zero direct Filament header includes from maintained examples after
   promotion.
+- The backend-token scan now uses a reusable
+  `scanHeadersForBackendTokens` helper with an explicit future hook for
+  promoted `dart/gui/*.hpp` headers once the first-class Filament API replaces
+  the legacy OSG-shaped public GUI headers.
 - The full north-star also requires any surviving `examples/filament_gui/`
   tree to shrink to a minimal executable entry point: renderer setup, frame
   lifecycle, material and texture resources, scene synchronization, capture,

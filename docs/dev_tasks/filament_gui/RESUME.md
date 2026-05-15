@@ -111,6 +111,9 @@ avoids a direct Filament sampler include.
 `examples/filament_gui/*.hpp` files and the example entry point have no direct
 Filament header includes; this is only an incremental guard, not completion of
 the full example include metric.
+The backend-token scan now uses a reusable `scanHeadersForBackendTokens`
+helper with an explicit future hook for promoted `dart/gui/*.hpp` headers once
+the first-class Filament API replaces the legacy OSG-shaped public GUI headers.
 The full north-star also requires any surviving `examples/filament_gui/` tree
 to shrink to a minimal executable entry point: renderer setup, frame lifecycle,
 material and texture resources, scene synchronization, capture, overlays, input

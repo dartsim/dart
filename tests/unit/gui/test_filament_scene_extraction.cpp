@@ -321,6 +321,29 @@ std::vector<BackendTokenViolation> scanSourceFilesForTokens(
   return violations;
 }
 
+std::vector<BackendTokenViolation> scanHeadersForBackendTokens(
+    const std::vector<std::filesystem::path>& directories)
+{
+  std::vector<std::filesystem::path> headers;
+  for (const auto& directory : directories) {
+    const auto directoryHeaders = listPublicHeadersInDirectory(directory);
+    headers.insert(
+        headers.end(), directoryHeaders.begin(), directoryHeaders.end());
+  }
+
+  return scanSourceFilesForTokens(headers, kForbiddenBackendTokens);
+}
+
+std::vector<std::filesystem::path> guiHeaderDirectoriesForBackendTokenScan()
+{
+  std::vector<std::filesystem::path> directories
+      = {std::filesystem::path("dart") / "gui" / "experimental"};
+
+  // Add promoted dart/gui headers here when the Filament API replaces the
+  // legacy OSG-shaped public GUI headers.
+  return directories;
+}
+
 std::shared_ptr<const SoftMeshShape> findSoftMeshShape(
     const SoftBodyNode& softBody)
 {
@@ -363,20 +386,20 @@ void expectMeshGeometryIsWellFormed(const MeshGeometry& mesh)
 
 TEST(FilamentSceneExtraction, ExperimentalPublicHeadersStayBackendHidden)
 {
-  const std::vector<std::filesystem::path> publicHeaderDirectories
-      = {std::filesystem::path("dart") / "gui" / "experimental"};
+  const auto publicHeaderDirectories
+      = guiHeaderDirectoriesForBackendTokenScan();
+  ASSERT_FALSE(publicHeaderDirectories.empty());
 
   for (const auto& directory : publicHeaderDirectories) {
     const auto headers = listPublicHeadersInDirectory(directory);
     ASSERT_FALSE(headers.empty()) << directory;
+  }
 
-    const auto violations
-        = scanSourceFilesForTokens(headers, kForbiddenBackendTokens);
-    for (const auto& violation : violations) {
-      ADD_FAILURE() << violation.source
-                    << " exposes backend implementation token `"
-                    << violation.token << "`";
-    }
+  const auto violations = scanHeadersForBackendTokens(publicHeaderDirectories);
+  for (const auto& violation : violations) {
+    ADD_FAILURE() << violation.source
+                  << " exposes backend implementation token `"
+                  << violation.token << "`";
   }
 }
 

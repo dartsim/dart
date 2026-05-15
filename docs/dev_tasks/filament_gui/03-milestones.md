@@ -285,6 +285,9 @@
   `#include <filament/`, `#include "filament/`, `filament::`, `Filament::`,
   `GLFW`, `ImGui`, `imgui`, `OpenGL`, `Vulkan`, `Metal`, `osg::`, `::osg`,
   `osg/`, `osgGA`, `osgViewer`, `Raylib`, `raylib`, and `rlgl`.
+  `UNIT_gui_FilamentSceneExtraction` now has the reusable
+  `scanHeadersForBackendTokens` helper and a reserved promoted-header
+  directory hook for that extension.
 - Add an example-level promotion check that maintained examples, including any
   surviving replacement for `examples/filament_gui`, have zero direct
   `#include <filament/...>` or `#include "filament/..."` usage. Examples should
