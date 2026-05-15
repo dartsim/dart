@@ -15,6 +15,12 @@ recommended maintainability slices:
   fixtures and scene option parsing.
 - `dart/gui/experimental/interaction.cpp` owns picking, plane-drag,
   frame-translation, and renderable set update planning helpers.
+- `dart/gui/experimental/renderable.hpp`, `interaction.hpp`, and `debug.hpp`
+  now split the constrained public surface while `scene.hpp` remains an
+  aggregate compatibility include.
+- `dart/gui/experimental/shape_descriptions.cpp` owns `describeShape`, leaving
+  `scene.cpp` focused on renderable identity, resource versioning, and world
+  extraction.
 
 The remaining guidance is still useful for promotion sequencing, but the
 original "next" ordering below is partially complete.
@@ -25,8 +31,8 @@ original "next" ordering below is partially complete.
   `dart/gui/experimental/viewer.{hpp,cpp}` (228 + 432 lines) is now the
   formal home for `RunOptions`, `ViewerLifecycleState`, `OrbitCamera*`,
   `PerspectiveProjection`, `PickRay`, `writeRgbaPpm`, frame
-  accounting, and pause/step helpers. `scene.hpp` re-exports
-  `viewer.hpp` via `#include <dart/gui/experimental/viewer.hpp>`.
+  accounting, and pause/step helpers. `scene.hpp` remains an aggregate
+  compatibility include for the constrained experimental surface.
 
 ### Independent verification results
 
@@ -38,8 +44,8 @@ original "next" ordering below is partially complete.
   automatically by `ExperimentalPublicHeadersStayBackendHidden`.
 - **Build system:** `dart/gui/experimental/CMakeLists.txt` uses
   `file(GLOB hdrs "*.hpp")` and `file(GLOB srcs "*.cpp")`. No CMake edit
-  required — `viewer.cpp` is picked up automatically. Same will be true
-  for `debug.cpp` once committed.
+  required — focused experimental headers and sources are picked up
+  automatically after reconfigure.
 - **Behavior preservation:** `git show 877fababbc6 -- scene.cpp` had zero
   added lines, only deletions. Pure mechanical move. Bodies in
   `viewer.cpp` byte-equivalent to deleted bodies.
@@ -57,6 +63,15 @@ original "next" ordering below is partially complete.
 `makeSupportPolygonDebugLines`, `extractContactDebugLines`,
 `extractDebugLines`, plus internal helpers). Its public surface remains in
 `scene.hpp` for source compatibility.
+
+## Completed scene interface split
+
+`scene.hpp` is now only an aggregate compatibility include. Focused public
+headers carry the constrained concepts: `renderable.hpp` for descriptors and
+extraction planning, `interaction.hpp` for picking/dragging/translation, and
+`debug.hpp` for debug-line descriptors. `shape_descriptions.cpp` owns
+`describeShape`, while `scene.cpp` owns renderable IDs, render-resource version
+hashing, and `extractRenderables`.
 
 ## Original recommended priority order
 

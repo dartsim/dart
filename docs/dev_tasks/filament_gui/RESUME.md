@@ -77,14 +77,19 @@ and `SimpleFrame` visuals. Backend-hidden
 run-option normalization, viewer lifecycle state, and orbit-camera helpers now
 live in `dart-gui-experimental`; the Filament example uses them for bounded
 screenshots, camera placement, headless runs, pause/step behavior, frame
-accounting, and perspective pick rays. Viewer-runtime helpers live in
-`dart/gui/experimental/viewer.hpp` and `.cpp`, debug descriptor generation lives
-in `dart/gui/experimental/debug.cpp`, backend-hidden mesh builders live in
-`dart/gui/experimental/geometry.hpp` and `.cpp`, and picking, plane dragging,
-frame translation, and renderable set planning live in
-`dart/gui/experimental/interaction.cpp`. `scene.hpp` remains an aggregate
-compatibility include for existing experimental consumers. Backend-hidden
-renderable set planning now also compares active render-resource versions so
+accounting, and perspective pick rays. The constrained experimental API is now
+split across focused backend-hidden headers: `renderable.hpp`,
+`interaction.hpp`, `debug.hpp`, `geometry.hpp`, and `viewer.hpp`.
+`scene.hpp` remains an aggregate compatibility include for existing
+experimental consumers. Viewer-runtime helpers live in
+`dart/gui/experimental/viewer.cpp`, debug descriptor generation lives in
+`dart/gui/experimental/debug.cpp`, backend-hidden mesh builders live in
+`dart/gui/experimental/geometry.cpp`, shape description extraction lives in
+`dart/gui/experimental/shape_descriptions.cpp`, renderable identity/extraction
+and resource versioning live in `dart/gui/experimental/scene.cpp`, and picking,
+plane dragging, frame translation, and renderable set planning live in
+`dart/gui/experimental/interaction.cpp`. Backend-hidden renderable set planning
+now also compares active render-resource versions so
 descriptor-owned geometry changes, including dynamic soft-mesh vertex changes,
 recreate Filament resources. Supported descriptor kinds that cannot produce
 renderer resources now carry diagnostic reasons that the Filament example logs

@@ -57,6 +57,12 @@
   in `dart/gui/experimental/geometry.hpp` and `.cpp`; the Filament example is a
   consumer of those generated mesh buffers instead of owning that tessellation
   code locally.
+- The constrained experimental public surface is split into focused
+  backend-hidden headers: `renderable.hpp`, `interaction.hpp`, `debug.hpp`,
+  `geometry.hpp`, and `viewer.hpp`. `scene.hpp` remains an aggregate
+  compatibility include, while implementation now separates shape description
+  extraction in `shape_descriptions.cpp` from renderable identity/resource
+  extraction in `scene.cpp`.
 - The experimental interaction layer includes tested picking bounds and nearest
   ray-hit selection helpers with hit point, bounds-normal, primitive-surface,
   and triangle-backed mesh surface reporting. The example uses them for basic

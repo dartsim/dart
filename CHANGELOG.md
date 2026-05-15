@@ -157,9 +157,11 @@
     also live in a dedicated `dart/gui/experimental/viewer.hpp` runtime helper
     and are consumed by the Filament example through `dart-gui-experimental`.
     The backend-hidden implementation is now split by responsibility across
-    `viewer.cpp`, `debug.cpp`, `geometry.cpp`, `interaction.cpp`, and
-    `scene.cpp`, while `scene.hpp` remains an aggregate compatibility include
-    for existing experimental consumers. The Filament example also keeps
+    `viewer.cpp`, `debug.cpp`, `geometry.cpp`, `interaction.cpp`,
+    `shape_descriptions.cpp`, and `scene.cpp`, with focused experimental
+    headers for renderable, interaction, debug, geometry, and viewer concepts
+    while `scene.hpp` remains an aggregate compatibility include for existing
+    experimental consumers. The Filament example also keeps
     reusable DART world fixtures in `examples/filament_gui/scenes.hpp` and
     `.cpp` so `main.cpp` focuses on renderer resources and UI wiring. The
     north-star audit now also maps the legacy OSG/Raylib GUI surfaces that must

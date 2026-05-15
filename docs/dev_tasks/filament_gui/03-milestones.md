@@ -191,11 +191,14 @@
   helpers are split into `dart/gui/experimental/viewer.hpp` while `scene.hpp`
   remains an aggregate compatibility include.
 - `dart-gui-experimental` now keeps the constrained experimental API in
-  backend-hidden headers while splitting implementation by responsibility:
-  scene extraction in `scene.cpp`, interaction and renderable update planning
-  in `interaction.cpp`, debug descriptor generation in `debug.cpp`, viewer
-  runtime helpers in `viewer.cpp`, and backend-hidden mesh builders in
-  `geometry.cpp`.
+  focused backend-hidden headers: `renderable.hpp`, `interaction.hpp`,
+  `debug.hpp`, `geometry.hpp`, and `viewer.hpp`, while `scene.hpp` remains an
+  aggregate compatibility include. Implementation is split by responsibility:
+  renderable identity/extraction and resource versioning in `scene.cpp`, shape
+  description extraction in `shape_descriptions.cpp`, interaction and
+  renderable update planning in `interaction.cpp`, debug descriptor generation
+  in `debug.cpp`, viewer runtime helpers in `viewer.cpp`, and backend-hidden
+  mesh builders in `geometry.cpp`.
 - The Filament example keeps its backend-specific GLFW/ImGui input polling and
   status-panel hit testing in `examples/filament_gui/input.hpp` and `.cpp`,
   while reusable nudge/orbit/manipulation math remains in `dart-gui-experimental`.
