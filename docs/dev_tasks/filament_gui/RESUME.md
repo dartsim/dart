@@ -106,8 +106,9 @@ direct Filament sampler include.
 `examples/filament_gui/*.hpp` has no direct Filament header includes; this is
 only a header-level guard, not completion of the full example include metric.
 Example-local neutral lighting/color grading, light entity creation and orbit
-updates, viewport/camera application, and windowed view-quality setup live in
-`examples/filament_gui/render_environment.hpp` and `.cpp`.
+updates, scene environment binding, viewport/camera application, and windowed
+view-quality setup live in `examples/filament_gui/render_environment.hpp` and
+`.cpp`.
 Example-local platform-specific GLFW native-window handle selection lives in
 `examples/filament_gui/native_window.hpp` and `.cpp`.
 Example-local ImGui font loading lives with the overlay renderer in
@@ -119,8 +120,8 @@ renderable state, lit-material setup, shadow flag application, and destruction
 lifecycle helpers live in `examples/filament_gui/renderable_resources.hpp` and
 `.cpp`.
 Example-local descriptor-to-scene synchronization, unsupported descriptor
-logging, and renderable transform/selection update helpers live in
-`examples/filament_gui/renderable_sync.hpp` and `.cpp`.
+logging, scene entity attachment, and renderable transform/selection update
+helpers live in `examples/filament_gui/renderable_sync.hpp` and `.cpp`.
 Example-local descriptor-to-Filament renderable construction now lives in
 `examples/filament_gui/renderable_factory.hpp` and `.cpp`, including generated
 mesh buffer upload, debug-line renderable creation, material part assembly, and

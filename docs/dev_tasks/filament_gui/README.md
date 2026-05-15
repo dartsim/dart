@@ -123,8 +123,9 @@
   the full north-star metric remains zero direct Filament header includes from
   maintained examples after promotion.
 - The Filament example's neutral lighting, light entity creation and orbit
-  update, color grading, viewport/camera application, and windowed view-quality
-  setup now live in `examples/filament_gui/render_environment.hpp` and `.cpp`.
+  update, scene environment binding, color grading, viewport/camera
+  application, and windowed view-quality setup now live in
+  `examples/filament_gui/render_environment.hpp` and `.cpp`.
 - The Filament example's platform-specific GLFW native-window handle selection
   now lives in `examples/filament_gui/native_window.hpp` and `.cpp`.
 - The Filament example's selection labels and G1 IK-target translation glue now
@@ -135,8 +136,9 @@
   settings, and destruction lifecycle now live in
   `examples/filament_gui/renderable_resources.hpp` and `.cpp`.
 - The Filament example's descriptor-to-scene synchronization, unsupported
-  descriptor logging, and renderable transform/selection update helpers now live
-  in `examples/filament_gui/renderable_sync.hpp` and `.cpp`.
+  descriptor logging, scene entity attachment, and renderable
+  transform/selection update helpers now live in
+  `examples/filament_gui/renderable_sync.hpp` and `.cpp`.
 - The Filament example's scene option parsing and reusable DART world fixtures
   now live in `examples/filament_gui/scenes.hpp` and `.cpp`; `main.cpp` remains
   focused on renderer resources, synchronization, input, and the built-in panel.

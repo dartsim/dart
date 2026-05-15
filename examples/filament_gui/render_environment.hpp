@@ -42,6 +42,7 @@ class ColorGrading;
 class Engine;
 class IndirectLight;
 class LightManager;
+class Scene;
 class Skybox;
 class View;
 
@@ -82,6 +83,16 @@ SceneLights createSceneLights(
     bool headless,
     bool orbitLight,
     double orbitPeriodSeconds);
+
+void attachSceneEnvironment(
+    filament::Scene& scene,
+    filament::IndirectLight* indirectLight,
+    filament::Skybox* skybox,
+    const SceneLights& lights);
+
+void detachSceneEnvironment(filament::Scene& scene, const SceneLights& lights);
+
+void destroySceneLights(filament::Engine& engine, const SceneLights& lights);
 
 void updateOrbitingKeyLight(
     filament::LightManager& lights,

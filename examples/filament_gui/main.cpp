@@ -59,7 +59,6 @@
 #include <GLFW/glfw3.h>
 #include <filament/Engine.h>
 #include <filament/Renderer.h>
-#include <filament/Scene.h>
 #include <filament/SwapChain.h>
 #include <filament/View.h>
 #include <utils/EntityManager.h>
@@ -154,6 +153,8 @@ using dart::examples::filament_gui::Renderable;
 using dart::examples::filament_gui::ScreenshotCapture;
 using dart::examples::filament_gui::SceneRenderable;
 using dart::examples::filament_gui::SceneLights;
+using dart::examples::filament_gui::addRenderableToScene;
+using dart::examples::filament_gui::attachSceneEnvironment;
 using dart::examples::filament_gui::configureWindowedViewQuality;
 using dart::examples::filament_gui::configureViewportCamera;
 using dart::examples::filament_gui::createDartScene;
@@ -168,6 +169,8 @@ using dart::examples::filament_gui::createSceneLights;
 using dart::examples::filament_gui::destroyImGuiOverlay;
 using dart::examples::filament_gui::destroyMaterialResources;
 using dart::examples::filament_gui::destroyRenderable;
+using dart::examples::filament_gui::destroySceneLights;
+using dart::examples::filament_gui::detachSceneEnvironment;
 using dart::examples::filament_gui::elapsedMs;
 using dart::examples::filament_gui::handleScroll;
 using dart::examples::filament_gui::initialCameraForScene;
@@ -192,6 +195,7 @@ using dart::examples::filament_gui::kWamFixtureSkeletonName;
 using dart::examples::filament_gui::getNativeWindow;
 using dart::examples::filament_gui::loadImGuiFont;
 using dart::examples::filament_gui::logUnsupportedRenderableDescriptorOnce;
+using dart::examples::filament_gui::removeRenderableFromScene;
 using dart::examples::filament_gui::parseOptions;
 using dart::examples::filament_gui::printProfile;
 using dart::examples::filament_gui::requestScreenshot;
@@ -275,8 +279,6 @@ int main(int argc, char* argv[])
   view->setShadowType(filament::ShadowType::PCF);
   auto* indirectLight = createNeutralIndirectLight(*engine);
   auto* skybox = createNeutralSkybox(*engine);
-  scene->setIndirectLight(indirectLight);
-  scene->setSkybox(skybox);
   if (!options.headless) {
     configureWindowedViewQuality(*view);
   }
@@ -607,7 +609,7 @@ int main(int argc, char* argv[])
     SceneRenderable sceneRenderable;
     sceneRenderable.id = descriptor.id;
     sceneRenderable.renderable = *renderable;
-    scene->addEntity(sceneRenderable.renderable.entity);
+    addRenderableToScene(*scene, sceneRenderable.renderable);
     setRenderableTransform(
         *engine, sceneRenderable.renderable, descriptor.worldTransform);
     sceneRenderables.push_back(sceneRenderable);
@@ -718,7 +720,7 @@ int main(int argc, char* argv[])
   std::optional<Renderable> debugOverlay;
   auto refreshDebugOverlay = [&]() {
     if (debugOverlay) {
-      scene->remove(debugOverlay->entity);
+      removeRenderableFromScene(*scene, *debugOverlay);
       destroyRenderable(*engine, *debugOverlay);
       debugOverlay.reset();
     }
@@ -728,7 +730,7 @@ int main(int argc, char* argv[])
         materials.debugColor,
         extractDebugLines(*dartScene.world, staticDebugOptions));
     if (debugOverlay) {
-      scene->addEntity(debugOverlay->entity);
+      addRenderableToScene(*scene, *debugOverlay);
     }
   };
   refreshDebugOverlay();
@@ -745,7 +747,7 @@ int main(int argc, char* argv[])
   std::optional<Renderable> contactDebugOverlay;
   auto refreshContactDebugOverlay = [&]() {
     if (contactDebugOverlay) {
-      scene->remove(contactDebugOverlay->entity);
+      removeRenderableFromScene(*scene, *contactDebugOverlay);
       destroyRenderable(*engine, *contactDebugOverlay);
       contactDebugOverlay.reset();
     }
@@ -756,7 +758,7 @@ int main(int argc, char* argv[])
         extractContactDebugLines(
             dartScene.world->getLastCollisionResult(), contactDebugOptions));
     if (contactDebugOverlay) {
-      scene->addEntity(contactDebugOverlay->entity);
+      addRenderableToScene(*scene, *contactDebugOverlay);
     }
   };
 
@@ -765,7 +767,7 @@ int main(int argc, char* argv[])
       = [&](const std::vector<RenderableDescriptor>& descriptors,
             RenderableId selectedRenderableId) {
           if (selectionDebugOverlay) {
-            scene->remove(selectionDebugOverlay->entity);
+            removeRenderableFromScene(*scene, *selectionDebugOverlay);
             destroyRenderable(*engine, *selectionDebugOverlay);
             selectionDebugOverlay.reset();
           }
@@ -790,16 +792,14 @@ int main(int argc, char* argv[])
               materials.debugColor,
               makeSelectionDebugLines(*selectedDescriptor));
           if (selectionDebugOverlay) {
-            scene->addEntity(selectionDebugOverlay->entity);
+            addRenderableToScene(*scene, *selectionDebugOverlay);
           }
         };
 
   bool orbitLight = appOptions.orbitLight;
   SceneLights lights = createSceneLights(
       *engine, options.headless, orbitLight, appOptions.orbitLightPeriodSeconds);
-  scene->addEntity(lights.key);
-  scene->addEntity(lights.fill);
-  scene->addEntity(lights.rim);
+  attachSceneEnvironment(*scene, indirectLight, skybox, lights);
 
   ImGui::CreateContext();
   ImGui::StyleColorsDark();
@@ -1265,30 +1265,21 @@ int main(int argc, char* argv[])
   destroyImGuiOverlay(*engine, imguiOverlay);
   ImGui::DestroyContext();
 
-  scene->remove(lights.key);
-  scene->remove(lights.fill);
-  scene->remove(lights.rim);
-  scene->setIndirectLight(nullptr);
-  scene->setSkybox(nullptr);
+  detachSceneEnvironment(*scene, lights);
   view->setColorGrading(nullptr);
   for (const SceneRenderable& sceneRenderable : sceneRenderables) {
-    scene->remove(sceneRenderable.renderable.entity);
+    removeRenderableFromScene(*scene, sceneRenderable.renderable);
   }
   if (debugOverlay) {
-    scene->remove(debugOverlay->entity);
+    removeRenderableFromScene(*scene, *debugOverlay);
   }
   if (contactDebugOverlay) {
-    scene->remove(contactDebugOverlay->entity);
+    removeRenderableFromScene(*scene, *contactDebugOverlay);
   }
   if (selectionDebugOverlay) {
-    scene->remove(selectionDebugOverlay->entity);
+    removeRenderableFromScene(*scene, *selectionDebugOverlay);
   }
-  engine->destroy(lights.key);
-  engine->destroy(lights.fill);
-  engine->destroy(lights.rim);
-  EntityManager::get().destroy(lights.key);
-  EntityManager::get().destroy(lights.fill);
-  EntityManager::get().destroy(lights.rim);
+  destroySceneLights(*engine, lights);
   engine->destroy(indirectLight);
   engine->destroy(skybox);
   engine->destroy(colorGrading);

@@ -36,9 +36,11 @@
 
 #include <filament/Camera.h>
 #include <filament/ColorGrading.h>
+#include <filament/Engine.h>
 #include <filament/IndirectLight.h>
 #include <filament/LightManager.h>
 #include <filament/Options.h>
+#include <filament/Scene.h>
 #include <filament/Skybox.h>
 #include <filament/ToneMapper.h>
 #include <filament/View.h>
@@ -226,6 +228,38 @@ SceneLights createSceneLights(
       .build(engine, lights.rim);
 
   return lights;
+}
+
+void attachSceneEnvironment(
+    filament::Scene& scene,
+    filament::IndirectLight* indirectLight,
+    filament::Skybox* skybox,
+    const SceneLights& lights)
+{
+  scene.setIndirectLight(indirectLight);
+  scene.setSkybox(skybox);
+  scene.addEntity(lights.key);
+  scene.addEntity(lights.fill);
+  scene.addEntity(lights.rim);
+}
+
+void detachSceneEnvironment(filament::Scene& scene, const SceneLights& lights)
+{
+  scene.remove(lights.key);
+  scene.remove(lights.fill);
+  scene.remove(lights.rim);
+  scene.setIndirectLight(nullptr);
+  scene.setSkybox(nullptr);
+}
+
+void destroySceneLights(filament::Engine& engine, const SceneLights& lights)
+{
+  engine.destroy(lights.key);
+  engine.destroy(lights.fill);
+  engine.destroy(lights.rim);
+  utils::EntityManager::get().destroy(lights.key);
+  utils::EntityManager::get().destroy(lights.fill);
+  utils::EntityManager::get().destroy(lights.rim);
 }
 
 void updateOrbitingKeyLight(

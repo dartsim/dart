@@ -125,6 +125,17 @@ void setRenderableTransform(
       transforms.getInstance(renderable.entity), toFilamentTransform(transform));
 }
 
+void addRenderableToScene(filament::Scene& scene, const Renderable& renderable)
+{
+  scene.addEntity(renderable.entity);
+}
+
+void removeRenderableFromScene(
+    filament::Scene& scene, const Renderable& renderable)
+{
+  scene.remove(renderable.entity);
+}
+
 void updateSceneRenderableFromDescriptor(
     filament::Engine& engine,
     SceneRenderable& sceneRenderable,
@@ -175,7 +186,7 @@ void synchronizeSceneRenderables(
     }
 
     SceneRenderable& sceneRenderable = sceneRenderables[index];
-    scene.remove(sceneRenderable.renderable.entity);
+    removeRenderableFromScene(scene, sceneRenderable.renderable);
     destroyRenderable(engine, sceneRenderable.renderable);
     sceneRenderables.erase(sceneRenderables.begin() + index);
   }
@@ -201,7 +212,7 @@ void synchronizeSceneRenderables(
     sceneRenderable.shapeVersion = descriptor.shapeVersion;
     sceneRenderable.renderResourceVersion = descriptor.renderResourceVersion;
     sceneRenderable.renderable = *renderable;
-    scene.addEntity(sceneRenderable.renderable.entity);
+    addRenderableToScene(scene, sceneRenderable.renderable);
     setRenderableTransform(engine, sceneRenderable.renderable, descriptor.worldTransform);
     sceneRenderables.push_back(sceneRenderable);
   }
