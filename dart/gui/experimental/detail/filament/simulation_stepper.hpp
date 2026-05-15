@@ -38,6 +38,10 @@
 
 #include <cstddef>
 
+namespace dart::simulation {
+class World;
+} // namespace dart::simulation
+
 namespace dart::gui::experimental::filament {
 
 class SimulationStepper
@@ -54,6 +58,12 @@ private:
       = dart::gui::experimental::ProfileAccumulator::Clock::now();
   double mSimulationAccumulator = 0.0;
 };
+
+bool advanceSimulationSteps(
+    dart::simulation::World& world,
+    std::size_t simulationStepsToRun,
+    dart::gui::experimental::ViewerLifecycleState& lifecycle,
+    dart::gui::experimental::ProfileAccumulator& profile);
 
 } // namespace dart::gui::experimental::filament
 

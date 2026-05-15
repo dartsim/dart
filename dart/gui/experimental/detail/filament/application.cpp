@@ -117,7 +117,6 @@ using dart::gui::experimental::ShapeKind;
 using dart::gui::experimental::ViewerLifecycleState;
 using dart::gui::experimental::elapsedMs;
 using dart::gui::experimental::extractRenderables;
-using dart::gui::experimental::markSimulationAdvanced;
 using dart::gui::experimental::makeRenderableId;
 using dart::gui::experimental::normalizeRunOptions;
 using dart::gui::experimental::printProfile;
@@ -135,6 +134,7 @@ using dart::gui::experimental::filament::SceneContentCounts;
 using dart::gui::experimental::filament::SelectionController;
 using dart::gui::experimental::filament::SimulationStepper;
 using dart::gui::experimental::filament::addRenderableToScene;
+using dart::gui::experimental::filament::advanceSimulationSteps;
 using dart::gui::experimental::filament::accumulateSceneContent;
 using dart::gui::experimental::filament::attachSceneEnvironment;
 using dart::gui::experimental::filament::clearDebugLineOverlay;
@@ -353,17 +353,8 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
         = simulationStepper.stepsToRun(
             options, lifecycle, dartScene.world->getTimeStep());
 
-    if (simulationStepsToRun > 0) {
-      phaseStart = ProfileAccumulator::Clock::now();
-      for (std::size_t i = 0; i < simulationStepsToRun; ++i) {
-        const double timeStep = dartScene.world->getTimeStep();
-        dartScene.world->step();
-        profile.simulatedMs += timeStep * 1000.0;
-      }
-      markSimulationAdvanced(lifecycle);
-      profile.simulationSteps += simulationStepsToRun;
-      profile.simulationMs += elapsedMs(phaseStart);
-
+    if (advanceSimulationSteps(
+            *dartScene.world, simulationStepsToRun, lifecycle, profile)) {
       phaseStart = ProfileAccumulator::Clock::now();
       refreshContactDebugOverlay(
           *engine,

@@ -32,6 +32,8 @@
 
 #include <dart/gui/experimental/detail/filament/simulation_stepper.hpp>
 
+#include <dart/simulation/world.hpp>
+
 #include <algorithm>
 #include <chrono>
 
@@ -40,6 +42,8 @@ namespace dart::gui::experimental::filament {
 using dart::gui::experimental::ProfileAccumulator;
 using dart::gui::experimental::RunOptions;
 using dart::gui::experimental::ViewerLifecycleState;
+using dart::gui::experimental::elapsedMs;
+using dart::gui::experimental::markSimulationAdvanced;
 using dart::gui::experimental::shouldAdvanceSimulation;
 
 std::size_t SimulationStepper::stepsToRun(
@@ -75,6 +79,28 @@ std::size_t SimulationStepper::stepsToRun(
   }
 
   return simulationStepsToRun;
+}
+
+bool advanceSimulationSteps(
+    dart::simulation::World& world,
+    std::size_t simulationStepsToRun,
+    ViewerLifecycleState& lifecycle,
+    ProfileAccumulator& profile)
+{
+  if (simulationStepsToRun == 0) {
+    return false;
+  }
+
+  const auto phaseStart = ProfileAccumulator::Clock::now();
+  for (std::size_t i = 0; i < simulationStepsToRun; ++i) {
+    const double timeStep = world.getTimeStep();
+    world.step();
+    profile.simulatedMs += timeStep * 1000.0;
+  }
+  markSimulationAdvanced(lifecycle);
+  profile.simulationSteps += simulationStepsToRun;
+  profile.simulationMs += elapsedMs(phaseStart);
+  return true;
 }
 
 } // namespace dart::gui::experimental::filament

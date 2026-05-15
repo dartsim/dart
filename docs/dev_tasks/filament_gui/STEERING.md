@@ -46,7 +46,8 @@ recommended maintainability slices:
   private scene-entity synchronization, unsupported-renderable logging, and
   per-frame renderable transform/selection/shadow application.
 - `dart/gui/experimental/detail/filament/simulation_stepper.hpp` and `.cpp` own
-  the bounded realtime simulation step-count accumulator.
+  the bounded realtime simulation step-count accumulator, world-step
+  application, lifecycle marking, and simulation profile accounting.
 - `dart/gui/experimental/profile.hpp` and `.cpp` own viewer-loop profile
   accumulation, and `dart/gui/experimental/detail/filament/render_context.*`
   plus `screenshot.*`, `render_environment.*`, `textures.*`, and

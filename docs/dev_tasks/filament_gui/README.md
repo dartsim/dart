@@ -183,10 +183,10 @@
 - Filament frame rendering, skipped-frame accounting, screenshot request
   dispatch, rendered-frame profiling, and bounded-run stop checks now live in
   `dart/gui/experimental/detail/filament/frame_renderer.hpp` and `.cpp`.
-- The Filament example's bounded realtime simulation step-count accumulator now
-  lives in `dart/gui/experimental/detail/filament/simulation_stepper.hpp` and
-  `.cpp`, leaving the application loop responsible for applying world steps and
-  profiling the result.
+- The Filament example's bounded realtime simulation step-count accumulator,
+  world-step application, lifecycle marking, and simulation profile accounting
+  now live in `dart/gui/experimental/detail/filament/simulation_stepper.hpp`
+  and `.cpp`.
 - The Filament example's built-in status panel rendering now lives in
   `dart/gui/experimental/detail/filament/panel.hpp` and `.cpp`; it remains
   private MVP policy rather than a promoted panel/tool API.
