@@ -99,7 +99,9 @@ Retained Filament renderables also reapply descriptor shadow flags each frame,
 so DART visual-aspect shadow changes are not limited to resource creation.
 Example-local PNG/JPEG image decoding, Filament texture-cache ownership,
 sampler setup, and PBR texture parameter binding live in
-`examples/filament_gui/textures.hpp` and `.cpp`.
+`examples/filament_gui/textures.hpp` and `.cpp`, with repeat sampler
+construction private to the `.cpp` implementation so the helper header avoids a
+direct Filament sampler include.
 Example-local neutral lighting/color grading, orbiting key-light direction, and
 windowed view-quality setup live in
 `examples/filament_gui/render_environment.hpp` and `.cpp`.

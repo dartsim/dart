@@ -36,6 +36,7 @@
 #include <filament/Engine.h>
 #include <filament/MaterialInstance.h>
 #include <filament/Texture.h>
+#include <filament/TextureSampler.h>
 
 #include <jpeglib.h>
 #include <png.h>
@@ -258,20 +259,6 @@ bool isBoundTexture(const TextureBinding* binding)
   return binding != nullptr && binding->texture != nullptr;
 }
 
-void setTextureParameter(
-    filament::MaterialInstance& material,
-    const TextureBinding& fallback,
-    const char* textureName,
-    const char* flagName,
-    const TextureBinding* binding)
-{
-  const TextureBinding& active = isBoundTexture(binding) ? *binding : fallback;
-  material.setParameter(textureName, active.texture, active.sampler);
-  material.setParameter(flagName, isBoundTexture(binding) ? 1.0f : 0.0f);
-}
-
-} // namespace
-
 filament::TextureSampler makeRepeatTextureSampler()
 {
   filament::TextureSampler sampler(
@@ -281,6 +268,20 @@ filament::TextureSampler makeRepeatTextureSampler()
   sampler.setAnisotropy(8.0f);
   return sampler;
 }
+
+void setTextureParameter(
+    filament::MaterialInstance& material,
+    const TextureBinding& fallback,
+    const char* textureName,
+    const char* flagName,
+    const TextureBinding* binding)
+{
+  const TextureBinding& active = isBoundTexture(binding) ? *binding : fallback;
+  material.setParameter(textureName, active.texture, makeRepeatTextureSampler());
+  material.setParameter(flagName, isBoundTexture(binding) ? 1.0f : 0.0f);
+}
+
+} // namespace
 
 const TextureBinding* getOrLoadTextureBinding(
     filament::Engine& engine,
@@ -316,7 +317,6 @@ const TextureBinding* getOrLoadTextureBinding(
 
   TextureBinding binding;
   binding.texture = texture;
-  binding.sampler = makeRepeatTextureSampler();
   cache.ownedTextures.push_back(texture);
   const auto [inserted, _] = cache.bindings.emplace(cacheKey, binding);
   return &inserted->second;

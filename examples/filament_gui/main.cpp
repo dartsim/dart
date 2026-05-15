@@ -75,7 +75,6 @@
 #include <filament/Scene.h>
 #include <filament/SwapChain.h>
 #include <filament/Texture.h>
-#include <filament/TextureSampler.h>
 #include <filament/TransformManager.h>
 #include <filament/VertexBuffer.h>
 #include <filament/View.h>
@@ -239,7 +238,6 @@ using dart::examples::filament_gui::saveScreenshot;
 using dart::examples::filament_gui::sceneName;
 using dart::examples::filament_gui::selectedNudgeFromKeyboard;
 using dart::examples::filament_gui::selectionLabelForRenderable;
-using dart::examples::filament_gui::makeRepeatTextureSampler;
 using dart::examples::filament_gui::selectLitMaterial;
 using dart::examples::filament_gui::setRenderableTransform;
 using dart::examples::filament_gui::synchronizeSceneRenderables;
@@ -1739,14 +1737,12 @@ int main(int argc, char* argv[])
   auto* checkerTexture = createCheckerTexture(*engine);
   TextureBinding checkerBinding;
   checkerBinding.texture = checkerTexture;
-  checkerBinding.sampler = makeRepeatTextureSampler();
   auto* fallbackTexture = createSolidTexture(
       *engine,
       std::array<std::uint8_t, 4>{255, 255, 255, 255},
       TextureColorSpace::Linear);
   TextureBinding fallbackBinding;
   fallbackBinding.texture = fallbackTexture;
-  fallbackBinding.sampler = makeRepeatTextureSampler();
   const MaterialSet materials{
       *material,
       *texturedMaterial,

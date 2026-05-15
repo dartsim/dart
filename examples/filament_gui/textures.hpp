@@ -33,8 +33,6 @@
 #ifndef EXAMPLES_FILAMENT_GUI_TEXTURES_HPP_
 #define EXAMPLES_FILAMENT_GUI_TEXTURES_HPP_
 
-#include <filament/TextureSampler.h>
-
 #include <array>
 #include <string>
 #include <unordered_map>
@@ -53,7 +51,6 @@ namespace dart::examples::filament_gui {
 struct TextureBinding
 {
   filament::Texture* texture = nullptr;
-  filament::TextureSampler sampler;
 };
 
 enum class TextureColorSpace
@@ -78,8 +75,6 @@ struct TextureCache
   std::unordered_map<std::string, TextureBinding> bindings;
   std::vector<filament::Texture*> ownedTextures;
 };
-
-filament::TextureSampler makeRepeatTextureSampler();
 
 const TextureBinding* getOrLoadTextureBinding(
     filament::Engine& engine,

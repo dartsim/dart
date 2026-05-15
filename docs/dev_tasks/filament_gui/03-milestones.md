@@ -208,7 +208,8 @@
   needs DART-owned panel/tool APIs.
 - The Filament example keeps PNG/JPEG image decoding, Filament texture-cache
   ownership, sampler setup, and PBR material texture parameter binding in
-  `examples/filament_gui/textures.hpp` and `.cpp`.
+  `examples/filament_gui/textures.hpp` and `.cpp`, with repeat sampler
+  construction private to the `.cpp` implementation.
 - The Filament example keeps neutral lighting/color grading, orbiting
   key-light direction, and windowed view-quality configuration in
   `examples/filament_gui/render_environment.hpp` and `.cpp`.

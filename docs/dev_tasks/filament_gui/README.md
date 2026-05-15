@@ -111,7 +111,9 @@
   headless captures are directly reviewable without a manual vertical flip.
 - The Filament example's PNG/JPEG texture loading, Filament texture cache, and
   PBR texture parameter wiring now live in `examples/filament_gui/textures.hpp`
-  and `.cpp`; `main.cpp` still owns higher-level renderable resource assembly.
+  and `.cpp`; repeat sampler construction stays private to the texture
+  implementation so the helper header does not include Filament sampler
+  headers. `main.cpp` still owns higher-level renderable resource assembly.
 - The Filament example's neutral lighting, color grading, orbiting key-light
   direction, and windowed view-quality setup now live in
   `examples/filament_gui/render_environment.hpp` and `.cpp`.

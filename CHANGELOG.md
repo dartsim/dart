@@ -176,7 +176,10 @@
     state, material selection/configuration, shadow settings, and destruction
     helpers now live in `examples/filament_gui/renderable_resources.hpp` and
     `.cpp`, while descriptor-to-scene synchronization and renderable transform
-    updates live in `examples/filament_gui/renderable_sync.hpp` and `.cpp`. The
+    updates live in `examples/filament_gui/renderable_sync.hpp` and `.cpp`.
+    Texture sampler setup is now private to
+    `examples/filament_gui/textures.cpp`, keeping that helper header free of a
+    direct Filament sampler include. The
     north-star audit now also maps the legacy OSG/Raylib GUI surfaces that must
     be replaced, made private, or removed during first-class Filament
     promotion. The renderer-hidden debug descriptor path also covers
