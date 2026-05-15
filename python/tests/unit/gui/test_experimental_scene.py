@@ -11,8 +11,12 @@ def test_experimental_stub_surface_is_backend_hidden():
     experimental_stub = (
         repo_root / "python" / "stubs" / "dartpy" / "gui" / "experimental.pyi"
     )
+    gui_docs = repo_root / "docs" / "python_api" / "modules" / "gui.rst"
+    rtd_conf = repo_root / "docs" / "readthedocs" / "conf.py"
 
     assert "from . import experimental" in gui_stub.read_text()
+    assert "automodule:: dartpy.gui.experimental" in gui_docs.read_text()
+    assert "dartpy.gui.experimental" in rtd_conf.read_text()
     text = experimental_stub.read_text()
     for token in (
         "Filament",
