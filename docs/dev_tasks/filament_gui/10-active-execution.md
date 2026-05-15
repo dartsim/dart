@@ -27,14 +27,14 @@ context survives across sessions.
 
 - Branch: `feature/filament-gui-full-execution`
 - Upstream: `origin/feature/filament-gui-full-execution`
-- Latest pushed checkpoint: `cd04ba4862ac Track simple frames GUI launcher`
+- Latest pushed checkpoint: `858ab55cacd1 Promote dartpy GUI surface`
 - GitHub Actions were manually dispatched for the pushed checkpoint without
   opening a PR:
-  - CI Lint: https://github.com/dartsim/dart/actions/runs/25944438949
-  - CI Linux: https://github.com/dartsim/dart/actions/runs/25944438929
-  - CI macOS: https://github.com/dartsim/dart/actions/runs/25944438931
-  - CI Windows: https://github.com/dartsim/dart/actions/runs/25944438919
-  - CodeQL: https://github.com/dartsim/dart/actions/runs/25944438926
+  - CI Lint: https://github.com/dartsim/dart/actions/runs/25944746447
+  - CI Linux: https://github.com/dartsim/dart/actions/runs/25944746434
+  - CI macOS: https://github.com/dartsim/dart/actions/runs/25944746426
+  - CI Windows: https://github.com/dartsim/dart/actions/runs/25944746471
+  - CodeQL: https://github.com/dartsim/dart/actions/runs/25944746430
 - Linux Filament smoke tests passed at the latest inspected run.
 - Linux headless rendering failed earlier because the workflow still invoked the
   legacy `rigid_cubes` executable, which was removed in the earlier example
@@ -44,6 +44,8 @@ context survives across sessions.
   `examples/simple_frames/CMakeLists.txt` was ignored by the repository
   `*_frames/` ignore rule and therefore missing on GitHub. `cd04ba4862ac`
   force-adds that launcher so CMake can configure the restored examples on CI.
+- CI Lint on `cd04ba4862ac` passed; Linux, macOS, Windows, and CodeQL were still
+  running when the Python GUI promotion checkpoint was pushed.
 - The restored-example repair is pushed:
   - `examples/dartsim` is the renamed app-level viewer.
   - `dart/gui/application.hpp` exposes the narrow promoted launch API.
@@ -117,7 +119,8 @@ context survives across sessions.
 
 ## Python Binding Promotion Slice
 
-- Promote the existing backend-hidden GUI descriptor/helper symbols from
+- `858ab55cacd1` promotes the existing backend-hidden GUI descriptor/helper
+  symbols from
   `dartpy.gui.experimental` onto `dartpy.gui`, matching the promoted C++
   `dart::gui` surface.
 - Keep `dartpy.gui.experimental` importable as a compatibility namespace for
@@ -126,6 +129,18 @@ context survives across sessions.
   `dartpy.gui` as the official surface.
 - Do not expose Filament, GLFW, Dear ImGui, OpenGL, Vulkan, Metal, OSG, or
   Raylib types through Python-facing contracts.
+
+## Private CMake Helper Rename Slice
+
+- Rename private helper functions and CMake variables that still use the
+  backend-named `filament_gui` compound to `gui_filament` wording.
+- Keep `Filament` in private backend implementation names where it identifies
+  the rendering technology; the problem is the old example/product compound
+  `filament_gui`.
+- Preserve public compatibility rejection for old user-facing names such as
+  `filament_gui` and `dart_filament_gui`.
+- Keep target/component renames involving `dart-gui-experimental` as a larger
+  compatibility step unless a local mechanical rename is clearly safe.
 
 ## Example Restoration Plan
 
@@ -190,11 +205,11 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Promote the Python GUI binding surface from `dartpy.gui.experimental` to
-   `dartpy.gui` while keeping the old submodule as a compatibility alias.
-2. After the Python binding checkpoint lands, continue removing `experimental`
-   from promoted surfaces, including private CMake helper-name cleanup where it
-   does not affect compatibility.
+1. Rename private Filament CMake helper functions and smoke-test variables away
+   from the old `filament_gui` compound while preserving user-facing rejection
+   tests for that legacy name.
+2. Continue removing `experimental` from promoted surfaces, including private
+   target/helper-name cleanup where it does not affect compatibility.
 3. Do not expose Filament, GLFW, or Dear ImGui types in promoted headers.
    Private implementation can remain under `dart/gui/experimental/detail` until
    a later file-layout sweep.

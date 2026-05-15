@@ -20,7 +20,7 @@ target_link_libraries(${target_name} PUBLIC dart)
 
 if(DART_BUILD_GUI_FILAMENT)
   include("${CMAKE_CURRENT_LIST_DIR}/detail/filament/filament_sources.cmake")
-  dart_filament_gui_configure_backend_target(
+  dart_gui_filament_configure_backend_target(
     ${target_name}
     GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/filament_generated"
   )

@@ -1,83 +1,83 @@
 # Copyright (c) 2011, The DART development contributors
 
-set(DART_FILAMENT_GUI_BACKEND_DIR "${CMAKE_CURRENT_LIST_DIR}")
-set(DART_FILAMENT_GUI_DETAIL_DIR "${DART_FILAMENT_GUI_BACKEND_DIR}/..")
-set(DART_FILAMENT_GUI_TESTING_DIR "${DART_FILAMENT_GUI_BACKEND_DIR}/testing")
+set(DART_GUI_FILAMENT_BACKEND_DIR "${CMAKE_CURRENT_LIST_DIR}")
+set(DART_GUI_FILAMENT_DETAIL_DIR "${DART_GUI_FILAMENT_BACKEND_DIR}/..")
+set(DART_GUI_FILAMENT_TESTING_DIR "${DART_GUI_FILAMENT_BACKEND_DIR}/testing")
 get_filename_component(
-  DART_FILAMENT_GUI_SOURCE_DIR
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/../../../../.."
+  DART_GUI_FILAMENT_SOURCE_DIR
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/../../../../.."
   ABSOLUTE
 )
-set(DART_FILAMENT_GUI_BINARY_TO_HEADER
-  "${DART_FILAMENT_GUI_SOURCE_DIR}/cmake/dart_binary_to_header.cmake")
+set(DART_GUI_FILAMENT_BINARY_TO_HEADER
+  "${DART_GUI_FILAMENT_SOURCE_DIR}/cmake/dart_binary_to_header.cmake")
 
-set(DART_FILAMENT_GUI_DEFAULT_LIT_MATERIAL
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/materials/default_lit.mat")
-set(DART_FILAMENT_GUI_TEXTURED_LIT_MATERIAL
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/materials/textured_lit.mat")
-set(DART_FILAMENT_GUI_TRANSPARENT_LIT_MATERIAL
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/materials/transparent_lit.mat")
-set(DART_FILAMENT_GUI_TRANSPARENT_TEXTURED_LIT_MATERIAL
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/materials/transparent_textured_lit.mat")
-set(DART_FILAMENT_GUI_DEBUG_COLOR_MATERIAL
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/materials/debug_color.mat")
-set(DART_FILAMENT_GUI_IMGUI_MATERIAL
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/materials/imgui.mat")
+set(DART_GUI_FILAMENT_DEFAULT_LIT_MATERIAL
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/materials/default_lit.mat")
+set(DART_GUI_FILAMENT_TEXTURED_LIT_MATERIAL
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/materials/textured_lit.mat")
+set(DART_GUI_FILAMENT_TRANSPARENT_LIT_MATERIAL
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/materials/transparent_lit.mat")
+set(DART_GUI_FILAMENT_TRANSPARENT_TEXTURED_LIT_MATERIAL
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/materials/transparent_textured_lit.mat")
+set(DART_GUI_FILAMENT_DEBUG_COLOR_MATERIAL
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/materials/debug_color.mat")
+set(DART_GUI_FILAMENT_IMGUI_MATERIAL
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/materials/imgui.mat")
 
-set(DART_FILAMENT_GUI_BACKEND_SRCS
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/application.cpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/application_teardown.cpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/debug_overlay.cpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/frame_renderer.cpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/frame_viewport.cpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/imgui_overlay.cpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/input.cpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/native_window.cpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/panel.cpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/render_context.cpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/render_environment.cpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/renderable_factory.cpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/renderable_resources.cpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/renderable_sync.cpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/scene_frame.cpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/scene_fixtures.cpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/scene_requirements.cpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/scene_startup.cpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/scenes.cpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/screenshot.cpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/selection.cpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/simulation_stepper.cpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/textures.cpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/ui_frame.cpp")
+set(DART_GUI_FILAMENT_BACKEND_SRCS
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/application.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/application_teardown.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/debug_overlay.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/frame_renderer.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/frame_viewport.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/imgui_overlay.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/input.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/native_window.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/panel.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/render_context.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/render_environment.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/renderable_factory.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/renderable_resources.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/renderable_sync.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/scene_frame.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/scene_fixtures.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/scene_requirements.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/scene_startup.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/scenes.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/screenshot.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/selection.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/simulation_stepper.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/textures.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/ui_frame.cpp")
 
-set(DART_FILAMENT_GUI_BACKEND_HDRS
-  "${DART_FILAMENT_GUI_DETAIL_DIR}/application.hpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/application.hpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/application_teardown.hpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/debug_overlay.hpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/frame_renderer.hpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/frame_viewport.hpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/imgui_overlay.hpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/input.hpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/native_window.hpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/panel.hpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/render_context.hpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/render_environment.hpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/renderable_factory.hpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/renderable_resources.hpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/renderable_sync.hpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/scene_frame.hpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/scene_fixtures.hpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/scene_requirements.hpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/scene_startup.hpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/scenes.hpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/screenshot.hpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/selection.hpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/simulation_stepper.hpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/textures.hpp"
-  "${DART_FILAMENT_GUI_BACKEND_DIR}/ui_frame.hpp")
+set(DART_GUI_FILAMENT_BACKEND_HDRS
+  "${DART_GUI_FILAMENT_DETAIL_DIR}/application.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/application.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/application_teardown.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/debug_overlay.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/frame_renderer.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/frame_viewport.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/imgui_overlay.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/input.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/native_window.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/panel.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/render_context.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/render_environment.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/renderable_factory.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/renderable_resources.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/renderable_sync.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/scene_frame.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/scene_fixtures.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/scene_requirements.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/scene_startup.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/scenes.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/screenshot.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/selection.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/simulation_stepper.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/textures.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/ui_frame.hpp")
 
-function(_dart_filament_gui_find_dependencies out_imgui_target)
+function(_dart_gui_filament_find_dependencies out_imgui_target)
   if(NOT TARGET Filament::filament OR NOT TARGET Filament::matc)
     find_package(Filament REQUIRED MODULE)
   endif()
@@ -110,7 +110,7 @@ function(_dart_filament_gui_find_dependencies out_imgui_target)
   set(${out_imgui_target} "${_imgui_target}" PARENT_SCOPE)
 endfunction()
 
-function(_dart_filament_gui_read_jpeg_version out_version)
+function(_dart_gui_filament_read_jpeg_version out_version)
   foreach(_jpeg_include_dir IN LISTS ARGN)
     if(EXISTS "${_jpeg_include_dir}/jconfig.h")
       file(
@@ -143,7 +143,7 @@ function(_dart_filament_gui_read_jpeg_version out_version)
 endfunction()
 
 function(
-  _dart_filament_gui_add_material_header
+  _dart_gui_filament_add_material_header
   out_headers
   generated_dir
   material_name
@@ -171,8 +171,8 @@ function(
             "-DOUTPUT=${_material_header}"
             "-DSYMBOL=${symbol}"
             -DNAMESPACE=dart::gui::experimental::filament
-            -P "${DART_FILAMENT_GUI_BINARY_TO_HEADER}"
-    DEPENDS "${_material_bin}" "${DART_FILAMENT_GUI_BINARY_TO_HEADER}"
+            -P "${DART_GUI_FILAMENT_BINARY_TO_HEADER}"
+    DEPENDS "${_material_bin}" "${DART_GUI_FILAMENT_BINARY_TO_HEADER}"
     COMMENT "Embedding ${material_label} Filament material"
     VERBATIM
   )
@@ -180,61 +180,61 @@ function(
   set(${out_headers} ${${out_headers}} "${_material_header}" PARENT_SCOPE)
 endfunction()
 
-function(dart_filament_gui_generate_material_headers out_headers)
-  cmake_parse_arguments(DART_FILAMENT_GUI "" "GENERATED_DIR" "" ${ARGN})
-  if(NOT DART_FILAMENT_GUI_GENERATED_DIR)
+function(dart_gui_filament_generate_material_headers out_headers)
+  cmake_parse_arguments(DART_GUI_FILAMENT "" "GENERATED_DIR" "" ${ARGN})
+  if(NOT DART_GUI_FILAMENT_GENERATED_DIR)
     message(
       FATAL_ERROR
-      "dart_filament_gui_generate_material_headers requires GENERATED_DIR"
+      "dart_gui_filament_generate_material_headers requires GENERATED_DIR"
     )
   endif()
 
   set(_headers)
-  _dart_filament_gui_add_material_header(
+  _dart_gui_filament_add_material_header(
     _headers
-    "${DART_FILAMENT_GUI_GENERATED_DIR}"
+    "${DART_GUI_FILAMENT_GENERATED_DIR}"
     default_lit
-    "${DART_FILAMENT_GUI_DEFAULT_LIT_MATERIAL}"
+    "${DART_GUI_FILAMENT_DEFAULT_LIT_MATERIAL}"
     kDefaultLitMaterial
     "default lit"
   )
-  _dart_filament_gui_add_material_header(
+  _dart_gui_filament_add_material_header(
     _headers
-    "${DART_FILAMENT_GUI_GENERATED_DIR}"
+    "${DART_GUI_FILAMENT_GENERATED_DIR}"
     textured_lit
-    "${DART_FILAMENT_GUI_TEXTURED_LIT_MATERIAL}"
+    "${DART_GUI_FILAMENT_TEXTURED_LIT_MATERIAL}"
     kTexturedLitMaterial
     "textured lit"
   )
-  _dart_filament_gui_add_material_header(
+  _dart_gui_filament_add_material_header(
     _headers
-    "${DART_FILAMENT_GUI_GENERATED_DIR}"
+    "${DART_GUI_FILAMENT_GENERATED_DIR}"
     transparent_lit
-    "${DART_FILAMENT_GUI_TRANSPARENT_LIT_MATERIAL}"
+    "${DART_GUI_FILAMENT_TRANSPARENT_LIT_MATERIAL}"
     kTransparentLitMaterial
     "transparent lit"
   )
-  _dart_filament_gui_add_material_header(
+  _dart_gui_filament_add_material_header(
     _headers
-    "${DART_FILAMENT_GUI_GENERATED_DIR}"
+    "${DART_GUI_FILAMENT_GENERATED_DIR}"
     transparent_textured_lit
-    "${DART_FILAMENT_GUI_TRANSPARENT_TEXTURED_LIT_MATERIAL}"
+    "${DART_GUI_FILAMENT_TRANSPARENT_TEXTURED_LIT_MATERIAL}"
     kTransparentTexturedLitMaterial
     "transparent textured lit"
   )
-  _dart_filament_gui_add_material_header(
+  _dart_gui_filament_add_material_header(
     _headers
-    "${DART_FILAMENT_GUI_GENERATED_DIR}"
+    "${DART_GUI_FILAMENT_GENERATED_DIR}"
     debug_color
-    "${DART_FILAMENT_GUI_DEBUG_COLOR_MATERIAL}"
+    "${DART_GUI_FILAMENT_DEBUG_COLOR_MATERIAL}"
     kDebugColorMaterial
     "debug color"
   )
-  _dart_filament_gui_add_material_header(
+  _dart_gui_filament_add_material_header(
     _headers
-    "${DART_FILAMENT_GUI_GENERATED_DIR}"
+    "${DART_GUI_FILAMENT_GENERATED_DIR}"
     imgui
-    "${DART_FILAMENT_GUI_IMGUI_MATERIAL}"
+    "${DART_GUI_FILAMENT_IMGUI_MATERIAL}"
     kImGuiMaterial
     "ImGui"
   )
@@ -242,73 +242,73 @@ function(dart_filament_gui_generate_material_headers out_headers)
   set(${out_headers} ${_headers} PARENT_SCOPE)
 endfunction()
 
-function(dart_filament_gui_configure_backend_target target_name)
-  cmake_parse_arguments(DART_FILAMENT_GUI "" "GENERATED_DIR" "" ${ARGN})
+function(dart_gui_filament_configure_backend_target target_name)
+  cmake_parse_arguments(DART_GUI_FILAMENT "" "GENERATED_DIR" "" ${ARGN})
   if(NOT TARGET "${target_name}")
     message(
       FATAL_ERROR
-      "dart_filament_gui_configure_backend_target requires an existing target"
+      "dart_gui_filament_configure_backend_target requires an existing target"
     )
   endif()
-  if(NOT DART_FILAMENT_GUI_GENERATED_DIR)
+  if(NOT DART_GUI_FILAMENT_GENERATED_DIR)
     message(
       FATAL_ERROR
-      "dart_filament_gui_configure_backend_target requires GENERATED_DIR"
+      "dart_gui_filament_configure_backend_target requires GENERATED_DIR"
     )
   endif()
 
-  _dart_filament_gui_find_dependencies(_imgui_target)
-  dart_filament_gui_generate_material_headers(
+  _dart_gui_filament_find_dependencies(_imgui_target)
+  dart_gui_filament_generate_material_headers(
     _material_headers
-    GENERATED_DIR "${DART_FILAMENT_GUI_GENERATED_DIR}"
+    GENERATED_DIR "${DART_GUI_FILAMENT_GENERATED_DIR}"
   )
 
-  set(_dart_filament_gui_jpeg_include_dirs ${JPEG_INCLUDE_DIRS})
-  if(NOT _dart_filament_gui_jpeg_include_dirs AND JPEG_INCLUDE_DIR)
-    set(_dart_filament_gui_jpeg_include_dirs "${JPEG_INCLUDE_DIR}")
+  set(_dart_gui_filament_jpeg_include_dirs ${JPEG_INCLUDE_DIRS})
+  if(NOT _dart_gui_filament_jpeg_include_dirs AND JPEG_INCLUDE_DIR)
+    set(_dart_gui_filament_jpeg_include_dirs "${JPEG_INCLUDE_DIR}")
   endif()
-  set(_dart_filament_gui_png_include_dirs ${PNG_INCLUDE_DIRS})
-  if(NOT _dart_filament_gui_png_include_dirs AND PNG_PNG_INCLUDE_DIR)
-    set(_dart_filament_gui_png_include_dirs "${PNG_PNG_INCLUDE_DIR}")
+  set(_dart_gui_filament_png_include_dirs ${PNG_INCLUDE_DIRS})
+  if(NOT _dart_gui_filament_png_include_dirs AND PNG_PNG_INCLUDE_DIR)
+    set(_dart_gui_filament_png_include_dirs "${PNG_PNG_INCLUDE_DIR}")
   endif()
-  _dart_filament_gui_read_jpeg_version(
-    _dart_filament_gui_jpeg_lib_version
-    ${_dart_filament_gui_jpeg_include_dirs}
+  _dart_gui_filament_read_jpeg_version(
+    _dart_gui_filament_jpeg_lib_version
+    ${_dart_gui_filament_jpeg_include_dirs}
   )
 
-  set(_dart_filament_gui_jpeg_libraries ${JPEG_LIBRARIES})
-  if(NOT _dart_filament_gui_jpeg_libraries AND JPEG_LIBRARY_RELEASE)
-    set(_dart_filament_gui_jpeg_libraries "${JPEG_LIBRARY_RELEASE}")
-  elseif(NOT _dart_filament_gui_jpeg_libraries AND JPEG_LIBRARY)
-    set(_dart_filament_gui_jpeg_libraries "${JPEG_LIBRARY}")
+  set(_dart_gui_filament_jpeg_libraries ${JPEG_LIBRARIES})
+  if(NOT _dart_gui_filament_jpeg_libraries AND JPEG_LIBRARY_RELEASE)
+    set(_dart_gui_filament_jpeg_libraries "${JPEG_LIBRARY_RELEASE}")
+  elseif(NOT _dart_gui_filament_jpeg_libraries AND JPEG_LIBRARY)
+    set(_dart_gui_filament_jpeg_libraries "${JPEG_LIBRARY}")
   endif()
 
-  set(_dart_filament_gui_png_libraries ${PNG_LIBRARIES})
-  if(NOT _dart_filament_gui_png_libraries AND PNG_LIBRARY_RELEASE)
-    set(_dart_filament_gui_png_libraries "${PNG_LIBRARY_RELEASE}")
-  elseif(NOT _dart_filament_gui_png_libraries AND PNG_LIBRARY)
-    set(_dart_filament_gui_png_libraries "${PNG_LIBRARY}")
+  set(_dart_gui_filament_png_libraries ${PNG_LIBRARIES})
+  if(NOT _dart_gui_filament_png_libraries AND PNG_LIBRARY_RELEASE)
+    set(_dart_gui_filament_png_libraries "${PNG_LIBRARY_RELEASE}")
+  elseif(NOT _dart_gui_filament_png_libraries AND PNG_LIBRARY)
+    set(_dart_gui_filament_png_libraries "${PNG_LIBRARY}")
   endif()
 
   target_sources(
     ${target_name}
     PRIVATE
-      ${DART_FILAMENT_GUI_BACKEND_SRCS}
-      ${DART_FILAMENT_GUI_BACKEND_HDRS}
+      ${DART_GUI_FILAMENT_BACKEND_SRCS}
+      ${DART_GUI_FILAMENT_BACKEND_HDRS}
       ${_material_headers}
   )
   target_include_directories(
     ${target_name}
     PRIVATE
-      "${DART_FILAMENT_GUI_GENERATED_DIR}"
-      ${_dart_filament_gui_jpeg_include_dirs}
-      ${_dart_filament_gui_png_include_dirs}
+      "${DART_GUI_FILAMENT_GENERATED_DIR}"
+      ${_dart_gui_filament_jpeg_include_dirs}
+      ${_dart_gui_filament_png_include_dirs}
   )
   target_compile_definitions(
     ${target_name}
     PRIVATE
-      DART_FILAMENT_GUI_JPEG_LIB_VERSION=${_dart_filament_gui_jpeg_lib_version}
-      DART_FILAMENT_GUI_REPOSITORY_ROOT="${DART_FILAMENT_GUI_SOURCE_DIR}"
+      DART_GUI_FILAMENT_JPEG_LIB_VERSION=${_dart_gui_filament_jpeg_lib_version}
+      DART_GUI_FILAMENT_REPOSITORY_ROOT="${DART_GUI_FILAMENT_SOURCE_DIR}"
   )
   target_link_libraries(
     ${target_name}
@@ -316,15 +316,15 @@ function(dart_filament_gui_configure_backend_target target_name)
       dart-io
       dart-utils-urdf
       Filament::filament
-      ${_dart_filament_gui_jpeg_libraries}
-      ${_dart_filament_gui_png_libraries}
+      ${_dart_gui_filament_jpeg_libraries}
+      ${_dart_gui_filament_png_libraries}
       glfw
       ${_imgui_target}
   )
   target_compile_features(${target_name} PRIVATE cxx_std_20)
 endfunction()
 
-function(_dart_filament_gui_apply_smoke_test_properties test_name)
+function(_dart_gui_filament_apply_smoke_test_properties test_name)
   set_tests_properties(
     ${test_name}
     PROPERTIES LABELS "filament;gui;smoke;graphics"
@@ -338,7 +338,7 @@ function(_dart_filament_gui_apply_smoke_test_properties test_name)
   endif()
 endfunction()
 
-set(DART_FILAMENT_GUI_SMOKE_SCENE_PAIRS
+set(DART_GUI_FILAMENT_SMOKE_SCENE_PAIRS
     hello_world hello-world
     boxes boxes
     hardcoded_design hardcoded-design
@@ -371,7 +371,7 @@ set(DART_FILAMENT_GUI_SMOKE_SCENE_PAIRS
     heightmap heightmap
 )
 
-function(_dart_filament_gui_smoke_test_name out_name scene_suffix)
+function(_dart_gui_filament_smoke_test_name out_name scene_suffix)
   set(
     ${out_name}
     "EXAMPLE_dartsim_${scene_suffix}_headless_smoke"
@@ -379,44 +379,44 @@ function(_dart_filament_gui_smoke_test_name out_name scene_suffix)
   )
 endfunction()
 
-function(_dart_filament_gui_add_headless_smoke_test test_name example_target)
+function(_dart_gui_filament_add_headless_smoke_test test_name example_target)
   cmake_parse_arguments(
-    DART_FILAMENT_GUI_SMOKE
+    DART_GUI_FILAMENT_SMOKE
     "ANALYZE"
     "ANALYSIS_MODE;BINARY_DIR;FRAMES;SCENE"
     ""
     ${ARGN}
   )
-  if(NOT DART_FILAMENT_GUI_SMOKE_BINARY_DIR)
-    set(DART_FILAMENT_GUI_SMOKE_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+  if(NOT DART_GUI_FILAMENT_SMOKE_BINARY_DIR)
+    set(DART_GUI_FILAMENT_SMOKE_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
   endif()
-  if(NOT DART_FILAMENT_GUI_SMOKE_FRAMES)
-    set(DART_FILAMENT_GUI_SMOKE_FRAMES 4)
+  if(NOT DART_GUI_FILAMENT_SMOKE_FRAMES)
+    set(DART_GUI_FILAMENT_SMOKE_FRAMES 4)
   endif()
 
   string(REGEX REPLACE "^EXAMPLE_" "" _screenshot_stem "${test_name}")
   set(
     _command
     "${CMAKE_COMMAND}"
-    "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-    "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_SMOKE_BINARY_DIR}/${_screenshot_stem}.ppm"
-    -DDART_FILAMENT_GUI_WIDTH=640
-    -DDART_FILAMENT_GUI_HEIGHT=480
-    "-DDART_FILAMENT_GUI_FRAMES=${DART_FILAMENT_GUI_SMOKE_FRAMES}"
+    "-DDART_GUI_FILAMENT_EXECUTABLE=$<TARGET_FILE:${example_target}>"
+    "-DDART_GUI_FILAMENT_SCREENSHOT=${DART_GUI_FILAMENT_SMOKE_BINARY_DIR}/${_screenshot_stem}.ppm"
+    -DDART_GUI_FILAMENT_WIDTH=640
+    -DDART_GUI_FILAMENT_HEIGHT=480
+    "-DDART_GUI_FILAMENT_FRAMES=${DART_GUI_FILAMENT_SMOKE_FRAMES}"
   )
 
-  if(DART_FILAMENT_GUI_SMOKE_SCENE)
+  if(DART_GUI_FILAMENT_SMOKE_SCENE)
     list(
       APPEND
       _command
-      "-DDART_FILAMENT_GUI_SCENE=${DART_FILAMENT_GUI_SMOKE_SCENE}"
+      "-DDART_GUI_FILAMENT_SCENE=${DART_GUI_FILAMENT_SMOKE_SCENE}"
     )
   endif()
-  if(DART_FILAMENT_GUI_SMOKE_ANALYZE)
-    if(NOT DART_FILAMENT_GUI_SMOKE_ANALYSIS_MODE)
-      set(DART_FILAMENT_GUI_SMOKE_ANALYSIS_MODE contrast)
+  if(DART_GUI_FILAMENT_SMOKE_ANALYZE)
+    if(NOT DART_GUI_FILAMENT_SMOKE_ANALYSIS_MODE)
+      set(DART_GUI_FILAMENT_SMOKE_ANALYSIS_MODE contrast)
     endif()
-    if(NOT DART_FILAMENT_GUI_SMOKE_ANALYSIS_MODE MATCHES "^(basic|contrast)$")
+    if(NOT DART_GUI_FILAMENT_SMOKE_ANALYSIS_MODE MATCHES "^(basic|contrast)$")
       message(
         FATAL_ERROR
         "ANALYSIS_MODE must be 'basic' or 'contrast' for ${test_name}"
@@ -425,9 +425,9 @@ function(_dart_filament_gui_add_headless_smoke_test test_name example_target)
     list(
       APPEND
       _command
-      "-DDART_FILAMENT_GUI_PYTHON=${Python3_EXECUTABLE}"
-      "-DDART_FILAMENT_GUI_ANALYZER=${DART_FILAMENT_GUI_TESTING_DIR}/analyze_headless_smoke.py"
-      "-DDART_FILAMENT_GUI_ANALYSIS_MODE=${DART_FILAMENT_GUI_SMOKE_ANALYSIS_MODE}"
+      "-DDART_GUI_FILAMENT_PYTHON=${Python3_EXECUTABLE}"
+      "-DDART_GUI_FILAMENT_ANALYZER=${DART_GUI_FILAMENT_TESTING_DIR}/analyze_headless_smoke.py"
+      "-DDART_GUI_FILAMENT_ANALYSIS_MODE=${DART_GUI_FILAMENT_SMOKE_ANALYSIS_MODE}"
     )
   endif()
 
@@ -435,44 +435,44 @@ function(_dart_filament_gui_add_headless_smoke_test test_name example_target)
     APPEND
     _command
     -P
-    "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
+    "${DART_GUI_FILAMENT_TESTING_DIR}/run_headless_smoke.cmake"
   )
   add_test(NAME ${test_name} COMMAND ${_command})
-  _dart_filament_gui_apply_smoke_test_properties(${test_name})
+  _dart_gui_filament_apply_smoke_test_properties(${test_name})
 endfunction()
 
-function(dart_filament_gui_add_smoke_tests example_target)
-  cmake_parse_arguments(DART_FILAMENT_GUI "" "BINARY_DIR" "" ${ARGN})
-  if(NOT DART_FILAMENT_GUI_BINARY_DIR)
-    set(DART_FILAMENT_GUI_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+function(dart_gui_filament_add_smoke_tests example_target)
+  cmake_parse_arguments(DART_GUI_FILAMENT "" "BINARY_DIR" "" ${ARGN})
+  if(NOT DART_GUI_FILAMENT_BINARY_DIR)
+    set(DART_GUI_FILAMENT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
   endif()
 
   find_package(Python3 COMPONENTS Interpreter REQUIRED)
-  _dart_filament_gui_add_headless_smoke_test(
+  _dart_gui_filament_add_headless_smoke_test(
     EXAMPLE_dartsim_headless_smoke
     ${example_target}
-    BINARY_DIR "${DART_FILAMENT_GUI_BINARY_DIR}"
+    BINARY_DIR "${DART_GUI_FILAMENT_BINARY_DIR}"
     FRAMES 10
     ANALYZE
     ANALYSIS_MODE contrast
   )
 
-  list(LENGTH DART_FILAMENT_GUI_SMOKE_SCENE_PAIRS _smoke_pair_count)
+  list(LENGTH DART_GUI_FILAMENT_SMOKE_SCENE_PAIRS _smoke_pair_count)
   math(EXPR _smoke_last_index "${_smoke_pair_count} - 1")
   foreach(_suffix_index RANGE 0 ${_smoke_last_index} 2)
     math(EXPR _scene_index "${_suffix_index} + 1")
     list(
       GET
-      DART_FILAMENT_GUI_SMOKE_SCENE_PAIRS
+      DART_GUI_FILAMENT_SMOKE_SCENE_PAIRS
       ${_suffix_index}
       _scene_suffix
     )
-    list(GET DART_FILAMENT_GUI_SMOKE_SCENE_PAIRS ${_scene_index} _scene_name)
-    _dart_filament_gui_smoke_test_name(_test_name "${_scene_suffix}")
-    _dart_filament_gui_add_headless_smoke_test(
+    list(GET DART_GUI_FILAMENT_SMOKE_SCENE_PAIRS ${_scene_index} _scene_name)
+    _dart_gui_filament_smoke_test_name(_test_name "${_scene_suffix}")
+    _dart_gui_filament_add_headless_smoke_test(
       ${_test_name}
       ${example_target}
-      BINARY_DIR "${DART_FILAMENT_GUI_BINARY_DIR}"
+      BINARY_DIR "${DART_GUI_FILAMENT_BINARY_DIR}"
       SCENE "${_scene_name}"
       ANALYZE
       ANALYSIS_MODE basic
@@ -480,28 +480,28 @@ function(dart_filament_gui_add_smoke_tests example_target)
   endforeach()
 endfunction()
 
-function(dart_filament_gui_add_example example_target)
+function(dart_gui_filament_add_example example_target)
   cmake_parse_arguments(
-    DART_FILAMENT_GUI_EXAMPLE
+    DART_GUI_FILAMENT_EXAMPLE
     ""
     "GENERATED_DIR;OUTPUT_NAME;SOURCE_DIR"
     ""
     ${ARGN}
   )
-  if(NOT DART_FILAMENT_GUI_EXAMPLE_GENERATED_DIR)
-    message(FATAL_ERROR "dart_filament_gui_add_example requires GENERATED_DIR")
+  if(NOT DART_GUI_FILAMENT_EXAMPLE_GENERATED_DIR)
+    message(FATAL_ERROR "dart_gui_filament_add_example requires GENERATED_DIR")
   endif()
-  if(NOT DART_FILAMENT_GUI_EXAMPLE_OUTPUT_NAME)
-    message(FATAL_ERROR "dart_filament_gui_add_example requires OUTPUT_NAME")
+  if(NOT DART_GUI_FILAMENT_EXAMPLE_OUTPUT_NAME)
+    message(FATAL_ERROR "dart_gui_filament_add_example requires OUTPUT_NAME")
   endif()
-  if(NOT DART_FILAMENT_GUI_EXAMPLE_SOURCE_DIR)
-    message(FATAL_ERROR "dart_filament_gui_add_example requires SOURCE_DIR")
+  if(NOT DART_GUI_FILAMENT_EXAMPLE_SOURCE_DIR)
+    message(FATAL_ERROR "dart_gui_filament_add_example requires SOURCE_DIR")
   endif()
   if(NOT TARGET dart-gui)
     message(FATAL_ERROR "dartsim requires the dart-gui target")
   endif()
 
-  set(_example_main "${DART_FILAMENT_GUI_EXAMPLE_SOURCE_DIR}/main.cpp")
+  set(_example_main "${DART_GUI_FILAMENT_EXAMPLE_SOURCE_DIR}/main.cpp")
   if(NOT EXISTS "${_example_main}")
     message(FATAL_ERROR "dartsim requires ${_example_main}")
   endif()
@@ -533,8 +533,8 @@ function(dart_filament_gui_add_example example_target)
     GLOB
     _example_local_sources
     CONFIGURE_DEPENDS
-    "${DART_FILAMENT_GUI_EXAMPLE_SOURCE_DIR}/*.cpp"
-    "${DART_FILAMENT_GUI_EXAMPLE_SOURCE_DIR}/*.hpp"
+    "${DART_GUI_FILAMENT_EXAMPLE_SOURCE_DIR}/*.cpp"
+    "${DART_GUI_FILAMENT_EXAMPLE_SOURCE_DIR}/*.hpp"
   )
   set(_unexpected_example_local_sources ${_example_local_sources})
   list(REMOVE_ITEM _unexpected_example_local_sources "${_example_main}")
@@ -558,14 +558,14 @@ function(dart_filament_gui_add_example example_target)
     _example_tree_files
     LIST_DIRECTORIES false
     CONFIGURE_DEPENDS
-    "${DART_FILAMENT_GUI_EXAMPLE_SOURCE_DIR}/*"
+    "${DART_GUI_FILAMENT_EXAMPLE_SOURCE_DIR}/*"
   )
   set(_unexpected_example_tree_files ${_example_tree_files})
   list(
     REMOVE_ITEM
     _unexpected_example_tree_files
-    "${DART_FILAMENT_GUI_EXAMPLE_SOURCE_DIR}/CMakeLists.txt"
-    "${DART_FILAMENT_GUI_EXAMPLE_SOURCE_DIR}/README.md"
+    "${DART_GUI_FILAMENT_EXAMPLE_SOURCE_DIR}/CMakeLists.txt"
+    "${DART_GUI_FILAMENT_EXAMPLE_SOURCE_DIR}/README.md"
     "${_example_main}"
   )
   if(_unexpected_example_tree_files)
@@ -586,7 +586,7 @@ function(dart_filament_gui_add_example example_target)
   add_executable(${example_target} "${_example_main}")
   set_target_properties(
     ${example_target}
-    PROPERTIES OUTPUT_NAME "${DART_FILAMENT_GUI_EXAMPLE_OUTPUT_NAME}"
+    PROPERTIES OUTPUT_NAME "${DART_GUI_FILAMENT_EXAMPLE_OUTPUT_NAME}"
   )
   target_link_libraries(
     ${example_target}
@@ -603,12 +603,12 @@ function(dart_filament_gui_add_example example_target)
     dart_add_example(${example_target})
     dart_format_add(
       "${_example_main}"
-      ${DART_FILAMENT_GUI_BACKEND_SRCS}
-      ${DART_FILAMENT_GUI_BACKEND_HDRS}
+      ${DART_GUI_FILAMENT_BACKEND_SRCS}
+      ${DART_GUI_FILAMENT_BACKEND_HDRS}
     )
 
-    if(BUILD_TESTING AND DART_BUILD_TESTS AND DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS)
-      dart_filament_gui_add_smoke_tests(
+    if(BUILD_TESTING AND DART_BUILD_TESTS AND DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS)
+      dart_gui_filament_add_smoke_tests(
         ${example_target}
         BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}"
       )
@@ -617,5 +617,5 @@ function(dart_filament_gui_add_example example_target)
 endfunction()
 
 function(dart_gui_add_application example_target)
-  dart_filament_gui_add_example(${example_target} ${ARGN})
+  dart_gui_filament_add_example(${example_target} ${ARGN})
 endfunction()

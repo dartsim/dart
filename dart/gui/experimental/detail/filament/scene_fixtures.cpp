@@ -163,7 +163,7 @@ std::filesystem::path resolveExamplePath(const std::string& path)
   }
 
   const std::filesystem::path sourcePath
-      = std::filesystem::path(DART_FILAMENT_GUI_REPOSITORY_ROOT) / input;
+      = std::filesystem::path(DART_GUI_FILAMENT_REPOSITORY_ROOT) / input;
   if (std::filesystem::exists(sourcePath)) {
     return std::filesystem::absolute(sourcePath);
   }

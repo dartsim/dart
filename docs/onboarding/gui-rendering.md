@@ -58,8 +58,8 @@ implementation.
   through `Filament_ROOT`.
 - `DART_FETCH_FILAMENT=ON`: fetches the pinned Linux x86_64 Filament archive
   when no packaged Filament install is available.
-- `DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS=ON`: registers bounded headless
-  screenshot smoke tests for the Filament executable.
+- `DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS=ON`: registers bounded headless
+  screenshot smoke tests for the DART GUI executable.
 
 OpenSceneGraph and Raylib are no longer buildable renderer options.
 

@@ -243,8 +243,8 @@ dart_option(DART_BUILD_COLLISION_ODE "Embed the ODE collision backend into the c
 dart_option(DART_BUILD_EXAMPLES "Build example targets" ON CATEGORY build)
 dart_option(DART_BUILD_TUTORIALS "Build tutorial targets" ON CATEGORY build)
 dart_option(DART_BUILD_TESTS "Build C++ tests" ON CATEGORY build)
-dart_option(DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS
-  "Register opt-in headless smoke tests for the Filament GUI executable" OFF
+dart_option(DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS
+  "Register opt-in headless smoke tests for the DART GUI executable" OFF
   CATEGORY diagnostics)
 dart_option(DART_BUILD_PROFILE "Build DART with profiling options" OFF CATEGORY performance)
 dart_option(DART_PROFILE_BUILTIN "Enable built-in text profiling backend" ON CATEGORY performance)

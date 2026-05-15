@@ -40,9 +40,9 @@
 #include <jpeglib.h>
 #include <png.h>
 
-#if defined(DART_FILAMENT_GUI_JPEG_LIB_VERSION)
+#if defined(DART_GUI_FILAMENT_JPEG_LIB_VERSION)
 static_assert(
-    JPEG_LIB_VERSION == DART_FILAMENT_GUI_JPEG_LIB_VERSION,
+    JPEG_LIB_VERSION == DART_GUI_FILAMENT_JPEG_LIB_VERSION,
     "Configured JPEG headers do not match the jpeglib.h include path");
 #endif
 

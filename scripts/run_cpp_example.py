@@ -292,7 +292,7 @@ def _ensure_filament(build_dir: Path, env: dict[str, str], smoke: bool) -> None:
     }
     if smoke:
         desired["DART_BUILD_TESTS"] = "ON"
-        desired["DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS"] = "ON"
+        desired["DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS"] = "ON"
 
     _option_override(desired, env, "DART_BUILD_DARTPY", "DART_BUILD_DARTPY_OVERRIDE")
     _option_override(desired, env, "DART_BUILD_TESTS", "DART_BUILD_TESTS_OVERRIDE")
@@ -412,13 +412,13 @@ def _prepare_filament_run_args(
     if headless and not _has_arg(args, "--headless"):
         args.append("--headless")
     if headless and not _has_arg(args, "--frames"):
-        args.extend(["--frames", os.environ.get("DART_FILAMENT_GUI_FRAMES", "10")])
+        args.extend(["--frames", os.environ.get("DART_GUI_FILAMENT_FRAMES", "10")])
     if not _has_arg(args, "--width"):
         args.extend(
             [
                 "--width",
                 os.environ.get(
-                    "DART_FILAMENT_GUI_WIDTH", "640" if headless else "1280"
+                    "DART_GUI_FILAMENT_WIDTH", "640" if headless else "1280"
                 ),
             ]
         )
@@ -427,12 +427,12 @@ def _prepare_filament_run_args(
             [
                 "--height",
                 os.environ.get(
-                    "DART_FILAMENT_GUI_HEIGHT", "480" if headless else "720"
+                    "DART_GUI_FILAMENT_HEIGHT", "480" if headless else "720"
                 ),
             ]
         )
     if headless:
-        screenshot = os.environ.get("DART_FILAMENT_GUI_SCREENSHOT")
+        screenshot = os.environ.get("DART_GUI_FILAMENT_SCREENSHOT")
         if _has_arg(args, "--screenshot"):
             if multiple_scenes:
                 for index, arg in enumerate(args):

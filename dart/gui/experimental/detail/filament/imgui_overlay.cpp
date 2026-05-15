@@ -173,7 +173,7 @@ ImGuiOverlay createImGuiOverlay(::filament::Engine& engine)
 void loadImGuiFont(ImGuiIO& io, float guiScale)
 {
   std::vector<std::filesystem::path> candidates;
-  if (const char* fontPath = std::getenv("DART_FILAMENT_GUI_FONT");
+  if (const char* fontPath = std::getenv("DART_GUI_FILAMENT_FONT");
       fontPath != nullptr && std::strlen(fontPath) > 0) {
     candidates.emplace_back(fontPath);
   }

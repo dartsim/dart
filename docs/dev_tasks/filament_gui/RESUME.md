@@ -30,7 +30,10 @@ geometry, interaction, debug, and profiling concepts. CI Lint on
 `d343c3c64bc` revealed that `examples/simple_frames/CMakeLists.txt` was ignored
 by `.gitignore`'s `*_frames/` rule and missing on GitHub; the immediate repair
 was force-added in `cd04ba4862ac`, then CI was manually redispatched for lint,
-Linux, macOS, Windows, and CodeQL on that branch head.
+Linux, macOS, Windows, and CodeQL on that branch head. Checkpoint
+`858ab55cacd1` promotes existing Python GUI descriptor/helper symbols from
+`dartpy.gui.experimental` onto `dartpy.gui`, leaves the old submodule as a
+compatibility namespace, and was pushed with a new manual CI dispatch.
 
 The latest steering is to continue without waiting for CI to finish, document
 scope/design updates in this dev-task folder before acting on them, remove the
@@ -45,10 +48,10 @@ simulator/viewer identity, analogous to Isaac Sim.
 
 ## Immediate Next Step
 
-Promote the Python GUI binding surface from `dartpy.gui.experimental` to
-`dartpy.gui` while keeping `dartpy.gui.experimental` importable as a
-compatibility namespace for this checkpoint. Preserve Filament/GLFW/ImGui as
-private implementation details.
+Rename private Filament CMake helper functions and smoke-test variables away
+from the old `filament_gui` compound to `gui_filament` wording. Preserve
+Filament/GLFW/ImGui as private implementation details and keep the user-facing
+compatibility rejection for `filament_gui` and `dart_filament_gui`.
 
 ## Context That Would Be Lost
 

@@ -190,7 +190,7 @@ def test_filament_smoke_pattern_uses_scene_all_list(run_cpp_example):
 
 def _cmake_filament_smoke_scene_pairs(cmake_text):
     match = re.search(
-        r"set\(DART_FILAMENT_GUI_SMOKE_SCENE_PAIRS\s+(.*?)\n\)",
+        r"set\(DART_GUI_FILAMENT_SMOKE_SCENE_PAIRS\s+(.*?)\n\)",
         cmake_text,
         re.DOTALL,
     )
@@ -217,7 +217,7 @@ def _filament_sources_cmake_text(run_cpp_example):
 
 def _cmake_headless_smoke_test_call(cmake_text, first_argument):
     match = re.search(
-        r"_dart_filament_gui_add_headless_smoke_test\(\s+"
+        r"_dart_gui_filament_add_headless_smoke_test\(\s+"
         + re.escape(first_argument)
         + r"\s+(.*?)\n\s+\)",
         cmake_text,
