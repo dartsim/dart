@@ -1878,6 +1878,7 @@ TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
   dart::gui::experimental::RunOptions options;
   options.width = 0;
   options.height = -8;
+  options.guiScale = std::numeric_limits<double>::quiet_NaN();
   options.headless = true;
   options.screenshotPath = "capture.ppm";
 
@@ -1885,6 +1886,7 @@ TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
 
   EXPECT_EQ(options.width, 1);
   EXPECT_EQ(options.height, 1);
+  EXPECT_NEAR(options.guiScale, 1.0, 1e-12);
   EXPECT_EQ(options.maxFrames, 1);
   EXPECT_TRUE(options.headless);
   EXPECT_TRUE(
@@ -1917,6 +1919,9 @@ TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
   EXPECT_TRUE(dart::gui::experimental::shouldStopAfterFrame(options, state));
 
   dart::gui::experimental::RunOptions windowOnly;
+  windowOnly.guiScale = 10.0;
+  dart::gui::experimental::normalizeRunOptions(windowOnly);
+  EXPECT_NEAR(windowOnly.guiScale, 4.0, 1e-12);
   EXPECT_FALSE(
       dart::gui::experimental::shouldRequestScreenshot(windowOnly, 0, false));
 }

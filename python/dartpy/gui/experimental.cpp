@@ -188,6 +188,7 @@ void defGuiExperimentalModule(nb::module_& m)
       .def_rw("width", &gui::RunOptions::width)
       .def_rw("height", &gui::RunOptions::height)
       .def_rw("max_frames", &gui::RunOptions::maxFrames)
+      .def_rw("gui_scale", &gui::RunOptions::guiScale)
       .def_rw("headless", &gui::RunOptions::headless)
       .def_rw("screenshot_path", &gui::RunOptions::screenshotPath);
 

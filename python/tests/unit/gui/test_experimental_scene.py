@@ -646,6 +646,7 @@ def test_experimental_camera_and_run_helpers():
     options = dart.gui.experimental.RunOptions()
     options.width = 0
     options.height = -3
+    options.gui_scale = float("nan")
     options.headless = True
     options.screenshot_path = "capture.ppm"
 
@@ -653,6 +654,7 @@ def test_experimental_camera_and_run_helpers():
 
     assert options.width == 1
     assert options.height == 1
+    assert np.isclose(options.gui_scale, 1.0)
     assert options.max_frames == 1
     assert options.headless is True
     assert dart.gui.experimental.should_request_screenshot(options, 0, False)
@@ -678,6 +680,11 @@ def test_experimental_camera_and_run_helpers():
     assert lifecycle.rendered_frames == 1
     assert lifecycle.skipped_frames == 0
     assert dart.gui.experimental.should_stop_after_frame(options, lifecycle)
+
+    window_only = dart.gui.experimental.RunOptions()
+    window_only.gui_scale = 10.0
+    dart.gui.experimental.normalize_run_options(window_only)
+    assert np.isclose(window_only.gui_scale, 4.0)
 
     camera = dart.gui.experimental.OrbitCamera()
     camera.target = np.zeros(3)

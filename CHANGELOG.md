@@ -152,8 +152,9 @@
     `dart::gui::experimental` API directly instead of carrying an example-local
     namespace re-export header, and checked-in dartpy stubs and API docs now
     expose `dartpy.gui.experimental` without backend-specific names.
-    Perspective projection and near/far clipping policy now also live in
-    `dart-gui-experimental` and are consumed by the Filament example. The
+    Perspective projection, near/far clipping policy, and GUI scale
+    normalization now also live in `dart-gui-experimental` and are consumed by
+    the Filament example. The
     north-star audit now also maps the legacy OSG/Raylib GUI surfaces that must
     be replaced, made private, or removed during first-class Filament
     promotion. The renderer-hidden debug descriptor path also covers

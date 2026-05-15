@@ -2113,6 +2113,10 @@ void normalizeRunOptions(RunOptions& options)
 {
   options.width = std::max(1, options.width);
   options.height = std::max(1, options.height);
+  if (!std::isfinite(options.guiScale) || options.guiScale <= 0.0) {
+    options.guiScale = 1.0;
+  }
+  options.guiScale = std::clamp(options.guiScale, 0.5, 4.0);
   if (options.headless && options.maxFrames < 0) {
     options.maxFrames = 1;
   }

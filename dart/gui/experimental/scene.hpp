@@ -202,6 +202,7 @@ struct RunOptions
   int width = 1280;
   int height = 720;
   int maxFrames = -1;
+  double guiScale = 1.0;
   bool headless = false;
   std::string screenshotPath;
 };

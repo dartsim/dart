@@ -70,7 +70,7 @@
   normalization, viewer lifecycle state, orbit-camera math, and perspective
   projection/clipping descriptors used by the example for bounded screenshots,
   camera placement, headless mode, pause/step behavior, frame accounting,
-  perspective pick rays, and near/far plane policy.
+  GUI scale normalization, perspective pick rays, and near/far plane policy.
 - Renderer resource synchronization planning now compares active renderable
   render-resource versions, so descriptor-owned geometry changes, including
   dynamic soft-mesh vertex changes, `MeshShape` material-color policy changes,

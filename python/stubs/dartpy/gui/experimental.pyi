@@ -225,6 +225,7 @@ class RunOptions:
     width: int
     height: int
     max_frames: int
+    gui_scale: float
     headless: bool
     screenshot_path: str
 

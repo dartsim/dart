@@ -936,7 +936,6 @@ struct AppOptions
   bool profile = false;
   bool orbitLight = true;
   double orbitLightPeriodSeconds = 80.0;
-  float guiScale = 1.0f;
   std::string g1PackageName = "g1_description";
   std::string g1PackageUri
       = "https://raw.githubusercontent.com/unitreerobotics/unitree_ros/"
@@ -1541,7 +1540,8 @@ AppOptions parseOptions(int argc, char* argv[])
                   << "'. Expected a positive number.\n";
         std::exit(2);
       }
-      options.guiScale = std::clamp(guiScale, 0.5f, 4.0f);
+      options.run.guiScale
+          = std::clamp(static_cast<double>(guiScale), 0.5, 4.0);
     } else if (arg == "--profile") {
       options.profile = true;
     } else if (arg == "--scene" && i + 1 < argc) {
@@ -1599,15 +1599,15 @@ AppOptions parseOptions(int argc, char* argv[])
   }
 
   normalizeRunOptions(options.run);
-  if (options.guiScale != 1.0f) {
+  if (options.run.guiScale != 1.0) {
     options.run.width = std::max(
         1,
-        static_cast<int>(
-            std::lround(static_cast<float>(options.run.width) * options.guiScale)));
+        static_cast<int>(std::lround(
+            static_cast<double>(options.run.width) * options.run.guiScale)));
     options.run.height = std::max(
         1,
-        static_cast<int>(
-            std::lround(static_cast<float>(options.run.height) * options.guiScale)));
+        static_cast<int>(std::lround(
+            static_cast<double>(options.run.height) * options.run.guiScale)));
   }
   if (options.run.headless && !options.showUiExplicit) {
     options.showUi = false;
@@ -1686,7 +1686,7 @@ void updateImGuiMouseInput(
       = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
 }
 
-bool isInsideStatusPanel(double cursorX, double cursorY, float guiScale)
+bool isInsideStatusPanel(double cursorX, double cursorY, double guiScale)
 {
   return cursorX >= 20.0 * guiScale && cursorX <= 360.0 * guiScale
          && cursorY >= 20.0 * guiScale && cursorY <= 360.0 * guiScale;
@@ -5237,11 +5237,12 @@ int main(int argc, char* argv[])
   ImGui::CreateContext();
   ImGui::StyleColorsDark();
   auto& imguiStyle = ImGui::GetStyle();
-  imguiStyle.ScaleAllSizes(appOptions.guiScale);
-  imguiStyle.WindowRounding = 4.0f * appOptions.guiScale;
+  const float guiScale = static_cast<float>(options.guiScale);
+  imguiStyle.ScaleAllSizes(guiScale);
+  imguiStyle.WindowRounding = 4.0f * guiScale;
   imguiStyle.Colors[ImGuiCol_WindowBg].w = 0.72f;
   auto& imguiIo = ImGui::GetIO();
-  loadImGuiFont(imguiIo, appOptions.guiScale);
+  loadImGuiFont(imguiIo, guiScale);
   imguiIo.Fonts->Build();
   ImGuiOverlay imguiOverlay = createImGuiOverlay(*engine);
 
@@ -5328,7 +5329,7 @@ int main(int argc, char* argv[])
       const bool suppressCameraOrbit
           = leftMouseStartedDrag
             || (appOptions.showUi
-                && isInsideStatusPanel(cursorX, cursorY, appOptions.guiScale));
+                && isInsideStatusPanel(cursorX, cursorY, options.guiScale));
       updateCameraController(window, cameraController, suppressCameraOrbit);
     }
     const Eigen::Vector3d eye = cameraEye(cameraController.camera);
@@ -5476,7 +5477,7 @@ int main(int argc, char* argv[])
         leftMouseStartedDrag = false;
         leftMouseStartedOnPanel
             = appOptions.showUi
-              && isInsideStatusPanel(cursorX, cursorY, appOptions.guiScale);
+              && isInsideStatusPanel(cursorX, cursorY, options.guiScale);
 
         if (!leftMouseStartedOnPanel && selectedRenderableId != 0
             && isDragModifierDown(window)) {
@@ -5561,7 +5562,7 @@ int main(int argc, char* argv[])
       updateImGuiMouseInput(window, imguiIo, width, height);
       ImGui::NewFrame();
       ImGui::SetNextWindowPos(
-          {20.0f * appOptions.guiScale, 20.0f * appOptions.guiScale},
+          {20.0f * guiScale, 20.0f * guiScale},
           ImGuiCond_Always);
       ImGui::SetNextWindowBgAlpha(0.72f);
       ImGui::Begin(
@@ -5569,7 +5570,7 @@ int main(int argc, char* argv[])
           nullptr,
           ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
       ImGui::PushTextWrapPos(
-          ImGui::GetCursorPosX() + 300.0f * appOptions.guiScale);
+          ImGui::GetCursorPosX() + 300.0f * guiScale);
       ImGui::TextWrapped(
           "DART scene viewer: inspect renderables, shadows, and debug overlays.");
       ImGui::TextWrapped(
@@ -5588,7 +5589,7 @@ int main(int argc, char* argv[])
       ImGui::Text(
           "contacts: %zu",
           dartScene.world->getLastCollisionResult().getNumContacts());
-      ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 300.0f * appOptions.guiScale);
+      ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 300.0f * guiScale);
       ImGui::Text("selected: %s", selectedLabel.c_str());
       ImGui::PopTextWrapPos();
       if (ImGui::Button(lifecycle.paused ? "Resume" : "Pause")) {
