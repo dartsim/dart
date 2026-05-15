@@ -61,6 +61,13 @@ must be deleted in the same PR that completes the native-collision migration.
 
 Local validation currently recorded in the dev-task evidence:
 
+- `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run test-all`
+  passed on current validation head `9ed54f2c491` with 6/6 top-level gates:
+  linting, build, unit tests, simulation-experimental tests, Python tests, and
+  documentation. Default configure kept FCL, Bullet, ODE, reference tests, and
+  reference benchmarks all `OFF`, confirming those build flags are not required
+  by core DART, dartpy, gz-physics runtime integration, or native-backed
+  compatibility facades.
 - `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
   passed after the compatibility-facade audit hardening with 6/6 top-level
   gates:
@@ -148,4 +155,4 @@ Compatibility notes:
   `DART_BUILD_COLLISION_ODE` are only needed for explicit
   `collision-reference-*` comparison components. Core DART, dartpy,
   gz-physics runtime integration, and native-backed compatibility facades do
-  not need those options.
+  not need those options; do not use these flags as compatibility gates.

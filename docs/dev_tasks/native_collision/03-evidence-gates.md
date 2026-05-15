@@ -2762,6 +2762,21 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     FCL/Bullet/ODE implementation files are intentionally retained as opt-in
     reference comparison code for `createReference()`, reference tests, and
     comparative benchmarks.
+- Current full local validation refresh:
+  - Commit: `9ed54f2c49192343aee9418ea7d7835880731556`
+    (`Align native collision PR handoff wording`), pushed to
+    `origin/feature/new_coll`.
+  - Command:
+    `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run test-all`
+  - Result: passed. The comprehensive suite reported 6/6 top-level gates:
+    linting, build, unit tests, simulation-experimental tests, Python tests,
+    and documentation. The run configured normal native-only defaults with
+    `DART_BUILD_COLLISION_FCL`, `DART_BUILD_COLLISION_BULLET`,
+    `DART_BUILD_COLLISION_ODE`, collision reference tests, and collision
+    reference benchmarks all `OFF`, while still building dartpy and passing
+    the compatibility-facade lint/audit guards. This confirms the build flags
+    are not required by core DART, dartpy, gz-physics runtime compatibility, or
+    the native-backed legacy package component facades.
 
 ## Known Risks
 

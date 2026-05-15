@@ -239,6 +239,13 @@ dart/
 
 ### Collision Reference Dependencies (Optional Components)
 
+These dependencies are reference-comparison inputs only. Core DART libraries,
+dartpy, gz-physics runtime integration, and the native-backed
+`collision-fcl`/`collision-bullet`/`collision-ode` compatibility facades do not
+need `DART_BUILD_COLLISION_FCL`, `DART_BUILD_COLLISION_BULLET`, or
+`DART_BUILD_COLLISION_ODE`; enabling those options should be reserved for
+explicit `collision-reference-*` tests and benchmarks.
+
 #### 10. FCL (Flexible Collision Library)
 
 - **Version:** ≥ 0.7.0, < 0.8

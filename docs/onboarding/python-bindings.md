@@ -67,9 +67,11 @@ dartpy/
 - Collision detector backend aliases are different: dartpy does not preserve
   legacy `DARTCollisionDetector`, `FCLCollisionDetector`,
   `BulletCollisionDetector`, or `OdeCollisionDetector` names through DART 7.
-  Use `DartCollisionDetector` or the default detector. C++ keeps deprecated
-  native-backed facades for downstream source compatibility, but those names
-  should not be mirrored back into the Python API.
+  Prefer the clean Python API: use `DartCollisionDetector` or the default
+  detector, and do not add compatibility shims for the old backend-specific
+  spellings unless a maintainer explicitly chooses that policy. C++ keeps
+  deprecated native-backed facades for downstream source compatibility, but
+  those names should not be mirrored back into the Python API.
 
 **Source**: See `python/dartpy/` directory for module implementations
 

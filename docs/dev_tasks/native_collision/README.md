@@ -158,7 +158,10 @@
       intentional `collision-reference-*` test/benchmark code.
 - [ ] Final validation after the completing code state is still open. At
       minimum this means `pixi run lint`, `pixi run test-all`, and any
-      maintainer-selected CI gates whose failures are not covered locally.
+      maintainer-selected CI gates whose failures are not covered locally. The
+      current code state at `9ed54f2c491` has a fresh local `pixi run test-all`
+      pass with default FCL/Bullet/ODE/reference knobs `OFF`; final PR-state
+      evidence is still pending.
 - [ ] Final evidence transfer and dev-task cleanup are still open.
       `07-pr-evidence-transfer.md` and `PR-DRAFT.md` stage the review packet,
       but this folder must stay until that evidence is moved to the completing
@@ -216,7 +219,7 @@ The current checkpoint is a validated middle state, not a final PR boundary.
 | 9     | Downstream migration/deprecation path exists | Package/gz/link smokes pass; policy evidence left |
 | 10    | Clean built-in API/scaling/perf layer        | Local design plus artifact evidence; final left   |
 | 11    | Old runtime backend source is reference-only | Local split; lint guard wired                     |
-| 12    | Final one-PR validation and PR packaging     | Prior full local pass; final PR evidence left     |
+| 12    | Final one-PR validation and PR packaging     | Current full local pass; final PR evidence left   |
 
 ## Built-In Architecture Status
 

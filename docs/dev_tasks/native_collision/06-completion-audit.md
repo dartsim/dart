@@ -118,9 +118,11 @@ unverified external and finalization gates:
   implementations, keep only native-backed compatibility facades required by
   downstream migration, and leave FCL/Bullet/ODE access in explicit
   reference-only test/benchmark APIs.
-- Full local `pixi run test-all` evidence is refreshed for the current local
-  state. Final `pixi run test-all` evidence after the eventual PR-complete
-  state is still missing. The refreshed full reruns found and repaired three
+- Full local `pixi run test-all` evidence is refreshed for the current code
+  state at `9ed54f2c491`, with normal native-only defaults keeping FCL,
+  Bullet, ODE, reference tests, and reference benchmarks `OFF`. Final
+  `pixi run test-all` evidence after the eventual PR-complete state is still
+  missing. The refreshed full reruns found and repaired three
   local validation robustness gaps: a stale optional `libccd` CMake cache issue
   in the default native-only test build, stale `ShapeType::Cone`,
   `ShapeType::HeightField`, and `ShapeType::PointCloud` cases in the VSG
@@ -155,6 +157,16 @@ Current audited state:
   needed for explicit `collision-reference-*` comparison components. GitHub
   reports no Actions runs for the later pushes because `feature/new_coll` does
   not match the workflow `push` filters and PR #2652 remains closed.
+- Current full local validation head: `9ed54f2c491`
+  (`Align native collision PR handoff wording`). The safe-job full-validation
+  command passed with 6/6 top-level gates: linting, build, unit tests,
+  simulation-experimental tests, Python tests, and documentation. The configure
+  output kept `DART_BUILD_COLLISION_FCL`,
+  `DART_BUILD_COLLISION_BULLET`, `DART_BUILD_COLLISION_ODE`, collision
+  reference tests, and collision reference benchmarks `OFF`, confirming those
+  options are reference-component opt-ins rather than compatibility
+  prerequisites for core DART, dartpy, gz-physics runtime integration, or
+  native-backed package component facades.
 - GitHub PR state: PR #2652
   (https://github.com/dartsim/dart/pull/2652) is closed, still marked draft,
   and remains anchored to old head `714d220d82a`.
