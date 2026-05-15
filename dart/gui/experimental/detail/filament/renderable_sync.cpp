@@ -151,6 +151,34 @@ void updateSceneRenderableFromDescriptor(
       engine, sceneRenderable.renderable, descriptor.material);
 }
 
+bool updateSceneRenderablesFromDescriptors(
+    ::filament::Engine& engine,
+    const std::vector<RenderableDescriptor>& descriptors,
+    std::vector<SceneRenderable>& sceneRenderables,
+    RenderableId selectedRenderableId)
+{
+  bool selectedRenderableStillVisible = selectedRenderableId == 0;
+  for (SceneRenderable& sceneRenderable : sceneRenderables) {
+    const auto descriptor = std::find_if(
+        descriptors.begin(),
+        descriptors.end(),
+        [&](const RenderableDescriptor& candidate) {
+          return candidate.id == sceneRenderable.id;
+        });
+    if (descriptor == descriptors.end() || !descriptor->material.visible) {
+      continue;
+    }
+
+    const bool isSelected = descriptor->id == selectedRenderableId;
+    if (isSelected) {
+      selectedRenderableStillVisible = true;
+    }
+    updateSceneRenderableFromDescriptor(
+        engine, sceneRenderable, *descriptor, isSelected);
+  }
+  return selectedRenderableStillVisible;
+}
+
 void logUnsupportedRenderableDescriptorOnce(
     std::vector<RenderableId>& loggedUnsupportedRenderableIds,
     const RenderableDescriptor& descriptor)

@@ -177,7 +177,7 @@ using dart::gui::experimental::filament::updateCameraController;
 using dart::gui::experimental::filament::updateImGuiOverlay;
 using dart::gui::experimental::filament::updateImGuiMouseInput;
 using dart::gui::experimental::filament::updateOrbitingKeyLight;
-using dart::gui::experimental::filament::updateSceneRenderableFromDescriptor;
+using dart::gui::experimental::filament::updateSceneRenderablesFromDescriptors;
 using dart::simulation::World;
 using dart::gui::experimental::filament::AppOptions;
 using dart::gui::experimental::filament::DartScene;
@@ -418,28 +418,11 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
           return createRenderableFromDescriptor(
               *engine, materials, materialResources.textureCache, descriptor);
         });
-    bool selectedRenderableStillVisible
-        = selectionController.selectedRenderableId() == 0;
-    for (SceneRenderable& sceneRenderable : sceneRenderables) {
-      const auto descriptor = std::find_if(
-          descriptors.begin(),
-          descriptors.end(),
-          [&](const RenderableDescriptor& candidate) {
-            return candidate.id == sceneRenderable.id;
-          });
-      if (descriptor == descriptors.end() || !descriptor->material.visible) {
-        continue;
-      }
-
-      const bool isSelected
-          = descriptor->id == selectionController.selectedRenderableId();
-      if (isSelected) {
-        selectedRenderableStillVisible = true;
-      }
-      updateSceneRenderableFromDescriptor(
-          *engine, sceneRenderable, *descriptor, isSelected);
-    }
-    if (!selectedRenderableStillVisible) {
+    if (!updateSceneRenderablesFromDescriptors(
+            *engine,
+            descriptors,
+            sceneRenderables,
+            selectionController.selectedRenderableId())) {
       selectionController.clear();
     }
     profile.syncMs += elapsedMs(phaseStart);

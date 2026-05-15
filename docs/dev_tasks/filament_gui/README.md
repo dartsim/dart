@@ -164,8 +164,8 @@
   destruction lifecycle now live in
   `dart/gui/experimental/detail/filament/renderable_resources.hpp` and `.cpp`.
 - The Filament descriptor-to-scene synchronization, unsupported descriptor
-  logging, scene entity attachment, and renderable transform/selection update
-  helpers now live in
+  logging, scene entity attachment, and per-frame renderable
+  transform/selection/shadow update helpers now live in
   `dart/gui/experimental/detail/filament/renderable_sync.hpp` and `.cpp`.
 - The Filament debug-line overlay refresh, cleanup, and selected-renderable
   overlay lookup helpers now live in

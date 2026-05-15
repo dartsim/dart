@@ -67,6 +67,13 @@ void updateSceneRenderableFromDescriptor(
     const dart::gui::experimental::RenderableDescriptor& descriptor,
     bool selected);
 
+bool updateSceneRenderablesFromDescriptors(
+    ::filament::Engine& engine,
+    const std::vector<dart::gui::experimental::RenderableDescriptor>&
+        descriptors,
+    std::vector<SceneRenderable>& sceneRenderables,
+    dart::gui::experimental::RenderableId selectedRenderableId);
+
 void logUnsupportedRenderableDescriptorOnce(
     std::vector<dart::gui::experimental::RenderableId>&
         loggedUnsupportedRenderableIds,

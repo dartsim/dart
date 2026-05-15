@@ -42,6 +42,9 @@ recommended maintainability slices:
 - `dart/gui/experimental/detail/filament/selection.hpp` and `.cpp` own the
   private selection controller state and GLFW event translation for keyboard
   nudging, click selection, and Ctrl-left dragging.
+- `dart/gui/experimental/detail/filament/renderable_sync.hpp` and `.cpp` own
+  private scene-entity synchronization, unsupported-renderable logging, and
+  per-frame renderable transform/selection/shadow application.
 - `dart/gui/experimental/detail/filament/simulation_stepper.hpp` and `.cpp` own
   the bounded realtime simulation step-count accumulator.
 - `dart/gui/experimental/profile.hpp` and `.cpp` own viewer-loop profile

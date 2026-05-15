@@ -152,8 +152,9 @@ lit-material setup, shadow flag application, and destruction lifecycle helpers
 live in `dart/gui/experimental/detail/filament/renderable_resources.hpp` and
 `.cpp`.
 Filament descriptor-to-scene synchronization, unsupported descriptor logging,
-scene entity attachment, and renderable transform/selection update helpers live
-in `dart/gui/experimental/detail/filament/renderable_sync.hpp` and `.cpp`.
+scene entity attachment, and per-frame renderable transform/selection/shadow
+update helpers live in
+`dart/gui/experimental/detail/filament/renderable_sync.hpp` and `.cpp`.
 Filament descriptor-to-renderable construction now lives in
 `dart/gui/experimental/detail/filament/renderable_factory.hpp` and `.cpp`,
 including generated mesh buffer upload, debug-line renderable creation,
