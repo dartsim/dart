@@ -210,14 +210,14 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_
   set(_dart_default_filament_gui ON)
 endif()
 dart_option(DART_BUILD_GUI "Build the Filament-backed GUI library" ${_dart_default_filament_gui} CATEGORY build)
-dart_option(DART_BUILD_GUI_FILAMENT "Build the Filament GUI executable and smoke-test target" OFF CATEGORY build)
+dart_option(DART_BUILD_GUI_FILAMENT "Build the DART GUI application and smoke-test target" OFF CATEGORY build)
 if(DART_BUILD_GUI AND NOT DART_BUILD_GUI_FILAMENT)
   set(DART_BUILD_GUI_FILAMENT ON)
   set(
     DART_BUILD_GUI_FILAMENT
     ON
     CACHE BOOL
-    "Build the Filament GUI executable and smoke-test target"
+    "Build the DART GUI application and smoke-test target"
     FORCE
   )
 endif()
@@ -735,15 +735,15 @@ if(TARGET dart)
 
   if(DART_BUILD_GUI_FILAMENT)
     if(MSVC)
-      add_subdirectory(examples/filament_gui)
+      add_subdirectory(examples/dartsim)
     else()
-      add_subdirectory(examples/filament_gui EXCLUDE_FROM_ALL)
+      add_subdirectory(examples/dartsim EXCLUDE_FROM_ALL)
     endif()
-    if(TARGET examples AND TARGET dart_filament_gui)
-      add_dependencies(examples dart_filament_gui)
+    if(TARGET examples AND TARGET dartsim)
+      add_dependencies(examples dartsim)
     endif()
   else()
-    message(STATUS "Skipping Filament GUI example (DART_BUILD_GUI_FILAMENT == OFF)")
+    message(STATUS "Skipping dartsim example (DART_BUILD_GUI_FILAMENT == OFF)")
   endif()
 
 endif()
@@ -773,8 +773,8 @@ foreach(target_candidate IN LISTS tutorials)
     list(APPEND all_targets ${target_candidate})
   endif()
 endforeach()
-if(TARGET dart_filament_gui)
-  list(APPEND all_targets dart_filament_gui)
+if(TARGET dartsim)
+  list(APPEND all_targets dartsim)
 endif()
 add_custom_target(ALL DEPENDS ${all_targets})
 

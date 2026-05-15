@@ -11,9 +11,8 @@ The *Atlas Simbicon* demo simulates `Atlas <http://www.bostondynamics.com/robot_
 humanoid robot controlled by `Simbicon <http://www.cs.ubc.ca/~van/papers/Simbicon.htm>`_,
 which is a simple biped locomotion controller. This demo is a fully 3D
 simulation with articulated dynamics and rigid body collisions. The maintained
-visualization path uses the Filament GUI example; run
-``pixi run ex filament_gui --scene atlas-simbicon`` from a source checkout to
-open the scene.
+visualization path uses the DART GUI app; run
+``pixi run ex atlas_simbicon`` from a source checkout to open the scene.
 
 The controller has three control modes: 'No Control', 'Short-Stride Walking',
 and 'Normal-Stride Walking'. The Atlas robot can walk keeping its balance with
@@ -41,9 +40,8 @@ Tinkertoy
 The *tinkertoy* demo simulates trees of *tinkertoys*, which are blocks connected
 to each other via various joint types. This is a fully 3D simulation with
 articulated dynamics and rigid body collisions. The maintained visualization
-path uses the Filament GUI example; run
-``pixi run ex filament_gui --scene tinkertoy`` from a source checkout to open
-the scene.
+path uses the DART GUI app; run ``pixi run ex tinkertoy`` from a source
+checkout to open the scene.
 
 The scene starts out with two trees of *tinkertoys*. Left-click on one of the
 blocks to attach a target to it. During simulation, the block that is attached

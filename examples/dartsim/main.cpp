@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/experimental/detail/application.hpp>
+#include <dart/gui/application.hpp>
 
 int main(int argc, char* argv[])
 {
-  return dart::gui::experimental::detail::runGuiApplication(argc, argv);
+  return dart::gui::runApplication(argc, argv);
 }

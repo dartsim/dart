@@ -19,6 +19,10 @@ surfaces, document Filament as official, and make the default GUI build respect
 the platform support matrix. GitHub CI was manually dispatched without opening
 a PR; Linux headless rendering exposed a concrete restoration gap because the
 old `rigid_cubes` executable was removed while the workflow still invokes it.
+The local repair checkpoint renames the MVP app to `dartsim`, adds
+`dart/gui/application.hpp`, restores historical GUI example executable names as
+thin `dart::gui` launchers, and updates Linux headless CI to validate the
+promoted `--screenshot` capture path.
 
 The latest steering is to continue without waiting for CI to finish, document
 scope/design updates in this dev-task folder before acting on them, remove the
@@ -33,11 +37,9 @@ analogous to Isaac Sim.
 
 ## Immediate Next Step
 
-Update the code to make the MVP executable scope- or app-named, with
-`dartsim` now the branding candidate for an application-level simulator/viewer
-and `gui_viewer` the neutral fallback example name. Then restore legacy example
-entry points as `dart::gui` launchers with default scenes. Preserve
-Filament/GLFW/ImGui as private implementation details and keep all
+If resuming after the `dartsim` checkpoint is pushed, continue reducing
+remaining `dart::gui::experimental` naming in promoted headers and bindings.
+Preserve Filament/GLFW/ImGui as private implementation details and keep all
 public/example includes on DART-owned `dart::gui` headers.
 
 ## Context That Would Be Lost

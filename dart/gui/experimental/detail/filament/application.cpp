@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/gui/application.hpp>
 #include <dart/gui/experimental/detail/application.hpp>
 #include <dart/gui/experimental/detail/filament/application.hpp>
 #include <dart/gui/experimental/detail/filament/application_teardown.hpp>
@@ -62,7 +63,10 @@
 
 #include <iostream>
 #include <optional>
+#include <string>
+#include <string_view>
 #include <utility>
+#include <vector>
 
 #include <cstddef>
 
@@ -298,7 +302,52 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
   return screenshotSucceeded ? 0 : 1;
 }
 
+bool hasSceneOption(int argc, char* argv[])
+{
+  for (int i = 1; i < argc; ++i) {
+    if (argv[i] != nullptr && std::string_view(argv[i]) == "--scene") {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 } // namespace
+
+namespace dart::gui {
+
+int runApplication(int argc, char* argv[])
+{
+  return experimental::filament::runFilamentGuiApplication(argc, argv);
+}
+
+int runApplication(int argc, char* argv[], const char* defaultScene)
+{
+  if (defaultScene == nullptr || defaultScene[0] == '\0'
+      || hasSceneOption(argc, argv)) {
+    return runApplication(argc, argv);
+  }
+
+  std::vector<std::string> argumentStorage;
+  argumentStorage.reserve(static_cast<std::size_t>(argc) + 2u);
+  for (int i = 0; i < argc; ++i) {
+    argumentStorage.emplace_back(argv[i] == nullptr ? "" : argv[i]);
+  }
+  argumentStorage.emplace_back("--scene");
+  argumentStorage.emplace_back(defaultScene);
+
+  std::vector<char*> rewrittenArguments;
+  rewrittenArguments.reserve(argumentStorage.size());
+  for (std::string& argument : argumentStorage) {
+    rewrittenArguments.push_back(argument.data());
+  }
+
+  return runApplication(
+      static_cast<int>(rewrittenArguments.size()), rewrittenArguments.data());
+}
+
+} // namespace dart::gui
 
 namespace dart::gui::experimental::filament {
 
@@ -313,7 +362,7 @@ namespace dart::gui::experimental::detail {
 
 int runGuiApplication(int argc, char* argv[])
 {
-  return filament::runFilamentGuiApplication(argc, argv);
+  return dart::gui::runApplication(argc, argv);
 }
 
 } // namespace dart::gui::experimental::detail

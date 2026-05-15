@@ -52,9 +52,9 @@ FILAMENT_KNOWN_SCENES = (*FILAMENT_ALL_SCENES, *FILAMENT_EXTRA_KNOWN_SCENES)
 
 def _filament_smoke_test_name(scene: str) -> str:
     if scene == "mvp":
-        return "EXAMPLE_filament_gui_headless_smoke"
+        return "EXAMPLE_dartsim_headless_smoke"
     suffix = scene.replace("-", "_")
-    return f"EXAMPLE_filament_gui_{suffix}_headless_smoke"
+    return f"EXAMPLE_dartsim_{suffix}_headless_smoke"
 
 
 FILAMENT_SMOKE_PATTERN = "|".join(
@@ -70,228 +70,66 @@ class ExampleSpec:
     default_args: tuple[str, ...] = ()
 
 
-EXAMPLE_SPECS = {
-    "filament_gui": ExampleSpec("dart_filament_gui", "filament_gui", ("filament",)),
-    "imgui": ExampleSpec("dart_filament_gui", "filament_gui", ("filament",)),
-    "rigid_shapes": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "mvp"),
-    ),
-    "hello_world": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "hello-world"),
-    ),
-    "boxes": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "boxes"),
-    ),
-    "box_stacking": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "boxes"),
-    ),
-    "rigid_cubes": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "boxes"),
-    ),
-    "hardcoded_design": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "hardcoded-design"),
-    ),
-    "rigid_chain": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "rigid-chain"),
-    ),
-    "rigid_loop": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "rigid-loop"),
-    ),
-    "mixed_chain": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "mixed-chain"),
-    ),
-    "coupler_constraint": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "coupler-constraint"),
-    ),
-    "add_delete_skels": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "add-delete-skels"),
-    ),
-    "vehicle": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "vehicle"),
-    ),
-    "hybrid_dynamics": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "hybrid-dynamics"),
-    ),
-    "biped_stand": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "hybrid-dynamics"),
-    ),
-    "joint_constraints": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "joint-constraints"),
-    ),
-    "free_joint_cases": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "free-joint-cases"),
-    ),
-    "human_joint_limits": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "human-joint-limits"),
-    ),
-    "lcp_physics": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "lcp-physics"),
-    ),
-    "mimic_pendulums": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "mimic-pendulums"),
-    ),
-    "atlas_puppet": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "atlas-puppet"),
-    ),
-    "hubo_puppet": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "hubo-puppet"),
-    ),
-    "atlas_simbicon": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "atlas-simbicon"),
-    ),
-    "operational_space_control": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "operational-space-control"),
-    ),
-    "wam_ikfast": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "wam-ikfast"),
-    ),
-    "fetch": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "fetch"),
-    ),
-    "tinkertoy": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "tinkertoy"),
-    ),
-    "drag_and_drop": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "drag-and-drop"),
-    ),
-    "empty": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "drag-and-drop"),
-    ),
-    "simple_frames": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "simple-frames"),
-    ),
-    "soft_bodies": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "soft-bodies"),
-    ),
-    "point_cloud": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "point-cloud"),
-    ),
-    "capsule_ground_contact": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "capsule-ground-contact"),
-    ),
-    "simulation_event_handler": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "simulation-event-handler"),
-    ),
-    "polyhedron_visual": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "polyhedron"),
-    ),
-    "heightmap": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "heightmap"),
-    ),
-    "g1_puppet": ExampleSpec(
-        "dart_filament_gui",
-        "filament_gui",
-        ("filament",),
-        ("--scene", "g1"),
-    ),
+GUI_SCENE_EXAMPLE_DEFAULT_ARGS = {
+    "imgui": (),
+    "rigid_shapes": ("--scene", "mvp"),
+    "hello_world": ("--scene", "hello-world"),
+    "boxes": ("--scene", "boxes"),
+    "box_stacking": ("--scene", "boxes"),
+    "rigid_cubes": ("--scene", "boxes"),
+    "hardcoded_design": ("--scene", "hardcoded-design"),
+    "rigid_chain": ("--scene", "rigid-chain"),
+    "rigid_loop": ("--scene", "rigid-loop"),
+    "mixed_chain": ("--scene", "mixed-chain"),
+    "coupler_constraint": ("--scene", "coupler-constraint"),
+    "add_delete_skels": ("--scene", "add-delete-skels"),
+    "vehicle": ("--scene", "vehicle"),
+    "hybrid_dynamics": ("--scene", "hybrid-dynamics"),
+    "biped_stand": ("--scene", "hybrid-dynamics"),
+    "joint_constraints": ("--scene", "joint-constraints"),
+    "free_joint_cases": ("--scene", "free-joint-cases"),
+    "human_joint_limits": ("--scene", "human-joint-limits"),
+    "lcp_physics": ("--scene", "lcp-physics"),
+    "mimic_pendulums": ("--scene", "mimic-pendulums"),
+    "atlas_puppet": ("--scene", "atlas-puppet"),
+    "hubo_puppet": ("--scene", "hubo-puppet"),
+    "atlas_simbicon": ("--scene", "atlas-simbicon"),
+    "operational_space_control": ("--scene", "operational-space-control"),
+    "wam_ikfast": ("--scene", "wam-ikfast"),
+    "fetch": ("--scene", "fetch"),
+    "tinkertoy": ("--scene", "tinkertoy"),
+    "drag_and_drop": ("--scene", "drag-and-drop"),
+    "empty": ("--scene", "drag-and-drop"),
+    "simple_frames": ("--scene", "simple-frames"),
+    "soft_bodies": ("--scene", "soft-bodies"),
+    "point_cloud": ("--scene", "point-cloud"),
+    "capsule_ground_contact": ("--scene", "capsule-ground-contact"),
+    "simulation_event_handler": ("--scene", "simulation-event-handler"),
+    "polyhedron_visual": ("--scene", "polyhedron"),
+    "heightmap": ("--scene", "heightmap"),
+    "g1_puppet": ("--scene", "g1"),
 }
 
-REMOVED_EXAMPLES = {"raylib", "dart_raylib", "raylib_gui"}
+EXAMPLE_SPECS = {
+    "dartsim": ExampleSpec("dartsim", "dartsim", ("filament",)),
+    **{
+        name: ExampleSpec(name, name, ("filament",), default_args)
+        for name, default_args in GUI_SCENE_EXAMPLE_DEFAULT_ARGS.items()
+    },
+}
+
+REMOVED_EXAMPLES = {
+    "raylib": "The Raylib GUI example has been removed. Use `pixi run ex dartsim` "
+    "or one of the DART GUI example names instead.",
+    "dart_raylib": "The Raylib GUI example has been removed. Use `pixi run ex dartsim` "
+    "or one of the DART GUI example names instead.",
+    "raylib_gui": "The Raylib GUI example has been removed. Use `pixi run ex dartsim` "
+    "or one of the DART GUI example names instead.",
+    "filament_gui": "The backend-named GUI example has been renamed. Use "
+    "`pixi run ex dartsim` or one of the DART GUI example names instead.",
+    "dart_filament_gui": "The backend-named GUI example has been renamed. Use "
+    "`pixi run ex dartsim` or one of the DART GUI example names instead.",
+}
 
 
 def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
@@ -337,10 +175,7 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
 
 def _normalize_target(target: str) -> str:
     if target in REMOVED_EXAMPLES:
-        raise SystemExit(
-            "The Raylib GUI example has been removed. Use `pixi run ex filament_gui` "
-            "or one of the Filament-routed example names instead."
-        )
+        raise SystemExit(REMOVED_EXAMPLES[target])
     return target
 
 
@@ -448,6 +283,7 @@ def _ensure_filament(build_dir: Path, env: dict[str, str], smoke: bool) -> None:
     )
 
     desired = {
+        "DART_BUILD_GUI": "ON",
         "DART_BUILD_GUI_FILAMENT": "ON",
         "DART_BUILD_EXAMPLES": "ON",
         "DART_BUILD_TUTORIALS": "OFF",
@@ -459,7 +295,6 @@ def _ensure_filament(build_dir: Path, env: dict[str, str], smoke: bool) -> None:
         desired["DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS"] = "ON"
 
     _option_override(desired, env, "DART_BUILD_DARTPY", "DART_BUILD_DARTPY_OVERRIDE")
-    _option_override(desired, env, "DART_BUILD_GUI", "DART_BUILD_GUI_OVERRIDE")
     _option_override(desired, env, "DART_BUILD_TESTS", "DART_BUILD_TESTS_OVERRIDE")
 
     definitions = {
@@ -471,7 +306,7 @@ def _ensure_filament(build_dir: Path, env: dict[str, str], smoke: bool) -> None:
         return
 
     print(
-        "Configuring Filament example requirements "
+        "Configuring DART GUI example requirements "
         f"({', '.join(f'{k}={v}' for k, v in definitions.items())})...",
         file=sys.stderr,
     )
@@ -537,7 +372,7 @@ def _run_args_with_defaults(spec: ExampleSpec, run_args: list[str]) -> list[str]
 def _filament_screenshot_path(scene: str) -> Path:
     env_name = os.environ.get("PIXI_ENVIRONMENT_NAME", "default")
     scene_suffix = scene.replace("-", "_")
-    return Path("build") / env_name / f"filament_gui_{scene_suffix}.ppm"
+    return Path("build") / env_name / f"dartsim_{scene_suffix}.ppm"
 
 
 def _split_filament_scenes(run_args: list[str]) -> tuple[list[str], list[str]]:
@@ -642,8 +477,8 @@ def _run_with_optional_xvfb(
         xvfb_run = shutil.which("xvfb-run")
         if not xvfb_run:
             raise SystemExit(
-                "Filament GUI examples need DISPLAY or xvfb-run for "
-                "Filament's OpenGL backend on Linux."
+                "DART GUI examples need DISPLAY or xvfb-run for the "
+                "Filament OpenGL backend on Linux."
             )
         final_command = [
             xvfb_run,
@@ -695,7 +530,7 @@ def _validate_filament_smoke_tests_discovered(
     output = result.stdout + result.stderr
     match = re.search(r"Total Tests:\s*(\d+)", output)
     if match is None or int(match.group(1)) == 0:
-        raise SystemExit("No Filament GUI smoke tests were discovered.")
+        raise SystemExit("No DART GUI smoke tests were discovered.")
 
 
 def _run_filament_smoke(build_dir: Path, env: dict[str, str]) -> None:

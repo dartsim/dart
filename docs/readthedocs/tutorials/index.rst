@@ -3,8 +3,9 @@ Tutorials
 
 The legacy OpenSceneGraph tutorial sources were removed with the renderer
 replacement. Maintained visualization coverage now lives in the Filament GUI
-example scenes and backend-hidden ``dart::gui::experimental`` APIs.
+implementation behind ``dart::gui`` and the restored GUI examples.
 
-From a source checkout, run ``pixi run ex filament_gui`` for the default scene
-or pass ``--scene <name>`` for migrated scenes such as ``atlas-simbicon``,
-``tinkertoy``, ``mimic-pendulums``, ``rigid-chain``, and contact examples.
+From a source checkout, run ``pixi run ex dartsim`` for the default scene, or
+run restored example names such as ``pixi run ex atlas_simbicon``,
+``pixi run ex tinkertoy``, ``pixi run ex mimic_pendulums``, and
+``pixi run ex rigid_chain``.

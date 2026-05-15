@@ -1037,10 +1037,10 @@ while (running) {
 // Extract backend-hidden renderable descriptors from a DART world.
 auto renderables = dart::gui::experimental::extractRenderables(*world);
 
-// Use the maintained Filament runner for interactive or headless rendering.
+// Use the maintained DART GUI app for interactive or headless rendering.
 // Repo-local command line:
-//   pixi run ex filament_gui --scene boxes
-//   pixi run ex filament_gui --headless --frames 1 --screenshot frame.ppm
+//   pixi run ex dartsim --scene boxes
+//   pixi run ex dartsim --headless --frames 1 --screenshot frame.ppm
 ```
 
 ### Pattern 3: Custom Simulation Hooks

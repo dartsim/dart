@@ -40,8 +40,8 @@ no-renderer-backward-compatibility stance, and the multi-phase promotion path.
 4. **Promotion and example restoration**
    - Promote the experimental API to primary `dart::gui` in a major DART
      version.
-   - Rename the MVP executable by scope, currently planned as
-     `examples/gui_viewer` / `dart_gui_viewer` / `gui_viewer`.
+   - Rename the MVP executable by scope and application brand:
+     `examples/dartsim` / `dartsim`.
    - Restore all pre-existing user-facing examples as `dart::gui` examples
      before deleting their old OSG implementations. Each restored example
      should keep its historical example entry point and teach the new DART GUI

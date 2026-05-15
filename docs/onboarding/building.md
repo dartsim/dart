@@ -215,12 +215,12 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
 
    ```bash
    pixi run ex hello_world
-   pixi run ex filament_gui
+   pixi run ex dartsim
    ```
 
    `scripts/run_cpp_example.py` centralizes example-specific CMake
-   requirements so routed GUI examples and `filament_gui` can use the same
-   command shape.
+   requirements so restored GUI examples and `dartsim` can use the same command
+   shape.
 
 5. (Optional) Gazebo / gz-physics integration test:
 

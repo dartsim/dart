@@ -14,7 +14,7 @@ if(NOT TARGET dart-gui-experimental)
   message(FATAL_ERROR "dart-gui requires the dart-gui-experimental target")
 endif()
 
-set(dart_gui_hdrs all.hpp export.hpp fwd.hpp)
+set(dart_gui_hdrs all.hpp application.hpp export.hpp fwd.hpp)
 set(dart_gui_srcs gui.cpp)
 
 dart_add_library(${target_name} ${dart_gui_hdrs} ${dart_gui_srcs})
@@ -40,6 +40,7 @@ configure_file(
 install(
   FILES
     all.hpp
+    application.hpp
     export.hpp
     fwd.hpp
     "${CMAKE_CURRENT_BINARY_DIR}/gui.hpp"

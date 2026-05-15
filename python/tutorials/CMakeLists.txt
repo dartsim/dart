@@ -30,7 +30,7 @@
 
 message(
   STATUS
-  "The legacy OpenSceneGraph Python tutorials were removed; use Filament GUI "
+  "The legacy OpenSceneGraph Python tutorials were removed; use DART GUI "
   "examples and dartpy.gui.experimental tests for maintained visualization "
   "coverage."
 )

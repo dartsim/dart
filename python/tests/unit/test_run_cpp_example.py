@@ -7,7 +7,7 @@ import pytest
 
 
 FILAMENT_ROUTED_EXAMPLES = {
-    "filament_gui": (),
+    "dartsim": (),
     "imgui": (),
     "rigid_shapes": ("--scene", "mvp"),
     "hello_world": ("--scene", "hello-world"),
@@ -71,6 +71,14 @@ def test_normalize_target_rejects_removed_raylib(run_cpp_example, target):
     assert "Raylib GUI example has been removed" in str(exc.value)
 
 
+@pytest.mark.parametrize("target", ["filament_gui", "dart_filament_gui"])
+def test_normalize_target_rejects_backend_named_gui(run_cpp_example, target):
+    with pytest.raises(SystemExit) as exc:
+        run_cpp_example._normalize_target(target)
+
+    assert "backend-named GUI example has been renamed" in str(exc.value)
+
+
 def test_normalize_target_passthrough(run_cpp_example, capsys):
     assert run_cpp_example._normalize_target("atlas_simbicon") == "atlas_simbicon"
     assert capsys.readouterr().err == ""
@@ -99,18 +107,18 @@ def test_parse_args_allows_pixi_help_without_target(run_cpp_example, capsys):
 @pytest.mark.parametrize(
     ("target", "build_target", "binary_name", "requirements", "default_args"),
     [
-        ("filament_gui", "dart_filament_gui", "filament_gui", ("filament",), ()),
+        ("dartsim", "dartsim", "dartsim", ("filament",), ()),
         (
             "g1_puppet",
-            "dart_filament_gui",
-            "filament_gui",
+            "g1_puppet",
+            "g1_puppet",
             ("filament",),
             ("--scene", "g1"),
         ),
         (
             "atlas_simbicon",
-            "dart_filament_gui",
-            "filament_gui",
+            "atlas_simbicon",
+            "atlas_simbicon",
             ("filament",),
             ("--scene", "atlas-simbicon"),
         ),
@@ -138,8 +146,8 @@ def test_filament_routed_examples_resolve_to_filament(
     target, default_args, run_cpp_example
 ):
     spec = run_cpp_example._resolve_example(target)
-    assert spec.build_target == "dart_filament_gui"
-    assert spec.binary_name == "filament_gui"
+    assert spec.build_target == target
+    assert spec.binary_name == target
     assert spec.requirements == ("filament",)
     assert spec.default_args == default_args
 
@@ -237,9 +245,9 @@ def test_filament_scene_all_matches_registered_smoke_tests(run_cpp_example):
     scene_pairs = _cmake_filament_smoke_scene_pairs(cmake_text)
     registered_scenes = tuple(scene for _suffix, scene in scene_pairs)
     registered_tests = (
-        "EXAMPLE_filament_gui_headless_smoke",
+        "EXAMPLE_dartsim_headless_smoke",
         *(
-            f"EXAMPLE_filament_gui_{suffix}_headless_smoke"
+            f"EXAMPLE_dartsim_{suffix}_headless_smoke"
             for suffix, _scene in scene_pairs
         ),
     )
@@ -251,7 +259,7 @@ def test_filament_scene_all_matches_registered_smoke_tests(run_cpp_example):
 def test_filament_smoke_cmake_registers_analysis_modes(run_cpp_example):
     cmake_text = _filament_sources_cmake_text(run_cpp_example)
     default_call = _cmake_headless_smoke_test_call(
-        cmake_text, "EXAMPLE_filament_gui_headless_smoke"
+        cmake_text, "EXAMPLE_dartsim_headless_smoke"
     )
     scene_call = _cmake_headless_smoke_test_call(cmake_text, "${_test_name}")
 

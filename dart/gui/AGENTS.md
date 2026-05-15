@@ -36,7 +36,8 @@ public-header boundary guards)
 Filament smoke: `pixi run test-filament-gui-smoke` when changing the explicit
 fetch path, renderer fixture behavior, or screenshot smoke coverage.
 
-Examples: `examples/filament_gui/` and `examples/gui_scene_diagnostics/`
+Examples: `examples/dartsim/`, restored GUI example launchers, and
+`examples/gui_scene_diagnostics/`
 
 ## See Also
 

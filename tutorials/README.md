@@ -2,12 +2,12 @@
 
 The legacy OpenSceneGraph tutorial executables were removed with the renderer
 replacement. Maintained visualization coverage now lives in the Filament GUI
-example scenes and backend-hidden `dart::gui::experimental` APIs.
+implementation behind `dart::gui` and the restored GUI examples.
 
 From a source checkout, run:
 
 ```bash
-pixi run ex filament_gui
+pixi run ex dartsim
 ```
 
 Pass `--scene <name>` for migrated scenes such as `atlas-simbicon`,

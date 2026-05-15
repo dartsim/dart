@@ -714,11 +714,11 @@ python scripts/pixi_test_py.py
 test-filament-gui-smoke = { cmd = [
   "python",
   "scripts/run_cpp_example.py",
-  "filament_gui",
+  "dartsim",
   "--pixi-smoke",
 ], depends-on = [
   "config",
-], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "OFF", DART_BUILD_GUI_FILAMENT_OVERRIDE = "ON", DART_FETCH_FILAMENT_OVERRIDE = "ON", DART_USE_SYSTEM_FILAMENT_OVERRIDE = "OFF" } }
+], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "ON", DART_BUILD_GUI_FILAMENT_OVERRIDE = "ON", DART_FETCH_FILAMENT_OVERRIDE = "ON", DART_USE_SYSTEM_FILAMENT_OVERRIDE = "OFF" } }
 
 test-capsule-ground-contact = { cmd = """
     ctest \

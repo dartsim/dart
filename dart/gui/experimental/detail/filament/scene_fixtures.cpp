@@ -1836,7 +1836,7 @@ DartScene createMvpDartScene()
     return skeleton;
   };
 
-  scene.world = World::create("filament_gui_mvp");
+  scene.world = World::create("dartsim_mvp");
   scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   scene.world->addSkeleton(blueBox);
   scene.world->addSkeleton(orangeBox);
@@ -1980,7 +1980,7 @@ DartScene createMvpDartScene()
 DartScene createHelloWorldScene()
 {
   DartScene scene;
-  scene.world = World::create("filament_gui_hello_world");
+  scene.world = World::create("dartsim_hello_world");
   scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
 
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
@@ -2006,7 +2006,7 @@ DartScene createHelloWorldScene()
 DartScene createBoxesScene()
 {
   DartScene scene;
-  scene.world = World::create("filament_gui_boxes");
+  scene.world = World::create("dartsim_boxes");
   scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
 
   const int dim = 5;
@@ -2121,7 +2121,7 @@ dart::dynamics::SkeletonPtr createHardcodedDesignSkeleton()
 DartScene createHardcodedDesignScene()
 {
   DartScene scene;
-  scene.world = World::create("filament_gui_hardcoded_design");
+  scene.world = World::create("dartsim_hardcoded_design");
   scene.world->setGravity(Eigen::Vector3d::Zero());
   scene.world->addSkeleton(createHardcodedDesignSkeleton());
   return scene;
@@ -3090,7 +3090,7 @@ private:
 DartScene createFreeJointCasesScene()
 {
   DartScene scene;
-  scene.world = World::create("filament_gui_free_joint_cases");
+  scene.world = World::create("dartsim_free_joint_cases");
   scene.world->setGravity(Eigen::Vector3d::Zero());
   scene.world->setTimeStep(1e-3);
 
@@ -3255,7 +3255,7 @@ DartScene createHumanJointLimitsScene()
 DartScene createLcpPhysicsScene()
 {
   DartScene scene;
-  scene.world = World::create("filament_gui_lcp_physics");
+  scene.world = World::create("dartsim_lcp_physics");
   scene.world->setTimeStep(0.001);
   scene.world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
   if (auto* solver = scene.world->getConstraintSolver()) {
@@ -3428,7 +3428,7 @@ DartScene createMimicPendulumsScene()
 DartScene createAtlasPuppetScene()
 {
   DartScene scene;
-  scene.world = World::create("filament_gui_atlas_puppet");
+  scene.world = World::create("dartsim_atlas_puppet");
   scene.world->setGravity(Eigen::Vector3d::Zero());
   scene.world->addSkeleton(createStaticVisualSkeleton(
       kAtlasPuppetFixtureGroundSkeletonName,
@@ -3446,7 +3446,7 @@ DartScene createAtlasPuppetScene()
 DartScene createHuboPuppetScene()
 {
   DartScene scene;
-  scene.world = World::create("filament_gui_hubo_puppet");
+  scene.world = World::create("dartsim_hubo_puppet");
   scene.world->setGravity(Eigen::Vector3d::Zero());
   scene.world->addSkeleton(createStaticVisualSkeleton(
       kHuboPuppetFixtureGroundSkeletonName,
@@ -3464,7 +3464,7 @@ DartScene createHuboPuppetScene()
 DartScene createAtlasSimbiconScene()
 {
   DartScene scene;
-  scene.world = World::create("filament_gui_atlas_simbicon");
+  scene.world = World::create("dartsim_atlas_simbicon");
   scene.world->setGravity(Eigen::Vector3d::Zero());
 
   constexpr double groundThickness = 0.08;
@@ -3486,7 +3486,7 @@ DartScene createAtlasSimbiconScene()
 DartScene createOperationalSpaceControlScene()
 {
   DartScene scene;
-  scene.world = World::create("filament_gui_operational_space_control");
+  scene.world = World::create("dartsim_operational_space_control");
   scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   scene.world->addSkeleton(createStaticVisualSkeleton(
       kOperationalSpaceControlGroundSkeletonName,
@@ -3524,7 +3524,7 @@ DartScene createOperationalSpaceControlScene()
 DartScene createWamIkFastScene()
 {
   DartScene scene;
-  scene.world = World::create("filament_gui_wam_ikfast");
+  scene.world = World::create("dartsim_wam_ikfast");
   scene.world->setGravity(Eigen::Vector3d::Zero());
   scene.world->addSkeleton(createStaticVisualSkeleton(
       kWamIkFastGroundSkeletonName,
@@ -3652,7 +3652,7 @@ DartScene createTinkertoyScene()
 DartScene createDragAndDropScene()
 {
   DartScene scene;
-  scene.world = World::create("filament_gui_drag_and_drop");
+  scene.world = World::create("dartsim_drag_and_drop");
   scene.world->setGravity(Eigen::Vector3d::Zero());
 
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
@@ -3698,7 +3698,7 @@ DartScene createDragAndDropScene()
 DartScene createSimpleFramesScene()
 {
   DartScene scene;
-  scene.world = World::create("filament_gui_simple_frames");
+  scene.world = World::create("dartsim_simple_frames");
   scene.world->setGravity(Eigen::Vector3d::Zero());
 
   Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
@@ -3800,7 +3800,7 @@ DartScene createSoftBodiesScene()
 DartScene createPointCloudScene()
 {
   DartScene scene;
-  scene.world = World::create("filament_gui_point_cloud");
+  scene.world = World::create("dartsim_point_cloud");
   scene.world->setGravity(Eigen::Vector3d::Zero());
 
   auto pointCloudShape = std::make_shared<PointCloudShape>(0.055);
@@ -3875,7 +3875,7 @@ DartScene createCapsuleGroundContactScene()
   constexpr double kGroundVisualThickness = 0.08;
 
   DartScene scene;
-  scene.world = World::create("filament_gui_capsule_ground_contact");
+  scene.world = World::create("dartsim_capsule_ground_contact");
   scene.world->setTimeStep(0.001);
   scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
 #if DART_HAVE_ODE
@@ -3931,7 +3931,7 @@ DartScene createCapsuleGroundContactScene()
 DartScene createSimulationEventHandlerScene()
 {
   DartScene scene;
-  scene.world = World::create("filament_gui_simulation_event_handler");
+  scene.world = World::create("dartsim_simulation_event_handler");
   scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   scene.world->setTimeStep(0.001);
 
@@ -4013,7 +4013,7 @@ DartScene createSimulationEventHandlerScene()
 DartScene createPolyhedronScene()
 {
   DartScene scene;
-  scene.world = World::create("filament_gui_polyhedron");
+  scene.world = World::create("dartsim_polyhedron");
   scene.world->setGravity(Eigen::Vector3d::Zero());
   scene.world->addSkeleton(createStaticVisualSkeleton(
       kPolyhedronFixtureSkeletonName,
@@ -4032,7 +4032,7 @@ DartScene createPolyhedronScene()
 DartScene createHeightmapScene()
 {
   DartScene scene;
-  scene.world = World::create("filament_gui_heightmap");
+  scene.world = World::create("dartsim_heightmap");
   scene.world->setGravity(Eigen::Vector3d::Zero());
   scene.world->addSkeleton(createStaticVisualSkeleton(
       kHeightmapFixtureSkeletonName,
@@ -4065,7 +4065,7 @@ DartScene createHeightmapScene()
 DartScene createG1DartScene(const AppOptions& options)
 {
   DartScene scene;
-  scene.world = World::create("filament_gui_g1");
+  scene.world = World::create("dartsim_g1");
   scene.world->setGravity(Eigen::Vector3d::Zero());
   scene.world->addSkeleton(createG1Ground());
 

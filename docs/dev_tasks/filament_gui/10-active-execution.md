@@ -24,14 +24,25 @@ context survives across sessions.
 
 - Branch: `feature/filament-gui-full-execution`
 - Upstream: `origin/feature/filament-gui-full-execution`
-- Latest pushed checkpoint: `92eb7c1d470 Respect platform support for default
-Filament GUI`
+- Latest pushed checkpoint: `64284fbcda5` (active migration plan docs)
 - GitHub Actions were manually dispatched without opening a PR.
 - Linux Filament smoke tests passed at the latest inspected run.
-- Linux headless rendering failed because the workflow still invokes the legacy
-  `rigid_cubes` executable, which was removed in the earlier example cleanup.
-  Restoring legacy example entry points and capture compatibility is therefore a
-  concrete CI requirement, not only documentation polish.
+- Linux headless rendering failed earlier because the workflow still invoked the
+  legacy `rigid_cubes` executable, which was removed in the earlier example
+  cleanup. Restoring legacy example entry points and capture compatibility is
+  therefore a concrete CI requirement, not only documentation polish.
+- Local repair checkpoint in progress:
+  - `examples/dartsim` is the renamed app-level viewer.
+  - `dart/gui/application.hpp` exposes the narrow promoted launch API.
+  - Historical GUI example executables are restored as thin `dart::gui`
+    launchers.
+  - The Linux headless workflow now validates `rigid_cubes --screenshot`
+    output instead of the removed OSG-style `--out` PNG sequence.
+  - Local evidence: targeted CMake configure/build passed, the
+    `UNIT_gui_FilamentSceneExtraction` boundary test passed,
+    `python/tests/unit/test_run_cpp_example.py` passed, direct `rigid_cubes`
+    headless PPM capture passed, and `pixi run test-filament-gui-smoke` passed
+    31/31 tests with `EXAMPLE_dartsim_*` smoke names.
 
 ## Current Code Shape
 
@@ -40,32 +51,31 @@ Filament GUI`
 - `DART_BUILD_GUI` now defaults according to platform support for the pinned
   Filament path.
 - The maintained renderer implementation still lives behind names such as
-  `dart::gui::experimental` and `examples/filament_gui`; those names are now
-  promotion debt.
+  `dart::gui::experimental`; that namespace is now promotion debt. The
+  backend-named MVP example has been renamed to `examples/dartsim`.
 - Private implementation details live under
   `dart/gui/experimental/detail/filament`. They can remain private while the
   promoted public names move to `dart::gui`.
 - Existing command-line support includes bounded frames, window size,
   headless mode, UI visibility, scene selection, profiling, and a single PPM
   screenshot path.
-- The old headless rendering workflow expects a legacy-style executable and
-  `--out` frame output behavior. The next slice should either restore
-  compatible behavior or update the workflow and tests to the promoted capture
-  contract.
+- Current execution decision: restore the historical executable names as thin
+  `dart::gui` launchers and update CI to validate the promoted
+  `--screenshot` capture contract. Multi-frame `--out` output remains useful
+  future capture work, but it is not required for this repair checkpoint.
 
 ## Naming Decisions
 
 - The MVP executable should be renamed by scope:
-  - Working neutral name: `examples/gui_viewer` / `dart_gui_viewer` /
+  - Decision for this slice: `examples/dartsim` / `dartsim`
+  - Earlier neutral fallback: `examples/gui_viewer` / `dart_gui_viewer` /
     `gui_viewer`
-  - Branding candidate: `dartsim` for the application-level simulator/viewer
-    surface
 - Legacy user-facing examples should keep their historical example names where
   those names describe the simulation or workflow, such as `hello_world`,
   `rigid_cubes`, `drag_and_drop`, and `imgui`.
 - Backend-named examples should not be treated as official public surfaces.
-  `filament_gui` should disappear or become only a temporary compatibility
-  alias during the transition; Raylib should not be restored as a renderer.
+  `filament_gui` is rejected by the runner with a migration message, and Raylib
+  should not be restored as a renderer.
 - Branding direction: `DART` remains the overall project and library identity,
   with `libdart` remaining appropriate for packaging/library contexts.
   `dartsim` is the application-level identity, analogous to an application
@@ -133,14 +143,29 @@ These should be designed for but do not block the immediate restoration slice:
 - Offscreen rendering as a first-class `dart::gui` workflow.
 - Automated screenshot sequences and video capture.
 
+## Branch Done Checklist
+
+The branch is ready to hand off for review only when:
+
+- Promoted public names and maintained examples use `dart::gui`/`dartsim`
+  branding, with no `experimental` token in promoted public concepts.
+- Linux headless CI is green on the tracked branch after the restored-example
+  repair lands.
+- The agreed restored historical example executables exist and can produce
+  headless screenshots through the promoted capture path.
+- No maintained user-facing file refers to `filament_gui` as an official
+  executable, example, or workflow. Private backend helper names may be renamed
+  in a separate promotion-debt sweep.
+- Documentation consistently distinguishes `DART`/`libdart` library identity
+  from `dartsim` application identity.
+
 ## Immediate Next Steps
 
-1. Rename `examples/filament_gui` to a scope-based viewer example and update
-   CMake, runner, tests, docs, and smoke names.
-2. Add a promoted `dart::gui` application-launch header and keep the existing
-   private Filament implementation behind it.
-3. Restore legacy user-facing example directories as small `dart::gui`
-   launchers with default scenes.
-4. Add or update capture compatibility for the Linux headless workflow.
+1. Run `pixi run lint` for the active checkpoint.
+2. Commit and push the `dartsim` rename/restored-example repair.
+3. Continue with the next promotion slice: reduce remaining
+   `dart::gui::experimental` naming in promoted headers and bindings while
+   keeping backend resources private.
+4. Keep multi-frame image sequence and video capture as follow-up capture work.
 5. Run `pixi run lint` before every checkpoint commit, then push the commit to
    the tracked remote branch.

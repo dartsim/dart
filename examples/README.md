@@ -4,9 +4,10 @@
 
 - Maintained examples live flat under `examples/` for simpler discovery and
   tooling.
-- Filament is the maintained visualization path. Legacy OpenSceneGraph example
-  sources were removed; common historical example names still route through the
-  Filament scene runner where a replacement scene exists.
+- Filament is the maintained visualization implementation behind `dart::gui`.
+  Legacy OpenSceneGraph example sources were removed; common historical GUI
+  example names are restored as thin `dart::gui` launchers where a replacement
+  scene exists.
 - Legacy OpenSceneGraph C++ tutorials were removed from `tutorials/`.
 
 ## Categories (Ordered)
@@ -17,7 +18,11 @@
 
 ### 01 Visualization and Interaction
 
-- `filament_gui`
+- `dartsim`
+- `hello_world`
+- `rigid_cubes`
+- `drag_and_drop`
+- `imgui`
 - `gui_scene_diagnostics`
 
 ### 02 Performance and Scaling
@@ -44,12 +49,10 @@ For C++ examples, the generic in-tree runner is:
 pixi run ex <example-target>
 ```
 
-For example, `pixi run ex csv_logger` builds and runs `csv_logger`. Examples
-with extra CMake requirements or redirected GUI runners, such as
-`filament_gui`, declare those requirements in `scripts/run_cpp_example.py`.
-Historical GUI example names such as `hello_world`, `boxes`, `rigid_chain`,
-`atlas_simbicon`, and `heightmap` are compatibility aliases that build
-`filament_gui` and select the matching Filament scene.
+For example, `pixi run ex csv_logger` builds and runs `csv_logger`. GUI
+examples with extra CMake requirements, such as `dartsim`, `hello_world`,
+`boxes`, `rigid_chain`, `atlas_simbicon`, and `heightmap`, declare those
+requirements in `scripts/run_cpp_example.py`.
 
 ## Build Examples as One Project
 

@@ -8,7 +8,9 @@ renderer surfaces have been removed from the branch. The next execution slice is
 tracked in `10-active-execution.md`: remove the remaining
 `dart::gui::experimental` promotion gap, restore the pre-existing user-facing
 examples as `dart::gui` examples, and rename the backend-named MVP executable to
-a scope-named GUI viewer because Filament is no longer an alternate backend.
+the application-level `dartsim` identity because Filament is no longer an
+alternate backend. `DART` remains the project/library identity, and `libdart`
+remains the packaging/library context name.
 
 The completion audit in `07-completion-audit.md` describes the previous
 promotion checkpoint. The detailed progress notes below are retained as

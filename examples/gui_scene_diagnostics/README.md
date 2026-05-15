@@ -11,8 +11,8 @@
   information, and center-pick diagnostics printed to the console.
 - Controls: CLI flags for frame count and diagnostic viewport size.
 
-This example is intended for API diagnostics. The maintained renderer experiment
-remains `examples/filament_gui`.
+This example is intended for API diagnostics. The maintained GUI application is
+`examples/dartsim`.
 
 ## Build Instructions
 

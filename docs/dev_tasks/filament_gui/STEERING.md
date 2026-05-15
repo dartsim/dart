@@ -3,6 +3,160 @@
 > Live supervisor note from a parallel evaluator pass. Read after `RESUME.md`.
 > This is **strategic guidance**, not a task list. Owner: Codex.
 
+## 2026-05-15 supervisor update (translation of live human direction)
+
+Synthesis of a parallel architect / code-reviewer / verifier / critic pass over
+this folder plus the current code state. Sticky — do not delete; mark items
+`~~done~~` with a one-line evidence pointer when they land, and surface
+disagreement under "Open Issues" instead of editing "Decisions in force".
+
+### Status (local repair checkpoint pending commit)
+
+- The worktree now renames `examples/filament_gui/` to `examples/dartsim/`.
+  The README documents `dartsim` as the application-level viewer with legacy
+  launchers as sibling examples. This is not a pushed checkpoint until the next
+  commit lands.
+- `examples/dartsim/main.cpp` includes `<dart/gui/application.hpp>` and calls
+  `dart::gui::runApplication(argc, argv)`. Public include path is therefore
+  `dart/gui/application.hpp` (NOT `detail/application.hpp` as some older
+  doc passages still claim).
+- CMake target / `OUTPUT_NAME` is `dartsim`. The CMake helper is still named
+  `dart_filament_gui_add_example` and lives in
+  `dart/gui/experimental/detail/filament/filament_sources.cmake` — keep it
+  for now, rename in a separate sweep.
+- Linux headless CI was red because the workflow invoked the removed legacy
+  `rigid_cubes` executable with the old `--out` contract. The local repair
+  restores `rigid_cubes` as a `dart::gui` launcher and updates the workflow to
+  validate `--screenshot` PPM output.
+- The boundary-guard test `UNIT_gui_FilamentSceneExtraction`
+  (`tests/unit/gui/test_filament_scene_extraction.cpp`) is retargeted locally
+  to the promoted `examples/dartsim/` entry point and `dart/gui` public header
+  surface.
+
+### Decisions in force (do NOT reopen)
+
+1. **Naming is final**. Application-level binary is `dartsim`; example
+   directory is `examples/dartsim/`; public include is
+   `<dart/gui/application.hpp>`; entry symbol is `dart::gui::runApplication`.
+   No `gui_viewer`, no `filament_gui`, no `dart_filament_gui` in user-facing
+   strings. CMake helper symbol may keep `filament_gui` in its name as a
+   private detail until a separate rename sweep.
+   Branding distinction: `DART` is the project/library identity, `libdart` is
+   appropriate for packaging/library contexts, and `dartsim` is the
+   application-level simulator/viewer identity.
+2. **Restoration semantics for legacy examples**: each historical user-facing
+   example (`hello_world`, `rigid_cubes`, `drag_and_drop`, `imgui`,
+   `simple_frames`, etc.) becomes its own `examples/<name>/` directory that
+   builds a real executable through the shared `gui_scene_launcher.cpp` and
+   supplies that example's default scene to
+   `dart::gui::runApplication(argc, argv, defaultScene)`. Pixi `ex` aliases
+   are not a substitute — CI invokes the binary on disk.
+3. **`--scene <name>` fixtures inside `dartsim`** stay as the developer
+   fixture menu and the source of truth for headless smoke generation. Per-
+   example binaries become the user-facing surface; `dartsim --scene foo`
+   remains the developer entry point. This is a permanent split, not interim
+   debt — the `--scene` retirement plan called for in the critic pass is
+   resolved by accepting this split.
+4. **Public API surface promoted in this branch is exactly
+   `dart::gui::runApplication` plus its default-scene selector overload.
+   Nothing else.** Do NOT draft `dart::gui::Viewer` /
+   `ViewerOptions` until Phases C/E/F/G in `08-north-star-migration.md` are
+   substantially complete. This resolves the `STEERING.md` ↔
+   `10-active-execution.md` contradiction by reading "promoted application
+   header" narrowly.
+5. **Out of scope for this branch (do not start, even opportunistically)**:
+   ImGui Docking, dockable 3D widget, video capture, font atlas/label work,
+   broader product/packaging work beyond the `dartsim` naming distinction,
+   macOS/Windows port work, conda-forge feedstock changes. Track in a follow-up
+   task; do not let a refactor "accidentally" land any of these.
+
+### Order of operations (CI repair first, then promotion debt)
+
+1. ~~**Unblock Linux headless CI**~~: local repair restores the `rigid_cubes`
+   executable and updates the workflow to validate
+   `rigid_cubes --headless --frames 10 --screenshot ...` PPM output. This
+   intentionally chooses the promoted capture contract over restoring `--out`
+   PNG sequences in the same checkpoint.
+2. ~~**Retarget the boundary-guard test**~~ (`UNIT_gui_FilamentSceneExtraction`
+   in `tests/unit/gui/test_filament_scene_extraction.cpp`) to scan
+   `examples/dartsim/` and the promoted `dart/gui` header surface. The
+   configure-time application check is now exposed through
+   `dart_gui_add_application()` and continues to guard the `dartsim` entry
+   point.
+3. ~~**Restore legacy examples as real per-dir binaries**~~: the local repair
+   restores the historical GUI example executable names as thin launchers using
+   `examples/gui_scene_example.cmake` and `examples/gui_scene_launcher.cpp`,
+   not just the first three examples.
+4. ~~**Sweep stale user-facing `filament_gui` strings**~~ across the repo:
+   runner
+   `scripts/run_cpp_example.py`, `python/tests/unit/test_run_cpp_example.py`,
+   smoke test names, status messages in
+   `dart/gui/experimental/detail/filament/testing/run_headless_smoke.cmake`,
+   `CHANGELOG.md`, `dart/gui/AGENTS.md`, and skill docs under
+   `.claude/skills/dart-build/` and `.codex/skills/dart-build/`. Private
+   CMake helper names under `dart/gui/experimental/detail/filament/` remain
+   promotion debt for a separate sweep.
+5. Rerun `pixi run lint`, commit, and push the checkpoint as usual. Do not open
+   a PR.
+
+### Open issues raised by the parallel review pass
+
+- **[verifier]** Per-scene headless smokes (~30 scenes) all run
+  `ANALYSIS_MODE basic` (nonzero-pixel only). The "dark/mid/bright +
+  luminance spread" gate documented in `03-milestones.md` only applies to
+  the single aggregate `EXAMPLE_dartsim_headless_smoke`. Either upgrade the
+  per-scene smokes to `contrast` mode or amend the docs to match reality.
+- ~~**[verifier]** `scanHeadersForBackendTokens` has a documented hook for
+  promoted `dart/gui/*.hpp` headers, but
+  `guiHeaderDirectoriesForBackendTokenScan()` returns only the experimental
+  directory. Now that `dart/gui/application.hpp` is promoted, register
+  `dart/gui` in that hook so the guard becomes live, not aspirational.~~
+  Local repair adds `dart/gui` to that scan.
+- **[code-reviewer] over-fragmentation** under
+  `dart/gui/experimental/detail/filament/`: collapse the per-frame trio
+  `simulation_stepper.{hpp,cpp}` (72/110), `frame_renderer.{hpp,cpp}`
+  (67/112), and `frame_viewport.{hpp,cpp}` (75/85) into one `frame_loop`
+  unit (~520 LOC); fold `application_teardown.{hpp,cpp}` (61/73) back into
+  `application.cpp`; consider merging `scene_startup.*` + `scene_frame.*`
+  into `scene_lifecycle`. 19 of 49 files in that directory are <100 LOC.
+- **[code-reviewer] under-fragmentation**: `scene_fixtures.cpp` is **4082
+  LOC** and `scene_requirements.cpp` is **1844 LOC** with a 130-field
+  `SceneContentCounts` God Struct that is a Shotgun-Surgery magnet. Split
+  fixtures by family (rigid_demos, joint_demos, robot_demos, geometry_demos)
+  and replace `SceneContentCounts` with a `std::unordered_map<SceneKind,
+std::size_t>`.
+- **[code-reviewer] encapsulation leaks under `detail/`**: `scene_frame.hpp`,
+  `frame_viewport.hpp`, `renderable_resources.hpp`, and `scene_startup.hpp`
+  expose `GLFWwindow*` / `::filament::Engine` / `::filament::View&` /
+  `ImGuiIO&` in public function signatures. Move these behind pImpl or a
+  renderer-context handle so `detail/` becomes a real seam, not just a
+  directory.
+- **[critic]** Reconcile this file with `10-active-execution.md` regarding
+  the promoted application header. Decision 4 above is the resolution;
+  record an explicit cross-reference in both docs so future sessions don't
+  reopen the question.
+- ~~**[critic] no branch-level definition of done**. Add an explicit "Branch
+  is done when:" checklist to `10-active-execution.md` covering: (a) zero
+  `experimental` token in promoted names, (b) Linux headless CI green,
+  (c) the agreed N restored example binaries exist and produce screenshots,
+  (d) no `filament_gui` user-facing strings remain in any maintained file.~~
+  Local repair adds `Branch Done Checklist` to `10-active-execution.md`.
+
+### How the supervisor uses this section
+
+- Each new live human direction gets translated into the lists above (not
+  into a new file). Codex reads `STEERING.md` after `RESUME.md` per the
+  existing convention.
+- When a numbered step in "Order of operations" lands, mark it `~~done~~`
+  with a one-line evidence pointer (commit short SHA + file). Do not delete
+  it for one review cycle so review agents can tell what just shipped.
+- The "Decisions in force" block is sticky. If you need to change one, flag
+  it under "Open issues" and wait for the next supervisor pass to confirm.
+
+---
+
+## Original 2026-05-14 evaluator pass (kept for history)
+
 ## Current branch update
 
 Since this steering note was first written, the post-MVP branch landed the

@@ -366,10 +366,8 @@ std::vector<BackendTokenViolation> scanHeadersForBackendTokens(
 std::vector<std::filesystem::path> guiHeaderDirectoriesForBackendTokenScan()
 {
   std::vector<std::filesystem::path> directories
-      = {std::filesystem::path("dart") / "gui" / "experimental"};
-
-  // Add promoted dart/gui headers here when the Filament API replaces the
-  // legacy OSG-shaped public GUI headers.
+      = {std::filesystem::path("dart") / "gui" / "experimental",
+         std::filesystem::path("dart") / "gui"};
   return directories;
 }
 
@@ -435,7 +433,7 @@ TEST(FilamentSceneExtraction, ExperimentalPublicHeadersStayBackendHidden)
 TEST(FilamentSceneExtraction, FilamentExampleHeadersAvoidDirectFilamentIncludes)
 {
   const auto headers = listPublicHeadersInDirectory(
-      std::filesystem::path("examples") / "filament_gui");
+      std::filesystem::path("examples") / "dartsim");
 
   const auto violations
       = scanSourceFilesForTokens(headers, kForbiddenFilamentIncludeTokens);
@@ -450,7 +448,7 @@ TEST(
     FilamentExampleEntryPointAvoidsDirectFilamentIncludes)
 {
   const std::vector<std::filesystem::path> sources
-      = {std::filesystem::path("examples") / "filament_gui" / "main.cpp"};
+      = {std::filesystem::path("examples") / "dartsim" / "main.cpp"};
 
   const auto violations
       = scanSourceFilesForTokens(sources, kForbiddenFilamentIncludeTokens);
@@ -463,7 +461,7 @@ TEST(
 TEST(FilamentSceneExtraction, FilamentExampleEntryPointAvoidsBackendTokens)
 {
   const std::vector<std::filesystem::path> sources
-      = {std::filesystem::path("examples") / "filament_gui" / "main.cpp"};
+      = {std::filesystem::path("examples") / "dartsim" / "main.cpp"};
 
   const auto violations
       = scanSourceFilesForTokens(sources, kForbiddenBackendTokens);
@@ -473,10 +471,10 @@ TEST(FilamentSceneExtraction, FilamentExampleEntryPointAvoidsBackendTokens)
   }
 }
 
-TEST(FilamentSceneExtraction, FilamentExampleEntryPointUsesGuiDetailBoundary)
+TEST(FilamentSceneExtraction, FilamentExampleEntryPointUsesPublicGuiBoundary)
 {
   const std::vector<std::filesystem::path> sources
-      = {std::filesystem::path("examples") / "filament_gui" / "main.cpp"};
+      = {std::filesystem::path("examples") / "dartsim" / "main.cpp"};
 
   const auto violations
       = scanSourceFilesForTokens(sources, kForbiddenFilamentDetailTokens);
@@ -489,41 +487,38 @@ TEST(FilamentSceneExtraction, FilamentExampleEntryPointUsesGuiDetailBoundary)
 TEST(FilamentSceneExtraction, FilamentExampleEntryPointStaysMinimal)
 {
   const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "filament_gui" / "main.cpp");
+      std::filesystem::path("examples") / "dartsim" / "main.cpp");
 
   EXPECT_EQ(countOccurrences(mainSource, "#include "), 1u);
   EXPECT_NE(
-      mainSource.find(
-          "#include <dart/gui/experimental/detail/application.hpp>"),
+      mainSource.find("#include <dart/gui/application.hpp>"),
       std::string::npos);
   EXPECT_EQ(countOccurrences(mainSource, "int main("), 1u);
   EXPECT_EQ(
       countOccurrences(
-          mainSource,
-          "return dart::gui::experimental::detail::runGuiApplication("
-          "argc, argv);"),
+          mainSource, "return dart::gui::runApplication(argc, argv);"),
       1u);
 }
 
 TEST(FilamentSceneExtraction, FilamentExampleKeepsOnlyMinimalCppEntryPoint)
 {
   const auto sources = listCppSourceFilesRecursively(
-      std::filesystem::path("examples") / "filament_gui");
+      std::filesystem::path("examples") / "dartsim");
 
   const std::vector<std::filesystem::path> expectedSources
-      = {std::filesystem::path("examples") / "filament_gui" / "main.cpp"};
+      = {std::filesystem::path("examples") / "dartsim" / "main.cpp"};
   EXPECT_EQ(sources, expectedSources);
 }
 
 TEST(FilamentSceneExtraction, FilamentExampleKeepsOnlyEntryPointAndWrapperFiles)
 {
   const auto files = listRegularFilesRecursively(
-      std::filesystem::path("examples") / "filament_gui");
+      std::filesystem::path("examples") / "dartsim");
 
   const std::vector<std::filesystem::path> expectedFiles
-      = {std::filesystem::path("examples") / "filament_gui" / "CMakeLists.txt",
-         std::filesystem::path("examples") / "filament_gui" / "README.md",
-         std::filesystem::path("examples") / "filament_gui" / "main.cpp"};
+      = {std::filesystem::path("examples") / "dartsim" / "CMakeLists.txt",
+         std::filesystem::path("examples") / "dartsim" / "README.md",
+         std::filesystem::path("examples") / "dartsim" / "main.cpp"};
   EXPECT_EQ(files, expectedFiles);
 }
 

@@ -198,7 +198,7 @@ dart/
 - **Options:**
   - `DART_BUILD_GUI=ON` builds `dart-gui`. It defaults to `ON` only on Linux
     x86_64, where the pinned Filament archive is supported.
-  - `DART_BUILD_GUI_FILAMENT=ON` builds the `filament_gui` executable. It
+  - `DART_BUILD_GUI_FILAMENT=ON` builds the `dartsim` executable. It
     follows `DART_BUILD_GUI` unless explicitly set.
   - `DART_FETCH_FILAMENT=ON` fetches the pinned Linux x86_64 Filament archive.
   - `DART_USE_SYSTEM_FILAMENT=ON` discovers an installed package or `Filament_ROOT`.
@@ -550,7 +550,9 @@ dart/
 
 Examples are built in `build/.../bin/`:
 
-- `filament_gui` - Official Filament renderer and migrated visual scenes
+- `dartsim` - Application-level simulator/viewer and migrated visual scenes
+- Historical GUI names such as `hello_world`, `rigid_cubes`, and
+  `drag_and_drop` - thin `dart::gui` launchers for migrated scenes
 - `gui_scene_diagnostics` - Backend-hidden GUI descriptor diagnostics
 - `unified_loading`, `headless_simulation`, `speed_test`, `csv_logger`,
   `rerun` - Maintained non-legacy examples

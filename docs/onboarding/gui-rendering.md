@@ -5,7 +5,7 @@
 The maintained DART GUI renderer is Filament, with GLFW3 for windowing and
 Dear ImGui for built-in overlays. `DART_BUILD_GUI=ON` builds the public
 `dart-gui` component, and `DART_BUILD_GUI_FILAMENT=ON` builds the
-`filament_gui` executable and smoke-test target.
+`dartsim` executable and smoke-test target.
 
 The public GUI surface should describe DART concepts rather than renderer
 objects. Public headers must not expose Filament, GLFW, raw Dear ImGui,
@@ -49,7 +49,7 @@ is the official component target that links to it.
   Defaults to `ON` on Linux x86_64 source builds where DART can fetch the
   pinned Filament archive; other platforms need an explicit Filament install or
   `Filament_ROOT`.
-- `DART_BUILD_GUI_FILAMENT=ON`: builds `filament_gui` and related smoke-test
+- `DART_BUILD_GUI_FILAMENT=ON`: builds `dartsim` and related smoke-test
   plumbing. This is selected automatically when `DART_BUILD_GUI=ON`.
 - `DART_USE_SYSTEM_FILAMENT=ON`: discovers an installed Filament tree, usually
   through `Filament_ROOT`.
@@ -69,8 +69,8 @@ bounded headless render:
 cmake --build build/default/cpp/Release --target UNIT_gui_FilamentSceneExtraction
 ctest --test-dir build/default/cpp/Release --output-on-failure \
   -R '^UNIT_gui_FilamentSceneExtraction$'
-pixi run ex filament_gui --headless --frames 1 --width 1280 --height 720 \
-  --screenshot /tmp/dart_filament_gui.ppm
+pixi run ex dartsim --headless --frames 1 --width 1280 --height 720 \
+  --screenshot /tmp/dartsim.ppm
 ```
 
 Inspect screenshots when judging visual quality. Command success alone is not

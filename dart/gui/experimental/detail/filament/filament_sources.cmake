@@ -104,7 +104,7 @@ function(_dart_filament_gui_find_dependencies out_imgui_target)
   elseif(TARGET dart-imgui-lib)
     set(_imgui_target dart-imgui-lib)
   else()
-    message(FATAL_ERROR "No ImGui target is available for filament_gui")
+    message(FATAL_ERROR "No ImGui target is available for DART GUI")
   endif()
 
   set(${out_imgui_target} "${_imgui_target}" PARENT_SCOPE)
@@ -374,7 +374,7 @@ set(DART_FILAMENT_GUI_SMOKE_SCENE_PAIRS
 function(_dart_filament_gui_smoke_test_name out_name scene_suffix)
   set(
     ${out_name}
-    "EXAMPLE_filament_gui_${scene_suffix}_headless_smoke"
+    "EXAMPLE_dartsim_${scene_suffix}_headless_smoke"
     PARENT_SCOPE
   )
 endfunction()
@@ -449,7 +449,7 @@ function(dart_filament_gui_add_smoke_tests example_target)
 
   find_package(Python3 COMPONENTS Interpreter REQUIRED)
   _dart_filament_gui_add_headless_smoke_test(
-    EXAMPLE_filament_gui_headless_smoke
+    EXAMPLE_dartsim_headless_smoke
     ${example_target}
     BINARY_DIR "${DART_FILAMENT_GUI_BINARY_DIR}"
     FRAMES 10
@@ -497,13 +497,13 @@ function(dart_filament_gui_add_example example_target)
   if(NOT DART_FILAMENT_GUI_EXAMPLE_SOURCE_DIR)
     message(FATAL_ERROR "dart_filament_gui_add_example requires SOURCE_DIR")
   endif()
-  if(NOT TARGET dart-gui-experimental)
-    message(FATAL_ERROR "filament_gui requires the dart-gui-experimental target")
+  if(NOT TARGET dart-gui)
+    message(FATAL_ERROR "dartsim requires the dart-gui target")
   endif()
 
   set(_example_main "${DART_FILAMENT_GUI_EXAMPLE_SOURCE_DIR}/main.cpp")
   if(NOT EXISTS "${_example_main}")
-    message(FATAL_ERROR "filament_gui requires ${_example_main}")
+    message(FATAL_ERROR "dartsim requires ${_example_main}")
   endif()
   file(READ "${_example_main}" _example_main_contents)
   string(
@@ -524,7 +524,7 @@ function(dart_filament_gui_add_example example_target)
   )
     message(
       FATAL_ERROR
-      "filament_gui entry point must not include Filament headers directly: "
+      "dartsim entry point must not include Filament headers directly: "
       "${_example_main}"
     )
   endif()
@@ -547,7 +547,7 @@ function(dart_filament_gui_add_example example_target)
     )
     message(
       FATAL_ERROR
-      "filament_gui keeps reusable renderer code under dart/gui; unexpected "
+      "dartsim keeps reusable renderer code under dart/gui; unexpected "
       "example-local C++ source/header files:\n  "
       "${_unexpected_example_local_sources_message}"
     )
@@ -577,7 +577,7 @@ function(dart_filament_gui_add_example example_target)
     )
     message(
       FATAL_ERROR
-      "filament_gui must stay a minimal DART GUI entry point; unexpected "
+      "dartsim must stay a minimal DART GUI entry point; unexpected "
       "example-tree regular files:\n  "
       "${_unexpected_example_tree_files_message}"
     )
@@ -591,7 +591,7 @@ function(dart_filament_gui_add_example example_target)
   target_link_libraries(
     ${example_target}
     PRIVATE
-      dart-gui-experimental
+      dart-gui
   )
   target_compile_features(${example_target} PRIVATE cxx_std_20)
 
@@ -614,4 +614,8 @@ function(dart_filament_gui_add_example example_target)
       )
     endif()
   endif()
+endfunction()
+
+function(dart_gui_add_application example_target)
+  dart_filament_gui_add_example(${example_target} ${ARGN})
 endfunction()

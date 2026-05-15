@@ -250,7 +250,7 @@
     The `lcp_physics` runner now routes to a `--scene lcp-physics` Filament
     fixture for deterministic mass-ratio, stacking, domino, ball-drop, and
     ground contact renderables.
-    The focused GUI unit test now checks that `examples/filament_gui` contains
+    The focused GUI unit test now checks that `examples/dartsim` contains
     no C++ source/header files other than `main.cpp`, that the example has no
     direct Filament header includes, and that `main.cpp` stays a single-include
     delegated entry point without backend implementation tokens. The Filament

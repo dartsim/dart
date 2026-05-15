@@ -59,19 +59,19 @@ execute_process(
 )
 
 if(NOT _stdout STREQUAL "")
-  message(STATUS "filament_gui stdout:\n${_stdout}")
+  message(STATUS "dartsim stdout:\n${_stdout}")
 endif()
 
 if(NOT _stderr STREQUAL "")
-  message(STATUS "filament_gui stderr:\n${_stderr}")
+  message(STATUS "dartsim stderr:\n${_stderr}")
 endif()
 
 if(NOT _result STREQUAL "0")
-  message(FATAL_ERROR "filament_gui headless smoke failed with exit code ${_result}")
+  message(FATAL_ERROR "dartsim headless smoke failed with exit code ${_result}")
 endif()
 
 if(NOT EXISTS "${DART_FILAMENT_GUI_SCREENSHOT}")
-  message(FATAL_ERROR "filament_gui did not write ${DART_FILAMENT_GUI_SCREENSHOT}")
+  message(FATAL_ERROR "dartsim did not write ${DART_FILAMENT_GUI_SCREENSHOT}")
 endif()
 
 file(SIZE "${DART_FILAMENT_GUI_SCREENSHOT}" _screenshot_size)
@@ -82,7 +82,7 @@ file(READ "${DART_FILAMENT_GUI_SCREENSHOT}" _actual_header LIMIT "${_header_size
 if(NOT "${_actual_header}" STREQUAL "${_expected_header}")
   message(
     FATAL_ERROR
-    "filament_gui screenshot does not start with the expected ${_width}x${_height} binary PPM header"
+    "dartsim screenshot does not start with the expected ${_width}x${_height} binary PPM header"
   )
 endif()
 
@@ -91,7 +91,7 @@ math(EXPR _expected_size "${_header_size} + ${_width} * ${_height} * 3")
 if(_screenshot_size LESS _expected_size)
   message(
     FATAL_ERROR
-    "filament_gui screenshot is ${_screenshot_size} bytes, expected at least ${_expected_size}"
+    "dartsim screenshot is ${_screenshot_size} bytes, expected at least ${_expected_size}"
   )
 endif()
 
@@ -103,7 +103,7 @@ file(
 )
 
 if(NOT _pixel_sample MATCHES "[1-9a-fA-F]")
-  message(FATAL_ERROR "filament_gui screenshot sample contains only zero-valued pixels")
+  message(FATAL_ERROR "dartsim screenshot sample contains only zero-valued pixels")
 endif()
 
 if(DEFINED DART_FILAMENT_GUI_PYTHON AND DEFINED DART_FILAMENT_GUI_ANALYZER)
@@ -132,19 +132,19 @@ if(DEFINED DART_FILAMENT_GUI_PYTHON AND DEFINED DART_FILAMENT_GUI_ANALYZER)
   )
 
   if(NOT _analyzer_stdout STREQUAL "")
-    message(STATUS "filament_gui screenshot analysis:\n${_analyzer_stdout}")
+    message(STATUS "dartsim screenshot analysis:\n${_analyzer_stdout}")
   endif()
 
   if(NOT _analyzer_stderr STREQUAL "")
-    message(STATUS "filament_gui screenshot analysis stderr:\n${_analyzer_stderr}")
+    message(STATUS "dartsim screenshot analysis stderr:\n${_analyzer_stderr}")
   endif()
 
   if(NOT _analyzer_result STREQUAL "0")
-    message(FATAL_ERROR "filament_gui screenshot analysis failed")
+    message(FATAL_ERROR "dartsim screenshot analysis failed")
   endif()
 endif()
 
 message(
   STATUS
-  "filament_gui headless smoke wrote ${DART_FILAMENT_GUI_SCREENSHOT} (${_screenshot_size} bytes)"
+  "dartsim headless smoke wrote ${DART_FILAMENT_GUI_SCREENSHOT} (${_screenshot_size} bytes)"
 )

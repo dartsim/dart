@@ -291,12 +291,12 @@ jobs:
           mkdir -p /tmp/headless_output
           xvfb-run --auto-servernum --server-args="-screen 0 1024x768x24" \
             ./build/default/cpp/Release/bin/rigid_cubes \
-            --headless --frames 10 --out /tmp/headless_output
-          echo "Captured frames:"
+            --headless --frames 10 \
+            --screenshot /tmp/headless_output/rigid_cubes.ppm
+          echo "Captured image:"
           ls -la /tmp/headless_output/
-          test -f /tmp/headless_output/frame_000000.png
-          test -f /tmp/headless_output/frame_000008.png
-          file /tmp/headless_output/frame_000000.png | grep -q "PNG image data"
+          test -f /tmp/headless_output/rigid_cubes.ppm
+          test "$(head -c 2 /tmp/headless_output/rigid_cubes.ppm)" = "P6"
           echo "Headless rendering test passed!"
 
   filament-gui-smoke:

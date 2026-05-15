@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dart/gui/application.hpp>
 #include <dart/gui/experimental/debug.hpp>
 #include <dart/gui/experimental/geometry.hpp>
 #include <dart/gui/experimental/interaction.hpp>
