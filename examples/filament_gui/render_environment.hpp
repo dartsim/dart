@@ -37,6 +37,7 @@
 
 namespace filament {
 
+class Camera;
 class ColorGrading;
 class Engine;
 class IndirectLight;
@@ -45,6 +46,12 @@ class Skybox;
 class View;
 
 } // namespace filament
+
+namespace dart::gui::experimental {
+
+struct OrbitCamera;
+
+} // namespace dart::gui::experimental
 
 namespace dart::examples::filament_gui {
 
@@ -62,6 +69,13 @@ filament::IndirectLight* createNeutralIndirectLight(filament::Engine& engine);
 filament::Skybox* createNeutralSkybox(filament::Engine& engine);
 
 void configureWindowedViewQuality(filament::View& view);
+
+void configureViewportCamera(
+    filament::View& view,
+    filament::Camera& camera,
+    const dart::gui::experimental::OrbitCamera& orbitCamera,
+    int width,
+    int height);
 
 SceneLights createSceneLights(
     filament::Engine& engine,

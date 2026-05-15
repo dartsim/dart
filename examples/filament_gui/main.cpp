@@ -57,13 +57,11 @@
 #include <dart/utils/urdf/All.hpp>
 
 #include <GLFW/glfw3.h>
-#include <filament/Camera.h>
 #include <filament/Engine.h>
 #include <filament/Renderer.h>
 #include <filament/Scene.h>
 #include <filament/SwapChain.h>
 #include <filament/View.h>
-#include <filament/Viewport.h>
 #include <utils/EntityManager.h>
 
 #include <Eigen/Core>
@@ -124,7 +122,6 @@ using dart::gui::experimental::RenderableId;
 using dart::gui::experimental::RunOptions;
 using dart::gui::experimental::ShapeKind;
 using dart::gui::experimental::ViewerLifecycleState;
-using dart::gui::experimental::cameraEye;
 using dart::gui::experimental::computePlaneDragTranslation;
 using dart::gui::experimental::extractContactDebugLines;
 using dart::gui::experimental::extractDebugLines;
@@ -135,7 +132,6 @@ using dart::gui::experimental::markFrameSkipped;
 using dart::gui::experimental::markScreenshotRequested;
 using dart::gui::experimental::markSimulationAdvanced;
 using dart::gui::experimental::makeOrbitCameraBasis;
-using dart::gui::experimental::makePerspectiveProjection;
 using dart::gui::experimental::makePerspectivePickRay;
 using dart::gui::experimental::makeRenderableId;
 using dart::gui::experimental::makeSelectionDebugLines;
@@ -159,6 +155,7 @@ using dart::examples::filament_gui::ScreenshotCapture;
 using dart::examples::filament_gui::SceneRenderable;
 using dart::examples::filament_gui::SceneLights;
 using dart::examples::filament_gui::configureWindowedViewQuality;
+using dart::examples::filament_gui::configureViewportCamera;
 using dart::examples::filament_gui::createDartScene;
 using dart::examples::filament_gui::createDebugColorGrading;
 using dart::examples::filament_gui::createDebugLineRenderable;
@@ -879,19 +876,7 @@ int main(int argc, char* argv[])
     imguiIo.DisplaySize
         = ImVec2(static_cast<float>(width), static_cast<float>(height));
     imguiIo.DeltaTime = static_cast<float>(dartScene.world->getTimeStep());
-    view->setViewport(
-        {0,
-         0,
-         static_cast<std::uint32_t>(width),
-         static_cast<std::uint32_t>(height)});
-    const auto projection
-        = makePerspectiveProjection(cameraController.camera, width, height);
-    camera->setProjection(
-        projection.verticalFovDegrees,
-        projection.aspectRatio,
-        projection.nearPlane,
-        projection.farPlane,
-        filament::Camera::Fov::VERTICAL);
+    configureViewportCamera(*view, *camera, cameraController.camera, width, height);
     if (window != nullptr) {
       double cursorX = 0.0;
       double cursorY = 0.0;
@@ -902,13 +887,6 @@ int main(int argc, char* argv[])
                 && isInsideStatusPanel(cursorX, cursorY, options.guiScale));
       updateCameraController(window, cameraController, suppressCameraOrbit);
     }
-    const Eigen::Vector3d eye = cameraEye(cameraController.camera);
-    camera->lookAt(
-        {eye.x(), eye.y(), eye.z()},
-        {cameraController.camera.target.x(),
-         cameraController.camera.target.y(),
-         cameraController.camera.target.z()},
-        {0.0, 0.0, 1.0});
     profile.viewportCameraMs += elapsedMs(phaseStart);
 
     std::size_t simulationStepsToRun = 0;

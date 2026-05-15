@@ -32,6 +32,9 @@
 
 #include "render_environment.hpp"
 
+#include <dart/gui/experimental/viewer.hpp>
+
+#include <filament/Camera.h>
 #include <filament/ColorGrading.h>
 #include <filament/IndirectLight.h>
 #include <filament/LightManager.h>
@@ -39,6 +42,7 @@
 #include <filament/Skybox.h>
 #include <filament/ToneMapper.h>
 #include <filament/View.h>
+#include <filament/Viewport.h>
 #include <math/vec3.h>
 #include <utils/EntityManager.h>
 
@@ -46,6 +50,7 @@
 #include <array>
 
 #include <cmath>
+#include <cstdint>
 
 namespace dart::examples::filament_gui {
 namespace {
@@ -130,6 +135,35 @@ void configureWindowedViewQuality(filament::View& view)
   view.setMultiSampleAntiAliasingOptions(multiSampleAntiAliasingOptions);
   view.setAntiAliasing(filament::AntiAliasing::FXAA);
   view.setDithering(filament::Dithering::NONE);
+}
+
+void configureViewportCamera(
+    filament::View& view,
+    filament::Camera& camera,
+    const dart::gui::experimental::OrbitCamera& orbitCamera,
+    int width,
+    int height)
+{
+  view.setViewport(
+      {0,
+       0,
+       static_cast<std::uint32_t>(width),
+       static_cast<std::uint32_t>(height)});
+  const auto projection
+      = dart::gui::experimental::makePerspectiveProjection(
+          orbitCamera, width, height);
+  camera.setProjection(
+      projection.verticalFovDegrees,
+      projection.aspectRatio,
+      projection.nearPlane,
+      projection.farPlane,
+      filament::Camera::Fov::VERTICAL);
+  const Eigen::Vector3d eye
+      = dart::gui::experimental::cameraEye(orbitCamera);
+  camera.lookAt(
+      {eye.x(), eye.y(), eye.z()},
+      {orbitCamera.target.x(), orbitCamera.target.y(), orbitCamera.target.z()},
+      {0.0, 0.0, 1.0});
 }
 
 float3 orbitingKeyLightDirection(
