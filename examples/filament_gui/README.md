@@ -232,6 +232,6 @@ DART_BUILD_GUI_FILAMENT_OVERRIDE=ON \
   pixi run config
 cmake --build build/default/cpp/Release --target dart_filament_gui
 ctest --test-dir build/default/cpp/Release \
-  -R 'EXAMPLE_filament_gui_headless_smoke|EXAMPLE_filament_gui_drag_and_drop_headless_smoke' \
+  -R 'EXAMPLE_filament_gui_(headless|drag_and_drop_headless|polyhedron_headless)_smoke' \
   --output-on-failure
 ```

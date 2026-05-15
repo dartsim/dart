@@ -269,10 +269,11 @@
   is still a local workaround rather than a supported packaging path.
 - `pixi run test-filament-gui-smoke` now exercises the explicit pinned
   `DART_FETCH_FILAMENT=ON` path on Linux x86_64, builds without the legacy OSG
-  GUI target, and runs the default plus drag-and-drop headless CTest smokes.
-  When no display server is available, the task runs the smokes under Xvfb and
-  prefers Mesa's EGL vendor file for software rendering. The Ubuntu CI workflow
-  has a matching opt-in smoke job that gets Xvfb, libc++, and libc++abi from
+  GUI target, and runs the default, drag-and-drop, and polyhedron headless
+  CTest smokes. When no display server is available, the task runs the smokes
+  under Xvfb and prefers Mesa's EGL vendor file for software rendering. The
+  Ubuntu CI workflow has a matching opt-in smoke job that gets Xvfb, libc++,
+  and libc++abi from
   system packages instead of relying on a Filament package. The MVP PR #2647
   merged with hosted `Filament GUI Smoke (GCC)` and
   `Filament GUI Smoke (Clang)` passing.

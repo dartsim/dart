@@ -15,7 +15,8 @@ from pathlib import Path
 
 FILAMENT_SMOKE_PATTERN = (
     "EXAMPLE_filament_gui_headless_smoke|"
-    "EXAMPLE_filament_gui_drag_and_drop_headless_smoke"
+    "EXAMPLE_filament_gui_drag_and_drop_headless_smoke|"
+    "EXAMPLE_filament_gui_polyhedron_headless_smoke"
 )
 
 

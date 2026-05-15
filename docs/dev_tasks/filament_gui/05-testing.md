@@ -65,8 +65,10 @@
    `EXAMPLE_filament_gui_headless_smoke` on graphics-capable workers.
 4. Opt-in interaction fixture smoke through
    `EXAMPLE_filament_gui_drag_and_drop_headless_smoke` on the same workers.
-5. Focused C++ unit tests for scene extraction and interaction math.
-6. Python import/binding smoke tests for the constrained experimental API.
+5. Opt-in polyhedron visual fixture smoke through
+   `EXAMPLE_filament_gui_polyhedron_headless_smoke` on the same workers.
+6. Focused C++ unit tests for scene extraction and interaction math.
+7. Python import/binding smoke tests for the constrained experimental API.
 
 ## Local commands
 
@@ -119,12 +121,12 @@ LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
   cmake --build build/default/cpp/Release --target dart_filament_gui
 LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
   ctest --test-dir build/default/cpp/Release \
-  -R 'EXAMPLE_filament_gui_headless_smoke|EXAMPLE_filament_gui_drag_and_drop_headless_smoke' \
+  -R 'EXAMPLE_filament_gui_(headless|drag_and_drop_headless|polyhedron_headless)_smoke' \
   --output-on-failure
 ```
 
 The CI-oriented shortcut uses the same explicit fetch path, disables the legacy
-OSG GUI target, and builds only the Filament example before running both CTest
+OSG GUI target, and builds only the Filament example before running the CTest
 smokes:
 
 ```bash
@@ -211,15 +213,17 @@ Known current result:
   dimensions, expected byte count, nonzero sampled pixel data, and
   scene-region luminance contrast from the shadowed fixture. The same option
   also registers `EXAMPLE_filament_gui_drag_and_drop_headless_smoke`, which
-  runs `--scene drag-and-drop` through the headless path and verifies the
-  generated PPM structure and sampled pixels.
+  runs `--scene drag-and-drop`, and
+  `EXAMPLE_filament_gui_polyhedron_headless_smoke`, which runs
+  `--scene polyhedron`; both fixture smokes use the headless path and verify
+  the generated PPM structure and sampled pixels.
 - The opt-in CTest smoke passed locally with the explicit fetch path,
   compatible libc++/libc++abi libraries, and Mesa llvmpipe.
 - `pixi run test-filament-gui-smoke` passed locally with the same explicit
   fetch path. The task configures with `DART_BUILD_GUI=OFF`,
   `DART_BUILD_DARTPY=OFF`, `DART_FETCH_FILAMENT=ON`, and
   `DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS=ON`, builds `dart_filament_gui`, and
-  runs both headless CTest smokes. When `DISPLAY` is unset, the task runs CTest
+  runs the headless CTest smokes. When `DISPLAY` is unset, the task runs CTest
   under `xvfb-run` and prefers Mesa's EGL vendor file when available so the
   OpenGL backend uses software rendering on headless Linux workers.
 - `.github/workflows/ci_ubuntu.yml` now includes a `filament-gui-smoke` job
