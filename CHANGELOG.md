@@ -214,6 +214,10 @@
     `--scene atlas-puppet` Filament fixture that loads Atlas, exposes generic
     selectable IK targets for its hands and feet, and keeps the legacy
     standalone source as comparison material for the OSG teleoperation widget.
+    The `hubo_puppet` runner now routes to a `--scene hubo-puppet` Filament
+    fixture that loads Hubo, exposes selectable IK targets for its hands, feet,
+    and wrist pegs, and keeps the legacy standalone source as comparison
+    material for the OSG teleoperation widget and support-polygon visual.
     The `atlas_simbicon` runner now routes to a `--scene atlas-simbicon`
     Filament fixture that loads the legacy Atlas SDF and ground in the
     Simbicon start orientation while the legacy standalone source remains

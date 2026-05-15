@@ -192,6 +192,18 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Box) {
     ++counts.atlasPuppetGrounds;
   }
+  if (descriptor.skeletonName == kHuboPuppetRobotFixtureSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Mesh) {
+    ++counts.huboPuppetMeshes;
+  }
+  if (descriptor.skeletonName == kHuboPuppetFixtureGroundSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.huboPuppetGrounds;
+  }
+  if (descriptor.shapeFrameName.starts_with(kHuboPuppetIkTargetFramePrefix)
+      && descriptor.geometry.kind == ShapeKind::Sphere) {
+    ++counts.huboPuppetIkTargets;
+  }
   if (descriptor.skeletonName == kAtlasSimbiconFixtureGroundSkeletonName
       && descriptor.geometry.kind == ShapeKind::Box) {
     ++counts.atlasSimbiconGrounds;
@@ -595,6 +607,31 @@ bool validateSceneDescriptorContent(
         counts.atlasPuppetIkTargets,
         kAtlasPuppetIkTargetCount,
         "atlas-puppet scene",
+        "visible IK target renderable descriptors",
+        output);
+  }
+
+  if (scene == ExampleScene::HuboPuppet) {
+    if (!requireAtLeast(
+            counts.huboPuppetMeshes,
+            kMinHuboPuppetRenderableCount,
+            "Hubo puppet fixture",
+            "visible mesh renderables",
+            output)) {
+      return false;
+    }
+    if (!requireEqual(
+            counts.huboPuppetGrounds,
+            kHuboPuppetFixtureGroundCount,
+            "hubo-puppet scene",
+            "visible ground renderable descriptor",
+            output)) {
+      return false;
+    }
+    return requireEqual(
+        counts.huboPuppetIkTargets,
+        kHuboPuppetIkTargetCount,
+        "hubo-puppet scene",
         "visible IK target renderable descriptors",
         output);
   }
@@ -1270,6 +1307,28 @@ bool validateCreatedSceneContent(
         created.atlasPuppetIkTargets,
         expected.atlasPuppetIkTargets,
         "atlas-puppet IK target renderables",
+        output);
+  }
+
+  if (scene == ExampleScene::HuboPuppet) {
+    if (!requireCreatedAtLeast(
+            created.huboPuppetMeshes,
+            expected.huboPuppetMeshes,
+            "Hubo puppet mesh renderables",
+            output)) {
+      return false;
+    }
+    if (!requireCreatedEqual(
+            created.huboPuppetGrounds,
+            expected.huboPuppetGrounds,
+            "hubo-puppet ground renderables",
+            output)) {
+      return false;
+    }
+    return requireCreatedEqual(
+        created.huboPuppetIkTargets,
+        expected.huboPuppetIkTargets,
+        "hubo-puppet IK target renderables",
         output);
   }
 

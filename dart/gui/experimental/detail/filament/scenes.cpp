@@ -161,6 +161,8 @@ const char* sceneName(ExampleScene scene)
       return "mimic-pendulums";
     case ExampleScene::AtlasPuppet:
       return "atlas-puppet";
+    case ExampleScene::HuboPuppet:
+      return "hubo-puppet";
     case ExampleScene::AtlasSimbicon:
       return "atlas-simbicon";
     case ExampleScene::OperationalSpaceControl:
@@ -261,6 +263,10 @@ bool parseSceneName(std::string_view name, ExampleScene& scene)
   }
   if (name == "atlas-puppet") {
     scene = ExampleScene::AtlasPuppet;
+    return true;
+  }
+  if (name == "hubo-puppet") {
+    scene = ExampleScene::HuboPuppet;
     return true;
   }
   if (name == "atlas-simbicon") {
@@ -428,6 +434,12 @@ dart::gui::experimental::OrbitCamera initialCameraForScene(ExampleScene scene)
       camera.pitch = 0.28;
       camera.distance = 3.8;
       break;
+    case ExampleScene::HuboPuppet:
+      camera.target = Eigen::Vector3d(0.0, 0.0, 0.85);
+      camera.yaw = -0.76;
+      camera.pitch = 0.30;
+      camera.distance = 3.4;
+      break;
     case ExampleScene::AtlasSimbicon:
       camera.target = Eigen::Vector3d(0.0, 0.85, 0.0);
       camera.yaw = -0.68;
@@ -580,7 +592,7 @@ AppOptions parseOptions(int argc, char* argv[])
                      "'add-delete-skels', 'vehicle', 'hybrid-dynamics', "
                      "'joint-constraints', 'free-joint-cases', "
                      "'human-joint-limits', 'lcp-physics', "
-                     "'mimic-pendulums', 'atlas-puppet', "
+                     "'mimic-pendulums', 'atlas-puppet', 'hubo-puppet', "
                      "'atlas-simbicon', 'operational-space-control', "
                      "'wam-ikfast', 'fetch', 'tinkertoy', 'drag-and-drop', "
                      "'simple-frames', 'soft-bodies', 'point-cloud', "
@@ -612,7 +624,7 @@ AppOptions parseOptions(int argc, char* argv[])
                    " [--orbit-light-period SECONDS]"
                    " [--gui-scale N]"
                    " [--profile]"
-                   " [--scene mvp|hello-world|boxes|hardcoded-design|rigid-chain|rigid-loop|mixed-chain|coupler-constraint|add-delete-skels|vehicle|hybrid-dynamics|joint-constraints|free-joint-cases|human-joint-limits|lcp-physics|mimic-pendulums|atlas-puppet|atlas-simbicon|operational-space-control|wam-ikfast|fetch|tinkertoy|drag-and-drop|simple-frames|soft-bodies|point-cloud|capsule-ground-contact|simulation-event-handler|polyhedron|heightmap|g1]"
+                   " [--scene mvp|hello-world|boxes|hardcoded-design|rigid-chain|rigid-loop|mixed-chain|coupler-constraint|add-delete-skels|vehicle|hybrid-dynamics|joint-constraints|free-joint-cases|human-joint-limits|lcp-physics|mimic-pendulums|atlas-puppet|hubo-puppet|atlas-simbicon|operational-space-control|wam-ikfast|fetch|tinkertoy|drag-and-drop|simple-frames|soft-bodies|point-cloud|capsule-ground-contact|simulation-event-handler|polyhedron|heightmap|g1]"
                    " [--g1-package-uri URI] [--g1-robot-uri URI]"
                    " [--g1-package-name NAME]\n";
       std::exit(0);
@@ -690,6 +702,8 @@ DartScene createDartScene(const AppOptions& options)
       return createMimicPendulumsScene();
     case ExampleScene::AtlasPuppet:
       return createAtlasPuppetScene();
+    case ExampleScene::HuboPuppet:
+      return createHuboPuppetScene();
     case ExampleScene::AtlasSimbicon:
       return createAtlasSimbiconScene();
     case ExampleScene::OperationalSpaceControl:

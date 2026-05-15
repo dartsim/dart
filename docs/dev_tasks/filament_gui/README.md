@@ -190,7 +190,7 @@
   MVP/G1/hello-world/boxes/hardcoded-design/rigid-chain/rigid-loop/
   mixed-chain/coupler-constraint/add-delete-skels/vehicle/hybrid-dynamics/
   joint-constraints/free-joint-cases/human-joint-limits/lcp-physics/
-  mimic-pendulums/atlas-puppet/atlas-simbicon/
+  mimic-pendulums/atlas-puppet/hubo-puppet/atlas-simbicon/
   operational-space-control/wam-ikfast/fetch/tinkertoy/drag/
   simple-frames/
   soft-bodies/point-cloud/capsule-ground-contact/simulation-event-handler/
@@ -340,6 +340,12 @@
   renderables. The in-tree `pixi run ex atlas_puppet` runner now routes to
   that Filament scene while the legacy standalone OSG source remains available
   for teleoperation-widget and support-polygon comparison.
+- The Filament example includes `--scene hubo-puppet`, a Hubo IK-target
+  fixture that carries the legacy `hubo_puppet` visual workflow through
+  descriptor-owned Hubo mesh, ground, and selectable hand/foot/wrist-peg target
+  renderables. The in-tree `pixi run ex hubo_puppet` runner now routes to that
+  Filament scene while the legacy standalone OSG source remains available for
+  teleoperation-widget, support-polygon, and keyboard-control comparison.
 - The Filament example includes `--scene atlas-simbicon`, an Atlas visual
   fixture that carries the legacy `atlas_simbicon` startup view through
   descriptor-owned Atlas mesh and ground renderables. The in-tree
@@ -470,7 +476,8 @@
   rigid-chain, rigid-loop, mixed-chain, coupler-constraint, add-delete-skels,
   vehicle, hybrid-dynamics, joint-constraints, free-joint-cases,
   human-joint-limits, lcp-physics, mimic-pendulums, atlas-puppet,
-  atlas-simbicon, operational-space-control, wam-ikfast, fetch, tinkertoy,
+  hubo-puppet, atlas-simbicon, operational-space-control, wam-ikfast, fetch,
+  tinkertoy,
   drag-and-drop,
   simple-frames, soft-bodies,
   point-cloud, capsule-ground-contact, simulation-event-handler, polyhedron,

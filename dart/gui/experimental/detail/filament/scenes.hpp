@@ -84,6 +84,7 @@ enum class ExampleScene
   LcpPhysics,
   MimicPendulums,
   AtlasPuppet,
+  HuboPuppet,
   AtlasSimbicon,
   OperationalSpaceControl,
   WamIkFast,
@@ -141,6 +142,12 @@ inline constexpr const char* kAtlasFixtureSkeletonName = "visual_atlas_torso_mes
 inline constexpr const char* kAtlasRobotFixtureSkeletonName = "visual_atlas_robot";
 inline constexpr const char* kAtlasPuppetFixtureGroundSkeletonName
     = "visual_atlas_puppet_ground";
+inline constexpr const char* kHuboPuppetRobotFixtureSkeletonName
+    = "visual_hubo_puppet_robot";
+inline constexpr const char* kHuboPuppetFixtureGroundSkeletonName
+    = "visual_hubo_puppet_ground";
+inline constexpr const char* kHuboPuppetIkTargetFramePrefix
+    = "hubo_puppet_ik_target_";
 inline constexpr const char* kAtlasSimbiconFixtureGroundSkeletonName
     = "visual_atlas_simbicon_ground";
 inline constexpr const char* kAtlasPuppetIkTargetFramePrefix
@@ -265,6 +272,9 @@ inline constexpr std::size_t kMimicPendulumsFixtureCylinderCount = 15;
 inline constexpr std::size_t kMimicPendulumsFixtureGroundCount = 1;
 inline constexpr std::size_t kAtlasPuppetFixtureGroundCount = 1;
 inline constexpr std::size_t kAtlasPuppetIkTargetCount = 4;
+inline constexpr std::size_t kMinHuboPuppetRenderableCount = 20;
+inline constexpr std::size_t kHuboPuppetFixtureGroundCount = 1;
+inline constexpr std::size_t kHuboPuppetIkTargetCount = 6;
 inline constexpr std::size_t kAtlasSimbiconFixtureGroundCount = 1;
 inline constexpr std::size_t kOperationalSpaceControlTargetCount = 1;
 inline constexpr std::size_t kOperationalSpaceControlGroundCount = 1;

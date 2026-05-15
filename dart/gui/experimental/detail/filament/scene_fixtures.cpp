@@ -1102,6 +1102,266 @@ void addG1IkTargets(
   }
 }
 
+void setRequiredHuboPuppetDofPosition(
+    const dart::dynamics::SkeletonPtr& hubo,
+    const char* name,
+    double position)
+{
+  auto* dof = hubo ? hubo->getDof(name) : nullptr;
+  if (dof == nullptr) {
+    throw std::runtime_error(
+        "Hubo puppet fixture is missing expected DOF " + std::string(name));
+  }
+  dof->setPosition(position);
+}
+
+void setRequiredHuboPuppetDofLimits(
+    const dart::dynamics::SkeletonPtr& hubo,
+    const char* name,
+    double lower,
+    double upper)
+{
+  auto* dof = hubo ? hubo->getDof(name) : nullptr;
+  if (dof == nullptr) {
+    throw std::runtime_error(
+        "Hubo puppet fixture is missing expected DOF " + std::string(name));
+  }
+  dof->setPositionLowerLimit(lower);
+  dof->setPositionUpperLimit(upper);
+}
+
+void setupHuboPuppetStartConfiguration(
+    const dart::dynamics::SkeletonPtr& hubo)
+{
+  const std::array<std::pair<const char*, double>, 10> jointPositions{{
+      {"LHP", -45.0},
+      {"LKP", 90.0},
+      {"LAP", -45.0},
+      {"RHP", -45.0},
+      {"RKP", 90.0},
+      {"RAP", -45.0},
+      {"LSP", 30.0},
+      {"LEP", -120.0},
+      {"RSP", 30.0},
+      {"REP", -120.0},
+  }};
+  for (const auto& [name, degrees] : jointPositions) {
+    setRequiredHuboPuppetDofPosition(
+        hubo, name, dart::math::toRadian(degrees));
+  }
+
+  const std::array<const char*, 4> limitedDofs{{"LSY", "LWY", "RSY", "RWY"}};
+  for (const char* name : limitedDofs) {
+    setRequiredHuboPuppetDofLimits(
+        hubo,
+        name,
+        dart::math::toRadian(-90.0),
+        dart::math::toRadian(90.0));
+  }
+}
+
+void removeHuboPuppetFingerBodyNodes(const dart::dynamics::SkeletonPtr& hubo)
+{
+  if (!hubo) {
+    return;
+  }
+
+  for (std::size_t i = 0; i < hubo->getNumBodyNodes();) {
+    auto* body = hubo->getBodyNode(i);
+    if (body == nullptr) {
+      ++i;
+      continue;
+    }
+
+    const std::string name = body->getName();
+    if (name.starts_with("Body_LF") || name.starts_with("Body_RF")) {
+      body->remove();
+      continue;
+    }
+    ++i;
+  }
+}
+
+dart::dynamics::SkeletonPtr loadHuboPuppetSkeleton()
+{
+  dart::io::ReadOptions options;
+  options.addPackageDirectory(
+      "drchubo", dart::config::dataPath("urdf/drchubo"));
+  const dart::common::Uri huboUri = dart::common::Uri::createFromPath(
+      dart::config::dataPath("urdf/drchubo/drchubo.urdf"));
+  auto hubo = dart::io::readSkeleton(huboUri, options);
+  if (!hubo) {
+    throw std::runtime_error(
+        "Failed to load Hubo puppet fixture from " + huboUri.toString());
+  }
+
+  hubo->setName(kHuboPuppetRobotFixtureSkeletonName);
+  removeHuboPuppetFingerBodyNodes(hubo);
+  setupHuboPuppetStartConfiguration(hubo);
+
+  auto* rootBody = hubo->getRootBodyNode();
+  if (rootBody != nullptr
+      && dynamic_cast<FreeJoint*>(rootBody->getParentJoint()) != nullptr) {
+    Eigen::Isometry3d transform = rootBody->getWorldTransform();
+    transform.translation().x() = 0.0;
+    transform.translation().y() = 0.0;
+    FreeJoint::setTransformOf(rootBody, transform);
+    if (const auto bounds = computeVisualWorldBounds(hubo)) {
+      constexpr double groundClearance = 0.015;
+      transform = rootBody->getWorldTransform();
+      transform.translation().z() += groundClearance - bounds->first.z();
+      FreeJoint::setTransformOf(rootBody, transform);
+    }
+  }
+
+  disableSkeletonCollisionAndGravity(hubo);
+  return hubo;
+}
+
+dart::math::SupportGeometry makeHuboPuppetFootSupportGeometry()
+{
+  dart::math::SupportGeometry support;
+  support.emplace_back(-0.08, 0.05, 0.0);
+  support.emplace_back(-0.18, 0.05, 0.0);
+  support.emplace_back(-0.18, -0.05, 0.0);
+  support.emplace_back(-0.08, -0.05, 0.0);
+  return support;
+}
+
+void addHuboPuppetIkTargets(
+    DartScene& scene, const dart::dynamics::SkeletonPtr& hubo)
+{
+  struct Config
+  {
+    const char* bodyNode;
+    const char* effectorName;
+    const char* targetSuffix;
+    const char* label;
+    int hotkey;
+    Eigen::Isometry3d relativeTransform;
+    Eigen::Vector4d color;
+    bool supportContact;
+  };
+
+  Eigen::Isometry3d hand = Eigen::Isometry3d::Identity();
+  hand.translation() = Eigen::Vector3d(0.0, 0.0, -0.09);
+
+  Eigen::Isometry3d foot = Eigen::Isometry3d::Identity();
+  foot.translation() = Eigen::Vector3d(0.14, 0.0, -0.126);
+
+  Eigen::Isometry3d peg = Eigen::Isometry3d::Identity();
+  peg.translation() = Eigen::Vector3d(0.0, 0.0, 0.09);
+
+  const std::array<Config, 6> configs{{
+      {"Body_LWR",
+       "hubo_puppet_left_hand",
+       "left_hand",
+       "1 left hand",
+       '1',
+       hand,
+       {0.18, 0.55, 1.0, 0.92},
+       false},
+      {"Body_RWR",
+       "hubo_puppet_right_hand",
+       "right_hand",
+       "2 right hand",
+       '2',
+       hand,
+       {1.0, 0.40, 0.24, 0.92},
+       false},
+      {"Body_LAR",
+       "hubo_puppet_left_foot",
+       "left_foot",
+       "3 left foot",
+       '3',
+       foot,
+       {0.26, 0.86, 0.34, 0.92},
+       true},
+      {"Body_RAR",
+       "hubo_puppet_right_foot",
+       "right_foot",
+       "4 right foot",
+       '4',
+       foot,
+       {0.95, 0.72, 0.18, 0.92},
+       true},
+      {"Body_LWP",
+       "hubo_puppet_left_peg",
+       "left_peg",
+       "5 left peg",
+       '5',
+       peg,
+       {0.70, 0.43, 0.96, 0.92},
+       false},
+      {"Body_RWP",
+       "hubo_puppet_right_peg",
+       "right_peg",
+       "6 right peg",
+       '6',
+       peg,
+       {0.25, 0.88, 0.78, 0.92},
+       false},
+  }};
+
+  if (!scene.world || !hubo) {
+    return;
+  }
+
+  const auto footSupportGeometry = makeHuboPuppetFootSupportGeometry();
+  for (const Config& config : configs) {
+    auto* bodyNode = hubo->getBodyNode(config.bodyNode);
+    if (bodyNode == nullptr) {
+      throw std::runtime_error(
+          "Hubo puppet fixture is missing body node "
+          + std::string(config.bodyNode));
+    }
+
+    auto* endEffector = bodyNode->createEndEffector(config.effectorName);
+    endEffector->setDefaultRelativeTransform(config.relativeTransform, true);
+    if (config.supportContact) {
+      auto* support = endEffector->getSupport(true);
+      support->setGeometry(footSupportGeometry);
+      support->setActive(true);
+    }
+
+    auto ik = endEffector->getIK(true);
+    ik->useWholeBody();
+    ik->setGradientMethod<InverseKinematics::JacobianTranspose>();
+    ik->getSolver()->setNumMaxIterations(30);
+    if (config.supportContact) {
+      ik->setHierarchyLevel(1);
+      Eigen::Vector3d linearBounds
+          = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+      Eigen::Vector3d angularBounds
+          = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+      linearBounds.z() = 1e-8;
+      angularBounds.x() = 1e-8;
+      angularBounds.y() = 1e-8;
+      ik->getErrorMethod().setLinearBounds(-linearBounds, linearBounds);
+      ik->getErrorMethod().setAngularBounds(-angularBounds, angularBounds);
+    }
+
+    const std::string targetName
+        = std::string(kHuboPuppetIkTargetFramePrefix) + config.targetSuffix;
+    auto target = SimpleFrame::createShared(
+        dart::dynamics::Frame::World(),
+        targetName,
+        endEffector->getWorldTransform());
+    target->setShape(std::make_shared<SphereShape>(0.055));
+    target->getVisualAspect(true)->setRGBA(config.color);
+    scene.world->addSimpleFrame(target);
+    ik->setTarget(target);
+
+    IkHandle handle;
+    handle.targetRenderableId = makeRenderableId(*target);
+    handle.label = config.label;
+    handle.hotkey = config.hotkey;
+    handle.target = std::move(target);
+    handle.ik = std::move(ik);
+    scene.ikHandles.push_back(std::move(handle));
+  }
+}
+
 dart::dynamics::SkeletonPtr createStaticVisualSkeleton(
     const std::string& name,
     const ShapePtr& shape,
@@ -3180,6 +3440,24 @@ DartScene createAtlasPuppetScene()
   auto atlas = loadAtlasPuppetSkeleton();
   scene.world->addSkeleton(atlas);
   addAtlasPuppetIkTargets(scene, atlas);
+
+  return scene;
+}
+
+DartScene createHuboPuppetScene()
+{
+  DartScene scene;
+  scene.world = World::create("filament_gui_hubo_puppet");
+  scene.world->setGravity(Eigen::Vector3d::Zero());
+  scene.world->addSkeleton(createStaticVisualSkeleton(
+      kHuboPuppetFixtureGroundSkeletonName,
+      std::make_shared<BoxShape>(Eigen::Vector3d(4.0, 4.0, 0.04)),
+      Eigen::Vector3d(0.0, 0.0, -0.02),
+      Eigen::Vector3d(0.86, 0.88, 0.90)));
+
+  auto hubo = loadHuboPuppetSkeleton();
+  scene.world->addSkeleton(hubo);
+  addHuboPuppetIkTargets(scene, hubo);
 
   return scene;
 }

@@ -104,7 +104,7 @@ with extra CMake requirements or redirected experimental GUI runners, such as
 `rigid_loop`, `mixed_chain`, `coupler_constraint`, `drag_and_drop`,
 `add_delete_skels`, `vehicle`, `hybrid_dynamics`, `biped_stand`,
 `joint_constraints`, `free_joint_cases`, `human_joint_limits`,
-`mimic_pendulums`, `atlas_puppet`, `atlas_simbicon`,
+`mimic_pendulums`, `atlas_puppet`, `hubo_puppet`, `atlas_simbicon`,
 `operational_space_control`, `wam_ikfast`, `fetch`, `tinkertoy`,
 `simple_frames`, `soft_bodies`, `point_cloud`, `empty`,
 `capsule_ground_contact`, `lcp_physics`, `simulation_event_handler`,

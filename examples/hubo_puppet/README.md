@@ -14,6 +14,12 @@
 This project is dependent on DART. Please make sure a proper version of DART is
 installed before building this project.
 
+Inside the source tree, `pixi run ex hubo_puppet` routes to
+`examples/filament_gui --scene hubo-puppet` so the in-tree runner uses the
+maintained Filament visual path. This standalone source remains comparison
+material for the OSG teleoperation widget, support-polygon visual, and
+keyboard controls.
+
 ## Build Instructions
 
 From this directory:

@@ -98,37 +98,39 @@
     `EXAMPLE_filament_gui_mimic_pendulums_headless_smoke` on the same workers.
 19. Opt-in atlas-puppet visual/IK-target fixture smoke through
     `EXAMPLE_filament_gui_atlas_puppet_headless_smoke` on the same workers.
-20. Opt-in atlas-simbicon visual fixture smoke through
+20. Opt-in hubo-puppet visual/IK-target fixture smoke through
+    `EXAMPLE_filament_gui_hubo_puppet_headless_smoke` on the same workers.
+21. Opt-in atlas-simbicon visual fixture smoke through
     `EXAMPLE_filament_gui_atlas_simbicon_headless_smoke` on the same workers.
-21. Opt-in operational-space-control fixture smoke through
+22. Opt-in operational-space-control fixture smoke through
     `EXAMPLE_filament_gui_operational_space_control_headless_smoke` on the
     same workers.
-22. Opt-in wam-ikfast visual fixture smoke through
+23. Opt-in wam-ikfast visual fixture smoke through
     `EXAMPLE_filament_gui_wam_ikfast_headless_smoke` on the same workers.
-23. Opt-in fetch MJCF visual fixture smoke through
+24. Opt-in fetch MJCF visual fixture smoke through
     `EXAMPLE_filament_gui_fetch_headless_smoke` on the same workers.
-24. Opt-in tinkertoy builder fixture smoke through
+25. Opt-in tinkertoy builder fixture smoke through
     `EXAMPLE_filament_gui_tinkertoy_headless_smoke` on the same workers.
-25. Opt-in interaction fixture smoke through
+26. Opt-in interaction fixture smoke through
     `EXAMPLE_filament_gui_drag_and_drop_headless_smoke` on the same workers.
-26. Opt-in simple-frames visual fixture smoke through
+27. Opt-in simple-frames visual fixture smoke through
     `EXAMPLE_filament_gui_simple_frames_headless_smoke` on the same workers.
-27. Opt-in soft-bodies visual fixture smoke through
+28. Opt-in soft-bodies visual fixture smoke through
     `EXAMPLE_filament_gui_soft_bodies_headless_smoke` on the same workers.
-28. Opt-in point-cloud visual fixture smoke through
+29. Opt-in point-cloud visual fixture smoke through
     `EXAMPLE_filament_gui_point_cloud_headless_smoke` on the same workers.
-29. Opt-in capsule contact fixture smoke through
+30. Opt-in capsule contact fixture smoke through
     `EXAMPLE_filament_gui_capsule_ground_contact_headless_smoke` on the same
     workers.
-30. Opt-in simulation event-handler fixture smoke through
+31. Opt-in simulation event-handler fixture smoke through
     `EXAMPLE_filament_gui_simulation_event_handler_headless_smoke` on the same
     workers.
-31. Opt-in polyhedron visual fixture smoke through
+32. Opt-in polyhedron visual fixture smoke through
     `EXAMPLE_filament_gui_polyhedron_headless_smoke` on the same workers.
-32. Opt-in heightmap visual fixture smoke through
+33. Opt-in heightmap visual fixture smoke through
     `EXAMPLE_filament_gui_heightmap_headless_smoke` on the same workers.
-33. Focused C++ unit tests for scene extraction and interaction math.
-34. Python import/binding smoke tests for the constrained experimental API.
+34. Focused C++ unit tests for scene extraction and interaction math.
+35. Python import/binding smoke tests for the constrained experimental API.
 
 ## Local commands
 
@@ -181,7 +183,7 @@ LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
   cmake --build build/default/cpp/Release --target dart_filament_gui
 LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
   ctest --test-dir build/default/cpp/Release \
-  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|hardcoded_design_headless|rigid_chain_headless|rigid_loop_headless|mixed_chain_headless|coupler_constraint_headless|add_delete_skels_headless|vehicle_headless|hybrid_dynamics_headless|joint_constraints_headless|free_joint_cases_headless|human_joint_limits_headless|lcp_physics_headless|mimic_pendulums_headless|atlas_puppet_headless|atlas_simbicon_headless|operational_space_control_headless|wam_ikfast_headless|fetch_headless|tinkertoy_headless|drag_and_drop_headless|simple_frames_headless|soft_bodies_headless|point_cloud_headless|capsule_ground_contact_headless|simulation_event_handler_headless|polyhedron_headless|heightmap_headless)_smoke' \
+  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|hardcoded_design_headless|rigid_chain_headless|rigid_loop_headless|mixed_chain_headless|coupler_constraint_headless|add_delete_skels_headless|vehicle_headless|hybrid_dynamics_headless|joint_constraints_headless|free_joint_cases_headless|human_joint_limits_headless|lcp_physics_headless|mimic_pendulums_headless|atlas_puppet_headless|hubo_puppet_headless|atlas_simbicon_headless|operational_space_control_headless|wam_ikfast_headless|fetch_headless|tinkertoy_headless|drag_and_drop_headless|simple_frames_headless|soft_bodies_headless|point_cloud_headless|capsule_ground_contact_headless|simulation_event_handler_headless|polyhedron_headless|heightmap_headless)_smoke' \
   --output-on-failure
 ```
 
@@ -302,6 +304,8 @@ Known current result:
   `--scene mimic-pendulums`,
   `EXAMPLE_filament_gui_atlas_puppet_headless_smoke`, which runs
   `--scene atlas-puppet`,
+  `EXAMPLE_filament_gui_hubo_puppet_headless_smoke`, which runs
+  `--scene hubo-puppet`,
   `EXAMPLE_filament_gui_atlas_simbicon_headless_smoke`, which runs
   `--scene atlas-simbicon`,
   `EXAMPLE_filament_gui_operational_space_control_headless_smoke`, which runs
@@ -337,7 +341,7 @@ Known current result:
   runs the default, hello-world, boxes, hardcoded-design, rigid-chain,
   rigid-loop, mixed-chain, coupler-constraint, add-delete-skels, vehicle,
   hybrid-dynamics, joint-constraints, free-joint-cases, human-joint-limits,
-  lcp-physics, mimic-pendulums, atlas-puppet, atlas-simbicon,
+  lcp-physics, mimic-pendulums, atlas-puppet, hubo-puppet, atlas-simbicon,
   operational-space-control, wam-ikfast, fetch, tinkertoy, drag-and-drop,
   simple-frames, soft-bodies,
   point-cloud, capsule-ground-contact, simulation-event-handler, polyhedron,

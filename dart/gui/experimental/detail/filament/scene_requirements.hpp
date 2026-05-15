@@ -100,6 +100,9 @@ struct SceneContentCounts
   std::size_t mimicPendulumsGrounds = 0;
   std::size_t atlasPuppetGrounds = 0;
   std::size_t atlasPuppetIkTargets = 0;
+  std::size_t huboPuppetMeshes = 0;
+  std::size_t huboPuppetGrounds = 0;
+  std::size_t huboPuppetIkTargets = 0;
   std::size_t atlasSimbiconGrounds = 0;
   std::size_t pyramids = 0;
   std::size_t multiSpheres = 0;

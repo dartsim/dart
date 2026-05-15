@@ -250,6 +250,12 @@
   routes to this Filament scene by default while the standalone source remains
   as legacy OSG comparison material for teleoperation-widget and
   support-polygon behavior.
+- The Filament example includes a selectable `--scene hubo-puppet` fixture
+  that loads Hubo and renders the robot, ground, and six selectable hand, foot,
+  and wrist-peg IK target spheres through descriptor-owned renderables.
+  `pixi run ex hubo_puppet` routes to this Filament scene by default while the
+  standalone source remains as legacy OSG comparison material for
+  teleoperation-widget, support-polygon, and keyboard-control behavior.
 - The Filament example includes a selectable `--scene atlas-simbicon` fixture
   that loads the legacy Atlas SDF and ground in the Simbicon start orientation
   through descriptor-owned renderables. `pixi run ex atlas_simbicon` routes to
@@ -459,8 +465,8 @@
   hardcoded-design/rigid-chain/rigid-loop/mixed-chain/coupler-constraint/
   add-delete-skels/vehicle/hybrid-dynamics/joint-constraints/
   free-joint-cases/human-joint-limits/lcp-physics/mimic-pendulums/atlas-puppet/
-  atlas-simbicon/operational-space-control/wam-ikfast/fetch/tinkertoy/drag/
-  simple-frames/soft-bodies/point-cloud/
+  hubo-puppet/atlas-simbicon/operational-space-control/wam-ikfast/fetch/
+  tinkertoy/drag/simple-frames/soft-bodies/point-cloud/
   capsule-ground-contact/simulation-event-handler/polyhedron/heightmap
   validation gates now live in
   `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.
