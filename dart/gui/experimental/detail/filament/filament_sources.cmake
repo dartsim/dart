@@ -337,6 +337,23 @@ function(dart_filament_gui_add_smoke_tests example_target)
   )
   _dart_filament_gui_apply_smoke_test_properties(${point_cloud_test_name})
 
+  set(capsule_ground_contact_test_name
+      EXAMPLE_filament_gui_capsule_ground_contact_headless_smoke)
+  add_test(
+    NAME ${capsule_ground_contact_test_name}
+    COMMAND
+      "${CMAKE_COMMAND}"
+      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
+      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_capsule_ground_contact_headless_smoke.ppm"
+      -DDART_FILAMENT_GUI_SCENE=capsule-ground-contact
+      -DDART_FILAMENT_GUI_WIDTH=640
+      -DDART_FILAMENT_GUI_HEIGHT=480
+      -DDART_FILAMENT_GUI_FRAMES=4
+      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
+  )
+  _dart_filament_gui_apply_smoke_test_properties(
+    ${capsule_ground_contact_test_name})
+
   set(polyhedron_test_name EXAMPLE_filament_gui_polyhedron_headless_smoke)
   add_test(
     NAME ${polyhedron_test_name}

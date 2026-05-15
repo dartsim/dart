@@ -269,9 +269,9 @@ headless context, while the dedicated headless construction test remains.
 for Linux x86_64. It configures with `DART_BUILD_GUI=OFF` and
 `DART_BUILD_DARTPY=OFF`, builds `dart_filament_gui`, and runs the default,
 hello-world, boxes, drag-and-drop, simple-frames, soft-bodies, point-cloud,
-polyhedron, and heightmap headless CTest smokes. When `DISPLAY` is absent, the
-task uses Xvfb and prefers Mesa's EGL vendor file for software rendering. The
-Ubuntu CI
+capsule-ground-contact, polyhedron, and heightmap headless CTest smokes. When
+`DISPLAY` is absent, the task uses Xvfb and prefers Mesa's EGL vendor file for
+software rendering. The Ubuntu CI
 workflow has a matching `filament-gui-smoke` job that installs Mesa, Xvfb, and
 libc++/libc++abi development packages from apt and runs that task without
 relying on a Filament conda package. The MVP PR #2647 merged with hosted
@@ -301,6 +301,10 @@ material. It also routes `pixi run ex point_cloud` through the Filament
 example's `--scene point-cloud` fixture, which renders visual point-cloud and
 voxel-grid descriptors while keeping the standalone source as legacy OSG/ImGui
 comparison material for the robot-mesh sampling controls. It also routes
+`pixi run ex capsule_ground_contact` through the Filament example's
+`--scene capsule-ground-contact` fixture, which renders capsule and ground
+descriptors while keeping the standalone source as legacy OSG comparison
+material for the pose-reset controls. It also routes
 `pixi run ex polyhedron_visual` through the Filament example's
 `--scene polyhedron` fixture, which renders the legacy convex hull and wireframe
 through descriptor-owned convex-mesh and line-segment renderables. It also
@@ -333,10 +337,10 @@ The Filament example scene option parsing and dispatch now live in
 DART world fixtures now live in
 `dart/gui/experimental/detail/filament/scene_fixtures.hpp` and `.cpp`.
 Scene content requirement counting and
-MVP/G1/hello-world/boxes/drag/simple-frames/soft-bodies/point-cloud/polyhedron/
-heightmap validation gates, including created-renderable content counting, now
-live in `dart/gui/experimental/detail/filament/scene_requirements.hpp` and
-`.cpp`.
+MVP/G1/hello-world/boxes/drag/simple-frames/soft-bodies/point-cloud/
+capsule-ground-contact/polyhedron/heightmap validation gates, including
+created-renderable content counting, now live in
+`dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.
 The Filament example frame lifecycle, scene synchronization, capture, built-in
 panel wiring, and top-level orchestration now live in
 `dart/gui/experimental/detail/filament/application.hpp` and `.cpp`, leaving
@@ -424,6 +428,11 @@ promotion gate.
   maintained examples, including any surviving replacement for
   `examples/filament_gui`; Filament headers should be confined to private
   promoted GUI implementation units.
+- A companion API-cleanliness metric is that any surviving
+  `examples/filament_gui` tree contains only a minimal `main.cpp` entry point
+  plus unavoidable build/docs files. Renderer setup, frame lifecycle,
+  resources, synchronization, capture, overlays, input translation, and fixture
+  logic should live in `dart::gui` or private GUI implementation units.
 - Filament package availability and matching material compiler tooling are the
   primary risks. Fetch fallback must be explicit and pinned.
 - The current ImGui overlay is deliberately narrow. Its Filament renderer is

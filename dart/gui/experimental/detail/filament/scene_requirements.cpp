@@ -165,6 +165,14 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::PointCloud) {
     ++counts.pointClouds;
   }
+  if (descriptor.skeletonName == kCapsuleGroundContactCapsuleSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Capsule) {
+    ++counts.capsuleGroundContactCapsules;
+  }
+  if (descriptor.skeletonName == kCapsuleGroundContactGroundSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.capsuleGroundContactGrounds;
+  }
   if (descriptor.skeletonName == kHeightmapFixtureSkeletonName
       && descriptor.geometry.kind == ShapeKind::Heightmap) {
     ++counts.heightmaps;
@@ -480,6 +488,23 @@ bool validateSceneDescriptorContent(
 #endif
   }
 
+  if (scene == ExampleScene::CapsuleGroundContact) {
+    if (!requireEqual(
+            counts.capsuleGroundContactCapsules,
+            1,
+            "capsule-ground-contact scene",
+            "visible capsule renderable descriptor",
+            output)) {
+      return false;
+    }
+    return requireEqual(
+        counts.capsuleGroundContactGrounds,
+        1,
+        "capsule-ground-contact scene",
+        "visible ground renderable descriptor",
+        output);
+  }
+
   return true;
 }
 
@@ -677,6 +702,21 @@ bool validateCreatedSceneContent(
 #else
     return true;
 #endif
+  }
+
+  if (scene == ExampleScene::CapsuleGroundContact) {
+    if (!requireCreatedEqual(
+            created.capsuleGroundContactCapsules,
+            expected.capsuleGroundContactCapsules,
+            "capsule-ground-contact capsule renderables",
+            output)) {
+      return false;
+    }
+    return requireCreatedEqual(
+        created.capsuleGroundContactGrounds,
+        expected.capsuleGroundContactGrounds,
+        "capsule-ground-contact ground renderables",
+        output);
   }
 
   return true;

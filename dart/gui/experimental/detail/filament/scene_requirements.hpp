@@ -59,6 +59,8 @@ struct SceneContentCounts
   std::size_t lineSegments = 0;
   std::size_t convexMeshes = 0;
   std::size_t pointClouds = 0;
+  std::size_t capsuleGroundContactCapsules = 0;
+  std::size_t capsuleGroundContactGrounds = 0;
   std::size_t heightmaps = 0;
   std::size_t softMeshes = 0;
   std::size_t softBodyMeshes = 0;

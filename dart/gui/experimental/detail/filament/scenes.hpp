@@ -72,6 +72,7 @@ enum class ExampleScene
   SimpleFrames,
   SoftBodies,
   PointCloud,
+  CapsuleGroundContact,
   Polyhedron,
   Heightmap,
   G1,
@@ -109,6 +110,10 @@ inline constexpr const char* kMultiSphereFixtureSkeletonName = "visual_multi_sph
 inline constexpr const char* kLineSegmentFixtureSkeletonName = "visual_line_segments";
 inline constexpr const char* kConvexMeshFixtureSkeletonName = "visual_convex_mesh";
 inline constexpr const char* kPointCloudFixtureSkeletonName = "visual_point_cloud";
+inline constexpr const char* kCapsuleGroundContactCapsuleSkeletonName
+    = "visual_capsule_ground_contact_capsule";
+inline constexpr const char* kCapsuleGroundContactGroundSkeletonName
+    = "visual_capsule_ground_contact_ground";
 inline constexpr const char* kHeightmapFixtureSkeletonName = "visual_heightmap";
 inline constexpr const char* kSoftMeshFixtureSkeletonName = "visual_soft_mesh";
 inline constexpr const char* kVoxelGridFixtureSkeletonName = "visual_voxel_grid";

@@ -61,11 +61,13 @@
 namespace dart::gui::experimental::filament {
 
 using dart::dynamics::BoxShape;
+using dart::dynamics::CapsuleShape;
 using dart::dynamics::CollisionAspect;
 using dart::dynamics::ConvexMeshShape;
 using dart::dynamics::DynamicsAspect;
 using dart::dynamics::FreeJoint;
 using dart::dynamics::HeightmapShaped;
+using dart::dynamics::Inertia;
 using dart::dynamics::InverseKinematics;
 using dart::dynamics::MeshShape;
 using dart::dynamics::PlaneShape;
@@ -1207,6 +1209,67 @@ DartScene createPointCloudScene()
   sensor->setShape(std::make_shared<SphereShape>(0.055));
   sensor->getVisualAspect(true)->setRGBA(Eigen::Vector4d(0.95, 0.18, 0.12, 1.0));
   scene.world->addSimpleFrame(sensor);
+
+  return scene;
+}
+
+DartScene createCapsuleGroundContactScene()
+{
+  constexpr double kCapsuleRadius = 0.2;
+  constexpr double kCapsuleHeight = 0.6;
+  constexpr double kGroundVisualThickness = 0.08;
+
+  DartScene scene;
+  scene.world = World::create("filament_gui_capsule_ground_contact");
+  scene.world->setTimeStep(0.001);
+  scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+#if DART_HAVE_ODE
+  scene.world->setCollisionDetector(
+      dart::simulation::CollisionDetectorType::Ode);
+#endif
+
+  auto ground = Skeleton::create(kCapsuleGroundContactGroundSkeletonName);
+  auto* groundBody = ground->createJointAndBodyNodePair<WeldJoint>().second;
+  groundBody->setName("ground");
+  const Eigen::Vector3d planeNormal = Eigen::Vector3d::UnitZ();
+  groundBody->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<PlaneShape>(planeNormal, 0.0));
+
+  auto* groundVisual = groundBody->createShapeNodeWith<VisualAspect>(
+      std::make_shared<BoxShape>(
+          Eigen::Vector3d(4.0, 4.0, kGroundVisualThickness)));
+  Eigen::Isometry3d groundOffset = Eigen::Isometry3d::Identity();
+  groundOffset.translation()
+      = planeNormal * (-0.5 * kGroundVisualThickness);
+  groundVisual->setRelativeTransform(groundOffset);
+  groundVisual->getVisualAspect()->setColor(Eigen::Vector3d(0.70, 0.70, 0.70));
+  groundVisual->getVisualAspect()->setShadowed(false);
+  ground->setMobile(false);
+  scene.world->addSkeleton(ground);
+
+  auto capsule = Skeleton::create(kCapsuleGroundContactCapsuleSkeletonName);
+  auto [joint, body] = capsule->createJointAndBodyNodePair<FreeJoint>();
+  Eigen::Isometry3d capsuleTransform = Eigen::Isometry3d::Identity();
+  capsuleTransform.translation()
+      = Eigen::Vector3d(0.0, 0.0, kCapsuleRadius + 0.12);
+  capsuleTransform.rotate(
+      Eigen::AngleAxisd(dart::math::half_pi, Eigen::Vector3d::UnitY()));
+  joint->setTransformFromParentBodyNode(capsuleTransform);
+
+  auto capsuleShape
+      = std::make_shared<CapsuleShape>(kCapsuleRadius, kCapsuleHeight);
+  auto* capsuleNode = body->createShapeNodeWith<
+      VisualAspect,
+      CollisionAspect,
+      DynamicsAspect>(capsuleShape);
+  capsuleNode->getVisualAspect()->setColor(Eigen::Vector3d(0.2, 0.4, 0.8));
+
+  constexpr double kCapsuleMass = 1.0;
+  body->setInertia(Inertia(
+      kCapsuleMass,
+      Eigen::Vector3d::Zero(),
+      capsuleShape->computeInertia(kCapsuleMass)));
+  scene.world->addSkeleton(capsule);
 
   return scene;
 }

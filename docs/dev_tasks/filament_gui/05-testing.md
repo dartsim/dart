@@ -75,12 +75,15 @@
    `EXAMPLE_filament_gui_soft_bodies_headless_smoke` on the same workers.
 9. Opt-in point-cloud visual fixture smoke through
    `EXAMPLE_filament_gui_point_cloud_headless_smoke` on the same workers.
-10. Opt-in polyhedron visual fixture smoke through
+10. Opt-in capsule contact fixture smoke through
+    `EXAMPLE_filament_gui_capsule_ground_contact_headless_smoke` on the same
+    workers.
+11. Opt-in polyhedron visual fixture smoke through
     `EXAMPLE_filament_gui_polyhedron_headless_smoke` on the same workers.
-11. Opt-in heightmap visual fixture smoke through
+12. Opt-in heightmap visual fixture smoke through
     `EXAMPLE_filament_gui_heightmap_headless_smoke` on the same workers.
-12. Focused C++ unit tests for scene extraction and interaction math.
-13. Python import/binding smoke tests for the constrained experimental API.
+13. Focused C++ unit tests for scene extraction and interaction math.
+14. Python import/binding smoke tests for the constrained experimental API.
 
 ## Local commands
 
@@ -133,7 +136,7 @@ LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
   cmake --build build/default/cpp/Release --target dart_filament_gui
 LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
   ctest --test-dir build/default/cpp/Release \
-  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|drag_and_drop_headless|simple_frames_headless|soft_bodies_headless|point_cloud_headless|polyhedron_headless|heightmap_headless)_smoke' \
+  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|drag_and_drop_headless|simple_frames_headless|soft_bodies_headless|point_cloud_headless|capsule_ground_contact_headless|polyhedron_headless|heightmap_headless)_smoke' \
   --output-on-failure
 ```
 
@@ -235,6 +238,8 @@ Known current result:
   `--scene soft-bodies`,
   `EXAMPLE_filament_gui_point_cloud_headless_smoke`, which runs
   `--scene point-cloud`,
+  `EXAMPLE_filament_gui_capsule_ground_contact_headless_smoke`, which runs
+  `--scene capsule-ground-contact`,
   `EXAMPLE_filament_gui_polyhedron_headless_smoke`, which runs
   `--scene polyhedron`, plus
   `EXAMPLE_filament_gui_heightmap_headless_smoke`, which runs
@@ -247,8 +252,8 @@ Known current result:
   `DART_BUILD_DARTPY=OFF`, `DART_FETCH_FILAMENT=ON`, and
   `DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS=ON`, builds `dart_filament_gui`, and
   runs the default, hello-world, boxes, drag-and-drop, simple-frames,
-  soft-bodies, point-cloud, polyhedron, and heightmap headless CTest smokes.
-  When `DISPLAY` is unset, the task runs CTest
+  soft-bodies, point-cloud, capsule-ground-contact, polyhedron, and heightmap
+  headless CTest smokes. When `DISPLAY` is unset, the task runs CTest
   under `xvfb-run` and prefers Mesa's EGL vendor file when available so the
   OpenGL backend uses software rendering on headless Linux workers.
 - `.github/workflows/ci_ubuntu.yml` now includes a `filament-gui-smoke` job

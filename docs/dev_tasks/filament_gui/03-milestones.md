@@ -181,6 +181,12 @@
   point-cloud and voxel-grid renderables. `pixi run ex point_cloud` routes to
   this Filament scene by default while the standalone source remains as legacy
   OSG/ImGui comparison material for the robot-mesh sampling controls.
+- The Filament example includes a selectable `--scene capsule-ground-contact`
+  fixture that renders the legacy capsule/ground contact setup through
+  descriptor-owned capsule and ground renderables, using ODE collision when
+  available. `pixi run ex capsule_ground_contact` routes to this Filament
+  scene by default while the standalone source remains as legacy OSG comparison
+  material for the pose-reset controls.
 - The Filament example includes a `--scene polyhedron` fixture that renders the
   legacy polyhedron visual example's convex hull and wireframe through
   descriptor-owned convex-mesh and line-segment renderables.
@@ -311,9 +317,9 @@
 - Debug-line overlay refresh and cleanup now live in
   `dart/gui/experimental/detail/filament/debug_overlay.hpp` and `.cpp`.
 - Scene content requirement counting and MVP/G1/hello-world/boxes/drag/
-  simple-frames/soft-bodies/point-cloud/polyhedron/heightmap validation gates
-  now live in `dart/gui/experimental/detail/filament/scene_requirements.hpp`
-  and `.cpp`.
+  simple-frames/soft-bodies/point-cloud/capsule-ground-contact/polyhedron/
+  heightmap validation gates now live in
+  `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.
 - Private built-in status panel rendering now lives in
   `dart/gui/experimental/detail/filament/panel.hpp` and `.cpp`; promoted
   panel/tool API design remains deferred.
@@ -341,12 +347,19 @@
   surviving replacement for `examples/filament_gui`, have zero direct
   `#include <filament/...>` or `#include "filament/..."` usage. Examples should
   consume the promoted DART GUI API, not the renderer implementation.
+- Add an example-tree promotion check that any surviving `examples/filament_gui`
+  directory contains only a minimal `main.cpp` entry point plus unavoidable
+  build/docs files. Renderer setup, frame lifecycle, resources,
+  synchronization, capture, overlays, input translation, and fixture logic
+  should live in `dart::gui` or private GUI implementation units.
 
 **Exit criteria**
 
 - Maintained examples/tutorials and `dartpy` have a supported non-OSG
   visualization path.
 - Maintained examples no longer include Filament headers directly.
+- Any surviving `examples/filament_gui` tree remains a minimal DART GUI entry
+  point rather than owning renderer architecture.
 - Filament dependency handling works in the supported source-build and wheel
   workflows.
 - Maintainers accept the visual-quality gate for DART's built-in
