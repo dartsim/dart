@@ -37,6 +37,7 @@
 #include <dart/common/uri.hpp>
 #include <dart/config.hpp>
 #include <dart/io/read.hpp>
+#include <dart/sensor/sensor.hpp>
 #include <dart/utils/composite_resource_retriever.hpp>
 #include <dart/utils/dart_resource_retriever.hpp>
 #include <dart/utils/http_resource_retriever.hpp>
@@ -65,6 +66,7 @@ using dart::dynamics::CapsuleShape;
 using dart::dynamics::CollisionAspect;
 using dart::dynamics::ConvexMeshShape;
 using dart::dynamics::DynamicsAspect;
+using dart::dynamics::Frame;
 using dart::dynamics::FreeJoint;
 using dart::dynamics::HeightmapShaped;
 using dart::dynamics::Inertia;
@@ -88,6 +90,56 @@ using dart::dynamics::VoxelGridShape;
 
 using dart::gui::experimental::makeRenderableId;
 using dart::simulation::World;
+
+struct SensorMarker
+{
+  std::shared_ptr<SimpleFrame> frame;
+  VisualAspect* visual = nullptr;
+};
+
+class BlinkingMarkerSensor final : public dart::sensor::Sensor
+{
+public:
+  BlinkingMarkerSensor(
+      const Properties& properties,
+      const SensorMarker& marker,
+      const Eigen::Vector4d& activeColor,
+      const Eigen::Vector4d& inactiveColor)
+    : dart::sensor::Sensor(properties),
+      mMarker(marker.frame),
+      mVisual(marker.visual),
+      mActiveColor(activeColor),
+      mInactiveColor(inactiveColor)
+  {
+    if (mVisual) {
+      mVisual->setRGBA(mInactiveColor);
+    }
+  }
+
+private:
+  void updateImpl(
+      const World&, const dart::sensor::SensorUpdateContext&) override
+  {
+    if (mVisual) {
+      mVisual->setRGBA(mPulseOn ? mActiveColor : mInactiveColor);
+    }
+    mPulseOn = !mPulseOn;
+  }
+
+  void resetImpl() override
+  {
+    mPulseOn = false;
+    if (mVisual) {
+      mVisual->setRGBA(mInactiveColor);
+    }
+  }
+
+  std::shared_ptr<SimpleFrame> mMarker;
+  VisualAspect* mVisual = nullptr;
+  Eigen::Vector4d mActiveColor;
+  Eigen::Vector4d mInactiveColor;
+  bool mPulseOn = false;
+};
 
 std::filesystem::path resolveExamplePath(const std::string& path)
 {
@@ -660,6 +712,30 @@ dart::dynamics::SkeletonPtr createDynamicBoxSkeleton(
   return createDynamicBoxSkeleton(name, size, transform, color, restitution);
 }
 
+dart::dynamics::SkeletonPtr createDynamicSphereSkeleton(
+    const std::string& name,
+    double radius,
+    const Eigen::Vector3d& position,
+    const Eigen::Vector3d& color,
+    double mass = 1.0)
+{
+  auto sphere = Skeleton::create(name);
+  auto [joint, body] = sphere->createJointAndBodyNodePair<FreeJoint>();
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = position;
+  joint->setTransformFromParentBodyNode(transform);
+
+  auto sphereShape = std::make_shared<SphereShape>(radius);
+  auto* sphereNode = body->createShapeNodeWith<
+      VisualAspect,
+      CollisionAspect,
+      DynamicsAspect>(sphereShape);
+  sphereNode->getVisualAspect()->setColor(color);
+  body->setInertia(Inertia(
+      mass, Eigen::Vector3d::Zero(), sphereShape->computeInertia(mass)));
+  return sphere;
+}
+
 dart::dynamics::SkeletonPtr createBoxGroundSkeleton(
     const std::string& name,
     const Eigen::Vector3d& size,
@@ -675,6 +751,21 @@ dart::dynamics::SkeletonPtr createBoxGroundSkeleton(
   groundShapeNode->getVisualAspect()->setColor(color);
   groundShapeNode->getDynamicsAspect()->setRestitutionCoeff(restitution);
   return ground;
+}
+
+SensorMarker createSensorMarker(
+    const std::string& name,
+    Frame* parent,
+    const Eigen::Isometry3d& relativeTransform,
+    double radius,
+    const Eigen::Vector4d& color)
+{
+  auto marker = SimpleFrame::createShared(
+      parent ? parent : Frame::World(), name, relativeTransform);
+  marker->setShape(std::make_shared<SphereShape>(radius));
+  VisualAspect* visual = marker->createVisualAspect();
+  visual->setRGBA(color);
+  return SensorMarker{std::move(marker), visual};
 }
 
 DartScene createMvpDartScene()
@@ -1270,6 +1361,88 @@ DartScene createCapsuleGroundContactScene()
       Eigen::Vector3d::Zero(),
       capsuleShape->computeInertia(kCapsuleMass)));
   scene.world->addSkeleton(capsule);
+
+  return scene;
+}
+
+DartScene createSimulationEventHandlerScene()
+{
+  DartScene scene;
+  scene.world = World::create("filament_gui_simulation_event_handler");
+  scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  scene.world->setTimeStep(0.001);
+
+  scene.world->addSkeleton(createBoxGroundSkeleton(
+      kSimulationEventHandlerGroundSkeletonName,
+      Eigen::Vector3d(8.0, 8.0, 0.1),
+      Eigen::Vector3d(0.3, 0.3, 0.3)));
+
+  auto sensorCarrier = createDynamicBoxSkeleton(
+      std::string(kSimulationEventHandlerBoxSkeletonPrefix) + "sensor_carrier",
+      Eigen::Vector3d(0.4, 0.4, 0.4),
+      Eigen::Vector3d(-1.0, 0.0, 2.0),
+      Eigen::Vector3d(0.8, 0.2, 0.2));
+  auto* sensorParent = sensorCarrier->getBodyNode(0);
+  scene.world->addSkeleton(sensorCarrier);
+
+  scene.world->addSkeleton(createDynamicBoxSkeleton(
+      std::string(kSimulationEventHandlerBoxSkeletonPrefix) + "green",
+      Eigen::Vector3d(0.6, 0.3, 0.3),
+      Eigen::Vector3d(0.0, 0.0, 3.0),
+      Eigen::Vector3d(0.2, 0.8, 0.2)));
+  scene.world->addSkeleton(createDynamicBoxSkeleton(
+      std::string(kSimulationEventHandlerBoxSkeletonPrefix) + "yellow",
+      Eigen::Vector3d(0.3, 0.5, 0.4),
+      Eigen::Vector3d(0.5, 1.0, 2.2),
+      Eigen::Vector3d(0.9, 0.9, 0.2)));
+  scene.world->addSkeleton(createDynamicSphereSkeleton(
+      kSimulationEventHandlerSphereSkeletonName,
+      0.3,
+      Eigen::Vector3d(1.0, 0.0, 2.5),
+      Eigen::Vector3d(0.2, 0.2, 0.8)));
+
+  Eigen::Isometry3d fastOffset = Eigen::Isometry3d::Identity();
+  fastOffset.translation() = Eigen::Vector3d(0.2, 0.0, 0.35);
+  Eigen::Isometry3d slowOffset = Eigen::Isometry3d::Identity();
+  slowOffset.translation() = Eigen::Vector3d(-0.2, 0.0, 0.35);
+
+  const Eigen::Vector4d fastInactive(0.1, 0.8, 0.2, 0.25);
+  const Eigen::Vector4d fastActive(0.1, 0.95, 0.25, 0.9);
+  const Eigen::Vector4d slowInactive(0.95, 0.45, 0.1, 0.25);
+  const Eigen::Vector4d slowActive(1.0, 0.65, 0.15, 0.9);
+  auto fastMarker = createSensorMarker(
+      kSimulationEventHandlerFastSensorFrameName,
+      sensorParent,
+      fastOffset,
+      0.08,
+      fastInactive);
+  auto slowMarker = createSensorMarker(
+      kSimulationEventHandlerSlowSensorFrameName,
+      sensorParent,
+      slowOffset,
+      0.1,
+      slowInactive);
+
+  dart::sensor::Sensor::Properties fastProps;
+  fastProps.name = "fast_sensor";
+  fastProps.updateRate = 30.0;
+  fastProps.relativeTransform = fastOffset;
+  auto fastSensor = std::make_shared<BlinkingMarkerSensor>(
+      fastProps, fastMarker, fastActive, fastInactive);
+  fastSensor->setParentFrame(sensorParent);
+
+  dart::sensor::Sensor::Properties slowProps;
+  slowProps.name = "slow_sensor";
+  slowProps.updateRate = 5.0;
+  slowProps.relativeTransform = slowOffset;
+  auto slowSensor = std::make_shared<BlinkingMarkerSensor>(
+      slowProps, slowMarker, slowActive, slowInactive);
+  slowSensor->setParentFrame(sensorParent);
+
+  scene.world->addSensor(fastSensor);
+  scene.world->addSensor(slowSensor);
+  scene.world->addSimpleFrame(fastMarker.frame);
+  scene.world->addSimpleFrame(slowMarker.frame);
 
   return scene;
 }

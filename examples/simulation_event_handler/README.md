@@ -3,10 +3,35 @@
 ## Summary
 
 - Goal: provide a reusable event handler for simulation control and forces.
-- Concepts/APIs: `gui::Viewer` input handling, force/torque visualization.
-- Expected output: a viewer with controllable rigid bodies and force arrows.
-- Controls: space toggles sim; S steps; R resets; Tab cycles bodies; arrows/QWE
-  apply forces/torques; V toggles force arrows.
+- Concepts/APIs: `gui::Viewer` input handling, force/torque visualization, and
+  the experimental Filament GUI scene.
+- Expected output: a Filament viewer with falling rigid bodies and visible
+  sensor markers attached to one box.
+- Controls: left drag orbits, right/middle drag pans, wheel zooms, Space
+  pauses/resumes, `n` steps once while paused, click selects renderables,
+  Ctrl-left drag or arrow/PageUp/PageDown nudges selected bodies, and Escape
+  exits.
+
+## Notes
+
+- The recommended in-tree runner uses the Filament scene in
+  `examples/filament_gui`, which renders the rigid bodies and sensor markers
+  through backend-hidden DART descriptors.
+- The standalone source in this directory remains as the legacy OSG version for
+  force/torque keyboard controls and force-arrow visualization until the
+  promoted Filament GUI API replaces the old viewer/event-handler path.
+
+## Run In Tree
+
+From the repository root:
+
+```bash
+pixi run ex simulation_event_handler
+```
+
+This builds and runs `examples/filament_gui --scene simulation-event-handler`,
+so the recommended visual path no longer depends on the legacy OSG viewer. On
+Linux without a display, the runner automatically uses headless defaults.
 
 This project is dependent on DART. Please make sure a proper version of DART is
 installed before building this project.
@@ -26,4 +51,5 @@ Launch the executable from the build directory above:
 
     $ ./{generated_executable}
 
-Follow the instructions detailed in the console.
+This launches the legacy OSG viewer. Follow the instructions detailed in the
+console to use the force/torque controls.

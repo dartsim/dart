@@ -173,6 +173,24 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Box) {
     ++counts.capsuleGroundContactGrounds;
   }
+  if (descriptor.skeletonName.starts_with(
+          kSimulationEventHandlerBoxSkeletonPrefix)
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.simulationEventHandlerBoxes;
+  }
+  if (descriptor.skeletonName == kSimulationEventHandlerSphereSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Sphere) {
+    ++counts.simulationEventHandlerSpheres;
+  }
+  if (descriptor.skeletonName == kSimulationEventHandlerGroundSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.simulationEventHandlerGrounds;
+  }
+  if ((descriptor.shapeFrameName == kSimulationEventHandlerFastSensorFrameName
+       || descriptor.shapeFrameName == kSimulationEventHandlerSlowSensorFrameName)
+      && descriptor.geometry.kind == ShapeKind::Sphere) {
+    ++counts.simulationEventHandlerSensorMarkers;
+  }
   if (descriptor.skeletonName == kHeightmapFixtureSkeletonName
       && descriptor.geometry.kind == ShapeKind::Heightmap) {
     ++counts.heightmaps;
@@ -505,6 +523,39 @@ bool validateSceneDescriptorContent(
         output);
   }
 
+  if (scene == ExampleScene::SimulationEventHandler) {
+    if (!requireEqual(
+            counts.simulationEventHandlerBoxes,
+            3,
+            "simulation-event-handler scene",
+            "visible box renderable descriptors",
+            output)) {
+      return false;
+    }
+    if (!requireEqual(
+            counts.simulationEventHandlerSpheres,
+            1,
+            "simulation-event-handler scene",
+            "visible sphere renderable descriptor",
+            output)) {
+      return false;
+    }
+    if (!requireEqual(
+            counts.simulationEventHandlerGrounds,
+            1,
+            "simulation-event-handler scene",
+            "visible ground renderable descriptor",
+            output)) {
+      return false;
+    }
+    return requireEqual(
+        counts.simulationEventHandlerSensorMarkers,
+        2,
+        "simulation-event-handler scene",
+        "visible sensor marker descriptors",
+        output);
+  }
+
   return true;
 }
 
@@ -716,6 +767,35 @@ bool validateCreatedSceneContent(
         created.capsuleGroundContactGrounds,
         expected.capsuleGroundContactGrounds,
         "capsule-ground-contact ground renderables",
+        output);
+  }
+
+  if (scene == ExampleScene::SimulationEventHandler) {
+    if (!requireCreatedEqual(
+            created.simulationEventHandlerBoxes,
+            expected.simulationEventHandlerBoxes,
+            "simulation-event-handler box renderables",
+            output)) {
+      return false;
+    }
+    if (!requireCreatedEqual(
+            created.simulationEventHandlerSpheres,
+            expected.simulationEventHandlerSpheres,
+            "simulation-event-handler sphere renderables",
+            output)) {
+      return false;
+    }
+    if (!requireCreatedEqual(
+            created.simulationEventHandlerGrounds,
+            expected.simulationEventHandlerGrounds,
+            "simulation-event-handler ground renderables",
+            output)) {
+      return false;
+    }
+    return requireCreatedEqual(
+        created.simulationEventHandlerSensorMarkers,
+        expected.simulationEventHandlerSensorMarkers,
+        "simulation-event-handler sensor marker renderables",
         output);
   }
 

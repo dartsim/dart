@@ -22,6 +22,7 @@ FILAMENT_SMOKE_PATTERN = (
     "EXAMPLE_filament_gui_soft_bodies_headless_smoke|"
     "EXAMPLE_filament_gui_point_cloud_headless_smoke|"
     "EXAMPLE_filament_gui_capsule_ground_contact_headless_smoke|"
+    "EXAMPLE_filament_gui_simulation_event_handler_headless_smoke|"
     "EXAMPLE_filament_gui_polyhedron_headless_smoke|"
     "EXAMPLE_filament_gui_heightmap_headless_smoke"
 )
@@ -80,6 +81,12 @@ EXAMPLE_SPECS = {
         "filament_gui",
         ("filament",),
         ("--scene", "capsule-ground-contact"),
+    ),
+    "simulation_event_handler": ExampleSpec(
+        "dart_filament_gui",
+        "filament_gui",
+        ("filament",),
+        ("--scene", "simulation-event-handler"),
     ),
     "polyhedron_visual": ExampleSpec(
         "dart_filament_gui",
@@ -376,6 +383,7 @@ def _split_filament_scenes(run_args: list[str]) -> tuple[list[str], list[str]]:
                 "soft-bodies",
                 "point-cloud",
                 "capsule-ground-contact",
+                "simulation-event-handler",
                 "polyhedron",
                 "heightmap",
             ], args

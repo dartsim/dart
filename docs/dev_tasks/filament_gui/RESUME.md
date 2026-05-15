@@ -269,9 +269,9 @@ headless context, while the dedicated headless construction test remains.
 for Linux x86_64. It configures with `DART_BUILD_GUI=OFF` and
 `DART_BUILD_DARTPY=OFF`, builds `dart_filament_gui`, and runs the default,
 hello-world, boxes, drag-and-drop, simple-frames, soft-bodies, point-cloud,
-capsule-ground-contact, polyhedron, and heightmap headless CTest smokes. When
-`DISPLAY` is absent, the task uses Xvfb and prefers Mesa's EGL vendor file for
-software rendering. The Ubuntu CI
+capsule-ground-contact, simulation-event-handler, polyhedron, and heightmap
+headless CTest smokes. When `DISPLAY` is absent, the task uses Xvfb and
+prefers Mesa's EGL vendor file for software rendering. The Ubuntu CI
 workflow has a matching `filament-gui-smoke` job that installs Mesa, Xvfb, and
 libc++/libc++abi development packages from apt and runs that task without
 relying on a Filament conda package. The MVP PR #2647 merged with hosted
@@ -305,6 +305,11 @@ comparison material for the robot-mesh sampling controls. It also routes
 `--scene capsule-ground-contact` fixture, which renders capsule and ground
 descriptors while keeping the standalone source as legacy OSG comparison
 material for the pose-reset controls. It also routes
+`pixi run ex simulation_event_handler` through the Filament example's
+`--scene simulation-event-handler` fixture, which renders falling body and
+sensor-marker descriptors while keeping the standalone source as legacy OSG
+comparison material for force/torque controls and force-arrow visualization.
+It also routes
 `pixi run ex polyhedron_visual` through the Filament example's
 `--scene polyhedron` fixture, which renders the legacy convex hull and wireframe
 through descriptor-owned convex-mesh and line-segment renderables. It also
@@ -338,8 +343,8 @@ DART world fixtures now live in
 `dart/gui/experimental/detail/filament/scene_fixtures.hpp` and `.cpp`.
 Scene content requirement counting and
 MVP/G1/hello-world/boxes/drag/simple-frames/soft-bodies/point-cloud/
-capsule-ground-contact/polyhedron/heightmap validation gates, including
-created-renderable content counting, now live in
+capsule-ground-contact/simulation-event-handler/polyhedron/heightmap validation
+gates, including created-renderable content counting, now live in
 `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.
 The Filament example frame lifecycle, scene synchronization, capture, built-in
 panel wiring, and top-level orchestration now live in

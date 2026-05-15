@@ -73,6 +73,7 @@ enum class ExampleScene
   SoftBodies,
   PointCloud,
   CapsuleGroundContact,
+  SimulationEventHandler,
   Polyhedron,
   Heightmap,
   G1,
@@ -114,6 +115,16 @@ inline constexpr const char* kCapsuleGroundContactCapsuleSkeletonName
     = "visual_capsule_ground_contact_capsule";
 inline constexpr const char* kCapsuleGroundContactGroundSkeletonName
     = "visual_capsule_ground_contact_ground";
+inline constexpr const char* kSimulationEventHandlerBoxSkeletonPrefix
+    = "visual_simulation_event_handler_box_";
+inline constexpr const char* kSimulationEventHandlerSphereSkeletonName
+    = "visual_simulation_event_handler_sphere";
+inline constexpr const char* kSimulationEventHandlerGroundSkeletonName
+    = "visual_simulation_event_handler_ground";
+inline constexpr const char* kSimulationEventHandlerFastSensorFrameName
+    = "simulation_event_handler_fast_sensor_marker";
+inline constexpr const char* kSimulationEventHandlerSlowSensorFrameName
+    = "simulation_event_handler_slow_sensor_marker";
 inline constexpr const char* kHeightmapFixtureSkeletonName = "visual_heightmap";
 inline constexpr const char* kSoftMeshFixtureSkeletonName = "visual_soft_mesh";
 inline constexpr const char* kVoxelGridFixtureSkeletonName = "visual_voxel_grid";

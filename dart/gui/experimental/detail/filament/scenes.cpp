@@ -143,6 +143,8 @@ const char* sceneName(ExampleScene scene)
       return "point-cloud";
     case ExampleScene::CapsuleGroundContact:
       return "capsule-ground-contact";
+    case ExampleScene::SimulationEventHandler:
+      return "simulation-event-handler";
     case ExampleScene::Polyhedron:
       return "polyhedron";
     case ExampleScene::Heightmap:
@@ -185,6 +187,10 @@ bool parseSceneName(std::string_view name, ExampleScene& scene)
   }
   if (name == "capsule-ground-contact") {
     scene = ExampleScene::CapsuleGroundContact;
+    return true;
+  }
+  if (name == "simulation-event-handler") {
+    scene = ExampleScene::SimulationEventHandler;
     return true;
   }
   if (name == "polyhedron") {
@@ -247,6 +253,12 @@ dart::gui::experimental::OrbitCamera initialCameraForScene(ExampleScene scene)
       camera.yaw = -0.74;
       camera.pitch = 0.36;
       camera.distance = 3.4;
+      break;
+    case ExampleScene::SimulationEventHandler:
+      camera.target = Eigen::Vector3d(0.0, 0.2, 1.3);
+      camera.yaw = -0.78;
+      camera.pitch = 0.42;
+      camera.distance = 6.0;
       break;
     case ExampleScene::Polyhedron:
       camera.target = Eigen::Vector3d(0.0, 0.0, 0.45);
@@ -336,8 +348,9 @@ AppOptions parseOptions(int argc, char* argv[])
         std::cerr << "Unknown scene '" << sceneArg
                   << "'. Expected 'mvp', 'hello-world', 'boxes', "
                      "'drag-and-drop', 'simple-frames', 'soft-bodies', "
-                     "'point-cloud', 'capsule-ground-contact', 'polyhedron', "
-                     "'heightmap', or 'g1'.\n";
+                     "'point-cloud', 'capsule-ground-contact', "
+                     "'simulation-event-handler', 'polyhedron', 'heightmap', "
+                     "or 'g1'.\n";
         std::exit(2);
       }
     } else if (
@@ -363,7 +376,7 @@ AppOptions parseOptions(int argc, char* argv[])
                    " [--orbit-light-period SECONDS]"
                    " [--gui-scale N]"
                    " [--profile]"
-                   " [--scene mvp|hello-world|boxes|drag-and-drop|simple-frames|soft-bodies|point-cloud|capsule-ground-contact|polyhedron|heightmap|g1]"
+                   " [--scene mvp|hello-world|boxes|drag-and-drop|simple-frames|soft-bodies|point-cloud|capsule-ground-contact|simulation-event-handler|polyhedron|heightmap|g1]"
                    " [--g1-package-uri URI] [--g1-robot-uri URI]"
                    " [--g1-package-name NAME]\n";
       std::exit(0);
@@ -423,6 +436,8 @@ DartScene createDartScene(const AppOptions& options)
       return createPointCloudScene();
     case ExampleScene::CapsuleGroundContact:
       return createCapsuleGroundContactScene();
+    case ExampleScene::SimulationEventHandler:
+      return createSimulationEventHandlerScene();
     case ExampleScene::Polyhedron:
       return createPolyhedronScene();
     case ExampleScene::Heightmap:

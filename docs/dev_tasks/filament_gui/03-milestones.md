@@ -187,6 +187,12 @@
   available. `pixi run ex capsule_ground_contact` routes to this Filament
   scene by default while the standalone source remains as legacy OSG comparison
   material for the pose-reset controls.
+- The Filament example includes a selectable `--scene simulation-event-handler`
+  fixture that renders the legacy simulation event-handler body's falling
+  boxes, sphere, ground, and sensor markers through descriptor-owned
+  renderables. `pixi run ex simulation_event_handler` routes to this Filament
+  scene by default while the standalone source remains as legacy OSG comparison
+  material for force/torque controls and force-arrow visualization.
 - The Filament example includes a `--scene polyhedron` fixture that renders the
   legacy polyhedron visual example's convex hull and wireframe through
   descriptor-owned convex-mesh and line-segment renderables.
@@ -317,8 +323,8 @@
 - Debug-line overlay refresh and cleanup now live in
   `dart/gui/experimental/detail/filament/debug_overlay.hpp` and `.cpp`.
 - Scene content requirement counting and MVP/G1/hello-world/boxes/drag/
-  simple-frames/soft-bodies/point-cloud/capsule-ground-contact/polyhedron/
-  heightmap validation gates now live in
+  simple-frames/soft-bodies/point-cloud/capsule-ground-contact/
+  simulation-event-handler/polyhedron/heightmap validation gates now live in
   `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.
 - Private built-in status panel rendering now lives in
   `dart/gui/experimental/detail/filament/panel.hpp` and `.cpp`; promoted

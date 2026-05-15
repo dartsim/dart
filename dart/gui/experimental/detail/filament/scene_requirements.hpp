@@ -61,6 +61,10 @@ struct SceneContentCounts
   std::size_t pointClouds = 0;
   std::size_t capsuleGroundContactCapsules = 0;
   std::size_t capsuleGroundContactGrounds = 0;
+  std::size_t simulationEventHandlerBoxes = 0;
+  std::size_t simulationEventHandlerSpheres = 0;
+  std::size_t simulationEventHandlerGrounds = 0;
+  std::size_t simulationEventHandlerSensorMarkers = 0;
   std::size_t heightmaps = 0;
   std::size_t softMeshes = 0;
   std::size_t softBodyMeshes = 0;
