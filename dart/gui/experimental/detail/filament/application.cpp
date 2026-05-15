@@ -48,7 +48,7 @@
 #include <dart/gui/experimental/detail/filament/renderable_sync.hpp>
 #include <dart/gui/experimental/detail/filament/render_environment.hpp>
 #include <dart/gui/experimental/detail/filament/render_context.hpp>
-#include <dart/gui/experimental/detail/filament/scene_requirements.hpp>
+#include <dart/gui/experimental/detail/filament/scene_startup.hpp>
 #include <dart/gui/experimental/detail/filament/screenshot.hpp>
 #include <dart/gui/experimental/detail/filament/simulation_stepper.hpp>
 #include <dart/gui/experimental/detail/filament/ui_frame.hpp>
@@ -60,14 +60,12 @@
 #include <cstddef>
 #include <iostream>
 #include <optional>
-#include <vector>
+#include <utility>
 
 namespace {
 
 using dart::gui::experimental::OrbitCameraController;
 using dart::gui::experimental::ProfileAccumulator;
-using dart::gui::experimental::RenderableDescriptor;
-using dart::gui::experimental::RenderableId;
 using dart::gui::experimental::RunOptions;
 using dart::gui::experimental::ViewerLifecycleState;
 using dart::gui::experimental::elapsedMs;
@@ -80,20 +78,17 @@ using dart::gui::experimental::filament::FilamentRenderContext;
 using dart::gui::experimental::filament::FrameRenderResult;
 using dart::gui::experimental::filament::FrameViewport;
 using dart::gui::experimental::filament::ImGuiOverlay;
+using dart::gui::experimental::filament::InitialSceneState;
 using dart::gui::experimental::filament::MaterialResources;
 using dart::gui::experimental::filament::MaterialSet;
 using dart::gui::experimental::filament::Renderable;
-using dart::gui::experimental::filament::SceneRenderable;
 using dart::gui::experimental::filament::SceneLights;
 using dart::gui::experimental::filament::ScreenshotCapture;
-using dart::gui::experimental::filament::SceneContentCounts;
 using dart::gui::experimental::filament::SelectionController;
 using dart::gui::experimental::filament::SimulationStepper;
 using dart::gui::experimental::filament::advanceSimulationSteps;
 using dart::gui::experimental::filament::attachSceneEnvironment;
 using dart::gui::experimental::filament::configureMainView;
-using dart::gui::experimental::filament::countCreatedSceneContent;
-using dart::gui::experimental::filament::countSceneContent;
 using dart::gui::experimental::filament::createFilamentRenderContext;
 using dart::gui::experimental::filament::createApplicationWindow;
 using dart::gui::experimental::filament::createDebugColorGrading;
@@ -102,18 +97,16 @@ using dart::gui::experimental::filament::createNeutralIndirectLight;
 using dart::gui::experimental::filament::createNeutralSkybox;
 using dart::gui::experimental::filament::createMaterialResources;
 using dart::gui::experimental::filament::createRenderableFromDescriptor;
+using dart::gui::experimental::filament::createInitialSceneState;
 using dart::gui::experimental::filament::createSceneLights;
-using dart::gui::experimental::filament::DebugOverlayController;
 using dart::gui::experimental::filament::destroyApplicationResources;
 using dart::gui::experimental::filament::finalizeScreenshotCapture;
 using dart::gui::experimental::filament::getNativeWindow;
 using dart::gui::experimental::filament::getCurrentImGuiIo;
-using dart::gui::experimental::filament::makeDebugOverlayController;
 using dart::gui::experimental::filament::pollApplicationInput;
 using dart::gui::experimental::filament::renderApplicationFrame;
 using dart::gui::experimental::filament::refreshContactDebugOverlay;
 using dart::gui::experimental::filament::refreshSelectionDebugLineOverlay;
-using dart::gui::experimental::filament::refreshStaticDebugOverlay;
 using dart::gui::experimental::filament::synchronizeSceneRenderables;
 using dart::gui::experimental::filament::shouldContinueApplicationLoop;
 using dart::gui::experimental::filament::updateFrameViewport;
@@ -126,8 +119,6 @@ using dart::gui::experimental::filament::ExampleScene;
 using dart::gui::experimental::filament::createDartScene;
 using dart::gui::experimental::filament::initialCameraForScene;
 using dart::gui::experimental::filament::parseOptions;
-using dart::gui::experimental::filament::validateCreatedSceneContent;
-using dart::gui::experimental::filament::validateSceneDescriptorContent;
 
 int runFilamentGuiApplicationImpl(int argc, char* argv[])
 {
@@ -159,48 +150,23 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
   const MaterialSet materials = materialResources.materialSet();
 
   DartScene dartScene = createDartScene(appOptions);
-  const auto initialDescriptors = extractRenderables(*dartScene.world);
-  const SceneContentCounts expectedSceneContent
-      = countSceneContent(initialDescriptors);
-  if (!validateSceneDescriptorContent(
-          appOptions.scene, expectedSceneContent, std::cerr)) {
-    return 1;
-  }
-
-  std::vector<SceneRenderable> sceneRenderables;
-  std::vector<RenderableId> loggedUnsupportedRenderableIds;
-  synchronizeSceneRenderables(
-      *engine,
-      *scene,
-      initialDescriptors,
-      sceneRenderables,
-      loggedUnsupportedRenderableIds,
-      [&](const RenderableDescriptor& descriptor) {
-        return createRenderableFromDescriptor(
-            *engine, materials, materialResources.textureCache, descriptor);
-      });
-  if (sceneRenderables.empty()) {
-    std::cerr << "No supported visible DART renderables were extracted\n";
-    return 1;
-  }
-  const SceneContentCounts createdSceneContent
-      = countCreatedSceneContent(initialDescriptors, sceneRenderables);
-  if (!validateCreatedSceneContent(
+  std::optional<InitialSceneState> maybeInitialSceneState
+      = createInitialSceneState(
+          *engine,
+          *scene,
+          materials,
+          materialResources,
           appOptions.scene,
-          expectedSceneContent,
-          createdSceneContent,
-          std::cerr)) {
+          dartScene,
+          std::cerr);
+  if (!maybeInitialSceneState) {
     return 1;
   }
-
-  DebugOverlayController debugOverlays
-      = makeDebugOverlayController(appOptions.scene == ExampleScene::G1);
-  refreshStaticDebugOverlay(
-      *engine, *scene, materials.debugColor, *dartScene.world, debugOverlays);
-  if (!debugOverlays.staticOverlay) {
-    std::cerr << "No debug overlay lines were extracted\n";
-    return 1;
-  }
+  InitialSceneState sceneState = std::move(*maybeInitialSceneState);
+  auto& sceneRenderables = sceneState.sceneRenderables;
+  auto& loggedUnsupportedRenderableIds
+      = sceneState.loggedUnsupportedRenderableIds;
+  auto& debugOverlays = sceneState.debugOverlays;
 
   std::optional<Renderable> selectionDebugOverlay;
 
@@ -275,7 +241,7 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
         descriptors,
         sceneRenderables,
         loggedUnsupportedRenderableIds,
-        [&](const RenderableDescriptor& descriptor) {
+        [&](const auto& descriptor) {
           return createRenderableFromDescriptor(
               *engine, materials, materialResources.textureCache, descriptor);
         });

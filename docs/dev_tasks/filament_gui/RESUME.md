@@ -128,6 +128,9 @@ implementation slice has moved out of the example tree.
 Debug-line overlay option defaults, static/contact refresh/cleanup state, and
 selected-renderable overlay lookup now live in
 `dart/gui/experimental/detail/filament/debug_overlay.hpp` and `.cpp`.
+Initial scene extraction, startup validation, first renderable synchronization,
+and startup debug-overlay validation live in
+`dart/gui/experimental/detail/filament/scene_startup.hpp` and `.cpp`.
 Filament neutral lighting/color grading, light entity creation and orbit
 updates, scene environment binding, viewport/camera configuration helper, and
 windowed view-quality setup live in

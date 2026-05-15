@@ -187,6 +187,9 @@
 - The Filament example's scene content requirement counting and MVP/G1/drag
   validation gates, including created-renderable content counting, now live in
   `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`;
+- Initial scene extraction, startup validation, first renderable
+  synchronization, and startup debug-overlay validation now live in
+  `dart/gui/experimental/detail/filament/scene_startup.hpp` and `.cpp`.
 - The Filament example's frame lifecycle, scene synchronization, capture,
   and top-level orchestration now live in
   `dart/gui/experimental/detail/filament/application.hpp` and `.cpp`, leaving
