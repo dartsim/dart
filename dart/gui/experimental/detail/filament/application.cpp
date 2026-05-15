@@ -31,6 +31,7 @@
  */
 
 #include <dart/gui/experimental/detail/filament/application.hpp>
+#include <dart/gui/experimental/detail/filament/application_teardown.hpp>
 #include <dart/gui/experimental/detail/filament/scenes.hpp>
 #include <dart/gui/experimental/detail/filament/selection.hpp>
 #include <dart/collision/collision_result.hpp>
@@ -93,9 +94,6 @@ using dart::gui::experimental::filament::SelectionController;
 using dart::gui::experimental::filament::SimulationStepper;
 using dart::gui::experimental::filament::advanceSimulationSteps;
 using dart::gui::experimental::filament::attachSceneEnvironment;
-using dart::gui::experimental::filament::clearDebugLineOverlay;
-using dart::gui::experimental::filament::clearDebugOverlays;
-using dart::gui::experimental::filament::clearMainViewColorGrading;
 using dart::gui::experimental::filament::configureMainView;
 using dart::gui::experimental::filament::countCreatedSceneContent;
 using dart::gui::experimental::filament::countSceneContent;
@@ -109,13 +107,7 @@ using dart::gui::experimental::filament::createMaterialResources;
 using dart::gui::experimental::filament::createRenderableFromDescriptor;
 using dart::gui::experimental::filament::createSceneLights;
 using dart::gui::experimental::filament::DebugOverlayController;
-using dart::gui::experimental::filament::destroyMaterialResources;
-using dart::gui::experimental::filament::destroyRenderable;
-using dart::gui::experimental::filament::destroyRenderEnvironmentResources;
-using dart::gui::experimental::filament::destroyFilamentRenderContext;
-using dart::gui::experimental::filament::destroyConfiguredImGuiOverlay;
-using dart::gui::experimental::filament::destroySceneLights;
-using dart::gui::experimental::filament::detachSceneEnvironment;
+using dart::gui::experimental::filament::destroyApplicationResources;
 using dart::gui::experimental::filament::finalizeScreenshotCapture;
 using dart::gui::experimental::filament::getNativeWindow;
 using dart::gui::experimental::filament::handleScroll;
@@ -125,7 +117,6 @@ using dart::gui::experimental::filament::renderApplicationFrame;
 using dart::gui::experimental::filament::refreshContactDebugOverlay;
 using dart::gui::experimental::filament::refreshSelectionDebugLineOverlay;
 using dart::gui::experimental::filament::refreshStaticDebugOverlay;
-using dart::gui::experimental::filament::removeRenderableFromScene;
 using dart::gui::experimental::filament::synchronizeSceneRenderables;
 using dart::gui::experimental::filament::updateFrameViewport;
 using dart::gui::experimental::filament::updateFrameUi;
@@ -387,23 +378,17 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
     DART_PROFILE_TEXT_DUMP();
   }
 
-  destroyConfiguredImGuiOverlay(*engine, imguiOverlay);
-
-  detachSceneEnvironment(*scene, lights);
-  clearMainViewColorGrading(*view);
-  for (const SceneRenderable& sceneRenderable : sceneRenderables) {
-    removeRenderableFromScene(*scene, sceneRenderable.renderable);
-  }
-  clearDebugOverlays(*engine, *scene, debugOverlays);
-  clearDebugLineOverlay(*engine, *scene, selectionDebugOverlay);
-  destroySceneLights(*engine, lights);
-  destroyRenderEnvironmentResources(
-      *engine, indirectLight, skybox, colorGrading);
-  for (SceneRenderable& sceneRenderable : sceneRenderables) {
-    destroyRenderable(*engine, sceneRenderable.renderable);
-  }
-  destroyMaterialResources(*engine, materialResources);
-  destroyFilamentRenderContext(renderContext);
+  destroyApplicationResources(
+      renderContext,
+      imguiOverlay,
+      lights,
+      indirectLight,
+      skybox,
+      colorGrading,
+      sceneRenderables,
+      debugOverlays,
+      selectionDebugOverlay,
+      materialResources);
 
   return screenshotSucceeded ? 0 : 1;
 }

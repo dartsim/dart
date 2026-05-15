@@ -91,6 +91,8 @@
   dispatch, debug-overlay refreshes caused by panel toggles, and ImGui overlay
   upload now live in `dart/gui/experimental/detail/filament/ui_frame.hpp` and
   `.cpp`.
+- Ordered teardown of the private Filament application resources now lives in
+  `dart/gui/experimental/detail/filament/application_teardown.hpp` and `.cpp`.
 - The experimental viewer-runtime layer owns backend-hidden run-option
   normalization, viewer lifecycle state, orbit-camera math, orbit-camera
   controller state, viewer profiling accumulation, and perspective
