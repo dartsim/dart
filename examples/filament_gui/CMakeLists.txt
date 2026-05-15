@@ -195,6 +195,7 @@ add_custom_command(
 
 file(GLOB srcs "*.cpp" "*.hpp")
 set(filament_gui_backend_srcs
+  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/application.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/imgui_overlay.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/input.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/native_window.cpp"
@@ -209,6 +210,7 @@ set(filament_gui_backend_srcs
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/textures.cpp"
 )
 set(filament_gui_backend_hdrs
+  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/application.hpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/imgui_overlay.hpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/input.hpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/native_window.hpp"

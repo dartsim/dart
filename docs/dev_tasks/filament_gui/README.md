@@ -162,8 +162,10 @@
   `dart/gui/experimental/detail/filament/renderable_sync.hpp` and `.cpp`.
 - The Filament example's scene option parsing and reusable DART world fixtures
   now live in `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp`;
-  `main.cpp` remains focused on synchronization and built-in panel
-  orchestration.
+- The Filament example's frame lifecycle, scene synchronization, capture,
+  built-in panel wiring, and top-level orchestration now live in
+  `dart/gui/experimental/detail/filament/application.hpp` and `.cpp`, leaving
+  `examples/filament_gui/main.cpp` as a minimal entry point.
 - `dartpy.gui.experimental` now exposes the constrained backend-hidden
   descriptor, picking, frame-translation, debug-line, run-option, viewer
   lifecycle, screenshot storage, orbit-camera, orbit-camera controller,

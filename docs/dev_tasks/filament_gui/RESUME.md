@@ -253,8 +253,11 @@ rendering now consumes descriptor-owned triangle data instead of concrete shape
 dynamic casts. Unsupported shapes now produce diagnostic descriptors instead of
 being silently dropped by the extraction layer.
 The Filament example scene option parsing and reusable DART world fixtures now
-live in `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp`, leaving
-`examples/filament_gui/main.cpp` as the only C++ source in the example tree.
+live in `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp`.
+The Filament example frame lifecycle, scene synchronization, capture, built-in
+panel wiring, and top-level orchestration now live in
+`dart/gui/experimental/detail/filament/application.hpp` and `.cpp`, leaving
+`examples/filament_gui/main.cpp` as a minimal entry point.
 `MeshShape` triangle geometry, texture coordinates, imported vertex normals,
 material, texture-path, and submesh metadata now flow through renderer-hidden
 descriptors, and the Filament example consumes that descriptor metadata for

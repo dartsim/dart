@@ -30,10 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/experimental/detail/filament/application.hpp>
+#ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_APPLICATION_HPP_
+#define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_APPLICATION_HPP_
 
-int main(int argc, char* argv[])
-{
-  return dart::gui::experimental::filament::runFilamentGuiApplication(
-      argc, argv);
-}
+namespace dart::gui::experimental::filament {
+
+int runFilamentGuiApplication(int argc, char* argv[]);
+
+} // namespace dart::gui::experimental::filament
+
+#endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_APPLICATION_HPP_

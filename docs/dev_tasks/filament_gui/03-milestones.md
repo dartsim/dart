@@ -258,8 +258,11 @@
   experimental API. It exercises descriptors, debug lines, run options, camera
   basis, and picking without introducing another renderer.
 - Reusable DART world fixtures and scene option parsing now live in
-  `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp`, leaving
-  `examples/filament_gui/main.cpp` as the only C++ source in the example tree.
+  `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp`.
+- Filament example frame lifecycle, scene synchronization, capture, built-in
+  panel wiring, and top-level orchestration now live in
+  `dart/gui/experimental/detail/filament/application.hpp` and `.cpp`, leaving
+  `examples/filament_gui/main.cpp` as a minimal entry point.
 - Phase 4 is not complete because remaining interaction-heavy workflow
   migration and cross-platform wheel coverage are still pending.
 

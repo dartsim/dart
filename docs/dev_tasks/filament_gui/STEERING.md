@@ -94,8 +94,9 @@ hashing, and `extractRenderables`.
 2. **Completed: move scene fixtures under private GUI detail.**
    `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp` now own scene
    option parsing plus MVP, drag-and-drop, and G1 DART world fixtures.
-   `main.cpp` is focused on Filament frame orchestration and the built-in
-   panel.
+   `dart/gui/experimental/detail/filament/application.hpp` and `.cpp` now own
+   Filament frame orchestration and the built-in panel, leaving `main.cpp` as a
+   minimal entry point.
 3. **Generalize the public-header leakage scan.**
    `08-north-star-migration.md` Phase A explicitly promises that the
    leakage check will be extended to promoted `dart::gui` headers
@@ -127,11 +128,10 @@ The docs-sync slice should keep these items current as commits land:
 - **Do not draft the promoted `dart::gui::Viewer` / `ViewerOptions`
   public API yet** (the sketch in `08-north-star-migration.md:331-344`).
   Phase H requires Phases C, E, F, G to be substantially complete first.
-  The example still owns Filament frame orchestration and built-in overlay
-  policy. Defining the
-  promoted API now would either bake in MVP-shaped concessions or
-  force a second rewrite when Phase C extraction reveals the right
-  resource boundaries.
+  The private implementation still owns Filament frame orchestration and
+  built-in overlay policy. Defining the promoted API now would either bake in
+  MVP-shaped concessions or force a second rewrite when Phase C extraction
+  reveals the right resource boundaries.
 - **Do not add panel/tool abstractions** (`08-north-star-migration.md`
   §11). Keep the built-in ImGui panel/tool policy MVP-scoped until Phase E
   demands it.
@@ -153,5 +153,5 @@ any surviving `examples/filament_gui/` directory should become a minimal
 entry-point shell while renderer setup, frame lifecycle, resources,
 synchronization, capture, overlays, input translation, and fixture logic live
 under `dart::gui` or private GUI implementation units.
-The promoted `dart::gui` API shape will fall out naturally from
-what's left in `main.cpp` when the lane bottoms out.
+The promoted `dart::gui` API shape will fall out naturally from what remains
+private implementation detail after the example entry point bottoms out.
