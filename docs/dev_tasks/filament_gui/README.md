@@ -189,8 +189,9 @@
 - The Filament example's scene content requirement counting and
   MVP/G1/hello-world/boxes/hardcoded-design/rigid-chain/rigid-loop/
   mixed-chain/coupler-constraint/add-delete-skels/vehicle/hybrid-dynamics/
-  mimic-pendulums/atlas-puppet/drag/simple-frames/soft-bodies/point-cloud/
-  capsule-ground-contact/simulation-event-handler/polyhedron/heightmap
+  mimic-pendulums/atlas-puppet/operational-space-control/drag/simple-frames/
+  soft-bodies/point-cloud/capsule-ground-contact/simulation-event-handler/
+  polyhedron/heightmap
   validation gates, including created-renderable content counting, now live in
   `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`;
 - Initial scene extraction, startup validation, first renderable
@@ -307,6 +308,14 @@
   renderables. The in-tree `pixi run ex atlas_puppet` runner now routes to
   that Filament scene while the legacy standalone OSG source remains available
   for teleoperation-widget and support-polygon comparison.
+- The Filament example includes `--scene operational-space-control`, a WAM
+  fixture that carries the legacy `operational_space_control` visual workflow
+  through descriptor-owned robot, ground, and selectable target renderables.
+  The fixture runs the task-space controller through a private scene pre-step
+  hook before each DART step. The in-tree
+  `pixi run ex operational_space_control` runner now routes to that Filament
+  scene while the legacy standalone OSG source remains available for
+  drag-and-drop axis-constraint comparison.
 - The Filament example also includes `--scene drag-and-drop`, a first
   interaction-heavy fixture that carries the legacy `SimpleFrame` anchor, child
   frame, and axis marker layout through the same backend-hidden manipulation
@@ -403,9 +412,10 @@
   `DART_FETCH_FILAMENT=ON` path on Linux x86_64, builds without the legacy OSG
   GUI target, and runs the default, hello-world, boxes, hardcoded-design,
   rigid-chain, rigid-loop, mixed-chain, coupler-constraint, add-delete-skels,
-  vehicle, hybrid-dynamics, mimic-pendulums, atlas-puppet, drag-and-drop,
-  simple-frames, soft-bodies, point-cloud, capsule-ground-contact,
-  simulation-event-handler, polyhedron, and heightmap headless CTest smokes.
+  vehicle, hybrid-dynamics, mimic-pendulums, atlas-puppet,
+  operational-space-control, drag-and-drop, simple-frames, soft-bodies,
+  point-cloud, capsule-ground-contact, simulation-event-handler, polyhedron,
+  and heightmap headless CTest smokes.
   When no display server is available, the task runs the smokes under Xvfb and
   prefers Mesa's EGL vendor file for software rendering. The Ubuntu CI workflow
   has a matching opt-in smoke job that gets Xvfb, libc++, and libc++abi from
@@ -515,7 +525,7 @@ longer express stable DART concepts.
    `filament-static` package to the Pixi toolchain and validate that
    `Filament_ROOT=$CONDA_PREFIX` discovers headers, libraries, and `matc`.
 5. Expand debug overlay and interaction scenario coverage beyond the MVP,
-   drag-and-drop, and robot IK fixtures.
+   drag-and-drop, task-space target, and robot IK fixtures.
 6. Continue moving reusable renderer resource management out of the Filament
    example once the API boundary is stable enough.
 7. Keep the MVP ImGui panel/tool policy example-scoped unless promotion needs

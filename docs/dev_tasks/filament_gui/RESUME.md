@@ -270,9 +270,10 @@ for Linux x86_64. It configures with `DART_BUILD_GUI=OFF` and
 `DART_BUILD_DARTPY=OFF`, builds `dart_filament_gui`, and runs the default,
 hello-world, boxes, hardcoded-design, rigid-chain, rigid-loop, mixed-chain,
 coupler-constraint, add-delete-skels, vehicle, hybrid-dynamics,
-mimic-pendulums, atlas-puppet, drag-and-drop, simple-frames, soft-bodies,
-point-cloud, capsule-ground-contact, simulation-event-handler, polyhedron, and
-heightmap headless CTest smokes. When `DISPLAY` is absent, the
+mimic-pendulums, atlas-puppet, operational-space-control, drag-and-drop,
+simple-frames, soft-bodies, point-cloud, capsule-ground-contact,
+simulation-event-handler, polyhedron, and heightmap headless CTest smokes.
+When `DISPLAY` is absent, the
 task uses Xvfb and prefers Mesa's EGL vendor file for software rendering. The
 Ubuntu CI
 workflow has a matching `filament-gui-smoke` job that installs Mesa, Xvfb, and
@@ -342,8 +343,14 @@ routes `pixi run ex atlas_puppet` through the Filament example's selectable
 `--scene atlas-puppet` fixture, which loads Atlas and renders the robot,
 ground, and selectable hand/foot IK target descriptors while keeping the
 standalone source as legacy OSG comparison material for the teleoperation
-widget and support-polygon visual. It routes `pixi run ex drag_and_drop`
-through the Filament example's selectable
+widget and support-polygon visual. It routes
+`pixi run ex operational_space_control` through the Filament example's
+selectable `--scene operational-space-control` fixture, which loads the WAM
+arm, renders the ground and selectable red target descriptor, and runs the
+task-space controller through a private scene pre-step hook while keeping the
+standalone source as legacy OSG comparison material for drag-and-drop axis
+constraints. It routes `pixi run ex drag_and_drop` through the Filament
+example's selectable
 `--scene drag-and-drop` fixture by default while keeping the standalone source
 as legacy OSG comparison material. It also routes
 `pixi run ex empty` through the same Filament `--scene drag-and-drop` fixture
@@ -411,10 +418,10 @@ DART world fixtures now live in
 `dart/gui/experimental/detail/filament/scene_fixtures.hpp` and `.cpp`.
 Scene content requirement counting and
 MVP/G1/hello-world/boxes/hardcoded-design/rigid-chain/rigid-loop/mixed-chain/
-coupler-constraint/add-delete-skels/vehicle/hybrid-dynamics/mimic-pendulums/atlas-puppet/drag/
-simple-frames/soft-bodies/point-cloud/capsule-ground-contact/simulation-event-handler/
-polyhedron/heightmap validation gates, including created-renderable content
-counting, now live in
+coupler-constraint/add-delete-skels/vehicle/hybrid-dynamics/mimic-pendulums/
+atlas-puppet/operational-space-control/drag/simple-frames/soft-bodies/
+point-cloud/capsule-ground-contact/simulation-event-handler/polyhedron/
+heightmap validation gates, including created-renderable content counting, now live in
 `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.
 The Filament example frame lifecycle, scene synchronization, capture, built-in
 panel wiring, and top-level orchestration now live in
@@ -483,9 +490,9 @@ After the target links, keep the MVP ImGui panel/tool policy example-scoped
 unless promotion needs user extension points; in that case add DART-owned
 panel/tool abstractions instead of exposing raw ImGui APIs. Add
 interaction-heavy example coverage beyond the current selection/nudging/drag
-path and first drag-and-drop and robot IK fixtures, and add broader human visual
-review with larger real authored environment/PBR assets for the shadow/material
-promotion gate.
+path and first drag-and-drop, task-space target, and robot IK fixtures, and add
+broader human visual review with larger real authored environment/PBR assets for
+the shadow/material promotion gate.
 
 ## Context That Would Be Lost
 

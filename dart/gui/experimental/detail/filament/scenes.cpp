@@ -153,6 +153,8 @@ const char* sceneName(ExampleScene scene)
       return "mimic-pendulums";
     case ExampleScene::AtlasPuppet:
       return "atlas-puppet";
+    case ExampleScene::OperationalSpaceControl:
+      return "operational-space-control";
     case ExampleScene::DragAndDrop:
       return "drag-and-drop";
     case ExampleScene::SimpleFrames:
@@ -227,6 +229,10 @@ bool parseSceneName(std::string_view name, ExampleScene& scene)
   }
   if (name == "atlas-puppet") {
     scene = ExampleScene::AtlasPuppet;
+    return true;
+  }
+  if (name == "operational-space-control") {
+    scene = ExampleScene::OperationalSpaceControl;
     return true;
   }
   if (name == "drag-and-drop") {
@@ -350,6 +356,12 @@ dart::gui::experimental::OrbitCamera initialCameraForScene(ExampleScene scene)
       camera.pitch = 0.28;
       camera.distance = 3.8;
       break;
+    case ExampleScene::OperationalSpaceControl:
+      camera.target = Eigen::Vector3d(0.25, 0.0, 0.55);
+      camera.yaw = -0.78;
+      camera.pitch = 0.26;
+      camera.distance = 2.7;
+      break;
     case ExampleScene::SimpleFrames:
       camera.target = Eigen::Vector3d(0.05, 0.0, 0.06);
       camera.yaw = -0.70;
@@ -470,7 +482,8 @@ AppOptions parseOptions(int argc, char* argv[])
                      "'hardcoded-design', 'rigid-chain', 'rigid-loop', "
                      "'mixed-chain', 'coupler-constraint', "
                      "'add-delete-skels', 'vehicle', 'hybrid-dynamics', "
-                     "'mimic-pendulums', 'atlas-puppet', 'drag-and-drop', "
+                     "'mimic-pendulums', 'atlas-puppet', "
+                     "'operational-space-control', 'drag-and-drop', "
                      "'simple-frames', 'soft-bodies', 'point-cloud', "
                      "'capsule-ground-contact', "
                      "'simulation-event-handler', 'polyhedron', "
@@ -500,7 +513,7 @@ AppOptions parseOptions(int argc, char* argv[])
                    " [--orbit-light-period SECONDS]"
                    " [--gui-scale N]"
                    " [--profile]"
-                   " [--scene mvp|hello-world|boxes|hardcoded-design|rigid-chain|rigid-loop|mixed-chain|coupler-constraint|add-delete-skels|vehicle|hybrid-dynamics|mimic-pendulums|atlas-puppet|drag-and-drop|simple-frames|soft-bodies|point-cloud|capsule-ground-contact|simulation-event-handler|polyhedron|heightmap|g1]"
+                   " [--scene mvp|hello-world|boxes|hardcoded-design|rigid-chain|rigid-loop|mixed-chain|coupler-constraint|add-delete-skels|vehicle|hybrid-dynamics|mimic-pendulums|atlas-puppet|operational-space-control|drag-and-drop|simple-frames|soft-bodies|point-cloud|capsule-ground-contact|simulation-event-handler|polyhedron|heightmap|g1]"
                    " [--g1-package-uri URI] [--g1-robot-uri URI]"
                    " [--g1-package-name NAME]\n";
       std::exit(0);
@@ -570,6 +583,8 @@ DartScene createDartScene(const AppOptions& options)
       return createMimicPendulumsScene();
     case ExampleScene::AtlasPuppet:
       return createAtlasPuppetScene();
+    case ExampleScene::OperationalSpaceControl:
+      return createOperationalSpaceControlScene();
     case ExampleScene::DragAndDrop:
       return createDragAndDropScene();
     case ExampleScene::SimpleFrames:

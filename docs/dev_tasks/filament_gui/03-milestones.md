@@ -224,6 +224,12 @@
   routes to this Filament scene by default while the standalone source remains
   as legacy OSG comparison material for teleoperation-widget and
   support-polygon behavior.
+- The Filament example includes a selectable
+  `--scene operational-space-control` fixture that loads the WAM arm, renders
+  the selectable red target sphere, and runs the task-space controller through
+  a private scene pre-step hook. `pixi run ex operational_space_control`
+  routes to this Filament scene by default while the standalone source remains
+  as legacy OSG comparison material for drag-and-drop axis constraints.
 - The Filament example includes a selectable `--scene drag-and-drop` fixture
   that extracts and renders the legacy drag-and-drop example's `SimpleFrame`
   anchor, child frame, and axis markers through the same manipulation path.
@@ -402,9 +408,9 @@
   `dart/gui/experimental/detail/filament/debug_overlay.hpp` and `.cpp`.
 - Scene content requirement counting and MVP/G1/hello-world/boxes/
   hardcoded-design/rigid-chain/rigid-loop/mixed-chain/coupler-constraint/
-  add-delete-skels/vehicle/hybrid-dynamics/mimic-pendulums/atlas-puppet/drag/
-  simple-frames/soft-bodies/point-cloud/capsule-ground-contact/
-  simulation-event-handler/polyhedron/heightmap
+  add-delete-skels/vehicle/hybrid-dynamics/mimic-pendulums/atlas-puppet/
+  operational-space-control/drag/simple-frames/soft-bodies/point-cloud/
+  capsule-ground-contact/simulation-event-handler/polyhedron/heightmap
   validation gates now live in
   `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.
 - Private built-in status panel rendering now lives in

@@ -214,6 +214,10 @@
     `--scene atlas-puppet` Filament fixture that loads Atlas, exposes generic
     selectable IK targets for its hands and feet, and keeps the legacy
     standalone source as comparison material for the OSG teleoperation widget.
+    The `operational_space_control` runner now routes to a
+    `--scene operational-space-control` Filament fixture that loads the WAM arm,
+    runs the task-space controller through a private scene pre-step hook, and
+    exposes the red target as a selectable `SimpleFrame`.
     The focused GUI unit test now
     checks that
     `examples/filament_gui` contains no C++ source/header

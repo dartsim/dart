@@ -98,7 +98,7 @@ void SceneFrameUpdater::update(
       mOptions, mLifecycle, mDartScene.world->getTimeStep());
 
   if (advanceSimulationSteps(
-          *mDartScene.world, simulationStepsToRun, mLifecycle, mProfile)) {
+          mDartScene, simulationStepsToRun, mLifecycle, mProfile)) {
     auto phaseStart = dart::gui::experimental::ProfileAccumulator::Clock::now();
     refreshContactDebugOverlay(
         mEngine,

@@ -377,6 +377,128 @@ dart::dynamics::SkeletonPtr loadRequiredWamRobotSkeleton()
   return wam;
 }
 
+dart::dynamics::SkeletonPtr loadOperationalSpaceControlWamSkeleton()
+{
+  dart::io::ReadOptions options;
+  options.addPackageDirectory(
+      "herb_description", dart::config::dataPath("urdf/wam"));
+  const auto wamUri = dart::common::Uri::createFromPath(
+      dart::config::dataPath("urdf/wam/wam.urdf"));
+  auto wam = dart::io::readSkeleton(wamUri, options);
+  if (!wam) {
+    throw std::runtime_error(
+        "Failed to load operational-space WAM fixture from "
+        + wamUri.toString());
+  }
+
+  wam->setName(kOperationalSpaceControlWamSkeletonName);
+  const std::array<std::pair<const char*, double>, 7> jointPositions{{
+      {"/j1", 0.0},
+      {"/j2", 0.0},
+      {"/j3", 0.0},
+      {"/j4", 0.0},
+      {"/j5", 0.0},
+      {"/j6", 0.0},
+      {"/j7", 0.0},
+  }};
+  for (const auto& [name, position] : jointPositions) {
+    auto* dof = wam->getDof(name);
+    if (dof == nullptr) {
+      throw std::runtime_error(
+          "Operational-space WAM fixture is missing expected DOF "
+          + std::string(name));
+    }
+    dof->setPosition(position);
+  }
+
+  wam->eachJoint([](dart::dynamics::Joint* joint) {
+    joint->setLimitEnforcement(false);
+    for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+      joint->setDampingCoefficient(i, 0.5);
+    }
+  });
+  return wam;
+}
+
+class OperationalSpaceControlState
+{
+public:
+  OperationalSpaceControlState(
+      dart::dynamics::SkeletonPtr robot,
+      dart::dynamics::SimpleFramePtr target)
+    : mRobot(std::move(robot)),
+      mEndEffector(
+          mRobot ? mRobot->getBodyNode("/wam7") : nullptr),
+      mTarget(std::move(target)),
+      mOffset(0.05, 0.0, 0.0)
+  {
+    if (mRobot == nullptr || mEndEffector == nullptr || mTarget == nullptr) {
+      throw std::runtime_error(
+          "Operational-space fixture is missing WAM, end-effector, or target");
+    }
+
+    const std::size_t dofs = mEndEffector->getNumDependentGenCoords();
+    mKp.setZero();
+    for (std::size_t i = 0; i < 3; ++i) {
+      mKp(i, i) = 50.0;
+    }
+    mKd.setZero(dofs, dofs);
+    for (std::size_t i = 0; i < dofs; ++i) {
+      mKd(i, i) = 5.0;
+    }
+
+    Eigen::Isometry3d targetTransform = mEndEffector->getWorldTransform();
+    targetTransform.pretranslate(mOffset);
+    mTarget->setTransform(targetTransform);
+    mOffset = mEndEffector->getWorldTransform().rotation().transpose() * mOffset;
+  }
+
+  void preStep()
+  {
+    const Eigen::MatrixXd mass = mRobot->getMassMatrix();
+
+    const dart::math::LinearJacobian jacobian
+        = mEndEffector->getLinearJacobian(mOffset);
+    const Eigen::MatrixXd jacobianInverse
+        = jacobian.transpose()
+          * (jacobian * jacobian.transpose()
+             + 0.0025 * Eigen::Matrix3d::Identity())
+                .inverse();
+
+    const dart::math::LinearJacobian jacobianDeriv
+        = mEndEffector->getLinearJacobianDeriv(mOffset);
+    const Eigen::MatrixXd jacobianDerivInverse
+        = jacobianDeriv.transpose()
+          * (jacobianDeriv * jacobianDeriv.transpose()
+             + 0.0025 * Eigen::Matrix3d::Identity())
+                .inverse();
+
+    const Eigen::Vector3d positionError
+        = mTarget->getWorldTransform().translation()
+          - mEndEffector->getWorldTransform() * mOffset;
+    const Eigen::Vector3d velocityError
+        = -mEndEffector->getLinearVelocity(mOffset);
+    const Eigen::VectorXd coriolisAndGravity
+        = mRobot->getCoriolisAndGravityForces();
+
+    const Eigen::VectorXd forces
+        = mass
+              * (jacobianInverse * mKp * velocityError
+                 + jacobianDerivInverse * mKp * positionError)
+          + coriolisAndGravity
+          + mKd * jacobianInverse * mKp * positionError;
+    mRobot->setForces(forces);
+  }
+
+private:
+  dart::dynamics::SkeletonPtr mRobot;
+  dart::dynamics::BodyNode* mEndEffector = nullptr;
+  dart::dynamics::SimpleFramePtr mTarget;
+  Eigen::Vector3d mOffset;
+  Eigen::Matrix3d mKp;
+  Eigen::MatrixXd mKd;
+};
+
 dart::dynamics::SkeletonPtr loadRequiredAtlasRobotSkeleton()
 {
   const auto atlasUri = dart::common::Uri::createFromString(
@@ -2015,6 +2137,43 @@ DartScene createAtlasPuppetScene()
   auto atlas = loadAtlasPuppetSkeleton();
   scene.world->addSkeleton(atlas);
   addAtlasPuppetIkTargets(scene, atlas);
+
+  return scene;
+}
+
+DartScene createOperationalSpaceControlScene()
+{
+  DartScene scene;
+  scene.world = World::create("filament_gui_operational_space_control");
+  scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  scene.world->addSkeleton(createStaticVisualSkeleton(
+      kOperationalSpaceControlGroundSkeletonName,
+      std::make_shared<BoxShape>(Eigen::Vector3d(5.0, 5.0, 0.01)),
+      Eigen::Vector3d(0.0, 0.0, -0.005),
+      Eigen::Vector3d(0.18, 0.32, 0.58)));
+
+  auto wam = loadOperationalSpaceControlWamSkeleton();
+  auto* endEffector = wam->getBodyNode("/wam7");
+  if (endEffector == nullptr) {
+    throw std::runtime_error(
+        "Operational-space WAM fixture is missing /wam7 body node");
+  }
+
+  Eigen::Isometry3d targetTransform = endEffector->getWorldTransform();
+  targetTransform.pretranslate(Eigen::Vector3d(0.05, 0.0, 0.0));
+  auto target = SimpleFrame::createShared(
+      dart::dynamics::Frame::World(),
+      kOperationalSpaceControlTargetFrameName,
+      targetTransform);
+  target->setShape(std::make_shared<SphereShape>(0.04));
+  target->getVisualAspect(true)->setRGBA(Eigen::Vector4d(0.92, 0.08, 0.08, 1.0));
+  scene.world->addSimpleFrame(target);
+
+  auto controller = std::make_shared<OperationalSpaceControlState>(wam, target);
+  scene.world->addSkeleton(wam);
+  scene.preStep = [controller = std::move(controller)]() {
+    controller->preStep();
+  };
 
   return scene;
 }

@@ -32,6 +32,7 @@
 
 #include <dart/gui/experimental/detail/filament/simulation_stepper.hpp>
 
+#include <dart/gui/experimental/detail/filament/scenes.hpp>
 #include <dart/simulation/world.hpp>
 
 #include <algorithm>
@@ -82,7 +83,7 @@ std::size_t SimulationStepper::stepsToRun(
 }
 
 bool advanceSimulationSteps(
-    dart::simulation::World& world,
+    DartScene& scene,
     std::size_t simulationStepsToRun,
     ViewerLifecycleState& lifecycle,
     ProfileAccumulator& profile)
@@ -93,8 +94,11 @@ bool advanceSimulationSteps(
 
   const auto phaseStart = ProfileAccumulator::Clock::now();
   for (std::size_t i = 0; i < simulationStepsToRun; ++i) {
-    const double timeStep = world.getTimeStep();
-    world.step();
+    const double timeStep = scene.world->getTimeStep();
+    if (scene.preStep) {
+      scene.preStep();
+    }
+    scene.world->step();
     profile.simulatedMs += timeStep * 1000.0;
   }
   markSimulationAdvanced(lifecycle);

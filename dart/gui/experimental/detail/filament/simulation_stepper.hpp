@@ -44,6 +44,8 @@ class World;
 
 namespace dart::gui::experimental::filament {
 
+struct DartScene;
+
 class SimulationStepper
 {
 public:
@@ -60,7 +62,7 @@ private:
 };
 
 bool advanceSimulationSteps(
-    dart::simulation::World& world,
+    DartScene& scene,
     std::size_t simulationStepsToRun,
     dart::gui::experimental::ViewerLifecycleState& lifecycle,
     dart::gui::experimental::ProfileAccumulator& profile);

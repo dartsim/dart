@@ -186,10 +186,10 @@ Current progress: the in-tree `hello_world`, `boxes`, `box_stacking`,
 `rigid_cubes`, `hardcoded_design`, `rigid_chain`, `rigid_loop`,
 `mixed_chain`, `coupler_constraint`, `add_delete_skels`, `vehicle`,
 `hybrid_dynamics`, `biped_stand`, `mimic_pendulums`, `atlas_puppet`,
-`drag_and_drop`, `empty`, `simple_frames`, `soft_bodies`, `point_cloud`,
-`capsule_ground_contact`, `simulation_event_handler`, `imgui`,
-`rigid_shapes`, `polyhedron_visual`, `heightmap`, and `g1_puppet` runners now
-route to focused Filament scenes, the
+`operational_space_control`, `drag_and_drop`, `empty`, `simple_frames`,
+`soft_bodies`, `point_cloud`, `capsule_ground_contact`,
+`simulation_event_handler`, `imgui`, `rigid_shapes`, `polyhedron_visual`,
+`heightmap`, and `g1_puppet` runners now route to focused Filament scenes, the
 default Filament visual-coverage scene, or the built-in Filament panel by
 default while their standalone sources remain as legacy OSG comparison
 material until the promoted API can replace the missing panel/tool-specific

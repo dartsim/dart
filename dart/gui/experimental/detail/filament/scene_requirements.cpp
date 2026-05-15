@@ -121,6 +121,18 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Mesh) {
     ++counts.wamMeshes;
   }
+  if (descriptor.skeletonName == kOperationalSpaceControlWamSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Mesh) {
+    ++counts.operationalSpaceControlWamMeshes;
+  }
+  if (descriptor.shapeFrameName == kOperationalSpaceControlTargetFrameName
+      && descriptor.geometry.kind == ShapeKind::Sphere) {
+    ++counts.operationalSpaceControlTargets;
+  }
+  if (descriptor.skeletonName == kOperationalSpaceControlGroundSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.operationalSpaceControlGrounds;
+  }
   if (descriptor.skeletonName == kAtlasFixtureSkeletonName
       && descriptor.geometry.kind == ShapeKind::Mesh) {
     ++counts.atlasMeshes;
@@ -488,6 +500,31 @@ bool validateSceneDescriptorContent(
         kAtlasPuppetIkTargetCount,
         "atlas-puppet scene",
         "visible IK target renderable descriptors",
+        output);
+  }
+
+  if (scene == ExampleScene::OperationalSpaceControl) {
+    if (!requireAtLeast(
+            counts.operationalSpaceControlWamMeshes,
+            5,
+            "operational-space-control scene",
+            "visible WAM mesh renderables",
+            output)) {
+      return false;
+    }
+    if (!requireEqual(
+            counts.operationalSpaceControlTargets,
+            kOperationalSpaceControlTargetCount,
+            "operational-space-control scene",
+            "visible target renderable descriptor",
+            output)) {
+      return false;
+    }
+    return requireEqual(
+        counts.operationalSpaceControlGrounds,
+        kOperationalSpaceControlGroundCount,
+        "operational-space-control scene",
+        "visible ground renderable descriptor",
         output);
   }
 
@@ -929,6 +966,28 @@ bool validateCreatedSceneContent(
         created.atlasPuppetIkTargets,
         expected.atlasPuppetIkTargets,
         "atlas-puppet IK target renderables",
+        output);
+  }
+
+  if (scene == ExampleScene::OperationalSpaceControl) {
+    if (!requireCreatedAtLeast(
+            created.operationalSpaceControlWamMeshes,
+            expected.operationalSpaceControlWamMeshes,
+            "operational-space-control WAM mesh renderables",
+            output)) {
+      return false;
+    }
+    if (!requireCreatedEqual(
+            created.operationalSpaceControlTargets,
+            expected.operationalSpaceControlTargets,
+            "operational-space-control target renderables",
+            output)) {
+      return false;
+    }
+    return requireCreatedEqual(
+        created.operationalSpaceControlGrounds,
+        expected.operationalSpaceControlGrounds,
+        "operational-space-control ground renderables",
         output);
   }
 

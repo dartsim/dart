@@ -39,6 +39,7 @@
 
 #include <Eigen/Core>
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -61,6 +62,7 @@ struct DartScene
 {
   dart::simulation::WorldPtr world;
   std::vector<IkHandle> ikHandles;
+  std::function<void()> preStep;
 };
 
 enum class ExampleScene
@@ -78,6 +80,7 @@ enum class ExampleScene
   HybridDynamics,
   MimicPendulums,
   AtlasPuppet,
+  OperationalSpaceControl,
   DragAndDrop,
   SimpleFrames,
   SoftBodies,
@@ -106,6 +109,12 @@ struct AppOptions
 };
 
 inline constexpr const char* kWamFixtureSkeletonName = "visual_wam_robot";
+inline constexpr const char* kOperationalSpaceControlWamSkeletonName
+    = "visual_operational_space_control_wam";
+inline constexpr const char* kOperationalSpaceControlTargetFrameName
+    = "operational_space_control_target";
+inline constexpr const char* kOperationalSpaceControlGroundSkeletonName
+    = "visual_operational_space_control_ground";
 inline constexpr const char* kAtlasFixtureSkeletonName = "visual_atlas_torso_mesh";
 inline constexpr const char* kAtlasRobotFixtureSkeletonName = "visual_atlas_robot";
 inline constexpr const char* kAtlasPuppetFixtureGroundSkeletonName
@@ -204,6 +213,8 @@ inline constexpr std::size_t kMimicPendulumsFixtureCylinderCount = 15;
 inline constexpr std::size_t kMimicPendulumsFixtureGroundCount = 1;
 inline constexpr std::size_t kAtlasPuppetFixtureGroundCount = 1;
 inline constexpr std::size_t kAtlasPuppetIkTargetCount = 4;
+inline constexpr std::size_t kOperationalSpaceControlTargetCount = 1;
+inline constexpr std::size_t kOperationalSpaceControlGroundCount = 1;
 inline constexpr std::size_t kSimpleFramesFixtureBoxCount = 3;
 inline constexpr std::size_t kSimpleFramesFixtureEllipsoidCount = 4;
 inline constexpr std::size_t kSoftBodiesFixtureMinSoftMeshCount = 5;

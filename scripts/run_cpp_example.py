@@ -27,6 +27,7 @@ FILAMENT_SMOKE_PATTERN = (
     "EXAMPLE_filament_gui_hybrid_dynamics_headless_smoke|"
     "EXAMPLE_filament_gui_mimic_pendulums_headless_smoke|"
     "EXAMPLE_filament_gui_atlas_puppet_headless_smoke|"
+    "EXAMPLE_filament_gui_operational_space_control_headless_smoke|"
     "EXAMPLE_filament_gui_drag_and_drop_headless_smoke|"
     "EXAMPLE_filament_gui_simple_frames_headless_smoke|"
     "EXAMPLE_filament_gui_soft_bodies_headless_smoke|"
@@ -146,6 +147,12 @@ EXAMPLE_SPECS = {
         "filament_gui",
         ("filament",),
         ("--scene", "atlas-puppet"),
+    ),
+    "operational_space_control": ExampleSpec(
+        "dart_filament_gui",
+        "filament_gui",
+        ("filament",),
+        ("--scene", "operational-space-control"),
     ),
     "drag_and_drop": ExampleSpec(
         "dart_filament_gui",
@@ -489,6 +496,7 @@ def _split_filament_scenes(run_args: list[str]) -> tuple[list[str], list[str]]:
                 "hybrid-dynamics",
                 "mimic-pendulums",
                 "atlas-puppet",
+                "operational-space-control",
                 "drag-and-drop",
                 "simple-frames",
                 "soft-bodies",
