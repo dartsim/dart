@@ -2633,11 +2633,11 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     `7005904083`, `7005879764`, `7006075376`, `7006153851`,
     `7006180173`.
 - Closed-PR trigger state after later pushed audit/docs heads:
-  - Heads `f31f1a5b897` and `bdf6e34573c` are pushed to
-    `feature/new_coll`, but `gh run list --branch feature/new_coll --commit`
-    returns no Actions runs for either commit. These pushes publish branch
-    state only because the workflows do not run on arbitrary feature-branch
-    pushes.
+  - Heads `f31f1a5b897`, `bdf6e34573c`, `6be640e7007`, and `ec6f6f43112` are
+    pushed to `feature/new_coll`, but
+    `gh run list --branch feature/new_coll --commit` returns no Actions runs
+    for those commits. These pushes publish branch state only because the
+    workflows do not run on arbitrary feature-branch pushes.
 - Broad local Debug validation after the macOS/Linux closed-PR repairs:
   - Command:
     `cmake --build build/default/cpp/Debug --target tests --parallel 5`
@@ -2714,6 +2714,26 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     passed: linting, build, unit tests, simulation-experimental tests, Python
     tests, and documentation. This final pass included
     `audit-collision-compat-facades` through the lint gate.
+- Current pushed clean-API/build-option policy checkpoint:
+  - Commit: `ec6f6f43112`
+    (`Clean dartpy collision API and deprecate C++ facades`), pushed to
+    `origin/feature/new_coll`.
+  - Result: passed local validation before push:
+    `pixi run lint`, `pixi run build`, `pixi run test-unit` (277/277 CTest
+    tests), `pixi run test-py` (147 Python tests),
+    `pixi run -e gazebo test-gz` (65/65 gz-physics tests), and the native
+    compatibility package smoke.
+  - Policy evidence: dartpy exposes `DartCollisionDetector` without legacy
+    detector aliases; retained C++ FCL/Bullet/ODE facades and legacy factory
+    keys are deprecated native-backed compatibility paths; and
+    `DART_BUILD_COLLISION_FCL`, `DART_BUILD_COLLISION_BULLET`, and
+    `DART_BUILD_COLLISION_ODE` now document reference-only scope. Core DART,
+    dartpy, gz-physics runtime integration, and the native-backed
+    compatibility component facades do not need those options.
+  - GitHub trigger evidence:
+    `gh run list --branch feature/new_coll --commit ec6f6f43112 ...` returned
+    no runs because PR #2652 is closed and feature-branch pushes do not match
+    the main workflow `push` filters.
 
 ## Known Risks
 

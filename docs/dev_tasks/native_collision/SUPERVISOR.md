@@ -122,7 +122,7 @@ valid for retained C++ compatibility facades and factory keys.
 | Lint guard wired into `lint` and `check-lint`; script exits 0                      | VERIFIED | `pixi.toml:207`, `:255`; live run: `Collision runtime isolation check passed.`                                                           |
 | Old-engine implementation under `reference/` paths; top-level files are facades    | VERIFIED | `dart/collision/{fcl,bullet,ode}/reference/` exist; top-level `*_collision_detector.hpp` is `#pragma once` + redirect to `compat/`       |
 | Native `ShapeType` taxonomy excludes cone/heightfield/point-cloud                  | VERIFIED | `dart/collision/native/shapes/shape.hpp:44-55` — exactly `Sphere, Box, Capsule, Cylinder, Plane, Mesh, Convex, Sdf, Compound`            |
-| Python compat names construct `DartCollisionDetector`                              | VERIFIED | `python/dartpy/collision/collision_detector.cpp:43-46`                                                                                   |
+| Python exposes only clean `DartCollisionDetector` API                              | VERIFIED | `python/dartpy/collision/collision_detector.cpp`; `audit-collision-compat-facades` confirms legacy detector aliases are absent           |
 | `wheel-verify` runs `verify_wheel_collision_isolation.py`                          | VERIFIED | `pixi.toml:1278-1280`; `wheel-verify` deps at `:2189`, `:2322`, `:2441`                                                                  |
 | Smoke `smoke/native_compat_package/` runnable                                      | VERIFIED | `CMakeLists.txt` + `main.cpp` present; CMake requests `collision-fcl/bullet/ode` components and links `dart-collision-{fcl,bullet,ode}`  |
 | Retained components are facades; old engines use `collision-reference-*`           | VERIFIED | `dart/CMakeLists.txt:59-61` registers facade components; `fcl/bullet/ode/CMakeLists.txt` use `collision-reference-*` target names        |
@@ -161,6 +161,13 @@ This is actionable code work Codex should fix in Step A. It is not contradicted 
 
 ### Critic (plan coherence) — completed
 
+Status update after `ec6f6f43112`: the SHA bookkeeping concern below is
+resolved in `README.md`, `RESUME.md`, `06-completion-audit.md`, and
+`07-pr-evidence-transfer.md`. The canonical current branch head is now
+`ec6f6f43112`; the latest GitHub Actions evidence remains the earlier manual
+workflow-dispatch reference evidence on `1e1faf6feb1` because PR #2652 is
+closed and feature-branch pushes do not trigger the main workflows.
+
 **Top 3 plan risks:**
 
 1. **CRITICAL — Status inflation: README has `[x]` boxes whose evidence is "manual workflow-dispatch on a closed PR using a personal token".** A reader skimming README will believe the project is one step from done; it isn't. The audit row says `Local`/`Open` for the same item.
@@ -170,7 +177,10 @@ This is actionable code work Codex should fix in Step A. It is not contradicted 
 **Specific contradictions (cited):**
 
 - **README vs. completion-audit on CI status.** README line 132: `[x] CI Linux has a scheduled/manual collision benchmark guard job ... uploads .benchmark_results/...` But `06-completion-audit.md` ~line 30: _"scheduled/permanent gate evidence is still a finalization item."_ The README hides "scheduled gate not proven" behind a checked box.
-- **Three different "current" SHAs.** README cites `8c83cd19cb8`; RESUME line 286 says latest pushed code head is `1e1faf6feb1`; `git log` shows current HEAD is `f5d4f9ee932`. A reviewer cannot tell what state is being claimed.
+- **Three different "current" SHAs.** Earlier docs cited `8c83cd19cb8`,
+  `1e1faf6feb1`, and `f5d4f9ee932` as current in different places. This is now
+  resolved to canonical branch head `ec6f6f43112`, with prior SHAs retained
+  only as evidence checkpoints.
 - **Phase 10 marked "locally complete" in 02-milestones but README progress scale Stage 9 says "policy evidence left."**
 - **README narrates 4 separate `pixi run test-all` "passes", each on a different SHA after a different regression repair.** No single SHA where everything green coexists with the latest code.
 
@@ -198,7 +208,11 @@ The architect and critic disagree on whether to start coding (architect: yes, ru
 
 A1. **Decommit inflated README `[x]` items.** Convert items whose evidence is "manual workflow-dispatch on closed PR" to `[~]` (in progress) and rewrite the line so the actual gate (scheduled CI on an open PR or merged main) is visible.
 
-A2. **Pick ONE canonical "current SHA"** and ensure README, RESUME, and 06-audit all reference the same one. Suggest: latest pushed head `1e1faf6feb1`, with a footnote that `f5d4f9ee932` is a docs-only update on top of it (which `git log` confirms).
+A2. **Pick ONE canonical "current SHA"** and ensure README, RESUME, and
+06-audit all reference the same one. Current resolution: latest pushed head
+`ec6f6f43112`, with `1e1faf6feb1` retained as the last manual
+workflow-dispatch evidence head and intermediate docs/audit commits retained
+only as historical checkpoints.
 
 A3. **Replace the single open `[ ]` mega-item in README** with a 6-bullet list mirroring the audit's "Missing Evidence And Required Next Actions" so progress is measurable per Phase (10/11/13/14).
 
@@ -218,12 +232,15 @@ User answers cleared the policy fork. Codex may now do BOTH:
 - Add `[[deprecated("Use DartCollisionDetector instead. See docs/dev_tasks/native_collision/05-downstream-migration.md")]]` attributes on:
   - `FCLCollisionDetector`, `BulletCollisionDetector`, `OdeCollisionDetector` C++ classes (compat headers).
   - `[[deprecated]]` on `createReference()` is NOT appropriate (those are intentional reference APIs); keep them undeprecated.
-- Add Python `DeprecationWarning` on the alias assignments at `python/dartpy/collision/collision_detector.cpp:43-46`. Use `_warn_deprecated_collision_alias` helper if it doesn't already exist.
 - Superseded by Q1 addendum for dartpy: remove Python legacy detector aliases
-  instead of adding `DeprecationWarning` wrappers; tests and stubs should prove
-  the clean `DartCollisionDetector` API.
+  instead of adding `DeprecationWarning` wrappers; tests, stubs, and
+  `audit-collision-compat-facades` now prove the clean `DartCollisionDetector`
+  API.
 - Gate the C++ deprecation attribute behind a CMake option `DART_COLLISION_DEPRECATE_LEGACY_NAMES` (default ON; downstreams in mid-migration can `-DDART_COLLISION_DEPRECATE_LEGACY_NAMES=OFF` to silence).
-- Add a regression test `UNIT_collision_LegacyDeprecationWarnings` that compiles a tiny program against each legacy spelling under `-Wdeprecated-declarations -Werror=deprecated-declarations` and asserts the warning fires; symmetric Python `pytest` proves `DeprecationWarning` is raised when the alias is constructed.
+- Add C++ regression coverage that keeps retained legacy spellings visibly
+  deprecated when `DART_COLLISION_DEPRECATE_LEGACY_NAMES=ON`. Python coverage
+  should prove the legacy detector aliases are absent, not deprecated, because
+  dartpy intentionally takes the clean API path for DART 7.
 - Confirm gz-physics still builds. Run `pixi run -e gazebo test-gz` with the option ON; if gz-physics breaks because it constructs legacy names internally, document the gz-physics-side migration patch in `05-downstream-migration.md` rather than removing the deprecation.
 
 **B2. Final runtime cleanup (architect's slice):**

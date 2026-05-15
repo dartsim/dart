@@ -99,9 +99,9 @@ Local validation currently recorded in the dev-task evidence:
   - full dartpy wheel matrix passed
   - collision benchmark guard uploaded
     `collision-benchmark-guard-25887939088-1`
-- Later pushed audit/docs heads `f31f1a5b897` and `bdf6e34573c` have no
-  attached GitHub Actions runs because `feature/new_coll` pushes do not match
-  the workflow `push` filters.
+- Later pushed audit/docs/policy heads `f31f1a5b897`, `bdf6e34573c`,
+  `6be640e7007`, and `ec6f6f43112` have no attached GitHub Actions runs
+  because `feature/new_coll` pushes do not match the workflow `push` filters.
 
 Final PR-complete testing still needs whatever CI surface the maintainer chooses
 after PR #2652 is reopened or a successor PR is created.
@@ -129,8 +129,8 @@ Compatibility notes:
 ## Related Issues / PRs
 
 - PR #2652: `https://github.com/dartsim/dart/pull/2652`
-- Current pushed branch: `feature/new_coll` at the latest pushed head; update
-  this line after the next evidence push.
+- Current pushed branch: `feature/new_coll` at `ec6f6f43112`
+  (`Clean dartpy collision API and deprecate C++ facades`).
 
 ## Checklist Notes
 
@@ -141,3 +141,8 @@ Compatibility notes:
 - C++ downstream deprecation warnings are enabled by default through
   `DART_COLLISION_DEPRECATE_LEGACY_NAMES`; downstreams may turn that option
   off only as a migration aid. Dartpy intentionally takes the clean API path.
+- `DART_BUILD_COLLISION_FCL`, `DART_BUILD_COLLISION_BULLET`, and
+  `DART_BUILD_COLLISION_ODE` are only needed for explicit
+  `collision-reference-*` comparison components. Core DART, dartpy,
+  gz-physics runtime integration, and native-backed compatibility facades do
+  not need those options.

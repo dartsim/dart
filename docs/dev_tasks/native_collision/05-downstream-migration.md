@@ -20,7 +20,11 @@ The downstream-compatible runtime spelling is `dart`, `DartCollisionDetector`,
 `CollisionDetectorType::Dart`, and the default `dart` package component. Direct
 C++ legacy facade objects may still report `"fcl"`, `"bullet"`, or `"ode"` as
 compatibility display strings, but those strings do not select external
-runtime engines.
+runtime engines. `DART_BUILD_COLLISION_FCL`,
+`DART_BUILD_COLLISION_BULLET`, and `DART_BUILD_COLLISION_ODE` are no longer
+needed by core DART, dartpy, gz-physics runtime integration, or the
+native-backed compatibility component facades; they only opt into explicit
+`collision-reference-*` comparison components.
 
 Current status: the DART-side compatibility facade tests cover those display
 strings, FCL/ODE facades preserve gz-required unsupported raycast behavior, a

@@ -99,7 +99,11 @@
   - Added collision benchmark regression checks that parse Google Benchmark JSON and compare native collision timings against the best enabled FCL, Bullet, or ODE reference result across narrowphase, distance, raycast, mixed primitive, mesh-heavy, raycast-batch, and public DART adapter scenarios, with a scheduled/manual CI Linux guard that uploads the JSON artifacts.
   - Added dartpy wheel verification that rejects legacy collision runtime libraries, reference collision libraries, and old reference collision component exports from wheel artifacts while allowing native-backed compatibility component facades.
   - Added a runtime source isolation check that fails if non-reference DART source paths include FCL, Bullet, ODE, libccd, or explicit collision reference backend headers.
-  - Made the FCL collision backend optional behind `DART_BUILD_COLLISION_FCL`; core `dart` and `dartpy` now configure and build with FCL, Bullet, and ODE collision backends disabled.
+  - Scoped `DART_BUILD_COLLISION_FCL`, `DART_BUILD_COLLISION_BULLET`, and
+    `DART_BUILD_COLLISION_ODE` to optional `collision-reference-*`
+    components; core `dart`, `dartpy`, and native-backed
+    `collision-fcl`/`collision-bullet`/`collision-ode` compatibility facades
+    build with all three disabled.
   - Broke the collision→dynamics source dependency using a bridge pattern: dynamics-dependent implementations moved from `dart/collision/*.cpp` to `dart/dynamics/detail/*_bridge.cpp`. Collision `.cpp` files no longer include any `dart/dynamics/` headers.
   - Added built-in native collision module (`dart/collision/native/`) with 575+ tests covering all primitive shape pairs, GJK/EPA, distance queries, raycast, CCD, four broad-phase algorithms, collision filtering, compound shapes, and parallel narrowphase.
   - Wired the native DART backend as a full `CollisionDetector` implementation with distance queries, raycast, and expanded shape adapters (Cone, Ellipsoid, Heightmap, MultiSphere). The legacy `"experimental"` factory key remains as an alias for compatibility.

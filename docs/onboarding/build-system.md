@@ -246,8 +246,8 @@ dart/
   benchmarks
 - **Option:** `DART_BUILD_COLLISION_FCL`
 - **Integration:** Builds optional `dart-collision-reference-fcl` component.
-  The core DART libraries and normal runtime collision stack do not depend on
-  FCL.
+  The core DART libraries, dartpy, native-backed compatibility facades, and
+  normal runtime collision stack do not depend on FCL.
 - **CMake Module:** `cmake/DARTFindfcl.cmake`
 - **ROS Dependency:** `libfcl-dev`
 - **Failure mode:** Configuration aborts with `FATAL_ERROR` if the option is
@@ -262,8 +262,8 @@ dart/
   benchmarks
 - **Option:** `DART_BUILD_COLLISION_BULLET`
 - **Integration:** Builds optional `dart-collision-reference-bullet`
-  component. The core DART libraries and normal runtime collision stack do not
-  depend on Bullet.
+  component. The core DART libraries, dartpy, native-backed compatibility
+  facades, and normal runtime collision stack do not depend on Bullet.
 - **CMake Module:** `cmake/DARTFindBullet.cmake`
 - **Failure mode:** Configuration aborts with `FATAL_ERROR` if the option is `ON` and Bullet is missing.
 - **Disable:** There is no `DART_SKIP_Bullet`; set
@@ -276,8 +276,8 @@ dart/
   benchmarks
 - **Option:** `DART_BUILD_COLLISION_ODE`
 - **Integration:** Builds optional `dart-collision-reference-ode` component.
-  The core DART libraries and normal runtime collision stack do not depend on
-  ODE collision.
+  The core DART libraries, dartpy, native-backed compatibility facades, and
+  normal runtime collision stack do not depend on ODE collision.
 - **CMake Module:** `cmake/DARTFindODE.cmake`
 - **Failure mode:** Configuration aborts with `FATAL_ERROR` if the option is `ON` and ODE is missing.
 - **Disable:** There is no `DART_SKIP_ODE`; set `DART_BUILD_COLLISION_ODE=OFF`
@@ -489,7 +489,8 @@ Component Dependency Tree:
 > facades that do not add external collision runtime dependencies. Use the
 > `DART_BUILD_COLLISION_FCL`, `DART_BUILD_COLLISION_BULLET`, and
 > `DART_BUILD_COLLISION_ODE` CMake options only when building explicit
-> reference comparison tests or benchmarks.
+> reference comparison tests or benchmarks. Core libraries, dartpy, and the
+> native-backed compatibility facades do not need those options.
 
 > Advanced optimizer targets (IPOPT, NLopt, pagmo, SNOPT) were moved to [dart-optimization](https://github.com/dartsim/dart-optimization). The `dart/optimizer` directory that remains in this repo only ships deprecated headers that forward to `dart/math/optimization`.
 
@@ -813,9 +814,10 @@ DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz
   - **Resolution:** The downstream should be updated to depend only on `dart`
     for normal runtime collision. The `collision-bullet` and `collision-ode`
     package components are native-backed compatibility facades; the old
-    `DART_BUILD_COLLISION_BULLET` and `DART_BUILD_COLLISION_ODE` knobs are for
-    explicit `collision-reference-*` comparison builds, not required by
-    gz-physics runtime integration.
+    `DART_BUILD_COLLISION_FCL`, `DART_BUILD_COLLISION_BULLET`, and
+    `DART_BUILD_COLLISION_ODE` knobs are for explicit
+    `collision-reference-*` comparison builds, not required by core DART,
+    dartpy, or gz-physics runtime integration.
 - **No local gz-physics source patches.** Keep `scripts/patch_gz_physics.py` limited to the DART version requirement bump; otherwise this workflow stops catching real compatibility breaks.
 - **gtest header mismatches.** Symptom: link errors like `undefined reference to testing::internal::MakeAndRegisterTestInfo(std::string, ...)` when building gz-physics tests. The `config-gz` task passes `-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:FILEPATH=$PWD/cmake/gz_physics_force_vendor_gtest.cmake` to ensure gz-physics compiles against the vendored headers that match its vendored gtest library; keep that behavior.
 - **Deprecation noise is expected.** When gz-physics exercises deprecated compatibility APIs, CMake or compiler warnings may appear; these are intentional and should be treated as migration pressure for downstreams.
