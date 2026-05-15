@@ -31,8 +31,9 @@ Make native DART collision the default runtime stack
 
 ## Test Plan
 
-- `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
-  passed on pushed validation baseline `376fd5e686d`; the current default
+- `DART_PARALLEL_JOBS=1 CTEST_PARALLEL_LEVEL=1 CMAKE_BUILD_PARALLEL_LEVEL=1 pixi run test-all`
+  passed on pushed branch head `d0e23f7b2f1` before this evidence-note update;
+  the current default
   configure path keeps reference tests and benchmarks `OFF` and exposes no
   per-engine FCL/Bullet/ODE collision build switches.
 - `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e collision-reference -- ctest --test-dir build/collision-reference/cpp/Release --output-on-failure -R '^test_reference_backends$' -j 5`

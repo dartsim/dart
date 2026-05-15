@@ -61,8 +61,9 @@ must be deleted in the same PR that completes the native-collision migration.
 
 Local validation currently recorded in the dev-task evidence:
 
-- `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
-  passed on pushed validation baseline `376fd5e686d` with 6/6 top-level gates:
+- `DART_PARALLEL_JOBS=1 CTEST_PARALLEL_LEVEL=1 CMAKE_BUILD_PARALLEL_LEVEL=1 pixi run test-all`
+  passed on pushed branch head `d0e23f7b2f1` before this evidence-note update
+  with 6/6 top-level gates:
   - linting
   - build
   - unit tests
@@ -149,6 +150,7 @@ Compatibility notes:
   - `aa3ccce70c7` (`Clarify collision reference build options`)
   - `06cd27d0163` (`Rename collision reference build options`)
   - `376fd5e686d` (`Remove per-engine collision reference build options`)
+  - `d0e23f7b2f1` (`Clarify native collision audit branch state`)
 
 ## Checklist Notes
 

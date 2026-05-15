@@ -127,8 +127,9 @@ unverified external and finalization gates:
   implementations, keep only native-backed compatibility facades required by
   downstream migration, and leave FCL/Bullet/ODE access in explicit
   reference-only test/benchmark APIs.
-- Full local `pixi run test-all` evidence is refreshed on pushed validation
-  baseline `376fd5e686d`, with normal native-only defaults keeping only reference
+- Full local `pixi run test-all` evidence is refreshed on pushed branch head
+  `d0e23f7b2f1` (`Clarify native collision audit branch state`) before this
+  evidence-note update, with normal native-only defaults keeping only reference
   tests and reference benchmarks visible and `OFF`. Final `pixi run test-all`
   evidence after the eventual PR-complete state is still missing. The refreshed
   full reruns found and repaired three
@@ -182,9 +183,9 @@ Current audited state:
   backend guidance, plus the latest completion-audit refresh. GitHub reports no
   Actions runs for the later pushes because `feature/new_coll` does not match
   the workflow `push` filters and PR #2652 remains closed.
-- Full local validation run head: pushed validation baseline `376fd5e686d`
-  (`Remove per-engine collision reference build options`). The safe-job
-  full-validation command passed with 6/6 top-level
+- Full local validation run head: pushed branch head `d0e23f7b2f1`
+  (`Clarify native collision audit branch state`) before this evidence-note
+  update. The safe-job full-validation command passed with 6/6 top-level
   gates: linting, build, unit tests, simulation-experimental tests, Python
   tests, and documentation. The configure output kept collision reference tests
   and collision reference benchmarks `OFF`, confirming old-engine comparison

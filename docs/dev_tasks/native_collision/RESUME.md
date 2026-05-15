@@ -60,7 +60,8 @@ post GitHub comments unless the user explicitly asks.
   package/link smoke with direct `readelf` checks.
 - Public docs collision-runtime wording baseline: `ad1b6782578`.
 - Latest full local `pixi run test-all` validation baseline:
-  `376fd5e686d`, with 6/6 top-level gates passing.
+  `d0e23f7b2f1`, with 6/6 top-level gates passing before the follow-up
+  evidence-note commit.
 - Latest local `collision-reference` benchmark guard baseline: `4b155655890`.
 - Latest local downstream/package/link smoke baseline: `376fd5e686d`.
 - Last manual workflow-dispatch CI evidence head: `1e1faf6feb1`.
