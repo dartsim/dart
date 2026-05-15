@@ -105,7 +105,7 @@ with extra CMake requirements or redirected experimental GUI runners, such as
 `add_delete_skels`, `vehicle`, `hybrid_dynamics`, `biped_stand`,
 `joint_constraints`, `free_joint_cases`, `human_joint_limits`,
 `mimic_pendulums`, `atlas_puppet`, `atlas_simbicon`,
-`operational_space_control`, `wam_ikfast`,
+`operational_space_control`, `wam_ikfast`, `fetch`,
 `simple_frames`, `soft_bodies`, `point_cloud`, `empty`,
 `capsule_ground_contact`, `lcp_physics`, `simulation_event_handler`,
 `polyhedron_visual`, `heightmap`, and `g1_puppet`, declare those requirements in

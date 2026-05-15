@@ -87,6 +87,7 @@ enum class ExampleScene
   AtlasSimbicon,
   OperationalSpaceControl,
   WamIkFast,
+  Fetch,
   DragAndDrop,
   SimpleFrames,
   SoftBodies,
@@ -126,6 +127,9 @@ inline constexpr const char* kWamIkFastFixtureSkeletonName
 inline constexpr const char* kWamIkFastTargetFrameName = "wam_ikfast_target";
 inline constexpr const char* kWamIkFastGroundSkeletonName
     = "visual_wam_ikfast_ground";
+inline constexpr const char* kFetchRobotFixtureSkeletonName = "robot0:base_link";
+inline constexpr const char* kFetchObjectFixtureSkeletonName = "object0";
+inline constexpr const char* kFetchTargetFrameName = "fetch_pick_and_place_target";
 inline constexpr const char* kAtlasFixtureSkeletonName = "visual_atlas_torso_mesh";
 inline constexpr const char* kAtlasRobotFixtureSkeletonName = "visual_atlas_robot";
 inline constexpr const char* kAtlasPuppetFixtureGroundSkeletonName
@@ -259,6 +263,7 @@ inline constexpr std::size_t kOperationalSpaceControlTargetCount = 1;
 inline constexpr std::size_t kOperationalSpaceControlGroundCount = 1;
 inline constexpr std::size_t kWamIkFastTargetCount = 1;
 inline constexpr std::size_t kWamIkFastGroundCount = 1;
+inline constexpr std::size_t kFetchTargetCount = 1;
 inline constexpr std::size_t kSimpleFramesFixtureBoxCount = 3;
 inline constexpr std::size_t kSimpleFramesFixtureEllipsoidCount = 4;
 inline constexpr std::size_t kSoftBodiesFixtureMinSoftMeshCount = 5;

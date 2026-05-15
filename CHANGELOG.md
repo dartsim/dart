@@ -226,6 +226,11 @@
     fixture that loads the WAM arm, ground, and end-effector target through
     descriptor-owned renderables while the legacy standalone source remains
     available for IKFast solver and keyboard interaction comparison.
+    The `fetch` runner now routes to a `--scene fetch` Filament fixture that
+    loads the legacy MJCF pick-and-place world, applies the initial robot and
+    object pose, and exposes the target frame through descriptor-owned
+    renderables while the legacy standalone source remains available for its
+    ImGui panel and OSG drag controls.
     The `joint_constraints` runner now routes to a `--scene joint-constraints`
     Filament fixture that loads the legacy fullbody world and runs the SPD
     balance controller through the same private scene pre-step hook.

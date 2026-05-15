@@ -3054,6 +3054,92 @@ DartScene createWamIkFastScene()
   return scene;
 }
 
+DartScene createFetchScene()
+{
+  DartScene scene;
+  scene.world = dart::io::readWorld(
+      "dart://sample/mjcf/openai/robotics/fetch/pick_and_place.xml");
+  if (!scene.world) {
+    throw std::runtime_error("Failed to load Fetch pick-and-place MJCF world");
+  }
+  scene.world->setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = scene.world->getSkeleton(kFetchRobotFixtureSkeletonName);
+  if (!robot) {
+    throw std::runtime_error("Fetch fixture is missing robot0:base_link");
+  }
+  const auto setRobotPosition = [&](std::size_t index, double value) {
+    if (index >= robot->getNumDofs()) {
+      throw std::runtime_error("Fetch fixture robot has too few DOFs");
+    }
+    robot->setPosition(index, value);
+  };
+  setRobotPosition(0, 0.405);
+  setRobotPosition(1, 0.480);
+  setRobotPosition(2, 0.000);
+  setRobotPosition(6, 0.01);
+  setRobotPosition(7, -0.73);
+  setRobotPosition(8, 0.00);
+  setRobotPosition(9, 1.64);
+  setRobotPosition(10, 0.0);
+  setRobotPosition(11, 0.66);
+  setRobotPosition(12, 0.01);
+
+  auto object = scene.world->getSkeleton(kFetchObjectFixtureSkeletonName);
+  if (!object) {
+    throw std::runtime_error("Fetch fixture is missing object0");
+  }
+  const auto setObjectPosition = [&](std::size_t index, double value) {
+    if (index >= object->getNumDofs()) {
+      throw std::runtime_error("Fetch fixture object has too few DOFs");
+    }
+    object->setPosition(index, value);
+  };
+  setObjectPosition(3, 1.25);
+  setObjectPosition(4, 0.53);
+  setObjectPosition(5, 0.40);
+
+  auto mocap = scene.world->getSkeleton("robot0:mocap");
+  if (!mocap) {
+    throw std::runtime_error("Fetch fixture is missing robot0:mocap");
+  }
+  auto* constraintSolver = scene.world->getConstraintSolver();
+  if (constraintSolver != nullptr && constraintSolver->getNumConstraints() > 0) {
+    if (auto weldJointConstraint
+        = std::dynamic_pointer_cast<dart::constraint::WeldJointConstraint>(
+            constraintSolver->getConstraint(0))) {
+      weldJointConstraint->setRelativeTransform(Eigen::Isometry3d::Identity());
+    }
+  }
+
+  constexpr double halfPi = 1.5707963267948966;
+  Eigen::Isometry3d targetTransform = Eigen::Isometry3d::Identity();
+  targetTransform.translation() = Eigen::Vector3d(1.3, 0.75, 0.50);
+  targetTransform.linear()
+      = Eigen::AngleAxisd(halfPi, Eigen::Vector3d::UnitY()).toRotationMatrix();
+  auto target = SimpleFrame::createShared(
+      dart::dynamics::Frame::World(),
+      kFetchTargetFrameName,
+      targetTransform);
+  target->setShape(std::make_shared<SphereShape>(0.06));
+  target->getVisualAspect(true)->setRGBA(Eigen::Vector4d(0.18, 0.86, 0.34, 0.92));
+  scene.world->addSimpleFrame(target);
+
+  for (std::size_t i = 0; i < scene.world->getNumSkeletons(); ++i) {
+    makeVisualOnlySkeleton(scene.world->getSkeleton(i));
+  }
+
+  auto* mocapRoot = mocap->getRootBodyNode();
+  scene.preStep = [mocapRoot, target]() {
+    if (mocapRoot != nullptr && mocapRoot->getParentJoint() != nullptr) {
+      mocapRoot->getParentJoint()->setTransformFromParentBodyNode(
+          target->getTransform());
+    }
+  };
+
+  return scene;
+}
+
 DartScene createDragAndDropScene()
 {
   DartScene scene;

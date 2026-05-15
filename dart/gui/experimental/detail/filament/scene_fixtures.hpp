@@ -77,6 +77,8 @@ DartScene createOperationalSpaceControlScene();
 
 DartScene createWamIkFastScene();
 
+DartScene createFetchScene();
+
 DartScene createDragAndDropScene();
 
 DartScene createSimpleFramesScene();

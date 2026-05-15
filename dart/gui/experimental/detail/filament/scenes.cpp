@@ -167,6 +167,8 @@ const char* sceneName(ExampleScene scene)
       return "operational-space-control";
     case ExampleScene::WamIkFast:
       return "wam-ikfast";
+    case ExampleScene::Fetch:
+      return "fetch";
     case ExampleScene::DragAndDrop:
       return "drag-and-drop";
     case ExampleScene::SimpleFrames:
@@ -269,6 +271,10 @@ bool parseSceneName(std::string_view name, ExampleScene& scene)
   }
   if (name == "wam-ikfast") {
     scene = ExampleScene::WamIkFast;
+    return true;
+  }
+  if (name == "fetch") {
+    scene = ExampleScene::Fetch;
     return true;
   }
   if (name == "drag-and-drop") {
@@ -434,6 +440,12 @@ dart::gui::experimental::OrbitCamera initialCameraForScene(ExampleScene scene)
       camera.pitch = 0.28;
       camera.distance = 3.0;
       break;
+    case ExampleScene::Fetch:
+      camera.target = Eigen::Vector3d(0.6, 0.35, 0.45);
+      camera.yaw = -0.78;
+      camera.pitch = 0.32;
+      camera.distance = 4.8;
+      break;
     case ExampleScene::SimpleFrames:
       camera.target = Eigen::Vector3d(0.05, 0.0, 0.06);
       camera.yaw = -0.70;
@@ -558,7 +570,7 @@ AppOptions parseOptions(int argc, char* argv[])
                      "'human-joint-limits', 'lcp-physics', "
                      "'mimic-pendulums', 'atlas-puppet', "
                      "'atlas-simbicon', 'operational-space-control', "
-                     "'wam-ikfast', 'drag-and-drop', "
+                     "'wam-ikfast', 'fetch', 'drag-and-drop', "
                      "'simple-frames', 'soft-bodies', 'point-cloud', "
                      "'capsule-ground-contact', "
                      "'simulation-event-handler', 'polyhedron', "
@@ -588,7 +600,7 @@ AppOptions parseOptions(int argc, char* argv[])
                    " [--orbit-light-period SECONDS]"
                    " [--gui-scale N]"
                    " [--profile]"
-                   " [--scene mvp|hello-world|boxes|hardcoded-design|rigid-chain|rigid-loop|mixed-chain|coupler-constraint|add-delete-skels|vehicle|hybrid-dynamics|joint-constraints|free-joint-cases|human-joint-limits|lcp-physics|mimic-pendulums|atlas-puppet|atlas-simbicon|operational-space-control|wam-ikfast|drag-and-drop|simple-frames|soft-bodies|point-cloud|capsule-ground-contact|simulation-event-handler|polyhedron|heightmap|g1]"
+                   " [--scene mvp|hello-world|boxes|hardcoded-design|rigid-chain|rigid-loop|mixed-chain|coupler-constraint|add-delete-skels|vehicle|hybrid-dynamics|joint-constraints|free-joint-cases|human-joint-limits|lcp-physics|mimic-pendulums|atlas-puppet|atlas-simbicon|operational-space-control|wam-ikfast|fetch|drag-and-drop|simple-frames|soft-bodies|point-cloud|capsule-ground-contact|simulation-event-handler|polyhedron|heightmap|g1]"
                    " [--g1-package-uri URI] [--g1-robot-uri URI]"
                    " [--g1-package-name NAME]\n";
       std::exit(0);
@@ -672,6 +684,8 @@ DartScene createDartScene(const AppOptions& options)
       return createOperationalSpaceControlScene();
     case ExampleScene::WamIkFast:
       return createWamIkFastScene();
+    case ExampleScene::Fetch:
+      return createFetchScene();
     case ExampleScene::DragAndDrop:
       return createDragAndDropScene();
     case ExampleScene::SimpleFrames:

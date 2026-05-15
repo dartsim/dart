@@ -145,6 +145,17 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Box) {
     ++counts.wamIkFastGrounds;
   }
+  if (descriptor.skeletonName == kFetchRobotFixtureSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Mesh) {
+    ++counts.fetchRobotMeshes;
+  }
+  if (descriptor.skeletonName == kFetchObjectFixtureSkeletonName) {
+    ++counts.fetchObjectRenderables;
+  }
+  if (descriptor.shapeFrameName == kFetchTargetFrameName
+      && descriptor.geometry.kind == ShapeKind::Sphere) {
+    ++counts.fetchTargets;
+  }
   if (descriptor.skeletonName == kAtlasFixtureSkeletonName
       && descriptor.geometry.kind == ShapeKind::Mesh) {
     ++counts.atlasMeshes;
@@ -628,6 +639,31 @@ bool validateSceneDescriptorContent(
         kWamIkFastGroundCount,
         "wam-ikfast scene",
         "visible ground renderable descriptor",
+        output);
+  }
+
+  if (scene == ExampleScene::Fetch) {
+    if (!requireAtLeast(
+            counts.fetchRobotMeshes,
+            5,
+            "fetch scene",
+            "visible robot mesh renderables",
+            output)) {
+      return false;
+    }
+    if (!requireAtLeast(
+            counts.fetchObjectRenderables,
+            1,
+            "fetch scene",
+            "visible object renderable descriptor",
+            output)) {
+      return false;
+    }
+    return requireEqual(
+        counts.fetchTargets,
+        kFetchTargetCount,
+        "fetch scene",
+        "visible target renderable descriptor",
         output);
   }
 
@@ -1221,6 +1257,25 @@ bool validateCreatedSceneContent(
         expected.wamIkFastGrounds,
         "wam-ikfast ground renderables",
         output);
+  }
+
+  if (scene == ExampleScene::Fetch) {
+    if (!requireCreatedAtLeast(
+            created.fetchRobotMeshes,
+            expected.fetchRobotMeshes,
+            "fetch robot mesh renderables",
+            output)) {
+      return false;
+    }
+    if (!requireCreatedAtLeast(
+            created.fetchObjectRenderables,
+            expected.fetchObjectRenderables,
+            "fetch object renderables",
+            output)) {
+      return false;
+    }
+    return requireCreatedEqual(
+        created.fetchTargets, expected.fetchTargets, "fetch target renderables", output);
   }
 
   if (scene == ExampleScene::HelloWorld) {

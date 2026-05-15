@@ -191,7 +191,7 @@
   mixed-chain/coupler-constraint/add-delete-skels/vehicle/hybrid-dynamics/
   joint-constraints/free-joint-cases/human-joint-limits/lcp-physics/
   mimic-pendulums/atlas-puppet/atlas-simbicon/
-  operational-space-control/wam-ikfast/drag/
+  operational-space-control/wam-ikfast/fetch/drag/
   simple-frames/
   soft-bodies/point-cloud/capsule-ground-contact/simulation-event-handler/
   polyhedron/heightmap
@@ -360,6 +360,12 @@
   in-tree `pixi run ex wam_ikfast` runner now routes to that Filament scene
   while the legacy standalone OSG source remains available for IKFast solver,
   drag-mode, keyboard-shortcut, and posture-reset comparison.
+- The Filament example includes `--scene fetch`, a Fetch MJCF visual fixture
+  that carries the legacy `fetch` workflow through descriptor-owned robot,
+  object, and target renderables. The in-tree `pixi run ex fetch` runner now
+  routes to that Filament scene while the legacy standalone OSG/ImGui source
+  remains available for panel, drag-control, and mocap target update
+  comparison.
 - The Filament example also includes `--scene drag-and-drop`, a first
   interaction-heavy fixture that carries the legacy `SimpleFrame` anchor, child
   frame, and axis marker layout through the same backend-hidden manipulation
@@ -458,7 +464,7 @@
   rigid-chain, rigid-loop, mixed-chain, coupler-constraint, add-delete-skels,
   vehicle, hybrid-dynamics, joint-constraints, free-joint-cases,
   human-joint-limits, lcp-physics, mimic-pendulums, atlas-puppet,
-  atlas-simbicon, operational-space-control, wam-ikfast, drag-and-drop,
+  atlas-simbicon, operational-space-control, wam-ikfast, fetch, drag-and-drop,
   simple-frames, soft-bodies,
   point-cloud, capsule-ground-contact, simulation-event-handler, polyhedron,
   and heightmap headless CTest smokes.
