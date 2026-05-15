@@ -43,6 +43,8 @@
 
 namespace dart::gui::experimental::filament {
 
+struct SceneRenderable;
+
 struct SceneContentCounts
 {
   std::size_t wamMeshes = 0;
@@ -68,6 +70,11 @@ void accumulateSceneContent(
 SceneContentCounts countSceneContent(
     const std::vector<dart::gui::experimental::RenderableDescriptor>&
         descriptors);
+
+SceneContentCounts countCreatedSceneContent(
+    const std::vector<dart::gui::experimental::RenderableDescriptor>&
+        descriptors,
+    const std::vector<SceneRenderable>& sceneRenderables);
 
 bool validateSceneDescriptorContent(
     ExampleScene scene,

@@ -155,8 +155,8 @@ lit-material setup, shadow flag application, and destruction lifecycle helpers
 live in `dart/gui/experimental/detail/filament/renderable_resources.hpp` and
 `.cpp`.
 Filament descriptor-to-scene synchronization, unsupported descriptor logging,
-scene entity attachment, and per-frame renderable transform/selection/shadow
-update helpers live in
+initial scene renderable creation, scene entity attachment, and per-frame
+renderable transform/selection/shadow update helpers live in
 `dart/gui/experimental/detail/filament/renderable_sync.hpp` and `.cpp`.
 Filament descriptor-to-renderable construction now lives in
 `dart/gui/experimental/detail/filament/renderable_factory.hpp` and `.cpp`,
@@ -270,7 +270,8 @@ dynamic casts. Unsupported shapes now produce diagnostic descriptors instead of
 being silently dropped by the extraction layer.
 The Filament example scene option parsing and reusable DART world fixtures now
 live in `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp`.
-Scene content requirement counting and MVP/G1/drag validation gates now live in
+Scene content requirement counting and MVP/G1/drag validation gates, including
+created-renderable content counting, now live in
 `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.
 The Filament example frame lifecycle, scene synchronization, capture, built-in
 panel wiring, and top-level orchestration now live in

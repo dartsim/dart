@@ -33,7 +33,9 @@
 #include <dart/gui/experimental/detail/filament/scene_requirements.hpp>
 
 #include <dart/config.hpp>
+#include <dart/gui/experimental/detail/filament/renderable_resources.hpp>
 
+#include <algorithm>
 #include <ostream>
 
 namespace dart::gui::experimental::filament {
@@ -178,6 +180,25 @@ SceneContentCounts countSceneContent(
   SceneContentCounts counts;
   for (const RenderableDescriptor& descriptor : descriptors) {
     accumulateSceneContent(counts, descriptor);
+  }
+  return counts;
+}
+
+SceneContentCounts countCreatedSceneContent(
+    const std::vector<RenderableDescriptor>& descriptors,
+    const std::vector<SceneRenderable>& sceneRenderables)
+{
+  SceneContentCounts counts;
+  for (const SceneRenderable& sceneRenderable : sceneRenderables) {
+    const auto descriptor = std::find_if(
+        descriptors.begin(),
+        descriptors.end(),
+        [&](const RenderableDescriptor& candidate) {
+          return candidate.id == sceneRenderable.id;
+        });
+    if (descriptor != descriptors.end()) {
+      accumulateSceneContent(counts, *descriptor);
+    }
   }
   return counts;
 }

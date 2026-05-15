@@ -73,7 +73,6 @@ using dart::gui::experimental::ProfileAccumulator;
 using dart::gui::experimental::RenderableDescriptor;
 using dart::gui::experimental::RenderableId;
 using dart::gui::experimental::RunOptions;
-using dart::gui::experimental::ShapeKind;
 using dart::gui::experimental::ViewerLifecycleState;
 using dart::gui::experimental::elapsedMs;
 using dart::gui::experimental::extractRenderables;
@@ -93,14 +92,13 @@ using dart::gui::experimental::filament::ScreenshotCapture;
 using dart::gui::experimental::filament::SceneContentCounts;
 using dart::gui::experimental::filament::SelectionController;
 using dart::gui::experimental::filament::SimulationStepper;
-using dart::gui::experimental::filament::addRenderableToScene;
 using dart::gui::experimental::filament::advanceSimulationSteps;
-using dart::gui::experimental::filament::accumulateSceneContent;
 using dart::gui::experimental::filament::attachSceneEnvironment;
 using dart::gui::experimental::filament::clearDebugLineOverlay;
 using dart::gui::experimental::filament::clearDebugOverlays;
 using dart::gui::experimental::filament::clearMainViewColorGrading;
 using dart::gui::experimental::filament::configureMainView;
+using dart::gui::experimental::filament::countCreatedSceneContent;
 using dart::gui::experimental::filament::countSceneContent;
 using dart::gui::experimental::filament::createFilamentRenderContext;
 using dart::gui::experimental::filament::createApplicationWindow;
@@ -129,9 +127,7 @@ using dart::gui::experimental::filament::renderApplicationFrame;
 using dart::gui::experimental::filament::refreshContactDebugOverlay;
 using dart::gui::experimental::filament::refreshSelectionDebugLineOverlay;
 using dart::gui::experimental::filament::refreshStaticDebugOverlay;
-using dart::gui::experimental::filament::logUnsupportedRenderableDescriptorOnce;
 using dart::gui::experimental::filament::removeRenderableFromScene;
-using dart::gui::experimental::filament::setRenderableTransform;
 using dart::gui::experimental::filament::synchronizeSceneRenderables;
 using dart::gui::experimental::filament::updateFrameViewport;
 using dart::gui::experimental::filament::updateImGuiOverlay;
@@ -191,35 +187,22 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
 
   std::vector<SceneRenderable> sceneRenderables;
   std::vector<RenderableId> loggedUnsupportedRenderableIds;
-  SceneContentCounts createdSceneContent;
-  for (const RenderableDescriptor& descriptor : initialDescriptors) {
-    if (!descriptor.material.visible) {
-      continue;
-    }
-
-    auto renderable = createRenderableFromDescriptor(
-        *engine, materials, materialResources.textureCache, descriptor);
-    if (!renderable) {
-      if (descriptor.geometry.kind == ShapeKind::Unsupported) {
-        logUnsupportedRenderableDescriptorOnce(
-            loggedUnsupportedRenderableIds, descriptor);
-      }
-      continue;
-    }
-    accumulateSceneContent(createdSceneContent, descriptor);
-
-    SceneRenderable sceneRenderable;
-    sceneRenderable.id = descriptor.id;
-    sceneRenderable.renderable = *renderable;
-    addRenderableToScene(*scene, sceneRenderable.renderable);
-    setRenderableTransform(
-        *engine, sceneRenderable.renderable, descriptor.worldTransform);
-    sceneRenderables.push_back(sceneRenderable);
-  }
+  synchronizeSceneRenderables(
+      *engine,
+      *scene,
+      initialDescriptors,
+      sceneRenderables,
+      loggedUnsupportedRenderableIds,
+      [&](const RenderableDescriptor& descriptor) {
+        return createRenderableFromDescriptor(
+            *engine, materials, materialResources.textureCache, descriptor);
+      });
   if (sceneRenderables.empty()) {
     std::cerr << "No supported visible DART renderables were extracted\n";
     return 1;
   }
+  const SceneContentCounts createdSceneContent
+      = countCreatedSceneContent(initialDescriptors, sceneRenderables);
   if (!validateCreatedSceneContent(
           appOptions.scene,
           expectedSceneContent,

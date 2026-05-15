@@ -50,8 +50,11 @@ recommended maintainability slices:
   private GLFW initialization/window lifecycle and platform-native handle
   selection.
 - `dart/gui/experimental/detail/filament/renderable_sync.hpp` and `.cpp` own
-  private scene-entity synchronization, unsupported-renderable logging, and
-  per-frame renderable transform/selection/shadow application.
+  private initial scene renderable creation, scene-entity synchronization,
+  unsupported-renderable logging, and per-frame renderable
+  transform/selection/shadow application.
+- `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`
+  own created-renderable content counting for startup validation.
 - `dart/gui/experimental/detail/filament/simulation_stepper.hpp` and `.cpp` own
   the bounded realtime simulation step-count accumulator, world-step
   application, lifecycle marking, and simulation profile accounting.
