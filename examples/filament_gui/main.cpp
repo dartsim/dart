@@ -38,6 +38,7 @@
 
 #include "imgui_overlay.hpp"
 #include "input.hpp"
+#include "native_window.hpp"
 #include "profile.hpp"
 #include "render_environment.hpp"
 #include "scenes.hpp"
@@ -78,17 +79,6 @@
 #include <filament/Viewport.h>
 #include <geometry/SurfaceOrientation.h>
 #include <utils/EntityManager.h>
-
-#if defined(__linux__)
-  #define GLFW_EXPOSE_NATIVE_X11
-  #include <GLFW/glfw3native.h>
-#elif defined(_WIN32)
-  #define GLFW_EXPOSE_NATIVE_WIN32
-  #include <GLFW/glfw3native.h>
-#elif defined(__APPLE__)
-  #define GLFW_EXPOSE_NATIVE_COCOA
-  #include <GLFW/glfw3native.h>
-#endif
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -235,6 +225,7 @@ using dart::examples::filament_gui::kPyramidFixtureSkeletonName;
 using dart::examples::filament_gui::kSoftMeshFixtureSkeletonName;
 using dart::examples::filament_gui::kVoxelGridFixtureSkeletonName;
 using dart::examples::filament_gui::kWamFixtureSkeletonName;
+using dart::examples::filament_gui::getNativeWindow;
 using dart::examples::filament_gui::orbitingKeyLightDirection;
 using dart::examples::filament_gui::parseOptions;
 using dart::examples::filament_gui::printProfile;
@@ -363,20 +354,6 @@ void loadImGuiFont(ImGuiIO& io, float guiScale)
 
   config.SizePixels = 13.0f * guiScale;
   io.Fonts->AddFontDefault(&config);
-}
-
-void* getNativeWindow(GLFWwindow* window)
-{
-#if defined(__linux__)
-  return reinterpret_cast<void*>(glfwGetX11Window(window));
-#elif defined(_WIN32)
-  return glfwGetWin32Window(window);
-#elif defined(__APPLE__)
-  return glfwGetCocoaWindow(window);
-#else
-  (void)window;
-  return nullptr;
-#endif
 }
 
 G1IkHandle* findG1IkHandle(DartScene& scene, RenderableId targetRenderableId)

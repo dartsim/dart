@@ -103,6 +103,8 @@ sampler setup, and PBR texture parameter binding live in
 Example-local neutral lighting/color grading, orbiting key-light direction, and
 windowed view-quality setup live in
 `examples/filament_gui/render_environment.hpp` and `.cpp`.
+Example-local platform-specific GLFW native-window handle selection lives in
+`examples/filament_gui/native_window.hpp` and `.cpp`.
 `UNIT_dynamics_MeshShape` also loads the checked-in
 `data/gltf/pbr_triangle.gltf` and `data/gltf/pbr_multi_material.gltf` fixtures
 through the real Assimp importer and verifies authored glTF PBR texture slots,

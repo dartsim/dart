@@ -211,6 +211,8 @@
 - The Filament example keeps neutral lighting/color grading, orbiting
   key-light direction, and windowed view-quality configuration in
   `examples/filament_gui/render_environment.hpp` and `.cpp`.
+- The Filament example keeps platform-specific GLFW native-window handle
+  selection in `examples/filament_gui/native_window.hpp` and `.cpp`.
 - `dart-gui-experimental` now owns viewer lifecycle state for pause/step
   behavior, screenshot request tracking, rendered/skipped frame counters, and
   bounded-run stop checks. The Filament example uses this state instead of
