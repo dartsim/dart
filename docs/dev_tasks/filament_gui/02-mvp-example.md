@@ -96,7 +96,7 @@ Implemented:
   arrows, and contact force arrows, with the Filament example translating those
   descriptors into line primitives.
 - Renderer-independent picking bounds, nearest ray-hit helpers, and focused
-  unit coverage in the experimental scene layer.
+  unit coverage in the experimental interaction layer.
 - Basic click-to-select in the example, with the ImGui panel reporting the
   selected DART shape and the selected renderable temporarily highlighted.
 - Renderer-independent selection bounds descriptors, with the example rendering
@@ -114,10 +114,10 @@ Implemented:
 - Built-in panel controls for pause/resume, single-step, and debug overlay
   toggles covering grid, world/body frames, center-of-mass markers, contacts,
   normal arrows, and force arrows.
-- Backend-hidden run-option normalization and orbit-camera helpers in
-  `dart-gui-experimental`, with the Filament example using them for bounded
-  screenshots, camera placement, cursor tracking, directional nudging, and
-  perspective pick rays.
+- Backend-hidden viewer-runtime helpers in `dart-gui-experimental`, with the
+  Filament example using them for bounded screenshots, camera placement, cursor
+  tracking, directional nudging, viewer lifecycle state, screenshot storage,
+  and perspective pick rays.
 - `examples/gui_scene_diagnostics`, a non-rendering second example that consumes
   `dart-gui-experimental` descriptors, debug lines, run options, camera basis,
   and picking helpers.
@@ -152,8 +152,9 @@ Blocked or incomplete:
   body/simple-frame nudging, Ctrl-left camera-plane dragging, and a first
   drag-and-drop fixture exist, but broader interaction-heavy workflows are
   still pending.
-- Camera and bounded-run math have moved into `dart-gui-experimental`, but
-  screenshot storage and full viewer lifecycle behavior remain example-local.
+- Camera, bounded-run math, screenshot storage, and viewer lifecycle state have
+  moved into `dart-gui-experimental`; broader viewer API promotion is still
+  pending.
 - The second example is diagnostic-only; the Filament example now carries the
   first interaction-heavy fixture through `--scene drag-and-drop`, but broader
   example migration is still pending.

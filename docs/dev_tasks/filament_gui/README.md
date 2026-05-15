@@ -33,7 +33,7 @@
   Filament sampler material. It also loads an existing textured WAM Collada
   mesh, the full WAM URDF skeleton, a required Atlas DAE torso mesh, and a full
   Atlas SDF robot fixture, and a required four-panel glTF/PBR environment
-  layout. The experimental scene layer exposes `MeshShape` material base
+  layout. The experimental descriptors expose `MeshShape` material base
   colors, metallic/roughness factors, emissive colors, UV coordinate data,
   imported vertex normals, submesh ranges, and typed PNG/JPEG texture image
   paths for base color, metallic, roughness, combined metallic-roughness,
@@ -52,21 +52,26 @@
   inertia boxes, collision-shape bounds, contact normal arrows, contact force
   arrows, support-polygon outlines, and support-centroid markers; the Filament
   example translates those descriptors into line primitives.
-- The experimental scene layer includes tested picking bounds and nearest
+- Backend-hidden mesh builders for box, sphere/ellipsoid, cylinder, capsule,
+  cone, pyramid, multi-sphere, point boxes, and triangle descriptors now live
+  in `dart/gui/experimental/geometry.hpp` and `.cpp`; the Filament example is a
+  consumer of those generated mesh buffers instead of owning that tessellation
+  code locally.
+- The experimental interaction layer includes tested picking bounds and nearest
   ray-hit selection helpers with hit point, bounds-normal, primitive-surface,
   and triangle-backed mesh surface reporting. The example uses them for basic
   click-to-select highlighting and a renderer-independent selection bounds
   overlay without exposing Filament types.
-- The experimental scene layer includes tested free-joint, simple-frame, and
-  combined frame-renderable translation helpers for selected renderables. The
-  Filament example uses the combined path with camera-relative nudge math for
-  keyboard nudging of selected dynamic bodies and `SimpleFrame` visuals without
-  exposing Filament input types.
-- The experimental scene layer includes tested plane intersection and
+- The experimental interaction layer includes tested free-joint, simple-frame,
+  and combined frame-renderable translation helpers for selected renderables.
+  The Filament example uses the combined path with camera-relative nudge math
+  for keyboard nudging of selected dynamic bodies and `SimpleFrame` visuals
+  without exposing Filament input types.
+- The experimental interaction layer includes tested plane intersection and
   plane-drag translation helpers. The Filament example uses them for Ctrl-left
   camera-plane dragging of selected dynamic bodies and `SimpleFrame` visuals
   without exposing Filament input types.
-- The experimental scene layer also owns backend-hidden run-option
+- The experimental viewer-runtime layer owns backend-hidden run-option
   normalization, viewer lifecycle state, orbit-camera math, orbit-camera
   controller state, and perspective projection/clipping descriptors used by the
   example for bounded screenshots, camera placement, headless mode, pause/step
@@ -85,10 +90,14 @@
   silently.
 - Retained Filament renderables now reapply descriptor shadow flags each frame,
   so DART visual-aspect shadow changes are not limited to resource creation.
-- The experimental scene layer owns reusable RGBA-to-PPM screenshot storage,
-  while the Filament example remains responsible only for renderer readback.
+- The experimental viewer-runtime layer owns reusable RGBA-to-PPM screenshot
+  storage, while the Filament example remains responsible only for renderer
+  readback.
   The current Filament readback path writes top-left-origin screenshots so
   headless captures are directly reviewable without a manual vertical flip.
+- The Filament example's scene option parsing and reusable DART world fixtures
+  now live in `examples/filament_gui/scenes.hpp` and `.cpp`; `main.cpp` remains
+  focused on renderer resources, synchronization, input, and the built-in panel.
 - `dartpy.gui.experimental` now exposes the constrained backend-hidden
   descriptor, picking, frame-translation, debug-line, run-option, viewer
   lifecycle, screenshot storage, orbit-camera, orbit-camera controller,
@@ -232,6 +241,7 @@ longer express stable DART concepts.
 - North-star migration plan: `docs/dev_tasks/filament_gui/08-north-star-migration.md`
 - Legacy surface audit: `docs/dev_tasks/filament_gui/09-legacy-surface-audit.md`
 - Resume prompt: `docs/dev_tasks/filament_gui/RESUME.md`
+- Live supervisor steering: `docs/dev_tasks/filament_gui/STEERING.md`
 
 ## Immediate next steps
 

@@ -190,6 +190,12 @@
   descriptor generation used by the Filament example. These viewer-runtime
   helpers are split into `dart/gui/experimental/viewer.hpp` while `scene.hpp`
   remains an aggregate compatibility include.
+- `dart-gui-experimental` now keeps the constrained experimental API in
+  backend-hidden headers while splitting implementation by responsibility:
+  scene extraction in `scene.cpp`, interaction and renderable update planning
+  in `interaction.cpp`, debug descriptor generation in `debug.cpp`, viewer
+  runtime helpers in `viewer.cpp`, and backend-hidden mesh builders in
+  `geometry.cpp`.
 - `dart-gui-experimental` now owns viewer lifecycle state for pause/step
   behavior, screenshot request tracking, rendered/skipped frame counters, and
   bounded-run stop checks. The Filament example uses this state instead of
@@ -218,6 +224,9 @@
 - `examples/gui_scene_diagnostics` is a second example consumer of the
   experimental API. It exercises descriptors, debug lines, run options, camera
   basis, and picking without introducing another renderer.
+- `examples/filament_gui` now keeps reusable DART world fixtures and scene
+  option parsing in `examples/filament_gui/scenes.hpp` and `.cpp`, leaving the
+  main executable source focused on Filament renderer resources and UI wiring.
 - Phase 4 is not complete because remaining interaction-heavy workflow
   migration and cross-platform wheel coverage are still pending.
 

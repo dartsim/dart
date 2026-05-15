@@ -156,7 +156,12 @@
     policy, GUI scale normalization, and camera-relative keyboard nudge math now
     also live in a dedicated `dart/gui/experimental/viewer.hpp` runtime helper
     and are consumed by the Filament example through `dart-gui-experimental`.
-    The
+    The backend-hidden implementation is now split by responsibility across
+    `viewer.cpp`, `debug.cpp`, `geometry.cpp`, `interaction.cpp`, and
+    `scene.cpp`, while `scene.hpp` remains an aggregate compatibility include
+    for existing experimental consumers. The Filament example also keeps
+    reusable DART world fixtures in `examples/filament_gui/scenes.hpp` and
+    `.cpp` so `main.cpp` focuses on renderer resources and UI wiring. The
     north-star audit now also maps the legacy OSG/Raylib GUI surfaces that must
     be replaced, made private, or removed during first-class Filament
     promotion. The renderer-hidden debug descriptor path also covers

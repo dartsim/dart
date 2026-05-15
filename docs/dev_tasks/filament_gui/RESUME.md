@@ -1,5 +1,11 @@
 # Resume: Filament GUI Replacement
 
+## Live Supervisor Steering
+
+A parallel evaluator pass (2026-05-14) wrote `STEERING.md` next to this
+file. Read it before picking the next slice; it records the live steering
+context for the post-MVP branch and should be kept in sync when slices land.
+
 ## Last Session Summary
 
 The GUI replacement plan was redirected from Raylib to a Filament + GLFW + Dear
@@ -71,15 +77,21 @@ and `SimpleFrame` visuals. Backend-hidden
 run-option normalization, viewer lifecycle state, and orbit-camera helpers now
 live in `dart-gui-experimental`; the Filament example uses them for bounded
 screenshots, camera placement, headless runs, pause/step behavior, frame
-accounting, and perspective pick rays. Backend-hidden renderable set planning
-now also compares active render-resource versions so descriptor-owned geometry
-changes, including dynamic soft-mesh vertex changes, recreate Filament
-resources. Supported descriptor kinds that cannot produce renderer resources
-now carry diagnostic reasons that the Filament example logs once. Backend-hidden
-RGBA-to-PPM screenshot storage also now lives in `dart-gui-experimental`; the
-Filament example keeps only renderer readback. Retained Filament renderables
-also reapply descriptor shadow flags each frame, so DART visual-aspect shadow
-changes are not limited to resource creation.
+accounting, and perspective pick rays. Viewer-runtime helpers live in
+`dart/gui/experimental/viewer.hpp` and `.cpp`, debug descriptor generation lives
+in `dart/gui/experimental/debug.cpp`, backend-hidden mesh builders live in
+`dart/gui/experimental/geometry.hpp` and `.cpp`, and picking, plane dragging,
+frame translation, and renderable set planning live in
+`dart/gui/experimental/interaction.cpp`. `scene.hpp` remains an aggregate
+compatibility include for existing experimental consumers. Backend-hidden
+renderable set planning now also compares active render-resource versions so
+descriptor-owned geometry changes, including dynamic soft-mesh vertex changes,
+recreate Filament resources. Supported descriptor kinds that cannot produce
+renderer resources now carry diagnostic reasons that the Filament example logs
+once. Backend-hidden RGBA-to-PPM screenshot storage also now lives in
+`dart-gui-experimental`; the Filament example keeps only renderer readback.
+Retained Filament renderables also reapply descriptor shadow flags each frame,
+so DART visual-aspect shadow changes are not limited to resource creation.
 `UNIT_dynamics_MeshShape` also loads the checked-in
 `data/gltf/pbr_triangle.gltf` and `data/gltf/pbr_multi_material.gltf` fixtures
 through the real Assimp importer and verifies authored glTF PBR texture slots,
@@ -162,7 +174,9 @@ relying on a Filament conda package. The MVP PR #2647 merged with hosted
 `Filament GUI Smoke (GCC)` and `Filament GUI Smoke (Clang)` passing.
 
 `feature/filament-gui-completion` is the follow-up branch for work beyond the
-MVP. It includes the Filament version of the G1 puppet example: `--scene g1`
+MVP, and `feature/filament-gui-full-execution` continues that work in the
+separate north-star completion branch requested after MVP PR #2647. It includes
+the Filament version of the G1 puppet example: `--scene g1`
 loads the Unitree G1 URDF through DART resource retrievers, exposes colored IK
 targets for both hands and feet, registers active support geometry on the foot
 targets for support-polygon overlay inspection, and routes
@@ -181,6 +195,10 @@ converted into Filament renderables. Convex mesh, heightmap, and soft mesh
 rendering now consumes descriptor-owned triangle data instead of concrete shape
 dynamic casts. Unsupported shapes now produce diagnostic descriptors instead of
 being silently dropped by the extraction layer.
+The Filament example scene option parsing and reusable DART world fixtures now
+live in `examples/filament_gui/scenes.hpp` and `.cpp`, leaving
+`examples/filament_gui/main.cpp` focused on Filament resources, synchronization,
+input, and the built-in panel.
 `MeshShape` triangle geometry, texture coordinates, imported vertex normals,
 material, texture-path, and submesh metadata now flow through renderer-hidden
 descriptors, and the Filament example consumes that descriptor metadata for

@@ -25,11 +25,11 @@ rg -n "DART_BUILD_GUI_RAYLIB|raylib|Raylib|examples/raylib|DART_BUILD_RAYLIB" \
 - Renderer-specific downstream source compatibility is out of scope for the
   north-star migration. Code that subclasses OSG viewer/node classes or consumes
   raw OSG event types should migrate to DART-owned concepts.
-- `dart/gui/experimental/scene.hpp` is the current clean API fence. During
-  promotion, its concepts should either become the stable `dart::gui` API or be
-  collapsed into private implementation details. It should not remain as a
-  permanent generic-renderer adapter after Filament is the only maintained
-  built-in renderer.
+- The experimental headers in `dart/gui/experimental/` are the current clean
+  API fence. During promotion, their concepts should either become the stable
+  `dart::gui` API or be collapsed into private implementation details. They
+  should not remain as a permanent generic-renderer adapter after Filament is
+  the only maintained built-in renderer.
 - Raylib is isolated to an experimental example/build option and should be
   removed in the same major-version window as the OSG GUI removal.
 
