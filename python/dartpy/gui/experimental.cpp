@@ -231,6 +231,18 @@ void defGuiExperimentalModule(nb::module_& m)
       .def_rw("min_pitch", &gui::OrbitCameraUpdate::minPitch)
       .def_rw("max_pitch", &gui::OrbitCameraUpdate::maxPitch);
 
+  nb::class_<gui::DirectionalNudgeInput>(m, "DirectionalNudgeInput")
+      .def(nb::init<>())
+      .def_rw("left", &gui::DirectionalNudgeInput::left)
+      .def_rw("right", &gui::DirectionalNudgeInput::right)
+      .def_rw("forward", &gui::DirectionalNudgeInput::forward)
+      .def_rw("backward", &gui::DirectionalNudgeInput::backward)
+      .def_rw("up", &gui::DirectionalNudgeInput::up)
+      .def_rw("down", &gui::DirectionalNudgeInput::down)
+      .def_rw("fast", &gui::DirectionalNudgeInput::fast)
+      .def_rw("step_size", &gui::DirectionalNudgeInput::stepSize)
+      .def_rw("fast_multiplier", &gui::DirectionalNudgeInput::fastMultiplier);
+
   nb::class_<gui::ProjectionOptions>(m, "ProjectionOptions")
       .def(nb::init<>())
       .def_rw(
@@ -458,6 +470,11 @@ void defGuiExperimentalModule(nb::module_& m)
       &gui::updateOrbitCamera,
       nb::arg("camera"),
       nb::arg("update"));
+  m.def(
+      "compute_camera_relative_nudge",
+      &gui::computeCameraRelativeNudge,
+      nb::arg("camera"),
+      nb::arg("input"));
   m.def(
       "make_perspective_pick_ray",
       &gui::makePerspectivePickRay,

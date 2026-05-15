@@ -116,13 +116,14 @@ Implemented:
   normal arrows, and force arrows.
 - Backend-hidden run-option normalization and orbit-camera helpers in
   `dart-gui-experimental`, with the Filament example using them for bounded
-  screenshots, camera placement, and perspective pick rays.
+  screenshots, camera placement, directional nudging, and perspective pick
+  rays.
 - `examples/gui_scene_diagnostics`, a non-rendering second example that consumes
   `dart-gui-experimental` descriptors, debug lines, run options, camera basis,
   and picking helpers.
 - Constrained `dartpy.gui.experimental` bindings for scene descriptors,
   picking helpers, frame translation, debug-line descriptor generation,
-  run options, and orbit-camera helpers.
+  run options, orbit-camera helpers, and directional nudge helpers.
 - A local Linux runtime smoke pass with the upstream Filament archive,
   compatible libc++/libc++abi libraries, and Mesa llvmpipe.
 

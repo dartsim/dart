@@ -138,9 +138,10 @@
   renderer-independent selection bounds overlay.
 - Backend-hidden helpers can translate selected free-joint and `SimpleFrame`
   renderables through a combined frame-renderable API. The Filament example
-  uses that shared path for keyboard nudging and camera-plane dragging, while
-  C++/Python tests cover the mutable free-joint path, fixed-body rejection, and
-  simple-frame translation.
+  uses that shared path with camera-relative directional nudge math for
+  keyboard nudging and camera-plane dragging, while C++/Python tests cover the
+  mutable free-joint path, fixed-body rejection, simple-frame translation, and
+  nudge-vector calculation.
 - Backend-hidden plane intersection and plane-drag translation helpers now
   support Ctrl-left camera-plane dragging of selected dynamic bodies or
   `SimpleFrame` visuals in the Filament example, with C++/Python coverage for
@@ -184,8 +185,9 @@
   in an OSG-free configure when `DART_BUILD_GUI=OFF` and `DART_BUILD_DARTPY=OFF`.
 - `dart-gui-experimental` now owns the run-option normalization, orbit-camera
   basis/update logic, camera eye computation, perspective pick-ray generation,
-  GUI scale normalization, and perspective projection/clipping descriptor
-  generation used by the Filament example.
+  camera-relative directional nudge math, GUI scale normalization, and
+  perspective projection/clipping descriptor generation used by the Filament
+  example.
 - `dart-gui-experimental` now owns viewer lifecycle state for pause/step
   behavior, screenshot request tracking, rendered/skipped frame counters, and
   bounded-run stop checks. The Filament example uses this state instead of
@@ -206,8 +208,8 @@
   free-joint translation, plane-drag helpers, debug-line descriptor generation
   including support-polygon, inertia-box, and collision-shape-bound overlays,
   run options including GUI scale normalization, viewer lifecycle state,
-  screenshot storage, orbit-camera helpers, and perspective projection/clipping
-  helpers.
+  screenshot storage, orbit-camera helpers, directional nudge helpers, and
+  perspective projection/clipping helpers.
 - `dartpy` can now build the constrained `dartpy.gui.experimental` module with
   `DART_BUILD_GUI=OFF` when `dart-gui-experimental` is present, so the Python
   experimental API is no longer tied to the legacy GUI target.

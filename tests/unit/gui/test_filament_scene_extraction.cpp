@@ -2013,6 +2013,22 @@ TEST(FilamentSceneExtraction, OrbitCamera_UpdateBasisAndPickingAreStable)
   EXPECT_TRUE(basis.right.isApprox(Eigen::Vector3d::UnitY()));
   EXPECT_TRUE(basis.up.isApprox(Eigen::Vector3d::UnitZ()));
 
+  dart::gui::experimental::DirectionalNudgeInput nudgeInput;
+  nudgeInput.right = true;
+  nudgeInput.forward = true;
+  nudgeInput.up = true;
+  nudgeInput.fast = true;
+  nudgeInput.stepSize = 0.25;
+  nudgeInput.fastMultiplier = 2.0;
+  const auto nudge
+      = dart::gui::experimental::computeCameraRelativeNudge(camera, nudgeInput);
+  EXPECT_TRUE(nudge.isApprox(Eigen::Vector3d(-0.5, 0.5, 0.5)));
+
+  nudgeInput.stepSize = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_TRUE(
+      dart::gui::experimental::computeCameraRelativeNudge(camera, nudgeInput)
+          .isZero());
+
   const auto ray = dart::gui::experimental::makePerspectivePickRay(
       camera, 320, 240, 640, 480);
   EXPECT_TRUE(ray.origin.isApprox(basis.eye));

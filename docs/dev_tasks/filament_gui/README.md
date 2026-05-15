@@ -59,9 +59,9 @@
   overlay without exposing Filament types.
 - The experimental scene layer includes tested free-joint, simple-frame, and
   combined frame-renderable translation helpers for selected renderables. The
-  Filament example uses the combined path for keyboard nudging of selected
-  dynamic bodies and `SimpleFrame` visuals without exposing Filament input
-  types.
+  Filament example uses the combined path with camera-relative nudge math for
+  keyboard nudging of selected dynamic bodies and `SimpleFrame` visuals without
+  exposing Filament input types.
 - The experimental scene layer includes tested plane intersection and
   plane-drag translation helpers. The Filament example uses them for Ctrl-left
   camera-plane dragging of selected dynamic bodies and `SimpleFrame` visuals
@@ -88,8 +88,8 @@
   headless captures are directly reviewable without a manual vertical flip.
 - `dartpy.gui.experimental` now exposes the constrained backend-hidden
   descriptor, picking, frame-translation, debug-line, run-option, viewer
-  lifecycle, screenshot storage, orbit-camera, and projection/clipping APIs used
-  by the current C++ experiment.
+  lifecycle, screenshot storage, orbit-camera, directional nudge, and
+  projection/clipping APIs used by the current C++ experiment.
 - The constrained `dartpy.gui.experimental` module can build and pass its
   focused test with `DART_BUILD_GUI=OFF` when the experimental GUI target is
   present, so the Python descriptor API no longer depends on the legacy GUI
@@ -131,7 +131,8 @@
   namespace re-export header.
 - Checked-in dartpy stubs and Python API docs now list
   `dartpy.gui.experimental` and include a backend-hidden stub surface for
-  descriptor, picking, debug-line, run-loop, camera, and screenshot helpers.
+  descriptor, picking, debug-line, run-loop, camera, directional nudge, and
+  screenshot helpers.
 - Promotion requires explicit visual-quality gates, including dynamic shadows.
 - The current Pixi environment does not provide Filament. The upstream Filament
   Linux archive can be discovered with `Filament_ROOT`. It links and runs in

@@ -151,6 +151,7 @@ using dart::dynamics::VoxelGridShape;
 using dart::gui::experimental::ActiveRenderableState;
 using dart::gui::experimental::DebugDrawOptions;
 using dart::gui::experimental::DebugLineDescriptor;
+using dart::gui::experimental::DirectionalNudgeInput;
 using dart::gui::experimental::GeometryDescriptor;
 using dart::gui::experimental::MaterialDescriptor;
 using dart::gui::experimental::MeshAlphaMode;
@@ -165,6 +166,7 @@ using dart::gui::experimental::RunOptions;
 using dart::gui::experimental::ShapeKind;
 using dart::gui::experimental::ViewerLifecycleState;
 using dart::gui::experimental::cameraEye;
+using dart::gui::experimental::computeCameraRelativeNudge;
 using dart::gui::experimental::computePlaneDragTranslation;
 using dart::gui::experimental::extractContactDebugLines;
 using dart::gui::experimental::extractDebugLines;
@@ -1701,54 +1703,21 @@ bool isDragModifierDown(GLFWwindow* window)
 Eigen::Vector3d selectedNudgeFromKeyboard(
     GLFWwindow* window, const OrbitCamera& camera, double stepSize)
 {
-  if (window == nullptr || stepSize <= 0.0) {
+  if (window == nullptr) {
     return Eigen::Vector3d::Zero();
   }
 
-  const double speedMultiplier
-      = isKeyDown(window, GLFW_KEY_LEFT_SHIFT)
-            || isKeyDown(window, GLFW_KEY_RIGHT_SHIFT)
-        ? 3.0
-        : 1.0;
-  const double step = stepSize * speedMultiplier;
-
-  const auto basis = makeOrbitCameraBasis(camera);
-  Eigen::Vector3d forward = basis.forward;
-  forward.z() = 0.0;
-  if (forward.squaredNorm() < 1e-12) {
-    forward = -Eigen::Vector3d::UnitY();
-  } else {
-    forward.normalize();
-  }
-
-  Eigen::Vector3d right = basis.right;
-  right.z() = 0.0;
-  if (right.squaredNorm() < 1e-12) {
-    right = Eigen::Vector3d::UnitX();
-  } else {
-    right.normalize();
-  }
-
-  Eigen::Vector3d nudge = Eigen::Vector3d::Zero();
-  if (isKeyDown(window, GLFW_KEY_LEFT)) {
-    nudge -= right * step;
-  }
-  if (isKeyDown(window, GLFW_KEY_RIGHT)) {
-    nudge += right * step;
-  }
-  if (isKeyDown(window, GLFW_KEY_UP)) {
-    nudge += forward * step;
-  }
-  if (isKeyDown(window, GLFW_KEY_DOWN)) {
-    nudge -= forward * step;
-  }
-  if (isKeyDown(window, GLFW_KEY_PAGE_UP)) {
-    nudge += Eigen::Vector3d::UnitZ() * step;
-  }
-  if (isKeyDown(window, GLFW_KEY_PAGE_DOWN)) {
-    nudge -= Eigen::Vector3d::UnitZ() * step;
-  }
-  return nudge;
+  DirectionalNudgeInput input;
+  input.left = isKeyDown(window, GLFW_KEY_LEFT);
+  input.right = isKeyDown(window, GLFW_KEY_RIGHT);
+  input.forward = isKeyDown(window, GLFW_KEY_UP);
+  input.backward = isKeyDown(window, GLFW_KEY_DOWN);
+  input.up = isKeyDown(window, GLFW_KEY_PAGE_UP);
+  input.down = isKeyDown(window, GLFW_KEY_PAGE_DOWN);
+  input.fast = isKeyDown(window, GLFW_KEY_LEFT_SHIFT)
+               || isKeyDown(window, GLFW_KEY_RIGHT_SHIFT);
+  input.stepSize = stepSize;
+  return computeCameraRelativeNudge(camera, input);
 }
 
 G1IkHandle* findG1IkHandle(DartScene& scene, RenderableId targetRenderableId)

@@ -248,6 +248,19 @@ struct OrbitCameraUpdate
   double maxPitch = 1.45;
 };
 
+struct DirectionalNudgeInput
+{
+  bool left = false;
+  bool right = false;
+  bool forward = false;
+  bool backward = false;
+  bool up = false;
+  bool down = false;
+  bool fast = false;
+  double stepSize = 0.035;
+  double fastMultiplier = 3.0;
+};
+
 struct ProjectionOptions
 {
   double verticalFovDegrees = 45.0;
@@ -409,6 +422,9 @@ DART_GUI_API Eigen::Vector3d cameraEye(const OrbitCamera& camera);
 
 DART_GUI_API void updateOrbitCamera(
     OrbitCamera& camera, const OrbitCameraUpdate& update);
+
+DART_GUI_API Eigen::Vector3d computeCameraRelativeNudge(
+    const OrbitCamera& camera, const DirectionalNudgeInput& input);
 
 DART_GUI_API PickRay makePerspectivePickRay(
     const OrbitCamera& camera,

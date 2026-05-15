@@ -277,6 +277,20 @@ class OrbitCameraUpdate:
     def __init__(self) -> None: ...
 
 
+class DirectionalNudgeInput:
+    left: bool
+    right: bool
+    forward: bool
+    backward: bool
+    up: bool
+    down: bool
+    fast: bool
+    step_size: float
+    fast_multiplier: float
+
+    def __init__(self) -> None: ...
+
+
 class ProjectionOptions:
     vertical_fov_degrees: float
     near_plane: float | None
@@ -418,6 +432,9 @@ def write_rgba_ppm(
 def make_orbit_camera_basis(camera: OrbitCamera) -> OrbitCameraBasis: ...
 def camera_eye(camera: OrbitCamera) -> Array: ...
 def update_orbit_camera(camera: OrbitCamera, update: OrbitCameraUpdate) -> None: ...
+def compute_camera_relative_nudge(
+    camera: OrbitCamera, input: DirectionalNudgeInput
+) -> Array: ...
 def make_perspective_pick_ray(
     camera: OrbitCamera,
     cursor_x: float,

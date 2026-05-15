@@ -2311,6 +2311,61 @@ void updateOrbitCamera(OrbitCamera& camera, const OrbitCameraUpdate& update)
   camera.distance = std::clamp(camera.distance, minDistance, maxDistance);
 }
 
+Eigen::Vector3d computeCameraRelativeNudge(
+    const OrbitCamera& camera, const DirectionalNudgeInput& input)
+{
+  if (!std::isfinite(input.stepSize) || input.stepSize <= 0.0) {
+    return Eigen::Vector3d::Zero();
+  }
+
+  const double fastMultiplier
+      = std::isfinite(input.fastMultiplier) && input.fastMultiplier > 0.0
+            ? input.fastMultiplier
+            : 1.0;
+  const double step = input.stepSize * (input.fast ? fastMultiplier : 1.0);
+  if (!std::isfinite(step) || step <= 0.0) {
+    return Eigen::Vector3d::Zero();
+  }
+
+  const auto basis = makeOrbitCameraBasis(camera);
+  Eigen::Vector3d forward = basis.forward;
+  forward.z() = 0.0;
+  if (forward.squaredNorm() < 1e-12) {
+    forward = -Eigen::Vector3d::UnitY();
+  } else {
+    forward.normalize();
+  }
+
+  Eigen::Vector3d right = basis.right;
+  right.z() = 0.0;
+  if (right.squaredNorm() < 1e-12) {
+    right = Eigen::Vector3d::UnitX();
+  } else {
+    right.normalize();
+  }
+
+  Eigen::Vector3d nudge = Eigen::Vector3d::Zero();
+  if (input.left) {
+    nudge -= right * step;
+  }
+  if (input.right) {
+    nudge += right * step;
+  }
+  if (input.forward) {
+    nudge += forward * step;
+  }
+  if (input.backward) {
+    nudge -= forward * step;
+  }
+  if (input.up) {
+    nudge += Eigen::Vector3d::UnitZ() * step;
+  }
+  if (input.down) {
+    nudge -= Eigen::Vector3d::UnitZ() * step;
+  }
+  return nudge;
+}
+
 PickRay makePerspectivePickRay(
     const OrbitCamera& camera,
     double cursorX,

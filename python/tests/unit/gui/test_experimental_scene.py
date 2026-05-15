@@ -696,6 +696,24 @@ def test_experimental_camera_and_run_helpers():
     assert np.allclose(basis.eye, [2.0, 0.0, 0.0])
     assert np.allclose(basis.forward, [-1.0, 0.0, 0.0])
 
+    nudge_input = dart.gui.experimental.DirectionalNudgeInput()
+    nudge_input.right = True
+    nudge_input.forward = True
+    nudge_input.up = True
+    nudge_input.fast = True
+    nudge_input.step_size = 0.25
+    nudge_input.fast_multiplier = 2.0
+    nudge = dart.gui.experimental.compute_camera_relative_nudge(
+        camera, nudge_input
+    )
+    assert np.allclose(nudge, [-0.5, 0.5, 0.5])
+
+    nudge_input.step_size = float("nan")
+    nudge = dart.gui.experimental.compute_camera_relative_nudge(
+        camera, nudge_input
+    )
+    assert np.allclose(nudge, np.zeros(3))
+
     ray = dart.gui.experimental.make_perspective_pick_ray(camera, 320, 240, 640, 480)
     assert np.allclose(ray.origin, basis.eye)
     assert np.allclose(ray.direction, basis.forward)
