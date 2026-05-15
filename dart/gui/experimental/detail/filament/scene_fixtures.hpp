@@ -45,6 +45,8 @@ DartScene createBoxesScene();
 
 DartScene createHardcodedDesignScene();
 
+DartScene createRigidChainScene();
+
 DartScene createDragAndDropScene();
 
 DartScene createSimpleFramesScene();

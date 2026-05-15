@@ -135,6 +135,8 @@ const char* sceneName(ExampleScene scene)
       return "boxes";
     case ExampleScene::HardcodedDesign:
       return "hardcoded-design";
+    case ExampleScene::RigidChain:
+      return "rigid-chain";
     case ExampleScene::DragAndDrop:
       return "drag-and-drop";
     case ExampleScene::SimpleFrames:
@@ -173,6 +175,10 @@ bool parseSceneName(std::string_view name, ExampleScene& scene)
   }
   if (name == "hardcoded-design") {
     scene = ExampleScene::HardcodedDesign;
+    return true;
+  }
+  if (name == "rigid-chain") {
+    scene = ExampleScene::RigidChain;
     return true;
   }
   if (name == "drag-and-drop") {
@@ -241,6 +247,12 @@ dart::gui::experimental::OrbitCamera initialCameraForScene(ExampleScene scene)
       camera.yaw = -0.78;
       camera.pitch = 0.42;
       camera.distance = 4.0;
+      break;
+    case ExampleScene::RigidChain:
+      camera.target = Eigen::Vector3d(0.0, -0.45, 0.0);
+      camera.yaw = -0.72;
+      camera.pitch = 0.35;
+      camera.distance = 2.4;
       break;
     case ExampleScene::SimpleFrames:
       camera.target = Eigen::Vector3d(0.05, 0.0, 0.06);
@@ -359,10 +371,10 @@ AppOptions parseOptions(int argc, char* argv[])
       if (!parseSceneName(sceneArg, options.scene)) {
         std::cerr << "Unknown scene '" << sceneArg
                   << "'. Expected 'mvp', 'hello-world', 'boxes', "
-                     "'hardcoded-design', 'drag-and-drop', 'simple-frames', "
-                     "'soft-bodies', 'point-cloud', 'capsule-ground-contact', "
-                     "'simulation-event-handler', 'polyhedron', "
-                     "'heightmap', or 'g1'.\n";
+                     "'hardcoded-design', 'rigid-chain', 'drag-and-drop', "
+                     "'simple-frames', 'soft-bodies', 'point-cloud', "
+                     "'capsule-ground-contact', 'simulation-event-handler', "
+                     "'polyhedron', 'heightmap', or 'g1'.\n";
         std::exit(2);
       }
     } else if (
@@ -388,7 +400,7 @@ AppOptions parseOptions(int argc, char* argv[])
                    " [--orbit-light-period SECONDS]"
                    " [--gui-scale N]"
                    " [--profile]"
-                   " [--scene mvp|hello-world|boxes|hardcoded-design|drag-and-drop|simple-frames|soft-bodies|point-cloud|capsule-ground-contact|simulation-event-handler|polyhedron|heightmap|g1]"
+                   " [--scene mvp|hello-world|boxes|hardcoded-design|rigid-chain|drag-and-drop|simple-frames|soft-bodies|point-cloud|capsule-ground-contact|simulation-event-handler|polyhedron|heightmap|g1]"
                    " [--g1-package-uri URI] [--g1-robot-uri URI]"
                    " [--g1-package-name NAME]\n";
       std::exit(0);
@@ -440,6 +452,8 @@ DartScene createDartScene(const AppOptions& options)
       return createBoxesScene();
     case ExampleScene::HardcodedDesign:
       return createHardcodedDesignScene();
+    case ExampleScene::RigidChain:
+      return createRigidChainScene();
     case ExampleScene::DragAndDrop:
       return createDragAndDropScene();
     case ExampleScene::SimpleFrames:

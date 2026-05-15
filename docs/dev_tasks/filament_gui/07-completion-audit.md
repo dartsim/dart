@@ -232,6 +232,11 @@ hand-built skeleton workflow exercises descriptor-owned box renderables while
 the standalone source in `examples/hardcoded_design` remains as legacy OSG
 comparison material for wireframe rendering and direct key-controlled joint
 motion.
+The Filament example's selectable `--scene rigid-chain` fixture now backs the
+in-tree `pixi run ex rigid_chain` runner, so the recommended chain workflow
+exercises descriptor-owned SKEL-loaded box-link renderables while the
+standalone source in `examples/rigid_chain` remains as legacy OSG comparison
+material for the custom per-step damping hook.
 The Filament example's selectable `--scene drag-and-drop` fixture now backs the
 in-tree `pixi run ex drag_and_drop` runner, so the recommended drag-and-drop
 workflow exercises the Filament renderer path while the standalone source in

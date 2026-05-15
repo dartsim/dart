@@ -149,6 +149,10 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Box) {
     ++counts.hardcodedDesignBoxes;
   }
+  if (descriptor.skeletonName == kRigidChainFixtureSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.rigidChainBoxes;
+  }
   if (descriptor.skeletonName == kPyramidFixtureSkeletonName
       && descriptor.geometry.kind == ShapeKind::Pyramid) {
     ++counts.pyramids;
@@ -429,6 +433,15 @@ bool validateSceneDescriptorContent(
         output);
   }
 
+  if (scene == ExampleScene::RigidChain) {
+    return requireEqual(
+        counts.rigidChainBoxes,
+        kRigidChainFixtureBoxCount,
+        "rigid-chain scene",
+        "visible chain box renderable descriptors",
+        output);
+  }
+
   if (scene == ExampleScene::Heightmap) {
     return requireEqual(
         counts.heightmaps,
@@ -696,6 +709,14 @@ bool validateCreatedSceneContent(
         created.hardcodedDesignBoxes,
         expected.hardcodedDesignBoxes,
         "hardcoded-design box renderables",
+        output);
+  }
+
+  if (scene == ExampleScene::RigidChain) {
+    return requireCreatedEqual(
+        created.rigidChainBoxes,
+        expected.rigidChainBoxes,
+        "rigid-chain box renderables",
         output);
   }
 

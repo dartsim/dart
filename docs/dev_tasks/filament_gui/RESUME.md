@@ -296,6 +296,10 @@ solver selection, gravity controls, and custom key callbacks. It routes
 three-link skeleton through backend-hidden descriptors while keeping the
 standalone source as legacy OSG comparison material for wireframe rendering and
 direct key-controlled joint motion. It routes
+`pixi run ex rigid_chain` through the Filament example's
+`--scene rigid-chain` fixture, which loads the legacy chain SKEL data and
+renders its box-link descriptors while keeping the standalone source as legacy
+OSG comparison material for the custom per-step damping hook. It routes
 `pixi run ex drag_and_drop` through the Filament example's selectable
 `--scene drag-and-drop` fixture by default while keeping the standalone source
 as legacy OSG comparison material. It also routes

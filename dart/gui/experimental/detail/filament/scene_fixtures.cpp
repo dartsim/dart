@@ -1183,6 +1183,46 @@ DartScene createHardcodedDesignScene()
   return scene;
 }
 
+DartScene createRigidChainScene()
+{
+  DartScene scene;
+  scene.world = dart::io::readWorld("dart://sample/skel/chain.skel");
+  if (!scene.world) {
+    throw std::runtime_error(
+        "Failed to load rigid_chain fixture from "
+        "dart://sample/skel/chain.skel");
+  }
+
+  scene.world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  scene.world->setTimeStep(1.0 / 2000.0);
+
+  auto chain = scene.world->getSkeleton(0);
+  if (!chain) {
+    throw std::runtime_error("rigid_chain fixture did not contain a skeleton");
+  }
+  chain->setName(kRigidChainFixtureSkeletonName);
+
+  const auto dof = static_cast<int>(chain->getNumDofs());
+  Eigen::VectorXd initialPose(dof);
+  for (int i = 0; i < dof; ++i) {
+    initialPose[i] = 0.18 * std::sin(static_cast<double>(i) * 0.7);
+  }
+  chain->setPositions(initialPose);
+
+  const std::size_t numBodyNodes = chain->getNumBodyNodes();
+  for (std::size_t i = 0; i < numBodyNodes; ++i) {
+    const double t = numBodyNodes <= 1
+                         ? 0.0
+                         : static_cast<double>(i)
+                               / static_cast<double>(numBodyNodes - 1);
+    const Eigen::Vector3d color(
+        0.20 + 0.60 * t, 0.58 - 0.28 * t, 0.90 - 0.45 * t);
+    chain->getBodyNode(i)->setColor(color);
+  }
+
+  return scene;
+}
+
 DartScene createDragAndDropScene()
 {
   DartScene scene;

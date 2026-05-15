@@ -252,6 +252,11 @@
   `pixi run ex hardcoded_design` runner now routes to that Filament scene while
   the legacy standalone OSG source remains available for wireframe and
   key-controlled joint comparison.
+- The Filament example includes `--scene rigid-chain`, a SKEL-loaded chain
+  fixture that carries the legacy `rigid_chain` example through
+  descriptor-owned box-link renderables. The in-tree `pixi run ex rigid_chain`
+  runner now routes to that Filament scene while the legacy standalone OSG
+  source remains available for per-step damping comparison.
 - The Filament example also includes `--scene drag-and-drop`, a first
   interaction-heavy fixture that carries the legacy `SimpleFrame` anchor, child
   frame, and axis marker layout through the same backend-hidden manipulation

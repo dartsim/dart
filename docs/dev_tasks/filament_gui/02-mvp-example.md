@@ -114,6 +114,9 @@ Implemented:
 - A selectable `--scene hardcoded-design` fixture that recreates the legacy
   hardcoded-design example's three-link manually constructed skeleton through
   backend-hidden renderable descriptors.
+- A selectable `--scene rigid-chain` fixture that loads the legacy rigid-chain
+  SKEL data and renders its box-link descriptors through the same
+  backend-hidden extraction path.
 - Built-in panel controls for pause/resume, single-step, and debug overlay
   toggles covering grid, world/body frames, center-of-mass markers, contacts,
   normal arrows, and force arrows.

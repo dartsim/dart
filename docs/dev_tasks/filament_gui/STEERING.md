@@ -161,15 +161,15 @@ version hashing, and `extractRenderables`.
    `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp` now own scene
    option parsing and dispatch, while
    `dart/gui/experimental/detail/filament/scene_fixtures.hpp` and `.cpp` own
-   MVP, hello-world, boxes, hardcoded-design, drag-and-drop, simple-frames,
-   soft-bodies, point-cloud, capsule-ground-contact, simulation-event-handler,
-   polyhedron, heightmap, and G1 DART world fixtures.
+   MVP, hello-world, boxes, hardcoded-design, rigid-chain, drag-and-drop,
+   simple-frames, soft-bodies, point-cloud, capsule-ground-contact,
+   simulation-event-handler, polyhedron, heightmap, and G1 DART world fixtures.
    `dart/gui/experimental/detail/filament/application.hpp` and `.cpp` now own
    Filament frame orchestration and the built-in panel, leaving `main.cpp` as a
    minimal entry point.
    `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`
    now own scene fixture requirement counting and MVP/G1/hello-world/boxes/
-   hardcoded-design/drag/simple-frames/soft-bodies/point-cloud/
+   hardcoded-design/rigid-chain/drag/simple-frames/soft-bodies/point-cloud/
    capsule-ground-contact/simulation-event-handler/polyhedron/heightmap
    validation gates.
 3. **Completed: generalize the public-header leakage scan.**

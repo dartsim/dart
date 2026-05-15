@@ -18,6 +18,7 @@ FILAMENT_SMOKE_PATTERN = (
     "EXAMPLE_filament_gui_hello_world_headless_smoke|"
     "EXAMPLE_filament_gui_boxes_headless_smoke|"
     "EXAMPLE_filament_gui_hardcoded_design_headless_smoke|"
+    "EXAMPLE_filament_gui_rigid_chain_headless_smoke|"
     "EXAMPLE_filament_gui_drag_and_drop_headless_smoke|"
     "EXAMPLE_filament_gui_simple_frames_headless_smoke|"
     "EXAMPLE_filament_gui_soft_bodies_headless_smoke|"
@@ -77,6 +78,12 @@ EXAMPLE_SPECS = {
         "filament_gui",
         ("filament",),
         ("--scene", "hardcoded-design"),
+    ),
+    "rigid_chain": ExampleSpec(
+        "dart_filament_gui",
+        "filament_gui",
+        ("filament",),
+        ("--scene", "rigid-chain"),
     ),
     "drag_and_drop": ExampleSpec(
         "dart_filament_gui",
