@@ -7,7 +7,9 @@ keeps FCL, Bullet, and ODE only as optional reference engines for tests and
 benchmarks. The current branch has local evidence for the clean dartpy API,
 native-backed C++ compatibility facades, package/wheel isolation, gz-physics
 compatibility, runtime source isolation, benchmark guards, and reference-only
-old-engine targets.
+old-engine targets. The latest pushed docs/evidence pass also aligns public
+overview, numerical-methods, constraints, and example documentation so they no
+longer present FCL/Bullet/ODE as normal runtime collision backends.
 
 The task is not complete. PR #2652 is closed and still points at old head
 `714d220d82a`; later pushes to `feature/new_coll` do not trigger the main
@@ -20,9 +22,10 @@ for the maintainer-opened review surface.
 
 `feature/new_coll` tracks `origin/feature/new_coll`.
 
-At the start of the latest docs-truthfulness pass, local and remote matched at
-`2c4c05be36e` (`Avoid stale native collision head lists`) with no local diff.
-Run the commands below to refresh that fact instead of trusting this timestamp:
+At the start of the latest completion-audit refresh, local and remote matched
+at `ad1b6782578` (`Align public collision docs with native default`) with no
+local diff. If another audit-record commit has been added after this note, run
+the commands below to refresh that fact instead of trusting this timestamp:
 
 ```bash
 git status --short --branch
@@ -50,6 +53,7 @@ post GitHub comments unless the user explicitly asks.
 - Clean dartpy collision API and C++ compatibility-facade deprecation baseline:
   `ec6f6f43112`.
 - Build-option policy baseline: `aa3ccce70c7`.
+- Public docs collision-runtime wording baseline: `ad1b6782578`.
 - Last manual workflow-dispatch CI evidence head: `1e1faf6feb1`.
 - Latest pushed docs/reference-cleanup heads after those baselines have no
   GitHub Actions runs because branch pushes do not match the workflow filters

@@ -105,10 +105,12 @@ unverified external and finalization gates:
   cast results; the world query layer now keeps stable collision-object handles
   for raycast, sphere-cast, and capsule-cast result pointers.
 - Later pushed audit/docs/policy heads contain audit evidence, CI trigger
-  notes, clean dartpy collision API policy, and reference build-option
-  refinements. The matching `gh run list` checks return no GitHub Actions runs
-  for checked docs/evidence commits because those branch pushes are not an
-  allowed workflow trigger.
+  notes, clean dartpy collision API policy, reference build-option
+  refinements, and public docs alignment for the built-in runtime collision
+  path. The latest checked docs/evidence head before this audit-record update
+  is `ad1b6782578`. The matching `gh run list` check returned no GitHub
+  Actions runs because these branch pushes are not an allowed workflow trigger
+  while PR #2652 is closed.
 - Local downstream migration evidence is refreshed: fresh gz-physics,
   package-smoke, runtime-isolation, C++ compatibility-name, dartpy clean-API,
   direct link-inspection checks, and human-authored stale-backend docs audit all
@@ -142,23 +144,31 @@ unverified external and finalization gates:
 Current audited state:
 
 - Branch: `feature/new_coll`
+- Latest pushed branch head before this audit-record update: `ad1b6782578`
+  (`Align public collision docs with native default`). Local and
+  `origin/feature/new_coll` matched at that head, PR #2652 was still closed
+  and anchored to old head `714d220d82a`, and GitHub reported no Actions runs
+  for commit `ad1b6782578`.
 - Latest published checkpoint before CI repair: `5b08a00d381`
   (`Record current native collision validation pass`), which records the
   current local validation pass after the durable built-in architecture docs
   and compatibility-facade policy cleanup.
 - Latest audited branch evidence: `ec6f6f43112`
   (`Clean dartpy collision API and deprecate C++ facades`) plus
-  `aa3ccce70c7` (`Clarify collision reference build options`). Those commits
-  include the latest code/evidence head `1e1faf6feb1`
+  `aa3ccce70c7` (`Clarify collision reference build options`) through
+  `ad1b6782578` (`Align public collision docs with native default`). Those
+  commits include the latest code/evidence head `1e1faf6feb1`
   (`Fix native capsule convex casts in CI`), the local downstream evidence
   checkpoint, the compatibility-facade audit guard at `f31f1a5b897`, the PR
   evidence transfer draft, the closed-PR CI trigger evidence at `6be640e7007`,
   the clean dartpy collision API, default-on C++ compatibility facade
   deprecations, and docs clarifying that `DART_BUILD_COLLISION_FCL`,
   `DART_BUILD_COLLISION_BULLET`, and `DART_BUILD_COLLISION_ODE` only enable
-  explicit `collision-reference-*` comparison components. GitHub reports no
-  Actions runs for the later pushes because `feature/new_coll` does not match
-  the workflow `push` filters and PR #2652 remains closed.
+  explicit `collision-reference-*` comparison components. They also include the
+  public overview, numerical-methods, constraints, and example README cleanup
+  that removes stale normal-runtime FCL/Bullet/ODE backend guidance. GitHub
+  reports no Actions runs for the later pushes because `feature/new_coll` does
+  not match the workflow `push` filters and PR #2652 remains closed.
 - Full local validation run head: `778cc98c5f2`
   (`Clarify collision reference flag scope`). The safe-job full-validation
   command passed with 6/6 top-level gates: linting, build, unit tests,
