@@ -21,6 +21,9 @@ recommended maintainability slices:
 - `dart/gui/experimental/shape_descriptions.cpp` owns `describeShape`, leaving
   `renderable.cpp` focused on renderable identity, resource versioning, and
   world extraction.
+- `dart/gui/experimental/detail/filament/panel.hpp` and `.cpp` own the
+  private built-in status panel rendering while promoted panel/tool API design
+  remains deferred.
 - `dart/gui/experimental/profile.hpp` and `.cpp` own viewer-loop profile
   accumulation, and `dart/gui/experimental/detail/filament/render_context.*`
   plus `screenshot.*`, `render_environment.*`, `textures.*`, and

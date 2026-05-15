@@ -258,6 +258,9 @@ The Filament example frame lifecycle, scene synchronization, capture, built-in
 panel wiring, and top-level orchestration now live in
 `dart/gui/experimental/detail/filament/application.hpp` and `.cpp`, leaving
 `examples/filament_gui/main.cpp` as a minimal entry point.
+The built-in status panel rendering now lives in
+`dart/gui/experimental/detail/filament/panel.hpp` and `.cpp`; it remains
+private MVP policy rather than a promoted panel/tool API.
 `MeshShape` triangle geometry, texture coordinates, imported vertex normals,
 material, texture-path, and submesh metadata now flow through renderer-hidden
 descriptors, and the Filament example consumes that descriptor metadata for

@@ -263,6 +263,9 @@
   panel wiring, and top-level orchestration now live in
   `dart/gui/experimental/detail/filament/application.hpp` and `.cpp`, leaving
   `examples/filament_gui/main.cpp` as a minimal entry point.
+- Private built-in status panel rendering now lives in
+  `dart/gui/experimental/detail/filament/panel.hpp` and `.cpp`; promoted
+  panel/tool API design remains deferred.
 - Phase 4 is not complete because remaining interaction-heavy workflow
   migration and cross-platform wheel coverage are still pending.
 

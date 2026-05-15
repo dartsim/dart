@@ -40,6 +40,7 @@
 #include <dart/gui/experimental/detail/filament/imgui_overlay.hpp>
 #include <dart/gui/experimental/detail/filament/input.hpp>
 #include <dart/gui/experimental/detail/filament/native_window.hpp>
+#include <dart/gui/experimental/detail/filament/panel.hpp>
 #include <dart/gui/experimental/detail/filament/renderable_factory.hpp>
 #include <dart/gui/experimental/detail/filament/renderable_resources.hpp>
 #include <dart/gui/experimental/detail/filament/renderable_sync.hpp>
@@ -176,6 +177,7 @@ using dart::gui::experimental::filament::isDragModifierDown;
 using dart::gui::experimental::filament::isInsideStatusPanel;
 using dart::gui::experimental::filament::loadImGuiFont;
 using dart::gui::experimental::filament::renderFilamentViews;
+using dart::gui::experimental::filament::renderBuiltInStatusPanel;
 using dart::gui::experimental::filament::requestScreenshot;
 using dart::gui::experimental::filament::saveScreenshot;
 using dart::gui::experimental::filament::logUnsupportedRenderableDescriptorOnce;
@@ -1083,79 +1085,21 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
       phaseStart = ProfileAccumulator::Clock::now();
       updateImGuiMouseInput(window, imguiIo, width, height);
       ImGui::NewFrame();
-      ImGui::SetNextWindowPos(
-          {20.0f * guiScale, 20.0f * guiScale},
-          ImGuiCond_Always);
-      ImGui::SetNextWindowBgAlpha(0.72f);
-      ImGui::Begin(
-          "DART",
-          nullptr,
-          ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
-      ImGui::PushTextWrapPos(
-          ImGui::GetCursorPosX() + 300.0f * guiScale);
-      ImGui::TextWrapped(
-          "DART scene viewer: inspect renderables, shadows, and debug overlays.");
-      ImGui::TextWrapped(
-          "Mouse: left orbit, right/middle pan, wheel zoom, click select.");
-      ImGui::TextWrapped(
-          "Keys: Space pause, N step, arrows/Pg or Ctrl-left drag selected, "
-          "Esc exit.");
-      if (!dartScene.ikHandles.empty()) {
-        ImGui::TextWrapped(
-            "G1 IK: press 1-4 or click a colored target, then move it.");
-      }
-      ImGui::PopTextWrapPos();
-      ImGui::Separator();
-      ImGui::Text("scene: %s", sceneName(appOptions.scene));
-      ImGui::Text("time: %.3f", dartScene.world->getTime());
-      ImGui::Text(
-          "contacts: %zu",
-          dartScene.world->getLastCollisionResult().getNumContacts());
-      ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 300.0f * guiScale);
-      ImGui::Text("selected: %s", selectedLabel.c_str());
-      ImGui::PopTextWrapPos();
-      if (ImGui::Button(lifecycle.paused ? "Resume" : "Pause")) {
-        togglePaused(lifecycle);
-      }
-      ImGui::SameLine();
-      if (ImGui::Button("Step")) {
-        requestSingleStep(lifecycle);
-      }
-      ImGui::SameLine();
-      ImGui::Checkbox("Orbit light", &orbitLight);
-      bool debugOptionsChanged = false;
-      debugOptionsChanged
-          |= ImGui::Checkbox("Grid", &staticDebugOptions.drawGrid);
-      ImGui::SameLine();
-      debugOptionsChanged
-          |= ImGui::Checkbox("World", &staticDebugOptions.drawWorldFrame);
-      ImGui::SameLine();
-      debugOptionsChanged
-          |= ImGui::Checkbox("Body", &staticDebugOptions.drawBodyFrames);
-      debugOptionsChanged
-          |= ImGui::Checkbox("COM", &staticDebugOptions.drawCentersOfMass);
-      ImGui::SameLine();
-      debugOptionsChanged |= ImGui::Checkbox(
-          "Inertia", &staticDebugOptions.drawInertiaBoxes);
-      ImGui::SameLine();
-      debugOptionsChanged |= ImGui::Checkbox(
-          "Collision", &staticDebugOptions.drawCollisionShapeBounds);
-      ImGui::SameLine();
-      debugOptionsChanged
-          |= ImGui::Checkbox("Contacts", &contactDebugOptions.drawContacts);
-      ImGui::SameLine();
-      debugOptionsChanged |= ImGui::Checkbox(
-          "Support", &staticDebugOptions.drawSupportPolygons);
-      debugOptionsChanged |= ImGui::Checkbox(
-          "Normals", &contactDebugOptions.drawContactNormals);
-      ImGui::SameLine();
-      debugOptionsChanged
-          |= ImGui::Checkbox("Forces", &contactDebugOptions.drawContactForces);
+      const bool debugOptionsChanged = renderBuiltInStatusPanel(
+          sceneName(appOptions.scene),
+          dartScene.world->getTime(),
+          dartScene.world->getLastCollisionResult().getNumContacts(),
+          selectedLabel,
+          !dartScene.ikHandles.empty(),
+          orbitLight,
+          staticDebugOptions,
+          contactDebugOptions,
+          lifecycle,
+          guiScale);
       if (debugOptionsChanged) {
         refreshDebugOverlay();
         refreshContactDebugOverlay();
       }
-      ImGui::End();
       ImGui::Render();
       updateImGuiOverlay(
           *engine,
