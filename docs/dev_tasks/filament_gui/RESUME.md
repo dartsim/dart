@@ -192,7 +192,7 @@ CMake file includes private helper plumbing instead of owning the backend file
 list, renderer dependency links, or repeated Filament material/test commands
 itself. That helper now compiles only `examples/filament_gui/main.cpp` from the
 example tree and fails configuration if extra example-local C++ source/header
-files are added.
+files are added or if the entry point adds a direct Filament header include.
 Filament descriptor-to-scene synchronization, unsupported descriptor logging,
 initial scene renderable creation, scene entity attachment, and per-frame
 renderable transform/selection/shadow update helpers live in

@@ -384,6 +384,29 @@ function(dart_filament_gui_add_example example_target)
   if(NOT EXISTS "${_example_main}")
     message(FATAL_ERROR "filament_gui requires ${_example_main}")
   endif()
+  file(READ "${_example_main}" _example_main_contents)
+  string(
+    FIND
+    "${_example_main_contents}"
+    "#include <filament/"
+    _filament_angle_include
+  )
+  string(
+    FIND
+    "${_example_main_contents}"
+    "#include \"filament/"
+    _filament_quote_include
+  )
+  if(
+    NOT _filament_angle_include EQUAL -1
+    OR NOT _filament_quote_include EQUAL -1
+  )
+    message(
+      FATAL_ERROR
+      "filament_gui entry point must not include Filament headers directly: "
+      "${_example_main}"
+    )
+  endif()
 
   file(
     GLOB

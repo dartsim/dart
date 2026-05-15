@@ -151,8 +151,9 @@
   private GUI implementation units rather than as example-local architecture.
   The Filament example CMake helper now compiles only that `main.cpp` entry
   point and rejects extra example-local C++ source/header files during
-  configure, so the build plumbing enforces the same boundary as the focused
-  unit guard.
+  configure. It also rejects direct Filament header includes from the entry
+  point, so the build plumbing enforces the same boundary as the focused unit
+  guard.
 - The Filament example's engine, renderer, swap-chain, main view, scene,
   camera lifecycle, and begin/render/end frame calls now live in
   `dart/gui/experimental/detail/filament/render_context.hpp` and `.cpp`,
