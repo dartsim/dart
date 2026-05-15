@@ -190,7 +190,9 @@ in
 `dart/gui/experimental/detail/filament/filament_sources.cmake`, so the example
 CMake file includes private helper plumbing instead of owning the backend file
 list, renderer dependency links, or repeated Filament material/test commands
-itself.
+itself. That helper now compiles only `examples/filament_gui/main.cpp` from the
+example tree and fails configuration if extra example-local C++ source/header
+files are added.
 Filament descriptor-to-scene synchronization, unsupported descriptor logging,
 initial scene renderable creation, scene entity attachment, and per-frame
 renderable transform/selection/shadow update helpers live in

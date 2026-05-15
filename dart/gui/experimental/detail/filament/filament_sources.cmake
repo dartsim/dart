@@ -380,16 +380,38 @@ function(dart_filament_gui_add_example example_target)
     GENERATED_DIR "${DART_FILAMENT_GUI_EXAMPLE_GENERATED_DIR}"
   )
 
+  set(_example_main "${DART_FILAMENT_GUI_EXAMPLE_SOURCE_DIR}/main.cpp")
+  if(NOT EXISTS "${_example_main}")
+    message(FATAL_ERROR "filament_gui requires ${_example_main}")
+  endif()
+
   file(
     GLOB
-    _example_sources
+    _example_local_sources
+    CONFIGURE_DEPENDS
     "${DART_FILAMENT_GUI_EXAMPLE_SOURCE_DIR}/*.cpp"
     "${DART_FILAMENT_GUI_EXAMPLE_SOURCE_DIR}/*.hpp"
   )
+  set(_unexpected_example_local_sources ${_example_local_sources})
+  list(REMOVE_ITEM _unexpected_example_local_sources "${_example_main}")
+  if(_unexpected_example_local_sources)
+    list(
+      JOIN
+      _unexpected_example_local_sources
+      "\n  "
+      _unexpected_example_local_sources_message
+    )
+    message(
+      FATAL_ERROR
+      "filament_gui keeps reusable renderer code under dart/gui; unexpected "
+      "example-local C++ source/header files:\n  "
+      "${_unexpected_example_local_sources_message}"
+    )
+  endif()
 
   add_executable(
     ${example_target}
-    ${_example_sources}
+    "${_example_main}"
     ${DART_FILAMENT_GUI_BACKEND_SRCS}
     ${DART_FILAMENT_GUI_BACKEND_HDRS}
     ${_material_headers}
@@ -428,7 +450,7 @@ function(dart_filament_gui_add_example example_target)
     )
     dart_add_example(${example_target})
     dart_format_add(
-      ${_example_sources}
+      "${_example_main}"
       ${DART_FILAMENT_GUI_BACKEND_SRCS}
       ${DART_FILAMENT_GUI_BACKEND_HDRS}
     )

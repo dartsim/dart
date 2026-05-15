@@ -263,7 +263,9 @@
     The focused GUI unit test now checks that `examples/filament_gui` contains
     no C++ source/header files other than `main.cpp`, that the example has no
     direct Filament header includes, and that `main.cpp` stays a single-include
-    delegated entry point without backend implementation tokens. The
+    delegated entry point without backend implementation tokens. The Filament
+    example CMake helper now also compiles only that entry point and rejects
+    extra example-local C++ source/header files at configure time. The
     `run_cpp_example.py` unit coverage now also checks that migrated visual
     runners resolve to their Filament scenes instead of stale legacy binaries,
     and that the `--scene all` runner list, smoke-test regex, and
