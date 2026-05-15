@@ -41,7 +41,7 @@
 #include <algorithm>
 #include <iostream>
 
-namespace dart::examples::filament_gui {
+namespace dart::gui::experimental::filament {
 namespace {
 
 using dart::gui::experimental::ActiveRenderableState;
@@ -49,8 +49,8 @@ using dart::gui::experimental::RenderableDescriptor;
 using dart::gui::experimental::RenderableId;
 using dart::gui::experimental::ShapeKind;
 using dart::gui::experimental::planRenderableSetUpdate;
-using filament::math::float4;
-using filament::math::mat4f;
+using ::filament::math::float4;
+using ::filament::math::mat4f;
 
 mat4f toFilamentTransform(const Eigen::Isometry3d& transform)
 {
@@ -116,7 +116,7 @@ void logUnsupportedRenderableDescriptor(const RenderableDescriptor& descriptor)
 } // namespace
 
 void setRenderableTransform(
-    filament::Engine& engine,
+    ::filament::Engine& engine,
     const Renderable& renderable,
     const Eigen::Isometry3d& transform)
 {
@@ -125,19 +125,19 @@ void setRenderableTransform(
       transforms.getInstance(renderable.entity), toFilamentTransform(transform));
 }
 
-void addRenderableToScene(filament::Scene& scene, const Renderable& renderable)
+void addRenderableToScene(::filament::Scene& scene, const Renderable& renderable)
 {
   scene.addEntity(renderable.entity);
 }
 
 void removeRenderableFromScene(
-    filament::Scene& scene, const Renderable& renderable)
+    ::filament::Scene& scene, const Renderable& renderable)
 {
   scene.remove(renderable.entity);
 }
 
 void updateSceneRenderableFromDescriptor(
-    filament::Engine& engine,
+    ::filament::Engine& engine,
     SceneRenderable& sceneRenderable,
     const RenderableDescriptor& descriptor,
     bool selected)
@@ -167,8 +167,8 @@ void logUnsupportedRenderableDescriptorOnce(
 }
 
 void synchronizeSceneRenderables(
-    filament::Engine& engine,
-    filament::Scene& scene,
+    ::filament::Engine& engine,
+    ::filament::Scene& scene,
     const std::vector<RenderableDescriptor>& descriptors,
     std::vector<SceneRenderable>& sceneRenderables,
     std::vector<RenderableId>& loggedUnsupportedRenderableIds,
@@ -218,4 +218,4 @@ void synchronizeSceneRenderables(
   }
 }
 
-} // namespace dart::examples::filament_gui
+} // namespace dart::gui::experimental::filament

@@ -131,20 +131,20 @@ Example-local ImGui font loading lives with the overlay renderer in
 `examples/filament_gui/imgui_overlay.hpp` and `.cpp`.
 Example-local selection label formatting and G1 IK-target translation glue live
 in `examples/filament_gui/selection.hpp` and `.cpp`.
-Example-local Filament material bundle creation, seed texture resources,
-renderable state, lit-material setup, shadow flag application, and destruction
-lifecycle helpers live in `examples/filament_gui/renderable_resources.hpp` and
+Filament material bundle creation, seed texture resources, renderable state,
+lit-material setup, shadow flag application, and destruction lifecycle helpers
+live in `dart/gui/experimental/detail/filament/renderable_resources.hpp` and
 `.cpp`.
-Example-local descriptor-to-scene synchronization, unsupported descriptor
-logging, scene entity attachment, and renderable transform/selection update
-helpers live in `examples/filament_gui/renderable_sync.hpp` and `.cpp`.
-Example-local descriptor-to-Filament renderable construction now lives in
-`examples/filament_gui/renderable_factory.hpp` and `.cpp`, including generated
-mesh buffer upload, debug-line renderable creation, material part assembly, and
-texture-backed mesh binding. The factory header does not include Filament
-headers; the full migration metric remains zero direct Filament header includes
-from maintained example files after promotion, not just zero direct Filament
-includes from helper headers.
+Filament descriptor-to-scene synchronization, unsupported descriptor logging,
+scene entity attachment, and renderable transform/selection update helpers live
+in `dart/gui/experimental/detail/filament/renderable_sync.hpp` and `.cpp`.
+Filament descriptor-to-renderable construction now lives in
+`dart/gui/experimental/detail/filament/renderable_factory.hpp` and `.cpp`,
+including generated mesh buffer upload, debug-line renderable creation,
+material part assembly, and texture-backed mesh binding. The factory header does
+not include Filament headers; the full migration metric remains zero direct
+Filament header includes from maintained example files after promotion, not just
+zero direct Filament includes from helper headers.
 `UNIT_dynamics_MeshShape` also loads the checked-in
 `data/gltf/pbr_triangle.gltf` and `data/gltf/pbr_multi_material.gltf` fixtures
 through the real Assimp importer and verifies authored glTF PBR texture slots,

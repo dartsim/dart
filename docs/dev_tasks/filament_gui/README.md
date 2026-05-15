@@ -118,10 +118,10 @@
   `dart/gui/experimental/detail/filament/textures.hpp` and `.cpp`; repeat
   sampler construction stays private to the texture implementation so the
   helper header does not include Filament sampler headers.
-- The Filament example's descriptor-to-Filament renderable factory now lives in
-  `examples/filament_gui/renderable_factory.hpp` and `.cpp`, keeping generated
-  mesh buffers, material part assembly, debug-line resource creation, and
-  texture-backed mesh binding out of the main viewer loop.
+- The Filament descriptor-to-Filament renderable factory now lives in
+  `dart/gui/experimental/detail/filament/renderable_factory.hpp` and `.cpp`,
+  keeping generated mesh buffers, material part assembly, debug-line resource
+  creation, and texture-backed mesh binding out of the main viewer loop.
 - `UNIT_gui_FilamentSceneExtraction` now checks that
   `examples/filament_gui/*.hpp` and the example entry point have no direct
   Filament header includes, while the full north-star metric remains zero
@@ -147,14 +147,14 @@
 - The Filament example's selection labels and G1 IK-target translation glue now
   live in `examples/filament_gui/selection.hpp` and `.cpp`; renderer-independent
   selection and translation primitives remain in `dart-gui-experimental`.
-- The Filament example's Filament material bundle, seed texture resources,
-  renderable state, material selection and parameter binding helpers, shadow
-  settings, and destruction lifecycle now live in
-  `examples/filament_gui/renderable_resources.hpp` and `.cpp`.
-- The Filament example's descriptor-to-scene synchronization, unsupported
-  descriptor logging, scene entity attachment, and renderable
-  transform/selection update helpers now live in
-  `examples/filament_gui/renderable_sync.hpp` and `.cpp`.
+- The Filament material bundle, seed texture resources, renderable state,
+  material selection and parameter binding helpers, shadow settings, and
+  destruction lifecycle now live in
+  `dart/gui/experimental/detail/filament/renderable_resources.hpp` and `.cpp`.
+- The Filament descriptor-to-scene synchronization, unsupported descriptor
+  logging, scene entity attachment, and renderable transform/selection update
+  helpers now live in
+  `dart/gui/experimental/detail/filament/renderable_sync.hpp` and `.cpp`.
 - The Filament example's scene option parsing and reusable DART world fixtures
   now live in `examples/filament_gui/scenes.hpp` and `.cpp`; `main.cpp` remains
   focused on synchronization, input, and the built-in panel.

@@ -220,12 +220,12 @@
   selection in `examples/filament_gui/native_window.hpp` and `.cpp`.
 - The Filament example keeps selection label formatting and G1 IK-target
   translation glue in `examples/filament_gui/selection.hpp` and `.cpp`.
-- The Filament example keeps renderable state, lit-material configuration,
-  shadow flag application, and destruction lifecycle helpers in
-  `examples/filament_gui/renderable_resources.hpp` and `.cpp`.
-- The Filament example keeps descriptor-to-scene synchronization, unsupported
-  descriptor logging, and renderable transform/selection update helpers in
-  `examples/filament_gui/renderable_sync.hpp` and `.cpp`.
+- Filament renderable state, lit-material configuration, shadow flag
+  application, and destruction lifecycle helpers now live in
+  `dart/gui/experimental/detail/filament/renderable_resources.hpp` and `.cpp`.
+- Filament descriptor-to-scene synchronization, unsupported descriptor logging,
+  and renderable transform/selection update helpers now live in
+  `dart/gui/experimental/detail/filament/renderable_sync.hpp` and `.cpp`.
 - `dart-gui-experimental` now owns viewer lifecycle state for pause/step
   behavior, screenshot request tracking, rendered/skipped frame counters, and
   bounded-run stop checks. The Filament example uses this state instead of
@@ -257,8 +257,8 @@
   basis, and picking without introducing another renderer.
 - `examples/filament_gui` now keeps reusable DART world fixtures and scene
   option parsing in `examples/filament_gui/scenes.hpp` and `.cpp`, leaving the
-  main executable source focused on Filament renderable resources, scene
-  synchronization, render environment assembly, and UI wiring.
+  main executable source focused on debug/capture coordination, scene
+  synchronization calls, render environment assembly, and UI wiring.
 - Phase 4 is not complete because remaining interaction-heavy workflow
   migration and cross-platform wheel coverage are still pending.
 

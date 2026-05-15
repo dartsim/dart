@@ -30,12 +30,11 @@
  *   DAMAGE.
  */
 
-#ifndef EXAMPLES_FILAMENT_GUI_RENDERABLE_FACTORY_HPP_
-#define EXAMPLES_FILAMENT_GUI_RENDERABLE_FACTORY_HPP_
-
-#include "renderable_resources.hpp"
+#ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_RENDERABLE_FACTORY_HPP_
+#define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_RENDERABLE_FACTORY_HPP_
 
 #include <dart/gui/experimental/debug.hpp>
+#include <dart/gui/experimental/detail/filament/renderable_resources.hpp>
 #include <dart/gui/experimental/renderable.hpp>
 
 #include <optional>
@@ -46,19 +45,19 @@ class Engine;
 class Material;
 } // namespace filament
 
-namespace dart::examples::filament_gui {
+namespace dart::gui::experimental::filament {
 
 std::optional<Renderable> createDebugLineRenderable(
-    filament::Engine& engine,
-    filament::Material& material,
+    ::filament::Engine& engine,
+    ::filament::Material& material,
     const std::vector<dart::gui::experimental::DebugLineDescriptor>& lines);
 
 std::optional<Renderable> createRenderableFromDescriptor(
-    filament::Engine& engine,
+    ::filament::Engine& engine,
     const MaterialSet& materials,
     TextureCache& textureCache,
     const dart::gui::experimental::RenderableDescriptor& descriptor);
 
-} // namespace dart::examples::filament_gui
+} // namespace dart::gui::experimental::filament
 
-#endif // EXAMPLES_FILAMENT_GUI_RENDERABLE_FACTORY_HPP_
+#endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_RENDERABLE_FACTORY_HPP_

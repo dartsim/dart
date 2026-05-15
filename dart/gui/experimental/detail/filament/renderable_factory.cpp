@@ -58,7 +58,7 @@
 #include <cstddef>
 #include <utility>
 
-namespace dart::examples::filament_gui {
+namespace dart::gui::experimental::filament {
 
 using dart::gui::experimental::DebugLineDescriptor;
 using dart::gui::experimental::GeometryDescriptor;
@@ -76,9 +76,9 @@ using dart::gui::experimental::makeCylinderMeshGeometry;
 using dart::gui::experimental::makeEllipsoidMeshGeometry;
 using dart::gui::experimental::makeMultiSphereMeshGeometry;
 using dart::gui::experimental::makePyramidMeshGeometry;
-using filament::math::float2;
-using filament::math::float3;
-using filament::math::float4;
+using ::filament::math::float2;
+using ::filament::math::float3;
+using ::filament::math::float4;
 using utils::EntityManager;
 
 namespace {
@@ -86,22 +86,22 @@ namespace {
 struct Vertex
 {
   float3 position;
-  filament::math::short4 tangent;
-  filament::math::float2 uv = {0.0f, 0.0f};
+  ::filament::math::short4 tangent;
+  ::filament::math::float2 uv = {0.0f, 0.0f};
 };
 
 struct DebugVertex
 {
-  filament::math::float3 position;
+  ::filament::math::float3 position;
   std::uint32_t color = 0;
 };
 
 template <typename T, std::size_t Size>
-filament::backend::BufferDescriptor makeBufferDescriptor(
+::filament::backend::BufferDescriptor makeBufferDescriptor(
     const std::array<T, Size>& data)
 {
   auto* owned = new std::array<T, Size>(data);
-  return filament::backend::BufferDescriptor(
+  return ::filament::backend::BufferDescriptor(
       owned->data(),
       owned->size() * sizeof(T),
       [](void*, std::size_t, void* user) {
@@ -111,10 +111,10 @@ filament::backend::BufferDescriptor makeBufferDescriptor(
 }
 
 template <typename T>
-filament::backend::BufferDescriptor makeBufferDescriptor(std::vector<T>&& data)
+::filament::backend::BufferDescriptor makeBufferDescriptor(std::vector<T>&& data)
 {
   auto* owned = new std::vector<T>(std::move(data));
-  return filament::backend::BufferDescriptor(
+  return ::filament::backend::BufferDescriptor(
       owned->data(),
       owned->size() * sizeof(T),
       [](void*, std::size_t, void* user) {
@@ -182,10 +182,10 @@ bool hasUsableTextureCoordinates(const std::vector<Vertex>& vertices)
 
 void generateTangentFrames(
     std::vector<Vertex>& vertices,
-    const std::vector<filament::math::uint3>& triangles,
+    const std::vector<::filament::math::uint3>& triangles,
     const std::vector<float3>& normals = {})
 {
-  std::vector<filament::math::float2> uvs;
+  std::vector<::filament::math::float2> uvs;
   std::vector<float3> positions;
   if (hasUsableTextureCoordinates(vertices)) {
     uvs.reserve(vertices.size());
@@ -202,7 +202,7 @@ void generateTangentFrames(
         [](const Vertex& vertex) { return vertex.position; });
   }
 
-  filament::geometry::SurfaceOrientation::Builder builder;
+  ::filament::geometry::SurfaceOrientation::Builder builder;
   builder.vertexCount(vertices.size())
       .positions(
           positions.empty() ? &vertices[0].position : positions.data(),
@@ -216,7 +216,7 @@ void generateTangentFrames(
     builder.uvs(uvs.data());
   }
 
-  std::unique_ptr<filament::geometry::SurfaceOrientation> orientation(
+  std::unique_ptr<::filament::geometry::SurfaceOrientation> orientation(
       builder.build());
   if (orientation == nullptr) {
     std::cerr << "Failed to generate Filament tangent frames\n";
@@ -279,15 +279,15 @@ float resolveMeshMaterialAlpha(
 }
 
 Renderable createBoxRenderable(
-    filament::Engine& engine,
-    filament::Material& material,
+    ::filament::Engine& engine,
+    ::filament::Material& material,
     const float3& halfExtents,
     const float4& color)
 {
   static constexpr std::array<std::uint16_t, 36> indices = {
       0,  1,  2,  0,  2,  3,  4,  6,  5,  4,  7,  6,  8,  9,  10, 8,  10, 11,
       12, 14, 13, 12, 15, 14, 16, 17, 18, 16, 18, 19, 20, 22, 21, 20, 23, 22};
-  static constexpr std::array<filament::math::ushort3, 12> triangles = {{
+  static constexpr std::array<::filament::math::ushort3, 12> triangles = {{
       {0, 1, 2},
       {0, 2, 3},
       {4, 6, 5},
@@ -305,7 +305,7 @@ Renderable createBoxRenderable(
   const auto hx = halfExtents.x;
   const auto hy = halfExtents.y;
   const auto hz = halfExtents.z;
-  const filament::math::short4 tangent = {0, 0, 0, 32767};
+  const ::filament::math::short4 tangent = {0, 0, 0, 32767};
   std::array<Vertex, 24> vertices = {{
       {{-hx, -hy, hz}, tangent},  {{hx, -hy, hz}, tangent},
       {{hx, hy, hz}, tangent},    {{-hx, hy, hz}, tangent},
@@ -321,8 +321,8 @@ Renderable createBoxRenderable(
       {{-hx, hy, hz}, tangent},   {{-hx, -hy, hz}, tangent},
   }};
 
-  std::unique_ptr<filament::geometry::SurfaceOrientation> orientation(
-      filament::geometry::SurfaceOrientation::Builder()
+  std::unique_ptr<::filament::geometry::SurfaceOrientation> orientation(
+      ::filament::geometry::SurfaceOrientation::Builder()
           .vertexCount(vertices.size())
           .positions(&vertices[0].position, sizeof(Vertex))
           .triangleCount(triangles.size())
@@ -336,36 +336,36 @@ Renderable createBoxRenderable(
 
   Renderable renderable;
   renderable.vertexBuffer
-      = filament::VertexBuffer::Builder()
+      = ::filament::VertexBuffer::Builder()
             .vertexCount(vertices.size())
             .bufferCount(1)
             .attribute(
-                filament::VertexAttribute::POSITION,
+                ::filament::VertexAttribute::POSITION,
                 0,
-                filament::VertexBuffer::AttributeType::FLOAT3,
+                ::filament::VertexBuffer::AttributeType::FLOAT3,
                 offsetof(Vertex, position),
                 sizeof(Vertex))
             .attribute(
-                filament::VertexAttribute::TANGENTS,
+                ::filament::VertexAttribute::TANGENTS,
                 0,
-                filament::VertexBuffer::AttributeType::SHORT4,
+                ::filament::VertexBuffer::AttributeType::SHORT4,
                 offsetof(Vertex, tangent),
                 sizeof(Vertex))
             .attribute(
-                filament::VertexAttribute::UV0,
+                ::filament::VertexAttribute::UV0,
                 0,
-                filament::VertexBuffer::AttributeType::FLOAT2,
+                ::filament::VertexBuffer::AttributeType::FLOAT2,
                 offsetof(Vertex, uv),
                 sizeof(Vertex))
-            .normalized(filament::VertexAttribute::TANGENTS)
+            .normalized(::filament::VertexAttribute::TANGENTS)
             .build(engine);
   renderable.vertexBuffer->setBufferAt(
       engine, 0, makeBufferDescriptor(vertices));
 
   renderable.indexBuffer
-      = filament::IndexBuffer::Builder()
+      = ::filament::IndexBuffer::Builder()
             .indexCount(indices.size())
-            .bufferType(filament::IndexBuffer::IndexType::USHORT)
+            .bufferType(::filament::IndexBuffer::IndexType::USHORT)
             .build(engine);
   renderable.indexBuffer->setBuffer(engine, makeBufferDescriptor(indices));
 
@@ -379,14 +379,14 @@ Renderable createBoxRenderable(
       float3{0.0f, 0.0f, 0.0f});
 
   renderable.entity = EntityManager::get().create();
-  filament::RenderableManager::Builder(1)
+  ::filament::RenderableManager::Builder(1)
       .boundingBox(
           {{-halfExtents.x, -halfExtents.y, -halfExtents.z},
            {halfExtents.x, halfExtents.y, halfExtents.z}})
       .material(0, materialInstance)
       .geometry(
           0,
-          filament::RenderableManager::PrimitiveType::TRIANGLES,
+          ::filament::RenderableManager::PrimitiveType::TRIANGLES,
           renderable.vertexBuffer,
           renderable.indexBuffer,
           0,
@@ -403,7 +403,7 @@ Renderable createBoxRenderable(
 
 void appendTriangle(
     std::vector<std::uint32_t>& indices,
-    std::vector<filament::math::uint3>& triangles,
+    std::vector<::filament::math::uint3>& triangles,
     std::uint32_t a,
     std::uint32_t b,
     std::uint32_t c)
@@ -452,14 +452,14 @@ struct TriangleMeshBuffers
 {
   std::vector<Vertex> vertices;
   std::vector<std::uint32_t> indices;
-  std::vector<filament::math::uint3> triangles;
+  std::vector<::filament::math::uint3> triangles;
   std::vector<float3> normals;
   Bounds bounds{{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
 };
 
 TriangleMeshBuffers makeTriangleMeshBuffers(MeshGeometry&& geometry)
 {
-  const filament::math::short4 tangent = {0, 0, 0, 32767};
+  const ::filament::math::short4 tangent = {0, 0, 0, 32767};
   TriangleMeshBuffers buffers;
   buffers.vertices.reserve(geometry.vertices.size());
   buffers.normals.reserve(geometry.vertices.size());
@@ -498,8 +498,8 @@ std::uint32_t packColor(const Eigen::Vector4d& rgba)
 } // namespace
 
 std::optional<Renderable> createDebugLineRenderable(
-    filament::Engine& engine,
-    filament::Material& material,
+    ::filament::Engine& engine,
+    ::filament::Material& material,
     const std::vector<DebugLineDescriptor>& lines)
 {
   if (lines.empty()) {
@@ -524,42 +524,42 @@ std::optional<Renderable> createDebugLineRenderable(
   const std::size_t indexCount = indices.size();
   Renderable renderable;
   renderable.vertexBuffer
-      = filament::VertexBuffer::Builder()
+      = ::filament::VertexBuffer::Builder()
             .vertexCount(vertices.size())
             .bufferCount(1)
             .attribute(
-                filament::VertexAttribute::POSITION,
+                ::filament::VertexAttribute::POSITION,
                 0,
-                filament::VertexBuffer::AttributeType::FLOAT3,
+                ::filament::VertexBuffer::AttributeType::FLOAT3,
                 offsetof(DebugVertex, position),
                 sizeof(DebugVertex))
             .attribute(
-                filament::VertexAttribute::COLOR,
+                ::filament::VertexAttribute::COLOR,
                 0,
-                filament::VertexBuffer::AttributeType::UBYTE4,
+                ::filament::VertexBuffer::AttributeType::UBYTE4,
                 offsetof(DebugVertex, color),
                 sizeof(DebugVertex))
-            .normalized(filament::VertexAttribute::COLOR)
+            .normalized(::filament::VertexAttribute::COLOR)
             .build(engine);
   renderable.vertexBuffer->setBufferAt(
       engine, 0, makeBufferDescriptor(std::move(vertices)));
 
   renderable.indexBuffer
-      = filament::IndexBuffer::Builder()
+      = ::filament::IndexBuffer::Builder()
             .indexCount(indices.size())
-            .bufferType(filament::IndexBuffer::IndexType::UINT)
+            .bufferType(::filament::IndexBuffer::IndexType::UINT)
             .build(engine);
   renderable.indexBuffer->setBuffer(
       engine, makeBufferDescriptor(std::move(indices)));
 
   auto* materialInstance = addRenderableMaterial(renderable, material);
   renderable.entity = EntityManager::get().create();
-  filament::RenderableManager::Builder(1)
+  ::filament::RenderableManager::Builder(1)
       .boundingBox({bounds.min, bounds.max})
       .material(0, materialInstance)
       .geometry(
           0,
-          filament::RenderableManager::PrimitiveType::LINES,
+          ::filament::RenderableManager::PrimitiveType::LINES,
           renderable.vertexBuffer,
           renderable.indexBuffer,
           0,
@@ -574,8 +574,8 @@ std::optional<Renderable> createDebugLineRenderable(
 namespace {
 
 std::optional<Renderable> createLineSegmentRenderable(
-    filament::Engine& engine,
-    filament::Material& material,
+    ::filament::Engine& engine,
+    ::filament::Material& material,
     const RenderableDescriptor& descriptor)
 {
   std::vector<DebugLineDescriptor> lines;
@@ -604,11 +604,11 @@ std::optional<Renderable> createLineSegmentRenderable(
 }
 
 Renderable createTriangleMeshRenderable(
-    filament::Engine& engine,
-    filament::Material& material,
+    ::filament::Engine& engine,
+    ::filament::Material& material,
     std::vector<Vertex> vertices,
     std::vector<std::uint32_t> indices,
-    std::vector<filament::math::uint3> triangles,
+    std::vector<::filament::math::uint3> triangles,
     std::vector<float3> normals,
     const float4& color,
     const float3& minBounds,
@@ -625,36 +625,36 @@ Renderable createTriangleMeshRenderable(
 
   Renderable renderable;
   renderable.vertexBuffer
-      = filament::VertexBuffer::Builder()
+      = ::filament::VertexBuffer::Builder()
             .vertexCount(vertices.size())
             .bufferCount(1)
             .attribute(
-                filament::VertexAttribute::POSITION,
+                ::filament::VertexAttribute::POSITION,
                 0,
-                filament::VertexBuffer::AttributeType::FLOAT3,
+                ::filament::VertexBuffer::AttributeType::FLOAT3,
                 offsetof(Vertex, position),
                 sizeof(Vertex))
             .attribute(
-                filament::VertexAttribute::TANGENTS,
+                ::filament::VertexAttribute::TANGENTS,
                 0,
-                filament::VertexBuffer::AttributeType::SHORT4,
+                ::filament::VertexBuffer::AttributeType::SHORT4,
                 offsetof(Vertex, tangent),
                 sizeof(Vertex))
             .attribute(
-                filament::VertexAttribute::UV0,
+                ::filament::VertexAttribute::UV0,
                 0,
-                filament::VertexBuffer::AttributeType::FLOAT2,
+                ::filament::VertexBuffer::AttributeType::FLOAT2,
                 offsetof(Vertex, uv),
                 sizeof(Vertex))
-            .normalized(filament::VertexAttribute::TANGENTS)
+            .normalized(::filament::VertexAttribute::TANGENTS)
             .build(engine);
   renderable.vertexBuffer->setBufferAt(
       engine, 0, makeBufferDescriptor(std::move(vertices)));
 
   renderable.indexBuffer
-      = filament::IndexBuffer::Builder()
+      = ::filament::IndexBuffer::Builder()
             .indexCount(indices.size())
-            .bufferType(filament::IndexBuffer::IndexType::UINT)
+            .bufferType(::filament::IndexBuffer::IndexType::UINT)
             .build(engine);
   renderable.indexBuffer->setBuffer(
       engine, makeBufferDescriptor(std::move(indices)));
@@ -671,12 +671,12 @@ Renderable createTriangleMeshRenderable(
       fallbackTexture);
 
   renderable.entity = EntityManager::get().create();
-  filament::RenderableManager::Builder(1)
+  ::filament::RenderableManager::Builder(1)
       .boundingBox({minBounds, maxBounds})
       .material(0, materialInstance)
       .geometry(
           0,
-          filament::RenderableManager::PrimitiveType::TRIANGLES,
+          ::filament::RenderableManager::PrimitiveType::TRIANGLES,
           renderable.vertexBuffer,
           renderable.indexBuffer,
           0,
@@ -692,8 +692,8 @@ Renderable createTriangleMeshRenderable(
 }
 
 Renderable createGeometryMeshRenderable(
-    filament::Engine& engine,
-    filament::Material& material,
+    ::filament::Engine& engine,
+    ::filament::Material& material,
     MeshGeometry geometry,
     const float4& color)
 {
@@ -711,8 +711,8 @@ Renderable createGeometryMeshRenderable(
 }
 
 Renderable createEllipsoidRenderable(
-    filament::Engine& engine,
-    filament::Material& material,
+    ::filament::Engine& engine,
+    ::filament::Material& material,
     const Eigen::Vector3d& radii,
     const float4& color)
 {
@@ -721,8 +721,8 @@ Renderable createEllipsoidRenderable(
 }
 
 Renderable createMultiSphereRenderable(
-    filament::Engine& engine,
-    filament::Material& material,
+    ::filament::Engine& engine,
+    ::filament::Material& material,
     const std::vector<Eigen::Vector3d>& centers,
     const std::vector<double>& radii,
     const float4& color)
@@ -732,8 +732,8 @@ Renderable createMultiSphereRenderable(
 }
 
 Renderable createCylinderRenderable(
-    filament::Engine& engine,
-    filament::Material& material,
+    ::filament::Engine& engine,
+    ::filament::Material& material,
     double radius,
     double height,
     const float4& color)
@@ -743,8 +743,8 @@ Renderable createCylinderRenderable(
 }
 
 Renderable createConeRenderable(
-    filament::Engine& engine,
-    filament::Material& material,
+    ::filament::Engine& engine,
+    ::filament::Material& material,
     double radius,
     double height,
     const float4& color)
@@ -754,8 +754,8 @@ Renderable createConeRenderable(
 }
 
 Renderable createPyramidRenderable(
-    filament::Engine& engine,
-    filament::Material& material,
+    ::filament::Engine& engine,
+    ::filament::Material& material,
     const Eigen::Vector3d& size,
     const float4& color)
 {
@@ -764,8 +764,8 @@ Renderable createPyramidRenderable(
 }
 
 Renderable createCapsuleRenderable(
-    filament::Engine& engine,
-    filament::Material& material,
+    ::filament::Engine& engine,
+    ::filament::Material& material,
     double radius,
     double height,
     const float4& color)
@@ -775,8 +775,8 @@ Renderable createCapsuleRenderable(
 }
 
 std::optional<Renderable> createDescriptorTriangleMeshRenderable(
-    filament::Engine& engine,
-    filament::Material& material,
+    ::filament::Engine& engine,
+    ::filament::Material& material,
     const GeometryDescriptor& geometry,
     const float4& color)
 {
@@ -788,7 +788,7 @@ std::optional<Renderable> createDescriptorTriangleMeshRenderable(
     return std::nullopt;
   }
 
-  const filament::math::short4 tangent = {0, 0, 0, 32767};
+  const ::filament::math::short4 tangent = {0, 0, 0, 32767};
   std::vector<Vertex> vertices;
   vertices.reserve(geometry.triangleVertices.size());
   for (const Eigen::Vector3d& vertex : geometry.triangleVertices) {
@@ -799,7 +799,7 @@ std::optional<Renderable> createDescriptorTriangleMeshRenderable(
   }
 
   std::vector<std::uint32_t> indices;
-  std::vector<filament::math::uint3> triangles;
+  std::vector<::filament::math::uint3> triangles;
   indices.reserve(geometry.triangleIndices.size() * 3u);
   triangles.reserve(geometry.triangleIndices.size());
   for (const Eigen::Vector3i& triangle : geometry.triangleIndices) {
@@ -872,7 +872,7 @@ std::optional<Renderable> createDescriptorTriangleMeshRenderable(
 }
 
 std::optional<Renderable> createPointCloudRenderable(
-    filament::Engine& engine,
+    ::filament::Engine& engine,
     const MaterialSet& materials,
     const RenderableDescriptor& descriptor)
 {
@@ -908,42 +908,42 @@ std::optional<Renderable> createPointCloudRenderable(
 
     Renderable renderable;
     renderable.vertexBuffer
-        = filament::VertexBuffer::Builder()
+        = ::filament::VertexBuffer::Builder()
               .vertexCount(buffers.vertices.size())
               .bufferCount(1)
               .attribute(
-                  filament::VertexAttribute::POSITION,
+                  ::filament::VertexAttribute::POSITION,
                   0,
-                  filament::VertexBuffer::AttributeType::FLOAT3,
+                  ::filament::VertexBuffer::AttributeType::FLOAT3,
                   offsetof(Vertex, position),
                   sizeof(Vertex))
               .attribute(
-                  filament::VertexAttribute::TANGENTS,
+                  ::filament::VertexAttribute::TANGENTS,
                   0,
-                  filament::VertexBuffer::AttributeType::SHORT4,
+                  ::filament::VertexBuffer::AttributeType::SHORT4,
                   offsetof(Vertex, tangent),
                   sizeof(Vertex))
               .attribute(
-                  filament::VertexAttribute::UV0,
+                  ::filament::VertexAttribute::UV0,
                   0,
-                  filament::VertexBuffer::AttributeType::FLOAT2,
+                  ::filament::VertexBuffer::AttributeType::FLOAT2,
                   offsetof(Vertex, uv),
                   sizeof(Vertex))
-              .normalized(filament::VertexAttribute::TANGENTS)
+              .normalized(::filament::VertexAttribute::TANGENTS)
               .build(engine);
     renderable.vertexBuffer->setBufferAt(
         engine, 0, makeBufferDescriptor(std::move(buffers.vertices)));
 
     renderable.indexBuffer
-        = filament::IndexBuffer::Builder()
+        = ::filament::IndexBuffer::Builder()
               .indexCount(buffers.indices.size())
-              .bufferType(filament::IndexBuffer::IndexType::UINT)
+              .bufferType(::filament::IndexBuffer::IndexType::UINT)
               .build(engine);
     renderable.indexBuffer->setBuffer(
         engine, makeBufferDescriptor(std::move(buffers.indices)));
 
     renderable.entity = EntityManager::get().create();
-    auto builder = filament::RenderableManager::Builder(pointRanges.size());
+    auto builder = ::filament::RenderableManager::Builder(pointRanges.size());
     builder.boundingBox({bounds.min, bounds.max})
         .castShadows(true)
         .receiveShadows(true);
@@ -960,7 +960,7 @@ std::optional<Renderable> createPointCloudRenderable(
       builder.material(i, materialInstance)
           .geometry(
               i,
-              filament::RenderableManager::PrimitiveType::TRIANGLES,
+              ::filament::RenderableManager::PrimitiveType::TRIANGLES,
               renderable.vertexBuffer,
               renderable.indexBuffer,
               pointRanges[i].indexOffset,
@@ -987,7 +987,7 @@ std::optional<Renderable> createPointCloudRenderable(
 }
 
 std::optional<Renderable> createVoxelGridRenderable(
-    filament::Engine& engine,
+    ::filament::Engine& engine,
     const MaterialSet& materials,
     const RenderableDescriptor& descriptor)
 {
@@ -1022,7 +1022,7 @@ std::optional<Renderable> createVoxelGridRenderable(
 }
 
 std::optional<Renderable> createMeshRenderable(
-    filament::Engine& engine,
+    ::filament::Engine& engine,
     const MaterialSet& materials,
     TextureCache& textureCache,
     const GeometryDescriptor& geometry,
@@ -1038,7 +1038,7 @@ std::optional<Renderable> createMeshRenderable(
     return std::nullopt;
   }
 
-  const filament::math::short4 tangent = {0, 0, 0, 32767};
+  const ::filament::math::short4 tangent = {0, 0, 0, 32767};
   const bool hasTextureCoords
       = geometry.meshTextureCoordComponents >= 2
         && geometry.meshTextureCoordinates.size() == meshVertices.size();
@@ -1050,7 +1050,7 @@ std::optional<Renderable> createMeshRenderable(
       return std::nullopt;
     }
 
-    filament::math::float2 uv = {0.0f, 0.0f};
+    ::filament::math::float2 uv = {0.0f, 0.0f};
     if (hasTextureCoords) {
       const Eigen::Vector3d& textureCoordinate
           = geometry.meshTextureCoordinates[i];
@@ -1077,7 +1077,7 @@ std::optional<Renderable> createMeshRenderable(
   }
 
   std::vector<std::uint32_t> indices;
-  std::vector<filament::math::uint3> triangles;
+  std::vector<::filament::math::uint3> triangles;
   indices.reserve(meshTriangles.size() * 3);
   triangles.reserve(meshTriangles.size());
   for (const Eigen::Vector3i& triangle : meshTriangles) {
@@ -1170,7 +1170,7 @@ std::optional<Renderable> createMeshRenderable(
 
   const auto makeMaterialInstance
       = [&](Renderable& renderable,
-            const MeshMaterialState& state) -> filament::MaterialInstance* {
+            const MeshMaterialState& state) -> ::filament::MaterialInstance* {
     const bool usesTextures = hasTextureBindings(state.textures);
     auto* materialInstance = addRenderableMaterial(
         renderable,
@@ -1231,42 +1231,42 @@ std::optional<Renderable> createMeshRenderable(
 
   Renderable renderable;
   renderable.vertexBuffer
-      = filament::VertexBuffer::Builder()
+      = ::filament::VertexBuffer::Builder()
             .vertexCount(vertices.size())
             .bufferCount(1)
             .attribute(
-                filament::VertexAttribute::POSITION,
+                ::filament::VertexAttribute::POSITION,
                 0,
-                filament::VertexBuffer::AttributeType::FLOAT3,
+                ::filament::VertexBuffer::AttributeType::FLOAT3,
                 offsetof(Vertex, position),
                 sizeof(Vertex))
             .attribute(
-                filament::VertexAttribute::TANGENTS,
+                ::filament::VertexAttribute::TANGENTS,
                 0,
-                filament::VertexBuffer::AttributeType::SHORT4,
+                ::filament::VertexBuffer::AttributeType::SHORT4,
                 offsetof(Vertex, tangent),
                 sizeof(Vertex))
             .attribute(
-                filament::VertexAttribute::UV0,
+                ::filament::VertexAttribute::UV0,
                 0,
-                filament::VertexBuffer::AttributeType::FLOAT2,
+                ::filament::VertexBuffer::AttributeType::FLOAT2,
                 offsetof(Vertex, uv),
                 sizeof(Vertex))
-            .normalized(filament::VertexAttribute::TANGENTS)
+            .normalized(::filament::VertexAttribute::TANGENTS)
             .build(engine);
   renderable.vertexBuffer->setBufferAt(
       engine, 0, makeBufferDescriptor(std::move(vertices)));
 
   renderable.indexBuffer
-      = filament::IndexBuffer::Builder()
+      = ::filament::IndexBuffer::Builder()
             .indexCount(indices.size())
-            .bufferType(filament::IndexBuffer::IndexType::UINT)
+            .bufferType(::filament::IndexBuffer::IndexType::UINT)
             .build(engine);
   renderable.indexBuffer->setBuffer(
       engine, makeBufferDescriptor(std::move(indices)));
 
   renderable.entity = EntityManager::get().create();
-  auto builder = filament::RenderableManager::Builder(parts.size());
+  auto builder = ::filament::RenderableManager::Builder(parts.size());
   builder.boundingBox({bounds.min, bounds.max})
       .castShadows(true)
       .receiveShadows(true);
@@ -1277,7 +1277,7 @@ std::optional<Renderable> createMeshRenderable(
     builder.material(partIndex, materialInstance)
         .geometry(
             partIndex,
-            filament::RenderableManager::PrimitiveType::TRIANGLES,
+            ::filament::RenderableManager::PrimitiveType::TRIANGLES,
             renderable.vertexBuffer,
             renderable.indexBuffer,
             part.triangleOffset * 3u,
@@ -1293,8 +1293,8 @@ std::optional<Renderable> createMeshRenderable(
 }
 
 Renderable createPlaneRenderable(
-    filament::Engine& engine,
-    filament::Material& material,
+    ::filament::Engine& engine,
+    ::filament::Material& material,
     const Eigen::Vector3d& normal,
     double offset,
     const float4& color,
@@ -1302,7 +1302,7 @@ Renderable createPlaneRenderable(
     const TextureBinding* fallbackTexture = nullptr)
 {
   static constexpr double halfExtent = 1.0;
-  const filament::math::short4 tangent = {0, 0, 0, 32767};
+  const ::filament::math::short4 tangent = {0, 0, 0, 32767};
   Eigen::Vector3d unitNormal = normal;
   if (unitNormal.squaredNorm() < 1e-12) {
     unitNormal = Eigen::Vector3d::UnitZ();
@@ -1331,7 +1331,7 @@ Renderable createPlaneRenderable(
        {0.0f, 4.0f}},
   };
   std::vector<std::uint32_t> indices;
-  std::vector<filament::math::uint3> triangles;
+  std::vector<::filament::math::uint3> triangles;
   const std::vector<float3> normals(4, toFloat3(unitNormal));
   indices.reserve(6);
   triangles.reserve(2);
@@ -1358,7 +1358,7 @@ Renderable createPlaneRenderable(
 } // namespace
 
 std::optional<Renderable> createRenderableFromDescriptor(
-    filament::Engine& engine,
+    ::filament::Engine& engine,
     const MaterialSet& materials,
     TextureCache& textureCache,
     const RenderableDescriptor& descriptor)
@@ -1471,4 +1471,4 @@ std::optional<Renderable> createRenderableFromDescriptor(
 }
 
 
-} // namespace dart::examples::filament_gui
+} // namespace dart::gui::experimental::filament

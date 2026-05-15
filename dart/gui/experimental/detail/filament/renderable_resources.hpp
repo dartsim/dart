@@ -30,11 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_FILAMENT_GUI_RENDERABLE_RESOURCES_HPP_
-#define EXAMPLES_FILAMENT_GUI_RENDERABLE_RESOURCES_HPP_
+#ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_RENDERABLE_RESOURCES_HPP_
+#define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_RENDERABLE_RESOURCES_HPP_
 
-#include <dart/gui/experimental/renderable.hpp>
 #include <dart/gui/experimental/detail/filament/textures.hpp>
+#include <dart/gui/experimental/renderable.hpp>
 
 #include <math/vec3.h>
 #include <math/vec4.h>
@@ -55,36 +55,26 @@ class VertexBuffer;
 
 } // namespace filament
 
-namespace dart::examples::filament_gui {
-
-using dart::gui::experimental::filament::PbrTextureBindings;
-using dart::gui::experimental::filament::TextureBinding;
-using dart::gui::experimental::filament::TextureCache;
-using dart::gui::experimental::filament::TextureColorSpace;
-using dart::gui::experimental::filament::createCheckerTexture;
-using dart::gui::experimental::filament::createSolidTexture;
-using dart::gui::experimental::filament::getOrLoadTextureBinding;
-using dart::gui::experimental::filament::hasTextureBindings;
-using dart::gui::experimental::filament::setPbrTextureParameters;
+namespace dart::gui::experimental::filament {
 
 struct MaterialSet
 {
-  filament::Material& defaultLit;
-  filament::Material& texturedLit;
-  filament::Material& transparentLit;
-  filament::Material& transparentTexturedLit;
-  filament::Material& debugColor;
+  ::filament::Material& defaultLit;
+  ::filament::Material& texturedLit;
+  ::filament::Material& transparentLit;
+  ::filament::Material& transparentTexturedLit;
+  ::filament::Material& debugColor;
   TextureBinding checkerTexture;
   TextureBinding fallbackTexture;
 };
 
 struct MaterialResources
 {
-  filament::Material* defaultLit = nullptr;
-  filament::Material* texturedLit = nullptr;
-  filament::Material* transparentLit = nullptr;
-  filament::Material* transparentTexturedLit = nullptr;
-  filament::Material* debugColor = nullptr;
+  ::filament::Material* defaultLit = nullptr;
+  ::filament::Material* texturedLit = nullptr;
+  ::filament::Material* transparentLit = nullptr;
+  ::filament::Material* transparentTexturedLit = nullptr;
+  ::filament::Material* debugColor = nullptr;
   TextureBinding checkerTexture;
   TextureBinding fallbackTexture;
   TextureCache textureCache;
@@ -95,12 +85,12 @@ struct MaterialResources
 struct Renderable
 {
   utils::Entity entity;
-  filament::VertexBuffer* vertexBuffer = nullptr;
-  filament::IndexBuffer* indexBuffer = nullptr;
+  ::filament::VertexBuffer* vertexBuffer = nullptr;
+  ::filament::IndexBuffer* indexBuffer = nullptr;
   struct MaterialInstance
   {
-    filament::MaterialInstance* instance = nullptr;
-    filament::math::float4 baseColor{0.0f, 0.0f, 0.0f, 1.0f};
+    ::filament::MaterialInstance* instance = nullptr;
+    ::filament::math::float4 baseColor{0.0f, 0.0f, 0.0f, 1.0f};
     bool hasBaseColor = false;
     bool followsDescriptorColor = false;
   };
@@ -115,43 +105,43 @@ struct SceneRenderable
   Renderable renderable;
 };
 
-MaterialResources createMaterialResources(filament::Engine& engine);
+MaterialResources createMaterialResources(::filament::Engine& engine);
 
 void destroyMaterialResources(
-    filament::Engine& engine, MaterialResources& resources);
+    ::filament::Engine& engine, MaterialResources& resources);
 
-filament::MaterialInstance* addRenderableMaterial(
+::filament::MaterialInstance* addRenderableMaterial(
     Renderable& renderable,
-    filament::Material& material,
-    const std::optional<filament::math::float4>& baseColor = std::nullopt,
+    ::filament::Material& material,
+    const std::optional<::filament::math::float4>& baseColor = std::nullopt,
     bool followsDescriptorColor = false);
 
 void updateRenderableSelection(
     Renderable& renderable,
-    const filament::math::float4& descriptorColor,
+    const ::filament::math::float4& descriptorColor,
     bool selected);
 
 void configureLitMaterialInstance(
-    filament::MaterialInstance& material,
-    const filament::math::float4& color,
+    ::filament::MaterialInstance& material,
+    const ::filament::math::float4& color,
     float metallic,
     float roughness,
-    const filament::math::float3& emissiveColor,
+    const ::filament::math::float3& emissiveColor,
     const PbrTextureBindings& textures = {},
     const TextureBinding* fallbackTexture = nullptr);
 
 void applyRenderableShadowSettings(
-    filament::Engine& engine,
+    ::filament::Engine& engine,
     const Renderable& renderable,
     const dart::gui::experimental::MaterialDescriptor& material);
 
-filament::Material& selectLitMaterial(
+::filament::Material& selectLitMaterial(
     const MaterialSet& materials,
     bool usesTextures,
-    const filament::math::float4& color);
+    const ::filament::math::float4& color);
 
-void destroyRenderable(filament::Engine& engine, Renderable& renderable);
+void destroyRenderable(::filament::Engine& engine, Renderable& renderable);
 
-} // namespace dart::examples::filament_gui
+} // namespace dart::gui::experimental::filament
 
-#endif // EXAMPLES_FILAMENT_GUI_RENDERABLE_RESOURCES_HPP_
+#endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_RENDERABLE_RESOURCES_HPP_

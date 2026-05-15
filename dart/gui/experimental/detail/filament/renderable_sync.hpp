@@ -32,8 +32,7 @@
 
 #pragma once
 
-#include "renderable_resources.hpp"
-
+#include <dart/gui/experimental/detail/filament/renderable_resources.hpp>
 #include <dart/gui/experimental/renderable.hpp>
 
 #include <Eigen/Geometry>
@@ -47,23 +46,23 @@ class Engine;
 class Scene;
 } // namespace filament
 
-namespace dart::examples::filament_gui {
+namespace dart::gui::experimental::filament {
 
 using RenderableFactory = std::function<std::optional<Renderable>(
     const dart::gui::experimental::RenderableDescriptor&)>;
 
 void setRenderableTransform(
-    filament::Engine& engine,
+    ::filament::Engine& engine,
     const Renderable& renderable,
     const Eigen::Isometry3d& transform);
 
-void addRenderableToScene(filament::Scene& scene, const Renderable& renderable);
+void addRenderableToScene(::filament::Scene& scene, const Renderable& renderable);
 
 void removeRenderableFromScene(
-    filament::Scene& scene, const Renderable& renderable);
+    ::filament::Scene& scene, const Renderable& renderable);
 
 void updateSceneRenderableFromDescriptor(
-    filament::Engine& engine,
+    ::filament::Engine& engine,
     SceneRenderable& sceneRenderable,
     const dart::gui::experimental::RenderableDescriptor& descriptor,
     bool selected);
@@ -74,8 +73,8 @@ void logUnsupportedRenderableDescriptorOnce(
     const dart::gui::experimental::RenderableDescriptor& descriptor);
 
 void synchronizeSceneRenderables(
-    filament::Engine& engine,
-    filament::Scene& scene,
+    ::filament::Engine& engine,
+    ::filament::Scene& scene,
     const std::vector<dart::gui::experimental::RenderableDescriptor>&
         descriptors,
     std::vector<SceneRenderable>& sceneRenderables,
@@ -83,4 +82,4 @@ void synchronizeSceneRenderables(
         loggedUnsupportedRenderableIds,
     const RenderableFactory& createRenderable);
 
-} // namespace dart::examples::filament_gui
+} // namespace dart::gui::experimental::filament

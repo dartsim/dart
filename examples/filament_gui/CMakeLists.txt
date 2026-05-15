@@ -71,7 +71,7 @@ add_custom_command(
           "-DINPUT=${material_bin}"
           "-DOUTPUT=${material_header}"
           -DSYMBOL=kDefaultLitMaterial
-          -DNAMESPACE=dart::examples::filament_gui
+          -DNAMESPACE=dart::gui::experimental::filament
           -P "${CMAKE_CURRENT_LIST_DIR}/../../cmake/dart_binary_to_header.cmake"
   DEPENDS "${material_bin}" "${CMAKE_CURRENT_LIST_DIR}/../../cmake/dart_binary_to_header.cmake"
   COMMENT "Embedding Filament material for ${example_name}"
@@ -94,7 +94,7 @@ add_custom_command(
           "-DINPUT=${textured_material_bin}"
           "-DOUTPUT=${textured_material_header}"
           -DSYMBOL=kTexturedLitMaterial
-          -DNAMESPACE=dart::examples::filament_gui
+          -DNAMESPACE=dart::gui::experimental::filament
           -P "${CMAKE_CURRENT_LIST_DIR}/../../cmake/dart_binary_to_header.cmake"
   DEPENDS "${textured_material_bin}" "${CMAKE_CURRENT_LIST_DIR}/../../cmake/dart_binary_to_header.cmake"
   COMMENT "Embedding textured Filament material for ${example_name}"
@@ -117,7 +117,7 @@ add_custom_command(
           "-DINPUT=${transparent_material_bin}"
           "-DOUTPUT=${transparent_material_header}"
           -DSYMBOL=kTransparentLitMaterial
-          -DNAMESPACE=dart::examples::filament_gui
+          -DNAMESPACE=dart::gui::experimental::filament
           -P "${CMAKE_CURRENT_LIST_DIR}/../../cmake/dart_binary_to_header.cmake"
   DEPENDS "${transparent_material_bin}" "${CMAKE_CURRENT_LIST_DIR}/../../cmake/dart_binary_to_header.cmake"
   COMMENT "Embedding transparent Filament material for ${example_name}"
@@ -140,7 +140,7 @@ add_custom_command(
           "-DINPUT=${transparent_textured_material_bin}"
           "-DOUTPUT=${transparent_textured_material_header}"
           -DSYMBOL=kTransparentTexturedLitMaterial
-          -DNAMESPACE=dart::examples::filament_gui
+          -DNAMESPACE=dart::gui::experimental::filament
           -P "${CMAKE_CURRENT_LIST_DIR}/../../cmake/dart_binary_to_header.cmake"
   DEPENDS "${transparent_textured_material_bin}" "${CMAKE_CURRENT_LIST_DIR}/../../cmake/dart_binary_to_header.cmake"
   COMMENT "Embedding transparent textured Filament material for ${example_name}"
@@ -173,7 +173,7 @@ add_custom_command(
           "-DINPUT=${debug_material_bin}"
           "-DOUTPUT=${debug_material_header}"
           -DSYMBOL=kDebugColorMaterial
-          -DNAMESPACE=dart::examples::filament_gui
+          -DNAMESPACE=dart::gui::experimental::filament
           -P "${CMAKE_CURRENT_LIST_DIR}/../../cmake/dart_binary_to_header.cmake"
   DEPENDS "${debug_material_bin}" "${CMAKE_CURRENT_LIST_DIR}/../../cmake/dart_binary_to_header.cmake"
   COMMENT "Embedding debug Filament material for ${example_name}"
@@ -195,12 +195,18 @@ add_custom_command(
 
 file(GLOB srcs "*.cpp" "*.hpp")
 set(filament_gui_backend_srcs
+  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/renderable_factory.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/renderable_resources.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/renderable_sync.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/render_context.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/render_environment.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/screenshot.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/textures.cpp"
 )
 set(filament_gui_backend_hdrs
+  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/renderable_factory.hpp"
+  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/renderable_resources.hpp"
+  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/renderable_sync.hpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/render_context.hpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/render_environment.hpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/screenshot.hpp"

@@ -51,11 +51,11 @@
 #include <cstdint>
 #include <cstdlib>
 
-namespace dart::examples::filament_gui {
+namespace dart::gui::experimental::filament {
 namespace {
 
-using filament::math::float3;
-using filament::math::float4;
+using ::filament::math::float3;
+using ::filament::math::float4;
 
 float3 rgb(const float4& color)
 {
@@ -94,29 +94,29 @@ MaterialSet MaterialResources::materialSet()
       fallbackTexture};
 }
 
-MaterialResources createMaterialResources(filament::Engine& engine)
+MaterialResources createMaterialResources(::filament::Engine& engine)
 {
   MaterialResources resources;
   resources.defaultLit
-      = filament::Material::Builder()
+      = ::filament::Material::Builder()
             .package(kDefaultLitMaterial, kDefaultLitMaterialSize)
             .build(engine);
   resources.texturedLit
-      = filament::Material::Builder()
+      = ::filament::Material::Builder()
             .package(kTexturedLitMaterial, kTexturedLitMaterialSize)
             .build(engine);
   resources.transparentLit
-      = filament::Material::Builder()
+      = ::filament::Material::Builder()
             .package(kTransparentLitMaterial, kTransparentLitMaterialSize)
             .build(engine);
   resources.transparentTexturedLit
-      = filament::Material::Builder()
+      = ::filament::Material::Builder()
             .package(
                 kTransparentTexturedLitMaterial,
                 kTransparentTexturedLitMaterialSize)
             .build(engine);
   resources.debugColor
-      = filament::Material::Builder()
+      = ::filament::Material::Builder()
             .package(kDebugColorMaterial, kDebugColorMaterialSize)
             .build(engine);
   resources.checkerTexture.texture = createCheckerTexture(engine);
@@ -128,7 +128,7 @@ MaterialResources createMaterialResources(filament::Engine& engine)
 }
 
 void destroyMaterialResources(
-    filament::Engine& engine, MaterialResources& resources)
+    ::filament::Engine& engine, MaterialResources& resources)
 {
   for (auto* texture : resources.textureCache.ownedTextures) {
     engine.destroy(texture);
@@ -153,9 +153,9 @@ void destroyMaterialResources(
   resources.defaultLit = nullptr;
 }
 
-filament::MaterialInstance* addRenderableMaterial(
+::filament::MaterialInstance* addRenderableMaterial(
     Renderable& renderable,
-    filament::Material& material,
+    ::filament::Material& material,
     const std::optional<float4>& baseColor,
     bool followsDescriptorColor)
 {
@@ -186,7 +186,7 @@ void updateRenderableSelection(
 }
 
 void configureLitMaterialInstance(
-    filament::MaterialInstance& material,
+    ::filament::MaterialInstance& material,
     const float4& color,
     float metallic,
     float roughness,
@@ -209,7 +209,7 @@ void configureLitMaterialInstance(
 }
 
 void applyRenderableShadowSettings(
-    filament::Engine& engine,
+    ::filament::Engine& engine,
     const Renderable& renderable,
     const dart::gui::experimental::MaterialDescriptor& material)
 {
@@ -221,7 +221,7 @@ void applyRenderableShadowSettings(
       instance, material.castsShadows || material.receivesShadows);
 }
 
-filament::Material& selectLitMaterial(
+::filament::Material& selectLitMaterial(
     const MaterialSet& materials, bool usesTextures, const float4& color)
 {
   if (isTransparent(color)) {
@@ -231,7 +231,7 @@ filament::Material& selectLitMaterial(
   return usesTextures ? materials.texturedLit : materials.defaultLit;
 }
 
-void destroyRenderable(filament::Engine& engine, Renderable& renderable)
+void destroyRenderable(::filament::Engine& engine, Renderable& renderable)
 {
   engine.destroy(renderable.entity);
   for (Renderable::MaterialInstance& material : renderable.materials) {
@@ -246,4 +246,4 @@ void destroyRenderable(filament::Engine& engine, Renderable& renderable)
   utils::EntityManager::get().destroy(renderable.entity);
 }
 
-} // namespace dart::examples::filament_gui
+} // namespace dart::gui::experimental::filament
