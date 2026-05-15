@@ -24,25 +24,31 @@ context survives across sessions.
 
 - Branch: `feature/filament-gui-full-execution`
 - Upstream: `origin/feature/filament-gui-full-execution`
-- Latest pushed checkpoint: `64284fbcda5` (active migration plan docs)
-- GitHub Actions were manually dispatched without opening a PR.
+- Latest pushed checkpoint: `d343c3c64bc Restore GUI examples through dartsim`
+- GitHub Actions were manually dispatched for the pushed checkpoint without
+  opening a PR:
+  - CI Lint: https://github.com/dartsim/dart/actions/runs/25943929994
+  - CI Linux: https://github.com/dartsim/dart/actions/runs/25943929987
+  - CI macOS: https://github.com/dartsim/dart/actions/runs/25943929950
+  - CI Windows: https://github.com/dartsim/dart/actions/runs/25943929974
+  - CodeQL: https://github.com/dartsim/dart/actions/runs/25943929956
 - Linux Filament smoke tests passed at the latest inspected run.
 - Linux headless rendering failed earlier because the workflow still invoked the
   legacy `rigid_cubes` executable, which was removed in the earlier example
   cleanup. Restoring legacy example entry points and capture compatibility is
   therefore a concrete CI requirement, not only documentation polish.
-- Local repair checkpoint in progress:
+- The restored-example repair is pushed:
   - `examples/dartsim` is the renamed app-level viewer.
   - `dart/gui/application.hpp` exposes the narrow promoted launch API.
   - Historical GUI example executables are restored as thin `dart::gui`
     launchers.
   - The Linux headless workflow now validates `rigid_cubes --screenshot`
     output instead of the removed OSG-style `--out` PNG sequence.
-  - Local evidence: targeted CMake configure/build passed, the
-    `UNIT_gui_FilamentSceneExtraction` boundary test passed,
-    `python/tests/unit/test_run_cpp_example.py` passed, direct `rigid_cubes`
-    headless PPM capture passed, and `pixi run test-filament-gui-smoke` passed
-    31/31 tests with `EXAMPLE_dartsim_*` smoke names.
+  - Local evidence: `pixi run lint`, full `examples` target build,
+    `UNIT_gui_FilamentSceneExtraction`,
+    `python/tests/unit/test_run_cpp_example.py`, direct `rigid_cubes`
+    headless PPM capture, and `pixi run test-filament-gui-smoke` all passed
+    before or during the checkpoint.
 
 ## Current Code Shape
 
@@ -161,11 +167,16 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Run `pixi run lint` for the active checkpoint.
-2. Commit and push the `dartsim` rename/restored-example repair.
-3. Continue with the next promotion slice: reduce remaining
-   `dart::gui::experimental` naming in promoted headers and bindings while
-   keeping backend resources private.
+1. Introduce promoted `dart/gui/*.hpp` forwarding headers and explicit
+   `dart::gui` aliases for the renderer-independent scene, viewer, geometry,
+   interaction, debug, and profiling concepts that are already consumed through
+   `dart-gui`.
+2. Move the maintained diagnostic example and public aggregate include to those
+   promoted headers. Keep the existing `dart/gui/experimental/*` headers as
+   compatibility shims for this checkpoint.
+3. Do not expose Filament, GLFW, or Dear ImGui types in the promoted headers.
+   Private implementation can remain under `dart/gui/experimental/detail` until
+   a later file-layout sweep.
 4. Keep multi-frame image sequence and video capture as follow-up capture work.
 5. Run `pixi run lint` before every checkpoint commit, then push the commit to
    the tracked remote branch.

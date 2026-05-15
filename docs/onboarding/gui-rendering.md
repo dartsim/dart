@@ -13,8 +13,8 @@ OpenGL, Vulkan, Metal, OSG, or Raylib types.
 
 ## Public Surface
 
-The public `dart/gui` aggregate includes the backend-hidden descriptor APIs
-that were introduced under `dart/gui/experimental`:
+The public `dart/gui` aggregate includes promoted renderer-independent
+descriptor APIs:
 
 - scene and renderable descriptors
 - geometry and material descriptors
@@ -40,8 +40,11 @@ The private Filament backend lives under
 - texture and image loading through PNG/JPEG
 - renderable synchronization, selection, screenshots, and frame lifecycle
 
-`dart-gui-experimental` carries the implementation sources, while `dart-gui`
-is the official component target that links to it.
+The older `dart/gui/experimental/*.hpp` headers remain compatibility shims for
+now. Maintained code should include promoted headers such as
+`dart/gui/scene.hpp`, `dart/gui/viewer.hpp`, and `dart/gui/renderable.hpp`.
+`dart-gui` is the official component target that links to the private
+implementation.
 
 ## Build Options
 

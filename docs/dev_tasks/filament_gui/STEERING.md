@@ -10,12 +10,11 @@ this folder plus the current code state. Sticky — do not delete; mark items
 `~~done~~` with a one-line evidence pointer when they land, and surface
 disagreement under "Open Issues" instead of editing "Decisions in force".
 
-### Status (local repair checkpoint pending commit)
+### Status (verified at d343c3c64bc)
 
-- The worktree now renames `examples/filament_gui/` to `examples/dartsim/`.
-  The README documents `dartsim` as the application-level viewer with legacy
-  launchers as sibling examples. This is not a pushed checkpoint until the next
-  commit lands.
+- `examples/filament_gui/` is renamed to `examples/dartsim/`. The README
+  documents `dartsim` as the application-level viewer with legacy launchers as
+  sibling examples.
 - `examples/dartsim/main.cpp` includes `<dart/gui/application.hpp>` and calls
   `dart::gui::runApplication(argc, argv)`. Public include path is therefore
   `dart/gui/application.hpp` (NOT `detail/application.hpp` as some older
@@ -32,6 +31,8 @@ disagreement under "Open Issues" instead of editing "Decisions in force".
   (`tests/unit/gui/test_filament_scene_extraction.cpp`) is retargeted locally
   to the promoted `examples/dartsim/` entry point and `dart/gui` public header
   surface.
+- CI Lint, CI Linux, CI macOS, CI Windows, and CodeQL were manually dispatched
+  for `d343c3c64bc` without opening a PR.
 
 ### Decisions in force (do NOT reopen)
 
@@ -72,7 +73,7 @@ disagreement under "Open Issues" instead of editing "Decisions in force".
 
 ### Order of operations (CI repair first, then promotion debt)
 
-1. ~~**Unblock Linux headless CI**~~: local repair restores the `rigid_cubes`
+1. ~~**Unblock Linux headless CI**~~: `d343c3c64bc` restores the `rigid_cubes`
    executable and updates the workflow to validate
    `rigid_cubes --headless --frames 10 --screenshot ...` PPM output. This
    intentionally chooses the promoted capture contract over restoring `--out`
@@ -83,7 +84,7 @@ disagreement under "Open Issues" instead of editing "Decisions in force".
    configure-time application check is now exposed through
    `dart_gui_add_application()` and continues to guard the `dartsim` entry
    point.
-3. ~~**Restore legacy examples as real per-dir binaries**~~: the local repair
+3. ~~**Restore legacy examples as real per-dir binaries**~~: `d343c3c64bc`
    restores the historical GUI example executable names as thin launchers using
    `examples/gui_scene_example.cmake` and `examples/gui_scene_launcher.cpp`,
    not just the first three examples.
@@ -96,8 +97,19 @@ disagreement under "Open Issues" instead of editing "Decisions in force".
    `.claude/skills/dart-build/` and `.codex/skills/dart-build/`. Private
    CMake helper names under `dart/gui/experimental/detail/filament/` remain
    promotion debt for a separate sweep.
-5. Rerun `pixi run lint`, commit, and push the checkpoint as usual. Do not open
-   a PR.
+5. ~~Rerun `pixi run lint`, commit, and push the checkpoint as usual. Do not
+   open a PR.~~ `d343c3c64bc` is pushed to the tracked remote branch.
+
+### Next promoted-header slice
+
+- Add promoted `dart/gui/*.hpp` forwarding headers and explicit `dart::gui`
+  aliases for renderer-independent scene, viewer, geometry, interaction, debug,
+  and profiling concepts.
+- Move maintained examples and public aggregate includes off
+  `dart/gui/experimental/*.hpp` where those concepts are now official.
+- Keep `dart/gui/experimental/*.hpp` as compatibility shims for this checkpoint.
+- Keep private Filament/GLFW/ImGui implementation under
+  `dart/gui/experimental/detail` until a later file-layout sweep.
 
 ### Open issues raised by the parallel review pass
 

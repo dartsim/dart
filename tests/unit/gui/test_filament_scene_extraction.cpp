@@ -32,8 +32,8 @@
 
 #include <dart/config.hpp>
 
-#include <dart/gui/experimental/geometry.hpp>
-#include <dart/gui/experimental/scene.hpp>
+#include <dart/gui/geometry.hpp>
+#include <dart/gui/scene.hpp>
 
 #include <dart/simulation/world.hpp>
 
@@ -121,10 +121,10 @@ using dart::dynamics::SoftMeshShape;
 using dart::dynamics::SphereShape;
 using dart::dynamics::VisualAspect;
 using dart::dynamics::WeldJoint;
-using dart::gui::experimental::ActiveRenderableState;
-using dart::gui::experimental::MeshAlphaMode;
-using dart::gui::experimental::MeshGeometry;
-using dart::gui::experimental::ShapeKind;
+using dart::gui::ActiveRenderableState;
+using dart::gui::MeshAlphaMode;
+using dart::gui::MeshGeometry;
+using dart::gui::ShapeKind;
 using dart::math::SupportGeometry;
 using dart::simulation::World;
 
@@ -242,6 +242,11 @@ constexpr std::array<std::string_view, 2> kForbiddenFilamentIncludeTokens
 
 constexpr std::array<std::string_view, 2> kForbiddenFilamentDetailTokens
     = {"detail/filament", "experimental::filament"};
+
+constexpr std::array<std::string_view, 3> kForbiddenPromotedGuiTokens
+    = {"dart/gui/experimental",
+       "dart::gui::experimental",
+       "dart-gui-experimental"};
 
 struct BackendTokenViolation
 {
@@ -430,6 +435,39 @@ TEST(FilamentSceneExtraction, ExperimentalPublicHeadersStayBackendHidden)
   }
 }
 
+TEST(FilamentSceneExtraction, PublicAggregateUsesPromotedGuiHeaders)
+{
+  const auto aggregate
+      = readSourceFile(std::filesystem::path("dart") / "gui" / "all.hpp");
+
+  EXPECT_EQ(aggregate.find("dart/gui/experimental"), std::string::npos);
+  EXPECT_NE(aggregate.find("#include <dart/gui/scene.hpp>"), std::string::npos);
+  EXPECT_NE(
+      aggregate.find("#include <dart/gui/viewer.hpp>"), std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, DiagnosticsExampleUsesPromotedGuiBoundary)
+{
+  const std::vector<std::filesystem::path> sources = {
+      std::filesystem::path("examples") / "gui_scene_diagnostics" / "main.cpp",
+      std::filesystem::path("examples") / "gui_scene_diagnostics"
+          / "CMakeLists.txt"};
+
+  const auto violations
+      = scanSourceFilesForTokens(sources, kForbiddenPromotedGuiTokens);
+  for (const auto& violation : violations) {
+    ADD_FAILURE() << violation.source << " reaches old GUI token `"
+                  << violation.token << "`";
+  }
+
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "gui_scene_diagnostics" / "main.cpp");
+  EXPECT_NE(
+      mainSource.find("#include <dart/gui/scene.hpp>"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("dart::gui::extractRenderables"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, FilamentExampleHeadersAvoidDirectFilamentIncludes)
 {
   const auto headers = listPublicHeadersInDirectory(
@@ -524,8 +562,8 @@ TEST(FilamentSceneExtraction, FilamentExampleKeepsOnlyEntryPointAndWrapperFiles)
 
 TEST(FilamentSceneExtraction, MeshGeometryBuildersProduceBoundedMeshes)
 {
-  const auto ellipsoid = dart::gui::experimental::makeEllipsoidMeshGeometry(
-      Eigen::Vector3d(1.0, 2.0, 3.0));
+  const auto ellipsoid
+      = dart::gui::makeEllipsoidMeshGeometry(Eigen::Vector3d(1.0, 2.0, 3.0));
   expectMeshGeometryIsWellFormed(ellipsoid);
   EXPECT_EQ(ellipsoid.vertices.size(), 17u * 33u);
   EXPECT_EQ(ellipsoid.triangles.size(), 16u * 32u * 2u);
@@ -533,8 +571,7 @@ TEST(FilamentSceneExtraction, MeshGeometryBuildersProduceBoundedMeshes)
       ellipsoid.boundsMin.isApprox(Eigen::Vector3f(-1.0f, -2.0f, -3.0f)));
   EXPECT_TRUE(ellipsoid.boundsMax.isApprox(Eigen::Vector3f(1.0f, 2.0f, 3.0f)));
 
-  const auto cylinder
-      = dart::gui::experimental::makeCylinderMeshGeometry(0.5, 1.4);
+  const auto cylinder = dart::gui::makeCylinderMeshGeometry(0.5, 1.4);
   expectMeshGeometryIsWellFormed(cylinder);
   EXPECT_EQ(cylinder.vertices.size(), 166u);
   EXPECT_EQ(cylinder.triangles.size(), 160u);
@@ -542,8 +579,8 @@ TEST(FilamentSceneExtraction, MeshGeometryBuildersProduceBoundedMeshes)
       cylinder.boundsMin.isApprox(Eigen::Vector3f(-0.5f, -0.5f, -0.7f)));
   EXPECT_TRUE(cylinder.boundsMax.isApprox(Eigen::Vector3f(0.5f, 0.5f, 0.7f)));
 
-  const auto pyramid = dart::gui::experimental::makePyramidMeshGeometry(
-      Eigen::Vector3d(2.0, 4.0, 6.0));
+  const auto pyramid
+      = dart::gui::makePyramidMeshGeometry(Eigen::Vector3d(2.0, 4.0, 6.0));
   expectMeshGeometryIsWellFormed(pyramid);
   EXPECT_EQ(pyramid.vertices.size(), 18u);
   EXPECT_EQ(pyramid.triangles.size(), 6u);
@@ -554,9 +591,9 @@ TEST(FilamentSceneExtraction, MeshGeometryBuildersProduceBoundedMeshes)
 TEST(FilamentSceneExtraction, BoxMeshAppenderReportsIndexRanges)
 {
   MeshGeometry mesh;
-  const auto first = dart::gui::experimental::appendBoxMeshGeometry(
+  const auto first = dart::gui::appendBoxMeshGeometry(
       mesh, Eigen::Vector3d(1.0, 2.0, 3.0), Eigen::Vector3d::Ones());
-  const auto second = dart::gui::experimental::appendBoxMeshGeometry(
+  const auto second = dart::gui::appendBoxMeshGeometry(
       mesh, Eigen::Vector3d(-1.0, -2.0, -3.0), Eigen::Vector3d::Ones() * 2.0);
 
   expectMeshGeometryIsWellFormed(mesh);
@@ -593,9 +630,8 @@ TEST(
 
   world->addSkeleton(skeleton);
 
-  const auto firstExtract = dart::gui::experimental::extractRenderables(*world);
-  const auto secondExtract
-      = dart::gui::experimental::extractRenderables(*world);
+  const auto firstExtract = dart::gui::extractRenderables(*world);
+  const auto secondExtract = dart::gui::extractRenderables(*world);
 
   ASSERT_EQ(firstExtract.size(), 1u);
   ASSERT_EQ(secondExtract.size(), 1u);
@@ -628,14 +664,14 @@ TEST(
       = body->createShapeNodeWith<VisualAspect>(shape, "box_visual");
   world->addSkeleton(skeleton);
 
-  const auto before = dart::gui::experimental::extractRenderables(*world);
+  const auto before = dart::gui::extractRenderables(*world);
   ASSERT_EQ(before.size(), 1u);
 
   shape->setSize(Eigen::Vector3d(2.0, 0.75, 1.25));
   shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.7, 0.6, 0.5, 0.4));
   shapeNode->getVisualAspect()->hide();
 
-  const auto after = dart::gui::experimental::extractRenderables(*world);
+  const auto after = dart::gui::extractRenderables(*world);
   ASSERT_EQ(after.size(), 1u);
 
   EXPECT_EQ(before.front().id, after.front().id);
@@ -664,13 +700,13 @@ TEST(
       = body->createShapeNodeWith<VisualAspect>(shape, "box_visual");
   world->addSkeleton(skeleton);
 
-  const auto before = dart::gui::experimental::extractRenderables(*world);
+  const auto before = dart::gui::extractRenderables(*world);
   ASSERT_EQ(before.size(), 1u);
   const auto beforeShapeVersion = before.front().shapeVersion;
 
   shapeNode->getVisualAspect()->setAlpha(0.25);
 
-  const auto after = dart::gui::experimental::extractRenderables(*world);
+  const auto after = dart::gui::extractRenderables(*world);
   ASSERT_EQ(after.size(), 1u);
   EXPECT_EQ(before.front().id, after.front().id);
   EXPECT_EQ(beforeShapeVersion, after.front().shapeVersion);
@@ -697,14 +733,14 @@ TEST(
   body->createShapeNodeWith<VisualAspect>(pointCloud, "points_visual");
   world->addSkeleton(skeleton);
 
-  const auto before = dart::gui::experimental::extractRenderables(*world);
+  const auto before = dart::gui::extractRenderables(*world);
   ASSERT_EQ(before.size(), 1u);
   const auto beforeShapeVersion = before.front().shapeVersion;
   ASSERT_EQ(before.front().geometry.pointCloudColors.size(), 1u);
 
   pointCloud->setColorMode(PointCloudShape::BIND_PER_POINT);
 
-  const auto after = dart::gui::experimental::extractRenderables(*world);
+  const auto after = dart::gui::extractRenderables(*world);
   ASSERT_EQ(after.size(), 1u);
   ASSERT_EQ(after.front().geometry.pointCloudColors.size(), 2u);
   EXPECT_EQ(before.front().id, after.front().id);
@@ -740,15 +776,14 @@ TEST(
   world->addSkeleton(skeleton);
 
   const auto findSoftMeshDescriptor =
-      [](const std::vector<dart::gui::experimental::RenderableDescriptor>&
-             descriptors) {
+      [](const std::vector<dart::gui::RenderableDescriptor>& descriptors) {
         return std::find_if(
             descriptors.begin(), descriptors.end(), [](const auto& descriptor) {
               return descriptor.geometry.kind == ShapeKind::SoftMesh;
             });
       };
 
-  const auto before = dart::gui::experimental::extractRenderables(*world);
+  const auto before = dart::gui::extractRenderables(*world);
   const auto beforeSoftMesh = findSoftMeshDescriptor(before);
   ASSERT_NE(beforeSoftMesh, before.end());
   ASSERT_FALSE(beforeSoftMesh->geometry.triangleVertices.empty());
@@ -756,7 +791,7 @@ TEST(
   ASSERT_GT(softBody->getNumPointMasses(), 0u);
   softBody->getPointMass(0u)->setPositions(Eigen::Vector3d(0.0, 0.0, 0.2));
 
-  const auto after = dart::gui::experimental::extractRenderables(*world);
+  const auto after = dart::gui::extractRenderables(*world);
   const auto afterSoftMesh = findSoftMeshDescriptor(after);
   ASSERT_NE(afterSoftMesh, after.end());
   ASSERT_FALSE(afterSoftMesh->geometry.triangleVertices.empty());
@@ -784,9 +819,8 @@ TEST(
   frame->getVisualAspect()->setShadowed(false);
   world->addSimpleFrame(frame);
 
-  const auto firstExtract = dart::gui::experimental::extractRenderables(*world);
-  const auto secondExtract
-      = dart::gui::experimental::extractRenderables(*world);
+  const auto firstExtract = dart::gui::extractRenderables(*world);
+  const auto secondExtract = dart::gui::extractRenderables(*world);
 
   ASSERT_EQ(firstExtract.size(), 1u);
   ASSERT_EQ(secondExtract.size(), 1u);
@@ -820,7 +854,7 @@ TEST(
     FilamentSceneExtraction,
     DescribeShape_CommonPrimitiveShapes_ReturnsRendererDescriptors)
 {
-  using dart::gui::experimental::describeShape;
+  using dart::gui::describeShape;
 
   const auto sphere = describeShape(SphereShape(0.25));
   ASSERT_TRUE(sphere.has_value());
@@ -1163,7 +1197,7 @@ TEST(
   shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.8, 0.2, 0.1, 1.0));
   world->addSkeleton(skeleton);
 
-  const auto descriptors = dart::gui::experimental::extractRenderables(*world);
+  const auto descriptors = dart::gui::extractRenderables(*world);
   ASSERT_EQ(descriptors.size(), 1u);
   const auto& descriptor = descriptors.front();
   EXPECT_EQ(descriptor.geometry.kind, ShapeKind::Unsupported);
@@ -1179,8 +1213,8 @@ TEST(
     FilamentSceneExtraction,
     PlanRenderableSetUpdate_AddsVisibleAndRemovesStaleResources)
 {
-  using dart::gui::experimental::RenderableDescriptor;
-  using dart::gui::experimental::RenderableId;
+  using dart::gui::RenderableDescriptor;
+  using dart::gui::RenderableId;
 
   RenderableDescriptor visibleA;
   visibleA.id = 1u;
@@ -1207,8 +1241,7 @@ TEST(
   const std::vector<RenderableId> activeIds{
       visibleA.id, hidden.id, 4u, visibleA.id, 0u};
 
-  const auto plan = dart::gui::experimental::planRenderableSetUpdate(
-      descriptors, activeIds);
+  const auto plan = dart::gui::planRenderableSetUpdate(descriptors, activeIds);
 
   ASSERT_EQ(plan.descriptorIndicesToAdd.size(), 1u);
   EXPECT_EQ(plan.descriptorIndicesToAdd[0], 2u);
@@ -1232,8 +1265,8 @@ TEST(
   currentB.renderResourceVersion = visibleB.renderResourceVersion;
   const std::vector<ActiveRenderableState> activeStates{staleA, currentB};
 
-  const auto versionedPlan = dart::gui::experimental::planRenderableSetUpdate(
-      versionedDescriptors, activeStates);
+  const auto versionedPlan
+      = dart::gui::planRenderableSetUpdate(versionedDescriptors, activeStates);
 
   const std::vector<std::size_t> expectedVersionRemovals{0u};
   const std::vector<std::size_t> expectedVersionAdds{0u};
@@ -1245,7 +1278,7 @@ TEST(
   staleShapeOnlyA.id = visibleA.id;
   staleShapeOnlyA.shapeVersion = 1u;
 
-  const auto shapeOnlyPlan = dart::gui::experimental::planRenderableSetUpdate(
+  const auto shapeOnlyPlan = dart::gui::planRenderableSetUpdate(
       versionedDescriptors,
       std::vector<ActiveRenderableState>{staleShapeOnlyA, currentB});
 
@@ -1277,13 +1310,12 @@ TEST(
   makeBox("near_box", 2.0);
   makeBox("far_box", 4.0);
 
-  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  const auto renderables = dart::gui::extractRenderables(*world);
   ASSERT_EQ(renderables.size(), 2u);
 
-  const dart::gui::experimental::PickRay ray{
+  const dart::gui::PickRay ray{
       Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitX()};
-  const auto hit
-      = dart::gui::experimental::pickNearestRenderable(renderables, ray);
+  const auto hit = dart::gui::pickNearestRenderable(renderables, ray);
 
   ASSERT_TRUE(hit.has_value());
   EXPECT_EQ(hit->id, renderables.front().id);
@@ -1306,13 +1338,12 @@ TEST(
   body->createShapeNodeWith<VisualAspect>(std::make_shared<SphereShape>(1.0));
   world->addSkeleton(skeleton);
 
-  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  const auto renderables = dart::gui::extractRenderables(*world);
   ASSERT_EQ(renderables.size(), 1u);
 
-  const dart::gui::experimental::PickRay ray{
+  const dart::gui::PickRay ray{
       Eigen::Vector3d(0.0, 0.5, 0.0), Eigen::Vector3d::UnitX()};
-  const auto hit
-      = dart::gui::experimental::pickNearestRenderable(renderables, ray);
+  const auto hit = dart::gui::pickNearestRenderable(renderables, ray);
 
   const double expectedX = 2.0 - std::sqrt(0.75);
   ASSERT_TRUE(hit.has_value());
@@ -1336,13 +1367,12 @@ TEST(
       std::make_shared<MultiSphereConvexHullShape>(spheres));
   world->addSkeleton(skeleton);
 
-  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  const auto renderables = dart::gui::extractRenderables(*world);
   ASSERT_EQ(renderables.size(), 1u);
 
-  const dart::gui::experimental::PickRay ray{
+  const dart::gui::PickRay ray{
       Eigen::Vector3d(-3.0, 0.25, 0.0), Eigen::Vector3d::UnitX()};
-  const auto hit
-      = dart::gui::experimental::pickNearestRenderable(renderables, ray);
+  const auto hit = dart::gui::pickNearestRenderable(renderables, ray);
 
   const double expectedX = -1.0 - std::sqrt(0.1875);
   ASSERT_TRUE(hit.has_value());
@@ -1366,13 +1396,12 @@ TEST(
       std::make_shared<CylinderShape>(1.0, 2.0));
   world->addSkeleton(skeleton);
 
-  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  const auto renderables = dart::gui::extractRenderables(*world);
   ASSERT_EQ(renderables.size(), 1u);
 
-  const dart::gui::experimental::PickRay ray{
+  const dart::gui::PickRay ray{
       Eigen::Vector3d(0.0, 0.5, 0.0), Eigen::Vector3d::UnitX()};
-  const auto hit
-      = dart::gui::experimental::pickNearestRenderable(renderables, ray);
+  const auto hit = dart::gui::pickNearestRenderable(renderables, ray);
 
   const double expectedX = 2.0 - std::sqrt(0.75);
   ASSERT_TRUE(hit.has_value());
@@ -1393,13 +1422,12 @@ TEST(
       std::make_shared<CapsuleShape>(1.0, 2.0));
   world->addSkeleton(skeleton);
 
-  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  const auto renderables = dart::gui::extractRenderables(*world);
   ASSERT_EQ(renderables.size(), 1u);
 
-  const dart::gui::experimental::PickRay sideRay{
+  const dart::gui::PickRay sideRay{
       Eigen::Vector3d(-2.0, 0.5, 0.0), Eigen::Vector3d::UnitX()};
-  const auto sideHit
-      = dart::gui::experimental::pickNearestRenderable(renderables, sideRay);
+  const auto sideHit = dart::gui::pickNearestRenderable(renderables, sideRay);
 
   const double sideX = -std::sqrt(0.75);
   ASSERT_TRUE(sideHit.has_value());
@@ -1408,10 +1436,9 @@ TEST(
   EXPECT_TRUE(
       sideHit->normal.isApprox(Eigen::Vector3d(sideX, 0.5, 0.0).normalized()));
 
-  const dart::gui::experimental::PickRay capRay{
+  const dart::gui::PickRay capRay{
       Eigen::Vector3d(0.5, 0.0, 4.0), -Eigen::Vector3d::UnitZ()};
-  const auto capHit
-      = dart::gui::experimental::pickNearestRenderable(renderables, capRay);
+  const auto capHit = dart::gui::pickNearestRenderable(renderables, capRay);
 
   const double capZ = 1.0 + std::sqrt(0.75);
   ASSERT_TRUE(capHit.has_value());
@@ -1432,13 +1459,12 @@ TEST(
       std::make_shared<ConeShape>(1.0, 2.0));
   world->addSkeleton(skeleton);
 
-  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  const auto renderables = dart::gui::extractRenderables(*world);
   ASSERT_EQ(renderables.size(), 1u);
 
-  const dart::gui::experimental::PickRay sideRay{
+  const dart::gui::PickRay sideRay{
       Eigen::Vector3d(-2.0, 0.25, 0.0), Eigen::Vector3d::UnitX()};
-  const auto sideHit
-      = dart::gui::experimental::pickNearestRenderable(renderables, sideRay);
+  const auto sideHit = dart::gui::pickNearestRenderable(renderables, sideRay);
 
   const double sideX = -std::sqrt(0.1875);
   ASSERT_TRUE(sideHit.has_value());
@@ -1447,10 +1473,9 @@ TEST(
   EXPECT_TRUE(sideHit->normal.isApprox(
       Eigen::Vector3d(sideX, 0.25, 0.25).normalized()));
 
-  const dart::gui::experimental::PickRay baseRay{
+  const dart::gui::PickRay baseRay{
       Eigen::Vector3d(0.5, 0.0, -4.0), Eigen::Vector3d::UnitZ()};
-  const auto baseHit
-      = dart::gui::experimental::pickNearestRenderable(renderables, baseRay);
+  const auto baseHit = dart::gui::pickNearestRenderable(renderables, baseRay);
 
   ASSERT_TRUE(baseHit.has_value());
   EXPECT_NEAR(baseHit->distance, 3.0, 1e-12);
@@ -1469,13 +1494,12 @@ TEST(
       std::make_shared<PyramidShape>(2.0, 2.0, 2.0));
   world->addSkeleton(skeleton);
 
-  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  const auto renderables = dart::gui::extractRenderables(*world);
   ASSERT_EQ(renderables.size(), 1u);
 
-  const dart::gui::experimental::PickRay sideRay{
+  const dart::gui::PickRay sideRay{
       Eigen::Vector3d(0.0, -3.0, 0.0), Eigen::Vector3d::UnitY()};
-  const auto sideHit
-      = dart::gui::experimental::pickNearestRenderable(renderables, sideRay);
+  const auto sideHit = dart::gui::pickNearestRenderable(renderables, sideRay);
 
   ASSERT_TRUE(sideHit.has_value());
   EXPECT_NEAR(sideHit->distance, 2.5, 1e-12);
@@ -1483,10 +1507,9 @@ TEST(
   EXPECT_TRUE(
       sideHit->normal.isApprox(Eigen::Vector3d(0.0, -2.0, 1.0).normalized()));
 
-  const dart::gui::experimental::PickRay baseRay{
+  const dart::gui::PickRay baseRay{
       Eigen::Vector3d(0.5, 0.25, -4.0), Eigen::Vector3d::UnitZ()};
-  const auto baseHit
-      = dart::gui::experimental::pickNearestRenderable(renderables, baseRay);
+  const auto baseHit = dart::gui::pickNearestRenderable(renderables, baseRay);
 
   ASSERT_TRUE(baseHit.has_value());
   EXPECT_NEAR(baseHit->distance, 3.0, 1e-12);
@@ -1503,31 +1526,29 @@ TEST(FilamentSceneExtraction, PickNearestRenderable_PlaneUsesFiniteProxySurface)
       std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.25));
   world->addSkeleton(skeleton);
 
-  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  const auto renderables = dart::gui::extractRenderables(*world);
   ASSERT_EQ(renderables.size(), 1u);
 
-  const dart::gui::experimental::PickRay hitRay{
+  const dart::gui::PickRay hitRay{
       Eigen::Vector3d(0.25, 0.5, 2.0), -Eigen::Vector3d::UnitZ()};
-  const auto hit
-      = dart::gui::experimental::pickNearestRenderable(renderables, hitRay);
+  const auto hit = dart::gui::pickNearestRenderable(renderables, hitRay);
 
   ASSERT_TRUE(hit.has_value());
   EXPECT_NEAR(hit->distance, 1.75, 1e-12);
   EXPECT_TRUE(hit->point.isApprox(Eigen::Vector3d(0.25, 0.5, 0.25)));
   EXPECT_TRUE(hit->normal.isApprox(Eigen::Vector3d::UnitZ()));
 
-  const dart::gui::experimental::PickRay missRay{
+  const dart::gui::PickRay missRay{
       Eigen::Vector3d(1.5, 0.0, 2.0), -Eigen::Vector3d::UnitZ()};
   EXPECT_FALSE(
-      dart::gui::experimental::pickNearestRenderable(renderables, missRay)
-          .has_value());
+      dart::gui::pickNearestRenderable(renderables, missRay).has_value());
 }
 
 TEST(
     FilamentSceneExtraction,
     PickNearestRenderable_TriangleMeshUsesSurfaceTriangles)
 {
-  dart::gui::experimental::RenderableDescriptor renderable;
+  dart::gui::RenderableDescriptor renderable;
   renderable.id = 1u;
   renderable.geometry.kind = ShapeKind::Mesh;
   renderable.geometry.hasLocalBounds = true;
@@ -1539,24 +1560,21 @@ TEST(
          Eigen::Vector3d(0.0, 1.0, 0.0)};
   renderable.geometry.triangleIndices = {Eigen::Vector3i(0, 1, 2)};
 
-  const std::vector<dart::gui::experimental::RenderableDescriptor> renderables{
-      renderable};
+  const std::vector<dart::gui::RenderableDescriptor> renderables{renderable};
 
-  const dart::gui::experimental::PickRay hitRay{
+  const dart::gui::PickRay hitRay{
       Eigen::Vector3d(0.25, 0.25, 1.0), -Eigen::Vector3d::UnitZ()};
-  const auto hit
-      = dart::gui::experimental::pickNearestRenderable(renderables, hitRay);
+  const auto hit = dart::gui::pickNearestRenderable(renderables, hitRay);
 
   ASSERT_TRUE(hit.has_value());
   EXPECT_NEAR(hit->distance, 1.0, 1e-12);
   EXPECT_TRUE(hit->point.isApprox(Eigen::Vector3d(0.25, 0.25, 0.0)));
   EXPECT_TRUE(hit->normal.isApprox(Eigen::Vector3d::UnitZ()));
 
-  const dart::gui::experimental::PickRay missRay{
+  const dart::gui::PickRay missRay{
       Eigen::Vector3d(0.75, 0.75, 1.0), -Eigen::Vector3d::UnitZ()};
   EXPECT_FALSE(
-      dart::gui::experimental::pickNearestRenderable(renderables, missRay)
-          .has_value());
+      dart::gui::pickNearestRenderable(renderables, missRay).has_value());
 }
 
 TEST(
@@ -1572,31 +1590,29 @@ TEST(
   body->createShapeNodeWith<VisualAspect>(pointCloud);
   world->addSkeleton(skeleton);
 
-  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  const auto renderables = dart::gui::extractRenderables(*world);
   ASSERT_EQ(renderables.size(), 1u);
 
-  const dart::gui::experimental::PickRay hitRay{
+  const dart::gui::PickRay hitRay{
       Eigen::Vector3d(-2.0, 0.05, 0.0), Eigen::Vector3d::UnitX()};
-  const auto hit
-      = dart::gui::experimental::pickNearestRenderable(renderables, hitRay);
+  const auto hit = dart::gui::pickNearestRenderable(renderables, hitRay);
 
   ASSERT_TRUE(hit.has_value());
   EXPECT_NEAR(hit->distance, 1.9, 1e-12);
   EXPECT_TRUE(hit->point.isApprox(Eigen::Vector3d(-0.1, 0.05, 0.0)));
   EXPECT_TRUE(hit->normal.isApprox(-Eigen::Vector3d::UnitX()));
 
-  const dart::gui::experimental::PickRay gapRay{
+  const dart::gui::PickRay gapRay{
       Eigen::Vector3d(1.0, 0.0, -1.0), Eigen::Vector3d::UnitZ()};
   EXPECT_FALSE(
-      dart::gui::experimental::pickNearestRenderable(renderables, gapRay)
-          .has_value());
+      dart::gui::pickNearestRenderable(renderables, gapRay).has_value());
 }
 
 TEST(
     FilamentSceneExtraction,
     PickNearestRenderable_VoxelGridUsesPerVoxelBoxSurface)
 {
-  dart::gui::experimental::RenderableDescriptor renderable;
+  dart::gui::RenderableDescriptor renderable;
   renderable.id = 1;
   renderable.geometry.kind = ShapeKind::VoxelGrid;
   renderable.geometry.voxelSize = 0.2;
@@ -1606,24 +1622,21 @@ TEST(
   renderable.geometry.localBoundsMin = Eigen::Vector3d(-0.1, -0.1, -0.1);
   renderable.geometry.localBoundsMax = Eigen::Vector3d(2.1, 0.1, 0.1);
 
-  const std::vector<dart::gui::experimental::RenderableDescriptor> renderables{
-      renderable};
+  const std::vector<dart::gui::RenderableDescriptor> renderables{renderable};
 
-  const dart::gui::experimental::PickRay hitRay{
+  const dart::gui::PickRay hitRay{
       Eigen::Vector3d(-2.0, 0.05, 0.0), Eigen::Vector3d::UnitX()};
-  const auto hit
-      = dart::gui::experimental::pickNearestRenderable(renderables, hitRay);
+  const auto hit = dart::gui::pickNearestRenderable(renderables, hitRay);
 
   ASSERT_TRUE(hit.has_value());
   EXPECT_NEAR(hit->distance, 1.9, 1e-12);
   EXPECT_TRUE(hit->point.isApprox(Eigen::Vector3d(-0.1, 0.05, 0.0)));
   EXPECT_TRUE(hit->normal.isApprox(-Eigen::Vector3d::UnitX()));
 
-  const dart::gui::experimental::PickRay gapRay{
+  const dart::gui::PickRay gapRay{
       Eigen::Vector3d(1.0, 0.0, -1.0), Eigen::Vector3d::UnitZ()};
   EXPECT_FALSE(
-      dart::gui::experimental::pickNearestRenderable(renderables, gapRay)
-          .has_value());
+      dart::gui::pickNearestRenderable(renderables, gapRay).has_value());
 }
 
 TEST(
@@ -1653,23 +1666,21 @@ TEST(
   visibleBody->createShapeNodeWith<VisualAspect>(visibleShape);
   world->addSkeleton(visibleSkeleton);
 
-  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  const auto renderables = dart::gui::extractRenderables(*world);
   ASSERT_EQ(renderables.size(), 2u);
 
-  const dart::gui::experimental::PickRay hitRay{
+  const dart::gui::PickRay hitRay{
       Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitX()};
-  const auto hit
-      = dart::gui::experimental::pickNearestRenderable(renderables, hitRay);
+  const auto hit = dart::gui::pickNearestRenderable(renderables, hitRay);
   ASSERT_TRUE(hit.has_value());
   EXPECT_EQ(hit->id, renderables.back().id);
   EXPECT_NEAR(hit->distance, 3.5, 1e-12);
   EXPECT_TRUE(hit->normal.isApprox(Eigen::Vector3d(-1.0, 0.0, 0.0)));
 
-  const dart::gui::experimental::PickRay missRay{
+  const dart::gui::PickRay missRay{
       Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitY()};
   EXPECT_FALSE(
-      dart::gui::experimental::pickNearestRenderable(renderables, missRay)
-          .has_value());
+      dart::gui::pickNearestRenderable(renderables, missRay).has_value());
 }
 
 TEST(
@@ -1686,18 +1697,17 @@ TEST(
   body->createShapeNodeWith<VisualAspect>(shape, "box_visual");
   world->addSkeleton(skeleton);
 
-  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  const auto renderables = dart::gui::extractRenderables(*world);
   ASSERT_EQ(renderables.size(), 1u);
 
   const Eigen::Vector3d offset(0.25, -0.5, 0.75);
   EXPECT_TRUE(
-      dart::gui::experimental::translateFreeJointRenderable(
-          renderables.front(), offset));
+      dart::gui::translateFreeJointRenderable(renderables.front(), offset));
   EXPECT_TRUE(body->getWorldTransform().translation().isApprox(
       initialTransform.translation() + offset));
 
   EXPECT_FALSE(
-      dart::gui::experimental::translateFreeJointRenderable(
+      dart::gui::translateFreeJointRenderable(
           renderables.front(),
           Eigen::Vector3d(std::numeric_limits<double>::quiet_NaN(), 0.0, 0.0)));
 }
@@ -1715,11 +1725,11 @@ TEST(
   world->addSkeleton(skeleton);
 
   const auto before = body->getWorldTransform();
-  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  const auto renderables = dart::gui::extractRenderables(*world);
   ASSERT_EQ(renderables.size(), 1u);
 
   EXPECT_FALSE(
-      dart::gui::experimental::translateFreeJointRenderable(
+      dart::gui::translateFreeJointRenderable(
           renderables.front(), Eigen::Vector3d(1.0, 0.0, 0.0)));
   EXPECT_TRUE(body->getWorldTransform().isApprox(before));
 }
@@ -1736,12 +1746,12 @@ TEST(
   body->createShapeNodeWith<VisualAspect>(shape, "box_visual");
   world->addSkeleton(skeleton);
 
-  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  const auto renderables = dart::gui::extractRenderables(*world);
   ASSERT_EQ(renderables.size(), 1u);
 
   body->removeAllShapeNodes();
   EXPECT_FALSE(
-      dart::gui::experimental::translateFreeJointRenderable(
+      dart::gui::translateFreeJointRenderable(
           renderables.front(), Eigen::Vector3d(1.0, 0.0, 0.0)));
 }
 
@@ -1759,24 +1769,22 @@ TEST(
   frame->getVisualAspect(true);
   world->addSimpleFrame(frame);
 
-  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  const auto renderables = dart::gui::extractRenderables(*world);
   ASSERT_EQ(renderables.size(), 1u);
 
   const Eigen::Vector3d offset(0.2, 0.3, -0.1);
   EXPECT_TRUE(
-      dart::gui::experimental::translateSimpleFrameRenderable(
-          renderables.front(), offset));
+      dart::gui::translateSimpleFrameRenderable(renderables.front(), offset));
   EXPECT_TRUE(frame->getWorldTransform().translation().isApprox(
       transform.translation() + offset));
 
   EXPECT_TRUE(
-      dart::gui::experimental::translateFrameRenderable(
-          renderables.front(), -offset));
+      dart::gui::translateFrameRenderable(renderables.front(), -offset));
   EXPECT_TRUE(frame->getWorldTransform().translation().isApprox(
       transform.translation()));
 
   EXPECT_FALSE(
-      dart::gui::experimental::translateSimpleFrameRenderable(
+      dart::gui::translateSimpleFrameRenderable(
           renderables.front(),
           Eigen::Vector3d(std::numeric_limits<double>::quiet_NaN(), 0.0, 0.0)));
 }
@@ -1793,13 +1801,13 @@ TEST(
   frame->getVisualAspect(true);
   world->addSimpleFrame(frame);
 
-  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  const auto renderables = dart::gui::extractRenderables(*world);
   ASSERT_EQ(renderables.size(), 1u);
 
   world->removeSimpleFrame(frame);
   frame.reset();
   EXPECT_FALSE(
-      dart::gui::experimental::translateSimpleFrameRenderable(
+      dart::gui::translateSimpleFrameRenderable(
           renderables.front(), Eigen::Vector3d(1.0, 0.0, 0.0)));
 }
 
@@ -1807,29 +1815,28 @@ TEST(FilamentSceneExtraction, PlaneDragHelpers_ReturnExpectedTranslation)
 {
   const Eigen::Vector3d planePoint = Eigen::Vector3d::Zero();
   const Eigen::Vector3d planeNormal = Eigen::Vector3d::UnitZ();
-  const dart::gui::experimental::PickRay previousRay{
+  const dart::gui::PickRay previousRay{
       Eigen::Vector3d(0.0, 0.0, 1.0), Eigen::Vector3d(0.0, 0.0, -1.0)};
-  const dart::gui::experimental::PickRay currentRay{
+  const dart::gui::PickRay currentRay{
       Eigen::Vector3d(1.0, 2.0, 1.0), Eigen::Vector3d(0.0, 0.0, -1.0)};
 
-  const auto intersection = dart::gui::experimental::intersectPlane(
-      previousRay, planePoint, planeNormal);
+  const auto intersection
+      = dart::gui::intersectPlane(previousRay, planePoint, planeNormal);
   ASSERT_TRUE(intersection.has_value());
   EXPECT_TRUE(intersection->isApprox(Eigen::Vector3d::Zero()));
 
-  const auto translation = dart::gui::experimental::computePlaneDragTranslation(
+  const auto translation = dart::gui::computePlaneDragTranslation(
       previousRay, currentRay, planePoint, planeNormal);
   ASSERT_TRUE(translation.has_value());
   EXPECT_TRUE(translation->isApprox(Eigen::Vector3d(1.0, 2.0, 0.0)));
 
-  const dart::gui::experimental::PickRay parallelRay{
+  const dart::gui::PickRay parallelRay{
       Eigen::Vector3d(0.0, 0.0, 1.0), Eigen::Vector3d::UnitX()};
   EXPECT_FALSE(
-      dart::gui::experimental::intersectPlane(
-          parallelRay, planePoint, planeNormal)
+      dart::gui::intersectPlane(parallelRay, planePoint, planeNormal)
           .has_value());
   EXPECT_FALSE(
-      dart::gui::experimental::computePlaneDragTranslation(
+      dart::gui::computePlaneDragTranslation(
           parallelRay, currentRay, planePoint, planeNormal)
           .has_value());
 }
@@ -1838,24 +1845,24 @@ TEST(FilamentSceneExtraction, AxisDragHelpers_ReturnExpectedTranslation)
 {
   const Eigen::Vector3d axisPoint = Eigen::Vector3d::Zero();
   const Eigen::Vector3d axisDirection = Eigen::Vector3d::UnitX();
-  const dart::gui::experimental::PickRay previousRay{
+  const dart::gui::PickRay previousRay{
       Eigen::Vector3d(0.0, 0.0, 1.0), Eigen::Vector3d(0.0, 0.0, -1.0)};
-  const dart::gui::experimental::PickRay currentRay{
+  const dart::gui::PickRay currentRay{
       Eigen::Vector3d(0.0, 1.0, 1.0), Eigen::Vector3d(1.0, -1.0, -1.0)};
 
-  const auto translation = dart::gui::experimental::computeAxisDragTranslation(
+  const auto translation = dart::gui::computeAxisDragTranslation(
       previousRay, currentRay, axisPoint, axisDirection);
   ASSERT_TRUE(translation.has_value());
   EXPECT_TRUE(translation->isApprox(Eigen::Vector3d::UnitX()));
 
-  const dart::gui::experimental::PickRay parallelRay{
+  const dart::gui::PickRay parallelRay{
       Eigen::Vector3d(-1.0, 0.0, 0.0), Eigen::Vector3d::UnitX()};
   EXPECT_FALSE(
-      dart::gui::experimental::computeAxisDragTranslation(
+      dart::gui::computeAxisDragTranslation(
           parallelRay, currentRay, axisPoint, axisDirection)
           .has_value());
   EXPECT_FALSE(
-      dart::gui::experimental::computeAxisDragTranslation(
+      dart::gui::computeAxisDragTranslation(
           previousRay, currentRay, axisPoint, Eigen::Vector3d::Zero())
           .has_value());
 }
@@ -1874,11 +1881,10 @@ TEST(FilamentSceneExtraction, MakeSelectionDebugLines_ReturnsWorldSpaceBounds)
   joint->setTransformFromParentBodyNode(transform);
   world->addSkeleton(skeleton);
 
-  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  const auto renderables = dart::gui::extractRenderables(*world);
   ASSERT_EQ(renderables.size(), 1u);
 
-  const auto lines
-      = dart::gui::experimental::makeSelectionDebugLines(renderables.front());
+  const auto lines = dart::gui::makeSelectionDebugLines(renderables.front());
 
   ASSERT_EQ(lines.size(), 12u);
   EXPECT_EQ(lines.front().label, "selection.bounds");
@@ -1888,13 +1894,10 @@ TEST(FilamentSceneExtraction, MakeSelectionDebugLines_ReturnsWorldSpaceBounds)
   EXPECT_TRUE(lines.back().to.isApprox(Eigen::Vector3d(0.0, 4.0, 6.0)));
 
   shapeNode->getVisualAspect()->hide();
-  const auto hiddenRenderables
-      = dart::gui::experimental::extractRenderables(*world);
+  const auto hiddenRenderables = dart::gui::extractRenderables(*world);
   ASSERT_EQ(hiddenRenderables.size(), 1u);
   EXPECT_TRUE(
-      dart::gui::experimental::makeSelectionDebugLines(
-          hiddenRenderables.front())
-          .empty());
+      dart::gui::makeSelectionDebugLines(hiddenRenderables.front()).empty());
 }
 
 TEST(FilamentSceneExtraction, MakeCollisionShapeDebugLines_ReturnsBounds)
@@ -1912,16 +1915,16 @@ TEST(FilamentSceneExtraction, MakeCollisionShapeDebugLines_ReturnsBounds)
   joint->setTransformFromParentBodyNode(transform);
   world->addSkeleton(skeleton);
 
-  EXPECT_TRUE(dart::gui::experimental::extractRenderables(*world).empty());
+  EXPECT_TRUE(dart::gui::extractRenderables(*world).empty());
 
-  dart::gui::experimental::DebugDrawOptions options;
+  dart::gui::DebugDrawOptions options;
   options.drawGrid = false;
   options.drawWorldFrame = false;
   options.drawContacts = false;
   options.drawCollisionShapeBounds = true;
   options.collisionBoundsPadding = 0.1;
 
-  const auto lines = dart::gui::experimental::makeCollisionShapeDebugLines(
+  const auto lines = dart::gui::makeCollisionShapeDebugLines(
       *shapeNode, options, "robot/body/collision_box");
 
   ASSERT_EQ(lines.size(), 12u);
@@ -1938,8 +1941,7 @@ TEST(FilamentSceneExtraction, MakeCollisionShapeDebugLines_ReturnsBounds)
   EXPECT_TRUE(min.isApprox(Eigen::Vector3d(-0.1, -0.1, -0.1)));
   EXPECT_TRUE(max.isApprox(Eigen::Vector3d(2.1, 4.1, 6.1)));
 
-  const auto extractedLines
-      = dart::gui::experimental::extractDebugLines(*world, options);
+  const auto extractedLines = dart::gui::extractDebugLines(*world, options);
   ASSERT_EQ(extractedLines.size(), lines.size());
   EXPECT_EQ(
       extractedLines.front().label,
@@ -1958,7 +1960,7 @@ TEST(FilamentSceneExtraction, ExtractDebugLines_ReturnsGridAndFrameAxes)
   joint->setTransformFromParentBodyNode(transform);
   world->addSkeleton(skeleton);
 
-  dart::gui::experimental::DebugDrawOptions options;
+  dart::gui::DebugDrawOptions options;
   options.drawContacts = false;
   options.drawBodyFrames = true;
   options.gridHalfExtent = 1.0;
@@ -1966,8 +1968,7 @@ TEST(FilamentSceneExtraction, ExtractDebugLines_ReturnsGridAndFrameAxes)
   options.worldFrameAxisLength = 0.5;
   options.bodyFrameAxisLength = 0.25;
 
-  const auto lines
-      = dart::gui::experimental::extractDebugLines(*world, options);
+  const auto lines = dart::gui::extractDebugLines(*world, options);
 
   ASSERT_EQ(lines.size(), 12u);
   EXPECT_EQ(lines[0].label, "grid");
@@ -1990,15 +1991,14 @@ TEST(FilamentSceneExtraction, ExtractDebugLines_ReturnsCenterOfMassMarker)
   joint->setTransformFromParentBodyNode(transform);
   world->addSkeleton(skeleton);
 
-  dart::gui::experimental::DebugDrawOptions options;
+  dart::gui::DebugDrawOptions options;
   options.drawGrid = false;
   options.drawWorldFrame = false;
   options.drawContacts = false;
   options.drawCentersOfMass = true;
   options.centerOfMassMarkerRadius = 0.2;
 
-  const auto lines
-      = dart::gui::experimental::extractDebugLines(*world, options);
+  const auto lines = dart::gui::extractDebugLines(*world, options);
 
   ASSERT_EQ(lines.size(), 3u);
   EXPECT_EQ(lines[0].label, "robot.com.x");
@@ -2022,14 +2022,14 @@ TEST(FilamentSceneExtraction, MakeInertiaDebugLines_ReturnsEquivalentBox)
   joint->setTransformFromParentBodyNode(transform);
   world->addSkeleton(skeleton);
 
-  dart::gui::experimental::DebugDrawOptions options;
+  dart::gui::DebugDrawOptions options;
   options.drawGrid = false;
   options.drawWorldFrame = false;
   options.drawContacts = false;
   options.drawInertiaBoxes = true;
 
-  const auto lines = dart::gui::experimental::makeInertiaDebugLines(
-      *body, options, "robot/body");
+  const auto lines
+      = dart::gui::makeInertiaDebugLines(*body, options, "robot/body");
 
   ASSERT_EQ(lines.size(), 12u);
   EXPECT_EQ(lines.front().label, "robot/body.inertia");
@@ -2045,8 +2045,7 @@ TEST(FilamentSceneExtraction, MakeInertiaDebugLines_ReturnsEquivalentBox)
   EXPECT_TRUE(min.isApprox(Eigen::Vector3d(0.0, 0.0, 0.0)));
   EXPECT_TRUE(max.isApprox(Eigen::Vector3d(2.0, 4.0, 6.0)));
 
-  const auto extractedLines
-      = dart::gui::experimental::extractDebugLines(*world, options);
+  const auto extractedLines = dart::gui::extractDebugLines(*world, options);
   ASSERT_EQ(extractedLines.size(), lines.size());
   EXPECT_EQ(extractedLines.front().label, "robot/body.inertia");
 }
@@ -2068,7 +2067,7 @@ TEST(
   addSupportEndEffector(
       body, "right_foot", Eigen::Vector3d(0.35, -0.18, 0.0), supportGeometry);
 
-  dart::gui::experimental::DebugDrawOptions options;
+  dart::gui::DebugDrawOptions options;
   options.drawGrid = false;
   options.drawWorldFrame = false;
   options.drawContacts = false;
@@ -2080,7 +2079,7 @@ TEST(
   const dart::math::SupportPolygon& polygon = skeleton->getSupportPolygon();
   ASSERT_GE(polygon.size(), 3u);
 
-  const auto lines = dart::gui::experimental::makeSupportPolygonDebugLines(
+  const auto lines = dart::gui::makeSupportPolygonDebugLines(
       *skeleton, options, skeleton->getName());
 
   ASSERT_EQ(lines.size(), polygon.size() + 3u);
@@ -2108,8 +2107,7 @@ TEST(
           + Eigen::Vector3d::UnitX() * options.supportCentroidMarkerRadius));
 
   world->addSkeleton(skeleton);
-  const auto extractedLines
-      = dart::gui::experimental::extractDebugLines(*world, options);
+  const auto extractedLines = dart::gui::extractDebugLines(*world, options);
   ASSERT_EQ(extractedLines.size(), lines.size());
   EXPECT_EQ(extractedLines.front().label, "support_bot.support_polygon");
 }
@@ -2141,15 +2139,14 @@ TEST(FilamentSceneExtraction, ExtractContactDebugLines_ReturnsMarkersAndVectors)
   contact.normal = Eigen::Vector3d::UnitZ();
   contact.force = Eigen::Vector3d(10.0, 0.0, 0.0);
 
-  dart::gui::experimental::DebugDrawOptions options;
+  dart::gui::DebugDrawOptions options;
   options.contactMarkerHalfExtent = 0.1;
   options.contactNormalLength = 0.3;
   options.contactForceScale = 0.02;
   options.contactForceMinLength = 0.0;
   options.contactForceMaxLength = 1.0;
 
-  const auto lines
-      = dart::gui::experimental::extractContactDebugLines(result, options);
+  const auto lines = dart::gui::extractContactDebugLines(result, options);
 
   ASSERT_EQ(lines.size(), 8u);
   EXPECT_EQ(lines[0].label, "contact.point");
@@ -2167,55 +2164,51 @@ TEST(FilamentSceneExtraction, ExtractContactDebugLines_ReturnsMarkersAndVectors)
 
 TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
 {
-  dart::gui::experimental::RunOptions options;
+  dart::gui::RunOptions options;
   options.width = 0;
   options.height = -8;
   options.guiScale = std::numeric_limits<double>::quiet_NaN();
   options.headless = true;
   options.screenshotPath = "capture.ppm";
 
-  dart::gui::experimental::normalizeRunOptions(options);
+  dart::gui::normalizeRunOptions(options);
 
   EXPECT_EQ(options.width, 1);
   EXPECT_EQ(options.height, 1);
   EXPECT_NEAR(options.guiScale, 1.0, 1e-12);
   EXPECT_EQ(options.maxFrames, 1);
   EXPECT_TRUE(options.headless);
-  EXPECT_TRUE(
-      dart::gui::experimental::shouldRequestScreenshot(options, 0, false));
-  EXPECT_FALSE(
-      dart::gui::experimental::shouldRequestScreenshot(options, 0, true));
-  EXPECT_FALSE(dart::gui::experimental::shouldStopAfterFrame(options, 0));
-  EXPECT_TRUE(dart::gui::experimental::shouldStopAfterFrame(options, 1));
+  EXPECT_TRUE(dart::gui::shouldRequestScreenshot(options, 0, false));
+  EXPECT_FALSE(dart::gui::shouldRequestScreenshot(options, 0, true));
+  EXPECT_FALSE(dart::gui::shouldStopAfterFrame(options, 0));
+  EXPECT_TRUE(dart::gui::shouldStopAfterFrame(options, 1));
 
-  dart::gui::experimental::ViewerLifecycleState state;
-  EXPECT_TRUE(dart::gui::experimental::shouldAdvanceSimulation(state));
-  dart::gui::experimental::togglePaused(state);
+  dart::gui::ViewerLifecycleState state;
+  EXPECT_TRUE(dart::gui::shouldAdvanceSimulation(state));
+  dart::gui::togglePaused(state);
   EXPECT_TRUE(state.paused);
-  EXPECT_FALSE(dart::gui::experimental::shouldAdvanceSimulation(state));
-  dart::gui::experimental::requestSingleStep(state);
+  EXPECT_FALSE(dart::gui::shouldAdvanceSimulation(state));
+  dart::gui::requestSingleStep(state);
   EXPECT_TRUE(state.paused);
-  EXPECT_TRUE(dart::gui::experimental::shouldAdvanceSimulation(state));
-  dart::gui::experimental::markSimulationAdvanced(state);
+  EXPECT_TRUE(dart::gui::shouldAdvanceSimulation(state));
+  dart::gui::markSimulationAdvanced(state);
   EXPECT_FALSE(state.stepOnce);
-  EXPECT_FALSE(dart::gui::experimental::shouldAdvanceSimulation(state));
-  EXPECT_TRUE(dart::gui::experimental::shouldRequestScreenshot(options, state));
-  dart::gui::experimental::markScreenshotRequested(state);
-  EXPECT_FALSE(
-      dart::gui::experimental::shouldRequestScreenshot(options, state));
-  dart::gui::experimental::markFrameSkipped(state);
+  EXPECT_FALSE(dart::gui::shouldAdvanceSimulation(state));
+  EXPECT_TRUE(dart::gui::shouldRequestScreenshot(options, state));
+  dart::gui::markScreenshotRequested(state);
+  EXPECT_FALSE(dart::gui::shouldRequestScreenshot(options, state));
+  dart::gui::markFrameSkipped(state);
   EXPECT_EQ(state.skippedFrames, 1);
-  dart::gui::experimental::markFrameRendered(state);
+  dart::gui::markFrameRendered(state);
   EXPECT_EQ(state.renderedFrames, 1);
   EXPECT_EQ(state.skippedFrames, 0);
-  EXPECT_TRUE(dart::gui::experimental::shouldStopAfterFrame(options, state));
+  EXPECT_TRUE(dart::gui::shouldStopAfterFrame(options, state));
 
-  dart::gui::experimental::RunOptions windowOnly;
+  dart::gui::RunOptions windowOnly;
   windowOnly.guiScale = 10.0;
-  dart::gui::experimental::normalizeRunOptions(windowOnly);
+  dart::gui::normalizeRunOptions(windowOnly);
   EXPECT_NEAR(windowOnly.guiScale, 4.0, 1e-12);
-  EXPECT_FALSE(
-      dart::gui::experimental::shouldRequestScreenshot(windowOnly, 0, false));
+  EXPECT_FALSE(dart::gui::shouldRequestScreenshot(windowOnly, 0, false));
 }
 
 TEST(FilamentSceneExtraction, WriteRgbaPpm_DropsAlphaAndHandlesBottomLeftOrigin)
@@ -2245,8 +2238,7 @@ TEST(FilamentSceneExtraction, WriteRgbaPpm_DropsAlphaAndHandlesBottomLeftOrigin)
 
   std::string error;
   ASSERT_TRUE(
-      dart::gui::experimental::writeRgbaPpm(
-          path.string(), 2, 2, rgbaPixels, true, &error))
+      dart::gui::writeRgbaPpm(path.string(), 2, 2, rgbaPixels, true, &error))
       << error;
 
   std::ifstream in(path, std::ios::binary);
@@ -2283,7 +2275,7 @@ TEST(FilamentSceneExtraction, WriteRgbaPpm_DropsAlphaAndHandlesBottomLeftOrigin)
 
   error.clear();
   EXPECT_FALSE(
-      dart::gui::experimental::writeRgbaPpm(
+      dart::gui::writeRgbaPpm(
           path.string(), 2, 2, {255, 0, 0, 255}, false, &error));
   EXPECT_FALSE(error.empty());
 
@@ -2293,97 +2285,92 @@ TEST(FilamentSceneExtraction, WriteRgbaPpm_DropsAlphaAndHandlesBottomLeftOrigin)
 
 TEST(FilamentSceneExtraction, OrbitCamera_UpdateBasisAndPickingAreStable)
 {
-  dart::gui::experimental::OrbitCamera camera;
+  dart::gui::OrbitCamera camera;
   camera.target = Eigen::Vector3d::Zero();
   camera.yaw = 0.0;
   camera.pitch = 0.0;
   camera.distance = 2.0;
 
-  const auto basis = dart::gui::experimental::makeOrbitCameraBasis(camera);
+  const auto basis = dart::gui::makeOrbitCameraBasis(camera);
   EXPECT_TRUE(basis.eye.isApprox(Eigen::Vector3d(2.0, 0.0, 0.0)));
   EXPECT_TRUE(basis.forward.isApprox(-Eigen::Vector3d::UnitX()));
   EXPECT_TRUE(basis.right.isApprox(Eigen::Vector3d::UnitY()));
   EXPECT_TRUE(basis.up.isApprox(Eigen::Vector3d::UnitZ()));
 
-  dart::gui::experimental::DirectionalNudgeInput nudgeInput;
+  dart::gui::DirectionalNudgeInput nudgeInput;
   nudgeInput.right = true;
   nudgeInput.forward = true;
   nudgeInput.up = true;
   nudgeInput.fast = true;
   nudgeInput.stepSize = 0.25;
   nudgeInput.fastMultiplier = 2.0;
-  const auto nudge
-      = dart::gui::experimental::computeCameraRelativeNudge(camera, nudgeInput);
+  const auto nudge = dart::gui::computeCameraRelativeNudge(camera, nudgeInput);
   EXPECT_TRUE(nudge.isApprox(Eigen::Vector3d(-0.5, 0.5, 0.5)));
 
   nudgeInput.stepSize = std::numeric_limits<double>::quiet_NaN();
   EXPECT_TRUE(
-      dart::gui::experimental::computeCameraRelativeNudge(camera, nudgeInput)
-          .isZero());
+      dart::gui::computeCameraRelativeNudge(camera, nudgeInput).isZero());
 
-  dart::gui::experimental::OrbitCameraController controller;
+  dart::gui::OrbitCameraController controller;
   controller.camera = camera;
-  dart::gui::experimental::OrbitCameraControllerInput controllerInput;
+  dart::gui::OrbitCameraControllerInput controllerInput;
   controllerInput.cursorX = 100.0;
   controllerInput.cursorY = 50.0;
-  dart::gui::experimental::updateOrbitCameraController(
-      controller, controllerInput);
+  dart::gui::updateOrbitCameraController(controller, controllerInput);
   EXPECT_TRUE(controller.hasLastCursor);
   EXPECT_NEAR(controller.lastCursorX, 100.0, 1e-12);
   EXPECT_NEAR(controller.lastCursorY, 50.0, 1e-12);
   EXPECT_TRUE(controller.camera.target.isApprox(Eigen::Vector3d::Zero()));
 
-  dart::gui::experimental::addOrbitCameraScroll(controller, 1.0);
+  dart::gui::addOrbitCameraScroll(controller, 1.0);
   controllerInput.cursorX = 110.0;
   controllerInput.cursorY = 70.0;
   controllerInput.pan = true;
-  dart::gui::experimental::updateOrbitCameraController(
-      controller, controllerInput);
+  dart::gui::updateOrbitCameraController(controller, controllerInput);
   EXPECT_NEAR(controller.scrollDelta, 0.0, 1e-12);
   EXPECT_TRUE(
       controller.camera.target.isApprox(Eigen::Vector3d(0.0, -0.03, 0.06)));
   EXPECT_LT(controller.camera.distance, 2.0);
 
   controllerInput.hasCursor = false;
-  dart::gui::experimental::updateOrbitCameraController(
-      controller, controllerInput);
+  dart::gui::updateOrbitCameraController(controller, controllerInput);
   EXPECT_FALSE(controller.hasLastCursor);
 
-  const auto ray = dart::gui::experimental::makePerspectivePickRay(
-      camera, 320, 240, 640, 480);
+  const auto ray
+      = dart::gui::makePerspectivePickRay(camera, 320, 240, 640, 480);
   EXPECT_TRUE(ray.origin.isApprox(basis.eye));
   EXPECT_TRUE(ray.direction.isApprox(basis.forward));
 
-  dart::gui::experimental::OrbitCameraUpdate panUpdate;
+  dart::gui::OrbitCameraUpdate panUpdate;
   panUpdate.pan = true;
   panUpdate.deltaX = 10.0;
   panUpdate.deltaY = 20.0;
   panUpdate.panScale = 0.1;
-  dart::gui::experimental::updateOrbitCamera(camera, panUpdate);
+  dart::gui::updateOrbitCamera(camera, panUpdate);
   EXPECT_TRUE(camera.target.isApprox(Eigen::Vector3d(0.0, -2.0, 4.0)));
 
-  dart::gui::experimental::OrbitCameraUpdate orbitUpdate;
+  dart::gui::OrbitCameraUpdate orbitUpdate;
   orbitUpdate.orbit = true;
   orbitUpdate.deltaX = 10.0;
   orbitUpdate.deltaY = 1000.0;
-  dart::gui::experimental::updateOrbitCamera(camera, orbitUpdate);
+  dart::gui::updateOrbitCamera(camera, orbitUpdate);
   EXPECT_NEAR(camera.yaw, -0.06, 1e-12);
   EXPECT_NEAR(camera.pitch, orbitUpdate.maxPitch, 1e-12);
 
-  dart::gui::experimental::OrbitCameraUpdate scrollUpdate;
+  dart::gui::OrbitCameraUpdate scrollUpdate;
   scrollUpdate.scrollDelta = 100.0;
-  dart::gui::experimental::updateOrbitCamera(camera, scrollUpdate);
+  dart::gui::updateOrbitCamera(camera, scrollUpdate);
   EXPECT_NEAR(camera.distance, scrollUpdate.minDistance, 1e-12);
 
   camera.distance = 2.0;
   const auto projection
-      = dart::gui::experimental::makePerspectiveProjection(camera, 640, 480);
+      = dart::gui::makePerspectiveProjection(camera, 640, 480);
   EXPECT_NEAR(projection.verticalFovDegrees, 45.0, 1e-12);
   EXPECT_NEAR(projection.aspectRatio, 4.0 / 3.0, 1e-12);
   EXPECT_NEAR(projection.nearPlane, 0.008, 1e-12);
   EXPECT_NEAR(projection.farPlane, 37.0, 1e-12);
 
-  dart::gui::experimental::ProjectionOptions projectionOptions;
+  dart::gui::ProjectionOptions projectionOptions;
   projectionOptions.verticalFovDegrees
       = std::numeric_limits<double>::quiet_NaN();
   projectionOptions.nearPlane = 0.1;
@@ -2391,8 +2378,7 @@ TEST(FilamentSceneExtraction, OrbitCamera_UpdateBasisAndPickingAreStable)
   projectionOptions.minFarPlane = 10.0;
   projectionOptions.farPadding = 5.0;
   const auto overrideProjection
-      = dart::gui::experimental::makePerspectiveProjection(
-          camera, 0, -20, projectionOptions);
+      = dart::gui::makePerspectiveProjection(camera, 0, -20, projectionOptions);
   EXPECT_NEAR(overrideProjection.verticalFovDegrees, 45.0, 1e-12);
   EXPECT_NEAR(overrideProjection.aspectRatio, 1.0, 1e-12);
   EXPECT_NEAR(overrideProjection.nearPlane, 0.1, 1e-12);

@@ -218,9 +218,9 @@ graph TB
     COLLISION --> COMMON
     SKELETON --> COMMON
 
-    click VIEWER "dart/gui/experimental/viewer.hpp" "Open viewer descriptors"
-    click DESCRIPTORS "dart/gui/experimental/renderable.hpp" "Open renderable descriptors"
-    click INTERACTION "dart/gui/experimental/interaction.hpp" "Open interaction helpers"
+    click VIEWER "dart/gui/viewer.hpp" "Open viewer descriptors"
+    click DESCRIPTORS "dart/gui/renderable.hpp" "Open renderable descriptors"
+    click INTERACTION "dart/gui/interaction.hpp" "Open interaction helpers"
     click WORLD "dart/simulation/World.hpp" "Open World"
     click SKELETON "dart/dynamics/Skeleton.hpp" "Open Skeleton"
     click BODYNODE "dart/dynamics/BodyNode.hpp" "Open BodyNode"
@@ -277,7 +277,7 @@ graph TB
 
 ### Component: GUI Entry Point
 
-**Files**: [`all.hpp`](../../dart/gui/all.hpp) | [`viewer.hpp`](../../dart/gui/experimental/viewer.hpp)
+**Files**: [`all.hpp`](../../dart/gui/all.hpp) | [`viewer.hpp`](../../dart/gui/viewer.hpp)
 
 **Purpose**: Public GUI headers expose DART-owned scene, camera, interaction,
 debug, and viewer lifecycle concepts. The Filament, GLFW3, and Dear ImGui
@@ -293,17 +293,17 @@ implementation details live in private backend sources.
 
 **Depends On**:
 
-- **Internal**: `dart-gui-experimental` and private Filament backend sources
+- **Internal**: private Filament backend sources
 - **External**: Filament, GLFW3, Dear ImGui, PNG, JPEG
 
 ---
 
 ### Component: GUI Descriptors And Tools
 
-**Files**: [`geometry.hpp`](../../dart/gui/experimental/geometry.hpp),
-[`renderable.hpp`](../../dart/gui/experimental/renderable.hpp),
-[`interaction.hpp`](../../dart/gui/experimental/interaction.hpp),
-[`debug.hpp`](../../dart/gui/experimental/debug.hpp)
+**Files**: [`geometry.hpp`](../../dart/gui/geometry.hpp),
+[`renderable.hpp`](../../dart/gui/renderable.hpp),
+[`interaction.hpp`](../../dart/gui/interaction.hpp),
+[`debug.hpp`](../../dart/gui/debug.hpp)
 
 **Purpose**: Backend-hidden C++ and Python GUI contracts. These headers keep
 simulation visualization, picking, camera control, screenshots, and debug
@@ -537,8 +537,8 @@ sequenceDiagram
 
 - Example: [`examples/hello_world/main.cpp`](../../examples/hello_world/main.cpp)
 - [`World::step()`](dart/simulation/World.cpp#L356)
-- [`RunOptions`](../../dart/gui/experimental/viewer.hpp)
-- [`RenderableDescriptor`](../../dart/gui/experimental/renderable.hpp)
+- [`RunOptions`](../../dart/gui/viewer.hpp)
+- [`RenderableDescriptor`](../../dart/gui/renderable.hpp)
 
 ---
 
@@ -1035,7 +1035,7 @@ while (running) {
 
 ```cpp
 // Extract backend-hidden renderable descriptors from a DART world.
-auto renderables = dart::gui::experimental::extractRenderables(*world);
+auto renderables = dart::gui::extractRenderables(*world);
 
 // Use the maintained DART GUI app for interactive or headless rendering.
 // Repo-local command line:
@@ -1046,28 +1046,27 @@ auto renderables = dart::gui::experimental::extractRenderables(*world);
 ### Pattern 3: Custom Simulation Hooks
 
 ```cpp
-dart::gui::experimental::ViewerLifecycleState lifecycle;
-auto options = dart::gui::experimental::RunOptions{};
+dart::gui::ViewerLifecycleState lifecycle;
+auto options = dart::gui::RunOptions{};
 
-if (dart::gui::experimental::shouldAdvanceSimulation(lifecycle)) {
+if (dart::gui::shouldAdvanceSimulation(lifecycle)) {
   auto robot = world->getSkeleton("robot");
   robot->setForces(computeControlTorques());
   world->step();
-  dart::gui::experimental::markSimulationAdvanced(lifecycle);
+  dart::gui::markSimulationAdvanced(lifecycle);
 }
 ```
 
 ### Pattern 4: Interactive Manipulation
 
 ```cpp
-auto ray = dart::gui::experimental::makePerspectivePickRay(
+auto ray = dart::gui::makePerspectivePickRay(
     camera, mouseX, mouseY, viewportWidth, viewportHeight);
-auto hit = dart::gui::experimental::pickNearestRenderable(renderables, ray);
+auto hit = dart::gui::pickNearestRenderable(renderables, ray);
 if (hit) {
-  auto translation = dart::gui::experimental::computePlaneDragTranslation(
+  auto translation = dart::gui::computePlaneDragTranslation(
       previousRay, ray, hit->position, dragPlaneNormal);
-  dart::gui::experimental::translateFrameRenderable(
-      *world, hit->renderableId, translation);
+  dart::gui::translateFrameRenderable(*world, hit->renderableId, translation);
 }
 ```
 
@@ -1093,12 +1092,12 @@ auto legacy = dart::io::readSkeleton("path/to/skel.skel");
 ### Pattern 6: Debug Draws And Capture
 
 ```cpp
-dart::gui::experimental::DebugDrawOptions debug;
+dart::gui::DebugDrawOptions debug;
 debug.showContactForces = true;
 debug.showSupportPolygons = true;
 
-auto lines = dart::gui::experimental::extractDebugLines(*world, debug);
-dart::gui::experimental::writeRgbaPpm("frame.ppm", rgba, width, height);
+auto lines = dart::gui::extractDebugLines(*world, debug);
+dart::gui::writeRgbaPpm("frame.ppm", rgba, width, height);
 ```
 
 ---

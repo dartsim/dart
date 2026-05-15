@@ -130,11 +130,12 @@ dart/
 - Builds `dart-gui` library
 - Integrates the Filament-backed GUI implementation
 - Integrates GLFW3 and ImGui
-- Generates component headers (`All.hpp`, `gui.hpp`)
+- Generates component headers (`all.hpp`, `gui.hpp`) and installs promoted
+  `dart/gui/*.hpp` scene/viewer descriptor headers
 
 **Dependencies:**
 
-- `dart-gui-experimental`
+- private GUI implementation sources
 - Filament 1.71.3, GLFW3, ImGui, PNG, and JPEG for the private backend
 
 ---
@@ -440,7 +441,7 @@ Component Dependency Tree:
     │   └── depends: utils (+ utils-urdf when available)
     │
     └── gui
-        └── depends: gui-experimental, Filament, GLFW3, ImGui
+        └── depends: private Filament, GLFW3, ImGui implementation
 ```
 
 ### Component Targets
@@ -451,7 +452,7 @@ Component Dependency Tree:
 | `utils`          | `dart-utils`          | `dart`, `tinyxml2`, `libsdformat`                                                                                                   |
 | `utils-urdf`     | `dart-utils-urdf`     | `dart-utils`, `urdfdom`                                                                                                             |
 | `io`             | `dart-io`             | `dart-utils` (plus `dart-utils-urdf` when available)                                                                                |
-| `gui`            | `dart-gui`            | `dart-gui-experimental`                                                                                                             |
+| `gui`            | `dart-gui`            | private GUI implementation, Filament, GLFW3, ImGui, PNG, JPEG                                                                       |
 | `external-imgui` | `dart-external-imgui` | `OpenGL::GL`                                                                                                                        |
 
 > Bullet and ODE no longer create standalone `dart-collision-*` components. When `DART_BUILD_COLLISION_BULLET` or `DART_BUILD_COLLISION_ODE` is `ON`, their sources and link dependencies are baked directly into the `dart` target.

@@ -5,7 +5,7 @@ project(dart-examples)
 include("${CMAKE_CURRENT_LIST_DIR}/gui_scene_example.cmake")
 
 add_subdirectory(unified_loading)
-if(TARGET dart-gui-experimental OR NOT DART_IN_SOURCE_BUILD)
+if(TARGET dart-gui OR NOT DART_IN_SOURCE_BUILD)
   add_subdirectory(gui_scene_diagnostics)
 endif()
 add_subdirectory(headless_simulation)

@@ -11,13 +11,14 @@ than renderer or windowing types.
 
 ## Subdirectories
 
-- `experimental/` - Backend-hidden scene/debug/picking/run-loop descriptors and
-  the private Filament implementation.
+- `experimental/` - Compatibility headers and the private Filament
+  implementation. Prefer promoted `dart/gui/*.hpp` headers for maintained
+  code.
 
 ## GUI Rules
 
-- Use `dart/gui/experimental/scene.hpp` for testable DART-owned scene concepts
-  and `dart/gui/experimental/viewer.hpp` for testable viewer-runtime concepts.
+- Use `dart/gui/scene.hpp` for testable DART-owned scene concepts and
+  `dart/gui/viewer.hpp` for testable viewer-runtime concepts.
 - Do not add public OSG, Raylib, Filament, GLFW, or raw ImGui extension points.
 - Keep renderer resources private: materials, textures, buffers, entities,
   windows, swap chains, and ImGui draw resources.

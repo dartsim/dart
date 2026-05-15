@@ -2,11 +2,11 @@
 
 ## Summary
 
-- Goal: inspect the experimental backend-hidden GUI descriptors without opening
-  a window or adding another renderer.
-- Concepts/APIs: `dart::gui::experimental::extractRenderables`,
-  `extractDebugLines`, `makeSelectionDebugLines`, `RunOptions`, `OrbitCamera`,
-  picking helpers, and `SimpleFrame` visual descriptors.
+- Goal: inspect the renderer-independent GUI descriptors without opening a
+  window or adding another renderer.
+- Concepts/APIs: `dart::gui::extractRenderables`, `extractDebugLines`,
+  `makeSelectionDebugLines`, `RunOptions`, `OrbitCamera`, picking helpers, and
+  `SimpleFrame` visual descriptors.
 - Expected output: descriptor counts, debug/selection line counts, camera
   information, and center-pick diagnostics printed to the console.
 - Controls: CLI flags for frame count and diagnostic viewport size.
