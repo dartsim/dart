@@ -216,7 +216,7 @@ The current checkpoint is a validated middle state, not a final PR boundary.
 | 9     | Downstream migration/deprecation path exists | Package/gz/link smokes pass; policy evidence left |
 | 10    | Clean built-in API/scaling/perf layer        | Local design plus artifact evidence; final left   |
 | 11    | Old runtime backend source is reference-only | Local split; lint guard wired                     |
-| 12    | Final one-PR validation and PR packaging     | Current full local pass; PR/migration left        |
+| 12    | Final one-PR validation and PR packaging     | Prior full local pass; final PR evidence left     |
 
 ## Built-In Architecture Status
 
@@ -569,4 +569,4 @@ This folder is working documentation. When native collision reaches the
 completion criteria, keep only durable design notes in onboarding docs, move
 final command evidence to the PR description, then delete this folder in the
 same PR. Use `07-pr-evidence-transfer.md` as the starting point after the
-maintainer chooses whether to reopen PR #2652 or create a successor PR.
+maintainer opens the successor PR or explicitly chooses another review surface.

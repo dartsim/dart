@@ -1,8 +1,9 @@
 # PR Evidence Transfer Draft
 
 This file is a staging packet for the eventual PR description update. It should
-be copied into the PR review surface only after the maintainer chooses whether
-to reopen PR #2652 or create a successor PR.
+be copied into the PR review surface only after the maintainer opens the
+successor PR or explicitly chooses another review surface. Do not reopen PR
+#2652 or create a PR from this branch just because this packet exists.
 
 Do not treat this file as final completion evidence. The dev-task folder still
 must be deleted in the same PR that completes the native-collision migration.
@@ -104,7 +105,8 @@ Local validation currently recorded in the dev-task evidence:
   `feature/new_coll` pushes do not match the workflow `push` filters.
 
 Final PR-complete testing still needs whatever CI surface the maintainer chooses
-after PR #2652 is reopened or a successor PR is created.
+after the maintainer-opened successor PR or another explicit review surface
+exists.
 
 ## Breaking Changes
 
