@@ -49,6 +49,7 @@
 #include <dart/gui/experimental/detail/filament/render_context.hpp>
 #include <dart/gui/experimental/detail/filament/scene_requirements.hpp>
 #include <dart/gui/experimental/detail/filament/screenshot.hpp>
+#include <dart/gui/experimental/detail/filament/simulation_stepper.hpp>
 #include <dart/gui/experimental/profile.hpp>
 #include <dart/gui/experimental/scene.hpp>
 #include <dart/io/read.hpp>
@@ -67,7 +68,6 @@
 #include <cctype>
 #include <chrono>
 #include <iostream>
-#include <limits>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -128,7 +128,6 @@ using dart::gui::experimental::makeRenderableId;
 using dart::gui::experimental::normalizeRunOptions;
 using dart::gui::experimental::printProfile;
 using dart::gui::experimental::requestSingleStep;
-using dart::gui::experimental::shouldAdvanceSimulation;
 using dart::gui::experimental::shouldRequestScreenshot;
 using dart::gui::experimental::shouldStopAfterFrame;
 using dart::gui::experimental::togglePaused;
@@ -142,6 +141,7 @@ using dart::gui::experimental::filament::SceneLights;
 using dart::gui::experimental::filament::ScreenshotCapture;
 using dart::gui::experimental::filament::SceneContentCounts;
 using dart::gui::experimental::filament::SelectionController;
+using dart::gui::experimental::filament::SimulationStepper;
 using dart::gui::experimental::filament::addRenderableToScene;
 using dart::gui::experimental::filament::accumulateSceneContent;
 using dart::gui::experimental::filament::attachSceneEnvironment;
@@ -355,10 +355,8 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
   bool screenshotSucceeded = options.screenshotPath.empty();
   ScreenshotCapture screenshotCapture;
   ProfileAccumulator profile;
-  auto lastSimulationClock = ProfileAccumulator::Clock::now();
+  SimulationStepper simulationStepper;
   const auto orbitStartClock = ProfileAccumulator::Clock::now();
-  double simulationAccumulator = 0.0;
-  constexpr std::size_t kMaxSimulationStepsPerRenderedFrame = 64;
 
   while (options.headless || !glfwWindowShouldClose(window)) {
     const auto frameStart = ProfileAccumulator::Clock::now();
@@ -415,33 +413,9 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
     }
     profile.viewportCameraMs += elapsedMs(phaseStart);
 
-    std::size_t simulationStepsToRun = 0;
-    if (shouldAdvanceSimulation(lifecycle)) {
-      if (options.headless || lifecycle.stepOnce) {
-        simulationStepsToRun = 1;
-      } else {
-        const auto now = ProfileAccumulator::Clock::now();
-        simulationAccumulator += std::chrono::duration<double>(
-                                     now - lastSimulationClock)
-                                     .count();
-        lastSimulationClock = now;
-        const double timeStep = dartScene.world->getTimeStep();
-        if (timeStep > 0.0) {
-          simulationAccumulator = std::min(
-              simulationAccumulator,
-              timeStep
-                  * static_cast<double>(kMaxSimulationStepsPerRenderedFrame));
-          while (simulationStepsToRun < kMaxSimulationStepsPerRenderedFrame
-                 && simulationAccumulator + 1e-12 >= timeStep) {
-            ++simulationStepsToRun;
-            simulationAccumulator -= timeStep;
-          }
-        }
-      }
-    } else {
-      lastSimulationClock = ProfileAccumulator::Clock::now();
-      simulationAccumulator = 0.0;
-    }
+    const std::size_t simulationStepsToRun
+        = simulationStepper.stepsToRun(
+            options, lifecycle, dartScene.world->getTimeStep());
 
     if (simulationStepsToRun > 0) {
       phaseStart = ProfileAccumulator::Clock::now();

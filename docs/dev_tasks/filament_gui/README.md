@@ -180,6 +180,10 @@
   `dart/gui/experimental/detail/filament/application.hpp` and `.cpp`, leaving
   `examples/filament_gui/main.cpp` as a minimal entry point guarded by the
   focused scene-extraction unit.
+- The Filament example's bounded realtime simulation step-count accumulator now
+  lives in `dart/gui/experimental/detail/filament/simulation_stepper.hpp` and
+  `.cpp`, leaving the application loop responsible for applying world steps and
+  profiling the result.
 - The Filament example's built-in status panel rendering now lives in
   `dart/gui/experimental/detail/filament/panel.hpp` and `.cpp`; it remains
   private MVP policy rather than a promoted panel/tool API.
