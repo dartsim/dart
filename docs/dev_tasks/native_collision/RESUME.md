@@ -23,10 +23,10 @@ for the maintainer-opened review surface.
 `feature/new_coll` tracks `origin/feature/new_coll`.
 
 The latest pushed validation baseline is `376fd5e686d`
-(`Remove per-engine collision reference build options`), where local and remote
-matched before this documentation bookkeeping refresh. If another audit-record
-commit has been added after this note, run the
-commands below to refresh that fact instead of trusting this timestamp:
+(`Remove per-engine collision reference build options`). Current branch head
+may include docs-only evidence refresh commits on top of that validation
+baseline. Run the commands below to refresh the exact local/remote state before
+acting:
 
 ```bash
 git status --short --branch

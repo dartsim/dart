@@ -108,9 +108,11 @@ unverified external and finalization gates:
   notes, clean dartpy collision API policy, reference build-option
   refinements, and public docs alignment for the built-in runtime collision
   path. The latest pushed validation baseline is `376fd5e686d`
-  (`Remove per-engine collision reference build options`). The matching
-  `gh run list` check returned no GitHub Actions runs because these branch
-  pushes are not an allowed workflow trigger while PR #2652 is closed.
+  (`Remove per-engine collision reference build options`). Later docs-only
+  evidence refreshes may sit on top of that baseline, but they do not replace
+  the recorded validation run. The matching `gh run list` checks returned no
+  GitHub Actions runs because these branch pushes are not an allowed workflow
+  trigger while PR #2652 is closed.
 - Local downstream migration evidence is refreshed: fresh gz-physics,
   package-smoke, runtime-isolation, C++ compatibility-name, dartpy clean-API,
   direct link-inspection checks, and human-authored stale-backend docs audit all
@@ -148,10 +150,13 @@ Current audited state:
 
 - Branch: `feature/new_coll`
 - Latest pushed validation baseline:
-  `376fd5e686d` (`Remove per-engine collision reference build options`).
-  Local and `origin/feature/new_coll` matched at that head, PR #2652 was still
+  `376fd5e686d` (`Remove per-engine collision reference build options`). This
+  is the latest commit with full local validation evidence. Current branch head
+  may include docs-only evidence refresh commits on top; verify it with
+  `git status --short --branch`, `git rev-parse HEAD`, and
+  `git rev-parse origin/feature/new_coll` before acting. PR #2652 is still
   closed and anchored to old head `714d220d82a`, and GitHub reported no
-  Actions runs for commit `376fd5e686d`.
+  Actions runs for the validation-baseline push.
 - Latest published checkpoint before CI repair: `5b08a00d381`
   (`Record current native collision validation pass`), which records the
   current local validation pass after the durable built-in architecture docs
@@ -171,8 +176,9 @@ Current audited state:
   reference gates are only `DART_BUILD_COLLISION_REFERENCE_TESTS` and
   `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` for optional comparison tests
   and benchmarks rather than runtime backend choices.
-  The branch also includes the public overview, numerical-methods, constraints,
-  and example README cleanup that removes stale normal-runtime FCL/Bullet/ODE
+  The branch also includes docs-only evidence refresh commits after that
+  validation baseline, the public overview, numerical-methods, constraints, and
+  example README cleanup that removes stale normal-runtime FCL/Bullet/ODE
   backend guidance, plus the latest completion-audit refresh. GitHub reports no
   Actions runs for the later pushes because `feature/new_coll` does not match
   the workflow `push` filters and PR #2652 remains closed.
