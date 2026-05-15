@@ -333,9 +333,11 @@ head `1e1faf6feb1`. Do not create or reopen a PR/diff until the user asks.
 Continue by getting explicit maintainer direction on downstream deprecation
 policy and PR resumption, rerunning full local validation after any
 behavior-affecting code changes, then transferring final evidence to the PR
-description and deleting the dev-task folder in the completing PR. Read
-`06-completion-audit.md` before deciding whether a future checkpoint is
-complete; it is the prompt-to-artifact checklist for the north-star goal.
+description and deleting the dev-task folder in the completing PR. Use
+`07-pr-evidence-transfer.md` as the PR-template-shaped starting packet for that
+description once a review surface exists. Read `06-completion-audit.md` before
+deciding whether a future checkpoint is complete; it is the prompt-to-artifact
+checklist for the north-star goal.
 
 The persistent DART adapter scene path is now started: public collision,
 distance, and raycast calls use synced native scene state owned by
@@ -667,6 +669,9 @@ libraries.
 - Final local validation after that audit checkpoint passed
   `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
   across all 6 top-level gates.
+- `07-pr-evidence-transfer.md` stages the eventual PR description evidence
+  packet, but it is not completion evidence until copied to the PR review
+  surface and this dev-task folder is deleted in the same completing PR.
 
 ## How to Resume
 

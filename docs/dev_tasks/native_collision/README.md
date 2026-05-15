@@ -199,7 +199,8 @@
       legacy names are continuously checked as native-backed routes; both
       `pixi run lint` and `pixi run check-lint` pass with those guards enabled.
       A final local `pixi run test-all` after that audit checkpoint passed all
-      6 top-level gates.
+      6 top-level gates. `07-pr-evidence-transfer.md` now stages the
+      PR-template-shaped evidence packet for the eventual review surface.
 
 ## Goal
 
@@ -596,4 +597,5 @@ collision stack.
 This folder is working documentation. When native collision reaches the
 completion criteria, keep only durable design notes in onboarding docs, move
 final command evidence to the PR description, then delete this folder in the
-same PR.
+same PR. Use `07-pr-evidence-transfer.md` as the starting point after the
+maintainer chooses whether to reopen PR #2652 or create a successor PR.

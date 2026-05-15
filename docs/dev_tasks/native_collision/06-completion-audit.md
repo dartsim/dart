@@ -123,8 +123,9 @@ unverified external and finalization gates:
   `nb_func.cpp` without rebuilding matching `nb_internals.cpp` objects.
 - The dev-task folder must remain until final PR evidence is transferred to
   the PR description and the folder is deleted in the completing PR. Durable
-  architecture notes are now seeded in onboarding docs, but final evidence
-  transfer is still pending.
+  architecture notes are now seeded in onboarding docs, and
+  `07-pr-evidence-transfer.md` stages a PR-template-shaped evidence packet, but
+  final evidence transfer is still pending.
 
 ## Audit Inputs
 
@@ -462,6 +463,7 @@ Additional inspected artifacts:
 - `docs/dev_tasks/native_collision/03-evidence-gates.md`
 - `docs/dev_tasks/native_collision/04-reference-gap-analysis.md`
 - `docs/dev_tasks/native_collision/05-downstream-migration.md`
+- `docs/dev_tasks/native_collision/07-pr-evidence-transfer.md`
 - `docs/onboarding/README.md`
 - `docs/onboarding/architecture.md`
 - `docs/onboarding/build-system.md`
@@ -495,7 +497,7 @@ Additional inspected artifacts:
 | Architecture evidence must cover code, tests, package/source boundaries, and benchmark/profiling hooks, not only prose docs. | Code evidence exists for factory aliases, compatibility facades, persistent `DartCollisionGroup` scene state, cache IDs, source isolation, native shape taxonomy cleanup, wheel verifier wiring, package smoke, adapter benchmarks, and native/reference benchmark JSON. CI/artifact evidence remains missing.                                                                                                                                                           | Partial |
 | gz-physics compatibility must be preserved while legacy names migrate.                                                       | Fresh local `pixi run -e gazebo test-gz` passed 65/65 and package smoke passed. `readelf` shows the gz DART plugin and package-smoke executable use `libdart-collision-native.so` without old collision/reference runtime dependencies. `05-downstream-migration.md` defines the compatibility contract and removal gates.                                                                                                                                               | Local   |
 | Downstream migration/deprecation path must be proven before removing retained facades.                                       | `05-downstream-migration.md` defines the migration order and gates. Local primary evidence now covers fresh gz-physics, package smoke, runtime isolation, C++/Python compatibility names, and direct link inspection. Downstream deprecation policy evidence is still missing before retained facades can be removed or hard-deprecated.                                                                                                                                 | Open    |
-| Final PR evidence and cleanup must happen in the same PR.                                                                    | `README.md`, `02-milestones.md`, and `docs/dev_tasks/README.md` require transferring final evidence to the PR description and deleting `docs/dev_tasks/native_collision/` only at completion. Durable collision architecture notes have been seeded in onboarding docs, but PR evidence transfer and folder deletion remain open.                                                                                                                                        | Open    |
+| Final PR evidence and cleanup must happen in the same PR.                                                                    | `README.md`, `02-milestones.md`, and `docs/dev_tasks/README.md` require transferring final evidence to the PR description and deleting `docs/dev_tasks/native_collision/` only at completion. Durable collision architecture notes have been seeded in onboarding docs, and `07-pr-evidence-transfer.md` stages the PR-template-shaped evidence packet, but PR evidence transfer and folder deletion remain open.                                                        | Open    |
 
 Legend:
 
@@ -525,9 +527,9 @@ Legend:
 4. Run final validation after the final code state, including at least
    `pixi run lint` and `pixi run test-all`, plus any CI-specific gates whose
    failures are not covered locally.
-5. Keep the durable collision architecture summary in onboarding docs, move
-   final command evidence into the PR description, then delete this dev-task
-   folder in the same PR.
+5. Keep the durable collision architecture summary in onboarding docs, use
+   `07-pr-evidence-transfer.md` as the starting packet for the final PR
+   description, then delete this dev-task folder in the same PR.
 
 ## Completion Bar
 
