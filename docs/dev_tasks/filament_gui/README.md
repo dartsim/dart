@@ -117,6 +117,9 @@
   `examples/filament_gui/render_environment.hpp` and `.cpp`.
 - The Filament example's platform-specific GLFW native-window handle selection
   now lives in `examples/filament_gui/native_window.hpp` and `.cpp`.
+- The Filament example's selection labels and G1 IK-target translation glue now
+  live in `examples/filament_gui/selection.hpp` and `.cpp`; renderer-independent
+  selection and translation primitives remain in `dart-gui-experimental`.
 - The Filament example's scene option parsing and reusable DART world fixtures
   now live in `examples/filament_gui/scenes.hpp` and `.cpp`; `main.cpp` remains
   focused on renderer resources, synchronization, input, and the built-in panel.

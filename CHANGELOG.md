@@ -170,7 +170,9 @@
     GLFW window handle selection lives in `examples/filament_gui/native_window.hpp`
     and `.cpp`. ImGui font loading now lives with the overlay renderer in
     `examples/filament_gui/imgui_overlay.hpp` and `.cpp`, so `main.cpp`
-    focuses on renderer resources and UI wiring. The
+    focuses on renderer resources and UI wiring. Example-local selection labels
+    and G1 IK-target translation are also split into
+    `examples/filament_gui/selection.hpp` and `.cpp`. The
     north-star audit now also maps the legacy OSG/Raylib GUI surfaces that must
     be replaced, made private, or removed during first-class Filament
     promotion. The renderer-hidden debug descriptor path also covers

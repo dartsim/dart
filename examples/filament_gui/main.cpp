@@ -43,6 +43,7 @@
 #include "render_environment.hpp"
 #include "scenes.hpp"
 #include "screenshot.hpp"
+#include "selection.hpp"
 #include "textures.hpp"
 
 #include <dart/all.hpp>
@@ -178,12 +179,10 @@ using dart::gui::experimental::shouldAdvanceSimulation;
 using dart::gui::experimental::shouldRequestScreenshot;
 using dart::gui::experimental::shouldStopAfterFrame;
 using dart::gui::experimental::togglePaused;
-using dart::gui::experimental::translateFrameRenderable;
 using dart::simulation::World;
 using dart::examples::filament_gui::AppOptions;
 using dart::examples::filament_gui::DartScene;
 using dart::examples::filament_gui::ExampleScene;
-using dart::examples::filament_gui::G1IkHandle;
 using dart::examples::filament_gui::ImGuiOverlay;
 using dart::examples::filament_gui::PbrTextureBindings;
 using dart::examples::filament_gui::ProfileAccumulator;
@@ -232,8 +231,10 @@ using dart::examples::filament_gui::requestScreenshot;
 using dart::examples::filament_gui::saveScreenshot;
 using dart::examples::filament_gui::sceneName;
 using dart::examples::filament_gui::selectedNudgeFromKeyboard;
+using dart::examples::filament_gui::selectionLabelForRenderable;
 using dart::examples::filament_gui::makeRepeatTextureSampler;
 using dart::examples::filament_gui::setPbrTextureParameters;
+using dart::examples::filament_gui::translateRenderableAndApplyIk;
 using dart::examples::filament_gui::updateCameraController;
 using dart::examples::filament_gui::updateImGuiOverlay;
 using dart::examples::filament_gui::updateImGuiMouseInput;
@@ -317,65 +318,6 @@ filament::backend::BufferDescriptor makeBufferDescriptor(std::vector<T>&& data)
         delete static_cast<std::vector<T>*>(user);
       },
       owned);
-}
-
-G1IkHandle* findG1IkHandle(DartScene& scene, RenderableId targetRenderableId)
-{
-  const auto handle = std::find_if(
-      scene.ikHandles.begin(),
-      scene.ikHandles.end(),
-      [&](const G1IkHandle& candidate) {
-        return candidate.targetRenderableId == targetRenderableId;
-      });
-  return handle == scene.ikHandles.end() ? nullptr : &*handle;
-}
-
-const G1IkHandle* findG1IkHandle(
-    const DartScene& scene, RenderableId targetRenderableId)
-{
-  const auto handle = std::find_if(
-      scene.ikHandles.begin(),
-      scene.ikHandles.end(),
-      [&](const G1IkHandle& candidate) {
-        return candidate.targetRenderableId == targetRenderableId;
-      });
-  return handle == scene.ikHandles.end() ? nullptr : &*handle;
-}
-
-std::string selectionLabelForRenderable(
-    const DartScene& scene, const RenderableDescriptor& descriptor)
-{
-  if (const auto* handle = findG1IkHandle(scene, descriptor.id)) {
-    return handle->label + " IK target";
-  }
-
-  std::string label = descriptor.skeletonName.empty()
-                          ? descriptor.shapeFrameName
-                          : descriptor.skeletonName + "/" + descriptor.bodyName;
-  if (!descriptor.shapeNodeName.empty()) {
-    label += "/" + descriptor.shapeNodeName;
-  }
-  label += " (" + descriptor.geometry.shapeType + ")";
-  return label;
-}
-
-bool translateRenderableAndApplyIk(
-    DartScene& scene,
-    const RenderableDescriptor& descriptor,
-    const Eigen::Vector3d& worldTranslation)
-{
-  if (!translateFrameRenderable(descriptor, worldTranslation)) {
-    return false;
-  }
-
-  if (auto* handle = findG1IkHandle(scene, descriptor.id)) {
-    if (handle->ik) {
-      handle->ik->getSolver()->setNumMaxIterations(30);
-      handle->ik->solveAndApply(true);
-    }
-  }
-
-  return true;
 }
 
 float3 toFloat3(const Eigen::Vector3d& vector)
