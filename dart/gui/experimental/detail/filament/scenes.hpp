@@ -70,6 +70,7 @@ enum class ExampleScene
   Boxes,
   DragAndDrop,
   SimpleFrames,
+  SoftBodies,
   Polyhedron,
   Heightmap,
   G1,
@@ -126,6 +127,7 @@ inline constexpr const char* kG1FixtureSkeletonName = "visual_g1_robot";
 inline constexpr std::size_t kBoxesFixtureBoxCount = 125;
 inline constexpr std::size_t kSimpleFramesFixtureBoxCount = 3;
 inline constexpr std::size_t kSimpleFramesFixtureEllipsoidCount = 4;
+inline constexpr std::size_t kSoftBodiesFixtureMinSoftMeshCount = 5;
 inline constexpr std::size_t kMinPbrEnvironmentRenderableCount = 4;
 inline constexpr std::size_t kMinDragAndDropFrameRenderableCount = 5;
 inline constexpr std::size_t kMinG1RenderableCount = 20;

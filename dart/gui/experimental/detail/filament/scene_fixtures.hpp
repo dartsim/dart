@@ -47,6 +47,8 @@ DartScene createDragAndDropScene();
 
 DartScene createSimpleFramesScene();
 
+DartScene createSoftBodiesScene();
+
 DartScene createPolyhedronScene();
 
 DartScene createHeightmapScene();

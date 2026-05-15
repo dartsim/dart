@@ -61,6 +61,7 @@ struct SceneContentCounts
   std::size_t pointClouds = 0;
   std::size_t heightmaps = 0;
   std::size_t softMeshes = 0;
+  std::size_t softBodyMeshes = 0;
   std::size_t voxelGrids = 0;
   std::size_t pbrEnvironmentMeshes = 0;
   std::size_t polyhedronSurfaces = 0;

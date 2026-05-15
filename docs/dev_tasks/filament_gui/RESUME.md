@@ -268,10 +268,10 @@ headless context, while the dedicated headless construction test remains.
 `pixi run test-filament-gui-smoke` now wraps the explicit pinned fetch fallback
 for Linux x86_64. It configures with `DART_BUILD_GUI=OFF` and
 `DART_BUILD_DARTPY=OFF`, builds `dart_filament_gui`, and runs the default,
-hello-world, boxes, drag-and-drop, simple-frames, polyhedron, and heightmap
-headless CTest smokes. When `DISPLAY` is absent, the task uses Xvfb and
-prefers Mesa's EGL vendor file for software rendering. The Ubuntu CI workflow
-has a matching `filament-gui-smoke` job that installs Mesa, Xvfb, and
+hello-world, boxes, drag-and-drop, simple-frames, soft-bodies, polyhedron, and
+heightmap headless CTest smokes. When `DISPLAY` is absent, the task uses Xvfb
+and prefers Mesa's EGL vendor file for software rendering. The Ubuntu CI
+workflow has a matching `filament-gui-smoke` job that installs Mesa, Xvfb, and
 libc++/libc++abi development packages from apt and runs that task without
 relying on a Filament conda package. The MVP PR #2647 merged with hosted
 `Filament GUI Smoke (GCC)` and `Filament GUI Smoke (Clang)` passing.
@@ -291,6 +291,11 @@ as legacy OSG comparison material. It also routes
 `--scene simple-frames` fixture, which renders the legacy `SimpleFrame`
 hierarchy, marker ellipsoids, and arrow marker through backend-hidden
 descriptors while keeping the standalone source as legacy OSG comparison
+material. It also routes
+`pixi run ex soft_bodies` through the Filament example's
+`--scene soft-bodies` fixture, which loads the legacy `softBodies.skel` data
+through DART IO and renders its soft meshes through backend-hidden descriptors
+while keeping the standalone recorded-playback source as legacy OSG comparison
 material. It also routes
 `pixi run ex polyhedron_visual` through the Filament example's
 `--scene polyhedron` fixture, which renders the legacy convex hull and wireframe
@@ -324,8 +329,8 @@ The Filament example scene option parsing and dispatch now live in
 DART world fixtures now live in
 `dart/gui/experimental/detail/filament/scene_fixtures.hpp` and `.cpp`.
 Scene content requirement counting and
-MVP/G1/hello-world/boxes/drag/simple-frames/polyhedron/heightmap validation
-gates, including created-renderable content counting, now live in
+MVP/G1/hello-world/boxes/drag/simple-frames/soft-bodies/polyhedron/heightmap
+validation gates, including created-renderable content counting, now live in
 `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.
 The Filament example frame lifecycle, scene synchronization, capture, built-in
 panel wiring, and top-level orchestration now live in

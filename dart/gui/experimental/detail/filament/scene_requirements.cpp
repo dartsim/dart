@@ -169,6 +169,9 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Heightmap) {
     ++counts.heightmaps;
   }
+  if (descriptor.geometry.kind == ShapeKind::SoftMesh) {
+    ++counts.softBodyMeshes;
+  }
   if (descriptor.skeletonName == kSoftMeshFixtureSkeletonName
       && descriptor.geometry.kind == ShapeKind::SoftMesh) {
     ++counts.softMeshes;
@@ -447,6 +450,15 @@ bool validateSceneDescriptorContent(
         output);
   }
 
+  if (scene == ExampleScene::SoftBodies) {
+    return requireAtLeast(
+        counts.softBodyMeshes,
+        kSoftBodiesFixtureMinSoftMeshCount,
+        "soft-bodies scene",
+        "visible soft-mesh renderable descriptors",
+        output);
+  }
+
   return true;
 }
 
@@ -616,6 +628,14 @@ bool validateCreatedSceneContent(
         created.simpleFrameArrowLines,
         expected.simpleFrameArrowLines,
         "simple-frames arrow line renderables",
+        output);
+  }
+
+  if (scene == ExampleScene::SoftBodies) {
+    return requireCreatedAtLeast(
+        created.softBodyMeshes,
+        expected.softBodyMeshes,
+        "soft-bodies soft-mesh renderables",
         output);
   }
 

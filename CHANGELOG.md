@@ -170,7 +170,9 @@
     split into `scene_fixtures.cpp`. The `simple_frames` runner now routes to
     a `--scene simple-frames` Filament fixture that renders its `SimpleFrame`
     hierarchy, marker ellipsoids, and arrow marker through backend-hidden
-    descriptors. The example tree is left as a minimal
+    descriptors, and the `soft_bodies` runner now routes to a
+    `--scene soft-bodies` fixture that loads `softBodies.skel` through
+    backend-hidden soft-mesh descriptors. The example tree is left as a minimal
     `main.cpp` entry point plus CMake and README files. The focused GUI unit
     test now checks that
     `examples/filament_gui` contains no C++ source/header files other than

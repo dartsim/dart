@@ -137,6 +137,8 @@ const char* sceneName(ExampleScene scene)
       return "drag-and-drop";
     case ExampleScene::SimpleFrames:
       return "simple-frames";
+    case ExampleScene::SoftBodies:
+      return "soft-bodies";
     case ExampleScene::Polyhedron:
       return "polyhedron";
     case ExampleScene::Heightmap:
@@ -167,6 +169,10 @@ bool parseSceneName(std::string_view name, ExampleScene& scene)
   }
   if (name == "simple-frames") {
     scene = ExampleScene::SimpleFrames;
+    return true;
+  }
+  if (name == "soft-bodies") {
+    scene = ExampleScene::SoftBodies;
     return true;
   }
   if (name == "polyhedron") {
@@ -211,6 +217,12 @@ dart::gui::experimental::OrbitCamera initialCameraForScene(ExampleScene scene)
       camera.yaw = -0.70;
       camera.pitch = 0.48;
       camera.distance = 0.75;
+      break;
+    case ExampleScene::SoftBodies:
+      camera.target = Eigen::Vector3d(0.0, 0.05, 0.0);
+      camera.yaw = -0.72;
+      camera.pitch = 0.50;
+      camera.distance = 2.8;
       break;
     case ExampleScene::Polyhedron:
       camera.target = Eigen::Vector3d(0.0, 0.0, 0.45);
@@ -299,8 +311,8 @@ AppOptions parseOptions(int argc, char* argv[])
       if (!parseSceneName(sceneArg, options.scene)) {
         std::cerr << "Unknown scene '" << sceneArg
                   << "'. Expected 'mvp', 'hello-world', 'boxes', "
-                     "'drag-and-drop', 'simple-frames', 'polyhedron', "
-                     "'heightmap', or 'g1'.\n";
+                     "'drag-and-drop', 'simple-frames', 'soft-bodies', "
+                     "'polyhedron', 'heightmap', or 'g1'.\n";
         std::exit(2);
       }
     } else if (
@@ -326,7 +338,7 @@ AppOptions parseOptions(int argc, char* argv[])
                    " [--orbit-light-period SECONDS]"
                    " [--gui-scale N]"
                    " [--profile]"
-                   " [--scene mvp|hello-world|boxes|drag-and-drop|simple-frames|polyhedron|heightmap|g1]"
+                   " [--scene mvp|hello-world|boxes|drag-and-drop|simple-frames|soft-bodies|polyhedron|heightmap|g1]"
                    " [--g1-package-uri URI] [--g1-robot-uri URI]"
                    " [--g1-package-name NAME]\n";
       std::exit(0);
@@ -380,6 +392,8 @@ DartScene createDartScene(const AppOptions& options)
       return createDragAndDropScene();
     case ExampleScene::SimpleFrames:
       return createSimpleFramesScene();
+    case ExampleScene::SoftBodies:
+      return createSoftBodiesScene();
     case ExampleScene::Polyhedron:
       return createPolyhedronScene();
     case ExampleScene::Heightmap:

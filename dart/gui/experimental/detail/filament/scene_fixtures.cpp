@@ -1127,6 +1127,19 @@ DartScene createSimpleFramesScene()
   return scene;
 }
 
+DartScene createSoftBodiesScene()
+{
+  DartScene scene;
+  scene.world = dart::io::readWorld("dart://sample/skel/softBodies.skel");
+  if (!scene.world) {
+    throw std::runtime_error(
+        "Failed to load soft_bodies fixture from "
+        "dart://sample/skel/softBodies.skel");
+  }
+
+  return scene;
+}
+
 DartScene createPolyhedronScene()
 {
   DartScene scene;

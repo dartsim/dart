@@ -307,6 +307,21 @@ function(dart_filament_gui_add_smoke_tests example_target)
   )
   _dart_filament_gui_apply_smoke_test_properties(${simple_frames_test_name})
 
+  set(soft_bodies_test_name EXAMPLE_filament_gui_soft_bodies_headless_smoke)
+  add_test(
+    NAME ${soft_bodies_test_name}
+    COMMAND
+      "${CMAKE_COMMAND}"
+      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
+      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_soft_bodies_headless_smoke.ppm"
+      -DDART_FILAMENT_GUI_SCENE=soft-bodies
+      -DDART_FILAMENT_GUI_WIDTH=640
+      -DDART_FILAMENT_GUI_HEIGHT=480
+      -DDART_FILAMENT_GUI_FRAMES=4
+      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
+  )
+  _dart_filament_gui_apply_smoke_test_properties(${soft_bodies_test_name})
+
   set(polyhedron_test_name EXAMPLE_filament_gui_polyhedron_headless_smoke)
   add_test(
     NAME ${polyhedron_test_name}
