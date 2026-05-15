@@ -270,7 +270,7 @@ for Linux x86_64. It configures with `DART_BUILD_GUI=OFF` and
 `DART_BUILD_DARTPY=OFF`, builds `dart_filament_gui`, and runs the default,
 hello-world, boxes, hardcoded-design, rigid-chain, rigid-loop, mixed-chain,
 coupler-constraint, add-delete-skels, vehicle, hybrid-dynamics,
-joint-constraints, mimic-pendulums, atlas-puppet,
+joint-constraints, free-joint-cases, mimic-pendulums, atlas-puppet,
 operational-space-control, drag-and-drop,
 simple-frames, soft-bodies, point-cloud, capsule-ground-contact,
 simulation-event-handler, polyhedron, and heightmap headless CTest smokes.
@@ -342,6 +342,12 @@ renders standing biped and ground descriptors, and runs the SPD balance
 controller through a private scene pre-step hook while keeping the standalone
 source as legacy OSG comparison material for perturbation shortcuts and harness
 toggling. It routes
+`pixi run ex free_joint_cases` through the Filament example's selectable
+`--scene free-joint-cases` fixture, which builds the legacy zero-gravity
+free-joint cases, renders active and transparent reference box descriptors,
+and advances the reference bodies through a private torque-free pre-step hook
+while keeping the standalone source as legacy OSG/ImGui comparison material
+for numeric checks and reference-model controls. It routes
 `pixi run ex mimic_pendulums` through the Filament example's selectable
 `--scene mimic-pendulums` fixture, which loads the legacy SDF pendulum rigs and
 renders cylinder, box, and ground descriptors while keeping the standalone
@@ -426,8 +432,8 @@ DART world fixtures now live in
 Scene content requirement counting and
 MVP/G1/hello-world/boxes/hardcoded-design/rigid-chain/rigid-loop/mixed-chain/
 coupler-constraint/add-delete-skels/vehicle/hybrid-dynamics/joint-constraints/
-mimic-pendulums/atlas-puppet/operational-space-control/drag/simple-frames/
-soft-bodies/
+free-joint-cases/mimic-pendulums/atlas-puppet/operational-space-control/drag/
+simple-frames/soft-bodies/
 point-cloud/capsule-ground-contact/simulation-event-handler/polyhedron/
 heightmap validation gates, including created-renderable content counting, now live in
 `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.

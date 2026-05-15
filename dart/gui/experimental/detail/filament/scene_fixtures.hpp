@@ -61,6 +61,8 @@ DartScene createHybridDynamicsScene();
 
 DartScene createJointConstraintsScene();
 
+DartScene createFreeJointCasesScene();
+
 DartScene createMimicPendulumsScene();
 
 DartScene createAtlasPuppetScene();

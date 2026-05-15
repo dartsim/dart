@@ -37,6 +37,7 @@
   `--scene vehicle` to run the SKEL-loaded vehicle visual fixture,
   `--scene hybrid-dynamics` to run the posed fullbody visual fixture,
   `--scene joint-constraints` to run the fullbody SPD controller fixture,
+  `--scene free-joint-cases` to run the free-joint comparison fixture,
   `--scene mimic-pendulums` to run the SDF-loaded mimic pendulum fixture,
   `--scene atlas-puppet` to run the Atlas IK target fixture,
   `--scene operational-space-control` to run the WAM task-space control fixture,
@@ -134,6 +135,11 @@
   applies the standing configuration, and runs the SPD balance controller before
   each simulation step. The standalone source remains comparison material for
   perturbation shortcuts and the OSG harness toggle.
+- The `--scene free-joint-cases` fixture builds the legacy zero-gravity
+  free-joint cases, renders each active body plus its transparent torque-free
+  reference body, and advances the reference bodies through a private scene
+  pre-step hook. The standalone source remains comparison material for the
+  ImGui numeric checks and reference-model controls.
 - The `--scene mimic-pendulums` fixture loads the legacy mimic-pendulums SDF
   world and renders the three pendulum rigs, base poles, and ground through the
   same descriptor-driven Filament path. The standalone source remains
@@ -280,6 +286,12 @@ To run the joint-constraints fixture:
 pixi run ex filament_gui --scene joint-constraints
 ```
 
+To run the free-joint-cases fixture:
+
+```bash
+pixi run ex filament_gui --scene free-joint-cases
+```
+
 To run the mimic-pendulums fixture:
 
 ```bash
@@ -364,6 +376,7 @@ The capture paths are `build/<pixi-env>/filament_gui_mvp.ppm` and
 `build/<pixi-env>/filament_gui_vehicle.ppm`,
 `build/<pixi-env>/filament_gui_hybrid_dynamics.ppm`,
 `build/<pixi-env>/filament_gui_joint_constraints.ppm`,
+`build/<pixi-env>/filament_gui_free_joint_cases.ppm`,
 `build/<pixi-env>/filament_gui_mimic_pendulums.ppm`,
 `build/<pixi-env>/filament_gui_atlas_puppet.ppm`,
 `build/<pixi-env>/filament_gui_operational_space_control.ppm`,
@@ -471,6 +484,6 @@ DART_BUILD_GUI_FILAMENT_OVERRIDE=ON \
   pixi run config
 cmake --build build/default/cpp/Release --target dart_filament_gui
 ctest --test-dir build/default/cpp/Release \
-  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|hardcoded_design_headless|rigid_chain_headless|rigid_loop_headless|mixed_chain_headless|coupler_constraint_headless|add_delete_skels_headless|vehicle_headless|hybrid_dynamics_headless|joint_constraints_headless|mimic_pendulums_headless|atlas_puppet_headless|operational_space_control_headless|drag_and_drop_headless|simple_frames_headless|soft_bodies_headless|point_cloud_headless|capsule_ground_contact_headless|simulation_event_handler_headless|polyhedron_headless|heightmap_headless)_smoke' \
+  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|hardcoded_design_headless|rigid_chain_headless|rigid_loop_headless|mixed_chain_headless|coupler_constraint_headless|add_delete_skels_headless|vehicle_headless|hybrid_dynamics_headless|joint_constraints_headless|free_joint_cases_headless|mimic_pendulums_headless|atlas_puppet_headless|operational_space_control_headless|drag_and_drop_headless|simple_frames_headless|soft_bodies_headless|point_cloud_headless|capsule_ground_contact_headless|simulation_event_handler_headless|polyhedron_headless|heightmap_headless)_smoke' \
   --output-on-failure
 ```

@@ -74,6 +74,8 @@ struct SceneContentCounts
   std::size_t hybridDynamicsGrounds = 0;
   std::size_t jointConstraintsBipedBoxes = 0;
   std::size_t jointConstraintsGrounds = 0;
+  std::size_t freeJointCasesActiveBoxes = 0;
+  std::size_t freeJointCasesReferenceBoxes = 0;
   std::size_t mimicPendulumsBoxes = 0;
   std::size_t mimicPendulumsCylinders = 0;
   std::size_t mimicPendulumsGrounds = 0;

@@ -221,6 +221,10 @@
     The `joint_constraints` runner now routes to a `--scene joint-constraints`
     Filament fixture that loads the legacy fullbody world and runs the SPD
     balance controller through the same private scene pre-step hook.
+    The `free_joint_cases` runner now routes to a `--scene free-joint-cases`
+    Filament fixture for the zero-gravity free-joint bodies and transparent
+    torque-free reference boxes while the legacy standalone source remains
+    available for the ImGui numeric checks and reference-model controls.
     The focused GUI unit test now
     checks that
     `examples/filament_gui` contains no C++ source/header

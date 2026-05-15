@@ -189,7 +189,8 @@
 - The Filament example's scene content requirement counting and
   MVP/G1/hello-world/boxes/hardcoded-design/rigid-chain/rigid-loop/
   mixed-chain/coupler-constraint/add-delete-skels/vehicle/hybrid-dynamics/
-  joint-constraints/mimic-pendulums/atlas-puppet/operational-space-control/drag/
+  joint-constraints/free-joint-cases/mimic-pendulums/atlas-puppet/
+  operational-space-control/drag/
   simple-frames/
   soft-bodies/point-cloud/capsule-ground-contact/simulation-event-handler/
   polyhedron/heightmap
@@ -304,6 +305,14 @@
   DART step. The in-tree `pixi run ex joint_constraints` runner now routes to
   that Filament scene while the legacy standalone OSG source remains available
   for perturbation-shortcut and harness-toggle comparison.
+- The Filament example includes `--scene free-joint-cases`, a zero-gravity
+  free-joint fixture that carries the legacy `free_joint_cases` visual
+  workflow through descriptor-owned active and transparent reference boxes. The
+  fixture advances torque-free reference bodies through a private scene
+  pre-step hook before each DART step. The in-tree
+  `pixi run ex free_joint_cases` runner now routes to that Filament scene while
+  the legacy standalone OSG/ImGui source remains available for numeric-check
+  and reference-model control comparison.
 - The Filament example includes `--scene mimic-pendulums`, an SDF-loaded
   pendulum-rig fixture that carries the legacy `mimic_pendulums` example
   through descriptor-owned cylinder, box, and ground renderables. The in-tree
@@ -420,8 +429,9 @@
   `DART_FETCH_FILAMENT=ON` path on Linux x86_64, builds without the legacy OSG
   GUI target, and runs the default, hello-world, boxes, hardcoded-design,
   rigid-chain, rigid-loop, mixed-chain, coupler-constraint, add-delete-skels,
-  vehicle, hybrid-dynamics, joint-constraints, mimic-pendulums, atlas-puppet,
-  operational-space-control, drag-and-drop, simple-frames, soft-bodies,
+  vehicle, hybrid-dynamics, joint-constraints, free-joint-cases,
+  mimic-pendulums, atlas-puppet, operational-space-control, drag-and-drop,
+  simple-frames, soft-bodies,
   point-cloud, capsule-ground-contact, simulation-event-handler, polyhedron,
   and heightmap headless CTest smokes.
   When no display server is available, the task runs the smokes under Xvfb and

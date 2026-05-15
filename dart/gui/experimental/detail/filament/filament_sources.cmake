@@ -420,6 +420,23 @@ function(dart_filament_gui_add_smoke_tests example_target)
   _dart_filament_gui_apply_smoke_test_properties(
     ${joint_constraints_test_name})
 
+  set(free_joint_cases_test_name
+      EXAMPLE_filament_gui_free_joint_cases_headless_smoke)
+  add_test(
+    NAME ${free_joint_cases_test_name}
+    COMMAND
+      "${CMAKE_COMMAND}"
+      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
+      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_free_joint_cases_headless_smoke.ppm"
+      -DDART_FILAMENT_GUI_SCENE=free-joint-cases
+      -DDART_FILAMENT_GUI_WIDTH=640
+      -DDART_FILAMENT_GUI_HEIGHT=480
+      -DDART_FILAMENT_GUI_FRAMES=4
+      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
+  )
+  _dart_filament_gui_apply_smoke_test_properties(
+    ${free_joint_cases_test_name})
+
   set(mimic_pendulums_test_name
       EXAMPLE_filament_gui_mimic_pendulums_headless_smoke)
   add_test(

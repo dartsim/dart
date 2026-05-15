@@ -218,6 +218,13 @@
   `pixi run ex joint_constraints` routes to this Filament scene by default
   while the standalone source remains as legacy OSG comparison material for
   perturbation shortcuts and harness toggling.
+- The Filament example includes a selectable `--scene free-joint-cases`
+  fixture that builds the legacy zero-gravity free-joint scenarios and renders
+  each active body plus its transparent torque-free reference body through
+  descriptor-owned box renderables. `pixi run ex free_joint_cases` routes to
+  this Filament scene by default while the standalone source remains as legacy
+  OSG/ImGui comparison material for numeric checks and reference-model
+  controls.
 - The Filament example includes a selectable `--scene mimic-pendulums` fixture
   that loads the legacy mimic-pendulums SDF world and renders the three
   pendulum rigs plus ground through descriptor-owned renderables.
@@ -415,8 +422,8 @@
 - Scene content requirement counting and MVP/G1/hello-world/boxes/
   hardcoded-design/rigid-chain/rigid-loop/mixed-chain/coupler-constraint/
   add-delete-skels/vehicle/hybrid-dynamics/joint-constraints/
-  mimic-pendulums/atlas-puppet/operational-space-control/drag/simple-frames/
-  soft-bodies/point-cloud/
+  free-joint-cases/mimic-pendulums/atlas-puppet/operational-space-control/drag/
+  simple-frames/soft-bodies/point-cloud/
   capsule-ground-contact/simulation-event-handler/polyhedron/heightmap
   validation gates now live in
   `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.

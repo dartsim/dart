@@ -2241,6 +2241,346 @@ DartScene createJointConstraintsScene()
   return scene;
 }
 
+struct FreeJointCasesTorqueFreeState
+{
+  Eigen::Quaterniond orientation{Eigen::Quaterniond::Identity()};
+  Eigen::Vector3d omegaBody{Eigen::Vector3d::Zero()};
+};
+
+struct FreeJointCasesFixture
+{
+  dart::dynamics::SkeletonPtr skeleton;
+  dart::dynamics::FreeJoint* joint = nullptr;
+  dart::dynamics::SkeletonPtr referenceSkeleton;
+  dart::dynamics::FreeJoint* referenceJoint = nullptr;
+  Eigen::Matrix3d inertia{Eigen::Matrix3d::Identity()};
+  Eigen::Matrix3d inertiaInv{Eigen::Matrix3d::Identity()};
+  FreeJointCasesTorqueFreeState torqueFreeState;
+  Eigen::Vector6d initialPositions{Eigen::Vector6d::Zero()};
+  Eigen::Vector6d initialVelocities{Eigen::Vector6d::Zero()};
+};
+
+struct FreeJointCasesTorqueFreeDeriv
+{
+  Eigen::Vector4d orientationDot{Eigen::Vector4d::Zero()};
+  Eigen::Vector3d omegaBodyDot{Eigen::Vector3d::Zero()};
+};
+
+Eigen::Vector3d computeFreeJointCasesOmegaBodyDot(
+    const Eigen::Matrix3d& inertia,
+    const Eigen::Matrix3d& inertiaInv,
+    const Eigen::Vector3d& omegaBody)
+{
+  return -inertiaInv * (omegaBody.cross(inertia * omegaBody));
+}
+
+Eigen::Vector4d computeFreeJointCasesQuaternionCoeffDot(
+    const Eigen::Quaterniond& orientation,
+    const Eigen::Vector3d& omegaBody)
+{
+  const Eigen::Quaterniond omegaQuat(
+      0.0, omegaBody.x(), omegaBody.y(), omegaBody.z());
+  Eigen::Quaterniond qdot = orientation * omegaQuat;
+  qdot.coeffs() *= 0.5;
+  return qdot.coeffs();
+}
+
+FreeJointCasesTorqueFreeDeriv evaluateFreeJointCasesTorqueFreeDeriv(
+    const FreeJointCasesTorqueFreeState& state,
+    const Eigen::Matrix3d& inertia,
+    const Eigen::Matrix3d& inertiaInv)
+{
+  FreeJointCasesTorqueFreeDeriv deriv;
+  deriv.orientationDot = computeFreeJointCasesQuaternionCoeffDot(
+      state.orientation, state.omegaBody);
+  deriv.omegaBodyDot
+      = computeFreeJointCasesOmegaBodyDot(inertia, inertiaInv, state.omegaBody);
+  return deriv;
+}
+
+void integrateFreeJointCasesTorqueFreeStep(
+    FreeJointCasesTorqueFreeState& state,
+    const Eigen::Matrix3d& inertia,
+    const Eigen::Matrix3d& inertiaInv,
+    double dt)
+{
+  if (!(dt > 0.0)) {
+    return;
+  }
+
+  const FreeJointCasesTorqueFreeDeriv k1
+      = evaluateFreeJointCasesTorqueFreeDeriv(state, inertia, inertiaInv);
+
+  FreeJointCasesTorqueFreeState s2 = state;
+  s2.orientation.coeffs() += 0.5 * dt * k1.orientationDot;
+  s2.omegaBody += 0.5 * dt * k1.omegaBodyDot;
+  s2.orientation.normalize();
+  const FreeJointCasesTorqueFreeDeriv k2
+      = evaluateFreeJointCasesTorqueFreeDeriv(s2, inertia, inertiaInv);
+
+  FreeJointCasesTorqueFreeState s3 = state;
+  s3.orientation.coeffs() += 0.5 * dt * k2.orientationDot;
+  s3.omegaBody += 0.5 * dt * k2.omegaBodyDot;
+  s3.orientation.normalize();
+  const FreeJointCasesTorqueFreeDeriv k3
+      = evaluateFreeJointCasesTorqueFreeDeriv(s3, inertia, inertiaInv);
+
+  FreeJointCasesTorqueFreeState s4 = state;
+  s4.orientation.coeffs() += dt * k3.orientationDot;
+  s4.omegaBody += dt * k3.omegaBodyDot;
+  s4.orientation.normalize();
+  const FreeJointCasesTorqueFreeDeriv k4
+      = evaluateFreeJointCasesTorqueFreeDeriv(s4, inertia, inertiaInv);
+
+  state.orientation.coeffs()
+      += (dt / 6.0)
+         * (k1.orientationDot + 2.0 * k2.orientationDot
+            + 2.0 * k3.orientationDot + k4.orientationDot);
+  state.omegaBody += (dt / 6.0)
+                     * (k1.omegaBodyDot + 2.0 * k2.omegaBodyDot
+                        + 2.0 * k3.omegaBodyDot + k4.omegaBodyDot);
+  state.orientation.normalize();
+}
+
+FreeJointCasesFixture createFreeJointCasesFixture(
+    std::size_t index,
+    const char* label,
+    const Eigen::Isometry3d& pose,
+    const Eigen::Vector6d& velocities,
+    const Eigen::Vector4d& color)
+{
+  FreeJointCasesFixture fixture;
+  fixture.skeleton = Skeleton::create(
+      std::string(kFreeJointCasesActiveSkeletonPrefix) + std::to_string(index));
+  auto [joint, body] = fixture.skeleton->createJointAndBodyNodePair<FreeJoint>();
+  fixture.joint = joint;
+  body->setName(label);
+  body->setMass(1.0);
+  body->setMomentOfInertia(0.02, 0.04, 0.06);
+  body->setCollidable(false);
+  fixture.inertia = Eigen::Vector3d(0.02, 0.04, 0.06).asDiagonal();
+  fixture.inertiaInv = fixture.inertia.inverse();
+
+  const Eigen::Vector3d boxSize(0.3, 0.2, 0.15);
+  auto shapeNode = body->createShapeNodeWith<
+      VisualAspect,
+      CollisionAspect,
+      DynamicsAspect>(std::make_shared<BoxShape>(boxSize));
+  shapeNode->getVisualAspect()->setRGBA(color);
+
+  joint->setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
+  joint->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
+  fixture.initialPositions = FreeJoint::convertToPositions(pose);
+  fixture.initialVelocities = velocities;
+  joint->setPositions(fixture.initialPositions);
+  joint->setVelocities(fixture.initialVelocities);
+
+  const Eigen::Matrix3d rotation = pose.linear();
+  fixture.torqueFreeState.orientation = Eigen::Quaterniond(rotation);
+  fixture.torqueFreeState.orientation.normalize();
+  fixture.torqueFreeState.omegaBody = rotation.transpose() * velocities.head<3>();
+
+  fixture.referenceSkeleton = Skeleton::create(
+      std::string(kFreeJointCasesReferenceSkeletonPrefix)
+      + std::to_string(index));
+  fixture.referenceSkeleton->setMobile(false);
+  auto [referenceJoint, referenceBody]
+      = fixture.referenceSkeleton->createJointAndBodyNodePair<FreeJoint>();
+  fixture.referenceJoint = referenceJoint;
+  referenceBody->setName(std::string(label) + " reference");
+  referenceBody->setCollidable(false);
+
+  Eigen::Vector4d referenceColor = color;
+  referenceColor.head<3>()
+      = 0.25 * Eigen::Vector3d::Ones() + 0.75 * referenceColor.head<3>();
+  referenceColor[3] = std::min(referenceColor[3], 0.22);
+
+  auto referenceShapeNode = referenceBody->createShapeNodeWith<VisualAspect>(
+      std::make_shared<BoxShape>(boxSize * 1.05));
+  referenceShapeNode->getVisualAspect()->setRGBA(referenceColor);
+  referenceShapeNode->getVisualAspect()->setShadowed(false);
+
+  referenceJoint->setTransformFromParentBodyNode(Eigen::Isometry3d::Identity());
+  referenceJoint->setTransformFromChildBodyNode(Eigen::Isometry3d::Identity());
+  referenceJoint->setPositions(fixture.initialPositions);
+  referenceJoint->setVelocities(Eigen::Vector6d::Zero());
+
+  return fixture;
+}
+
+class FreeJointCasesControllerState
+{
+public:
+  FreeJointCasesControllerState(
+      dart::simulation::WorldPtr world,
+      std::vector<FreeJointCasesFixture> fixtures)
+    : mWorld(std::move(world)), mFixtures(std::move(fixtures))
+  {
+    if (!mWorld) {
+      throw std::runtime_error("free_joint_cases fixture is missing world");
+    }
+  }
+
+  void preStep()
+  {
+    const double targetTime = mWorld->getTime() + mWorld->getTimeStep();
+    if (targetTime < mTorqueFreeTime) {
+      resetTorqueFreeState();
+    }
+    advanceTorqueFreeState(targetTime);
+    updateReferenceBodies(targetTime);
+  }
+
+private:
+  void resetTorqueFreeState()
+  {
+    mTorqueFreeTime = 0.0;
+    for (auto& fixture : mFixtures) {
+      const Eigen::Isometry3d initial
+          = FreeJoint::convertToTransform(fixture.initialPositions);
+      fixture.torqueFreeState.orientation
+          = Eigen::Quaterniond(initial.linear());
+      fixture.torqueFreeState.orientation.normalize();
+      fixture.torqueFreeState.omegaBody
+          = initial.linear().transpose() * fixture.initialVelocities.head<3>();
+    }
+  }
+
+  void advanceTorqueFreeState(double targetTime)
+  {
+    const double timeStep = mWorld->getTimeStep();
+    if (!(timeStep > 0.0) || !(targetTime > mTorqueFreeTime)) {
+      return;
+    }
+
+    constexpr int kSubsteps = 10;
+    const double baseStep = timeStep / static_cast<double>(kSubsteps);
+    double time = mTorqueFreeTime;
+    while (time + 1e-12 < targetTime) {
+      const double dt = std::min(baseStep, targetTime - time);
+      for (auto& fixture : mFixtures) {
+        integrateFreeJointCasesTorqueFreeStep(
+            fixture.torqueFreeState,
+            fixture.inertia,
+            fixture.inertiaInv,
+            dt);
+      }
+      time += dt;
+    }
+    mTorqueFreeTime = targetTime;
+  }
+
+  void updateReferenceBodies(double time)
+  {
+    for (auto& fixture : mFixtures) {
+      if (fixture.referenceJoint == nullptr) {
+        continue;
+      }
+
+      Eigen::Isometry3d expected = Eigen::Isometry3d::Identity();
+      expected.linear()
+          = fixture.torqueFreeState.orientation.toRotationMatrix();
+      expected.translation()
+          = fixture.initialPositions.tail<3>()
+            + fixture.initialVelocities.tail<3>() * time;
+      fixture.referenceJoint->setPositions(
+          FreeJoint::convertToPositions(expected));
+    }
+  }
+
+  dart::simulation::WorldPtr mWorld;
+  std::vector<FreeJointCasesFixture> mFixtures;
+  double mTorqueFreeTime = 0.0;
+};
+
+DartScene createFreeJointCasesScene()
+{
+  DartScene scene;
+  scene.world = World::create("filament_gui_free_joint_cases");
+  scene.world->setGravity(Eigen::Vector3d::Zero());
+  scene.world->setTimeStep(1e-3);
+
+  std::vector<FreeJointCasesFixture> fixtures;
+  fixtures.reserve(kFreeJointCasesCaseCount);
+
+  {
+    Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+    pose.translation() = Eigen::Vector3d(0.0, 0.0, 0.0);
+    Eigen::Vector6d velocity = Eigen::Vector6d::Zero();
+    velocity.tail<3>() = Eigen::Vector3d(0.7, 0.0, 0.0);
+    fixtures.push_back(createFreeJointCasesFixture(
+        0, "linear_only", pose, velocity, Eigen::Vector4d(0.15, 0.35, 0.95, 0.7)));
+  }
+
+  {
+    Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+    pose.translation() = Eigen::Vector3d(2.0, 0.0, 0.0);
+    Eigen::Vector6d velocity = Eigen::Vector6d::Zero();
+    velocity.head<3>() = Eigen::Vector3d(0.0, 0.9, 0.0);
+    fixtures.push_back(createFreeJointCasesFixture(
+        1, "angular_only", pose, velocity, Eigen::Vector4d(0.90, 0.12, 0.12, 0.7)));
+  }
+
+  {
+    Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+    pose.translation() = Eigen::Vector3d(4.0, 0.0, 0.0);
+    pose.linear() = dart::math::expMapRot(Eigen::Vector3d(0.6, -0.3, 0.2));
+    Eigen::Vector6d velocity = Eigen::Vector6d::Zero();
+    velocity.head<3>() = Eigen::Vector3d(0.6, -0.3, 0.4);
+    velocity.tail<3>() = Eigen::Vector3d(0.5, 0.2, -0.1);
+    fixtures.push_back(createFreeJointCasesFixture(
+        2,
+        "linear_angular",
+        pose,
+        velocity,
+        Eigen::Vector4d(0.24, 0.78, 0.32, 0.7)));
+  }
+
+  {
+    Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+    pose.translation() = Eigen::Vector3d(6.0, 0.0, 0.0);
+    pose.linear()
+        = dart::math::expMapRot(Eigen::Vector3d(dart::math::pi - 1e-6, 0.0, 0.0));
+    Eigen::Vector6d velocity = Eigen::Vector6d::Zero();
+    velocity.head<3>() = Eigen::Vector3d(0.2, 0.8, -0.4);
+    velocity.tail<3>() = Eigen::Vector3d(0.3, -0.1, 0.2);
+    fixtures.push_back(createFreeJointCasesFixture(
+        3,
+        "near_pi_rotation",
+        pose,
+        velocity,
+        Eigen::Vector4d(0.95, 0.58, 0.10, 0.7)));
+  }
+
+  {
+    Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+    pose.translation() = Eigen::Vector3d(8.0, 0.0, 0.0);
+    pose.linear() = dart::math::expMapRot(Eigen::Vector3d(0.3, 1.2, -0.4));
+    Eigen::Vector6d velocity = Eigen::Vector6d::Zero();
+    velocity.head<3>() = Eigen::Vector3d(1.2, 0.9, -1.0);
+    velocity.tail<3>() = Eigen::Vector3d(0.2, 0.3, 0.0);
+    fixtures.push_back(createFreeJointCasesFixture(
+        4,
+        "high_omega_multi_axis",
+        pose,
+        velocity,
+        Eigen::Vector4d(0.82, 0.22, 0.78, 0.7)));
+  }
+
+  for (const auto& fixture : fixtures) {
+    scene.world->addSkeleton(fixture.skeleton);
+    scene.world->addSkeleton(fixture.referenceSkeleton);
+  }
+
+  auto controller = std::make_shared<FreeJointCasesControllerState>(
+      scene.world, std::move(fixtures));
+  scene.preStep = [controller = std::move(controller)]() {
+    controller->preStep();
+  };
+
+  return scene;
+}
+
 DartScene createMimicPendulumsScene()
 {
   DartScene scene;

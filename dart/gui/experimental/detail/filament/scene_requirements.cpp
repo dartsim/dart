@@ -235,6 +235,14 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Box) {
     ++counts.jointConstraintsGrounds;
   }
+  if (descriptor.skeletonName.starts_with(kFreeJointCasesActiveSkeletonPrefix)
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.freeJointCasesActiveBoxes;
+  }
+  if (descriptor.skeletonName.starts_with(kFreeJointCasesReferenceSkeletonPrefix)
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.freeJointCasesReferenceBoxes;
+  }
   if (descriptor.skeletonName.starts_with(kMimicPendulumsFixtureSkeletonPrefix)
       && descriptor.skeletonName != kMimicPendulumsFixtureGroundSkeletonName
       && descriptor.geometry.kind == ShapeKind::Box) {
@@ -715,6 +723,23 @@ bool validateSceneDescriptorContent(
         output);
   }
 
+  if (scene == ExampleScene::FreeJointCases) {
+    if (!requireEqual(
+            counts.freeJointCasesActiveBoxes,
+            kFreeJointCasesCaseCount,
+            "free-joint-cases scene",
+            "visible active free-body box renderable descriptors",
+            output)) {
+      return false;
+    }
+    return requireEqual(
+        counts.freeJointCasesReferenceBoxes,
+        kFreeJointCasesCaseCount,
+        "free-joint-cases scene",
+        "visible reference free-body box renderable descriptors",
+        output);
+  }
+
   if (scene == ExampleScene::MimicPendulums) {
     if (!requireEqual(
             counts.mimicPendulumsBoxes,
@@ -1171,6 +1196,21 @@ bool validateCreatedSceneContent(
         created.jointConstraintsGrounds,
         expected.jointConstraintsGrounds,
         "joint-constraints ground renderables",
+        output);
+  }
+
+  if (scene == ExampleScene::FreeJointCases) {
+    if (!requireCreatedEqual(
+            created.freeJointCasesActiveBoxes,
+            expected.freeJointCasesActiveBoxes,
+            "free-joint-cases active box renderables",
+            output)) {
+      return false;
+    }
+    return requireCreatedEqual(
+        created.freeJointCasesReferenceBoxes,
+        expected.freeJointCasesReferenceBoxes,
+        "free-joint-cases reference box renderables",
         output);
   }
 

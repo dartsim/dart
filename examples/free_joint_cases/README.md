@@ -4,13 +4,22 @@
 
 - Goal: compare free-joint integration against reference models in zero gravity.
 - Concepts/APIs: `dynamics::FreeJoint`, Jacobian checks, ImGui viewer.
-- Expected output: multiple colored bodies with transparent reference boxes.
-- Controls: use the ImGui panel; CLI flags tune the reference model.
+- Expected output: by default, the shared Filament viewer displays multiple
+  colored bodies with transparent reference boxes. The legacy standalone source
+  still contains the ImGui numeric checks and reference-model controls for
+  comparison.
+- Controls: in the Filament route, use the shared viewer controls. In the
+  legacy standalone source, use the ImGui panel and CLI flags to tune the
+  reference model.
 
 ## Details
 
 Visualizes multiple `dart::dynamics::FreeJoint` single-body scenarios in a
 zero-gravity world.
+
+`pixi run ex free_joint_cases` routes to
+`examples/filament_gui --scene free-joint-cases` so the in-tree runner uses the
+Filament path.
 
 Each case shows:
 

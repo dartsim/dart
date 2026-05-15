@@ -79,6 +79,7 @@ enum class ExampleScene
   Vehicle,
   HybridDynamics,
   JointConstraints,
+  FreeJointCases,
   MimicPendulums,
   AtlasPuppet,
   OperationalSpaceControl,
@@ -158,6 +159,10 @@ inline constexpr const char* kJointConstraintsFixtureBipedSkeletonName
     = "visual_joint_constraints_biped";
 inline constexpr const char* kJointConstraintsFixtureGroundSkeletonName
     = "visual_joint_constraints_ground";
+inline constexpr const char* kFreeJointCasesActiveSkeletonPrefix
+    = "visual_free_joint_case_active_";
+inline constexpr const char* kFreeJointCasesReferenceSkeletonPrefix
+    = "visual_free_joint_case_reference_";
 inline constexpr const char* kMimicPendulumsFixtureSkeletonPrefix
     = "visual_mimic_pendulums_";
 inline constexpr const char* kMimicPendulumsFixtureGroundSkeletonName
@@ -215,6 +220,7 @@ inline constexpr std::size_t kHybridDynamicsFixtureBipedBoxCount = 20;
 inline constexpr std::size_t kHybridDynamicsFixtureGroundCount = 1;
 inline constexpr std::size_t kJointConstraintsFixtureBipedBoxCount = 20;
 inline constexpr std::size_t kJointConstraintsFixtureGroundCount = 1;
+inline constexpr std::size_t kFreeJointCasesCaseCount = 5;
 inline constexpr std::size_t kMimicPendulumsFixtureBoxCount = 4;
 inline constexpr std::size_t kMimicPendulumsFixtureCylinderCount = 15;
 inline constexpr std::size_t kMimicPendulumsFixtureGroundCount = 1;
