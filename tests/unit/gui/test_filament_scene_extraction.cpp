@@ -263,6 +263,17 @@ std::string readSourceFile(const std::filesystem::path& relativePath)
       std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
 }
 
+std::size_t countOccurrences(std::string_view text, std::string_view needle)
+{
+  std::size_t count = 0;
+  std::size_t position = 0;
+  while ((position = text.find(needle, position)) != std::string_view::npos) {
+    ++count;
+    position += needle.size();
+  }
+  return count;
+}
+
 std::vector<std::filesystem::path> listPublicHeadersInDirectory(
     const std::filesystem::path& relativeDirectory)
 {
@@ -449,6 +460,19 @@ TEST(
   }
 }
 
+TEST(FilamentSceneExtraction, FilamentExampleEntryPointAvoidsBackendTokens)
+{
+  const std::vector<std::filesystem::path> sources
+      = {std::filesystem::path("examples") / "filament_gui" / "main.cpp"};
+
+  const auto violations
+      = scanSourceFilesForTokens(sources, kForbiddenBackendTokens);
+  for (const auto& violation : violations) {
+    ADD_FAILURE() << violation.source << " reaches backend token `"
+                  << violation.token << "` directly";
+  }
+}
+
 TEST(FilamentSceneExtraction, FilamentExampleEntryPointUsesGuiDetailBoundary)
 {
   const std::vector<std::filesystem::path> sources
@@ -460,6 +484,25 @@ TEST(FilamentSceneExtraction, FilamentExampleEntryPointUsesGuiDetailBoundary)
     ADD_FAILURE() << violation.source << " reaches backend detail token `"
                   << violation.token << "` directly";
   }
+}
+
+TEST(FilamentSceneExtraction, FilamentExampleEntryPointStaysMinimal)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "filament_gui" / "main.cpp");
+
+  EXPECT_EQ(countOccurrences(mainSource, "#include "), 1u);
+  EXPECT_NE(
+      mainSource.find(
+          "#include <dart/gui/experimental/detail/application.hpp>"),
+      std::string::npos);
+  EXPECT_EQ(countOccurrences(mainSource, "int main("), 1u);
+  EXPECT_EQ(
+      countOccurrences(
+          mainSource,
+          "return dart::gui::experimental::detail::runGuiApplication("
+          "argc, argv);"),
+      1u);
 }
 
 TEST(FilamentSceneExtraction, FilamentExampleKeepsOnlyMinimalCppEntryPoint)

@@ -114,7 +114,10 @@ avoids a direct Filament sampler include.
 Filament header includes; this is only an incremental guard, not completion of
 the full example include metric. The same unit now recursively guards that the
 example tree contains no regular files except `CMakeLists.txt`, `README.md`,
-and `main.cpp`, and no C++ source/header files except `main.cpp`.
+and `main.cpp`, and no C++ source/header files except `main.cpp`. It also
+checks that the entry point has only the generic application include, a single
+`main`, the delegated `runGuiApplication(argc, argv)` call, and no backend
+implementation tokens.
 The backend-token scan now uses a reusable `scanHeadersForBackendTokens`
 helper with an explicit future hook for promoted `dart/gui/*.hpp` headers once
 the first-class Filament API replaces the legacy OSG-shaped public GUI headers.

@@ -260,11 +260,11 @@
     ground contact renderables while the legacy standalone source remains
     available for solver controls, plots, scenario switching, and frame
     recording.
-    The focused GUI unit test now
-    checks that
-    `examples/filament_gui` contains no C++ source/header
-    files other than `main.cpp` and that the example has no direct Filament
-    header includes. The north-star audit now also maps the legacy OSG/Raylib
+    The focused GUI unit test now checks that `examples/filament_gui` contains
+    no C++ source/header files other than `main.cpp`, that the example has no
+    direct Filament header includes, and that `main.cpp` stays a single-include
+    delegated entry point without backend implementation tokens. The north-star
+    audit now also maps the legacy OSG/Raylib
     GUI surfaces that must be replaced, made private, or removed during
     first-class Filament promotion. The renderer-hidden debug descriptor path
     also covers

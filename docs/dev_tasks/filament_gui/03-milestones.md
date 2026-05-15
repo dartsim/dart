@@ -506,6 +506,10 @@
   build/docs files. Renderer setup, frame lifecycle, resources,
   synchronization, capture, overlays, input translation, and fixture logic
   should live in `dart::gui` or private GUI implementation units.
+  `UNIT_gui_FilamentSceneExtraction` now enforces the current incremental form:
+  only `CMakeLists.txt`, `README.md`, and `main.cpp` may remain in the example
+  tree, and `main.cpp` must stay a single-include delegating entry point with no
+  direct backend implementation tokens.
 
 **Exit criteria**
 
