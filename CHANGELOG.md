@@ -154,8 +154,9 @@
     expose `dartpy.gui.experimental` without backend-specific names.
     Orbit-camera controller state, perspective projection, near/far clipping
     policy, GUI scale normalization, and camera-relative keyboard nudge math now
-    also live in `dart-gui-experimental` and are consumed by the Filament
-    example. The
+    also live in a dedicated `dart/gui/experimental/viewer.hpp` runtime helper
+    and are consumed by the Filament example through `dart-gui-experimental`.
+    The
     north-star audit now also maps the legacy OSG/Raylib GUI surfaces that must
     be replaced, made private, or removed during first-class Filament
     promotion. The renderer-hidden debug descriptor path also covers

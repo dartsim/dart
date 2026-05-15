@@ -187,7 +187,9 @@
   basis/update logic, camera-controller cursor tracking, camera eye
   computation, perspective pick-ray generation, camera-relative directional
   nudge math, GUI scale normalization, and perspective projection/clipping
-  descriptor generation used by the Filament example.
+  descriptor generation used by the Filament example. These viewer-runtime
+  helpers are split into `dart/gui/experimental/viewer.hpp` while `scene.hpp`
+  remains an aggregate compatibility include.
 - `dart-gui-experimental` now owns viewer lifecycle state for pause/step
   behavior, screenshot request tracking, rendered/skipped frame counters, and
   bounded-run stop checks. The Filament example uses this state instead of

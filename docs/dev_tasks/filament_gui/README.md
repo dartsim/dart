@@ -71,7 +71,9 @@
   controller state, and perspective projection/clipping descriptors used by the
   example for bounded screenshots, camera placement, headless mode, pause/step
   behavior, frame accounting, GUI scale normalization, perspective pick rays,
-  and near/far plane policy.
+  and near/far plane policy. Those viewer-runtime helpers now live in
+  `dart/gui/experimental/viewer.hpp` and are re-exported by `scene.hpp` for
+  existing experimental consumers.
 - Renderer resource synchronization planning now compares active renderable
   render-resource versions, so descriptor-owned geometry changes, including
   dynamic soft-mesh vertex changes, `MeshShape` material-color policy changes,

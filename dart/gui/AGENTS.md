@@ -33,8 +33,9 @@ Filament is promoted.
 
 ## Filament Migration Rules
 
-- Use `dart/gui/experimental/scene.hpp` for testable DART-owned concepts while
-  the API is experimental.
+- Use `dart/gui/experimental/scene.hpp` for testable DART-owned scene concepts
+  and `dart/gui/experimental/viewer.hpp` for testable viewer-runtime concepts
+  while the API is experimental.
 - Do not add new public OSG, Raylib, Filament, GLFW, or raw ImGui extension
   points.
 - Keep renderer resources private: materials, textures, buffers, entities,
