@@ -2778,9 +2778,10 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     reference comparison code for `createReference()`, reference tests, and
     comparative benchmarks.
 - Current full local validation refresh:
-  - Commit: `32a55e297e457e1c00d37f2cc9f78df5cafbe4fe`
-    (`Refresh native collision completion audit`), pushed to
-    `origin/feature/new_coll`.
+  - Commit: `399efafbc8084730967eb14f99b9135f3d44cca6`
+    (`Record refreshed downstream collision evidence`), pushed to
+    `origin/feature/new_coll`, before this full-validation evidence-record
+    update.
   - Command:
     `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run test-all`
   - Result: passed. The comprehensive suite reported 6/6 top-level gates:
@@ -2788,10 +2789,12 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     and documentation. The run configured normal native-only defaults with
     `DART_BUILD_COLLISION_FCL`, `DART_BUILD_COLLISION_BULLET`,
     `DART_BUILD_COLLISION_ODE`, collision reference tests, and collision
-    reference benchmarks all `OFF`, while still building dartpy and passing
-    the compatibility-facade lint/audit guards. This confirms the build flags
-    are not required by core DART, dartpy, gz-physics runtime compatibility, or
-    the native-backed legacy package component facades.
+    reference benchmarks all `OFF`, while still building dartpy, passing the
+    264-test Release CTest suite, passing the 13-test simulation-experimental
+    suite, passing Python tests, building documentation, and passing the
+    compatibility-facade lint/audit guards. This confirms the build flags are
+    not required by core DART, dartpy, gz-physics runtime compatibility, or the
+    native-backed legacy package component facades.
 - Current local collision benchmark guard refresh:
   - Commit: `4b1556558900ea4b19a85f3c3c9d8d2f6d175afe`
     (`Record current collision benchmark guard`), pushed to

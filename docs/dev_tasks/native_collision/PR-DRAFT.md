@@ -29,7 +29,7 @@ Make native DART collision the default runtime stack
 ## Test Plan
 
 - `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run test-all`
-  passed on current validation head `32a55e297e4` with default
+  passed on current validation head `399efafbc80` with default
   FCL/Bullet/ODE/reference build flags `OFF`.
 - `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -e collision-reference bm-collision-check`
   passed before benchmark-evidence commit `4b155655890`.
