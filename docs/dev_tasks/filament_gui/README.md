@@ -125,7 +125,9 @@
   visualization scope maintainable.
 - The Filament example now links through `dart-gui-experimental` and can build
   without the legacy OSG `dart-gui` target when `DART_BUILD_GUI=OFF` and
-  `DART_BUILD_DARTPY=OFF`.
+  `DART_BUILD_DARTPY=OFF`. The example now includes the
+  `dart::gui::experimental` API directly instead of carrying an example-local
+  namespace re-export header.
 - Promotion requires explicit visual-quality gates, including dynamic shadows.
 - The current Pixi environment does not provide Filament. The upstream Filament
   Linux archive can be discovered with `Filament_ROOT`. It links and runs in

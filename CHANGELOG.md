@@ -147,7 +147,9 @@
     Filament point-cloud path also consumes per-point color descriptors, and
     the experimental public headers now have unit coverage that guards against
     leaking Filament, GLFW, Dear ImGui, OpenGL, Vulkan, Metal, OSG, or Raylib
-    implementation tokens. The
+    implementation tokens. The Filament example now includes the
+    `dart::gui::experimental` API directly instead of carrying an example-local
+    namespace re-export header. The
     renderer-hidden debug descriptor path also covers support-polygon outlines
     and support-centroid markers, plus arrowheads for contact normal and force
     overlays, equivalent inertia-box overlays, and collision-shape bounds for
