@@ -143,9 +143,9 @@ Success criteria:
 Verification:
 
 - CI job definitions explicitly set
-  `DART_BUILD_COLLISION_FCL=OFF`,
-  `DART_BUILD_COLLISION_BULLET=OFF`, and
-  `DART_BUILD_COLLISION_ODE=OFF`.
+  `DART_BUILD_COLLISION_REFERENCE_FCL=OFF`,
+  `DART_BUILD_COLLISION_REFERENCE_BULLET=OFF`, and
+  `DART_BUILD_COLLISION_REFERENCE_ODE=OFF`.
 - The disabled-backend job passes on Linux before old collision dependencies
   are removed from any wider build environment.
 - gz-physics CI passes against the same branch without local downstream
@@ -166,7 +166,7 @@ reference-only tests and comparative benchmarks behind them, and has local
 reference-disabled/reference-enabled evidence in `03-evidence-gates.md`.
 Normal pixi configure paths now default FCL, Bullet, ODE, reference tests, and
 reference benchmarks to `OFF`; reference comparison jobs opt in through
-`DART_BUILD_COLLISION_*_OVERRIDE=ON`. The reference toggles now propagate
+`DART_BUILD_COLLISION_REFERENCE_*_OVERRIDE=ON`. The reference toggles now propagate
 through the main debug, dartpy, install, coverage, ASAN, Windows, and wheel
 configure entry points. Core native-only link and installed package-export
 inspection now show no old collision component targets or old collision runtime
@@ -221,7 +221,7 @@ old collision component target files. The latest package-export cleanup also
 removes the default `collision-fcl` fallback and the generated
 `collision-bullet`/`collision-ode` compatibility text from native-only
 installed CMake metadata; the install probe now reports only
-`DART_BUILD_COLLISION_*` variables as `OFF`. A fresh install of the normal
+`DART_BUILD_COLLISION_REFERENCE_*` variables as `OFF`. A fresh install of the normal
 runtime components has no FCL, Bullet, ODE, or libccd runtime links from
 installed shared libraries or the built dartpy module. Default and wheel Pixi
 dependency metadata now also omit FCL, Bullet, ODE, and the FCL transitive

@@ -41,12 +41,13 @@
       build with all three disabled.
 - [x] Normal pixi configure paths now default FCL, Bullet, ODE, reference
       correctness tests, and reference benchmarks to `OFF`; comparison jobs
-      opt in with `DART_BUILD_COLLISION_*_OVERRIDE=ON`.
-- [x] `DART_BUILD_COLLISION_FCL`, `DART_BUILD_COLLISION_BULLET`, and
-      `DART_BUILD_COLLISION_ODE` are reference-component knobs only. Core
-      DART, dartpy, gz-physics runtime integration, and the native-backed
-      `collision-fcl`/`collision-bullet`/`collision-ode` compatibility facades
-      no longer need them.
+      opt in with `DART_BUILD_COLLISION_REFERENCE_*_OVERRIDE=ON`.
+- [x] `DART_BUILD_COLLISION_REFERENCE_FCL`,
+      `DART_BUILD_COLLISION_REFERENCE_BULLET`, and
+      `DART_BUILD_COLLISION_REFERENCE_ODE` are reference-component knobs only.
+      Core DART, dartpy, gz-physics runtime integration, and the native-backed
+      `collision-fcl`/`collision-bullet`/`collision-ode` compatibility
+      facades no longer need them.
 - [x] Human-authored user docs no longer describe FCL, Bullet, or ODE as normal
       runtime collision backends. The public overview, numerical-methods,
       constraints, and example docs describe the built-in detector as the
@@ -168,9 +169,10 @@
 - [ ] Final validation after the completing code state is still open. At
       minimum this means `pixi run lint`, `pixi run test-all`, and any
       maintainer-selected CI gates whose failures are not covered locally. The
-      latest full local `pixi run test-all` pass is tied to `399efafbc80` with
-      default FCL/Bullet/ODE/reference knobs `OFF`; final PR-state evidence is
-      still pending.
+      latest full local `pixi run test-all` pass is tied to the working tree
+      after `ab8ad841b9c`, with default
+      `DART_BUILD_COLLISION_REFERENCE_*` engine options and reference gates
+      `OFF`; final PR-state evidence is still pending.
 - [ ] Final evidence transfer and dev-task cleanup are still open.
       `07-pr-evidence-transfer.md` and `PR-DRAFT.md` stage the review packet,
       but this folder must stay until that evidence is moved to the completing
@@ -433,10 +435,11 @@ collision stack.
 
 1. **CI Hardening**
    - Add permanent CI coverage for native-default builds with
-     `DART_BUILD_COLLISION_FCL=OFF`, `DART_BUILD_COLLISION_BULLET=OFF`, and
-     `DART_BUILD_COLLISION_ODE=OFF`; the initial Linux native-only job is now
-     in the working tree with matching local command evidence and still needs
-     GitHub CI evidence.
+     `DART_BUILD_COLLISION_REFERENCE_FCL=OFF`,
+     `DART_BUILD_COLLISION_REFERENCE_BULLET=OFF`, and
+     `DART_BUILD_COLLISION_REFERENCE_ODE=OFF`; the initial Linux native-only
+     job is now in the working tree with matching local command evidence and
+     still needs GitHub CI evidence.
    - Include dartpy import smoke, the `collision-native` label, focused
      default-detector tests, and gz-physics compatibility coverage.
 2. **Reference Test And Benchmark Harness**

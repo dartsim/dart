@@ -3,7 +3,7 @@ file(GLOB facade_hdrs "*.hpp")
 file(GLOB compat_hdrs "compat/*.hpp")
 dart_format_add(${facade_hdrs} ${compat_hdrs})
 
-if(NOT DART_BUILD_COLLISION_ODE)
+if(NOT DART_BUILD_COLLISION_REFERENCE_ODE)
   set(DART_HAVE_ODE FALSE CACHE BOOL "Check if ODE found." FORCE)
   install(
     FILES ${compat_hdrs}
@@ -13,7 +13,7 @@ if(NOT DART_BUILD_COLLISION_ODE)
   return()
 endif()
 
-message(STATUS "Configuring dart/collision/ode (DART_BUILD_COLLISION_ODE=${DART_BUILD_COLLISION_ODE})")
+message(STATUS "Configuring dart/collision/ode (DART_BUILD_COLLISION_REFERENCE_ODE=${DART_BUILD_COLLISION_REFERENCE_ODE})")
 
 # Skip find_package when ODE was already provided via FetchContent
 # (ODE_FOUND and ODE::ODE target already set in dart_find_dependencies.cmake)
@@ -22,8 +22,8 @@ if(NOT ODE_FOUND OR NOT TARGET ODE::ODE)
   if(NOT ODE_FOUND)
     message(
       FATAL_ERROR
-      "DART_BUILD_COLLISION_ODE is ON but ODE (>= 0.13) was not found. "
-      "Please install libode-dev or disable DART_BUILD_COLLISION_ODE."
+      "DART_BUILD_COLLISION_REFERENCE_ODE is ON but ODE (>= 0.13) was not found. "
+      "Please install libode-dev or disable DART_BUILD_COLLISION_REFERENCE_ODE."
     )
   endif()
 endif()

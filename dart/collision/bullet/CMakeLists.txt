@@ -3,7 +3,7 @@ file(GLOB facade_hdrs "*.hpp")
 file(GLOB compat_hdrs "compat/*.hpp")
 dart_format_add(${facade_hdrs} ${compat_hdrs})
 
-if(NOT DART_BUILD_COLLISION_BULLET)
+if(NOT DART_BUILD_COLLISION_REFERENCE_BULLET)
   set(DART_HAVE_BULLET FALSE CACHE BOOL "Check if BULLET found." FORCE)
   unset(BT_USE_DOUBLE_PRECISION CACHE)
   unset(BT_USE_DOUBLE_PRECISION)
@@ -15,7 +15,7 @@ if(NOT DART_BUILD_COLLISION_BULLET)
   return()
 endif()
 
-message(STATUS "Configuring dart/collision/bullet (DART_BUILD_COLLISION_BULLET=${DART_BUILD_COLLISION_BULLET})")
+message(STATUS "Configuring dart/collision/bullet (DART_BUILD_COLLISION_REFERENCE_BULLET=${DART_BUILD_COLLISION_REFERENCE_BULLET})")
 
 # Skip find_package when Bullet was already provided via FetchContent
 # (BULLET_FOUND and BULLET_LIBRARIES already set in dart_find_dependencies.cmake)
@@ -27,9 +27,9 @@ if(NOT BULLET_FOUND)
   if(NOT BULLET_FOUND)
     message(
       FATAL_ERROR
-      "DART_BUILD_COLLISION_BULLET is ON but Bullet was not found. "
+      "DART_BUILD_COLLISION_REFERENCE_BULLET is ON but Bullet was not found. "
       "Please install libbullet-dev (>= 3.25) or disable "
-      "DART_BUILD_COLLISION_BULLET."
+      "DART_BUILD_COLLISION_REFERENCE_BULLET."
     )
   endif()
 endif()

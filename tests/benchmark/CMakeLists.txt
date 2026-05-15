@@ -46,7 +46,7 @@ include(dart_test_libccd)
 # ==============================================================================
 # Collision Benchmarks
 # ==============================================================================
-if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS AND DART_BUILD_COLLISION_BULLET)
+if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS AND DART_BUILD_COLLISION_REFERENCE_BULLET)
   add_executable(bm_boxes collision/bm_boxes.cpp)
   target_link_libraries(bm_boxes
     dart

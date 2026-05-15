@@ -61,22 +61,23 @@ must be deleted in the same PR that completes the native-collision migration.
 
 Local validation currently recorded in the dev-task evidence:
 
-- `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run test-all`
-  passed on current validation head `399efafbc80` with 6/6 top-level gates:
-  linting, build, unit tests, simulation-experimental tests, Python tests, and
-  documentation. Default configure kept FCL, Bullet, ODE, reference tests, and
-  reference benchmarks all `OFF`, confirming those build flags are not required
-  by core DART, dartpy, gz-physics runtime integration, or native-backed
-  compatibility facades.
 - `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
-  passed after the compatibility-facade audit hardening with 6/6 top-level
-  gates:
+  passed on the working tree after `ab8ad841b9c` with 6/6 top-level gates:
   - linting
   - build
   - unit tests
   - simulation-experimental tests
   - Python tests
   - documentation
+- Default configure kept `DART_BUILD_COLLISION_REFERENCE_FCL`,
+  `DART_BUILD_COLLISION_REFERENCE_BULLET`,
+  `DART_BUILD_COLLISION_REFERENCE_ODE`, reference tests, and reference
+  benchmarks all `OFF`, confirming those build flags are not required by core
+  DART, dartpy, gz-physics runtime integration, or native-backed compatibility
+  facades.
+- `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e collision-reference -- ctest --test-dir build/collision-reference/cpp/Release --output-on-failure -R '^test_reference_backends$' -j 5`
+  passed 1/1 after the `collision-reference` configure path reported FCL,
+  Bullet, ODE, reference tests, and reference benchmarks `ON`.
 - `pixi run lint` passed and includes:
   - `check-collision-runtime-isolation`
   - `audit-collision-compat-facades`
@@ -92,9 +93,9 @@ Local validation currently recorded in the dev-task evidence:
 - Current local downstream evidence:
   - fresh `pixi run -e gazebo test-gz` passed 65/65 tests with the DART
     install configured as native-only:
-    `DART_BUILD_COLLISION_FCL=OFF`,
-    `DART_BUILD_COLLISION_BULLET=OFF`,
-    `DART_BUILD_COLLISION_ODE=OFF`
+    `DART_BUILD_COLLISION_REFERENCE_FCL=OFF`,
+    `DART_BUILD_COLLISION_REFERENCE_BULLET=OFF`,
+    `DART_BUILD_COLLISION_REFERENCE_ODE=OFF`
   - native compatibility package smoke passed against the same native-only
     install, including installed `collision-fcl`, `collision-bullet`, and
     `collision-ode` package component facades
@@ -159,8 +160,9 @@ Compatibility notes:
 - C++ downstream deprecation warnings are enabled by default through
   `DART_COLLISION_DEPRECATE_LEGACY_NAMES`; downstreams may turn that option
   off only as a migration aid. Dartpy intentionally takes the clean API path.
-- `DART_BUILD_COLLISION_FCL`, `DART_BUILD_COLLISION_BULLET`, and
-  `DART_BUILD_COLLISION_ODE` only enable explicit `collision-reference-*`
-  comparison components. Core DART, dartpy, gz-physics runtime integration,
-  and native-backed compatibility facades do not need those options; do not use
-  these flags as compatibility gates.
+- `DART_BUILD_COLLISION_REFERENCE_FCL`,
+  `DART_BUILD_COLLISION_REFERENCE_BULLET`, and
+  `DART_BUILD_COLLISION_REFERENCE_ODE` only enable explicit
+  `collision-reference-*` comparison components. Core DART, dartpy,
+  gz-physics runtime integration, and native-backed compatibility facades do
+  not need those options; do not use these flags as compatibility gates.

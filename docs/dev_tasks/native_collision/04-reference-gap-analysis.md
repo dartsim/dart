@@ -38,7 +38,7 @@ The current built-in stack already has substantial native infrastructure:
   reference benchmarks.
 - Normal pixi configure entry points now default FCL, Bullet, ODE, reference
   tests, and reference benchmarks to `OFF`; explicit comparison jobs opt in
-  with `DART_BUILD_COLLISION_*_OVERRIDE=ON`.
+  with `DART_BUILD_COLLISION_REFERENCE_*_OVERRIDE=ON`.
 - Native-only installed package exports now default to the `dart` component and
   retain legacy `collision-fcl`, `collision-bullet`, and `collision-ode`
   component names only as native-backed interface facades. They no longer
@@ -334,7 +334,7 @@ The built-in architecture should make performance visible before optimization:
       carry the reference test/benchmark toggles.
 - [x] Normal pixi configure paths default FCL, Bullet, ODE, reference tests,
       and reference benchmarks to `OFF`.
-- [x] Explicit `DART_BUILD_COLLISION_*_OVERRIDE=ON` opt-in restores reference
+- [x] Explicit `DART_BUILD_COLLISION_REFERENCE_*_OVERRIDE=ON` opt-in restores reference
       component, correctness-test, and benchmark targets.
 - [x] Native-only install-style core build produces `libdart.so` without FCL,
       Bullet, ODE, or libccd runtime links.

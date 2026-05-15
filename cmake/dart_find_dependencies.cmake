@@ -21,14 +21,6 @@ dart_check_required_package(EIGEN3 "eigen3")
 dart_find_package(assimp)
 dart_check_required_package(assimp "assimp")
 
-# FCL
-if(DART_BUILD_COLLISION_FCL)
-  dart_find_package(fcl)
-  dart_check_required_package(fcl "fcl")
-else()
-  set(DART_HAVE_FCL FALSE CACHE BOOL "Check if fcl found." FORCE)
-endif()
-
 #=======================
 # Optional dependencies
 #=======================
@@ -76,6 +68,14 @@ endif()
 
 find_package(Python3 COMPONENTS Interpreter Development)
 
+# Optional collision reference dependency. FCL is not required by core DART.
+if(DART_BUILD_COLLISION_REFERENCE_FCL)
+  dart_find_package(fcl)
+  dart_check_required_package(fcl "fcl")
+else()
+  set(DART_HAVE_FCL FALSE CACHE BOOL "Check if fcl found." FORCE)
+endif()
+
 option(DART_SKIP_spdlog "If ON, do not use spdlog even if it is found." OFF)
 mark_as_advanced(DART_SKIP_spdlog)
 dart_find_package(spdlog)
@@ -83,10 +83,10 @@ dart_find_package(spdlog)
 # Only fetch ODE/Bullet if the corresponding collision module is enabled
 # and system libraries are not being used.
 set(_dart_need_fetch_content OFF)
-if(DART_BUILD_COLLISION_ODE AND NOT DART_USE_SYSTEM_ODE)
+if(DART_BUILD_COLLISION_REFERENCE_ODE AND NOT DART_USE_SYSTEM_ODE)
   set(_dart_need_fetch_content ON)
 endif()
-if(DART_BUILD_COLLISION_BULLET AND NOT DART_USE_SYSTEM_BULLET)
+if(DART_BUILD_COLLISION_REFERENCE_BULLET AND NOT DART_USE_SYSTEM_BULLET)
   set(_dart_need_fetch_content ON)
 endif()
 if(_dart_need_fetch_content)
@@ -94,7 +94,7 @@ if(_dart_need_fetch_content)
 endif()
 unset(_dart_need_fetch_content)
 
-if(DART_BUILD_COLLISION_ODE AND NOT DART_USE_SYSTEM_ODE)
+if(DART_BUILD_COLLISION_REFERENCE_ODE AND NOT DART_USE_SYSTEM_ODE)
   # Match Ubuntu/conda-forge libode settings (libccd enabled, box-cylinder disabled).
   set(_dart_build_shared_libs "${BUILD_SHARED_LIBS}")
   set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
@@ -136,7 +136,7 @@ if(DART_BUILD_COLLISION_ODE AND NOT DART_USE_SYSTEM_ODE)
 
   set(BUILD_SHARED_LIBS "${_dart_build_shared_libs}" CACHE BOOL "" FORCE)
   unset(_dart_build_shared_libs)
-elseif(DART_BUILD_COLLISION_ODE)
+elseif(DART_BUILD_COLLISION_REFERENCE_ODE)
   # Using system ODE - clear any stale FetchContent cache values so dart_find_package runs fresh
   unset(ODE_FOUND CACHE)
   unset(ODE_LIBRARIES CACHE)
@@ -145,7 +145,7 @@ elseif(DART_BUILD_COLLISION_ODE)
   unset(DART_ODE_BINARY_DIR CACHE)
 endif()
 
-if(DART_BUILD_COLLISION_BULLET AND NOT DART_USE_SYSTEM_BULLET)
+if(DART_BUILD_COLLISION_REFERENCE_BULLET AND NOT DART_USE_SYSTEM_BULLET)
   # Match conda-forge Bullet float64 build flags.
   set(_dart_build_shared_libs "${BUILD_SHARED_LIBS}")
   set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
@@ -191,7 +191,7 @@ if(DART_BUILD_COLLISION_BULLET AND NOT DART_USE_SYSTEM_BULLET)
 
   set(BUILD_SHARED_LIBS "${_dart_build_shared_libs}" CACHE BOOL "" FORCE)
   unset(_dart_build_shared_libs)
-elseif(DART_BUILD_COLLISION_BULLET)
+elseif(DART_BUILD_COLLISION_REFERENCE_BULLET)
   # Using system Bullet - clear any stale FetchContent cache values so dart_find_package
   # and the precision probe run fresh
   unset(Bullet_FOUND CACHE)

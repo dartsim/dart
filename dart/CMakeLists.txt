@@ -60,15 +60,15 @@ add_component(${PROJECT_NAME} collision-fcl)
 add_component(${PROJECT_NAME} collision-bullet)
 add_component(${PROJECT_NAME} collision-ode)
 
-if(DART_BUILD_COLLISION_FCL)
+if(DART_BUILD_COLLISION_REFERENCE_FCL)
   add_component(${PROJECT_NAME} collision-reference-fcl)
 endif()
 
-if(DART_BUILD_COLLISION_BULLET)
+if(DART_BUILD_COLLISION_REFERENCE_BULLET)
   add_component(${PROJECT_NAME} collision-reference-bullet)
 endif()
 
-if(DART_BUILD_COLLISION_ODE)
+if(DART_BUILD_COLLISION_REFERENCE_ODE)
   add_component(${PROJECT_NAME} collision-reference-ode)
 endif()
 
