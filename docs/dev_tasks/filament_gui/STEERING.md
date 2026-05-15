@@ -30,6 +30,9 @@ recommended maintainability slices:
 - `dart/gui/experimental/detail/filament/imgui_overlay.hpp` and `.cpp` own
   ImGui context setup, style/font initialization, draw-data upload, and overlay
   teardown.
+- `dart/gui/experimental/detail/filament/ui_frame.hpp` and `.cpp` own
+  per-frame UI input sync, built-in status panel dispatch, panel-triggered
+  debug-overlay refreshes, and ImGui overlay upload.
 - `dart/gui/experimental/detail/filament/frame_renderer.hpp` and `.cpp` own the
   private render-frame, skipped-frame, screenshot-request, and frame-accounting
   policy.

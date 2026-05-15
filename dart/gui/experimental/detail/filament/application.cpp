@@ -42,7 +42,6 @@
 #include <dart/gui/experimental/detail/filament/imgui_overlay.hpp>
 #include <dart/gui/experimental/detail/filament/input.hpp>
 #include <dart/gui/experimental/detail/filament/native_window.hpp>
-#include <dart/gui/experimental/detail/filament/panel.hpp>
 #include <dart/gui/experimental/detail/filament/renderable_factory.hpp>
 #include <dart/gui/experimental/detail/filament/renderable_resources.hpp>
 #include <dart/gui/experimental/detail/filament/renderable_sync.hpp>
@@ -51,6 +50,7 @@
 #include <dart/gui/experimental/detail/filament/scene_requirements.hpp>
 #include <dart/gui/experimental/detail/filament/screenshot.hpp>
 #include <dart/gui/experimental/detail/filament/simulation_stepper.hpp>
+#include <dart/gui/experimental/detail/filament/ui_frame.hpp>
 #include <dart/gui/experimental/profile.hpp>
 #include <dart/gui/experimental/scene.hpp>
 #include <dart/simulation/world.hpp>
@@ -61,7 +61,6 @@
 
 #include <chrono>
 #include <cstddef>
-#include <cstdint>
 #include <iostream>
 #include <optional>
 #include <vector>
@@ -122,7 +121,6 @@ using dart::gui::experimental::filament::getNativeWindow;
 using dart::gui::experimental::filament::handleScroll;
 using dart::gui::experimental::filament::makeDebugOverlayController;
 using dart::gui::experimental::filament::pollApplicationInput;
-using dart::gui::experimental::filament::renderBuiltInStatusPanel;
 using dart::gui::experimental::filament::renderApplicationFrame;
 using dart::gui::experimental::filament::refreshContactDebugOverlay;
 using dart::gui::experimental::filament::refreshSelectionDebugLineOverlay;
@@ -130,8 +128,7 @@ using dart::gui::experimental::filament::refreshStaticDebugOverlay;
 using dart::gui::experimental::filament::removeRenderableFromScene;
 using dart::gui::experimental::filament::synchronizeSceneRenderables;
 using dart::gui::experimental::filament::updateFrameViewport;
-using dart::gui::experimental::filament::updateImGuiOverlay;
-using dart::gui::experimental::filament::updateImGuiMouseInput;
+using dart::gui::experimental::filament::updateFrameUi;
 using dart::gui::experimental::filament::updateOrbitingKeyLight;
 using dart::gui::experimental::filament::updateSceneRenderablesFromDescriptors;
 using dart::gui::experimental::filament::AppOptions;
@@ -140,7 +137,6 @@ using dart::gui::experimental::filament::ExampleScene;
 using dart::gui::experimental::filament::createDartScene;
 using dart::gui::experimental::filament::initialCameraForScene;
 using dart::gui::experimental::filament::parseOptions;
-using dart::gui::experimental::filament::sceneName;
 using dart::gui::experimental::filament::validateCreatedSceneContent;
 using dart::gui::experimental::filament::validateSceneDescriptorContent;
 
@@ -339,42 +335,22 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
     profile.selectionDebugMs += elapsedMs(phaseStart);
 
     if (appOptions.showUi) {
-      phaseStart = ProfileAccumulator::Clock::now();
-      updateImGuiMouseInput(window, imguiIo, viewport.width, viewport.height);
-      ImGui::NewFrame();
-      const bool debugOptionsChanged = renderBuiltInStatusPanel(
-          sceneName(appOptions.scene),
-          dartScene.world->getTime(),
-          dartScene.world->getLastCollisionResult().getNumContacts(),
-          selectionController.selectedLabel(),
-          !dartScene.ikHandles.empty(),
-          orbitLight,
-          debugOverlays.staticOptions,
-          debugOverlays.contactOptions,
-          lifecycle,
-          guiScale);
-      if (debugOptionsChanged) {
-        refreshStaticDebugOverlay(
-            *engine,
-            *scene,
-            materials.debugColor,
-            *dartScene.world,
-            debugOverlays);
-        refreshContactDebugOverlay(
-            *engine,
-            *scene,
-            materials.debugColor,
-            dartScene.world->getLastCollisionResult(),
-            debugOverlays);
-      }
-      ImGui::Render();
-      updateImGuiOverlay(
+      updateFrameUi(
+          window,
           *engine,
+          *scene,
+          materials.debugColor,
           imguiOverlay,
-          ImGui::GetDrawData(),
-          static_cast<std::uint32_t>(viewport.width),
-          static_cast<std::uint32_t>(viewport.height));
-      profile.uiMs += elapsedMs(phaseStart);
+          imguiIo,
+          viewport,
+          appOptions.scene,
+          dartScene,
+          selectionController,
+          orbitLight,
+          debugOverlays,
+          lifecycle,
+          guiScale,
+          profile);
     }
 
     const FrameRenderResult frameRenderResult = renderApplicationFrame(

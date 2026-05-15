@@ -214,6 +214,7 @@ set(filament_gui_backend_srcs
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/selection.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/simulation_stepper.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/textures.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/ui_frame.cpp"
 )
 set(filament_gui_backend_hdrs
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/application.hpp"
@@ -235,6 +236,7 @@ set(filament_gui_backend_hdrs
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/selection.hpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/simulation_stepper.hpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/textures.hpp"
+  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/ui_frame.hpp"
 )
 add_executable(
   ${example_target}
