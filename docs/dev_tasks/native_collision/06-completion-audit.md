@@ -102,10 +102,10 @@ unverified external and finalization gates:
   `test_collision_world` dangling-pointer issue in world-level sphere/capsule
   cast results; the world query layer now keeps stable collision-object handles
   for raycast, sphere-cast, and capsule-cast result pointers.
-- Later pushed heads `f31f1a5b897`, `bdf6e34573c`, `6be640e7007`, and
-  `ec6f6f43112` contain audit/docs/policy refinements and the clean dartpy
-  collision API. `gh run list --branch feature/new_coll --commit ...` returns
-  no GitHub Actions runs for those heads because those branch pushes are not an
+- Later pushed heads `f31f1a5b897`, `bdf6e34573c`, `6be640e7007`,
+  `ec6f6f43112`, and `aa3ccce70c7` contain audit/docs/policy refinements and
+  the clean dartpy collision API. The matching `gh run list` checks return no
+  GitHub Actions runs for those heads because those branch pushes are not an
   allowed workflow trigger.
 - Local downstream migration evidence is refreshed: fresh gz-physics,
   package-smoke, runtime-isolation, C++ compatibility-name, dartpy clean-API,
@@ -142,9 +142,10 @@ Current audited state:
   (`Record current native collision validation pass`), which records the
   current local validation pass after the durable built-in architecture docs
   and compatibility-facade policy cleanup.
-- Branch state: `feature/new_coll` is pushed to origin at `ec6f6f43112`
-  (`Clean dartpy collision API and deprecate C++ facades`). That head includes
-  the latest code/evidence head `1e1faf6feb1`
+- Latest audited branch evidence: `ec6f6f43112`
+  (`Clean dartpy collision API and deprecate C++ facades`) plus
+  `aa3ccce70c7` (`Clarify collision reference build options`). Those commits
+  include the latest code/evidence head `1e1faf6feb1`
   (`Fix native capsule convex casts in CI`), the local downstream evidence
   checkpoint, the compatibility-facade audit guard at `f31f1a5b897`, the PR
   evidence transfer draft, the closed-PR CI trigger evidence at `6be640e7007`,
@@ -224,7 +225,7 @@ Current audited state:
     a DART test failure: `/usr/lib/gcc/x86_64-redhat-linux/15/libasan.so` is a
     linker script pointing at missing `/usr/lib64/libasan.so.8.0.0`, so the
     ASAN build fails at link time before native collision tests can run.
-- Current pushed-head local validation for `ec6f6f43112`:
+- Clean-API baseline local validation for `ec6f6f43112`:
   - `pixi run lint` passed before the commit and included
     `check-collision-runtime-isolation` plus
     `audit-collision-compat-facades`.
@@ -243,6 +244,20 @@ Current audited state:
   - `gh run list --branch feature/new_coll --commit ec6f6f43112 ...` returned
     no workflow runs because feature-branch pushes are not workflow triggers
     for the main CI surfaces while PR #2652 is closed.
+- Build-option policy docs validation for `aa3ccce70c7`:
+  - `pixi run lint` passed and configured the default build with
+    `DART_BUILD_COLLISION_FCL=OFF`, `DART_BUILD_COLLISION_BULLET=OFF`,
+    `DART_BUILD_COLLISION_ODE=OFF`,
+    `DART_BUILD_COLLISION_REFERENCE_TESTS=OFF`, and
+    `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS=OFF`.
+  - The lint gate included `check-collision-runtime-isolation` and
+    `audit-collision-compat-facades`, whose output still reported
+    `dartpy API: DartCollisionDetector only; legacy detector aliases absent`
+    and `package components: collision-fcl/bullet/ode -> dart`.
+  - `git diff --check` passed before commit.
+  - `gh run list --branch feature/new_coll --commit aa3ccce70c7 ...` returned
+    no workflow runs because feature-branch pushes are not workflow triggers
+    while PR #2652 is closed.
 - Initial PR CI state: GitHub Actions started for the pushed head. The first
   completed failure was `Asserts enabled (no -DNDEBUG)`, run `25870574281`,
   job `76024440344`, which failed during configure because
@@ -551,8 +566,8 @@ Legend:
    Manual workflow-dispatch reference evidence for pushed head `1e1faf6feb1`
    now covers native-only CI, gz-physics, the wheel matrix, and the collision
    benchmark guard artifact upload. Later pushed heads `f31f1a5b897`,
-   `bdf6e34573c`, `6be640e7007`, and `ec6f6f43112` have no attached runs for
-   the same trigger-filter reason.
+   `bdf6e34573c`, `6be640e7007`, `ec6f6f43112`, and `aa3ccce70c7` have no
+   attached runs for the same trigger-filter reason.
    Treat GitHub CI as reference evidence; use local build/test as the main
    validation surface unless the maintainer explicitly chooses another trigger.
 2. Record downstream deprecation policy evidence proving downstream users no

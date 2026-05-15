@@ -208,15 +208,16 @@
       A final local `pixi run test-all` after that audit checkpoint passed all
       6 top-level gates. `07-pr-evidence-transfer.md` now stages the
       PR-template-shaped evidence packet for the eventual review surface.
-      The current pushed head `ec6f6f43112` makes the dartpy collision API
-      clean, default-deprecates retained C++ compatibility facade names, and
-      records that FCL/Bullet/ODE build switches are only for explicit
-      reference components. Local `pixi run lint`, `pixi run build`,
-      `pixi run test-unit`, `pixi run test-py`, `pixi run -e gazebo test-gz`,
-      and the native compatibility package smoke all passed before that push.
-      GitHub reports no Actions runs for `ec6f6f43112` because branch pushes to
-      `feature/new_coll` do not match the workflow `push` filters and PR #2652
-      remains closed.
+      The clean-API evidence baseline `ec6f6f43112` makes the dartpy collision
+      API clean and default-deprecates retained C++ compatibility facade names.
+      Local `pixi run lint`, `pixi run build`, `pixi run test-unit`,
+      `pixi run test-py`, `pixi run -e gazebo test-gz`, and the native
+      compatibility package smoke all passed before that push. Follow-up
+      policy/docs commit `aa3ccce70c7` records that FCL/Bullet/ODE build
+      switches are only for explicit reference components and passed
+      `pixi run lint`. GitHub reports no Actions runs for either commit because
+      branch pushes to `feature/new_coll` do not match the workflow `push`
+      filters and PR #2652 remains closed.
 
 ## Goal
 

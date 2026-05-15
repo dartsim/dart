@@ -100,8 +100,9 @@ Local validation currently recorded in the dev-task evidence:
   - collision benchmark guard uploaded
     `collision-benchmark-guard-25887939088-1`
 - Later pushed audit/docs/policy heads `f31f1a5b897`, `bdf6e34573c`,
-  `6be640e7007`, and `ec6f6f43112` have no attached GitHub Actions runs
-  because `feature/new_coll` pushes do not match the workflow `push` filters.
+  `6be640e7007`, `ec6f6f43112`, and `aa3ccce70c7` have no attached GitHub
+  Actions runs because `feature/new_coll` pushes do not match the workflow
+  `push` filters.
 
 Final PR-complete testing still needs whatever CI surface the maintainer chooses
 after PR #2652 is reopened or a successor PR is created.
@@ -129,8 +130,9 @@ Compatibility notes:
 ## Related Issues / PRs
 
 - PR #2652: `https://github.com/dartsim/dart/pull/2652`
-- Current pushed branch: `feature/new_coll` at `ec6f6f43112`
-  (`Clean dartpy collision API and deprecate C++ facades`).
+- Latest audited branch evidence:
+  - `ec6f6f43112` (`Clean dartpy collision API and deprecate C++ facades`)
+  - `aa3ccce70c7` (`Clarify collision reference build options`)
 
 ## Checklist Notes
 

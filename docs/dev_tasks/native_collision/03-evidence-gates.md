@@ -2633,8 +2633,8 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     `7005904083`, `7005879764`, `7006075376`, `7006153851`,
     `7006180173`.
 - Closed-PR trigger state after later pushed audit/docs heads:
-  - Heads `f31f1a5b897`, `bdf6e34573c`, `6be640e7007`, and `ec6f6f43112` are
-    pushed to `feature/new_coll`, but
+  - Heads `f31f1a5b897`, `bdf6e34573c`, `6be640e7007`, `ec6f6f43112`, and
+    `aa3ccce70c7` are pushed to `feature/new_coll`, but
     `gh run list --branch feature/new_coll --commit` returns no Actions runs
     for those commits. These pushes publish branch state only because the
     workflows do not run on arbitrary feature-branch pushes.
@@ -2732,6 +2732,18 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     compatibility component facades do not need those options.
   - GitHub trigger evidence:
     `gh run list --branch feature/new_coll --commit ec6f6f43112 ...` returned
+    no runs because PR #2652 is closed and feature-branch pushes do not match
+    the main workflow `push` filters.
+- Follow-up collision reference build-option docs checkpoint:
+  - Commit: `aa3ccce70c7`
+    (`Clarify collision reference build options`), pushed to
+    `origin/feature/new_coll`.
+  - Result: passed `pixi run lint`, including
+    `check-collision-runtime-isolation`, `audit-collision-compat-facades`, and
+    default configure output with FCL, Bullet, ODE, reference tests, and
+    reference benchmarks all `OFF`.
+  - GitHub trigger evidence:
+    `gh run list --branch feature/new_coll --commit aa3ccce70c7 ...` returned
     no runs because PR #2652 is closed and feature-branch pushes do not match
     the main workflow `push` filters.
 

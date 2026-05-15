@@ -161,12 +161,13 @@ This is actionable code work Codex should fix in Step A. It is not contradicted 
 
 ### Critic (plan coherence) — completed
 
-Status update after `ec6f6f43112`: the SHA bookkeeping concern below is
+Status update after `aa3ccce70c7`: the SHA bookkeeping concern below is
 resolved in `README.md`, `RESUME.md`, `06-completion-audit.md`, and
-`07-pr-evidence-transfer.md`. The canonical current branch head is now
-`ec6f6f43112`; the latest GitHub Actions evidence remains the earlier manual
-workflow-dispatch reference evidence on `1e1faf6feb1` because PR #2652 is
-closed and feature-branch pushes do not trigger the main workflows.
+`07-pr-evidence-transfer.md` by recording audited evidence baselines instead of
+self-referential "current head" claims. The latest GitHub Actions evidence
+remains the earlier manual workflow-dispatch reference evidence on
+`1e1faf6feb1` because PR #2652 is closed and feature-branch pushes do not
+trigger the main workflows.
 
 **Top 3 plan risks:**
 
@@ -179,8 +180,8 @@ closed and feature-branch pushes do not trigger the main workflows.
 - **README vs. completion-audit on CI status.** README line 132: `[x] CI Linux has a scheduled/manual collision benchmark guard job ... uploads .benchmark_results/...` But `06-completion-audit.md` ~line 30: _"scheduled/permanent gate evidence is still a finalization item."_ The README hides "scheduled gate not proven" behind a checked box.
 - **Three different "current" SHAs.** Earlier docs cited `8c83cd19cb8`,
   `1e1faf6feb1`, and `f5d4f9ee932` as current in different places. This is now
-  resolved to canonical branch head `ec6f6f43112`, with prior SHAs retained
-  only as evidence checkpoints.
+  resolved by recording `ec6f6f43112` and `aa3ccce70c7` as audited evidence
+  baselines, with prior SHAs retained only as evidence checkpoints.
 - **Phase 10 marked "locally complete" in 02-milestones but README progress scale Stage 9 says "policy evidence left."**
 - **README narrates 4 separate `pixi run test-all` "passes", each on a different SHA after a different regression repair.** No single SHA where everything green coexists with the latest code.
 
@@ -209,10 +210,11 @@ The architect and critic disagree on whether to start coding (architect: yes, ru
 A1. **Decommit inflated README `[x]` items.** Convert items whose evidence is "manual workflow-dispatch on closed PR" to `[~]` (in progress) and rewrite the line so the actual gate (scheduled CI on an open PR or merged main) is visible.
 
 A2. **Pick ONE canonical "current SHA"** and ensure README, RESUME, and
-06-audit all reference the same one. Current resolution: latest pushed head
-`ec6f6f43112`, with `1e1faf6feb1` retained as the last manual
-workflow-dispatch evidence head and intermediate docs/audit commits retained
-only as historical checkpoints.
+06-audit all reference the same one. Current resolution: record audited
+evidence baselines instead of a self-referential current-head claim:
+`ec6f6f43112` is the clean-API baseline, `aa3ccce70c7` is the build-option
+policy baseline, and `1e1faf6feb1` is retained as the last manual
+workflow-dispatch evidence head.
 
 A3. **Replace the single open `[ ]` mega-item in README** with a 6-bullet list mirroring the audit's "Missing Evidence And Required Next Actions" so progress is measurable per Phase (10/11/13/14).
 

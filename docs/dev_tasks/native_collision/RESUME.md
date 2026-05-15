@@ -672,10 +672,11 @@ libraries.
 - `07-pr-evidence-transfer.md` stages the eventual PR description evidence
   packet, but it is not completion evidence until copied to the PR review
   surface and this dev-task folder is deleted in the same completing PR.
-- The current pushed branch head is `ec6f6f43112`. It includes the repaired
-  code/evidence head `1e1faf6feb1`, the compatibility-facade audit guard, the
-  PR evidence transfer draft, the clean dartpy collision API, default-on C++
-  compatibility facade deprecations, and docs clarifying that
+- The latest audited branch evidence includes clean-API baseline `ec6f6f43112`
+  and follow-up policy/docs baseline `aa3ccce70c7`. Together they include the
+  repaired code/evidence head `1e1faf6feb1`, the compatibility-facade audit
+  guard, the PR evidence transfer draft, the clean dartpy collision API,
+  default-on C++ compatibility facade deprecations, and docs clarifying that
   `DART_BUILD_COLLISION_FCL`, `DART_BUILD_COLLISION_BULLET`, and
   `DART_BUILD_COLLISION_ODE` are only for explicit `collision-reference-*`
   comparison components. Core DART, dartpy, gz-physics runtime integration, and
@@ -683,9 +684,9 @@ libraries.
   options. Manual workflow-dispatch evidence on `1e1faf6feb1` passed
   native-only CI, gz-physics CI, the full dartpy wheel matrix, and the
   collision benchmark guard artifact upload. Later pushes
-  `f31f1a5b897`, `bdf6e34573c`, `6be640e7007`, and `ec6f6f43112` have no
-  attached Actions runs because `feature/new_coll` does not match the workflow
-  `push` filters and PR #2652 remains closed.
+  `f31f1a5b897`, `bdf6e34573c`, `6be640e7007`, `ec6f6f43112`, and
+  `aa3ccce70c7` have no attached Actions runs because `feature/new_coll` does
+  not match the workflow `push` filters and PR #2652 remains closed.
 
 ## How to Resume
 
