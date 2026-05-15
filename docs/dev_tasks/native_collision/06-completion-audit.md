@@ -125,8 +125,9 @@ unverified external and finalization gates:
   validation baseline `376fd5e686d`, with only public reference
   tests/benchmarks gates and no per-engine FCL/Bullet/ODE collision build
   switches in current code/config paths.
-  Downstream deprecation policy evidence is still missing before retained
-  facades can be removed or hard-deprecated.
+  `05-downstream-migration.md` now defines the deprecation evidence acceptance
+  criteria; final PR/downstream CI evidence is still missing before retained
+  facades can be removed or hard-deprecated further.
 - Final compatibility-facade retention/deprecation evidence is still missing:
   the documented decision is to delete old external-engine runtime
   implementations, keep only native-backed compatibility facades required by

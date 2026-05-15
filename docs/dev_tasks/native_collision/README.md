@@ -123,8 +123,9 @@
       contract: retained C++ legacy detector names, factory keys, and package
       components are source-compatible routes to the built-in detector, dartpy
       uses the clean `DartCollisionDetector` API without legacy Python aliases,
-      and reference engines require explicit `collision-reference-*` targets
-      plus `createReference()` APIs.
+      reference engines require explicit `collision-reference-*` targets plus
+      `createReference()` APIs, and the deprecation evidence acceptance
+      checklist names the artifacts that close the downstream policy gate.
 - [x] Public migration docs now carry the same DART 7 policy: C++ legacy
       collision names are native-backed migration facades, dartpy does not keep
       old detector aliases, and FCL/Bullet/ODE comparison engines are opt-in
@@ -166,10 +167,10 @@
       evidence, but the final review surface must be maintainer-selected
       because PR #2652 is closed.
 - [ ] Downstream migration/deprecation finalization is still open. The local
-      contract, C++ deprecation option, clean dartpy API, gz-physics smoke,
-      package smoke, and link inspections exist; final downstream/PR evidence
-      still has to prove retained names are migration facades rather than
-      runtime backend selectors.
+      contract, C++ deprecation option, clean dartpy API, acceptance criteria,
+      gz-physics smoke, package smoke, and link inspections exist; final
+      downstream/PR evidence still has to prove retained names are migration
+      facades rather than runtime backend selectors.
 - [ ] Final compatibility-facade/runtime cleanup policy is still open. The
       current reference-file audit found no unreferenced old-engine
       implementation files to delete; remaining FCL/Bullet/ODE code is
