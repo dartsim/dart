@@ -67,6 +67,7 @@ enum class ExampleScene
 {
   Mvp,
   HelloWorld,
+  Boxes,
   DragAndDrop,
   Polyhedron,
   Heightmap,
@@ -96,6 +97,10 @@ inline constexpr const char* kHelloWorldBoxFixtureSkeletonName
     = "visual_hello_world_box";
 inline constexpr const char* kHelloWorldGroundFixtureSkeletonName
     = "visual_hello_world_ground";
+inline constexpr const char* kBoxesFixtureBoxSkeletonPrefix
+    = "visual_boxes_box_";
+inline constexpr const char* kBoxesFixtureGroundSkeletonName
+    = "visual_boxes_ground";
 inline constexpr const char* kPyramidFixtureSkeletonName = "visual_pyramid";
 inline constexpr const char* kMultiSphereFixtureSkeletonName = "visual_multi_sphere";
 inline constexpr const char* kLineSegmentFixtureSkeletonName = "visual_line_segments";
@@ -111,6 +116,7 @@ inline constexpr const char* kPolyhedronFixtureSkeletonName
 inline constexpr const char* kPolyhedronWireframeFixtureSkeletonName
     = "visual_polyhedron_wireframe";
 inline constexpr const char* kG1FixtureSkeletonName = "visual_g1_robot";
+inline constexpr std::size_t kBoxesFixtureBoxCount = 125;
 inline constexpr std::size_t kMinPbrEnvironmentRenderableCount = 4;
 inline constexpr std::size_t kMinDragAndDropFrameRenderableCount = 5;
 inline constexpr std::size_t kMinG1RenderableCount = 20;

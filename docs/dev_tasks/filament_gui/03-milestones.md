@@ -152,6 +152,11 @@
   `pixi run ex hello_world` routes to this Filament scene by default so the
   simplest in-tree visual workflow no longer depends on the legacy OSG viewer
   path.
+- The Filament example includes a selectable `--scene boxes` fixture that
+  extracts and renders the legacy boxes example's dynamic colored box grid and
+  ground plane through the same descriptor-driven Filament path.
+  `pixi run ex boxes` routes to this Filament scene by default so the in-tree
+  multi-box visual workflow no longer depends on the legacy OSG viewer path.
 - The Filament example includes a selectable `--scene drag-and-drop` fixture
   that extracts and renders the legacy drag-and-drop example's `SimpleFrame`
   anchor, child frame, and axis markers through the same manipulation path.

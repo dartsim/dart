@@ -97,10 +97,10 @@ For C++ examples, the generic in-tree runner is:
 pixi run ex <example-target>
 ```
 
-For example, `pixi run ex boxes` builds and runs `boxes`. Examples with extra
-CMake requirements or redirected experimental GUI runners, such as `raylib`,
-`filament_gui`, `hello_world`, `drag_and_drop`, `polyhedron_visual`,
-`heightmap`, and `g1_puppet`, declare those requirements in
+For example, `pixi run ex csv_logger` builds and runs `csv_logger`. Examples
+with extra CMake requirements or redirected experimental GUI runners, such as
+`raylib`, `filament_gui`, `hello_world`, `boxes`, `drag_and_drop`,
+`polyhedron_visual`, `heightmap`, and `g1_puppet`, declare those requirements in
 `scripts/run_cpp_example.py` so the same command shape can remain stable as more
 examples are added.
 

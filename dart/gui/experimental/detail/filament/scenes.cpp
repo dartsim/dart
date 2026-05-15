@@ -115,6 +115,8 @@ const char* sceneName(ExampleScene scene)
       return "mvp";
     case ExampleScene::HelloWorld:
       return "hello-world";
+    case ExampleScene::Boxes:
+      return "boxes";
     case ExampleScene::DragAndDrop:
       return "drag-and-drop";
     case ExampleScene::Polyhedron:
@@ -135,6 +137,10 @@ bool parseSceneName(std::string_view name, ExampleScene& scene)
   }
   if (name == "hello-world") {
     scene = ExampleScene::HelloWorld;
+    return true;
+  }
+  if (name == "boxes") {
+    scene = ExampleScene::Boxes;
     return true;
   }
   if (name == "drag-and-drop") {
@@ -171,6 +177,12 @@ OrbitCamera initialCameraForScene(ExampleScene scene)
       camera.yaw = -0.88;
       camera.pitch = 0.36;
       camera.distance = 4.2;
+      break;
+    case ExampleScene::Boxes:
+      camera.target = Eigen::Vector3d(0.0, 0.0, 4.0);
+      camera.yaw = -0.78;
+      camera.pitch = 0.44;
+      camera.distance = 22.0;
       break;
     case ExampleScene::Polyhedron:
       camera.target = Eigen::Vector3d(0.0, 0.0, 0.45);
@@ -832,8 +844,8 @@ AppOptions parseOptions(int argc, char* argv[])
       const std::string_view sceneArg(argv[++i]);
       if (!parseSceneName(sceneArg, options.scene)) {
         std::cerr << "Unknown scene '" << sceneArg
-                  << "'. Expected 'mvp', 'hello-world', 'drag-and-drop', "
-                     "'polyhedron', 'heightmap', or 'g1'.\n";
+                  << "'. Expected 'mvp', 'hello-world', 'boxes', "
+                     "'drag-and-drop', 'polyhedron', 'heightmap', or 'g1'.\n";
         std::exit(2);
       }
     } else if (
@@ -859,7 +871,7 @@ AppOptions parseOptions(int argc, char* argv[])
                    " [--orbit-light-period SECONDS]"
                    " [--gui-scale N]"
                    " [--profile]"
-                   " [--scene mvp|hello-world|drag-and-drop|polyhedron|heightmap|g1]"
+                   " [--scene mvp|hello-world|boxes|drag-and-drop|polyhedron|heightmap|g1]"
                    " [--g1-package-uri URI] [--g1-robot-uri URI]"
                    " [--g1-package-name NAME]\n";
       std::exit(0);
@@ -918,58 +930,80 @@ dart::dynamics::SkeletonPtr createStaticVisualSkeleton(
   return skeleton;
 }
 
+dart::dynamics::SkeletonPtr createDynamicBoxSkeleton(
+    const std::string& name,
+    const Eigen::Vector3d& size,
+    const Eigen::Isometry3d& transform,
+    const Eigen::Vector3d& color,
+    double restitution = 0.0)
+{
+  auto box = Skeleton::create(name);
+  auto [joint, body] = box->createJointAndBodyNodePair<FreeJoint>();
+  joint->setTransformFromParentBodyNode(transform);
+
+  auto boxShape = std::make_shared<BoxShape>(size);
+  auto* boxShapeNode = body->createShapeNodeWith<
+      VisualAspect,
+      CollisionAspect,
+      DynamicsAspect>(boxShape);
+  boxShapeNode->getVisualAspect()->setColor(color);
+  boxShapeNode->getDynamicsAspect()->setRestitutionCoeff(restitution);
+  body->setInertia(dart::dynamics::Inertia(
+      1.0, Eigen::Vector3d::Zero(), boxShape->computeInertia(1.0)));
+  return box;
+}
+
+dart::dynamics::SkeletonPtr createDynamicBoxSkeleton(
+    const std::string& name,
+    const Eigen::Vector3d& size,
+    const Eigen::Vector3d& position,
+    const Eigen::Vector3d& color,
+    double restitution = 0.0)
+{
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = position;
+  return createDynamicBoxSkeleton(name, size, transform, color, restitution);
+}
+
+dart::dynamics::SkeletonPtr createBoxGroundSkeleton(
+    const std::string& name,
+    const Eigen::Vector3d& size,
+    const Eigen::Vector3d& color,
+    double restitution = 0.0)
+{
+  auto ground = Skeleton::create(name);
+  auto* groundBody = ground->createJointAndBodyNodePair<WeldJoint>().second;
+  auto* groundShapeNode = groundBody->createShapeNodeWith<
+      VisualAspect,
+      CollisionAspect,
+      DynamicsAspect>(std::make_shared<BoxShape>(size));
+  groundShapeNode->getVisualAspect()->setColor(color);
+  groundShapeNode->getDynamicsAspect()->setRestitutionCoeff(restitution);
+  return ground;
+}
+
 DartScene createMvpDartScene()
 {
   DartScene scene;
 
-  auto createDynamicBox = [](const std::string& name,
-                             const Eigen::Vector3d& size,
-                             const Eigen::Vector3d& position,
-                             const Eigen::Vector3d& color) {
-    auto box = Skeleton::create(name);
-    auto [joint, body] = box->createJointAndBodyNodePair<FreeJoint>();
-    Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-    tf.translation() = position;
-    joint->setTransformFromParentBodyNode(tf);
-
-    auto boxShape = std::make_shared<BoxShape>(size);
-    auto boxShapeNode = body->createShapeNodeWith<
-        VisualAspect,
-        CollisionAspect,
-        DynamicsAspect>(boxShape);
-    boxShapeNode->getVisualAspect()->setColor(color);
-    body->setInertia(
-        dart::dynamics::Inertia(
-            1.0,
-            Eigen::Vector3d::Zero(),
-            boxShapeNode->getShape()->computeInertia(1.0)));
-    return box;
-  };
-
-  auto blueBox = createDynamicBox(
+  auto blueBox = createDynamicBoxSkeleton(
       "falling_blue_box",
       Eigen::Vector3d(0.35, 0.35, 0.35),
       Eigen::Vector3d(-0.35, 0.0, 1.5),
       dart::Color::Blue());
-  auto orangeBox = createDynamicBox(
+  auto orangeBox = createDynamicBoxSkeleton(
       "falling_orange_box",
       Eigen::Vector3d(0.28, 0.28, 0.28),
       Eigen::Vector3d(0.35, 0.1, 2.15),
       dart::Color::Orange());
-  auto contactBox = createDynamicBox(
+  auto contactBox = createDynamicBoxSkeleton(
       "contact_green_box",
       Eigen::Vector3d(0.3, 0.3, 0.3),
       Eigen::Vector3d(-1.05, 0.25, 0.18),
       dart::Color::Green());
 
-  auto ground = Skeleton::create("ground");
-  auto groundBody = ground->createJointAndBodyNodePair<WeldJoint>().second;
-  auto groundShapeNode = groundBody->createShapeNodeWith<
-      VisualAspect,
-      CollisionAspect,
-      DynamicsAspect>(
-      std::make_shared<BoxShape>(Eigen::Vector3d(8.0, 8.0, 0.1)));
-  groundShapeNode->getVisualAspect()->setColor(dart::Color::LightGray());
+  auto ground = createBoxGroundSkeleton(
+      "ground", Eigen::Vector3d(8.0, 8.0, 0.1), dart::Color::LightGray());
 
   auto createStaticVisual = [](const std::string& name,
                                const ShapePtr& shape,
@@ -1216,35 +1250,56 @@ DartScene createHelloWorldScene()
   scene.world = World::create("filament_gui_hello_world");
   scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
 
-  auto box = Skeleton::create(kHelloWorldBoxFixtureSkeletonName);
-  auto [joint, body] = box->createJointAndBodyNodePair<FreeJoint>();
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translation() = Eigen::Vector3d(0.0, 0.0, 1.0);
   const Eigen::Quaterniond orientation
       = Eigen::AngleAxisd(0.45, Eigen::Vector3d::UnitX())
         * Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitY());
   transform.linear() = orientation.toRotationMatrix();
-  joint->setTransformFromParentBodyNode(transform);
 
-  auto boxShape = std::make_shared<BoxShape>(Eigen::Vector3d(0.3, 0.3, 0.3));
-  auto* boxShapeNode = body->createShapeNodeWith<
-      VisualAspect,
-      CollisionAspect,
-      DynamicsAspect>(boxShape);
-  boxShapeNode->getVisualAspect()->setColor(dart::Color::Blue());
-  body->setInertia(dart::dynamics::Inertia(
-      1.0, Eigen::Vector3d::Zero(), boxShape->computeInertia(1.0)));
-  scene.world->addSkeleton(box);
+  scene.world->addSkeleton(createDynamicBoxSkeleton(
+      kHelloWorldBoxFixtureSkeletonName,
+      Eigen::Vector3d(0.3, 0.3, 0.3),
+      transform,
+      dart::Color::Blue()));
+  scene.world->addSkeleton(createBoxGroundSkeleton(
+      kHelloWorldGroundFixtureSkeletonName,
+      Eigen::Vector3d(10.0, 10.0, 0.1),
+      dart::Color::LightGray()));
 
-  auto ground = Skeleton::create(kHelloWorldGroundFixtureSkeletonName);
-  auto* groundBody = ground->createJointAndBodyNodePair<WeldJoint>().second;
-  auto* groundShapeNode = groundBody->createShapeNodeWith<
-      VisualAspect,
-      CollisionAspect,
-      DynamicsAspect>(
-      std::make_shared<BoxShape>(Eigen::Vector3d(10.0, 10.0, 0.1)));
-  groundShapeNode->getVisualAspect()->setColor(dart::Color::LightGray());
-  scene.world->addSkeleton(ground);
+  return scene;
+}
+
+DartScene createBoxesScene()
+{
+  DartScene scene;
+  scene.world = World::create("filament_gui_boxes");
+  scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+
+  const int dim = 5;
+  std::size_t boxIndex = 0;
+  for (int i = 0; i < dim; ++i) {
+    for (int j = 0; j < dim; ++j) {
+      for (int k = 0; k < dim; ++k) {
+        scene.world->addSkeleton(createDynamicBoxSkeleton(
+            std::string(kBoxesFixtureBoxSkeletonPrefix)
+                + std::to_string(boxIndex++),
+            Eigen::Vector3d(0.9, 0.9, 0.9),
+            Eigen::Vector3d(i - dim / 2, j - dim / 2, k + 5),
+            Eigen::Vector3d(
+                static_cast<double>(i) / dim,
+                static_cast<double>(j) / dim,
+                static_cast<double>(k) / dim),
+            0.9));
+      }
+    }
+  }
+
+  scene.world->addSkeleton(createBoxGroundSkeleton(
+      kBoxesFixtureGroundSkeletonName,
+      Eigen::Vector3d(25.0, 25.0, 0.1),
+      dart::Color::LightGray(),
+      0.9));
 
   return scene;
 }
@@ -1366,6 +1421,8 @@ DartScene createDartScene(const AppOptions& options)
       return createMvpDartScene();
     case ExampleScene::HelloWorld:
       return createHelloWorldScene();
+    case ExampleScene::Boxes:
+      return createBoxesScene();
     case ExampleScene::DragAndDrop:
       return createDragAndDropScene();
     case ExampleScene::Polyhedron:

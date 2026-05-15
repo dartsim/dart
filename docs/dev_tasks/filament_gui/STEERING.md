@@ -158,14 +158,14 @@ version hashing, and `extractRenderables`.
      geometry path is the obvious next descriptor surface.
 2. **Completed: move scene fixtures under private GUI detail.**
    `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp` now own scene
-   option parsing plus MVP, hello-world, drag-and-drop, polyhedron, heightmap,
-   and G1 DART world fixtures.
+   option parsing plus MVP, hello-world, boxes, drag-and-drop, polyhedron,
+   heightmap, and G1 DART world fixtures.
    `dart/gui/experimental/detail/filament/application.hpp` and `.cpp` now own
    Filament frame orchestration and the built-in panel, leaving `main.cpp` as a
    minimal entry point.
    `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`
-   now own scene fixture requirement counting and MVP/G1/hello-world/drag/
-   polyhedron/heightmap validation gates.
+   now own scene fixture requirement counting and MVP/G1/hello-world/boxes/
+   drag/polyhedron/heightmap validation gates.
 3. **Completed: generalize the public-header leakage scan.**
    `UNIT_gui_FilamentSceneExtraction` now routes the backend-token check
    through `scanHeadersForBackendTokens`, and

@@ -137,6 +137,14 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Box) {
     ++counts.helloWorldGrounds;
   }
+  if (descriptor.skeletonName.starts_with(kBoxesFixtureBoxSkeletonPrefix)
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.boxesExampleBoxes;
+  }
+  if (descriptor.skeletonName == kBoxesFixtureGroundSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.boxesExampleGrounds;
+  }
   if (descriptor.skeletonName == kPyramidFixtureSkeletonName
       && descriptor.geometry.kind == ShapeKind::Pyramid) {
     ++counts.pyramids;
@@ -349,6 +357,23 @@ bool validateSceneDescriptorContent(
         output);
   }
 
+  if (scene == ExampleScene::Boxes) {
+    if (!requireEqual(
+            counts.boxesExampleBoxes,
+            kBoxesFixtureBoxCount,
+            "boxes scene",
+            "visible dynamic box renderable descriptors",
+            output)) {
+      return false;
+    }
+    return requireEqual(
+        counts.boxesExampleGrounds,
+        1,
+        "boxes scene",
+        "visible ground renderable descriptor",
+        output);
+  }
+
   if (scene == ExampleScene::Heightmap) {
     return requireEqual(
         counts.heightmaps,
@@ -488,6 +513,21 @@ bool validateCreatedSceneContent(
         created.helloWorldGrounds,
         expected.helloWorldGrounds,
         "hello world ground renderables",
+        output);
+  }
+
+  if (scene == ExampleScene::Boxes) {
+    if (!requireCreatedEqual(
+            created.boxesExampleBoxes,
+            expected.boxesExampleBoxes,
+            "boxes dynamic box renderables",
+            output)) {
+      return false;
+    }
+    return requireCreatedEqual(
+        created.boxesExampleGrounds,
+        expected.boxesExampleGrounds,
+        "boxes ground renderables",
         output);
   }
 

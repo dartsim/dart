@@ -3,14 +3,33 @@
 ## Summary
 
 - Goal: spawn a grid of rigid boxes over a ground plane and visualize them.
-- Concepts/APIs: `dynamics::Skeleton`, `simulation::World`,
-  `collision::BulletCollisionDetector`, `gui::Viewer`.
-- Expected output: an OSG viewer with colored boxes falling onto a gray ground.
-- Controls: press space to toggle simulation.
+- Concepts/APIs: `dynamics::Skeleton`, `simulation::World`, and the
+  experimental Filament GUI scene.
+- Expected output: a Filament viewer with colored boxes falling onto a gray
+  ground.
+- Controls: left drag orbits, right/middle drag pans, wheel zooms, Space
+  pauses/resumes, `n` steps once while paused, and Escape exits.
 
 ## Notes
 
-- Requires DART built with Bullet collision (`DART_BUILD_COLLISION_BULLET=ON`).
+- The recommended in-tree runner uses the Filament scene in
+  `examples/filament_gui`, which carries this example's dynamic box grid and
+  ground plane through backend-hidden DART descriptors.
+- The standalone source in this directory remains as the legacy OSG/Bullet
+  version for comparison until the promoted Filament GUI API replaces the old
+  viewer path.
+
+## Run In Tree
+
+From the repository root:
+
+```bash
+pixi run ex boxes
+```
+
+This builds and runs `examples/filament_gui --scene boxes`, so the recommended
+visual path no longer depends on the legacy OSG viewer. On Linux without a
+display, the runner automatically uses headless defaults.
 
 This project is dependent on DART. Please make sure a proper version of DART is
 installed before building this project.

@@ -65,14 +65,16 @@
    `EXAMPLE_filament_gui_headless_smoke` on graphics-capable workers.
 4. Opt-in hello-world fixture smoke through
    `EXAMPLE_filament_gui_hello_world_headless_smoke` on the same workers.
-5. Opt-in interaction fixture smoke through
+5. Opt-in boxes fixture smoke through
+   `EXAMPLE_filament_gui_boxes_headless_smoke` on the same workers.
+6. Opt-in interaction fixture smoke through
    `EXAMPLE_filament_gui_drag_and_drop_headless_smoke` on the same workers.
-6. Opt-in polyhedron visual fixture smoke through
+7. Opt-in polyhedron visual fixture smoke through
    `EXAMPLE_filament_gui_polyhedron_headless_smoke` on the same workers.
-7. Opt-in heightmap visual fixture smoke through
+8. Opt-in heightmap visual fixture smoke through
    `EXAMPLE_filament_gui_heightmap_headless_smoke` on the same workers.
-8. Focused C++ unit tests for scene extraction and interaction math.
-9. Python import/binding smoke tests for the constrained experimental API.
+9. Focused C++ unit tests for scene extraction and interaction math.
+10. Python import/binding smoke tests for the constrained experimental API.
 
 ## Local commands
 
@@ -125,7 +127,7 @@ LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
   cmake --build build/default/cpp/Release --target dart_filament_gui
 LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
   ctest --test-dir build/default/cpp/Release \
-  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|drag_and_drop_headless|polyhedron_headless|heightmap_headless)_smoke' \
+  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|drag_and_drop_headless|polyhedron_headless|heightmap_headless)_smoke' \
   --output-on-failure
 ```
 
@@ -218,6 +220,7 @@ Known current result:
   scene-region luminance contrast from the shadowed fixture. The same option
   also registers `EXAMPLE_filament_gui_hello_world_headless_smoke`, which runs
   `--scene hello-world`,
+  `EXAMPLE_filament_gui_boxes_headless_smoke`, which runs `--scene boxes`,
   `EXAMPLE_filament_gui_drag_and_drop_headless_smoke`, which runs
   `--scene drag-and-drop`,
   `EXAMPLE_filament_gui_polyhedron_headless_smoke`, which runs

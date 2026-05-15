@@ -182,7 +182,7 @@ Surfaces: OSG-heavy examples such as `examples/imgui`,
 
 Current public shape: user-facing examples still teach OSG-shaped APIs.
 
-Current progress: the in-tree `hello_world`, `drag_and_drop`,
+Current progress: the in-tree `hello_world`, `boxes`, `drag_and_drop`,
 `polyhedron_visual`, `heightmap`, and `g1_puppet` runners now route to focused
 Filament scenes by default while their standalone sources remain as legacy OSG
 comparison material until the promoted API can replace the missing
