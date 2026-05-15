@@ -244,7 +244,9 @@ dartpy, gz-physics runtime integration, and the native-backed
 `collision-fcl`/`collision-bullet`/`collision-ode` compatibility facades do not
 need `DART_BUILD_COLLISION_FCL`, `DART_BUILD_COLLISION_BULLET`, or
 `DART_BUILD_COLLISION_ODE`; enabling those options should be reserved for
-explicit `collision-reference-*` tests and benchmarks.
+explicit `collision-reference-*` tests and benchmarks. Do not use these options
+as compatibility gates for normal core, package, dartpy, or downstream runtime
+builds.
 
 #### 10. FCL (Flexible Collision Library)
 
@@ -824,7 +826,8 @@ DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz
     `DART_BUILD_COLLISION_FCL`, `DART_BUILD_COLLISION_BULLET`, and
     `DART_BUILD_COLLISION_ODE` knobs are for explicit
     `collision-reference-*` comparison builds, not required by core DART,
-    dartpy, or gz-physics runtime integration.
+    dartpy, gz-physics runtime integration, or native-backed compatibility
+    facades.
 - **No local gz-physics source patches.** Keep `scripts/patch_gz_physics.py` limited to the DART version requirement bump; otherwise this workflow stops catching real compatibility breaks.
 - **gtest header mismatches.** Symptom: link errors like `undefined reference to testing::internal::MakeAndRegisterTestInfo(std::string, ...)` when building gz-physics tests. The `config-gz` task passes `-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:FILEPATH=$PWD/cmake/gz_physics_force_vendor_gtest.cmake` to ensure gz-physics compiles against the vendored headers that match its vendored gtest library; keep that behavior.
 - **Deprecation noise is expected.** When gz-physics exercises deprecated compatibility APIs, CMake or compiler warnings may appear; these are intentional and should be treated as migration pressure for downstreams.

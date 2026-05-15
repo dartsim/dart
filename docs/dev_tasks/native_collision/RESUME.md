@@ -22,10 +22,11 @@ for the maintainer-opened review surface.
 
 `feature/new_coll` tracks `origin/feature/new_coll`.
 
-At the start of the latest completion-audit refresh, local and remote matched
-at `ad1b6782578` (`Align public collision docs with native default`) with no
-local diff. If another audit-record commit has been added after this note, run
-the commands below to refresh that fact instead of trusting this timestamp:
+At the start of the latest downstream/package evidence refresh, local and
+remote matched at `4b155655890` (`Record current collision benchmark guard`)
+with no local diff. If another audit-record commit has been added after this
+note, run the commands below to refresh that fact instead of trusting this
+timestamp:
 
 ```bash
 git status --short --branch
@@ -55,7 +56,8 @@ post GitHub comments unless the user explicitly asks.
 - Build-option policy baseline: `aa3ccce70c7`.
 - Public docs collision-runtime wording baseline: `ad1b6782578`.
 - Latest full local `pixi run test-all` validation baseline: `32a55e297e4`.
-- Latest local `collision-reference` benchmark guard baseline: `2eb3257965a`.
+- Latest local `collision-reference` benchmark guard baseline: `4b155655890`.
+- Latest local downstream/package/link smoke baseline: `4b155655890`.
 - Last manual workflow-dispatch CI evidence head: `1e1faf6feb1`.
 - Latest pushed docs/reference-cleanup heads after those baselines have no
   GitHub Actions runs because branch pushes do not match the workflow filters

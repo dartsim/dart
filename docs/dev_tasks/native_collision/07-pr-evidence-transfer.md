@@ -62,7 +62,7 @@ must be deleted in the same PR that completes the native-collision migration.
 Local validation currently recorded in the dev-task evidence:
 
 - `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run test-all`
-  passed on current validation head `778cc98c5f2` with 6/6 top-level gates:
+  passed on current validation head `32a55e297e4` with 6/6 top-level gates:
   linting, build, unit tests, simulation-experimental tests, Python tests, and
   documentation. Default configure kept FCL, Bullet, ODE, reference tests, and
   reference benchmarks all `OFF`, confirming those build flags are not required
@@ -101,13 +101,15 @@ Local validation currently recorded in the dev-task evidence:
   - `readelf` showed gz/plugin package-smoke binaries depending on
     `libdart-collision-native.so` without old collision/reference runtime
     dependencies
+  - latest local refresh is tied to pushed head `4b155655890` before this
+    evidence-record update
 - Prior workflow-dispatch reference evidence on pushed head `1e1faf6feb1`:
   - native-only CI passed
   - gz-physics CI passed
   - full dartpy wheel matrix passed
   - collision benchmark guard uploaded
     `collision-benchmark-guard-25887939088-1`
-- Recent local benchmark evidence on `1f3505ea469`:
+- Recent local benchmark evidence recorded in `4b155655890`:
   - `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -e collision-reference bm-collision-check`
     passed.
   - Checked subsets passed for narrow phase, distance, raycast, mixed

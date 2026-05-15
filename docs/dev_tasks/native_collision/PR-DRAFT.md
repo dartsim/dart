@@ -29,10 +29,17 @@ Make native DART collision the default runtime stack
 ## Test Plan
 
 - `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run test-all`
-  passed on current validation head `778cc98c5f2` with default
+  passed on current validation head `32a55e297e4` with default
   FCL/Bullet/ODE/reference build flags `OFF`.
 - `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -e collision-reference bm-collision-check`
-  passed on benchmark head `1f3505ea469`.
+  passed before benchmark-evidence commit `4b155655890`.
+- `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -e gazebo test-gz`
+  passed on current downstream evidence head `4b155655890` with
+  FCL/Bullet/ODE/reference knobs `OFF`.
+- Native compatibility package smoke and direct `readelf` link inspection passed
+  on `4b155655890`; gz/plugin package-smoke binaries link
+  `libdart-collision-native.so` without old collision/reference runtime
+  dependencies.
 - `pixi run lint`
 - `pixi run check-lint`
 - `pixi run build`

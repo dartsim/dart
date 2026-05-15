@@ -310,7 +310,7 @@ build/default/cpp/Debug -R '^UNIT_collision_DistanceFilter$'
 
 ## Test Runs
 
-- Current native compatibility package smoke
+- Initial native compatibility package smoke
   - Command:
 
     ```bash
@@ -339,37 +339,52 @@ build/default/cpp/Debug -R '^UNIT_collision_DistanceFilter$'
     libccd runtime libraries.
 
 - Current downstream migration evidence refresh
-  - Commit: `8c83cd19cb8`
-    (`Record native collision resume evidence`).
+  - Commit: `4b155655890`
+    (`Record current collision benchmark guard`), before this evidence-record
+    update. That head was pushed to `origin/feature/new_coll`; feature-branch
+    pushes still do not trigger the main GitHub Actions workflows while PR
+    #2652 is closed.
   - Commands:
 
     ```bash
-    DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e gazebo test-gz
-    DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -- bash -lc 'set -euo pipefail
+    DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -e gazebo test-gz
+    DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -- bash -lc 'set -euo pipefail
     rm -rf build/native-compat-install build/native-compat-package-smoke
-    cmake --install build/default/cpp/Release --prefix build/native-compat-install --component headers >/tmp/dart_native_compat_install.log
-    cmake --install build/default/cpp/Release --prefix build/native-compat-install >>/tmp/dart_native_compat_install.log
-    cmake -S docs/dev_tasks/native_collision/smoke/native_compat_package -B build/native-compat-package-smoke -DCMAKE_PREFIX_PATH="$PWD/build/native-compat-install;$CONDA_PREFIX" >/tmp/dart_native_compat_smoke_config.log
-    cmake --build build/native-compat-package-smoke --parallel "$DART_PARALLEL_JOBS" >/tmp/dart_native_compat_smoke_build.log
+    cmake --install build/default/cpp/Release --prefix build/native-compat-install --component headers >/tmp/dart_native_compat_install_current.log
+    cmake --install build/default/cpp/Release --prefix build/native-compat-install >>/tmp/dart_native_compat_install_current.log
+    cmake -S docs/dev_tasks/native_collision/smoke/native_compat_package -B build/native-compat-package-smoke -DCMAKE_PREFIX_PATH="$PWD/build/native-compat-install;$CONDA_PREFIX" >/tmp/dart_native_compat_smoke_config_current.log
+    cmake --build build/native-compat-package-smoke --parallel "$DART_PARALLEL_JOBS" >/tmp/dart_native_compat_smoke_build_current.log
     build/native-compat-package-smoke/native_collision_compat_package_smoke
     if find build/native-compat-install/lib -maxdepth 1 \( -type f -o -type l \) | sort | rg "dart-collision-reference|lib(fcl|bullet|ode|ccd)"; then
       exit 1
-    fi'
+    fi
+    readelf -d .deps/gz-physics/build/lib/libgz-physics-dartsim-plugin.so | rg "NEEDED|RUNPATH" | tee /tmp/dart_gz_readelf_current.txt
+    readelf -d build/native-compat-package-smoke/native_collision_compat_package_smoke | rg "NEEDED|RUNPATH" | tee /tmp/dart_native_compat_smoke_readelf_current.txt
+    if rg "libdart-collision-reference|libfcl|libbullet|libBullet|libode|libccd" /tmp/dart_gz_readelf_current.txt /tmp/dart_native_compat_smoke_readelf_current.txt; then
+      exit 1
+    fi
+    echo "native downstream package/link smoke passed"'
     pixi run check-collision-runtime-isolation
-    cmake --build build/default/cpp/Release --target test_legacy_compat_facades --parallel 5
-    ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_legacy_compat_facades$'
-    PYTHONPATH="$PWD/build/default/cpp/Release/python:$PWD/build/default/cpp/Release/python/dartpy" DARTPY_RUNTIME_DIR="$PWD/build/default/cpp/Release/python/dartpy" python -m pytest python/tests/unit/collision/test_collision.py::test_legacy_collision_detector_names_are_native_backed -v
-    readelf -d .deps/gz-physics/build/lib/libgz-physics-dartsim-plugin.so | rg 'NEEDED|RUNPATH'
-    readelf -d build/native-compat-package-smoke/native_collision_compat_package_smoke | rg 'NEEDED|RUNPATH'
+    python scripts/audit_collision_compat_facades.py
+    cmake --build build/default/cpp/Release --target test_legacy_compat_facades --parallel 4
+    ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_legacy_compat_facades$' -j 4
+    pixi run -- env PYTHONPATH="$PWD/build/default/cpp/Release/python" DARTPY_RUNTIME_DIR="$PWD/build/default/cpp/Release/python/dartpy" python -m pytest python/tests/unit/collision/test_collision.py::test_legacy_collision_detector_names_are_not_exposed_in_dartpy -v
     ```
 
   - Result: passed locally. The fresh gz-physics workflow patched only the
-    DART version requirement, built the DART plugin, and printed the DART
-    integration success message. The package smoke passed on the current
-    installed native build. Runtime isolation passed. The focused C++ legacy
-    facade CTest passed 1/1, and the focused Python legacy detector alias test
-    passed 1/1. `readelf` showed both the gz DART plugin and the package-smoke
-    executable depend on `libdart-collision-native.so` and do not depend on
+    DART version requirement, configured DART for the gazebo environment with
+    `DART_BUILD_COLLISION_FCL=OFF`, `DART_BUILD_COLLISION_BULLET=OFF`,
+    `DART_BUILD_COLLISION_ODE=OFF`, collision reference tests `OFF`, and
+    collision reference benchmarks `OFF`, built the DART plugin, and passed
+    65/65 gz-physics tests before printing the DART integration success
+    message. The package smoke passed on the current installed native build,
+    including retained `collision-fcl`, `collision-bullet`, and `collision-ode`
+    component facades. Runtime isolation passed. The compatibility facade audit
+    passed, reporting factory aliases and package components route to `dart`
+    while dartpy exposes only `DartCollisionDetector`. The focused C++ legacy
+    facade CTest passed 1/1, and the focused Python clean-API test passed 1/1.
+    `readelf` showed both the gz DART plugin and the package-smoke executable
+    depend on `libdart-collision-native.so` and do not depend on
     `libdart-collision-reference-*`, FCL, Bullet, ODE, or libccd. This is
     primary local evidence; manual GitHub Actions runs are reference evidence
     only.
@@ -2778,9 +2793,10 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     are not required by core DART, dartpy, gz-physics runtime compatibility, or
     the native-backed legacy package component facades.
 - Current local collision benchmark guard refresh:
-  - Commit: `2eb3257965a21162f18c9a43e519dd555f99fe84`
-    (`Record current native collision validation`), pushed to
-    `origin/feature/new_coll`.
+  - Commit: `4b1556558900ea4b19a85f3c3c9d8d2f6d175afe`
+    (`Record current collision benchmark guard`), pushed to
+    `origin/feature/new_coll`. The benchmark command was run immediately before
+    this evidence-record commit on parent head `2eb3257965a`.
   - Command:
     `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -e collision-reference bm-collision-check`
   - Result: passed. The `collision-reference` configure intentionally enabled

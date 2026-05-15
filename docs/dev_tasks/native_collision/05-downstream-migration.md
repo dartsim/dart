@@ -24,7 +24,9 @@ runtime engines. `DART_BUILD_COLLISION_FCL`,
 `DART_BUILD_COLLISION_BULLET`, and `DART_BUILD_COLLISION_ODE` are no longer
 needed by core DART, dartpy, gz-physics runtime integration, or the
 native-backed compatibility component facades; they only opt into explicit
-`collision-reference-*` comparison components.
+`collision-reference-*` comparison components. They are not compatibility
+switches for normal core libraries, dartpy wheels, package facades, or
+downstream runtime integration.
 
 Current status: the DART-side compatibility facade tests cover those display
 strings, FCL/ODE facades preserve gz-required unsupported raycast behavior, a
@@ -32,11 +34,11 @@ fresh local `pixi run -e gazebo test-gz` run passes 65/65 tests through the
 built-in detector, and a current native compatibility package smoke links the
 retained `collision-fcl`, `collision-bullet`, and `collision-ode` components to
 the built-in stack without installed old-engine runtime libraries. The local
-`8c83cd19cb8` refresh also checks the built artifacts directly: `readelf`
+`4b155655890` refresh also checks those built artifacts directly: `readelf`
 shows the gz DART plugin and the native compatibility package smoke executable
 depend on `libdart-collision-native.so` without any
 `libdart-collision-reference-*`, FCL, Bullet, ODE, or libccd runtime
-dependency. The local `audit-collision-compat-facades` guard now also verifies
+dependency. The local `audit-collision-compat-facades` guard now verifies
 that retained factory keys, C++ facades, and package component names route to
 native DART collision while dartpy exposes only the clean
 `DartCollisionDetector` API. Manual GitHub workflow runs are reference evidence
@@ -91,7 +93,7 @@ The north-star PR cannot delete retained compatibility facades until these
 checks pass:
 
 1. `pixi run -e gazebo test-gz` passes without downstream patches. This is
-   complete locally from a fresh gz-physics clone on `8c83cd19cb8`; manual
+   complete locally from a fresh gz-physics clone on `4b155655890`; manual
    GitHub gz-physics CI on `1e1faf6feb1` is reference evidence only.
 2. A downstream package smoke that requests `collision-fcl`,
    `collision-bullet`, and `collision-ode` links only the built-in `dart` stack.

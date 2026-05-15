@@ -21,7 +21,7 @@
       cylinder-vs-plane-like-box support for gz's plane-as-large-box path,
       capped large flat box/mesh contact patches for gz max-contact tests, and
       legacy FCL/ODE facade raycast behavior required by gz's ray-intersection
-      feature tests. The current local refresh on `8c83cd19cb8` rebuilt a fresh
+      feature tests. The current local refresh on `4b155655890` rebuilt a fresh
       gz-physics checkout, printed the expected DART plugin integration success
       line, and `readelf` showed the gz DART plugin depends on
       `libdart-collision-native.so` without any
@@ -106,7 +106,7 @@
       package smoke test that requests `collision-fcl`, `collision-bullet`, and
       `collision-ode` proves those names link the built-in `dart` stack and do
       not install old collision libraries. The current local refresh on
-      `8c83cd19cb8` reran that package smoke and `readelf` showed the smoke
+      `4b155655890` reran that package smoke and `readelf` showed the smoke
       executable depends on `libdart-collision-native.so` without any old
       collision/reference runtime dependency.
 - [x] Installed legacy detector headers for FCL, Bullet, and ODE are now
@@ -137,15 +137,15 @@
       subsets emit Google Benchmark JSON and compare native timings against the
       best enabled FCL/Bullet/ODE reference result; the public adapter subset
       records JSON for the built-in `DartCollisionDetector` path. The broad
-      local guard was refreshed at `2eb3257965a` and passed every checked
+      local guard was refreshed at `4b155655890` and passed every checked
       subset after the latest validation and benchmark-evidence updates.
 - [x] CI Linux contains a scheduled/manual collision benchmark guard job that
       runs the broad `collision-reference` benchmark check and uploads the
       `.benchmark_results/collision_check_*.json` artifacts when a workflow
       surface is available.
 - [x] Recent local benchmark-guard evidence is refreshed. The
-      `collision-reference` benchmark guard passed on `2eb3257965a`, the latest
-      pushed branch head before benchmark-evidence docs, producing local
+      `collision-reference` benchmark guard passed before the `4b155655890`
+      benchmark-evidence commit, producing local
       `.benchmark_results/collision_check_{narrow,distance,raycast,mixed,mesh,raycast_batch,adapter}.json`
       files.
 - [ ] Final benchmark-guard CI artifact evidence on the completing PR head is
@@ -528,7 +528,7 @@ collision stack.
    - The current `bm-collision-check` task runs checked narrowphase, distance,
      raycast, mixed-primitive, mesh-heavy, raycast-batch, and public adapter
      benchmark subsets.
-   - The latest local run at `2eb3257965a` passed all checked subsets and wrote
+   - The latest local run recorded in `4b155655890` passed all checked subsets and wrote
      `.benchmark_results/collision_check_*.json` outputs.
    - CI Linux now has a scheduled/manual `Collision Benchmark Guard` job that
      runs the same broad guard in the `collision-reference` environment and

@@ -196,8 +196,9 @@ trigger the main workflows.
 - **README vs. completion-audit on CI status.** README line 132: `[x] CI Linux has a scheduled/manual collision benchmark guard job ... uploads .benchmark_results/...` But `06-completion-audit.md` ~line 30: _"scheduled/permanent gate evidence is still a finalization item."_ The README hides "scheduled gate not proven" behind a checked box.
 - **Three different "current" SHAs.** Earlier docs cited `8c83cd19cb8`,
   `1e1faf6feb1`, and `f5d4f9ee932` as current in different places. This is now
-  resolved by recording `ec6f6f43112` and `aa3ccce70c7` as audited evidence
-  baselines, with prior SHAs retained only as evidence checkpoints.
+  resolved by recording durable baseline heads plus the current local
+  downstream/benchmark evidence head `4b155655890`, with prior SHAs retained
+  only as evidence checkpoints.
 - **Phase 10 marked "locally complete" in 02-milestones but README progress scale Stage 9 says "policy evidence left."**
 - **README narrates 4 separate `pixi run test-all` "passes", each on a different SHA after a different regression repair.** No single SHA where everything green coexists with the latest code.
 
