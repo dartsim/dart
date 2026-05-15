@@ -32,7 +32,7 @@ Make native DART collision the default runtime stack
 ## Test Plan
 
 - `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
-  passed on the working tree after `06cd27d0163`; the current default
+  passed on pushed validation baseline `376fd5e686d`; the current default
   configure path keeps reference tests and benchmarks `OFF` and exposes no
   per-engine FCL/Bullet/ODE collision build switches.
 - `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e collision-reference -- ctest --test-dir build/collision-reference/cpp/Release --output-on-failure -R '^test_reference_backends$' -j 5`
@@ -42,10 +42,10 @@ Make native DART collision the default runtime stack
 - `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -e collision-reference bm-collision-check`
   passed before benchmark-evidence commit `4b155655890`.
 - `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -e gazebo test-gz`
-  passed on the working tree after `06cd27d0163` with reference tests and
+  passed on pushed validation baseline `376fd5e686d` with reference tests and
   benchmarks `OFF` and no per-engine FCL/Bullet/ODE collision build switches.
 - Native compatibility package smoke and direct `readelf` link inspection passed
-  on the working tree after `06cd27d0163`; gz/plugin package-smoke binaries link
+  on pushed validation baseline `376fd5e686d`; gz/plugin package-smoke binaries link
   `libdart-collision-native.so` without old collision/reference runtime
   dependencies.
 - `pixi run lint`

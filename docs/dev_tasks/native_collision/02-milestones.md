@@ -176,10 +176,11 @@ install probe now also covers the installed shared libraries and dartpy module
 for old-engine runtime links. Default and wheel Pixi lock metadata now exclude
 FCL, Bullet, ODE, and the FCL transitive packages; the explicit
 `collision-reference` environment owns those packages and restores the focused
-reference target. A repaired py312 wheel artifact built with old collision
-engines disabled now imports successfully and has no old collision component
-files or runtime links. Downstream-component inspection and CI wheel-matrix
-evidence are still required before this phase is complete. C++ reference tests
+reference target. A repaired py312 wheel artifact built without normal
+old-engine collision switches now imports successfully and has no old collision
+component files or runtime links. Downstream-component inspection and CI
+wheel-matrix evidence are still required before this phase is complete. C++
+reference tests
 and benchmarks now call explicit `createReference()` detector APIs, so
 old-engine comparison intent is visible at each call site.
 The runtime source isolation check is wired into lint so non-reference DART

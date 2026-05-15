@@ -107,17 +107,17 @@ unverified external and finalization gates:
 - Later pushed audit/docs/policy heads contain audit evidence, CI trigger
   notes, clean dartpy collision API policy, reference build-option
   refinements, and public docs alignment for the built-in runtime collision
-  path. The latest pushed docs/evidence head before this clean reference-gate
-  update is `06cd27d0163`. The matching `gh run list` check returned no
-  GitHub Actions runs because these branch pushes are not an allowed workflow
-  trigger while PR #2652 is closed.
+  path. The latest pushed validation baseline is `376fd5e686d`
+  (`Remove per-engine collision reference build options`). The matching
+  `gh run list` check returned no GitHub Actions runs because these branch
+  pushes are not an allowed workflow trigger while PR #2652 is closed.
 - Local downstream migration evidence is refreshed: fresh gz-physics,
   package-smoke, runtime-isolation, C++ compatibility-name, dartpy clean-API,
   direct link-inspection checks, and human-authored stale-backend docs audit all
-  pass. The primary executable/link-smoke evidence is refreshed on the working
-  tree after `06cd27d0163`, with only public reference tests/benchmarks gates
-  and no per-engine FCL/Bullet/ODE collision build switches in current
-  code/config paths.
+  pass. The primary executable/link-smoke evidence is refreshed on pushed
+  validation baseline `376fd5e686d`, with only public reference
+  tests/benchmarks gates and no per-engine FCL/Bullet/ODE collision build
+  switches in current code/config paths.
   Downstream deprecation policy evidence is still missing before retained
   facades can be removed or hard-deprecated.
 - Final compatibility-facade retention/deprecation evidence is still missing:
@@ -125,8 +125,8 @@ unverified external and finalization gates:
   implementations, keep only native-backed compatibility facades required by
   downstream migration, and leave FCL/Bullet/ODE access in explicit
   reference-only test/benchmark APIs.
-- Full local `pixi run test-all` evidence is refreshed on the working tree
-  after `06cd27d0163`, with normal native-only defaults keeping only reference
+- Full local `pixi run test-all` evidence is refreshed on pushed validation
+  baseline `376fd5e686d`, with normal native-only defaults keeping only reference
   tests and reference benchmarks visible and `OFF`. Final `pixi run test-all`
   evidence after the eventual PR-complete state is still missing. The refreshed
   full reruns found and repaired three
@@ -147,11 +147,11 @@ unverified external and finalization gates:
 Current audited state:
 
 - Branch: `feature/new_coll`
-- Latest pushed branch head before this clean reference-gate update:
-  `06cd27d0163` (`Rename collision reference build options`). Local and
-  `origin/feature/new_coll` matched at that head, PR #2652 was still closed
-  and anchored to old head `714d220d82a`, and GitHub reported no Actions runs
-  for commit `06cd27d0163`.
+- Latest pushed validation baseline:
+  `376fd5e686d` (`Remove per-engine collision reference build options`).
+  Local and `origin/feature/new_coll` matched at that head, PR #2652 was still
+  closed and anchored to old head `714d220d82a`, and GitHub reported no
+  Actions runs for commit `376fd5e686d`.
 - Latest published checkpoint before CI repair: `5b08a00d381`
   (`Record current native collision validation pass`), which records the
   current local validation pass after the durable built-in architecture docs
@@ -159,7 +159,7 @@ Current audited state:
 - Latest audited branch evidence: `ec6f6f43112`
   (`Clean dartpy collision API and deprecate C++ facades`) plus
   `aa3ccce70c7` (`Clarify collision reference build options`) through
-  `06cd27d0163` (`Rename collision reference build options`). Those
+  `376fd5e686d` (`Remove per-engine collision reference build options`). Those
   commits include the latest code/evidence head `1e1faf6feb1`
   (`Fix native capsule convex casts in CI`), the local downstream evidence
   checkpoint, the compatibility-facade audit guard at `f31f1a5b897`, the PR
@@ -176,9 +176,9 @@ Current audited state:
   backend guidance, plus the latest completion-audit refresh. GitHub reports no
   Actions runs for the later pushes because `feature/new_coll` does not match
   the workflow `push` filters and PR #2652 remains closed.
-- Full local validation run head: working tree after `06cd27d0163`
-  (`Rename collision reference build options`), before this evidence-record
-  update. The safe-job full-validation command passed with 6/6 top-level
+- Full local validation run head: pushed validation baseline `376fd5e686d`
+  (`Remove per-engine collision reference build options`). The safe-job
+  full-validation command passed with 6/6 top-level
   gates: linting, build, unit tests, simulation-experimental tests, Python
   tests, and documentation. The configure output kept collision reference tests
   and collision reference benchmarks `OFF`, confirming old-engine comparison
@@ -194,9 +194,9 @@ Current audited state:
   DART adapter benchmark JSON outputs. This is local benchmark evidence; it
   does not replace final PR/CI artifact evidence because feature-branch pushes
   do not trigger the benchmark workflow while PR #2652 is closed.
-- Downstream/package/link refresh head: working tree after `06cd27d0163`
-  (`Rename collision reference build options`), before this evidence-record
-  update. The safe-job `pixi run -e gazebo test-gz` run configured the gazebo
+- Downstream/package/link refresh head: pushed validation baseline
+  `376fd5e686d` (`Remove per-engine collision reference build options`). The
+  safe-job `pixi run -e gazebo test-gz` run configured the gazebo
   DART install with collision reference tests and collision reference
   benchmarks `OFF` and no per-engine FCL/Bullet/ODE collision build switches,
   then passed 65/65 gz-physics tests. The native compatibility package smoke

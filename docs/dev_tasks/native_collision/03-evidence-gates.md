@@ -2740,11 +2740,11 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     compatibility package smoke.
   - Policy evidence: dartpy exposes `DartCollisionDetector` without legacy
     detector aliases; retained C++ FCL/Bullet/ODE facades and legacy factory
-    keys are deprecated native-backed compatibility paths; and
-    `DART_BUILD_COLLISION_FCL`, `DART_BUILD_COLLISION_BULLET`, and
-    `DART_BUILD_COLLISION_ODE` now document reference-only scope. Core DART,
-    dartpy, gz-physics runtime integration, and the native-backed
-    compatibility component facades do not need those options.
+    keys are deprecated native-backed compatibility paths; and the old
+    per-engine FCL/Bullet/ODE collision build switches are no longer a current
+    build surface. Core DART, dartpy, gz-physics runtime integration, and the
+    native-backed compatibility component facades do not need backend-shaped
+    build flags.
   - GitHub trigger evidence:
     `gh run list --branch feature/new_coll --commit ec6f6f43112 ...` returned
     no runs because PR #2652 is closed and feature-branch pushes do not match
@@ -2796,9 +2796,10 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     not required by core DART, dartpy, gz-physics runtime compatibility, or the
     native-backed legacy package component facades.
 - Current clean reference-gate validation:
-  - Commit: working tree after `06cd27d0163`
-    (`Rename collision reference build options`), before this evidence-record
-    commit.
+  - Commit: `376fd5e686d`
+    (`Remove per-engine collision reference build options`), pushed to
+    `origin/feature/new_coll`. This documentation refresh is bookkeeping on
+    top of that validation baseline.
   - Build API change: the current CMake/Pixi/CI surface exposes only
     `DART_BUILD_COLLISION_REFERENCE_TESTS` and
     `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` for optional old-engine
@@ -2816,8 +2817,9 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     against the gz DART plugin and package-smoke executable, and
     `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`.
   - Result: passed. Default configure reported reference tests and reference
-    benchmarks `OFF`; the current build surface has no per-engine collision
-    reference options. The `collision-reference` configure reported only
+    benchmarks `OFF`; the current build surface has no per-engine
+    FCL/Bullet/ODE collision build switches or per-engine reference options.
+    The `collision-reference` configure reported only
     reference tests and reference benchmarks `ON`, configured the FCL, Bullet,
     and ODE reference components, added 13 components, and configured 287 CTest
     tests. The focused `test_reference_backends` build and CTest passed 1/1.

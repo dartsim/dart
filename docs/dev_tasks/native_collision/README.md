@@ -21,12 +21,14 @@
       cylinder-vs-plane-like-box support for gz's plane-as-large-box path,
       capped large flat box/mesh contact patches for gz max-contact tests, and
       legacy FCL/ODE facade raycast behavior required by gz's ray-intersection
-      feature tests. The current local refresh on the working tree after
-      `06cd27d0163` rebuilt a fresh gz-physics checkout, printed the expected
-      DART plugin integration success line, and `readelf` showed the gz DART
-      plugin depends on `libdart-collision-native.so` without any
+      feature tests. The latest pushed validation baseline
+      (`376fd5e686d`, `Remove per-engine collision reference build options`)
+      rebuilt a fresh gz-physics checkout, printed the expected DART plugin
+      integration success line, and `readelf` showed the gz DART plugin
+      depends on `libdart-collision-native.so` without any
       `libdart-collision-reference-*`, FCL, Bullet, ODE, or libccd runtime
-      dependency. Manual workflow-dispatch evidence on `1e1faf6feb1` is
+      dependency. This follow-up documentation refresh is bookkeeping only.
+      Manual workflow-dispatch evidence on `1e1faf6feb1` is
       reference-only and also passed gz-physics CI, but final PR packaging
       still needs maintainer-approved evidence transfer because PR #2652 is
       closed.
@@ -38,7 +40,7 @@
       native is 1.06 ms CPU mean versus Bullet at 1.69 ms.
 - [x] FCL, Bullet, and ODE are no longer required collision dependencies. A
       core `dart` build, focused native/default C++ tests, and `dartpy` now
-      build with all three disabled.
+      build without exposing or requiring per-engine collision build switches.
 - [x] Normal pixi configure paths now default reference correctness tests and
       reference benchmarks to `OFF`; comparison jobs opt in through the
       `collision-reference` environment, which enables
@@ -52,9 +54,10 @@
       runtime collision backends. The public overview, numerical-methods,
       constraints, and example docs describe the built-in detector as the
       runtime path and the old engines as optional reference-comparison inputs.
-- [x] Native-only install metadata no longer advertises old collision
-      component targets or old collision runtime libraries; the remaining
-      installed collision option variables are `OFF` state reporting.
+- [x] Native-only install metadata no longer advertises old collision runtime
+      libraries; retained legacy collision component targets are native-backed
+      interface facades, and the old per-engine build option variables are no
+      longer part of the installed metadata.
 - [x] A fresh native-only runtime install probe with `dartpy`, GUI, VSG GUI, IO,
       utils, URDF, simulation-experimental, and `dart-collision-native` built
       and installed shows no old collision component files and no FCL, Bullet,
@@ -107,10 +110,10 @@
       facades. A default native-only install/export probe and downstream
       package smoke test that requests `collision-fcl`, `collision-bullet`, and
       `collision-ode` proves those names link the built-in `dart` stack and do
-      not install old collision libraries. The current local refresh on the
-      working tree after `06cd27d0163` reran that package smoke and `readelf`
-      showed the smoke executable depends on `libdart-collision-native.so`
-      without any old collision/reference runtime dependency.
+      not install old collision libraries. The latest pushed validation
+      baseline (`376fd5e686d`) reran that package smoke and `readelf` showed
+      the smoke executable depends on `libdart-collision-native.so` without
+      any old collision/reference runtime dependency.
 - [x] Installed legacy detector headers for FCL, Bullet, and ODE are now
       compatibility facades over `DartCollisionDetector` in native-only and
       reference-enabled installs. The downstream package/header smokes include
@@ -170,8 +173,8 @@
 - [ ] Final validation after the completing code state is still open. At
       minimum this means `pixi run lint`, `pixi run test-all`, and any
       maintainer-selected CI gates whose failures are not covered locally. The
-      latest full local `pixi run test-all` pass is tied to the working tree
-      after `06cd27d0163` and passed 6/6 top-level gates. The current clean
+      latest full local `pixi run test-all` pass is tied to pushed validation
+      baseline `376fd5e686d` and passed 6/6 top-level gates. The current clean
       reference-gate refresh proves normal configure exposes only reference
       tests/benchmarks, keeps both `OFF` by default, and no longer has
       per-engine FCL/Bullet/ODE collision build switches. Final PR-state

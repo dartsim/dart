@@ -47,9 +47,9 @@ The current built-in stack already has substantial native infrastructure:
   `libode`, and the FCL transitive packages. The explicit
   `collision-reference` environment owns those packages and restores the
   reference component, test, and benchmark option set for comparison work.
-- A repaired py312 wheel artifact built with old collision engines disabled
-  imports successfully and contains no old collision component files, old
-  collision CMake exports, or FCL, Bullet, ODE, or libccd runtime links. The
+- A repaired py312 wheel artifact built without normal old-engine collision
+  switches imports successfully and contains no old collision component files,
+  old collision CMake exports, or FCL, Bullet, ODE, or libccd runtime links. The
   closed-PR workflow-dispatch Publish dartpy run on head `1e1faf6feb1` also
   passed the full Ubuntu, macOS, and Windows Python 3.12/3.13/3.14 wheel
   matrix with the collision-isolation verifier wired into `wheel-verify`.

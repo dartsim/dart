@@ -62,7 +62,7 @@ must be deleted in the same PR that completes the native-collision migration.
 Local validation currently recorded in the dev-task evidence:
 
 - `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
-  passed on the working tree after `06cd27d0163` with 6/6 top-level gates:
+  passed on pushed validation baseline `376fd5e686d` with 6/6 top-level gates:
   - linting
   - build
   - unit tests
@@ -99,8 +99,8 @@ Local validation currently recorded in the dev-task evidence:
   - `readelf` showed gz/plugin package-smoke binaries depending on
     `libdart-collision-native.so` without old collision/reference runtime
     dependencies
-  - latest local refresh is tied to the working tree after pushed head
-    `06cd27d0163` before this evidence-record update
+  - latest local refresh is tied to pushed validation baseline `376fd5e686d`;
+    this documentation refresh is bookkeeping only
 - Prior workflow-dispatch reference evidence on pushed head `1e1faf6feb1`:
   - native-only CI passed
   - gz-physics CI passed
@@ -148,6 +148,7 @@ Compatibility notes:
   - `ec6f6f43112` (`Clean dartpy collision API and deprecate C++ facades`)
   - `aa3ccce70c7` (`Clarify collision reference build options`)
   - `06cd27d0163` (`Rename collision reference build options`)
+  - `376fd5e686d` (`Remove per-engine collision reference build options`)
 
 ## Checklist Notes
 

@@ -22,9 +22,10 @@ for the maintainer-opened review surface.
 
 `feature/new_coll` tracks `origin/feature/new_coll`.
 
-At the start of the latest clean reference-gate slice, local and remote matched
-at `06cd27d0163` (`Rename collision reference build options`) with no local
-diff. If another audit-record commit has been added after this note, run the
+The latest pushed validation baseline is `376fd5e686d`
+(`Remove per-engine collision reference build options`), where local and remote
+matched before this documentation bookkeeping refresh. If another audit-record
+commit has been added after this note, run the
 commands below to refresh that fact instead of trusting this timestamp:
 
 ```bash
@@ -53,16 +54,15 @@ post GitHub comments unless the user explicitly asks.
 - Clean dartpy collision API and C++ compatibility-facade deprecation baseline:
   `ec6f6f43112`.
 - Build-option policy baseline: `aa3ccce70c7`.
-- Clean reference-gate validation: working tree after `06cd27d0163` passed
+- Clean reference-gate validation: pushed validation baseline `376fd5e686d` passed
   default configure, `collision-reference` configure, focused
   `test_reference_backends`, fresh `pixi run -e gazebo test-gz`, and native
   package/link smoke with direct `readelf` checks.
 - Public docs collision-runtime wording baseline: `ad1b6782578`.
-- Latest full local `pixi run test-all` validation baseline: working tree
-  after `06cd27d0163`, with 6/6 top-level gates passing.
+- Latest full local `pixi run test-all` validation baseline:
+  `376fd5e686d`, with 6/6 top-level gates passing.
 - Latest local `collision-reference` benchmark guard baseline: `4b155655890`.
-- Latest local downstream/package/link smoke baseline: working tree after
-  `06cd27d0163`.
+- Latest local downstream/package/link smoke baseline: `376fd5e686d`.
 - Last manual workflow-dispatch CI evidence head: `1e1faf6feb1`.
 - Latest pushed docs/reference-cleanup heads after those baselines have no
   GitHub Actions runs because branch pushes do not match the workflow filters
