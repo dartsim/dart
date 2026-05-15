@@ -230,9 +230,9 @@
   bounded-run stop checks. The Filament example uses this state instead of
   keeping those viewer-loop decisions example-local.
 - `dart-gui-experimental` now owns reusable RGBA-to-PPM screenshot storage.
-  The Filament example keeps renderer readback and capture synchronization in
-  `examples/filament_gui/screenshot.hpp` and `.cpp`, and delegates file writing
-  to the backend-hidden helper.
+  The Filament renderer readback and capture synchronization now live under
+  `dart/gui/experimental/detail/filament/screenshot.hpp` and `.cpp`, while
+  file writing delegates to the backend-hidden helper.
 - `dart-gui-experimental` now owns renderer-hidden renderable set update
   planning. The Filament example uses that plan to create and destroy Filament
   resources when descriptor snapshots gain, lose, hide, or reveal renderables

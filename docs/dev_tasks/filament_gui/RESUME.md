@@ -97,9 +97,9 @@ descriptor-owned geometry changes, including dynamic soft-mesh vertex changes,
 recreate Filament resources. Supported descriptor kinds that cannot produce
 renderer resources now carry diagnostic reasons that the Filament example logs
 once. Backend-hidden RGBA-to-PPM screenshot storage also now lives in
-`dart-gui-experimental`; the Filament example keeps only renderer readback
-behind its example render context, so the screenshot helper header does not
-expose Filament renderer types.
+`dart-gui-experimental`; Filament renderer readback now lives under
+`dart/gui/experimental/detail/filament` behind the Filament render context, so
+the screenshot helper header does not expose Filament renderer types.
 Retained Filament renderables also reapply descriptor shadow flags each frame,
 so DART visual-aspect shadow changes are not limited to resource creation.
 Example-local PNG/JPEG image decoding, Filament texture-cache ownership,
@@ -116,10 +116,11 @@ to shrink to a minimal executable entry point: renderer setup, frame lifecycle,
 material and texture resources, scene synchronization, capture, overlays, input
 translation, and reusable fixture logic should move into `dart::gui` or private
 GUI implementation units rather than remain as example-local architecture.
-Example-local engine, renderer, swap-chain, main view, scene, camera lifecycle,
-and begin/render/end frame calls live in
-`examples/filament_gui/render_context.hpp` and `.cpp`; `main.cpp` now has zero
-direct Filament header includes.
+Filament engine, renderer, swap-chain, main view, scene, camera lifecycle, and
+begin/render/end frame calls live in
+`dart/gui/experimental/detail/filament/render_context.hpp` and `.cpp`;
+`main.cpp` now has zero direct Filament header includes, and this backend
+implementation slice has moved out of the example tree.
 Example-local neutral lighting/color grading, light entity creation and orbit
 updates, scene environment binding, viewport/camera application, and windowed
 view-quality setup live in `examples/filament_gui/render_environment.hpp` and

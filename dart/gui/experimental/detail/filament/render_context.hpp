@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_FILAMENT_GUI_RENDER_CONTEXT_HPP_
-#define EXAMPLES_FILAMENT_GUI_RENDER_CONTEXT_HPP_
+#ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_RENDER_CONTEXT_HPP_
+#define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_RENDER_CONTEXT_HPP_
 
 #include <utils/Entity.h>
 
@@ -52,16 +52,16 @@ struct RunOptions;
 
 } // namespace dart::gui::experimental
 
-namespace dart::examples::filament_gui {
+namespace dart::gui::experimental::filament {
 
 struct FilamentRenderContext
 {
-  filament::Engine* engine = nullptr;
-  filament::Renderer* renderer = nullptr;
-  filament::SwapChain* swapChain = nullptr;
-  filament::View* view = nullptr;
-  filament::Scene* scene = nullptr;
-  filament::Camera* camera = nullptr;
+  ::filament::Engine* engine = nullptr;
+  ::filament::Renderer* renderer = nullptr;
+  ::filament::SwapChain* swapChain = nullptr;
+  ::filament::View* view = nullptr;
+  ::filament::Scene* scene = nullptr;
+  ::filament::Camera* camera = nullptr;
   utils::Entity cameraEntity;
 };
 
@@ -75,12 +75,12 @@ bool shouldSkipRenderedWorkAfterFrameSkip(
     const FilamentRenderContext& context, bool headless);
 
 void renderFilamentViews(
-    FilamentRenderContext& context, filament::View* overlayView);
+    FilamentRenderContext& context, ::filament::View* overlayView);
 
 void endFilamentFrame(FilamentRenderContext& context);
 
 void destroyFilamentRenderContext(FilamentRenderContext& context);
 
-} // namespace dart::examples::filament_gui
+} // namespace dart::gui::experimental::filament
 
-#endif // EXAMPLES_FILAMENT_GUI_RENDER_CONTEXT_HPP_
+#endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_RENDER_CONTEXT_HPP_

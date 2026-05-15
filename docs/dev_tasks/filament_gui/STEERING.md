@@ -21,6 +21,10 @@ recommended maintainability slices:
 - `dart/gui/experimental/shape_descriptions.cpp` owns `describeShape`, leaving
   `scene.cpp` focused on renderable identity, resource versioning, and world
   extraction.
+- `dart/gui/experimental/profile.hpp` and `.cpp` own viewer-loop profile
+  accumulation, and `dart/gui/experimental/detail/filament/render_context.*`
+  plus `screenshot.*` now own the first Filament-private runtime slice outside
+  the example tree.
 
 The remaining guidance is still useful for promotion sequencing, but the
 original "next" ordering below is partially complete.

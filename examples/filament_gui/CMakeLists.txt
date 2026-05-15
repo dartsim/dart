@@ -194,9 +194,19 @@ add_custom_command(
 )
 
 file(GLOB srcs "*.cpp" "*.hpp")
+set(filament_gui_backend_srcs
+  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/render_context.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/screenshot.cpp"
+)
+set(filament_gui_backend_hdrs
+  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/render_context.hpp"
+  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/screenshot.hpp"
+)
 add_executable(
   ${example_target}
   ${srcs}
+  ${filament_gui_backend_srcs}
+  ${filament_gui_backend_hdrs}
   "${material_header}"
   "${textured_material_header}"
   "${transparent_material_header}"
@@ -228,7 +238,11 @@ target_compile_features(${example_target} PRIVATE cxx_std_20)
 if(DART_IN_SOURCE_BUILD)
   set_target_properties(${example_target} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin")
   dart_add_example(${example_target})
-  dart_format_add(${srcs})
+  dart_format_add(
+    ${srcs}
+    ${filament_gui_backend_srcs}
+    ${filament_gui_backend_hdrs}
+  )
 
   if(BUILD_TESTING AND DART_BUILD_TESTS AND DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS)
     find_package(Python3 COMPONENTS Interpreter REQUIRED)

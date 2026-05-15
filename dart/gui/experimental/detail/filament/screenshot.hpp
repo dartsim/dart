@@ -30,8 +30,8 @@
  *   DAMAGE.
  */
 
-#ifndef EXAMPLES_FILAMENT_GUI_SCREENSHOT_HPP_
-#define EXAMPLES_FILAMENT_GUI_SCREENSHOT_HPP_
+#ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCREENSHOT_HPP_
+#define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCREENSHOT_HPP_
 
 #include <condition_variable>
 #include <cstdint>
@@ -39,7 +39,7 @@
 #include <string>
 #include <vector>
 
-namespace dart::examples::filament_gui {
+namespace dart::gui::experimental::filament {
 
 struct FilamentRenderContext;
 
@@ -64,6 +64,6 @@ void requestScreenshot(
 bool waitForScreenshot(
     FilamentRenderContext& context, ScreenshotCapture& capture);
 
-} // namespace dart::examples::filament_gui
+} // namespace dart::gui::experimental::filament
 
-#endif // EXAMPLES_FILAMENT_GUI_SCREENSHOT_HPP_
+#endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCREENSHOT_HPP_

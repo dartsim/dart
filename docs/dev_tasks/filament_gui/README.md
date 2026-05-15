@@ -107,10 +107,10 @@
 - Retained Filament renderables now reapply descriptor shadow flags each frame,
   so DART visual-aspect shadow changes are not limited to resource creation.
 - The experimental viewer-runtime layer owns reusable RGBA-to-PPM screenshot
-  storage, while `examples/filament_gui/screenshot.hpp` and `.cpp` isolate the
-  Filament example's renderer readback and capture synchronization behind the
-  example render context, so the screenshot helper header does not expose
-  Filament renderer types.
+  storage, while `dart/gui/experimental/detail/filament/screenshot.hpp` and
+  `.cpp` isolate the Filament example's renderer readback and capture
+  synchronization behind the Filament render context, so the screenshot helper
+  header does not expose Filament renderer types.
   The current Filament readback path writes top-left-origin screenshots so
   headless captures are directly reviewable without a manual vertical flip.
 - The Filament example's PNG/JPEG texture loading, Filament texture cache, and
@@ -134,8 +134,9 @@
   architecture.
 - The Filament example's engine, renderer, swap-chain, main view, scene,
   camera lifecycle, and begin/render/end frame calls now live in
-  `examples/filament_gui/render_context.hpp` and `.cpp`, leaving `main.cpp`
-  without direct Filament header includes.
+  `dart/gui/experimental/detail/filament/render_context.hpp` and `.cpp`,
+  leaving `main.cpp` without direct Filament header includes and moving another
+  backend implementation slice out of the example tree.
 - The Filament example's neutral lighting, light entity creation and orbit
   update, scene environment binding, color grading, viewport/camera
   application, and windowed view-quality setup now live in

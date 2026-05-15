@@ -44,7 +44,7 @@
 #include <cstdlib>
 #include <iostream>
 
-namespace dart::examples::filament_gui {
+namespace dart::gui::experimental::filament {
 
 void saveScreenshot(const ScreenshotCapture& capture, const std::string& path)
 {
@@ -77,11 +77,11 @@ void requestScreenshot(
         0);
   }
 
-  filament::backend::PixelBufferDescriptor pixels(
+  ::filament::backend::PixelBufferDescriptor pixels(
       capture.pixels.data(),
       capture.pixels.size(),
-      filament::backend::PixelBufferDescriptor::PixelDataFormat::RGBA,
-      filament::backend::PixelBufferDescriptor::PixelDataType::UBYTE,
+      ::filament::backend::PixelBufferDescriptor::PixelDataFormat::RGBA,
+      ::filament::backend::PixelBufferDescriptor::PixelDataType::UBYTE,
       1,
       0,
       0,
@@ -110,4 +110,4 @@ bool waitForScreenshot(
   });
 }
 
-} // namespace dart::examples::filament_gui
+} // namespace dart::gui::experimental::filament

@@ -41,17 +41,18 @@
 
 #include <cstdint>
 
-namespace dart::examples::filament_gui {
+namespace dart::gui::experimental::filament {
 
 FilamentRenderContext createFilamentRenderContext(
     const dart::gui::experimental::RunOptions& options,
     void* nativeWindow)
 {
   FilamentRenderContext context;
-  context.engine = filament::Engine::create(filament::Engine::Backend::OPENGL);
+  context.engine
+      = ::filament::Engine::create(::filament::Engine::Backend::OPENGL);
   context.renderer = context.engine->createRenderer();
   if (options.headless) {
-    filament::Renderer::DisplayInfo displayInfo;
+    ::filament::Renderer::DisplayInfo displayInfo;
     displayInfo.refreshRate = 0.0f;
     context.renderer->setDisplayInfo(displayInfo);
   }
@@ -82,7 +83,7 @@ bool shouldSkipRenderedWorkAfterFrameSkip(
 }
 
 void renderFilamentViews(
-    FilamentRenderContext& context, filament::View* overlayView)
+    FilamentRenderContext& context, ::filament::View* overlayView)
 {
   context.renderer->render(context.view);
   if (overlayView != nullptr) {
@@ -103,8 +104,8 @@ void destroyFilamentRenderContext(FilamentRenderContext& context)
   context.engine->destroy(context.scene);
   context.engine->destroy(context.renderer);
   context.engine->destroy(context.swapChain);
-  filament::Engine::destroy(&context.engine);
+  ::filament::Engine::destroy(&context.engine);
   context = {};
 }
 
-} // namespace dart::examples::filament_gui
+} // namespace dart::gui::experimental::filament
