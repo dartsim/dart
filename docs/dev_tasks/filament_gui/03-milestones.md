@@ -146,6 +146,12 @@
   support Ctrl-left camera-plane dragging of selected dynamic bodies or
   `SimpleFrame` visuals in the Filament example, with C++/Python coverage for
   the shared math.
+- The Filament example includes a selectable `--scene hello-world` fixture that
+  extracts and renders the legacy hello-world example's single dynamic box and
+  ground plane through the same descriptor-driven Filament path.
+  `pixi run ex hello_world` routes to this Filament scene by default so the
+  simplest in-tree visual workflow no longer depends on the legacy OSG viewer
+  path.
 - The Filament example includes a selectable `--scene drag-and-drop` fixture
   that extracts and renders the legacy drag-and-drop example's `SimpleFrame`
   anchor, child frame, and axis markers through the same manipulation path.

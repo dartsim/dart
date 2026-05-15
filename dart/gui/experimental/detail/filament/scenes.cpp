@@ -113,6 +113,8 @@ const char* sceneName(ExampleScene scene)
   switch (scene) {
     case ExampleScene::Mvp:
       return "mvp";
+    case ExampleScene::HelloWorld:
+      return "hello-world";
     case ExampleScene::DragAndDrop:
       return "drag-and-drop";
     case ExampleScene::Polyhedron:
@@ -129,6 +131,10 @@ bool parseSceneName(std::string_view name, ExampleScene& scene)
 {
   if (name == "mvp") {
     scene = ExampleScene::Mvp;
+    return true;
+  }
+  if (name == "hello-world") {
+    scene = ExampleScene::HelloWorld;
     return true;
   }
   if (name == "drag-and-drop") {
@@ -159,6 +165,12 @@ OrbitCamera initialCameraForScene(ExampleScene scene)
       camera.yaw = -0.72;
       camera.pitch = 0.58;
       camera.distance = 9.5;
+      break;
+    case ExampleScene::HelloWorld:
+      camera.target = Eigen::Vector3d(0.0, 0.0, 0.5);
+      camera.yaw = -0.88;
+      camera.pitch = 0.36;
+      camera.distance = 4.2;
       break;
     case ExampleScene::Polyhedron:
       camera.target = Eigen::Vector3d(0.0, 0.0, 0.45);
@@ -820,8 +832,8 @@ AppOptions parseOptions(int argc, char* argv[])
       const std::string_view sceneArg(argv[++i]);
       if (!parseSceneName(sceneArg, options.scene)) {
         std::cerr << "Unknown scene '" << sceneArg
-                  << "'. Expected 'mvp', 'drag-and-drop', 'polyhedron', "
-                     "'heightmap', or 'g1'.\n";
+                  << "'. Expected 'mvp', 'hello-world', 'drag-and-drop', "
+                     "'polyhedron', 'heightmap', or 'g1'.\n";
         std::exit(2);
       }
     } else if (
@@ -847,7 +859,7 @@ AppOptions parseOptions(int argc, char* argv[])
                    " [--orbit-light-period SECONDS]"
                    " [--gui-scale N]"
                    " [--profile]"
-                   " [--scene mvp|drag-and-drop|polyhedron|heightmap|g1]"
+                   " [--scene mvp|hello-world|drag-and-drop|polyhedron|heightmap|g1]"
                    " [--g1-package-uri URI] [--g1-robot-uri URI]"
                    " [--g1-package-name NAME]\n";
       std::exit(0);
@@ -1198,6 +1210,45 @@ DartScene createMvpDartScene()
   return scene;
 }
 
+DartScene createHelloWorldScene()
+{
+  DartScene scene;
+  scene.world = World::create("filament_gui_hello_world");
+  scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+
+  auto box = Skeleton::create(kHelloWorldBoxFixtureSkeletonName);
+  auto [joint, body] = box->createJointAndBodyNodePair<FreeJoint>();
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(0.0, 0.0, 1.0);
+  const Eigen::Quaterniond orientation
+      = Eigen::AngleAxisd(0.45, Eigen::Vector3d::UnitX())
+        * Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitY());
+  transform.linear() = orientation.toRotationMatrix();
+  joint->setTransformFromParentBodyNode(transform);
+
+  auto boxShape = std::make_shared<BoxShape>(Eigen::Vector3d(0.3, 0.3, 0.3));
+  auto* boxShapeNode = body->createShapeNodeWith<
+      VisualAspect,
+      CollisionAspect,
+      DynamicsAspect>(boxShape);
+  boxShapeNode->getVisualAspect()->setColor(dart::Color::Blue());
+  body->setInertia(dart::dynamics::Inertia(
+      1.0, Eigen::Vector3d::Zero(), boxShape->computeInertia(1.0)));
+  scene.world->addSkeleton(box);
+
+  auto ground = Skeleton::create(kHelloWorldGroundFixtureSkeletonName);
+  auto* groundBody = ground->createJointAndBodyNodePair<WeldJoint>().second;
+  auto* groundShapeNode = groundBody->createShapeNodeWith<
+      VisualAspect,
+      CollisionAspect,
+      DynamicsAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d(10.0, 10.0, 0.1)));
+  groundShapeNode->getVisualAspect()->setColor(dart::Color::LightGray());
+  scene.world->addSkeleton(ground);
+
+  return scene;
+}
+
 DartScene createDragAndDropScene()
 {
   DartScene scene;
@@ -1313,6 +1364,8 @@ DartScene createDartScene(const AppOptions& options)
   switch (options.scene) {
     case ExampleScene::Mvp:
       return createMvpDartScene();
+    case ExampleScene::HelloWorld:
+      return createHelloWorldScene();
     case ExampleScene::DragAndDrop:
       return createDragAndDropScene();
     case ExampleScene::Polyhedron:

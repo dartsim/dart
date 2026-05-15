@@ -25,7 +25,8 @@
   for shading diagnostics; toggle it with `--orbit-light`, `--no-orbit-light`,
   or the panel checkbox, and tune the default 80-second full orbit with
   `--orbit-light-period <seconds>`.
-  Use `--scene drag-and-drop` to run the interaction fixture,
+  Use `--scene hello-world` to run the simplest dynamic-box fixture,
+  `--scene drag-and-drop` to run the interaction fixture,
   `--scene polyhedron` or `--scene heightmap` to inspect focused legacy visual
   fixtures, or `--scene g1` to load the Unitree G1 humanoid used in the project
   README animation.
@@ -70,6 +71,9 @@
 - Imported WAM and Atlas robot fixtures are included as static visual reference
   objects in the default scene. Their collision and gravity participation are
   disabled so they do not dominate example frame time.
+- The `--scene hello-world` fixture renders the legacy hello-world example's
+  single dynamic blue box and gray ground plane through the same
+  descriptor-driven Filament path.
 - Windowed playback advances physics against wall-clock time with a bounded
   catch-up step budget. Headless captures remain deterministic and advance one
   simulation step for each rendered frame.
@@ -122,6 +126,12 @@ To run the interaction fixture:
 pixi run ex filament_gui --scene drag-and-drop
 ```
 
+To run the hello-world fixture:
+
+```bash
+pixi run ex filament_gui --scene hello-world
+```
+
 To run the convex polyhedron fixture:
 
 ```bash
@@ -147,7 +157,8 @@ pixi run ex filament_gui --headless --scene all
 ```
 
 The capture paths are `build/<pixi-env>/filament_gui_mvp.ppm` and
-`build/<pixi-env>/filament_gui_drag_and_drop.ppm`, and
+`build/<pixi-env>/filament_gui_hello_world.ppm`,
+`build/<pixi-env>/filament_gui_drag_and_drop.ppm`,
 `build/<pixi-env>/filament_gui_polyhedron.ppm`, and
 `build/<pixi-env>/filament_gui_heightmap.ppm` unless
 `DART_FILAMENT_GUI_SCREENSHOT` is set. The G1 fixture intentionally stays out
@@ -246,6 +257,6 @@ DART_BUILD_GUI_FILAMENT_OVERRIDE=ON \
   pixi run config
 cmake --build build/default/cpp/Release --target dart_filament_gui
 ctest --test-dir build/default/cpp/Release \
-  -R 'EXAMPLE_filament_gui_(headless|drag_and_drop_headless|polyhedron_headless|heightmap_headless)_smoke' \
+  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|drag_and_drop_headless|polyhedron_headless|heightmap_headless)_smoke' \
   --output-on-failure
 ```

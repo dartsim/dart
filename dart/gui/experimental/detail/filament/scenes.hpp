@@ -66,6 +66,7 @@ struct DartScene
 enum class ExampleScene
 {
   Mvp,
+  HelloWorld,
   DragAndDrop,
   Polyhedron,
   Heightmap,
@@ -91,6 +92,10 @@ struct AppOptions
 inline constexpr const char* kWamFixtureSkeletonName = "visual_wam_robot";
 inline constexpr const char* kAtlasFixtureSkeletonName = "visual_atlas_torso_mesh";
 inline constexpr const char* kAtlasRobotFixtureSkeletonName = "visual_atlas_robot";
+inline constexpr const char* kHelloWorldBoxFixtureSkeletonName
+    = "visual_hello_world_box";
+inline constexpr const char* kHelloWorldGroundFixtureSkeletonName
+    = "visual_hello_world_ground";
 inline constexpr const char* kPyramidFixtureSkeletonName = "visual_pyramid";
 inline constexpr const char* kMultiSphereFixtureSkeletonName = "visual_multi_sphere";
 inline constexpr const char* kLineSegmentFixtureSkeletonName = "visual_line_segments";

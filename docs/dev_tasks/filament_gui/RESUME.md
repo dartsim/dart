@@ -267,17 +267,20 @@ headless context, while the dedicated headless construction test remains.
 `pixi run test-filament-gui-smoke` now wraps the explicit pinned fetch fallback
 for Linux x86_64. It configures with `DART_BUILD_GUI=OFF` and
 `DART_BUILD_DARTPY=OFF`, builds `dart_filament_gui`, and runs the default,
-drag-and-drop, polyhedron, and heightmap headless CTest smokes. When `DISPLAY`
-is absent, the task uses Xvfb and prefers Mesa's EGL vendor file for software
-rendering. The Ubuntu CI workflow has a matching `filament-gui-smoke` job that
-installs Mesa, Xvfb, and libc++/libc++abi development packages from apt and
-runs that task without
+hello-world, drag-and-drop, polyhedron, and heightmap headless CTest smokes.
+When `DISPLAY` is absent, the task uses Xvfb and prefers Mesa's EGL vendor file
+for software rendering. The Ubuntu CI workflow has a matching
+`filament-gui-smoke` job that installs Mesa, Xvfb, and libc++/libc++abi
+development packages from apt and runs that task without
 relying on a Filament conda package. The MVP PR #2647 merged with hosted
 `Filament GUI Smoke (GCC)` and `Filament GUI Smoke (Clang)` passing.
 
 `feature/filament-gui-completion` is the follow-up branch for work beyond the
 MVP, and `feature/filament-gui-full-execution` continues that work in the
 separate north-star completion branch requested after MVP PR #2647. It routes
+`pixi run ex hello_world` through the Filament example's selectable
+`--scene hello-world` fixture by default while keeping the standalone source as
+legacy OSG comparison material. It routes
 `pixi run ex drag_and_drop` through the Filament example's selectable
 `--scene drag-and-drop` fixture by default while keeping the standalone source
 as legacy OSG comparison material. It also routes

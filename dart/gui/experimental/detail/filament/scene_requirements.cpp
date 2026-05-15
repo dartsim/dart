@@ -129,6 +129,14 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Mesh) {
     ++counts.atlasRobotMeshes;
   }
+  if (descriptor.skeletonName == kHelloWorldBoxFixtureSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.helloWorldBoxes;
+  }
+  if (descriptor.skeletonName == kHelloWorldGroundFixtureSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.helloWorldGrounds;
+  }
   if (descriptor.skeletonName == kPyramidFixtureSkeletonName
       && descriptor.geometry.kind == ShapeKind::Pyramid) {
     ++counts.pyramids;
@@ -324,6 +332,23 @@ bool validateSceneDescriptorContent(
         output);
   }
 
+  if (scene == ExampleScene::HelloWorld) {
+    if (!requireEqual(
+            counts.helloWorldBoxes,
+            1,
+            "hello world scene",
+            "visible dynamic box renderable descriptor",
+            output)) {
+      return false;
+    }
+    return requireEqual(
+        counts.helloWorldGrounds,
+        1,
+        "hello world scene",
+        "visible ground renderable descriptor",
+        output);
+  }
+
   if (scene == ExampleScene::Heightmap) {
     return requireEqual(
         counts.heightmaps,
@@ -449,6 +474,21 @@ bool validateCreatedSceneContent(
   if (scene == ExampleScene::G1) {
     return requireCreatedAtLeast(
         created.g1Meshes, expected.g1Meshes, "G1 robot mesh renderables", output);
+  }
+
+  if (scene == ExampleScene::HelloWorld) {
+    if (!requireCreatedEqual(
+            created.helloWorldBoxes,
+            expected.helloWorldBoxes,
+            "hello world dynamic box renderables",
+            output)) {
+      return false;
+    }
+    return requireCreatedEqual(
+        created.helloWorldGrounds,
+        expected.helloWorldGrounds,
+        "hello world ground renderables",
+        output);
   }
 
   if (scene == ExampleScene::Heightmap) {

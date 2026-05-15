@@ -50,6 +50,8 @@ struct SceneContentCounts
   std::size_t wamMeshes = 0;
   std::size_t atlasMeshes = 0;
   std::size_t atlasRobotMeshes = 0;
+  std::size_t helloWorldBoxes = 0;
+  std::size_t helloWorldGrounds = 0;
   std::size_t pyramids = 0;
   std::size_t multiSpheres = 0;
   std::size_t lineSegments = 0;
