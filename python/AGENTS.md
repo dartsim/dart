@@ -24,7 +24,7 @@ import dartpy as dart
 dart.World()
 dart.Skeleton.create()
 dart.io.read_skeleton()  # Unified loader
-dart.gui.experimental    # Backend-hidden Filament GUI descriptors
+dart.gui                 # Backend-hidden GUI descriptors and helpers
 ```
 
 ## Code Patterns
@@ -33,8 +33,9 @@ dart.gui.experimental    # Backend-hidden Filament GUI descriptors
 - Use `dart.io.read_skeleton()` for model loading
 - Factory methods: `Skeleton.create()`, `World.create()`
 - Keep dartpy GUI APIs aligned with DART-owned C++ concepts.
-  `dartpy.gui.experimental` exposes the constrained Filament descriptor,
-  debug, picking, and run-loop bridge.
+  `dartpy.gui` exposes the constrained descriptor, debug, picking, and run-loop
+  bridge. `dartpy.gui.experimental` remains an import-compatible namespace for
+  the current promotion checkpoint.
 - Do not expose Filament, GLFW, Dear ImGui, OpenGL, Vulkan, Metal, OSG, or
   Raylib implementation types through new Python-facing contracts.
 

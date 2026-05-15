@@ -6,8 +6,8 @@
 - Legacy Python examples that depended on the removed OpenSceneGraph GUI
   classes were removed. The remaining example is headless and works with the
   maintained dartpy core API.
-- GUI-oriented Python coverage now lives in tests for
-  `dartpy.gui.experimental`, which exposes backend-hidden Filament descriptors.
+- GUI-oriented Python coverage now lives in tests for `dartpy.gui`, which
+  exposes backend-hidden GUI descriptors and helpers.
 
 ## Categories (Ordered)
 

@@ -174,7 +174,7 @@ def _ensure_dartpy_available() -> None:
         importlib.import_module("dartpy")
         # Treat older wheels that do not ship modules referenced by the docs as
         # incompatible and fall back to the checked-in stubs.
-        required_modules = ("dartpy.io", "dartpy.gui.experimental")
+        required_modules = ("dartpy.io", "dartpy.gui")
         for module_name in required_modules:
             importlib.import_module(module_name)
         return
@@ -182,7 +182,7 @@ def _ensure_dartpy_available() -> None:
         reason = None
         if isinstance(exc, ModuleNotFoundError) and exc.name in {
             "dartpy.io",
-            "dartpy.gui.experimental",
+            "dartpy.gui",
         }:
             reason = f"installed dartpy missing {exc.name}"
 

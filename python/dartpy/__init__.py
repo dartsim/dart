@@ -57,9 +57,28 @@ def _alias_extension_submodules() -> None:
     modules[alias] = module
 
 
+def _promote_gui_symbols() -> None:
+  """Promote the maintained GUI compatibility module onto `dartpy.gui`."""
+  gui_module = sys.modules.get(f"{__name__}.gui")
+  experimental_module = sys.modules.get(f"{__name__}.gui.experimental")
+  if gui_module is None or experimental_module is None:
+    return
+
+  public_names = [
+      name for name in dir(experimental_module) if not name.startswith("_")
+  ]
+  for name in public_names:
+    if hasattr(gui_module, name):
+      continue
+    setattr(gui_module, name, getattr(experimental_module, name))
+
+  gui_module.__all__ = ["experimental", *public_names]
+
+
 from ._dartpy import *  # noqa: F401,F403
 
 _alias_extension_submodules()
+_promote_gui_symbols()
 _naming.install_aliases(_ext)
 _layout.install_layout(sys.modules[__name__])
 

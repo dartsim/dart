@@ -29,7 +29,8 @@ and explicit `dart::gui` aliases for renderer-independent scene, viewer,
 geometry, interaction, debug, and profiling concepts. CI Lint on
 `d343c3c64bc` revealed that `examples/simple_frames/CMakeLists.txt` was ignored
 by `.gitignore`'s `*_frames/` rule and missing on GitHub; the immediate repair
-is to force-add that launcher, commit, push, and redispatch CI.
+was force-added in `cd04ba4862ac`, then CI was manually redispatched for lint,
+Linux, macOS, Windows, and CodeQL on that branch head.
 
 The latest steering is to continue without waiting for CI to finish, document
 scope/design updates in this dev-task folder before acting on them, remove the
@@ -44,11 +45,10 @@ simulator/viewer identity, analogous to Isaac Sim.
 
 ## Immediate Next Step
 
-Commit and push the force-added `examples/simple_frames/CMakeLists.txt` repair,
-then manually redispatch CI on the tracked branch. After that, continue the
-next promotion slice by moving public-facing bindings and examples away from
-`experimental` names while preserving Filament/GLFW/ImGui as private
-implementation details.
+Promote the Python GUI binding surface from `dartpy.gui.experimental` to
+`dartpy.gui` while keeping `dartpy.gui.experimental` importable as a
+compatibility namespace for this checkpoint. Preserve Filament/GLFW/ImGui as
+private implementation details.
 
 ## Context That Would Be Lost
 

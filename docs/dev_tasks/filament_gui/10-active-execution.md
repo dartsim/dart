@@ -27,22 +27,22 @@ context survives across sessions.
 
 - Branch: `feature/filament-gui-full-execution`
 - Upstream: `origin/feature/filament-gui-full-execution`
-- Latest pushed checkpoint: `c9ccedfebe8 Promote DART GUI scene headers`
+- Latest pushed checkpoint: `cd04ba4862ac Track simple frames GUI launcher`
 - GitHub Actions were manually dispatched for the pushed checkpoint without
   opening a PR:
-  - CI Lint: https://github.com/dartsim/dart/actions/runs/25944247114
-  - CI Linux: https://github.com/dartsim/dart/actions/runs/25944247147
-  - CI macOS: https://github.com/dartsim/dart/actions/runs/25944247089
-  - CI Windows: https://github.com/dartsim/dart/actions/runs/25944247175
-  - CodeQL: https://github.com/dartsim/dart/actions/runs/25944247115
+  - CI Lint: https://github.com/dartsim/dart/actions/runs/25944438949
+  - CI Linux: https://github.com/dartsim/dart/actions/runs/25944438929
+  - CI macOS: https://github.com/dartsim/dart/actions/runs/25944438931
+  - CI Windows: https://github.com/dartsim/dart/actions/runs/25944438919
+  - CodeQL: https://github.com/dartsim/dart/actions/runs/25944438926
 - Linux Filament smoke tests passed at the latest inspected run.
 - Linux headless rendering failed earlier because the workflow still invoked the
   legacy `rigid_cubes` executable, which was removed in the earlier example
   cleanup. Restoring legacy example entry points and capture compatibility is
   therefore a concrete CI requirement, not only documentation polish.
-- CI Lint on `d343c3c64bc` also exposed that
+- CI Lint on `d343c3c64bc` and `c9ccedfebe8` exposed that
   `examples/simple_frames/CMakeLists.txt` was ignored by the repository
-  `*_frames/` ignore rule and therefore missing on GitHub. The next checkpoint
+  `*_frames/` ignore rule and therefore missing on GitHub. `cd04ba4862ac`
   force-adds that launcher so CMake can configure the restored examples on CI.
 - The restored-example repair is pushed:
   - `examples/dartsim` is the renamed app-level viewer.
@@ -115,6 +115,18 @@ context survives across sessions.
   concepts or make behavior testable without a graphics context. Do not keep a
   multi-backend abstraction only to select between renderer backends.
 
+## Python Binding Promotion Slice
+
+- Promote the existing backend-hidden GUI descriptor/helper symbols from
+  `dartpy.gui.experimental` onto `dartpy.gui`, matching the promoted C++
+  `dart::gui` surface.
+- Keep `dartpy.gui.experimental` importable as a compatibility namespace for
+  this checkpoint so existing users and tests do not break abruptly.
+- Update Python stubs, Sphinx API docs, tests, and Python onboarding text to use
+  `dartpy.gui` as the official surface.
+- Do not expose Filament, GLFW, Dear ImGui, OpenGL, Vulkan, Metal, OSG, or
+  Raylib types through Python-facing contracts.
+
 ## Example Restoration Plan
 
 Restore the pre-existing user-facing examples as migrated `dart::gui` examples
@@ -178,12 +190,11 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Commit and push the force-added `examples/simple_frames/CMakeLists.txt`
-   repair, then manually redispatch GitHub Actions on the tracked branch.
-2. Continue removing `experimental` from promoted surfaces. The next likely
-   slice is Python binding promotion from `dartpy.gui.experimental` toward
-   `dartpy.gui` compatibility wrappers, followed by private CMake helper-name
-   cleanup.
+1. Promote the Python GUI binding surface from `dartpy.gui.experimental` to
+   `dartpy.gui` while keeping the old submodule as a compatibility alias.
+2. After the Python binding checkpoint lands, continue removing `experimental`
+   from promoted surfaces, including private CMake helper-name cleanup where it
+   does not affect compatibility.
 3. Do not expose Filament, GLFW, or Dear ImGui types in promoted headers.
    Private implementation can remain under `dart/gui/experimental/detail` until
    a later file-layout sweep.

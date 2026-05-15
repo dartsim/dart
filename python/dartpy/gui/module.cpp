@@ -14,7 +14,7 @@ void defGuiModule(nanobind::module_& m)
 {
 #if defined(DARTPY_HAS_EXPERIMENTAL_GUI)
   auto experimental = m.def_submodule(
-      "experimental", "Experimental backend-hidden GUI descriptors");
+      "experimental", "Compatibility namespace for promoted GUI descriptors");
   defGuiExperimentalModule(experimental);
 #endif
 }
