@@ -505,9 +505,9 @@
   tests, and docs. The default `UNIT_gui_HeadlessViewer` test was tightened to
   avoid creating a second headless pbuffer in one process after that path
   exposed a local Mesa GLX hang during full-suite validation.
-- A ready-for-review conda-forge staged-recipes PR exists for Filament 1.71.3.
+- An open non-draft conda-forge staged-recipes PR exists for Filament 1.71.3.
   Its current head is still open and behind the target branch, but the latest
-  inspected head `6b20da5` is green across staged-recipes linter,
+  inspected head `d78834e` is green across staged-recipes linter,
   conda-forge-linter, Check Skip, Azure linux_64, osx_64, win_64, and aggregate
   checks. It has not produced an installable feedstock yet, but its planned
   `filament-static` output is the build-time package DART should consume once

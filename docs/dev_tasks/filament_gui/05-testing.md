@@ -247,13 +247,12 @@ Known current result:
   which pulls the matching tool output needed for `matc`.
 - At the latest inspected head `d78834e9bcca1c0c5a55f3d2752f39765932c3f2`,
   the PR was still open, non-draft, and behind the target branch.
-  Staged-recipes linter, conda-forge-linter, Check Skip, Azure linux_64, and
-  win_64 passed, while Azure osx_64 and the aggregate staged-recipes status were
-  still pending. The previous Linux failure came from using
-  `source_files: test-cmake`; the current head uses `files: test-cmake` for the
-  recipe-local CMake consumer test and links that test through CMake OpenGL
-  package targets. The PR is still not merged, so DART still has no installable
-  Filament package to consume.
+  Staged-recipes linter, conda-forge-linter, Check Skip, Azure linux_64,
+  osx_64, win_64, and aggregate staged-recipes checks passed. The previous
+  Linux failure came from using `source_files: test-cmake`; the current head
+  uses `files: test-cmake` for the recipe-local CMake consumer test and links
+  that test through CMake OpenGL package targets. The PR is still not merged,
+  so DART still has no installable Filament package to consume.
 - Upstream Filament release archives include `matc`, headers, and static
   libraries, so `Filament_ROOT` can point at that layout.
 - `DART_FETCH_FILAMENT=ON` explicitly fetches the pinned Linux x86_64

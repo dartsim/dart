@@ -239,12 +239,12 @@ splits host tools into `filament` and headers/static libraries into
 but the current Linux smoke path does not wait for it. At latest inspection, the
 PR was still open and behind the target branch at head
 `d78834e9bcca1c0c5a55f3d2752f39765932c3f2`; staged-recipes linter,
-conda-forge-linter, Check Skip, Azure linux_64, and win_64 passed, while Azure
-osx_64 and the aggregate staged-recipes status were still pending. The previous
-Linux failure came from using `source_files: test-cmake`; the current head uses
-`files: test-cmake` for the recipe-local CMake consumer test and links that test
-through CMake OpenGL package targets. `@conda-forge/help-c-cpp` has been pinged,
-and the feedstock is not created yet.
+conda-forge-linter, Check Skip, Azure linux_64, osx_64, win_64, and aggregate
+staged-recipes checks passed. The previous Linux failure came from using
+`source_files: test-cmake`; the current head uses `files: test-cmake` for the
+recipe-local CMake consumer test and links that test through CMake OpenGL
+package targets. `@conda-forge/help-c-cpp` has been pinged, and the feedstock
+is not created yet.
 
 When compatible libc++/libc++abi libraries are supplied, the experimental target
 configures, links, and runs locally with Mesa llvmpipe. The explicit

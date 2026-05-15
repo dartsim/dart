@@ -461,12 +461,12 @@ Packaging evidence:
   into `filament-static`. `@conda-forge/help-c-cpp` has been pinged.
 - At latest inspection, the current PR head was still open and behind the target
   branch; staged-recipes linter, conda-forge-linter, Check Skip, Azure linux_64,
-  and win_64 passed, while Azure osx_64 and the aggregate staged-recipes status
-  were still pending on head `d78834e`. The previous Linux failure came from
-  using `source_files: test-cmake`; the current head uses `files: test-cmake`
-  for the recipe-local CMake consumer test and links that test through CMake
-  OpenGL package targets. The PR is still not merged, so no installable
-  feedstock exists yet.
+  osx_64, win_64, and aggregate staged-recipes checks passed on head
+  `d78834e`. The previous Linux failure came from using
+  `source_files: test-cmake`; the current head uses `files: test-cmake` for the
+  recipe-local CMake consumer test and links that test through CMake OpenGL
+  package targets. The PR is still not merged, so no installable feedstock
+  exists yet.
 
 ## Remaining Required Work
 
