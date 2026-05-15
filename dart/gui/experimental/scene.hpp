@@ -248,6 +248,24 @@ struct OrbitCameraUpdate
   double maxPitch = 1.45;
 };
 
+struct OrbitCameraController
+{
+  OrbitCamera camera;
+  double lastCursorX = 0.0;
+  double lastCursorY = 0.0;
+  double scrollDelta = 0.0;
+  bool hasLastCursor = false;
+};
+
+struct OrbitCameraControllerInput
+{
+  double cursorX = 0.0;
+  double cursorY = 0.0;
+  bool hasCursor = true;
+  bool orbit = false;
+  bool pan = false;
+};
+
 struct DirectionalNudgeInput
 {
   bool left = false;
@@ -422,6 +440,14 @@ DART_GUI_API Eigen::Vector3d cameraEye(const OrbitCamera& camera);
 
 DART_GUI_API void updateOrbitCamera(
     OrbitCamera& camera, const OrbitCameraUpdate& update);
+
+DART_GUI_API void addOrbitCameraScroll(
+    OrbitCameraController& controller, double scrollDelta);
+
+DART_GUI_API void resetOrbitCameraTracking(OrbitCameraController& controller);
+
+DART_GUI_API void updateOrbitCameraController(
+    OrbitCameraController& controller, const OrbitCameraControllerInput& input);
 
 DART_GUI_API Eigen::Vector3d computeCameraRelativeNudge(
     const OrbitCamera& camera, const DirectionalNudgeInput& input);

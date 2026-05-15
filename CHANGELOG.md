@@ -152,9 +152,10 @@
     `dart::gui::experimental` API directly instead of carrying an example-local
     namespace re-export header, and checked-in dartpy stubs and API docs now
     expose `dartpy.gui.experimental` without backend-specific names.
-    Perspective projection, near/far clipping policy, GUI scale normalization,
-    and camera-relative keyboard nudge math now also live in
-    `dart-gui-experimental` and are consumed by the Filament example. The
+    Orbit-camera controller state, perspective projection, near/far clipping
+    policy, GUI scale normalization, and camera-relative keyboard nudge math now
+    also live in `dart-gui-experimental` and are consumed by the Filament
+    example. The
     north-star audit now also maps the legacy OSG/Raylib GUI surfaces that must
     be replaced, made private, or removed during first-class Filament
     promotion. The renderer-hidden debug descriptor path also covers

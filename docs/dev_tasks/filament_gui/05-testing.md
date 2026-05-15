@@ -243,8 +243,8 @@ Known current result:
   sphere/ellipsoid/cylinder/capsule/cone/pyramid/multi-sphere/point-cloud/voxel-grid/plane
   surface hits, renderable set update planning, and debug-line descriptors, without
   requiring Filament or a graphics context. The same focused test covers
-  backend-hidden camera-relative nudge math used by the Filament example's
-  keyboard manipulation path.
+  backend-hidden orbit-camera controller state and camera-relative nudge math
+  used by the Filament example's mouse/cursor and keyboard manipulation paths.
 - After moving viewer lifecycle state into `dart-gui-experimental`,
   `DART_PARALLEL_JOBS=2 CTEST_PARALLEL_LEVEL=2 pixi run test-all` passed
   locally, covering lint, Release/Debug builds, default C++ tests,

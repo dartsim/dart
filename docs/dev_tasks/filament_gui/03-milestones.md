@@ -184,10 +184,10 @@
 - The Filament example links through `dart-gui-experimental` and can be built
   in an OSG-free configure when `DART_BUILD_GUI=OFF` and `DART_BUILD_DARTPY=OFF`.
 - `dart-gui-experimental` now owns the run-option normalization, orbit-camera
-  basis/update logic, camera eye computation, perspective pick-ray generation,
-  camera-relative directional nudge math, GUI scale normalization, and
-  perspective projection/clipping descriptor generation used by the Filament
-  example.
+  basis/update logic, camera-controller cursor tracking, camera eye
+  computation, perspective pick-ray generation, camera-relative directional
+  nudge math, GUI scale normalization, and perspective projection/clipping
+  descriptor generation used by the Filament example.
 - `dart-gui-experimental` now owns viewer lifecycle state for pause/step
   behavior, screenshot request tracking, rendered/skipped frame counters, and
   bounded-run stop checks. The Filament example uses this state instead of
@@ -208,8 +208,8 @@
   free-joint translation, plane-drag helpers, debug-line descriptor generation
   including support-polygon, inertia-box, and collision-shape-bound overlays,
   run options including GUI scale normalization, viewer lifecycle state,
-  screenshot storage, orbit-camera helpers, directional nudge helpers, and
-  perspective projection/clipping helpers.
+  screenshot storage, orbit-camera helpers, orbit-camera controller helpers,
+  directional nudge helpers, and perspective projection/clipping helpers.
 - `dartpy` can now build the constrained `dartpy.gui.experimental` module with
   `DART_BUILD_GUI=OFF` when `dart-gui-experimental` is present, so the Python
   experimental API is no longer tied to the legacy GUI target.

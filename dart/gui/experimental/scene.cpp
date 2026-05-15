@@ -2311,6 +2311,49 @@ void updateOrbitCamera(OrbitCamera& camera, const OrbitCameraUpdate& update)
   camera.distance = std::clamp(camera.distance, minDistance, maxDistance);
 }
 
+void addOrbitCameraScroll(OrbitCameraController& controller, double scrollDelta)
+{
+  if (std::isfinite(scrollDelta)) {
+    controller.scrollDelta += scrollDelta;
+  }
+}
+
+void resetOrbitCameraTracking(OrbitCameraController& controller)
+{
+  controller.hasLastCursor = false;
+}
+
+void updateOrbitCameraController(
+    OrbitCameraController& controller, const OrbitCameraControllerInput& input)
+{
+  const bool hasCursor = input.hasCursor && std::isfinite(input.cursorX)
+                         && std::isfinite(input.cursorY);
+  double dx = 0.0;
+  double dy = 0.0;
+  if (hasCursor) {
+    if (!controller.hasLastCursor) {
+      controller.lastCursorX = input.cursorX;
+      controller.lastCursorY = input.cursorY;
+      controller.hasLastCursor = true;
+    }
+    dx = input.cursorX - controller.lastCursorX;
+    dy = input.cursorY - controller.lastCursorY;
+    controller.lastCursorX = input.cursorX;
+    controller.lastCursorY = input.cursorY;
+  } else {
+    resetOrbitCameraTracking(controller);
+  }
+
+  OrbitCameraUpdate update;
+  update.deltaX = dx;
+  update.deltaY = dy;
+  update.scrollDelta = controller.scrollDelta;
+  update.orbit = hasCursor && input.orbit;
+  update.pan = hasCursor && input.pan;
+  updateOrbitCamera(controller.camera, update);
+  controller.scrollDelta = 0.0;
+}
+
 Eigen::Vector3d computeCameraRelativeNudge(
     const OrbitCamera& camera, const DirectionalNudgeInput& input)
 {

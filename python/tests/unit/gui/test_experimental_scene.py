@@ -714,6 +714,36 @@ def test_experimental_camera_and_run_helpers():
     )
     assert np.allclose(nudge, np.zeros(3))
 
+    controller = dart.gui.experimental.OrbitCameraController()
+    controller.camera = camera
+    controller_input = dart.gui.experimental.OrbitCameraControllerInput()
+    controller_input.cursor_x = 100.0
+    controller_input.cursor_y = 50.0
+    dart.gui.experimental.update_orbit_camera_controller(
+        controller, controller_input
+    )
+    assert controller.has_last_cursor is True
+    assert np.isclose(controller.last_cursor_x, 100.0)
+    assert np.isclose(controller.last_cursor_y, 50.0)
+    assert np.allclose(controller.camera.target, np.zeros(3))
+
+    dart.gui.experimental.add_orbit_camera_scroll(controller, 1.0)
+    controller_input.cursor_x = 110.0
+    controller_input.cursor_y = 70.0
+    controller_input.pan = True
+    dart.gui.experimental.update_orbit_camera_controller(
+        controller, controller_input
+    )
+    assert np.isclose(controller.scroll_delta, 0.0)
+    assert np.allclose(controller.camera.target, [0.0, -0.03, 0.06])
+    assert controller.camera.distance < 2.0
+
+    controller_input.has_cursor = False
+    dart.gui.experimental.update_orbit_camera_controller(
+        controller, controller_input
+    )
+    assert controller.has_last_cursor is False
+
     ray = dart.gui.experimental.make_perspective_pick_ray(camera, 320, 240, 640, 480)
     assert np.allclose(ray.origin, basis.eye)
     assert np.allclose(ray.direction, basis.forward)

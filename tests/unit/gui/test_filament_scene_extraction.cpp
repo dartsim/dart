@@ -2029,6 +2029,34 @@ TEST(FilamentSceneExtraction, OrbitCamera_UpdateBasisAndPickingAreStable)
       dart::gui::experimental::computeCameraRelativeNudge(camera, nudgeInput)
           .isZero());
 
+  dart::gui::experimental::OrbitCameraController controller;
+  controller.camera = camera;
+  dart::gui::experimental::OrbitCameraControllerInput controllerInput;
+  controllerInput.cursorX = 100.0;
+  controllerInput.cursorY = 50.0;
+  dart::gui::experimental::updateOrbitCameraController(
+      controller, controllerInput);
+  EXPECT_TRUE(controller.hasLastCursor);
+  EXPECT_NEAR(controller.lastCursorX, 100.0, 1e-12);
+  EXPECT_NEAR(controller.lastCursorY, 50.0, 1e-12);
+  EXPECT_TRUE(controller.camera.target.isApprox(Eigen::Vector3d::Zero()));
+
+  dart::gui::experimental::addOrbitCameraScroll(controller, 1.0);
+  controllerInput.cursorX = 110.0;
+  controllerInput.cursorY = 70.0;
+  controllerInput.pan = true;
+  dart::gui::experimental::updateOrbitCameraController(
+      controller, controllerInput);
+  EXPECT_NEAR(controller.scrollDelta, 0.0, 1e-12);
+  EXPECT_TRUE(
+      controller.camera.target.isApprox(Eigen::Vector3d(0.0, -0.03, 0.06)));
+  EXPECT_LT(controller.camera.distance, 2.0);
+
+  controllerInput.hasCursor = false;
+  dart::gui::experimental::updateOrbitCameraController(
+      controller, controllerInput);
+  EXPECT_FALSE(controller.hasLastCursor);
+
   const auto ray = dart::gui::experimental::makePerspectivePickRay(
       camera, 320, 240, 640, 480);
   EXPECT_TRUE(ray.origin.isApprox(basis.eye));

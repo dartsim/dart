@@ -231,6 +231,22 @@ void defGuiExperimentalModule(nb::module_& m)
       .def_rw("min_pitch", &gui::OrbitCameraUpdate::minPitch)
       .def_rw("max_pitch", &gui::OrbitCameraUpdate::maxPitch);
 
+  nb::class_<gui::OrbitCameraController>(m, "OrbitCameraController")
+      .def(nb::init<>())
+      .def_rw("camera", &gui::OrbitCameraController::camera)
+      .def_rw("last_cursor_x", &gui::OrbitCameraController::lastCursorX)
+      .def_rw("last_cursor_y", &gui::OrbitCameraController::lastCursorY)
+      .def_rw("scroll_delta", &gui::OrbitCameraController::scrollDelta)
+      .def_rw("has_last_cursor", &gui::OrbitCameraController::hasLastCursor);
+
+  nb::class_<gui::OrbitCameraControllerInput>(m, "OrbitCameraControllerInput")
+      .def(nb::init<>())
+      .def_rw("cursor_x", &gui::OrbitCameraControllerInput::cursorX)
+      .def_rw("cursor_y", &gui::OrbitCameraControllerInput::cursorY)
+      .def_rw("has_cursor", &gui::OrbitCameraControllerInput::hasCursor)
+      .def_rw("orbit", &gui::OrbitCameraControllerInput::orbit)
+      .def_rw("pan", &gui::OrbitCameraControllerInput::pan);
+
   nb::class_<gui::DirectionalNudgeInput>(m, "DirectionalNudgeInput")
       .def(nb::init<>())
       .def_rw("left", &gui::DirectionalNudgeInput::left)
@@ -470,6 +486,20 @@ void defGuiExperimentalModule(nb::module_& m)
       &gui::updateOrbitCamera,
       nb::arg("camera"),
       nb::arg("update"));
+  m.def(
+      "add_orbit_camera_scroll",
+      &gui::addOrbitCameraScroll,
+      nb::arg("controller"),
+      nb::arg("scroll_delta"));
+  m.def(
+      "reset_orbit_camera_tracking",
+      &gui::resetOrbitCameraTracking,
+      nb::arg("controller"));
+  m.def(
+      "update_orbit_camera_controller",
+      &gui::updateOrbitCameraController,
+      nb::arg("controller"),
+      nb::arg("input"));
   m.def(
       "compute_camera_relative_nudge",
       &gui::computeCameraRelativeNudge,

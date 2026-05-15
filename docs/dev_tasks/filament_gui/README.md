@@ -67,10 +67,11 @@
   camera-plane dragging of selected dynamic bodies and `SimpleFrame` visuals
   without exposing Filament input types.
 - The experimental scene layer also owns backend-hidden run-option
-  normalization, viewer lifecycle state, orbit-camera math, and perspective
-  projection/clipping descriptors used by the example for bounded screenshots,
-  camera placement, headless mode, pause/step behavior, frame accounting,
-  GUI scale normalization, perspective pick rays, and near/far plane policy.
+  normalization, viewer lifecycle state, orbit-camera math, orbit-camera
+  controller state, and perspective projection/clipping descriptors used by the
+  example for bounded screenshots, camera placement, headless mode, pause/step
+  behavior, frame accounting, GUI scale normalization, perspective pick rays,
+  and near/far plane policy.
 - Renderer resource synchronization planning now compares active renderable
   render-resource versions, so descriptor-owned geometry changes, including
   dynamic soft-mesh vertex changes, `MeshShape` material-color policy changes,
@@ -88,8 +89,9 @@
   headless captures are directly reviewable without a manual vertical flip.
 - `dartpy.gui.experimental` now exposes the constrained backend-hidden
   descriptor, picking, frame-translation, debug-line, run-option, viewer
-  lifecycle, screenshot storage, orbit-camera, directional nudge, and
-  projection/clipping APIs used by the current C++ experiment.
+  lifecycle, screenshot storage, orbit-camera, orbit-camera controller,
+  directional nudge, and projection/clipping APIs used by the current C++
+  experiment.
 - The constrained `dartpy.gui.experimental` module can build and pass its
   focused test with `DART_BUILD_GUI=OFF` when the experimental GUI target is
   present, so the Python descriptor API no longer depends on the legacy GUI
@@ -131,8 +133,8 @@
   namespace re-export header.
 - Checked-in dartpy stubs and Python API docs now list
   `dartpy.gui.experimental` and include a backend-hidden stub surface for
-  descriptor, picking, debug-line, run-loop, camera, directional nudge, and
-  screenshot helpers.
+  descriptor, picking, debug-line, run-loop, camera, camera-controller,
+  directional nudge, and screenshot helpers.
 - Promotion requires explicit visual-quality gates, including dynamic shadows.
 - The current Pixi environment does not provide Filament. The upstream Filament
   Linux archive can be discovered with `Filament_ROOT`. It links and runs in

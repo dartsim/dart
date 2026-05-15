@@ -11,6 +11,7 @@ __all__: list[str] = [
     'ActiveRenderableState',
     'DebugDrawOptions',
     'DebugLineDescriptor',
+    'DirectionalNudgeInput',
     'GeometryDescriptor',
     'MaterialDescriptor',
     'MeshAlphaMode',
@@ -18,6 +19,8 @@ __all__: list[str] = [
     'MeshPartDescriptor',
     'OrbitCamera',
     'OrbitCameraBasis',
+    'OrbitCameraController',
+    'OrbitCameraControllerInput',
     'OrbitCameraUpdate',
     'PerspectiveProjection',
     'PickHit',
@@ -28,7 +31,9 @@ __all__: list[str] = [
     'RunOptions',
     'ShapeKind',
     'ViewerLifecycleState',
+    'add_orbit_camera_scroll',
     'camera_eye',
+    'compute_camera_relative_nudge',
     'compute_plane_drag_translation',
     'describe_shape',
     'extract_contact_debug_lines',
@@ -53,6 +58,7 @@ __all__: list[str] = [
     'pick_nearest_renderable',
     'plan_renderable_set_update',
     'request_single_step',
+    'reset_orbit_camera_tracking',
     'should_advance_simulation',
     'should_request_screenshot',
     'should_stop_after_frame',
@@ -61,6 +67,7 @@ __all__: list[str] = [
     'translate_free_joint_renderable',
     'translate_simple_frame_renderable',
     'update_orbit_camera',
+    'update_orbit_camera_controller',
     'write_rgba_ppm',
 ]
 
@@ -277,6 +284,26 @@ class OrbitCameraUpdate:
     def __init__(self) -> None: ...
 
 
+class OrbitCameraController:
+    camera: OrbitCamera
+    last_cursor_x: float
+    last_cursor_y: float
+    scroll_delta: float
+    has_last_cursor: bool
+
+    def __init__(self) -> None: ...
+
+
+class OrbitCameraControllerInput:
+    cursor_x: float
+    cursor_y: float
+    has_cursor: bool
+    orbit: bool
+    pan: bool
+
+    def __init__(self) -> None: ...
+
+
 class DirectionalNudgeInput:
     left: bool
     right: bool
@@ -432,6 +459,13 @@ def write_rgba_ppm(
 def make_orbit_camera_basis(camera: OrbitCamera) -> OrbitCameraBasis: ...
 def camera_eye(camera: OrbitCamera) -> Array: ...
 def update_orbit_camera(camera: OrbitCamera, update: OrbitCameraUpdate) -> None: ...
+def add_orbit_camera_scroll(
+    controller: OrbitCameraController, scroll_delta: float
+) -> None: ...
+def reset_orbit_camera_tracking(controller: OrbitCameraController) -> None: ...
+def update_orbit_camera_controller(
+    controller: OrbitCameraController, input: OrbitCameraControllerInput
+) -> None: ...
 def compute_camera_relative_nudge(
     camera: OrbitCamera, input: DirectionalNudgeInput
 ) -> Array: ...

@@ -158,13 +158,15 @@ using dart::gui::experimental::MeshAlphaMode;
 using dart::gui::experimental::MeshMaterialDescriptor;
 using dart::gui::experimental::MeshPartDescriptor;
 using dart::gui::experimental::OrbitCamera;
-using dart::gui::experimental::OrbitCameraUpdate;
+using dart::gui::experimental::OrbitCameraController;
+using dart::gui::experimental::OrbitCameraControllerInput;
 using dart::gui::experimental::PickRay;
 using dart::gui::experimental::RenderableDescriptor;
 using dart::gui::experimental::RenderableId;
 using dart::gui::experimental::RunOptions;
 using dart::gui::experimental::ShapeKind;
 using dart::gui::experimental::ViewerLifecycleState;
+using dart::gui::experimental::addOrbitCameraScroll;
 using dart::gui::experimental::cameraEye;
 using dart::gui::experimental::computeCameraRelativeNudge;
 using dart::gui::experimental::computePlaneDragTranslation;
@@ -190,7 +192,7 @@ using dart::gui::experimental::shouldRequestScreenshot;
 using dart::gui::experimental::shouldStopAfterFrame;
 using dart::gui::experimental::togglePaused;
 using dart::gui::experimental::translateFrameRenderable;
-using dart::gui::experimental::updateOrbitCamera;
+using dart::gui::experimental::updateOrbitCameraController;
 using dart::gui::experimental::writeRgbaPpm;
 using dart::simulation::World;
 using filament::math::float2;
@@ -334,15 +336,6 @@ struct ProfileAccumulator
   double screenshotSaveMs = 0.0;
   double maxFrameMs = 0.0;
   double maxRenderMs = 0.0;
-};
-
-struct CameraController
-{
-  OrbitCamera camera;
-  double lastX = 0.0;
-  double lastY = 0.0;
-  double scrollDelta = 0.0;
-  bool hasLastCursor = false;
 };
 
 struct ImGuiOverlay
@@ -1634,9 +1627,9 @@ void* getNativeWindow(GLFWwindow* window)
 void handleScroll(GLFWwindow* window, double, double yOffset)
 {
   auto* controller
-      = static_cast<CameraController*>(glfwGetWindowUserPointer(window));
+      = static_cast<OrbitCameraController*>(glfwGetWindowUserPointer(window));
   if (controller != nullptr) {
-    controller->scrollDelta += yOffset;
+    addOrbitCameraScroll(*controller, yOffset);
   }
 }
 
@@ -2350,39 +2343,26 @@ mat4f toFilamentTransform(const Eigen::Isometry3d& tf)
 
 void updateCameraController(
     GLFWwindow* window,
-    CameraController& controller,
+    OrbitCameraController& controller,
     bool suppressLeftMouseOrbit = false)
 {
+  if (window == nullptr) {
+    return;
+  }
+
   double x = 0.0;
   double y = 0.0;
   glfwGetCursorPos(window, &x, &y);
 
-  if (!controller.hasLastCursor) {
-    controller.lastX = x;
-    controller.lastY = y;
-    controller.hasLastCursor = true;
-  }
-
-  const double dx = x - controller.lastX;
-  const double dy = y - controller.lastY;
-  controller.lastX = x;
-  controller.lastY = y;
-
-  const bool orbit
-      = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS
-        && !suppressLeftMouseOrbit && !isDragModifierDown(window);
-  const bool pan
+  OrbitCameraControllerInput input;
+  input.cursorX = x;
+  input.cursorY = y;
+  input.orbit = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS
+                && !suppressLeftMouseOrbit && !isDragModifierDown(window);
+  input.pan
       = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS
         || glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
-
-  OrbitCameraUpdate update;
-  update.deltaX = dx;
-  update.deltaY = dy;
-  update.scrollDelta = controller.scrollDelta;
-  update.orbit = orbit;
-  update.pan = pan;
-  updateOrbitCamera(controller.camera, update);
-  controller.scrollDelta = 0.0;
+  updateOrbitCameraController(controller, input);
 }
 
 filament::MaterialInstance* addRenderableMaterial(
@@ -4543,7 +4523,7 @@ int main(int argc, char* argv[])
     }
   }
 
-  CameraController cameraController;
+  OrbitCameraController cameraController;
   cameraController.camera = initialCameraForScene(appOptions.scene);
   if (window != nullptr) {
     glfwSetWindowUserPointer(window, &cameraController);
