@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/experimental/scene.hpp>
+#include <dart/gui/experimental/interaction.hpp>
 
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/frame.hpp>

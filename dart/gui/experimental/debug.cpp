@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/experimental/scene.hpp>
+#include <dart/gui/experimental/debug.hpp>
 
 #include <dart/simulation/world.hpp>
 
