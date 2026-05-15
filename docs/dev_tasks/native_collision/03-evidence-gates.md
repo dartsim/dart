@@ -2778,8 +2778,8 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     are not required by core DART, dartpy, gz-physics runtime compatibility, or
     the native-backed legacy package component facades.
 - Current local collision benchmark guard refresh:
-  - Commit: `1f3505ea4697d33ef9212a37be87477dd69f9399`
-    (`Record latest native collision validation`), pushed to
+  - Commit: `2eb3257965a21162f18c9a43e519dd555f99fe84`
+    (`Record current native collision validation`), pushed to
     `origin/feature/new_coll`.
   - Command:
     `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -e collision-reference bm-collision-check`

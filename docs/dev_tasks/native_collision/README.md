@@ -137,14 +137,14 @@
       subsets emit Google Benchmark JSON and compare native timings against the
       best enabled FCL/Bullet/ODE reference result; the public adapter subset
       records JSON for the built-in `DartCollisionDetector` path. The broad
-      local guard was refreshed at `1f3505ea469` and passed every checked
+      local guard was refreshed at `2eb3257965a` and passed every checked
       subset after the latest validation and benchmark-evidence updates.
 - [x] CI Linux contains a scheduled/manual collision benchmark guard job that
       runs the broad `collision-reference` benchmark check and uploads the
       `.benchmark_results/collision_check_*.json` artifacts when a workflow
       surface is available.
 - [x] Recent local benchmark-guard evidence is refreshed. The
-      `collision-reference` benchmark guard passed on `1f3505ea469`, the latest
+      `collision-reference` benchmark guard passed on `2eb3257965a`, the latest
       pushed branch head before benchmark-evidence docs, producing local
       `.benchmark_results/collision_check_{narrow,distance,raycast,mixed,mesh,raycast_batch,adapter}.json`
       files.
@@ -528,7 +528,7 @@ collision stack.
    - The current `bm-collision-check` task runs checked narrowphase, distance,
      raycast, mixed-primitive, mesh-heavy, raycast-batch, and public adapter
      benchmark subsets.
-   - The latest local run at `1f3505ea469` passed all checked subsets and wrote
+   - The latest local run at `2eb3257965a` passed all checked subsets and wrote
      `.benchmark_results/collision_check_*.json` outputs.
    - CI Linux now has a scheduled/manual `Collision Benchmark Guard` job that
      runs the same broad guard in the `collision-reference` environment and
