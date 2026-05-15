@@ -170,7 +170,7 @@ function(
             "-DINPUT=${_material_bin}"
             "-DOUTPUT=${_material_header}"
             "-DSYMBOL=${symbol}"
-            -DNAMESPACE=dart::gui::experimental::filament
+            -DNAMESPACE=dart::gui::filament
             -P "${DART_GUI_FILAMENT_BINARY_TO_HEADER}"
     DEPENDS "${_material_bin}" "${DART_GUI_FILAMENT_BINARY_TO_HEADER}"
     COMMENT "Embedding ${material_label} Filament material"

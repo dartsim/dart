@@ -49,7 +49,7 @@
 #include <cmath>
 #include <cstdlib>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 namespace {
 
 std::optional<std::string> getLastPathSegment(std::string value)
@@ -330,9 +330,9 @@ bool parseSceneName(std::string_view name, ExampleScene& scene)
   return false;
 }
 
-dart::gui::experimental::OrbitCamera initialCameraForScene(ExampleScene scene)
+dart::gui::OrbitCamera initialCameraForScene(ExampleScene scene)
 {
-  dart::gui::experimental::OrbitCamera camera;
+  dart::gui::OrbitCamera camera;
   switch (scene) {
     case ExampleScene::DragAndDrop:
       camera.target = Eigen::Vector3d(0.35, 0.15, 0.9);
@@ -657,7 +657,7 @@ AppOptions parseOptions(int argc, char* argv[])
     }
   }
 
-  dart::gui::experimental::normalizeRunOptions(options.run);
+  dart::gui::normalizeRunOptions(options.run);
   if (options.run.guiScale != 1.0) {
     options.run.width = std::max(
         1,
@@ -745,4 +745,4 @@ DartScene createDartScene(const AppOptions& options)
   return createMvpDartScene();
 }
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament

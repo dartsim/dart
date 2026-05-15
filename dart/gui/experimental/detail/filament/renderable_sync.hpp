@@ -33,7 +33,7 @@
 #pragma once
 
 #include <dart/gui/experimental/detail/filament/renderable_resources.hpp>
-#include <dart/gui/experimental/renderable.hpp>
+#include <dart/gui/renderable.hpp>
 
 #include <Eigen/Geometry>
 
@@ -46,10 +46,10 @@ class Engine;
 class Scene;
 } // namespace filament
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 using RenderableFactory = std::function<std::optional<Renderable>(
-    const dart::gui::experimental::RenderableDescriptor&)>;
+    const dart::gui::RenderableDescriptor&)>;
 
 void setRenderableTransform(
     ::filament::Engine& engine,
@@ -65,29 +65,25 @@ void removeRenderableFromScene(
 void updateSceneRenderableFromDescriptor(
     ::filament::Engine& engine,
     SceneRenderable& sceneRenderable,
-    const dart::gui::experimental::RenderableDescriptor& descriptor,
+    const dart::gui::RenderableDescriptor& descriptor,
     bool selected);
 
 bool updateSceneRenderablesFromDescriptors(
     ::filament::Engine& engine,
-    const std::vector<dart::gui::experimental::RenderableDescriptor>&
-        descriptors,
+    const std::vector<dart::gui::RenderableDescriptor>& descriptors,
     std::vector<SceneRenderable>& sceneRenderables,
-    dart::gui::experimental::RenderableId selectedRenderableId);
+    dart::gui::RenderableId selectedRenderableId);
 
 void logUnsupportedRenderableDescriptorOnce(
-    std::vector<dart::gui::experimental::RenderableId>&
-        loggedUnsupportedRenderableIds,
-    const dart::gui::experimental::RenderableDescriptor& descriptor);
+    std::vector<dart::gui::RenderableId>& loggedUnsupportedRenderableIds,
+    const dart::gui::RenderableDescriptor& descriptor);
 
 void synchronizeSceneRenderables(
     ::filament::Engine& engine,
     ::filament::Scene& scene,
-    const std::vector<dart::gui::experimental::RenderableDescriptor>&
-        descriptors,
+    const std::vector<dart::gui::RenderableDescriptor>& descriptors,
     std::vector<SceneRenderable>& sceneRenderables,
-    std::vector<dart::gui::experimental::RenderableId>&
-        loggedUnsupportedRenderableIds,
+    std::vector<dart::gui::RenderableId>& loggedUnsupportedRenderableIds,
     const RenderableFactory& createRenderable);
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament

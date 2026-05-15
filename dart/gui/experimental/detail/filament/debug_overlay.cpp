@@ -36,14 +36,14 @@
 
 #include <algorithm>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
-using dart::gui::experimental::DebugDrawOptions;
-using dart::gui::experimental::extractContactDebugLines;
-using dart::gui::experimental::extractDebugLines;
-using dart::gui::experimental::makeSelectionDebugLines;
-using dart::gui::experimental::RenderableDescriptor;
-using dart::gui::experimental::RenderableId;
+using dart::gui::DebugDrawOptions;
+using dart::gui::extractContactDebugLines;
+using dart::gui::extractDebugLines;
+using dart::gui::makeSelectionDebugLines;
+using dart::gui::RenderableDescriptor;
+using dart::gui::RenderableId;
 
 DebugOverlayController makeDebugOverlayController(bool drawSupportPolygons)
 {
@@ -89,7 +89,7 @@ void refreshDebugLineOverlay(
     ::filament::Engine& engine,
     ::filament::Scene& scene,
     ::filament::Material& material,
-    const std::vector<dart::gui::experimental::DebugLineDescriptor>& lines,
+    const std::vector<dart::gui::DebugLineDescriptor>& lines,
     std::optional<Renderable>& overlay)
 {
   clearDebugLineOverlay(engine, scene, overlay);
@@ -163,4 +163,4 @@ void refreshSelectionDebugLineOverlay(
       overlay);
 }
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament

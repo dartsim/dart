@@ -38,12 +38,12 @@
 #include <algorithm>
 #include <ostream>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 namespace {
 
-using dart::gui::experimental::RenderableDescriptor;
-using dart::gui::experimental::ShapeKind;
+using dart::gui::RenderableDescriptor;
+using dart::gui::ShapeKind;
 
 bool requireEqual(
     std::size_t actual,
@@ -1841,4 +1841,4 @@ bool validateCreatedSceneContent(
   return true;
 }
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament

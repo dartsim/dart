@@ -55,7 +55,7 @@ class View;
 struct ImDrawData;
 struct ImGuiIO;
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 struct OverlayMesh
 {
@@ -93,6 +93,6 @@ void updateImGuiOverlay(
 void destroyConfiguredImGuiOverlay(
     ::filament::Engine& engine, ImGuiOverlay& overlay);
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_IMGUI_OVERLAY_HPP_

@@ -34,14 +34,14 @@
 #define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCENE_REQUIREMENTS_HPP_
 
 #include <dart/gui/experimental/detail/filament/scenes.hpp>
-#include <dart/gui/experimental/renderable.hpp>
+#include <dart/gui/renderable.hpp>
 
 #include <iosfwd>
 #include <vector>
 
 #include <cstddef>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 struct SceneRenderable;
 
@@ -131,15 +131,13 @@ struct SceneContentCounts
 
 void accumulateSceneContent(
     SceneContentCounts& counts,
-    const dart::gui::experimental::RenderableDescriptor& descriptor);
+    const dart::gui::RenderableDescriptor& descriptor);
 
 SceneContentCounts countSceneContent(
-    const std::vector<dart::gui::experimental::RenderableDescriptor>&
-        descriptors);
+    const std::vector<dart::gui::RenderableDescriptor>& descriptors);
 
 SceneContentCounts countCreatedSceneContent(
-    const std::vector<dart::gui::experimental::RenderableDescriptor>&
-        descriptors,
+    const std::vector<dart::gui::RenderableDescriptor>& descriptors,
     const std::vector<SceneRenderable>& sceneRenderables);
 
 bool validateSceneDescriptorContent(
@@ -151,6 +149,6 @@ bool validateCreatedSceneContent(
     const SceneContentCounts& created,
     std::ostream& output);
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCENE_REQUIREMENTS_HPP_

@@ -35,7 +35,7 @@
 
 #include <dart/gui/experimental/detail/filament/debug_overlay.hpp>
 #include <dart/gui/experimental/detail/filament/renderable_resources.hpp>
-#include <dart/gui/experimental/renderable.hpp>
+#include <dart/gui/renderable.hpp>
 
 #include <iosfwd>
 #include <optional>
@@ -46,7 +46,7 @@ class Engine;
 class Scene;
 } // namespace filament
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 struct DartScene;
 enum class ExampleScene;
@@ -54,8 +54,7 @@ enum class ExampleScene;
 struct InitialSceneState
 {
   std::vector<SceneRenderable> sceneRenderables;
-  std::vector<dart::gui::experimental::RenderableId>
-      loggedUnsupportedRenderableIds;
+  std::vector<dart::gui::RenderableId> loggedUnsupportedRenderableIds;
   DebugOverlayController debugOverlays;
 };
 
@@ -68,6 +67,6 @@ std::optional<InitialSceneState> createInitialSceneState(
     DartScene& dartScene,
     std::ostream& errors);
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCENE_STARTUP_HPP_

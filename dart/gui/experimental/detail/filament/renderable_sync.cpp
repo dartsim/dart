@@ -41,14 +41,14 @@
 #include <algorithm>
 #include <iostream>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 namespace {
 
-using dart::gui::experimental::ActiveRenderableState;
-using dart::gui::experimental::planRenderableSetUpdate;
-using dart::gui::experimental::RenderableDescriptor;
-using dart::gui::experimental::RenderableId;
-using dart::gui::experimental::ShapeKind;
+using dart::gui::ActiveRenderableState;
+using dart::gui::planRenderableSetUpdate;
+using dart::gui::RenderableDescriptor;
+using dart::gui::RenderableId;
+using dart::gui::ShapeKind;
 using ::filament::math::float4;
 using ::filament::math::mat4f;
 
@@ -249,4 +249,4 @@ void synchronizeSceneRenderables(
   }
 }
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament

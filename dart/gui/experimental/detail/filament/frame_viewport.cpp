@@ -34,20 +34,20 @@
 #include <dart/gui/experimental/detail/filament/input.hpp>
 #include <dart/gui/experimental/detail/filament/render_environment.hpp>
 #include <dart/gui/experimental/detail/filament/selection.hpp>
-#include <dart/gui/experimental/viewer.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 
 #include <algorithm>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 FrameViewport updateFrameViewport(
     GLFWwindow* window,
     ::filament::View& view,
     ::filament::Camera& camera,
-    dart::gui::experimental::OrbitCameraController& cameraController,
+    dart::gui::OrbitCameraController& cameraController,
     const SelectionController& selectionController,
     ImGuiIO& imguiIo,
     int defaultWidth,
@@ -82,4 +82,4 @@ FrameViewport updateFrameViewport(
   return viewport;
 }
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament

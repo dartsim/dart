@@ -40,9 +40,9 @@
 #include <dart/gui/experimental/detail/filament/scenes.hpp>
 #include <dart/gui/experimental/detail/filament/selection.hpp>
 #include <dart/gui/experimental/detail/filament/simulation_stepper.hpp>
-#include <dart/gui/experimental/profile.hpp>
-#include <dart/gui/experimental/scene.hpp>
-#include <dart/gui/experimental/viewer.hpp>
+#include <dart/gui/profile.hpp>
+#include <dart/gui/scene.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <dart/simulation/world.hpp>
 
@@ -50,7 +50,7 @@
 
 #include <chrono>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 SceneFrameUpdater::SceneFrameUpdater(
     GLFWwindow* window,
@@ -58,18 +58,17 @@ SceneFrameUpdater::SceneFrameUpdater(
     ::filament::Scene& scene,
     const MaterialSet& materials,
     MaterialResources& materialResources,
-    const dart::gui::experimental::RunOptions& options,
+    const dart::gui::RunOptions& options,
     DartScene& dartScene,
-    const dart::gui::experimental::OrbitCameraController& cameraController,
+    const dart::gui::OrbitCameraController& cameraController,
     SelectionController& selectionController,
     InitialSceneState& sceneState,
     std::optional<Renderable>& selectionDebugOverlay,
-    dart::gui::experimental::ViewerLifecycleState& lifecycle,
+    dart::gui::ViewerLifecycleState& lifecycle,
     SimulationStepper& simulationStepper,
     SceneLights& lights,
-    dart::gui::experimental::ProfileAccumulator::Clock::time_point
-        orbitStartClock,
-    dart::gui::experimental::ProfileAccumulator& profile)
+    dart::gui::ProfileAccumulator::Clock::time_point orbitStartClock,
+    dart::gui::ProfileAccumulator& profile)
   : mWindow(window),
     mEngine(engine),
     mScene(scene),
@@ -100,22 +99,21 @@ void SceneFrameUpdater::update(
 
   if (advanceSimulationSteps(
           mDartScene, simulationStepsToRun, mLifecycle, mProfile)) {
-    auto phaseStart = dart::gui::experimental::ProfileAccumulator::Clock::now();
+    auto phaseStart = dart::gui::ProfileAccumulator::Clock::now();
     refreshContactDebugOverlay(
         mEngine,
         mScene,
         mMaterials.debugColor,
         mDartScene.world->getLastCollisionResult(),
         mSceneState.debugOverlays);
-    mProfile.contactDebugMs += dart::gui::experimental::elapsedMs(phaseStart);
+    mProfile.contactDebugMs += dart::gui::elapsedMs(phaseStart);
   }
 
-  auto phaseStart = dart::gui::experimental::ProfileAccumulator::Clock::now();
-  auto descriptors
-      = dart::gui::experimental::extractRenderables(*mDartScene.world);
-  mProfile.extractionMs += dart::gui::experimental::elapsedMs(phaseStart);
+  auto phaseStart = dart::gui::ProfileAccumulator::Clock::now();
+  auto descriptors = dart::gui::extractRenderables(*mDartScene.world);
+  mProfile.extractionMs += dart::gui::elapsedMs(phaseStart);
 
-  phaseStart = dart::gui::experimental::ProfileAccumulator::Clock::now();
+  phaseStart = dart::gui::ProfileAccumulator::Clock::now();
   mSelectionController.applyKeyboardNudge(
       mWindow,
       mCameraController.camera,
@@ -123,16 +121,16 @@ void SceneFrameUpdater::update(
       descriptors,
       mLifecycle,
       0.035);
-  mProfile.interactionMs += dart::gui::experimental::elapsedMs(phaseStart);
+  mProfile.interactionMs += dart::gui::elapsedMs(phaseStart);
 
-  phaseStart = dart::gui::experimental::ProfileAccumulator::Clock::now();
+  phaseStart = dart::gui::ProfileAccumulator::Clock::now();
   synchronizeSceneRenderables(
       mEngine,
       mScene,
       descriptors,
       mSceneState.sceneRenderables,
       mSceneState.loggedUnsupportedRenderableIds,
-      [&](const dart::gui::experimental::RenderableDescriptor& descriptor) {
+      [&](const dart::gui::RenderableDescriptor& descriptor) {
         return createRenderableFromDescriptor(
             mEngine, mMaterials, mMaterialResources.textureCache, descriptor);
       });
@@ -143,19 +141,18 @@ void SceneFrameUpdater::update(
           mSelectionController.selectedRenderableId())) {
     mSelectionController.clear();
   }
-  mProfile.syncMs += dart::gui::experimental::elapsedMs(phaseStart);
+  mProfile.syncMs += dart::gui::elapsedMs(phaseStart);
 
   if (orbitLight) {
     const double orbitElapsedSeconds
         = std::chrono::duration<double>(
-              dart::gui::experimental::ProfileAccumulator::Clock::now()
-              - mOrbitStartClock)
+              dart::gui::ProfileAccumulator::Clock::now() - mOrbitStartClock)
               .count();
     updateOrbitingKeyLight(
         mEngine, mLights, orbitElapsedSeconds, orbitLightPeriodSeconds);
   }
 
-  phaseStart = dart::gui::experimental::ProfileAccumulator::Clock::now();
+  phaseStart = dart::gui::ProfileAccumulator::Clock::now();
   mSelectionController.updateMouseSelection(
       mWindow,
       mCameraController.camera,
@@ -166,9 +163,9 @@ void SceneFrameUpdater::update(
       mDartScene,
       descriptors,
       mLifecycle);
-  mProfile.interactionMs += dart::gui::experimental::elapsedMs(phaseStart);
+  mProfile.interactionMs += dart::gui::elapsedMs(phaseStart);
 
-  phaseStart = dart::gui::experimental::ProfileAccumulator::Clock::now();
+  phaseStart = dart::gui::ProfileAccumulator::Clock::now();
   refreshSelectionDebugLineOverlay(
       mEngine,
       mScene,
@@ -176,7 +173,7 @@ void SceneFrameUpdater::update(
       descriptors,
       mSelectionController.selectedRenderableId(),
       mSelectionDebugOverlay);
-  mProfile.selectionDebugMs += dart::gui::experimental::elapsedMs(phaseStart);
+  mProfile.selectionDebugMs += dart::gui::elapsedMs(phaseStart);
 }
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament

@@ -38,7 +38,7 @@
 #include <dart/gui/experimental/detail/filament/scenes.hpp>
 #include <dart/gui/experimental/detail/filament/selection.hpp>
 #include <dart/gui/experimental/detail/filament/ui_frame.hpp>
-#include <dart/gui/experimental/profile.hpp>
+#include <dart/gui/profile.hpp>
 
 #include <dart/simulation/world.hpp>
 
@@ -48,7 +48,7 @@
 
 #include <cstdint>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 void updateFrameUi(
     GLFWwindow* window,
@@ -63,11 +63,11 @@ void updateFrameUi(
     const SelectionController& selectionController,
     bool& orbitLight,
     DebugOverlayController& debugOverlays,
-    dart::gui::experimental::ViewerLifecycleState& lifecycle,
+    dart::gui::ViewerLifecycleState& lifecycle,
     double guiScale,
-    dart::gui::experimental::ProfileAccumulator& profile)
+    dart::gui::ProfileAccumulator& profile)
 {
-  auto phaseStart = dart::gui::experimental::ProfileAccumulator::Clock::now();
+  auto phaseStart = dart::gui::ProfileAccumulator::Clock::now();
   updateImGuiMouseInput(window, imguiIo, viewport.width, viewport.height);
   ImGui::NewFrame();
   const bool debugOptionsChanged = renderBuiltInStatusPanel(
@@ -98,7 +98,7 @@ void updateFrameUi(
       ImGui::GetDrawData(),
       static_cast<std::uint32_t>(viewport.width),
       static_cast<std::uint32_t>(viewport.height));
-  profile.uiMs += dart::gui::experimental::elapsedMs(phaseStart);
+  profile.uiMs += dart::gui::elapsedMs(phaseStart);
 }
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament

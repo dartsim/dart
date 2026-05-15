@@ -33,44 +33,13 @@
 #ifndef DART_GUI_EXPERIMENTAL_PROFILE_HPP_
 #define DART_GUI_EXPERIMENTAL_PROFILE_HPP_
 
-#include <dart/gui/export.hpp>
-
-#include <chrono>
-
-#include <cstddef>
+#include <dart/gui/profile.hpp>
 
 namespace dart::gui::experimental {
 
-struct ProfileAccumulator
-{
-  using Clock = std::chrono::steady_clock;
-
-  std::size_t frames = 0;
-  std::size_t renderedFrames = 0;
-  std::size_t skippedFrames = 0;
-  std::size_t simulationSteps = 0;
-  double frameMs = 0.0;
-  double simulatedMs = 0.0;
-  double inputMs = 0.0;
-  double viewportCameraMs = 0.0;
-  double simulationMs = 0.0;
-  double contactDebugMs = 0.0;
-  double extractionMs = 0.0;
-  double syncMs = 0.0;
-  double interactionMs = 0.0;
-  double selectionDebugMs = 0.0;
-  double uiMs = 0.0;
-  double beginFrameMs = 0.0;
-  double renderMs = 0.0;
-  double screenshotWaitMs = 0.0;
-  double screenshotSaveMs = 0.0;
-  double maxFrameMs = 0.0;
-  double maxRenderMs = 0.0;
-};
-
-DART_GUI_API double elapsedMs(ProfileAccumulator::Clock::time_point start);
-
-DART_GUI_API void printProfile(const ProfileAccumulator& profile);
+using ::dart::gui::elapsedMs;
+using ::dart::gui::printProfile;
+using ::dart::gui::ProfileAccumulator;
 
 } // namespace dart::gui::experimental
 

@@ -38,14 +38,14 @@
 #include <algorithm>
 #include <chrono>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
-using dart::gui::experimental::elapsedMs;
-using dart::gui::experimental::markSimulationAdvanced;
-using dart::gui::experimental::ProfileAccumulator;
-using dart::gui::experimental::RunOptions;
-using dart::gui::experimental::shouldAdvanceSimulation;
-using dart::gui::experimental::ViewerLifecycleState;
+using dart::gui::elapsedMs;
+using dart::gui::markSimulationAdvanced;
+using dart::gui::ProfileAccumulator;
+using dart::gui::RunOptions;
+using dart::gui::shouldAdvanceSimulation;
+using dart::gui::ViewerLifecycleState;
 
 std::size_t SimulationStepper::stepsToRun(
     const RunOptions& options,
@@ -107,4 +107,4 @@ bool advanceSimulationSteps(
   return true;
 }
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament

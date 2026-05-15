@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/experimental/interaction.hpp>
+#include <dart/gui/interaction.hpp>
 
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/frame.hpp>
@@ -51,7 +51,7 @@
 
 #include <cmath>
 
-namespace dart::gui::experimental {
+namespace dart::gui {
 namespace {
 
 struct LocalBoundsHit
@@ -1014,4 +1014,4 @@ bool translateFrameRenderable(
          || translateSimpleFrameRenderable(renderable, worldTranslation);
 }
 
-} // namespace dart::gui::experimental
+} // namespace dart::gui

@@ -35,8 +35,8 @@
 #include "input.hpp"
 #include "scenes.hpp"
 
-#include <dart/gui/experimental/interaction.hpp>
-#include <dart/gui/experimental/renderable.hpp>
+#include <dart/gui/interaction.hpp>
+#include <dart/gui/renderable.hpp>
 
 #include <dart/dynamics/inverse_kinematics.hpp>
 
@@ -47,21 +47,21 @@
 
 #include <cmath>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
-using dart::gui::experimental::computeAxisDragTranslation;
-using dart::gui::experimental::computePlaneDragTranslation;
-using dart::gui::experimental::extractRenderables;
-using dart::gui::experimental::intersectPlane;
-using dart::gui::experimental::makeOrbitCameraBasis;
-using dart::gui::experimental::makePerspectivePickRay;
-using dart::gui::experimental::OrbitCamera;
-using dart::gui::experimental::pickNearestRenderable;
-using dart::gui::experimental::PickRay;
-using dart::gui::experimental::RenderableDescriptor;
-using dart::gui::experimental::RenderableId;
-using dart::gui::experimental::translateFrameRenderable;
-using dart::gui::experimental::ViewerLifecycleState;
+using dart::gui::computeAxisDragTranslation;
+using dart::gui::computePlaneDragTranslation;
+using dart::gui::extractRenderables;
+using dart::gui::intersectPlane;
+using dart::gui::makeOrbitCameraBasis;
+using dart::gui::makePerspectivePickRay;
+using dart::gui::OrbitCamera;
+using dart::gui::pickNearestRenderable;
+using dart::gui::PickRay;
+using dart::gui::RenderableDescriptor;
+using dart::gui::RenderableId;
+using dart::gui::translateFrameRenderable;
+using dart::gui::ViewerLifecycleState;
 
 namespace {
 
@@ -304,4 +304,4 @@ void SelectionController::updateMouseSelection(
   mWasLeftMousePressed = isLeftMousePressed;
 }
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament

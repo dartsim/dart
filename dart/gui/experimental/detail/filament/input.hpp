@@ -33,7 +33,7 @@
 #ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_INPUT_HPP_
 #define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_INPUT_HPP_
 
-#include <dart/gui/experimental/viewer.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <Eigen/Core>
 
@@ -42,7 +42,7 @@
 struct GLFWwindow;
 struct ImGuiIO;
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 struct DartScene;
 class SelectionController;
@@ -54,8 +54,7 @@ struct ApplicationInputState
 };
 
 void attachOrbitCameraController(
-    GLFWwindow* window,
-    dart::gui::experimental::OrbitCameraController& controller);
+    GLFWwindow* window, dart::gui::OrbitCameraController& controller);
 
 bool isKeyDown(GLFWwindow* window, int key);
 
@@ -63,7 +62,7 @@ void pollApplicationInput(
     GLFWwindow* window,
     DartScene& scene,
     SelectionController& selectionController,
-    dart::gui::experimental::ViewerLifecycleState& lifecycle,
+    dart::gui::ViewerLifecycleState& lifecycle,
     ApplicationInputState& state);
 
 void updateImGuiMouseInput(
@@ -79,15 +78,13 @@ bool isDragModifierDown(GLFWwindow* window);
 std::optional<Eigen::Vector3d> selectedDragAxisFromKeyboard(GLFWwindow* window);
 
 Eigen::Vector3d selectedNudgeFromKeyboard(
-    GLFWwindow* window,
-    const dart::gui::experimental::OrbitCamera& camera,
-    double stepSize);
+    GLFWwindow* window, const dart::gui::OrbitCamera& camera, double stepSize);
 
 void updateCameraController(
     GLFWwindow* window,
-    dart::gui::experimental::OrbitCameraController& controller,
+    dart::gui::OrbitCameraController& controller,
     bool suppressLeftMouseOrbit = false);
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_INPUT_HPP_

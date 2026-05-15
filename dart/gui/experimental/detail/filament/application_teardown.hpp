@@ -42,7 +42,7 @@
 #include <optional>
 #include <vector>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 void destroyApplicationResources(
     FilamentRenderContext& renderContext,
@@ -56,6 +56,6 @@ void destroyApplicationResources(
     std::optional<Renderable>& selectionDebugOverlay,
     MaterialResources& materialResources);
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_APPLICATION_TEARDOWN_HPP_

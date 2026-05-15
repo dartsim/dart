@@ -33,14 +33,14 @@
 #ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_FRAME_RENDERER_HPP_
 #define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_FRAME_RENDERER_HPP_
 
-#include <dart/gui/experimental/profile.hpp>
-#include <dart/gui/experimental/viewer.hpp>
+#include <dart/gui/profile.hpp>
+#include <dart/gui/viewer.hpp>
 
 namespace filament {
 class View;
 } // namespace filament
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 struct FilamentRenderContext;
 struct ScreenshotCapture;
@@ -54,14 +54,14 @@ struct FrameRenderResult
 FrameRenderResult renderApplicationFrame(
     FilamentRenderContext& renderContext,
     ::filament::View* overlayView,
-    const dart::gui::experimental::RunOptions& options,
+    const dart::gui::RunOptions& options,
     int framebufferWidth,
     int framebufferHeight,
-    dart::gui::experimental::ProfileAccumulator::Clock::time_point frameStart,
+    dart::gui::ProfileAccumulator::Clock::time_point frameStart,
     ScreenshotCapture& screenshotCapture,
-    dart::gui::experimental::ViewerLifecycleState& lifecycle,
-    dart::gui::experimental::ProfileAccumulator& profile);
+    dart::gui::ViewerLifecycleState& lifecycle,
+    dart::gui::ProfileAccumulator& profile);
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_FRAME_RENDERER_HPP_

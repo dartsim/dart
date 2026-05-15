@@ -42,14 +42,14 @@ class Material;
 class Scene;
 } // namespace filament
 
-namespace dart::gui::experimental {
+namespace dart::gui {
 
 struct ProfileAccumulator;
 struct ViewerLifecycleState;
 
-} // namespace dart::gui::experimental
+} // namespace dart::gui
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 struct DartScene;
 struct DebugOverlayController;
@@ -71,10 +71,10 @@ void updateFrameUi(
     const SelectionController& selectionController,
     bool& orbitLight,
     DebugOverlayController& debugOverlays,
-    dart::gui::experimental::ViewerLifecycleState& lifecycle,
+    dart::gui::ViewerLifecycleState& lifecycle,
     double guiScale,
-    dart::gui::experimental::ProfileAccumulator& profile);
+    dart::gui::ProfileAccumulator& profile);
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_UI_FRAME_HPP_

@@ -34,7 +34,7 @@
 
 #include "render_context.hpp"
 
-#include <dart/gui/experimental/viewer.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <backend/PixelBufferDescriptor.h>
 #include <filament/Engine.h>
@@ -45,15 +45,15 @@
 
 #include <cstdlib>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
-using dart::gui::experimental::elapsedMs;
-using dart::gui::experimental::ProfileAccumulator;
+using dart::gui::elapsedMs;
+using dart::gui::ProfileAccumulator;
 
 void saveScreenshot(const ScreenshotCapture& capture, const std::string& path)
 {
   std::string error;
-  if (!dart::gui::experimental::writeRgbaPpm(
+  if (!dart::gui::writeRgbaPpm(
           path, capture.width, capture.height, capture.pixels, false, &error)) {
     std::cerr << error << "\n";
     std::exit(1);
@@ -135,4 +135,4 @@ bool finalizeScreenshotCapture(
   return screenshotSucceeded;
 }
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament

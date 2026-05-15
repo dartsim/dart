@@ -32,7 +32,7 @@
 
 #include <dart/config.hpp>
 
-#include <dart/gui/experimental/renderable.hpp>
+#include <dart/gui/renderable.hpp>
 
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/capsule_shape.hpp>
@@ -69,7 +69,7 @@
 
 #include <cmath>
 
-namespace dart::gui::experimental {
+namespace dart::gui {
 namespace {
 
 void setLocalBounds(
@@ -804,10 +804,9 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
   }
 
   descriptor.kind = ShapeKind::Unsupported;
-  descriptor.unsupportedReason
-      = "Shape type '" + descriptor.shapeType
-        + "' is not supported by dart::gui::experimental";
+  descriptor.unsupportedReason = "Shape type '" + descriptor.shapeType
+                                 + "' is not supported by dart::gui";
   return descriptor;
 }
 
-} // namespace dart::gui::experimental
+} // namespace dart::gui

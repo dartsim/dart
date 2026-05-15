@@ -66,7 +66,7 @@
 
 #include <cmath>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 using dart::dynamics::BallJoint;
 using dart::dynamics::BoxShape;
@@ -99,7 +99,7 @@ using dart::dynamics::WeldJoint;
 using dart::dynamics::VoxelGridShape;
 #endif
 
-using dart::gui::experimental::makeRenderableId;
+using dart::gui::makeRenderableId;
 using dart::simulation::World;
 
 struct SensorMarker
@@ -4079,4 +4079,4 @@ DartScene createG1DartScene(const AppOptions& options)
   return scene;
 }
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament

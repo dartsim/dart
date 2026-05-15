@@ -19,10 +19,10 @@ disagreement under "Open Issues" instead of editing "Decisions in force".
   `dart::gui::runApplication(argc, argv)`. Public include path is therefore
   `dart/gui/application.hpp` (NOT `detail/application.hpp` as some older
   doc passages still claim).
-- CMake target / `OUTPUT_NAME` is `dartsim`. The CMake helper is still named
-  `dart_filament_gui_add_example` and lives in
-  `dart/gui/experimental/detail/filament/filament_sources.cmake` — keep it
-  for now, rename in a separate sweep.
+- CMake target / `OUTPUT_NAME` is `dartsim`. Checkpoint `30b879458f8` renamed
+  the old private `dart_filament_gui_add_example` helper to
+  `dart_gui_filament_add_example`, keeping backend details out of user-facing
+  example names.
 - Linux headless CI was red because the workflow invoked the removed legacy
   `rigid_cubes` executable with the old `--out` contract. The local repair
   restores `rigid_cubes` as a `dart::gui` launcher and updates the workflow to
@@ -48,8 +48,10 @@ disagreement under "Open Issues" instead of editing "Decisions in force".
    directory is `examples/dartsim/`; public include is
    `<dart/gui/application.hpp>`; entry symbol is `dart::gui::runApplication`.
    No `gui_viewer`, no `filament_gui`, no `dart_filament_gui` in user-facing
-   strings. CMake helper symbol may keep `filament_gui` in its name as a
-   private detail until a separate rename sweep.
+   strings. Private helper names were also moved away from the old
+   `filament_gui` compound in `30b879458f8`; keep new private names aligned
+   with `gui_filament`/`DART_GUI_FILAMENT` wording unless a real backend
+   identifier is needed.
    Branding distinction: `DART` is the project and C++ library family identity,
    `libdart` is appropriate for package/library artifacts, and `dartsim` is the
    application-level simulator/viewer identity, analogous to Isaac Sim.
@@ -103,8 +105,8 @@ disagreement under "Open Issues" instead of editing "Decisions in force".
    `dart/gui/experimental/detail/filament/testing/run_headless_smoke.cmake`,
    `CHANGELOG.md`, `dart/gui/AGENTS.md`, and skill docs under
    `.claude/skills/dart-build/` and `.codex/skills/dart-build/`. Private
-   CMake helper names under `dart/gui/experimental/detail/filament/` remain
-   promotion debt for a separate sweep.
+   CMake helper names under `dart/gui/experimental/detail/filament/` were
+   swept in `30b879458f8`.
 5. ~~Rerun `pixi run lint`, commit, and push the checkpoint as usual. Do not
    open a PR.~~ `d343c3c64bc` is pushed to the tracked remote branch.
 6. **Track ignored `simple_frames` launcher**: force-add

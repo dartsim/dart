@@ -33,10 +33,10 @@
 #ifndef DART_GUI_EXPERIMENTAL_DETAIL_APPLICATION_HPP_
 #define DART_GUI_EXPERIMENTAL_DETAIL_APPLICATION_HPP_
 
-namespace dart::gui::experimental::detail {
+namespace dart::gui::detail {
 
 int runGuiApplication(int argc, char* argv[]);
 
-} // namespace dart::gui::experimental::detail
+} // namespace dart::gui::detail
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_APPLICATION_HPP_

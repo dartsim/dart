@@ -37,13 +37,13 @@
 
 struct GLFWwindow;
 
-namespace dart::gui::experimental {
+namespace dart::gui {
 
 struct RunOptions;
 
-} // namespace dart::gui::experimental
+} // namespace dart::gui
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 class ApplicationWindow
 {
@@ -66,12 +66,12 @@ private:
 };
 
 ApplicationWindow createApplicationWindow(
-    const dart::gui::experimental::RunOptions& options, std::ostream& errors);
+    const dart::gui::RunOptions& options, std::ostream& errors);
 
 void* getNativeWindow(GLFWwindow* window);
 
 bool shouldContinueApplicationLoop(bool headless, GLFWwindow* window);
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_NATIVE_WINDOW_HPP_

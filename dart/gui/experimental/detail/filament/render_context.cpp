@@ -32,7 +32,7 @@
 
 #include "render_context.hpp"
 
-#include <dart/gui/experimental/viewer.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <filament/Engine.h>
 #include <filament/Renderer.h>
@@ -41,10 +41,10 @@
 
 #include <cstdint>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 FilamentRenderContext createFilamentRenderContext(
-    const dart::gui::experimental::RunOptions& options, void* nativeWindow)
+    const dart::gui::RunOptions& options, void* nativeWindow)
 {
   FilamentRenderContext context;
   context.engine
@@ -106,4 +106,4 @@ void destroyFilamentRenderContext(FilamentRenderContext& context)
   context = {};
 }
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament

@@ -57,7 +57,7 @@
 #include <cstdlib>
 #include <cstring>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 namespace {
 
 struct ImGuiVertex
@@ -380,4 +380,4 @@ void destroyConfiguredImGuiOverlay(
   ImGui::DestroyContext();
 }
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament

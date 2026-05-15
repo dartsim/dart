@@ -33,7 +33,7 @@
 #ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCENES_HPP_
 #define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCENES_HPP_
 
-#include <dart/gui/experimental/scene.hpp>
+#include <dart/gui/scene.hpp>
 
 #include <dart/simulation/fwd.hpp>
 
@@ -49,11 +49,11 @@
 
 #include <cstddef>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 struct IkHandle
 {
-  dart::gui::experimental::RenderableId targetRenderableId = 0;
+  dart::gui::RenderableId targetRenderableId = 0;
   std::string label;
   int hotkey = 0;
   std::shared_ptr<dart::dynamics::SimpleFrame> target;
@@ -105,7 +105,7 @@ enum class ExampleScene
 
 struct AppOptions
 {
-  dart::gui::experimental::RunOptions run;
+  dart::gui::RunOptions run;
   ExampleScene scene = ExampleScene::Mvp;
   bool showUi = true;
   bool showUiExplicit = false;
@@ -311,12 +311,12 @@ const char* sceneName(ExampleScene scene);
 
 bool parseSceneName(std::string_view name, ExampleScene& scene);
 
-dart::gui::experimental::OrbitCamera initialCameraForScene(ExampleScene scene);
+dart::gui::OrbitCamera initialCameraForScene(ExampleScene scene);
 
 AppOptions parseOptions(int argc, char* argv[]);
 
 DartScene createDartScene(const AppOptions& options);
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCENES_HPP_

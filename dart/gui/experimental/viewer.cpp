@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/experimental/viewer.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <algorithm>
 #include <fstream>
@@ -38,7 +38,7 @@
 
 #include <cmath>
 
-namespace dart::gui::experimental {
+namespace dart::gui {
 
 void normalizeRunOptions(RunOptions& options)
 {
@@ -429,4 +429,4 @@ PerspectiveProjection makePerspectiveProjection(
   return projection;
 }
 
-} // namespace dart::gui::experimental
+} // namespace dart::gui

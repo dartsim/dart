@@ -41,13 +41,13 @@ class Camera;
 class View;
 } // namespace filament
 
-namespace dart::gui::experimental {
+namespace dart::gui {
 
 struct OrbitCameraController;
 
-} // namespace dart::gui::experimental
+} // namespace dart::gui
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 class SelectionController;
 
@@ -61,7 +61,7 @@ FrameViewport updateFrameViewport(
     GLFWwindow* window,
     ::filament::View& view,
     ::filament::Camera& camera,
-    dart::gui::experimental::OrbitCameraController& cameraController,
+    dart::gui::OrbitCameraController& cameraController,
     const SelectionController& selectionController,
     ImGuiIO& imguiIo,
     int defaultWidth,
@@ -70,6 +70,6 @@ FrameViewport updateFrameViewport(
     bool showUi,
     double guiScale);
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_FRAME_VIEWPORT_HPP_

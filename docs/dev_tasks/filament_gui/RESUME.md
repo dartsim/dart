@@ -34,6 +34,10 @@ Linux, macOS, Windows, and CodeQL on that branch head. Checkpoint
 `858ab55cacd1` promotes existing Python GUI descriptor/helper symbols from
 `dartpy.gui.experimental` onto `dartpy.gui`, leaves the old submodule as a
 compatibility namespace, and was pushed with a new manual CI dispatch.
+Checkpoint `30b879458f8` renames private CMake helpers, smoke-test variables,
+and runner environment variables from the old backend-named `filament_gui`
+compound to `gui_filament`/`DART_GUI_FILAMENT` wording, then was pushed with a
+new manual CI dispatch.
 
 The latest steering is to continue without waiting for CI to finish, document
 scope/design updates in this dev-task folder before acting on them, remove the
@@ -48,10 +52,14 @@ simulator/viewer identity, analogous to Isaac Sim.
 
 ## Immediate Next Step
 
-Rename private Filament CMake helper functions and smoke-test variables away
-from the old `filament_gui` compound to `gui_filament` wording. Preserve
-Filament/GLFW/ImGui as private implementation details and keep the user-facing
-compatibility rejection for `filament_gui` and `dart_filament_gui`.
+Promote renderer-independent C++ declarations and definitions from
+`dart::gui::experimental` to `dart::gui`. Keep
+`dart/gui/experimental/*.hpp` installed as compatibility shims that alias the
+old namespace names to the promoted `dart::gui` symbols, and update private
+Filament implementation code to consume the stable headers where practical.
+The in-progress local slice also promotes the private implementation namespace
+to `dart::gui::filament` while leaving the physical
+`dart/gui/experimental/detail/filament` directory as later file-layout debt.
 
 ## Context That Would Be Lost
 
@@ -69,6 +77,9 @@ compatibility rejection for `filament_gui` and `dart_filament_gui`.
   and private implementation under `dart/gui/experimental/detail/filament`;
   promotion should make stable includes/names live under `dart::gui` while
   keeping backend objects private.
+- The private file layout can remain under `dart/gui/experimental/detail` for a
+  later sweep; this next slice is about the public namespace and declaration
+  surface, not a full directory move.
 
 ## Historical Summary
 

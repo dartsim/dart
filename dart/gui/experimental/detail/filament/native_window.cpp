@@ -31,7 +31,7 @@
  */
 
 #include <dart/gui/experimental/detail/filament/native_window.hpp>
-#include <dart/gui/experimental/viewer.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <GLFW/glfw3.h>
 
@@ -49,7 +49,7 @@
 #include <ostream>
 #include <utility>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 ApplicationWindow::ApplicationWindow(GLFWwindow* window) : mWindow(window) {}
 
@@ -88,7 +88,7 @@ void ApplicationWindow::reset(GLFWwindow* window)
 }
 
 ApplicationWindow createApplicationWindow(
-    const dart::gui::experimental::RunOptions& options, std::ostream& errors)
+    const dart::gui::RunOptions& options, std::ostream& errors)
 {
   if (options.headless) {
     return {};
@@ -137,4 +137,4 @@ bool shouldContinueApplicationLoop(bool headless, GLFWwindow* window)
   return headless || (window != nullptr && !glfwWindowShouldClose(window));
 }
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament

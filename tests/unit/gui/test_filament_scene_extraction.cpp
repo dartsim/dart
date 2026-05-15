@@ -446,6 +446,19 @@ TEST(FilamentSceneExtraction, PublicAggregateUsesPromotedGuiHeaders)
       aggregate.find("#include <dart/gui/viewer.hpp>"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, PromotedGuiHeadersAvoidExperimentalSurface)
+{
+  const auto headers
+      = listPublicHeadersInDirectory(std::filesystem::path("dart") / "gui");
+
+  const auto violations
+      = scanSourceFilesForTokens(headers, kForbiddenPromotedGuiTokens);
+  for (const auto& violation : violations) {
+    ADD_FAILURE() << violation.source << " reaches old GUI token `"
+                  << violation.token << "`";
+  }
+}
+
 TEST(FilamentSceneExtraction, DiagnosticsExampleUsesPromotedGuiBoundary)
 {
   const std::vector<std::filesystem::path> sources = {

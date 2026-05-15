@@ -30,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/experimental/profile.hpp>
+#include <dart/gui/profile.hpp>
 
 #include <algorithm>
 #include <iostream>
 
-namespace dart::gui::experimental {
+namespace dart::gui {
 
 double elapsedMs(ProfileAccumulator::Clock::time_point start)
 {
@@ -103,4 +103,4 @@ void printProfile(const ProfileAccumulator& profile)
   }
 }
 
-} // namespace dart::gui::experimental
+} // namespace dart::gui

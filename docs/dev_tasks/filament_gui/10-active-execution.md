@@ -27,14 +27,15 @@ context survives across sessions.
 
 - Branch: `feature/filament-gui-full-execution`
 - Upstream: `origin/feature/filament-gui-full-execution`
-- Latest pushed checkpoint: `858ab55cacd1 Promote dartpy GUI surface`
+- Latest pushed checkpoint before this in-progress slice:
+  `30b879458f8 Rename DART GUI Filament helpers`
 - GitHub Actions were manually dispatched for the pushed checkpoint without
   opening a PR:
-  - CI Lint: https://github.com/dartsim/dart/actions/runs/25944746447
-  - CI Linux: https://github.com/dartsim/dart/actions/runs/25944746434
-  - CI macOS: https://github.com/dartsim/dart/actions/runs/25944746426
-  - CI Windows: https://github.com/dartsim/dart/actions/runs/25944746471
-  - CodeQL: https://github.com/dartsim/dart/actions/runs/25944746430
+  - CI Lint: https://github.com/dartsim/dart/actions/runs/25945043484
+  - CI Linux: https://github.com/dartsim/dart/actions/runs/25945043509
+  - CI macOS: https://github.com/dartsim/dart/actions/runs/25945043561
+  - CI Windows: https://github.com/dartsim/dart/actions/runs/25945043471
+  - CodeQL: https://github.com/dartsim/dart/actions/runs/25945043499
 - Linux Filament smoke tests passed at the latest inspected run.
 - Linux headless rendering failed earlier because the workflow still invoked the
   legacy `rigid_cubes` executable, which was removed in the earlier example
@@ -46,6 +47,8 @@ context survives across sessions.
   force-adds that launcher so CMake can configure the restored examples on CI.
 - CI Lint on `cd04ba4862ac` passed; Linux, macOS, Windows, and CodeQL were still
   running when the Python GUI promotion checkpoint was pushed.
+- CI Lint on `858ab55cacd1` passed; Linux, macOS, Windows, and CodeQL were still
+  running when `30b879458f8` was pushed.
 - The restored-example repair is pushed:
   - `examples/dartsim` is the renamed app-level viewer.
   - `dart/gui/application.hpp` exposes the narrow promoted launch API.
@@ -132,8 +135,8 @@ context survives across sessions.
 
 ## Private CMake Helper Rename Slice
 
-- Rename private helper functions and CMake variables that still use the
-  backend-named `filament_gui` compound to `gui_filament` wording.
+- `30b879458f8` renames private helper functions and CMake variables that used
+  the backend-named `filament_gui` compound to `gui_filament` wording.
 - Keep `Filament` in private backend implementation names where it identifies
   the rendering technology; the problem is the old example/product compound
   `filament_gui`.
@@ -141,6 +144,35 @@ context survives across sessions.
   `filament_gui` and `dart_filament_gui`.
 - Keep target/component renames involving `dart-gui-experimental` as a larger
   compatibility step unless a local mechanical rename is clearly safe.
+
+## C++ Namespace Promotion Slice
+
+- In-progress checkpoint promotes renderer-independent declarations from
+  `dart::gui::experimental` to
+  first-class `dart::gui` declarations in the stable `dart/gui/*.hpp` headers.
+- Keep `dart/gui/experimental/*.hpp` installed as compatibility shims that
+  include the stable headers and alias the old namespace names to `dart::gui`.
+- Move implementation definitions to `namespace dart::gui` so promoted symbols
+  are no longer aliases of an experimental ABI surface.
+- Update private Filament implementation includes/usages to prefer
+  `dart/gui/*.hpp` and `dart::gui`; the private Filament namespace is promoted
+  to `dart::gui::filament` while the physical
+  `dart/gui/experimental/detail/filament` layout remains private file-layout
+  debt for a later, larger sweep.
+- Keep any target/component rename for `dart-gui-experimental` separate unless
+  it remains a local CMake-only change with no compatibility risk.
+- Add a unit guard that promoted `dart/gui/*.hpp` headers cannot reintroduce
+  `dart/gui/experimental`, `dart::gui::experimental`, or
+  `dart-gui-experimental` tokens.
+- Local verification for this slice so far:
+  - C++ GUI target build for `dart-gui`, `dartsim`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run build-py-dev`
+  - `pixi run python -m pytest python/tests/unit/gui/test_gui_scene.py -q`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct `dartpy.gui` / `dartpy.gui.experimental` identity import check
+  - `pixi run test-filament-gui-smoke`
 
 ## Example Restoration Plan
 
@@ -205,15 +237,17 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Rename private Filament CMake helper functions and smoke-test variables away
-   from the old `filament_gui` compound while preserving user-facing rejection
-   tests for that legacy name.
-2. Continue removing `experimental` from promoted surfaces, including private
-   target/helper-name cleanup where it does not affect compatibility.
-3. Do not expose Filament, GLFW, or Dear ImGui types in promoted headers.
+1. Promote renderer-independent C++ declarations and definitions from
+   `dart::gui::experimental` to `dart::gui`, while keeping compatibility shims
+   for old experimental includes.
+2. Update private Filament code to include promoted `dart/gui/*.hpp` headers
+   where it consumes renderer-independent concepts.
+3. Continue private target/helper-name cleanup where it does not affect
+   compatibility.
+4. Do not expose Filament, GLFW, or Dear ImGui types in promoted headers.
    Private implementation can remain under `dart/gui/experimental/detail` until
    a later file-layout sweep.
-4. Keep ImGui Docking, docked 3D widgets, multi-frame image sequences, and
+5. Keep ImGui Docking, docked 3D widgets, multi-frame image sequences, and
    video capture as follow-up capture/application work.
-5. Run `pixi run lint` before every checkpoint commit, then push the commit to
+6. Run `pixi run lint` before every checkpoint commit, then push the commit to
    the tracked remote branch.

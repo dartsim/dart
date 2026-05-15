@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/experimental/renderable.hpp>
+#include <dart/gui/renderable.hpp>
 
 #include <dart/simulation/world.hpp>
 
@@ -50,7 +50,7 @@
 
 #include <cstddef>
 
-namespace dart::gui::experimental {
+namespace dart::gui {
 
 RenderableId makeRenderableId(const dynamics::ShapeFrame& shapeFrame)
 {
@@ -213,4 +213,4 @@ std::vector<RenderableDescriptor> extractRenderables(
   return renderables;
 }
 
-} // namespace dart::gui::experimental
+} // namespace dart::gui

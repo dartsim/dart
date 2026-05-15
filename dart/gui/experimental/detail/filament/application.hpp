@@ -33,10 +33,10 @@
 #ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_APPLICATION_HPP_
 #define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_APPLICATION_HPP_
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 int runFilamentGuiApplication(int argc, char* argv[]);
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_APPLICATION_HPP_

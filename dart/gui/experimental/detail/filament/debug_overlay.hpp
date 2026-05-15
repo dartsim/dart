@@ -33,7 +33,7 @@
 #ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_DEBUG_OVERLAY_HPP_
 #define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_DEBUG_OVERLAY_HPP_
 
-#include <dart/gui/experimental/debug.hpp>
+#include <dart/gui/debug.hpp>
 #include <dart/gui/experimental/detail/filament/renderable_resources.hpp>
 
 #include <optional>
@@ -45,12 +45,12 @@ class Material;
 class Scene;
 } // namespace filament
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 struct DebugOverlayController
 {
-  dart::gui::experimental::DebugDrawOptions staticOptions;
-  dart::gui::experimental::DebugDrawOptions contactOptions;
+  dart::gui::DebugDrawOptions staticOptions;
+  dart::gui::DebugDrawOptions contactOptions;
   std::optional<Renderable> staticOverlay;
   std::optional<Renderable> contactOverlay;
 };
@@ -71,7 +71,7 @@ void refreshDebugLineOverlay(
     ::filament::Engine& engine,
     ::filament::Scene& scene,
     ::filament::Material& material,
-    const std::vector<dart::gui::experimental::DebugLineDescriptor>& lines,
+    const std::vector<dart::gui::DebugLineDescriptor>& lines,
     std::optional<Renderable>& overlay);
 
 void refreshStaticDebugOverlay(
@@ -92,11 +92,10 @@ void refreshSelectionDebugLineOverlay(
     ::filament::Engine& engine,
     ::filament::Scene& scene,
     ::filament::Material& material,
-    const std::vector<dart::gui::experimental::RenderableDescriptor>&
-        descriptors,
-    dart::gui::experimental::RenderableId selectedRenderableId,
+    const std::vector<dart::gui::RenderableDescriptor>& descriptors,
+    dart::gui::RenderableId selectedRenderableId,
     std::optional<Renderable>& overlay);
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_DEBUG_OVERLAY_HPP_

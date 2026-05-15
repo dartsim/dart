@@ -46,13 +46,13 @@ class View;
 
 } // namespace filament
 
-namespace dart::gui::experimental {
+namespace dart::gui {
 
 struct RunOptions;
 
-} // namespace dart::gui::experimental
+} // namespace dart::gui
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 struct FilamentRenderContext
 {
@@ -66,7 +66,7 @@ struct FilamentRenderContext
 };
 
 FilamentRenderContext createFilamentRenderContext(
-    const dart::gui::experimental::RunOptions& options, void* nativeWindow);
+    const dart::gui::RunOptions& options, void* nativeWindow);
 
 bool beginFilamentFrame(FilamentRenderContext& context);
 
@@ -80,6 +80,6 @@ void endFilamentFrame(FilamentRenderContext& context);
 
 void destroyFilamentRenderContext(FilamentRenderContext& context);
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_RENDER_CONTEXT_HPP_

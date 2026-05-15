@@ -33,77 +33,24 @@
 #ifndef DART_GUI_EXPERIMENTAL_GEOMETRY_HPP_
 #define DART_GUI_EXPERIMENTAL_GEOMETRY_HPP_
 
-#include <dart/gui/export.hpp>
-
-#include <Eigen/Core>
-
-#include <vector>
-
-#include <cstddef>
-#include <cstdint>
+#include <dart/gui/geometry.hpp>
 
 namespace dart::gui::experimental {
 
-struct MeshVertex
-{
-  Eigen::Vector3f position = Eigen::Vector3f::Zero();
-  Eigen::Vector3f normal = Eigen::Vector3f::UnitZ();
-  Eigen::Vector2f uv = Eigen::Vector2f::Zero();
-};
-
-struct MeshTriangle
-{
-  std::uint32_t a = 0u;
-  std::uint32_t b = 0u;
-  std::uint32_t c = 0u;
-};
-
-struct MeshIndexRange
-{
-  std::size_t indexOffset = 0u;
-  std::size_t indexCount = 0u;
-};
-
-struct MeshGeometry
-{
-  std::vector<MeshVertex> vertices;
-  std::vector<std::uint32_t> indices;
-  std::vector<MeshTriangle> triangles;
-  Eigen::Vector3f boundsMin = Eigen::Vector3f::Zero();
-  Eigen::Vector3f boundsMax = Eigen::Vector3f::Zero();
-  bool hasBounds = false;
-};
-
-DART_GUI_API void appendTriangle(
-    MeshGeometry& mesh, std::uint32_t a, std::uint32_t b, std::uint32_t c);
-
-DART_GUI_API MeshIndexRange appendBoxMeshGeometry(
-    MeshGeometry& mesh,
-    const Eigen::Vector3d& center,
-    const Eigen::Vector3d& size);
-
-DART_GUI_API void appendEllipsoidMeshGeometry(
-    MeshGeometry& mesh,
-    const Eigen::Vector3d& center,
-    const Eigen::Vector3d& radii);
-
-DART_GUI_API MeshGeometry makeBoxMeshGeometry(const Eigen::Vector3d& size);
-
-DART_GUI_API MeshGeometry
-makeEllipsoidMeshGeometry(const Eigen::Vector3d& radii);
-
-DART_GUI_API MeshGeometry makeMultiSphereMeshGeometry(
-    const std::vector<Eigen::Vector3d>& centers,
-    const std::vector<double>& radii);
-
-DART_GUI_API MeshGeometry
-makeCylinderMeshGeometry(double radius, double height);
-
-DART_GUI_API MeshGeometry makeConeMeshGeometry(double radius, double height);
-
-DART_GUI_API MeshGeometry makePyramidMeshGeometry(const Eigen::Vector3d& size);
-
-DART_GUI_API MeshGeometry makeCapsuleMeshGeometry(double radius, double height);
+using ::dart::gui::appendBoxMeshGeometry;
+using ::dart::gui::appendEllipsoidMeshGeometry;
+using ::dart::gui::appendTriangle;
+using ::dart::gui::makeBoxMeshGeometry;
+using ::dart::gui::makeCapsuleMeshGeometry;
+using ::dart::gui::makeConeMeshGeometry;
+using ::dart::gui::makeCylinderMeshGeometry;
+using ::dart::gui::makeEllipsoidMeshGeometry;
+using ::dart::gui::makeMultiSphereMeshGeometry;
+using ::dart::gui::makePyramidMeshGeometry;
+using ::dart::gui::MeshGeometry;
+using ::dart::gui::MeshIndexRange;
+using ::dart::gui::MeshTriangle;
+using ::dart::gui::MeshVertex;
 
 } // namespace dart::gui::experimental
 

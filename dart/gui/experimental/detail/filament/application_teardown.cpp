@@ -33,7 +33,7 @@
 #include <dart/gui/experimental/detail/filament/application_teardown.hpp>
 #include <dart/gui/experimental/detail/filament/renderable_sync.hpp>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 void destroyApplicationResources(
     FilamentRenderContext& renderContext,
@@ -70,4 +70,4 @@ void destroyApplicationResources(
   destroyFilamentRenderContext(renderContext);
 }
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament

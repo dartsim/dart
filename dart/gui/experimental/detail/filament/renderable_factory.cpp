@@ -32,7 +32,7 @@
 
 #include "renderable_factory.hpp"
 
-#include <dart/gui/experimental/geometry.hpp>
+#include <dart/gui/geometry.hpp>
 
 #include <Eigen/Core>
 #include <backend/BufferDescriptor.h>
@@ -57,24 +57,24 @@
 #include <cstdint>
 #include <cstdlib>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
-using dart::gui::experimental::appendBoxMeshGeometry;
-using dart::gui::experimental::DebugLineDescriptor;
-using dart::gui::experimental::GeometryDescriptor;
-using dart::gui::experimental::makeCapsuleMeshGeometry;
-using dart::gui::experimental::makeConeMeshGeometry;
-using dart::gui::experimental::makeCylinderMeshGeometry;
-using dart::gui::experimental::makeEllipsoidMeshGeometry;
-using dart::gui::experimental::makeMultiSphereMeshGeometry;
-using dart::gui::experimental::makePyramidMeshGeometry;
-using dart::gui::experimental::MeshAlphaMode;
-using dart::gui::experimental::MeshGeometry;
-using dart::gui::experimental::MeshIndexRange;
-using dart::gui::experimental::MeshMaterialDescriptor;
-using dart::gui::experimental::MeshPartDescriptor;
-using dart::gui::experimental::RenderableDescriptor;
-using dart::gui::experimental::ShapeKind;
+using dart::gui::appendBoxMeshGeometry;
+using dart::gui::DebugLineDescriptor;
+using dart::gui::GeometryDescriptor;
+using dart::gui::makeCapsuleMeshGeometry;
+using dart::gui::makeConeMeshGeometry;
+using dart::gui::makeCylinderMeshGeometry;
+using dart::gui::makeEllipsoidMeshGeometry;
+using dart::gui::makeMultiSphereMeshGeometry;
+using dart::gui::makePyramidMeshGeometry;
+using dart::gui::MeshAlphaMode;
+using dart::gui::MeshGeometry;
+using dart::gui::MeshIndexRange;
+using dart::gui::MeshMaterialDescriptor;
+using dart::gui::MeshPartDescriptor;
+using dart::gui::RenderableDescriptor;
+using dart::gui::ShapeKind;
 using ::filament::math::float2;
 using ::filament::math::float3;
 using ::filament::math::float4;
@@ -1468,4 +1468,4 @@ std::optional<Renderable> createRenderableFromDescriptor(
   return renderable;
 }
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament

@@ -32,7 +32,7 @@
 
 #include "render_environment.hpp"
 
-#include <dart/gui/experimental/viewer.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <filament/Camera.h>
 #include <filament/ColorGrading.h>
@@ -54,7 +54,7 @@
 #include <cmath>
 #include <cstdint>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 namespace {
 
 using ::filament::math::float3;
@@ -161,7 +161,7 @@ void clearMainViewColorGrading(::filament::View& view)
 void configureViewportCamera(
     ::filament::View& view,
     ::filament::Camera& camera,
-    const dart::gui::experimental::OrbitCamera& orbitCamera,
+    const dart::gui::OrbitCamera& orbitCamera,
     int width,
     int height)
 {
@@ -170,15 +170,15 @@ void configureViewportCamera(
        0,
        static_cast<std::uint32_t>(width),
        static_cast<std::uint32_t>(height)});
-  const auto projection = dart::gui::experimental::makePerspectiveProjection(
-      orbitCamera, width, height);
+  const auto projection
+      = dart::gui::makePerspectiveProjection(orbitCamera, width, height);
   camera.setProjection(
       projection.verticalFovDegrees,
       projection.aspectRatio,
       projection.nearPlane,
       projection.farPlane,
       ::filament::Camera::Fov::VERTICAL);
-  const Eigen::Vector3d eye = dart::gui::experimental::cameraEye(orbitCamera);
+  const Eigen::Vector3d eye = dart::gui::cameraEye(orbitCamera);
   camera.lookAt(
       {eye.x(), eye.y(), eye.z()},
       {orbitCamera.target.x(), orbitCamera.target.y(), orbitCamera.target.z()},
@@ -302,4 +302,4 @@ void updateOrbitingKeyLight(
       orbitingKeyLightDirection(elapsedSeconds, orbitPeriodSeconds));
 }
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament

@@ -34,7 +34,7 @@
 
 #include <imgui.h>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 bool renderBuiltInStatusPanel(
     const char* sceneName,
@@ -121,4 +121,4 @@ bool renderBuiltInStatusPanel(
   return debugOptionsChanged;
 }
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament

@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/experimental/debug.hpp>
+#include <dart/gui/debug.hpp>
 
 #include <dart/simulation/world.hpp>
 
@@ -54,7 +54,7 @@
 
 #include <cmath>
 
-namespace dart::gui::experimental {
+namespace dart::gui {
 namespace {
 
 Eigen::Vector4d rgba(double red, double green, double blue, double alpha = 1.0)
@@ -685,4 +685,4 @@ std::vector<DebugLineDescriptor> extractDebugLines(
   return lines;
 }
 
-} // namespace dart::gui::experimental
+} // namespace dart::gui

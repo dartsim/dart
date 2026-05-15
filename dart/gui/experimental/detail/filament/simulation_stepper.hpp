@@ -33,8 +33,8 @@
 #ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SIMULATION_STEPPER_HPP_
 #define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SIMULATION_STEPPER_HPP_
 
-#include <dart/gui/experimental/profile.hpp>
-#include <dart/gui/experimental/viewer.hpp>
+#include <dart/gui/profile.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <cstddef>
 
@@ -42,7 +42,7 @@ namespace dart::simulation {
 class World;
 } // namespace dart::simulation
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 struct DartScene;
 
@@ -50,23 +50,22 @@ class SimulationStepper
 {
 public:
   std::size_t stepsToRun(
-      const dart::gui::experimental::RunOptions& options,
-      const dart::gui::experimental::ViewerLifecycleState& lifecycle,
+      const dart::gui::RunOptions& options,
+      const dart::gui::ViewerLifecycleState& lifecycle,
       double timeStep);
 
 private:
-  dart::gui::experimental::ProfileAccumulator::Clock::time_point
-      mLastSimulationClock
-      = dart::gui::experimental::ProfileAccumulator::Clock::now();
+  dart::gui::ProfileAccumulator::Clock::time_point mLastSimulationClock
+      = dart::gui::ProfileAccumulator::Clock::now();
   double mSimulationAccumulator = 0.0;
 };
 
 bool advanceSimulationSteps(
     DartScene& scene,
     std::size_t simulationStepsToRun,
-    dart::gui::experimental::ViewerLifecycleState& lifecycle,
-    dart::gui::experimental::ProfileAccumulator& profile);
+    dart::gui::ViewerLifecycleState& lifecycle,
+    dart::gui::ProfileAccumulator& profile);
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SIMULATION_STEPPER_HPP_

@@ -40,23 +40,22 @@
 
 #include <limits>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
-using dart::gui::experimental::addOrbitCameraScroll;
-using dart::gui::experimental::computeCameraRelativeNudge;
-using dart::gui::experimental::DirectionalNudgeInput;
-using dart::gui::experimental::OrbitCameraControllerInput;
-using dart::gui::experimental::requestSingleStep;
-using dart::gui::experimental::togglePaused;
-using dart::gui::experimental::updateOrbitCameraController;
+using dart::gui::addOrbitCameraScroll;
+using dart::gui::computeCameraRelativeNudge;
+using dart::gui::DirectionalNudgeInput;
+using dart::gui::OrbitCameraControllerInput;
+using dart::gui::requestSingleStep;
+using dart::gui::togglePaused;
+using dart::gui::updateOrbitCameraController;
 
 namespace {
 
 void handleScroll(GLFWwindow* window, double, double yOffset)
 {
-  auto* controller
-      = static_cast<dart::gui::experimental::OrbitCameraController*>(
-          glfwGetWindowUserPointer(window));
+  auto* controller = static_cast<dart::gui::OrbitCameraController*>(
+      glfwGetWindowUserPointer(window));
   if (controller != nullptr) {
     addOrbitCameraScroll(*controller, yOffset);
   }
@@ -65,8 +64,7 @@ void handleScroll(GLFWwindow* window, double, double yOffset)
 } // namespace
 
 void attachOrbitCameraController(
-    GLFWwindow* window,
-    dart::gui::experimental::OrbitCameraController& controller)
+    GLFWwindow* window, dart::gui::OrbitCameraController& controller)
 {
   if (window == nullptr) {
     return;
@@ -85,7 +83,7 @@ void pollApplicationInput(
     GLFWwindow* window,
     DartScene& scene,
     SelectionController& selectionController,
-    dart::gui::experimental::ViewerLifecycleState& lifecycle,
+    dart::gui::ViewerLifecycleState& lifecycle,
     ApplicationInputState& state)
 {
   if (window == nullptr) {
@@ -188,9 +186,7 @@ std::optional<Eigen::Vector3d> selectedDragAxisFromKeyboard(GLFWwindow* window)
 }
 
 Eigen::Vector3d selectedNudgeFromKeyboard(
-    GLFWwindow* window,
-    const dart::gui::experimental::OrbitCamera& camera,
-    double stepSize)
+    GLFWwindow* window, const dart::gui::OrbitCamera& camera, double stepSize)
 {
   if (window == nullptr) {
     return Eigen::Vector3d::Zero();
@@ -211,7 +207,7 @@ Eigen::Vector3d selectedNudgeFromKeyboard(
 
 void updateCameraController(
     GLFWwindow* window,
-    dart::gui::experimental::OrbitCameraController& controller,
+    dart::gui::OrbitCameraController& controller,
     bool suppressLeftMouseOrbit)
 {
   if (window == nullptr) {
@@ -233,4 +229,4 @@ void updateCameraController(
   updateOrbitCameraController(controller, input);
 }
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament

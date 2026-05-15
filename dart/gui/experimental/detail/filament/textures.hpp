@@ -46,7 +46,7 @@ class MaterialInstance;
 class Texture;
 } // namespace filament
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 struct TextureBinding
 {
@@ -96,6 +96,6 @@ void setPbrTextureParameters(
     const std::array<std::uint8_t, 4>& color,
     TextureColorSpace colorSpace);
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_TEXTURES_HPP_

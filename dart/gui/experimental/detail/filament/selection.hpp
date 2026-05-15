@@ -33,8 +33,8 @@
 #ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SELECTION_HPP_
 #define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SELECTION_HPP_
 
-#include <dart/gui/experimental/renderable.hpp>
-#include <dart/gui/experimental/viewer.hpp>
+#include <dart/gui/renderable.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <Eigen/Core>
 
@@ -43,56 +43,53 @@
 
 struct GLFWwindow;
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 struct DartScene;
 struct IkHandle;
 
 IkHandle* findIkHandle(
-    DartScene& scene, dart::gui::experimental::RenderableId targetRenderableId);
+    DartScene& scene, dart::gui::RenderableId targetRenderableId);
 
 const IkHandle* findIkHandle(
-    const DartScene& scene,
-    dart::gui::experimental::RenderableId targetRenderableId);
+    const DartScene& scene, dart::gui::RenderableId targetRenderableId);
 
 std::string selectionLabelForRenderable(
-    const DartScene& scene,
-    const dart::gui::experimental::RenderableDescriptor& descriptor);
+    const DartScene& scene, const dart::gui::RenderableDescriptor& descriptor);
 
 bool translateRenderableAndApplyIk(
     DartScene& scene,
-    const dart::gui::experimental::RenderableDescriptor& descriptor,
+    const dart::gui::RenderableDescriptor& descriptor,
     const Eigen::Vector3d& worldTranslation);
 
 class SelectionController
 {
 public:
-  dart::gui::experimental::RenderableId selectedRenderableId() const;
+  dart::gui::RenderableId selectedRenderableId() const;
   const std::string& selectedLabel() const;
   bool isDraggingSelection() const;
 
-  void select(
-      dart::gui::experimental::RenderableId renderableId, std::string label);
+  void select(dart::gui::RenderableId renderableId, std::string label);
   void clear();
 
   void applyKeyboardNudge(
       GLFWwindow* window,
-      const dart::gui::experimental::OrbitCamera& camera,
+      const dart::gui::OrbitCamera& camera,
       DartScene& scene,
-      std::vector<dart::gui::experimental::RenderableDescriptor>& descriptors,
-      dart::gui::experimental::ViewerLifecycleState& lifecycle,
+      std::vector<dart::gui::RenderableDescriptor>& descriptors,
+      dart::gui::ViewerLifecycleState& lifecycle,
       double stepSize);
 
   void updateMouseSelection(
       GLFWwindow* window,
-      const dart::gui::experimental::OrbitCamera& camera,
+      const dart::gui::OrbitCamera& camera,
       int framebufferWidth,
       int framebufferHeight,
       bool showUi,
       double guiScale,
       DartScene& scene,
-      std::vector<dart::gui::experimental::RenderableDescriptor>& descriptors,
-      dart::gui::experimental::ViewerLifecycleState& lifecycle);
+      std::vector<dart::gui::RenderableDescriptor>& descriptors,
+      dart::gui::ViewerLifecycleState& lifecycle);
 
 private:
   bool mWasLeftMousePressed = false;
@@ -100,15 +97,15 @@ private:
   bool mLeftMouseStartedDrag = false;
   double mLeftMousePressX = 0.0;
   double mLeftMousePressY = 0.0;
-  dart::gui::experimental::PickRay mSelectedDragLastRay;
+  dart::gui::PickRay mSelectedDragLastRay;
   bool mSelectedDragIsAxisConstrained = false;
   Eigen::Vector3d mSelectedDragPlanePoint = Eigen::Vector3d::Zero();
   Eigen::Vector3d mSelectedDragPlaneNormal = Eigen::Vector3d::UnitX();
   Eigen::Vector3d mSelectedDragAxisDirection = Eigen::Vector3d::UnitX();
-  dart::gui::experimental::RenderableId mSelectedRenderableId = 0;
+  dart::gui::RenderableId mSelectedRenderableId = 0;
   std::string mSelectedLabel = "none";
 };
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SELECTION_HPP_

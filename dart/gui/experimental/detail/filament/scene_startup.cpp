@@ -36,13 +36,13 @@
 #include <dart/gui/experimental/detail/filament/scene_requirements.hpp>
 #include <dart/gui/experimental/detail/filament/scene_startup.hpp>
 #include <dart/gui/experimental/detail/filament/scenes.hpp>
-#include <dart/gui/experimental/scene.hpp>
+#include <dart/gui/scene.hpp>
 
 #include <dart/simulation/world.hpp>
 
 #include <ostream>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 std::optional<InitialSceneState> createInitialSceneState(
     ::filament::Engine& engine,
@@ -54,7 +54,7 @@ std::optional<InitialSceneState> createInitialSceneState(
     std::ostream& errors)
 {
   const auto initialDescriptors
-      = dart::gui::experimental::extractRenderables(*dartScene.world);
+      = dart::gui::extractRenderables(*dartScene.world);
   const SceneContentCounts expectedSceneContent
       = countSceneContent(initialDescriptors);
   if (!validateSceneDescriptorContent(
@@ -69,7 +69,7 @@ std::optional<InitialSceneState> createInitialSceneState(
       initialDescriptors,
       state.sceneRenderables,
       state.loggedUnsupportedRenderableIds,
-      [&](const dart::gui::experimental::RenderableDescriptor& descriptor) {
+      [&](const dart::gui::RenderableDescriptor& descriptor) {
         return createRenderableFromDescriptor(
             engine, materials, materialResources.textureCache, descriptor);
       });
@@ -101,4 +101,4 @@ std::optional<InitialSceneState> createInitialSceneState(
   return state;
 }
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament

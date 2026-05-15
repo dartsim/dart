@@ -33,14 +33,14 @@
 #ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_PANEL_HPP_
 #define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_PANEL_HPP_
 
-#include <dart/gui/experimental/debug.hpp>
-#include <dart/gui/experimental/viewer.hpp>
+#include <dart/gui/debug.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <string>
 
 #include <cstddef>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 bool renderBuiltInStatusPanel(
     const char* sceneName,
@@ -54,6 +54,6 @@ bool renderBuiltInStatusPanel(
     ViewerLifecycleState& lifecycle,
     double guiScale);
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_PANEL_HPP_

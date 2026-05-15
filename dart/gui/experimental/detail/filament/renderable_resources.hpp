@@ -34,7 +34,7 @@
 #define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_RENDERABLE_RESOURCES_HPP_
 
 #include <dart/gui/experimental/detail/filament/textures.hpp>
-#include <dart/gui/experimental/renderable.hpp>
+#include <dart/gui/renderable.hpp>
 
 #include <math/vec3.h>
 #include <math/vec4.h>
@@ -55,7 +55,7 @@ class VertexBuffer;
 
 } // namespace filament
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 struct MaterialSet
 {
@@ -99,7 +99,7 @@ struct Renderable
 
 struct SceneRenderable
 {
-  dart::gui::experimental::RenderableId id = 0;
+  dart::gui::RenderableId id = 0;
   std::size_t shapeVersion = 0;
   std::size_t renderResourceVersion = 0;
   Renderable renderable;
@@ -133,7 +133,7 @@ void configureLitMaterialInstance(
 void applyRenderableShadowSettings(
     ::filament::Engine& engine,
     const Renderable& renderable,
-    const dart::gui::experimental::MaterialDescriptor& material);
+    const dart::gui::MaterialDescriptor& material);
 
 ::filament::Material& selectLitMaterial(
     const MaterialSet& materials,
@@ -142,6 +142,6 @@ void applyRenderableShadowSettings(
 
 void destroyRenderable(::filament::Engine& engine, Renderable& renderable);
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_RENDERABLE_RESOURCES_HPP_

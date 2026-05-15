@@ -40,17 +40,17 @@
 
 #include <cstdint>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
-using dart::gui::experimental::elapsedMs;
-using dart::gui::experimental::markFrameRendered;
-using dart::gui::experimental::markFrameSkipped;
-using dart::gui::experimental::markScreenshotRequested;
-using dart::gui::experimental::ProfileAccumulator;
-using dart::gui::experimental::RunOptions;
-using dart::gui::experimental::shouldRequestScreenshot;
-using dart::gui::experimental::shouldStopAfterFrame;
-using dart::gui::experimental::ViewerLifecycleState;
+using dart::gui::elapsedMs;
+using dart::gui::markFrameRendered;
+using dart::gui::markFrameSkipped;
+using dart::gui::markScreenshotRequested;
+using dart::gui::ProfileAccumulator;
+using dart::gui::RunOptions;
+using dart::gui::shouldRequestScreenshot;
+using dart::gui::shouldStopAfterFrame;
+using dart::gui::ViewerLifecycleState;
 
 FrameRenderResult renderApplicationFrame(
     FilamentRenderContext& renderContext,
@@ -109,4 +109,4 @@ FrameRenderResult renderApplicationFrame(
   return {.stopLoop = shouldStopAfterFrame(options, lifecycle)};
 }
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament

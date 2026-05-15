@@ -51,7 +51,7 @@
 #include <cstdint>
 #include <cstdlib>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 namespace {
 
 using ::filament::math::float3;
@@ -213,7 +213,7 @@ void configureLitMaterialInstance(
 void applyRenderableShadowSettings(
     ::filament::Engine& engine,
     const Renderable& renderable,
-    const dart::gui::experimental::MaterialDescriptor& material)
+    const dart::gui::MaterialDescriptor& material)
 {
   auto& renderables = engine.getRenderableManager();
   const auto instance = renderables.getInstance(renderable.entity);
@@ -248,4 +248,4 @@ void destroyRenderable(::filament::Engine& engine, Renderable& renderable)
   utils::EntityManager::get().destroy(renderable.entity);
 }
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament

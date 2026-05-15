@@ -33,7 +33,7 @@
 #ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCREENSHOT_HPP_
 #define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCREENSHOT_HPP_
 
-#include <dart/gui/experimental/profile.hpp>
+#include <dart/gui/profile.hpp>
 
 #include <condition_variable>
 #include <mutex>
@@ -42,7 +42,7 @@
 
 #include <cstdint>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 struct FilamentRenderContext;
 
@@ -72,8 +72,8 @@ bool finalizeScreenshotCapture(
     ScreenshotCapture& capture,
     const std::string& path,
     bool screenshotRequested,
-    dart::gui::experimental::ProfileAccumulator& profile);
+    dart::gui::ProfileAccumulator& profile);
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCREENSHOT_HPP_

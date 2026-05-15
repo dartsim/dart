@@ -34,7 +34,7 @@
 #define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCENE_FRAME_HPP_
 
 #include <dart/gui/experimental/detail/filament/renderable_resources.hpp>
-#include <dart/gui/experimental/profile.hpp>
+#include <dart/gui/profile.hpp>
 
 #include <optional>
 
@@ -45,15 +45,15 @@ class Engine;
 class Scene;
 } // namespace filament
 
-namespace dart::gui::experimental {
+namespace dart::gui {
 
 struct OrbitCameraController;
 struct RunOptions;
 struct ViewerLifecycleState;
 
-} // namespace dart::gui::experimental
+} // namespace dart::gui
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 struct DartScene;
 struct FrameViewport;
@@ -71,18 +71,17 @@ public:
       ::filament::Scene& scene,
       const MaterialSet& materials,
       MaterialResources& materialResources,
-      const dart::gui::experimental::RunOptions& options,
+      const dart::gui::RunOptions& options,
       DartScene& dartScene,
-      const dart::gui::experimental::OrbitCameraController& cameraController,
+      const dart::gui::OrbitCameraController& cameraController,
       SelectionController& selectionController,
       InitialSceneState& sceneState,
       std::optional<Renderable>& selectionDebugOverlay,
-      dart::gui::experimental::ViewerLifecycleState& lifecycle,
+      dart::gui::ViewerLifecycleState& lifecycle,
       SimulationStepper& simulationStepper,
       SceneLights& lights,
-      dart::gui::experimental::ProfileAccumulator::Clock::time_point
-          orbitStartClock,
-      dart::gui::experimental::ProfileAccumulator& profile);
+      dart::gui::ProfileAccumulator::Clock::time_point orbitStartClock,
+      dart::gui::ProfileAccumulator& profile);
 
   void update(
       const FrameViewport& viewport,
@@ -96,20 +95,19 @@ private:
   ::filament::Scene& mScene;
   const MaterialSet& mMaterials;
   MaterialResources& mMaterialResources;
-  const dart::gui::experimental::RunOptions& mOptions;
+  const dart::gui::RunOptions& mOptions;
   DartScene& mDartScene;
-  const dart::gui::experimental::OrbitCameraController& mCameraController;
+  const dart::gui::OrbitCameraController& mCameraController;
   SelectionController& mSelectionController;
   InitialSceneState& mSceneState;
   std::optional<Renderable>& mSelectionDebugOverlay;
-  dart::gui::experimental::ViewerLifecycleState& mLifecycle;
+  dart::gui::ViewerLifecycleState& mLifecycle;
   SimulationStepper& mSimulationStepper;
   SceneLights& mLights;
-  dart::gui::experimental::ProfileAccumulator::Clock::time_point
-      mOrbitStartClock;
-  dart::gui::experimental::ProfileAccumulator& mProfile;
+  dart::gui::ProfileAccumulator::Clock::time_point mOrbitStartClock;
+  dart::gui::ProfileAccumulator& mProfile;
 };
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCENE_FRAME_HPP_

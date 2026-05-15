@@ -47,13 +47,13 @@ class View;
 
 } // namespace filament
 
-namespace dart::gui::experimental {
+namespace dart::gui {
 
 struct OrbitCamera;
 
-} // namespace dart::gui::experimental
+} // namespace dart::gui
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 struct SceneLights
 {
@@ -81,7 +81,7 @@ void clearMainViewColorGrading(::filament::View& view);
 void configureViewportCamera(
     ::filament::View& view,
     ::filament::Camera& camera,
-    const dart::gui::experimental::OrbitCamera& orbitCamera,
+    const dart::gui::OrbitCamera& orbitCamera,
     int width,
     int height);
 
@@ -114,6 +114,6 @@ void updateOrbitingKeyLight(
     double elapsedSeconds,
     double orbitPeriodSeconds);
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_RENDER_ENVIRONMENT_HPP_

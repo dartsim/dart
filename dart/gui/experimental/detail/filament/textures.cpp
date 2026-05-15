@@ -62,7 +62,7 @@ static_assert(
 #include <cstdio>
 #include <cstring>
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 namespace {
 
 struct ImageData
@@ -439,4 +439,4 @@ void setPbrTextureParameters(
   return texture;
 }
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament

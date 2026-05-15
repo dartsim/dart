@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/experimental/geometry.hpp>
+#include <dart/gui/geometry.hpp>
 
 #include <Eigen/Geometry>
 
@@ -40,7 +40,7 @@
 
 #include <cmath>
 
-namespace dart::gui::experimental {
+namespace dart::gui {
 namespace {
 
 constexpr double kPi = 3.14159265358979323846;
@@ -544,4 +544,4 @@ MeshGeometry makeCapsuleMeshGeometry(double radius, double height)
   return mesh;
 }
 
-} // namespace dart::gui::experimental
+} // namespace dart::gui

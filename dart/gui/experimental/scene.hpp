@@ -36,5 +36,6 @@
 #include <dart/gui/experimental/debug.hpp>
 #include <dart/gui/experimental/interaction.hpp>
 #include <dart/gui/experimental/renderable.hpp>
+#include <dart/gui/experimental/viewer.hpp>
 
 #endif // DART_GUI_EXPERIMENTAL_SCENE_HPP_

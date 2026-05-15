@@ -35,7 +35,7 @@
 
 #include "scenes.hpp"
 
-namespace dart::gui::experimental::filament {
+namespace dart::gui::filament {
 
 DartScene createMvpDartScene();
 
@@ -101,6 +101,6 @@ DartScene createHeightmapScene();
 
 DartScene createG1DartScene(const AppOptions& options);
 
-} // namespace dart::gui::experimental::filament
+} // namespace dart::gui::filament
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCENE_FIXTURES_HPP_

@@ -36,8 +36,6 @@
 namespace dart {
 namespace gui {
 
-namespace experimental {
-
 struct ActiveRenderableState;
 struct DebugLineDescriptor;
 struct GeometryDescriptor;
@@ -57,8 +55,6 @@ struct RenderableDescriptor;
 struct RenderableSetUpdatePlan;
 struct RunOptions;
 struct ViewerLifecycleState;
-
-} // namespace experimental
 
 } // namespace gui
 } // namespace dart
