@@ -22,11 +22,12 @@ evidence-doc edits. A follow-up current-tree audit reran the runtime isolation
 guard, compatibility-facade audit, `pixi run lint`, and
 `pixi run check-lint`; all passed with no formatter changes.
 
-The task is not complete. PR #2652 is closed and still points at old head
-`714d220d82a`; later pushes to `feature/new_coll` do not trigger the main
-GitHub Actions workflows. The user has repeatedly directed agents not to open
-or reopen a PR. Continue by committing focused local progress when useful, push
-only after explicit user/maintainer approval, and keep `PR-DRAFT.md` /
+The final north-star PR is not complete because PR #2652 is closed and still
+points at old head `714d220d82a`; later pushes to `feature/new_coll` do not
+trigger the main GitHub Actions workflows. That PR finalization is not in the
+current goal scope. The current scope is branch-local feature/evidence
+completion: keep the branch evidence packet current, publish only after
+explicit user/maintainer approval, and keep `PR-DRAFT.md` /
 `07-pr-evidence-transfer.md` ready for the maintainer-opened review surface.
 
 The latest pushed non-PR progress moved FCL out of required source-build
@@ -34,17 +35,28 @@ prerequisites and documented FCL/Bullet/ODE as optional reference-comparison
 dependencies. That docs cleanup is commit `621fca5a1fb` and was validated with
 `pixi run lint`.
 
+Current unpushed follow-up fixes a native box-box contact-point regression that
+could let a rotated box fall through a large ground box in default-world
+simulation. It also keeps incomplete `ConvexMeshShape` data on the
+compatibility fallback path and adds public-detector coverage for sphere-mesh
+collision in both object orders. The slice adds raw box-box, default-world,
+convex-mesh, and mesh regression tests, rebuilds `hello_world` without the
+OctoMap `<ciso646>` warning, and refreshes focused native/reference validation
+plus raw narrow-phase benchmark evidence. The canonical command list and
+results are recorded in `03-evidence-gates.md`.
+
 ## Current Branch
 
 `feature/new_coll` tracks `origin/feature/new_coll`. After explicit user
 approval, the docs/evidence commits were published to
-`origin/feature/new_coll`. Run `git rev-parse HEAD` and
-`git rev-parse origin/feature/new_coll` for the exact current local/remote
-heads because amending this note changes the latest hash. A read-only GitHub
-recheck after publishing found no Actions runs for the published evidence head;
-branch pushes do not trigger the main workflows while PR #2652 remains closed.
-PR #2652 is closed, draft, dirty, and still anchored to old head
-`714d220d82a`.
+`origin/feature/new_coll`; the latest published pre-note head was
+`f8f5663d514` (`Avoid stale native collision publish head`). Run
+`git rev-parse HEAD` and `git rev-parse origin/feature/new_coll` for the exact
+current local/remote heads because amending this note changes the latest hash.
+A read-only GitHub recheck after publishing found no Actions runs for the
+published evidence head; branch pushes do not trigger the main workflows while
+PR #2652 remains closed. PR #2652 is closed, draft, dirty, and still anchored
+to old head `714d220d82a`.
 
 The latest pushed validation baseline is `376fd5e686d`
 (`Remove per-engine collision reference build options`). Current branch head
@@ -61,14 +73,20 @@ git rev-parse origin/feature/new_coll
 
 ## Immediate Next Step
 
-Use `06-completion-audit.md` as the checklist for deciding whether the north
-star is complete. Under the current user constraint, the known open items are
-PR/review-surface bound:
+Under the current user constraint, do not spend the next pass trying to open,
+reopen, or prepare GitHub PR mutations. Use `06-completion-audit.md` to keep
+the distinction clear:
 
-1. Final maintainer-selected PR or manual CI surface.
-2. Final PR-state evidence transfer from this folder to the review body.
-3. Final local validation after the completing code state.
-4. Deleting `docs/dev_tasks/native_collision/` in the same completing PR.
+1. Current no-PR scope: maintain the published branch-local evidence packet,
+   `PR-DRAFT.md`, and `07-pr-evidence-transfer.md`.
+2. Deferred PR-finalization scope: maintainer-selected PR/CI surface, final
+   evidence transfer, final local validation on that completing state, and
+   deleting this folder in the same completing PR.
+
+If code or evidence changes again, run `pixi run lint` before committing and
+run the focused validation that matches the change. Full `pixi run test-all`
+evidence is already refreshed locally for the current working tree after
+pushed head `f8f5663d514`.
 
 Publish transport note: `origin` is configured as
 `git@github.com:dartsim/dart.git`, but SSH access was unreachable during resume
@@ -89,11 +107,10 @@ post GitHub comments unless the user explicitly asks.
   `test_reference_backends`, fresh `pixi run -e gazebo test-gz`, and native
   package/link smoke with direct `readelf` checks.
 - Public docs collision-runtime wording baseline: `ad1b6782578`.
-- Latest full local `pixi run test-all` validation baseline:
-  `a0b53ef844021dd668c61d2957fbffd08104c6cb`, with 6/6 top-level
-  gates passing on the local evidence head before this docs-only evidence note.
-  That run included linting, build, unit tests, simulation-experimental tests,
-  Python tests, and documentation.
+- Latest full local `pixi run test-all` validation: current working tree after
+  pushed head `f8f5663d514`, with 6/6 top-level gates passing after the raw
+  box-ground follow-up. That run included linting, build, unit tests,
+  simulation-experimental tests, Python tests, and documentation.
 - Latest evidence-record commits: docs-only and published on
   `origin/feature/new_coll`; run `git log -3 --oneline --decorate` for the
   current head.
@@ -113,6 +130,17 @@ post GitHub comments unless the user explicitly asks.
   SSH to `github.com:22` was unreachable in this environment. HTTPS fetch and
   `git ls-remote https://github.com/dartsim/dart.git refs/heads/feature/new_coll`
   worked and confirmed the published feature branch head.
+- Current local regression refresh after `f8f5663d514`: focused raw
+  box-ground tests passed, `test_box_box` passed 20/20 with the new direct
+  regression and determinism coverage, `UNIT_collision_DartCollisionDetector`
+  passed the new convex-mesh fallback and sphere-mesh order regressions,
+  `test_convex` and `test_mesh_mesh` passed, full `collision-native` label
+  passed 29/29, the focused default/native CTest slice passed 5/5,
+  `UNIT_collision_ConvexMesh` and `test_reference_backends` passed 2/2 in the
+  `collision-reference` environment, `hello_world` rebuilt without the prior
+  OctoMap `<ciso646>` warning, and
+  `.benchmark_results/native_collision_raw_narrow_phase.json` was produced by
+  the raw narrow-phase benchmark run.
 
 Useful lightweight guards:
 

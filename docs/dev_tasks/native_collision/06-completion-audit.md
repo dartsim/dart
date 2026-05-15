@@ -13,16 +13,26 @@ the built-in layer is proven feature-complete, correct, scalable, and
 performance-ready through tests, benchmark guardrails, package checks, downstream
 compatibility, and CI artifacts.
 
-Current pass scope: feature-level completion. The final PR must keep benchmark
-and profiling guardrails in place, but the next wave owns optimization for
-single-CPU hot paths, multi-core CPU parallelism, and stretch GPU support.
+Current pass scope: feature-level completion. The current user-scoped pass is
+branch-local and no-PR: keep the implementation/evidence packet current on
+`feature/new_coll`, keep the PR draft and evidence-transfer packet ready, and
+do not open or reopen a PR. The final PR must keep benchmark and profiling
+guardrails in place, but the next wave owns optimization for single-CPU hot
+paths, multi-core CPU parallelism, and stretch GPU support.
 
 ## Completion Decision
 
-Status: not complete.
+Status: final north-star PR completion is not complete. Current no-PR
+branch-evidence execution is locally satisfied by the published evidence
+packet and latest local validation records. The latest local follow-up also
+refreshes raw box-ground, convex-mesh fallback, and public mesh collision
+coverage without changing the no-PR boundary. This dev-task folder remains
+active because final PR/CI evidence transfer and folder deletion are explicitly
+out of the current scope.
 
-The current branch has strong local evidence, but the north star still has
-unverified external and finalization gates:
+The current branch has strong local evidence. The remaining north-star gates
+are deferred finalization gates rather than work that should trigger a PR
+mutation during the current pass:
 
 - Native-only and gz-physics manual workflow-dispatch evidence is now collected
   for pushed head `1e1faf6feb1`, but the final PR-complete state still needs
@@ -223,12 +233,13 @@ Current audited state:
   tests and reference benchmarks `ON` and all FCL, Bullet, and ODE reference
   components configured internally.
 - Current local evidence-head validation: `pixi run test-all` was rerun with
-  safe local parallelism on `a0b53ef844021dd668c61d2957fbffd08104c6cb` and
-  passed all 6 top-level gates: linting, build, unit tests,
+  safe local parallelism on the current working tree after pushed head
+  `f8f5663d514` and passed all 6 top-level gates: linting, build, unit tests,
   simulation-experimental tests, Python tests, and documentation. The run
-  passed 264/264 C++ Release CTest tests; it also reran the runtime isolation
-  and compatibility-facade audits through the lint gate. This evidence is local
-  and remains insufficient to close the final PR/CI-surface gates.
+  passed 264/264 C++ Release CTest tests and 147/147 Python tests; it also
+  reran the runtime isolation and compatibility-facade audits through the lint
+  gate. This evidence is local and remains insufficient to close the final
+  PR/CI-surface gates.
 - Benchmark guard record head: `4b155655890`
   (`Record current collision benchmark guard`). The safe-job
   `collision-reference` benchmark guard passed locally, covering narrow phase,
@@ -667,36 +678,44 @@ Legend:
   requirement.
 - Open: required evidence or finalization work is missing.
 
-## Missing Evidence And Required Next Actions
+## Current Scope And Deferred Finalization
+
+Current no-PR scope:
 
 1. Do not create a new diff or review request until the user asks. PR #2652 is
-   closed, so pushing focused fixes to `feature/new_coll` publishes branch
+   closed, so publishing focused fixes to `feature/new_coll` records branch
    state but does not automatically trigger the main GitHub Actions workflows.
-   Manual workflow-dispatch reference evidence for pushed head `1e1faf6feb1`
-   now covers native-only CI, gz-physics, the wheel matrix, and the collision
-   benchmark guard artifact upload. Later pushed docs/evidence heads have no
-   attached runs for the same trigger-filter reason.
-   Treat GitHub CI as reference evidence; use local build/test as the main
-   validation surface unless the maintainer explicitly chooses another trigger.
-   Current local publish mechanics need HTTPS with the `jslee02` account:
-   `origin` uses SSH, which was unreachable during the latest resume check, and
-   the active `gh` CLI account had only read permission on `dartsim/dart`.
-2. Record downstream deprecation policy evidence proving downstream users no
+2. Treat GitHub CI as reference evidence for now; use local build/test as the
+   main validation surface unless the maintainer explicitly chooses another
+   trigger. Manual workflow-dispatch reference evidence for pushed head
+   `1e1faf6feb1` already covers native-only CI, gz-physics, the wheel matrix,
+   and the collision benchmark guard artifact upload. Later pushed
+   docs/evidence heads have no attached runs for the same trigger-filter
+   reason.
+3. Keep `PR-DRAFT.md` and `07-pr-evidence-transfer.md` current for the
+   maintainer-opened review surface. Do not post them or mutate GitHub PR
+   metadata in this pass.
+
+Deferred finalization scope:
+
+1. Record downstream deprecation policy evidence proving downstream users no
    longer depend on legacy names as runtime backend selectors before removing
    or hard-deprecating retained facades. Local migration evidence is refreshed;
    the remaining gap is policy/finalization, not the package/gz smoke itself.
-3. Apply the documented compatibility-facade policy in the final PR state:
+2. Apply the documented compatibility-facade policy in the final PR state:
    preserve only wrappers required for source compatibility, keep them
    native-backed, and keep all external engines reference-only. The local
    reference-file cleanup audit found no unreferenced old-engine implementation
    files to delete; the remaining FCL/Bullet/ODE implementation files are
    intentional `collision-reference-*` test/benchmark code.
-4. Run final validation after the final code state, including at least
+3. Run final validation after the final PR code state, including at least
    `pixi run lint` and `pixi run test-all`, plus any CI-specific gates whose
-   failures are not covered locally.
-5. Keep the durable collision architecture summary in onboarding docs, use
+   failures are not covered locally. The current working tree has a fresh local
+   `pixi run test-all` pass, but this does not replace final maintainer-selected
+   PR/CI evidence.
+4. Keep the durable collision architecture summary in onboarding docs, use
    `07-pr-evidence-transfer.md` as the starting packet for the final PR
-   description, then delete this dev-task folder in the same PR.
+   description, then delete this dev-task folder in the same completing PR.
 
 ## Completion Bar
 

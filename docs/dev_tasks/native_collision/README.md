@@ -1,5 +1,22 @@
 # Native Collision North-Star PR - Dev Task
 
+## Current Scope
+
+The active user scope is branch-local feature/evidence completion. Do not open
+or reopen a PR, trigger GitHub workflows, mutate PR metadata, or delete this
+folder in the current pass. Keep `feature/new_coll`, `PR-DRAFT.md`, and
+`07-pr-evidence-transfer.md` ready for the maintainer-opened review surface.
+Final PR CI evidence, evidence transfer, and folder deletion are deferred
+finalization steps.
+
+Latest local follow-up: the current tree fixes the default native box-ground
+contact regression reported from `hello_world`/Atlas-style scenes, keeps
+incomplete `ConvexMeshShape` data on the compatibility fallback path, adds
+focused raw box-box, convex-mesh, mesh, and default-world regression coverage,
+rebuilds `hello_world` without the OctoMap `<ciso646>` warning, and refreshes
+the focused native/reference/benchmark validation evidence in
+`03-evidence-gates.md`.
+
 ## Current Status
 
 - [x] Native collision core exists under `dart/collision/native/`.
@@ -179,11 +196,10 @@
 - [ ] Final validation after the completing code state is still open. At
       minimum this means `pixi run lint`, `pixi run test-all`, and any
       maintainer-selected CI gates whose failures are not covered locally. The
-      latest full local `pixi run test-all` pass is tied to
-      `a0b53ef844021dd668c61d2957fbffd08104c6cb` and passed 6/6 top-level
-      gates with Release CTest 264/264; the result is recorded in the published
-      docs/evidence head on `origin/feature/new_coll`. The current clean
-      reference-gate refresh proves normal configure exposes only
+      latest full local `pixi run test-all` pass was rerun on the current
+      working tree after pushed head `f8f5663d514` and passed 6/6 top-level
+      gates with Release CTest 264/264 and Python tests 147/147. The current
+      clean reference-gate refresh proves normal configure exposes only
       reference tests/benchmarks, keeps both `OFF` by default, and no longer
       has per-engine FCL/Bullet/ODE collision build switches. The
       source-build prerequisite cleanup was linted on pushed docs commit

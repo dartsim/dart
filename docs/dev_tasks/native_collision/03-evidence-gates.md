@@ -2891,6 +2891,53 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     `DART_BUILD_COLLISION_REFERENCE_TESTS` and
     `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS`, both `OFF` by default, for
     optional old-engine comparison components.
+- Current local raw/convex/mesh regression refresh:
+  - Commit: current working tree after pushed branch head `f8f5663d514`
+    (`Avoid stale native collision publish head`).
+  - Commands:
+    `JOBS=$(python scripts/parallel_jobs.py)`,
+    `CMAKE_BUILD_PARALLEL_LEVEL=$JOBS cmake --build build/default/cpp/Release --target test_box_box --target UNIT_simulation_World --parallel "$JOBS"`,
+    `./build/default/cpp/Release/bin/test_box_box --gtest_filter='BoxBox.*'`,
+    `./build/default/cpp/Release/bin/UNIT_simulation_World --gtest_filter='WorldTests.DefaultNative*BoxRestsOnGround'`,
+    `cmake --build build/default/cpp/Release --target UNIT_collision_DartCollisionDetector test_convex test_mesh_mesh --parallel "$JOBS"`,
+    `./build/default/cpp/Release/bin/UNIT_collision_DartCollisionDetector --gtest_filter='DartCollisionDetector.SphereMeshCollisionWorksInBothOrders:DartCollisionDetector.ConvexMeshCollisionUsesNativeConvexGeometry:DartCollisionDetector.EmptyConvexMeshUsesFallbackSphere'`,
+    `./build/default/cpp/Release/bin/test_convex`,
+    `./build/default/cpp/Release/bin/test_mesh_mesh`,
+    `CMAKE_BUILD_PARALLEL_LEVEL=$JOBS cmake --build build/default/cpp/Release --target dart_collision_native_tests --parallel "$JOBS"`,
+    `CTEST_PARALLEL_LEVEL=$JOBS ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native -j "$JOBS"`,
+    `CTEST_PARALLEL_LEVEL=$JOBS ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(UNIT_collision_DartCollisionDetector|test_convex|test_mesh_mesh|test_box_box|UNIT_simulation_World)$' -j "$JOBS"`,
+    `pixi run -e collision-reference -- python scripts/cmake_build.py --build-dir build/collision-reference/cpp/Release --parallel "$JOBS" --target test_reference_backends --target bm_comparative_narrow_phase`,
+    `pixi run -e collision-reference -- ctest --test-dir build/collision-reference/cpp/Release --output-on-failure -R '^test_reference_backends$' -j "$JOBS"`,
+    `pixi run -e collision-reference -- python scripts/cmake_build.py --build-dir build/collision-reference/cpp/Release --parallel "$JOBS" --target UNIT_collision_ConvexMesh --target test_reference_backends`,
+    `pixi run -e collision-reference -- ctest --test-dir build/collision-reference/cpp/Release --output-on-failure -R '^(UNIT_collision_ConvexMesh|test_reference_backends)$' -j "$JOBS"`,
+    `./build/collision-reference/cpp/Release/bin/bm_comparative_narrow_phase --benchmark_filter='BM_NarrowPhase_(SphereSphere|BoxBox|CapsuleCapsule|SphereBox|CapsuleSphere|CapsuleBox|CylinderCylinder|CylinderSphere|CylinderBox|CylinderCapsule|CylinderPlane|PlaneSphere|PlaneBox|PlaneCapsule)_(Native|FCL|Bullet|ODE)$' --benchmark_min_time=1ms --benchmark_repetitions=3 --benchmark_out=.benchmark_results/native_collision_raw_narrow_phase.json --benchmark_out_format=json`,
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target hello_world`,
+    and `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-all`.
+  - Result: passed. The focused default-world box/ground tests cover both
+    upright and rotated boxes with the default `dart` detector and prevent the
+    box from sinking through the ground. The full `test_box_box` executable
+    passed 20/20, including the direct box-box regression, determinism, and
+    swapped-input coverage that keeps contacts for a rotated small box on a
+    large ground box near the local overlap instead of the large ground
+    boundary. The default detector now also keeps incomplete
+    `ConvexMeshShape` data on the compatibility fallback path, covers valid
+    convex-mesh contact through native convex geometry, and covers sphere-mesh
+    collision in both object orders. `test_convex` and `test_mesh_mesh`
+    passed, the full native collision unit label passed 29/29, the focused
+    default/native CTest slice passed 5/5 after the final header cleanup, and
+    the explicit `UNIT_collision_ConvexMesh` plus `test_reference_backends`
+    targets passed 2/2 in the `collision-reference` environment. The raw
+    narrow-phase benchmark binary's built-in accuracy
+    verification passed for Sphere-Sphere, Box-Box, Capsule-Capsule,
+    Sphere-Box, Capsule-Sphere, Capsule-Box, Cylinder-Cylinder,
+    Cylinder-Sphere, Cylinder-Box, Cylinder-Capsule, Cylinder-Plane,
+    Plane-Sphere, Plane-Box, and Plane-Capsule before re-recording benchmark
+    JSON after the final box-box source edit. A separate `hello_world` target
+    rebuild completed without the prior OctoMap `<ciso646>` C++20 warning after
+    wrapping the public OctoMap include with the existing diagnostics
+    suppression helper. The final full local validation for this working tree
+    passed 6/6 top-level `test-all` gates: linting, build, unit tests,
+    simulation-experimental tests, Python tests, and documentation.
 
 ## Known Risks
 
