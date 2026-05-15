@@ -107,7 +107,7 @@ Local validation currently recorded in the dev-task evidence:
   - full dartpy wheel matrix passed
   - collision benchmark guard uploaded
     `collision-benchmark-guard-25887939088-1`
-- Current-head local benchmark evidence on `c4fd6e27f8c`:
+- Recent local benchmark evidence on `c4fd6e27f8c`:
   - `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -e collision-reference bm-collision-check`
     passed.
   - Checked subsets passed for narrow phase, distance, raycast, mixed

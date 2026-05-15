@@ -139,9 +139,9 @@
       runs the broad `collision-reference` benchmark check and uploads the
       `.benchmark_results/collision_check_*.json` artifacts when a workflow
       surface is available.
-- [x] Current-head local benchmark-guard evidence is refreshed. The
-      `collision-reference` benchmark guard passed on `c4fd6e27f8c`, producing
-      local
+- [x] Recent local benchmark-guard evidence is refreshed. The
+      `collision-reference` benchmark guard passed on `c4fd6e27f8c`, the latest
+      code/configuration head before evidence-only docs, producing local
       `.benchmark_results/collision_check_{narrow,distance,raycast,mixed,mesh,raycast_batch,adapter}.json`
       files.
 - [ ] Final benchmark-guard CI artifact evidence on the completing PR head is
@@ -164,9 +164,9 @@
 - [ ] Final validation after the completing code state is still open. At
       minimum this means `pixi run lint`, `pixi run test-all`, and any
       maintainer-selected CI gates whose failures are not covered locally. The
-      current code state at `9ed54f2c491` has a fresh local `pixi run test-all`
-      pass with default FCL/Bullet/ODE/reference knobs `OFF`; final PR-state
-      evidence is still pending.
+      latest full local `pixi run test-all` pass is tied to `9ed54f2c491` with
+      default FCL/Bullet/ODE/reference knobs `OFF`; final PR-state evidence is
+      still pending.
 - [ ] Final evidence transfer and dev-task cleanup are still open.
       `07-pr-evidence-transfer.md` and `PR-DRAFT.md` stage the review packet,
       but this folder must stay until that evidence is moved to the completing
@@ -224,7 +224,7 @@ The current checkpoint is a validated middle state, not a final PR boundary.
 | 9     | Downstream migration/deprecation path exists | Package/gz/link smokes pass; policy evidence left |
 | 10    | Clean built-in API/scaling/perf layer        | Local design plus artifact evidence; final left   |
 | 11    | Old runtime backend source is reference-only | Local split; lint guard wired                     |
-| 12    | Final one-PR validation and PR packaging     | Current full local pass; final PR evidence left   |
+| 12    | Final one-PR validation and PR packaging     | Recent full local pass; final PR evidence left    |
 
 ## Built-In Architecture Status
 

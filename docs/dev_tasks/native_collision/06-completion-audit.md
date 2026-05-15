@@ -28,7 +28,7 @@ unverified external and finalization gates:
   to the PR description or successor review surface.
 - GitHub artifact evidence for the manual collision benchmark guard is now
   collected for pushed head `1e1faf6feb1`; scheduled/permanent gate evidence is
-  still a finalization item. Current-head local benchmark-guard evidence is
+  still a finalization item. Recent local benchmark-guard evidence is
   refreshed on `c4fd6e27f8c`, but final GitHub artifact evidence still needs a
   maintainer-selected PR or workflow surface.
 - PR #2652 was used as the initial CI surface, then closed per user direction
@@ -120,11 +120,11 @@ unverified external and finalization gates:
   implementations, keep only native-backed compatibility facades required by
   downstream migration, and leave FCL/Bullet/ODE access in explicit
   reference-only test/benchmark APIs.
-- Full local `pixi run test-all` evidence is refreshed for the current code
-  state at `9ed54f2c491`, with normal native-only defaults keeping FCL,
-  Bullet, ODE, reference tests, and reference benchmarks `OFF`. Final
-  `pixi run test-all` evidence after the eventual PR-complete state is still
-  missing. The refreshed full reruns found and repaired three
+- Full local `pixi run test-all` evidence is refreshed at `9ed54f2c491`, with
+  normal native-only defaults keeping FCL, Bullet, ODE, reference tests, and
+  reference benchmarks `OFF`. Final `pixi run test-all` evidence after the
+  eventual PR-complete state is still missing. The refreshed full reruns found
+  and repaired three
   local validation robustness gaps: a stale optional `libccd` CMake cache issue
   in the default native-only test build, stale `ShapeType::Cone`,
   `ShapeType::HeightField`, and `ShapeType::PointCloud` cases in the VSG
@@ -159,7 +159,7 @@ Current audited state:
   needed for explicit `collision-reference-*` comparison components. GitHub
   reports no Actions runs for the later pushes because `feature/new_coll` does
   not match the workflow `push` filters and PR #2652 remains closed.
-- Current full local validation head: `9ed54f2c491`
+- Full local validation run head: `9ed54f2c491`
   (`Align native collision PR handoff wording`). The safe-job full-validation
   command passed with 6/6 top-level gates: linting, build, unit tests,
   simulation-experimental tests, Python tests, and documentation. The configure
@@ -169,11 +169,11 @@ Current audited state:
   options are reference-component opt-ins rather than compatibility
   prerequisites for core DART, dartpy, gz-physics runtime integration, or
   native-backed package component facades.
-- Current local benchmark guard head: `c4fd6e27f8c`
+- Benchmark guard run head: `c4fd6e27f8c`
   (`Clarify collision reference option scope`). The safe-job
   `collision-reference` benchmark guard passed locally, covering narrow phase,
   distance, raycast, mixed primitives, mesh-heavy, raycast-batch, and public
-  DART adapter benchmark JSON outputs. This is local current-head evidence; it
+  DART adapter benchmark JSON outputs. This is local benchmark evidence; it
   does not replace final PR/CI artifact evidence because feature-branch pushes
   do not trigger the benchmark workflow while PR #2652 is closed.
 - GitHub PR state: PR #2652
