@@ -34,10 +34,13 @@
 
 #include <filament/ColorGrading.h>
 #include <filament/IndirectLight.h>
+#include <filament/LightManager.h>
 #include <filament/Options.h>
 #include <filament/Skybox.h>
 #include <filament/ToneMapper.h>
 #include <filament/View.h>
+#include <math/vec3.h>
+#include <utils/EntityManager.h>
 
 #include <algorithm>
 #include <array>
@@ -140,6 +143,66 @@ float3 orbitingKeyLightDirection(
        static_cast<float>(0.68 * std::sin(angle)),
        -0.74f},
       {-0.30f, -0.42f, -1.0f});
+}
+
+SceneLights createSceneLights(
+    filament::Engine& engine,
+    bool headless,
+    bool orbitLight,
+    double orbitPeriodSeconds)
+{
+  SceneLights lights{
+      utils::EntityManager::get().create(),
+      utils::EntityManager::get().create(),
+      utils::EntityManager::get().create()};
+
+  filament::LightManager::ShadowOptions shadowOptions;
+  shadowOptions.mapSize = headless ? 2048 : 4096;
+  shadowOptions.shadowCascades = headless ? 3 : 4;
+  shadowOptions.cascadeSplitPositions[0] = 0.10f;
+  shadowOptions.cascadeSplitPositions[1] = 0.30f;
+  shadowOptions.cascadeSplitPositions[2] = 0.62f;
+  shadowOptions.shadowFar = headless ? 10.0f : 14.0f;
+  shadowOptions.shadowFarHint = headless ? 4.5f : 5.5f;
+  shadowOptions.screenSpaceContactShadows = false;
+
+  const float3 keyLightDirection
+      = orbitLight ? orbitingKeyLightDirection(0.0, orbitPeriodSeconds)
+                   : float3{-0.30f, -0.42f, -1.0f};
+  filament::LightManager::Builder(filament::LightManager::Type::SUN)
+      .color({1.0f, 0.96f, 0.88f})
+      .intensity(82000.0f)
+      .direction(keyLightDirection)
+      .castShadows(true)
+      .shadowOptions(shadowOptions)
+      .build(engine, lights.key);
+
+  filament::LightManager::Builder(filament::LightManager::Type::DIRECTIONAL)
+      .color({0.80f, 0.88f, 1.0f})
+      .intensity(62000.0f)
+      .direction({0.42f, 0.18f, -0.7f})
+      .castShadows(false)
+      .build(engine, lights.fill);
+
+  filament::LightManager::Builder(filament::LightManager::Type::DIRECTIONAL)
+      .color({0.88f, 0.93f, 1.0f})
+      .intensity(42000.0f)
+      .direction({-0.65f, 0.40f, -0.45f})
+      .castShadows(false)
+      .build(engine, lights.rim);
+
+  return lights;
+}
+
+void updateOrbitingKeyLight(
+    filament::LightManager& lights,
+    const SceneLights& sceneLights,
+    double elapsedSeconds,
+    double orbitPeriodSeconds)
+{
+  lights.setDirection(
+      lights.getInstance(sceneLights.key),
+      orbitingKeyLightDirection(elapsedSeconds, orbitPeriodSeconds));
 }
 
 } // namespace dart::examples::filament_gui

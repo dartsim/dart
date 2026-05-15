@@ -105,8 +105,8 @@ direct Filament sampler include.
 `UNIT_gui_FilamentSceneExtraction` also checks that
 `examples/filament_gui/*.hpp` has no direct Filament header includes; this is
 only a header-level guard, not completion of the full example include metric.
-Example-local neutral lighting/color grading, orbiting key-light direction, and
-windowed view-quality setup live in
+Example-local neutral lighting/color grading, light entity creation and orbit
+updates, and windowed view-quality setup live in
 `examples/filament_gui/render_environment.hpp` and `.cpp`.
 Example-local platform-specific GLFW native-window handle selection lives in
 `examples/filament_gui/native_window.hpp` and `.cpp`.

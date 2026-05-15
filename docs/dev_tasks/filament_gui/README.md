@@ -122,8 +122,8 @@
   `examples/filament_gui/*.hpp` has no direct Filament header includes, while
   the full north-star metric remains zero direct Filament header includes from
   maintained examples after promotion.
-- The Filament example's neutral lighting, color grading, orbiting key-light
-  direction, and windowed view-quality setup now live in
+- The Filament example's neutral lighting, light entity creation and orbit
+  update, color grading, and windowed view-quality setup now live in
   `examples/filament_gui/render_environment.hpp` and `.cpp`.
 - The Filament example's platform-specific GLFW native-window handle selection
   now lives in `examples/filament_gui/native_window.hpp` and `.cpp`.

@@ -59,7 +59,6 @@
 #include <GLFW/glfw3.h>
 #include <filament/Camera.h>
 #include <filament/Engine.h>
-#include <filament/LightManager.h>
 #include <filament/Renderer.h>
 #include <filament/Scene.h>
 #include <filament/SwapChain.h>
@@ -158,6 +157,7 @@ using dart::examples::filament_gui::ProfileAccumulator;
 using dart::examples::filament_gui::Renderable;
 using dart::examples::filament_gui::ScreenshotCapture;
 using dart::examples::filament_gui::SceneRenderable;
+using dart::examples::filament_gui::SceneLights;
 using dart::examples::filament_gui::configureWindowedViewQuality;
 using dart::examples::filament_gui::createDartScene;
 using dart::examples::filament_gui::createDebugColorGrading;
@@ -167,6 +167,7 @@ using dart::examples::filament_gui::createMaterialResources;
 using dart::examples::filament_gui::createNeutralIndirectLight;
 using dart::examples::filament_gui::createNeutralSkybox;
 using dart::examples::filament_gui::createRenderableFromDescriptor;
+using dart::examples::filament_gui::createSceneLights;
 using dart::examples::filament_gui::destroyImGuiOverlay;
 using dart::examples::filament_gui::destroyMaterialResources;
 using dart::examples::filament_gui::destroyRenderable;
@@ -194,7 +195,6 @@ using dart::examples::filament_gui::kWamFixtureSkeletonName;
 using dart::examples::filament_gui::getNativeWindow;
 using dart::examples::filament_gui::loadImGuiFont;
 using dart::examples::filament_gui::logUnsupportedRenderableDescriptorOnce;
-using dart::examples::filament_gui::orbitingKeyLightDirection;
 using dart::examples::filament_gui::parseOptions;
 using dart::examples::filament_gui::printProfile;
 using dart::examples::filament_gui::requestScreenshot;
@@ -209,8 +209,8 @@ using dart::examples::filament_gui::updateCameraController;
 using dart::examples::filament_gui::updateImGuiOverlay;
 using dart::examples::filament_gui::updateImGuiMouseInput;
 using dart::examples::filament_gui::updateSceneRenderableFromDescriptor;
+using dart::examples::filament_gui::updateOrbitingKeyLight;
 using dart::examples::filament_gui::waitForScreenshot;
-using filament::math::float3;
 using utils::EntityManager;
 
 
@@ -797,47 +797,12 @@ int main(int argc, char* argv[])
           }
         };
 
-  auto lightEntity = EntityManager::get().create();
-  filament::LightManager::ShadowOptions shadowOptions;
-  shadowOptions.mapSize = options.headless ? 2048 : 4096;
-  shadowOptions.shadowCascades = options.headless ? 3 : 4;
-  shadowOptions.cascadeSplitPositions[0] = 0.10f;
-  shadowOptions.cascadeSplitPositions[1] = 0.30f;
-  shadowOptions.cascadeSplitPositions[2] = 0.62f;
-  shadowOptions.shadowFar = options.headless ? 10.0f : 14.0f;
-  shadowOptions.shadowFarHint = options.headless ? 4.5f : 5.5f;
-  shadowOptions.screenSpaceContactShadows = false;
   bool orbitLight = appOptions.orbitLight;
-  const float3 keyLightDirection
-      = orbitLight ? orbitingKeyLightDirection(
-                         0.0, appOptions.orbitLightPeriodSeconds)
-                   : float3{-0.30f, -0.42f, -1.0f};
-  filament::LightManager::Builder(filament::LightManager::Type::SUN)
-      .color({1.0f, 0.96f, 0.88f})
-      .intensity(82000.0f)
-      .direction(keyLightDirection)
-      .castShadows(true)
-      .shadowOptions(shadowOptions)
-      .build(*engine, lightEntity);
-  scene->addEntity(lightEntity);
-
-  auto fillLightEntity = EntityManager::get().create();
-  filament::LightManager::Builder(filament::LightManager::Type::DIRECTIONAL)
-      .color({0.80f, 0.88f, 1.0f})
-      .intensity(62000.0f)
-      .direction({0.42f, 0.18f, -0.7f})
-      .castShadows(false)
-      .build(*engine, fillLightEntity);
-  scene->addEntity(fillLightEntity);
-
-  auto rimLightEntity = EntityManager::get().create();
-  filament::LightManager::Builder(filament::LightManager::Type::DIRECTIONAL)
-      .color({0.88f, 0.93f, 1.0f})
-      .intensity(42000.0f)
-      .direction({-0.65f, 0.40f, -0.45f})
-      .castShadows(false)
-      .build(*engine, rimLightEntity);
-  scene->addEntity(rimLightEntity);
+  SceneLights lights = createSceneLights(
+      *engine, options.headless, orbitLight, appOptions.orbitLightPeriodSeconds);
+  scene->addEntity(lights.key);
+  scene->addEntity(lights.fill);
+  scene->addEntity(lights.rim);
 
   ImGui::CreateContext();
   ImGui::StyleColorsDark();
@@ -1056,11 +1021,11 @@ int main(int argc, char* argv[])
                                              ProfileAccumulator::Clock::now()
                                              - orbitStartClock)
                                              .count();
-      auto& lights = engine->getLightManager();
-      lights.setDirection(
-          lights.getInstance(lightEntity),
-          orbitingKeyLightDirection(
-              orbitElapsedSeconds, appOptions.orbitLightPeriodSeconds));
+      updateOrbitingKeyLight(
+          engine->getLightManager(),
+          lights,
+          orbitElapsedSeconds,
+          appOptions.orbitLightPeriodSeconds);
     }
 
     phaseStart = ProfileAccumulator::Clock::now();
@@ -1322,9 +1287,9 @@ int main(int argc, char* argv[])
   destroyImGuiOverlay(*engine, imguiOverlay);
   ImGui::DestroyContext();
 
-  scene->remove(lightEntity);
-  scene->remove(fillLightEntity);
-  scene->remove(rimLightEntity);
+  scene->remove(lights.key);
+  scene->remove(lights.fill);
+  scene->remove(lights.rim);
   scene->setIndirectLight(nullptr);
   scene->setSkybox(nullptr);
   view->setColorGrading(nullptr);
@@ -1340,12 +1305,12 @@ int main(int argc, char* argv[])
   if (selectionDebugOverlay) {
     scene->remove(selectionDebugOverlay->entity);
   }
-  engine->destroy(lightEntity);
-  engine->destroy(fillLightEntity);
-  engine->destroy(rimLightEntity);
-  EntityManager::get().destroy(lightEntity);
-  EntityManager::get().destroy(fillLightEntity);
-  EntityManager::get().destroy(rimLightEntity);
+  engine->destroy(lights.key);
+  engine->destroy(lights.fill);
+  engine->destroy(lights.rim);
+  EntityManager::get().destroy(lights.key);
+  EntityManager::get().destroy(lights.fill);
+  EntityManager::get().destroy(lights.rim);
   engine->destroy(indirectLight);
   engine->destroy(skybox);
   engine->destroy(colorGrading);

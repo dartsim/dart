@@ -33,19 +33,27 @@
 #ifndef EXAMPLES_FILAMENT_GUI_RENDER_ENVIRONMENT_HPP_
 #define EXAMPLES_FILAMENT_GUI_RENDER_ENVIRONMENT_HPP_
 
-#include <math/vec3.h>
+#include <utils/Entity.h>
 
 namespace filament {
 
 class ColorGrading;
 class Engine;
 class IndirectLight;
+class LightManager;
 class Skybox;
 class View;
 
 } // namespace filament
 
 namespace dart::examples::filament_gui {
+
+struct SceneLights
+{
+  utils::Entity key;
+  utils::Entity fill;
+  utils::Entity rim;
+};
 
 filament::ColorGrading* createDebugColorGrading(filament::Engine& engine);
 
@@ -55,8 +63,17 @@ filament::Skybox* createNeutralSkybox(filament::Engine& engine);
 
 void configureWindowedViewQuality(filament::View& view);
 
-filament::math::float3 orbitingKeyLightDirection(
-    double elapsedSeconds, double orbitPeriodSeconds);
+SceneLights createSceneLights(
+    filament::Engine& engine,
+    bool headless,
+    bool orbitLight,
+    double orbitPeriodSeconds);
+
+void updateOrbitingKeyLight(
+    filament::LightManager& lights,
+    const SceneLights& sceneLights,
+    double elapsedSeconds,
+    double orbitPeriodSeconds);
 
 } // namespace dart::examples::filament_gui
 
