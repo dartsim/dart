@@ -282,43 +282,39 @@ std::vector<std::filesystem::path> listPublicHeadersInDirectory(
   return headers;
 }
 
-std::vector<std::filesystem::path> listRegularFilesInDirectory(
+std::vector<std::filesystem::path> listRegularFilesRecursively(
     const std::filesystem::path& relativeDirectory)
 {
-  const auto directory
-      = std::filesystem::path(dart::config::sourcePath()) / relativeDirectory;
+  const auto sourceRoot = std::filesystem::path(dart::config::sourcePath());
+  const auto directory = sourceRoot / relativeDirectory;
 
   std::vector<std::filesystem::path> files;
-  for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+  for (const auto& entry :
+       std::filesystem::recursive_directory_iterator(directory)) {
     if (!entry.is_regular_file()) {
       continue;
     }
 
-    files.push_back(relativeDirectory / entry.path().filename());
+    files.push_back(std::filesystem::relative(entry.path(), sourceRoot));
   }
 
   std::sort(files.begin(), files.end());
   return files;
 }
 
-std::vector<std::filesystem::path> listCppSourceFilesInDirectory(
+std::vector<std::filesystem::path> listCppSourceFilesRecursively(
     const std::filesystem::path& relativeDirectory)
 {
-  const auto directory
-      = std::filesystem::path(dart::config::sourcePath()) / relativeDirectory;
-
   std::vector<std::filesystem::path> sources;
-  for (const auto& entry : std::filesystem::directory_iterator(directory)) {
-    if (!entry.is_regular_file()) {
+  for (const auto& file : listRegularFilesRecursively(relativeDirectory)) {
+    const auto extension = file.extension();
+    if (extension != ".cpp" && extension != ".cc" && extension != ".cxx"
+        && extension != ".hpp" && extension != ".hh" && extension != ".h"
+        && extension != ".hxx") {
       continue;
     }
 
-    const auto extension = entry.path().extension();
-    if (extension != ".cpp" && extension != ".hpp") {
-      continue;
-    }
-
-    sources.push_back(relativeDirectory / entry.path().filename());
+    sources.push_back(file);
   }
 
   std::sort(sources.begin(), sources.end());
@@ -468,7 +464,7 @@ TEST(FilamentSceneExtraction, FilamentExampleEntryPointUsesGuiDetailBoundary)
 
 TEST(FilamentSceneExtraction, FilamentExampleKeepsOnlyMinimalCppEntryPoint)
 {
-  const auto sources = listCppSourceFilesInDirectory(
+  const auto sources = listCppSourceFilesRecursively(
       std::filesystem::path("examples") / "filament_gui");
 
   const std::vector<std::filesystem::path> expectedSources
@@ -478,7 +474,7 @@ TEST(FilamentSceneExtraction, FilamentExampleKeepsOnlyMinimalCppEntryPoint)
 
 TEST(FilamentSceneExtraction, FilamentExampleKeepsOnlyEntryPointAndWrapperFiles)
 {
-  const auto files = listRegularFilesInDirectory(
+  const auto files = listRegularFilesRecursively(
       std::filesystem::path("examples") / "filament_gui");
 
   const std::vector<std::filesystem::path> expectedFiles
