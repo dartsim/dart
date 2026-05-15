@@ -294,6 +294,9 @@ solver selection, gravity controls, and custom key callbacks. It routes
 `pixi run ex drag_and_drop` through the Filament example's selectable
 `--scene drag-and-drop` fixture by default while keeping the standalone source
 as legacy OSG comparison material. It also routes
+`pixi run ex empty` through the same Filament `--scene drag-and-drop` fixture
+while keeping the standalone source as legacy OSG comparison material for
+custom world hooks and raw key-event callbacks. It also routes
 `pixi run ex simple_frames` through the Filament example's
 `--scene simple-frames` fixture, which renders the legacy `SimpleFrame`
 hierarchy, marker ellipsoids, and arrow marker through backend-hidden

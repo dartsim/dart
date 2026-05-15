@@ -2,10 +2,36 @@
 
 ## Summary
 
-- Goal: provide a minimal viewer scaffold with custom world hooks and input handling.
-- Concepts/APIs: `gui::RealTimeWorldNode`, `gui::InteractiveFrame`, event handlers.
-- Expected output: an OSG viewer with a draggable target frame and key events.
-- Controls: press Q or arrow keys to see event callbacks in the console.
+- Goal: inspect a minimal interactive-frame viewer path in the maintained
+  Filament renderer.
+- Concepts/APIs: Filament GUI frame descriptors, `gui::RealTimeWorldNode`,
+  `gui::InteractiveFrame`, and legacy event handlers.
+- Expected output: a Filament viewer with draggable frame markers and axes.
+- Controls: left drag orbits, right/middle drag pans, wheel zooms, Space
+  pauses/resumes, `n` steps once while paused, click selects renderables,
+  Ctrl-left drag or arrow/PageUp/PageDown keys move selectable items, and
+  Escape exits.
+
+## Notes
+
+- The recommended in-tree runner uses the Filament `--scene drag-and-drop`
+  fixture in `examples/filament_gui`, which keeps renderer setup, resources,
+  input, overlays, capture, and frame manipulation behind the DART GUI
+  implementation boundary.
+- The standalone source in this directory remains as the legacy OSG comparison
+  scaffold for custom world hooks and raw key-event callbacks.
+
+## Run In Tree
+
+From the repository root:
+
+```bash
+pixi run ex empty
+```
+
+This builds and runs `examples/filament_gui --scene drag-and-drop`, so the
+recommended visual path no longer depends on the legacy OSG viewer. On Linux
+without a display, the runner automatically uses headless defaults.
 
 This project is dependent on DART. Please make sure a proper version of DART is
 installed before building this project.
@@ -25,4 +51,5 @@ Launch the executable from the build directory above:
 
     $ ./{generated_executable}
 
-Follow the instructions detailed in the console.
+This launches the legacy OSG viewer. Follow the instructions detailed in the
+console for its custom key-event callbacks.

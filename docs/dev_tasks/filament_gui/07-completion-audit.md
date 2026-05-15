@@ -231,6 +231,11 @@ in-tree `pixi run ex drag_and_drop` runner, so the recommended drag-and-drop
 workflow exercises the Filament renderer path while the standalone source in
 `examples/drag_and_drop` remains as legacy OSG comparison material until the
 promoted GUI API replaces it.
+The in-tree `pixi run ex empty` runner now uses the same Filament
+`--scene drag-and-drop` fixture by default, so its recommended visual path
+exercises descriptor-owned frame manipulation while the standalone source in
+`examples/empty` remains as legacy OSG comparison material for custom world
+hooks and raw key-event callbacks.
 The Filament example's selectable `--scene point-cloud` fixture now backs the
 in-tree `pixi run ex point_cloud` runner, so the recommended point-cloud
 workflow exercises descriptor-owned point-cloud and voxel-grid renderables in

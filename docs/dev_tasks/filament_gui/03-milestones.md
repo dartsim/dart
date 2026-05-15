@@ -170,6 +170,9 @@
   `pixi run ex drag_and_drop` routes to this Filament scene by default so the
   in-tree drag-and-drop workflow no longer depends on the legacy OSG viewer
   path.
+- `pixi run ex empty` also routes to the `--scene drag-and-drop` Filament
+  fixture by default while the standalone source remains as legacy OSG
+  comparison material for custom world hooks and raw key-event callbacks.
 - The Filament example includes a selectable `--scene simple-frames` fixture
   that extracts and renders the legacy simple-frames example's `SimpleFrame`
   hierarchy, marker ellipsoids, and arrow marker through the same

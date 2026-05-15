@@ -252,6 +252,10 @@
   path. The in-tree `pixi run ex drag_and_drop` runner now routes to that
   Filament scene while the legacy standalone OSG source remains available for
   comparison until the promoted GUI API replaces the old viewer path.
+- The in-tree `pixi run ex empty` runner now routes to the same
+  `--scene drag-and-drop` Filament fixture while the legacy standalone OSG
+  source remains available for custom world hooks and raw key-event callback
+  comparison.
 - The Filament example includes `--scene simple-frames`, a frame-hierarchy
   fixture that carries the legacy `simple_frames` example through
   descriptor-owned `SimpleFrame` box, ellipsoid, and arrow-marker renderables.
