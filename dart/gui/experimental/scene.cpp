@@ -2336,6 +2336,66 @@ PickRay makePerspectivePickRay(
   return ray;
 }
 
+PerspectiveProjection makePerspectiveProjection(
+    const OrbitCamera& camera,
+    int width,
+    int height,
+    const ProjectionOptions& options)
+{
+  const int safeWidth = std::max(1, width);
+  const int safeHeight = std::max(1, height);
+  const double safeDistance
+      = std::isfinite(camera.distance) ? std::max(0.0, camera.distance) : 0.0;
+  const double defaultNearScale = ProjectionOptions{}.nearScale;
+  const double nearScale
+      = std::isfinite(options.nearScale) && options.nearScale > 0.0
+            ? options.nearScale
+            : defaultNearScale;
+  const double minNear = std::max(
+      1e-6,
+      std::isfinite(options.minNearPlane) && options.minNearPlane > 0.0
+          ? options.minNearPlane
+          : ProjectionOptions{}.minNearPlane);
+  const double maxNearCandidate
+      = std::isfinite(options.maxNearPlane) && options.maxNearPlane > 0.0
+            ? options.maxNearPlane
+            : ProjectionOptions{}.maxNearPlane;
+  const double maxNear = std::max(minNear, maxNearCandidate);
+  const double defaultNear
+      = std::clamp(safeDistance * nearScale, minNear, maxNear);
+
+  PerspectiveProjection projection;
+  projection.aspectRatio
+      = static_cast<double>(safeWidth) / static_cast<double>(safeHeight);
+  projection.verticalFovDegrees = std::isfinite(options.verticalFovDegrees)
+                                          && options.verticalFovDegrees > 0.0
+                                          && options.verticalFovDegrees < 180.0
+                                      ? options.verticalFovDegrees
+                                      : ProjectionOptions{}.verticalFovDegrees;
+  projection.nearPlane = options.nearPlane.has_value()
+                                 && std::isfinite(*options.nearPlane)
+                                 && *options.nearPlane > 0.0
+                             ? *options.nearPlane
+                             : defaultNear;
+
+  const double minFar
+      = std::isfinite(options.minFarPlane) && options.minFarPlane > 0.0
+            ? options.minFarPlane
+            : ProjectionOptions{}.minFarPlane;
+  const double farPadding
+      = std::isfinite(options.farPadding) && options.farPadding >= 0.0
+            ? options.farPadding
+            : ProjectionOptions{}.farPadding;
+  const double defaultFar = std::max(
+      std::max(minFar, safeDistance + farPadding), projection.nearPlane + 1.0);
+  projection.farPlane = options.farPlane.has_value()
+                                && std::isfinite(*options.farPlane)
+                                && *options.farPlane > projection.nearPlane
+                            ? *options.farPlane
+                            : defaultFar;
+  return projection;
+}
+
 std::vector<DebugLineDescriptor> makeGridDebugLines(
     const DebugDrawOptions& options)
 {

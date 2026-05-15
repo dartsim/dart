@@ -698,6 +698,27 @@ def test_experimental_camera_and_run_helpers():
     dart.gui.experimental.update_orbit_camera(camera, update)
     assert np.isclose(camera.distance, update.min_distance)
 
+    camera.distance = 2.0
+    projection = dart.gui.experimental.make_perspective_projection(camera, 640, 480)
+    assert np.isclose(projection.vertical_fov_degrees, 45.0)
+    assert np.isclose(projection.aspect_ratio, 4.0 / 3.0)
+    assert np.isclose(projection.near_plane, 0.008)
+    assert np.isclose(projection.far_plane, 37.0)
+
+    projection_options = dart.gui.experimental.ProjectionOptions()
+    projection_options.vertical_fov_degrees = float("nan")
+    projection_options.near_plane = 0.1
+    projection_options.far_plane = 0.05
+    projection_options.min_far_plane = 10.0
+    projection_options.far_padding = 5.0
+    override_projection = dart.gui.experimental.make_perspective_projection(
+        camera, 0, -20, projection_options
+    )
+    assert np.isclose(override_projection.vertical_fov_degrees, 45.0)
+    assert np.isclose(override_projection.aspect_ratio, 1.0)
+    assert np.isclose(override_projection.near_plane, 0.1)
+    assert np.isclose(override_projection.far_plane, 10.0)
+
 
 def test_experimental_write_rgba_ppm(tmp_path):
     path = tmp_path / "capture.ppm"

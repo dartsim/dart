@@ -2033,6 +2033,29 @@ TEST(FilamentSceneExtraction, OrbitCamera_UpdateBasisAndPickingAreStable)
   scrollUpdate.scrollDelta = 100.0;
   dart::gui::experimental::updateOrbitCamera(camera, scrollUpdate);
   EXPECT_NEAR(camera.distance, scrollUpdate.minDistance, 1e-12);
+
+  camera.distance = 2.0;
+  const auto projection
+      = dart::gui::experimental::makePerspectiveProjection(camera, 640, 480);
+  EXPECT_NEAR(projection.verticalFovDegrees, 45.0, 1e-12);
+  EXPECT_NEAR(projection.aspectRatio, 4.0 / 3.0, 1e-12);
+  EXPECT_NEAR(projection.nearPlane, 0.008, 1e-12);
+  EXPECT_NEAR(projection.farPlane, 37.0, 1e-12);
+
+  dart::gui::experimental::ProjectionOptions projectionOptions;
+  projectionOptions.verticalFovDegrees
+      = std::numeric_limits<double>::quiet_NaN();
+  projectionOptions.nearPlane = 0.1;
+  projectionOptions.farPlane = 0.05;
+  projectionOptions.minFarPlane = 10.0;
+  projectionOptions.farPadding = 5.0;
+  const auto overrideProjection
+      = dart::gui::experimental::makePerspectiveProjection(
+          camera, 0, -20, projectionOptions);
+  EXPECT_NEAR(overrideProjection.verticalFovDegrees, 45.0, 1e-12);
+  EXPECT_NEAR(overrideProjection.aspectRatio, 1.0, 1e-12);
+  EXPECT_NEAR(overrideProjection.nearPlane, 0.1, 1e-12);
+  EXPECT_NEAR(overrideProjection.farPlane, 10.0, 1e-12);
 }
 
 } // namespace

@@ -247,6 +247,26 @@ struct OrbitCameraUpdate
   double maxPitch = 1.45;
 };
 
+struct ProjectionOptions
+{
+  double verticalFovDegrees = 45.0;
+  std::optional<double> nearPlane;
+  std::optional<double> farPlane;
+  double nearScale = 0.004;
+  double minNearPlane = 0.002;
+  double maxNearPlane = 0.025;
+  double minFarPlane = 30.0;
+  double farPadding = 35.0;
+};
+
+struct PerspectiveProjection
+{
+  double verticalFovDegrees = 45.0;
+  double aspectRatio = 1.0;
+  double nearPlane = 0.002;
+  double farPlane = 30.0;
+};
+
 struct PickHit
 {
   RenderableId id = 0;
@@ -396,6 +416,12 @@ DART_GUI_API PickRay makePerspectivePickRay(
     int width,
     int height,
     double verticalFovRadians = 0.7853981633974483);
+
+DART_GUI_API PerspectiveProjection makePerspectiveProjection(
+    const OrbitCamera& camera,
+    int width,
+    int height,
+    const ProjectionOptions& options = {});
 
 DART_GUI_API std::vector<DebugLineDescriptor> makeGridDebugLines(
     const DebugDrawOptions& options = {});

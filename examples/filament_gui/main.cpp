@@ -175,6 +175,7 @@ using dart::gui::experimental::markFrameSkipped;
 using dart::gui::experimental::markScreenshotRequested;
 using dart::gui::experimental::markSimulationAdvanced;
 using dart::gui::experimental::makeOrbitCameraBasis;
+using dart::gui::experimental::makePerspectiveProjection;
 using dart::gui::experimental::makePerspectivePickRay;
 using dart::gui::experimental::makeRenderableId;
 using dart::gui::experimental::makeSelectionDebugLines;
@@ -2293,16 +2294,6 @@ float3 orbitingKeyLightDirection(double elapsedSeconds, double orbitPeriodSecond
        static_cast<float>(0.68 * std::sin(angle)),
        -0.74f},
       {-0.30f, -0.42f, -1.0f});
-}
-
-double perspectiveNearPlane(const OrbitCamera& camera)
-{
-  return std::clamp(camera.distance * 0.004, 0.002, 0.025);
-}
-
-double perspectiveFarPlane(const OrbitCamera& camera)
-{
-  return std::max(30.0, camera.distance + 35.0);
 }
 
 float4 toRgba(const Eigen::Vector4d& rgba)
@@ -5322,13 +5313,13 @@ int main(int argc, char* argv[])
          0,
          static_cast<std::uint32_t>(width),
          static_cast<std::uint32_t>(height)});
-    const double aspect
-        = static_cast<double>(width) / static_cast<double>(height);
+    const auto projection
+        = makePerspectiveProjection(cameraController.camera, width, height);
     camera->setProjection(
-        45.0,
-        aspect,
-        perspectiveNearPlane(cameraController.camera),
-        perspectiveFarPlane(cameraController.camera),
+        projection.verticalFovDegrees,
+        projection.aspectRatio,
+        projection.nearPlane,
+        projection.farPlane,
         filament::Camera::Fov::VERTICAL);
     if (window != nullptr) {
       double cursorX = 0.0;

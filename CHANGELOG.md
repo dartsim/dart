@@ -151,11 +151,13 @@
     implementation tokens. The Filament example now includes the
     `dart::gui::experimental` API directly instead of carrying an example-local
     namespace re-export header, and checked-in dartpy stubs and API docs now
-    expose `dartpy.gui.experimental` without backend-specific names. The
+    expose `dartpy.gui.experimental` without backend-specific names.
+    Perspective projection and near/far clipping policy now also live in
+    `dart-gui-experimental` and are consumed by the Filament example. The
     north-star audit now also maps the legacy OSG/Raylib GUI surfaces that must
     be replaced, made private, or removed during first-class Filament
-    promotion. The
-    renderer-hidden debug descriptor path also covers support-polygon outlines
+    promotion. The renderer-hidden debug descriptor path also covers
+    support-polygon outlines
     and support-centroid markers, plus arrowheads for contact normal and force
     overlays, equivalent inertia-box overlays, and collision-shape bounds for
     collision-only shape nodes.

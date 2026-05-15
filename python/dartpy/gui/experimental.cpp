@@ -230,6 +230,27 @@ void defGuiExperimentalModule(nb::module_& m)
       .def_rw("min_pitch", &gui::OrbitCameraUpdate::minPitch)
       .def_rw("max_pitch", &gui::OrbitCameraUpdate::maxPitch);
 
+  nb::class_<gui::ProjectionOptions>(m, "ProjectionOptions")
+      .def(nb::init<>())
+      .def_rw(
+          "vertical_fov_degrees", &gui::ProjectionOptions::verticalFovDegrees)
+      .def_rw("near_plane", &gui::ProjectionOptions::nearPlane)
+      .def_rw("far_plane", &gui::ProjectionOptions::farPlane)
+      .def_rw("near_scale", &gui::ProjectionOptions::nearScale)
+      .def_rw("min_near_plane", &gui::ProjectionOptions::minNearPlane)
+      .def_rw("max_near_plane", &gui::ProjectionOptions::maxNearPlane)
+      .def_rw("min_far_plane", &gui::ProjectionOptions::minFarPlane)
+      .def_rw("far_padding", &gui::ProjectionOptions::farPadding);
+
+  nb::class_<gui::PerspectiveProjection>(m, "PerspectiveProjection")
+      .def(nb::init<>())
+      .def_rw(
+          "vertical_fov_degrees",
+          &gui::PerspectiveProjection::verticalFovDegrees)
+      .def_rw("aspect_ratio", &gui::PerspectiveProjection::aspectRatio)
+      .def_rw("near_plane", &gui::PerspectiveProjection::nearPlane)
+      .def_rw("far_plane", &gui::PerspectiveProjection::farPlane);
+
   nb::class_<gui::PickHit>(m, "PickHit")
       .def(nb::init<>())
       .def_rw("id", &gui::PickHit::id)
@@ -445,6 +466,13 @@ void defGuiExperimentalModule(nb::module_& m)
       nb::arg("width"),
       nb::arg("height"),
       nb::arg("vertical_fov_radians") = 0.7853981633974483);
+  m.def(
+      "make_perspective_projection",
+      &gui::makePerspectiveProjection,
+      nb::arg("camera"),
+      nb::arg("width"),
+      nb::arg("height"),
+      nb::arg("options") = gui::ProjectionOptions{});
   m.def(
       "make_grid_debug_lines",
       &gui::makeGridDebugLines,

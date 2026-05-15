@@ -66,10 +66,11 @@
   plane-drag translation helpers. The Filament example uses them for Ctrl-left
   camera-plane dragging of selected dynamic bodies and `SimpleFrame` visuals
   without exposing Filament input types.
-- The experimental scene layer also owns backend-hidden run-option normalization
-  viewer lifecycle state, and orbit-camera math used by the example for bounded
-  screenshots, camera placement, headless mode, pause/step behavior, frame
-  accounting, and perspective pick rays.
+- The experimental scene layer also owns backend-hidden run-option
+  normalization, viewer lifecycle state, orbit-camera math, and perspective
+  projection/clipping descriptors used by the example for bounded screenshots,
+  camera placement, headless mode, pause/step behavior, frame accounting,
+  perspective pick rays, and near/far plane policy.
 - Renderer resource synchronization planning now compares active renderable
   render-resource versions, so descriptor-owned geometry changes, including
   dynamic soft-mesh vertex changes, `MeshShape` material-color policy changes,
@@ -87,8 +88,8 @@
   headless captures are directly reviewable without a manual vertical flip.
 - `dartpy.gui.experimental` now exposes the constrained backend-hidden
   descriptor, picking, frame-translation, debug-line, run-option, viewer
-  lifecycle, screenshot storage, and orbit-camera APIs used by the current C++
-  experiment.
+  lifecycle, screenshot storage, orbit-camera, and projection/clipping APIs used
+  by the current C++ experiment.
 - The constrained `dartpy.gui.experimental` module can build and pass its
   focused test with `DART_BUILD_GUI=OFF` when the experimental GUI target is
   present, so the Python descriptor API no longer depends on the legacy GUI

@@ -19,8 +19,10 @@ __all__: list[str] = [
     'OrbitCamera',
     'OrbitCameraBasis',
     'OrbitCameraUpdate',
+    'PerspectiveProjection',
     'PickHit',
     'PickRay',
+    'ProjectionOptions',
     'RenderableDescriptor',
     'RenderableSetUpdatePlan',
     'RunOptions',
@@ -40,6 +42,7 @@ __all__: list[str] = [
     'make_inertia_debug_lines',
     'make_orbit_camera_basis',
     'make_perspective_pick_ray',
+    'make_perspective_projection',
     'make_selection_debug_lines',
     'make_support_polygon_debug_lines',
     'mark_frame_rendered',
@@ -273,6 +276,28 @@ class OrbitCameraUpdate:
     def __init__(self) -> None: ...
 
 
+class ProjectionOptions:
+    vertical_fov_degrees: float
+    near_plane: float | None
+    far_plane: float | None
+    near_scale: float
+    min_near_plane: float
+    max_near_plane: float
+    min_far_plane: float
+    far_padding: float
+
+    def __init__(self) -> None: ...
+
+
+class PerspectiveProjection:
+    vertical_fov_degrees: float
+    aspect_ratio: float
+    near_plane: float
+    far_plane: float
+
+    def __init__(self) -> None: ...
+
+
 class PickHit:
     id: int
     renderable_index: int
@@ -400,6 +425,12 @@ def make_perspective_pick_ray(
     height: int,
     vertical_fov_radians: float = ...,
 ) -> PickRay: ...
+def make_perspective_projection(
+    camera: OrbitCamera,
+    width: int,
+    height: int,
+    options: ProjectionOptions = ...,
+) -> PerspectiveProjection: ...
 def make_grid_debug_lines(
     options: DebugDrawOptions = ...,
 ) -> list[DebugLineDescriptor]: ...
