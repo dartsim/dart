@@ -78,11 +78,14 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
 #include <limits>
+#include <string>
+#include <string_view>
 #include <system_error>
 #include <utility>
 #include <vector>
@@ -212,6 +215,40 @@ public:
   }
 };
 
+std::string readSourceFile(const std::filesystem::path& relativePath)
+{
+  const auto path
+      = std::filesystem::path(dart::config::sourcePath()) / relativePath;
+  std::ifstream file(path, std::ios::binary);
+  if (!file) {
+    ADD_FAILURE() << "Failed to open source file: " << path;
+    return {};
+  }
+
+  return {
+      std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
+}
+
+std::vector<std::filesystem::path> listExperimentalGuiPublicHeaders()
+{
+  const auto relativeDirectory
+      = std::filesystem::path("dart") / "gui" / "experimental";
+  const auto directory
+      = std::filesystem::path(dart::config::sourcePath()) / relativeDirectory;
+
+  std::vector<std::filesystem::path> headers;
+  for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+    if (!entry.is_regular_file() || entry.path().extension() != ".hpp") {
+      continue;
+    }
+
+    headers.push_back(relativeDirectory / entry.path().filename());
+  }
+
+  std::sort(headers.begin(), headers.end());
+  return headers;
+}
+
 std::shared_ptr<const SoftMeshShape> findSoftMeshShape(
     const SoftBodyNode& softBody)
 {
@@ -229,6 +266,42 @@ std::shared_ptr<const SoftMeshShape> findSoftMeshShape(
   }
 
   return nullptr;
+}
+
+TEST(FilamentSceneExtraction, ExperimentalPublicHeadersStayBackendHidden)
+{
+  const std::array<std::string_view, 18> forbiddenTokens
+      = {"#include <filament/",
+         "#include \"filament/",
+         "filament::",
+         "Filament::",
+         "GLFW",
+         "ImGui",
+         "imgui",
+         "OpenGL",
+         "Vulkan",
+         "Metal",
+         "osg::",
+         "::osg",
+         "osg/",
+         "osgGA",
+         "osgViewer",
+         "Raylib",
+         "raylib",
+         "rlgl"};
+
+  const auto headers = listExperimentalGuiPublicHeaders();
+  ASSERT_FALSE(headers.empty());
+
+  for (const auto& header : headers) {
+    const auto contents = readSourceFile(header);
+    ASSERT_FALSE(contents.empty()) << header;
+    for (const auto token : forbiddenTokens) {
+      EXPECT_EQ(std::string::npos, contents.find(token))
+          << header << " exposes backend implementation token `" << token
+          << "`";
+    }
+  }
 }
 
 TEST(

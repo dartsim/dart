@@ -352,6 +352,8 @@ experimental surface is ready to promote.
 - Public API principles are accepted: DART concepts in public headers,
   renderer types private, no source compatibility promise for OSG renderer
   code.
+- Public header leakage checks cover the experimental GUI headers and should be
+  extended to the promoted `dart::gui` headers before first-class promotion.
 - Existing OSG GUI surfaces are audited into supported DART concepts,
   unsupported renderer-specific behaviors, and optional future extensions.
 
@@ -483,6 +485,9 @@ experimental surface is ready to promote.
 - Remove OSG implementation files, public OSG-shaped APIs, OSG-specific Python
   bindings, and OSG-only examples.
 - Remove the Raylib smoke experiment and related build options.
+- Delete or collapse backend-neutral scaffolding that exists only to support
+  multiple renderer implementations, while keeping DART-owned concepts such as
+  scene descriptors, tools, panels, debug draws, and camera/run options.
 - Remove migration-only shims after examples and docs no longer use them.
 
 **Exit criteria**

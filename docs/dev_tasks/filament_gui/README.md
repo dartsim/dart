@@ -214,7 +214,9 @@ longer express stable DART concepts.
 
 1. Use the north-star migration plan as the gate for any new public GUI API:
    DART-owned concepts only, no public backend types, and no OSG renderer
-   source-compatibility promise.
+   source-compatibility promise. Keep the experimental public-header leakage
+   test passing, and extend that check when APIs move into promoted
+   `dart::gui` headers.
 2. Keep the hosted Ubuntu `Filament GUI Smoke (GCC)` and
    `Filament GUI Smoke (Clang)` jobs green on each follow-up PR when the
    explicit pinned fetch path or Filament example behavior changes.
