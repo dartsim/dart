@@ -49,10 +49,10 @@
 ### Key Build Options
 
 ```cmake
-DART_BUILD_GUI          = ON   # Build the Filament-backed GUI library
-DART_BUILD_GUI_FILAMENT = ON   # Build the Filament GUI executable/example
+DART_BUILD_GUI          = ON   # Linux x86_64 default; OFF elsewhere unless explicitly enabled
+DART_BUILD_GUI_FILAMENT = ON   # Follows DART_BUILD_GUI unless explicitly set
 DART_USE_SYSTEM_FILAMENT     = ON   # Use installed Filament or Filament_ROOT
-DART_FETCH_FILAMENT          = ON   # Linux x86_64 pinned Filament fetch fallback
+DART_FETCH_FILAMENT          = ON   # Linux x86_64 default pinned Filament fetch fallback
 DART_BUILD_DARTPY           = OFF  # Build Python bindings
 DART_BUILD_PROFILE          = OFF  # Enable profiling support
 DART_ENABLE_SIMD            = OFF  # Enable SIMD instructions
@@ -196,8 +196,10 @@ dart/
 - **Purpose:** Maintained built-in 3D visualization and interaction renderer.
 - **Windowing/UI:** GLFW3 and Dear ImGui are private backend dependencies.
 - **Options:**
-  - `DART_BUILD_GUI=ON` builds `dart-gui`.
-  - `DART_BUILD_GUI_FILAMENT=ON` builds the `filament_gui` executable.
+  - `DART_BUILD_GUI=ON` builds `dart-gui`. It defaults to `ON` only on Linux
+    x86_64, where the pinned Filament archive is supported.
+  - `DART_BUILD_GUI_FILAMENT=ON` builds the `filament_gui` executable. It
+    follows `DART_BUILD_GUI` unless explicitly set.
   - `DART_FETCH_FILAMENT=ON` fetches the pinned Linux x86_64 Filament archive.
   - `DART_USE_SYSTEM_FILAMENT=ON` discovers an installed package or `Filament_ROOT`.
 
@@ -227,7 +229,7 @@ active build.
   - **System Mode** (`DART_USE_SYSTEM_FILAMENT=ON`): Finds an installed
     Filament tree, typically through `Filament_ROOT`
   - **Fetch Mode** (`DART_FETCH_FILAMENT=ON`): Explicitly fetches the pinned
-    Linux x86_64 Filament archive for smoke testing
+    Linux x86_64 Filament archive for source builds and smoke testing
 - **Migration:** The full replacement plan lives in
   [`docs/dev_tasks/filament_gui/08-north-star-migration.md`](../dev_tasks/filament_gui/08-north-star-migration.md).
   New public GUI APIs should describe DART concepts and keep Filament, GLFW,

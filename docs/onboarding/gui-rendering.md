@@ -46,6 +46,9 @@ is the official component target that links to it.
 ## Build Options
 
 - `DART_BUILD_GUI=ON`: builds the official Filament-backed GUI library.
+  Defaults to `ON` on Linux x86_64 source builds where DART can fetch the
+  pinned Filament archive; other platforms need an explicit Filament install or
+  `Filament_ROOT`.
 - `DART_BUILD_GUI_FILAMENT=ON`: builds `filament_gui` and related smoke-test
   plumbing. This is selected automatically when `DART_BUILD_GUI=ON`.
 - `DART_USE_SYSTEM_FILAMENT=ON`: discovers an installed Filament tree, usually

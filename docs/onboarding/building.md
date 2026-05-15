@@ -140,7 +140,10 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    ```
 
    Note: Official dartpy wheels include the Filament-backed GUI surface; keep
-   `DART_BUILD_GUI` enabled when validating dartpy GUI changes.
+   `DART_BUILD_GUI` enabled when validating dartpy GUI changes. The default
+   Pixi GUI build is enabled on Linux x86_64 where the pinned Filament archive
+   is available; other platforms should provide `Filament_ROOT` or set
+   `DART_BUILD_GUI_OVERRIDE=OFF` until packaged Filament is available there.
 
 3. Build and test:
 
@@ -272,7 +275,7 @@ For all available CMake configuration options and their defaults, refer to [`CMa
 
 - `CMAKE_BUILD_TYPE` - Build configuration (Release, Debug, etc.). Only applies to single-config generators (e.g., Ninja, Unix Makefiles). Multi-config generators (Visual Studio, Xcode) expose the configuration inside the IDE or via `cmake --build` `--config`.
 - `DART_BUILD_DARTPY` - Enable Python bindings
-- `DART_BUILD_GUI` - Enable the Filament-backed GUI library
+- `DART_BUILD_GUI` - Enable the Filament-backed GUI library. Defaults to `ON` on Linux x86_64 source builds where the pinned Filament archive is supported, and `OFF` elsewhere unless explicitly enabled.
 - `DART_BUILD_GUI_FILAMENT` - Enable the Filament GUI executable and smoke-test target
 - `DART_USE_SYSTEM_FILAMENT` - Discover Filament from an installed package or `Filament_ROOT`
 - `DART_FETCH_FILAMENT` - Fetch the pinned Linux x86_64 Filament archive when no packaged Filament install is available

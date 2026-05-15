@@ -526,8 +526,9 @@ surfaces have been removed.
 - Maintained examples no longer include Filament headers directly.
 - Any surviving `examples/filament_gui` tree remains a minimal DART GUI entry
   point rather than owning renderer architecture.
-- Filament dependency handling works in the supported source-build and wheel
-  workflows.
+- Filament dependency handling works in the supported Linux x86_64 source-build
+  and wheel workflows; other platforms require an explicit Filament install or
+  keep the GUI disabled until package support lands.
 - Maintainers accept the visual-quality gate for DART's built-in
   visualization/debugging workflows.
 

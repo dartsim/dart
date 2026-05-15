@@ -481,10 +481,10 @@ describe intermediate states that no longer exist in the source tree.
   descriptor, picking, debug-line, run-loop, camera, camera-controller,
   directional nudge, and screenshot helpers.
 - Promotion requires explicit visual-quality gates, including dynamic shadows.
-- The current Pixi environment does not provide Filament. The upstream Filament
-  Linux archive can be discovered with `Filament_ROOT`. It links and runs in
-  this checkout when compatible libc++/libc++abi libraries are added, but that
-  is still a local workaround rather than a supported packaging path.
+- The default source-build GUI path is enabled on Linux x86_64, where CMake can
+  fetch the pinned upstream Filament archive. Other platforms should provide
+  `Filament_ROOT` or keep `DART_BUILD_GUI=OFF` until packaged Filament is
+  available there.
 - `pixi run test-filament-gui-smoke` now exercises the explicit pinned
   `DART_FETCH_FILAMENT=ON` path on Linux x86_64, builds without the legacy OSG
   GUI target, and runs the default, hello-world, boxes, hardcoded-design,
