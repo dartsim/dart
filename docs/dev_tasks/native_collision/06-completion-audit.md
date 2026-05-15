@@ -102,7 +102,11 @@ unverified external and finalization gates:
   `test_collision_world` dangling-pointer issue in world-level sphere/capsule
   cast results; the world query layer now keeps stable collision-object handles
   for raycast, sphere-cast, and capsule-cast result pointers.
-- Downstream migration/deprecation evidence is still missing.
+- Local downstream migration evidence is refreshed: fresh gz-physics,
+  package-smoke, runtime-isolation, C++/Python compatibility-name, and direct
+  link-inspection checks all pass on `8c83cd19cb8`. Downstream deprecation
+  policy evidence is still missing before retained facades can be removed or
+  hard-deprecated.
 - Final compatibility-facade retention/deprecation evidence is still missing:
   the documented decision is to delete old external-engine runtime
   implementations, keep only native-backed compatibility facades required by
@@ -447,8 +451,8 @@ Additional inspected artifacts:
 | Native performance should beat the best legacy engine on required workloads, with feature first and correctness preserved.   | The current local broad benchmark guard passed at `892e50d02e4`; `README.md` records native wins on the measured primitive, narrowphase, supported distance, raycast, batch, mesh-heavy, and mixed workloads.                                                                                                                                                                                                                                                            | Local   |
 | Built-in layer architecture must be API-clean, scalable, and performance-oriented.                                           | `01-design.md` defines the public API boundary, compatibility shell, DART adapter scene, native scene/query core, query lifecycle, scalability design, performance hooks, and reference harness boundary. `README.md` mirrors this in the Architecture Completion Rubric, `docs/onboarding/architecture.md` now carries the durable built-in runtime architecture summary, and native `ShapeType` cleanup keeps the native taxonomy aligned with real supported classes. | Local   |
 | Architecture evidence must cover code, tests, package/source boundaries, and benchmark/profiling hooks, not only prose docs. | Code evidence exists for factory aliases, compatibility facades, persistent `DartCollisionGroup` scene state, cache IDs, source isolation, native shape taxonomy cleanup, wheel verifier wiring, package smoke, adapter benchmarks, and native/reference benchmark JSON. CI/artifact evidence remains missing.                                                                                                                                                           | Partial |
-| gz-physics compatibility must be preserved while legacy names migrate.                                                       | Fresh local `pixi run -e gazebo test-gz` passed 65/65 and package smoke passed. `05-downstream-migration.md` defines the compatibility contract and removal gates.                                                                                                                                                                                                                                                                                                       | Local   |
-| Downstream migration/deprecation path must be proven before removing retained facades.                                       | `05-downstream-migration.md` defines the migration order and gates. DART-side package smoke is local evidence only; downstream CI/deprecation evidence is still missing.                                                                                                                                                                                                                                                                                                 | Open    |
+| gz-physics compatibility must be preserved while legacy names migrate.                                                       | Fresh local `pixi run -e gazebo test-gz` passed 65/65 and package smoke passed. `readelf` shows the gz DART plugin and package-smoke executable use `libdart-collision-native.so` without old collision/reference runtime dependencies. `05-downstream-migration.md` defines the compatibility contract and removal gates.                                                                                                                                               | Local   |
+| Downstream migration/deprecation path must be proven before removing retained facades.                                       | `05-downstream-migration.md` defines the migration order and gates. Local primary evidence now covers fresh gz-physics, package smoke, runtime isolation, C++/Python compatibility names, and direct link inspection. Downstream deprecation policy evidence is still missing before retained facades can be removed or hard-deprecated.                                                                                                                                 | Open    |
 | Final PR evidence and cleanup must happen in the same PR.                                                                    | `README.md`, `02-milestones.md`, and `docs/dev_tasks/README.md` require transferring final evidence to the PR description and deleting `docs/dev_tasks/native_collision/` only at completion. Durable collision architecture notes have been seeded in onboarding docs, but PR evidence transfer and folder deletion remain open.                                                                                                                                        | Open    |
 
 Legend:
@@ -469,9 +473,10 @@ Legend:
    now covers native-only CI, gz-physics, the wheel matrix, and the collision
    benchmark guard artifact upload. Treat GitHub CI as reference evidence; use
    local build/test as the main validation surface.
-2. Record downstream migration/deprecation evidence proving gz-physics and
-   downstream users no longer depend on legacy names as runtime backend
-   selectors.
+2. Record downstream deprecation policy evidence proving downstream users no
+   longer depend on legacy names as runtime backend selectors before removing
+   or hard-deprecating retained facades. Local migration evidence is refreshed;
+   the remaining gap is policy/finalization, not the package/gz smoke itself.
 3. Apply the documented compatibility-facade policy in the final PR state:
    preserve only wrappers required for source compatibility, keep them
    native-backed, and keep all external engines reference-only.

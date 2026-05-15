@@ -27,9 +27,14 @@ strings, FCL/ODE facades preserve gz-required unsupported raycast behavior, a
 fresh local `pixi run -e gazebo test-gz` run passes 65/65 tests through the
 built-in detector, and a current native compatibility package smoke links the
 retained `collision-fcl`, `collision-bullet`, and `collision-ode` components to
-the built-in stack without installed old-engine runtime libraries. CI evidence
-and downstream migration/deprecation evidence are still required before
-retained compatibility facades can be removed or hard-deprecated.
+the built-in stack without installed old-engine runtime libraries. The local
+`8c83cd19cb8` refresh also checks the built artifacts directly: `readelf`
+shows the gz DART plugin and the native compatibility package smoke executable
+depend on `libdart-collision-native.so` without any
+`libdart-collision-reference-*`, FCL, Bullet, ODE, or libccd runtime
+dependency. Manual GitHub workflow runs are reference evidence only. Downstream
+migration/deprecation policy evidence is still required before retained
+compatibility facades can be removed or hard-deprecated.
 
 ## Downstream Work
 
@@ -53,19 +58,22 @@ The north-star PR cannot delete retained compatibility facades until these
 checks pass:
 
 1. `pixi run -e gazebo test-gz` passes without downstream patches. This is
-   complete locally from a fresh gz-physics clone; CI evidence is still needed.
+   complete locally from a fresh gz-physics clone on `8c83cd19cb8`; manual
+   GitHub gz-physics CI on `1e1faf6feb1` is reference evidence only.
 2. A downstream package smoke that requests `collision-fcl`,
    `collision-bullet`, and `collision-ode` links only the built-in `dart` stack.
    This is complete locally with the dev-task native compatibility package
-   smoke; downstream CI evidence is still needed.
+   smoke, and direct `readelf` inspection shows only `libdart-collision-native`
+   from the collision stack.
 3. Python compatibility names construct and report detector type `dart`.
 4. Source-tree and installed legacy detector headers compile without FCL,
    Bullet, or ODE headers in native-only builds.
 5. `check-collision-runtime-isolation` passes in lint, proving non-reference
    DART source paths do not include old-engine or reference-backend headers and
    legacy implementation sources remain under explicit `reference/` paths.
-6. CI wheel artifacts pass `wheel-verify`, including the collision-isolation
-   verifier.
+6. Wheel artifacts pass `wheel-verify`, including the collision-isolation
+   verifier. Local wheel verifier evidence exists, and the current wheel-matrix
+   workflow pass is reference evidence only until final PR packaging.
 7. Reference tests and benchmarks still have explicit opt-in access through
    `collision-reference-*` targets.
 

@@ -72,6 +72,18 @@ The latest downstream-migration slice documents the compatibility contract in
 compatibility facades so downstream users can see that retained legacy runtime
 names route to the built-in detector. The documented migration path still needs
 fresh gz-physics and package-smoke run evidence before final deletion.
+The current local downstream refresh on `8c83cd19cb8` now supplies that local
+evidence: `pixi run -e gazebo test-gz` rebuilt a fresh gz-physics checkout,
+patched only the DART version requirement, and printed `DART plugin built
+successfully with DART integration!`; the native compatibility package smoke
+passed; `pixi run check-collision-runtime-isolation` passed; the focused C++
+`test_legacy_compat_facades` CTest passed 1/1; and the focused Python
+`test_legacy_collision_detector_names_are_native_backed` pytest passed 1/1.
+`readelf` on both the gz DART plugin and the package-smoke executable shows
+they depend on `libdart-collision-native.so` without any
+`libdart-collision-reference-*`, FCL, Bullet, ODE, or libccd runtime
+dependency. The remaining downstream gate is deprecation policy/finalization
+evidence before removing or hard-deprecating retained facades.
 The latest runtime-isolation slice adds
 `scripts/check_collision_runtime_isolation.py` and wires it into `lint` and
 `check-lint` so non-reference DART source paths cannot include FCL, Bullet,
