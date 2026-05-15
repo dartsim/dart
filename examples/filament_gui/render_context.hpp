@@ -30,86 +30,57 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_FILAMENT_GUI_RENDER_ENVIRONMENT_HPP_
-#define EXAMPLES_FILAMENT_GUI_RENDER_ENVIRONMENT_HPP_
+#ifndef EXAMPLES_FILAMENT_GUI_RENDER_CONTEXT_HPP_
+#define EXAMPLES_FILAMENT_GUI_RENDER_CONTEXT_HPP_
 
 #include <utils/Entity.h>
 
 namespace filament {
 
 class Camera;
-class ColorGrading;
 class Engine;
-class IndirectLight;
+class Renderer;
 class Scene;
-class Skybox;
+class SwapChain;
 class View;
 
 } // namespace filament
 
 namespace dart::gui::experimental {
 
-struct OrbitCamera;
+struct RunOptions;
 
 } // namespace dart::gui::experimental
 
 namespace dart::examples::filament_gui {
 
-struct SceneLights
+struct FilamentRenderContext
 {
-  utils::Entity key;
-  utils::Entity fill;
-  utils::Entity rim;
+  filament::Engine* engine = nullptr;
+  filament::Renderer* renderer = nullptr;
+  filament::SwapChain* swapChain = nullptr;
+  filament::View* view = nullptr;
+  filament::Scene* scene = nullptr;
+  filament::Camera* camera = nullptr;
+  utils::Entity cameraEntity;
 };
 
-filament::ColorGrading* createDebugColorGrading(filament::Engine& engine);
+FilamentRenderContext createFilamentRenderContext(
+    const dart::gui::experimental::RunOptions& options,
+    void* nativeWindow);
 
-filament::IndirectLight* createNeutralIndirectLight(filament::Engine& engine);
+bool beginFilamentFrame(FilamentRenderContext& context);
 
-filament::Skybox* createNeutralSkybox(filament::Engine& engine);
+bool shouldSkipRenderedWorkAfterFrameSkip(
+    const FilamentRenderContext& context, bool headless);
 
-void configureWindowedViewQuality(filament::View& view);
+void renderFilamentViews(
+    FilamentRenderContext& context, filament::View* overlayView);
 
-void configureMainView(
-    filament::View& view, filament::ColorGrading* colorGrading, bool headless);
+void endFilamentFrame(FilamentRenderContext& context);
 
-void clearMainViewColorGrading(filament::View& view);
-
-void configureViewportCamera(
-    filament::View& view,
-    filament::Camera& camera,
-    const dart::gui::experimental::OrbitCamera& orbitCamera,
-    int width,
-    int height);
-
-SceneLights createSceneLights(
-    filament::Engine& engine,
-    bool headless,
-    bool orbitLight,
-    double orbitPeriodSeconds);
-
-void attachSceneEnvironment(
-    filament::Scene& scene,
-    filament::IndirectLight* indirectLight,
-    filament::Skybox* skybox,
-    const SceneLights& lights);
-
-void detachSceneEnvironment(filament::Scene& scene, const SceneLights& lights);
-
-void destroySceneLights(filament::Engine& engine, const SceneLights& lights);
-
-void destroyRenderEnvironmentResources(
-    filament::Engine& engine,
-    filament::IndirectLight* indirectLight,
-    filament::Skybox* skybox,
-    filament::ColorGrading* colorGrading);
-
-void updateOrbitingKeyLight(
-    filament::Engine& engine,
-    const SceneLights& sceneLights,
-    double elapsedSeconds,
-    double orbitPeriodSeconds);
+void destroyFilamentRenderContext(FilamentRenderContext& context);
 
 } // namespace dart::examples::filament_gui
 
-#endif // EXAMPLES_FILAMENT_GUI_RENDER_ENVIRONMENT_HPP_
+#endif // EXAMPLES_FILAMENT_GUI_RENDER_CONTEXT_HPP_

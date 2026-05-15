@@ -122,6 +122,10 @@
   `examples/filament_gui/*.hpp` has no direct Filament header includes, while
   the full north-star metric remains zero direct Filament header includes from
   maintained examples after promotion.
+- The Filament example's engine, renderer, swap-chain, main view, scene,
+  camera lifecycle, and begin/render/end frame calls now live in
+  `examples/filament_gui/render_context.hpp` and `.cpp`, leaving `main.cpp`
+  without direct Filament header includes.
 - The Filament example's neutral lighting, light entity creation and orbit
   update, scene environment binding, color grading, viewport/camera
   application, and windowed view-quality setup now live in
@@ -141,7 +145,7 @@
   `examples/filament_gui/renderable_sync.hpp` and `.cpp`.
 - The Filament example's scene option parsing and reusable DART world fixtures
   now live in `examples/filament_gui/scenes.hpp` and `.cpp`; `main.cpp` remains
-  focused on renderer resources, synchronization, input, and the built-in panel.
+  focused on synchronization, input, and the built-in panel.
 - `dartpy.gui.experimental` now exposes the constrained backend-hidden
   descriptor, picking, frame-translation, debug-line, run-option, viewer
   lifecycle, screenshot storage, orbit-camera, orbit-camera controller,

@@ -139,6 +139,22 @@ void configureWindowedViewQuality(filament::View& view)
   view.setDithering(filament::Dithering::NONE);
 }
 
+void configureMainView(
+    filament::View& view, filament::ColorGrading* colorGrading, bool headless)
+{
+  view.setColorGrading(colorGrading);
+  view.setShadowingEnabled(true);
+  view.setShadowType(filament::ShadowType::PCF);
+  if (!headless) {
+    configureWindowedViewQuality(view);
+  }
+}
+
+void clearMainViewColorGrading(filament::View& view)
+{
+  view.setColorGrading(nullptr);
+}
+
 void configureViewportCamera(
     filament::View& view,
     filament::Camera& camera,
@@ -262,12 +278,24 @@ void destroySceneLights(filament::Engine& engine, const SceneLights& lights)
   utils::EntityManager::get().destroy(lights.rim);
 }
 
+void destroyRenderEnvironmentResources(
+    filament::Engine& engine,
+    filament::IndirectLight* indirectLight,
+    filament::Skybox* skybox,
+    filament::ColorGrading* colorGrading)
+{
+  engine.destroy(indirectLight);
+  engine.destroy(skybox);
+  engine.destroy(colorGrading);
+}
+
 void updateOrbitingKeyLight(
-    filament::LightManager& lights,
+    filament::Engine& engine,
     const SceneLights& sceneLights,
     double elapsedSeconds,
     double orbitPeriodSeconds)
 {
+  auto& lights = engine.getLightManager();
   lights.setDirection(
       lights.getInstance(sceneLights.key),
       orbitingKeyLightDirection(elapsedSeconds, orbitPeriodSeconds));

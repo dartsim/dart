@@ -34,6 +34,7 @@
 #include "input.hpp"
 #include "native_window.hpp"
 #include "profile.hpp"
+#include "render_context.hpp"
 #include "render_environment.hpp"
 #include "renderable_factory.hpp"
 #include "renderable_resources.hpp"
@@ -57,11 +58,6 @@
 #include <dart/utils/urdf/All.hpp>
 
 #include <GLFW/glfw3.h>
-#include <filament/Engine.h>
-#include <filament/Renderer.h>
-#include <filament/SwapChain.h>
-#include <filament/View.h>
-#include <utils/EntityManager.h>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -145,6 +141,7 @@ using dart::simulation::World;
 using dart::examples::filament_gui::AppOptions;
 using dart::examples::filament_gui::DartScene;
 using dart::examples::filament_gui::ExampleScene;
+using dart::examples::filament_gui::FilamentRenderContext;
 using dart::examples::filament_gui::ImGuiOverlay;
 using dart::examples::filament_gui::MaterialResources;
 using dart::examples::filament_gui::MaterialSet;
@@ -155,10 +152,13 @@ using dart::examples::filament_gui::SceneRenderable;
 using dart::examples::filament_gui::SceneLights;
 using dart::examples::filament_gui::addRenderableToScene;
 using dart::examples::filament_gui::attachSceneEnvironment;
-using dart::examples::filament_gui::configureWindowedViewQuality;
+using dart::examples::filament_gui::beginFilamentFrame;
+using dart::examples::filament_gui::clearMainViewColorGrading;
+using dart::examples::filament_gui::configureMainView;
 using dart::examples::filament_gui::configureViewportCamera;
 using dart::examples::filament_gui::createDartScene;
 using dart::examples::filament_gui::createDebugColorGrading;
+using dart::examples::filament_gui::createFilamentRenderContext;
 using dart::examples::filament_gui::createDebugLineRenderable;
 using dart::examples::filament_gui::createImGuiOverlay;
 using dart::examples::filament_gui::createMaterialResources;
@@ -166,12 +166,15 @@ using dart::examples::filament_gui::createNeutralIndirectLight;
 using dart::examples::filament_gui::createNeutralSkybox;
 using dart::examples::filament_gui::createRenderableFromDescriptor;
 using dart::examples::filament_gui::createSceneLights;
+using dart::examples::filament_gui::destroyFilamentRenderContext;
 using dart::examples::filament_gui::destroyImGuiOverlay;
 using dart::examples::filament_gui::destroyMaterialResources;
 using dart::examples::filament_gui::destroyRenderable;
+using dart::examples::filament_gui::destroyRenderEnvironmentResources;
 using dart::examples::filament_gui::destroySceneLights;
 using dart::examples::filament_gui::detachSceneEnvironment;
 using dart::examples::filament_gui::elapsedMs;
+using dart::examples::filament_gui::endFilamentFrame;
 using dart::examples::filament_gui::handleScroll;
 using dart::examples::filament_gui::initialCameraForScene;
 using dart::examples::filament_gui::isDragModifierDown;
@@ -198,12 +201,14 @@ using dart::examples::filament_gui::logUnsupportedRenderableDescriptorOnce;
 using dart::examples::filament_gui::removeRenderableFromScene;
 using dart::examples::filament_gui::parseOptions;
 using dart::examples::filament_gui::printProfile;
+using dart::examples::filament_gui::renderFilamentViews;
 using dart::examples::filament_gui::requestScreenshot;
 using dart::examples::filament_gui::saveScreenshot;
 using dart::examples::filament_gui::sceneName;
 using dart::examples::filament_gui::selectedNudgeFromKeyboard;
 using dart::examples::filament_gui::selectionLabelForRenderable;
 using dart::examples::filament_gui::setRenderableTransform;
+using dart::examples::filament_gui::shouldSkipRenderedWorkAfterFrameSkip;
 using dart::examples::filament_gui::synchronizeSceneRenderables;
 using dart::examples::filament_gui::translateRenderableAndApplyIk;
 using dart::examples::filament_gui::updateCameraController;
@@ -212,7 +217,6 @@ using dart::examples::filament_gui::updateImGuiMouseInput;
 using dart::examples::filament_gui::updateSceneRenderableFromDescriptor;
 using dart::examples::filament_gui::updateOrbitingKeyLight;
 using dart::examples::filament_gui::waitForScreenshot;
-using utils::EntityManager;
 
 
 } // namespace
@@ -255,33 +259,16 @@ int main(int argc, char* argv[])
     glfwSetScrollCallback(window, handleScroll);
   }
 
-  auto* engine = filament::Engine::create(filament::Engine::Backend::OPENGL);
-  auto* renderer = engine->createRenderer();
-  if (options.headless) {
-    filament::Renderer::DisplayInfo displayInfo;
-    displayInfo.refreshRate = 0.0f;
-    renderer->setDisplayInfo(displayInfo);
-  }
-  auto* swapChain = options.headless
-                        ? engine->createSwapChain(
-                              static_cast<std::uint32_t>(options.width),
-                              static_cast<std::uint32_t>(options.height))
-                        : engine->createSwapChain(getNativeWindow(window));
-  auto* view = engine->createView();
-  auto* scene = engine->createScene();
-  auto cameraEntity = EntityManager::get().create();
-  auto* camera = engine->createCamera(cameraEntity);
-  view->setScene(scene);
-  view->setCamera(camera);
+  FilamentRenderContext renderContext = createFilamentRenderContext(
+      options, options.headless ? nullptr : getNativeWindow(window));
+  auto* engine = renderContext.engine;
+  auto* view = renderContext.view;
+  auto* scene = renderContext.scene;
+  auto* camera = renderContext.camera;
   auto* colorGrading = createDebugColorGrading(*engine);
-  view->setColorGrading(colorGrading);
-  view->setShadowingEnabled(true);
-  view->setShadowType(filament::ShadowType::PCF);
+  configureMainView(*view, colorGrading, options.headless);
   auto* indirectLight = createNeutralIndirectLight(*engine);
   auto* skybox = createNeutralSkybox(*engine);
-  if (!options.headless) {
-    configureWindowedViewQuality(*view);
-  }
 
   MaterialResources materialResources = createMaterialResources(*engine);
   const MaterialSet materials = materialResources.materialSet();
@@ -1000,10 +987,7 @@ int main(int argc, char* argv[])
                                              - orbitStartClock)
                                              .count();
       updateOrbitingKeyLight(
-          engine->getLightManager(),
-          lights,
-          orbitElapsedSeconds,
-          appOptions.orbitLightPeriodSeconds);
+          *engine, lights, orbitElapsedSeconds, appOptions.orbitLightPeriodSeconds);
     }
 
     phaseStart = ProfileAccumulator::Clock::now();
@@ -1190,12 +1174,13 @@ int main(int argc, char* argv[])
         = shouldRequestScreenshot(options, lifecycle);
 
     const auto renderFrameStart = ProfileAccumulator::Clock::now();
-    const bool shouldRenderFrame = renderer->beginFrame(swapChain);
+    const bool shouldRenderFrame = beginFilamentFrame(renderContext);
     profile.beginFrameMs += elapsedMs(renderFrameStart);
     if (!shouldRenderFrame) {
       markFrameSkipped(lifecycle);
       ++profile.skippedFrames;
-      if (!options.headless || !renderer->shouldRenderFrame()) {
+      if (shouldSkipRenderedWorkAfterFrameSkip(
+              renderContext, options.headless)) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
         const double frameMs = elapsedMs(frameStart);
         profile.frameMs += frameMs;
@@ -1209,19 +1194,17 @@ int main(int argc, char* argv[])
     }
 
     phaseStart = ProfileAccumulator::Clock::now();
-    renderer->render(view);
-    if (appOptions.showUi) {
-      renderer->render(imguiOverlay.view);
-    }
+    renderFilamentViews(
+        renderContext, appOptions.showUi ? imguiOverlay.view : nullptr);
     if (shouldCaptureScreenshot) {
       requestScreenshot(
-          *renderer,
+          *renderContext.renderer,
           screenshotCapture,
           static_cast<std::uint32_t>(width),
           static_cast<std::uint32_t>(height));
       markScreenshotRequested(lifecycle);
     }
-    renderer->endFrame();
+    endFilamentFrame(renderContext);
     ++profile.renderedFrames;
     const double renderMs = elapsedMs(phaseStart);
     profile.renderMs += renderMs;
@@ -1266,7 +1249,7 @@ int main(int argc, char* argv[])
   ImGui::DestroyContext();
 
   detachSceneEnvironment(*scene, lights);
-  view->setColorGrading(nullptr);
+  clearMainViewColorGrading(*view);
   for (const SceneRenderable& sceneRenderable : sceneRenderables) {
     removeRenderableFromScene(*scene, sceneRenderable.renderable);
   }
@@ -1280,9 +1263,8 @@ int main(int argc, char* argv[])
     removeRenderableFromScene(*scene, *selectionDebugOverlay);
   }
   destroySceneLights(*engine, lights);
-  engine->destroy(indirectLight);
-  engine->destroy(skybox);
-  engine->destroy(colorGrading);
+  destroyRenderEnvironmentResources(
+      *engine, indirectLight, skybox, colorGrading);
   for (SceneRenderable& sceneRenderable : sceneRenderables) {
     destroyRenderable(*engine, sceneRenderable.renderable);
   }
@@ -1296,13 +1278,7 @@ int main(int argc, char* argv[])
     destroyRenderable(*engine, *debugOverlay);
   }
   destroyMaterialResources(*engine, materialResources);
-  engine->destroyCameraComponent(cameraEntity);
-  EntityManager::get().destroy(cameraEntity);
-  engine->destroy(view);
-  engine->destroy(scene);
-  engine->destroy(renderer);
-  engine->destroy(swapChain);
-  filament::Engine::destroy(&engine);
+  destroyFilamentRenderContext(renderContext);
 
   if (window != nullptr) {
     glfwDestroyWindow(window);

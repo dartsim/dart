@@ -105,6 +105,10 @@ direct Filament sampler include.
 `UNIT_gui_FilamentSceneExtraction` also checks that
 `examples/filament_gui/*.hpp` has no direct Filament header includes; this is
 only a header-level guard, not completion of the full example include metric.
+Example-local engine, renderer, swap-chain, main view, scene, camera lifecycle,
+and begin/render/end frame calls live in
+`examples/filament_gui/render_context.hpp` and `.cpp`; `main.cpp` now has zero
+direct Filament header includes.
 Example-local neutral lighting/color grading, light entity creation and orbit
 updates, scene environment binding, viewport/camera application, and windowed
 view-quality setup live in `examples/filament_gui/render_environment.hpp` and
@@ -234,8 +238,8 @@ dynamic casts. Unsupported shapes now produce diagnostic descriptors instead of
 being silently dropped by the extraction layer.
 The Filament example scene option parsing and reusable DART world fixtures now
 live in `examples/filament_gui/scenes.hpp` and `.cpp`, leaving
-`examples/filament_gui/main.cpp` focused on Filament resources, synchronization,
-input, and the built-in panel.
+`examples/filament_gui/main.cpp` focused on synchronization, input, and the
+built-in panel.
 `MeshShape` triangle geometry, texture coordinates, imported vertex normals,
 material, texture-path, and submesh metadata now flow through renderer-hidden
 descriptors, and the Filament example consumes that descriptor metadata for
