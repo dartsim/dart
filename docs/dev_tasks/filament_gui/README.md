@@ -189,7 +189,8 @@
 - The Filament example's scene content requirement counting and
   MVP/G1/hello-world/boxes/hardcoded-design/rigid-chain/rigid-loop/
   mixed-chain/coupler-constraint/add-delete-skels/vehicle/hybrid-dynamics/
-  joint-constraints/free-joint-cases/mimic-pendulums/atlas-puppet/
+  joint-constraints/free-joint-cases/human-joint-limits/
+  mimic-pendulums/atlas-puppet/
   operational-space-control/drag/
   simple-frames/
   soft-bodies/point-cloud/capsule-ground-contact/simulation-event-handler/
@@ -313,6 +314,13 @@
   `pixi run ex free_joint_cases` runner now routes to that Filament scene while
   the legacy standalone OSG/ImGui source remains available for numeric-check
   and reference-model control comparison.
+- The Filament example includes `--scene human-joint-limits`, a Kima human
+  fixture that carries the legacy `human_joint_limits` visual workflow through
+  descriptor-owned mesh, multi-sphere, box, and ground renderables with DART
+  joint-limit enforcement enabled. The in-tree
+  `pixi run ex human_joint_limits` runner now routes to that Filament scene
+  while the legacy standalone source remains available for the custom
+  TinyDNN-backed arm and leg constraint comparison.
 - The Filament example includes `--scene mimic-pendulums`, an SDF-loaded
   pendulum-rig fixture that carries the legacy `mimic_pendulums` example
   through descriptor-owned cylinder, box, and ground renderables. The in-tree
@@ -430,7 +438,8 @@
   GUI target, and runs the default, hello-world, boxes, hardcoded-design,
   rigid-chain, rigid-loop, mixed-chain, coupler-constraint, add-delete-skels,
   vehicle, hybrid-dynamics, joint-constraints, free-joint-cases,
-  mimic-pendulums, atlas-puppet, operational-space-control, drag-and-drop,
+  human-joint-limits, mimic-pendulums, atlas-puppet, operational-space-control,
+  drag-and-drop,
   simple-frames, soft-bodies,
   point-cloud, capsule-ground-contact, simulation-event-handler, polyhedron,
   and heightmap headless CTest smokes.

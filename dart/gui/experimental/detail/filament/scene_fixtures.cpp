@@ -343,6 +343,37 @@ void makeVisualOnlySkeleton(const dart::dynamics::SkeletonPtr& skeleton)
   disableSkeletonCollisionAndGravity(skeleton);
 }
 
+void setRequiredJointPositions(
+    const dart::dynamics::SkeletonPtr& skeleton,
+    const char* jointName,
+    const std::vector<double>& positions)
+{
+  if (!skeleton) {
+    throw std::runtime_error(
+        "Cannot pose joint " + std::string(jointName)
+        + " because the skeleton is null");
+  }
+
+  auto* joint = skeleton->getJoint(jointName);
+  if (joint == nullptr) {
+    throw std::runtime_error(
+        "human_joint_limits fixture is missing joint: "
+        + std::string(jointName));
+  }
+
+  if (joint->getNumDofs() != positions.size()) {
+    throw std::runtime_error(
+        "human_joint_limits fixture joint " + std::string(jointName)
+        + " has an unexpected DOF count");
+  }
+
+  Eigen::VectorXd q(positions.size());
+  for (std::size_t i = 0; i < positions.size(); ++i) {
+    q[static_cast<Eigen::Index>(i)] = positions[i];
+  }
+  joint->setPositions(q);
+}
+
 dart::dynamics::SkeletonPtr loadRequiredWamRobotSkeleton()
 {
   dart::io::ReadOptions options;
@@ -2577,6 +2608,76 @@ DartScene createFreeJointCasesScene()
   scene.preStep = [controller = std::move(controller)]() {
     controller->preStep();
   };
+
+  return scene;
+}
+
+DartScene createHumanJointLimitsScene()
+{
+  DartScene scene;
+  const dart::common::Uri worldUri = dart::common::Uri::createFromPath(
+      dart::config::dataPath("skel/kima/kima_human_edited.skel"));
+  scene.world = dart::io::readWorld(worldUri);
+  if (!scene.world) {
+    throw std::runtime_error(
+        "Failed to load human_joint_limits fixture from "
+        + worldUri.toString());
+  }
+  scene.world->setGravity(Eigen::Vector3d::Zero());
+
+  auto ground = scene.world->getSkeleton("ground skeleton");
+  if (!ground) {
+    throw std::runtime_error("human_joint_limits fixture is missing ground");
+  }
+  ground->setName(kHumanJointLimitsFixtureGroundSkeletonName);
+  makeVisualOnlySkeleton(ground);
+  if (auto* body = ground->getBodyNode("ground")) {
+    body->setColor(Eigen::Vector3d(0.58, 0.62, 0.60));
+  }
+
+  auto human = scene.world->getSkeleton("human");
+  if (!human) {
+    throw std::runtime_error("human_joint_limits fixture is missing human");
+  }
+  human->setName(kHumanJointLimitsFixtureSkeletonName);
+  makeVisualOnlySkeleton(human);
+  human->eachJoint([](dart::dynamics::Joint* joint) {
+    joint->setLimitEnforcement(true);
+  });
+
+  setRequiredJointPositions(human, "j_bicep_left", {-0.35, 0.20, 0.55});
+  setRequiredJointPositions(human, "j_forearm_left", {0.75});
+  setRequiredJointPositions(human, "j_bicep_right", {0.35, 0.20, -0.55});
+  setRequiredJointPositions(human, "j_forearm_right", {0.75});
+  setRequiredJointPositions(human, "j_thigh_left", {0.08, -0.12, 0.08});
+  setRequiredJointPositions(human, "j_shin_left", {0.28});
+  setRequiredJointPositions(human, "j_heel_left", {-0.12, 0.05});
+  setRequiredJointPositions(human, "j_thigh_right", {-0.08, -0.12, -0.08});
+  setRequiredJointPositions(human, "j_shin_right", {0.28});
+  setRequiredJointPositions(human, "j_heel_right", {-0.12, -0.05});
+
+  for (std::size_t i = 0; i < human->getNumBodyNodes(); ++i) {
+    auto* body = human->getBodyNode(i);
+    if (body == nullptr) {
+      continue;
+    }
+    const double t = human->getNumBodyNodes() <= 1
+                         ? 0.0
+                         : static_cast<double>(i)
+                               / static_cast<double>(
+                                   human->getNumBodyNodes() - 1);
+    body->setColor(
+        Eigen::Vector3d(0.68 + 0.10 * t, 0.52 + 0.10 * t, 0.38 + 0.08 * t));
+  }
+  if (auto* pelvis = human->getBodyNode("pelvis")) {
+    pelvis->setColor(Eigen::Vector3d(0.42, 0.50, 0.66));
+  }
+  if (auto* thorax = human->getBodyNode("thorax")) {
+    thorax->setColor(Eigen::Vector3d(0.36, 0.54, 0.70));
+  }
+  if (auto* head = human->getBodyNode("head")) {
+    head->setColor(Eigen::Vector3d(0.84, 0.68, 0.52));
+  }
 
   return scene;
 }

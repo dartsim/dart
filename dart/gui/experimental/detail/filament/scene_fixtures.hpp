@@ -63,6 +63,8 @@ DartScene createJointConstraintsScene();
 
 DartScene createFreeJointCasesScene();
 
+DartScene createHumanJointLimitsScene();
+
 DartScene createMimicPendulumsScene();
 
 DartScene createAtlasPuppetScene();

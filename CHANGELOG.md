@@ -225,6 +225,11 @@
     Filament fixture for the zero-gravity free-joint bodies and transparent
     torque-free reference boxes while the legacy standalone source remains
     available for the ImGui numeric checks and reference-model controls.
+    The `human_joint_limits` runner now routes to a
+    `--scene human-joint-limits` Filament fixture for the Kima human visual,
+    DART joint-limit enforcement, and descriptor-owned mesh, multi-sphere,
+    box, and ground renderables while the legacy standalone source remains
+    available for the custom TinyDNN-backed arm and leg constraints.
     The focused GUI unit test now
     checks that
     `examples/filament_gui` contains no C++ source/header

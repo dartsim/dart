@@ -12,6 +12,10 @@
 ## Notes
 
 - Requires TinyDNN and DART built with both Bullet and ODE collision backends.
+- Inside the source tree, `pixi run ex human_joint_limits` routes to
+  `examples/filament_gui --scene human-joint-limits` so the in-tree runner uses
+  the maintained Filament path. This standalone source remains comparison
+  material for the custom TinyDNN-backed arm and leg constraints.
 
 This project is dependent on DART. Please make sure a proper version of DART is
 installed before building this project.

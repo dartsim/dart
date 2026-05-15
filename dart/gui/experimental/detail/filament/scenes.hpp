@@ -80,6 +80,7 @@ enum class ExampleScene
   HybridDynamics,
   JointConstraints,
   FreeJointCases,
+  HumanJointLimits,
   MimicPendulums,
   AtlasPuppet,
   OperationalSpaceControl,
@@ -163,6 +164,10 @@ inline constexpr const char* kFreeJointCasesActiveSkeletonPrefix
     = "visual_free_joint_case_active_";
 inline constexpr const char* kFreeJointCasesReferenceSkeletonPrefix
     = "visual_free_joint_case_reference_";
+inline constexpr const char* kHumanJointLimitsFixtureSkeletonName
+    = "visual_human_joint_limits_human";
+inline constexpr const char* kHumanJointLimitsFixtureGroundSkeletonName
+    = "visual_human_joint_limits_ground";
 inline constexpr const char* kMimicPendulumsFixtureSkeletonPrefix
     = "visual_mimic_pendulums_";
 inline constexpr const char* kMimicPendulumsFixtureGroundSkeletonName
@@ -221,6 +226,10 @@ inline constexpr std::size_t kHybridDynamicsFixtureGroundCount = 1;
 inline constexpr std::size_t kJointConstraintsFixtureBipedBoxCount = 20;
 inline constexpr std::size_t kJointConstraintsFixtureGroundCount = 1;
 inline constexpr std::size_t kFreeJointCasesCaseCount = 5;
+inline constexpr std::size_t kHumanJointLimitsFixtureMeshCount = 6;
+inline constexpr std::size_t kHumanJointLimitsFixtureMultiSphereCount = 8;
+inline constexpr std::size_t kHumanJointLimitsFixtureBoxCount = 4;
+inline constexpr std::size_t kHumanJointLimitsFixtureGroundCount = 1;
 inline constexpr std::size_t kMimicPendulumsFixtureBoxCount = 4;
 inline constexpr std::size_t kMimicPendulumsFixtureCylinderCount = 15;
 inline constexpr std::size_t kMimicPendulumsFixtureGroundCount = 1;

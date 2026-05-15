@@ -270,7 +270,8 @@ for Linux x86_64. It configures with `DART_BUILD_GUI=OFF` and
 `DART_BUILD_DARTPY=OFF`, builds `dart_filament_gui`, and runs the default,
 hello-world, boxes, hardcoded-design, rigid-chain, rigid-loop, mixed-chain,
 coupler-constraint, add-delete-skels, vehicle, hybrid-dynamics,
-joint-constraints, free-joint-cases, mimic-pendulums, atlas-puppet,
+joint-constraints, free-joint-cases, human-joint-limits, mimic-pendulums,
+atlas-puppet,
 operational-space-control, drag-and-drop,
 simple-frames, soft-bodies, point-cloud, capsule-ground-contact,
 simulation-event-handler, polyhedron, and heightmap headless CTest smokes.
@@ -348,6 +349,11 @@ free-joint cases, renders active and transparent reference box descriptors,
 and advances the reference bodies through a private torque-free pre-step hook
 while keeping the standalone source as legacy OSG/ImGui comparison material
 for numeric checks and reference-model controls. It routes
+`pixi run ex human_joint_limits` through the Filament example's selectable
+`--scene human-joint-limits` fixture, which loads the legacy Kima human SKEL,
+enables DART joint-limit enforcement, and renders mesh, multi-sphere, box, and
+ground descriptors while keeping the standalone source as legacy comparison
+material for the custom TinyDNN-backed arm and leg constraints. It routes
 `pixi run ex mimic_pendulums` through the Filament example's selectable
 `--scene mimic-pendulums` fixture, which loads the legacy SDF pendulum rigs and
 renders cylinder, box, and ground descriptors while keeping the standalone
@@ -432,7 +438,8 @@ DART world fixtures now live in
 Scene content requirement counting and
 MVP/G1/hello-world/boxes/hardcoded-design/rigid-chain/rigid-loop/mixed-chain/
 coupler-constraint/add-delete-skels/vehicle/hybrid-dynamics/joint-constraints/
-free-joint-cases/mimic-pendulums/atlas-puppet/operational-space-control/drag/
+free-joint-cases/human-joint-limits/mimic-pendulums/atlas-puppet/
+operational-space-control/drag/
 simple-frames/soft-bodies/
 point-cloud/capsule-ground-contact/simulation-event-handler/polyhedron/
 heightmap validation gates, including created-renderable content counting, now live in

@@ -27,6 +27,7 @@ FILAMENT_SMOKE_PATTERN = (
     "EXAMPLE_filament_gui_hybrid_dynamics_headless_smoke|"
     "EXAMPLE_filament_gui_joint_constraints_headless_smoke|"
     "EXAMPLE_filament_gui_free_joint_cases_headless_smoke|"
+    "EXAMPLE_filament_gui_human_joint_limits_headless_smoke|"
     "EXAMPLE_filament_gui_mimic_pendulums_headless_smoke|"
     "EXAMPLE_filament_gui_atlas_puppet_headless_smoke|"
     "EXAMPLE_filament_gui_operational_space_control_headless_smoke|"
@@ -149,6 +150,12 @@ EXAMPLE_SPECS = {
         "filament_gui",
         ("filament",),
         ("--scene", "free-joint-cases"),
+    ),
+    "human_joint_limits": ExampleSpec(
+        "dart_filament_gui",
+        "filament_gui",
+        ("filament",),
+        ("--scene", "human-joint-limits"),
     ),
     "mimic_pendulums": ExampleSpec(
         "dart_filament_gui",
@@ -510,6 +517,7 @@ def _split_filament_scenes(run_args: list[str]) -> tuple[list[str], list[str]]:
                 "hybrid-dynamics",
                 "joint-constraints",
                 "free-joint-cases",
+                "human-joint-limits",
                 "mimic-pendulums",
                 "atlas-puppet",
                 "operational-space-control",

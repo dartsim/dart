@@ -243,6 +243,22 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Box) {
     ++counts.freeJointCasesReferenceBoxes;
   }
+  if (descriptor.skeletonName == kHumanJointLimitsFixtureSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Mesh) {
+    ++counts.humanJointLimitsMeshes;
+  }
+  if (descriptor.skeletonName == kHumanJointLimitsFixtureSkeletonName
+      && descriptor.geometry.kind == ShapeKind::MultiSphere) {
+    ++counts.humanJointLimitsMultiSpheres;
+  }
+  if (descriptor.skeletonName == kHumanJointLimitsFixtureSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.humanJointLimitsBoxes;
+  }
+  if (descriptor.skeletonName == kHumanJointLimitsFixtureGroundSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.humanJointLimitsGrounds;
+  }
   if (descriptor.skeletonName.starts_with(kMimicPendulumsFixtureSkeletonPrefix)
       && descriptor.skeletonName != kMimicPendulumsFixtureGroundSkeletonName
       && descriptor.geometry.kind == ShapeKind::Box) {
@@ -740,6 +756,39 @@ bool validateSceneDescriptorContent(
         output);
   }
 
+  if (scene == ExampleScene::HumanJointLimits) {
+    if (!requireAtLeast(
+            counts.humanJointLimitsMeshes,
+            kHumanJointLimitsFixtureMeshCount,
+            "human-joint-limits scene",
+            "visible Kima mesh renderable descriptors",
+            output)) {
+      return false;
+    }
+    if (!requireEqual(
+            counts.humanJointLimitsMultiSpheres,
+            kHumanJointLimitsFixtureMultiSphereCount,
+            "human-joint-limits scene",
+            "visible limb multi-sphere renderable descriptors",
+            output)) {
+      return false;
+    }
+    if (!requireEqual(
+            counts.humanJointLimitsBoxes,
+            kHumanJointLimitsFixtureBoxCount,
+            "human-joint-limits scene",
+            "visible foot/toe box renderable descriptors",
+            output)) {
+      return false;
+    }
+    return requireEqual(
+        counts.humanJointLimitsGrounds,
+        kHumanJointLimitsFixtureGroundCount,
+        "human-joint-limits scene",
+        "visible ground renderable descriptor",
+        output);
+  }
+
   if (scene == ExampleScene::MimicPendulums) {
     if (!requireEqual(
             counts.mimicPendulumsBoxes,
@@ -1211,6 +1260,35 @@ bool validateCreatedSceneContent(
         created.freeJointCasesReferenceBoxes,
         expected.freeJointCasesReferenceBoxes,
         "free-joint-cases reference box renderables",
+        output);
+  }
+
+  if (scene == ExampleScene::HumanJointLimits) {
+    if (!requireCreatedAtLeast(
+            created.humanJointLimitsMeshes,
+            expected.humanJointLimitsMeshes,
+            "human-joint-limits Kima mesh renderables",
+            output)) {
+      return false;
+    }
+    if (!requireCreatedEqual(
+            created.humanJointLimitsMultiSpheres,
+            expected.humanJointLimitsMultiSpheres,
+            "human-joint-limits limb multi-sphere renderables",
+            output)) {
+      return false;
+    }
+    if (!requireCreatedEqual(
+            created.humanJointLimitsBoxes,
+            expected.humanJointLimitsBoxes,
+            "human-joint-limits foot/toe box renderables",
+            output)) {
+      return false;
+    }
+    return requireCreatedEqual(
+        created.humanJointLimitsGrounds,
+        expected.humanJointLimitsGrounds,
+        "human-joint-limits ground renderables",
         output);
   }
 

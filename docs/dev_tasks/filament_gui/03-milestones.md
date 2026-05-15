@@ -225,6 +225,13 @@
   this Filament scene by default while the standalone source remains as legacy
   OSG/ImGui comparison material for numeric checks and reference-model
   controls.
+- The Filament example includes a selectable `--scene human-joint-limits`
+  fixture that loads the legacy Kima human SKEL world, enables DART
+  joint-limit enforcement, and renders the posed humanoid plus ground through
+  descriptor-owned mesh, multi-sphere, and box renderables.
+  `pixi run ex human_joint_limits` routes to this Filament scene by default
+  while the standalone source remains as legacy comparison material for the
+  custom TinyDNN-backed arm and leg constraints.
 - The Filament example includes a selectable `--scene mimic-pendulums` fixture
   that loads the legacy mimic-pendulums SDF world and renders the three
   pendulum rigs plus ground through descriptor-owned renderables.
@@ -422,7 +429,8 @@
 - Scene content requirement counting and MVP/G1/hello-world/boxes/
   hardcoded-design/rigid-chain/rigid-loop/mixed-chain/coupler-constraint/
   add-delete-skels/vehicle/hybrid-dynamics/joint-constraints/
-  free-joint-cases/mimic-pendulums/atlas-puppet/operational-space-control/drag/
+  free-joint-cases/human-joint-limits/mimic-pendulums/atlas-puppet/
+  operational-space-control/drag/
   simple-frames/soft-bodies/point-cloud/
   capsule-ground-contact/simulation-event-handler/polyhedron/heightmap
   validation gates now live in

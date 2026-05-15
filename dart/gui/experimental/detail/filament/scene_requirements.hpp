@@ -76,6 +76,10 @@ struct SceneContentCounts
   std::size_t jointConstraintsGrounds = 0;
   std::size_t freeJointCasesActiveBoxes = 0;
   std::size_t freeJointCasesReferenceBoxes = 0;
+  std::size_t humanJointLimitsMeshes = 0;
+  std::size_t humanJointLimitsMultiSpheres = 0;
+  std::size_t humanJointLimitsBoxes = 0;
+  std::size_t humanJointLimitsGrounds = 0;
   std::size_t mimicPendulumsBoxes = 0;
   std::size_t mimicPendulumsCylinders = 0;
   std::size_t mimicPendulumsGrounds = 0;
