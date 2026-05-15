@@ -276,13 +276,15 @@ relying on a Filament conda package. The MVP PR #2647 merged with hosted
 
 `feature/filament-gui-completion` is the follow-up branch for work beyond the
 MVP, and `feature/filament-gui-full-execution` continues that work in the
-separate north-star completion branch requested after MVP PR #2647. It includes
-the Filament version of the G1 puppet example: `--scene g1`
-loads the Unitree G1 URDF through DART resource retrievers, exposes colored IK
-targets for both hands and feet, registers active support geometry on the foot
-targets for support-polygon overlay inspection, and routes
-`pixi run ex g1_puppet` through the Filament example by default. This branch is
-intentionally separate from the merged MVP PR #2647.
+separate north-star completion branch requested after MVP PR #2647. It routes
+`pixi run ex drag_and_drop` through the Filament example's selectable
+`--scene drag-and-drop` fixture by default while keeping the standalone source
+as legacy OSG comparison material. It also includes the Filament version of the
+G1 puppet example: `--scene g1` loads the Unitree G1 URDF through DART resource
+retrievers, exposes colored IK targets for both hands and feet, registers
+active support geometry on the foot targets for support-polygon overlay
+inspection, and routes `pixi run ex g1_puppet` through the Filament example by
+default. This branch is intentionally separate from the merged MVP PR #2647.
 
 The follow-up branch also extends the backend-hidden shape descriptor and
 renderer path to `PyramidShape`, `MultiSphereConvexHullShape`, and

@@ -149,6 +149,9 @@
 - The Filament example includes a selectable `--scene drag-and-drop` fixture
   that extracts and renders the legacy drag-and-drop example's `SimpleFrame`
   anchor, child frame, and axis markers through the same manipulation path.
+  `pixi run ex drag_and_drop` routes to this Filament scene by default so the
+  in-tree drag-and-drop workflow no longer depends on the legacy OSG viewer
+  path.
 - The Filament example includes a selectable `--scene g1` fixture that loads
   the Unitree G1 URDF through DART resource retrievers and exposes colored IK
   targets for both hands and feet. `pixi run ex g1_puppet` routes to this

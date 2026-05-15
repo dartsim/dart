@@ -227,7 +227,9 @@
 - The Filament example also includes `--scene drag-and-drop`, a first
   interaction-heavy fixture that carries the legacy `SimpleFrame` anchor, child
   frame, and axis marker layout through the same backend-hidden manipulation
-  path.
+  path. The in-tree `pixi run ex drag_and_drop` runner now routes to that
+  Filament scene while the legacy standalone OSG source remains available for
+  comparison until the promoted GUI API replaces the old viewer path.
 - The Filament example now also includes `--scene g1`, which loads the remote
   Unitree G1 URDF through DART's normal resource-retriever path and exposes
   colored IK targets for both hands and feet. The in-tree
