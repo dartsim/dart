@@ -223,6 +223,13 @@ Current audited state:
   `collision-reference` configure/build/CTest check also passed with reference
   tests and reference benchmarks `ON` and all FCL, Bullet, and ODE reference
   components configured internally.
+- Current local evidence-head validation: `pixi run test-all` was rerun with
+  safe local parallelism on `a0b53ef844021dd668c61d2957fbffd08104c6cb` and
+  passed all 6 top-level gates: linting, build, unit tests,
+  simulation-experimental tests, Python tests, and documentation. The run
+  passed 264/264 C++ Release CTest tests; it also reran the runtime isolation
+  and compatibility-facade audits through the lint gate. This evidence is local
+  and remains insufficient to close the final PR/CI-surface gates.
 - Benchmark guard record head: `4b155655890`
   (`Record current collision benchmark guard`). The safe-job
   `collision-reference` benchmark guard passed locally, covering narrow phase,

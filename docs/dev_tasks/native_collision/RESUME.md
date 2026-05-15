@@ -95,8 +95,10 @@ post GitHub comments unless the user explicitly asks.
   package/link smoke with direct `readelf` checks.
 - Public docs collision-runtime wording baseline: `ad1b6782578`.
 - Latest full local `pixi run test-all` validation baseline:
-  `64abc65a032`, with 6/6 top-level gates passing at the current pushed branch
-  head before this evidence-record update.
+  `a0b53ef844021dd668c61d2957fbffd08104c6cb`, with 6/6 top-level
+  gates passing on the local evidence head before this docs-only evidence note.
+  That run included linting, build, unit tests, simulation-experimental tests,
+  Python tests, and documentation.
 - Latest local evidence-record commit: docs-only, on top of
   `origin/feature/new_coll`, not pushed.
 - Latest source-build prerequisite docs cleanup: `621fca5a1fb`. Validation:
