@@ -73,6 +73,39 @@ set(DART_FILAMENT_GUI_BACKEND_HDRS
   "${DART_FILAMENT_GUI_BACKEND_DIR}/textures.hpp"
   "${DART_FILAMENT_GUI_BACKEND_DIR}/ui_frame.hpp")
 
+function(_dart_filament_gui_find_dependencies out_imgui_target)
+  if(NOT TARGET Filament::filament OR NOT TARGET Filament::matc)
+    find_package(Filament REQUIRED MODULE)
+  endif()
+  if(NOT TARGET Filament::filament OR NOT TARGET Filament::matc)
+    message(FATAL_ERROR "Filament::filament and Filament::matc are required")
+  endif()
+
+  if(NOT TARGET glfw)
+    find_package(glfw3 CONFIG REQUIRED)
+  endif()
+  if(NOT TARGET glfw)
+    message(FATAL_ERROR "glfw target is required")
+  endif()
+
+  find_package(JPEG REQUIRED)
+  find_package(PNG REQUIRED)
+
+  if(NOT TARGET dart-imgui-lib AND NOT TARGET imgui::imgui)
+    find_package(imgui CONFIG QUIET)
+  endif()
+
+  if(TARGET imgui::imgui)
+    set(_imgui_target imgui::imgui)
+  elseif(TARGET dart-imgui-lib)
+    set(_imgui_target dart-imgui-lib)
+  else()
+    message(FATAL_ERROR "No ImGui target is available for filament_gui")
+  endif()
+
+  set(${out_imgui_target} "${_imgui_target}" PARENT_SCOPE)
+endfunction()
+
 function(
   _dart_filament_gui_add_material_header
   out_headers
@@ -224,4 +257,93 @@ function(dart_filament_gui_add_smoke_tests example_target)
       -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
   )
   _dart_filament_gui_apply_smoke_test_properties(${drag_test_name})
+endfunction()
+
+function(dart_filament_gui_add_example example_target)
+  cmake_parse_arguments(
+    DART_FILAMENT_GUI_EXAMPLE
+    ""
+    "GENERATED_DIR;OUTPUT_NAME;SOURCE_DIR"
+    ""
+    ${ARGN}
+  )
+  if(NOT DART_FILAMENT_GUI_EXAMPLE_GENERATED_DIR)
+    message(FATAL_ERROR "dart_filament_gui_add_example requires GENERATED_DIR")
+  endif()
+  if(NOT DART_FILAMENT_GUI_EXAMPLE_OUTPUT_NAME)
+    message(FATAL_ERROR "dart_filament_gui_add_example requires OUTPUT_NAME")
+  endif()
+  if(NOT DART_FILAMENT_GUI_EXAMPLE_SOURCE_DIR)
+    message(FATAL_ERROR "dart_filament_gui_add_example requires SOURCE_DIR")
+  endif()
+  if(NOT TARGET dart-gui-experimental)
+    message(FATAL_ERROR "filament_gui requires the dart-gui-experimental target")
+  endif()
+
+  _dart_filament_gui_find_dependencies(_imgui_target)
+  dart_filament_gui_generate_material_headers(
+    _material_headers
+    GENERATED_DIR "${DART_FILAMENT_GUI_EXAMPLE_GENERATED_DIR}"
+  )
+
+  file(
+    GLOB
+    _example_sources
+    "${DART_FILAMENT_GUI_EXAMPLE_SOURCE_DIR}/*.cpp"
+    "${DART_FILAMENT_GUI_EXAMPLE_SOURCE_DIR}/*.hpp"
+  )
+
+  add_executable(
+    ${example_target}
+    ${_example_sources}
+    ${DART_FILAMENT_GUI_BACKEND_SRCS}
+    ${DART_FILAMENT_GUI_BACKEND_HDRS}
+    ${_material_headers}
+  )
+  set_target_properties(
+    ${example_target}
+    PROPERTIES OUTPUT_NAME "${DART_FILAMENT_GUI_EXAMPLE_OUTPUT_NAME}"
+  )
+  target_include_directories(
+    ${example_target}
+    PRIVATE "${DART_FILAMENT_GUI_EXAMPLE_GENERATED_DIR}"
+  )
+  target_compile_definitions(
+    ${example_target}
+    PRIVATE DART_FILAMENT_GUI_REPOSITORY_ROOT="${DART_FILAMENT_GUI_SOURCE_DIR}"
+  )
+  target_link_libraries(
+    ${example_target}
+    PRIVATE
+      dart
+      dart-io
+      dart-utils-urdf
+      dart-gui-experimental
+      Filament::filament
+      JPEG::JPEG
+      PNG::PNG
+      glfw
+      ${_imgui_target}
+  )
+  target_compile_features(${example_target} PRIVATE cxx_std_20)
+
+  if(DART_IN_SOURCE_BUILD)
+    set_target_properties(
+      ${example_target}
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin"
+    )
+    dart_add_example(${example_target})
+    dart_format_add(
+      ${_example_sources}
+      ${DART_FILAMENT_GUI_BACKEND_SRCS}
+      ${DART_FILAMENT_GUI_BACKEND_HDRS}
+    )
+
+    if(BUILD_TESTING AND DART_BUILD_TESTS AND DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS)
+      dart_filament_gui_add_smoke_tests(
+        ${example_target}
+        BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}"
+      )
+    endif()
+  endif()
 endfunction()

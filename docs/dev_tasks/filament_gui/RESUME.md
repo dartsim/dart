@@ -172,11 +172,13 @@ Filament material shader sources now live under
 smoke CMake/Python helpers now live under
 `dart/gui/experimental/detail/filament/testing`, leaving the example directory
 to carry only its entry-point source plus example-level CMake/README files.
-The private backend source list, material inputs, material header generation,
-and smoke-test registration are centralized in
+The private backend source list, dependency wiring, target setup, material
+inputs, material header generation, and smoke-test registration are centralized
+in
 `dart/gui/experimental/detail/filament/filament_sources.cmake`, so the example
 CMake file includes private helper plumbing instead of owning the backend file
-list or repeated Filament material/test commands itself.
+list, renderer dependency links, or repeated Filament material/test commands
+itself.
 Filament descriptor-to-scene synchronization, unsupported descriptor logging,
 initial scene renderable creation, scene entity attachment, and per-frame
 renderable transform/selection/shadow update helpers live in
