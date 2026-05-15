@@ -49,6 +49,7 @@ struct FrameRenderResult
 {
   bool continueLoop = false;
   bool stopLoop = false;
+  bool failed = false;
 };
 
 FrameRenderResult renderApplicationFrame(

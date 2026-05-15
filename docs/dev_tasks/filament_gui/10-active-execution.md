@@ -94,14 +94,13 @@ context survives across sessions.
   `dart/gui/experimental/detail/filament`. They can remain private while the
   promoted public names move to `dart::gui`.
 - Existing command-line support includes bounded frames, window size,
-  headless mode, UI visibility, scene selection, profiling, and a single PPM
-  screenshot path.
+  headless mode, UI visibility, scene selection, profiling, a single PPM
+  screenshot path, and a `--out <dir>` PPM image-sequence path.
 - Current execution decision: keep the restored historical executable names as
   thin `dart::gui` launchers, keep CI validating the promoted `--screenshot`
-  capture contract, and restore historical `--out <dir>` image-sequence
-  compatibility as the next capture slice. The `--out` path should be
-  implemented through the DART GUI capture layer, not as an OSG compatibility
-  dependency.
+  capture contract, and keep the restored historical `--out <dir>`
+  image-sequence compatibility in the DART GUI capture layer without reviving
+  OSG.
 
 ## Naming Decisions
 
@@ -230,28 +229,34 @@ alternate renderer implementations.
 
 ## Capture Compatibility Slice
 
-The next implementation slice restores the historical `--out <dir>` capture
+This implementation slice restores the historical `--out <dir>` capture
 contract as image-sequence output while retaining the current promoted
 `--screenshot <path>` single-frame contract.
 
-Implementation direction:
+Implementation state:
 
-- Add a renderer-independent capture option to the promoted `dart::gui`
+- A renderer-independent capture option has been added to the promoted `dart::gui`
   run-options layer instead of encoding the behavior in an example launcher.
-- Parse `--out <dir>` in the shared `dartsim` / restored-example command-line
-  path and create the directory when needed.
-- For each rendered frame in a bounded headless or windowed run, write a PPM
-  frame image with stable numbering. The first version can prioritize
-  correctness over throughput by waiting for each Filament readback before the
-  next frame.
+- The shared `dartsim` / restored-example command-line path parses
+  `--out <dir>` and creates the directory when needed.
+- For each rendered frame in a bounded headless or windowed run, the Filament
+  backend writes a PPM frame image with stable `frame_000001.ppm` numbering.
+  This first version prioritizes correctness over throughput by waiting for
+  each readback before the next frame.
 - Keep `--screenshot <path>` as the final/single-frame capture API used by CI
   smoke tests.
-- If both `--out` and `--screenshot` are provided, save sequence frames and the
-  final screenshot without issuing duplicate renderer readbacks for the same
-  frame when practical.
-- Add focused tests for option parsing/normalization and at least one local
-  headless run proving that a restored historical executable can produce a
-  sequence directory.
+- If both `--out` and `--screenshot` are provided, sequence frames and the
+  final screenshot are both saved while reusing the same readback on the final
+  frame.
+- Local evidence so far:
+  - C++ GUI target build for `dart-gui`, `dartsim`, and `rigid_cubes`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run build-py-dev`
+  - `pixi run python -m pytest python/tests/unit/gui/test_gui_scene.py -q`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct `rigid_cubes --headless --frames 2 --out ...` frame-sequence run
+  - `pixi run ex rigid_cubes --headless --frames 2 --out ...` frame-sequence
+    run with final screenshot preservation
 
 ## Stretch Direction
 
@@ -283,16 +288,12 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Restore `--out <dir>` image-sequence capture through the promoted
-   `dart::gui` run-options and shared `dartsim` command-line path.
-2. Verify capture compatibility with a restored historical example executable,
-   plus the focused GUI/Python tests that cover runner behavior.
-3. Continue private target/helper-name cleanup where it does not affect
+1. Continue private target/helper-name cleanup where it does not affect
    compatibility.
-4. Do not expose Filament, GLFW, or Dear ImGui types in promoted headers.
+2. Do not expose Filament, GLFW, or Dear ImGui types in promoted headers.
    Private implementation can remain under `dart/gui/experimental/detail` until
    a later file-layout sweep.
-5. Keep ImGui Docking, docked 3D widgets, first-class offscreen APIs, and video
+3. Keep ImGui Docking, docked 3D widgets, first-class offscreen APIs, and video
    capture as follow-up application/capture work.
-6. Run `pixi run lint` before every checkpoint commit, then push the commit to
+4. Run `pixi run lint` before every checkpoint commit, then push the commit to
    the tracked remote branch.

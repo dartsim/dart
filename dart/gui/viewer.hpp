@@ -60,6 +60,7 @@ struct RunOptions
   double guiScale = 1.0;
   bool headless = false;
   std::string screenshotPath;
+  std::string frameOutputDirectory;
 };
 
 struct ViewerLifecycleState
@@ -158,6 +159,11 @@ DART_GUI_API void normalizeRunOptions(RunOptions& options);
 
 DART_GUI_API bool shouldRequestScreenshot(
     const RunOptions& options, int renderedFrames, bool screenshotRequested);
+
+DART_GUI_API bool shouldCaptureFrameOutput(const RunOptions& options);
+
+DART_GUI_API std::string makeFrameOutputPath(
+    const RunOptions& options, int frameNumber);
 
 DART_GUI_API bool shouldStopAfterFrame(
     const RunOptions& options, int renderedFrames);

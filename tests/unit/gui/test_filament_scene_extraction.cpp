@@ -2192,6 +2192,7 @@ TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
   EXPECT_EQ(options.maxFrames, 1);
   EXPECT_TRUE(options.headless);
   EXPECT_TRUE(dart::gui::shouldRequestScreenshot(options, 0, false));
+  EXPECT_FALSE(dart::gui::shouldCaptureFrameOutput(options));
   EXPECT_FALSE(dart::gui::shouldRequestScreenshot(options, 0, true));
   EXPECT_FALSE(dart::gui::shouldStopAfterFrame(options, 0));
   EXPECT_TRUE(dart::gui::shouldStopAfterFrame(options, 1));
@@ -2222,6 +2223,17 @@ TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
   dart::gui::normalizeRunOptions(windowOnly);
   EXPECT_NEAR(windowOnly.guiScale, 4.0, 1e-12);
   EXPECT_FALSE(dart::gui::shouldRequestScreenshot(windowOnly, 0, false));
+
+  dart::gui::RunOptions sequenceOutput;
+  sequenceOutput.frameOutputDirectory = "frames";
+  dart::gui::normalizeRunOptions(sequenceOutput);
+  EXPECT_EQ(sequenceOutput.maxFrames, 1);
+  EXPECT_TRUE(dart::gui::shouldCaptureFrameOutput(sequenceOutput));
+  EXPECT_EQ(
+      std::filesystem::path(dart::gui::makeFrameOutputPath(sequenceOutput, 7))
+          .filename()
+          .string(),
+      "frame_000007.ppm");
 }
 
 TEST(FilamentSceneExtraction, WriteRgbaPpm_DropsAlphaAndHandlesBottomLeftOrigin)

@@ -43,6 +43,7 @@ __all__: list[str] = [
     'intersect_plane',
     'intersect_renderable',
     'make_collision_shape_debug_lines',
+    'make_frame_output_path',
     'make_frame_debug_lines',
     'make_grid_debug_lines',
     'make_inertia_debug_lines',
@@ -61,6 +62,7 @@ __all__: list[str] = [
     'request_single_step',
     'reset_orbit_camera_tracking',
     'should_advance_simulation',
+    'should_capture_frame_output',
     'should_request_screenshot',
     'should_stop_after_frame',
     'toggle_paused',
@@ -236,6 +238,7 @@ class RunOptions:
     gui_scale: float
     headless: bool
     screenshot_path: str
+    frame_output_directory: str
 
     def __init__(self) -> None: ...
 
@@ -435,6 +438,8 @@ def translate_frame_renderable(
     renderable: RenderableDescriptor, world_translation: Array
 ) -> bool: ...
 def normalize_run_options(options: RunOptions) -> None: ...
+def should_capture_frame_output(options: RunOptions) -> bool: ...
+def make_frame_output_path(options: RunOptions, frame_number: int) -> str: ...
 @typing.overload
 def should_request_screenshot(
     options: RunOptions, rendered_frames: int, screenshot_requested: bool

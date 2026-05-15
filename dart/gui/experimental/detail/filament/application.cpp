@@ -61,10 +61,12 @@
 
 #include <dart/common/profile.hpp>
 
+#include <filesystem>
 #include <iostream>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -126,6 +128,23 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
   const AppOptions appOptions = parseOptions(argc, argv);
   const RunOptions& options = appOptions.run;
 
+  if (!options.frameOutputDirectory.empty()) {
+    std::error_code error;
+    const std::filesystem::path outputDirectory(options.frameOutputDirectory);
+    std::filesystem::create_directories(outputDirectory, error);
+    if (error) {
+      std::cerr << "Failed to create frame output directory '"
+                << options.frameOutputDirectory << "': " << error.message()
+                << "\n";
+      return 1;
+    }
+    if (!std::filesystem::is_directory(outputDirectory, error)) {
+      std::cerr << "Frame output path is not a directory: "
+                << options.frameOutputDirectory << "\n";
+      return 1;
+    }
+  }
+
   ApplicationWindow appWindow = createApplicationWindow(options, std::cerr);
   GLFWwindow* window = appWindow.get();
   if (!options.headless && window == nullptr) {
@@ -186,6 +205,7 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
   SelectionController selectionController;
   ScreenshotCapture screenshotCapture;
   ProfileAccumulator profile;
+  bool frameCaptureSucceeded = true;
   SimulationStepper simulationStepper;
   const auto orbitStartClock = ProfileAccumulator::Clock::now();
   SceneFrameUpdater sceneFrameUpdater(
@@ -263,6 +283,10 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
         screenshotCapture,
         lifecycle,
         profile);
+    if (frameRenderResult.failed) {
+      frameCaptureSucceeded = false;
+      break;
+    }
     if (frameRenderResult.continueLoop) {
       continue;
     }
@@ -299,7 +323,7 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
       selectionDebugOverlay,
       materialResources);
 
-  return screenshotSucceeded ? 0 : 1;
+  return screenshotSucceeded && frameCaptureSucceeded ? 0 : 1;
 }
 
 bool hasSceneOption(int argc, char* argv[])

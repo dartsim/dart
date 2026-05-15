@@ -67,6 +67,12 @@ void requestScreenshot(
 bool waitForScreenshot(
     FilamentRenderContext& context, ScreenshotCapture& capture);
 
+bool saveCompletedScreenshotCapture(
+    FilamentRenderContext& context,
+    ScreenshotCapture& capture,
+    const std::string& path,
+    dart::gui::ProfileAccumulator& profile);
+
 bool finalizeScreenshotCapture(
     FilamentRenderContext& context,
     ScreenshotCapture& capture,

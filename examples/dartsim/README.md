@@ -10,6 +10,7 @@ interactive or headless GUI scenes.
 pixi run ex dartsim
 pixi run ex dartsim --scene boxes
 pixi run ex dartsim --headless --frames 10 --screenshot /tmp/dartsim.ppm
+pixi run ex dartsim --headless --frames 10 --out /tmp/dartsim_frames
 ```
 
 Historical GUI examples such as `hello_world`, `rigid_cubes`,
@@ -19,6 +20,7 @@ their own executable names:
 ```bash
 pixi run ex hello_world
 pixi run ex rigid_cubes --headless --frames 10 --screenshot /tmp/rigid_cubes.ppm
+pixi run ex rigid_cubes --headless --frames 10 --out /tmp/rigid_cubes_frames
 ```
 
 The renderer implementation is private to `dart::gui`; example code should

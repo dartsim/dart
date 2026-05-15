@@ -60,11 +60,12 @@ simulator/viewer identity, analogous to Isaac Sim.
 
 ## Immediate Next Step
 
-Restore historical `--out <dir>` image-sequence capture compatibility through
-the promoted `dart::gui` run-options and shared `dartsim` command-line path,
-while keeping `--screenshot <path>` as the current CI-oriented single-frame
-capture contract. Make a bounded capture implementation checkpoint with focused
-tests and at least one restored historical executable headless run.
+Continue from the pushed `--out <dir>` image-sequence capture checkpoint. Do
+not wait for CI before making independent progress, but inspect and fix CI
+failures if they surface. The checkpoint adds the promoted `RunOptions` field,
+C++/Python helpers, CLI parsing, frame readback/save path, focused C++/Python
+tests, and direct plus Pixi `rigid_cubes --headless --frames 2 --out ...`
+verification.
 
 ## Context That Would Be Lost
 
@@ -72,8 +73,8 @@ tests and at least one restored historical executable headless run.
   branch so GitHub Actions can run.
 - `rigid_cubes --headless --frames 10 --out /tmp/headless_output` failed in
   CI originally because the executable no longer existed and the old OSG-style
-  output contract was gone. The executable has been restored and CI now checks
-  `--screenshot`; `--out <dir>` remains the next compatibility gap to restore
+  output contract was gone. The executable has been restored, CI now checks
+  `--screenshot`, and the local capture checkpoint restores `--out <dir>`
   without bringing back OSG.
 - `filament_gui` is now the wrong example name. The executable should describe
   its role or use the application-level `dartsim` brand, not the renderer
@@ -622,10 +623,9 @@ the smoke regex, and CMake scene pairs for drift.
 
 ## Current Immediate Next Step
 
-Implement `--out <dir>` image-sequence capture through the promoted
+Continue after the `--out <dir>` image-sequence checkpoint through the promoted
 `dart::gui` runtime. Keep `--screenshot <path>` working for the existing CTest
-and GitHub Actions smoke path. Locally, use focused build/test runs first, then
-the existing smoke shortcut when the capture path is wired:
+and GitHub Actions smoke path. A later broader smoke sweep can still use:
 
 ```bash
 pixi run test-filament-gui-smoke

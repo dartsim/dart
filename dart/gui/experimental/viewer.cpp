@@ -33,8 +33,11 @@
 #include <dart/gui/viewer.hpp>
 
 #include <algorithm>
+#include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <limits>
+#include <sstream>
 
 #include <cmath>
 
@@ -51,7 +54,8 @@ void normalizeRunOptions(RunOptions& options)
   if (options.headless && options.maxFrames < 0) {
     options.maxFrames = 1;
   }
-  if (!options.screenshotPath.empty() && options.maxFrames < 0) {
+  if ((!options.screenshotPath.empty() || !options.frameOutputDirectory.empty())
+      && options.maxFrames < 0) {
     options.maxFrames = 1;
   }
 }
@@ -66,6 +70,24 @@ bool shouldRequestScreenshot(
     return true;
   }
   return renderedFrames + 1 >= options.maxFrames;
+}
+
+bool shouldCaptureFrameOutput(const RunOptions& options)
+{
+  return !options.frameOutputDirectory.empty();
+}
+
+std::string makeFrameOutputPath(const RunOptions& options, int frameNumber)
+{
+  if (!shouldCaptureFrameOutput(options)) {
+    return {};
+  }
+
+  std::ostringstream filename;
+  filename << "frame_" << std::setw(6) << std::setfill('0')
+           << std::max(0, frameNumber) << ".ppm";
+  return (std::filesystem::path(options.frameOutputDirectory) / filename.str())
+      .string();
 }
 
 bool shouldStopAfterFrame(const RunOptions& options, int renderedFrames)

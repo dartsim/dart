@@ -693,6 +693,7 @@ def test_gui_camera_and_run_helpers():
     assert options.max_frames == 1
     assert options.headless is True
     assert dart.gui.should_request_screenshot(options, 0, False)
+    assert not dart.gui.should_capture_frame_output(options)
     assert not dart.gui.should_request_screenshot(options, 0, True)
     assert dart.gui.should_stop_after_frame(options, 1)
 
@@ -720,6 +721,16 @@ def test_gui_camera_and_run_helpers():
     window_only.gui_scale = 10.0
     dart.gui.normalize_run_options(window_only)
     assert np.isclose(window_only.gui_scale, 4.0)
+
+    sequence_output = dart.gui.RunOptions()
+    sequence_output.frame_output_directory = "frames"
+    dart.gui.normalize_run_options(sequence_output)
+    assert sequence_output.max_frames == 1
+    assert dart.gui.should_capture_frame_output(sequence_output)
+    assert (
+        Path(dart.gui.make_frame_output_path(sequence_output, 7)).name
+        == "frame_000007.ppm"
+    )
 
     camera = dart.gui.OrbitCamera()
     camera.target = np.zeros(3)

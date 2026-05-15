@@ -23,8 +23,7 @@ Current capture contract:
 
 - `--screenshot <path>` writes the single final PPM image and is the current CI
   smoke path.
-- `--out <dir>` is the next compatibility slice and should write a numbered PPM
-  image sequence without reviving OSG.
+- `--out <dir>` writes a numbered PPM image sequence without reviving OSG.
 - Automated video capture, ImGui Docking, docked 3D scene widgets, and a
   first-class offscreen API are follow-up application/capture work, not blockers
   for the immediate example-restoration checkpoint.

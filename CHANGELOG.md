@@ -24,6 +24,9 @@
     replacing OpenSceneGraph and the Raylib experiment. The legacy OSG GUI
     sources, OSG/Raylib CMake dependency discovery, legacy C++/Python GUI
     examples and tutorials, and legacy dartpy GUI bindings/stubs were removed.
+  - Restored historical GUI example executable names as `dart::gui` launchers
+    backed by `dartsim`, and added `--out <dir>` PPM image-sequence capture
+    alongside the existing `--screenshot <path>` final-frame capture.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

@@ -109,6 +109,25 @@ bool waitForScreenshot(
   });
 }
 
+bool saveCompletedScreenshotCapture(
+    FilamentRenderContext& context,
+    ScreenshotCapture& capture,
+    const std::string& path,
+    ProfileAccumulator& profile)
+{
+  const auto screenshotWaitStart = ProfileAccumulator::Clock::now();
+  const bool screenshotSucceeded = waitForScreenshot(context, capture);
+  profile.screenshotWaitMs += elapsedMs(screenshotWaitStart);
+  if (screenshotSucceeded) {
+    const auto screenshotSaveStart = ProfileAccumulator::Clock::now();
+    saveScreenshot(capture, path);
+    profile.screenshotSaveMs += elapsedMs(screenshotSaveStart);
+  } else {
+    std::cerr << "Timed out waiting for Filament screenshot readback\n";
+  }
+  return screenshotSucceeded;
+}
+
 bool finalizeScreenshotCapture(
     FilamentRenderContext& context,
     ScreenshotCapture& capture,
@@ -121,16 +140,8 @@ bool finalizeScreenshotCapture(
     std::cerr << "No rendered frame was available for screenshot capture\n";
   }
   if (screenshotRequested) {
-    const auto screenshotWaitStart = ProfileAccumulator::Clock::now();
-    screenshotSucceeded = waitForScreenshot(context, capture);
-    profile.screenshotWaitMs += elapsedMs(screenshotWaitStart);
-    if (screenshotSucceeded) {
-      const auto screenshotSaveStart = ProfileAccumulator::Clock::now();
-      saveScreenshot(capture, path);
-      profile.screenshotSaveMs += elapsedMs(screenshotSaveStart);
-    } else {
-      std::cerr << "Timed out waiting for Filament screenshot readback\n";
-    }
+    screenshotSucceeded
+        = saveCompletedScreenshotCapture(context, capture, path, profile);
   }
   return screenshotSucceeded;
 }

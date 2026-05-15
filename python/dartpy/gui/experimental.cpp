@@ -190,7 +190,8 @@ void defGuiExperimentalModule(nb::module_& m)
       .def_rw("max_frames", &gui::RunOptions::maxFrames)
       .def_rw("gui_scale", &gui::RunOptions::guiScale)
       .def_rw("headless", &gui::RunOptions::headless)
-      .def_rw("screenshot_path", &gui::RunOptions::screenshotPath);
+      .def_rw("screenshot_path", &gui::RunOptions::screenshotPath)
+      .def_rw("frame_output_directory", &gui::RunOptions::frameOutputDirectory);
 
   nb::class_<gui::ViewerLifecycleState>(m, "ViewerLifecycleState")
       .def(nb::init<>())
@@ -413,6 +414,15 @@ void defGuiExperimentalModule(nb::module_& m)
       nb::arg("renderable"),
       nb::arg("world_translation"));
   m.def("normalize_run_options", &gui::normalizeRunOptions, nb::arg("options"));
+  m.def(
+      "should_capture_frame_output",
+      &gui::shouldCaptureFrameOutput,
+      nb::arg("options"));
+  m.def(
+      "make_frame_output_path",
+      &gui::makeFrameOutputPath,
+      nb::arg("options"),
+      nb::arg("frame_number"));
   m.def(
       "should_request_screenshot",
       [](const gui::RunOptions& options,

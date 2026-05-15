@@ -36,6 +36,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <string>
 #include <thread>
 
 #include <cstdint>
@@ -43,11 +44,13 @@
 namespace dart::gui::filament {
 
 using dart::gui::elapsedMs;
+using dart::gui::makeFrameOutputPath;
 using dart::gui::markFrameRendered;
 using dart::gui::markFrameSkipped;
 using dart::gui::markScreenshotRequested;
 using dart::gui::ProfileAccumulator;
 using dart::gui::RunOptions;
+using dart::gui::shouldCaptureFrameOutput;
 using dart::gui::shouldRequestScreenshot;
 using dart::gui::shouldStopAfterFrame;
 using dart::gui::ViewerLifecycleState;
@@ -65,6 +68,9 @@ FrameRenderResult renderApplicationFrame(
 {
   const bool shouldCaptureScreenshot
       = shouldRequestScreenshot(options, lifecycle);
+  const bool shouldCaptureFrame = shouldCaptureFrameOutput(options);
+  const bool shouldCaptureRenderedFrame
+      = shouldCaptureScreenshot || shouldCaptureFrame;
 
   const auto renderFrameStart = ProfileAccumulator::Clock::now();
   const bool shouldRenderFrame = beginFilamentFrame(renderContext);
@@ -87,12 +93,14 @@ FrameRenderResult renderApplicationFrame(
 
   const auto renderStart = ProfileAccumulator::Clock::now();
   renderFilamentViews(renderContext, overlayView);
-  if (shouldCaptureScreenshot) {
+  if (shouldCaptureRenderedFrame) {
     requestScreenshot(
         renderContext,
         screenshotCapture,
         static_cast<std::uint32_t>(framebufferWidth),
         static_cast<std::uint32_t>(framebufferHeight));
+  }
+  if (shouldCaptureScreenshot) {
     markScreenshotRequested(lifecycle);
   }
   endFilamentFrame(renderContext);
@@ -100,6 +108,15 @@ FrameRenderResult renderApplicationFrame(
   const double renderMs = elapsedMs(renderStart);
   profile.renderMs += renderMs;
   profile.maxRenderMs = std::max(profile.maxRenderMs, renderMs);
+
+  if (shouldCaptureFrame) {
+    const std::string frameOutputPath
+        = makeFrameOutputPath(options, lifecycle.renderedFrames + 1);
+    if (!saveCompletedScreenshotCapture(
+            renderContext, screenshotCapture, frameOutputPath, profile)) {
+      return {.stopLoop = true, .failed = true};
+    }
+  }
 
   const double frameMs = elapsedMs(frameStart);
   profile.frameMs += frameMs;

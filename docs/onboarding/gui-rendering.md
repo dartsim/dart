@@ -22,6 +22,7 @@ descriptor APIs:
 - picking rays and hit records
 - orbit camera and controller helpers
 - run options and viewer lifecycle state
+- screenshot and frame-output helpers
 - profile/debug helpers
 
 These types are stable DART concepts. They are suitable for C++ and Python
@@ -75,10 +76,15 @@ ctest --test-dir build/default/cpp/Release --output-on-failure \
   -R '^UNIT_gui_FilamentSceneExtraction$'
 pixi run ex dartsim --headless --frames 1 --width 1280 --height 720 \
   --screenshot /tmp/dartsim.ppm
+pixi run ex rigid_cubes --headless --frames 2 --width 640 --height 480 \
+  --out /tmp/rigid_cubes_frames
 ```
 
-Inspect screenshots when judging visual quality. Command success alone is not
-enough for material, lighting, transparency, camera, or UI regressions.
+`--screenshot` writes a single final PPM image. `--out <dir>` writes a numbered
+PPM image sequence named `frame_000001.ppm`, `frame_000002.ppm`, and so on.
+Inspect screenshots or captured frame sequences when judging visual quality.
+Command success alone is not enough for material, lighting, transparency,
+camera, or UI regressions.
 
 ## Migration Notes
 

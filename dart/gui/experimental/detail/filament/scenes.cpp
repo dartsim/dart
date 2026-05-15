@@ -547,6 +547,8 @@ AppOptions parseOptions(int argc, char* argv[])
       options.run.height = std::max(1, std::atoi(argv[++i]));
     } else if (arg == "--screenshot" && i + 1 < argc) {
       options.run.screenshotPath = argv[++i];
+    } else if (arg == "--out" && i + 1 < argc) {
+      options.run.frameOutputDirectory = argv[++i];
     } else if (arg == "--headless") {
       options.run.headless = true;
     } else if (arg == "--hide-ui") {
@@ -621,7 +623,7 @@ AppOptions parseOptions(int argc, char* argv[])
       std::cout
           << "Usage: " << argv[0]
           << " [--frames N] [--width N] [--height N]"
-             " [--screenshot PATH] [--headless]"
+             " [--screenshot PATH] [--out DIR] [--headless]"
              " [--hide-ui|--show-ui]"
              " [--orbit-light|--no-orbit-light]"
              " [--orbit-light-period SECONDS]"
