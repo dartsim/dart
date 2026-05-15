@@ -363,7 +363,7 @@ and docs. The full-suite run exposed a local Mesa GLX hang when
 the factory test now covers the factory path without requesting a second
 headless context, while the dedicated headless construction test remains.
 
-`pixi run test-filament-gui-smoke` now wraps the explicit pinned fetch fallback
+`pixi run test-dart-gui-smoke` now wraps the explicit pinned fetch fallback
 for Linux x86_64. It configures with `DART_BUILD_GUI=OFF` and
 `DART_BUILD_DARTPY=OFF`, builds `dart_filament_gui`, and runs the default,
 hello-world, boxes, hardcoded-design, rigid-chain, rigid-loop, mixed-chain,
@@ -379,7 +379,7 @@ Ubuntu CI
 workflow has a matching `filament-gui-smoke` job that installs Mesa, Xvfb, and
 libc++/libc++abi development packages from apt and runs that task without
 relying on a Filament conda package. The MVP PR #2647 merged with hosted
-`Filament GUI Smoke (GCC)` and `Filament GUI Smoke (Clang)` passing.
+`DART GUI Smoke (GCC)` and `DART GUI Smoke (Clang)` passing.
 
 `feature/filament-gui-completion` is the follow-up branch for work beyond the
 MVP, and `feature/filament-gui-full-execution` continues that work in the
@@ -628,7 +628,7 @@ Continue after the `--out <dir>` image-sequence checkpoint through the promoted
 and GitHub Actions smoke path. A later broader smoke sweep can still use:
 
 ```bash
-pixi run test-filament-gui-smoke
+pixi run test-dart-gui-smoke
 ```
 
 Keep tracking Filament package availability as a longer packaging concern, but

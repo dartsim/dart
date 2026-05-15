@@ -711,7 +711,7 @@ python scripts/pixi_test_py.py
   { arg = "build_type", default = "Release" },
 ] }
 
-test-filament-gui-smoke = { cmd = [
+test-dart-gui-smoke = { cmd = [
   "python",
   "scripts/run_cpp_example.py",
   "dartsim",
@@ -719,6 +719,8 @@ test-filament-gui-smoke = { cmd = [
 ], depends-on = [
   "config",
 ], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "ON", DART_BUILD_GUI_FILAMENT_OVERRIDE = "ON", DART_FETCH_FILAMENT_OVERRIDE = "ON", DART_USE_SYSTEM_FILAMENT_OVERRIDE = "OFF" } }
+
+test-filament-gui-smoke = { depends-on = ["test-dart-gui-smoke"] }
 
 test-capsule-ground-contact = { cmd = """
     ctest \

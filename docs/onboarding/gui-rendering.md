@@ -1,4 +1,4 @@
-# Filament GUI Rendering
+# DART GUI Rendering
 
 ## Overview
 

@@ -81,7 +81,7 @@ add_subdirectory(simulation)
 add_subdirectory(sensor)
 add_subdirectory(utils) # tinyxml2, libsdformat
 add_subdirectory(io)
-add_subdirectory(gui) # Filament GUI
+add_subdirectory(gui) # DART GUI
 add_subdirectory(simd)
 
 set(DART_CONFIG_HPP_IN ${DART_SOURCE_DIR}/dart/config.hpp.in)

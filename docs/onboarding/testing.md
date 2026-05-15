@@ -131,7 +131,7 @@ tests/
 │   ├── common/              # Allocators, factory, logging, memory, strings
 │   ├── constraint/          # Constraint solver API
 │   ├── dynamics/            # Joint tests, inertia calculations, shape node API
-│   ├── gui/                 # Filament GUI descriptor and public-boundary tests
+│   ├── gui/                 # DART GUI descriptor and public-boundary tests
 │   ├── io/                  # Tests for parsers (URDF, SDF error paths)
 │   ├── math/                # Geometry, math operations, random, meshes, LCP solvers
 │   ├── sensor/              # Tests for the sensor API

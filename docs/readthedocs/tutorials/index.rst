@@ -2,7 +2,7 @@ Tutorials
 =========
 
 The legacy OpenSceneGraph tutorial sources were removed with the renderer
-replacement. Maintained visualization coverage now lives in the Filament GUI
+replacement. Maintained visualization coverage now lives in the DART GUI
 implementation behind ``dart::gui`` and the restored GUI examples.
 
 From a source checkout, run ``pixi run ex dartsim`` for the default scene, or

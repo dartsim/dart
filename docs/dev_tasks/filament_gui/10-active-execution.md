@@ -72,7 +72,7 @@ context survives across sessions.
   - Local evidence: `pixi run lint`, full `examples` target build,
     `UNIT_gui_FilamentSceneExtraction`,
     `python/tests/unit/test_run_cpp_example.py`, direct `rigid_cubes`
-    headless PPM capture, and `pixi run test-filament-gui-smoke` all passed
+    headless PPM capture, and `pixi run test-dart-gui-smoke` all passed
     before or during the checkpoint.
 
 ## Current Code Shape
@@ -188,7 +188,7 @@ context survives across sessions.
   - `pixi run python -m pytest python/tests/unit/gui/test_gui_scene.py -q`
   - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
   - Direct `dartpy.gui` / `dartpy.gui.experimental` identity import check
-  - `pixi run test-filament-gui-smoke`
+  - `pixi run test-dart-gui-smoke`
   - `pixi run lint`
 
 ## Example Restoration Plan
@@ -258,6 +258,46 @@ Implementation state:
   - `pixi run ex rigid_cubes --headless --frames 2 --out ...` frame-sequence
     run with final screenshot preservation
 
+## Branding Cleanup Slice
+
+This implementation slice removes small remaining user-facing backend or
+experimental labels where no compatibility contract depends on the old names.
+
+Implementation direction:
+
+- Change the GLFW window title from the old experimental Filament wording to
+  the application-level `dartsim` brand.
+- Rename private CMake default variables that still use the old
+  `filament_gui` compound.
+- Prefer `DART GUI` wording for CI labels and CMake comments where the label is
+  about the maintained GUI surface rather than a private backend technology.
+- Keep compatibility shims such as `dart/gui/experimental/*.hpp`,
+  `dartpy.gui.experimental`, and the rejected legacy `filament_gui` runner
+  aliases until a deliberate compatibility-removal checkpoint.
+- The new `test-dart-gui-smoke` pixi task is the promoted smoke-test entry
+  point; the old `test-filament-gui-smoke` task remains as a compatibility
+  alias for now.
+
+## Per-Example Source Migration Direction
+
+The latest steering in `STEERING.md` makes per-example source migration the
+next major implementation thread after capture and branding cleanup. The
+restored example binaries currently share the generic launcher and
+`--scene <name>` fixtures. That keeps the executable names and headless
+coverage working, but Tier-A examples with distinctive controls, panels, reset
+logic, or interaction flows still need real `main.cpp` files migrated onto
+promoted `dart::gui` APIs.
+
+Execution order:
+
+1. Add the minimum promoted `dart::gui` panel/tool/callback hook needed for
+   example-owned controls without exposing Dear ImGui or Filament types.
+2. Migrate at least the first Tier-A examples to real per-example source files
+   that include `dart/gui/*.hpp`, link `dart-gui`, and avoid private backend
+   headers.
+3. Only after that proof point, start the mechanical directory cleanup that
+   moves private implementation paths out of `dart/gui/experimental/detail`.
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:
@@ -288,12 +328,12 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Continue private target/helper-name cleanup where it does not affect
-   compatibility.
-2. Do not expose Filament, GLFW, or Dear ImGui types in promoted headers.
-   Private implementation can remain under `dart/gui/experimental/detail` until
-   a later file-layout sweep.
-3. Keep ImGui Docking, docked 3D widgets, first-class offscreen APIs, and video
-   capture as follow-up application/capture work.
-4. Run `pixi run lint` before every checkpoint commit, then push the commit to
+1. Finish and push the branding cleanup checkpoint.
+2. Start the promoted `dart::gui` panel/tool/callback hook required for
+   real per-example source migration.
+3. Migrate the first Tier-A examples to real per-example `main.cpp` files that
+   do not include private renderer headers.
+4. Do not start the physical `experimental/` directory move until the
+   per-example API proof point lands.
+5. Run `pixi run lint` before every checkpoint commit, then push the commit to
    the tracked remote branch.

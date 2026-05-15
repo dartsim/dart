@@ -191,7 +191,7 @@ dart/
 
 ### GUI-Specific Dependencies
 
-#### Filament GUI Stack
+#### DART GUI Stack
 
 - **Version:** Filament 1.71.3 for the pinned Linux x86_64 fetch.
 - **Purpose:** Maintained built-in 3D visualization and interaction renderer.
@@ -213,7 +213,7 @@ active build.
 - **Purpose:** In-scene GUI widgets and overlays
 - **CMake Module:** `cmake/DARTFindimgui.cmake`
 - **Fetch Module:** `dart/external/imgui/CMakeLists.txt`
-- **Backend:** Private Filament GUI overlay integration
+- **Backend:** Private DART GUI overlay integration
 - **Target:** `imgui::imgui`
 - **Modes:**
   - **System Mode** (`DART_USE_SYSTEM_IMGUI=ON`): Links against system package
@@ -373,7 +373,7 @@ DART includes several dependencies as part of the source tree under `dart/extern
 
 - Core: `imgui.cpp`, `imgui_draw.cpp`, `imgui_tables.cpp`, `imgui_widgets.cpp`
 - Headers: `imgui.h`, `imgui_internal.h`, `imconfig.h`, `imstb_*.h`
-- Backend integration: private Filament GUI overlay code
+- Backend integration: private DART GUI overlay code
 
 **Dependencies:**
 

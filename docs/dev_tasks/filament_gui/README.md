@@ -494,7 +494,7 @@ the source tree.
   fetch the pinned upstream Filament archive. Other platforms should provide
   `Filament_ROOT` or keep `DART_BUILD_GUI=OFF` until packaged Filament is
   available there.
-- `pixi run test-filament-gui-smoke` now exercises the explicit pinned
+- `pixi run test-dart-gui-smoke` now exercises the explicit pinned
   `DART_FETCH_FILAMENT=ON` path on Linux x86_64, builds without the legacy OSG
   GUI target, and runs the default, hello-world, boxes, hardcoded-design,
   rigid-chain, rigid-loop, mixed-chain, coupler-constraint, add-delete-skels,
@@ -510,8 +510,8 @@ the source tree.
   prefers Mesa's EGL vendor file for software rendering. The Ubuntu CI workflow
   has a matching opt-in smoke job that gets Xvfb, libc++, and libc++abi from
   system packages instead of relying on a Filament package. The MVP PR #2647
-  merged with hosted `Filament GUI Smoke (GCC)` and
-  `Filament GUI Smoke (Clang)` passing.
+  merged with hosted `DART GUI Smoke (GCC)` and
+  `DART GUI Smoke (Clang)` passing.
 - Local Linux CPython 3.12, 3.13, and 3.14 wheel builds now repair with
   `auditwheel` and pass installed-wheel testing. The smoke confirms
   `dartpy.gui.experimental` is present in the wheel and can extract a one-box
@@ -604,8 +604,8 @@ longer express stable DART concepts.
    detail, or a removed/unsupported renderer-specific API. Keep the experimental
    public-header leakage test passing; its reusable scan should add promoted
    `dart/gui/*.hpp` headers when APIs move into first-class `dart::gui`.
-2. Keep the hosted Ubuntu `Filament GUI Smoke (GCC)` and
-   `Filament GUI Smoke (Clang)` jobs green on each follow-up PR when the
+2. Keep the hosted Ubuntu `DART GUI Smoke (GCC)` and
+   `DART GUI Smoke (Clang)` jobs green on each follow-up PR when the
    explicit pinned fetch path or Filament example behavior changes.
 3. Add broader human visual review and larger authored environment/PBR assets
    for the visual-quality gate. The current screenshot analyzer is a smoke check

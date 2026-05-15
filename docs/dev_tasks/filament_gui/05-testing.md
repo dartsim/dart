@@ -17,7 +17,7 @@ Current live names:
 - Private backend helper naming: `gui_filament` / `DART_GUI_FILAMENT`
 - Smoke-test CTest names: `EXAMPLE_dartsim_headless_smoke` and
   `EXAMPLE_dartsim_<scene>_headless_smoke`
-- Pixi shortcut: `pixi run test-filament-gui-smoke`
+- Pixi shortcut: `pixi run test-dart-gui-smoke`
 
 Current capture contract:
 
@@ -163,7 +163,7 @@ smokes:
 
 ```bash
 LIBCXX_PREFIX=<prefix-containing-libc++-and-libc++abi> \
-  pixi run test-filament-gui-smoke
+  pixi run test-dart-gui-smoke
 ```
 
 On Ubuntu CI, libc++/libc++abi are installed from apt for this smoke job so the
@@ -249,7 +249,7 @@ Known current result:
   headless path and verify the generated PPM structure and sampled pixels.
 - The opt-in CTest smoke passed locally with the explicit fetch path,
   compatible libc++/libc++abi libraries, and Mesa llvmpipe.
-- `pixi run test-filament-gui-smoke` passed locally with the same explicit
+- `pixi run test-dart-gui-smoke` passed locally with the same explicit
   fetch path. The task configures with `DART_BUILD_GUI=OFF`,
   `DART_BUILD_DARTPY=OFF`, `DART_FETCH_FILAMENT=ON`, and
   `DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS=ON`, builds `dartsim`, and runs the
@@ -266,9 +266,9 @@ Known current result:
   OpenGL backend uses software rendering on headless Linux workers.
 - `.github/workflows/ci_ubuntu.yml` now includes a `filament-gui-smoke` job
   that installs Mesa, Xvfb, and libc++/libc++abi development packages and runs
-  `pixi run test-filament-gui-smoke` without relying on a Filament conda
+  `pixi run test-dart-gui-smoke` without relying on a Filament conda
   package. The MVP PR #2647 merged with hosted
-  `Filament GUI Smoke (GCC)` and `Filament GUI Smoke (Clang)` passing.
+  `DART GUI Smoke (GCC)` and `DART GUI Smoke (Clang)` passing.
 - The `dartsim` application also configured, linked, and ran with
   `DART_BUILD_GUI=OFF` and `DART_BUILD_DARTPY=OFF` using
   `pixi run config OFF`, proving the Filament-backed path no longer needs

@@ -142,6 +142,91 @@ disagreement under "Open Issues" instead of editing "Decisions in force".
   image-sequence capture from the shared `dartsim` command-line path, with
   focused tests and one restored historical executable headless proof.
 
+### 2026-05-15 supervisor follow-up: per-example sources + drop `experimental/`
+
+Two new threads, **in this order** (capture slice still comes first):
+
+7. **Per-example real-source migration.** Right now every restored example
+   directory contains only a 7-line `CMakeLists.txt` that compiles the shared
+   `examples/gui_scene_launcher.cpp` with a `DART_GUI_DEFAULT_SCENE` define.
+   That ships a binary on disk but does NOT migrate the original example's
+   distinctive behavior (custom key callbacks, panel widgets, scenario reset
+   logic, etc.) to the promoted `dart::gui` API — that behavior currently
+   lives only inside the `--scene <name>` fixture in `scene_fixtures.cpp`.
+   Decide which examples need their own `main.cpp` and migrate accordingly:
+   - **Tier-A (real `main.cpp` required, full migration)**: `imgui`,
+     `drag_and_drop`, `tinkertoy`, `lcp_physics`, `mimic_pendulums`,
+     `coupler_constraint`, `add_delete_skels`, `vehicle`, `wam_ikfast`,
+     `fetch`, `heightmap`, `atlas_simbicon`, `joint_constraints`,
+     `operational_space_control`, `g1_puppet`, `hubo_puppet`, `atlas_puppet`,
+     `point_cloud`, `simulation_event_handler`, `human_joint_limits`,
+     `hybrid_dynamics`, `biped_stand`, `box_stacking`, `rigid_cubes`,
+     `polyhedron_visual`, `rigid_shapes`, `mixed_chain`, `rigid_chain`,
+     `rigid_loop`, `free_joint_cases`, `hardcoded_design`. These all had
+     unique controls/widgets/scenario logic in their pre-cleanup OSG sources.
+     Each needs its own `main.cpp` calling promoted `dart::gui::*` API
+     (panel callbacks, key handlers, world hooks) — not the shared launcher
+     macro.
+   - **Tier-B (shared launcher OK)**: `hello_world`, `boxes`, `empty`,
+     `simple_frames`, `capsule_ground_contact`, `soft_bodies`. These were
+     visual-only legacy examples; the shared launcher + scene preset is
+     sufficient.
+   - **Required new public API surface to support Tier-A migration**: a
+     `dart::gui::Panel` / `dart::gui::Tool` (or equivalent callback hook)
+     interface so per-example `main.cpp` files can register custom
+     widgets/key handlers without reaching into private
+     `detail/filament/imgui_overlay.hpp`. This is the minimum panel/tool API
+     that STEERING previously deferred — it's now load-bearing for Tier-A.
+   - **Acceptance per migrated example**: example builds and links against
+     `dart::gui` only (no `dart::gui::experimental::filament`, no
+     `<filament/...>`, no `<GLFW/...>`, no `<imgui.h>`); a focused unit or
+     headless smoke confirms the migrated controls fire; the corresponding
+     `--scene <name>` fixture in `scene_fixtures.cpp` can then shrink to a
+     visual-only fallback.
+
+8. **Drop the `experimental/` segment from code paths.** Now that
+   `dart::gui::*` is the promoted namespace and `dart/gui/*.hpp` are the
+   stable headers, the physical `dart/gui/experimental/` directory and the
+   `dart/gui/experimental/detail/filament/` private path are debt. Sequence:
+   - **8a**: Move public compatibility shims `dart/gui/experimental/*.hpp` →
+     thin `#include`-only headers that re-export from `dart/gui/*.hpp`. They
+     should keep working for one release cycle, but have ZERO declarations
+     of their own. Mark them `[[deprecated]]` with a one-cycle removal
+     window.
+   - **8b**: Move the private backend implementation
+     `dart/gui/experimental/detail/filament/*` → `dart/gui/detail/filament/*`
+     (one mechanical rename, preserve commit history with `git mv`). Update
+     all `#include "dart/gui/experimental/detail/filament/..."` paths in the
+     same commit. The boundary-guard test
+     (`UNIT_gui_FilamentSceneExtraction`) and the configure-time check in
+     `dart_gui_filament_add_example()` need their hardcoded paths updated
+     in the same commit.
+   - **8c**: Move the renderer-independent implementation files
+     `dart/gui/experimental/{viewer,scene,renderable,interaction,debug,geometry,profile,shape_descriptions}.cpp`
+     → `dart/gui/*.cpp` to match where the headers now live. After this,
+     `dart/gui/experimental/` contains only `[[deprecated]]` shim headers.
+   - **8d**: Remove the `experimental` token from the dartpy module name
+     (`dartpy.gui.experimental` → `dartpy.gui`), with a `dartpy.gui.experimental`
+     proxy module that emits a `DeprecationWarning` and re-exports.
+   - **8e**: After one release cycle (NOT in this branch), delete the shims
+     and `dart/gui/experimental/` entirely. This branch should leave
+     `experimental/` containing only deprecation shims so the path itself
+     becomes a reading-cue for "this name is going away."
+   - **Constraint for 8b**: do NOT change file boundaries inside
+     `detail/filament/*` during the rename — the over/under-fragmentation
+     review issues are a separate slice from the directory rename. One
+     mechanical concern per commit.
+   - **CMake helper rename in same slice**: `dart_gui_filament_add_example`
+     stays under `dart/gui/detail/filament/filament_sources.cmake`. The
+     macro's name is acceptable (it names the backend, not the path).
+
+The order is: capture slice (item 6 above) → item 7 (per-example real
+sources, with the panel/tool API as a precondition) → item 8 (drop
+`experimental/`). Item 8 should NOT start before item 7 lands a real
+per-example `main.cpp` for at least 3 Tier-A examples, because the
+deprecation shims need to know which `dart::gui` symbols are actually
+consumed externally.
+
 ### Open issues raised by the parallel review pass
 
 - **[verifier]** Per-scene headless smokes (~30 scenes) all run

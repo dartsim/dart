@@ -302,7 +302,7 @@ jobs:
   filament-gui-smoke:
     needs: changes
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true'
-    name: Filament GUI Smoke (${{ matrix.compiler.name }})
+    name: DART GUI Smoke (${{ matrix.compiler.name }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -334,10 +334,10 @@ jobs:
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
 
-      - name: Build and run Filament GUI smoke tests
+      - name: Build and run DART GUI smoke tests
         env:
           CC: ${{ matrix.compiler.cc }}
           CXX: ${{ matrix.compiler.cxx }}
         run: |
           DART_VERBOSE=ON \
-          pixi run test-filament-gui-smoke
+          pixi run test-dart-gui-smoke

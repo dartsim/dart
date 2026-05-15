@@ -34,7 +34,7 @@ than renderer or windowing types.
 Unit tests: `tests/unit/gui/` (Filament descriptor, scene extraction, and
 public-header boundary guards)
 
-Filament smoke: `pixi run test-filament-gui-smoke` when changing the explicit
+DART GUI smoke: `pixi run test-dart-gui-smoke` when changing the explicit
 fetch path, renderer fixture behavior, or screenshot smoke coverage.
 
 Examples: `examples/dartsim/`, restored GUI example launchers, and

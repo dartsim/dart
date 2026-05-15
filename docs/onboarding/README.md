@@ -72,7 +72,7 @@ This onboarding guide is organized into several focused documents:
 
 - **[../background/dynamics/](../background/dynamics/)** - Mathematical foundations (Lagrangian dynamics, equations of motion)
 - **[../background/lcp/](../background/lcp/)** - LCP solver theory (contact handling, constraint solving)
-- **[gui-rendering.md](gui-rendering.md)** - Filament GUI rendering details
+- **[gui-rendering.md](gui-rendering.md)** - DART GUI rendering details
 - **[python-bindings.md](python-bindings.md)** - nanobind bindings architecture
 - **[api-documentation.md](api-documentation.md)** - Publishing strategy for RTD and GitHub Pages API docs
 - **[build-system.md](build-system.md)** - CMake internals and dependency analysis
@@ -512,7 +512,7 @@ sequenceDiagram
     participant World as World
     participant Descriptors as GUI Descriptors
     participant Viewer as Viewer
-    participant GUI as Filament GUI
+    participant GUI as DART GUI
 
     User->>Skeleton: create()
     User->>Skeleton: createJointAndBodyNodePair<FreeJoint>()
@@ -521,7 +521,7 @@ sequenceDiagram
     User->>World: addSkeleton(skeleton)
     User->>Descriptors: extract renderable descriptors
     User->>Viewer: create viewer options
-    User->>Viewer: run Filament GUI
+    User->>Viewer: run DART GUI
 
     loop Rendering Loop
         Viewer->>World: step()
@@ -1121,7 +1121,7 @@ This repository contains additional detailed analysis documents:
 
 - [`architecture.md`](architecture.md) - Core DART architecture deep dive
 - [`aspect-system.md`](aspect-system.md) - Aspect/State/Properties design and implementation
-- [`gui-rendering.md`](gui-rendering.md) - Filament GUI rendering details
+- [`gui-rendering.md`](gui-rendering.md) - DART GUI rendering details
 - [`python-bindings.md`](python-bindings.md) - Python bindings (dartpy) reference
 - [`build-system.md`](build-system.md) - Build system and dependencies
 - [`dynamics.md`](dynamics.md) - Dynamics system exploration
