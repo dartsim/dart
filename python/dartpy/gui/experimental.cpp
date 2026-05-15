@@ -391,6 +391,13 @@ void defGuiExperimentalModule(nb::module_& m)
       nb::arg("plane_point"),
       nb::arg("plane_normal"));
   m.def(
+      "compute_axis_drag_translation",
+      &gui::computeAxisDragTranslation,
+      nb::arg("previous_ray"),
+      nb::arg("current_ray"),
+      nb::arg("axis_point"),
+      nb::arg("axis_direction"));
+  m.def(
       "translate_free_joint_renderable",
       &gui::translateFreeJointRenderable,
       nb::arg("renderable"),

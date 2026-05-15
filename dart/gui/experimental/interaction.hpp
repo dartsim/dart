@@ -73,6 +73,12 @@ DART_GUI_API std::optional<Eigen::Vector3d> computePlaneDragTranslation(
     const Eigen::Vector3d& planePoint,
     const Eigen::Vector3d& planeNormal);
 
+DART_GUI_API std::optional<Eigen::Vector3d> computeAxisDragTranslation(
+    const PickRay& previousRay,
+    const PickRay& currentRay,
+    const Eigen::Vector3d& axisPoint,
+    const Eigen::Vector3d& axisDirection);
+
 DART_GUI_API bool translateFreeJointRenderable(
     const RenderableDescriptor& renderable,
     const Eigen::Vector3d& worldTranslation);

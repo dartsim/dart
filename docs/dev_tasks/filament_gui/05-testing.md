@@ -450,10 +450,10 @@ Known current result:
   simple-frame visuals. The Filament example wires the combined frame-renderable
   path into keyboard nudging for selected dynamic bodies and `SimpleFrame`
   visuals.
-- Renderer-independent plane intersection and plane-drag translation are
-  unit-tested in C++ and Python. The Filament example wires that path into
-  Ctrl-left camera-plane dragging for selected dynamic bodies and `SimpleFrame`
-  visuals.
+- Renderer-independent plane intersection, plane-drag translation, and
+  axis-drag translation are unit-tested in C++ and Python. The Filament example
+  wires the plane path into Ctrl-left camera-plane dragging for selected dynamic
+  bodies and `SimpleFrame` visuals.
 - `UNIT_gui_FilamentSceneExtraction` also covers run-option normalization,
   viewer lifecycle state, bounded screenshot/frame gates, RGBA-to-PPM
   screenshot storage, orbit-camera basis/update behavior, and perspective
@@ -466,7 +466,7 @@ Known current result:
   bindings, and `python/tests/unit/gui/test_experimental_scene.py` passes
   against the local build tree, including the camera/run helper,
   viewer lifecycle, renderable set update planning, frame-translation,
-  plane-drag helper, and screenshot storage bindings.
+  plane/axis-drag helpers, and screenshot storage bindings.
 - The same Python test passes against the OSG-free Filament configure with
   `DART_BUILD_GUI=OFF`, `DART_BUILD_GUI_FILAMENT=ON`, and
   `DART_BUILD_DARTPY=ON`, covering the reduced `dartpy.gui.experimental` module

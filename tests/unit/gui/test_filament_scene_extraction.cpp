@@ -1796,6 +1796,32 @@ TEST(FilamentSceneExtraction, PlaneDragHelpers_ReturnExpectedTranslation)
           .has_value());
 }
 
+TEST(FilamentSceneExtraction, AxisDragHelpers_ReturnExpectedTranslation)
+{
+  const Eigen::Vector3d axisPoint = Eigen::Vector3d::Zero();
+  const Eigen::Vector3d axisDirection = Eigen::Vector3d::UnitX();
+  const dart::gui::experimental::PickRay previousRay{
+      Eigen::Vector3d(0.0, 0.0, 1.0), Eigen::Vector3d(0.0, 0.0, -1.0)};
+  const dart::gui::experimental::PickRay currentRay{
+      Eigen::Vector3d(0.0, 1.0, 1.0), Eigen::Vector3d(1.0, -1.0, -1.0)};
+
+  const auto translation = dart::gui::experimental::computeAxisDragTranslation(
+      previousRay, currentRay, axisPoint, axisDirection);
+  ASSERT_TRUE(translation.has_value());
+  EXPECT_TRUE(translation->isApprox(Eigen::Vector3d::UnitX()));
+
+  const dart::gui::experimental::PickRay parallelRay{
+      Eigen::Vector3d(-1.0, 0.0, 0.0), Eigen::Vector3d::UnitX()};
+  EXPECT_FALSE(
+      dart::gui::experimental::computeAxisDragTranslation(
+          parallelRay, currentRay, axisPoint, axisDirection)
+          .has_value());
+  EXPECT_FALSE(
+      dart::gui::experimental::computeAxisDragTranslation(
+          previousRay, currentRay, axisPoint, Eigen::Vector3d::Zero())
+          .has_value());
+}
+
 TEST(FilamentSceneExtraction, MakeSelectionDebugLines_ReturnsWorldSpaceBounds)
 {
   auto world = World::create("world");

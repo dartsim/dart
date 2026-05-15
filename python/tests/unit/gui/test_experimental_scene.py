@@ -547,6 +547,30 @@ def test_experimental_plane_drag_helpers():
     )
 
 
+def test_experimental_axis_drag_helpers():
+    previous_ray = dart.gui.experimental.PickRay()
+    previous_ray.origin = np.array([0.0, 0.0, 1.0])
+    previous_ray.direction = np.array([0.0, 0.0, -1.0])
+    current_ray = dart.gui.experimental.PickRay()
+    current_ray.origin = np.array([0.0, 1.0, 1.0])
+    current_ray.direction = np.array([1.0, -1.0, -1.0])
+
+    translation = dart.gui.experimental.compute_axis_drag_translation(
+        previous_ray, current_ray, np.zeros(3), np.array([1.0, 0.0, 0.0])
+    )
+    assert np.allclose(translation, [1.0, 0.0, 0.0])
+
+    parallel_ray = dart.gui.experimental.PickRay()
+    parallel_ray.origin = np.array([-1.0, 0.0, 0.0])
+    parallel_ray.direction = np.array([1.0, 0.0, 0.0])
+    assert (
+        dart.gui.experimental.compute_axis_drag_translation(
+            parallel_ray, current_ray, np.zeros(3), np.array([1.0, 0.0, 0.0])
+        )
+        is None
+    )
+
+
 def test_experimental_center_of_mass_debug_lines():
     world = dart.World.create("world")
     skeleton = dart.Skeleton("robot")

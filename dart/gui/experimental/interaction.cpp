@@ -886,6 +886,61 @@ std::optional<Eigen::Vector3d> computePlaneDragTranslation(
   return *currentPoint - *previousPoint;
 }
 
+std::optional<Eigen::Vector3d> computeAxisDragTranslation(
+    const PickRay& previousRay,
+    const PickRay& currentRay,
+    const Eigen::Vector3d& axisPoint,
+    const Eigen::Vector3d& axisDirection)
+{
+  if (!axisPoint.allFinite() || !axisDirection.allFinite()) {
+    return std::nullopt;
+  }
+
+  const double axisNorm = axisDirection.norm();
+  if (!std::isfinite(axisNorm) || axisNorm < 1e-12) {
+    return std::nullopt;
+  }
+
+  const Eigen::Vector3d axis = axisDirection / axisNorm;
+  const auto closestAxisParameter = [&](const PickRay& ray) {
+    if (!ray.origin.allFinite() || !ray.direction.allFinite()) {
+      return std::optional<double>{};
+    }
+
+    const double rayNorm = ray.direction.norm();
+    if (!std::isfinite(rayNorm) || rayNorm < 1e-12) {
+      return std::optional<double>{};
+    }
+
+    const Eigen::Vector3d direction = ray.direction / rayNorm;
+    const double axisDotRay = axis.dot(direction);
+    const double denom = 1.0 - axisDotRay * axisDotRay;
+    if (!std::isfinite(denom) || std::abs(denom) < 1e-12) {
+      return std::optional<double>{};
+    }
+
+    const Eigen::Vector3d offset = axisPoint - ray.origin;
+    const double axisOffset = axis.dot(offset);
+    const double rayOffset = direction.dot(offset);
+    const double axisParameter = (axisDotRay * rayOffset - axisOffset) / denom;
+    const double rayParameter = axisDotRay * axisParameter + rayOffset;
+    if (!std::isfinite(axisParameter) || !std::isfinite(rayParameter)
+        || rayParameter < 0.0) {
+      return std::optional<double>{};
+    }
+
+    return std::optional<double>{axisParameter};
+  };
+
+  const auto previousParameter = closestAxisParameter(previousRay);
+  const auto currentParameter = closestAxisParameter(currentRay);
+  if (!previousParameter || !currentParameter) {
+    return std::nullopt;
+  }
+
+  return axis * (*currentParameter - *previousParameter);
+}
+
 bool translateFreeJointRenderable(
     const RenderableDescriptor& renderable,
     const Eigen::Vector3d& worldTranslation)

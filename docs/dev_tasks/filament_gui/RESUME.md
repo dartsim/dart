@@ -70,10 +70,11 @@ panel.
 Backend-hidden free-joint, simple-frame, and combined
 frame-renderable translation helpers are covered by C++ and Python tests, and
 the example uses the combined helper for keyboard nudging of selected dynamic
-bodies and `SimpleFrame` visuals. Backend-hidden plane intersection and
-plane-drag translation helpers are also covered by C++ and Python tests, and the
-example uses them for Ctrl-left camera-plane dragging of selected dynamic bodies
-and `SimpleFrame` visuals. Backend-hidden
+bodies and `SimpleFrame` visuals. Backend-hidden plane intersection,
+plane-drag translation, and axis-drag translation helpers are also covered by
+C++ and Python tests, and the example uses the plane helpers for Ctrl-left
+camera-plane dragging of selected dynamic bodies and `SimpleFrame` visuals.
+Backend-hidden
 run-option normalization, viewer lifecycle state, viewer profiling
 accumulation, and orbit-camera helpers now live in `dart-gui-experimental`;
 the Filament example uses them for bounded screenshots, camera placement,
@@ -90,8 +91,8 @@ experimental consumers. Viewer-runtime helpers live in
 `dart/gui/experimental/geometry.cpp`, shape description extraction lives in
 `dart/gui/experimental/shape_descriptions.cpp`, renderable identity/extraction
 and resource versioning live in `dart/gui/experimental/renderable.cpp`, and
-picking, plane dragging, frame translation, and renderable set planning live in
-`dart/gui/experimental/interaction.cpp`. Backend-hidden renderable set planning
+picking, plane/axis dragging, frame translation, and renderable set planning
+live in `dart/gui/experimental/interaction.cpp`. Backend-hidden renderable set planning
 now also compares active render-resource versions so
 descriptor-owned geometry changes, including dynamic soft-mesh vertex changes,
 recreate Filament resources. Supported descriptor kinds that cannot produce
@@ -249,8 +250,8 @@ also builds through `dart-gui-experimental` with
 `DART_BUILD_GUI=OFF` and `DART_BUILD_DARTPY=OFF`, proving the path does not
 require the legacy OSG GUI target. Constrained `dartpy.gui.experimental`
 bindings now expose the backend-hidden descriptor, picking, frame-translation,
-plane-drag, debug-line, run-option, viewer lifecycle, and orbit-camera APIs. They
-pass the focused Python smoke test in both the default configure and the
+plane/axis drag, debug-line, run-option, viewer lifecycle, and orbit-camera
+APIs. They pass the focused Python smoke test in both the default configure and the
 OSG-free Filament configure with `DART_BUILD_DARTPY=ON`; the OSG-free configure
 also passes the default and drag-and-drop Filament headless smokes. Local
 Linux CPython 3.12, 3.13, and 3.14 wheel builds were repaired with

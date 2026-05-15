@@ -73,10 +73,12 @@
   The Filament example uses the combined path with camera-relative nudge math
   for keyboard nudging of selected dynamic bodies and `SimpleFrame` visuals
   without exposing Filament input types.
-- The experimental interaction layer includes tested plane intersection and
-  plane-drag translation helpers. The Filament example uses them for Ctrl-left
-  camera-plane dragging of selected dynamic bodies and `SimpleFrame` visuals
-  without exposing Filament input types.
+- The experimental interaction layer includes tested plane intersection,
+  plane-drag translation, and axis-drag translation helpers. The Filament
+  example uses the plane helpers for Ctrl-left camera-plane dragging of
+  selected dynamic bodies and `SimpleFrame` visuals without exposing Filament
+  input types, while the axis helper covers the backend-hidden primitive needed
+  for future constrained manipulators.
 - The Filament example's GLFW/ImGui input bridge now lives in
   `dart/gui/experimental/detail/filament/input.hpp` and `.cpp`, keeping
   backend-specific mouse/controller input, orbit-camera scroll callback
@@ -218,10 +220,10 @@
   `dart/gui/experimental/detail/filament/panel.hpp` and `.cpp`; it remains
   private MVP policy rather than a promoted panel/tool API.
 - `dartpy.gui.experimental` now exposes the constrained backend-hidden
-  descriptor, picking, frame-translation, debug-line, run-option, viewer
-  lifecycle, screenshot storage, orbit-camera, orbit-camera controller,
-  directional nudge, and projection/clipping APIs used by the current C++
-  experiment.
+  descriptor, picking, frame-translation, plane/axis drag, debug-line,
+  run-option, viewer lifecycle, screenshot storage, orbit-camera, orbit-camera
+  controller, directional nudge, and projection/clipping APIs used by the
+  current C++ experiment.
 - The constrained `dartpy.gui.experimental` module can build and pass its
   focused test with `DART_BUILD_GUI=OFF` when the experimental GUI target is
   present, so the Python descriptor API no longer depends on the legacy GUI

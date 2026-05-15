@@ -33,6 +33,7 @@ __all__: list[str] = [
     'ViewerLifecycleState',
     'add_orbit_camera_scroll',
     'camera_eye',
+    'compute_axis_drag_translation',
     'compute_camera_relative_nudge',
     'compute_plane_drag_translation',
     'describe_shape',
@@ -417,6 +418,12 @@ def compute_plane_drag_translation(
     current_ray: PickRay,
     plane_point: Array,
     plane_normal: Array,
+) -> Array | None: ...
+def compute_axis_drag_translation(
+    previous_ray: PickRay,
+    current_ray: PickRay,
+    axis_point: Array,
+    axis_direction: Array,
 ) -> Array | None: ...
 def translate_free_joint_renderable(
     renderable: RenderableDescriptor, world_translation: Array

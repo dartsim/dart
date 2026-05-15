@@ -105,9 +105,9 @@ Implemented:
   translation helpers, with C++ and Python tests. The example uses the combined
   helper for keyboard nudging of selected dynamic bodies and `SimpleFrame`
   visuals, covering the core data path needed by drag-and-drop style workflows.
-- Backend-hidden plane intersection and plane-drag translation helpers, with
-  C++ and Python tests, and example Ctrl-left dragging for selected dynamic
-  bodies in a camera-facing plane.
+- Backend-hidden plane intersection, plane-drag translation, and axis-drag
+  translation helpers, with C++ and Python tests, and example Ctrl-left
+  dragging for selected dynamic bodies in a camera-facing plane.
 - A selectable `--scene drag-and-drop` fixture that recreates the legacy
   drag-and-drop example's `SimpleFrame` anchor, child frame, and axis markers
   through the same backend-hidden extraction and frame-translation path.
@@ -147,9 +147,9 @@ Implemented:
   `dart-gui-experimental` descriptors, debug lines, run options, camera basis,
   and picking helpers.
 - Constrained `dartpy.gui.experimental` bindings for scene descriptors,
-  picking helpers, frame translation, debug-line descriptor generation,
-  run options, orbit-camera helpers, orbit-camera controller helpers, and
-  directional nudge helpers.
+  picking helpers, frame translation, plane/axis drag, debug-line descriptor
+  generation, run options, orbit-camera helpers, orbit-camera controller
+  helpers, and directional nudge helpers.
 - A local Linux runtime smoke pass with the upstream Filament archive,
   compatible libc++/libc++abi libraries, and Mesa llvmpipe.
 

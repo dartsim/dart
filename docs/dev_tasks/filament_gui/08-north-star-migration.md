@@ -85,9 +85,9 @@ The experimental Filament work already covers a narrower backend-hidden slice:
 renderable descriptors, common primitive descriptors, TriMesh mesh references,
 finite plane proxies, visual shadow flags, debug line descriptors, bounds-based
 picking, primitive and triangle-backed surface picking, simple selection,
-selected-frame translation, plane dragging, orbit camera math, lifecycle state,
-screenshot storage, constrained Python bindings, renderable set update planning,
-and headless smoke tests.
+selected-frame translation, plane and axis drag helpers, orbit camera math,
+lifecycle state, screenshot storage, constrained Python bindings, renderable
+set update planning, and headless smoke tests.
 
 `09-legacy-surface-audit.md` maps these legacy surfaces at the file/API level
 into DART concepts to keep, Filament-private implementation details, and

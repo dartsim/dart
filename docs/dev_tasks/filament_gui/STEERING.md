@@ -14,7 +14,7 @@ recommended maintainability slices:
 - `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp` own scene
   option parsing and dispatch, while `scene_fixtures.hpp` and `.cpp` own
   reusable DART world fixtures.
-- `dart/gui/experimental/interaction.cpp` owns picking, plane-drag,
+- `dart/gui/experimental/interaction.cpp` owns picking, plane/axis-drag,
   frame-translation, and renderable set update planning helpers.
 - `dart/gui/experimental/renderable.hpp`, `interaction.hpp`, and `debug.hpp`
   now split the constrained public surface while `scene.hpp` remains an

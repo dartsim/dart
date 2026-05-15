@@ -156,9 +156,12 @@
     policy, GUI scale normalization, and camera-relative keyboard nudge math now
     also live in a dedicated `dart/gui/experimental/viewer.hpp` runtime helper
     and are consumed by the Filament example through `dart-gui-experimental`.
+    Axis-constrained drag translation now also lives in the backend-hidden
+    interaction helpers with C++ and Python coverage for future constrained
+    manipulators.
     The backend-hidden implementation is now split by responsibility across
     `viewer.cpp`, `debug.cpp`, `geometry.cpp`, `interaction.cpp`,
-    `shape_descriptions.cpp`, and `scene.cpp`, with focused experimental
+    `shape_descriptions.cpp`, and `profile.cpp`, with focused experimental
     headers for renderable, interaction, debug, geometry, and viewer concepts
     while `scene.hpp` remains an aggregate compatibility include for existing
     experimental consumers. Filament renderer setup, frame lifecycle, material

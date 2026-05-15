@@ -146,6 +146,9 @@
   support Ctrl-left camera-plane dragging of selected dynamic bodies or
   `SimpleFrame` visuals in the Filament example, with C++/Python coverage for
   the shared math.
+- Backend-hidden axis-drag translation helpers are also covered by C++/Python
+  tests, giving future constrained manipulators a renderer-independent math
+  primitive without exposing Filament input types.
 - The Filament example includes a selectable `--scene hello-world` fixture that
   extracts and renders the legacy hello-world example's single dynamic box and
   ground plane through the same descriptor-driven Filament path.
@@ -440,8 +443,9 @@
   normals and primitive
   sphere/ellipsoid/cylinder/capsule/cone/pyramid/multi-sphere/point-cloud/voxel-grid/plane
   hit normals,
-  free-joint translation, plane-drag helpers, debug-line descriptor generation
-  including support-polygon, inertia-box, and collision-shape-bound overlays,
+  free-joint translation, plane/axis-drag helpers, debug-line descriptor
+  generation including support-polygon, inertia-box, and collision-shape-bound
+  overlays,
   run options including GUI scale normalization, viewer lifecycle state,
   screenshot storage, orbit-camera helpers, orbit-camera controller helpers,
   directional nudge helpers, and perspective projection/clipping helpers.
