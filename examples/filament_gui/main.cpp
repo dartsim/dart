@@ -4031,7 +4031,7 @@ std::optional<Renderable> createRenderableFromDescriptor(
 
 void logUnsupportedRenderableDescriptor(const RenderableDescriptor& descriptor)
 {
-  std::cerr << "Unsupported DART shape";
+  std::cerr << "DART shape";
   if (!descriptor.geometry.shapeType.empty()) {
     std::cerr << " '" << descriptor.geometry.shapeType << "'";
   }
@@ -4134,7 +4134,8 @@ void synchronizeSceneRenderables(
     auto renderable = createRenderableFromDescriptor(
         engine, materials, textureCache, descriptor);
     if (!renderable) {
-      if (descriptor.geometry.kind == ShapeKind::Unsupported) {
+      if (descriptor.geometry.kind == ShapeKind::Unsupported
+          || !descriptor.geometry.unsupportedReason.empty()) {
         logUnsupportedRenderableDescriptorOnce(
             loggedUnsupportedRenderableIds, descriptor);
       }

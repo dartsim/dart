@@ -550,6 +550,13 @@ TEST(
   EXPECT_TRUE(points->localBoundsMax.isApprox(Eigen::Vector3d(0.3, 0.1, 0.6)));
   EXPECT_TRUE(points->size.isApprox(Eigen::Vector3d(0.8, 0.5, 0.6)));
 
+  PointCloudShape emptyPointCloud(0.2);
+  const auto emptyPoints = describeShape(emptyPointCloud);
+  ASSERT_TRUE(emptyPoints.has_value());
+  EXPECT_EQ(emptyPoints->kind, ShapeKind::PointCloud);
+  EXPECT_NE(
+      emptyPoints->unsupportedReason.find("no points"), std::string::npos);
+
   HeightmapShaped heightmap;
   const std::array<double, 6> heights{1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
   heightmap.setHeightField(3u, 2u, heights);
@@ -716,6 +723,16 @@ TEST(
   ASSERT_TRUE(mesh->hasLocalBounds);
   EXPECT_TRUE(mesh->localBoundsMin.isApprox(Eigen::Vector3d(0.0, 0.0, 0.0)));
   EXPECT_TRUE(mesh->localBoundsMax.isApprox(Eigen::Vector3d(2.0, 3.0, 0.0)));
+
+  std::shared_ptr<dart::math::TriMesh<double>> emptyTriMesh;
+  const MeshShape emptyMeshShape(
+      Eigen::Vector3d::Ones(), emptyTriMesh, dart::common::Uri{});
+  const auto emptyMesh = describeShape(emptyMeshShape);
+  ASSERT_TRUE(emptyMesh.has_value());
+  EXPECT_EQ(emptyMesh->kind, ShapeKind::Mesh);
+  EXPECT_NE(
+      emptyMesh->unsupportedReason.find("no triangle mesh data"),
+      std::string::npos);
 
   const auto plane = describeShape(PlaneShape(Eigen::Vector3d::UnitZ(), 0.25));
   ASSERT_TRUE(plane.has_value());

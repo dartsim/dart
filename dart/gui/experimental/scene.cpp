@@ -1325,6 +1325,14 @@ bool containsRenderableId(const std::vector<RenderableId>& ids, RenderableId id)
   return std::find(ids.begin(), ids.end(), id) != ids.end();
 }
 
+void setDiagnosticIfMissingGeometry(
+    GeometryDescriptor& descriptor, const std::string& reason)
+{
+  if (descriptor.unsupportedReason.empty()) {
+    descriptor.unsupportedReason = reason;
+  }
+}
+
 void hashCombine(std::size_t& seed, std::size_t value)
 {
   constexpr auto kHashMixConstant
@@ -1465,6 +1473,10 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
     if (hasBounds) {
       descriptor.size = max - min;
       setLocalBounds(descriptor, min, max);
+    } else {
+      setDiagnosticIfMissingGeometry(
+          descriptor,
+          "MultiSphereConvexHullShape has no positive-radius spheres");
     }
     return descriptor;
   }
@@ -1508,6 +1520,13 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
     if (hasBounds) {
       descriptor.size = max - min;
       setLocalBounds(descriptor, min, max);
+    } else {
+      setDiagnosticIfMissingGeometry(
+          descriptor, "LineSegmentShape has no vertices");
+    }
+    if (descriptor.lineConnections.empty()) {
+      setDiagnosticIfMissingGeometry(
+          descriptor, "LineSegmentShape has no valid line connections");
     }
     return descriptor;
   }
@@ -1526,6 +1545,11 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
       }
       descriptor.size = max - min;
       setLocalBounds(descriptor, min, max);
+    }
+    if (descriptor.triangleVertices.empty()
+        || descriptor.triangleIndices.empty()) {
+      setDiagnosticIfMissingGeometry(
+          descriptor, "ConvexMeshShape has no triangle mesh data");
     }
     return descriptor;
   }
@@ -1568,6 +1592,9 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
     if (hasBounds) {
       descriptor.size = max - min;
       setLocalBounds(descriptor, min, max);
+    } else {
+      setDiagnosticIfMissingGeometry(
+          descriptor, "PointCloudShape has no points");
     }
     return descriptor;
   }
@@ -1577,6 +1604,11 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
     descriptor.kind = ShapeKind::Heightmap;
     setHeightmapTriangleData(descriptor, *heightmap);
     setShapeBoundingBoxBounds(descriptor, *heightmap);
+    if (descriptor.triangleVertices.empty()
+        || descriptor.triangleIndices.empty()) {
+      setDiagnosticIfMissingGeometry(
+          descriptor, "HeightmapShape has no triangle mesh data");
+    }
     return descriptor;
   }
 
@@ -1585,6 +1617,11 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
     descriptor.kind = ShapeKind::Heightmap;
     setHeightmapTriangleData(descriptor, *heightmap);
     setShapeBoundingBoxBounds(descriptor, *heightmap);
+    if (descriptor.triangleVertices.empty()
+        || descriptor.triangleIndices.empty()) {
+      setDiagnosticIfMissingGeometry(
+          descriptor, "HeightmapShape has no triangle mesh data");
+    }
     return descriptor;
   }
 
@@ -1593,6 +1630,11 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
     descriptor.kind = ShapeKind::SoftMesh;
     setSoftMeshTriangleData(descriptor, *softMesh);
     setSoftMeshBounds(descriptor, *softMesh);
+    if (descriptor.triangleVertices.empty()
+        || descriptor.triangleIndices.empty()) {
+      setDiagnosticIfMissingGeometry(
+          descriptor, "SoftMeshShape has no triangle mesh data");
+    }
     return descriptor;
   }
 
@@ -1601,6 +1643,10 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
       = dynamic_cast<const dynamics::VoxelGridShape*>(&shape)) {
     descriptor.kind = ShapeKind::VoxelGrid;
     setVoxelGridData(descriptor, *voxelGrid);
+    if (descriptor.voxelCenters.empty()) {
+      setDiagnosticIfMissingGeometry(
+          descriptor, "VoxelGridShape has no occupied voxels");
+    }
     return descriptor;
   }
 #endif
@@ -1637,6 +1683,14 @@ std::optional<GeometryDescriptor> describeShape(const dynamics::Shape& shape)
         max = max.cwiseMax(scaled);
       }
       setLocalBounds(descriptor, min, max);
+    }
+    if (descriptor.triangleVertices.empty()
+        || descriptor.triangleIndices.empty()) {
+      std::string reason = "MeshShape has no triangle mesh data";
+      if (!descriptor.meshUri.empty()) {
+        reason += " for '" + descriptor.meshUri + "'";
+      }
+      setDiagnosticIfMissingGeometry(descriptor, reason);
     }
     return descriptor;
   }

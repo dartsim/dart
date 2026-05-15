@@ -70,6 +70,10 @@
   render-resource versions, so descriptor-owned geometry changes, including
   dynamic soft-mesh vertex changes, recreate Filament resources without
   exposing renderer handles.
+- Supported descriptor kinds that cannot produce renderer resources, such as
+  empty point clouds or meshes without triangle data, now carry diagnostic
+  reasons and are logged once by the Filament example instead of failing
+  silently.
 - The experimental scene layer owns reusable RGBA-to-PPM screenshot storage,
   while the Filament example remains responsible only for renderer readback.
   The current Filament readback path writes top-left-origin screenshots so
