@@ -56,8 +56,6 @@
 #include <dart/gui/experimental/scene.hpp>
 #include <dart/simulation/world.hpp>
 
-#include <imgui.h>
-
 #include <chrono>
 #include <cstddef>
 #include <iostream>
@@ -109,6 +107,7 @@ using dart::gui::experimental::filament::DebugOverlayController;
 using dart::gui::experimental::filament::destroyApplicationResources;
 using dart::gui::experimental::filament::finalizeScreenshotCapture;
 using dart::gui::experimental::filament::getNativeWindow;
+using dart::gui::experimental::filament::getCurrentImGuiIo;
 using dart::gui::experimental::filament::makeDebugOverlayController;
 using dart::gui::experimental::filament::pollApplicationInput;
 using dart::gui::experimental::filament::renderApplicationFrame;
@@ -212,7 +211,7 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
 
   const float guiScale = static_cast<float>(options.guiScale);
   ImGuiOverlay imguiOverlay = createConfiguredImGuiOverlay(*engine, guiScale);
-  auto& imguiIo = ImGui::GetIO();
+  auto& imguiIo = getCurrentImGuiIo();
 
   ViewerLifecycleState lifecycle;
   ApplicationInputState inputState;

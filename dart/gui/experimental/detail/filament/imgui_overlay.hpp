@@ -53,6 +53,7 @@ class View;
 } // namespace filament
 
 struct ImDrawData;
+struct ImGuiIO;
 
 namespace dart::gui::experimental::filament {
 
@@ -79,6 +80,8 @@ struct ImGuiOverlay
 
 ImGuiOverlay createConfiguredImGuiOverlay(
     ::filament::Engine& engine, float guiScale);
+
+ImGuiIO& getCurrentImGuiIo();
 
 void updateImGuiOverlay(
     ::filament::Engine& engine,

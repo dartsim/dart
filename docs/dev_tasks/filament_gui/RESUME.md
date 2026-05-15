@@ -143,8 +143,8 @@ manipulation math remains in `dart-gui-experimental`.
 GLFW initialization/window lifecycle, window-close loop predicate, and
 platform-specific native-window handle selection live in
 `dart/gui/experimental/detail/filament/native_window.hpp` and `.cpp`.
-Filament-native ImGui context setup, style scaling, font loading, overlay
-rendering, and draw-data upload live in
+Filament-native ImGui context setup, style scaling, font loading, current IO
+access, overlay rendering, and draw-data upload live in
 `dart/gui/experimental/detail/filament/imgui_overlay.hpp` and `.cpp`; the
 built-in panel policy remains MVP/example-scoped.
 Per-frame UI input sync, built-in status panel dispatch, debug-overlay

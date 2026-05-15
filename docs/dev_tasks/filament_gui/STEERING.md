@@ -28,8 +28,8 @@ recommended maintainability slices:
   debug-line overlay option defaults and refresh/cleanup for static, contact,
   and selection overlays, including selected-renderable descriptor lookup.
 - `dart/gui/experimental/detail/filament/imgui_overlay.hpp` and `.cpp` own
-  ImGui context setup, style/font initialization, draw-data upload, and overlay
-  teardown.
+  ImGui context setup, style/font initialization, current IO access, draw-data
+  upload, and overlay teardown.
 - `dart/gui/experimental/detail/filament/ui_frame.hpp` and `.cpp` own
   per-frame UI input sync, built-in status panel dispatch, panel-triggered
   debug-overlay refreshes, and ImGui overlay upload.

@@ -221,6 +221,11 @@ ImGuiOverlay createConfiguredImGuiOverlay(
   return createImGuiOverlay(engine);
 }
 
+ImGuiIO& getCurrentImGuiIo()
+{
+  return ImGui::GetIO();
+}
+
 void updateImGuiOverlay(
     ::filament::Engine& engine,
     ImGuiOverlay& overlay,

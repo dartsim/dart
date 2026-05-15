@@ -84,7 +84,7 @@
   key-edge state out of the main viewer loop while the reusable manipulation
   math remains in `dart-gui-experimental`.
 - The Filament-native ImGui context setup, style scaling, font loading,
-  overlay renderer, and draw-data upload now live in
+  current IO access, overlay renderer, and draw-data upload now live in
   `dart/gui/experimental/detail/filament/imgui_overlay.hpp` and `.cpp`; the
   built-in panel contents remain MVP/example-scoped and are still not a
   promoted panel/tool API.
