@@ -49,8 +49,11 @@
 ### Key Build Options
 
 ```cmake
-DART_BUILD_GUI          = ON   # Build OpenSceneGraph GUI
-DART_BUILD_GUI_RAYLIB       = OFF  # Build experimental Raylib integration
+DART_BUILD_GUI          = ON   # Build current legacy OpenSceneGraph GUI
+DART_BUILD_GUI_FILAMENT = OFF  # Build experimental Filament GUI target/example
+DART_USE_SYSTEM_FILAMENT     = ON   # Use installed Filament or Filament_ROOT
+DART_FETCH_FILAMENT          = OFF  # Explicit Linux x86_64 Filament fetch fallback
+DART_BUILD_GUI_RAYLIB       = OFF  # Build legacy experimental Raylib smoke path
 DART_BUILD_DARTPY           = OFF  # Build Python bindings
 DART_BUILD_PROFILE          = OFF  # Enable profiling support
 DART_ENABLE_SIMD            = OFF  # Enable SIMD instructions
@@ -230,13 +233,31 @@ dart/
 
 #### Raylib (Experimental)
 
-- **Purpose:** Optional/experimental backend for windowing + rendering (in progress)
+- **Purpose:** Legacy optional smoke path for windowing + rendering. It is not
+  the maintained GUI replacement direction.
 - **Options:**
   - **Enable**: `DART_BUILD_GUI_RAYLIB=ON`
   - **System Mode** (`DART_USE_SYSTEM_RAYLIB=ON`): Links against a system-installed `raylib`
   - **Fetch Mode** (`DART_USE_SYSTEM_RAYLIB=OFF`): Fetches Raylib from `https://github.com/raysan5/raylib.git` (defaults to the latest git tag)
   - **Fetch Tag Override**: `DART_RAYLIB_GIT_TAG=<tag>` (only used when fetching)
 - **Note:** In out-of-source example builds, `DART_BUILD_GUI_RAYLIB` may be unset; avoid using it to gate standalone example builds. Prefer guarding only in in-source builds or checking for the `raylib` target.
+- **Migration:** Raylib should be removed in the same major-version window as
+  the OSG GUI removal after the Filament-backed `dart::gui` surface is
+  promoted.
+
+#### Filament (Experimental)
+
+- **Purpose:** Candidate replacement for DART's maintained built-in GUI.
+- **Options:**
+  - **Enable**: `DART_BUILD_GUI_FILAMENT=ON`
+  - **System Mode** (`DART_USE_SYSTEM_FILAMENT=ON`): Finds an installed
+    Filament tree, typically through `Filament_ROOT`
+  - **Fetch Mode** (`DART_FETCH_FILAMENT=ON`): Explicitly fetches the pinned
+    Linux x86_64 Filament archive for smoke testing
+- **Migration:** The full replacement plan lives in
+  [`docs/dev_tasks/filament_gui/08-north-star-migration.md`](../dev_tasks/filament_gui/08-north-star-migration.md).
+  New public GUI APIs should describe DART concepts and keep Filament, GLFW,
+  Dear ImGui, OpenGL, Vulkan, Metal, OSG, and Raylib types private.
 
 #### 9. OpenGL
 

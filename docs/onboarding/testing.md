@@ -131,7 +131,7 @@ tests/
 │   ├── common/              # Allocators, factory, logging, memory, strings
 │   ├── constraint/          # Constraint solver API
 │   ├── dynamics/            # Joint tests, inertia calculations, shape node API
-│   ├── gui/                 # Tests for OSG nodes and ImGui integration
+│   ├── gui/                 # Legacy OSG/ImGui tests plus experimental Filament GUI guards
 │   ├── io/                  # Tests for parsers (URDF, SDF error paths)
 │   ├── math/                # Geometry, math operations, random, meshes, LCP solvers
 │   ├── sensor/              # Tests for the sensor API
@@ -192,7 +192,10 @@ Unit tests focus on testing **individual classes or functions in isolation**. Th
 - **common/**: Allocators, factory patterns, logging, memory management, strings, URIs
 - **constraint/**: Constraint solver API tests (without full physics)
 - **dynamics/**: Individual joint tests, inertia calculations, single component tests
-- **gui/**: OSG nodes and ImGui integration tests
+- **gui/**: Legacy OSG nodes and ImGui integration tests, plus experimental
+  Filament descriptor and public-boundary guards. New GUI tests should keep
+  renderer implementation types out of public headers and prefer DART-owned
+  concepts that can survive Filament promotion.
 - **io/**: Parser tests (URDF, SDF error paths)
 - **math/**: Geometry primitives, icosphere generation, mathematical operations, random number generation, triangle meshes, LCP solvers (in `lcp/` subdirectory)
 - **sensor/**: Sensor API tests

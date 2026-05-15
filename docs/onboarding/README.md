@@ -1304,7 +1304,8 @@ This repository contains additional detailed analysis documents:
 
 - [`architecture.md`](architecture.md) - Core DART architecture deep dive
 - [`aspect-system.md`](aspect-system.md) - Aspect/State/Properties design and implementation
-- [`gui-rendering.md`](gui-rendering.md) - OpenSceneGraph integration details
+- [`gui-rendering.md`](gui-rendering.md) - Current OpenSceneGraph integration
+  details and Filament replacement status
 - [`python-bindings.md`](python-bindings.md) - Python bindings (dartpy) reference
 - [`build-system.md`](build-system.md) - Build system and dependencies
 - [`dynamics.md`](dynamics.md) - Dynamics system exploration
@@ -1325,15 +1326,19 @@ This repository contains additional detailed analysis documents:
 
 ## Summary
 
-**DART GUI** is a mature, research-grade robotics simulation and visualization library with:
+**DART** is a mature, research-grade robotics simulation library with:
 
 ✅ **O(n) efficient dynamics** via Featherstone algorithms
-✅ **Interactive 3D visualization** with OSG + ImGui
+✅ **Interactive 3D visualization** through the current legacy OSG + ImGui GUI,
+with Filament planned as the maintained replacement direction
 ✅ **Multiple collision backends** (FCL, Bullet, ODE)
 ✅ **Python integration** for ML/research workflows
 ✅ **Extensive file format support** (URDF, SDF, MJCF, SKEL)
 ✅ **Cross-platform** with reproducible builds via pixi
 
-The codebase demonstrates excellent software engineering practices with clear layering, design patterns, and extensibility. The GUI components provide rich interactivity for robotics research and development.
+The codebase demonstrates clear layering, design patterns, and extensibility.
+The GUI components provide rich interactivity today, but new visualization work
+should follow the Filament north-star plan instead of extending OSG-shaped
+public APIs.
 
 </details>

@@ -19,11 +19,24 @@ explicit-fetch smoke coverage. Follow-up completion work is expected to stay on
 separate branches and must keep public headers free of Filament, GLFW, Dear
 ImGui, OpenGL, Vulkan, Metal, OSG, and Raylib types.
 
+The north-star is a full Filament replacement, not a second maintained backend:
+the current main OSG GUI, Raylib smoke path, experimental C++ GUI APIs,
+experimental dartpy GUI APIs, and maintained visualization examples should
+converge onto one Filament-backed `dart::gui` surface. After that surface is
+promoted, delete or collapse abstraction layers whose only remaining purpose is
+choosing among OSG, Raylib, and Filament. Keep only DART-owned concepts such as
+viewer options, cameras, renderables, debug draws, selections, tools, panels,
+screenshots, and simulation run control.
+
 Before promoting Filament to first-class `dart::gui`, complete the remaining
 promotion gates: package-manager availability for Filament, macOS/Windows
 configure/build/runtime evidence, broader robot/environment visual review,
 DART-owned panel/tool abstractions if extension points are needed, and an
 accepted OSG/Raylib deprecation and removal plan.
+
+See `docs/dev_tasks/filament_gui/08-north-star-migration.md` for the migration
+plan and `docs/dev_tasks/filament_gui/09-legacy-surface-audit.md` for the
+current surface classification.
 
 ---
 

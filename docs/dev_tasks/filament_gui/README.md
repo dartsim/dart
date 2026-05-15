@@ -171,6 +171,9 @@
   dartpy GUI bindings, Raylib build/example support, and maintained examples
   into DART-owned concepts to keep, renderer details to make private, and
   renderer-specific surfaces to remove or explicitly leave unsupported.
+- Onboarding docs now identify OSG and Raylib as legacy current-state details,
+  route new GUI work to the Filament north-star plan, and warn against public
+  APIs or abstractions whose only purpose is supporting multiple renderers.
 
 ## Goal
 
@@ -248,3 +251,5 @@ longer express stable DART concepts.
    exposing raw ImGui APIs.
 8. Complete remaining platform and GUI option-matrix wheel evidence before
    promoting anything to `dart-gui`.
+9. Keep onboarding docs aligned with the north-star plan as API names and
+   migration gates move from experimental to promoted `dart::gui`.

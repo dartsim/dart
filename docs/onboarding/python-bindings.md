@@ -56,7 +56,7 @@ namespaces:
 ```
 dartpy/
 ├── io            # File parsers (URDF, SDF, SKEL, MJCF)
-└── gui           # 3D visualization (OpenSceneGraph + ImGui)
+└── gui           # 3D visualization (legacy OpenSceneGraph + ImGui today)
 ```
 
 - Core classes/functions (dynamics, collision, math, simulation, constraint,
@@ -109,6 +109,14 @@ Project policy: official dartpy wheels build with GUI enabled, so `dartpy.gui`
 is expected to be available in release artifacts and CI. For local headless-only
 builds you can disable GUI, but some examples/tutorials will not run.
 
+The current stable `dartpy.gui` surface mirrors the legacy OSG GUI and should
+not define the replacement API shape. Filament completion work should converge
+`dartpy.gui`, `dartpy.gui.experimental`, and the C++ GUI surface onto
+DART-owned concepts, with Filament, GLFW, Dear ImGui, OpenGL, Vulkan, Metal,
+OSG, and Raylib kept out of public Python-facing contracts. See
+`docs/dev_tasks/filament_gui/08-north-star-migration.md` for the promotion
+plan.
+
 ## Fast Iteration Loop
 
 Smallest repeatable local loop for dartpy binding changes.
@@ -141,7 +149,7 @@ Signals to look for:
 ### For End Users
 
 ```bash
-# PyPI wheels (pre-built, includes OSG)
+# PyPI wheels (pre-built, includes the current legacy GUI)
 pip install dartpy
 
 # conda-forge
@@ -166,7 +174,8 @@ Wheels are built using **pixi** environments defined in `pixi.toml`:
 
 - Features: `py312-wheel`, `py313-wheel`
 - Platform-specific build tasks
-- OSG enabled on all platforms
+- Current legacy GUI enabled on all platforms; Filament GUI wheel promotion is
+  still gated by the north-star migration plan
 
 ### Publishing Workflow
 
