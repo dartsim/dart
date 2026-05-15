@@ -56,6 +56,7 @@ struct SceneContentCounts
   std::size_t boxesExampleGrounds = 0;
   std::size_t hardcodedDesignBoxes = 0;
   std::size_t rigidChainBoxes = 0;
+  std::size_t rigidLoopBoxes = 0;
   std::size_t pyramids = 0;
   std::size_t multiSpheres = 0;
   std::size_t lineSegments = 0;

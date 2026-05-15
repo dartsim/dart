@@ -175,6 +175,13 @@
   through descriptor-owned renderables. `pixi run ex rigid_chain` routes to
   this Filament scene by default while the standalone source remains as legacy
   OSG comparison material for the custom per-step damping hook.
+- The Filament example includes a selectable `--scene rigid-loop` fixture that
+  loads the legacy loop-chain SKEL data, restores the loop-closing pose and
+  ball-joint constraint, marks the constrained links red, and renders its ten
+  link boxes through descriptor-owned renderables.
+  `pixi run ex rigid_loop` routes to this Filament scene by default while the
+  standalone source remains as legacy OSG comparison material for damping and
+  constraint setup.
 - The Filament example includes a selectable `--scene drag-and-drop` fixture
   that extracts and renders the legacy drag-and-drop example's `SimpleFrame`
   anchor, child frame, and axis markers through the same manipulation path.
@@ -352,8 +359,8 @@
 - Debug-line overlay refresh and cleanup now live in
   `dart/gui/experimental/detail/filament/debug_overlay.hpp` and `.cpp`.
 - Scene content requirement counting and MVP/G1/hello-world/boxes/
-  hardcoded-design/rigid-chain/drag/simple-frames/soft-bodies/point-cloud/
-  capsule-ground-contact/simulation-event-handler/polyhedron/heightmap
+  hardcoded-design/rigid-chain/rigid-loop/drag/simple-frames/soft-bodies/
+  point-cloud/capsule-ground-contact/simulation-event-handler/polyhedron/heightmap
   validation gates now live in
   `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.
 - Private built-in status panel rendering now lives in

@@ -1223,6 +1223,55 @@ DartScene createRigidChainScene()
   return scene;
 }
 
+DartScene createRigidLoopScene()
+{
+  DartScene scene;
+  scene.world = dart::io::readWorld("dart://sample/skel/chain.skel");
+  if (!scene.world) {
+    throw std::runtime_error(
+        "Failed to load rigid_loop fixture from "
+        "dart://sample/skel/chain.skel");
+  }
+
+  scene.world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  scene.world->setTimeStep(1.0 / 2000.0);
+
+  auto chain = scene.world->getSkeleton(0);
+  if (!chain) {
+    throw std::runtime_error("rigid_loop fixture did not contain a skeleton");
+  }
+  chain->setName(kRigidLoopFixtureSkeletonName);
+
+  Eigen::VectorXd initialPose = Eigen::VectorXd::Zero(chain->getNumDofs());
+  for (const int index : std::array{20, 23, 26, 29}) {
+    if (index < initialPose.size()) {
+      initialPose[index] = 0.4 * dart::math::pi;
+    }
+  }
+  chain->setPositions(initialPose);
+
+  for (std::size_t i = 0; i < chain->getNumBodyNodes(); ++i) {
+    chain->getBodyNode(i)->setColor(Eigen::Vector3d(0.35, 0.55, 0.85));
+  }
+
+  auto* link6 = chain->getBodyNode("link 6");
+  auto* link10 = chain->getBodyNode("link 10");
+  if (!link6 || !link10) {
+    throw std::runtime_error("rigid_loop fixture is missing loop link bodies");
+  }
+
+  link6->setColor(Eigen::Vector3d(0.95, 0.12, 0.12));
+  link10->setColor(Eigen::Vector3d(0.95, 0.12, 0.12));
+
+  const Eigen::Vector3d offset(0.0, 0.025, 0.0);
+  const Eigen::Vector3d jointPosition = link6->getTransform() * offset;
+  scene.world->getConstraintSolver()->addConstraint(
+      std::make_shared<dart::constraint::BallJointConstraint>(
+          link6, link10, jointPosition));
+
+  return scene;
+}
+
 DartScene createDragAndDropScene()
 {
   DartScene scene;

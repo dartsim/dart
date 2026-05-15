@@ -29,6 +29,7 @@
   `--scene boxes` to run the dynamic box-grid fixture,
   `--scene hardcoded-design` to run the hand-built skeleton fixture,
   `--scene rigid-chain` to run the SKEL-loaded chain fixture,
+  `--scene rigid-loop` to run the constrained loop-chain fixture,
   `--scene drag-and-drop` to run the interaction fixture,
   `--scene simple-frames` to run the frame-hierarchy fixture,
   `--scene soft-bodies` to run the soft-body SKEL fixture,
@@ -92,6 +93,10 @@
 - The `--scene rigid-chain` fixture loads the legacy rigid-chain SKEL data and
   renders the chain's box-link descriptors through the same Filament path. The
   standalone source remains comparison material for custom per-step damping.
+- The `--scene rigid-loop` fixture loads the legacy rigid-loop chain data,
+  applies the loop-closing pose, marks the constrained links red, and renders
+  the linked box descriptors through the same Filament path. The standalone
+  source remains comparison material for damping and constraint setup.
 - Windowed playback advances physics against wall-clock time with a bounded
   catch-up step budget. Headless captures remain deterministic and advance one
   simulation step for each rendered frame.
@@ -183,6 +188,12 @@ To run the rigid-chain fixture:
 pixi run ex filament_gui --scene rigid-chain
 ```
 
+To run the rigid-loop fixture:
+
+```bash
+pixi run ex filament_gui --scene rigid-loop
+```
+
 To run the simple-frames fixture:
 
 ```bash
@@ -240,6 +251,9 @@ pixi run ex filament_gui --headless --scene all
 The capture paths are `build/<pixi-env>/filament_gui_mvp.ppm` and
 `build/<pixi-env>/filament_gui_hello_world.ppm`,
 `build/<pixi-env>/filament_gui_boxes.ppm`,
+`build/<pixi-env>/filament_gui_hardcoded_design.ppm`,
+`build/<pixi-env>/filament_gui_rigid_chain.ppm`,
+`build/<pixi-env>/filament_gui_rigid_loop.ppm`,
 `build/<pixi-env>/filament_gui_drag_and_drop.ppm`,
 `build/<pixi-env>/filament_gui_simple_frames.ppm`,
 `build/<pixi-env>/filament_gui_soft_bodies.ppm`,
@@ -344,6 +358,6 @@ DART_BUILD_GUI_FILAMENT_OVERRIDE=ON \
   pixi run config
 cmake --build build/default/cpp/Release --target dart_filament_gui
 ctest --test-dir build/default/cpp/Release \
-  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|hardcoded_design_headless|rigid_chain_headless|drag_and_drop_headless|simple_frames_headless|soft_bodies_headless|point_cloud_headless|capsule_ground_contact_headless|simulation_event_handler_headless|polyhedron_headless|heightmap_headless)_smoke' \
+  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|hardcoded_design_headless|rigid_chain_headless|rigid_loop_headless|drag_and_drop_headless|simple_frames_headless|soft_bodies_headless|point_cloud_headless|capsule_ground_contact_headless|simulation_event_handler_headless|polyhedron_headless|heightmap_headless)_smoke' \
   --output-on-failure
 ```

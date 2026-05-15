@@ -4,13 +4,24 @@
 
 - Goal: form a closed-loop chain using a ball joint constraint.
 - Concepts/APIs: `constraint::BallJointConstraint`, `dart::io::readWorld`.
-- Expected output: an OSG viewer with a chain where two red links close the loop.
+- Expected output: a Filament viewer with a chain where two red links close
+  the loop.
 - Controls: space toggles simulation; ESC exits.
 
 ## Details
 
 The red body nodes are connected by a ball joint constraint to close the
 kinematic loop while the chain moves under gravity and damping.
+
+The recommended in-tree runner now opens the shared Filament viewer:
+
+```bash
+pixi run ex rigid_loop
+```
+
+The standalone source in this directory remains legacy OSG comparison material
+for damping and constraint setup until the promoted `dart::gui` API replaces
+the remaining viewer-specific example code.
 
 ## Build Instructions
 
@@ -23,7 +34,13 @@ From this directory:
 
 ## Execute Instructions
 
-Launch the executable from the build directory above:
+From the DART repository root:
+
+```bash
+pixi run ex rigid_loop
+```
+
+Or launch the legacy standalone executable from the build directory above:
 
     $ ./rigid_loop
 
