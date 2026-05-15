@@ -114,9 +114,10 @@ Example-local ImGui font loading lives with the overlay renderer in
 `examples/filament_gui/imgui_overlay.hpp` and `.cpp`.
 Example-local selection label formatting and G1 IK-target translation glue live
 in `examples/filament_gui/selection.hpp` and `.cpp`.
-Example-local Filament renderable state, lit-material setup, shadow flag
-application, and destruction lifecycle helpers live in
-`examples/filament_gui/renderable_resources.hpp` and `.cpp`.
+Example-local Filament material bundle creation, seed texture resources,
+renderable state, lit-material setup, shadow flag application, and destruction
+lifecycle helpers live in `examples/filament_gui/renderable_resources.hpp` and
+`.cpp`.
 Example-local descriptor-to-scene synchronization, unsupported descriptor
 logging, and renderable transform/selection update helpers live in
 `examples/filament_gui/renderable_sync.hpp` and `.cpp`.

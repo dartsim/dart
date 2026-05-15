@@ -32,6 +32,12 @@
 
 #include "renderable_resources.hpp"
 
+#include "debug_color_material.hpp"
+#include "default_lit_material.hpp"
+#include "textured_lit_material.hpp"
+#include "transparent_lit_material.hpp"
+#include "transparent_textured_lit_material.hpp"
+
 #include <filament/Engine.h>
 #include <filament/Material.h>
 #include <filament/MaterialInstance.h>
@@ -39,8 +45,10 @@
 #include <utils/EntityManager.h>
 
 #include <algorithm>
+#include <array>
 #include <iostream>
 
+#include <cstdint>
 #include <cstdlib>
 
 namespace dart::examples::filament_gui {
@@ -73,6 +81,77 @@ float3 selectionTint(const float3& color)
 }
 
 } // namespace
+
+MaterialSet MaterialResources::materialSet()
+{
+  return {
+      *defaultLit,
+      *texturedLit,
+      *transparentLit,
+      *transparentTexturedLit,
+      *debugColor,
+      checkerTexture,
+      fallbackTexture};
+}
+
+MaterialResources createMaterialResources(filament::Engine& engine)
+{
+  MaterialResources resources;
+  resources.defaultLit
+      = filament::Material::Builder()
+            .package(kDefaultLitMaterial, kDefaultLitMaterialSize)
+            .build(engine);
+  resources.texturedLit
+      = filament::Material::Builder()
+            .package(kTexturedLitMaterial, kTexturedLitMaterialSize)
+            .build(engine);
+  resources.transparentLit
+      = filament::Material::Builder()
+            .package(kTransparentLitMaterial, kTransparentLitMaterialSize)
+            .build(engine);
+  resources.transparentTexturedLit
+      = filament::Material::Builder()
+            .package(
+                kTransparentTexturedLitMaterial,
+                kTransparentTexturedLitMaterialSize)
+            .build(engine);
+  resources.debugColor
+      = filament::Material::Builder()
+            .package(kDebugColorMaterial, kDebugColorMaterialSize)
+            .build(engine);
+  resources.checkerTexture.texture = createCheckerTexture(engine);
+  resources.fallbackTexture.texture = createSolidTexture(
+      engine,
+      std::array<std::uint8_t, 4>{255, 255, 255, 255},
+      TextureColorSpace::Linear);
+  return resources;
+}
+
+void destroyMaterialResources(
+    filament::Engine& engine, MaterialResources& resources)
+{
+  for (auto* texture : resources.textureCache.ownedTextures) {
+    engine.destroy(texture);
+  }
+  resources.textureCache.ownedTextures.clear();
+  resources.textureCache.bindings.clear();
+
+  engine.destroy(resources.fallbackTexture.texture);
+  resources.fallbackTexture.texture = nullptr;
+  engine.destroy(resources.checkerTexture.texture);
+  resources.checkerTexture.texture = nullptr;
+
+  engine.destroy(resources.debugColor);
+  resources.debugColor = nullptr;
+  engine.destroy(resources.transparentTexturedLit);
+  resources.transparentTexturedLit = nullptr;
+  engine.destroy(resources.transparentLit);
+  resources.transparentLit = nullptr;
+  engine.destroy(resources.texturedLit);
+  resources.texturedLit = nullptr;
+  engine.destroy(resources.defaultLit);
+  resources.defaultLit = nullptr;
+}
 
 filament::MaterialInstance* addRenderableMaterial(
     Renderable& renderable,

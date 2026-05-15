@@ -69,6 +69,20 @@ struct MaterialSet
   TextureBinding fallbackTexture;
 };
 
+struct MaterialResources
+{
+  filament::Material* defaultLit = nullptr;
+  filament::Material* texturedLit = nullptr;
+  filament::Material* transparentLit = nullptr;
+  filament::Material* transparentTexturedLit = nullptr;
+  filament::Material* debugColor = nullptr;
+  TextureBinding checkerTexture;
+  TextureBinding fallbackTexture;
+  TextureCache textureCache;
+
+  MaterialSet materialSet();
+};
+
 struct Renderable
 {
   utils::Entity entity;
@@ -91,6 +105,11 @@ struct SceneRenderable
   std::size_t renderResourceVersion = 0;
   Renderable renderable;
 };
+
+MaterialResources createMaterialResources(filament::Engine& engine);
+
+void destroyMaterialResources(
+    filament::Engine& engine, MaterialResources& resources);
 
 filament::MaterialInstance* addRenderableMaterial(
     Renderable& renderable,

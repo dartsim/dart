@@ -130,9 +130,10 @@
 - The Filament example's selection labels and G1 IK-target translation glue now
   live in `examples/filament_gui/selection.hpp` and `.cpp`; renderer-independent
   selection and translation primitives remain in `dart-gui-experimental`.
-- The Filament example's Filament renderable state, material selection and
-  parameter binding helpers, shadow settings, and destruction lifecycle now live
-  in `examples/filament_gui/renderable_resources.hpp` and `.cpp`.
+- The Filament example's Filament material bundle, seed texture resources,
+  renderable state, material selection and parameter binding helpers, shadow
+  settings, and destruction lifecycle now live in
+  `examples/filament_gui/renderable_resources.hpp` and `.cpp`.
 - The Filament example's descriptor-to-scene synchronization, unsupported
   descriptor logging, and renderable transform/selection update helpers now live
   in `examples/filament_gui/renderable_sync.hpp` and `.cpp`.

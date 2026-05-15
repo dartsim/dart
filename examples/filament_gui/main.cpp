@@ -30,12 +30,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "default_lit_material.hpp"
-#include "debug_color_material.hpp"
-#include "textured_lit_material.hpp"
-#include "transparent_lit_material.hpp"
-#include "transparent_textured_lit_material.hpp"
-
 #include "imgui_overlay.hpp"
 #include "input.hpp"
 #include "native_window.hpp"
@@ -66,7 +60,6 @@
 #include <filament/Camera.h>
 #include <filament/Engine.h>
 #include <filament/LightManager.h>
-#include <filament/Material.h>
 #include <filament/Renderer.h>
 #include <filament/Scene.h>
 #include <filament/SwapChain.h>
@@ -79,7 +72,6 @@
 #include <imgui.h>
 
 #include <algorithm>
-#include <array>
 #include <cctype>
 #include <chrono>
 #include <iostream>
@@ -160,25 +152,23 @@ using dart::examples::filament_gui::AppOptions;
 using dart::examples::filament_gui::DartScene;
 using dart::examples::filament_gui::ExampleScene;
 using dart::examples::filament_gui::ImGuiOverlay;
+using dart::examples::filament_gui::MaterialResources;
 using dart::examples::filament_gui::MaterialSet;
 using dart::examples::filament_gui::ProfileAccumulator;
 using dart::examples::filament_gui::Renderable;
 using dart::examples::filament_gui::ScreenshotCapture;
 using dart::examples::filament_gui::SceneRenderable;
-using dart::examples::filament_gui::TextureBinding;
-using dart::examples::filament_gui::TextureCache;
-using dart::examples::filament_gui::TextureColorSpace;
 using dart::examples::filament_gui::configureWindowedViewQuality;
 using dart::examples::filament_gui::createDartScene;
-using dart::examples::filament_gui::createCheckerTexture;
 using dart::examples::filament_gui::createDebugColorGrading;
 using dart::examples::filament_gui::createDebugLineRenderable;
 using dart::examples::filament_gui::createImGuiOverlay;
+using dart::examples::filament_gui::createMaterialResources;
 using dart::examples::filament_gui::createNeutralIndirectLight;
 using dart::examples::filament_gui::createNeutralSkybox;
 using dart::examples::filament_gui::createRenderableFromDescriptor;
-using dart::examples::filament_gui::createSolidTexture;
 using dart::examples::filament_gui::destroyImGuiOverlay;
+using dart::examples::filament_gui::destroyMaterialResources;
 using dart::examples::filament_gui::destroyRenderable;
 using dart::examples::filament_gui::elapsedMs;
 using dart::examples::filament_gui::handleScroll;
@@ -294,55 +284,8 @@ int main(int argc, char* argv[])
     configureWindowedViewQuality(*view);
   }
 
-  auto* material
-      = filament::Material::Builder()
-            .package(
-                dart::examples::filament_gui::kDefaultLitMaterial,
-                dart::examples::filament_gui::kDefaultLitMaterialSize)
-            .build(*engine);
-  auto* texturedMaterial
-      = filament::Material::Builder()
-            .package(
-                dart::examples::filament_gui::kTexturedLitMaterial,
-                dart::examples::filament_gui::kTexturedLitMaterialSize)
-            .build(*engine);
-  auto* transparentMaterial
-      = filament::Material::Builder()
-            .package(
-                dart::examples::filament_gui::kTransparentLitMaterial,
-                dart::examples::filament_gui::kTransparentLitMaterialSize)
-            .build(*engine);
-  auto* transparentTexturedMaterial
-      = filament::Material::Builder()
-            .package(
-                dart::examples::filament_gui::kTransparentTexturedLitMaterial,
-                dart::examples::filament_gui::
-                    kTransparentTexturedLitMaterialSize)
-            .build(*engine);
-  auto* debugMaterial
-      = filament::Material::Builder()
-            .package(
-                dart::examples::filament_gui::kDebugColorMaterial,
-                dart::examples::filament_gui::kDebugColorMaterialSize)
-            .build(*engine);
-  auto* checkerTexture = createCheckerTexture(*engine);
-  TextureBinding checkerBinding;
-  checkerBinding.texture = checkerTexture;
-  auto* fallbackTexture = createSolidTexture(
-      *engine,
-      std::array<std::uint8_t, 4>{255, 255, 255, 255},
-      TextureColorSpace::Linear);
-  TextureBinding fallbackBinding;
-  fallbackBinding.texture = fallbackTexture;
-  const MaterialSet materials{
-      *material,
-      *texturedMaterial,
-      *transparentMaterial,
-      *transparentTexturedMaterial,
-      *debugMaterial,
-      checkerBinding,
-      fallbackBinding};
-  TextureCache textureCache;
+  MaterialResources materialResources = createMaterialResources(*engine);
+  const MaterialSet materials = materialResources.materialSet();
 
   DartScene dartScene = createDartScene(appOptions);
   const auto initialDescriptors = extractRenderables(*dartScene.world);
@@ -598,7 +541,7 @@ int main(int argc, char* argv[])
     }
 
     auto renderable = createRenderableFromDescriptor(
-        *engine, materials, textureCache, descriptor);
+        *engine, materials, materialResources.textureCache, descriptor);
     if (!renderable) {
       if (descriptor.geometry.kind == ShapeKind::Unsupported) {
         logUnsupportedRenderableDescriptorOnce(
@@ -785,7 +728,7 @@ int main(int argc, char* argv[])
 
     debugOverlay = createDebugLineRenderable(
         *engine,
-        *debugMaterial,
+        materials.debugColor,
         extractDebugLines(*dartScene.world, staticDebugOptions));
     if (debugOverlay) {
       scene->addEntity(debugOverlay->entity);
@@ -812,7 +755,7 @@ int main(int argc, char* argv[])
 
     contactDebugOverlay = createDebugLineRenderable(
         *engine,
-        *debugMaterial,
+        materials.debugColor,
         extractContactDebugLines(
             dartScene.world->getLastCollisionResult(), contactDebugOptions));
     if (contactDebugOverlay) {
@@ -847,7 +790,7 @@ int main(int argc, char* argv[])
 
           selectionDebugOverlay = createDebugLineRenderable(
               *engine,
-              *debugMaterial,
+              materials.debugColor,
               makeSelectionDebugLines(*selectedDescriptor));
           if (selectionDebugOverlay) {
             scene->addEntity(selectionDebugOverlay->entity);
@@ -1081,7 +1024,7 @@ int main(int argc, char* argv[])
         loggedUnsupportedRenderableIds,
         [&](const RenderableDescriptor& descriptor) {
           return createRenderableFromDescriptor(
-              *engine, materials, textureCache, descriptor);
+              *engine, materials, materialResources.textureCache, descriptor);
         });
     bool selectedRenderableStillVisible = selectedRenderableId == 0;
     for (SceneRenderable& sceneRenderable : sceneRenderables) {
@@ -1418,16 +1361,7 @@ int main(int argc, char* argv[])
   if (debugOverlay) {
     destroyRenderable(*engine, *debugOverlay);
   }
-  for (auto* texture : textureCache.ownedTextures) {
-    engine->destroy(texture);
-  }
-  engine->destroy(fallbackTexture);
-  engine->destroy(checkerTexture);
-  engine->destroy(debugMaterial);
-  engine->destroy(transparentTexturedMaterial);
-  engine->destroy(transparentMaterial);
-  engine->destroy(texturedMaterial);
-  engine->destroy(material);
+  destroyMaterialResources(*engine, materialResources);
   engine->destroyCameraComponent(cameraEntity);
   EntityManager::get().destroy(cameraEntity);
   engine->destroy(view);
