@@ -193,6 +193,19 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Mesh) {
     ++counts.g1Meshes;
   }
+  if (descriptor.shapeFrameName.starts_with(kSimpleFramesFixtureBoxFramePrefix)
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.simpleFrameBoxes;
+  }
+  if (descriptor.shapeFrameName.starts_with(
+          kSimpleFramesFixtureEllipsoidFramePrefix)
+      && descriptor.geometry.kind == ShapeKind::Ellipsoid) {
+    ++counts.simpleFrameEllipsoids;
+  }
+  if (descriptor.shapeFrameName == kSimpleFramesFixtureArrowFrameName
+      && descriptor.geometry.kind == ShapeKind::LineSegments) {
+    ++counts.simpleFrameArrowLines;
+  }
   if (!descriptor.shapeFrameName.empty()) {
     ++counts.dragAndDropFrames;
   }
@@ -409,6 +422,31 @@ bool validateSceneDescriptorContent(
         output);
   }
 
+  if (scene == ExampleScene::SimpleFrames) {
+    if (!requireEqual(
+            counts.simpleFrameBoxes,
+            kSimpleFramesFixtureBoxCount,
+            "simple-frames scene",
+            "visible box frame renderable descriptors",
+            output)) {
+      return false;
+    }
+    if (!requireEqual(
+            counts.simpleFrameEllipsoids,
+            kSimpleFramesFixtureEllipsoidCount,
+            "simple-frames scene",
+            "visible ellipsoid frame renderable descriptors",
+            output)) {
+      return false;
+    }
+    return requireEqual(
+        counts.simpleFrameArrowLines,
+        1,
+        "simple-frames scene",
+        "visible arrow line renderable descriptor",
+        output);
+  }
+
   return true;
 }
 
@@ -556,6 +594,28 @@ bool validateCreatedSceneContent(
         created.dragAndDropFrames,
         expected.dragAndDropFrames,
         "drag-and-drop frame renderables",
+        output);
+  }
+
+  if (scene == ExampleScene::SimpleFrames) {
+    if (!requireCreatedEqual(
+            created.simpleFrameBoxes,
+            expected.simpleFrameBoxes,
+            "simple-frames box renderables",
+            output)) {
+      return false;
+    }
+    if (!requireCreatedEqual(
+            created.simpleFrameEllipsoids,
+            expected.simpleFrameEllipsoids,
+            "simple-frames ellipsoid renderables",
+            output)) {
+      return false;
+    }
+    return requireCreatedEqual(
+        created.simpleFrameArrowLines,
+        expected.simpleFrameArrowLines,
+        "simple-frames arrow line renderables",
         output);
   }
 

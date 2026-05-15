@@ -11,8 +11,9 @@ recommended maintainability slices:
 - `dart/gui/experimental/debug.cpp` owns debug descriptor generation.
 - `dart/gui/experimental/geometry.hpp` and `.cpp` own backend-hidden mesh
   builders for generated primitive and descriptor geometry.
-- `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp` own reusable
-  DART scene fixtures and scene option parsing.
+- `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp` own scene
+  option parsing and dispatch, while `scene_fixtures.hpp` and `.cpp` own
+  reusable DART world fixtures.
 - `dart/gui/experimental/interaction.cpp` owns picking, plane-drag,
   frame-translation, and renderable set update planning helpers.
 - `dart/gui/experimental/renderable.hpp`, `interaction.hpp`, and `debug.hpp`
@@ -160,14 +161,14 @@ version hashing, and `extractRenderables`.
    `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp` now own scene
    option parsing and dispatch, while
    `dart/gui/experimental/detail/filament/scene_fixtures.hpp` and `.cpp` own
-   MVP, hello-world, boxes, drag-and-drop, polyhedron, heightmap, and G1 DART
-   world fixtures.
+   MVP, hello-world, boxes, drag-and-drop, simple-frames, polyhedron,
+   heightmap, and G1 DART world fixtures.
    `dart/gui/experimental/detail/filament/application.hpp` and `.cpp` now own
    Filament frame orchestration and the built-in panel, leaving `main.cpp` as a
    minimal entry point.
    `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`
    now own scene fixture requirement counting and MVP/G1/hello-world/boxes/
-   drag/polyhedron/heightmap validation gates.
+   drag/simple-frames/polyhedron/heightmap validation gates.
 3. **Completed: generalize the public-header leakage scan.**
    `UNIT_gui_FilamentSceneExtraction` now routes the backend-token check
    through `scanHeadersForBackendTokens`, and

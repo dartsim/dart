@@ -65,6 +65,9 @@ struct SceneContentCounts
   std::size_t pbrEnvironmentMeshes = 0;
   std::size_t polyhedronSurfaces = 0;
   std::size_t polyhedronWireframes = 0;
+  std::size_t simpleFrameBoxes = 0;
+  std::size_t simpleFrameEllipsoids = 0;
+  std::size_t simpleFrameArrowLines = 0;
   std::size_t g1Meshes = 0;
   std::size_t dragAndDropFrames = 0;
 };

@@ -69,12 +69,14 @@
    `EXAMPLE_filament_gui_boxes_headless_smoke` on the same workers.
 6. Opt-in interaction fixture smoke through
    `EXAMPLE_filament_gui_drag_and_drop_headless_smoke` on the same workers.
-7. Opt-in polyhedron visual fixture smoke through
+7. Opt-in simple-frames visual fixture smoke through
+   `EXAMPLE_filament_gui_simple_frames_headless_smoke` on the same workers.
+8. Opt-in polyhedron visual fixture smoke through
    `EXAMPLE_filament_gui_polyhedron_headless_smoke` on the same workers.
-8. Opt-in heightmap visual fixture smoke through
+9. Opt-in heightmap visual fixture smoke through
    `EXAMPLE_filament_gui_heightmap_headless_smoke` on the same workers.
-9. Focused C++ unit tests for scene extraction and interaction math.
-10. Python import/binding smoke tests for the constrained experimental API.
+10. Focused C++ unit tests for scene extraction and interaction math.
+11. Python import/binding smoke tests for the constrained experimental API.
 
 ## Local commands
 
@@ -127,7 +129,7 @@ LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
   cmake --build build/default/cpp/Release --target dart_filament_gui
 LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
   ctest --test-dir build/default/cpp/Release \
-  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|drag_and_drop_headless|polyhedron_headless|heightmap_headless)_smoke' \
+  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|drag_and_drop_headless|simple_frames_headless|polyhedron_headless|heightmap_headless)_smoke' \
   --output-on-failure
 ```
 
@@ -223,6 +225,8 @@ Known current result:
   `EXAMPLE_filament_gui_boxes_headless_smoke`, which runs `--scene boxes`,
   `EXAMPLE_filament_gui_drag_and_drop_headless_smoke`, which runs
   `--scene drag-and-drop`,
+  `EXAMPLE_filament_gui_simple_frames_headless_smoke`, which runs
+  `--scene simple-frames`,
   `EXAMPLE_filament_gui_polyhedron_headless_smoke`, which runs
   `--scene polyhedron`, plus
   `EXAMPLE_filament_gui_heightmap_headless_smoke`, which runs

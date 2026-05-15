@@ -100,9 +100,9 @@ pixi run ex <example-target>
 For example, `pixi run ex csv_logger` builds and runs `csv_logger`. Examples
 with extra CMake requirements or redirected experimental GUI runners, such as
 `raylib`, `filament_gui`, `hello_world`, `boxes`, `drag_and_drop`,
-`polyhedron_visual`, `heightmap`, and `g1_puppet`, declare those requirements in
-`scripts/run_cpp_example.py` so the same command shape can remain stable as more
-examples are added.
+`simple_frames`, `polyhedron_visual`, `heightmap`, and `g1_puppet`, declare
+those requirements in `scripts/run_cpp_example.py` so the same command shape can
+remain stable as more examples are added.
 
 ## Build Examples as One Project
 

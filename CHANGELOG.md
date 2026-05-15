@@ -167,7 +167,10 @@
     generation, and reusable scene fixtures now live under private
     `dart/gui/experimental/detail/filament` implementation units; scene option
     parsing and dispatch remain in `scenes.cpp`, while fixture construction is
-    split into `scene_fixtures.cpp`. The example tree is left as a minimal
+    split into `scene_fixtures.cpp`. The `simple_frames` runner now routes to
+    a `--scene simple-frames` Filament fixture that renders its `SimpleFrame`
+    hierarchy, marker ellipsoids, and arrow marker through backend-hidden
+    descriptors. The example tree is left as a minimal
     `main.cpp` entry point plus CMake and README files. The focused GUI unit
     test now checks that
     `examples/filament_gui` contains no C++ source/header files other than

@@ -69,6 +69,7 @@ enum class ExampleScene
   HelloWorld,
   Boxes,
   DragAndDrop,
+  SimpleFrames,
   Polyhedron,
   Heightmap,
   G1,
@@ -115,8 +116,16 @@ inline constexpr const char* kPolyhedronFixtureSkeletonName
     = "visual_polyhedron_surface";
 inline constexpr const char* kPolyhedronWireframeFixtureSkeletonName
     = "visual_polyhedron_wireframe";
+inline constexpr const char* kSimpleFramesFixtureBoxFramePrefix
+    = "simple_frames_box_";
+inline constexpr const char* kSimpleFramesFixtureEllipsoidFramePrefix
+    = "simple_frames_marker_";
+inline constexpr const char* kSimpleFramesFixtureArrowFrameName
+    = "simple_frames_arrow";
 inline constexpr const char* kG1FixtureSkeletonName = "visual_g1_robot";
 inline constexpr std::size_t kBoxesFixtureBoxCount = 125;
+inline constexpr std::size_t kSimpleFramesFixtureBoxCount = 3;
+inline constexpr std::size_t kSimpleFramesFixtureEllipsoidCount = 4;
 inline constexpr std::size_t kMinPbrEnvironmentRenderableCount = 4;
 inline constexpr std::size_t kMinDragAndDropFrameRenderableCount = 5;
 inline constexpr std::size_t kMinG1RenderableCount = 20;

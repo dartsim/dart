@@ -163,6 +163,12 @@
   `pixi run ex drag_and_drop` routes to this Filament scene by default so the
   in-tree drag-and-drop workflow no longer depends on the legacy OSG viewer
   path.
+- The Filament example includes a selectable `--scene simple-frames` fixture
+  that extracts and renders the legacy simple-frames example's `SimpleFrame`
+  hierarchy, marker ellipsoids, and arrow marker through the same
+  descriptor-driven Filament path. `pixi run ex simple_frames` routes to this
+  Filament scene by default so the simplest frame-visualization workflow no
+  longer depends on the legacy OSG viewer path.
 - The Filament example includes a `--scene polyhedron` fixture that renders the
   legacy polyhedron visual example's convex hull and wireframe through
   descriptor-owned convex-mesh and line-segment renderables.
@@ -282,16 +288,19 @@
 - `examples/gui_scene_diagnostics` is a second example consumer of the
   experimental API. It exercises descriptors, debug lines, run options, camera
   basis, and picking without introducing another renderer.
-- Reusable DART world fixtures and scene option parsing now live in
-  `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp`.
+- Scene option parsing and dispatch now live in
+  `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp`, while
+  reusable DART world fixtures live in
+  `dart/gui/experimental/detail/filament/scene_fixtures.hpp` and `.cpp`.
 - Filament example frame lifecycle, scene synchronization, capture, built-in
   panel wiring, and top-level orchestration now live in
   `dart/gui/experimental/detail/filament/application.hpp` and `.cpp`, leaving
   `examples/filament_gui/main.cpp` as a minimal entry point.
 - Debug-line overlay refresh and cleanup now live in
   `dart/gui/experimental/detail/filament/debug_overlay.hpp` and `.cpp`.
-- Scene content requirement counting and MVP/G1/drag validation gates now live
-  in `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.
+- Scene content requirement counting and MVP/G1/hello-world/boxes/drag/
+  simple-frames/polyhedron/heightmap validation gates now live in
+  `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.
 - Private built-in status panel rendering now lives in
   `dart/gui/experimental/detail/filament/panel.hpp` and `.cpp`; promoted
   panel/tool API design remains deferred.
