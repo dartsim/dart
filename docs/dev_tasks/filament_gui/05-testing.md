@@ -239,20 +239,21 @@ Known current result:
 - `pixi search filament` does not find a conda-forge Filament package.
 - `gh repo view conda-forge/filament-feedstock` does not find a created
   feedstock yet.
-- `conda-forge/staged-recipes#33297` is an open ready-for-review PR for
+- `conda-forge/staged-recipes#33297` is an open non-draft PR for
   Filament 1.71.3, with `@conda-forge/help-c-cpp` pinged for review. The recipe
   builds from the official source tarball, keeps host tools in the `filament`
   output, and places headers/static archives in the `filament-static` output.
   Once merged, DART's build-time Pixi dependency should use `filament-static`,
   which pulls the matching tool output needed for `matc`.
-- At the latest inspected head `6b20da57ce864edb5bb4080a2b4a8e312b4c0a22`,
-  the PR was still open, ready for review, and behind the target branch.
-  Staged-recipes linter, conda-forge-linter, Check Skip, Azure linux_64, osx_64,
-  win_64, and aggregate checks passed. The previous Linux failure came from
-  using `source_files: test-cmake`; the current head uses `files: test-cmake`
-  for the recipe-local CMake consumer test and links that test through CMake
-  OpenGL package targets. The PR is still not merged, so DART still has no
-  installable Filament package to consume.
+- At the latest inspected head `d78834e9bcca1c0c5a55f3d2752f39765932c3f2`,
+  the PR was still open, non-draft, and behind the target branch.
+  Staged-recipes linter, conda-forge-linter, Check Skip, Azure linux_64, and
+  win_64 passed, while Azure osx_64 and the aggregate staged-recipes status were
+  still pending. The previous Linux failure came from using
+  `source_files: test-cmake`; the current head uses `files: test-cmake` for the
+  recipe-local CMake consumer test and links that test through CMake OpenGL
+  package targets. The PR is still not merged, so DART still has no installable
+  Filament package to consume.
 - Upstream Filament release archives include `matc`, headers, and static
   libraries, so `Filament_ROOT` can point at that layout.
 - `DART_FETCH_FILAMENT=ON` explicitly fetches the pinned Linux x86_64
