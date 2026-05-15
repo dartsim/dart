@@ -61,8 +61,6 @@
 
 #include <GLFW/glfw3.h>
 
-#include <Eigen/Core>
-#include <Eigen/Geometry>
 #include <imgui.h>
 
 #include <algorithm>
@@ -78,7 +76,6 @@
 #include <utility>
 #include <vector>
 
-#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 
@@ -113,29 +110,23 @@ using dart::dynamics::VoxelGridShape;
 using dart::gui::experimental::DebugDrawOptions;
 using dart::gui::experimental::OrbitCamera;
 using dart::gui::experimental::OrbitCameraController;
-using dart::gui::experimental::PickRay;
 using dart::gui::experimental::ProfileAccumulator;
 using dart::gui::experimental::RenderableDescriptor;
 using dart::gui::experimental::RenderableId;
 using dart::gui::experimental::RunOptions;
 using dart::gui::experimental::ShapeKind;
 using dart::gui::experimental::ViewerLifecycleState;
-using dart::gui::experimental::computePlaneDragTranslation;
 using dart::gui::experimental::elapsedMs;
 using dart::gui::experimental::extractContactDebugLines;
 using dart::gui::experimental::extractDebugLines;
 using dart::gui::experimental::extractRenderables;
-using dart::gui::experimental::intersectPlane;
 using dart::gui::experimental::markFrameRendered;
 using dart::gui::experimental::markFrameSkipped;
 using dart::gui::experimental::markScreenshotRequested;
 using dart::gui::experimental::markSimulationAdvanced;
-using dart::gui::experimental::makeOrbitCameraBasis;
-using dart::gui::experimental::makePerspectivePickRay;
 using dart::gui::experimental::makeRenderableId;
 using dart::gui::experimental::makeSelectionDebugLines;
 using dart::gui::experimental::normalizeRunOptions;
-using dart::gui::experimental::pickNearestRenderable;
 using dart::gui::experimental::printProfile;
 using dart::gui::experimental::requestSingleStep;
 using dart::gui::experimental::shouldAdvanceSimulation;
@@ -151,6 +142,7 @@ using dart::gui::experimental::filament::SceneRenderable;
 using dart::gui::experimental::filament::SceneLights;
 using dart::gui::experimental::filament::ScreenshotCapture;
 using dart::gui::experimental::filament::SceneContentCounts;
+using dart::gui::experimental::filament::SelectionController;
 using dart::gui::experimental::filament::addRenderableToScene;
 using dart::gui::experimental::filament::accumulateSceneContent;
 using dart::gui::experimental::filament::attachSceneEnvironment;
@@ -178,7 +170,6 @@ using dart::gui::experimental::filament::detachSceneEnvironment;
 using dart::gui::experimental::filament::endFilamentFrame;
 using dart::gui::experimental::filament::getNativeWindow;
 using dart::gui::experimental::filament::handleScroll;
-using dart::gui::experimental::filament::isDragModifierDown;
 using dart::gui::experimental::filament::isInsideStatusPanel;
 using dart::gui::experimental::filament::renderFilamentViews;
 using dart::gui::experimental::filament::renderBuiltInStatusPanel;
@@ -190,7 +181,6 @@ using dart::gui::experimental::filament::removeRenderableFromScene;
 using dart::gui::experimental::filament::setRenderableTransform;
 using dart::gui::experimental::filament::shouldSkipRenderedWorkAfterFrameSkip;
 using dart::gui::experimental::filament::synchronizeSceneRenderables;
-using dart::gui::experimental::filament::selectedNudgeFromKeyboard;
 using dart::gui::experimental::filament::updateCameraController;
 using dart::gui::experimental::filament::updateImGuiOverlay;
 using dart::gui::experimental::filament::updateImGuiMouseInput;
@@ -205,8 +195,6 @@ using dart::gui::experimental::filament::createDartScene;
 using dart::gui::experimental::filament::initialCameraForScene;
 using dart::gui::experimental::filament::parseOptions;
 using dart::gui::experimental::filament::sceneName;
-using dart::gui::experimental::filament::selectionLabelForRenderable;
-using dart::gui::experimental::filament::translateRenderableAndApplyIk;
 using dart::gui::experimental::filament::validateCreatedSceneContent;
 using dart::gui::experimental::filament::validateSceneDescriptorContent;
 
@@ -390,16 +378,7 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
   ViewerLifecycleState lifecycle;
   bool wasSpacePressed = false;
   bool wasStepPressed = false;
-  bool wasLeftMousePressed = false;
-  bool leftMouseStartedOnPanel = false;
-  bool leftMouseStartedDrag = false;
-  double leftMousePressX = 0.0;
-  double leftMousePressY = 0.0;
-  PickRay selectedDragLastRay;
-  Eigen::Vector3d selectedDragPlanePoint = Eigen::Vector3d::Zero();
-  Eigen::Vector3d selectedDragPlaneNormal = Eigen::Vector3d::UnitX();
-  RenderableId selectedRenderableId = 0;
-  std::string selectedLabel = "none";
+  SelectionController selectionController;
   bool screenshotSucceeded = options.screenshotPath.empty();
   ScreenshotCapture screenshotCapture;
   ProfileAccumulator profile;
@@ -431,8 +410,8 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
 
       for (const auto& handle : dartScene.ikHandles) {
         if (glfwGetKey(window, handle.hotkey) == GLFW_PRESS) {
-          selectedRenderableId = handle.targetRenderableId;
-          selectedLabel = handle.label + " IK target";
+          selectionController.select(
+              handle.targetRenderableId, handle.label + " IK target");
           lifecycle.paused = true;
         }
       }
@@ -456,7 +435,7 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
       double cursorY = 0.0;
       glfwGetCursorPos(window, &cursorX, &cursorY);
       const bool suppressCameraOrbit
-          = leftMouseStartedDrag
+          = selectionController.isDraggingSelection()
             || (appOptions.showUi
                 && isInsideStatusPanel(cursorX, cursorY, options.guiScale));
       updateCameraController(window, cameraController, suppressCameraOrbit);
@@ -512,24 +491,8 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
     profile.extractionMs += elapsedMs(phaseStart);
 
     phaseStart = ProfileAccumulator::Clock::now();
-    if (window != nullptr && selectedRenderableId != 0) {
-      const Eigen::Vector3d nudge = selectedNudgeFromKeyboard(
-          window, cameraController.camera, 0.035);
-      if (nudge.squaredNorm() > 0.0) {
-        const auto selectedDescriptor = std::find_if(
-            descriptors.begin(),
-            descriptors.end(),
-            [&](const RenderableDescriptor& candidate) {
-              return candidate.id == selectedRenderableId;
-            });
-        if (selectedDescriptor != descriptors.end()
-            && translateRenderableAndApplyIk(
-                dartScene, *selectedDescriptor, nudge)) {
-          lifecycle.paused = true;
-          descriptors = extractRenderables(*dartScene.world);
-        }
-      }
-    }
+    selectionController.applyKeyboardNudge(
+        window, cameraController.camera, dartScene, descriptors, lifecycle, 0.035);
     profile.interactionMs += elapsedMs(phaseStart);
 
     phaseStart = ProfileAccumulator::Clock::now();
@@ -543,7 +506,8 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
           return createRenderableFromDescriptor(
               *engine, materials, materialResources.textureCache, descriptor);
         });
-    bool selectedRenderableStillVisible = selectedRenderableId == 0;
+    bool selectedRenderableStillVisible
+        = selectionController.selectedRenderableId() == 0;
     for (SceneRenderable& sceneRenderable : sceneRenderables) {
       const auto descriptor = std::find_if(
           descriptors.begin(),
@@ -555,7 +519,8 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
         continue;
       }
 
-      const bool isSelected = descriptor->id == selectedRenderableId;
+      const bool isSelected
+          = descriptor->id == selectionController.selectedRenderableId();
       if (isSelected) {
         selectedRenderableStillVisible = true;
       }
@@ -563,8 +528,7 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
           *engine, sceneRenderable, *descriptor, isSelected);
     }
     if (!selectedRenderableStillVisible) {
-      selectedRenderableId = 0;
-      selectedLabel = "none";
+      selectionController.clear();
     }
     profile.syncMs += elapsedMs(phaseStart);
 
@@ -578,96 +542,21 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
     }
 
     phaseStart = ProfileAccumulator::Clock::now();
-    if (window != nullptr) {
-      double cursorX = 0.0;
-      double cursorY = 0.0;
-      glfwGetCursorPos(window, &cursorX, &cursorY);
-      const bool isLeftMousePressed
-          = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
-      if (isLeftMousePressed && !wasLeftMousePressed) {
-        leftMousePressX = cursorX;
-        leftMousePressY = cursorY;
-        leftMouseStartedDrag = false;
-        leftMouseStartedOnPanel
-            = appOptions.showUi
-              && isInsideStatusPanel(cursorX, cursorY, options.guiScale);
-
-        if (!leftMouseStartedOnPanel && selectedRenderableId != 0
-            && isDragModifierDown(window)) {
-          const auto selectedDescriptor = std::find_if(
-              descriptors.begin(),
-              descriptors.end(),
-              [&](const RenderableDescriptor& candidate) {
-                return candidate.id == selectedRenderableId;
-              });
-          if (selectedDescriptor != descriptors.end()) {
-            const auto basis = makeOrbitCameraBasis(cameraController.camera);
-            const PickRay ray = makePerspectivePickRay(
-                cameraController.camera, cursorX, cursorY, width, height);
-            const Eigen::Vector3d planePoint
-                = selectedDescriptor->worldTransform.translation();
-            const Eigen::Vector3d planeNormal = basis.forward;
-            if (intersectPlane(ray, planePoint, planeNormal)) {
-              leftMouseStartedDrag = true;
-              selectedDragLastRay = ray;
-              selectedDragPlanePoint = planePoint;
-              selectedDragPlaneNormal = planeNormal;
-              lifecycle.paused = true;
-            }
-          }
-        }
-      }
-      if (isLeftMousePressed && leftMouseStartedDrag) {
-        const PickRay ray = makePerspectivePickRay(
-            cameraController.camera, cursorX, cursorY, width, height);
-        const auto translation = computePlaneDragTranslation(
-            selectedDragLastRay,
-            ray,
-            selectedDragPlanePoint,
-            selectedDragPlaneNormal);
-        if (translation && translation->squaredNorm() > 1e-12) {
-          const auto selectedDescriptor = std::find_if(
-              descriptors.begin(),
-              descriptors.end(),
-              [&](const RenderableDescriptor& candidate) {
-                return candidate.id == selectedRenderableId;
-              });
-          if (selectedDescriptor != descriptors.end()
-              && translateRenderableAndApplyIk(
-                  dartScene, *selectedDescriptor, *translation)) {
-            selectedDragLastRay = ray;
-            lifecycle.paused = true;
-            descriptors = extractRenderables(*dartScene.world);
-          }
-        }
-      }
-      if (!isLeftMousePressed && wasLeftMousePressed) {
-        const double dragDistance = std::hypot(
-            cursorX - leftMousePressX, cursorY - leftMousePressY);
-        if (!leftMouseStartedOnPanel && !leftMouseStartedDrag
-            && dragDistance < 4.0) {
-          const auto hit = pickNearestRenderable(
-              descriptors,
-              makePerspectivePickRay(
-                  cameraController.camera, cursorX, cursorY, width, height));
-          if (hit) {
-            selectedRenderableId = hit->id;
-            const RenderableDescriptor& descriptor
-                = descriptors[hit->renderableIndex];
-            selectedLabel = selectionLabelForRenderable(dartScene, descriptor);
-          } else {
-            selectedRenderableId = 0;
-            selectedLabel = "none";
-          }
-        }
-        leftMouseStartedDrag = false;
-      }
-      wasLeftMousePressed = isLeftMousePressed;
-    }
+    selectionController.updateMouseSelection(
+        window,
+        cameraController.camera,
+        width,
+        height,
+        appOptions.showUi,
+        options.guiScale,
+        dartScene,
+        descriptors,
+        lifecycle);
     profile.interactionMs += elapsedMs(phaseStart);
 
     phaseStart = ProfileAccumulator::Clock::now();
-    refreshSelectionDebugOverlay(descriptors, selectedRenderableId);
+    refreshSelectionDebugOverlay(
+        descriptors, selectionController.selectedRenderableId());
     profile.selectionDebugMs += elapsedMs(phaseStart);
 
     if (appOptions.showUi) {
@@ -678,7 +567,7 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
           sceneName(appOptions.scene),
           dartScene.world->getTime(),
           dartScene.world->getLastCollisionResult().getNumContacts(),
-          selectedLabel,
+          selectionController.selectedLabel(),
           !dartScene.ikHandles.empty(),
           orbitLight,
           staticDebugOptions,

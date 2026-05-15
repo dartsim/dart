@@ -141,8 +141,11 @@ Filament-native ImGui context setup, style scaling, font loading, overlay
 rendering, and draw-data upload live in
 `dart/gui/experimental/detail/filament/imgui_overlay.hpp` and `.cpp`; the
 built-in panel policy remains MVP/example-scoped.
-Selection label formatting and G1 IK-target translation glue live in
-`dart/gui/experimental/detail/filament/selection.hpp` and `.cpp`.
+Selection label formatting, G1 IK-target translation glue, hotkey target
+selection, keyboard nudging, click selection, and Ctrl-left drag event
+translation live in
+`dart/gui/experimental/detail/filament/selection.hpp` and `.cpp`; reusable
+selection math stays in `dart-gui-experimental`.
 Filament material bundle creation, seed texture resources, renderable state,
 lit-material setup, shadow flag application, and destruction lifecycle helpers
 live in `dart/gui/experimental/detail/filament/renderable_resources.hpp` and

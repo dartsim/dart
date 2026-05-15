@@ -151,11 +151,12 @@
 - The Filament example's platform-specific GLFW native-window handle selection
   now lives in
   `dart/gui/experimental/detail/filament/native_window.hpp` and `.cpp`.
-- The Filament example's selection labels and G1 IK-target translation glue now
-  live in
-  `dart/gui/experimental/detail/filament/selection.hpp` and `.cpp`;
-  renderer-independent selection and translation primitives remain in
-  `dart-gui-experimental`.
+- The Filament example's selection labels, G1 IK-target translation glue, and
+  private selection controller state now live in
+  `dart/gui/experimental/detail/filament/selection.hpp` and `.cpp`. That
+  controller owns hotkey target selection, keyboard nudging, click selection, and
+  Ctrl-left drag event translation while renderer-independent selection and
+  translation primitives remain in `dart-gui-experimental`.
 - The Filament material bundle, seed texture resources, renderable state,
   material selection and parameter binding helpers, shadow settings, and
   destruction lifecycle now live in

@@ -34,10 +34,14 @@
 #define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SELECTION_HPP_
 
 #include <dart/gui/experimental/renderable.hpp>
+#include <dart/gui/experimental/viewer.hpp>
 
 #include <Eigen/Core>
 
 #include <string>
+#include <vector>
+
+struct GLFWwindow;
 
 namespace dart::gui::experimental::filament {
 
@@ -59,6 +63,49 @@ bool translateRenderableAndApplyIk(
     DartScene& scene,
     const dart::gui::experimental::RenderableDescriptor& descriptor,
     const Eigen::Vector3d& worldTranslation);
+
+class SelectionController
+{
+public:
+  dart::gui::experimental::RenderableId selectedRenderableId() const;
+  const std::string& selectedLabel() const;
+  bool isDraggingSelection() const;
+
+  void select(
+      dart::gui::experimental::RenderableId renderableId, std::string label);
+  void clear();
+
+  void applyKeyboardNudge(
+      GLFWwindow* window,
+      const dart::gui::experimental::OrbitCamera& camera,
+      DartScene& scene,
+      std::vector<dart::gui::experimental::RenderableDescriptor>& descriptors,
+      dart::gui::experimental::ViewerLifecycleState& lifecycle,
+      double stepSize);
+
+  void updateMouseSelection(
+      GLFWwindow* window,
+      const dart::gui::experimental::OrbitCamera& camera,
+      int framebufferWidth,
+      int framebufferHeight,
+      bool showUi,
+      double guiScale,
+      DartScene& scene,
+      std::vector<dart::gui::experimental::RenderableDescriptor>& descriptors,
+      dart::gui::experimental::ViewerLifecycleState& lifecycle);
+
+private:
+  bool mWasLeftMousePressed = false;
+  bool mLeftMouseStartedOnPanel = false;
+  bool mLeftMouseStartedDrag = false;
+  double mLeftMousePressX = 0.0;
+  double mLeftMousePressY = 0.0;
+  dart::gui::experimental::PickRay mSelectedDragLastRay;
+  Eigen::Vector3d mSelectedDragPlanePoint = Eigen::Vector3d::Zero();
+  Eigen::Vector3d mSelectedDragPlaneNormal = Eigen::Vector3d::UnitX();
+  dart::gui::experimental::RenderableId mSelectedRenderableId = 0;
+  std::string mSelectedLabel = "none";
+};
 
 } // namespace dart::gui::experimental::filament
 
