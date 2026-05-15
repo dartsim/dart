@@ -168,7 +168,7 @@
 - [ ] Final validation after the completing code state is still open. At
       minimum this means `pixi run lint`, `pixi run test-all`, and any
       maintainer-selected CI gates whose failures are not covered locally. The
-      latest full local `pixi run test-all` pass is tied to `778cc98c5f2` with
+      latest full local `pixi run test-all` pass is tied to `32a55e297e4` with
       default FCL/Bullet/ODE/reference knobs `OFF`; final PR-state evidence is
       still pending.
 - [ ] Final evidence transfer and dev-task cleanup are still open.

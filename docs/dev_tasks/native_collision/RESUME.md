@@ -54,6 +54,7 @@ post GitHub comments unless the user explicitly asks.
   `ec6f6f43112`.
 - Build-option policy baseline: `aa3ccce70c7`.
 - Public docs collision-runtime wording baseline: `ad1b6782578`.
+- Latest full local `pixi run test-all` validation baseline: `32a55e297e4`.
 - Last manual workflow-dispatch CI evidence head: `1e1faf6feb1`.
 - Latest pushed docs/reference-cleanup heads after those baselines have no
   GitHub Actions runs because branch pushes do not match the workflow filters
