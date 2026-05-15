@@ -283,6 +283,10 @@ gate.
   `docs/dev_tasks/filament_gui/06-visual-quality.md`.
 - Do not make DART a multi-backend rendering project. OSG and Raylib are legacy
   or experimental paths to remove after the Filament path is promoted.
+- A concrete full-migration metric is zero direct Filament header includes from
+  maintained examples, including any surviving replacement for
+  `examples/filament_gui`; Filament headers should be confined to private
+  promoted GUI implementation units.
 - Filament package availability and matching material compiler tooling are the
   primary risks. Fetch fallback must be explicit and pinned.
 - The current ImGui overlay is deliberately narrow and example-local. It

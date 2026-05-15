@@ -269,11 +269,16 @@
   `#include <filament/`, `#include "filament/`, `filament::`, `Filament::`,
   `GLFW`, `ImGui`, `imgui`, `OpenGL`, `Vulkan`, `Metal`, `osg::`, `::osg`,
   `osg/`, `osgGA`, `osgViewer`, `Raylib`, `raylib`, and `rlgl`.
+- Add an example-level promotion check that maintained examples, including any
+  surviving replacement for `examples/filament_gui`, have zero direct
+  `#include <filament/...>` or `#include "filament/..."` usage. Examples should
+  consume the promoted DART GUI API, not the renderer implementation.
 
 **Exit criteria**
 
 - Maintained examples/tutorials and `dartpy` have a supported non-OSG
   visualization path.
+- Maintained examples no longer include Filament headers directly.
 - Filament dependency handling works in the supported source-build and wheel
   workflows.
 - Maintainers accept the visual-quality gate for DART's built-in

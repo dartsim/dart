@@ -27,6 +27,11 @@ requires the separate north-star branch/PR to finish the Filament promotion,
 replace the main and experimental visualization surfaces with that promoted
 `dart::gui`, and remove backend-agnostic scaffolding whose only remaining
 purpose was to support multiple renderer implementations.
+A concrete completion metric for that promotion is that maintained example code,
+including any surviving replacement for `examples/filament_gui`, has zero direct
+Filament header includes. Filament headers should live only in private
+implementation units below the promoted GUI component, while examples exercise
+DART-owned viewer, scene, debug, capture, and tool APIs.
 
 ## Compatibility position
 
