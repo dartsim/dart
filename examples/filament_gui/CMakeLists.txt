@@ -42,6 +42,8 @@ if(NOT TARGET dart-gui-experimental)
 endif()
 
 set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
+set(filament_gui_backend_dir "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament")
+set(filament_gui_testing_dir "${filament_gui_backend_dir}/testing")
 set(material_bin "${generated_dir}/default_lit.filamat")
 set(material_header "${generated_dir}/default_lit_material.hpp")
 set(textured_material_bin "${generated_dir}/textured_lit.filamat")
@@ -59,8 +61,8 @@ add_custom_command(
   OUTPUT "${material_bin}"
   COMMAND "${CMAKE_COMMAND}" -E make_directory "${generated_dir}"
   COMMAND Filament::matc -a opengl -p desktop -o "${material_bin}"
-          "${CMAKE_CURRENT_LIST_DIR}/materials/default_lit.mat"
-  DEPENDS "${CMAKE_CURRENT_LIST_DIR}/materials/default_lit.mat" Filament::matc
+          "${filament_gui_backend_dir}/materials/default_lit.mat"
+  DEPENDS "${filament_gui_backend_dir}/materials/default_lit.mat" Filament::matc
   COMMENT "Compiling Filament material for ${example_name}"
   VERBATIM
 )
@@ -82,8 +84,8 @@ add_custom_command(
   OUTPUT "${textured_material_bin}"
   COMMAND "${CMAKE_COMMAND}" -E make_directory "${generated_dir}"
   COMMAND Filament::matc -a opengl -p desktop -o "${textured_material_bin}"
-          "${CMAKE_CURRENT_LIST_DIR}/materials/textured_lit.mat"
-  DEPENDS "${CMAKE_CURRENT_LIST_DIR}/materials/textured_lit.mat" Filament::matc
+          "${filament_gui_backend_dir}/materials/textured_lit.mat"
+  DEPENDS "${filament_gui_backend_dir}/materials/textured_lit.mat" Filament::matc
   COMMENT "Compiling textured Filament material for ${example_name}"
   VERBATIM
 )
@@ -105,8 +107,8 @@ add_custom_command(
   OUTPUT "${transparent_material_bin}"
   COMMAND "${CMAKE_COMMAND}" -E make_directory "${generated_dir}"
   COMMAND Filament::matc -a opengl -p desktop -o "${transparent_material_bin}"
-          "${CMAKE_CURRENT_LIST_DIR}/materials/transparent_lit.mat"
-  DEPENDS "${CMAKE_CURRENT_LIST_DIR}/materials/transparent_lit.mat" Filament::matc
+          "${filament_gui_backend_dir}/materials/transparent_lit.mat"
+  DEPENDS "${filament_gui_backend_dir}/materials/transparent_lit.mat" Filament::matc
   COMMENT "Compiling transparent Filament material for ${example_name}"
   VERBATIM
 )
@@ -128,8 +130,8 @@ add_custom_command(
   OUTPUT "${transparent_textured_material_bin}"
   COMMAND "${CMAKE_COMMAND}" -E make_directory "${generated_dir}"
   COMMAND Filament::matc -a opengl -p desktop -o "${transparent_textured_material_bin}"
-          "${CMAKE_CURRENT_LIST_DIR}/materials/transparent_textured_lit.mat"
-  DEPENDS "${CMAKE_CURRENT_LIST_DIR}/materials/transparent_textured_lit.mat" Filament::matc
+          "${filament_gui_backend_dir}/materials/transparent_textured_lit.mat"
+  DEPENDS "${filament_gui_backend_dir}/materials/transparent_textured_lit.mat" Filament::matc
   COMMENT "Compiling transparent textured Filament material for ${example_name}"
   VERBATIM
 )
@@ -151,8 +153,8 @@ add_custom_command(
   OUTPUT "${imgui_material_bin}"
   COMMAND "${CMAKE_COMMAND}" -E make_directory "${generated_dir}"
   COMMAND Filament::matc -a opengl -p desktop -o "${imgui_material_bin}"
-          "${CMAKE_CURRENT_LIST_DIR}/materials/imgui.mat"
-  DEPENDS "${CMAKE_CURRENT_LIST_DIR}/materials/imgui.mat" Filament::matc
+          "${filament_gui_backend_dir}/materials/imgui.mat"
+  DEPENDS "${filament_gui_backend_dir}/materials/imgui.mat" Filament::matc
   COMMENT "Compiling Filament ImGui material for ${example_name}"
   VERBATIM
 )
@@ -161,8 +163,8 @@ add_custom_command(
   OUTPUT "${debug_material_bin}"
   COMMAND "${CMAKE_COMMAND}" -E make_directory "${generated_dir}"
   COMMAND Filament::matc -a opengl -p desktop -o "${debug_material_bin}"
-          "${CMAKE_CURRENT_LIST_DIR}/materials/debug_color.mat"
-  DEPENDS "${CMAKE_CURRENT_LIST_DIR}/materials/debug_color.mat" Filament::matc
+          "${filament_gui_backend_dir}/materials/debug_color.mat"
+  DEPENDS "${filament_gui_backend_dir}/materials/debug_color.mat" Filament::matc
   COMMENT "Compiling debug Filament material for ${example_name}"
   VERBATIM
 )
@@ -195,54 +197,54 @@ add_custom_command(
 
 file(GLOB srcs "*.cpp" "*.hpp")
 set(filament_gui_backend_srcs
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/application.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/application_teardown.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/debug_overlay.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/frame_renderer.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/frame_viewport.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/imgui_overlay.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/input.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/native_window.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/panel.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/renderable_factory.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/renderable_resources.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/renderable_sync.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/render_context.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/render_environment.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/scenes.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/scene_frame.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/scene_requirements.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/scene_startup.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/screenshot.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/selection.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/simulation_stepper.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/textures.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/ui_frame.cpp"
+  "${filament_gui_backend_dir}/application.cpp"
+  "${filament_gui_backend_dir}/application_teardown.cpp"
+  "${filament_gui_backend_dir}/debug_overlay.cpp"
+  "${filament_gui_backend_dir}/frame_renderer.cpp"
+  "${filament_gui_backend_dir}/frame_viewport.cpp"
+  "${filament_gui_backend_dir}/imgui_overlay.cpp"
+  "${filament_gui_backend_dir}/input.cpp"
+  "${filament_gui_backend_dir}/native_window.cpp"
+  "${filament_gui_backend_dir}/panel.cpp"
+  "${filament_gui_backend_dir}/renderable_factory.cpp"
+  "${filament_gui_backend_dir}/renderable_resources.cpp"
+  "${filament_gui_backend_dir}/renderable_sync.cpp"
+  "${filament_gui_backend_dir}/render_context.cpp"
+  "${filament_gui_backend_dir}/render_environment.cpp"
+  "${filament_gui_backend_dir}/scenes.cpp"
+  "${filament_gui_backend_dir}/scene_frame.cpp"
+  "${filament_gui_backend_dir}/scene_requirements.cpp"
+  "${filament_gui_backend_dir}/scene_startup.cpp"
+  "${filament_gui_backend_dir}/screenshot.cpp"
+  "${filament_gui_backend_dir}/selection.cpp"
+  "${filament_gui_backend_dir}/simulation_stepper.cpp"
+  "${filament_gui_backend_dir}/textures.cpp"
+  "${filament_gui_backend_dir}/ui_frame.cpp"
 )
 set(filament_gui_backend_hdrs
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/application.hpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/application_teardown.hpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/debug_overlay.hpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/frame_renderer.hpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/frame_viewport.hpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/imgui_overlay.hpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/input.hpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/native_window.hpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/panel.hpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/renderable_factory.hpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/renderable_resources.hpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/renderable_sync.hpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/render_context.hpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/render_environment.hpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/scenes.hpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/scene_frame.hpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/scene_requirements.hpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/scene_startup.hpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/screenshot.hpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/selection.hpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/simulation_stepper.hpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/textures.hpp"
-  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/ui_frame.hpp"
+  "${filament_gui_backend_dir}/application.hpp"
+  "${filament_gui_backend_dir}/application_teardown.hpp"
+  "${filament_gui_backend_dir}/debug_overlay.hpp"
+  "${filament_gui_backend_dir}/frame_renderer.hpp"
+  "${filament_gui_backend_dir}/frame_viewport.hpp"
+  "${filament_gui_backend_dir}/imgui_overlay.hpp"
+  "${filament_gui_backend_dir}/input.hpp"
+  "${filament_gui_backend_dir}/native_window.hpp"
+  "${filament_gui_backend_dir}/panel.hpp"
+  "${filament_gui_backend_dir}/renderable_factory.hpp"
+  "${filament_gui_backend_dir}/renderable_resources.hpp"
+  "${filament_gui_backend_dir}/renderable_sync.hpp"
+  "${filament_gui_backend_dir}/render_context.hpp"
+  "${filament_gui_backend_dir}/render_environment.hpp"
+  "${filament_gui_backend_dir}/scenes.hpp"
+  "${filament_gui_backend_dir}/scene_frame.hpp"
+  "${filament_gui_backend_dir}/scene_requirements.hpp"
+  "${filament_gui_backend_dir}/scene_startup.hpp"
+  "${filament_gui_backend_dir}/screenshot.hpp"
+  "${filament_gui_backend_dir}/selection.hpp"
+  "${filament_gui_backend_dir}/simulation_stepper.hpp"
+  "${filament_gui_backend_dir}/textures.hpp"
+  "${filament_gui_backend_dir}/ui_frame.hpp"
 )
 add_executable(
   ${example_target}
@@ -299,8 +301,8 @@ if(DART_IN_SOURCE_BUILD)
         -DDART_FILAMENT_GUI_HEIGHT=480
         -DDART_FILAMENT_GUI_FRAMES=10
         "-DDART_FILAMENT_GUI_PYTHON=${Python3_EXECUTABLE}"
-        "-DDART_FILAMENT_GUI_ANALYZER=${CMAKE_CURRENT_LIST_DIR}/analyze_headless_smoke.py"
-        -P "${CMAKE_CURRENT_LIST_DIR}/run_headless_smoke.cmake"
+        "-DDART_FILAMENT_GUI_ANALYZER=${filament_gui_testing_dir}/analyze_headless_smoke.py"
+        -P "${filament_gui_testing_dir}/run_headless_smoke.cmake"
     )
     set_tests_properties(
       ${test_name}
@@ -324,7 +326,7 @@ if(DART_IN_SOURCE_BUILD)
         -DDART_FILAMENT_GUI_WIDTH=640
         -DDART_FILAMENT_GUI_HEIGHT=480
         -DDART_FILAMENT_GUI_FRAMES=4
-        -P "${CMAKE_CURRENT_LIST_DIR}/run_headless_smoke.cmake"
+        -P "${filament_gui_testing_dir}/run_headless_smoke.cmake"
     )
     set_tests_properties(
       ${drag_test_name}

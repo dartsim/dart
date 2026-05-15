@@ -293,11 +293,11 @@ Known current result:
   visible environment mesh descriptors are extracted or if any extracted
   environment descriptor fails to create a Filament renderable.
 - The opt-in headless smoke now runs
-  `examples/filament_gui/analyze_headless_smoke.py` on the rendered PPM. The
-  analyzer samples the fixture region and requires dark, mid-tone, and bright
-  pixels plus a minimum luminance spread. This catches regressions that would
-  flatten the shadowed lighting fixture while staying less brittle than a
-  golden-image comparison.
+  `dart/gui/experimental/detail/filament/testing/analyze_headless_smoke.py` on
+  the rendered PPM. The analyzer samples the fixture region and requires dark,
+  mid-tone, and bright pixels plus a minimum luminance spread. This catches
+  regressions that would flatten the shadowed lighting fixture while staying
+  less brittle than a golden-image comparison.
 - The same smoke fixture renders Filament line primitives from
   `dart-gui-experimental` grid, world/body frame, center-of-mass, contact,
   inertia-box, normal-arrow, and force-arrow descriptors. The debug-line

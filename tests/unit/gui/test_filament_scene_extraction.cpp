@@ -279,6 +279,25 @@ std::vector<std::filesystem::path> listPublicHeadersInDirectory(
   return headers;
 }
 
+std::vector<std::filesystem::path> listRegularFilesInDirectory(
+    const std::filesystem::path& relativeDirectory)
+{
+  const auto directory
+      = std::filesystem::path(dart::config::sourcePath()) / relativeDirectory;
+
+  std::vector<std::filesystem::path> files;
+  for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+    if (!entry.is_regular_file()) {
+      continue;
+    }
+
+    files.push_back(relativeDirectory / entry.path().filename());
+  }
+
+  std::sort(files.begin(), files.end());
+  return files;
+}
+
 std::vector<std::filesystem::path> listCppSourceFilesInDirectory(
     const std::filesystem::path& relativeDirectory)
 {
@@ -439,6 +458,18 @@ TEST(FilamentSceneExtraction, FilamentExampleKeepsOnlyMinimalCppEntryPoint)
   const std::vector<std::filesystem::path> expectedSources
       = {std::filesystem::path("examples") / "filament_gui" / "main.cpp"};
   EXPECT_EQ(sources, expectedSources);
+}
+
+TEST(FilamentSceneExtraction, FilamentExampleKeepsOnlyEntryPointAndWrapperFiles)
+{
+  const auto files = listRegularFilesInDirectory(
+      std::filesystem::path("examples") / "filament_gui");
+
+  const std::vector<std::filesystem::path> expectedFiles
+      = {std::filesystem::path("examples") / "filament_gui" / "CMakeLists.txt",
+         std::filesystem::path("examples") / "filament_gui" / "README.md",
+         std::filesystem::path("examples") / "filament_gui" / "main.cpp"};
+  EXPECT_EQ(files, expectedFiles);
 }
 
 TEST(FilamentSceneExtraction, MeshGeometryBuildersProduceBoundedMeshes)

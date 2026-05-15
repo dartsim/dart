@@ -59,6 +59,9 @@ recommended maintainability slices:
   private initial scene renderable creation, scene-entity synchronization,
   unsupported-renderable logging, and per-frame renderable
   transform/selection/shadow application.
+- `dart/gui/experimental/detail/filament/materials/` owns the Filament material
+  shader sources, and `dart/gui/experimental/detail/filament/testing/` owns the
+  opt-in headless smoke CMake/Python helpers.
 - `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`
   own created-renderable content counting for startup validation.
 - `dart/gui/experimental/detail/filament/scene_startup.hpp` and `.cpp` own

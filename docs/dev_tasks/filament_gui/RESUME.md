@@ -167,6 +167,11 @@ Filament material bundle creation, seed texture resources, renderable state,
 lit-material setup, shadow flag application, and destruction lifecycle helpers
 live in `dart/gui/experimental/detail/filament/renderable_resources.hpp` and
 `.cpp`.
+Filament material shader sources now live under
+`dart/gui/experimental/detail/filament/materials`, and the opt-in headless
+smoke CMake/Python helpers now live under
+`dart/gui/experimental/detail/filament/testing`, leaving the example directory
+to carry only its entry-point source plus example-level CMake/README files.
 Filament descriptor-to-scene synchronization, unsupported descriptor logging,
 initial scene renderable creation, scene entity attachment, and per-frame
 renderable transform/selection/shadow update helpers live in
