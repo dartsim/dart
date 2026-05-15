@@ -71,9 +71,11 @@ using dart::dynamics::FreeJoint;
 using dart::dynamics::HeightmapShaped;
 using dart::dynamics::Inertia;
 using dart::dynamics::InverseKinematics;
+using dart::dynamics::LineSegmentShape;
 using dart::dynamics::MeshShape;
 using dart::dynamics::PlaneShape;
 using dart::dynamics::PointCloudShape;
+using dart::dynamics::RevoluteJoint;
 using dart::dynamics::ShapePtr;
 using dart::dynamics::ShapeNode;
 using dart::dynamics::SimpleFrame;
@@ -1307,6 +1309,242 @@ DartScene createMixedChainScene()
         softLink ? Eigen::Vector3d(0.90, 0.42, 0.18)
                  : Eigen::Vector3d(0.30, 0.55, 0.85));
   }
+
+  return scene;
+}
+
+struct CouplerConstraintFixtureAssembly
+{
+  dart::dynamics::SkeletonPtr skeleton;
+  dart::dynamics::Joint* referenceJoint = nullptr;
+  dart::dynamics::Joint* followerJoint = nullptr;
+  dart::dynamics::BodyNode* referenceBody = nullptr;
+  dart::dynamics::BodyNode* followerBody = nullptr;
+};
+
+CouplerConstraintFixtureAssembly createCouplerConstraintFixtureAssembly(
+    const std::string& label,
+    const Eigen::Vector3d& baseOffset,
+    bool useCouplerConstraint,
+    const Eigen::Vector3d& referenceColor,
+    const Eigen::Vector3d& followerColor,
+    double targetAngle)
+{
+  auto skeleton
+      = Skeleton::create(std::string(kCouplerConstraintFixtureSkeletonPrefix)
+                         + label);
+
+  dart::dynamics::WeldJoint::Properties baseJointProps;
+  baseJointProps.mName = label + "_base_joint";
+  baseJointProps.mT_ParentBodyToJoint = Eigen::Translation3d(baseOffset);
+
+  dart::dynamics::BodyNode::Properties baseBodyProps;
+  baseBodyProps.mName = label + "_base";
+  Inertia baseInertia;
+  baseInertia.setMass(0.1);
+  baseInertia.setMoment(1e-4, 1e-4, 1e-4, 0.0, 0.0, 0.0);
+  baseBodyProps.mInertia = baseInertia;
+
+  auto basePair = skeleton->createJointAndBodyNodePair<WeldJoint>(
+      nullptr, baseJointProps, baseBodyProps);
+  auto* baseBody = basePair.second;
+
+  RevoluteJoint::Properties referenceJointProps;
+  referenceJointProps.mName = label + "_reference_joint";
+  referenceJointProps.mAxis = Eigen::Vector3d::UnitZ();
+  referenceJointProps.mT_ParentBodyToJoint
+      = Eigen::Translation3d(0.0, 0.15, 0.0);
+  referenceJointProps.mT_ChildBodyToJoint
+      = Eigen::Translation3d(-0.25, 0.0, 0.0);
+
+  dart::dynamics::BodyNode::Properties referenceBodyProps;
+  referenceBodyProps.mName = label + "_reference_body";
+  Inertia referenceInertia;
+  referenceInertia.setMass(1.0);
+  referenceInertia.setMoment(0.02, 0.02, 0.03, 0.0, 0.0, 0.0);
+  referenceBodyProps.mInertia = referenceInertia;
+
+  auto referencePair = skeleton->createJointAndBodyNodePair<RevoluteJoint>(
+      baseBody, referenceJointProps, referenceBodyProps);
+  auto* referenceJoint = referencePair.first;
+  auto* referenceBody = referencePair.second;
+
+  referenceJoint->setActuatorType(dart::dynamics::Joint::FORCE);
+  referenceJoint->setForceLowerLimit(0, -120.0);
+  referenceJoint->setForceUpperLimit(0, 120.0);
+  referenceJoint->setDampingCoefficient(0, 0.02);
+
+  auto referenceShape
+      = std::make_shared<BoxShape>(Eigen::Vector3d(0.5, 0.05, 0.05));
+  auto referenceShapeNode = referenceBody->createShapeNodeWith<
+      VisualAspect,
+      CollisionAspect,
+      DynamicsAspect>(referenceShape);
+  referenceShapeNode->setRelativeTranslation(Eigen::Vector3d(0.25, 0.0, 0.0));
+  referenceShapeNode->getVisualAspect()->setColor(referenceColor);
+
+  RevoluteJoint::Properties followerJointProps;
+  followerJointProps.mName = label + "_follower_joint";
+  followerJointProps.mAxis = Eigen::Vector3d::UnitZ();
+  followerJointProps.mT_ParentBodyToJoint
+      = Eigen::Translation3d(0.0, -0.15, 0.0);
+  followerJointProps.mT_ChildBodyToJoint
+      = Eigen::Translation3d(-0.25, 0.0, 0.0);
+
+  dart::dynamics::BodyNode::Properties followerBodyProps;
+  followerBodyProps.mName = label + "_follower_body";
+  Inertia followerInertia;
+  followerInertia.setMass(1.0);
+  followerInertia.setMoment(0.02, 0.02, 0.03, 0.0, 0.0, 0.0);
+  followerBodyProps.mInertia = followerInertia;
+
+  auto followerPair = skeleton->createJointAndBodyNodePair<RevoluteJoint>(
+      baseBody, followerJointProps, followerBodyProps);
+  auto* followerJoint = followerPair.first;
+  auto* followerBody = followerPair.second;
+
+  followerJoint->setActuatorType(dart::dynamics::Joint::MIMIC);
+  followerJoint->setMimicJoint(referenceJoint, -1.0, 0.0);
+  followerJoint->setUseCouplerConstraint(useCouplerConstraint);
+  followerJoint->setForceLowerLimit(0, -120.0);
+  followerJoint->setForceUpperLimit(0, 120.0);
+  followerJoint->setDampingCoefficient(0, 0.02);
+  followerJoint->setPositionLowerLimit(0, -0.35);
+  followerJoint->setPositionUpperLimit(0, 0.35);
+  followerJoint->setLimitEnforcement(true);
+
+  auto followerShape
+      = std::make_shared<BoxShape>(Eigen::Vector3d(0.5, 0.05, 0.05));
+  auto followerShapeNode = followerBody->createShapeNodeWith<
+      VisualAspect,
+      CollisionAspect,
+      DynamicsAspect>(followerShape);
+  followerShapeNode->setRelativeTranslation(Eigen::Vector3d(0.25, 0.0, 0.0));
+  followerShapeNode->getVisualAspect()->setColor(followerColor);
+
+  referenceJoint->setPosition(0, targetAngle);
+  followerJoint->setPosition(0, followerJoint->getPositionLowerLimit(0));
+
+  return {
+      skeleton,
+      referenceJoint,
+      followerJoint,
+      referenceBody,
+      followerBody,
+  };
+}
+
+void addCouplerConstraintLimitGuide(
+    World& world,
+    const std::string& name,
+    dart::dynamics::Joint* followerJoint,
+    double angle,
+    const Eigen::Vector3d& color)
+{
+  auto* revolute = dynamic_cast<RevoluteJoint*>(followerJoint);
+  if (revolute == nullptr) {
+    throw std::runtime_error("coupler fixture expected a revolute follower");
+  }
+
+  auto frame = SimpleFrame::createShared(Frame::World(), name);
+  auto line = std::make_shared<LineSegmentShape>(0.05f);
+  line->addVertex(Eigen::Vector3d::Zero());
+  line->addVertex(Eigen::Vector3d::UnitX() * 0.65);
+  line->addConnection(0, 1);
+  frame->setShape(line);
+  frame->createVisualAspect()->setColor(color);
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  if (const auto* parent = followerJoint->getParentBodyNode()) {
+    transform = parent->getWorldTransform();
+  }
+  transform = transform * followerJoint->getTransformFromParentBodyNode();
+  transform.rotate(Eigen::AngleAxisd(angle, revolute->getAxis()));
+  transform.translate(Eigen::Vector3d(0.0, 0.0, 0.02));
+  frame->setRelativeTransform(transform);
+
+  world.addSimpleFrame(frame);
+}
+
+void addCouplerConstraintPairLink(
+    World& world,
+    const std::string& name,
+    float width,
+    const Eigen::Vector3d& color,
+    const CouplerConstraintFixtureAssembly& assembly)
+{
+  auto frame = SimpleFrame::createShared(Frame::World(), name);
+  auto line = std::make_shared<LineSegmentShape>(width);
+  line->addVertex(assembly.referenceBody->getWorldTransform().translation());
+  line->addVertex(assembly.followerBody->getWorldTransform().translation());
+  line->addConnection(0, 1);
+  frame->setShape(line);
+  frame->createVisualAspect()->setColor(color);
+  world.addSimpleFrame(frame);
+}
+
+DartScene createCouplerConstraintScene()
+{
+  DartScene scene;
+  scene.world = World::create();
+  scene.world->setGravity(Eigen::Vector3d::Zero());
+  scene.world->setTimeStep(1e-3);
+
+  const double targetAngle = 45.0 * dart::math::pi / 180.0;
+  auto coupler = createCouplerConstraintFixtureAssembly(
+      "coupler",
+      Eigen::Vector3d(-0.45, 0.0, 0.0),
+      true,
+      Eigen::Vector3d(0.85, 0.35, 0.25),
+      Eigen::Vector3d(0.25, 0.58, 0.92),
+      targetAngle);
+  auto motor = createCouplerConstraintFixtureAssembly(
+      "motor",
+      Eigen::Vector3d(0.45, 0.0, 0.0),
+      false,
+      Eigen::Vector3d(0.68, 0.32, 0.70),
+      Eigen::Vector3d(0.25, 0.75, 0.70),
+      targetAngle);
+
+  scene.world->addSkeleton(coupler.skeleton);
+  scene.world->addSkeleton(motor.skeleton);
+
+  addCouplerConstraintLimitGuide(
+      *scene.world,
+      std::string(kCouplerConstraintFixtureFramePrefix) + "coupler_lower_limit",
+      coupler.followerJoint,
+      coupler.followerJoint->getPositionLowerLimit(0),
+      Eigen::Vector3d(0.92, 0.35, 0.35));
+  addCouplerConstraintLimitGuide(
+      *scene.world,
+      std::string(kCouplerConstraintFixtureFramePrefix) + "coupler_upper_limit",
+      coupler.followerJoint,
+      coupler.followerJoint->getPositionUpperLimit(0),
+      Eigen::Vector3d(0.35, 0.92, 0.35));
+  addCouplerConstraintLimitGuide(
+      *scene.world,
+      std::string(kCouplerConstraintFixtureFramePrefix) + "motor_lower_limit",
+      motor.followerJoint,
+      motor.followerJoint->getPositionLowerLimit(0),
+      Eigen::Vector3d(0.92, 0.35, 0.35));
+  addCouplerConstraintLimitGuide(
+      *scene.world,
+      std::string(kCouplerConstraintFixtureFramePrefix) + "motor_upper_limit",
+      motor.followerJoint,
+      motor.followerJoint->getPositionUpperLimit(0),
+      Eigen::Vector3d(0.35, 0.92, 0.35));
+  addCouplerConstraintPairLink(
+      *scene.world,
+      std::string(kCouplerConstraintFixtureFramePrefix) + "coupler_link",
+      0.06f,
+      Eigen::Vector3d(0.95, 0.95, 0.2),
+      coupler);
+  addCouplerConstraintPairLink(
+      *scene.world,
+      std::string(kCouplerConstraintFixtureFramePrefix) + "motor_link",
+      0.04f,
+      Eigen::Vector3d(0.75, 0.75, 0.9),
+      motor);
 
   return scene;
 }

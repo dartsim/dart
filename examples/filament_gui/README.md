@@ -31,6 +31,7 @@
   `--scene rigid-chain` to run the SKEL-loaded chain fixture,
   `--scene rigid-loop` to run the constrained loop-chain fixture,
   `--scene mixed-chain` to run the mixed rigid/soft chain fixture,
+  `--scene coupler-constraint` to run the paired mimic/coupler rig fixture,
   `--scene drag-and-drop` to run the interaction fixture,
   `--scene simple-frames` to run the frame-hierarchy fixture,
   `--scene soft-bodies` to run the soft-body SKEL fixture,
@@ -102,6 +103,10 @@
   data and renders both box-link and soft-mesh descriptors through the same
   Filament path. The standalone source remains comparison material for
   keyboard-applied external forces.
+- The `--scene coupler-constraint` fixture builds the legacy paired
+  mimic/coupler rig layout and renders the four link boxes plus six guide lines
+  through the same Filament path. The standalone source remains comparison
+  material for the ImGui status overlay and reset controls.
 - Windowed playback advances physics against wall-clock time with a bounded
   catch-up step budget. Headless captures remain deterministic and advance one
   simulation step for each rendered frame.
@@ -205,6 +210,12 @@ To run the mixed-chain fixture:
 pixi run ex filament_gui --scene mixed-chain
 ```
 
+To run the coupler-constraint fixture:
+
+```bash
+pixi run ex filament_gui --scene coupler-constraint
+```
+
 To run the simple-frames fixture:
 
 ```bash
@@ -266,6 +277,7 @@ The capture paths are `build/<pixi-env>/filament_gui_mvp.ppm` and
 `build/<pixi-env>/filament_gui_rigid_chain.ppm`,
 `build/<pixi-env>/filament_gui_rigid_loop.ppm`,
 `build/<pixi-env>/filament_gui_mixed_chain.ppm`,
+`build/<pixi-env>/filament_gui_coupler_constraint.ppm`,
 `build/<pixi-env>/filament_gui_drag_and_drop.ppm`,
 `build/<pixi-env>/filament_gui_simple_frames.ppm`,
 `build/<pixi-env>/filament_gui_soft_bodies.ppm`,
@@ -370,6 +382,6 @@ DART_BUILD_GUI_FILAMENT_OVERRIDE=ON \
   pixi run config
 cmake --build build/default/cpp/Release --target dart_filament_gui
 ctest --test-dir build/default/cpp/Release \
-  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|hardcoded_design_headless|rigid_chain_headless|rigid_loop_headless|mixed_chain_headless|drag_and_drop_headless|simple_frames_headless|soft_bodies_headless|point_cloud_headless|capsule_ground_contact_headless|simulation_event_handler_headless|polyhedron_headless|heightmap_headless)_smoke' \
+  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|hardcoded_design_headless|rigid_chain_headless|rigid_loop_headless|mixed_chain_headless|coupler_constraint_headless|drag_and_drop_headless|simple_frames_headless|soft_bodies_headless|point_cloud_headless|capsule_ground_contact_headless|simulation_event_handler_headless|polyhedron_headless|heightmap_headless)_smoke' \
   --output-on-failure
 ```

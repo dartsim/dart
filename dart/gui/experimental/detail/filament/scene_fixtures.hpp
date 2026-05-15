@@ -51,6 +51,8 @@ DartScene createRigidLoopScene();
 
 DartScene createMixedChainScene();
 
+DartScene createCouplerConstraintScene();
+
 DartScene createDragAndDropScene();
 
 DartScene createSimpleFramesScene();

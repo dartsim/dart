@@ -5,16 +5,22 @@
 - Goal: compare coupler constraints with mimic motor constraints on paired joints.
 - Concepts/APIs: mimic joints, `constraint::CouplerConstraint`,
   `constraint::MimicMotorConstraint`, ImGui viewer.
-- Expected output: two side-by-side rigs with an ImGui overlay showing errors
-  and limit engagement.
+- Expected output: a Filament viewer with two side-by-side mimic/coupler rigs.
 - Controls: space toggles simulation; r resets both rigs.
 
 ## Notes
 
 - Use `--gui-scale` to scale the ImGui widgets.
 
-This project is dependent on DART. Please make sure a proper version of DART is
-installed before building this project.
+The recommended in-tree runner now opens the shared Filament viewer:
+
+```bash
+pixi run ex coupler_constraint
+```
+
+The standalone source in this directory remains legacy OSG/ImGui comparison
+material for the status overlay and reset controls until the promoted
+`dart::gui` API replaces the remaining viewer-specific example code.
 
 ## Build Instructions
 
@@ -27,7 +33,13 @@ From this directory:
 
 ## Execute Instructions
 
-Launch the executable from the build directory above:
+From the DART repository root:
+
+```bash
+pixi run ex coupler_constraint
+```
+
+Or launch the legacy standalone executable from the build directory above:
 
     $ ./{generated_executable} --gui-scale 1.0
 

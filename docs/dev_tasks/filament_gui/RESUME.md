@@ -269,7 +269,7 @@ headless context, while the dedicated headless construction test remains.
 for Linux x86_64. It configures with `DART_BUILD_GUI=OFF` and
 `DART_BUILD_DARTPY=OFF`, builds `dart_filament_gui`, and runs the default,
 hello-world, boxes, hardcoded-design, rigid-chain, rigid-loop, mixed-chain,
-drag-and-drop, simple-frames, soft-bodies, point-cloud,
+coupler-constraint, drag-and-drop, simple-frames, soft-bodies, point-cloud,
 capsule-ground-contact, simulation-event-handler, polyhedron, and heightmap
 headless CTest smokes. When `DISPLAY` is absent, the task uses Xvfb and
 prefers Mesa's EGL vendor file for software rendering. The Ubuntu CI
@@ -311,6 +311,11 @@ legacy OSG comparison material for damping and constraint setup. It routes
 SKEL data and renders its box-link and soft-mesh descriptors while keeping the
 standalone source as legacy OSG comparison material for keyboard-applied
 external forces. It routes
+`pixi run ex coupler_constraint` through the Filament example's
+`--scene coupler-constraint` fixture, which builds the legacy paired
+mimic/coupler rig layout and renders its box-link and guide-line descriptors
+while keeping the standalone source as legacy OSG/ImGui comparison material
+for the status overlay and reset controls. It routes
 `pixi run ex drag_and_drop` through the Filament example's selectable
 `--scene drag-and-drop` fixture by default while keeping the standalone source
 as legacy OSG comparison material. It also routes
@@ -379,7 +384,7 @@ DART world fixtures now live in
 `dart/gui/experimental/detail/filament/scene_fixtures.hpp` and `.cpp`.
 Scene content requirement counting and
 MVP/G1/hello-world/boxes/hardcoded-design/rigid-chain/rigid-loop/mixed-chain/
-drag/simple-frames/soft-bodies/point-cloud/capsule-ground-contact/
+coupler-constraint/drag/simple-frames/soft-bodies/point-cloud/capsule-ground-contact/
 simulation-event-handler/polyhedron/heightmap validation
 gates, including created-renderable content counting, now live in
 `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.

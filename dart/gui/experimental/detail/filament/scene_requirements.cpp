@@ -165,6 +165,15 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::SoftMesh) {
     ++counts.mixedChainSoftMeshes;
   }
+  if (descriptor.skeletonName.starts_with(
+          kCouplerConstraintFixtureSkeletonPrefix)
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.couplerConstraintBoxes;
+  }
+  if (descriptor.shapeFrameName.starts_with(kCouplerConstraintFixtureFramePrefix)
+      && descriptor.geometry.kind == ShapeKind::LineSegments) {
+    ++counts.couplerConstraintLines;
+  }
   if (descriptor.skeletonName == kPyramidFixtureSkeletonName
       && descriptor.geometry.kind == ShapeKind::Pyramid) {
     ++counts.pyramids;
@@ -480,6 +489,23 @@ bool validateSceneDescriptorContent(
         output);
   }
 
+  if (scene == ExampleScene::CouplerConstraint) {
+    if (!requireEqual(
+            counts.couplerConstraintBoxes,
+            kCouplerConstraintFixtureBoxCount,
+            "coupler-constraint scene",
+            "visible rig box renderable descriptors",
+            output)) {
+      return false;
+    }
+    return requireEqual(
+        counts.couplerConstraintLines,
+        kCouplerConstraintFixtureLineCount,
+        "coupler-constraint scene",
+        "visible guide line renderable descriptors",
+        output);
+  }
+
   if (scene == ExampleScene::Heightmap) {
     return requireEqual(
         counts.heightmaps,
@@ -778,6 +804,21 @@ bool validateCreatedSceneContent(
         created.mixedChainSoftMeshes,
         expected.mixedChainSoftMeshes,
         "mixed-chain soft mesh renderables",
+        output);
+  }
+
+  if (scene == ExampleScene::CouplerConstraint) {
+    if (!requireCreatedEqual(
+            created.couplerConstraintBoxes,
+            expected.couplerConstraintBoxes,
+            "coupler-constraint box renderables",
+            output)) {
+      return false;
+    }
+    return requireCreatedEqual(
+        created.couplerConstraintLines,
+        expected.couplerConstraintLines,
+        "coupler-constraint line renderables",
         output);
   }
 

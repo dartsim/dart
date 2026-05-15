@@ -124,6 +124,9 @@ Implemented:
 - A selectable `--scene mixed-chain` fixture that loads the legacy mixed
   rigid/soft chain SKEL data and renders both box-link and soft-mesh
   descriptors through the same backend-hidden extraction path.
+- A selectable `--scene coupler-constraint` fixture that builds the legacy
+  paired mimic/coupler rig layout and renders link boxes plus guide lines
+  through the same backend-hidden extraction path.
 - Built-in panel controls for pause/resume, single-step, and debug overlay
   toggles covering grid, world/body frames, center-of-mass markers, contacts,
   normal arrows, and force arrows.

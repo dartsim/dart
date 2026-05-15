@@ -339,6 +339,22 @@ function(dart_filament_gui_add_smoke_tests example_target)
   )
   _dart_filament_gui_apply_smoke_test_properties(${mixed_chain_test_name})
 
+  set(coupler_constraint_test_name
+      EXAMPLE_filament_gui_coupler_constraint_headless_smoke)
+  add_test(
+    NAME ${coupler_constraint_test_name}
+    COMMAND
+      "${CMAKE_COMMAND}"
+      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
+      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_coupler_constraint_headless_smoke.ppm"
+      -DDART_FILAMENT_GUI_SCENE=coupler-constraint
+      -DDART_FILAMENT_GUI_WIDTH=640
+      -DDART_FILAMENT_GUI_HEIGHT=480
+      -DDART_FILAMENT_GUI_FRAMES=4
+      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
+  )
+  _dart_filament_gui_apply_smoke_test_properties(${coupler_constraint_test_name})
+
   set(drag_test_name EXAMPLE_filament_gui_drag_and_drop_headless_smoke)
   add_test(
     NAME ${drag_test_name}
