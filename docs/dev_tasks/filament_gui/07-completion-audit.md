@@ -221,6 +221,11 @@ The in-tree `pixi run ex rigid_cubes` runner now uses the same Filament
 exercises descriptor-owned dynamic cube-grid renderables while the standalone
 source in `examples/rigid_cubes` remains as legacy OSG comparison material for
 directional force controls and frame-recording options.
+The in-tree `pixi run ex box_stacking` runner now uses the same Filament
+`--scene boxes` fixture by default, so its recommended visual path exercises
+descriptor-owned dynamic box-stack renderables while the standalone source in
+`examples/box_stacking` remains as legacy OSG/ImGui comparison material for
+solver selection, gravity controls, and custom key callbacks.
 The Filament example's selectable `--scene drag-and-drop` fixture now backs the
 in-tree `pixi run ex drag_and_drop` runner, so the recommended drag-and-drop
 workflow exercises the Filament renderer path while the standalone source in

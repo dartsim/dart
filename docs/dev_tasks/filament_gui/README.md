@@ -242,6 +242,10 @@
   `--scene boxes` Filament fixture while the legacy standalone OSG source
   remains available for directional force controls and frame-recording
   comparison.
+- The in-tree `pixi run ex box_stacking` runner now routes to the same
+  `--scene boxes` Filament fixture while the legacy standalone OSG/ImGui source
+  remains available for solver selection, gravity controls, and custom-key
+  callback comparison.
 - The Filament example also includes `--scene drag-and-drop`, a first
   interaction-heavy fixture that carries the legacy `SimpleFrame` anchor, child
   frame, and axis marker layout through the same backend-hidden manipulation

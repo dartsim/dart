@@ -59,6 +59,12 @@ EXAMPLE_SPECS = {
         ("filament",),
         ("--scene", "boxes"),
     ),
+    "box_stacking": ExampleSpec(
+        "dart_filament_gui",
+        "filament_gui",
+        ("filament",),
+        ("--scene", "boxes"),
+    ),
     "rigid_cubes": ExampleSpec(
         "dart_filament_gui",
         "filament_gui",
