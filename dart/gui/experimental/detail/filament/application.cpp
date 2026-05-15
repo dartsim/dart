@@ -38,6 +38,7 @@
 #include <dart/common/profile.hpp>
 #include <dart/config.hpp>
 #include <dart/gui/experimental/detail/filament/debug_overlay.hpp>
+#include <dart/gui/experimental/detail/filament/frame_renderer.hpp>
 #include <dart/gui/experimental/detail/filament/imgui_overlay.hpp>
 #include <dart/gui/experimental/detail/filament/input.hpp>
 #include <dart/gui/experimental/detail/filament/native_window.hpp>
@@ -72,7 +73,6 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
-#include <thread>
 #include <utility>
 #include <vector>
 
@@ -120,18 +120,14 @@ using dart::gui::experimental::elapsedMs;
 using dart::gui::experimental::extractContactDebugLines;
 using dart::gui::experimental::extractDebugLines;
 using dart::gui::experimental::extractRenderables;
-using dart::gui::experimental::markFrameRendered;
-using dart::gui::experimental::markFrameSkipped;
-using dart::gui::experimental::markScreenshotRequested;
 using dart::gui::experimental::markSimulationAdvanced;
 using dart::gui::experimental::makeRenderableId;
 using dart::gui::experimental::normalizeRunOptions;
 using dart::gui::experimental::printProfile;
 using dart::gui::experimental::requestSingleStep;
-using dart::gui::experimental::shouldRequestScreenshot;
-using dart::gui::experimental::shouldStopAfterFrame;
 using dart::gui::experimental::togglePaused;
 using dart::gui::experimental::filament::FilamentRenderContext;
+using dart::gui::experimental::filament::FrameRenderResult;
 using dart::gui::experimental::filament::ImGuiOverlay;
 using dart::gui::experimental::filament::MaterialResources;
 using dart::gui::experimental::filament::MaterialSet;
@@ -145,7 +141,6 @@ using dart::gui::experimental::filament::SimulationStepper;
 using dart::gui::experimental::filament::addRenderableToScene;
 using dart::gui::experimental::filament::accumulateSceneContent;
 using dart::gui::experimental::filament::attachSceneEnvironment;
-using dart::gui::experimental::filament::beginFilamentFrame;
 using dart::gui::experimental::filament::clearDebugLineOverlay;
 using dart::gui::experimental::filament::clearMainViewColorGrading;
 using dart::gui::experimental::filament::configureMainView;
@@ -166,20 +161,17 @@ using dart::gui::experimental::filament::destroyFilamentRenderContext;
 using dart::gui::experimental::filament::destroyConfiguredImGuiOverlay;
 using dart::gui::experimental::filament::destroySceneLights;
 using dart::gui::experimental::filament::detachSceneEnvironment;
-using dart::gui::experimental::filament::endFilamentFrame;
 using dart::gui::experimental::filament::getNativeWindow;
 using dart::gui::experimental::filament::handleScroll;
 using dart::gui::experimental::filament::isInsideStatusPanel;
-using dart::gui::experimental::filament::renderFilamentViews;
 using dart::gui::experimental::filament::renderBuiltInStatusPanel;
-using dart::gui::experimental::filament::requestScreenshot;
+using dart::gui::experimental::filament::renderApplicationFrame;
 using dart::gui::experimental::filament::refreshDebugLineOverlay;
 using dart::gui::experimental::filament::refreshSelectionDebugLineOverlay;
 using dart::gui::experimental::filament::saveScreenshot;
 using dart::gui::experimental::filament::logUnsupportedRenderableDescriptorOnce;
 using dart::gui::experimental::filament::removeRenderableFromScene;
 using dart::gui::experimental::filament::setRenderableTransform;
-using dart::gui::experimental::filament::shouldSkipRenderedWorkAfterFrameSkip;
 using dart::gui::experimental::filament::synchronizeSceneRenderables;
 using dart::gui::experimental::filament::updateCameraController;
 using dart::gui::experimental::filament::updateImGuiOverlay;
@@ -540,52 +532,20 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
       profile.uiMs += elapsedMs(phaseStart);
     }
 
-    const bool shouldCaptureScreenshot
-        = shouldRequestScreenshot(options, lifecycle);
-
-    const auto renderFrameStart = ProfileAccumulator::Clock::now();
-    const bool shouldRenderFrame = beginFilamentFrame(renderContext);
-    profile.beginFrameMs += elapsedMs(renderFrameStart);
-    if (!shouldRenderFrame) {
-      markFrameSkipped(lifecycle);
-      ++profile.skippedFrames;
-      if (shouldSkipRenderedWorkAfterFrameSkip(
-              renderContext, options.headless)) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        const double frameMs = elapsedMs(frameStart);
-        profile.frameMs += frameMs;
-        profile.maxFrameMs = std::max(profile.maxFrameMs, frameMs);
-        ++profile.frames;
-        continue;
-      }
-      // Filament allows callers to ignore a pacing-only false return. Headless
-      // software GL can report skips almost every frame, so keep deterministic
-      // offscreen captures while still skipping backend failures above.
+    const FrameRenderResult frameRenderResult = renderApplicationFrame(
+        renderContext,
+        appOptions.showUi ? imguiOverlay.view : nullptr,
+        options,
+        width,
+        height,
+        frameStart,
+        screenshotCapture,
+        lifecycle,
+        profile);
+    if (frameRenderResult.continueLoop) {
+      continue;
     }
-
-    phaseStart = ProfileAccumulator::Clock::now();
-    renderFilamentViews(
-        renderContext, appOptions.showUi ? imguiOverlay.view : nullptr);
-    if (shouldCaptureScreenshot) {
-      requestScreenshot(
-          renderContext,
-          screenshotCapture,
-          static_cast<std::uint32_t>(width),
-          static_cast<std::uint32_t>(height));
-      markScreenshotRequested(lifecycle);
-    }
-    endFilamentFrame(renderContext);
-    ++profile.renderedFrames;
-    const double renderMs = elapsedMs(phaseStart);
-    profile.renderMs += renderMs;
-    profile.maxRenderMs = std::max(profile.maxRenderMs, renderMs);
-
-    const double frameMs = elapsedMs(frameStart);
-    profile.frameMs += frameMs;
-    profile.maxFrameMs = std::max(profile.maxFrameMs, frameMs);
-    ++profile.frames;
-    markFrameRendered(lifecycle);
-    if (shouldStopAfterFrame(options, lifecycle)) {
+    if (frameRenderResult.stopLoop) {
       break;
     }
   }

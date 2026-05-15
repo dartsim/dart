@@ -30,6 +30,9 @@ recommended maintainability slices:
 - `dart/gui/experimental/detail/filament/imgui_overlay.hpp` and `.cpp` own
   ImGui context setup, style/font initialization, draw-data upload, and overlay
   teardown.
+- `dart/gui/experimental/detail/filament/frame_renderer.hpp` and `.cpp` own the
+  private render-frame, skipped-frame, screenshot-request, and frame-accounting
+  policy.
 - `dart/gui/experimental/detail/filament/selection.hpp` and `.cpp` own the
   private selection controller state and GLFW event translation for hotkey
   selection, keyboard nudging, click selection, and Ctrl-left dragging.

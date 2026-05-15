@@ -272,6 +272,9 @@ The Filament example frame lifecycle, scene synchronization, capture, built-in
 panel wiring, and top-level orchestration now live in
 `dart/gui/experimental/detail/filament/application.hpp` and `.cpp`, leaving
 `examples/filament_gui/main.cpp` as a minimal entry point.
+Frame rendering, skipped-frame accounting, screenshot request dispatch,
+rendered-frame profiling, and bounded-run stop checks now live in
+`dart/gui/experimental/detail/filament/frame_renderer.hpp` and `.cpp`.
 The bounded realtime simulation step-count accumulator now lives in
 `dart/gui/experimental/detail/filament/simulation_stepper.hpp` and `.cpp`.
 The built-in status panel rendering now lives in

@@ -197,6 +197,7 @@ file(GLOB srcs "*.cpp" "*.hpp")
 set(filament_gui_backend_srcs
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/application.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/debug_overlay.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/frame_renderer.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/imgui_overlay.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/input.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/native_window.cpp"
@@ -216,6 +217,7 @@ set(filament_gui_backend_srcs
 set(filament_gui_backend_hdrs
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/application.hpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/debug_overlay.hpp"
+  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/frame_renderer.hpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/imgui_overlay.hpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/input.hpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/native_window.hpp"

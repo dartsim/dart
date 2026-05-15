@@ -180,6 +180,9 @@
   `dart/gui/experimental/detail/filament/application.hpp` and `.cpp`, leaving
   `examples/filament_gui/main.cpp` as a minimal entry point guarded by the
   focused scene-extraction unit.
+- Filament frame rendering, skipped-frame accounting, screenshot request
+  dispatch, rendered-frame profiling, and bounded-run stop checks now live in
+  `dart/gui/experimental/detail/filament/frame_renderer.hpp` and `.cpp`.
 - The Filament example's bounded realtime simulation step-count accumulator now
   lives in `dart/gui/experimental/detail/filament/simulation_stepper.hpp` and
   `.cpp`, leaving the application loop responsible for applying world steps and
