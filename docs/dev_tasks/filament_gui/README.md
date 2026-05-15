@@ -147,9 +147,13 @@
   backend implementation slice out of the example tree.
 - The Filament example's neutral lighting, light entity creation and orbit
   update, scene environment binding, color grading, viewport/camera
-  application, and windowed view-quality setup now live in
+  configuration helper, and windowed view-quality setup now live in
   `dart/gui/experimental/detail/filament/render_environment.hpp` and `.cpp`,
   moving another backend implementation slice out of the example tree.
+- The Filament example's per-frame framebuffer sizing, ImGui display metrics,
+  viewport/camera update dispatch, and camera-controller suppression while
+  selection or built-in UI consumes the pointer now live in
+  `dart/gui/experimental/detail/filament/frame_viewport.hpp` and `.cpp`.
 - The Filament example's platform-specific GLFW native-window handle selection
   now lives in
   `dart/gui/experimental/detail/filament/native_window.hpp` and `.cpp`.

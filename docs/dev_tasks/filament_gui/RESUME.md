@@ -129,9 +129,13 @@ Debug-line overlay option defaults, static/contact refresh/cleanup state, and
 selected-renderable overlay lookup now live in
 `dart/gui/experimental/detail/filament/debug_overlay.hpp` and `.cpp`.
 Filament neutral lighting/color grading, light entity creation and orbit
-updates, scene environment binding, viewport/camera application, and windowed
-view-quality setup live in
+updates, scene environment binding, viewport/camera configuration helper, and
+windowed view-quality setup live in
 `dart/gui/experimental/detail/filament/render_environment.hpp` and `.cpp`.
+Per-frame framebuffer sizing, ImGui display metrics, viewport/camera update
+dispatch, and camera-controller suppression while selection or the built-in UI
+consumes the pointer live in
+`dart/gui/experimental/detail/filament/frame_viewport.hpp` and `.cpp`.
 The GLFW/ImGui input bridge and application hotkey polling live in
 `dart/gui/experimental/detail/filament/input.hpp` and `.cpp`; reusable
 manipulation math remains in `dart-gui-experimental`.
@@ -274,6 +278,10 @@ panel wiring, and top-level orchestration now live in
 Frame rendering, skipped-frame accounting, screenshot request dispatch,
 rendered-frame profiling, and bounded-run stop checks now live in
 `dart/gui/experimental/detail/filament/frame_renderer.hpp` and `.cpp`.
+Per-frame framebuffer sizing, ImGui display metrics, viewport/camera updates,
+and camera-controller suppression while selection or the built-in UI consumes
+the pointer now live in
+`dart/gui/experimental/detail/filament/frame_viewport.hpp` and `.cpp`.
 The bounded realtime simulation step-count accumulator, world-step application,
 lifecycle marking, and simulation profile accounting now live in
 `dart/gui/experimental/detail/filament/simulation_stepper.hpp` and `.cpp`.

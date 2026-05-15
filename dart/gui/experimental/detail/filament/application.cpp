@@ -39,6 +39,7 @@
 #include <dart/config.hpp>
 #include <dart/gui/experimental/detail/filament/debug_overlay.hpp>
 #include <dart/gui/experimental/detail/filament/frame_renderer.hpp>
+#include <dart/gui/experimental/detail/filament/frame_viewport.hpp>
 #include <dart/gui/experimental/detail/filament/imgui_overlay.hpp>
 #include <dart/gui/experimental/detail/filament/input.hpp>
 #include <dart/gui/experimental/detail/filament/native_window.hpp>
@@ -65,7 +66,6 @@
 
 #include <imgui.h>
 
-#include <algorithm>
 #include <cctype>
 #include <chrono>
 #include <iostream>
@@ -123,6 +123,7 @@ using dart::gui::experimental::printProfile;
 using dart::gui::experimental::filament::ApplicationInputState;
 using dart::gui::experimental::filament::FilamentRenderContext;
 using dart::gui::experimental::filament::FrameRenderResult;
+using dart::gui::experimental::filament::FrameViewport;
 using dart::gui::experimental::filament::ImGuiOverlay;
 using dart::gui::experimental::filament::MaterialResources;
 using dart::gui::experimental::filament::MaterialSet;
@@ -141,7 +142,6 @@ using dart::gui::experimental::filament::clearDebugLineOverlay;
 using dart::gui::experimental::filament::clearDebugOverlays;
 using dart::gui::experimental::filament::clearMainViewColorGrading;
 using dart::gui::experimental::filament::configureMainView;
-using dart::gui::experimental::filament::configureViewportCamera;
 using dart::gui::experimental::filament::countSceneContent;
 using dart::gui::experimental::filament::createFilamentRenderContext;
 using dart::gui::experimental::filament::createDebugColorGrading;
@@ -162,7 +162,6 @@ using dart::gui::experimental::filament::detachSceneEnvironment;
 using dart::gui::experimental::filament::finalizeScreenshotCapture;
 using dart::gui::experimental::filament::getNativeWindow;
 using dart::gui::experimental::filament::handleScroll;
-using dart::gui::experimental::filament::isInsideStatusPanel;
 using dart::gui::experimental::filament::makeDebugOverlayController;
 using dart::gui::experimental::filament::pollApplicationInput;
 using dart::gui::experimental::filament::renderBuiltInStatusPanel;
@@ -174,7 +173,7 @@ using dart::gui::experimental::filament::logUnsupportedRenderableDescriptorOnce;
 using dart::gui::experimental::filament::removeRenderableFromScene;
 using dart::gui::experimental::filament::setRenderableTransform;
 using dart::gui::experimental::filament::synchronizeSceneRenderables;
-using dart::gui::experimental::filament::updateCameraController;
+using dart::gui::experimental::filament::updateFrameViewport;
 using dart::gui::experimental::filament::updateImGuiOverlay;
 using dart::gui::experimental::filament::updateImGuiMouseInput;
 using dart::gui::experimental::filament::updateOrbitingKeyLight;
@@ -326,27 +325,18 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
     profile.inputMs += elapsedMs(phaseStart);
 
     phaseStart = ProfileAccumulator::Clock::now();
-    int width = options.width;
-    int height = options.height;
-    if (window != nullptr) {
-      glfwGetFramebufferSize(window, &width, &height);
-    }
-    width = std::max(1, width);
-    height = std::max(1, height);
-    imguiIo.DisplaySize
-        = ImVec2(static_cast<float>(width), static_cast<float>(height));
-    imguiIo.DeltaTime = static_cast<float>(dartScene.world->getTimeStep());
-    configureViewportCamera(*view, *camera, cameraController.camera, width, height);
-    if (window != nullptr) {
-      double cursorX = 0.0;
-      double cursorY = 0.0;
-      glfwGetCursorPos(window, &cursorX, &cursorY);
-      const bool suppressCameraOrbit
-          = selectionController.isDraggingSelection()
-            || (appOptions.showUi
-                && isInsideStatusPanel(cursorX, cursorY, options.guiScale));
-      updateCameraController(window, cameraController, suppressCameraOrbit);
-    }
+    const FrameViewport viewport = updateFrameViewport(
+        window,
+        *view,
+        *camera,
+        cameraController,
+        selectionController,
+        imguiIo,
+        options.width,
+        options.height,
+        dartScene.world->getTimeStep(),
+        appOptions.showUi,
+        options.guiScale);
     profile.viewportCameraMs += elapsedMs(phaseStart);
 
     const std::size_t simulationStepsToRun
@@ -407,8 +397,8 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
     selectionController.updateMouseSelection(
         window,
         cameraController.camera,
-        width,
-        height,
+        viewport.width,
+        viewport.height,
         appOptions.showUi,
         options.guiScale,
         dartScene,
@@ -428,7 +418,7 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
 
     if (appOptions.showUi) {
       phaseStart = ProfileAccumulator::Clock::now();
-      updateImGuiMouseInput(window, imguiIo, width, height);
+      updateImGuiMouseInput(window, imguiIo, viewport.width, viewport.height);
       ImGui::NewFrame();
       const bool debugOptionsChanged = renderBuiltInStatusPanel(
           sceneName(appOptions.scene),
@@ -460,8 +450,8 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
           *engine,
           imguiOverlay,
           ImGui::GetDrawData(),
-          static_cast<std::uint32_t>(width),
-          static_cast<std::uint32_t>(height));
+          static_cast<std::uint32_t>(viewport.width),
+          static_cast<std::uint32_t>(viewport.height));
       profile.uiMs += elapsedMs(phaseStart);
     }
 
@@ -469,8 +459,8 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
         renderContext,
         appOptions.showUi ? imguiOverlay.view : nullptr,
         options,
-        width,
-        height,
+        viewport.width,
+        viewport.height,
         frameStart,
         screenshotCapture,
         lifecycle,

@@ -33,6 +33,10 @@ recommended maintainability slices:
 - `dart/gui/experimental/detail/filament/frame_renderer.hpp` and `.cpp` own the
   private render-frame, skipped-frame, screenshot-request, and frame-accounting
   policy.
+- `dart/gui/experimental/detail/filament/frame_viewport.hpp` and `.cpp` own
+  private per-frame framebuffer sizing, ImGui display metrics,
+  viewport/camera updates, and camera-controller suppression while selection
+  or the built-in UI consumes the pointer.
 - `dart/gui/experimental/detail/filament/screenshot.hpp` and `.cpp` own the
   private Filament screenshot readback, wait/save finalization, and screenshot
   profile accounting.
