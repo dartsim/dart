@@ -3,6 +3,7 @@
 #include <dart/collision/dart/dart_collision_detector.hpp>
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
+#include <dart/common/diagnostics.hpp>
 
 #include <memory>
 #include <string>
@@ -38,12 +39,14 @@ int main()
     return 2;
   }
 
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const std::shared_ptr<dart::collision::CollisionDetector> fclClass
       = dart::collision::FCLCollisionDetector::create();
   const std::shared_ptr<dart::collision::CollisionDetector> bulletClass
       = dart::collision::BulletCollisionDetector::create();
   const std::shared_ptr<dart::collision::CollisionDetector> odeClass
       = dart::collision::OdeCollisionDetector::create();
+  DART_SUPPRESS_DEPRECATED_END
 
   if (!isDartBacked(fclClass) || !isDartBacked(bulletClass)
       || !isDartBacked(odeClass)) {

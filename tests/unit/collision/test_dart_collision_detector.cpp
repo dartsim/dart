@@ -407,8 +407,10 @@ TEST(DartCollisionDetector, LegacyUppercaseHeaderKeepsRaycastUnsupported)
 
 TEST(DartCollisionDetector, LegacyReferenceFacadesKeepRaycastUnsupported)
 {
+  DART_SUPPRESS_DEPRECATED_BEGIN
   const std::array<std::shared_ptr<CollisionDetector>, 2> detectors{
       FCLCollisionDetector::create(), OdeCollisionDetector::create()};
+  DART_SUPPRESS_DEPRECATED_END
 
   for (const auto& detector : detectors) {
     auto sphere = std::make_shared<SphereShape>(0.5);

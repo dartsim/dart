@@ -35,6 +35,7 @@
 
 #include <dart/collision/dart/dart_collision_detector.hpp>
 #include <dart/collision/dart/dart_collision_group.hpp>
+#include <dart/collision/detail/legacy_deprecation.hpp>
 
 #include <string>
 
@@ -48,7 +49,8 @@ namespace collision {
 /// compatibility state for source compatibility only. Reference tests and
 /// benchmarks that intentionally compare against FCL must use the explicit
 /// reference header and `createReference()` API in a reference-enabled target.
-class FCLCollisionDetector : public DartCollisionDetector
+class DART_COLLISION_LEGACY_NAME_DEPRECATED FCLCollisionDetector
+  : public DartCollisionDetector
 {
 public:
   enum PrimitiveShape

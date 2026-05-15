@@ -8,13 +8,13 @@ on one built-in collision detector.
 During the DART 7 migration window, legacy collision names remain source
 compatible but do not select external runtime engines:
 
-| Surface                                                                                         | Migration behavior                                                                                                        |
-| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Factory keys `fcl`, `fcl_mesh`, `bullet`, `ode`                                                 | Accepted as aliases for the built-in `dart` detector.                                                                     |
-| C++ detector classes `FCLCollisionDetector`, `BulletCollisionDetector`, `OdeCollisionDetector`  | Native-backed facades over `DartCollisionDetector`; legacy display strings may be preserved for gz-physics compatibility. |
-| Python detector names `FCLCollisionDetector`, `BulletCollisionDetector`, `OdeCollisionDetector` | Native-backed aliases of `DartCollisionDetector`.                                                                         |
-| Package components `collision-fcl`, `collision-bullet`, `collision-ode`                         | Native-backed interface facades that link the built-in `dart` stack.                                                      |
-| Explicit reference targets `collision-reference-*`                                              | Test/benchmark-only opt-in surfaces for FCL, Bullet, and ODE comparisons.                                                 |
+| Surface                                                                                        | Migration behavior                                                                                                        |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Factory keys `fcl`, `fcl_mesh`, `bullet`, `ode`                                                | Accepted as aliases for the built-in `dart` detector.                                                                     |
+| C++ detector classes `FCLCollisionDetector`, `BulletCollisionDetector`, `OdeCollisionDetector` | Native-backed facades over `DartCollisionDetector`; legacy display strings may be preserved for gz-physics compatibility. |
+| dartpy detector API                                                                            | Clean DART 7 Python API: use `DartCollisionDetector`; legacy backend detector aliases are not retained.                   |
+| Package components `collision-fcl`, `collision-bullet`, `collision-ode`                        | Native-backed interface facades that link the built-in `dart` stack.                                                      |
+| Explicit reference targets `collision-reference-*`                                             | Test/benchmark-only opt-in surfaces for FCL, Bullet, and ODE comparisons.                                                 |
 
 The downstream-compatible runtime spelling is `dart`, `DartCollisionDetector`,
 `CollisionDetectorType::Dart`, and the default `dart` package component. Direct
@@ -33,11 +33,33 @@ shows the gz DART plugin and the native compatibility package smoke executable
 depend on `libdart-collision-native.so` without any
 `libdart-collision-reference-*`, FCL, Bullet, ODE, or libccd runtime
 dependency. The local `audit-collision-compat-facades` guard now also verifies
-that retained factory keys, C++ facades, dartpy aliases, and package component
-names route to native DART collision. Manual GitHub workflow runs are reference
-evidence only. Downstream migration/deprecation policy evidence is still
-required before retained compatibility facades can be removed or
-hard-deprecated.
+that retained factory keys, C++ facades, and package component names route to
+native DART collision while dartpy exposes only the clean
+`DartCollisionDetector` API. Manual GitHub workflow runs are reference evidence
+only. Downstream migration/deprecation policy evidence is still required before
+retained C++ and package compatibility facades can be removed or hard-deprecated.
+
+## DART 7 Deprecation Policy
+
+DART 7 is the migration window for C++ and package source compatibility, not a
+requirement to preserve legacy dartpy collision detector spellings. For dartpy,
+prefer a clean API over compatibility shims: Python users should construct
+`DartCollisionDetector` or use the default detector, and DART 7 does not expose
+`DARTCollisionDetector`, `FCLCollisionDetector`, `BulletCollisionDetector`, or
+`OdeCollisionDetector` aliases.
+
+| Surface                                                                               | DART 7 behavior                                                                                                  | Planned DART 8 cleanup                                  |
+| ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| C++ factory keys `fcl`, `fcl_mesh`, `bullet`, `ode`                                   | Still accepted; emit deprecation warnings when `DART_COLLISION_DEPRECATE_LEGACY_NAMES=ON` and route to `dart`.   | Delete the alias registrars after downstream migration. |
+| C++ classes `FCLCollisionDetector`, `BulletCollisionDetector`, `OdeCollisionDetector` | Retained as native-backed facades; marked deprecated by default through `DART_COLLISION_DEPRECATE_LEGACY_NAMES`. | Delete or move behind a final compatibility opt-in.     |
+| CMake package components `collision-fcl`, `collision-bullet`, `collision-ode`         | Retained as native-backed interface targets for source/package compatibility.                                    | Remove once DART 6.x compatibility is no longer needed. |
+| dartpy legacy detector names                                                          | Not retained; no Python `DeprecationWarning` shim. The clean API is `DartCollisionDetector`.                     | No additional cleanup expected.                         |
+| Explicit reference APIs and components                                                | Not deprecated. `createReference()` and `collision-reference-*` remain the intentional comparison surface.       | Preserve while reference comparisons remain useful.     |
+
+Downstreams that temporarily need to compile C++ legacy detector classes without
+deprecation warnings can configure with
+`-DDART_COLLISION_DEPRECATE_LEGACY_NAMES=OFF`. That switch is only a migration
+aid; it does not restore external runtime backend selection.
 
 ## Downstream Work
 
@@ -49,10 +71,14 @@ Downstream runtime code should migrate in this order:
    `BulletCollisionDetector`, and `OdeCollisionDetector` with
    `DartCollisionDetector` unless the code is an intentional reference
    benchmark.
-3. Replace package requests for `collision-fcl`, `collision-bullet`, and
+3. Replace dartpy use of `DARTCollisionDetector`, `FCLCollisionDetector`,
+   `BulletCollisionDetector`, or `OdeCollisionDetector` with
+   `DartCollisionDetector`; DART 7 does not keep Python aliases for these
+   names.
+4. Replace package requests for `collision-fcl`, `collision-bullet`, and
    `collision-ode` with `dart` when downstream no longer needs source
    compatibility with DART 6.x.
-4. Keep reference-engine comparisons in tests or benchmarks only, using
+5. Keep reference-engine comparisons in tests or benchmarks only, using
    `collision-reference-*` components and the explicit `createReference()` APIs.
 
 ## Gates Before Removing Compatibility Facades
@@ -68,7 +94,8 @@ checks pass:
    This is complete locally with the dev-task native compatibility package
    smoke, and direct `readelf` inspection shows only `libdart-collision-native`
    from the collision stack.
-3. Python compatibility names construct and report detector type `dart`.
+3. dartpy exposes `DartCollisionDetector` and does not expose legacy detector
+   aliases.
 4. Source-tree and installed legacy detector headers compile without FCL,
    Bullet, or ODE headers in native-only builds.
 5. `check-collision-runtime-isolation` and

@@ -36,6 +36,7 @@
 #include <dart/collision/contact.hpp>
 #include <dart/collision/dart/dart_collision_detector.hpp>
 #include <dart/collision/dart/dart_collision_group.hpp>
+#include <dart/collision/detail/legacy_deprecation.hpp>
 
 #include <deque>
 #include <string>
@@ -51,7 +52,8 @@ namespace collision {
 /// compatibility state for source compatibility only. Reference tests and
 /// benchmarks that intentionally compare against ODE must use the explicit
 /// reference header and `createReference()` API in a reference-enabled target.
-class OdeCollisionDetector : public DartCollisionDetector
+class DART_COLLISION_LEGACY_NAME_DEPRECATED OdeCollisionDetector
+  : public DartCollisionDetector
 {
 public:
   using CollObjPair = std::pair<CollisionObject*, CollisionObject*>;

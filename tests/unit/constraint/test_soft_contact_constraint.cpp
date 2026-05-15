@@ -23,6 +23,8 @@
 #include <dart/dynamics/soft_body_node.hpp>
 #include <dart/dynamics/soft_mesh_shape.hpp>
 
+#include <dart/common/diagnostics.hpp>
+
 #include <gtest/gtest.h>
 
 #include <algorithm>
@@ -1167,7 +1169,9 @@ TEST(ContactConstraint, SecondarySlipComplianceAffectsVelocityChange)
 TEST(ContactConstraint, NativeCacheUpdatesThroughCompatibilityFacade)
 {
   constexpr double timeStep = 0.01;
+  DART_SUPPRESS_DEPRECATED_BEGIN
   auto detector = collision::OdeCollisionDetector::create();
+  DART_SUPPRESS_DEPRECATED_END
   ASSERT_NE(detector, nullptr);
   ASSERT_EQ("ode", detector->getType());
 

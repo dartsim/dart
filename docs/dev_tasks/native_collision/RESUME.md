@@ -366,9 +366,9 @@ Collision abstraction cleanup has also started: `DartCollisionDetector` owns
 native-backed public factory aliases for `experimental`, `fcl`, `fcl_mesh`,
 `bullet`, and `ode`; the FCL/Bullet/ODE component registrars also publish
 native-backed creators so linking old reference component libraries cannot
-restore public backend selection; and the Python compatibility names
-`DARTCollisionDetector`, `FCLCollisionDetector`, `BulletCollisionDetector`, and
-`OdeCollisionDetector` now construct/report the built-in `dart` detector.
+restore public backend selection; and dartpy now exposes the clean DART 7
+Python detector API through `DartCollisionDetector` without retaining legacy
+detector aliases.
 Reference tests and benchmarks now use explicit `createReference()` APIs on the
 FCL, Bullet, and ODE detector classes, and direct public C++ legacy detector
 `create()` paths now return the built-in `DartCollisionDetector`. Retained
@@ -466,8 +466,8 @@ libraries.
   `dart-collision-ode`. Default dartpy build and Python collision/world tests
   passed. A reference-enabled dartpy build also passed with FCL/Bullet/ODE
   components present, built dartpy shared-object `ldd` checks found no
-  FCL/Bullet/ODE/libccd links, and the Python compatibility names printed
-  `dart dart` for instance and static detector type.
+  FCL/Bullet/ODE/libccd links, and the Python tests now prove
+  `DartCollisionDetector` is exposed while legacy detector aliases are absent.
 - The reference-enabled dartpy build required a GUI compatibility fix because
   ImGui 1.92.8 removed the obsolete `ImGuiKey_Mod*` aliases. DART now submits
   left/right modifier keys directly in `im_gui_handler.cpp`.
@@ -664,8 +664,8 @@ libraries.
   `audit-collision-compat-facades` into both lint and check-lint,
   including the Windows task lists. It verifies factory aliases
   `experimental`, `fcl`, `fcl_mesh`, `bullet`, and `ode`, C++ legacy
-  detector/group facades, dartpy aliases, and legacy CMake collision component
-  names route to native DART collision.
+  detector/group facades, absence of dartpy legacy detector aliases, and legacy
+  CMake collision component names route to native DART collision.
 - Final local validation after that audit checkpoint passed
   `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
   across all 6 top-level gates.

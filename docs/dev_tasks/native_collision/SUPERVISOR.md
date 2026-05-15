@@ -92,6 +92,12 @@ Concrete fix: in the `North-Star Progress Scale` table in README, replace cells 
 
 **Q1 ANSWER (user, 2026-05-14):** Yes — proceed with the supervisor's suggestion. Add `[[deprecated]]` (C++) and `DeprecationWarning` (Python) on the retained legacy spellings per §1 of this file.
 
+**Q1 ADDENDUM (user, 2026-05-14):** For dartpy, backward compatibility is not
+required up to and including DART 7. Prefer the clean API approach: expose
+`DartCollisionDetector` and do not retain Python legacy detector aliases or
+Python `DeprecationWarning` wrappers. The C++ deprecation direction remains
+valid for retained C++ compatibility facades and factory keys.
+
 **Q2 (PR resumption):** PR #2652 is closed; manual workflow-dispatch CI evidence on `1e1faf6feb1` is collected but is "reference only". Should Codex (a) keep accumulating evidence on `feature/new_coll` and wait for explicit authorization to open a successor PR, or (b) draft the PR description now (without opening the PR) so it's ready when the green light comes?
 
 **Q2 ANSWER (user, 2026-05-14):** PR #2652 stays closed. A successor PR will be opened MANUALLY by the user when ready. Codex must NOT open a PR — keep accumulating local evidence and DRAFT the PR description in this folder so it's ready when the user opens the PR.
@@ -213,6 +219,9 @@ User answers cleared the policy fork. Codex may now do BOTH:
   - `FCLCollisionDetector`, `BulletCollisionDetector`, `OdeCollisionDetector` C++ classes (compat headers).
   - `[[deprecated]]` on `createReference()` is NOT appropriate (those are intentional reference APIs); keep them undeprecated.
 - Add Python `DeprecationWarning` on the alias assignments at `python/dartpy/collision/collision_detector.cpp:43-46`. Use `_warn_deprecated_collision_alias` helper if it doesn't already exist.
+- Superseded by Q1 addendum for dartpy: remove Python legacy detector aliases
+  instead of adding `DeprecationWarning` wrappers; tests and stubs should prove
+  the clean `DartCollisionDetector` API.
 - Gate the C++ deprecation attribute behind a CMake option `DART_COLLISION_DEPRECATE_LEGACY_NAMES` (default ON; downstreams in mid-migration can `-DDART_COLLISION_DEPRECATE_LEGACY_NAMES=OFF` to silence).
 - Add a regression test `UNIT_collision_LegacyDeprecationWarnings` that compiles a tiny program against each legacy spelling under `-Wdeprecated-declarations -Werror=deprecated-declarations` and asserts the warning fires; symmetric Python `pytest` proves `DeprecationWarning` is raised when the alias is constructed.
 - Confirm gz-physics still builds. Run `pixi run -e gazebo test-gz` with the option ON; if gz-physics breaks because it constructs legacy names internally, document the gz-physics-side migration patch in `05-downstream-migration.md` rather than removing the deprecation.

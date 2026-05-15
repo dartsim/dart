@@ -58,7 +58,7 @@ These gates are still required before the single north-star PR is complete.
 | Gate                         | Required evidence                                                                                                      | Current state                                       |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
 | CI native-only build         | CI passes with FCL, Bullet, and ODE disabled                                                                           | Manual dispatch passed on repaired head             |
-| CI gz-physics compatibility  | gz-physics CI passes with optional legacy components built                                                             | Current local `test-gz` passes; CI reference exists |
+| CI gz-physics compatibility  | gz-physics CI passes using native-backed compatibility facades without optional reference components                   | Current local `test-gz` passes; CI reference exists |
 | Reference correctness        | FCL/Bullet/ODE comparison tests are test-only and optional                                                             | Local reference target split passes                 |
 | Packaging removal            | Default packages/wheels have no old collision runtime deps                                                             | Verifier wired; CI matrix passed on repaired head   |
 | Downstream migration         | gz-physics has a tested path away from legacy detector APIs                                                            | Package/gz/link smokes pass; policy evidence left   |
@@ -1841,28 +1841,49 @@ dist/dartpy-7.0.0-cp312-cp312-manylinux_2_39_x86_64.whl | rg -i
   - Result: no old collision dynamic or static libraries were present in the
     repaired wheel.
 
-## Python Compatibility Facade Runs
+## Python Clean API Runs
 
 - `pixi run -- cmake --build build/default/cpp/Release --target dartpy
 --parallel 8`
-  - Commit: working tree after Python detector compatibility aliases and
-    dartpy link cleanup.
+  - Commit: working tree after dartpy clean detector API and link cleanup.
   - Result: passed in the default native-only configuration. Configure reported
     FCL, Bullet, ODE, reference tests, and reference benchmarks all `OFF`;
     dartpy built without linking legacy collision component targets.
 - `PYTHONPATH=build/default/cpp/Release/python pixi run pytest -q
 python/tests/unit/collision/test_collision.py
 python/tests/unit/simulation/test_world.py`
-  - Commit: working tree after Python detector compatibility aliases and
-    dartpy link cleanup.
-  - Result: passed, 17/17 tests. The new regression test proves
-    `DARTCollisionDetector`, `FCLCollisionDetector`, `BulletCollisionDetector`,
-    and `OdeCollisionDetector` all construct and report the built-in `dart`
-    detector.
+  - Commit: working tree after dartpy clean detector API and link cleanup.
+  - Result: passed. The focused clean-API regression verifies
+    `DartCollisionDetector` is exposed, legacy detector aliases are absent, and
+    world/collision APIs instantiate the canonical detector path.
+
+## Native-Only Gazebo Compatibility Run
+
+- `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5
+pixi run -e gazebo test-gz`
+  - Commit: working tree after removing the Gazebo environment's
+    FCL/Bullet/ODE reference-component overrides.
+  - Result: passed, 65/65 gz-physics tests. The DART install configure printed
+    `DART_BUILD_COLLISION_FCL: OFF`, `DART_BUILD_COLLISION_BULLET: OFF`,
+    `DART_BUILD_COLLISION_ODE: OFF`, and collision reference tests/benchmarks
+    `OFF`, proving gz-physics no longer needs the old reference-engine build
+    flags for runtime integration. The gz-physics build emitted the intended
+    C++ deprecation warnings when it touched retained Bullet/Ode compatibility
+    classes, and the plugin link inspection still found
+    `libdart-collision-native.so`.
+- Native compatibility package smoke:
+  - Command: install the current default build into `build/native-compat-install`,
+    configure `docs/dev_tasks/native_collision/smoke/native_compat_package`
+    against that install, build the smoke executable, run it, and verify
+    `build/native-compat-install/lib` contains no
+    `dart-collision-reference`, FCL, Bullet, ODE, or libccd collision runtime
+    libraries.
+  - Result: passed. The smoke accepted installed `collision-fcl`,
+    `collision-bullet`, and `collision-ode` package component facades while the
+    DART install remained native-only.
 - `pixi run --locked -e collision-reference -- cmake --build
 build/collision-reference/cpp/Release --target dartpy --parallel 8`
-  - Commit: working tree after Python detector compatibility aliases and
-    dartpy link cleanup.
+  - Commit: working tree after dartpy clean detector API and link cleanup.
   - Result: passed in a reference-enabled configuration where FCL, Bullet, ODE,
     reference tests, and reference benchmarks were all `ON`. The build also
     verified the GUI key mapping against ImGui 1.92.8, where the old
@@ -2674,8 +2695,9 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     top-level `dart/collision/{fcl,bullet,ode}` source/header files are explicit
     public facades and only forward to native-backed `compat/` headers.
   - Change: `scripts/audit_collision_compat_facades.py` now audits retained
-    legacy factory keys, C++ detector/group facades, dartpy aliases, and legacy
-    CMake package component names as routes to native DART collision.
+    legacy factory keys, C++ detector/group facades, absence of dartpy legacy
+    detector aliases, and legacy CMake package component names as routes to
+    native DART collision.
   - Commands:
     `python scripts/check_collision_runtime_isolation.py`,
     `python scripts/audit_collision_compat_facades.py`,

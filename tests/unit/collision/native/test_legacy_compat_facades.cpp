@@ -37,12 +37,14 @@ void expectNativeBackedFacade(
 
 TEST(LegacyCompatFacades, DirectClassesKeepDisplayNamesOnly)
 {
+  DART_SUPPRESS_DEPRECATED_BEGIN
   expectNativeBackedFacade(
       dart::collision::FCLCollisionDetector::create(), "fcl");
   expectNativeBackedFacade(
       dart::collision::BulletCollisionDetector::create(), "bullet");
   expectNativeBackedFacade(
       dart::collision::OdeCollisionDetector::create(), "ode");
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 TEST(LegacyCompatFacades, FactoryAliasesStillCanonicalizeToDart)

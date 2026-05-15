@@ -38,12 +38,8 @@ void defCollisionDetector(nb::module_& m)
             dart::collision::DartCollisionDetector::getStaticType());
       });
 
-  // Backward compatibility aliases. These names intentionally resolve to the
-  // built-in detector; FCL, Bullet, and ODE are reference engines only.
-  m.attr("DARTCollisionDetector") = m.attr("DartCollisionDetector");
-  m.attr("FCLCollisionDetector") = m.attr("DartCollisionDetector");
-  m.attr("BulletCollisionDetector") = m.attr("DartCollisionDetector");
-  m.attr("OdeCollisionDetector") = m.attr("DartCollisionDetector");
+  // Dartpy exposes the clean DART 7 API directly. C++ retains deprecated
+  // legacy detector facades for downstream source compatibility.
 }
 
 } // namespace dart::python_nb

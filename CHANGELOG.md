@@ -20,6 +20,9 @@
   - Removed deprecated experimental example and benchmark directories.
   - Removed C3D/VSK utilities, parsers, and sample data. ([#2363](https://github.com/dartsim/dart/pull/2363))
   - Dropped the deprecated `docker/dev/v6.15` images; use the maintained v6.16 images instead.
+  - Removed dartpy legacy collision detector aliases `DARTCollisionDetector`,
+    `FCLCollisionDetector`, `BulletCollisionDetector`, and
+    `OdeCollisionDetector`; use `DartCollisionDetector` or the default detector.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+
@@ -88,6 +91,10 @@
 
 - Collision and Geometry
   - Decoupled FCL, Bullet, and ODE collision backends from `libdart.so` into explicit reference shared libraries (`dart-collision-reference-fcl`, `dart-collision-reference-bullet`, `dart-collision-reference-ode`) while promoting the native DART backend to the default detector (`"dart"` factory key). The legacy `collision-fcl`, `collision-bullet`, and `collision-ode` package components plus installed/source-tree detector headers are native-backed compatibility facades; direct C++ legacy facade objects may preserve legacy display type strings for gz-physics compatibility, but old engines remain available only through reference targets and `reference/` source paths for tests and benchmarks during the migration.
+  - Marked retained C++ FCL/Bullet/ODE detector facades and legacy factory keys
+    as deprecated native-backed compatibility paths through
+    `DART_COLLISION_DEPRECATE_LEGACY_NAMES` while keeping explicit
+    `collision-reference-*` targets for tests and benchmarks.
   - Added native plane/mesh collision dispatch, unbounded PlaneShape AABB transform handling, and regression coverage for mesh-plane contacts through both native tests and the public DART collision group path.
   - Added collision benchmark regression checks that parse Google Benchmark JSON and compare native collision timings against the best enabled FCL, Bullet, or ODE reference result across narrowphase, distance, raycast, mixed primitive, mesh-heavy, raycast-batch, and public DART adapter scenarios, with a scheduled/manual CI Linux guard that uploads the JSON artifacts.
   - Added dartpy wheel verification that rejects legacy collision runtime libraries, reference collision libraries, and old reference collision component exports from wheel artifacts while allowing native-backed compatibility component facades.

@@ -2,9 +2,9 @@
 """Audit retained legacy collision names as native-backed facades.
 
 This is a static completion guard for the native collision migration. It checks
-that compatibility factory keys, public C++ detector/group names, dartpy
-aliases, and package components still route to the built-in DART collision
-stack rather than reintroducing FCL, Bullet, or ODE as runtime backends.
+that compatibility factory keys, public C++ detector/group names, package
+components, and dartpy's clean API boundary do not reintroduce FCL, Bullet, or
+ODE as runtime backends.
 """
 
 from __future__ import annotations
@@ -21,7 +21,6 @@ class EngineFacade:
     detector: str
     group: str
     factory_keys: tuple[str, ...]
-    python_alias: str
     public_headers: tuple[str, ...]
 
 
@@ -31,7 +30,6 @@ FACADES = (
         detector="FCLCollisionDetector",
         group="FCLCollisionGroup",
         factory_keys=("fcl", "fcl_mesh"),
-        python_alias="FCLCollisionDetector",
         public_headers=(
             "All.hpp",
             "FCLCollisionDetector.hpp",
@@ -46,7 +44,6 @@ FACADES = (
         detector="BulletCollisionDetector",
         group="BulletCollisionGroup",
         factory_keys=("bullet",),
-        python_alias="BulletCollisionDetector",
         public_headers=(
             "All.hpp",
             "BulletCollisionDetector.hpp",
@@ -61,7 +58,6 @@ FACADES = (
         detector="OdeCollisionDetector",
         group="OdeCollisionGroup",
         factory_keys=("ode",),
-        python_alias="OdeCollisionDetector",
         public_headers=(
             "All.hpp",
             "OdeCollisionDetector.hpp",
@@ -88,11 +84,20 @@ def require_contains(failures: list[str], text: str, needle: str, label: str) ->
         failures.append(f"{label}: expected to find {needle!r}")
 
 
+def require_not_contains(
+    failures: list[str], text: str, needle: str, label: str
+) -> None:
+    if needle in text:
+        failures.append(f"{label}: expected not to find {needle!r}")
+
+
 def registration_returns_native(source: str, key: str) -> bool:
     for match in re.finditer(rf'"{re.escape(key)}"', source):
         block = source[match.start() : match.start() + 520]
         if "DartCollisionDetector::create()" in block:
             return True
+        if "createLegacyAliasDetector(" in block:
+            return "return DartCollisionDetector::create();" in source
     return False
 
 
@@ -122,10 +127,19 @@ def check_cpp_facade(repo_root: Path, facade: EngineFacade) -> list[str]:
         f"{facade.engine}_collision_detector.hpp"
     )
     compat_text = read_text(repo_root, compat_header)
+    class_pattern = re.compile(
+        rf"class\s+(?:DART_COLLISION_LEGACY_NAME_DEPRECATED\s+)?"
+        rf"{facade.detector}\s*:\s*public\s+DartCollisionDetector"
+    )
+    if not class_pattern.search(compat_text):
+        failures.append(
+            f"{compat_header}: expected {facade.detector} to inherit "
+            "DartCollisionDetector"
+        )
     require_contains(
         failures,
         compat_text,
-        f"class {facade.detector} : public DartCollisionDetector",
+        "DART_COLLISION_LEGACY_NAME_DEPRECATED",
         compat_header,
     )
     require_contains(
@@ -166,15 +180,25 @@ def check_cpp_facade(repo_root: Path, facade: EngineFacade) -> list[str]:
     return failures
 
 
-def check_python_aliases(repo_root: Path) -> list[str]:
+def check_python_clean_api(repo_root: Path) -> list[str]:
     failures: list[str] = []
     source = read_text(repo_root, "python/dartpy/collision/collision_detector.cpp")
+    require_contains(
+        failures,
+        source,
+        'm, "DartCollisionDetector"',
+        "python dartpy collision API",
+    )
     for alias in (
         "DARTCollisionDetector",
-        *(facade.python_alias for facade in FACADES),
+        *(facade.detector for facade in FACADES),
     ):
-        expected = f'm.attr("{alias}") = m.attr("DartCollisionDetector");'
-        require_contains(failures, source, expected, "python dartpy aliases")
+        require_not_contains(
+            failures,
+            source,
+            f'm.attr("{alias}")',
+            "python dartpy collision API",
+        )
     return failures
 
 
@@ -207,7 +231,7 @@ def main() -> int:
     failures.extend(check_factory_aliases(repo_root))
     for facade in FACADES:
         failures.extend(check_cpp_facade(repo_root, facade))
-    failures.extend(check_python_aliases(repo_root))
+    failures.extend(check_python_clean_api(repo_root))
     failures.extend(check_package_components(repo_root))
 
     if failures:
@@ -222,10 +246,7 @@ def main() -> int:
         "  C++ facades: FCLCollisionDetector, BulletCollisionDetector, "
         "OdeCollisionDetector -> DartCollisionDetector"
     )
-    print(
-        "  dartpy aliases: DART/FCL/Bullet/OdeCollisionDetector -> "
-        "DartCollisionDetector"
-    )
+    print("  dartpy API: DartCollisionDetector only; legacy detector aliases absent")
     print("  package components: collision-fcl/bullet/ode -> dart")
     return 0
 

@@ -30,33 +30,21 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DEPRECATED_HPP_
-#define DART_COMMON_DEPRECATED_HPP_
+#ifndef DART_COLLISION_DETAIL_LEGACYDEPRECATION_HPP_
+#define DART_COLLISION_DETAIL_LEGACYDEPRECATION_HPP_
 
 #include <dart/config.hpp>
 
-//==============================================================================
-// Deprecated is used for backward compatibility between different minor
-// versions of DART. Every deprecated function should be removed for every major
-// version up.
-//==============================================================================
+#include <dart/common/deprecated.hpp>
 
-#if defined(__GNUC__) || defined(__clang__)
-  #define DART_DEPRECATED(version) __attribute__((deprecated))
-  #define DART_DEPRECATED_MESSAGE(message) __attribute__((deprecated(message)))
-  #define DART_FORCEINLINE __attribute__((always_inline))
-#elif defined(_MSC_VER)
-  #define DART_DEPRECATED(version) __declspec(deprecated)
-  #define DART_DEPRECATED_MESSAGE(message) __declspec(deprecated(message))
-  #define DART_FORCEINLINE _forceinline
+#if DART_COLLISION_DEPRECATE_LEGACY_NAMES
+  #define DART_COLLISION_LEGACY_NAME_DEPRECATED                                \
+    DART_DEPRECATED_MESSAGE(                                                   \
+        "Use DartCollisionDetector or the default dart collision detector. "   \
+        "Legacy FCL/Bullet/ODE names are native-backed compatibility "         \
+        "facades.")
 #else
-  #define DART_DEPRECATED(version) ()
-  #define DART_DEPRECATED_MESSAGE(message)
-  #define DART_FORCEINLINE
+  #define DART_COLLISION_LEGACY_NAME_DEPRECATED
 #endif
 
-// Warning suppression helpers (DART_SUPPRESS_*) now live in
-// dart/common/Diagnostics.hpp to decouple general diagnostics utilities from
-// the DART_DEPRECATED attribute helpers in this header.
-
-#endif // DART_COMMON_DEPRECATED_HPP_
+#endif // DART_COLLISION_DETAIL_LEGACYDEPRECATION_HPP_

@@ -36,12 +36,14 @@
 #include "dart/collision/dart/dart_collision_group.hpp"
 #include "dart/collision/dart/dart_collision_object.hpp"
 #include "dart/collision/dart/shape_adapter.hpp"
+#include "dart/collision/detail/legacy_deprecation.hpp"
 #include "dart/collision/native/persistent_manifold_cache.hpp"
 #include "dart/common/logging.hpp"
 #include "dart/dynamics/shape_frame.hpp"
 
 #include <optional>
 #include <ranges>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -51,6 +53,21 @@ namespace dart {
 namespace collision {
 
 namespace {
+
+std::shared_ptr<DartCollisionDetector> createLegacyAliasDetector(
+    std::string_view legacyKey)
+{
+#if DART_COLLISION_DEPRECATE_LEGACY_NAMES
+  DART_WARN_ONCE(
+      "Collision detector factory key '{}' is deprecated; use 'dart' or the "
+      "default collision detector instead. The legacy key currently returns "
+      "the built-in DART collision detector.",
+      legacyKey);
+#else
+  (void)legacyKey;
+#endif
+  return DartCollisionDetector::create();
+}
 
 bool checkGroupValidity(DartCollisionDetector* cd, CollisionGroup* group)
 {
@@ -211,7 +228,7 @@ DartCollisionDetector::Registrar<DartCollisionDetector>
     DartCollisionDetector::mRegistrarExperimental{
         "experimental",
         []() -> std::shared_ptr<dart::collision::DartCollisionDetector> {
-          return dart::collision::DartCollisionDetector::create();
+          return createLegacyAliasDetector("experimental");
         }};
 
 // Backward compatibility: legacy factory keys are aliases, not backend
@@ -220,27 +237,27 @@ DartCollisionDetector::Registrar<DartCollisionDetector>
 DartCollisionDetector::Registrar<DartCollisionDetector>
     DartCollisionDetector::mRegistrarFclAlias{
         "fcl", []() -> std::shared_ptr<dart::collision::DartCollisionDetector> {
-          return dart::collision::DartCollisionDetector::create();
+          return createLegacyAliasDetector("fcl");
         }};
 
 DartCollisionDetector::Registrar<DartCollisionDetector>
     DartCollisionDetector::mRegistrarFclMeshAlias{
         "fcl_mesh",
         []() -> std::shared_ptr<dart::collision::DartCollisionDetector> {
-          return dart::collision::DartCollisionDetector::create();
+          return createLegacyAliasDetector("fcl_mesh");
         }};
 
 DartCollisionDetector::Registrar<DartCollisionDetector>
     DartCollisionDetector::mRegistrarBulletAlias{
         "bullet",
         []() -> std::shared_ptr<dart::collision::DartCollisionDetector> {
-          return dart::collision::DartCollisionDetector::create();
+          return createLegacyAliasDetector("bullet");
         }};
 
 DartCollisionDetector::Registrar<DartCollisionDetector>
     DartCollisionDetector::mRegistrarOdeAlias{
         "ode", []() -> std::shared_ptr<dart::collision::DartCollisionDetector> {
-          return dart::collision::DartCollisionDetector::create();
+          return createLegacyAliasDetector("ode");
         }};
 
 //==============================================================================

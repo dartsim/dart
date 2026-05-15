@@ -35,6 +35,7 @@
 
 #include <dart/collision/dart/dart_collision_detector.hpp>
 #include <dart/collision/dart/dart_collision_group.hpp>
+#include <dart/collision/detail/legacy_deprecation.hpp>
 
 #include <string>
 
@@ -47,7 +48,8 @@ namespace collision {
 /// built-in DART collision detector. Reference tests and benchmarks that
 /// intentionally compare against Bullet must use the explicit reference header
 /// and `createReference()` API in a reference-enabled target.
-class BulletCollisionDetector : public DartCollisionDetector
+class DART_COLLISION_LEGACY_NAME_DEPRECATED BulletCollisionDetector
+  : public DartCollisionDetector
 {
 public:
   static std::shared_ptr<BulletCollisionDetector> create()

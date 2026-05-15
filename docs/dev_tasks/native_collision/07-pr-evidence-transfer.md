@@ -36,7 +36,8 @@ must be deleted in the same PR that completes the native-collision migration.
 - FCL, Bullet, ODE, and `experimental` factory keys route to
   `DartCollisionDetector`.
 - C++ legacy detector/group surfaces are native-backed compatibility facades.
-- dartpy legacy detector names are aliases of `DartCollisionDetector`.
+- dartpy exposes the clean DART 7 `DartCollisionDetector` API and does not
+  retain legacy detector aliases.
 - Legacy package components `collision-fcl`, `collision-bullet`, and
   `collision-ode` are native-backed interface facades.
 - Explicit `collision-reference-*` surfaces retain opt-in access for tests and
@@ -45,7 +46,8 @@ must be deleted in the same PR that completes the native-collision migration.
   rejects non-reference old-engine includes and now also enforces pure
   top-level legacy facade headers.
 - Compatibility routing is guarded by `audit-collision-compat-facades`, which
-  audits factory aliases, C++ facades, dartpy aliases, and package components.
+  audits factory aliases, C++ facades, package components, and absence of
+  dartpy legacy detector aliases.
 - Wheel/package isolation is guarded by `verify_wheel_collision_isolation.py`
   and package smoke/link checks.
 - Native/reference benchmark checks cover primitive, narrow-phase, distance,
@@ -74,9 +76,20 @@ Local validation currently recorded in the dev-task evidence:
   non-mutating lint path.
 - `python scripts/check_collision_runtime_isolation.py` passed.
 - `python scripts/audit_collision_compat_facades.py` passed.
-- Prior local downstream evidence:
-  - fresh `pixi run -e gazebo test-gz` passed 65/65 tests
-  - native compatibility package smoke passed
+- Current clean-API validation passed locally:
+  - `pixi run lint`
+  - `pixi run build`
+  - `pixi run test-unit` (277/277 CTest tests passed)
+  - `pixi run test-py` (147 Python tests passed)
+- Current local downstream evidence:
+  - fresh `pixi run -e gazebo test-gz` passed 65/65 tests with the DART
+    install configured as native-only:
+    `DART_BUILD_COLLISION_FCL=OFF`,
+    `DART_BUILD_COLLISION_BULLET=OFF`,
+    `DART_BUILD_COLLISION_ODE=OFF`
+  - native compatibility package smoke passed against the same native-only
+    install, including installed `collision-fcl`, `collision-bullet`, and
+    `collision-ode` package component facades
   - `readelf` showed gz/plugin package-smoke binaries depending on
     `libdart-collision-native.so` without old collision/reference runtime
     dependencies
@@ -95,7 +108,10 @@ after PR #2652 is reopened or a successor PR is created.
 
 ## Breaking Changes
 
-- [ ] None
+- [x] Dartpy no longer exposes legacy detector aliases
+      `DARTCollisionDetector`, `FCLCollisionDetector`, `BulletCollisionDetector`,
+      or `OdeCollisionDetector`. Use `DartCollisionDetector` or the default
+      detector.
 
 Compatibility notes:
 
@@ -103,15 +119,18 @@ Compatibility notes:
   when retained legacy names are used.
 - Retained legacy names are compatibility facades, not external runtime backend
   selectors.
-- Downstream runtime code should migrate to `dart`, `DartCollisionDetector`,
+- Downstream C++ runtime code should migrate to `dart`, `DartCollisionDetector`,
   `CollisionDetectorType::Dart`, and the default `dart` package component.
+- Downstream Python runtime code should migrate directly to
+  `DartCollisionDetector`; DART 7 does not keep dartpy detector aliases.
 - Explicit old-engine comparisons should use `collision-reference-*` targets
   and `createReference()` APIs.
 
 ## Related Issues / PRs
 
 - PR #2652: `https://github.com/dartsim/dart/pull/2652`
-- Current pushed branch: `feature/new_coll` at `bdf6e34573c`
+- Current pushed branch: `feature/new_coll` at the latest pushed head; update
+  this line after the next evidence push.
 
 ## Checklist Notes
 
@@ -119,6 +138,6 @@ Compatibility notes:
 - `CHANGELOG.md` update should be decided after the final PR number is known.
 - The dev-task folder must be deleted in the same completing PR after evidence
   is transferred.
-- Downstream deprecation or hard-removal requires explicit maintainer policy
-  direction; do not add deprecation warnings or remove retained facades until
-  that decision is made.
+- C++ downstream deprecation warnings are enabled by default through
+  `DART_COLLISION_DEPRECATE_LEGACY_NAMES`; downstreams may turn that option
+  off only as a migration aid. Dartpy intentionally takes the clean API path.

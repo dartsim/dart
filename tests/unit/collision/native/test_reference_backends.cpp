@@ -331,7 +331,9 @@ protected:
 
 TEST_F(ReferenceBackends, LegacyCreateAliasesReturnNativeDetector)
 {
+  DART_SUPPRESS_DEPRECATED_BEGIN
   auto fclAlias = dart::collision::FCLCollisionDetector::create();
+  DART_SUPPRESS_DEPRECATED_END
   ASSERT_NE(fclAlias, nullptr);
   EXPECT_EQ(std::string(fclAlias->getTypeView()), "dart");
   EXPECT_EQ(
@@ -341,7 +343,9 @@ TEST_F(ReferenceBackends, LegacyCreateAliasesReturnNativeDetector)
       "fcl");
 
 #if DART_HAVE_BULLET
+  DART_SUPPRESS_DEPRECATED_BEGIN
   auto bulletAlias = dart::collision::BulletCollisionDetector::create();
+  DART_SUPPRESS_DEPRECATED_END
   ASSERT_NE(bulletAlias, nullptr);
   EXPECT_EQ(std::string(bulletAlias->getTypeView()), "dart");
   EXPECT_EQ(
@@ -352,7 +356,9 @@ TEST_F(ReferenceBackends, LegacyCreateAliasesReturnNativeDetector)
 #endif
 
 #if DART_HAVE_ODE
+  DART_SUPPRESS_DEPRECATED_BEGIN
   auto odeAlias = dart::collision::OdeCollisionDetector::create();
+  DART_SUPPRESS_DEPRECATED_END
   ASSERT_NE(odeAlias, nullptr);
   EXPECT_EQ(std::string(odeAlias->getTypeView()), "dart");
   EXPECT_EQ(

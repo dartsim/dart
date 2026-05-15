@@ -260,10 +260,10 @@ Current working-tree status: this phase is locally complete and needs CI plus
 downstream migration/deprecation evidence. DART-side factory and SKEL
 parser coverage now proves `"fcl"`, `"fcl_mesh"`, `"bullet"`, and `"ode"`
 selection routes to `DartCollisionDetector`, including a reference-enabled
-build where legacy component libraries are linked. The Python detector
-compatibility names now also resolve to `DartCollisionDetector`, and dartpy no
-longer links legacy collision component targets even in a reference-enabled
-build. Direct public C++ legacy facades keep legacy display strings for
+build where legacy component libraries are linked. Dartpy exposes
+`DartCollisionDetector` without legacy detector aliases and no longer links
+legacy collision component targets even in a reference-enabled build. Direct
+public C++ legacy facades keep legacy display strings for
 gz-physics compatibility while remaining native-backed. FCL/ODE facades now
 preserve gz-required unsupported raycast behavior, while Bullet/native raycast
 support remains available. A fresh local `pixi run -e gazebo test-gz` passes
@@ -316,9 +316,9 @@ is documented in `01-design.md` as public API and compatibility facades outside 
 scene/query state and performance instrumentation. The same design contract now
 contains a concrete blueprint for API cleanliness, adapter-owned scene state,
 native scene/query data, query lifecycle, scalability rules, and
-performance-oriented internals. Python detector
-compatibility names now resolve to `DartCollisionDetector` and dartpy no
-longer links legacy collision component targets. Reference tests and
+performance-oriented internals. Dartpy exposes `DartCollisionDetector` without
+legacy detector aliases and no longer links legacy collision component targets.
+Reference tests and
 benchmarks now use explicit `createReference()` APIs for old-engine
 comparisons. Direct public C++ legacy detector `create()` paths now resolve to
 native-backed `DartCollisionDetector` facades; any legacy display type string
