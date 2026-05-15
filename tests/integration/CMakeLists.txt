@@ -157,6 +157,18 @@ if(DART_BUILD_COLLISION_REFERENCE_TESTS
     dart-collision-reference-bullet
     dart-collision-reference-ode
   )
+
+  dart_add_test(
+    "integration"
+    INTEGRATION_collision_BoxGroundContactParity
+    collision/test_box_ground_contact_parity.cpp)
+  target_link_libraries(
+    INTEGRATION_collision_BoxGroundContactParity
+    dart-collision-native
+    dart-collision-reference-bullet
+    dart-collision-reference-ode
+    dart-collision-reference-fcl
+  )
 endif()
 
 # ==============================================================================

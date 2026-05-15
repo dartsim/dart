@@ -44,6 +44,9 @@ set(collision_native_sources
   contact_manifold.cpp
   persistent_manifold_cache.cpp
   narrow_phase/box_box.cpp
+  narrow_phase/box_box/contact_reduction.cpp
+  narrow_phase/box_box/face_clip.cpp
+  narrow_phase/box_box/sat.cpp
   narrow_phase/capsule_box.cpp
   narrow_phase/capsule_capsule.cpp
   narrow_phase/capsule_sphere.cpp

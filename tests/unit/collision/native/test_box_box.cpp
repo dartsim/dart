@@ -31,6 +31,7 @@
  */
 
 #include <dart/collision/native/narrow_phase/box_box.hpp>
+#include <dart/collision/native/narrow_phase/box_box/sat.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
 #include <dart/collision/native/types.hpp>
 
@@ -443,6 +444,102 @@ TEST(BoxBox, RotatedSmallBoxOnLargeGroundHasLocalContactPoint)
   ASSERT_GE(swappedResult.numContacts(), 1u);
   EXPECT_NEAR(contact.depth, swappedContact.depth, 1e-9);
   EXPECT_LT(contact.normal.dot(swappedContact.normal), -0.99);
+}
+
+TEST(BoxBox, RotatedBoxOnFlatGroundEmitsFacePatch)
+{
+  const Eigen::Vector3d boxHalfExtents(0.15, 0.15, 0.15);
+  const Eigen::Vector3d groundHalfExtents(5.0, 5.0, 0.05);
+
+  Eigen::Isometry3d boxTf = Eigen::Isometry3d::Identity();
+  boxTf.linear() = (Eigen::AngleAxisd(0.005, Eigen::Vector3d::UnitX())
+                    * Eigen::AngleAxisd(-0.004, Eigen::Vector3d::UnitY())
+                    * Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitZ()))
+                       .toRotationMatrix();
+
+  const Eigen::Vector3d zAxis = Eigen::Vector3d::UnitZ();
+  const double boxRadiusZ
+      = boxHalfExtents.x() * std::abs(zAxis.dot(boxTf.linear().col(0)))
+        + boxHalfExtents.y() * std::abs(zAxis.dot(boxTf.linear().col(1)))
+        + boxHalfExtents.z() * std::abs(zAxis.dot(boxTf.linear().col(2)));
+  const double groundTop = groundHalfExtents.z();
+  boxTf.translation()
+      = Eigen::Vector3d(0.0, 0.0, groundTop + boxRadiusZ - 0.01);
+
+  Eigen::Isometry3d groundTf = Eigen::Isometry3d::Identity();
+
+  CollisionOption option;
+  option.maxNumContacts = 8;
+
+  CollisionResult result;
+  ASSERT_TRUE(collideBoxes(
+      boxHalfExtents, boxTf, groundHalfExtents, groundTf, result, option));
+  ASSERT_GE(result.numContacts(), 3u);
+
+  Eigen::Vector2d minPoint(
+      std::numeric_limits<double>::infinity(),
+      std::numeric_limits<double>::infinity());
+  Eigen::Vector2d maxPoint(
+      -std::numeric_limits<double>::infinity(),
+      -std::numeric_limits<double>::infinity());
+
+  for (const auto& manifold : result.getManifolds()) {
+    for (const auto& contact : manifold.getContacts()) {
+      EXPECT_GT(contact.normal.z(), 0.9)
+          << "position=" << contact.position.transpose()
+          << " normal=" << contact.normal.transpose()
+          << " depth=" << contact.depth;
+      EXPECT_GE(contact.depth, 0.0);
+      minPoint = minPoint.cwiseMin(contact.position.head<2>());
+      maxPoint = maxPoint.cwiseMax(contact.position.head<2>());
+    }
+  }
+
+  const double patchArea
+      = (maxPoint.x() - minPoint.x()) * (maxPoint.y() - minPoint.y());
+  EXPECT_GT(patchArea, 0.01)
+      << "min=" << minPoint.transpose() << " max=" << maxPoint.transpose();
+}
+
+TEST(BoxBox, SatAxisStableForNearFaceBoxGroundPerturbations)
+{
+  const Eigen::Vector3d boxHalfExtents(0.15, 0.15, 0.15);
+  const Eigen::Vector3d groundHalfExtents(5.0, 5.0, 0.05);
+  const Eigen::Isometry3d groundTf = Eigen::Isometry3d::Identity();
+  const dart::collision::native::box_box::BoxData ground{
+      groundTf.translation(), groundHalfExtents, groundTf.rotation()};
+
+  const double groundTop = groundHalfExtents.z();
+  const double penetration = 0.01;
+  const double yaw = 0.5;
+
+  for (int i = -10; i <= 10; ++i) {
+    const double perturbation = static_cast<double>(i) * 1e-4;
+    Eigen::Isometry3d boxTf = Eigen::Isometry3d::Identity();
+    boxTf.linear()
+        = (Eigen::AngleAxisd(0.004 + perturbation, Eigen::Vector3d::UnitX())
+           * Eigen::AngleAxisd(
+               -0.003 + 0.5 * perturbation, Eigen::Vector3d::UnitY())
+           * Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()))
+              .toRotationMatrix();
+
+    const Eigen::Vector3d zAxis = Eigen::Vector3d::UnitZ();
+    const double boxRadiusZ
+        = boxHalfExtents.x() * std::abs(zAxis.dot(boxTf.linear().col(0)))
+          + boxHalfExtents.y() * std::abs(zAxis.dot(boxTf.linear().col(1)))
+          + boxHalfExtents.z() * std::abs(zAxis.dot(boxTf.linear().col(2)));
+    boxTf.translation()
+        = Eigen::Vector3d(0.0, 0.0, groundTop + boxRadiusZ - penetration);
+
+    const dart::collision::native::box_box::BoxData box{
+        boxTf.translation(), boxHalfExtents, boxTf.rotation()};
+    dart::collision::native::box_box::SatResult sat;
+    ASSERT_TRUE(
+        dart::collision::native::box_box::computeBoxBoxSat(box, ground, sat));
+    EXPECT_EQ(sat.axisType, dart::collision::native::box_box::SatAxisType::Face)
+        << "perturbation=" << perturbation << " axisIndex=" << sat.axisIndex
+        << " normal=" << sat.normal.transpose();
+  }
 }
 
 TEST(BoxBox, Determinism)

@@ -428,13 +428,30 @@ TEST(WorldTests, BasicSimulation)
   EXPECT_LT(finalZ, initialZ);
 }
 
-//==============================================================================
-void testDefaultNativeBoxRestsOnGround(const Eigen::Matrix3d& initialRotation)
+namespace {
+
+struct NativeBoxGroundRunResult
+{
+  bool sawContact = false;
+  double lowestCenterZ = std::numeric_limits<double>::infinity();
+  double lowestVertexZ = std::numeric_limits<double>::infinity();
+  double highestCenterZAfterRest = -std::numeric_limits<double>::infinity();
+  double lowestCenterZAfterRest = std::numeric_limits<double>::infinity();
+  Eigen::Isometry3d finalTransform = Eigen::Isometry3d::Identity();
+};
+
+NativeBoxGroundRunResult runDefaultNativeBoxOnGround(
+    const Eigen::Matrix3d& initialRotation,
+    int numSteps,
+    bool checkLongRunBounds)
 {
   auto world = World::create();
   world->setTimeStep(0.001);
-  ASSERT_TRUE(world->getCollisionDetector());
-  ASSERT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
+  EXPECT_TRUE(world->getCollisionDetector());
+  if (!world->getCollisionDetector()) {
+    return {};
+  }
+  EXPECT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
 
   const auto boxSize = Eigen::Vector3d::Constant(0.3);
   const double boxHalfExtent = 0.5 * boxSize.z();
@@ -466,9 +483,6 @@ void testDefaultNativeBoxRestsOnGround(const Eigen::Matrix3d& initialRotation)
   world->addSkeleton(box);
   world->addSkeleton(ground);
 
-  bool sawContact = false;
-  double lowestCenterZ = std::numeric_limits<double>::infinity();
-  double lowestVertexZ = std::numeric_limits<double>::infinity();
   auto measureLowestVertexZ = [&]() {
     const auto tf = boxBody->getWorldTransform();
     double lowest = std::numeric_limits<double>::infinity();
@@ -483,18 +497,62 @@ void testDefaultNativeBoxRestsOnGround(const Eigen::Matrix3d& initialRotation)
     return lowest;
   };
 
-  for (int i = 0; i < 1500; ++i) {
+  NativeBoxGroundRunResult runResult;
+  double previousCenterZAfterRest = std::numeric_limits<double>::infinity();
+  for (int i = 0; i < numSteps; ++i) {
     world->step();
     const auto& collisionResult = world->getLastCollisionResult();
-    sawContact = sawContact || collisionResult.getNumContacts() > 0u;
+    runResult.sawContact
+        = runResult.sawContact || collisionResult.getNumContacts() > 0u;
     const double z = boxBody->getWorldTransform().translation().z();
-    lowestCenterZ = std::min(lowestCenterZ, z);
-    lowestVertexZ = std::min(lowestVertexZ, measureLowestVertexZ());
+    const double lowestVertexZ = measureLowestVertexZ();
+    runResult.lowestCenterZ = std::min(runResult.lowestCenterZ, z);
+    runResult.lowestVertexZ = std::min(runResult.lowestVertexZ, lowestVertexZ);
+    if (i >= 2000) {
+      runResult.highestCenterZAfterRest
+          = std::max(runResult.highestCenterZAfterRest, z);
+      runResult.lowestCenterZAfterRest
+          = std::min(runResult.lowestCenterZAfterRest, z);
+      if (checkLongRunBounds && (i % 100 == 0)) {
+        EXPECT_LE(z, previousCenterZAfterRest + 0.002)
+            << "step=" << i << " previous=" << previousCenterZAfterRest;
+        previousCenterZAfterRest = z;
+      }
+    }
+
+    if (checkLongRunBounds && i >= 500 && (i % 100 == 0)) {
+      EXPECT_GE(lowestVertexZ, groundTop - 0.005) << "step=" << i;
+      EXPECT_GE(z, expectedCenterZ - 0.02) << "step=" << i;
+      EXPECT_LE(z, groundTop + boxHalfExtent * 1.74 + 0.02) << "step=" << i;
+    }
   }
 
-  EXPECT_TRUE(sawContact);
-  EXPECT_GE(lowestCenterZ, expectedCenterZ - 0.02);
-  EXPECT_GE(lowestVertexZ, groundTop - 0.005);
+  runResult.finalTransform = boxBody->getWorldTransform();
+  return runResult;
+}
+
+bool hasLocalAxisAlignedWithWorldZ(
+    const Eigen::Matrix3d& rotation, double angleToleranceRadians)
+{
+  const double threshold = std::cos(angleToleranceRadians);
+  for (int i = 0; i < 3; ++i) {
+    if (std::abs(rotation.col(i).dot(Eigen::Vector3d::UnitZ())) >= threshold) {
+      return true;
+    }
+  }
+  return false;
+}
+
+} // namespace
+
+//==============================================================================
+void testDefaultNativeBoxRestsOnGround(const Eigen::Matrix3d& initialRotation)
+{
+  const auto result = runDefaultNativeBoxOnGround(initialRotation, 1500, false);
+
+  EXPECT_TRUE(result.sawContact);
+  EXPECT_GE(result.lowestCenterZ, 0.05 + 0.15 - 0.02);
+  EXPECT_GE(result.lowestVertexZ, 0.05 - 0.005);
 }
 
 //==============================================================================
@@ -508,6 +566,32 @@ TEST(WorldTests, DefaultNativeRotatedBoxRestsOnGround)
 {
   testDefaultNativeBoxRestsOnGround(
       math::expMapRot(Eigen::Vector3d(0.4, -0.7, 0.2)));
+}
+
+//==============================================================================
+TEST(WorldTests, DefaultNativeRotatedBoxSettlesOnFace)
+{
+  const auto result = runDefaultNativeBoxOnGround(
+      math::expMapRot(Eigen::Vector3d(0.4, -0.7, 0.2)), 3000, false);
+
+  EXPECT_TRUE(result.sawContact);
+  EXPECT_TRUE(hasLocalAxisAlignedWithWorldZ(
+      result.finalTransform.linear(), 5.0 * M_PI / 180.0))
+      << "rotation=\n"
+      << result.finalTransform.linear();
+}
+
+//==============================================================================
+TEST(WorldTests, DefaultNativeRotatedBoxStaysOnGround15s)
+{
+  const auto result = runDefaultNativeBoxOnGround(
+      math::expMapRot(Eigen::Vector3d(0.4, -0.7, 0.2)), 15000, true);
+
+  EXPECT_TRUE(result.sawContact);
+  EXPECT_GE(result.lowestCenterZ, 0.05 + 0.15 - 0.02);
+  EXPECT_GE(result.lowestVertexZ, 0.05 - 0.005);
+  EXPECT_LE(result.highestCenterZAfterRest, 0.05 + 0.15 * 1.74 + 0.02);
+  EXPECT_GE(result.lowestCenterZAfterRest, 0.05 + 0.15 - 0.02);
 }
 
 //==============================================================================

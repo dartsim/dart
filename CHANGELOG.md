@@ -113,7 +113,7 @@
   - Native collision: improved broad-phase early exit, contact-count tracking, box-box distance, cylinder-box narrow phase, and primitive-mesh traversal performance.
   - Native collision: stabilized tilted cylinder contacts against plane-like large boxes, matching gz-physics plane fallback behavior without selecting external collision backends.
   - Native collision: capped large flat box/mesh contact patches to keep gz-physics max-contact selection tests expressive without overwhelming the solver, and preserved gz-required unsupported raycast behavior on FCL/ODE compatibility facades while keeping the built-in native detector behind those names.
-  - Native collision: fixed box-box contact points for large ground boxes so default DART worlds keep upright and rotated boxes resting on the ground, and made invalid convex/soft mesh data non-collidable with a warning instead of synthesizing native fallback geometry.
+  - Native collision: fixed box-box contact points for large ground boxes so default DART worlds keep upright and rotated boxes resting on the ground, added stable SAT/face-clipping contact patches for rotated box-ground contacts, and made invalid convex/soft mesh data non-collidable with a warning instead of synthesizing native fallback geometry.
   - Restored `BodyNodeDistanceFilter` so distance queries honor body collidability, self-collision, and adjacent-body filtering, and made `DistanceFilter` safely deletable through its base interface.
   - Fixed native sphere-box CCD when the sphere starts inside the expanded box so Debug builds no longer assert before reporting an initial overlap.
   - Fixed native capsule-vs-convex CCD so casts use the full capsule support shape instead of relying on numerically fragile endpoint-sphere hits.

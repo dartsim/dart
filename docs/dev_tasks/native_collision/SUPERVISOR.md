@@ -756,3 +756,1105 @@ Q5 policy is implemented locally:
   `README.md`, `RESUME.md`, `03-evidence-gates.md`, and `CHANGELOG.md` now
   describe invalid convex/soft meshes as non-collidable on the native runtime
   path, with the FCL fallback documented as legacy reference behavior.
+
+## Round 6 — Reference Code Belongs Under tests/ (architectural cleanup)
+
+User direction (2026-05-15): "Reference code (FCL, ODE, Bullet) should be
+only in tests/ directory, not in the dart/\*\* folder."
+
+This is an architectural cleanup, not a behavior change. Today the layout
+is:
+
+- `dart/collision/{fcl,bullet,ode}/` — top-level public C++ compatibility
+  facade headers + small `compat/` shim headers. These route to
+  `DartCollisionDetector` and are required for source-compatibility of
+  downstream code like gz-physics. **STAY in `dart/`**.
+- `dart/collision/{fcl,bullet,ode}/reference/` — full historical
+  FCL/Bullet/ODE collision implementation: `*_collision_detector.{hpp,cpp}`,
+  `*_collision_group.{hpp,cpp}`, `*_collision_object.{hpp,cpp}`,
+  `*_collision_shape.{hpp,cpp}`, `*_types.{hpp,cpp}`, plus engine-specific
+  `detail/`. These are consumed ONLY by test/benchmark targets via
+  `createReference()` and the `dart-collision-reference-{fcl,bullet,ode}`
+  CMake targets. **MOVE under `tests/`** because they have no runtime
+  callers inside `dart/`.
+
+Confirmed today (no production caller of `createReference`):
+
+- All `createReference()` call sites live under `tests/`
+  (`tests/integration/collision/*`, `tests/unit/collision/*`,
+  `tests/benchmark/collision/comparative/*`). Re-run
+  `git grep -lE "createReference|reference/(fcl|bullet|ode)_collision" -- dart/ python/`
+  before acting to confirm nothing under `dart/` consumes the reference
+  trees.
+
+### Target layout
+
+```
+tests/reference_collision/
+  fcl/
+    fcl_collision_detector.{hpp,cpp}
+    fcl_collision_group.{hpp,cpp}
+    fcl_collision_object.{hpp,cpp}
+    collision_shapes.hpp
+    backward_compatibility.{hpp,cpp}
+    fcl_types.{hpp,cpp}
+    tri_tri_intersection_test.hpp
+    CMakeLists.txt          # builds test-only `dart-test-reference-fcl`
+  bullet/
+    bullet_collision_detector.{hpp,cpp}
+    bullet_collision_group.{hpp,cpp}
+    bullet_collision_object.{hpp,cpp}
+    bullet_collision_shape.{hpp,cpp}
+    bullet_include.hpp
+    bullet_types.{hpp,cpp}
+    detail/...
+    CMakeLists.txt          # builds test-only `dart-test-reference-bullet`
+  ode/
+    ode_collision_detector.{hpp,cpp}
+    ode_collision_group.{hpp,cpp}
+    ode_collision_object.{hpp,cpp}
+    ode_types.{hpp,cpp}
+    detail/...
+    CMakeLists.txt          # builds test-only `dart-test-reference-ode`
+  README.md                  # explains why this lives under tests/, what
+                             # downstream contract still survives in dart/
+                             # via the compat facades, and how to extend
+                             # reference engines for new comparison tests
+  CMakeLists.txt             # add_subdirectory(fcl|bullet|ode) gated by
+                             # DART_BUILD_COLLISION_REFERENCE_TESTS or
+                             # DART_BUILD_COLLISION_REFERENCE_BENCHMARKS
+```
+
+After the move, `dart/collision/{fcl,bullet,ode}/reference/` directories
+are DELETED. The top-level `dart/collision/{fcl,bullet,ode}/*.hpp` facade
+headers and `compat/*.hpp` shims remain in place — those are the
+downstream source-compatibility surface for gz-physics and others.
+
+### Why this is right (long-term, scalable)
+
+1. **`dart/` is the runtime library; `tests/` is test infrastructure.**
+   Reference engines are correctness/perf comparison fixtures. They have
+   no business shipping in the production library tree.
+2. **Removes the "are these runtime backends?" ambiguity.** Today the
+   `dart/collision/fcl/reference/` path could be misread as "an FCL
+   backend exists inside dart/". Moving to `tests/reference_collision/`
+   makes the test-only intent self-documenting.
+3. **Shrinks the public install surface.** Reference headers will no
+   longer be installable from `dart/`; only test binaries will see them.
+   No downstream needs to include them.
+4. **Cleaner DART 8 path.** When the reference comparison harness is
+   eventually retired (post-DART 8), deleting `tests/reference_collision/`
+   is one `rm -rf` instead of touching the runtime tree.
+
+### Concrete migration plan for Codex
+
+Treat this as a sixth commit landing AFTER the box-box / OctoMap / doc /
+convex-mesh stack from Rounds 3–5. Single commit, mechanical move.
+
+1. **Confirm no production caller** with the grep above. If anything pops
+   up, fix it FIRST (likely a stale include).
+2. **`git mv` the source trees** (preserves blame):
+   - `git mv dart/collision/fcl/reference tests/reference_collision/fcl`
+   - `git mv dart/collision/bullet/reference tests/reference_collision/bullet`
+   - `git mv dart/collision/ode/reference tests/reference_collision/ode`
+3. **Move + rewrite the per-engine `CMakeLists.txt`** out of
+   `dart/collision/{fcl,bullet,ode}/CMakeLists.txt` and into the
+   matching `tests/reference_collision/{fcl,bullet,ode}/CMakeLists.txt`.
+   Rename the targets:
+   - `dart-collision-reference-fcl` → `dart-test-reference-fcl`
+   - `dart-collision-reference-bullet` → `dart-test-reference-bullet`
+   - `dart-collision-reference-ode` → `dart-test-reference-ode`
+     Targets stay gated by the existing
+     `DART_BUILD_COLLISION_REFERENCE_TESTS` /
+     `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` options. Update every
+     `target_link_libraries(... dart-collision-reference-*)` line in
+     `tests/unit/collision/CMakeLists.txt`,
+     `tests/integration/collision/CMakeLists.txt`,
+     `tests/benchmark/collision/CMakeLists.txt`, and any other test
+     CMakeLists referencing the old name.
+4. **Drop the installable `collision-reference-*` package components.**
+   Today the per-engine CMakeLists install those components under
+   `lib/cmake/...`. After the move these are TEST artifacts and should
+   NOT install. Remove the `install(...)` blocks for the reference
+   targets entirely so they don't ship from `dart/` or `tests/`.
+   Update `05-downstream-migration.md` to record this removal as part
+   of the reference-engine cleanup — downstream users were never
+   intended to link those components and the existing migration doc
+   already labels them reference-only.
+5. **Update include paths in all reference-consuming tests.** Every
+   include of the form
+   `#include <dart/collision/{fcl,bullet,ode}/reference/...>` must
+   become an include rooted at the new test-only location. See Q6 below
+   for the exact path convention.
+6. **Update the `check-collision-runtime-isolation` lint script**
+   (`scripts/check_collision_runtime_isolation.py`) so its allowed-path
+   list moves from `dart/collision/**/reference/` to
+   `tests/reference_collision/`. The runtime guard now becomes
+   "nothing under `dart/collision/` (except `compat/` facades) may
+   include reference engine headers" — which is even stricter than
+   today.
+7. **Update the `audit_collision_compat_facades` script** to reflect
+   the new test-only location for reference adapters.
+8. **Update `README.md`, `06-completion-audit.md`,
+   `05-downstream-migration.md`,** and `docs/onboarding/architecture.md`
+   to describe the new layout. The "Native Detector + Compatibility
+   Facades + Optional Reference Engines (now under tests/)" framing is
+   the architecture story for DART 7.
+9. **Refresh evidence.** Run `pixi run lint`, `pixi run test-all`,
+   `pixi run -e collision-reference test-cpp` (and the
+   `bm-collision-check` benchmark guard) on the post-move tree. Record
+   in `03-evidence-gates.md` as a new dated entry, and write a Round 7
+   spot-check section in this SUPERVISOR.md.
+
+### Anti-goals for this slice
+
+- Do NOT touch the top-level `dart/collision/{fcl,bullet,ode}/` facade
+  headers or the `compat/` shims. Those are the downstream
+  source-compatibility surface and stay in `dart/`.
+- Do NOT change runtime behavior. This is a pure file move + CMake
+  rename + include-path update. If any test fails after the move,
+  diagnose and fix the build wiring rather than reverting the move.
+- Do NOT bundle this with the box-box / OctoMap / doc / convex-mesh
+  commits. It is the SIXTH commit in the stack and lands AFTER all five
+  prior commits are clean.
+- Do NOT push the new layout to `origin/feature/new_coll` without
+  explicit user/maintainer approval.
+
+### Open Question Q6 for User — ANSWERED
+
+**Q6 (test-only reference engine include path):** After the move, test
+sources need to include reference headers. Two options:
+
+- **A — Relative includes within `tests/`.**
+  `#include "../../reference_collision/fcl/fcl_collision_detector.hpp"`.
+  Cheapest, no install metadata at all.
+- **B — Pretend-installable test include root.**
+  `target_include_directories(dart-test-reference-fcl PUBLIC tests/)` so
+  callers can `#include <reference_collision/fcl/fcl_collision_detector.hpp>`.
+  Cleaner at the call site, slightly more CMake.
+
+Supervisor recommends **B** because it keeps test includes angle-bracket
+style consistent with the rest of the codebase and avoids fragile
+relative paths.
+
+**Q6 ANSWER (user, 2026-05-15):** Option B — long-term, scalable,
+proper approach. Codex MUST:
+
+1. **Set the test include root explicitly per reference target.**
+   `target_include_directories(dart-test-reference-fcl PUBLIC
+${CMAKE_SOURCE_DIR}/tests)` (and same for bullet/ode). Use
+   `$<BUILD_INTERFACE:...>` so the include path is build-only — these
+   targets must NEVER export an INSTALL_INTERFACE include path, because
+   reference engines do not ship.
+2. **Use the `dart/test/reference_collision/...` include namespace, not
+   bare `reference_collision/...`.** Rationale: `tests/` is the include
+   root, and the natural angle-bracket form rooted at that directory is
+   `#include <reference_collision/fcl/fcl_collision_detector.hpp>`.
+   That's fine for in-tree builds but reads as a top-level namespace
+   collision risk for any downstream that ever points its include path
+   at `tests/`. Wrap with one more directory level under
+   `tests/dart/test/` so every include is unambiguously DART-namespaced:
+   `tests/dart/test/reference_collision/fcl/fcl_collision_detector.hpp`,
+   and callers write
+   `#include <dart/test/reference_collision/fcl/fcl_collision_detector.hpp>`.
+   Set the include root to `${CMAKE_SOURCE_DIR}/tests`. This matches
+   the rest of the codebase's `<dart/...>` convention exactly.
+3. **Move with the path-corrected layout.** Update the migration plan
+   from `tests/reference_collision/{fcl,bullet,ode}/...` to
+   `tests/dart/test/reference_collision/{fcl,bullet,ode}/...`. Update
+   every step in the Round 6 plan accordingly:
+   - `git mv dart/collision/fcl/reference
+tests/dart/test/reference_collision/fcl`
+   - (same for bullet, ode)
+   - Include rewrite:
+     `#include <dart/collision/fcl/reference/...>` →
+     `#include <dart/test/reference_collision/fcl/...>`.
+4. **README under the new directory** lives at
+   `tests/dart/test/reference_collision/README.md` and explains:
+   reference engines are test infrastructure only; no install metadata;
+   no INSTALL_INTERFACE; new comparison engines should be added under
+   the same namespace; the `dart-test-reference-*` targets are gated by
+   `DART_BUILD_COLLISION_REFERENCE_TESTS` /
+   `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS`.
+5. **Lint guard update.** The runtime isolation script must now reject
+   any include of `<dart/test/reference_collision/...>` from outside
+   `tests/`. The existing guard at
+   `scripts/check_collision_runtime_isolation.py` already enforces a
+   similar rule for `dart/collision/*/reference/...`; extend it to
+   cover the new path AND keep the old path forbidden so a stale
+   reintroduction is rejected.
+6. **Onboarding doc update.**
+   `docs/onboarding/architecture.md` needs a one-paragraph note saying
+   reference engines now live under `tests/dart/test/reference_collision/`
+   and are excluded from the install surface.
+
+Apply Q6 alongside Round 6 as the sixth commit of the stack; do not
+push without explicit user/maintainer approval. After the move, write
+the Round 7 spot-check section.
+
+## Round 7 — Box-Box Rest Stability Regression (NEW, user-observed)
+
+User direction (2026-05-15, with screenshot from `hello_world`): a box
+dropped from the air does NOT settle on a face. Instead it settles
+balanced on a single edge, tilted ~30°, with no toppling-to-face
+behavior. This is a visible default-detector quality regression, not a
+test-pass regression.
+
+### Root cause (Claude direct inspection)
+
+User reports a TWO-stage failure: (1) box settles balanced on an edge,
+not a face, (2) after ~15 s the box rotates and tunnels through the
+ground entirely. These are caused by THREE compounding bugs in
+`dart/collision/native/narrow_phase/box_box.cpp`, not one.
+
+**Root cause 1 — Single-point fallback for rotated face contact**
+(`box_box.cpp:168-259`). `addFacePatchContacts` requires
+`incidentFaceAlignment >= 1.0 - 1e-6` (line 198). For a rotated box on
+a flat ground, the incident face's normal is NOT axis-aligned with the
+contact normal — `cos(rotation_angle) < 1.0` — so the check fails and
+`collideBoxes` falls back to a single contact point at line 367. A
+single point has zero torque arm; the solver cannot resist further
+rotation, so the box "balances" on a knife edge. This is Stage 1 of
+the user-visible failure.
+
+**Root cause 2 — Unnormalized cross-axis SAT comparison**
+(`box_box.cpp:317-332`). The SAT loop tries 15 separating axes: 3 face
+normals on box1, 3 on box2, and 9 cross products `axes1[i] x axes2[j]`.
+The cross-axis loop has TWO problems:
+
+- The `crossAxis` is NOT pre-normalized OR length-checked. When two
+  box axes are nearly parallel (which happens continuously as a
+  rotated cube wobbles toward face alignment), `axes1[i].cross(axes2[j])`
+  shrinks toward zero. `testAxis` normalizes the axis internally for
+  the normal but the projected `overlap` it compares against
+  `best.penetration` (line 93) is computed on the un-rescaled axis,
+  so a near-degenerate cross-axis can artificially "win" SAT with a
+  spurious small overlap.
+- A proper SAT implementation skips cross-axes whose length squared is
+  below ~1e-6. The current code doesn't, so as the cube rotates toward
+  axis-alignment the chosen separating axis flickers between cross-axes
+  and face axes. The resulting normal flickers direction frame-to-frame,
+  causing manifold cache thrash, warm-start invalidation, and
+  inconsistent impulse direction. Over many frames the cube's
+  position drifts downward.
+
+**Root cause 3 — SAT picks wrong axis under deep penetration**
+(`box_box.cpp:281-332` + `testAxis` at lines 66-100). SAT chooses the
+axis of MINIMUM overlap as the separating axis. Once Stage-2 drift has
+pushed a box vertex below the ground surface deeper than the box's own
+half-height, the minimum-overlap axis flips from "world +Z" (push box
+up) to one of the box's OWN face normals (push box sideways or DOWN
+into the ground, escaping through the closer face). The reported
+penetration then becomes the box's own thickness instead of the ground
+penetration, and the contact normal points along that wrong axis. The
+solver dutifully resolves "penetration" by pushing the box deeper into
+the ground until the pair is no longer detected as colliding. That's
+Stage 2 — tunneling through.
+
+The Round-3 `computeContactPoint` rewrite addressed neither RC1, RC2,
+nor RC3. The Round-3 unit tests pass because they only check static
+"box does not fall through one timestep" (vertex_z >= ground_top -
+0.005), not steady-state stability or 15-second behavior.
+
+### Why this matters
+
+This is the user-visible default-detector quality bar for the
+native-collision-default rollout. If gz-physics or any user app drops
+a box on a floor and it balances on an edge, the perception is "DART
+native is unstable" regardless of what the test suite says. Reference
+engines (FCL, Bullet, ODE) all produce multi-contact manifolds for
+rotated-box-on-flat-ground via Sutherland-Hodgman-style face/face
+clipping — DART must match.
+
+### Correct behavior bar
+
+For a small box rotated 30° about an arbitrary axis, dropped on a
+large flat ground:
+
+1. The narrow-phase must emit **at least 3 contact points** spanning
+   the actual contact polygon (the rotated-box face's intersection
+   with the ground face, clipped by both faces' edges).
+2. The constraint solver, given those 3+ contacts, must allow the box
+   to topple from edge-rest to face-rest over a short simulation
+   window (< 1 s of sim time for a 0.3 m cube falling from 1 m).
+3. Steady-state should be face-rest with the box's lowest face flush
+   on the ground (within 1e-3 m of `groundTop + halfExtent` for axis
+   alignment).
+
+### Algorithm path
+
+The correct fix has THREE parts, addressing each root cause:
+
+**Fix 1 — Sutherland-Hodgman face/face polygon clipping** (addresses
+RC1). NOT just relaxing the `1.0 - 1e-6` threshold:
+
+1. Identify the reference face (the face perpendicular to the SAT
+   best-axis on the reference box). Today this is correctly chosen at
+   `box_box.cpp:189-192`.
+2. Identify the incident face — for the rotated box, this is the
+   face whose outward normal is MOST anti-aligned with the contact
+   normal, NOT the face that's perpendicular to one of the incident
+   box's local axes. Today the code's "incident face alignment" check
+   conflates these.
+3. Clip the incident face polygon against the reference face's 4 edge
+   half-planes (Sutherland-Hodgman in 2D, projected into the reference
+   face's tangent plane). Result: 0-8 clipped polygon vertices.
+4. Project each clipped vertex back onto the reference face plane;
+   keep only points with penetration > 0 (i.e., on the wrong side of
+   the reference face). Each kept point becomes a contact point with
+   normal = reference face normal and depth = signed distance.
+5. If the clipped polygon has more than `maxNumContacts - contactsBefore`
+   points, reduce via a "best 4 contacts" heuristic
+   (Bullet's `btPolyhedralContactClipping::reduceContacts`):
+   keep the deepest point + the 3 points farthest from it in
+   projection.
+
+**Fix 2 — Skip degenerate cross-axes in SAT** (addresses RC2). In
+`box_box.cpp:317-332`:
+
+```cpp
+for (int i = 0; i < 3; ++i) {
+  for (int j = 0; j < 3; ++j) {
+    Eigen::Vector3d crossAxis = axes1[i].cross(axes2[j]);
+    const double lenSq = crossAxis.squaredNorm();
+    if (lenSq < kCrossAxisDegenerateEpsilon) {  // e.g. 1e-12
+      continue;  // axes nearly parallel — face-axis SAT already covers
+    }
+    crossAxis /= std::sqrt(lenSq);  // normalize BEFORE testAxis
+    if (!testAxis(crossAxis, ...)) return false;
+  }
+}
+```
+
+This is the classical SAT-for-boxes recipe (Gottschalk's "Collision
+Queries Using Oriented Bounding Boxes", §3.2). Without it, projected
+overlaps on a near-zero axis are comparable in magnitude to projected
+overlaps on a face axis, even though only the face axis is
+geometrically meaningful.
+
+**Fix 3 — Bias SAT axis preference toward face axes under near-tie**
+(addresses RC3 and tightens RC2). When two SAT axes report
+near-equal overlap (within ~1% relative or 1e-4 absolute), prefer
+the face axis over the cross-axis. This kills SAT axis flicker as the
+box rotates toward face alignment, and prevents the
+deep-penetration normal-flip that causes tunneling.
+
+```cpp
+// In testAxis, replace `overlap < best.penetration` with:
+const bool isFaceAxis = (axisIndex < 6);
+const bool isBestFaceAxis = (best.axisIndex >= 0 && best.axisIndex < 6);
+const double tieThreshold = 1e-4;
+const bool clearlyBetter = (best.penetration - overlap) > tieThreshold;
+const bool preferOverTie =
+    !isBestFaceAxis && isFaceAxis &&
+    std::abs(overlap - best.penetration) <= tieThreshold;
+if (clearlyBetter || preferOverTie) {
+  best.penetration = overlap;
+  best.axis = normalizedAxis;
+  best.axisIndex = axisIndex;
+}
+```
+
+Combined, these three fixes match how Bullet's `btBoxBoxDetector` and
+ODE's `dBoxBox` handle the rotated-box-on-ground case. FCL routes
+through GJK+EPA which falls back to similar polygon clipping for box
+pairs.
+
+### Concrete acceptance criteria for Codex
+
+1. **New regression test** in `tests/unit/collision/native/test_box_box.cpp`:
+   `BoxBox.RotatedBoxOnFlatGroundEmitsFacePatch` — rotated small box
+   (any non-axis-aligned rotation) resting on a large ground box;
+   assert `result.numContacts() >= 3` AND
+   the contact points span a polygon area > some threshold
+   (e.g., bounding-box area of contact positions >
+   `(0.5 * box.halfExtent)^2`).
+2. **New default-world test** in
+   `tests/unit/simulation/test_world.cpp`:
+   `WorldTests.DefaultNativeRotatedBoxSettlesOnFace` — drop a rotated
+   0.3 m box from 1 m onto a large ground over 3000 steps. Assert
+   that after 2 s of simulation, the box's orientation has at least
+   one local axis aligned with world ±Z to within 5° (face-rest
+   condition).
+3. **NEW long-horizon stability test** in
+   `tests/unit/simulation/test_world.cpp`:
+   `WorldTests.DefaultNativeRotatedBoxStaysOnGround15s` — same scene
+   as #2 but run 15 000 steps (15 s sim). Assert at every 100-step
+   sample point that:
+   - box vertex_z >= ground_top - 0.005 (no tunneling);
+   - box center_z stays within [ground_top + halfExtent - 0.02,
+     ground_top + halfExtent * 1.74 + 0.02] (no drift; the upper
+     bound covers the edge-balanced transient since edge-rest height
+     is `halfExtent * sqrt(3)`);
+   - box center_z is monotonically non-increasing within the rest
+     phase (after step 2000) — no oscillation upward.
+     This is the test that catches RC2/RC3 directly.
+4. **Cross-engine parity check** in benchmark/integration: confirm
+   that for the same rotated-box-on-ground scenario, native emits a
+   similar number of contacts as Bullet/ODE (the reference engines'
+   call sites at
+   `tests/integration/collision/test_capsule_ground_contact.cpp` or a
+   new equivalent test for box-on-ground).
+5. **SAT-axis-flicker probe test**: a rotated box held statically just
+   above a ground (no gravity); call `collideBoxes` 100 times with
+   tiny rotational perturbations (~0.001 rad). Assert that
+   `best.axisIndex` returned by SAT does not flip between face-axis
+   and cross-axis indices across the sweep. This is the unit test for
+   Fix 2 + Fix 3.
+6. The existing `BoxBox.Determinism` (`test_box_box.cpp:411`) and the
+   Round-3 `RotatedSmallBoxOnLargeGroundHasLocalContactPoint` must
+   continue to pass.
+7. Native vs reference perf for `BM_NarrowPhase_BoxBox_Native` may
+   regress slightly (face clipping is more work than a single contact
+   point). Acceptable up to 2-3× the current ~544 ns; surface the
+   actual number in the Round-8 spot-check.
+
+### Anti-goals
+
+- Do NOT just relax the `1.0 - 1e-6` threshold to `1.0 - 0.1` or
+  similar. That makes the face-patch path emit a 4-corner manifold
+  using the WRONG polygon (the incident box's own face corners,
+  unclipped against the reference face). The result will be contacts
+  outside the actual overlap region — same root cause as the original
+  box-box regression the Round-3 fix already addressed.
+- Do NOT just bump the contact count by adding edge/vertex midpoints
+  to the existing single-contact result. The contacts must lie inside
+  the actual overlap polygon, with correct depths per point, or the
+  constraint solver will compute wrong torques.
+- Do NOT bundle this fix with the Round-6 reference-code move. Round 7
+  is a separate algorithm-change slice with its own
+  test/perf/regression evidence requirements.
+
+### Open Question Q7 for User — ANSWERED
+
+**Q7 (box-box face/face clipping):** This is a real default-detector
+quality bug. Two scope choices:
+
+- **A — Fix now, before the reference-code move (Round 6).** Bumps Q7
+  ahead of Q6 in the commit stack. Justification: the visible quality
+  issue is the user-facing blocker; reference-code reorg can wait.
+- **B — Fix after the reference-code move.** Keeps the stack linear:
+  box-box → octomap → docs → convex-mesh → tests/ move → face-clipping.
+  Justification: each prior commit is already done locally; Round 7 is
+  the heaviest algorithm work and benefits from a clean tree.
+
+Supervisor recommends **A** because the visible quality bar dominates
+the architectural cleanup priority. The reference-code move is mostly
+mechanical and can land after a real algorithm fix.
+
+Either way, Round 7 is its own commit, lands on the existing branch,
+and does not push without user approval. Do NOT start Round 7
+implementation until Q7 is answered.
+
+**Q7 ANSWER (user, 2026-05-15):** Option A — fix the box-box quality
+bug first, then do the Round-6 tests/ move after. Apply the cleanest,
+most scalable implementation, not a minimum-diff conservative patch.
+gz-physics compatibility is the one hard constraint (the box-box fix
+must not break the gz-physics build / test surface).
+
+Codex MUST do the following for Round 7, in this order:
+
+1. **Refactor `box_box.cpp` toward the clean target shape FIRST**
+   before adding face-clipping. The current file mixes SAT,
+   contact-point heuristics, and a single-purpose face-patch helper;
+   the clean shape is:
+   - `box_box/sat.{hpp,cpp}` — SAT axis search (15 axes, with
+     degenerate cross-axis skipping per Fix 2 and face-axis tie-bias
+     per Fix 3). One pure function returning `SatResult`.
+   - `box_box/face_clip.{hpp,cpp}` — Sutherland-Hodgman polygon
+     clipping per Fix 1. Pure function: given two box transforms +
+     `SatResult`, return up to 8 clipped contact points.
+   - `box_box/contact_reduction.{hpp,cpp}` — Bullet-style "best 4
+     contacts" reducer. Pure function: given N contact points + a
+     `maxNumContacts` budget, return the reduced set.
+   - `box_box.cpp` — orchestration only: SAT → clip → reduce → emit.
+     This splits a 389-line file into 4 focused files (~100 lines each).
+     Cleaner, testable in isolation, scalable for the future
+     per-pair specializations the next perf wave will need.
+2. **Apply Fix 1 + Fix 2 + Fix 3 as documented in Round 7 above** in
+   the new files. The single-point fallback at current
+   `box_box.cpp:367` goes away entirely — there is no scenario where
+   a box-box overlap should produce only one contact. If the
+   reduced-contact set is empty, the pair is not colliding and we
+   return `false`; if non-empty, we always emit ≥1 contact (from the
+   reducer's output), most of the time ≥3.
+3. **Write all 7 acceptance-criteria tests from Round 7 BEFORE the
+   implementation lands** (TDD-style). Specifically: criteria #1, #2,
+   #3 (15-second long-horizon), #5 (SAT-axis-flicker probe), and
+   #6 (Determinism + Round-3 regression carry-over). Each test fails
+   first against the current implementation, then passes after the
+   new implementation lands. The test names from Round 7 stay as
+   specified; do not rename.
+4. **Cross-engine parity (#4):** add a new
+   `tests/integration/collision/test_box_ground_contact_parity.cpp`
+   that runs the same rotated-box-on-ground scene through native +
+   FCL + Bullet + ODE reference detectors and asserts the contact
+   count is within ±1 of Bullet's count (Bullet is the reference for
+   "correct" box-box behavior). This is the gz-physics-style
+   parity gate.
+5. **Validate the gz-physics hard constraint.** Run
+   `pixi run -e gazebo test-gz` after the Round-7 implementation
+   lands. If anything fails, do NOT silence it — surface the failure
+   in a Round-8 spot-check section with the actual gz-physics test
+   name and output. Most likely the gz tests will benefit from
+   better box-box behavior; if any depend on the OLD single-point
+   contact (unlikely but possible), document the divergence and ask
+   the user before changing gz expectations.
+6. **Re-record the raw narrow-phase benchmark JSON** with the new
+   box-box path. The acceptance bar is ≤ 3× current 544 ns (≤ 1632
+   ns). If the actual number is worse, surface in the Round-8
+   spot-check and ask before continuing — but do not pre-optimize.
+   The clean-architecture-first principle (see user durable
+   guidance) means correctness > perf during this slice.
+7. **Update `08-pair-coverage.md`** Algorithm Map and Performance
+   tables with the new BoxBox numbers and the new
+   `box_box/{sat,face_clip,contact_reduction}.cpp` source citations.
+8. **Commit ordering** updated:
+   (a) box-box fix from Round 3 [DONE],
+   (b) OctoMap warning [DONE],
+   (c) doc updates [DONE],
+   (d) convex-mesh policy [DONE],
+   (e) **Round 7: box-box face-clip refactor + SAT fix + tests + JSON**
+   [THIS SLICE],
+   (f) Round 6: tests/ reference move [AFTER Round 7],
+   (g) Round 4: per-pair bench parity (Q4) [AFTER Round 6].
+
+After items 1-7 are done, do NOT push. Write Round 8 spot-check in
+this SUPERVISOR.md so the supervisor can verify the gz-physics
+hard-constraint result, the contact-count parity vs Bullet, the
+perf delta, and that the new `box_box/` subdirectory layout matches
+the target shape.
+
+### Anti-goals for Round 7
+
+- Do NOT keep the single-point fallback "as a fast path for
+  axis-aligned simple cases". The clean architecture is one path:
+  always SAT → clip → reduce → emit. Specializations come in the
+  perf wave, gated by benchmark evidence, not preemptively.
+- Do NOT preserve the current `addFacePatchContacts` function shape.
+  The whole helper is replaced by `face_clip.cpp` + `contact_reduction.cpp`.
+- Do NOT pre-optimize the SAT loop with SIMD or batched dot products.
+  Clean architecture first; perf wave after.
+- Do NOT skip writing the long-horizon (15 s) test on the grounds that
+  "it's slow." That test is the load-bearing acceptance criterion for
+  this slice — if it slows the suite, gate it behind a CTest label
+  (`-L collision-native-stability`) that's part of `test-all` but
+  excluded from `test-unit` for fast inner-loop dev iteration.
+
+### Durable user preference (recorded 2026-05-15)
+
+For all future decisions on this branch: prefer clean / scalable /
+long-term-correct solutions over minimum-diff conservative patches.
+gz-physics compatibility is the one hard backward-compat constraint;
+inside that boundary, take the clean path. This applies to Round 7,
+Round 6 (when it lands), Q4 implementation, and any future open
+question that surfaces during the supervisor session.
+
+## Round 8 — Test & Benchmark Coverage Matrix (TDD)
+
+User direction (2026-05-15, with TDD-mode active): "Review widely and
+deeply the tests/benchmarks of the Bullet, ODE, and FCL codebase, list
+them all up, and restructure/reorganize so that DART collision (native)
+tests/benchmarks have the superset of them ... so that eventually DART
+native collision is fully harnessed the superset of tests/benchmarks,
+which leading to feature complete and performance beating all other
+libraries."
+
+A new tracker `09-test-coverage-matrix.md` enumerates the superset and
+DART's current status. Categories were derived from a cross-survey of
+upstream Bullet, ODE, and FCL test+benchmark suites but the tracker
+does NOT attribute categories to specific upstreams — DART owns the
+taxonomy as its own quality bar.
+
+**Current state per the new matrix:**
+
+- 112 DONE / 8 PARTIAL / 74 GAP rows across 194 total.
+- DART native is at ~58% of the proposed superset.
+- Gap concentration: less-common shape pairs against
+  capsule/cylinder/mesh/convex/sdf/compound, algorithm-isolation tests
+  for SAT internals, long-horizon stability scenes, per-engine raw
+  narrow-phase parity benchmarks.
+
+**Codex MUST integrate this matrix into the TDD workflow.** Round 7
+(box-box face clipping) is the first slice that follows the workflow
+end-to-end: tests fail first, implementation lands, tests pass, matrix
+flips DONE.
+
+### Codex follow-up plan (no user question)
+
+For all future feature/regression slices on this branch, follow this
+order:
+
+1. **Add the row to `09-test-coverage-matrix.md` as `GAP`** with a
+   proposed codename in the existing kebab-case style. If a similar
+   row already exists, use its codename and update the Status column.
+2. **Write the failing test under that codename** (use the exact
+   codename in the test name, e.g.
+   `TEST(BoxBox, boxbox_edge_edge)` or
+   `TEST(WorldTests, boxbox_15s_no_tunneling)`).
+3. **Run the test** and confirm it fails for the geometrically correct
+   reason (not a compile error, not a missing fixture). Cite the
+   failure output in the commit message.
+4. **Implement the smallest scope that makes the test pass.**
+5. **Re-run and confirm green.**
+6. **Flip the matrix row to `DONE`**, refresh the summary counters at
+   the bottom of `09-test-coverage-matrix.md`, and re-record the
+   benchmark JSON if the row is a benchmark.
+
+### Next-priorities ordering (Codex must follow this)
+
+The "Next Priorities" section at the bottom of
+`09-test-coverage-matrix.md` is the load-bearing ordering. Codex MUST
+work through it top-to-bottom:
+
+1. Round 7 box-box GAPs (already steered separately).
+2. Q4 bench parity (already steered separately).
+3. Round 6 tests/ reference move (already steered separately).
+4. Capsule × {Mesh, Convex, Compound} — 3 GAP rows.
+5. Cylinder × {Mesh, Convex, Compound, Sdf} — 4 GAP rows.
+6. SAT algorithm-isolation suite.
+7. Long-horizon stability scenes (`stacked_boxes_n10/n100`,
+   `mixed_primitive_stack` unit version, `ragdoll_capsule_pile`,
+   `thin_box_no_tunneling`).
+8. Scope-decision items (auto-diff, float/double parity, k-DOP / OBB
+   / RSS BVH variants) — surface as future Q before adding rows.
+
+Cross-cutting: when a benchmark row lands, it MUST go through the
+apples-to-apples adapter path (see Q4 ANSWER) so the perf comparison
+to FCL/Bullet/ODE is fair.
+
+### Open Question Q8 for User — Stretch scope-decision items
+
+**Q8 (stretch scope):** `09-test-coverage-matrix.md` lists three
+families that are real upstream collision-test categories but may or
+may not belong in DART's superset:
+
+- **Auto-diff narrow-phase** — run pair tests under
+  `Eigen::AutoDiffScalar` to verify gradient correctness. Adds CI cost
+  but unlocks differentiable physics. Useful if DART positions for
+  ML / optimization workloads.
+- **Float / double parity** — DART is double-only today. Adding
+  `float` instantiation costs ~2× test runtime and ~2× narrow-phase
+  template instantiations. Useful for embedded / mobile / GPU paths.
+- **k-DOP / OBB / RSS BVH variants** — DART uses AABB BVH today.
+  Other libraries support tighter bounding volumes for mesh-heavy
+  scenes. ~5-15% perf win on mesh stress, but adds 3-5 new code paths
+  to maintain.
+
+Pick one of:
+
+- **A — In-scope, all three.** Maximizes superset coverage; biggest
+  maintenance surface.
+- **B — In-scope auto-diff + float/double, defer BV variants.** Most
+  user-visible value; defers the algorithm-implementation work.
+- **C — Defer all three until a real user need surfaces.** Smallest
+  scope; keeps the matrix's "scope-decision items" honest.
+
+Supervisor recommends **C** because (1) the existing 74 GAP rows
+already cover concrete user-visible quality issues (box-box stability,
+long-horizon tests, missing shape pairs) and (2) the cleanest
+long-term path is to land those gaps first, then revisit stretch
+items with real perf/feature evidence rather than speculative adds.
+This is consistent with the durable preference: clean + scalable, but
+not pre-built.
+
+Do NOT start any Q8-scoped work until Q8 is answered.
+
+## Round 8 Spot-Check - Round 7 Box-Box Slice (2026-05-15)
+
+Codex completed a focused Round 7 raw box-box pass without pushing or
+opening a PR.
+
+Implementation shape:
+
+- `box_box.cpp` is now orchestration only: it builds box data, runs SAT,
+  computes contact candidates, reduces the contact patch, and emits the
+  manifold.
+- The raw implementation is split into
+  `box_box/{sat,face_clip,contact_reduction}.{hpp,cpp}` so SAT axis
+  selection, face clipping, and patch reduction are independently testable.
+- The path preserves the existing `CollisionDetector` surface, factory keys,
+  and native-backed compatibility facades.
+
+Fail-first evidence:
+
+- `BoxBox.RotatedBoxOnFlatGroundEmitsFacePatch` failed on the old code with a
+  single contact where the expected face patch required at least 3 contacts.
+- `WorldTests.DefaultNativeRotatedBoxSettlesOnFace` failed on the old code,
+  reproducing the user-visible rotated box/ground instability.
+
+Validation evidence:
+
+- Default focused tests:
+  `ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^(test_box_box|UNIT_simulation_World)$'` passed 2/2.
+- Reference parity test:
+  `pixi run -e collision-reference -- ctest --test-dir
+build/collision-reference/cpp/Release --output-on-failure -R
+'^INTEGRATION_collision_BoxGroundContactParity$'` passed.
+- gz-physics downstream gate:
+  `pixi run -e gazebo test-gz` passed 65/65 tests and built the DART plugin.
+- Canonical raw narrow-phase benchmark JSON was refreshed at
+  `.benchmark_results/native_collision_raw_narrow_phase.json`.
+  Box-box mean timings from that run:
+  - Native: 428 ns real / 425 ns CPU.
+  - FCL reference: 1410 ns real / 1401 ns CPU.
+  - Bullet reference: 851 ns real / 845 ns CPU.
+  - ODE reference: 1520 ns real / 1510 ns CPU.
+- The one-off Round 7 box-box benchmark JSON is retained at
+  `.benchmark_results/native_collision_box_box_round7.json`; its native
+  timing stayed within the 3x acceptance budget.
+
+Coverage matrix update:
+
+- `09-test-coverage-matrix.md` was updated for the new box-box face patch,
+  rotated ground, 15s no-tunneling, SAT stability, and cross-backend contact
+  parity coverage.
+- Current matrix summary after this slice: 123 DONE, 5 PARTIAL, 66 GAP
+  (~63% complete).
+
+## Round 9 — Batch + SIMD as First-Class Collision Dimension (NEW)
+
+User direction (2026-05-15): "Going back to collision detection,
+consider (not making this one-way door) optimizing not only for
+pair-wise collision detection but also batch collision detection,
+fully utilizing SIMD, as well."
+
+This is an **architectural direction**, not a slice. It must be
+baked into the Round 7 box-box refactor and every subsequent
+narrow-phase rewrite, so the code shape supports batch + SIMD without
+a second rewrite. The instruction is explicitly "not making this
+one-way door" — meaning current pair-at-a-time call sites must keep
+working AND a batch path must exist alongside.
+
+### Why this changes the Round 7 design
+
+Round 7's clean refactor already splits `box_box.cpp` into
+`box_box/{sat,face_clip,contact_reduction}.cpp`. Pair-at-a-time only.
+If we land Round 7 as-currently-specified, then add batch+SIMD later,
+we will rewrite the same three files twice. Instead, Round 7 must
+land with a batch-aware function signature from the start, even if
+the initial implementation does scalar pair-at-a-time internally.
+
+### Critical context — world experimental ECS already has SoA layout
+
+User direction (2026-05-15): "there is world experimental where the
+data structure is memory friendly, and batch processing with the
+memory friendly data structure would be perfect match."
+
+`dart/simulation/experimental/` is an EnTT-backed Entity-Component-System
+world (see `dart/simulation/experimental/world.{hpp,cpp}`,
+`ecs/entity_object*.hpp`, `comps/{dynamics,joint,link,rigid_body,multi_body,frame}.hpp`,
+`space/state_space.hpp`). Components live in EnTT's pool storage,
+which IS the SoA layout — same component type for many entities sits
+in a contiguous array. EnTT views/groups give cache-friendly
+iteration over (entity, components...) tuples without scatter.
+
+**Implication: the batch collision API should consume EnTT views/groups
+directly, not invent a parallel `std::span<BoxPair>` layout.** The
+canonical batch input becomes something like:
+
+```cpp
+// world experimental ECS, native collision integration:
+void collideBoxesBatchEcs(
+    entt::registry& registry,
+    entt::view<entt::get_t<comps::RigidBody, comps::BoxShapeTag, comps::Frame>> pairs,
+    std::span<CollisionResult> results,
+    const CollisionOption& option);
+```
+
+The `std::span<BoxPair>` API stays as the lower-level "raw" batch
+entry for tests / micro-benchmarks / non-ECS callers (e.g.
+gz-physics). The ECS entry is the production path the world
+experimental simulation loop calls.
+
+This makes Round 7's box-box refactor a perfect first slice for the
+ECS-batch design: scalar fallback today, SoA-friendly today, but
+shaped for an EnTT view tomorrow.
+
+### Two-tier API shape (revised)
+
+```cpp
+// Tier 1 — single-pair API (unchanged, existing call sites):
+bool collideBoxes(const BoxShape& a, const Eigen::Isometry3d& tfA,
+                  const BoxShape& b, const Eigen::Isometry3d& tfB,
+                  CollisionResult& result,
+                  const CollisionOption& option);
+
+// Tier 2 — raw batch API (Round 7 must include):
+void collideBoxesBatch(std::span<const BoxPair> pairs,
+                       std::span<CollisionResult> results,
+                       const CollisionOption& option);
+
+// Tier 3 — ECS batch API (lands when native collision wires into
+// world experimental; can be a later slice but the signature is
+// committed to NOW so Tier 2 doesn't paint Tier 3 into a corner):
+void collideBoxesBatchEcs(
+    entt::registry& registry,
+    auto view,                       // EnTT view of box-pair entities
+    std::span<CollisionResult> results,
+    const CollisionOption& option);
+```
+
+Tier 1 → calls Tier 2 with a 1-element span.
+Tier 2 → SoA-friendly internal loop. SIMD-target.
+Tier 3 → adapts EnTT view into the SoA layout Tier 2 wants.
+
+Round 7 lands Tier 1 + Tier 2 (with scalar-loop body). Tier 3 lands
+when native collision integrates into `dart/simulation/experimental/`
+— likely Round 10 or after, gated on Q9 + a separate ECS-integration
+slice.
+
+### Architectural invariants Round 7 onward must hold
+
+1. **Every narrow-phase pair entry point exposes Tier 1 + Tier 2
+   APIs.** Tier 1 is a 1-element call into Tier 2.
+2. **SAT axes, projection intervals, and face-clipping inner loops
+   are written against `std::span<const Pair>` (or a moral
+   equivalent).** No naked single-pair-only loops over `axes1[i]`.
+3. **Data layout is SoA-ready at the Tier 2 boundary.** Inside the
+   scalar implementation it's OK to use the existing AoS
+   `Eigen::Isometry3d`, but the Tier 2 entry takes spans of pairs so
+   a future perf-wave commit can swap to SoA without changing call
+   sites.
+4. **The internal SoA buffer shape Tier 2 settles on MUST match what
+   an EnTT view yields when iterated.** EnTT view iteration gives
+   `(entity, component_ref, component_ref, ...)` — Tier 2 should
+   accept either a span of structs or a parallel-arrays layout
+   compatible with EnTT view destructuring. Pick the parallel-arrays
+   layout because EnTT view's pool storage IS parallel-arrays.
+5. **Determinism contract scales to batch AND across tiers.** Tier 1,
+   Tier 2, and Tier 3 must produce bit-identical results for the
+   same logical pair set, regardless of batch ordering. This makes
+   the existing `test_parallel_determinism.cpp` + new
+   `*_batch_determinism` tests load-bearing. Add a third
+   `*_ecs_batch_determinism_vs_raw_batch` test when Tier 3 lands.
+6. **CollisionOption applies per-batch, not per-pair.** Same option
+   for every pair in a batch is fine (matches real solver usage).
+   If per-pair option becomes needed later, that's an additive change.
+7. **Benchmark surface gets matching batch versions.** Every
+   `BM_NarrowPhase_*_Native` per-pair bench gets sibling
+   `BM_NarrowPhase_*_Native_Batch_N{1,10,100,1000}` AND eventually
+   `BM_NarrowPhase_*_Native_EcsBatch_N{1,10,100,1000}` to measure
+   the EnTT-adapter overhead vs raw batch.
+
+### SIMD strategy (deferred to perf wave, but planned now)
+
+When the perf wave lands, the Tier 2 batch loop body becomes the
+optimization target. Strategy:
+
+- **First win:** SoA layout for the 16 SAT axes per pair (3 face1 +
+  3 face2 + 9 cross + 1 unused-but-aligned). Process 4 / 8 pairs in
+  parallel with one SAT axis vector each — straightforward AVX2 /
+  NEON.
+- **Second win:** Polygon clipping is harder to SIMD-ize per-pair
+  but trivial across pairs at the per-pair level (process N pairs'
+  polygons in parallel; each pair has its own 4-edge clip).
+- **Third win:** Contact-reduction "best 4 of N" is per-pair scalar;
+  amortize via batch-level prefetching.
+- **Fourth win (ECS-specific):** Tier 3 can pre-sort the EnTT view
+  by pair-type and contact-cache bucket, so the batch handed to
+  Tier 2 has even better locality than what raw call sites can
+  provide. This is unique value the ECS-integration slice unlocks.
+- **Tooling:** prefer `xsimd` (header-only, BSD, already a common
+  DART-ecosystem dep) or `std::simd` (C++26). Reject hand-written
+  intrinsics — too platform-fragmented for OSS DART.
+
+### Apply to every future narrow-phase pair, not just box-box
+
+Same architecture applies when Codex eventually writes
+`sphere_sphere_batch`, `capsule_capsule_batch`, `convex_convex_batch`,
+`mesh_mesh_batch`. Cylinder/Capsule analytic pairs especially benefit
+because they're high-frequency in stacked / ragdoll scenes.
+
+### Acceptance criteria
+
+1. **Round 7 commit MUST land with the Tier 2 raw-batch entry function
+   present** for box-box, even if the implementation body is a scalar
+   loop. No "we'll add batch later" — that's the one-way-door the
+   user explicitly rejected.
+2. **At least one new test:** `BoxBoxBatch.DeterminismVsSinglePair`
+   — assert that `collideBoxesBatch(N=100 random pairs)` produces
+   bit-identical results to looping `collideBoxes` over the same 100
+   pairs. Codename: `boxbox_batch_determinism_vs_single`.
+3. **At least one new benchmark:** `BM_NarrowPhase_BoxBox_Native_Batch_N100`
+   in `bm_narrow_phase.cpp`. Initial number will look identical to
+   the per-pair number × 100; that's expected. The benchmark exists
+   so future perf-wave wins are visible. Codename:
+   `bench_narrow_phase_per_pair_batch`.
+4. **`09-test-coverage-matrix.md` gets a new "Batch + SIMD" section**
+   with codenames for: batch-determinism per pair, batch-throughput
+   bench per pair, SIMD-target codepath, ECS-batch entry path
+   (currently GAP — perf wave + future ECS integration slice).
+5. **No SIMD work in Round 7.** Round 7 is "make the API
+   batch-shaped." SIMD is the perf-wave slice. Document the
+   intended SIMD strategy in `01-design.md` so future-Codex doesn't
+   pick a different one.
+6. **No Tier 3 ECS code in Round 7.** Tier 3 lands in a separate
+   "native collision in world experimental" slice. But Round 7's
+   Tier 2 signature MUST be compatible with EnTT view destructuring
+   — i.e. parallel-arrays-friendly, not AoS-only.
+
+### Open Question Q9 for User — Batch API ownership + ECS integration timing
+
+**Q9a (batch API ownership):** The Tier 2 batch API lives somewhere.
+Three options:
+
+- **A — Per-pair file owns its batch API.** `box_box/box_box.hpp`
+  exposes both `collideBoxes` and `collideBoxesBatch`. Same for
+  every other pair file. Pro: locality. Con: each pair file
+  re-implements the batch loop; consistency relies on convention.
+- **B — Generic `NarrowPhase::collideBatch` dispatcher fans out per
+  pair-type.** Public API is `NarrowPhase::collideBatch(span<Pair>)`
+  which groups pairs by type and dispatches to pair-specific batch
+  functions. Pro: one public entry point; users don't think about
+  pair types. Con: dispatch overhead on the batch boundary.
+- **C — Both: per-pair batch functions exist AND
+  `NarrowPhase::collideBatch` dispatcher exists.** Public users go
+  through dispatcher; advanced users / internal callers can call
+  pair-specific batch directly. Pro: best of both. Con: two surfaces
+  to maintain.
+
+Supervisor recommends **C** — matches the existing
+`NarrowPhase::collide(shape1, shape2, ...)` dispatcher pattern at
+`narrow_phase.cpp:103-431`, just extends it to batch.
+
+**Q9b (Tier 3 ECS integration timing):** When does native collision
+wire into `dart/simulation/experimental/`?
+
+- **A — Right after Round 7.** Tier 3 becomes Round 10; lands
+  before the Round 6 tests/ move and before the Q4 bench parity.
+  Risk: world experimental ECS is itself still evolving; adding a
+  collision adapter on top while both are moving is hard to
+  bisect.
+- **B — After Round 7 + Round 6 + Q4 are all clean.** Tier 3 lands
+  after the box-box quality bug is fixed, after reference code
+  moved to tests/, and after benchmark parity is in place. Cleaner
+  base; tier 2 batch has had time to bake.
+- **C — Defer Tier 3 indefinitely until world experimental
+  stabilizes AND a real downstream user asks.** Keep the Tier 2 API
+  ECS-compatible (parallel-arrays-shaped) but don't write Tier 3
+  yet. Lowest risk, fewest unknowns.
+
+Supervisor recommends **B** — Round 7 stability comes first; ECS
+adapter is the natural next architectural slice after that's clean.
+Picking B also means the Round 7 design has to commit only to the
+Tier 2 shape, not the Tier 3 implementation.
+
+Do NOT start the Round 7 implementation phase until Q9a is answered.
+Q9b can be answered later but should be answered before any
+ECS-integration work begins. Round 7's test-writing phase (the 7
+acceptance tests + the new batch-determinism test) can proceed in
+parallel since the tests don't depend on the batch ownership choice
+yet — but the implementation phase must wait for Q9a because the
+function signatures depend on the chosen ownership.
+
+## Round 10 — DART 7 vs DART 8 Compatibility Horizon (NEW)
+
+User direction (2026-05-15): "The backward compatibility for
+gz-physics in terms of dart/collision/ is only for DART 7. In DART 8,
+we should aim for much cleaner API, folder structure, without
+worrying about backward compatibility; also in that case, we're
+willing to help gz-physics to adopt to the new API."
+
+This is a **policy clarification**, not a new code slice. It changes
+how Codex frames every future decision on this branch and updates the
+durable preference.
+
+### Updated rules
+
+**DART 7 (current release, what `feature/new_coll` is targeting):**
+
+- gz-physics compatibility is the one HARD constraint. Retained C++
+  legacy names (`FCLCollisionDetector`, `BulletCollisionDetector`,
+  `OdeCollisionDetector`, factory keys `"fcl"` / `"bullet"` /
+  `"ode"` / `"experimental"`, package components `collision-fcl` /
+  `collision-bullet` / `collision-ode`, installed legacy headers)
+  MUST keep working as native-backed facades.
+- Dartpy intentionally does NOT keep legacy detector aliases (per
+  Q1 addendum). Clean Python API only.
+- `[[deprecated]]` warnings on C++ facades are ON by default per
+  Q1 ANSWER, gated by `DART_COLLISION_DEPRECATE_LEGACY_NAMES`.
+- The reference engines stay reachable via `createReference()` +
+  `collision-reference-*` targets (and after Round 6, those move
+  under `tests/dart/test/reference_collision/`).
+
+**DART 8 (next major, post-current-branch):**
+
+- **NO backward-compat constraint in `dart/collision/`.** Codex
+  should design the cleanest possible API + folder structure as if
+  starting fresh.
+- Legacy C++ detector names / factory keys / package components
+  are REMOVED. `compat/` shims DELETED. Installed legacy headers
+  REMOVED.
+- User will actively help gz-physics adopt the new API in
+  coordinated parallel PRs. Don't preserve gz-physics-specific
+  behavior just because gz-physics currently depends on it.
+- Reference engine code (whatever survives Round 6 in
+  `tests/dart/test/reference_collision/`) is fair game for further
+  cleanup if tests / benchmarks no longer need it.
+
+### How this changes ongoing work
+
+**Round 7 (box-box face-clipping):** No change — quality fix is
+DART 7 work. gz-physics still expects boxbox to produce contacts.
+
+**Round 6 (tests/ reference move):** No change — moves legacy
+reference code OUT of `dart/`. DART 8 may delete it entirely
+afterward.
+
+**Round 9 (batch + SIMD + ECS Tier 3):** Significant change. The
+Tier 3 ECS API can be designed without gz-physics input — DART 8
+gives free hand. Tier 3 spec should reflect the cleanest possible
+EnTT integration, not "what gz-physics can also call." gz-physics
+will adopt whatever DART 8 ships.
+
+**Q5 (invalid mesh → nullptr):** Continues. DART 8 will likely also
+remove the FCL `kLegacyEmptyMeshFallbackRadius` since FCL itself
+will be moved out of `dart/collision/` entirely in DART 6 → DART 7
+→ DART 8 progression.
+
+**Future slices not yet planned:**
+
+- DART 8 collision API design doc (new file, `08-dart8-api-design.md`
+  or rename to `DART8-DESIGN.md` later). Codex should draft this
+  AFTER Round 7/6/9 land, capturing the user-visible DART 7 → 8
+  migration items as the input.
+- gz-physics migration PR sketch (in `05-downstream-migration.md` or
+  a new section).
+
+### Authoring guidance for Codex
+
+When writing or modifying any file in `dart/collision/`:
+
+1. **Mark gz-physics-compat code paths with `// TODO(DART 8): remove
+— gz-physics will migrate to <clean equivalent>`.** This creates
+   the inventory of DART 8 cleanup items automatically.
+2. **When the cleanest design choice is blocked only by gz-physics
+   compat, document the divergence** in `05-downstream-migration.md`
+   AND surface as a Q in this SUPERVISOR.md, BUT make the DART 7
+   choice that preserves gz-physics. The supervisor will plan the
+   DART 8 cleanup separately.
+3. **For new code (Round 7 box-box, Round 9 batch APIs):** design
+   for DART 8. No legacy facades, no backward-compat shims.
+   gz-physics will adopt.
+4. **For changes to existing legacy surface
+   (e.g. `dart/collision/{fcl,bullet,ode}/*.hpp` facade headers):**
+   minimum-diff for DART 7. List the DART 8 cleanup as a separate
+   item in `02-milestones.md`.
+5. **For DART 8 design docs:** describe the target API without
+   gz-physics compat baked in. The gz-physics migration is a
+   COORDINATED change, not a constraint.
+
+### No new question
+
+Q10 not opened — this is a policy clarification with a clear
+direction, not a fork. Codex should incorporate immediately on the
+next slice that touches a gz-physics-facing surface.
+
+### Durable preference updated
+
+The project-memory entry `dart-collision-priority.md` has been
+updated to record this DART 7 vs DART 8 split. Future sessions
+(post-context-compaction or new sessions on this branch) will pick
+up the rule automatically.
