@@ -114,6 +114,10 @@
   and `.cpp`; repeat sampler construction stays private to the texture
   implementation so the helper header does not include Filament sampler
   headers. `main.cpp` still owns higher-level renderable resource assembly.
+- `UNIT_gui_FilamentSceneExtraction` now checks that
+  `examples/filament_gui/*.hpp` has no direct Filament header includes, while
+  the full north-star metric remains zero direct Filament header includes from
+  maintained examples after promotion.
 - The Filament example's neutral lighting, color grading, orbiting key-light
   direction, and windowed view-quality setup now live in
   `examples/filament_gui/render_environment.hpp` and `.cpp`.

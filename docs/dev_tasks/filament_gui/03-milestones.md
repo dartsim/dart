@@ -210,6 +210,8 @@
   ownership, sampler setup, and PBR material texture parameter binding in
   `examples/filament_gui/textures.hpp` and `.cpp`, with repeat sampler
   construction private to the `.cpp` implementation.
+- `UNIT_gui_FilamentSceneExtraction` now also checks that
+  `examples/filament_gui/*.hpp` has no direct Filament header includes.
 - The Filament example keeps neutral lighting/color grading, orbiting
   key-light direction, and windowed view-quality configuration in
   `examples/filament_gui/render_environment.hpp` and `.cpp`.

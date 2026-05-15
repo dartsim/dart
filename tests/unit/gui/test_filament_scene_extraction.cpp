@@ -237,6 +237,9 @@ constexpr std::array<std::string_view, 18> kForbiddenBackendTokens
        "raylib",
        "rlgl"};
 
+constexpr std::array<std::string_view, 2> kForbiddenFilamentIncludeTokens
+    = {"#include <filament/", "#include \"filament/"};
+
 struct BackendTokenViolation
 {
   std::filesystem::path header;
@@ -276,13 +279,15 @@ std::vector<std::filesystem::path> listPublicHeadersInDirectory(
   return headers;
 }
 
-std::vector<BackendTokenViolation> scanHeadersForBackendTokens(
-    const std::vector<std::filesystem::path>& headers)
+template <std::size_t TokenCount>
+std::vector<BackendTokenViolation> scanHeadersForTokens(
+    const std::vector<std::filesystem::path>& headers,
+    const std::array<std::string_view, TokenCount>& tokens)
 {
   std::vector<BackendTokenViolation> violations;
   for (const auto& header : headers) {
     const auto contents = readSourceFile(header);
-    for (const auto token : kForbiddenBackendTokens) {
+    for (const auto token : tokens) {
       if (contents.find(token) != std::string::npos) {
         violations.push_back({header, token});
       }
@@ -341,12 +346,27 @@ TEST(FilamentSceneExtraction, ExperimentalPublicHeadersStayBackendHidden)
     const auto headers = listPublicHeadersInDirectory(directory);
     ASSERT_FALSE(headers.empty()) << directory;
 
-    const auto violations = scanHeadersForBackendTokens(headers);
+    const auto violations
+        = scanHeadersForTokens(headers, kForbiddenBackendTokens);
     for (const auto& violation : violations) {
       ADD_FAILURE() << violation.header
                     << " exposes backend implementation token `"
                     << violation.token << "`";
     }
+  }
+}
+
+TEST(FilamentSceneExtraction, FilamentExampleHeadersAvoidDirectFilamentIncludes)
+{
+  const auto headers = listPublicHeadersInDirectory(
+      std::filesystem::path("examples") / "filament_gui");
+  ASSERT_FALSE(headers.empty());
+
+  const auto violations
+      = scanHeadersForTokens(headers, kForbiddenFilamentIncludeTokens);
+  for (const auto& violation : violations) {
+    ADD_FAILURE() << violation.header << " includes Filament header token `"
+                  << violation.token << "` directly";
   }
 }
 

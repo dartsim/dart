@@ -179,7 +179,9 @@
     updates live in `examples/filament_gui/renderable_sync.hpp` and `.cpp`.
     Texture sampler setup is now private to
     `examples/filament_gui/textures.cpp`, keeping that helper header free of a
-    direct Filament sampler include. The
+    direct Filament sampler include; the focused GUI unit test now also checks
+    that `examples/filament_gui/*.hpp` does not include Filament headers
+    directly. The
     north-star audit now also maps the legacy OSG/Raylib GUI surfaces that must
     be replaced, made private, or removed during first-class Filament
     promotion. The renderer-hidden debug descriptor path also covers
