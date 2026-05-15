@@ -40,6 +40,7 @@
   `--scene free-joint-cases` to run the free-joint comparison fixture,
   `--scene human-joint-limits` to run the Kima human joint-limit visual
   fixture,
+  `--scene lcp-physics` to run the LCP contact benchmark fixture,
   `--scene mimic-pendulums` to run the SDF-loaded mimic pendulum fixture,
   `--scene atlas-puppet` to run the Atlas IK target fixture,
   `--scene operational-space-control` to run the WAM task-space control fixture,
@@ -147,6 +148,11 @@
   descriptor-owned mesh, multi-sphere, box, and ground renderables. The
   standalone source remains comparison material for the custom TinyDNN-backed
   arm and leg constraint classes.
+- The `--scene lcp-physics` fixture builds a deterministic contact benchmark
+  layout with mass-ratio boxes, a stack, dominoes, falling spheres, and a
+  ground plane through descriptor-owned renderables. The standalone source
+  remains comparison material for the ImGui solver controls, plots, and
+  scenario switching.
 - The `--scene mimic-pendulums` fixture loads the legacy mimic-pendulums SDF
   world and renders the three pendulum rigs, base poles, and ground through the
   same descriptor-driven Filament path. The standalone source remains
@@ -305,6 +311,12 @@ To run the human-joint-limits fixture:
 pixi run ex filament_gui --scene human-joint-limits
 ```
 
+To run the lcp-physics fixture:
+
+```bash
+pixi run ex filament_gui --scene lcp-physics
+```
+
 To run the mimic-pendulums fixture:
 
 ```bash
@@ -391,6 +403,7 @@ The capture paths are `build/<pixi-env>/filament_gui_mvp.ppm` and
 `build/<pixi-env>/filament_gui_joint_constraints.ppm`,
 `build/<pixi-env>/filament_gui_free_joint_cases.ppm`,
 `build/<pixi-env>/filament_gui_human_joint_limits.ppm`,
+`build/<pixi-env>/filament_gui_lcp_physics.ppm`,
 `build/<pixi-env>/filament_gui_mimic_pendulums.ppm`,
 `build/<pixi-env>/filament_gui_atlas_puppet.ppm`,
 `build/<pixi-env>/filament_gui_operational_space_control.ppm`,
@@ -498,6 +511,6 @@ DART_BUILD_GUI_FILAMENT_OVERRIDE=ON \
   pixi run config
 cmake --build build/default/cpp/Release --target dart_filament_gui
 ctest --test-dir build/default/cpp/Release \
-  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|hardcoded_design_headless|rigid_chain_headless|rigid_loop_headless|mixed_chain_headless|coupler_constraint_headless|add_delete_skels_headless|vehicle_headless|hybrid_dynamics_headless|joint_constraints_headless|free_joint_cases_headless|human_joint_limits_headless|mimic_pendulums_headless|atlas_puppet_headless|operational_space_control_headless|drag_and_drop_headless|simple_frames_headless|soft_bodies_headless|point_cloud_headless|capsule_ground_contact_headless|simulation_event_handler_headless|polyhedron_headless|heightmap_headless)_smoke' \
+  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|hardcoded_design_headless|rigid_chain_headless|rigid_loop_headless|mixed_chain_headless|coupler_constraint_headless|add_delete_skels_headless|vehicle_headless|hybrid_dynamics_headless|joint_constraints_headless|free_joint_cases_headless|human_joint_limits_headless|lcp_physics_headless|mimic_pendulums_headless|atlas_puppet_headless|operational_space_control_headless|drag_and_drop_headless|simple_frames_headless|soft_bodies_headless|point_cloud_headless|capsule_ground_contact_headless|simulation_event_handler_headless|polyhedron_headless|heightmap_headless)_smoke' \
   --output-on-failure
 ```

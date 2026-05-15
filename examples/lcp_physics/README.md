@@ -21,6 +21,11 @@ cmake --build build/default/cpp/Release --target lcp_physics
 ./build/default/cpp/Release/bin/lcp_physics
 ```
 
+Inside the source tree, `pixi run ex lcp_physics` routes to
+`examples/filament_gui --scene lcp-physics` so the in-tree runner uses the
+maintained Filament path. This standalone source remains comparison material
+for solver selection, ImGui plots, scenario switching, and frame recording.
+
 ## Command-Line Options
 
 ```

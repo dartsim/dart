@@ -1111,6 +1111,32 @@ dart::dynamics::SkeletonPtr createDynamicSphereSkeleton(
   return sphere;
 }
 
+dart::dynamics::SkeletonPtr createLcpPhysicsBoxSkeleton(
+    const std::string& name,
+    const Eigen::Vector3d& size,
+    double mass,
+    const Eigen::Isometry3d& transform,
+    const Eigen::Vector3d& color)
+{
+  auto box = Skeleton::create(name);
+  auto [joint, body] = box->createJointAndBodyNodePair<FreeJoint>();
+  joint->setTransformFromParentBodyNode(transform);
+
+  auto boxShape = std::make_shared<BoxShape>(size);
+  auto* shapeNode = body->createShapeNodeWith<
+      VisualAspect,
+      CollisionAspect,
+      DynamicsAspect>(boxShape);
+  shapeNode->getVisualAspect()->setColor(color);
+  shapeNode->getDynamicsAspect()->setRestitutionCoeff(0.3);
+  shapeNode->getDynamicsAspect()->setFrictionCoeff(0.8);
+  shapeNode->getDynamicsAspect()->setPrimarySlipCompliance(0.0);
+  shapeNode->getDynamicsAspect()->setSecondarySlipCompliance(0.0);
+  body->setInertia(Inertia(
+      mass, Eigen::Vector3d::Zero(), boxShape->computeInertia(mass)));
+  return box;
+}
+
 dart::dynamics::SkeletonPtr createBoxGroundSkeleton(
     const std::string& name,
     const Eigen::Vector3d& size,
@@ -2677,6 +2703,128 @@ DartScene createHumanJointLimitsScene()
   }
   if (auto* head = human->getBodyNode("head")) {
     head->setColor(Eigen::Vector3d(0.84, 0.68, 0.52));
+  }
+
+  return scene;
+}
+
+DartScene createLcpPhysicsScene()
+{
+  DartScene scene;
+  scene.world = World::create("filament_gui_lcp_physics");
+  scene.world->setTimeStep(0.001);
+  scene.world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  if (auto* solver = scene.world->getConstraintSolver()) {
+    solver->setLcpSolver(std::make_shared<dart::math::DantzigSolver>());
+  }
+
+  constexpr double groundThickness = 0.08;
+  auto ground = createBoxGroundSkeleton(
+      kLcpPhysicsFixtureGroundSkeletonName,
+      Eigen::Vector3d(7.0, groundThickness, 4.5),
+      Eigen::Vector3d(0.72, 0.74, 0.72),
+      0.3);
+  if (auto* groundBody = ground->getBodyNode(0)) {
+    Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+    transform.translation().y() = -0.5 * groundThickness;
+    groundBody->getParentJoint()->setTransformFromParentBodyNode(transform);
+  }
+  scene.world->addSkeleton(ground);
+
+  auto addBox = [&](std::string suffix,
+                    const Eigen::Vector3d& size,
+                    double mass,
+                    const Eigen::Isometry3d& transform,
+                    const Eigen::Vector3d& color) {
+    scene.world->addSkeleton(createLcpPhysicsBoxSkeleton(
+        std::string(kLcpPhysicsFixtureBoxSkeletonPrefix) + std::move(suffix),
+        size,
+        mass,
+        transform,
+        color));
+  };
+  auto addTranslatedBox = [&](std::string suffix,
+                              const Eigen::Vector3d& size,
+                              double mass,
+                              const Eigen::Vector3d& position,
+                              const Eigen::Vector3d& color) {
+    Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+    transform.translation() = position;
+    addBox(std::move(suffix), size, mass, transform, color);
+  };
+
+  constexpr double massBoxSize = 0.36;
+  addTranslatedBox(
+      "light_mass",
+      Eigen::Vector3d(massBoxSize, massBoxSize, massBoxSize),
+      1.0,
+      Eigen::Vector3d(-2.0, 0.5 * massBoxSize, -0.85),
+      Eigen::Vector3d(0.30, 0.72, 0.36));
+  addTranslatedBox(
+      "heavy_mass",
+      Eigen::Vector3d(massBoxSize, massBoxSize, massBoxSize),
+      1000.0,
+      Eigen::Vector3d(-2.0, 1.5 * massBoxSize, -0.85),
+      Eigen::Vector3d(0.84, 0.24, 0.20));
+
+  constexpr int pyramidLayers = 4;
+  constexpr double pyramidBoxSize = 0.28;
+  int pyramidBoxIndex = 0;
+  for (int layer = 0; layer < pyramidLayers; ++layer) {
+    const int boxesInLayer = pyramidLayers - layer;
+    const double y = 0.5 * pyramidBoxSize + layer * pyramidBoxSize * 1.05;
+    const double startX = -0.5 * (boxesInLayer - 1) * pyramidBoxSize * 1.12;
+    for (int i = 0; i < boxesInLayer; ++i) {
+      const double x = startX + i * pyramidBoxSize * 1.12;
+      const double t = static_cast<double>(pyramidBoxIndex)
+                       / static_cast<double>(
+                           pyramidLayers * (pyramidLayers + 1) / 2);
+      addTranslatedBox(
+          "stack_" + std::to_string(pyramidBoxIndex),
+          Eigen::Vector3d::Constant(pyramidBoxSize),
+          1.0,
+          Eigen::Vector3d(x, y, -0.55),
+          Eigen::Vector3d(0.28 + 0.42 * t, 0.52, 0.82 - 0.34 * t));
+      ++pyramidBoxIndex;
+    }
+  }
+
+  constexpr int dominoCount = 8;
+  constexpr double dominoSpacing = 0.16;
+  for (int i = 0; i < dominoCount; ++i) {
+    const double x = (static_cast<double>(i) - 0.5 * (dominoCount - 1))
+                     * dominoSpacing;
+    Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+    transform.translation() = Eigen::Vector3d(x, 0.18, 0.85);
+    if (i == 0) {
+      transform.rotate(Eigen::AngleAxisd(0.30, Eigen::Vector3d::UnitZ()));
+    }
+    const double t = static_cast<double>(i) / static_cast<double>(dominoCount);
+    addBox(
+        "domino_" + std::to_string(i),
+        Eigen::Vector3d(0.055, 0.32, 0.15),
+        0.5,
+        transform,
+        Eigen::Vector3d(0.18 + 0.52 * t, 0.34, 0.84 - 0.42 * t));
+  }
+
+  int sphereIndex = 0;
+  for (int xIndex = 0; xIndex < 4; ++xIndex) {
+    for (int zIndex = 0; zIndex < 3; ++zIndex) {
+      const double t = static_cast<double>(sphereIndex)
+                       / static_cast<double>(kLcpPhysicsFixtureSphereCount);
+      scene.world->addSkeleton(createDynamicSphereSkeleton(
+          std::string(kLcpPhysicsFixtureSphereSkeletonPrefix)
+              + std::to_string(sphereIndex),
+          0.11,
+          Eigen::Vector3d(
+              1.45 + (static_cast<double>(xIndex) - 1.5) * 0.28,
+              0.65 + 0.10 * static_cast<double>(zIndex),
+              -0.55 + (static_cast<double>(zIndex) - 1.0) * 0.28),
+          Eigen::Vector3d(0.86 - 0.35 * t, 0.42 + 0.35 * t, 0.36),
+          0.5));
+      ++sphereIndex;
+    }
   }
 
   return scene;

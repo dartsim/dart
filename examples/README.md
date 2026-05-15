@@ -106,8 +106,8 @@ with extra CMake requirements or redirected experimental GUI runners, such as
 `joint_constraints`, `free_joint_cases`, `human_joint_limits`,
 `mimic_pendulums`, `atlas_puppet`, `operational_space_control`,
 `simple_frames`, `soft_bodies`, `point_cloud`, `empty`,
-`capsule_ground_contact`, `simulation_event_handler`, `polyhedron_visual`,
-`heightmap`, and `g1_puppet`, declare those requirements in
+`capsule_ground_contact`, `lcp_physics`, `simulation_event_handler`,
+`polyhedron_visual`, `heightmap`, and `g1_puppet`, declare those requirements in
 `scripts/run_cpp_example.py` so the same command shape can remain stable as
 more examples are added.
 

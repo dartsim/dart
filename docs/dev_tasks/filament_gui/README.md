@@ -189,7 +189,7 @@
 - The Filament example's scene content requirement counting and
   MVP/G1/hello-world/boxes/hardcoded-design/rigid-chain/rigid-loop/
   mixed-chain/coupler-constraint/add-delete-skels/vehicle/hybrid-dynamics/
-  joint-constraints/free-joint-cases/human-joint-limits/
+  joint-constraints/free-joint-cases/human-joint-limits/lcp-physics/
   mimic-pendulums/atlas-puppet/
   operational-space-control/drag/
   simple-frames/
@@ -321,6 +321,13 @@
   `pixi run ex human_joint_limits` runner now routes to that Filament scene
   while the legacy standalone source remains available for the custom
   TinyDNN-backed arm and leg constraint comparison.
+- The Filament example includes `--scene lcp-physics`, a deterministic contact
+  benchmark fixture that carries the legacy `lcp_physics` visual workflow
+  through descriptor-owned mass-ratio boxes, stack boxes, dominoes, falling
+  spheres, and ground renderables. The in-tree `pixi run ex lcp_physics`
+  runner now routes to that Filament scene while the legacy standalone source
+  remains available for solver controls, plots, scenario switching, and frame
+  recording.
 - The Filament example includes `--scene mimic-pendulums`, an SDF-loaded
   pendulum-rig fixture that carries the legacy `mimic_pendulums` example
   through descriptor-owned cylinder, box, and ground renderables. The in-tree
@@ -438,8 +445,8 @@
   GUI target, and runs the default, hello-world, boxes, hardcoded-design,
   rigid-chain, rigid-loop, mixed-chain, coupler-constraint, add-delete-skels,
   vehicle, hybrid-dynamics, joint-constraints, free-joint-cases,
-  human-joint-limits, mimic-pendulums, atlas-puppet, operational-space-control,
-  drag-and-drop,
+  human-joint-limits, lcp-physics, mimic-pendulums, atlas-puppet,
+  operational-space-control, drag-and-drop,
   simple-frames, soft-bodies,
   point-cloud, capsule-ground-contact, simulation-event-handler, polyhedron,
   and heightmap headless CTest smokes.

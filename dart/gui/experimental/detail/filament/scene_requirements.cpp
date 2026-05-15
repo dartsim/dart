@@ -259,6 +259,19 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Box) {
     ++counts.humanJointLimitsGrounds;
   }
+  if (descriptor.skeletonName.starts_with(kLcpPhysicsFixtureBoxSkeletonPrefix)
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.lcpPhysicsBoxes;
+  }
+  if (descriptor.skeletonName.starts_with(
+          kLcpPhysicsFixtureSphereSkeletonPrefix)
+      && descriptor.geometry.kind == ShapeKind::Sphere) {
+    ++counts.lcpPhysicsSpheres;
+  }
+  if (descriptor.skeletonName == kLcpPhysicsFixtureGroundSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.lcpPhysicsGrounds;
+  }
   if (descriptor.skeletonName.starts_with(kMimicPendulumsFixtureSkeletonPrefix)
       && descriptor.skeletonName != kMimicPendulumsFixtureGroundSkeletonName
       && descriptor.geometry.kind == ShapeKind::Box) {
@@ -789,6 +802,31 @@ bool validateSceneDescriptorContent(
         output);
   }
 
+  if (scene == ExampleScene::LcpPhysics) {
+    if (!requireEqual(
+            counts.lcpPhysicsBoxes,
+            kLcpPhysicsFixtureBoxCount,
+            "lcp-physics scene",
+            "visible contact box renderable descriptors",
+            output)) {
+      return false;
+    }
+    if (!requireEqual(
+            counts.lcpPhysicsSpheres,
+            kLcpPhysicsFixtureSphereCount,
+            "lcp-physics scene",
+            "visible ball-drop sphere renderable descriptors",
+            output)) {
+      return false;
+    }
+    return requireEqual(
+        counts.lcpPhysicsGrounds,
+        kLcpPhysicsFixtureGroundCount,
+        "lcp-physics scene",
+        "visible ground renderable descriptor",
+        output);
+  }
+
   if (scene == ExampleScene::MimicPendulums) {
     if (!requireEqual(
             counts.mimicPendulumsBoxes,
@@ -1289,6 +1327,28 @@ bool validateCreatedSceneContent(
         created.humanJointLimitsGrounds,
         expected.humanJointLimitsGrounds,
         "human-joint-limits ground renderables",
+        output);
+  }
+
+  if (scene == ExampleScene::LcpPhysics) {
+    if (!requireCreatedEqual(
+            created.lcpPhysicsBoxes,
+            expected.lcpPhysicsBoxes,
+            "lcp-physics contact box renderables",
+            output)) {
+      return false;
+    }
+    if (!requireCreatedEqual(
+            created.lcpPhysicsSpheres,
+            expected.lcpPhysicsSpheres,
+            "lcp-physics ball-drop sphere renderables",
+            output)) {
+      return false;
+    }
+    return requireCreatedEqual(
+        created.lcpPhysicsGrounds,
+        expected.lcpPhysicsGrounds,
+        "lcp-physics ground renderables",
         output);
   }
 

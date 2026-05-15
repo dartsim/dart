@@ -80,6 +80,9 @@ struct SceneContentCounts
   std::size_t humanJointLimitsMultiSpheres = 0;
   std::size_t humanJointLimitsBoxes = 0;
   std::size_t humanJointLimitsGrounds = 0;
+  std::size_t lcpPhysicsBoxes = 0;
+  std::size_t lcpPhysicsSpheres = 0;
+  std::size_t lcpPhysicsGrounds = 0;
   std::size_t mimicPendulumsBoxes = 0;
   std::size_t mimicPendulumsCylinders = 0;
   std::size_t mimicPendulumsGrounds = 0;

@@ -230,6 +230,11 @@
     DART joint-limit enforcement, and descriptor-owned mesh, multi-sphere,
     box, and ground renderables while the legacy standalone source remains
     available for the custom TinyDNN-backed arm and leg constraints.
+    The `lcp_physics` runner now routes to a `--scene lcp-physics` Filament
+    fixture for deterministic mass-ratio, stacking, domino, ball-drop, and
+    ground contact renderables while the legacy standalone source remains
+    available for solver controls, plots, scenario switching, and frame
+    recording.
     The focused GUI unit test now
     checks that
     `examples/filament_gui` contains no C++ source/header
