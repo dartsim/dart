@@ -263,6 +263,8 @@
   panel wiring, and top-level orchestration now live in
   `dart/gui/experimental/detail/filament/application.hpp` and `.cpp`, leaving
   `examples/filament_gui/main.cpp` as a minimal entry point.
+- Debug-line overlay refresh and cleanup now live in
+  `dart/gui/experimental/detail/filament/debug_overlay.hpp` and `.cpp`.
 - Scene content requirement counting and MVP/G1/drag validation gates now live
   in `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.
 - Private built-in status panel rendering now lives in

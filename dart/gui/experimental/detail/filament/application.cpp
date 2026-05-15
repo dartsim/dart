@@ -37,6 +37,7 @@
 #include <dart/common/local_resource_retriever.hpp>
 #include <dart/common/profile.hpp>
 #include <dart/config.hpp>
+#include <dart/gui/experimental/detail/filament/debug_overlay.hpp>
 #include <dart/gui/experimental/detail/filament/imgui_overlay.hpp>
 #include <dart/gui/experimental/detail/filament/input.hpp>
 #include <dart/gui/experimental/detail/filament/native_window.hpp>
@@ -154,13 +155,13 @@ using dart::gui::experimental::filament::addRenderableToScene;
 using dart::gui::experimental::filament::accumulateSceneContent;
 using dart::gui::experimental::filament::attachSceneEnvironment;
 using dart::gui::experimental::filament::beginFilamentFrame;
+using dart::gui::experimental::filament::clearDebugLineOverlay;
 using dart::gui::experimental::filament::clearMainViewColorGrading;
 using dart::gui::experimental::filament::configureMainView;
 using dart::gui::experimental::filament::configureViewportCamera;
 using dart::gui::experimental::filament::countSceneContent;
 using dart::gui::experimental::filament::createFilamentRenderContext;
 using dart::gui::experimental::filament::createDebugColorGrading;
-using dart::gui::experimental::filament::createDebugLineRenderable;
 using dart::gui::experimental::filament::createImGuiOverlay;
 using dart::gui::experimental::filament::createNeutralIndirectLight;
 using dart::gui::experimental::filament::createNeutralSkybox;
@@ -183,6 +184,7 @@ using dart::gui::experimental::filament::loadImGuiFont;
 using dart::gui::experimental::filament::renderFilamentViews;
 using dart::gui::experimental::filament::renderBuiltInStatusPanel;
 using dart::gui::experimental::filament::requestScreenshot;
+using dart::gui::experimental::filament::refreshDebugLineOverlay;
 using dart::gui::experimental::filament::saveScreenshot;
 using dart::gui::experimental::filament::logUnsupportedRenderableDescriptorOnce;
 using dart::gui::experimental::filament::removeRenderableFromScene;
@@ -319,19 +321,12 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
   staticDebugOptions.drawContacts = false;
   std::optional<Renderable> debugOverlay;
   auto refreshDebugOverlay = [&]() {
-    if (debugOverlay) {
-      removeRenderableFromScene(*scene, *debugOverlay);
-      destroyRenderable(*engine, *debugOverlay);
-      debugOverlay.reset();
-    }
-
-    debugOverlay = createDebugLineRenderable(
+    refreshDebugLineOverlay(
         *engine,
+        *scene,
         materials.debugColor,
-        extractDebugLines(*dartScene.world, staticDebugOptions));
-    if (debugOverlay) {
-      addRenderableToScene(*scene, *debugOverlay);
-    }
+        extractDebugLines(*dartScene.world, staticDebugOptions),
+        debugOverlay);
   };
   refreshDebugOverlay();
   if (!debugOverlay) {
@@ -346,33 +341,21 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
   contactDebugOptions.drawCentersOfMass = false;
   std::optional<Renderable> contactDebugOverlay;
   auto refreshContactDebugOverlay = [&]() {
-    if (contactDebugOverlay) {
-      removeRenderableFromScene(*scene, *contactDebugOverlay);
-      destroyRenderable(*engine, *contactDebugOverlay);
-      contactDebugOverlay.reset();
-    }
-
-    contactDebugOverlay = createDebugLineRenderable(
+    refreshDebugLineOverlay(
         *engine,
+        *scene,
         materials.debugColor,
         extractContactDebugLines(
-            dartScene.world->getLastCollisionResult(), contactDebugOptions));
-    if (contactDebugOverlay) {
-      addRenderableToScene(*scene, *contactDebugOverlay);
-    }
+            dartScene.world->getLastCollisionResult(), contactDebugOptions),
+        contactDebugOverlay);
   };
 
   std::optional<Renderable> selectionDebugOverlay;
   auto refreshSelectionDebugOverlay
       = [&](const std::vector<RenderableDescriptor>& descriptors,
             RenderableId selectedRenderableId) {
-          if (selectionDebugOverlay) {
-            removeRenderableFromScene(*scene, *selectionDebugOverlay);
-            destroyRenderable(*engine, *selectionDebugOverlay);
-            selectionDebugOverlay.reset();
-          }
-
           if (selectedRenderableId == 0) {
+            clearDebugLineOverlay(*engine, *scene, selectionDebugOverlay);
             return;
           }
 
@@ -384,16 +367,16 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
               });
           if (selectedDescriptor == descriptors.end()
               || !selectedDescriptor->material.visible) {
+            clearDebugLineOverlay(*engine, *scene, selectionDebugOverlay);
             return;
           }
 
-          selectionDebugOverlay = createDebugLineRenderable(
+          refreshDebugLineOverlay(
               *engine,
+              *scene,
               materials.debugColor,
-              makeSelectionDebugLines(*selectedDescriptor));
-          if (selectionDebugOverlay) {
-            addRenderableToScene(*scene, *selectionDebugOverlay);
-          }
+              makeSelectionDebugLines(*selectedDescriptor),
+              selectionDebugOverlay);
         };
 
   bool orbitLight = appOptions.orbitLight;
@@ -808,29 +791,14 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
   for (const SceneRenderable& sceneRenderable : sceneRenderables) {
     removeRenderableFromScene(*scene, sceneRenderable.renderable);
   }
-  if (debugOverlay) {
-    removeRenderableFromScene(*scene, *debugOverlay);
-  }
-  if (contactDebugOverlay) {
-    removeRenderableFromScene(*scene, *contactDebugOverlay);
-  }
-  if (selectionDebugOverlay) {
-    removeRenderableFromScene(*scene, *selectionDebugOverlay);
-  }
+  clearDebugLineOverlay(*engine, *scene, debugOverlay);
+  clearDebugLineOverlay(*engine, *scene, contactDebugOverlay);
+  clearDebugLineOverlay(*engine, *scene, selectionDebugOverlay);
   destroySceneLights(*engine, lights);
   destroyRenderEnvironmentResources(
       *engine, indirectLight, skybox, colorGrading);
   for (SceneRenderable& sceneRenderable : sceneRenderables) {
     destroyRenderable(*engine, sceneRenderable.renderable);
-  }
-  if (contactDebugOverlay) {
-    destroyRenderable(*engine, *contactDebugOverlay);
-  }
-  if (selectionDebugOverlay) {
-    destroyRenderable(*engine, *selectionDebugOverlay);
-  }
-  if (debugOverlay) {
-    destroyRenderable(*engine, *debugOverlay);
   }
   destroyMaterialResources(*engine, materialResources);
   destroyFilamentRenderContext(renderContext);
