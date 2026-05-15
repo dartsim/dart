@@ -19,9 +19,11 @@ no-renderer-backward-compatibility stance, and the multi-phase promotion path.
 ## Proposed sequence
 
 1. **MVP example**
-   - Build `examples/filament_gui`.
+   - Historical starting point: build `examples/filament_gui` while Filament
+     was still an experiment.
+   - Current promoted name: `examples/dartsim` / `dartsim`.
    - Keep implementation local to the example until the dependency and lifetime
-     model is proven.
+     model is proven; then move reusable implementation behind `dart::gui`.
 
 2. **Backend-hidden extraction**
    - Move world traversal, shape descriptors, materials, debug primitives, and
@@ -32,8 +34,8 @@ no-renderer-backward-compatibility stance, and the multi-phase promotion path.
    - Add a constrained `dart::gui::experimental` API.
    - Port one simple example and one interaction-heavy example.
    - Current simple consumer: `examples/gui_scene_diagnostics`.
-   - Current interaction-heavy fixture:
-     `examples/filament_gui --scene drag-and-drop`.
+   - Current interaction-heavy fixture: `dartsim --scene drag-and-drop` and
+     the restored `drag_and_drop` example launcher.
    - Add Python bindings only for constrained descriptor/debug APIs that are
      stable enough to test without committing to a full viewer surface.
 
@@ -48,6 +50,9 @@ no-renderer-backward-compatibility stance, and the multi-phase promotion path.
      surface, while renderer setup remains private.
    - Keep backend-only example names out of the official surface. Do not
      restore Raylib as a renderer.
+   - Restore historical `--out <dir>` image-sequence capture compatibility
+     through `dart::gui`; keep `--screenshot <path>` as the single-frame smoke
+     path.
 
 5. **Removal**
    - Remove the OSG implementation and public OSG-shaped APIs after examples,

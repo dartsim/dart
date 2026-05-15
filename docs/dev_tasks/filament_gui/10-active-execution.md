@@ -28,7 +28,7 @@ context survives across sessions.
 - Branch: `feature/filament-gui-full-execution`
 - Upstream: `origin/feature/filament-gui-full-execution`
 - Latest pushed checkpoint before this in-progress slice:
-  `30b879458f8 Rename DART GUI Filament helpers`
+  `8796ed5ad99 Promote DART GUI C++ namespace`
 - GitHub Actions were manually dispatched for the pushed checkpoint without
   opening a PR:
   - CI Lint: https://github.com/dartsim/dart/actions/runs/25945043484
@@ -47,8 +47,21 @@ context survives across sessions.
   force-adds that launcher so CMake can configure the restored examples on CI.
 - CI Lint on `cd04ba4862ac` passed; Linux, macOS, Windows, and CodeQL were still
   running when the Python GUI promotion checkpoint was pushed.
-- CI Lint on `858ab55cacd1` passed; Linux, macOS, Windows, and CodeQL were still
-  running when `30b879458f8` was pushed.
+- CI Lint on `858ab55cacd1` passed; Linux, macOS, Windows, and CodeQL were
+  cancelled by newer checkpoint dispatches.
+- CI Lint on `30b879458f8` passed; Linux, macOS, Windows, and CodeQL were
+  cancelled by the newer `8796ed5ad99` checkpoint dispatch.
+- CI for `8796ed5ad99` was manually dispatched without opening a PR:
+  - CI Lint: https://github.com/dartsim/dart/actions/runs/25945825085
+    completed successfully.
+  - CI Linux: https://github.com/dartsim/dart/actions/runs/25945825122 was
+    running at the latest check.
+  - CI macOS: https://github.com/dartsim/dart/actions/runs/25945825123 was
+    running at the latest check.
+  - CI Windows: https://github.com/dartsim/dart/actions/runs/25945825130 was
+    running at the latest check.
+  - CodeQL: https://github.com/dartsim/dart/actions/runs/25945825158 was
+    running at the latest check.
 - The restored-example repair is pushed:
   - `examples/dartsim` is the renamed app-level viewer.
   - `dart/gui/application.hpp` exposes the narrow promoted launch API.
@@ -68,23 +81,27 @@ context survives across sessions.
   tutorial, example, Python, and documentation surfaces.
 - `DART_BUILD_GUI` now defaults according to platform support for the pinned
   Filament path.
-- The maintained renderer implementation still lives behind names such as
-  `dart::gui::experimental`; that namespace is now promotion debt. The
-  backend-named MVP example has been renamed to `examples/dartsim`.
-- The first promoted-header checkpoint adds stable `dart/gui/*.hpp` wrappers
-  and explicit `dart::gui` aliases for renderer-independent scene, viewer,
-  geometry, interaction, debug, and profiling concepts while keeping
-  `dart/gui/experimental/*` as compatibility shims.
+- The backend-named MVP example has been renamed to `examples/dartsim`.
+- Stable `dart/gui/*.hpp` headers now own renderer-independent scene, viewer,
+  geometry, interaction, debug, and profiling declarations in `dart::gui`.
+  `dart/gui/experimental/*` remains as compatibility shims only.
+- The C++ implementation definitions for promoted renderer-independent symbols
+  now live in `namespace dart::gui`. Private Filament implementation names are
+  under `dart::gui::filament`, while the physical
+  `dart/gui/experimental/detail/filament` path remains file-layout debt for a
+  later sweep.
 - Private implementation details live under
   `dart/gui/experimental/detail/filament`. They can remain private while the
   promoted public names move to `dart::gui`.
 - Existing command-line support includes bounded frames, window size,
   headless mode, UI visibility, scene selection, profiling, and a single PPM
   screenshot path.
-- Current execution decision: restore the historical executable names as thin
-  `dart::gui` launchers and update CI to validate the promoted
-  `--screenshot` capture contract. Multi-frame `--out` output remains useful
-  future capture work, but it is not required for this repair checkpoint.
+- Current execution decision: keep the restored historical executable names as
+  thin `dart::gui` launchers, keep CI validating the promoted `--screenshot`
+  capture contract, and restore historical `--out <dir>` image-sequence
+  compatibility as the next capture slice. The `--out` path should be
+  implemented through the DART GUI capture layer, not as an OSG compatibility
+  dependency.
 
 ## Naming Decisions
 
@@ -147,7 +164,7 @@ context survives across sessions.
 
 ## C++ Namespace Promotion Slice
 
-- In-progress checkpoint promotes renderer-independent declarations from
+- `8796ed5ad99` promotes renderer-independent declarations from
   `dart::gui::experimental` to
   first-class `dart::gui` declarations in the stable `dart/gui/*.hpp` headers.
 - Keep `dart/gui/experimental/*.hpp` installed as compatibility shims that
@@ -164,7 +181,7 @@ context survives across sessions.
 - Add a unit guard that promoted `dart/gui/*.hpp` headers cannot reintroduce
   `dart/gui/experimental`, `dart::gui::experimental`, or
   `dart-gui-experimental` tokens.
-- Local verification for this slice so far:
+- Local verification for this slice:
   - C++ GUI target build for `dart-gui`, `dartsim`, and
     `UNIT_gui_FilamentSceneExtraction`
   - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
@@ -173,6 +190,7 @@ context survives across sessions.
   - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
   - Direct `dartpy.gui` / `dartpy.gui.experimental` identity import check
   - `pixi run test-filament-gui-smoke`
+  - `pixi run lint`
 
 ## Example Restoration Plan
 
@@ -210,6 +228,31 @@ alternate renderer implementations.
 - Existing scene defaults and scene validation should continue to exercise the
   migrated examples.
 
+## Capture Compatibility Slice
+
+The next implementation slice restores the historical `--out <dir>` capture
+contract as image-sequence output while retaining the current promoted
+`--screenshot <path>` single-frame contract.
+
+Implementation direction:
+
+- Add a renderer-independent capture option to the promoted `dart::gui`
+  run-options layer instead of encoding the behavior in an example launcher.
+- Parse `--out <dir>` in the shared `dartsim` / restored-example command-line
+  path and create the directory when needed.
+- For each rendered frame in a bounded headless or windowed run, write a PPM
+  frame image with stable numbering. The first version can prioritize
+  correctness over throughput by waiting for each Filament readback before the
+  next frame.
+- Keep `--screenshot <path>` as the final/single-frame capture API used by CI
+  smoke tests.
+- If both `--out` and `--screenshot` are provided, save sequence frames and the
+  final screenshot without issuing duplicate renderer readbacks for the same
+  frame when practical.
+- Add focused tests for option parsing/normalization and at least one local
+  headless run proving that a restored historical executable can produce a
+  sequence directory.
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:
@@ -217,7 +260,9 @@ These should be designed for but do not block the immediate restoration slice:
 - Dear ImGui Docking.
 - A Filament 3D scene rendered as one docked ImGui window/widget.
 - Offscreen rendering as a first-class `dart::gui` workflow.
-- Automated screenshot sequences and video capture.
+- Automated video capture. Image-sequence capture via `--out <dir>` is now a
+  compatibility requirement for the active restoration work, not only stretch
+  scope.
 
 ## Branch Done Checklist
 
@@ -228,7 +273,8 @@ The branch is ready to hand off for review only when:
 - Linux headless CI is green on the tracked branch after the restored-example
   repair lands.
 - The agreed restored historical example executables exist and can produce
-  headless screenshots through the promoted capture path.
+  headless screenshots through the promoted capture path, and the historical
+  `--out <dir>` image-sequence workflow exists without reviving OSG.
 - No maintained user-facing file refers to `filament_gui` as an official
   executable, example, or workflow. Private backend helper names may be renamed
   in a separate promotion-debt sweep.
@@ -237,17 +283,16 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Promote renderer-independent C++ declarations and definitions from
-   `dart::gui::experimental` to `dart::gui`, while keeping compatibility shims
-   for old experimental includes.
-2. Update private Filament code to include promoted `dart/gui/*.hpp` headers
-   where it consumes renderer-independent concepts.
+1. Restore `--out <dir>` image-sequence capture through the promoted
+   `dart::gui` run-options and shared `dartsim` command-line path.
+2. Verify capture compatibility with a restored historical example executable,
+   plus the focused GUI/Python tests that cover runner behavior.
 3. Continue private target/helper-name cleanup where it does not affect
    compatibility.
 4. Do not expose Filament, GLFW, or Dear ImGui types in promoted headers.
    Private implementation can remain under `dart/gui/experimental/detail` until
    a later file-layout sweep.
-5. Keep ImGui Docking, docked 3D widgets, multi-frame image sequences, and
-   video capture as follow-up capture/application work.
+5. Keep ImGui Docking, docked 3D widgets, first-class offscreen APIs, and video
+   capture as follow-up application/capture work.
 6. Run `pixi run lint` before every checkpoint commit, then push the commit to
    the tracked remote branch.

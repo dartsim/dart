@@ -37,7 +37,15 @@ compatibility namespace, and was pushed with a new manual CI dispatch.
 Checkpoint `30b879458f8` renames private CMake helpers, smoke-test variables,
 and runner environment variables from the old backend-named `filament_gui`
 compound to `gui_filament`/`DART_GUI_FILAMENT` wording, then was pushed with a
-new manual CI dispatch.
+new manual CI dispatch. Checkpoint `8796ed5ad99` promotes the
+renderer-independent C++ GUI declarations and definitions from
+`dart::gui::experimental` to stable `dart::gui` headers/names, keeps
+`dart/gui/experimental/*.hpp` as compatibility shims, promotes the private
+Filament implementation namespace to `dart::gui::filament`, adds a promoted
+header guard test, runs the focused C++/Python/smoke verification set, and is
+pushed to the tracked remote branch. CI Lint on that checkpoint completed
+successfully; Linux, macOS, Windows, and CodeQL were still running at the
+latest check.
 
 The latest steering is to continue without waiting for CI to finish, document
 scope/design updates in this dev-task folder before acting on them, remove the
@@ -52,34 +60,32 @@ simulator/viewer identity, analogous to Isaac Sim.
 
 ## Immediate Next Step
 
-Promote renderer-independent C++ declarations and definitions from
-`dart::gui::experimental` to `dart::gui`. Keep
-`dart/gui/experimental/*.hpp` installed as compatibility shims that alias the
-old namespace names to the promoted `dart::gui` symbols, and update private
-Filament implementation code to consume the stable headers where practical.
-The in-progress local slice also promotes the private implementation namespace
-to `dart::gui::filament` while leaving the physical
-`dart/gui/experimental/detail/filament` directory as later file-layout debt.
+Restore historical `--out <dir>` image-sequence capture compatibility through
+the promoted `dart::gui` run-options and shared `dartsim` command-line path,
+while keeping `--screenshot <path>` as the current CI-oriented single-frame
+capture contract. Make a bounded capture implementation checkpoint with focused
+tests and at least one restored historical executable headless run.
 
 ## Context That Would Be Lost
 
 - Do not open a PR. Push checkpoint commits directly to the tracked remote
   branch so GitHub Actions can run.
 - `rigid_cubes --headless --frames 10 --out /tmp/headless_output` failed in
-  CI because the executable no longer exists. Restoring legacy example
-  executables and capture compatibility is part of the next slice.
+  CI originally because the executable no longer existed and the old OSG-style
+  output contract was gone. The executable has been restored and CI now checks
+  `--screenshot`; `--out <dir>` remains the next compatibility gap to restore
+  without bringing back OSG.
 - `filament_gui` is now the wrong example name. The executable should describe
   its role or use the application-level `dartsim` brand, not the renderer
   backend.
 - The stretch direction is ImGui Docking with the 3D scene shown as a docked
   window/widget, plus offscreen rendering and automated image/video capture.
 - The current code still has promoted concepts under `dart::gui::experimental`
-  and private implementation under `dart/gui/experimental/detail/filament`;
-  promotion should make stable includes/names live under `dart::gui` while
-  keeping backend objects private.
+  only as compatibility shims; stable includes/names live under `dart::gui`
+  while backend objects remain private.
 - The private file layout can remain under `dart/gui/experimental/detail` for a
-  later sweep; this next slice is about the public namespace and declaration
-  surface, not a full directory move.
+  later sweep; the next slice is capture compatibility, not a full directory
+  move.
 
 ## Historical Summary
 
@@ -600,41 +606,36 @@ Recent follow-ups added render-resource revision tracking, descriptor
 diagnostics for supported geometry without renderable payload, retained
 renderable shadow-flag reapplication, the Fetch/Tinkertoy/Hubo routed fixtures,
 and the recursive example-tree boundary guard for the minimal
-`examples/filament_gui` shape. The runner now keeps the `--scene all` and
+`examples/dartsim` shape. The runner now keeps the `--scene all` and
 CTest smoke scene set in one `FILAMENT_ALL_SCENES` list, with
 the CMake smoke registration using one
-`DART_FILAMENT_GUI_SMOKE_SCENE_PAIRS` list and
+`DART_GUI_FILAMENT_SMOKE_SCENE_PAIRS` list and
 `python/tests/unit/test_run_cpp_example.py` checking migrated runner defaults,
 the smoke regex, and CMake scene pairs for drift.
 
 ## Current Branch
 
-`feature/filament-gui-full-execution`, stacked on the merged MVP PR #2647. Verify
-with `git status && git branch --show-current` before editing.
+`feature/filament-gui-full-execution`, tracking
+`origin/feature/filament-gui-full-execution`. Verify with
+`git status --short --branch` before editing; the branch was clean at
+`8796ed5ad99` when this handoff was refreshed.
 
-## Immediate Next Step
+## Current Immediate Next Step
 
-Use `07-completion-audit.md` and `08-north-star-migration.md` to choose the next
-promotion-gate slice. Keep the hosted Ubuntu GCC/Clang Filament smoke jobs green
-on every follow-up PR that changes the explicit pinned fetch fallback or
-Filament example behavior. Locally, use:
+Implement `--out <dir>` image-sequence capture through the promoted
+`dart::gui` runtime. Keep `--screenshot <path>` working for the existing CTest
+and GitHub Actions smoke path. Locally, use focused build/test runs first, then
+the existing smoke shortcut when the capture path is wired:
 
 ```bash
-LIBCXX_PREFIX=<prefix-containing-libc++-and-libc++abi>
 pixi run test-filament-gui-smoke
 ```
 
-Keep tracking the staged-recipes PR as the preferred future package path. After
-it merges, add the `filament-static` output to the Pixi toolchain and validate
-`Filament_ROOT=$CONDA_PREFIX`.
-
-After the target links, keep the MVP ImGui panel/tool policy example-scoped
-unless promotion needs user extension points; in that case add DART-owned
-panel/tool abstractions instead of exposing raw ImGui APIs. Add
-interaction-heavy example coverage beyond the current selection/nudging/drag
-path and first drag-and-drop, task-space target, and robot IK fixtures, and add
-broader human visual review with larger real authored environment/PBR assets for
-the shadow/material promotion gate.
+Keep tracking Filament package availability as a longer packaging concern, but
+do not start conda-forge/feedstock work in this branch. Keep the ImGui Docking,
+docked 3D scene widget, first-class offscreen API, and video capture work as
+follow-up application/capture tasks unless maintainers explicitly reprioritize
+them over the required example restoration and capture compatibility work.
 
 ## Context That Would Be Lost
 
@@ -649,14 +650,13 @@ the shadow/material promotion gate.
 - Do not make DART a multi-backend rendering project. OSG and Raylib are legacy
   or experimental paths to remove after the Filament path is promoted.
 - A concrete full-migration metric is zero direct Filament header includes from
-  maintained examples, including any surviving replacement for
-  `examples/filament_gui`; Filament headers should be confined to private
-  promoted GUI implementation units.
-- A companion API-cleanliness metric is that any surviving
-  `examples/filament_gui` tree contains only a minimal `main.cpp` entry point
-  plus unavoidable build/docs files. Renderer setup, frame lifecycle,
-  resources, synchronization, capture, overlays, input translation, and fixture
-  logic should live in `dart::gui` or private GUI implementation units.
+  maintained examples, including `examples/dartsim`; Filament headers should be
+  confined to private promoted GUI implementation units.
+- A companion API-cleanliness metric is that `examples/dartsim` remains only a
+  minimal `main.cpp` entry point plus unavoidable build/docs files. Renderer
+  setup, frame lifecycle, resources, synchronization, capture, overlays, input
+  translation, and fixture logic should live in `dart::gui` or private GUI
+  implementation units.
 - Filament package availability and matching material compiler tooling are the
   primary risks. Fetch fallback must be explicit and pinned.
 - The current ImGui overlay is deliberately narrow. Its Filament renderer is
@@ -671,5 +671,6 @@ find docs/dev_tasks/filament_gui -maxdepth 1 -type f -print | sort
 ```
 
 For the current branch, the MVP implementation already exists and #2647 is
-merged; use `07-completion-audit.md` and `08-north-star-migration.md` to choose
-the next promotion-gate work. Keep follow-up PRs separate from the MVP branch.
+merged. Read `10-active-execution.md` and `STEERING.md`, then continue the
+documented capture compatibility slice on the tracked branch without opening a
+PR unless maintainers explicitly ask for one.

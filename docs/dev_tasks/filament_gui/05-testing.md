@@ -1,12 +1,42 @@
 # Filament GUI Replacement - Testing and CI
 
+## Current promotion update
+
+This file began as the MVP testing plan. The live branch has promoted Filament
+with GLFW3 and Dear ImGui as the only maintained `dart::gui` renderer, renamed
+the application-level runner to `dartsim`, restored historical examples as thin
+`dart::gui` launchers, and moved C++ renderer-independent declarations into
+stable `dart/gui/*.hpp` headers. Treat old `filament_gui` target/test names in
+historical sections below as migration history unless a passage explicitly says
+it is current.
+
+Current live names:
+
+- Application runner: `dartsim`
+- Main GUI component target: `dart-gui`
+- Private backend helper naming: `gui_filament` / `DART_GUI_FILAMENT`
+- Smoke-test CTest names: `EXAMPLE_dartsim_headless_smoke` and
+  `EXAMPLE_dartsim_<scene>_headless_smoke`
+- Pixi shortcut: `pixi run test-filament-gui-smoke`
+
+Current capture contract:
+
+- `--screenshot <path>` writes the single final PPM image and is the current CI
+  smoke path.
+- `--out <dir>` is the next compatibility slice and should write a numbered PPM
+  image sequence without reviving OSG.
+- Automated video capture, ImGui Docking, docked 3D scene widgets, and a
+  first-class offscreen API are follow-up application/capture work, not blockers
+  for the immediate example-restoration checkpoint.
+
 ## Goals
 
-- Prove the MVP works before committing to a public API.
+- Keep the promoted Filament-backed `dart::gui` path working across local and
+  hosted CI.
 - Keep non-GUI builds unaffected.
-- Keep Filament optional until packaging and CI are reliable.
+- Keep the pinned Filament fetch path and package-manager transition explicit.
 - Catch rendering, resource-lifetime, and platform regressions with targeted
-  checks rather than broad visual goldens at the start.
+  checks rather than broad visual goldens.
 
 ## Required gates before promotion
 
@@ -59,95 +89,36 @@
 
 ## Suggested CI stages
 
-1. Build-only check with `DART_BUILD_GUI_FILAMENT=ON`.
+1. Build-only check with `DART_BUILD_GUI=ON`.
 2. Windowed smoke check on a CI worker with a display or virtual display.
-3. Opt-in headless/offscreen frame capture through
-   `EXAMPLE_filament_gui_headless_smoke` on graphics-capable workers.
-4. Opt-in hello-world fixture smoke through
-   `EXAMPLE_filament_gui_hello_world_headless_smoke` on the same workers.
-5. Opt-in boxes fixture smoke through
-   `EXAMPLE_filament_gui_boxes_headless_smoke` on the same workers.
-6. Opt-in hardcoded-design fixture smoke through
-   `EXAMPLE_filament_gui_hardcoded_design_headless_smoke` on the same workers.
-7. Opt-in rigid-chain fixture smoke through
-   `EXAMPLE_filament_gui_rigid_chain_headless_smoke` on the same workers.
-8. Opt-in rigid-loop fixture smoke through
-   `EXAMPLE_filament_gui_rigid_loop_headless_smoke` on the same workers.
-9. Opt-in mixed-chain fixture smoke through
-   `EXAMPLE_filament_gui_mixed_chain_headless_smoke` on the same workers.
-10. Opt-in coupler-constraint fixture smoke through
-    `EXAMPLE_filament_gui_coupler_constraint_headless_smoke` on the same
-    workers.
-11. Opt-in add-delete-skels fixture smoke through
-    `EXAMPLE_filament_gui_add_delete_skels_headless_smoke` on the same workers.
-12. Opt-in vehicle visual fixture smoke through
-    `EXAMPLE_filament_gui_vehicle_headless_smoke` on the same workers.
-13. Opt-in hybrid-dynamics visual fixture smoke through
-    `EXAMPLE_filament_gui_hybrid_dynamics_headless_smoke` on the same workers.
-14. Opt-in joint-constraints controller fixture smoke through
-    `EXAMPLE_filament_gui_joint_constraints_headless_smoke` on the same
-    workers.
-15. Opt-in free-joint-cases fixture smoke through
-    `EXAMPLE_filament_gui_free_joint_cases_headless_smoke` on the same workers.
-16. Opt-in human-joint-limits visual fixture smoke through
-    `EXAMPLE_filament_gui_human_joint_limits_headless_smoke` on the same
-    workers.
-17. Opt-in lcp-physics visual fixture smoke through
-    `EXAMPLE_filament_gui_lcp_physics_headless_smoke` on the same workers.
-18. Opt-in mimic-pendulums visual fixture smoke through
-    `EXAMPLE_filament_gui_mimic_pendulums_headless_smoke` on the same workers.
-19. Opt-in atlas-puppet visual/IK-target fixture smoke through
-    `EXAMPLE_filament_gui_atlas_puppet_headless_smoke` on the same workers.
-20. Opt-in hubo-puppet visual/IK-target fixture smoke through
-    `EXAMPLE_filament_gui_hubo_puppet_headless_smoke` on the same workers.
-21. Opt-in atlas-simbicon visual fixture smoke through
-    `EXAMPLE_filament_gui_atlas_simbicon_headless_smoke` on the same workers.
-22. Opt-in operational-space-control fixture smoke through
-    `EXAMPLE_filament_gui_operational_space_control_headless_smoke` on the
-    same workers.
-23. Opt-in wam-ikfast visual fixture smoke through
-    `EXAMPLE_filament_gui_wam_ikfast_headless_smoke` on the same workers.
-24. Opt-in fetch MJCF visual fixture smoke through
-    `EXAMPLE_filament_gui_fetch_headless_smoke` on the same workers.
-25. Opt-in tinkertoy builder fixture smoke through
-    `EXAMPLE_filament_gui_tinkertoy_headless_smoke` on the same workers.
-26. Opt-in interaction fixture smoke through
-    `EXAMPLE_filament_gui_drag_and_drop_headless_smoke` on the same workers.
-27. Opt-in simple-frames visual fixture smoke through
-    `EXAMPLE_filament_gui_simple_frames_headless_smoke` on the same workers.
-28. Opt-in soft-bodies visual fixture smoke through
-    `EXAMPLE_filament_gui_soft_bodies_headless_smoke` on the same workers.
-29. Opt-in point-cloud visual fixture smoke through
-    `EXAMPLE_filament_gui_point_cloud_headless_smoke` on the same workers.
-30. Opt-in capsule contact fixture smoke through
-    `EXAMPLE_filament_gui_capsule_ground_contact_headless_smoke` on the same
-    workers.
-31. Opt-in simulation event-handler fixture smoke through
-    `EXAMPLE_filament_gui_simulation_event_handler_headless_smoke` on the same
-    workers.
-32. Opt-in polyhedron visual fixture smoke through
-    `EXAMPLE_filament_gui_polyhedron_headless_smoke` on the same workers.
-33. Opt-in heightmap visual fixture smoke through
-    `EXAMPLE_filament_gui_heightmap_headless_smoke` on the same workers.
-34. Focused C++ unit tests for scene extraction and interaction math.
-35. Python import/binding smoke tests for the constrained experimental API.
+3. Opt-in headless/offscreen final-frame capture through
+   `EXAMPLE_dartsim_headless_smoke` on graphics-capable workers.
+4. Opt-in scene matrix smokes through
+   `EXAMPLE_dartsim_<scene>_headless_smoke` for the shared
+   `DART_GUI_FILAMENT_SMOKE_SCENE_PAIRS` scene list.
+5. Focused C++ unit tests for scene extraction, promoted-header cleanliness,
+   lifecycle/capture helpers, and interaction math.
+6. Python import/binding smoke tests for `dartpy.gui`, with
+   `dartpy.gui.experimental` kept as compatibility coverage.
+7. Restored historical example runner tests, including at least one headless
+   image-sequence proof after `--out <dir>` compatibility lands.
 
 ## Local commands
 
-Default builds keep Filament disabled:
+Default local configuration uses the current platform GUI defaults:
 
 ```bash
 pixi run config
 ```
 
-Enable the experimental target only when a compatible Filament install tree is
-available:
+The promoted GUI target builds `dartsim` when the Filament-backed GUI component
+is enabled:
 
 ```bash
 DART_BUILD_GUI_FILAMENT_OVERRIDE=ON Filament_ROOT=<filament-install> pixi run config
-cmake --build build/default/cpp/Release --target dart_filament_gui
-./build/default/cpp/Release/bin/filament_gui --frames 10 \
-  --screenshot /tmp/dart_filament_gui.ppm
+cmake --build build/default/cpp/Release --target dart-gui dartsim
+./build/default/cpp/Release/bin/dartsim --frames 10 \
+  --screenshot /tmp/dart_gui.ppm
 pixi run lint
 ```
 
@@ -161,12 +132,12 @@ CMAKE_LIBRARY_PATH="$LIBCXX_PREFIX/lib" \
   DART_USE_SYSTEM_FILAMENT_OVERRIDE=OFF \
   pixi run config
 LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
-  cmake --build build/default/cpp/Release --target dart_filament_gui
+  cmake --build build/default/cpp/Release --target dart-gui dartsim
 LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
   LIBGL_ALWAYS_SOFTWARE=1 \
   MESA_LOADER_DRIVER_OVERRIDE=llvmpipe \
-  ./build/default/cpp/Release/bin/filament_gui --frames 10 \
-  --headless --screenshot /tmp/dart_filament_gui_fetch.ppm
+  ./build/default/cpp/Release/bin/dartsim --frames 10 \
+  --headless --screenshot /tmp/dart_gui_fetch.ppm
 ```
 
 The same headless path can be registered as an opt-in CTest smoke check:
@@ -177,18 +148,18 @@ CMAKE_LIBRARY_PATH="$LIBCXX_PREFIX/lib" \
   DART_BUILD_GUI_FILAMENT_OVERRIDE=ON \
   DART_FETCH_FILAMENT_OVERRIDE=ON \
   DART_USE_SYSTEM_FILAMENT_OVERRIDE=OFF \
-  DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS_OVERRIDE=ON \
+  DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_OVERRIDE=ON \
   pixi run config
 LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
-  cmake --build build/default/cpp/Release --target dart_filament_gui
+  cmake --build build/default/cpp/Release --target dartsim
 LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
   ctest --test-dir build/default/cpp/Release \
-  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|hardcoded_design_headless|rigid_chain_headless|rigid_loop_headless|mixed_chain_headless|coupler_constraint_headless|add_delete_skels_headless|vehicle_headless|hybrid_dynamics_headless|joint_constraints_headless|free_joint_cases_headless|human_joint_limits_headless|lcp_physics_headless|mimic_pendulums_headless|atlas_puppet_headless|hubo_puppet_headless|atlas_simbicon_headless|operational_space_control_headless|wam_ikfast_headless|fetch_headless|tinkertoy_headless|drag_and_drop_headless|simple_frames_headless|soft_bodies_headless|point_cloud_headless|capsule_ground_contact_headless|simulation_event_handler_headless|polyhedron_headless|heightmap_headless)_smoke' \
+  -R 'EXAMPLE_dartsim_(headless|hello_world_headless|boxes_headless|hardcoded_design_headless|rigid_chain_headless|rigid_loop_headless|mixed_chain_headless|coupler_constraint_headless|add_delete_skels_headless|vehicle_headless|hybrid_dynamics_headless|joint_constraints_headless|free_joint_cases_headless|human_joint_limits_headless|lcp_physics_headless|mimic_pendulums_headless|atlas_puppet_headless|hubo_puppet_headless|atlas_simbicon_headless|operational_space_control_headless|wam_ikfast_headless|fetch_headless|tinkertoy_headless|drag_and_drop_headless|simple_frames_headless|soft_bodies_headless|point_cloud_headless|capsule_ground_contact_headless|simulation_event_handler_headless|polyhedron_headless|heightmap_headless)_smoke' \
   --output-on-failure
 ```
 
 The CI-oriented shortcut uses the same explicit fetch path, disables the legacy
-OSG GUI target, and builds only the Filament example before running the CTest
+legacy renderer targets, and builds the DART GUI application before running the CTest
 smokes:
 
 ```bash
@@ -199,9 +170,9 @@ LIBCXX_PREFIX=<prefix-containing-libc++-and-libc++abi> \
 On Ubuntu CI, libc++/libc++abi are installed from apt for this smoke job so the
 workflow does not depend on a Filament conda package.
 
-To validate that the experimental Filament path is independent from the legacy
-OSG `dart-gui` target, configure with the no-dartpy preset argument and enable
-Filament explicitly:
+To validate that the Filament-backed GUI path is independent from the removed
+legacy OSG implementation, configure with the no-dartpy preset argument and
+enable the GUI explicitly:
 
 ```bash
 LIBCXX_PREFIX=<prefix-containing-libc++-and-libc++abi>
@@ -212,7 +183,7 @@ CMAKE_LIBRARY_PATH="$LIBCXX_PREFIX/lib" \
   DART_USE_SYSTEM_FILAMENT_OVERRIDE=OFF \
   pixi run config OFF
 LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
-  cmake --build build/default/cpp/Release --target dart_filament_gui
+  cmake --build build/default/cpp/Release --target dartsim
 ```
 
 When testing the upstream Linux release archive, add compatible libc++ and
@@ -226,12 +197,12 @@ CMAKE_LIBRARY_PATH="$LIBCXX_PREFIX/lib" \
   Filament_ROOT=<filament-install> \
   pixi run config
 LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
-  cmake --build build/default/cpp/Release --target dart_filament_gui
+  cmake --build build/default/cpp/Release --target dartsim
 LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
   LIBGL_ALWAYS_SOFTWARE=1 \
   MESA_LOADER_DRIVER_OVERRIDE=llvmpipe \
-  ./build/default/cpp/Release/bin/filament_gui --frames 10 \
-  --screenshot /tmp/dart_filament_gui.ppm
+  ./build/default/cpp/Release/bin/dartsim --frames 10 \
+  --screenshot /tmp/dart_gui.ppm
 ```
 
 Known current result:
@@ -262,85 +233,28 @@ Known current result:
   detects those `std::__1` symbols and requires libc++/libc++abi or a
   compatible Filament build.
 - With compatible libc++/libc++abi libraries supplied through
-  `CMAKE_LIBRARY_PATH` and `LD_LIBRARY_PATH`, the experimental target configured,
+  `CMAKE_LIBRARY_PATH` and `LD_LIBRARY_PATH`, the `dartsim` target configured,
   linked, and ran locally with Mesa llvmpipe.
 - The explicit fetch path configured, linked, and ran the same local screenshot
   smoke check with the pinned upstream archive and Mesa llvmpipe.
 - The same fetched target rendered a nonblank screenshot through
   `--headless`, exercising Filament's headless swap-chain path without creating
   a GLFW window.
-- `DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS=ON` registers
-  `EXAMPLE_filament_gui_headless_smoke`, an opt-in CTest that runs the default
-  scene through the headless path and verifies the generated PPM header,
-  dimensions, expected byte count, nonzero sampled pixel data, full-image
-  nonzero pixels, and scene-region luminance contrast from the shadowed
-  fixture. The same option also registers scene-specific CTest smokes that run
-  the same PPM structure, sampled-pixel, and full-image nonzero analyzer gates:
-  `EXAMPLE_filament_gui_hello_world_headless_smoke`, which runs
-  `--scene hello-world`,
-  `EXAMPLE_filament_gui_boxes_headless_smoke`, which runs `--scene boxes`,
-  `EXAMPLE_filament_gui_hardcoded_design_headless_smoke`, which runs
-  `--scene hardcoded-design`,
-  `EXAMPLE_filament_gui_rigid_chain_headless_smoke`, which runs
-  `--scene rigid-chain`,
-  `EXAMPLE_filament_gui_rigid_loop_headless_smoke`, which runs
-  `--scene rigid-loop`,
-  `EXAMPLE_filament_gui_mixed_chain_headless_smoke`, which runs
-  `--scene mixed-chain`,
-  `EXAMPLE_filament_gui_coupler_constraint_headless_smoke`, which runs
-  `--scene coupler-constraint`,
-  `EXAMPLE_filament_gui_add_delete_skels_headless_smoke`, which runs
-  `--scene add-delete-skels`,
-  `EXAMPLE_filament_gui_vehicle_headless_smoke`, which runs `--scene vehicle`,
-  `EXAMPLE_filament_gui_hybrid_dynamics_headless_smoke`, which runs
-  `--scene hybrid-dynamics`,
-  `EXAMPLE_filament_gui_joint_constraints_headless_smoke`, which runs
-  `--scene joint-constraints`,
-  `EXAMPLE_filament_gui_free_joint_cases_headless_smoke`, which runs
-  `--scene free-joint-cases`,
-  `EXAMPLE_filament_gui_human_joint_limits_headless_smoke`, which runs
-  `--scene human-joint-limits`,
-  `EXAMPLE_filament_gui_lcp_physics_headless_smoke`, which runs
-  `--scene lcp-physics`,
-  `EXAMPLE_filament_gui_mimic_pendulums_headless_smoke`, which runs
-  `--scene mimic-pendulums`,
-  `EXAMPLE_filament_gui_atlas_puppet_headless_smoke`, which runs
-  `--scene atlas-puppet`,
-  `EXAMPLE_filament_gui_hubo_puppet_headless_smoke`, which runs
-  `--scene hubo-puppet`,
-  `EXAMPLE_filament_gui_atlas_simbicon_headless_smoke`, which runs
-  `--scene atlas-simbicon`,
-  `EXAMPLE_filament_gui_operational_space_control_headless_smoke`, which runs
-  `--scene operational-space-control`,
-  `EXAMPLE_filament_gui_wam_ikfast_headless_smoke`, which runs
-  `--scene wam-ikfast`,
-  `EXAMPLE_filament_gui_fetch_headless_smoke`, which runs `--scene fetch`,
-  `EXAMPLE_filament_gui_tinkertoy_headless_smoke`, which runs
-  `--scene tinkertoy`,
-  `EXAMPLE_filament_gui_drag_and_drop_headless_smoke`, which runs
-  `--scene drag-and-drop`,
-  `EXAMPLE_filament_gui_simple_frames_headless_smoke`, which runs
-  `--scene simple-frames`,
-  `EXAMPLE_filament_gui_soft_bodies_headless_smoke`, which runs
-  `--scene soft-bodies`,
-  `EXAMPLE_filament_gui_point_cloud_headless_smoke`, which runs
-  `--scene point-cloud`,
-  `EXAMPLE_filament_gui_capsule_ground_contact_headless_smoke`, which runs
-  `--scene capsule-ground-contact`,
-  `EXAMPLE_filament_gui_simulation_event_handler_headless_smoke`, which runs
-  `--scene simulation-event-handler`,
-  `EXAMPLE_filament_gui_polyhedron_headless_smoke`, which runs
-  `--scene polyhedron`, plus
-  `EXAMPLE_filament_gui_heightmap_headless_smoke`, which runs
-  `--scene heightmap`; these fixture smokes use the headless path and verify the
-  generated PPM structure and sampled pixels.
+- `DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS=ON` registers
+  `EXAMPLE_dartsim_headless_smoke`, an opt-in CTest that runs the default scene
+  through the headless path and verifies the generated PPM header, dimensions,
+  expected byte count, nonzero sampled pixel data, full-image nonzero pixels,
+  and scene-region luminance contrast from the shadowed fixture. The same
+  option also registers scene-specific `EXAMPLE_dartsim_<scene>_headless_smoke`
+  tests from `DART_GUI_FILAMENT_SMOKE_SCENE_PAIRS`; those fixture smokes use the
+  headless path and verify the generated PPM structure and sampled pixels.
 - The opt-in CTest smoke passed locally with the explicit fetch path,
   compatible libc++/libc++abi libraries, and Mesa llvmpipe.
 - `pixi run test-filament-gui-smoke` passed locally with the same explicit
   fetch path. The task configures with `DART_BUILD_GUI=OFF`,
   `DART_BUILD_DARTPY=OFF`, `DART_FETCH_FILAMENT=ON`, and
-  `DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS=ON`, builds `dart_filament_gui`, and
-  runs the default, hello-world, boxes, hardcoded-design, rigid-chain,
+  `DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS=ON`, builds `dartsim`, and runs the
+  default, hello-world, boxes, hardcoded-design, rigid-chain,
   rigid-loop, mixed-chain, coupler-constraint, add-delete-skels, vehicle,
   hybrid-dynamics, joint-constraints, free-joint-cases, human-joint-limits,
   lcp-physics, mimic-pendulums, atlas-puppet, hubo-puppet, atlas-simbicon,
@@ -356,13 +270,13 @@ Known current result:
   `pixi run test-filament-gui-smoke` without relying on a Filament conda
   package. The MVP PR #2647 merged with hosted
   `Filament GUI Smoke (GCC)` and `Filament GUI Smoke (Clang)` passing.
-- The Filament example also configured, linked, and ran with
+- The `dartsim` application also configured, linked, and ran with
   `DART_BUILD_GUI=OFF` and `DART_BUILD_DARTPY=OFF` using
-  `pixi run config OFF`, proving the experimental Filament path no longer needs
+  `pixi run config OFF`, proving the Filament-backed path no longer needs
   the legacy OSG `dart-gui` target.
 - `dartpy` also builds with `DART_BUILD_GUI=OFF`, `DART_BUILD_GUI_FILAMENT=ON`,
-  and `DART_BUILD_DARTPY=ON`. In that mode, `dartpy.gui.experimental` remains
-  available while the legacy GUI bindings are omitted.
+  and `DART_BUILD_DARTPY=ON`. In that mode, `dartpy.gui` is the promoted
+  surface and `dartpy.gui.experimental` remains available as compatibility.
 - The local screenshot smoke command produced a nonblank 1280x720 PPM file from
   the shadow-enabled two-box/ground fixture with a visible ImGui overlay.
 - `UNIT_gui_FilamentSceneExtraction` builds and passes. It covers the
@@ -465,9 +379,9 @@ Known current result:
   bodies and `SimpleFrame` visuals, and wires the axis path into
   Ctrl-X/Y/Z-left constrained dragging.
 - `python/tests/unit/test_run_cpp_example.py` verifies that the migrated visual
-  example runners resolve to `dart_filament_gui` with their intended
-  `--scene` defaults, so stale legacy-runner expectations fail locally. It
-  also checks that the runner's `--scene all` list, smoke-test regex, and
+  example runners resolve to their restored executable names with intended
+  `--scene` defaults, so stale backend-named runner expectations fail locally.
+  It also checks that the runner's `--scene all` list, smoke-test regex, and
   loop-generated CMake Filament smoke scene registrations stay aligned.
 - `UNIT_gui_FilamentSceneExtraction` also covers run-option normalization,
   viewer lifecycle state, bounded screenshot/frame gates, RGBA-to-PPM
@@ -477,26 +391,26 @@ Known current result:
 - The same unit target covers center-of-mass markers and equivalent inertia-box
   debug descriptors plus collision-shape-bound descriptors generated by the
   backend-hidden debug descriptor layer.
-- `pixi run build-py-dev` builds the constrained `dartpy.gui.experimental`
-  bindings, and `python/tests/unit/gui/test_experimental_scene.py` passes
+- `pixi run build-py-dev` builds the promoted `dartpy.gui` bindings, and
+  `python/tests/unit/gui/test_gui_scene.py` passes
   against the local build tree, including the camera/run helper,
   viewer lifecycle, renderable set update planning, frame-translation,
   plane/axis-drag helpers, and screenshot storage bindings.
 - The same Python test passes against the OSG-free Filament configure with
   `DART_BUILD_GUI=OFF`, `DART_BUILD_GUI_FILAMENT=ON`, and
-  `DART_BUILD_DARTPY=ON`, covering the reduced `dartpy.gui.experimental` module
-  without linking the legacy GUI target. In that same OSG-free configure, the
-  default and drag-and-drop Filament headless smokes also pass.
-- `scripts/test_wheel.py` now checks `dartpy.gui.experimental` when the
-  submodule is present in a wheel: it builds a one-box world, extracts
-  renderable descriptors, and verifies the box shape descriptor.
+  `DART_BUILD_DARTPY=ON`, covering the promoted `dartpy.gui` module and its
+  experimental compatibility namespace without linking the legacy GUI target.
+  In that same OSG-free configure, the default and drag-and-drop Filament
+  headless smokes also pass.
+- `scripts/test_wheel.py` now checks `dartpy.gui` when the GUI module is
+  present in a wheel: it builds a one-box world, extracts renderable
+  descriptors, and verifies the box shape descriptor.
 - The Linux CPython 3.12, 3.13, and 3.14 wheel workflows now build, repair,
   verify, and installed-test repaired manylinux wheels locally. The
   installed-wheel smoke imports `dartpy`, checks the core modules, confirms the
-  legacy `Viewer` and constrained `dartpy.gui.experimental` APIs are present,
-  and runs the one-box scene descriptor smoke. This is local Linux CPython
-  3.12/3.13/3.14 evidence, not full macOS, Windows, or GUI option-matrix
-  evidence.
+  promoted `dartpy.gui` APIs are present, and runs the one-box scene descriptor
+  smoke. This is local Linux CPython 3.12/3.13/3.14 evidence, not full macOS,
+  Windows, or GUI option-matrix evidence.
 - Full default validation passes locally with
   `DART_PARALLEL_JOBS=2 CTEST_PARALLEL_LEVEL=2 pixi run test-all`, including
   lint, Release/Debug builds, default C++ tests, simulation-experimental tests,

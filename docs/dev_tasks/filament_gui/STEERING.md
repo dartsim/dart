@@ -10,7 +10,7 @@ this folder plus the current code state. Sticky — do not delete; mark items
 `~~done~~` with a one-line evidence pointer when they land, and surface
 disagreement under "Open Issues" instead of editing "Decisions in force".
 
-### Status (verified at c9ccedfebe8)
+### Status (verified at 8796ed5ad99)
 
 - `examples/filament_gui/` is renamed to `examples/dartsim/`. The README
   documents `dartsim` as the application-level viewer with legacy launchers as
@@ -37,10 +37,18 @@ disagreement under "Open Issues" instead of editing "Decisions in force".
   `dart::gui` aliases for renderer-independent scene, viewer, geometry,
   interaction, debug, and profiling concepts, while keeping
   `dart/gui/experimental/*` as compatibility shims for now.
+- `8796ed5ad99` finishes the C++ namespace promotion checkpoint: promoted
+  renderer-independent declarations and definitions now live under
+  `dart::gui`, `dart/gui/experimental/*.hpp` remains compatibility-only, and
+  private Filament implementation names use `dart::gui::filament` while the
+  physical `dart/gui/experimental/detail/filament` path remains later
+  file-layout debt.
 - CI Lint on `d343c3c64bc` failed at CMake configure because
   `examples/simple_frames/CMakeLists.txt` was ignored by `.gitignore`'s
   `*_frames/` rule. The local repair force-adds that launcher before the next
   CI dispatch.
+- CI Lint on `8796ed5ad99` passed. Linux, macOS, Windows, and CodeQL were
+  running at the latest check and should not block independent local progress.
 
 ### Decisions in force (do NOT reopen)
 
@@ -68,18 +76,24 @@ disagreement under "Open Issues" instead of editing "Decisions in force".
    remains the developer entry point. This is a permanent split, not interim
    debt — the `--scene` retirement plan called for in the critic pass is
    resolved by accepting this split.
-4. **Public API surface promoted in this branch is exactly
-   `dart::gui::runApplication` plus its default-scene selector overload.
-   Nothing else.** Do NOT draft `dart::gui::Viewer` /
-   `ViewerOptions` until Phases C/E/F/G in `08-north-star-migration.md` are
-   substantially complete. This resolves the `STEERING.md` ↔
-   `10-active-execution.md` contradiction by reading "promoted application
-   header" narrowly.
+4. **Promoted public API surface stays DART-owned and backend-hidden.**
+   `dart::gui::runApplication` is the application entry point, and
+   renderer-independent scene/viewer/geometry/interaction/debug/profile
+   concepts now live in stable `dart/gui/*.hpp` headers under `dart::gui`.
+   Do not expose Filament, GLFW, Dear ImGui, OpenGL, Vulkan, Metal, OSG, or
+   Raylib types through this surface. Do not add a broad `dart::gui::Viewer`
+   object model until the north-star viewer/tool/panel phases have concrete
+   implementation evidence.
 5. **Out of scope for this branch (do not start, even opportunistically)**:
    ImGui Docking, dockable 3D widget, video capture, font atlas/label work,
    broader product/packaging work beyond the `dartsim` naming distinction,
-   macOS/Windows port work, conda-forge feedstock changes. Track in a follow-up
-   task; do not let a refactor "accidentally" land any of these.
+   macOS/Windows port work, conda-forge feedstock changes. Track these as
+   follow-up application/capture tasks; do not let a refactor accidentally land
+   any of them.
+6. **Capture compatibility is in scope now.** Restore historical
+   `--out <dir>` image-sequence output through the promoted `dart::gui` capture
+   path while keeping `--screenshot <path>` as the current single-frame and CI
+   smoke contract. This is image-sequence compatibility, not video capture.
 
 ### Order of operations (CI repair first, then promotion debt)
 
@@ -109,20 +123,24 @@ disagreement under "Open Issues" instead of editing "Decisions in force".
    swept in `30b879458f8`.
 5. ~~Rerun `pixi run lint`, commit, and push the checkpoint as usual. Do not
    open a PR.~~ `d343c3c64bc` is pushed to the tracked remote branch.
-6. **Track ignored `simple_frames` launcher**: force-add
-   `examples/simple_frames/CMakeLists.txt`, rerun lint, commit, push, and
-   redispatch CI. This is a Git tracking repair for the restored examples, not
-   a renderer behavior change.
+6. ~~**Track ignored `simple_frames` launcher**~~: `cd04ba4862ac` force-added
+   `examples/simple_frames/CMakeLists.txt`, reran lint, committed, pushed, and
+   redispatched CI. This was a Git tracking repair for the restored examples,
+   not a renderer behavior change.
 
-### Next promoted-header slice
+### Next promoted-header and capture slice
 
-- The initial promoted-header checkpoint has landed in `c9ccedfebe8`.
+- The initial promoted-header checkpoint landed in `c9ccedfebe8`; the C++
+  namespace/definition promotion landed in `8796ed5ad99`.
 - Continue moving maintained public-facing examples, tests, and bindings off
   `dart/gui/experimental/*.hpp` / `dartpy.gui.experimental` where those
   concepts are now official.
 - Keep `dart/gui/experimental/*.hpp` as compatibility shims for this checkpoint.
 - Keep private Filament/GLFW/ImGui implementation under
   `dart/gui/experimental/detail` until a later file-layout sweep.
+- The next implementation checkpoint should restore `--out <dir>`
+  image-sequence capture from the shared `dartsim` command-line path, with
+  focused tests and one restored historical executable headless proof.
 
 ### Open issues raised by the parallel review pass
 

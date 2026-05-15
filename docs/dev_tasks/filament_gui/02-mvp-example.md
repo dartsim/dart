@@ -30,10 +30,12 @@ application-level simulator/viewer identity. This branch should use `dartsim`
 for the promoted application-level viewer rather than the neutral
 `gui_viewer`.
 
-Start example-local, then move reusable code into `dart/gui/experimental` only
-after the API and lifetime boundaries become clear. The scene extraction and
-picking helpers have now crossed that boundary; renderer/window/overlay code
-remains local to the example.
+Start example-local, then move reusable code into `dart::gui` only after the
+API and lifetime boundaries become clear. The scene extraction, picking,
+viewer-runtime, debug, geometry, and capture helpers have now crossed that
+boundary; compatibility shims remain under `dart/gui/experimental`.
+Renderer/window/overlay implementation remains private backend code, not
+example-local public API.
 
 ## Implementation status
 

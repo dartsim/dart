@@ -5,12 +5,15 @@
 This task is active again on the promotion branch. Filament with GLFW3 and Dear
 ImGui is the only official renderer direction, and legacy OpenSceneGraph/Raylib
 renderer surfaces have been removed from the branch. The next execution slice is
-tracked in `10-active-execution.md`: remove the remaining
-`dart::gui::experimental` promotion gap, restore the pre-existing user-facing
-examples as `dart::gui` examples, and rename the backend-named MVP executable to
-the application-level `dartsim` identity because Filament is no longer an
-alternate backend. `DART` remains the project/library identity, and `libdart`
-remains the packaging/library context name. `dartsim` is the application-level
+tracked in `10-active-execution.md`: keep restoring the pre-existing
+user-facing examples as `dart::gui` examples, restore the historical `--out
+
+<dir>` image-sequence capture contract, and continue removing stale
+`experimental`/backend-named concepts from promoted surfaces. The
+backend-named MVP executable has already moved to the application-level
+`dartsim` identity because Filament is no longer an alternate backend. `DART`
+remains the project/library identity, and `libdart` remains the
+packaging/library context name. `dartsim` is the application-level
 simulator/viewer brand, analogous to an application product such as Isaac Sim.
 
 The completion audit in `07-completion-audit.md` describes the previous
@@ -464,9 +467,9 @@ the source tree.
   legacy standalone source remains available for comparison. The G1 scene is
   intentionally not part of `--scene all` because it fetches remote robot
   assets by default.
-- The Filament example can render bounded screenshots through Filament's
+- `dartsim` can render bounded screenshots through Filament's
   headless swap-chain path without creating a GLFW window.
-- `DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS=ON` registers an opt-in CTest smoke
+- `DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS=ON` registers an opt-in CTest smoke
   check for the headless screenshot path. This is a CI hook, not a default test
   yet.
 - The default headless smoke check validates more than a nonblank image: it
@@ -475,18 +478,17 @@ the source tree.
   analyzer in a basic mode that scans each full PPM for nonzero pixels. Focused
   Python unit coverage checks those analyzer modes against synthetic PPMs, and
   the example-runner tests guard the matching CMake analysis-mode registration.
-- Filament is the preferred renderer candidate for the next experiment because
-  it provides modern real-time rendering features while keeping DART's built-in
-  visualization scope maintainable.
-- The Filament example now links through `dart-gui-experimental` and can build
-  without the legacy OSG `dart-gui` target when `DART_BUILD_GUI=OFF` and
-  `DART_BUILD_DARTPY=OFF`. The example now includes the
-  `dart::gui::experimental` API directly instead of carrying an example-local
-  namespace re-export header.
-- Checked-in dartpy stubs and Python API docs now list
-  `dartpy.gui.experimental` and include a backend-hidden stub surface for
-  descriptor, picking, debug-line, run-loop, camera, camera-controller,
-  directional nudge, and screenshot helpers.
+- Filament is the maintained renderer because it provides modern real-time
+  rendering features while keeping DART's built-in visualization scope
+  maintainable.
+- `dartsim` now links through the promoted `dart-gui` component and can build
+  without the legacy OSG implementation when `DART_BUILD_GUI=OFF` and
+  `DART_BUILD_DARTPY=OFF`. Compatibility shims remain under
+  `dart/gui/experimental` for old include paths.
+- Checked-in dartpy stubs and Python API docs now list `dartpy.gui` as the
+  promoted surface and keep `dartpy.gui.experimental` as a compatibility
+  namespace for descriptor, picking, debug-line, run-loop, camera,
+  camera-controller, directional nudge, and screenshot helpers.
 - Promotion requires explicit visual-quality gates, including dynamic shadows.
 - The default source-build GUI path is enabled on Linux x86_64, where CMake can
   fetch the pinned upstream Filament archive. Other platforms should provide
