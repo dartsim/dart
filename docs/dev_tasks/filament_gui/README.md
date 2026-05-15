@@ -75,6 +75,9 @@
   `examples/filament_gui/input.hpp` and `.cpp`, keeping backend-specific input
   polling out of the main viewer loop while the reusable manipulation math
   remains in `dart-gui-experimental`.
+- The Filament example's ImGui-to-Filament overlay renderer now lives in
+  `examples/filament_gui/imgui_overlay.hpp` and `.cpp`; the built-in panel
+  contents remain example-local and are still not a promoted panel/tool API.
 - The experimental viewer-runtime layer owns backend-hidden run-option
   normalization, viewer lifecycle state, orbit-camera math, orbit-camera
   controller state, and perspective projection/clipping descriptors used by the

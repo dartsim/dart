@@ -199,6 +199,9 @@
 - The Filament example keeps its backend-specific GLFW/ImGui input polling and
   status-panel hit testing in `examples/filament_gui/input.hpp` and `.cpp`,
   while reusable nudge/orbit/manipulation math remains in `dart-gui-experimental`.
+- The Filament example keeps its ImGui-to-Filament overlay renderer in
+  `examples/filament_gui/imgui_overlay.hpp` and `.cpp`; panel contents remain
+  example-local until a later promotion phase needs DART-owned panel/tool APIs.
 - `dart-gui-experimental` now owns viewer lifecycle state for pause/step
   behavior, screenshot request tracking, rendered/skipped frame counters, and
   bounded-run stop checks. The Filament example uses this state instead of

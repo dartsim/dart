@@ -32,11 +32,11 @@
 
 #include "default_lit_material.hpp"
 #include "debug_color_material.hpp"
-#include "imgui_material.hpp"
 #include "textured_lit_material.hpp"
 #include "transparent_lit_material.hpp"
 #include "transparent_textured_lit_material.hpp"
 
+#include "imgui_overlay.hpp"
 #include "input.hpp"
 #include "scenes.hpp"
 #include "screenshot.hpp"
@@ -205,8 +205,11 @@ using dart::examples::filament_gui::AppOptions;
 using dart::examples::filament_gui::DartScene;
 using dart::examples::filament_gui::ExampleScene;
 using dart::examples::filament_gui::G1IkHandle;
+using dart::examples::filament_gui::ImGuiOverlay;
 using dart::examples::filament_gui::ScreenshotCapture;
 using dart::examples::filament_gui::createDartScene;
+using dart::examples::filament_gui::createImGuiOverlay;
+using dart::examples::filament_gui::destroyImGuiOverlay;
 using dart::examples::filament_gui::handleScroll;
 using dart::examples::filament_gui::initialCameraForScene;
 using dart::examples::filament_gui::isDragModifierDown;
@@ -233,6 +236,7 @@ using dart::examples::filament_gui::saveScreenshot;
 using dart::examples::filament_gui::sceneName;
 using dart::examples::filament_gui::selectedNudgeFromKeyboard;
 using dart::examples::filament_gui::updateCameraController;
+using dart::examples::filament_gui::updateImGuiOverlay;
 using dart::examples::filament_gui::updateImGuiMouseInput;
 using dart::examples::filament_gui::waitForScreenshot;
 using filament::math::float2;
@@ -319,22 +323,6 @@ struct SceneRenderable
   Renderable renderable;
 };
 
-struct OverlayMesh
-{
-  Entity entity;
-  filament::VertexBuffer* vertexBuffer = nullptr;
-  filament::IndexBuffer* indexBuffer = nullptr;
-  std::size_t vertexCount = 0;
-  std::size_t indexCount = 0;
-};
-
-struct ImGuiVertex
-{
-  filament::math::float3 position;
-  filament::math::float2 uv;
-  std::uint32_t color = 0;
-};
-
 struct DebugVertex
 {
   filament::math::float3 position;
@@ -366,18 +354,6 @@ struct ProfileAccumulator
   double screenshotSaveMs = 0.0;
   double maxFrameMs = 0.0;
   double maxRenderMs = 0.0;
-};
-
-struct ImGuiOverlay
-{
-  filament::View* view = nullptr;
-  filament::Scene* scene = nullptr;
-  filament::Camera* camera = nullptr;
-  Entity cameraEntity;
-  filament::Material* material = nullptr;
-  filament::MaterialInstance* materialInstance = nullptr;
-  filament::Texture* fontTexture = nullptr;
-  OverlayMesh mesh;
 };
 
 template <typename T, std::size_t Size>
@@ -2572,224 +2548,6 @@ void synchronizeSceneRenderables(
             sceneRenderable.renderable.entity),
         toFilamentTransform(descriptor.worldTransform));
     sceneRenderables.push_back(sceneRenderable);
-  }
-}
-
-void destroyOverlayMesh(
-    filament::Engine& engine, filament::Scene* scene, OverlayMesh& mesh)
-{
-  if (mesh.entity) {
-    if (scene != nullptr) {
-      scene->remove(mesh.entity);
-    }
-    engine.destroy(mesh.entity);
-    EntityManager::get().destroy(mesh.entity);
-    mesh.entity.clear();
-  }
-  if (mesh.vertexBuffer != nullptr) {
-    engine.destroy(mesh.vertexBuffer);
-    mesh.vertexBuffer = nullptr;
-  }
-  if (mesh.indexBuffer != nullptr) {
-    engine.destroy(mesh.indexBuffer);
-    mesh.indexBuffer = nullptr;
-  }
-  mesh.vertexCount = 0;
-  mesh.indexCount = 0;
-}
-
-ImGuiOverlay createImGuiOverlay(filament::Engine& engine)
-{
-  ImGuiOverlay overlay;
-  overlay.view = engine.createView();
-  overlay.scene = engine.createScene();
-  overlay.cameraEntity = EntityManager::get().create();
-  overlay.camera = engine.createCamera(overlay.cameraEntity);
-  overlay.view->setScene(overlay.scene);
-  overlay.view->setCamera(overlay.camera);
-  overlay.view->setBlendMode(filament::BlendMode::TRANSLUCENT);
-  overlay.view->setPostProcessingEnabled(false);
-
-  overlay.material = filament::Material::Builder()
-                         .package(
-                             dart::examples::filament_gui::kImGuiMaterial,
-                             dart::examples::filament_gui::kImGuiMaterialSize)
-                         .build(engine);
-  overlay.materialInstance = overlay.material->createInstance();
-
-  unsigned char* pixels = nullptr;
-  int width = 0;
-  int height = 0;
-  ImGui::GetIO().Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
-  std::vector<std::uint8_t> fontPixels(
-      pixels, pixels + static_cast<std::size_t>(width) * height * 4);
-
-  overlay.fontTexture = filament::Texture::Builder()
-                            .width(static_cast<std::uint32_t>(width))
-                            .height(static_cast<std::uint32_t>(height))
-                            .levels(1)
-                            .sampler(filament::Texture::Sampler::SAMPLER_2D)
-                            .format(filament::Texture::InternalFormat::RGBA8)
-                            .build(engine);
-  overlay.fontTexture->setImage(
-      engine,
-      0,
-      makePixelBufferDescriptor(
-          std::move(fontPixels),
-          filament::backend::PixelDataFormat::RGBA,
-          filament::backend::PixelDataType::UBYTE));
-
-  const filament::TextureSampler sampler(
-      filament::TextureSampler::MinFilter::LINEAR,
-      filament::TextureSampler::MagFilter::LINEAR);
-  overlay.materialInstance->setParameter(
-      "fontTexture", overlay.fontTexture, sampler);
-  return overlay;
-}
-
-void updateImGuiOverlay(
-    filament::Engine& engine,
-    ImGuiOverlay& overlay,
-    const ImDrawData* drawData,
-    std::uint32_t width,
-    std::uint32_t height)
-{
-  overlay.view->setViewport({0, 0, width, height});
-  overlay.camera->setProjection(
-      filament::Camera::Projection::ORTHO,
-      0.0,
-      static_cast<double>(width),
-      static_cast<double>(height),
-      0.0,
-      0.01,
-      10.0);
-  overlay.camera->lookAt({0.0, 0.0, 1.0}, {0.0, 0.0, 0.0}, {0.0, 1.0, 0.0});
-
-  if (drawData == nullptr || drawData->TotalVtxCount <= 0
-      || drawData->TotalIdxCount <= 0) {
-    destroyOverlayMesh(engine, overlay.scene, overlay.mesh);
-    return;
-  }
-
-  const ImVec2 displayPos = drawData->DisplayPos;
-  std::vector<ImGuiVertex> vertices;
-  std::vector<std::uint32_t> indices;
-  vertices.reserve(static_cast<std::size_t>(drawData->TotalVtxCount));
-  indices.reserve(static_cast<std::size_t>(drawData->TotalIdxCount));
-
-  for (int listIndex = 0; listIndex < drawData->CmdListsCount; ++listIndex) {
-    const ImDrawList* commandList = drawData->CmdLists[listIndex];
-    const std::uint32_t vertexBase
-        = static_cast<std::uint32_t>(vertices.size());
-
-    for (const ImDrawVert& vertex : commandList->VtxBuffer) {
-      vertices.push_back(
-          ImGuiVertex{
-              {vertex.pos.x - displayPos.x, vertex.pos.y - displayPos.y, 0.0f},
-              {vertex.uv.x, 1.0f - vertex.uv.y},
-              vertex.col});
-    }
-
-    for (const ImDrawIdx index : commandList->IdxBuffer) {
-      indices.push_back(vertexBase + static_cast<std::uint32_t>(index));
-    }
-  }
-
-  const std::size_t vertexCount = vertices.size();
-  const std::size_t indexCount = indices.size();
-  if (!overlay.mesh.entity || overlay.mesh.vertexCount != vertexCount
-      || overlay.mesh.indexCount != indexCount) {
-    destroyOverlayMesh(engine, overlay.scene, overlay.mesh);
-
-    overlay.mesh.vertexBuffer
-        = filament::VertexBuffer::Builder()
-              .vertexCount(vertexCount)
-              .bufferCount(1)
-              .attribute(
-                  filament::VertexAttribute::POSITION,
-                  0,
-                  filament::VertexBuffer::AttributeType::FLOAT3,
-                  offsetof(ImGuiVertex, position),
-                  sizeof(ImGuiVertex))
-              .attribute(
-                  filament::VertexAttribute::UV0,
-                  0,
-                  filament::VertexBuffer::AttributeType::FLOAT2,
-                  offsetof(ImGuiVertex, uv),
-                  sizeof(ImGuiVertex))
-              .attribute(
-                  filament::VertexAttribute::COLOR,
-                  0,
-                  filament::VertexBuffer::AttributeType::UBYTE4,
-                  offsetof(ImGuiVertex, color),
-                  sizeof(ImGuiVertex))
-              .normalized(filament::VertexAttribute::COLOR)
-              .build(engine);
-
-    overlay.mesh.indexBuffer
-        = filament::IndexBuffer::Builder()
-              .indexCount(indexCount)
-              .bufferType(filament::IndexBuffer::IndexType::UINT)
-              .build(engine);
-
-    overlay.mesh.entity = EntityManager::get().create();
-    filament::RenderableManager::Builder(1)
-        .boundingBox(
-            {{0.0f, 0.0f, -1.0f},
-             {static_cast<float>(width), static_cast<float>(height), 1.0f}})
-        .material(0, overlay.materialInstance)
-        .geometry(
-            0,
-            filament::RenderableManager::PrimitiveType::TRIANGLES,
-            overlay.mesh.vertexBuffer,
-            overlay.mesh.indexBuffer,
-            0,
-            indexCount)
-        .culling(false)
-        .castShadows(false)
-        .receiveShadows(false)
-        .build(engine, overlay.mesh.entity);
-    overlay.scene->addEntity(overlay.mesh.entity);
-    overlay.mesh.vertexCount = vertexCount;
-    overlay.mesh.indexCount = indexCount;
-  }
-
-  overlay.mesh.vertexBuffer->setBufferAt(
-      engine, 0, makeBufferDescriptor(std::move(vertices)));
-  overlay.mesh.indexBuffer->setBuffer(
-      engine, makeBufferDescriptor(std::move(indices)));
-}
-
-void destroyImGuiOverlay(filament::Engine& engine, ImGuiOverlay& overlay)
-{
-  destroyOverlayMesh(engine, overlay.scene, overlay.mesh);
-  if (overlay.materialInstance != nullptr) {
-    engine.destroy(overlay.materialInstance);
-    overlay.materialInstance = nullptr;
-  }
-  if (overlay.fontTexture != nullptr) {
-    engine.destroy(overlay.fontTexture);
-    overlay.fontTexture = nullptr;
-  }
-  if (overlay.material != nullptr) {
-    engine.destroy(overlay.material);
-    overlay.material = nullptr;
-  }
-  if (overlay.camera != nullptr) {
-    engine.destroyCameraComponent(overlay.cameraEntity);
-    overlay.camera = nullptr;
-  }
-  if (overlay.cameraEntity) {
-    EntityManager::get().destroy(overlay.cameraEntity);
-    overlay.cameraEntity.clear();
-  }
-  if (overlay.view != nullptr) {
-    engine.destroy(overlay.view);
-    overlay.view = nullptr;
-  }
-  if (overlay.scene != nullptr) {
-    engine.destroy(overlay.scene);
-    overlay.scene = nullptr;
   }
 }
 
