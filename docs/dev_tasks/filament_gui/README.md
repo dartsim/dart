@@ -174,6 +174,10 @@
 - Onboarding docs now identify OSG and Raylib as legacy current-state details,
   route new GUI work to the Filament north-star plan, and warn against public
   APIs or abstractions whose only purpose is supporting multiple renderers.
+- The GUI and Python module `AGENTS.md` files now carry the same migration
+  guardrails for future local edits: legacy OSG APIs are current-state only,
+  experimental Filament concepts must stay backend-hidden, and new public
+  bindings should use DART-owned concepts.
 
 ## Goal
 
