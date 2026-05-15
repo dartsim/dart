@@ -108,6 +108,9 @@
   Filament example's renderer readback and capture synchronization.
   The current Filament readback path writes top-left-origin screenshots so
   headless captures are directly reviewable without a manual vertical flip.
+- The Filament example's PNG/JPEG texture loading, Filament texture cache, and
+  PBR texture parameter wiring now live in `examples/filament_gui/textures.hpp`
+  and `.cpp`; `main.cpp` still owns higher-level renderable resource assembly.
 - The Filament example's scene option parsing and reusable DART world fixtures
   now live in `examples/filament_gui/scenes.hpp` and `.cpp`; `main.cpp` remains
   focused on renderer resources, synchronization, input, and the built-in panel.

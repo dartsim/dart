@@ -163,7 +163,9 @@
     while `scene.hpp` remains an aggregate compatibility include for existing
     experimental consumers. The Filament example also keeps
     reusable DART world fixtures in `examples/filament_gui/scenes.hpp` and
-    `.cpp` so `main.cpp` focuses on renderer resources and UI wiring. The
+    `.cpp`, and example-local texture loading/caching in
+    `examples/filament_gui/textures.hpp` and `.cpp`, so `main.cpp` focuses on
+    renderer resources and UI wiring. The
     north-star audit now also maps the legacy OSG/Raylib GUI surfaces that must
     be replaced, made private, or removed during first-class Filament
     promotion. The renderer-hidden debug descriptor path also covers

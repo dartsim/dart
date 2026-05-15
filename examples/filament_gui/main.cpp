@@ -41,6 +41,7 @@
 #include "profile.hpp"
 #include "scenes.hpp"
 #include "screenshot.hpp"
+#include "textures.hpp"
 
 #include <dart/all.hpp>
 #include <dart/common/local_resource_retriever.hpp>
@@ -58,7 +59,6 @@
 
 #include <GLFW/glfw3.h>
 #include <backend/BufferDescriptor.h>
-#include <backend/PixelBufferDescriptor.h>
 #include <filament/Camera.h>
 #include <filament/ColorGrading.h>
 #include <filament/Engine.h>
@@ -97,15 +97,11 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <imgui.h>
-#include <jpeglib.h>
-#include <png.h>
 
 #include <algorithm>
 #include <array>
 #include <cctype>
 #include <chrono>
-#include <csetjmp>
-#include <cstdio>
 #include <cstring>
 #include <filesystem>
 #include <iostream>
@@ -114,9 +110,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
-#include <string_view>
 #include <thread>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -207,13 +201,21 @@ using dart::examples::filament_gui::DartScene;
 using dart::examples::filament_gui::ExampleScene;
 using dart::examples::filament_gui::G1IkHandle;
 using dart::examples::filament_gui::ImGuiOverlay;
+using dart::examples::filament_gui::PbrTextureBindings;
 using dart::examples::filament_gui::ProfileAccumulator;
 using dart::examples::filament_gui::ScreenshotCapture;
+using dart::examples::filament_gui::TextureBinding;
+using dart::examples::filament_gui::TextureCache;
+using dart::examples::filament_gui::TextureColorSpace;
 using dart::examples::filament_gui::createDartScene;
+using dart::examples::filament_gui::createCheckerTexture;
 using dart::examples::filament_gui::createImGuiOverlay;
+using dart::examples::filament_gui::createSolidTexture;
 using dart::examples::filament_gui::destroyImGuiOverlay;
 using dart::examples::filament_gui::elapsedMs;
+using dart::examples::filament_gui::getOrLoadTextureBinding;
 using dart::examples::filament_gui::handleScroll;
+using dart::examples::filament_gui::hasTextureBindings;
 using dart::examples::filament_gui::initialCameraForScene;
 using dart::examples::filament_gui::isDragModifierDown;
 using dart::examples::filament_gui::isInsideStatusPanel;
@@ -239,6 +241,8 @@ using dart::examples::filament_gui::requestScreenshot;
 using dart::examples::filament_gui::saveScreenshot;
 using dart::examples::filament_gui::sceneName;
 using dart::examples::filament_gui::selectedNudgeFromKeyboard;
+using dart::examples::filament_gui::makeRepeatTextureSampler;
+using dart::examples::filament_gui::setPbrTextureParameters;
 using dart::examples::filament_gui::updateCameraController;
 using dart::examples::filament_gui::updateImGuiOverlay;
 using dart::examples::filament_gui::updateImGuiMouseInput;
@@ -255,42 +259,6 @@ struct Vertex
   float3 position;
   filament::math::short4 tangent;
   filament::math::float2 uv = {0.0f, 0.0f};
-};
-
-struct TextureBinding
-{
-  filament::Texture* texture = nullptr;
-  filament::TextureSampler sampler;
-};
-
-enum class TextureColorSpace
-{
-  Linear,
-  Srgb,
-};
-
-struct PbrTextureBindings
-{
-  const TextureBinding* baseColor = nullptr;
-  const TextureBinding* metallic = nullptr;
-  const TextureBinding* roughness = nullptr;
-  const TextureBinding* metallicRoughness = nullptr;
-  const TextureBinding* normal = nullptr;
-  const TextureBinding* occlusion = nullptr;
-  const TextureBinding* emissive = nullptr;
-};
-
-struct ImageData
-{
-  std::uint32_t width = 0;
-  std::uint32_t height = 0;
-  std::vector<std::uint8_t> rgba;
-};
-
-struct TextureCache
-{
-  std::unordered_map<std::string, TextureBinding> bindings;
-  std::vector<filament::Texture*> ownedTextures;
 };
 
 struct MaterialSet
@@ -360,23 +328,6 @@ filament::backend::BufferDescriptor makeBufferDescriptor(std::vector<T>&& data)
       owned);
 }
 
-filament::backend::PixelBufferDescriptor makePixelBufferDescriptor(
-    std::vector<std::uint8_t>&& data,
-    filament::backend::PixelDataFormat format,
-    filament::backend::PixelDataType type)
-{
-  auto* owned = new std::vector<std::uint8_t>(std::move(data));
-  return filament::backend::PixelBufferDescriptor(
-      owned->data(),
-      owned->size(),
-      format,
-      type,
-      [](void*, std::size_t, void* user) {
-        delete static_cast<std::vector<std::uint8_t>*>(user);
-      },
-      owned);
-}
-
 filament::ColorGrading* createDebugColorGrading(filament::Engine& engine)
 {
   filament::PBRNeutralToneMapper toneMapper;
@@ -416,16 +367,6 @@ filament::Skybox* createNeutralSkybox(filament::Engine& engine)
       .build(engine);
 }
 
-filament::TextureSampler makeRepeatTextureSampler()
-{
-  filament::TextureSampler sampler(
-      filament::TextureSampler::MinFilter::LINEAR,
-      filament::TextureSampler::MagFilter::LINEAR,
-      filament::TextureSampler::WrapMode::REPEAT);
-  sampler.setAnisotropy(8.0f);
-  return sampler;
-}
-
 void loadImGuiFont(ImGuiIO& io, float guiScale)
 {
   std::vector<std::filesystem::path> candidates;
@@ -460,349 +401,6 @@ void loadImGuiFont(ImGuiIO& io, float guiScale)
 
   config.SizePixels = 13.0f * guiScale;
   io.Fonts->AddFontDefault(&config);
-}
-
-std::string lowerExtension(const std::filesystem::path& path)
-{
-  std::string extension = path.extension().string();
-  std::transform(extension.begin(), extension.end(), extension.begin(), [](char c) {
-    return static_cast<char>(
-        std::tolower(static_cast<unsigned char>(c)));
-  });
-  return extension;
-}
-
-std::filesystem::path texturePathFromUriOrPath(std::string_view source)
-{
-  static constexpr std::string_view filePrefix = "file://";
-  if (source.starts_with(filePrefix)) {
-    return std::filesystem::path(std::string(source.substr(filePrefix.size())));
-  }
-  return std::filesystem::path(std::string(source));
-}
-
-std::optional<ImageData> loadPngImage(const std::filesystem::path& path)
-{
-  png_image image;
-  std::memset(&image, 0, sizeof(image));
-  image.version = PNG_IMAGE_VERSION;
-
-  if (!png_image_begin_read_from_file(&image, path.string().c_str())) {
-    std::cerr << "Failed to read PNG texture header: " << path.string()
-              << " (" << image.message << ")\n";
-    return std::nullopt;
-  }
-
-  image.format = PNG_FORMAT_RGBA;
-  ImageData output;
-  output.width = image.width;
-  output.height = image.height;
-  output.rgba.resize(PNG_IMAGE_SIZE(image));
-
-  if (!png_image_finish_read(
-          &image, nullptr, output.rgba.data(), 0, nullptr)) {
-    std::cerr << "Failed to read PNG texture: " << path.string() << " ("
-              << image.message << ")\n";
-    png_image_free(&image);
-    return std::nullopt;
-  }
-
-  return output;
-}
-
-struct JpegErrorManager
-{
-  jpeg_error_mgr base;
-  jmp_buf jumpBuffer;
-  char message[JMSG_LENGTH_MAX]{};
-};
-
-void handleJpegError(j_common_ptr cinfo)
-{
-  auto* error = reinterpret_cast<JpegErrorManager*>(cinfo->err);
-  (*cinfo->err->format_message)(cinfo, error->message);
-  longjmp(error->jumpBuffer, 1);
-}
-
-std::optional<ImageData> loadJpegImage(const std::filesystem::path& path)
-{
-  FILE* file = std::fopen(path.string().c_str(), "rb");
-  if (file == nullptr) {
-    std::cerr << "Failed to open JPEG texture: " << path.string() << "\n";
-    return std::nullopt;
-  }
-
-  jpeg_decompress_struct info{};
-  JpegErrorManager error;
-  info.err = jpeg_std_error(&error.base);
-  error.base.error_exit = handleJpegError;
-
-  if (setjmp(error.jumpBuffer)) {
-    std::cerr << "Failed to read JPEG texture: " << path.string() << " ("
-              << error.message << ")\n";
-    jpeg_destroy_decompress(&info);
-    std::fclose(file);
-    return std::nullopt;
-  }
-
-  jpeg_create_decompress(&info);
-  jpeg_stdio_src(&info, file);
-  jpeg_read_header(&info, TRUE);
-  jpeg_start_decompress(&info);
-
-  ImageData output;
-  output.width = info.output_width;
-  output.height = info.output_height;
-  output.rgba.resize(
-      static_cast<std::size_t>(output.width) * output.height * 4u);
-
-  const std::size_t rowStride
-      = static_cast<std::size_t>(info.output_width) * info.output_components;
-  std::vector<std::uint8_t> row(rowStride);
-  while (info.output_scanline < info.output_height) {
-    JSAMPROW rowPtr = row.data();
-    const std::uint32_t y = info.output_scanline;
-    jpeg_read_scanlines(&info, &rowPtr, 1);
-
-    for (std::uint32_t x = 0; x < output.width; ++x) {
-      const auto* source = &row[static_cast<std::size_t>(x)
-                               * info.output_components];
-      auto* target = &output.rgba[
-          (static_cast<std::size_t>(y) * output.width + x) * 4u];
-      if (info.output_components == 1) {
-        target[0] = source[0];
-        target[1] = source[0];
-        target[2] = source[0];
-        target[3] = 255;
-      } else {
-        target[0] = source[0];
-        target[1] = source[1];
-        target[2] = source[2];
-        target[3] = info.output_components >= 4 ? source[3] : 255;
-      }
-    }
-  }
-
-  jpeg_finish_decompress(&info);
-  jpeg_destroy_decompress(&info);
-  std::fclose(file);
-  return output;
-}
-
-std::optional<ImageData> loadTextureImage(const std::string& source)
-{
-  const std::filesystem::path path = texturePathFromUriOrPath(source);
-  const std::string extension = lowerExtension(path);
-  if (extension == ".png") {
-    return loadPngImage(path);
-  }
-  if (extension == ".jpg" || extension == ".jpeg") {
-    return loadJpegImage(path);
-  }
-
-  std::cerr << "Unsupported texture image format: " << source << "\n";
-  return std::nullopt;
-}
-
-filament::Texture* createTexture(
-    filament::Engine& engine, ImageData&& image, TextureColorSpace colorSpace)
-{
-  if (image.width == 0 || image.height == 0 || image.rgba.empty()) {
-    return nullptr;
-  }
-
-  auto* texture = filament::Texture::Builder()
-                      .width(image.width)
-                      .height(image.height)
-                      .levels(1)
-                      .sampler(filament::Texture::Sampler::SAMPLER_2D)
-                      .format(
-                          colorSpace == TextureColorSpace::Srgb
-                              ? filament::Texture::InternalFormat::SRGB8_A8
-                              : filament::Texture::InternalFormat::RGBA8)
-                      .build(engine);
-  texture->setImage(
-      engine,
-      0,
-      makePixelBufferDescriptor(
-          std::move(image.rgba),
-          filament::backend::PixelDataFormat::RGBA,
-          filament::backend::PixelDataType::UBYTE));
-  return texture;
-}
-
-const TextureBinding* getOrLoadTextureBinding(
-    filament::Engine& engine,
-    TextureCache& cache,
-    const std::string& source,
-    TextureColorSpace colorSpace)
-{
-  if (source.empty()) {
-    return nullptr;
-  }
-
-  const std::filesystem::path path = texturePathFromUriOrPath(source);
-  std::error_code ec;
-  const auto key = std::filesystem::weakly_canonical(path, ec).string();
-  const std::string canonicalKey = ec ? source : key;
-  const std::string cacheKey
-      = std::string(colorSpace == TextureColorSpace::Srgb ? "srgb:" : "linear:")
-        + canonicalKey;
-  if (const auto found = cache.bindings.find(cacheKey);
-      found != cache.bindings.end()) {
-    return &found->second;
-  }
-
-  auto image = loadTextureImage(canonicalKey);
-  if (!image) {
-    return nullptr;
-  }
-
-  auto* texture = createTexture(engine, std::move(*image), colorSpace);
-  if (texture == nullptr) {
-    return nullptr;
-  }
-
-  TextureBinding binding;
-  binding.texture = texture;
-  binding.sampler = makeRepeatTextureSampler();
-  cache.ownedTextures.push_back(texture);
-  const auto [inserted, _] = cache.bindings.emplace(cacheKey, binding);
-  return &inserted->second;
-}
-
-bool hasTextureBindings(const PbrTextureBindings& textures)
-{
-  return textures.baseColor != nullptr || textures.metallic != nullptr
-         || textures.roughness != nullptr
-         || textures.metallicRoughness != nullptr || textures.normal != nullptr
-         || textures.occlusion != nullptr || textures.emissive != nullptr;
-}
-
-bool isBoundTexture(const TextureBinding* binding)
-{
-  return binding != nullptr && binding->texture != nullptr;
-}
-
-void setTextureParameter(
-    filament::MaterialInstance& material,
-    const TextureBinding& fallback,
-    const char* textureName,
-    const char* flagName,
-    const TextureBinding* binding)
-{
-  const TextureBinding& active = isBoundTexture(binding) ? *binding : fallback;
-  material.setParameter(textureName, active.texture, active.sampler);
-  material.setParameter(flagName, isBoundTexture(binding) ? 1.0f : 0.0f);
-}
-
-void setPbrTextureParameters(
-    filament::MaterialInstance& material,
-    const TextureBinding& fallback,
-    const PbrTextureBindings& textures)
-{
-  setTextureParameter(
-      material,
-      fallback,
-      "baseColorTexture",
-      "useBaseColorTexture",
-      textures.baseColor);
-  setTextureParameter(
-      material,
-      fallback,
-      "metallicTexture",
-      "useMetallicTexture",
-      textures.metallic);
-  setTextureParameter(
-      material,
-      fallback,
-      "roughnessTexture",
-      "useRoughnessTexture",
-      textures.roughness);
-  setTextureParameter(
-      material,
-      fallback,
-      "metallicRoughnessTexture",
-      "useMetallicRoughnessTexture",
-      textures.metallicRoughness);
-  setTextureParameter(
-      material,
-      fallback,
-      "normalTexture",
-      "useNormalTexture",
-      textures.normal);
-  setTextureParameter(
-      material,
-      fallback,
-      "occlusionTexture",
-      "useOcclusionTexture",
-      textures.occlusion);
-  setTextureParameter(
-      material,
-      fallback,
-      "emissiveTexture",
-      "useEmissiveTexture",
-      textures.emissive);
-}
-
-filament::Texture* createCheckerTexture(filament::Engine& engine)
-{
-  static constexpr std::uint32_t size = 64;
-  static constexpr std::uint32_t channels = 4;
-  std::vector<std::uint8_t> pixels(size * size * channels);
-  for (std::uint32_t y = 0; y < size; ++y) {
-    for (std::uint32_t x = 0; x < size; ++x) {
-      const bool light = ((x / 8u) + (y / 8u)) % 2u == 0u;
-      const std::array<std::uint8_t, channels> color
-          = light ? std::array<std::uint8_t, channels>{235, 245, 240, 255}
-                  : std::array<std::uint8_t, channels>{42, 132, 145, 255};
-      const std::size_t offset = (static_cast<std::size_t>(y) * size + x)
-                                 * channels;
-      std::copy(color.begin(), color.end(), pixels.begin() + offset);
-    }
-  }
-
-  auto* texture = filament::Texture::Builder()
-                      .width(size)
-                      .height(size)
-                      .levels(1)
-                      .sampler(filament::Texture::Sampler::SAMPLER_2D)
-                      .format(filament::Texture::InternalFormat::SRGB8_A8)
-                      .build(engine);
-  texture->setImage(
-      engine,
-      0,
-      makePixelBufferDescriptor(
-          std::move(pixels),
-          filament::backend::PixelDataFormat::RGBA,
-          filament::backend::PixelDataType::UBYTE));
-  return texture;
-}
-
-filament::Texture* createSolidTexture(
-    filament::Engine& engine,
-    const std::array<std::uint8_t, 4>& color,
-    TextureColorSpace colorSpace)
-{
-  auto* texture = filament::Texture::Builder()
-                      .width(1)
-                      .height(1)
-                      .levels(1)
-                      .sampler(filament::Texture::Sampler::SAMPLER_2D)
-                      .format(
-                          colorSpace == TextureColorSpace::Srgb
-                              ? filament::Texture::InternalFormat::SRGB8_A8
-                              : filament::Texture::InternalFormat::RGBA8)
-                      .build(engine);
-  std::vector<std::uint8_t> pixels(color.begin(), color.end());
-  texture->setImage(
-      engine,
-      0,
-      makePixelBufferDescriptor(
-          std::move(pixels),
-          filament::backend::PixelDataFormat::RGBA,
-          filament::backend::PixelDataType::UBYTE));
-  return texture;
 }
 
 void* getNativeWindow(GLFWwindow* window)
