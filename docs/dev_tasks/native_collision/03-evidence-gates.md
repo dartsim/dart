@@ -2746,6 +2746,22 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     `gh run list --branch feature/new_coll --commit aa3ccce70c7 ...` returned
     no runs because PR #2652 is closed and feature-branch pushes do not match
     the main workflow `push` filters.
+- Final runtime cleanup reference-file audit:
+  - Commands:
+    `find dart/collision/{fcl,bullet,ode}/reference -type f | sort`,
+    per-engine `find ... | wc -l`, and an `rg` check for `file(GLOB`,
+    `dart_add_library`, and `add_component_targets` in the three engine
+    `CMakeLists.txt` files.
+  - Result: no unreferenced old-engine runtime source was found outside the
+    explicit reference targets. FCL has 12 reference files, Bullet has 16, and
+    ODE has 26. Their CMake files glob `reference/*.cpp` plus detail sources
+    where applicable, build only `dart-collision-reference-fcl`,
+    `dart-collision-reference-bullet`, and `dart-collision-reference-ode`, and
+    register only the matching `collision-reference-*` package components.
+  - Deletion decision: no file deletion in this slice. The remaining
+    FCL/Bullet/ODE implementation files are intentionally retained as opt-in
+    reference comparison code for `createReference()`, reference tests, and
+    comparative benchmarks.
 
 ## Known Risks
 

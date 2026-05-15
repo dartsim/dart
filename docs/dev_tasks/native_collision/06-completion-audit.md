@@ -506,6 +506,26 @@ compiling with /utf-8'`. The current repair adds `/utf-8` to the root MSVC
   documentation. The lint gate included `audit-collision-compat-facades` and the
   existing collision runtime-isolation guard.
 
+- Final runtime cleanup reference-file audit:
+
+  ```bash
+  find dart/collision/{fcl,bullet,ode}/reference -type f | sort
+  rg -n 'file\(GLOB|dart_add_library|add_component_targets' \
+    dart/collision/fcl/CMakeLists.txt \
+    dart/collision/bullet/CMakeLists.txt \
+    dart/collision/ode/CMakeLists.txt
+  ```
+
+  Result: inspected all old-engine implementation files under explicit
+  `reference/` paths. FCL has 12 files, Bullet has 16, and ODE has 26. Each
+  engine CMake file globs the corresponding `reference/*.cpp` and
+  `reference/detail/*.cpp` sources where applicable, builds only the matching
+  `dart-collision-reference-*` target, and registers only the matching
+  `collision-reference-*` package component. No unreferenced old-engine runtime
+  file was found outside the explicit reference targets, so this audit deletes
+  nothing and preserves the remaining reference implementations for
+  `createReference()`, reference tests, and comparative benchmarks.
+
 Additional inspected artifacts:
 
 - `docs/dev_tasks/native_collision/README.md`
@@ -576,7 +596,10 @@ Legend:
    the remaining gap is policy/finalization, not the package/gz smoke itself.
 3. Apply the documented compatibility-facade policy in the final PR state:
    preserve only wrappers required for source compatibility, keep them
-   native-backed, and keep all external engines reference-only.
+   native-backed, and keep all external engines reference-only. The local
+   reference-file cleanup audit found no unreferenced old-engine implementation
+   files to delete; the remaining FCL/Bullet/ODE implementation files are
+   intentional `collision-reference-*` test/benchmark code.
 4. Run final validation after the final code state, including at least
    `pixi run lint` and `pixi run test-all`, plus any CI-specific gates whose
    failures are not covered locally.

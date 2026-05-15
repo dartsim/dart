@@ -249,6 +249,11 @@ User answers cleared the policy fork. Codex may now do BOTH:
 
 Enumerate `dart/collision/**/reference/` files reachable only from `collision-reference-*` test/benchmark targets. Identify any no longer referenced by `test_reference_backends`, comparative benchmarks, or `createReference()` paths, and delete the unreferenced ones. Keep top-level `dart/collision/{fcl,bullet,ode}/` compatibility facades intact. Run the architect's done-evidence command set. Record results in a new `## Final Runtime Cleanup` subsection in `06-completion-audit.md`.
 
+Status update: the reference-file audit found no unreferenced old-engine
+implementation files to delete. The remaining FCL/Bullet/ODE files are under
+`reference/`, are built only into `dart-collision-reference-*` targets, and are
+kept for `createReference()`, reference tests, and comparative benchmarks.
+
 **B-ordering note:** Do B1 BEFORE B2. The deprecation attributes are the public-API change downstreams need to see first; the runtime cleanup is internal. If both land in the same commit they'll be hard to bisect if a downstream regression appears.
 
 ### Step C — Draft PR description NOW; user opens PR manually.
