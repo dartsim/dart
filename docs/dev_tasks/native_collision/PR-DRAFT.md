@@ -59,6 +59,9 @@ Make native DART collision the default runtime stack
   acceptance criteria. That lint run configured reference tests and benchmarks
   `OFF`, reran `check-collision-runtime-isolation`, and reran
   `audit-collision-compat-facades`.
+- `pixi run lint` passed on pushed source-build prerequisite docs head
+  `621fca5a1fb`; that run also reran `check-collision-runtime-isolation` and
+  `audit-collision-compat-facades`.
 - `pixi run lint`
 - `pixi run check-lint`
 - `pixi run build`

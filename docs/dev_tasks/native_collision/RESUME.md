@@ -18,6 +18,11 @@ or reopen a PR. Continue by pushing focused commits only when there is real
 non-PR progress, and keep `PR-DRAFT.md` / `07-pr-evidence-transfer.md` ready
 for the maintainer-opened review surface.
 
+The latest pushed non-PR progress moved FCL out of required source-build
+prerequisites and documented FCL/Bullet/ODE as optional reference-comparison
+dependencies. That docs cleanup is commit `621fca5a1fb` and was validated with
+`pixi run lint`.
+
 ## Current Branch
 
 `feature/new_coll` tracks `origin/feature/new_coll`.
@@ -60,8 +65,11 @@ post GitHub comments unless the user explicitly asks.
   package/link smoke with direct `readelf` checks.
 - Public docs collision-runtime wording baseline: `ad1b6782578`.
 - Latest full local `pixi run test-all` validation baseline:
-  `d0e23f7b2f1`, with 6/6 top-level gates passing before the follow-up
-  evidence-note commit.
+  `930aca64d45`, with 6/6 top-level gates passing before later docs-only
+  refresh commits.
+- Latest source-build prerequisite docs cleanup: `621fca5a1fb`. Validation:
+  `pixi run lint` passed on that tree after moving FCL out of required
+  prerequisites.
 - Latest local `collision-reference` benchmark guard baseline: `4b155655890`.
 - Latest local downstream/package/link smoke baseline: `376fd5e686d`.
 - Last manual workflow-dispatch CI evidence head: `1e1faf6feb1`.

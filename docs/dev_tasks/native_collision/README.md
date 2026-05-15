@@ -182,12 +182,13 @@
       minimum this means `pixi run lint`, `pixi run test-all`, and any
       maintainer-selected CI gates whose failures are not covered locally. The
       latest full local `pixi run test-all` pass is tied to pushed branch head
-      `d0e23f7b2f1` (`Clarify native collision audit branch state`) before
-      this evidence-note update and passed 6/6 top-level gates. The current
+      `930aca64d45` (`Sync native collision PR evidence draft`) before later
+      docs-only refresh commits and passed 6/6 top-level gates. The current
       clean reference-gate refresh proves normal configure exposes only
       reference tests/benchmarks, keeps both `OFF` by default, and no longer
-      has per-engine FCL/Bullet/ODE collision build switches. Final PR-state
-      evidence is still pending.
+      has per-engine FCL/Bullet/ODE collision build switches. The
+      source-build prerequisite cleanup was linted on pushed docs commit
+      `621fca5a1fb`; final PR-state evidence is still pending.
 - [ ] Final evidence transfer and dev-task cleanup are still open.
       `07-pr-evidence-transfer.md` and `PR-DRAFT.md` stage the review packet,
       but this folder must stay until that evidence is moved to the completing

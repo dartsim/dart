@@ -138,6 +138,13 @@ Local validation currently recorded in the dev-task evidence:
     simulation-experimental tests, Python tests, and documentation.
   - The C++ Release CTest pass completed 264/264 tests, and Python tests
     completed 147/147 tests.
+- Latest source-build prerequisite docs validation on pushed head
+  `621fca5a1fb`:
+  - `pixi run lint` passed after moving FCL out of required source-build
+    prerequisites and recording FCL/Bullet/ODE as optional reference-comparison
+    dependencies.
+  - Lint reran `check-collision-runtime-isolation` and
+    `audit-collision-compat-facades`.
 - Later pushed audit/docs/policy heads have no attached GitHub Actions runs
   unless the maintainer chooses a PR or manual workflow surface, because
   `feature/new_coll` pushes do not match the workflow `push` filters.
@@ -178,6 +185,7 @@ Compatibility notes:
   - `d790a459850` (`Document collision migration policy`)
   - `d489292bdf1` (`Define collision deprecation evidence criteria`)
   - `930aca64d45` (`Sync native collision PR evidence draft`)
+  - `621fca5a1fb` (`Clarify collision reference dependencies`)
 
 ## Checklist Notes
 
