@@ -263,8 +263,10 @@
     The focused GUI unit test now checks that `examples/filament_gui` contains
     no C++ source/header files other than `main.cpp`, that the example has no
     direct Filament header includes, and that `main.cpp` stays a single-include
-    delegated entry point without backend implementation tokens. The north-star
-    audit now also maps the legacy OSG/Raylib
+    delegated entry point without backend implementation tokens. The
+    `run_cpp_example.py` unit coverage now also checks that migrated visual
+    runners resolve to their Filament scenes instead of stale legacy binaries.
+    The north-star audit now also maps the legacy OSG/Raylib
     GUI surfaces that must be replaced, made private, or removed during
     first-class Filament promotion. The renderer-hidden debug descriptor path
     also covers

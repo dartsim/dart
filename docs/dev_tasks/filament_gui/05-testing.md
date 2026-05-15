@@ -455,6 +455,9 @@ Known current result:
   wires the plane path into Ctrl-left camera-plane dragging for selected dynamic
   bodies and `SimpleFrame` visuals, and wires the axis path into
   Ctrl-X/Y/Z-left constrained dragging.
+- `python/tests/unit/test_run_cpp_example.py` verifies that the migrated visual
+  example runners resolve to `dart_filament_gui` with their intended
+  `--scene` defaults, so stale legacy-runner expectations fail locally.
 - `UNIT_gui_FilamentSceneExtraction` also covers run-option normalization,
   viewer lifecycle state, bounded screenshot/frame gates, RGBA-to-PPM
   screenshot storage, orbit-camera basis/update behavior, and perspective

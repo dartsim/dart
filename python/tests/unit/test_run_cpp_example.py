@@ -5,6 +5,48 @@ from pathlib import Path
 import pytest
 
 
+FILAMENT_ROUTED_EXAMPLES = {
+    "filament_gui": (),
+    "imgui": (),
+    "rigid_shapes": ("--scene", "mvp"),
+    "hello_world": ("--scene", "hello-world"),
+    "boxes": ("--scene", "boxes"),
+    "box_stacking": ("--scene", "boxes"),
+    "rigid_cubes": ("--scene", "boxes"),
+    "hardcoded_design": ("--scene", "hardcoded-design"),
+    "rigid_chain": ("--scene", "rigid-chain"),
+    "rigid_loop": ("--scene", "rigid-loop"),
+    "mixed_chain": ("--scene", "mixed-chain"),
+    "coupler_constraint": ("--scene", "coupler-constraint"),
+    "add_delete_skels": ("--scene", "add-delete-skels"),
+    "vehicle": ("--scene", "vehicle"),
+    "hybrid_dynamics": ("--scene", "hybrid-dynamics"),
+    "biped_stand": ("--scene", "hybrid-dynamics"),
+    "joint_constraints": ("--scene", "joint-constraints"),
+    "free_joint_cases": ("--scene", "free-joint-cases"),
+    "human_joint_limits": ("--scene", "human-joint-limits"),
+    "lcp_physics": ("--scene", "lcp-physics"),
+    "mimic_pendulums": ("--scene", "mimic-pendulums"),
+    "atlas_puppet": ("--scene", "atlas-puppet"),
+    "hubo_puppet": ("--scene", "hubo-puppet"),
+    "atlas_simbicon": ("--scene", "atlas-simbicon"),
+    "operational_space_control": ("--scene", "operational-space-control"),
+    "wam_ikfast": ("--scene", "wam-ikfast"),
+    "fetch": ("--scene", "fetch"),
+    "tinkertoy": ("--scene", "tinkertoy"),
+    "drag_and_drop": ("--scene", "drag-and-drop"),
+    "empty": ("--scene", "drag-and-drop"),
+    "simple_frames": ("--scene", "simple-frames"),
+    "soft_bodies": ("--scene", "soft-bodies"),
+    "point_cloud": ("--scene", "point-cloud"),
+    "capsule_ground_contact": ("--scene", "capsule-ground-contact"),
+    "simulation_event_handler": ("--scene", "simulation-event-handler"),
+    "polyhedron_visual": ("--scene", "polyhedron"),
+    "heightmap": ("--scene", "heightmap"),
+    "g1_puppet": ("--scene", "g1"),
+}
+
+
 @pytest.fixture(scope="module")
 def run_cpp_example():
     repo_root = Path(__file__).resolve().parents[3]
@@ -65,7 +107,13 @@ def test_parse_args_allows_pixi_help_without_target(run_cpp_example, capsys):
             ("filament",),
             ("--scene", "g1"),
         ),
-        ("atlas_simbicon", "atlas_simbicon", "atlas_simbicon", (), ()),
+        (
+            "atlas_simbicon",
+            "dart_filament_gui",
+            "filament_gui",
+            ("filament",),
+            ("--scene", "atlas-simbicon"),
+        ),
     ],
 )
 def test_resolve_example(
@@ -80,6 +128,19 @@ def test_resolve_example(
     assert spec.build_target == build_target
     assert spec.binary_name == binary_name
     assert spec.requirements == requirements
+    assert spec.default_args == default_args
+
+
+@pytest.mark.parametrize(
+    ("target", "default_args"), sorted(FILAMENT_ROUTED_EXAMPLES.items())
+)
+def test_filament_routed_examples_resolve_to_filament(
+    target, default_args, run_cpp_example
+):
+    spec = run_cpp_example._resolve_example(target)
+    assert spec.build_target == "dart_filament_gui"
+    assert spec.binary_name == "filament_gui"
+    assert spec.requirements == ("filament",)
     assert spec.default_args == default_args
 
 
