@@ -43,13 +43,13 @@ performance-oriented internals before this scale reaches completion.
 | 3     | gz-physics compatibility is proven                  | Current local `test-gz` pass             |
 | 4     | Native benchmark wins are recorded                  | Complete in checkpoint                   |
 | 5     | Local builds pass with FCL/Bullet/ODE disabled      | Complete in checkpoint                   |
-| 6     | Native-only and gz-physics CI are permanent         | Started; CI evidence still needed        |
+| 6     | Native-only and gz-physics CI are permanent         | Manual evidence collected; final left    |
 | 7     | Reference engines are test/bench-only opt-in        | Local target split proven                |
-| 8     | Default packages/wheels have no old runtime deps    | Local pass; CI wheel matrix left         |
+| 8     | Default packages/wheels have no old runtime deps    | CI wheel matrix passed on repaired head  |
 | 9     | Downstream migration/deprecation path is tested     | Package/gz/link smokes pass; policy left |
-| 10    | Clean built-in API/scaling/perf layer               | Local design evidence; CI left           |
+| 10    | Clean built-in API/scaling/perf layer               | Design/artifact evidence; final left     |
 | 11    | Old runtime backend source is reference-only        | Local split; lint guard wired            |
-| 12    | Final PR evidence is complete and task docs removed | Blocked on CI/migration/perf             |
+| 12    | Final PR evidence is complete and task docs removed | Blocked on PR/migration/final cleanup    |
 
 ## Remaining North-Star Gate Backlog
 
@@ -57,14 +57,14 @@ These gates are still required before the single north-star PR is complete.
 
 | Gate                         | Required evidence                                                                                                      | Current state                                       |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| CI native-only build         | CI passes with FCL, Bullet, and ODE disabled                                                                           | Local equivalent passed; awaiting CI evidence       |
+| CI native-only build         | CI passes with FCL, Bullet, and ODE disabled                                                                           | Manual dispatch passed on repaired head             |
 | CI gz-physics compatibility  | gz-physics CI passes with optional legacy components built                                                             | Current local `test-gz` passes; CI reference exists |
 | Reference correctness        | FCL/Bullet/ODE comparison tests are test-only and optional                                                             | Local reference target split passes                 |
-| Packaging removal            | Default packages/wheels have no old collision runtime deps                                                             | Verifier wired; CI matrix evidence left             |
+| Packaging removal            | Default packages/wheels have no old collision runtime deps                                                             | Verifier wired; CI matrix passed on repaired head   |
 | Downstream migration         | gz-physics has a tested path away from legacy detector APIs                                                            | Package/gz/link smokes pass; policy evidence left   |
 | Collision abstraction        | Legacy keys/classes route only to built-in native behavior                                                             | Source/package facades done                         |
 | Built-in architecture/design | `01-design.md` north-star requirement, layer table, and blueprint pass API-cleanliness, scaling, and performance gates | Source split, cache bridge, gz/full support         |
-| Benchmark regression guard   | Optional reference benchmarks guide gradual optimization                                                               | Scheduled/manual CI guard added; evidence left      |
+| Benchmark regression guard   | Optional reference benchmarks guide gradual optimization                                                               | Manual dispatch artifact uploaded on repaired head  |
 | Legacy backend deletion      | Old runtime backend sources removed from default stack                                                                 | Runtime source guard wired; deletion left           |
 
 ## PR Publishing And Initial CI Repair
@@ -2587,8 +2587,36 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     `collision-benchmark-guard-${{ github.run_id }}-${{ github.run_attempt }}`
     includes `.benchmark_results/collision_check_*.json`.
   - Because the repair changes C++ collision behavior, gz-physics, wheel
-    matrix, native-only, and benchmark guard CI evidence must be refreshed on
-    the next pushed head before the north-star CI gates can close.
+    matrix, native-only, and benchmark guard CI evidence needed a repaired-head
+    refresh before those north-star CI gates could count.
+- Closed-PR manual dispatch evidence on repaired head `1e1faf6feb1`:
+  - Run/job: `25887939088` / `76084265248` (`CI Linux` /
+    `Native Collision (no FCL/Bullet/ODE)`).
+  - Result: passed. This covers the previous `test_ccd` /
+    `CapsuleCastConvex.DirectHit` failure on GitHub.
+  - Run/job: `25887940214` / `76084227295` (`CI gz-physics` /
+    `GZ Physics Tests`).
+  - Result: passed.
+  - Run/job: `25887939088` / `76084265196` (`CI Linux` /
+    `Collision Benchmark Guard`).
+  - Result: passed and uploaded
+    `collision-benchmark-guard-25887939088-1`, artifact id `7006005918`,
+    digest
+    `sha256:c92c993b9d6a2eaf0ac234d7526cc9893c6544992f0ed55fd77a8bf7f02ba2f5`.
+  - Run: `25887941240` (`Publish dartpy`).
+  - Result: passed across all wheel build, repair, verify, test, and upload
+    jobs for `ubuntu-latest`, `macos-latest`, and `windows-latest` on Python
+    3.12, 3.13, and 3.14. The PyPI publish job was skipped as expected.
+  - Artifact IDs:
+    `7006040650`, `7006017034`, `7005950943`, `7005940232`,
+    `7005904083`, `7005879764`, `7006075376`, `7006153851`,
+    `7006180173`.
+- Closed-PR trigger state after later pushed audit/docs heads:
+  - Heads `f31f1a5b897` and `bdf6e34573c` are pushed to
+    `feature/new_coll`, but `gh run list --branch feature/new_coll --commit`
+    returns no Actions runs for either commit. These pushes publish branch
+    state only because the workflows do not run on arbitrary feature-branch
+    pushes.
 - Broad local Debug validation after the macOS/Linux closed-PR repairs:
   - Command:
     `cmake --build build/default/cpp/Debug --target tests --parallel 5`
@@ -2676,10 +2704,11 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
   detector/group headers are native-backed facades. Old FCL, Bullet, and ODE
   implementation files still exist only as explicit reference test/benchmark
   surfaces under `reference/` paths.
-- Normal pixi configure paths, default/wheel Pixi lock metadata, and the
-  repaired py312 wheel artifact now exclude the old collision engines. CI
-  wheel-matrix artifacts still need inspection so packaging cannot reintroduce
-  FCL, Bullet, ODE, or libccd runtime links on another Python/platform build.
+- Normal pixi configure paths, default/wheel Pixi lock metadata, the repaired
+  py312 wheel artifact, and the repaired-head workflow-dispatch wheel matrix
+  now exclude the old collision engines. Keep final PR-state packaging
+  evidence current so later Python/platform builds cannot reintroduce FCL,
+  Bullet, ODE, or libccd runtime links.
 - Compatibility-alias checks can silently bypass native-only paths if they are
   used outside explicit backward-compatibility tests.
 - Scenario-scale collision manager performance now passes the recorded
@@ -2693,7 +2722,9 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
 - gz-physics depends on legacy detector names and compatibility headers; keep
   facade behavior covered while native lowercase APIs evolve. The latest local
   gz-physics evidence is a fresh `pixi run -e gazebo test-gz` pass: 65/65
-  tests against the DART plugin. CI evidence still blocks the release gate.
+  tests against the DART plugin, and repaired-head workflow-dispatch
+  gz-physics CI also passed. Final PR-state/downstream policy evidence still
+  blocks the release gate.
 - Installed-package compatibility remains important: native-backed
   compatibility component files must keep downstream packages such as
   gz-physics linking without making FCL, Bullet, or ODE required for native

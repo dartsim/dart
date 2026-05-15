@@ -633,8 +633,8 @@ libraries.
   - Root cause: `capsuleCastConvex()` tested only the two capsule endpoint
     spheres, so a full capsule-body hit against a convex target depended on a
     numerically fragile grazing endpoint contact.
-  - Current working-tree repair: use a capsule support function and
-    conservative advancement for capsule-vs-convex CCD.
+  - Pushed repair: use a capsule support function and conservative advancement
+    for capsule-vs-convex CCD.
   - Local validation after the repair: focused `test_ccd` passed, the full
     `collision-native` label passed 29/29, the native-only CI focused CTest
     regex passed 4/4, and the Python collision/world smoke passed 17/17.
@@ -672,6 +672,13 @@ libraries.
 - `07-pr-evidence-transfer.md` stages the eventual PR description evidence
   packet, but it is not completion evidence until copied to the PR review
   surface and this dev-task folder is deleted in the same completing PR.
+- The current pushed branch head before this note is `bdf6e34573c`. It includes
+  the repaired code/evidence head `1e1faf6feb1`, the compatibility-facade audit
+  guard, and the PR evidence transfer draft. Manual workflow-dispatch evidence
+  on `1e1faf6feb1` passed native-only CI, gz-physics CI, the full dartpy wheel
+  matrix, and the collision benchmark guard artifact upload. Later pushes
+  `f31f1a5b897` and `bdf6e34573c` have no attached Actions runs because
+  `feature/new_coll` does not match the workflow `push` filters.
 
 ## How to Resume
 

@@ -102,6 +102,10 @@ unverified external and finalization gates:
   `test_collision_world` dangling-pointer issue in world-level sphere/capsule
   cast results; the world query layer now keeps stable collision-object handles
   for raycast, sphere-cast, and capsule-cast result pointers.
+- Later pushed heads `f31f1a5b897` and `bdf6e34573c` contain audit/docs
+  evidence only. `gh run list --branch feature/new_coll --commit ...` returns
+  no GitHub Actions runs for either head because those branch pushes are not an
+  allowed workflow trigger.
 - Local downstream migration evidence is refreshed: fresh gz-physics,
   package-smoke, runtime-isolation, C++/Python compatibility-name, and direct
   link-inspection checks all pass on `8c83cd19cb8`. Downstream deprecation
@@ -136,10 +140,14 @@ Current audited state:
   (`Record current native collision validation pass`), which records the
   current local validation pass after the durable built-in architecture docs
   and compatibility-facade policy cleanup.
-- Branch state: `feature/new_coll` includes a docs-only resume checkpoint on
-  top of the latest pushed code/evidence head `1e1faf6feb1`
-  (`Fix native capsule convex casts in CI`) plus the current local audit
-  checkpoint at HEAD.
+- Branch state: `feature/new_coll` is pushed to origin at `bdf6e34573c`
+  (`Prepare native collision PR evidence transfer`). That head includes the
+  latest code/evidence head `1e1faf6feb1`
+  (`Fix native capsule convex casts in CI`), the local downstream evidence
+  checkpoint, the compatibility-facade audit guard at `f31f1a5b897`, and the
+  PR evidence transfer draft. GitHub reports no Actions runs for the
+  `f31f1a5b897` or `bdf6e34573c` pushes because `feature/new_coll` does not
+  match the workflow `push` filters.
 - GitHub PR state: PR #2652
   (https://github.com/dartsim/dart/pull/2652) is closed, still marked draft,
   and remains anchored to old head `714d220d82a`.
@@ -157,7 +165,7 @@ Current audited state:
     `macos-latest-py312`, `macos-latest-py313`, `macos-latest-py314`,
     `windows-latest-py312`, `windows-latest-py313`,
     `windows-latest-py314`.
-  - Current working-tree repair after the Linux native-only failure: replace
+  - Pushed repair after the Linux native-only failure: replace
     endpoint-only `capsuleCastConvex()` checks with capsule-support
     conservative advancement against the convex support target. Focused local
     validation passes `test_ccd`, the 29-test `collision-native` label, the
@@ -361,9 +369,10 @@ compiling with /utf-8'`. The current repair adds `/utf-8` to the root MSVC
   - PR #2652 is closed and remains anchored to old head `714d220d82a`.
   - Follow-up fixes are being pushed to `feature/new_coll`, but branch pushes
     do not start the main workflows because the workflow `push` filters only
-    include protected release/default branches. Manual workflow dispatch was
-    attempted for the relevant workflows and failed with HTTP 403 requiring
-    repository admin rights.
+    include protected release/default branches. Manual workflow dispatch later
+    supplied reference evidence for head `1e1faf6feb1`, but the current user
+    direction is commit pushes only, with no PR reopen/create or workflow
+    dispatch mutation.
 
 - Follow-up broad local Debug validation after the closed-PR macOS/Linux
   repairs:
@@ -494,7 +503,7 @@ Additional inspected artifacts:
 | Built-in detector maintains benchmarks for performance optimization.                                                         | `pixi run -e collision-reference bm-collision-check` runs checked narrowphase, distance, raycast, mixed-primitive, mesh-heavy, raycast-batch, and public adapter benchmark subsets, writing `.benchmark_results/collision_check_*.json`.                                                                                                                                                                                                                                 | Local   |
 | Native performance should beat the best legacy engine on required workloads, with feature first and correctness preserved.   | The current local broad benchmark guard passed at `892e50d02e4`; `README.md` records native wins on the measured primitive, narrowphase, supported distance, raycast, batch, mesh-heavy, and mixed workloads.                                                                                                                                                                                                                                                            | Local   |
 | Built-in layer architecture must be API-clean, scalable, and performance-oriented.                                           | `01-design.md` defines the public API boundary, compatibility shell, DART adapter scene, native scene/query core, query lifecycle, scalability design, performance hooks, and reference harness boundary. `README.md` mirrors this in the Architecture Completion Rubric, `docs/onboarding/architecture.md` now carries the durable built-in runtime architecture summary, and native `ShapeType` cleanup keeps the native taxonomy aligned with real supported classes. | Local   |
-| Architecture evidence must cover code, tests, package/source boundaries, and benchmark/profiling hooks, not only prose docs. | Code evidence exists for factory aliases, compatibility facades, persistent `DartCollisionGroup` scene state, cache IDs, source isolation, native shape taxonomy cleanup, wheel verifier wiring, package smoke, adapter benchmarks, and native/reference benchmark JSON. CI/artifact evidence remains missing.                                                                                                                                                           | Partial |
+| Architecture evidence must cover code, tests, package/source boundaries, and benchmark/profiling hooks, not only prose docs. | Code evidence exists for factory aliases, compatibility facades, persistent `DartCollisionGroup` scene state, cache IDs, source isolation, native shape taxonomy cleanup, wheel verifier wiring, package smoke, adapter benchmarks, native/reference benchmark JSON, repaired-head workflow-dispatch wheel artifacts, and the benchmark guard artifact. Final PR-state CI/artifact evidence remains missing.                                                             | Partial |
 | gz-physics compatibility must be preserved while legacy names migrate.                                                       | Fresh local `pixi run -e gazebo test-gz` passed 65/65 and package smoke passed. `readelf` shows the gz DART plugin and package-smoke executable use `libdart-collision-native.so` without old collision/reference runtime dependencies. `05-downstream-migration.md` defines the compatibility contract and removal gates.                                                                                                                                               | Local   |
 | Downstream migration/deprecation path must be proven before removing retained facades.                                       | `05-downstream-migration.md` defines the migration order and gates. Local primary evidence now covers fresh gz-physics, package smoke, runtime isolation, C++/Python compatibility names, and direct link inspection. Downstream deprecation policy evidence is still missing before retained facades can be removed or hard-deprecated.                                                                                                                                 | Open    |
 | Final PR evidence and cleanup must happen in the same PR.                                                                    | `README.md`, `02-milestones.md`, and `docs/dev_tasks/README.md` require transferring final evidence to the PR description and deleting `docs/dev_tasks/native_collision/` only at completion. Durable collision architecture notes have been seeded in onboarding docs, and `07-pr-evidence-transfer.md` stages the PR-template-shaped evidence packet, but PR evidence transfer and folder deletion remain open.                                                        | Open    |
@@ -515,8 +524,10 @@ Legend:
    state but does not automatically trigger the main GitHub Actions workflows.
    Manual workflow-dispatch reference evidence for pushed head `1e1faf6feb1`
    now covers native-only CI, gz-physics, the wheel matrix, and the collision
-   benchmark guard artifact upload. Treat GitHub CI as reference evidence; use
-   local build/test as the main validation surface.
+   benchmark guard artifact upload. Later pushed heads `f31f1a5b897` and
+   `bdf6e34573c` have no attached runs for the same trigger-filter reason.
+   Treat GitHub CI as reference evidence; use local build/test as the main
+   validation surface unless the maintainer explicitly chooses another trigger.
 2. Record downstream deprecation policy evidence proving downstream users no
    longer depend on legacy names as runtime backend selectors before removing
    or hard-deprecating retained facades. Local migration evidence is refreshed;

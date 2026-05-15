@@ -86,6 +86,9 @@ Local validation currently recorded in the dev-task evidence:
   - full dartpy wheel matrix passed
   - collision benchmark guard uploaded
     `collision-benchmark-guard-25887939088-1`
+- Later pushed audit/docs heads `f31f1a5b897` and `bdf6e34573c` have no
+  attached GitHub Actions runs because `feature/new_coll` pushes do not match
+  the workflow `push` filters.
 
 Final PR-complete testing still needs whatever CI surface the maintainer chooses
 after PR #2652 is reopened or a successor PR is created.
@@ -108,7 +111,7 @@ Compatibility notes:
 ## Related Issues / PRs
 
 - PR #2652: `https://github.com/dartsim/dart/pull/2652`
-- Current pushed branch: `feature/new_coll`
+- Current pushed branch: `feature/new_coll` at `bdf6e34573c`
 
 ## Checklist Notes
 
