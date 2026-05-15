@@ -445,6 +445,36 @@ function(dart_filament_gui_add_example example_target)
     )
   endif()
 
+  file(
+    GLOB_RECURSE
+    _example_tree_files
+    LIST_DIRECTORIES false
+    CONFIGURE_DEPENDS
+    "${DART_FILAMENT_GUI_EXAMPLE_SOURCE_DIR}/*"
+  )
+  set(_unexpected_example_tree_files ${_example_tree_files})
+  list(
+    REMOVE_ITEM
+    _unexpected_example_tree_files
+    "${DART_FILAMENT_GUI_EXAMPLE_SOURCE_DIR}/CMakeLists.txt"
+    "${DART_FILAMENT_GUI_EXAMPLE_SOURCE_DIR}/README.md"
+    "${_example_main}"
+  )
+  if(_unexpected_example_tree_files)
+    list(
+      JOIN
+      _unexpected_example_tree_files
+      "\n  "
+      _unexpected_example_tree_files_message
+    )
+    message(
+      FATAL_ERROR
+      "filament_gui must stay a minimal DART GUI entry point; unexpected "
+      "example-tree regular files:\n  "
+      "${_unexpected_example_tree_files_message}"
+    )
+  endif()
+
   add_executable(
     ${example_target}
     "${_example_main}"

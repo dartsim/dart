@@ -265,7 +265,7 @@
     direct Filament header includes, and that `main.cpp` stays a single-include
     delegated entry point without backend implementation tokens. The Filament
     example CMake helper now also compiles only that entry point and rejects
-    extra example-local C++ source/header files or direct Filament entry-point
+    unexpected example-tree regular files or direct Filament entry-point
     includes at configure time. The
     `run_cpp_example.py` unit coverage now also checks that migrated visual
     runners resolve to their Filament scenes instead of stale legacy binaries,

@@ -511,6 +511,8 @@
   only `CMakeLists.txt`, `README.md`, and `main.cpp` may remain in the example
   tree, and `main.cpp` must stay a single-include delegating entry point with no
   direct backend implementation tokens.
+  `dart_filament_gui_add_example()` now also rejects unexpected example-tree
+  regular files at configure time.
 
 **Exit criteria**
 
