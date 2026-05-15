@@ -203,8 +203,8 @@
   in `dart/gui/experimental/detail/filament/input.hpp` and `.cpp`, while
   reusable nudge/orbit/manipulation math remains in
   `dart-gui-experimental`.
-- The Filament-native ImGui overlay renderer, font loading, and draw-data
-  upload live in
+- The Filament-native ImGui context setup, style scaling, font loading,
+  overlay renderer, and draw-data upload live in
   `dart/gui/experimental/detail/filament/imgui_overlay.hpp` and `.cpp`; panel
   contents remain MVP/example-scoped until a later promotion phase needs
   DART-owned panel/tool APIs.

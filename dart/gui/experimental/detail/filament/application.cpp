@@ -162,7 +162,7 @@ using dart::gui::experimental::filament::configureViewportCamera;
 using dart::gui::experimental::filament::countSceneContent;
 using dart::gui::experimental::filament::createFilamentRenderContext;
 using dart::gui::experimental::filament::createDebugColorGrading;
-using dart::gui::experimental::filament::createImGuiOverlay;
+using dart::gui::experimental::filament::createConfiguredImGuiOverlay;
 using dart::gui::experimental::filament::createNeutralIndirectLight;
 using dart::gui::experimental::filament::createNeutralSkybox;
 using dart::gui::experimental::filament::createMaterialResources;
@@ -172,7 +172,7 @@ using dart::gui::experimental::filament::destroyMaterialResources;
 using dart::gui::experimental::filament::destroyRenderable;
 using dart::gui::experimental::filament::destroyRenderEnvironmentResources;
 using dart::gui::experimental::filament::destroyFilamentRenderContext;
-using dart::gui::experimental::filament::destroyImGuiOverlay;
+using dart::gui::experimental::filament::destroyConfiguredImGuiOverlay;
 using dart::gui::experimental::filament::destroySceneLights;
 using dart::gui::experimental::filament::detachSceneEnvironment;
 using dart::gui::experimental::filament::endFilamentFrame;
@@ -180,7 +180,6 @@ using dart::gui::experimental::filament::getNativeWindow;
 using dart::gui::experimental::filament::handleScroll;
 using dart::gui::experimental::filament::isDragModifierDown;
 using dart::gui::experimental::filament::isInsideStatusPanel;
-using dart::gui::experimental::filament::loadImGuiFont;
 using dart::gui::experimental::filament::renderFilamentViews;
 using dart::gui::experimental::filament::renderBuiltInStatusPanel;
 using dart::gui::experimental::filament::requestScreenshot;
@@ -384,17 +383,9 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
       *engine, options.headless, orbitLight, appOptions.orbitLightPeriodSeconds);
   attachSceneEnvironment(*scene, indirectLight, skybox, lights);
 
-  ImGui::CreateContext();
-  ImGui::StyleColorsDark();
-  auto& imguiStyle = ImGui::GetStyle();
   const float guiScale = static_cast<float>(options.guiScale);
-  imguiStyle.ScaleAllSizes(guiScale);
-  imguiStyle.WindowRounding = 4.0f * guiScale;
-  imguiStyle.Colors[ImGuiCol_WindowBg].w = 0.72f;
+  ImGuiOverlay imguiOverlay = createConfiguredImGuiOverlay(*engine, guiScale);
   auto& imguiIo = ImGui::GetIO();
-  loadImGuiFont(imguiIo, guiScale);
-  imguiIo.Fonts->Build();
-  ImGuiOverlay imguiOverlay = createImGuiOverlay(*engine);
 
   ViewerLifecycleState lifecycle;
   bool wasSpacePressed = false;
@@ -783,8 +774,7 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
     DART_PROFILE_TEXT_DUMP();
   }
 
-  destroyImGuiOverlay(*engine, imguiOverlay);
-  ImGui::DestroyContext();
+  destroyConfiguredImGuiOverlay(*engine, imguiOverlay);
 
   detachSceneEnvironment(*scene, lights);
   clearMainViewColorGrading(*view);

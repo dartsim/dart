@@ -53,7 +53,6 @@ class View;
 } // namespace filament
 
 struct ImDrawData;
-struct ImGuiIO;
 
 namespace dart::gui::experimental::filament {
 
@@ -78,9 +77,8 @@ struct ImGuiOverlay
   OverlayMesh mesh;
 };
 
-ImGuiOverlay createImGuiOverlay(::filament::Engine& engine);
-
-void loadImGuiFont(ImGuiIO& io, float guiScale);
+ImGuiOverlay createConfiguredImGuiOverlay(
+    ::filament::Engine& engine, float guiScale);
 
 void updateImGuiOverlay(
     ::filament::Engine& engine,
@@ -89,7 +87,8 @@ void updateImGuiOverlay(
     std::uint32_t width,
     std::uint32_t height);
 
-void destroyImGuiOverlay(::filament::Engine& engine, ImGuiOverlay& overlay);
+void destroyConfiguredImGuiOverlay(
+    ::filament::Engine& engine, ImGuiOverlay& overlay);
 
 } // namespace dart::gui::experimental::filament
 

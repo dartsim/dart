@@ -27,6 +27,9 @@ recommended maintainability slices:
 - `dart/gui/experimental/detail/filament/debug_overlay.hpp` and `.cpp` own
   debug-line overlay refresh/cleanup for static, contact, and selection
   overlays.
+- `dart/gui/experimental/detail/filament/imgui_overlay.hpp` and `.cpp` own
+  ImGui context setup, style/font initialization, draw-data upload, and overlay
+  teardown.
 - `dart/gui/experimental/profile.hpp` and `.cpp` own viewer-loop profile
   accumulation, and `dart/gui/experimental/detail/filament/render_context.*`
   plus `screenshot.*`, `render_environment.*`, `textures.*`, and

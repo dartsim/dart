@@ -205,6 +205,22 @@ void loadImGuiFont(ImGuiIO& io, float guiScale)
   io.Fonts->AddFontDefault(&config);
 }
 
+ImGuiOverlay createConfiguredImGuiOverlay(
+    ::filament::Engine& engine, float guiScale)
+{
+  ImGui::CreateContext();
+  ImGui::StyleColorsDark();
+  auto& style = ImGui::GetStyle();
+  style.ScaleAllSizes(guiScale);
+  style.WindowRounding = 4.0f * guiScale;
+  style.Colors[ImGuiCol_WindowBg].w = 0.72f;
+
+  auto& io = ImGui::GetIO();
+  loadImGuiFont(io, guiScale);
+  io.Fonts->Build();
+  return createImGuiOverlay(engine);
+}
+
 void updateImGuiOverlay(
     ::filament::Engine& engine,
     ImGuiOverlay& overlay,
@@ -349,6 +365,13 @@ void destroyImGuiOverlay(::filament::Engine& engine, ImGuiOverlay& overlay)
     engine.destroy(overlay.scene);
     overlay.scene = nullptr;
   }
+}
+
+void destroyConfiguredImGuiOverlay(
+    ::filament::Engine& engine, ImGuiOverlay& overlay)
+{
+  destroyImGuiOverlay(engine, overlay);
+  ImGui::DestroyContext();
 }
 
 } // namespace dart::gui::experimental::filament

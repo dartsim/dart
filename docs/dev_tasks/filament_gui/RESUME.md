@@ -137,7 +137,8 @@ The GLFW/ImGui input bridge lives in
 manipulation math remains in `dart-gui-experimental`.
 Platform-specific GLFW native-window handle selection lives in
 `dart/gui/experimental/detail/filament/native_window.hpp` and `.cpp`.
-Filament-native ImGui font loading lives with the overlay renderer in
+Filament-native ImGui context setup, style scaling, font loading, overlay
+rendering, and draw-data upload live in
 `dart/gui/experimental/detail/filament/imgui_overlay.hpp` and `.cpp`; the
 built-in panel policy remains MVP/example-scoped.
 Selection label formatting and G1 IK-target translation glue live in
