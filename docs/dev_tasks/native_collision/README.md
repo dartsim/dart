@@ -125,6 +125,10 @@
       uses the clean `DartCollisionDetector` API without legacy Python aliases,
       and reference engines require explicit `collision-reference-*` targets
       plus `createReference()` APIs.
+- [x] Public migration docs now carry the same DART 7 policy: C++ legacy
+      collision names are native-backed migration facades, dartpy does not keep
+      old detector aliases, and FCL/Bullet/ODE comparison engines are opt-in
+      reference components rather than normal runtime build options.
 - [x] Source-tree legacy detector headers are now split the same way as the
       installed package surface: top-level FCL, Bullet, and ODE detector/group
       headers, PascalCase compatibility headers, All headers, and component
@@ -212,11 +216,12 @@ engine-specific knobs, while the native core stays scalable and
 performance-oriented internally.
 
 FCL, Bullet, and ODE may remain only as optional reference engines for
-correctness tests and benchmarks. They should be controlled by CMake options so
-comparison jobs can opt in and native-only builds can opt out. The work order
-inside this PR is feature coverage first, correctness tests as the permanent
-gate, then gradual performance optimization until native beats the reference
-engines on required workloads.
+correctness tests and benchmarks. They should be controlled by the public
+reference test/benchmark gates so comparison jobs can opt in and native-only
+builds stay free of per-engine runtime switches. The work order inside this PR
+is feature coverage first, correctness tests as the permanent gate, then
+gradual performance optimization until native beats the reference engines on
+required workloads.
 
 ## North-Star Progress Scale
 

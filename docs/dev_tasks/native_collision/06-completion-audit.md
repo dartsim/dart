@@ -107,7 +107,12 @@ unverified external and finalization gates:
 - Later pushed audit/docs/policy heads contain audit evidence, CI trigger
   notes, clean dartpy collision API policy, reference build-option
   refinements, and public docs alignment for the built-in runtime collision
-  path. The latest pushed validation baseline is `376fd5e686d`
+  path. The public DART 6-to-7 migration guide now states that retained C++
+  legacy collision names are native-backed migration facades, dartpy keeps the
+  clean `DartCollisionDetector` API without old detector aliases, and old
+  engines are available only through reference comparison gates rather than
+  normal per-engine runtime switches. The latest pushed validation baseline is
+  `376fd5e686d`
   (`Remove per-engine collision reference build options`). Later docs-only
   evidence refreshes may sit on top of that baseline, but they do not replace
   the recorded validation run. The matching `gh run list` checks returned no
