@@ -118,7 +118,7 @@ if(TARGET dart-utils-urdf)
   dart_add_test("integration" INTEGRATION_collision_NoFalseContacts collision/test_no_false_contacts.cpp)
 endif()
 
-if(DART_BUILD_COLLISION_REFERENCE_TESTS AND DART_BUILD_COLLISION_REFERENCE_BULLET)
+if(DART_BUILD_COLLISION_REFERENCE_TESTS AND TARGET dart-collision-reference-bullet)
   dart_add_test("integration" INTEGRATION_collision_CollisionAccuracy collision/test_collision_accuracy.cpp)
   target_link_libraries(INTEGRATION_collision_CollisionAccuracy dart-collision-reference-bullet)
   dart_add_test("integration" INTEGRATION_collision_BulletCylinderRolling collision/test_bullet_cylinder_rolling.cpp)
@@ -130,8 +130,8 @@ if(DART_BUILD_COLLISION_REFERENCE_TESTS AND DART_BUILD_COLLISION_REFERENCE_BULLE
 endif()
 
 if(DART_BUILD_COLLISION_REFERENCE_TESTS
-   AND DART_BUILD_COLLISION_REFERENCE_BULLET
-   AND DART_BUILD_COLLISION_REFERENCE_ODE
+   AND TARGET dart-collision-reference-bullet
+   AND TARGET dart-collision-reference-ode
    AND TARGET dart-collision-reference-fcl
 )
   dart_add_test("integration" INTEGRATION_collision_PlaneShapeCollision collision/test_plane_shape_collision.cpp)
@@ -182,7 +182,7 @@ if(DART_BUILD_COLLISION_REFERENCE_TESTS)
   dart_force_link_collision_backend(INTEGRATION_constraint_SplitImpulse dart-collision-reference-fcl)
 endif()
 
-if(DART_BUILD_COLLISION_REFERENCE_TESTS AND DART_BUILD_COLLISION_REFERENCE_ODE)
+if(DART_BUILD_COLLISION_REFERENCE_TESTS AND TARGET dart-collision-reference-ode)
   dart_add_test("integration" INTEGRATION_constraint_ForceDependentSlip constraint/test_force_dependent_slip.cpp)
   target_link_libraries(INTEGRATION_constraint_ForceDependentSlip dart-collision-reference-ode)
   dart_force_link_collision_backend(INTEGRATION_constraint_ForceDependentSlip dart-collision-reference-fcl)

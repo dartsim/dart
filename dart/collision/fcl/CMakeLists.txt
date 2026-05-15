@@ -7,7 +7,7 @@ file(GLOB srcs "reference/*.cpp")
 file(GLOB compat_hdrs "compat/*.hpp")
 dart_format_add(${facade_hdrs} ${compat_hdrs})
 
-if(NOT DART_BUILD_COLLISION_REFERENCE_FCL)
+if(NOT _dart_build_collision_references)
   set(DART_HAVE_FCL FALSE CACHE BOOL "Check if fcl found." FORCE)
   install(
     FILES ${compat_hdrs}
@@ -17,7 +17,7 @@ if(NOT DART_BUILD_COLLISION_REFERENCE_FCL)
   return()
 endif()
 
-message(STATUS "Configuring dart/collision/fcl (DART_BUILD_COLLISION_REFERENCE_FCL=${DART_BUILD_COLLISION_REFERENCE_FCL})")
+message(STATUS "Configuring dart/collision/fcl reference component")
 
 set(DART_HAVE_FCL TRUE CACHE BOOL "Check if fcl found." FORCE)
 

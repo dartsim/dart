@@ -22,11 +22,10 @@ for the maintainer-opened review surface.
 
 `feature/new_coll` tracks `origin/feature/new_coll`.
 
-At the start of the latest reference-option rename slice, local and remote
-matched at `ab8ad841b9c` (`Record current full native collision validation`)
-with no local diff. If another audit-record commit has been added after this
-note, run the commands below to refresh that fact instead of trusting this
-timestamp:
+At the start of the latest clean reference-gate slice, local and remote matched
+at `06cd27d0163` (`Rename collision reference build options`) with no local
+diff. If another audit-record commit has been added after this note, run the
+commands below to refresh that fact instead of trusting this timestamp:
 
 ```bash
 git status --short --branch
@@ -54,15 +53,16 @@ post GitHub comments unless the user explicitly asks.
 - Clean dartpy collision API and C++ compatibility-facade deprecation baseline:
   `ec6f6f43112`.
 - Build-option policy baseline: `aa3ccce70c7`.
-- Reference-named build-option rename validation: working tree after
-  `ab8ad841b9c` passed default configure, `collision-reference` configure,
-  focused `test_reference_backends`, `pixi run lint`, and
-  `pixi run test-all`.
+- Clean reference-gate validation: working tree after `06cd27d0163` passed
+  default configure, `collision-reference` configure, focused
+  `test_reference_backends`, fresh `pixi run -e gazebo test-gz`, and native
+  package/link smoke with direct `readelf` checks.
 - Public docs collision-runtime wording baseline: `ad1b6782578`.
 - Latest full local `pixi run test-all` validation baseline: working tree
-  after `ab8ad841b9c`.
+  after `06cd27d0163`, with 6/6 top-level gates passing.
 - Latest local `collision-reference` benchmark guard baseline: `4b155655890`.
-- Latest local downstream/package/link smoke baseline: `4b155655890`.
+- Latest local downstream/package/link smoke baseline: working tree after
+  `06cd27d0163`.
 - Last manual workflow-dispatch CI evidence head: `1e1faf6feb1`.
 - Latest pushed docs/reference-cleanup heads after those baselines have no
   GitHub Actions runs because branch pushes do not match the workflow filters
@@ -92,12 +92,11 @@ The last local guard refresh reported:
   facades, not external runtime backend selectors.
 - dartpy intentionally does not keep the legacy detector aliases through DART 7.
   The clean Python API is `DartCollisionDetector`.
-- `DART_BUILD_COLLISION_REFERENCE_FCL`,
-  `DART_BUILD_COLLISION_REFERENCE_BULLET`, and
-  `DART_BUILD_COLLISION_REFERENCE_ODE` only enable explicit
-  `collision-reference-*` comparison components. Core DART, dartpy,
-  gz-physics runtime integration, and native-backed compatibility facades do
-  not need those options.
+- Per-engine FCL/Bullet/ODE collision build switches are gone from the current
+  build surface. `DART_BUILD_COLLISION_REFERENCE_TESTS` and
+  `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` are the explicit opt-in gates for
+  reference comparison components. Core DART, dartpy, gz-physics runtime
+  integration, and native-backed compatibility facades do not need those gates.
 - The reference-file cleanup audit found no unreferenced FCL/Bullet/ODE
   implementation files to delete. Remaining files under
   `dart/collision/{fcl,bullet,ode}/reference/` are intentional reference

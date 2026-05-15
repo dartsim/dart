@@ -64,14 +64,15 @@ dartpy/
 - Legacy submodules remain importable in DART 7.x but will be removed in DART
   8.0. Toggle deprecation handling with `DARTPY_WARN_ON_LEGACY_MODULES` or
   `DARTPY_ENABLE_LEGACY_MODULES`.
-- Collision detector backend aliases are different: dartpy does not preserve
+- Collision detector backend aliases are different: for the DART 7 native
+  collision transition, dartpy does not need to keep backward compatibility for
   legacy `DARTCollisionDetector`, `FCLCollisionDetector`,
-  `BulletCollisionDetector`, or `OdeCollisionDetector` names through DART 7.
-  Prefer the clean Python API: use `DartCollisionDetector` or the default
-  detector, and do not add compatibility shims for the old backend-specific
-  spellings unless a maintainer explicitly chooses that policy. C++ keeps
-  deprecated native-backed facades for downstream source compatibility, but
-  those names should not be mirrored back into the Python API.
+  `BulletCollisionDetector`, or `OdeCollisionDetector` names. Prefer the clean
+  Python API: use `DartCollisionDetector` or the default detector, and do not
+  add compatibility shims for the old backend-specific spellings unless a
+  maintainer explicitly changes that policy. C++ keeps deprecated
+  native-backed facades for downstream source compatibility, but those names
+  should not be mirrored back into the Python API.
 
 **Source**: See `python/dartpy/` directory for module implementations
 

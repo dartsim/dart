@@ -2795,33 +2795,40 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     compatibility-facade lint/audit guards. This confirms the build flags are
     not required by core DART, dartpy, gz-physics runtime compatibility, or the
     native-backed legacy package component facades.
-- Current collision reference build-option rename validation:
-  - Commit: working tree after `ab8ad841b9c`
-    (`Record current full native collision validation`), before this
-    evidence-record commit.
-  - Build API change: the current CMake/Pixi/CI surface uses
-    `DART_BUILD_COLLISION_REFERENCE_FCL`,
-    `DART_BUILD_COLLISION_REFERENCE_BULLET`, and
-    `DART_BUILD_COLLISION_REFERENCE_ODE` for optional old-engine comparison
-    components. The previous `DART_BUILD_COLLISION_FCL`,
-    `DART_BUILD_COLLISION_BULLET`, and `DART_BUILD_COLLISION_ODE` spellings
-    are no longer present in current code/config paths.
+- Current clean reference-gate validation:
+  - Commit: working tree after `06cd27d0163`
+    (`Rename collision reference build options`), before this evidence-record
+    commit.
+  - Build API change: the current CMake/Pixi/CI surface exposes only
+    `DART_BUILD_COLLISION_REFERENCE_TESTS` and
+    `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` for optional old-engine
+    comparison jobs. Per-engine FCL/Bullet/ODE collision build switches are no
+    longer present in current code/config paths; FCL, Bullet, and ODE
+    reference components are derived internally when either public reference
+    gate is enabled.
   - Commands:
     `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run config`,
     `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e collision-reference config`,
     `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e collision-reference -- cmake --build build/collision-reference/cpp/Release --target test_reference_backends --parallel 5`,
     `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e collision-reference -- ctest --test-dir build/collision-reference/cpp/Release --output-on-failure -R '^test_reference_backends$' -j 5`,
-    `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run lint`,
-    and
+    `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e gazebo test-gz`,
+    the native compatibility package/link smoke with direct `readelf` checks
+    against the gz DART plugin and package-smoke executable, and
     `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`.
-  - Result: passed. Default configure reported all three
-    `DART_BUILD_COLLISION_REFERENCE_*` engine options, reference tests, and
-    reference benchmarks `OFF`. The `collision-reference` configure reported
-    FCL, Bullet, ODE, reference tests, and reference benchmarks `ON`, added 13
-    components, and configured 287 CTest tests. The focused
-    `test_reference_backends` build and CTest passed 1/1. Full local
-    `test-all` passed 6/6 top-level gates: linting, build, unit tests,
-    simulation-experimental tests, Python tests, and documentation.
+  - Result: passed. Default configure reported reference tests and reference
+    benchmarks `OFF`; the current build surface has no per-engine collision
+    reference options. The `collision-reference` configure reported only
+    reference tests and reference benchmarks `ON`, configured the FCL, Bullet,
+    and ODE reference components, added 13 components, and configured 287 CTest
+    tests. The focused `test_reference_backends` build and CTest passed 1/1.
+    The fresh gz-physics run passed 65/65 selected tests after configuring the
+    DART install with reference tests and benchmarks `OFF`. The package/link
+    smoke passed, and `readelf` showed both the gz DART plugin and package
+    smoke executable depend on `libdart-collision-native.so` without
+    `libdart-collision-reference-*`, FCL, Bullet, ODE, or libccd runtime
+    dependencies. Full local `test-all` passed 6/6 top-level gates: linting,
+    build, unit tests, simulation-experimental tests, Python tests, and
+    documentation.
 - Current local collision benchmark guard refresh:
   - Commit: `4b1556558900ea4b19a85f3c3c9d8d2f6d175afe`
     (`Record current collision benchmark guard`), pushed to
@@ -2830,8 +2837,8 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
   - Command:
     `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -e collision-reference bm-collision-check`
   - Result: passed. The `collision-reference` configure intentionally enabled
-    FCL, Bullet, ODE, reference tests, and reference benchmarks as opt-in
-    comparison inputs. Checked subsets passed with no failures or skips for
+    reference tests and reference benchmarks as opt-in comparison gates for
+    FCL, Bullet, and ODE. Checked subsets passed with no failures or skips for
     narrow phase (3/3), distance (3/3), raycast (5/5), mixed primitives (4/4),
     mesh-heavy (1/1), and raycast-batch (2/2), and the public
     `DartCollisionDetector` adapter benchmark completed successfully.

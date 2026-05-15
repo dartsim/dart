@@ -107,15 +107,17 @@ unverified external and finalization gates:
 - Later pushed audit/docs/policy heads contain audit evidence, CI trigger
   notes, clean dartpy collision API policy, reference build-option
   refinements, and public docs alignment for the built-in runtime collision
-  path. The latest checked docs/evidence head before this audit-record update
-  is `4b155655890`. The matching `gh run list` check returned no GitHub
-  Actions runs because these branch pushes are not an allowed workflow trigger
-  while PR #2652 is closed.
+  path. The latest pushed docs/evidence head before this clean reference-gate
+  update is `06cd27d0163`. The matching `gh run list` check returned no
+  GitHub Actions runs because these branch pushes are not an allowed workflow
+  trigger while PR #2652 is closed.
 - Local downstream migration evidence is refreshed: fresh gz-physics,
   package-smoke, runtime-isolation, C++ compatibility-name, dartpy clean-API,
   direct link-inspection checks, and human-authored stale-backend docs audit all
-  pass. The primary executable/link-smoke evidence is refreshed on
-  `4b155655890`.
+  pass. The primary executable/link-smoke evidence is refreshed on the working
+  tree after `06cd27d0163`, with only public reference tests/benchmarks gates
+  and no per-engine FCL/Bullet/ODE collision build switches in current
+  code/config paths.
   Downstream deprecation policy evidence is still missing before retained
   facades can be removed or hard-deprecated.
 - Final compatibility-facade retention/deprecation evidence is still missing:
@@ -124,13 +126,10 @@ unverified external and finalization gates:
   downstream migration, and leave FCL/Bullet/ODE access in explicit
   reference-only test/benchmark APIs.
 - Full local `pixi run test-all` evidence is refreshed on the working tree
-  after `ab8ad841b9c`, with normal native-only defaults keeping
-  `DART_BUILD_COLLISION_REFERENCE_FCL`,
-  `DART_BUILD_COLLISION_REFERENCE_BULLET`,
-  `DART_BUILD_COLLISION_REFERENCE_ODE`, reference tests, and reference
-  benchmarks `OFF`. Final `pixi run test-all` evidence after the eventual
-  PR-complete state is still missing. The refreshed full reruns found and
-  repaired three
+  after `06cd27d0163`, with normal native-only defaults keeping only reference
+  tests and reference benchmarks visible and `OFF`. Final `pixi run test-all`
+  evidence after the eventual PR-complete state is still missing. The refreshed
+  full reruns found and repaired three
   local validation robustness gaps: a stale optional `libccd` CMake cache issue
   in the default native-only test build, stale `ShapeType::Cone`,
   `ShapeType::HeightField`, and `ShapeType::PointCloud` cases in the VSG
@@ -148,11 +147,11 @@ unverified external and finalization gates:
 Current audited state:
 
 - Branch: `feature/new_coll`
-- Latest pushed branch head before this option-rename update:
-  `ab8ad841b9c` (`Record current full native collision validation`). Local and
+- Latest pushed branch head before this clean reference-gate update:
+  `06cd27d0163` (`Rename collision reference build options`). Local and
   `origin/feature/new_coll` matched at that head, PR #2652 was still closed
   and anchored to old head `714d220d82a`, and GitHub reported no Actions runs
-  for commit `ab8ad841b9c`.
+  for commit `06cd27d0163`.
 - Latest published checkpoint before CI repair: `5b08a00d381`
   (`Record current native collision validation pass`), which records the
   current local validation pass after the durable built-in architecture docs
@@ -160,36 +159,34 @@ Current audited state:
 - Latest audited branch evidence: `ec6f6f43112`
   (`Clean dartpy collision API and deprecate C++ facades`) plus
   `aa3ccce70c7` (`Clarify collision reference build options`) through
-  `ab8ad841b9c` (`Record current full native collision validation`). Those
+  `06cd27d0163` (`Rename collision reference build options`). Those
   commits include the latest code/evidence head `1e1faf6feb1`
   (`Fix native capsule convex casts in CI`), the local downstream evidence
   checkpoint, the compatibility-facade audit guard at `f31f1a5b897`, the PR
   evidence transfer draft, the closed-PR CI trigger evidence at `6be640e7007`,
   the clean dartpy collision API, default-on C++ compatibility facade
   deprecations, and docs clarifying the old-engine reference-only scope. The
-  current working tree renames the CMake/Pixi/CI option surface to
-  `DART_BUILD_COLLISION_REFERENCE_FCL`,
-  `DART_BUILD_COLLISION_REFERENCE_BULLET`, and
-  `DART_BUILD_COLLISION_REFERENCE_ODE`, so current user-facing build flags
-  describe optional reference components rather than runtime backend choices.
+  current working tree removes all per-engine FCL/Bullet/ODE collision build
+  switches from the user-facing CMake/Pixi/CI surface, so the remaining public
+  reference gates are only `DART_BUILD_COLLISION_REFERENCE_TESTS` and
+  `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` for optional comparison tests
+  and benchmarks rather than runtime backend choices.
   The branch also includes the public overview, numerical-methods, constraints,
   and example README cleanup that removes stale normal-runtime FCL/Bullet/ODE
   backend guidance, plus the latest completion-audit refresh. GitHub reports no
   Actions runs for the later pushes because `feature/new_coll` does not match
   the workflow `push` filters and PR #2652 remains closed.
-- Full local validation run head: working tree after `ab8ad841b9c`
-  (`Record current full native collision validation`). The safe-job
-  full-validation command passed with 6/6 top-level gates: linting, build, unit
-  tests, simulation-experimental tests, Python tests, and documentation. The
-  configure output kept `DART_BUILD_COLLISION_REFERENCE_FCL`,
-  `DART_BUILD_COLLISION_REFERENCE_BULLET`,
-  `DART_BUILD_COLLISION_REFERENCE_ODE`, collision reference tests, and
-  collision reference benchmarks `OFF`, confirming those options are
-  reference-component opt-ins rather than compatibility prerequisites for core
-  DART, dartpy, gz-physics runtime integration, or native-backed package
-  component facades. A focused `collision-reference` configure/build/CTest
-  check also passed with FCL, Bullet, ODE, reference tests, and reference
-  benchmarks `ON`.
+- Full local validation run head: working tree after `06cd27d0163`
+  (`Rename collision reference build options`), before this evidence-record
+  update. The safe-job full-validation command passed with 6/6 top-level
+  gates: linting, build, unit tests, simulation-experimental tests, Python
+  tests, and documentation. The configure output kept collision reference tests
+  and collision reference benchmarks `OFF`, confirming old-engine comparison
+  components are not compatibility prerequisites for core DART, dartpy,
+  gz-physics runtime integration, or native-backed package component facades.
+  A focused `collision-reference` configure/build/CTest check also passed with
+  reference tests and reference benchmarks `ON` and all FCL, Bullet, and ODE
+  reference components configured internally.
 - Benchmark guard record head: `4b155655890`
   (`Record current collision benchmark guard`). The safe-job
   `collision-reference` benchmark guard passed locally, covering narrow phase,
@@ -197,20 +194,14 @@ Current audited state:
   DART adapter benchmark JSON outputs. This is local benchmark evidence; it
   does not replace final PR/CI artifact evidence because feature-branch pushes
   do not trigger the benchmark workflow while PR #2652 is closed.
-- Downstream/package/link refresh head: `4b155655890`
-  (`Record current collision benchmark guard`), before this evidence-record
+- Downstream/package/link refresh head: working tree after `06cd27d0163`
+  (`Rename collision reference build options`), before this evidence-record
   update. The safe-job `pixi run -e gazebo test-gz` run configured the gazebo
-  DART install with `DART_BUILD_COLLISION_FCL=OFF`,
-  `DART_BUILD_COLLISION_BULLET=OFF`, `DART_BUILD_COLLISION_ODE=OFF`,
-  collision reference tests `OFF`, and collision reference benchmarks `OFF`,
+  DART install with collision reference tests and collision reference
+  benchmarks `OFF` and no per-engine FCL/Bullet/ODE collision build switches,
   then passed 65/65 gz-physics tests. The native compatibility package smoke
-  passed, `pixi run check-collision-runtime-isolation` passed,
-  `python scripts/audit_collision_compat_facades.py` passed, the focused
-  `test_legacy_compat_facades` CTest passed 1/1, and the focused dartpy
-  clean-API test
-  `test_legacy_collision_detector_names_are_not_exposed_in_dartpy` passed 1/1.
-  Direct `readelf` inspections showed both the gz DART plugin and package-smoke
-  executable depend on `libdart-collision-native.so` without
+  passed. Direct `readelf` inspections showed both the gz DART plugin and
+  package-smoke executable depend on `libdart-collision-native.so` without
   `libdart-collision-reference-*`, FCL, Bullet, ODE, or libccd runtime
   dependencies.
 - GitHub PR state: PR #2652
@@ -293,9 +284,7 @@ Current audited state:
     the clean dartpy `DartCollisionDetector` API without legacy detector
     aliases.
   - `pixi run -e gazebo test-gz` passed 65/65 tests with the DART install
-    configured native-only: `DART_BUILD_COLLISION_FCL=OFF`,
-    `DART_BUILD_COLLISION_BULLET=OFF`, and
-    `DART_BUILD_COLLISION_ODE=OFF`.
+    configured native-only.
   - The native compatibility package smoke passed against that native-only
     install, including retained `collision-fcl`, `collision-bullet`, and
     `collision-ode` package component facades.
@@ -304,9 +293,7 @@ Current audited state:
     for the main CI surfaces while PR #2652 is closed.
 - Build-option policy docs validation for `aa3ccce70c7`:
   - `pixi run lint` passed and configured the default build with
-    `DART_BUILD_COLLISION_FCL=OFF`, `DART_BUILD_COLLISION_BULLET=OFF`,
-    `DART_BUILD_COLLISION_ODE=OFF`,
-    `DART_BUILD_COLLISION_REFERENCE_TESTS=OFF`, and
+    `DART_BUILD_COLLISION_REFERENCE_TESTS=OFF` and
     `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS=OFF`.
   - The lint gate included `check-collision-runtime-isolation` and
     `audit-collision-compat-facades`, whose output still reported
@@ -608,24 +595,24 @@ Additional inspected artifacts:
 
 ## Prompt-To-Artifact Checklist
 
-| Requirement                                                                                                                  | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Status  |
-| ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| Track progress on the scale of the path toward the north star.                                                               | `README.md` and `03-evidence-gates.md` both define the 0-12 north-star progress scale. Stage 10 has local design evidence, stage 11 has local source/reference split evidence, and stage 12 remains blocked on CI, migration, final deletion, validation, and PR packaging.                                                                                                                                                                                                              | Done    |
-| One PR continues until it fully reaches the north star.                                                                      | `README.md` states the checkpoint is not a final PR boundary, and `02-milestones.md` keeps final PR packaging and dev-task deletion as completion gates.                                                                                                                                                                                                                                                                                                                                 | Open    |
-| `dart/collision/` stops exposing a real multi-backend runtime selection layer.                                               | `dart/collision/dart/dart_collision_detector.hpp` owns the canonical `dart` registrar plus legacy alias registrars. Top-level FCL/Bullet/ODE headers route through compatibility facades, and old implementation sources live under explicit `reference/` paths.                                                                                                                                                                                                                         | Local   |
-| Retained FCL/Bullet/ODE/experimental names are wrappers/adapters over the built-in detector.                                 | Compatibility headers under `dart/collision/{fcl,bullet,ode}/compat/` and the package smoke under `docs/dev_tasks/native_collision/smoke/native_compat_package/` verify native-backed C++ and package compatibility names. Dartpy uses the clean `DartCollisionDetector` API and tests/audit verify legacy detector aliases are absent.                                                                                                                                                  | Local   |
-| Any selected "backend" through retained public names always uses the built-in detector.                                      | `UNIT_collision_DartCollisionDetector` covers factory aliases and legacy facade behavior. The native compatibility package smoke verifies package components, factory keys, installed headers, and direct legacy `create()` calls.                                                                                                                                                                                                                                                       | Local   |
-| FCL/Bullet/ODE remain only as optional reference engines for tests and benchmarks.                                           | `DART_BUILD_COLLISION_REFERENCE_TESTS` and `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` exist in CMake/Pixi configure paths; `collision-reference` is the explicit opt-in Pixi environment; `DART_BUILD_COLLISION_REFERENCE_FCL/BULLET/ODE` now build only optional reference components and are not needed by core DART, dartpy, gz-physics runtime integration, or native-backed compatibility facades; reference call sites use `createReference()` and `collision-reference-*` names. | Local   |
-| Native-only builds can opt out of FCL/Bullet/ODE.                                                                            | Normal Pixi configure paths default FCL, Bullet, ODE, reference tests, and reference benchmarks to `OFF`; local native-only build/install/wheel evidence is recorded in `03-evidence-gates.md`.                                                                                                                                                                                                                                                                                          | Local   |
-| Default packages and wheels do not carry old collision runtime dependencies.                                                 | Package install probes, Pixi dependency metadata checks, and the `verify_wheel_collision_isolation.py` verifier are recorded. `wheel-verify-core` runs the wheel isolation verifier, and `publish_dartpy.yml` invokes `pixi run -e py${{ matrix.python-version }}-wheel wheel-verify`.                                                                                                                                                                                                   | Local   |
-| Built-in detector maintains correctness tests.                                                                               | Native unit/integration tests, feature parity tests, DART adapter tests, gz-focused regressions, and reference comparison tests are recorded in `03-evidence-gates.md`.                                                                                                                                                                                                                                                                                                                  | Local   |
-| Built-in detector maintains benchmarks for performance optimization.                                                         | `pixi run -e collision-reference bm-collision-check` runs checked narrowphase, distance, raycast, mixed-primitive, mesh-heavy, raycast-batch, and public adapter benchmark subsets, writing `.benchmark_results/collision_check_*.json`.                                                                                                                                                                                                                                                 | Local   |
-| Native performance should beat the best legacy engine on required workloads, with feature first and correctness preserved.   | The current local broad benchmark guard is refreshed in `4b155655890`; `README.md` records native wins on the measured primitive, narrowphase, supported distance, raycast, batch, mesh-heavy, and mixed workloads.                                                                                                                                                                                                                                                                      | Local   |
-| Built-in layer architecture must be API-clean, scalable, and performance-oriented.                                           | `01-design.md` defines the public API boundary, compatibility shell, DART adapter scene, native scene/query core, query lifecycle, scalability design, performance hooks, and reference harness boundary. `README.md` mirrors this in the Architecture Completion Rubric, `docs/onboarding/architecture.md` now carries the durable built-in runtime architecture summary, and native `ShapeType` cleanup keeps the native taxonomy aligned with real supported classes.                 | Local   |
-| Architecture evidence must cover code, tests, package/source boundaries, and benchmark/profiling hooks, not only prose docs. | Code evidence exists for factory aliases, compatibility facades, persistent `DartCollisionGroup` scene state, cache IDs, source isolation, native shape taxonomy cleanup, wheel verifier wiring, package smoke, adapter benchmarks, native/reference benchmark JSON, repaired-head workflow-dispatch wheel artifacts, and the benchmark guard artifact. Final PR-state CI/artifact evidence remains missing.                                                                             | Partial |
-| gz-physics compatibility must be preserved while legacy names migrate.                                                       | Fresh local `pixi run -e gazebo test-gz` passed 65/65 and package smoke passed. `readelf` shows the gz DART plugin and package-smoke executable use `libdart-collision-native.so` without old collision/reference runtime dependencies. `05-downstream-migration.md` defines the compatibility contract and removal gates.                                                                                                                                                               | Local   |
-| Downstream migration/deprecation path must be proven before removing retained facades.                                       | `05-downstream-migration.md` defines the migration order and gates. Local primary evidence now covers fresh gz-physics, package smoke, runtime isolation, C++ compatibility names, dartpy clean-API enforcement, direct link inspection, and default-on C++ deprecation annotations. Final pushed-head CI/PR evidence remains open.                                                                                                                                                      | Open    |
-| Final PR evidence and cleanup must happen in the same PR.                                                                    | `README.md`, `02-milestones.md`, and `docs/dev_tasks/README.md` require transferring final evidence to the PR description and deleting `docs/dev_tasks/native_collision/` only at completion. Durable collision architecture notes have been seeded in onboarding docs, and `07-pr-evidence-transfer.md` stages the PR-template-shaped evidence packet, but PR evidence transfer and folder deletion remain open.                                                                        | Open    |
+| Requirement                                                                                                                  | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Status  |
+| ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
+| Track progress on the scale of the path toward the north star.                                                               | `README.md` and `03-evidence-gates.md` both define the 0-12 north-star progress scale. Stage 10 has local design evidence, stage 11 has local source/reference split evidence, and stage 12 remains blocked on CI, migration, final deletion, validation, and PR packaging.                                                                                                                                                                                              | Done    |
+| One PR continues until it fully reaches the north star.                                                                      | `README.md` states the checkpoint is not a final PR boundary, and `02-milestones.md` keeps final PR packaging and dev-task deletion as completion gates.                                                                                                                                                                                                                                                                                                                 | Open    |
+| `dart/collision/` stops exposing a real multi-backend runtime selection layer.                                               | `dart/collision/dart/dart_collision_detector.hpp` owns the canonical `dart` registrar plus legacy alias registrars. Top-level FCL/Bullet/ODE headers route through compatibility facades, and old implementation sources live under explicit `reference/` paths.                                                                                                                                                                                                         | Local   |
+| Retained FCL/Bullet/ODE/experimental names are wrappers/adapters over the built-in detector.                                 | Compatibility headers under `dart/collision/{fcl,bullet,ode}/compat/` and the package smoke under `docs/dev_tasks/native_collision/smoke/native_compat_package/` verify native-backed C++ and package compatibility names. Dartpy uses the clean `DartCollisionDetector` API and tests/audit verify legacy detector aliases are absent.                                                                                                                                  | Local   |
+| Any selected "backend" through retained public names always uses the built-in detector.                                      | `UNIT_collision_DartCollisionDetector` covers factory aliases and legacy facade behavior. The native compatibility package smoke verifies package components, factory keys, installed headers, and direct legacy `create()` calls.                                                                                                                                                                                                                                       | Local   |
+| FCL/Bullet/ODE remain only as optional reference engines for tests and benchmarks.                                           | `DART_BUILD_COLLISION_REFERENCE_TESTS` and `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` exist in CMake/Pixi configure paths; `collision-reference` is the explicit opt-in Pixi environment; per-engine FCL/Bullet/ODE collision build switches are gone from the current build surface; reference call sites use `createReference()` and `collision-reference-*` names.                                                                                                   | Local   |
+| Native-only builds can opt out of FCL/Bullet/ODE.                                                                            | Normal Pixi configure paths default reference tests and reference benchmarks to `OFF`; local native-only build/install/wheel evidence is recorded in `03-evidence-gates.md`.                                                                                                                                                                                                                                                                                             | Local   |
+| Default packages and wheels do not carry old collision runtime dependencies.                                                 | Package install probes, Pixi dependency metadata checks, and the `verify_wheel_collision_isolation.py` verifier are recorded. `wheel-verify-core` runs the wheel isolation verifier, and `publish_dartpy.yml` invokes `pixi run -e py${{ matrix.python-version }}-wheel wheel-verify`.                                                                                                                                                                                   | Local   |
+| Built-in detector maintains correctness tests.                                                                               | Native unit/integration tests, feature parity tests, DART adapter tests, gz-focused regressions, and reference comparison tests are recorded in `03-evidence-gates.md`.                                                                                                                                                                                                                                                                                                  | Local   |
+| Built-in detector maintains benchmarks for performance optimization.                                                         | `pixi run -e collision-reference bm-collision-check` runs checked narrowphase, distance, raycast, mixed-primitive, mesh-heavy, raycast-batch, and public adapter benchmark subsets, writing `.benchmark_results/collision_check_*.json`.                                                                                                                                                                                                                                 | Local   |
+| Native performance should beat the best legacy engine on required workloads, with feature first and correctness preserved.   | The current local broad benchmark guard is refreshed in `4b155655890`; `README.md` records native wins on the measured primitive, narrowphase, supported distance, raycast, batch, mesh-heavy, and mixed workloads.                                                                                                                                                                                                                                                      | Local   |
+| Built-in layer architecture must be API-clean, scalable, and performance-oriented.                                           | `01-design.md` defines the public API boundary, compatibility shell, DART adapter scene, native scene/query core, query lifecycle, scalability design, performance hooks, and reference harness boundary. `README.md` mirrors this in the Architecture Completion Rubric, `docs/onboarding/architecture.md` now carries the durable built-in runtime architecture summary, and native `ShapeType` cleanup keeps the native taxonomy aligned with real supported classes. | Local   |
+| Architecture evidence must cover code, tests, package/source boundaries, and benchmark/profiling hooks, not only prose docs. | Code evidence exists for factory aliases, compatibility facades, persistent `DartCollisionGroup` scene state, cache IDs, source isolation, native shape taxonomy cleanup, wheel verifier wiring, package smoke, adapter benchmarks, native/reference benchmark JSON, repaired-head workflow-dispatch wheel artifacts, and the benchmark guard artifact. Final PR-state CI/artifact evidence remains missing.                                                             | Partial |
+| gz-physics compatibility must be preserved while legacy names migrate.                                                       | Fresh local `pixi run -e gazebo test-gz` passed 65/65 and package smoke passed. `readelf` shows the gz DART plugin and package-smoke executable use `libdart-collision-native.so` without old collision/reference runtime dependencies. `05-downstream-migration.md` defines the compatibility contract and removal gates.                                                                                                                                               | Local   |
+| Downstream migration/deprecation path must be proven before removing retained facades.                                       | `05-downstream-migration.md` defines the migration order and gates. Local primary evidence now covers fresh gz-physics, package smoke, runtime isolation, C++ compatibility names, dartpy clean-API enforcement, direct link inspection, and default-on C++ deprecation annotations. Final pushed-head CI/PR evidence remains open.                                                                                                                                      | Open    |
+| Final PR evidence and cleanup must happen in the same PR.                                                                    | `README.md`, `02-milestones.md`, and `docs/dev_tasks/README.md` require transferring final evidence to the PR description and deleting `docs/dev_tasks/native_collision/` only at completion. Durable collision architecture notes have been seeded in onboarding docs, and `07-pr-evidence-transfer.md` stages the PR-template-shaped evidence packet, but PR evidence transfer and folder deletion remain open.                                                        | Open    |
 
 Legend:
 

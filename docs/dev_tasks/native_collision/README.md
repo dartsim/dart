@@ -21,10 +21,10 @@
       cylinder-vs-plane-like-box support for gz's plane-as-large-box path,
       capped large flat box/mesh contact patches for gz max-contact tests, and
       legacy FCL/ODE facade raycast behavior required by gz's ray-intersection
-      feature tests. The current local refresh on `4b155655890` rebuilt a fresh
-      gz-physics checkout, printed the expected DART plugin integration success
-      line, and `readelf` showed the gz DART plugin depends on
-      `libdart-collision-native.so` without any
+      feature tests. The current local refresh on the working tree after
+      `06cd27d0163` rebuilt a fresh gz-physics checkout, printed the expected
+      DART plugin integration success line, and `readelf` showed the gz DART
+      plugin depends on `libdart-collision-native.so` without any
       `libdart-collision-reference-*`, FCL, Bullet, ODE, or libccd runtime
       dependency. Manual workflow-dispatch evidence on `1e1faf6feb1` is
       reference-only and also passed gz-physics CI, but final PR packaging
@@ -39,15 +39,15 @@
 - [x] FCL, Bullet, and ODE are no longer required collision dependencies. A
       core `dart` build, focused native/default C++ tests, and `dartpy` now
       build with all three disabled.
-- [x] Normal pixi configure paths now default FCL, Bullet, ODE, reference
-      correctness tests, and reference benchmarks to `OFF`; comparison jobs
-      opt in with `DART_BUILD_COLLISION_REFERENCE_*_OVERRIDE=ON`.
-- [x] `DART_BUILD_COLLISION_REFERENCE_FCL`,
-      `DART_BUILD_COLLISION_REFERENCE_BULLET`, and
-      `DART_BUILD_COLLISION_REFERENCE_ODE` are reference-component knobs only.
-      Core DART, dartpy, gz-physics runtime integration, and the native-backed
-      `collision-fcl`/`collision-bullet`/`collision-ode` compatibility
-      facades no longer need them.
+- [x] Normal pixi configure paths now default reference correctness tests and
+      reference benchmarks to `OFF`; comparison jobs opt in through the
+      `collision-reference` environment, which enables
+      `DART_BUILD_COLLISION_REFERENCE_TESTS` and
+      `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS`.
+- [x] Per-engine FCL/Bullet/ODE collision build switches are gone from the
+      current build surface. Core DART, dartpy, gz-physics runtime integration,
+      and the native-backed `collision-fcl`/`collision-bullet`/`collision-ode`
+      compatibility facades no longer need backend-shaped build flags.
 - [x] Human-authored user docs no longer describe FCL, Bullet, or ODE as normal
       runtime collision backends. The public overview, numerical-methods,
       constraints, and example docs describe the built-in detector as the
@@ -78,9 +78,10 @@
       detector class, while legacy aliases `DARTCollisionDetector`,
       `FCLCollisionDetector`, `BulletCollisionDetector`, and
       `OdeCollisionDetector` are not exposed.
-- [x] The `collision-reference` environment configures with FCL, Bullet, ODE,
-      reference tests, and reference benchmarks enabled, and the focused
-      `test_reference_backends` target builds and passes.
+- [x] The `collision-reference` environment configures with reference tests and
+      reference benchmarks enabled, derives all FCL, Bullet, and ODE reference
+      components internally, and the focused `test_reference_backends` target
+      builds and passes.
 - [x] C++ reference-engine call sites in tests and benchmarks now use explicit
       `FCLCollisionDetector::createReference()`,
       `BulletCollisionDetector::createReference()`, and
@@ -106,10 +107,10 @@
       facades. A default native-only install/export probe and downstream
       package smoke test that requests `collision-fcl`, `collision-bullet`, and
       `collision-ode` proves those names link the built-in `dart` stack and do
-      not install old collision libraries. The current local refresh on
-      `4b155655890` reran that package smoke and `readelf` showed the smoke
-      executable depends on `libdart-collision-native.so` without any old
-      collision/reference runtime dependency.
+      not install old collision libraries. The current local refresh on the
+      working tree after `06cd27d0163` reran that package smoke and `readelf`
+      showed the smoke executable depends on `libdart-collision-native.so`
+      without any old collision/reference runtime dependency.
 - [x] Installed legacy detector headers for FCL, Bullet, and ODE are now
       compatibility facades over `DartCollisionDetector` in native-only and
       reference-enabled installs. The downstream package/header smokes include
@@ -170,9 +171,11 @@
       minimum this means `pixi run lint`, `pixi run test-all`, and any
       maintainer-selected CI gates whose failures are not covered locally. The
       latest full local `pixi run test-all` pass is tied to the working tree
-      after `ab8ad841b9c`, with default
-      `DART_BUILD_COLLISION_REFERENCE_*` engine options and reference gates
-      `OFF`; final PR-state evidence is still pending.
+      after `06cd27d0163` and passed 6/6 top-level gates. The current clean
+      reference-gate refresh proves normal configure exposes only reference
+      tests/benchmarks, keeps both `OFF` by default, and no longer has
+      per-engine FCL/Bullet/ODE collision build switches. Final PR-state
+      evidence is still pending.
 - [ ] Final evidence transfer and dev-task cleanup are still open.
       `07-pr-evidence-transfer.md` and `PR-DRAFT.md` stage the review packet,
       but this folder must stay until that evidence is moved to the completing
@@ -435,11 +438,10 @@ collision stack.
 
 1. **CI Hardening**
    - Add permanent CI coverage for native-default builds with
-     `DART_BUILD_COLLISION_REFERENCE_FCL=OFF`,
-     `DART_BUILD_COLLISION_REFERENCE_BULLET=OFF`, and
-     `DART_BUILD_COLLISION_REFERENCE_ODE=OFF`; the initial Linux native-only
-     job is now in the working tree with matching local command evidence and
-     still needs GitHub CI evidence.
+     `DART_BUILD_COLLISION_REFERENCE_TESTS=OFF` and
+     `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS=OFF`; the initial Linux
+     native-only job is now in the working tree with matching local command
+     evidence and still needs GitHub CI evidence.
    - Include dartpy import smoke, the `collision-native` label, focused
      default-detector tests, and gz-physics compatibility coverage.
 2. **Reference Test And Benchmark Harness**
@@ -531,8 +533,8 @@ collision stack.
    - The current `bm-collision-check` task runs checked narrowphase, distance,
      raycast, mixed-primitive, mesh-heavy, raycast-batch, and public adapter
      benchmark subsets.
-   - The latest local run recorded in `4b155655890` passed all checked subsets and wrote
-     `.benchmark_results/collision_check_*.json` outputs.
+   - The latest local run recorded in `4b155655890` passed all checked subsets
+     and wrote `.benchmark_results/collision_check_*.json` outputs.
    - CI Linux now has a scheduled/manual `Collision Benchmark Guard` job that
      runs the same broad guard in the `collision-reference` environment and
      uploads benchmark JSON artifacts; run `25887939088` uploaded

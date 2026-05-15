@@ -142,10 +142,8 @@ Success criteria:
 
 Verification:
 
-- CI job definitions explicitly set
-  `DART_BUILD_COLLISION_REFERENCE_FCL=OFF`,
-  `DART_BUILD_COLLISION_REFERENCE_BULLET=OFF`, and
-  `DART_BUILD_COLLISION_REFERENCE_ODE=OFF`.
+- CI job definitions explicitly keep `DART_BUILD_COLLISION_REFERENCE_TESTS=OFF`
+  and `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS=OFF`.
 - The disabled-backend job passes on Linux before old collision dependencies
   are removed from any wider build environment.
 - gz-physics CI passes against the same branch without local downstream
@@ -164,11 +162,14 @@ Current working-tree status: this phase is started. The branch now has
 `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` CMake options, gates focused
 reference-only tests and comparative benchmarks behind them, and has local
 reference-disabled/reference-enabled evidence in `03-evidence-gates.md`.
-Normal pixi configure paths now default FCL, Bullet, ODE, reference tests, and
-reference benchmarks to `OFF`; reference comparison jobs opt in through
-`DART_BUILD_COLLISION_REFERENCE_*_OVERRIDE=ON`. The reference toggles now propagate
-through the main debug, dartpy, install, coverage, ASAN, Windows, and wheel
-configure entry points. Core native-only link and installed package-export
+Normal pixi configure paths now default reference tests and reference
+benchmarks to `OFF`; reference comparison jobs opt in through
+`DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE=ON` and
+`DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE=ON`. There are no public
+per-engine FCL/Bullet/ODE collision build switches in the current build
+surface. The reference toggles now propagate through the main debug, dartpy,
+install, coverage, ASAN, Windows, and wheel configure entry points. Core
+native-only link and installed package-export
 inspection now show no old collision component targets or old collision runtime
 libraries in the native-only install metadata. A fresh native-only runtime
 install probe now also covers the installed shared libraries and dartpy module
@@ -215,18 +216,20 @@ reference or benchmark work.
 
 Current working-tree status: this phase is started, not complete. Normal pixi
 configure paths now request native-only collision by default, wheel CMake
-defaults explicitly disable FCL, Bullet, ODE, and reference harnesses, and a
-native-only install-style build/install produced no old collision libraries or
-old collision component target files. The latest package-export cleanup also
-removes the default `collision-fcl` fallback and the generated
+defaults keep reference harnesses disabled, and a native-only install-style
+build/install produced no old collision libraries or old collision component
+target files. The latest package-export cleanup also removes the default
+`collision-fcl` fallback and the generated
 `collision-bullet`/`collision-ode` compatibility text from native-only
 installed CMake metadata; the install probe now reports only
-`DART_BUILD_COLLISION_REFERENCE_*` variables as `OFF`. A fresh install of the normal
-runtime components has no FCL, Bullet, ODE, or libccd runtime links from
-installed shared libraries or the built dartpy module. Default and wheel Pixi
-dependency metadata now also omit FCL, Bullet, ODE, and the FCL transitive
-packages, while `collision-reference` is the explicit opt-in package
-environment for reference comparisons. A repaired py312 wheel artifact has no
+`DART_BUILD_COLLISION_REFERENCE_TESTS` and
+`DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` as `OFF`. A fresh install of the
+normal runtime components has no FCL, Bullet, ODE, or libccd runtime links
+from installed shared libraries or the built dartpy module. Default and wheel
+Pixi dependency metadata now also omit FCL, Bullet, ODE, and the FCL
+transitive packages, while `collision-reference` is the explicit opt-in
+package environment for reference comparisons. A repaired py312 wheel artifact
+has no
 old collision component headers, old collision component libraries, old
 collision CMake exports, or FCL, Bullet, ODE, or libccd runtime links.
 Remaining work includes CI wheel-matrix evidence and gz-physics compatibility

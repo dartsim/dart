@@ -34,16 +34,15 @@ The current built-in stack already has substantial native infrastructure:
   shapes, meshes with BVH data, SDF distance, raycast, distance, GJK/MPR paths,
   and sphere/capsule cast internals.
 - Reference tests and comparative benchmarks already exist. The working tree
-  isolates them with explicit CMake opt-out options for reference tests and
-  reference benchmarks.
-- Normal pixi configure entry points now default FCL, Bullet, ODE, reference
-  tests, and reference benchmarks to `OFF`; explicit comparison jobs opt in
-  with `DART_BUILD_COLLISION_REFERENCE_*_OVERRIDE=ON`.
+  isolates them with explicit CMake gates for reference tests and reference
+  benchmarks.
+- Normal pixi configure entry points now default reference tests and reference
+  benchmarks to `OFF`; explicit comparison jobs opt in through the
+  `collision-reference` environment.
 - Native-only installed package exports now default to the `dart` component and
   retain legacy `collision-fcl`, `collision-bullet`, and `collision-ode`
   component names only as native-backed interface facades. They no longer
-  advertise old collision runtime libraries; installed metadata retains only
-  `OFF` state variables for the optional reference-engine build options.
+  advertise old collision runtime libraries or old per-engine build options.
 - Default and wheel Pixi dependency metadata now exclude `bullet-cpp`, `fcl`,
   `libode`, and the FCL transitive packages. The explicit
   `collision-reference` environment owns those packages and restores the
@@ -316,7 +315,7 @@ The built-in architecture should make performance visible before optimization:
       scene geometry replacement.
 - [x] Adapter-path benchmarks exist for collision, distance, raycast, and dirty
       worlds.
-- [x] CMake reference test/benchmark opt-out options exist and focused
+- [x] CMake reference test/benchmark opt-in options exist and focused
       reference-off/reference-on validation passes locally.
 - [x] Public factory aliases for `experimental`, `fcl`, `fcl_mesh`, `bullet`,
       and `ode` create the built-in `DartCollisionDetector`.
@@ -332,9 +331,9 @@ The built-in architecture should make performance visible before optimization:
       strings are allowed only as gz-physics compatibility metadata.
 - [x] Debug, dartpy, install, coverage, ASAN, Windows, and wheel configure paths
       carry the reference test/benchmark toggles.
-- [x] Normal pixi configure paths default FCL, Bullet, ODE, reference tests,
-      and reference benchmarks to `OFF`.
-- [x] Explicit `DART_BUILD_COLLISION_REFERENCE_*_OVERRIDE=ON` opt-in restores reference
+- [x] Normal pixi configure paths default reference tests and reference
+      benchmarks to `OFF`.
+- [x] The explicit `collision-reference` environment enables the reference
       component, correctness-test, and benchmark targets.
 - [x] Native-only install-style core build produces `libdart.so` without FCL,
       Bullet, ODE, or libccd runtime links.

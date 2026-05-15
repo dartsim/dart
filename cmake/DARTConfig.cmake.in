@@ -26,10 +26,6 @@ endif()
 
 @PACKAGE_INIT@
 
-set(DART_BUILD_COLLISION_REFERENCE_BULLET "@DART_BUILD_COLLISION_REFERENCE_BULLET@")
-set(DART_BUILD_COLLISION_REFERENCE_FCL "@DART_BUILD_COLLISION_REFERENCE_FCL@")
-set(DART_BUILD_COLLISION_REFERENCE_ODE "@DART_BUILD_COLLISION_REFERENCE_ODE@")
-
 #===============================================================================
 function(@PROJECT_NAME@_traverse_components output_variable)
   set(output_components)

@@ -225,24 +225,6 @@ endif()
 unset(_dart_user_set_build_gui_raylib)
 dart_option(DART_BUILD_GUI_VSG "Build experimental VSG (VulkanSceneGraph) GUI backend" OFF CATEGORY build)
 dart_option(
-  DART_BUILD_COLLISION_REFERENCE_FCL
-  "Enable the optional FCL collision reference component for tests and benchmarks. Core DART, dartpy, gz-physics runtime integration, and compatibility facades do not depend on FCL"
-  OFF
-  CATEGORY build
-)
-dart_option(
-  DART_BUILD_COLLISION_REFERENCE_BULLET
-  "Enable the optional Bullet collision reference component for tests and benchmarks. Core DART, dartpy, gz-physics runtime integration, and compatibility facades do not depend on Bullet"
-  OFF
-  CATEGORY build
-)
-dart_option(
-  DART_BUILD_COLLISION_REFERENCE_ODE
-  "Enable the optional ODE collision reference component for tests and benchmarks. Core DART, dartpy, gz-physics runtime integration, and compatibility facades do not depend on ODE collision"
-  OFF
-  CATEGORY build
-)
-dart_option(
   DART_COLLISION_DEPRECATE_LEGACY_NAMES
   "Emit deprecation warnings for legacy collision detector names that now route to the built-in DART detector"
   ON
@@ -251,15 +233,19 @@ dart_option(
 dart_option(
   DART_BUILD_COLLISION_REFERENCE_TESTS
   "Build collision tests that use FCL, Bullet, or ODE as reference engines"
-  ON
+  OFF
   CATEGORY build
 )
 dart_option(
   DART_BUILD_COLLISION_REFERENCE_BENCHMARKS
   "Build collision benchmarks that compare native collision against FCL, Bullet, or ODE"
-  ON
+  OFF
   CATEGORY build
 )
+set(_dart_build_collision_references OFF)
+if(DART_BUILD_COLLISION_REFERENCE_TESTS OR DART_BUILD_COLLISION_REFERENCE_BENCHMARKS)
+  set(_dart_build_collision_references ON)
+endif()
 dart_option(DART_BUILD_EXAMPLES "Build example targets" ON CATEGORY build)
 dart_option(DART_BUILD_TUTORIALS "Build tutorial targets" ON CATEGORY build)
 dart_option(DART_BUILD_TESTS "Build C++ tests" ON CATEGORY build)

@@ -20,23 +20,24 @@ The downstream-compatible runtime spelling is `dart`, `DartCollisionDetector`,
 `CollisionDetectorType::Dart`, and the default `dart` package component. Direct
 C++ legacy facade objects may still report `"fcl"`, `"bullet"`, or `"ode"` as
 compatibility display strings, but those strings do not select external
-runtime engines. `DART_BUILD_COLLISION_REFERENCE_FCL`,
-`DART_BUILD_COLLISION_REFERENCE_BULLET`, and
-`DART_BUILD_COLLISION_REFERENCE_ODE` are no longer needed by core DART,
-dartpy, gz-physics runtime integration, or the native-backed compatibility
-component facades; they only opt into explicit `collision-reference-*`
-comparison components. They are not compatibility switches for normal core
-libraries, dartpy wheels, package facades, or downstream runtime integration.
+runtime engines. Per-engine FCL/Bullet/ODE collision build switches are gone
+from the current build surface; core DART, dartpy, gz-physics runtime
+integration, and native-backed compatibility component facades do not need
+backend-shaped build flags. Explicit `collision-reference-*` comparison
+components are built only through the reference test/benchmark gates, and those
+gates are not compatibility switches for normal core libraries, dartpy wheels,
+package facades, or downstream runtime integration.
 
 Current status: the DART-side compatibility facade tests cover those display
 strings, FCL/ODE facades preserve gz-required unsupported raycast behavior, a
 fresh local `pixi run -e gazebo test-gz` run passes 65/65 tests through the
 built-in detector, and a current native compatibility package smoke links the
 retained `collision-fcl`, `collision-bullet`, and `collision-ode` components to
-the built-in stack without installed old-engine runtime libraries. The local
-`4b155655890` refresh also checks those built artifacts directly: `readelf`
-shows the gz DART plugin and the native compatibility package smoke executable
-depend on `libdart-collision-native.so` without any
+the built-in stack without installed old-engine runtime libraries. The latest
+local refresh on the working tree after `06cd27d0163` also checks those built
+artifacts directly: `readelf` shows the gz DART plugin and the native
+compatibility package smoke executable depend on `libdart-collision-native.so`
+without any
 `libdart-collision-reference-*`, FCL, Bullet, ODE, or libccd runtime
 dependency. The local `audit-collision-compat-facades` guard now verifies
 that retained factory keys, C++ facades, and package component names route to
@@ -93,8 +94,9 @@ The north-star PR cannot delete retained compatibility facades until these
 checks pass:
 
 1. `pixi run -e gazebo test-gz` passes without downstream patches. This is
-   complete locally from a fresh gz-physics clone on `4b155655890`; manual
-   GitHub gz-physics CI on `1e1faf6feb1` is reference evidence only.
+   complete locally from a fresh gz-physics clone on the working tree after
+   `06cd27d0163`; manual GitHub gz-physics CI on `1e1faf6feb1` is reference
+   evidence only.
 2. A downstream package smoke that requests `collision-fcl`,
    `collision-bullet`, and `collision-ode` links only the built-in `dart` stack.
    This is complete locally with the dev-task native compatibility package

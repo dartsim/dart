@@ -17,11 +17,9 @@ Make native DART collision the default runtime stack
 - Keeps FCL, Bullet, and ODE available only through explicit
   `collision-reference-*` targets and `createReference()` APIs for tests and
   benchmarks.
-- Renames the optional old-engine comparison CMake/Pixi switches to
-  `DART_BUILD_COLLISION_REFERENCE_FCL`,
-  `DART_BUILD_COLLISION_REFERENCE_BULLET`, and
-  `DART_BUILD_COLLISION_REFERENCE_ODE` so the build surface no longer presents
-  FCL/Bullet/ODE as runtime collision backend options.
+- Removes per-engine FCL/Bullet/ODE collision build switches from the current
+  build surface; explicit reference tests and benchmarks are the only public
+  opt-in gates for old-engine comparison components.
 - Adds runtime-isolation, compatibility-facade, wheel/package, downstream, and
   benchmark evidence gates.
 
@@ -34,18 +32,20 @@ Make native DART collision the default runtime stack
 ## Test Plan
 
 - `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
-  passed on the working tree after `ab8ad841b9c` with default
-  `DART_BUILD_COLLISION_REFERENCE_*` engine options and reference gates `OFF`.
+  passed on the working tree after `06cd27d0163`; the current default
+  configure path keeps reference tests and benchmarks `OFF` and exposes no
+  per-engine FCL/Bullet/ODE collision build switches.
 - `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e collision-reference -- ctest --test-dir build/collision-reference/cpp/Release --output-on-failure -R '^test_reference_backends$' -j 5`
-  passed 1/1 after configuring `collision-reference` with FCL, Bullet, ODE,
-  reference tests, and reference benchmarks `ON`.
+  passed 1/1 after configuring `collision-reference` with reference tests and
+  reference benchmarks `ON` and all FCL, Bullet, and ODE reference components
+  enabled internally.
 - `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -e collision-reference bm-collision-check`
   passed before benchmark-evidence commit `4b155655890`.
 - `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -e gazebo test-gz`
-  passed on current downstream evidence head `4b155655890` with
-  FCL/Bullet/ODE/reference knobs `OFF`.
+  passed on the working tree after `06cd27d0163` with reference tests and
+  benchmarks `OFF` and no per-engine FCL/Bullet/ODE collision build switches.
 - Native compatibility package smoke and direct `readelf` link inspection passed
-  on `4b155655890`; gz/plugin package-smoke binaries link
+  on the working tree after `06cd27d0163`; gz/plugin package-smoke binaries link
   `libdart-collision-native.so` without old collision/reference runtime
   dependencies.
 - `pixi run lint`
