@@ -194,7 +194,7 @@ def _cmake_filament_smoke_scene_pairs(cmake_text):
     return tuple(zip(tokens[0::2], tokens[1::2]))
 
 
-def test_filament_scene_all_matches_registered_smoke_tests(run_cpp_example):
+def _filament_sources_cmake_text(run_cpp_example):
     repo_root = Path(run_cpp_example.__file__).resolve().parents[1]
     cmake_path = (
         repo_root
@@ -205,7 +205,35 @@ def test_filament_scene_all_matches_registered_smoke_tests(run_cpp_example):
         / "filament"
         / "filament_sources.cmake"
     )
-    cmake_text = cmake_path.read_text(encoding="utf-8")
+    return cmake_path.read_text(encoding="utf-8")
+
+
+def _cmake_headless_smoke_test_call(cmake_text, first_argument):
+    match = re.search(
+        r"_dart_filament_gui_add_headless_smoke_test\(\s+"
+        + re.escape(first_argument)
+        + r"\s+(.*?)\n\s+\)",
+        cmake_text,
+        re.DOTALL,
+    )
+    assert match is not None
+    return match.group(1)
+
+
+def _cmake_tokens(cmake_text):
+    return re.findall(r"\$\{[^}]+\}|[A-Za-z0-9_-]+", cmake_text)
+
+
+def _cmake_option_value(cmake_text, option):
+    tokens = _cmake_tokens(cmake_text)
+    assert option in tokens
+    index = tokens.index(option)
+    assert index + 1 < len(tokens)
+    return tokens[index + 1]
+
+
+def test_filament_scene_all_matches_registered_smoke_tests(run_cpp_example):
+    cmake_text = _filament_sources_cmake_text(run_cpp_example)
 
     scene_pairs = _cmake_filament_smoke_scene_pairs(cmake_text)
     registered_scenes = tuple(scene for _suffix, scene in scene_pairs)
@@ -219,6 +247,19 @@ def test_filament_scene_all_matches_registered_smoke_tests(run_cpp_example):
 
     assert registered_scenes == run_cpp_example.FILAMENT_ALL_SCENES[1:]
     assert registered_tests == tuple(run_cpp_example.FILAMENT_SMOKE_PATTERN.split("|"))
+
+
+def test_filament_smoke_cmake_registers_analysis_modes(run_cpp_example):
+    cmake_text = _filament_sources_cmake_text(run_cpp_example)
+    default_call = _cmake_headless_smoke_test_call(
+        cmake_text, "EXAMPLE_filament_gui_headless_smoke"
+    )
+    scene_call = _cmake_headless_smoke_test_call(cmake_text, "${_test_name}")
+
+    assert "ANALYZE" in _cmake_tokens(default_call)
+    assert _cmake_option_value(default_call, "ANALYSIS_MODE") == "contrast"
+    assert "ANALYZE" in _cmake_tokens(scene_call)
+    assert _cmake_option_value(scene_call, "ANALYSIS_MODE") == "basic"
 
 
 def test_run_args_with_defaults_uses_g1_scene(run_cpp_example):

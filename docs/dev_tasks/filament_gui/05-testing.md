@@ -431,7 +431,9 @@ Known current result:
   regressions while keeping broad scene coverage less brittle than
   golden-image comparisons. Focused Python unit coverage now imports the
   analyzer directly and checks accepted/rejected synthetic PPMs for basic mode,
-  contrast mode, and the default CLI mode.
+  contrast mode, and the default CLI mode. The example-runner unit coverage
+  also checks that the generated scene-smoke CMake registration stays wired to
+  `ANALYZE` plus `ANALYSIS_MODE basic`.
 - The same smoke fixture renders Filament line primitives from
   `dart-gui-experimental` grid, world/body frame, center-of-mass, contact,
   inertia-box, normal-arrow, and force-arrow descriptors. The debug-line

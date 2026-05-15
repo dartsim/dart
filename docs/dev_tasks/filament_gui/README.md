@@ -461,7 +461,8 @@
   samples the shadowed fixture region for dark, mid-tone, and bright pixels plus
   a minimum luminance spread. The generated scene-specific smokes also run the
   analyzer in a basic mode that scans each full PPM for nonzero pixels. Focused
-  Python unit coverage checks those analyzer modes against synthetic PPMs.
+  Python unit coverage checks those analyzer modes against synthetic PPMs, and
+  the example-runner tests guard the matching CMake analysis-mode registration.
 - Filament is the preferred renderer candidate for the next experiment because
   it provides modern real-time rendering features while keeping DART's built-in
   visualization scope maintainable.
