@@ -39,9 +39,29 @@
 
 namespace dart::gui::experimental::filament {
 
+using dart::gui::experimental::DebugDrawOptions;
 using dart::gui::experimental::RenderableDescriptor;
 using dart::gui::experimental::RenderableId;
+using dart::gui::experimental::extractContactDebugLines;
+using dart::gui::experimental::extractDebugLines;
 using dart::gui::experimental::makeSelectionDebugLines;
+
+DebugOverlayController makeDebugOverlayController(bool drawSupportPolygons)
+{
+  DebugOverlayController controller;
+  controller.staticOptions.drawBodyFrames = true;
+  controller.staticOptions.drawCentersOfMass = true;
+  controller.staticOptions.drawInertiaBoxes = false;
+  controller.staticOptions.drawCollisionShapeBounds = false;
+  controller.staticOptions.drawSupportPolygons = drawSupportPolygons;
+  controller.staticOptions.drawContacts = false;
+
+  controller.contactOptions.drawGrid = false;
+  controller.contactOptions.drawWorldFrame = false;
+  controller.contactOptions.drawBodyFrames = false;
+  controller.contactOptions.drawCentersOfMass = false;
+  return controller;
+}
 
 void clearDebugLineOverlay(
     ::filament::Engine& engine,
@@ -57,6 +77,15 @@ void clearDebugLineOverlay(
   overlay.reset();
 }
 
+void clearDebugOverlays(
+    ::filament::Engine& engine,
+    ::filament::Scene& scene,
+    DebugOverlayController& controller)
+{
+  clearDebugLineOverlay(engine, scene, controller.staticOverlay);
+  clearDebugLineOverlay(engine, scene, controller.contactOverlay);
+}
+
 void refreshDebugLineOverlay(
     ::filament::Engine& engine,
     ::filament::Scene& scene,
@@ -70,6 +99,36 @@ void refreshDebugLineOverlay(
   if (overlay) {
     addRenderableToScene(scene, *overlay);
   }
+}
+
+void refreshStaticDebugOverlay(
+    ::filament::Engine& engine,
+    ::filament::Scene& scene,
+    ::filament::Material& material,
+    const dart::simulation::World& world,
+    DebugOverlayController& controller)
+{
+  refreshDebugLineOverlay(
+      engine,
+      scene,
+      material,
+      extractDebugLines(world, controller.staticOptions),
+      controller.staticOverlay);
+}
+
+void refreshContactDebugOverlay(
+    ::filament::Engine& engine,
+    ::filament::Scene& scene,
+    ::filament::Material& material,
+    const dart::collision::CollisionResult& result,
+    DebugOverlayController& controller)
+{
+  refreshDebugLineOverlay(
+      engine,
+      scene,
+      material,
+      extractContactDebugLines(result, controller.contactOptions),
+      controller.contactOverlay);
 }
 
 void refreshSelectionDebugLineOverlay(

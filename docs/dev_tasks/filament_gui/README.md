@@ -167,11 +167,9 @@
   logging, scene entity attachment, and per-frame renderable
   transform/selection/shadow update helpers now live in
   `dart/gui/experimental/detail/filament/renderable_sync.hpp` and `.cpp`.
-- The Filament debug-line overlay refresh, cleanup, and selected-renderable
-  overlay lookup helpers now live in
-  `dart/gui/experimental/detail/filament/debug_overlay.hpp` and `.cpp`, leaving
-  the application loop responsible only for choosing which non-selection debug
-  descriptors to request.
+- The Filament debug-line overlay option defaults, static/contact
+  refresh/cleanup state, and selected-renderable overlay lookup helpers now
+  live in `dart/gui/experimental/detail/filament/debug_overlay.hpp` and `.cpp`.
 - The Filament example's scene option parsing and reusable DART world fixtures
   now live in `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp`;
 - The Filament example's scene content requirement counting and MVP/G1/drag

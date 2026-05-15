@@ -107,7 +107,6 @@ using dart::dynamics::WeldJoint;
 using dart::dynamics::VoxelGridShape;
 #endif
 
-using dart::gui::experimental::DebugDrawOptions;
 using dart::gui::experimental::OrbitCamera;
 using dart::gui::experimental::OrbitCameraController;
 using dart::gui::experimental::ProfileAccumulator;
@@ -117,8 +116,6 @@ using dart::gui::experimental::RunOptions;
 using dart::gui::experimental::ShapeKind;
 using dart::gui::experimental::ViewerLifecycleState;
 using dart::gui::experimental::elapsedMs;
-using dart::gui::experimental::extractContactDebugLines;
-using dart::gui::experimental::extractDebugLines;
 using dart::gui::experimental::extractRenderables;
 using dart::gui::experimental::markSimulationAdvanced;
 using dart::gui::experimental::makeRenderableId;
@@ -141,6 +138,7 @@ using dart::gui::experimental::filament::addRenderableToScene;
 using dart::gui::experimental::filament::accumulateSceneContent;
 using dart::gui::experimental::filament::attachSceneEnvironment;
 using dart::gui::experimental::filament::clearDebugLineOverlay;
+using dart::gui::experimental::filament::clearDebugOverlays;
 using dart::gui::experimental::filament::clearMainViewColorGrading;
 using dart::gui::experimental::filament::configureMainView;
 using dart::gui::experimental::filament::configureViewportCamera;
@@ -153,6 +151,7 @@ using dart::gui::experimental::filament::createNeutralSkybox;
 using dart::gui::experimental::filament::createMaterialResources;
 using dart::gui::experimental::filament::createRenderableFromDescriptor;
 using dart::gui::experimental::filament::createSceneLights;
+using dart::gui::experimental::filament::DebugOverlayController;
 using dart::gui::experimental::filament::destroyMaterialResources;
 using dart::gui::experimental::filament::destroyRenderable;
 using dart::gui::experimental::filament::destroyRenderEnvironmentResources;
@@ -164,11 +163,13 @@ using dart::gui::experimental::filament::finalizeScreenshotCapture;
 using dart::gui::experimental::filament::getNativeWindow;
 using dart::gui::experimental::filament::handleScroll;
 using dart::gui::experimental::filament::isInsideStatusPanel;
+using dart::gui::experimental::filament::makeDebugOverlayController;
 using dart::gui::experimental::filament::pollApplicationInput;
 using dart::gui::experimental::filament::renderBuiltInStatusPanel;
 using dart::gui::experimental::filament::renderApplicationFrame;
-using dart::gui::experimental::filament::refreshDebugLineOverlay;
+using dart::gui::experimental::filament::refreshContactDebugOverlay;
 using dart::gui::experimental::filament::refreshSelectionDebugLineOverlay;
+using dart::gui::experimental::filament::refreshStaticDebugOverlay;
 using dart::gui::experimental::filament::logUnsupportedRenderableDescriptorOnce;
 using dart::gui::experimental::filament::removeRenderableFromScene;
 using dart::gui::experimental::filament::setRenderableTransform;
@@ -289,44 +290,14 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
     return 1;
   }
 
-  DebugDrawOptions staticDebugOptions;
-  staticDebugOptions.drawBodyFrames = true;
-  staticDebugOptions.drawCentersOfMass = true;
-  staticDebugOptions.drawInertiaBoxes = false;
-  staticDebugOptions.drawCollisionShapeBounds = false;
-  staticDebugOptions.drawSupportPolygons
-      = appOptions.scene == ExampleScene::G1;
-  staticDebugOptions.drawContacts = false;
-  std::optional<Renderable> debugOverlay;
-  auto refreshDebugOverlay = [&]() {
-    refreshDebugLineOverlay(
-        *engine,
-        *scene,
-        materials.debugColor,
-        extractDebugLines(*dartScene.world, staticDebugOptions),
-        debugOverlay);
-  };
-  refreshDebugOverlay();
-  if (!debugOverlay) {
+  DebugOverlayController debugOverlays
+      = makeDebugOverlayController(appOptions.scene == ExampleScene::G1);
+  refreshStaticDebugOverlay(
+      *engine, *scene, materials.debugColor, *dartScene.world, debugOverlays);
+  if (!debugOverlays.staticOverlay) {
     std::cerr << "No debug overlay lines were extracted\n";
     return 1;
   }
-
-  DebugDrawOptions contactDebugOptions;
-  contactDebugOptions.drawGrid = false;
-  contactDebugOptions.drawWorldFrame = false;
-  contactDebugOptions.drawBodyFrames = false;
-  contactDebugOptions.drawCentersOfMass = false;
-  std::optional<Renderable> contactDebugOverlay;
-  auto refreshContactDebugOverlay = [&]() {
-    refreshDebugLineOverlay(
-        *engine,
-        *scene,
-        materials.debugColor,
-        extractContactDebugLines(
-            dartScene.world->getLastCollisionResult(), contactDebugOptions),
-        contactDebugOverlay);
-  };
 
   std::optional<Renderable> selectionDebugOverlay;
 
@@ -394,7 +365,12 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
       profile.simulationMs += elapsedMs(phaseStart);
 
       phaseStart = ProfileAccumulator::Clock::now();
-      refreshContactDebugOverlay();
+      refreshContactDebugOverlay(
+          *engine,
+          *scene,
+          materials.debugColor,
+          dartScene.world->getLastCollisionResult(),
+          debugOverlays);
       profile.contactDebugMs += elapsedMs(phaseStart);
     }
 
@@ -470,13 +446,23 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
           selectionController.selectedLabel(),
           !dartScene.ikHandles.empty(),
           orbitLight,
-          staticDebugOptions,
-          contactDebugOptions,
+          debugOverlays.staticOptions,
+          debugOverlays.contactOptions,
           lifecycle,
           guiScale);
       if (debugOptionsChanged) {
-        refreshDebugOverlay();
-        refreshContactDebugOverlay();
+        refreshStaticDebugOverlay(
+            *engine,
+            *scene,
+            materials.debugColor,
+            *dartScene.world,
+            debugOverlays);
+        refreshContactDebugOverlay(
+            *engine,
+            *scene,
+            materials.debugColor,
+            dartScene.world->getLastCollisionResult(),
+            debugOverlays);
       }
       ImGui::Render();
       updateImGuiOverlay(
@@ -529,8 +515,7 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
   for (const SceneRenderable& sceneRenderable : sceneRenderables) {
     removeRenderableFromScene(*scene, sceneRenderable.renderable);
   }
-  clearDebugLineOverlay(*engine, *scene, debugOverlay);
-  clearDebugLineOverlay(*engine, *scene, contactDebugOverlay);
+  clearDebugOverlays(*engine, *scene, debugOverlays);
   clearDebugLineOverlay(*engine, *scene, selectionDebugOverlay);
   destroySceneLights(*engine, lights);
   destroyRenderEnvironmentResources(

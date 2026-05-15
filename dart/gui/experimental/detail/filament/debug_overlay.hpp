@@ -47,10 +47,25 @@ class Scene;
 
 namespace dart::gui::experimental::filament {
 
+struct DebugOverlayController
+{
+  dart::gui::experimental::DebugDrawOptions staticOptions;
+  dart::gui::experimental::DebugDrawOptions contactOptions;
+  std::optional<Renderable> staticOverlay;
+  std::optional<Renderable> contactOverlay;
+};
+
+DebugOverlayController makeDebugOverlayController(bool drawSupportPolygons);
+
 void clearDebugLineOverlay(
     ::filament::Engine& engine,
     ::filament::Scene& scene,
     std::optional<Renderable>& overlay);
+
+void clearDebugOverlays(
+    ::filament::Engine& engine,
+    ::filament::Scene& scene,
+    DebugOverlayController& controller);
 
 void refreshDebugLineOverlay(
     ::filament::Engine& engine,
@@ -58,6 +73,20 @@ void refreshDebugLineOverlay(
     ::filament::Material& material,
     const std::vector<dart::gui::experimental::DebugLineDescriptor>& lines,
     std::optional<Renderable>& overlay);
+
+void refreshStaticDebugOverlay(
+    ::filament::Engine& engine,
+    ::filament::Scene& scene,
+    ::filament::Material& material,
+    const dart::simulation::World& world,
+    DebugOverlayController& controller);
+
+void refreshContactDebugOverlay(
+    ::filament::Engine& engine,
+    ::filament::Scene& scene,
+    ::filament::Material& material,
+    const dart::collision::CollisionResult& result,
+    DebugOverlayController& controller);
 
 void refreshSelectionDebugLineOverlay(
     ::filament::Engine& engine,
