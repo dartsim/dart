@@ -15,8 +15,9 @@
   pauses/resumes, `n` steps once while paused, a left click without dragging
   selects a renderable, arrow/PageUp/PageDown keys nudge selected free-joint
   bodies, `SimpleFrame` visuals, and robot IK targets, Ctrl-left drag moves the
-  selected item in a camera-facing plane, Escape exits, and `--frames` limits
-  rendered frame count. Use
+  selected item in a camera-facing plane, Ctrl-X/Y/Z-left drag constrains
+  selected-item motion to the matching world axis, Escape exits, and `--frames`
+  limits rendered frame count. Use
   `--screenshot <path>` to write a binary PPM capture, and `--headless` to use
   Filament's headless swap-chain path without creating a GLFW window. Use
   `--hide-ui` or `--show-ui` to control the status panel in captures,

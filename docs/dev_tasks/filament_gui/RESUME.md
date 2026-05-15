@@ -72,8 +72,9 @@ frame-renderable translation helpers are covered by C++ and Python tests, and
 the example uses the combined helper for keyboard nudging of selected dynamic
 bodies and `SimpleFrame` visuals. Backend-hidden plane intersection,
 plane-drag translation, and axis-drag translation helpers are also covered by
-C++ and Python tests, and the example uses the plane helpers for Ctrl-left
-camera-plane dragging of selected dynamic bodies and `SimpleFrame` visuals.
+C++ and Python tests; the example uses the plane helpers for Ctrl-left
+camera-plane dragging and the axis helpers for Ctrl-X/Y/Z-left constrained
+dragging of selected dynamic bodies and `SimpleFrame` visuals.
 Backend-hidden
 run-option normalization, viewer lifecycle state, viewer profiling
 accumulation, and orbit-camera helpers now live in `dart-gui-experimental`;
@@ -167,7 +168,8 @@ selection-debug overlay refresh, and orbiting-light updates live in
 Ordered teardown of private Filament application resources lives in
 `dart/gui/experimental/detail/filament/application_teardown.hpp` and `.cpp`.
 Selection label formatting, robot IK-target translation glue, keyboard nudging,
-click selection, and Ctrl-left drag event translation live in
+click selection, Ctrl-left camera-plane drag event translation, and
+Ctrl-X/Y/Z-left axis-constrained drag dispatch live in
 `dart/gui/experimental/detail/filament/selection.hpp` and `.cpp`; reusable
 selection math stays in `dart-gui-experimental`.
 Filament material bundle creation, seed texture resources, renderable state,

@@ -147,8 +147,9 @@
   `SimpleFrame` visuals in the Filament example, with C++/Python coverage for
   the shared math.
 - Backend-hidden axis-drag translation helpers are also covered by C++/Python
-  tests, giving future constrained manipulators a renderer-independent math
-  primitive without exposing Filament input types.
+  tests and are wired into Ctrl-X/Y/Z-left dragging in the Filament example,
+  giving constrained manipulators a renderer-independent math primitive without
+  exposing Filament input types.
 - The Filament example includes a selectable `--scene hello-world` fixture that
   extracts and renders the legacy hello-world example's single dynamic box and
   ground plane through the same descriptor-driven Filament path.

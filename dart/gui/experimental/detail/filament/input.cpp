@@ -177,6 +177,21 @@ bool isDragModifierDown(GLFWwindow* window)
          || isKeyDown(window, GLFW_KEY_RIGHT_CONTROL);
 }
 
+std::optional<Eigen::Vector3d> selectedDragAxisFromKeyboard(GLFWwindow* window)
+{
+  if (isKeyDown(window, GLFW_KEY_X)) {
+    return Eigen::Vector3d::UnitX();
+  }
+  if (isKeyDown(window, GLFW_KEY_Y)) {
+    return Eigen::Vector3d::UnitY();
+  }
+  if (isKeyDown(window, GLFW_KEY_Z)) {
+    return Eigen::Vector3d::UnitZ();
+  }
+
+  return std::nullopt;
+}
+
 Eigen::Vector3d selectedNudgeFromKeyboard(
     GLFWwindow* window,
     const dart::gui::experimental::OrbitCamera& camera,

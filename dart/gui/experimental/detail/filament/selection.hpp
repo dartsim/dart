@@ -101,8 +101,10 @@ private:
   double mLeftMousePressX = 0.0;
   double mLeftMousePressY = 0.0;
   dart::gui::experimental::PickRay mSelectedDragLastRay;
+  bool mSelectedDragIsAxisConstrained = false;
   Eigen::Vector3d mSelectedDragPlanePoint = Eigen::Vector3d::Zero();
   Eigen::Vector3d mSelectedDragPlaneNormal = Eigen::Vector3d::UnitX();
+  Eigen::Vector3d mSelectedDragAxisDirection = Eigen::Vector3d::UnitX();
   dart::gui::experimental::RenderableId mSelectedRenderableId = 0;
   std::string mSelectedLabel = "none";
 };

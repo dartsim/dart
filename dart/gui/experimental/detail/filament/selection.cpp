@@ -52,6 +52,7 @@ using dart::gui::experimental::PickRay;
 using dart::gui::experimental::RenderableDescriptor;
 using dart::gui::experimental::RenderableId;
 using dart::gui::experimental::ViewerLifecycleState;
+using dart::gui::experimental::computeAxisDragTranslation;
 using dart::gui::experimental::computePlaneDragTranslation;
 using dart::gui::experimental::extractRenderables;
 using dart::gui::experimental::intersectPlane;
@@ -215,6 +216,7 @@ void SelectionController::updateMouseSelection(
     mLeftMousePressX = cursorX;
     mLeftMousePressY = cursorY;
     mLeftMouseStartedDrag = false;
+    mSelectedDragIsAxisConstrained = false;
     mLeftMouseStartedOnPanel
         = showUi && isInsideStatusPanel(cursorX, cursorY, guiScale);
 
@@ -229,7 +231,16 @@ void SelectionController::updateMouseSelection(
         const Eigen::Vector3d planePoint
             = selectedDescriptor->worldTransform.translation();
         const Eigen::Vector3d planeNormal = basis.forward;
-        if (intersectPlane(ray, planePoint, planeNormal)) {
+        if (const auto axis = selectedDragAxisFromKeyboard(window)) {
+          if (computeAxisDragTranslation(ray, ray, planePoint, *axis)) {
+            mLeftMouseStartedDrag = true;
+            mSelectedDragIsAxisConstrained = true;
+            mSelectedDragLastRay = ray;
+            mSelectedDragPlanePoint = planePoint;
+            mSelectedDragAxisDirection = *axis;
+            lifecycle.paused = true;
+          }
+        } else if (intersectPlane(ray, planePoint, planeNormal)) {
           mLeftMouseStartedDrag = true;
           mSelectedDragLastRay = ray;
           mSelectedDragPlanePoint = planePoint;
@@ -243,11 +254,18 @@ void SelectionController::updateMouseSelection(
   if (isLeftMousePressed && mLeftMouseStartedDrag) {
     const PickRay ray = makePerspectivePickRay(
         camera, cursorX, cursorY, framebufferWidth, framebufferHeight);
-    const auto translation = computePlaneDragTranslation(
-        mSelectedDragLastRay,
-        ray,
-        mSelectedDragPlanePoint,
-        mSelectedDragPlaneNormal);
+    const auto translation
+        = mSelectedDragIsAxisConstrained
+              ? computeAxisDragTranslation(
+                    mSelectedDragLastRay,
+                    ray,
+                    mSelectedDragPlanePoint,
+                    mSelectedDragAxisDirection)
+              : computePlaneDragTranslation(
+                    mSelectedDragLastRay,
+                    ray,
+                    mSelectedDragPlanePoint,
+                    mSelectedDragPlaneNormal);
     if (translation && translation->squaredNorm() > 1e-12) {
       const RenderableDescriptor* selectedDescriptor
           = findRenderableDescriptor(descriptors, mSelectedRenderableId);

@@ -453,7 +453,8 @@ Known current result:
 - Renderer-independent plane intersection, plane-drag translation, and
   axis-drag translation are unit-tested in C++ and Python. The Filament example
   wires the plane path into Ctrl-left camera-plane dragging for selected dynamic
-  bodies and `SimpleFrame` visuals.
+  bodies and `SimpleFrame` visuals, and wires the axis path into
+  Ctrl-X/Y/Z-left constrained dragging.
 - `UNIT_gui_FilamentSceneExtraction` also covers run-option normalization,
   viewer lifecycle state, bounded screenshot/frame gates, RGBA-to-PPM
   screenshot storage, orbit-camera basis/update behavior, and perspective

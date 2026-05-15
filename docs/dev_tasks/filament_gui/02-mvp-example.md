@@ -106,8 +106,9 @@ Implemented:
   helper for keyboard nudging of selected dynamic bodies and `SimpleFrame`
   visuals, covering the core data path needed by drag-and-drop style workflows.
 - Backend-hidden plane intersection, plane-drag translation, and axis-drag
-  translation helpers, with C++ and Python tests, and example Ctrl-left
-  dragging for selected dynamic bodies in a camera-facing plane.
+  translation helpers, with C++ and Python tests. The example uses Ctrl-left
+  dragging for selected dynamic bodies in a camera-facing plane and
+  Ctrl-X/Y/Z-left dragging for world-axis constrained motion.
 - A selectable `--scene drag-and-drop` fixture that recreates the legacy
   drag-and-drop example's `SimpleFrame` anchor, child frame, and axis markers
   through the same backend-hidden extraction and frame-translation path.
@@ -210,6 +211,8 @@ Avoid file loading in the first pass unless needed to prove mesh import.
 - Left click without dragging: select the nearest visible renderable under the
   cursor
 - Ctrl-left drag: move the selected free-joint body in a camera-facing plane
+- Ctrl-X/Y/Z-left drag: move the selected free-joint body along the matching
+  world axis
 - Escape or window close: exit
 - `--frames <n>`: render a bounded number of frames and exit
 - `--width <n>` / `--height <n>`: configure viewport size

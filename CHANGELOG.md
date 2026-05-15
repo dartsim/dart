@@ -157,8 +157,8 @@
     also live in a dedicated `dart/gui/experimental/viewer.hpp` runtime helper
     and are consumed by the Filament example through `dart-gui-experimental`.
     Axis-constrained drag translation now also lives in the backend-hidden
-    interaction helpers with C++ and Python coverage for future constrained
-    manipulators.
+    interaction helpers with C++ and Python coverage, and the Filament example
+    uses it for Ctrl-X/Y/Z-left constrained selection dragging.
     The backend-hidden implementation is now split by responsibility across
     `viewer.cpp`, `debug.cpp`, `geometry.cpp`, `interaction.cpp`,
     `shape_descriptions.cpp`, and `profile.cpp`, with focused experimental
