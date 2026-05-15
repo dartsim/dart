@@ -153,6 +153,10 @@ built-in panel policy remains MVP/example-scoped.
 Per-frame UI input sync, built-in status panel dispatch, debug-overlay
 refreshes caused by panel toggles, and ImGui overlay upload live in
 `dart/gui/experimental/detail/filament/ui_frame.hpp` and `.cpp`.
+Per-frame simulation stepping, renderable descriptor extraction, scene
+synchronization, selected-renderable keyboard/mouse interaction updates,
+selection-debug overlay refresh, and orbiting-light updates live in
+`dart/gui/experimental/detail/filament/scene_frame.hpp` and `.cpp`.
 Ordered teardown of private Filament application resources lives in
 `dart/gui/experimental/detail/filament/application_teardown.hpp` and `.cpp`.
 Selection label formatting, G1 IK-target translation glue, keyboard nudging,

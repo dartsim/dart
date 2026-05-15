@@ -64,6 +64,10 @@ recommended maintainability slices:
 - `dart/gui/experimental/detail/filament/scene_startup.hpp` and `.cpp` own
   initial scene extraction, startup validation, first renderable
   synchronization, and startup debug-overlay validation.
+- `dart/gui/experimental/detail/filament/scene_frame.hpp` and `.cpp` own
+  per-frame simulation stepping, descriptor extraction, scene synchronization,
+  selected-renderable interaction updates, selection-debug refresh, and
+  orbiting-light updates.
 - `dart/gui/experimental/detail/filament/simulation_stepper.hpp` and `.cpp` own
   the bounded realtime simulation step-count accumulator, world-step
   application, lifecycle marking, and simulation profile accounting.
