@@ -244,32 +244,7 @@ set(dartpy_gui_experimental_sources
   gui/experimental.cpp
 )
 
-set(dartpy_gui_legacy_headers
-  gui/gui.hpp
-  gui/utils.hpp
-  gui/support_polygon_visual.hpp
-)
-
-set(dartpy_gui_legacy_sources
-  gui/gui_event_handler.cpp
-  gui/world_node.cpp
-  gui/interactive_frame.cpp
-  gui/viewer_attachment.cpp
-  gui/support_polygon_visual.cpp
-  gui/drag_and_drop.cpp
-  gui/shadow_technique.cpp
-  gui/viewer.cpp
-  gui/imgui.cpp
-)
-
-set(_dartpy_has_legacy_gui FALSE)
 set(_dartpy_has_experimental_gui FALSE)
-
-if(DART_BUILD_GUI)
-  list(APPEND dartpy_headers ${dartpy_gui_legacy_headers})
-  list(APPEND dartpy_sources ${dartpy_gui_legacy_sources})
-  set(_dartpy_has_legacy_gui TRUE)
-endif()
 
 if(TARGET dart-gui-experimental)
   list(APPEND dartpy_headers ${dartpy_gui_experimental_headers})
@@ -277,7 +252,7 @@ if(TARGET dart-gui-experimental)
   set(_dartpy_has_experimental_gui TRUE)
 endif()
 
-if(_dartpy_has_legacy_gui OR _dartpy_has_experimental_gui)
+if(_dartpy_has_experimental_gui)
   list(APPEND dartpy_headers ${dartpy_gui_module_headers})
   list(APPEND dartpy_sources ${dartpy_gui_module_sources})
 endif()

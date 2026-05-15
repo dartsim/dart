@@ -64,14 +64,17 @@ struct SceneLights
 
 ::filament::ColorGrading* createDebugColorGrading(::filament::Engine& engine);
 
-::filament::IndirectLight* createNeutralIndirectLight(::filament::Engine& engine);
+::filament::IndirectLight* createNeutralIndirectLight(
+    ::filament::Engine& engine);
 
 ::filament::Skybox* createNeutralSkybox(::filament::Engine& engine);
 
 void configureWindowedViewQuality(::filament::View& view);
 
 void configureMainView(
-    ::filament::View& view, ::filament::ColorGrading* colorGrading, bool headless);
+    ::filament::View& view,
+    ::filament::ColorGrading* colorGrading,
+    bool headless);
 
 void clearMainViewColorGrading(::filament::View& view);
 
@@ -94,7 +97,8 @@ void attachSceneEnvironment(
     ::filament::Skybox* skybox,
     const SceneLights& lights);
 
-void detachSceneEnvironment(::filament::Scene& scene, const SceneLights& lights);
+void detachSceneEnvironment(
+    ::filament::Scene& scene, const SceneLights& lights);
 
 void destroySceneLights(::filament::Engine& engine, const SceneLights& lights);
 

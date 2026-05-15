@@ -112,7 +112,7 @@ core_modules = [
 
 # Optional submodules (may not be available on all platforms)
 optional_modules = [
-    'gui',  # May not be available if OSG is disabled
+    'gui',  # Requires the Filament-backed GUI build
 ]
 
 print('Testing core submodules:')

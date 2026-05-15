@@ -34,6 +34,7 @@
 
 #include <dart/gui/experimental/geometry.hpp>
 
+#include <Eigen/Core>
 #include <backend/BufferDescriptor.h>
 #include <filament/Engine.h>
 #include <filament/IndexBuffer.h>
@@ -42,26 +43,31 @@
 #include <geometry/SurfaceOrientation.h>
 #include <utils/EntityManager.h>
 
-#include <Eigen/Core>
-
 #include <algorithm>
 #include <array>
 #include <iostream>
 #include <limits>
 #include <memory>
 #include <optional>
+#include <utility>
 #include <vector>
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
-#include <cstddef>
-#include <utility>
 
 namespace dart::gui::experimental::filament {
 
+using dart::gui::experimental::appendBoxMeshGeometry;
 using dart::gui::experimental::DebugLineDescriptor;
 using dart::gui::experimental::GeometryDescriptor;
+using dart::gui::experimental::makeCapsuleMeshGeometry;
+using dart::gui::experimental::makeConeMeshGeometry;
+using dart::gui::experimental::makeCylinderMeshGeometry;
+using dart::gui::experimental::makeEllipsoidMeshGeometry;
+using dart::gui::experimental::makeMultiSphereMeshGeometry;
+using dart::gui::experimental::makePyramidMeshGeometry;
 using dart::gui::experimental::MeshAlphaMode;
 using dart::gui::experimental::MeshGeometry;
 using dart::gui::experimental::MeshIndexRange;
@@ -69,13 +75,6 @@ using dart::gui::experimental::MeshMaterialDescriptor;
 using dart::gui::experimental::MeshPartDescriptor;
 using dart::gui::experimental::RenderableDescriptor;
 using dart::gui::experimental::ShapeKind;
-using dart::gui::experimental::appendBoxMeshGeometry;
-using dart::gui::experimental::makeCapsuleMeshGeometry;
-using dart::gui::experimental::makeConeMeshGeometry;
-using dart::gui::experimental::makeCylinderMeshGeometry;
-using dart::gui::experimental::makeEllipsoidMeshGeometry;
-using dart::gui::experimental::makeMultiSphereMeshGeometry;
-using dart::gui::experimental::makePyramidMeshGeometry;
 using ::filament::math::float2;
 using ::filament::math::float3;
 using ::filament::math::float4;
@@ -111,7 +110,8 @@ template <typename T, std::size_t Size>
 }
 
 template <typename T>
-::filament::backend::BufferDescriptor makeBufferDescriptor(std::vector<T>&& data)
+::filament::backend::BufferDescriptor makeBufferDescriptor(
+    std::vector<T>&& data)
 {
   auto* owned = new std::vector<T>(std::move(data));
   return ::filament::backend::BufferDescriptor(
@@ -152,8 +152,8 @@ float4 toFloat4(const Eigen::Vector4d& vector)
 
 float3 normalizeOr(const float3& vector, const float3& fallback)
 {
-  const float lengthSquared = vector.x * vector.x + vector.y * vector.y
-                              + vector.z * vector.z;
+  const float lengthSquared
+      = vector.x * vector.x + vector.y * vector.y + vector.z * vector.z;
   if (lengthSquared <= 1e-12f) {
     return fallback;
   }
@@ -175,9 +175,10 @@ float3 crossProduct(const float3& lhs, const float3& rhs)
 
 bool hasUsableTextureCoordinates(const std::vector<Vertex>& vertices)
 {
-  return std::any_of(vertices.begin(), vertices.end(), [](const Vertex& vertex) {
-    return std::abs(vertex.uv.x) > 1e-7f || std::abs(vertex.uv.y) > 1e-7f;
-  });
+  return std::any_of(
+      vertices.begin(), vertices.end(), [](const Vertex& vertex) {
+        return std::abs(vertex.uv.x) > 1e-7f || std::abs(vertex.uv.y) > 1e-7f;
+      });
 }
 
 void generateTangentFrames(
@@ -254,12 +255,15 @@ float4 ensureReadableDisplayColor(const float4& color)
   }
 
   constexpr float3 kNeutralMeshColor{0.46f, 0.48f, 0.52f};
-  const float blend
-      = std::clamp((kMinLuminance - currentLuminance) / kMinLuminance, 0.0f, 1.0f);
+  const float blend = std::clamp(
+      (kMinLuminance - currentLuminance) / kMinLuminance, 0.0f, 1.0f);
   return {
-      std::clamp(color.x * (1.0f - blend) + kNeutralMeshColor.x * blend, 0.0f, 1.0f),
-      std::clamp(color.y * (1.0f - blend) + kNeutralMeshColor.y * blend, 0.0f, 1.0f),
-      std::clamp(color.z * (1.0f - blend) + kNeutralMeshColor.z * blend, 0.0f, 1.0f),
+      std::clamp(
+          color.x * (1.0f - blend) + kNeutralMeshColor.x * blend, 0.0f, 1.0f),
+      std::clamp(
+          color.y * (1.0f - blend) + kNeutralMeshColor.y * blend, 0.0f, 1.0f),
+      std::clamp(
+          color.z * (1.0f - blend) + kNeutralMeshColor.z * blend, 0.0f, 1.0f),
       color.w};
 }
 
@@ -372,11 +376,7 @@ Renderable createBoxRenderable(
   auto* materialInstance
       = addRenderableMaterial(renderable, material, color, true);
   configureLitMaterialInstance(
-      *materialInstance,
-      color,
-      0.0f,
-      0.55f,
-      float3{0.0f, 0.0f, 0.0f});
+      *materialInstance, color, 0.0f, 0.55f, float3{0.0f, 0.0f, 0.0f});
 
   renderable.entity = EntityManager::get().create();
   ::filament::RenderableManager::Builder(1)
@@ -475,15 +475,14 @@ TriangleMeshBuffers makeTriangleMeshBuffers(MeshGeometry&& geometry)
     buffers.triangles.push_back({triangle.a, triangle.b, triangle.c});
   }
 
-  buffers.bounds = {
-      toFloat3f(geometry.boundsMin), toFloat3f(geometry.boundsMax)};
+  buffers.bounds
+      = {toFloat3f(geometry.boundsMin), toFloat3f(geometry.boundsMax)};
   return buffers;
 }
 
 std::uint8_t toByte(double channel)
 {
-  return static_cast<std::uint8_t>(
-      std::clamp(channel, 0.0, 1.0) * 255.0 + 0.5);
+  return static_cast<std::uint8_t>(std::clamp(channel, 0.0, 1.0) * 255.0 + 0.5);
 }
 
 std::uint32_t packColor(const Eigen::Vector4d& rgba)
@@ -900,9 +899,8 @@ std::optional<Renderable> createPointCloudRenderable(
 
   auto buffers = makeTriangleMeshBuffers(std::move(geometry));
   const Bounds bounds = buffers.bounds;
-  const bool usePerPointColors
-      = descriptor.geometry.pointCloudColors.size()
-        == descriptor.geometry.pointCloudPoints.size();
+  const bool usePerPointColors = descriptor.geometry.pointCloudColors.size()
+                                 == descriptor.geometry.pointCloudPoints.size();
   if (usePerPointColors) {
     generateTangentFrames(buffers.vertices, buffers.triangles, buffers.normals);
 
@@ -1057,9 +1055,9 @@ std::optional<Renderable> createMeshRenderable(
       if (!textureCoordinate.allFinite()) {
         return std::nullopt;
       }
-      uv = {
-          static_cast<float>(textureCoordinate.x()),
-          static_cast<float>(textureCoordinate.y())};
+      uv
+          = {static_cast<float>(textureCoordinate.x()),
+             static_cast<float>(textureCoordinate.y())};
     }
     vertices.push_back(Vertex{toFloat3(meshVertices[i]), tangent, uv});
   }
@@ -1127,10 +1125,10 @@ std::optional<Renderable> createMeshRenderable(
           color.w, state.baseColor.w, geometry.meshAlphaMode);
       state.metallic = static_cast<float>(meshMaterial.metallicFactor);
       state.roughness = static_cast<float>(meshMaterial.roughnessFactor);
-      state.emissiveColor = {
-          static_cast<float>(meshMaterial.emissive.x()),
-          static_cast<float>(meshMaterial.emissive.y()),
-          static_cast<float>(meshMaterial.emissive.z())};
+      state.emissiveColor
+          = {static_cast<float>(meshMaterial.emissive.x()),
+             static_cast<float>(meshMaterial.emissive.y()),
+             static_cast<float>(meshMaterial.emissive.z())};
 
       if (hasTextureCoords) {
         const auto loadBinding
@@ -1146,8 +1144,8 @@ std::optional<Renderable> createMeshRenderable(
                   : (!meshMaterial.textureImagePaths.empty()
                          ? meshMaterial.textureImagePaths[0]
                          : meshMaterial.baseColorTexturePath);
-        state.textures.baseColor = loadBinding(
-            baseColorTexturePath, TextureColorSpace::Srgb);
+        state.textures.baseColor
+            = loadBinding(baseColorTexturePath, TextureColorSpace::Srgb);
         state.textures.metallic = loadBinding(
             meshMaterial.metallicTexturePath, TextureColorSpace::Linear);
         state.textures.roughness = loadBinding(
@@ -1272,8 +1270,8 @@ std::optional<Renderable> createMeshRenderable(
       .receiveShadows(true);
   for (std::size_t partIndex = 0; partIndex < parts.size(); ++partIndex) {
     const auto& part = parts[partIndex];
-    auto* materialInstance
-        = makeMaterialInstance(renderable, makeMaterialState(part.materialIndex));
+    auto* materialInstance = makeMaterialInstance(
+        renderable, makeMaterialState(part.materialIndex));
     builder.material(partIndex, materialInstance)
         .geometry(
             partIndex,
@@ -1309,9 +1307,9 @@ Renderable createPlaneRenderable(
   } else {
     unitNormal.normalize();
   }
-  const Eigen::Vector3d seed
-      = std::abs(unitNormal.z()) < 0.9 ? Eigen::Vector3d::UnitZ()
-                                       : Eigen::Vector3d::UnitX();
+  const Eigen::Vector3d seed = std::abs(unitNormal.z()) < 0.9
+                                   ? Eigen::Vector3d::UnitZ()
+                                   : Eigen::Vector3d::UnitX();
   const Eigen::Vector3d axisU = seed.cross(unitNormal).normalized();
   const Eigen::Vector3d axisV = unitNormal.cross(axisU).normalized();
   const Eigen::Vector3d center = unitNormal * offset;
@@ -1422,8 +1420,8 @@ std::optional<Renderable> createRenderableFromDescriptor(
       }
       break;
     case ShapeKind::LineSegments:
-      renderable
-          = createLineSegmentRenderable(engine, materials.debugColor, descriptor);
+      renderable = createLineSegmentRenderable(
+          engine, materials.debugColor, descriptor);
       break;
     case ShapeKind::Capsule:
       renderable = createCapsuleRenderable(
@@ -1469,6 +1467,5 @@ std::optional<Renderable> createRenderableFromDescriptor(
 
   return renderable;
 }
-
 
 } // namespace dart::gui::experimental::filament

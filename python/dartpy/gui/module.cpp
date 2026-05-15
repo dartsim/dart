@@ -6,30 +6,12 @@
   #include "gui/experimental.hpp"
 #endif
 
-#if defined(DARTPY_HAS_LEGACY_GUI)
-  #include "gui/gui.hpp"
-#endif
-
 #include <nanobind/nanobind.h>
 
 namespace dart::python_nb {
 
 void defGuiModule(nanobind::module_& m)
 {
-#if defined(DARTPY_HAS_LEGACY_GUI)
-  defGuiEventHandler(m);
-  defViewerAttachment(m);
-  defGridVisual(m);
-  defInteractiveFrame(m);
-  defWorldNode(m);
-  defRealTimeWorldNode(m);
-  defViewer(m);
-  defImGuiApi(m);
-  defImGuiWidget(m);
-  defImGuiHandler(m);
-  defImGuiViewer(m);
-#endif
-
 #if defined(DARTPY_HAS_EXPERIMENTAL_GUI)
   auto experimental = m.def_submodule(
       "experimental", "Experimental backend-hidden GUI descriptors");

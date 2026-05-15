@@ -33,84 +33,89 @@
 #include <dart/gui/experimental/detail/application.hpp>
 #include <dart/gui/experimental/detail/filament/application.hpp>
 #include <dart/gui/experimental/detail/filament/application_teardown.hpp>
-#include <dart/gui/experimental/detail/filament/scenes.hpp>
-#include <dart/gui/experimental/detail/filament/selection.hpp>
-#include <dart/collision/collision_result.hpp>
-#include <dart/common/profile.hpp>
-#include <dart/dynamics/body_node.hpp>
 #include <dart/gui/experimental/detail/filament/debug_overlay.hpp>
 #include <dart/gui/experimental/detail/filament/frame_renderer.hpp>
 #include <dart/gui/experimental/detail/filament/frame_viewport.hpp>
 #include <dart/gui/experimental/detail/filament/imgui_overlay.hpp>
 #include <dart/gui/experimental/detail/filament/input.hpp>
 #include <dart/gui/experimental/detail/filament/native_window.hpp>
-#include <dart/gui/experimental/detail/filament/renderable_resources.hpp>
-#include <dart/gui/experimental/detail/filament/render_environment.hpp>
 #include <dart/gui/experimental/detail/filament/render_context.hpp>
+#include <dart/gui/experimental/detail/filament/render_environment.hpp>
+#include <dart/gui/experimental/detail/filament/renderable_resources.hpp>
 #include <dart/gui/experimental/detail/filament/scene_frame.hpp>
 #include <dart/gui/experimental/detail/filament/scene_startup.hpp>
+#include <dart/gui/experimental/detail/filament/scenes.hpp>
 #include <dart/gui/experimental/detail/filament/screenshot.hpp>
+#include <dart/gui/experimental/detail/filament/selection.hpp>
 #include <dart/gui/experimental/detail/filament/simulation_stepper.hpp>
 #include <dart/gui/experimental/detail/filament/ui_frame.hpp>
 #include <dart/gui/experimental/profile.hpp>
 #include <dart/gui/experimental/viewer.hpp>
+
 #include <dart/simulation/world.hpp>
 
-#include <cstddef>
+#include <dart/collision/collision_result.hpp>
+
+#include <dart/dynamics/body_node.hpp>
+
+#include <dart/common/profile.hpp>
+
 #include <iostream>
 #include <optional>
 #include <utility>
 
+#include <cstddef>
+
 namespace {
 
+using dart::gui::experimental::elapsedMs;
 using dart::gui::experimental::OrbitCameraController;
+using dart::gui::experimental::printProfile;
 using dart::gui::experimental::ProfileAccumulator;
 using dart::gui::experimental::RunOptions;
 using dart::gui::experimental::ViewerLifecycleState;
-using dart::gui::experimental::elapsedMs;
-using dart::gui::experimental::printProfile;
 using dart::gui::experimental::filament::ApplicationInputState;
 using dart::gui::experimental::filament::ApplicationWindow;
+using dart::gui::experimental::filament::AppOptions;
 using dart::gui::experimental::filament::attachOrbitCameraController;
+using dart::gui::experimental::filament::attachSceneEnvironment;
+using dart::gui::experimental::filament::configureMainView;
+using dart::gui::experimental::filament::createApplicationWindow;
+using dart::gui::experimental::filament::createConfiguredImGuiOverlay;
+using dart::gui::experimental::filament::createDartScene;
+using dart::gui::experimental::filament::createDebugColorGrading;
+using dart::gui::experimental::filament::createFilamentRenderContext;
+using dart::gui::experimental::filament::createInitialSceneState;
+using dart::gui::experimental::filament::createMaterialResources;
+using dart::gui::experimental::filament::createNeutralIndirectLight;
+using dart::gui::experimental::filament::createNeutralSkybox;
+using dart::gui::experimental::filament::createSceneLights;
+using dart::gui::experimental::filament::DartScene;
+using dart::gui::experimental::filament::destroyApplicationResources;
+using dart::gui::experimental::filament::ExampleScene;
 using dart::gui::experimental::filament::FilamentRenderContext;
+using dart::gui::experimental::filament::finalizeScreenshotCapture;
 using dart::gui::experimental::filament::FrameRenderResult;
 using dart::gui::experimental::filament::FrameViewport;
+using dart::gui::experimental::filament::getCurrentImGuiIo;
+using dart::gui::experimental::filament::getNativeWindow;
 using dart::gui::experimental::filament::ImGuiOverlay;
+using dart::gui::experimental::filament::initialCameraForScene;
 using dart::gui::experimental::filament::InitialSceneState;
 using dart::gui::experimental::filament::MaterialResources;
 using dart::gui::experimental::filament::MaterialSet;
+using dart::gui::experimental::filament::parseOptions;
+using dart::gui::experimental::filament::pollApplicationInput;
 using dart::gui::experimental::filament::Renderable;
+using dart::gui::experimental::filament::renderApplicationFrame;
+using dart::gui::experimental::filament::SceneFrameUpdater;
 using dart::gui::experimental::filament::SceneLights;
 using dart::gui::experimental::filament::ScreenshotCapture;
-using dart::gui::experimental::filament::SceneFrameUpdater;
 using dart::gui::experimental::filament::SelectionController;
-using dart::gui::experimental::filament::SimulationStepper;
-using dart::gui::experimental::filament::attachSceneEnvironment;
-using dart::gui::experimental::filament::configureMainView;
-using dart::gui::experimental::filament::createFilamentRenderContext;
-using dart::gui::experimental::filament::createApplicationWindow;
-using dart::gui::experimental::filament::createDebugColorGrading;
-using dart::gui::experimental::filament::createConfiguredImGuiOverlay;
-using dart::gui::experimental::filament::createNeutralIndirectLight;
-using dart::gui::experimental::filament::createNeutralSkybox;
-using dart::gui::experimental::filament::createMaterialResources;
-using dart::gui::experimental::filament::createInitialSceneState;
-using dart::gui::experimental::filament::createSceneLights;
-using dart::gui::experimental::filament::destroyApplicationResources;
-using dart::gui::experimental::filament::finalizeScreenshotCapture;
-using dart::gui::experimental::filament::getNativeWindow;
-using dart::gui::experimental::filament::getCurrentImGuiIo;
-using dart::gui::experimental::filament::pollApplicationInput;
-using dart::gui::experimental::filament::renderApplicationFrame;
 using dart::gui::experimental::filament::shouldContinueApplicationLoop;
-using dart::gui::experimental::filament::updateFrameViewport;
+using dart::gui::experimental::filament::SimulationStepper;
 using dart::gui::experimental::filament::updateFrameUi;
-using dart::gui::experimental::filament::AppOptions;
-using dart::gui::experimental::filament::DartScene;
-using dart::gui::experimental::filament::ExampleScene;
-using dart::gui::experimental::filament::createDartScene;
-using dart::gui::experimental::filament::initialCameraForScene;
-using dart::gui::experimental::filament::parseOptions;
+using dart::gui::experimental::filament::updateFrameViewport;
 
 int runFilamentGuiApplicationImpl(int argc, char* argv[])
 {
@@ -162,7 +167,10 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
 
   bool orbitLight = appOptions.orbitLight;
   SceneLights lights = createSceneLights(
-      *engine, options.headless, orbitLight, appOptions.orbitLightPeriodSeconds);
+      *engine,
+      options.headless,
+      orbitLight,
+      appOptions.orbitLightPeriodSeconds);
   attachSceneEnvironment(*scene, indirectLight, skybox, lights);
 
   const float guiScale = static_cast<float>(options.guiScale);
@@ -217,7 +225,10 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
     profile.viewportCameraMs += elapsedMs(phaseStart);
 
     sceneFrameUpdater.update(
-        viewport, appOptions.showUi, orbitLight, appOptions.orbitLightPeriodSeconds);
+        viewport,
+        appOptions.showUi,
+        orbitLight,
+        appOptions.orbitLightPeriodSeconds);
 
     if (appOptions.showUi) {
       updateFrameUi(

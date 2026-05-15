@@ -31,7 +31,6 @@
  */
 
 #include <dart/gui/experimental/detail/filament/application_teardown.hpp>
-
 #include <dart/gui/experimental/detail/filament/renderable_sync.hpp>
 
 namespace dart::gui::experimental::filament {
@@ -62,7 +61,8 @@ void destroyApplicationResources(
   clearDebugOverlays(engine, scene, debugOverlays);
   clearDebugLineOverlay(engine, scene, selectionDebugOverlay);
   destroySceneLights(engine, lights);
-  destroyRenderEnvironmentResources(engine, indirectLight, skybox, colorGrading);
+  destroyRenderEnvironmentResources(
+      engine, indirectLight, skybox, colorGrading);
   for (SceneRenderable& sceneRenderable : sceneRenderables) {
     destroyRenderable(engine, sceneRenderable.renderable);
   }

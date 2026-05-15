@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/gui/experimental/detail/filament/scenes.hpp>
 #include <dart/gui/experimental/detail/filament/simulation_stepper.hpp>
 
-#include <dart/gui/experimental/detail/filament/scenes.hpp>
 #include <dart/simulation/world.hpp>
 
 #include <algorithm>
@@ -40,12 +40,12 @@
 
 namespace dart::gui::experimental::filament {
 
-using dart::gui::experimental::ProfileAccumulator;
-using dart::gui::experimental::RunOptions;
-using dart::gui::experimental::ViewerLifecycleState;
 using dart::gui::experimental::elapsedMs;
 using dart::gui::experimental::markSimulationAdvanced;
+using dart::gui::experimental::ProfileAccumulator;
+using dart::gui::experimental::RunOptions;
 using dart::gui::experimental::shouldAdvanceSimulation;
+using dart::gui::experimental::ViewerLifecycleState;
 
 std::size_t SimulationStepper::stepsToRun(
     const RunOptions& options,

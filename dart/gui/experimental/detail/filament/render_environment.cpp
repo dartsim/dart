@@ -61,8 +61,8 @@ using ::filament::math::float3;
 
 float3 normalizeOr(const float3& vector, const float3& fallback)
 {
-  const float lengthSquared = vector.x * vector.x + vector.y * vector.y
-                              + vector.z * vector.z;
+  const float lengthSquared
+      = vector.x * vector.x + vector.y * vector.y + vector.z * vector.z;
   if (lengthSquared <= 1e-12f) {
     return fallback;
   }
@@ -87,7 +87,8 @@ float3 normalizeOr(const float3& vector, const float3& fallback)
       .build(engine);
 }
 
-::filament::IndirectLight* createNeutralIndirectLight(::filament::Engine& engine)
+::filament::IndirectLight* createNeutralIndirectLight(
+    ::filament::Engine& engine)
 {
   static constexpr std::array<float3, 9> kDiffuseIrradiance = {{
       {0.22f, 0.24f, 0.28f},
@@ -140,7 +141,9 @@ void configureWindowedViewQuality(::filament::View& view)
 }
 
 void configureMainView(
-    ::filament::View& view, ::filament::ColorGrading* colorGrading, bool headless)
+    ::filament::View& view,
+    ::filament::ColorGrading* colorGrading,
+    bool headless)
 {
   view.setColorGrading(colorGrading);
   view.setShadowingEnabled(true);
@@ -167,17 +170,15 @@ void configureViewportCamera(
        0,
        static_cast<std::uint32_t>(width),
        static_cast<std::uint32_t>(height)});
-  const auto projection
-      = dart::gui::experimental::makePerspectiveProjection(
-          orbitCamera, width, height);
+  const auto projection = dart::gui::experimental::makePerspectiveProjection(
+      orbitCamera, width, height);
   camera.setProjection(
       projection.verticalFovDegrees,
       projection.aspectRatio,
       projection.nearPlane,
       projection.farPlane,
       ::filament::Camera::Fov::VERTICAL);
-  const Eigen::Vector3d eye
-      = dart::gui::experimental::cameraEye(orbitCamera);
+  const Eigen::Vector3d eye = dart::gui::experimental::cameraEye(orbitCamera);
   camera.lookAt(
       {eye.x(), eye.y(), eye.z()},
       {orbitCamera.target.x(), orbitCamera.target.y(), orbitCamera.target.z()},

@@ -31,7 +31,6 @@
  */
 
 #include <dart/gui/experimental/detail/filament/debug_overlay.hpp>
-
 #include <dart/gui/experimental/detail/filament/renderable_factory.hpp>
 #include <dart/gui/experimental/detail/filament/renderable_sync.hpp>
 
@@ -40,11 +39,11 @@
 namespace dart::gui::experimental::filament {
 
 using dart::gui::experimental::DebugDrawOptions;
-using dart::gui::experimental::RenderableDescriptor;
-using dart::gui::experimental::RenderableId;
 using dart::gui::experimental::extractContactDebugLines;
 using dart::gui::experimental::extractDebugLines;
 using dart::gui::experimental::makeSelectionDebugLines;
+using dart::gui::experimental::RenderableDescriptor;
+using dart::gui::experimental::RenderableId;
 
 DebugOverlayController makeDebugOverlayController(bool drawSupportPolygons)
 {
@@ -157,7 +156,11 @@ void refreshSelectionDebugLineOverlay(
   }
 
   refreshDebugLineOverlay(
-      engine, scene, material, makeSelectionDebugLines(*selectedDescriptor), overlay);
+      engine,
+      scene,
+      material,
+      makeSelectionDebugLines(*selectedDescriptor),
+      overlay);
 }
 
 } // namespace dart::gui::experimental::filament

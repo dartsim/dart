@@ -71,8 +71,6 @@ class ExampleSpec:
 
 
 EXAMPLE_SPECS = {
-    "raylib": ExampleSpec("dart_raylib", "raylib", ("raylib",)),
-    "dart_raylib": ExampleSpec("dart_raylib", "raylib", ("raylib",)),
     "filament_gui": ExampleSpec("dart_filament_gui", "filament_gui", ("filament",)),
     "imgui": ExampleSpec("dart_filament_gui", "filament_gui", ("filament",)),
     "rigid_shapes": ExampleSpec(
@@ -293,6 +291,8 @@ EXAMPLE_SPECS = {
     ),
 }
 
+REMOVED_EXAMPLES = {"raylib", "dart_raylib", "raylib_gui"}
+
 
 def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
     parser = argparse.ArgumentParser(
@@ -336,9 +336,11 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
 
 
 def _normalize_target(target: str) -> str:
-    if target == "raylib_gui":
-        print("NOTE: example `raylib_gui` was renamed to `raylib`.", file=sys.stderr)
-        return "raylib"
+    if target in REMOVED_EXAMPLES:
+        raise SystemExit(
+            "The Raylib GUI example has been removed. Use `pixi run ex filament_gui` "
+            "or one of the Filament-routed example names instead."
+        )
     return target
 
 
@@ -428,17 +430,6 @@ def _configure(
     subprocess.run(cmd, check=True, env=env)
 
 
-def _ensure_raylib(build_dir: Path, env: dict[str, str]) -> None:
-    if _cache_bool_matches(build_dir, "DART_BUILD_GUI_RAYLIB", "ON"):
-        return
-
-    print(
-        "Enabling experimental Raylib backend (DART_BUILD_GUI_RAYLIB=ON) for this build...",
-        file=sys.stderr,
-    )
-    _configure(build_dir, {"DART_BUILD_GUI_RAYLIB": "ON"}, env)
-
-
 def _option_override(
     definitions: dict[str, str], env: dict[str, str], option: str, env_name: str
 ) -> None:
@@ -490,8 +481,6 @@ def _ensure_filament(build_dir: Path, env: dict[str, str], smoke: bool) -> None:
 def _ensure_target_requirements(
     build_dir: Path, spec: ExampleSpec, env: dict[str, str], smoke: bool
 ) -> None:
-    if "raylib" in spec.requirements:
-        _ensure_raylib(build_dir, env)
     if "filament" in spec.requirements:
         _ensure_filament(build_dir, env, smoke)
 

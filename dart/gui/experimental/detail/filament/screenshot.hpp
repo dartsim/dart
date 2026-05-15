@@ -36,10 +36,11 @@
 #include <dart/gui/experimental/profile.hpp>
 
 #include <condition_variable>
-#include <cstdint>
 #include <mutex>
 #include <string>
 #include <vector>
+
+#include <cstdint>
 
 namespace dart::gui::experimental::filament {
 

@@ -34,18 +34,20 @@
 
 #include "scene_fixtures.hpp"
 
-#include <dart/common/uri.hpp>
 #include <dart/dynamics/body_node.hpp>
+
+#include <dart/common/uri.hpp>
 
 #include <Eigen/Core>
 
 #include <algorithm>
-#include <cmath>
-#include <cstdlib>
 #include <iostream>
 #include <optional>
 #include <string>
 #include <string_view>
+
+#include <cmath>
+#include <cstdlib>
 
 namespace dart::gui::experimental::filament {
 namespace {
@@ -561,7 +563,8 @@ AppOptions parseOptions(int argc, char* argv[])
       char* end = nullptr;
       const char* value = argv[++i];
       const double orbitLightPeriodSeconds = std::strtod(value, &end);
-      if (end == value || *end != '\0' || !std::isfinite(orbitLightPeriodSeconds)
+      if (end == value || *end != '\0'
+          || !std::isfinite(orbitLightPeriodSeconds)
           || orbitLightPeriodSeconds <= 0.0) {
         std::cerr << "Invalid --orbit-light-period value '" << value
                   << "'. Expected a positive number of seconds.\n";
@@ -602,8 +605,7 @@ AppOptions parseOptions(int argc, char* argv[])
         std::exit(2);
       }
     } else if (
-        (arg == "--g1-package-uri" || arg == "--package-uri")
-        && i + 1 < argc) {
+        (arg == "--g1-package-uri" || arg == "--package-uri") && i + 1 < argc) {
       options.g1PackageUri = argv[++i];
       g1PackageUriExplicit = true;
     } else if (
@@ -616,25 +618,32 @@ AppOptions parseOptions(int argc, char* argv[])
       options.g1PackageName = argv[++i];
       g1PackageNameExplicit = true;
     } else if (arg == "--help" || arg == "-h") {
-      std::cout << "Usage: " << argv[0]
-                << " [--frames N] [--width N] [--height N]"
-                   " [--screenshot PATH] [--headless]"
-                   " [--hide-ui|--show-ui]"
-                   " [--orbit-light|--no-orbit-light]"
-                   " [--orbit-light-period SECONDS]"
-                   " [--gui-scale N]"
-                   " [--profile]"
-                   " [--scene mvp|hello-world|boxes|hardcoded-design|rigid-chain|rigid-loop|mixed-chain|coupler-constraint|add-delete-skels|vehicle|hybrid-dynamics|joint-constraints|free-joint-cases|human-joint-limits|lcp-physics|mimic-pendulums|atlas-puppet|hubo-puppet|atlas-simbicon|operational-space-control|wam-ikfast|fetch|tinkertoy|drag-and-drop|simple-frames|soft-bodies|point-cloud|capsule-ground-contact|simulation-event-handler|polyhedron|heightmap|g1]"
-                   " [--g1-package-uri URI] [--g1-robot-uri URI]"
-                   " [--g1-package-name NAME]\n";
+      std::cout
+          << "Usage: " << argv[0]
+          << " [--frames N] [--width N] [--height N]"
+             " [--screenshot PATH] [--headless]"
+             " [--hide-ui|--show-ui]"
+             " [--orbit-light|--no-orbit-light]"
+             " [--orbit-light-period SECONDS]"
+             " [--gui-scale N]"
+             " [--profile]"
+             " [--scene "
+             "mvp|hello-world|boxes|hardcoded-design|rigid-chain|rigid-loop|"
+             "mixed-chain|coupler-constraint|add-delete-skels|vehicle|hybrid-"
+             "dynamics|joint-constraints|free-joint-cases|human-joint-limits|"
+             "lcp-physics|mimic-pendulums|atlas-puppet|hubo-puppet|atlas-"
+             "simbicon|operational-space-control|wam-ikfast|fetch|tinkertoy|"
+             "drag-and-drop|simple-frames|soft-bodies|point-cloud|capsule-"
+             "ground-contact|simulation-event-handler|polyhedron|heightmap|g1]"
+             " [--g1-package-uri URI] [--g1-robot-uri URI]"
+             " [--g1-package-name NAME]\n";
       std::exit(0);
     }
   }
 
   if (!g1PackageNameExplicit) {
     if (g1RobotUriExplicit) {
-      if (auto packageName
-          = inferPackageNameFromRobotUri(options.g1RobotUri)) {
+      if (auto packageName = inferPackageNameFromRobotUri(options.g1RobotUri)) {
         options.g1PackageName = *packageName;
       }
     } else if (g1PackageUriExplicit) {
@@ -642,8 +651,8 @@ AppOptions parseOptions(int argc, char* argv[])
           = inferPackageNameFromPackageUri(options.g1PackageUri)) {
         options.g1PackageName = *packageName;
       }
-    } else if (auto packageName
-               = inferPackageNameFromRobotUri(options.g1RobotUri)) {
+    } else if (
+        auto packageName = inferPackageNameFromRobotUri(options.g1RobotUri)) {
       options.g1PackageName = *packageName;
     }
   }

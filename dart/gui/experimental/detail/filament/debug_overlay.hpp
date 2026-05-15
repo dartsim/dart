@@ -92,7 +92,8 @@ void refreshSelectionDebugLineOverlay(
     ::filament::Engine& engine,
     ::filament::Scene& scene,
     ::filament::Material& material,
-    const std::vector<dart::gui::experimental::RenderableDescriptor>& descriptors,
+    const std::vector<dart::gui::experimental::RenderableDescriptor>&
+        descriptors,
     dart::gui::experimental::RenderableId selectedRenderableId,
     std::optional<Renderable>& overlay);
 

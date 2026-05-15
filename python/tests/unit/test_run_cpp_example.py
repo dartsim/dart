@@ -63,11 +63,12 @@ def run_cpp_example():
     return module
 
 
-def test_normalize_target_deprecates_raylib_gui(run_cpp_example, capsys):
-    assert run_cpp_example._normalize_target("raylib_gui") == "raylib"
-    captured = capsys.readouterr()
-    assert "raylib_gui" in captured.err
-    assert "renamed to `raylib`" in captured.err
+@pytest.mark.parametrize("target", ["raylib", "dart_raylib", "raylib_gui"])
+def test_normalize_target_rejects_removed_raylib(run_cpp_example, target):
+    with pytest.raises(SystemExit) as exc:
+        run_cpp_example._normalize_target(target)
+
+    assert "Raylib GUI example has been removed" in str(exc.value)
 
 
 def test_normalize_target_passthrough(run_cpp_example, capsys):
@@ -98,8 +99,6 @@ def test_parse_args_allows_pixi_help_without_target(run_cpp_example, capsys):
 @pytest.mark.parametrize(
     ("target", "build_target", "binary_name", "requirements", "default_args"),
     [
-        ("raylib", "dart_raylib", "raylib", ("raylib",), ()),
-        ("dart_raylib", "dart_raylib", "raylib", ("raylib",), ()),
         ("filament_gui", "dart_filament_gui", "filament_gui", ("filament",), ()),
         (
             "g1_puppet",
@@ -283,58 +282,19 @@ def test_run_args_with_defaults_preserves_explicit_scene(run_cpp_example):
 
 def test_cmake_cache_bool(run_cpp_example, tmp_path):
     cache_path = tmp_path / "CMakeCache.txt"
-    cache_path.write_text("DART_BUILD_GUI_RAYLIB:BOOL=ON\n", encoding="utf-8")
-    assert run_cpp_example._cmake_cache_bool(tmp_path, "DART_BUILD_GUI_RAYLIB") is True
+    cache_path.write_text("DART_BUILD_GUI_FILAMENT:BOOL=ON\n", encoding="utf-8")
+    assert run_cpp_example._cmake_cache_bool(tmp_path, "DART_BUILD_GUI_FILAMENT") is True
 
-    cache_path.write_text("DART_BUILD_GUI_RAYLIB:BOOL=OFF\n", encoding="utf-8")
-    assert run_cpp_example._cmake_cache_bool(tmp_path, "DART_BUILD_GUI_RAYLIB") is False
+    cache_path.write_text("DART_BUILD_GUI_FILAMENT:BOOL=OFF\n", encoding="utf-8")
+    assert (
+        run_cpp_example._cmake_cache_bool(tmp_path, "DART_BUILD_GUI_FILAMENT") is False
+    )
 
-    cache_path.write_text("DART_BUILD_GUI_RAYLIB:BOOL=maybe\n", encoding="utf-8")
-    assert run_cpp_example._cmake_cache_bool(tmp_path, "DART_BUILD_GUI_RAYLIB") is None
+    cache_path.write_text("DART_BUILD_GUI_FILAMENT:BOOL=maybe\n", encoding="utf-8")
+    assert run_cpp_example._cmake_cache_bool(tmp_path, "DART_BUILD_GUI_FILAMENT") is None
 
     cache_path.write_text("UNRELATED:BOOL=ON\n", encoding="utf-8")
-    assert run_cpp_example._cmake_cache_bool(tmp_path, "DART_BUILD_GUI_RAYLIB") is None
-
-
-def test_ensure_target_requirements_enables_raylib(run_cpp_example, tmp_path, monkeypatch):
-    (tmp_path / "CMakeCache.txt").write_text(
-        "DART_BUILD_GUI_RAYLIB:BOOL=OFF\n", encoding="utf-8"
-    )
-
-    calls = []
-
-    def fake_run(cmd, *args, **kwargs):
-        calls.append((cmd, args, kwargs))
-        return None
-
-    monkeypatch.setattr(run_cpp_example.subprocess, "run", fake_run)
-
-    env = {"EXAMPLE": "1"}
-    spec = run_cpp_example._resolve_example("raylib")
-    run_cpp_example._ensure_target_requirements(tmp_path, spec, env, smoke=False)
-
-    assert len(calls) == 1
-    cmd, args, kwargs = calls[0]
-    assert cmd[0] == "cmake"
-    assert "-DDART_BUILD_GUI_RAYLIB=ON" in cmd
-    assert kwargs.get("env") == env
-    assert kwargs.get("check") is True
-
-
-def test_ensure_target_requirements_noop_when_enabled(run_cpp_example, tmp_path, monkeypatch):
-    (tmp_path / "CMakeCache.txt").write_text(
-        "DART_BUILD_GUI_RAYLIB:BOOL=ON\n", encoding="utf-8"
-    )
-
-    def fail_run(*_args, **_kwargs):
-        raise AssertionError("subprocess.run should not be called")
-
-    monkeypatch.setattr(run_cpp_example.subprocess, "run", fail_run)
-
-    spec = run_cpp_example._resolve_example("raylib")
-    run_cpp_example._ensure_target_requirements(
-        tmp_path, spec, {"EXAMPLE": "1"}, smoke=False
-    )
+    assert run_cpp_example._cmake_cache_bool(tmp_path, "DART_BUILD_GUI_FILAMENT") is None
 
 
 def test_run_filament_smoke_uses_no_tests_error_when_supported(

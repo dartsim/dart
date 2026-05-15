@@ -143,9 +143,7 @@ SceneContentCounts countCreatedSceneContent(
     const std::vector<SceneRenderable>& sceneRenderables);
 
 bool validateSceneDescriptorContent(
-    ExampleScene scene,
-    const SceneContentCounts& counts,
-    std::ostream& output);
+    ExampleScene scene, const SceneContentCounts& counts, std::ostream& output);
 
 bool validateCreatedSceneContent(
     ExampleScene scene,

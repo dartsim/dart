@@ -27,14 +27,15 @@ imgui = ">=1.92.3,<2"
 isort = ">=7.0.0,<8"
 jinja2 = ">=3.1.6,<4"
 libboost-devel = ">=1.88.0,<2"
+libjpeg-turbo = ">=3.1.2,<4"
 libode = ">=0.16.6,<0.17"
+libpng = ">=1.6.54,<2"
 libsdformat = ">=16.0.0,<17"
 myst-parser = ">=4.0.1,<5"
 nanobind = ">=2.10.2,<3"
 ninja = ">=1.13.2,<2"
 numpy = ">=2.4.0,<3"
 octomap = ">=1.10.0,<2"
-openscenegraph = ">=3.6.5,<4"
 pip = ">=25.3,<26"
 pipx = ">=1.8.0,<2"
 pkg-config = ">=0.29.2,<0.30"
@@ -80,18 +81,21 @@ DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-ON}
 DART_BUILD_EXAMPLES_VALUE=${DART_BUILD_EXAMPLES_OVERRIDE:-ON}
 DART_BUILD_TUTORIALS_VALUE=${DART_BUILD_TUTORIALS_OVERRIDE:-ON}
 DART_BUILD_TESTS_VALUE=${DART_BUILD_TESTS_OVERRIDE:-ON}
-DART_BUILD_GUI_FILAMENT_VALUE=${DART_BUILD_GUI_FILAMENT_OVERRIDE:-OFF}
-DART_BUILD_GUI_RAYLIB_VALUE=${DART_BUILD_GUI_RAYLIB_OVERRIDE:-${DART_BUILD_RAYLIB_OVERRIDE:-OFF}}
+DART_BUILD_GUI_FILAMENT_VALUE=${DART_BUILD_GUI_FILAMENT_OVERRIDE:-${DART_BUILD_GUI_VALUE}}
 DART_USE_SYSTEM_FILAMENT_VALUE=${DART_USE_SYSTEM_FILAMENT_OVERRIDE:-ON}
-DART_FETCH_FILAMENT_VALUE=${DART_FETCH_FILAMENT_OVERRIDE:-OFF}
-DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS_VALUE=${DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS_OVERRIDE:-OFF}
-DART_USE_SYSTEM_RAYLIB_VALUE=${DART_USE_SYSTEM_RAYLIB_OVERRIDE:-OFF}
-DART_RAYLIB_GIT_TAG_VALUE=${DART_RAYLIB_GIT_TAG_OVERRIDE:-}
-DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
-RAYLIB_GIT_TAG_DEF=""
-if [ -n "${DART_RAYLIB_GIT_TAG_VALUE}" ]; then
-  RAYLIB_GIT_TAG_DEF="-DDART_RAYLIB_GIT_TAG=${DART_RAYLIB_GIT_TAG_VALUE}"
+DART_FETCH_FILAMENT_VALUE=${DART_FETCH_FILAMENT_OVERRIDE:-}
+if [ -z "$DART_FETCH_FILAMENT_VALUE" ]; then
+  case "$(uname -s)-$(uname -m)" in
+    Linux-x86_64|Linux-amd64)
+      DART_FETCH_FILAMENT_VALUE=ON
+      ;;
+    *)
+      DART_FETCH_FILAMENT_VALUE=OFF
+      ;;
+  esac
 fi
+DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS_VALUE=${DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS_OVERRIDE:-OFF}
+DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
@@ -129,7 +133,6 @@ cmake \
   -DDART_BUILD_COLLISION_ODE=${DART_BUILD_COLLISION_ODE_VALUE} \
   -DDART_BUILD_GUI=${DART_BUILD_GUI_VALUE} \
   -DDART_BUILD_GUI_FILAMENT=${DART_BUILD_GUI_FILAMENT_VALUE} \
-  -DDART_BUILD_GUI_RAYLIB=${DART_BUILD_GUI_RAYLIB_VALUE} \
   -DDART_BUILD_EXAMPLES=${DART_BUILD_EXAMPLES_VALUE} \
   -DDART_BUILD_TUTORIALS=${DART_BUILD_TUTORIALS_VALUE} \
   -DDART_BUILD_TESTS=${DART_BUILD_TESTS_VALUE} \
@@ -145,12 +148,10 @@ cmake \
   -DDART_USE_SYSTEM_FILAMENT=${DART_USE_SYSTEM_FILAMENT_VALUE} \
   -DDART_FETCH_FILAMENT=${DART_FETCH_FILAMENT_VALUE} \
   -DDART_ENABLE_FILAMENT_GUI_SMOKE_TESTS=${DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS_VALUE} \
-  -DDART_USE_SYSTEM_RAYLIB=${DART_USE_SYSTEM_RAYLIB_VALUE} \
   -DDART_USE_SYSTEM_NANOBIND=OFF \
   -DDART_USE_SYSTEM_TRACY=ON \
   -DDART_VERBOSE=${DART_VERBOSE} \
   -Dnanobind_DIR=${NANOBIND_CMAKE_DIR} \
-  $RAYLIB_GIT_TAG_DEF \
   $LAUNCHER_DEFS
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
@@ -296,21 +297,25 @@ if [ -z "$DART_BUILD_DARTPY_VALUE" ]; then
   DART_BUILD_DARTPY_VALUE="{{ dartpy }}"
 fi
 DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE=${DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE:-ON}
+DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-ON}
 DART_BUILD_EXAMPLES_VALUE=${DART_BUILD_EXAMPLES_OVERRIDE:-ON}
 DART_BUILD_TUTORIALS_VALUE=${DART_BUILD_TUTORIALS_OVERRIDE:-ON}
 DART_BUILD_TESTS_VALUE=${DART_BUILD_TESTS_OVERRIDE:-ON}
-DART_BUILD_GUI_FILAMENT_VALUE=${DART_BUILD_GUI_FILAMENT_OVERRIDE:-OFF}
-DART_BUILD_GUI_RAYLIB_VALUE=${DART_BUILD_GUI_RAYLIB_OVERRIDE:-${DART_BUILD_RAYLIB_OVERRIDE:-OFF}}
+DART_BUILD_GUI_FILAMENT_VALUE=${DART_BUILD_GUI_FILAMENT_OVERRIDE:-${DART_BUILD_GUI_VALUE}}
 DART_USE_SYSTEM_FILAMENT_VALUE=${DART_USE_SYSTEM_FILAMENT_OVERRIDE:-ON}
-DART_FETCH_FILAMENT_VALUE=${DART_FETCH_FILAMENT_OVERRIDE:-OFF}
-DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS_VALUE=${DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS_OVERRIDE:-OFF}
-DART_USE_SYSTEM_RAYLIB_VALUE=${DART_USE_SYSTEM_RAYLIB_OVERRIDE:-OFF}
-DART_RAYLIB_GIT_TAG_VALUE=${DART_RAYLIB_GIT_TAG_OVERRIDE:-}
-DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
-RAYLIB_GIT_TAG_DEF=""
-if [ -n "${DART_RAYLIB_GIT_TAG_VALUE}" ]; then
-  RAYLIB_GIT_TAG_DEF="-DDART_RAYLIB_GIT_TAG=${DART_RAYLIB_GIT_TAG_VALUE}"
+DART_FETCH_FILAMENT_VALUE=${DART_FETCH_FILAMENT_OVERRIDE:-}
+if [ -z "$DART_FETCH_FILAMENT_VALUE" ]; then
+  case "$(uname -s)-$(uname -m)" in
+    Linux-x86_64|Linux-amd64)
+      DART_FETCH_FILAMENT_VALUE=ON
+      ;;
+    *)
+      DART_FETCH_FILAMENT_VALUE=OFF
+      ;;
+  esac
 fi
+DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS_VALUE=${DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS_OVERRIDE:-OFF}
+DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
@@ -343,8 +348,8 @@ cmake \
   -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
   -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} \
   -DDART_BUILD_SIMULATION_EXPERIMENTAL=${DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE} \
+  -DDART_BUILD_GUI=${DART_BUILD_GUI_VALUE} \
   -DDART_BUILD_GUI_FILAMENT=${DART_BUILD_GUI_FILAMENT_VALUE} \
-  -DDART_BUILD_GUI_RAYLIB=${DART_BUILD_GUI_RAYLIB_VALUE} \
   -DDART_BUILD_EXAMPLES=${DART_BUILD_EXAMPLES_VALUE} \
   -DDART_BUILD_TUTORIALS=${DART_BUILD_TUTORIALS_VALUE} \
   -DDART_BUILD_TESTS=${DART_BUILD_TESTS_VALUE} \
@@ -360,11 +365,9 @@ cmake \
   -DDART_USE_SYSTEM_FILAMENT=${DART_USE_SYSTEM_FILAMENT_VALUE} \
   -DDART_FETCH_FILAMENT=${DART_FETCH_FILAMENT_VALUE} \
   -DDART_ENABLE_FILAMENT_GUI_SMOKE_TESTS=${DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS_VALUE} \
-  -DDART_USE_SYSTEM_RAYLIB=${DART_USE_SYSTEM_RAYLIB_VALUE} \
   -DDART_USE_SYSTEM_NANOBIND=OFF \
   -DDART_USE_SYSTEM_TRACY=ON \
   -DDART_VERBOSE=${DART_VERBOSE} \
-  $RAYLIB_GIT_TAG_DEF \
   $LAUNCHER_DEFS
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
@@ -1332,82 +1335,16 @@ libcxx-devel = ">=22.1.5,<23"
 ################################################################################
 
 [target.osx-64.dependencies]
-git = ">=2.52.0,<3"
 tracy-profiler-client = ">=0.12.2,<0.13"
 tracy-profiler-gui = ">=0.11.1,<0.12"
-
-[target.osx-64.tasks]
-download-osg = { cmd = """
-    rm -rf .deps/OpenSceneGraph/ && \
-    git clone https://github.com/openscenegraph/OpenSceneGraph.git .deps/OpenSceneGraph && \
-    cd .deps/OpenSceneGraph && \
-    git checkout 2e4ae2ea94595995c1fc56860051410b0c0be605
-""", outputs = [
-  ".deps/OpenSceneGraph/README.md",
-] }
-
-config-osg = { cmd = """
-    cmake \
-        -G Ninja \
-        -S .deps/OpenSceneGraph \
-        -B .deps/OpenSceneGraph/build \
-        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-        -DBUILD_OSG_APPLICATIONS=OFF \
-        -DBUILD_OSG_EXAMPLES=OFF
-""", depends-on = ["download-osg"] }
-
-build-osg = { cmd = ["bash", "-lc", """
-set -euo pipefail
-CMAKE_BUILD_DIR=.deps/OpenSceneGraph/build python scripts/cmake_build.py
-"""], depends-on = ["config-osg"] }
-
-install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on = [
-  "build-osg",
-] }
 
 ################################################################################
 # osx-arm64
 ################################################################################
 
 [target.osx-arm64.dependencies]
-git = ">=2.52.0,<3"
 tracy-profiler-client = ">=0.12.2,<0.13"
 tracy-profiler-gui = ">=0.11.1,<0.12"
-
-[target.osx-arm64.tasks]
-download-osg = { cmd = """
-    rm -rf .deps/OpenSceneGraph/ && \
-    git clone https://github.com/openscenegraph/OpenSceneGraph.git .deps/OpenSceneGraph && \
-    cd .deps/OpenSceneGraph && \
-    git checkout 2e4ae2ea94595995c1fc56860051410b0c0be605
-""", outputs = [
-  ".deps/OpenSceneGraph/README.md",
-] }
-
-config-osg = { cmd = """
-    cmake \
-        -G Ninja \
-        -S .deps/OpenSceneGraph \
-        -B .deps/OpenSceneGraph/build \
-        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-        -DBUILD_OSG_APPLICATIONS=OFF \
-        -DBUILD_OSG_EXAMPLES=OFF
-""", depends-on = ["download-osg"] }
-
-build-osg = { cmd = ["bash", "-lc", """
-set -euo pipefail
-CMAKE_BUILD_DIR=.deps/OpenSceneGraph/build python scripts/cmake_build.py
-"""], depends-on = ["config-osg"] }
-
-install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on = [
-  "build-osg",
-] }
 
 ################################################################################
 # win-64
@@ -1911,8 +1848,7 @@ PY
 # - All CMake configuration MUST be done via CMAKE_ARGS environment variable
 # - DO NOT use --config-settings=cmake.define.XXX (it doesn't work reliably with scikit-build-core)
 # - DART_BUILD_GUI controls whether dartpy.gui submodule is included (see python/dartpy/CMakeLists.txt)
-# - OpenSceneGraph is available on conda-forge for ALL platforms (Linux, macOS, Windows)
-# - DART_BUILD_GUI=ON enables dartpy.gui Python bindings on all platforms
+# - DART_BUILD_GUI=ON enables the Filament-backed dartpy.gui Python surface
 
 [feature.py312-wheel]
 channels = ["conda-forge"]
@@ -1933,7 +1869,9 @@ fcl = ">=0.7.0,<0.8"
 fmt = ">=12.0.0,<13"
 imgui = ">=1.92.3,<2"
 libboost-devel = ">=1.88.0,<2"
+libjpeg-turbo = ">=3.1.2,<4"
 octomap = ">=1.10.0,<2"
+libpng = ">=1.6.54,<2"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=4.0.1,<5"
 numpy = ">=2.4.0,<3"
@@ -1942,22 +1880,18 @@ uv = ">=0.9.21,<0.10"
 twine = ">=6.2.0,<7"
 
 [feature.py312-wheel.target.linux-64.dependencies]
-openscenegraph = ">=3.6.5,<4"
 auditwheel = ">=6.5.1,<7"
 patchelf = ">=0.17.2,<0.18"
 mesalib = ">=25.0.5,<26"
 libglvnd = ">=1.7.0,<2"
 
 [feature.py312-wheel.target.osx-64.dependencies]
-openscenegraph = ">=3.6.5,<4"
 delocate = ">=0.13.0,<0.14"
 
 [feature.py312-wheel.target.osx-arm64.dependencies]
-openscenegraph = ">=3.6.5,<4"
 delocate = ">=0.13.0,<0.14"
 
 [feature.py312-wheel.target.win-64.dependencies]
-openscenegraph = ">=3.6.5,<4"
 delvewheel = ">=1.11.2,<2"
 
 [feature.py312-wheel.target.linux-64.tasks]
@@ -2016,7 +1950,7 @@ wheel-publish = { depends-on = [
   "wheel-upload",
 ] }
 
-# macOS-specific: OSG is available but imgui needs to be built from source (not available on conda-forge for macOS)
+# macOS-specific: imgui needs to be built from source (not available on conda-forge for macOS)
 [feature.py312-wheel.target.osx-64.tasks]
 wheel-build = { depends-on = [{ task = "wheel-build-core", args = ["OFF"] }] }
 
@@ -2061,7 +1995,9 @@ fcl = ">=0.7.0,<0.8"
 fmt = ">=12.0.0,<13"
 imgui = ">=1.92.3,<2"
 libboost-devel = ">=1.88.0,<2"
+libjpeg-turbo = ">=3.1.2,<4"
 octomap = ">=1.10.0,<2"
+libpng = ">=1.6.54,<2"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=4.0.1,<5"
 numpy = ">=2.4.0,<3"
@@ -2070,7 +2006,6 @@ uv = ">=0.9.21,<0.10"
 twine = ">=6.2.0,<7"
 
 [feature.py313-wheel.target.linux-64.dependencies]
-openscenegraph = ">=3.6.5,<4"
 auditwheel = ">=6.5.1,<7"
 patchelf = ">=0.17.2,<0.18"
 mesalib = ">=25.0.5,<26"
@@ -2087,7 +2022,6 @@ wheel-repair = { depends-on = [
 ] }
 
 [feature.py313-wheel.target.osx-64.dependencies]
-openscenegraph = ">=3.6.5,<4"
 delocate = ">=0.13.0,<0.14"
 
 [feature.py313-wheel.target.osx-64.tasks]
@@ -2102,7 +2036,6 @@ wheel-repair = { depends-on = [
 ] }
 
 [feature.py313-wheel.target.win-64.dependencies]
-openscenegraph = ">=3.6.5,<4"
 delvewheel = ">=1.11.2,<2"
 
 [feature.py313-wheel.target.win-64.tasks]
@@ -2152,7 +2085,6 @@ wheel-publish = { depends-on = [
 ] }
 
 [feature.py313-wheel.target.osx-arm64.dependencies]
-openscenegraph = ">=3.6.5,<4"
 delocate = ">=0.13.0,<0.14"
 
 [feature.py313-wheel.target.osx-arm64.tasks]
@@ -2189,7 +2121,9 @@ fcl = ">=0.7.0,<0.8"
 fmt = ">=12.0.0,<13"
 imgui = ">=1.92.3,<2"
 libboost-devel = ">=1.88.0,<2"
+libjpeg-turbo = ">=3.1.2,<4"
 octomap = ">=1.10.0,<2"
+libpng = ">=1.6.54,<2"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=4.0.1,<5"
 numpy = ">=2.4.0,<3"
@@ -2198,7 +2132,6 @@ uv = ">=0.9.21,<0.10"
 twine = ">=6.2.0,<7"
 
 [feature.py314-wheel.target.linux-64.dependencies]
-openscenegraph = ">=3.6.5,<4"
 auditwheel = ">=6.5.1,<7"
 patchelf = ">=0.17.2,<0.18"
 mesalib = ">=25.0.5,<26"
@@ -2215,15 +2148,12 @@ wheel-repair = { depends-on = [
 ] }
 
 [feature.py314-wheel.target.osx-64.dependencies]
-openscenegraph = ">=3.6.5,<4"
 delocate = ">=0.13.0,<0.14"
 
 [feature.py314-wheel.target.osx-arm64.dependencies]
-openscenegraph = ">=3.6.5,<4"
 delocate = ">=0.13.0,<0.14"
 
 [feature.py314-wheel.target.win-64.dependencies]
-openscenegraph = ">=3.6.5,<4"
 delvewheel = ">=1.11.2,<2"
 
 [feature.py314-wheel.target.win-64.tasks]

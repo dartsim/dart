@@ -41,24 +41,20 @@
 #include <filament/Renderer.h>
 
 #include <chrono>
-#include <cstdlib>
 #include <iostream>
+
+#include <cstdlib>
 
 namespace dart::gui::experimental::filament {
 
-using dart::gui::experimental::ProfileAccumulator;
 using dart::gui::experimental::elapsedMs;
+using dart::gui::experimental::ProfileAccumulator;
 
 void saveScreenshot(const ScreenshotCapture& capture, const std::string& path)
 {
   std::string error;
   if (!dart::gui::experimental::writeRgbaPpm(
-          path,
-          capture.width,
-          capture.height,
-          capture.pixels,
-          false,
-          &error)) {
+          path, capture.width, capture.height, capture.pixels, false, &error)) {
     std::cerr << error << "\n";
     std::exit(1);
   }

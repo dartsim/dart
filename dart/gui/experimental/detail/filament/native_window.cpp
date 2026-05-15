@@ -51,9 +51,7 @@
 
 namespace dart::gui::experimental::filament {
 
-ApplicationWindow::ApplicationWindow(GLFWwindow* window) : mWindow(window)
-{
-}
+ApplicationWindow::ApplicationWindow(GLFWwindow* window) : mWindow(window) {}
 
 ApplicationWindow::~ApplicationWindow()
 {

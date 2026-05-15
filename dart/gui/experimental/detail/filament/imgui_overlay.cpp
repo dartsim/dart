@@ -68,7 +68,8 @@ struct ImGuiVertex
 };
 
 template <typename T>
-::filament::backend::BufferDescriptor makeBufferDescriptor(std::vector<T>&& data)
+::filament::backend::BufferDescriptor makeBufferDescriptor(
+    std::vector<T>&& data)
 {
   auto* owned = new std::vector<T>(std::move(data));
   return ::filament::backend::BufferDescriptor(

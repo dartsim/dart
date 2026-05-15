@@ -37,16 +37,17 @@
 #include <filament/MaterialInstance.h>
 #include <filament/Texture.h>
 #include <filament/TextureSampler.h>
-
 #include <jpeglib.h>
 #include <png.h>
 
+#if defined(DART_FILAMENT_GUI_JPEG_LIB_VERSION)
+static_assert(
+    JPEG_LIB_VERSION == DART_FILAMENT_GUI_JPEG_LIB_VERSION,
+    "Configured JPEG headers do not match the jpeglib.h include path");
+#endif
+
 #include <algorithm>
 #include <array>
-#include <cctype>
-#include <csetjmp>
-#include <cstdio>
-#include <cstring>
 #include <filesystem>
 #include <iostream>
 #include <optional>
@@ -55,7 +56,11 @@
 #include <utility>
 #include <vector>
 
+#include <cctype>
+#include <csetjmp>
 #include <cstdint>
+#include <cstdio>
+#include <cstring>
 
 namespace dart::gui::experimental::filament {
 namespace {
@@ -89,8 +94,7 @@ std::string lowerExtension(const std::filesystem::path& path)
   std::string extension = path.extension().string();
   std::transform(
       extension.begin(), extension.end(), extension.begin(), [](char c) {
-        return static_cast<char>(
-            std::tolower(static_cast<unsigned char>(c)));
+        return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
       });
   return extension;
 }
@@ -111,8 +115,8 @@ std::optional<ImageData> loadPngImage(const std::filesystem::path& path)
   image.version = PNG_IMAGE_VERSION;
 
   if (!png_image_begin_read_from_file(&image, path.string().c_str())) {
-    std::cerr << "Failed to read PNG texture header: " << path.string()
-              << " (" << image.message << ")\n";
+    std::cerr << "Failed to read PNG texture header: " << path.string() << " ("
+              << image.message << ")\n";
     return std::nullopt;
   }
 
@@ -122,8 +126,7 @@ std::optional<ImageData> loadPngImage(const std::filesystem::path& path)
   output.height = image.height;
   output.rgba.resize(PNG_IMAGE_SIZE(image));
 
-  if (!png_image_finish_read(
-          &image, nullptr, output.rgba.data(), 0, nullptr)) {
+  if (!png_image_finish_read(&image, nullptr, output.rgba.data(), 0, nullptr)) {
     std::cerr << "Failed to read PNG texture: " << path.string() << " ("
               << image.message << ")\n";
     png_image_free(&image);
@@ -188,10 +191,10 @@ std::optional<ImageData> loadJpegImage(const std::filesystem::path& path)
     jpeg_read_scanlines(&info, &rowPtr, 1);
 
     for (std::uint32_t x = 0; x < output.width; ++x) {
-      const auto* source = &row[static_cast<std::size_t>(x)
-                               * info.output_components];
-      auto* target = &output.rgba[
-          (static_cast<std::size_t>(y) * output.width + x) * 4u];
+      const auto* source
+          = &row[static_cast<std::size_t>(x) * info.output_components];
+      auto* target
+          = &output.rgba[(static_cast<std::size_t>(y) * output.width + x) * 4u];
       if (info.output_components == 1) {
         target[0] = source[0];
         target[1] = source[0];
@@ -277,7 +280,8 @@ void setTextureParameter(
     const TextureBinding* binding)
 {
   const TextureBinding& active = isBoundTexture(binding) ? *binding : fallback;
-  material.setParameter(textureName, active.texture, makeRepeatTextureSampler());
+  material.setParameter(
+      textureName, active.texture, makeRepeatTextureSampler());
   material.setParameter(flagName, isBoundTexture(binding) ? 1.0f : 0.0f);
 }
 
@@ -360,11 +364,7 @@ void setPbrTextureParameters(
       "useMetallicRoughnessTexture",
       textures.metallicRoughness);
   setTextureParameter(
-      material,
-      fallback,
-      "normalTexture",
-      "useNormalTexture",
-      textures.normal);
+      material, fallback, "normalTexture", "useNormalTexture", textures.normal);
   setTextureParameter(
       material,
       fallback,
@@ -390,8 +390,8 @@ void setPbrTextureParameters(
       const std::array<std::uint8_t, channels> color
           = light ? std::array<std::uint8_t, channels>{235, 245, 240, 255}
                   : std::array<std::uint8_t, channels>{42, 132, 145, 255};
-      const std::size_t offset = (static_cast<std::size_t>(y) * size + x)
-                                 * channels;
+      const std::size_t offset
+          = (static_cast<std::size_t>(y) * size + x) * channels;
       std::copy(color.begin(), color.end(), pixels.begin() + offset);
     }
   }

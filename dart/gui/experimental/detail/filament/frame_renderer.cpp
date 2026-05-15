@@ -31,7 +31,6 @@
  */
 
 #include <dart/gui/experimental/detail/filament/frame_renderer.hpp>
-
 #include <dart/gui/experimental/detail/filament/render_context.hpp>
 #include <dart/gui/experimental/detail/filament/screenshot.hpp>
 
@@ -43,15 +42,15 @@
 
 namespace dart::gui::experimental::filament {
 
-using dart::gui::experimental::ProfileAccumulator;
-using dart::gui::experimental::RunOptions;
-using dart::gui::experimental::ViewerLifecycleState;
 using dart::gui::experimental::elapsedMs;
 using dart::gui::experimental::markFrameRendered;
 using dart::gui::experimental::markFrameSkipped;
 using dart::gui::experimental::markScreenshotRequested;
+using dart::gui::experimental::ProfileAccumulator;
+using dart::gui::experimental::RunOptions;
 using dart::gui::experimental::shouldRequestScreenshot;
 using dart::gui::experimental::shouldStopAfterFrame;
+using dart::gui::experimental::ViewerLifecycleState;
 
 FrameRenderResult renderApplicationFrame(
     FilamentRenderContext& renderContext,
@@ -73,8 +72,7 @@ FrameRenderResult renderApplicationFrame(
   if (!shouldRenderFrame) {
     markFrameSkipped(lifecycle);
     ++profile.skippedFrames;
-    if (shouldSkipRenderedWorkAfterFrameSkip(
-            renderContext, options.headless)) {
+    if (shouldSkipRenderedWorkAfterFrameSkip(renderContext, options.headless)) {
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
       const double frameMs = elapsedMs(frameStart);
       profile.frameMs += frameMs;

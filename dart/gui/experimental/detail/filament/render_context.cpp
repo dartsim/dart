@@ -44,8 +44,7 @@
 namespace dart::gui::experimental::filament {
 
 FilamentRenderContext createFilamentRenderContext(
-    const dart::gui::experimental::RunOptions& options,
-    void* nativeWindow)
+    const dart::gui::experimental::RunOptions& options, void* nativeWindow)
 {
   FilamentRenderContext context;
   context.engine
@@ -56,12 +55,11 @@ FilamentRenderContext createFilamentRenderContext(
     displayInfo.refreshRate = 0.0f;
     context.renderer->setDisplayInfo(displayInfo);
   }
-  context.swapChain
-      = options.headless
-            ? context.engine->createSwapChain(
-                  static_cast<std::uint32_t>(options.width),
-                  static_cast<std::uint32_t>(options.height))
-            : context.engine->createSwapChain(nativeWindow);
+  context.swapChain = options.headless
+                          ? context.engine->createSwapChain(
+                                static_cast<std::uint32_t>(options.width),
+                                static_cast<std::uint32_t>(options.height))
+                          : context.engine->createSwapChain(nativeWindow);
   context.view = context.engine->createView();
   context.scene = context.engine->createScene();
   context.cameraEntity = utils::EntityManager::get().create();

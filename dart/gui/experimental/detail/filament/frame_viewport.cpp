@@ -31,7 +31,6 @@
  */
 
 #include <dart/gui/experimental/detail/filament/frame_viewport.hpp>
-
 #include <dart/gui/experimental/detail/filament/input.hpp>
 #include <dart/gui/experimental/detail/filament/render_environment.hpp>
 #include <dart/gui/experimental/detail/filament/selection.hpp>

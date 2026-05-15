@@ -7,7 +7,7 @@
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
- *   without modification, are permitted provided that the following
+ *   without modification, are permitted, provided that the following
  *   conditions are met:
  *   * Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
@@ -30,56 +30,4 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_RENDER_CONTEXT_HPP_
-#define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_RENDER_CONTEXT_HPP_
-
-#include <utils/Entity.h>
-
-namespace filament {
-
-class Camera;
-class Engine;
-class Renderer;
-class Scene;
-class SwapChain;
-class View;
-
-} // namespace filament
-
-namespace dart::gui::experimental {
-
-struct RunOptions;
-
-} // namespace dart::gui::experimental
-
-namespace dart::gui::experimental::filament {
-
-struct FilamentRenderContext
-{
-  ::filament::Engine* engine = nullptr;
-  ::filament::Renderer* renderer = nullptr;
-  ::filament::SwapChain* swapChain = nullptr;
-  ::filament::View* view = nullptr;
-  ::filament::Scene* scene = nullptr;
-  ::filament::Camera* camera = nullptr;
-  utils::Entity cameraEntity;
-};
-
-FilamentRenderContext createFilamentRenderContext(
-    const dart::gui::experimental::RunOptions& options, void* nativeWindow);
-
-bool beginFilamentFrame(FilamentRenderContext& context);
-
-bool shouldSkipRenderedWorkAfterFrameSkip(
-    const FilamentRenderContext& context, bool headless);
-
-void renderFilamentViews(
-    FilamentRenderContext& context, ::filament::View* overlayView);
-
-void endFilamentFrame(FilamentRenderContext& context);
-
-void destroyFilamentRenderContext(FilamentRenderContext& context);
-
-} // namespace dart::gui::experimental::filament
-
-#endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_RENDER_CONTEXT_HPP_
+#include <dart/gui/all.hpp>

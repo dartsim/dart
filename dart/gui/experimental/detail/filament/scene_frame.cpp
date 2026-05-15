@@ -30,14 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/experimental/detail/filament/scene_frame.hpp>
-
-#include <dart/collision/collision_result.hpp>
 #include <dart/gui/experimental/detail/filament/debug_overlay.hpp>
 #include <dart/gui/experimental/detail/filament/frame_viewport.hpp>
 #include <dart/gui/experimental/detail/filament/render_environment.hpp>
 #include <dart/gui/experimental/detail/filament/renderable_factory.hpp>
 #include <dart/gui/experimental/detail/filament/renderable_sync.hpp>
+#include <dart/gui/experimental/detail/filament/scene_frame.hpp>
 #include <dart/gui/experimental/detail/filament/scene_startup.hpp>
 #include <dart/gui/experimental/detail/filament/scenes.hpp>
 #include <dart/gui/experimental/detail/filament/selection.hpp>
@@ -45,7 +43,10 @@
 #include <dart/gui/experimental/profile.hpp>
 #include <dart/gui/experimental/scene.hpp>
 #include <dart/gui/experimental/viewer.hpp>
+
 #include <dart/simulation/world.hpp>
+
+#include <dart/collision/collision_result.hpp>
 
 #include <chrono>
 
@@ -133,10 +134,7 @@ void SceneFrameUpdater::update(
       mSceneState.loggedUnsupportedRenderableIds,
       [&](const dart::gui::experimental::RenderableDescriptor& descriptor) {
         return createRenderableFromDescriptor(
-            mEngine,
-            mMaterials,
-            mMaterialResources.textureCache,
-            descriptor);
+            mEngine, mMaterials, mMaterialResources.textureCache, descriptor);
       });
   if (!updateSceneRenderablesFromDescriptors(
           mEngine,
@@ -178,8 +176,7 @@ void SceneFrameUpdater::update(
       descriptors,
       mSelectionController.selectedRenderableId(),
       mSelectionDebugOverlay);
-  mProfile.selectionDebugMs
-      += dart::gui::experimental::elapsedMs(phaseStart);
+  mProfile.selectionDebugMs += dart::gui::experimental::elapsedMs(phaseStart);
 }
 
 } // namespace dart::gui::experimental::filament

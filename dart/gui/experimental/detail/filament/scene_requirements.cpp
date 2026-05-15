@@ -30,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/experimental/detail/filament/scene_requirements.hpp>
-
 #include <dart/config.hpp>
+
 #include <dart/gui/experimental/detail/filament/renderable_resources.hpp>
+#include <dart/gui/experimental/detail/filament/scene_requirements.hpp>
 
 #include <algorithm>
 #include <ostream>
@@ -110,8 +110,7 @@ bool requireCreatedAtLeast(
 } // namespace
 
 void accumulateSceneContent(
-    SceneContentCounts& counts,
-    const RenderableDescriptor& descriptor)
+    SceneContentCounts& counts, const RenderableDescriptor& descriptor)
 {
   if (!descriptor.material.visible) {
     return;
@@ -253,7 +252,8 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Box) {
     ++counts.couplerConstraintBoxes;
   }
-  if (descriptor.shapeFrameName.starts_with(kCouplerConstraintFixtureFramePrefix)
+  if (descriptor.shapeFrameName.starts_with(
+          kCouplerConstraintFixtureFramePrefix)
       && descriptor.geometry.kind == ShapeKind::LineSegments) {
     ++counts.couplerConstraintLines;
   }
@@ -302,7 +302,8 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Box) {
     ++counts.freeJointCasesActiveBoxes;
   }
-  if (descriptor.skeletonName.starts_with(kFreeJointCasesReferenceSkeletonPrefix)
+  if (descriptor.skeletonName.starts_with(
+          kFreeJointCasesReferenceSkeletonPrefix)
       && descriptor.geometry.kind == ShapeKind::Box) {
     ++counts.freeJointCasesReferenceBoxes;
   }
@@ -391,7 +392,8 @@ void accumulateSceneContent(
     ++counts.simulationEventHandlerGrounds;
   }
   if ((descriptor.shapeFrameName == kSimulationEventHandlerFastSensorFrameName
-       || descriptor.shapeFrameName == kSimulationEventHandlerSlowSensorFrameName)
+       || descriptor.shapeFrameName
+              == kSimulationEventHandlerSlowSensorFrameName)
       && descriptor.geometry.kind == ShapeKind::Sphere) {
     ++counts.simulationEventHandlerSensorMarkers;
   }
@@ -474,9 +476,7 @@ SceneContentCounts countCreatedSceneContent(
 }
 
 bool validateSceneDescriptorContent(
-    ExampleScene scene,
-    const SceneContentCounts& counts,
-    std::ostream& output)
+    ExampleScene scene, const SceneContentCounts& counts, std::ostream& output)
 {
   if (scene == ExampleScene::Mvp) {
     if (!requireAtLeast(
@@ -1207,11 +1207,17 @@ bool validateCreatedSceneContent(
 {
   if (scene == ExampleScene::Mvp) {
     if (!requireCreatedAtLeast(
-            created.wamMeshes, expected.wamMeshes, "WAM robot mesh renderables", output)) {
+            created.wamMeshes,
+            expected.wamMeshes,
+            "WAM robot mesh renderables",
+            output)) {
       return false;
     }
     if (!requireCreatedEqual(
-            created.atlasMeshes, expected.atlasMeshes, "Atlas mesh renderables", output)) {
+            created.atlasMeshes,
+            expected.atlasMeshes,
+            "Atlas mesh renderables",
+            output)) {
       return false;
     }
     if (!requireCreatedAtLeast(
@@ -1222,7 +1228,10 @@ bool validateCreatedSceneContent(
       return false;
     }
     if (!requireCreatedEqual(
-            created.pyramids, expected.pyramids, "pyramid renderables", output)) {
+            created.pyramids,
+            expected.pyramids,
+            "pyramid renderables",
+            output)) {
       return false;
     }
     if (!requireCreatedEqual(
@@ -1285,7 +1294,10 @@ bool validateCreatedSceneContent(
 
   if (scene == ExampleScene::G1) {
     return requireCreatedAtLeast(
-        created.g1Meshes, expected.g1Meshes, "G1 robot mesh renderables", output);
+        created.g1Meshes,
+        expected.g1Meshes,
+        "G1 robot mesh renderables",
+        output);
   }
 
   if (scene == ExampleScene::AtlasPuppet) {
@@ -1407,7 +1419,10 @@ bool validateCreatedSceneContent(
       return false;
     }
     return requireCreatedEqual(
-        created.fetchTargets, expected.fetchTargets, "fetch target renderables", output);
+        created.fetchTargets,
+        expected.fetchTargets,
+        "fetch target renderables",
+        output);
   }
 
   if (scene == ExampleScene::Tinkertoy) {
@@ -1701,7 +1716,10 @@ bool validateCreatedSceneContent(
 
   if (scene == ExampleScene::Heightmap) {
     return requireCreatedEqual(
-        created.heightmaps, expected.heightmaps, "heightmap renderables", output);
+        created.heightmaps,
+        expected.heightmaps,
+        "heightmap renderables",
+        output);
   }
 
   if (scene == ExampleScene::Polyhedron) {

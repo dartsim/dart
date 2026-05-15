@@ -180,8 +180,10 @@ void updateRenderableSelection(
     }
     material.instance->setParameter(
         "baseColor",
-        selected ? withRgb(material.baseColor, selectionTint(rgb(material.baseColor)))
-                 : material.baseColor);
+        selected
+            ? withRgb(
+                  material.baseColor, selectionTint(rgb(material.baseColor)))
+            : material.baseColor);
   }
 }
 

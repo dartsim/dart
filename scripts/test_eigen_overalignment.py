@@ -164,7 +164,6 @@ def configure(build_dir: Path, args: argparse.Namespace) -> None:
         "-DDART_BUILD_EXAMPLES=OFF",
         "-DDART_BUILD_TUTORIALS=OFF",
         "-DDART_BUILD_GUI=OFF",
-        "-DDART_BUILD_GUI_RAYLIB=OFF",
         "-DDART_BUILD_COLLISION_BULLET=OFF",
         "-DDART_BUILD_COLLISION_ODE=OFF",
         "-DDART_BUILD_SIMULATION_EXPERIMENTAL=OFF",

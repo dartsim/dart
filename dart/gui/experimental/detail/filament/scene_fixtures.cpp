@@ -32,12 +32,8 @@
 
 #include "scene_fixtures.hpp"
 
-#include <dart/all.hpp>
-#include <dart/common/local_resource_retriever.hpp>
-#include <dart/common/uri.hpp>
 #include <dart/config.hpp>
-#include <dart/io/read.hpp>
-#include <dart/sensor/sensor.hpp>
+
 #include <dart/utils/composite_resource_retriever.hpp>
 #include <dart/utils/dart_resource_retriever.hpp>
 #include <dart/utils/http_resource_retriever.hpp>
@@ -45,12 +41,18 @@
 #include <dart/utils/package_resource_retriever.hpp>
 #include <dart/utils/urdf/All.hpp>
 
+#include <dart/common/local_resource_retriever.hpp>
+#include <dart/common/uri.hpp>
+
+#include <dart/all.hpp>
+#include <dart/io/read.hpp>
+#include <dart/sensor/sensor.hpp>
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
 #include <algorithm>
 #include <array>
-#include <cmath>
 #include <filesystem>
 #include <iostream>
 #include <limits>
@@ -61,6 +63,8 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+#include <cmath>
 
 namespace dart::gui::experimental::filament {
 
@@ -81,8 +85,8 @@ using dart::dynamics::MeshShape;
 using dart::dynamics::PlaneShape;
 using dart::dynamics::PointCloudShape;
 using dart::dynamics::RevoluteJoint;
-using dart::dynamics::ShapePtr;
 using dart::dynamics::ShapeNode;
+using dart::dynamics::ShapePtr;
 using dart::dynamics::SimpleFrame;
 using dart::dynamics::Skeleton;
 using dart::dynamics::SoftBodyNode;
@@ -186,14 +190,15 @@ std::shared_ptr<dart::math::TriMesh<double>> createTetraMesh()
 
 std::array<Eigen::Vector3d, 8> polyhedronFixtureVertices()
 {
-  return {Eigen::Vector3d(-0.5, -0.5, 0.0),
-          Eigen::Vector3d(0.5, -0.5, 0.2),
-          Eigen::Vector3d(0.6, 0.5, 0.1),
-          Eigen::Vector3d(-0.4, 0.6, 0.15),
-          Eigen::Vector3d(-0.2, -0.2, 0.9),
-          Eigen::Vector3d(0.35, -0.3, 0.8),
-          Eigen::Vector3d(0.4, 0.35, 0.75),
-          Eigen::Vector3d(-0.35, 0.4, 0.7)};
+  return {
+      Eigen::Vector3d(-0.5, -0.5, 0.0),
+      Eigen::Vector3d(0.5, -0.5, 0.2),
+      Eigen::Vector3d(0.6, 0.5, 0.1),
+      Eigen::Vector3d(-0.4, 0.6, 0.15),
+      Eigen::Vector3d(-0.2, -0.2, 0.9),
+      Eigen::Vector3d(0.35, -0.3, 0.8),
+      Eigen::Vector3d(0.4, 0.35, 0.75),
+      Eigen::Vector3d(-0.35, 0.4, 0.7)};
 }
 
 std::shared_ptr<dart::math::TriMesh<double>> createPolyhedronMesh()
@@ -257,8 +262,7 @@ std::shared_ptr<HeightmapShaped> createMvpHeightmapShape()
 {
   auto shape = std::make_shared<HeightmapShaped>();
   const std::array<double, 12> heights{
-      0.02, 0.10, 0.06, 0.12, 0.08, 0.18,
-      0.14, 0.05, 0.10, 0.24, 0.16, 0.08};
+      0.02, 0.10, 0.06, 0.12, 0.08, 0.18, 0.14, 0.05, 0.10, 0.24, 0.16, 0.08};
   shape->setHeightField(4u, 3u, heights);
   shape->setScale(Eigen::Vector3d(0.18, 0.18, 1.0));
   return shape;
@@ -297,8 +301,8 @@ std::shared_ptr<MeshShape> loadExampleMeshShape(
     return nullptr;
   }
 
-  auto sharedMesh = std::shared_ptr<dart::math::TriMesh<double>>(
-      std::move(mesh));
+  auto sharedMesh
+      = std::shared_ptr<dart::math::TriMesh<double>>(std::move(mesh));
   const auto uri
       = dart::common::Uri::createFromStringOrPath(resolvedPath.string());
   return std::make_shared<MeshShape>(scale, std::move(sharedMesh), uri);
@@ -392,13 +396,13 @@ dart::dynamics::SkeletonPtr loadRequiredWamRobotSkeleton()
 
   wam->setName(kWamFixtureSkeletonName);
   const std::array<std::pair<const char*, double>, 7> jointPositions{
-      { {"/j1", 0.0},
-        {"/j2", -0.55},
-        {"/j3", 0.25},
-        {"/j4", 1.05},
-        {"/j5", 0.0},
-        {"/j6", 0.7},
-        {"/j7", 0.0} }};
+      {{"/j1", 0.0},
+       {"/j2", -0.55},
+       {"/j3", 0.25},
+       {"/j4", 1.05},
+       {"/j5", 0.0},
+       {"/j6", 0.7},
+       {"/j7", 0.0}}};
   for (const auto& [name, position] : jointPositions) {
     auto* dof = wam->getDof(name);
     if (dof == nullptr) {
@@ -495,11 +499,9 @@ class OperationalSpaceControlState
 {
 public:
   OperationalSpaceControlState(
-      dart::dynamics::SkeletonPtr robot,
-      dart::dynamics::SimpleFramePtr target)
+      dart::dynamics::SkeletonPtr robot, dart::dynamics::SimpleFramePtr target)
     : mRobot(std::move(robot)),
-      mEndEffector(
-          mRobot ? mRobot->getBodyNode("/wam7") : nullptr),
+      mEndEffector(mRobot ? mRobot->getBodyNode("/wam7") : nullptr),
       mTarget(std::move(target)),
       mOffset(0.05, 0.0, 0.0)
   {
@@ -521,7 +523,8 @@ public:
     Eigen::Isometry3d targetTransform = mEndEffector->getWorldTransform();
     targetTransform.pretranslate(mOffset);
     mTarget->setTransform(targetTransform);
-    mOffset = mEndEffector->getWorldTransform().rotation().transpose() * mOffset;
+    mOffset
+        = mEndEffector->getWorldTransform().rotation().transpose() * mOffset;
   }
 
   void preStep()
@@ -556,8 +559,7 @@ public:
         = mass
               * (jacobianInverse * mKp * velocityError
                  + jacobianDerivInverse * mKp * positionError)
-          + coriolisAndGravity
-          + mKd * jacobianInverse * mKp * positionError;
+          + coriolisAndGravity + mKd * jacobianInverse * mKp * positionError;
     mRobot->setForces(forces);
   }
 
@@ -690,11 +692,13 @@ dart::dynamics::SkeletonPtr loadAtlasPuppetSkeleton()
 
   auto* torso = atlas->getRootBodyNode();
   if (torso != nullptr) {
-    auto rootShape = std::make_shared<BoxShape>(Eigen::Vector3d(0.25, 0.25, 0.125));
+    auto rootShape
+        = std::make_shared<BoxShape>(Eigen::Vector3d(0.25, 0.25, 0.125));
     auto* shapeNode = torso->createShapeNodeWith<VisualAspect>(rootShape);
     shapeNode->setName("atlas_puppet_root_handle");
     shapeNode->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, 0.1));
-    shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.08, 0.09, 0.10, 1.0));
+    shapeNode->getVisualAspect()->setRGBA(
+        Eigen::Vector4d(0.08, 0.09, 0.10, 1.0));
   }
 
   disableSkeletonCollisionAndGravity(atlas);
@@ -883,7 +887,8 @@ dart::common::ResourceRetrieverPtr createG1ResourceRetriever(
   auto dartRetriever = std::make_shared<dart::utils::DartResourceRetriever>();
   auto http = std::make_shared<dart::utils::HttpResourceRetriever>();
 
-  auto passthrough = std::make_shared<dart::utils::CompositeResourceRetriever>();
+  auto passthrough
+      = std::make_shared<dart::utils::CompositeResourceRetriever>();
   passthrough->addSchemaRetriever("file", local);
   passthrough->addSchemaRetriever("dart", dartRetriever);
   passthrough->addSchemaRetriever("http", http);
@@ -914,7 +919,8 @@ dart::dynamics::SkeletonPtr createG1Ground()
   constexpr double thickness = 0.04;
   auto* shapeNode = body->createShapeNodeWith<VisualAspect>(
       std::make_shared<BoxShape>(Eigen::Vector3d(4.0, 4.0, thickness)));
-  shapeNode->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, -thickness / 2.0));
+  shapeNode->setRelativeTranslation(
+      Eigen::Vector3d(0.0, 0.0, -thickness / 2.0));
   shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.86, 0.88, 0.9, 1.0));
   return ground;
 }
@@ -963,10 +969,12 @@ computeVisualWorldBounds(const dart::dynamics::SkeletonPtr& skeleton)
       for (int x = 0; x < 2; ++x) {
         for (int y = 0; y < 2; ++y) {
           for (int z = 0; z < 2; ++z) {
-            includePoint(transform * Eigen::Vector3d(
-                                         x == 0 ? localMin.x() : localMax.x(),
-                                         y == 0 ? localMin.y() : localMax.y(),
-                                         z == 0 ? localMin.z() : localMax.z()));
+            includePoint(
+                transform
+                * Eigen::Vector3d(
+                    x == 0 ? localMin.x() : localMax.x(),
+                    y == 0 ? localMin.y() : localMax.y(),
+                    z == 0 ? localMin.z() : localMax.z()));
           }
         }
       }
@@ -1018,8 +1026,7 @@ dart::math::SupportGeometry makeG1FootSupportGeometry()
   return geometry;
 }
 
-void addG1IkTargets(
-    DartScene& scene, const dart::dynamics::SkeletonPtr& robot)
+void addG1IkTargets(DartScene& scene, const dart::dynamics::SkeletonPtr& robot)
 {
   struct Config
   {
@@ -1103,9 +1110,7 @@ void addG1IkTargets(
 }
 
 void setRequiredHuboPuppetDofPosition(
-    const dart::dynamics::SkeletonPtr& hubo,
-    const char* name,
-    double position)
+    const dart::dynamics::SkeletonPtr& hubo, const char* name, double position)
 {
   auto* dof = hubo ? hubo->getDof(name) : nullptr;
   if (dof == nullptr) {
@@ -1130,8 +1135,7 @@ void setRequiredHuboPuppetDofLimits(
   dof->setPositionUpperLimit(upper);
 }
 
-void setupHuboPuppetStartConfiguration(
-    const dart::dynamics::SkeletonPtr& hubo)
+void setupHuboPuppetStartConfiguration(const dart::dynamics::SkeletonPtr& hubo)
 {
   const std::array<std::pair<const char*, double>, 10> jointPositions{{
       {"LHP", -45.0},
@@ -1146,17 +1150,13 @@ void setupHuboPuppetStartConfiguration(
       {"REP", -120.0},
   }};
   for (const auto& [name, degrees] : jointPositions) {
-    setRequiredHuboPuppetDofPosition(
-        hubo, name, dart::math::toRadian(degrees));
+    setRequiredHuboPuppetDofPosition(hubo, name, dart::math::toRadian(degrees));
   }
 
   const std::array<const char*, 4> limitedDofs{{"LSY", "LWY", "RSY", "RWY"}};
   for (const char* name : limitedDofs) {
     setRequiredHuboPuppetDofLimits(
-        hubo,
-        name,
-        dart::math::toRadian(-90.0),
-        dart::math::toRadian(90.0));
+        hubo, name, dart::math::toRadian(-90.0), dart::math::toRadian(90.0));
   }
 }
 
@@ -1398,8 +1398,9 @@ dart::dynamics::SkeletonPtr createDynamicBoxSkeleton(
       DynamicsAspect>(boxShape);
   boxShapeNode->getVisualAspect()->setColor(color);
   boxShapeNode->getDynamicsAspect()->setRestitutionCoeff(restitution);
-  body->setInertia(dart::dynamics::Inertia(
-      1.0, Eigen::Vector3d::Zero(), boxShape->computeInertia(1.0)));
+  body->setInertia(
+      dart::dynamics::Inertia(
+          1.0, Eigen::Vector3d::Zero(), boxShape->computeInertia(1.0)));
   return box;
 }
 
@@ -1504,8 +1505,8 @@ dart::dynamics::BodyNode* addTinkertoyBlock(
       = body->template createShapeNodeWith<VisualAspect>(jointShape);
   jointShapeNode->getVisualAspect()->setRGBA(jointColor);
 
-  auto* blockShapeNode = body->template createShapeNodeWith<VisualAspect>(
-      shapes.blockShape);
+  auto* blockShapeNode
+      = body->template createShapeNodeWith<VisualAspect>(shapes.blockShape);
   blockShapeNode->setRelativeTransform(shapes.blockOffset);
   blockShapeNode->getVisualAspect()->setRGBA(pausedColor);
 
@@ -1560,14 +1561,13 @@ void addTinkertoyReferenceFrames(World& world)
   target->getVisualAspect(true)->setRGBA(dart::Color::Fuchsia(1.0));
   world.addSimpleFrame(target);
 
-  auto forceLine = SimpleFrame::createShared(
-      Frame::World(), kTinkertoyForceLineFrameName);
+  auto forceLine
+      = SimpleFrame::createShared(Frame::World(), kTinkertoyForceLineFrameName);
   auto forceLineShape = std::make_shared<LineSegmentShape>(
-      Eigen::Vector3d(0.08, -0.15, 0.18),
-      targetTransform.translation(),
-      3.0f);
+      Eigen::Vector3d(0.08, -0.15, 0.18), targetTransform.translation(), 3.0f);
   forceLine->setShape(forceLineShape);
-  forceLine->createVisualAspect()->setRGBA(Eigen::Vector4d(1.0, 0.63, 0.0, 1.0));
+  forceLine->createVisualAspect()->setRGBA(
+      Eigen::Vector4d(1.0, 0.63, 0.0, 1.0));
   world.addSimpleFrame(forceLine);
 }
 
@@ -1577,15 +1577,15 @@ void addTinkertoyInitialAssemblies(World& world)
   std::size_t nextToyIndex = 0;
 
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-  transform.rotate(Eigen::AngleAxisd(
-      dart::math::toRadian(45.0), Eigen::Vector3d::UnitY()));
+  transform.rotate(
+      Eigen::AngleAxisd(dart::math::toRadian(45.0), Eigen::Vector3d::UnitY()));
   auto* firstToy = addTinkertoyBlock<BallJoint>(
       world, shapes, nullptr, transform, shapes.ballJointShape, nextToyIndex);
 
   transform = Eigen::Isometry3d::Identity();
   transform.translation().x() = 0.5;
-  transform.prerotate(Eigen::AngleAxisd(
-      dart::math::toRadian(90.0), Eigen::Vector3d::UnitX()));
+  transform.prerotate(
+      Eigen::AngleAxisd(dart::math::toRadian(90.0), Eigen::Vector3d::UnitX()));
   firstToy = addTinkertoyBlock<RevoluteJoint>(
       world,
       shapes,
@@ -1595,22 +1595,22 @@ void addTinkertoyInitialAssemblies(World& world)
       nextToyIndex);
 
   transform = Eigen::Isometry3d::Identity();
-  transform.rotate(Eigen::AngleAxisd(
-      dart::math::toRadian(90.0), Eigen::Vector3d::UnitZ()));
+  transform.rotate(
+      Eigen::AngleAxisd(dart::math::toRadian(90.0), Eigen::Vector3d::UnitZ()));
   firstToy = addTinkertoyBlock<WeldJoint>(
       world, shapes, firstToy, transform, shapes.weldJointShape, nextToyIndex);
 
   transform = Eigen::Isometry3d::Identity();
   transform.translation().x() = 0.25;
   transform.translation().z() = 0.075;
-  transform.rotate(Eigen::AngleAxisd(
-      dart::math::toRadian(-30.0), Eigen::Vector3d::UnitZ()));
+  transform.rotate(
+      Eigen::AngleAxisd(dart::math::toRadian(-30.0), Eigen::Vector3d::UnitZ()));
   addTinkertoyBlock<BallJoint>(
       world, shapes, firstToy, transform, shapes.ballJointShape, nextToyIndex);
 
   transform = Eigen::Isometry3d::Identity();
-  transform.rotate(Eigen::AngleAxisd(
-      dart::math::toRadian(90.0), Eigen::Vector3d::UnitY()));
+  transform.rotate(
+      Eigen::AngleAxisd(dart::math::toRadian(90.0), Eigen::Vector3d::UnitY()));
   transform.pretranslate(-1.0 * Eigen::Vector3d::UnitX());
   auto* secondToy = addTinkertoyBlock<BallJoint>(
       world, shapes, nullptr, transform, shapes.ballJointShape, nextToyIndex);
@@ -1618,16 +1618,16 @@ void addTinkertoyInitialAssemblies(World& world)
   transform = Eigen::Isometry3d::Identity();
   transform.translation().x() = 0.5;
   transform.translation().z() = 0.25;
-  transform.rotate(Eigen::AngleAxisd(
-      dart::math::toRadian(90.0), Eigen::Vector3d::UnitY()));
+  transform.rotate(
+      Eigen::AngleAxisd(dart::math::toRadian(90.0), Eigen::Vector3d::UnitY()));
   secondToy = addTinkertoyBlock<WeldJoint>(
       world, shapes, secondToy, transform, shapes.weldJointShape, nextToyIndex);
 
   transform = Eigen::Isometry3d::Identity();
-  transform.rotate(Eigen::AngleAxisd(
-      dart::math::toRadian(-90.0), Eigen::Vector3d::UnitX()));
-  transform.rotate(Eigen::AngleAxisd(
-      dart::math::toRadian(-90.0), Eigen::Vector3d::UnitZ()));
+  transform.rotate(
+      Eigen::AngleAxisd(dart::math::toRadian(-90.0), Eigen::Vector3d::UnitX()));
+  transform.rotate(
+      Eigen::AngleAxisd(dart::math::toRadian(-90.0), Eigen::Vector3d::UnitZ()));
   transform.translation().z() = 0.075 / 2.0;
   addTinkertoyBlock<RevoluteJoint>(
       world,
@@ -1677,8 +1677,8 @@ dart::dynamics::SkeletonPtr createLcpPhysicsBoxSkeleton(
   shapeNode->getDynamicsAspect()->setFrictionCoeff(0.8);
   shapeNode->getDynamicsAspect()->setPrimarySlipCompliance(0.0);
   shapeNode->getDynamicsAspect()->setSecondarySlipCompliance(0.0);
-  body->setInertia(Inertia(
-      mass, Eigen::Vector3d::Zero(), boxShape->computeInertia(mass)));
+  body->setInertia(
+      Inertia(mass, Eigen::Vector3d::Zero(), boxShape->computeInertia(mass)));
   return box;
 }
 
@@ -1814,12 +1814,14 @@ DartScene createMvpDartScene()
         continue;
       }
       const Eigen::Vector3d& resting = pointMass->getRestingPosition();
-      pointMass->setPositions(Eigen::Vector3d(
-          0.0,
-          0.0,
-          0.05
-              * std::sin(7.0 * resting.x() + 5.0 * resting.y()
-                         + static_cast<double>(i) * 0.3)));
+      pointMass->setPositions(
+          Eigen::Vector3d(
+              0.0,
+              0.0,
+              0.05
+                  * std::sin(
+                      7.0 * resting.x() + 5.0 * resting.y()
+                      + static_cast<double>(i) * 0.3)));
     }
 
     for (std::size_t i = 0; i < softBody->getNumShapeNodes(); ++i) {
@@ -1936,8 +1938,7 @@ DartScene createMvpDartScene()
   scene.world->addSkeleton(loadRequiredWamRobotSkeleton());
   scene.world->addSkeleton(loadRequiredAtlasRobotSkeleton());
   if (auto pbrMesh = loadExampleMeshShape(
-          "data/gltf/pbr_triangle.gltf",
-          Eigen::Vector3d(0.9, 0.9, 0.9))) {
+          "data/gltf/pbr_triangle.gltf", Eigen::Vector3d(0.9, 0.9, 0.9))) {
     scene.world->addSkeleton(createStaticVisual(
         "visual_gltf_pbr_mesh",
         pbrMesh,
@@ -2053,9 +2054,8 @@ dart::dynamics::SkeletonPtr createHardcodedDesignSkeleton()
   joint.mPositionUpperLimits[0] = dart::math::pi;
 
   auto [rootJoint, rootBody]
-      = skeleton
-            ->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
-                nullptr, joint, body);
+      = skeleton->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
+          nullptr, joint, body);
   (void)rootJoint;
   auto rootShapeNode = rootBody->createShapeNodeWith<
       VisualAspect,
@@ -2077,9 +2077,8 @@ dart::dynamics::SkeletonPtr createHardcodedDesignSkeleton()
   joint.mT_ParentBodyToJoint = Eigen::Translation3d(0.0, 0.0, 0.5);
 
   auto [hipRollJoint, hipRollBody]
-      = skeleton
-            ->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
-                rootBody, joint, body);
+      = skeleton->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
+          rootBody, joint, body);
   (void)hipRollJoint;
   auto hipRollShapeNode = hipRollBody->createShapeNodeWith<
       VisualAspect,
@@ -2103,9 +2102,8 @@ dart::dynamics::SkeletonPtr createHardcodedDesignSkeleton()
   joint.mT_ParentBodyToJoint = Eigen::Translation3d(0.0, 0.0, 1.0);
 
   auto [hipPitchJoint, hipPitchBody]
-      = skeleton
-            ->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
-                hipRollBody, joint, body);
+      = skeleton->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
+          hipRollBody, joint, body);
   (void)hipPitchJoint;
   auto hipPitchShapeNode = hipPitchBody->createShapeNodeWith<
       VisualAspect,
@@ -2157,10 +2155,10 @@ DartScene createRigidChainScene()
 
   const std::size_t numBodyNodes = chain->getNumBodyNodes();
   for (std::size_t i = 0; i < numBodyNodes; ++i) {
-    const double t = numBodyNodes <= 1
-                         ? 0.0
-                         : static_cast<double>(i)
-                               / static_cast<double>(numBodyNodes - 1);
+    const double t
+        = numBodyNodes <= 1
+              ? 0.0
+              : static_cast<double>(i) / static_cast<double>(numBodyNodes - 1);
     const Eigen::Vector3d color(
         0.20 + 0.60 * t, 0.58 - 0.28 * t, 0.90 - 0.45 * t);
     chain->getBodyNode(i)->setColor(color);
@@ -2248,7 +2246,8 @@ DartScene createMixedChainScene()
   for (std::size_t i = 0; i < chain->getNumBodyNodes(); ++i) {
     auto* bodyNode = chain->getBodyNode(i);
     const bool softLink
-        = dynamic_cast<const dart::dynamics::SoftBodyNode*>(bodyNode) != nullptr;
+        = dynamic_cast<const dart::dynamics::SoftBodyNode*>(bodyNode)
+          != nullptr;
     bodyNode->setColor(
         softLink ? Eigen::Vector3d(0.90, 0.42, 0.18)
                  : Eigen::Vector3d(0.30, 0.55, 0.85));
@@ -2274,9 +2273,8 @@ CouplerConstraintFixtureAssembly createCouplerConstraintFixtureAssembly(
     const Eigen::Vector3d& followerColor,
     double targetAngle)
 {
-  auto skeleton
-      = Skeleton::create(std::string(kCouplerConstraintFixtureSkeletonPrefix)
-                         + label);
+  auto skeleton = Skeleton::create(
+      std::string(kCouplerConstraintFixtureSkeletonPrefix) + label);
 
   dart::dynamics::WeldJoint::Properties baseJointProps;
   baseJointProps.mName = label + "_base_joint";
@@ -2511,12 +2509,12 @@ DartScene createAddDeleteSkelsScene()
   ground->setName(kAddDeleteSkelsFixtureGroundSkeletonName);
 
   const std::array<Eigen::Vector3d, kAddDeleteSkelsFixtureCubeCount> positions{
-          Eigen::Vector3d(-0.8, 0.65, -0.7),
-          Eigen::Vector3d(-0.35, 1.05, 0.25),
-          Eigen::Vector3d(0.15, 0.75, -0.15),
-          Eigen::Vector3d(0.55, 1.25, 0.55),
-          Eigen::Vector3d(0.9, 0.95, -0.45),
-      };
+      Eigen::Vector3d(-0.8, 0.65, -0.7),
+      Eigen::Vector3d(-0.35, 1.05, 0.25),
+      Eigen::Vector3d(0.15, 0.75, -0.15),
+      Eigen::Vector3d(0.55, 1.25, 0.55),
+      Eigen::Vector3d(0.9, 0.95, -0.45),
+  };
   const std::array<Eigen::Vector3d, kAddDeleteSkelsFixtureCubeCount> sizes{
       Eigen::Vector3d(0.25, 0.22, 0.30),
       Eigen::Vector3d(0.18, 0.28, 0.22),
@@ -2559,8 +2557,7 @@ DartScene createVehicleScene()
   const auto requireSkeleton = [&](const std::string& name) {
     auto skeleton = scene.world->getSkeleton(name);
     if (!skeleton) {
-      throw std::runtime_error(
-          "vehicle fixture is missing skeleton: " + name);
+      throw std::runtime_error("vehicle fixture is missing skeleton: " + name);
     }
     return skeleton;
   };
@@ -2607,8 +2604,7 @@ class JointConstraintsControllerState
 {
 public:
   JointConstraintsControllerState(
-      dart::dynamics::SkeletonPtr biped,
-      double timeStep)
+      dart::dynamics::SkeletonPtr biped, double timeStep)
     : mBiped(std::move(biped)), mTimeStep(timeStep)
   {
     if (!mBiped) {
@@ -2650,8 +2646,7 @@ public:
 
 private:
   void computeTorques(
-      const Eigen::VectorXd& positions,
-      const Eigen::VectorXd& velocities)
+      const Eigen::VectorXd& positions, const Eigen::VectorXd& velocities)
   {
     const Eigen::MatrixXd inverseMass
         = (mBiped->getMassMatrix() + mKd * mTimeStep).inverse();
@@ -2755,11 +2750,11 @@ DartScene createHybridDynamicsScene()
     if (body == nullptr) {
       continue;
     }
-    const double t = biped->getNumBodyNodes() <= 1
-                         ? 0.0
-                         : static_cast<double>(i)
-                               / static_cast<double>(
-                                   biped->getNumBodyNodes() - 1);
+    const double t
+        = biped->getNumBodyNodes() <= 1
+              ? 0.0
+              : static_cast<double>(i)
+                    / static_cast<double>(biped->getNumBodyNodes() - 1);
     body->setColor(
         Eigen::Vector3d(0.25 + 0.45 * t, 0.42 + 0.22 * t, 0.78 - 0.35 * t));
   }
@@ -2819,11 +2814,11 @@ DartScene createJointConstraintsScene()
     if (body == nullptr) {
       continue;
     }
-    const double t = biped->getNumBodyNodes() <= 1
-                         ? 0.0
-                         : static_cast<double>(i)
-                               / static_cast<double>(
-                                   biped->getNumBodyNodes() - 1);
+    const double t
+        = biped->getNumBodyNodes() <= 1
+              ? 0.0
+              : static_cast<double>(i)
+                    / static_cast<double>(biped->getNumBodyNodes() - 1);
     body->setColor(
         Eigen::Vector3d(0.24 + 0.34 * t, 0.52 - 0.20 * t, 0.34 + 0.24 * t));
   }
@@ -2877,8 +2872,7 @@ Eigen::Vector3d computeFreeJointCasesOmegaBodyDot(
 }
 
 Eigen::Vector4d computeFreeJointCasesQuaternionCoeffDot(
-    const Eigen::Quaterniond& orientation,
-    const Eigen::Vector3d& omegaBody)
+    const Eigen::Quaterniond& orientation, const Eigen::Vector3d& omegaBody)
 {
   const Eigen::Quaterniond omegaQuat(
       0.0, omegaBody.x(), omegaBody.y(), omegaBody.z());
@@ -2954,7 +2948,8 @@ FreeJointCasesFixture createFreeJointCasesFixture(
   FreeJointCasesFixture fixture;
   fixture.skeleton = Skeleton::create(
       std::string(kFreeJointCasesActiveSkeletonPrefix) + std::to_string(index));
-  auto [joint, body] = fixture.skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto [joint, body]
+      = fixture.skeleton->createJointAndBodyNodePair<FreeJoint>();
   fixture.joint = joint;
   body->setName(label);
   body->setMass(1.0);
@@ -2980,7 +2975,8 @@ FreeJointCasesFixture createFreeJointCasesFixture(
   const Eigen::Matrix3d rotation = pose.linear();
   fixture.torqueFreeState.orientation = Eigen::Quaterniond(rotation);
   fixture.torqueFreeState.orientation.normalize();
-  fixture.torqueFreeState.omegaBody = rotation.transpose() * velocities.head<3>();
+  fixture.torqueFreeState.omegaBody
+      = rotation.transpose() * velocities.head<3>();
 
   fixture.referenceSkeleton = Skeleton::create(
       std::string(kFreeJointCasesReferenceSkeletonPrefix)
@@ -3062,10 +3058,7 @@ private:
       const double dt = std::min(baseStep, targetTime - time);
       for (auto& fixture : mFixtures) {
         integrateFreeJointCasesTorqueFreeStep(
-            fixture.torqueFreeState,
-            fixture.inertia,
-            fixture.inertiaInv,
-            dt);
+            fixture.torqueFreeState, fixture.inertia, fixture.inertiaInv, dt);
       }
       time += dt;
     }
@@ -3082,9 +3075,8 @@ private:
       Eigen::Isometry3d expected = Eigen::Isometry3d::Identity();
       expected.linear()
           = fixture.torqueFreeState.orientation.toRotationMatrix();
-      expected.translation()
-          = fixture.initialPositions.tail<3>()
-            + fixture.initialVelocities.tail<3>() * time;
+      expected.translation() = fixture.initialPositions.tail<3>()
+                               + fixture.initialVelocities.tail<3>() * time;
       fixture.referenceJoint->setPositions(
           FreeJoint::convertToPositions(expected));
     }
@@ -3111,7 +3103,11 @@ DartScene createFreeJointCasesScene()
     Eigen::Vector6d velocity = Eigen::Vector6d::Zero();
     velocity.tail<3>() = Eigen::Vector3d(0.7, 0.0, 0.0);
     fixtures.push_back(createFreeJointCasesFixture(
-        0, "linear_only", pose, velocity, Eigen::Vector4d(0.15, 0.35, 0.95, 0.7)));
+        0,
+        "linear_only",
+        pose,
+        velocity,
+        Eigen::Vector4d(0.15, 0.35, 0.95, 0.7)));
   }
 
   {
@@ -3120,7 +3116,11 @@ DartScene createFreeJointCasesScene()
     Eigen::Vector6d velocity = Eigen::Vector6d::Zero();
     velocity.head<3>() = Eigen::Vector3d(0.0, 0.9, 0.0);
     fixtures.push_back(createFreeJointCasesFixture(
-        1, "angular_only", pose, velocity, Eigen::Vector4d(0.90, 0.12, 0.12, 0.7)));
+        1,
+        "angular_only",
+        pose,
+        velocity,
+        Eigen::Vector4d(0.90, 0.12, 0.12, 0.7)));
   }
 
   {
@@ -3141,8 +3141,8 @@ DartScene createFreeJointCasesScene()
   {
     Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
     pose.translation() = Eigen::Vector3d(6.0, 0.0, 0.0);
-    pose.linear()
-        = dart::math::expMapRot(Eigen::Vector3d(dart::math::pi - 1e-6, 0.0, 0.0));
+    pose.linear() = dart::math::expMapRot(
+        Eigen::Vector3d(dart::math::pi - 1e-6, 0.0, 0.0));
     Eigen::Vector6d velocity = Eigen::Vector6d::Zero();
     velocity.head<3>() = Eigen::Vector3d(0.2, 0.8, -0.4);
     velocity.tail<3>() = Eigen::Vector3d(0.3, -0.1, 0.2);
@@ -3212,9 +3212,8 @@ DartScene createHumanJointLimitsScene()
   }
   human->setName(kHumanJointLimitsFixtureSkeletonName);
   makeVisualOnlySkeleton(human);
-  human->eachJoint([](dart::dynamics::Joint* joint) {
-    joint->setLimitEnforcement(true);
-  });
+  human->eachJoint(
+      [](dart::dynamics::Joint* joint) { joint->setLimitEnforcement(true); });
 
   setRequiredJointPositions(human, "j_bicep_left", {-0.35, 0.20, 0.55});
   setRequiredJointPositions(human, "j_forearm_left", {0.75});
@@ -3232,11 +3231,11 @@ DartScene createHumanJointLimitsScene()
     if (body == nullptr) {
       continue;
     }
-    const double t = human->getNumBodyNodes() <= 1
-                         ? 0.0
-                         : static_cast<double>(i)
-                               / static_cast<double>(
-                                   human->getNumBodyNodes() - 1);
+    const double t
+        = human->getNumBodyNodes() <= 1
+              ? 0.0
+              : static_cast<double>(i)
+                    / static_cast<double>(human->getNumBodyNodes() - 1);
     body->setColor(
         Eigen::Vector3d(0.68 + 0.10 * t, 0.52 + 0.10 * t, 0.38 + 0.08 * t));
   }
@@ -3321,9 +3320,9 @@ DartScene createLcpPhysicsScene()
     const double startX = -0.5 * (boxesInLayer - 1) * pyramidBoxSize * 1.12;
     for (int i = 0; i < boxesInLayer; ++i) {
       const double x = startX + i * pyramidBoxSize * 1.12;
-      const double t = static_cast<double>(pyramidBoxIndex)
-                       / static_cast<double>(
-                           pyramidLayers * (pyramidLayers + 1) / 2);
+      const double t
+          = static_cast<double>(pyramidBoxIndex)
+            / static_cast<double>(pyramidLayers * (pyramidLayers + 1) / 2);
       addTranslatedBox(
           "stack_" + std::to_string(pyramidBoxIndex),
           Eigen::Vector3d::Constant(pyramidBoxSize),
@@ -3337,8 +3336,8 @@ DartScene createLcpPhysicsScene()
   constexpr int dominoCount = 8;
   constexpr double dominoSpacing = 0.16;
   for (int i = 0; i < dominoCount; ++i) {
-    const double x = (static_cast<double>(i) - 0.5 * (dominoCount - 1))
-                     * dominoSpacing;
+    const double x
+        = (static_cast<double>(i) - 0.5 * (dominoCount - 1)) * dominoSpacing;
     Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
     transform.translation() = Eigen::Vector3d(x, 0.18, 0.85);
     if (i == 0) {
@@ -3509,7 +3508,8 @@ DartScene createOperationalSpaceControlScene()
       kOperationalSpaceControlTargetFrameName,
       targetTransform);
   target->setShape(std::make_shared<SphereShape>(0.04));
-  target->getVisualAspect(true)->setRGBA(Eigen::Vector4d(0.92, 0.08, 0.08, 1.0));
+  target->getVisualAspect(true)->setRGBA(
+      Eigen::Vector4d(0.92, 0.08, 0.08, 1.0));
   scene.world->addSimpleFrame(target);
 
   auto controller = std::make_shared<OperationalSpaceControlState>(wam, target);
@@ -3545,7 +3545,8 @@ DartScene createWamIkFastScene()
       kWamIkFastTargetFrameName,
       targetTransform);
   target->setShape(std::make_shared<SphereShape>(0.045));
-  target->getVisualAspect(true)->setRGBA(Eigen::Vector4d(0.18, 0.55, 1.0, 0.92));
+  target->getVisualAspect(true)->setRGBA(
+      Eigen::Vector4d(0.18, 0.55, 1.0, 0.92));
   scene.world->addSimpleFrame(target);
   scene.world->addSkeleton(wam);
 
@@ -3602,7 +3603,8 @@ DartScene createFetchScene()
     throw std::runtime_error("Fetch fixture is missing robot0:mocap");
   }
   auto* constraintSolver = scene.world->getConstraintSolver();
-  if (constraintSolver != nullptr && constraintSolver->getNumConstraints() > 0) {
+  if (constraintSolver != nullptr
+      && constraintSolver->getNumConstraints() > 0) {
     if (auto weldJointConstraint
         = std::dynamic_pointer_cast<dart::constraint::WeldJointConstraint>(
             constraintSolver->getConstraint(0))) {
@@ -3616,11 +3618,10 @@ DartScene createFetchScene()
   targetTransform.linear()
       = Eigen::AngleAxisd(halfPi, Eigen::Vector3d::UnitY()).toRotationMatrix();
   auto target = SimpleFrame::createShared(
-      dart::dynamics::Frame::World(),
-      kFetchTargetFrameName,
-      targetTransform);
+      dart::dynamics::Frame::World(), kFetchTargetFrameName, targetTransform);
   target->setShape(std::make_shared<SphereShape>(0.06));
-  target->getVisualAspect(true)->setRGBA(Eigen::Vector4d(0.18, 0.86, 0.34, 0.92));
+  target->getVisualAspect(true)->setRGBA(
+      Eigen::Vector4d(0.18, 0.86, 0.34, 0.92));
   scene.world->addSimpleFrame(target);
 
   for (std::size_t i = 0; i < scene.world->getNumSkeletons(); ++i) {
@@ -3658,14 +3659,16 @@ DartScene createDragAndDropScene()
   transform.translation() = Eigen::Vector3d(4.0, -4.0, 0.0);
   auto anchor = std::make_shared<SimpleFrame>(
       dart::dynamics::Frame::World(), "interactive frame", transform);
-  anchor->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(0.45, 0.45, 0.45)));
+  anchor->setShape(
+      std::make_shared<BoxShape>(Eigen::Vector3d(0.45, 0.45, 0.45)));
   anchor->getVisualAspect(true)->setColor(Eigen::Vector3d(0.95, 0.7, 0.15));
   scene.world->addSimpleFrame(anchor);
 
   transform = Eigen::Isometry3d::Identity();
   transform.translation() = Eigen::Vector3d(-4.0, 4.0, 0.0);
   auto draggable = anchor->spawnChildSimpleFrame("draggable", transform);
-  draggable->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  draggable->setShape(
+      std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0)));
   draggable->getVisualAspect(true)->setColor(Eigen::Vector3d(0.9, 0.0, 0.0));
   scene.world->addSimpleFrame(draggable);
 
@@ -3682,9 +3685,12 @@ DartScene createDragAndDropScene()
     scene.world->addSimpleFrame(marker);
   };
 
-  addMarker("X", Eigen::Vector3d(8.0, 0.0, 0.0), Eigen::Vector3d(0.9, 0.0, 0.0));
-  addMarker("Y", Eigen::Vector3d(0.0, 8.0, 0.0), Eigen::Vector3d(0.0, 0.9, 0.0));
-  addMarker("Z", Eigen::Vector3d(0.0, 0.0, 8.0), Eigen::Vector3d(0.0, 0.0, 0.9));
+  addMarker(
+      "X", Eigen::Vector3d(8.0, 0.0, 0.0), Eigen::Vector3d(0.9, 0.0, 0.0));
+  addMarker(
+      "Y", Eigen::Vector3d(0.0, 8.0, 0.0), Eigen::Vector3d(0.0, 0.9, 0.0));
+  addMarker(
+      "Z", Eigen::Vector3d(0.0, 0.0, 8.0), Eigen::Vector3d(0.0, 0.0, 0.9));
 
   return scene;
 }
@@ -3700,13 +3706,13 @@ DartScene createSimpleFramesScene()
 
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
   tf2.translate(Eigen::Vector3d(0.0, 0.1, 0.0));
-  tf2.rotate(Eigen::AngleAxisd(
-      dart::math::toRadian(45.0), Eigen::Vector3d::UnitX()));
+  tf2.rotate(
+      Eigen::AngleAxisd(dart::math::toRadian(45.0), Eigen::Vector3d::UnitX()));
 
   Eigen::Isometry3d tf3 = Eigen::Isometry3d::Identity();
   tf3.translate(Eigen::Vector3d(0.0, 0.0, 0.1));
-  tf3.rotate(Eigen::AngleAxisd(
-      dart::math::toRadian(60.0), Eigen::Vector3d::UnitY()));
+  tf3.rotate(
+      Eigen::AngleAxisd(dart::math::toRadian(60.0), Eigen::Vector3d::UnitY()));
 
   const auto addFrame = [&](const std::shared_ptr<SimpleFrame>& frame) {
     scene.world->addSimpleFrame(frame);
@@ -3740,19 +3746,21 @@ DartScene createSimpleFramesScene()
   auto markerRoot = SimpleFrame::createShared(
       dart::dynamics::Frame::World(),
       std::string(kSimpleFramesFixtureEllipsoidFramePrefix) + "root");
-  markerRoot->setShape(std::make_shared<dart::dynamics::EllipsoidShape>(
-      Eigen::Vector3d(0.02, 0.02, 0.02)));
+  markerRoot->setShape(
+      std::make_shared<dart::dynamics::EllipsoidShape>(
+          Eigen::Vector3d(0.02, 0.02, 0.02)));
   setColor(markerRoot, Eigen::Vector4d(0.95, 0.75, 0.20, 1.0));
   addFrame(markerRoot);
 
-  const auto addMarker = [&](const std::string& name,
-                             const Eigen::Isometry3d& transform) {
-    auto marker = markerRoot->spawnChildSimpleFrame(name, transform);
-    marker->setShape(std::make_shared<dart::dynamics::EllipsoidShape>(
-        Eigen::Vector3d(0.01, 0.01, 0.01)));
-    setColor(marker, Eigen::Vector4d(0.95, 0.75, 0.20, 1.0));
-    addFrame(marker);
-  };
+  const auto addMarker
+      = [&](const std::string& name, const Eigen::Isometry3d& transform) {
+          auto marker = markerRoot->spawnChildSimpleFrame(name, transform);
+          marker->setShape(
+              std::make_shared<dart::dynamics::EllipsoidShape>(
+                  Eigen::Vector3d(0.01, 0.01, 0.01)));
+          setColor(marker, Eigen::Vector4d(0.95, 0.75, 0.20, 1.0));
+          addFrame(marker);
+        };
   addMarker(
       std::string(kSimpleFramesFixtureEllipsoidFramePrefix) + "1",
       f1->getTransform(markerRoot.get()));
@@ -3766,9 +3774,7 @@ DartScene createSimpleFramesScene()
   auto arrow = SimpleFrame::createShared(
       dart::dynamics::Frame::World(), kSimpleFramesFixtureArrowFrameName);
   auto arrowShape = std::make_shared<dart::dynamics::LineSegmentShape>(
-      Eigen::Vector3d(0.1, -0.1, 0.0),
-      Eigen::Vector3d(0.1, 0.0, 0.0),
-      2.0f);
+      Eigen::Vector3d(0.1, -0.1, 0.0), Eigen::Vector3d(0.1, 0.0, 0.0), 2.0f);
   arrowShape->addVertex(Eigen::Vector3d(0.075, -0.025, 0.0), 1);
   arrowShape->addVertex(Eigen::Vector3d(0.125, -0.025, 0.0), 1);
   arrow->setShape(arrowShape);
@@ -3809,8 +3815,7 @@ DartScene createPointCloudScene()
     for (int y = 0; y < 6; ++y) {
       const double xf = -0.42 + 0.12 * static_cast<double>(x);
       const double yf = -0.30 + 0.12 * static_cast<double>(y);
-      const double zf
-          = 0.05 * std::sin(5.0 * xf) + 0.06 * std::cos(4.0 * yf);
+      const double zf = 0.05 * std::sin(5.0 * xf) + 0.06 * std::cos(4.0 * yf);
       points.emplace_back(xf, yf, zf);
 
       const double mix = static_cast<double>(x + y) / 12.0;
@@ -3856,7 +3861,8 @@ DartScene createPointCloudScene()
   auto sensor = SimpleFrame::createShared(
       dart::dynamics::Frame::World(), "point_cloud_sensor", sensorTransform);
   sensor->setShape(std::make_shared<SphereShape>(0.055));
-  sensor->getVisualAspect(true)->setRGBA(Eigen::Vector4d(0.95, 0.18, 0.12, 1.0));
+  sensor->getVisualAspect(true)->setRGBA(
+      Eigen::Vector4d(0.95, 0.18, 0.12, 1.0));
   scene.world->addSimpleFrame(sensor);
 
   return scene;
@@ -3888,8 +3894,7 @@ DartScene createCapsuleGroundContactScene()
       std::make_shared<BoxShape>(
           Eigen::Vector3d(4.0, 4.0, kGroundVisualThickness)));
   Eigen::Isometry3d groundOffset = Eigen::Isometry3d::Identity();
-  groundOffset.translation()
-      = planeNormal * (-0.5 * kGroundVisualThickness);
+  groundOffset.translation() = planeNormal * (-0.5 * kGroundVisualThickness);
   groundVisual->setRelativeTransform(groundOffset);
   groundVisual->getVisualAspect()->setColor(Eigen::Vector3d(0.70, 0.70, 0.70));
   groundVisual->getVisualAspect()->setShadowed(false);

@@ -35,31 +35,33 @@
 #include "input.hpp"
 #include "scenes.hpp"
 
-#include <dart/dynamics/inverse_kinematics.hpp>
 #include <dart/gui/experimental/interaction.hpp>
 #include <dart/gui/experimental/renderable.hpp>
+
+#include <dart/dynamics/inverse_kinematics.hpp>
 
 #include <GLFW/glfw3.h>
 
 #include <algorithm>
-#include <cmath>
 #include <utility>
+
+#include <cmath>
 
 namespace dart::gui::experimental::filament {
 
-using dart::gui::experimental::OrbitCamera;
-using dart::gui::experimental::PickRay;
-using dart::gui::experimental::RenderableDescriptor;
-using dart::gui::experimental::RenderableId;
-using dart::gui::experimental::ViewerLifecycleState;
 using dart::gui::experimental::computeAxisDragTranslation;
 using dart::gui::experimental::computePlaneDragTranslation;
 using dart::gui::experimental::extractRenderables;
 using dart::gui::experimental::intersectPlane;
 using dart::gui::experimental::makeOrbitCameraBasis;
 using dart::gui::experimental::makePerspectivePickRay;
+using dart::gui::experimental::OrbitCamera;
 using dart::gui::experimental::pickNearestRenderable;
+using dart::gui::experimental::PickRay;
+using dart::gui::experimental::RenderableDescriptor;
+using dart::gui::experimental::RenderableId;
 using dart::gui::experimental::translateFrameRenderable;
+using dart::gui::experimental::ViewerLifecycleState;
 
 namespace {
 
@@ -254,23 +256,23 @@ void SelectionController::updateMouseSelection(
   if (isLeftMousePressed && mLeftMouseStartedDrag) {
     const PickRay ray = makePerspectivePickRay(
         camera, cursorX, cursorY, framebufferWidth, framebufferHeight);
-    const auto translation
-        = mSelectedDragIsAxisConstrained
-              ? computeAxisDragTranslation(
-                    mSelectedDragLastRay,
-                    ray,
-                    mSelectedDragPlanePoint,
-                    mSelectedDragAxisDirection)
-              : computePlaneDragTranslation(
-                    mSelectedDragLastRay,
-                    ray,
-                    mSelectedDragPlanePoint,
-                    mSelectedDragPlaneNormal);
+    const auto translation = mSelectedDragIsAxisConstrained
+                                 ? computeAxisDragTranslation(
+                                       mSelectedDragLastRay,
+                                       ray,
+                                       mSelectedDragPlanePoint,
+                                       mSelectedDragAxisDirection)
+                                 : computePlaneDragTranslation(
+                                       mSelectedDragLastRay,
+                                       ray,
+                                       mSelectedDragPlanePoint,
+                                       mSelectedDragPlaneNormal);
     if (translation && translation->squaredNorm() > 1e-12) {
       const RenderableDescriptor* selectedDescriptor
           = findRenderableDescriptor(descriptors, mSelectedRenderableId);
       if (selectedDescriptor != nullptr
-          && translateRenderableAndApplyIk(scene, *selectedDescriptor, *translation)) {
+          && translateRenderableAndApplyIk(
+              scene, *selectedDescriptor, *translation)) {
         mSelectedDragLastRay = ray;
         lifecycle.paused = true;
         descriptors = extractRenderables(*scene.world);
@@ -289,7 +291,8 @@ void SelectionController::updateMouseSelection(
               camera, cursorX, cursorY, framebufferWidth, framebufferHeight));
       if (hit) {
         mSelectedRenderableId = hit->id;
-        const RenderableDescriptor& descriptor = descriptors[hit->renderableIndex];
+        const RenderableDescriptor& descriptor
+            = descriptors[hit->renderableIndex];
         mSelectedLabel = selectionLabelForRenderable(scene, descriptor);
       } else {
         clear();

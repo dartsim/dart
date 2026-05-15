@@ -45,10 +45,10 @@ namespace dart::gui::experimental::filament {
 namespace {
 
 using dart::gui::experimental::ActiveRenderableState;
+using dart::gui::experimental::planRenderableSetUpdate;
 using dart::gui::experimental::RenderableDescriptor;
 using dart::gui::experimental::RenderableId;
 using dart::gui::experimental::ShapeKind;
-using dart::gui::experimental::planRenderableSetUpdate;
 using ::filament::math::float4;
 using ::filament::math::mat4f;
 
@@ -73,8 +73,7 @@ float4 toRgba(const Eigen::Vector4d& rgba)
       static_cast<float>(rgba.w())};
 }
 
-bool containsRenderableId(
-    const std::vector<RenderableId>& ids, RenderableId id)
+bool containsRenderableId(const std::vector<RenderableId>& ids, RenderableId id)
 {
   return std::find(ids.begin(), ids.end(), id) != ids.end();
 }
@@ -122,10 +121,12 @@ void setRenderableTransform(
 {
   auto& transforms = engine.getTransformManager();
   transforms.setTransform(
-      transforms.getInstance(renderable.entity), toFilamentTransform(transform));
+      transforms.getInstance(renderable.entity),
+      toFilamentTransform(transform));
 }
 
-void addRenderableToScene(::filament::Scene& scene, const Renderable& renderable)
+void addRenderableToScene(
+    ::filament::Scene& scene, const Renderable& renderable)
 {
   scene.addEntity(renderable.entity);
 }
@@ -144,7 +145,8 @@ void updateSceneRenderableFromDescriptor(
 {
   sceneRenderable.shapeVersion = descriptor.shapeVersion;
   sceneRenderable.renderResourceVersion = descriptor.renderResourceVersion;
-  setRenderableTransform(engine, sceneRenderable.renderable, descriptor.worldTransform);
+  setRenderableTransform(
+      engine, sceneRenderable.renderable, descriptor.worldTransform);
   updateRenderableSelection(
       sceneRenderable.renderable, toRgba(descriptor.material.rgba), selected);
   applyRenderableShadowSettings(
@@ -241,7 +243,8 @@ void synchronizeSceneRenderables(
     sceneRenderable.renderResourceVersion = descriptor.renderResourceVersion;
     sceneRenderable.renderable = *renderable;
     addRenderableToScene(scene, sceneRenderable.renderable);
-    setRenderableTransform(engine, sceneRenderable.renderable, descriptor.worldTransform);
+    setRenderableTransform(
+        engine, sceneRenderable.renderable, descriptor.worldTransform);
     sceneRenderables.push_back(sceneRenderable);
   }
 }

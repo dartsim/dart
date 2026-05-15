@@ -254,34 +254,6 @@ if(TARGET dart-gui-experimental)
   target_link_libraries(UNIT_gui_FilamentSceneExtraction dart-gui-experimental)
 endif()
 
-if(TARGET dart-gui)
-  dart_add_test("unit" UNIT_gui_HeightmapShapeNode gui/test_heightmap_shape_node.cpp)
-  dart_add_test(
-    "unit" UNIT_gui_ImGuiWindowScaling gui/test_im_gui_window_scaling.cpp)
-  # Null font guard test only works with fetched (patched) ImGui, not system ImGui
-  if(NOT DART_USE_SYSTEM_IMGUI)
-    dart_add_test(
-      "unit" UNIT_gui_ImGuiNullFontGuard gui/test_imgui_null_font_guard.cpp)
-    target_link_libraries(UNIT_gui_ImGuiNullFontGuard dart-gui)
-  endif()
-  dart_add_test(
-    "unit" UNIT_gui_HeadlessViewer gui/test_headless_viewer.cpp)
-  target_link_libraries(UNIT_gui_HeadlessViewer dart-gui)
-  # System ImGui builds can depend on SDL3, which is not available in ASAN CI.
-  if(NOT (DART_ENABLE_ASAN AND DART_USE_SYSTEM_IMGUI))
-    dart_add_test(
-      "unit" UNIT_gui_MeshShapeNodeMaterialUpdates
-      gui/test_mesh_shape_node_material_updates.cpp)
-    target_link_libraries(UNIT_gui_MeshShapeNodeMaterialUpdates dart-gui)
-    dart_add_test(
-      "unit" UNIT_gui_ConvexMeshShapeNode gui/test_convex_mesh_shape_node.cpp)
-    target_link_libraries(UNIT_gui_ConvexMeshShapeNode dart-gui)
-    dart_add_test(
-      "unit" UNIT_gui_PlaneShapeNode gui/test_plane_shape_node.cpp)
-    target_link_libraries(UNIT_gui_PlaneShapeNode dart-gui)
-  endif()
-endif()
-
 # ==============================================================================
 # Utils Tests
 # ==============================================================================

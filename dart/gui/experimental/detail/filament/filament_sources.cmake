@@ -110,6 +110,38 @@ function(_dart_filament_gui_find_dependencies out_imgui_target)
   set(${out_imgui_target} "${_imgui_target}" PARENT_SCOPE)
 endfunction()
 
+function(_dart_filament_gui_read_jpeg_version out_version)
+  foreach(_jpeg_include_dir IN LISTS ARGN)
+    if(EXISTS "${_jpeg_include_dir}/jconfig.h")
+      file(
+        STRINGS
+        "${_jpeg_include_dir}/jconfig.h"
+        _jpeg_version_lines
+        REGEX "^#define[ \t]+JPEG_LIB_VERSION[ \t]+[0-9]+"
+      )
+      if(_jpeg_version_lines)
+        list(GET _jpeg_version_lines 0 _jpeg_version_line)
+        string(
+          REGEX REPLACE
+          ".*JPEG_LIB_VERSION[ \t]+([0-9]+).*"
+          "\\1"
+          _jpeg_version
+          "${_jpeg_version_line}"
+        )
+        set(${out_version} "${_jpeg_version}" PARENT_SCOPE)
+        return()
+      endif()
+    endif()
+  endforeach()
+
+  list(JOIN ARGN ", " _jpeg_include_dirs_message)
+  message(
+    FATAL_ERROR
+    "Could not determine JPEG_LIB_VERSION from JPEG include dirs: "
+    "${_jpeg_include_dirs_message}"
+  )
+endfunction()
+
 function(
   _dart_filament_gui_add_material_header
   out_headers
@@ -208,6 +240,88 @@ function(dart_filament_gui_generate_material_headers out_headers)
   )
 
   set(${out_headers} ${_headers} PARENT_SCOPE)
+endfunction()
+
+function(dart_filament_gui_configure_backend_target target_name)
+  cmake_parse_arguments(DART_FILAMENT_GUI "" "GENERATED_DIR" "" ${ARGN})
+  if(NOT TARGET "${target_name}")
+    message(
+      FATAL_ERROR
+      "dart_filament_gui_configure_backend_target requires an existing target"
+    )
+  endif()
+  if(NOT DART_FILAMENT_GUI_GENERATED_DIR)
+    message(
+      FATAL_ERROR
+      "dart_filament_gui_configure_backend_target requires GENERATED_DIR"
+    )
+  endif()
+
+  _dart_filament_gui_find_dependencies(_imgui_target)
+  dart_filament_gui_generate_material_headers(
+    _material_headers
+    GENERATED_DIR "${DART_FILAMENT_GUI_GENERATED_DIR}"
+  )
+
+  set(_dart_filament_gui_jpeg_include_dirs ${JPEG_INCLUDE_DIRS})
+  if(NOT _dart_filament_gui_jpeg_include_dirs AND JPEG_INCLUDE_DIR)
+    set(_dart_filament_gui_jpeg_include_dirs "${JPEG_INCLUDE_DIR}")
+  endif()
+  set(_dart_filament_gui_png_include_dirs ${PNG_INCLUDE_DIRS})
+  if(NOT _dart_filament_gui_png_include_dirs AND PNG_PNG_INCLUDE_DIR)
+    set(_dart_filament_gui_png_include_dirs "${PNG_PNG_INCLUDE_DIR}")
+  endif()
+  _dart_filament_gui_read_jpeg_version(
+    _dart_filament_gui_jpeg_lib_version
+    ${_dart_filament_gui_jpeg_include_dirs}
+  )
+
+  set(_dart_filament_gui_jpeg_libraries ${JPEG_LIBRARIES})
+  if(NOT _dart_filament_gui_jpeg_libraries AND JPEG_LIBRARY_RELEASE)
+    set(_dart_filament_gui_jpeg_libraries "${JPEG_LIBRARY_RELEASE}")
+  elseif(NOT _dart_filament_gui_jpeg_libraries AND JPEG_LIBRARY)
+    set(_dart_filament_gui_jpeg_libraries "${JPEG_LIBRARY}")
+  endif()
+
+  set(_dart_filament_gui_png_libraries ${PNG_LIBRARIES})
+  if(NOT _dart_filament_gui_png_libraries AND PNG_LIBRARY_RELEASE)
+    set(_dart_filament_gui_png_libraries "${PNG_LIBRARY_RELEASE}")
+  elseif(NOT _dart_filament_gui_png_libraries AND PNG_LIBRARY)
+    set(_dart_filament_gui_png_libraries "${PNG_LIBRARY}")
+  endif()
+
+  target_sources(
+    ${target_name}
+    PRIVATE
+      ${DART_FILAMENT_GUI_BACKEND_SRCS}
+      ${DART_FILAMENT_GUI_BACKEND_HDRS}
+      ${_material_headers}
+  )
+  target_include_directories(
+    ${target_name}
+    PRIVATE
+      "${DART_FILAMENT_GUI_GENERATED_DIR}"
+      ${_dart_filament_gui_jpeg_include_dirs}
+      ${_dart_filament_gui_png_include_dirs}
+  )
+  target_compile_definitions(
+    ${target_name}
+    PRIVATE
+      DART_FILAMENT_GUI_JPEG_LIB_VERSION=${_dart_filament_gui_jpeg_lib_version}
+      DART_FILAMENT_GUI_REPOSITORY_ROOT="${DART_FILAMENT_GUI_SOURCE_DIR}"
+  )
+  target_link_libraries(
+    ${target_name}
+    PRIVATE
+      dart-io
+      dart-utils-urdf
+      Filament::filament
+      ${_dart_filament_gui_jpeg_libraries}
+      ${_dart_filament_gui_png_libraries}
+      glfw
+      ${_imgui_target}
+  )
+  target_compile_features(${target_name} PRIVATE cxx_std_20)
 endfunction()
 
 function(_dart_filament_gui_apply_smoke_test_properties test_name)
@@ -387,12 +501,6 @@ function(dart_filament_gui_add_example example_target)
     message(FATAL_ERROR "filament_gui requires the dart-gui-experimental target")
   endif()
 
-  _dart_filament_gui_find_dependencies(_imgui_target)
-  dart_filament_gui_generate_material_headers(
-    _material_headers
-    GENERATED_DIR "${DART_FILAMENT_GUI_EXAMPLE_GENERATED_DIR}"
-  )
-
   set(_example_main "${DART_FILAMENT_GUI_EXAMPLE_SOURCE_DIR}/main.cpp")
   if(NOT EXISTS "${_example_main}")
     message(FATAL_ERROR "filament_gui requires ${_example_main}")
@@ -475,37 +583,15 @@ function(dart_filament_gui_add_example example_target)
     )
   endif()
 
-  add_executable(
-    ${example_target}
-    "${_example_main}"
-    ${DART_FILAMENT_GUI_BACKEND_SRCS}
-    ${DART_FILAMENT_GUI_BACKEND_HDRS}
-    ${_material_headers}
-  )
+  add_executable(${example_target} "${_example_main}")
   set_target_properties(
     ${example_target}
     PROPERTIES OUTPUT_NAME "${DART_FILAMENT_GUI_EXAMPLE_OUTPUT_NAME}"
   )
-  target_include_directories(
-    ${example_target}
-    PRIVATE "${DART_FILAMENT_GUI_EXAMPLE_GENERATED_DIR}"
-  )
-  target_compile_definitions(
-    ${example_target}
-    PRIVATE DART_FILAMENT_GUI_REPOSITORY_ROOT="${DART_FILAMENT_GUI_SOURCE_DIR}"
-  )
   target_link_libraries(
     ${example_target}
     PRIVATE
-      dart
-      dart-io
-      dart-utils-urdf
       dart-gui-experimental
-      Filament::filament
-      JPEG::JPEG
-      PNG::PNG
-      glfw
-      ${_imgui_target}
   )
   target_compile_features(${example_target} PRIVATE cxx_std_20)
 

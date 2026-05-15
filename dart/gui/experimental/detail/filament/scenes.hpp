@@ -33,9 +33,11 @@
 #ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCENES_HPP_
 #define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCENES_HPP_
 
-#include <dart/dynamics/fwd.hpp>
 #include <dart/gui/experimental/scene.hpp>
+
 #include <dart/simulation/fwd.hpp>
+
+#include <dart/dynamics/fwd.hpp>
 
 #include <Eigen/Core>
 
@@ -129,17 +131,21 @@ inline constexpr const char* kWamIkFastFixtureSkeletonName
 inline constexpr const char* kWamIkFastTargetFrameName = "wam_ikfast_target";
 inline constexpr const char* kWamIkFastGroundSkeletonName
     = "visual_wam_ikfast_ground";
-inline constexpr const char* kFetchRobotFixtureSkeletonName = "robot0:base_link";
+inline constexpr const char* kFetchRobotFixtureSkeletonName
+    = "robot0:base_link";
 inline constexpr const char* kFetchObjectFixtureSkeletonName = "object0";
-inline constexpr const char* kFetchTargetFrameName = "fetch_pick_and_place_target";
+inline constexpr const char* kFetchTargetFrameName
+    = "fetch_pick_and_place_target";
 inline constexpr const char* kTinkertoyFixtureSkeletonPrefix
     = "visual_tinkertoy_toy_";
 inline constexpr const char* kTinkertoyTargetFrameName = "tinkertoy_target";
 inline constexpr const char* kTinkertoyForceLineFrameName
     = "tinkertoy_force_line";
 inline constexpr const char* kTinkertoyAxisFramePrefix = "tinkertoy_axis_";
-inline constexpr const char* kAtlasFixtureSkeletonName = "visual_atlas_torso_mesh";
-inline constexpr const char* kAtlasRobotFixtureSkeletonName = "visual_atlas_robot";
+inline constexpr const char* kAtlasFixtureSkeletonName
+    = "visual_atlas_torso_mesh";
+inline constexpr const char* kAtlasRobotFixtureSkeletonName
+    = "visual_atlas_robot";
 inline constexpr const char* kAtlasPuppetFixtureGroundSkeletonName
     = "visual_atlas_puppet_ground";
 inline constexpr const char* kHuboPuppetRobotFixtureSkeletonName
@@ -164,8 +170,10 @@ inline constexpr const char* kHardcodedDesignFixtureSkeletonName
     = "visual_hardcoded_design";
 inline constexpr const char* kRigidChainFixtureSkeletonName
     = "visual_rigid_chain";
-inline constexpr const char* kRigidLoopFixtureSkeletonName = "visual_rigid_loop";
-inline constexpr const char* kMixedChainFixtureSkeletonName = "visual_mixed_chain";
+inline constexpr const char* kRigidLoopFixtureSkeletonName
+    = "visual_rigid_loop";
+inline constexpr const char* kMixedChainFixtureSkeletonName
+    = "visual_mixed_chain";
 inline constexpr const char* kCouplerConstraintFixtureSkeletonPrefix
     = "visual_coupler_constraint_";
 inline constexpr const char* kCouplerConstraintFixtureFramePrefix
@@ -207,10 +215,14 @@ inline constexpr const char* kMimicPendulumsFixtureSkeletonPrefix
 inline constexpr const char* kMimicPendulumsFixtureGroundSkeletonName
     = "visual_mimic_pendulums_ground";
 inline constexpr const char* kPyramidFixtureSkeletonName = "visual_pyramid";
-inline constexpr const char* kMultiSphereFixtureSkeletonName = "visual_multi_sphere";
-inline constexpr const char* kLineSegmentFixtureSkeletonName = "visual_line_segments";
-inline constexpr const char* kConvexMeshFixtureSkeletonName = "visual_convex_mesh";
-inline constexpr const char* kPointCloudFixtureSkeletonName = "visual_point_cloud";
+inline constexpr const char* kMultiSphereFixtureSkeletonName
+    = "visual_multi_sphere";
+inline constexpr const char* kLineSegmentFixtureSkeletonName
+    = "visual_line_segments";
+inline constexpr const char* kConvexMeshFixtureSkeletonName
+    = "visual_convex_mesh";
+inline constexpr const char* kPointCloudFixtureSkeletonName
+    = "visual_point_cloud";
 inline constexpr const char* kCapsuleGroundContactCapsuleSkeletonName
     = "visual_capsule_ground_contact_capsule";
 inline constexpr const char* kCapsuleGroundContactGroundSkeletonName
@@ -227,7 +239,8 @@ inline constexpr const char* kSimulationEventHandlerSlowSensorFrameName
     = "simulation_event_handler_slow_sensor_marker";
 inline constexpr const char* kHeightmapFixtureSkeletonName = "visual_heightmap";
 inline constexpr const char* kSoftMeshFixtureSkeletonName = "visual_soft_mesh";
-inline constexpr const char* kVoxelGridFixtureSkeletonName = "visual_voxel_grid";
+inline constexpr const char* kVoxelGridFixtureSkeletonName
+    = "visual_voxel_grid";
 inline constexpr const char* kPbrEnvironmentFixtureSkeletonName
     = "visual_pbr_environment";
 inline constexpr const char* kPolyhedronFixtureSkeletonName

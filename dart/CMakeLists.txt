@@ -27,8 +27,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #   sdf
 #   urdf
 # gui
-#   osg
-#     render
+#   experimental
+#   filament
 
 #===============================================================================
 # Targets - {dependency targets}, source directories, [external dependency libs]
@@ -38,7 +38,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #        gui, [assimp, eigen3, fcl, fmt]
 # dart-utils - {dart}, utils, utils/sdf, [tinyxml2]
 # dart-utils-urdf - {dart-utils}, utils/urdf, [urdfdom]
-# dart-gui - {dart-utils}, gui, gui/render, [openscenegraph]
+# dart-gui - {dart-gui-experimental}, gui, gui/experimental/detail/filament,
+#            [filament, glfw3, imgui, png, jpeg]
 
 #===============================================================================
 # Components - (dependency component), {dependency targets}
@@ -46,7 +47,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # dart - {dart}
 # utils - (dart), {dart-utils}
 # utils-urdf - (utils), {dart-utils-urdf}
-# gui - (utils), {dart-gui}
+# gui - (gui-experimental), {dart-gui}
 # collision-bullet - (dart), {dart} [compat]
 # collision-ode - (dart), {dart} [compat]
 
@@ -80,7 +81,7 @@ add_subdirectory(simulation)
 add_subdirectory(sensor)
 add_subdirectory(utils) # tinyxml2, libsdformat
 add_subdirectory(io)
-add_subdirectory(gui) # osg
+add_subdirectory(gui) # Filament GUI
 add_subdirectory(simd)
 
 set(DART_CONFIG_HPP_IN ${DART_SOURCE_DIR}/dart/config.hpp.in)

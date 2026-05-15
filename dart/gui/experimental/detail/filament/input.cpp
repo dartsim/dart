@@ -42,10 +42,10 @@
 
 namespace dart::gui::experimental::filament {
 
-using dart::gui::experimental::DirectionalNudgeInput;
-using dart::gui::experimental::OrbitCameraControllerInput;
 using dart::gui::experimental::addOrbitCameraScroll;
 using dart::gui::experimental::computeCameraRelativeNudge;
+using dart::gui::experimental::DirectionalNudgeInput;
+using dart::gui::experimental::OrbitCameraControllerInput;
 using dart::gui::experimental::requestSingleStep;
 using dart::gui::experimental::togglePaused;
 using dart::gui::experimental::updateOrbitCameraController;
@@ -97,8 +97,7 @@ void pollApplicationInput(
     glfwSetWindowShouldClose(window, GLFW_TRUE);
   }
 
-  const bool isSpacePressed
-      = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
+  const bool isSpacePressed = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
   if (isSpacePressed && !state.wasSpacePressed) {
     togglePaused(lifecycle);
   }
@@ -139,16 +138,12 @@ void updateImGuiMouseInput(
   int windowWidth = framebufferWidth;
   int windowHeight = framebufferHeight;
   glfwGetWindowSize(window, &windowWidth, &windowHeight);
-  const float xScale
-      = windowWidth > 0
-            ? static_cast<float>(framebufferWidth)
-                  / static_cast<float>(windowWidth)
-            : 1.0f;
-  const float yScale
-      = windowHeight > 0
-            ? static_cast<float>(framebufferHeight)
-                  / static_cast<float>(windowHeight)
-            : 1.0f;
+  const float xScale = windowWidth > 0 ? static_cast<float>(framebufferWidth)
+                                             / static_cast<float>(windowWidth)
+                                       : 1.0f;
+  const float yScale = windowHeight > 0 ? static_cast<float>(framebufferHeight)
+                                              / static_cast<float>(windowHeight)
+                                        : 1.0f;
   io.DisplayFramebufferScale = ImVec2(xScale, yScale);
 
   double cursorX = 0.0;

@@ -56,7 +56,8 @@ void setRenderableTransform(
     const Renderable& renderable,
     const Eigen::Isometry3d& transform);
 
-void addRenderableToScene(::filament::Scene& scene, const Renderable& renderable);
+void addRenderableToScene(
+    ::filament::Scene& scene, const Renderable& renderable);
 
 void removeRenderableFromScene(
     ::filament::Scene& scene, const Renderable& renderable);

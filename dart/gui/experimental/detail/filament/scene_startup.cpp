@@ -30,14 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/experimental/detail/filament/scene_startup.hpp>
-
 #include <dart/gui/experimental/detail/filament/debug_overlay.hpp>
 #include <dart/gui/experimental/detail/filament/renderable_factory.hpp>
 #include <dart/gui/experimental/detail/filament/renderable_sync.hpp>
 #include <dart/gui/experimental/detail/filament/scene_requirements.hpp>
+#include <dart/gui/experimental/detail/filament/scene_startup.hpp>
 #include <dart/gui/experimental/detail/filament/scenes.hpp>
 #include <dart/gui/experimental/scene.hpp>
+
 #include <dart/simulation/world.hpp>
 
 #include <ostream>
@@ -85,9 +85,14 @@ std::optional<InitialSceneState> createInitialSceneState(
     return std::nullopt;
   }
 
-  state.debugOverlays = makeDebugOverlayController(exampleScene == ExampleScene::G1);
+  state.debugOverlays
+      = makeDebugOverlayController(exampleScene == ExampleScene::G1);
   refreshStaticDebugOverlay(
-      engine, scene, materials.debugColor, *dartScene.world, state.debugOverlays);
+      engine,
+      scene,
+      materials.debugColor,
+      *dartScene.world,
+      state.debugOverlays);
   if (!state.debugOverlays.staticOverlay) {
     errors << "No debug overlay lines were extracted\n";
     return std::nullopt;

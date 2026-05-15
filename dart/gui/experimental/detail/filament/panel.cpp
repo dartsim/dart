@@ -109,8 +109,8 @@ bool renderBuiltInStatusPanel(
   debugOptionsChanged
       |= ImGui::Checkbox("Contacts", &contactDebugOptions.drawContacts);
   ImGui::SameLine();
-  debugOptionsChanged |= ImGui::Checkbox(
-      "Support", &staticDebugOptions.drawSupportPolygons);
+  debugOptionsChanged
+      |= ImGui::Checkbox("Support", &staticDebugOptions.drawSupportPolygons);
   debugOptionsChanged
       |= ImGui::Checkbox("Normals", &contactDebugOptions.drawContactNormals);
   ImGui::SameLine();

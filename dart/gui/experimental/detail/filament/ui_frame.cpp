@@ -30,8 +30,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/experimental/detail/filament/ui_frame.hpp>
-
 #include <dart/gui/experimental/detail/filament/debug_overlay.hpp>
 #include <dart/gui/experimental/detail/filament/frame_viewport.hpp>
 #include <dart/gui/experimental/detail/filament/imgui_overlay.hpp>
@@ -39,9 +37,12 @@
 #include <dart/gui/experimental/detail/filament/panel.hpp>
 #include <dart/gui/experimental/detail/filament/scenes.hpp>
 #include <dart/gui/experimental/detail/filament/selection.hpp>
-#include <dart/collision/collision_result.hpp>
+#include <dart/gui/experimental/detail/filament/ui_frame.hpp>
 #include <dart/gui/experimental/profile.hpp>
+
 #include <dart/simulation/world.hpp>
+
+#include <dart/collision/collision_result.hpp>
 
 #include <imgui.h>
 
