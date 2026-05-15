@@ -136,12 +136,13 @@ Per-frame framebuffer sizing, ImGui display metrics, viewport/camera update
 dispatch, and camera-controller suppression while selection or the built-in UI
 consumes the pointer live in
 `dart/gui/experimental/detail/filament/frame_viewport.hpp` and `.cpp`.
-The GLFW/ImGui input bridge and application hotkey polling live in
+The GLFW/ImGui input bridge, orbit-camera scroll callback attachment, and
+application hotkey polling live in
 `dart/gui/experimental/detail/filament/input.hpp` and `.cpp`; reusable
 manipulation math remains in `dart-gui-experimental`.
-GLFW initialization/window lifecycle and platform-specific native-window handle
-selection live in `dart/gui/experimental/detail/filament/native_window.hpp` and
-`.cpp`.
+GLFW initialization/window lifecycle, window-close loop predicate, and
+platform-specific native-window handle selection live in
+`dart/gui/experimental/detail/filament/native_window.hpp` and `.cpp`.
 Filament-native ImGui context setup, style scaling, font loading, overlay
 rendering, and draw-data upload live in
 `dart/gui/experimental/detail/filament/imgui_overlay.hpp` and `.cpp`; the

@@ -46,14 +46,15 @@ recommended maintainability slices:
   private Filament screenshot readback, wait/save finalization, and screenshot
   profile accounting.
 - `dart/gui/experimental/detail/filament/input.hpp` and `.cpp` own private
-  GLFW/ImGui input bridging, camera-controller input translation, and
-  application hotkey polling/key-edge state.
+  GLFW/ImGui input bridging, orbit-camera scroll callback attachment,
+  camera-controller input translation, and application hotkey polling/key-edge
+  state.
 - `dart/gui/experimental/detail/filament/selection.hpp` and `.cpp` own the
   private selection controller state and GLFW event translation for keyboard
   nudging, click selection, and Ctrl-left dragging.
 - `dart/gui/experimental/detail/filament/native_window.hpp` and `.cpp` own the
-  private GLFW initialization/window lifecycle and platform-native handle
-  selection.
+  private GLFW initialization/window lifecycle, window-close loop predicate, and
+  platform-native handle selection.
 - `dart/gui/experimental/detail/filament/renderable_sync.hpp` and `.cpp` own
   private initial scene renderable creation, scene-entity synchronization,
   unsupported-renderable logging, and per-frame renderable

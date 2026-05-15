@@ -51,7 +51,9 @@ struct ApplicationInputState
   bool wasStepPressed = false;
 };
 
-void handleScroll(GLFWwindow* window, double xOffset, double yOffset);
+void attachOrbitCameraController(
+    GLFWwindow* window,
+    dart::gui::experimental::OrbitCameraController& controller);
 
 bool isKeyDown(GLFWwindow* window, int key);
 

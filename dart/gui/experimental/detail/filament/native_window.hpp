@@ -70,6 +70,8 @@ ApplicationWindow createApplicationWindow(
 
 void* getNativeWindow(GLFWwindow* window);
 
+bool shouldContinueApplicationLoop(bool headless, GLFWwindow* window);
+
 } // namespace dart::gui::experimental::filament
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_NATIVE_WINDOW_HPP_

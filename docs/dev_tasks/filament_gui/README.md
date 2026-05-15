@@ -79,9 +79,10 @@
   without exposing Filament input types.
 - The Filament example's GLFW/ImGui input bridge now lives in
   `dart/gui/experimental/detail/filament/input.hpp` and `.cpp`, keeping
-  backend-specific mouse/controller input, application hotkey polling, and
-  pause/single-step/IK target key-edge state out of the main viewer loop while
-  the reusable manipulation math remains in `dart-gui-experimental`.
+  backend-specific mouse/controller input, orbit-camera scroll callback
+  attachment, application hotkey polling, and pause/single-step/IK target
+  key-edge state out of the main viewer loop while the reusable manipulation
+  math remains in `dart-gui-experimental`.
 - The Filament-native ImGui context setup, style scaling, font loading,
   overlay renderer, and draw-data upload now live in
   `dart/gui/experimental/detail/filament/imgui_overlay.hpp` and `.cpp`; the
@@ -160,8 +161,9 @@
   viewport/camera update dispatch, and camera-controller suppression while
   selection or built-in UI consumes the pointer now live in
   `dart/gui/experimental/detail/filament/frame_viewport.hpp` and `.cpp`.
-- The Filament example's GLFW initialization/window lifecycle and
-  platform-specific native-window handle selection now live in
+- The Filament example's GLFW initialization/window lifecycle,
+  window-close loop predicate, and platform-specific native-window handle
+  selection now live in
   `dart/gui/experimental/detail/filament/native_window.hpp` and `.cpp`.
 - The Filament example's selection labels, G1 IK-target translation glue, and
   private selection controller state now live in

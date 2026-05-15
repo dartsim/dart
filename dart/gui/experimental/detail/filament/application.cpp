@@ -56,8 +56,6 @@
 #include <dart/gui/experimental/scene.hpp>
 #include <dart/simulation/world.hpp>
 
-#include <GLFW/glfw3.h>
-
 #include <imgui.h>
 
 #include <chrono>
@@ -79,6 +77,7 @@ using dart::gui::experimental::extractRenderables;
 using dart::gui::experimental::printProfile;
 using dart::gui::experimental::filament::ApplicationInputState;
 using dart::gui::experimental::filament::ApplicationWindow;
+using dart::gui::experimental::filament::attachOrbitCameraController;
 using dart::gui::experimental::filament::FilamentRenderContext;
 using dart::gui::experimental::filament::FrameRenderResult;
 using dart::gui::experimental::filament::FrameViewport;
@@ -110,7 +109,6 @@ using dart::gui::experimental::filament::DebugOverlayController;
 using dart::gui::experimental::filament::destroyApplicationResources;
 using dart::gui::experimental::filament::finalizeScreenshotCapture;
 using dart::gui::experimental::filament::getNativeWindow;
-using dart::gui::experimental::filament::handleScroll;
 using dart::gui::experimental::filament::makeDebugOverlayController;
 using dart::gui::experimental::filament::pollApplicationInput;
 using dart::gui::experimental::filament::renderApplicationFrame;
@@ -118,6 +116,7 @@ using dart::gui::experimental::filament::refreshContactDebugOverlay;
 using dart::gui::experimental::filament::refreshSelectionDebugLineOverlay;
 using dart::gui::experimental::filament::refreshStaticDebugOverlay;
 using dart::gui::experimental::filament::synchronizeSceneRenderables;
+using dart::gui::experimental::filament::shouldContinueApplicationLoop;
 using dart::gui::experimental::filament::updateFrameViewport;
 using dart::gui::experimental::filament::updateFrameUi;
 using dart::gui::experimental::filament::updateOrbitingKeyLight;
@@ -144,10 +143,7 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
 
   OrbitCameraController cameraController;
   cameraController.camera = initialCameraForScene(appOptions.scene);
-  if (window != nullptr) {
-    glfwSetWindowUserPointer(window, &cameraController);
-    glfwSetScrollCallback(window, handleScroll);
-  }
+  attachOrbitCameraController(window, cameraController);
 
   FilamentRenderContext renderContext = createFilamentRenderContext(
       options, options.headless ? nullptr : getNativeWindow(window));
@@ -226,7 +222,7 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
   SimulationStepper simulationStepper;
   const auto orbitStartClock = ProfileAccumulator::Clock::now();
 
-  while (options.headless || !glfwWindowShouldClose(window)) {
+  while (shouldContinueApplicationLoop(options.headless, window)) {
     const auto frameStart = ProfileAccumulator::Clock::now();
     auto phaseStart = ProfileAccumulator::Clock::now();
     pollApplicationInput(

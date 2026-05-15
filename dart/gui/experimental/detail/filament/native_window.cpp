@@ -134,4 +134,9 @@ void* getNativeWindow(GLFWwindow* window)
 #endif
 }
 
+bool shouldContinueApplicationLoop(bool headless, GLFWwindow* window)
+{
+  return headless || (window != nullptr && !glfwWindowShouldClose(window));
+}
+
 } // namespace dart::gui::experimental::filament

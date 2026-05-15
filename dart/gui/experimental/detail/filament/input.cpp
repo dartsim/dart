@@ -50,6 +50,8 @@ using dart::gui::experimental::requestSingleStep;
 using dart::gui::experimental::togglePaused;
 using dart::gui::experimental::updateOrbitCameraController;
 
+namespace {
+
 void handleScroll(GLFWwindow* window, double, double yOffset)
 {
   auto* controller
@@ -58,6 +60,20 @@ void handleScroll(GLFWwindow* window, double, double yOffset)
   if (controller != nullptr) {
     addOrbitCameraScroll(*controller, yOffset);
   }
+}
+
+} // namespace
+
+void attachOrbitCameraController(
+    GLFWwindow* window,
+    dart::gui::experimental::OrbitCameraController& controller)
+{
+  if (window == nullptr) {
+    return;
+  }
+
+  glfwSetWindowUserPointer(window, &controller);
+  glfwSetScrollCallback(window, handleScroll);
 }
 
 bool isKeyDown(GLFWwindow* window, int key)
