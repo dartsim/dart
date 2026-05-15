@@ -1198,7 +1198,7 @@ int main(int argc, char* argv[])
         renderContext, appOptions.showUi ? imguiOverlay.view : nullptr);
     if (shouldCaptureScreenshot) {
       requestScreenshot(
-          *renderContext.renderer,
+          renderContext,
           screenshotCapture,
           static_cast<std::uint32_t>(width),
           static_cast<std::uint32_t>(height));
@@ -1225,7 +1225,7 @@ int main(int argc, char* argv[])
   }
   if (lifecycle.screenshotRequested) {
     const auto screenshotWaitStart = ProfileAccumulator::Clock::now();
-    screenshotSucceeded = waitForScreenshot(*engine, screenshotCapture);
+    screenshotSucceeded = waitForScreenshot(renderContext, screenshotCapture);
     profile.screenshotWaitMs += elapsedMs(screenshotWaitStart);
     if (screenshotSucceeded) {
       const auto screenshotSaveStart = ProfileAccumulator::Clock::now();

@@ -106,7 +106,9 @@
   so DART visual-aspect shadow changes are not limited to resource creation.
 - The experimental viewer-runtime layer owns reusable RGBA-to-PPM screenshot
   storage, while `examples/filament_gui/screenshot.hpp` and `.cpp` isolate the
-  Filament example's renderer readback and capture synchronization.
+  Filament example's renderer readback and capture synchronization behind the
+  example render context, so the screenshot helper header does not expose
+  Filament renderer types.
   The current Filament readback path writes top-left-origin screenshots so
   headless captures are directly reviewable without a manual vertical flip.
 - The Filament example's PNG/JPEG texture loading, Filament texture cache, and

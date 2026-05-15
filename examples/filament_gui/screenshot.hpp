@@ -39,14 +39,9 @@
 #include <string>
 #include <vector>
 
-namespace filament {
-
-class Engine;
-class Renderer;
-
-} // namespace filament
-
 namespace dart::examples::filament_gui {
+
+struct FilamentRenderContext;
 
 struct ScreenshotCapture
 {
@@ -61,12 +56,13 @@ struct ScreenshotCapture
 void saveScreenshot(const ScreenshotCapture& capture, const std::string& path);
 
 void requestScreenshot(
-    filament::Renderer& renderer,
+    FilamentRenderContext& context,
     ScreenshotCapture& capture,
     std::uint32_t width,
     std::uint32_t height);
 
-bool waitForScreenshot(filament::Engine& engine, ScreenshotCapture& capture);
+bool waitForScreenshot(
+    FilamentRenderContext& context, ScreenshotCapture& capture);
 
 } // namespace dart::examples::filament_gui
 

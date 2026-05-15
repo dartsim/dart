@@ -32,6 +32,8 @@
 
 #include "screenshot.hpp"
 
+#include "render_context.hpp"
+
 #include <dart/gui/experimental/viewer.hpp>
 
 #include <backend/PixelBufferDescriptor.h>
@@ -60,7 +62,7 @@ void saveScreenshot(const ScreenshotCapture& capture, const std::string& path)
 }
 
 void requestScreenshot(
-    filament::Renderer& renderer,
+    FilamentRenderContext& context,
     ScreenshotCapture& capture,
     std::uint32_t width,
     std::uint32_t height)
@@ -93,13 +95,14 @@ void requestScreenshot(
         capture->condition.notify_one();
       },
       &capture);
-  renderer.readPixels(0, 0, width, height, std::move(pixels));
+  context.renderer->readPixels(0, 0, width, height, std::move(pixels));
 }
 
-bool waitForScreenshot(filament::Engine& engine, ScreenshotCapture& capture)
+bool waitForScreenshot(
+    FilamentRenderContext& context, ScreenshotCapture& capture)
 {
   using namespace std::chrono_literals;
-  engine.flushAndWait();
+  context.engine->flushAndWait();
 
   std::unique_lock<std::mutex> lock(capture.mutex);
   return capture.done || capture.condition.wait_for(lock, 5s, [&capture] {
