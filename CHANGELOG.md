@@ -194,8 +194,10 @@
     skeleton. The `rigid_chain` runner now routes to a `--scene rigid-chain`
     Filament fixture for SKEL-loaded chain renderables. The `rigid_loop`
     runner now routes to a `--scene rigid-loop` Filament fixture for
-    constrained SKEL-loaded chain renderables. The focused GUI unit test now
-    checks that `examples/filament_gui` contains no C++ source/header
+    constrained SKEL-loaded chain renderables. The `mixed_chain` runner now
+    routes to a `--scene mixed-chain` Filament fixture for mixed rigid and soft
+    chain renderables. The focused GUI unit test now checks that
+    `examples/filament_gui` contains no C++ source/header
     files other than `main.cpp` and that the example has no direct Filament
     header includes. The north-star audit now also maps the legacy OSG/Raylib
     GUI surfaces that must be replaced, made private, or removed during

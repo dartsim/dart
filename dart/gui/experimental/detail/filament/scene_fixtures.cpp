@@ -1272,6 +1272,45 @@ DartScene createRigidLoopScene()
   return scene;
 }
 
+DartScene createMixedChainScene()
+{
+  DartScene scene;
+  scene.world = dart::io::readWorld(
+      "dart://sample/skel/test/test_articulated_bodies_10bodies.skel");
+  if (!scene.world) {
+    throw std::runtime_error(
+        "Failed to load mixed_chain fixture from "
+        "dart://sample/skel/test/test_articulated_bodies_10bodies.skel");
+  }
+
+  scene.world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  auto chain = scene.world->getSkeleton(1);
+  if (!chain) {
+    throw std::runtime_error("mixed_chain fixture did not contain a chain");
+  }
+  chain->setName(kMixedChainFixtureSkeletonName);
+
+  Eigen::VectorXd initialPose = Eigen::VectorXd::Zero(chain->getNumDofs());
+  if (initialPose.size() >= 3) {
+    initialPose[0] = -0.25;
+    initialPose[1] = 0.18;
+    initialPose[2] = 0.12;
+  }
+  chain->setPositions(initialPose);
+
+  for (std::size_t i = 0; i < chain->getNumBodyNodes(); ++i) {
+    auto* bodyNode = chain->getBodyNode(i);
+    const bool softLink
+        = dynamic_cast<const dart::dynamics::SoftBodyNode*>(bodyNode) != nullptr;
+    bodyNode->setColor(
+        softLink ? Eigen::Vector3d(0.90, 0.42, 0.18)
+                 : Eigen::Vector3d(0.30, 0.55, 0.85));
+  }
+
+  return scene;
+}
+
 DartScene createDragAndDropScene()
 {
   DartScene scene;

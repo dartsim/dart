@@ -157,6 +157,14 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Box) {
     ++counts.rigidLoopBoxes;
   }
+  if (descriptor.skeletonName == kMixedChainFixtureSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.mixedChainBoxes;
+  }
+  if (descriptor.skeletonName == kMixedChainFixtureSkeletonName
+      && descriptor.geometry.kind == ShapeKind::SoftMesh) {
+    ++counts.mixedChainSoftMeshes;
+  }
   if (descriptor.skeletonName == kPyramidFixtureSkeletonName
       && descriptor.geometry.kind == ShapeKind::Pyramid) {
     ++counts.pyramids;
@@ -455,6 +463,23 @@ bool validateSceneDescriptorContent(
         output);
   }
 
+  if (scene == ExampleScene::MixedChain) {
+    if (!requireEqual(
+            counts.mixedChainBoxes,
+            kMixedChainFixtureBoxCount,
+            "mixed-chain scene",
+            "visible chain box renderable descriptors",
+            output)) {
+      return false;
+    }
+    return requireEqual(
+        counts.mixedChainSoftMeshes,
+        kMixedChainFixtureSoftMeshCount,
+        "mixed-chain scene",
+        "visible soft mesh renderable descriptors",
+        output);
+  }
+
   if (scene == ExampleScene::Heightmap) {
     return requireEqual(
         counts.heightmaps,
@@ -738,6 +763,21 @@ bool validateCreatedSceneContent(
         created.rigidLoopBoxes,
         expected.rigidLoopBoxes,
         "rigid-loop box renderables",
+        output);
+  }
+
+  if (scene == ExampleScene::MixedChain) {
+    if (!requireCreatedEqual(
+            created.mixedChainBoxes,
+            expected.mixedChainBoxes,
+            "mixed-chain box renderables",
+            output)) {
+      return false;
+    }
+    return requireCreatedEqual(
+        created.mixedChainSoftMeshes,
+        expected.mixedChainSoftMeshes,
+        "mixed-chain soft mesh renderables",
         output);
   }
 

@@ -139,6 +139,8 @@ const char* sceneName(ExampleScene scene)
       return "rigid-chain";
     case ExampleScene::RigidLoop:
       return "rigid-loop";
+    case ExampleScene::MixedChain:
+      return "mixed-chain";
     case ExampleScene::DragAndDrop:
       return "drag-and-drop";
     case ExampleScene::SimpleFrames:
@@ -185,6 +187,10 @@ bool parseSceneName(std::string_view name, ExampleScene& scene)
   }
   if (name == "rigid-loop") {
     scene = ExampleScene::RigidLoop;
+    return true;
+  }
+  if (name == "mixed-chain") {
+    scene = ExampleScene::MixedChain;
     return true;
   }
   if (name == "drag-and-drop") {
@@ -265,6 +271,12 @@ dart::gui::experimental::OrbitCamera initialCameraForScene(ExampleScene scene)
       camera.yaw = -0.72;
       camera.pitch = 0.35;
       camera.distance = 2.6;
+      break;
+    case ExampleScene::MixedChain:
+      camera.target = Eigen::Vector3d(0.0, 2.1, 0.0);
+      camera.yaw = -0.72;
+      camera.pitch = 0.38;
+      camera.distance = 7.0;
       break;
     case ExampleScene::SimpleFrames:
       camera.target = Eigen::Vector3d(0.05, 0.0, 0.06);
@@ -384,8 +396,8 @@ AppOptions parseOptions(int argc, char* argv[])
         std::cerr << "Unknown scene '" << sceneArg
                   << "'. Expected 'mvp', 'hello-world', 'boxes', "
                      "'hardcoded-design', 'rigid-chain', 'rigid-loop', "
-                     "'drag-and-drop', 'simple-frames', 'soft-bodies', "
-                     "'point-cloud', 'capsule-ground-contact', "
+                     "'mixed-chain', 'drag-and-drop', 'simple-frames', "
+                     "'soft-bodies', 'point-cloud', 'capsule-ground-contact', "
                      "'simulation-event-handler', 'polyhedron', "
                      "'heightmap', or 'g1'.\n";
         std::exit(2);
@@ -413,7 +425,7 @@ AppOptions parseOptions(int argc, char* argv[])
                    " [--orbit-light-period SECONDS]"
                    " [--gui-scale N]"
                    " [--profile]"
-                   " [--scene mvp|hello-world|boxes|hardcoded-design|rigid-chain|rigid-loop|drag-and-drop|simple-frames|soft-bodies|point-cloud|capsule-ground-contact|simulation-event-handler|polyhedron|heightmap|g1]"
+                   " [--scene mvp|hello-world|boxes|hardcoded-design|rigid-chain|rigid-loop|mixed-chain|drag-and-drop|simple-frames|soft-bodies|point-cloud|capsule-ground-contact|simulation-event-handler|polyhedron|heightmap|g1]"
                    " [--g1-package-uri URI] [--g1-robot-uri URI]"
                    " [--g1-package-name NAME]\n";
       std::exit(0);
@@ -469,6 +481,8 @@ DartScene createDartScene(const AppOptions& options)
       return createRigidChainScene();
     case ExampleScene::RigidLoop:
       return createRigidLoopScene();
+    case ExampleScene::MixedChain:
+      return createMixedChainScene();
     case ExampleScene::DragAndDrop:
       return createDragAndDropScene();
     case ExampleScene::SimpleFrames:

@@ -268,10 +268,10 @@ headless context, while the dedicated headless construction test remains.
 `pixi run test-filament-gui-smoke` now wraps the explicit pinned fetch fallback
 for Linux x86_64. It configures with `DART_BUILD_GUI=OFF` and
 `DART_BUILD_DARTPY=OFF`, builds `dart_filament_gui`, and runs the default,
-hello-world, boxes, hardcoded-design, rigid-chain, rigid-loop, drag-and-drop,
-simple-frames, soft-bodies, point-cloud, capsule-ground-contact,
-simulation-event-handler, polyhedron, and heightmap headless CTest smokes.
-When `DISPLAY` is absent, the task uses Xvfb and
+hello-world, boxes, hardcoded-design, rigid-chain, rigid-loop, mixed-chain,
+drag-and-drop, simple-frames, soft-bodies, point-cloud,
+capsule-ground-contact, simulation-event-handler, polyhedron, and heightmap
+headless CTest smokes. When `DISPLAY` is absent, the task uses Xvfb and
 prefers Mesa's EGL vendor file for software rendering. The Ubuntu CI
 workflow has a matching `filament-gui-smoke` job that installs Mesa, Xvfb, and
 libc++/libc++abi development packages from apt and runs that task without
@@ -306,6 +306,11 @@ OSG comparison material for the custom per-step damping hook. It routes
 restores the loop-closing pose and constraint, and renders its red constrained
 links through backend-hidden descriptors while keeping the standalone source as
 legacy OSG comparison material for damping and constraint setup. It routes
+`pixi run ex mixed_chain` through the Filament example's
+`--scene mixed-chain` fixture, which loads the legacy mixed rigid/soft chain
+SKEL data and renders its box-link and soft-mesh descriptors while keeping the
+standalone source as legacy OSG comparison material for keyboard-applied
+external forces. It routes
 `pixi run ex drag_and_drop` through the Filament example's selectable
 `--scene drag-and-drop` fixture by default while keeping the standalone source
 as legacy OSG comparison material. It also routes
@@ -373,8 +378,8 @@ The Filament example scene option parsing and dispatch now live in
 DART world fixtures now live in
 `dart/gui/experimental/detail/filament/scene_fixtures.hpp` and `.cpp`.
 Scene content requirement counting and
-MVP/G1/hello-world/boxes/hardcoded-design/rigid-chain/rigid-loop/drag/
-simple-frames/soft-bodies/point-cloud/capsule-ground-contact/
+MVP/G1/hello-world/boxes/hardcoded-design/rigid-chain/rigid-loop/mixed-chain/
+drag/simple-frames/soft-bodies/point-cloud/capsule-ground-contact/
 simulation-event-handler/polyhedron/heightmap validation
 gates, including created-renderable content counting, now live in
 `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.

@@ -20,6 +20,7 @@ FILAMENT_SMOKE_PATTERN = (
     "EXAMPLE_filament_gui_hardcoded_design_headless_smoke|"
     "EXAMPLE_filament_gui_rigid_chain_headless_smoke|"
     "EXAMPLE_filament_gui_rigid_loop_headless_smoke|"
+    "EXAMPLE_filament_gui_mixed_chain_headless_smoke|"
     "EXAMPLE_filament_gui_drag_and_drop_headless_smoke|"
     "EXAMPLE_filament_gui_simple_frames_headless_smoke|"
     "EXAMPLE_filament_gui_soft_bodies_headless_smoke|"
@@ -91,6 +92,12 @@ EXAMPLE_SPECS = {
         "filament_gui",
         ("filament",),
         ("--scene", "rigid-loop"),
+    ),
+    "mixed_chain": ExampleSpec(
+        "dart_filament_gui",
+        "filament_gui",
+        ("filament",),
+        ("--scene", "mixed-chain"),
     ),
     "drag_and_drop": ExampleSpec(
         "dart_filament_gui",
@@ -427,6 +434,7 @@ def _split_filament_scenes(run_args: list[str]) -> tuple[list[str], list[str]]:
                 "hardcoded-design",
                 "rigid-chain",
                 "rigid-loop",
+                "mixed-chain",
                 "drag-and-drop",
                 "simple-frames",
                 "soft-bodies",
