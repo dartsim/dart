@@ -181,6 +181,19 @@ def test_filament_smoke_pattern_uses_scene_all_list(run_cpp_example):
     )
 
 
+def _cmake_filament_smoke_scene_pairs(cmake_text):
+    match = re.search(
+        r"set\(DART_FILAMENT_GUI_SMOKE_SCENE_PAIRS\s+(.*?)\n\)",
+        cmake_text,
+        re.DOTALL,
+    )
+    assert match is not None
+
+    tokens = re.findall(r"[a-z0-9_-]+", match.group(1))
+    assert len(tokens) % 2 == 0
+    return tuple(zip(tokens[0::2], tokens[1::2]))
+
+
 def test_filament_scene_all_matches_registered_smoke_tests(run_cpp_example):
     repo_root = Path(run_cpp_example.__file__).resolve().parents[1]
     cmake_path = (
@@ -194,16 +207,14 @@ def test_filament_scene_all_matches_registered_smoke_tests(run_cpp_example):
     )
     cmake_text = cmake_path.read_text(encoding="utf-8")
 
-    registered_scenes = tuple(
-        re.findall(r"-DDART_FILAMENT_GUI_SCENE=([a-z0-9-]+)", cmake_text)
-    )
-    registered_tests = tuple(
-        dict.fromkeys(
-            re.findall(
-                r"EXAMPLE_filament_gui(?:_[a-z0-9_]+)?_headless_smoke",
-                cmake_text,
-            )
-        )
+    scene_pairs = _cmake_filament_smoke_scene_pairs(cmake_text)
+    registered_scenes = tuple(scene for _suffix, scene in scene_pairs)
+    registered_tests = (
+        "EXAMPLE_filament_gui_headless_smoke",
+        *(
+            f"EXAMPLE_filament_gui_{suffix}_headless_smoke"
+            for suffix, _scene in scene_pairs
+        ),
     )
 
     assert registered_scenes == run_cpp_example.FILAMENT_ALL_SCENES[1:]

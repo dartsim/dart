@@ -519,8 +519,10 @@ renderable shadow-flag reapplication, the Fetch/Tinkertoy/Hubo routed fixtures,
 and the recursive example-tree boundary guard for the minimal
 `examples/filament_gui` shape. The runner now keeps the `--scene all` and
 CTest smoke scene set in one `FILAMENT_ALL_SCENES` list, with
+the CMake smoke registration using one
+`DART_FILAMENT_GUI_SMOKE_SCENE_PAIRS` list and
 `python/tests/unit/test_run_cpp_example.py` checking migrated runner defaults,
-the smoke regex, and CMake smoke registration for drift.
+the smoke regex, and CMake scene pairs for drift.
 
 ## Current Branch
 

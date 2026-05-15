@@ -459,7 +459,7 @@ Known current result:
   example runners resolve to `dart_filament_gui` with their intended
   `--scene` defaults, so stale legacy-runner expectations fail locally. It
   also checks that the runner's `--scene all` list, smoke-test regex, and
-  CMake-registered Filament smoke scenes stay aligned.
+  loop-generated CMake Filament smoke scene registrations stay aligned.
 - `UNIT_gui_FilamentSceneExtraction` also covers run-option normalization,
   viewer lifecycle state, bounded screenshot/frame gates, RGBA-to-PPM
   screenshot storage, orbit-camera basis/update behavior, and perspective

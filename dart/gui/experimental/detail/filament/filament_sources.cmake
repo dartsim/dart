@@ -224,6 +224,99 @@ function(_dart_filament_gui_apply_smoke_test_properties test_name)
   endif()
 endfunction()
 
+set(DART_FILAMENT_GUI_SMOKE_SCENE_PAIRS
+    hello_world hello-world
+    boxes boxes
+    hardcoded_design hardcoded-design
+    rigid_chain rigid-chain
+    rigid_loop rigid-loop
+    mixed_chain mixed-chain
+    coupler_constraint coupler-constraint
+    add_delete_skels add-delete-skels
+    vehicle vehicle
+    hybrid_dynamics hybrid-dynamics
+    joint_constraints joint-constraints
+    free_joint_cases free-joint-cases
+    human_joint_limits human-joint-limits
+    lcp_physics lcp-physics
+    mimic_pendulums mimic-pendulums
+    atlas_puppet atlas-puppet
+    hubo_puppet hubo-puppet
+    atlas_simbicon atlas-simbicon
+    operational_space_control operational-space-control
+    wam_ikfast wam-ikfast
+    fetch fetch
+    tinkertoy tinkertoy
+    drag_and_drop drag-and-drop
+    simple_frames simple-frames
+    soft_bodies soft-bodies
+    point_cloud point-cloud
+    capsule_ground_contact capsule-ground-contact
+    simulation_event_handler simulation-event-handler
+    polyhedron polyhedron
+    heightmap heightmap
+)
+
+function(_dart_filament_gui_smoke_test_name out_name scene_suffix)
+  set(
+    ${out_name}
+    "EXAMPLE_filament_gui_${scene_suffix}_headless_smoke"
+    PARENT_SCOPE
+  )
+endfunction()
+
+function(_dart_filament_gui_add_headless_smoke_test test_name example_target)
+  cmake_parse_arguments(
+    DART_FILAMENT_GUI_SMOKE
+    "ANALYZE"
+    "BINARY_DIR;FRAMES;SCENE"
+    ""
+    ${ARGN}
+  )
+  if(NOT DART_FILAMENT_GUI_SMOKE_BINARY_DIR)
+    set(DART_FILAMENT_GUI_SMOKE_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+  endif()
+  if(NOT DART_FILAMENT_GUI_SMOKE_FRAMES)
+    set(DART_FILAMENT_GUI_SMOKE_FRAMES 4)
+  endif()
+
+  string(REGEX REPLACE "^EXAMPLE_" "" _screenshot_stem "${test_name}")
+  set(
+    _command
+    "${CMAKE_COMMAND}"
+    "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
+    "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_SMOKE_BINARY_DIR}/${_screenshot_stem}.ppm"
+    -DDART_FILAMENT_GUI_WIDTH=640
+    -DDART_FILAMENT_GUI_HEIGHT=480
+    "-DDART_FILAMENT_GUI_FRAMES=${DART_FILAMENT_GUI_SMOKE_FRAMES}"
+  )
+
+  if(DART_FILAMENT_GUI_SMOKE_SCENE)
+    list(
+      APPEND
+      _command
+      "-DDART_FILAMENT_GUI_SCENE=${DART_FILAMENT_GUI_SMOKE_SCENE}"
+    )
+  endif()
+  if(DART_FILAMENT_GUI_SMOKE_ANALYZE)
+    list(
+      APPEND
+      _command
+      "-DDART_FILAMENT_GUI_PYTHON=${Python3_EXECUTABLE}"
+      "-DDART_FILAMENT_GUI_ANALYZER=${DART_FILAMENT_GUI_TESTING_DIR}/analyze_headless_smoke.py"
+    )
+  endif()
+
+  list(
+    APPEND
+    _command
+    -P
+    "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
+  )
+  add_test(NAME ${test_name} COMMAND ${_command})
+  _dart_filament_gui_apply_smoke_test_properties(${test_name})
+endfunction()
+
 function(dart_filament_gui_add_smoke_tests example_target)
   cmake_parse_arguments(DART_FILAMENT_GUI "" "BINARY_DIR" "" ${ARGN})
   if(NOT DART_FILAMENT_GUI_BINARY_DIR)
@@ -231,497 +324,33 @@ function(dart_filament_gui_add_smoke_tests example_target)
   endif()
 
   find_package(Python3 COMPONENTS Interpreter REQUIRED)
-  set(test_name EXAMPLE_filament_gui_headless_smoke)
-  add_test(
-    NAME ${test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=10
-      "-DDART_FILAMENT_GUI_PYTHON=${Python3_EXECUTABLE}"
-      "-DDART_FILAMENT_GUI_ANALYZER=${DART_FILAMENT_GUI_TESTING_DIR}/analyze_headless_smoke.py"
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
+  _dart_filament_gui_add_headless_smoke_test(
+    EXAMPLE_filament_gui_headless_smoke
+    ${example_target}
+    BINARY_DIR "${DART_FILAMENT_GUI_BINARY_DIR}"
+    FRAMES 10
+    ANALYZE
   )
-  _dart_filament_gui_apply_smoke_test_properties(${test_name})
 
-  set(hello_world_test_name EXAMPLE_filament_gui_hello_world_headless_smoke)
-  add_test(
-    NAME ${hello_world_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_hello_world_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=hello-world
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(${hello_world_test_name})
-
-  set(boxes_test_name EXAMPLE_filament_gui_boxes_headless_smoke)
-  add_test(
-    NAME ${boxes_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_boxes_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=boxes
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(${boxes_test_name})
-
-  set(hardcoded_design_test_name
-      EXAMPLE_filament_gui_hardcoded_design_headless_smoke)
-  add_test(
-    NAME ${hardcoded_design_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_hardcoded_design_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=hardcoded-design
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(
-    ${hardcoded_design_test_name})
-
-  set(rigid_chain_test_name EXAMPLE_filament_gui_rigid_chain_headless_smoke)
-  add_test(
-    NAME ${rigid_chain_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_rigid_chain_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=rigid-chain
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(${rigid_chain_test_name})
-
-  set(rigid_loop_test_name EXAMPLE_filament_gui_rigid_loop_headless_smoke)
-  add_test(
-    NAME ${rigid_loop_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_rigid_loop_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=rigid-loop
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(${rigid_loop_test_name})
-
-  set(mixed_chain_test_name EXAMPLE_filament_gui_mixed_chain_headless_smoke)
-  add_test(
-    NAME ${mixed_chain_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_mixed_chain_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=mixed-chain
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(${mixed_chain_test_name})
-
-  set(coupler_constraint_test_name
-      EXAMPLE_filament_gui_coupler_constraint_headless_smoke)
-  add_test(
-    NAME ${coupler_constraint_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_coupler_constraint_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=coupler-constraint
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(${coupler_constraint_test_name})
-
-  set(add_delete_skels_test_name
-      EXAMPLE_filament_gui_add_delete_skels_headless_smoke)
-  add_test(
-    NAME ${add_delete_skels_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_add_delete_skels_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=add-delete-skels
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(${add_delete_skels_test_name})
-
-  set(vehicle_test_name EXAMPLE_filament_gui_vehicle_headless_smoke)
-  add_test(
-    NAME ${vehicle_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_vehicle_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=vehicle
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(${vehicle_test_name})
-
-  set(hybrid_dynamics_test_name
-      EXAMPLE_filament_gui_hybrid_dynamics_headless_smoke)
-  add_test(
-    NAME ${hybrid_dynamics_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_hybrid_dynamics_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=hybrid-dynamics
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(
-    ${hybrid_dynamics_test_name})
-
-  set(joint_constraints_test_name
-      EXAMPLE_filament_gui_joint_constraints_headless_smoke)
-  add_test(
-    NAME ${joint_constraints_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_joint_constraints_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=joint-constraints
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(
-    ${joint_constraints_test_name})
-
-  set(free_joint_cases_test_name
-      EXAMPLE_filament_gui_free_joint_cases_headless_smoke)
-  add_test(
-    NAME ${free_joint_cases_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_free_joint_cases_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=free-joint-cases
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(
-    ${free_joint_cases_test_name})
-
-  set(human_joint_limits_test_name
-      EXAMPLE_filament_gui_human_joint_limits_headless_smoke)
-  add_test(
-    NAME ${human_joint_limits_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_human_joint_limits_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=human-joint-limits
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(
-    ${human_joint_limits_test_name})
-
-  set(lcp_physics_test_name EXAMPLE_filament_gui_lcp_physics_headless_smoke)
-  add_test(
-    NAME ${lcp_physics_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_lcp_physics_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=lcp-physics
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(${lcp_physics_test_name})
-
-  set(mimic_pendulums_test_name
-      EXAMPLE_filament_gui_mimic_pendulums_headless_smoke)
-  add_test(
-    NAME ${mimic_pendulums_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_mimic_pendulums_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=mimic-pendulums
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(
-    ${mimic_pendulums_test_name})
-
-  set(atlas_puppet_test_name
-      EXAMPLE_filament_gui_atlas_puppet_headless_smoke)
-  add_test(
-    NAME ${atlas_puppet_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_atlas_puppet_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=atlas-puppet
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(
-    ${atlas_puppet_test_name})
-
-  set(hubo_puppet_test_name
-      EXAMPLE_filament_gui_hubo_puppet_headless_smoke)
-  add_test(
-    NAME ${hubo_puppet_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_hubo_puppet_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=hubo-puppet
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(
-    ${hubo_puppet_test_name})
-
-  set(atlas_simbicon_test_name
-      EXAMPLE_filament_gui_atlas_simbicon_headless_smoke)
-  add_test(
-    NAME ${atlas_simbicon_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_atlas_simbicon_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=atlas-simbicon
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(
-    ${atlas_simbicon_test_name})
-
-  set(operational_space_control_test_name
-      EXAMPLE_filament_gui_operational_space_control_headless_smoke)
-  add_test(
-    NAME ${operational_space_control_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_operational_space_control_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=operational-space-control
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(
-    ${operational_space_control_test_name})
-
-  set(wam_ikfast_test_name EXAMPLE_filament_gui_wam_ikfast_headless_smoke)
-  add_test(
-    NAME ${wam_ikfast_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_wam_ikfast_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=wam-ikfast
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(${wam_ikfast_test_name})
-
-  set(fetch_test_name EXAMPLE_filament_gui_fetch_headless_smoke)
-  add_test(
-    NAME ${fetch_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_fetch_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=fetch
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(${fetch_test_name})
-
-  set(tinkertoy_test_name EXAMPLE_filament_gui_tinkertoy_headless_smoke)
-  add_test(
-    NAME ${tinkertoy_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_tinkertoy_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=tinkertoy
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(${tinkertoy_test_name})
-
-  set(drag_test_name EXAMPLE_filament_gui_drag_and_drop_headless_smoke)
-  add_test(
-    NAME ${drag_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_drag_and_drop_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=drag-and-drop
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(${drag_test_name})
-
-  set(simple_frames_test_name EXAMPLE_filament_gui_simple_frames_headless_smoke)
-  add_test(
-    NAME ${simple_frames_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_simple_frames_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=simple-frames
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(${simple_frames_test_name})
-
-  set(soft_bodies_test_name EXAMPLE_filament_gui_soft_bodies_headless_smoke)
-  add_test(
-    NAME ${soft_bodies_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_soft_bodies_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=soft-bodies
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(${soft_bodies_test_name})
-
-  set(point_cloud_test_name EXAMPLE_filament_gui_point_cloud_headless_smoke)
-  add_test(
-    NAME ${point_cloud_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_point_cloud_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=point-cloud
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(${point_cloud_test_name})
-
-  set(capsule_ground_contact_test_name
-      EXAMPLE_filament_gui_capsule_ground_contact_headless_smoke)
-  add_test(
-    NAME ${capsule_ground_contact_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_capsule_ground_contact_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=capsule-ground-contact
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(
-    ${capsule_ground_contact_test_name})
-
-  set(simulation_event_handler_test_name
-      EXAMPLE_filament_gui_simulation_event_handler_headless_smoke)
-  add_test(
-    NAME ${simulation_event_handler_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_simulation_event_handler_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=simulation-event-handler
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(
-    ${simulation_event_handler_test_name})
-
-  set(polyhedron_test_name EXAMPLE_filament_gui_polyhedron_headless_smoke)
-  add_test(
-    NAME ${polyhedron_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_polyhedron_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=polyhedron
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(${polyhedron_test_name})
-
-  set(heightmap_test_name EXAMPLE_filament_gui_heightmap_headless_smoke)
-  add_test(
-    NAME ${heightmap_test_name}
-    COMMAND
-      "${CMAKE_COMMAND}"
-      "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-      "-DDART_FILAMENT_GUI_SCREENSHOT=${DART_FILAMENT_GUI_BINARY_DIR}/filament_gui_heightmap_headless_smoke.ppm"
-      -DDART_FILAMENT_GUI_SCENE=heightmap
-      -DDART_FILAMENT_GUI_WIDTH=640
-      -DDART_FILAMENT_GUI_HEIGHT=480
-      -DDART_FILAMENT_GUI_FRAMES=4
-      -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-  )
-  _dart_filament_gui_apply_smoke_test_properties(${heightmap_test_name})
+  list(LENGTH DART_FILAMENT_GUI_SMOKE_SCENE_PAIRS _smoke_pair_count)
+  math(EXPR _smoke_last_index "${_smoke_pair_count} - 1")
+  foreach(_suffix_index RANGE 0 ${_smoke_last_index} 2)
+    math(EXPR _scene_index "${_suffix_index} + 1")
+    list(
+      GET
+      DART_FILAMENT_GUI_SMOKE_SCENE_PAIRS
+      ${_suffix_index}
+      _scene_suffix
+    )
+    list(GET DART_FILAMENT_GUI_SMOKE_SCENE_PAIRS ${_scene_index} _scene_name)
+    _dart_filament_gui_smoke_test_name(_test_name "${_scene_suffix}")
+    _dart_filament_gui_add_headless_smoke_test(
+      ${_test_name}
+      ${example_target}
+      BINARY_DIR "${DART_FILAMENT_GUI_BINARY_DIR}"
+      SCENE "${_scene_name}"
+    )
+  endforeach()
 endfunction()
 
 function(dart_filament_gui_add_example example_target)
