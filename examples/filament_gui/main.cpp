@@ -33,7 +33,6 @@
 #include "imgui_overlay.hpp"
 #include "input.hpp"
 #include "native_window.hpp"
-#include "profile.hpp"
 #include "render_context.hpp"
 #include "render_environment.hpp"
 #include "renderable_factory.hpp"
@@ -48,6 +47,7 @@
 #include <dart/common/local_resource_retriever.hpp>
 #include <dart/common/profile.hpp>
 #include <dart/config.hpp>
+#include <dart/gui/experimental/profile.hpp>
 #include <dart/gui/experimental/scene.hpp>
 #include <dart/io/read.hpp>
 #include <dart/utils/composite_resource_retriever.hpp>
@@ -112,12 +112,14 @@ using dart::gui::experimental::DebugDrawOptions;
 using dart::gui::experimental::OrbitCamera;
 using dart::gui::experimental::OrbitCameraController;
 using dart::gui::experimental::PickRay;
+using dart::gui::experimental::ProfileAccumulator;
 using dart::gui::experimental::RenderableDescriptor;
 using dart::gui::experimental::RenderableId;
 using dart::gui::experimental::RunOptions;
 using dart::gui::experimental::ShapeKind;
 using dart::gui::experimental::ViewerLifecycleState;
 using dart::gui::experimental::computePlaneDragTranslation;
+using dart::gui::experimental::elapsedMs;
 using dart::gui::experimental::extractContactDebugLines;
 using dart::gui::experimental::extractDebugLines;
 using dart::gui::experimental::extractRenderables;
@@ -132,6 +134,7 @@ using dart::gui::experimental::makeRenderableId;
 using dart::gui::experimental::makeSelectionDebugLines;
 using dart::gui::experimental::normalizeRunOptions;
 using dart::gui::experimental::pickNearestRenderable;
+using dart::gui::experimental::printProfile;
 using dart::gui::experimental::requestSingleStep;
 using dart::gui::experimental::shouldAdvanceSimulation;
 using dart::gui::experimental::shouldRequestScreenshot;
@@ -145,7 +148,6 @@ using dart::examples::filament_gui::FilamentRenderContext;
 using dart::examples::filament_gui::ImGuiOverlay;
 using dart::examples::filament_gui::MaterialResources;
 using dart::examples::filament_gui::MaterialSet;
-using dart::examples::filament_gui::ProfileAccumulator;
 using dart::examples::filament_gui::Renderable;
 using dart::examples::filament_gui::ScreenshotCapture;
 using dart::examples::filament_gui::SceneRenderable;
@@ -173,7 +175,6 @@ using dart::examples::filament_gui::destroyRenderable;
 using dart::examples::filament_gui::destroyRenderEnvironmentResources;
 using dart::examples::filament_gui::destroySceneLights;
 using dart::examples::filament_gui::detachSceneEnvironment;
-using dart::examples::filament_gui::elapsedMs;
 using dart::examples::filament_gui::endFilamentFrame;
 using dart::examples::filament_gui::handleScroll;
 using dart::examples::filament_gui::initialCameraForScene;
@@ -200,7 +201,6 @@ using dart::examples::filament_gui::loadImGuiFont;
 using dart::examples::filament_gui::logUnsupportedRenderableDescriptorOnce;
 using dart::examples::filament_gui::removeRenderableFromScene;
 using dart::examples::filament_gui::parseOptions;
-using dart::examples::filament_gui::printProfile;
 using dart::examples::filament_gui::renderFilamentViews;
 using dart::examples::filament_gui::requestScreenshot;
 using dart::examples::filament_gui::saveScreenshot;

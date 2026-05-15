@@ -59,10 +59,10 @@
   code locally.
 - The constrained experimental public surface is split into focused
   backend-hidden headers: `renderable.hpp`, `interaction.hpp`, `debug.hpp`,
-  `geometry.hpp`, and `viewer.hpp`. `scene.hpp` remains an aggregate
-  compatibility include, while implementation now separates shape description
-  extraction in `shape_descriptions.cpp` from renderable identity/resource
-  extraction in `scene.cpp`.
+  `geometry.hpp`, `viewer.hpp`, and `profile.hpp`. `scene.hpp` remains an
+  aggregate compatibility include, while implementation now separates shape
+  description extraction in `shape_descriptions.cpp` from renderable
+  identity/resource extraction in `scene.cpp`.
 - The experimental interaction layer includes tested picking bounds and nearest
   ray-hit selection helpers with hit point, bounds-normal, primitive-surface,
   and triangle-backed mesh surface reporting. The example uses them for basic
@@ -87,12 +87,14 @@
   promoted panel/tool API.
 - The experimental viewer-runtime layer owns backend-hidden run-option
   normalization, viewer lifecycle state, orbit-camera math, orbit-camera
-  controller state, and perspective projection/clipping descriptors used by the
-  example for bounded screenshots, camera placement, headless mode, pause/step
-  behavior, frame accounting, GUI scale normalization, perspective pick rays,
-  and near/far plane policy. Those viewer-runtime helpers now live in
-  `dart/gui/experimental/viewer.hpp` and are re-exported by `scene.hpp` for
-  existing experimental consumers.
+  controller state, viewer profiling accumulation, and perspective
+  projection/clipping descriptors used by the example for bounded screenshots,
+  camera placement, headless mode, pause/step behavior, frame accounting, GUI
+  scale normalization, perspective pick rays, near/far plane policy, and
+  profile reporting. Those viewer-runtime helpers now live in
+  `dart/gui/experimental/viewer.hpp` and
+  `dart/gui/experimental/profile.hpp`, with core viewer helpers re-exported by
+  `scene.hpp` for existing experimental consumers.
 - Renderer resource synchronization planning now compares active renderable
   render-resource versions, so descriptor-owned geometry changes, including
   dynamic soft-mesh vertex changes, `MeshShape` material-color policy changes,
@@ -124,6 +126,12 @@
   `examples/filament_gui/*.hpp` and the example entry point have no direct
   Filament header includes, while the full north-star metric remains zero
   direct Filament header includes from maintained examples after promotion.
+- The full north-star also requires any surviving `examples/filament_gui/`
+  tree to shrink to a minimal executable entry point: renderer setup, frame
+  lifecycle, material and texture resources, scene synchronization, capture,
+  overlays, input translation, and reusable fixture logic should live in
+  `dart::gui` or private GUI implementation units rather than as example-local
+  architecture.
 - The Filament example's engine, renderer, swap-chain, main view, scene,
   camera lifecycle, and begin/render/end frame calls now live in
   `examples/filament_gui/render_context.hpp` and `.cpp`, leaving `main.cpp`

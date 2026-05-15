@@ -22,22 +22,24 @@
  *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
  *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
  *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; OR
- *   BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- *   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
- *   USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
- *   DAMAGE.
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_FILAMENT_GUI_PROFILE_HPP_
-#define EXAMPLES_FILAMENT_GUI_PROFILE_HPP_
+#ifndef DART_GUI_EXPERIMENTAL_PROFILE_HPP_
+#define DART_GUI_EXPERIMENTAL_PROFILE_HPP_
+
+#include <dart/gui/export.hpp>
 
 #include <chrono>
 
 #include <cstddef>
 
-namespace dart::examples::filament_gui {
+namespace dart::gui::experimental {
 
 struct ProfileAccumulator
 {
@@ -66,10 +68,10 @@ struct ProfileAccumulator
   double maxRenderMs = 0.0;
 };
 
-double elapsedMs(ProfileAccumulator::Clock::time_point start);
+DART_GUI_API double elapsedMs(ProfileAccumulator::Clock::time_point start);
 
-void printProfile(const ProfileAccumulator& profile);
+DART_GUI_API void printProfile(const ProfileAccumulator& profile);
 
-} // namespace dart::examples::filament_gui
+} // namespace dart::gui::experimental
 
-#endif // EXAMPLES_FILAMENT_GUI_PROFILE_HPP_
+#endif // DART_GUI_EXPERIMENTAL_PROFILE_HPP_

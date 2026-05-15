@@ -22,20 +22,20 @@
  *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
  *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
  *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; OR
- *   BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- *   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
- *   USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
- *   DAMAGE.
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "profile.hpp"
+#include <dart/gui/experimental/profile.hpp>
 
 #include <algorithm>
 #include <iostream>
 
-namespace dart::examples::filament_gui {
+namespace dart::gui::experimental {
 
 double elapsedMs(ProfileAccumulator::Clock::time_point start)
 {
@@ -60,8 +60,12 @@ void printProfile(const ProfileAccumulator& profile)
             ? 1000.0 * static_cast<double>(profile.renderedFrames)
                   / profile.frameMs
             : 0.0;
-  const auto avg = [&](double value) { return value / frames; };
-  const auto avgRendered = [&](double value) { return value / renderedFrames; };
+  const auto avg = [&](double value) {
+    return value / frames;
+  };
+  const auto avgRendered = [&](double value) {
+    return value / renderedFrames;
+  };
 
   std::cout << "Profile frames: " << profile.frames
             << " rendered=" << profile.renderedFrames
@@ -99,4 +103,4 @@ void printProfile(const ProfileAccumulator& profile)
   }
 }
 
-} // namespace dart::examples::filament_gui
+} // namespace dart::gui::experimental

@@ -74,15 +74,18 @@ bodies and `SimpleFrame` visuals. Backend-hidden plane intersection and
 plane-drag translation helpers are also covered by C++ and Python tests, and the
 example uses them for Ctrl-left camera-plane dragging of selected dynamic bodies
 and `SimpleFrame` visuals. Backend-hidden
-run-option normalization, viewer lifecycle state, and orbit-camera helpers now
-live in `dart-gui-experimental`; the Filament example uses them for bounded
-screenshots, camera placement, headless runs, pause/step behavior, frame
-accounting, and perspective pick rays. The constrained experimental API is now
+run-option normalization, viewer lifecycle state, viewer profiling
+accumulation, and orbit-camera helpers now live in `dart-gui-experimental`;
+the Filament example uses them for bounded screenshots, camera placement,
+headless runs, pause/step behavior, frame accounting, profile reporting, and
+perspective pick rays. The constrained experimental API is now
 split across focused backend-hidden headers: `renderable.hpp`,
-`interaction.hpp`, `debug.hpp`, `geometry.hpp`, and `viewer.hpp`.
+`interaction.hpp`, `debug.hpp`, `geometry.hpp`, `viewer.hpp`, and
+`profile.hpp`.
 `scene.hpp` remains an aggregate compatibility include for existing
 experimental consumers. Viewer-runtime helpers live in
-`dart/gui/experimental/viewer.cpp`, debug descriptor generation lives in
+`dart/gui/experimental/viewer.cpp`, profile accumulation lives in
+`dart/gui/experimental/profile.cpp`, debug descriptor generation lives in
 `dart/gui/experimental/debug.cpp`, backend-hidden mesh builders live in
 `dart/gui/experimental/geometry.cpp`, shape description extraction lives in
 `dart/gui/experimental/shape_descriptions.cpp`, renderable identity/extraction
@@ -108,6 +111,11 @@ direct Filament sampler include.
 `examples/filament_gui/*.hpp` and the example entry point have no direct
 Filament header includes; this is only an incremental guard, not completion of
 the full example include metric.
+The full north-star also requires any surviving `examples/filament_gui/` tree
+to shrink to a minimal executable entry point: renderer setup, frame lifecycle,
+material and texture resources, scene synchronization, capture, overlays, input
+translation, and reusable fixture logic should move into `dart::gui` or private
+GUI implementation units rather than remain as example-local architecture.
 Example-local engine, renderer, swap-chain, main view, scene, camera lifecycle,
 and begin/render/end frame calls live in
 `examples/filament_gui/render_context.hpp` and `.cpp`; `main.cpp` now has zero

@@ -141,5 +141,10 @@ the highest-leverage path right now. Every commit in the recent
 log fits that lane: GUI scale → projection → nudge → camera
 controller → viewer split → debug-line split → geometry builders → scene
 fixtures → interaction helpers. Stay in this lane.
+The completion metric for this lane is stronger than direct include hygiene:
+any surviving `examples/filament_gui/` directory should become a minimal
+entry-point shell while renderer setup, frame lifecycle, resources,
+synchronization, capture, overlays, input translation, and fixture logic live
+under `dart::gui` or private GUI implementation units.
 The promoted `dart::gui` API shape will fall out naturally from
 what's left in `main.cpp` when the lane bottoms out.
