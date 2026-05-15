@@ -165,7 +165,8 @@
 - The Filament example's frame lifecycle, scene synchronization, capture,
   built-in panel wiring, and top-level orchestration now live in
   `dart/gui/experimental/detail/filament/application.hpp` and `.cpp`, leaving
-  `examples/filament_gui/main.cpp` as a minimal entry point.
+  `examples/filament_gui/main.cpp` as a minimal entry point guarded by the
+  focused scene-extraction unit.
 - `dartpy.gui.experimental` now exposes the constrained backend-hidden
   descriptor, picking, frame-translation, debug-line, run-option, viewer
   lifecycle, screenshot storage, orbit-camera, orbit-camera controller,

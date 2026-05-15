@@ -279,6 +279,30 @@ std::vector<std::filesystem::path> listPublicHeadersInDirectory(
   return headers;
 }
 
+std::vector<std::filesystem::path> listCppSourceFilesInDirectory(
+    const std::filesystem::path& relativeDirectory)
+{
+  const auto directory
+      = std::filesystem::path(dart::config::sourcePath()) / relativeDirectory;
+
+  std::vector<std::filesystem::path> sources;
+  for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+    if (!entry.is_regular_file()) {
+      continue;
+    }
+
+    const auto extension = entry.path().extension();
+    if (extension != ".cpp" && extension != ".hpp") {
+      continue;
+    }
+
+    sources.push_back(relativeDirectory / entry.path().filename());
+  }
+
+  std::sort(sources.begin(), sources.end());
+  return sources;
+}
+
 template <std::size_t TokenCount>
 std::vector<BackendTokenViolation> scanSourceFilesForTokens(
     const std::vector<std::filesystem::path>& sources,
@@ -382,6 +406,16 @@ TEST(
     ADD_FAILURE() << violation.source << " includes Filament header token `"
                   << violation.token << "` directly";
   }
+}
+
+TEST(FilamentSceneExtraction, FilamentExampleKeepsOnlyMinimalCppEntryPoint)
+{
+  const auto sources = listCppSourceFilesInDirectory(
+      std::filesystem::path("examples") / "filament_gui");
+
+  const std::vector<std::filesystem::path> expectedSources
+      = {std::filesystem::path("examples") / "filament_gui" / "main.cpp"};
+  EXPECT_EQ(sources, expectedSources);
 }
 
 TEST(FilamentSceneExtraction, MeshGeometryBuildersProduceBoundedMeshes)
