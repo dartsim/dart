@@ -71,6 +71,10 @@
   plane-drag translation helpers. The Filament example uses them for Ctrl-left
   camera-plane dragging of selected dynamic bodies and `SimpleFrame` visuals
   without exposing Filament input types.
+- The Filament example's GLFW/ImGui input bridge now lives in
+  `examples/filament_gui/input.hpp` and `.cpp`, keeping backend-specific input
+  polling out of the main viewer loop while the reusable manipulation math
+  remains in `dart-gui-experimental`.
 - The experimental viewer-runtime layer owns backend-hidden run-option
   normalization, viewer lifecycle state, orbit-camera math, orbit-camera
   controller state, and perspective projection/clipping descriptors used by the

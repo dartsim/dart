@@ -37,6 +37,7 @@
 #include "transparent_lit_material.hpp"
 #include "transparent_textured_lit_material.hpp"
 
+#include "input.hpp"
 #include "scenes.hpp"
 #include "screenshot.hpp"
 
@@ -153,7 +154,6 @@ using dart::dynamics::VoxelGridShape;
 using dart::gui::experimental::ActiveRenderableState;
 using dart::gui::experimental::DebugDrawOptions;
 using dart::gui::experimental::DebugLineDescriptor;
-using dart::gui::experimental::DirectionalNudgeInput;
 using dart::gui::experimental::GeometryDescriptor;
 using dart::gui::experimental::MaterialDescriptor;
 using dart::gui::experimental::MeshGeometry;
@@ -163,16 +163,13 @@ using dart::gui::experimental::MeshMaterialDescriptor;
 using dart::gui::experimental::MeshPartDescriptor;
 using dart::gui::experimental::OrbitCamera;
 using dart::gui::experimental::OrbitCameraController;
-using dart::gui::experimental::OrbitCameraControllerInput;
 using dart::gui::experimental::PickRay;
 using dart::gui::experimental::RenderableDescriptor;
 using dart::gui::experimental::RenderableId;
 using dart::gui::experimental::RunOptions;
 using dart::gui::experimental::ShapeKind;
 using dart::gui::experimental::ViewerLifecycleState;
-using dart::gui::experimental::addOrbitCameraScroll;
 using dart::gui::experimental::cameraEye;
-using dart::gui::experimental::computeCameraRelativeNudge;
 using dart::gui::experimental::computePlaneDragTranslation;
 using dart::gui::experimental::extractContactDebugLines;
 using dart::gui::experimental::extractDebugLines;
@@ -203,7 +200,6 @@ using dart::gui::experimental::shouldRequestScreenshot;
 using dart::gui::experimental::shouldStopAfterFrame;
 using dart::gui::experimental::togglePaused;
 using dart::gui::experimental::translateFrameRenderable;
-using dart::gui::experimental::updateOrbitCameraController;
 using dart::simulation::World;
 using dart::examples::filament_gui::AppOptions;
 using dart::examples::filament_gui::DartScene;
@@ -211,7 +207,10 @@ using dart::examples::filament_gui::ExampleScene;
 using dart::examples::filament_gui::G1IkHandle;
 using dart::examples::filament_gui::ScreenshotCapture;
 using dart::examples::filament_gui::createDartScene;
+using dart::examples::filament_gui::handleScroll;
 using dart::examples::filament_gui::initialCameraForScene;
+using dart::examples::filament_gui::isDragModifierDown;
+using dart::examples::filament_gui::isInsideStatusPanel;
 using dart::examples::filament_gui::kAtlasFixtureSkeletonName;
 using dart::examples::filament_gui::kAtlasRobotFixtureSkeletonName;
 using dart::examples::filament_gui::kConvexMeshFixtureSkeletonName;
@@ -232,6 +231,9 @@ using dart::examples::filament_gui::parseOptions;
 using dart::examples::filament_gui::requestScreenshot;
 using dart::examples::filament_gui::saveScreenshot;
 using dart::examples::filament_gui::sceneName;
+using dart::examples::filament_gui::selectedNudgeFromKeyboard;
+using dart::examples::filament_gui::updateCameraController;
+using dart::examples::filament_gui::updateImGuiMouseInput;
 using dart::examples::filament_gui::waitForScreenshot;
 using filament::math::float2;
 using filament::math::float3;
@@ -926,95 +928,6 @@ void* getNativeWindow(GLFWwindow* window)
 #endif
 }
 
-void handleScroll(GLFWwindow* window, double, double yOffset)
-{
-  auto* controller
-      = static_cast<OrbitCameraController*>(glfwGetWindowUserPointer(window));
-  if (controller != nullptr) {
-    addOrbitCameraScroll(*controller, yOffset);
-  }
-}
-
-bool isKeyDown(GLFWwindow* window, int key)
-{
-  return window != nullptr && glfwGetKey(window, key) == GLFW_PRESS;
-}
-
-void updateImGuiMouseInput(
-    GLFWwindow* window,
-    ImGuiIO& io,
-    int framebufferWidth,
-    int framebufferHeight)
-{
-  for (bool& mouseDown : io.MouseDown) {
-    mouseDown = false;
-  }
-
-  if (window == nullptr) {
-    const float offscreen = -std::numeric_limits<float>::max();
-    io.MousePos = ImVec2(offscreen, offscreen);
-    io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
-    return;
-  }
-
-  int windowWidth = framebufferWidth;
-  int windowHeight = framebufferHeight;
-  glfwGetWindowSize(window, &windowWidth, &windowHeight);
-  const float xScale
-      = windowWidth > 0
-            ? static_cast<float>(framebufferWidth) / static_cast<float>(windowWidth)
-            : 1.0f;
-  const float yScale
-      = windowHeight > 0
-            ? static_cast<float>(framebufferHeight) / static_cast<float>(windowHeight)
-            : 1.0f;
-  io.DisplayFramebufferScale = ImVec2(xScale, yScale);
-
-  double cursorX = 0.0;
-  double cursorY = 0.0;
-  glfwGetCursorPos(window, &cursorX, &cursorY);
-  io.MousePos = ImVec2(
-      static_cast<float>(cursorX) * xScale,
-      static_cast<float>(cursorY) * yScale);
-  io.MouseDown[0] = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
-  io.MouseDown[1]
-      = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
-  io.MouseDown[2]
-      = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
-}
-
-bool isInsideStatusPanel(double cursorX, double cursorY, double guiScale)
-{
-  return cursorX >= 20.0 * guiScale && cursorX <= 360.0 * guiScale
-         && cursorY >= 20.0 * guiScale && cursorY <= 360.0 * guiScale;
-}
-
-bool isDragModifierDown(GLFWwindow* window)
-{
-  return isKeyDown(window, GLFW_KEY_LEFT_CONTROL)
-         || isKeyDown(window, GLFW_KEY_RIGHT_CONTROL);
-}
-
-Eigen::Vector3d selectedNudgeFromKeyboard(
-    GLFWwindow* window, const OrbitCamera& camera, double stepSize)
-{
-  if (window == nullptr) {
-    return Eigen::Vector3d::Zero();
-  }
-
-  DirectionalNudgeInput input;
-  input.left = isKeyDown(window, GLFW_KEY_LEFT);
-  input.right = isKeyDown(window, GLFW_KEY_RIGHT);
-  input.forward = isKeyDown(window, GLFW_KEY_UP);
-  input.backward = isKeyDown(window, GLFW_KEY_DOWN);
-  input.up = isKeyDown(window, GLFW_KEY_PAGE_UP);
-  input.down = isKeyDown(window, GLFW_KEY_PAGE_DOWN);
-  input.fast = isKeyDown(window, GLFW_KEY_LEFT_SHIFT)
-               || isKeyDown(window, GLFW_KEY_RIGHT_SHIFT);
-  input.stepSize = stepSize;
-  return computeCameraRelativeNudge(camera, input);
-}
-
 G1IkHandle* findG1IkHandle(DartScene& scene, RenderableId targetRenderableId)
 {
   const auto handle = std::find_if(
@@ -1269,30 +1182,6 @@ mat4f toFilamentTransform(const Eigen::Isometry3d& tf)
     }
   }
   return out;
-}
-
-void updateCameraController(
-    GLFWwindow* window,
-    OrbitCameraController& controller,
-    bool suppressLeftMouseOrbit = false)
-{
-  if (window == nullptr) {
-    return;
-  }
-
-  double x = 0.0;
-  double y = 0.0;
-  glfwGetCursorPos(window, &x, &y);
-
-  OrbitCameraControllerInput input;
-  input.cursorX = x;
-  input.cursorY = y;
-  input.orbit = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS
-                && !suppressLeftMouseOrbit && !isDragModifierDown(window);
-  input.pan
-      = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS
-        || glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
-  updateOrbitCameraController(controller, input);
 }
 
 filament::MaterialInstance* addRenderableMaterial(

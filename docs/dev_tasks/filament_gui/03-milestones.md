@@ -196,6 +196,9 @@
   in `interaction.cpp`, debug descriptor generation in `debug.cpp`, viewer
   runtime helpers in `viewer.cpp`, and backend-hidden mesh builders in
   `geometry.cpp`.
+- The Filament example keeps its backend-specific GLFW/ImGui input polling and
+  status-panel hit testing in `examples/filament_gui/input.hpp` and `.cpp`,
+  while reusable nudge/orbit/manipulation math remains in `dart-gui-experimental`.
 - `dart-gui-experimental` now owns viewer lifecycle state for pause/step
   behavior, screenshot request tracking, rendered/skipped frame counters, and
   bounded-run stop checks. The Filament example uses this state instead of
