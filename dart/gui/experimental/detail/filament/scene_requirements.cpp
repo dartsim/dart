@@ -133,6 +133,18 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Box) {
     ++counts.operationalSpaceControlGrounds;
   }
+  if (descriptor.skeletonName == kWamIkFastFixtureSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Mesh) {
+    ++counts.wamIkFastMeshes;
+  }
+  if (descriptor.shapeFrameName == kWamIkFastTargetFrameName
+      && descriptor.geometry.kind == ShapeKind::Sphere) {
+    ++counts.wamIkFastTargets;
+  }
+  if (descriptor.skeletonName == kWamIkFastGroundSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.wamIkFastGrounds;
+  }
   if (descriptor.skeletonName == kAtlasFixtureSkeletonName
       && descriptor.geometry.kind == ShapeKind::Mesh) {
     ++counts.atlasMeshes;
@@ -590,6 +602,31 @@ bool validateSceneDescriptorContent(
         counts.operationalSpaceControlGrounds,
         kOperationalSpaceControlGroundCount,
         "operational-space-control scene",
+        "visible ground renderable descriptor",
+        output);
+  }
+
+  if (scene == ExampleScene::WamIkFast) {
+    if (!requireAtLeast(
+            counts.wamIkFastMeshes,
+            5,
+            "wam-ikfast scene",
+            "visible WAM mesh renderables",
+            output)) {
+      return false;
+    }
+    if (!requireEqual(
+            counts.wamIkFastTargets,
+            kWamIkFastTargetCount,
+            "wam-ikfast scene",
+            "visible target renderable descriptor",
+            output)) {
+      return false;
+    }
+    return requireEqual(
+        counts.wamIkFastGrounds,
+        kWamIkFastGroundCount,
+        "wam-ikfast scene",
         "visible ground renderable descriptor",
         output);
   }
@@ -1161,6 +1198,28 @@ bool validateCreatedSceneContent(
         created.operationalSpaceControlGrounds,
         expected.operationalSpaceControlGrounds,
         "operational-space-control ground renderables",
+        output);
+  }
+
+  if (scene == ExampleScene::WamIkFast) {
+    if (!requireCreatedAtLeast(
+            created.wamIkFastMeshes,
+            expected.wamIkFastMeshes,
+            "wam-ikfast WAM mesh renderables",
+            output)) {
+      return false;
+    }
+    if (!requireCreatedEqual(
+            created.wamIkFastTargets,
+            expected.wamIkFastTargets,
+            "wam-ikfast target renderables",
+            output)) {
+      return false;
+    }
+    return requireCreatedEqual(
+        created.wamIkFastGrounds,
+        expected.wamIkFastGrounds,
+        "wam-ikfast ground renderables",
         output);
   }
 

@@ -452,6 +452,42 @@ dart::dynamics::SkeletonPtr loadOperationalSpaceControlWamSkeleton()
   return wam;
 }
 
+dart::dynamics::SkeletonPtr loadWamIkFastSkeleton()
+{
+  dart::io::ReadOptions options;
+  options.addPackageDirectory(
+      "herb_description", dart::config::dataPath("urdf/wam"));
+  const auto wamUri = dart::common::Uri::createFromPath(
+      dart::config::dataPath("urdf/wam/wam.urdf"));
+  auto wam = dart::io::readSkeleton(wamUri, options);
+  if (!wam) {
+    throw std::runtime_error(
+        "Failed to load WAM IKFast fixture from " + wamUri.toString());
+  }
+
+  wam->setName(kWamIkFastFixtureSkeletonName);
+  const std::array<std::pair<const char*, double>, 7> jointPositions{{
+      {"/j1", 0.0},
+      {"/j2", 0.0},
+      {"/j3", 0.0},
+      {"/j4", 0.0},
+      {"/j5", 0.0},
+      {"/j6", 0.0},
+      {"/j7", 0.0},
+  }};
+  for (const auto& [name, position] : jointPositions) {
+    auto* dof = wam->getDof(name);
+    if (dof == nullptr) {
+      throw std::runtime_error(
+          "WAM IKFast fixture is missing expected DOF " + std::string(name));
+    }
+    dof->setPosition(position);
+  }
+
+  makeVisualOnlySkeleton(wam);
+  return wam;
+}
+
 class OperationalSpaceControlState
 {
 public:
@@ -2983,6 +3019,37 @@ DartScene createOperationalSpaceControlScene()
   scene.preStep = [controller = std::move(controller)]() {
     controller->preStep();
   };
+
+  return scene;
+}
+
+DartScene createWamIkFastScene()
+{
+  DartScene scene;
+  scene.world = World::create("filament_gui_wam_ikfast");
+  scene.world->setGravity(Eigen::Vector3d::Zero());
+  scene.world->addSkeleton(createStaticVisualSkeleton(
+      kWamIkFastGroundSkeletonName,
+      std::make_shared<BoxShape>(Eigen::Vector3d(10.0, 10.0, 0.01)),
+      Eigen::Vector3d(0.0, 0.0, -0.005),
+      Eigen::Vector3d(0.18, 0.32, 0.58)));
+
+  auto wam = loadWamIkFastSkeleton();
+  auto* endEffector = wam->getBodyNode("/wam7");
+  if (endEffector == nullptr) {
+    throw std::runtime_error("WAM IKFast fixture is missing /wam7 body node");
+  }
+
+  Eigen::Isometry3d targetTransform = endEffector->getWorldTransform();
+  targetTransform.translate(Eigen::Vector3d(0.0, 0.0, -0.09));
+  auto target = SimpleFrame::createShared(
+      dart::dynamics::Frame::World(),
+      kWamIkFastTargetFrameName,
+      targetTransform);
+  target->setShape(std::make_shared<SphereShape>(0.045));
+  target->getVisualAspect(true)->setRGBA(Eigen::Vector4d(0.18, 0.55, 1.0, 0.92));
+  scene.world->addSimpleFrame(target);
+  scene.world->addSkeleton(wam);
 
   return scene;
 }

@@ -15,6 +15,12 @@
 This project is dependent on DART. Please make sure a proper version of DART is
 installed before building this project.
 
+Inside the source tree, `pixi run ex wam_ikfast` routes to
+`examples/filament_gui --scene wam-ikfast` so the in-tree runner uses the
+maintained Filament visual path. This standalone source remains comparison
+material for the IKFast solver, drag modes, keyboard shortcuts, and posture
+reset workflow.
+
 ## Build Instructions
 
 From this directory:

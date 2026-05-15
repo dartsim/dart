@@ -222,6 +222,10 @@
     `--scene operational-space-control` Filament fixture that loads the WAM arm,
     runs the task-space controller through a private scene pre-step hook, and
     exposes the red target as a selectable `SimpleFrame`.
+    The `wam_ikfast` runner now routes to a `--scene wam-ikfast` Filament
+    fixture that loads the WAM arm, ground, and end-effector target through
+    descriptor-owned renderables while the legacy standalone source remains
+    available for IKFast solver and keyboard interaction comparison.
     The `joint_constraints` runner now routes to a `--scene joint-constraints`
     Filament fixture that loads the legacy fullbody world and runs the SPD
     balance controller through the same private scene pre-step hook.

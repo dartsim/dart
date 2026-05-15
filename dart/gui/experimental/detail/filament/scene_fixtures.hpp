@@ -75,6 +75,8 @@ DartScene createAtlasSimbiconScene();
 
 DartScene createOperationalSpaceControlScene();
 
+DartScene createWamIkFastScene();
+
 DartScene createDragAndDropScene();
 
 DartScene createSimpleFramesScene();

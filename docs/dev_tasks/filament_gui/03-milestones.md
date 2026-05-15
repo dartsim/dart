@@ -262,6 +262,11 @@
   a private scene pre-step hook. `pixi run ex operational_space_control`
   routes to this Filament scene by default while the standalone source remains
   as legacy OSG comparison material for drag-and-drop axis constraints.
+- The Filament example includes a selectable `--scene wam-ikfast` fixture that
+  loads the WAM arm, ground, and end-effector target through descriptor-owned
+  renderables. `pixi run ex wam_ikfast` routes to this Filament scene by
+  default while the standalone source remains as legacy OSG comparison material
+  for the IKFast solver, drag modes, keyboard shortcuts, and posture reset.
 - The Filament example includes a selectable `--scene drag-and-drop` fixture
   that extracts and renders the legacy drag-and-drop example's `SimpleFrame`
   anchor, child frame, and axis markers through the same manipulation path.
@@ -442,7 +447,7 @@
   hardcoded-design/rigid-chain/rigid-loop/mixed-chain/coupler-constraint/
   add-delete-skels/vehicle/hybrid-dynamics/joint-constraints/
   free-joint-cases/human-joint-limits/lcp-physics/mimic-pendulums/atlas-puppet/
-  atlas-simbicon/operational-space-control/drag/
+  atlas-simbicon/operational-space-control/wam-ikfast/drag/
   simple-frames/soft-bodies/point-cloud/
   capsule-ground-contact/simulation-event-handler/polyhedron/heightmap
   validation gates now live in

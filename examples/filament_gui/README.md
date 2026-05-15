@@ -45,6 +45,7 @@
   `--scene atlas-puppet` to run the Atlas IK target fixture,
   `--scene atlas-simbicon` to run the Atlas Simbicon visual fixture,
   `--scene operational-space-control` to run the WAM task-space control fixture,
+  `--scene wam-ikfast` to run the WAM IKFast visual fixture,
   `--scene drag-and-drop` to run the interaction fixture,
   `--scene simple-frames` to run the frame-hierarchy fixture,
   `--scene soft-bodies` to run the soft-body SKEL fixture,
@@ -171,6 +172,10 @@
   operational-space target controller before each simulation step, and exposes
   the red target as a selectable `SimpleFrame`. The standalone source remains
   comparison material for OSG drag-and-drop axis constraints.
+- The `--scene wam-ikfast` fixture loads the WAM arm, ground, and
+  end-effector target through descriptor-owned renderables. The standalone
+  source remains comparison material for the IKFast solver, drag modes,
+  keyboard shortcuts, and posture reset workflow.
 - Windowed playback advances physics against wall-clock time with a bounded
   catch-up step budget. Headless captures remain deterministic and advance one
   simulation step for each rendered frame.
@@ -346,6 +351,12 @@ To run the operational-space-control fixture:
 pixi run ex filament_gui --scene operational-space-control
 ```
 
+To run the wam-ikfast fixture:
+
+```bash
+pixi run ex filament_gui --scene wam-ikfast
+```
+
 To run the simple-frames fixture:
 
 ```bash
@@ -419,6 +430,7 @@ The capture paths are `build/<pixi-env>/filament_gui_mvp.ppm` and
 `build/<pixi-env>/filament_gui_atlas_puppet.ppm`,
 `build/<pixi-env>/filament_gui_atlas_simbicon.ppm`,
 `build/<pixi-env>/filament_gui_operational_space_control.ppm`,
+`build/<pixi-env>/filament_gui_wam_ikfast.ppm`,
 `build/<pixi-env>/filament_gui_drag_and_drop.ppm`,
 `build/<pixi-env>/filament_gui_simple_frames.ppm`,
 `build/<pixi-env>/filament_gui_soft_bodies.ppm`,
@@ -523,6 +535,6 @@ DART_BUILD_GUI_FILAMENT_OVERRIDE=ON \
   pixi run config
 cmake --build build/default/cpp/Release --target dart_filament_gui
 ctest --test-dir build/default/cpp/Release \
-  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|hardcoded_design_headless|rigid_chain_headless|rigid_loop_headless|mixed_chain_headless|coupler_constraint_headless|add_delete_skels_headless|vehicle_headless|hybrid_dynamics_headless|joint_constraints_headless|free_joint_cases_headless|human_joint_limits_headless|lcp_physics_headless|mimic_pendulums_headless|atlas_puppet_headless|atlas_simbicon_headless|operational_space_control_headless|drag_and_drop_headless|simple_frames_headless|soft_bodies_headless|point_cloud_headless|capsule_ground_contact_headless|simulation_event_handler_headless|polyhedron_headless|heightmap_headless)_smoke' \
+  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|hardcoded_design_headless|rigid_chain_headless|rigid_loop_headless|mixed_chain_headless|coupler_constraint_headless|add_delete_skels_headless|vehicle_headless|hybrid_dynamics_headless|joint_constraints_headless|free_joint_cases_headless|human_joint_limits_headless|lcp_physics_headless|mimic_pendulums_headless|atlas_puppet_headless|atlas_simbicon_headless|operational_space_control_headless|wam_ikfast_headless|drag_and_drop_headless|simple_frames_headless|soft_bodies_headless|point_cloud_headless|capsule_ground_contact_headless|simulation_event_handler_headless|polyhedron_headless|heightmap_headless)_smoke' \
   --output-on-failure
 ```
