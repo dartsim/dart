@@ -9,9 +9,36 @@ from pathlib import Path
 
 SOURCE_SUFFIXES = {".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx", ".ipp"}
 LEGACY_ENGINES = ("fcl", "bullet", "ode")
+PUBLIC_FACADE_HEADERS = {
+    "bullet": {
+        "All.hpp",
+        "BulletCollisionDetector.hpp",
+        "BulletCollisionGroup.hpp",
+        "bullet.hpp",
+        "bullet_collision_detector.hpp",
+        "bullet_collision_group.hpp",
+    },
+    "fcl": {
+        "All.hpp",
+        "FCLCollisionDetector.hpp",
+        "FCLCollisionGroup.hpp",
+        "fcl.hpp",
+        "fcl_collision_detector.hpp",
+        "fcl_collision_group.hpp",
+    },
+    "ode": {
+        "All.hpp",
+        "OdeCollisionDetector.hpp",
+        "OdeCollisionGroup.hpp",
+        "ode.hpp",
+        "ode_collision_detector.hpp",
+        "ode_collision_group.hpp",
+    },
+}
 REFERENCE_PREFIXES = tuple(
     f"dart/collision/{engine}/reference/" for engine in LEGACY_ENGINES
 )
+COMPAT_PREFIXES = tuple(f"dart/collision/{engine}/compat/" for engine in LEGACY_ENGINES)
 FORBIDDEN_DART_REFERENCE_INCLUDES = tuple(
     f"dart/collision/{engine}/reference/" for engine in LEGACY_ENGINES
 )
@@ -37,6 +64,10 @@ def is_reference_path(relative_path: str) -> bool:
     return relative_path.startswith(REFERENCE_PREFIXES)
 
 
+def is_compat_path(relative_path: str) -> bool:
+    return relative_path.startswith(COMPAT_PREFIXES)
+
+
 def check_forbidden_sources(repo_root: Path) -> list[str]:
     failures: list[str] = []
     for engine in LEGACY_ENGINES:
@@ -47,10 +78,58 @@ def check_forbidden_sources(repo_root: Path) -> list[str]:
             if not path.is_file() or path.suffix.lower() not in {".cc", ".cpp", ".cxx"}:
                 continue
             relative_path = path.relative_to(repo_root).as_posix()
-            if not is_reference_path(relative_path):
+            if not is_reference_path(relative_path) and not is_compat_path(
+                relative_path
+            ):
                 failures.append(
                     f"{relative_path}: legacy engine implementation source must "
-                    "live under reference/"
+                    "live under reference/ or compat/"
+                )
+    return failures
+
+
+def check_public_facade_headers(repo_root: Path) -> list[str]:
+    failures: list[str] = []
+    for engine in LEGACY_ENGINES:
+        engine_dir = repo_root / "dart" / "collision" / engine
+        if not engine_dir.exists():
+            continue
+
+        allowed_headers = PUBLIC_FACADE_HEADERS[engine]
+        allowed_include_prefix = f"dart/collision/{engine}/compat/"
+        for path in sorted(engine_dir.iterdir()):
+            if not path.is_file() or not is_source_file(path):
+                continue
+
+            relative_path = path.relative_to(repo_root).as_posix()
+            if path.name not in allowed_headers:
+                failures.append(
+                    f"{relative_path}: public legacy collision source must be "
+                    "an explicit forwarding facade or move under compat/ or "
+                    "reference/"
+                )
+                continue
+
+            for line_number, line in enumerate(
+                path.read_text(encoding="utf-8", errors="replace").splitlines(),
+                start=1,
+            ):
+                stripped = line.strip()
+                if (
+                    not stripped
+                    or stripped.startswith("//")
+                    or stripped == "#pragma once"
+                ):
+                    continue
+
+                match = INCLUDE_PATTERN.match(line)
+                if match and match.group(1).startswith(allowed_include_prefix):
+                    continue
+
+                failures.append(
+                    f"{relative_path}:{line_number}: public legacy collision "
+                    "header must only forward to the native-backed compat "
+                    f"facade under {allowed_include_prefix}"
                 )
     return failures
 
@@ -88,6 +167,7 @@ def check_forbidden_includes(repo_root: Path) -> list[str]:
 def main() -> int:
     repo_root = Path(__file__).resolve().parent.parent
     failures = check_forbidden_sources(repo_root)
+    failures.extend(check_public_facade_headers(repo_root))
     failures.extend(check_forbidden_includes(repo_root))
 
     if failures:

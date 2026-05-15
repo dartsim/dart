@@ -193,6 +193,7 @@ lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
 lint-spell = { cmd = "codespell --write-changes --config .codespellrc" }
 
 check-collision-runtime-isolation = { cmd = "python scripts/check_collision_runtime_isolation.py" }
+audit-collision-compat-facades = { cmd = "python scripts/audit_collision_compat_facades.py" }
 
 lint = { depends-on = [
   "lint-spell",
@@ -205,6 +206,7 @@ lint = { depends-on = [
   "lint-md",
   "lint-rst",
   "check-collision-runtime-isolation",
+  "audit-collision-compat-facades",
   "sync-ai-commands",
 ] }
 
@@ -253,6 +255,7 @@ check-lint = { depends-on = [
   "check-lint-rst",
   "check-lint-spell",
   "check-collision-runtime-isolation",
+  "audit-collision-compat-facades",
   "check-docs-policy",
   "check-ai-commands",
 ] }
@@ -1634,6 +1637,7 @@ lint = { depends-on = [
   "lint-md",
   "lint-rst",
   "check-collision-runtime-isolation",
+  "audit-collision-compat-facades",
   "sync-ai-commands",
 ] }
 
@@ -1653,6 +1657,7 @@ check-lint = { depends-on = [
   "check-lint-rst",
   "check-lint-spell",
   "check-collision-runtime-isolation",
+  "audit-collision-compat-facades",
   "check-docs-policy",
   "check-ai-commands",
 ] }

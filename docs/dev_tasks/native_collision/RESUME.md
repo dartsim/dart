@@ -285,20 +285,32 @@ simulation-experimental tests, Python tests, and documentation.
 
 `feature/new_coll` - local branch tracking `origin/feature/new_coll`. PR #2652
 is closed and still points at old head `714d220d82a`. The branch now includes
-a docs-only resume checkpoint on top of the latest code/evidence head,
-`1e1faf6feb1` (`Fix native capsule convex casts in CI`). That code commit
-fixes the closed-PR native-only CI failure by replacing endpoint-only
-`capsuleCastConvex()` checks with capsule-support conservative advancement
-against convex targets, and fixes the benchmark guard artifact upload by
-allowing hidden `.benchmark_results/` files.
+docs-only evidence checkpoint `f5d4f9ee932` on top of the latest code/evidence
+head, `1e1faf6feb1` (`Fix native capsule convex casts in CI`), plus the
+current local audit checkpoint at HEAD. The code commit fixes the closed-PR
+native-only CI failure by replacing endpoint-only `capsuleCastConvex()` checks
+with capsule-support conservative advancement against convex targets, and fixes
+the benchmark guard artifact upload by allowing hidden `.benchmark_results/`
+files.
 
-Primary local validation on the pushed head is green:
-`pixi run lint` passed before commit, then `pixi run build` and
-`pixi run test-unit` passed after the push; `test-unit` reported 277/277 tests
-passed, including `test_ccd` and all 29 `collision-native` tests. A focused
-local ASAN attempt is blocked by the host toolchain rather than by DART code:
-GCC's `libasan.so` linker script points to missing
-`/usr/lib64/libasan.so.8.0.0`, so ASAN linking fails before tests can run.
+Primary local validation is green. On the pushed code head, `pixi run lint`
+passed before commit, then `pixi run build` and `pixi run test-unit` passed
+after the push; `test-unit` reported 277/277 tests passed, including
+`test_ccd` and all 29 `collision-native` tests. On docs-only evidence
+checkpoint `f5d4f9ee932`,
+`DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+passed all 6 top-level gates: linting, build, unit tests,
+simulation-experimental tests, Python tests, and documentation. The current
+local audit checkpoint tightened the collision runtime-isolation guard for
+top-level legacy facades and added `audit-collision-compat-facades` to
+`pixi run lint` / `pixi run check-lint`; standalone guard runs,
+`pixi run lint`, and `pixi run check-lint` passed. A focused local ASAN attempt
+is blocked by the host toolchain rather than by DART code: GCC's `libasan.so`
+linker script points to missing `/usr/lib64/libasan.so.8.0.0`, so ASAN linking
+fails before tests can run. Final local validation after the audit checkpoint
+also passed
+`DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+across all 6 top-level gates.
 
 Manual workflow-dispatch runs for `1e1faf6feb1` are reference evidence only,
 not the main validation surface. Current status: CI gz-physics run
@@ -314,13 +326,13 @@ so do not block local progress on that reference-only signal.
 ## Immediate Next Step
 
 Continue from `docs/dev_tasks/native_collision/06-completion-audit.md`.
-Current local focused validation is green on pushed head `1e1faf6feb1`, and
-manual workflow-dispatch reference evidence now covers native-only CI,
-gz-physics, the wheel matrix, and the benchmark artifact upload for that head.
-Do not create or reopen a PR/diff until the user asks. Continue by recording
-downstream migration/deprecation evidence, deciding the final
-compatibility-facade/runtime cleanup slice, rerunning full local validation
-after any further code changes, then transferring final evidence to the PR
+Current local validation is green through the local audit checkpoint at HEAD,
+and manual workflow-dispatch reference evidence covers native-only CI,
+gz-physics, the wheel matrix, and the benchmark artifact upload for pushed code
+head `1e1faf6feb1`. Do not create or reopen a PR/diff until the user asks.
+Continue by getting explicit maintainer direction on downstream deprecation
+policy and PR resumption, rerunning full local validation after any
+behavior-affecting code changes, then transferring final evidence to the PR
 description and deleting the dev-task folder in the completing PR. Read
 `06-completion-audit.md` before deciding whether a future checkpoint is
 complete; it is the prompt-to-artifact checklist for the north-star goal.
@@ -641,6 +653,20 @@ libraries.
   rebuilds passed, then
   `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
   passed all 6 top-level gates.
+- The current docs-only validation refresh on `f5d4f9ee932` also passed
+  `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+  across all 6 top-level gates, with native-only collision defaults and
+  Release CTest reporting 264/264 tests passed.
+- The current local audit checkpoint adds
+  `scripts/audit_collision_compat_facades.py` and wires
+  `audit-collision-compat-facades` into both lint and check-lint,
+  including the Windows task lists. It verifies factory aliases
+  `experimental`, `fcl`, `fcl_mesh`, `bullet`, and `ode`, C++ legacy
+  detector/group facades, dartpy aliases, and legacy CMake collision component
+  names route to native DART collision.
+- Final local validation after that audit checkpoint passed
+  `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+  across all 6 top-level gates.
 
 ## How to Resume
 

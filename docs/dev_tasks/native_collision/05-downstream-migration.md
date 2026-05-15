@@ -32,9 +32,12 @@ the built-in stack without installed old-engine runtime libraries. The local
 shows the gz DART plugin and the native compatibility package smoke executable
 depend on `libdart-collision-native.so` without any
 `libdart-collision-reference-*`, FCL, Bullet, ODE, or libccd runtime
-dependency. Manual GitHub workflow runs are reference evidence only. Downstream
-migration/deprecation policy evidence is still required before retained
-compatibility facades can be removed or hard-deprecated.
+dependency. The local `audit-collision-compat-facades` guard now also verifies
+that retained factory keys, C++ facades, dartpy aliases, and package component
+names route to native DART collision. Manual GitHub workflow runs are reference
+evidence only. Downstream migration/deprecation policy evidence is still
+required before retained compatibility facades can be removed or
+hard-deprecated.
 
 ## Downstream Work
 
@@ -68,9 +71,12 @@ checks pass:
 3. Python compatibility names construct and report detector type `dart`.
 4. Source-tree and installed legacy detector headers compile without FCL,
    Bullet, or ODE headers in native-only builds.
-5. `check-collision-runtime-isolation` passes in lint, proving non-reference
-   DART source paths do not include old-engine or reference-backend headers and
-   legacy implementation sources remain under explicit `reference/` paths.
+5. `check-collision-runtime-isolation` and
+   `audit-collision-compat-facades` pass in lint, proving non-reference DART
+   source paths do not include old-engine or reference-backend headers, legacy
+   implementation sources remain under explicit `reference/` paths, top-level
+   legacy headers are pure native-backed forwarding facades, and retained
+   compatibility names route to native DART collision.
 6. Wheel artifacts pass `wheel-verify`, including the collision-isolation
    verifier. Local wheel verifier evidence exists, and the current wheel-matrix
    workflow pass is reference evidence only until final PR packaging.

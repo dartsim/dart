@@ -136,8 +136,9 @@ Current audited state:
   current local validation pass after the durable built-in architecture docs
   and compatibility-facade policy cleanup.
 - Branch state: `feature/new_coll` includes a docs-only resume checkpoint on
-  top of the latest code/evidence head `1e1faf6feb1` (`Fix native capsule
-convex casts in CI`).
+  top of the latest pushed code/evidence head `1e1faf6feb1`
+  (`Fix native capsule convex casts in CI`) plus the current local audit
+  checkpoint at HEAD.
 - GitHub PR state: PR #2652
   (https://github.com/dartsim/dart/pull/2652) is closed, still marked draft,
   and remains anchored to old head `714d220d82a`.
@@ -401,6 +402,19 @@ compiling with /utf-8'`. The current repair adds `/utf-8` to the root MSVC
   build, unit tests, simulation-experimental tests, Python tests, and
   documentation.
 
+- Current local validation refresh on docs-only head `f5d4f9ee932`:
+
+  ```bash
+  DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all
+  ```
+
+  Result: passed. The comprehensive suite reported 6/6 top-level gates passed:
+  linting, build, unit tests, simulation-experimental tests, Python tests, and
+  documentation. Release CTest reported 264/264 tests passed, including the
+  29-test `collision-native` label. Configure output kept the native-only
+  defaults with FCL, Bullet, ODE, reference tests, and reference benchmarks all
+  `OFF`.
+
 - Local command run during this audit:
 
   ```bash
@@ -412,6 +426,34 @@ compiling with /utf-8'`. The current repair adds `/utf-8` to the root MSVC
   ```text
   Collision runtime isolation check passed.
   ```
+
+- Follow-up local compatibility-facade audit hardening:
+
+  ```bash
+  python scripts/check_collision_runtime_isolation.py
+  python scripts/audit_collision_compat_facades.py
+  DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run lint
+  DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run check-lint
+  ```
+
+  Result: passed. The runtime isolation guard now also verifies that top-level
+  legacy collision engine files are explicit public facades forwarding only to
+  native-backed `compat/` headers. The new
+  `audit-collision-compat-facades` Pixi task audits retained factory keys,
+  C++ detector/group facades, dartpy aliases, and CMake legacy component names
+  as native-backed routes, and both `pixi run lint` and `pixi run check-lint`
+  execute it with the existing isolation guard.
+
+- Final local validation after compatibility-facade audit hardening:
+
+  ```bash
+  DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all
+  ```
+
+  Result: passed. The comprehensive suite reported 6/6 top-level gates passed:
+  linting, build, unit tests, simulation-experimental tests, Python tests, and
+  documentation. The lint gate included `audit-collision-compat-facades` and the
+  existing collision runtime-isolation guard.
 
 Additional inspected artifacts:
 

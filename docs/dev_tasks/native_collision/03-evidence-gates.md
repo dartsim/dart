@@ -2632,6 +2632,38 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
   - Result: passed. The comprehensive suite reported 6/6 top-level gates
     passed: linting, build, unit tests, simulation-experimental tests, Python
     tests, and documentation.
+- Current local validation refresh on docs-only head `f5d4f9ee932`:
+  - Command:
+    `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+  - Result: passed. The comprehensive suite reported 6/6 top-level gates
+    passed: linting, build, unit tests, simulation-experimental tests, Python
+    tests, and documentation. Release CTest reported 264/264 tests passed,
+    including the 29-test `collision-native` label. The run used native-only
+    default configure values with FCL, Bullet, ODE, reference tests, and
+    reference benchmarks all `OFF`.
+- Local compatibility-facade audit hardening:
+  - Change: `scripts/check_collision_runtime_isolation.py` now asserts
+    top-level `dart/collision/{fcl,bullet,ode}` source/header files are explicit
+    public facades and only forward to native-backed `compat/` headers.
+  - Change: `scripts/audit_collision_compat_facades.py` now audits retained
+    legacy factory keys, C++ detector/group facades, dartpy aliases, and legacy
+    CMake package component names as routes to native DART collision.
+  - Commands:
+    `python scripts/check_collision_runtime_isolation.py`,
+    `python scripts/audit_collision_compat_facades.py`,
+    `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run lint`,
+    `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run check-lint`
+  - Result: passed. `pixi run lint` now includes
+    `audit-collision-compat-facades` alongside the existing runtime isolation
+    guard, and `pixi run check-lint` verifies the same audit through the
+    non-mutating CI-style lint path.
+- Final local validation after compatibility-facade audit hardening:
+  - Command:
+    `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+  - Result: passed. The comprehensive suite reported 6/6 top-level gates
+    passed: linting, build, unit tests, simulation-experimental tests, Python
+    tests, and documentation. This final pass included
+    `audit-collision-compat-facades` through the lint gate.
 
 ## Known Risks
 

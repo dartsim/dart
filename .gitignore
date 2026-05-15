@@ -139,5 +139,7 @@ compile_flags.txt
 !.codex/skills/**/
 !.codex/skills/**/SKILL.md
 
+.omc/
+
 # Temporary apt downloads
 .tmp_apt/

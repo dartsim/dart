@@ -22,8 +22,8 @@
       capped large flat box/mesh contact patches for gz max-contact tests, and
       legacy FCL/ODE facade raycast behavior required by gz's ray-intersection
       feature tests. The current local refresh on `8c83cd19cb8` rebuilt a fresh
-      gz-physics checkout, printed `DART plugin built successfully with DART
-  integration!`, and `readelf` showed the gz DART plugin depends on
+      gz-physics checkout, printed the expected DART plugin integration success
+      line, and `readelf` showed the gz DART plugin depends on
       `libdart-collision-native.so` without any
       `libdart-collision-reference-*`, FCL, Bullet, ODE, or libccd runtime
       dependency. Manual workflow-dispatch evidence on `1e1faf6feb1` is
@@ -187,7 +187,19 @@
       Manual workflow-dispatch reference evidence on the same head passed
       native-only CI, gz-physics, the full dartpy wheel matrix, and uploaded
       `collision-benchmark-guard-25887939088-1`; broad CI Linux Release is
-      still a slow reference-only tail and should not block local progress.
+      still a slow reference-only tail and should not block local progress. A
+      fresh local
+      `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+      pass on docs-only head `f5d4f9ee932` refreshed the current branch local
+      gate: linting, build, unit tests, simulation-experimental tests, Python
+      tests, and documentation all passed with native-only collision defaults.
+      The current local audit checkpoint also tightened
+      `check-collision-runtime-isolation` for top-level legacy facade headers
+      and added `audit-collision-compat-facades` to lint/check-lint so retained
+      legacy names are continuously checked as native-backed routes; both
+      `pixi run lint` and `pixi run check-lint` pass with those guards enabled.
+      A final local `pixi run test-all` after that audit checkpoint passed all
+      6 top-level gates.
 
 ## Goal
 
