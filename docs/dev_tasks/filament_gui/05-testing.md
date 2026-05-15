@@ -86,26 +86,28 @@
     `EXAMPLE_filament_gui_hybrid_dynamics_headless_smoke` on the same workers.
 14. Opt-in mimic-pendulums visual fixture smoke through
     `EXAMPLE_filament_gui_mimic_pendulums_headless_smoke` on the same workers.
-15. Opt-in interaction fixture smoke through
+15. Opt-in atlas-puppet visual/IK-target fixture smoke through
+    `EXAMPLE_filament_gui_atlas_puppet_headless_smoke` on the same workers.
+16. Opt-in interaction fixture smoke through
     `EXAMPLE_filament_gui_drag_and_drop_headless_smoke` on the same workers.
-16. Opt-in simple-frames visual fixture smoke through
+17. Opt-in simple-frames visual fixture smoke through
     `EXAMPLE_filament_gui_simple_frames_headless_smoke` on the same workers.
-17. Opt-in soft-bodies visual fixture smoke through
+18. Opt-in soft-bodies visual fixture smoke through
     `EXAMPLE_filament_gui_soft_bodies_headless_smoke` on the same workers.
-18. Opt-in point-cloud visual fixture smoke through
+19. Opt-in point-cloud visual fixture smoke through
     `EXAMPLE_filament_gui_point_cloud_headless_smoke` on the same workers.
-19. Opt-in capsule contact fixture smoke through
+20. Opt-in capsule contact fixture smoke through
     `EXAMPLE_filament_gui_capsule_ground_contact_headless_smoke` on the same
     workers.
-20. Opt-in simulation event-handler fixture smoke through
+21. Opt-in simulation event-handler fixture smoke through
     `EXAMPLE_filament_gui_simulation_event_handler_headless_smoke` on the same
     workers.
-21. Opt-in polyhedron visual fixture smoke through
+22. Opt-in polyhedron visual fixture smoke through
     `EXAMPLE_filament_gui_polyhedron_headless_smoke` on the same workers.
-22. Opt-in heightmap visual fixture smoke through
+23. Opt-in heightmap visual fixture smoke through
     `EXAMPLE_filament_gui_heightmap_headless_smoke` on the same workers.
-23. Focused C++ unit tests for scene extraction and interaction math.
-24. Python import/binding smoke tests for the constrained experimental API.
+24. Focused C++ unit tests for scene extraction and interaction math.
+25. Python import/binding smoke tests for the constrained experimental API.
 
 ## Local commands
 
@@ -158,7 +160,7 @@ LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
   cmake --build build/default/cpp/Release --target dart_filament_gui
 LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
   ctest --test-dir build/default/cpp/Release \
-  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|hardcoded_design_headless|rigid_chain_headless|rigid_loop_headless|mixed_chain_headless|coupler_constraint_headless|add_delete_skels_headless|vehicle_headless|hybrid_dynamics_headless|mimic_pendulums_headless|drag_and_drop_headless|simple_frames_headless|soft_bodies_headless|point_cloud_headless|capsule_ground_contact_headless|simulation_event_handler_headless|polyhedron_headless|heightmap_headless)_smoke' \
+  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|hardcoded_design_headless|rigid_chain_headless|rigid_loop_headless|mixed_chain_headless|coupler_constraint_headless|add_delete_skels_headless|vehicle_headless|hybrid_dynamics_headless|mimic_pendulums_headless|atlas_puppet_headless|drag_and_drop_headless|simple_frames_headless|soft_bodies_headless|point_cloud_headless|capsule_ground_contact_headless|simulation_event_handler_headless|polyhedron_headless|heightmap_headless)_smoke' \
   --output-on-failure
 ```
 
@@ -269,6 +271,8 @@ Known current result:
   `--scene hybrid-dynamics`,
   `EXAMPLE_filament_gui_mimic_pendulums_headless_smoke`, which runs
   `--scene mimic-pendulums`,
+  `EXAMPLE_filament_gui_atlas_puppet_headless_smoke`, which runs
+  `--scene atlas-puppet`,
   `EXAMPLE_filament_gui_drag_and_drop_headless_smoke`, which runs
   `--scene drag-and-drop`,
   `EXAMPLE_filament_gui_simple_frames_headless_smoke`, which runs
@@ -294,9 +298,9 @@ Known current result:
   `DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS=ON`, builds `dart_filament_gui`, and
   runs the default, hello-world, boxes, hardcoded-design, rigid-chain,
   rigid-loop, mixed-chain, coupler-constraint, add-delete-skels, vehicle,
-  hybrid-dynamics, mimic-pendulums, drag-and-drop, simple-frames, soft-bodies,
-  point-cloud, capsule-ground-contact, simulation-event-handler, polyhedron,
-  and heightmap headless CTest smokes.
+  hybrid-dynamics, mimic-pendulums, atlas-puppet, drag-and-drop,
+  simple-frames, soft-bodies, point-cloud, capsule-ground-contact,
+  simulation-event-handler, polyhedron, and heightmap headless CTest smokes.
   When `DISPLAY` is unset, the task runs CTest
   under `xvfb-run` and prefers Mesa's EGL vendor file when available so the
   OpenGL backend uses software rendering on headless Linux workers.

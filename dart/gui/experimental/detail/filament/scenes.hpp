@@ -48,7 +48,7 @@
 
 namespace dart::gui::experimental::filament {
 
-struct G1IkHandle
+struct IkHandle
 {
   dart::gui::experimental::RenderableId targetRenderableId = 0;
   std::string label;
@@ -60,7 +60,7 @@ struct G1IkHandle
 struct DartScene
 {
   dart::simulation::WorldPtr world;
-  std::vector<G1IkHandle> ikHandles;
+  std::vector<IkHandle> ikHandles;
 };
 
 enum class ExampleScene
@@ -77,6 +77,7 @@ enum class ExampleScene
   Vehicle,
   HybridDynamics,
   MimicPendulums,
+  AtlasPuppet,
   DragAndDrop,
   SimpleFrames,
   SoftBodies,
@@ -107,6 +108,10 @@ struct AppOptions
 inline constexpr const char* kWamFixtureSkeletonName = "visual_wam_robot";
 inline constexpr const char* kAtlasFixtureSkeletonName = "visual_atlas_torso_mesh";
 inline constexpr const char* kAtlasRobotFixtureSkeletonName = "visual_atlas_robot";
+inline constexpr const char* kAtlasPuppetFixtureGroundSkeletonName
+    = "visual_atlas_puppet_ground";
+inline constexpr const char* kAtlasPuppetIkTargetFramePrefix
+    = "atlas_puppet_ik_target_";
 inline constexpr const char* kHelloWorldBoxFixtureSkeletonName
     = "visual_hello_world_box";
 inline constexpr const char* kHelloWorldGroundFixtureSkeletonName
@@ -197,6 +202,8 @@ inline constexpr std::size_t kHybridDynamicsFixtureGroundCount = 1;
 inline constexpr std::size_t kMimicPendulumsFixtureBoxCount = 4;
 inline constexpr std::size_t kMimicPendulumsFixtureCylinderCount = 15;
 inline constexpr std::size_t kMimicPendulumsFixtureGroundCount = 1;
+inline constexpr std::size_t kAtlasPuppetFixtureGroundCount = 1;
+inline constexpr std::size_t kAtlasPuppetIkTargetCount = 4;
 inline constexpr std::size_t kSimpleFramesFixtureBoxCount = 3;
 inline constexpr std::size_t kSimpleFramesFixtureEllipsoidCount = 4;
 inline constexpr std::size_t kSoftBodiesFixtureMinSoftMeshCount = 5;

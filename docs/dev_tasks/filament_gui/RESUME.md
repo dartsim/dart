@@ -160,7 +160,7 @@ selection-debug overlay refresh, and orbiting-light updates live in
 `dart/gui/experimental/detail/filament/scene_frame.hpp` and `.cpp`.
 Ordered teardown of private Filament application resources lives in
 `dart/gui/experimental/detail/filament/application_teardown.hpp` and `.cpp`.
-Selection label formatting, G1 IK-target translation glue, keyboard nudging,
+Selection label formatting, robot IK-target translation glue, keyboard nudging,
 click selection, and Ctrl-left drag event translation live in
 `dart/gui/experimental/detail/filament/selection.hpp` and `.cpp`; reusable
 selection math stays in `dart-gui-experimental`.
@@ -270,10 +270,9 @@ for Linux x86_64. It configures with `DART_BUILD_GUI=OFF` and
 `DART_BUILD_DARTPY=OFF`, builds `dart_filament_gui`, and runs the default,
 hello-world, boxes, hardcoded-design, rigid-chain, rigid-loop, mixed-chain,
 coupler-constraint, add-delete-skels, vehicle, hybrid-dynamics,
-mimic-pendulums, drag-and-drop, simple-frames, soft-bodies, point-cloud,
-capsule-ground-contact,
-simulation-event-handler, polyhedron, and heightmap headless CTest smokes. When
-`DISPLAY` is absent, the
+mimic-pendulums, atlas-puppet, drag-and-drop, simple-frames, soft-bodies,
+point-cloud, capsule-ground-contact, simulation-event-handler, polyhedron, and
+heightmap headless CTest smokes. When `DISPLAY` is absent, the
 task uses Xvfb and prefers Mesa's EGL vendor file for software rendering. The
 Ubuntu CI
 workflow has a matching `filament-gui-smoke` job that installs Mesa, Xvfb, and
@@ -338,8 +337,13 @@ material for SPD control and perturbation controls. It routes
 `pixi run ex mimic_pendulums` through the Filament example's selectable
 `--scene mimic-pendulums` fixture, which loads the legacy SDF pendulum rigs and
 renders cylinder, box, and ground descriptors while keeping the standalone
-source as legacy OSG comparison material for the ImGui solver/debug table. It routes
-`pixi run ex drag_and_drop` through the Filament example's selectable
+source as legacy OSG comparison material for the ImGui solver/debug table. It
+routes `pixi run ex atlas_puppet` through the Filament example's selectable
+`--scene atlas-puppet` fixture, which loads Atlas and renders the robot,
+ground, and selectable hand/foot IK target descriptors while keeping the
+standalone source as legacy OSG comparison material for the teleoperation
+widget and support-polygon visual. It routes `pixi run ex drag_and_drop`
+through the Filament example's selectable
 `--scene drag-and-drop` fixture by default while keeping the standalone source
 as legacy OSG comparison material. It also routes
 `pixi run ex empty` through the same Filament `--scene drag-and-drop` fixture
@@ -407,8 +411,8 @@ DART world fixtures now live in
 `dart/gui/experimental/detail/filament/scene_fixtures.hpp` and `.cpp`.
 Scene content requirement counting and
 MVP/G1/hello-world/boxes/hardcoded-design/rigid-chain/rigid-loop/mixed-chain/
-coupler-constraint/add-delete-skels/vehicle/hybrid-dynamics/mimic-pendulums/drag/simple-frames/
-soft-bodies/point-cloud/capsule-ground-contact/simulation-event-handler/
+coupler-constraint/add-delete-skels/vehicle/hybrid-dynamics/mimic-pendulums/atlas-puppet/drag/
+simple-frames/soft-bodies/point-cloud/capsule-ground-contact/simulation-event-handler/
 polyhedron/heightmap validation gates, including created-renderable content
 counting, now live in
 `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.
@@ -479,7 +483,7 @@ After the target links, keep the MVP ImGui panel/tool policy example-scoped
 unless promotion needs user extension points; in that case add DART-owned
 panel/tool abstractions instead of exposing raw ImGui APIs. Add
 interaction-heavy example coverage beyond the current selection/nudging/drag
-path and first drag-and-drop and G1 IK fixtures, and add broader human visual
+path and first drag-and-drop and robot IK fixtures, and add broader human visual
 review with larger real authored environment/PBR assets for the shadow/material
 promotion gate.
 

@@ -76,24 +76,24 @@ const RenderableDescriptor* findRenderableDescriptor(
 
 } // namespace
 
-G1IkHandle* findG1IkHandle(DartScene& scene, RenderableId targetRenderableId)
+IkHandle* findIkHandle(DartScene& scene, RenderableId targetRenderableId)
 {
   const auto handle = std::find_if(
       scene.ikHandles.begin(),
       scene.ikHandles.end(),
-      [&](const G1IkHandle& candidate) {
+      [&](const IkHandle& candidate) {
         return candidate.targetRenderableId == targetRenderableId;
       });
   return handle == scene.ikHandles.end() ? nullptr : &*handle;
 }
 
-const G1IkHandle* findG1IkHandle(
+const IkHandle* findIkHandle(
     const DartScene& scene, RenderableId targetRenderableId)
 {
   const auto handle = std::find_if(
       scene.ikHandles.begin(),
       scene.ikHandles.end(),
-      [&](const G1IkHandle& candidate) {
+      [&](const IkHandle& candidate) {
         return candidate.targetRenderableId == targetRenderableId;
       });
   return handle == scene.ikHandles.end() ? nullptr : &*handle;
@@ -102,7 +102,7 @@ const G1IkHandle* findG1IkHandle(
 std::string selectionLabelForRenderable(
     const DartScene& scene, const RenderableDescriptor& descriptor)
 {
-  if (const auto* handle = findG1IkHandle(scene, descriptor.id)) {
+  if (const auto* handle = findIkHandle(scene, descriptor.id)) {
     return handle->label + " IK target";
   }
 
@@ -125,7 +125,7 @@ bool translateRenderableAndApplyIk(
     return false;
   }
 
-  if (auto* handle = findG1IkHandle(scene, descriptor.id)) {
+  if (auto* handle = findIkHandle(scene, descriptor.id)) {
     if (handle->ik) {
       handle->ik->getSolver()->setNumMaxIterations(30);
       handle->ik->solveAndApply(true);

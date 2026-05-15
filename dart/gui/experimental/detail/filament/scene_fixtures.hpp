@@ -61,6 +61,8 @@ DartScene createHybridDynamicsScene();
 
 DartScene createMimicPendulumsScene();
 
+DartScene createAtlasPuppetScene();
+
 DartScene createDragAndDropScene();
 
 DartScene createSimpleFramesScene();

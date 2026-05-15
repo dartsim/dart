@@ -218,6 +218,12 @@
   `pixi run ex mimic_pendulums` routes to this Filament scene by default while
   the standalone source remains as legacy OSG comparison material for the ImGui
   solver/debug table.
+- The Filament example includes a selectable `--scene atlas-puppet` fixture
+  that loads Atlas and renders the robot, ground, and four selectable IK target
+  spheres through descriptor-owned renderables. `pixi run ex atlas_puppet`
+  routes to this Filament scene by default while the standalone source remains
+  as legacy OSG comparison material for teleoperation-widget and
+  support-polygon behavior.
 - The Filament example includes a selectable `--scene drag-and-drop` fixture
   that extracts and renders the legacy drag-and-drop example's `SimpleFrame`
   anchor, child frame, and axis markers through the same manipulation path.
@@ -347,7 +353,7 @@
   `dart/gui/experimental/detail/filament/render_environment.hpp` and `.cpp`.
 - Platform-specific GLFW native-window handle selection lives in
   `dart/gui/experimental/detail/filament/native_window.hpp` and `.cpp`.
-- Selection label formatting and G1 IK-target translation glue live in
+- Selection label formatting and robot IK-target translation glue live in
   `dart/gui/experimental/detail/filament/selection.hpp` and `.cpp`.
 - Filament renderable state, lit-material configuration, shadow flag
   application, and destruction lifecycle helpers now live in
@@ -396,9 +402,9 @@
   `dart/gui/experimental/detail/filament/debug_overlay.hpp` and `.cpp`.
 - Scene content requirement counting and MVP/G1/hello-world/boxes/
   hardcoded-design/rigid-chain/rigid-loop/mixed-chain/coupler-constraint/
-  add-delete-skels/vehicle/hybrid-dynamics/mimic-pendulums/drag/simple-frames/
-  soft-bodies/point-cloud/capsule-ground-contact/simulation-event-handler/
-  polyhedron/heightmap
+  add-delete-skels/vehicle/hybrid-dynamics/mimic-pendulums/atlas-puppet/drag/
+  simple-frames/soft-bodies/point-cloud/capsule-ground-contact/
+  simulation-event-handler/polyhedron/heightmap
   validation gates now live in
   `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.
 - Private built-in status panel rendering now lives in

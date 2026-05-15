@@ -210,7 +210,10 @@
     The `mimic_pendulums` runner now routes to a `--scene mimic-pendulums`
     Filament fixture for the SDF-loaded pendulum rigs, base poles, and ground
     renderables while the legacy standalone source remains available for the
-    ImGui solver/debug table.
+    ImGui solver/debug table. The `atlas_puppet` runner now routes to a
+    `--scene atlas-puppet` Filament fixture that loads Atlas, exposes generic
+    selectable IK targets for its hands and feet, and keeps the legacy
+    standalone source as comparison material for the OSG teleoperation widget.
     The focused GUI unit test now
     checks that
     `examples/filament_gui` contains no C++ source/header

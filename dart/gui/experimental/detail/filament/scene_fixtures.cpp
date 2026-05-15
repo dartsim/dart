@@ -52,6 +52,7 @@
 #include <cmath>
 #include <filesystem>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -98,6 +99,9 @@ struct SensorMarker
   std::shared_ptr<SimpleFrame> frame;
   VisualAspect* visual = nullptr;
 };
+
+std::optional<std::pair<Eigen::Vector3d, Eigen::Vector3d>>
+computeVisualWorldBounds(const dart::dynamics::SkeletonPtr& skeleton);
 
 class BlinkingMarkerSensor final : public dart::sensor::Sensor
 {
@@ -396,6 +400,221 @@ dart::dynamics::SkeletonPtr loadRequiredAtlasRobotSkeleton()
   return atlas;
 }
 
+void setRequiredDofPosition(
+    const dart::dynamics::SkeletonPtr& skeleton,
+    const char* name,
+    double position)
+{
+  auto* dof = skeleton ? skeleton->getDof(name) : nullptr;
+  if (dof == nullptr) {
+    throw std::runtime_error(
+        "Atlas puppet fixture is missing expected DOF " + std::string(name));
+  }
+  dof->setPosition(position);
+}
+
+void setupAtlasPuppetStartConfiguration(
+    const dart::dynamics::SkeletonPtr& atlas)
+{
+  constexpr double degrees = 3.14159265358979323846 / 180.0;
+
+  setRequiredDofPosition(atlas, "r_leg_hpy", -45.0 * degrees);
+  setRequiredDofPosition(atlas, "r_leg_kny", 90.0 * degrees);
+  setRequiredDofPosition(atlas, "r_leg_aky", -45.0 * degrees);
+  setRequiredDofPosition(atlas, "l_leg_hpy", -45.0 * degrees);
+  setRequiredDofPosition(atlas, "l_leg_kny", 90.0 * degrees);
+  setRequiredDofPosition(atlas, "l_leg_aky", -45.0 * degrees);
+
+  setRequiredDofPosition(atlas, "r_arm_shx", 65.0 * degrees);
+  setRequiredDofPosition(atlas, "r_arm_ely", 90.0 * degrees);
+  setRequiredDofPosition(atlas, "r_arm_elx", -90.0 * degrees);
+  setRequiredDofPosition(atlas, "r_arm_wry", 65.0 * degrees);
+  setRequiredDofPosition(atlas, "l_arm_shx", -65.0 * degrees);
+  setRequiredDofPosition(atlas, "l_arm_ely", 90.0 * degrees);
+  setRequiredDofPosition(atlas, "l_arm_elx", 90.0 * degrees);
+  setRequiredDofPosition(atlas, "l_arm_wry", 65.0 * degrees);
+
+  atlas->getDof("r_leg_kny")->setPositionLowerLimit(10.0 * degrees);
+  atlas->getDof("l_leg_kny")->setPositionLowerLimit(10.0 * degrees);
+}
+
+dart::dynamics::SkeletonPtr loadAtlasPuppetSkeleton()
+{
+  const auto atlasUri = dart::common::Uri::createFromString(
+      "dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
+  auto atlas = dart::io::readSkeleton(atlasUri);
+  if (!atlas) {
+    throw std::runtime_error(
+        "Failed to load Atlas puppet fixture from " + atlasUri.toString());
+  }
+
+  atlas->setName(kAtlasRobotFixtureSkeletonName);
+  setupAtlasPuppetStartConfiguration(atlas);
+
+  auto* rootBody = atlas->getRootBodyNode();
+  if (rootBody != nullptr
+      && dynamic_cast<FreeJoint*>(rootBody->getParentJoint()) != nullptr) {
+    Eigen::Isometry3d transform = rootBody->getWorldTransform();
+    transform.translation().x() = 0.0;
+    transform.translation().y() = 0.0;
+    FreeJoint::setTransformOf(rootBody, transform);
+    if (const auto bounds = computeVisualWorldBounds(atlas)) {
+      constexpr double groundClearance = 0.015;
+      transform = rootBody->getWorldTransform();
+      transform.translation().z() += groundClearance - bounds->first.z();
+      FreeJoint::setTransformOf(rootBody, transform);
+    }
+  }
+
+  auto* torso = atlas->getRootBodyNode();
+  if (torso != nullptr) {
+    auto rootShape = std::make_shared<BoxShape>(Eigen::Vector3d(0.25, 0.25, 0.125));
+    auto* shapeNode = torso->createShapeNodeWith<VisualAspect>(rootShape);
+    shapeNode->setName("atlas_puppet_root_handle");
+    shapeNode->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, 0.1));
+    shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.08, 0.09, 0.10, 1.0));
+  }
+
+  disableSkeletonCollisionAndGravity(atlas);
+  return atlas;
+}
+
+dart::math::SupportGeometry makeAtlasPuppetFootSupportGeometry()
+{
+  dart::math::SupportGeometry support;
+  constexpr double supportPositiveX = 0.10 - 0.186;
+  constexpr double supportNegativeX = -0.03 - 0.186;
+  constexpr double supportPositiveY = 0.03;
+  constexpr double supportNegativeY = -0.03;
+  support.emplace_back(supportNegativeX, supportNegativeY, 0.0);
+  support.emplace_back(supportPositiveX, supportNegativeY, 0.0);
+  support.emplace_back(supportPositiveX, supportPositiveY, 0.0);
+  support.emplace_back(supportNegativeX, supportPositiveY, 0.0);
+  return support;
+}
+
+void addAtlasPuppetIkTargets(
+    DartScene& scene, const dart::dynamics::SkeletonPtr& atlas)
+{
+  struct Config
+  {
+    const char* bodyNode;
+    const char* effectorName;
+    const char* targetName;
+    const char* label;
+    int hotkey;
+    Eigen::Isometry3d relativeTransform;
+    Eigen::Vector4d color;
+    bool supportContact;
+  };
+
+  constexpr double halfPi = 1.5707963267948966;
+  Eigen::Isometry3d leftHand = Eigen::Isometry3d::Identity();
+  leftHand.translation() = Eigen::Vector3d(0.0009, 0.1254, 0.012);
+  leftHand.rotate(Eigen::AngleAxisd(halfPi, Eigen::Vector3d::UnitZ()));
+
+  Eigen::Isometry3d rightHand = leftHand;
+  rightHand.translation().x() = -rightHand.translation().x();
+  rightHand.translation().y() = -rightHand.translation().y();
+  rightHand.linear() = rightHand.linear().inverse().eval();
+
+  Eigen::Isometry3d foot = Eigen::Isometry3d::Identity();
+  foot.translation() = Eigen::Vector3d(0.186, 0.0, -0.08);
+
+  const std::array<Config, 4> configs{{
+      {"l_hand",
+       "atlas_puppet_left_hand",
+       "atlas_puppet_ik_target_left_hand",
+       "1 left hand",
+       '1',
+       leftHand,
+       {0.18, 0.55, 1.0, 0.92},
+       false},
+      {"r_hand",
+       "atlas_puppet_right_hand",
+       "atlas_puppet_ik_target_right_hand",
+       "2 right hand",
+       '2',
+       rightHand,
+       {1.0, 0.40, 0.24, 0.92},
+       false},
+      {"l_foot",
+       "atlas_puppet_left_foot",
+       "atlas_puppet_ik_target_left_foot",
+       "3 left foot",
+       '3',
+       foot,
+       {0.26, 0.86, 0.34, 0.92},
+       true},
+      {"r_foot",
+       "atlas_puppet_right_foot",
+       "atlas_puppet_ik_target_right_foot",
+       "4 right foot",
+       '4',
+       foot,
+       {0.95, 0.72, 0.18, 0.92},
+       true},
+  }};
+
+  if (!scene.world || !atlas) {
+    return;
+  }
+
+  const auto footSupportGeometry = makeAtlasPuppetFootSupportGeometry();
+  for (const Config& config : configs) {
+    auto* bodyNode = atlas->getBodyNode(config.bodyNode);
+    if (bodyNode == nullptr) {
+      throw std::runtime_error(
+          "Atlas puppet fixture is missing body node "
+          + std::string(config.bodyNode));
+    }
+
+    auto* endEffector = bodyNode->createEndEffector(config.effectorName);
+    if (config.supportContact) {
+      endEffector->setRelativeTransform(config.relativeTransform);
+      auto* support = endEffector->getSupport(true);
+      support->setGeometry(footSupportGeometry);
+      support->setActive(true);
+    } else {
+      endEffector->setDefaultRelativeTransform(config.relativeTransform, true);
+    }
+
+    auto ik = endEffector->getIK(true);
+    ik->useWholeBody();
+    ik->setGradientMethod<InverseKinematics::JacobianTranspose>();
+    ik->getSolver()->setNumMaxIterations(30);
+    if (config.supportContact) {
+      ik->setHierarchyLevel(1);
+      Eigen::Vector3d linearBounds
+          = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+      Eigen::Vector3d angularBounds
+          = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+      linearBounds.z() = 1e-8;
+      angularBounds.x() = 1e-8;
+      angularBounds.y() = 1e-8;
+      ik->getErrorMethod().setLinearBounds(-linearBounds, linearBounds);
+      ik->getErrorMethod().setAngularBounds(-angularBounds, angularBounds);
+    }
+
+    auto target = SimpleFrame::createShared(
+        dart::dynamics::Frame::World(),
+        config.targetName,
+        endEffector->getWorldTransform());
+    target->setShape(std::make_shared<SphereShape>(0.06));
+    target->getVisualAspect(true)->setRGBA(config.color);
+    scene.world->addSimpleFrame(target);
+    ik->setTarget(target);
+
+    IkHandle handle;
+    handle.targetRenderableId = makeRenderableId(*target);
+    handle.label = config.label;
+    handle.hotkey = config.hotkey;
+    handle.target = std::move(target);
+    handle.ik = std::move(ik);
+    scene.ikHandles.push_back(std::move(handle));
+  }
+}
+
 dart::dynamics::SkeletonPtr createRequiredPbrEnvironmentSkeleton()
 {
   auto environment = Skeleton::create(kPbrEnvironmentFixtureSkeletonName);
@@ -651,7 +870,7 @@ void addG1IkTargets(
     scene.world->addSimpleFrame(target);
     ik->setTarget(target);
 
-    G1IkHandle handle;
+    IkHandle handle;
     handle.targetRenderableId = makeRenderableId(*target);
     handle.label = config.label;
     handle.hotkey = config.hotkey;
@@ -1778,6 +1997,24 @@ DartScene createMimicPendulumsScene()
       }
     }
   }
+
+  return scene;
+}
+
+DartScene createAtlasPuppetScene()
+{
+  DartScene scene;
+  scene.world = World::create("filament_gui_atlas_puppet");
+  scene.world->setGravity(Eigen::Vector3d::Zero());
+  scene.world->addSkeleton(createStaticVisualSkeleton(
+      kAtlasPuppetFixtureGroundSkeletonName,
+      std::make_shared<BoxShape>(Eigen::Vector3d(4.0, 4.0, 0.04)),
+      Eigen::Vector3d(0.0, 0.0, -0.02),
+      Eigen::Vector3d(0.86, 0.88, 0.90)));
+
+  auto atlas = loadAtlasPuppetSkeleton();
+  scene.world->addSkeleton(atlas);
+  addAtlasPuppetIkTargets(scene, atlas);
 
   return scene;
 }

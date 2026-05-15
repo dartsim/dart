@@ -129,6 +129,14 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Mesh) {
     ++counts.atlasRobotMeshes;
   }
+  if (descriptor.skeletonName == kAtlasPuppetFixtureGroundSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.atlasPuppetGrounds;
+  }
+  if (descriptor.shapeFrameName.starts_with(kAtlasPuppetIkTargetFramePrefix)
+      && descriptor.geometry.kind == ShapeKind::Sphere) {
+    ++counts.atlasPuppetIkTargets;
+  }
   if (descriptor.skeletonName == kHelloWorldBoxFixtureSkeletonName
       && descriptor.geometry.kind == ShapeKind::Box) {
     ++counts.helloWorldBoxes;
@@ -455,6 +463,31 @@ bool validateSceneDescriptorContent(
         kMinG1RenderableCount,
         "G1 robot fixture",
         "visible mesh renderables",
+        output);
+  }
+
+  if (scene == ExampleScene::AtlasPuppet) {
+    if (!requireAtLeast(
+            counts.atlasRobotMeshes,
+            20,
+            "Atlas puppet fixture",
+            "visible mesh renderables",
+            output)) {
+      return false;
+    }
+    if (!requireEqual(
+            counts.atlasPuppetGrounds,
+            kAtlasPuppetFixtureGroundCount,
+            "atlas-puppet scene",
+            "visible ground renderable descriptor",
+            output)) {
+      return false;
+    }
+    return requireEqual(
+        counts.atlasPuppetIkTargets,
+        kAtlasPuppetIkTargetCount,
+        "atlas-puppet scene",
+        "visible IK target renderable descriptors",
         output);
   }
 
@@ -875,6 +908,28 @@ bool validateCreatedSceneContent(
   if (scene == ExampleScene::G1) {
     return requireCreatedAtLeast(
         created.g1Meshes, expected.g1Meshes, "G1 robot mesh renderables", output);
+  }
+
+  if (scene == ExampleScene::AtlasPuppet) {
+    if (!requireCreatedAtLeast(
+            created.atlasRobotMeshes,
+            expected.atlasRobotMeshes,
+            "Atlas puppet mesh renderables",
+            output)) {
+      return false;
+    }
+    if (!requireCreatedEqual(
+            created.atlasPuppetGrounds,
+            expected.atlasPuppetGrounds,
+            "atlas-puppet ground renderables",
+            output)) {
+      return false;
+    }
+    return requireCreatedEqual(
+        created.atlasPuppetIkTargets,
+        expected.atlasPuppetIkTargets,
+        "atlas-puppet IK target renderables",
+        output);
   }
 
   if (scene == ExampleScene::HelloWorld) {

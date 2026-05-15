@@ -46,12 +46,12 @@ struct GLFWwindow;
 namespace dart::gui::experimental::filament {
 
 struct DartScene;
-struct G1IkHandle;
+struct IkHandle;
 
-G1IkHandle* findG1IkHandle(
+IkHandle* findIkHandle(
     DartScene& scene, dart::gui::experimental::RenderableId targetRenderableId);
 
-const G1IkHandle* findG1IkHandle(
+const IkHandle* findIkHandle(
     const DartScene& scene,
     dart::gui::experimental::RenderableId targetRenderableId);
 

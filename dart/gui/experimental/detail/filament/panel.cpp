@@ -68,7 +68,7 @@ bool renderBuiltInStatusPanel(
       "Esc exit.");
   if (showIkHint) {
     ImGui::TextWrapped(
-        "G1 IK: press 1-4 or click a colored target, then move it.");
+        "IK: press 1-4 or click a colored target, then move it.");
   }
   ImGui::PopTextWrapPos();
   ImGui::Separator();
