@@ -206,10 +206,10 @@
   `examples/filament_gui/imgui_overlay.hpp` and `.cpp`, including ImGui font
   loading; panel contents remain example-local until a later promotion phase
   needs DART-owned panel/tool APIs.
-- The Filament example keeps PNG/JPEG image decoding, Filament texture-cache
-  ownership, sampler setup, and PBR material texture parameter binding in
-  `examples/filament_gui/textures.hpp` and `.cpp`, with repeat sampler
-  construction private to the `.cpp` implementation.
+- Filament PNG/JPEG image decoding, texture-cache ownership, sampler setup, and
+  PBR material texture parameter binding now live in
+  `dart/gui/experimental/detail/filament/textures.hpp` and `.cpp`, with repeat
+  sampler construction private to the `.cpp` implementation.
 - `UNIT_gui_FilamentSceneExtraction` now also checks that
   `examples/filament_gui/*.hpp` has no direct Filament header includes.
 - Filament neutral lighting/color grading, orbiting key-light direction,

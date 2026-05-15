@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_FILAMENT_GUI_TEXTURES_HPP_
-#define EXAMPLES_FILAMENT_GUI_TEXTURES_HPP_
+#ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_TEXTURES_HPP_
+#define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_TEXTURES_HPP_
 
 #include <array>
 #include <string>
@@ -46,11 +46,11 @@ class MaterialInstance;
 class Texture;
 } // namespace filament
 
-namespace dart::examples::filament_gui {
+namespace dart::gui::experimental::filament {
 
 struct TextureBinding
 {
-  filament::Texture* texture = nullptr;
+  ::filament::Texture* texture = nullptr;
 };
 
 enum class TextureColorSpace
@@ -73,11 +73,11 @@ struct PbrTextureBindings
 struct TextureCache
 {
   std::unordered_map<std::string, TextureBinding> bindings;
-  std::vector<filament::Texture*> ownedTextures;
+  std::vector<::filament::Texture*> ownedTextures;
 };
 
 const TextureBinding* getOrLoadTextureBinding(
-    filament::Engine& engine,
+    ::filament::Engine& engine,
     TextureCache& cache,
     const std::string& source,
     TextureColorSpace colorSpace);
@@ -85,17 +85,17 @@ const TextureBinding* getOrLoadTextureBinding(
 bool hasTextureBindings(const PbrTextureBindings& textures);
 
 void setPbrTextureParameters(
-    filament::MaterialInstance& material,
+    ::filament::MaterialInstance& material,
     const TextureBinding& fallback,
     const PbrTextureBindings& textures);
 
-filament::Texture* createCheckerTexture(filament::Engine& engine);
+::filament::Texture* createCheckerTexture(::filament::Engine& engine);
 
-filament::Texture* createSolidTexture(
-    filament::Engine& engine,
+::filament::Texture* createSolidTexture(
+    ::filament::Engine& engine,
     const std::array<std::uint8_t, 4>& color,
     TextureColorSpace colorSpace);
 
-} // namespace dart::examples::filament_gui
+} // namespace dart::gui::experimental::filament
 
-#endif // EXAMPLES_FILAMENT_GUI_TEXTURES_HPP_
+#endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_TEXTURES_HPP_

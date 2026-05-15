@@ -33,9 +33,8 @@
 #ifndef EXAMPLES_FILAMENT_GUI_RENDERABLE_RESOURCES_HPP_
 #define EXAMPLES_FILAMENT_GUI_RENDERABLE_RESOURCES_HPP_
 
-#include "textures.hpp"
-
 #include <dart/gui/experimental/renderable.hpp>
+#include <dart/gui/experimental/detail/filament/textures.hpp>
 
 #include <math/vec3.h>
 #include <math/vec4.h>
@@ -57,6 +56,16 @@ class VertexBuffer;
 } // namespace filament
 
 namespace dart::examples::filament_gui {
+
+using dart::gui::experimental::filament::PbrTextureBindings;
+using dart::gui::experimental::filament::TextureBinding;
+using dart::gui::experimental::filament::TextureCache;
+using dart::gui::experimental::filament::TextureColorSpace;
+using dart::gui::experimental::filament::createCheckerTexture;
+using dart::gui::experimental::filament::createSolidTexture;
+using dart::gui::experimental::filament::getOrLoadTextureBinding;
+using dart::gui::experimental::filament::hasTextureBindings;
+using dart::gui::experimental::filament::setPbrTextureParameters;
 
 struct MaterialSet
 {

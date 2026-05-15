@@ -114,10 +114,10 @@
   The current Filament readback path writes top-left-origin screenshots so
   headless captures are directly reviewable without a manual vertical flip.
 - The Filament example's PNG/JPEG texture loading, Filament texture cache, and
-  PBR texture parameter wiring now live in `examples/filament_gui/textures.hpp`
-  and `.cpp`; repeat sampler construction stays private to the texture
-  implementation so the helper header does not include Filament sampler
-  headers.
+  PBR texture parameter wiring now live in
+  `dart/gui/experimental/detail/filament/textures.hpp` and `.cpp`; repeat
+  sampler construction stays private to the texture implementation so the
+  helper header does not include Filament sampler headers.
 - The Filament example's descriptor-to-Filament renderable factory now lives in
   `examples/filament_gui/renderable_factory.hpp` and `.cpp`, keeping generated
   mesh buffers, material part assembly, debug-line resource creation, and

@@ -57,7 +57,7 @@
 
 #include <cstdint>
 
-namespace dart::examples::filament_gui {
+namespace dart::gui::experimental::filament {
 namespace {
 
 struct ImageData
@@ -67,13 +67,13 @@ struct ImageData
   std::vector<std::uint8_t> rgba;
 };
 
-filament::backend::PixelBufferDescriptor makePixelBufferDescriptor(
+::filament::backend::PixelBufferDescriptor makePixelBufferDescriptor(
     std::vector<std::uint8_t>&& data,
-    filament::backend::PixelDataFormat format,
-    filament::backend::PixelDataType type)
+    ::filament::backend::PixelDataFormat format,
+    ::filament::backend::PixelDataType type)
 {
   auto* owned = new std::vector<std::uint8_t>(std::move(data));
-  return filament::backend::PixelBufferDescriptor(
+  return ::filament::backend::PixelBufferDescriptor(
       owned->data(),
       owned->size(),
       format,
@@ -227,30 +227,30 @@ std::optional<ImageData> loadTextureImage(const std::string& source)
   return std::nullopt;
 }
 
-filament::Texture* createTexture(
-    filament::Engine& engine, ImageData&& image, TextureColorSpace colorSpace)
+::filament::Texture* createTexture(
+    ::filament::Engine& engine, ImageData&& image, TextureColorSpace colorSpace)
 {
   if (image.width == 0 || image.height == 0 || image.rgba.empty()) {
     return nullptr;
   }
 
-  auto* texture = filament::Texture::Builder()
+  auto* texture = ::filament::Texture::Builder()
                       .width(image.width)
                       .height(image.height)
                       .levels(1)
-                      .sampler(filament::Texture::Sampler::SAMPLER_2D)
+                      .sampler(::filament::Texture::Sampler::SAMPLER_2D)
                       .format(
                           colorSpace == TextureColorSpace::Srgb
-                              ? filament::Texture::InternalFormat::SRGB8_A8
-                              : filament::Texture::InternalFormat::RGBA8)
+                              ? ::filament::Texture::InternalFormat::SRGB8_A8
+                              : ::filament::Texture::InternalFormat::RGBA8)
                       .build(engine);
   texture->setImage(
       engine,
       0,
       makePixelBufferDescriptor(
           std::move(image.rgba),
-          filament::backend::PixelDataFormat::RGBA,
-          filament::backend::PixelDataType::UBYTE));
+          ::filament::backend::PixelDataFormat::RGBA,
+          ::filament::backend::PixelDataType::UBYTE));
   return texture;
 }
 
@@ -259,18 +259,18 @@ bool isBoundTexture(const TextureBinding* binding)
   return binding != nullptr && binding->texture != nullptr;
 }
 
-filament::TextureSampler makeRepeatTextureSampler()
+::filament::TextureSampler makeRepeatTextureSampler()
 {
-  filament::TextureSampler sampler(
-      filament::TextureSampler::MinFilter::LINEAR,
-      filament::TextureSampler::MagFilter::LINEAR,
-      filament::TextureSampler::WrapMode::REPEAT);
+  ::filament::TextureSampler sampler(
+      ::filament::TextureSampler::MinFilter::LINEAR,
+      ::filament::TextureSampler::MagFilter::LINEAR,
+      ::filament::TextureSampler::WrapMode::REPEAT);
   sampler.setAnisotropy(8.0f);
   return sampler;
 }
 
 void setTextureParameter(
-    filament::MaterialInstance& material,
+    ::filament::MaterialInstance& material,
     const TextureBinding& fallback,
     const char* textureName,
     const char* flagName,
@@ -284,7 +284,7 @@ void setTextureParameter(
 } // namespace
 
 const TextureBinding* getOrLoadTextureBinding(
-    filament::Engine& engine,
+    ::filament::Engine& engine,
     TextureCache& cache,
     const std::string& source,
     TextureColorSpace colorSpace)
@@ -331,7 +331,7 @@ bool hasTextureBindings(const PbrTextureBindings& textures)
 }
 
 void setPbrTextureParameters(
-    filament::MaterialInstance& material,
+    ::filament::MaterialInstance& material,
     const TextureBinding& fallback,
     const PbrTextureBindings& textures)
 {
@@ -379,7 +379,7 @@ void setPbrTextureParameters(
       textures.emissive);
 }
 
-filament::Texture* createCheckerTexture(filament::Engine& engine)
+::filament::Texture* createCheckerTexture(::filament::Engine& engine)
 {
   static constexpr std::uint32_t size = 64;
   static constexpr std::uint32_t channels = 4;
@@ -396,37 +396,37 @@ filament::Texture* createCheckerTexture(filament::Engine& engine)
     }
   }
 
-  auto* texture = filament::Texture::Builder()
+  auto* texture = ::filament::Texture::Builder()
                       .width(size)
                       .height(size)
                       .levels(1)
-                      .sampler(filament::Texture::Sampler::SAMPLER_2D)
-                      .format(filament::Texture::InternalFormat::SRGB8_A8)
+                      .sampler(::filament::Texture::Sampler::SAMPLER_2D)
+                      .format(::filament::Texture::InternalFormat::SRGB8_A8)
                       .build(engine);
   texture->setImage(
       engine,
       0,
       makePixelBufferDescriptor(
           std::move(pixels),
-          filament::backend::PixelDataFormat::RGBA,
-          filament::backend::PixelDataType::UBYTE));
+          ::filament::backend::PixelDataFormat::RGBA,
+          ::filament::backend::PixelDataType::UBYTE));
   return texture;
 }
 
-filament::Texture* createSolidTexture(
-    filament::Engine& engine,
+::filament::Texture* createSolidTexture(
+    ::filament::Engine& engine,
     const std::array<std::uint8_t, 4>& color,
     TextureColorSpace colorSpace)
 {
-  auto* texture = filament::Texture::Builder()
+  auto* texture = ::filament::Texture::Builder()
                       .width(1)
                       .height(1)
                       .levels(1)
-                      .sampler(filament::Texture::Sampler::SAMPLER_2D)
+                      .sampler(::filament::Texture::Sampler::SAMPLER_2D)
                       .format(
                           colorSpace == TextureColorSpace::Srgb
-                              ? filament::Texture::InternalFormat::SRGB8_A8
-                              : filament::Texture::InternalFormat::RGBA8)
+                              ? ::filament::Texture::InternalFormat::SRGB8_A8
+                              : ::filament::Texture::InternalFormat::RGBA8)
                       .build(engine);
   std::vector<std::uint8_t> pixels(color.begin(), color.end());
   texture->setImage(
@@ -434,9 +434,9 @@ filament::Texture* createSolidTexture(
       0,
       makePixelBufferDescriptor(
           std::move(pixels),
-          filament::backend::PixelDataFormat::RGBA,
-          filament::backend::PixelDataType::UBYTE));
+          ::filament::backend::PixelDataFormat::RGBA,
+          ::filament::backend::PixelDataType::UBYTE));
   return texture;
 }
 
-} // namespace dart::examples::filament_gui
+} // namespace dart::gui::experimental::filament

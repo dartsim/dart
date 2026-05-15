@@ -102,11 +102,11 @@ once. Backend-hidden RGBA-to-PPM screenshot storage also now lives in
 the screenshot helper header does not expose Filament renderer types.
 Retained Filament renderables also reapply descriptor shadow flags each frame,
 so DART visual-aspect shadow changes are not limited to resource creation.
-Example-local PNG/JPEG image decoding, Filament texture-cache ownership,
-sampler setup, and PBR texture parameter binding live in
-`examples/filament_gui/textures.hpp` and `.cpp`, with repeat sampler
-construction private to the `.cpp` implementation so the helper header avoids a
-direct Filament sampler include.
+Filament PNG/JPEG image decoding, texture-cache ownership, sampler setup, and
+PBR texture parameter binding live in
+`dart/gui/experimental/detail/filament/textures.hpp` and `.cpp`, with repeat
+sampler construction private to the `.cpp` implementation so the helper header
+avoids a direct Filament sampler include.
 `UNIT_gui_FilamentSceneExtraction` also checks that
 `examples/filament_gui/*.hpp` and the example entry point have no direct
 Filament header includes; this is only an incremental guard, not completion of

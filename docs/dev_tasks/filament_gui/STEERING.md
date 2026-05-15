@@ -23,8 +23,8 @@ recommended maintainability slices:
   extraction.
 - `dart/gui/experimental/profile.hpp` and `.cpp` own viewer-loop profile
   accumulation, and `dart/gui/experimental/detail/filament/render_context.*`
-  plus `screenshot.*` and `render_environment.*` now own the first
-  Filament-private runtime slices outside the example tree.
+  plus `screenshot.*`, `render_environment.*`, and `textures.*` now own the
+  first Filament-private runtime slices outside the example tree.
 
 The remaining guidance is still useful for promotion sequencing, but the
 original "next" ordering below is partially complete.

@@ -38,7 +38,6 @@
 #include "renderable_sync.hpp"
 #include "scenes.hpp"
 #include "selection.hpp"
-#include "textures.hpp"
 
 #include <dart/all.hpp>
 #include <dart/common/local_resource_retriever.hpp>
