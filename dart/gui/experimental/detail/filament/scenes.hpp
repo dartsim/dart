@@ -76,6 +76,7 @@ enum class ExampleScene
   AddDeleteSkels,
   Vehicle,
   HybridDynamics,
+  MimicPendulums,
   DragAndDrop,
   SimpleFrames,
   SoftBodies,
@@ -138,6 +139,10 @@ inline constexpr const char* kHybridDynamicsFixtureBipedSkeletonName
     = "visual_hybrid_dynamics_biped";
 inline constexpr const char* kHybridDynamicsFixtureGroundSkeletonName
     = "visual_hybrid_dynamics_ground";
+inline constexpr const char* kMimicPendulumsFixtureSkeletonPrefix
+    = "visual_mimic_pendulums_";
+inline constexpr const char* kMimicPendulumsFixtureGroundSkeletonName
+    = "visual_mimic_pendulums_ground";
 inline constexpr const char* kPyramidFixtureSkeletonName = "visual_pyramid";
 inline constexpr const char* kMultiSphereFixtureSkeletonName = "visual_multi_sphere";
 inline constexpr const char* kLineSegmentFixtureSkeletonName = "visual_line_segments";
@@ -189,6 +194,9 @@ inline constexpr std::size_t kVehicleFixtureGroundCount = 1;
 inline constexpr std::size_t kVehicleFixtureObstacleCount = 2;
 inline constexpr std::size_t kHybridDynamicsFixtureBipedBoxCount = 20;
 inline constexpr std::size_t kHybridDynamicsFixtureGroundCount = 1;
+inline constexpr std::size_t kMimicPendulumsFixtureBoxCount = 4;
+inline constexpr std::size_t kMimicPendulumsFixtureCylinderCount = 15;
+inline constexpr std::size_t kMimicPendulumsFixtureGroundCount = 1;
 inline constexpr std::size_t kSimpleFramesFixtureBoxCount = 3;
 inline constexpr std::size_t kSimpleFramesFixtureEllipsoidCount = 4;
 inline constexpr std::size_t kSoftBodiesFixtureMinSoftMeshCount = 5;

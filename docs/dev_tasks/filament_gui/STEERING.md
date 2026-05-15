@@ -163,9 +163,9 @@ version hashing, and `extractRenderables`.
    `dart/gui/experimental/detail/filament/scene_fixtures.hpp` and `.cpp` own
    MVP, hello-world, boxes, hardcoded-design, rigid-chain, rigid-loop,
    mixed-chain, coupler-constraint, add-delete-skels, vehicle,
-   hybrid-dynamics, drag-and-drop, simple-frames, soft-bodies, point-cloud,
-   capsule-ground-contact, simulation-event-handler, polyhedron, heightmap, and
-   G1 DART world fixtures. The `biped_stand` runner reuses the
+   hybrid-dynamics, mimic-pendulums, drag-and-drop, simple-frames, soft-bodies,
+   point-cloud, capsule-ground-contact, simulation-event-handler, polyhedron,
+   heightmap, and G1 DART world fixtures. The `biped_stand` runner reuses the
    hybrid-dynamics fullbody fixture rather than adding duplicate scene code.
    `dart/gui/experimental/detail/filament/application.hpp` and `.cpp` now own
    Filament frame orchestration and the built-in panel, leaving `main.cpp` as a
@@ -173,8 +173,8 @@ version hashing, and `extractRenderables`.
    `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`
    now own scene fixture requirement counting and MVP/G1/hello-world/boxes/
    hardcoded-design/rigid-chain/rigid-loop/mixed-chain/coupler-constraint/
-   add-delete-skels/vehicle/hybrid-dynamics/drag/simple-frames/soft-bodies/
-   point-cloud/capsule-ground-contact/simulation-event-handler/polyhedron/heightmap
+   add-delete-skels/vehicle/hybrid-dynamics/mimic-pendulums/drag/simple-frames/
+   soft-bodies/point-cloud/capsule-ground-contact/simulation-event-handler/polyhedron/heightmap
    validation gates. Runner-only reuse, such as `biped_stand` using
    hybrid-dynamics, should stay in the runner/docs layer unless it needs a
    distinct scene fixture.

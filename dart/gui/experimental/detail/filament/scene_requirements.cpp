@@ -207,6 +207,20 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Box) {
     ++counts.hybridDynamicsGrounds;
   }
+  if (descriptor.skeletonName.starts_with(kMimicPendulumsFixtureSkeletonPrefix)
+      && descriptor.skeletonName != kMimicPendulumsFixtureGroundSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.mimicPendulumsBoxes;
+  }
+  if (descriptor.skeletonName.starts_with(kMimicPendulumsFixtureSkeletonPrefix)
+      && descriptor.skeletonName != kMimicPendulumsFixtureGroundSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Cylinder) {
+    ++counts.mimicPendulumsCylinders;
+  }
+  if (descriptor.skeletonName == kMimicPendulumsFixtureGroundSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.mimicPendulumsGrounds;
+  }
   if (descriptor.skeletonName == kPyramidFixtureSkeletonName
       && descriptor.geometry.kind == ShapeKind::Pyramid) {
     ++counts.pyramids;
@@ -606,6 +620,31 @@ bool validateSceneDescriptorContent(
         output);
   }
 
+  if (scene == ExampleScene::MimicPendulums) {
+    if (!requireEqual(
+            counts.mimicPendulumsBoxes,
+            kMimicPendulumsFixtureBoxCount,
+            "mimic-pendulums scene",
+            "visible base-pole box renderable descriptors",
+            output)) {
+      return false;
+    }
+    if (!requireEqual(
+            counts.mimicPendulumsCylinders,
+            kMimicPendulumsFixtureCylinderCount,
+            "mimic-pendulums scene",
+            "visible pendulum cylinder renderable descriptors",
+            output)) {
+      return false;
+    }
+    return requireEqual(
+        counts.mimicPendulumsGrounds,
+        kMimicPendulumsFixtureGroundCount,
+        "mimic-pendulums scene",
+        "visible ground renderable descriptor",
+        output);
+  }
+
   if (scene == ExampleScene::Heightmap) {
     return requireEqual(
         counts.heightmaps,
@@ -978,6 +1017,28 @@ bool validateCreatedSceneContent(
         created.hybridDynamicsGrounds,
         expected.hybridDynamicsGrounds,
         "hybrid-dynamics ground renderables",
+        output);
+  }
+
+  if (scene == ExampleScene::MimicPendulums) {
+    if (!requireCreatedEqual(
+            created.mimicPendulumsBoxes,
+            expected.mimicPendulumsBoxes,
+            "mimic-pendulums box renderables",
+            output)) {
+      return false;
+    }
+    if (!requireCreatedEqual(
+            created.mimicPendulumsCylinders,
+            expected.mimicPendulumsCylinders,
+            "mimic-pendulums cylinder renderables",
+            output)) {
+      return false;
+    }
+    return requireCreatedEqual(
+        created.mimicPendulumsGrounds,
+        expected.mimicPendulumsGrounds,
+        "mimic-pendulums ground renderables",
         output);
   }
 

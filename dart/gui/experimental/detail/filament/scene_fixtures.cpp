@@ -1731,6 +1731,57 @@ DartScene createHybridDynamicsScene()
   return scene;
 }
 
+DartScene createMimicPendulumsScene()
+{
+  DartScene scene;
+  scene.world = dart::io::readWorld(
+      "dart://sample/sdf/test/mimic_fast_slow_pendulums_world.sdf");
+  if (!scene.world) {
+    throw std::runtime_error(
+        "Failed to load mimic_pendulums fixture from "
+        "dart://sample/sdf/test/mimic_fast_slow_pendulums_world.sdf");
+  }
+  scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+
+  auto ground = scene.world->getSkeleton("ground_plane");
+  if (!ground) {
+    throw std::runtime_error("mimic_pendulums fixture is missing ground_plane");
+  }
+  ground->setName("visual_mimic_pendulums_imported_ground");
+  scene.world->addSkeleton(createStaticVisualSkeleton(
+      kMimicPendulumsFixtureGroundSkeletonName,
+      std::make_shared<BoxShape>(Eigen::Vector3d(2.2, 7.2, 0.04)),
+      Eigen::Vector3d(0.0, 3.0, -0.02),
+      Eigen::Vector3d(0.47, 0.50, 0.47)));
+
+  const std::array<std::pair<const char*, Eigen::Vector3d>, 3> rigs{{
+      {"pendulum_with_base", Eigen::Vector3d(0.62, 0.62, 0.62)},
+      {"pendulum_with_base_mimic_slow_follows_fast",
+       Eigen::Vector3d(0.90, 0.34, 0.34)},
+      {"pendulum_with_base_mimic_fast_follows_slow",
+       Eigen::Vector3d(0.28, 0.48, 0.92)},
+  }};
+
+  for (std::size_t i = 0; i < rigs.size(); ++i) {
+    auto skeleton = scene.world->getSkeleton(rigs[i].first);
+    if (!skeleton) {
+      throw std::runtime_error(
+          "mimic_pendulums fixture is missing skeleton: "
+          + std::string(rigs[i].first));
+    }
+    skeleton->setName(
+        std::string(kMimicPendulumsFixtureSkeletonPrefix) + std::to_string(i));
+    for (std::size_t bodyIndex = 0; bodyIndex < skeleton->getNumBodyNodes();
+         ++bodyIndex) {
+      if (auto* body = skeleton->getBodyNode(bodyIndex)) {
+        body->setColor(rigs[i].second);
+      }
+    }
+  }
+
+  return scene;
+}
+
 DartScene createDragAndDropScene()
 {
   DartScene scene;

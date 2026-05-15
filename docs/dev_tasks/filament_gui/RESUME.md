@@ -269,8 +269,9 @@ headless context, while the dedicated headless construction test remains.
 for Linux x86_64. It configures with `DART_BUILD_GUI=OFF` and
 `DART_BUILD_DARTPY=OFF`, builds `dart_filament_gui`, and runs the default,
 hello-world, boxes, hardcoded-design, rigid-chain, rigid-loop, mixed-chain,
-coupler-constraint, add-delete-skels, vehicle, hybrid-dynamics, drag-and-drop,
-simple-frames, soft-bodies, point-cloud, capsule-ground-contact,
+coupler-constraint, add-delete-skels, vehicle, hybrid-dynamics,
+mimic-pendulums, drag-and-drop, simple-frames, soft-bodies, point-cloud,
+capsule-ground-contact,
 simulation-event-handler, polyhedron, and heightmap headless CTest smokes. When
 `DISPLAY` is absent, the
 task uses Xvfb and prefers Mesa's EGL vendor file for software rendering. The
@@ -334,6 +335,10 @@ source as legacy OSG comparison material for scripted joint commands and
 harness toggling. It routes `pixi run ex biped_stand` through the same
 Filament fixture while keeping the standalone source as legacy OSG comparison
 material for SPD control and perturbation controls. It routes
+`pixi run ex mimic_pendulums` through the Filament example's selectable
+`--scene mimic-pendulums` fixture, which loads the legacy SDF pendulum rigs and
+renders cylinder, box, and ground descriptors while keeping the standalone
+source as legacy OSG comparison material for the ImGui solver/debug table. It routes
 `pixi run ex drag_and_drop` through the Filament example's selectable
 `--scene drag-and-drop` fixture by default while keeping the standalone source
 as legacy OSG comparison material. It also routes
@@ -402,7 +407,7 @@ DART world fixtures now live in
 `dart/gui/experimental/detail/filament/scene_fixtures.hpp` and `.cpp`.
 Scene content requirement counting and
 MVP/G1/hello-world/boxes/hardcoded-design/rigid-chain/rigid-loop/mixed-chain/
-coupler-constraint/add-delete-skels/vehicle/hybrid-dynamics/drag/simple-frames/
+coupler-constraint/add-delete-skels/vehicle/hybrid-dynamics/mimic-pendulums/drag/simple-frames/
 soft-bodies/point-cloud/capsule-ground-contact/simulation-event-handler/
 polyhedron/heightmap validation gates, including created-renderable content
 counting, now live in

@@ -207,6 +207,10 @@
     humanoid and ground renderables. The `biped_stand` runner also routes to
     that Filament fixture for a standing fullbody visual workflow while the
     legacy standalone source remains available for SPD perturbation controls.
+    The `mimic_pendulums` runner now routes to a `--scene mimic-pendulums`
+    Filament fixture for the SDF-loaded pendulum rigs, base poles, and ground
+    renderables while the legacy standalone source remains available for the
+    ImGui solver/debug table.
     The focused GUI unit test now
     checks that
     `examples/filament_gui` contains no C++ source/header

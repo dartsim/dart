@@ -59,6 +59,8 @@ DartScene createVehicleScene();
 
 DartScene createHybridDynamicsScene();
 
+DartScene createMimicPendulumsScene();
+
 DartScene createDragAndDropScene();
 
 DartScene createSimpleFramesScene();
