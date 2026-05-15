@@ -165,9 +165,11 @@
     and texture resources, descriptor synchronization, selection state, input
     translation, simulation stepping, smoke-test registration, material header
     generation, and reusable scene fixtures now live under private
-    `dart/gui/experimental/detail/filament` implementation units, leaving
-    `examples/filament_gui` as a minimal `main.cpp` entry point plus CMake and
-    README files. The focused GUI unit test now checks that
+    `dart/gui/experimental/detail/filament` implementation units; scene option
+    parsing and dispatch remain in `scenes.cpp`, while fixture construction is
+    split into `scene_fixtures.cpp`. The example tree is left as a minimal
+    `main.cpp` entry point plus CMake and README files. The focused GUI unit
+    test now checks that
     `examples/filament_gui` contains no C++ source/header files other than
     `main.cpp` and that the example has no direct Filament header includes. The
     north-star audit now also maps the legacy OSG/Raylib GUI surfaces that must

@@ -314,8 +314,10 @@ converted into Filament renderables. Convex mesh, heightmap, and soft mesh
 rendering now consumes descriptor-owned triangle data instead of concrete shape
 dynamic casts. Unsupported shapes now produce diagnostic descriptors instead of
 being silently dropped by the extraction layer.
-The Filament example scene option parsing and reusable DART world fixtures now
-live in `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp`.
+The Filament example scene option parsing and dispatch now live in
+`dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp`, while reusable
+DART world fixtures now live in
+`dart/gui/experimental/detail/filament/scene_fixtures.hpp` and `.cpp`.
 Scene content requirement counting and MVP/G1/drag validation gates, including
 created-renderable content counting, now live in
 `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`.
@@ -324,7 +326,7 @@ panel wiring, and top-level orchestration now live in
 `dart/gui/experimental/detail/filament/application.hpp` and `.cpp`, leaving
 `examples/filament_gui/main.cpp` as a minimal entry point. The application unit
 depends on the private GUI runtime surfaces directly and leaves DART scene
-fixture/import dependencies in `scenes.hpp` and `.cpp`.
+fixture/import dependencies in `scene_fixtures.hpp` and `.cpp`.
 Frame rendering, skipped-frame accounting, screenshot request dispatch,
 rendered-frame profiling, and bounded-run stop checks now live in
 `dart/gui/experimental/detail/filament/frame_renderer.hpp` and `.cpp`.

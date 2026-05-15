@@ -182,8 +182,10 @@
 - The Filament debug-line overlay option defaults, static/contact
   refresh/cleanup state, and selected-renderable overlay lookup helpers now
   live in `dart/gui/experimental/detail/filament/debug_overlay.hpp` and `.cpp`.
-- The Filament example's scene option parsing and reusable DART world fixtures
-  now live in `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp`;
+- The Filament example's scene option parsing and dispatch now live in
+  `dart/gui/experimental/detail/filament/scenes.hpp` and `.cpp`, while
+  reusable DART world fixtures now live in
+  `dart/gui/experimental/detail/filament/scene_fixtures.hpp` and `.cpp`;
 - The Filament example's scene content requirement counting and MVP/G1/drag
   validation gates, including created-renderable content counting, now live in
   `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`;
@@ -196,7 +198,7 @@
   `examples/filament_gui/main.cpp` as a minimal entry point guarded by the
   focused scene-extraction unit. The application unit now depends on the
   private GUI runtime surfaces directly and leaves DART scene fixture/import
-  dependencies in `scenes.hpp` and `.cpp`.
+  dependencies in `scene_fixtures.hpp` and `.cpp`.
 - Filament frame rendering, skipped-frame accounting, screenshot request
   dispatch, rendered-frame profiling, and bounded-run stop checks now live in
   `dart/gui/experimental/detail/filament/frame_renderer.hpp` and `.cpp`.
