@@ -172,6 +172,9 @@ Filament material shader sources now live under
 smoke CMake/Python helpers now live under
 `dart/gui/experimental/detail/filament/testing`, leaving the example directory
 to carry only its entry-point source plus example-level CMake/README files.
+The example entry point now includes
+`dart/gui/experimental/detail/application.hpp`, a generic private GUI detail
+wrapper, instead of the backend-specific private detail application header.
 The private backend source list, dependency wiring, target setup, material
 inputs, material header generation, and smoke-test registration are centralized
 in

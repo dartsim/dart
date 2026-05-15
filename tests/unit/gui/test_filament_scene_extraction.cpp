@@ -240,6 +240,9 @@ constexpr std::array<std::string_view, 18> kForbiddenBackendTokens
 constexpr std::array<std::string_view, 2> kForbiddenFilamentIncludeTokens
     = {"#include <filament/", "#include \"filament/"};
 
+constexpr std::array<std::string_view, 2> kForbiddenFilamentDetailTokens
+    = {"detail/filament", "experimental::filament"};
+
 struct BackendTokenViolation
 {
   std::filesystem::path source;
@@ -446,6 +449,19 @@ TEST(
       = scanSourceFilesForTokens(sources, kForbiddenFilamentIncludeTokens);
   for (const auto& violation : violations) {
     ADD_FAILURE() << violation.source << " includes Filament header token `"
+                  << violation.token << "` directly";
+  }
+}
+
+TEST(FilamentSceneExtraction, FilamentExampleEntryPointUsesGuiDetailBoundary)
+{
+  const std::vector<std::filesystem::path> sources
+      = {std::filesystem::path("examples") / "filament_gui" / "main.cpp"};
+
+  const auto violations
+      = scanSourceFilesForTokens(sources, kForbiddenFilamentDetailTokens);
+  for (const auto& violation : violations) {
+    ADD_FAILURE() << violation.source << " reaches backend detail token `"
                   << violation.token << "` directly";
   }
 }

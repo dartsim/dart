@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/gui/experimental/detail/application.hpp>
 #include <dart/gui/experimental/detail/filament/application.hpp>
 #include <dart/gui/experimental/detail/filament/application_teardown.hpp>
 #include <dart/gui/experimental/detail/filament/scenes.hpp>
@@ -296,3 +297,12 @@ int runFilamentGuiApplication(int argc, char* argv[])
 }
 
 } // namespace dart::gui::experimental::filament
+
+namespace dart::gui::experimental::detail {
+
+int runGuiApplication(int argc, char* argv[])
+{
+  return filament::runFilamentGuiApplication(argc, argv);
+}
+
+} // namespace dart::gui::experimental::detail

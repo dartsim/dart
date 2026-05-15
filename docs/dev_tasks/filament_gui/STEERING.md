@@ -66,6 +66,10 @@ recommended maintainability slices:
   private backend source/header list, dependency wiring, target setup, material
   inputs, material header generation, and smoke-test registration that the
   minimal example CMake file consumes.
+- `dart/gui/experimental/detail/application.hpp` owns the generic private GUI
+  application entry point consumed by `examples/filament_gui/main.cpp`; the
+  backend-specific application entry point stays under
+  `dart/gui/experimental/detail/filament`.
 - `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`
   own created-renderable content counting for startup validation.
 - `dart/gui/experimental/detail/filament/scene_startup.hpp` and `.cpp` own
