@@ -88,8 +88,6 @@
 #include <array>
 #include <cctype>
 #include <chrono>
-#include <cstring>
-#include <filesystem>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -226,6 +224,7 @@ using dart::examples::filament_gui::kSoftMeshFixtureSkeletonName;
 using dart::examples::filament_gui::kVoxelGridFixtureSkeletonName;
 using dart::examples::filament_gui::kWamFixtureSkeletonName;
 using dart::examples::filament_gui::getNativeWindow;
+using dart::examples::filament_gui::loadImGuiFont;
 using dart::examples::filament_gui::orbitingKeyLightDirection;
 using dart::examples::filament_gui::parseOptions;
 using dart::examples::filament_gui::printProfile;
@@ -318,42 +317,6 @@ filament::backend::BufferDescriptor makeBufferDescriptor(std::vector<T>&& data)
         delete static_cast<std::vector<T>*>(user);
       },
       owned);
-}
-
-void loadImGuiFont(ImGuiIO& io, float guiScale)
-{
-  std::vector<std::filesystem::path> candidates;
-  if (const char* fontPath = std::getenv("DART_FILAMENT_GUI_FONT");
-      fontPath != nullptr && std::strlen(fontPath) > 0) {
-    candidates.emplace_back(fontPath);
-  }
-
-  candidates.emplace_back("/usr/share/fonts/dejavu-sans-fonts/DejaVuSans.ttf");
-  candidates.emplace_back("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf");
-  candidates.emplace_back(
-      "/usr/share/fonts/liberation-sans-fonts/LiberationSans-Regular.ttf");
-  candidates.emplace_back("/System/Library/Fonts/Supplemental/Arial.ttf");
-  candidates.emplace_back("/Library/Fonts/Arial.ttf");
-  candidates.emplace_back("C:/Windows/Fonts/segoeui.ttf");
-
-  ImFontConfig config;
-  config.OversampleH = 3;
-  config.OversampleV = 2;
-  config.PixelSnapH = false;
-  const float fontSize = 15.0f * guiScale;
-  for (const auto& path : candidates) {
-    std::error_code ec;
-    if (!std::filesystem::is_regular_file(path, ec)) {
-      continue;
-    }
-    if (io.Fonts->AddFontFromFileTTF(path.string().c_str(), fontSize, &config)
-        != nullptr) {
-      return;
-    }
-  }
-
-  config.SizePixels = 13.0f * guiScale;
-  io.Fonts->AddFontDefault(&config);
 }
 
 G1IkHandle* findG1IkHandle(DartScene& scene, RenderableId targetRenderableId)

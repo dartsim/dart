@@ -203,8 +203,9 @@
   status-panel hit testing in `examples/filament_gui/input.hpp` and `.cpp`,
   while reusable nudge/orbit/manipulation math remains in `dart-gui-experimental`.
 - The Filament example keeps its ImGui-to-Filament overlay renderer in
-  `examples/filament_gui/imgui_overlay.hpp` and `.cpp`; panel contents remain
-  example-local until a later promotion phase needs DART-owned panel/tool APIs.
+  `examples/filament_gui/imgui_overlay.hpp` and `.cpp`, including ImGui font
+  loading; panel contents remain example-local until a later promotion phase
+  needs DART-owned panel/tool APIs.
 - The Filament example keeps PNG/JPEG image decoding, Filament texture-cache
   ownership, sampler setup, and PBR material texture parameter binding in
   `examples/filament_gui/textures.hpp` and `.cpp`.

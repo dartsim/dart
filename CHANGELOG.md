@@ -168,7 +168,9 @@
     lighting/color-grading and windowed quality setup now live in
     `examples/filament_gui/render_environment.hpp` and `.cpp`, and native
     GLFW window handle selection lives in `examples/filament_gui/native_window.hpp`
-    and `.cpp`, so `main.cpp` focuses on renderer resources and UI wiring. The
+    and `.cpp`. ImGui font loading now lives with the overlay renderer in
+    `examples/filament_gui/imgui_overlay.hpp` and `.cpp`, so `main.cpp`
+    focuses on renderer resources and UI wiring. The
     north-star audit now also maps the legacy OSG/Raylib GUI surfaces that must
     be replaced, made private, or removed during first-class Filament
     promotion. The renderer-hidden debug descriptor path also covers
