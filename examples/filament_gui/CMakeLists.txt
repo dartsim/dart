@@ -44,155 +44,9 @@ endif()
 include("${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/filament_sources.cmake")
 
 set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
-set(material_bin "${generated_dir}/default_lit.filamat")
-set(material_header "${generated_dir}/default_lit_material.hpp")
-set(textured_material_bin "${generated_dir}/textured_lit.filamat")
-set(textured_material_header "${generated_dir}/textured_lit_material.hpp")
-set(transparent_material_bin "${generated_dir}/transparent_lit.filamat")
-set(transparent_material_header "${generated_dir}/transparent_lit_material.hpp")
-set(transparent_textured_material_bin "${generated_dir}/transparent_textured_lit.filamat")
-set(transparent_textured_material_header "${generated_dir}/transparent_textured_lit_material.hpp")
-set(debug_material_bin "${generated_dir}/debug_color.filamat")
-set(debug_material_header "${generated_dir}/debug_color_material.hpp")
-set(imgui_material_bin "${generated_dir}/imgui.filamat")
-set(imgui_material_header "${generated_dir}/imgui_material.hpp")
-
-add_custom_command(
-  OUTPUT "${material_bin}"
-  COMMAND "${CMAKE_COMMAND}" -E make_directory "${generated_dir}"
-  COMMAND Filament::matc -a opengl -p desktop -o "${material_bin}"
-          "${DART_FILAMENT_GUI_DEFAULT_LIT_MATERIAL}"
-  DEPENDS "${DART_FILAMENT_GUI_DEFAULT_LIT_MATERIAL}" Filament::matc
-  COMMENT "Compiling Filament material for ${example_name}"
-  VERBATIM
-)
-
-add_custom_command(
-  OUTPUT "${material_header}"
-  COMMAND "${CMAKE_COMMAND}"
-          "-DINPUT=${material_bin}"
-          "-DOUTPUT=${material_header}"
-          -DSYMBOL=kDefaultLitMaterial
-          -DNAMESPACE=dart::gui::experimental::filament
-          -P "${CMAKE_CURRENT_LIST_DIR}/../../cmake/dart_binary_to_header.cmake"
-  DEPENDS "${material_bin}" "${CMAKE_CURRENT_LIST_DIR}/../../cmake/dart_binary_to_header.cmake"
-  COMMENT "Embedding Filament material for ${example_name}"
-  VERBATIM
-)
-
-add_custom_command(
-  OUTPUT "${textured_material_bin}"
-  COMMAND "${CMAKE_COMMAND}" -E make_directory "${generated_dir}"
-  COMMAND Filament::matc -a opengl -p desktop -o "${textured_material_bin}"
-          "${DART_FILAMENT_GUI_TEXTURED_LIT_MATERIAL}"
-  DEPENDS "${DART_FILAMENT_GUI_TEXTURED_LIT_MATERIAL}" Filament::matc
-  COMMENT "Compiling textured Filament material for ${example_name}"
-  VERBATIM
-)
-
-add_custom_command(
-  OUTPUT "${textured_material_header}"
-  COMMAND "${CMAKE_COMMAND}"
-          "-DINPUT=${textured_material_bin}"
-          "-DOUTPUT=${textured_material_header}"
-          -DSYMBOL=kTexturedLitMaterial
-          -DNAMESPACE=dart::gui::experimental::filament
-          -P "${CMAKE_CURRENT_LIST_DIR}/../../cmake/dart_binary_to_header.cmake"
-  DEPENDS "${textured_material_bin}" "${CMAKE_CURRENT_LIST_DIR}/../../cmake/dart_binary_to_header.cmake"
-  COMMENT "Embedding textured Filament material for ${example_name}"
-  VERBATIM
-)
-
-add_custom_command(
-  OUTPUT "${transparent_material_bin}"
-  COMMAND "${CMAKE_COMMAND}" -E make_directory "${generated_dir}"
-  COMMAND Filament::matc -a opengl -p desktop -o "${transparent_material_bin}"
-          "${DART_FILAMENT_GUI_TRANSPARENT_LIT_MATERIAL}"
-  DEPENDS "${DART_FILAMENT_GUI_TRANSPARENT_LIT_MATERIAL}" Filament::matc
-  COMMENT "Compiling transparent Filament material for ${example_name}"
-  VERBATIM
-)
-
-add_custom_command(
-  OUTPUT "${transparent_material_header}"
-  COMMAND "${CMAKE_COMMAND}"
-          "-DINPUT=${transparent_material_bin}"
-          "-DOUTPUT=${transparent_material_header}"
-          -DSYMBOL=kTransparentLitMaterial
-          -DNAMESPACE=dart::gui::experimental::filament
-          -P "${CMAKE_CURRENT_LIST_DIR}/../../cmake/dart_binary_to_header.cmake"
-  DEPENDS "${transparent_material_bin}" "${CMAKE_CURRENT_LIST_DIR}/../../cmake/dart_binary_to_header.cmake"
-  COMMENT "Embedding transparent Filament material for ${example_name}"
-  VERBATIM
-)
-
-add_custom_command(
-  OUTPUT "${transparent_textured_material_bin}"
-  COMMAND "${CMAKE_COMMAND}" -E make_directory "${generated_dir}"
-  COMMAND Filament::matc -a opengl -p desktop -o "${transparent_textured_material_bin}"
-          "${DART_FILAMENT_GUI_TRANSPARENT_TEXTURED_LIT_MATERIAL}"
-  DEPENDS "${DART_FILAMENT_GUI_TRANSPARENT_TEXTURED_LIT_MATERIAL}" Filament::matc
-  COMMENT "Compiling transparent textured Filament material for ${example_name}"
-  VERBATIM
-)
-
-add_custom_command(
-  OUTPUT "${transparent_textured_material_header}"
-  COMMAND "${CMAKE_COMMAND}"
-          "-DINPUT=${transparent_textured_material_bin}"
-          "-DOUTPUT=${transparent_textured_material_header}"
-          -DSYMBOL=kTransparentTexturedLitMaterial
-          -DNAMESPACE=dart::gui::experimental::filament
-          -P "${CMAKE_CURRENT_LIST_DIR}/../../cmake/dart_binary_to_header.cmake"
-  DEPENDS "${transparent_textured_material_bin}" "${CMAKE_CURRENT_LIST_DIR}/../../cmake/dart_binary_to_header.cmake"
-  COMMENT "Embedding transparent textured Filament material for ${example_name}"
-  VERBATIM
-)
-
-add_custom_command(
-  OUTPUT "${imgui_material_bin}"
-  COMMAND "${CMAKE_COMMAND}" -E make_directory "${generated_dir}"
-  COMMAND Filament::matc -a opengl -p desktop -o "${imgui_material_bin}"
-          "${DART_FILAMENT_GUI_IMGUI_MATERIAL}"
-  DEPENDS "${DART_FILAMENT_GUI_IMGUI_MATERIAL}" Filament::matc
-  COMMENT "Compiling Filament ImGui material for ${example_name}"
-  VERBATIM
-)
-
-add_custom_command(
-  OUTPUT "${debug_material_bin}"
-  COMMAND "${CMAKE_COMMAND}" -E make_directory "${generated_dir}"
-  COMMAND Filament::matc -a opengl -p desktop -o "${debug_material_bin}"
-          "${DART_FILAMENT_GUI_DEBUG_COLOR_MATERIAL}"
-  DEPENDS "${DART_FILAMENT_GUI_DEBUG_COLOR_MATERIAL}" Filament::matc
-  COMMENT "Compiling debug Filament material for ${example_name}"
-  VERBATIM
-)
-
-add_custom_command(
-  OUTPUT "${debug_material_header}"
-  COMMAND "${CMAKE_COMMAND}"
-          "-DINPUT=${debug_material_bin}"
-          "-DOUTPUT=${debug_material_header}"
-          -DSYMBOL=kDebugColorMaterial
-          -DNAMESPACE=dart::gui::experimental::filament
-          -P "${CMAKE_CURRENT_LIST_DIR}/../../cmake/dart_binary_to_header.cmake"
-  DEPENDS "${debug_material_bin}" "${CMAKE_CURRENT_LIST_DIR}/../../cmake/dart_binary_to_header.cmake"
-  COMMENT "Embedding debug Filament material for ${example_name}"
-  VERBATIM
-)
-
-add_custom_command(
-  OUTPUT "${imgui_material_header}"
-  COMMAND "${CMAKE_COMMAND}"
-          "-DINPUT=${imgui_material_bin}"
-          "-DOUTPUT=${imgui_material_header}"
-          -DSYMBOL=kImGuiMaterial
-          -DNAMESPACE=dart::gui::experimental::filament
-          -P "${CMAKE_CURRENT_LIST_DIR}/../../cmake/dart_binary_to_header.cmake"
-  DEPENDS "${imgui_material_bin}" "${CMAKE_CURRENT_LIST_DIR}/../../cmake/dart_binary_to_header.cmake"
-  COMMENT "Embedding Filament ImGui material for ${example_name}"
-  VERBATIM
+dart_filament_gui_generate_material_headers(
+  material_headers
+  GENERATED_DIR "${generated_dir}"
 )
 
 file(GLOB srcs "*.cpp" "*.hpp")
@@ -201,18 +55,13 @@ add_executable(
   ${srcs}
   ${DART_FILAMENT_GUI_BACKEND_SRCS}
   ${DART_FILAMENT_GUI_BACKEND_HDRS}
-  "${material_header}"
-  "${textured_material_header}"
-  "${transparent_material_header}"
-  "${transparent_textured_material_header}"
-  "${debug_material_header}"
-  "${imgui_material_header}"
+  ${material_headers}
 )
 set_target_properties(${example_target} PROPERTIES OUTPUT_NAME ${example_name})
 target_include_directories(${example_target} PRIVATE "${generated_dir}")
 target_compile_definitions(
   ${example_target}
-  PRIVATE DART_FILAMENT_GUI_REPOSITORY_ROOT="${CMAKE_CURRENT_LIST_DIR}/../.."
+  PRIVATE DART_FILAMENT_GUI_REPOSITORY_ROOT="${DART_FILAMENT_GUI_SOURCE_DIR}"
 )
 target_link_libraries(
   ${example_target}
@@ -239,54 +88,9 @@ if(DART_IN_SOURCE_BUILD)
   )
 
   if(BUILD_TESTING AND DART_BUILD_TESTS AND DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS)
-    find_package(Python3 COMPONENTS Interpreter REQUIRED)
-    set(test_name EXAMPLE_filament_gui_headless_smoke)
-    add_test(
-      NAME ${test_name}
-      COMMAND
-        "${CMAKE_COMMAND}"
-        "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-        "-DDART_FILAMENT_GUI_SCREENSHOT=${CMAKE_CURRENT_BINARY_DIR}/filament_gui_headless_smoke.ppm"
-        -DDART_FILAMENT_GUI_WIDTH=640
-        -DDART_FILAMENT_GUI_HEIGHT=480
-        -DDART_FILAMENT_GUI_FRAMES=10
-        "-DDART_FILAMENT_GUI_PYTHON=${Python3_EXECUTABLE}"
-        "-DDART_FILAMENT_GUI_ANALYZER=${DART_FILAMENT_GUI_TESTING_DIR}/analyze_headless_smoke.py"
-        -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
+    dart_filament_gui_add_smoke_tests(
+      ${example_target}
+      BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}"
     )
-    set_tests_properties(
-      ${test_name}
-      PROPERTIES LABELS "filament;gui;smoke;graphics"
-    )
-    if(UNIX AND NOT APPLE)
-      set_tests_properties(
-        ${test_name}
-        PROPERTIES ENVIRONMENT "LIBGL_ALWAYS_SOFTWARE=1;MESA_LOADER_DRIVER_OVERRIDE=llvmpipe"
-      )
-    endif()
-
-    set(drag_test_name EXAMPLE_filament_gui_drag_and_drop_headless_smoke)
-    add_test(
-      NAME ${drag_test_name}
-      COMMAND
-        "${CMAKE_COMMAND}"
-        "-DDART_FILAMENT_GUI_EXECUTABLE=$<TARGET_FILE:${example_target}>"
-        "-DDART_FILAMENT_GUI_SCREENSHOT=${CMAKE_CURRENT_BINARY_DIR}/filament_gui_drag_and_drop_headless_smoke.ppm"
-        -DDART_FILAMENT_GUI_SCENE=drag-and-drop
-        -DDART_FILAMENT_GUI_WIDTH=640
-        -DDART_FILAMENT_GUI_HEIGHT=480
-        -DDART_FILAMENT_GUI_FRAMES=4
-        -P "${DART_FILAMENT_GUI_TESTING_DIR}/run_headless_smoke.cmake"
-    )
-    set_tests_properties(
-      ${drag_test_name}
-      PROPERTIES LABELS "filament;gui;smoke;graphics"
-    )
-    if(UNIX AND NOT APPLE)
-      set_tests_properties(
-        ${drag_test_name}
-        PROPERTIES ENVIRONMENT "LIBGL_ALWAYS_SOFTWARE=1;MESA_LOADER_DRIVER_OVERRIDE=llvmpipe"
-      )
-    endif()
   endif()
 endif()
