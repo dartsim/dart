@@ -44,6 +44,7 @@ namespace dart::collision::native {
 namespace {
 
 constexpr double kEpsilon = 1e-10;
+constexpr double kSurfaceAxisEpsilon = 1e-8;
 
 struct SatResult
 {
@@ -107,21 +108,42 @@ Eigen::Vector3d computeContactPoint(
     const Eigen::Matrix3d& rotation2,
     const Eigen::Vector3d& normal)
 {
-  Eigen::Vector3d point1 = center1;
-  for (int i = 0; i < 3; ++i) {
-    Eigen::Vector3d axis = rotation1.col(i);
-    double sign = (normal.dot(axis) > 0) ? 1.0 : -1.0;
-    point1 -= sign * halfExtents1[i] * axis;
-  }
+  auto surfacePointNear = [](const Eigen::Vector3d& center,
+                             const Eigen::Vector3d& halfExtents,
+                             const Eigen::Matrix3d& rotation,
+                             const Eigen::Vector3d& direction,
+                             const Eigen::Vector3d& nearPoint) {
+    Eigen::Vector3d local = rotation.transpose() * (nearPoint - center);
+    const Eigen::Vector3d localDirection = rotation.transpose() * direction;
 
-  Eigen::Vector3d point2 = center2;
-  for (int i = 0; i < 3; ++i) {
-    Eigen::Vector3d axis = rotation2.col(i);
-    double sign = (normal.dot(axis) > 0) ? -1.0 : 1.0;
-    point2 -= sign * halfExtents2[i] * axis;
-  }
+    // Snap axes facing the contact normal to the surface; clamp tangential axes
+    // near the opposing point so large boxes do not report far-corner contacts.
+    for (int i = 0; i < 3; ++i) {
+      if (std::abs(localDirection[i]) > kSurfaceAxisEpsilon) {
+        local[i] = (localDirection[i] > 0.0) ? halfExtents[i] : -halfExtents[i];
+      } else {
+        local[i] = std::clamp(local[i], -halfExtents[i], halfExtents[i]);
+      }
+    }
 
-  return (point1 + point2) * 0.5;
+    return center + rotation * local;
+  };
+
+  Eigen::Vector3d forwardPoint1
+      = surfacePointNear(center1, halfExtents1, rotation1, -normal, center2);
+  Eigen::Vector3d forwardPoint2 = surfacePointNear(
+      center2, halfExtents2, rotation2, normal, forwardPoint1);
+  forwardPoint1 = surfacePointNear(
+      center1, halfExtents1, rotation1, -normal, forwardPoint2);
+
+  Eigen::Vector3d reversePoint2
+      = surfacePointNear(center2, halfExtents2, rotation2, normal, center1);
+  Eigen::Vector3d reversePoint1 = surfacePointNear(
+      center1, halfExtents1, rotation1, -normal, reversePoint2);
+  reversePoint2 = surfacePointNear(
+      center2, halfExtents2, rotation2, normal, reversePoint1);
+
+  return (forwardPoint1 + forwardPoint2 + reversePoint1 + reversePoint2) * 0.25;
 }
 
 std::array<double, 2> projectInterval(

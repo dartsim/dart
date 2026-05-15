@@ -36,6 +36,9 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <limits>
+
 #include <cmath>
 
 using namespace dart;
@@ -423,6 +426,88 @@ TEST(WorldTests, BasicSimulation)
   double finalZ = skel->getPositions()[5];
 
   EXPECT_LT(finalZ, initialZ);
+}
+
+//==============================================================================
+void testDefaultNativeBoxRestsOnGround(const Eigen::Matrix3d& initialRotation)
+{
+  auto world = World::create();
+  world->setTimeStep(0.001);
+  ASSERT_TRUE(world->getCollisionDetector());
+  ASSERT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
+
+  const auto boxSize = Eigen::Vector3d::Constant(0.3);
+  const double boxHalfExtent = 0.5 * boxSize.z();
+  const double groundTop = 0.05;
+  const double expectedCenterZ = groundTop + boxHalfExtent;
+
+  auto box = Skeleton::create("box");
+  auto boxPair = box->createJointAndBodyNodePair<FreeJoint>();
+  auto* boxJoint = boxPair.first;
+  auto* boxBody = boxPair.second;
+  Eigen::Isometry3d boxTf = Eigen::Isometry3d::Identity();
+  boxTf.translation() = Eigen::Vector3d(0.0, 0.0, 1.0);
+  boxTf.linear() = initialRotation;
+  boxJoint->setTransform(boxTf);
+  auto* boxShapeNode
+      = boxBody->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+          std::make_shared<BoxShape>(boxSize));
+
+  Inertia boxInertia;
+  boxInertia.setMass(1.0);
+  boxInertia.setMoment(boxShapeNode->getShape()->computeInertia(1.0));
+  boxBody->setInertia(boxInertia);
+
+  auto ground = Skeleton::create("ground");
+  auto groundPair = ground->createJointAndBodyNodePair<WeldJoint>();
+  groundPair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d(10.0, 10.0, 0.1)));
+
+  world->addSkeleton(box);
+  world->addSkeleton(ground);
+
+  bool sawContact = false;
+  double lowestCenterZ = std::numeric_limits<double>::infinity();
+  double lowestVertexZ = std::numeric_limits<double>::infinity();
+  auto measureLowestVertexZ = [&]() {
+    const auto tf = boxBody->getWorldTransform();
+    double lowest = std::numeric_limits<double>::infinity();
+    for (const double x : {-boxHalfExtent, boxHalfExtent}) {
+      for (const double y : {-boxHalfExtent, boxHalfExtent}) {
+        for (const double z : {-boxHalfExtent, boxHalfExtent}) {
+          const Eigen::Vector3d vertex = tf * Eigen::Vector3d(x, y, z);
+          lowest = std::min(lowest, vertex.z());
+        }
+      }
+    }
+    return lowest;
+  };
+
+  for (int i = 0; i < 1500; ++i) {
+    world->step();
+    const auto& collisionResult = world->getLastCollisionResult();
+    sawContact = sawContact || collisionResult.getNumContacts() > 0u;
+    const double z = boxBody->getWorldTransform().translation().z();
+    lowestCenterZ = std::min(lowestCenterZ, z);
+    lowestVertexZ = std::min(lowestVertexZ, measureLowestVertexZ());
+  }
+
+  EXPECT_TRUE(sawContact);
+  EXPECT_GE(lowestCenterZ, expectedCenterZ - 0.02);
+  EXPECT_GE(lowestVertexZ, groundTop - 0.005);
+}
+
+//==============================================================================
+TEST(WorldTests, DefaultNativeBoxRestsOnGround)
+{
+  testDefaultNativeBoxRestsOnGround(Eigen::Matrix3d::Identity());
+}
+
+//==============================================================================
+TEST(WorldTests, DefaultNativeRotatedBoxRestsOnGround)
+{
+  testDefaultNativeBoxRestsOnGround(
+      math::expMapRot(Eigen::Vector3d(0.4, -0.7, 0.2)));
 }
 
 //==============================================================================

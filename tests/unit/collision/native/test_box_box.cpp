@@ -36,6 +36,11 @@
 
 #include <gtest/gtest.h>
 
+#include <limits>
+#include <vector>
+
+#include <cmath>
+
 using namespace dart::collision::native;
 
 TEST(BoxBox, Separated_AlongX)
@@ -362,6 +367,73 @@ TEST(BoxBox, UsingShapeObjects)
   EXPECT_TRUE(collided);
   ASSERT_GE(result.numContacts(), 1u);
   EXPECT_NEAR(result.getContact(0).depth, 0.5, 1e-10);
+}
+
+TEST(BoxBox, RotatedSmallBoxOnLargeGroundHasLocalContactPoint)
+{
+  const Eigen::Vector3d boxHalfExtents(0.15, 0.15, 0.15);
+  const Eigen::Vector3d groundHalfExtents(5.0, 5.0, 0.05);
+
+  Eigen::Isometry3d boxTf = Eigen::Isometry3d::Identity();
+  boxTf.linear() = (Eigen::AngleAxisd(0.4, Eigen::Vector3d::UnitX())
+                    * Eigen::AngleAxisd(-0.7, Eigen::Vector3d::UnitY())
+                    * Eigen::AngleAxisd(0.2, Eigen::Vector3d::UnitZ()))
+                       .toRotationMatrix();
+
+  const Eigen::Vector3d zAxis = Eigen::Vector3d::UnitZ();
+  const double boxRadiusZ
+      = boxHalfExtents.x() * std::abs(zAxis.dot(boxTf.linear().col(0)))
+        + boxHalfExtents.y() * std::abs(zAxis.dot(boxTf.linear().col(1)))
+        + boxHalfExtents.z() * std::abs(zAxis.dot(boxTf.linear().col(2)));
+  const double groundTop = groundHalfExtents.z();
+  boxTf.translation()
+      = Eigen::Vector3d(0.0, 0.0, groundTop + boxRadiusZ - 0.01);
+
+  Eigen::Isometry3d groundTf = Eigen::Isometry3d::Identity();
+
+  auto closestLocalContact
+      = [](const CollisionResult& result, double normalSign) {
+          const ContactPoint* closest = nullptr;
+          double closestDistance = std::numeric_limits<double>::infinity();
+          std::size_t countedContacts = 0;
+          for (const auto& manifold : result.getManifolds()) {
+            for (const auto& contact : manifold.getContacts()) {
+              ++countedContacts;
+              EXPECT_TRUE(contact.position.allFinite());
+              EXPECT_TRUE(contact.normal.allFinite());
+              EXPECT_NEAR(contact.depth, 0.01, 1e-9);
+              EXPECT_GT(contact.normal.z() * normalSign, 0.25);
+
+              const double distance = contact.position.head<2>().norm();
+              if (distance < closestDistance) {
+                closestDistance = distance;
+                closest = &contact;
+              }
+            }
+          }
+
+          EXPECT_EQ(countedContacts, result.numContacts());
+          EXPECT_GE(countedContacts, 1u);
+          EXPECT_LT(closestDistance, 0.3);
+          return (closest != nullptr) ? *closest : ContactPoint{};
+        };
+
+  CollisionResult result;
+  result.clear();
+  EXPECT_TRUE(
+      collideBoxes(boxHalfExtents, boxTf, groundHalfExtents, groundTf, result));
+  const auto contact = closestLocalContact(result, 1.0);
+
+  CollisionResult swappedResult;
+  swappedResult.clear();
+  EXPECT_TRUE(collideBoxes(
+      groundHalfExtents, groundTf, boxHalfExtents, boxTf, swappedResult));
+  const auto swappedContact = closestLocalContact(swappedResult, -1.0);
+
+  ASSERT_GE(result.numContacts(), 1u);
+  ASSERT_GE(swappedResult.numContacts(), 1u);
+  EXPECT_NEAR(contact.depth, swappedContact.depth, 1e-9);
+  EXPECT_LT(contact.normal.dot(swappedContact.normal), -0.99);
 }
 
 TEST(BoxBox, Determinism)
