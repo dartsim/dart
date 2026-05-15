@@ -42,9 +42,25 @@ struct ImGuiIO;
 
 namespace dart::gui::experimental::filament {
 
+struct DartScene;
+class SelectionController;
+
+struct ApplicationInputState
+{
+  bool wasSpacePressed = false;
+  bool wasStepPressed = false;
+};
+
 void handleScroll(GLFWwindow* window, double xOffset, double yOffset);
 
 bool isKeyDown(GLFWwindow* window, int key);
+
+void pollApplicationInput(
+    GLFWwindow* window,
+    DartScene& scene,
+    SelectionController& selectionController,
+    dart::gui::experimental::ViewerLifecycleState& lifecycle,
+    ApplicationInputState& state);
 
 void updateImGuiMouseInput(
     GLFWwindow* window,

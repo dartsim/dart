@@ -124,8 +124,7 @@ using dart::gui::experimental::markSimulationAdvanced;
 using dart::gui::experimental::makeRenderableId;
 using dart::gui::experimental::normalizeRunOptions;
 using dart::gui::experimental::printProfile;
-using dart::gui::experimental::requestSingleStep;
-using dart::gui::experimental::togglePaused;
+using dart::gui::experimental::filament::ApplicationInputState;
 using dart::gui::experimental::filament::FilamentRenderContext;
 using dart::gui::experimental::filament::FrameRenderResult;
 using dart::gui::experimental::filament::ImGuiOverlay;
@@ -164,6 +163,7 @@ using dart::gui::experimental::filament::detachSceneEnvironment;
 using dart::gui::experimental::filament::getNativeWindow;
 using dart::gui::experimental::filament::handleScroll;
 using dart::gui::experimental::filament::isInsideStatusPanel;
+using dart::gui::experimental::filament::pollApplicationInput;
 using dart::gui::experimental::filament::renderBuiltInStatusPanel;
 using dart::gui::experimental::filament::renderApplicationFrame;
 using dart::gui::experimental::filament::refreshDebugLineOverlay;
@@ -341,8 +341,7 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
   auto& imguiIo = ImGui::GetIO();
 
   ViewerLifecycleState lifecycle;
-  bool wasSpacePressed = false;
-  bool wasStepPressed = false;
+  ApplicationInputState inputState;
   SelectionController selectionController;
   bool screenshotSucceeded = options.screenshotPath.empty();
   ScreenshotCapture screenshotCapture;
@@ -353,32 +352,8 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
   while (options.headless || !glfwWindowShouldClose(window)) {
     const auto frameStart = ProfileAccumulator::Clock::now();
     auto phaseStart = ProfileAccumulator::Clock::now();
-    if (window != nullptr) {
-      glfwPollEvents();
-      if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-      }
-      const bool isSpacePressed
-          = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
-      if (isSpacePressed && !wasSpacePressed) {
-        togglePaused(lifecycle);
-      }
-      wasSpacePressed = isSpacePressed;
-
-      const bool isStepPressed = glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS;
-      if (isStepPressed && !wasStepPressed) {
-        requestSingleStep(lifecycle, false);
-      }
-      wasStepPressed = isStepPressed;
-
-      for (const auto& handle : dartScene.ikHandles) {
-        if (glfwGetKey(window, handle.hotkey) == GLFW_PRESS) {
-          selectionController.select(
-              handle.targetRenderableId, handle.label + " IK target");
-          lifecycle.paused = true;
-        }
-      }
-    }
+    pollApplicationInput(
+        window, dartScene, selectionController, lifecycle, inputState);
     profile.inputMs += elapsedMs(phaseStart);
 
     phaseStart = ProfileAccumulator::Clock::now();

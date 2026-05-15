@@ -133,7 +133,7 @@ Filament neutral lighting/color grading, light entity creation and orbit
 updates, scene environment binding, viewport/camera application, and windowed
 view-quality setup live in
 `dart/gui/experimental/detail/filament/render_environment.hpp` and `.cpp`.
-The GLFW/ImGui input bridge lives in
+The GLFW/ImGui input bridge and application hotkey polling live in
 `dart/gui/experimental/detail/filament/input.hpp` and `.cpp`; reusable
 manipulation math remains in `dart-gui-experimental`.
 Platform-specific GLFW native-window handle selection lives in
@@ -142,9 +142,8 @@ Filament-native ImGui context setup, style scaling, font loading, overlay
 rendering, and draw-data upload live in
 `dart/gui/experimental/detail/filament/imgui_overlay.hpp` and `.cpp`; the
 built-in panel policy remains MVP/example-scoped.
-Selection label formatting, G1 IK-target translation glue, hotkey target
-selection, keyboard nudging, click selection, and Ctrl-left drag event
-translation live in
+Selection label formatting, G1 IK-target translation glue, keyboard nudging,
+click selection, and Ctrl-left drag event translation live in
 `dart/gui/experimental/detail/filament/selection.hpp` and `.cpp`; reusable
 selection math stays in `dart-gui-experimental`.
 Filament material bundle creation, seed texture resources, renderable state,

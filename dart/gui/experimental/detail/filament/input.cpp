@@ -32,6 +32,9 @@
 
 #include "input.hpp"
 
+#include "scenes.hpp"
+#include "selection.hpp"
+
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 
@@ -43,6 +46,8 @@ using dart::gui::experimental::DirectionalNudgeInput;
 using dart::gui::experimental::OrbitCameraControllerInput;
 using dart::gui::experimental::addOrbitCameraScroll;
 using dart::gui::experimental::computeCameraRelativeNudge;
+using dart::gui::experimental::requestSingleStep;
+using dart::gui::experimental::togglePaused;
 using dart::gui::experimental::updateOrbitCameraController;
 
 void handleScroll(GLFWwindow* window, double, double yOffset)
@@ -58,6 +63,44 @@ void handleScroll(GLFWwindow* window, double, double yOffset)
 bool isKeyDown(GLFWwindow* window, int key)
 {
   return window != nullptr && glfwGetKey(window, key) == GLFW_PRESS;
+}
+
+void pollApplicationInput(
+    GLFWwindow* window,
+    DartScene& scene,
+    SelectionController& selectionController,
+    dart::gui::experimental::ViewerLifecycleState& lifecycle,
+    ApplicationInputState& state)
+{
+  if (window == nullptr) {
+    return;
+  }
+
+  glfwPollEvents();
+  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+    glfwSetWindowShouldClose(window, GLFW_TRUE);
+  }
+
+  const bool isSpacePressed
+      = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
+  if (isSpacePressed && !state.wasSpacePressed) {
+    togglePaused(lifecycle);
+  }
+  state.wasSpacePressed = isSpacePressed;
+
+  const bool isStepPressed = glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS;
+  if (isStepPressed && !state.wasStepPressed) {
+    requestSingleStep(lifecycle, false);
+  }
+  state.wasStepPressed = isStepPressed;
+
+  for (const auto& handle : scene.ikHandles) {
+    if (glfwGetKey(window, handle.hotkey) == GLFW_PRESS) {
+      selectionController.select(
+          handle.targetRenderableId, handle.label + " IK target");
+      lifecycle.paused = true;
+    }
+  }
 }
 
 void updateImGuiMouseInput(

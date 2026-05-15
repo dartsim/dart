@@ -79,8 +79,9 @@
   without exposing Filament input types.
 - The Filament example's GLFW/ImGui input bridge now lives in
   `dart/gui/experimental/detail/filament/input.hpp` and `.cpp`, keeping
-  backend-specific input polling out of the main viewer loop while the
-  reusable manipulation math remains in `dart-gui-experimental`.
+  backend-specific mouse/controller input, application hotkey polling, and
+  pause/single-step/IK target key-edge state out of the main viewer loop while
+  the reusable manipulation math remains in `dart-gui-experimental`.
 - The Filament-native ImGui context setup, style scaling, font loading,
   overlay renderer, and draw-data upload now live in
   `dart/gui/experimental/detail/filament/imgui_overlay.hpp` and `.cpp`; the
@@ -154,9 +155,9 @@
 - The Filament example's selection labels, G1 IK-target translation glue, and
   private selection controller state now live in
   `dart/gui/experimental/detail/filament/selection.hpp` and `.cpp`. That
-  controller owns hotkey target selection, keyboard nudging, click selection, and
-  Ctrl-left drag event translation while renderer-independent selection and
-  translation primitives remain in `dart-gui-experimental`.
+  controller owns keyboard nudging, click selection, and Ctrl-left drag event
+  translation while renderer-independent selection and translation primitives
+  remain in `dart-gui-experimental`.
 - The Filament material bundle, seed texture resources, renderable state,
   material selection and parameter binding helpers, shadow settings, and
   destruction lifecycle now live in

@@ -33,9 +33,12 @@ recommended maintainability slices:
 - `dart/gui/experimental/detail/filament/frame_renderer.hpp` and `.cpp` own the
   private render-frame, skipped-frame, screenshot-request, and frame-accounting
   policy.
+- `dart/gui/experimental/detail/filament/input.hpp` and `.cpp` own private
+  GLFW/ImGui input bridging, camera-controller input translation, and
+  application hotkey polling/key-edge state.
 - `dart/gui/experimental/detail/filament/selection.hpp` and `.cpp` own the
-  private selection controller state and GLFW event translation for hotkey
-  selection, keyboard nudging, click selection, and Ctrl-left dragging.
+  private selection controller state and GLFW event translation for keyboard
+  nudging, click selection, and Ctrl-left dragging.
 - `dart/gui/experimental/detail/filament/simulation_stepper.hpp` and `.cpp` own
   the bounded realtime simulation step-count accumulator.
 - `dart/gui/experimental/profile.hpp` and `.cpp` own viewer-loop profile
