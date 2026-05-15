@@ -112,6 +112,9 @@ in `examples/filament_gui/selection.hpp` and `.cpp`.
 Example-local Filament renderable state, lit-material setup, shadow flag
 application, and destruction lifecycle helpers live in
 `examples/filament_gui/renderable_resources.hpp` and `.cpp`.
+Example-local descriptor-to-scene synchronization, unsupported descriptor
+logging, and renderable transform/selection update helpers live in
+`examples/filament_gui/renderable_sync.hpp` and `.cpp`.
 `UNIT_dynamics_MeshShape` also loads the checked-in
 `data/gltf/pbr_triangle.gltf` and `data/gltf/pbr_multi_material.gltf` fixtures
 through the real Assimp importer and verifies authored glTF PBR texture slots,

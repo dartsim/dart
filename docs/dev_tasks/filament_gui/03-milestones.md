@@ -219,6 +219,9 @@
 - The Filament example keeps renderable state, lit-material configuration,
   shadow flag application, and destruction lifecycle helpers in
   `examples/filament_gui/renderable_resources.hpp` and `.cpp`.
+- The Filament example keeps descriptor-to-scene synchronization, unsupported
+  descriptor logging, and renderable transform/selection update helpers in
+  `examples/filament_gui/renderable_sync.hpp` and `.cpp`.
 - `dart-gui-experimental` now owns viewer lifecycle state for pause/step
   behavior, screenshot request tracking, rendered/skipped frame counters, and
   bounded-run stop checks. The Filament example uses this state instead of

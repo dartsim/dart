@@ -123,6 +123,9 @@
 - The Filament example's Filament renderable state, material selection and
   parameter binding helpers, shadow settings, and destruction lifecycle now live
   in `examples/filament_gui/renderable_resources.hpp` and `.cpp`.
+- The Filament example's descriptor-to-scene synchronization, unsupported
+  descriptor logging, and renderable transform/selection update helpers now live
+  in `examples/filament_gui/renderable_sync.hpp` and `.cpp`.
 - The Filament example's scene option parsing and reusable DART world fixtures
   now live in `examples/filament_gui/scenes.hpp` and `.cpp`; `main.cpp` remains
   focused on renderer resources, synchronization, input, and the built-in panel.

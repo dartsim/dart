@@ -42,6 +42,7 @@
 #include "profile.hpp"
 #include "render_environment.hpp"
 #include "renderable_resources.hpp"
+#include "renderable_sync.hpp"
 #include "scenes.hpp"
 #include "screenshot.hpp"
 #include "selection.hpp"
@@ -132,11 +133,9 @@ using dart::dynamics::WeldJoint;
 using dart::dynamics::VoxelGridShape;
 #endif
 
-using dart::gui::experimental::ActiveRenderableState;
 using dart::gui::experimental::DebugDrawOptions;
 using dart::gui::experimental::DebugLineDescriptor;
 using dart::gui::experimental::GeometryDescriptor;
-using dart::gui::experimental::MaterialDescriptor;
 using dart::gui::experimental::MeshGeometry;
 using dart::gui::experimental::MeshIndexRange;
 using dart::gui::experimental::MeshAlphaMode;
@@ -174,7 +173,6 @@ using dart::gui::experimental::makeRenderableId;
 using dart::gui::experimental::makeSelectionDebugLines;
 using dart::gui::experimental::normalizeRunOptions;
 using dart::gui::experimental::pickNearestRenderable;
-using dart::gui::experimental::planRenderableSetUpdate;
 using dart::gui::experimental::requestSingleStep;
 using dart::gui::experimental::shouldAdvanceSimulation;
 using dart::gui::experimental::shouldRequestScreenshot;
@@ -232,6 +230,7 @@ using dart::examples::filament_gui::kVoxelGridFixtureSkeletonName;
 using dart::examples::filament_gui::kWamFixtureSkeletonName;
 using dart::examples::filament_gui::getNativeWindow;
 using dart::examples::filament_gui::loadImGuiFont;
+using dart::examples::filament_gui::logUnsupportedRenderableDescriptorOnce;
 using dart::examples::filament_gui::orbitingKeyLightDirection;
 using dart::examples::filament_gui::parseOptions;
 using dart::examples::filament_gui::printProfile;
@@ -242,16 +241,17 @@ using dart::examples::filament_gui::selectedNudgeFromKeyboard;
 using dart::examples::filament_gui::selectionLabelForRenderable;
 using dart::examples::filament_gui::makeRepeatTextureSampler;
 using dart::examples::filament_gui::selectLitMaterial;
+using dart::examples::filament_gui::setRenderableTransform;
+using dart::examples::filament_gui::synchronizeSceneRenderables;
 using dart::examples::filament_gui::translateRenderableAndApplyIk;
 using dart::examples::filament_gui::updateCameraController;
 using dart::examples::filament_gui::updateImGuiOverlay;
 using dart::examples::filament_gui::updateImGuiMouseInput;
-using dart::examples::filament_gui::updateRenderableSelection;
+using dart::examples::filament_gui::updateSceneRenderableFromDescriptor;
 using dart::examples::filament_gui::waitForScreenshot;
 using filament::math::float2;
 using filament::math::float3;
 using filament::math::float4;
-using filament::math::mat4f;
 using utils::EntityManager;
 
 struct Vertex
@@ -447,18 +447,6 @@ float resolveMeshMaterialAlpha(
   }
 
   return visualAlpha * materialAlpha;
-}
-
-mat4f toFilamentTransform(const Eigen::Isometry3d& tf)
-{
-  const Eigen::Matrix4d m = tf.matrix();
-  mat4f out;
-  for (int col = 0; col < 4; ++col) {
-    for (int row = 0; row < 4; ++row) {
-      out[col][row] = static_cast<float>(m(row, col));
-    }
-  }
-  return out;
 }
 
 Renderable createBoxRenderable(
@@ -1647,118 +1635,6 @@ std::optional<Renderable> createRenderableFromDescriptor(
   return renderable;
 }
 
-void logUnsupportedRenderableDescriptor(const RenderableDescriptor& descriptor)
-{
-  std::cerr << "DART shape";
-  if (!descriptor.geometry.shapeType.empty()) {
-    std::cerr << " '" << descriptor.geometry.shapeType << "'";
-  }
-  if (!descriptor.shapeFrameName.empty()) {
-    std::cerr << " in shape frame '" << descriptor.shapeFrameName << "'";
-  }
-  if (!descriptor.skeletonName.empty()) {
-    std::cerr << " on skeleton '" << descriptor.skeletonName << "'";
-  }
-  std::cerr << " will not be rendered";
-  if (!descriptor.geometry.unsupportedReason.empty()) {
-    std::cerr << ": " << descriptor.geometry.unsupportedReason;
-  }
-  std::cerr << "\n";
-}
-
-bool containsRenderableId(
-    const std::vector<RenderableId>& ids, RenderableId id)
-{
-  return std::find(ids.begin(), ids.end(), id) != ids.end();
-}
-
-std::vector<ActiveRenderableState> collectActiveRenderableStates(
-    const std::vector<SceneRenderable>& sceneRenderables)
-{
-  std::vector<ActiveRenderableState> states;
-  states.reserve(sceneRenderables.size());
-  for (const SceneRenderable& sceneRenderable : sceneRenderables) {
-    ActiveRenderableState state;
-    state.id = sceneRenderable.id;
-    state.shapeVersion = sceneRenderable.shapeVersion;
-    state.renderResourceVersion = sceneRenderable.renderResourceVersion;
-    states.push_back(state);
-  }
-  return states;
-}
-
-void logUnsupportedRenderableDescriptorOnce(
-    std::vector<RenderableId>& loggedUnsupportedRenderableIds,
-    const RenderableDescriptor& descriptor)
-{
-  if (descriptor.id != 0
-      && containsRenderableId(loggedUnsupportedRenderableIds, descriptor.id)) {
-    return;
-  }
-
-  logUnsupportedRenderableDescriptor(descriptor);
-  if (descriptor.id != 0) {
-    loggedUnsupportedRenderableIds.push_back(descriptor.id);
-  }
-}
-
-void synchronizeSceneRenderables(
-    filament::Engine& engine,
-    filament::Scene& scene,
-    const MaterialSet& materials,
-    TextureCache& textureCache,
-    const std::vector<RenderableDescriptor>& descriptors,
-    std::vector<SceneRenderable>& sceneRenderables,
-    std::vector<RenderableId>& loggedUnsupportedRenderableIds)
-{
-  const auto plan = planRenderableSetUpdate(
-      descriptors, collectActiveRenderableStates(sceneRenderables));
-
-  for (auto indexIt = plan.activeRenderableIndicesToRemove.rbegin();
-       indexIt != plan.activeRenderableIndicesToRemove.rend();
-       ++indexIt) {
-    const std::size_t index = *indexIt;
-    if (index >= sceneRenderables.size()) {
-      continue;
-    }
-
-    SceneRenderable& sceneRenderable = sceneRenderables[index];
-    scene.remove(sceneRenderable.renderable.entity);
-    destroyRenderable(engine, sceneRenderable.renderable);
-    sceneRenderables.erase(sceneRenderables.begin() + index);
-  }
-
-  for (const std::size_t descriptorIndex : plan.descriptorIndicesToAdd) {
-    if (descriptorIndex >= descriptors.size()) {
-      continue;
-    }
-
-    const RenderableDescriptor& descriptor = descriptors[descriptorIndex];
-    auto renderable = createRenderableFromDescriptor(
-        engine, materials, textureCache, descriptor);
-    if (!renderable) {
-      if (descriptor.geometry.kind == ShapeKind::Unsupported
-          || !descriptor.geometry.unsupportedReason.empty()) {
-        logUnsupportedRenderableDescriptorOnce(
-            loggedUnsupportedRenderableIds, descriptor);
-      }
-      continue;
-    }
-
-    SceneRenderable sceneRenderable;
-    sceneRenderable.id = descriptor.id;
-    sceneRenderable.shapeVersion = descriptor.shapeVersion;
-    sceneRenderable.renderResourceVersion = descriptor.renderResourceVersion;
-    sceneRenderable.renderable = *renderable;
-    scene.addEntity(sceneRenderable.renderable.entity);
-    engine.getTransformManager().setTransform(
-        engine.getTransformManager().getInstance(
-            sceneRenderable.renderable.entity),
-        toFilamentTransform(descriptor.worldTransform));
-    sceneRenderables.push_back(sceneRenderable);
-  }
-}
-
 } // namespace
 
 int main(int argc, char* argv[])
@@ -2205,10 +2081,8 @@ int main(int argc, char* argv[])
     sceneRenderable.id = descriptor.id;
     sceneRenderable.renderable = *renderable;
     scene->addEntity(sceneRenderable.renderable.entity);
-    engine->getTransformManager().setTransform(
-        engine->getTransformManager().getInstance(
-            sceneRenderable.renderable.entity),
-        toFilamentTransform(descriptor.worldTransform));
+    setRenderableTransform(
+        *engine, sceneRenderable.renderable, descriptor.worldTransform);
     sceneRenderables.push_back(sceneRenderable);
   }
   if (sceneRenderables.empty()) {
@@ -2586,7 +2460,6 @@ int main(int argc, char* argv[])
       profile.contactDebugMs += elapsedMs(phaseStart);
     }
 
-    auto& transforms = engine->getTransformManager();
     phaseStart = ProfileAccumulator::Clock::now();
     auto descriptors = extractRenderables(*dartScene.world);
     profile.extractionMs += elapsedMs(phaseStart);
@@ -2616,11 +2489,13 @@ int main(int argc, char* argv[])
     synchronizeSceneRenderables(
         *engine,
         *scene,
-        materials,
-        textureCache,
         descriptors,
         sceneRenderables,
-        loggedUnsupportedRenderableIds);
+        loggedUnsupportedRenderableIds,
+        [&](const RenderableDescriptor& descriptor) {
+          return createRenderableFromDescriptor(
+              *engine, materials, textureCache, descriptor);
+        });
     bool selectedRenderableStillVisible = selectedRenderableId == 0;
     for (SceneRenderable& sceneRenderable : sceneRenderables) {
       const auto descriptor = std::find_if(
@@ -2633,19 +2508,12 @@ int main(int argc, char* argv[])
         continue;
       }
 
-      transforms.setTransform(
-          transforms.getInstance(sceneRenderable.renderable.entity),
-          toFilamentTransform(descriptor->worldTransform));
       const bool isSelected = descriptor->id == selectedRenderableId;
       if (isSelected) {
         selectedRenderableStillVisible = true;
       }
-      updateRenderableSelection(
-          sceneRenderable.renderable,
-          toRgba(descriptor->material.rgba),
-          isSelected);
-      applyRenderableShadowSettings(
-          *engine, sceneRenderable.renderable, descriptor->material);
+      updateSceneRenderableFromDescriptor(
+          *engine, sceneRenderable, *descriptor, isSelected);
     }
     if (!selectedRenderableStillVisible) {
       selectedRenderableId = 0;
