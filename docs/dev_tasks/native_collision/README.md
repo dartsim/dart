@@ -135,89 +135,34 @@
       records JSON for the built-in `DartCollisionDetector` path. The broad
       local guard was refreshed at `892e50d02e4` and passed every checked
       subset after the latest gz compatibility and package-smoke changes.
-- [x] CI Linux has a scheduled/manual collision benchmark guard job that runs
-      the broad `collision-reference` benchmark check and uploads the
-      `.benchmark_results/collision_check_*.json` artifacts.
-- [ ] The single north-star PR is not complete yet. The checkpoint commit proves
-      native default, feature parity, gz-physics compatibility, performance,
-      disabled-legacy-backend builds, native-only pixi defaults, and explicit
-      reference opt-in locally. The current dependency-metadata slice also
-      proves default/wheel Pixi metadata isolation and a repaired py312 wheel
-      artifact inspection. The current API-cleanup slice also proves
-      clean dartpy `DartCollisionDetector` exposure, absence of legacy Python
-      detector aliases, reference-enabled dartpy link isolation, explicit C++
-      reference-detector creation for
-      tests/benchmarks, and native-backed direct C++ legacy `create()` entry
-      points. User-facing examples/tutorials have also been moved off old
-      collision components, and package component names are now split into
-      native-backed compatibility facades versus explicit reference targets.
-      Installed and source-tree legacy detector headers are also native-backed
-      facades, with old-engine implementation files under explicit reference
-      paths, and lint now guards that runtime source isolation. The remaining
-      work is downstream migration/deprecation evidence, final
-      compatibility-facade/runtime cleanup, PR evidence transfer, explicit
-      API/scalability/performance architecture gate evidence, dev-task
-      cleanup, and final runtime cleanup that removes old external-engine
-      implementations while preserving only native-backed compatibility
-      facades required by downstream migration.
-      A current local `pixi run test-all` rerun exposed a validation
-      robustness gap rather than a native-collision behavior regression:
-      stale cached optional `libccd` paths could leave the native test build
-      depending on a removed default-environment library. The CMake cache
-      reset repair is in the working tree, and
-      `pixi run build-tests ON Release` now completes with
-      `test_libccd_algorithms` excluded when
-      `libccd` is unavailable. A fresh full
-      `DART_PARALLEL_JOBS=15 CTEST_PARALLEL_LEVEL=15 pixi run test-all` rerun
-      passed at `da532729bec` before the later native shape-taxonomy cleanup.
-      The next audit rerun exposed one stale native `ShapeType` switch in the
-      VSG geometry builder that still referenced removed cone, heightfield, and
-      point-cloud native tags. That stale switch is now fixed, the focused
-      Debug `dart-gui-vsg` target passes, and a fresh full
-      `DART_PARALLEL_JOBS=15 CTEST_PARALLEL_LEVEL=15 pixi run test-all` rerun
-      passes for the current local state. A follow-up full
-      `DART_PARALLEL_JOBS=15 CTEST_PARALLEL_LEVEL=15 pixi run test-all` rerun
-      at `864dd56d944c` also passes after the durable onboarding architecture
-      docs and compatibility-facade policy cleanup. Final validation will still
-      need another full rerun after the remaining CI/migration/runtime-cleanup
-      work changes the PR state. The latest PR CI refresh on head
-      `714d220d82a` exposed macOS arm64 Release unused-variable test cleanup
-      plus Debug CCD, VSG headless, and world fallback-test robustness gaps;
-      the same closed-PR Linux Debug run exposed dangling world query result
-      object pointers for native sphere/capsule casts. Focused local repairs
-      and target validation are recorded in `03-evidence-gates.md`.
-      The latest pushed code/evidence head `1e1faf6feb1` fixes the closed-PR
-      native-only capsule-vs-convex CCD CI failure and the benchmark guard
-      hidden-artifact upload. Primary local validation on that head passed
-      `pixi run lint`, `pixi run build`, and `pixi run test-unit` with
-      277/277 tests, including `test_ccd` and all 29 `collision-native` tests.
-      Manual workflow-dispatch reference evidence on the same head passed
-      native-only CI, gz-physics, the full dartpy wheel matrix, and uploaded
-      `collision-benchmark-guard-25887939088-1`; broad CI Linux Release is
-      still a slow reference-only tail and should not block local progress. A
-      fresh local
-      `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
-      pass on docs-only head `f5d4f9ee932` refreshed the current branch local
-      gate: linting, build, unit tests, simulation-experimental tests, Python
-      tests, and documentation all passed with native-only collision defaults.
-      The current local audit checkpoint also tightened
-      `check-collision-runtime-isolation` for top-level legacy facade headers
-      and added `audit-collision-compat-facades` to lint/check-lint so retained
-      legacy names are continuously checked as native-backed routes; both
-      `pixi run lint` and `pixi run check-lint` pass with those guards enabled.
-      A final local `pixi run test-all` after that audit checkpoint passed all
-      6 top-level gates. `07-pr-evidence-transfer.md` now stages the
-      PR-template-shaped evidence packet for the eventual review surface.
-      The clean-API evidence baseline `ec6f6f43112` makes the dartpy collision
-      API clean and default-deprecates retained C++ compatibility facade names.
-      Local `pixi run lint`, `pixi run build`, `pixi run test-unit`,
-      `pixi run test-py`, `pixi run -e gazebo test-gz`, and the native
-      compatibility package smoke all passed before that push. Follow-up
-      policy/docs commit `aa3ccce70c7` records that FCL/Bullet/ODE build
-      switches are only for explicit reference components and passed
-      `pixi run lint`. GitHub reports no Actions runs for either commit because
-      branch pushes to `feature/new_coll` do not match the workflow `push`
-      filters and PR #2652 remains closed.
+- [x] CI Linux contains a scheduled/manual collision benchmark guard job that
+      runs the broad `collision-reference` benchmark check and uploads the
+      `.benchmark_results/collision_check_*.json` artifacts when a workflow
+      surface is available.
+- [ ] Final benchmark-guard evidence on the completing head is still open. The
+      last manual artifact evidence is tied to `1e1faf6feb1`; later
+      feature-branch pushes do not start GitHub Actions while PR #2652 is
+      closed.
+- [ ] Final PR/CI review surface evidence is still open. The implementation is
+      locally validated and prior manual workflow-dispatch runs are reference
+      evidence, but the final review surface must be maintainer-selected
+      because PR #2652 is closed.
+- [ ] Downstream migration/deprecation finalization is still open. The local
+      contract, C++ deprecation option, clean dartpy API, gz-physics smoke,
+      package smoke, and link inspections exist; final downstream/PR evidence
+      still has to prove retained names are migration facades rather than
+      runtime backend selectors.
+- [ ] Final compatibility-facade/runtime cleanup policy is still open. The
+      current reference-file audit found no unreferenced old-engine
+      implementation files to delete; remaining FCL/Bullet/ODE code is
+      intentional `collision-reference-*` test/benchmark code.
+- [ ] Final validation after the completing code state is still open. At
+      minimum this means `pixi run lint`, `pixi run test-all`, and any
+      maintainer-selected CI gates whose failures are not covered locally.
+- [ ] Final evidence transfer and dev-task cleanup are still open.
+      `07-pr-evidence-transfer.md` and `PR-DRAFT.md` stage the review packet,
+      but this folder must stay until that evidence is moved to the completing
+      PR and the folder is deleted in the same PR.
 
 ## Goal
 

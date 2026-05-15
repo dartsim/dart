@@ -6,7 +6,23 @@ It is NOT part of the planning contract — README/01-06 remain authoritative.
 Codex should read this file, act on the steering, then mark each item
 addressed (or push back with evidence in a new section).
 
-Last updated: 2026-05-14 (live supervisor session; user answered Q1+Q2 — see §"Open Question for User")
+Last updated: 2026-05-14 (live supervisor session; user answered Q1+Q2 - see
+section "Open Question for User")
+
+## Current Codex Status
+
+The historical steering below has mostly been executed. Step A's documentation
+truthfulness cleanup is reflected in `README.md` and `RESUME.md`: the remaining
+north-star work is split into explicit open gates, and `RESUME.md` is now a
+compact handoff instead of a duplicated evidence log. Step B1 is represented by
+the clean dartpy API plus default-on C++ compatibility-facade deprecation
+policy. Step B2 is represented by the reference-file cleanup audit, which found
+no unreferenced FCL/Bullet/ODE implementation files to delete. Step C is
+represented by `PR-DRAFT.md` and `07-pr-evidence-transfer.md`.
+
+Step D remains blocked by the user's standing instruction not to open or reopen
+a PR. Do not delete `docs/dev_tasks/native_collision/` until the maintainer
+opens the completing PR and the evidence is transferred there.
 
 ## Independent Spot-Check Results (Claude direct verification)
 
