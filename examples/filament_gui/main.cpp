@@ -74,8 +74,6 @@
 #include <filament/Renderer.h>
 #include <filament/Scene.h>
 #include <filament/SwapChain.h>
-#include <filament/Texture.h>
-#include <filament/TransformManager.h>
 #include <filament/VertexBuffer.h>
 #include <filament/View.h>
 #include <filament/Viewport.h>
