@@ -200,7 +200,9 @@
     `--scene coupler-constraint` Filament fixture for paired mimic/coupler rig
     renderables. The `add_delete_skels` runner now routes to a
     `--scene add-delete-skels` Filament fixture for deterministic
-    add/delete-style cube skeleton renderables. The focused GUI unit test now
+    add/delete-style cube skeleton renderables. The `vehicle` runner now routes
+    to a `--scene vehicle` Filament fixture for the SKEL-loaded car, wheel,
+    ground, and obstacle renderables. The focused GUI unit test now
     checks that
     `examples/filament_gui` contains no C++ source/header
     files other than `main.cpp` and that the example has no direct Filament

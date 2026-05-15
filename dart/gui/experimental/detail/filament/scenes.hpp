@@ -74,6 +74,7 @@ enum class ExampleScene
   MixedChain,
   CouplerConstraint,
   AddDeleteSkels,
+  Vehicle,
   DragAndDrop,
   SimpleFrames,
   SoftBodies,
@@ -126,6 +127,12 @@ inline constexpr const char* kAddDeleteSkelsFixtureCubeSkeletonPrefix
     = "visual_add_delete_skels_cube_";
 inline constexpr const char* kAddDeleteSkelsFixtureGroundSkeletonName
     = "visual_add_delete_skels_ground";
+inline constexpr const char* kVehicleFixtureCarSkeletonName
+    = "visual_vehicle_car";
+inline constexpr const char* kVehicleFixtureGroundSkeletonName
+    = "visual_vehicle_ground";
+inline constexpr const char* kVehicleFixtureObstacleSkeletonPrefix
+    = "visual_vehicle_obstacle_";
 inline constexpr const char* kPyramidFixtureSkeletonName = "visual_pyramid";
 inline constexpr const char* kMultiSphereFixtureSkeletonName = "visual_multi_sphere";
 inline constexpr const char* kLineSegmentFixtureSkeletonName = "visual_line_segments";
@@ -171,6 +178,10 @@ inline constexpr std::size_t kCouplerConstraintFixtureBoxCount = 4;
 inline constexpr std::size_t kCouplerConstraintFixtureLineCount = 6;
 inline constexpr std::size_t kAddDeleteSkelsFixtureCubeCount = 5;
 inline constexpr std::size_t kAddDeleteSkelsFixtureGroundCount = 1;
+inline constexpr std::size_t kVehicleFixtureCarBoxCount = 1;
+inline constexpr std::size_t kVehicleFixtureWheelCylinderCount = 4;
+inline constexpr std::size_t kVehicleFixtureGroundCount = 1;
+inline constexpr std::size_t kVehicleFixtureObstacleCount = 2;
 inline constexpr std::size_t kSimpleFramesFixtureBoxCount = 3;
 inline constexpr std::size_t kSimpleFramesFixtureEllipsoidCount = 4;
 inline constexpr std::size_t kSoftBodiesFixtureMinSoftMeshCount = 5;

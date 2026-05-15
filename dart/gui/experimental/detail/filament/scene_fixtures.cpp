@@ -1601,6 +1601,64 @@ DartScene createAddDeleteSkelsScene()
   return scene;
 }
 
+DartScene createVehicleScene()
+{
+  DartScene scene;
+  scene.world = dart::io::readWorld("dart://sample/skel/vehicle.skel");
+  if (!scene.world) {
+    throw std::runtime_error(
+        "Failed to load vehicle fixture from "
+        "dart://sample/skel/vehicle.skel");
+  }
+  scene.world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  const auto requireSkeleton = [&](const std::string& name) {
+    auto skeleton = scene.world->getSkeleton(name);
+    if (!skeleton) {
+      throw std::runtime_error(
+          "vehicle fixture is missing skeleton: " + name);
+    }
+    return skeleton;
+  };
+
+  auto ground = requireSkeleton("ground skeleton");
+  ground->setName(kVehicleFixtureGroundSkeletonName);
+  if (auto* body = ground->getBodyNode("ground")) {
+    body->setColor(Eigen::Vector3d(0.45, 0.50, 0.45));
+  }
+
+  auto car = requireSkeleton("car_skeleton");
+  car->setName(kVehicleFixtureCarSkeletonName);
+  if (auto* body = car->getBodyNode("main_body")) {
+    body->setColor(Eigen::Vector3d(0.18, 0.36, 0.82));
+  }
+  const std::array<const char*, kVehicleFixtureWheelCylinderCount> wheelNames{
+      "wheel_front_left",
+      "wheel_front_right",
+      "wheel_back_left",
+      "wheel_back_right"};
+  for (const char* wheelName : wheelNames) {
+    if (auto* wheel = car->getBodyNode(wheelName)) {
+      wheel->setColor(Eigen::Vector3d(0.06, 0.06, 0.07));
+    }
+  }
+
+  const std::array<const char*, kVehicleFixtureObstacleCount> obstacles{
+      "skeleton_box1", "skeleton_box2"};
+  for (std::size_t i = 0; i < obstacles.size(); ++i) {
+    auto obstacle = requireSkeleton(obstacles[i]);
+    obstacle->setName(
+        std::string(kVehicleFixtureObstacleSkeletonPrefix) + std::to_string(i));
+    if (auto* body = obstacle->getBodyNode("box")) {
+      body->setColor(
+          i == 0 ? Eigen::Vector3d(0.86, 0.42, 0.20)
+                 : Eigen::Vector3d(0.78, 0.64, 0.18));
+    }
+  }
+
+  return scene;
+}
+
 DartScene createDragAndDropScene()
 {
   DartScene scene;

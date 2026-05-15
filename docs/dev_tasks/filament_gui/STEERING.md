@@ -162,7 +162,7 @@ version hashing, and `extractRenderables`.
    option parsing and dispatch, while
    `dart/gui/experimental/detail/filament/scene_fixtures.hpp` and `.cpp` own
    MVP, hello-world, boxes, hardcoded-design, rigid-chain, rigid-loop,
-   mixed-chain, coupler-constraint, add-delete-skels, drag-and-drop,
+   mixed-chain, coupler-constraint, add-delete-skels, vehicle, drag-and-drop,
    simple-frames, soft-bodies, point-cloud, capsule-ground-contact,
    simulation-event-handler, polyhedron, heightmap, and G1 DART world fixtures.
    `dart/gui/experimental/detail/filament/application.hpp` and `.cpp` now own
@@ -171,7 +171,7 @@ version hashing, and `extractRenderables`.
    `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`
    now own scene fixture requirement counting and MVP/G1/hello-world/boxes/
    hardcoded-design/rigid-chain/rigid-loop/mixed-chain/coupler-constraint/
-   add-delete-skels/drag/simple-frames/soft-bodies/point-cloud/
+   add-delete-skels/vehicle/drag/simple-frames/soft-bodies/point-cloud/
    capsule-ground-contact/simulation-event-handler/polyhedron/heightmap
    validation gates.
 3. **Completed: generalize the public-header leakage scan.**

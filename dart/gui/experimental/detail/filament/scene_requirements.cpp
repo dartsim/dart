@@ -183,6 +183,22 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Box) {
     ++counts.addDeleteSkelsGrounds;
   }
+  if (descriptor.skeletonName == kVehicleFixtureCarSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.vehicleCarBoxes;
+  }
+  if (descriptor.skeletonName == kVehicleFixtureCarSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Cylinder) {
+    ++counts.vehicleWheelCylinders;
+  }
+  if (descriptor.skeletonName == kVehicleFixtureGroundSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.vehicleGrounds;
+  }
+  if (descriptor.skeletonName.starts_with(kVehicleFixtureObstacleSkeletonPrefix)
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.vehicleObstacles;
+  }
   if (descriptor.skeletonName == kPyramidFixtureSkeletonName
       && descriptor.geometry.kind == ShapeKind::Pyramid) {
     ++counts.pyramids;
@@ -532,6 +548,39 @@ bool validateSceneDescriptorContent(
         output);
   }
 
+  if (scene == ExampleScene::Vehicle) {
+    if (!requireEqual(
+            counts.vehicleCarBoxes,
+            kVehicleFixtureCarBoxCount,
+            "vehicle scene",
+            "visible car body renderable descriptor",
+            output)) {
+      return false;
+    }
+    if (!requireEqual(
+            counts.vehicleWheelCylinders,
+            kVehicleFixtureWheelCylinderCount,
+            "vehicle scene",
+            "visible wheel cylinder renderable descriptors",
+            output)) {
+      return false;
+    }
+    if (!requireEqual(
+            counts.vehicleGrounds,
+            kVehicleFixtureGroundCount,
+            "vehicle scene",
+            "visible ground renderable descriptor",
+            output)) {
+      return false;
+    }
+    return requireEqual(
+        counts.vehicleObstacles,
+        kVehicleFixtureObstacleCount,
+        "vehicle scene",
+        "visible obstacle box renderable descriptors",
+        output);
+  }
+
   if (scene == ExampleScene::Heightmap) {
     return requireEqual(
         counts.heightmaps,
@@ -860,6 +909,35 @@ bool validateCreatedSceneContent(
         created.addDeleteSkelsGrounds,
         expected.addDeleteSkelsGrounds,
         "add-delete-skels ground renderables",
+        output);
+  }
+
+  if (scene == ExampleScene::Vehicle) {
+    if (!requireCreatedEqual(
+            created.vehicleCarBoxes,
+            expected.vehicleCarBoxes,
+            "vehicle car body renderables",
+            output)) {
+      return false;
+    }
+    if (!requireCreatedEqual(
+            created.vehicleWheelCylinders,
+            expected.vehicleWheelCylinders,
+            "vehicle wheel cylinder renderables",
+            output)) {
+      return false;
+    }
+    if (!requireCreatedEqual(
+            created.vehicleGrounds,
+            expected.vehicleGrounds,
+            "vehicle ground renderables",
+            output)) {
+      return false;
+    }
+    return requireCreatedEqual(
+        created.vehicleObstacles,
+        expected.vehicleObstacles,
+        "vehicle obstacle renderables",
         output);
   }
 

@@ -55,6 +55,8 @@ DartScene createCouplerConstraintScene();
 
 DartScene createAddDeleteSkelsScene();
 
+DartScene createVehicleScene();
+
 DartScene createDragAndDropScene();
 
 DartScene createSimpleFramesScene();
