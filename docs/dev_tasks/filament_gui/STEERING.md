@@ -62,6 +62,9 @@ recommended maintainability slices:
 - `dart/gui/experimental/detail/filament/materials/` owns the Filament material
   shader sources, and `dart/gui/experimental/detail/filament/testing/` owns the
   opt-in headless smoke CMake/Python helpers.
+- `dart/gui/experimental/detail/filament/filament_sources.cmake` owns the
+  private backend source/header list, material inputs, and smoke-test helper
+  paths that the minimal example CMake file consumes.
 - `dart/gui/experimental/detail/filament/scene_requirements.hpp` and `.cpp`
   own created-renderable content counting for startup validation.
 - `dart/gui/experimental/detail/filament/scene_startup.hpp` and `.cpp` own
