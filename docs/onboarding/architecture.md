@@ -911,16 +911,16 @@ CollisionDetector
 
 ### External Libraries:
 
-| Library                   | Purpose             | Usage                      |
-| ------------------------- | ------------------- | -------------------------- |
-| **Eigen**                 | Linear algebra      | Math operations throughout |
-| **FCL** (optional)        | Collision detection | Default collision backend  |
-| **Bullet** (optional)     | Collision detection | Alternative backend        |
-| **ODE** (optional)        | Collision/physics   | Alternative backend        |
-| **urdfdom** (optional)    | URDF parsing        | Robot model loading        |
-| **tinyxml2** (optional)   | XML parsing         | File I/O                   |
-| **OpenGL/OSG** (optional) | Visualization       | GUI applications           |
-| **assimp** (optional)     | 3D model loading    | Mesh import                |
+| Library                  | Purpose             | Usage                      |
+| ------------------------ | ------------------- | -------------------------- |
+| **Eigen**                | Linear algebra      | Math operations throughout |
+| **FCL** (optional)       | Collision detection | Default collision backend  |
+| **Bullet** (optional)    | Collision detection | Alternative backend        |
+| **ODE** (optional)       | Collision/physics   | Alternative backend        |
+| **urdfdom** (optional)   | URDF parsing        | Robot model loading        |
+| **tinyxml2** (optional)  | XML parsing         | File I/O                   |
+| **Filament/GLFW3/ImGui** | Visualization       | GUI applications           |
+| **assimp** (optional)    | 3D model loading    | Mesh import                |
 
 ### Build System:
 
@@ -1038,7 +1038,7 @@ This architecture makes DART suitable for:
 │   ├── simulation/           # World and simulation loop / time stepping
 │   ├── math/optimization/    # Optimization helpers
 │   ├── optimizer/            # Deprecated headers forwarding to math/optimization
-│   └── gui/                  # Visualization (OSG, ImGui)
+│   └── gui/                  # Visualization (Filament, GLFW3, ImGui)
 ├── CMakeLists.txt            # Build configuration
 └── README.md                 # Project overview
 ```

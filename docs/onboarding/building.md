@@ -45,7 +45,7 @@ Install optional dependencies:
 sudo apt install \
   coinor-libipopt-dev libbullet-dev \
   libtinyxml2-dev liburdfdom-dev liburdfdom-headers-dev \
-  libopenscenegraph-dev libnlopt-cxx-dev liboctomap-dev libode-dev \
+  libglfw3-dev libnlopt-cxx-dev liboctomap-dev libode-dev \
   libspdlog-dev libyaml-cpp-dev ocl-icd-opencl-dev opencl-headers \
   opencl-clhpp-headers
 ```
@@ -64,8 +64,7 @@ brew install assimp cmake eigen fmt fcl osrf/simulation/sdformat13
 Install optional dependencies:
 
 ```bash
-brew install bullet ipopt nlopt octomap ode \
-  open-scene-graph --HEAD \
+brew install bullet glfw ipopt nlopt octomap ode \
   spdlog tinyxml2 urdfdom yaml-cpp
 ```
 
@@ -82,7 +81,7 @@ Install optional dependencies:
 ```bash
 vcpkg install --triplet x64-windows \
   assimp eigen3 fcl fmt spdlog bullet3 glfw3 nlopt ode \
-  opencl opengl osg pagmo2 nanobind tinyxml2 urdfdom yaml-cpp
+  opencl opengl pagmo2 nanobind tinyxml2 urdfdom yaml-cpp
 ```
 
 ### Arch Linux (experimental)
@@ -97,8 +96,8 @@ Install optional dependencies:
 
 ```bash
 yay -S \
-  bullet coin-or-ipopt nlopt octomap ode opencl-clhpp \
-  opencl-headers opencl-icd-loader openscenegraph pagmo spdlog tinyxml2 \
+  bullet coin-or-ipopt glfw nlopt octomap ode opencl-clhpp \
+  opencl-headers opencl-icd-loader pagmo spdlog tinyxml2 \
   urdfdom nanobind
 ```
 
@@ -137,10 +136,11 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    ```bash
    DART_BUILD_DARTPY_OVERRIDE=OFF pixi run config
    DART_BUILD_GUI_OVERRIDE=OFF pixi run config
-   DART_BUILD_GUI_RAYLIB_OVERRIDE=ON DART_USE_SYSTEM_RAYLIB_OVERRIDE=OFF pixi run config
+   DART_FETCH_FILAMENT_OVERRIDE=ON pixi run config
    ```
 
-   Note: Official dartpy wheels include OSG/GUI; keep `DART_BUILD_GUI` enabled when validating dartpy changes.
+   Note: Official dartpy wheels include the Filament-backed GUI surface; keep
+   `DART_BUILD_GUI` enabled when validating dartpy GUI changes.
 
 3. Build and test:
 
@@ -216,8 +216,8 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    ```
 
    `scripts/run_cpp_example.py` centralizes example-specific CMake
-   requirements so examples such as `raylib` and `filament_gui` can still use
-   the same command shape.
+   requirements so routed GUI examples and `filament_gui` can use the same
+   command shape.
 
 5. (Optional) Gazebo / gz-physics integration test:
 
@@ -272,20 +272,16 @@ For all available CMake configuration options and their defaults, refer to [`CMa
 
 - `CMAKE_BUILD_TYPE` - Build configuration (Release, Debug, etc.). Only applies to single-config generators (e.g., Ninja, Unix Makefiles). Multi-config generators (Visual Studio, Xcode) expose the configuration inside the IDE or via `cmake --build` `--config`.
 - `DART_BUILD_DARTPY` - Enable Python bindings
-- `DART_BUILD_GUI` - Enable the current legacy OpenSceneGraph GUI
-- `DART_BUILD_GUI_FILAMENT` - Enable the experimental Filament GUI target and example
+- `DART_BUILD_GUI` - Enable the Filament-backed GUI library
+- `DART_BUILD_GUI_FILAMENT` - Enable the Filament GUI executable and smoke-test target
 - `DART_USE_SYSTEM_FILAMENT` - Discover Filament from an installed package or `Filament_ROOT`
-- `DART_FETCH_FILAMENT` - Explicitly fetch the pinned Linux x86_64 Filament archive for experiments
-- `DART_BUILD_GUI_RAYLIB` - Enable the legacy experimental Raylib smoke path (slated for removal with the Filament promotion window)
+- `DART_FETCH_FILAMENT` - Fetch the pinned Linux x86_64 Filament archive when no packaged Filament install is available
 - `DART_BUILD_TESTS` - Build C++ tests (wraps the standard `BUILD_TESTING` option)
-- `DART_BUILD_EXAMPLES` - Build the GUI-based example targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI=OFF`)
-- `DART_BUILD_TUTORIALS` - Build the GUI-based tutorial targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI=OFF`)
+- `DART_BUILD_EXAMPLES` - Build the maintained example targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI=OFF`)
+- `DART_BUILD_TUTORIALS` - Kept for compatibility; legacy OSG tutorials are skipped while Filament is the active renderer
 
-Filament is the intended replacement direction for maintained visualization,
-but it is still explicit and experimental. Do not treat Raylib or OSG as shapes
-for new public GUI APIs; follow
-[`docs/dev_tasks/filament_gui/08-north-star-migration.md`](../dev_tasks/filament_gui/08-north-star-migration.md)
-for promotion work.
+Filament with GLFW3 and Dear ImGui is the maintained renderer path. The OSG GUI
+and Raylib smoke path are no longer buildable renderer options.
 
 ### Platform-Specific Configuration Examples
 

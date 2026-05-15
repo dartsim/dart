@@ -1,15 +1,17 @@
 # Filament GUI North-Star Migration Plan
 
+This plan has been executed in the current promotion branch. See
+`07-completion-audit.md` for the current state and remaining follow-up scope.
+
 ## North star
 
-DART's maintained built-in visualization should become a Filament-backed
-`dart::gui` implementation. OpenSceneGraph (OSG) and the Raylib smoke path
-should be removed in the same major-version migration window after the new GUI
-surface is ready.
-This is a full replacement target: both the main visualization API and current
-experimental visualization paths should converge onto Filament, and redundant
-renderer-neutral layers that existed only to keep multiple backends viable
-should be deleted or collapsed after the Filament API boundary is promoted.
+DART's maintained built-in visualization is now a Filament-backed `dart::gui`
+implementation. OpenSceneGraph (OSG) and the Raylib smoke path were removed in
+the same major-version migration window.
+This was a full replacement target: both the main visualization API and
+experimental visualization paths converged onto Filament, and redundant
+renderer-neutral layers that existed only to keep multiple backends viable were
+deleted or collapsed after the Filament API boundary was promoted.
 
 The public API should be owned by DART and should describe DART concepts:
 worlds, cameras, renderables, debug draws, selections, tools, panels, frame
@@ -19,26 +21,12 @@ Keep abstractions only when they express stable DART concepts or make the
 Filament implementation testable; do not preserve indirection whose only job is
 to support alternate renderer implementations.
 
-The MVP `examples/filament_gui` is only evidence that the renderer can work.
-It is not the target API shape. Future maintained examples should use a clean
-GUI layer, not example-local renderer plumbing.
-PR #2647 should be treated as that MVP evidence only. Completing this dev task
-requires the separate north-star branch/PR to finish the Filament promotion,
-replace the main and experimental visualization surfaces with that promoted
-`dart::gui`, and remove backend-agnostic scaffolding whose only remaining
-purpose was to support multiple renderer implementations.
-A concrete completion metric for that promotion is that maintained example code,
-including files under `examples/filament_gui/` until that example is replaced,
-has zero direct Filament header includes. Filament headers should live only in
-private implementation units below the promoted GUI component, while examples
-exercise DART-owned viewer, scene, debug, capture, and tool APIs.
-A companion maintainability metric is that any surviving
-`examples/filament_gui/` tree contains only a minimal `main.cpp` executable
-entry point, plus unavoidable build/docs files. Renderer setup, frame
-lifecycle, material and texture resources, scene synchronization, capture,
-overlays, input translation, and reusable fixture logic should be encapsulated
-in `dart::gui` or its private implementation units rather than remaining as
-example-local architecture.
+The MVP `examples/filament_gui` provided evidence that the renderer could work.
+The current promotion branch moved the renderer plumbing under private
+`dart::gui` implementation units and keeps the example tree to a minimal
+`main.cpp` entry point plus unavoidable build/docs files. Filament headers live
+only in private implementation units below the promoted GUI component, while
+examples exercise DART-owned viewer, scene, debug, capture, and tool APIs.
 
 ## Compatibility position
 

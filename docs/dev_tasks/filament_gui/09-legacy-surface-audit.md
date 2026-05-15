@@ -1,9 +1,10 @@
 # Legacy GUI Surface Audit
 
-This audit supports Phase A of the north-star migration plan. It is not a
-removal patch. It identifies the current OSG/Raylib-shaped surfaces that must be
-replaced, made private, or deleted before a Filament-backed `dart::gui` can be
-called complete.
+This audit supported Phase A of the north-star migration plan. It identified
+the OSG/Raylib-shaped surfaces that had to be replaced, made private, or
+deleted before a Filament-backed `dart::gui` could be called complete. The
+current promotion branch has executed that removal; see
+`07-completion-audit.md` for the current state.
 
 ## Audit Commands
 

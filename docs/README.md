@@ -18,8 +18,8 @@ Located in `onboarding/` - **Architecture guides for developers:**
 - [Aspect System](onboarding/aspect-system.md) - Aspect/State/Properties design and implementation
 - [Dynamics System](onboarding/dynamics.md) - Articulated body system and kinematics
 - [Constraint Solver](onboarding/constraints.md) - Constraint resolution and collision response
-- [GUI & Rendering](onboarding/gui-rendering.md) - Current OpenSceneGraph
-  integration details and Filament replacement status
+- [GUI & Rendering](onboarding/gui-rendering.md) - Filament renderer
+  architecture, workflow, and verification
 - [Python Bindings](onboarding/python-bindings.md) - nanobind bindings architecture
 - [Build System](onboarding/build-system.md) - CMake internals and dependency analysis
 - [Building from Source](onboarding/building.md) - Step-by-step build instructions
@@ -45,4 +45,4 @@ _Format: ReStructuredText (RST) for Sphinx/ReadTheDocs publishing_
 - **Understanding architecture?** → [onboarding/architecture.md](onboarding/architecture.md)
 - **Using AI agent workflows?** → [ai/README.md](ai/README.md) + [onboarding/ai-tools.md](onboarding/ai-tools.md)
 - **Using DART API?** → [dart.readthedocs.io](https://dart.readthedocs.io/)
-- **Looking for examples?** → [examples/](../examples/) and [tutorials/](../tutorials/)
+- **Looking for examples?** → [examples/](../examples/)

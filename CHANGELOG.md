@@ -20,6 +20,10 @@
   - Removed deprecated experimental example and benchmark directories.
   - Removed C3D/VSK utilities, parsers, and sample data. ([#2363](https://github.com/dartsim/dart/pull/2363))
   - Dropped the deprecated `docker/dev/v6.15` images; use the maintained v6.16 images instead.
+  - Promoted Filament with GLFW3 and Dear ImGui as the only maintained renderer,
+    replacing OpenSceneGraph and the Raylib experiment. The legacy OSG GUI
+    sources, OSG/Raylib CMake dependency discovery, legacy C++/Python GUI
+    examples and tutorials, and legacy dartpy GUI bindings/stubs were removed.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+
@@ -50,7 +54,8 @@
 - Tooling and Docs
   - Added AI-native documentation architecture with AGENTS.md, module-specific guides, slash commands, and command sync automation. ([#2446](https://github.com/dartsim/dart/pull/2446), [#2447](https://github.com/dartsim/dart/pull/2447), [#2448](https://github.com/dartsim/dart/pull/2448), [#2449](https://github.com/dartsim/dart/pull/2449))
   - Added the shared `docs/ai/` agent entrypoint and tightened AI workflow verification, approval-boundary checks, and dev-task cleanup guidance. ([#2649](https://github.com/dartsim/dart/pull/2649))
-  - Updated GUI onboarding and module agent docs to identify OSG and Raylib as legacy current-state details, document the experimental Filament build options, and route future GUI API work to the Filament replacement plan.
+  - Updated GUI onboarding, module agent docs, ReadTheDocs pages, examples, and tutorial indexes to identify Filament as the maintained renderer and the removed OSG/Raylib paths as unsupported.
+  - Removed the OpenSceneGraph GUI implementation sources, Raylib experiment, legacy C++ and Python GUI examples/tutorials, legacy dartpy GUI bindings/stubs, and OSG/Raylib dependency discovery. Filament with GLFW3 and Dear ImGui is now the official renderer surface.
   - Extended AI command and skill synchronization so Claude Code, OpenCode, and Codex expose the same DART workflow capabilities with parity checks for generated command and skill files.
   - Promoted prompt-only AI workflows into synced workflow commands and removed the separate prompt-template folder.
   - Fixed generated Codex DART skill frontmatter so strict YAML parsers load AI workflow skills without warnings. ([#2546](https://github.com/dartsim/dart/pull/2546))
@@ -187,9 +192,7 @@
     MVP fixture for broad primitive, mesh, point-cloud, heightmap, soft-mesh,
     and robot visual coverage. The `rigid_cubes` runner now routes to the
     `--scene boxes` Filament fixture for dynamic cube-grid coverage. The
-    `box_stacking` runner now routes to the same Filament boxes fixture while
-    its standalone OSG/ImGui source remains legacy comparison material for
-    solver and gravity controls. The example tree is left as a minimal
+    `box_stacking` runner now routes to the same Filament boxes fixture. The example tree is left as a minimal
     `main.cpp` entry point plus CMake and README files. The `empty` runner now
     routes to the `--scene drag-and-drop` Filament fixture for minimal
     interactive-frame coverage. The `hardcoded_design` runner now routes to a
@@ -208,58 +211,45 @@
     ground, and obstacle renderables. The `hybrid_dynamics` runner now routes
     to a `--scene hybrid-dynamics` Filament fixture for the posed fullbody
     humanoid and ground renderables. The `biped_stand` runner also routes to
-    that Filament fixture for a standing fullbody visual workflow while the
-    legacy standalone source remains available for SPD perturbation controls.
+    that Filament fixture for a standing fullbody visual workflow.
     The `mimic_pendulums` runner now routes to a `--scene mimic-pendulums`
     Filament fixture for the SDF-loaded pendulum rigs, base poles, and ground
-    renderables while the legacy standalone source remains available for the
-    ImGui solver/debug table. The `atlas_puppet` runner now routes to a
+    renderables. The `atlas_puppet` runner now routes to a
     `--scene atlas-puppet` Filament fixture that loads Atlas, exposes generic
-    selectable IK targets for its hands and feet, and keeps the legacy
-    standalone source as comparison material for the OSG teleoperation widget.
+    selectable IK targets for its hands and feet.
     The `hubo_puppet` runner now routes to a `--scene hubo-puppet` Filament
     fixture that loads Hubo, exposes selectable IK targets for its hands, feet,
-    and wrist pegs, and keeps the legacy standalone source as comparison
-    material for the OSG teleoperation widget and support-polygon visual.
+    and wrist pegs.
     The `atlas_simbicon` runner now routes to a `--scene atlas-simbicon`
     Filament fixture that loads the legacy Atlas SDF and ground in the
-    Simbicon start orientation while the legacy standalone source remains
-    available for the gait controller, perturbation shortcuts, and ImGui panel.
+    Simbicon start orientation.
     The `operational_space_control` runner now routes to a
     `--scene operational-space-control` Filament fixture that loads the WAM arm,
     runs the task-space controller through a private scene pre-step hook, and
     exposes the red target as a selectable `SimpleFrame`.
     The `wam_ikfast` runner now routes to a `--scene wam-ikfast` Filament
     fixture that loads the WAM arm, ground, and end-effector target through
-    descriptor-owned renderables while the legacy standalone source remains
-    available for IKFast solver and keyboard interaction comparison.
+    descriptor-owned renderables.
     The `fetch` runner now routes to a `--scene fetch` Filament fixture that
     loads the legacy MJCF pick-and-place world, applies the initial robot and
     object pose, and exposes the target frame through descriptor-owned
-    renderables while the legacy standalone source remains available for its
-    ImGui panel and OSG drag controls.
+    renderables.
     The `tinkertoy` runner now routes to a `--scene tinkertoy` Filament fixture
     that recreates the legacy builder's initial block assemblies, target
-    marker, force line, and reference axes through descriptor-owned renderables
-    while the legacy standalone source remains available for its ImGui panel,
-    mouse picking, and block-add/delete controls.
+    marker, force line, and reference axes through descriptor-owned renderables.
     The `joint_constraints` runner now routes to a `--scene joint-constraints`
     Filament fixture that loads the legacy fullbody world and runs the SPD
     balance controller through the same private scene pre-step hook.
     The `free_joint_cases` runner now routes to a `--scene free-joint-cases`
     Filament fixture for the zero-gravity free-joint bodies and transparent
-    torque-free reference boxes while the legacy standalone source remains
-    available for the ImGui numeric checks and reference-model controls.
+    torque-free reference boxes.
     The `human_joint_limits` runner now routes to a
     `--scene human-joint-limits` Filament fixture for the Kima human visual,
     DART joint-limit enforcement, and descriptor-owned mesh, multi-sphere,
-    box, and ground renderables while the legacy standalone source remains
-    available for the custom TinyDNN-backed arm and leg constraints.
+    box, and ground renderables.
     The `lcp_physics` runner now routes to a `--scene lcp-physics` Filament
     fixture for deterministic mass-ratio, stacking, domino, ball-drop, and
-    ground contact renderables while the legacy standalone source remains
-    available for solver controls, plots, scenario switching, and frame
-    recording.
+    ground contact renderables.
     The focused GUI unit test now checks that `examples/filament_gui` contains
     no C++ source/header files other than `main.cpp`, that the example has no
     direct Filament header includes, and that `main.cpp` stays a single-include
@@ -277,9 +267,8 @@
     coverage now checks the analyzer's basic mode, contrast mode, and default
     CLI mode against synthetic PPM fixtures, and the example-runner tests guard
     that the CMake smoke registration keeps those analysis modes wired.
-    The north-star audit now also maps the legacy OSG/Raylib
-    GUI surfaces that must be replaced, made private, or removed during
-    first-class Filament promotion. The renderer-hidden debug descriptor path
+    The north-star audit now records the removed OSG/Raylib GUI surfaces and
+    the remaining Filament-only renderer ownership boundary. The renderer-hidden debug descriptor path
     also covers
     support-polygon outlines
     and support-centroid markers, plus arrowheads for contact normal and force

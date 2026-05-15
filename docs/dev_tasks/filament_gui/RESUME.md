@@ -1,5 +1,9 @@
 # Resume: Filament GUI Replacement
 
+This resume file is retained as historical handoff material from the migration
+work. See `07-completion-audit.md` for the current promotion-branch state and
+remaining follow-up scope.
+
 ## Live Supervisor Steering
 
 A parallel evaluator pass (2026-05-14) wrote `STEERING.md` next to this

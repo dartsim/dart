@@ -56,7 +56,7 @@ namespaces:
 ```
 dartpy/
 ├── io            # File parsers (URDF, SDF, SKEL, MJCF)
-└── gui           # 3D visualization (legacy OpenSceneGraph + ImGui today)
+└── gui           # Filament-backed 3D visualization descriptors and helpers
 ```
 
 - Core classes/functions (dynamics, collision, math, simulation, constraint,
@@ -100,7 +100,7 @@ positions = skel.get_positions()  # Returns ndarray
 - Convert Python arguments to C++ types before releasing the GIL; nanobind casting and NumPy access require holding the GIL.
 - When the C++ API stores raw pointers, add explicit keep-alive/shared-ownership patterns to prevent lifetime bugs in Python.
 
-### OSG Bindings Design
+### GUI Bindings Design
 
 GUI bindings are built only when `DART_BUILD_GUI=ON`. The build wires this up by
 conditionally appending the GUI sources in `python/dartpy/CMakeLists.txt`.
@@ -109,13 +109,12 @@ Project policy: official dartpy wheels build with GUI enabled, so `dartpy.gui`
 is expected to be available in release artifacts and CI. For local headless-only
 builds you can disable GUI, but some examples/tutorials will not run.
 
-The current stable `dartpy.gui` surface mirrors the legacy OSG GUI and should
-not define the replacement API shape. Filament completion work should converge
-`dartpy.gui`, `dartpy.gui.experimental`, and the C++ GUI surface onto
-DART-owned concepts, with Filament, GLFW, Dear ImGui, OpenGL, Vulkan, Metal,
-OSG, and Raylib kept out of public Python-facing contracts. See
-`docs/dev_tasks/filament_gui/08-north-star-migration.md` for the promotion
-plan.
+The maintained `dartpy.gui` surface is built around DART-owned concepts such as
+scene descriptors, renderable descriptors, picking, camera helpers, debug
+draws, screenshot options, and viewer lifecycle state. Filament, GLFW, Dear
+ImGui, OpenGL, Vulkan, Metal, OSG, and Raylib implementation types stay out of
+public Python-facing contracts. See
+`docs/dev_tasks/filament_gui/08-north-star-migration.md` for the promotion plan.
 
 ## Fast Iteration Loop
 

@@ -49,16 +49,14 @@
 ### Key Build Options
 
 ```cmake
-DART_BUILD_GUI          = ON   # Build current legacy OpenSceneGraph GUI
-DART_BUILD_GUI_FILAMENT = OFF  # Build experimental Filament GUI target/example
+DART_BUILD_GUI          = ON   # Build the Filament-backed GUI library
+DART_BUILD_GUI_FILAMENT = ON   # Build the Filament GUI executable/example
 DART_USE_SYSTEM_FILAMENT     = ON   # Use installed Filament or Filament_ROOT
-DART_FETCH_FILAMENT          = OFF  # Explicit Linux x86_64 Filament fetch fallback
-DART_BUILD_GUI_RAYLIB       = OFF  # Build legacy experimental Raylib smoke path
+DART_FETCH_FILAMENT          = ON   # Linux x86_64 pinned Filament fetch fallback
 DART_BUILD_DARTPY           = OFF  # Build Python bindings
 DART_BUILD_PROFILE          = OFF  # Enable profiling support
 DART_ENABLE_SIMD            = OFF  # Enable SIMD instructions
 DART_USE_SYSTEM_IMGUI       = OFF  # Use system ImGui vs fetch from GitHub
-DART_USE_SYSTEM_RAYLIB      = OFF  # Use system Raylib vs fetch from GitHub
 DART_USE_SYSTEM_GOOGLEBENCHMARK = OFF
 DART_USE_SYSTEM_GOOGLETEST  = OFF
 DART_USE_SYSTEM_TRACY       = OFF
@@ -119,9 +117,8 @@ dart/
 ├── constraint/     # Constraint handling
 ├── simulation/     # Simulation framework + time stepping
 ├── utils/          # Parsers and helpers (URDF/SDF)
-└── gui/            # GUI components (OpenSceneGraph backend)
-    ├── render/     # Shape renderers
-    └── detail/     # Implementation details
+└── gui/            # Filament-backed GUI components
+    └── experimental/detail/filament/
 ```
 
 #### 3. dart/gui/CMakeLists.txt
@@ -131,17 +128,14 @@ dart/
 **Responsibilities:**
 
 - Builds `dart-gui` library
-- Integrates OpenSceneGraph
-- Integrates ImGui (system or fetched)
-- Manages render subdirectory
+- Integrates the Filament-backed GUI implementation
+- Integrates GLFW3 and ImGui
 - Generates component headers (`All.hpp`, `gui.hpp`)
 
 **Dependencies:**
 
-- `dart-utils` (dependent target)
-- OpenSceneGraph 3.0.0+ (external)
-- ImGui 1.80+ (external or fetched)
-- OpenGL (for ImGui backend)
+- `dart-gui-experimental`
+- Filament 1.71.3, GLFW3, ImGui, PNG, and JPEG for the private backend
 
 ---
 
@@ -196,33 +190,27 @@ dart/
 
 ### GUI-Specific Dependencies
 
-#### 7. OpenSceneGraph (OSG)
+#### Filament GUI Stack
 
-- **Version:** ≥ 3.0.0, < 4
-- **Recommended:** ≥ 3.7.0 (for macOS 10.15+ compatibility)
-- **Purpose:** 3D visualization and rendering
-- **CMake Module:** `cmake/DARTFindOpenSceneGraph.cmake`
-- **Components Required:**
-  - `osg`
-  - `osgViewer`
-  - `osgManipulator`
-  - `osgGA`
-  - `osgDB`
-  - `osgShadow`
-  - `osgUtil`
-- **Target:** `osg::osg` (INTERFACE IMPORTED)
-- **Platform Notes:**
-  - macOS: Manual build required on osx-64 and osx-arm64 (git SHA: `2e4ae2ea94595995c1fc56860051410b0c0be605`)
-  - Linux: Available via conda-forge
-  - Windows: Available via conda-forge
+- **Version:** Filament 1.71.3 for the pinned Linux x86_64 fetch.
+- **Purpose:** Maintained built-in 3D visualization and interaction renderer.
+- **Windowing/UI:** GLFW3 and Dear ImGui are private backend dependencies.
+- **Options:**
+  - `DART_BUILD_GUI=ON` builds `dart-gui`.
+  - `DART_BUILD_GUI_FILAMENT=ON` builds the `filament_gui` executable.
+  - `DART_FETCH_FILAMENT=ON` fetches the pinned Linux x86_64 Filament archive.
+  - `DART_USE_SYSTEM_FILAMENT=ON` discovers an installed package or `Filament_ROOT`.
 
-#### 8. ImGui (Immediate Mode GUI)
+OpenSceneGraph and Raylib are no longer maintained renderer options in the
+active build.
+
+#### ImGui (Immediate Mode GUI)
 
 - **Version:** ≥ 1.91.9, < 2 (system), v1.84.2 (fetched)
 - **Purpose:** In-scene GUI widgets and overlays
 - **CMake Module:** `cmake/DARTFindimgui.cmake`
 - **Fetch Module:** `dart/external/imgui/CMakeLists.txt`
-- **Backend:** OpenGL2 (for OSG compatibility)
+- **Backend:** Private Filament GUI overlay integration
 - **Target:** `imgui::imgui`
 - **Modes:**
   - **System Mode** (`DART_USE_SYSTEM_IMGUI=ON`): Links against system package
@@ -231,23 +219,9 @@ dart/
     - Tag: `v1.84.2`
     - Not installed with DART (local build only)
 
-#### Raylib (Experimental)
+#### Filament
 
-- **Purpose:** Legacy optional smoke path for windowing + rendering. It is not
-  the maintained GUI replacement direction.
-- **Options:**
-  - **Enable**: `DART_BUILD_GUI_RAYLIB=ON`
-  - **System Mode** (`DART_USE_SYSTEM_RAYLIB=ON`): Links against a system-installed `raylib`
-  - **Fetch Mode** (`DART_USE_SYSTEM_RAYLIB=OFF`): Fetches Raylib from `https://github.com/raysan5/raylib.git` (defaults to the latest git tag)
-  - **Fetch Tag Override**: `DART_RAYLIB_GIT_TAG=<tag>` (only used when fetching)
-- **Note:** In out-of-source example builds, `DART_BUILD_GUI_RAYLIB` may be unset; avoid using it to gate standalone example builds. Prefer guarding only in in-source builds or checking for the `raylib` target.
-- **Migration:** Raylib should be removed in the same major-version window as
-  the OSG GUI removal after the Filament-backed `dart::gui` surface is
-  promoted.
-
-#### Filament (Experimental)
-
-- **Purpose:** Candidate replacement for DART's maintained built-in GUI.
+- **Purpose:** DART's maintained built-in GUI renderer.
 - **Options:**
   - **Enable**: `DART_BUILD_GUI_FILAMENT=ON`
   - **System Mode** (`DART_USE_SYSTEM_FILAMENT=ON`): Finds an installed
@@ -259,9 +233,10 @@ dart/
   New public GUI APIs should describe DART concepts and keep Filament, GLFW,
   Dear ImGui, OpenGL, Vulkan, Metal, OSG, and Raylib types private.
 
-#### 9. OpenGL
+#### OpenGL
 
-- **Purpose:** Graphics rendering (required by ImGui backend)
+- **Purpose:** Platform graphics support used by Filament on OpenGL-capable
+  systems.
 - **Target:** `OpenGL::GL`
 - **Platform:** All (system-provided)
 
@@ -343,8 +318,7 @@ dart/
 
 #### macOS
 
-- **Cocoa Framework** (linked with ImGui)
-- **Git:** ≥ 2.40.0 (for OSG build)
+- **Cocoa Framework** (transitively required by windowing/rendering packages)
 
 ---
 
@@ -396,7 +370,7 @@ DART includes several dependencies as part of the source tree under `dart/extern
 
 - Core: `imgui.cpp`, `imgui_draw.cpp`, `imgui_tables.cpp`, `imgui_widgets.cpp`
 - Headers: `imgui.h`, `imgui_internal.h`, `imconfig.h`, `imstb_*.h`
-- Backend: `imgui_impl_opengl2.cpp/h` (OpenGL2 backend for OSG)
+- Backend integration: private Filament GUI overlay code
 
 **Dependencies:**
 
@@ -464,7 +438,7 @@ Component Dependency Tree:
     │   └── depends: utils (+ utils-urdf when available)
     │
     └── gui
-        └── depends: utils, OpenSceneGraph, ImGui, OpenGL
+        └── depends: gui-experimental, Filament, GLFW3, ImGui
 ```
 
 ### Component Targets
@@ -475,7 +449,7 @@ Component Dependency Tree:
 | `utils`          | `dart-utils`          | `dart`, `tinyxml2`, `libsdformat`                                                                                                   |
 | `utils-urdf`     | `dart-utils-urdf`     | `dart-utils`, `urdfdom`                                                                                                             |
 | `io`             | `dart-io`             | `dart-utils` (plus `dart-utils-urdf` when available)                                                                                |
-| `gui`            | `dart-gui`            | `dart-utils`, `osg::osg`, `imgui::imgui`                                                                                            |
+| `gui`            | `dart-gui`            | `dart-gui-experimental`                                                                                                             |
 | `external-imgui` | `dart-external-imgui` | `OpenGL::GL`                                                                                                                        |
 
 > Bullet and ODE no longer create standalone `dart-collision-*` components. When `DART_BUILD_COLLISION_BULLET` or `DART_BUILD_COLLISION_ODE` is `ON`, their sources and link dependencies are baked directly into the `dart` target.
@@ -503,9 +477,8 @@ dart/
 ├── utils/           # Utility functions
 │   ├── sdf/        # SDF file parser
 │   └── urdf/       # URDF file parser
-└── gui/             # GUI components (OpenSceneGraph backend)
-    ├── render/      # Rendering utilities
-    └── detail/      # Implementation details
+└── gui/             # Filament-backed GUI components
+    └── experimental/detail/filament/
 ```
 
 ---
@@ -534,7 +507,7 @@ dart/
 - **`dart-utils`** - Utility functions
 - **`dart-utils-urdf`** - URDF parser
 - **`dart-io`** - Unified model loading (`dart::io`)
-- **`dart-gui`** - OpenSceneGraph GUI
+- **`dart-gui`** - Filament-backed GUI
 
 ### Python Bindings Target
 
@@ -575,19 +548,16 @@ dart/
 
 Examples are built in `build/.../bin/`:
 
-- `hello_world` - Basic DART usage
-- `atlas_puppet` - Atlas robot control
-- `atlas_simbicon` - Atlas robot with Simbicon controller
-- Various other examples...
+- `filament_gui` - Official Filament renderer and migrated visual scenes
+- `gui_scene_diagnostics` - Backend-hidden GUI descriptor diagnostics
+- `unified_loading`, `headless_simulation`, `speed_test`, `csv_logger`,
+  `rerun` - Maintained non-legacy examples
 
 ### Tutorial Executables
 
-Tutorials are built in `build/.../bin/`:
-
-- `tutorial_biped` / `tutorial_biped_finished`
-- `tutorial_collisions` / `tutorial_collisions_finished`
-- `tutorial_dominoes` / `tutorial_dominoes_finished`
-- `tutorial_multi_pendulum` / `tutorial_multi_pendulum_finished`
+The legacy OpenSceneGraph tutorial executables were removed. The
+`DART_BUILD_TUTORIALS` option remains accepted for compatibility but no longer
+adds those targets.
 
 ### Benchmark Executables (Performance Testing)
 

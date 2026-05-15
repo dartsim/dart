@@ -56,16 +56,15 @@
   `--scene point-cloud` to run the point-cloud/voxel-grid fixture,
   `--scene capsule-ground-contact` to run the capsule contact fixture,
   `--scene simulation-event-handler` to run the sensor-marker fixture,
-  `--scene polyhedron` or `--scene heightmap` to inspect focused legacy
-  visual fixtures, or `--scene g1` to load the Unitree G1 humanoid used in
-  the project README animation.
+  `--scene polyhedron` or `--scene heightmap` to inspect focused visual
+  fixtures, or `--scene g1` to load the Unitree G1 humanoid used in the project
+  README animation.
 
 ## Notes
 
 - Requires DART configured with `DART_BUILD_GUI_FILAMENT=ON`.
 - Links against `dart-gui-experimental` for backend-hidden scene extraction and
-  picking; it does not require the legacy OSG `dart-gui` target when
-  `DART_BUILD_GUI=OFF` and `DART_BUILD_DARTPY=OFF`.
+  picking.
 - Requires a Filament install tree with headers, libraries, and matching
   `matc`; set `Filament_ROOT` if it is not discoverable.
 - This is an experimental implementation using the constrained
@@ -135,65 +134,44 @@
   material for live throttle and steering controls.
 - The `--scene hybrid-dynamics` fixture loads the legacy fullbody SKEL world,
   applies the same initial humanoid pose, and renders the biped and ground
-  boxes through the same descriptor-driven Filament path. The standalone source
-  remains comparison material for scripted joint commands and harness toggling.
-  The `biped_stand` runner reuses this fixture for its standing fullbody visual
-  workflow while the standalone source remains comparison material for SPD
-  perturbation controls.
+  boxes through the same descriptor-driven Filament path. The `biped_stand`
+  runner reuses this fixture for its standing fullbody visual workflow.
 - The `--scene joint-constraints` fixture loads the legacy fullbody SKEL world,
   applies the standing configuration, and runs the SPD balance controller before
-  each simulation step. The standalone source remains comparison material for
-  perturbation shortcuts and the OSG harness toggle.
+  each simulation step.
 - The `--scene free-joint-cases` fixture builds the legacy zero-gravity
   free-joint cases, renders each active body plus its transparent torque-free
   reference body, and advances the reference bodies through a private scene
-  pre-step hook. The standalone source remains comparison material for the
-  ImGui numeric checks and reference-model controls.
+  pre-step hook.
 - The `--scene human-joint-limits` fixture loads the legacy Kima human SKEL,
   enables DART joint-limit enforcement, and renders the posed humanoid through
-  descriptor-owned mesh, multi-sphere, box, and ground renderables. The
-  standalone source remains comparison material for the custom TinyDNN-backed
-  arm and leg constraint classes.
+  descriptor-owned mesh, multi-sphere, box, and ground renderables.
 - The `--scene lcp-physics` fixture builds a deterministic contact benchmark
   layout with mass-ratio boxes, a stack, dominoes, falling spheres, and a
-  ground plane through descriptor-owned renderables. The standalone source
-  remains comparison material for the ImGui solver controls, plots, and
-  scenario switching.
+  ground plane through descriptor-owned renderables.
 - The `--scene mimic-pendulums` fixture loads the legacy mimic-pendulums SDF
   world and renders the three pendulum rigs, base poles, and ground through the
-  same descriptor-driven Filament path. The standalone source remains
-  comparison material for the ImGui solver/debug table.
+  same descriptor-driven Filament path.
 - The `--scene atlas-puppet` fixture loads Atlas and exposes selectable hand
   and foot IK target frames through the same backend-hidden selection,
-  keyboard-nudge, and Ctrl-left drag path. The standalone source remains
-  comparison material for the OSG teleoperation widget and support-polygon
-  visual.
+  keyboard-nudge, and Ctrl-left drag path.
 - The `--scene hubo-puppet` fixture loads Hubo and exposes selectable hand,
   foot, and wrist-peg IK target frames through the same backend-hidden
-  selection, keyboard-nudge, and Ctrl-left drag path. The standalone source
-  remains comparison material for the OSG teleoperation widget,
-  support-polygon visual, and keyboard controls.
+  selection, keyboard-nudge, and Ctrl-left drag path.
 - The `--scene atlas-simbicon` fixture loads the legacy Atlas SDF and ground in
   the Simbicon start orientation through descriptor-owned mesh and box
-  renderables. The standalone source remains comparison material for the
-  Simbicon gait controller, perturbation shortcuts, and ImGui panel.
+  renderables.
 - The `--scene operational-space-control` fixture loads a WAM arm, runs the
   operational-space target controller before each simulation step, and exposes
-  the red target as a selectable `SimpleFrame`. The standalone source remains
-  comparison material for OSG drag-and-drop axis constraints.
+  the red target as a selectable `SimpleFrame`.
 - The `--scene wam-ikfast` fixture loads the WAM arm, ground, and
-  end-effector target through descriptor-owned renderables. The standalone
-  source remains comparison material for the IKFast solver, drag modes,
-  keyboard shortcuts, and posture reset workflow.
+  end-effector target through descriptor-owned renderables.
 - The `--scene fetch` fixture loads the legacy MJCF pick-and-place world,
   applies the initial robot and object pose, and exposes the target frame
-  through descriptor-owned renderables. The standalone source remains
-  comparison material for the ImGui panel, OSG drag controls, and mocap target
-  update loop.
+  through descriptor-owned renderables.
 - The `--scene tinkertoy` fixture recreates the legacy builder's initial block
   assemblies, target marker, force line, and reference axes through
-  descriptor-owned renderables. The standalone source remains comparison
-  material for the ImGui panel, mouse picking, and block-add/delete controls.
+  descriptor-owned renderables.
 - Windowed playback advances physics against wall-clock time with a bounded
   catch-up step budget. Headless captures remain deterministic and advance one
   simulation step for each rendered frame.
@@ -504,7 +482,7 @@ DART_BUILD_GUI_FILAMENT_OVERRIDE=ON \
   pixi run config
 ```
 
-To validate this example without the legacy OSG `dart-gui` target:
+To validate this example with the standalone Filament target:
 
 ```bash
 LIBCXX_PREFIX=<prefix-containing-libc++-and-libc++abi>

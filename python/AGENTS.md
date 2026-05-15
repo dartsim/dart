@@ -24,7 +24,7 @@ import dartpy as dart
 dart.World()
 dart.Skeleton.create()
 dart.io.read_skeleton()  # Unified loader
-dart.gui.Viewer()        # Current legacy GUI surface
+dart.gui.experimental    # Backend-hidden Filament GUI descriptors
 ```
 
 ## Code Patterns
@@ -32,9 +32,9 @@ dart.gui.Viewer()        # Current legacy GUI surface
 - Eigen ↔ NumPy automatic conversion
 - Use `dart.io.read_skeleton()` for model loading
 - Factory methods: `Skeleton.create()`, `World.create()`
-- Keep stable dartpy GUI APIs aligned with DART-owned C++ concepts. The current
-  `dartpy.gui` surface mirrors legacy OSG, while `dartpy.gui.experimental`
-  exposes the constrained Filament descriptor/debug/picking/run-loop bridge.
+- Keep dartpy GUI APIs aligned with DART-owned C++ concepts.
+  `dartpy.gui.experimental` exposes the constrained Filament descriptor,
+  debug, picking, and run-loop bridge.
 - Do not expose Filament, GLFW, Dear ImGui, OpenGL, Vulkan, Metal, OSG, or
   Raylib implementation types through new Python-facing contracts.
 
@@ -54,7 +54,7 @@ pixi run test-py         # Run Python tests
 ## See Also
 
 - @docs/onboarding/python-bindings.md - Binding architecture
-- @docs/onboarding/gui-rendering.md - Current GUI status and Filament direction
+- @docs/onboarding/gui-rendering.md - Filament GUI architecture and workflow
 - @docs/dev_tasks/filament_gui/08-north-star-migration.md - Filament replacement plan
 - @python/examples/README.md - Example index
 - @pyproject.toml - Python package configuration

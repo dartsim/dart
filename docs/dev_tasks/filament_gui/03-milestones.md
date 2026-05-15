@@ -1,5 +1,10 @@
 # Filament GUI Replacement - Milestones
 
+This milestone log is retained as migration history. See
+`07-completion-audit.md` for the current promotion-branch state: Filament is
+the maintained `dart::gui` renderer, and the legacy OpenSceneGraph/Raylib
+surfaces have been removed.
+
 ## Phase 0 - Dependency and MVP spike
 
 **Deliverables**

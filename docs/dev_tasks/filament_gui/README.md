@@ -2,12 +2,17 @@
 
 ## Current status
 
-- The shipped `dart-gui` library is still the OpenSceneGraph (OSG) backend, and
-  public headers expose OSG types.
-- The existing Raylib work is only a smoke example and is no longer the
-  preferred long-term replacement direction.
-- Experimental Filament build plumbing and `examples/filament_gui` now exist
-  behind `DART_BUILD_GUI_FILAMENT=ON`.
+This task has been executed in the current promotion branch. The completion
+audit in `07-completion-audit.md` is the current source of truth: Filament with
+GLFW3 and Dear ImGui is promoted as the maintained `dart::gui` renderer, and
+the legacy OpenSceneGraph/Raylib build, example, tutorial, Python, and
+dependency surfaces were removed.
+
+The detailed progress notes below are retained as migration history and may
+describe intermediate states that no longer exist in the source tree.
+
+- `DART_BUILD_GUI` now builds the Filament-backed GUI component, and
+  `DART_BUILD_GUI_FILAMENT` builds the official Filament visual runner.
 - `dart-gui-experimental` now provides a backend-hidden scene extraction layer
   that converts DART visual shape nodes and world-owned `SimpleFrame` visuals
   into renderable descriptors. Focused unit tests cover descriptor extraction

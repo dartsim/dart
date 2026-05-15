@@ -3,39 +3,17 @@
 ## Overview
 
 - Examples live flat under `python/examples/` for simpler discovery and tooling.
-- Categories below mirror the C++ examples layout; not every category has a Python example yet.
-- Tutorials remain in `python/tutorials/`.
+- Legacy Python examples that depended on the removed OpenSceneGraph GUI
+  classes were removed. The remaining example is headless and works with the
+  maintained dartpy core API.
+- GUI-oriented Python coverage now lives in tests for
+  `dartpy.gui.experimental`, which exposes backend-hidden Filament descriptors.
 
 ## Categories (Ordered)
 
 ### 00 Getting Started
 
 - `hello_world`
-- `hello_world_gui`
-
-### 01 Rigid Bodies and Frames
-
-- `rigid_cubes`
-
-### 02 Joints and Constraints
-
-- `rigid_chain`
-- `rigid_loop`
-
-### 03 Collisions and Contacts
-
-- `contacts_pointcloud`
-
-### 04 Control and IK
-
-- `atlas_puppet`
-- `biped_stand`
-- `operational_space_control`
-
-### 07 Visualization and Interaction
-
-- `drag_and_drop`
-- `imgui_python`
 
 ## Run Examples
 

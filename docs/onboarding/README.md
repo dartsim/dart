@@ -25,7 +25,7 @@
 
 ## 1. Overview
 
-**DART** (Dynamic Animation and Robotics Toolkit) is a comprehensive C++ physics engine for robotics simulation, kinematics, dynamics, and control. The **dart_gui** component provides 3D visualization and interactive manipulation capabilities built on OpenSceneGraph (OSG) and Dear ImGui.
+**DART** (Dynamic Animation and Robotics Toolkit) is a comprehensive C++ physics engine for robotics simulation, kinematics, dynamics, and control. The **dart_gui** component provides Filament-backed 3D visualization with GLFW3 windowing and Dear ImGui overlays.
 
 ### Release & Branch Strategy
 
@@ -72,7 +72,7 @@ This onboarding guide is organized into several focused documents:
 
 - **[../background/dynamics/](../background/dynamics/)** - Mathematical foundations (Lagrangian dynamics, equations of motion)
 - **[../background/lcp/](../background/lcp/)** - LCP solver theory (contact handling, constraint solving)
-- **[gui-rendering.md](gui-rendering.md)** - OpenSceneGraph integration details
+- **[gui-rendering.md](gui-rendering.md)** - Filament GUI rendering details
 - **[python-bindings.md](python-bindings.md)** - nanobind bindings architecture
 - **[api-documentation.md](api-documentation.md)** - Publishing strategy for RTD and GitHub Pages API docs
 - **[build-system.md](build-system.md)** - CMake internals and dependency analysis
@@ -103,9 +103,9 @@ DART addresses the need for:
 
 - **Advanced Dynamics**: Articulated body simulation with 10+ joint types, contact resolution, constraint solving
 - **Multiple Collision Backends**: FCL (default), Bullet, DART native, ODE
-- **3D Visualization**: OpenSceneGraph-based rendering with shadows, materials, and real-time updates
-- **Interactive Manipulation**: Drag-and-drop, inverse kinematics, interactive frames with visual handles
-- **ImGui Integration**: Modern immediate-mode GUI for controls, debugging, and custom widgets
+- **3D Visualization**: Filament-backed rendering with shadows, materials, screenshots, and real-time updates
+- **Interactive Manipulation**: DART-owned picking, camera, and frame manipulation concepts
+- **ImGui Integration**: Private Dear ImGui overlays for controls and diagnostics
 - **Python Bindings**: Complete API coverage via nanobind with NumPy integration
 - **Optimization Helpers**: Core repo ships gradient-descent + IK primitives; the heavy-duty solver suite (IPOPT, NLopt, pagmo, SNOPT) now lives in [dart-optimization](https://github.com/dartsim/dart-optimization)
 - **File Format Support**: URDF, SDF, SKEL, MJCF for robot model loading (SKEL is legacy XML-only; prefer URDF/SDF/MJCF for new work)
@@ -115,18 +115,18 @@ DART addresses the need for:
 
 ### Technologies Used
 
-| Category                | Technology            | Purpose                   |
-| ----------------------- | --------------------- | ------------------------- |
-| **Core Language**       | C++20                 | Main implementation       |
-| **Build System**        | CMake 3.22.1+         | Cross-platform builds     |
-| **Python Bindings**     | nanobind 2.9.x        | Python API                |
-| **Linear Algebra**      | Eigen 3.4.0+          | Math operations           |
-| **Collision Detection** | FCL 0.7.0+            | Primary collision backend |
-| **3D Rendering**        | OpenSceneGraph 3.0.0+ | Visualization             |
-| **GUI Framework**       | Dear ImGui 1.91.9     | Immediate-mode UI         |
-| **Model Loading**       | assimp 5.4.3+         | 3D asset import           |
-| **Environment**         | pixi/conda-forge      | Dependency management     |
-| **Graphics API**        | OpenGL 2+             | Rendering backend         |
+| Category                | Technology         | Purpose                   |
+| ----------------------- | ------------------ | ------------------------- |
+| **Core Language**       | C++20              | Main implementation       |
+| **Build System**        | CMake 3.22.1+      | Cross-platform builds     |
+| **Python Bindings**     | nanobind 2.9.x     | Python API                |
+| **Linear Algebra**      | Eigen 3.4.0+       | Math operations           |
+| **Collision Detection** | FCL 0.7.0+         | Primary collision backend |
+| **3D Rendering**        | Filament 1.71.3    | Visualization             |
+| **Windowing/UI**        | GLFW3 + Dear ImGui | Windowing and overlays    |
+| **Model Loading**       | assimp 5.4.3+      | 3D asset import           |
+| **Environment**         | pixi/conda-forge   | Dependency management     |
+| **Graphics API**        | Filament backends  | Rendering backend         |
 
 ---
 
@@ -149,18 +149,17 @@ graph TB
     end
 
     subgraph "GUI Layer"
-        VIEWER[Viewer/ImGuiViewer]
-        IMGUI[ImGui Integration]
-        WORLDNODE[WorldNode/RealTimeWorldNode]
-        DND[DragAndDrop System]
-        INTERACTIVE[InteractiveFrame]
+        VIEWER[Viewer Options]
+        DESCRIPTORS[Scene/Renderable Descriptors]
+        INTERACTION[Picking and Camera Helpers]
+        DEBUG[Debug Draws]
     end
 
     subgraph "Rendering Layer"
-        OSG[OpenSceneGraph]
-        SHAPENODE[ShapeFrameNode]
-        RENDERNODES[Shape Render Nodes<br/>Box, Sphere, Mesh, etc.]
-        SHADOWS[Shadow Rendering]
+        FILAMENT[Filament Backend]
+        GLFW[GLFW3 Windowing]
+        IMGUI[Dear ImGui Overlay]
+        SCREENSHOT[Screenshots]
     end
 
     subgraph "Simulation Core"
@@ -185,24 +184,20 @@ graph TB
     end
 
     APP --> VIEWER
+    APP --> DESCRIPTORS
     APP --> WORLD
 
-    VIEWER --> IMGUI
-    VIEWER --> WORLDNODE
-    VIEWER --> DND
-    VIEWER --> INTERACTIVE
+    VIEWER --> FILAMENT
+    DESCRIPTORS --> FILAMENT
+    INTERACTION --> VIEWER
+    DEBUG --> DESCRIPTORS
 
-    IMGUI --> OSG
-    WORLDNODE --> OSG
-    WORLDNODE --> WORLD
-
-    OSG --> SHAPENODE
-    OSG --> SHADOWS
-    SHAPENODE --> RENDERNODES
-
-    DND --> BODYNODE
-    DND --> IK
-    INTERACTIVE --> SHAPES
+    FILAMENT --> GLFW
+    FILAMENT --> IMGUI
+    FILAMENT --> SCREENSHOT
+    DESCRIPTORS --> WORLD
+    INTERACTION --> BODYNODE
+    INTERACTION --> IK
 
     WORLD --> SKELETON
     WORLD --> COLLISION
@@ -223,11 +218,9 @@ graph TB
     COLLISION --> COMMON
     SKELETON --> COMMON
 
-    click VIEWER "dart/gui/Viewer.hpp" "Open Viewer"
-    click IMGUI "dart/gui/ImGuiViewer.hpp" "Open ImGuiViewer"
-    click WORLDNODE "dart/gui/WorldNode.hpp" "Open WorldNode"
-    click DND "dart/gui/DragAndDrop.hpp" "Open DragAndDrop"
-    click INTERACTIVE "dart/gui/InteractiveFrame.hpp" "Open InteractiveFrame"
+    click VIEWER "dart/gui/experimental/viewer.hpp" "Open viewer descriptors"
+    click DESCRIPTORS "dart/gui/experimental/renderable.hpp" "Open renderable descriptors"
+    click INTERACTION "dart/gui/experimental/interaction.hpp" "Open interaction helpers"
     click WORLD "dart/simulation/World.hpp" "Open World"
     click SKELETON "dart/dynamics/Skeleton.hpp" "Open Skeleton"
     click BODYNODE "dart/dynamics/BodyNode.hpp" "Open BodyNode"
@@ -245,18 +238,17 @@ graph TB
 
 **GUI Layer:**
 
-- **Viewer**: Main window manager for 3D visualization with camera control and event handling
-- **ImGuiViewer**: Extended viewer with Dear ImGui widget support for interactive UI
-- **WorldNode/RealTimeWorldNode**: Bridge between DART World and OSG scene graph, handles real-time simulation
-- **DragAndDrop**: Interactive manipulation system with constraint support
-- **InteractiveFrame**: Visual 3D manipulator with translation/rotation handles
+- **Viewer descriptors**: Backend-hidden viewer options, lifecycle state, screenshots, and run control
+- **Scene descriptors**: DART-owned renderable, material, transform, and debug-draw descriptions
+- **Interaction helpers**: Picking, camera, frame translation, axis/plane drag, and directional nudge helpers
+- **Filament backend**: Private renderer, resource, input, screenshot, and overlay implementation
 
 **Rendering Layer:**
 
-- **OpenSceneGraph (OSG)**: Scene graph management and OpenGL rendering
-- **ShapeFrameNode**: Converts DART frames to OSG nodes
-- **Shape Render Nodes**: Specialized renderers for 16+ shape types (box, sphere, mesh, etc.)
-- **Shadow Rendering**: Configurable shadow techniques
+- **Filament**: Maintained built-in renderer
+- **Shape extraction**: Converts DART shapes and visual aspects to backend-hidden renderable descriptors
+- **Materials and Textures**: PBR-oriented materials, image loading, transparency, and mesh support
+- **Debug Rendering**: Lines, overlays, selection, and diagnostics
 
 **Simulation Core:**
 
@@ -283,172 +275,54 @@ graph TB
 
 ## 3. Component Breakdown
 
-### Component: Viewer (GUI Entry Point)
+### Component: GUI Entry Point
 
-**File**: [`Viewer.hpp`](dart/gui/Viewer.hpp) | [`Viewer.cpp`](dart/gui/Viewer.cpp)
+**Files**: [`all.hpp`](../../dart/gui/all.hpp) | [`viewer.hpp`](../../dart/gui/experimental/viewer.hpp)
 
-**Purpose**: Main 3D visualization window that integrates OpenSceneGraph rendering with DART simulation. Manages camera, lighting, shadows, event handling, and world node registration.
-
-**Key Elements**:
-
-- [`Viewer::Viewer()`](dart/gui/Viewer.cpp#L86) - Constructor that sets up OSG viewer with default camera and lighting
-- [`Viewer::addWorldNode()`](dart/gui/Viewer.cpp#L122) - Registers a WorldNode for rendering
-- [`Viewer::enableDragAndDrop()`](dart/gui/Viewer.cpp#L189) - Activates interactive manipulation for frames/bodies
-- [`Viewer::run()`](dart/gui/Viewer.cpp#L462) - Main rendering loop
-- [`Viewer::setupDefaultLights()`](dart/gui/Viewer.cpp#L292) - Configures scene lighting
-- [`Viewer::captureScreen()`](dart/gui/Viewer.cpp#L373) - Screenshot functionality
-
-**Depends On**:
-
-- **Internal**: OpenSceneGraph scene graph, camera manipulators, event handlers
-- **External**: OSG (OpenSceneGraph library), OpenGL
-
----
-
-### Component: ImGuiViewer (Enhanced Viewer)
-
-**File**: [`ImGuiViewer.hpp`](dart/gui/ImGuiViewer.hpp) | [`ImGuiViewer.cpp`](dart/gui/ImGuiViewer.cpp)
-
-**Purpose**: Extended viewer with Dear ImGui integration for modern UI widgets and controls. Provides immediate-mode GUI capabilities for debugging, controls, and custom interfaces.
+**Purpose**: Public GUI headers expose DART-owned scene, camera, interaction,
+debug, and viewer lifecycle concepts. The Filament, GLFW3, and Dear ImGui
+implementation details live in private backend sources.
 
 **Key Elements**:
 
-- [`ImGuiViewer::ImGuiViewer()`](dart/gui/ImGuiViewer.cpp#L46) - Initializes ImGui handler and default widgets
-- [`ImGuiHandler`](dart/gui/ImGuiHandler.hpp) - Bridges OSG events to ImGui input system
-- [`ImGuiWidget`](dart/gui/ImGuiWidget.hpp) - Base class for custom widgets
-- [`AboutWidget`](dart/gui/ImGuiViewer.cpp#L49) - Default about dialog
+- `RunOptions` - Window/headless frame, screenshot, and run-loop options
+- `ViewerLifecycleState` - Backend-hidden lifecycle state for consumers
+- `GeometryDescriptor` and `RenderableDescriptor` - Shape/material rendering inputs
+- `OrbitCamera` and `OrbitCameraController` - Camera state and manipulation helpers
+- `PickRay` and `PickHit` - Picking data without renderer event types
 
 **Depends On**:
 
-- **Internal**: Viewer base class, ImGuiHandler, ImGuiWidget system
-- **External**: Dear ImGui library, OpenGL2 backend
+- **Internal**: `dart-gui-experimental` and private Filament backend sources
+- **External**: Filament, GLFW3, Dear ImGui, PNG, JPEG
 
 ---
 
-### Component: WorldNode (Simulation-Rendering Bridge)
+### Component: GUI Descriptors And Tools
 
-**File**: [`WorldNode.hpp`](dart/gui/WorldNode.hpp) | [`WorldNode.cpp`](dart/gui/WorldNode.cpp)
+**Files**: [`geometry.hpp`](../../dart/gui/experimental/geometry.hpp),
+[`renderable.hpp`](../../dart/gui/experimental/renderable.hpp),
+[`interaction.hpp`](../../dart/gui/experimental/interaction.hpp),
+[`debug.hpp`](../../dart/gui/experimental/debug.hpp)
 
-**Purpose**: Encapsulates a DART World for OSG rendering. Manages skeleton visualization, shape nodes, shadow groups, and synchronization between simulation and rendering state.
+**Purpose**: Backend-hidden C++ and Python GUI contracts. These headers keep
+simulation visualization, picking, camera control, screenshots, and debug
+drawing expressed as DART values instead of renderer types.
 
 **Key Elements**:
 
-- [`WorldNode::WorldNode()`](dart/gui/WorldNode.cpp#L59) - Creates OSG node wrapping DART World
-- [`WorldNode::refresh()`](dart/gui/WorldNode.cpp#L138) - Updates visual state from simulation
-- [`WorldNode::customPreRefresh()`](dart/gui/WorldNode.hpp#L81) - Hook for custom update logic
-- [`WorldNode::setShadowTechnique()`](dart/gui/WorldNode.cpp#L218) - Configures shadow rendering
-- Dual scene graph: Normal group and shadow group for optimized shadow rendering
+- Geometry and material descriptors for primitive, mesh, point-cloud,
+  heightmap, voxel-grid, and debug line rendering
+- Renderable update planning for efficient scene synchronization
+- Picking rays, hit records, hit normals, and drag helpers
+- Orbit camera state, projection helpers, and directional nudges
+- Run options, screenshot configuration, and viewer lifecycle state
 
 **Depends On**:
 
-- **Internal**: DART World, Skeleton, ShapeFrameNode, shadow utilities
-- **External**: OSG scene graph nodes
-
----
-
-### Component: RealTimeWorldNode (Simulation Loop)
-
-**File**: [`RealTimeWorldNode.hpp`](dart/gui/RealTimeWorldNode.hpp) | [`RealTimeWorldNode.cpp`](dart/gui/RealTimeWorldNode.cpp)
-
-**Purpose**: Real-time simulation with adaptive time stepping. Maintains target real-time factor (RTF) and provides hooks for custom logic before/after each simulation step.
-
-**Key Elements**:
-
-- [`RealTimeWorldNode::refresh()`](dart/gui/RealTimeWorldNode.cpp#L103) - Advances simulation and updates visuals
-- [`RealTimeWorldNode::customPreStep()`](dart/gui/RealTimeWorldNode.hpp#L69) - Pre-step hook for control
-- [`RealTimeWorldNode::customPostStep()`](dart/gui/RealTimeWorldNode.hpp#L74) - Post-step hook for logging
-- Adaptive stepping: Multiple sub-steps per frame to maintain RTF
-
-**Depends On**:
-
-- **Internal**: WorldNode base class, DART World time-stepping
-- **External**: System clock for timing
-
----
-
-### Component: ShapeFrameNode (Frame Visualization)
-
-**File**: [`ShapeFrameNode.hpp`](dart/gui/ShapeFrameNode.hpp) | [`ShapeFrameNode.cpp`](dart/gui/ShapeFrameNode.cpp)
-
-**Purpose**: Bridges DART frames to OSG scene graph. Manages transformation updates, shape rendering, visual properties (color, transparency), and lifecycle.
-
-**Key Elements**:
-
-- [`ShapeFrameNode::ShapeFrameNode()`](dart/gui/ShapeFrameNode.cpp#L56) - Creates OSG node for a DART frame
-- [`ShapeFrameNode::refresh()`](dart/gui/ShapeFrameNode.cpp#L109) - Updates transformations and visual properties
-- [`ShapeFrameNode::createShapeNode()`](dart/gui/ShapeFrameNode.cpp#L190) - Factory for shape-specific renderers
-- Utilization tracking for automatic garbage collection
-
-**Depends On**:
-
-- **Internal**: DART Frame, Shape, VisualAspect, shape render nodes
-- **External**: OSG transformation nodes
-
----
-
-### Component: Shape Render Nodes
-
-**Directory**: [`dart/gui/render/`](dart/gui/render/)
-
-**Purpose**: Specialized renderers for 16+ DART shape types. Each renderer converts DART shape geometry to OSG drawable geometry with proper materials and textures.
-
-**Key Shape Nodes**:
-
-- [`BoxShapeNode`](dart/gui/render/BoxShapeNode.hpp) - Box primitives
-- [`SphereShapeNode`](dart/gui/render/SphereShapeNode.hpp) - Sphere primitives
-- [`CylinderShapeNode`](dart/gui/render/CylinderShapeNode.hpp) - Cylinder primitives
-- [`CapsuleShapeNode`](dart/gui/render/CapsuleShapeNode.hpp) - Capsule primitives
-- [`MeshShapeNode`](dart/gui/render/MeshShapeNode.hpp) - Arbitrary mesh geometry
-- [`SoftMeshShapeNode`](dart/gui/render/SoftMeshShapeNode.hpp) - Deformable soft bodies
-- [`PointCloudShapeNode`](dart/gui/render/PointCloudShapeNode.hpp) - Point cloud visualization
-
-**Depends On**:
-
-- **Internal**: DART Shape classes, VisualAspect properties
-- **External**: OSG geometry, materials, textures
-
----
-
-### Component: DragAndDrop System
-
-**File**: [`DragAndDrop.hpp`](dart/gui/DragAndDrop.hpp) | [`DragAndDrop.cpp`](dart/gui/DragAndDrop.cpp)
-
-**Purpose**: Comprehensive drag-and-drop framework for interactive manipulation with constraint support, rotation modes, and specialized handlers for different entity types.
-
-**Key Elements**:
-
-- [`DragAndDrop`](dart/gui/DragAndDrop.hpp#L61) - Abstract base class
-- [`SimpleFrameDnD`](dart/gui/DragAndDrop.hpp#L178) - Drag SimpleFrame objects
-- [`InteractiveFrameDnD`](dart/gui/DragAndDrop.hpp#L236) - Drag interactive frame tools
-- [`BodyNodeDnD`](dart/gui/DragAndDrop.hpp#L266) - Drag robot bodies with IK
-- Constraint types: `UNCONSTRAINED`, `LINE_CONSTRAINT`, `PLANE_CONSTRAINT`
-- Rotation modes: `HOLD_MODKEY`, `ALWAYS_ON`, `ALWAYS_OFF`
-
-**Depends On**:
-
-- **Internal**: DART frames, BodyNode, IK module, picking system
-- **External**: OSG event adapters for mouse input
-
----
-
-### Component: InteractiveFrame
-
-**File**: [`InteractiveFrame.hpp`](dart/gui/InteractiveFrame.hpp) | [`InteractiveFrame.cpp`](dart/gui/InteractiveFrame.cpp)
-
-**Purpose**: 3D manipulator widget with visual handles for translation and rotation. Creates arrows, rings, and planes for intuitive 3D object manipulation.
-
-**Key Elements**:
-
-- [`InteractiveFrame`](dart/gui/InteractiveFrame.hpp#L109) - Composite frame with 9 manipulation tools
-- [`InteractiveTool`](dart/gui/InteractiveFrame.hpp#L49) - Individual tool (arrow, ring, plane)
-- Tool types: `LINEAR` (translation arrows), `ANGULAR` (rotation rings), `PLANAR` (2D planes)
-- Color-coded axes: X=red, Y=green, Z=blue
-- [`resizeStandardVisuals()`](dart/gui/InteractiveFrame.cpp#L570) - Customize tool size/thickness
-
-**Depends On**:
-
-- **Internal**: DART SimpleFrame, Shape system
-- **External**: None (pure DART component)
+- **Internal**: DART shapes, frames, worlds, Eigen math, and private Filament
+  backend code
+- **External**: No renderer or windowing types in public headers
 
 ---
 
@@ -605,7 +479,7 @@ graph TB
 
 - `dartpy` (top-level) - Core classes/functions (math, dynamics, collision, simulation, constraint, optimizer) exposed in snake_case
 - `dartpy.io` - File parsers (URDF, SDF, SKEL, MJCF) [alias for legacy `utils`]
-- `dartpy.gui` - 3D visualization with OSG and ImGui
+- `dartpy.gui` - Filament-backed GUI descriptors and helpers
 - Legacy `dartpy`/`math`/`dynamics`/`collision`/`simulation`/`constraint`/`optimizer`/`utils` remain importable in DART 7.x but emit `DeprecationWarning` and will be removed in DART 8.0.
 
 **Key Files**:
@@ -626,7 +500,8 @@ graph TB
 
 ### Example Flow 1: Creating and Visualizing a Simple Simulation
 
-**Description**: User creates a falling box simulation, sets up 3D visualization with OSG, and runs the interactive viewer loop.
+**Description**: User creates a falling box simulation, converts the world into
+GUI descriptors, and runs the Filament-backed viewer loop.
 
 **Sequence Diagram**:
 
@@ -635,29 +510,26 @@ sequenceDiagram
     participant User as User Code
     participant Skeleton as Skeleton
     participant World as World
-    participant WorldNode as WorldNode
+    participant Descriptors as GUI Descriptors
     participant Viewer as Viewer
-    participant OSG as OpenSceneGraph
+    participant GUI as Filament GUI
 
     User->>Skeleton: create()
     User->>Skeleton: createJointAndBodyNodePair<FreeJoint>()
     User->>Skeleton: createShapeNodeWith<>()
     User->>World: create()
     User->>World: addSkeleton(skeleton)
-    User->>WorldNode: new RealTimeWorldNode(world)
-    User->>Viewer: create Viewer
-    User->>Viewer: addWorldNode(node)
-    User->>Viewer: setUpViewInWindow()
-    User->>Viewer: run()
+    User->>Descriptors: extract renderable descriptors
+    User->>Viewer: create viewer options
+    User->>Viewer: run Filament GUI
 
     loop Rendering Loop
-        Viewer->>WorldNode: refresh()
-        WorldNode->>World: step()
+        Viewer->>World: step()
         World->>Skeleton: computeForwardKinematics()
         World->>Skeleton: computeForwardDynamics()
         World->>World: integrate()
-        WorldNode->>OSG: update scene graph
-        OSG->>Viewer: render frame
+        Descriptors->>GUI: sync renderables
+        GUI->>Viewer: render frame
     end
 ```
 
@@ -665,8 +537,8 @@ sequenceDiagram
 
 - Example: [`examples/hello_world/main.cpp`](../../examples/hello_world/main.cpp)
 - [`World::step()`](dart/simulation/World.cpp#L356)
-- [`RealTimeWorldNode::refresh()`](dart/gui/RealTimeWorldNode.cpp#L103)
-- [`Viewer::run()`](dart/gui/Viewer.cpp#L462)
+- [`RunOptions`](../../dart/gui/experimental/viewer.hpp)
+- [`RenderableDescriptor`](../../dart/gui/experimental/renderable.hpp)
 
 ---
 
@@ -764,50 +636,34 @@ sequenceDiagram
 
 ---
 
-### Example Flow 4: ImGui Widget Rendering
+### Example Flow 4: Filament Overlay Rendering
 
-**Description**: How ImGui widgets are integrated into the OSG rendering loop using camera callbacks.
+**Description**: How built-in GUI overlays are integrated into the private
+Filament frame lifecycle.
 
 **Sequence Diagram**:
 
 ```mermaid
 sequenceDiagram
-    participant OSG as OSG Renderer
-    participant Camera as OSG Camera
-    participant ImGuiH as ImGuiHandler
-    participant Widget as ImGuiWidget
+    participant Viewer as Viewer
+    participant Backend as Filament Backend
+    participant Overlay as ImGui Overlay
     participant ImGui as Dear ImGui
 
-    OSG->>Camera: pre-draw callback
-    Camera->>ImGuiH: newFrame()
-    ImGuiH->>ImGui: ImGui_ImplOpenGL2_NewFrame()
-    ImGuiH->>ImGui: ImGui::NewFrame()
-    Note over ImGui: Start new frame,<br/>process input state
-
-    OSG->>OSG: render 3D scene
-
-    OSG->>Camera: post-draw callback
-    Camera->>ImGuiH: render()
-
-    loop For each widget
-        ImGuiH->>Widget: widget->render()
-        Widget->>ImGui: ImGui::Begin()
-        Widget->>ImGui: ImGui::Button(), etc.
-        Widget->>ImGui: ImGui::End()
-    end
-
-    ImGuiH->>ImGui: ImGui::Render()
-    ImGuiH->>ImGui: ImGui_ImplOpenGL2_RenderDrawData()
-    Note over ImGui: Draw UI on top of 3D scene
-
-    OSG->>OSG: swap buffers
+    Viewer->>Backend: begin frame
+    Backend->>Overlay: translate input and start UI frame
+    Overlay->>ImGui: ImGui::NewFrame()
+    Backend->>Backend: render 3D scene
+    Overlay->>ImGui: render built-in panels
+    ImGui-->>Overlay: draw data
+    Overlay->>Backend: render overlay material
+    Backend-->>Viewer: present or capture screenshot
 ```
 
 **Key Files**:
 
-- [`ImGuiHandler::newFrame()`](dart/gui/ImGuiHandler.cpp#L135)
-- [`ImGuiHandler::render()`](dart/gui/ImGuiHandler.cpp#L207)
-- [`ImGuiWidget::render()`](dart/gui/ImGuiWidget.hpp#L49)
+- [`imgui_overlay.cpp`](../../dart/gui/experimental/detail/filament/imgui_overlay.cpp)
+- [`panel.cpp`](../../dart/gui/experimental/detail/filament/panel.cpp)
 
 ---
 
@@ -1178,64 +1034,41 @@ while (running) {
 ### Pattern 2: Creating Visualization
 
 ```cpp
-// Create viewer
-gui::Viewer viewer;
-viewer.setUpViewInWindow(0, 0, 1280, 720);
+// Extract backend-hidden renderable descriptors from a DART world.
+auto renderables = dart::gui::experimental::extractRenderables(*world);
 
-// Wrap world in real-time node
-osg::ref_ptr<gui::RealTimeWorldNode> node
-  = new gui::RealTimeWorldNode(world);
-
-// Add to viewer
-viewer.addWorldNode(node);
-
-// Configure camera
-viewer.getCameraManipulator()->setHomePosition(
-  osg::Vec3(5, 5, 3), osg::Vec3(0, 0, 0), osg::Vec3(0, 0, 1));
-viewer.setCameraManipulator(viewer.getCameraManipulator());
-
-// Run viewer loop (handles simulation + rendering)
-viewer.run();
+// Use the maintained Filament runner for interactive or headless rendering.
+// Repo-local command line:
+//   pixi run ex filament_gui --scene boxes
+//   pixi run ex filament_gui --headless --frames 1 --screenshot frame.ppm
 ```
 
 ### Pattern 3: Custom Simulation Hooks
 
 ```cpp
-class MyWorldNode : public gui::RealTimeWorldNode {
-public:
-  MyWorldNode(const simulation::WorldPtr& world)
-    : gui::RealTimeWorldNode(world) {}
+dart::gui::experimental::ViewerLifecycleState lifecycle;
+auto options = dart::gui::experimental::RunOptions{};
 
-  void customPreStep() override {
-    // Apply control forces before physics step
-    auto robot = getWorld()->getSkeleton("robot");
-    robot->setForces(computeControlTorques());
-  }
-
-  void customPostStep() override {
-    // Log data after physics step
-    logState(getWorld()->getTime());
-  }
-};
-
-// Use custom node
-osg::ref_ptr<MyWorldNode> node = new MyWorldNode(world);
-viewer.addWorldNode(node);
+if (dart::gui::experimental::shouldAdvanceSimulation(lifecycle)) {
+  auto robot = world->getSkeleton("robot");
+  robot->setForces(computeControlTorques());
+  world->step();
+  dart::gui::experimental::markSimulationAdvanced(lifecycle);
+}
 ```
 
 ### Pattern 4: Interactive Manipulation
 
 ```cpp
-// Enable drag-and-drop for a frame
-gui::InteractiveFramePtr manipulator
-  = new gui::InteractiveFrame(Frame::World(), "tool", tf);
-world->addSimpleFrame(manipulator);
-viewer.enableDragAndDrop(manipulator.get());
-
-// Enable drag-and-drop for robot bodies with IK
-robot->eachBodyNode([&](BodyNode* bodyNode) {
-  viewer.enableDragAndDrop(bodyNode);
-});
+auto ray = dart::gui::experimental::makePerspectivePickRay(
+    camera, mouseX, mouseY, viewportWidth, viewportHeight);
+auto hit = dart::gui::experimental::pickNearestRenderable(renderables, ray);
+if (hit) {
+  auto translation = dart::gui::experimental::computePlaneDragTranslation(
+      previousRay, ray, hit->position, dragPlaneNormal);
+  dart::gui::experimental::translateFrameRenderable(
+      *world, hit->renderableId, translation);
+}
 ```
 
 ### Pattern 5: Loading Robot Models
@@ -1257,29 +1090,15 @@ auto legacy = dart::io::readSkeleton("path/to/skel.skel");
 
 > **Note:** SKEL stays as a legacy XML format for backward compatibility. There is no plan to redesign it (e.g., YAML); use URDF, SDF, or MJCF for new models.
 
-### Pattern 6: Custom ImGui Widgets
+### Pattern 6: Debug Draws And Capture
 
 ```cpp
-class MyWidget : public gui::ImGuiWidget {
-public:
-  void render() override {
-    ImGui::Begin("My Widget", &mIsVisible);
+dart::gui::experimental::DebugDrawOptions debug;
+debug.showContactForces = true;
+debug.showSupportPolygons = true;
 
-    if (ImGui::Button("Reset Simulation")) {
-      mWorld->reset();
-    }
-
-    ImGui::Text("Time: %.2f", mWorld->getTime());
-    ImGui::End();
-  }
-
-private:
-  simulation::WorldPtr mWorld;
-};
-
-// Add to ImGuiViewer
-auto widget = std::make_shared<MyWidget>();
-viewer.getImGuiHandler()->addWidget(widget, true);
+auto lines = dart::gui::experimental::extractDebugLines(*world, debug);
+dart::gui::experimental::writeRgbaPpm("frame.ppm", rgba, width, height);
 ```
 
 ---
@@ -1290,7 +1109,6 @@ viewer.getImGuiHandler()->addWidget(widget, true);
 
 - **Main Website**: https://docs.dartsim.org/
 - **API Documentation**: Built with Doxygen (run `pixi run api-docs-cpp`)
-- **Tutorials**: [`tutorials/`](tutorials/)
 - **Examples**: [`examples/`](../../examples/)
 
 ### Community
@@ -1304,8 +1122,7 @@ This repository contains additional detailed analysis documents:
 
 - [`architecture.md`](architecture.md) - Core DART architecture deep dive
 - [`aspect-system.md`](aspect-system.md) - Aspect/State/Properties design and implementation
-- [`gui-rendering.md`](gui-rendering.md) - Current OpenSceneGraph integration
-  details and Filament replacement status
+- [`gui-rendering.md`](gui-rendering.md) - Filament GUI rendering details
 - [`python-bindings.md`](python-bindings.md) - Python bindings (dartpy) reference
 - [`build-system.md`](build-system.md) - Build system and dependencies
 - [`dynamics.md`](dynamics.md) - Dynamics system exploration
@@ -1329,16 +1146,14 @@ This repository contains additional detailed analysis documents:
 **DART** is a mature, research-grade robotics simulation library with:
 
 ✅ **O(n) efficient dynamics** via Featherstone algorithms
-✅ **Interactive 3D visualization** through the current legacy OSG + ImGui GUI,
-with Filament planned as the maintained replacement direction
+✅ **Interactive 3D visualization** through the Filament + GLFW3 + Dear ImGui GUI
 ✅ **Multiple collision backends** (FCL, Bullet, ODE)
 ✅ **Python integration** for ML/research workflows
 ✅ **Extensive file format support** (URDF, SDF, MJCF, SKEL)
 ✅ **Cross-platform** with reproducible builds via pixi
 
 The codebase demonstrates clear layering, design patterns, and extensibility.
-The GUI components provide rich interactivity today, but new visualization work
-should follow the Filament north-star plan instead of extending OSG-shaped
-public APIs.
+New visualization work should keep renderer implementation types private and
+build on the Filament-backed DART GUI concepts.
 
 </details>
