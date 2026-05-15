@@ -186,7 +186,7 @@ add_custom_command(
           "-DINPUT=${imgui_material_bin}"
           "-DOUTPUT=${imgui_material_header}"
           -DSYMBOL=kImGuiMaterial
-          -DNAMESPACE=dart::examples::filament_gui
+          -DNAMESPACE=dart::gui::experimental::filament
           -P "${CMAKE_CURRENT_LIST_DIR}/../../cmake/dart_binary_to_header.cmake"
   DEPENDS "${imgui_material_bin}" "${CMAKE_CURRENT_LIST_DIR}/../../cmake/dart_binary_to_header.cmake"
   COMMENT "Embedding Filament ImGui material for ${example_name}"
@@ -195,6 +195,7 @@ add_custom_command(
 
 file(GLOB srcs "*.cpp" "*.hpp")
 set(filament_gui_backend_srcs
+  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/imgui_overlay.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/renderable_factory.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/renderable_resources.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/renderable_sync.cpp"
@@ -204,6 +205,7 @@ set(filament_gui_backend_srcs
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/textures.cpp"
 )
 set(filament_gui_backend_hdrs
+  "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/imgui_overlay.hpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/renderable_factory.hpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/renderable_resources.hpp"
   "${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/renderable_sync.hpp"

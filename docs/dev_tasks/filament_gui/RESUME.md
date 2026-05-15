@@ -127,8 +127,9 @@ view-quality setup live in
 `dart/gui/experimental/detail/filament/render_environment.hpp` and `.cpp`.
 Example-local platform-specific GLFW native-window handle selection lives in
 `examples/filament_gui/native_window.hpp` and `.cpp`.
-Example-local ImGui font loading lives with the overlay renderer in
-`examples/filament_gui/imgui_overlay.hpp` and `.cpp`.
+Filament-native ImGui font loading lives with the overlay renderer in
+`dart/gui/experimental/detail/filament/imgui_overlay.hpp` and `.cpp`; the
+built-in panel policy remains MVP/example-scoped.
 Example-local selection label formatting and G1 IK-target translation glue live
 in `examples/filament_gui/selection.hpp` and `.cpp`.
 Filament material bundle creation, seed texture resources, renderable state,
@@ -296,13 +297,13 @@ Keep tracking the staged-recipes PR as the preferred future package path. After
 it merges, add the `filament-static` output to the Pixi toolchain and validate
 `Filament_ROOT=$CONDA_PREFIX`.
 
-After the target links, keep the MVP ImGui overlay example-local unless
-promotion needs user extension points; in that case add DART-owned panel/tool
-abstractions instead of exposing raw ImGui APIs. Add interaction-heavy example
-coverage beyond the current selection/nudging/drag path and first
-drag-and-drop and G1 IK fixtures, and add broader human visual review with
-larger real authored environment/PBR assets for the shadow/material promotion
-gate.
+After the target links, keep the MVP ImGui panel/tool policy example-scoped
+unless promotion needs user extension points; in that case add DART-owned
+panel/tool abstractions instead of exposing raw ImGui APIs. Add
+interaction-heavy example coverage beyond the current selection/nudging/drag
+path and first drag-and-drop and G1 IK fixtures, and add broader human visual
+review with larger real authored environment/PBR assets for the shadow/material
+promotion gate.
 
 ## Context That Would Be Lost
 
@@ -322,10 +323,9 @@ gate.
   promoted GUI implementation units.
 - Filament package availability and matching material compiler tooling are the
   primary risks. Fetch fallback must be explicit and pinned.
-- The current ImGui overlay is deliberately narrow and example-local. It
-  renders built-in controls through Filament buffers, but must stay internal or
-  be wrapped in DART-owned panel/tool abstractions before first-class
-  promotion.
+- The current ImGui overlay is deliberately narrow. Its Filament renderer is
+  private GUI detail, and the built-in panel policy must stay internal or be
+  wrapped in DART-owned panel/tool abstractions before first-class promotion.
 
 ## How to Resume
 

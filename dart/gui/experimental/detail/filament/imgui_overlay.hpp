@@ -30,8 +30,8 @@
  *   DAMAGE.
  */
 
-#ifndef EXAMPLES_FILAMENT_GUI_IMGUI_OVERLAY_HPP_
-#define EXAMPLES_FILAMENT_GUI_IMGUI_OVERLAY_HPP_
+#ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_IMGUI_OVERLAY_HPP_
+#define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_IMGUI_OVERLAY_HPP_
 
 #include <utils/Entity.h>
 
@@ -55,42 +55,42 @@ class View;
 struct ImDrawData;
 struct ImGuiIO;
 
-namespace dart::examples::filament_gui {
+namespace dart::gui::experimental::filament {
 
 struct OverlayMesh
 {
   utils::Entity entity;
-  filament::VertexBuffer* vertexBuffer = nullptr;
-  filament::IndexBuffer* indexBuffer = nullptr;
+  ::filament::VertexBuffer* vertexBuffer = nullptr;
+  ::filament::IndexBuffer* indexBuffer = nullptr;
   std::size_t vertexCount = 0;
   std::size_t indexCount = 0;
 };
 
 struct ImGuiOverlay
 {
-  filament::View* view = nullptr;
-  filament::Scene* scene = nullptr;
-  filament::Camera* camera = nullptr;
+  ::filament::View* view = nullptr;
+  ::filament::Scene* scene = nullptr;
+  ::filament::Camera* camera = nullptr;
   utils::Entity cameraEntity;
-  filament::Material* material = nullptr;
-  filament::MaterialInstance* materialInstance = nullptr;
-  filament::Texture* fontTexture = nullptr;
+  ::filament::Material* material = nullptr;
+  ::filament::MaterialInstance* materialInstance = nullptr;
+  ::filament::Texture* fontTexture = nullptr;
   OverlayMesh mesh;
 };
 
-ImGuiOverlay createImGuiOverlay(filament::Engine& engine);
+ImGuiOverlay createImGuiOverlay(::filament::Engine& engine);
 
 void loadImGuiFont(ImGuiIO& io, float guiScale);
 
 void updateImGuiOverlay(
-    filament::Engine& engine,
+    ::filament::Engine& engine,
     ImGuiOverlay& overlay,
     const ImDrawData* drawData,
     std::uint32_t width,
     std::uint32_t height);
 
-void destroyImGuiOverlay(filament::Engine& engine, ImGuiOverlay& overlay);
+void destroyImGuiOverlay(::filament::Engine& engine, ImGuiOverlay& overlay);
 
-} // namespace dart::examples::filament_gui
+} // namespace dart::gui::experimental::filament
 
-#endif // EXAMPLES_FILAMENT_GUI_IMGUI_OVERLAY_HPP_
+#endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_IMGUI_OVERLAY_HPP_

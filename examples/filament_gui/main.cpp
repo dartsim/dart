@@ -30,7 +30,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "imgui_overlay.hpp"
 #include "input.hpp"
 #include "native_window.hpp"
 #include "scenes.hpp"
@@ -40,6 +39,7 @@
 #include <dart/common/local_resource_retriever.hpp>
 #include <dart/common/profile.hpp>
 #include <dart/config.hpp>
+#include <dart/gui/experimental/detail/filament/imgui_overlay.hpp>
 #include <dart/gui/experimental/detail/filament/renderable_factory.hpp>
 #include <dart/gui/experimental/detail/filament/renderable_resources.hpp>
 #include <dart/gui/experimental/detail/filament/renderable_sync.hpp>
@@ -140,6 +140,7 @@ using dart::gui::experimental::shouldRequestScreenshot;
 using dart::gui::experimental::shouldStopAfterFrame;
 using dart::gui::experimental::togglePaused;
 using dart::gui::experimental::filament::FilamentRenderContext;
+using dart::gui::experimental::filament::ImGuiOverlay;
 using dart::gui::experimental::filament::MaterialResources;
 using dart::gui::experimental::filament::MaterialSet;
 using dart::gui::experimental::filament::Renderable;
@@ -155,6 +156,7 @@ using dart::gui::experimental::filament::configureViewportCamera;
 using dart::gui::experimental::filament::createFilamentRenderContext;
 using dart::gui::experimental::filament::createDebugColorGrading;
 using dart::gui::experimental::filament::createDebugLineRenderable;
+using dart::gui::experimental::filament::createImGuiOverlay;
 using dart::gui::experimental::filament::createNeutralIndirectLight;
 using dart::gui::experimental::filament::createNeutralSkybox;
 using dart::gui::experimental::filament::createMaterialResources;
@@ -164,9 +166,11 @@ using dart::gui::experimental::filament::destroyMaterialResources;
 using dart::gui::experimental::filament::destroyRenderable;
 using dart::gui::experimental::filament::destroyRenderEnvironmentResources;
 using dart::gui::experimental::filament::destroyFilamentRenderContext;
+using dart::gui::experimental::filament::destroyImGuiOverlay;
 using dart::gui::experimental::filament::destroySceneLights;
 using dart::gui::experimental::filament::detachSceneEnvironment;
 using dart::gui::experimental::filament::endFilamentFrame;
+using dart::gui::experimental::filament::loadImGuiFont;
 using dart::gui::experimental::filament::renderFilamentViews;
 using dart::gui::experimental::filament::requestScreenshot;
 using dart::gui::experimental::filament::saveScreenshot;
@@ -175,6 +179,7 @@ using dart::gui::experimental::filament::removeRenderableFromScene;
 using dart::gui::experimental::filament::setRenderableTransform;
 using dart::gui::experimental::filament::shouldSkipRenderedWorkAfterFrameSkip;
 using dart::gui::experimental::filament::synchronizeSceneRenderables;
+using dart::gui::experimental::filament::updateImGuiOverlay;
 using dart::gui::experimental::filament::updateOrbitingKeyLight;
 using dart::gui::experimental::filament::updateSceneRenderableFromDescriptor;
 using dart::gui::experimental::filament::waitForScreenshot;
@@ -182,10 +187,7 @@ using dart::simulation::World;
 using dart::examples::filament_gui::AppOptions;
 using dart::examples::filament_gui::DartScene;
 using dart::examples::filament_gui::ExampleScene;
-using dart::examples::filament_gui::ImGuiOverlay;
 using dart::examples::filament_gui::createDartScene;
-using dart::examples::filament_gui::createImGuiOverlay;
-using dart::examples::filament_gui::destroyImGuiOverlay;
 using dart::examples::filament_gui::handleScroll;
 using dart::examples::filament_gui::initialCameraForScene;
 using dart::examples::filament_gui::isDragModifierDown;
@@ -207,14 +209,12 @@ using dart::examples::filament_gui::kSoftMeshFixtureSkeletonName;
 using dart::examples::filament_gui::kVoxelGridFixtureSkeletonName;
 using dart::examples::filament_gui::kWamFixtureSkeletonName;
 using dart::examples::filament_gui::getNativeWindow;
-using dart::examples::filament_gui::loadImGuiFont;
 using dart::examples::filament_gui::parseOptions;
 using dart::examples::filament_gui::sceneName;
 using dart::examples::filament_gui::selectedNudgeFromKeyboard;
 using dart::examples::filament_gui::selectionLabelForRenderable;
 using dart::examples::filament_gui::translateRenderableAndApplyIk;
 using dart::examples::filament_gui::updateCameraController;
-using dart::examples::filament_gui::updateImGuiOverlay;
 using dart::examples::filament_gui::updateImGuiMouseInput;
 
 

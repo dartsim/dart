@@ -126,13 +126,14 @@ The docs-sync slice should keep these items current as commits land:
 - **Do not draft the promoted `dart::gui::Viewer` / `ViewerOptions`
   public API yet** (the sketch in `08-north-star-migration.md:331-344`).
   Phase H requires Phases C, E, F, G to be substantially complete first.
-  The example still owns Filament resource management, material caches,
-  ImGui overlay, geometry builders, and scene fixtures. Defining the
+  The example still owns Filament resource orchestration, material caches,
+  built-in overlay policy, geometry builders, and scene fixtures. Defining the
   promoted API now would either bake in MVP-shaped concessions or
   force a second rewrite when Phase C extraction reveals the right
   resource boundaries.
 - **Do not add panel/tool abstractions** (`08-north-star-migration.md`
-  §11). Keep the ImGui overlay example-local until Phase E demands it.
+  §11). Keep the built-in ImGui panel/tool policy MVP-scoped until Phase E
+  demands it.
 - **Do not start macOS/Windows port work** — no machines in this
   branch, not actionable for Codex.
 - **Do not modify the conda-forge feedstock PR** — external dependency,

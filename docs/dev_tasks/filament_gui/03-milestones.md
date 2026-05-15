@@ -202,10 +202,11 @@
 - The Filament example keeps its backend-specific GLFW/ImGui input polling and
   status-panel hit testing in `examples/filament_gui/input.hpp` and `.cpp`,
   while reusable nudge/orbit/manipulation math remains in `dart-gui-experimental`.
-- The Filament example keeps its ImGui-to-Filament overlay renderer in
-  `examples/filament_gui/imgui_overlay.hpp` and `.cpp`, including ImGui font
-  loading; panel contents remain example-local until a later promotion phase
-  needs DART-owned panel/tool APIs.
+- The Filament-native ImGui overlay renderer, font loading, and draw-data
+  upload live in
+  `dart/gui/experimental/detail/filament/imgui_overlay.hpp` and `.cpp`; panel
+  contents remain MVP/example-scoped until a later promotion phase needs
+  DART-owned panel/tool APIs.
 - Filament PNG/JPEG image decoding, texture-cache ownership, sampler setup, and
   PBR material texture parameter binding now live in
   `dart/gui/experimental/detail/filament/textures.hpp` and `.cpp`, with repeat

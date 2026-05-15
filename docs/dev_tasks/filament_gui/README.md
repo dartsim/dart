@@ -81,9 +81,10 @@
   `examples/filament_gui/input.hpp` and `.cpp`, keeping backend-specific input
   polling out of the main viewer loop while the reusable manipulation math
   remains in `dart-gui-experimental`.
-- The Filament example's ImGui-to-Filament overlay renderer now lives in
-  `examples/filament_gui/imgui_overlay.hpp` and `.cpp`, including ImGui font
-  loading; the built-in panel contents remain example-local and are still not a
+- The Filament-native ImGui overlay renderer, font loading, and draw-data
+  upload now live in
+  `dart/gui/experimental/detail/filament/imgui_overlay.hpp` and `.cpp`; the
+  built-in panel contents remain MVP/example-scoped and are still not a
   promoted panel/tool API.
 - The experimental viewer-runtime layer owns backend-hidden run-option
   normalization, viewer lifecycle state, orbit-camera math, orbit-camera
@@ -326,9 +327,9 @@ longer express stable DART concepts.
    drag-and-drop, and G1 IK fixtures.
 6. Continue moving reusable renderer resource management out of the Filament
    example once the API boundary is stable enough.
-7. Keep the MVP ImGui overlay example-local unless promotion needs user
-   extension points; then add DART-owned panel/tool abstractions instead of
-   exposing raw ImGui APIs.
+7. Keep the MVP ImGui panel/tool policy example-scoped unless promotion needs
+   user extension points; then add DART-owned panel/tool abstractions instead
+   of exposing raw ImGui APIs.
 8. Complete remaining platform and GUI option-matrix wheel evidence before
    promoting anything to `dart-gui`.
 9. Keep onboarding docs aligned with the north-star plan as API names and

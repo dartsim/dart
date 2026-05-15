@@ -57,21 +57,21 @@
 #include <cstdlib>
 #include <cstring>
 
-namespace dart::examples::filament_gui {
+namespace dart::gui::experimental::filament {
 namespace {
 
 struct ImGuiVertex
 {
-  filament::math::float3 position;
-  filament::math::float2 uv;
+  ::filament::math::float3 position;
+  ::filament::math::float2 uv;
   std::uint32_t color = 0;
 };
 
 template <typename T>
-filament::backend::BufferDescriptor makeBufferDescriptor(std::vector<T>&& data)
+::filament::backend::BufferDescriptor makeBufferDescriptor(std::vector<T>&& data)
 {
   auto* owned = new std::vector<T>(std::move(data));
-  return filament::backend::BufferDescriptor(
+  return ::filament::backend::BufferDescriptor(
       owned->data(),
       owned->size() * sizeof(T),
       [](void*, std::size_t, void* user) {
@@ -80,13 +80,13 @@ filament::backend::BufferDescriptor makeBufferDescriptor(std::vector<T>&& data)
       owned);
 }
 
-filament::backend::PixelBufferDescriptor makePixelBufferDescriptor(
+::filament::backend::PixelBufferDescriptor makePixelBufferDescriptor(
     std::vector<std::uint8_t>&& data,
-    filament::backend::PixelDataFormat format,
-    filament::backend::PixelDataType type)
+    ::filament::backend::PixelDataFormat format,
+    ::filament::backend::PixelDataType type)
 {
   auto* owned = new std::vector<std::uint8_t>(std::move(data));
-  return filament::backend::PixelBufferDescriptor(
+  return ::filament::backend::PixelBufferDescriptor(
       owned->data(),
       owned->size(),
       format,
@@ -98,7 +98,7 @@ filament::backend::PixelBufferDescriptor makePixelBufferDescriptor(
 }
 
 void destroyOverlayMesh(
-    filament::Engine& engine, filament::Scene* scene, OverlayMesh& mesh)
+    ::filament::Engine& engine, ::filament::Scene* scene, OverlayMesh& mesh)
 {
   if (mesh.entity) {
     if (scene != nullptr) {
@@ -122,7 +122,7 @@ void destroyOverlayMesh(
 
 } // namespace
 
-ImGuiOverlay createImGuiOverlay(filament::Engine& engine)
+ImGuiOverlay createImGuiOverlay(::filament::Engine& engine)
 {
   ImGuiOverlay overlay;
   overlay.view = engine.createView();
@@ -131,10 +131,10 @@ ImGuiOverlay createImGuiOverlay(filament::Engine& engine)
   overlay.camera = engine.createCamera(overlay.cameraEntity);
   overlay.view->setScene(overlay.scene);
   overlay.view->setCamera(overlay.camera);
-  overlay.view->setBlendMode(filament::BlendMode::TRANSLUCENT);
+  overlay.view->setBlendMode(::filament::BlendMode::TRANSLUCENT);
   overlay.view->setPostProcessingEnabled(false);
 
-  overlay.material = filament::Material::Builder()
+  overlay.material = ::filament::Material::Builder()
                          .package(kImGuiMaterial, kImGuiMaterialSize)
                          .build(engine);
   overlay.materialInstance = overlay.material->createInstance();
@@ -146,24 +146,24 @@ ImGuiOverlay createImGuiOverlay(filament::Engine& engine)
   std::vector<std::uint8_t> fontPixels(
       pixels, pixels + static_cast<std::size_t>(width) * height * 4);
 
-  overlay.fontTexture = filament::Texture::Builder()
+  overlay.fontTexture = ::filament::Texture::Builder()
                             .width(static_cast<std::uint32_t>(width))
                             .height(static_cast<std::uint32_t>(height))
                             .levels(1)
-                            .sampler(filament::Texture::Sampler::SAMPLER_2D)
-                            .format(filament::Texture::InternalFormat::RGBA8)
+                            .sampler(::filament::Texture::Sampler::SAMPLER_2D)
+                            .format(::filament::Texture::InternalFormat::RGBA8)
                             .build(engine);
   overlay.fontTexture->setImage(
       engine,
       0,
       makePixelBufferDescriptor(
           std::move(fontPixels),
-          filament::backend::PixelDataFormat::RGBA,
-          filament::backend::PixelDataType::UBYTE));
+          ::filament::backend::PixelDataFormat::RGBA,
+          ::filament::backend::PixelDataType::UBYTE));
 
-  const filament::TextureSampler sampler(
-      filament::TextureSampler::MinFilter::LINEAR,
-      filament::TextureSampler::MagFilter::LINEAR);
+  const ::filament::TextureSampler sampler(
+      ::filament::TextureSampler::MinFilter::LINEAR,
+      ::filament::TextureSampler::MagFilter::LINEAR);
   overlay.materialInstance->setParameter(
       "fontTexture", overlay.fontTexture, sampler);
   return overlay;
@@ -206,7 +206,7 @@ void loadImGuiFont(ImGuiIO& io, float guiScale)
 }
 
 void updateImGuiOverlay(
-    filament::Engine& engine,
+    ::filament::Engine& engine,
     ImGuiOverlay& overlay,
     const ImDrawData* drawData,
     std::uint32_t width,
@@ -214,7 +214,7 @@ void updateImGuiOverlay(
 {
   overlay.view->setViewport({0, 0, width, height});
   overlay.camera->setProjection(
-      filament::Camera::Projection::ORTHO,
+      ::filament::Camera::Projection::ORTHO,
       0.0,
       static_cast<double>(width),
       static_cast<double>(height),
@@ -260,45 +260,45 @@ void updateImGuiOverlay(
     destroyOverlayMesh(engine, overlay.scene, overlay.mesh);
 
     overlay.mesh.vertexBuffer
-        = filament::VertexBuffer::Builder()
+        = ::filament::VertexBuffer::Builder()
               .vertexCount(vertexCount)
               .bufferCount(1)
               .attribute(
-                  filament::VertexAttribute::POSITION,
+                  ::filament::VertexAttribute::POSITION,
                   0,
-                  filament::VertexBuffer::AttributeType::FLOAT3,
+                  ::filament::VertexBuffer::AttributeType::FLOAT3,
                   offsetof(ImGuiVertex, position),
                   sizeof(ImGuiVertex))
               .attribute(
-                  filament::VertexAttribute::UV0,
+                  ::filament::VertexAttribute::UV0,
                   0,
-                  filament::VertexBuffer::AttributeType::FLOAT2,
+                  ::filament::VertexBuffer::AttributeType::FLOAT2,
                   offsetof(ImGuiVertex, uv),
                   sizeof(ImGuiVertex))
               .attribute(
-                  filament::VertexAttribute::COLOR,
+                  ::filament::VertexAttribute::COLOR,
                   0,
-                  filament::VertexBuffer::AttributeType::UBYTE4,
+                  ::filament::VertexBuffer::AttributeType::UBYTE4,
                   offsetof(ImGuiVertex, color),
                   sizeof(ImGuiVertex))
-              .normalized(filament::VertexAttribute::COLOR)
+              .normalized(::filament::VertexAttribute::COLOR)
               .build(engine);
 
     overlay.mesh.indexBuffer
-        = filament::IndexBuffer::Builder()
+        = ::filament::IndexBuffer::Builder()
               .indexCount(indexCount)
-              .bufferType(filament::IndexBuffer::IndexType::UINT)
+              .bufferType(::filament::IndexBuffer::IndexType::UINT)
               .build(engine);
 
     overlay.mesh.entity = utils::EntityManager::get().create();
-    filament::RenderableManager::Builder(1)
+    ::filament::RenderableManager::Builder(1)
         .boundingBox(
             {{0.0f, 0.0f, -1.0f},
              {static_cast<float>(width), static_cast<float>(height), 1.0f}})
         .material(0, overlay.materialInstance)
         .geometry(
             0,
-            filament::RenderableManager::PrimitiveType::TRIANGLES,
+            ::filament::RenderableManager::PrimitiveType::TRIANGLES,
             overlay.mesh.vertexBuffer,
             overlay.mesh.indexBuffer,
             0,
@@ -318,7 +318,7 @@ void updateImGuiOverlay(
       engine, makeBufferDescriptor(std::move(indices)));
 }
 
-void destroyImGuiOverlay(filament::Engine& engine, ImGuiOverlay& overlay)
+void destroyImGuiOverlay(::filament::Engine& engine, ImGuiOverlay& overlay)
 {
   destroyOverlayMesh(engine, overlay.scene, overlay.mesh);
   if (overlay.materialInstance != nullptr) {
@@ -351,4 +351,4 @@ void destroyImGuiOverlay(filament::Engine& engine, ImGuiOverlay& overlay)
   }
 }
 
-} // namespace dart::examples::filament_gui
+} // namespace dart::gui::experimental::filament
