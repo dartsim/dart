@@ -30,35 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "native_window.hpp"
+#ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_NATIVE_WINDOW_HPP_
+#define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_NATIVE_WINDOW_HPP_
 
-#include <GLFW/glfw3.h>
+struct GLFWwindow;
 
-#if defined(__linux__)
-  #define GLFW_EXPOSE_NATIVE_X11
-  #include <GLFW/glfw3native.h>
-#elif defined(_WIN32)
-  #define GLFW_EXPOSE_NATIVE_WIN32
-  #include <GLFW/glfw3native.h>
-#elif defined(__APPLE__)
-  #define GLFW_EXPOSE_NATIVE_COCOA
-  #include <GLFW/glfw3native.h>
-#endif
+namespace dart::gui::experimental::filament {
 
-namespace dart::examples::filament_gui {
+void* getNativeWindow(GLFWwindow* window);
 
-void* getNativeWindow(GLFWwindow* window)
-{
-#if defined(__linux__)
-  return reinterpret_cast<void*>(glfwGetX11Window(window));
-#elif defined(_WIN32)
-  return glfwGetWin32Window(window);
-#elif defined(__APPLE__)
-  return glfwGetCocoaWindow(window);
-#else
-  (void)window;
-  return nullptr;
-#endif
-}
+} // namespace dart::gui::experimental::filament
 
-} // namespace dart::examples::filament_gui
+#endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_NATIVE_WINDOW_HPP_

@@ -217,8 +217,8 @@
   scene environment binding, viewport/camera application, and windowed
   view-quality configuration now live in
   `dart/gui/experimental/detail/filament/render_environment.hpp` and `.cpp`.
-- The Filament example keeps platform-specific GLFW native-window handle
-  selection in `examples/filament_gui/native_window.hpp` and `.cpp`.
+- Platform-specific GLFW native-window handle selection lives in
+  `dart/gui/experimental/detail/filament/native_window.hpp` and `.cpp`.
 - The Filament example keeps selection label formatting and G1 IK-target
   translation glue in `examples/filament_gui/selection.hpp` and `.cpp`.
 - Filament renderable state, lit-material configuration, shadow flag

@@ -125,8 +125,8 @@ Filament neutral lighting/color grading, light entity creation and orbit
 updates, scene environment binding, viewport/camera application, and windowed
 view-quality setup live in
 `dart/gui/experimental/detail/filament/render_environment.hpp` and `.cpp`.
-Example-local platform-specific GLFW native-window handle selection lives in
-`examples/filament_gui/native_window.hpp` and `.cpp`.
+Platform-specific GLFW native-window handle selection lives in
+`dart/gui/experimental/detail/filament/native_window.hpp` and `.cpp`.
 Filament-native ImGui font loading lives with the overlay renderer in
 `dart/gui/experimental/detail/filament/imgui_overlay.hpp` and `.cpp`; the
 built-in panel policy remains MVP/example-scoped.

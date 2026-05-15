@@ -144,7 +144,8 @@
   `dart/gui/experimental/detail/filament/render_environment.hpp` and `.cpp`,
   moving another backend implementation slice out of the example tree.
 - The Filament example's platform-specific GLFW native-window handle selection
-  now lives in `examples/filament_gui/native_window.hpp` and `.cpp`.
+  now lives in
+  `dart/gui/experimental/detail/filament/native_window.hpp` and `.cpp`.
 - The Filament example's selection labels and G1 IK-target translation glue now
   live in `examples/filament_gui/selection.hpp` and `.cpp`; renderer-independent
   selection and translation primitives remain in `dart-gui-experimental`.

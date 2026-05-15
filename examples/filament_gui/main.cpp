@@ -31,7 +31,6 @@
  */
 
 #include "input.hpp"
-#include "native_window.hpp"
 #include "scenes.hpp"
 #include "selection.hpp"
 
@@ -40,6 +39,7 @@
 #include <dart/common/profile.hpp>
 #include <dart/config.hpp>
 #include <dart/gui/experimental/detail/filament/imgui_overlay.hpp>
+#include <dart/gui/experimental/detail/filament/native_window.hpp>
 #include <dart/gui/experimental/detail/filament/renderable_factory.hpp>
 #include <dart/gui/experimental/detail/filament/renderable_resources.hpp>
 #include <dart/gui/experimental/detail/filament/renderable_sync.hpp>
@@ -170,6 +170,7 @@ using dart::gui::experimental::filament::destroyImGuiOverlay;
 using dart::gui::experimental::filament::destroySceneLights;
 using dart::gui::experimental::filament::detachSceneEnvironment;
 using dart::gui::experimental::filament::endFilamentFrame;
+using dart::gui::experimental::filament::getNativeWindow;
 using dart::gui::experimental::filament::loadImGuiFont;
 using dart::gui::experimental::filament::renderFilamentViews;
 using dart::gui::experimental::filament::requestScreenshot;
@@ -208,7 +209,6 @@ using dart::examples::filament_gui::kPyramidFixtureSkeletonName;
 using dart::examples::filament_gui::kSoftMeshFixtureSkeletonName;
 using dart::examples::filament_gui::kVoxelGridFixtureSkeletonName;
 using dart::examples::filament_gui::kWamFixtureSkeletonName;
-using dart::examples::filament_gui::getNativeWindow;
 using dart::examples::filament_gui::parseOptions;
 using dart::examples::filament_gui::sceneName;
 using dart::examples::filament_gui::selectedNudgeFromKeyboard;
