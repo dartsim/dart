@@ -59,6 +59,12 @@ struct SceneContentCounts
   std::size_t fetchRobotMeshes = 0;
   std::size_t fetchObjectRenderables = 0;
   std::size_t fetchTargets = 0;
+  std::size_t tinkertoyBoxes = 0;
+  std::size_t tinkertoyCylinders = 0;
+  std::size_t tinkertoySpheres = 0;
+  std::size_t tinkertoyTargets = 0;
+  std::size_t tinkertoyForceLines = 0;
+  std::size_t tinkertoyAxisLines = 0;
   std::size_t helloWorldBoxes = 0;
   std::size_t helloWorldGrounds = 0;
   std::size_t boxesExampleBoxes = 0;

@@ -58,15 +58,18 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
 namespace dart::gui::experimental::filament {
 
+using dart::dynamics::BallJoint;
 using dart::dynamics::BoxShape;
 using dart::dynamics::CapsuleShape;
 using dart::dynamics::CollisionAspect;
 using dart::dynamics::ConvexMeshShape;
+using dart::dynamics::CylinderShape;
 using dart::dynamics::DynamicsAspect;
 using dart::dynamics::Frame;
 using dart::dynamics::FreeJoint;
@@ -1174,6 +1177,223 @@ dart::dynamics::SkeletonPtr createDynamicSphereSkeleton(
   body->setInertia(Inertia(
       mass, Eigen::Vector3d::Zero(), sphereShape->computeInertia(mass)));
   return sphere;
+}
+
+struct TinkertoyFixtureShapes
+{
+  ShapePtr weldJointShape;
+  ShapePtr revoluteJointShape;
+  ShapePtr ballJointShape;
+  ShapePtr blockShape;
+  Eigen::Isometry3d blockOffset = Eigen::Isometry3d::Identity();
+};
+
+TinkertoyFixtureShapes createTinkertoyFixtureShapes()
+{
+  constexpr double blockLength = 0.5;
+  constexpr double blockWidth = 0.075;
+  constexpr double jointRadius = 1.5 * blockWidth / 2.0;
+
+  TinkertoyFixtureShapes shapes;
+  shapes.weldJointShape = std::make_shared<BoxShape>(
+      Eigen::Vector3d(2.0 * jointRadius, blockWidth, blockWidth));
+  shapes.revoluteJointShape
+      = std::make_shared<CylinderShape>(jointRadius, 1.5 * blockWidth);
+  shapes.ballJointShape = std::make_shared<SphereShape>(jointRadius);
+  shapes.blockShape = std::make_shared<BoxShape>(
+      Eigen::Vector3d(blockLength, blockWidth, blockWidth));
+  shapes.blockOffset.translation().x() = blockLength / 2.0;
+  return shapes;
+}
+
+template <class JointType>
+dart::dynamics::BodyNode* addTinkertoyBlock(
+    World& world,
+    const TinkertoyFixtureShapes& shapes,
+    dart::dynamics::BodyNode* parent,
+    const Eigen::Isometry3d& relativeTransform,
+    const ShapePtr& jointShape,
+    std::size_t& nextToyIndex)
+{
+  constexpr double blockMass = 0.16 * 10e3 * 0.5 * 0.075 * 0.075;
+  const Eigen::Vector4d pausedColor(0xEE / 255.0, 0xC9 / 255.0, 0.0, 1.0);
+  const Eigen::Vector4d jointColor(0.50, 0.50, 1.0, 1.0);
+
+  dart::dynamics::SkeletonPtr skeleton;
+  if (parent != nullptr) {
+    skeleton = parent->getSkeleton();
+  } else {
+    skeleton = Skeleton::create(
+        std::string(kTinkertoyFixtureSkeletonPrefix)
+        + std::to_string(nextToyIndex++));
+    world.addSkeleton(skeleton);
+  }
+
+  auto [joint, body] = skeleton->createJointAndBodyNodePair<JointType>(parent);
+  body->setName("block_" + std::to_string(skeleton->getNumBodyNodes()));
+  joint->setName("joint_" + std::to_string(skeleton->getNumJoints()));
+  joint->setTransformFromParentBodyNode(relativeTransform);
+  if constexpr (std::is_same_v<JointType, RevoluteJoint>) {
+    joint->setAxis(Eigen::Vector3d::UnitZ());
+  }
+  for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+    joint->setDampingCoefficient(i, 0.4);
+  }
+
+  auto* jointShapeNode
+      = body->template createShapeNodeWith<VisualAspect>(jointShape);
+  jointShapeNode->getVisualAspect()->setRGBA(jointColor);
+
+  auto* blockShapeNode = body->template createShapeNodeWith<VisualAspect>(
+      shapes.blockShape);
+  blockShapeNode->setRelativeTransform(shapes.blockOffset);
+  blockShapeNode->getVisualAspect()->setRGBA(pausedColor);
+
+  body->setInertia(Inertia(
+      blockMass,
+      0.25 * Eigen::Vector3d::UnitX(),
+      std::dynamic_pointer_cast<BoxShape>(shapes.blockShape)
+          ->computeInertia(blockMass)));
+
+  return body;
+}
+
+void addTinkertoyAxis(
+    World& world,
+    const std::string& name,
+    const Eigen::Vector3d& axis,
+    const Eigen::Vector3d& color)
+{
+  auto frame = SimpleFrame::createShared(Frame::World(), name);
+  auto line = std::make_shared<LineSegmentShape>(2.5f);
+  line->addVertex(Eigen::Vector3d::Zero());
+  line->addVertex(axis * 0.55);
+  line->addConnection(0, 1);
+  frame->setShape(line);
+  frame->createVisualAspect()->setColor(color);
+  world.addSimpleFrame(frame);
+}
+
+void addTinkertoyReferenceFrames(World& world)
+{
+  addTinkertoyAxis(
+      world,
+      std::string(kTinkertoyAxisFramePrefix) + "x",
+      Eigen::Vector3d::UnitX(),
+      dart::Color::Red());
+  addTinkertoyAxis(
+      world,
+      std::string(kTinkertoyAxisFramePrefix) + "y",
+      Eigen::Vector3d::UnitY(),
+      dart::Color::Green());
+  addTinkertoyAxis(
+      world,
+      std::string(kTinkertoyAxisFramePrefix) + "z",
+      Eigen::Vector3d::UnitZ(),
+      dart::Color::Blue());
+
+  Eigen::Isometry3d targetTransform = Eigen::Isometry3d::Identity();
+  targetTransform.translation() = Eigen::Vector3d(0.35, -0.55, 0.35);
+  auto target = SimpleFrame::createShared(
+      Frame::World(), kTinkertoyTargetFrameName, targetTransform);
+  target->setShape(std::make_shared<SphereShape>(0.055));
+  target->getVisualAspect(true)->setRGBA(dart::Color::Fuchsia(1.0));
+  world.addSimpleFrame(target);
+
+  auto forceLine = SimpleFrame::createShared(
+      Frame::World(), kTinkertoyForceLineFrameName);
+  auto forceLineShape = std::make_shared<LineSegmentShape>(
+      Eigen::Vector3d(0.08, -0.15, 0.18),
+      targetTransform.translation(),
+      3.0f);
+  forceLine->setShape(forceLineShape);
+  forceLine->createVisualAspect()->setRGBA(Eigen::Vector4d(1.0, 0.63, 0.0, 1.0));
+  world.addSimpleFrame(forceLine);
+}
+
+void addTinkertoyInitialAssemblies(World& world)
+{
+  TinkertoyFixtureShapes shapes = createTinkertoyFixtureShapes();
+  std::size_t nextToyIndex = 0;
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.rotate(Eigen::AngleAxisd(
+      dart::math::toRadian(45.0), Eigen::Vector3d::UnitY()));
+  auto* firstToy = addTinkertoyBlock<BallJoint>(
+      world, shapes, nullptr, transform, shapes.ballJointShape, nextToyIndex);
+
+  transform = Eigen::Isometry3d::Identity();
+  transform.translation().x() = 0.5;
+  transform.prerotate(Eigen::AngleAxisd(
+      dart::math::toRadian(90.0), Eigen::Vector3d::UnitX()));
+  firstToy = addTinkertoyBlock<RevoluteJoint>(
+      world,
+      shapes,
+      firstToy,
+      transform,
+      shapes.revoluteJointShape,
+      nextToyIndex);
+
+  transform = Eigen::Isometry3d::Identity();
+  transform.rotate(Eigen::AngleAxisd(
+      dart::math::toRadian(90.0), Eigen::Vector3d::UnitZ()));
+  firstToy = addTinkertoyBlock<WeldJoint>(
+      world, shapes, firstToy, transform, shapes.weldJointShape, nextToyIndex);
+
+  transform = Eigen::Isometry3d::Identity();
+  transform.translation().x() = 0.25;
+  transform.translation().z() = 0.075;
+  transform.rotate(Eigen::AngleAxisd(
+      dart::math::toRadian(-30.0), Eigen::Vector3d::UnitZ()));
+  addTinkertoyBlock<BallJoint>(
+      world, shapes, firstToy, transform, shapes.ballJointShape, nextToyIndex);
+
+  transform = Eigen::Isometry3d::Identity();
+  transform.rotate(Eigen::AngleAxisd(
+      dart::math::toRadian(90.0), Eigen::Vector3d::UnitY()));
+  transform.pretranslate(-1.0 * Eigen::Vector3d::UnitX());
+  auto* secondToy = addTinkertoyBlock<BallJoint>(
+      world, shapes, nullptr, transform, shapes.ballJointShape, nextToyIndex);
+
+  transform = Eigen::Isometry3d::Identity();
+  transform.translation().x() = 0.5;
+  transform.translation().z() = 0.25;
+  transform.rotate(Eigen::AngleAxisd(
+      dart::math::toRadian(90.0), Eigen::Vector3d::UnitY()));
+  secondToy = addTinkertoyBlock<WeldJoint>(
+      world, shapes, secondToy, transform, shapes.weldJointShape, nextToyIndex);
+
+  transform = Eigen::Isometry3d::Identity();
+  transform.rotate(Eigen::AngleAxisd(
+      dart::math::toRadian(-90.0), Eigen::Vector3d::UnitX()));
+  transform.rotate(Eigen::AngleAxisd(
+      dart::math::toRadian(-90.0), Eigen::Vector3d::UnitZ()));
+  transform.translation().z() = 0.075 / 2.0;
+  addTinkertoyBlock<RevoluteJoint>(
+      world,
+      shapes,
+      secondToy,
+      transform,
+      shapes.revoluteJointShape,
+      nextToyIndex);
+
+  transform.translation().x() = 0.5;
+  secondToy = addTinkertoyBlock<RevoluteJoint>(
+      world,
+      shapes,
+      secondToy,
+      transform,
+      shapes.revoluteJointShape,
+      nextToyIndex);
+
+  transform = Eigen::Isometry3d::Identity();
+  transform.translation().x() = 0.5;
+  addTinkertoyBlock<BallJoint>(
+      world, shapes, secondToy, transform, shapes.ballJointShape, nextToyIndex);
+
+  for (std::size_t i = 0; i < world.getNumSkeletons(); ++i) {
+    makeVisualOnlySkeleton(world.getSkeleton(i));
+  }
 }
 
 dart::dynamics::SkeletonPtr createLcpPhysicsBoxSkeleton(
@@ -3137,6 +3357,16 @@ DartScene createFetchScene()
     }
   };
 
+  return scene;
+}
+
+DartScene createTinkertoyScene()
+{
+  DartScene scene;
+  scene.world = World::create();
+  scene.world->setGravity(Eigen::Vector3d::Zero());
+  addTinkertoyReferenceFrames(*scene.world);
+  addTinkertoyInitialAssemblies(*scene.world);
   return scene;
 }
 

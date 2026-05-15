@@ -79,6 +79,8 @@ DartScene createWamIkFastScene();
 
 DartScene createFetchScene();
 
+DartScene createTinkertoyScene();
+
 DartScene createDragAndDropScene();
 
 DartScene createSimpleFramesScene();

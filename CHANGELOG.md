@@ -231,6 +231,11 @@
     object pose, and exposes the target frame through descriptor-owned
     renderables while the legacy standalone source remains available for its
     ImGui panel and OSG drag controls.
+    The `tinkertoy` runner now routes to a `--scene tinkertoy` Filament fixture
+    that recreates the legacy builder's initial block assemblies, target
+    marker, force line, and reference axes through descriptor-owned renderables
+    while the legacy standalone source remains available for its ImGui panel,
+    mouse picking, and block-add/delete controls.
     The `joint_constraints` runner now routes to a `--scene joint-constraints`
     Filament fixture that loads the legacy fullbody world and runs the SPD
     balance controller through the same private scene pre-step hook.

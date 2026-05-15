@@ -35,6 +35,7 @@ FILAMENT_SMOKE_PATTERN = (
     "EXAMPLE_filament_gui_operational_space_control_headless_smoke|"
     "EXAMPLE_filament_gui_wam_ikfast_headless_smoke|"
     "EXAMPLE_filament_gui_fetch_headless_smoke|"
+    "EXAMPLE_filament_gui_tinkertoy_headless_smoke|"
     "EXAMPLE_filament_gui_drag_and_drop_headless_smoke|"
     "EXAMPLE_filament_gui_simple_frames_headless_smoke|"
     "EXAMPLE_filament_gui_soft_bodies_headless_smoke|"
@@ -202,6 +203,12 @@ EXAMPLE_SPECS = {
         "filament_gui",
         ("filament",),
         ("--scene", "fetch"),
+    ),
+    "tinkertoy": ExampleSpec(
+        "dart_filament_gui",
+        "filament_gui",
+        ("filament",),
+        ("--scene", "tinkertoy"),
     ),
     "drag_and_drop": ExampleSpec(
         "dart_filament_gui",
@@ -553,6 +560,7 @@ def _split_filament_scenes(run_args: list[str]) -> tuple[list[str], list[str]]:
                 "operational-space-control",
                 "wam-ikfast",
                 "fetch",
+                "tinkertoy",
                 "drag-and-drop",
                 "simple-frames",
                 "soft-bodies",

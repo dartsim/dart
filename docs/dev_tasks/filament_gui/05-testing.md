@@ -107,26 +107,28 @@
     `EXAMPLE_filament_gui_wam_ikfast_headless_smoke` on the same workers.
 23. Opt-in fetch MJCF visual fixture smoke through
     `EXAMPLE_filament_gui_fetch_headless_smoke` on the same workers.
-24. Opt-in interaction fixture smoke through
+24. Opt-in tinkertoy builder fixture smoke through
+    `EXAMPLE_filament_gui_tinkertoy_headless_smoke` on the same workers.
+25. Opt-in interaction fixture smoke through
     `EXAMPLE_filament_gui_drag_and_drop_headless_smoke` on the same workers.
-25. Opt-in simple-frames visual fixture smoke through
+26. Opt-in simple-frames visual fixture smoke through
     `EXAMPLE_filament_gui_simple_frames_headless_smoke` on the same workers.
-26. Opt-in soft-bodies visual fixture smoke through
+27. Opt-in soft-bodies visual fixture smoke through
     `EXAMPLE_filament_gui_soft_bodies_headless_smoke` on the same workers.
-27. Opt-in point-cloud visual fixture smoke through
+28. Opt-in point-cloud visual fixture smoke through
     `EXAMPLE_filament_gui_point_cloud_headless_smoke` on the same workers.
-28. Opt-in capsule contact fixture smoke through
+29. Opt-in capsule contact fixture smoke through
     `EXAMPLE_filament_gui_capsule_ground_contact_headless_smoke` on the same
     workers.
-29. Opt-in simulation event-handler fixture smoke through
+30. Opt-in simulation event-handler fixture smoke through
     `EXAMPLE_filament_gui_simulation_event_handler_headless_smoke` on the same
     workers.
-30. Opt-in polyhedron visual fixture smoke through
+31. Opt-in polyhedron visual fixture smoke through
     `EXAMPLE_filament_gui_polyhedron_headless_smoke` on the same workers.
-31. Opt-in heightmap visual fixture smoke through
+32. Opt-in heightmap visual fixture smoke through
     `EXAMPLE_filament_gui_heightmap_headless_smoke` on the same workers.
-32. Focused C++ unit tests for scene extraction and interaction math.
-33. Python import/binding smoke tests for the constrained experimental API.
+33. Focused C++ unit tests for scene extraction and interaction math.
+34. Python import/binding smoke tests for the constrained experimental API.
 
 ## Local commands
 
@@ -179,7 +181,7 @@ LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
   cmake --build build/default/cpp/Release --target dart_filament_gui
 LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
   ctest --test-dir build/default/cpp/Release \
-  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|hardcoded_design_headless|rigid_chain_headless|rigid_loop_headless|mixed_chain_headless|coupler_constraint_headless|add_delete_skels_headless|vehicle_headless|hybrid_dynamics_headless|joint_constraints_headless|free_joint_cases_headless|human_joint_limits_headless|lcp_physics_headless|mimic_pendulums_headless|atlas_puppet_headless|atlas_simbicon_headless|operational_space_control_headless|wam_ikfast_headless|fetch_headless|drag_and_drop_headless|simple_frames_headless|soft_bodies_headless|point_cloud_headless|capsule_ground_contact_headless|simulation_event_handler_headless|polyhedron_headless|heightmap_headless)_smoke' \
+  -R 'EXAMPLE_filament_gui_(headless|hello_world_headless|boxes_headless|hardcoded_design_headless|rigid_chain_headless|rigid_loop_headless|mixed_chain_headless|coupler_constraint_headless|add_delete_skels_headless|vehicle_headless|hybrid_dynamics_headless|joint_constraints_headless|free_joint_cases_headless|human_joint_limits_headless|lcp_physics_headless|mimic_pendulums_headless|atlas_puppet_headless|atlas_simbicon_headless|operational_space_control_headless|wam_ikfast_headless|fetch_headless|tinkertoy_headless|drag_and_drop_headless|simple_frames_headless|soft_bodies_headless|point_cloud_headless|capsule_ground_contact_headless|simulation_event_handler_headless|polyhedron_headless|heightmap_headless)_smoke' \
   --output-on-failure
 ```
 
@@ -307,6 +309,8 @@ Known current result:
   `EXAMPLE_filament_gui_wam_ikfast_headless_smoke`, which runs
   `--scene wam-ikfast`,
   `EXAMPLE_filament_gui_fetch_headless_smoke`, which runs `--scene fetch`,
+  `EXAMPLE_filament_gui_tinkertoy_headless_smoke`, which runs
+  `--scene tinkertoy`,
   `EXAMPLE_filament_gui_drag_and_drop_headless_smoke`, which runs
   `--scene drag-and-drop`,
   `EXAMPLE_filament_gui_simple_frames_headless_smoke`, which runs
@@ -334,7 +338,7 @@ Known current result:
   rigid-loop, mixed-chain, coupler-constraint, add-delete-skels, vehicle,
   hybrid-dynamics, joint-constraints, free-joint-cases, human-joint-limits,
   lcp-physics, mimic-pendulums, atlas-puppet, atlas-simbicon,
-  operational-space-control, wam-ikfast, fetch, drag-and-drop,
+  operational-space-control, wam-ikfast, fetch, tinkertoy, drag-and-drop,
   simple-frames, soft-bodies,
   point-cloud, capsule-ground-contact, simulation-event-handler, polyhedron,
   and heightmap headless CTest smokes.

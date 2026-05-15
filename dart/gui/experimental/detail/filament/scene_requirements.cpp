@@ -156,6 +156,30 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Sphere) {
     ++counts.fetchTargets;
   }
+  if (descriptor.skeletonName.starts_with(kTinkertoyFixtureSkeletonPrefix)
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.tinkertoyBoxes;
+  }
+  if (descriptor.skeletonName.starts_with(kTinkertoyFixtureSkeletonPrefix)
+      && descriptor.geometry.kind == ShapeKind::Cylinder) {
+    ++counts.tinkertoyCylinders;
+  }
+  if (descriptor.skeletonName.starts_with(kTinkertoyFixtureSkeletonPrefix)
+      && descriptor.geometry.kind == ShapeKind::Sphere) {
+    ++counts.tinkertoySpheres;
+  }
+  if (descriptor.shapeFrameName == kTinkertoyTargetFrameName
+      && descriptor.geometry.kind == ShapeKind::Sphere) {
+    ++counts.tinkertoyTargets;
+  }
+  if (descriptor.shapeFrameName == kTinkertoyForceLineFrameName
+      && descriptor.geometry.kind == ShapeKind::LineSegments) {
+    ++counts.tinkertoyForceLines;
+  }
+  if (descriptor.shapeFrameName.starts_with(kTinkertoyAxisFramePrefix)
+      && descriptor.geometry.kind == ShapeKind::LineSegments) {
+    ++counts.tinkertoyAxisLines;
+  }
   if (descriptor.skeletonName == kAtlasFixtureSkeletonName
       && descriptor.geometry.kind == ShapeKind::Mesh) {
     ++counts.atlasMeshes;
@@ -664,6 +688,55 @@ bool validateSceneDescriptorContent(
         kFetchTargetCount,
         "fetch scene",
         "visible target renderable descriptor",
+        output);
+  }
+
+  if (scene == ExampleScene::Tinkertoy) {
+    if (!requireEqual(
+            counts.tinkertoyBoxes,
+            kTinkertoyFixtureBoxCount,
+            "tinkertoy scene",
+            "visible block and weld-box renderable descriptors",
+            output)) {
+      return false;
+    }
+    if (!requireEqual(
+            counts.tinkertoyCylinders,
+            kTinkertoyFixtureCylinderCount,
+            "tinkertoy scene",
+            "visible revolute-joint renderable descriptors",
+            output)) {
+      return false;
+    }
+    if (!requireEqual(
+            counts.tinkertoySpheres,
+            kTinkertoyFixtureSphereCount,
+            "tinkertoy scene",
+            "visible ball-joint renderable descriptors",
+            output)) {
+      return false;
+    }
+    if (!requireEqual(
+            counts.tinkertoyTargets,
+            kTinkertoyTargetCount,
+            "tinkertoy scene",
+            "visible target renderable descriptor",
+            output)) {
+      return false;
+    }
+    if (!requireEqual(
+            counts.tinkertoyForceLines,
+            kTinkertoyForceLineCount,
+            "tinkertoy scene",
+            "visible force-line renderable descriptor",
+            output)) {
+      return false;
+    }
+    return requireEqual(
+        counts.tinkertoyAxisLines,
+        kTinkertoyAxisLineCount,
+        "tinkertoy scene",
+        "visible axis-line renderable descriptors",
         output);
   }
 
@@ -1276,6 +1349,49 @@ bool validateCreatedSceneContent(
     }
     return requireCreatedEqual(
         created.fetchTargets, expected.fetchTargets, "fetch target renderables", output);
+  }
+
+  if (scene == ExampleScene::Tinkertoy) {
+    if (!requireCreatedEqual(
+            created.tinkertoyBoxes,
+            expected.tinkertoyBoxes,
+            "tinkertoy block and weld-box renderables",
+            output)) {
+      return false;
+    }
+    if (!requireCreatedEqual(
+            created.tinkertoyCylinders,
+            expected.tinkertoyCylinders,
+            "tinkertoy revolute-joint renderables",
+            output)) {
+      return false;
+    }
+    if (!requireCreatedEqual(
+            created.tinkertoySpheres,
+            expected.tinkertoySpheres,
+            "tinkertoy ball-joint renderables",
+            output)) {
+      return false;
+    }
+    if (!requireCreatedEqual(
+            created.tinkertoyTargets,
+            expected.tinkertoyTargets,
+            "tinkertoy target renderables",
+            output)) {
+      return false;
+    }
+    if (!requireCreatedEqual(
+            created.tinkertoyForceLines,
+            expected.tinkertoyForceLines,
+            "tinkertoy force-line renderables",
+            output)) {
+      return false;
+    }
+    return requireCreatedEqual(
+        created.tinkertoyAxisLines,
+        expected.tinkertoyAxisLines,
+        "tinkertoy axis-line renderables",
+        output);
   }
 
   if (scene == ExampleScene::HelloWorld) {

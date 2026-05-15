@@ -10,6 +10,11 @@
 This project is dependent on DART. Please make sure a proper version of DART is
 installed before building this project.
 
+Inside the source tree, `pixi run ex tinkertoy` routes to
+`examples/filament_gui --scene tinkertoy` so the in-tree runner uses the
+maintained Filament visual path. This standalone source remains comparison
+material for the ImGui panel, mouse picking, and block-add/delete controls.
+
 ## Build Instructions
 
 From this directory:

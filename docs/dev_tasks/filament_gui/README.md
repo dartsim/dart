@@ -191,7 +191,7 @@
   mixed-chain/coupler-constraint/add-delete-skels/vehicle/hybrid-dynamics/
   joint-constraints/free-joint-cases/human-joint-limits/lcp-physics/
   mimic-pendulums/atlas-puppet/atlas-simbicon/
-  operational-space-control/wam-ikfast/fetch/drag/
+  operational-space-control/wam-ikfast/fetch/tinkertoy/drag/
   simple-frames/
   soft-bodies/point-cloud/capsule-ground-contact/simulation-event-handler/
   polyhedron/heightmap
@@ -366,6 +366,12 @@
   routes to that Filament scene while the legacy standalone OSG/ImGui source
   remains available for panel, drag-control, and mocap target update
   comparison.
+- The Filament example includes `--scene tinkertoy`, a Tinkertoy visual fixture
+  that carries the legacy builder's initial block assemblies, target marker,
+  force line, and reference axes through descriptor-owned renderables. The
+  in-tree `pixi run ex tinkertoy` runner now routes to that Filament scene
+  while the legacy standalone OSG/ImGui source remains available for panel,
+  mouse-picking, and block-add/delete comparison.
 - The Filament example also includes `--scene drag-and-drop`, a first
   interaction-heavy fixture that carries the legacy `SimpleFrame` anchor, child
   frame, and axis marker layout through the same backend-hidden manipulation
@@ -464,7 +470,8 @@
   rigid-chain, rigid-loop, mixed-chain, coupler-constraint, add-delete-skels,
   vehicle, hybrid-dynamics, joint-constraints, free-joint-cases,
   human-joint-limits, lcp-physics, mimic-pendulums, atlas-puppet,
-  atlas-simbicon, operational-space-control, wam-ikfast, fetch, drag-and-drop,
+  atlas-simbicon, operational-space-control, wam-ikfast, fetch, tinkertoy,
+  drag-and-drop,
   simple-frames, soft-bodies,
   point-cloud, capsule-ground-contact, simulation-event-handler, polyhedron,
   and heightmap headless CTest smokes.
