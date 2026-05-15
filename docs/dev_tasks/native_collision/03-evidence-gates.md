@@ -2633,11 +2633,11 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     `7005904083`, `7005879764`, `7006075376`, `7006153851`,
     `7006180173`.
 - Closed-PR trigger state after later pushed audit/docs heads:
-  - Heads `f31f1a5b897`, `bdf6e34573c`, `6be640e7007`, `ec6f6f43112`, and
-    `aa3ccce70c7` are pushed to `feature/new_coll`, but
+  - Audit/docs/policy heads after the manual-dispatch evidence baseline are
+    pushed to `feature/new_coll`, but
     `gh run list --branch feature/new_coll --commit` returns no Actions runs
-    for those commits. These pushes publish branch state only because the
-    workflows do not run on arbitrary feature-branch pushes.
+    for checked docs/evidence commits. These pushes publish branch state only
+    because the workflows do not run on arbitrary feature-branch pushes.
 - Broad local Debug validation after the macOS/Linux closed-PR repairs:
   - Command:
     `cmake --build build/default/cpp/Debug --target tests --parallel 5`

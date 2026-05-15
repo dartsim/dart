@@ -683,10 +683,9 @@ libraries.
   the native-backed compatibility facade components no longer need those
   options. Manual workflow-dispatch evidence on `1e1faf6feb1` passed
   native-only CI, gz-physics CI, the full dartpy wheel matrix, and the
-  collision benchmark guard artifact upload. Later pushes
-  `f31f1a5b897`, `bdf6e34573c`, `6be640e7007`, `ec6f6f43112`, and
-  `aa3ccce70c7` have no attached Actions runs because `feature/new_coll` does
-  not match the workflow `push` filters and PR #2652 remains closed.
+  collision benchmark guard artifact upload. Later docs/evidence pushes have
+  no attached Actions runs because `feature/new_coll` does not match the
+  workflow `push` filters and PR #2652 remains closed.
 
 ## How to Resume
 

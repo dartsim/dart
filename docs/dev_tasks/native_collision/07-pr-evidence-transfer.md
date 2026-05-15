@@ -99,10 +99,9 @@ Local validation currently recorded in the dev-task evidence:
   - full dartpy wheel matrix passed
   - collision benchmark guard uploaded
     `collision-benchmark-guard-25887939088-1`
-- Later pushed audit/docs/policy heads `f31f1a5b897`, `bdf6e34573c`,
-  `6be640e7007`, `ec6f6f43112`, and `aa3ccce70c7` have no attached GitHub
-  Actions runs because `feature/new_coll` pushes do not match the workflow
-  `push` filters.
+- Later pushed audit/docs/policy heads have no attached GitHub Actions runs
+  unless the maintainer chooses a PR or manual workflow surface, because
+  `feature/new_coll` pushes do not match the workflow `push` filters.
 
 Final PR-complete testing still needs whatever CI surface the maintainer chooses
 after PR #2652 is reopened or a successor PR is created.

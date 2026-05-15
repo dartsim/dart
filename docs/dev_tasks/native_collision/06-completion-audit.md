@@ -102,10 +102,10 @@ unverified external and finalization gates:
   `test_collision_world` dangling-pointer issue in world-level sphere/capsule
   cast results; the world query layer now keeps stable collision-object handles
   for raycast, sphere-cast, and capsule-cast result pointers.
-- Later pushed heads `f31f1a5b897`, `bdf6e34573c`, `6be640e7007`,
-  `ec6f6f43112`, and `aa3ccce70c7` contain audit/docs/policy refinements and
-  the clean dartpy collision API. The matching `gh run list` checks return no
-  GitHub Actions runs for those heads because those branch pushes are not an
+- Later pushed audit/docs/policy heads contain audit evidence, CI trigger
+  notes, clean dartpy collision API policy, and reference build-option
+  refinements. The matching `gh run list` checks return no GitHub Actions runs
+  for checked docs/evidence commits because those branch pushes are not an
   allowed workflow trigger.
 - Local downstream migration evidence is refreshed: fresh gz-physics,
   package-smoke, runtime-isolation, C++ compatibility-name, dartpy clean-API,
@@ -585,8 +585,7 @@ Legend:
    state but does not automatically trigger the main GitHub Actions workflows.
    Manual workflow-dispatch reference evidence for pushed head `1e1faf6feb1`
    now covers native-only CI, gz-physics, the wheel matrix, and the collision
-   benchmark guard artifact upload. Later pushed heads `f31f1a5b897`,
-   `bdf6e34573c`, `6be640e7007`, `ec6f6f43112`, and `aa3ccce70c7` have no
+   benchmark guard artifact upload. Later pushed docs/evidence heads have no
    attached runs for the same trigger-filter reason.
    Treat GitHub CI as reference evidence; use local build/test as the main
    validation surface unless the maintainer explicitly chooses another trigger.
