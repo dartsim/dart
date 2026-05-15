@@ -258,6 +258,56 @@ bool addFacePatchContacts(
   return true;
 }
 
+bool computeFaceOverlapContactPoint(
+    const Eigen::Vector3d& center1,
+    const Eigen::Vector3d& halfExtents1,
+    const Eigen::Matrix3d& rotation1,
+    const Eigen::Vector3d& center2,
+    const Eigen::Vector3d& halfExtents2,
+    const Eigen::Matrix3d& rotation2,
+    const Eigen::Vector3d& normal,
+    const SatResult& best,
+    Eigen::Vector3d& contactPoint)
+{
+  if (best.axisIndex < 0 || best.axisIndex >= 6) {
+    return false;
+  }
+
+  const auto referenceAxisIndex
+      = (best.axisIndex < 3) ? best.axisIndex : best.axisIndex - 3;
+  const auto& referenceRotation = (best.axisIndex < 3) ? rotation1 : rotation2;
+  const auto tangent1 = referenceRotation.col((referenceAxisIndex + 1) % 3);
+  const auto tangent2 = referenceRotation.col((referenceAxisIndex + 2) % 3);
+
+  const auto interval1T1
+      = projectInterval(center1, halfExtents1, rotation1, tangent1);
+  const auto interval2T1
+      = projectInterval(center2, halfExtents2, rotation2, tangent1);
+  const auto interval1T2
+      = projectInterval(center1, halfExtents1, rotation1, tangent2);
+  const auto interval2T2
+      = projectInterval(center2, halfExtents2, rotation2, tangent2);
+
+  const auto minT1 = std::max(interval1T1[0], interval2T1[0]);
+  const auto maxT1 = std::min(interval1T1[1], interval2T1[1]);
+  const auto minT2 = std::max(interval1T2[0], interval2T2[0]);
+  const auto maxT2 = std::min(interval1T2[1], interval2T2[1]);
+  if (maxT1 < minT1 || maxT2 < minT2) {
+    return false;
+  }
+
+  const auto interval1Normal
+      = projectInterval(center1, halfExtents1, rotation1, normal);
+  const auto interval2Normal
+      = projectInterval(center2, halfExtents2, rotation2, normal);
+  const auto contactNormalCoord
+      = 0.5 * (interval1Normal[0] + interval2Normal[1]);
+
+  contactPoint = contactNormalCoord * normal + 0.5 * (minT1 + maxT1) * tangent1
+                 + 0.5 * (minT2 + maxT2) * tangent2;
+  return true;
+}
+
 } // namespace
 
 bool collideBoxes(
@@ -336,14 +386,26 @@ bool collideBoxes(
     normal = -normal;
   }
 
-  Eigen::Vector3d contactPoint = computeContactPoint(
-      center1,
-      halfExtents1,
-      rotation1,
-      center2,
-      halfExtents2,
-      rotation2,
-      normal);
+  Eigen::Vector3d contactPoint;
+  if (!computeFaceOverlapContactPoint(
+          center1,
+          halfExtents1,
+          rotation1,
+          center2,
+          halfExtents2,
+          rotation2,
+          normal,
+          best,
+          contactPoint)) {
+    contactPoint = computeContactPoint(
+        center1,
+        halfExtents1,
+        rotation1,
+        center2,
+        halfExtents2,
+        rotation2,
+        normal);
+  }
 
   ContactPoint contact;
   contact.position = contactPoint;

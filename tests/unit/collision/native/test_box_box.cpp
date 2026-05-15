@@ -402,7 +402,10 @@ TEST(BoxBox, RotatedSmallBoxOnLargeGroundHasLocalContactPoint)
               EXPECT_TRUE(contact.position.allFinite());
               EXPECT_TRUE(contact.normal.allFinite());
               EXPECT_NEAR(contact.depth, 0.01, 1e-9);
-              EXPECT_GT(contact.normal.z() * normalSign, 0.25);
+              EXPECT_GT(contact.normal.z() * normalSign, 0.25)
+                  << "position=" << contact.position.transpose()
+                  << " normal=" << contact.normal.transpose()
+                  << " depth=" << contact.depth;
 
               const double distance = contact.position.head<2>().norm();
               if (distance < closestDistance) {
@@ -414,7 +417,13 @@ TEST(BoxBox, RotatedSmallBoxOnLargeGroundHasLocalContactPoint)
 
           EXPECT_EQ(countedContacts, result.numContacts());
           EXPECT_GE(countedContacts, 1u);
-          EXPECT_LT(closestDistance, 0.3);
+          if (closest != nullptr) {
+            EXPECT_LT(closestDistance, 0.3)
+                << "closest=" << closest->position.transpose()
+                << " normal=" << closest->normal.transpose();
+          } else {
+            EXPECT_LT(closestDistance, 0.3);
+          }
           return (closest != nullptr) ? *closest : ContactPoint{};
         };
 
