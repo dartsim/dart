@@ -324,6 +324,15 @@ bool validateSceneDescriptorContent(
         output);
   }
 
+  if (scene == ExampleScene::Heightmap) {
+    return requireEqual(
+        counts.heightmaps,
+        1,
+        "heightmap scene",
+        "visible heightmap renderable descriptor",
+        output);
+  }
+
   if (scene == ExampleScene::Polyhedron) {
     if (!requireEqual(
             counts.polyhedronSurfaces,
@@ -440,6 +449,11 @@ bool validateCreatedSceneContent(
   if (scene == ExampleScene::G1) {
     return requireCreatedAtLeast(
         created.g1Meshes, expected.g1Meshes, "G1 robot mesh renderables", output);
+  }
+
+  if (scene == ExampleScene::Heightmap) {
+    return requireCreatedEqual(
+        created.heightmaps, expected.heightmaps, "heightmap renderables", output);
   }
 
   if (scene == ExampleScene::Polyhedron) {

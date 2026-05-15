@@ -235,6 +235,12 @@
   descriptor-owned convex-mesh and line-segment renderables. The in-tree
   `pixi run ex polyhedron_visual` runner now routes to that Filament scene
   while the legacy standalone OSG source remains available for comparison.
+- The Filament example now also includes `--scene heightmap`, a local
+  heightmap surface and reference-marker fixture that carries the visual side
+  of the legacy `heightmap` example through descriptor-owned heightmap
+  renderables. The in-tree `pixi run ex heightmap` runner now routes to that
+  Filament scene while the legacy standalone OSG/ImGui source remains available
+  for the panel-driven sculpting and contact-alignment controls.
 - The Filament example now also includes `--scene g1`, which loads the remote
   Unitree G1 URDF through DART's normal resource-retriever path and exposes
   colored IK targets for both hands and feet. The in-tree
@@ -269,11 +275,11 @@
   is still a local workaround rather than a supported packaging path.
 - `pixi run test-filament-gui-smoke` now exercises the explicit pinned
   `DART_FETCH_FILAMENT=ON` path on Linux x86_64, builds without the legacy OSG
-  GUI target, and runs the default, drag-and-drop, and polyhedron headless
-  CTest smokes. When no display server is available, the task runs the smokes
-  under Xvfb and prefers Mesa's EGL vendor file for software rendering. The
-  Ubuntu CI workflow has a matching opt-in smoke job that gets Xvfb, libc++,
-  and libc++abi from
+  GUI target, and runs the default, drag-and-drop, polyhedron, and heightmap
+  headless CTest smokes. When no display server is available, the task runs the
+  smokes under Xvfb and prefers Mesa's EGL vendor file for software rendering.
+  The Ubuntu CI workflow has a matching opt-in smoke job that gets Xvfb,
+  libc++, and libc++abi from
   system packages instead of relying on a Filament package. The MVP PR #2647
   merged with hosted `Filament GUI Smoke (GCC)` and
   `Filament GUI Smoke (Clang)` passing.

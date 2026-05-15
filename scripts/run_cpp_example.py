@@ -16,7 +16,8 @@ from pathlib import Path
 FILAMENT_SMOKE_PATTERN = (
     "EXAMPLE_filament_gui_headless_smoke|"
     "EXAMPLE_filament_gui_drag_and_drop_headless_smoke|"
-    "EXAMPLE_filament_gui_polyhedron_headless_smoke"
+    "EXAMPLE_filament_gui_polyhedron_headless_smoke|"
+    "EXAMPLE_filament_gui_heightmap_headless_smoke"
 )
 
 
@@ -43,6 +44,12 @@ EXAMPLE_SPECS = {
         "filament_gui",
         ("filament",),
         ("--scene", "polyhedron"),
+    ),
+    "heightmap": ExampleSpec(
+        "dart_filament_gui",
+        "filament_gui",
+        ("filament",),
+        ("--scene", "heightmap"),
     ),
     "g1_puppet": ExampleSpec(
         "dart_filament_gui",
@@ -318,7 +325,7 @@ def _split_filament_scenes(run_args: list[str]) -> tuple[list[str], list[str]]:
         scene = args[index + 1]
         del args[index : index + 2]
         if scene == "all":
-            return ["mvp", "drag-and-drop", "polyhedron"], args
+            return ["mvp", "drag-and-drop", "polyhedron", "heightmap"], args
         return [scene], args
     return ["mvp"], args
 

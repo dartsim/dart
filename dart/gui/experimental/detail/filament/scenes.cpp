@@ -117,6 +117,8 @@ const char* sceneName(ExampleScene scene)
       return "drag-and-drop";
     case ExampleScene::Polyhedron:
       return "polyhedron";
+    case ExampleScene::Heightmap:
+      return "heightmap";
     case ExampleScene::G1:
       return "g1";
   }
@@ -135,6 +137,10 @@ bool parseSceneName(std::string_view name, ExampleScene& scene)
   }
   if (name == "polyhedron") {
     scene = ExampleScene::Polyhedron;
+    return true;
+  }
+  if (name == "heightmap") {
+    scene = ExampleScene::Heightmap;
     return true;
   }
   if (name == "g1") {
@@ -159,6 +165,12 @@ OrbitCamera initialCameraForScene(ExampleScene scene)
       camera.yaw = -0.78;
       camera.pitch = 0.42;
       camera.distance = 3.0;
+      break;
+    case ExampleScene::Heightmap:
+      camera.target = Eigen::Vector3d(0.0, 0.0, 0.25);
+      camera.yaw = -0.74;
+      camera.pitch = 0.48;
+      camera.distance = 4.3;
       break;
     case ExampleScene::G1:
       camera.target = Eigen::Vector3d(0.0, 0.0, 0.85);
@@ -259,6 +271,38 @@ std::shared_ptr<dart::dynamics::LineSegmentShape> createPolyhedronWireframe()
   for (const auto& edge : edges) {
     shape->addConnection(edge.first, edge.second);
   }
+  return shape;
+}
+
+std::shared_ptr<HeightmapShaped> createMvpHeightmapShape()
+{
+  auto shape = std::make_shared<HeightmapShaped>();
+  const std::array<double, 12> heights{
+      0.02, 0.10, 0.06, 0.12, 0.08, 0.18,
+      0.14, 0.05, 0.10, 0.24, 0.16, 0.08};
+  shape->setHeightField(4u, 3u, heights);
+  shape->setScale(Eigen::Vector3d(0.18, 0.18, 1.0));
+  return shape;
+}
+
+std::shared_ptr<HeightmapShaped> createHeightmapExampleShape()
+{
+  auto shape = std::make_shared<HeightmapShaped>();
+  constexpr std::size_t xResolution = 7;
+  constexpr std::size_t yResolution = 5;
+  std::vector<double> heights;
+  heights.reserve(xResolution * yResolution);
+  for (std::size_t y = 0; y < yResolution; ++y) {
+    for (std::size_t x = 0; x < xResolution; ++x) {
+      const double xPhase = static_cast<double>(x) * 0.75;
+      const double yPhase = static_cast<double>(y) * 0.9;
+      const double ridge = (x == 3 || y == 2) ? 0.08 : 0.0;
+      heights.push_back(
+          0.08 + ridge + 0.08 * std::sin(xPhase) * std::cos(yPhase));
+    }
+  }
+  shape->setHeightField(xResolution, yResolution, heights);
+  shape->setScale(Eigen::Vector3d(0.32, 0.32, 1.0));
   return shape;
 }
 
@@ -776,8 +820,8 @@ AppOptions parseOptions(int argc, char* argv[])
       const std::string_view sceneArg(argv[++i]);
       if (!parseSceneName(sceneArg, options.scene)) {
         std::cerr << "Unknown scene '" << sceneArg
-                  << "'. Expected 'mvp', 'drag-and-drop', 'polyhedron', or "
-                     "'g1'.\n";
+                  << "'. Expected 'mvp', 'drag-and-drop', 'polyhedron', "
+                     "'heightmap', or 'g1'.\n";
         std::exit(2);
       }
     } else if (
@@ -803,7 +847,7 @@ AppOptions parseOptions(int argc, char* argv[])
                    " [--orbit-light-period SECONDS]"
                    " [--gui-scale N]"
                    " [--profile]"
-                   " [--scene mvp|drag-and-drop|polyhedron|g1]"
+                   " [--scene mvp|drag-and-drop|polyhedron|heightmap|g1]"
                    " [--g1-package-uri URI] [--g1-robot-uri URI]"
                    " [--g1-package-name NAME]\n";
       std::exit(0);
@@ -950,16 +994,6 @@ DartScene createMvpDartScene()
     return shape;
   };
 
-  auto createHeightmapShape = [] {
-    auto shape = std::make_shared<HeightmapShaped>();
-    const std::array<double, 12> heights{
-        0.02, 0.10, 0.06, 0.12, 0.08, 0.18,
-        0.14, 0.05, 0.10, 0.24, 0.16, 0.08};
-    shape->setHeightField(4u, 3u, heights);
-    shape->setScale(Eigen::Vector3d(0.18, 0.18, 1.0));
-    return shape;
-  };
-
 #if DART_HAVE_OCTOMAP
   auto createVoxelGridShape = [] {
     auto shape = std::make_shared<VoxelGridShape>(0.12);
@@ -1079,7 +1113,7 @@ DartScene createMvpDartScene()
       Eigen::Vector3d(0.48, 0.86, 0.38)));
   scene.world->addSkeleton(createStaticVisual(
       kHeightmapFixtureSkeletonName,
-      createHeightmapShape(),
+      createMvpHeightmapShape(),
       Eigen::Vector3d(-0.75, 0.55, 0.65),
       Eigen::Vector3d(0.42, 0.74, 0.36)));
   scene.world->addSkeleton(createSoftMeshSkeleton());
@@ -1224,6 +1258,39 @@ DartScene createPolyhedronScene()
   return scene;
 }
 
+DartScene createHeightmapScene()
+{
+  DartScene scene;
+  scene.world = World::create("filament_gui_heightmap");
+  scene.world->setGravity(Eigen::Vector3d::Zero());
+  scene.world->addSkeleton(createStaticVisualSkeleton(
+      kHeightmapFixtureSkeletonName,
+      createHeightmapExampleShape(),
+      Eigen::Vector3d(-0.25, 0.0, 0.0),
+      Eigen::Vector3d(0.24, 0.58, 0.88)));
+  scene.world->addSkeleton(createStaticVisualSkeleton(
+      "visual_heightmap_reference_box",
+      std::make_shared<BoxShape>(Eigen::Vector3d(0.48, 0.48, 0.28)),
+      Eigen::Vector3d(0.72, 0.0, 0.20),
+      Eigen::Vector3d(0.20, 0.72, 0.28),
+      0.48));
+
+  int index = 0;
+  for (int y = -1; y <= 1; ++y) {
+    for (int x = -1; x <= 1; ++x) {
+      scene.world->addSkeleton(createStaticVisualSkeleton(
+          "visual_heightmap_sample_ball_" + std::to_string(index++),
+          std::make_shared<SphereShape>(0.07),
+          Eigen::Vector3d(
+              -0.25 + static_cast<double>(x) * 0.42,
+              static_cast<double>(y) * 0.32,
+              0.45),
+          Eigen::Vector3d(0.92, 0.48, 0.16)));
+    }
+  }
+  return scene;
+}
+
 DartScene createG1DartScene(const AppOptions& options)
 {
   DartScene scene;
@@ -1250,6 +1317,8 @@ DartScene createDartScene(const AppOptions& options)
       return createDragAndDropScene();
     case ExampleScene::Polyhedron:
       return createPolyhedronScene();
+    case ExampleScene::Heightmap:
+      return createHeightmapScene();
     case ExampleScene::G1:
       return createG1DartScene(options);
   }

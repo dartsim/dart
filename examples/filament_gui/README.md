@@ -25,8 +25,10 @@
   for shading diagnostics; toggle it with `--orbit-light`, `--no-orbit-light`,
   or the panel checkbox, and tune the default 80-second full orbit with
   `--orbit-light-period <seconds>`.
-  Use `--scene drag-and-drop` to run the interaction fixture, or `--scene g1`
-  to load the Unitree G1 humanoid used in the project README animation.
+  Use `--scene drag-and-drop` to run the interaction fixture,
+  `--scene polyhedron` or `--scene heightmap` to inspect focused legacy visual
+  fixtures, or `--scene g1` to load the Unitree G1 humanoid used in the project
+  README animation.
 
 ## Notes
 
@@ -83,6 +85,11 @@
   same backend-hidden descriptor layer. The `--scene drag-and-drop` fixture
   uses that path for a legacy-style `SimpleFrame` anchor, child frame, and axis
   marker layout.
+- The `--scene heightmap` fixture renders a local heightmap surface and
+  reference markers through descriptor-owned heightmap renderables. It carries
+  the visual side of the legacy `heightmap` example while the standalone source
+  remains as comparison material for panel-driven sculpting and contact
+  alignment.
 - The `--scene g1` fixture loads the remote Unitree G1 URDF through DART's
   normal resource retriever and renders it with Filament. Colored IK target
   markers are attached to both hands and feet; press `1`-`4` or click a marker,
@@ -121,6 +128,12 @@ To run the convex polyhedron fixture:
 pixi run ex filament_gui --scene polyhedron
 ```
 
+To run the heightmap visual fixture:
+
+```bash
+pixi run ex filament_gui --scene heightmap
+```
+
 To run the Unitree G1 fixture:
 
 ```bash
@@ -135,7 +148,8 @@ pixi run ex filament_gui --headless --scene all
 
 The capture paths are `build/<pixi-env>/filament_gui_mvp.ppm` and
 `build/<pixi-env>/filament_gui_drag_and_drop.ppm`, and
-`build/<pixi-env>/filament_gui_polyhedron.ppm` unless
+`build/<pixi-env>/filament_gui_polyhedron.ppm`, and
+`build/<pixi-env>/filament_gui_heightmap.ppm` unless
 `DART_FILAMENT_GUI_SCREENSHOT` is set. The G1 fixture intentionally stays out
 of `--scene all` because it fetches a remote robot package by default.
 
@@ -232,6 +246,6 @@ DART_BUILD_GUI_FILAMENT_OVERRIDE=ON \
   pixi run config
 cmake --build build/default/cpp/Release --target dart_filament_gui
 ctest --test-dir build/default/cpp/Release \
-  -R 'EXAMPLE_filament_gui_(headless|drag_and_drop_headless|polyhedron_headless)_smoke' \
+  -R 'EXAMPLE_filament_gui_(headless|drag_and_drop_headless|polyhedron_headless|heightmap_headless)_smoke' \
   --output-on-failure
 ```

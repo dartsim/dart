@@ -267,11 +267,11 @@ headless context, while the dedicated headless construction test remains.
 `pixi run test-filament-gui-smoke` now wraps the explicit pinned fetch fallback
 for Linux x86_64. It configures with `DART_BUILD_GUI=OFF` and
 `DART_BUILD_DARTPY=OFF`, builds `dart_filament_gui`, and runs the default,
-drag-and-drop, and polyhedron headless CTest smokes. When `DISPLAY` is absent,
-the task uses Xvfb and prefers Mesa's EGL vendor file for software rendering.
-The Ubuntu CI workflow has a matching `filament-gui-smoke` job that installs
-Mesa, Xvfb, and libc++/libc++abi development packages from apt and runs that
-task without
+drag-and-drop, polyhedron, and heightmap headless CTest smokes. When `DISPLAY`
+is absent, the task uses Xvfb and prefers Mesa's EGL vendor file for software
+rendering. The Ubuntu CI workflow has a matching `filament-gui-smoke` job that
+installs Mesa, Xvfb, and libc++/libc++abi development packages from apt and
+runs that task without
 relying on a Filament conda package. The MVP PR #2647 merged with hosted
 `Filament GUI Smoke (GCC)` and `Filament GUI Smoke (Clang)` passing.
 
@@ -284,7 +284,12 @@ as legacy OSG comparison material. It also routes
 `pixi run ex polyhedron_visual` through the Filament example's
 `--scene polyhedron` fixture, which renders the legacy convex hull and wireframe
 through descriptor-owned convex-mesh and line-segment renderables. It also
-includes the Filament version of the G1 puppet example: `--scene g1` loads the
+routes `pixi run ex heightmap` through the Filament example's
+`--scene heightmap` fixture, which renders a local heightmap surface and
+reference markers through descriptor-owned heightmap renderables while keeping
+the standalone source as legacy OSG/ImGui comparison material for the sculpting
+and contact-alignment controls. It also includes the Filament version of the G1
+puppet example: `--scene g1` loads the
 Unitree G1 URDF through DART resource retrievers, exposes colored IK targets
 for both hands and feet, registers active support geometry on the foot targets
 for support-polygon overlay inspection, and routes `pixi run ex g1_puppet`

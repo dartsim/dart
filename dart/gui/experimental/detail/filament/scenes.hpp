@@ -68,6 +68,7 @@ enum class ExampleScene
   Mvp,
   DragAndDrop,
   Polyhedron,
+  Heightmap,
   G1,
 };
 

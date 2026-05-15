@@ -67,8 +67,10 @@
    `EXAMPLE_filament_gui_drag_and_drop_headless_smoke` on the same workers.
 5. Opt-in polyhedron visual fixture smoke through
    `EXAMPLE_filament_gui_polyhedron_headless_smoke` on the same workers.
-6. Focused C++ unit tests for scene extraction and interaction math.
-7. Python import/binding smoke tests for the constrained experimental API.
+6. Opt-in heightmap visual fixture smoke through
+   `EXAMPLE_filament_gui_heightmap_headless_smoke` on the same workers.
+7. Focused C++ unit tests for scene extraction and interaction math.
+8. Python import/binding smoke tests for the constrained experimental API.
 
 ## Local commands
 
@@ -121,7 +123,7 @@ LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
   cmake --build build/default/cpp/Release --target dart_filament_gui
 LD_LIBRARY_PATH="$LIBCXX_PREFIX/lib:${LD_LIBRARY_PATH:-}" \
   ctest --test-dir build/default/cpp/Release \
-  -R 'EXAMPLE_filament_gui_(headless|drag_and_drop_headless|polyhedron_headless)_smoke' \
+  -R 'EXAMPLE_filament_gui_(headless|drag_and_drop_headless|polyhedron_headless|heightmap_headless)_smoke' \
   --output-on-failure
 ```
 
@@ -215,8 +217,10 @@ Known current result:
   also registers `EXAMPLE_filament_gui_drag_and_drop_headless_smoke`, which
   runs `--scene drag-and-drop`, and
   `EXAMPLE_filament_gui_polyhedron_headless_smoke`, which runs
-  `--scene polyhedron`; both fixture smokes use the headless path and verify
-  the generated PPM structure and sampled pixels.
+  `--scene polyhedron`, plus
+  `EXAMPLE_filament_gui_heightmap_headless_smoke`, which runs
+  `--scene heightmap`; these fixture smokes use the headless path and verify the
+  generated PPM structure and sampled pixels.
 - The opt-in CTest smoke passed locally with the explicit fetch path,
   compatible libc++/libc++abi libraries, and Mesa llvmpipe.
 - `pixi run test-filament-gui-smoke` passed locally with the same explicit

@@ -157,6 +157,12 @@
   descriptor-owned convex-mesh and line-segment renderables.
   `pixi run ex polyhedron_visual` routes to this Filament scene by default
   while the standalone source remains as legacy OSG comparison material.
+- The Filament example includes a selectable `--scene heightmap` fixture that
+  renders a local heightmap surface and reference markers through
+  descriptor-owned heightmap renderables. `pixi run ex heightmap` routes to
+  this Filament scene by default while the standalone source remains as legacy
+  OSG/ImGui comparison material for the panel-driven sculpting and
+  contact-alignment controls.
 - The Filament example includes a selectable `--scene g1` fixture that loads
   the Unitree G1 URDF through DART resource retrievers and exposes colored IK
   targets for both hands and feet. `pixi run ex g1_puppet` routes to this

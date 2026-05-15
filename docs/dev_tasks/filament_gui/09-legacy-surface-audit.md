@@ -182,6 +182,11 @@ Surfaces: OSG-heavy examples such as `examples/imgui`,
 
 Current public shape: user-facing examples still teach OSG-shaped APIs.
 
+Current progress: the in-tree `drag_and_drop`, `polyhedron_visual`, `heightmap`,
+and `g1_puppet` runners now route to focused Filament scenes by default while
+their standalone sources remain as legacy OSG comparison material until the
+promoted API can replace the missing panel/tool-specific workflows.
+
 North-star action: port representative examples to the promoted
 Filament-backed `dart::gui` API before deleting the legacy examples. Keep at
 least one simple, one mesh/material-heavy, one robotics, one interaction-heavy,
