@@ -35,7 +35,13 @@
 #include <dart/gui/experimental/detail/filament/renderable_factory.hpp>
 #include <dart/gui/experimental/detail/filament/renderable_sync.hpp>
 
+#include <algorithm>
+
 namespace dart::gui::experimental::filament {
+
+using dart::gui::experimental::RenderableDescriptor;
+using dart::gui::experimental::RenderableId;
+using dart::gui::experimental::makeSelectionDebugLines;
 
 void clearDebugLineOverlay(
     ::filament::Engine& engine,
@@ -64,6 +70,35 @@ void refreshDebugLineOverlay(
   if (overlay) {
     addRenderableToScene(scene, *overlay);
   }
+}
+
+void refreshSelectionDebugLineOverlay(
+    ::filament::Engine& engine,
+    ::filament::Scene& scene,
+    ::filament::Material& material,
+    const std::vector<RenderableDescriptor>& descriptors,
+    RenderableId selectedRenderableId,
+    std::optional<Renderable>& overlay)
+{
+  if (selectedRenderableId == 0) {
+    clearDebugLineOverlay(engine, scene, overlay);
+    return;
+  }
+
+  const auto selectedDescriptor = std::find_if(
+      descriptors.begin(),
+      descriptors.end(),
+      [&](const RenderableDescriptor& candidate) {
+        return candidate.id == selectedRenderableId;
+      });
+  if (selectedDescriptor == descriptors.end()
+      || !selectedDescriptor->material.visible) {
+    clearDebugLineOverlay(engine, scene, overlay);
+    return;
+  }
+
+  refreshDebugLineOverlay(
+      engine, scene, material, makeSelectionDebugLines(*selectedDescriptor), overlay);
 }
 
 } // namespace dart::gui::experimental::filament

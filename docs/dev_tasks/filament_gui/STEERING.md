@@ -25,8 +25,8 @@ recommended maintainability slices:
   private built-in status panel rendering while promoted panel/tool API design
   remains deferred.
 - `dart/gui/experimental/detail/filament/debug_overlay.hpp` and `.cpp` own
-  debug-line overlay refresh/cleanup for static, contact, and selection
-  overlays.
+  debug-line overlay refresh/cleanup for static, contact, and selection overlays,
+  including selected-renderable descriptor lookup.
 - `dart/gui/experimental/detail/filament/imgui_overlay.hpp` and `.cpp` own
   ImGui context setup, style/font initialization, draw-data upload, and overlay
   teardown.

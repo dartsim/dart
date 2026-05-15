@@ -125,7 +125,6 @@ using dart::gui::experimental::markFrameSkipped;
 using dart::gui::experimental::markScreenshotRequested;
 using dart::gui::experimental::markSimulationAdvanced;
 using dart::gui::experimental::makeRenderableId;
-using dart::gui::experimental::makeSelectionDebugLines;
 using dart::gui::experimental::normalizeRunOptions;
 using dart::gui::experimental::printProfile;
 using dart::gui::experimental::requestSingleStep;
@@ -175,6 +174,7 @@ using dart::gui::experimental::filament::renderFilamentViews;
 using dart::gui::experimental::filament::renderBuiltInStatusPanel;
 using dart::gui::experimental::filament::requestScreenshot;
 using dart::gui::experimental::filament::refreshDebugLineOverlay;
+using dart::gui::experimental::filament::refreshSelectionDebugLineOverlay;
 using dart::gui::experimental::filament::saveScreenshot;
 using dart::gui::experimental::filament::logUnsupportedRenderableDescriptorOnce;
 using dart::gui::experimental::filament::removeRenderableFromScene;
@@ -338,33 +338,6 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
   };
 
   std::optional<Renderable> selectionDebugOverlay;
-  auto refreshSelectionDebugOverlay
-      = [&](const std::vector<RenderableDescriptor>& descriptors,
-            RenderableId selectedRenderableId) {
-          if (selectedRenderableId == 0) {
-            clearDebugLineOverlay(*engine, *scene, selectionDebugOverlay);
-            return;
-          }
-
-          const auto selectedDescriptor = std::find_if(
-              descriptors.begin(),
-              descriptors.end(),
-              [&](const RenderableDescriptor& candidate) {
-                return candidate.id == selectedRenderableId;
-              });
-          if (selectedDescriptor == descriptors.end()
-              || !selectedDescriptor->material.visible) {
-            clearDebugLineOverlay(*engine, *scene, selectionDebugOverlay);
-            return;
-          }
-
-          refreshDebugLineOverlay(
-              *engine,
-              *scene,
-              materials.debugColor,
-              makeSelectionDebugLines(*selectedDescriptor),
-              selectionDebugOverlay);
-        };
 
   bool orbitLight = appOptions.orbitLight;
   SceneLights lights = createSceneLights(
@@ -555,8 +528,13 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
     profile.interactionMs += elapsedMs(phaseStart);
 
     phaseStart = ProfileAccumulator::Clock::now();
-    refreshSelectionDebugOverlay(
-        descriptors, selectionController.selectedRenderableId());
+    refreshSelectionDebugLineOverlay(
+        *engine,
+        *scene,
+        materials.debugColor,
+        descriptors,
+        selectionController.selectedRenderableId(),
+        selectionDebugOverlay);
     profile.selectionDebugMs += elapsedMs(phaseStart);
 
     if (appOptions.showUi) {

@@ -59,6 +59,14 @@ void refreshDebugLineOverlay(
     const std::vector<dart::gui::experimental::DebugLineDescriptor>& lines,
     std::optional<Renderable>& overlay);
 
+void refreshSelectionDebugLineOverlay(
+    ::filament::Engine& engine,
+    ::filament::Scene& scene,
+    ::filament::Material& material,
+    const std::vector<dart::gui::experimental::RenderableDescriptor>& descriptors,
+    dart::gui::experimental::RenderableId selectedRenderableId,
+    std::optional<Renderable>& overlay);
+
 } // namespace dart::gui::experimental::filament
 
 #endif // DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_DEBUG_OVERLAY_HPP_

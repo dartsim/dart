@@ -124,10 +124,11 @@ begin/render/end frame calls live in
 `dart/gui/experimental/detail/filament/render_context.hpp` and `.cpp`;
 `main.cpp` now has zero direct Filament header includes, and this backend
 implementation slice has moved out of the example tree.
-Debug-line overlay refresh and cleanup now live in
+Debug-line overlay refresh, cleanup, and selected-renderable overlay lookup now
+live in
 `dart/gui/experimental/detail/filament/debug_overlay.hpp` and `.cpp`, leaving
-the application loop responsible only for selecting static, contact, and
-selection debug descriptors.
+the application loop responsible only for selecting static and contact debug
+descriptors.
 Filament neutral lighting/color grading, light entity creation and orbit
 updates, scene environment binding, viewport/camera application, and windowed
 view-quality setup live in
