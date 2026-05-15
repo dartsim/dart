@@ -1,0 +1,119 @@
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#ifndef EXAMPLES_FILAMENT_GUI_SCENES_HPP_
+#define EXAMPLES_FILAMENT_GUI_SCENES_HPP_
+
+#include <dart/dynamics/fwd.hpp>
+#include <dart/gui/experimental/scene.hpp>
+#include <dart/simulation/fwd.hpp>
+
+#include <Eigen/Core>
+
+#include <memory>
+#include <string>
+#include <string_view>
+#include <vector>
+
+#include <cstddef>
+
+namespace dart::examples::filament_gui {
+
+struct G1IkHandle
+{
+  dart::gui::experimental::RenderableId targetRenderableId = 0;
+  std::string label;
+  int hotkey = 0;
+  std::shared_ptr<dart::dynamics::SimpleFrame> target;
+  dart::dynamics::InverseKinematicsPtr ik;
+};
+
+struct DartScene
+{
+  dart::simulation::WorldPtr world;
+  std::vector<G1IkHandle> ikHandles;
+};
+
+enum class ExampleScene
+{
+  Mvp,
+  DragAndDrop,
+  G1,
+};
+
+struct AppOptions
+{
+  dart::gui::experimental::RunOptions run;
+  ExampleScene scene = ExampleScene::Mvp;
+  bool showUi = true;
+  bool showUiExplicit = false;
+  bool profile = false;
+  bool orbitLight = true;
+  double orbitLightPeriodSeconds = 80.0;
+  std::string g1PackageName = "g1_description";
+  std::string g1PackageUri
+      = "https://raw.githubusercontent.com/unitreerobotics/unitree_ros/"
+        "master/robots/g1_description";
+  std::string g1RobotUri = "package://g1_description/g1_29dof.urdf";
+};
+
+inline constexpr const char* kWamFixtureSkeletonName = "visual_wam_robot";
+inline constexpr const char* kAtlasFixtureSkeletonName = "visual_atlas_torso_mesh";
+inline constexpr const char* kAtlasRobotFixtureSkeletonName = "visual_atlas_robot";
+inline constexpr const char* kPyramidFixtureSkeletonName = "visual_pyramid";
+inline constexpr const char* kMultiSphereFixtureSkeletonName = "visual_multi_sphere";
+inline constexpr const char* kLineSegmentFixtureSkeletonName = "visual_line_segments";
+inline constexpr const char* kConvexMeshFixtureSkeletonName = "visual_convex_mesh";
+inline constexpr const char* kPointCloudFixtureSkeletonName = "visual_point_cloud";
+inline constexpr const char* kHeightmapFixtureSkeletonName = "visual_heightmap";
+inline constexpr const char* kSoftMeshFixtureSkeletonName = "visual_soft_mesh";
+inline constexpr const char* kVoxelGridFixtureSkeletonName = "visual_voxel_grid";
+inline constexpr const char* kPbrEnvironmentFixtureSkeletonName
+    = "visual_pbr_environment";
+inline constexpr const char* kG1FixtureSkeletonName = "visual_g1_robot";
+inline constexpr std::size_t kMinPbrEnvironmentRenderableCount = 4;
+inline constexpr std::size_t kMinDragAndDropFrameRenderableCount = 5;
+inline constexpr std::size_t kMinG1RenderableCount = 20;
+
+const char* sceneName(ExampleScene scene);
+
+bool parseSceneName(std::string_view name, ExampleScene& scene);
+
+dart::gui::experimental::OrbitCamera initialCameraForScene(ExampleScene scene);
+
+AppOptions parseOptions(int argc, char* argv[]);
+
+DartScene createDartScene(const AppOptions& options);
+
+} // namespace dart::examples::filament_gui
+
+#endif // EXAMPLES_FILAMENT_GUI_SCENES_HPP_
