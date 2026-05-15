@@ -64,7 +64,8 @@ Verification:
 
 Success criteria:
 
-- gz-physics builds against this branch without patches.
+- gz-physics builds against this branch without behavioral source patches
+  beyond the intended DART CMake version requirement bump.
 - gz-physics tests pass with the native detector as DART's default.
 - Legacy class-name and factory-key compatibility is verified.
 
@@ -73,14 +74,17 @@ Verification:
 - `pixi run -e gazebo test-gz`.
 - Any failing gz-physics case is reduced to a DART test before being fixed.
 
-## Phase 4: Performance Gate
+## Phase 4: Benchmark And Performance-Readiness Gate
 
 Success criteria:
 
 - Comparative benchmark results are recorded in `03-evidence-gates.md`.
-- Native beats the best legacy backend in required narrowphase, broadphase,
-  distance, raycast, mixed primitive, and mesh-heavy scenarios.
+- Native has benchmark/profiling baselines for required narrowphase,
+  broadphase, distance, raycast, mixed primitive, and mesh-heavy scenarios.
 - No benchmark result is accepted without correctness checks for the same case.
+- Full performance optimization is a follow-up wave after feature-level
+  completion, starting with single-CPU hot paths, then multi-core CPU
+  parallelism, with GPU support as a stretch goal.
 
 Verification:
 
@@ -432,25 +436,28 @@ Success criteria:
 
 - Comparative benchmark suites can run in CI or scheduled jobs with structured
   output.
-- Native remains at least as fast as the best legacy backend on the required
-  benchmark set while reference backends are still available.
+- The feature-completion PR provides benchmark guardrails and baselines while
+  reference backends are still available.
 - Native-only baselines exist for future work after old backends are deleted.
-- Larger dirty-world and simulation-style workloads are included, not only
-  narrow microbenchmarks.
+- Larger dirty-world and simulation-style workloads are tracked for the next
+  performance wave, not as blockers for feature-level completion.
 - Correctness tests stay the prerequisite for accepting any performance
   optimization.
-- Benchmark failures drive gradual optimization work; they do not justify
-  weakening feature coverage or semantics.
+- Benchmark failures or regressions drive gradual optimization work; they do
+  not justify weakening feature coverage or semantics.
 
 Verification:
 
 - Benchmark jobs record JSON artifacts for primitive, narrow-phase, supported
   distance, raycast, batch-raycast, mesh-heavy, mixed-primitive, and
   dirty-world workloads.
-- Benchmark parsers fail the job or file an explicit follow-up when native
-  regresses beyond the accepted tolerance.
+- Benchmark parsers fail the job or file an explicit follow-up when the
+  feature-level benchmark guard regresses beyond the accepted tolerance.
 - Performance evidence is linked from release notes or PR descriptions for
   collision-sensitive changes.
+
+Follow-up scope: after this feature-level pass, optimize single-CPU hot paths,
+then multi-core CPU parallelism, with GPU support as a stretch goal.
 
 ## Phase 13: Final Runtime Cleanup And Facade Policy
 

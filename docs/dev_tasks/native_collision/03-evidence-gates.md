@@ -12,16 +12,16 @@ is tied to a commit, command, and observed output.
 
 ## Gate Matrix
 
-| Gate                  | Required evidence                                            | Current state                      |
-| --------------------- | ------------------------------------------------------------ | ---------------------------------- |
-| Native default        | Focused test showing default detector type is `dart`         | Focused pass, May 2026             |
-| Feature parity        | Native unit and integration collision tests pass             | Passed, May 2026                   |
-| Reference consistency | Native-vs-FCL/Bullet/ODE consistency tests pass              | Opt-in pass, May 2026              |
-| gz-physics            | `pixi run -e gazebo test-gz` passes without patches          | Current local pass, May 2026       |
-| Performance           | Comparative benchmarks show native >= best legacy backend    | Focused pass, May 2026             |
-| Dependency removal    | Default build succeeds without FCL/Bullet/ODE collision deps | Focused pass, May 2026             |
-| Source isolation      | Lint blocks old-engine runtime includes/source leakage       | Local pass, May 2026               |
-| Full validation       | `pixi run test-all` passes                                   | Fresh current-state pass, May 2026 |
+| Gate                  | Required evidence                                                                                  | Current state                      |
+| --------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| Native default        | Focused test showing default detector type is `dart`                                               | Focused pass, May 2026             |
+| Feature parity        | Native unit and integration collision tests pass                                                   | Passed, May 2026                   |
+| Reference consistency | Native-vs-FCL/Bullet/ODE consistency tests pass                                                    | Opt-in pass, May 2026              |
+| gz-physics            | `pixi run -e gazebo test-gz` passes without behavioral source patches beyond the DART version bump | Current local pass, May 2026       |
+| Performance           | Comparative benchmarks show native >= best legacy backend                                          | Focused pass, May 2026             |
+| Dependency removal    | Default build succeeds without FCL/Bullet/ODE collision deps                                       | Focused pass, May 2026             |
+| Source isolation      | Lint blocks old-engine runtime includes/source leakage                                             | Local pass, May 2026               |
+| Full validation       | `pixi run test-all` passes                                                                         | Fresh current-state pass, May 2026 |
 
 ## North-Star Progress Scale
 
@@ -308,6 +308,21 @@ build/default/cpp/Debug -R '^UNIT_collision_DistanceFilter$'
     source state. The final north-star PR state still needs a fresh rerun after
     the remaining CI/migration/deletion work is complete.
 
+- `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run test-all`
+  - Commit: `64abc65a032` (`Clarify native collision progress gates`), pushed
+    branch head before this evidence-record update.
+  - Result: passed. The full local suite passed lint, Release build, Release
+    C++ test build, C++ unit tests, simulation-experimental tests, Python
+    tests, and documentation. Release CTest passed 264/264 tests, Python tests
+    passed 147/147, and the final `test-all` report passed 6/6 top-level
+    gates.
+  - Configure signal: normal default configure kept
+    `DART_BUILD_COLLISION_REFERENCE_TESTS=OFF` and
+    `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS=OFF`, with no public
+    per-engine FCL/Bullet/ODE collision build switches exposed. This refreshes
+    local validation for the current pushed branch head; final
+    maintainer-selected PR/CI evidence is still open.
+
 ## Test Runs
 
 - Initial native compatibility package smoke
@@ -339,16 +354,15 @@ build/default/cpp/Debug -R '^UNIT_collision_DistanceFilter$'
     libccd runtime libraries.
 
 - Current downstream migration evidence refresh
-  - Commit: `4b155655890`
-    (`Record current collision benchmark guard`), before this evidence-record
-    update. That head was pushed to `origin/feature/new_coll`; feature-branch
-    pushes still do not trigger the main GitHub Actions workflows while PR
-    #2652 is closed.
+  - Commit: `64abc65a032` (`Clarify native collision progress gates`), code
+    head before this evidence-record update. That head was pushed to
+    `origin/feature/new_coll`; feature-branch pushes still do not trigger the
+    main GitHub Actions workflows while PR #2652 is closed.
   - Commands:
 
     ```bash
-    DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -e gazebo test-gz
-    DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -- bash -lc 'set -euo pipefail
+    DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e gazebo test-gz
+    DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -- bash -lc 'set -euo pipefail
     rm -rf build/native-compat-install build/native-compat-package-smoke
     cmake --install build/default/cpp/Release --prefix build/native-compat-install --component headers >/tmp/dart_native_compat_install_current.log
     cmake --install build/default/cpp/Release --prefix build/native-compat-install >>/tmp/dart_native_compat_install_current.log
@@ -364,25 +378,18 @@ build/default/cpp/Debug -R '^UNIT_collision_DistanceFilter$'
       exit 1
     fi
     echo "native downstream package/link smoke passed"'
-    pixi run check-collision-runtime-isolation
-    python scripts/audit_collision_compat_facades.py
-    cmake --build build/default/cpp/Release --target test_legacy_compat_facades --parallel 4
-    ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_legacy_compat_facades$' -j 4
-    pixi run -- env PYTHONPATH="$PWD/build/default/cpp/Release/python" DARTPY_RUNTIME_DIR="$PWD/build/default/cpp/Release/python/dartpy" python -m pytest python/tests/unit/collision/test_collision.py::test_legacy_collision_detector_names_are_not_exposed_in_dartpy -v
     ```
 
   - Result: passed locally. The fresh gz-physics workflow patched only the
     DART version requirement, configured DART for the gazebo environment with
-    `DART_BUILD_COLLISION_FCL=OFF`, `DART_BUILD_COLLISION_BULLET=OFF`,
-    `DART_BUILD_COLLISION_ODE=OFF`, collision reference tests `OFF`, and
-    collision reference benchmarks `OFF`, built the DART plugin, and passed
-    65/65 gz-physics tests before printing the DART integration success
+    collision reference tests `OFF` and collision reference benchmarks `OFF`,
+    built the DART plugin, and passed 65/65 gz-physics tests before printing
+    the DART integration success
     message. The package smoke passed on the current installed native build,
     including retained `collision-fcl`, `collision-bullet`, and `collision-ode`
-    component facades. Runtime isolation passed. The compatibility facade audit
-    passed, reporting factory aliases and package components route to `dart`
-    while dartpy exposes only `DartCollisionDetector`. The focused C++ legacy
-    facade CTest passed 1/1, and the focused Python clean-API test passed 1/1.
+    component facades. The current-head `test-all` and post-edit lint runs
+    above cover runtime isolation, compatibility-facade routing, the focused
+    C++ legacy facade test, and the Python clean-API test.
     `readelf` showed both the gz DART plugin and the package-smoke executable
     depend on `libdart-collision-native.so` and do not depend on
     `libdart-collision-reference-*`, FCL, Bullet, ODE, or libccd. This is
@@ -2904,9 +2911,11 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
 - Compatibility-alias checks can silently bypass native-only paths if they are
   used outside explicit backward-compatibility tests.
 - Scenario-scale collision manager performance now passes the recorded
-  benchmark set. Dirty-world streaming traversal remains a watch point for
-  future simulation-style benchmarks because the dense 1000 win relies on
-  reusing an already-valid broad-phase snapshot.
+  benchmark set used as this feature-level pass's guardrail. Dirty-world
+  streaming traversal remains a watch point for the next performance wave
+  because the dense 1000 win relies on reusing an already-valid broad-phase
+  snapshot. That follow-up wave should optimize single-CPU hot paths first,
+  then multi-core CPU parallelism, with GPU support as a stretch goal.
 - Native `VoxelGridShape` support adapts occupied OctoMap leaves into compound
   box cells. This closes DART's feature surface and tests, but very large
   voxel grids may need a dedicated acceleration path if they become hot

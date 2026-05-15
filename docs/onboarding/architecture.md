@@ -319,11 +319,12 @@ and opt-in reference targets.
   `dartpy` with FCL, Bullet, and ODE disabled. Installed package exports should
   include only the compatibility targets required for downstream packages that
   still use `${DART_LIBRARIES}`.
-- Performance claims are evidence driven: comparative benchmark runs must show
-  native matching or beating the best legacy engine for required primitive,
+- Performance claims are evidence driven. The feature-level native-collision
+  pass must keep comparative benchmark/profiling guardrails for primitive,
   narrow-phase, supported distance, raycast, batch-raycast, mesh-heavy, and
-  mixed-primitive workloads before old engines are treated as validation-only
-  dependencies.
+  mixed-primitive workloads. Deeper optimization is a follow-up wave: first
+  single-CPU hot paths, then multi-core CPU parallelism, with GPU support as a
+  stretch goal.
 
 **Collision→Dynamics Dependency (Bridge Pattern):**
 

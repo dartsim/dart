@@ -327,6 +327,11 @@ Performance acceptance still follows correctness. A benchmark win does not
 justify weaker contact semantics, unstable normals, nondeterministic ordering,
 or skipped dynamic-geometry invalidation.
 
+Current pass scope is feature-level completion. This design must leave the
+native core measurable and optimization-ready, but single-CPU hot-path tuning,
+multi-core CPU parallelism, and stretch GPU support belong to the next
+performance wave.
+
 ### Architecture Evidence Plan
 
 Every design axis needs evidence before the north-star PR can close:
@@ -340,7 +345,9 @@ Every design axis needs evidence before the north-star PR can close:
   and collision/distance/raycast query reuse.
 - Performance evidence: native and public-adapter benchmark JSON with labels
   for sync, broadphase, candidate traversal, filtering, narrowphase, distance,
-  raycast, contact/manifold generation, result merge, and DART conversion.
+  raycast, contact/manifold generation, result merge, and DART conversion. This
+  is a feature-level guardrail and baseline for follow-up optimization, not the
+  final single-CPU, multi-core CPU, or GPU performance campaign.
 - Reference isolation evidence: native-only configure/build/install/wheel
   probes without FCL, Bullet, ODE, or libccd runtime links, plus opt-in
   reference jobs for correctness comparisons and benchmark guidance.
@@ -676,8 +683,8 @@ allowed scope is:
 
 - Test-only reference comparisons for contact, distance, raycast, filtering,
   and solver-facing semantics.
-- Benchmark-only comparisons while native is being optimized to beat the best
-  legacy engine.
+- Benchmark-only comparisons that provide feature-level guardrails now and
+  guide the follow-up performance wave.
 - CMake option paths that allow reference engines to be enabled for comparison
   jobs and disabled for native-only builds.
 
@@ -697,7 +704,9 @@ compatibility adapters, not backend selections. Compatibility means:
 - Existing gz-physics code that includes legacy detector headers still builds.
 - Existing gz-physics code that subclasses legacy detector classes still has an
   ABI/API-compatible path, or a coordinated migration is documented and tested.
-- DART's gz-physics integration task passes without local downstream patches.
+- DART's gz-physics integration task passes without local gz-physics
+  behavioral source patches beyond the intended DART CMake version requirement
+  bump.
 - Legacy factory keys continue to resolve during the migration window, but they
   resolve to the built-in DART detector or a native-backed adapter.
 

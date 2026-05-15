@@ -13,6 +13,12 @@ must be deleted in the same PR that completes the native-collision migration.
 - Makes the built-in DART collision detector the normal runtime collision stack.
 - Keeps legacy FCL, Bullet, ODE, and `experimental` names as native-backed
   compatibility routes instead of external runtime backend selectors.
+- Keeps the compatibility surface intentionally narrow: enough for gz-physics
+  and downstream C++/package source compatibility, without preserving old
+  backend-selection behavior.
+- Treats this PR as feature-level completion: benchmark/profiling guardrails
+  remain in scope, while single-CPU optimization, multi-core CPU parallelism,
+  and stretch GPU support are follow-up performance work.
 - Moves old external-engine access behind explicit reference-only test and
   benchmark surfaces.
 - Adds source, package, wheel, downstream, benchmark, and lint guards to keep
@@ -72,9 +78,9 @@ must be deleted in the same PR that completes the native-collision migration.
 
 Local validation currently recorded in the dev-task evidence:
 
-- `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
-  passed on pushed branch head `930aca64d45` before the source-build
-  prerequisite docs cleanup
+- `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run test-all`
+  passed on pushed branch head `64abc65a032`
+  (`Clarify native collision progress gates`)
   with 6/6 top-level gates:
   - linting
   - build
@@ -112,8 +118,7 @@ Local validation currently recorded in the dev-task evidence:
   - `readelf` showed gz/plugin package-smoke binaries depending on
     `libdart-collision-native.so` without old collision/reference runtime
     dependencies
-  - latest local refresh is tied to pushed validation baseline `376fd5e686d`;
-    this documentation refresh is bookkeeping only
+  - latest local refresh is tied to code head `64abc65a032`
 - Prior workflow-dispatch reference evidence on pushed head `1e1faf6feb1`:
   - native-only CI passed
   - gz-physics CI passed
@@ -132,8 +137,8 @@ Local validation currently recorded in the dev-task evidence:
   - Lint configured the default build with reference tests and reference
     benchmarks `OFF`, then reran `check-collision-runtime-isolation` and
     `audit-collision-compat-facades`.
-- Latest local full-validation refresh on pushed head `930aca64d45`:
-  - `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+- Latest local full-validation refresh on pushed head `64abc65a032`:
+  - `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run test-all`
     passed with 6/6 top-level gates: linting, build, unit tests,
     simulation-experimental tests, Python tests, and documentation.
   - The C++ Release CTest pass completed 264/264 tests, and Python tests
@@ -192,6 +197,7 @@ Compatibility notes:
   - `aa3ccce70c7` (`Clarify collision reference build options`)
   - `06cd27d0163` (`Rename collision reference build options`)
   - `376fd5e686d` (`Remove per-engine collision reference build options`)
+  - `64abc65a032` (`Clarify native collision progress gates`)
   - `d0e23f7b2f1` (`Clarify native collision audit branch state`)
   - `d790a459850` (`Document collision migration policy`)
   - `d489292bdf1` (`Define collision deprecation evidence criteria`)
@@ -200,8 +206,16 @@ Compatibility notes:
 
 ## Checklist Notes
 
-- Milestone must be set on the final PR review surface.
-- `CHANGELOG.md` update should be decided after the final PR number is known.
+- Template checklist mapping:
+  - Milestone must be set on the final PR review surface.
+  - `CHANGELOG.md` already carries DART 7 native-collision entries; the final
+    PR surface can add a PR number reference if needed after the review surface
+    is known.
+  - Unit/integration/downstream/package/guard evidence is recorded in this
+    folder and must be summarized on the final PR surface.
+  - Public migration, architecture, and build-system docs carry the DART 7
+    collision policy and reference-only old-engine scope.
+  - dartpy exposes `DartCollisionDetector` without legacy detector aliases.
 - The dev-task folder must be deleted in the same completing PR after evidence
   is transferred.
 - C++ downstream deprecation warnings are enabled by default through

@@ -10,8 +10,12 @@ The single PR is complete only when DART's normal collision runtime is one
 built-in detector stack, FCL/Bullet/ODE are absent from normal runtime builds,
 old detector names are compatibility facades over the built-in detector, and
 the built-in layer is proven feature-complete, correct, scalable, and
-performance-oriented through tests, benchmarks, package checks, downstream
+performance-ready through tests, benchmark guardrails, package checks, downstream
 compatibility, and CI artifacts.
+
+Current pass scope: feature-level completion. The final PR must keep benchmark
+and profiling guardrails in place, but the next wave owns optimization for
+single-CPU hot paths, multi-core CPU parallelism, and stretch GPU support.
 
 ## Completion Decision
 
@@ -111,20 +115,20 @@ unverified external and finalization gates:
   legacy collision names are native-backed migration facades, dartpy keeps the
   clean `DartCollisionDetector` API without old detector aliases, and old
   engines are available only through reference comparison gates rather than
-  normal per-engine runtime switches. The latest pushed validation baseline is
-  `376fd5e686d`
-  (`Remove per-engine collision reference build options`). Later docs-only
-  evidence refreshes may sit on top of that baseline, but they do not replace
-  the recorded validation run. The matching `gh run list` checks returned no
+  normal per-engine runtime switches. The latest clean reference validation
+  baseline is `376fd5e686d`
+  (`Remove per-engine collision reference build options`), and current-head
+  local `test-all` plus downstream/package/link smoke evidence is refreshed on
+  code head `64abc65a032`. The matching `gh run list` checks returned no
   GitHub Actions runs because these branch pushes are not an allowed workflow
   trigger while PR #2652 is closed.
 - Local downstream migration evidence is refreshed: fresh gz-physics,
   package-smoke, runtime-isolation, C++ compatibility-name, dartpy clean-API,
   direct link-inspection checks, and human-authored stale-backend docs audit all
-  pass. The primary executable/link-smoke evidence is refreshed on pushed
-  validation baseline `376fd5e686d`, with only public reference
-  tests/benchmarks gates and no per-engine FCL/Bullet/ODE collision build
-  switches in current code/config paths.
+  pass. The primary executable/link-smoke evidence is refreshed on code head
+  `64abc65a032`, with only public reference tests/benchmarks gates and no
+  per-engine FCL/Bullet/ODE collision build switches in current code/config
+  paths.
   `05-downstream-migration.md` now defines the deprecation evidence acceptance
   criteria; final PR/downstream CI evidence is still missing before retained
   facades can be removed or hard-deprecated further.
@@ -134,11 +138,14 @@ unverified external and finalization gates:
   downstream migration, and leave FCL/Bullet/ODE access in explicit
   reference-only test/benchmark APIs.
 - Full local `pixi run test-all` evidence is refreshed on pushed branch head
-  `930aca64d45` (`Sync native collision PR evidence draft`) before the latest
-  source-build prerequisite docs cleanup, with normal native-only defaults
-  keeping only reference tests and reference benchmarks visible and `OFF`.
-  Final `pixi run test-all` evidence after the eventual PR-complete state is
-  still missing. The refreshed full reruns found and repaired three
+  `64abc65a032` (`Clarify native collision progress gates`), with normal
+  native-only defaults keeping only reference tests and reference benchmarks
+  visible and `OFF`. The run passed lint, Release build, Release C++ test
+  build, C++ unit tests, simulation-experimental tests, Python tests, and
+  documentation; Release CTest passed 264/264 tests and Python tests passed
+  147/147. Final maintainer-selected PR/CI evidence after the eventual
+  PR-complete state is still missing. The refreshed full reruns found and
+  repaired three
   local validation robustness gaps: a stale optional `libccd` CMake cache issue
   in the default native-only test build, stale `ShapeType::Cone`,
   `ShapeType::HeightField`, and `ShapeType::PointCloud` cases in the VSG
@@ -156,6 +163,17 @@ unverified external and finalization gates:
 Current audited state:
 
 - Branch: `feature/new_coll`
+- Local branch state: a docs-only evidence-refresh commit sits on top of
+  `origin/feature/new_coll`; it has not been pushed and does not have GitHub
+  Actions coverage. The remote `origin/feature/new_coll` head remains
+  `64abc65a03277de2150f2ce3bbd3e2893d8e9f2e`; run `git rev-parse HEAD` for the
+  exact current local evidence commit because amending this note changes that
+  hash. A fresh current-tree guard refresh for this local evidence state passed
+  the runtime-isolation script, the compatibility-facade audit script,
+  `pixi run lint` with no formatter changes, and `pixi run check-lint` through
+  the non-mutating lint path. A later read-only external recheck also found no
+  GitHub Actions runs for the local docs-only evidence head or the current
+  remote head.
 - Latest clean reference/downstream validation baseline:
   `376fd5e686d` (`Remove per-engine collision reference build options`). This
   is the latest commit with the full clean-reference, gz-physics, package-smoke,
@@ -180,7 +198,7 @@ Current audited state:
   evidence transfer draft, the closed-PR CI trigger evidence at `6be640e7007`,
   the clean dartpy collision API, default-on C++ compatibility facade
   deprecations, and docs clarifying the old-engine reference-only scope. The
-  current working tree removes all per-engine FCL/Bullet/ODE collision build
+  current branch removes all per-engine FCL/Bullet/ODE collision build
   switches from the user-facing CMake/Pixi/CI surface, so the remaining public
   reference gates are only `DART_BUILD_COLLISION_REFERENCE_TESTS` and
   `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` for optional comparison tests
@@ -191,13 +209,13 @@ Current audited state:
   backend guidance, plus the latest completion-audit refresh. GitHub reports no
   Actions runs for the later pushes because `feature/new_coll` does not match
   the workflow `push` filters and PR #2652 remains closed.
-- Full local validation run head: pushed branch head `d0e23f7b2f1`
-  (`Clarify native collision audit branch state`) plus a later full refresh on
-  pushed branch head `930aca64d45` (`Sync native collision PR evidence draft`)
-  before the source-build prerequisite docs cleanup. The safe-job
-  full-validation command passed with 6/6 top-level gates: linting, build, unit
-  tests, simulation-experimental tests, Python tests, and documentation. The
-  `930aca64d45` run passed 264/264 C++ Release CTest tests and 147/147 Python
+- Full local validation run head: pushed branch head `64abc65a032`
+  (`Clarify native collision progress gates`). The safe-job full-validation
+  command
+  `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run test-all`
+  passed with 6/6 top-level gates: linting, build, unit tests,
+  simulation-experimental tests, Python tests, and documentation. The
+  `64abc65a032` run passed 264/264 C++ Release CTest tests and 147/147 Python
   tests. The configure output kept collision reference tests and collision
   reference benchmarks `OFF`, confirming old-engine comparison components are
   not compatibility prerequisites for core DART, dartpy, gz-physics runtime
@@ -212,19 +230,19 @@ Current audited state:
   DART adapter benchmark JSON outputs. This is local benchmark evidence; it
   does not replace final PR/CI artifact evidence because feature-branch pushes
   do not trigger the benchmark workflow while PR #2652 is closed.
-- Downstream/package/link refresh head: pushed validation baseline
-  `376fd5e686d` (`Remove per-engine collision reference build options`). The
-  safe-job `pixi run -e gazebo test-gz` run configured the gazebo
-  DART install with collision reference tests and collision reference
-  benchmarks `OFF` and no per-engine FCL/Bullet/ODE collision build switches,
-  then passed 65/65 gz-physics tests. The native compatibility package smoke
-  passed. Direct `readelf` inspections showed both the gz DART plugin and
-  package-smoke executable depend on `libdart-collision-native.so` without
+- Downstream/package/link refresh head: code head `64abc65a032`
+  (`Clarify native collision progress gates`). The safe-job
+  `pixi run -e gazebo test-gz` run configured the gazebo DART install with
+  collision reference tests and collision reference benchmarks `OFF`, then
+  passed 65/65 gz-physics tests and printed the expected DART plugin
+  integration success line. The native compatibility package smoke passed.
+  Direct `readelf` inspections showed both the gz DART plugin and package-smoke
+  executable depend on `libdart-collision-native.so` without
   `libdart-collision-reference-*`, FCL, Bullet, ODE, or libccd runtime
   dependencies.
 - GitHub PR state: PR #2652
   (https://github.com/dartsim/dart/pull/2652) is closed, still marked draft,
-  and remains anchored to old head `714d220d82a`.
+  has merge state `DIRTY`, and remains anchored to old head `714d220d82a`.
 - Closed-PR workflow-dispatch state for `658da0edb10`:
   - CI Linux: run `25885373625`
     (https://github.com/dartsim/dart/actions/runs/25885373625), in progress
@@ -248,7 +266,7 @@ Current audited state:
   - Same-run benchmark guard state: `Collision Benchmark Guard` job
     `76075528749` passed its benchmark command, but uploaded no artifact
     because `actions/upload-artifact@v6` skipped the hidden
-    `.benchmark_results/` directory. The current working tree sets
+    `.benchmark_results/` directory. The current branch sets
     `include-hidden-files: true` for that upload step, so the next dispatch can
     attach the required `collision_check_*.json` files.
 - Closed-PR workflow-dispatch state for repaired head `1e1faf6feb1`:
@@ -470,12 +488,13 @@ compiling with /utf-8'`. The current repair adds `/utf-8` to the root MSVC
 - Closed-PR follow-up status after user direction to avoid creating a new
   diff:
   - PR #2652 is closed and remains anchored to old head `714d220d82a`.
-  - Follow-up fixes are being pushed to `feature/new_coll`, but branch pushes
-    do not start the main workflows because the workflow `push` filters only
-    include protected release/default branches. Manual workflow dispatch later
-    supplied reference evidence for head `1e1faf6feb1`, but the current user
-    direction is commit pushes only, with no PR reopen/create or workflow
-    dispatch mutation.
+  - Follow-up fixes can be committed locally and published to
+    `feature/new_coll` only after explicit user/maintainer approval. Branch
+    pushes do not start the main workflows because the workflow `push` filters
+    only include protected release/default branches. Manual workflow dispatch
+    later supplied reference evidence for head `1e1faf6feb1`, but the current
+    user direction still forbids PR reopen/create and workflow-dispatch
+    mutations by agents.
 
 - Follow-up broad local Debug validation after the closed-PR macOS/Linux
   repairs:
@@ -621,15 +640,16 @@ Additional inspected artifacts:
 | Retained FCL/Bullet/ODE/experimental names are wrappers/adapters over the built-in detector.                                 | Compatibility headers under `dart/collision/{fcl,bullet,ode}/compat/` and the package smoke under `docs/dev_tasks/native_collision/smoke/native_compat_package/` verify native-backed C++ and package compatibility names. Dartpy uses the clean `DartCollisionDetector` API and tests/audit verify legacy detector aliases are absent.                                                                                                                                  | Local   |
 | Any selected "backend" through retained public names always uses the built-in detector.                                      | `UNIT_collision_DartCollisionDetector` covers factory aliases and legacy facade behavior. The native compatibility package smoke verifies package components, factory keys, installed headers, and direct legacy `create()` calls.                                                                                                                                                                                                                                       | Local   |
 | FCL/Bullet/ODE remain only as optional reference engines for tests and benchmarks.                                           | `DART_BUILD_COLLISION_REFERENCE_TESTS` and `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` exist in CMake/Pixi configure paths; `collision-reference` is the explicit opt-in Pixi environment; per-engine FCL/Bullet/ODE collision build switches are gone from the current build surface; reference call sites use `createReference()` and `collision-reference-*` names.                                                                                                   | Local   |
-| Native-only builds can opt out of FCL/Bullet/ODE.                                                                            | Normal Pixi configure paths default reference tests and reference benchmarks to `OFF`; local native-only build/install/wheel evidence is recorded in `03-evidence-gates.md`.                                                                                                                                                                                                                                                                                             | Local   |
-| Default packages and wheels do not carry old collision runtime dependencies.                                                 | Package install probes, Pixi dependency metadata checks, and the `verify_wheel_collision_isolation.py` verifier are recorded. `wheel-verify-core` runs the wheel isolation verifier, and `publish_dartpy.yml` invokes `pixi run -e py${{ matrix.python-version }}-wheel wheel-verify`.                                                                                                                                                                                   | Local   |
+| Native-only builds can opt out of FCL/Bullet/ODE.                                                                            | Normal Pixi configure paths default reference tests and reference benchmarks to `OFF`; local native-only build/install/wheel evidence is recorded in `03-evidence-gates.md`. Manual workflow-dispatch native-only CI passed on repaired head `1e1faf6feb1` as reference evidence, but final PR-state CI evidence remains open.                                                                                                                                           | Local   |
+| Default packages and wheels do not carry old collision runtime dependencies.                                                 | Package install probes, Pixi dependency metadata checks, and the `verify_wheel_collision_isolation.py` verifier are recorded. `wheel-verify-core` runs the wheel isolation verifier, and `publish_dartpy.yml` invokes `pixi run -e py${{ matrix.python-version }}-wheel wheel-verify`. Manual workflow-dispatch wheel matrix evidence passed on repaired head `1e1faf6feb1`; final PR-state artifact evidence remains open.                                              | Local   |
 | Built-in detector maintains correctness tests.                                                                               | Native unit/integration tests, feature parity tests, DART adapter tests, gz-focused regressions, and reference comparison tests are recorded in `03-evidence-gates.md`.                                                                                                                                                                                                                                                                                                  | Local   |
-| Built-in detector maintains benchmarks for performance optimization.                                                         | `pixi run -e collision-reference bm-collision-check` runs checked narrowphase, distance, raycast, mixed-primitive, mesh-heavy, raycast-batch, and public adapter benchmark subsets, writing `.benchmark_results/collision_check_*.json`.                                                                                                                                                                                                                                 | Local   |
-| Native performance should beat the best legacy engine on required workloads, with feature first and correctness preserved.   | The current local broad benchmark guard is refreshed in `4b155655890`; `README.md` records native wins on the measured primitive, narrowphase, supported distance, raycast, batch, mesh-heavy, and mixed workloads.                                                                                                                                                                                                                                                      | Local   |
+| Built-in detector maintains benchmarks for performance optimization.                                                         | `pixi run -e collision-reference bm-collision-check` runs checked narrowphase, distance, raycast, mixed-primitive, mesh-heavy, raycast-batch, and public adapter benchmark subsets, writing `.benchmark_results/collision_check_*.json`. Manual workflow-dispatch benchmark guard artifact evidence passed on repaired head `1e1faf6feb1`; final scheduled/permanent PR evidence remains open.                                                                           | Local   |
+| Benchmark/profiling guardrails exist for the next performance wave, with feature first and correctness preserved.            | The current local broad benchmark guard is refreshed in `4b155655890`; `README.md` records feature-level benchmark baselines across primitive, narrowphase, supported distance, raycast, batch, mesh-heavy, and mixed workloads. Single-CPU optimization, multi-core CPU parallelism, and stretch GPU support are documented as follow-up performance work rather than current feature-completion blockers.                                                              | Local   |
 | Built-in layer architecture must be API-clean, scalable, and performance-oriented.                                           | `01-design.md` defines the public API boundary, compatibility shell, DART adapter scene, native scene/query core, query lifecycle, scalability design, performance hooks, and reference harness boundary. `README.md` mirrors this in the Architecture Completion Rubric, `docs/onboarding/architecture.md` now carries the durable built-in runtime architecture summary, and native `ShapeType` cleanup keeps the native taxonomy aligned with real supported classes. | Local   |
-| Architecture evidence must cover code, tests, package/source boundaries, and benchmark/profiling hooks, not only prose docs. | Code evidence exists for factory aliases, compatibility facades, persistent `DartCollisionGroup` scene state, cache IDs, source isolation, native shape taxonomy cleanup, wheel verifier wiring, package smoke, adapter benchmarks, native/reference benchmark JSON, repaired-head workflow-dispatch wheel artifacts, and the benchmark guard artifact. Final PR-state CI/artifact evidence remains missing.                                                             | Partial |
-| gz-physics compatibility must be preserved while legacy names migrate.                                                       | Fresh local `pixi run -e gazebo test-gz` passed 65/65 and package smoke passed. `readelf` shows the gz DART plugin and package-smoke executable use `libdart-collision-native.so` without old collision/reference runtime dependencies. `05-downstream-migration.md` defines the compatibility contract and removal gates.                                                                                                                                               | Local   |
+| Architecture evidence must cover code, tests, package/source boundaries, and benchmark/profiling hooks, not only prose docs. | Code evidence exists for factory aliases, compatibility facades, persistent `DartCollisionGroup` scene state, cache IDs, source isolation, native shape taxonomy cleanup, wheel verifier wiring, package smoke, adapter benchmarks, native/reference benchmark JSON, repaired-head workflow-dispatch native-only CI, wheel artifacts, gz-physics CI, and the benchmark guard artifact. Final PR-state CI/artifact evidence remains missing.                              | Partial |
+| gz-physics compatibility must be preserved while legacy names migrate.                                                       | Fresh local `pixi run -e gazebo test-gz` passed 65/65 and package smoke passed. `readelf` shows the gz DART plugin and package-smoke executable use `libdart-collision-native.so` without old collision/reference runtime dependencies. Manual workflow-dispatch gz-physics CI passed on repaired head `1e1faf6feb1` as reference evidence. `05-downstream-migration.md` defines the compatibility contract and removal gates.                                           | Local   |
 | Downstream migration/deprecation path must be proven before removing retained facades.                                       | `05-downstream-migration.md` defines the migration order and gates. Local primary evidence now covers fresh gz-physics, package smoke, runtime isolation, C++ compatibility names, dartpy clean-API enforcement, direct link inspection, and default-on C++ deprecation annotations. Final pushed-head CI/PR evidence remains open.                                                                                                                                      | Open    |
+| `CHANGELOG.md` must be updated for feature, behavior, and breaking-change user impact.                                       | `CHANGELOG.md` contains DART 7 native-collision entries for the dartpy alias breaking change, native/default collision behavior, reference-only old engines, benchmark guard, wheel isolation, and runtime source isolation. `07-pr-evidence-transfer.md` notes that only a final PR number reference may need to be added after the review surface is known.                                                                                                            | Done    |
 | Final PR evidence and cleanup must happen in the same PR.                                                                    | `README.md`, `02-milestones.md`, and `docs/dev_tasks/README.md` require transferring final evidence to the PR description and deleting `docs/dev_tasks/native_collision/` only at completion. Durable collision architecture notes have been seeded in onboarding docs, and `07-pr-evidence-transfer.md` stages the PR-template-shaped evidence packet, but PR evidence transfer and folder deletion remain open.                                                        | Open    |
 
 Legend:
@@ -652,6 +672,9 @@ Legend:
    attached runs for the same trigger-filter reason.
    Treat GitHub CI as reference evidence; use local build/test as the main
    validation surface unless the maintainer explicitly chooses another trigger.
+   Current local publish mechanics need HTTPS with the `jslee02` account:
+   `origin` uses SSH, which was unreachable during the latest resume check, and
+   the active `gh` CLI account had only read permission on `dartsim/dart`.
 2. Record downstream deprecation policy evidence proving downstream users no
    longer depend on legacy names as runtime backend selectors before removing
    or hard-deprecating retained facades. Local migration evidence is refreshed;

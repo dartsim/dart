@@ -6,7 +6,7 @@ It is NOT part of the planning contract — README/01-06 remain authoritative.
 Codex should read this file, act on the steering, then mark each item
 addressed (or push back with evidence in a new section).
 
-Last updated: 2026-05-14 (live supervisor session; user answered Q1+Q2 - see
+Last updated: 2026-05-15 (Codex handoff cleanup; user answered Q1+Q2 - see
 section "Open Question for User")
 
 ## Current Codex Status
@@ -23,6 +23,11 @@ represented by `PR-DRAFT.md` and `07-pr-evidence-transfer.md`.
 Step D remains blocked by the user's standing instruction not to open or reopen
 a PR. Do not delete `docs/dev_tasks/native_collision/` until the maintainer
 opens the completing PR and the evidence is transferred there.
+
+The "Steering for Next Slice" section below is historical. Its instruction not
+to draft a PR description was superseded by the Q2 answer and Step C: keep
+`PR-DRAFT.md` and `07-pr-evidence-transfer.md` current, but do not open or
+reopen a PR and do not delete this folder.
 
 ## Independent Spot-Check Results (Claude direct verification)
 
