@@ -152,6 +152,7 @@ using dart::examples::filament_gui::ActiveRenderableState;
 using dart::examples::filament_gui::DebugDrawOptions;
 using dart::examples::filament_gui::DebugLineDescriptor;
 using dart::examples::filament_gui::GeometryDescriptor;
+using dart::examples::filament_gui::MaterialDescriptor;
 using dart::examples::filament_gui::MeshMaterialDescriptor;
 using dart::examples::filament_gui::MeshPartDescriptor;
 using dart::examples::filament_gui::OrbitCamera;
@@ -2458,6 +2459,19 @@ void configureLitMaterialInstance(
   }
 }
 
+void applyRenderableShadowSettings(
+    filament::Engine& engine,
+    const Renderable& renderable,
+    const MaterialDescriptor& material)
+{
+  auto& renderables = engine.getRenderableManager();
+  const auto instance = renderables.getInstance(renderable.entity);
+  renderables.setCastShadows(instance, material.castsShadows);
+  renderables.setReceiveShadows(instance, material.receivesShadows);
+  renderables.setScreenSpaceContactShadows(
+      instance, material.castsShadows || material.receivesShadows);
+}
+
 filament::Material& selectLitMaterial(
     const MaterialSet& materials, bool usesTextures, const float4& color)
 {
@@ -4016,14 +4030,7 @@ std::optional<Renderable> createRenderableFromDescriptor(
   }
 
   if (renderable) {
-    auto& renderables = engine.getRenderableManager();
-    const auto instance = renderables.getInstance(renderable->entity);
-    renderables.setCastShadows(instance, descriptor.material.castsShadows);
-    renderables.setReceiveShadows(instance, descriptor.material.receivesShadows);
-    renderables.setScreenSpaceContactShadows(
-        instance,
-        descriptor.material.castsShadows
-            || descriptor.material.receivesShadows);
+    applyRenderableShadowSettings(engine, *renderable, descriptor.material);
   }
 
   return renderable;
@@ -5338,6 +5345,8 @@ int main(int argc, char* argv[])
           sceneRenderable.renderable,
           toRgba(descriptor->material.rgba),
           isSelected);
+      applyRenderableShadowSettings(
+          *engine, sceneRenderable.renderable, descriptor->material);
     }
     if (!selectedRenderableStillVisible) {
       selectedRenderableId = 0;

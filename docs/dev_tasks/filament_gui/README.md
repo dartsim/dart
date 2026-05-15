@@ -74,6 +74,8 @@
   empty point clouds or meshes without triangle data, now carry diagnostic
   reasons and are logged once by the Filament example instead of failing
   silently.
+- Retained Filament renderables now reapply descriptor shadow flags each frame,
+  so DART visual-aspect shadow changes are not limited to resource creation.
 - The experimental scene layer owns reusable RGBA-to-PPM screenshot storage,
   while the Filament example remains responsible only for renderer readback.
   The current Filament readback path writes top-left-origin screenshots so

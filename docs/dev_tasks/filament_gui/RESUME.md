@@ -77,7 +77,9 @@ changes, including dynamic soft-mesh vertex changes, recreate Filament
 resources. Supported descriptor kinds that cannot produce renderer resources
 now carry diagnostic reasons that the Filament example logs once. Backend-hidden
 RGBA-to-PPM screenshot storage also now lives in `dart-gui-experimental`; the
-Filament example keeps only renderer readback.
+Filament example keeps only renderer readback. Retained Filament renderables
+also reapply descriptor shadow flags each frame, so DART visual-aspect shadow
+changes are not limited to resource creation.
 `UNIT_dynamics_MeshShape` also loads the checked-in
 `data/gltf/pbr_triangle.gltf` and `data/gltf/pbr_multi_material.gltf` fixtures
 through the real Assimp importer and verifies authored glTF PBR texture slots,
@@ -192,6 +194,8 @@ renderer resources when descriptor-owned dynamic soft-mesh geometry changes,
 without exposing Filament handles or relying only on `Shape::getVersion()`.
 It also added descriptor diagnostics for supported geometry that has no
 renderable payload, such as empty point clouds or meshes without triangle data.
+The next follow-up centralized Filament shadow flag application and reapplies
+those flags to retained renderables during scene synchronization.
 
 ## Current Branch
 
