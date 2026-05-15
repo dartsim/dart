@@ -178,12 +178,12 @@
       intentional `collision-reference-*` test/benchmark code.
 - [ ] Final validation after the completing code state is still open. At
       minimum this means `pixi run lint`, `pixi run test-all`, and any
-      maintainer-selected CI gates whose failures are not covered locally. A
-      current full local `pixi run test-all` pass is tied to pushed branch head
-      `64abc65a032` (`Clarify native collision progress gates`) and passed
-      6/6 top-level gates with Release CTest 264/264 and Python tests 147/147.
-      The current
-      clean reference-gate refresh proves normal configure exposes only
+      maintainer-selected CI gates whose failures are not covered locally. The
+      latest full local `pixi run test-all` pass is tied to
+      `a0b53ef844021dd668c61d2957fbffd08104c6cb` and passed 6/6 top-level
+      gates with Release CTest 264/264; the result is recorded in the published
+      docs/evidence head on `origin/feature/new_coll`. The current clean
+      reference-gate refresh proves normal configure exposes only
       reference tests/benchmarks, keeps both `OFF` by default, and no longer
       has per-engine FCL/Bullet/ODE collision build switches. The
       source-build prerequisite cleanup was linted on pushed docs commit
