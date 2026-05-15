@@ -214,6 +214,10 @@
     `--scene atlas-puppet` Filament fixture that loads Atlas, exposes generic
     selectable IK targets for its hands and feet, and keeps the legacy
     standalone source as comparison material for the OSG teleoperation widget.
+    The `atlas_simbicon` runner now routes to a `--scene atlas-simbicon`
+    Filament fixture that loads the legacy Atlas SDF and ground in the
+    Simbicon start orientation while the legacy standalone source remains
+    available for the gait controller, perturbation shortcuts, and ImGui panel.
     The `operational_space_control` runner now routes to a
     `--scene operational-space-control` Filament fixture that loads the WAM arm,
     runs the task-space controller through a private scene pre-step hook, and

@@ -84,6 +84,7 @@ enum class ExampleScene
   LcpPhysics,
   MimicPendulums,
   AtlasPuppet,
+  AtlasSimbicon,
   OperationalSpaceControl,
   DragAndDrop,
   SimpleFrames,
@@ -123,6 +124,8 @@ inline constexpr const char* kAtlasFixtureSkeletonName = "visual_atlas_torso_mes
 inline constexpr const char* kAtlasRobotFixtureSkeletonName = "visual_atlas_robot";
 inline constexpr const char* kAtlasPuppetFixtureGroundSkeletonName
     = "visual_atlas_puppet_ground";
+inline constexpr const char* kAtlasSimbiconFixtureGroundSkeletonName
+    = "visual_atlas_simbicon_ground";
 inline constexpr const char* kAtlasPuppetIkTargetFramePrefix
     = "atlas_puppet_ik_target_";
 inline constexpr const char* kHelloWorldBoxFixtureSkeletonName
@@ -245,6 +248,7 @@ inline constexpr std::size_t kMimicPendulumsFixtureCylinderCount = 15;
 inline constexpr std::size_t kMimicPendulumsFixtureGroundCount = 1;
 inline constexpr std::size_t kAtlasPuppetFixtureGroundCount = 1;
 inline constexpr std::size_t kAtlasPuppetIkTargetCount = 4;
+inline constexpr std::size_t kAtlasSimbiconFixtureGroundCount = 1;
 inline constexpr std::size_t kOperationalSpaceControlTargetCount = 1;
 inline constexpr std::size_t kOperationalSpaceControlGroundCount = 1;
 inline constexpr std::size_t kSimpleFramesFixtureBoxCount = 3;

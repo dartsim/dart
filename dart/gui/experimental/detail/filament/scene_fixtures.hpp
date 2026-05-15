@@ -71,6 +71,8 @@ DartScene createMimicPendulumsScene();
 
 DartScene createAtlasPuppetScene();
 
+DartScene createAtlasSimbiconScene();
+
 DartScene createOperationalSpaceControlScene();
 
 DartScene createDragAndDropScene();

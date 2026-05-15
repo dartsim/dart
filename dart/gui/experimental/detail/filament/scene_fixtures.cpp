@@ -554,6 +554,35 @@ dart::dynamics::SkeletonPtr loadRequiredAtlasRobotSkeleton()
   return atlas;
 }
 
+dart::dynamics::SkeletonPtr loadAtlasSimbiconSkeleton()
+{
+  const auto atlasUri = dart::common::Uri::createFromString(
+      "dart://sample/sdf/atlas/atlas_v3_no_head.sdf");
+  auto atlas = dart::io::readSkeleton(atlasUri);
+  if (!atlas) {
+    throw std::runtime_error(
+        "Failed to load Atlas Simbicon fixture from " + atlasUri.toString());
+  }
+
+  atlas->setName(kAtlasRobotFixtureSkeletonName);
+  if (atlas->getNumDofs() == 0) {
+    throw std::runtime_error("Atlas Simbicon fixture has no root DOF");
+  }
+
+  constexpr double halfPi = 1.5707963267948966;
+  atlas->setPosition(0, -halfPi);
+  if (auto* rootBody = atlas->getRootBodyNode();
+      rootBody != nullptr
+      && dynamic_cast<FreeJoint*>(rootBody->getParentJoint()) != nullptr) {
+    Eigen::Isometry3d transform = rootBody->getWorldTransform();
+    transform.translation() = Eigen::Vector3d(0.0, 0.92, 0.0);
+    FreeJoint::setTransformOf(rootBody, transform);
+  }
+
+  makeVisualOnlySkeleton(atlas);
+  return atlas;
+}
+
 void setRequiredDofPosition(
     const dart::dynamics::SkeletonPtr& skeleton,
     const char* name,
@@ -2895,6 +2924,28 @@ DartScene createAtlasPuppetScene()
   auto atlas = loadAtlasPuppetSkeleton();
   scene.world->addSkeleton(atlas);
   addAtlasPuppetIkTargets(scene, atlas);
+
+  return scene;
+}
+
+DartScene createAtlasSimbiconScene()
+{
+  DartScene scene;
+  scene.world = World::create("filament_gui_atlas_simbicon");
+  scene.world->setGravity(Eigen::Vector3d::Zero());
+
+  constexpr double groundThickness = 0.08;
+  auto ground = createBoxGroundSkeleton(
+      kAtlasSimbiconFixtureGroundSkeletonName,
+      Eigen::Vector3d(5.5, groundThickness, 4.0),
+      Eigen::Vector3d(0.74, 0.76, 0.72));
+  if (auto* groundBody = ground->getBodyNode(0)) {
+    Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+    transform.translation().y() = -0.5 * groundThickness;
+    groundBody->getParentJoint()->setTransformFromParentBodyNode(transform);
+  }
+  scene.world->addSkeleton(ground);
+  scene.world->addSkeleton(loadAtlasSimbiconSkeleton());
 
   return scene;
 }

@@ -145,6 +145,10 @@ void accumulateSceneContent(
       && descriptor.geometry.kind == ShapeKind::Box) {
     ++counts.atlasPuppetGrounds;
   }
+  if (descriptor.skeletonName == kAtlasSimbiconFixtureGroundSkeletonName
+      && descriptor.geometry.kind == ShapeKind::Box) {
+    ++counts.atlasSimbiconGrounds;
+  }
   if (descriptor.shapeFrameName.starts_with(kAtlasPuppetIkTargetFramePrefix)
       && descriptor.geometry.kind == ShapeKind::Sphere) {
     ++counts.atlasPuppetIkTargets;
@@ -545,6 +549,23 @@ bool validateSceneDescriptorContent(
         kAtlasPuppetIkTargetCount,
         "atlas-puppet scene",
         "visible IK target renderable descriptors",
+        output);
+  }
+
+  if (scene == ExampleScene::AtlasSimbicon) {
+    if (!requireAtLeast(
+            counts.atlasRobotMeshes,
+            20,
+            "Atlas Simbicon fixture",
+            "visible mesh renderables",
+            output)) {
+      return false;
+    }
+    return requireEqual(
+        counts.atlasSimbiconGrounds,
+        kAtlasSimbiconFixtureGroundCount,
+        "atlas-simbicon scene",
+        "visible ground renderable descriptor",
         output);
   }
 
@@ -1103,6 +1124,21 @@ bool validateCreatedSceneContent(
         created.atlasPuppetIkTargets,
         expected.atlasPuppetIkTargets,
         "atlas-puppet IK target renderables",
+        output);
+  }
+
+  if (scene == ExampleScene::AtlasSimbicon) {
+    if (!requireCreatedAtLeast(
+            created.atlasRobotMeshes,
+            expected.atlasRobotMeshes,
+            "Atlas Simbicon mesh renderables",
+            output)) {
+      return false;
+    }
+    return requireCreatedEqual(
+        created.atlasSimbiconGrounds,
+        expected.atlasSimbiconGrounds,
+        "atlas-simbicon ground renderables",
         output);
   }
 

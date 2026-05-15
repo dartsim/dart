@@ -190,7 +190,7 @@
   MVP/G1/hello-world/boxes/hardcoded-design/rigid-chain/rigid-loop/
   mixed-chain/coupler-constraint/add-delete-skels/vehicle/hybrid-dynamics/
   joint-constraints/free-joint-cases/human-joint-limits/lcp-physics/
-  mimic-pendulums/atlas-puppet/
+  mimic-pendulums/atlas-puppet/atlas-simbicon/
   operational-space-control/drag/
   simple-frames/
   soft-bodies/point-cloud/capsule-ground-contact/simulation-event-handler/
@@ -340,6 +340,12 @@
   renderables. The in-tree `pixi run ex atlas_puppet` runner now routes to
   that Filament scene while the legacy standalone OSG source remains available
   for teleoperation-widget and support-polygon comparison.
+- The Filament example includes `--scene atlas-simbicon`, an Atlas visual
+  fixture that carries the legacy `atlas_simbicon` startup view through
+  descriptor-owned Atlas mesh and ground renderables. The in-tree
+  `pixi run ex atlas_simbicon` runner now routes to that Filament scene while
+  the legacy standalone OSG/ImGui source remains available for the Simbicon
+  gait controller, perturbation shortcuts, and panel controls.
 - The Filament example includes `--scene operational-space-control`, a WAM
   fixture that carries the legacy `operational_space_control` visual workflow
   through descriptor-owned robot, ground, and selectable target renderables.
@@ -446,7 +452,7 @@
   rigid-chain, rigid-loop, mixed-chain, coupler-constraint, add-delete-skels,
   vehicle, hybrid-dynamics, joint-constraints, free-joint-cases,
   human-joint-limits, lcp-physics, mimic-pendulums, atlas-puppet,
-  operational-space-control, drag-and-drop,
+  atlas-simbicon, operational-space-control, drag-and-drop,
   simple-frames, soft-bodies,
   point-cloud, capsule-ground-contact, simulation-event-handler, polyhedron,
   and heightmap headless CTest smokes.
