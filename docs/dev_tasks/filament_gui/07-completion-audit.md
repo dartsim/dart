@@ -244,6 +244,12 @@ The in-tree `pixi run ex imgui` runner now uses the Filament viewer's private
 built-in status panel by default while the standalone source in `examples/imgui`
 remains as legacy OSG/ImGui comparison material for custom-widget extension
 points.
+The in-tree `pixi run ex rigid_shapes` runner now uses the Filament example's
+default MVP scene by default, so the recommended broad-shape visual workflow
+exercises descriptor-owned primitive, mesh, point-cloud, heightmap, soft-mesh,
+and robot renderables in the Filament renderer path while the standalone source
+in `examples/rigid_shapes` remains as legacy OSG comparison material for shape
+spawning, contact toggles, and collision-detector controls.
 The Filament example's `--scene polyhedron` fixture now backs the in-tree
 `pixi run ex polyhedron_visual` runner, so the recommended convex-hull visual
 workflow exercises descriptor-owned convex-mesh and line-segment renderables in

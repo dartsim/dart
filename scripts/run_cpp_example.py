@@ -41,6 +41,12 @@ EXAMPLE_SPECS = {
     "dart_raylib": ExampleSpec("dart_raylib", "raylib", ("raylib",)),
     "filament_gui": ExampleSpec("dart_filament_gui", "filament_gui", ("filament",)),
     "imgui": ExampleSpec("dart_filament_gui", "filament_gui", ("filament",)),
+    "rigid_shapes": ExampleSpec(
+        "dart_filament_gui",
+        "filament_gui",
+        ("filament",),
+        ("--scene", "mvp"),
+    ),
     "hello_world": ExampleSpec(
         "dart_filament_gui",
         "filament_gui",

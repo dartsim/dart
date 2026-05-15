@@ -313,6 +313,10 @@ It also routes
 `pixi run ex imgui` through the Filament example's default viewer and private
 built-in status panel while keeping the standalone source as legacy OSG/ImGui
 comparison material for custom-widget extension points. It also routes
+`pixi run ex rigid_shapes` through the Filament example's default MVP scene for
+broad primitive, mesh, point-cloud, heightmap, soft-mesh, and robot visual
+coverage while keeping the standalone source as legacy OSG comparison material
+for shape spawning, contact toggles, and collision-detector controls. It also
 `pixi run ex polyhedron_visual` through the Filament example's
 `--scene polyhedron` fixture, which renders the legacy convex hull and wireframe
 through descriptor-owned convex-mesh and line-segment renderables. It also

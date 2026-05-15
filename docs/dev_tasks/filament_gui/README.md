@@ -278,6 +278,11 @@
   default viewer and private built-in status panel while the legacy standalone
   OSG/ImGui source remains available for custom-widget comparison until a
   promoted DART-owned panel/tool API exists.
+- The in-tree `pixi run ex rigid_shapes` runner now routes to the Filament
+  example's default MVP scene, giving the recommended broad-shape visual path
+  descriptor-owned primitive, mesh, point-cloud, heightmap, soft-mesh, and robot
+  coverage while the legacy standalone OSG source remains available for shape
+  spawning, contact toggles, and collision-detector comparison.
 - The Filament example includes `--scene polyhedron`, a convex-hull and
   wireframe fixture that carries the legacy `polyhedron_visual` example through
   descriptor-owned convex-mesh and line-segment renderables. The in-tree
