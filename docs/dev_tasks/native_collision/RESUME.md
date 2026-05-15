@@ -37,14 +37,14 @@ dependencies. That docs cleanup is commit `621fca5a1fb` and was validated with
 ## Current Branch
 
 `feature/new_coll` tracks `origin/feature/new_coll`. After explicit user
-approval, the docs/evidence commits through
-`918d29c0c4b083de411e816cf9b17ff411b6e7f9` were published to
+approval, the docs/evidence commits were published to
 `origin/feature/new_coll`. Run `git rev-parse HEAD` and
 `git rev-parse origin/feature/new_coll` for the exact current local/remote
 heads because amending this note changes the latest hash. A read-only GitHub
-recheck found no Actions runs for `918d29c0c4b`; branch pushes do not trigger
-the main workflows while PR #2652 remains closed. PR #2652 is closed, draft,
-dirty, and still anchored to old head `714d220d82a`.
+recheck after publishing found no Actions runs for the published evidence head;
+branch pushes do not trigger the main workflows while PR #2652 remains closed.
+PR #2652 is closed, draft, dirty, and still anchored to old head
+`714d220d82a`.
 
 The latest pushed validation baseline is `376fd5e686d`
 (`Remove per-engine collision reference build options`). Current branch head

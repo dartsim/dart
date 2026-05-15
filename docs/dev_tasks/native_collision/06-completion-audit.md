@@ -164,16 +164,15 @@ Current audited state:
 
 - Branch: `feature/new_coll`
 - Local branch state: after explicit user approval, the docs/evidence commits
-  through `918d29c0c4b083de411e816cf9b17ff411b6e7f9` were published to
-  `origin/feature/new_coll`. Run `git rev-parse HEAD` and
+  were published to `origin/feature/new_coll`. Run `git rev-parse HEAD` and
   `git rev-parse origin/feature/new_coll` for the exact current local/remote
   heads because amending this note changes the latest hash. A fresh current-tree
   guard refresh for the evidence state passed the runtime-isolation script, the
   compatibility-facade audit script, `pixi run lint` with no formatter changes,
   and `pixi run check-lint` through the non-mutating lint path. A later
-  read-only external recheck found no GitHub Actions runs for `918d29c0c4b`
-  because feature-branch pushes do not match the workflow filters while PR
-  #2652 is closed.
+  read-only external recheck found no GitHub Actions runs for the published
+  evidence head because feature-branch pushes do not match the workflow filters
+  while PR #2652 is closed.
 - Latest clean reference/downstream validation baseline:
   `376fd5e686d` (`Remove per-engine collision reference build options`). This
   is the latest commit with the full clean-reference, gz-physics, package-smoke,
