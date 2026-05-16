@@ -103,7 +103,7 @@ normals flip).
 | `capsule_mesh`                       | DONE   | `test_mesh_mesh.cpp::CapsuleVsMeshPairOrder`                       |                                                               |
 | `capsule_convex`                     | DONE   | `test_convex.cpp::CapsuleConvexPairOrder`                          |                                                               |
 | `capsule_sdf`                        | DONE   | `test_sdf_compare.cpp`                                             |                                                               |
-| `capsule_compound`                   | GAP    | —                                                                  |                                                               |
+| `capsule_compound`                   | DONE   | `test_compound.cpp::CapsulePairOrder`                              |                                                               |
 | `cylinder_cylinder_parallel_overlap` | DONE   | `test_cylinder.cpp`                                                |                                                               |
 | `cylinder_cylinder_stacked`          | DONE   | `test_cylinder.cpp`                                                |                                                               |
 | `cylinder_cylinder_perpendicular`    | DONE   | `test_cylinder.cpp`                                                |                                                               |
@@ -111,12 +111,12 @@ normals flip).
 | `cylinder_mesh`                      | DONE   | `test_mesh_mesh.cpp::CylinderVsMeshPairOrder`                      |                                                               |
 | `cylinder_convex`                    | DONE   | `test_convex.cpp::CylinderConvexPairOrder`                         |                                                               |
 | `cylinder_sdf`                       | GAP    | —                                                                  |                                                               |
-| `cylinder_compound`                  | GAP    | —                                                                  |                                                               |
+| `cylinder_compound`                  | DONE   | `test_compound.cpp::CylinderPairOrder`                             |                                                               |
 | `plane_mesh_penetrating`             | DONE   | `test_plane.cpp`                                                   |                                                               |
 | `plane_mesh_broadphase_path`         | DONE   | `test_dart_collision_detector.cpp`                                 |                                                               |
 | `plane_mesh_pair_order`              | DONE   | `test_narrow_phase.cpp`                                            |                                                               |
 | `plane_convex`                       | DONE   | `test_convex.cpp::PlaneConvexPairOrder`                            |                                                               |
-| `plane_compound`                     | GAP    | —                                                                  |                                                               |
+| `plane_compound`                     | DONE   | `test_compound.cpp::PlanePairOrder`                                |                                                               |
 | `mesh_mesh_basic`                    | DONE   | `test_mesh_mesh.cpp`                                               |                                                               |
 | `mesh_mesh_separated`                | DONE   | `test_mesh_mesh.cpp`                                               |                                                               |
 | `mesh_mesh_single_triangle_vs_large` | DONE   | `test_mesh_mesh.cpp`                                               |                                                               |
@@ -346,15 +346,15 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 
 ## Summary Counters (as of 2026-05-15)
 
-- **§1 Pair-wise narrow-phase:** 62 DONE, 0 PARTIAL, 18 GAP (of 80 rows)
+- **§1 Pair-wise narrow-phase:** 65 DONE, 0 PARTIAL, 15 GAP (of 80 rows)
 - **§2 Algorithm-level:** 27 DONE, 4 PARTIAL, 13 GAP (of 44 rows)
 - **§3 Stress / regression:** 17 DONE, 1 PARTIAL, 15 GAP (of 33 rows)
 - **§4 Benchmarks:** 19 DONE, 0 PARTIAL, 9 GAP (of 28 rows)
 - **§5 Infrastructure:** 8 DONE, 0 PARTIAL, 1 GAP (of 9 rows)
-- **TOTAL:** 133 DONE, 5 PARTIAL, 56 GAP (of 194 rows)
+- **TOTAL:** 136 DONE, 5 PARTIAL, 53 GAP (of 194 rows)
 
-DART native is currently at ~69% of the proposed superset, with the
-remaining 31% concentrated in: (a) less-common shape pairs against
+DART native is currently at ~70% of the proposed superset, with the
+remaining 30% concentrated in: (a) less-common shape pairs against
 capsule/cylinder/mesh/convex/sdf/compound, (b) algorithm-isolation
 tests for SAT internals, (c) long-horizon stability and stress scenes,
 (d) scale and scenario benchmarks beyond the focused raw primitive rows.
@@ -366,8 +366,8 @@ tests for SAT internals, (c) long-horizon stability and stress scenes,
 2. **Round 6 tests/ reference move** — no test changes but updates
    `lint_runtime_isolation` to enforce the new path. ~0 net change to
    this matrix; 1 row gets a new "and rejects old path" condition.
-3. **Capsule × Compound** — remaining capsule pair row.
-4. **Cylinder × {Compound, Sdf}** — remaining cylinder pair rows.
+3. **Cylinder × Sdf** — remaining cylinder pair row.
+4. **Convex/Mesh × {Sdf, Compound}** — remaining convexity and mesh pair rows.
 5. **Long-horizon stability scenes** — `stacked_boxes_n10/n100`,
    `mixed_primitive_stack` unit-test version, `ragdoll_capsule_pile`,
    `thin_box_no_tunneling`. These are the highest-leverage rows for

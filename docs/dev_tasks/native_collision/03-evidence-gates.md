@@ -3073,6 +3073,19 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     including the 15-second no-fall-through stability case, and the
     `hello_world` example target builds against the same default native
     collision path.
+- Current local primitive/compound refresh:
+  - Commit: current working tree after local head `320c9fa32e9`
+    (`Record native collision verification evidence`).
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_compound --parallel 5`,
+    `./build/default/cpp/Release/bin/test_compound --gtest_filter='CompoundCollision.CapsulePairOrder:CompoundCollision.CylinderPairOrder:CompoundCollision.PlanePairOrder'`,
+    and
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_compound$' -j 5`.
+  - Result: passed. `test_compound` now covers `capsule_compound`,
+    `cylinder_compound`, and `plane_compound` through native
+    `NarrowPhase` compound dispatch in both query orders, including nonzero
+    penetration depth, finite contact position/normal data, and flipped normal
+    orientation for swapped arguments.
 
 ## Known Risks
 

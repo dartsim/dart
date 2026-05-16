@@ -66,6 +66,47 @@ void addBoxChild(
   compound.addChild(std::make_unique<BoxShape>(halfExtents), transform);
 }
 
+void expectPairOrderCollision(
+    const Shape& shape1,
+    const Eigen::Isometry3d& tf1,
+    const Shape& shape2,
+    const Eigen::Isometry3d& tf2)
+{
+  CollisionOption option;
+  option.maxNumContacts = 1;
+
+  CollisionResult result12;
+  const bool hit12
+      = NarrowPhase::collide(&shape1, tf1, &shape2, tf2, option, result12);
+
+  ASSERT_TRUE(hit12);
+  ASSERT_EQ(result12.numContacts(), 1u);
+  EXPECT_GT(result12.getContact(0).depth, 0.0);
+  EXPECT_TRUE(result12.getContact(0).position.allFinite());
+  EXPECT_TRUE(result12.getContact(0).normal.allFinite());
+
+  CollisionResult result21;
+  const bool hit21
+      = NarrowPhase::collide(&shape2, tf2, &shape1, tf1, option, result21);
+
+  ASSERT_TRUE(hit21);
+  ASSERT_EQ(result21.numContacts(), 1u);
+  EXPECT_GT(result21.getContact(0).depth, 0.0);
+  EXPECT_TRUE(result21.getContact(0).position.allFinite());
+  EXPECT_TRUE(result21.getContact(0).normal.allFinite());
+  EXPECT_NEAR(
+      result12.getContact(0).depth, result21.getContact(0).depth, 1e-10);
+  EXPECT_NEAR(
+      (result12.getContact(0).position - result21.getContact(0).position)
+          .norm(),
+      0.0,
+      1e-10);
+  EXPECT_NEAR(
+      (result12.getContact(0).normal + result21.getContact(0).normal).norm(),
+      0.0,
+      1e-10);
+}
+
 } // namespace
 
 TEST(CompoundShape, ConstructionEmpty)
@@ -250,6 +291,48 @@ TEST(CompoundCollision, TransformedChild)
   CollisionResult result;
 
   EXPECT_TRUE(NarrowPhase::collide(compoundObj, boxObj, option, result));
+}
+
+TEST(CompoundCollision, CapsulePairOrder)
+{
+  CompoundShape compound;
+  addBoxChild(
+      compound, Eigen::Vector3d(0.5, 0.5, 0.5), Eigen::Isometry3d::Identity());
+
+  CapsuleShape capsule(0.25, 1.0);
+  Eigen::Isometry3d capsuleTf = Eigen::Isometry3d::Identity();
+  capsuleTf.translation() = Eigen::Vector3d(0.6, 0.0, 0.0);
+
+  expectPairOrderCollision(
+      compound, Eigen::Isometry3d::Identity(), capsule, capsuleTf);
+}
+
+TEST(CompoundCollision, CylinderPairOrder)
+{
+  CompoundShape compound;
+  addBoxChild(
+      compound, Eigen::Vector3d(0.5, 0.5, 0.5), Eigen::Isometry3d::Identity());
+
+  CylinderShape cylinder(0.25, 1.0);
+  Eigen::Isometry3d cylinderTf = Eigen::Isometry3d::Identity();
+  cylinderTf.translation() = Eigen::Vector3d(0.6, 0.0, 0.0);
+
+  expectPairOrderCollision(
+      compound, Eigen::Isometry3d::Identity(), cylinder, cylinderTf);
+}
+
+TEST(CompoundCollision, PlanePairOrder)
+{
+  CompoundShape compound;
+  addSphereChild(compound, 0.5, Eigen::Vector3d(0.0, 0.0, 0.25));
+
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+
+  expectPairOrderCollision(
+      compound,
+      Eigen::Isometry3d::Identity(),
+      plane,
+      Eigen::Isometry3d::Identity());
 }
 
 TEST(CompoundCollision, NoCollisionSeparatedChildren)
