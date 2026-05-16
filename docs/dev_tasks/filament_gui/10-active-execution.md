@@ -1767,6 +1767,48 @@ UNIT_gui_FilamentSceneExtraction --parallel 5`
     `analyze_headless_smoke.py` (512000/512000 nonzero pixels)
 - Remaining before checkpoint handoff: commit and push without opening a PR.
 
+Forty-fourth boxes parity checkpoint:
+
+- Historical `examples/boxes` spawned a 5x5x5 grid of rigid boxes over a large
+  ground plane, preferred Bullet collision when available, used a 1360x768
+  launch size, set camera home from eye `(20, 20, 15)` to target `(0, 0, 3)`,
+  printed simple viewer instructions, and had an example README.
+- Current promoted source owns the box grid and ground plane through public
+  `dart::gui`, but it lacks the Bullet preference, camera/run defaults, and
+  README.
+- Scope before code changes: restore Bullet preference behind `DART_HAVE_BULLET`,
+  restore camera/run defaults through `ApplicationOptions`, restore the README
+  with promoted `dart::gui` capture wording, and add source-extraction tests.
+  Keep the old OSG shadow-map tuning and instruction-text plumbing out of
+  scope because the promoted renderer owns those concepts differently.
+- Implementation status: boxes now restores Bullet preference when available,
+  1360x768 run defaults, historical camera home, and the example README through
+  promoted `dart::gui`.
+- Local validation completed so far:
+  - `cmake --build build/default/cpp/Release --target boxes
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - `ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^UNIT_gui_FilamentSceneExtraction$'`
+  - Direct llvmpipe `boxes --headless --frames 2 --screenshot
+/tmp/dart_boxes_direct.ppm` plus `analyze_headless_smoke.py`
+    (1044480/1044480 nonzero pixels at the restored 1360x768 default)
+  - `pixi run ex boxes --headless --frames 2 --screenshot
+/tmp/dart_boxes_pixi.ppm` plus `analyze_headless_smoke.py`
+    (307200/307200 nonzero pixels at the pixi wrapper's 640x480 size)
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+    (67 passed)
+  - `cmake --build build/default/cpp/Release --target examples --parallel 5`
+  - `git diff --check`
+  - `pixi run lint`
+  - Post-lint `cmake --build build/default/cpp/Release --target boxes
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - Post-lint `ctest --test-dir build/default/cpp/Release --output-on-failure
+-R '^UNIT_gui_FilamentSceneExtraction$'`
+  - Post-lint direct llvmpipe `boxes --headless --frames 2 --screenshot
+/tmp/dart_boxes_direct_postlint.ppm` plus `analyze_headless_smoke.py`
+    (1044480/1044480 nonzero pixels)
+- Remaining before checkpoint handoff: commit and push without opening a PR.
+
 Forty-first LCP physics parity checkpoint:
 
 - Historical `examples/lcp_physics` exposed separate LCP benchmark scenarios
@@ -2389,8 +2431,8 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Restore box-stacking solver selection, camera/run defaults, README, and
-   parity tests through public `dart::gui`.
+1. Restore boxes Bullet preference, camera/run defaults, README, and parity
+   tests through public `dart::gui`.
 2. Continue the source-owned historical parity audit across the remaining
    pre-existing examples; do not treat build or screenshot smoke coverage as
    full restoration evidence by itself.

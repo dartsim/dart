@@ -807,6 +807,29 @@ TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
   }
 }
 
+TEST(FilamentSceneExtraction, BoxesExamplePreservesParityMarkers)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "boxes" / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "boxes" / "README.md");
+
+  EXPECT_NE(mainSource.find("#if DART_HAVE_BULLET"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("CollisionDetectorType::Bullet"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeBoxesRunDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.width = 1360"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.height = 768"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeBoxesCamera"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 3.0)"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("options.world"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Boxes Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("dart::gui"), std::string::npos);
+  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, BoxStackingExamplePreservesParityMarkers)
 {
   const auto mainSource = readSourceFile(

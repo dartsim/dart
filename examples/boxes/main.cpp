@@ -30,7 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/config.hpp>
+
 #include <dart/gui/application.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <dart/simulation/world.hpp>
 
@@ -101,10 +104,20 @@ dart::dynamics::SkeletonPtr createGround()
   return ground;
 }
 
+void preferBulletCollisionDetector(dart::simulation::World& world)
+{
+#if DART_HAVE_BULLET
+  world.setCollisionDetector(dart::simulation::CollisionDetectorType::Bullet);
+#else
+  (void)world;
+#endif
+}
+
 dart::simulation::WorldPtr createBoxesWorld()
 {
   auto world = dart::simulation::World::create("boxes");
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  preferBulletCollisionDetector(*world);
 
   constexpr int dim = 5;
   std::size_t boxIndex = 0;
@@ -127,11 +140,31 @@ dart::simulation::WorldPtr createBoxesWorld()
   return world;
 }
 
+dart::gui::RunOptions makeBoxesRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 1360;
+  options.height = 768;
+  return options;
+}
+
+dart::gui::OrbitCamera makeBoxesCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.0, 0.0, 3.0);
+  camera.yaw = 0.7853981633974483;
+  camera.pitch = 0.4012471419183609;
+  camera.distance = 30.72458299147443;
+  return camera;
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
 {
   dart::gui::ApplicationOptions options;
   options.world = createBoxesWorld();
+  options.runDefaults = makeBoxesRunDefaults();
+  options.camera = makeBoxesCamera();
   return dart::gui::runApplication(argc, argv, options);
 }

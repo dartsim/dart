@@ -165,7 +165,15 @@ and parity tests through promoted `dart::gui`. That checkpoint is implemented
 and locally validated through the pre-lint focused build, CTest, direct/pixi
 screenshot smokes, Python example-runner tests, and the aggregate `examples`
 build, `git diff --check`, `pixi run lint`, and post-lint focused
-build/CTest/direct screenshot smoke. The remaining work is commit and push.
+build/CTest/direct screenshot smoke. The checkpoint was committed and pushed as
+`3493d7065c0 Restore box stacking solver controls`. The active slice is now
+`examples/boxes`: restore the historical Bullet preference, camera/run
+defaults, README, and parity tests through promoted `dart::gui`. That
+checkpoint is implemented and locally validated through the pre-lint focused
+build, CTest, direct/pixi screenshot smokes, Python example-runner tests, and
+the aggregate `examples` build, `git diff --check`, `pixi run lint`, and
+post-lint focused build/CTest/direct screenshot smoke. The remaining work is
+commit and push.
 Keep Atlas relaxed-posture/balance optimization, Hubo analytical IK,
 Atlas/Hubo target activation semantics, and Enter recording as explicit parity
 gaps unless a later slice adds the narrow renderer-neutral public API needed
@@ -728,13 +736,13 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`2bc6a0e168d Restore mimic pendulums diagnostics`; the current pending
-checkpoint is the box-stacking solver/defaults/README parity repair.
+`3493d7065c0 Restore box stacking solver controls`; the current pending
+checkpoint is the boxes Bullet/defaults/README parity repair.
 
 ## Current Immediate Next Step
 
-Restore box-stacking solver selection, camera/run defaults, README, and parity
-tests through public `dart::gui`, then validate, lint, commit, and push without
+Restore boxes Bullet preference, camera/run defaults, README, and parity tests
+through public `dart::gui`, then validate, lint, commit, and push without
 opening a PR. After that, continue the remaining source-owned historical
 example parity audit. Keep `--screenshot <path>` and `--out <dir>` working for
 the existing CTest, GitHub Actions smoke path, and historical image-sequence
