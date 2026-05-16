@@ -64,6 +64,23 @@ std::vector<Eigen::Vector3d> makeCubeVertices(double halfExtent = 1.0)
       {-h, h, h}};
 }
 
+std::vector<MeshShape::Triangle> makeCubeTriangles()
+{
+  return {
+      {0, 1, 2},
+      {0, 2, 3},
+      {4, 6, 5},
+      {4, 7, 6},
+      {0, 5, 1},
+      {0, 4, 5},
+      {2, 6, 7},
+      {2, 7, 3},
+      {0, 7, 4},
+      {0, 3, 7},
+      {1, 5, 6},
+      {1, 6, 2}};
+}
+
 TEST(ConvexCollision, ConvexConvexIntersecting)
 {
   auto octahedron1 = std::make_unique<ConvexShape>(makeOctahedronVertices());
@@ -138,6 +155,88 @@ TEST(ConvexCollision, ConvexBoxIntersecting)
       = collideConvexConvex(*octahedron, tf1, *box, tf2, result, option);
 
   EXPECT_TRUE(collides);
+}
+
+TEST(ConvexCollision, PlaneConvexPairOrder)
+{
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  ConvexShape octahedron(makeOctahedronVertices(0.5));
+
+  Eigen::Isometry3d planeTf = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d convexTf = Eigen::Isometry3d::Identity();
+  convexTf.translation() = Eigen::Vector3d(0, 0, 0.25);
+
+  CollisionOption option;
+  option.maxNumContacts = 1;
+
+  CollisionResult planeConvex;
+  const bool planeConvexCollides = NarrowPhase::collide(
+      &plane, planeTf, &octahedron, convexTf, option, planeConvex);
+
+  ASSERT_TRUE(planeConvexCollides);
+  ASSERT_EQ(planeConvex.numContacts(), 1u);
+  EXPECT_GT(planeConvex.getContact(0).depth, 0.0);
+  EXPECT_LT(planeConvex.getContact(0).normal.z(), -0.9);
+  EXPECT_TRUE(planeConvex.getContact(0).position.allFinite());
+
+  CollisionResult convexPlane;
+  const bool convexPlaneCollides = NarrowPhase::collide(
+      &octahedron, convexTf, &plane, planeTf, option, convexPlane);
+
+  ASSERT_TRUE(convexPlaneCollides);
+  ASSERT_EQ(convexPlane.numContacts(), 1u);
+  EXPECT_GT(convexPlane.getContact(0).depth, 0.0);
+  EXPECT_GT(convexPlane.getContact(0).normal.z(), 0.9);
+  EXPECT_TRUE(convexPlane.getContact(0).position.allFinite());
+  EXPECT_NEAR(
+      planeConvex.getContact(0).depth, convexPlane.getContact(0).depth, 1e-10);
+  EXPECT_NEAR(
+      (planeConvex.getContact(0).position - convexPlane.getContact(0).position)
+          .norm(),
+      0.0,
+      1e-10);
+}
+
+TEST(ConvexCollision, MeshConvexPairOrder)
+{
+  MeshShape mesh(makeCubeVertices(0.5), makeCubeTriangles());
+  ConvexShape octahedron(makeOctahedronVertices(0.5));
+
+  Eigen::Isometry3d meshTf = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d convexTf = Eigen::Isometry3d::Identity();
+  convexTf.translation() = Eigen::Vector3d(0.75, 0, 0);
+
+  CollisionOption option;
+  option.maxNumContacts = 1;
+
+  CollisionResult meshConvex;
+  const bool meshConvexCollides = NarrowPhase::collide(
+      &mesh, meshTf, &octahedron, convexTf, option, meshConvex);
+
+  ASSERT_TRUE(meshConvexCollides);
+  ASSERT_EQ(meshConvex.numContacts(), 1u);
+  EXPECT_GT(meshConvex.getContact(0).depth, 0.0);
+  EXPECT_TRUE(meshConvex.getContact(0).position.allFinite());
+  EXPECT_TRUE(meshConvex.getContact(0).normal.allFinite());
+  EXPECT_LT(meshConvex.getContact(0).normal.x(), -0.5);
+
+  CollisionResult convexMesh;
+  const bool convexMeshCollides = NarrowPhase::collide(
+      &octahedron, convexTf, &mesh, meshTf, option, convexMesh);
+
+  ASSERT_TRUE(convexMeshCollides);
+  ASSERT_EQ(convexMesh.numContacts(), 1u);
+  EXPECT_GT(convexMesh.getContact(0).depth, 0.0);
+  EXPECT_TRUE(convexMesh.getContact(0).position.allFinite());
+  EXPECT_TRUE(convexMesh.getContact(0).normal.allFinite());
+  EXPECT_GT(convexMesh.getContact(0).normal.x(), 0.5);
+  EXPECT_NEAR(
+      meshConvex.getContact(0).depth, convexMesh.getContact(0).depth, 1e-10);
+  EXPECT_NEAR(
+      (meshConvex.getContact(0).position - convexMesh.getContact(0).position)
+          .norm(),
+      0.0,
+      1e-10);
 }
 
 TEST(ConvexCollision, MeshMeshIntersecting)

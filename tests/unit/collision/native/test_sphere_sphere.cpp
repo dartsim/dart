@@ -110,6 +110,76 @@ TEST(SphereSphere, Concentric)
   EXPECT_NEAR(contact.normal.norm(), 1.0, 1e-10);
 }
 
+TEST(SphereSphere, ZeroRadius)
+{
+  {
+    CollisionResult result;
+    const bool collided = collideSpheres(
+        Eigen::Vector3d(0, 0, 0), 0.0, Eigen::Vector3d(2, 0, 0), 1.0, result);
+
+    EXPECT_FALSE(collided);
+    EXPECT_EQ(result.numContacts(), 0);
+  }
+
+  {
+    CollisionResult result;
+    const bool collided = collideSpheres(
+        Eigen::Vector3d(0, 0, 0), 0.0, Eigen::Vector3d(1, 0, 0), 1.0, result);
+
+    EXPECT_TRUE(collided);
+    ASSERT_EQ(result.numContacts(), 1);
+
+    const auto& contact = result.getContact(0);
+    EXPECT_NEAR(contact.depth, 0.0, 1e-10);
+    EXPECT_TRUE(contact.position.allFinite());
+    EXPECT_TRUE(contact.normal.allFinite());
+    EXPECT_NEAR(contact.normal.x(), -1.0, 1e-10);
+    EXPECT_NEAR(contact.normal.y(), 0.0, 1e-10);
+    EXPECT_NEAR(contact.normal.z(), 0.0, 1e-10);
+  }
+
+  {
+    CollisionResult ab;
+    const bool collidedAb = collideSpheres(
+        Eigen::Vector3d(0, 0, 0), 0.0, Eigen::Vector3d(0.5, 0, 0), 1.0, ab);
+
+    CollisionResult ba;
+    const bool collidedBa = collideSpheres(
+        Eigen::Vector3d(0.5, 0, 0), 1.0, Eigen::Vector3d(0, 0, 0), 0.0, ba);
+
+    ASSERT_TRUE(collidedAb);
+    ASSERT_TRUE(collidedBa);
+    ASSERT_EQ(ab.numContacts(), 1);
+    ASSERT_EQ(ba.numContacts(), 1);
+
+    const auto& contactAb = ab.getContact(0);
+    const auto& contactBa = ba.getContact(0);
+    EXPECT_NEAR(contactAb.depth, 0.5, 1e-10);
+    EXPECT_NEAR(contactBa.depth, 0.5, 1e-10);
+    EXPECT_TRUE(contactAb.position.allFinite());
+    EXPECT_TRUE(contactBa.position.allFinite());
+    EXPECT_TRUE(contactAb.normal.allFinite());
+    EXPECT_TRUE(contactBa.normal.allFinite());
+    EXPECT_NEAR((contactAb.position - contactBa.position).norm(), 0.0, 1e-10);
+    EXPECT_NEAR((contactAb.normal + contactBa.normal).norm(), 0.0, 1e-10);
+  }
+
+  {
+    CollisionResult result;
+    const bool collided = collideSpheres(
+        Eigen::Vector3d(0, 0, 0), 0.0, Eigen::Vector3d(0, 0, 0), 0.0, result);
+
+    EXPECT_TRUE(collided);
+    ASSERT_EQ(result.numContacts(), 1);
+
+    const auto& contact = result.getContact(0);
+    EXPECT_NEAR(contact.depth, 0.0, 1e-10);
+    EXPECT_TRUE(contact.position.allFinite());
+    EXPECT_TRUE(contact.normal.allFinite());
+    EXPECT_NEAR(contact.normal.norm(), 1.0, 1e-10);
+  }
+}
+
 TEST(SphereSphere, DifferentRadii)
 {
   CollisionResult result;

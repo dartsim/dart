@@ -2997,6 +2997,40 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     `INTEGRATION_collision_CapsuleGroundContact`,
     `INTEGRATION_collision_native_backend_consistency`, and
     `test_reference_backends`.
+- Current local raw sphere-sphere degenerate-radius refresh:
+  - Commit: current working tree after local head `78c1047ca00`
+    (`Fix reference collision test includes`).
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_sphere_sphere --parallel "$JOBS"`
+    and
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_sphere_sphere$' -j "$JOBS"`.
+  - Result: passed. `test_sphere_sphere` now covers the
+    `sphere_sphere_zero_radius` raw narrow-phase matrix row, including
+    zero-radius separation, zero-radius tangency, nonzero-depth point-inside
+    sphere pair-order symmetry, and coincident zero-radius contacts without
+    non-finite contact positions or normals.
+- Current local convexity-based plane/convex refresh:
+  - Commit: current working tree after local head `78c1047ca00`
+    (`Fix reference collision test includes`).
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_convex --parallel "$JOBS"`
+    and
+    `./build/default/cpp/Release/bin/test_convex --gtest_filter='ConvexCollision.PlaneConvexPairOrder'`.
+  - Result: passed. `test_convex` now covers the `plane_convex`
+    matrix row through the native `NarrowPhase` dispatch path, including
+    nonzero penetration depth, finite contact position, and pair-order normal
+    orientation for both plane/convex and convex/plane query order.
+- Current local mesh/convex refresh:
+  - Commit: current working tree after local head `78c1047ca00`
+    (`Fix reference collision test includes`).
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_convex --parallel "$JOBS"`
+    and
+    `./build/default/cpp/Release/bin/test_convex --gtest_filter='ConvexCollision.MeshConvexPairOrder'`.
+  - Result: passed. `test_convex` now covers the `mesh_convex`
+    matrix row through native `NarrowPhase` dispatch, including nonzero
+    penetration depth, finite contact position/normal data, and pair-order
+    normal orientation for both mesh/convex and convex/mesh query order.
 
 ## Known Risks
 

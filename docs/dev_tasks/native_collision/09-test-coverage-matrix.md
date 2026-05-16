@@ -52,7 +52,7 @@ normals flip).
 | Codename                             | Status | Source                                                             | Notes                                                         |
 | ------------------------------------ | ------ | ------------------------------------------------------------------ | ------------------------------------------------------------- |
 | `sphere_sphere_basic`                | DONE   | `test_sphere_sphere.cpp`, `test_narrow_phase.cpp`                  | Multi-config sweep                                            |
-| `sphere_sphere_zero_radius`          | GAP    | —                                                                  | Degenerate radius                                             |
+| `sphere_sphere_zero_radius`          | DONE   | `test_sphere_sphere.cpp::ZeroRadius`                               | Degenerate radius                                             |
 | `sphere_sphere_concentric`           | DONE   | `test_sphere_sphere.cpp`                                           | Coincident centers                                            |
 | `sphere_sphere_determinism`          | DONE   | `test_sphere_sphere.cpp`                                           |                                                               |
 | `sphere_sphere_pair_order`           | DONE   | `test_sphere_sphere.cpp`                                           |                                                               |
@@ -115,13 +115,13 @@ normals flip).
 | `plane_mesh_penetrating`             | DONE   | `test_plane.cpp`                                                   |                                                               |
 | `plane_mesh_broadphase_path`         | DONE   | `test_dart_collision_detector.cpp`                                 |                                                               |
 | `plane_mesh_pair_order`              | DONE   | `test_narrow_phase.cpp`                                            |                                                               |
-| `plane_convex`                       | GAP    | —                                                                  |                                                               |
+| `plane_convex`                       | DONE   | `test_convex.cpp::PlaneConvexPairOrder`                            |                                                               |
 | `plane_compound`                     | GAP    | —                                                                  |                                                               |
 | `mesh_mesh_basic`                    | DONE   | `test_mesh_mesh.cpp`                                               |                                                               |
 | `mesh_mesh_separated`                | DONE   | `test_mesh_mesh.cpp`                                               |                                                               |
 | `mesh_mesh_single_triangle_vs_large` | DONE   | `test_mesh_mesh.cpp`                                               |                                                               |
 | `mesh_mesh_contact_plane`            | DONE   | `test_mesh_contact_regression.cpp`                                 |                                                               |
-| `mesh_convex`                        | GAP    | —                                                                  | Routes through GJK; no dedicated test                         |
+| `mesh_convex`                        | DONE   | `test_convex.cpp::MeshConvexPairOrder`                             | Routes through GJK                                            |
 | `mesh_sdf`                           | GAP    | —                                                                  |                                                               |
 | `mesh_compound`                      | GAP    | —                                                                  |                                                               |
 | `convex_convex_intersecting`         | DONE   | `test_convex.cpp`                                                  |                                                               |
