@@ -138,9 +138,13 @@ checkpoint documents the preserved non-GUI CLI logging contract, adds marker
 coverage, validates a short CSV run, and avoids renderer dependencies. The
 active strict-audit slice is now `examples/headless_simulation/`: its
 historical/current source comparison also matches the pre-promotion baseline,
-so the checkpoint should document the preserved non-GUI deterministic
-batch-simulation contract, add marker coverage, validate a short headless run,
-and avoid adding renderer dependencies.
+and the checkpoint has been pushed as
+`18dd2a70dd5 Audit headless simulation example`. The active strict-audit slice
+is now `examples/speed_test/`: its historical/current source comparison also
+matches the pre-promotion baseline, so the checkpoint should document the
+preserved non-GUI benchmark contract, add marker coverage, validate with build
+and unit coverage, and avoid adding renderer dependencies or quick-run controls
+to the intentionally long benchmark.
 An earlier parity slice restored `examples/rigid_shapes`:
 restore the historical shape-spawn/delete/contact keyboard controls, convex
 mesh spawn path, contact-point visualization, camera home, and 640x480 default

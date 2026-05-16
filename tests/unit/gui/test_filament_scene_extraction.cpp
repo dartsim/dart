@@ -896,6 +896,57 @@ TEST(FilamentSceneExtraction, HeadlessSimulationPreservesNonGuiContract)
   EXPECT_EQ(cmakeSource.find("dart-gui"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, SpeedTestPreservesNonGuiBenchmarkContract)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "speed_test" / "main.cpp");
+  const auto cmakeSource = readSourceFile(
+      std::filesystem::path("examples") / "speed_test" / "CMakeLists.txt");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "speed_test" / "README.md");
+
+  EXPECT_NE(mainSource.find("testForwardKinematicSpeed"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("std::size_t numTests = 100000"), std::string::npos);
+  EXPECT_NE(mainSource.find("dart::math::Random::uniform"), std::string::npos);
+  EXPECT_NE(mainSource.find("getWorldTransform()"), std::string::npos);
+  EXPECT_NE(mainSource.find("getSpatialVelocity()"), std::string::npos);
+  EXPECT_NE(mainSource.find("getPartialAcceleration()"), std::string::npos);
+  EXPECT_NE(mainSource.find("getSpatialAcceleration()"), std::string::npos);
+  EXPECT_NE(mainSource.find("testDynamicsSpeed"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("std::size_t numIterations = 10000"), std::string::npos);
+  EXPECT_NE(mainSource.find("resetPositions()"), std::string::npos);
+  EXPECT_NE(mainSource.find("resetVelocities()"), std::string::npos);
+  EXPECT_NE(mainSource.find("resetAccelerations()"), std::string::npos);
+  EXPECT_NE(mainSource.find("world->step()"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("dart://sample/skel/test/chainwhipa.skel"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("serial_chain_ball_joint_40.skel"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("dart://sample/skel/fullbody1.skel"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("std::string(argv[i]) == \"-k\""), std::string::npos);
+  EXPECT_NE(mainSource.find("Testing Kinematics"), std::string::npos);
+  EXPECT_NE(mainSource.find("Testing Dynamics"), std::string::npos);
+  EXPECT_NE(mainSource.find("Trial #"), std::string::npos);
+  EXPECT_NE(mainSource.find("Final Kinematics Results"), std::string::npos);
+  EXPECT_NE(mainSource.find("Final Dynamics Results"), std::string::npos);
+  EXPECT_NE(mainSource.find("Average: "), std::string::npos);
+  EXPECT_NE(mainSource.find("Std Dev: "), std::string::npos);
+
+  EXPECT_NE(readmeSource.find("Speed Test Example"), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("time kinematics and dynamics"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Controls: none"), std::string::npos);
+
+  EXPECT_EQ(mainSource.find("dart/gui"), std::string::npos);
+  EXPECT_EQ(mainSource.find("ApplicationOptions"), std::string::npos);
+  EXPECT_EQ(cmakeSource.find("dart-gui"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, HelloWorldExamplePreservesParityMarkers)
 {
   const auto mainSource = readSourceFile(

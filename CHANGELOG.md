@@ -207,6 +207,9 @@
   - Preserved the `headless_simulation` example's non-GUI deterministic
     batch-simulation contract and added strict-audit marker coverage so
     renderer promotion does not pull it into the GUI dependency surface.
+  - Preserved the `speed_test` example's non-GUI timing benchmark contract and
+    added strict-audit marker coverage so renderer promotion does not pull it
+    into the GUI dependency surface.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

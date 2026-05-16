@@ -476,6 +476,31 @@ it.
 | No GUI renderer migration is required for this example.                                                                         | Superseded by non-GUI scope.   | Do not add `dart::gui` or renderer dependencies; the official renderer promotion should leave this CLI example intact.                          |
 | Keep source-marker coverage for the preserved headless simulation contract.                                                     | Restored through marker guard. | `UNIT_gui_FilamentSceneExtraction` now guards the CLI flags, default seed/time/steps, progress output, README, and absence of GUI dependencies. |
 
+### Speed Test Itemized Inventory
+
+Historical sources compared:
+`520993d7301^:examples/speed_test/main.cpp` and
+`520993d7301^:examples/speed_test/README.md`.
+
+This is a preserved non-GUI benchmark example. The current source and README
+match the pre-promotion files exactly, so restoration means keeping the
+historical dynamics/kinematics timing workflow intact while the renderer
+migration proceeds around it.
+
+| Historical item                                                                                                           | Current outcome                | Notes                                                                                                                              |
+| ------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Load the historical SKEL benchmark scene list, including pendulums, serial chains, tree structures, and `fullbody1.skel`. | Preserved.                     | Current source keeps the same `getSceneFiles()` list and `dart::io::readWorld` loading path.                                       |
+| Default mode runs dynamics speed tests.                                                                                   | Preserved.                     | Current source keeps `Testing Dynamics`, ten trials, `runDynamicsTest`, and `testDynamicsSpeed`.                                   |
+| `-k` switches to kinematics speed tests.                                                                                  | Preserved.                     | Current source keeps the hidden historical `-k` parser, ten kinematics trials, and position/velocity/acceleration summaries.       |
+| Dynamics benchmark resets positions, velocities, and accelerations before stepping.                                       | Preserved.                     | Current source keeps `world->eachSkeleton`, `resetPositions`, `resetVelocities`, and `resetAccelerations`.                         |
+| Dynamics benchmark steps each world 10000 times by default.                                                               | Preserved.                     | Current source keeps the historical `numIterations = 10000` default and loop around `world->step()`.                               |
+| Kinematics benchmark randomizes every DOF within clamped limits and samples transforms/velocities/accelerations.          | Preserved.                     | Current source keeps the historical `dart::math::Random::uniform` and body-node accessor calls.                                    |
+| Print per-trial `Result`, final section headers, average, and standard deviation.                                         | Preserved.                     | Current source keeps the historical console summary text and `print_results` implementation.                                       |
+| README explains the timing goal, DART IO/kinematics/world-step concepts, timing output, and no controls.                  | Preserved.                     | Current README is unchanged from the historical file.                                                                              |
+| No GUI renderer migration is required for this example.                                                                   | Superseded by non-GUI scope.   | Do not add `dart::gui` or renderer dependencies; the official renderer promotion should leave this benchmark intact.               |
+| No quick smoke execution is required for this checkpoint.                                                                 | Preserved benchmark scope.     | The historical executable intentionally performs long timing loops and has no bounded trial-count option.                          |
+| Keep source-marker coverage for the preserved speed-test benchmark contract.                                              | Restored through marker guard. | `UNIT_gui_FilamentSceneExtraction` now guards the scene list, benchmark loops, summaries, README, and absence of GUI dependencies. |
+
 ## Example Inventory
 
 | Example                     | Current Audit State                                                                | Next Required Action                                                                                                               |
@@ -518,7 +543,7 @@ it.
 | `simple_frames`             | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm camera/defaults, README, and guards.                                                                                       |
 | `simulation_event_handler`  | Restored except shifted-slash help alias follow-up.                                | Keep source-marker guards for controls, arrows, camera/defaults, README, and no backend types.                                     |
 | `soft_bodies`               | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm playback controls, shifted keys, camera/defaults, and guards.                                                              |
-| `speed_test`                | Needs strict audit.                                                                | Confirm performance-test behavior and README remain intact.                                                                        |
+| `speed_test`                | Preserved by strict audit as a non-GUI benchmark example.                          | Keep marker guards for scene list, dynamics/kinematics loops, summaries, README, and no GUI renderer dependency.                   |
 | `tinkertoy`                 | Recent builder/keyboard/camera checkpoints; still subject to strict audit re-open. | Confirm all construction controls, force controls, camera home, and recording gap.                                                 |
 | `unified_loading`           | Needs strict audit.                                                                | Confirm model-loading workflows, CLI behavior, and README.                                                                         |
 | `vehicle`                   | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm command keys, camera, and guards.                                                                                          |

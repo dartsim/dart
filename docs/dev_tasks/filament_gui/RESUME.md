@@ -819,25 +819,24 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`7ec64c3609e Audit CSV logger example`. The current pending checkpoint is
-`examples/headless_simulation/` strict audit. Historical comparison shows
-`examples/headless_simulation/main.cpp` and
-`examples/headless_simulation/README.md` match `520993d7301^` exactly, so this
-slice preserves the non-GUI deterministic batch-simulation workflow instead of
-migrating it to `dart::gui`. Add marker guards for the
-world/steps/time-step/seed CLI contract, deterministic seed setup, progress
-and timing output, README expectations, and absence of renderer dependencies;
-then validate a short executable run.
+`18dd2a70dd5 Audit headless simulation example`. The current pending
+checkpoint is `examples/speed_test/` strict audit. Historical comparison shows
+`examples/speed_test/main.cpp` and `examples/speed_test/README.md` match
+`520993d7301^` exactly, so this slice preserves the non-GUI timing benchmark
+workflow instead of migrating it to `dart::gui`. Add marker guards for the
+scene list, dynamics/kinematics benchmark loops, result summaries, README
+expectations, and absence of renderer dependencies; validate with focused
+build/unit coverage rather than executing the intentionally long benchmark.
 
 ## Current Immediate Next Step
 
-Implement and push the local `examples/headless_simulation/` checkpoint
-without opening a PR. Completed pre-lint validation is focused build for
-`headless_simulation` and `UNIT_gui_FilamentSceneExtraction`, focused CTest, a
-direct short headless run checking the printed step/time output, Python C++
-example-runner coverage, and aggregate `examples` build. Remaining checkpoint
-validation is mandatory `pixi run lint` and post-lint focused checks; those
-have also passed locally. Commit and push the checkpoint. Keep
+Implement and push the local `examples/speed_test/` checkpoint without opening
+a PR. Completed pre-lint validation is focused build for `speed_test` and
+`UNIT_gui_FilamentSceneExtraction`, focused CTest, Python C++ example-runner
+coverage, and aggregate `examples` build. Remaining checkpoint validation is
+mandatory `pixi run lint` and post-lint focused checks; those have also passed
+locally. Commit and push the checkpoint. Do not add quick-run controls or
+execute the long benchmark in this checkpoint. Keep
 `--screenshot <path>` and `--out <dir>` working for the existing CTest, GitHub
 Actions smoke path, and historical image-sequence workflows. A later broader
 smoke sweep can still use:

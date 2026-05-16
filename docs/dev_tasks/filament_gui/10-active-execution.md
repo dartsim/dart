@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `7ec64c3609e Audit CSV logger example`.
+  `18dd2a70dd5 Audit headless simulation example`.
 - Latest pushed code checkpoint:
-  `7ec64c3609e Audit CSV logger example`.
+  `18dd2a70dd5 Audit headless simulation example`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -136,6 +136,7 @@ history but are not guaranteed to be in chronological order.
   - `ae175ef6981 Restore Fetch target manipulation`
   - `63f990d5251 Restore panel extension example`
   - `7ec64c3609e Audit CSV logger example`
+  - `18dd2a70dd5 Audit headless simulation example`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -324,6 +325,26 @@ history but are not guaranteed to be in chronological order.
   `pixi run lint`, focused rebuild and CTest for `headless_simulation` plus
   `UNIT_gui_FilamentSceneExtraction`, direct short headless output
   verification, and `git diff --check`.
+- The headless simulation checkpoint was pushed as
+  `18dd2a70dd5 Audit headless simulation example`; do not wait for CI before
+  continuing independent strict-audit work.
+- Active slice is now `examples/speed_test/`. The historical source and README
+  match the current files exactly, so this slice should preserve the non-GUI
+  timing benchmark workflow, document the itemized historical inventory, add
+  source-marker coverage for scene loading, dynamics/kinematics benchmark loops,
+  result summaries, README text, and absence of GUI renderer dependencies, then
+  validate by focused build/unit coverage. Do not add a quick-run flag in this
+  checkpoint; the historical executable is intentionally an unbounded benchmark
+  unless a later task explicitly chooses to extend it.
+- Speed test validation completed before lint: focused C++ build for
+  `speed_test` and `UNIT_gui_FilamentSceneExtraction`, focused CTest for
+  `UNIT_gui_FilamentSceneExtraction`, Python C++ example-runner tests
+  (67 passed), and aggregate `examples` build. The benchmark executable itself
+  was not run because the preserved historical behavior is an intentionally
+  long timing loop with no bounded mode.
+- Speed test post-lint validation completed: mandatory `pixi run lint`,
+  focused rebuild and CTest for `speed_test` plus
+  `UNIT_gui_FilamentSceneExtraction`, and `git diff --check`.
 
 ## Current Code Shape
 
