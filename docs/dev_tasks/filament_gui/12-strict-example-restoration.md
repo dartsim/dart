@@ -595,10 +595,14 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     and marker coverage for promoted `--out` image-sequence capture. That local
     checkpoint is committed locally as `de1873ddab7` and passed focused
     build/CTest, mandatory lint, and direct/pixi Fetch `--out` smoke checks.
-    The active implementation slice is now R24-1:
-    add the public `dart::gui::Gizmo` value API, register render-only gizmos
-    through `ApplicationOptions`, render them privately as debug-line overlays,
-    and attach them to Atlas Puppet targets before implementing gizmo drag.
+63. R24-1 is committed locally as `9d5dc251b43`. It adds the public
+    `dart::gui::Gizmo` value API, registers render-only gizmos through
+    `ApplicationOptions`, renders them privately as debug-line overlays, and
+    attaches them to Atlas Puppet targets. The active implementation slice is
+    now R24-2: wire X/Y/Z gizmo arrow handles to axis-drag math for
+    `SimpleFrame` targets while keeping rotation rings, plane handles, hover
+    highlight, and replacing the old target-sphere affordance for later R24
+    slices.
 
 ## Checkpoint Rule
 

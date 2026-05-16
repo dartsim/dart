@@ -136,15 +136,16 @@ history but are not guaranteed to be in chronological order.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
-- Latest local checkpoint: `de1873ddab7 Document Fetch image-sequence capture`
-  updates Fetch README/audit/marker coverage for the promoted `--out` image
-  sequence path and passed focused build/CTest, lint, and direct/pixi Fetch
-  `--out` smoke checks locally. It is not pushed.
-- Active implementation slice: R24-1 `dart::gui::Gizmo` public API, using the
-  live steering note's Option A. Keep this first checkpoint render-only:
-  promoted value type, `ApplicationOptions::gizmos`, backend-private debug-line
-  rendering, Atlas Puppet registration, and unit/source-marker guards. Do not
-  start gizmo drag mechanics until the visible public surface validates.
+- Latest committed local checkpoints: `de1873ddab7 Document Fetch image-sequence
+capture` updates Fetch README/audit/marker coverage for the promoted `--out`
+  image-sequence path, and `9d5dc251b43 Add public GUI gizmo affordances` adds
+  the R24-1 `dart::gui::Gizmo` public API with Atlas Puppet render-only
+  registration. These local checkpoints are not pushed.
+- Current R24-2 implementation slice: wire X/Y/Z gizmo arrow handles to the
+  existing axis-drag math through renderer-neutral hit-testing and
+  `SimpleFrame` target translation. Keep rotation rings, plane handles, hover
+  highlight, and replacing the remaining example-owned target spheres as
+  follow-up R24 slices.
 - Latest pushed strict re-open checkpoint: `examples/joint_constraints/`
   restores the missing README, 640x480 launch default, loaded SKEL
   names/visuals, historical perturbation and harness console messages, and

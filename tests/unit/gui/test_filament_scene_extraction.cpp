@@ -830,6 +830,62 @@ TEST(FilamentSceneExtraction, GizmoDebugLinesFollowTargetFrame)
   EXPECT_TRUE(dart::gui::makeGizmoDebugLines(invalid).empty());
 }
 
+TEST(FilamentSceneExtraction, GizmoAxisHandlePickingDrivesTargetFrame)
+{
+  auto target = SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), "gizmo_target");
+
+  dart::gui::Gizmo gizmo;
+  gizmo.label = "axis_target";
+  gizmo.target = target;
+  gizmo.size = 1.0;
+
+  std::vector<dart::gui::Gizmo> gizmos{gizmo};
+  const dart::gui::PickRay xHandleRay{
+      Eigen::Vector3d(0.5, -0.02, 0.0), Eigen::Vector3d::UnitY()};
+  const auto hit
+      = dart::gui::pickNearestGizmoHandle(gizmos, xHandleRay, 1.0, 0.05);
+
+  ASSERT_TRUE(hit.has_value());
+  EXPECT_EQ(hit->gizmoIndex, 0u);
+  EXPECT_EQ(hit->handle, dart::gui::GizmoHandleKind::TranslateX);
+  EXPECT_TRUE(hit->axis.isApprox(Eigen::Vector3d::UnitX()));
+  EXPECT_TRUE(hit->point.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0)));
+
+  const dart::gui::PickRay missRay{
+      Eigen::Vector3d(0.5, -0.02, 0.20), Eigen::Vector3d::UnitY()};
+  EXPECT_FALSE(
+      dart::gui::pickNearestGizmoHandle(gizmos, missRay, 1.0, 0.05)
+          .has_value());
+
+  const dart::gui::PickRay previousRay{
+      Eigen::Vector3d(0.0, 0.0, 1.0), Eigen::Vector3d(0.0, 0.0, -1.0)};
+  const dart::gui::PickRay currentRay{
+      Eigen::Vector3d(0.0, 1.0, 1.0), Eigen::Vector3d(1.0, -1.0, -1.0)};
+  const auto translation = dart::gui::computeAxisDragTranslation(
+      previousRay,
+      currentRay,
+      target->getWorldTransform().translation(),
+      hit->axis);
+  ASSERT_TRUE(translation.has_value());
+  EXPECT_TRUE(translation->isApprox(Eigen::Vector3d::UnitX()));
+
+  bool callbackCalled = false;
+  gizmo.onChanged = [&](const Eigen::Isometry3d& transform) {
+    callbackCalled = true;
+    EXPECT_TRUE(transform.translation().isApprox(Eigen::Vector3d::UnitX()));
+  };
+
+  EXPECT_TRUE(dart::gui::translateGizmoTarget(gizmo, *translation));
+  EXPECT_TRUE(target->getWorldTransform().translation().isApprox(
+      Eigen::Vector3d::UnitX()));
+  EXPECT_TRUE(callbackCalled);
+
+  dart::gui::Gizmo invalid;
+  EXPECT_FALSE(
+      dart::gui::translateGizmoTarget(invalid, Eigen::Vector3d::UnitX()));
+}
+
 TEST(FilamentSceneExtraction, ApplicationRunDefaultsSeedParsedOptions)
 {
   dart::gui::RunOptions defaults;
@@ -2276,7 +2332,7 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_EQ(mainSource.find("ImGuiViewer"), std::string::npos);
   EXPECT_NE(readmeSource.find("Atlas Puppet Example"), std::string::npos);
   EXPECT_NE(readmeSource.find("dart::gui::Gizmo"), std::string::npos);
-  EXPECT_NE(readmeSource.find("render-only affordances"), std::string::npos);
+  EXPECT_NE(readmeSource.find("axis-arrow dragging"), std::string::npos);
   EXPECT_NE(readmeSource.find("pixi run ex atlas_puppet"), std::string::npos);
   EXPECT_NE(readmeSource.find("1280"), std::string::npos);
   EXPECT_NE(

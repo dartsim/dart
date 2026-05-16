@@ -35,6 +35,7 @@
 
 #include <dart/gui/debug.hpp>
 #include <dart/gui/export.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <dart/dynamics/fwd.hpp>
 
@@ -43,8 +44,11 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
+
+#include <cstddef>
 
 namespace dart::gui {
 
@@ -93,11 +97,37 @@ struct DART_GUI_API Gizmo
   std::function<void(const Eigen::Isometry3d& newWorldTransform)> onChanged;
 };
 
+enum class GizmoHandleKind
+{
+  None,
+  TranslateX,
+  TranslateY,
+  TranslateZ,
+};
+
+struct GizmoHandleHit
+{
+  std::size_t gizmoIndex = 0u;
+  GizmoHandleKind handle = GizmoHandleKind::None;
+  double distance = 0.0;
+  Eigen::Vector3d point = Eigen::Vector3d::Zero();
+  Eigen::Vector3d axis = Eigen::Vector3d::UnitX();
+};
+
 DART_GUI_API std::vector<DebugLineDescriptor> makeGizmoDebugLines(
     const Gizmo& gizmo, double scale = 1.0);
 
 DART_GUI_API std::vector<DebugLineDescriptor> makeGizmoDebugLines(
     const std::vector<Gizmo>& gizmos, double scale = 1.0);
+
+DART_GUI_API std::optional<GizmoHandleHit> pickNearestGizmoHandle(
+    const std::vector<Gizmo>& gizmos,
+    const PickRay& ray,
+    double scale = 1.0,
+    double handleRadius = 0.025);
+
+DART_GUI_API bool translateGizmoTarget(
+    Gizmo& gizmo, const Eigen::Vector3d& worldTranslation);
 
 } // namespace dart::gui
 

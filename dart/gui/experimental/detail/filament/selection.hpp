@@ -42,6 +42,8 @@
 #include <string>
 #include <vector>
 
+#include <cstddef>
+
 struct GLFWwindow;
 
 namespace dart::gui::filament {
@@ -99,6 +101,7 @@ private:
   {
     Translate,
     Rotate,
+    GizmoTranslateAxis,
   };
 
   bool mWasLeftMousePressed = false;
@@ -111,6 +114,7 @@ private:
   double mSelectedDragLastCursorY = 0.0;
   dart::gui::PickRay mSelectedDragLastRay;
   bool mSelectedDragIsAxisConstrained = false;
+  std::size_t mActiveGizmoIndex = 0u;
   Eigen::Vector3d mSelectedDragPlanePoint = Eigen::Vector3d::Zero();
   Eigen::Vector3d mSelectedDragPlaneNormal = Eigen::Vector3d::UnitX();
   Eigen::Vector3d mSelectedDragAxisDirection = Eigen::Vector3d::UnitX();

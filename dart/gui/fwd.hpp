@@ -41,6 +41,7 @@ struct ApplicationOptions;
 struct DebugLineDescriptor;
 struct Gizmo;
 struct GizmoAxisColors;
+struct GizmoHandleHit;
 struct GeometryDescriptor;
 struct MaterialDescriptor;
 struct MeshGeometry;

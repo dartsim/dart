@@ -40,8 +40,12 @@ namespace dart::gui::experimental {
 using ::dart::gui::Gizmo;
 using ::dart::gui::GizmoAxisColors;
 using ::dart::gui::GizmoFlags;
+using ::dart::gui::GizmoHandleHit;
+using ::dart::gui::GizmoHandleKind;
 using ::dart::gui::hasGizmoFlag;
 using ::dart::gui::makeGizmoDebugLines;
+using ::dart::gui::pickNearestGizmoHandle;
+using ::dart::gui::translateGizmoTarget;
 
 } // namespace dart::gui::experimental
 
