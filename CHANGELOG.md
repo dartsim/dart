@@ -168,6 +168,9 @@
   - Moved the LCP and mimic dynamics examples (`lcp_physics` and
     `mimic_pendulums`) off private named-scene fixture launchers so their
     example sources own solver setup, imported worlds, and public GUI panels.
+  - Restored the `mimic_pendulums` example's live reset/collision/solver
+    controls, XY reference grid, original rig names/base colors, diagnostics,
+    README options, and marker coverage through public `dart::gui`.
   - Moved the interaction/event examples (`empty` and
     `simulation_event_handler`) off private named-scene fixture launchers so
     their example sources own public frames, sensors, and panels directly.

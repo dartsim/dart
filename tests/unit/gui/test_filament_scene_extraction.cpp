@@ -2612,7 +2612,9 @@ TEST(FilamentSceneExtraction, LcpAndMimicExamplesPreserveParityMarkers)
       mimicSource.find(
           "dart://sample/sdf/test/mimic_fast_slow_pendulums_world.sdf"),
       std::string::npos);
-  EXPECT_NE(mimicSource.find("visual_mimic_pendulum_"), std::string::npos);
+  EXPECT_NE(mimicSource.find("mimic_pendulums_xy_grid"), std::string::npos);
+  EXPECT_NE(mimicSource.find("LineSegmentShape"), std::string::npos);
+  EXPECT_NE(mimicSource.find("pendulum_with_base\""), std::string::npos);
   EXPECT_NE(
       mimicSource.find("pendulum_with_base_mimic_slow_follows_fast"),
       std::string::npos);
@@ -2621,7 +2623,16 @@ TEST(FilamentSceneExtraction, LcpAndMimicExamplesPreserveParityMarkers)
       std::string::npos);
   EXPECT_NE(mimicSource.find("retargetMimicsToBaseline"), std::string::npos);
   EXPECT_NE(mimicSource.find("collectMimicPairs"), std::string::npos);
+  EXPECT_NE(mimicSource.find("tintBases"), std::string::npos);
   EXPECT_NE(mimicSource.find("base drift"), std::string::npos);
+  EXPECT_NE(mimicSource.find("Reference (rad)"), std::string::npos);
+  EXPECT_NE(mimicSource.find("Follower (rad)"), std::string::npos);
+  EXPECT_NE(mimicSource.find("toDegree"), std::string::npos);
+  EXPECT_NE(mimicSource.find("Reset world"), std::string::npos);
+  EXPECT_NE(mimicSource.find("Collision / solver"), std::string::npos);
+  EXPECT_NE(mimicSource.find("Use ODE collision"), std::string::npos);
+  EXPECT_NE(mimicSource.find("Force PGS solver"), std::string::npos);
+  EXPECT_NE(mimicSource.find("Contacts last step"), std::string::npos);
   EXPECT_NE(mimicSource.find("--solver"), std::string::npos);
   EXPECT_NE(mimicSource.find("--collision"), std::string::npos);
   EXPECT_NE(mimicSource.find("PgsSolver"), std::string::npos);
@@ -2637,6 +2648,8 @@ TEST(FilamentSceneExtraction, LcpAndMimicExamplesPreserveParityMarkers)
   EXPECT_NE(
       mimicReadmeSource.find("Mimic Pendulums Example"), std::string::npos);
   EXPECT_NE(mimicReadmeSource.find("dart::gui"), std::string::npos);
+  EXPECT_NE(mimicReadmeSource.find("Command-Line Options"), std::string::npos);
+  EXPECT_NE(mimicReadmeSource.find("--out <dir>"), std::string::npos);
   EXPECT_EQ(mimicSource.find("options.defaultScene"), std::string::npos);
 }
 

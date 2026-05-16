@@ -899,6 +899,39 @@ build, and `git diff --check`. Mandatory `pixi run lint`, post-lint focused
 build/CTest, direct `--list`, software-GL screenshot analyzer check, and
 post-lint `git diff --check` also passed.
 
+### Mimic Pendulums Itemized Inventory
+
+Historical source compared: `520993d7301^:examples/mimic_pendulums`.
+
+The promoted `dart::gui` source now loads the SDF world, retargets mimic joints
+to the baseline pendulum, preserves the original rig names, colors the
+historical rig bases, adds a source-owned XY grid, exposes live reset,
+ODE-collision, and PGS-solver controls, reports reference/follower/error/base
+drift diagnostics, and documents shared headless capture. Exact ImGui
+table/color-swatch layout remains a public panel API gap because the current
+renderer-neutral panel API exposes text, buttons, checkboxes, separators, and
+same-line layout only.
+
+| Historical item                                                                                      | Current outcome / repair plan           | Notes                                                                                                                   |
+| ---------------------------------------------------------------------------------------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Load `dart://sample/sdf/test/mimic_fast_slow_pendulums_world.sdf`.                                   | Restored through public `dart::gui`.    | Current source uses `dart::io::readWorld` and passes the world through `ApplicationOptions::world`.                     |
+| Retarget mimic joints to the uncoupled `pendulum_with_base` baseline and clear baseline mimic props. | Restored.                               | Current source keeps the historical retargeting behavior and collects reference/follower pairs.                         |
+| Preserve original rig names and color the baseline/red/blue rig bases for the legend.                | Restored.                               | Source keeps SDF skeleton names and uses the historical base-color palette for the panel legend.                        |
+| Preserve the 20-cell XY grid attachment as a visual reference.                                       | Restored with source-owned `dart::gui`. | The old OSG `GridVisual` is represented by a DART-owned `LineSegmentShape` grid rather than a renderer-private fixture. |
+| Preserve live simulation controls: Run simulation, Step 1, and Reset world.                          | Restored.                               | Reset refreshes the base-drift anchors after resetting the world.                                                       |
+| Preserve live collision/solver controls: ODE collision checkbox and PGS solver checkbox.             | Restored.                               | Launch flags still work; promoted panel checkboxes reconfigure the current world.                                       |
+| Preserve mimic diagnostics: pair label, reference/follower angles, position error, velocity error.   | Restored as flat panel text.            | Exact ImGui table styling remains a public panel API gap.                                                               |
+| Preserve base drift diagnostics and resettable drift anchors.                                        | Restored.                               | Reset world updates anchor positions through source-owned state.                                                        |
+| Preserve default 1280x720 launch size, camera home, and `--gui-scale`.                               | Restored through public `dart::gui`.    | `RunOptions`, `OrbitCamera`, and shared runner parsing cover these.                                                     |
+| Preserve headless/capture options and document solver/collision flags.                               | Restored.                               | README includes promoted `--headless`, `--frames`, `--screenshot`, `--out`, `--width`, `--height`, and `--gui-scale`.   |
+| Keep marker coverage for world URI, rig names/colors, grid, controls, diagnostics, README.           | Restored.                               | Marker guards cover the restored contract and reject the old private-scene handoff.                                     |
+
+Validation for this slice includes focused `mimic_pendulums` and
+`UNIT_gui_FilamentSceneExtraction` builds, focused CTest, direct `--help`,
+software-GL screenshot and image-sequence analyzer checks, aggregate
+`build-examples`, Python C++ example runner tests, mandatory `pixi run lint`,
+post-lint focused build/CTest/screenshot checks, and `git diff --check`.
+
 ## Example Inventory
 
 | Example                     | Current Audit State                                                                | Next Required Action                                                                                                                                                                                       |
@@ -928,7 +961,7 @@ post-lint `git diff --check` also passed.
 | `imgui`                     | Restored except public headlight/camera/key-release/render-hook API gaps.          | Keep marker guards for target frame, keydown callbacks, gravity control, help text, camera/defaults, README, and no backend types.                                                                         |
 | `joint_constraints`         | Restored by strict re-open except camera up-vector/roll API gap.                   | Keep marker guards for README, 640x480 defaults, loaded-scene visuals, perturb/harness console messages, and no backend types.                                                                             |
 | `lcp_physics`               | Restored by strict re-open except plot/render-metrics API gap.                     | Keep marker guards for historical scene counts/names/placements, live solver/scenario/reset/timestep/gravity panel controls, README options, capture flags, and no backend types.                          |
-| `mimic_pendulums`           | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm diagnostics, solver/collision flags, README, and guards.                                                                                                                                           |
+| `mimic_pendulums`           | Restored by strict re-open except table/color-swatch panel API gap.                | Keep marker guards for live controls, source-owned grid, original rig names/base colors, diagnostics, README options, capture flags, and no backend/private-scene handoff.                                 |
 | `mixed_chain`               | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm impulse controls, camera, and guards.                                                                                                                                                              |
 | `operational_space_control` | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm IK/control behavior, teleoperation, camera, and guards.                                                                                                                                            |
 | `point_cloud`               | Restored except public color-editor/debug-grid API gaps.                           | Keep color editors and fine-grained grid controls tracked as public API follow-ups.                                                                                                                        |

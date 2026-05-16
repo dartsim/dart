@@ -404,7 +404,28 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     Python example-runner tests, aggregate `examples` build, and
     `git diff --check` passed locally. Mandatory `pixi run lint`, post-lint
     focused build/CTest, direct `--list`, software-GL screenshot analyzer
-    check, and post-lint `git diff --check` also passed.
+    check, and post-lint `git diff --check` also passed. This checkpoint was
+    pushed as `e5523b4f5cd Restore LCP physics scene controls`.
+41. The active strict re-open cursor is now `examples/mimic_pendulums/`;
+    compare it against `520993d7301^:examples/mimic_pendulums` before coding
+    past that slice.
+42. `examples/mimic_pendulums/` strict re-open found concrete gaps: the live
+    ODE-collision/PGS-solver and reset controls were reduced to launch-time
+    flags/static text, the historical OSG grid was replaced with a ground box,
+    the source renamed the three rigs after collecting diagnostics, and README
+    plus marker coverage missed the full contract. Restore the live controls,
+    source-owned grid, original rig names/base colors, README option inventory,
+    and marker guards now.
+43. `examples/mimic_pendulums/` now restores the live reset, ODE collision, and
+    PGS solver controls; keeps original rig names with base-color legend;
+    replaces the old OSG grid with a source-owned `LineSegmentShape` XY grid;
+    reports reference/follower angles, position error, velocity error, and base
+    drift; and documents shared capture flags in the README. Exact ImGui table
+    and color-swatch layout remains a public panel API gap. Local validation
+    includes focused builds, focused CTest, direct `--help`, software-GL
+    screenshot and image-sequence analyzer checks, aggregate `build-examples`,
+    Python C++ example-runner tests, mandatory `pixi run lint`, post-lint
+    focused checks, and `git diff --check`.
 
 ## Checkpoint Rule
 
