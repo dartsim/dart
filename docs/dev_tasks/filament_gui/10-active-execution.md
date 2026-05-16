@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `b11f7db7d6c Restore Biped Stand instructions`.
+  `7af2ad1228d Restore box stacking scene parity`.
 - Latest pushed code checkpoint:
-  `b11f7db7d6c Restore Biped Stand instructions`.
+  `7af2ad1228d Restore box stacking scene parity`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -147,6 +147,7 @@ history but are not guaranteed to be in chronological order.
   - `3ca9f65c9bb Restore Atlas Puppet defaults`
   - `6ea2c868547 Restore Fetch target affordance`
   - `b11f7db7d6c Restore Biped Stand instructions`
+  - `7af2ad1228d Restore box stacking scene parity`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -669,6 +670,40 @@ history but are not guaranteed to be in chronological order.
   pixels), pixi `box_stacking` screenshot passed analyzer coverage
   (`/tmp/dart_box_stacking_strict_pixi_postlint.ppm`, 307200/307200 nonzero
   pixels), and `git diff --check` passed.
+- The Box Stacking scene-parity checkpoint was pushed as
+  `7af2ad1228d Restore box stacking scene parity`; do not wait for CI before
+  continuing independent strict-audit work.
+- Active slice is now `examples/boxes/`. Compare the current source and README
+  against `520993d7301^:examples/boxes`, itemize any remaining historical
+  behavior gaps in `11-example-parity-audit.md`, then repair or name public
+  `dart::gui` API gaps before coding.
+- Boxes strict re-open finding before code changes: the current source already
+  restores Bullet preference when available, the 5x5x5 box grid, restitution,
+  1360x768 defaults, and historical camera home, but it uses `box_0`-style
+  names instead of historical `box0` names, uses approximate gray instead of
+  `dart::Color::LightGray()` for the ground, drops the historical experimental
+  warning and "Press space to start free falling the box." instruction text,
+  and omits README build/execute sections. Repair those now through public
+  `dart::gui`; keep OSG shadow-map setup superseded by Filament.
+- Boxes implementation state: source now restores historical `box0`-style
+  names, `dart::Color::LightGray()` ground color, experimental warning,
+  "Press space to start free falling the box." instruction text, README
+  build/execute sections, and marker coverage through public `dart::gui`.
+- Boxes pre-lint validation: focused build for `boxes` and
+  `UNIT_gui_FilamentSceneExtraction` passed, focused CTest passed, direct
+  llvmpipe screenshot passed analyzer coverage
+  (`/tmp/dart_boxes_strict_direct.ppm`, 1044480/1044480 nonzero pixels), pixi
+  `boxes` screenshot passed analyzer coverage
+  (`/tmp/dart_boxes_strict_pixi.ppm`, 307200/307200 nonzero pixels), Python C++
+  example-runner tests passed (67/67), aggregate `examples` build passed, and
+  `git diff --check` passed.
+- Boxes post-lint validation: mandatory `pixi run lint` passed, focused rebuild
+  for `boxes` and `UNIT_gui_FilamentSceneExtraction` passed, focused CTest
+  passed, direct llvmpipe screenshot passed analyzer coverage
+  (`/tmp/dart_boxes_strict_direct_postlint.ppm`, 1044480/1044480 nonzero
+  pixels), pixi `boxes` screenshot passed analyzer coverage
+  (`/tmp/dart_boxes_strict_pixi_postlint.ppm`, 307200/307200 nonzero pixels),
+  and `git diff --check` passed.
 
 ## Current Code Shape
 

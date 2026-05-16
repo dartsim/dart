@@ -33,6 +33,7 @@
 #include <dart/config.hpp>
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
 
 #include <dart/simulation/world.hpp>
@@ -44,14 +45,23 @@
 #include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
+#include <dart/math/helpers.hpp>
+
 #include <Eigen/Geometry>
 
+#include <iostream>
 #include <memory>
 #include <string>
 
 #include <cstddef>
 
 namespace {
+
+constexpr const char* kBoxesExperimentalWarning
+    = "[Experimental] Please note: This example is in an experimental phase "
+      "and may not be fully functional at this time.";
+constexpr const char* kBoxesStartInstruction
+    = "Press space to start free falling the box.";
 
 dart::dynamics::SkeletonPtr createBox(
     std::size_t index,
@@ -60,7 +70,7 @@ dart::dynamics::SkeletonPtr createBox(
     const Eigen::Vector3d& color)
 {
   auto skeleton
-      = dart::dynamics::Skeleton::create("box_" + std::to_string(index));
+      = dart::dynamics::Skeleton::create("box" + std::to_string(index));
   auto jointAndBody
       = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
   auto* body = jointAndBody.second;
@@ -98,7 +108,7 @@ dart::dynamics::SkeletonPtr createGround()
       dart::dynamics::VisualAspect,
       dart::dynamics::CollisionAspect,
       dart::dynamics::DynamicsAspect>(shape);
-  shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.8, 0.8, 0.8));
+  shapeNode->getVisualAspect()->setColor(dart::Color::LightGray());
   shapeNode->getDynamicsAspect()->setRestitutionCoeff(0.9);
 
   return ground;
@@ -158,13 +168,31 @@ dart::gui::OrbitCamera makeBoxesCamera()
   return camera;
 }
 
+dart::gui::Panel createBoxesInstructionsPanel()
+{
+  dart::gui::Panel instructions;
+  instructions.title = "Boxes";
+  instructions.build = [](dart::gui::PanelBuilder& panel) {
+    panel.text(kBoxesExperimentalWarning);
+    panel.text(kBoxesStartInstruction);
+    panel.separator();
+    panel.text("Space starts or pauses simulation.");
+    panel.text("n steps once while paused; Escape exits.");
+  };
+  return instructions;
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
 {
+  std::cout << kBoxesExperimentalWarning << "\n"
+            << kBoxesStartInstruction << "\n";
+
   dart::gui::ApplicationOptions options;
   options.world = createBoxesWorld();
   options.runDefaults = makeBoxesRunDefaults();
   options.camera = makeBoxesCamera();
+  options.panels.push_back(createBoxesInstructionsPanel());
   return dart::gui::runApplication(argc, argv, options);
 }

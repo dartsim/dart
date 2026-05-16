@@ -1295,6 +1295,15 @@ TEST(FilamentSceneExtraction, BoxesExamplePreservesParityMarkers)
   EXPECT_NE(mainSource.find("#if DART_HAVE_BULLET"), std::string::npos);
   EXPECT_NE(
       mainSource.find("CollisionDetectorType::Bullet"), std::string::npos);
+  EXPECT_NE(mainSource.find("Skeleton::create(\"box\""), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Eigen::Vector3d(25.0, 25.0, 0.1)"), std::string::npos);
+  EXPECT_NE(mainSource.find("dart::Color::LightGray()"), std::string::npos);
+  EXPECT_NE(mainSource.find("[Experimental] Please note"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Press space to start free falling the box."),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("createBoxesInstructionsPanel"), std::string::npos);
   EXPECT_NE(mainSource.find("makeBoxesRunDefaults"), std::string::npos);
   EXPECT_NE(mainSource.find("options.width = 1360"), std::string::npos);
   EXPECT_NE(mainSource.find("options.height = 768"), std::string::npos);
@@ -1305,7 +1314,11 @@ TEST(FilamentSceneExtraction, BoxesExamplePreservesParityMarkers)
   EXPECT_NE(mainSource.find("options.world"), std::string::npos);
   EXPECT_NE(readmeSource.find("Boxes Example"), std::string::npos);
   EXPECT_NE(readmeSource.find("dart::gui"), std::string::npos);
+  EXPECT_NE(readmeSource.find("1360x768"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Build Instructions"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Execute Instructions"), std::string::npos);
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+  EXPECT_EQ(mainSource.find("::osg"), std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, SimpleFramesExamplePreservesParityMarkers)

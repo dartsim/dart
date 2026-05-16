@@ -252,6 +252,10 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     placement, headlight toggles, camera Eye/Center/Up readout, and key-release
     callbacks explicit as public `dart::gui` API follow-ups unless the missing
     renderer-neutral APIs are added.
+23. The Box Stacking scene-parity checkpoint was pushed as
+    `7af2ad1228d Restore box stacking scene parity`. The active cursor is now
+    `examples/boxes/`; compare it against `520993d7301^:examples/boxes`
+    before coding.
 
 ## Checkpoint Rule
 
