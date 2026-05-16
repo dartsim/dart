@@ -16,18 +16,19 @@ stretch GPU support are the next performance wave.
 This session refreshed full local validation on local head `4db514cfd22` with
 `pixi run test-all`, then refreshed the `collision-reference` evidence through
 focused reference-backend checks and a final unfiltered CTest pass of 301/301.
-A later current-state `pixi run test-all` pass on local head `9d9e6aeb62c`
+A later current-state `pixi run test-all` pass on local head `3fe8f9f7fde`
 passed all 6 top-level gates after the docs/evidence cleanup commits, the
-native stability CTest label update, and the ten-box stack stability coverage.
-The
-earlier pushed `64abc65a032` validation still records the latest local
-gz-physics/package/link smoke baseline. `pixi run lint`, runtime isolation,
-and compatibility-facade audits remain part of the local gate. The completion
-audit snapshot and validation-baseline wording were also refreshed so future
-passes do not treat historical "current head" evidence as live branch state.
-The latest local evidence-record commit before this handoff update was
-`49faf77240f` (`Record native collision stability validation`), which records
-the stability-label validation across the dev-task evidence packet.
+native stability CTest label update, the ten-box stack stability coverage, and
+the thin-box stability coverage. The earlier pushed `64abc65a032` validation
+still records the latest local gz-physics/package/link smoke baseline.
+`pixi run lint`, runtime isolation, and compatibility-facade audits remain
+part of the local gate. The completion audit snapshot and validation-baseline
+wording were also refreshed so future passes do not treat historical "current
+head" evidence as live branch state.
+The latest local code commit before this handoff update was `3fe8f9f7fde`
+(`Add native thin box stability coverage`), which records the thin-box
+stability regression in the test matrix and passed the full local validation
+gate.
 
 The final north-star PR is not complete because PR #2652 is closed and still
 points at old head `714d220d82a`; later pushes to `feature/new_coll` do not
@@ -49,9 +50,9 @@ non-collidable with a warning and adds public-detector coverage for
 sphere-mesh collision. The slice adds raw box-box, sphere-sphere batch,
 capsule-capsule batch,
 cylinder-cylinder batch, convex-convex batch, mesh-mesh batch, default-world,
-narrow-phase batch dispatcher, convex-mesh, mesh, and ten-box stack stability
-regression tests, rebuilds `hello_world` without the OctoMap `<ciso646>`
-warning, and refreshes focused native/reference validation plus raw
+narrow-phase batch dispatcher, convex-mesh, mesh, ten-box stack stability, and
+thin-box stability regression tests, rebuilds `hello_world` without the OctoMap
+`<ciso646>` warning, and refreshes focused native/reference validation plus raw
 narrow-phase benchmark evidence. The canonical command list and results are
 recorded in `03-evidence-gates.md`.
 
@@ -120,12 +121,12 @@ post GitHub comments unless the user explicitly asks.
   `test_reference_backends`, fresh `pixi run -e gazebo test-gz`, and native
   package/link smoke with direct `readelf` checks.
 - Public docs collision-runtime wording baseline: `ad1b6782578`.
-- Latest full local `pixi run test-all` validation: local head `9d9e6aeb62c`
-  (`Add native stacked box stability coverage`), with 6/6 top-level gates
+- Latest full local `pixi run test-all` validation: local head `3fe8f9f7fde`
+  (`Add native thin box stability coverage`), with 6/6 top-level gates
   passing after the raw, convex, mesh, mixed batch-dispatcher, docs/evidence
-  cleanup, native stability-label, and ten-box stack stability follow-ups. That
-  run included linting, build, unit tests, simulation-experimental tests,
-  Python tests, and documentation.
+  cleanup, native stability-label, ten-box stack stability, and thin-box
+  stability follow-ups. That run included linting, build, unit tests,
+  simulation-experimental tests, Python tests, and documentation.
 - Latest evidence-record commits are local and may be ahead of
   `origin/feature/new_coll`; run `git log -3 --oneline --decorate` for the
   current head. Recent docs-only evidence commits refresh the completion-audit

@@ -3499,6 +3499,25 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     unit tests, simulation-experimental tests, Python tests, and documentation,
     then printed `All tests passed!`. No PR, push, workflow, branch, or
     GitHub state was mutated by this local validation pass.
+- Current local full validation after thin-box stability coverage:
+  - Commit: `3fe8f9f7fde`
+    (`Add native thin box stability coverage`).
+  - Coverage: `WorldTests.DefaultNativeThinBoxDoesNotTunnel` closes the
+    `thin_box_no_tunneling` stress/regression row with the default native
+    `dart` detector, a thin dynamic box, 3000 simulation steps, contact
+    detection, and a lowest-vertex ground-tunneling bound.
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target UNIT_simulation_World --parallel 5`,
+    `./build/default/cpp/Release/bin/UNIT_simulation_World --gtest_filter=WorldTests.DefaultNativeThinBoxDoesNotTunnel`,
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native-stability`,
+    and
+    `DART_PARALLEL_JOBS=5 CMAKE_BUILD_PARALLEL_LEVEL=5 CTEST_PARALLEL_LEVEL=5 pixi run test-all`.
+  - Result: passed. The focused test passed, the
+    `collision-native-stability` label passed 2/2, and the full local
+    `pixi run test-all` report passed 6/6 top-level gates: linting, build,
+    unit tests, simulation-experimental tests, Python tests, and documentation,
+    then printed `All tests passed!`. No PR, push, workflow, branch, or
+    GitHub state was mutated by this local validation pass.
 
 ## Known Risks
 

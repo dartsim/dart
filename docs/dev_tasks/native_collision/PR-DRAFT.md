@@ -81,18 +81,23 @@ Make native DART collision the default runtime stack
   - `f300507a350` (`Add convex-convex native batch coverage`)
   - `6b81c9a2481` (`Add mesh-mesh native batch coverage`)
   - `4db514cfd22` (`Add native narrow-phase batch dispatcher`)
+  - `f9ee1dd28ba` (`Label native collision stability tests`)
+  - `9d9e6aeb62c` (`Add native stacked box stability coverage`)
+  - `3fe8f9f7fde` (`Add native thin box stability coverage`)
 - `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-all`
   passed on local head `4db514cfd22` with 6/6 top-level gates: linting, build,
   unit tests, simulation-experimental tests, Python tests, and documentation.
   Release CTest passed 264/264 and Python tests passed 147/147.
 - A later current-state local recheck with the same `pixi run test-all`
-  command passed on head `9d9e6aeb62c` after the docs/evidence cleanup,
-  native stability-label commits, and ten-box stack stability coverage, again
-  with 6/6 top-level gates and the final `All tests passed!` report.
+  command passed on head `3fe8f9f7fde` after the docs/evidence cleanup,
+  native stability-label commits, ten-box stack stability coverage, and
+  thin-box stability coverage, again with 6/6 top-level gates and the final
+  `All tests passed!` report.
 - Focused local regression validation for the latest follow-up passed:
   - `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_box_box|UNIT_collision_DartCollisionDetector|test_convex|test_mesh_mesh)$' --repeat until-fail:20`
   - `UNIT_simulation_World --gtest_filter='WorldTests.DefaultNative*BoxRestsOnGround'`
   - `UNIT_simulation_World --gtest_filter=WorldTests.DefaultNativeTenBoxStackDoesNotTunnel`
+  - `UNIT_simulation_World --gtest_filter=WorldTests.DefaultNativeThinBoxDoesNotTunnel`
   - `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native-stability`
   - `UNIT_collision_DartCollisionDetector --gtest_filter='DartCollisionDetector.SphereMeshCollisionDetectsContact:DartCollisionDetector.ConvexMeshCollisionUsesNativeConvexGeometry:DartCollisionDetector.EmptyConvexMeshIsNotCollidable'`
   - `test_convex`
