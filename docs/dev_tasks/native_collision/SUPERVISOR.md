@@ -1460,6 +1460,42 @@ not pre-built.
 
 Do NOT start any Q8-scoped work until Q8 is answered.
 
+**Q8 ANSWER (user, 2026-05-15):** Option C — defer all three
+stretch scope items (auto-diff narrow-phase, float/double parity,
+k-DOP / OBB / RSS BVH variants) until concrete user need surfaces.
+
+Implications for Codex:
+
+1. **Do NOT add the three stretch families** to `09-test-coverage-matrix.md`
+   as `GAP` rows. They stay as "scope-decision items" noted at the
+   bottom of the matrix.
+2. **Focus the matrix's "Next Priorities" ordering on the 74 existing
+   GAP rows** that cover concrete user-visible quality issues:
+   - Round 7 box-box family followups (`boxbox_edge_edge`,
+     `boxbox_face_vertex`, additional rotation triplets if Codex
+     finds edge cases during atlas-simbicon work).
+   - Capsule × {Mesh, Convex, Compound} pair coverage — 3 rows.
+   - Cylinder × {Mesh, Convex, Compound, Sdf} pair coverage — 4 rows.
+   - SAT algorithm-isolation suite.
+   - Long-horizon stability scenes (`stacked_boxes_n10/n100`,
+     `mixed_primitive_stack` unit version, `ragdoll_capsule_pile`,
+     `thin_box_no_tunneling`).
+3. **If a real user request surfaces for any of the deferred items
+   later** — e.g. a differentiable-physics paper that needs
+   auto-diff narrow-phase, or a mobile-DART user that needs float
+   instantiation — re-open Q8 as Q8-revisit and pick the
+   appropriate option then. Don't proactively add the rows in
+   anticipation.
+4. **Do NOT delete the deferred-items note from the matrix.** Keep
+   it as `### Stretch scope-decision items (deferred per Q8 ANSWER
+2026-05-15)` so future contributors see the scope was
+   considered, not omitted.
+
+This consistent with the durable preference recorded in
+`dart-collision-priority.md` and `dart-collision-perf-bar.md`:
+clean and scalable, but not pre-built. Speculative additions get
+deferred until evidence forces them.
+
 ## Round 8 Spot-Check - Round 7 Box-Box Slice (2026-05-15)
 
 Codex completed a focused Round 7 raw box-box pass without pushing or
@@ -1749,6 +1785,116 @@ parallel since the tests don't depend on the batch ownership choice
 yet — but the implementation phase must wait for Q9a because the
 function signatures depend on the chosen ownership.
 
+**Q9a ANSWER (user, 2026-05-15):** Option C — both per-pair direct
+batch functions AND a central `NarrowPhase::collideBatch` dispatcher.
+Matches the existing `NarrowPhase::collide(shape1, shape2, ...)`
+dispatcher pattern at `narrow_phase.cpp:103-431`. Per-pair direct
+entry exists so internal call sites (the dispatcher itself, plus
+benchmarks that want to isolate one pair's cost) can use the fast
+path; the dispatcher exists for external callers who don't want to
+think about pair types.
+
+Codex MUST follow this for Round 9:
+
+1. **Every pair file exposes a `collide<Pair>Batch(span<...Pair>,
+span<CollisionResult>, option)` entry function.** Same naming
+   convention as the existing scalar `collide<Pair>()` (e.g.
+   `collideBoxesBatch`, `collideSpheresBatch`, etc.). Initial body
+   is a scalar loop calling the existing single-pair function.
+2. **Add `NarrowPhase::collideBatch(span<Pair>, span<CollisionResult>,
+option)` at the dispatcher level** — groups pairs by
+   (ShapeType1, ShapeType2), dispatches each group to the
+   corresponding `collide<Pair>Batch`. Reuse the existing
+   `narrow_phase.cpp` dispatch table — extend, do not rewrite.
+3. **Pair-grouping in the dispatcher must be deterministic** so
+   `BoxBoxBatch.DeterminismVsSinglePair` and the dispatcher-level
+   `narrow_phase_collide_batch_dispatcher` test both pass bit-identical
+   results.
+4. **Headers stay matched.** Each pair's `<pair>.hpp` declares both
+   scalar and batch entries; `narrow_phase.hpp` declares the
+   dispatcher entry.
+5. **Tier 3 ECS (`collideBoxesBatchEcs` etc.) is NOT in Round 9.**
+   Tier 3 lands per Q9b answer when that arrives. Q9b is still
+   open; supervisor recommends B (after R7 + R6 + Q4 land clean).
+   The Tier 2 batch signature must STAY compatible with EnTT view
+   destructuring (parallel-arrays-friendly), per the Round 9
+   architectural invariants.
+
+**F11-1 ratified (user, 2026-05-15):** Bundle the Round 9 batch API
+stub with the F11-2 benchmark JSON refresh as one "Round 7 Followup"
+commit, landing BEFORE Round 6 (per Q12 queue ordering). Scope of
+that commit:
+
+- Add `collideBoxesBatch(span<BoxPair>, span<CollisionResult>,
+option)` declaration in `box_box.hpp` + implementation in
+  `box_box.cpp` (scalar loop body — no SIMD, no SoA layout changes).
+- Add `BoxPair` POD definition (struct of `const BoxShape* shapeA,
+shapeB` + `Eigen::Isometry3d tfA, tfB`).
+- Add the `boxbox_batch_determinism_vs_single` test (asserts batch
+  result is bit-identical to looping single-pair over the same N=100
+  random pairs) per Round 9 acceptance #2 with codename
+  `boxbox_batch_determinism_vs_single`.
+- Add `BM_NarrowPhase_BoxBox_Native_Batch_N{1,10,100,1000}`
+  benchmark rows in `bm_narrow_phase.cpp` per Round 9 acceptance #3
+  with codename `bench_narrow_phase_per_pair_batch`. Cite the
+  resulting JSON in `09-test-coverage-matrix.md` and flip both new
+  rows to DONE.
+- Refresh `.benchmark_results/native_collision_box_box_round7.json`
+  in the same commit and cite the numbers in `06-completion-audit.md`
+  - the new Round 11 Spot-Check section per F11-2.
+- Update `09-test-coverage-matrix.md`: flip
+  `boxbox_batch_api_surface` from GAP to DONE; flip
+  `boxbox_batch_determinism_vs_single` to DONE;
+  `bench_narrow_phase_per_pair_batch` to DONE (with N=1/10/100/1000
+  numbers cited).
+
+Do NOT bundle any of the following into the same commit (per Q12
+queue):
+
+- Reference-code move (`dart/collision/{fcl,bullet,ode}/reference/`
+  → `tests/dart/test/reference_collision/`) — that's Round 6.
+- Adapter-on-both-sides per-pair benchmark extension to non-touching
+  scenarios — that's Q4 followup.
+- Capsule / cylinder / sphere batch stubs — wait until Round 9 main
+  slice lands.
+
+After this commit, the queue continues: Round 6 (tests/ move) →
+Round 9 main slice (other pair-types' batch entries + dispatcher) →
+atlas-simbicon diagnosis.
+
+**Q9b ANSWER (user, 2026-05-15):** Option B — Tier 3 ECS
+integration (`collideBoxesBatchEcs` and the per-pair ECS entries
+consuming EnTT views/groups) lands AFTER Round 7 + Round 6 + Q4
+are all clean. This becomes a future round (likely Round 15 or 16)
+that comes after Round 9 main slice has the Tier 2 batch surface
+stable across all pair types.
+
+Implications for Codex:
+
+1. **Round 7 (committed) does NOT include any Tier 3 ECS code.**
+   Already correct in `4d5f07eebbf`.
+2. **Round 9 main slice does NOT include any Tier 3 ECS code.**
+   Tier 2 batch entries + dispatcher only. The Tier 2 signature
+   MUST remain compatible with EnTT view destructuring (parallel
+   arrays of `BoxPair`-like POD structs), per the Round 9
+   architectural invariants — so Tier 3 can be added later without
+   reshaping Tier 2.
+3. **When Tier 3 eventually lands as its own round**, the
+   per-pair ECS entry adapts an EnTT view (e.g.
+   `entt::view<entt::get_t<comps::RigidBody, comps::BoxShapeTag,
+comps::Frame>>`) into the Tier 2 `span<BoxPair>` layout, calls
+   Tier 2, then writes results back into EnTT components. The
+   Tier 3 round MUST also add `*_ecs_batch_determinism_vs_raw_batch`
+   tests asserting bit-identity with the equivalent Tier 2 raw
+   batch call.
+4. **Document Tier 3 deferral** in `01-design.md` and
+   `02-milestones.md` so future contributors don't preempt the
+   queue.
+
+This is consistent with the "clean base first" framing from
+Round 9 and the broader Q12 queue ordering (architecture cleanup
+before regression diagnosis).
+
 ## Round 10 — DART 7 vs DART 8 Compatibility Horizon (NEW)
 
 User direction (2026-05-15): "The backward compatibility for
@@ -1858,3 +2004,958 @@ The project-memory entry `dart-collision-priority.md` has been
 updated to record this DART 7 vs DART 8 split. Future sessions
 (post-context-compaction or new sessions on this branch) will pick
 up the rule automatically.
+
+## Round 11 — Round 7 Acceptance Review (2026-05-15)
+
+### User-side confirmation
+
+**User confirmation (2026-05-15):** `hello_world` works as expected
+after the Round 7 commit `4d5f07eebbf` (`Stabilize native box-box
+contact patches`). This is the user-visible acceptance for the
+original Round 7 regression report (box settled balanced on edge,
+then rotated through ground after ~15 s).
+
+### Independent code-review verdict — ship-with-followups
+
+An independent code-review lane verified the commit against the 7
+Round-7 acceptance criteria. **Result: 7/7 functional criteria MET.**
+Cited findings:
+
+- **AC1 (refactor split):** MET. `dart/collision/native/narrow_phase/box_box/`
+  exists with 6 files (~50-270 lines each). `box_box.cpp` reduced to
+  136 lines of orchestration. CMake updated.
+- **AC2 (Sutherland-Hodgman face clipping):** MET.
+  `face_clip.cpp:108-145` `clipPolygon` is canonical S-H half-plane
+  clipping; `face_clip.cpp:147-175` clips against all 4 reference
+  edges + reference plane. Single-point fallback only fires for
+  `SatAxisType::Edge` (`face_clip.cpp:260-264`).
+- **AC3 (SAT degenerate cross-axis skip + normalization):** MET.
+  `sat.cpp:170-173` skips axes with
+  `crossAxis.squaredNorm() < kCrossAxisDegenerateLengthSq`. Named
+  constant `1e-12` at `sat.cpp:45`. Cross axes normalized before
+  `testAxis`.
+- **AC4 (face-axis tie bias):** MET. `sat.cpp:50-75`
+  `shouldReplaceBest` replaces bare `<` with tolerance-based tie
+  rule; face beats edge on near-tie (`sat.cpp:70-72`).
+- **AC5 (7 test families):** ALL MET — `RotatedBoxOnFlatGroundEmitsFacePatch`,
+  `DefaultNativeRotatedBoxSettlesOnFace`, `DefaultNativeRotatedBoxStaysOnGround15s`,
+  `BoxGroundContactParity`, `SatAxisStableForNearFaceBoxGroundPerturbations`,
+  `BoxBox.Determinism` (preserved), `RotatedSmallBoxOnLargeGroundHasLocalContactPoint`
+  (pair-order swap from Round 3, still passes).
+- **AC6 (gz-physics hard constraint):** MET per SUPERVISOR.md spot-check
+  (gz-physics 65/65 passed; normal flip convention preserved at
+  `sat.cpp:194-196`).
+- **AC7 (anti-goals):** MET. `addFacePatchContacts` removed (`grep` →
+  0 hits). Single-point fallback only for `Edge` axes. No SIMD
+  intrinsics. 15s test present.
+
+### Reviewer-identified followups (NOT blockers, but real)
+
+**F11-1 (HIGH).** Round 9 batch API NOT added to Round 7 commit.
+SUPERVISOR.md lines 1525-1545 explicitly required Round 7 to land
+with a `collideBoxesBatch(span<BoxPair>, span<CollisionResult>, ...)`
+signature, even with a scalar loop body — the user rejected the
+"we'll add batch later" path. Current `box_box.hpp` exposes only
+the two scalar `collideBoxes` overloads. **Codex MUST add the batch
+entry stub in the next slice**, before Round 9 implementation
+starts. This is a missed Round 7 deliverable, not a new ask.
+
+**F11-2 (MEDIUM).** Benchmark JSON not refreshed in this commit.
+SUPERVISOR.md Round 8 Spot-Check references
+`.benchmark_results/native_collision_box_box_round7.json` "stayed
+within the 3× acceptance budget" but no such JSON exists in the
+working tree, and the file is not part of `4d5f07eebbf`. The 544 ns
+→ ≤1632 ns gate is asserted by prose, not by artifact. **Codex MUST
+re-run the BoxBox benchmark and check in the JSON** (or wire a CI
+perf guard) before claiming the perf gate is met.
+
+**F11-3 (MEDIUM).** `face_clip.cpp:147-175` `clipPolygon` uses
+`std::function` for half-plane test/intersection callbacks (5 heap
+allocs per pair in the hot path). Replace with `auto` templated
+lambdas or a small fixed-function type. Acceptable to defer to the
+Round 9 SIMD-prep slice if a measurement shows it's not the
+bottleneck; otherwise fix in a follow-up.
+
+**F11-4 (LOW).** `face_clip.cpp:46` `surfacePointNear` axis tolerance
+`1e-8` is undocumented. Add a one-line comment explaining the
+"smaller than typical contact normal slop" rationale.
+
+**F11-5 (NIT).** `<functional>` include cost in `face_clip.cpp:37`
+goes away if F11-3 lands.
+
+### Status
+
+- Round 7 is **functionally complete** from the user perspective.
+- Round 7 has **two real Codex-side followups** (F11-1 batch API
+  stub, F11-2 benchmark JSON) that should land before Round 6
+  (tests/ move) starts. F11-1 in particular blocks Round 9 from
+  being a clean retrofit — the user explicitly said no
+  "we'll add batch later."
+- `09-test-coverage-matrix.md` has already flipped multiple Round 7
+  GAP rows to DONE in the user's working copy.
+
+### No new question
+
+Q11 not opened — this is a verification round, not a fork. Codex
+should land F11-1 + F11-2 as part of a "Round 7 followup" commit,
+then proceed to Round 6 (tests/ move) per the existing queue.
+Q9a (batch API ownership) still gates Round 9 implementation.
+
+## Round 12 — Atlas-Simbicon Regression (NEW, user-observed)
+
+User direction (2026-05-15): "atlas-simbicon is not working, fyi."
+
+`examples/atlas_simbicon` is a humanoid character walking demo
+implementing the SIMBICON locomotion controller on an Atlas robot.
+It is a substantially harder collision scene than `hello_world`:
+
+- 30+ articulated rigid bodies (capsules + boxes for limbs, mesh
+  for the head).
+- Many simultaneous contacts: foot-ground (box-box face patch),
+  limb-limb (capsule-capsule), self-collision filtering across the
+  Atlas link tree, capsule-box transitions on the foot heel/toe
+  transition.
+- Rapid joint motion (~1 kHz simulation, leg swings, foot
+  strikes). Manifold cache churn is heavy.
+- Constraint solver is heavily loaded; small errors in contact
+  normals or depths amplify into rapid balance loss.
+
+### Suspect surfaces
+
+Without running the example, the most likely root causes given the
+recent Round 7 work:
+
+1. **Capsule-capsule and capsule-box face/face patches** are NOT
+   yet covered by Round 7's face-clip rewrite (Round 7 was box-box
+   only). If the simbicon controller depends on multi-contact
+   capsule-ground or capsule-capsule manifolds for foot/shin/thigh
+   contact stability, single-point fallback there causes the same
+   "balanced on edge" instability as the original Round 7 box bug —
+   just on capsules.
+2. **Self-collision filter behavior** — the new `face_clip.cpp`
+   uses the per-pair narrow-phase path. If pair-key normalization
+   under self-collision changed contact pair ordering, contact
+   persistence across frames may break for adjacent Atlas links.
+3. **Persistent manifold cache reduction** — Round 7 introduced
+   `contact_reduction.cpp` for box-box only. If atlas-simbicon
+   depends on stable contact IDs across frames for warm-start, and
+   the new reducer produces a different ordering than the previous
+   single-point output, the cache may miss every frame.
+4. **Normal direction convention drift** — even though
+   `BoxBox.Determinism` and the pair-order-swap test pass, a
+   different contact-point distribution can produce a different
+   normal direction under deep penetration. The SIMBICON controller
+   uses ground reaction force direction directly; a subtle normal
+   flip would invert the stabilizing torque.
+
+### Diagnosis plan for Codex
+
+This is NOT a "fix it now" instruction — first **reproduce, then
+diagnose, then propose**. Steps Codex should take in order:
+
+1. **Reproduce.** Build and run
+   `pixi run --frozen build`, then
+   `./build/default/cpp/Release/bin/atlas_simbicon` (or the headless
+   variant if one exists). Record the exact failure mode: does the
+   Atlas fall on first step? Drift sideways? Penetrate the ground?
+   Have body-parts intersect? Capture a screenshot or step count to
+   failure.
+2. **Bisect against Round 7.** Git checkout the commit BEFORE
+   `4d5f07eebbf` (the prior `Refresh native collision PR staging
+notes` at `37b78296e7c`) and rerun atlas_simbicon. Did the
+   regression exist there too? If YES, Round 7 is not the cause —
+   it's a pre-existing native collision bug exposed by atlas
+   specifically. If NO, Round 7 introduced it — bisect within
+   Round 7 (the refactor commit was atomic, so bisecting inside is
+   unlikely).
+3. **Compare native vs reference detector.** Modify atlas_simbicon
+   (locally only, don't commit) to swap the world's collision
+   detector to `FCLCollisionDetector::createReference()` or
+   `BulletCollisionDetector::createReference()`. Does the example
+   work? If YES, native collision is the problem (specific pair or
+   manifold semantics). If NO, the bug is outside collision (joint
+   limits, contact constraint solver, controller, etc.).
+4. **Isolate the pair.** Add minimal logging to
+   `dart/collision/native/narrow_phase/narrow_phase.cpp::collide`
+   to print which (ShapeType, ShapeType) dispatch fires and the
+   contact count. Identify the dominant pair-type in the failure
+   trajectory.
+5. **Cross-engine contact-count parity for the dominant pair.**
+   Apply the Round 7 acceptance #4 pattern: native vs Bullet contact
+   count parity test for the dominant pair type. If parity fails,
+   that's the root cause family.
+6. **Surface findings as Round 13** in this SUPERVISOR.md with the
+   bisect result + per-pair diagnosis + proposed fix scope. The
+   fix itself may be a new round (likely Round 14) — do NOT bundle
+   it with the diagnosis report.
+
+### Acceptance criteria for the eventual fix
+
+These are the criteria Codex should drive toward once the root cause
+is identified — they're stated upfront so the diagnosis phase knows
+what "fixed" looks like:
+
+1. **`atlas_simbicon` walks for at least 30 seconds** without falling,
+   tunneling, or visibly unstable behavior. User-visible standard
+   matching `hello_world` acceptance.
+2. **New regression test** in `tests/integration/` or
+   `tests/unit/simulation/` that exercises the failing scene
+   programmatically — a stripped-down "atlas-style stacked-capsule
+   on ground over N seconds" world that asserts no tunneling,
+   normal-direction stability, and contact-count parity vs Bullet
+   for the dominant pair type.
+3. **`09-test-coverage-matrix.md` updated** with the new codename
+   for the regression scenario.
+4. **No SIMD work.** Per Round 7 / Round 9 policy, SIMD belongs in
+   the perf wave; this is a correctness slice.
+5. **gz-physics hard constraint preserved.** Re-run
+   `pixi run -e gazebo test-gz` after the fix. If anything
+   regresses, surface in the followup Round.
+
+### Open Question Q12 for User — ANSWERED
+
+**Q12 (atlas-simbicon priority):** Where does this slot in the
+existing queue?
+
+- **A — Front of queue.** Codex stops planned Round 6 (tests/ move)
+  and Round 9 (batch+SIMD) work and diagnoses + fixes
+  atlas-simbicon next. Justification: visible user-facing
+  regression matters more than architecture cleanup, and the same
+  argument that put Round 7 ahead of Round 6 applies.
+- **B — Diagnose now, fix after Round 6.** Codex diagnoses
+  atlas-simbicon next (writes Round 13 with bisect + per-pair
+  findings), but the actual fix lands AFTER Round 6 tests/ move
+  is done. Justification: diagnosis is cheap; if the bug is in
+  pair-X face clipping for capsule/cylinder, that fix is its own
+  multi-week slice and the tests/ move shouldn't wait on it.
+- **C — Wait until Round 6 + F11-1 + F11-2 are done.** Standard
+  queue order. Justification: the F11-1 batch API stub is the
+  highest-leverage gap; Round 7 was real progress and shouldn't
+  be preempted by the next regression before the prior one is
+  cleanly closed.
+
+Supervisor recommends **A** — the user-facing quality bar
+(`hello_world` works, `atlas_simbicon` doesn't) is the same one
+that motivated Round 7's priority over Round 6. Defer Round 6 and
+the F11-1/F11-2 followups until after atlas-simbicon is at least
+diagnosed. F11-1 batch API stub can land alongside the
+atlas-simbicon fix if the fix is also box-box-pair scoped, or in
+parallel if it's a different pair.
+
+**Q12 ANSWER (user, 2026-05-15):** Follow the bigger picture — do
+NOT preempt the architectural queue for atlas-simbicon. Continue
+the planned ordering: finish Round 7 followups (F11-1 batch API
+stub, F11-2 benchmark JSON), then Round 6 (tests/ reference move),
+then Q4 (per-pair bench parity), then Round 9 (batch+SIMD)
+implementation. atlas-simbicon diagnosis + fix slots in AFTER those
+land cleanly.
+
+Rationale: the architectural cleanup work (clean directory layout,
+batch API surface, Round 9 ECS prep) is load-bearing for everything
+that comes after. atlas-simbicon is real but it's a correctness slice
+in a known regression family — diagnosing it later, against a
+cleaner tree, is easier than diagnosing it now against a
+partially-refactored tree.
+
+Codex MUST follow this queue ordering for the next several slices:
+
+1. **Round 7 followups (Codex's current slice).** Finish F11-2
+   (benchmark JSON refresh, in flight per the current uncommitted
+   `bm_narrow_phase.cpp` +177 edits). Add F11-1 batch API stub
+   (`collideBoxesBatch(span<BoxPair>, span<CollisionResult>,
+option)` with scalar loop body) — this should land BEFORE
+   starting Round 6 because Round 6 will touch the same files when
+   it moves reference adapters out. Bundle F11-1 + F11-2 into a
+   single "Round 7 followup" commit.
+2. **Round 6 (tests/ reference move).** Per Q6 ANSWER. Mechanical
+   move + CMake rename + include rewrite + lint guard update.
+   Lands as one commit.
+3. **Q4 (per-pair bench parity).** Per Q4 ANSWER. Add adapter-on-both
+   native rows + raw rows for FCL/Bullet/ODE so the per-pair table
+   is apples-to-apples. Lands as one commit.
+4. **Round 9 (batch + SIMD scaffolding).** Per Q9a ANSWER (when
+   answered) and Q9b ANSWER (when answered). Tier 2 batch entry
+   functions for all pair types + dispatcher. Scalar bodies for
+   the first commit; SIMD is the perf wave.
+5. **Round 13 (atlas-simbicon diagnosis).** Per Round 12 diagnosis
+   plan. Reproduce → bisect → swap detector → isolate pair → parity
+   check → write Round 13 findings.
+6. **Round 14 (atlas-simbicon fix).** Whatever pair-family the
+   diagnosis surfaces — most likely capsule-capsule and/or
+   capsule-box face clipping (same algorithm family as Round 7,
+   different pairs). Same TDD workflow: test first, implementation
+   second, matrix flip third.
+
+This ordering means atlas-simbicon stays broken for the next several
+slices. Surface that explicitly to the user if a release window or
+demo opportunity comes up — there's no in-between "partial fix"
+worth landing without the architectural work first.
+
+### Anti-goals for the queue
+
+- Do NOT diagnose atlas-simbicon early "just to know what we're
+  facing" if it pulls focus from the F11-1 batch API stub. The
+  diagnosis is structured (Round 12 has the 6-step plan) and can
+  be executed in a single focused session when its turn comes.
+- Do NOT use atlas-simbicon as justification to push capsule-capsule
+  face clipping ahead of Round 6 or Round 9. Whatever pair the
+  diagnosis surfaces, the fix lands in its proper queue slot.
+- Do NOT bundle F11-1 + F11-2 into the next code-touching commit
+  IF that commit is otherwise about reference-code move (Round 6).
+  Keep them separate so bisect is clean.
+
+### No new question
+
+Codex now has a full multi-slice queue and explicit ordering. Q9a
+remains the next user-input gate (needed before Round 9 starts).
+Q8 stretch scope can be answered any time without blocking.
+
+## Round 13 — Performance Bar Locked (NEW, 2026-05-15)
+
+User direction (2026-05-15): "the final goal is to optimize
+performance until DART fully beat for all the cases and all the
+FCL/Bullet/ODE."
+
+This is the **release bar** for the native-default collision rollout
+and applies to every perf-relevant decision from here on.
+
+### The bar
+
+DART native collision must be **strictly faster than every reference
+engine on every benchmarked scenario** before the native-default
+rollout is complete. Specifically:
+
+- Every pair in `09-test-coverage-matrix.md` §4 Benchmarks: Native
+  mean CPU time < FCL AND < Bullet AND < ODE on that row.
+- Every scenario benchmark (mixed-primitives, mesh-heavy, raycast
+  batch, stacked boxes, ragdoll, pipeline breakdown): same rule.
+- Every batch-size sweep in Round 9
+  (`*_Batch_N{1,10,100,1000}`): Native beats the equivalent
+  reference end-to-end scenario at every N.
+- Q4 Option A (adapter-on-both-sides): Native < FCL AND Bullet AND ODE.
+- Q4 Option B (raw narrow-phase): Native < FCL raw AND Bullet raw
+  AND ODE raw.
+
+Acceptance margin: **≥ 1.05× faster** (i.e. ≤ 95% of best reference
+time). Equality is not enough — leave 5% headroom for measurement
+noise and future regression.
+
+A single losing row is a release blocker.
+
+### Current state per Q4 Option A results
+
+The first apples-to-apples adapter-lane numbers (committed in
+`49466bf7b92`) show DART native LOSES on multiple rows today:
+
+| Pair                  | Native | Bullet | Native/Bullet | Status                             |
+| --------------------- | -----: | -----: | ------------: | ---------------------------------- |
+| BoxBox_Touching       | 1574.0 |  801.8 |         1.96× | **PERF-GAP — Bullet wins by 2×**   |
+| SphereSphere_Touching |  536.5 |  311.7 |         1.72× | **PERF-GAP — Bullet wins by 1.7×** |
+| SphereBox_Touching    |  580.9 |  528.3 |         1.10× | PERF-GAP — Bullet wins by 1.1×     |
+| SphereBox_Touching    |  580.9 |  494.2 |         1.18× | PERF-GAP — FCL wins by 1.2×        |
+
+Raw narrow-phase (the per-pair-only lane) shows native WINS on every
+row, including post-Round-7 BoxBox (458 ns vs Bullet 900 ns =
+1.96× faster). **The release blocker is adapter overhead, not the
+narrow-phase algorithm itself.**
+
+### Inventory tracking — PERF-GAP rows
+
+Codex MUST add a new "Status" value to `09-test-coverage-matrix.md`:
+
+- `DONE` — coverage exists, test/benchmark passes, AND perf beats
+  every reference by ≥ 1.05× (when row has a perf benchmark).
+- `PARTIAL` — coverage exists; perf not yet measured OR perf below
+  the ≥ 1.05× margin.
+- `GAP` — no test/benchmark coverage.
+- **`PERF-GAP`** — coverage exists; perf benchmark exists; Native
+  loses to OR ties (< 1.05×) at least one reference engine. Notes
+  column must cite Native/best-ref ratio.
+
+Every PERF-GAP row is a Round 9 (batch + SIMD) deliverable or a
+follow-up perf-wave slice. Codex must update the matrix when a row
+crosses the threshold (either direction).
+
+### Round 9 is now critical-path
+
+Round 9 (batch + SIMD scaffolding) was originally framed as an
+architectural prep slice. With the perf bar locked, Round 9 is
+**the slice that closes the adapter-overhead PERF-GAPs**. Tier 2
+batch eliminates per-pair adapter overhead; SIMD multiplies the
+per-pair speedup. The queue ordering (Round 7 followups → Round 6 →
+Q4 → Round 9 → Round 13-onward atlas) stays, but Round 9's
+importance is now first-order, not stretch.
+
+### Authoring guidance for Codex
+
+1. **Profile before micro-optimizing.** For each PERF-GAP row,
+   profile both the Native path and the reference path. Identify
+   what the reference does cheaper (adapter scene sync? persistent
+   manifold cache hit rate? tighter inner loop? branch prediction?).
+   Don't guess.
+2. **Match or exceed by ≥ 1.05×.** Equality is NOT done. Aim for
+   margin so a future regression doesn't immediately re-open the
+   gap.
+3. **Re-record JSON in the same commit as the fix.** Flip the
+   matrix row from PERF-GAP to DONE with the new ratio in the
+   Notes column. Cite the JSON path.
+4. **No SIMD shortcuts.** Per Round 9, SIMD lands via xsimd or
+   std::simd, NOT hand-written intrinsics. Cleanliness over
+   platform-specific micro-wins.
+5. **gz-physics hard constraint.** Re-run `pixi run -e gazebo
+test-gz` after every perf-affecting commit. Perf wins MUST NOT
+   break correctness.
+
+### No new question
+
+Round 13 is policy, not a fork — no Q13 opened. The existing queue
+already routes through Round 9, which is now the load-bearing slice
+for this bar.
+
+### Durable preference recorded
+
+A new project-memory entry `dart-collision-perf-bar.md` records
+this rule so future sessions (post-context-compaction or new
+sessions on this branch) pick it up automatically. Authoritative
+restatement also belongs in `01-design.md` "Performance
+orientation" section AND
+`docs/dev_tasks/native_collision/README.md` north-star scale —
+Codex should update both in the next commit that touches a
+perf-relevant file.
+
+## Round 14 — Apples-to-Apples Perf Comparison (NEW, 2026-05-15)
+
+User direction (2026-05-15): "If apples-to-apples comparison is not
+possible or unfair due to wrapper part for each engines, then
+consider either improve the wrapper or compare without the wrappers
+(ensuring that the wrapper can be improved later — so without
+wrapper perf optimization still worth, as first step)."
+
+This refines Round 13's performance bar. The Q4 Option A adapter
+lane revealed that the public `DartCollisionDetector::collide` path
+loses to Bullet on BoxBox_Touching (1.96×), SphereSphere_Touching
+(1.72×), and SphereBox_Touching (1.10-1.18×). The question is
+whether native is genuinely slower OR whether DART's adapter is
+fatter than Bullet's adapter and the algorithm itself is fine.
+
+### Two perf bars now, in order
+
+**Bar 1 — Raw-narrow-phase wins (algorithm-level fairness):**
+Native raw narrow-phase must beat FCL raw + Bullet raw + ODE raw on
+every pair, every batch size, every scenario. This is the
+fair-fight bar: each engine bypasses its own adapter. If we can't
+win here, the algorithm is the problem.
+
+**Status today (raw lane):** Native WINS on every Q4 Option B row
+including post-Round-7 BoxBox (458 ns vs Bullet 900 ns = 1.96×
+faster). **Bar 1 is currently MET for the rows that have raw
+benchmarks.** Codex should extend Q4 Option B to cover the remaining
+pairs and scenarios to confirm at scale.
+
+**Bar 2 — Adapter-on-both-sides wins (user-visible bar):** Native
+via `DartCollisionDetector::collide` must beat FCL, Bullet, ODE via
+their respective detector adapters on every pair, every batch size,
+every scenario. This is the "what users actually pay" bar — real
+DART applications go through the adapter, not the raw narrow-phase.
+
+**Status today (adapter lane):** Native LOSES on multiple rows per
+Q4 Option A — see Round 13 PERF-GAP table. Bar 2 is the release
+blocker.
+
+### Sequencing
+
+Bar 1 is the optimization-worthy first step. Bar 2 is the release
+gate. Codex should:
+
+1. **First, close any remaining Bar 1 (raw) gaps.** Extend Q4
+   Option B benchmarks to cover the same rows as Q4 Option A and
+   the broader scenario set. For each row, confirm Native raw
+   beats every reference raw by ≥ 1.05×. If any Bar 1 gap exists,
+   fix the native algorithm there first — wrapper improvements
+   won't close an algorithm-level gap.
+2. **Second, profile the adapter overhead.** For each Bar 2
+   PERF-GAP row (currently BoxBox_Touching, SphereSphere_Touching,
+   SphereBox_Touching at the adapter lane), measure:
+   - Native raw narrow-phase time (already known).
+   - DART adapter overhead per call (scene sync, broadphase walk,
+     manifold lookup, result conversion, post-processing).
+   - Bullet's adapter overhead per call (the same stages
+     measured against Bullet's `btCollisionWorld`).
+   - The delta = what Bullet's adapter does cheaper.
+3. **Third, improve the wrapper.** The fixes might include:
+   - **Lazy scene sync** — only re-sync transforms for objects
+     that moved since the last call.
+   - **Result-buffer reuse** — preallocate `CollisionResult` /
+     `ContactManifold` storage; avoid per-call malloc.
+   - **Inline-hot-path adapter routines** — small adapter
+     functions should be in headers, not `dart_collision_detector.cpp`.
+   - **Persistent-manifold-cache reuse** — exposed in Round 7's
+     `persistent_manifold_cache.cpp`; verify the public-adapter
+     path actually uses it (the raw narrow-phase tests
+     don't — adapter must add hit-rate benefit).
+   - **SoA scene layout** — closer to Round 9 batch+SIMD, but the
+     adapter pays scene-sync cost per call too; SoA helps even
+     scalar callers.
+4. **Fourth, re-run Q4 Option A** and verify Bar 2 ≥ 1.05×.
+
+### Anti-fragile guard
+
+Even when Bar 1 (raw) wins by a margin and Bar 2 (adapter) loses,
+do NOT delete the adapter benchmark or hide the loss. The adapter
+lane IS the user-visible perf number; "we win at raw, you'll just
+have to trust us" is not acceptable for the release.
+
+Equally: do not micro-optimize the adapter via fragile shims
+(e.g. caching scene state that becomes wrong under multi-threading).
+Adapter improvements must preserve correctness, gz-physics
+compatibility, and the determinism contract that the raw
+narrow-phase already meets.
+
+### Round 9 batch+SIMD is doubly load-bearing
+
+Round 9's Tier 2 batch entry function attacks both bars
+simultaneously:
+
+- **Bar 1 win:** SIMD over N pairs amplifies the per-pair algorithm
+  speedup native already has at the raw level.
+- **Bar 2 win:** Batch entry amortizes the adapter overhead across
+  N pairs — scene sync, broadphase walk, and result aggregation
+  pay once per batch instead of once per pair. This is the
+  highest-leverage adapter-overhead reduction available.
+
+So Round 9 still leads the perf wave per Round 13's "Round 9 is
+critical-path" framing. Round 14 just adds the explicit "raw bar
+first, then adapter bar" sequencing.
+
+### Codex action items
+
+1. **Extend Q4 Option B** (raw reference narrow-phase benchmarks)
+   to cover every pair currently in Q4 Option A (adapter lane).
+   For each pair, the raw lane should have Native_Raw, FCL_Raw,
+   Bullet_Raw, ODE_Raw rows. Verify Bar 1 wins everywhere.
+2. **Add a wrapper-overhead micro-benchmark** —
+   `BM_AdapterOverhead_Native_BoxBox`,
+   `BM_AdapterOverhead_Bullet_BoxBox`, etc. — that subtracts the
+   raw narrow-phase cost from the adapter cost to isolate the
+   adapter delta. Codename: `bench_adapter_overhead_per_engine`.
+3. **Land Round 9 batch API stub** (per F11-1 ratification) — this
+   is the first step toward Bar 2 closure.
+4. **In Round 13's PERF-GAP inventory**, annotate each gap with
+   "Bar 1: WIN / FAIL" and "Bar 2: WIN / FAIL" so the optimization
+   target is unambiguous.
+
+### No new question
+
+Round 14 is a refinement of Round 13's bar, with explicit ordering.
+No Q14 opened.
+
+### Durable preference updated
+
+The project-memory entry `dart-collision-perf-bar.md` will be
+updated to record the two-bar structure (raw-first, adapter-second)
+so future sessions pick it up automatically.
+
+## Round 15 — F11-1 Priority Reminder (NEW, 2026-05-15)
+
+Codex has been productive on the matrix `GAP` backlog over the past
+6 commits (`aeaaaa7186a`, `320c9fa32e9`, `914afcd367b`, `7910e22f1b6`,
+`43b56dfb06c`, plus in-flight SDF distance work). This is welcome
+and TDD has been paying off — the `aeaaaa7186a` primitive-mesh
+normal-direction fix was found via the new pair-order coverage,
+not a user report.
+
+**However**, the queue ordering per Q12 ANSWER + F11-1 ratified
+text says F11-1 (Round 7 followup commit) lands BEFORE Round 6
+(tests/ reference move). The matrix backlog is slotting in AHEAD
+of F11-1 — fine if F11-1 still lands before R6; problem if not.
+
+### Reminder, not a re-prioritization
+
+Round 15 does NOT change the queue. It restates:
+
+1. **NEXT slice MUST be F11-1** — bundle
+   `collideBoxesBatch(span<BoxPair>, span<CollisionResult>, option)`
+   stub + `BoxPair` POD + scalar loop body +
+   `boxbox_batch_determinism_vs_single` test +
+   `BM_NarrowPhase_BoxBox_Native_Batch_N{1,10,100,1000}` benchmark
+   rows + F11-2 JSON refresh. One commit. Per F11-1 ratification
+   at SUPERVISOR.md line 1787.
+2. Then Round 6 (tests/ reference move per Q6 ANSWER).
+3. Then Q4 followup (extend Option B to cover all Option A rows
+   per Round 14).
+4. Then Round 9 main slice (per-pair `collide<Pair>Batch` for
+   sphere/capsule/cylinder/plane/mesh/convex/compound +
+   `NarrowPhase::collideBatch` dispatcher per Q9a ANSWER C).
+5. Matrix `GAP` backlog rows continue to land in parallel /
+   between slices when cheap. The capsule/cylinder/mesh/convex/sdf
+   pair work is still valuable; just don't crowd out F11-1.
+
+### Why F11-1 first
+
+- Without `collideBoxesBatch` Tier 2 stub, Round 9 main slice
+  would retrofit the public ABI AND every call site at once —
+  the exact "we'll add batch later" pattern the user rejected
+  when answering Q9a as Option C.
+- Once F11-1 lands, every subsequent pair Codex adds can ship
+  with its own batch entry — pattern set, copy-paste cheap.
+- Current matrix momentum is strong; landing F11-1 next preserves
+  velocity instead of forcing a later retrofit.
+
+### What changes for Codex
+
+After landing the in-flight SDF distance slice (finish that since
+it's mid-flight), the very next commit MUST be F11-1. Then resume
+matrix backlog OR proceed to Round 6 per the queue.
+
+If F11-1 is intentionally being deferred for a reason not in this
+SUPERVISOR.md, Codex should explain in a Round N Local Completion
+Note; otherwise F11-1 is next.
+
+### No new question
+
+Round 15 is a queue reminder. No Q15 opened.
+
+## Round 16 — Drop the tests/unit/collision/native/ Subfolder (NEW, 2026-05-15)
+
+User direction (2026-05-15): "noticed that there is
+`tests/unit/collisions/native/*` but we may don't need to have
+`/native/` subfolder as DART now only has one collision backend
+(no backend but native)."
+
+This is an architectural cleanup that matches the Round 6 spirit
+(reference code belongs under `tests/`, runtime is one-stack-only):
+since `dart/collision/` is now native-only with compatibility
+facades, the `tests/unit/collision/native/` subfolder is also
+redundant. All native collision tests can live directly under
+`tests/unit/collision/`.
+
+### Current layout
+
+```
+tests/unit/collision/
+  test_aabb.cpp
+  test_aabb_tree.cpp
+  test_brute_force.cpp
+  test_bullet_collision_shapes.cpp     (REFERENCE — will be moved by Round 6)
+  test_bullet_contact.cpp              (REFERENCE — will be moved by Round 6)
+  test_collision_filter.cpp
+  test_collision_group.cpp
+  test_collision_option.cpp
+  test_collision_result.cpp
+  test_contact.cpp
+  test_convex_mesh_shape_collision.cpp (REFERENCE — will be moved by Round 6)
+  test_dart_collide.cpp                (REFERENCE-style — review)
+  test_dart_collision_detector.cpp
+  test_distance.cpp
+  test_distance_filter.cpp
+  test_distance_option.cpp
+  test_raycast.cpp
+  test_raycast_option.cpp
+  test_sweep_and_prune.cpp
+  test_spatial_hash.cpp
+  native/                              ← REDUNDANT SUBFOLDER
+    test_box_box.cpp
+    test_capsule_capsule.cpp
+    test_ccd.cpp
+    test_compound.cpp
+    test_convex.cpp
+    test_cylinder.cpp
+    test_distance_plane.cpp
+    test_gjk.cpp
+    test_gjk_degenerate.cpp
+    test_libccd_algorithms.cpp
+    test_mesh_mesh.cpp
+    test_narrow_phase.cpp
+    test_native_backend.cpp
+    test_parallel_determinism.cpp
+    test_plane.cpp
+    test_sdf_compare.cpp
+    test_sphere_box.cpp
+    test_sphere_sphere.cpp
+```
+
+Top-level `tests/unit/collision/` already mixes single-backend
+tests (`test_aabb*`, `test_brute_force`, `test_collision_*`,
+`test_distance*`, `test_raycast*`, `test_sweep_and_prune`,
+`test_spatial_hash`) with reference-engine tests
+(`test_bullet_*`, `test_convex_mesh_shape_collision`). The
+`native/` subfolder split is historical — from when DART had
+multiple collision backends and `native/` separated DART's own
+narrow-phase tests from the multi-backend public-adapter tests.
+With single-backend now, the split is purely organizational
+debt.
+
+### Target layout
+
+```
+tests/unit/collision/
+  test_aabb.cpp
+  test_aabb_tree.cpp
+  test_box_box.cpp                      ← from native/
+  test_brute_force.cpp
+  test_capsule_capsule.cpp              ← from native/
+  test_ccd.cpp                          ← from native/
+  test_collision_filter.cpp
+  test_collision_group.cpp
+  test_collision_option.cpp
+  test_collision_result.cpp
+  test_compound.cpp                     ← from native/
+  test_contact.cpp
+  test_convex.cpp                       ← from native/
+  test_cylinder.cpp                     ← from native/
+  test_dart_collision_detector.cpp
+  test_distance.cpp
+  test_distance_filter.cpp
+  test_distance_option.cpp
+  test_distance_plane.cpp               ← from native/
+  test_gjk.cpp                          ← from native/
+  test_gjk_degenerate.cpp               ← from native/
+  test_libccd_algorithms.cpp            ← from native/
+  test_mesh_mesh.cpp                    ← from native/
+  test_narrow_phase.cpp                 ← from native/
+  test_native_backend.cpp               ← from native/ (consider rename)
+  test_parallel_determinism.cpp         ← from native/
+  test_plane.cpp                        ← from native/
+  test_raycast.cpp
+  test_raycast_option.cpp
+  test_sdf_compare.cpp                  ← from native/
+  test_sphere_box.cpp                   ← from native/
+  test_sphere_sphere.cpp                ← from native/
+  test_spatial_hash.cpp
+  test_sweep_and_prune.cpp
+  test_bullet_collision_shapes.cpp      ← will move to tests/dart/test/reference_collision/ in Round 6
+  test_bullet_contact.cpp               ← same
+  test_convex_mesh_shape_collision.cpp  ← same
+  test_dart_collide.cpp                 ← review: native or reference?
+```
+
+After Round 16 + Round 6, top-level `tests/unit/collision/`
+contains ONLY native + public-adapter tests; the reference-engine
+tests live under `tests/dart/test/reference_collision/`.
+
+### Migration plan
+
+Single mechanical commit, lands AFTER F11-1 but BEFORE R6
+(because R6 will move the reference tests OUT of this directory,
+and doing R16 first avoids R6 needing to think about the
+`native/` subdir at all):
+
+1. **`git mv` the 18 files** out of
+   `tests/unit/collision/native/` into
+   `tests/unit/collision/` (preserves blame).
+2. **Delete the now-empty `tests/unit/collision/native/`
+   directory.**
+3. **Update `tests/unit/collision/CMakeLists.txt`** to merge the
+   sources list from the deleted `native/CMakeLists.txt`. The
+   `collision-native` CTest label should stay attached to the
+   moved tests (they ARE native — the label captures intent
+   independent of folder location).
+4. **Optionally rename `test_native_backend.cpp` →
+   `test_collision_backend.cpp`** (or similar). The "native"
+   word in the filename is now redundant with the
+   single-backend reality. Surface as a question
+   (Q16, see below) since renaming touches more discovery surfaces.
+5. **Update any include paths** that referenced the `native/`
+   subdir. Grep for
+   `tests/unit/collision/native/` in CMake files, scripts, docs.
+6. **Update `09-test-coverage-matrix.md`** Source column for
+   every row that cites `native/test_*.cpp` to drop the
+   `native/` prefix.
+7. **Refresh evidence** — `pixi run lint` + `pixi run test-unit`
+   on the post-move tree. Record in `03-evidence-gates.md`.
+
+### Anti-goals
+
+- Do NOT bundle with F11-1, R6, or any other slice. Round 16 is a
+  pure file move + CMake merge + matrix path updates.
+- Do NOT rename test files beyond Q16 (test_native_backend
+  rename). The `test_box_box.cpp` filename is fine; only the
+  `native/` directory is redundant.
+- Do NOT push.
+
+### Why R16 before R6
+
+Two orderings are possible:
+
+- **A — R16 (drop `native/` subfolder) BEFORE R6 (move reference
+  code to `tests/dart/test/reference_collision/`).** R6 then only
+  has to think about top-level reference test files.
+- **B — R6 before R16.** R6 has to move reference tests AND
+  navigate the `native/` subdir at the same time.
+
+Going with **A** — R16 first because it's the simpler delta and
+R6 then has a cleaner starting tree.
+
+### Open Question Q16 for User — `test_native_backend.cpp` rename
+
+**Q16 (rename `test_native_backend.cpp`):** After dropping the
+`native/` subfolder, the file `test_native_backend.cpp` reads
+strangely — "native_backend" is the only DART collision backend
+now; the filename is repeating the redundancy that motivated
+Round 16. Options:
+
+- **A — Keep `test_native_backend.cpp`.** No additional move.
+  Pro: zero blame churn. Con: filename still says "native"
+  when DART is single-backend; future contributors may ask
+  "is there a non-native backend test?"
+- **B — Rename to `test_collision_backend.cpp`.** Pro: matches
+  single-backend reality; mirrors `test_dart_collision_detector.cpp`
+  / `test_collision_*` naming. Con: one extra `git mv`,
+  potentially breaks downstream CI configs that target the
+  test by name.
+- **C — Rename to `test_dart_backend.cpp`.** Pro: explicit about
+  it being DART's collision backend (matches
+  `DartCollisionDetector` class). Con: similar to B.
+
+Supervisor recommends **B** — matches the existing
+`test_collision_*` family naming, drops the now-redundant
+"native" word for consistency with Round 16's whole motivation.
+**C** is acceptable if you want to mirror the class name; **A**
+preserves the most blame churn but contradicts the cleanup.
+
+Do NOT start Round 16 implementation until Q16 is answered.
+
+**Q16 ANSWER (user, 2026-05-15):** Option B — rename
+`test_native_backend.cpp` → `test_collision_backend.cpp` as part
+of the Round 16 commit. Matches the existing `test_collision_*`
+family naming and drops the redundant "native" word consistent
+with Round 16's whole motivation.
+
+Implications for Codex:
+
+1. Include the rename in the **same** Round 16 commit that drops
+   the `tests/unit/collision/native/` subfolder. Don't split into
+   two commits — they're the same architectural cleanup.
+2. Use `git mv tests/unit/collision/native/test_native_backend.cpp
+tests/unit/collision/test_collision_backend.cpp` for blame
+   preservation.
+3. Update the test class names inside the file from any
+   `TEST(NativeBackend, ...)` / `TEST(NativeCollision, ...)` /
+   similar to `TEST(CollisionBackend, ...)`. The test name is the
+   user-visible filter handle and should match the filename.
+4. Update `09-test-coverage-matrix.md` Source column for any rows
+   citing `native/test_native_backend.cpp` → `test_collision_backend.cpp`.
+5. Grep for `test_native_backend` across the repo (`CMakeLists.txt`,
+   pixi tasks, CI configs, scripts) and update every reference. If
+   any external CI config (GitHub Actions matrix, gz-physics
+   downstream test job) targets the test by name, surface as a
+   Round Local Completion Note — downstream CI configs may need a
+   coordinated update.
+
+## Round 17 — F11-1 Escalation (NEW, 2026-05-15)
+
+Codex has now skipped F11-1 four times since Round 15's reminder
+landed:
+
+- `8982de4ee31 Add cylinder SDF distance support`
+- `3d52e117c7f Cover SDF compound distance order`
+- `c2d327c4462 Add convex SDF distance support`
+- `0c96e3b341b Add mesh SDF distance support`
+
+All four are real matrix-GAP progress (the SDF family is now
+substantially closed), but none is F11-1, and no "Round N Local
+Completion Note" has been added to SUPERVISOR.md explaining the
+deferral. Round 15's hedge said: "If F11-1 is intentionally being
+deferred for some reason that isn't in this SUPERVISOR.md, Codex
+should surface the rationale as a new Round Local Completion Note
+explaining why; otherwise F11-1 is the next slice." Silence on
+that hedge is what's escalating now.
+
+### Three plausible causes
+
+- **A — Codex isn't re-reading SUPERVISOR.md before each pass.**
+  The side-channel discipline (read steering first, then work)
+  may have lapsed. This is the most likely cause given the
+  pattern.
+- **B — Codex read Round 15 but interpreted "in-flight SDF
+  distance work" as the WHOLE SDF family slate, not just the
+  single uncommitted slice that existed at the time.** Linguistic
+  ambiguity in Round 15.
+- **C — Codex sees F11-1 as covered by some other commit and
+  considers it done.** Possible but unlikely; no commit message
+  references F11-1, `collideBoxesBatch`, or `BoxPair`.
+
+### Sharper steering for next pass
+
+Codex MUST do the following in this exact order:
+
+1. **STOP matrix backlog work.** No more GAP-row commits until
+   F11-1 lands. Even cheap ones.
+2. **Read this entire SUPERVISOR.md including Round 11, Round 15,
+   and Round 17.** Confirm F11-1 understanding by writing a
+   one-paragraph "Round 17 Acknowledgment" section into
+   SUPERVISOR.md BEFORE the F11-1 implementation commit. The
+   acknowledgment must say: (a) what F11-1 is in Codex's own
+   words, (b) why Codex skipped it for the last 4 slices (if any
+   reason), (c) confirmation the next commit will be F11-1.
+3. **Implement F11-1 as ONE commit:**
+   - Add `BoxPair` POD struct to `dart/collision/native/narrow_phase/box_box.hpp`
+     (or `box_box/box_box.hpp` if the Round 7 refactor put it
+     there). Fields: `const BoxShape* shapeA, shapeB` +
+     `Eigen::Isometry3d tfA, tfB`.
+   - Add `void collideBoxesBatch(std::span<const BoxPair> pairs,
+std::span<CollisionResult> results, const CollisionOption&
+option)` declaration in the same header.
+   - Add scalar-loop implementation in the corresponding `.cpp`
+     (calls the existing single-pair `collideBoxes` for each
+     `pairs[i]`, writes into `results[i]`).
+   - Refactor the existing `collideBoxes` single-pair entry to
+     wrap a 1-element call into `collideBoxesBatch` (per Round 9
+     architectural invariant #1: "Every narrow-phase pair entry
+     point exposes Tier 1 + Tier 2 APIs. Tier 1 is a 1-element
+     call into Tier 2.").
+   - Add `tests/unit/collision/native/test_box_box.cpp` (or
+     `tests/unit/collision/test_box_box.cpp` post-Round-16) test:
+     `TEST(BoxBoxBatch, boxbox_batch_determinism_vs_single)` —
+     generate N=100 random `BoxPair` instances, run
+     `collideBoxesBatch(pairs, results, option)`, then loop
+     `collideBoxes(pair[i])` over the same pairs and compare
+     `results[i]` for bit-identity. Codename:
+     `boxbox_batch_determinism_vs_single`.
+   - Add `BM_NarrowPhase_BoxBox_Native_Batch` benchmark in
+     `tests/benchmark/collision/comparative/bm_narrow_phase.cpp`
+     (or `bm_native.cpp`) parameterized over N ∈ {1, 10, 100,
+     1000}. Each entry calls `collideBoxesBatch` on N random box
+     pairs and reports per-pair cost. Codename:
+     `bench_narrow_phase_per_pair_batch`.
+   - Refresh `.benchmark_results/native_collision_box_box_round7.json`
+     in the same commit (this is F11-2). Confirm
+     post-Round-7 BoxBox raw narrow-phase is still ≤ 1632 ns
+     (the 3× acceptance bar set in Round 7 acceptance #6).
+   - Update `09-test-coverage-matrix.md`: flip
+     `boxbox_batch_api_surface`, `boxbox_batch_determinism_vs_single`,
+     `bench_narrow_phase_per_pair_batch` rows from GAP to DONE,
+     citing the new test/benchmark and JSON paths.
+   - Update `03-evidence-gates.md` with a Round-17 entry citing
+     the commands run and outputs.
+4. **After F11-1 commit lands, write a "Round 17 Local Completion
+   Notes" section in SUPERVISOR.md** confirming F11-1 is closed.
+5. **Then resume the queue:** Round 16 (`tests/unit/collision/native/`
+   subfolder drop + `test_native_backend.cpp` →
+   `test_collision_backend.cpp` rename per Q16 ANSWER B) →
+   Round 6 (`dart/collision/{fcl,bullet,ode}/reference/` →
+   `tests/dart/test/reference_collision/{fcl,bullet,ode}/`) → Q4
+   followup (extend Option B to cover all Option A rows per
+   Round 14) → Round 9 main slice (per-pair `collide<Pair>Batch`
+   for sphere/capsule/cylinder/plane/mesh/convex/compound +
+   `NarrowPhase::collideBatch` dispatcher per Q9a ANSWER C).
+   Matrix GAP backlog can land in parallel after F11-1 closes,
+   per Round 15.
+
+### Anti-goals
+
+- Do NOT push F11-1 to remote without explicit user/maintainer
+  approval. Same publish discipline as the rest of the branch.
+- Do NOT bundle Round 16, Round 6, or any other slice into the
+  F11-1 commit. F11-1 is its own commit per F11-1 ratification
+  text.
+- Do NOT silently defer again. If something genuinely blocks
+  F11-1 (e.g. the Round 7 refactor created an architectural
+  conflict that needs a new Q before the batch API can land),
+  surface it as Q17 BEFORE skipping. Silent deferral is what
+  triggered this escalation.
+
+### No new question
+
+Round 17 is an escalation of an existing instruction. No Q17
+opened.
