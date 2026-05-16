@@ -34,6 +34,7 @@
 
 #include "helpers/gtest_utils.hpp"
 
+#include "controller.hpp"
 #include "dart/collision/All.hpp"
 #include "dart/common/macros.hpp"
 #include "dart/dynamics/body_node.hpp"
@@ -913,6 +914,71 @@ TEST(World, AtlasSimbiconFeetContactGroundWithNativeCollision)
       collisionAxisExtent(rightFoot, upAxis));
   ASSERT_TRUE(footExtent.hasShape);
   EXPECT_GE(footExtent.min, groundTop - 0.06);
+}
+
+//==============================================================================
+TEST(World, AtlasSimbiconControllerFeetStayAboveGroundWithNativeCollision)
+{
+  auto world = World::create();
+  ASSERT_NE(world, nullptr);
+  world->setTimeStep(0.001);
+  world->setCollisionDetector(CollisionDetectorType::Dart);
+  ASSERT_NE(world->getCollisionDetector(), nullptr);
+  EXPECT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
+
+  auto ground = dart::io::readSkeleton("dart://sample/sdf/atlas/ground.urdf");
+  auto atlas
+      = dart::io::readSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.sdf");
+  ASSERT_NE(ground, nullptr);
+  ASSERT_NE(atlas, nullptr);
+
+  atlas->setPosition(0, -0.5 * dart::math::pi);
+  world->addSkeleton(ground);
+  world->addSkeleton(atlas);
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  auto* leftFoot = atlas->getBodyNode("l_foot");
+  auto* rightFoot = atlas->getBodyNode("r_foot");
+  ASSERT_NE(leftFoot, nullptr);
+  ASSERT_NE(rightFoot, nullptr);
+
+  constexpr int upAxis = 1;
+  const AxisExtent groundExtent = collisionAxisExtent(ground, upAxis);
+  ASSERT_TRUE(groundExtent.hasShape);
+  const double groundTop = groundExtent.max;
+
+  Controller controller(atlas, world->getConstraintSolver());
+  controller.changeStateMachine("running", world->getTime());
+
+  constexpr int kNumSteps = 600;
+  constexpr double kAllowedDynamicPenetration = 0.08;
+  bool sawFootContact = false;
+  double lowestFootMin = std::numeric_limits<double>::infinity();
+
+  for (int step = 0; step < kNumSteps; ++step) {
+    controller.update();
+    world->step();
+
+    ASSERT_TRUE(atlas->getPositions().array().allFinite()) << "step=" << step;
+    ASSERT_TRUE(atlas->getVelocities().array().allFinite()) << "step=" << step;
+
+    const AxisExtent footExtent = mergedAxisExtent(
+        collisionAxisExtent(leftFoot, upAxis),
+        collisionAxisExtent(rightFoot, upAxis));
+    ASSERT_TRUE(footExtent.hasShape);
+    lowestFootMin = std::min(lowestFootMin, footExtent.min);
+
+    const auto& collisionResult = world->getLastCollisionResult();
+    sawFootContact = sawFootContact || collisionResult.inCollision(leftFoot)
+                     || collisionResult.inCollision(rightFoot);
+
+    EXPECT_GE(footExtent.min, groundTop - kAllowedDynamicPenetration)
+        << "step=" << step << " groundTop=" << groundTop
+        << " footMin=" << footExtent.min;
+  }
+
+  EXPECT_TRUE(sawFootContact);
+  EXPECT_GE(lowestFootMin, groundTop - kAllowedDynamicPenetration);
 }
 
 //==============================================================================

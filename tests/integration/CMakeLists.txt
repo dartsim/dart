@@ -416,6 +416,16 @@ if(TARGET dart-utils AND TARGET dart-io)
     TEST INTEGRATION_simulation_World
     APPEND PROPERTY LABELS collision-native-stability)
   target_link_libraries(INTEGRATION_simulation_World dart-io)
+  target_include_directories(
+    INTEGRATION_simulation_World
+    PRIVATE ${CMAKE_SOURCE_DIR}/examples/atlas_simbicon)
+  target_sources(
+    INTEGRATION_simulation_World
+    PRIVATE
+      ${CMAKE_SOURCE_DIR}/examples/atlas_simbicon/controller.cpp
+      ${CMAKE_SOURCE_DIR}/examples/atlas_simbicon/state.cpp
+      ${CMAKE_SOURCE_DIR}/examples/atlas_simbicon/state_machine.cpp
+      ${CMAKE_SOURCE_DIR}/examples/atlas_simbicon/terminal_condition.cpp)
   if(DART_BUILD_COLLISION_REFERENCE_TESTS)
     target_compile_definitions(
       INTEGRATION_simulation_World
