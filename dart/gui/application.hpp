@@ -38,6 +38,7 @@
 
 #include <dart/simulation/fwd.hpp>
 
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -46,6 +47,7 @@ namespace dart::gui {
 struct ApplicationOptions
 {
   dart::simulation::WorldPtr world;
+  std::function<void()> preStep;
   std::string defaultScene;
   std::vector<Panel> panels;
 };

@@ -96,7 +96,7 @@ GUI_SCENE_EXAMPLE_DEFAULT_ARGS = {
     "atlas_simbicon": ("--scene", "atlas-simbicon"),
     "operational_space_control": ("--scene", "operational-space-control"),
     "wam_ikfast": ("--scene", "wam-ikfast"),
-    "fetch": ("--scene", "fetch"),
+    "fetch": (),
     "tinkertoy": ("--scene", "tinkertoy"),
     "drag_and_drop": ("--scene", "drag-and-drop"),
     "empty": ("--scene", "drag-and-drop"),

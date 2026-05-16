@@ -568,6 +568,7 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   EXPECT_TRUE(diagnostics);
   EXPECT_DOUBLE_EQ(gain, 1.0);
   EXPECT_EQ(selectedLabel, "box");
+  bool preStepCalled = false;
   EXPECT_EQ(
       builder.events,
       (std::vector<std::string>{
@@ -581,10 +582,15 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
 
   dart::gui::ApplicationOptions options;
   options.world = World::create("panel_test");
+  options.preStep = [&preStepCalled]() {
+    preStepCalled = true;
+  };
   options.defaultScene = "mvp";
   options.panels.push_back(std::move(panel));
   ASSERT_NE(options.world, nullptr);
   EXPECT_EQ(options.world->getName(), "panel_test");
+  options.preStep();
+  EXPECT_TRUE(preStepCalled);
   EXPECT_EQ(options.defaultScene, "mvp");
   ASSERT_EQ(options.panels.size(), 1u);
   EXPECT_EQ(options.panels.front().title, "Controls");
@@ -605,6 +611,7 @@ TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
          {std::filesystem::path("examples") / "box_stacking", true},
          {std::filesystem::path("examples") / "simple_frames", false},
          {std::filesystem::path("examples") / "capsule_ground_contact", true},
+         {std::filesystem::path("examples") / "fetch", true},
          {std::filesystem::path("examples") / "imgui", true},
          {std::filesystem::path("examples") / "drag_and_drop", true},
          {std::filesystem::path("examples") / "tinkertoy", true}};

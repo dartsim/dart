@@ -133,6 +133,7 @@ int runFilamentGuiApplicationImpl(
   AppOptions appOptions = parseOptions(argc, argv);
   if (!hasSceneOption(argc, argv)) {
     appOptions.world = applicationOptions.world;
+    appOptions.preStep = applicationOptions.preStep;
   }
   appOptions.panels = applicationOptions.panels;
   const RunOptions& runOptions = appOptions.run;

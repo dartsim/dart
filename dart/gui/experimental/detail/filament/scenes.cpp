@@ -681,6 +681,7 @@ DartScene createDartScene(const AppOptions& options)
   if (options.world != nullptr) {
     DartScene scene;
     scene.world = options.world;
+    scene.preStep = options.preStep;
     return scene;
   }
 

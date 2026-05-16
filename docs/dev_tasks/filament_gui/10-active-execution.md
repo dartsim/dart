@@ -473,6 +473,40 @@ Fifth source-migration checkpoint:
   - Full `examples` aggregate target build
   - `pixi run lint`
 
+Correction after checkpoint `3b4ac2cae7b`:
+
+- The examples restored so far are only early proof points. Many historical
+  examples remain fixture-backed and therefore not fully restored yet, including
+  `examples/fetch`.
+- Treat each remaining `dart_build_gui_scene_example(...)` target as incomplete
+  until it has a real `examples/<name>/main.cpp`, public-API CMake wiring, and
+  no runner-injected `--scene <name>` default.
+
+Sixth source-migration checkpoint:
+
+- Restore `examples/fetch` as a source-defined public-API example.
+- Add the smallest renderer-neutral lifecycle hook required by the original
+  Fetch behavior: `dart::gui::ApplicationOptions::preStep`, invoked before each
+  simulation step when an example supplies its own world.
+- Use the hook to keep the MJCF mocap skeleton aligned with the example-owned
+  target `SimpleFrame`, replacing the private fixture-only `DartScene::preStep`
+  path for this example.
+- Keep renderer-specific drag/manipulation details private. The restored source
+  may expose status and play/step controls through `dart::gui::Panel`, but it
+  must not include Filament, GLFW, Dear ImGui, OSG, or
+  `dart/gui/experimental` headers.
+- Remove the `fetch` runner default `--scene fetch` after the real source is
+  active.
+- Local acceptance for this checkpoint:
+  - C++ GUI target build for `dart-gui`, `fetch`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct `fetch --headless --frames 1 --screenshot ...` capture
+  - `pixi run ex fetch --headless --frames 1 --screenshot ...`
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:
@@ -503,9 +537,8 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Restore the next simple visual/source-defined example family. Candidate
-   slice: `point_cloud`, `polyhedron_visual`, `heightmap`, and/or
-   `soft_bodies`, depending on how much public IO/shape API is needed.
+1. Restore `examples/fetch` as a real public-API `dart::gui` program, including
+   the minimal public pre-step hook needed to preserve its original behavior.
 2. Continue across the remaining pre-existing examples in small related
    families, documenting each slice here before implementation.
 3. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the

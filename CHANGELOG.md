@@ -39,6 +39,8 @@
   - Restored `simple_frames` and `capsule_ground_contact` as public-API
     `dart::gui` example sources using source-defined DART frame and contact
     worlds.
+  - Added a public `dart::gui::ApplicationOptions::preStep` lifecycle callback
+    and restored `fetch` as a source-defined `dart::gui` example.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

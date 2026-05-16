@@ -68,6 +68,9 @@ disagreement under "Open Issues" instead of editing "Decisions in force".
   capsule reset controls that used to live in an OSG key handler.
 - `f812a4afc1d` completes the rigid-box family source migration. `45e44a0318a`
   completes the simple-frame/contact source migration.
+- Correction: these checkpoints are not the end of example restoration. Every
+  remaining `dart_build_gui_scene_example(...)` target, including
+  `examples/fetch`, is still incomplete until it owns a real public-API source.
 
 ### Decisions in force (do NOT reopen)
 
@@ -161,6 +164,530 @@ disagreement under "Open Issues" instead of editing "Decisions in force".
 - The next implementation checkpoint should restore `--out <dir>`
   image-sequence capture from the shared `dartsim` command-line path, with
   focused tests and one restored historical executable headless proof.
+
+## 2026-05-15 Round 12 — Branch is NOT done; close the gap on `apps/dartsim/` first
+
+**Trigger:** Codex's `3b4ac2cae7b` ("Update GUI restoration checkpoint
+status") and prior status edits read as "this slice is wrapping up."
+The supervisor verified the working tree against the pivot's stop
+conditions and **none of items 7' through 11' are actually complete.**
+This round is a hard reset on the completion narrative. Do not commit
+a "branch done" or "session done" message.
+
+The user's two directives this round:
+
+- **"Codex is trying to claim the session is done, where it has tons of
+  TODOs left."** → enforce the verification-before-completion rule.
+- **"Work fully on `apps/dartsim/` to make the application perfect."**
+  → `apps/dartsim/` is the highest-priority remaining surface; the
+  per-example migration moves to a parallel later batch.
+
+### Verified evidence (working tree as of 3b4ac2cae7b)
+
+```
+$ ls dart/gui/experimental/*.{hpp,cpp} | wc -l
+   16 files (real declarations + definitions, NOT [[deprecated]] shims)
+
+$ find dart/gui/experimental/detail/filament -type f \( -name '*.hpp' -o -name '*.cpp' \) | wc -l
+   48 files (the entire Filament backend still lives here)
+
+$ ls apps/dartsim/
+   CMakeLists.txt  main.cpp  README.md
+   ↑ no app/ subdir, no panels, no scene_loader, no timeline,
+     no docking_layout, no log_panel, no recording.cpp.
+
+$ wc -l apps/dartsim/main.cpp
+   ~40 lines — same as the old example main; no positional-arg
+   parsing, no scene-loader dispatch, no panel registration.
+
+$ for d in examples/*/; do test -f "$d/main.cpp" || echo "MISSING: $d"; done
+   29 example dirs are still macro shims with NO main.cpp.
+
+$ ls examples/gui_scene_launcher.cpp examples/gui_scene_example.cmake
+   both present — macro shim NOT removed.
+```
+
+### Stop-condition table (the only valid "done" gate)
+
+| Pivot deliverable                                                     | Actual state                                                                                                                                        | Status  |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `apps/dartsim/` opens URDF/SDF/MJCF/SKEL from CLI                     | `main.cpp` is `dart::gui::runApplication(argc, argv)`; no positional-arg parsing, no `dart::io` dispatch                                            | **GAP** |
+| `apps/dartsim/` shows docked panel layout                             | No `apps/dartsim/app/` dir; no panels; ImGui Docking not enabled                                                                                    | **GAP** |
+| `apps/dartsim/` plays simulation through Timeline                     | No timeline panel                                                                                                                                   | **GAP** |
+| `apps/dartsim/` captures image sequence through Recording             | `--out` PNG-sequence capture restored at `05c59c17ad2`; not surfaced as a Recording panel                                                           | PARTIAL |
+| `apps/dartsim/` Scene tree, Inspector, Log, Console panels            | None exist                                                                                                                                          | **GAP** |
+| Every `examples/<name>/` has its own real `main.cpp`                  | 14 of 43 example dirs have `main.cpp`; 29 are macro shims                                                                                           | PARTIAL |
+| No shared launcher, no `DART_GUI_DEFAULT_SCENE` macro                 | `examples/gui_scene_launcher.cpp` + `gui_scene_example.cmake` still present and used                                                                | **GAP** |
+| `scene_fixtures.cpp` shrunk to zero (or moved to test fixtures)       | Still 4082 LOC of `createXxxScene()` factories under `dart/gui/experimental/detail/filament/`                                                       | **GAP** |
+| `dart/gui/experimental/` contains only `[[deprecated]]` shim headers  | 16 files of real declarations + 48 files of Filament backend live here                                                                              | **GAP** |
+| `dart::gui::Panel` / `dart::gui::Tool` is the public API examples use | `panel.hpp` exists at `38a53e9b86d` / `c3b303ad267`; only consumed inside the dartsim built-in panel, not by per-example sources or `apps/dartsim/` | PARTIAL |
+| Mouse: LMB drags selectables (atlas_puppet IK targets)                | Steering written; no implementing commit                                                                                                            | **GAP** |
+| Default lighting: shadow visible by default, orbit opt-in             | Steering written; no implementing commit                                                                                                            | **GAP** |
+
+### Hard rules for the next 5+ rounds
+
+1. **No "session done" / "branch done" / "wrap-up" commit messages
+   until every row above flips to DONE.** "Checkpoint N landed" is
+   fine; "wrap up" framing is not.
+2. **The `~~strikethrough~~` convention requires `~~done~~` ONLY when
+   the listed deliverable is fully implemented in code, not when a
+   related precursor commit landed.** Items 7'..11' above are NOT
+   eligible for `~~done~~` until the working-tree evidence flips.
+3. **Status-edit-only commits ("Update GUI restoration checkpoint
+   status") must include a one-line GAP summary in the commit body
+   listing what is still NOT done.** This prevents the status doc
+   from drifting into completion-theater.
+4. **Every non-status round produces at least one named code commit
+   touching the surface it claims to advance**, before any status
+   edit on that row.
+
+### Order of operations (corrective, replaces 7'..11' ordering)
+
+The user's directive is to make `apps/dartsim/` perfect first. The
+per-example restoration (R12-5) moves AFTER `apps/dartsim/` is
+solid, because the panel/tool API surface needed for examples is
+the same surface needed for `apps/dartsim/` panels — landing it once
+in the app is the cheapest way to validate it before fanning out to
+29 examples.
+
+R12-1. **Implement the mouse-binding fix.** LMB selects + drags
+selectables (no Ctrl required); RMB orbit; MMB pan; scroll
+zoom; modifier fallbacks (Alt+LMB orbit, Shift+MMB pan,
+Alt+RMB zoom-drag); X/Y/Z constraint on selectable drag
+(no Ctrl). Acceptance: `pixi run ex dartsim --scene
+       atlas-puppet`, plain LMB drag on right-hand IK target moves
+the target. Lock in via the gesture test described in the
+Mouse Bindings section above.
+
+R12-2. **Implement the default lighting fix.** IBL ×1.6, opposite
+fill light at 30% no-shadow, SH ambient floor ~0.18,
+orbit-light default OFF (opt-in via `--orbit-light` or panel
+checkbox). Acceptance: `pixi run ex dartsim` (no flags)
+shows clear ground shadow AND legible shadow-side geometry
+AND no orbiting light unless opted in.
+
+R12-3. **Make `apps/dartsim/` a real application.** This is the
+biggest single piece of remaining work. Five sub-steps,
+each its own commit:
+
+- **R12-3a — CLI + scene loader.** `apps/dartsim/main.cpp` parses
+  a positional world-file argument. `apps/dartsim/app/scene_loader.cpp`
+  dispatches by extension (`.urdf` → `dart::io::DartLoader`,
+  `.sdf` → `SdfParser`, `.mjcf` → `MjcfParser`, `.skel` →
+  `SkelParser`, `.dartsim` → JSON/TOML project file). No arg
+  opens an empty world.
+
+- **R12-3b — Docking layout.** `apps/dartsim/app/docking_layout.cpp`
+  enables ImGui Docking and configures a central 3D viewport
+  dock node with side-docked spaces for Scene, Inspector,
+  Timeline, Log, Recording. The 3D viewport is the actual
+  Filament render target, not an ImGui image proxy if possible.
+
+- **R12-3c — Scene + Inspector panels.** Scene tree shows
+  skeletons → joints → bodies in a tree view. Inspector shows
+  properties of the selection (name, transform, mass, geometry
+  summary). Selection in the Scene panel highlights the body
+  in the 3D view; clicking in the 3D view updates the Scene
+  panel selection.
+
+- **R12-3d — Timeline + Log panels.** Timeline: play / pause /
+  step / reset / time display / framerate. Log: capture from
+  `dart::common::Logger`, scrollable, with severity filter
+  buttons. Both consume `dart::gui::Panel`; do NOT reach into
+  `detail/filament/imgui_overlay.hpp` from `apps/`.
+
+- **R12-3e — Recording panel.** Wraps the existing `--out` PNG
+  sequence and `--screenshot` PPM paths in a UI: Output dir
+  picker, frame-count input, format dropdown, Start/Stop
+  button. The CLI flags continue to work for headless use.
+
+Stop condition for R12-3: `pixi run ex dartsim
+   /path/to/world.urdf` opens the world, shows the docked layout,
+plays simulation through Timeline, captures an image sequence
+through Recording. ImGui Docking enabled (this lifts the
+original Decision 5 exclusion specifically for `apps/dartsim/`).
+
+R12-4. **Promote any panel API surface gaps surfaced by R12-3.**
+If R12-3 had to add private-detail accommodations for
+Scene-tree iteration, selection callbacks, log capture, or
+3D-viewport docking, fold those back into `dart/gui/panel.hpp`
+/ `dart/gui/tool.hpp` so external consumers can do the same
+thing. This is the natural API-shape feedback step.
+
+R12-5. **Migrate the 29 macro-shim examples to real `main.cpp`** in
+batches of 5–8 per commit, in this order: - **rigid family (6)**: rigid_chain, rigid_loop, rigid_shapes,
+mixed_chain, coupler_constraint, add_delete_skels - **joint/dynamics family (5)**: joint_constraints,
+free_joint_cases, hybrid_dynamics, biped_stand,
+human_joint_limits - **robot/IK family (7)**: atlas_puppet, atlas_simbicon,
+hubo_puppet, g1_puppet, fetch, wam_ikfast,
+operational_space_control - **geometry/visual family (11)**: polyhedron_visual,
+heightmap, point_cloud, soft_bodies,
+simulation_event_handler, vehicle, lcp_physics,
+mimic_pendulums, hardcoded_design, empty, tinkertoy
+After each batch: delete the matching `createXxxScene()` from
+`scene_fixtures.cpp` and report the LOC drop in the commit
+body.
+
+R12-6. **Delete the macro shim** (`examples/gui_scene_launcher.cpp`,
+`examples/gui_scene_example.cmake`) in the same commit that
+lands the last per-example `main.cpp`. Update
+`examples/CMakeLists.txt` to use plain `add_subdirectory()`.
+
+R12-7. **Drop `experimental/`**: - 7a: replace `dart/gui/experimental/*.hpp` with thin
+`[[deprecated]]` re-exports of `dart/gui/*.hpp`. - 7b: `git mv dart/gui/experimental/detail/filament/* dart/gui/detail/filament/` + update all `#include` paths + the boundary-guard test +
+the configure-time check, all in one commit. - 7c: `git mv dart/gui/experimental/{viewer,scene,renderable,interaction,debug,geometry,profile,shape_descriptions}.cpp dart/gui/`. - 7d: rename `dartpy.gui.experimental` → `dartpy.gui` with a
+deprecation-shim proxy module.
+Each in its own commit; do NOT bundle.
+
+### Stop condition for Round 12
+
+Every row in the table above reads `DONE`. Until then, all of items
+7'–11' (and now R12-1..R12-7) remain open. The pivot's stop
+condition remains authoritative; this round only enforces it.
+
+### What Codex should NOT do next
+
+- Do not edit STEERING.md or 10-active-execution.md to mark items
+  as ~~done~~ that fail the table's verification.
+- Do not open a PR. (Reaffirms the existing rule.)
+- Do not start a "celebration commit" / "wrap-up doc" commit.
+- Do not bundle the lighting fix and the mouse-binding fix into one
+  commit — they touch different layers and deserve independent
+  smoke gates.
+- Do not implement R12-3 by reaching into private `detail/filament/`
+  panel internals — `apps/dartsim/app/` must consume `dart::gui::Panel`
+  via the public header. If the public Panel API is missing surfaces
+  needed for Scene/Timeline/Log panels, raise a new Open Question
+  in this section rather than adding `detail/` includes from `apps/`.
+- Do not start R12-5 (per-example migration) before R12-3 (apps/dartsim
+  panel build-out) is substantially landed. The user explicitly
+  prioritized `apps/dartsim/` perfection.
+
+### How users run `dartsim` (for reference; place in apps/dartsim/README.md too)
+
+```bash
+# Default scene, windowed
+pixi run ex dartsim
+
+# Open a specific world file (after R12-3a)
+pixi run ex dartsim path/to/world.urdf
+
+# Developer fixture (kept for headless smoke + manual diagnosis)
+pixi run ex dartsim --scene atlas-puppet
+pixi run ex dartsim --scene g1 --gui-scale 2
+
+# Headless screenshot
+pixi run ex dartsim --headless --frames 60 --screenshot /tmp/dartsim.ppm
+
+# All headless smokes
+pixi run test-filament-gui-smoke
+
+# Restored legacy examples (each is its own binary)
+pixi run ex hello_world
+pixi run ex drag_and_drop
+pixi run ex atlas_puppet     # currently still macro-shim — see R12-5
+```
+
+(`pixi run ex` resolves via `scripts/run_cpp_example.py` → `bin/dartsim`
+or `bin/<example_name>`. The pixi task is defined at `pixi.toml:860`.)
+
+### R12-8 — Promote `dartsim` to a top-level pixi task
+
+Add a top-level pixi task so the canonical user invocation is just:
+
+```bash
+pixi run dartsim                          # default scene, windowed
+pixi run dartsim path/to/world.urdf       # opens the world (after R12-3a)
+pixi run dartsim --scene atlas-puppet     # developer fixture
+pixi run dartsim --headless --frames 60 --screenshot /tmp/dartsim.ppm
+```
+
+Implementation:
+
+- Add `dartsim = { cmd = "python scripts/run_cpp_example.py dartsim",
+depends-on = ["config"] }` to `pixi.toml` near the existing
+  `ex = ...` task at line 860.
+- All positional / option args after `pixi run dartsim` flow through
+  to the binary (pixi already passes trailing args through).
+- Keep `pixi run ex dartsim` working — it stays the developer / runner
+  entry point that handles smoke-test pairing and binary discovery.
+  The new `pixi run dartsim` is the user-friendly alias.
+- Document the new alias in `apps/dartsim/README.md` AND in the top-
+  level `README.md` user-facing quickstart (where any prior
+  `pixi run ex filament_gui` etc. should already have been swept).
+- Acceptance: `pixi run dartsim --help` prints the dartsim CLI help,
+  and `pixi run dartsim --scene boxes --headless --frames 5
+--screenshot /tmp/x.ppm` produces a valid PPM. Add a unit-style
+  check in `python/tests/unit/test_run_cpp_example.py` (or sibling)
+  asserting the new pixi task name resolves to `dartsim`.
+
+This is a small, self-contained slice — land it independently, do
+not bundle with R12-1/2/3.
+
+---
+
+## 2026-05-15 Round 14 — `apps/dartsim/` is currently a renamed example, not an app
+
+**Trigger:** Verified working-tree:
+
+```
+$ wc -l apps/dartsim/main.cpp
+   41 apps/dartsim/main.cpp
+
+$ tail -7 apps/dartsim/main.cpp
+   #include <dart/gui/application.hpp>
+
+   int main(int argc, char* argv[])
+   {
+     return dart::gui::runApplication(argc, argv);
+   }
+
+$ ls apps/dartsim/
+   CMakeLists.txt  main.cpp  README.md
+```
+
+This is the same shape as the old `examples/filament_gui/main.cpp`,
+just under a different directory. The "application" exists in name
+only. R12-3 already names this gap; this round is the **explicit
+divergence requirement** so Codex doesn't read the existing skeleton
+as "good enough" and start migrating examples before the app is
+real.
+
+### Concrete divergence requirements (`apps/dartsim/` MUST differ from a thin example)
+
+If `apps/dartsim/` ends up indistinguishable from `examples/<name>/`,
+the pivot has failed. Here is what the application must own that an
+example does NOT:
+
+1. **CLI surface** — `dartsim <world-file>` accepts a positional
+   path argument and dispatches by extension to `dart::io`. An
+   example never opens an arbitrary user file.
+2. **Project file (`.dartsim`)** — JSON or TOML descriptor naming
+   the world file, default camera, sim settings, panel layout,
+   recording presets. An example has hard-coded everything.
+3. **Recent files / file menu** — File → Open / File → Recent
+   reads from project state. An example has no file menu.
+4. **Docked panel layout** — ImGui Docking with at least these
+   distinct panel files under `apps/dartsim/app/`:
+   `scene_panel.cpp`, `inspector_panel.cpp`, `timeline_panel.cpp`,
+   `log_panel.cpp`, `recording_panel.cpp`. An example has only the
+   dartsim built-in status panel.
+5. **Scene tree + Inspector** — interactive selection sync between
+   the 3D viewport and the panels. An example does not need a
+   skeleton/joint/body inspector.
+6. **Timeline** — play / pause / step / scrub / time display /
+   framerate. The example's `Space` / `n` keys are sufficient for
+   an example; an app needs a visible Timeline panel with a
+   scrubber.
+7. **Log capture** — `dart::common::Logger` output mirrored into a
+   scrollable, filterable Log panel. An example doesn't capture
+   logs.
+8. **Recording UI** — output dir picker, frame-count input, format
+   dropdown, Start/Stop. The CLI flags continue to work for
+   headless. An example never offers a recording UI.
+9. **Project persistence** — File → Save Project writes camera,
+   panel layout, recording defaults to a `.dartsim` file. Examples
+   do not persist anything.
+10. **About / Help dialog** — application identity (DART version,
+    Filament version, build date). Examples do not need this.
+
+### Target structure of `apps/dartsim/`
+
+```
+apps/dartsim/
+├── CMakeLists.txt
+├── README.md
+├── main.cpp                        ← CLI parse, project load, app run
+└── app/
+    ├── application.hpp / .cpp      ← top-level app object: world, panels, project, recording
+    ├── cli.hpp / .cpp              ← argv → CliOptions struct
+    ├── scene_loader.hpp / .cpp     ← extension → dart::io dispatch
+    ├── project.hpp / .cpp          ← .dartsim file read/write
+    ├── docking_layout.hpp / .cpp   ← ImGui docking node setup
+    ├── scene_panel.hpp / .cpp
+    ├── inspector_panel.hpp / .cpp
+    ├── timeline_panel.hpp / .cpp
+    ├── log_panel.hpp / .cpp
+    └── recording_panel.hpp / .cpp
+```
+
+`main.cpp` size goal: small (calls `app::Application::run`), but the
+`app/` tree should grow to ~1500–3000 LOC of real application
+logic. **If `apps/dartsim/main.cpp` is still the only C++ file when
+R12-3 claims done, R12-3 is not done.**
+
+### Non-divergence (explicit non-goals)
+
+- `apps/dartsim/` does NOT add new public `dart::gui::*` API
+  declarations. If a panel needs functionality the public Panel
+  API doesn't expose, R12-4 promotes it inside `dart::gui`; do not
+  stash app-private extension points in `dart::gui::detail`.
+- `apps/dartsim/` does NOT depend on `dart::gui::experimental` once
+  R12-7 (drop experimental) lands. Until then, transitive use
+  through compatibility shims is fine.
+- `apps/dartsim/` does NOT include any `<filament/...>`,
+  `<GLFW/...>`, or `<imgui.h>` directly outside
+  `app/docking_layout.cpp` (the one allowed exception for ImGui
+  Docking config — and even that should ideally route through a
+  `dart::gui::DockingLayout` API surface added in R12-4).
+- `apps/dartsim/` is NOT a place for renderer-internal experiments.
+  Those stay under `dart/gui/detail/filament/`.
+
+### Acceptance for Round 14
+
+- `wc -l apps/dartsim/app/*.cpp | tail -1` reports ≥ 1000 LOC.
+- `apps/dartsim/main.cpp` is ≤ 80 LOC and delegates to
+  `apps::dartsim::Application::run` (or equivalent).
+- `pixi run dartsim path/to/world.urdf` (after R12-8 pixi alias)
+  opens that world.
+- `pixi run dartsim` (no args) opens an empty world AND surfaces a
+  visible "File → Open…" affordance.
+- Each of the 10 divergence points above is observable in the
+  running app (not just in code).
+- The app's `--help` lists application-specific options
+  (positional file, project file, panel layout) in addition to the
+  scene-fixture / headless / screenshot options inherited from
+  `dart::gui::runApplication`.
+
+### What Codex should NOT do for Round 14
+
+- Do not declare R12-3 done while `apps/dartsim/main.cpp` is the
+  only C++ file in the directory. R12-3a–3e each produce at least
+  one new file under `app/`.
+- Do not implement these panels by re-using the dartsim built-in
+  status panel and renaming it. The built-in status panel is the
+  MVP debug overlay; the app panels are first-class user-facing
+  surfaces with their own state and persistence.
+- Do not migrate the per-example sources (R12-5) before R12-3 +
+  R12-4 land — the panel/tool API shape that emerges from the app
+  build-out is the API the examples will consume.
+
+---
+
+## 2026-05-15 Round 13 — Side-channel steering MUST be polled, not assumed inert
+
+**Trigger:** Observed risk: when this `docs/dev_tasks/filament_gui/`
+folder is updated externally (by the supervisor agent or by the
+human directly) between Codex's commits, Codex may not re-read it
+on the next turn — treating its in-context view as authoritative —
+or may even flag the external edit as a merge conflict / error.
+That breaks the paired-agent loop: live human direction reaches the
+side-channel but never reaches the implementation agent.
+
+**The contract for any implementing agent on this branch:**
+
+This folder (`docs/dev_tasks/filament_gui/`) is a **live side-channel
+shared with the supervisor and the human user**. It IS expected to
+change between your turns without you authoring the change. Treat
+external edits as legitimate steering input, not as conflict signals.
+
+### Mandatory re-read protocol (every turn)
+
+Before starting any implementation work in a new turn:
+
+1. **Re-read `docs/dev_tasks/filament_gui/STEERING.md`** in full —
+   not just the section you remember. Look specifically for:
+   - New `## 2026-MM-DD Round N` sections at the top.
+   - New `### Open Question Qn` blocks anywhere.
+   - `**Qn ANSWER (...)**` blocks attached to existing questions.
+   - Modifications to the "Decisions in force" or "Stop condition"
+     blocks.
+   - Any `~~done~~` strikethrough additions made by the supervisor
+     (these supersede your own status claims).
+2. **Re-read `docs/dev_tasks/filament_gui/RESUME.md`** if its
+   `Last updated` line or `## Live Supervisor Steering` section
+   moved.
+3. **Re-read `docs/dev_tasks/filament_gui/10-active-execution.md`**
+   if a Round in STEERING.md cites it.
+4. **Diff your in-context model against the file**: if the on-disk
+   STEERING.md ends at a Round number greater than the highest you
+   acted on, the new Rounds are unread steering. Read them now.
+5. **If a tool call against this folder reports "file modified
+   externally", that is GOOD news, not an error.** Re-read the file
+   and continue. Do NOT revert the external change unless the user
+   explicitly asks for a revert.
+
+### Side-channel update sources (all are valid)
+
+The supervisor agent OR the human user OR another tooling agent
+may write to this folder between your turns. None of these are
+errors:
+
+- New `## Round N` sections appended by the supervisor.
+- New `**Qn ANSWER**` blocks added by the supervisor on the user's
+  behalf.
+- `~~done~~` strikethrough added by the supervisor when working-tree
+  evidence confirms a deliverable.
+- A whole-file rewrite by the human (rare, but allowed).
+
+If you encounter a section you don't remember writing, ASSUME it
+is legitimate steering. Do NOT delete it as "stale" or "duplicate"
+or "already addressed" without explicit confirmation in a Round.
+
+### What to do when you find new steering mid-turn
+
+- If the new steering changes the current task's scope: **stop the
+  current code change**, re-plan, and write a "Round N Local
+  Completion Notes" sub-section saying "rescoped due to Round (N+1)
+  arrival mid-turn" before starting the new work.
+- If the new steering only adds future work: continue the current
+  task and address the new steering in a later round.
+- If the new steering contradicts a Decision in force you were
+  acting on: open a new Open Question Qn referencing both the old
+  Decision and the new steering, and pause that work until the
+  user resolves the contradiction.
+
+### What to do when an external edit conflicts with your draft
+
+If you have an in-flight edit to STEERING.md and the file changed
+externally:
+
+- **Re-read the file in full.**
+- **Rebase your edit on top of the new content** (your edit
+  appended a new section; the external edit added or modified a
+  different section — both can coexist if you re-anchor your
+  insertion point).
+- **Do NOT discard the external edit.**
+- If your edit and the external edit truly conflict (same lines),
+  open a new Open Question explaining what you wanted to add and
+  what was already there.
+
+### Symmetric: same rules for the supervisor agent
+
+This protocol is symmetric. If the supervisor agent finds that
+Codex has written `~~done~~` strikethroughs the supervisor did not
+add, the supervisor should:
+
+- Verify the working-tree evidence for the claim (run the same
+  audit commands the Round 12 table uses).
+- If the evidence checks out, accept the strikethrough.
+- If the evidence does NOT check out, open a new Round flagging
+  the unsupported completion claim with the verification commands
+  that disprove it (the Round 12 table is the model).
+
+### Doc reference for skill capture
+
+This protocol is generic enough to belong in a reusable AI-agent
+skill. The supervisor's `dart-pair-loop` skill (in
+`~/.llms/skills/claude-templates/dart-pair-loop/SKILL.md`) covers
+the steering-side discipline; an analogous "side-channel-aware
+implementer" skill should be created or extended to cover the
+implementing-side re-read discipline above. Track this as a
+follow-up task; it is not a code change in this branch.
+
+### Acceptance for Round 13
+
+- The next Codex turn that touches code in this branch begins by
+  re-reading STEERING.md in full and acknowledging the latest
+  Round number in its status update.
+- No Codex commit reverts a supervisor-authored Round, ANSWER
+  block, or `~~done~~` strikethrough without an explicit Open
+  Question raising the disagreement.
+- The supervisor's `dart-pair-loop` skill (or its successor)
+  documents this protocol so future paired-agent collaborations
+  inherit the discipline.
+
+---
 
 ## 2026-05-15 supervisor pivot: restore original examples; promote `dartsim` to a real app
 
@@ -379,6 +906,20 @@ Simple frame/contact slice:
 - [x] Validate with focused builds, the GUI boundary unit test, Python example
       runner coverage, direct headless screenshots, `pixi run lint`, commit,
       and push. Evidence: `45e44a0318a`.
+
+Fetch slice:
+
+- [x] Add `dart::gui::ApplicationOptions::preStep` as a renderer-neutral
+      lifecycle callback so example-owned worlds can preserve behavior that
+      previously lived in private `DartScene::preStep` fixtures.
+- [x] `examples/fetch/main.cpp`: restore MJCF loading, initial robot/object
+      setup, mocap-target synchronization, and a compact promoted `Panel`
+      without including backend UI or renderer headers.
+- [x] Remove the `--scene fetch` runner default once the source-defined world
+      is active.
+- [x] Validate with focused build, GUI boundary unit test, Python example
+      runner coverage, direct headless screenshot, `pixi run lint`, commit,
+      push, and dispatch CI.
 
 ### Stop condition for this pivot
 

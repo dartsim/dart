@@ -108,6 +108,7 @@ struct AppOptions
 {
   dart::gui::RunOptions run;
   dart::simulation::WorldPtr world;
+  std::function<void()> preStep;
   std::vector<dart::gui::Panel> panels;
   ExampleScene scene = ExampleScene::Mvp;
   bool showUi = true;
