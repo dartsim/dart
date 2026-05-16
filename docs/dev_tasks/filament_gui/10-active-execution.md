@@ -22,13 +22,16 @@ context survives across sessions.
 - Branding rule: `DART` is the project and library family identity, `libdart`
   is appropriate for package/library naming, and `dartsim` is the
   application-level simulator/viewer identity analogous to Isaac Sim.
+- Current application pivot: `dartsim` should live under `apps/dartsim/` as a
+  real application, not under `examples/`. The examples should return to
+  educational per-directory programs that consume public `dart::gui` APIs.
 
 ## Branch And CI State
 
 - Branch: `feature/filament-gui-full-execution`
 - Upstream: `origin/feature/filament-gui-full-execution`
 - Latest pushed checkpoint before this in-progress slice:
-  `8796ed5ad99 Promote DART GUI C++ namespace`
+  `c3b303ad267 Add DART GUI panel context examples`
 - GitHub Actions were manually dispatched for the pushed checkpoint without
   opening a PR:
   - CI Lint: https://github.com/dartsim/dart/actions/runs/25945043484
@@ -105,7 +108,7 @@ context survives across sessions.
 ## Naming Decisions
 
 - The MVP executable should be renamed by scope:
-  - Decision for this slice: `examples/dartsim` / `dartsim`
+  - Decision for this slice: `apps/dartsim` / `dartsim`
   - Earlier neutral fallback: `examples/gui_viewer` / `dart_gui_viewer` /
     `gui_viewer`
 - Legacy user-facing examples should keep their historical example names where
@@ -119,6 +122,32 @@ context survives across sessions.
   that convention. Use `dartsim` for application-level simulator/viewer
   surfaces, analogous to an application product such as Isaac Sim. Do not use
   renderer backend names for public app or example branding.
+
+## Application Pivot Slice
+
+The live steering in `STEERING.md` now treats `dartsim` as a top-level
+application, not as an example. The next architecture checkpoints should keep
+the public executable name `dartsim` while moving the source directory from
+`examples/dartsim/` to `apps/dartsim/`.
+
+Implementation direction:
+
+- Add a top-level `apps/` tree with `apps/dartsim/`.
+- Keep `dartsim` built whenever `DART_BUILD_GUI_FILAMENT` is enabled, and keep
+  the `examples` aggregate target depending on it only as a developer
+  convenience.
+- Keep the application entry point on promoted `dart::gui` APIs. The app may
+  use private CMake helper plumbing while the file-layout debt still lives
+  under `dart/gui/experimental/detail/filament`, but source code should not
+  include Filament, GLFW, Dear ImGui, or `dart/gui/experimental` headers.
+- Split future app-only behavior under `apps/dartsim/app/`: scene loading,
+  docking layout, timeline, inspector, log, recording, project file handling,
+  and eventual replay/plotting workflows.
+- Use `--dev-scene <name>` or a future test-fixture target for fixture scenes.
+  Do not make `--scene <name>` the long-term user-facing app model.
+- Treat Dear ImGui Docking and a docked 3D viewport as first-class application
+  goals for `apps/dartsim/`; image-sequence capture is required now, while
+  video capture remains a later recording feature.
 
 ## API Promotion Direction
 
@@ -194,20 +223,24 @@ context survives across sessions.
 ## Example Restoration Plan
 
 Restore the pre-existing user-facing examples as migrated `dart::gui` examples
-instead of leaving them collapsed into one backend-named executable.
+instead of leaving them collapsed into one backend-named executable or one
+shared fixture launcher.
 
 Implementation direction:
 
-- Add a promoted public application entry point, for example
-  `dart/gui/application.hpp`, that provides a generic viewer launcher.
-- Keep each restored example's `main.cpp` small and DART-owned. It should call
-  the generic `dart::gui` launcher with the example's default scene or workflow.
+- Keep each restored example's `main.cpp` small, educational, and DART-owned.
+  It should call promoted `dart::gui` APIs directly, using public panel/tool
+  hooks where the historical example had custom controls.
 - Preserve historical example executable names for CI and user muscle memory.
 - Keep Filament-specific setup in private GUI implementation units.
 - Ensure `scripts/run_cpp_example.py`, CMake targets, tests, and CI workflows
   refer to scope-based or historical example names, not `filament_gui`.
 - Restore examples before relying on CI jobs that invoke historical binaries
   such as `rigid_cubes`.
+- Use the shared `gui_scene_launcher.cpp` and `scene_fixtures.cpp` path only as
+  transitional infrastructure. The branch stop condition is real
+  `examples/<name>/main.cpp` files and no example behavior defined inside
+  private GUI library fixture code.
 
 The restoration should cover all maintained simulation/workflow examples that
 existed before the cleanup, including simple scenes, robotics scenes,
@@ -280,23 +313,26 @@ Implementation direction:
 
 ## Per-Example Source Migration Direction
 
-The latest steering in `STEERING.md` makes per-example source migration the
-next major implementation thread after capture and branding cleanup. The
-restored example binaries currently share the generic launcher and
-`--scene <name>` fixtures. That keeps the executable names and headless
-coverage working, but Tier-A examples with distinctive controls, panels, reset
-logic, or interaction flows still need real `main.cpp` files migrated onto
-promoted `dart::gui` APIs.
+The latest steering in `STEERING.md` supersedes the earlier Tier-A/Tier-B
+split: every pre-existing user-facing example should regain a real
+`examples/<name>/main.cpp` and plain per-example CMake target. The restored
+example binaries currently share the generic launcher and `--scene <name>`
+fixtures. That keeps the executable names and headless coverage working, but it
+does not restore the educational example sources or move behavior out of the
+private GUI library fixture code.
 
 Execution order:
 
-1. Add the minimum promoted `dart::gui` panel/tool/callback hook needed for
-   example-owned controls without exposing Dear ImGui or Filament types.
-2. Migrate at least the first Tier-A examples to real per-example source files
-   that include `dart/gui/*.hpp`, link `dart-gui`, and avoid private backend
-   headers.
-3. Only after that proof point, start the mechanical directory cleanup that
-   moves private implementation paths out of `dart/gui/experimental/detail`.
+1. Keep extending the promoted `dart::gui` panel/tool/callback hook only when a
+   restored example or `apps/dartsim` needs it; do not expose Dear ImGui or
+   Filament types.
+2. Migrate examples to real per-example source files that include
+   `dart/gui/*.hpp`, link `dart-gui`, and avoid private backend headers.
+3. Move matching behavior out of `scene_fixtures.cpp` once the public API is
+   sufficient for that example.
+4. Only after the application extraction and example restoration proof points,
+   start the mechanical directory cleanup that moves private implementation
+   paths out of `dart/gui/experimental/detail`.
 
 First API checkpoint:
 
@@ -381,12 +417,17 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Finish and push the branding cleanup checkpoint.
-2. Start the promoted `dart::gui` panel/tool/callback hook required for
-   real per-example source migration.
-3. Migrate the first Tier-A examples to real per-example `main.cpp` files that
-   do not include private renderer headers.
-4. Do not start the physical `experimental/` directory move until the
-   per-example API proof point lands.
-5. Run `pixi run lint` before every checkpoint commit, then push the commit to
+1. Commit and push this live documentation flush so the pivot is durable before
+   more code changes.
+2. Move `examples/dartsim/` to `apps/dartsim/` while preserving the `dartsim`
+   target, pixi runner behavior, and CI smoke target names.
+3. Restore the next simple canonical example source (`hello_world`) as a real
+   public-API `dart::gui` program, then continue across all pre-existing
+   examples.
+4. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
+   corresponding example behavior has moved into public-API example code.
+5. Do not start the physical `experimental/` directory move until the
+   application extraction and enough real example sources prove the consumed
+   public API surface.
+6. Run `pixi run lint` before every checkpoint commit, then push the commit to
    the tracked remote branch.

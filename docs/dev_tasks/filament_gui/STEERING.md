@@ -142,7 +142,204 @@ disagreement under "Open Issues" instead of editing "Decisions in force".
   image-sequence capture from the shared `dartsim` command-line path, with
   focused tests and one restored historical executable headless proof.
 
+## 2026-05-15 supervisor pivot: restore original examples; promote `dartsim` to a real app
+
+**This block supersedes Decisions 2, 3, 5 and item 7 above.** The shared
+`gui_scene_launcher.cpp` macro shim is the wrong long-term shape. The
+`dartsim` directory is also in the wrong place — it should be an
+**application**, not an example.
+
+### New architecture
+
+```
+<repo-root>/
+├── dart/
+│   └── gui/                       ← promoted public API: dart::gui::*
+│       ├── application.hpp        ← dart::gui::runApplication (entry helper)
+│       ├── viewer.hpp / scene.hpp / interaction.hpp / debug.hpp / ...
+│       └── detail/filament/       ← private backend (after item 8)
+│
+├── apps/
+│   └── dartsim/                   ← NEW: real application, not an example
+│       ├── CMakeLists.txt
+│       ├── main.cpp               ← parses CLI, opens scene description file
+│       ├── app/                   ← app-only code (panels, project model, etc.)
+│       │   ├── docking_layout.cpp
+│       │   ├── scene_loader.cpp   ← reads URDF / SDF / SKEL / MJCF / project file
+│       │   ├── timeline.cpp       ← play / pause / step / scrub / replay
+│       │   ├── inspector.cpp      ← skeleton / joint / body inspector panel
+│       │   ├── log_panel.cpp      ← in-app log + diagnostics
+│       │   ├── recording.cpp      ← screenshot + image-sequence + future video
+│       │   └── project.cpp        ← .dartsim project file + recent files
+│       └── README.md
+│
+└── examples/
+    ├── hello_world/main.cpp       ← restored ORIGINAL educational source,
+    │                                migrated to dart::gui (no scene-string macro)
+    ├── rigid_cubes/main.cpp       ← restored ORIGINAL educational source
+    ├── drag_and_drop/main.cpp     ← restored ORIGINAL educational source
+    ├── atlas_puppet/main.cpp      ← restored ORIGINAL educational source
+    ├── ... one main.cpp per example, written like a user would write it ...
+    └── README.md                  ← "if you want a full app, see apps/dartsim"
+```
+
+### Decisions in force (supersede the earlier numbered list where they conflict)
+
+1. **`apps/dartsim/` is a top-level application directory.** It is not an
+   example. Its purpose is to be DART's IDE-style simulation viewer:
+   - **Inputs**: URDF / SDF / MJCF / SKEL files passed as CLI args
+     (`dartsim path/to/world.urdf`); also a `.dartsim` project file format
+     (JSON or TOML) listing the world file, default camera, simulation
+     settings, panel layout, recording presets.
+   - **Stack**: Filament for rendering, GLFW3 for windowing, **Dear ImGui
+     with Docking enabled** for the panel system. No `--scene <name>`
+     flag in the user-facing app (developer fixtures stay under
+     `dartsim --dev-scene <name>` or are pulled out of the app entirely).
+   - **Initial panel set**: Scene tree (skeletons / joints / bodies),
+     Inspector (selected entity properties), Timeline (play / pause /
+     step / scrub / loop), Log (in-app log capture from
+     `dart::common::Logger`), Recording (screenshot, image-sequence,
+     future video), Console (placeholder for a future Python REPL — no
+     scripting yet).
+   - **Long-term direction**: docked 3D viewport, project file
+     persistence, replay of recorded simulation runs, plotting of
+     joint/contact data, headless batch mode for CI.
+   - **Out of scope for the first `apps/dartsim/` checkpoint**: video
+     capture (image-sequence is enough), Python scripting, multi-window
+     layouts, macOS/Windows ports, custom themes, internationalization.
+
+2. **Examples go back to the pre-cleanup shape.** Each `examples/<name>/`
+   contains its own real `main.cpp` + `CMakeLists.txt` (+ optional
+   per-example assets). The shared `gui_scene_launcher.cpp` /
+   `gui_scene_example.cmake` macro path is removed. Each example is the
+   smallest possible standalone DART program demonstrating ONE concept,
+   written the way a new user would write it. Educational value is the
+   primary acceptance criterion — not size.
+
+3. **Each example consumes only public DART API.** Allowed includes:
+   `dart/<module>.hpp` (`dart/dynamics.hpp`, `dart/simulation.hpp`,
+   `dart/io.hpp`, `dart/gui.hpp`, …). Forbidden: `<filament/...>`,
+   `<GLFW/...>`, `<imgui.h>`, anything under `dart/gui/detail/` or
+   `dart/gui/experimental/`. The boundary-guard test gains a per-example
+   scan that enforces this.
+
+4. **Promotion of the panel/tool API moves up.** `dart::gui::Panel` /
+   `dart::gui::Tool` (or the equivalent callback / hook API) is now
+   load-bearing — both `apps/dartsim/` and the migrated `imgui` /
+   `drag_and_drop` / `tinkertoy` / `lcp_physics` examples need it. Land
+   it before any per-example migration that touches custom widgets.
+
+5. **`scene_fixtures.cpp` becomes pure dev/test infrastructure.** Once
+   examples have their own real sources, the matching `createXxxScene()`
+   factories in `scene_fixtures.cpp` become redundant. They can either
+   move out of `dart/gui/experimental/detail/filament/` into a separate
+   test-only target (e.g. `tests/fixtures/gui_scenes/`) or be deleted.
+   Library code should not contain example fixtures.
+
+6. **Item 8 (drop `experimental/`) order changes.** The `experimental/`
+   directory still gets removed, but it now follows BOTH the example
+   restoration AND the `apps/dartsim/` extraction, because both new
+   surfaces will reveal which `dart::gui` symbols are actually consumed
+   by external-shaped code.
+
+### Revised order of operations (replaces items 7+8 below)
+
+7'. **Land the minimum panel/tool public API.** `dart::gui::Panel` and
+`dart::gui::Tool` (names TBD by Codex) under `dart/gui/panel.hpp` and
+`dart/gui/tool.hpp`. The current MVP `dartsim` (now `apps/dartsim/`
+after step 8') stops reaching into private
+`detail/filament/imgui_overlay.hpp` for its built-in panel and
+consumes the new public API instead. This is the precondition for
+both the application work and the per-example migration. Headless
+smoke gate: a custom panel's `onUpdate` callback fires N times in N
+rendered frames.
+
+8'. **Move `examples/dartsim/` → `apps/dartsim/` and grow it into a real
+application.** Single `git mv`, then build out the panels listed
+under Decision 1 above. Initial scope: - `apps/dartsim/main.cpp` accepts a positional arg
+(`dartsim <world-file>`) and recognized extensions
+`.urdf|.sdf|.mjcf|.skel|.dartsim`. With no arg, opens an empty
+world and surfaces a "File → Open…" panel button. - `apps/dartsim/app/scene_loader.cpp` dispatches by extension to
+existing `dart::io::DartLoader` / `SdfParser` / `MjcfParser` /
+`SkelParser`. - `apps/dartsim/app/docking_layout.cpp` configures ImGui docking
+with a central 3D viewport node and side-docked
+Scene/Inspector/Timeline/Log panels. **This requires enabling
+ImGui Docking**, which Decision 5 of the original block previously
+listed as out-of-scope; that exclusion is **lifted specifically
+for ImGui Docking** to enable `apps/dartsim/`. - `apps/dartsim/app/recording.cpp` consumes the promoted
+`dart::gui::Recorder` (screenshot + image-sequence) added in item 6. - The ~30 named `--scene` fixtures are NOT exposed in the app's user
+surface. They become dev-only via `dartsim --dev-scene <name>` for
+Codex's continued use, or migrate to the test-fixture target per
+Decision 5.
+
+9'. **Restore each `examples/<name>/main.cpp` from the pre-cleanup OSG
+sources, migrated to `dart::gui`.** Process per example: - Recover the original source via `git log --diff-filter=D --
+      examples/<name>/main.cpp` then `git show <sha>:examples/<name>/main.cpp`. - Rewrite the OSG-based viewer/world setup to use `dart::gui::*`
+API: `dart::gui::Application` / `runApplication`, the new
+`dart::gui::Panel`/`Tool` from item 7', and standard DART
+dynamics/simulation/io. - Delete the matching `createXxxScene()` factory from
+`scene_fixtures.cpp` (or move it to the test-fixture target). - Drop the `examples/<name>/CMakeLists.txt` from the macro shim;
+replace with a normal `add_executable(<name> main.cpp)` + link
+against `dart-gui` and required `dart-*` modules. - Acceptance: example builds standalone, links only public DART
+libraries, `examples/<name>/main.cpp` reads as something a new
+user could plausibly have written, headless smoke (kept under the
+dev `--dev-scene` path or via direct binary invocation) still
+produces the expected first frame. - Order: `hello_world` first (canonical template), `drag_and_drop`
+second (forces interaction API completeness), `imgui` third
+(forces the Panel/Tool API completeness), then batch by family.
+
+10'. **Remove the macro shim entirely** once every example has a real
+`main.cpp`. Delete `examples/gui_scene_launcher.cpp` and
+`examples/gui_scene_example.cmake`. Update
+`examples/CMakeLists.txt` to use plain `add_subdirectory()` calls.
+
+11'. **Then proceed to the original item 8 (drop `experimental/`)**, with
+the relocation now informed by the real public-API consumption
+pattern from `apps/dartsim/` and `examples/<name>/main.cpp`.
+
+### What the per-example checklist becomes
+
+The "Per-scene graduation checklist" below is **repurposed** as a
+**per-example restoration checklist** with the same item set, but the
+acceptance criteria now read:
+
+- [ ] `examples/<name>/main.cpp` exists as a real, educational source
+      (recovered from pre-cleanup history and migrated to `dart::gui`).
+- [ ] `examples/<name>/CMakeLists.txt` uses `add_executable` + plain
+      `target_link_libraries(<name> PRIVATE dart-gui dart-...)`.
+- [ ] No `<filament/...>`, `<GLFW/...>`, `<imgui.h>` includes anywhere
+      under `examples/**/*`.
+- [ ] The matching `createXxxScene()` is removed from `scene_fixtures.cpp`
+      (or moved to the test-fixture target).
+- [ ] Headless smoke (developer route) still passes.
+
+The Tier-A vs Tier-B distinction is dropped — every example gets its own
+real source. The Tier-B set (`hello_world`, `boxes`, `simple_frames`,
+`capsule_ground_contact`, `soft_bodies`, `empty`) are the simplest
+templates to restore first; the API-forcing examples (`imgui`,
+`drag_and_drop`) gate item 7'.
+
+### Stop condition for this pivot
+
+- `apps/dartsim/` builds, opens a URDF/SDF/MJCF/SKEL file from CLI,
+  shows the docked panel layout, plays simulation through Timeline,
+  captures an image sequence through Recording.
+- Every `examples/<name>/` directory contains its own real `main.cpp`
+  consuming only public `dart::gui` API; no shared launcher, no
+  `DART_GUI_DEFAULT_SCENE` macro, no per-example link to backend
+  internals.
+- `scene_fixtures.cpp` either shrinks to zero (factories deleted) or
+  moves to a test-only fixture target.
+- `dart/gui/experimental/` contains only `[[deprecated]]` shim headers.
+
+---
+
 ### 2026-05-15 supervisor follow-up: per-example sources + drop `experimental/`
+
+> **Superseded by the pivot above.** Items 7 and 8 below are reframed as
+> items 9' and 11' in the pivot. Tier-A/Tier-B partitioning is dropped;
+> the per-scene checklist is repurposed as the per-example restoration
+> checklist defined in the pivot block.
 
 Two new threads, **in this order** (capture slice still comes first):
 
