@@ -97,6 +97,11 @@ context survives across sessions.
   tracked remote branch without opening a PR. It restores Atlas/Hubo continuous
   IK solving and WASD/QE/FZ root teleoperation through promoted `dart::gui`
   concepts. Do not wait for CI before continuing independent parity work.
+- The Tinkertoy camera-home checkpoint
+  (`5c922f27a7d Restore Tinkertoy camera home action`) was pushed to the
+  tracked remote branch without opening a PR. It adds the public
+  keyboard-action camera reset callback and restores Tab camera-home in
+  Tinkertoy. Do not wait for CI before continuing independent parity work.
 
 ## Current Code Shape
 
@@ -1571,6 +1576,66 @@ Twenty-eighth camera-home keyboard-action checkpoint:
   - `pixi run lint`
   - `git diff --check`
 
+Twenty-ninth G1 target activation parity checkpoint:
+
+- Historical `examples/g1_puppet` used number keys as target
+  activation/deactivation toggles, not only as selection shortcuts. The
+  migrated source currently owns the G1 scene and visible target handles, but
+  all targets are present from startup and IK solving is limited to backend
+  drag/nudge operations.
+- Immediate implementation scope: restore G1's number-key target toggle
+  semantics using existing public DART and `dart::gui` APIs. Keep a local
+  source-owned handle state that owns the target `SimpleFrame`, the
+  `InverseKinematics` pointer, and the world membership flag. Number-key
+  keyboard actions should add/remove the target frame from the world, reset an
+  activated target to its end-effector transform, and solve only active
+  targets from `ApplicationOptions::preStep`.
+- Keep this checkpoint focused on G1. Atlas/Hubo target activation semantics,
+  Atlas relaxed-posture/balance optimization, Hubo analytical IK, and Enter
+  recording remain explicit follow-up gaps.
+- Local acceptance for this checkpoint:
+  - C++ GUI target build for `g1_puppet` and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Direct and/or pixi G1 headless screenshot with analyzer coverage
+  - Python runner tests
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+  - `git diff --check`
+- Local validation completed:
+  - `cmake --build build/default/cpp/Release --target examples --parallel 5`
+  - `pixi run lint`
+  - `cmake --build build/default/cpp/Release --target g1_puppet
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - `ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^UNIT_gui_FilamentSceneExtraction$'`
+  - Direct llvmpipe G1 screenshot plus `analyze_headless_smoke.py`
+    (`/tmp/dart_g1_toggle_direct.ppm`, 307200/307200 nonzero pixels)
+  - `pixi run ex g1_puppet --headless --frames 2 --width 640 --height 480
+--screenshot /tmp/dart_g1_toggle_pixi.ppm` plus analyzer
+    (307200/307200 nonzero pixels)
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+    (67 passed)
+  - `git diff --check`
+- Implementation status: ready to commit and push as the G1 target-toggle
+  checkpoint.
+
+Thirtieth source-owned example restoration checkpoint:
+
+- The user explicitly called out that many examples are still not fully
+  restored, including `examples/fetch/`. Treat this as a source-owned example
+  parity gap, not a renderer backend smoke-test gap.
+- Previous Fetch evidence covered camera framing, target-cross visibility,
+  work-area grid visibility, successful build, and headless image output. That
+  does not by itself prove the historical Fetch example is fully restored in
+  public `dart::gui` source.
+- Immediate implementation scope after the G1 checkpoint: re-audit
+  `examples/fetch/` against its historical OSG source and move any remaining
+  example behavior, UI controls, display text, and interaction semantics into
+  the maintained Fetch source through promoted `dart::gui` APIs.
+- After Fetch, continue the same source-owned audit pattern across the rest of
+  the pre-existing examples before treating the migration as complete.
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:
@@ -1601,11 +1666,10 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Restore Tinkertoy Tab camera-home through a renderer-neutral
-   `KeyboardActionContext` camera reset callback.
-2. Keep `examples/fetch/` in the completed-evidence set for camera,
-   target-cross, and work-area-grid parity, but do not generalize that result
-   to other examples.
+1. Commit and push the validated G1 number-key target activation/deactivation
+   and active-target pre-step solving checkpoint.
+2. Re-audit `examples/fetch/` against the historical OSG source and restore any
+   remaining source-owned behavior through public `dart::gui`.
 3. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
    corresponding example behavior has moved into public-API example code.
 4. Do not start the physical `experimental/` directory move until the

@@ -108,6 +108,8 @@
     teleoperation through renderer-neutral `dart::gui` keyboard actions.
   - Added a renderer-neutral keyboard action camera reset callback and used it
     to restore Tinkertoy's Tab camera-home hotkey.
+  - Restored G1 puppet number-key target activation/deactivation and
+    active-target IK solving through public `dart::gui` keyboard actions.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

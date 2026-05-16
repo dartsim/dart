@@ -886,6 +886,16 @@ TEST(FilamentSceneExtraction, G1PuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("Ctrl-left drag"), std::string::npos);
   EXPECT_NE(mainSource.find("InverseKinematicsHandle"), std::string::npos);
   EXPECT_NE(mainSource.find("options.ikHandles"), std::string::npos);
+  EXPECT_NE(mainSource.find("TargetState"), std::string::npos);
+  EXPECT_NE(mainSource.find("createG1KeyboardActions"), std::string::npos);
+  EXPECT_NE(mainSource.find("solveActiveG1Targets"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("world->addSimpleFrame(target)"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("world->removeSimpleFrame(target)"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
+  EXPECT_NE(mainSource.find("toggle target handles"), std::string::npos);
   EXPECT_NE(mainSource.find("'1'"), std::string::npos);
   EXPECT_NE(mainSource.find("'4'"), std::string::npos);
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);

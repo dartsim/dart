@@ -79,8 +79,8 @@ collision/dynamics block construction, and the `1`/`2`/`3`, Backspace, Delete,
 Up/Down, and backtick hotkeys are implemented through public `dart::gui`
 panels, `ApplicationOptions::preStep`, and
 `ApplicationOptions::keyboardActions`. It does not yet close Atlas
-relaxed-posture/balance, Hubo analytical IK, legacy target toggle semantics,
-Tab camera-home, or the legacy Enter recording toggle.
+relaxed-posture/balance, Hubo analytical IK, Atlas/Hubo target activation
+semantics, or the legacy Enter recording toggle.
 
 ## Immediate Next Step
 
@@ -89,11 +89,18 @@ API: continuous IK solving plus WASD/QE/FZ root teleoperation. This is
 implemented and pushed for `atlas_puppet` and `hubo_puppet`. The next slice is
 Tinkertoy Tab camera-home: add a renderer-neutral camera reset callback to
 `KeyboardActionContext` and register Tab from the Tinkertoy example without
-exposing backend camera/window types. This is implemented locally and is in
-validation/commit state. Keep Atlas relaxed-posture/balance optimization, Hubo
-analytical IK, target activation/deactivation semantics, G1 target toggles,
-and Enter recording as explicit parity gaps unless a later slice adds the
-narrow renderer-neutral public API needed for them.
+exposing backend camera/window types. This is implemented and pushed. The next
+slice is G1 target activation parity: use public `dart::gui` keyboard actions
+to make number keys add/remove target frames, reset activated targets to their
+end-effector transforms, and solve only active G1 targets from
+`ApplicationOptions::preStep`. This is implemented, locally validated, and
+ready to commit/push. The next source-owned restoration slice re-audits
+`examples/fetch/` against the historical OSG source, because prior Fetch
+camera/grid/capture evidence is not proof that the full example behavior was
+restored. Keep Atlas relaxed-posture/balance optimization, Hubo analytical IK,
+Atlas/Hubo target activation semantics, and Enter recording as explicit parity
+gaps unless a later slice adds the narrow renderer-neutral public API needed
+for them.
 
 ## Context That Would Be Lost
 

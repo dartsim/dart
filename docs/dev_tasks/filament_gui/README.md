@@ -40,23 +40,29 @@ pushed. The Tinkertoy builder and keyboard checkpoints now restore the
 stateful builder workflow through promoted `dart::gui` concepts: selected
 block state, add/delete panel controls, gravity and force-coefficient controls,
 target reorientation, force-line updates, external force application,
-collision/dynamics block construction, and the `1`/`2`/`3`, Backspace, Delete,
-Up/Down, and backtick hotkeys. Tab camera-home and Enter recording remain
-explicit follow-up gaps until public camera-reset and recording APIs exist.
+collision/dynamics block construction, the `1`/`2`/`3`, Backspace, Delete,
+Up/Down, and backtick hotkeys, and Tab camera-home. Enter recording remains an
+explicit follow-up gap until a public recording API exists.
 
 The next active slice uses the renderer-neutral keyboard action surface for
 robot/IK behavior parity. The first target is Atlas/Hubo whole-body puppet
 behavior that can be restored through promoted `dart::gui`: continuous IK
 solving plus WASD/QE/FZ root teleoperation. That slice is implemented locally
 for `atlas_puppet` and `hubo_puppet` and has been pushed. Atlas
-relaxed-posture/balance optimization, Hubo analytical IK, target
-activation/deactivation semantics, and G1 target toggle semantics remain
-tracked parity gaps unless a later slice adds the narrow public API needed to
-implement them cleanly. The next active slice closes Tinkertoy's Tab
+relaxed-posture/balance optimization, Hubo analytical IK, and Atlas/Hubo target
+activation/deactivation semantics remain tracked parity gaps unless a later
+slice adds the narrow public API needed to implement them cleanly. The next
+active slice closes Tinkertoy's Tab
 camera-home gap by adding a renderer-neutral camera reset callback to
 `KeyboardActionContext`; that callback and Tinkertoy Tab binding are
-implemented locally and in validation/commit state. Enter recording remains a
-separate capture/session API gap.
+implemented and pushed. The next active slice restores G1's historical
+number-key target activation/deactivation semantics and active-target pre-step
+solving through source-owned public `dart::gui` actions; it is implemented and
+in checkpoint validation/commit state. The next source-owned restoration slice
+re-audits `examples/fetch/` against the historical OSG source, because prior
+Fetch evidence proves camera/grid/capture smoke parity but does not by itself
+prove the full example was restored. Enter recording remains a separate
+capture/session API gap.
 
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as

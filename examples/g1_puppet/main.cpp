@@ -356,6 +356,55 @@ struct G1Scene
 {
   dart::simulation::WorldPtr world;
   std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
+  struct TargetState
+  {
+    dart::simulation::WorldPtr world;
+    dart::dynamics::EndEffector* effector = nullptr;
+    dart::dynamics::InverseKinematicsPtr ik;
+    dart::dynamics::SimpleFramePtr target;
+    std::string label;
+    char hotkey = '\0';
+    bool active = false;
+
+    void activate()
+    {
+      if (active || world == nullptr || effector == nullptr
+          || target == nullptr) {
+        return;
+      }
+      target->setTransform(effector->getWorldTransform());
+      world->addSimpleFrame(target);
+      active = true;
+      solve();
+    }
+
+    void deactivate()
+    {
+      if (!active || world == nullptr || target == nullptr) {
+        return;
+      }
+      world->removeSimpleFrame(target);
+      active = false;
+    }
+
+    void toggle()
+    {
+      if (active) {
+        deactivate();
+      } else {
+        activate();
+      }
+    }
+
+    void solve()
+    {
+      if (active && ik != nullptr) {
+        ik->solveAndApply(true);
+      }
+    }
+  };
+
+  std::vector<std::shared_ptr<TargetState>> targetStates;
 };
 
 void addG1IkTargets(G1Scene& scene, const dart::dynamics::SkeletonPtr& robot)
@@ -425,15 +474,23 @@ void addG1IkTargets(G1Scene& scene, const dart::dynamics::SkeletonPtr& robot)
         endEffector->getWorldTransform());
     target->setShape(createIkTargetHandleShape(0.15));
     target->getVisualAspect(true)->setRGBA(config.color);
-    scene.world->addSimpleFrame(target);
     ik->setTarget(target);
+
+    auto state = std::make_shared<G1Scene::TargetState>();
+    state->world = scene.world;
+    state->effector = endEffector;
+    state->ik = ik;
+    state->target = target;
+    state->label = config.label;
+    state->hotkey = config.hotkey;
 
     dart::gui::InverseKinematicsHandle handle;
     handle.label = config.label;
     handle.hotkey = config.hotkey;
-    handle.target = std::move(target);
-    handle.ik = std::move(ik);
+    handle.target = target;
+    handle.ik = ik;
     scene.ikHandles.push_back(std::move(handle));
+    scene.targetStates.push_back(std::move(state));
   }
 }
 
@@ -453,6 +510,40 @@ G1Scene createG1Scene(const G1Options& options)
   return scene;
 }
 
+void solveActiveG1Targets(
+    const std::vector<std::shared_ptr<G1Scene::TargetState>>& targetStates)
+{
+  for (const auto& state : targetStates) {
+    if (state != nullptr) {
+      state->solve();
+    }
+  }
+}
+
+std::vector<dart::gui::KeyboardAction> createG1KeyboardActions(
+    const std::vector<std::shared_ptr<G1Scene::TargetState>>& targetStates)
+{
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.reserve(targetStates.size());
+  for (const auto& state : targetStates) {
+    if (state == nullptr || state->hotkey == '\0') {
+      continue;
+    }
+
+    dart::gui::KeyboardAction action;
+    action.label = "Toggle G1 target " + state->label;
+    action.shortcut = dart::gui::KeyboardShortcut::characterKey(state->hotkey);
+    action.callback = [state](dart::gui::KeyboardActionContext& context) {
+      state->toggle();
+      if (context.lifecycle != nullptr) {
+        context.lifecycle->paused = true;
+      }
+    };
+    actions.push_back(std::move(action));
+  }
+  return actions;
+}
+
 dart::gui::Panel createG1Panel(const G1Options& options)
 {
   dart::gui::Panel panel;
@@ -461,10 +552,12 @@ dart::gui::Panel createG1Panel(const G1Options& options)
                                dart::gui::PanelBuilder& builder,
                                dart::gui::PanelContext& context) {
     builder.text("G1 whole-body IK puppet");
-    builder.text("Press 1-4 or select a target handle.");
+    builder.text("Press 1-4 to toggle target handles.");
+    builder.text("Select an active target handle to move it.");
     builder.text("Ctrl-left drag moves the selected handle.");
     builder.text("Arrow keys and PageUp/PageDown nudge it.");
     builder.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
+    builder.text("Only active targets solve each simulation step.");
     builder.separator();
     builder.text("robot: " + options.robotUri);
     if (context.lifecycle != nullptr) {
@@ -493,6 +586,10 @@ int main(int argc, char* argv[])
     dart::gui::ApplicationOptions options;
     options.world = scene.world;
     options.ikHandles = scene.ikHandles;
+    options.preStep = [targetStates = scene.targetStates]() {
+      solveActiveG1Targets(targetStates);
+    };
+    options.keyboardActions = createG1KeyboardActions(scene.targetStates);
     options.panels.push_back(createG1Panel(g1Options));
     return dart::gui::runApplication(argc, argv, options);
   } catch (const std::exception& e) {
