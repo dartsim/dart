@@ -36,6 +36,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <stdexcept>
 #include <utility>
 
 #include <cmath>
@@ -441,6 +442,28 @@ bool collideCylinders(
 
   result.addContact(contact);
   return true;
+}
+
+void collideCylindersBatch(
+    std::span<const CylinderPair> pairs,
+    std::span<CollisionResult> results,
+    const CollisionOption& option)
+{
+  if (results.size() < pairs.size()) {
+    throw std::invalid_argument(
+        "collideCylindersBatch requires one result for each pair");
+  }
+
+  for (std::size_t i = 0; i < pairs.size(); ++i) {
+    const auto& pair = pairs[i];
+    if (pair.shapeA == nullptr || pair.shapeB == nullptr) {
+      throw std::invalid_argument(
+          "collideCylindersBatch received a null cylinder");
+    }
+
+    [[maybe_unused]] const bool collided = collideCylinders(
+        *pair.shapeA, pair.tfA, *pair.shapeB, pair.tfB, results[i], option);
+  }
 }
 
 bool collideCylinderSphere(

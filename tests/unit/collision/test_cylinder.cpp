@@ -35,7 +35,66 @@
 
 #include <gtest/gtest.h>
 
+#include <random>
+#include <stdexcept>
+#include <vector>
+
 using namespace dart::collision::native;
+
+namespace {
+
+Eigen::Isometry3d makeCylinderBatchTransform(
+    double x, double y, double z, double angle)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.linear() = (Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitX())
+                 * Eigen::AngleAxisd(0.5 * angle, Eigen::Vector3d::UnitY()))
+                    .toRotationMatrix();
+  tf.translation() = Eigen::Vector3d(x, y, z);
+  return tf;
+}
+
+void expectVectorExactlyEqual(
+    const Eigen::Vector3d& expected, const Eigen::Vector3d& actual)
+{
+  EXPECT_EQ(expected.x(), actual.x());
+  EXPECT_EQ(expected.y(), actual.y());
+  EXPECT_EQ(expected.z(), actual.z());
+}
+
+void expectContactExactlyEqual(
+    const ContactPoint& expected, const ContactPoint& actual)
+{
+  expectVectorExactlyEqual(expected.position, actual.position);
+  expectVectorExactlyEqual(expected.normal, actual.normal);
+  EXPECT_EQ(expected.depth, actual.depth);
+  EXPECT_EQ(expected.object1, actual.object1);
+  EXPECT_EQ(expected.object2, actual.object2);
+  EXPECT_EQ(expected.featureIndex1, actual.featureIndex1);
+  EXPECT_EQ(expected.featureIndex2, actual.featureIndex2);
+}
+
+void expectCollisionResultExactlyEqual(
+    const CollisionResult& expected, const CollisionResult& actual)
+{
+  ASSERT_EQ(expected.numManifolds(), actual.numManifolds());
+  ASSERT_EQ(expected.numContacts(), actual.numContacts());
+
+  for (std::size_t i = 0; i < expected.numManifolds(); ++i) {
+    const auto& expectedManifold = expected.getManifold(i);
+    const auto& actualManifold = actual.getManifold(i);
+    EXPECT_EQ(expectedManifold.getType(), actualManifold.getType());
+    EXPECT_EQ(expectedManifold.getObject1(), actualManifold.getObject1());
+    EXPECT_EQ(expectedManifold.getObject2(), actualManifold.getObject2());
+    ASSERT_EQ(expectedManifold.numContacts(), actualManifold.numContacts());
+    for (std::size_t j = 0; j < expectedManifold.numContacts(); ++j) {
+      expectContactExactlyEqual(
+          expectedManifold.getContact(j), actualManifold.getContact(j));
+    }
+  }
+}
+
+} // namespace
 
 TEST(CylinderCylinder, NoCollision)
 {
@@ -106,6 +165,65 @@ TEST(CylinderCylinder, Perpendicular)
 
   EXPECT_TRUE(collided);
   EXPECT_GE(result.numContacts(), 1u);
+}
+
+TEST(CylinderCylinderBatch, cylinder_cylinder_batch_determinism_vs_single)
+{
+  CylinderShape cylinderA(0.45, 1.2);
+  CylinderShape cylinderB(0.40, 1.0);
+
+  std::mt19937 rng(161803u);
+  std::uniform_real_distribution<double> offset(-0.05, 0.05);
+  std::uniform_real_distribution<double> angle(-0.15, 0.15);
+
+  std::vector<CylinderPair> pairs;
+  pairs.reserve(100);
+  for (int i = 0; i < 100; ++i) {
+    const Eigen::Isometry3d tfA = makeCylinderBatchTransform(
+        offset(rng), offset(rng), offset(rng), angle(rng));
+    const Eigen::Isometry3d tfB = makeCylinderBatchTransform(
+        0.45 + offset(rng), offset(rng), offset(rng), angle(rng));
+
+    pairs.push_back(CylinderPair{&cylinderA, &cylinderB, tfA, tfB});
+  }
+
+  CollisionOption option;
+  std::vector<CollisionResult> batchResults(pairs.size());
+  collideCylindersBatch(pairs, batchResults, option);
+
+  for (std::size_t i = 0; i < pairs.size(); ++i) {
+    CollisionResult singleResult;
+    ASSERT_TRUE(collideCylinders(
+        *pairs[i].shapeA,
+        pairs[i].tfA,
+        *pairs[i].shapeB,
+        pairs[i].tfB,
+        singleResult,
+        option));
+    expectCollisionResultExactlyEqual(singleResult, batchResults[i]);
+  }
+}
+
+TEST(CylinderCylinderBatch, RejectsMalformedInputs)
+{
+  CylinderShape cylinderA(0.45, 1.2);
+  CylinderShape cylinderB(0.40, 1.0);
+
+  const Eigen::Isometry3d tfA = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
+  tfB.translation() = Eigen::Vector3d(0.45, 0.0, 0.0);
+
+  const std::vector<CylinderPair> validPairs{
+      {&cylinderA, &cylinderB, tfA, tfB}};
+  std::vector<CollisionResult> emptyResults;
+  EXPECT_THROW(
+      collideCylindersBatch(validPairs, emptyResults), std::invalid_argument);
+
+  const std::vector<CylinderPair> nullShapePairs{
+      {nullptr, &cylinderB, tfA, tfB}};
+  std::vector<CollisionResult> results(1);
+  EXPECT_THROW(
+      collideCylindersBatch(nullShapePairs, results), std::invalid_argument);
 }
 
 TEST(CylinderSphere, NoCollision)

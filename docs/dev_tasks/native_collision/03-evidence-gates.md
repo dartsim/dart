@@ -3389,6 +3389,22 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     reference-enabled benchmark target rebuilt cleanly, its built-in accuracy
     verification passed for all registered raw narrow-phase pairs, and the
     capsule-capsule batch benchmark emitted JSON for N=1/10/100/1000.
+- Current local cylinder-cylinder batch narrow-phase refresh:
+  - Commit: current working tree after local head `8bd5dd62b8a`
+    (`Add capsule-capsule native batch coverage`).
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_cylinder --parallel 5`,
+    `./build/default/cpp/Release/bin/test_cylinder --gtest_filter='CylinderCylinderBatch.*'`,
+    `CMAKE_BUILD_DIR=build/collision-reference/cpp/Release python scripts/cmake_build.py --target bm_comparative_narrow_phase --parallel 4`,
+    and
+    `./build/collision-reference/cpp/Release/bin/bm_comparative_narrow_phase --benchmark_filter='BM_NarrowPhase_CylinderCylinder_Native_Batch_N(1|10|100|1000)$' --benchmark_min_time=1ms --benchmark_repetitions=1 --benchmark_out=.benchmark_results/native_collision_cylinder_cylinder_batch.json --benchmark_out_format=json`.
+  - Result: passed. The new `collideCylindersBatch(...)` API emits one result
+    per `CylinderPair`, rejects malformed result spans and null cylinder
+    pointers, and the focused batch test passed exact batch-vs-scalar
+    comparison for 100 deterministic colliding pairs. The reference-enabled
+    benchmark target rebuilt cleanly, its built-in accuracy verification
+    passed for all registered raw narrow-phase pairs, and the
+    cylinder-cylinder batch benchmark emitted JSON for N=1/10/100/1000.
 
 ## Known Risks
 

@@ -38,6 +38,8 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include <span>
+
 namespace dart::collision::native {
 
 class BoxShape;
@@ -46,12 +48,25 @@ class CylinderShape;
 class PlaneShape;
 class SphereShape;
 
+struct DART_COLLISION_NATIVE_API CylinderPair
+{
+  const CylinderShape* shapeA;
+  const CylinderShape* shapeB;
+  Eigen::Isometry3d tfA;
+  Eigen::Isometry3d tfB;
+};
+
 [[nodiscard]] DART_COLLISION_NATIVE_API bool collideCylinders(
     const CylinderShape& cyl1,
     const Eigen::Isometry3d& transform1,
     const CylinderShape& cyl2,
     const Eigen::Isometry3d& transform2,
     CollisionResult& result,
+    const CollisionOption& option = CollisionOption());
+
+DART_COLLISION_NATIVE_API void collideCylindersBatch(
+    std::span<const CylinderPair> pairs,
+    std::span<CollisionResult> results,
     const CollisionOption& option = CollisionOption());
 
 [[nodiscard]] DART_COLLISION_NATIVE_API bool collideCylinderSphere(

@@ -1126,6 +1126,80 @@ static void BM_NarrowPhase_CylinderCylinder_Native(benchmark::State& state)
 }
 BENCHMARK(BM_NarrowPhase_CylinderCylinder_Native);
 
+static std::vector<CylinderPair> MakeCylinderCylinderBatchPairs(
+    std::size_t batchSize,
+    const CylinderShape& cylinder1,
+    const CylinderShape& cylinder2)
+{
+  std::mt19937 rng(161803u);
+  std::uniform_real_distribution<double> offset(-0.05, 0.05);
+  std::uniform_real_distribution<double> angle(-0.15, 0.15);
+
+  std::vector<CylinderPair> pairs;
+  pairs.reserve(batchSize);
+  for (std::size_t i = 0; i < batchSize; ++i) {
+    Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+    tf1.linear()
+        = (Eigen::AngleAxisd(angle(rng), Eigen::Vector3d::UnitX())
+           * Eigen::AngleAxisd(0.5 * angle(rng), Eigen::Vector3d::UnitY()))
+              .toRotationMatrix();
+    tf1.translation() = Eigen::Vector3d(
+        offset(rng), offset(rng), offset(rng));
+
+    Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+    tf2.linear()
+        = (Eigen::AngleAxisd(angle(rng), Eigen::Vector3d::UnitX())
+           * Eigen::AngleAxisd(0.5 * angle(rng), Eigen::Vector3d::UnitY()))
+              .toRotationMatrix();
+    tf2.translation() = Eigen::Vector3d(
+        0.45 + offset(rng), offset(rng), offset(rng));
+
+    pairs.push_back(CylinderPair{&cylinder1, &cylinder2, tf1, tf2});
+  }
+  return pairs;
+}
+
+static void BM_NarrowPhase_CylinderCylinder_Native_Batch(
+    benchmark::State& state, std::size_t batchSize)
+{
+  CylinderShape c1(0.45, 1.2);
+  CylinderShape c2(0.40, 1.0);
+
+  const auto pairs = MakeCylinderCylinderBatchPairs(batchSize, c1, c2);
+  std::vector<CollisionResult> results(batchSize);
+  CollisionOption option;
+
+  for (auto _ : state) {
+    for (auto& result : results)
+      result.clear();
+    collideCylindersBatch(pairs, results, option);
+    benchmark::DoNotOptimize(results.data());
+    benchmark::ClobberMemory();
+  }
+
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations())
+      * static_cast<int64_t>(batchSize));
+  state.counters["pairs_per_iteration"] = static_cast<double>(batchSize);
+}
+
+struct CylinderCylinderBatchBenchmarkRegistrar
+{
+  CylinderCylinderBatchBenchmarkRegistrar()
+  {
+    for (const std::size_t batchSize : {1u, 10u, 100u, 1000u}) {
+      const std::string name
+          = "BM_NarrowPhase_CylinderCylinder_Native_Batch_N"
+            + std::to_string(batchSize);
+      benchmark::RegisterBenchmark(
+          name.c_str(), BM_NarrowPhase_CylinderCylinder_Native_Batch, batchSize);
+    }
+  }
+};
+
+static CylinderCylinderBatchBenchmarkRegistrar
+    g_cylinder_cylinder_batch_benchmark_registrar;
+
 static void BM_NarrowPhase_CylinderCylinder_FCL(benchmark::State& state)
 {
   auto detector = dart::collision::FCLCollisionDetector::createReference();
