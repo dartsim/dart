@@ -63,9 +63,11 @@ against the historical OSG source, because prior Fetch evidence proves
 camera/grid/capture smoke parity but does not by itself prove the full example
 was restored. That Fetch re-audit found the remaining first-slice gap in the
 legacy panel affordances; Exit, Play/Pause, Help, and About controls are now
-implemented locally through public `dart::gui` lifecycle/panel APIs and are in
-validation/commit state. Enter recording remains a separate capture/session API
-gap.
+implemented and pushed through public `dart::gui` lifecycle/panel APIs. The
+next source-owned restoration slice is `examples/add_delete_skels/`, restoring
+the historical `q`/`w` keyboard controls, Bullet preference, and camera default
+through public `dart::gui`. Enter recording remains a separate capture/session
+API gap.
 
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as

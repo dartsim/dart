@@ -810,6 +810,33 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
       std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, AddDeleteSkelsExamplePreservesLegacyParityMarkers)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "add_delete_skels" / "main.cpp");
+
+  EXPECT_NE(mainSource.find("#if DART_HAVE_BULLET"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("CollisionDetectorType::Bullet"), std::string::npos);
+  EXPECT_NE(mainSource.find("spawnRandomCube"), std::string::npos);
+  EXPECT_NE(mainSource.find("deleteLastCube"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("createAddDeleteKeyboardActions"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("KeyboardShortcut::characterKey('q')"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("KeyboardShortcut::characterKey('w')"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("'q': spawn a random cube"), std::string::npos);
+  EXPECT_NE(mainSource.find("'w': delete a spawned cube"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeAddDeleteCamera"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.world"), std::string::npos);
+  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
 {
   const auto mainSource = readSourceFile(

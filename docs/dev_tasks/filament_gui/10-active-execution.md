@@ -1668,9 +1668,59 @@ UNIT_gui_FilamentSceneExtraction --parallel 5`
     `analyze_headless_smoke.py` (`/tmp/dart_fetch_panel_direct_postlint.ppm`
     and `/tmp/dart_fetch_panel_pixi_postlint.ppm`, both 303695/307200 nonzero
     pixels)
-- Implementation status: ready for checkpoint commit and push.
+- Implementation status: pushed as
+  `5939dbb1482 Restore Fetch panel controls`.
 - After Fetch, continue the same source-owned audit pattern across the rest of
   the pre-existing examples before treating the migration as complete.
+
+Thirty-first add/delete skeleton parity checkpoint:
+
+- Historical `examples/add_delete_skels` exposed live `q`/`w` keyboard
+  controls to spawn and delete cube skeletons, preferred Bullet collision when
+  available, printed those controls as viewer instructions, and set an
+  example-specific camera home view. The current promoted source owns the
+  world and panel but only exposes panel buttons and does not wire the legacy
+  keyboard actions or camera default through public `dart::gui`.
+- Implementation scope: restore `q` and `w` as renderer-neutral
+  `dart::gui::KeyboardAction`s, add a Bullet preference helper guarded by
+  `DART_HAVE_BULLET`, set a promoted `ApplicationOptions::camera` default that
+  matches the historical viewer home-position intent, and update the panel copy
+  so the example itself documents `q`/`w` controls.
+- Keep this checkpoint focused on add/delete skeleton parity. Do not delete the
+  private fixture yet; fixture cleanup remains a later promotion-debt sweep
+  after enough source-owned examples prove the public API surface.
+- Local acceptance for this checkpoint:
+  - C++ GUI target build for `add_delete_skels` and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Direct and/or pixi add/delete headless screenshot with analyzer coverage
+  - Python runner tests
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+  - `git diff --check`
+- Local validation completed:
+  - `cmake --build build/default/cpp/Release --target add_delete_skels
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - `ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^UNIT_gui_FilamentSceneExtraction$'`
+  - Direct llvmpipe add/delete screenshot plus `analyze_headless_smoke.py`
+    (`/tmp/dart_add_delete_direct.ppm`, 307200/307200 nonzero pixels)
+  - `pixi run ex add_delete_skels --headless --frames 2 --width 640 --height
+480 --screenshot /tmp/dart_add_delete_pixi.ppm` plus analyzer
+    (307200/307200 nonzero pixels)
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+    (67 passed)
+  - `cmake --build build/default/cpp/Release --target examples --parallel 5`
+  - `git diff --check`
+  - `pixi run lint`
+  - Post-lint `cmake --build build/default/cpp/Release --target
+add_delete_skels UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - Post-lint `ctest --test-dir build/default/cpp/Release --output-on-failure
+-R '^UNIT_gui_FilamentSceneExtraction$'`
+  - Post-lint direct llvmpipe add/delete screenshot plus
+    `analyze_headless_smoke.py` (`/tmp/dart_add_delete_direct_postlint.ppm`,
+    307200/307200 nonzero pixels)
+- Implementation status: ready for checkpoint commit and push.
 
 ## Stretch Direction
 
@@ -1702,8 +1752,8 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Run the mandatory pre-commit `pixi run lint`, then commit and push the
-   validated Fetch lifecycle/panel parity checkpoint.
+1. Restore add/delete skeleton `q`/`w` keyboard controls, Bullet preference,
+   and camera default through public `dart::gui`.
 2. Continue the source-owned historical parity audit across the remaining
    pre-existing examples; do not treat build or screenshot smoke coverage as
    full restoration evidence by itself.

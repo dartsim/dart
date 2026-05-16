@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/config.hpp>
+
 #include <dart/gui/application.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
@@ -50,7 +52,11 @@
 #include <array>
 #include <iostream>
 #include <memory>
+#include <random>
 #include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace {
 
@@ -91,11 +97,11 @@ dart::dynamics::SkeletonPtr createCube(
 struct AddDeleteState
 {
   explicit AddDeleteState(dart::simulation::WorldPtr inputWorld)
-    : world(std::move(inputWorld))
+    : world(std::move(inputWorld)), randomEngine(std::random_device{}())
   {
   }
 
-  void spawnCube()
+  void spawnPresetCube()
   {
     static const std::array<Eigen::Vector3d, 6> kPositions{{
         Eigen::Vector3d(-0.8, 0.65, -0.7),
@@ -134,6 +140,31 @@ struct AddDeleteState
         kColors[index % kColors.size()]));
   }
 
+  void spawnRandomCube()
+  {
+    if (world == nullptr) {
+      return;
+    }
+
+    std::uniform_real_distribution<double> positionX(-1.0, 1.0);
+    std::uniform_real_distribution<double> positionY(0.5, 1.0);
+    std::uniform_real_distribution<double> positionZ(-1.0, 1.0);
+    std::uniform_real_distribution<double> size(0.1, 0.5);
+    std::uniform_real_distribution<double> color(0.0, 1.0);
+
+    const std::size_t index = nextCubeIndex++;
+    world->addSkeleton(createCube(
+        std::string(kCubePrefix) + std::to_string(index),
+        Eigen::Vector3d(
+            positionX(randomEngine),
+            positionY(randomEngine),
+            positionZ(randomEngine)),
+        Eigen::Vector3d(
+            size(randomEngine), size(randomEngine), size(randomEngine)),
+        Eigen::Vector3d(
+            color(randomEngine), color(randomEngine), color(randomEngine))));
+  }
+
   void deleteLastCube()
   {
     if (world == nullptr || world->getNumSkeletons() <= 1) {
@@ -152,6 +183,7 @@ struct AddDeleteState
 
   dart::simulation::WorldPtr world;
   std::size_t nextCubeIndex = 0;
+  std::mt19937 randomEngine;
 };
 
 std::shared_ptr<AddDeleteState> createAddDeleteState(
@@ -159,9 +191,28 @@ std::shared_ptr<AddDeleteState> createAddDeleteState(
 {
   auto state = std::make_shared<AddDeleteState>(world);
   for (int i = 0; i < 5; ++i) {
-    state->spawnCube();
+    state->spawnPresetCube();
   }
   return state;
+}
+
+void preferBulletCollisionDetector(dart::simulation::World& world)
+{
+#if DART_HAVE_BULLET
+  world.setCollisionDetector(dart::simulation::CollisionDetectorType::Bullet);
+#else
+  (void)world;
+#endif
+}
+
+dart::gui::OrbitCamera makeAddDeleteCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.yaw = 0.5404195002705842;
+  camera.pitch = 0.4758822496604165;
+  camera.distance = 6.557438524302;
+  return camera;
 }
 
 dart::simulation::WorldPtr createAddDeleteWorld()
@@ -172,10 +223,35 @@ dart::simulation::WorldPtr createAddDeleteWorld()
   }
 
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  preferBulletCollisionDetector(*world);
   if (auto ground = world->getSkeleton(0)) {
     ground->setName(kGroundName);
   }
   return world;
+}
+
+std::vector<dart::gui::KeyboardAction> createAddDeleteKeyboardActions(
+    const std::shared_ptr<AddDeleteState>& state)
+{
+  std::vector<dart::gui::KeyboardAction> actions;
+
+  dart::gui::KeyboardAction spawn;
+  spawn.label = "Spawn random cube";
+  spawn.shortcut = dart::gui::KeyboardShortcut::characterKey('q');
+  spawn.callback = [state](dart::gui::KeyboardActionContext&) {
+    state->spawnRandomCube();
+  };
+  actions.push_back(std::move(spawn));
+
+  dart::gui::KeyboardAction remove;
+  remove.label = "Delete last spawned cube";
+  remove.shortcut = dart::gui::KeyboardShortcut::characterKey('w');
+  remove.callback = [state](dart::gui::KeyboardActionContext&) {
+    state->deleteLastCube();
+  };
+  actions.push_back(std::move(remove));
+
+  return actions;
 }
 
 dart::gui::Panel createControlsPanel(
@@ -187,6 +263,9 @@ dart::gui::Panel createControlsPanel(
                                dart::gui::PanelBuilder& builder,
                                dart::gui::PanelContext& context) {
     builder.text("Spawn or delete dynamic cube skeletons.");
+    builder.text("'q': spawn a random cube");
+    builder.text("'w': delete a spawned cube");
+    builder.text("space bar: simulation on/off");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -198,7 +277,7 @@ dart::gui::Panel createControlsPanel(
       }
     }
     if (builder.button("Spawn Cube")) {
-      state->spawnCube();
+      state->spawnRandomCube();
     }
     builder.sameLine();
     if (builder.button("Delete Cube")) {
@@ -223,6 +302,8 @@ int main(int argc, char* argv[])
 
     dart::gui::ApplicationOptions options;
     options.world = world;
+    options.camera = makeAddDeleteCamera();
+    options.keyboardActions = createAddDeleteKeyboardActions(state);
     options.panels.push_back(createControlsPanel(state));
     return dart::gui::runApplication(argc, argv, options);
   } catch (const std::exception& e) {

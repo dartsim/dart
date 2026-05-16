@@ -112,6 +112,8 @@
     active-target IK solving through public `dart::gui` keyboard actions.
   - Added a public `dart::gui` lifecycle exit request helper and used it to
     restore Fetch example panel Exit, Play/Pause, Help, and About affordances.
+  - Restored add/delete skeleton example `q`/`w` keyboard controls, Bullet
+    preference, and camera defaults through public `dart::gui`.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

@@ -98,11 +98,13 @@ source-owned restoration slice re-audits `examples/fetch/` against the
 historical OSG source, because prior Fetch camera/grid/capture evidence is not
 proof that the full example behavior was restored. That Fetch re-audit found a
 remaining first-slice gap in the legacy panel affordances; Exit, Play/Pause,
-Help, and About controls are now implemented locally through public
-`dart::gui` lifecycle/panel APIs and are in validation/commit state. Keep Atlas
-relaxed-posture/balance optimization, Hubo analytical IK, Atlas/Hubo target
-activation semantics, and Enter recording as explicit parity gaps unless a
-later slice adds the narrow renderer-neutral public API needed for them.
+Help, and About controls are implemented and pushed through public `dart::gui`
+lifecycle/panel APIs. The active slice is `examples/add_delete_skels/`:
+restore the historical `q`/`w` keyboard controls, Bullet preference, and camera
+default through public `dart::gui`. Keep Atlas relaxed-posture/balance
+optimization, Hubo analytical IK, Atlas/Hubo target activation semantics, and
+Enter recording as explicit parity gaps unless a later slice adds the narrow
+renderer-neutral public API needed for them.
 
 ## Context That Would Be Lost
 
