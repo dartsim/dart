@@ -1809,6 +1809,47 @@ UNIT_gui_FilamentSceneExtraction --parallel 5`
     (1044480/1044480 nonzero pixels)
 - Remaining before checkpoint handoff: commit and push without opening a PR.
 
+Forty-fifth simple-frames parity checkpoint:
+
+- Historical `examples/simple_frames` demonstrated a `SimpleFrame` hierarchy
+  with box shapes, marker ellipsoids, and an arrow marker, used a 640x480
+  launch size, set camera home from eye `(2, 1, 2)` to target `(0, 0, 0)`, and
+  had an example README.
+- Current promoted source owns the frame hierarchy, marker ellipsoids, and
+  renderer-supported line-segment arrow through public `dart::gui`, but it
+  lacks the README plus camera/run defaults.
+- Scope before code changes: restore the 640x480 run default, historical camera
+  home, README with promoted `dart::gui` wording, and source-extraction tests.
+  Keep the old OSG `ArrowShape` implementation detail out of scope because the
+  current public descriptor path already renders the arrow marker as line
+  segments.
+- Implementation status: simple-frames now restores 640x480 run defaults, the
+  historical camera home, and the example README through promoted `dart::gui`.
+- Local validation completed so far:
+  - `cmake --build build/default/cpp/Release --target simple_frames
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - `ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^UNIT_gui_FilamentSceneExtraction$'`
+  - Direct llvmpipe `simple_frames --headless --frames 2 --screenshot
+/tmp/dart_simple_frames_direct.ppm` plus `analyze_headless_smoke.py`
+    (307200/307200 nonzero pixels at the restored 640x480 default)
+  - `pixi run ex simple_frames --headless --frames 2 --screenshot
+/tmp/dart_simple_frames_pixi.ppm` plus `analyze_headless_smoke.py`
+    (307200/307200 nonzero pixels)
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+    (67 passed)
+  - `cmake --build build/default/cpp/Release --target examples --parallel 5`
+  - `git diff --check`
+  - `pixi run lint`
+  - Post-lint `cmake --build build/default/cpp/Release --target simple_frames
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - Post-lint `ctest --test-dir build/default/cpp/Release --output-on-failure
+-R '^UNIT_gui_FilamentSceneExtraction$'`
+  - Post-lint direct llvmpipe `simple_frames --headless --frames 2
+--screenshot /tmp/dart_simple_frames_direct_postlint.ppm` plus
+    `analyze_headless_smoke.py` (307200/307200 nonzero pixels)
+- Remaining before checkpoint handoff: commit and push without opening a PR.
+
 Forty-first LCP physics parity checkpoint:
 
 - Historical `examples/lcp_physics` exposed separate LCP benchmark scenarios
@@ -2431,8 +2472,8 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Restore boxes Bullet preference, camera/run defaults, README, and parity
-   tests through public `dart::gui`.
+1. Restore simple-frames camera/run defaults, README, and parity tests through
+   public `dart::gui`.
 2. Continue the source-owned historical parity audit across the remaining
    pre-existing examples; do not treat build or screenshot smoke coverage as
    full restoration evidence by itself.

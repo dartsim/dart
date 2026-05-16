@@ -31,6 +31,7 @@
  */
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <dart/simulation/world.hpp>
 
@@ -134,11 +135,31 @@ dart::simulation::WorldPtr createSimpleFramesWorld()
   return world;
 }
 
+dart::gui::RunOptions makeSimpleFramesRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
+
+dart::gui::OrbitCamera makeSimpleFramesCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.0, 0.0, 0.0);
+  camera.yaw = 0.4636476090008061;
+  camera.pitch = 0.7297276562269663;
+  camera.distance = 3.0;
+  return camera;
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
 {
   dart::gui::ApplicationOptions options;
   options.world = createSimpleFramesWorld();
+  options.runDefaults = makeSimpleFramesRunDefaults();
+  options.camera = makeSimpleFramesCamera();
   return dart::gui::runApplication(argc, argv, options);
 }

@@ -830,6 +830,29 @@ TEST(FilamentSceneExtraction, BoxesExamplePreservesParityMarkers)
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, SimpleFramesExamplePreservesParityMarkers)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "simple_frames" / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "simple_frames" / "README.md");
+
+  EXPECT_NE(mainSource.find("box_frame_1"), std::string::npos);
+  EXPECT_NE(mainSource.find("marker_root"), std::string::npos);
+  EXPECT_NE(mainSource.find("LineSegmentShape"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeSimpleFramesRunDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeSimpleFramesCamera"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 0.0)"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("options.world"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Simple Frames Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("dart::gui"), std::string::npos);
+  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, BoxStackingExamplePreservesParityMarkers)
 {
   const auto mainSource = readSourceFile(

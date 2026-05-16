@@ -145,6 +145,8 @@
     camera/run defaults, and example README through public `dart::gui`.
   - Restored boxes example Bullet preference, camera/run defaults, and example
     README through public `dart::gui`.
+  - Restored simple-frames example camera/run defaults and example README
+    through public `dart::gui`.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+
