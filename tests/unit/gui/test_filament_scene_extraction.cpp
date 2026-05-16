@@ -612,6 +612,12 @@ TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
          {std::filesystem::path("examples") / "simple_frames", false},
          {std::filesystem::path("examples") / "capsule_ground_contact", true},
          {std::filesystem::path("examples") / "fetch", true},
+         {std::filesystem::path("examples") / "rigid_chain", true},
+         {std::filesystem::path("examples") / "rigid_loop", true},
+         {std::filesystem::path("examples") / "mixed_chain", true},
+         {std::filesystem::path("examples") / "coupler_constraint", true},
+         {std::filesystem::path("examples") / "add_delete_skels", true},
+         {std::filesystem::path("examples") / "rigid_shapes", true},
          {std::filesystem::path("examples") / "imgui", true},
          {std::filesystem::path("examples") / "drag_and_drop", true},
          {std::filesystem::path("examples") / "tinkertoy", true}};

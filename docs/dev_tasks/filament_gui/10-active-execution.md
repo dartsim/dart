@@ -507,6 +507,33 @@ Sixth source-migration checkpoint:
   - Full `examples` aggregate target build
   - `pixi run lint`
 
+Seventh source-migration checkpoint:
+
+- Continue the "many examples remain" correction by restoring the next
+  related macro-shim batch: `rigid_chain`, `rigid_loop`, `mixed_chain`,
+  `coupler_constraint`, `add_delete_skels`, and `rigid_shapes`.
+- Recover the removed legacy sources from history, then migrate their world
+  setup and simple controls to public DART + `dart::gui` APIs. Keep the
+  examples educational and standalone; they should not include Filament, GLFW,
+  Dear ImGui, OSG, or `dart/gui/experimental` headers.
+- Use `dart::gui::ApplicationOptions::world` for source-owned worlds and
+  `dart::gui::ApplicationOptions::preStep` where a fixture had simulation-loop
+  behavior that must move out of private scene fixtures.
+- Remove the matching runner default `--scene ...` entries once each binary
+  owns its scene by default.
+- Keep private fixtures temporarily for `dartsim --scene ...` developer
+  coverage until the entire example migration and fixture cleanup are ready.
+- Local acceptance for this checkpoint:
+  - C++ GUI target build for `dart-gui`, the six migrated examples, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct headless screenshot capture for at least two representatives in the
+    batch, including one constraint-heavy example
+  - `pixi run ex rigid_chain --headless --frames 1 --screenshot ...`
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:

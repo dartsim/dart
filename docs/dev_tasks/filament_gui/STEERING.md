@@ -554,7 +554,7 @@ R12-3 claims done, R12-3 is not done.**
 - Do not declare R12-3 done while `apps/dartsim/main.cpp` is the
   only C++ file in the directory. R12-3a–3e each produce at least
   one new file under `app/`.
-- Do not implement these panels by re-using the dartsim built-in
+- Do not implement these panels by reusing the dartsim built-in
   status panel and renaming it. The built-in status panel is the
   MVP debug overlay; the app panels are first-class user-facing
   surfaces with their own state and persistence.
@@ -920,6 +920,22 @@ Fetch slice:
 - [x] Validate with focused build, GUI boundary unit test, Python example
       runner coverage, direct headless screenshot, `pixi run lint`, commit,
       push, and dispatch CI.
+
+Rigid/constraint family slice:
+
+- [x] Restore `examples/rigid_chain/main.cpp`, `examples/rigid_loop/main.cpp`,
+      `examples/mixed_chain/main.cpp`, `examples/coupler_constraint/main.cpp`,
+      `examples/add_delete_skels/main.cpp`, and
+      `examples/rigid_shapes/main.cpp` as real public-API sources rather than
+      `dart_build_gui_scene_example(...)` macro shims.
+- [x] Preserve the legacy educational intent by recovering removed sources
+      from history and migrating OSG viewer behavior to promoted
+      `dart::gui::ApplicationOptions`, `Panel`, and lifecycle hooks as needed.
+- [x] Remove the corresponding `--scene` runner defaults after the binaries own
+      their worlds by default.
+- [x] Validate with focused build, GUI boundary unit test, Python example
+      runner coverage, representative headless screenshots, full `examples`
+      build, `pixi run lint`, commit, push, and dispatch CI.
 
 ### Stop condition for this pivot
 

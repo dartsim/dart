@@ -41,6 +41,9 @@
     worlds.
   - Added a public `dart::gui::ApplicationOptions::preStep` lifecycle callback
     and restored `fetch` as a source-defined `dart::gui` example.
+  - Restored the rigid/constraint example batch (`rigid_chain`, `rigid_loop`,
+    `mixed_chain`, `coupler_constraint`, `add_delete_skels`, and
+    `rigid_shapes`) as source-defined `dart::gui` examples.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+
