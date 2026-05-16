@@ -3057,6 +3057,22 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     full `test_mesh_mesh` executable passes, including the existing capped
     large flat box/mesh contact patch with its updated pair-order normal
     expectation.
+- Current local primitive/mesh commit verification:
+  - Commit: `aeaaaa7186a` (`Fix primitive mesh contact normal order`).
+  - Commands:
+    `pixi run build`,
+    `pixi run test-unit`,
+    `pixi run lint`,
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target UNIT_simulation_World --parallel 5`,
+    `./build/default/cpp/Release/bin/UNIT_simulation_World --gtest_filter='WorldTests.DefaultNativeBoxRestsOnGround:WorldTests.DefaultNativeRotatedBoxRestsOnGround:WorldTests.DefaultNativeRotatedBoxSettlesOnFace:WorldTests.DefaultNativeRotatedBoxStaysOnGround15s'`,
+    and
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target hello_world --parallel 5`.
+  - Result: passed. `pixi run test-unit` reported 277/277 tests passing,
+    including all 29 `collision-native` tests. The filtered default-world
+    smoke covered upright and rotated free boxes resting on a box ground,
+    including the 15-second no-fall-through stability case, and the
+    `hello_world` example target builds against the same default native
+    collision path.
 
 ## Known Risks
 
