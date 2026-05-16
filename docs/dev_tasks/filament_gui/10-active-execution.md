@@ -118,9 +118,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `b718e65fe15 Advance Filament GUI strict cursor`.
+  `0e5f7980923 Restore Operational Space Control example`.
 - Latest pushed code checkpoint:
-  `b0da74db11c Restore Mixed Chain example defaults`.
+  `0e5f7980923 Restore Operational Space Control example`.
 - Latest pushed infrastructure checkpoint: `b7a269906f9` merged
   `origin/main` so the branch has the new AI-native living-plan and API
   boundary infrastructure without reopening the removed backend-named
@@ -165,12 +165,12 @@ history but are not guaranteed to be in chronological order.
   instructions, README/capture documentation, and marker coverage while
   preserving the already-promoted pre-step impulse controls, keyboard actions,
   panel buttons, and camera.
-- Active strict re-open cursor: `examples/operational_space_control/`. Compare
-  it against `520993d7301^:examples/operational_space_control` before coding,
-  then restore or explicitly classify every historical robot loading,
-  controller/IK behavior, target controls, camera/default, README, panel, and
-  marker behavior.
-- Current operational-space-control implementation restores the historical KR5
+- Latest pushed strict re-open checkpoint: `examples/operational_space_control/`
+  restores the historical KR5 robot/ground load, red target ball,
+  task-space controller, 640x480 default, camera home, console/panel
+  instructions, README/capture docs, and marker coverage through public
+  `dart::gui`.
+- Operational-space-control implementation restores the historical KR5
   robot/ground load, red target ball, task-space controller, 640x480 default,
   camera home, console/panel instructions, README/capture docs, and marker
   coverage. 1/2/3 aliases were added to the promoted selection drag axis
@@ -185,6 +185,12 @@ history but are not guaranteed to be in chronological order.
 - Mandatory `pixi run lint` passed for the operational-space-control slice.
   Post-lint focused rebuild, focused CTest, direct software-GL screenshot
   analyzer check, and `git diff --check` also passed.
+- Active strict re-open cursor: `examples/rigid_shapes/`. The source had a
+  prior parity checkpoint, but `11-example-parity-audit.md` still lacks an
+  itemized strict inventory for it. Compare current source and README against
+  `520993d7301^:examples/rigid_shapes`, then restore or explicitly classify
+  every historical spawn/delete/contact control, command-line option,
+  camera/default, README, panel, and marker behavior before moving past it.
 - Recent pushed example-parity checkpoints after Fetch include:
   - `619af5649bc Restore LCP physics controls`
   - `2bc6a0e168d Restore mimic pendulums diagnostics`

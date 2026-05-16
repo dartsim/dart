@@ -466,6 +466,13 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     the renderer selection and north-star migration notes. The remaining
     lowercase `rerun` references are CI retry workflow docs or intentional
     removal guards/history, not product support.
+50. The active strict re-open cursor is now `examples/rigid_shapes/`. A prior
+    parity checkpoint restored a substantial amount of behavior, but
+    `11-example-parity-audit.md` still lacks the itemized historical-source
+    inventory. Before coding past this slice, compare current source/README
+    against `520993d7301^:examples/rigid_shapes`, then restore or classify the
+    historical spawn/delete/contact controls, CLI options, camera/defaults,
+    README, panel, and marker behavior.
 
 ## Checkpoint Rule
 
