@@ -3641,6 +3641,25 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     unit-test phase reported 264/264 passing tests, and the examples build
     rebuilt `hello_world` and `atlas_simbicon`. No PR, push, workflow, branch,
     or GitHub state was mutated by this local validation pass.
+- Current local full validation after docs/evidence PR-surface audit refresh:
+  - Commit: `48c0cc3f90e`
+    (`Record native collision current head PR audit`).
+  - Scope: docs/evidence-only refresh after the stale legacy collision artifact
+    cleanup. No collision source changed after `35578ad2f8a`.
+  - Commands:
+    `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-all`,
+    `./build/default/cpp/Release/bin/UNIT_simulation_World --gtest_filter=WorldTests.DefaultNativeHelloWorldBoxDoesNotTunnel`,
+    `./build/default/cpp/Release/bin/INTEGRATION_simulation_World --gtest_filter=World.AtlasSimbiconControllerFeetStayAboveGroundWithNativeCollision`,
+    and
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native-stability -j 1`.
+  - Result: passed. The full local `pixi run test-all` report passed all 6
+    top-level gates: linting, build, unit tests, simulation-experimental tests,
+    Python tests, and documentation, then printed `All tests passed!`. The
+    focused `hello_world` no-tunneling regression passed 1/1, the Atlas
+    Simbicon controller-loop no-tunneling regression passed 1/1, and the
+    `collision-native-stability` CTest label passed 2/2. No PR, push,
+    workflow, branch, or GitHub state was mutated by this local validation
+    pass.
 
 ## Known Risks
 

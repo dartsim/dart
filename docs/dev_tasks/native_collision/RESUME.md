@@ -35,6 +35,11 @@ native-backed interface facades. The latest local feature-code commit remains
 `ca0201e67f4` (`Add Atlas Simbicon native collision regression`), which records
 the controller-loop Atlas Simbicon no-tunneling regression in the test matrix.
 The current head `35578ad2f8a` passed the full local validation gate.
+The newer docs/evidence-head validation on `48c0cc3f90e` also passed
+`pixi run test-all`, the focused `hello_world` no-tunneling regression, the
+Atlas Simbicon controller-loop no-tunneling regression, and the
+`collision-native-stability` CTest label. No PR, push, workflow, branch, or
+GitHub state was mutated for that recheck.
 
 The final north-star PR is not complete because PR #2652 is closed and still
 points at old head `714d220d82a`; later pushes to `feature/new_coll` do not

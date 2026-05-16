@@ -131,6 +131,12 @@ Local validation currently recorded in the dev-task evidence:
   and printed the final `All tests passed!` report. The artifact scan reported
   only `libdart-collision-native.so`, and the package/export scan found no old
   facade-library or FCL/Bullet/ODE/libccd runtime references.
+- A newer current-head local recheck with the same `pixi run test-all` command
+  passed on head `48c0cc3f90e` after docs/evidence PR-surface audit refreshes.
+  The focused `hello_world` no-tunneling regression,
+  Atlas Simbicon controller-loop no-tunneling regression, and
+  `collision-native-stability` CTest label also passed locally. No PR, push,
+  workflow, branch, or GitHub state was mutated by this recheck.
 - Focused local regression validation for the latest follow-up passed:
   - `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_box_box|UNIT_collision_DartCollisionDetector|test_convex|test_mesh_mesh)$' --repeat until-fail:20`
   - `UNIT_simulation_World --gtest_filter='WorldTests.DefaultNative*BoxRestsOnGround'`

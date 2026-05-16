@@ -215,6 +215,11 @@ native-backed interface facades.
       tests, Python tests, and documentation. The artifact scan reported only
       `libdart-collision-native.so`, and the package/export scan found no old
       facade-library or FCL/Bullet/ODE/libccd runtime references. The latest
+      docs/evidence-head recheck on `48c0cc3f90e` also passed
+      `pixi run test-all`, the focused `hello_world` no-tunneling regression,
+      the Atlas Simbicon controller-loop no-tunneling regression, and the
+      `collision-native-stability` CTest label without mutating PR, push,
+      workflow, branch, or GitHub state. The latest
       feature code head `ca0201e67f4` adds stack, stress, mesh-BVH, convex-landscape,
       convex-fragment, and exact `hello_world`-style stability coverage and
       an Atlas Simbicon controller-loop no-tunneling regression, and

@@ -198,6 +198,25 @@ validation gate was rerun on clean head `35578ad2f8a`
 - Scope: local validation only. No PR, push, workflow, branch, or GitHub state
   was mutated by this recheck.
 
+After the docs/evidence PR-surface audit refresh, the same full local
+validation gate was rerun on clean head `48c0cc3f90e`
+(`Record native collision current head PR audit`):
+
+- Command:
+  `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-all`
+- Result: passed. The full local report passed 6/6 top-level gates: linting,
+  build, unit tests, simulation-experimental tests, Python tests, and
+  documentation, then printed `All tests passed!`.
+- Focused regression checks:
+  `UNIT_simulation_World --gtest_filter=WorldTests.DefaultNativeHelloWorldBoxDoesNotTunnel`
+  passed 1/1,
+  `INTEGRATION_simulation_World --gtest_filter=World.AtlasSimbiconControllerFeetStayAboveGroundWithNativeCollision`
+  passed 1/1, and
+  `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native-stability -j 1`
+  passed 2/2.
+- Scope: local validation only. No PR, push, workflow, branch, or GitHub state
+  was mutated by this recheck.
+
 - Native-only and gz-physics manual workflow-dispatch evidence is now collected
   for pushed head `1e1faf6feb1`, but the final PR-complete state still needs
   whatever CI surface the maintainer chooses because PR #2652 is closed.
