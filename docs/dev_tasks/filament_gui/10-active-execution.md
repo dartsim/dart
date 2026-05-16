@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `cf0ed62209e Restore human joint limits live example`.
+  `ae175ef6981 Restore Fetch target manipulation`.
 - Latest pushed code checkpoint:
-  `cf0ed62209e Restore human joint limits live example`.
+  `ae175ef6981 Restore Fetch target manipulation`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -249,6 +249,31 @@ history but are not guaranteed to be in chronological order.
 - Fetch re-open validation completed before checkpoint commit: focused C++
   build for `fetch` and `UNIT_gui_FilamentSceneExtraction`, focused CTest for
   `UNIT_gui_FilamentSceneExtraction`, direct and pixi Fetch headless
+  screenshots with basic analyzer coverage, Python C++ example-runner tests
+  (67 passed), aggregate `examples` build, `git diff --check`, mandatory
+  `pixi run lint`, and post-lint focused build/CTest/direct screenshot smoke.
+- The Fetch target-manipulation checkpoint was pushed as
+  `ae175ef6981 Restore Fetch target manipulation`; do not wait for CI before
+  continuing independent strict-audit work.
+- Active slice is now `examples/imgui/`. Historical-source comparison shows
+  the current source is still a generic panel demo rather than the old
+  panel-extension example: restore the empty-world target frame, promoted
+  keydown callbacks, panel title/sections, gravity control, viewer help,
+  run/camera defaults, README, and marker guards. Keep direct backend UI types
+  out of source. Record headlight toggles, live camera-inspector text,
+  key-release callbacks, and pre/post render or post-step hooks as public
+  `dart::gui` API gaps unless the public API is added.
+- Implementation state for this panel-extension slice:
+  `examples/imgui/main.cpp` now owns an empty world with a selectable target
+  frame, restores the historical panel title, Play/Pause/Time, gravity
+  controls, viewer help, keydown callbacks for `q`/Left/Right, pre-step
+  callback demonstration, 640x480 default size, and camera home through public
+  `dart::gui`. The README and marker guards are in place. Headlight toggles,
+  live camera readout, key-release callbacks, shifted-`Q` distinction, and
+  pre/post render or post-step hooks remain named public API gaps.
+- Panel-extension validation completed before checkpoint commit: focused C++
+  build for `imgui` and `UNIT_gui_FilamentSceneExtraction`, focused CTest for
+  `UNIT_gui_FilamentSceneExtraction`, direct and pixi `imgui` headless
   screenshots with basic analyzer coverage, Python C++ example-runner tests
   (67 passed), aggregate `examples` build, `git diff --check`, mandatory
   `pixi run lint`, and post-lint focused build/CTest/direct screenshot smoke.

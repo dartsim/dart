@@ -78,15 +78,23 @@ are not itemized.
 Immediate order:
 
 1. Update the active docs to reflect the latest pushed
-   `cf0ed62209e Restore human joint limits live example` checkpoint and the
-   renewed Fetch correction.
+   `ae175ef6981 Restore Fetch target manipulation` checkpoint and the active
+   panel-extension example slice.
 2. Re-open `examples/fetch/` now. Stronger target manipulation/help parity is
    implemented and locally validated; commit and push it. Exact mouse rotation
    rings/tools remain a renderer-neutral manipulation API gap.
-3. `examples/coupler_constraint/` was committed and pushed as
+3. Audit and restore `examples/imgui/` next. The current source is a generic
+   box/slider panel, while the historical example demonstrated panel
+   extension, an empty target frame with drag controls, custom key handling,
+   gravity controls, viewer help, and camera/run defaults. Restore everything
+   expressible through public `dart::gui`; record headlight toggles,
+   key-release callbacks, camera-inspector text, and pre/post render or
+   post-step hooks as public API gaps.
+   Implementation is local and validated; commit and push it.
+4. `examples/coupler_constraint/` was committed and pushed as
    `3945c65852c Restore coupler constraint controls` after mandatory lint and
    post-lint focused checks.
-4. Audit and restore `examples/drag_and_drop/` next. The historical source used
+5. Audit and restore `examples/drag_and_drop/` next. The historical source used
    an `InteractiveFrame` at `(4, -4, 0)`, a child red box, X/Y/Z markers, a
    640x480 window, camera home from `(20, 17, 17)` to the origin, console
    instructions, and a README that described the interaction contract. Restore
@@ -95,7 +103,7 @@ Immediate order:
    rather than reintroducing OSG.
    This checkpoint was pushed as
    `1297aca1fe6 Restore drag and drop affordances`.
-5. `examples/human_joint_limits/` was committed and pushed as
+6. `examples/human_joint_limits/` was committed and pushed as
    `cf0ed62209e Restore human joint limits live example`. The historical
    example depended on TinyDNN-backed custom arm/leg constraints and required
    ODE/Bullet; the current branch no longer carries TinyDNN. Restore the live
@@ -103,7 +111,7 @@ Immediate order:
    marker guards now, and record the TinyDNN/custom neural-network constraint
    path as a named dependency/API follow-up unless a maintained replacement is
    added.
-6. Continue through the remaining `Needs strict audit` and
+7. Continue through the remaining `Needs strict audit` and
    `Recent parity checkpoint; still subject to strict audit re-open` rows.
 
 ## Checkpoint Rule

@@ -137,7 +137,14 @@ source-owned target affordance, add any feasible renderer-neutral target
 orientation controls, and record exact mouse rotation-ring parity as a public
 manipulation API gap if needed. The local implementation now adds the richer
 target handle, target rotation/reset keyboard actions, and restored viewer help
-text; validate, lint, commit, and push it before selecting another example. The
+text; it was committed and pushed as
+`ae175ef6981 Restore Fetch target manipulation`. The active slice is now
+`examples/imgui/`: restore the historical panel-extension example through
+public `dart::gui`, not the current generic box/slider demo. The first code
+pass should restore the target frame, promoted keydown callbacks, gravity
+control, panel sections, viewer help, 640x480/camera defaults, README, and
+source-marker guards while tracking headlight toggles, camera-inspector text,
+key-release callbacks, and render/post-step hooks as public API gaps. The
 current heightmap checkpoint restores
 `--demo interactive|alignment`, a mutable `HeightmapShaped` `SimpleFrame`,
 renderer-neutral panel controls, the ODE-backed alignment scene, camera/run

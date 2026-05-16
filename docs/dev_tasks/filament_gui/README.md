@@ -123,6 +123,14 @@ implementation now uses one richer transparent green line target handle, adds
 target rotation/reset keyboard actions through public `dart::gui`, and
 restores shared viewer help text. Exact mouse rotation rings remain a public
 manipulation API follow-up.
+That checkpoint was pushed as
+`ae175ef6981 Restore Fetch target manipulation`. The active strict-audit slice
+is now `examples/imgui/`: migrate it from the current generic box/slider panel
+demo back to the historical panel-extension example shape using public
+`dart::gui`, including target selection/dragging, keydown callbacks, gravity
+control, viewer help, camera/run defaults, README, and explicit public API gaps
+for headlight toggles, camera-inspector text, key release, and render/post-step
+hooks.
 An earlier parity slice restored `examples/rigid_shapes`:
 restore the historical shape-spawn/delete/contact keyboard controls, convex
 mesh spawn path, contact-point visualization, camera home, and 640x480 default

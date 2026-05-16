@@ -1248,6 +1248,58 @@ TEST(
   EXPECT_EQ(mainSource.find("GUIEventHandler"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, PanelExtensionExamplePreservesLegacyParityMarkers)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "imgui" / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "imgui" / "README.md");
+
+  EXPECT_NE(mainSource.find("PanelExtensionScene"), std::string::npos);
+  EXPECT_NE(mainSource.find("panel extension target"), std::string::npos);
+  EXPECT_NE(mainSource.find("LineSegmentShape"), std::string::npos);
+  EXPECT_NE(mainSource.find("createPanelTargetShape"), std::string::npos);
+  EXPECT_NE(mainSource.find("createPanelExtensionControls"), std::string::npos);
+  EXPECT_NE(mainSource.find("Tinkertoy Control"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Promoted panel extension example"), std::string::npos);
+  EXPECT_NE(mainSource.find("Gravity On/Off"), std::string::npos);
+  EXPECT_NE(mainSource.find("setPanelWorldGravity"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("createPanelExtensionKeyboardActions"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("Lowercase q pressed"), std::string::npos);
+  EXPECT_NE(mainSource.find("Left arrow key pressed"), std::string::npos);
+  EXPECT_NE(mainSource.find("Right arrow key pressed"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
+  EXPECT_NE(mainSource.find("Pre-step callbacks"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("makePanelExtensionRunDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
+  EXPECT_NE(mainSource.find("makePanelExtensionCamera"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.yaw = 0.8848934155088675"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.pitch = 0.38410042777133657"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.distance = 4.376539729055364"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("User Guide"), std::string::npos);
+  EXPECT_NE(mainSource.find("public lighting control API"), std::string::npos);
+  EXPECT_NE(mainSource.find("public viewer-inspection API"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Panel Extension Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Tinkertoy Control"), std::string::npos);
+  EXPECT_NE(readmeSource.find("640x480"), std::string::npos);
+  EXPECT_NE(readmeSource.find("key-release callbacks"), std::string::npos);
+  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+  EXPECT_EQ(mainSource.find("ImGuiViewer"), std::string::npos);
+  EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
+  EXPECT_EQ(mainSource.find("GUIEventHandler"), std::string::npos);
+  EXPECT_EQ(mainSource.find("InteractiveFrame"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, RigidShapesExamplePreservesLegacyParityMarkers)
 {
   const auto mainSource = readSourceFile(

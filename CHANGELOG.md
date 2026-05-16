@@ -91,6 +91,11 @@
   - Moved `imgui` and `tinkertoy` off private named-scene fixture defaults so
     their example sources own their DART worlds through
     `dart::gui::ApplicationOptions::world`.
+  - Restored the `imgui` panel-extension example's target frame, promoted
+    keydown callbacks, gravity control, viewer help, camera/run defaults,
+    README, and marker coverage through public `dart::gui`, with headlight,
+    camera-inspector, key-release, and render-hook gaps tracked as public API
+    follow-ups.
   - Moved `operational_space_control` and `wam_ikfast` off private named-scene
     fixture launchers so their example sources load the WAM robot, create their
     visible targets, and run through promoted `dart::gui` options directly.
