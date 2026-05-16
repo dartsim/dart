@@ -3357,8 +3357,7 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     scenes, including the 15-second no-tunneling guard. The full integration
     world executable passed 17/17 tests with the new Atlas coverage included.
 - Current local sphere-sphere batch narrow-phase refresh:
-  - Commit: current working tree after local head `1dbbe30dea3`
-    (`Add Atlas native collision regression coverage`).
+  - Commit: `ea48ea9a30c` (`Add sphere-sphere native batch coverage`).
   - Commands:
     `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_sphere_sphere --parallel 5`,
     `./build/default/cpp/Release/bin/test_sphere_sphere --gtest_filter=SphereSphereBatch.sphere_sphere_batch_determinism_vs_single`,
@@ -3374,8 +3373,7 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     verification passed for all registered raw narrow-phase pairs, and the
     sphere-sphere batch benchmark emitted JSON for N=1/10/100/1000.
 - Current local capsule-capsule batch narrow-phase refresh:
-  - Commit: current working tree after local head `ea48ea9a30c`
-    (`Add sphere-sphere native batch coverage`).
+  - Commit: `8bd5dd62b8a` (`Add capsule-capsule native batch coverage`).
   - Commands:
     `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_capsule_capsule --parallel 5`,
     `./build/default/cpp/Release/bin/test_capsule_capsule`,
@@ -3390,8 +3388,7 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     verification passed for all registered raw narrow-phase pairs, and the
     capsule-capsule batch benchmark emitted JSON for N=1/10/100/1000.
 - Current local cylinder-cylinder batch narrow-phase refresh:
-  - Commit: current working tree after local head `8bd5dd62b8a`
-    (`Add capsule-capsule native batch coverage`).
+  - Commit: `8702b83b8d3` (`Add cylinder-cylinder native batch coverage`).
   - Commands:
     `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_cylinder --parallel 5`,
     `./build/default/cpp/Release/bin/test_cylinder --gtest_filter='CylinderCylinderBatch.*'`,
@@ -3406,8 +3403,7 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     passed for all registered raw narrow-phase pairs, and the
     cylinder-cylinder batch benchmark emitted JSON for N=1/10/100/1000.
 - Current local convex-convex batch narrow-phase refresh:
-  - Commit: current working tree after local head `8702b83b8d3`
-    (`Add cylinder-cylinder native batch coverage`).
+  - Commit: `f300507a350` (`Add convex-convex native batch coverage`).
   - Commands:
     `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_convex --parallel "$CMAKE_BUILD_PARALLEL_LEVEL"`,
     `./build/default/cpp/Release/bin/test_convex --gtest_filter='ConvexCollisionBatch.*'`,
@@ -3422,8 +3418,7 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     verification passed for all registered raw narrow-phase pairs, and the
     convex-convex batch benchmark emitted JSON for N=1/10/100/1000.
 - Current local mesh-mesh batch narrow-phase refresh:
-  - Commit: current working tree after local head `f300507a350`
-    (`Add convex-convex native batch coverage`).
+  - Commit: `6b81c9a2481` (`Add mesh-mesh native batch coverage`).
   - Commands:
     `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_mesh_mesh --parallel "$CMAKE_BUILD_PARALLEL_LEVEL"`,
     `./build/default/cpp/Release/bin/test_mesh_mesh --gtest_filter='MeshMeshBatch.*'`,
@@ -3438,8 +3433,7 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     registered raw narrow-phase pairs, and the mesh-mesh batch benchmark
     emitted JSON for N=1/10/100/1000.
 - Current local narrow-phase batch dispatcher refresh:
-  - Commit: current working tree after local head `6b81c9a2481`
-    (`Add mesh-mesh native batch coverage`).
+  - Commit: `4db514cfd22` (`Add native narrow-phase batch dispatcher`).
   - Commands:
     `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_narrow_phase --parallel "$CMAKE_BUILD_PARALLEL_LEVEL"`,
     `./build/default/cpp/Release/bin/test_narrow_phase --gtest_filter='NarrowPhase.collide_batch_dispatcher*'`,
@@ -3454,6 +3448,25 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     The reference-enabled benchmark target rebuilt cleanly, its built-in
     accuracy verification passed for all registered raw narrow-phase pairs,
     and the dispatcher batch benchmark emitted JSON for N=1/10/100/1000.
+- Current local full validation after raw/convex/mesh batch coverage:
+  - Commit: `4db514cfd22` (`Add native narrow-phase batch dispatcher`).
+  - Commands:
+    `DART_PARALLEL_JOBS=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS CTEST_PARALLEL_LEVEL=$JOBS pixi run test-all`,
+    `CMAKE_BUILD_DIR=build/collision-reference/cpp/Release python scripts/cmake_build.py --target test_reference_backends`,
+    `ctest --test-dir build/collision-reference/cpp/Release --output-on-failure -R 'test_reference_backends|INTEGRATION_collision_native_backend_consistency'`,
+    `ctest --test-dir build/collision-reference/cpp/Release --output-on-failure -LE simulation-experimental`,
+    `pixi run -e collision-reference test-simulation-experimental`, and
+    `ctest --test-dir build/collision-reference/cpp/Release --output-on-failure`.
+  - Result: passed. Default `pixi run test-all` passed all 6 top-level gates:
+    linting, build, unit tests, simulation-experimental tests, Python tests,
+    and documentation. The focused reference check passed
+    `test_reference_backends` and
+    `INTEGRATION_collision_native_backend_consistency` 2/2. The
+    reference-enabled non-simulation CTest sweep passed 288/288; after the
+    dedicated simulation-experimental target built its executables,
+    simulation-experimental passed 13/13 and the final unfiltered
+    `collision-reference` CTest sweep passed 301/301, including FCL, Bullet,
+    ODE, and native collision tests.
 
 ## Known Risks
 

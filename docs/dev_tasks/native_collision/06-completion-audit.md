@@ -23,12 +23,13 @@ paths, multi-core CPU parallelism, and stretch GPU support.
 ## Completion Decision
 
 Status: final north-star PR completion is not complete. Current no-PR
-branch-evidence execution is locally satisfied by the published evidence
-packet and latest local validation records. The latest local follow-up also
-refreshes raw box-ground, convex-mesh fallback, and public mesh collision
+branch-evidence execution is locally satisfied by the evidence packet and
+latest local validation records. The latest local follow-up refreshes raw
+box-ground, convex-mesh fallback, public mesh collision coverage, raw /
+convex / mesh batch narrow-phase coverage, and mixed batch-dispatcher
 coverage without changing the no-PR boundary. This dev-task folder remains
-active because final PR/CI evidence transfer and folder deletion are explicitly
-out of the current scope.
+active because final PR/CI evidence transfer and folder deletion are
+explicitly out of the current scope.
 
 The current branch has strong local evidence. The remaining north-star gates
 are deferred finalization gates rather than work that should trigger a PR
@@ -233,13 +234,17 @@ Current audited state:
   tests and reference benchmarks `ON` and all FCL, Bullet, and ODE reference
   components configured internally.
 - Current local evidence-head validation: `pixi run test-all` was rerun with
-  safe local parallelism on the current working tree after pushed head
-  `f8f5663d514` and passed all 6 top-level gates: linting, build, unit tests,
-  simulation-experimental tests, Python tests, and documentation. The run
-  passed 264/264 C++ Release CTest tests and 147/147 Python tests; it also
-  reran the runtime isolation and compatibility-facade audits through the lint
-  gate. This evidence is local and remains insufficient to close the final
-  PR/CI-surface gates.
+  safe local parallelism on local head `4db514cfd22`
+  (`Add native narrow-phase batch dispatcher`) and passed all 6 top-level
+  gates: linting, build, unit tests, simulation-experimental tests, Python
+  tests, and documentation. The run passed 264/264 C++ Release CTest tests and
+  147/147 Python tests; it also reran the runtime isolation and
+  compatibility-facade audits through the lint gate. The same head passed
+  focused reference checks for `test_reference_backends` plus
+  `INTEGRATION_collision_native_backend_consistency`, and after building the
+  dedicated simulation-experimental target the full `collision-reference` CTest
+  sweep passed 301/301. This evidence is local and remains insufficient to
+  close the final PR/CI-surface gates.
 - Benchmark guard record head: `4b155655890`
   (`Record current collision benchmark guard`). The safe-job
   `collision-reference` benchmark guard passed locally, covering narrow phase,

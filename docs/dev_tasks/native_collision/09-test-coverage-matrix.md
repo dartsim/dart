@@ -347,31 +347,31 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 
 ## Summary Counters (as of 2026-05-15)
 
-- **§1 Pair-wise narrow-phase:** 74 DONE, 0 PARTIAL, 7 GAP (of 81 rows)
-- **§2 Algorithm-level:** 31 DONE, 2 PARTIAL, 11 GAP (of 44 rows)
-- **§3 Stress / regression:** 17 DONE, 1 PARTIAL, 15 GAP (of 33 rows)
-- **§4 Benchmarks:** 28 DONE, 0 PARTIAL, 0 GAP (of 28 rows)
+- **§1 Pair-wise narrow-phase:** 89 DONE, 0 PARTIAL, 0 GAP (of 89 rows)
+- **§2 Algorithm-level:** 36 DONE, 1 PARTIAL, 12 GAP (of 49 rows)
+- **§3 Stress / regression:** 19 DONE, 1 PARTIAL, 11 GAP (of 31 rows)
+- **§4 Benchmarks:** 30 DONE, 0 PARTIAL, 14 GAP (of 44 rows)
 - **§5 Infrastructure:** 8 DONE, 0 PARTIAL, 1 GAP (of 9 rows)
-- **TOTAL:** 158 DONE, 3 PARTIAL, 34 GAP (of 195 rows)
+- **TOTAL:** 182 DONE, 2 PARTIAL, 38 GAP (of 222 rows)
 
-DART native is currently at ~78% of the proposed superset, with the
-remaining coverage concentrated in: (a) BVH/CCD algorithm-isolation rows,
-(b) long-horizon stability and stress scenes, and (c) scale and scenario
-benchmarks beyond the focused raw primitive rows.
+DART native is currently at ~82% of the proposed superset, with pair-wise
+narrow-phase coverage closed. The remaining coverage is concentrated in:
+(a) BVH/CCD algorithm-isolation rows, (b) long-horizon stability and stress
+scenes, and (c) scale, scenario, and SIMD benchmark rows for the follow-up
+performance wave.
 
 ## Next Priorities (TDD order)
 
-1. **Raw narrow-phase correctness gaps** — continue pair and
-   algorithm-isolation rows before moving into convexity-specific coverage.
-2. **Convexity-specific collision coverage** — close remaining primitive /
-   convex dispatch and algorithm-isolation rows.
-3. **Mesh collision coverage** — prioritize mesh pair-order, contact patch,
-   and degenerate geometry rows before broad scenario expansion.
-4. **Long-horizon stability scenes** — `stacked_boxes_n10/n100`,
+1. **Algorithm-isolation gaps** — close or explicitly defer the remaining BVH
+   and CCD rows that are not part of the performance wave.
+2. **Long-horizon stability scenes** — `stacked_boxes_n10/n100`,
    `mixed_primitive_stack` unit-test version, `ragdoll_capsule_pile`,
    `thin_box_no_tunneling`. These are the highest-leverage rows for
    "DART is provably stable" marketing.
-5. **Stretch GAP rows** — auto-diff narrow-phase, float/double parity,
+3. **Scale/scenario benchmark rows** — broadphase scaling, stacked boxes,
+   ragdoll piles, convex-vs-landscape, and BVH build/traversal benchmarks.
+   These provide baselines for the next performance wave.
+4. **Stretch GAP rows** — auto-diff narrow-phase, float/double parity,
    k-DOP / OBB / RSS BVH variants. These are scope-decision items, not
    urgent fills. Decide before adding rows.
 

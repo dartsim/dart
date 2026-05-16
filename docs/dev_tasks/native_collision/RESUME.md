@@ -13,14 +13,12 @@ longer present FCL/Bullet/ODE as normal runtime collision backends.
 The current pass is feature-level completion: benchmark/profiling guardrails
 stay in scope, while single-CPU optimization, multi-core CPU parallelism, and
 stretch GPU support are the next performance wave.
-This session refreshed full local validation on pushed branch head
-`64abc65a032` with `pixi run test-all`, refreshed local
-gz-physics/package/link smoke evidence on the same code head, updated the
-native-collision evidence packet to record those passes, and committed the
-docs-only evidence refresh locally. `pixi run lint` passed after the
-evidence-doc edits. A follow-up current-tree audit reran the runtime isolation
-guard, compatibility-facade audit, `pixi run lint`, and
-`pixi run check-lint`; all passed with no formatter changes.
+This session refreshed full local validation on local head `4db514cfd22` with
+`pixi run test-all`, then refreshed the `collision-reference` evidence through
+focused reference-backend checks and a final unfiltered CTest pass of 301/301.
+The earlier pushed `64abc65a032` validation still records the latest local
+gz-physics/package/link smoke baseline. `pixi run lint`, runtime isolation,
+and compatibility-facade audits remain part of the local gate.
 
 The final north-star PR is not complete because PR #2652 is closed and still
 points at old head `714d220d82a`; later pushes to `feature/new_coll` do not
@@ -78,7 +76,7 @@ Under the current user constraint, do not spend the next pass trying to open,
 reopen, or prepare GitHub PR mutations. Use `06-completion-audit.md` to keep
 the distinction clear:
 
-1. Current no-PR scope: maintain the published branch-local evidence packet,
+1. Current no-PR scope: maintain the branch-local evidence packet,
    `PR-DRAFT.md`, and `07-pr-evidence-transfer.md`.
 2. Deferred PR-finalization scope: maintainer-selected PR/CI surface, final
    evidence transfer, final local validation on that completing state, and
@@ -86,8 +84,7 @@ the distinction clear:
 
 If code or evidence changes again, run `pixi run lint` before committing and
 run the focused validation that matches the change. Full `pixi run test-all`
-evidence is already refreshed locally for the current working tree after
-pushed head `f8f5663d514`.
+evidence is already refreshed locally for local head `4db514cfd22`.
 
 Publish transport note: `origin` is configured as
 `git@github.com:dartsim/dart.git`, but SSH access was unreachable during resume
@@ -108,11 +105,12 @@ post GitHub comments unless the user explicitly asks.
   `test_reference_backends`, fresh `pixi run -e gazebo test-gz`, and native
   package/link smoke with direct `readelf` checks.
 - Public docs collision-runtime wording baseline: `ad1b6782578`.
-- Latest full local `pixi run test-all` validation: current working tree after
-  pushed head `f8f5663d514`, with 6/6 top-level gates passing after the raw
-  box-ground follow-up. That run included linting, build, unit tests,
-  simulation-experimental tests, Python tests, and documentation.
-- Latest evidence-record commits: docs-only and published on
+- Latest full local `pixi run test-all` validation: local head `4db514cfd22`
+  (`Add native narrow-phase batch dispatcher`), with 6/6 top-level gates
+  passing after the raw, convex, mesh, and mixed batch-dispatcher follow-up.
+  That run included linting, build, unit tests, simulation-experimental tests,
+  Python tests, and documentation.
+- Latest evidence-record commits: current local commits may be ahead of
   `origin/feature/new_coll`; run `git log -3 --oneline --decorate` for the
   current head.
 - Latest source-build prerequisite docs cleanup: `621fca5a1fb`. Validation:
@@ -159,22 +157,28 @@ post GitHub comments unless the user explicitly asks.
   reference-enabled narrow-phase benchmark emitted
   `.benchmark_results/native_collision_cylinder_cylinder_batch.json` for
   N=1/10/100/1000.
-- Current local convex-convex batch refresh after `8702b83b8d3`: focused
+- Current local convex-convex batch refresh after `f300507a350`: focused
   `test_convex` batch determinism and malformed-input tests passed, and the
   reference-enabled narrow-phase benchmark emitted
   `.benchmark_results/native_collision_convex_convex_batch.json` for
   N=1/10/100/1000.
-- Current local mesh-mesh batch refresh after `f300507a350`: focused
+- Current local mesh-mesh batch refresh after `6b81c9a2481`: focused
   `test_mesh_mesh` batch determinism and malformed-input tests passed, and the
   reference-enabled narrow-phase benchmark emitted
   `.benchmark_results/native_collision_mesh_mesh_batch.json` for
   N=1/10/100/1000.
-- Current local narrow-phase batch dispatcher refresh after `6b81c9a2481`:
+- Current local narrow-phase batch dispatcher refresh after `4db514cfd22`:
   focused `test_narrow_phase` mixed-pair determinism, hit-flag, and
   malformed-input tests passed, and the reference-enabled narrow-phase
   benchmark emitted
   `.benchmark_results/native_collision_narrow_phase_dispatcher_batch.json`
   for N=1/10/100/1000.
+- Current local reference sweep after `4db514cfd22`: focused
+  `test_reference_backends` plus
+  `INTEGRATION_collision_native_backend_consistency` passed 2/2; the
+  `collision-reference` non-simulation CTest sweep passed 288/288; the
+  dedicated simulation-experimental task passed 13/13; and the final
+  unfiltered `collision-reference` CTest sweep passed 301/301.
 
 Useful lightweight guards:
 

@@ -66,8 +66,8 @@ Make native DART collision the default runtime stack
 
 ## Testing
 
-- Latest local committed follow-up, not yet pushed because this environment
-  rejects `git push`, contains:
+- Latest local committed follow-up, not yet pushed under the current no-PR /
+  no-GitHub-mutation scope, contains:
   - `beea226cf8d` (`Stabilize native box-box contact points`)
   - `0839874dffb` (`Unify invalid mesh collision handling`)
   - `5e8a2c67d78` (`Fix native box-box ground contacts`)
@@ -75,10 +75,16 @@ Make native DART collision the default runtime stack
     `0839874dffb` for invalid mesh data
   - `6853e86f9a6` (`Suppress OctoMap include warning`)
   - `bb4b48c1eff` (`Refresh native collision evidence notes`)
+  - `ea48ea9a30c` (`Add sphere-sphere native batch coverage`)
+  - `8bd5dd62b8a` (`Add capsule-capsule native batch coverage`)
+  - `8702b83b8d3` (`Add cylinder-cylinder native batch coverage`)
+  - `f300507a350` (`Add convex-convex native batch coverage`)
+  - `6b81c9a2481` (`Add mesh-mesh native batch coverage`)
+  - `4db514cfd22` (`Add native narrow-phase batch dispatcher`)
 - `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-all`
-  passed after the face-overlap box-box follow-up with 6/6 top-level gates:
-  linting, build, unit tests, simulation-experimental tests, Python tests, and
-  documentation.
+  passed on local head `4db514cfd22` with 6/6 top-level gates: linting, build,
+  unit tests, simulation-experimental tests, Python tests, and documentation.
+  Release CTest passed 264/264 and Python tests passed 147/147.
 - Focused local regression validation for the latest follow-up passed:
   - `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_box_box|UNIT_collision_DartCollisionDetector|test_convex|test_mesh_mesh)$' --repeat until-fail:20`
   - `UNIT_simulation_World --gtest_filter='WorldTests.DefaultNative*BoxRestsOnGround'`
@@ -97,6 +103,11 @@ Make native DART collision the default runtime stack
   passed 1/1 after configuring `collision-reference` with reference tests and
   reference benchmarks `ON` and all FCL, Bullet, and ODE test-only reference
   targets enabled internally.
+- Current local `collision-reference` validation on head `4db514cfd22` passed:
+  focused `test_reference_backends` plus
+  `INTEGRATION_collision_native_backend_consistency` 2/2, the non-simulation
+  CTest sweep 288/288, the dedicated simulation-experimental task 13/13, and
+  the final unfiltered CTest sweep 301/301.
 - `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -e collision-reference bm-collision-check`
   passed before benchmark-evidence commit `4b155655890`.
 - `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e gazebo test-gz`
