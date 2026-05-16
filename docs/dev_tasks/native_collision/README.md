@@ -13,10 +13,11 @@ Latest local follow-up: the current tree fixes the default native box-ground
 contact regression reported from `hello_world`/Atlas-style scenes, makes
 invalid convex/soft mesh data non-collidable with a warning, adds focused raw
 box-box, sphere-sphere batch, capsule-capsule batch, cylinder-cylinder batch,
-convex-convex batch, mesh-mesh batch, convex-mesh, mesh, default-world, and
-Atlas foot-ground regression coverage, rebuilds `hello_world` without the
-OctoMap `<ciso646>` warning, and refreshes the focused
-native/reference/benchmark validation evidence in `03-evidence-gates.md`.
+convex-convex batch, mesh-mesh batch, narrow-phase batch dispatcher,
+convex-mesh, mesh, default-world, and Atlas foot-ground regression coverage,
+rebuilds `hello_world` without the OctoMap `<ciso646>` warning, and refreshes
+the focused native/reference/benchmark validation evidence in
+`03-evidence-gates.md`.
 
 ## Current Status
 

@@ -37,8 +37,19 @@
 #include <dart/collision/native/types.hpp>
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
+
+#include <span>
 
 namespace dart::collision::native {
+
+struct DART_COLLISION_NATIVE_API NarrowPhasePair
+{
+  const Shape* shapeA;
+  const Shape* shapeB;
+  Eigen::Isometry3d tfA;
+  Eigen::Isometry3d tfB;
+};
 
 class DART_COLLISION_NATIVE_API NarrowPhase
 {
@@ -56,6 +67,17 @@ public:
       const Eigen::Isometry3d& tf2,
       const CollisionOption& option,
       CollisionResult& result);
+
+  static bool collideBatch(
+      std::span<const NarrowPhasePair> pairs,
+      std::span<CollisionResult> results,
+      const CollisionOption& option = CollisionOption());
+
+  static bool collideBatch(
+      std::span<const NarrowPhasePair> pairs,
+      std::span<CollisionResult> results,
+      std::span<bool> hits,
+      const CollisionOption& option = CollisionOption());
 
   static double distance(
       const CollisionObject& obj1,

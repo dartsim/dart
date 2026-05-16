@@ -48,6 +48,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <stdexcept>
 
 namespace dart::collision::native {
 
@@ -422,6 +423,41 @@ bool collideShapes(
   }
 
   return false;
+}
+
+bool collideBatchShapes(
+    std::span<const NarrowPhasePair> pairs,
+    std::span<CollisionResult> results,
+    std::span<bool> hits,
+    bool recordHits,
+    const CollisionOption& option)
+{
+  if (results.size() < pairs.size()) {
+    throw std::invalid_argument(
+        "NarrowPhase::collideBatch requires one result for each pair");
+  }
+  if (recordHits && hits.size() < pairs.size()) {
+    throw std::invalid_argument(
+        "NarrowPhase::collideBatch requires one hit flag for each pair");
+  }
+
+  bool anyHit = false;
+  for (std::size_t i = 0; i < pairs.size(); ++i) {
+    const auto& pair = pairs[i];
+    if (pair.shapeA == nullptr || pair.shapeB == nullptr) {
+      throw std::invalid_argument(
+          "NarrowPhase::collideBatch received a null shape");
+    }
+
+    const bool hit = collideShapes(
+        pair.shapeA, pair.tfA, pair.shapeB, pair.tfB, option, results[i]);
+    if (recordHits) {
+      hits[i] = hit;
+    }
+    anyHit |= hit;
+  }
+
+  return anyHit;
 }
 
 double distanceShapes(
@@ -980,6 +1016,23 @@ bool NarrowPhase::collide(
     CollisionResult& result)
 {
   return collideShapes(shape1, tf1, shape2, tf2, option, result);
+}
+
+bool NarrowPhase::collideBatch(
+    std::span<const NarrowPhasePair> pairs,
+    std::span<CollisionResult> results,
+    const CollisionOption& option)
+{
+  return collideBatchShapes(pairs, results, std::span<bool>(), false, option);
+}
+
+bool NarrowPhase::collideBatch(
+    std::span<const NarrowPhasePair> pairs,
+    std::span<CollisionResult> results,
+    std::span<bool> hits,
+    const CollisionOption& option)
+{
+  return collideBatchShapes(pairs, results, hits, true, option);
 }
 
 bool NarrowPhase::isSupported(ShapeType type1, ShapeType type2)

@@ -41,6 +41,7 @@
 #include <dart/collision/native/narrow_phase/convex_convex.hpp>
 #include <dart/collision/native/narrow_phase/cylinder_collision.hpp>
 #include <dart/collision/native/narrow_phase/mesh_mesh.hpp>
+#include <dart/collision/native/narrow_phase/narrow_phase.hpp>
 #include <dart/collision/native/narrow_phase/plane_sphere.hpp>
 #include <dart/collision/native/narrow_phase/sphere_box.hpp>
 #include <dart/collision/native/narrow_phase/sphere_sphere.hpp>
@@ -1432,6 +1433,112 @@ struct MeshMeshBatchBenchmarkRegistrar
 };
 
 static MeshMeshBatchBenchmarkRegistrar g_mesh_mesh_batch_benchmark_registrar;
+
+struct NarrowPhaseDispatcherBatchShapes
+{
+  NarrowPhaseDispatcherBatchShapes()
+    : convex1(MakeBenchmarkOctahedronVertices(0.60)),
+      convex2(MakeBenchmarkOctahedronVertices(0.55)),
+      mesh1(MakeBenchmarkCubeMeshVertices(1.0), MakeBenchmarkCubeMeshTriangles()),
+      mesh2(MakeBenchmarkCubeMeshVertices(1.0), MakeBenchmarkCubeMeshTriangles())
+  {
+  }
+
+  SphereShape sphere1{0.75};
+  SphereShape sphere2{0.60};
+  BoxShape box1{Eigen::Vector3d(0.5, 0.4, 0.3)};
+  BoxShape box2{Eigen::Vector3d(0.4, 0.5, 0.3)};
+  ConvexShape convex1;
+  ConvexShape convex2;
+  MeshShape mesh1;
+  MeshShape mesh2;
+};
+
+static std::vector<NarrowPhasePair> MakeNarrowPhaseDispatcherBatchPairs(
+    std::size_t batchSize, const NarrowPhaseDispatcherBatchShapes& shapes)
+{
+  std::vector<NarrowPhasePair> pairs;
+  pairs.reserve(batchSize);
+  for (std::size_t i = 0; i < batchSize; ++i) {
+    switch (i % 4u) {
+      case 0u:
+        pairs.push_back(
+            NarrowPhasePair{
+                &shapes.sphere1,
+                &shapes.sphere2,
+                Eigen::Isometry3d::Identity(),
+                OffsetTransform(0.85, 0.0, 0.0)});
+        break;
+      case 1u:
+        pairs.push_back(
+            NarrowPhasePair{
+                &shapes.box1,
+                &shapes.box2,
+                OffsetTransform(0.0, 0.1, 0.0),
+                OffsetTransform(0.65, -0.1, 0.0)});
+        break;
+      case 2u:
+        pairs.push_back(
+            NarrowPhasePair{
+                &shapes.convex1,
+                &shapes.convex2,
+                Eigen::Isometry3d::Identity(),
+                OffsetTransform(0.65, 0.0, 0.0)});
+        break;
+      default:
+        pairs.push_back(
+            NarrowPhasePair{
+                &shapes.mesh1,
+                &shapes.mesh2,
+                Eigen::Isometry3d::Identity(),
+                OffsetTransform(1.20, 0.0, 0.0)});
+        break;
+    }
+  }
+  return pairs;
+}
+
+static void BM_NarrowPhase_CollideBatchDispatcher_Native_Batch(
+    benchmark::State& state, std::size_t batchSize)
+{
+  const NarrowPhaseDispatcherBatchShapes shapes;
+  const auto pairs = MakeNarrowPhaseDispatcherBatchPairs(batchSize, shapes);
+  std::vector<CollisionResult> results(batchSize);
+  CollisionOption option;
+  option.maxNumContacts = 8;
+
+  for (auto _ : state) {
+    for (auto& result : results)
+      result.clear();
+    NarrowPhase::collideBatch(pairs, results, option);
+    benchmark::DoNotOptimize(results.data());
+    benchmark::ClobberMemory();
+  }
+
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations())
+      * static_cast<int64_t>(batchSize));
+  state.counters["pairs_per_iteration"] = static_cast<double>(batchSize);
+}
+
+struct NarrowPhaseCollideBatchDispatcherBenchmarkRegistrar
+{
+  NarrowPhaseCollideBatchDispatcherBenchmarkRegistrar()
+  {
+    for (const std::size_t batchSize : {1u, 10u, 100u, 1000u}) {
+      const std::string name
+          = "BM_NarrowPhase_CollideBatchDispatcher_Native_Batch_N"
+            + std::to_string(batchSize);
+      benchmark::RegisterBenchmark(
+          name.c_str(),
+          BM_NarrowPhase_CollideBatchDispatcher_Native_Batch,
+          batchSize);
+    }
+  }
+};
+
+static NarrowPhaseCollideBatchDispatcherBenchmarkRegistrar
+    g_narrow_phase_collide_batch_dispatcher_benchmark_registrar;
 
 static void BM_NarrowPhase_CylinderCylinder_FCL(benchmark::State& state)
 {

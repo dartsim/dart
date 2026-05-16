@@ -3437,6 +3437,23 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     rebuilt cleanly, its built-in accuracy verification passed for all
     registered raw narrow-phase pairs, and the mesh-mesh batch benchmark
     emitted JSON for N=1/10/100/1000.
+- Current local narrow-phase batch dispatcher refresh:
+  - Commit: current working tree after local head `6b81c9a2481`
+    (`Add mesh-mesh native batch coverage`).
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_narrow_phase --parallel "$CMAKE_BUILD_PARALLEL_LEVEL"`,
+    `./build/default/cpp/Release/bin/test_narrow_phase --gtest_filter='NarrowPhase.collide_batch_dispatcher*'`,
+    `CMAKE_BUILD_DIR=build/collision-reference/cpp/Release python scripts/cmake_build.py --target bm_comparative_narrow_phase --parallel "$CMAKE_BUILD_PARALLEL_LEVEL"`,
+    and
+    `./build/collision-reference/cpp/Release/bin/bm_comparative_narrow_phase --benchmark_filter='BM_NarrowPhase_CollideBatchDispatcher_Native_Batch_N(1|10|100|1000)$' --benchmark_min_time=1ms --benchmark_repetitions=1 --benchmark_out=.benchmark_results/native_collision_narrow_phase_dispatcher_batch.json --benchmark_out_format=json`.
+  - Result: passed. The new `NarrowPhase::collideBatch(...)` dispatcher
+    emits one `CollisionResult` per `NarrowPhasePair`, optionally fills
+    per-pair hit flags, rejects malformed result/hit spans and null shape
+    pointers, and the focused unit test passed exact batch-vs-scalar
+    comparison across mixed raw primitive, convex, mesh, and separated pairs.
+    The reference-enabled benchmark target rebuilt cleanly, its built-in
+    accuracy verification passed for all registered raw narrow-phase pairs,
+    and the dispatcher batch benchmark emitted JSON for N=1/10/100/1000.
 
 ## Known Risks
 

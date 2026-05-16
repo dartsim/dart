@@ -37,7 +37,104 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
+#include <stdexcept>
+#include <vector>
+
 using namespace dart::collision::native;
+
+namespace {
+
+std::vector<Eigen::Vector3d> makeOctahedronVertices(double scale = 1.0)
+{
+  return {
+      {scale, 0.0, 0.0},
+      {-scale, 0.0, 0.0},
+      {0.0, scale, 0.0},
+      {0.0, -scale, 0.0},
+      {0.0, 0.0, scale},
+      {0.0, 0.0, -scale}};
+}
+
+std::vector<Eigen::Vector3d> makeCubeMeshVertices(double halfExtent = 1.0)
+{
+  const double h = halfExtent;
+  return {
+      {-h, -h, -h},
+      {h, -h, -h},
+      {h, h, -h},
+      {-h, h, -h},
+      {-h, -h, h},
+      {h, -h, h},
+      {h, h, h},
+      {-h, h, h}};
+}
+
+std::vector<MeshShape::Triangle> makeCubeMeshTriangles()
+{
+  return {
+      {0, 2, 1},
+      {0, 3, 2},
+      {4, 5, 6},
+      {4, 6, 7},
+      {0, 1, 5},
+      {0, 5, 4},
+      {2, 3, 7},
+      {2, 7, 6},
+      {0, 4, 7},
+      {0, 7, 3},
+      {1, 2, 6},
+      {1, 6, 5}};
+}
+
+Eigen::Isometry3d translated(double x, double y = 0.0, double z = 0.0)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(x, y, z);
+  return tf;
+}
+
+void expectVectorExactlyEqual(
+    const Eigen::Vector3d& expected, const Eigen::Vector3d& actual)
+{
+  EXPECT_EQ(expected.x(), actual.x());
+  EXPECT_EQ(expected.y(), actual.y());
+  EXPECT_EQ(expected.z(), actual.z());
+}
+
+void expectContactExactlyEqual(
+    const ContactPoint& expected, const ContactPoint& actual)
+{
+  expectVectorExactlyEqual(expected.position, actual.position);
+  expectVectorExactlyEqual(expected.normal, actual.normal);
+  EXPECT_EQ(expected.depth, actual.depth);
+  EXPECT_EQ(expected.object1, actual.object1);
+  EXPECT_EQ(expected.object2, actual.object2);
+  EXPECT_EQ(expected.featureIndex1, actual.featureIndex1);
+  EXPECT_EQ(expected.featureIndex2, actual.featureIndex2);
+}
+
+void expectCollisionResultExactlyEqual(
+    const CollisionResult& expected, const CollisionResult& actual)
+{
+  ASSERT_EQ(expected.numManifolds(), actual.numManifolds());
+  ASSERT_EQ(expected.numContacts(), actual.numContacts());
+
+  for (std::size_t i = 0; i < expected.numManifolds(); ++i) {
+    const auto& expectedManifold = expected.getManifold(i);
+    const auto& actualManifold = actual.getManifold(i);
+    EXPECT_EQ(expectedManifold.getType(), actualManifold.getType());
+    EXPECT_EQ(expectedManifold.getObject1(), actualManifold.getObject1());
+    EXPECT_EQ(expectedManifold.getObject2(), actualManifold.getObject2());
+    ASSERT_EQ(expectedManifold.numContacts(), actualManifold.numContacts());
+    for (std::size_t j = 0; j < expectedManifold.numContacts(); ++j) {
+      expectContactExactlyEqual(
+          expectedManifold.getContact(j), actualManifold.getContact(j));
+    }
+  }
+}
+
+} // namespace
 
 TEST(NarrowPhase, IsSupported)
 {
@@ -75,6 +172,103 @@ TEST(NarrowPhase, IsSupported)
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Mesh));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Sphere));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Convex));
+}
+
+TEST(NarrowPhase, collide_batch_dispatcher_matches_scalar_loop)
+{
+  SphereShape sphereA(0.75);
+  SphereShape sphereB(0.60);
+  BoxShape boxA(Eigen::Vector3d(0.5, 0.4, 0.3));
+  BoxShape boxB(Eigen::Vector3d(0.4, 0.5, 0.3));
+  ConvexShape convexA(makeOctahedronVertices(0.60));
+  ConvexShape convexB(makeOctahedronVertices(0.55));
+  MeshShape meshA(makeCubeMeshVertices(1.0), makeCubeMeshTriangles());
+  MeshShape meshB(makeCubeMeshVertices(1.0), makeCubeMeshTriangles());
+
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+  const std::vector<NarrowPhasePair> pairs{
+      {&sphereA, &sphereB, identity, translated(0.85)},
+      {&boxA, &boxB, translated(0.0, 0.1), translated(0.65, -0.1)},
+      {&convexA, &convexB, identity, translated(0.65)},
+      {&meshA, &meshB, identity, translated(1.20)},
+      {&sphereA, &sphereB, identity, translated(3.0)}};
+
+  CollisionOption option;
+  option.maxNumContacts = 8;
+
+  std::vector<CollisionResult> batchResults(pairs.size());
+  const bool batchHit = NarrowPhase::collideBatch(pairs, batchResults, option);
+
+  bool scalarAnyHit = false;
+  for (std::size_t i = 0; i < pairs.size(); ++i) {
+    CollisionResult scalarResult;
+    const bool scalarHit = NarrowPhase::collide(
+        pairs[i].shapeA,
+        pairs[i].tfA,
+        pairs[i].shapeB,
+        pairs[i].tfB,
+        option,
+        scalarResult);
+    scalarAnyHit |= scalarHit;
+    expectCollisionResultExactlyEqual(scalarResult, batchResults[i]);
+  }
+
+  EXPECT_EQ(scalarAnyHit, batchHit);
+}
+
+TEST(NarrowPhase, collide_batch_dispatcher_reports_hit_flags)
+{
+  SphereShape sphereA(0.75);
+  SphereShape sphereB(0.60);
+
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+  const std::array<NarrowPhasePair, 3> pairs{
+      NarrowPhasePair{&sphereA, &sphereB, identity, translated(0.85)},
+      NarrowPhasePair{&sphereA, &sphereB, identity, translated(3.0)},
+      NarrowPhasePair{&sphereA, &sphereB, identity, translated(0.50)}};
+
+  CollisionOption option;
+  std::array<CollisionResult, pairs.size()> results;
+  std::array<bool, pairs.size()> hits{};
+
+  const bool anyHit = NarrowPhase::collideBatch(pairs, results, hits, option);
+
+  EXPECT_TRUE(anyHit);
+  EXPECT_TRUE(hits[0]);
+  EXPECT_FALSE(hits[1]);
+  EXPECT_TRUE(hits[2]);
+  EXPECT_GE(results[0].numContacts(), 1u);
+  EXPECT_EQ(results[1].numContacts(), 0u);
+  EXPECT_GE(results[2].numContacts(), 1u);
+}
+
+TEST(NarrowPhase, collide_batch_dispatcher_rejects_malformed_inputs)
+{
+  SphereShape sphereA(0.75);
+  SphereShape sphereB(0.60);
+
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+  const std::array<NarrowPhasePair, 2> validPairs{
+      NarrowPhasePair{&sphereA, &sphereB, identity, translated(0.85)},
+      NarrowPhasePair{&sphereA, &sphereB, identity, translated(3.0)}};
+
+  std::array<CollisionResult, 1> shortResults;
+  EXPECT_THROW(
+      NarrowPhase::collideBatch(validPairs, shortResults),
+      std::invalid_argument);
+
+  std::array<CollisionResult, validPairs.size()> results;
+  std::array<bool, 1> shortHits{};
+  EXPECT_THROW(
+      NarrowPhase::collideBatch(validPairs, results, shortHits),
+      std::invalid_argument);
+
+  const std::array<NarrowPhasePair, 1> nullShapePair{
+      NarrowPhasePair{nullptr, &sphereB, identity, translated(0.85)}};
+  std::array<CollisionResult, 1> nullShapeResults;
+  EXPECT_THROW(
+      NarrowPhase::collideBatch(nullShapePair, nullShapeResults),
+      std::invalid_argument);
 }
 
 TEST(NarrowPhase, SphereSphere_Colliding)

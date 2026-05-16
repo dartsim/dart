@@ -41,10 +41,10 @@ simulation. It also makes invalid convex/soft mesh data non-collidable with a
 warning and adds public-detector coverage for sphere-mesh collision. The slice
 adds raw box-box, sphere-sphere batch, capsule-capsule batch,
 cylinder-cylinder batch, convex-convex batch, mesh-mesh batch, default-world,
-convex-mesh, and mesh regression tests, rebuilds `hello_world` without the
-OctoMap `<ciso646>` warning, and refreshes focused native/reference validation
-plus raw narrow-phase benchmark evidence. The canonical command list and
-results are recorded in `03-evidence-gates.md`.
+narrow-phase batch dispatcher, convex-mesh, and mesh regression tests, rebuilds
+`hello_world` without the OctoMap `<ciso646>` warning, and refreshes focused
+native/reference validation plus raw narrow-phase benchmark evidence. The
+canonical command list and results are recorded in `03-evidence-gates.md`.
 
 ## Current Branch
 
@@ -169,6 +169,12 @@ post GitHub comments unless the user explicitly asks.
   reference-enabled narrow-phase benchmark emitted
   `.benchmark_results/native_collision_mesh_mesh_batch.json` for
   N=1/10/100/1000.
+- Current local narrow-phase batch dispatcher refresh after `6b81c9a2481`:
+  focused `test_narrow_phase` mixed-pair determinism, hit-flag, and
+  malformed-input tests passed, and the reference-enabled narrow-phase
+  benchmark emitted
+  `.benchmark_results/native_collision_narrow_phase_dispatcher_batch.json`
+  for N=1/10/100/1000.
 
 Useful lightweight guards:
 
