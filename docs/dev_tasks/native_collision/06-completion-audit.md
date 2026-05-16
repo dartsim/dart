@@ -667,6 +667,32 @@ The scalar native row remains below the 1632 ns Round 7 acceptance ceiling,
 and the batch rows now exist as F11-1/F11-2 guardrails for the later
 performance wave.
 
+## Round 12 Spot-Check
+
+Round 16 test-layout cleanup is current on the local post-F11-1 working tree.
+The raw native collision tests moved from `tests/unit/collision/native/` into
+`tests/unit/collision/`, and the now-empty native subfolder was removed. The
+flat directory already had public adapter tests named `test_collision_filter.cpp`,
+`test_distance.cpp`, and `test_raycast.cpp`, so the moved raw native tests use
+`test_collision_filter_core.cpp`, `test_distance_core.cpp`, and
+`test_raycast_core.cpp` to keep the public filenames stable. The former
+`test_native_backend.cpp` is now `test_collision_backend.cpp`, with CTest target
+`UNIT_collision_CollisionBackend`.
+
+Validation passed on the post-move tree:
+
+- `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target dart_collision_native_tests --parallel 5`
+- `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target UNIT_collision_CollisionBackend --parallel 5`
+- `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native -j 5`
+  passed 29/29 tests.
+- `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^UNIT_collision_CollisionBackend$' -j 5`
+  passed 1/1 test.
+- `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(UNIT_collision_CollisionGroup|UNIT_collision_Raycast|UNIT_collision_DartCollisionDetector|UNIT_collision_CollisionBackend)$' -j 5`
+  passed 4/4 tests.
+- `pixi run lint` passed.
+- `pixi run test-unit` passed 277/277 tests, including the 29-test
+  `collision-native` label and 13 `simulation-experimental` tests.
+
 ## Prompt-To-Artifact Checklist
 
 | Requirement                                                                                                                  | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Status  |

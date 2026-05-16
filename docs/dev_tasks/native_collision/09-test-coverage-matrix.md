@@ -85,7 +85,7 @@ normals flip).
 | `boxbox_sat_axis_no_flicker`         | DONE   | `test_box_box.cpp::SatAxisStableForNearFaceBoxGroundPerturbations` | SAT axis stability under perturbation — Round 7 acceptance #5 |
 | `boxbox_determinism`                 | DONE   | `test_box_box.cpp:411`                                             |                                                               |
 | `boxbox_pair_order_swap`             | DONE   | `test_box_box.cpp:427`                                             | Round 3                                                       |
-| `boxbox_distance`                    | DONE   | `test_distance.cpp`                                                |                                                               |
+| `boxbox_distance`                    | DONE   | `test_distance_core.cpp`                                           |                                                               |
 | `box_capsule_*`                      | DONE   | `test_capsule_capsule.cpp`                                         | Face / corner / penetrating / rotated                         |
 | `box_cylinder_*`                     | DONE   | `test_cylinder.cpp`                                                | Side / face / on-top / axial cap patch                        |
 | `box_plane_*`                        | DONE   | `test_plane.cpp`                                                   |                                                               |
@@ -140,11 +140,11 @@ adapt to convex/mesh/compound):
 
 | Codename              | Status | Source                             | Notes |
 | --------------------- | ------ | ---------------------------------- | ----- |
-| `adapter_cone`        | DONE   | `test_native_backend.cpp`          |       |
-| `adapter_ellipsoid`   | DONE   | `test_native_backend.cpp`          |       |
-| `adapter_heightmap`   | DONE   | `test_native_backend.cpp`          |       |
-| `adapter_multisphere` | DONE   | `test_native_backend.cpp`          |       |
-| `adapter_voxelgrid`   | DONE   | `test_native_backend.cpp`          |       |
+| `adapter_cone`        | DONE   | `test_collision_backend.cpp`       |       |
+| `adapter_ellipsoid`   | DONE   | `test_collision_backend.cpp`       |       |
+| `adapter_heightmap`   | DONE   | `test_collision_backend.cpp`       |       |
+| `adapter_multisphere` | DONE   | `test_collision_backend.cpp`       |       |
+| `adapter_voxelgrid`   | DONE   | `test_collision_backend.cpp`       |       |
 | `adapter_pyramid`     | DONE   | `test_dart_collision_detector.cpp` |       |
 
 ## 2. Algorithm-Level
@@ -177,12 +177,12 @@ Bar per row: at least one test exercises the algorithm in isolation
 | `bvh_overlap_obb`                     | GAP     | —                                                                  | DART native has only AABB BVH today; OBB BVH is a future-wave decision |
 | `bvh_overlap_rss`                     | GAP     | —                                                                  | Same                                                                   |
 | `bvh_kdop`                            | GAP     | —                                                                  | Decide if k-DOP is in DART's native scope                              |
-| `persistent_manifold_create`          | DONE    | `test_native_backend.cpp::PersistentManifoldCache*`                |                                                                        |
-| `persistent_manifold_pair_key`        | DONE    | `test_native_backend.cpp`                                          | Pair-key symmetry                                                      |
-| `persistent_manifold_warm_start`      | DONE    | `test_native_backend.cpp`                                          |                                                                        |
-| `persistent_manifold_refresh_drift`   | DONE    | `test_native_backend.cpp`                                          |                                                                        |
-| `persistent_manifold_threshold_break` | DONE    | `test_native_backend.cpp`                                          |                                                                        |
-| `persistent_manifold_reduction`       | DONE    | `test_native_backend.cpp`                                          |                                                                        |
+| `persistent_manifold_create`          | DONE    | `test_collision_backend.cpp::PersistentManifoldCache*`             |                                                                        |
+| `persistent_manifold_pair_key`        | DONE    | `test_collision_backend.cpp`                                       | Pair-key symmetry                                                      |
+| `persistent_manifold_warm_start`      | DONE    | `test_collision_backend.cpp`                                       |                                                                        |
+| `persistent_manifold_refresh_drift`   | DONE    | `test_collision_backend.cpp`                                       |                                                                        |
+| `persistent_manifold_threshold_break` | DONE    | `test_collision_backend.cpp`                                       |                                                                        |
+| `persistent_manifold_reduction`       | DONE    | `test_collision_backend.cpp`                                       |                                                                        |
 | `ccd_sphere_cast_*`                   | DONE    | `test_ccd.cpp`                                                     | Sphere/Box/Plane/Cylinder/Convex/Mesh targets                          |
 | `ccd_capsule_cast_*`                  | DONE    | `test_ccd.cpp`                                                     | Capsule/Box/Convex/Mesh targets                                        |
 | `ccd_conservative_advancement_convex` | DONE    | `bm_ccd.cpp` (benchmark)                                           | Add unit test                                                          |
@@ -196,8 +196,8 @@ Bar per row: at least one test exercises the algorithm in isolation
 | `broadphase_spatial_hash`             | DONE    | `test_spatial_hash.cpp`                                            |                                                                        |
 | `broadphase_parity_brute_force`       | DONE    | `test_aabb_tree.cpp` / `test_sap.cpp` / `test_spatial_hash.cpp`    | Cross-validation against brute force                                   |
 | `broadphase_octree`                   | GAP     | —                                                                  | Decide if octree is in scope (VoxelGrid covers some)                   |
-| `contact_filter_composite`            | DONE    | `test_collision_filter.cpp`                                        |                                                                        |
-| `contact_filter_bodynode`             | DONE    | `test_collision_filter.cpp`                                        |                                                                        |
+| `contact_filter_composite`            | DONE    | `test_collision_filter_core.cpp`                                   |                                                                        |
+| `contact_filter_bodynode`             | DONE    | `test_collision_filter_core.cpp`                                   |                                                                        |
 | `distance_filter`                     | DONE    | `test_distance_filter.cpp`                                         |                                                                        |
 | `sdf_dense_field`                     | DONE    | `test_sdf_compare.cpp`                                             |                                                                        |
 | `sdf_esdf_voxblox`                    | DONE    | `test_sdf_compare.cpp`                                             |                                                                        |
@@ -338,7 +338,7 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 | `fixture_scene_builders`                 | DONE   | `tests/benchmark/collision/fixtures/scene_builders.hpp`  |
 | `fixture_edge_cases`                     | DONE   | `tests/benchmark/collision/fixtures/edge_cases.hpp`      |
 | `pixi_task_bm_collision_check`           | DONE   | `pixi.toml` `bm-collision-check` aggregator              |
-| `ctest_label_collision_native`           | DONE   | `tests/unit/collision/native/CMakeLists.txt`             |
+| `ctest_label_collision_native`           | DONE   | `tests/unit/collision/CMakeLists.txt`                    |
 | `ctest_label_collision_native_stability` | GAP    | —                                                        | New label for long-horizon tests (Round 7) |
 | `lint_runtime_isolation`                 | DONE   | `scripts/check_collision_runtime_isolation.py`           |
 | `lint_compat_facade_audit`               | DONE   | `scripts/audit_collision_compat_facades.py`              |

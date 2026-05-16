@@ -123,7 +123,7 @@ private:
 } // namespace
 
 //==============================================================================
-TEST(DartCollisionBackend, PersistentManifoldCacheCreateAndRetrieve)
+TEST(CollisionBackend, PersistentManifoldCacheCreateAndRetrieve)
 {
   native::PersistentManifoldCache cache;
   auto& manifold = cache.getOrCreate(11u, 29u);
@@ -141,7 +141,7 @@ TEST(DartCollisionBackend, PersistentManifoldCacheCreateAndRetrieve)
 }
 
 //==============================================================================
-TEST(DartCollisionBackend, PersistentManifoldCachePairKeySymmetry)
+TEST(CollisionBackend, PersistentManifoldCachePairKeySymmetry)
 {
   native::PersistentManifoldCache cache;
 
@@ -153,7 +153,7 @@ TEST(DartCollisionBackend, PersistentManifoldCachePairKeySymmetry)
 }
 
 //==============================================================================
-TEST(DartCollisionBackend, PersistentManifoldCacheContactMatching)
+TEST(CollisionBackend, PersistentManifoldCacheContactMatching)
 {
   native::PersistentManifold manifold;
 
@@ -179,7 +179,7 @@ TEST(DartCollisionBackend, PersistentManifoldCacheContactMatching)
 }
 
 //==============================================================================
-TEST(DartCollisionBackend, PersistentManifoldCacheReduction)
+TEST(CollisionBackend, PersistentManifoldCacheReduction)
 {
   native::PersistentManifold manifold;
 
@@ -206,7 +206,7 @@ TEST(DartCollisionBackend, PersistentManifoldCacheReduction)
 }
 
 //==============================================================================
-TEST(DartCollisionBackend, PersistentManifoldCacheRefreshRemovesDrifted)
+TEST(CollisionBackend, PersistentManifoldCacheRefreshRemovesDrifted)
 {
   native::PersistentManifold manifold;
   native::CachedContact contact;
@@ -224,7 +224,7 @@ TEST(DartCollisionBackend, PersistentManifoldCacheRefreshRemovesDrifted)
 }
 
 //==============================================================================
-TEST(DartCollisionBackend, PersistentManifoldCacheWarmStartInCollide)
+TEST(CollisionBackend, PersistentManifoldCacheWarmStartInCollide)
 {
   auto detector = DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
@@ -258,7 +258,7 @@ TEST(DartCollisionBackend, PersistentManifoldCacheWarmStartInCollide)
 }
 
 //==============================================================================
-TEST(DartCollisionBackend, PersistentManifoldCacheWarmStartAcrossGroupOrder)
+TEST(CollisionBackend, PersistentManifoldCacheWarmStartAcrossGroupOrder)
 {
   auto detector = DartCollisionDetector::create();
   auto groupA = detector->createCollisionGroup();
@@ -293,7 +293,7 @@ TEST(DartCollisionBackend, PersistentManifoldCacheWarmStartAcrossGroupOrder)
 }
 
 //==============================================================================
-TEST(DartCollisionBackend, SphereSphereCollide)
+TEST(CollisionBackend, SphereSphereCollide)
 {
   auto detector = DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
@@ -312,7 +312,7 @@ TEST(DartCollisionBackend, SphereSphereCollide)
 }
 
 //==============================================================================
-TEST(DartCollisionBackend, SphereBoxCollideAcrossGroups)
+TEST(CollisionBackend, SphereBoxCollideAcrossGroups)
 {
   auto detector = DartCollisionDetector::create();
   auto groupA = detector->createCollisionGroup();
@@ -333,7 +333,7 @@ TEST(DartCollisionBackend, SphereBoxCollideAcrossGroups)
 }
 
 //==============================================================================
-TEST(DartCollisionBackend, DistanceSphereSphere)
+TEST(CollisionBackend, DistanceSphereSphere)
 {
   auto detector = DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
@@ -356,7 +356,7 @@ TEST(DartCollisionBackend, DistanceSphereSphere)
 }
 
 //==============================================================================
-TEST(DartCollisionBackend, DistanceSphereSphereOverlapping)
+TEST(CollisionBackend, DistanceSphereSphereOverlapping)
 {
   auto detector = DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
@@ -376,7 +376,7 @@ TEST(DartCollisionBackend, DistanceSphereSphereOverlapping)
 }
 
 //==============================================================================
-TEST(DartCollisionBackend, DistanceCrossGroup)
+TEST(CollisionBackend, DistanceCrossGroup)
 {
   auto detector = DartCollisionDetector::create();
   auto groupA = detector->createCollisionGroup();
@@ -400,7 +400,7 @@ TEST(DartCollisionBackend, DistanceCrossGroup)
 }
 
 //==============================================================================
-TEST(DartCollisionBackend, DistanceWithFilter)
+TEST(CollisionBackend, DistanceWithFilter)
 {
   auto detector = DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
@@ -428,7 +428,7 @@ TEST(DartCollisionBackend, DistanceWithFilter)
 }
 
 //==============================================================================
-TEST(DartCollisionBackend, RaycastHit)
+TEST(CollisionBackend, RaycastHit)
 {
   auto detector = DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
@@ -450,7 +450,7 @@ TEST(DartCollisionBackend, RaycastHit)
 }
 
 //==============================================================================
-TEST(DartCollisionBackend, RaycastMiss)
+TEST(CollisionBackend, RaycastMiss)
 {
   auto detector = DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
@@ -468,7 +468,7 @@ TEST(DartCollisionBackend, RaycastMiss)
 }
 
 //==============================================================================
-TEST(DartCollisionBackend, RaycastMultipleObjects)
+TEST(CollisionBackend, RaycastMultipleObjects)
 {
   auto detector = DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
@@ -495,7 +495,7 @@ TEST(DartCollisionBackend, RaycastMultipleObjects)
 }
 
 //==============================================================================
-TEST(DartCollisionBackend, RaycastFilter)
+TEST(CollisionBackend, RaycastFilter)
 {
   auto detector = DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
@@ -527,7 +527,7 @@ TEST(DartCollisionBackend, RaycastFilter)
 }
 
 //==============================================================================
-TEST(DartCollisionBackend, ConeShapeAdapter)
+TEST(CollisionBackend, ConeShapeAdapter)
 {
   dynamics::ShapePtr cone = std::make_shared<ConeShape>(0.5, 1.2);
   auto adapted = adaptShape(cone);
@@ -539,7 +539,7 @@ TEST(DartCollisionBackend, ConeShapeAdapter)
 }
 
 //==============================================================================
-TEST(DartCollisionBackend, EllipsoidShapeAdapter)
+TEST(CollisionBackend, EllipsoidShapeAdapter)
 {
   auto ellipsoid
       = std::make_shared<EllipsoidShape>(Eigen::Vector3d(2.0, 3.0, 4.0));
@@ -555,7 +555,7 @@ TEST(DartCollisionBackend, EllipsoidShapeAdapter)
 }
 
 //==============================================================================
-TEST(DartCollisionBackend, HeightmapShapeAdapter)
+TEST(CollisionBackend, HeightmapShapeAdapter)
 {
   auto heightmap = std::make_shared<HeightmapShaped>();
   heightmap->setScale(Eigen::Vector3d(0.5, 0.5, 2.0));
@@ -573,7 +573,7 @@ TEST(DartCollisionBackend, HeightmapShapeAdapter)
 }
 
 //==============================================================================
-TEST(DartCollisionBackend, MultiSphereConvexHullShapeAdapter)
+TEST(CollisionBackend, MultiSphereConvexHullShapeAdapter)
 {
   MultiSphereConvexHullShape::Spheres spheres;
   spheres.emplace_back(0.3, Eigen::Vector3d::Zero());
@@ -591,7 +591,7 @@ TEST(DartCollisionBackend, MultiSphereConvexHullShapeAdapter)
 
 //==============================================================================
 #if DART_HAVE_OCTOMAP
-TEST(DartCollisionBackend, VoxelGridShapeAdapter)
+TEST(CollisionBackend, VoxelGridShapeAdapter)
 {
   auto voxelGrid = std::make_shared<VoxelGridShape>(0.1);
   voxelGrid->updateOccupancy(Eigen::Vector3d::Zero(), true);
@@ -608,7 +608,7 @@ TEST(DartCollisionBackend, VoxelGridShapeAdapter)
 }
 
 //==============================================================================
-TEST(DartCollisionBackend, VoxelGridCollidesAfterOccupancyUpdate)
+TEST(CollisionBackend, VoxelGridCollidesAfterOccupancyUpdate)
 {
   auto detector = DartCollisionDetector::create();
 

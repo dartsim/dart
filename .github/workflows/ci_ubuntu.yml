@@ -185,7 +185,7 @@ jobs:
               UNIT_collision_CollisionGroup \
               UNIT_collision_Raycast \
               UNIT_collision_DartCollisionDetector \
-              UNIT_collision_NativeBackend \
+              UNIT_collision_CollisionBackend \
             --parallel "${DART_PARALLEL_JOBS}"
 
       - name: Test native collision and default detector paths
@@ -195,7 +195,7 @@ jobs:
             -L collision-native
           pixi run -- ctest --test-dir build/default/cpp/Release \
             --output-on-failure \
-            -R '^(UNIT_collision_CollisionGroup|UNIT_collision_Raycast|UNIT_collision_DartCollisionDetector|UNIT_collision_NativeBackend)$'
+            -R '^(UNIT_collision_CollisionGroup|UNIT_collision_Raycast|UNIT_collision_DartCollisionDetector|UNIT_collision_CollisionBackend)$'
 
       - name: Test dartpy native collision smoke
         run: |

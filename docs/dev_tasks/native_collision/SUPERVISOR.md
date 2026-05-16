@@ -2990,3 +2990,25 @@ validation passed: `test_box_box`, the focused batch test, the
 `pixi run lint`, and the full 29-test `collision-native` CTest label.
 Per Round 17 queue order, F11-1 is closed; the next local-only slice is Round
 16 unless the user redirects.
+
+## Round 16 Local Completion Notes (Codex, 2026-05-15)
+
+Round 16 is implemented in the current local working tree as a single
+test-layout cleanup: raw native collision tests moved out of
+`tests/unit/collision/native/` into `tests/unit/collision/`, the native
+subfolder is removed, and `tests/unit/collision/CMakeLists.txt` now owns the
+`collision-native` label and `dart_collision_native_tests` aggregate target.
+
+The actual tree had three flat-directory basename collisions with existing
+public adapter tests: `test_collision_filter.cpp`, `test_distance.cpp`, and
+`test_raycast.cpp`. Those public filenames were kept stable; the moved raw
+native tests are named `test_collision_filter_core.cpp`,
+`test_distance_core.cpp`, and `test_raycast_core.cpp`. Per Q16 answer B,
+`test_native_backend.cpp` is renamed to `test_collision_backend.cpp`, its
+GTest suite is now `CollisionBackend`, and the public CTest target is now
+`UNIT_collision_CollisionBackend`.
+
+Validation passed on the post-move tree: `dart_collision_native_tests`,
+`UNIT_collision_CollisionBackend`, the full 29-test `collision-native` CTest
+label, the focused default-collision CI regex, `pixi run lint`, and
+`pixi run test-unit` (277/277 tests).

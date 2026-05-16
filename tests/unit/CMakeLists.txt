@@ -70,7 +70,7 @@ endif()
 
 dart_add_test("unit" UNIT_collision_CollisionResult collision/test_collision_result.cpp)
 dart_add_test(
-  "unit" UNIT_collision_NativeBackend collision/test_native_backend.cpp)
+  "unit" UNIT_collision_CollisionBackend collision/test_collision_backend.cpp)
 if(DART_BUILD_COLLISION_REFERENCE_TESTS
    AND (TARGET dart-collision-reference-fcl OR TARGET dart-collision-reference-bullet OR TARGET dart-collision-reference-ode)
 )
@@ -445,7 +445,7 @@ endif()
 # ==============================================================================
 # Collision-Native Tests
 # ==============================================================================
-add_subdirectory(collision/native)
+add_subdirectory(collision)
 
 # ==============================================================================
 # SIMD Tests

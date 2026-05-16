@@ -3266,6 +3266,28 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     566412.9 ns for N=1000; the same run reports FCL at 1369.2 ns, Bullet at
     767.2 ns, and ODE at 1390.8 ns. The scalar native row remains well under
     the 1632 ns Round 7 acceptance ceiling.
+- Current local Round 16 test-layout cleanup:
+  - Commit: current Round 16 working tree after local head `e203cc5ed56`
+    (`Record native collision F11-1 completion`).
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target dart_collision_native_tests --parallel 5`,
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target UNIT_collision_CollisionBackend --parallel 5`,
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native -j 5`,
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^UNIT_collision_CollisionBackend$' -j 5`,
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(UNIT_collision_CollisionGroup|UNIT_collision_Raycast|UNIT_collision_DartCollisionDetector|UNIT_collision_CollisionBackend)$' -j 5`,
+    `pixi run lint`, and `pixi run test-unit`.
+  - Result: passed. The raw native collision tests now live directly under
+    `tests/unit/collision/`, `tests/unit/collision/native/` is removed, and
+    the native label remains attached through `tests/unit/collision/CMakeLists.txt`.
+    The flat directory had existing public adapter tests named
+    `test_collision_filter.cpp`, `test_distance.cpp`, and `test_raycast.cpp`;
+    the moved raw native tests use `test_collision_filter_core.cpp`,
+    `test_distance_core.cpp`, and `test_raycast_core.cpp` to avoid overwriting
+    those public test files. `test_native_backend.cpp` is renamed to
+    `test_collision_backend.cpp`, the public CTest target is now
+    `UNIT_collision_CollisionBackend`, the focused CI regex passes 4/4 tests,
+    the `collision-native` label passes 29/29 tests, and `pixi run test-unit`
+    passes 277/277 tests.
 
 ## Known Risks
 

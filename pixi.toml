@@ -165,7 +165,7 @@ lint-simulation-experimental = { cmd = """
 """ }
 
 lint-collision-native = { cmd = """
-    find dart/collision/native tests/unit/collision/native tests/benchmark/collision/native -type f \\( -name '*.hpp' -o -name '*.cpp' \\) -print0 | xargs -0 clang-format -i --style=file
+    find dart/collision/native tests/unit/collision tests/benchmark/collision/native -type f \\( -name '*.hpp' -o -name '*.cpp' \\) -print0 | xargs -0 clang-format -i --style=file
 """ }
 
 lint-py = { cmd = """
