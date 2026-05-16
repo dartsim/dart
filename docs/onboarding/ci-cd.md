@@ -401,20 +401,25 @@ so platform test jobs do not each rebuild docs.
 - FreeBSD CI (`ci_freebsd.yml`) runs on schedule/manual only to reduce maintenance burden; Alt Linux also runs on PRs for distro repro coverage
 - Lint is removed from platform-specific workflows since it's covered by the dedicated job
 
-**Doc-only skip patterns** (used by platform CI, NOT by lint CI):
+**Shared code-change filter:** platform and integration workflows that use
+`dorny/paths-filter` read `.github/filters/ci-code.yml` for their `changes`
+job. Keep non-code skip policy there instead of copying path lists between
+workflows.
 
 ```yaml
-paths-ignore:
-  - "docs/**"
-  - ".readthedocs.yml"
-  - "tutorials/**"
-  - "**/*.md"
-  - "**/*.rst"
-  - "**/*.po"
-  - "**/*.pot"
+code:
+  - "**"
+  - "!docs/**"
+  - "!tutorials/**"
+  - "!**/*.md"
 ```
 
-**Savings:** 12-25 minutes per PR on platform jobs for doc-only changes
+The shared filter also excludes maintenance-only workflow files such as
+`.github/workflows/update_lockfiles.yml`; those changes should still run lint,
+but they do not need to launch the platform build/test or wheel matrix.
+
+**Savings:** 12-25 minutes per PR on platform jobs for doc-only and
+maintenance-workflow-only changes
 
 ## Testing Strategy
 
