@@ -261,21 +261,21 @@ single-CPU, multi-core CPU, and possible GPU paths.
 This task is scoped as one PR that continues until the north star is reached.
 The current checkpoint is a validated middle state, not a final PR boundary.
 
-| Stage | Progress marker                              | Status                                                                                        |
-| ----- | -------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| 0     | Baseline native backend exists               | Complete before this task                                                                     |
-| 1     | Native `dart` detector is the default path   | Local complete                                                                                |
-| 2     | DART feature parity gaps are closed          | Local complete                                                                                |
-| 3     | gz-physics compatibility is proven           | Local complete; final PR/downstream CI evidence open                                          |
-| 4     | Benchmark guardrails exist for performance   | Local baseline complete; final PR benchmark artifact evidence open; optimization is next wave |
-| 5     | FCL/Bullet/ODE are optional for local builds | Local complete                                                                                |
-| 6     | Native-only and gz-physics CI are permanent  | Manual workflow-dispatch reference evidence exists; final PR CI open                          |
-| 7     | Reference engines are test/bench-only        | Local complete; final reference-gate CI evidence open                                         |
-| 8     | Default packages have no old runtime deps    | Manual wheel-matrix reference evidence exists; final PR wheel CI open                         |
-| 9     | Downstream migration/deprecation path exists | Local package/gz/link evidence exists; final PR/downstream CI open                            |
-| 10    | Clean built-in API/scaling/perf layer        | Local design/artifact evidence exists; final PR CI/artifact open                              |
-| 11    | Old runtime backend source is reference-only | Local split and lint guard complete; final PR-source audit evidence open                      |
-| 12    | Final one-PR validation and PR packaging     | Local validation exists; final PR evidence transfer and folder deletion open                  |
+| Stage | Progress marker                              | Status                                                                                                                                          |
+| ----- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0     | Baseline native backend exists               | Complete before this task                                                                                                                       |
+| 1     | Native `dart` detector is the default path   | Local: complete.<br>Final: covered by final PR validation in Stage 12.                                                                          |
+| 2     | DART feature parity gaps are closed          | Local: complete.<br>Final: covered by final PR validation in Stage 12.                                                                          |
+| 3     | gz-physics compatibility is proven           | Local: complete.<br>Final: PR/downstream CI evidence open.                                                                                      |
+| 4     | Benchmark guardrails exist for performance   | Local: baseline complete.<br>Final: PR benchmark artifact evidence open; optimization is next wave.                                             |
+| 5     | FCL/Bullet/ODE are optional for local builds | Local: complete.<br>Final: covered by final PR validation in Stage 12.                                                                          |
+| 6     | Native-only and gz-physics CI are permanent  | Local: manual workflow-dispatch reference evidence exists.<br>Final: PR CI evidence open.                                                       |
+| 7     | Reference engines are test/bench-only        | Local: complete.<br>Final: reference-gate CI evidence open.                                                                                     |
+| 8     | Default packages have no old runtime deps    | Local: manual wheel-matrix reference evidence exists.<br>Final: PR wheel CI evidence open.                                                      |
+| 9     | Downstream migration/deprecation path exists | Local: package/gz/link evidence exists.<br>Final: PR/downstream CI and deprecation-policy evidence open.                                        |
+| 10    | Clean built-in API/scaling/perf layer        | Local: design/artifact evidence exists.<br>Final: PR CI/artifact evidence open.                                                                 |
+| 11    | Old runtime backend source is reference-only | Local: source split and lint guard complete.<br>Final: PR-source audit evidence open.                                                           |
+| 12    | Final one-PR validation and PR packaging     | Local: validation exists.<br>Final: PR evidence transfer, maintainer-selected CI surface, milestone/review packaging, and folder deletion open. |
 
 ## Built-In Architecture Status
 
