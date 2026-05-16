@@ -60,9 +60,8 @@ Immediate order:
    checkpoint and this broader correction.
 2. Re-open `examples/fetch/` for one more strict comparison and repair any
    concrete gap found through public `dart::gui`.
-3. Continue with `examples/coupler_constraint/`, whose current source is only a
-   static promoted approximation and still lacks the historical controller,
-   dynamic status overlay, reset key, grid, camera/run defaults, and README.
+3. Commit and push the local `examples/coupler_constraint/` restoration after
+   mandatory lint and post-lint focused checks.
 4. Continue through the remaining `Needs strict audit` and
    `Recent parity checkpoint; still subject to strict audit re-open` rows.
 

@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `9f4af05ef1c Restore rigid cubes controls`.
+  `ce8ba83d2f3 Restore Fetch target affordance`.
 - Latest pushed code checkpoint:
-  `9f4af05ef1c Restore rigid cubes controls`.
+  `ce8ba83d2f3 Restore Fetch target affordance`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -130,6 +130,7 @@ history but are not guaranteed to be in chronological order.
   - `b864e5a31d3 Restore rigid chain defaults`
   - `4a957790bef Restore rigid loop defaults`
   - `9f4af05ef1c Restore rigid cubes controls`
+  - `ce8ba83d2f3 Restore Fetch target affordance`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -182,22 +183,21 @@ history but are not guaranteed to be in chronological order.
   direct llvmpipe Fetch screenshot with analyzer coverage
   (`/tmp/dart_fetch_panel_text_direct_postlint.ppm`, 303694/307200 nonzero
   pixels).
-- Current implementation checkpoint in the worktree: `examples/fetch/` target
-  affordance parity. The strict re-check found that the maintained source had
-  drifted to a generic 3-axis green target cross, while the historical panel
-  text described the target as the cross of two transparent green bars.
-- Fetch target-bar implementation state: `examples/fetch/main.cpp` now uses
-  one selectable `SimpleFrame` with two transparent green line bars, preserving
-  the promoted drag/selection behavior without child renderables that can
-  detach from the mocap target. The panel and README now describe the same
-  target-bar affordance, and the marker test guards the new source shape/text.
-- Fetch target-bar validation completed before commit: focused C++ build for
-  `fetch` and `UNIT_gui_FilamentSceneExtraction`, focused CTest for
-  `UNIT_gui_FilamentSceneExtraction`, direct and pixi Fetch headless
-  screenshots with analyzer coverage, Python C++ example-runner tests
-  (67 passed), aggregate `examples` build, `git diff --check`,
-  mandatory `pixi run lint`, and post-lint focused build/CTest/direct
-  screenshot analyzer checks.
+- Current implementation checkpoint in the worktree: `examples/coupler_constraint/`
+  behavior parity. The local implementation restores the historical
+  controller-driven comparison, reset action, live diagnostics, grid,
+  camera/run defaults, README, and marker guards through public `dart::gui`.
+- Latest Fetch target-bar checkpoint state: committed and pushed as
+  `ce8ba83d2f3 Restore Fetch target affordance`. Validation covered focused
+  C++ build/CTest, direct and pixi Fetch headless screenshots with analyzer
+  coverage, Python C++ example-runner tests, aggregate `examples` build,
+  `git diff --check`, mandatory `pixi run lint`, and post-lint focused
+  checks.
+- Coupler validation completed before lint: focused C++ build for
+  `coupler_constraint` and `UNIT_gui_FilamentSceneExtraction`, focused CTest
+  for `UNIT_gui_FilamentSceneExtraction`, direct and pixi Coupler headless
+  screenshots with basic analyzer coverage, Python C++ example-runner tests
+  (67 passed), and aggregate `examples` build.
 
 ## Current Code Shape
 
@@ -2568,18 +2568,15 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Commit and push the Fetch target-bar parity checkpoint after the completed
-   validation set.
-2. Restore `examples/coupler_constraint/` dynamic controller, reset key,
-   diagnostic panel, grid, camera/run defaults, README, and guard coverage
-   through public `dart::gui`.
-3. Continue the same historical-source parity audit across every remaining
+1. Run mandatory `pixi run lint`, post-lint focused Coupler checks, then commit
+   and push the `examples/coupler_constraint/` parity checkpoint.
+2. Continue the same historical-source parity audit across every remaining
    pre-existing example; do not treat source ownership, build success, runner
    coverage, or screenshots as sufficient restoration evidence.
-4. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
+3. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
    corresponding example behavior has moved into public-API example code.
-5. Do not start the physical `experimental/` directory move until the
+4. Do not start the physical `experimental/` directory move until the
    application extraction and enough real example sources prove the consumed
    public API surface.
-6. Run `pixi run lint` before every checkpoint commit, then push the commit to
+5. Run `pixi run lint` before every checkpoint commit, then push the commit to
    the tracked remote branch.

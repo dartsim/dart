@@ -1146,6 +1146,51 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
       std::string::npos);
 }
 
+TEST(
+    FilamentSceneExtraction,
+    CouplerConstraintExamplePreservesLegacyParityMarkers)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "coupler_constraint" / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "coupler_constraint" / "README.md");
+
+  EXPECT_NE(mainSource.find("CouplerController"), std::string::npos);
+  EXPECT_NE(mainSource.find("driveReferenceJoint"), std::string::npos);
+  EXPECT_NE(mainSource.find("refreshPairVisual"), std::string::npos);
+  EXPECT_NE(mainSource.find("getMimicDofProperties"), std::string::npos);
+  EXPECT_NE(mainSource.find("setUseCouplerConstraint"), std::string::npos);
+  EXPECT_NE(mainSource.find("torqueLimit = 90.0"), std::string::npos);
+  EXPECT_NE(mainSource.find("proportionalGain = 320.0"), std::string::npos);
+  EXPECT_NE(mainSource.find("dampingGain = 25.0"), std::string::npos);
+  EXPECT_NE(mainSource.find("coupler_constraint_grid"), std::string::npos);
+  EXPECT_NE(mainSource.find("cellCount = 25"), std::string::npos);
+  EXPECT_NE(mainSource.find("step = 0.05"), std::string::npos);
+  EXPECT_NE(mainSource.find("createCouplerKeyboardActions"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("KeyboardShortcut::characterKey('r')"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeCouplerCamera"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.width = 960"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.height = 720"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.target = Eigen::Vector3d(0.4, 0.0, 0.2)"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("Coupler pair (left)"), std::string::npos);
+  EXPECT_NE(mainSource.find("Mimic motor pair (right)"), std::string::npos);
+  EXPECT_NE(mainSource.find("MimicMotorConstraint"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Coupler Constraint Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("960x720"), std::string::npos);
+  EXPECT_NE(readmeSource.find("headless"), std::string::npos);
+  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+  EXPECT_EQ(mainSource.find("ImGuiViewer"), std::string::npos);
+  EXPECT_EQ(mainSource.find("RealTimeWorldNode"), std::string::npos);
+  EXPECT_EQ(mainSource.find("GUIEventHandler"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, RigidShapesExamplePreservesLegacyParityMarkers)
 {
   const auto mainSource = readSourceFile(

@@ -67,6 +67,9 @@
   - Restored the rigid/constraint example batch (`rigid_chain`, `rigid_loop`,
     `mixed_chain`, `coupler_constraint`, `add_delete_skels`, and
     `rigid_shapes`) as source-defined `dart::gui` examples.
+  - Restored the `coupler_constraint` example's controller-driven mimic
+    comparison, reset key, live diagnostics, grid, camera/run defaults, README,
+    and marker coverage through public `dart::gui`.
   - Restored the joint/dynamics example batch (`hybrid_dynamics`,
     `biped_stand`, `joint_constraints`, `free_joint_cases`, and
     `human_joint_limits`) as source-defined `dart::gui` examples.

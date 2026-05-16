@@ -803,26 +803,20 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`9f4af05ef1c Restore rigid cubes controls`. The current pending checkpoint is
-documentation-only: record the maintainer correction that many more examples
-remain strict-audit pending, keep `examples/fetch/` re-opened as the concrete
-reminder case, and capture the next `examples/coupler_constraint/` inventory.
+`ce8ba83d2f3 Restore Fetch target affordance`. The current pending checkpoint
+is `examples/coupler_constraint/` behavior parity. The implementation is in
+place locally and still needs mandatory lint, post-lint focused checks, commit,
+and push.
 
 ## Current Immediate Next Step
 
-Commit and push the Fetch target-bar parity checkpoint without opening a PR.
-The current local repair replaces the generic 3-axis target cross with two
-transparent green target bars on the same selectable `SimpleFrame`, updates
-the Fetch panel/README wording, and adds marker-test coverage. Local
-validation has passed focused build/CTest, direct and pixi screenshot analyzer
-checks, Python example-runner tests, aggregate `examples` build,
-`git diff --check`, `pixi run lint`, and post-lint focused checks.
-
-After that checkpoint, restore `examples/coupler_constraint/` dynamic
-controller/reset/overlay/grid/camera parity through public `dart::gui`. Keep
-`--screenshot <path>` and `--out <dir>` working for the existing CTest, GitHub
-Actions smoke path, and historical image-sequence workflows. A later broader
-smoke sweep can still use:
+Run mandatory `pixi run lint`, post-lint focused Coupler checks, then commit
+and push without opening a PR. The local implementation restores the
+controller-driven mimic/coupler comparison, `r` reset action, live diagnostics,
+source-owned grid, camera/run defaults, README, and marker guards through
+public `dart::gui`. Keep `--screenshot <path>` and `--out <dir>` working for
+the existing CTest, GitHub Actions smoke path, and historical image-sequence
+workflows. A later broader smoke sweep can still use:
 
 ```bash
 pixi run test-dart-gui-smoke

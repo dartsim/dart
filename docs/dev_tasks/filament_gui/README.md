@@ -219,7 +219,12 @@ pass. The checkpoint has been committed and pushed as
 checkpoint: the active work is not just the next cursor example. Re-open the
 strict example restoration queue, keep `examples/fetch/` as the concrete
 reminder that source ownership is not parity, then continue through the
-remaining examples with itemized historical-source audits.
+remaining examples with itemized historical-source audits. The Fetch
+target-affordance correction has been committed and pushed as
+`ce8ba83d2f3 Restore Fetch target affordance`. The current local checkpoint is
+`examples/coupler_constraint`: restore the historical controller-driven
+mimic/coupler comparison, `r` reset action, diagnostics, grid, camera/run
+defaults, README, and marker guards through public `dart::gui`.
 
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as

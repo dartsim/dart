@@ -52,11 +52,17 @@
 
 #include <Eigen/Geometry>
 
+#include <algorithm>
+#include <iomanip>
 #include <iostream>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <vector>
+
+#include <cmath>
 
 namespace {
 
@@ -69,13 +75,240 @@ struct Assembly
   dart::dynamics::BodyNode* followerBody = nullptr;
 };
 
+struct LinkVisual
+{
+  dart::dynamics::SimpleFramePtr frame;
+  std::shared_ptr<dart::dynamics::LineSegmentShape> shape;
+  dart::dynamics::VisualAspect* visual = nullptr;
+};
+
+Eigen::Vector3d lerpColor(
+    const Eigen::Vector3d& from, const Eigen::Vector3d& to, double amount)
+{
+  return from + (to - from) * amount;
+}
+
+std::string formatDegrees(double radians)
+{
+  std::ostringstream stream;
+  stream << std::fixed << std::setprecision(2)
+         << radians * 180.0 / dart::math::pi << " deg";
+  return stream.str();
+}
+
+class CouplerController
+{
+public:
+  struct PairRegistration
+  {
+    std::string label;
+    bool usesCoupler = false;
+    dart::dynamics::SkeletonPtr skeleton;
+    dart::dynamics::Joint* referenceJoint = nullptr;
+    dart::dynamics::Joint* followerJoint = nullptr;
+    dart::dynamics::BodyNode* referenceBody = nullptr;
+    dart::dynamics::BodyNode* followerBody = nullptr;
+    LinkVisual link;
+    double targetAngle = 0.0;
+    double torqueLimit = 90.0;
+    double proportionalGain = 320.0;
+    double dampingGain = 25.0;
+  };
+
+  struct PairStatus
+  {
+    std::string label;
+    bool usesCoupler = false;
+    bool couplerEnabled = false;
+    double targetAngle = 0.0;
+    double referencePosition = 0.0;
+    double followerPosition = 0.0;
+    double desiredFollowerPosition = 0.0;
+    double positionError = 0.0;
+    double followerLowerLimit = 0.0;
+    double followerUpperLimit = 0.0;
+    bool followerAtLowerLimit = false;
+    bool followerAtUpperLimit = false;
+  };
+
+  void addPair(PairRegistration registration)
+  {
+    PairData pair;
+    pair.label = std::move(registration.label);
+    pair.usesCoupler = registration.usesCoupler;
+    pair.couplerEnabled
+        = registration.usesCoupler && registration.followerJoint != nullptr
+          && registration.followerJoint->isUsingCouplerConstraint();
+    pair.skeleton = std::move(registration.skeleton);
+    pair.referenceJoint = registration.referenceJoint;
+    pair.followerJoint = registration.followerJoint;
+    pair.referenceBody = registration.referenceBody;
+    pair.followerBody = registration.followerBody;
+    pair.link = std::move(registration.link);
+    pair.targetAngle = registration.targetAngle;
+    pair.torqueLimit = registration.torqueLimit;
+    pair.proportionalGain = registration.proportionalGain;
+    pair.dampingGain = registration.dampingGain;
+    if (pair.skeleton != nullptr) {
+      pair.initialPositions = pair.skeleton->getPositions();
+    }
+
+    mPairs.push_back(std::move(pair));
+    refreshPairVisual(mPairs.back());
+  }
+
+  void update()
+  {
+    for (auto& pair : mPairs) {
+      driveReferenceJoint(pair);
+      refreshPairVisual(pair);
+    }
+  }
+
+  void reset()
+  {
+    for (auto& pair : mPairs) {
+      if (pair.skeleton == nullptr) {
+        continue;
+      }
+      pair.skeleton->setPositions(pair.initialPositions);
+      pair.skeleton->setVelocities(
+          Eigen::VectorXd::Zero(pair.skeleton->getNumDofs()));
+      pair.skeleton->clearExternalForces();
+    }
+    update();
+  }
+
+  std::vector<PairStatus> getStatuses() const
+  {
+    std::vector<PairStatus> statuses;
+    statuses.reserve(mPairs.size());
+
+    for (const auto& pair : mPairs) {
+      PairStatus status;
+      status.label = pair.label;
+      status.usesCoupler = pair.usesCoupler;
+      status.couplerEnabled = pair.couplerEnabled;
+      status.targetAngle = pair.targetAngle;
+      status.referencePosition = pair.referenceJoint != nullptr
+                                     ? pair.referenceJoint->getPosition(0)
+                                     : 0.0;
+      status.followerPosition = pair.followerJoint != nullptr
+                                    ? pair.followerJoint->getPosition(0)
+                                    : 0.0;
+      status.desiredFollowerPosition = computeDesiredFollowerPosition(pair);
+      status.positionError
+          = status.followerPosition - status.desiredFollowerPosition;
+      status.followerLowerLimit
+          = pair.followerJoint != nullptr
+                ? pair.followerJoint->getPositionLowerLimit(0)
+                : 0.0;
+      status.followerUpperLimit
+          = pair.followerJoint != nullptr
+                ? pair.followerJoint->getPositionUpperLimit(0)
+                : 0.0;
+      status.followerAtLowerLimit
+          = status.followerPosition - status.followerLowerLimit < 1e-3;
+      status.followerAtUpperLimit
+          = status.followerUpperLimit - status.followerPosition < 1e-3;
+      statuses.push_back(std::move(status));
+    }
+
+    return statuses;
+  }
+
+private:
+  struct PairData
+  {
+    std::string label;
+    bool usesCoupler = false;
+    bool couplerEnabled = false;
+    dart::dynamics::SkeletonPtr skeleton;
+    dart::dynamics::Joint* referenceJoint = nullptr;
+    dart::dynamics::Joint* followerJoint = nullptr;
+    dart::dynamics::BodyNode* referenceBody = nullptr;
+    dart::dynamics::BodyNode* followerBody = nullptr;
+    LinkVisual link;
+    Eigen::VectorXd initialPositions;
+    double targetAngle = 0.0;
+    double torqueLimit = 90.0;
+    double proportionalGain = 320.0;
+    double dampingGain = 25.0;
+  };
+
+  static double computeDesiredFollowerPosition(const PairData& pair)
+  {
+    if (pair.followerJoint == nullptr) {
+      return 0.0;
+    }
+
+    const auto& properties = pair.followerJoint->getMimicDofProperties();
+    if (properties.empty() || properties[0].mReferenceJoint == nullptr) {
+      return 0.0;
+    }
+
+    const auto& mimic = properties[0];
+    return mimic.mReferenceJoint->getPosition(mimic.mReferenceDofIndex)
+               * mimic.mMultiplier
+           + mimic.mOffset;
+  }
+
+  void refreshPairVisual(PairData& pair)
+  {
+    if (pair.link.shape == nullptr || pair.referenceBody == nullptr
+        || pair.followerBody == nullptr) {
+      return;
+    }
+
+    pair.link.shape->setVertex(
+        0, pair.referenceBody->getWorldTransform().translation());
+    pair.link.shape->setVertex(
+        1, pair.followerBody->getWorldTransform().translation());
+
+    if (pair.link.visual == nullptr) {
+      return;
+    }
+
+    const double error = pair.followerJoint != nullptr
+                             ? pair.followerJoint->getPosition(0)
+                                   - computeDesiredFollowerPosition(pair)
+                             : 0.0;
+    const double severity = std::min(1.0, std::abs(error) * 8.0);
+    const Eigen::Vector3d color = pair.usesCoupler
+                                      ? lerpColor(
+                                            Eigen::Vector3d(0.6, 0.95, 0.4),
+                                            Eigen::Vector3d(1.0, 0.6, 0.2),
+                                            severity)
+                                      : lerpColor(
+                                            Eigen::Vector3d(0.7, 0.7, 0.85),
+                                            Eigen::Vector3d(1.0, 0.4, 0.3),
+                                            severity);
+    pair.link.visual->setColor(color);
+  }
+
+  void driveReferenceJoint(PairData& pair)
+  {
+    if (pair.referenceJoint == nullptr) {
+      return;
+    }
+
+    const double position = pair.referenceJoint->getPosition(0);
+    const double velocity = pair.referenceJoint->getVelocity(0);
+    const double rawTorque
+        = pair.proportionalGain * (pair.targetAngle - position)
+          - pair.dampingGain * velocity;
+    const double torque
+        = std::clamp(rawTorque, -pair.torqueLimit, pair.torqueLimit);
+    pair.referenceJoint->setForce(0, torque);
+  }
+
+  std::vector<PairData> mPairs;
+};
+
 struct CouplerState
 {
   dart::simulation::WorldPtr world;
-  dart::dynamics::Joint* couplerReference = nullptr;
-  dart::dynamics::Joint* couplerFollower = nullptr;
-  dart::dynamics::Joint* motorReference = nullptr;
-  dart::dynamics::Joint* motorFollower = nullptr;
+  std::shared_ptr<CouplerController> controller;
 };
 
 void addRodVisual(dart::dynamics::BodyNode* body, const Eigen::Vector3d& color)
@@ -95,8 +328,7 @@ Assembly createAssembly(
     const Eigen::Vector3d& baseOffset,
     bool useCouplerConstraint,
     const Eigen::Vector3d& referenceColor,
-    const Eigen::Vector3d& followerColor,
-    double targetAngle)
+    const Eigen::Vector3d& followerColor)
 {
   auto skeleton = dart::dynamics::Skeleton::create(label + "_rig");
 
@@ -173,8 +405,8 @@ Assembly createAssembly(
   followerJoint->setLimitEnforcement(true);
   addRodVisual(followerBody, followerColor);
 
-  referenceJoint->setPosition(0, targetAngle);
-  followerJoint->setPosition(0, followerJoint->getPositionLowerLimit(0));
+  referenceJoint->setPosition(0, 0.0);
+  followerJoint->setPosition(0, 0.0);
 
   return {skeleton, referenceJoint, followerJoint, referenceBody, followerBody};
 }
@@ -211,7 +443,7 @@ void addLimitGuide(
   world.addSimpleFrame(frame);
 }
 
-void addPairLink(
+LinkVisual addPairLink(
     dart::simulation::World& world,
     const std::string& name,
     float width,
@@ -225,7 +457,31 @@ void addPairLink(
   line->addVertex(assembly.followerBody->getWorldTransform().translation());
   line->addConnection(0, 1);
   frame->setShape(line);
-  frame->createVisualAspect()->setColor(color);
+  auto* visual = frame->createVisualAspect();
+  visual->setColor(color);
+  world.addSimpleFrame(frame);
+  return {frame, line, visual};
+}
+
+void addSceneGrid(dart::simulation::World& world)
+{
+  auto frame = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), "coupler_constraint_grid");
+  auto grid = std::make_shared<dart::dynamics::LineSegmentShape>(1.0f);
+  constexpr int cellCount = 25;
+  constexpr double step = 0.05;
+  constexpr double halfExtent = cellCount * step;
+  for (int i = -cellCount; i <= cellCount; ++i) {
+    const double coordinate = static_cast<double>(i) * step;
+    const auto xStart
+        = grid->addVertex(Eigen::Vector3d(-halfExtent, coordinate, -0.02));
+    grid->addVertex(Eigen::Vector3d(halfExtent, coordinate, -0.02), xStart);
+    const auto yStart
+        = grid->addVertex(Eigen::Vector3d(coordinate, -halfExtent, -0.02));
+    grid->addVertex(Eigen::Vector3d(coordinate, halfExtent, -0.02), yStart);
+  }
+  frame->setShape(grid);
+  frame->createVisualAspect()->setRGBA(Eigen::Vector4d(0.42, 0.42, 0.42, 0.45));
   world.addSimpleFrame(frame);
 }
 
@@ -243,20 +499,13 @@ std::shared_ptr<CouplerState> createCouplerState()
       Eigen::Vector3d(-0.45, 0.0, 0.0),
       true,
       Eigen::Vector3d(0.85, 0.35, 0.25),
-      Eigen::Vector3d(0.25, 0.58, 0.92),
-      targetAngle);
+      Eigen::Vector3d(0.25, 0.58, 0.92));
   auto motor = createAssembly(
       "motor",
       Eigen::Vector3d(0.45, 0.0, 0.0),
       false,
       Eigen::Vector3d(0.68, 0.32, 0.70),
-      Eigen::Vector3d(0.25, 0.75, 0.70),
-      targetAngle);
-
-  state->couplerReference = coupler.referenceJoint;
-  state->couplerFollower = coupler.followerJoint;
-  state->motorReference = motor.referenceJoint;
-  state->motorFollower = motor.followerJoint;
+      Eigen::Vector3d(0.25, 0.75, 0.70));
 
   state->world->addSkeleton(coupler.skeleton);
   state->world->addSkeleton(motor.skeleton);
@@ -285,44 +534,66 @@ std::shared_ptr<CouplerState> createCouplerState()
       motor.followerJoint,
       motor.followerJoint->getPositionUpperLimit(0),
       Eigen::Vector3d(0.35, 0.92, 0.35));
-  addPairLink(
+  auto couplerLink = addPairLink(
       *state->world,
       "coupler_link",
       0.06f,
       Eigen::Vector3d(0.95, 0.95, 0.2),
       coupler);
-  addPairLink(
+  auto motorLink = addPairLink(
       *state->world,
       "motor_link",
       0.04f,
       Eigen::Vector3d(0.75, 0.75, 0.9),
       motor);
+  addSceneGrid(*state->world);
+
+  state->controller = std::make_shared<CouplerController>();
+  state->controller->addPair({
+      .label = "Coupler pair (left)",
+      .usesCoupler = true,
+      .skeleton = coupler.skeleton,
+      .referenceJoint = coupler.referenceJoint,
+      .followerJoint = coupler.followerJoint,
+      .referenceBody = coupler.referenceBody,
+      .followerBody = coupler.followerBody,
+      .link = std::move(couplerLink),
+      .targetAngle = targetAngle,
+      .torqueLimit = 90.0,
+      .proportionalGain = 320.0,
+      .dampingGain = 25.0,
+  });
+  state->controller->addPair({
+      .label = "Mimic motor pair (right)",
+      .usesCoupler = false,
+      .skeleton = motor.skeleton,
+      .referenceJoint = motor.referenceJoint,
+      .followerJoint = motor.followerJoint,
+      .referenceBody = motor.referenceBody,
+      .followerBody = motor.followerBody,
+      .link = std::move(motorLink),
+      .targetAngle = targetAngle,
+      .torqueLimit = 90.0,
+      .proportionalGain = 320.0,
+      .dampingGain = 25.0,
+  });
 
   return state;
 }
 
-void setReferenceAngle(CouplerState& state, double degrees)
-{
-  const double radians = degrees * dart::math::pi / 180.0;
-  if (state.couplerReference != nullptr) {
-    state.couplerReference->setPosition(0, radians);
-  }
-  if (state.motorReference != nullptr) {
-    state.motorReference->setPosition(0, radians);
-  }
-}
-
 dart::gui::Panel createControlsPanel(const std::shared_ptr<CouplerState>& state)
 {
-  double targetDegrees = 45.0;
-
   dart::gui::Panel panel;
   panel.title = "Coupler Constraint";
-  panel.buildWithContext = [state, targetDegrees](
+  panel.buildWithContext = [state](
                                dart::gui::PanelBuilder& builder,
-                               dart::gui::PanelContext& context) mutable {
-    builder.text("Left: mimic joint with coupler constraint.");
-    builder.text("Right: motor-style mimic without coupler constraint.");
+                               dart::gui::PanelContext& context) {
+    builder.text(
+        "Left rig: CouplerConstraint (bilateral). Right rig: Mimic motor "
+        "(servo).");
+    builder.text(
+        "Both reference joints chase a 45 deg command while followers are "
+        "limited to +/-20 deg.");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -333,24 +604,84 @@ dart::gui::Panel createControlsPanel(const std::shared_ptr<CouplerState>& state)
         dart::gui::requestSingleStep(*context.lifecycle);
       }
     }
-    if (builder.slider("Reference angle", targetDegrees, -60.0, 60.0)) {
-      setReferenceAngle(*state, targetDegrees);
-    }
     if (builder.button("Reset")) {
-      targetDegrees = 45.0;
-      setReferenceAngle(*state, targetDegrees);
+      state->controller->reset();
     }
-    if (state->couplerFollower != nullptr && state->motorFollower != nullptr) {
+    builder.text("Press r to reset both rigs.");
+    builder.separator();
+
+    for (const auto& status : state->controller->getStatuses()) {
+      builder.text(status.label);
       builder.text(
-          "coupler follower: "
-          + std::to_string(state->couplerFollower->getPosition(0)));
+          "Constraint: "
+          + std::string(
+              status.usesCoupler ? "Coupler (bilateral)"
+                                 : "Mimic motor (servo)"));
+      builder.text("Reference target: " + formatDegrees(status.targetAngle));
+      builder.text("Reference: " + formatDegrees(status.referencePosition));
+      builder.text("Follower: " + formatDegrees(status.followerPosition));
       builder.text(
-          "motor follower: "
-          + std::to_string(state->motorFollower->getPosition(0)));
+          "Follower limits: [" + formatDegrees(status.followerLowerLimit) + ", "
+          + formatDegrees(status.followerUpperLimit) + "]");
+      builder.text(
+          "Desired mimic: " + formatDegrees(status.desiredFollowerPosition));
+      builder.text("Error: " + formatDegrees(status.positionError));
+      if (status.followerAtLowerLimit) {
+        builder.text("Lower limit engaged");
+      } else if (status.followerAtUpperLimit) {
+        builder.text("Upper limit engaged");
+      }
+      builder.separator();
     }
     builder.text("time: " + std::to_string(context.simulationTime));
   };
   return panel;
+}
+
+std::vector<dart::gui::KeyboardAction> createCouplerKeyboardActions(
+    const std::shared_ptr<CouplerController>& controller)
+{
+  dart::gui::KeyboardAction reset;
+  reset.label = "reset both rigs";
+  reset.shortcut = dart::gui::KeyboardShortcut::characterKey('r');
+  reset.callback = [controller](dart::gui::KeyboardActionContext&) {
+    controller->reset();
+    std::cout << "Reset both rigs to their initial configuration\n";
+  };
+  return {std::move(reset)};
+}
+
+dart::gui::OrbitCamera makeCouplerCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.4, 0.0, 0.2);
+  camera.yaw = 0.9380474917927134;
+  camera.pitch = 0.49357845291184255;
+  camera.distance = 2.1118712081942874;
+  return camera;
+}
+
+dart::gui::RunOptions makeCouplerRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 960;
+  options.height = 720;
+  return options;
+}
+
+void printCouplerInstructions()
+{
+  std::cout
+      << "Coupler constraint demo:\n"
+      << "  - Left rig uses the bilateral CouplerConstraint (red/blue).\n"
+      << "  - Right rig uses the legacy MimicMotorConstraint (purple/teal).\n"
+      << "Both reference joints chase the same command while follower joints\n"
+      << "are clamped to +/-20 deg. When the follower saturates, only the "
+         "Coupler\n"
+      << "propagates the reaction torque back to the reference joint.\n"
+      << "space: toggle simulation (auto-starts)\n"
+      << "r: reset both rigs\n"
+      << std::endl;
 }
 
 } // namespace
@@ -359,10 +690,17 @@ int main(int argc, char* argv[])
 {
   try {
     auto state = createCouplerState();
+    printCouplerInstructions();
 
     dart::gui::ApplicationOptions options;
     options.world = state->world;
+    options.runDefaults = makeCouplerRunDefaults();
+    options.camera = makeCouplerCamera();
+    options.preStep = [controller = state->controller]() {
+      controller->update();
+    };
     options.panels.push_back(createControlsPanel(state));
+    options.keyboardActions = createCouplerKeyboardActions(state->controller);
     return dart::gui::runApplication(argc, argv, options);
   } catch (const std::exception& e) {
     std::cerr << "coupler_constraint: " << e.what() << "\n";
