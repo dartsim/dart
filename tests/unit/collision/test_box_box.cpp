@@ -38,6 +38,7 @@
 #include <gtest/gtest.h>
 
 #include <limits>
+#include <numbers>
 #include <random>
 #include <vector>
 
@@ -274,7 +275,9 @@ TEST(BoxBox, Rotated90_AlongX)
 
   Eigen::Isometry3d t1 = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d t2 = Eigen::Isometry3d::Identity();
-  t2.rotate(Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitX()));
+  t2.rotate(
+      Eigen::AngleAxisd(
+          std::numbers::pi_v<double> / 2, Eigen::Vector3d::UnitX()));
   t2.translation() = Eigen::Vector3d(0, 1.5, 0);
 
   bool collided = collideBoxes(
@@ -291,7 +294,9 @@ TEST(BoxBox, Rotated45_Diagonal)
 
   Eigen::Isometry3d t1 = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d t2 = Eigen::Isometry3d::Identity();
-  t2.rotate(Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitZ()));
+  t2.rotate(
+      Eigen::AngleAxisd(
+          std::numbers::pi_v<double> / 4, Eigen::Vector3d::UnitZ()));
   t2.translation() = Eigen::Vector3d(2.2, 0, 0);
 
   bool collided = collideBoxes(
@@ -314,10 +319,14 @@ TEST(BoxBox, BothRotated)
   CollisionResult result;
 
   Eigen::Isometry3d t1 = Eigen::Isometry3d::Identity();
-  t1.rotate(Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitZ()));
+  t1.rotate(
+      Eigen::AngleAxisd(
+          std::numbers::pi_v<double> / 4, Eigen::Vector3d::UnitZ()));
 
   Eigen::Isometry3d t2 = Eigen::Isometry3d::Identity();
-  t2.rotate(Eigen::AngleAxisd(-M_PI / 4, Eigen::Vector3d::UnitZ()));
+  t2.rotate(
+      Eigen::AngleAxisd(
+          -std::numbers::pi_v<double> / 4, Eigen::Vector3d::UnitZ()));
   t2.translation() = Eigen::Vector3d(2, 0, 0);
 
   bool collided = collideBoxes(

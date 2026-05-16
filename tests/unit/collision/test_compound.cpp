@@ -37,6 +37,7 @@
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <numbers>
 #include <vector>
 
 #include <cmath>
@@ -263,7 +264,9 @@ TEST(CompoundShape, ComputeLocalAabbRotatedChild)
 {
   CompoundShape compound;
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.rotate(Eigen::AngleAxisd(M_PI / 2.0, Eigen::Vector3d::UnitZ()));
+  tf.rotate(
+      Eigen::AngleAxisd(
+          std::numbers::pi_v<double> / 2.0, Eigen::Vector3d::UnitZ()));
   addBoxChild(compound, Eigen::Vector3d(1, 2, 3), tf);
 
   Aabb aabb = compound.computeLocalAabb();
@@ -590,7 +593,9 @@ TEST(CompoundRaycast, RotatedChild)
   auto compound = std::make_unique<CompoundShape>();
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
   tf.translation() = Eigen::Vector3d(0.0, 0.0, 5.0);
-  tf.rotate(Eigen::AngleAxisd(M_PI / 4.0, Eigen::Vector3d::UnitY()));
+  tf.rotate(
+      Eigen::AngleAxisd(
+          std::numbers::pi_v<double> / 4.0, Eigen::Vector3d::UnitY()));
   addBoxChild(*compound, Eigen::Vector3d(1, 1, 1), tf);
 
   CollisionWorld world;

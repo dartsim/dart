@@ -36,6 +36,8 @@
 
 #include <gtest/gtest.h>
 
+#include <numbers>
+
 using namespace dart::collision::native;
 
 TEST(CollisionObject, Construction)
@@ -114,7 +116,9 @@ TEST(CollisionObject, ComputeAabb_RotatedBox)
 {
   CollisionWorld world;
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-  transform.rotate(Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitZ()));
+  transform.rotate(
+      Eigen::AngleAxisd(
+          std::numbers::pi_v<double> / 2, Eigen::Vector3d::UnitZ()));
 
   auto obj = world.createObject(
       std::make_unique<BoxShape>(Eigen::Vector3d(1, 0.5, 0.5)), transform);

@@ -39,6 +39,8 @@
 
 #include <gtest/gtest.h>
 
+#include <numbers>
+
 using namespace dart::collision::native;
 
 //==============================================================================
@@ -251,7 +253,9 @@ TEST(SphereCastBox, RotatedBox)
 {
   BoxShape target(Eigen::Vector3d(1, 1, 1));
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-  transform.rotate(Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitY()));
+  transform.rotate(
+      Eigen::AngleAxisd(
+          std::numbers::pi_v<double> / 4, Eigen::Vector3d::UnitY()));
 
   Eigen::Vector3d start(0, 0, -5);
   Eigen::Vector3d end(0, 0, 5);
@@ -377,7 +381,9 @@ TEST(SphereCastCapsule, RotatedCapsule)
 {
   CapsuleShape target(0.5, 4.0);
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-  transform.rotate(Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitX()));
+  transform.rotate(
+      Eigen::AngleAxisd(
+          std::numbers::pi_v<double> / 2, Eigen::Vector3d::UnitX()));
 
   Eigen::Vector3d start(0, -5, 0);
   Eigen::Vector3d end(0, 5, 0);
@@ -519,7 +525,9 @@ TEST(SphereCastPlane, RotatedPlane)
 {
   PlaneShape target(Eigen::Vector3d::UnitZ(), 0.0);
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-  transform.rotate(Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitX()));
+  transform.rotate(
+      Eigen::AngleAxisd(
+          std::numbers::pi_v<double> / 2, Eigen::Vector3d::UnitX()));
 
   Eigen::Vector3d start(0, -5, 0);
   Eigen::Vector3d end(0, 5, 0);
@@ -833,7 +841,9 @@ TEST(CapsuleCastSphere, RotatingCapsule)
 
   Eigen::Isometry3d capsuleStart = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d capsuleEnd = Eigen::Isometry3d::Identity();
-  capsuleEnd.rotate(Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY()));
+  capsuleEnd.rotate(
+      Eigen::AngleAxisd(
+          std::numbers::pi_v<double> / 2, Eigen::Vector3d::UnitY()));
 
   CcdOption option;
   CcdResult result;
@@ -1034,11 +1044,15 @@ TEST(CapsuleCastPlane, TiltedCapsule)
 
   Eigen::Isometry3d capsuleStart = Eigen::Isometry3d::Identity();
   capsuleStart.translation() = Eigen::Vector3d(0, 0, 5);
-  capsuleStart.rotate(Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitX()));
+  capsuleStart.rotate(
+      Eigen::AngleAxisd(
+          std::numbers::pi_v<double> / 4, Eigen::Vector3d::UnitX()));
 
   Eigen::Isometry3d capsuleEnd = Eigen::Isometry3d::Identity();
   capsuleEnd.translation() = Eigen::Vector3d(0, 0, -5);
-  capsuleEnd.rotate(Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitX()));
+  capsuleEnd.rotate(
+      Eigen::AngleAxisd(
+          std::numbers::pi_v<double> / 4, Eigen::Vector3d::UnitX()));
 
   CcdOption option;
   CcdResult result;
@@ -1370,7 +1384,9 @@ TEST(ConservativeAdvancement, RotatingShape)
 
   Eigen::Isometry3d transformAEnd = Eigen::Isometry3d::Identity();
   transformAEnd.translation() = Eigen::Vector3d(0.5, 0, 0);
-  transformAEnd.rotate(Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitZ()));
+  transformAEnd.rotate(
+      Eigen::AngleAxisd(
+          std::numbers::pi_v<double> / 4, Eigen::Vector3d::UnitZ()));
 
   Eigen::Isometry3d transformB = Eigen::Isometry3d::Identity();
 

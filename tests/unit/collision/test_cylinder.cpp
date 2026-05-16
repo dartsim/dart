@@ -35,6 +35,7 @@
 
 #include <gtest/gtest.h>
 
+#include <numbers>
 #include <random>
 #include <stdexcept>
 #include <vector>
@@ -156,7 +157,8 @@ TEST(CylinderCylinder, Perpendicular)
 
   Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
-  tf2.linear() = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY())
+  tf2.linear() = Eigen::AngleAxisd(
+                     std::numbers::pi_v<double> / 2, Eigen::Vector3d::UnitY())
                      .toRotationMatrix();
   tf2.translation() = Eigen::Vector3d(0.8, 0, 0);
 
@@ -496,8 +498,10 @@ TEST(CylinderPlane, CylinderLyingOnPlane)
   PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
 
   Eigen::Isometry3d tfCylinder = Eigen::Isometry3d::Identity();
-  tfCylinder.linear() = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY())
-                            .toRotationMatrix();
+  tfCylinder.linear()
+      = Eigen::AngleAxisd(
+            std::numbers::pi_v<double> / 2, Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
   tfCylinder.translation() = Eigen::Vector3d(0, 0, 0.4);
   Eigen::Isometry3d tfPlane = Eigen::Isometry3d::Identity();
 
@@ -515,8 +519,10 @@ TEST(CylinderPlane, CylinderTiltedOnPlane)
   PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
 
   Eigen::Isometry3d tfCylinder = Eigen::Isometry3d::Identity();
-  tfCylinder.linear() = Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitY())
-                            .toRotationMatrix();
+  tfCylinder.linear()
+      = Eigen::AngleAxisd(
+            std::numbers::pi_v<double> / 4, Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
   tfCylinder.translation() = Eigen::Vector3d(0, 0, 0.5);
   Eigen::Isometry3d tfPlane = Eigen::Isometry3d::Identity();
 

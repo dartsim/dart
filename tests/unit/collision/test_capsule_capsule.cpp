@@ -37,6 +37,7 @@
 
 #include <gtest/gtest.h>
 
+#include <numbers>
 #include <random>
 #include <stdexcept>
 #include <vector>
@@ -155,7 +156,8 @@ TEST(CapsuleCapsule, Perpendicular)
 
   Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
-  tf2.linear() = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY())
+  tf2.linear() = Eigen::AngleAxisd(
+                     std::numbers::pi_v<double> / 2, Eigen::Vector3d::UnitY())
                      .toRotationMatrix();
   tf2.translation() = Eigen::Vector3d(0.8, 0, 0);
 
@@ -377,8 +379,10 @@ TEST(CapsuleBox, RotatedCapsule)
   BoxShape box(Eigen::Vector3d(0.5, 0.5, 0.5));
 
   Eigen::Isometry3d tfCapsule = Eigen::Isometry3d::Identity();
-  tfCapsule.linear() = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY())
-                           .toRotationMatrix();
+  tfCapsule.linear()
+      = Eigen::AngleAxisd(
+            std::numbers::pi_v<double> / 2, Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
   tfCapsule.translation() = Eigen::Vector3d(0.6, 0, 0);
   Eigen::Isometry3d tfBox = Eigen::Isometry3d::Identity();
 
@@ -395,8 +399,10 @@ TEST(CapsuleBox, HorizontalLineSupportHasEndpointContacts)
   BoxShape box(Eigen::Vector3d(10.0, 10.0, 0.1));
 
   Eigen::Isometry3d tfCapsule = Eigen::Isometry3d::Identity();
-  tfCapsule.linear() = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY())
-                           .toRotationMatrix();
+  tfCapsule.linear()
+      = Eigen::AngleAxisd(
+            std::numbers::pi_v<double> / 2, Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
   tfCapsule.translation() = Eigen::Vector3d(0.0, 0.0, 0.08);
   Eigen::Isometry3d tfBox = Eigen::Isometry3d::Identity();
 
@@ -413,8 +419,10 @@ TEST(CapsuleBox, DuplicateFilteringIsPairLocal)
   BoxShape box(Eigen::Vector3d(10.0, 10.0, 0.1));
 
   Eigen::Isometry3d tfCapsule = Eigen::Isometry3d::Identity();
-  tfCapsule.linear() = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY())
-                           .toRotationMatrix();
+  tfCapsule.linear()
+      = Eigen::AngleAxisd(
+            std::numbers::pi_v<double> / 2, Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
   tfCapsule.translation() = Eigen::Vector3d(0.0, 0.0, 0.08);
   Eigen::Isometry3d tfBox = Eigen::Isometry3d::Identity();
 

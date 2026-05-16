@@ -39,6 +39,8 @@
 #include <vsg/utils/GraphicsPipelineConfigurator.h>
 #include <vsg/utils/ShaderSet.h>
 
+#include <numbers>
+
 namespace dart::gui::vsg {
 
 namespace {
@@ -159,7 +161,9 @@ namespace {
     coneTransform.linear() = rotation.toRotationMatrix();
   } else if (dir.dot(zAxis) < 0) {
     coneTransform.linear()
-        = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()).toRotationMatrix();
+        = Eigen::AngleAxisd(
+              std::numbers::pi_v<double>, Eigen::Vector3d::UnitX())
+              .toRotationMatrix();
   }
 
   auto coneTransformNode = createTransform(coneTransform);

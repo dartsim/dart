@@ -36,6 +36,8 @@
 
 #include <gtest/gtest.h>
 
+#include <numbers>
+
 using namespace dart::collision::native;
 
 TEST(SphereBox, Separated_AlongX)
@@ -246,7 +248,9 @@ TEST(SphereBox, RotatedBox)
   CollisionResult result;
 
   Eigen::Isometry3d boxTransform = Eigen::Isometry3d::Identity();
-  boxTransform.rotate(Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitZ()));
+  boxTransform.rotate(
+      Eigen::AngleAxisd(
+          std::numbers::pi_v<double> / 4, Eigen::Vector3d::UnitZ()));
 
   double rotatedHalfWidth = std::sqrt(2.0);
   double sphereCenter = rotatedHalfWidth + 0.5;

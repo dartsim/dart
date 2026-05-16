@@ -36,6 +36,7 @@
 
 #include <gtest/gtest.h>
 
+#include <numbers>
 #include <random>
 #include <stdexcept>
 #include <vector>
@@ -393,11 +394,15 @@ TEST(SphereSphere, ShapeObjectsWithRotation)
   SphereShape sphere2(1.0);
 
   Eigen::Isometry3d transform1 = Eigen::Isometry3d::Identity();
-  transform1.rotate(Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitZ()));
+  transform1.rotate(
+      Eigen::AngleAxisd(
+          std::numbers::pi_v<double> / 4, Eigen::Vector3d::UnitZ()));
 
   Eigen::Isometry3d transform2 = Eigen::Isometry3d::Identity();
   transform2.translation() = Eigen::Vector3d(1.5, 0, 0);
-  transform2.rotate(Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitX()));
+  transform2.rotate(
+      Eigen::AngleAxisd(
+          std::numbers::pi_v<double> / 2, Eigen::Vector3d::UnitX()));
 
   CollisionResult result;
 

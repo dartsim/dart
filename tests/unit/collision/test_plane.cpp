@@ -36,6 +36,8 @@
 
 #include <gtest/gtest.h>
 
+#include <numbers>
+
 using namespace dart::collision::native;
 
 TEST(PlaneShape, Construction)
@@ -145,7 +147,8 @@ TEST(PlaneBox, RotatedBox)
 
   Eigen::Isometry3d tfPlane = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d tfBox = Eigen::Isometry3d::Identity();
-  tfBox.linear() = Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitY())
+  tfBox.linear() = Eigen::AngleAxisd(
+                       std::numbers::pi_v<double> / 4, Eigen::Vector3d::UnitY())
                        .toRotationMatrix();
   tfBox.translation() = Eigen::Vector3d(0, 0, 1.0);
 
@@ -198,8 +201,10 @@ TEST(PlaneCapsule, Lying)
 
   Eigen::Isometry3d tfPlane = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d tfCapsule = Eigen::Isometry3d::Identity();
-  tfCapsule.linear() = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY())
-                           .toRotationMatrix();
+  tfCapsule.linear()
+      = Eigen::AngleAxisd(
+            std::numbers::pi_v<double> / 2, Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
   tfCapsule.translation() = Eigen::Vector3d(0, 0, 0.3);
 
   CollisionResult result;

@@ -37,6 +37,8 @@
 
 #include <gtest/gtest.h>
 
+#include <numbers>
+
 using namespace dart::collision::native;
 
 TEST(RaycastSphere, Miss)
@@ -240,7 +242,9 @@ TEST(RaycastBox, RotatedBox)
 {
   BoxShape box(Eigen::Vector3d(1, 1, 1));
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-  transform.rotate(Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitY()));
+  transform.rotate(
+      Eigen::AngleAxisd(
+          std::numbers::pi_v<double> / 4, Eigen::Vector3d::UnitY()));
 
   Ray ray(Eigen::Vector3d(0, 0, -5), Eigen::Vector3d(0, 0, 1));
   RaycastOption option;

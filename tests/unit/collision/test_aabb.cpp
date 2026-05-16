@@ -35,6 +35,7 @@
 #include <gtest/gtest.h>
 
 #include <limits>
+#include <numbers>
 
 using namespace dart::collision::native;
 
@@ -252,7 +253,9 @@ TEST(Aabb, Transformed_Rotation90)
 {
   Aabb local(Eigen::Vector3d(-1, -2, -3), Eigen::Vector3d(1, 2, 3));
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-  transform.rotate(Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitZ()));
+  transform.rotate(
+      Eigen::AngleAxisd(
+          std::numbers::pi_v<double> / 2, Eigen::Vector3d::UnitZ()));
 
   auto world = Aabb::transformed(local, transform);
 
@@ -268,7 +271,9 @@ TEST(Aabb, Transformed_Rotation45_Grows)
 {
   Aabb local(Eigen::Vector3d(-1, -1, 0), Eigen::Vector3d(1, 1, 0));
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-  transform.rotate(Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitZ()));
+  transform.rotate(
+      Eigen::AngleAxisd(
+          std::numbers::pi_v<double> / 4, Eigen::Vector3d::UnitZ()));
 
   auto world = Aabb::transformed(local, transform);
 
@@ -285,7 +290,9 @@ TEST(Aabb, Transformed_Unbounded)
   Aabb local(Eigen::Vector3d(-inf, -inf, -inf), Eigen::Vector3d(inf, inf, inf));
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translate(Eigen::Vector3d(1.0, 2.0, 3.0));
-  transform.rotate(Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitX()));
+  transform.rotate(
+      Eigen::AngleAxisd(
+          std::numbers::pi_v<double> / 4, Eigen::Vector3d::UnitX()));
 
   auto world = Aabb::transformed(local, transform);
 

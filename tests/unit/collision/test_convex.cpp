@@ -37,6 +37,7 @@
 
 #include <gtest/gtest.h>
 
+#include <numbers>
 #include <random>
 #include <stdexcept>
 #include <vector>
@@ -537,7 +538,8 @@ TEST(ConvexCollision, RotatedConvex)
 
   Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
-  tf2.linear() = Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitZ())
+  tf2.linear() = Eigen::AngleAxisd(
+                     std::numbers::pi_v<double> / 4, Eigen::Vector3d::UnitZ())
                      .toRotationMatrix();
   tf2.translation() = Eigen::Vector3d(1.0, 0, 0);
 
