@@ -78,7 +78,7 @@ prerequisites and documented FCL/Bullet/ODE as optional reference-comparison
 dependencies. That docs cleanup is commit `621fca5a1fb` and was validated with
 `pixi run lint`.
 
-Current unpushed code follow-up fixes a native box-box contact-point
+Current local code follow-up fixes a native box-box contact-point
 regression that could let a rotated box fall through a large ground box in
 default-world simulation. It also makes invalid convex/soft mesh data
 non-collidable with a warning and adds public-detector coverage for
@@ -98,10 +98,10 @@ recorded in `03-evidence-gates.md`.
 remote-tracking head was `f8f5663d5145`, and the local branch is ahead. Run
 `git rev-parse HEAD` and `git rev-parse origin/feature/new_coll` for the exact
 current local/remote heads because editing this file changes the latest local
-hash. The latest read-only GitHub recheck on local docs/evidence head
-`68944664f39` found no Actions runs for that head; branch-local commits do not
-trigger the main workflows while PR #2652 remains closed. PR #2652 is closed,
-draft, dirty, and still anchored to old head `714d220d82a`.
+hash. The latest pre-handoff read-only GitHub recheck on local docs/evidence
+head `307cb5fb07b` found no Actions runs for that head; branch-local commits
+do not trigger the main workflows while PR #2652 remains closed. PR #2652 is
+closed, draft, dirty, and still anchored to old head `714d220d82a`.
 
 The latest pushed validation baseline is `376fd5e686d`
 (`Remove per-engine collision reference build options`). Current branch head
@@ -128,7 +128,7 @@ the distinction clear:
    evidence transfer, final local validation on that completing state, and
    deleting this folder in the same completing PR. The latest read-only review
    surface check found no workflow runs for local docs/evidence head
-   `68944664f39`, `gh pr list --head feature/new_coll --state all` returned
+   `307cb5fb07b`, `gh pr list --head feature/new_coll --state all` returned
    only PR #2652, `gh auth status -h github.com` showed `jslee02` is the active
    account, and confirmed
    PR #2652 remains closed on old head `714d220d82a6ba99350bf2214fc9696f5495a30f`.
@@ -192,10 +192,10 @@ post GitHub comments unless the user explicitly asks.
 - Latest pushed docs/reference-cleanup heads after those baselines have no
   GitHub Actions runs because branch pushes do not match the workflow filters
   while PR #2652 is closed.
-- Latest read-only successor-PR search on local docs/evidence head `68944664f39`
-  found no maintainer-opened replacement review surface; PR #2652 remains the
-  only relevant native-collision PR and is closed/draft on old head
-  `714d220d82a`.
+- Latest read-only successor-PR search on local docs/evidence head `307cb5fb07b`
+  found no maintainer-opened replacement review surface; `gh run list` returned
+  no Actions runs for that head, and PR #2652 remains the only relevant
+  native-collision PR and is closed/draft on old head `714d220d82a`.
 - Latest remote-ref check: `git fetch origin feature/new_coll` failed because
   SSH to `github.com:22` was unreachable in this environment. HTTPS fetch and
   `git ls-remote https://github.com/dartsim/dart.git refs/heads/feature/new_coll`
@@ -325,10 +325,10 @@ The last local guard refresh reported:
   reference comparison components. Core DART, dartpy, gz-physics runtime
   integration, and native-backed compatibility facades do not need those gates.
 - The reference-file cleanup audit found no unreferenced FCL/Bullet/ODE
-  implementation files to delete. Remaining files under
-  `dart/collision/{fcl,bullet,ode}/reference/` are intentional reference
-  test/benchmark code for `createReference()` and `collision-reference-*`
-  targets.
+  implementation files to delete. Remaining old-engine implementation files
+  live under `tests/dart/test/reference_collision/{fcl,bullet,ode}/` and are
+  intentional reference test/benchmark code for `createReference()` and
+  `dart-test-reference-*` targets.
 - `docs/onboarding/architecture.md` and `docs/onboarding/build-system.md`
   contain the durable architecture/build-system notes. This dev-task folder is
   still working documentation and must be removed only in the completing PR.

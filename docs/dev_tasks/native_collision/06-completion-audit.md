@@ -191,6 +191,28 @@ this read-only recheck. Later docs-only commits may move `HEAD`; use
 `git status --short --branch` and `git log -3 --oneline --decorate` for the
 exact current local state.
 
+The latest pre-handoff read-only recheck on local docs/evidence head
+`307cb5fb07b` (`Record native collision latest validation evidence`) kept the
+same branch-local boundary:
+
+- `git status --short --branch` reported
+  `feature/new_coll...origin/feature/new_coll [ahead 120]`.
+- `git rev-parse HEAD` reported
+  `307cb5fb07baa8ed22446fd7f26f302284f8e1a7`; `origin/feature/new_coll`
+  remained `f8f5663d514582d8e7ec5d13871f254671083e0d`.
+- `gh auth status -h github.com` showed `jslee02` as the active account.
+- `gh run list --repo dartsim/dart --branch feature/new_coll --commit 307cb5fb07baa8ed22446fd7f26f302284f8e1a7`
+  returned `[]`.
+- `gh pr list --repo dartsim/dart --head feature/new_coll --state all`
+  returned only PR #2652, still `CLOSED`, draft, based on `main`, and anchored
+  to old head `714d220d82a6ba99350bf2214fc9696f5495a30f`.
+- `gh pr status --repo dartsim/dart` reported no open PRs created by the
+  current user.
+
+No PR metadata, workflow state, branch state, or GitHub artifact was mutated by
+this read-only recheck. Later docs-only commits may move `HEAD`; use the
+commands above for the exact current local state.
+
 ## Current Local Full Validation Recheck (2026-05-16)
 
 After the Atlas Simbicon controller stability coverage update, a fresh local
