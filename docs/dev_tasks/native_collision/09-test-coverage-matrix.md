@@ -337,17 +337,18 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 
 ## 5. Cross-Cutting Infrastructure
 
-| Codename                                 | Status | Source                                                          |
-| ---------------------------------------- | ------ | --------------------------------------------------------------- | --------------------------------------------------- |
-| `fixture_shape_factories`                | DONE   | `tests/benchmark/collision/fixtures/shape_factories.hpp`        |
-| `fixture_scene_builders`                 | DONE   | `tests/benchmark/collision/fixtures/scene_builders.hpp`         |
-| `fixture_edge_cases`                     | DONE   | `tests/benchmark/collision/fixtures/edge_cases.hpp`             |
-| `pixi_task_bm_collision_check`           | DONE   | `pixi.toml` `bm-collision-check` aggregator                     |
-| `ctest_label_collision_native`           | DONE   | `tests/unit/collision/CMakeLists.txt`                           |
-| `ctest_label_collision_native_stability` | DONE   | `tests/unit/CMakeLists.txt`, `tests/integration/CMakeLists.txt` | Labels the world-level native stability executables |
-| `lint_runtime_isolation`                 | DONE   | `scripts/check_collision_runtime_isolation.py`                  |
-| `lint_compat_facade_audit`               | DONE   | `scripts/audit_collision_compat_facades.py`                     |
-| `lint_benchmark_schema`                  | DONE   | `scripts/check_collision_benchmarks.py`                         |
+| Codename                                 | Status | Source                                                          | Notes                                                                                              |
+| ---------------------------------------- | ------ | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `fixture_shape_factories`                | DONE   | `tests/benchmark/collision/fixtures/shape_factories.hpp`        |                                                                                                    |
+| `fixture_scene_builders`                 | DONE   | `tests/benchmark/collision/fixtures/scene_builders.hpp`         |                                                                                                    |
+| `fixture_edge_cases`                     | DONE   | `tests/benchmark/collision/fixtures/edge_cases.hpp`             |                                                                                                    |
+| `pixi_task_bm_collision_check`           | DONE   | `pixi.toml` `bm-collision-check` aggregator                     |                                                                                                    |
+| `ctest_label_collision_native`           | DONE   | `tests/unit/collision/CMakeLists.txt`                           |                                                                                                    |
+| `ctest_label_collision_native_stability` | DONE   | `tests/unit/CMakeLists.txt`, `tests/integration/CMakeLists.txt` | Labels the world-level native stability executables                                                |
+| `lint_runtime_isolation`                 | DONE   | `scripts/check_collision_runtime_isolation.py`                  |                                                                                                    |
+| `lint_compat_facade_audit`               | DONE   | `scripts/audit_collision_compat_facades.py`                     |                                                                                                    |
+| `lint_benchmark_schema`                  | DONE   | `scripts/check_collision_benchmarks.py`                         |                                                                                                    |
+| `benchmark_output_consumption`           | DONE   | `tests/benchmark/collision/comparative/bm_narrow_phase.cpp`     | Timed rows consume collision outputs/contact counts; strict fixed rows reject empty-contact setups |
 
 ## Summary Counters (as of 2026-05-16)
 
@@ -355,8 +356,8 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 - **§2 Algorithm-level:** 38 DONE, 0 PARTIAL, 0 GAP, 11 DEFERRED (of 49 rows)
 - **§3 Stress / regression:** 34 DONE, 0 PARTIAL, 0 GAP (of 34 rows)
 - **§4 Benchmarks:** 30 DONE, 0 PARTIAL, 0 GAP, 14 DEFERRED (of 44 rows)
-- **§5 Infrastructure:** 9 DONE, 0 PARTIAL, 0 GAP (of 9 rows)
-- **TOTAL:** 200 DONE, 0 PARTIAL, 0 GAP, 25 DEFERRED (of 225 rows)
+- **§5 Infrastructure:** 10 DONE, 0 PARTIAL, 0 GAP (of 10 rows)
+- **TOTAL:** 201 DONE, 0 PARTIAL, 0 GAP, 25 DEFERRED (of 226 rows)
 
 DART native has no open non-deferred feature-level rows in this matrix. The
 remaining proposed-superset rows are explicitly deferred into:

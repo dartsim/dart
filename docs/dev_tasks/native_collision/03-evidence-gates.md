@@ -3766,6 +3766,30 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     `hello_world` and `atlas_simbicon`, and the documentation build completed.
     No PR, push, workflow, branch, or GitHub state was mutated by this local
     validation pass.
+- Current local raw narrow-phase benchmark harness audit:
+  - Commit: `0b425b3f7af`
+    (`Harden native collision benchmark consumption`).
+  - Scope: fixed-contact native and reference rows now fail fast if their setup
+    produces no contacts, timed rows consume the collision result and contact
+    count, and batch rows consume summed contact counts. Edge-case rows still
+    allow intentionally separated/no-contact cases.
+  - Commands:
+    `DART_PARALLEL_JOBS=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run -e collision-reference -- python scripts/cmake_build.py --build-dir build/collision-reference/cpp/Release --target bm_comparative_narrow_phase --parallel "$JOBS"`,
+    `DART_PARALLEL_JOBS=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS CTEST_PARALLEL_LEVEL=$JOBS pixi run -e collision-reference bm-collision-check-narrow`,
+    `DART_PARALLEL_JOBS=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS CTEST_PARALLEL_LEVEL=$JOBS pixi run -e collision-reference bm-collision-check-narrow-raw-reference`,
+    `pixi run lint`, and `git diff --check`.
+  - Result: passed locally. The comparative narrow-phase benchmark target
+    rebuilt cleanly. `bm-collision-check-narrow` passed with
+    `collision benchmark check: 3 passed, 0 failed, 0 skipped`.
+    `bm-collision-check-narrow-raw-reference` passed in report-only mode with
+    `collision benchmark check: 2 passed, 0 failed, 0 skipped, 22 reported`.
+    The benchmark binary's built-in accuracy verification passed for
+    Sphere-Sphere, Box-Box, Capsule-Capsule, Sphere-Box, Capsule-Sphere,
+    Capsule-Box, Cylinder-Cylinder, Cylinder-Sphere, Cylinder-Box,
+    Cylinder-Capsule, Cylinder-Plane, Plane-Sphere, Plane-Box, and
+    Plane-Capsule. `pixi run lint` and `git diff --check` passed. No PR, push,
+    workflow, branch, or GitHub state was mutated by this local validation
+    pass.
 
 ## Known Risks
 

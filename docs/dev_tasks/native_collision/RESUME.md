@@ -205,6 +205,10 @@ post GitHub comments unless the user explicitly asks.
   `pixi run lint` passed on that tree after moving FCL out of required
   prerequisites.
 - Latest local `collision-reference` benchmark guard baseline: `4b155655890`.
+- Latest local raw narrow-phase benchmark harness audit: `0b425b3f7af`. The
+  comparative narrow-phase target now consumes collision outputs/contact counts
+  in timed rows, rejects empty-contact setups for strict fixed-contact rows,
+  and passed the focused narrow and raw-reference benchmark guards locally.
 - Latest local gz-physics baseline: `6742a21ab0f`.
 - Latest local native compatibility package-smoke baseline: `dcfc994542f`.
 - Last manual workflow-dispatch CI evidence head: `1e1faf6feb1`.
@@ -289,6 +293,12 @@ post GitHub comments unless the user explicitly asks.
   full `pixi run -e collision-reference bm-collision-check` guard passed,
   `pixi run lint` and `git diff --check` passed, `pixi run test-all` passed
   all 6 top-level gates, and `pixi run -e gazebo test-gz` passed 65/65.
+- Current local raw narrow-phase benchmark harness audit after `0b425b3f7af`:
+  the focused benchmark build passed, `bm-collision-check-narrow` reported
+  `3 passed, 0 failed, 0 skipped`, `bm-collision-check-narrow-raw-reference`
+  reported `2 passed, 0 failed, 0 skipped, 22 reported`, and `pixi run lint`
+  plus `git diff --check` passed. No PR, push, workflow, branch, or GitHub
+  state was mutated by this validation pass.
 - Current local feature-level stability refresh after `ca0201e67f4`: focused
   build of `INTEGRATION_simulation_World` passed,
   `World.AtlasSimbiconControllerFeetStayAboveGroundWithNativeCollision`
