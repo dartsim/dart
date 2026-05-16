@@ -32,6 +32,7 @@
 
 #include <dart/config.hpp>
 
+#include <dart/collision/dart/dart_collision_detector.hpp>
 #include <dart/collision/fcl/reference/fcl_collision_detector.hpp>
 #include <dart/collision/native/narrow_phase/box_box.hpp>
 #include <dart/collision/native/narrow_phase/capsule_box.hpp>
@@ -1280,6 +1281,38 @@ static void BM_NarrowPhase_EdgeCases_ODE(
 }
 #endif
 
+static void BM_NarrowPhaseAdapter_EdgeCases_Native(
+    benchmark::State& state, PairKind pair, EdgeCase edge)
+{
+  auto detector = dart::collision::DartCollisionDetector::create();
+  RunNarrowPhaseCaseDetector(state, detector, pair, edge);
+}
+
+static void BM_NarrowPhaseAdapter_EdgeCases_FCL(
+    benchmark::State& state, PairKind pair, EdgeCase edge)
+{
+  auto detector = dart::collision::FCLCollisionDetector::createReference();
+  RunNarrowPhaseCaseDetector(state, detector, pair, edge);
+}
+
+#if DART_HAVE_BULLET
+static void BM_NarrowPhaseAdapter_EdgeCases_Bullet(
+    benchmark::State& state, PairKind pair, EdgeCase edge)
+{
+  auto detector = dart::collision::BulletCollisionDetector::createReference();
+  RunNarrowPhaseCaseDetector(state, detector, pair, edge);
+}
+#endif
+
+#if DART_HAVE_ODE
+static void BM_NarrowPhaseAdapter_EdgeCases_ODE(
+    benchmark::State& state, PairKind pair, EdgeCase edge)
+{
+  auto detector = dart::collision::OdeCollisionDetector::createReference();
+  RunNarrowPhaseCaseDetector(state, detector, pair, edge);
+}
+#endif
+
 } // namespace edge_case_bench
 
 using dart::benchmark::collision::EdgeCase;
@@ -1303,6 +1336,29 @@ static void RegisterEdgeCaseBenchmark(
   edge_case_bench::AddScaleArgs(bench);
 }
 
+template <
+    std::size_t BasePairCount,
+    std::size_t BoxPairCount,
+    std::size_t BaseEdgeCount,
+    std::size_t BoxEdgeCount>
+static void RegisterEdgeCaseBenchmarkGroup(
+    const char* prefix,
+    EdgeCaseBenchmark fn,
+    const std::array<PairKind, BasePairCount>& base_pairs,
+    const std::array<PairKind, BoxPairCount>& box_pairs,
+    const std::array<EdgeCase, BaseEdgeCount>& base_edges,
+    const std::array<EdgeCase, BoxEdgeCount>& box_edges)
+{
+  for (EdgeCase edge : base_edges) {
+    for (PairKind pair : base_pairs)
+      RegisterEdgeCaseBenchmark(prefix, fn, pair, edge);
+  }
+  for (EdgeCase edge : box_edges) {
+    for (PairKind pair : box_pairs)
+      RegisterEdgeCaseBenchmark(prefix, fn, pair, edge);
+  }
+}
+
 static void RegisterNarrowPhaseEdgeCases()
 {
   const std::array<EdgeCase, 3> base_edges
@@ -1312,149 +1368,80 @@ static void RegisterNarrowPhaseEdgeCases()
          EdgeCase::kDeepPenetration,
          EdgeCase::kGrazing,
          EdgeCase::kThinFeature};
+  const std::array<PairKind, 3> base_pairs = {PairKind::kSphereSphere,
+                                             PairKind::kCapsuleCapsule,
+                                             PairKind::kCapsuleSphere};
+  const std::array<PairKind, 3> box_pairs
+      = {PairKind::kBoxBox, PairKind::kSphereBox, PairKind::kCapsuleBox};
 
-  for (EdgeCase edge : base_edges) {
-    RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_Native",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_Native,
-        PairKind::kSphereSphere,
-        edge);
-    RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_Native",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_Native,
-        PairKind::kCapsuleCapsule,
-        edge);
-    RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_Native",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_Native,
-        PairKind::kCapsuleSphere,
-        edge);
-  }
-  for (EdgeCase edge : box_edges) {
-    RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_Native",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_Native,
-        PairKind::kBoxBox,
-        edge);
-    RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_Native",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_Native,
-        PairKind::kSphereBox,
-        edge);
-    RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_Native",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_Native,
-        PairKind::kCapsuleBox,
-        edge);
-  }
-
-  for (EdgeCase edge : base_edges) {
-    RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_FCL",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_FCL,
-        PairKind::kSphereSphere,
-        edge);
-    RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_FCL",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_FCL,
-        PairKind::kCapsuleCapsule,
-        edge);
-    RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_FCL",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_FCL,
-        PairKind::kCapsuleSphere,
-        edge);
-  }
-  for (EdgeCase edge : box_edges) {
-    RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_FCL",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_FCL,
-        PairKind::kBoxBox,
-        edge);
-    RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_FCL",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_FCL,
-        PairKind::kSphereBox,
-        edge);
-    RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_FCL",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_FCL,
-        PairKind::kCapsuleBox,
-        edge);
-  }
+  RegisterEdgeCaseBenchmarkGroup(
+      "BM_NarrowPhase_EdgeCases_Native",
+      edge_case_bench::BM_NarrowPhase_EdgeCases_Native,
+      base_pairs,
+      box_pairs,
+      base_edges,
+      box_edges);
+  RegisterEdgeCaseBenchmarkGroup(
+      "BM_NarrowPhase_EdgeCases_FCL",
+      edge_case_bench::BM_NarrowPhase_EdgeCases_FCL,
+      base_pairs,
+      box_pairs,
+      base_edges,
+      box_edges);
 
 #if DART_HAVE_BULLET
-  for (EdgeCase edge : base_edges) {
-    RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_Bullet",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_Bullet,
-        PairKind::kSphereSphere,
-        edge);
-    RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_Bullet",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_Bullet,
-        PairKind::kCapsuleCapsule,
-        edge);
-    RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_Bullet",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_Bullet,
-        PairKind::kCapsuleSphere,
-        edge);
-  }
-  for (EdgeCase edge : box_edges) {
-    RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_Bullet",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_Bullet,
-        PairKind::kBoxBox,
-        edge);
-    RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_Bullet",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_Bullet,
-        PairKind::kSphereBox,
-        edge);
-    RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_Bullet",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_Bullet,
-        PairKind::kCapsuleBox,
-        edge);
-  }
+  RegisterEdgeCaseBenchmarkGroup(
+      "BM_NarrowPhase_EdgeCases_Bullet",
+      edge_case_bench::BM_NarrowPhase_EdgeCases_Bullet,
+      base_pairs,
+      box_pairs,
+      base_edges,
+      box_edges);
 #endif
 
 #if DART_HAVE_ODE
-  for (EdgeCase edge : base_edges) {
-    RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_ODE",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_ODE,
-        PairKind::kSphereSphere,
-        edge);
-    RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_ODE",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_ODE,
-        PairKind::kCapsuleCapsule,
-        edge);
-    RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_ODE",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_ODE,
-        PairKind::kCapsuleSphere,
-        edge);
-  }
-  for (EdgeCase edge : box_edges) {
-    RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_ODE",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_ODE,
-        PairKind::kBoxBox,
-        edge);
-    RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_ODE",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_ODE,
-        PairKind::kSphereBox,
-        edge);
-    RegisterEdgeCaseBenchmark(
-        "BM_NarrowPhase_EdgeCases_ODE",
-        edge_case_bench::BM_NarrowPhase_EdgeCases_ODE,
-        PairKind::kCapsuleBox,
-        edge);
-  }
+  RegisterEdgeCaseBenchmarkGroup(
+      "BM_NarrowPhase_EdgeCases_ODE",
+      edge_case_bench::BM_NarrowPhase_EdgeCases_ODE,
+      base_pairs,
+      box_pairs,
+      base_edges,
+      box_edges);
+#endif
+
+  RegisterEdgeCaseBenchmarkGroup(
+      "BM_NarrowPhaseAdapter_EdgeCases_Native",
+      edge_case_bench::BM_NarrowPhaseAdapter_EdgeCases_Native,
+      base_pairs,
+      box_pairs,
+      base_edges,
+      box_edges);
+  RegisterEdgeCaseBenchmarkGroup(
+      "BM_NarrowPhaseAdapter_EdgeCases_FCL",
+      edge_case_bench::BM_NarrowPhaseAdapter_EdgeCases_FCL,
+      base_pairs,
+      box_pairs,
+      base_edges,
+      box_edges);
+
+#if DART_HAVE_BULLET
+  RegisterEdgeCaseBenchmarkGroup(
+      "BM_NarrowPhaseAdapter_EdgeCases_Bullet",
+      edge_case_bench::BM_NarrowPhaseAdapter_EdgeCases_Bullet,
+      base_pairs,
+      box_pairs,
+      base_edges,
+      box_edges);
+#endif
+
+#if DART_HAVE_ODE
+  RegisterEdgeCaseBenchmarkGroup(
+      "BM_NarrowPhaseAdapter_EdgeCases_ODE",
+      edge_case_bench::BM_NarrowPhaseAdapter_EdgeCases_ODE,
+      base_pairs,
+      box_pairs,
+      base_edges,
+      box_edges);
 #endif
 }
 

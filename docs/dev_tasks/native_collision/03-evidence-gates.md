@@ -2954,6 +2954,18 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     opposing face, direct SAT face-axis tie bias, and degenerate cross-axis
     skipping. The executable passed 26/26 tests after the new coverage was
     added.
+- Current local public-adapter narrow-phase benchmark refresh:
+  - Commit: current working tree after local head `85643efd650`
+    (`Cover native box-box raw SAT gaps`).
+  - Command:
+    `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run -e collision-reference bm-collision-check-narrow-adapter`
+  - Result: passed. The task configured the reference environment, rebuilt
+    `bm_comparative_narrow_phase`, ran the public detector adapter
+    SphereSphere/BoxBox/SphereBox touching subset for native, FCL, Bullet, and
+    ODE, wrote `.benchmark_results/collision_check_narrow_adapter.json`, and
+    reported `collision benchmark check: 0 passed, 0 failed, 0 skipped, 3 reported`.
+    The benchmark binary's built-in accuracy verification passed
+    for the same primitive pairs covered by the raw narrow-phase benchmark.
 
 ## Known Risks
 

@@ -79,6 +79,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help="Print passing comparisons too.",
     )
     parser.add_argument(
+        "--report-only",
+        action="store_true",
+        help="Print comparisons without failing when the ratio limit is exceeded.",
+    )
+    parser.add_argument(
         "benchmark_args",
         nargs=argparse.REMAINDER,
         help="Extra benchmark arguments after --.",
@@ -207,9 +212,11 @@ def check_results(
     comparisons: dict[str, dict[str, float]],
     max_native_ratio: float,
     verbose: bool,
+    report_only: bool,
 ) -> int:
     failures: list[str] = []
     passes: list[str] = []
+    reports: list[str] = []
     skipped = 0
 
     for family in sorted(comparisons):
@@ -235,21 +242,28 @@ def check_results(
             f"best_reference={best_backend}:{best_reference / 1000.0:.3f}us, "
             f"ratio={ratio:.3f}, limit={max_native_ratio:.3f}"
         )
-        if ratio > max_native_ratio:
+        if ratio > max_native_ratio and report_only:
+            reports.append(line)
+        elif ratio > max_native_ratio:
             failures.append(line)
         else:
             passes.append(line)
 
     for line in failures:
         print(f"FAIL {line}")
+    for line in reports:
+        print(f"INFO {line}")
     if verbose:
         for line in passes:
             print(f"PASS {line}")
 
-    print(
+    summary = (
         "collision benchmark check: "
         f"{len(passes)} passed, {len(failures)} failed, {skipped} skipped"
     )
+    if reports:
+        summary += f", {len(reports)} reported"
+    print(summary)
     return 1 if failures else 0
 
 
@@ -260,7 +274,9 @@ def main(argv: list[str]) -> int:
     if not comparisons:
         print("No native/reference benchmark comparisons found.", file=sys.stderr)
         return 1
-    return check_results(comparisons, args.max_native_ratio, args.verbose)
+    return check_results(
+        comparisons, args.max_native_ratio, args.verbose, args.report_only
+    )
 
 
 if __name__ == "__main__":

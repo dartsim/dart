@@ -897,6 +897,7 @@ bm-check = { cmd = "python scripts/check_allocator_benchmarks.py", depends-on = 
 ] }
 bm-collision-check = { depends-on = [
   "bm-collision-check-narrow",
+  "bm-collision-check-narrow-adapter",
   "bm-collision-check-distance",
   "bm-collision-check-raycast",
   "bm-collision-check-mixed",
@@ -910,6 +911,19 @@ bm-collision-check-narrow = { cmd = """
       --output .benchmark_results/collision_check_narrow.json \
       --benchmark-filter 'BM_NarrowPhase_(SphereSphere|BoxBox|SphereBox)_(Native|FCL|Bullet|ODE)$' \
       --max-native-ratio 1.10 \
+      -- \
+      --benchmark_min_time=1ms \
+      --benchmark_repetitions=3
+""", depends-on = [
+  "config",
+] }
+bm-collision-check-narrow-adapter = { cmd = """
+    python scripts/check_collision_benchmarks.py \
+      --target bm_comparative_narrow_phase \
+      --output .benchmark_results/collision_check_narrow_adapter.json \
+      --benchmark-filter 'BM_NarrowPhaseAdapter_EdgeCases_(Native|FCL|Bullet|ODE)/(SphereSphere|BoxBox|SphereBox)_Touching/1$' \
+      --max-native-ratio 1.10 \
+      --report-only \
       -- \
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
