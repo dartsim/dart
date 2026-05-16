@@ -90,6 +90,24 @@ Historical source compared: `520993d7301^:examples/fetch/main.cpp`.
 | README documents how to run the example.                                                                                     | Restored.                                           | Current README documents `pixi run ex fetch`, headless capture, and the historical standalone build/execute instruction sections.                                                                                   |
 | Keep Fetch open if another historical behavior gap is identified.                                                            | Active strict-audit rule.                           | Do not treat the first-pass inventory as final without re-checking the current source against the old OSG/ImGui source.                                                                                             |
 
+### Biped Stand Itemized Inventory
+
+Historical source compared: `520993d7301^:examples/biped_stand`.
+
+The current source is a real `dart::gui` example and restores the live world and
+controller behavior, but the strict re-open found remaining user-facing
+documentation/instruction gaps.
+
+| Historical item                                                                                  | Current outcome                      | Notes                                                                                                                                     |
+| ------------------------------------------------------------------------------------------------ | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Load `dart://sample/skel/fullbody1.skel` and set gravity to `(0, -9.81, 0)`.                     | Restored through public `dart::gui`. | Current source calls `dart::io::readWorld`, preserves the Y-down gravity, and passes the world through `ApplicationOptions::world`.       |
+| Set the historical pelvis, thigh, shin, heel, and abdomen initial DOF positions.                 | Restored.                            | Current source preserves the same numeric DOF values before controller setup.                                                             |
+| SPD tracking controller with free-root gains disabled, `Kp=400`, `Kd=40`, and ankle strategy.    | Restored.                            | Current `BipedStandController::preStep` preserves the historical mass-matrix, Coriolis/gravity, constraint force, and ankle torque logic. |
+| Keys `1`-`4` apply +/-X and +/-Z pushes with force `50` for `100` frames.                        | Restored.                            | Current source exposes renderer-neutral keyboard actions and matching panel buttons.                                                      |
+| User-visible text prints "Press space to start simulation" and the exact four push instructions. | Restored.                            | Current panel preserves the historical start text and all four push-instruction lines.                                                    |
+| Default 640x480 window size and camera home from `(3, 1.5, 3)` to `(0, 0, 0)`.                   | Restored.                            | Current source uses `ApplicationOptions::runDefaults` and `ApplicationOptions::camera`.                                                   |
+| README includes standalone build and execute instructions.                                       | Restored.                            | Current README documents `pixi run ex biped_stand`, headless capture, and standalone build/execute sections.                              |
+
 ### Hello World Itemized Inventory
 
 Historical source compared: `520993d7301^:examples/hello_world/main.cpp`.
@@ -648,7 +666,7 @@ state machinery.
 | `add_delete_skels`          | Restored by strict re-open.                                                        | Keep marker guards for controls, no startup cubes, camera/defaults, README, and no backend types.                                                                                           |
 | `atlas_puppet`              | Restored except target-activation/posture/balance/support-visualization gaps.      | Keep remaining gaps explicit until repaired through source-owned state or public debug/IK APIs.                                                                                             |
 | `atlas_simbicon`            | Restored except render-settings/window-title API gaps.                             | Keep marker guards for controller/state files, pre-step control, perturbation and stride controls, camera/defaults, README, and no OSG types.                                               |
-| `biped_stand`               | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm perturbation controls, camera, run defaults, README, and guards.                                                                                                                    |
+| `biped_stand`               | Restored by strict re-open.                                                        | Keep marker guards for controller, perturbation controls, camera/run defaults, historical instruction text, README, and no backend types.                                                   |
 | `box_stacking`              | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm solver controls, camera/defaults, README, and guards.                                                                                                                               |
 | `boxes`                     | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm Bullet preference, camera/defaults, README, and guards.                                                                                                                             |
 | `capsule_ground_contact`    | Restored by strict audit.                                                          | Keep marker guards for controls, camera/defaults, README, and no backend types.                                                                                                             |

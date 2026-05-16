@@ -819,33 +819,26 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`3ca9f65c9bb Restore Atlas Puppet defaults`. No rows remain with the exact
-`Needs strict audit` state. The current pending checkpoint is the fresh
-`examples/fetch/` re-open requested by maintainer correction. Compare the
-current source against `520993d7301^:examples/fetch/main.cpp`, write any updated
-inventory findings in
+`6ea2c868547 Restore Fetch target affordance`. No rows remain with the exact
+`Needs strict audit` state. The current pending checkpoint is
+`examples/biped_stand/` strict re-open. Compare the current source and README
+against `520993d7301^:examples/biped_stand`, write any updated inventory
+findings in
 `11-example-parity-audit.md`, then preserve, restore, or explicitly name any
 public API gaps before coding past this slice.
 
 ## Current Immediate Next Step
 
-Audit `examples/fetch/` again before coding: compare the current source and
-README to the historical OSG/ImGui source, identify any user-visible behavior
-still missing despite previous Fetch checkpoints, then repair the source or name
-the missing renderer-neutral public API explicitly. Keep `--screenshot <path>`
-and `--out <dir>` working for the existing CTest, GitHub Actions smoke path, and
+Audit `examples/biped_stand/` before coding: compare the current source and
+README to the historical OSG/ImGui source, verify perturbation controls, camera,
+run defaults, README, and marker guards, then repair the source or name missing
+renderer-neutral public API explicitly. Keep `--screenshot <path>` and
+`--out <dir>` working for the existing CTest, GitHub Actions smoke path, and
 historical image-sequence workflows. A later broader smoke sweep can still use:
 
-Fresh audit finding: restore a closer `InteractiveFrame`-style target affordance
-using public DART line geometry, specifically local-axis arrowheads and planar
-translation guides around the existing selectable `SimpleFrame`. Also restore
-the historical standalone build/execute instruction sections in
-`examples/fetch/README.md`.
-
-Implementation state: Fetch now has local-axis arrowheads, planar translation
-guide outlines, and rotation rings on the selectable target handle, plus restored
-standalone README build/execute instructions. Validate this slice before
-committing.
+Implementation state: Biped Stand now restores the historical start text, exact
+push-instruction text for keys 1-4, standalone README build/execute sections,
+and marker coverage. Validate this slice before committing.
 
 Pre-lint validation is complete: focused build/CTest, direct/pixi headless
 screenshot analyzer checks, Python C++ example-runner tests, aggregate

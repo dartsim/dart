@@ -11,12 +11,27 @@
   along `+X` and `-X`; keys `3` and `4` push along `+Z` and `-Z`. The panel
   exposes the same perturbations.
 
-## Run
+## Build Instructions
+
+From this directory:
+
+    $ mkdir build
+    $ cd build
+    $ cmake ..
+    $ make
+
+## Execute Instructions
 
 From the source tree:
 
 ```bash
 pixi run ex biped_stand
+```
+
+From a standalone build directory:
+
+```bash
+./biped_stand
 ```
 
 Headless capture is also supported through the promoted `dart::gui` runner:

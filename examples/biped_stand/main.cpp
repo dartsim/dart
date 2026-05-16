@@ -265,7 +265,12 @@ dart::gui::Panel createBipedStandPanel(
                                dart::gui::PanelBuilder& builder,
                                dart::gui::PanelContext& context) {
     builder.text("SPD standing controller with panel perturbations");
+    builder.text("Press space to start simulation.");
     builder.text("Keys: 1 +X, 2 -X, 3 +Z, 4 -Z push for 100 frames.");
+    builder.text("1: Push robot with +50 along x-axis N for 100 frames");
+    builder.text("2: Push robot with -50 along x-axis N for 100 frames");
+    builder.text("3: Push robot with +50 along z-axis N for 100 frames");
+    builder.text("4: Push robot with -50 along z-axis N for 100 frames");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {

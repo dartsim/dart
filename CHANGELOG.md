@@ -72,6 +72,8 @@
     interactive-frame affordance with source-owned local-axis arrowheads,
     planar translation guides, and restored standalone README build/execute
     instructions.
+  - Restored the `biped_stand` example's historical space/start and push
+    instruction text plus standalone README build/execute instructions.
   - Restored the rigid/constraint example batch (`rigid_chain`, `rigid_loop`,
     `mixed_chain`, `coupler_constraint`, `add_delete_skels`, and
     `rigid_shapes`) as source-defined `dart::gui` examples.

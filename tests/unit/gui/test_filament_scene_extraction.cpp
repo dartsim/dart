@@ -1654,9 +1654,17 @@ TEST(FilamentSceneExtraction, BipedStandExamplePreservesLegacyParityMarkers)
   EXPECT_NE(
       mainSource.find("camera.target = Eigen::Vector3d::Zero()"),
       std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Press space to start simulation"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("1: Push robot with +50 along x-axis N for 100 frames"),
+      std::string::npos);
   EXPECT_NE(mainSource.find("Keys: 1 +X"), std::string::npos);
   EXPECT_NE(readmeSource.find("Biped Stand Example"), std::string::npos);
   EXPECT_NE(readmeSource.find("keyboard actions"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Build Instructions"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Execute Instructions"), std::string::npos);
+  EXPECT_NE(readmeSource.find("./biped_stand"), std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, FreeJointCasesExamplePreservesLegacyParityMarkers)

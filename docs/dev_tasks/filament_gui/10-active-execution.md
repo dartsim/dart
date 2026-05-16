@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `3ca9f65c9bb Restore Atlas Puppet defaults`.
+  `6ea2c868547 Restore Fetch target affordance`.
 - Latest pushed code checkpoint:
-  `3ca9f65c9bb Restore Atlas Puppet defaults`.
+  `6ea2c868547 Restore Fetch target affordance`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -145,6 +145,7 @@ history but are not guaranteed to be in chronological order.
   - `6511db33821 Audit Rerun placeholder example`
   - `9fa571ed585 Restore add-delete skeleton defaults`
   - `3ca9f65c9bb Restore Atlas Puppet defaults`
+  - `6ea2c868547 Restore Fetch target affordance`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -600,6 +601,35 @@ history but are not guaranteed to be in chronological order.
   (`/tmp/dart_fetch_interactive_frame_direct_postlint.ppm`, 303782/307200
   nonzero pixels, and `/tmp/dart_fetch_interactive_frame_pixi_postlint.ppm`,
   303777/307200 nonzero pixels), and `git diff --check` passed.
+- The Fetch target-affordance checkpoint was pushed as
+  `6ea2c868547 Restore Fetch target affordance`; do not wait for CI before
+  continuing independent strict-audit work.
+- Active slice is now `examples/biped_stand/`. Compare the current source and
+  README against `520993d7301^:examples/biped_stand`, itemize any remaining
+  historical behavior gaps in `11-example-parity-audit.md`, then repair or name
+  public `dart::gui` API gaps before moving on.
+- Biped Stand fresh audit finding: the current source restores the loaded
+  `fullbody1.skel` world, Y-down gravity, initial pose, SPD tracking, ankle
+  strategy, 1-4 perturbation controls, 640x480 run default, and camera home.
+  Remaining gaps are user-facing: the panel does not preserve the historical
+  "Press space to start simulation" and exact push-instruction text, and the
+  README lacks the standalone build and execute instruction sections.
+- Implementation state for this Biped Stand re-open: `examples/biped_stand` now
+  restores the historical space/start text, exact push-instruction text for
+  keys 1-4, standalone README build/execute sections, and marker coverage.
+- Biped Stand pre-lint validation: focused build for `biped_stand` and
+  `UNIT_gui_FilamentSceneExtraction` passed, focused CTest passed, direct and
+  pixi llvmpipe headless screenshots passed analyzer coverage
+  (`/tmp/dart_biped_stand_instructions_direct.ppm`, 307200/307200 nonzero
+  pixels, and `/tmp/dart_biped_stand_instructions_pixi.ppm`, 307200/307200
+  nonzero pixels), Python C++ example-runner tests passed (67/67), aggregate
+  `examples` build passed, and `git diff --check` passed.
+- Biped Stand post-lint validation: `pixi run lint` passed, focused build for
+  `biped_stand` and `UNIT_gui_FilamentSceneExtraction` passed, focused CTest
+  passed, direct and pixi llvmpipe headless screenshots passed analyzer coverage
+  (`/tmp/dart_biped_stand_instructions_direct_postlint.ppm`, 307200/307200
+  nonzero pixels, and `/tmp/dart_biped_stand_instructions_pixi_postlint.ppm`,
+  307200/307200 nonzero pixels), and `git diff --check` passed.
 
 ## Current Code Shape
 

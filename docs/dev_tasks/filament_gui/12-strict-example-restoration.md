@@ -237,6 +237,10 @@ restored. Do not rely on earlier restored-state wording in the inventory.
 19. The Atlas Puppet defaults checkpoint was pushed as
     `3ca9f65c9bb Restore Atlas Puppet defaults`. The active cursor is now the
     fresh `examples/fetch/` re-open requested by maintainer correction.
+20. The Fetch target-affordance checkpoint was pushed as
+    `6ea2c868547 Restore Fetch target affordance`. The active cursor is now
+    `examples/biped_stand/`; compare it against
+    `520993d7301^:examples/biped_stand` before coding.
 
 ## Checkpoint Rule
 
