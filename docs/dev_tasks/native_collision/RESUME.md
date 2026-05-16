@@ -114,14 +114,16 @@ recorded in `03-evidence-gates.md`.
 ## Current Branch
 
 `feature/new_coll` tracks `origin/feature/new_coll`. The latest audited
-remote-tracking head was `f8f5663d5145`, and the local branch was clean and
-ahead by 144 commits before this resume update. Run `git rev-parse HEAD` and
-`git rev-parse origin/feature/new_coll` for the exact current local/remote
-heads because editing this file changes the latest local hash. The latest
-read-only GitHub recheck on local docs/evidence head `ccbe9e5dd06` found no
-Actions runs for that head; branch-local commits do not trigger the main
-workflows while PR #2652 remains closed. PR #2652 is closed, draft, dirty, and
-still anchored to old head `714d220d82a`.
+remote-tracking head was `f8f5663d5145`. The latest audited local docs/evidence
+head before this resume update was `77ec5ee8ceb`
+(`Record current native collision validation evidence`), and the branch was
+clean and ahead by 148 commits. Run `git rev-parse HEAD` and
+`git rev-parse origin/feature/new_coll` for the exact current local/remote heads
+because editing this file changes the latest local hash. The latest read-only
+GitHub recheck on `77ec5ee8ceb` found no Actions runs for that head;
+branch-local commits do not trigger the main workflows while PR #2652 remains
+closed. PR #2652 is closed, draft, dirty, and still anchored to old head
+`714d220d82a`.
 
 The latest branch-local full validation head `6d2553123d9` passed
 `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
@@ -170,14 +172,14 @@ the distinction clear:
    evidence transfer, final local validation on that completing state, and
    deleting this folder in the same completing PR. The latest read-only review
    surface check found no workflow runs for local docs/evidence head
-   `ccbe9e5dd06`, `gh pr list --head feature/new_coll --state all` returned
+   `77ec5ee8ceb`, `gh pr list --head feature/new_coll --state all` returned
    only PR #2652, `gh auth status -h github.com` showed `jslee02` is the active
    account, and confirmed
    PR #2652 remains closed on old head `714d220d82a6ba99350bf2214fc9696f5495a30f`.
 
 If code or evidence changes again, run `pixi run lint` before committing and
 run the focused validation that matches the change. Full `pixi run test-all`
-evidence is refreshed locally through pre-record validation head `59769b3ee58`;
+evidence is refreshed locally through pre-record validation head `6d2553123d9`;
 later local evidence commits should be checked with
 `git status --short --branch` plus `git log -3 --oneline --decorate`.
 
@@ -200,9 +202,11 @@ post GitHub comments unless the user explicitly asks.
   `test_reference_backends`, fresh `pixi run -e gazebo test-gz`, and native
   package/link smoke with direct `readelf` checks.
 - Public docs collision-runtime wording baseline: `ad1b6782578`.
-- Latest full local `pixi run test-all` validation: pre-record local head `59769b3ee58`
-  (`Record native collision current audit state`), with 6/6 top-level gates
-  passing after current audit/evidence refreshes. Earlier validation head
+- Latest full local `pixi run test-all` validation: pre-record local head
+  `6d2553123d9` (`Record latest gz-physics compatibility evidence`), with 6/6
+  top-level gates passing after current audit/evidence refreshes. Earlier
+  validation head `59769b3ee58` also passed the same full local gate, and
+  earlier validation head
   `35578ad2f8a` also passed after stale legacy collision artifact cleanup on
   top of the Atlas Simbicon coverage head. The latest feature code head remains
   `ca0201e67f4`
