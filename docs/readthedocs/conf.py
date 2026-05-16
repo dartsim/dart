@@ -284,18 +284,13 @@ def _read_api_versions():
 # Get current DART version from package.xml
 current_version = get_dart_version()
 api_versions = _read_api_versions()
-if current_version in api_versions:
-    api_version_to_link = current_version
-else:
-    api_version_to_link = api_versions[0] if api_versions else current_version
 
 html_context = {
     "current_version": current_version,
     "api_versions": api_versions,
-    "api_version_to_link": api_version_to_link,
-    "cpp_api_url": f"https://dartsim.github.io/dart/{api_version_to_link}/",
-    "python_api_url": f"https://dartsim.github.io/dart/{api_version_to_link}-py/",
-    "gh_pages_url": "https://github.com/dartsim/dart/tree/gh-pages",
+    "cpp_api_url": "https://docs.dartsim.org/en/latest/dart/cpp_api_reference.html",
+    "python_api_url": "https://docs.dartsim.org/en/latest/dartpy/python_api_reference.html",
+    "published_docs_url": "https://docs.dartsim.org/",
 }
 
 # Provide easy-to-reuse substitutions in the RST files.

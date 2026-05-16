@@ -19,9 +19,10 @@ its own line so status updates remain git-history friendly.
 
 - Owner doc: [`README.md#plan-update-workflow`](README.md#plan-update-workflow)
 - Status: Active
-- Horizon: Now
+- Horizon: Next
 - Dimension: AI-native execution
-- Next step: Keep plan edits flowing through `$dart-plan-update`.
+- Next step: Keep structural checks covering workflow adapters, required-reading
+  paths, and dev-task shape.
 - Gate: AI docs/adapters gates stay green after each workflow change.
 
 ### PLAN-010: Easy-Start API And Package Readiness
@@ -69,13 +70,13 @@ its own line so status updates remain git-history friendly.
 ### PLAN-050: Experimental World Split
 
 - Owner doc:
-  [`../dev_tasks/world_split/00_design.md`](../dev_tasks/world_split/00_design.md)
-- Status: Blocked
+  [`../dev_tasks/world_split/README.md`](../dev_tasks/world_split/README.md)
+- Status: Active
 - Horizon: Next
 - Dimension: Algorithm extensibility
-- Next step: Normalize or retire the `world_split` dev task.
-- Gate: `world_split` has compliant dev-task status/resume files or durable
-  content is moved elsewhere.
+- Next step: Decide the Python module split for the experimental world.
+- Gate: `world_split` README and RESUME stay current, and Phase 2 names the
+  Python binding module shape.
 
 ### PLAN-060: Backend-Hidden GUI Roadmap
 

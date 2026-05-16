@@ -14,7 +14,7 @@ For general DART agent work:
 4. `docs/ai/north-star.md`
 5. `docs/ai/workflows.md`
 6. `docs/ai/verification.md`
-7. The task-specific onboarding doc listed in `AGENTS.md`
+7. The task-specific developer doc listed in `AGENTS.md`
 
 For multi-session work, also read `docs/ai/sessions.md` and
 `docs/dev_tasks/README.md`.
@@ -25,6 +25,23 @@ For project planning, also read `docs/plans/README.md`,
 For AI component maintenance or durable AI-infra self-improvement, read
 `docs/ai/components.md`, `docs/ai/verification.md`, and
 `docs/onboarding/ai-tools.md`.
+
+## Choosing The Next Task
+
+Use `$dart-next` in Codex or `/dart-next` in Claude/OpenCode when the goal is
+to let an agent select the next bounded DART task from tracked evidence. The
+workflow reads the north star, plan dashboard, active dev-task rules, and
+verification policy, then routes the selected task through the most specific
+workflow such as `dart-new-task`, `dart-fix-ci`, `dart-docs-update`, or
+`dart-plan-update`.
+
+Useful constraints include `mode=select`, `mode=execute`, `mode=pr`,
+`size=tiny|small|medium|large`, `days=N`, `focus=<topic>`, and
+`area=<dimension>`. `focus` is a preference rather than a hard filter: the
+workflow should favor matching tasks, then explain when a higher-evidence or
+better-bounded task is selected instead. PR creation, PR comments, review
+re-triggers, thread resolution, CI reruns, pushes, merges, and branch deletion
+still require explicit maintainer/user approval.
 
 ## Source Ownership
 
@@ -69,7 +86,7 @@ Use `docs/ai/verification.md` to select the strongest gate that matches the
 work. AI-surface changes use its AI docs/adapters gate set.
 
 Before committing, DART still requires `pixi run lint`. Code changes require
-the build and test gates listed in `AGENTS.md` and the relevant onboarding docs.
+the build and test gates listed in `AGENTS.md` and the relevant developer docs.
 
 Substantial AI-infra changes also require the principle audit in
 `docs/ai/principles.md`; record the result in the final response or PR Testing
