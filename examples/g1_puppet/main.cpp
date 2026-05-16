@@ -31,6 +31,7 @@
  */
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/debug.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
 
@@ -75,8 +76,14 @@
 
 namespace {
 
-constexpr const char* kG1SkeletonName = "visual_g1_robot";
-constexpr const char* kGroundSkeletonName = "g1_ground";
+constexpr const char* kG1SkeletonName = "G1";
+constexpr const char* kGroundSkeletonName = "ground";
+constexpr const char* kGroundBodyName = "ground_body";
+constexpr const char* kG1GridName = "g1_xy_grid";
+constexpr const char* kG1GridBodyName = "g1_xy_grid_body";
+constexpr const char* kG1GridShapeName = "g1_xy_grid_lines";
+constexpr const char* kG1SupportOverlayName = "g1_support_polygon_overlay";
+constexpr double kSupportVisualElevation = 0.02;
 
 struct G1Options
 {
@@ -186,71 +193,6 @@ void disableSkeletonCollisionAndGravity(
   }
 }
 
-std::optional<std::pair<Eigen::Vector3d, Eigen::Vector3d>>
-computeVisualWorldBounds(const dart::dynamics::SkeletonPtr& skeleton)
-{
-  if (skeleton == nullptr) {
-    return std::nullopt;
-  }
-
-  bool hasBounds = false;
-  Eigen::Vector3d min = Eigen::Vector3d::Zero();
-  Eigen::Vector3d max = Eigen::Vector3d::Zero();
-
-  const auto includePoint = [&](const Eigen::Vector3d& point) {
-    if (!hasBounds) {
-      min = point;
-      max = point;
-      hasBounds = true;
-      return;
-    }
-    min = min.cwiseMin(point);
-    max = max.cwiseMax(point);
-  };
-
-  for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
-    auto* body = skeleton->getBodyNode(i);
-    if (body == nullptr) {
-      continue;
-    }
-
-    body->eachShapeNodeWith<dart::dynamics::VisualAspect>(
-        [&](const dart::dynamics::ShapeNode* shapeNode) {
-          if (shapeNode == nullptr || shapeNode->getShape() == nullptr
-              || shapeNode->getVisualAspect()->isHidden()) {
-            return;
-          }
-
-          const auto& bounds = shapeNode->getShape()->getBoundingBox();
-          const Eigen::Vector3d localMin = bounds.getMin();
-          const Eigen::Vector3d localMax = bounds.getMax();
-          if (!localMin.allFinite() || !localMax.allFinite()) {
-            return;
-          }
-
-          const Eigen::Isometry3d transform = shapeNode->getWorldTransform();
-          for (int x = 0; x < 2; ++x) {
-            for (int y = 0; y < 2; ++y) {
-              for (int z = 0; z < 2; ++z) {
-                includePoint(
-                    transform
-                    * Eigen::Vector3d(
-                        x == 0 ? localMin.x() : localMax.x(),
-                        y == 0 ? localMin.y() : localMax.y(),
-                        z == 0 ? localMin.z() : localMax.z()));
-              }
-            }
-          }
-        });
-  }
-
-  if (!hasBounds) {
-    return std::nullopt;
-  }
-
-  return std::make_pair(min, max);
-}
-
 dart::common::ResourceRetrieverPtr createG1ResourceRetriever(
     const G1Options& options)
 {
@@ -287,15 +229,49 @@ dart::dynamics::SkeletonPtr createGround()
   auto ground = dart::dynamics::Skeleton::create(kGroundSkeletonName);
   auto* body
       = ground->createJointAndBodyNodePair<dart::dynamics::WeldJoint>().second;
+  body->setName(kGroundBodyName);
 
-  constexpr double thickness = 0.04;
+  constexpr double thickness = 0.1;
   auto* shapeNode = body->createShapeNodeWith<dart::dynamics::VisualAspect>(
       std::make_shared<dart::dynamics::BoxShape>(
-          Eigen::Vector3d(4.0, 4.0, thickness)));
+          Eigen::Vector3d(8.0, 8.0, thickness)));
   shapeNode->setRelativeTranslation(
       Eigen::Vector3d(0.0, 0.0, -thickness / 2.0));
-  shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.86, 0.88, 0.90, 1.0));
+  shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.4, 0.4, 0.4, 1.0));
   return ground;
+}
+
+std::shared_ptr<dart::dynamics::LineSegmentShape> createG1GridShape()
+{
+  auto grid = std::make_shared<dart::dynamics::LineSegmentShape>(1.0f);
+  constexpr int cellCount = 40;
+  constexpr double spacing = 0.1;
+  constexpr double halfExtent = cellCount * spacing * 0.5;
+  for (int i = -cellCount / 2; i <= cellCount / 2; ++i) {
+    const double coordinate = static_cast<double>(i) * spacing;
+    const auto startX
+        = grid->addVertex(Eigen::Vector3d(-halfExtent, coordinate, 0.0));
+    grid->addVertex(Eigen::Vector3d(halfExtent, coordinate, 0.0), startX);
+    const auto startY
+        = grid->addVertex(Eigen::Vector3d(coordinate, -halfExtent, 0.0));
+    grid->addVertex(Eigen::Vector3d(coordinate, halfExtent, 0.0), startY);
+  }
+  return grid;
+}
+
+dart::dynamics::SkeletonPtr createG1Grid()
+{
+  auto grid = dart::dynamics::Skeleton::create(kG1GridName);
+  auto* body
+      = grid->createJointAndBodyNodePair<dart::dynamics::WeldJoint>().second;
+  body->setName(kG1GridBodyName);
+
+  auto* shapeNode = body->createShapeNodeWith<dart::dynamics::VisualAspect>(
+      createG1GridShape());
+  shapeNode->setName(kG1GridShapeName);
+  shapeNode->getVisualAspect()->setRGBA(
+      Eigen::Vector4d(0.72, 0.72, 0.72, 0.58));
+  return grid;
 }
 
 dart::dynamics::SkeletonPtr loadG1Skeleton(const G1Options& options)
@@ -314,12 +290,8 @@ dart::dynamics::SkeletonPtr loadG1Skeleton(const G1Options& options)
     if (auto* freeJoint = dynamic_cast<dart::dynamics::FreeJoint*>(
             rootBody->getParentJoint())) {
       Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+      transform.translation().z() = 0.75;
       dart::dynamics::FreeJoint::setTransformOf(freeJoint, transform);
-      if (const auto bounds = computeVisualWorldBounds(robot)) {
-        constexpr double groundClearance = 0.015;
-        transform.translation().z() = groundClearance - bounds->first.z();
-        dart::dynamics::FreeJoint::setTransformOf(freeJoint, transform);
-      }
     }
   }
 
@@ -352,9 +324,59 @@ std::shared_ptr<dart::dynamics::LineSegmentShape> createIkTargetHandleShape(
   return handle;
 }
 
+std::shared_ptr<dart::dynamics::LineSegmentShape> createLineShape(
+    const std::vector<dart::gui::DebugLineDescriptor>& lines)
+{
+  auto shape = std::make_shared<dart::dynamics::LineSegmentShape>(3.0f);
+  for (const auto& line : lines) {
+    const auto start = shape->addVertex(line.from);
+    shape->addVertex(line.to, start);
+  }
+  return shape;
+}
+
+std::vector<dart::gui::DebugLineDescriptor> makeG1SupportPolygonLines(
+    const dart::dynamics::SkeletonPtr& robot)
+{
+  if (robot == nullptr) {
+    return {};
+  }
+
+  dart::gui::DebugDrawOptions options;
+  options.drawGrid = false;
+  options.drawWorldFrame = false;
+  options.drawSupportPolygons = true;
+  options.supportPolygonElevation = kSupportVisualElevation;
+  return dart::gui::makeSupportPolygonDebugLines(*robot, options, "g1");
+}
+
+dart::dynamics::SimpleFramePtr createG1SupportPolygonOverlay(
+    const dart::dynamics::SkeletonPtr& robot)
+{
+  auto overlay = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), kG1SupportOverlayName);
+  overlay->setShape(createLineShape(makeG1SupportPolygonLines(robot)));
+  overlay->getVisualAspect(true)->setRGBA(
+      Eigen::Vector4d(0.97, 0.78, 0.24, 0.86));
+  return overlay;
+}
+
+void updateG1SupportPolygonOverlay(
+    const dart::dynamics::SkeletonPtr& robot,
+    const dart::dynamics::SimpleFramePtr& overlay)
+{
+  if (overlay == nullptr) {
+    return;
+  }
+
+  overlay->setShape(createLineShape(makeG1SupportPolygonLines(robot)));
+}
+
 struct G1Scene
 {
   dart::simulation::WorldPtr world;
+  dart::dynamics::SkeletonPtr robot;
+  dart::dynamics::SimpleFramePtr supportOverlay;
   std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
   struct TargetState
   {
@@ -375,6 +397,7 @@ struct G1Scene
       target->setTransform(effector->getWorldTransform());
       world->addSimpleFrame(target);
       active = true;
+      std::cout << "Activated IK target '" << effector->getName() << "'.\n";
       solve();
     }
 
@@ -385,6 +408,7 @@ struct G1Scene
       }
       world->removeSimpleFrame(target);
       active = false;
+      std::cout << "Deactivated IK target '" << effector->getName() << "'.\n";
     }
 
     void toggle()
@@ -412,6 +436,7 @@ void addG1IkTargets(G1Scene& scene, const dart::dynamics::SkeletonPtr& robot)
   struct Config
   {
     const char* bodyNode;
+    const char* effectorName;
     const char* targetName;
     const char* label;
     int hotkey;
@@ -421,24 +446,28 @@ void addG1IkTargets(G1Scene& scene, const dart::dynamics::SkeletonPtr& robot)
 
   const std::array<Config, 4> configs{{
       {"left_rubber_hand",
+       "left_rubber_hand_target",
        "ik_target_left_hand",
        "1 left hand",
        '1',
        {0.18, 0.55, 1.0, 0.92},
        false},
       {"right_rubber_hand",
+       "right_rubber_hand_target",
        "ik_target_right_hand",
        "2 right hand",
        '2',
        {1.0, 0.40, 0.24, 0.92},
        false},
       {"left_ankle_roll_link",
+       "left_ankle_roll_link_target",
        "ik_target_left_foot",
        "3 left foot",
        '3',
        {0.26, 0.86, 0.34, 0.92},
        true},
       {"right_ankle_roll_link",
+       "right_ankle_roll_link_target",
        "ik_target_right_foot",
        "4 right foot",
        '4',
@@ -455,8 +484,7 @@ void addG1IkTargets(G1Scene& scene, const dart::dynamics::SkeletonPtr& robot)
           + std::string(config.bodyNode));
     }
 
-    auto* endEffector = bodyNode->createEndEffector(
-        std::string(config.targetName) + "_effector");
+    auto* endEffector = bodyNode->createEndEffector(config.effectorName);
     if (config.supportContact) {
       auto* support = endEffector->getSupport(true);
       support->setGeometry(footSupportGeometry);
@@ -498,15 +526,19 @@ G1Scene createG1Scene(const G1Options& options)
 {
   G1Scene scene;
   scene.world = dart::simulation::World::create("dartsim_g1");
-  scene.world->setGravity(Eigen::Vector3d::Zero());
+  scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   scene.world->addSkeleton(createGround());
+  scene.world->addSkeleton(createG1Grid());
 
   auto robot = loadG1Skeleton(options);
   std::cout << "Loaded G1 robot from '" << options.robotUri << "'.\n"
             << "Package root for '" << options.packageName << "' set to '"
             << options.packageUri << "'.\n";
-  scene.world->addSkeleton(robot);
-  addG1IkTargets(scene, robot);
+  scene.robot = robot;
+  scene.world->addSkeleton(scene.robot);
+  addG1IkTargets(scene, scene.robot);
+  scene.supportOverlay = createG1SupportPolygonOverlay(scene.robot);
+  scene.world->addSimpleFrame(scene.supportOverlay);
   return scene;
 }
 
@@ -557,6 +589,8 @@ dart::gui::Panel createG1Panel(const G1Options& options)
     builder.text("Ctrl-left drag moves the selected handle.");
     builder.text("Arrow keys and PageUp/PageDown nudge it.");
     builder.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
+    builder.text(
+        "The support polygon overlay follows the active foot targets.");
     builder.text("Only active targets solve each simulation step.");
     builder.separator();
     builder.text("robot: " + options.robotUri);
@@ -575,6 +609,24 @@ dart::gui::Panel createG1Panel(const G1Options& options)
   return panel;
 }
 
+dart::gui::RunOptions makeG1RunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 1280;
+  options.height = 960;
+  return options;
+}
+
+dart::gui::OrbitCamera makeG1Camera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.0, 0.0, 0.75);
+  camera.yaw = 0.48995732625372834;
+  camera.pitch = 0.18889718087762267;
+  camera.distance = 3.4615747861341952;
+  return camera;
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
@@ -586,8 +638,13 @@ int main(int argc, char* argv[])
     dart::gui::ApplicationOptions options;
     options.world = scene.world;
     options.ikHandles = scene.ikHandles;
-    options.preStep = [targetStates = scene.targetStates]() {
+    options.runDefaults = makeG1RunDefaults();
+    options.camera = makeG1Camera();
+    options.preStep = [targetStates = scene.targetStates,
+                       robot = scene.robot,
+                       supportOverlay = scene.supportOverlay]() {
       solveActiveG1Targets(targetStates);
+      updateG1SupportPolygonOverlay(robot, supportOverlay);
     };
     options.keyboardActions = createG1KeyboardActions(scene.targetStates);
     options.panels.push_back(createG1Panel(g1Options));

@@ -2176,16 +2176,46 @@ TEST(FilamentSceneExtraction, G1PuppetExamplePreservesLegacyParityMarkers)
 {
   const auto mainSource = readSourceFile(
       std::filesystem::path("examples") / "g1_puppet" / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "g1_puppet" / "README.md");
 
   EXPECT_NE(
       mainSource.find("package://g1_description/g1_29dof.urdf"),
       std::string::npos);
   EXPECT_NE(mainSource.find("createG1ResourceRetriever"), std::string::npos);
   EXPECT_NE(mainSource.find("--g1-package-uri"), std::string::npos);
+  EXPECT_NE(mainSource.find("--package-uri"), std::string::npos);
+  EXPECT_NE(mainSource.find("kG1SkeletonName = \"G1\""), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("kGroundSkeletonName = \"ground\""), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("kGroundBodyName = \"ground_body\""), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81))"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Eigen::Vector3d(8.0, 8.0, thickness)"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Eigen::Vector4d(0.4, 0.4, 0.4, 1.0)"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("transform.translation().z() = 0.75"), std::string::npos);
+  EXPECT_NE(mainSource.find("createG1GridShape"), std::string::npos);
+  EXPECT_NE(mainSource.find("constexpr int cellCount = 40"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("constexpr double spacing = 0.1"), std::string::npos);
+  EXPECT_NE(mainSource.find("kG1GridShapeName"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("kSupportVisualElevation = 0.02"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeSupportPolygonDebugLines"), std::string::npos);
+  EXPECT_NE(mainSource.find("g1_support_polygon_overlay"), std::string::npos);
   EXPECT_NE(mainSource.find("LineSegmentShape"), std::string::npos);
   EXPECT_NE(mainSource.find("createIkTargetHandleShape"), std::string::npos);
   EXPECT_NE(mainSource.find("ik_target_left_hand"), std::string::npos);
   EXPECT_NE(mainSource.find("ik_target_right_foot"), std::string::npos);
+  EXPECT_NE(mainSource.find("left_rubber_hand_target"), std::string::npos);
+  EXPECT_NE(mainSource.find("right_ankle_roll_link_target"), std::string::npos);
   EXPECT_NE(mainSource.find("support->setActive(true)"), std::string::npos);
   EXPECT_NE(mainSource.find("Ctrl-left drag"), std::string::npos);
   EXPECT_NE(mainSource.find("InverseKinematicsHandle"), std::string::npos);
@@ -2197,12 +2227,35 @@ TEST(FilamentSceneExtraction, G1PuppetExamplePreservesLegacyParityMarkers)
       mainSource.find("world->addSimpleFrame(target)"), std::string::npos);
   EXPECT_NE(
       mainSource.find("world->removeSimpleFrame(target)"), std::string::npos);
+  EXPECT_NE(mainSource.find("Activated IK target"), std::string::npos);
+  EXPECT_NE(mainSource.find("Deactivated IK target"), std::string::npos);
   EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
   EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.width = 1280"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.height = 960"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeG1Camera"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 0.75)"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.yaw = 0.48995732625372834"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
   EXPECT_NE(mainSource.find("toggle target handles"), std::string::npos);
   EXPECT_NE(mainSource.find("'1'"), std::string::npos);
   EXPECT_NE(mainSource.find("'4'"), std::string::npos);
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+  EXPECT_EQ(mainSource.find("GridVisual"), std::string::npos);
+  EXPECT_EQ(mainSource.find("SupportPolygonVisual"), std::string::npos);
+  EXPECT_EQ(mainSource.find("InteractiveFrame"), std::string::npos);
+  EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
+  EXPECT_EQ(mainSource.find("osg"), std::string::npos);
+  EXPECT_NE(readmeSource.find("G1 Puppet Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("pixi run ex g1_puppet"), std::string::npos);
+  EXPECT_NE(readmeSource.find("--package-uri"), std::string::npos);
+  EXPECT_NE(readmeSource.find("--g1-package-uri"), std::string::npos);
+  EXPECT_NE(readmeSource.find("support-polygon overlay"), std::string::npos);
+  EXPECT_NE(readmeSource.find("renderer-neutral"), std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)

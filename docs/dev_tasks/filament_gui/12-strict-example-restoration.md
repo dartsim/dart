@@ -279,6 +279,25 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     `061bf811d76 Restore simple frames names and arrow`. The active cursor is
     now the fresh `examples/fetch/` re-open requested by maintainer correction;
     compare it against `520993d7301^:examples/fetch/main.cpp` before coding.
+27. The Fetch panel-window checkpoint was pushed as
+    `7a9c712a3f1 Restore Fetch panel window controls`. The active cursor is now
+    `examples/g1_puppet/`; compare it against
+    `520993d7301^:examples/g1_puppet` before coding.
+28. `examples/g1_puppet/` strict re-open found remaining scene/default/README
+    gaps after the earlier robot/IK checkpoint: missing README, zero gravity,
+    smaller renamed ground, visual-bounds root placement instead of historical
+    z `0.75`, missing XY grid geometry, and no restored 1280x960 camera home.
+    Repair those through promoted `dart::gui` and source-owned DART geometry
+    now. Restore the always-on support polygon as a source-owned public debug
+    line overlay in this checkpoint; keep per-body articulated dragging as the
+    remaining named public API follow-up.
+    Implementation and validation are complete: focused build/CTest, direct G1
+    headless screenshot, Python C++ example-runner tests, aggregate `examples`
+    build, `git diff --check`, mandatory `pixi run lint`, and post-lint
+    focused checks passed locally.
+29. After the G1 checkpoint is committed and pushed, the next strict-audit
+    cursor is `examples/hubo_puppet/`; compare it against
+    `520993d7301^:examples/hubo_puppet` before coding.
 
 ## Checkpoint Rule
 

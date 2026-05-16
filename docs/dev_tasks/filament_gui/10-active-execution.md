@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `061bf811d76 Restore simple frames names and arrow`.
+  `7a9c712a3f1 Restore Fetch panel window controls`.
 - Latest pushed code checkpoint:
-  `061bf811d76 Restore simple frames names and arrow`.
+  `7a9c712a3f1 Restore Fetch panel window controls`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -150,6 +150,7 @@ history but are not guaranteed to be in chronological order.
   - `7af2ad1228d Restore box stacking scene parity`
   - `68e31a339e4 Restore boxes example instructions`
   - `061bf811d76 Restore simple frames names and arrow`
+  - `7a9c712a3f1 Restore Fetch panel window controls`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -217,11 +218,12 @@ history but are not guaranteed to be in chronological order.
   (`/tmp/dart_fetch_panel_text_direct_postlint.ppm`, 303694/307200 nonzero
   pixels).
 - Current implementation checkpoint in the worktree:
-  `examples/csv_logger/` strict audit. The historical and current source are
-  byte-for-byte identical, so this slice preserves the non-GUI CSV logging
-  behavior rather than migrating a GUI viewer. The planned work is to document
-  the itemized audit, add source-marker coverage for the CLI/logging contract,
-  and validate the executable writes the expected CSV rows before committing.
+  `examples/g1_puppet/` strict re-open. This slice restores the historical
+  gravity, 8x8x0.1 gray `ground`, G1 root z `0.75`, source-owned 40-cell XY
+  grid, always-on support-polygon overlay, 1280x960 run defaults, camera home,
+  activation/deactivation console messages, README, and marker guards through
+  public `dart::gui`. Per-body articulated dragging remains a named promoted
+  API follow-up.
 - Previous human-joint-limits implementation checkpoint:
   `examples/human_joint_limits/` strict audit. The implementation restores the
   live SKEL world, preserves the file timestep/Y-down gravity,
@@ -784,6 +786,16 @@ history but are not guaranteed to be in chronological order.
   nonzero pixels), pixi Fetch screenshot passed analyzer coverage
   (`/tmp/dart_fetch_panel_window_pixi_postlint.ppm`, 303774/307200 nonzero
   pixels), and `git diff --check` passed.
+- The Fetch panel-window checkpoint was pushed as
+  `7a9c712a3f1 Restore Fetch panel window controls`; do not wait for CI before
+  continuing independent strict-audit work.
+- Active `examples/g1_puppet/` validation is complete for this checkpoint:
+  focused build for `g1_puppet` and `UNIT_gui_FilamentSceneExtraction`, focused
+  CTest, direct llvmpipe G1 screenshot
+  (`/tmp/dart_g1_puppet_strict_direct_postlint.ppm`, 1280x960), Python C++
+  example-runner tests, aggregate `examples` build, `git diff --check`, and
+  mandatory `pixi run lint` passed locally. After this checkpoint is committed
+  and pushed, the next strict-audit cursor is `examples/hubo_puppet/`.
 
 ## Current Code Shape
 

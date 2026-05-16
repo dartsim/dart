@@ -819,46 +819,22 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`061bf811d76 Restore simple frames names and arrow`. No rows remain with the
-exact
+`7a9c712a3f1 Restore Fetch panel window controls`. No rows remain with the exact
 `Needs strict audit` state. The current pending checkpoint is
-the fresh `examples/fetch/` re-open requested by maintainer correction. Compare
-the current source and README against
-`520993d7301^:examples/fetch/main.cpp`, write any updated inventory findings in
-`11-example-parity-audit.md`, then preserve, restore, or explicitly name any
-public API gaps before coding past this slice.
+`examples/g1_puppet/` strict re-open. Implementation and local validation are
+complete; commit and push this checkpoint before moving on. The checkpoint
+restores the README, historical gravity, 8x8x0.1 gray `ground`, G1 root z
+`0.75`, source-owned XY grid, 1280x960 defaults, camera home from
+`(3.0, 1.6, 1.4)` to `(0, 0, 0.75)`, support-polygon overlay, and marker guards.
+Per-body articulated dragging remains the named promoted API follow-up.
 
 ## Current Immediate Next Step
 
-Audit `examples/fetch/` before coding: compare the current source and README to
-the historical OSG/ImGui source, challenge every previous restored-state
-assumption, and verify the target manipulation affordance, mocap sync, panel
-help text, Play/Pause/Step/Exit/About controls, camera/run defaults,
-headless/image-sequence capture, README, and source-marker guards. Repair any
-remaining gap through promoted `dart::gui` APIs or name the missing
-renderer-neutral public API explicitly before taking another linear cursor. A
-later broader smoke sweep can still use:
-
-Current Fetch re-open finding: add public panel window/menu/collapsible helpers
-so Fetch can restore the historical `(10, 20)` panel position, `(360, 600)`
-size, `0.5` background alpha, menu bar, horizontal scrollbar, collapsible Help
-section, and default-open Simulation section without direct ImGui or private
-Filament calls in the example.
-
-Implementation state: public `dart::gui::Panel` now carries panel window
-options, `PanelBuilder` now exposes collapsible-header and menu helpers, the
-Filament backend maps those public concepts to ImGui internally, and Fetch uses
-that API to restore its panel geometry, menu bar, scrollbar, Help/Simulation
-sections, Exit/About menu items, and historical `User Guid:` text.
-
-Pre-lint validation passed: focused build for `fetch` and
-`UNIT_gui_FilamentSceneExtraction`, focused CTest, direct and pixi Fetch
-headless screenshot analyzer checks, Python C++ example-runner tests, aggregate
-`examples` build, and `git diff --check`.
-
-Post-lint validation passed: `pixi run lint`, focused rebuild for `fetch` and
-`UNIT_gui_FilamentSceneExtraction`, focused CTest, direct and pixi Fetch
-headless screenshot analyzer checks, and `git diff --check`.
+After the G1 checkpoint is pushed, audit `examples/hubo_puppet/` next: compare
+the current source and README to `520993d7301^:examples/hubo_puppet`, challenge
+the recent robot/IK checkpoint, and verify target activation/deactivation, IK
+behavior, root teleoperation, camera/run defaults, README, capture, and
+source-marker guards. A later broader smoke sweep can still use:
 
 ```bash
 pixi run test-dart-gui-smoke
