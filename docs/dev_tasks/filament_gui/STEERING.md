@@ -66,6 +66,8 @@ disagreement under "Open Issues" instead of editing "Decisions in force".
   `capsule_ground_contact` as source-defined public-API examples. Use
   `SimpleFrame`/shape APIs for the former and a small `Panel` for the
   capsule reset controls that used to live in an OSG key handler.
+- `f812a4afc1d` completes the rigid-box family source migration. `45e44a0318a`
+  completes the simple-frame/contact source migration.
 
 ### Decisions in force (do NOT reopen)
 
@@ -350,33 +352,33 @@ templates to restore first; the API-forcing examples (`imgui`,
 
 Rigid-box family slice:
 
-- [~] `examples/boxes/main.cpp`: restore the stacked 5x5x5 dynamic-box
-  educational source through `ApplicationOptions::world`; do not expose
-  Bullet, OSG, Filament, GLFW, or ImGui in the example source.
-- [~] `examples/rigid_cubes/main.cpp`: restore the cube world as a standalone
-  source-defined example. Replace OSG keyboard handlers with a small
-  public `dart::gui::Panel` only if the force-control affordance is kept.
-- [~] `examples/box_stacking/main.cpp`: restore the stacking setup as a
-  public-API world plus a compact `Panel` for simulation/solver status if
-  supported by the current promoted panel API.
-- [ ] Remove the `--scene boxes` runner defaults for these binaries after their
+- [x] `examples/boxes/main.cpp`: restore the stacked 5x5x5 dynamic-box
+      educational source through `ApplicationOptions::world`; do not expose
+      Bullet, OSG, Filament, GLFW, or ImGui in the example source.
+- [x] `examples/rigid_cubes/main.cpp`: restore the cube world as a standalone
+      source-defined example. Replace OSG keyboard handlers with a small
+      public `dart::gui::Panel` only if the force-control affordance is kept.
+- [x] `examples/box_stacking/main.cpp`: restore the stacking setup as a
+      public-API world plus a compact `Panel` for simulation/solver status if
+      supported by the current promoted panel API.
+- [x] Remove the `--scene boxes` runner defaults for these binaries after their
       own sources are active.
-- [ ] Validate with focused builds, the GUI boundary unit test, Python example
+- [x] Validate with focused builds, the GUI boundary unit test, Python example
       runner coverage, one direct headless screenshot, `pixi run lint`, commit,
-      and push.
+      and push. Evidence: `f812a4afc1d`.
 
 Simple frame/contact slice:
 
-- [~] `examples/simple_frames/main.cpp`: restore the frame hierarchy with
-  public `SimpleFrame`, box, ellipsoid, and line-segment shape APIs.
-- [~] `examples/capsule_ground_contact/main.cpp`: restore the capsule/ground
-  contact world with public dynamics/simulation APIs and a promoted
-  `Panel` for pose reset/status controls.
-- [ ] Remove `--scene simple-frames` and `--scene capsule-ground-contact`
+- [x] `examples/simple_frames/main.cpp`: restore the frame hierarchy with
+      public `SimpleFrame`, box, ellipsoid, and line-segment shape APIs.
+- [x] `examples/capsule_ground_contact/main.cpp`: restore the capsule/ground
+      contact world with public dynamics/simulation APIs and a promoted
+      `Panel` for pose reset/status controls.
+- [x] Remove `--scene simple-frames` and `--scene capsule-ground-contact`
       runner defaults once the binaries own their scenes.
-- [ ] Validate with focused builds, the GUI boundary unit test, Python example
+- [x] Validate with focused builds, the GUI boundary unit test, Python example
       runner coverage, direct headless screenshots, `pixi run lint`, commit,
-      and push.
+      and push. Evidence: `45e44a0318a`.
 
 ### Stop condition for this pivot
 

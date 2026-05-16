@@ -31,7 +31,7 @@ context survives across sessions.
 - Branch: `feature/filament-gui-full-execution`
 - Upstream: `origin/feature/filament-gui-full-execution`
 - Latest pushed checkpoint before this in-progress slice:
-  `c3b303ad267 Add DART GUI panel context examples`
+  `45e44a0318a Restore frame and capsule GUI examples`
 - GitHub Actions were manually dispatched for the pushed checkpoint without
   opening a PR:
   - CI Lint: https://github.com/dartsim/dart/actions/runs/25945043484
@@ -436,13 +436,16 @@ Fourth source-migration checkpoint:
   as transitional dev/test infrastructure for `dartsim --scene boxes` until
   the remaining examples no longer depend on shared fixture coverage.
 - Local acceptance for this checkpoint:
+  - `f812a4afc1d` restores all three rigid-box sources.
   - C++ GUI target build for `dart-gui`, the three migrated examples, and
     `UNIT_gui_FilamentSceneExtraction`
   - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
   - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
-  - Direct headless screenshot capture for at least one migrated rigid-box
-    binary
-  - `pixi run lint` before committing
+  - Direct headless screenshot capture for all three migrated rigid-box
+    binaries
+  - `pixi run ex boxes --headless --frames 1 --screenshot ...`
+  - Full `examples` aggregate target build
+  - `pixi run lint`
 
 Fifth source-migration checkpoint:
 
@@ -459,6 +462,16 @@ Fifth source-migration checkpoint:
   default.
 - Keep the matching private scene fixtures as transitional dev/test
   infrastructure until the remaining shared-fixture examples have migrated.
+- Local acceptance for this checkpoint:
+  - `45e44a0318a` restores both sources.
+  - C++ GUI target build for `simple_frames`, `capsule_ground_contact`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct headless screenshot capture for both migrated binaries
+  - `pixi run ex simple_frames --headless --frames 1 --screenshot ...`
+  - Full `examples` aggregate target build
+  - `pixi run lint`
 
 ## Stretch Direction
 
@@ -490,8 +503,9 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Restore `simple_frames` and `capsule_ground_contact` as real public-API
-   `dart::gui` programs.
+1. Restore the next simple visual/source-defined example family. Candidate
+   slice: `point_cloud`, `polyhedron_visual`, `heightmap`, and/or
+   `soft_bodies`, depending on how much public IO/shape API is needed.
 2. Continue across the remaining pre-existing examples in small related
    families, documenting each slice here before implementation.
 3. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
