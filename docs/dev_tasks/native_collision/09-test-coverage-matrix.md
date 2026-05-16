@@ -217,9 +217,9 @@ deterministic across threads, etc.).
 | `rotated_box_settles_on_face_2s`     | DONE   | `test_world.cpp::DefaultNativeRotatedBoxSettlesOnFace`                                     | Round 7 acceptance #2                                               |
 | `rotated_box_15s_no_tunneling`       | DONE   | `test_world.cpp::DefaultNativeRotatedBoxStaysOnGround15s`                                  | Round 7 acceptance #3 — the load-bearing stability test             |
 | `stacked_boxes_n10`                  | DONE   | `test_world.cpp::DefaultNativeTenBoxStackDoesNotTunnel`                                    | Simple vertical stack stability                                     |
-| `stacked_boxes_n100`                 | GAP    | —                                                                                          | Larger pyramid / wall                                               |
+| `stacked_boxes_n100`                 | DONE   | `test_world.cpp::DefaultNativeHundredBoxWallDoesNotTunnel`                                 | 100-box wall stability                                              |
 | `mixed_primitive_stack`              | DONE   | `test_world.cpp::DefaultNativeMixedPrimitiveStackDoesNotTunnel`, `bm_mixed_primitives.cpp` | Unit stability and benchmark coverage                               |
-| `ragdoll_capsule_pile`               | GAP    | —                                                                                          | Multiple capsule bodies                                             |
+| `ragdoll_capsule_pile`               | DONE   | `test_world.cpp::DefaultNativeCapsulePileDoesNotTunnel`                                    | Multiple capsule bodies                                             |
 | `convex_static_mesh_landscape`       | GAP    | —                                                                                          | BVH-driven convex-concave under load                                |
 | `voronoi_fracture_settle`            | GAP    | —                                                                                          | Many small convex hulls — stretch                                   |
 | `parallel_narrow_phase_determinism`  | DONE   | `test_parallel_determinism.cpp`                                                            |                                                                     |
@@ -349,10 +349,10 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 
 - **§1 Pair-wise narrow-phase:** 89 DONE, 0 PARTIAL, 0 GAP (of 89 rows)
 - **§2 Algorithm-level:** 38 DONE, 0 PARTIAL, 11 GAP (of 49 rows)
-- **§3 Stress / regression:** 27 DONE, 0 PARTIAL, 4 GAP (of 31 rows)
+- **§3 Stress / regression:** 29 DONE, 0 PARTIAL, 2 GAP (of 31 rows)
 - **§4 Benchmarks:** 30 DONE, 0 PARTIAL, 14 GAP (of 44 rows)
 - **§5 Infrastructure:** 9 DONE, 0 PARTIAL, 0 GAP (of 9 rows)
-- **TOTAL:** 193 DONE, 0 PARTIAL, 29 GAP (of 222 rows)
+- **TOTAL:** 195 DONE, 0 PARTIAL, 27 GAP (of 222 rows)
 
 DART native is currently at ~87% of the proposed superset, with pair-wise
 narrow-phase coverage closed. The remaining coverage is concentrated in:
@@ -364,9 +364,8 @@ performance wave.
 
 1. **Algorithm-isolation gaps** — close or explicitly defer the remaining BVH
    and CCD rows that are not part of the performance wave.
-2. **Long-horizon stability scenes** — `stacked_boxes_n100`,
-   `mixed_primitive_stack` unit-test version, `ragdoll_capsule_pile`,
-   and remaining pile/scale cases. These are the highest-leverage rows for
+2. **Long-horizon stability scenes** — `convex_static_mesh_landscape` and the
+   remaining pile/scale cases. These are the highest-leverage rows for
    "DART is provably stable" marketing.
 3. **Scale/scenario benchmark rows** — broadphase scaling, stacked boxes,
    ragdoll piles, convex-vs-landscape, and BVH build/traversal benchmarks.

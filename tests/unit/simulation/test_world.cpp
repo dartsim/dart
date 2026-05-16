@@ -37,6 +37,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <array>
 #include <limits>
 #include <vector>
 
@@ -908,6 +909,147 @@ TEST(WorldTests, DefaultNativeTenBoxStackDoesNotTunnel)
   EXPECT_GE(lowestVertexZ, groundTop - 0.01);
   EXPECT_GT(highestFinalCenterZ, groundTop + boxHeight * 7.0);
   EXPECT_LT(finalKineticEnergy, 10.0);
+}
+
+//==============================================================================
+TEST(WorldTests, DefaultNativeHundredBoxWallDoesNotTunnel)
+{
+  auto world = World::create();
+  world->setTimeStep(0.001);
+  ASSERT_TRUE(world->getCollisionDetector());
+  ASSERT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
+
+  constexpr int kNumColumns = 10;
+  constexpr int kNumRows = 10;
+  const Eigen::Vector3d boxSize = Eigen::Vector3d::Constant(0.12);
+  const double groundTop = 0.05;
+  const double spacing = boxSize.x() * 1.01;
+
+  auto ground = Skeleton::create("hundred_box_wall_ground");
+  auto groundPair = ground->createJointAndBodyNodePair<WeldJoint>();
+  groundPair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d(5.0, 5.0, 0.1)));
+  world->addSkeleton(ground);
+
+  std::vector<NativePrimitiveBody> boxes;
+  boxes.reserve(static_cast<std::size_t>(kNumColumns * kNumRows));
+  for (int row = 0; row < kNumRows; ++row) {
+    for (int col = 0; col < kNumColumns; ++col) {
+      Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+      const double x
+          = (static_cast<double>(col) - 0.5 * (kNumColumns - 1)) * spacing;
+      const double y = 0.5 * (row % 2) * boxSize.y();
+      const double z
+          = groundTop + 0.5 * boxSize.z() + static_cast<double>(row) * spacing;
+      tf.translation() = Eigen::Vector3d(x, y, z);
+      boxes.push_back(createNativeFreePrimitive(
+          world.get(),
+          "hundred_box_wall_" + std::to_string(row) + "_" + std::to_string(col),
+          std::make_shared<BoxShape>(boxSize),
+          tf,
+          NativePrimitiveKind::Box,
+          boxSize));
+    }
+  }
+
+  bool sawContact = false;
+  double lowestVertexZ = std::numeric_limits<double>::infinity();
+
+  for (int step = 0; step < 1200; ++step) {
+    world->step();
+    sawContact
+        = sawContact || world->getLastCollisionResult().getNumContacts() > 0u;
+
+    for (const auto& box : boxes) {
+      ASSERT_TRUE(box.body->getWorldTransform().matrix().array().allFinite())
+          << "step=" << step;
+      const double boxLowestVertexZ
+          = measureBoxLowestVertexZ(box.body, box.boxSize);
+      lowestVertexZ = std::min(lowestVertexZ, boxLowestVertexZ);
+      if (step >= 100 && step % 100 == 0) {
+        EXPECT_GE(boxLowestVertexZ, groundTop - 0.02) << "step=" << step;
+      }
+    }
+  }
+
+  EXPECT_TRUE(sawContact);
+  EXPECT_GE(lowestVertexZ, groundTop - 0.02);
+}
+
+//==============================================================================
+TEST(WorldTests, DefaultNativeCapsulePileDoesNotTunnel)
+{
+  auto world = World::create();
+  world->setTimeStep(0.001);
+  ASSERT_TRUE(world->getCollisionDetector());
+  ASSERT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
+
+  constexpr double groundTop = 0.05;
+  constexpr double radius = 0.04;
+  constexpr double height = 0.38;
+  constexpr int kNumColumns = 5;
+  constexpr int kNumLayers = 4;
+
+  auto ground = Skeleton::create("capsule_pile_ground");
+  auto groundPair = ground->createJointAndBodyNodePair<WeldJoint>();
+  groundPair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d(5.0, 5.0, 0.1)));
+  world->addSkeleton(ground);
+
+  const std::array<double, kNumLayers> yawOffsets{
+      0.0, 0.5 * M_PI, 0.25 * M_PI, -0.25 * M_PI};
+
+  std::vector<NativePrimitiveBody> capsules;
+  capsules.reserve(static_cast<std::size_t>(kNumColumns * kNumLayers));
+  for (int layer = 0; layer < kNumLayers; ++layer) {
+    for (int col = 0; col < kNumColumns; ++col) {
+      Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+      const double x = (static_cast<double>(col) - 0.5 * (kNumColumns - 1))
+                       * (2.1 * radius);
+      const double y = (static_cast<double>(layer % 2) - 0.5) * radius;
+      const double z = groundTop + radius + static_cast<double>(layer) * 0.11;
+      tf.translation() = Eigen::Vector3d(x, y, z);
+      tf.linear() = Eigen::AngleAxisd(
+                        yawOffsets[static_cast<std::size_t>(layer)],
+                        Eigen::Vector3d::UnitZ())
+                    * Eigen::AngleAxisd(0.5 * M_PI, Eigen::Vector3d::UnitY())
+                          .toRotationMatrix();
+
+      capsules.push_back(createNativeFreePrimitive(
+          world.get(),
+          "capsule_pile_" + std::to_string(layer) + "_" + std::to_string(col),
+          std::make_shared<CapsuleShape>(radius, height),
+          tf,
+          NativePrimitiveKind::Capsule,
+          Eigen::Vector3d::Zero(),
+          radius,
+          height));
+    }
+  }
+
+  bool sawContact = false;
+  double lowestPointZ = std::numeric_limits<double>::infinity();
+
+  for (int step = 0; step < 1600; ++step) {
+    world->step();
+    sawContact
+        = sawContact || world->getLastCollisionResult().getNumContacts() > 0u;
+
+    for (const auto& capsule : capsules) {
+      ASSERT_TRUE(
+          capsule.body->getWorldTransform().matrix().array().allFinite())
+          << "step=" << step;
+      const double capsuleLowestPointZ = measureCapsuleLowestPointZ(
+          capsule.body, capsule.radius, capsule.height);
+      lowestPointZ = std::min(lowestPointZ, capsuleLowestPointZ);
+      if (step >= 100 && step % 100 == 0) {
+        EXPECT_GE(capsuleLowestPointZ, groundTop - 0.025) << "step=" << step;
+      }
+    }
+  }
+
+  EXPECT_TRUE(sawContact);
+  EXPECT_GE(lowestPointZ, groundTop - 0.025);
 }
 
 //==============================================================================
