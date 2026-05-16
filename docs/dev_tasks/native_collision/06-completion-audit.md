@@ -50,14 +50,14 @@ mutation during the current pass:
 
 ## Current Audit Snapshot (2026-05-16)
 
-Latest local audit commands before recording this snapshot showed:
+Snapshot audit commands before recording this section showed:
 
-- Audit branch state: `feature/new_coll` was clean at `1bfc9103a6b`
+- Branch-state snapshot: `feature/new_coll` was clean at `1bfc9103a6b`
   (`Refresh current gz compatibility evidence`) and was 92 commits ahead of
   `origin/feature/new_coll`. This snapshot and later docs-only audit commits may
   move `HEAD`; use `git status --short --branch` and
   `git log -3 --oneline --decorate` for the exact current branch state.
-- Audit remote-tracking state: `origin/feature/new_coll` resolved to
+- Remote-tracking snapshot: `origin/feature/new_coll` resolved to
   `f8f5663d5145`.
 - Review surface state: read-only `gh pr view 2652 --repo dartsim/dart`
   reports PR #2652 as `CLOSED`, draft, dirty, based on `main`, and still
@@ -72,10 +72,10 @@ Latest local audit commands before recording this snapshot showed:
   The same code head passed focused reference-backend checks and the final
   unfiltered `collision-reference` CTest sweep 301/301 after building the
   dedicated simulation-experimental target.
-- Latest local downstream/package/link refresh head: `6404f7607be`
+- Local downstream/package/link refresh head: `6404f7607be`
   (`Classify native collision matrix deferrals`) passed the gz-physics Pixi gate
   65/65, the native compatibility package smoke, and direct `readelf` link
-  checks. The latest docs/evidence commit `1bfc9103a6b` records that evidence.
+  checks. Docs/evidence commit `1bfc9103a6b` records that evidence.
 - Local commits after `c5bc95e3bcf` added capsule validation notes, mesh BVH
   coverage, degenerate and scale narrow-phase stress coverage, mixed primitive
   stack coverage, raw stress coverage, convex landscape and fragment coverage,
