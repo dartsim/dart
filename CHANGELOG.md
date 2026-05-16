@@ -110,7 +110,7 @@
   - Added a runtime source isolation check that fails if non-reference DART source paths include FCL, Bullet, ODE, libccd, or explicit collision reference backend headers.
   - Removed per-engine FCL/Bullet/ODE collision build switches from the normal
     build surface. Explicit reference test/benchmark gates now build the
-    optional `collision-reference-*` components; core `dart`, `dartpy`,
+    optional `dart-test-reference-*` targets; core `dart`, `dartpy`,
     gz-physics runtime integration, and native-backed
     `collision-fcl`/`collision-bullet`/`collision-ode` compatibility facades
     do not depend on those reference gates.
