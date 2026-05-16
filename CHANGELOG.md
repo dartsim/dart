@@ -132,6 +132,8 @@
   - Restored `BodyNodeDistanceFilter` so distance queries honor body collidability, self-collision, and adjacent-body filtering, and made `DistanceFilter` safely deletable through its base interface.
   - Fixed native sphere-box CCD when the sphere starts inside the expanded box so Debug builds no longer assert before reporting an initial overlap.
   - Fixed native capsule-vs-convex CCD so casts use the full capsule support shape instead of relying on numerically fragile endpoint-sphere hits.
+  - Fixed native sphere/capsule-vs-mesh CCD so casts against open or thin mesh
+    triangles no longer miss direct hits.
   - Fixed native world-level raycast, sphere-cast, and capsule-cast results so returned collision-object handles remain valid after the query returns.
   - Fixed TriMesh-backed `MeshShape` construction with an empty URI so it does not probe `file://` for material metadata, eliminating spurious mesh-load warnings while preserving real URI/path material extraction.
   - Fixed PascalCase ODE compatibility headers to preserve legacy includes such as `OdeCollisionDetector.hpp`. ([#2475](https://github.com/dartsim/dart/pull/2475))

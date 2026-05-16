@@ -75,6 +75,25 @@ double solveQuadraticSmallestPositive(double a, double b, double c)
   return -1.0;
 }
 
+ConvexShape makeTriangleConvex(
+    const MeshShape& mesh, const MeshShape::Triangle& triangle)
+{
+  const auto& vertices = mesh.getVertices();
+  return ConvexShape(
+      {vertices[static_cast<std::size_t>(triangle[0])],
+       vertices[static_cast<std::size_t>(triangle[1])],
+       vertices[static_cast<std::size_t>(triangle[2])]});
+}
+
+void updateBestCcdResult(
+    const CcdResult& candidate, double& bestT, CcdResult& bestResult)
+{
+  if (candidate.timeOfImpact < bestT) {
+    bestT = candidate.timeOfImpact;
+    bestResult = candidate;
+  }
+}
+
 } // namespace
 
 bool sphereCastSphere(
@@ -528,75 +547,31 @@ bool sphereCastMesh(
 {
   result.clear();
 
-  double motionBound = (sphereEnd - sphereStart).norm();
-  if (motionBound < option.tolerance) {
-    motionBound = option.tolerance;
+  double bestT = 2.0;
+  CcdResult bestResult;
+
+  for (const auto& triangle : target.getTriangles()) {
+    const ConvexShape triangleTarget = makeTriangleConvex(target, triangle);
+
+    CcdResult localResult;
+    if (sphereCastConvex(
+            sphereStart,
+            sphereEnd,
+            sphereRadius,
+            triangleTarget,
+            targetTransform,
+            option,
+            localResult)) {
+      updateBestCcdResult(localResult, bestT, bestResult);
+    }
   }
 
-  double t = 0.0;
-
-  Eigen::Vector3d initialDir = targetTransform.translation() - sphereStart;
-  if (initialDir.squaredNorm() < kEpsilon) {
-    initialDir = Eigen::Vector3d::UnitX();
+  if (bestT > 1.0) {
+    return false;
   }
 
-  for (int iter = 0; iter < option.maxIterations; ++iter) {
-    Eigen::Vector3d currentCenter = sphereStart + t * (sphereEnd - sphereStart);
-
-    auto supportA = [&](const Eigen::Vector3d& dir) {
-      return currentCenter + sphereRadius * dir.normalized();
-    };
-    auto supportB = [&](const Eigen::Vector3d& dir) {
-      return targetTransform
-             * target.support(targetTransform.rotation().transpose() * dir);
-    };
-
-    GjkResult gjkResult = Gjk::query(supportA, supportB, initialDir);
-
-    if (gjkResult.intersecting) {
-      result.hit = true;
-      result.timeOfImpact = t;
-      Eigen::Vector3d pointB = supportB(Eigen::Vector3d::UnitX());
-      result.point = pointB;
-      result.normal = (currentCenter - pointB).normalized();
-      if (result.normal.squaredNorm() < kEpsilon) {
-        result.normal = Eigen::Vector3d::UnitZ();
-      }
-      return true;
-    }
-
-    Eigen::Vector3d pointA = gjkResult.closestPointA;
-    Eigen::Vector3d pointB = gjkResult.closestPointB;
-    double distance = gjkResult.distance;
-
-    Eigen::Vector3d sepAxis = gjkResult.separationAxis;
-    if (sepAxis.squaredNorm() < kEpsilon) {
-      sepAxis = pointB - pointA;
-    }
-    if (sepAxis.squaredNorm() < kEpsilon) {
-      sepAxis = Eigen::Vector3d::UnitX();
-    }
-    sepAxis.normalize();
-
-    if (distance < option.tolerance) {
-      result.hit = true;
-      result.timeOfImpact = t;
-      result.point = pointB;
-      result.normal = sepAxis;
-      return true;
-    }
-
-    double dt = distance / motionBound;
-    t += dt;
-
-    if (t > 1.0) {
-      return false;
-    }
-
-    initialDir = sepAxis;
-  }
-
-  return false;
+  result = bestResult;
+  return true;
 }
 
 namespace {
@@ -690,10 +665,7 @@ bool capsuleCastSphere(
             targetTransform,
             option,
             localResult)) {
-      if (localResult.timeOfImpact < bestT) {
-        bestT = localResult.timeOfImpact;
-        bestResult = localResult;
-      }
+      updateBestCcdResult(localResult, bestT, bestResult);
     }
   };
 
@@ -739,10 +711,7 @@ bool capsuleCastBox(
             targetTransform,
             option,
             localResult)) {
-      if (localResult.timeOfImpact < bestT) {
-        bestT = localResult.timeOfImpact;
-        bestResult = localResult;
-      }
+      updateBestCcdResult(localResult, bestT, bestResult);
     }
   };
 
@@ -788,10 +757,7 @@ bool capsuleCastCapsule(
             targetTransform,
             option,
             localResult)) {
-      if (localResult.timeOfImpact < bestT) {
-        bestT = localResult.timeOfImpact;
-        bestResult = localResult;
-      }
+      updateBestCcdResult(localResult, bestT, bestResult);
     }
   };
 
@@ -837,10 +803,7 @@ bool capsuleCastPlane(
             targetTransform,
             option,
             localResult)) {
-      if (localResult.timeOfImpact < bestT) {
-        bestT = localResult.timeOfImpact;
-        bestResult = localResult;
-      }
+      updateBestCcdResult(localResult, bestT, bestResult);
     }
   };
 
@@ -886,10 +849,7 @@ bool capsuleCastCylinder(
             targetTransform,
             option,
             localResult)) {
-      if (localResult.timeOfImpact < bestT) {
-        bestT = localResult.timeOfImpact;
-        bestResult = localResult;
-      }
+      updateBestCcdResult(localResult, bestT, bestResult);
     }
   };
 
@@ -1021,15 +981,28 @@ bool capsuleCastMesh(
             targetTransform,
             option,
             localResult)) {
-      if (localResult.timeOfImpact < bestT) {
-        bestT = localResult.timeOfImpact;
-        bestResult = localResult;
-      }
+      updateBestCcdResult(localResult, bestT, bestResult);
     }
   };
 
   testEndpoint(true);
   testEndpoint(false);
+
+  for (const auto& triangle : target.getTriangles()) {
+    const ConvexShape triangleTarget = makeTriangleConvex(target, triangle);
+
+    CcdResult localResult;
+    if (capsuleCastConvex(
+            capsuleStart,
+            capsuleEnd,
+            capsule,
+            triangleTarget,
+            targetTransform,
+            option,
+            localResult)) {
+      updateBestCcdResult(localResult, bestT, bestResult);
+    }
+  }
 
   if (bestT > 1.0) {
     return false;
