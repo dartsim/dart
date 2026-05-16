@@ -1279,6 +1279,20 @@ packet command wrapping`) confirmed the same no-PR finalization boundary:
   `.deps/gz-physics/build/lib/libgz-physics-dartsim-plugin.so.9.0.0` showed
   `libdart-collision-native.so` in the `NEEDED` list and no old DART collision
   reference, FCL, Bullet, ODE, or libccd runtime dependency.
+- The latest current-head full validation ran on pre-record local head
+  `6d2553123d9` with
+  `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`.
+  It passed all 6 top-level gates: linting, build, unit tests,
+  simulation-experimental tests, Python tests, and documentation. The C++
+  unit-test phase reported 264/264 passing tests, including `collision-native`
+  and `collision-native-stability`; simulation-experimental reported 13/13,
+  Python reported 147/147, documentation built successfully, and the final
+  report printed `All tests passed!`.
+- The latest read-only review-surface check on `6d2553123d9` reported
+  `feature/new_coll...origin/feature/new_coll [ahead 147]`, no Actions runs
+  for the current head, active GitHub account `jslee02`, and only closed
+  PR #2652 still anchored to old head
+  `714d220d82a6ba99350bf2214fc9696f5495a30f`.
 
 No PR metadata, workflow state, branch state, push, or GitHub artifact was
 mutated by this recheck. The objective remains open only on the deferred

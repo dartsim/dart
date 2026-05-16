@@ -123,7 +123,7 @@ Actions runs for that head; branch-local commits do not trigger the main
 workflows while PR #2652 remains closed. PR #2652 is closed, draft, dirty, and
 still anchored to old head `714d220d82a`.
 
-The latest branch-local full validation head `5f8c9b0204a` passed
+The latest branch-local full validation head `6d2553123d9` passed
 `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
 with all 6 top-level gates green: linting, build, unit tests,
 simulation-experimental tests, Python tests, and documentation. The C++
@@ -132,6 +132,10 @@ and `collision-native-stability`; simulation-experimental reported 13/13,
 Python reported 147/147, documentation built successfully, and the report
 printed `All tests passed!`. No PR, push, workflow, branch, or GitHub state
 was mutated by this recheck.
+
+The latest read-only review-surface check on the same head returned no Actions
+runs, active GitHub account `jslee02`, and only closed PR #2652 on old head
+`714d220d82a6ba99350bf2214fc9696f5495a30f`.
 
 The latest current-head gz-physics refresh on pre-record head `9cc3fe99008`
 passed `pixi run -e gazebo test-gz` 65/65 against a fresh

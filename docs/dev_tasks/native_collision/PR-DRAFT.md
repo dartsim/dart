@@ -185,6 +185,16 @@ Make native DART collision the default runtime stack
   reported 13/13, Python reported 147/147, documentation built successfully,
   and the report printed `All tests passed!`. No PR, push, workflow, branch,
   or GitHub state was mutated by this recheck.
+- The latest branch-local full validation head `6d2553123d9` passed the same
+  safe-job `pixi run test-all` command with all 6 top-level gates green:
+  linting, build, unit tests, simulation-experimental tests, Python tests, and
+  documentation. The C++ unit-test phase reported 264/264 passing tests,
+  including `collision-native` and `collision-native-stability`;
+  simulation-experimental reported 13/13, Python reported 147/147,
+  documentation built successfully, and the report printed
+  `All tests passed!`. Read-only GitHub checks for that head returned no
+  Actions runs and only closed PR #2652 on old head `714d220d82a`. No PR,
+  push, workflow, branch, or GitHub state was mutated by this recheck.
 - The latest current-head gz-physics refresh on pre-record head `9cc3fe99008`
   passed `pixi run -e gazebo test-gz` 65/65 against a fresh
   `gz-physics9_9.0.0` checkout. The gazebo DART install configured reference

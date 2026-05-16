@@ -214,7 +214,7 @@ component names became native-backed interface facades.
       minimum this means `pixi run lint`, `pixi run test-all`, and any
       maintainer-selected CI gates whose failures are not covered locally. The
       latest branch-local full `pixi run test-all` pass was rerun on
-      pre-record head `5f8c9b0204a` with
+      pre-record head `6d2553123d9` with
       `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5`;
       it passed all 6 top-level gates: linting, build, unit tests,
       simulation-experimental tests, Python tests, and documentation, then
@@ -222,7 +222,12 @@ component names became native-backed interface facades.
       passing tests, including `collision-native` and
       `collision-native-stability`; simulation-experimental reported 13/13 and
       Python reported 147/147. No PR, push, workflow, branch, or GitHub state
-      was mutated by that validation pass. The earlier recorded full local
+      was mutated by that validation pass. A read-only current-head review
+      surface check for `6d2553123d9` returned no Actions runs, only closed
+      PR #2652 on old head `714d220d82a`, and active GitHub account `jslee02`.
+      The previous branch-local full `pixi run test-all` pass was rerun on
+      pre-record head `5f8c9b0204a` with the same 6/6 top-level result. Another
+      earlier recorded full local
       `pixi run test-all` pass was rerun on
       validation head `b5801f6c84c` after the no-PR boundary audit; it passed
       6/6 top-level gates: linting, build, unit tests,
