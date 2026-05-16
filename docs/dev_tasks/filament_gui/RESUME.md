@@ -819,22 +819,27 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`b80b7809570 Audit GUI scene diagnostics example`. The current pending
-checkpoint is `examples/rerun/` strict restoration. Compare the current source
-against `520993d7301^:examples/rerun`, write the itemized inventory in
+`6511db33821 Audit Rerun placeholder example`. No rows remain with the exact
+`Needs strict audit` state. The current pending checkpoint is
+`examples/add_delete_skels/` strict re-open. Compare the current source against
+`520993d7301^:examples/add_delete_skels`, write the itemized inventory in
 `11-example-parity-audit.md`, then preserve, restore, or explicitly name any
 public API gaps before coding past this slice.
-Audit result: `examples/rerun/` is unchanged from the historical source. It is
-a no-source placeholder with README/CMake scaffolding and should keep its CMake
-early-skip behavior until a real Rerun integration example is added.
-Pre-lint focused build/CTest, aggregate `examples` build, no-`rerun`-executable
-verification, and Python C++ example-runner tests passed. Mandatory lint,
-post-lint focused build/CTest, aggregate `examples` build,
-no-`rerun`-executable verification, and `git diff --check` also passed.
+Audit result: controls and camera were mostly restored in
+`184396a4cf0 Restore add delete skeleton controls`, but the current tree
+deleted the README, omitted the historical 640x480 launch default, and added
+startup cubes even though the historical source only spawned cubes through
+`q`.
+Implementation and pre-lint validation are complete: README restored, 640x480
+run defaults added, startup cube spawning removed, marker coverage strengthened,
+focused build/CTest passed, direct and pixi headless screenshot smokes passed,
+Python C++ example-runner tests passed, and aggregate `examples` build passed.
+Mandatory lint, post-lint focused build/CTest, direct screenshot smoke, and
+`git diff --check` also passed.
 
 ## Current Immediate Next Step
 
-Commit and push the `examples/rerun/` no-source placeholder audit checkpoint
+Commit and push the `examples/add_delete_skels/` strict re-open checkpoint
 without opening a PR. Keep `--screenshot <path>` and `--out <dir>` working for
 the existing CTest, GitHub Actions smoke path, and historical image-sequence
 workflows. A later broader smoke sweep can still use:

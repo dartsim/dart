@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `b80b7809570 Audit GUI scene diagnostics example`.
+  `6511db33821 Audit Rerun placeholder example`.
 - Latest pushed code checkpoint:
-  `b80b7809570 Audit GUI scene diagnostics example`.
+  `6511db33821 Audit Rerun placeholder example`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -142,6 +142,7 @@ history but are not guaranteed to be in chronological order.
   - `c39ed94fef3 Restore Fetch selected-frame rotation`
   - `82e39c45558 Restore Atlas Simbicon controller example`
   - `b80b7809570 Audit GUI scene diagnostics example`
+  - `6511db33821 Audit Rerun placeholder example`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -499,6 +500,36 @@ history but are not guaranteed to be in chronological order.
   rebuild and CTest for `UNIT_gui_FilamentSceneExtraction`, aggregate
   `examples` build, verification that `build/default/cpp/Release/bin/rerun`
   is not produced, and `git diff --check`.
+- The Rerun placeholder audit checkpoint was pushed as
+  `6511db33821 Audit Rerun placeholder example`; do not wait for CI before
+  continuing independent strict-audit work.
+- No rows remain with the exact `Needs strict audit` state. Continue through
+  rows still marked as recent checkpoints subject to strict-audit re-open.
+- Active slice is now `examples/add_delete_skels/`. Compare the current source
+  against `520993d7301^:examples/add_delete_skels`, write an itemized
+  inventory in `11-example-parity-audit.md`, then preserve, restore, or
+  explicitly name any public API gaps before coding past this slice.
+- Add/delete strict re-open result: controls and camera were mostly restored in
+  `184396a4cf0 Restore add delete skeleton controls`, but strict comparison
+  found the current tree deleted the README, omitted the historical 640x480
+  launch default, and added startup cubes even though the historical source
+  only spawned cubes through `q`. Repair those through public `dart::gui` and
+  strengthen marker coverage.
+- Add/delete implementation state: README restored, 640x480 run defaults added,
+  startup cube spawning removed, marker coverage strengthened for world setup,
+  random cube creation, controls, camera/defaults, README, no startup cubes,
+  and no OSG/backend source types.
+- Add/delete validation completed before lint: focused C++ build for
+  `add_delete_skels` and `UNIT_gui_FilamentSceneExtraction`, focused CTest for
+  `UNIT_gui_FilamentSceneExtraction`, direct and pixi add/delete headless
+  screenshots with basic analyzer coverage (`/tmp/dart_add_delete_direct.ppm`
+  and `/tmp/dart_add_delete_pixi.ppm`, both 307200/307200 nonzero pixels),
+  Python C++ example-runner tests (67 passed), and aggregate `examples` build.
+- Add/delete post-lint validation completed: mandatory `pixi run lint`,
+  focused rebuild and CTest for `add_delete_skels` plus
+  `UNIT_gui_FilamentSceneExtraction`, direct llvmpipe screenshot with basic
+  analyzer coverage (`/tmp/dart_add_delete_direct_postlint.ppm`,
+  307200/307200 nonzero pixels), and `git diff --check`.
 
 ## Current Code Shape
 

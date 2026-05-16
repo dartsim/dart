@@ -197,6 +197,21 @@ Immediate order:
     build, no-`rerun`-executable verification, and Python C++ example-runner
     tests passed. Post-lint focused build/CTest, aggregate `examples` build,
     no-`rerun`-executable verification, and `git diff --check` also passed.
+    This checkpoint was pushed as
+    `6511db33821 Audit Rerun placeholder example`.
+15. No rows remain with the exact `Needs strict audit` state. Continue through
+    the rows still marked as recent checkpoints subject to strict-audit
+    re-open. The next cursor is `examples/add_delete_skels/`: compare it
+    against `520993d7301^:examples/add_delete_skels`, document the itemized
+    inventory, then preserve, restore, or explicitly name any public API gaps.
+16. `examples/add_delete_skels/` strict re-open found remaining gaps after the
+    recent control checkpoint: README deleted, 640x480 default missing, and
+    startup cubes added despite historical spawn-only-on-`q` behavior. Repair
+    those and update marker coverage before committing this checkpoint.
+    Implementation and pre-lint validation are complete: focused build/CTest,
+    direct and pixi headless screenshot smokes, Python C++ example-runner
+    tests, and aggregate `examples` build passed. Post-lint focused
+    build/CTest, direct screenshot smoke, and `git diff --check` also passed.
 
 ## Checkpoint Rule
 

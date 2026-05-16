@@ -1732,11 +1732,24 @@ TEST(FilamentSceneExtraction, AddDeleteSkelsExamplePreservesLegacyParityMarkers)
 {
   const auto mainSource = readSourceFile(
       std::filesystem::path("examples") / "add_delete_skels" / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "add_delete_skels" / "README.md");
 
   EXPECT_NE(mainSource.find("#if DART_HAVE_BULLET"), std::string::npos);
   EXPECT_NE(
       mainSource.find("CollisionDetectorType::Bullet"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("dart://sample/skel/ground.skel"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0))"),
+      std::string::npos);
   EXPECT_NE(mainSource.find("spawnRandomCube"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("std::uniform_real_distribution"), std::string::npos);
+  EXPECT_NE(mainSource.find("body.mInertia.setMass(mass)"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("BoxShape::computeInertia(size, mass)"),
+      std::string::npos);
   EXPECT_NE(mainSource.find("deleteLastCube"), std::string::npos);
   EXPECT_NE(
       mainSource.find("createAddDeleteKeyboardActions"), std::string::npos);
@@ -1750,9 +1763,22 @@ TEST(FilamentSceneExtraction, AddDeleteSkelsExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("'w': delete a spawned cube"), std::string::npos);
   EXPECT_NE(mainSource.find("makeAddDeleteCamera"), std::string::npos);
   EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeAddDeleteRunDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
   EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
   EXPECT_NE(mainSource.find("options.world"), std::string::npos);
+  EXPECT_EQ(mainSource.find("spawnPresetCube"), std::string::npos);
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+  EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("Add/Delete Skeletons Example"), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("pixi run ex add_delete_skels"), std::string::npos);
+  EXPECT_NE(readmeSource.find("`q` spawns a cube"), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("`w` deletes the most recent cube"), std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, MixedChainExamplePreservesLegacyParityMarkers)

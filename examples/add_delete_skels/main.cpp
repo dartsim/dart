@@ -49,7 +49,6 @@
 
 #include <Eigen/Geometry>
 
-#include <array>
 #include <iostream>
 #include <memory>
 #include <random>
@@ -101,45 +100,6 @@ struct AddDeleteState
   {
   }
 
-  void spawnPresetCube()
-  {
-    static const std::array<Eigen::Vector3d, 6> kPositions{{
-        Eigen::Vector3d(-0.8, 0.65, -0.7),
-        Eigen::Vector3d(-0.35, 1.05, 0.25),
-        Eigen::Vector3d(0.15, 0.75, -0.15),
-        Eigen::Vector3d(0.55, 1.25, 0.55),
-        Eigen::Vector3d(0.9, 0.95, -0.45),
-        Eigen::Vector3d(-0.1, 1.45, 0.75),
-    }};
-    static const std::array<Eigen::Vector3d, 6> kSizes{{
-        Eigen::Vector3d(0.25, 0.22, 0.30),
-        Eigen::Vector3d(0.18, 0.28, 0.22),
-        Eigen::Vector3d(0.32, 0.18, 0.24),
-        Eigen::Vector3d(0.22, 0.34, 0.20),
-        Eigen::Vector3d(0.28, 0.24, 0.18),
-        Eigen::Vector3d(0.30, 0.20, 0.26),
-    }};
-    static const std::array<Eigen::Vector3d, 6> kColors{{
-        Eigen::Vector3d(0.85, 0.30, 0.24),
-        Eigen::Vector3d(0.25, 0.55, 0.90),
-        Eigen::Vector3d(0.95, 0.72, 0.25),
-        Eigen::Vector3d(0.35, 0.78, 0.45),
-        Eigen::Vector3d(0.68, 0.38, 0.85),
-        Eigen::Vector3d(0.25, 0.75, 0.70),
-    }};
-
-    if (world == nullptr) {
-      return;
-    }
-
-    const std::size_t index = nextCubeIndex++;
-    world->addSkeleton(createCube(
-        std::string(kCubePrefix) + std::to_string(index),
-        kPositions[index % kPositions.size()],
-        kSizes[index % kSizes.size()],
-        kColors[index % kColors.size()]));
-  }
-
   void spawnRandomCube()
   {
     if (world == nullptr) {
@@ -189,11 +149,7 @@ struct AddDeleteState
 std::shared_ptr<AddDeleteState> createAddDeleteState(
     const dart::simulation::WorldPtr& world)
 {
-  auto state = std::make_shared<AddDeleteState>(world);
-  for (int i = 0; i < 5; ++i) {
-    state->spawnPresetCube();
-  }
-  return state;
+  return std::make_shared<AddDeleteState>(world);
 }
 
 void preferBulletCollisionDetector(dart::simulation::World& world)
@@ -213,6 +169,14 @@ dart::gui::OrbitCamera makeAddDeleteCamera()
   camera.pitch = 0.4758822496604165;
   camera.distance = 6.557438524302;
   return camera;
+}
+
+dart::gui::RunOptions makeAddDeleteRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
 }
 
 dart::simulation::WorldPtr createAddDeleteWorld()
@@ -303,6 +267,7 @@ int main(int argc, char* argv[])
     dart::gui::ApplicationOptions options;
     options.world = world;
     options.camera = makeAddDeleteCamera();
+    options.runDefaults = makeAddDeleteRunDefaults();
     options.keyboardActions = createAddDeleteKeyboardActions(state);
     options.panels.push_back(createControlsPanel(state));
     return dart::gui::runApplication(argc, argv, options);

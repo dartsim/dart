@@ -597,11 +597,31 @@ renderer dependency until a real Rerun integration example is added.
 | Keep marker coverage for no-source status, early CMake skip, pending-source README, and no GUI types. | Restored through marker guard. | `UNIT_gui_FilamentSceneExtraction` guards the preserved placeholder contract.                                    |
 | Runtime or capture validation.                                                                        | Not applicable until sourced.  | There is intentionally no `rerun` executable in this checkpoint, so validation is CMake/test/build-only focused. |
 
+### Add/Delete Skeletons Itemized Inventory
+
+Historical source compared: `520993d7301^:examples/add_delete_skels`.
+
+The recent checkpoint restored the main keyboard actions and source-owned world,
+but strict re-open found remaining user-visible gaps: the README was deleted,
+the 640x480 launch default was not restored, and startup cubes were added even
+though the historical source spawned cubes only through the `q` action.
+
+| Historical item                                                                                        | Current outcome                      | Notes                                                                                                                |
+| ------------------------------------------------------------------------------------------------------ | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| Load `dart://sample/skel/ground.skel`, set gravity to `(0, -9.81, 0)`, and prefer Bullet if available. | Restored with promoted fallback.     | Current source loads the ground, sets Y-down gravity, and selects Bullet behind `DART_HAVE_BULLET` when available.   |
+| Start with the loaded ground world; spawn cube skeletons only from the add action.                     | Restored.                            | Startup pre-spawned cubes were removed to match the historical interaction.                                          |
+| `q`/`Q` spawns a random cube with a `FreeJoint`, box shape, mass `0.1`, random size, position, color.  | Restored through public `dart::gui`. | Current source exposes `q` through renderer-neutral keyboard actions and a panel button.                             |
+| `w`/`W` deletes the most recent spawned cube while preserving the ground skeleton.                     | Restored through public `dart::gui`. | Current source tracks spawned cube names and removes the newest one.                                                 |
+| Console instructions for `q`, `w`, and space pause.                                                    | Restored through promoted UI.        | Current source shows the same controls in the panel; console text is superseded by the maintained `dart::gui` panel. |
+| 640x480 default window and camera home from `(5, 3, 3)` to the origin.                                 | Restored.                            | Camera home and `ApplicationOptions::runDefaults` now preserve the historical defaults.                              |
+| README documents the runner and controls.                                                              | Restored.                            | README was restored with promoted `dart::gui` wording and headless smoke guidance.                                   |
+| Keep marker coverage for world setup, controls, no startup cubes, camera/defaults, README, no OSG.     | Restored through marker guard.       | Marker guards cover the restored source contract.                                                                    |
+
 ## Example Inventory
 
 | Example                     | Current Audit State                                                                | Next Required Action                                                                                                                          |
 | --------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `add_delete_skels`          | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm historical controls/defaults are itemized and guarded.                                                                                |
+| `add_delete_skels`          | Restored by strict re-open.                                                        | Keep marker guards for controls, no startup cubes, camera/defaults, README, and no backend types.                                             |
 | `atlas_puppet`              | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm target activation, IK, posture, and camera items are itemized.                                                                        |
 | `atlas_simbicon`            | Restored except render-settings/window-title API gaps.                             | Keep marker guards for controller/state files, pre-step control, perturbation and stride controls, camera/defaults, README, and no OSG types. |
 | `biped_stand`               | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm perturbation controls, camera, run defaults, README, and guards.                                                                      |
