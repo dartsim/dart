@@ -652,7 +652,9 @@ TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
       {std::filesystem::path("examples") / "point_cloud", false},
       {std::filesystem::path("examples") / "polyhedron_visual", false},
       {std::filesystem::path("examples") / "lcp_physics", true},
-      {std::filesystem::path("examples") / "mimic_pendulums", true}};
+      {std::filesystem::path("examples") / "mimic_pendulums", true},
+      {std::filesystem::path("examples") / "empty", true},
+      {std::filesystem::path("examples") / "simulation_event_handler", true}};
   std::vector<std::filesystem::path> sources;
   for (const auto& example : examples) {
     sources.push_back(example.directory / "main.cpp");
@@ -839,6 +841,31 @@ TEST(FilamentSceneExtraction, LcpAndMimicExamplesPreserveParityMarkers)
       std::string::npos);
   EXPECT_NE(mimicSource.find("options.world"), std::string::npos);
   EXPECT_EQ(mimicSource.find("options.defaultScene"), std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, InteractionEventExamplesPreserveParityMarkers)
+{
+  const auto emptySource = readSourceFile(
+      std::filesystem::path("examples") / "empty" / "main.cpp");
+  EXPECT_NE(emptySource.find("interactive frame"), std::string::npos);
+  EXPECT_NE(emptySource.find("draggable"), std::string::npos);
+  EXPECT_NE(emptySource.find("createEmptyWorld"), std::string::npos);
+  EXPECT_NE(emptySource.find("options.world"), std::string::npos);
+  EXPECT_EQ(emptySource.find("options.defaultScene"), std::string::npos);
+
+  const auto eventSource = readSourceFile(
+      std::filesystem::path("examples") / "simulation_event_handler"
+      / "main.cpp");
+  EXPECT_NE(
+      eventSource.find("class BlinkingMarkerSensor final"), std::string::npos);
+  EXPECT_NE(eventSource.find("fast_sensor"), std::string::npos);
+  EXPECT_NE(eventSource.find("slow_sensor"), std::string::npos);
+  EXPECT_NE(
+      eventSource.find("simulation_event_handler_fast_sensor"),
+      std::string::npos);
+  EXPECT_NE(eventSource.find("world->addSensor"), std::string::npos);
+  EXPECT_NE(eventSource.find("options.world"), std::string::npos);
+  EXPECT_EQ(eventSource.find("options.defaultScene"), std::string::npos);
 }
 
 TEST(

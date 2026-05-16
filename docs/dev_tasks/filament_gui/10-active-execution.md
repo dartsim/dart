@@ -990,6 +990,58 @@ Sixteenth source-ownership checkpoint:
 - Remaining GUI macro launchers after this slice: `empty`,
   `simulation_event_handler`, `soft_bodies`, and `vehicle`.
 
+Seventeenth source-ownership checkpoint:
+
+- Restore the interaction/event examples as real public-API sources: `empty`
+  and `simulation_event_handler`.
+- Move the historical "empty viewer" draggable frame scaffold into
+  `examples/empty/main.cpp`: an anchor frame, child draggable frame, and axis
+  marker frames, all using public `SimpleFrame` and `dart::gui` APIs.
+- Move the simulation-event example's world, dynamic boxes/sphere, blinking
+  sensor marker frames, custom `dart::sensor::Sensor`, timestep, gravity, and
+  status panel into `examples/simulation_event_handler/main.cpp`.
+- Keep both examples on promoted `dart::gui::ApplicationOptions`, with no
+  private `DartScene`, no scene-string launcher, and no backend headers. The
+  replacement for old raw OSG key handlers is a small public GUI panel plus
+  standard viewer selection/drag controls.
+- Switch both CMake files to `dart_build_gui_example(...)`, and remove the
+  Python runner's injected `--scene drag-and-drop` and
+  `--scene simulation-event-handler` defaults.
+- Local acceptance for this checkpoint:
+  - C++ GUI target build for `empty`, `simulation_event_handler`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct headless screenshot capture for both examples
+  - `pixi run ex empty --headless --frames 1 --screenshot ...`
+  - `pixi run ex simulation_event_handler --headless --frames 1 --screenshot
+...`
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+- Implementation state for this slice: `examples/empty/main.cpp` now owns the
+  selectable anchor frame, child draggable frame, axis marker frames, and
+  minimal status panel. `examples/simulation_event_handler/main.cpp` now owns
+  the dynamic boxes/sphere, blinking sensor marker frames, custom
+  `dart::sensor::Sensor` implementation, gravity/timestep setup, and status
+  panel. The Python runner no longer injects `--scene` defaults for either
+  executable.
+- Local evidence so far:
+  - C++ GUI target build for `empty`, `simulation_event_handler`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct headless screenshot capture for both examples
+  - Sequential pixi-runner screenshot capture for `empty`
+  - Sequential pixi-runner screenshot capture for `simulation_event_handler`
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+  - Post-lint focused C++ GUI target build for `empty`,
+    `simulation_event_handler`, and `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint Python runner tests (`66 passed`)
+  - `git diff --check`
+- Remaining GUI macro launchers after this slice: `soft_bodies` and `vehicle`.
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:
