@@ -34,6 +34,7 @@
 #include <dart/collision/native/shapes/shape.hpp>
 
 #include <algorithm>
+#include <limits>
 
 #include <cmath>
 
@@ -180,6 +181,7 @@ bool distanceSameOrientationBoxes(
 }
 
 constexpr double kSupportEps = 1e-12;
+constexpr double kPi = 3.141592653589793238462643383279502884;
 
 bool supportPointOnShape(
     const Shape& shape,
@@ -292,6 +294,17 @@ bool querySdfDistanceAndGradient(
 
   *gradientWorld = sdfRotation * gradientField;
   return true;
+}
+
+double boundedSdfQueryDistance(double upperBound, double margin)
+{
+  if (!std::isfinite(upperBound)) {
+    return std::numeric_limits<double>::max();
+  }
+  if (upperBound > std::numeric_limits<double>::max() - margin) {
+    return std::numeric_limits<double>::max();
+  }
+  return upperBound + margin;
 }
 
 } // namespace
@@ -830,6 +843,116 @@ double distanceCapsuleSdf(
   }
 
   return best_dist;
+}
+
+double distanceCylinderSdf(
+    const CylinderShape& cylinder,
+    const Eigen::Isometry3d& cylinderTransform,
+    const SdfShape& sdf,
+    const Eigen::Isometry3d& sdfTransform,
+    DistanceResult& result,
+    const DistanceOption& option)
+{
+  const SignedDistanceField* field = sdf.getField();
+  if (!field) {
+    result.distance = std::numeric_limits<double>::max();
+    return result.distance;
+  }
+
+  const double radius = cylinder.getRadius();
+  const double halfHeight = cylinder.getHeight() * 0.5;
+  const double voxelSize = std::max(field->voxelSize(), 1e-6);
+  const int axialSamples = std::clamp(
+      static_cast<int>(std::ceil(cylinder.getHeight() / voxelSize)) + 1, 2, 32);
+  const int radialSamples
+      = std::clamp(static_cast<int>(std::ceil(radius / voxelSize)) + 1, 2, 16);
+  const int angularSamples = std::clamp(
+      static_cast<int>(std::ceil(2.0 * kPi * radius / voxelSize)), 16, 64);
+
+  const Eigen::Isometry3d sdfInverse = sdfTransform.inverse();
+  const Eigen::Matrix3d sdfRotation = sdfTransform.rotation();
+
+  SdfQueryOptions queryOptions;
+  const double boundingRadius
+      = std::sqrt(radius * radius + halfHeight * halfHeight);
+  queryOptions.maxDistance
+      = boundedSdfQueryDistance(option.upperBound, boundingRadius);
+
+  bool found = false;
+  double bestDistance = std::numeric_limits<double>::max();
+  Eigen::Vector3d bestPoint = Eigen::Vector3d::Zero();
+  Eigen::Vector3d bestGradient = Eigen::Vector3d::Zero();
+
+  const auto querySample = [&](const Eigen::Vector3d& pointLocal) {
+    const Eigen::Vector3d pointWorld = cylinderTransform * pointLocal;
+    double fieldDistance = 0.0;
+    Eigen::Vector3d gradientWorld = Eigen::Vector3d::Zero();
+    if (!querySdfDistanceAndGradient(
+            field,
+            sdfInverse,
+            sdfRotation,
+            pointWorld,
+            queryOptions,
+            &fieldDistance,
+            &gradientWorld)) {
+      return;
+    }
+
+    if (fieldDistance < bestDistance) {
+      bestDistance = fieldDistance;
+      bestPoint = pointWorld;
+      bestGradient = gradientWorld;
+      found = true;
+    }
+  };
+
+  for (int zIndex = 0; zIndex < axialSamples; ++zIndex) {
+    const double zAlpha = (axialSamples == 1)
+                              ? 0.5
+                              : static_cast<double>(zIndex)
+                                    / static_cast<double>(axialSamples - 1);
+    const double z = -halfHeight + 2.0 * halfHeight * zAlpha;
+
+    querySample(Eigen::Vector3d(0.0, 0.0, z));
+
+    for (int rIndex = 1; rIndex < radialSamples; ++rIndex) {
+      const double r = radius * static_cast<double>(rIndex)
+                       / static_cast<double>(radialSamples - 1);
+      for (int angleIndex = 0; angleIndex < angularSamples; ++angleIndex) {
+        const double theta = 2.0 * kPi * static_cast<double>(angleIndex)
+                             / static_cast<double>(angularSamples);
+        querySample(
+            Eigen::Vector3d(r * std::cos(theta), r * std::sin(theta), z));
+      }
+    }
+  }
+
+  if (!found) {
+    result.distance = std::numeric_limits<double>::max();
+    return result.distance;
+  }
+
+  result.distance = bestDistance;
+  if (bestDistance > option.upperBound) {
+    return bestDistance;
+  }
+
+  if (option.enableNearestPoints) {
+    Eigen::Vector3d normal = Eigen::Vector3d::UnitX();
+    const double gradNorm = bestGradient.norm();
+    if (gradNorm > 1e-12) {
+      const Eigen::Vector3d gradUnit = bestGradient / gradNorm;
+      const double sign = (bestDistance >= 0.0) ? 1.0 : -1.0;
+      normal = gradUnit * sign;
+      result.pointOnObject2 = bestPoint - gradUnit * bestDistance;
+    } else {
+      result.pointOnObject2 = bestPoint;
+    }
+    result.pointOnObject1 = bestPoint;
+    result.normal = normal;
+  }
+
+  return bestDistance;
 }
 
 } // namespace dart::collision::native

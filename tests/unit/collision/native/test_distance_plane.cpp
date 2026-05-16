@@ -129,6 +129,6 @@ TEST(DistanceSupport, PlaneAndCylinderPairs)
       NarrowPhase::isDistanceSupported(ShapeType::Plane, ShapeType::Cylinder));
   EXPECT_TRUE(
       NarrowPhase::isDistanceSupported(ShapeType::Cylinder, ShapeType::Box));
-  EXPECT_FALSE(
+  EXPECT_TRUE(
       NarrowPhase::isDistanceSupported(ShapeType::Cylinder, ShapeType::Sdf));
 }

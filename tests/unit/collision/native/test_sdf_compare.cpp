@@ -8,7 +8,9 @@
  * This file is provided under the following "BSD-style" License
  */
 
+#include <dart/collision/native/collision_world.hpp>
 #include <dart/collision/native/narrow_phase/distance.hpp>
+#include <dart/collision/native/narrow_phase/narrow_phase.hpp>
 #include <dart/collision/native/sdf/dense_esdf_field.hpp>
 #include <dart/collision/native/sdf/dense_sdf_field.hpp>
 #include <dart/collision/native/sdf/dense_tsdf_field.hpp>
@@ -191,6 +193,69 @@ TEST(SdfDistance, SphereVsSdf)
   const double expected
       = sphereDistance(sphere_tf.translation()) - sphere.getRadius();
   EXPECT_NEAR(dist, expected, kDistTol);
+}
+
+TEST(SdfDistance, CylinderVsSdf)
+{
+  using namespace dart::collision::native;
+
+  auto field = buildDenseField();
+  SdfShape sdf(field);
+  CylinderShape cylinder(0.2, 0.6);
+
+  Eigen::Isometry3d cylinder_tf = Eigen::Isometry3d::Identity();
+  cylinder_tf.translation() = gridCenter() + Eigen::Vector3d(1.2, 0.0, 0.0);
+
+  Eigen::Isometry3d sdf_tf = Eigen::Isometry3d::Identity();
+
+  DistanceResult result;
+  DistanceOption option;
+  double dist
+      = distanceCylinderSdf(cylinder, cylinder_tf, sdf, sdf_tf, result, option);
+
+  EXPECT_NEAR(dist, 0.2, kDistTol);
+  EXPECT_TRUE(result.pointOnObject1.allFinite());
+  EXPECT_TRUE(result.pointOnObject2.allFinite());
+  EXPECT_TRUE(result.normal.allFinite());
+
+  cylinder_tf.translation() = gridCenter() + Eigen::Vector3d(0.9, 0.0, 0.0);
+  result.clear();
+  dist
+      = distanceCylinderSdf(cylinder, cylinder_tf, sdf, sdf_tf, result, option);
+
+  EXPECT_LT(dist, 0.0);
+  EXPECT_NEAR(dist, -0.1, kDistTol);
+}
+
+TEST(SdfDistance, CylinderSdfPairOrder)
+{
+  using namespace dart::collision::native;
+
+  auto field = buildDenseField();
+  CollisionWorld world;
+  auto cylinder = world.createObject(std::make_unique<CylinderShape>(0.2, 0.6));
+  auto sdf = world.createObject(std::make_unique<SdfShape>(field));
+
+  Eigen::Isometry3d cylinder_tf = Eigen::Isometry3d::Identity();
+  cylinder_tf.translation() = gridCenter() + Eigen::Vector3d(1.2, 0.0, 0.0);
+  cylinder.setTransform(cylinder_tf);
+
+  DistanceResult cylinder_sdf;
+  DistanceResult sdf_cylinder;
+  const DistanceOption option = DistanceOption::unlimited();
+
+  const double dist1
+      = NarrowPhase::distance(cylinder, sdf, option, cylinder_sdf);
+  const double dist2
+      = NarrowPhase::distance(sdf, cylinder, option, sdf_cylinder);
+
+  EXPECT_NEAR(dist1, 0.2, kDistTol);
+  EXPECT_NEAR(dist1, dist2, kDistTol);
+  EXPECT_TRUE(cylinder_sdf.pointOnObject1.allFinite());
+  EXPECT_TRUE(cylinder_sdf.pointOnObject2.allFinite());
+  EXPECT_TRUE(sdf_cylinder.pointOnObject1.allFinite());
+  EXPECT_TRUE(sdf_cylinder.pointOnObject2.allFinite());
+  EXPECT_LT(cylinder_sdf.normal.dot(sdf_cylinder.normal), -0.9);
 }
 
 TEST(EsdfDenseField, BuildsFromTsdf)

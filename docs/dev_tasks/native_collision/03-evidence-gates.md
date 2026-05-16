@@ -3117,6 +3117,26 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     simulation-experimental tests, Python tests, and documentation. The full
     C++ unit/integration CTest slice reported 264/264 tests passing, including
     all 29 `collision-native` tests.
+- Current local cylinder/SDF distance refresh:
+  - Commit: current working tree after local head `43b56dfb06c`
+    (`Cover pyramid collision adapter`).
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_sdf_compare --parallel 5`,
+    `./build/default/cpp/Release/bin/test_sdf_compare --gtest_filter='SdfDistance.CylinderVsSdf:SdfDistance.CylinderSdfPairOrder'`,
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_distance_plane --parallel 5`,
+    and
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_sdf_compare|test_distance_plane)$' -j 5`.
+  - Result: passed. Native distance now supports `CylinderShape` against
+    `SdfShape` in both query orders, with finite nearest-point data and flipped
+    swapped-order normals.
+- Current local full validation after cylinder/SDF distance support:
+  - Commit: current working tree after local head `43b56dfb06c`
+    (`Cover pyramid collision adapter`).
+  - Command: `pixi run test-all`.
+  - Result: passed 6/6 gates: linting, build, unit tests,
+    simulation-experimental tests, Python tests, and documentation. The full
+    C++ unit/integration CTest slice reported 264/264 tests passing, including
+    all 29 `collision-native` tests.
 
 ## Known Risks
 

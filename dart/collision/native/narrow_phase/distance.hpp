@@ -120,4 +120,12 @@ class SdfShape;
     DistanceResult& result,
     const DistanceOption& option = DistanceOption());
 
+[[nodiscard]] DART_COLLISION_NATIVE_API double distanceCylinderSdf(
+    const CylinderShape& cylinder,
+    const Eigen::Isometry3d& cylinderTransform,
+    const SdfShape& sdf,
+    const Eigen::Isometry3d& sdfTransform,
+    DistanceResult& result,
+    const DistanceOption& option = DistanceOption());
+
 } // namespace dart::collision::native
