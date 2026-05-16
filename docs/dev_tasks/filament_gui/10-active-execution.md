@@ -1660,6 +1660,16 @@ UNIT_gui_FilamentSceneExtraction --parallel 5`
   - `cmake --build build/default/cpp/Release --target examples --parallel 5`
   - `git diff --check`
   - `pixi run lint`
+  - Post-lint `cmake --build build/default/cpp/Release --target lcp_physics
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - Post-lint `ctest --test-dir build/default/cpp/Release --output-on-failure
+-R '^UNIT_gui_FilamentSceneExtraction$'`
+  - Post-lint direct llvmpipe LCP physics screenshot with `--scenario dominos
+--solver pgs` plus `analyze_headless_smoke.py`
+    (`/tmp/dart_lcp_physics_direct_postlint.ppm`, 921600/921600 nonzero
+    pixels)
+  - `git diff --check`
+  - `pixi run lint`
   - Post-lint `cmake --build build/default/cpp/Release --target
 free_joint_cases UNIT_gui_FilamentSceneExtraction --parallel 5`
   - Post-lint `ctest --test-dir build/default/cpp/Release --output-on-failure
@@ -1668,6 +1678,49 @@ free_joint_cases UNIT_gui_FilamentSceneExtraction --parallel 5`
     local CLI flags plus `analyze_headless_smoke.py`
     (`/tmp/dart_free_joint_cases_direct_postlint.ppm`, 921600/921600 nonzero
     pixels)
+- Implementation status: pushed as
+  `f4963df00cd Restore free joint cases controls`.
+
+Forty-first LCP physics parity checkpoint:
+
+- Historical `examples/lcp_physics` exposed separate LCP benchmark scenarios
+  (`mass_ratio`, `box_stack`, `ball_drop`, `dominos`, `inclined_plane`), solver
+  selection (`dantzig` or `pgs`), `--list`, frame-capture-friendly headless
+  defaults, 1280x720 launch size, camera home from eye `(3, 2, 3)` to target
+  `(0, 0.3, 0)`, and a README documenting scenarios, CLI options, headless
+  capture, and references.
+- Current promoted source owns a renderer-neutral combined benchmark scene, but
+  it dropped the README, local `--scenario`, `--solver`, and `--list` CLI
+  surface, PGS solver selection, launch-size/camera defaults, and per-scenario
+  explanatory state. The old in-window scenario/solver radio controls require a
+  public mutable-world application API or richer renderer-neutral controls, so
+  this checkpoint will not reintroduce private ImGui or OSG widget code.
+- Scope before code changes: restore launch-time scenario selection, solver
+  selection, `--list`, README, camera/run defaults, and panel text through
+  promoted `dart::gui`; keep shared capture/window flags (`--headless`,
+  `--frames`, `--out`, `--width`, `--height`, `--gui-scale`) under the common
+  runner; update tests/changelog; record any remaining dynamic in-window
+  switching as public API follow-up rather than backend-specific code.
+- Implementation status: LCP physics now restores launch-time scenario
+  selection, solver selection, list mode, camera/run defaults, panel context,
+  and README through promoted `dart::gui`; dynamic in-window scenario/solver
+  replacement remains a public API follow-up.
+- Local acceptance completed so far for this checkpoint:
+  - `cmake --build build/default/cpp/Release --target lcp_physics
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - `ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^UNIT_gui_FilamentSceneExtraction$'`
+  - `build/default/cpp/Release/bin/lcp_physics --list`
+  - Direct llvmpipe `lcp_physics --scenario dominos --solver pgs --headless
+--frames 2 --screenshot /tmp/dart_lcp_physics_direct.ppm` plus
+    `analyze_headless_smoke.py` (921600/921600 nonzero pixels)
+  - `pixi run ex lcp_physics --scenario box_stack --headless --frames 2
+--screenshot /tmp/dart_lcp_physics_pixi.ppm` plus
+    `analyze_headless_smoke.py` (307200/307200 nonzero pixels at the pixi
+    wrapper's 640x480 size)
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+    (67 passed)
+  - `cmake --build build/default/cpp/Release --target examples --parallel 5`
   - `git diff --check`
   - `pixi run lint`
   - Post-lint `cmake --build build/default/cpp/Release --target fetch
@@ -2250,7 +2303,7 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Commit and push the validated free-joint-cases parity checkpoint.
+1. Commit and push the validated LCP physics parity checkpoint.
 2. Continue the source-owned historical parity audit across the remaining
    pre-existing examples; do not treat build or screenshot smoke coverage as
    full restoration evidence by itself.

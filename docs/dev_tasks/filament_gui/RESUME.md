@@ -143,7 +143,14 @@ local CLI flags, camera/run defaults, and README through promoted `dart::gui`.
 That checkpoint is implemented and locally validated through the pre-lint
 focused build, CTest, direct/pixi screenshot smokes, Python example-runner
 tests, the aggregate `examples` build, `pixi run lint`, and post-lint focused
-build/CTest/direct screenshot smoke.
+build/CTest/direct screenshot smoke. The checkpoint was pushed as
+`f4963df00cd Restore free joint cases controls`. The active slice is now
+`examples/lcp_physics`: restore the historical scenario/solver/list CLI,
+camera/run defaults, panel context, and README through promoted `dart::gui`.
+That checkpoint is implemented and locally validated through the pre-lint
+focused build, CTest, `--list`, direct/pixi screenshot smokes, Python
+example-runner tests, the aggregate `examples` build, `pixi run lint`, and
+post-lint focused build/CTest/direct screenshot smoke.
 Keep Atlas relaxed-posture/balance optimization, Hubo analytical IK,
 Atlas/Hubo target activation semantics, and Enter recording as explicit parity
 gaps unless a later slice adds the narrow renderer-neutral public API needed

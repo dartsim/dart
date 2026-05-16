@@ -135,6 +135,9 @@
   - Restored free-joint-cases example numeric/reference controls, local
     command-line flags, camera/run defaults, and example README through public
     `dart::gui`.
+  - Restored LCP physics example scenario and solver command-line selection,
+    list mode, camera/run defaults, panel context, and example README through
+    public `dart::gui`.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

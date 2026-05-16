@@ -1258,10 +1258,26 @@ TEST(FilamentSceneExtraction, LcpAndMimicExamplesPreserveParityMarkers)
 {
   const auto lcpSource = readSourceFile(
       std::filesystem::path("examples") / "lcp_physics" / "main.cpp");
+  const auto lcpReadmeSource = readSourceFile(
+      std::filesystem::path("examples") / "lcp_physics" / "README.md");
   EXPECT_NE(lcpSource.find("lcp_physics_contact_box_"), std::string::npos);
   EXPECT_NE(lcpSource.find("lcp_physics_ball_drop_sphere_"), std::string::npos);
   EXPECT_NE(lcpSource.find("DantzigSolver"), std::string::npos);
+  EXPECT_NE(lcpSource.find("PgsSolver"), std::string::npos);
+  EXPECT_NE(lcpSource.find("--scenario"), std::string::npos);
+  EXPECT_NE(lcpSource.find("--solver"), std::string::npos);
+  EXPECT_NE(lcpSource.find("--list"), std::string::npos);
+  EXPECT_NE(lcpSource.find("createInclinedPlaneScenario"), std::string::npos);
+  EXPECT_NE(lcpSource.find("makeLcpRunDefaults"), std::string::npos);
+  EXPECT_NE(lcpSource.find("options.width = 1280"), std::string::npos);
+  EXPECT_NE(lcpSource.find("options.height = 720"), std::string::npos);
+  EXPECT_NE(lcpSource.find("makeLcpCamera"), std::string::npos);
+  EXPECT_NE(
+      lcpSource.find("camera.target = Eigen::Vector3d(0.0, 0.3, 0.0)"),
+      std::string::npos);
   EXPECT_NE(lcpSource.find("options.world"), std::string::npos);
+  EXPECT_NE(lcpReadmeSource.find("LCP Physics Example"), std::string::npos);
+  EXPECT_NE(lcpReadmeSource.find("mass_ratio"), std::string::npos);
   EXPECT_EQ(lcpSource.find("options.defaultScene"), std::string::npos);
 
   const auto mimicSource = readSourceFile(
