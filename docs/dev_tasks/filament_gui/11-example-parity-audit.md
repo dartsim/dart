@@ -560,6 +560,26 @@ build/screenshot path as sufficient.
 | README documents the Simbicon controller workflow and promoted runner.                                                          | Restored.                            | Current README documents the promoted runner and remaining render-settings gaps.                                                                  |
 | Keep source-marker coverage for controller files, pre-step update, controls, camera/defaults, README, and absence of OSG types. | Restored through marker guard.       | `UNIT_gui_FilamentSceneExtraction` guards the restored contract.                                                                                  |
 
+### GUI Scene Diagnostics Itemized Inventory
+
+Historical source compared:
+`520993d7301^:examples/gui_scene_diagnostics`.
+
+The historical source was already a renderer-independent descriptor diagnostic,
+not an interactive viewer. The current source intentionally differs only by
+using promoted `dart::gui` headers/names and by naming `apps/dartsim` as the
+maintained GUI application.
+
+| Historical item                                                                                           | Current outcome                | Notes                                                                                                                  |
+| --------------------------------------------------------------------------------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| Build only when the GUI component is available.                                                           | Restored through `dart::gui`.  | CMake now checks `dart-gui` instead of the old `dart-gui-experimental` target.                                         |
+| CLI flags: `--frames`, `--width`, `--height`, and `--help`, with a default bounded 10-frame simulation.   | Restored.                      | Current source preserves the diagnostic CLI and normalizes `RunOptions`.                                               |
+| Create a `gui_scene_diagnostics` world with a dynamic blue box, gray ground, and yellow `SimpleFrame`.    | Restored.                      | The diagnostic world and object names are preserved.                                                                   |
+| Print frame count, renderable count, debug-line count, selection-line count, camera eye, and pick hit.    | Restored.                      | Direct run `gui_scene_diagnostics --frames 3 --width 320 --height 240` produced the expected diagnostic fields.        |
+| Exercise renderable extraction, debug-line extraction, selection-line generation, orbit camera, and pick. | Restored through `dart::gui`.  | Current source uses promoted `dart::gui` APIs for the same descriptor checks.                                          |
+| README documents descriptor diagnostics and the promoted application direction.                           | Restored.                      | README points users to `apps/dartsim` instead of the removed backend-named example.                                    |
+| Keep marker coverage for CLI, world setup, descriptor extraction, diagnostic output, README, and no OSG.  | Restored through marker guard. | `UNIT_gui_FilamentSceneExtraction` now guards the preserved non-interactive diagnostic contract and promoted boundary. |
+
 ## Example Inventory
 
 | Example                     | Current Audit State                                                                | Next Required Action                                                                                                                          |
@@ -576,9 +596,9 @@ build/screenshot path as sufficient.
 | `drag_and_drop`             | Restored except public rotation-manipulator API gap.                               | Keep marker guards for frame handle, child box, markers, camera/defaults, README, and no backend types.                                       |
 | `empty`                     | Restored except public key-release/render-hook API gaps.                           | Keep key-release and pre/post-render hooks tracked as public API follow-ups.                                                                  |
 | `fetch`                     | Restored by strict re-open.                                                        | Keep marker guards for target handle, translation/rotation controls, help text, grid, camera/defaults, README, and no backend types.          |
-| `free_joint_cases`          | Needs strict audit.                                                                | Compare historical source and list controls/defaults.                                                                                         |
+| `free_joint_cases`          | Restored by strict audit.                                                          | Keep marker guards for numeric/reference controls, local CLI flags, camera/defaults, README, and no backend types.                            |
 | `g1_puppet`                 | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm target activation, IK, teleoperation, camera, and guards.                                                                             |
-| `gui_scene_diagnostics`     | Needs strict audit.                                                                | Confirm diagnostic GUI behavior and capture expectations.                                                                                     |
+| `gui_scene_diagnostics`     | Preserved by strict audit as a descriptor diagnostic example.                      | Keep marker guards for CLI flags, descriptor extraction, debug/selection lines, pick output, README, and no backend types.                    |
 | `hardcoded_design`          | Recent parity checkpoint; OSG wireframe remains public API gap.                    | Confirm checklist entry and keep wireframe follow-up explicit.                                                                                |
 | `headless_simulation`       | Preserved by strict audit as a non-GUI example.                                    | Keep marker guards for CLI flags, seed setup, progress output, README, and no GUI renderer dependency.                                        |
 | `heightmap`                 | Restored except public debug-grid/color editor gaps.                               | Keep OSG grid style controls tracked as public API follow-up.                                                                                 |

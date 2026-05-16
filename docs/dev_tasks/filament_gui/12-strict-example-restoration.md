@@ -168,16 +168,21 @@ Immediate order:
     added.
 11. Continue through the remaining `Needs strict audit` and
     `Recent parity checkpoint; still subject to strict audit re-open` rows.
-    The next strict-audit cursor is `examples/atlas_simbicon/`; do not skip it
-    because it already builds. This slice must restore the deleted Simbicon
-    controller/state files and migrate the historical OSG world-node,
-    event-handler, and widget behavior to public `dart::gui` pre-step
-    callbacks, keyboard actions, and panel controls.
-    Implementation and pre-lint validation are complete; exact headlight,
+    The Atlas Simbicon checkpoint has been committed and pushed as
+    `82e39c45558 Restore Atlas Simbicon controller example`; exact headlight,
     shadow-toggle, depth-camera, and native window-title parity remain named
-    public API gaps. Post-lint focused build/CTest, direct Atlas Simbicon
-    screenshot smoke, and `git diff --check` also passed. Commit and push this
-    checkpoint before moving the cursor to the remaining strict-audit rows.
+    public API gaps. `examples/free_joint_cases/` was already restored and
+    pushed as `f4963df00cd Restore free joint cases controls`, so the next
+    strict-audit cursor is `examples/gui_scene_diagnostics/`.
+12. `examples/gui_scene_diagnostics/` has been compared against
+    `520993d7301^:examples/gui_scene_diagnostics`. It is a non-interactive
+    descriptor diagnostic example, and the current behavior is preserved except
+    for the intentional `dart::gui::experimental` to promoted `dart::gui`
+    naming. Add marker coverage and validate direct diagnostic output before
+    committing this audit checkpoint. Pre-lint focused build/CTest, direct
+    diagnostic output verification, Python C++ example-runner tests, and
+    aggregate `examples` build passed. Post-lint focused build/CTest, direct
+    diagnostic output verification, and `git diff --check` also passed.
 
 ## Checkpoint Rule
 

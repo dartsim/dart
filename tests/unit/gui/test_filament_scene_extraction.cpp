@@ -536,6 +536,49 @@ TEST(FilamentSceneExtraction, DiagnosticsExampleUsesPromotedGuiBoundary)
       mainSource.find("dart::gui::extractRenderables"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, DiagnosticsExamplePreservesLegacyContractMarkers)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "gui_scene_diagnostics" / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "gui_scene_diagnostics"
+      / "README.md");
+
+  EXPECT_NE(mainSource.find("options.run.maxFrames = 10"), std::string::npos);
+  EXPECT_NE(mainSource.find("--frames"), std::string::npos);
+  EXPECT_NE(mainSource.find("--width"), std::string::npos);
+  EXPECT_NE(mainSource.find("--height"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("dart::gui::normalizeRunOptions"), std::string::npos);
+  EXPECT_NE(mainSource.find("createDiagnosticWorld"), std::string::npos);
+  EXPECT_NE(mainSource.find("gui_scene_diagnostics"), std::string::npos);
+  EXPECT_NE(mainSource.find("diagnostic_box"), std::string::npos);
+  EXPECT_NE(mainSource.find("box_visual"), std::string::npos);
+  EXPECT_NE(mainSource.find("ground_visual"), std::string::npos);
+  EXPECT_NE(mainSource.find("diagnostic_interactive_frame"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("dart::gui::extractRenderables"), std::string::npos);
+  EXPECT_NE(mainSource.find("dart::gui::extractDebugLines"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("dart::gui::makeSelectionDebugLines"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("dart::gui::makePerspectivePickRay"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("dart::gui::pickNearestRenderable"), std::string::npos);
+  EXPECT_NE(mainSource.find("\"frames: \""), std::string::npos);
+  EXPECT_NE(mainSource.find("\"renderables: \""), std::string::npos);
+  EXPECT_NE(mainSource.find("\"debug lines: \""), std::string::npos);
+  EXPECT_NE(mainSource.find("\"selection lines: \""), std::string::npos);
+  EXPECT_NE(mainSource.find("\"camera eye: \""), std::string::npos);
+  EXPECT_NE(mainSource.find("\"center pick: \""), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("GUI Scene Diagnostics Example"), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("renderer-independent GUI descriptors"),
+      std::string::npos);
+  EXPECT_NE(readmeSource.find("apps/dartsim"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, GuiExamplesDoNotExposeSceneLauncherShim)
 {
   const auto helperSource = readSourceFile(

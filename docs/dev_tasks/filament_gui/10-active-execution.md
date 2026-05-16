@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `c39ed94fef3 Restore Fetch selected-frame rotation`.
+  `82e39c45558 Restore Atlas Simbicon controller example`.
 - Latest pushed code checkpoint:
-  `c39ed94fef3 Restore Fetch selected-frame rotation`.
+  `82e39c45558 Restore Atlas Simbicon controller example`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -140,6 +140,7 @@ history but are not guaranteed to be in chronological order.
   - `824c520659c Audit speed test example`
   - `f3bdffff5ad Audit unified loading example`
   - `c39ed94fef3 Restore Fetch selected-frame rotation`
+  - `82e39c45558 Restore Atlas Simbicon controller example`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -443,6 +444,38 @@ history but are not guaranteed to be in chronological order.
   screenshot with basic analyzer coverage
   (`/tmp/dart_atlas_simbicon_direct_postlint.ppm`, 307180/307200 nonzero
   pixels), and `git diff --check`.
+- The Atlas Simbicon controller checkpoint was pushed as
+  `82e39c45558 Restore Atlas Simbicon controller example`; do not wait for CI
+  before continuing independent strict-audit work.
+- `examples/free_joint_cases/` is not the next live gap despite the stale table
+  row: it was already restored and pushed as
+  `f4963df00cd Restore free joint cases controls` with marker coverage for
+  controls, local CLI flags, camera/run defaults, and README.
+- Active slice is now `examples/gui_scene_diagnostics/`. Before editing source,
+  compare the current source against
+  `520993d7301^:examples/gui_scene_diagnostics`, write an itemized inventory
+  in `11-example-parity-audit.md`, then restore or explicitly name any
+  remaining public API gaps.
+- GUI scene diagnostics audit result: the example was already a
+  non-interactive descriptor diagnostic. Current behavior matches the
+  historical source except for the intentional promotion from
+  `dart::gui::experimental` to `dart::gui` and README wording that points to
+  `apps/dartsim`. This checkpoint should add itemized docs and marker coverage,
+  validate direct diagnostic output, and avoid adding renderer/window
+  dependencies.
+- GUI scene diagnostics validation completed before lint: focused C++ build for
+  `gui_scene_diagnostics` and `UNIT_gui_FilamentSceneExtraction`, focused CTest
+  for `UNIT_gui_FilamentSceneExtraction`, direct
+  `gui_scene_diagnostics --frames 3 --width 320 --height 240` output
+  verification (`frames: 3`, `renderables: 3`, `debug lines: 49`,
+  `selection lines: 12`, and center pick
+  `diagnostic_box/box_body/box_visual`), Python C++ example-runner tests
+  (67 passed), and aggregate `examples` build.
+- GUI scene diagnostics post-lint validation completed: mandatory
+  `pixi run lint`, focused rebuild and CTest for `gui_scene_diagnostics` plus
+  `UNIT_gui_FilamentSceneExtraction`, direct diagnostic output verification
+  with `gui_scene_diagnostics --frames 3 --width 320 --height 240`, and
+  `git diff --check`.
 
 ## Current Code Shape
 
