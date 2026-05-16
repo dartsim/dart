@@ -458,10 +458,11 @@ double measureBoxLowestVertexZ(
   return lowest;
 }
 
-NativeBoxGroundRunResult runDefaultNativeBoxOnGround(
+NativeBoxGroundRunResult runDefaultNativeBoxOnGroundWithSize(
     const Eigen::Matrix3d& initialRotation,
     int numSteps,
-    bool checkLongRunBounds)
+    bool checkLongRunBounds,
+    const Eigen::Vector3d& boxSize)
 {
   auto world = World::create();
   world->setTimeStep(0.001);
@@ -471,7 +472,6 @@ NativeBoxGroundRunResult runDefaultNativeBoxOnGround(
   }
   EXPECT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
 
-  const auto boxSize = Eigen::Vector3d::Constant(0.3);
   const double boxHalfExtent = 0.5 * boxSize.z();
   const double groundTop = 0.05;
   const double expectedCenterZ = groundTop + boxHalfExtent;
@@ -537,6 +537,18 @@ NativeBoxGroundRunResult runDefaultNativeBoxOnGround(
 
   runResult.finalTransform = boxBody->getWorldTransform();
   return runResult;
+}
+
+NativeBoxGroundRunResult runDefaultNativeBoxOnGround(
+    const Eigen::Matrix3d& initialRotation,
+    int numSteps,
+    bool checkLongRunBounds)
+{
+  return runDefaultNativeBoxOnGroundWithSize(
+      initialRotation,
+      numSteps,
+      checkLongRunBounds,
+      Eigen::Vector3d::Constant(0.3));
 }
 
 bool hasLocalAxisAlignedWithWorldZ(
@@ -625,6 +637,19 @@ TEST(WorldTests, DefaultNativeRotatedBoxStaysOnGround15s)
   EXPECT_GE(result.lowestVertexZ, 0.05 - 0.005);
   EXPECT_LE(result.highestCenterZAfterRest, 0.05 + 0.15 * 1.74 + 0.02);
   EXPECT_GE(result.lowestCenterZAfterRest, 0.05 + 0.15 - 0.02);
+}
+
+//==============================================================================
+TEST(WorldTests, DefaultNativeThinBoxDoesNotTunnel)
+{
+  const auto result = runDefaultNativeBoxOnGroundWithSize(
+      math::expMapRot(Eigen::Vector3d(0.2, -0.1, 0.35)),
+      3000,
+      false,
+      Eigen::Vector3d(0.9, 0.08, 0.06));
+
+  EXPECT_TRUE(result.sawContact);
+  EXPECT_GE(result.lowestVertexZ, 0.05 - 0.005);
 }
 
 //==============================================================================

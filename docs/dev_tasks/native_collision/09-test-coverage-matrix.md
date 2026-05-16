@@ -238,7 +238,7 @@ deterministic across threads, etc.).
 | `gz_issue895_self_collision`         | DONE    | `test_self_collision_filtering.cpp`                       |                                                                     |
 | `cross_backend_consistency`          | DONE    | `test_native_backend_consistency.cpp`                     | Gated on reference engines                                          |
 | `cross_backend_contact_count_parity` | DONE    | `test_box_ground_contact_parity.cpp`                      | Reference-enabled parity test; match Bullet contact count within ±1 |
-| `thin_box_no_tunneling`              | GAP     | —                                                         | Slender feature stress                                              |
+| `thin_box_no_tunneling`              | DONE    | `test_world.cpp::DefaultNativeThinBoxDoesNotTunnel`       | Slender feature stress                                              |
 | `slender_capsule_no_tunneling`       | GAP     | —                                                         |                                                                     |
 | `coincident_vertex_no_crash`         | GAP     | —                                                         | Degenerate mesh                                                     |
 | `zero_extent_shape_no_crash`         | GAP     | —                                                         |                                                                     |
@@ -349,10 +349,10 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 
 - **§1 Pair-wise narrow-phase:** 89 DONE, 0 PARTIAL, 0 GAP (of 89 rows)
 - **§2 Algorithm-level:** 36 DONE, 1 PARTIAL, 12 GAP (of 49 rows)
-- **§3 Stress / regression:** 20 DONE, 1 PARTIAL, 10 GAP (of 31 rows)
+- **§3 Stress / regression:** 21 DONE, 1 PARTIAL, 9 GAP (of 31 rows)
 - **§4 Benchmarks:** 30 DONE, 0 PARTIAL, 14 GAP (of 44 rows)
 - **§5 Infrastructure:** 9 DONE, 0 PARTIAL, 0 GAP (of 9 rows)
-- **TOTAL:** 184 DONE, 2 PARTIAL, 36 GAP (of 222 rows)
+- **TOTAL:** 185 DONE, 2 PARTIAL, 35 GAP (of 222 rows)
 
 DART native is currently at ~82% of the proposed superset, with pair-wise
 narrow-phase coverage closed. The remaining coverage is concentrated in:
@@ -366,7 +366,7 @@ performance wave.
    and CCD rows that are not part of the performance wave.
 2. **Long-horizon stability scenes** — `stacked_boxes_n100`,
    `mixed_primitive_stack` unit-test version, `ragdoll_capsule_pile`,
-   `thin_box_no_tunneling`. These are the highest-leverage rows for
+   and remaining pile/scale cases. These are the highest-leverage rows for
    "DART is provably stable" marketing.
 3. **Scale/scenario benchmark rows** — broadphase scaling, stacked boxes,
    ragdoll piles, convex-vs-landscape, and BVH build/traversal benchmarks.
