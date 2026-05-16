@@ -138,14 +138,14 @@ normals flip).
 native taxonomy does not have a dedicated `ShapeType` for them; they
 adapt to convex/mesh/compound):
 
-| Codename              | Status | Source                    | Notes                          |
-| --------------------- | ------ | ------------------------- | ------------------------------ |
-| `adapter_cone`        | DONE   | `test_native_backend.cpp` |                                |
-| `adapter_ellipsoid`   | DONE   | `test_native_backend.cpp` |                                |
-| `adapter_heightmap`   | DONE   | `test_native_backend.cpp` |                                |
-| `adapter_multisphere` | DONE   | `test_native_backend.cpp` |                                |
-| `adapter_voxelgrid`   | DONE   | `test_native_backend.cpp` |                                |
-| `adapter_pyramid`     | GAP    | —                         | dynamics::PyramidShape unused? |
+| Codename              | Status | Source                             | Notes |
+| --------------------- | ------ | ---------------------------------- | ----- |
+| `adapter_cone`        | DONE   | `test_native_backend.cpp`          |       |
+| `adapter_ellipsoid`   | DONE   | `test_native_backend.cpp`          |       |
+| `adapter_heightmap`   | DONE   | `test_native_backend.cpp`          |       |
+| `adapter_multisphere` | DONE   | `test_native_backend.cpp`          |       |
+| `adapter_voxelgrid`   | DONE   | `test_native_backend.cpp`          |       |
+| `adapter_pyramid`     | DONE   | `test_dart_collision_detector.cpp` |       |
 
 ## 2. Algorithm-Level
 
@@ -346,15 +346,15 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 
 ## Summary Counters (as of 2026-05-15)
 
-- **§1 Pair-wise narrow-phase:** 67 DONE, 0 PARTIAL, 13 GAP (of 80 rows)
+- **§1 Pair-wise narrow-phase:** 68 DONE, 0 PARTIAL, 12 GAP (of 80 rows)
 - **§2 Algorithm-level:** 27 DONE, 4 PARTIAL, 13 GAP (of 44 rows)
 - **§3 Stress / regression:** 17 DONE, 1 PARTIAL, 15 GAP (of 33 rows)
 - **§4 Benchmarks:** 19 DONE, 0 PARTIAL, 9 GAP (of 28 rows)
 - **§5 Infrastructure:** 8 DONE, 0 PARTIAL, 1 GAP (of 9 rows)
-- **TOTAL:** 138 DONE, 5 PARTIAL, 51 GAP (of 194 rows)
+- **TOTAL:** 139 DONE, 5 PARTIAL, 50 GAP (of 194 rows)
 
-DART native is currently at ~71% of the proposed superset, with the
-remaining 29% concentrated in: (a) less-common shape pairs against
+DART native is currently at ~72% of the proposed superset, with the
+remaining 28% concentrated in: (a) less-common shape pairs against
 capsule/cylinder/mesh/convex/sdf/compound, (b) algorithm-isolation
 tests for SAT internals, (c) long-horizon stability and stress scenes,
 (d) scale and scenario benchmarks beyond the focused raw primitive rows.

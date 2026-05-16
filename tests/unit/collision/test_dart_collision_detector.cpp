@@ -23,6 +23,7 @@
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/plane_shape.hpp>
 #include <dart/dynamics/point_cloud_shape.hpp>
+#include <dart/dynamics/pyramid_shape.hpp>
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/soft_body_node.hpp>
@@ -353,6 +354,20 @@ TEST(DartCollisionDetector, SphereMeshCollisionDetectsContact)
   ASSERT_GT(result.second.getNumContacts(), 0u);
   EXPECT_GT(result.second.getContact(0).normal.norm(), 0.9);
   EXPECT_GT(result.second.getContact(0).penetrationDepth, 0.0);
+}
+
+TEST(DartCollisionDetector, PyramidShapeCollisionUsesNativeConvexGeometry)
+{
+  auto pyramid = std::make_shared<PyramidShape>(1.0, 1.0, 1.0);
+  auto sphere = std::make_shared<SphereShape>(0.3);
+
+  auto result = runCollision(pyramid, sphere, Eigen::Vector3d(0.0, 0.0, 0.3));
+  ASSERT_TRUE(result.first);
+  EXPECT_GT(result.second, 0u);
+
+  result = runCollision(pyramid, sphere, Eigen::Vector3d(0.0, 0.0, 2.0));
+  EXPECT_FALSE(result.first);
+  EXPECT_EQ(result.second, 0u);
 }
 
 TEST(DartCollisionDetector, ConvexMeshCollisionUsesNativeConvexGeometry)

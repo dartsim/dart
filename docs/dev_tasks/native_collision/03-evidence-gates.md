@@ -3098,6 +3098,25 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     `mesh_compound` through existing native compound dispatch in both query
     orders, including nonzero penetration depth, finite contact position/normal
     data, and flipped normal orientation for swapped arguments.
+- Current local pyramid adapter refresh:
+  - Commit: current working tree after local head `7910e22f1b6`
+    (`Cover convex mesh compound pair order`).
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target UNIT_collision_DartCollisionDetector --parallel 5`,
+    `./build/default/cpp/Release/bin/UNIT_collision_DartCollisionDetector --gtest_filter='DartCollisionDetector.PyramidShapeCollisionUsesNativeConvexGeometry'`,
+    and
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^UNIT_collision_DartCollisionDetector$' -j 5`.
+  - Result: passed. Public `DartCollisionDetector` now covers the
+    `PyramidShape` adapter path through native convex geometry for both
+    colliding and separated pyramid/sphere cases.
+- Current local full validation after pyramid adapter coverage:
+  - Commit: current working tree after local head `7910e22f1b6`
+    (`Cover convex mesh compound pair order`).
+  - Command: `pixi run test-all`.
+  - Result: passed 6/6 gates: linting, build, unit tests,
+    simulation-experimental tests, Python tests, and documentation. The full
+    C++ unit/integration CTest slice reported 264/264 tests passing, including
+    all 29 `collision-native` tests.
 
 ## Known Risks
 
