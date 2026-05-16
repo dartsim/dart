@@ -34,6 +34,8 @@
 #include <dart/collision/native/shapes/shape.hpp>
 
 #include <algorithm>
+#include <array>
+#include <limits>
 
 #include <cmath>
 
@@ -65,21 +67,101 @@ Eigen::Vector3d closestPointOnSegmentInBoxSpace(
   }
 
   double bestDistSq = std::numeric_limits<double>::max();
-  Eigen::Vector3d bestOnBox;
-  Eigen::Vector3d bestOnSegment;
+  double bestInteriorMargin = -std::numeric_limits<double>::infinity();
+  Eigen::Vector3d bestOnBox = Eigen::Vector3d::Zero();
+  Eigen::Vector3d bestOnSegment = segmentStart;
 
-  constexpr int numSamples = 8;
-  for (int i = 0; i <= numSamples; ++i) {
-    const double t = static_cast<double>(i) / numSamples;
+  auto computeInteriorMargin = [&](const Eigen::Vector3d& point) {
+    double margin = std::numeric_limits<double>::infinity();
+    for (int axis = 0; axis < 3; ++axis) {
+      const double axisMargin = halfExtents[axis] - std::abs(point[axis]);
+      if (axisMargin < 0.0) {
+        return -std::numeric_limits<double>::infinity();
+      }
+      margin = std::min(margin, axisMargin);
+    }
+    return margin;
+  };
+
+  auto testCandidate = [&](double t) {
     const Eigen::Vector3d pointOnSegment = segmentStart + segment * t;
     const Eigen::Vector3d pointOnBox
         = closestPointOnBox(pointOnSegment, halfExtents);
     const double distSq = (pointOnSegment - pointOnBox).squaredNorm();
+    const double interiorMargin = computeInteriorMargin(pointOnSegment);
 
-    if (distSq < bestDistSq) {
+    if (distSq < bestDistSq - 1e-18
+        || (std::abs(distSq - bestDistSq) <= 1e-18
+            && interiorMargin > bestInteriorMargin)) {
       bestDistSq = distSq;
+      bestInteriorMargin = interiorMargin;
       bestOnBox = pointOnBox;
       bestOnSegment = pointOnSegment;
+    }
+  };
+
+  std::array<double, 8> breakpoints{};
+  std::size_t numBreakpoints = 0;
+  breakpoints[numBreakpoints++] = 0.0;
+  breakpoints[numBreakpoints++] = 1.0;
+
+  constexpr double kAxisEps = 1e-12;
+  for (int axis = 0; axis < 3; ++axis) {
+    if (std::abs(segment[axis]) <= kAxisEps) {
+      continue;
+    }
+
+    for (const double face : {-halfExtents[axis], halfExtents[axis]}) {
+      const double t = (face - segmentStart[axis]) / segment[axis];
+      if (t > 0.0 && t < 1.0) {
+        breakpoints[numBreakpoints++] = t;
+      }
+    }
+  }
+
+  std::sort(breakpoints.begin(), breakpoints.begin() + numBreakpoints);
+
+  std::array<double, 8> uniqueBreakpoints{};
+  std::size_t numUniqueBreakpoints = 0;
+  for (std::size_t i = 0; i < numBreakpoints; ++i) {
+    if (numUniqueBreakpoints == 0
+        || std::abs(
+               breakpoints[i] - uniqueBreakpoints[numUniqueBreakpoints - 1])
+               > kAxisEps) {
+      uniqueBreakpoints[numUniqueBreakpoints++] = breakpoints[i];
+      testCandidate(breakpoints[i]);
+    }
+  }
+
+  for (std::size_t i = 0; i + 1 < numUniqueBreakpoints; ++i) {
+    const double lo = uniqueBreakpoints[i];
+    const double hi = uniqueBreakpoints[i + 1];
+    if (hi - lo <= kAxisEps) {
+      continue;
+    }
+
+    const double mid = 0.5 * (lo + hi);
+    double numerator = 0.0;
+    double denominator = 0.0;
+    for (int axis = 0; axis < 3; ++axis) {
+      const double coord = segmentStart[axis] + segment[axis] * mid;
+      double face = 0.0;
+      if (coord < -halfExtents[axis]) {
+        face = -halfExtents[axis];
+      } else if (coord > halfExtents[axis]) {
+        face = halfExtents[axis];
+      } else {
+        continue;
+      }
+
+      numerator += segment[axis] * (face - segmentStart[axis]);
+      denominator += segment[axis] * segment[axis];
+    }
+
+    if (denominator > kAxisEps) {
+      testCandidate(std::clamp(numerator / denominator, lo, hi));
+    } else {
+      testCandidate(mid);
     }
   }
 
@@ -116,49 +198,73 @@ bool collideCapsuleBox(
   const Eigen::Vector3d boxBottom = boxInverse * worldBottom;
 
   Eigen::Vector3d closestOnSegment;
-  const Eigen::Vector3d closestOnBox = closestPointOnSegmentInBoxSpace(
+  closestPointOnSegmentInBoxSpace(
       boxBottom, boxTop, halfExtents, closestOnSegment);
 
-  const Eigen::Vector3d diff = closestOnSegment - closestOnBox;
-  const double distSquared = diff.squaredNorm();
-
-  if (distSquared > capsuleRadius * capsuleRadius) {
-    return false;
-  }
-
-  const double dist = std::sqrt(distSquared);
-  const double penetration = capsuleRadius - dist;
-
-  Eigen::Vector3d normalLocal;
-  if (dist < 1e-10) {
-    const Eigen::Vector3d absClosest = closestOnBox.cwiseAbs();
-    const Eigen::Vector3d distToFace = halfExtents - absClosest;
-    int minAxis = 0;
-    if (distToFace.y() < distToFace.x()) {
-      minAxis = 1;
+  auto addContactForAxisPoint = [&](const Eigen::Vector3d& axisPointLocal) {
+    if (result.numContacts() >= option.maxNumContacts) {
+      return false;
     }
-    if (distToFace.z() < distToFace[minAxis]) {
-      minAxis = 2;
+
+    const Eigen::Vector3d pointOnBoxLocal
+        = closestPointOnBox(axisPointLocal, halfExtents);
+    const Eigen::Vector3d diff = axisPointLocal - pointOnBoxLocal;
+    const double distSquared = diff.squaredNorm();
+
+    if (distSquared > capsuleRadius * capsuleRadius) {
+      return false;
     }
-    normalLocal = Eigen::Vector3d::Zero();
-    normalLocal[minAxis] = (closestOnSegment[minAxis] >= 0) ? 1.0 : -1.0;
-  } else {
-    normalLocal = diff / dist;
-  }
 
-  const Eigen::Vector3d normalWorld = boxTransform.rotation() * normalLocal;
+    const double dist = std::sqrt(distSquared);
 
-  const Eigen::Vector3d contactWorld
-      = boxTransform * closestOnBox + normalWorld * (penetration * 0.5);
+    Eigen::Vector3d normalLocal;
+    Eigen::Vector3d contactOnBoxLocal = pointOnBoxLocal;
+    double penetration = capsuleRadius - dist;
+    if (dist < 1e-10) {
+      const Eigen::Vector3d absAxisPoint = axisPointLocal.cwiseAbs();
+      const Eigen::Vector3d distToFace = halfExtents - absAxisPoint;
+      int minAxis = 0;
+      if (distToFace.y() < distToFace.x()) {
+        minAxis = 1;
+      }
+      if (distToFace.z() < distToFace[minAxis]) {
+        minAxis = 2;
+      }
+      normalLocal = Eigen::Vector3d::Zero();
+      normalLocal[minAxis] = (axisPointLocal[minAxis] >= 0) ? 1.0 : -1.0;
+      contactOnBoxLocal[minAxis] = normalLocal[minAxis] > 0.0
+                                       ? halfExtents[minAxis]
+                                       : -halfExtents[minAxis];
+      penetration = capsuleRadius + distToFace[minAxis];
+    } else {
+      normalLocal = diff / dist;
+    }
 
-  ContactPoint contact;
-  contact.position = contactWorld;
-  contact.normal = -normalWorld;
-  contact.depth = penetration;
+    const Eigen::Vector3d normalWorld = boxTransform.rotation() * normalLocal;
 
-  result.addContact(contact);
+    ContactPoint contact;
+    contact.position
+        = boxTransform * contactOnBoxLocal + normalWorld * (penetration * 0.5);
+    contact.normal = -normalWorld;
+    contact.depth = penetration;
 
-  return true;
+    for (std::size_t i = 0; i < result.numContacts(); ++i) {
+      const auto& existing = result.getContact(i);
+      if ((existing.position - contact.position).squaredNorm() < 1e-12
+          && existing.normal.dot(contact.normal) > 0.999) {
+        return false;
+      }
+    }
+
+    result.addContact(contact);
+    return true;
+  };
+
+  bool hit = addContactForAxisPoint(closestOnSegment);
+  hit = addContactForAxisPoint(boxBottom) || hit;
+  hit = addContactForAxisPoint(boxTop) || hit;
+
+  return hit;
 }
 
 } // namespace dart::collision::native

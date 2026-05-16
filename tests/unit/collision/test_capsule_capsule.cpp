@@ -337,7 +337,7 @@ TEST(CapsuleBox, CapsuleThroughBoxFace)
   bool collided = collideCapsuleBox(capsule, tfCapsule, box, tfBox, result);
 
   EXPECT_TRUE(collided);
-  EXPECT_EQ(result.numContacts(), 1u);
+  EXPECT_GE(result.numContacts(), 1u);
 }
 
 TEST(CapsuleBox, CapsuleAtBoxCorner)
@@ -353,7 +353,7 @@ TEST(CapsuleBox, CapsuleAtBoxCorner)
   bool collided = collideCapsuleBox(capsule, tfCapsule, box, tfBox, result);
 
   EXPECT_TRUE(collided);
-  EXPECT_EQ(result.numContacts(), 1u);
+  EXPECT_GE(result.numContacts(), 1u);
 }
 
 TEST(CapsuleBox, CapsulePenetratingBox)
@@ -368,7 +368,7 @@ TEST(CapsuleBox, CapsulePenetratingBox)
   bool collided = collideCapsuleBox(capsule, tfCapsule, box, tfBox, result);
 
   EXPECT_TRUE(collided);
-  EXPECT_EQ(result.numContacts(), 1u);
+  EXPECT_GE(result.numContacts(), 1u);
 }
 
 TEST(CapsuleBox, RotatedCapsule)
@@ -386,5 +386,23 @@ TEST(CapsuleBox, RotatedCapsule)
   bool collided = collideCapsuleBox(capsule, tfCapsule, box, tfBox, result);
 
   EXPECT_TRUE(collided);
-  EXPECT_EQ(result.numContacts(), 1u);
+  EXPECT_GE(result.numContacts(), 1u);
+}
+
+TEST(CapsuleBox, HorizontalLineSupportHasEndpointContacts)
+{
+  CapsuleShape capsule(0.035, 0.9);
+  BoxShape box(Eigen::Vector3d(10.0, 10.0, 0.1));
+
+  Eigen::Isometry3d tfCapsule = Eigen::Isometry3d::Identity();
+  tfCapsule.linear() = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY())
+                           .toRotationMatrix();
+  tfCapsule.translation() = Eigen::Vector3d(0.0, 0.0, 0.08);
+  Eigen::Isometry3d tfBox = Eigen::Isometry3d::Identity();
+
+  CollisionResult result;
+  bool collided = collideCapsuleBox(capsule, tfCapsule, box, tfBox, result);
+
+  EXPECT_TRUE(collided);
+  EXPECT_GE(result.numContacts(), 2u);
 }

@@ -441,6 +441,18 @@ struct NativeBoxGroundRunResult
   Eigen::Isometry3d finalTransform = Eigen::Isometry3d::Identity();
 };
 
+struct NativeCapsuleGroundRunResult
+{
+  bool sawContact = false;
+  double lowestPointZ = std::numeric_limits<double>::infinity();
+  double lowestCenterZ = std::numeric_limits<double>::infinity();
+  std::size_t maxContacts = 0;
+  double lastPenetrationDepth = 0.0;
+  Eigen::Vector3d lastContactPoint = Eigen::Vector3d::Zero();
+  Eigen::Vector3d lastContactNormal = Eigen::Vector3d::Zero();
+  Eigen::Isometry3d finalTransform = Eigen::Isometry3d::Identity();
+};
+
 double measureBoxLowestVertexZ(
     const BodyNode* body, const Eigen::Vector3d& boxSize)
 {
@@ -456,6 +468,17 @@ double measureBoxLowestVertexZ(
     }
   }
   return lowest;
+}
+
+double measureCapsuleLowestPointZ(
+    const BodyNode* body, double radius, double height)
+{
+  const auto tf = body->getWorldTransform();
+  const double halfHeight = 0.5 * height;
+  const Eigen::Vector3d endpoint0 = tf * Eigen::Vector3d(0.0, 0.0, -halfHeight);
+  const Eigen::Vector3d endpoint1 = tf * Eigen::Vector3d(0.0, 0.0, halfHeight);
+
+  return std::min(endpoint0.z(), endpoint1.z()) - radius;
 }
 
 NativeBoxGroundRunResult runDefaultNativeBoxOnGroundWithSize(
@@ -536,6 +559,75 @@ NativeBoxGroundRunResult runDefaultNativeBoxOnGroundWithSize(
   }
 
   runResult.finalTransform = boxBody->getWorldTransform();
+  return runResult;
+}
+
+NativeCapsuleGroundRunResult runDefaultNativeCapsuleOnGround(
+    const Eigen::Matrix3d& initialRotation,
+    int numSteps,
+    double radius,
+    double height)
+{
+  auto world = World::create();
+  world->setTimeStep(0.001);
+  EXPECT_TRUE(world->getCollisionDetector());
+  if (!world->getCollisionDetector()) {
+    return {};
+  }
+  EXPECT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
+
+  auto capsule = Skeleton::create("capsule");
+  auto capsulePair = capsule->createJointAndBodyNodePair<FreeJoint>();
+  auto* capsuleJoint = capsulePair.first;
+  auto* capsuleBody = capsulePair.second;
+  Eigen::Isometry3d capsuleTf = Eigen::Isometry3d::Identity();
+  capsuleTf.translation() = Eigen::Vector3d(0.0, 0.0, 1.0);
+  capsuleTf.linear() = initialRotation;
+  capsuleJoint->setTransform(capsuleTf);
+  auto* capsuleShapeNode
+      = capsuleBody->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+          std::make_shared<CapsuleShape>(radius, height));
+
+  Inertia capsuleInertia;
+  capsuleInertia.setMass(1.0);
+  capsuleInertia.setMoment(capsuleShapeNode->getShape()->computeInertia(1.0));
+  capsuleBody->setInertia(capsuleInertia);
+
+  auto ground = Skeleton::create("capsule_ground");
+  auto groundPair = ground->createJointAndBodyNodePair<WeldJoint>();
+  groundPair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d(10.0, 10.0, 0.1)));
+
+  world->addSkeleton(capsule);
+  world->addSkeleton(ground);
+
+  NativeCapsuleGroundRunResult runResult;
+  for (int i = 0; i < numSteps; ++i) {
+    world->step();
+    const auto& collisionResult = world->getLastCollisionResult();
+    runResult.sawContact
+        = runResult.sawContact || collisionResult.getNumContacts() > 0u;
+    runResult.maxContacts = std::max(
+        runResult.maxContacts,
+        static_cast<std::size_t>(collisionResult.getNumContacts()));
+    if (collisionResult.getNumContacts() > 0u) {
+      const auto& contact = collisionResult.getContact(0);
+      runResult.lastPenetrationDepth = contact.penetrationDepth;
+      runResult.lastContactPoint = contact.point;
+      runResult.lastContactNormal = contact.normal;
+    }
+    runResult.lowestCenterZ = std::min(
+        runResult.lowestCenterZ,
+        capsuleBody->getWorldTransform().translation().z());
+    runResult.lowestPointZ = std::min(
+        runResult.lowestPointZ,
+        measureCapsuleLowestPointZ(capsuleBody, radius, height));
+
+    EXPECT_TRUE(capsuleBody->getWorldTransform().matrix().array().allFinite())
+        << "step=" << i;
+  }
+
+  runResult.finalTransform = capsuleBody->getWorldTransform();
   return runResult;
 }
 
@@ -650,6 +742,29 @@ TEST(WorldTests, DefaultNativeThinBoxDoesNotTunnel)
 
   EXPECT_TRUE(result.sawContact);
   EXPECT_GE(result.lowestVertexZ, 0.05 - 0.005);
+}
+
+//==============================================================================
+TEST(WorldTests, DefaultNativeSlenderCapsuleDoesNotTunnel)
+{
+  const auto result = runDefaultNativeCapsuleOnGround(
+      Eigen::AngleAxisd(0.5 * M_PI, Eigen::Vector3d::UnitY()).toRotationMatrix()
+          * math::expMapRot(Eigen::Vector3d(0.0, 0.0, 0.25)),
+      3000,
+      0.035,
+      0.9);
+
+  EXPECT_TRUE(result.sawContact);
+  EXPECT_GE(result.lowestPointZ, 0.05 - 0.01)
+      << "sawContact=" << result.sawContact
+      << " maxContacts=" << result.maxContacts
+      << " lowestCenterZ=" << result.lowestCenterZ
+      << " lastDepth=" << result.lastPenetrationDepth
+      << " lastPoint=" << result.lastContactPoint.transpose()
+      << " lastNormal=" << result.lastContactNormal.transpose()
+      << " finalCenterZ=" << result.finalTransform.translation().z()
+      << " finalRotation=\n"
+      << result.finalTransform.linear();
 }
 
 //==============================================================================

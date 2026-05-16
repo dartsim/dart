@@ -211,39 +211,39 @@ Bar: scene-level test that runs > 100 steps OR > 100 collision pairs
 and asserts a stability invariant (no tunneling, no false contacts,
 deterministic across threads, etc.).
 
-| Codename                             | Status  | Source                                                    | Notes                                                               |
-| ------------------------------------ | ------- | --------------------------------------------------------- | ------------------------------------------------------------------- |
-| `rotated_box_rests_on_ground`        | DONE    | `test_world.cpp::DefaultNativeRotatedBoxRestsOnGround`    | Extended by face-rest and long-horizon checks                       |
-| `rotated_box_settles_on_face_2s`     | DONE    | `test_world.cpp::DefaultNativeRotatedBoxSettlesOnFace`    | Round 7 acceptance #2                                               |
-| `rotated_box_15s_no_tunneling`       | DONE    | `test_world.cpp::DefaultNativeRotatedBoxStaysOnGround15s` | Round 7 acceptance #3 — the load-bearing stability test             |
-| `stacked_boxes_n10`                  | DONE    | `test_world.cpp::DefaultNativeTenBoxStackDoesNotTunnel`   | Simple vertical stack stability                                     |
-| `stacked_boxes_n100`                 | GAP     | —                                                         | Larger pyramid / wall                                               |
-| `mixed_primitive_stack`              | PARTIAL | benchmark `bm_mixed_primitives.cpp` only                  | No unit-test version                                                |
-| `ragdoll_capsule_pile`               | GAP     | —                                                         | Multiple capsule bodies                                             |
-| `convex_static_mesh_landscape`       | GAP     | —                                                         | BVH-driven convex-concave under load                                |
-| `voronoi_fracture_settle`            | GAP     | —                                                         | Many small convex hulls — stretch                                   |
-| `parallel_narrow_phase_determinism`  | DONE    | `test_parallel_determinism.cpp`                           |                                                                     |
-| `collide_all_ordering_repeatable`    | DONE    | `test_collision_world.cpp`                                |                                                                     |
-| `raycast_all_ordering_repeatable`    | DONE    | `test_collision_world.cpp`                                |                                                                     |
-| `persistent_scene_dirty_shape`       | DONE    | `test_dart_collision_detector.cpp`                        |                                                                     |
-| `persistent_scene_dirty_mesh`        | DONE    | `test_dart_collision_detector.cpp`                        |                                                                     |
-| `persistent_scene_dirty_heightmap`   | DONE    | `test_dart_collision_detector.cpp`                        |                                                                     |
-| `persistent_scene_dirty_voxelgrid`   | DONE    | `test_dart_collision_detector.cpp`                        |                                                                     |
-| `mesh_contact_plane_stability`       | DONE    | `test_mesh_contact_regression.cpp`                        |                                                                     |
-| `gz_issue1184_accuracy`              | DONE    | `test_collision_accuracy.cpp`                             |                                                                     |
-| `gz_issue1231_no_false_contacts`     | DONE    | `test_no_false_contacts.cpp`                              |                                                                     |
-| `gz_issue1624_contact_grouping`      | DONE    | `test_contact_grouping.cpp`                               |                                                                     |
-| `gz_issue1654_capsule_ground`        | DONE    | `test_capsule_ground_contact.cpp`                         |                                                                     |
-| `gz_issue867_box_stack`              | DONE    | `test_bullet_box_stack.cpp`                               |                                                                     |
-| `gz_issue895_self_collision`         | DONE    | `test_self_collision_filtering.cpp`                       |                                                                     |
-| `cross_backend_consistency`          | DONE    | `test_native_backend_consistency.cpp`                     | Gated on reference engines                                          |
-| `cross_backend_contact_count_parity` | DONE    | `test_box_ground_contact_parity.cpp`                      | Reference-enabled parity test; match Bullet contact count within ±1 |
-| `thin_box_no_tunneling`              | DONE    | `test_world.cpp::DefaultNativeThinBoxDoesNotTunnel`       | Slender feature stress                                              |
-| `slender_capsule_no_tunneling`       | GAP     | —                                                         |                                                                     |
-| `coincident_vertex_no_crash`         | GAP     | —                                                         | Degenerate mesh                                                     |
-| `zero_extent_shape_no_crash`         | GAP     | —                                                         |                                                                     |
-| `huge_magnitude_fp_stability`        | GAP     | —                                                         | 1e6 m boxes                                                         |
-| `tiny_magnitude_fp_stability`        | GAP     | —                                                         | 1e-6 m spheres                                                      |
+| Codename                             | Status  | Source                                                     | Notes                                                               |
+| ------------------------------------ | ------- | ---------------------------------------------------------- | ------------------------------------------------------------------- |
+| `rotated_box_rests_on_ground`        | DONE    | `test_world.cpp::DefaultNativeRotatedBoxRestsOnGround`     | Extended by face-rest and long-horizon checks                       |
+| `rotated_box_settles_on_face_2s`     | DONE    | `test_world.cpp::DefaultNativeRotatedBoxSettlesOnFace`     | Round 7 acceptance #2                                               |
+| `rotated_box_15s_no_tunneling`       | DONE    | `test_world.cpp::DefaultNativeRotatedBoxStaysOnGround15s`  | Round 7 acceptance #3 — the load-bearing stability test             |
+| `stacked_boxes_n10`                  | DONE    | `test_world.cpp::DefaultNativeTenBoxStackDoesNotTunnel`    | Simple vertical stack stability                                     |
+| `stacked_boxes_n100`                 | GAP     | —                                                          | Larger pyramid / wall                                               |
+| `mixed_primitive_stack`              | PARTIAL | benchmark `bm_mixed_primitives.cpp` only                   | No unit-test version                                                |
+| `ragdoll_capsule_pile`               | GAP     | —                                                          | Multiple capsule bodies                                             |
+| `convex_static_mesh_landscape`       | GAP     | —                                                          | BVH-driven convex-concave under load                                |
+| `voronoi_fracture_settle`            | GAP     | —                                                          | Many small convex hulls — stretch                                   |
+| `parallel_narrow_phase_determinism`  | DONE    | `test_parallel_determinism.cpp`                            |                                                                     |
+| `collide_all_ordering_repeatable`    | DONE    | `test_collision_world.cpp`                                 |                                                                     |
+| `raycast_all_ordering_repeatable`    | DONE    | `test_collision_world.cpp`                                 |                                                                     |
+| `persistent_scene_dirty_shape`       | DONE    | `test_dart_collision_detector.cpp`                         |                                                                     |
+| `persistent_scene_dirty_mesh`        | DONE    | `test_dart_collision_detector.cpp`                         |                                                                     |
+| `persistent_scene_dirty_heightmap`   | DONE    | `test_dart_collision_detector.cpp`                         |                                                                     |
+| `persistent_scene_dirty_voxelgrid`   | DONE    | `test_dart_collision_detector.cpp`                         |                                                                     |
+| `mesh_contact_plane_stability`       | DONE    | `test_mesh_contact_regression.cpp`                         |                                                                     |
+| `gz_issue1184_accuracy`              | DONE    | `test_collision_accuracy.cpp`                              |                                                                     |
+| `gz_issue1231_no_false_contacts`     | DONE    | `test_no_false_contacts.cpp`                               |                                                                     |
+| `gz_issue1624_contact_grouping`      | DONE    | `test_contact_grouping.cpp`                                |                                                                     |
+| `gz_issue1654_capsule_ground`        | DONE    | `test_capsule_ground_contact.cpp`                          |                                                                     |
+| `gz_issue867_box_stack`              | DONE    | `test_bullet_box_stack.cpp`                                |                                                                     |
+| `gz_issue895_self_collision`         | DONE    | `test_self_collision_filtering.cpp`                        |                                                                     |
+| `cross_backend_consistency`          | DONE    | `test_native_backend_consistency.cpp`                      | Gated on reference engines                                          |
+| `cross_backend_contact_count_parity` | DONE    | `test_box_ground_contact_parity.cpp`                       | Reference-enabled parity test; match Bullet contact count within ±1 |
+| `thin_box_no_tunneling`              | DONE    | `test_world.cpp::DefaultNativeThinBoxDoesNotTunnel`        | Slender feature stress                                              |
+| `slender_capsule_no_tunneling`       | DONE    | `test_world.cpp::DefaultNativeSlenderCapsuleDoesNotTunnel` | Capsule line-support stress                                         |
+| `coincident_vertex_no_crash`         | GAP     | —                                                          | Degenerate mesh                                                     |
+| `zero_extent_shape_no_crash`         | GAP     | —                                                          |                                                                     |
+| `huge_magnitude_fp_stability`        | GAP     | —                                                          | 1e6 m boxes                                                         |
+| `tiny_magnitude_fp_stability`        | GAP     | —                                                          | 1e-6 m spheres                                                      |
 
 ## 4. Benchmarks
 
@@ -349,10 +349,10 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 
 - **§1 Pair-wise narrow-phase:** 89 DONE, 0 PARTIAL, 0 GAP (of 89 rows)
 - **§2 Algorithm-level:** 36 DONE, 1 PARTIAL, 12 GAP (of 49 rows)
-- **§3 Stress / regression:** 21 DONE, 1 PARTIAL, 9 GAP (of 31 rows)
+- **§3 Stress / regression:** 22 DONE, 1 PARTIAL, 8 GAP (of 31 rows)
 - **§4 Benchmarks:** 30 DONE, 0 PARTIAL, 14 GAP (of 44 rows)
 - **§5 Infrastructure:** 9 DONE, 0 PARTIAL, 0 GAP (of 9 rows)
-- **TOTAL:** 185 DONE, 2 PARTIAL, 35 GAP (of 222 rows)
+- **TOTAL:** 186 DONE, 2 PARTIAL, 34 GAP (of 222 rows)
 
 DART native is currently at ~82% of the proposed superset, with pair-wise
 narrow-phase coverage closed. The remaining coverage is concentrated in:
