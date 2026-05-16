@@ -3107,3 +3107,86 @@ Validation passed on the post-Q4 tree: `INTEGRATION_simulation_World` rebuilt,
 the focused Atlas Simbicon contact test passed, the four focused
 default-native box/ground tests passed, and the full
 `INTEGRATION_simulation_World` executable passed 17/17 tests.
+
+## Round 18 — Suspicious-Win Perf Audit Protocol (2026-05-16)
+
+User direction: "if DART wins a lot/unrealistically inspect
+correctness, fairly-compared, properly-measured" — catch DCE +
+asymmetric work + timer granularity before claiming WIN.
+
+Statuses: `WIN (audited)` or `WIN (provisional)`. 10-step audit
+checklist (DoNotOptimize+ClobberMemory on both lanes, symmetric
+work, output assertion, cache symmetry, shape construction
+outside loop, compiler-flag symmetry, threading symmetry, timer
+granularity, variance CV < 5%, cross-engine sanity).
+
+Codex executed audit + hardening commits `0b425b3f7af`,
+`184c8be739d`, `c6ba832b844`, `1f59af53d30`, `9c78540e933`. All
+8 suspicious Bar 1 rows remain WIN after audit — Native times
+jumped 30–125% post-hardening (DCE was real on some rows);
+margins still 11–22×. Protocol worked.
+
+Scoping per user 2026-05-16: Bar 1 audit THIS session; Bar 2
+adapter-lane optimization NEXT session.
+
+Durable: `dart-collision-suspicious-win-audit.md` (memory) +
+global skill `dart-perf-audit`.
+
+## Round 19 — No FCL/Bullet/ODE Refs in Implementation (2026-05-16)
+
+User direction: "current work MUST not explicitly reference FCL,
+Bullet, ODE in implementation; only allowed in tests/benchmarks."
+
+Applies to `dart/collision/{native,dart}/**`, top-level facade
+headers, `compat/**`, `python/dartpy/collision/**`. Exempt:
+`reference/**` (test targets), `tests/**`, `tests/benchmark/**`,
+`docs/**`, lint scripts.
+
+Findings: (1) `dart_collision_detector.cpp:57,231-260` legacy
+factory keys `"experimental"`/`"fcl"`/`"fcl_mesh"`/`"bullet"`/
+`"ode"` are **PROTECTED exception** per Q1+Q5 ANSWERs + Round 10
+(gz-physics DART 7 compat; DART 8 removes); (2)
+`collision_filter.hpp` comment names Bullet+ODE → rewrite
+engine-agnostic; (3) Python tests → exempt.
+
+Action: extend `check_collision_runtime_isolation.py` with audit
+guard + 5-line allowlist citing "gz-physics DART 7 compatibility
+per Q1+Q5+Round 10"; fix `collision_filter.hpp` comment in next
+implementation commit. Don't touch factory keys / top-level
+facade headers (Q1/Q5/Round 10 protected).
+
+## Round 20 — Planning-Doc Cleanup Cadence (2026-05-16)
+
+User direction: "clean up `docs/dev_tasks/native_collision/` for
+already done — not removing but don't need all detailed history;
+focus on overall progress, general lessons, plans — to avoid
+polluting AI agent context."
+
+Triggers: file > 500 lines OR Round/Q older than 2 Rounds AND
+fully ANSWERED+executed OR agent re-reading multi-thousand-line
+docs every pass.
+
+Targets: `SUPERVISOR.md` < 1500; `06-completion-audit.md` < 300;
+`03-evidence-gates.md` < 500. Don't compact authoritative design
+docs (`01-design.md`, `02-milestones.md`, etc.).
+
+Compact by: promoting completed Rounds 1-12 into a summary table
+(Round → one-line outcome + commit hash); keeping open Rounds in
+full; Q answer table (one line per answered Q, drop
+multi-paragraph option-tradeoff bodies); lessons-learned section
+at top; PRESERVE grep anchors (`## Round N`,
+`### Open Question Qn`, `**Qn ANSWER`,
+`## Round N Local Completion Notes`) so snapshot tooling
+continues to work.
+
+Cadence: implementing agent compacts when doc crosses target by
+>50% (e.g. SUPERVISOR.md > 2250 → compact to < 1500); compaction
+is its OWN commit, NEVER bundled with code, NEVER during an
+in-flight slice. Steering agent compacts between Rounds.
+
+PROMOTE durable lessons to global skills / project memory BEFORE
+deleting from the planning doc.
+
+Durable: `dev-task-doc-hygiene.md` (memory) + new "Side-channel
+hygiene" section in `dart-co-agent` skill (lines 145-225 of the
+skill).

@@ -141,5 +141,10 @@ compile_flags.txt
 
 .omc/
 
+# Local Claude Code session state (per-project agent settings, hooks,
+# scheduled tasks). Should NOT be tracked — every developer has their
+# own agent configuration.
+.claude/
+
 # Temporary apt downloads
 .tmp_apt/
