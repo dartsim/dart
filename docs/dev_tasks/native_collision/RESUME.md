@@ -42,10 +42,10 @@ The newer docs/evidence-head validation on `48c0cc3f90e` also passed
 Atlas Simbicon controller-loop no-tunneling regression, and the
 `collision-native-stability` CTest label. No PR, push, workflow, branch, or
 GitHub state was mutated for that recheck.
-The latest current-head validation on `59769b3ee58` passed
+The latest pre-record validation on `59769b3ee58` passed
 `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
-with all 6 top-level gates green. No PR, push, workflow, branch, or GitHub
-state was mutated for that recheck.
+with all 6 top-level gates green before the docs-only validation-record commit.
+No PR, push, workflow, branch, or GitHub state was mutated for that recheck.
 The newer local gz-physics refresh on `6742a21ab0f` also passed 65/65 with
 reference collision tests and benchmarks configured `OFF`; an explicit plugin
 dependency scan reported `libdart-collision-native.so` without old DART
@@ -130,7 +130,7 @@ the distinction clear:
 
 If code or evidence changes again, run `pixi run lint` before committing and
 run the focused validation that matches the change. Full `pixi run test-all`
-evidence is refreshed locally for current-state validation head `59769b3ee58`;
+evidence is refreshed locally through pre-record validation head `59769b3ee58`;
 later local evidence commits should be checked with
 `git status --short --branch` plus `git log -3 --oneline --decorate`.
 
@@ -153,7 +153,7 @@ post GitHub comments unless the user explicitly asks.
   `test_reference_backends`, fresh `pixi run -e gazebo test-gz`, and native
   package/link smoke with direct `readelf` checks.
 - Public docs collision-runtime wording baseline: `ad1b6782578`.
-- Latest full local `pixi run test-all` validation: local head `59769b3ee58`
+- Latest full local `pixi run test-all` validation: pre-record local head `59769b3ee58`
   (`Record native collision current audit state`), with 6/6 top-level gates
   passing after current audit/evidence refreshes. Earlier validation head
   `35578ad2f8a` also passed after stale legacy collision artifact cleanup on

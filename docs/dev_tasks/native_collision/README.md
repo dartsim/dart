@@ -209,11 +209,12 @@ native-backed interface facades.
 - [ ] Final validation after the completing code state is still open. At
       minimum this means `pixi run lint`, `pixi run test-all`, and any
       maintainer-selected CI gates whose failures are not covered locally. The
-      latest current-head `pixi run test-all` pass was rerun on local head
-      `59769b3ee58` after the current audit/evidence refresh and passed 6/6
-      top-level gates: linting, build, unit tests, simulation-experimental
-      tests, Python tests, and documentation. No PR, push, workflow, branch, or
-      GitHub state was mutated by that validation pass. Earlier full
+      latest pre-record `pixi run test-all` pass was rerun on local head
+      `59769b3ee58` after the current audit/evidence refresh and before the
+      docs-only validation-record commit; it passed 6/6 top-level gates:
+      linting, build, unit tests, simulation-experimental tests, Python tests,
+      and documentation. No PR, push, workflow, branch, or GitHub state was
+      mutated by that validation pass. Earlier full
       current-state validation on `35578ad2f8a` also reported only
       `libdart-collision-native.so` in the artifact scan and no old
       facade-library or FCL/Bullet/ODE/libccd runtime references in the
