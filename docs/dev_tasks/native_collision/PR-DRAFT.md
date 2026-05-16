@@ -108,6 +108,10 @@ Make native DART collision the default runtime stack
   `INTEGRATION_collision_native_backend_consistency` 2/2, the non-simulation
   CTest sweep 288/288, the dedicated simulation-experimental task 13/13, and
   the final unfiltered CTest sweep 301/301.
+- Local commits after `4db514cfd22` are docs/evidence-only; `pixi run lint`
+  has passed after those updates, including `check-collision-runtime-isolation`
+  and `audit-collision-compat-facades`. Use `git log -3 --oneline --decorate`
+  for the exact current local head.
 - `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -e collision-reference bm-collision-check`
   passed before benchmark-evidence commit `4b155655890`.
 - `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e gazebo test-gz`
