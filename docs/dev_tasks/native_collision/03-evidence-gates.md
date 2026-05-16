@@ -3137,6 +3137,17 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     simulation-experimental tests, Python tests, and documentation. The full
     C++ unit/integration CTest slice reported 264/264 tests passing, including
     all 29 `collision-native` tests.
+- Current local SDF/compound distance coverage refresh:
+  - Commit: current working tree after local head `8982de4ee31`
+    (`Add cylinder SDF distance support`).
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_sdf_compare --parallel 5`,
+    `./build/default/cpp/Release/bin/test_sdf_compare --gtest_filter='SdfDistance.CompoundSdfPairOrder'`,
+    and
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_sdf_compare$' -j 5`.
+  - Result: passed. Native distance now covers `SdfShape` against a compound
+    shape in both query orders through the existing compound child dispatcher,
+    with finite nearest-point data and flipped swapped-order normals.
 
 ## Known Risks
 

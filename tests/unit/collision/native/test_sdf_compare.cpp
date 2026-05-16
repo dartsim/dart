@@ -258,6 +258,45 @@ TEST(SdfDistance, CylinderSdfPairOrder)
   EXPECT_LT(cylinder_sdf.normal.dot(sdf_cylinder.normal), -0.9);
 }
 
+TEST(SdfDistance, CompoundSdfPairOrder)
+{
+  using namespace dart::collision::native;
+
+  auto field = buildDenseField();
+  CollisionWorld world;
+
+  auto compoundShape = std::make_unique<CompoundShape>();
+  compoundShape->addChild(std::make_unique<SphereShape>(0.2));
+  auto compound = world.createObject(std::move(compoundShape));
+  auto sdf = world.createObject(std::make_unique<SdfShape>(field));
+
+  Eigen::Isometry3d compound_tf = Eigen::Isometry3d::Identity();
+  compound_tf.translation() = gridCenter() + Eigen::Vector3d(1.2, 0.0, 0.0);
+  compound.setTransform(compound_tf);
+
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Compound, ShapeType::Sdf));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Sdf, ShapeType::Compound));
+
+  DistanceResult compound_sdf;
+  DistanceResult sdf_compound;
+  const DistanceOption option = DistanceOption::unlimited();
+
+  const double dist1
+      = NarrowPhase::distance(compound, sdf, option, compound_sdf);
+  const double dist2
+      = NarrowPhase::distance(sdf, compound, option, sdf_compound);
+
+  EXPECT_NEAR(dist1, 0.2, kDistTol);
+  EXPECT_NEAR(dist1, dist2, kDistTol);
+  EXPECT_TRUE(compound_sdf.pointOnObject1.allFinite());
+  EXPECT_TRUE(compound_sdf.pointOnObject2.allFinite());
+  EXPECT_TRUE(sdf_compound.pointOnObject1.allFinite());
+  EXPECT_TRUE(sdf_compound.pointOnObject2.allFinite());
+  EXPECT_LT(compound_sdf.normal.dot(sdf_compound.normal), -0.9);
+}
+
 TEST(EsdfDenseField, BuildsFromTsdf)
 {
   using dart::collision::native::DenseEsdfField;
