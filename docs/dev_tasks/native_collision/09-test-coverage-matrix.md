@@ -172,7 +172,7 @@ Bar per row: at least one test exercises the algorithm in isolation
 | `bvh_build_from_triangles`            | DONE   | `test_shapes.cpp::MeshShape.BvhLargeMesh`, `BvhDegenerateTriangles` | Build invariants and degenerate triangle coverage                      |
 | `bvh_build_from_points`               | GAP    | —                                                                   |                                                                        |
 | `bvh_traversal_hit`                   | DONE   | `test_mesh_mesh.cpp::RaycastMesh.BvhTraversalHit`                   |                                                                        |
-| `bvh_refit_after_transform`           | GAP    | —                                                                   |                                                                        |
+| `bvh_refit_after_transform`           | DONE   | `test_mesh_mesh.cpp::MeshMesh.BvhTraversalUsesCurrentTransform`     | Local BVH traversal follows the current query transform                |
 | `bvh_traversal_with_front_list`       | GAP    | —                                                                   | Warm-start incremental BVH                                             |
 | `bvh_overlap_aabb_only`               | DONE   | `test_aabb_tree.cpp`                                                |                                                                        |
 | `bvh_overlap_obb`                     | GAP    | —                                                                   | DART native has only AABB BVH today; OBB BVH is a future-wave decision |
@@ -186,7 +186,7 @@ Bar per row: at least one test exercises the algorithm in isolation
 | `persistent_manifold_reduction`       | DONE   | `test_collision_backend.cpp`                                        |                                                                        |
 | `ccd_sphere_cast_*`                   | DONE   | `test_ccd.cpp`                                                      | Sphere/Box/Plane/Cylinder/Convex/Mesh targets                          |
 | `ccd_capsule_cast_*`                  | DONE   | `test_ccd.cpp`                                                      | Capsule/Box/Convex/Mesh targets                                        |
-| `ccd_conservative_advancement_convex` | DONE   | `bm_ccd.cpp` (benchmark)                                            | Add unit test                                                          |
+| `ccd_conservative_advancement_convex` | DONE   | `test_ccd.cpp::ConservativeAdvancement*`, `bm_ccd.cpp`              | Unit and benchmark coverage                                            |
 | `ccd_spline_motion`                   | GAP    | —                                                                   | Decide if non-linear motion is in scope                                |
 | `ccd_screw_motion`                    | GAP    | —                                                                   | Same                                                                   |
 | `ccd_bilateral_advancement`           | GAP    | —                                                                   | Two-body conservative advancement                                      |
@@ -348,13 +348,13 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 ## Summary Counters (as of 2026-05-16)
 
 - **§1 Pair-wise narrow-phase:** 89 DONE, 0 PARTIAL, 0 GAP (of 89 rows)
-- **§2 Algorithm-level:** 37 DONE, 0 PARTIAL, 12 GAP (of 49 rows)
+- **§2 Algorithm-level:** 38 DONE, 0 PARTIAL, 11 GAP (of 49 rows)
 - **§3 Stress / regression:** 22 DONE, 1 PARTIAL, 8 GAP (of 31 rows)
 - **§4 Benchmarks:** 30 DONE, 0 PARTIAL, 14 GAP (of 44 rows)
 - **§5 Infrastructure:** 9 DONE, 0 PARTIAL, 0 GAP (of 9 rows)
-- **TOTAL:** 187 DONE, 1 PARTIAL, 34 GAP (of 222 rows)
+- **TOTAL:** 188 DONE, 1 PARTIAL, 33 GAP (of 222 rows)
 
-DART native is currently at ~84% of the proposed superset, with pair-wise
+DART native is currently at ~85% of the proposed superset, with pair-wise
 narrow-phase coverage closed. The remaining coverage is concentrated in:
 (a) BVH/CCD algorithm-isolation rows, (b) long-horizon stability and stress
 scenes, and (c) scale, scenario, and SIMD benchmark rows for the follow-up

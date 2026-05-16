@@ -187,6 +187,32 @@ TEST(MeshMesh, BoxMeshesColliding)
   EXPECT_GE(result.getContact(0).depth, 0.0);
 }
 
+TEST(MeshMesh, BvhTraversalUsesCurrentTransform)
+{
+  MeshShape meshA(makeCubeVertices(1.0), makeCubeTriangles());
+  MeshShape meshB(makeCubeVertices(1.0), makeCubeTriangles());
+
+  const Eigen::Isometry3d tfA = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
+
+  CollisionOption option;
+  option.maxNumContacts = 8;
+
+  tfB.translation() = Eigen::Vector3d(3.1, 0.0, 0.0);
+  CollisionResult separatedBefore;
+  EXPECT_FALSE(
+      collideMeshMesh(meshA, tfA, meshB, tfB, separatedBefore, option));
+
+  tfB.translation() = Eigen::Vector3d(1.5, 0.0, 0.0);
+  CollisionResult overlapping;
+  ASSERT_TRUE(collideMeshMesh(meshA, tfA, meshB, tfB, overlapping, option));
+  ASSERT_GE(overlapping.numContacts(), 1u);
+
+  tfB.translation() = Eigen::Vector3d(-3.1, 0.0, 0.0);
+  CollisionResult separatedAfter;
+  EXPECT_FALSE(collideMeshMesh(meshA, tfA, meshB, tfB, separatedAfter, option));
+}
+
 TEST(MeshMeshBatch, mesh_mesh_batch_determinism_vs_single)
 {
   MeshShape meshA(makeCubeVertices(1.0), makeCubeTriangles());
