@@ -2878,7 +2878,7 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     source-build prerequisites now list FCL with Bullet and ODE as optional
     reference-comparison dependencies, while core DART, dartpy, and normal
     runtime builds require no per-engine collision dependency.
-- Current branch-head full local validation refresh:
+- Earlier branch-head full local validation refresh:
   - Commit: `930aca64d45` (`Sync native collision PR evidence draft`), pushed
     to `origin/feature/new_coll`. This source-build prerequisite docs cleanup
     is documentation-only on top of that full validation baseline.
@@ -2891,8 +2891,8 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     `DART_BUILD_COLLISION_REFERENCE_TESTS` and
     `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS`, both `OFF` by default, for
     optional old-engine comparison components.
-- Current local raw/convex/mesh regression refresh:
-  - Commit: current working tree after pushed branch head `f8f5663d514`
+- Local raw/convex/mesh regression refresh:
+  - Commit context: working tree after pushed branch head `f8f5663d514`
     (`Avoid stale native collision publish head`).
   - Commands:
     `JOBS=$(python scripts/parallel_jobs.py)`,

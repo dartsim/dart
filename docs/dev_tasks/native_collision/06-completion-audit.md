@@ -878,9 +878,10 @@ Deferred finalization scope:
    test/benchmark code.
 3. Run final validation after the final PR code state, including at least
    `pixi run lint` and `pixi run test-all`, plus any CI-specific gates whose
-   failures are not covered locally. The current working tree has a fresh local
-   `pixi run test-all` pass, but this does not replace final maintainer-selected
-   PR/CI evidence.
+   failures are not covered locally. The latest local code-validation head has
+   a fresh `pixi run test-all` pass, and later local commits are docs-only with
+   lint coverage, but this does not replace final maintainer-selected PR/CI
+   evidence.
 4. Keep the durable collision architecture summary in onboarding docs, use
    `07-pr-evidence-transfer.md` as the starting packet for the final PR
    description, then delete this dev-task folder in the same completing PR.
