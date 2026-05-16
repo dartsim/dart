@@ -75,7 +75,9 @@
 #include <functional>
 #include <iostream>
 #include <memory>
+#include <random>
 #include <string>
+#include <vector>
 
 #include <cmath>
 
@@ -404,6 +406,79 @@ static void BM_NarrowPhase_BoxBox_Native(benchmark::State& state)
   }
 }
 BENCHMARK(BM_NarrowPhase_BoxBox_Native);
+
+static std::vector<BoxPair> MakeBoxBoxBatchPairs(
+    std::size_t batchSize, const BoxShape& box1, const BoxShape& box2)
+{
+  std::mt19937 rng(1701u);
+  std::uniform_real_distribution<double> offset(-0.15, 0.15);
+  std::uniform_real_distribution<double> angle(-0.35, 0.35);
+
+  std::vector<BoxPair> pairs;
+  pairs.reserve(batchSize);
+  for (std::size_t i = 0; i < batchSize; ++i) {
+    Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+    tf1.linear()
+        = (Eigen::AngleAxisd(angle(rng), Eigen::Vector3d::UnitX())
+           * Eigen::AngleAxisd(0.5 * angle(rng), Eigen::Vector3d::UnitY()))
+              .toRotationMatrix();
+    tf1.translation() = Eigen::Vector3d(
+        0.05 * offset(rng), offset(rng), offset(rng));
+
+    Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+    tf2.linear()
+        = (Eigen::AngleAxisd(angle(rng), Eigen::Vector3d::UnitY())
+           * Eigen::AngleAxisd(-0.25 * angle(rng), Eigen::Vector3d::UnitZ()))
+              .toRotationMatrix();
+    tf2.translation() = Eigen::Vector3d(
+        0.9 + offset(rng), offset(rng), offset(rng));
+
+    pairs.push_back(BoxPair{&box1, &box2, tf1, tf2});
+  }
+  return pairs;
+}
+
+static void BM_NarrowPhase_BoxBox_Native_Batch(
+    benchmark::State& state, std::size_t batchSize)
+{
+  const Eigen::Vector3d half_extents(0.5, 0.5, 0.5);
+  BoxShape b1(half_extents);
+  BoxShape b2(half_extents);
+
+  const auto pairs = MakeBoxBoxBatchPairs(batchSize, b1, b2);
+  std::vector<CollisionResult> results(batchSize);
+  CollisionOption option;
+
+  for (auto _ : state) {
+    for (auto& result : results)
+      result.clear();
+    collideBoxesBatch(pairs, results, option);
+    benchmark::DoNotOptimize(results.data());
+    benchmark::ClobberMemory();
+  }
+
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations())
+      * static_cast<int64_t>(batchSize));
+  state.counters["pairs_per_iteration"]
+      = static_cast<double>(batchSize);
+}
+
+struct BoxBoxBatchBenchmarkRegistrar
+{
+  BoxBoxBatchBenchmarkRegistrar()
+  {
+    for (const std::size_t batchSize : {1u, 10u, 100u, 1000u}) {
+      const std::string name
+          = "BM_NarrowPhase_BoxBox_Native_Batch_N"
+            + std::to_string(batchSize);
+      benchmark::RegisterBenchmark(
+          name.c_str(), BM_NarrowPhase_BoxBox_Native_Batch, batchSize);
+    }
+  }
+};
+
+static BoxBoxBatchBenchmarkRegistrar g_box_box_batch_benchmark_registrar;
 
 static void BM_NarrowPhase_BoxBox_FCL(benchmark::State& state)
 {

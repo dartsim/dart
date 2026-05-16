@@ -38,11 +38,68 @@
 #include <gtest/gtest.h>
 
 #include <limits>
+#include <random>
 #include <vector>
 
 #include <cmath>
 
 using namespace dart::collision::native;
+
+namespace {
+
+Eigen::Isometry3d makeBoxBatchTransform(
+    double x, double y, double z, double angle)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.linear() = (Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitX())
+                 * Eigen::AngleAxisd(0.5 * angle, Eigen::Vector3d::UnitY())
+                 * Eigen::AngleAxisd(-0.25 * angle, Eigen::Vector3d::UnitZ()))
+                    .toRotationMatrix();
+  tf.translation() = Eigen::Vector3d(x, y, z);
+  return tf;
+}
+
+void expectVectorExactlyEqual(
+    const Eigen::Vector3d& expected, const Eigen::Vector3d& actual)
+{
+  EXPECT_EQ(expected.x(), actual.x());
+  EXPECT_EQ(expected.y(), actual.y());
+  EXPECT_EQ(expected.z(), actual.z());
+}
+
+void expectContactExactlyEqual(
+    const ContactPoint& expected, const ContactPoint& actual)
+{
+  expectVectorExactlyEqual(expected.position, actual.position);
+  expectVectorExactlyEqual(expected.normal, actual.normal);
+  EXPECT_EQ(expected.depth, actual.depth);
+  EXPECT_EQ(expected.object1, actual.object1);
+  EXPECT_EQ(expected.object2, actual.object2);
+  EXPECT_EQ(expected.featureIndex1, actual.featureIndex1);
+  EXPECT_EQ(expected.featureIndex2, actual.featureIndex2);
+}
+
+void expectCollisionResultExactlyEqual(
+    const CollisionResult& expected, const CollisionResult& actual)
+{
+  ASSERT_EQ(expected.numManifolds(), actual.numManifolds());
+  ASSERT_EQ(expected.numContacts(), actual.numContacts());
+
+  for (std::size_t i = 0; i < expected.numManifolds(); ++i) {
+    const auto& expectedManifold = expected.getManifold(i);
+    const auto& actualManifold = actual.getManifold(i);
+    EXPECT_EQ(expectedManifold.getType(), actualManifold.getType());
+    EXPECT_EQ(expectedManifold.getObject1(), actualManifold.getObject1());
+    EXPECT_EQ(expectedManifold.getObject2(), actualManifold.getObject2());
+    ASSERT_EQ(expectedManifold.numContacts(), actualManifold.numContacts());
+    for (std::size_t j = 0; j < expectedManifold.numContacts(); ++j) {
+      expectContactExactlyEqual(
+          expectedManifold.getContact(j), actualManifold.getContact(j));
+    }
+  }
+}
+
+} // namespace
 
 TEST(BoxBox, Separated_AlongX)
 {
@@ -727,5 +784,42 @@ TEST(BoxBox, Determinism)
     EXPECT_EQ(contacts[i].normal.y(), contacts[0].normal.y());
     EXPECT_EQ(contacts[i].normal.z(), contacts[0].normal.z());
     EXPECT_EQ(contacts[i].depth, contacts[0].depth);
+  }
+}
+
+TEST(BoxBoxBatch, boxbox_batch_determinism_vs_single)
+{
+  BoxShape boxA(Eigen::Vector3d(1.1, 0.9, 0.7));
+  BoxShape boxB(Eigen::Vector3d(0.8, 1.0, 0.6));
+
+  std::mt19937 rng(1701u);
+  std::uniform_real_distribution<double> offset(-0.15, 0.15);
+  std::uniform_real_distribution<double> angle(-0.35, 0.35);
+
+  std::vector<BoxPair> pairs;
+  pairs.reserve(100);
+  for (int i = 0; i < 100; ++i) {
+    const Eigen::Isometry3d tfA = makeBoxBatchTransform(
+        0.05 * offset(rng), offset(rng), offset(rng), angle(rng));
+    const Eigen::Isometry3d tfB = makeBoxBatchTransform(
+        0.9 + offset(rng), offset(rng), offset(rng), angle(rng));
+    pairs.push_back(BoxPair{&boxA, &boxB, tfA, tfB});
+  }
+
+  CollisionOption option;
+  option.maxNumContacts = 8;
+  std::vector<CollisionResult> batchResults(pairs.size());
+  collideBoxesBatch(pairs, batchResults, option);
+
+  for (std::size_t i = 0; i < pairs.size(); ++i) {
+    CollisionResult singleResult;
+    ASSERT_TRUE(collideBoxes(
+        pairs[i].shapeA->getHalfExtents(),
+        pairs[i].tfA,
+        pairs[i].shapeB->getHalfExtents(),
+        pairs[i].tfB,
+        singleResult,
+        option));
+    expectCollisionResultExactlyEqual(singleResult, batchResults[i]);
   }
 }

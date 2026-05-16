@@ -647,6 +647,26 @@ Additional inspected artifacts:
 - `tests/benchmark/collision/**`
 - `docs/dev_tasks/native_collision/smoke/native_compat_package/**`
 
+## Round 11 Spot-Check
+
+F11-2 box-box benchmark refresh is current on the local F11-1 working tree.
+The command
+`./build/collision-reference/cpp/Release/bin/bm_comparative_narrow_phase --benchmark_filter='BM_NarrowPhase_BoxBox_(Native|FCL|Bullet|ODE|Native_Batch_N(1|10|100|1000))$' --benchmark_min_time=1ms --benchmark_repetitions=1 --benchmark_out=.benchmark_results/native_collision_box_box_round7.json --benchmark_out_format=json`
+passed after building `bm_comparative_narrow_phase` in the
+`collision-reference` tree. The refreshed JSON reports:
+
+- `BM_NarrowPhase_BoxBox_Native`: 397.6 ns CPU.
+- `BM_NarrowPhase_BoxBox_Native_Batch_N1`: 351.4 ns CPU.
+- `BM_NarrowPhase_BoxBox_Native_Batch_N10`: 5517.0 ns CPU.
+- `BM_NarrowPhase_BoxBox_Native_Batch_N100`: 53286.4 ns CPU.
+- `BM_NarrowPhase_BoxBox_Native_Batch_N1000`: 566412.9 ns CPU.
+- Reference scalar rows: FCL 1369.2 ns CPU, Bullet 767.2 ns CPU,
+  ODE 1390.8 ns CPU.
+
+The scalar native row remains below the 1632 ns Round 7 acceptance ceiling,
+and the batch rows now exist as F11-1/F11-2 guardrails for the later
+performance wave.
+
 ## Prompt-To-Artifact Checklist
 
 | Requirement                                                                                                                  | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Status  |

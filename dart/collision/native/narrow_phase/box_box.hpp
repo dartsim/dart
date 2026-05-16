@@ -38,9 +38,19 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include <span>
+
 namespace dart::collision::native {
 
 class BoxShape;
+
+struct DART_COLLISION_NATIVE_API BoxPair
+{
+  const BoxShape* shapeA;
+  const BoxShape* shapeB;
+  Eigen::Isometry3d tfA;
+  Eigen::Isometry3d tfB;
+};
 
 [[nodiscard]] DART_COLLISION_NATIVE_API bool collideBoxes(
     const Eigen::Vector3d& halfExtents1,
@@ -56,6 +66,11 @@ class BoxShape;
     const BoxShape& box2,
     const Eigen::Isometry3d& transform2,
     CollisionResult& result,
+    const CollisionOption& option = CollisionOption());
+
+DART_COLLISION_NATIVE_API void collideBoxesBatch(
+    std::span<const BoxPair> pairs,
+    std::span<CollisionResult> results,
     const CollisionOption& option = CollisionOption());
 
 } // namespace dart::collision::native

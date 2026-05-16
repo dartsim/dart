@@ -37,6 +37,7 @@
 #include <dart/collision/native/shapes/shape.hpp>
 
 #include <algorithm>
+#include <stdexcept>
 #include <utility>
 
 namespace dart::collision::native {
@@ -59,9 +60,7 @@ namespace {
   return numContacts > 1 ? ContactType::Face : ContactType::Point;
 }
 
-} // namespace
-
-bool collideBoxes(
+[[nodiscard]] bool collideBoxesImpl(
     const Eigen::Vector3d& halfExtents1,
     const Eigen::Isometry3d& transform1,
     const Eigen::Vector3d& halfExtents2,
@@ -115,6 +114,20 @@ bool collideBoxes(
   return true;
 }
 
+} // namespace
+
+bool collideBoxes(
+    const Eigen::Vector3d& halfExtents1,
+    const Eigen::Isometry3d& transform1,
+    const Eigen::Vector3d& halfExtents2,
+    const Eigen::Isometry3d& transform2,
+    CollisionResult& result,
+    const CollisionOption& option)
+{
+  return collideBoxesImpl(
+      halfExtents1, transform1, halfExtents2, transform2, result, option);
+}
+
 bool collideBoxes(
     const BoxShape& box1,
     const Eigen::Isometry3d& transform1,
@@ -123,13 +136,49 @@ bool collideBoxes(
     CollisionResult& result,
     const CollisionOption& option)
 {
-  return collideBoxes(
-      box1.getHalfExtents(),
-      transform1,
-      box2.getHalfExtents(),
-      transform2,
-      result,
+  if (!option.enableContact) {
+    return collideBoxesImpl(
+        box1.getHalfExtents(),
+        transform1,
+        box2.getHalfExtents(),
+        transform2,
+        result,
+        option);
+  }
+
+  const auto manifoldsBefore = result.numManifolds();
+  const BoxPair pair{&box1, &box2, transform1, transform2};
+  collideBoxesBatch(
+      std::span<const BoxPair>(&pair, 1),
+      std::span<CollisionResult>(&result, 1),
       option);
+  return result.numManifolds() > manifoldsBefore;
+}
+
+void collideBoxesBatch(
+    std::span<const BoxPair> pairs,
+    std::span<CollisionResult> results,
+    const CollisionOption& option)
+{
+  if (results.size() < pairs.size()) {
+    throw std::invalid_argument(
+        "collideBoxesBatch requires one result for each pair");
+  }
+
+  for (std::size_t i = 0; i < pairs.size(); ++i) {
+    const auto& pair = pairs[i];
+    if (pair.shapeA == nullptr || pair.shapeB == nullptr) {
+      throw std::invalid_argument("collideBoxesBatch received a null box");
+    }
+
+    [[maybe_unused]] const bool collided = collideBoxesImpl(
+        pair.shapeA->getHalfExtents(),
+        pair.tfA,
+        pair.shapeB->getHalfExtents(),
+        pair.tfB,
+        results[i],
+        option);
+  }
 }
 
 } // namespace dart::collision::native

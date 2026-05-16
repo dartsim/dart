@@ -3245,6 +3245,27 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     all 29 `collision-native` tests; the simulation-experimental slice
     separately reported 13/13 passing tests. The final report printed
     `All tests passed!`.
+- Current local F11-1 box-box batch API refresh:
+  - Commit: current working tree after local head `e9fad56dac9`
+    (`Acknowledge native collision F11-1 priority`).
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_box_box --parallel 5`,
+    `./build/default/cpp/Release/bin/test_box_box --gtest_filter='BoxBoxBatch.boxbox_batch_determinism_vs_single'`,
+    `CMAKE_BUILD_DIR=build/collision-reference/cpp/Release python scripts/cmake_build.py --target bm_comparative_narrow_phase --parallel 5`,
+    `./build/collision-reference/cpp/Release/bin/bm_comparative_narrow_phase --benchmark_filter='BM_NarrowPhase_BoxBox_(Native|FCL|Bullet|ODE|Native_Batch_N(1|10|100|1000))$' --benchmark_min_time=1ms --benchmark_repetitions=1 --benchmark_out=.benchmark_results/native_collision_box_box_round7.json --benchmark_out_format=json`,
+    `pixi run lint`,
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_box_box$' -j 5`,
+    and
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native -j 5`.
+  - Result: passed. The new `BoxPair` /
+    `collideBoxesBatch(...)` Tier 2 surface builds, the batch
+    determinism-vs-single test passes, `test_box_box` passes, and the broader
+    `collision-native` CTest label passes 29/29. The refreshed box-box
+    benchmark JSON reports native scalar box-box at 397.6 ns CPU, native batch
+    at 351.4 ns for N=1, 5517.0 ns for N=10, 53286.4 ns for N=100, and
+    566412.9 ns for N=1000; the same run reports FCL at 1369.2 ns, Bullet at
+    767.2 ns, and ODE at 1390.8 ns. The scalar native row remains well under
+    the 1632 ns Round 7 acceptance ceiling.
 
 ## Known Risks
 
