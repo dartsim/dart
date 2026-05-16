@@ -65,6 +65,19 @@ SupportFunction makeBoxSupport(
   };
 }
 
+SupportPoint makeSupportPoint(
+    const SupportFunction& supportA,
+    const SupportFunction& supportB,
+    const Eigen::Vector3d& direction)
+{
+  SupportPoint point;
+  point.direction = direction.normalized();
+  point.v1 = supportA(point.direction);
+  point.v2 = supportB(-point.direction);
+  point.v = point.v1 - point.v2;
+  return point;
+}
+
 SupportFunction makeConvexSupport(const ConvexShape& convex)
 {
   return [&convex](const Eigen::Vector3d& dir) {
@@ -240,6 +253,51 @@ TEST(Gjk, SmallOverlap)
   EXPECT_TRUE(Gjk::intersect(supportA, supportB));
 }
 
+TEST(Gjk, WarmStartSimplexReuseMatchesColdQuery)
+{
+  auto supportA
+      = makeBoxSupport(Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones());
+  auto supportB = makeBoxSupport(
+      Eigen::Vector3d(3.0, 2.5, 1.5), Eigen::Vector3d(0.5, 0.75, 0.4));
+
+  const GjkResult cold
+      = Gjk::query(supportA, supportB, Eigen::Vector3d(1.0, 1.0, 1.0));
+  ASSERT_FALSE(cold.intersecting);
+  ASSERT_GT(cold.simplex.size, 0);
+
+  auto movedSupportB = makeBoxSupport(
+      Eigen::Vector3d(3.05, 2.48, 1.52), Eigen::Vector3d(0.5, 0.75, 0.4));
+
+  const GjkResult movedCold
+      = Gjk::query(supportA, movedSupportB, Eigen::Vector3d(1.0, 1.0, 1.0));
+  const GjkResult movedWarm = Gjk::query(
+      supportA, movedSupportB, cold.simplex, Eigen::Vector3d(1.0, 1.0, 1.0));
+
+  EXPECT_FALSE(movedWarm.intersecting);
+  EXPECT_EQ(movedCold.intersecting, movedWarm.intersecting);
+  EXPECT_NEAR(movedCold.distance, movedWarm.distance, 1e-9);
+  EXPECT_TRUE(movedWarm.closestPointA.isApprox(movedCold.closestPointA, 1e-9));
+  EXPECT_TRUE(movedWarm.closestPointB.isApprox(movedCold.closestPointB, 1e-9));
+  EXPECT_GT(movedWarm.simplex.size, 0);
+  for (int i = 0; i < movedWarm.simplex.size; ++i) {
+    EXPECT_TRUE(movedWarm.simplex.points[i].direction.allFinite());
+    EXPECT_GT(movedWarm.simplex.points[i].direction.squaredNorm(), 0.0);
+  }
+}
+
+TEST(Gjk, WarmStartEmptySimplexFallsBack)
+{
+  auto supportA = makeSphereSupport(Eigen::Vector3d::Zero(), 1.0);
+  auto supportB = makeSphereSupport(Eigen::Vector3d(3.0, 0.0, 0.0), 1.0);
+
+  GjkSimplex emptySimplex;
+  const GjkResult result
+      = Gjk::query(supportA, supportB, emptySimplex, Eigen::Vector3d::Zero());
+
+  EXPECT_FALSE(result.intersecting);
+  EXPECT_NEAR(result.distance, 1.0, 1e-6);
+}
+
 TEST(Epa, SphereSphereIntersecting)
 {
   auto supportA = makeSphereSupport(Eigen::Vector3d::Zero(), 1.0);
@@ -271,11 +329,7 @@ TEST(Epa, BoxBoxPenetrationDepthAnalytic)
          Eigen::Vector3d(-1.0, -1.0, -1.0)};
 
   for (const auto& direction : directions) {
-    SupportPoint point;
-    point.v1 = supportA(direction);
-    point.v2 = supportB(-direction);
-    point.v = point.v1 - point.v2;
-    simplex.push(point);
+    simplex.push(makeSupportPoint(supportA, supportB, direction));
   }
 
   const EpaResult epa = Epa::penetration(supportA, supportB, simplex);
@@ -286,6 +340,31 @@ TEST(Epa, BoxBoxPenetrationDepthAnalytic)
       std::abs(epa.normal.normalized().dot(Eigen::Vector3d::UnitX())), 0.99);
   EXPECT_TRUE(epa.pointOnA.allFinite());
   EXPECT_TRUE(epa.pointOnB.allFinite());
+}
+
+TEST(Epa, BoxBoxSignedDistanceAnalytic)
+{
+  auto supportA
+      = makeBoxSupport(Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones());
+  auto supportB
+      = makeBoxSupport(Eigen::Vector3d(1.5, 0.0, 0.0), Eigen::Vector3d::Ones());
+
+  GjkSimplex simplex;
+  const std::array<Eigen::Vector3d, 4> directions
+      = {Eigen::Vector3d::UnitX(),
+         Eigen::Vector3d::UnitY(),
+         Eigen::Vector3d::UnitZ(),
+         Eigen::Vector3d(-1.0, -1.0, -1.0)};
+
+  for (const auto& direction : directions) {
+    simplex.push(makeSupportPoint(supportA, supportB, direction));
+  }
+
+  const EpaResult epa = Epa::penetration(supportA, supportB, simplex);
+  ASSERT_TRUE(epa.success);
+
+  EXPECT_NEAR(epa.signedDistance(), -0.5, 1e-4);
+  EXPECT_EQ(epa.signedDistance(), -epa.depth);
 }
 
 TEST(Mpr, SphereSpherePenetrationDepthAnalytic)

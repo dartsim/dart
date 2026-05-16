@@ -156,12 +156,12 @@ Bar per row: at least one test exercises the algorithm in isolation
 | ------------------------------------- | ------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
 | `gjk_distance_query`                  | DONE    | `test_gjk.cpp`                                                     |                                                                        |
 | `gjk_intersection_query`              | DONE    | `test_gjk.cpp`                                                     |                                                                        |
-| `gjk_warm_start_cache`                | GAP     | —                                                                  | Warm-start via simplex reuse                                           |
+| `gjk_warm_start_cache`                | DONE    | `test_gjk.cpp::WarmStartSimplexReuseMatchesColdQuery`              | Warm-start via simplex reuse                                           |
 | `gjk_degenerate_segments`             | DONE    | `test_gjk_degenerate.cpp`                                          |                                                                        |
 | `gjk_libccd_parity`                   | DONE    | `test_libccd_algorithms.cpp`                                       |                                                                        |
 | `epa_penetration_depth`               | DONE    | `test_gjk.cpp::BoxBoxPenetrationDepthAnalytic`                     | Standalone analytic depth check                                        |
 | `epa_libccd_parity`                   | DONE    | `test_libccd_algorithms.cpp`                                       |                                                                        |
-| `epa_signed_distance`                 | GAP     | —                                                                  | Negative distance via EPA                                              |
+| `epa_signed_distance`                 | DONE    | `test_gjk.cpp::BoxBoxSignedDistanceAnalytic`                       | Negative distance via EPA                                              |
 | `mpr_penetration_depth`               | DONE    | `test_gjk.cpp::SphereSpherePenetrationDepthAnalytic`               | Standalone analytic depth check                                        |
 | `mpr_libccd_parity`                   | DONE    | `test_libccd_algorithms.cpp`                                       |                                                                        |
 | `sat_box_axes`                        | DONE    | `test_box_box.cpp::SatAxisStableForNearFaceBoxGroundPerturbations` | Calls `computeBoxBoxSat` directly                                      |
@@ -347,17 +347,17 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 ## Summary Counters (as of 2026-05-15)
 
 - **§1 Pair-wise narrow-phase:** 72 DONE, 0 PARTIAL, 8 GAP (of 80 rows)
-- **§2 Algorithm-level:** 29 DONE, 2 PARTIAL, 13 GAP (of 44 rows)
+- **§2 Algorithm-level:** 31 DONE, 2 PARTIAL, 11 GAP (of 44 rows)
 - **§3 Stress / regression:** 17 DONE, 1 PARTIAL, 15 GAP (of 33 rows)
 - **§4 Benchmarks:** 19 DONE, 0 PARTIAL, 9 GAP (of 28 rows)
 - **§5 Infrastructure:** 8 DONE, 0 PARTIAL, 1 GAP (of 9 rows)
-- **TOTAL:** 145 DONE, 3 PARTIAL, 46 GAP (of 194 rows)
+- **TOTAL:** 147 DONE, 3 PARTIAL, 44 GAP (of 194 rows)
 
-DART native is currently at ~75% of the proposed superset, with the
-remaining 25% concentrated in: (a) less-common shape pairs against
-capsule/cylinder/mesh/convex/sdf/compound, (b) algorithm-isolation
-tests for SAT internals, (c) long-horizon stability and stress scenes,
-(d) scale and scenario benchmarks beyond the focused raw primitive rows.
+DART native is currently at ~76% of the proposed superset, with the
+remaining coverage concentrated in: (a) scoped shape-pair decisions such
+as SDF-vs-SDF, (b) BVH/CCD algorithm-isolation rows, (c) long-horizon
+stability and stress scenes, and (d) scale and scenario benchmarks
+beyond the focused raw primitive rows.
 
 ## Next Priorities (TDD order)
 

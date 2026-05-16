@@ -3207,6 +3207,20 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     C++ unit/integration CTest slice reported 264/264 tests passing, including
     all 29 `collision-native` tests; the simulation-experimental slice
     separately reported 13/13 passing tests.
+- Current local raw GJK/EPA cache coverage refresh:
+  - Commit: current working tree after local head `1fb1aaad766`
+    (`Record native collision full validation`).
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_gjk --parallel 5`,
+    `./build/default/cpp/Release/bin/test_gjk --gtest_filter='Gjk.WarmStartSimplexReuseMatchesColdQuery:Gjk.WarmStartEmptySimplexFallsBack:Epa.BoxBoxSignedDistanceAnalytic'`,
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_gjk$' -j 5`,
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target dart_collision_native_tests --parallel 5`,
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native -j 5`,
+    and `pixi run lint`.
+  - Result: passed. GJK now has a backward-compatible simplex warm-start
+    overload with an empty-cache fallback, EPA exposes the negative
+    signed-distance convention used by distance queries, `test_gjk` passed,
+    and the broader `collision-native` CTest label passed 29/29.
 
 ## Known Risks
 

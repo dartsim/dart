@@ -61,7 +61,13 @@ SupportPoint computeSupport(
   point.v1 = supportA(dir);
   point.v2 = supportB(-dir);
   point.v = point.v1 - point.v2;
+  point.direction = dir;
   return point;
+}
+
+bool isUsableDirection(const Eigen::Vector3d& direction)
+{
+  return direction.allFinite() && direction.squaredNorm() > kEpsilon;
 }
 
 enum class TriangleRegion
@@ -483,25 +489,30 @@ void fillSeparationResult(
   }
 }
 
-} // namespace
-
-GjkResult Gjk::query(
+GjkResult queryFromSimplex(
     const SupportFunction& supportA,
     const SupportFunction& supportB,
-    const Eigen::Vector3d& initialDirection)
+    GjkSimplex simplex,
+    const Eigen::Vector3d& fallbackInitialDirection)
 {
   GjkResult result;
-  GjkSimplex simplex;
   std::array<double, 4> weights{};
 
-  Eigen::Vector3d direction = initialDirection;
-  if (direction.squaredNorm() < kEpsilon) {
+  Eigen::Vector3d direction = fallbackInitialDirection;
+  if (!isUsableDirection(direction)) {
     direction = Eigen::Vector3d::UnitX();
   }
 
-  simplex.push(computeSupport(supportA, supportB, direction));
-  Eigen::Vector3d closest = simplex.points[0].v;
-  reduceSimplex(simplex, closest, weights);
+  if (simplex.size == 0) {
+    simplex.push(computeSupport(supportA, supportB, direction));
+  }
+
+  Eigen::Vector3d closest = Eigen::Vector3d::Zero();
+  if (reduceSimplex(simplex, closest, weights)) {
+    result.intersecting = true;
+    result.simplex = simplex;
+    return result;
+  }
 
   double prevDist2 = std::numeric_limits<double>::infinity();
 
@@ -543,6 +554,52 @@ GjkResult Gjk::query(
   fillSeparationResult(simplex, weights, closest, result);
   result.simplex = simplex;
   return result;
+}
+
+GjkSimplex buildWarmStartSimplex(
+    const SupportFunction& supportA,
+    const SupportFunction& supportB,
+    const GjkSimplex& initialSimplex)
+{
+  GjkSimplex simplex;
+  for (int i = 0; i < initialSimplex.size; ++i) {
+    Eigen::Vector3d direction = initialSimplex.points[i].direction;
+    if (!isUsableDirection(direction)) {
+      direction = initialSimplex.points[i].v;
+    }
+    if (isUsableDirection(direction)) {
+      simplex.push(computeSupport(supportA, supportB, direction));
+    }
+  }
+  return simplex;
+}
+
+} // namespace
+
+GjkResult Gjk::query(
+    const SupportFunction& supportA,
+    const SupportFunction& supportB,
+    const Eigen::Vector3d& initialDirection)
+{
+  GjkSimplex simplex;
+  Eigen::Vector3d direction = initialDirection;
+  if (!isUsableDirection(direction)) {
+    direction = Eigen::Vector3d::UnitX();
+  }
+  simplex.push(computeSupport(supportA, supportB, direction));
+  return queryFromSimplex(supportA, supportB, simplex, direction);
+}
+
+GjkResult Gjk::query(
+    const SupportFunction& supportA,
+    const SupportFunction& supportB,
+    const GjkSimplex& initialSimplex,
+    const Eigen::Vector3d& fallbackInitialDirection)
+{
+  GjkSimplex simplex
+      = buildWarmStartSimplex(supportA, supportB, initialSimplex);
+  return queryFromSimplex(
+      supportA, supportB, simplex, fallbackInitialDirection);
 }
 
 bool Gjk::intersect(

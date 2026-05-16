@@ -51,6 +51,7 @@ struct DART_COLLISION_NATIVE_API SupportPoint
   Eigen::Vector3d v = Eigen::Vector3d::Zero();
   Eigen::Vector3d v1 = Eigen::Vector3d::Zero();
   Eigen::Vector3d v2 = Eigen::Vector3d::Zero();
+  Eigen::Vector3d direction = Eigen::Vector3d::Zero();
 };
 
 struct DART_COLLISION_NATIVE_API GjkSimplex
@@ -94,6 +95,11 @@ struct DART_COLLISION_NATIVE_API EpaResult
   Eigen::Vector3d normal = Eigen::Vector3d::Zero();
   Eigen::Vector3d pointOnA = Eigen::Vector3d::Zero();
   Eigen::Vector3d pointOnB = Eigen::Vector3d::Zero();
+
+  double signedDistance() const
+  {
+    return -depth;
+  }
 };
 
 class DART_COLLISION_NATIVE_API Gjk
@@ -106,6 +112,13 @@ public:
       const SupportFunction& supportA,
       const SupportFunction& supportB,
       const Eigen::Vector3d& initialDirection = Eigen::Vector3d::UnitX());
+
+  static GjkResult query(
+      const SupportFunction& supportA,
+      const SupportFunction& supportB,
+      const GjkSimplex& initialSimplex,
+      const Eigen::Vector3d& fallbackInitialDirection
+      = Eigen::Vector3d::UnitX());
 
   static bool intersect(
       const SupportFunction& supportA,
