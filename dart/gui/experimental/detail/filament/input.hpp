@@ -38,6 +38,7 @@
 #include <Eigen/Core>
 
 #include <optional>
+#include <vector>
 
 struct GLFWwindow;
 struct ImGuiIO;
@@ -51,6 +52,7 @@ struct ApplicationInputState
 {
   bool wasSpacePressed = false;
   bool wasStepPressed = false;
+  std::vector<bool> customActionWasPressed;
 };
 
 void attachOrbitCameraController(

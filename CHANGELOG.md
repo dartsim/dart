@@ -101,6 +101,9 @@
     including selected-block add/delete actions, gravity and force-coefficient
     controls, target reorientation, force-line updates, external force
     application, and collision/dynamics block construction.
+  - Added renderer-neutral `dart::gui` keyboard actions and used them to
+    restore Tinkertoy add/delete, force coefficient, clear-pick, and target
+    reorientation hotkeys without exposing backend input headers.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

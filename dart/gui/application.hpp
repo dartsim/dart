@@ -58,6 +58,55 @@ struct InverseKinematicsHandle
   dart::dynamics::InverseKinematicsPtr ik;
 };
 
+enum class KeyboardKey
+{
+  Unknown,
+  Tab,
+  Enter,
+  Backspace,
+  Delete,
+  Up,
+  Down,
+  Left,
+  Right,
+  PageUp,
+  PageDown,
+  GraveAccent,
+};
+
+struct KeyboardShortcut
+{
+  char character = '\0';
+  KeyboardKey key = KeyboardKey::Unknown;
+
+  static KeyboardShortcut characterKey(char value)
+  {
+    KeyboardShortcut shortcut;
+    shortcut.character = value;
+    return shortcut;
+  }
+
+  static KeyboardShortcut namedKey(KeyboardKey value)
+  {
+    KeyboardShortcut shortcut;
+    shortcut.key = value;
+    return shortcut;
+  }
+};
+
+struct KeyboardActionContext
+{
+  ViewerLifecycleState* lifecycle = nullptr;
+};
+
+struct KeyboardAction
+{
+  std::string label;
+  KeyboardShortcut shortcut;
+  bool repeat = false;
+  std::function<void(KeyboardActionContext&)> callback;
+};
+
 struct ApplicationOptions
 {
   dart::simulation::WorldPtr world;
@@ -66,6 +115,7 @@ struct ApplicationOptions
   std::string defaultScene;
   std::vector<Panel> panels;
   std::vector<InverseKinematicsHandle> ikHandles;
+  std::vector<KeyboardAction> keyboardActions;
 };
 
 DART_GUI_API int runApplication(int argc, char* argv[]);

@@ -67,6 +67,7 @@ struct DartScene
 {
   dart::simulation::WorldPtr world;
   std::vector<IkHandle> ikHandles;
+  std::vector<dart::gui::KeyboardAction> keyboardActions;
   std::function<void()> preStep;
 };
 
@@ -114,6 +115,7 @@ struct AppOptions
   std::optional<dart::gui::OrbitCamera> camera;
   std::vector<dart::gui::Panel> panels;
   std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
+  std::vector<dart::gui::KeyboardAction> keyboardActions;
   ExampleScene scene = ExampleScene::Mvp;
   bool showUi = true;
   bool showUiExplicit = false;

@@ -136,6 +136,7 @@ int runFilamentGuiApplicationImpl(
     appOptions.world = applicationOptions.world;
     appOptions.preStep = applicationOptions.preStep;
     appOptions.ikHandles = applicationOptions.ikHandles;
+    appOptions.keyboardActions = applicationOptions.keyboardActions;
   }
   appOptions.panels = applicationOptions.panels;
   const RunOptions& runOptions = appOptions.run;

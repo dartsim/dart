@@ -45,6 +45,12 @@ mandatory lint plus post-lint focused validation. Raw keyboard hotkeys and the
 legacy recording toggle remain explicit follow-up gaps until there is a
 renderer-neutral public input/action API.
 
+The next active slice has locally introduced that renderer-neutral keyboard
+action surface on `dart::gui::ApplicationOptions` and uses it for Tinkertoy
+hotkeys that do not require new camera-reset or recording APIs. This is also
+the prerequisite for restoring robot/IK teleoperation hotkeys without exposing
+GLFW or private Filament input types from examples.
+
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as
 migration history and may describe intermediate states that no longer exist in

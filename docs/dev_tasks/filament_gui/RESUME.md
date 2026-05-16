@@ -88,6 +88,13 @@ Tinkertoy builder-state parity checkpoint. Then continue solver-behavior parity
 such as Atlas relaxed posture, Hubo analytical IK, and full OSG hotkey behavior
 before claiming the robot/IK and construction examples are complete.
 
+After the Tinkertoy builder-state checkpoint was pushed, the next slice is a
+renderer-neutral keyboard action API on `dart::gui::ApplicationOptions`. It is
+implemented locally and first restores Tinkertoy's `1`/`2`/`3`, Backspace,
+Delete, Up/Down, and backtick hotkeys without exposing GLFW/Filament headers.
+Leave Tab camera-home and Enter recording as explicit gaps until public camera
+reset and recording APIs exist.
+
 ## Context That Would Be Lost
 
 - Do not open a PR. Push checkpoint commits directly to the tracked remote

@@ -83,6 +83,7 @@ constexpr double kMaxForce = 200.0;
 constexpr double kDefaultForceCoeff = 100.0;
 constexpr double kMaxForceCoeff = 1000.0;
 constexpr double kMinForceCoeff = 10.0;
+constexpr double kForceIncrement = 10.0;
 
 const Eigen::Vector4d kSimulationColor(0.5, 0.5, 1.0, 1.0);
 const Eigen::Vector4d kPausedColor(0xEE / 255.0, 0xC9 / 255.0, 0.0, 1.0);
@@ -411,6 +412,18 @@ public:
     return mForceCoeff;
   }
 
+  void incrementForceCoeff()
+  {
+    setForceCoeff(mForceCoeff + kForceIncrement);
+    mStatus = "Force coefficient: " + std::to_string(mForceCoeff);
+  }
+
+  void decrementForceCoeff()
+  {
+    setForceCoeff(mForceCoeff - kForceIncrement);
+    mStatus = "Force coefficient: " + std::to_string(mForceCoeff);
+  }
+
   const std::string& status() const
   {
     return mStatus;
@@ -614,6 +627,73 @@ private:
   std::string mStatus = "No block selected";
 };
 
+std::vector<dart::gui::KeyboardAction> createTinkertoyKeyboardActions(
+    const std::shared_ptr<TinkertoyState>& state)
+{
+  const auto paused = [](dart::gui::KeyboardActionContext& context) {
+    return context.lifecycle == nullptr || context.lifecycle->paused;
+  };
+
+  std::vector<dart::gui::KeyboardAction> actions;
+  const auto addAction = [&](std::string label,
+                             dart::gui::KeyboardShortcut shortcut,
+                             auto callback) {
+    dart::gui::KeyboardAction action;
+    action.label = std::move(label);
+    action.shortcut = shortcut;
+    action.callback = callback;
+    actions.push_back(std::move(action));
+  };
+
+  addAction(
+      "Add WeldJoint block",
+      dart::gui::KeyboardShortcut::characterKey('1'),
+      [state, paused](dart::gui::KeyboardActionContext& context) {
+        state->addWeldJointBlock(paused(context));
+      });
+  addAction(
+      "Add RevoluteJoint block",
+      dart::gui::KeyboardShortcut::characterKey('2'),
+      [state, paused](dart::gui::KeyboardActionContext& context) {
+        state->addRevoluteJointBlock(paused(context));
+      });
+  addAction(
+      "Add BallJoint block",
+      dart::gui::KeyboardShortcut::characterKey('3'),
+      [state, paused](dart::gui::KeyboardActionContext& context) {
+        state->addBallJointBlock(paused(context));
+      });
+  addAction(
+      "Clear Tinkertoy pick",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Backspace),
+      [state](dart::gui::KeyboardActionContext&) { state->clearPick(); });
+  addAction(
+      "Delete Tinkertoy pick",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Delete),
+      [state, paused](dart::gui::KeyboardActionContext& context) {
+        state->deletePick(paused(context));
+      });
+  addAction(
+      "Increase Tinkertoy force coefficient",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Up),
+      [state](dart::gui::KeyboardActionContext&) {
+        state->incrementForceCoeff();
+      });
+  addAction(
+      "Decrease Tinkertoy force coefficient",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Down),
+      [state](dart::gui::KeyboardActionContext&) {
+        state->decrementForceCoeff();
+      });
+  addAction(
+      "Reorient Tinkertoy target",
+      dart::gui::KeyboardShortcut::namedKey(
+          dart::gui::KeyboardKey::GraveAccent),
+      [state](dart::gui::KeyboardActionContext&) { state->reorientTarget(); });
+
+  return actions;
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
@@ -682,6 +762,9 @@ int main(int argc, char* argv[])
     if (showBuilderHints) {
       panel.text("Select a block to attach new blocks or apply force.");
       panel.text("Select the magenta target handle to move it.");
+      panel.text("Hotkeys: 1/2/3 add blocks; Backspace clears pick.");
+      panel.text("Delete removes a picked subtree; ` resets target.");
+      panel.text("Up/Down adjusts the force coefficient.");
       panel.text("Ctrl-left drag moves the selected handle.");
       panel.text("Arrow keys and PageUp/PageDown nudge it.");
       panel.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
@@ -697,6 +780,7 @@ int main(int argc, char* argv[])
   options.preStep = [state]() {
     state->preStep();
   };
+  options.keyboardActions = createTinkertoyKeyboardActions(state);
   options.panels.push_back(std::move(controls));
 
   return dart::gui::runApplication(argc, argv, options);

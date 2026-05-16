@@ -649,6 +649,33 @@ TEST(FilamentSceneExtraction, ApplicationOptionsStoresIkHandles)
   EXPECT_EQ(options.ikHandles.front().hotkey, '1');
 }
 
+TEST(FilamentSceneExtraction, ApplicationOptionsStoresKeyboardActions)
+{
+  dart::gui::ApplicationOptions options;
+  dart::gui::KeyboardAction action;
+  action.label = "clear";
+  action.shortcut
+      = dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Delete);
+  action.callback = [](dart::gui::KeyboardActionContext& context) {
+    if (context.lifecycle != nullptr) {
+      context.lifecycle->paused = true;
+    }
+  };
+
+  options.keyboardActions.push_back(std::move(action));
+
+  ASSERT_EQ(options.keyboardActions.size(), 1u);
+  EXPECT_EQ(options.keyboardActions.front().label, "clear");
+  EXPECT_EQ(
+      options.keyboardActions.front().shortcut.key,
+      dart::gui::KeyboardKey::Delete);
+  dart::gui::ViewerLifecycleState lifecycle;
+  dart::gui::KeyboardActionContext context;
+  context.lifecycle = &lifecycle;
+  options.keyboardActions.front().callback(context);
+  EXPECT_TRUE(lifecycle.paused);
+}
+
 TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
 {
   struct ExampleExpectation
@@ -880,6 +907,9 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
   EXPECT_NE(tinkertoySource.find("setGravityEnabled"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("setForceCoeff"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("options.preStep"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("KeyboardShortcut"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("KeyboardAction"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("options.keyboardActions"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("CollisionAspect"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("DynamicsAspect"), std::string::npos);
   EXPECT_EQ(tinkertoySource.find("options.defaultScene"), std::string::npos);

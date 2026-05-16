@@ -1417,6 +1417,37 @@ Twenty-fifth Tinkertoy builder-state parity checkpoint:
   - Python runner tests (`67 passed`)
   - Full `examples` aggregate target build
 
+Twenty-sixth renderer-neutral keyboard-action checkpoint:
+
+- Motivation: Tinkertoy still has raw keyboard parity gaps (`1`/`2`/`3`,
+  Backspace, Delete, Up/Down, backtick, Tab), and the robot/IK examples still
+  need promoted hotkey/teleoperation behavior. The examples must not include
+  GLFW, Filament, or other backend-private input headers to close those gaps.
+- Implementation state: `dart::gui::ApplicationOptions` now has a small
+  renderer-neutral keyboard action surface: printable-character shortcuts plus
+  named non-character keys, edge-triggered by default, with callbacks receiving
+  a public action context containing the `ViewerLifecycleState`. The backend
+  maps those public shortcuts to GLFW internally; examples still do not include
+  private GLFW or Filament input headers.
+- First consumer state: Tinkertoy now registers historical keyboard actions
+  that do not require camera reset or recording APIs: `1`/`2`/`3` add
+  Weld/Revolute/Ball blocks, Backspace clears the pick, Delete deletes the
+  picked subtree, Up/Down adjust force coefficient, and backtick reorients the
+  target. Tab camera-home and Enter recording toggle remain explicit follow-up
+  gaps until public camera-reset and recording APIs exist.
+- Guard state: unit/source markers cover `KeyboardShortcut`, `KeyboardAction`,
+  Tinkertoy `options.keyboardActions`, and the restored non-renderer-private
+  hotkey registrations.
+- Local evidence so far:
+  - Focused C++ target build for `dart-gui`, `tinkertoy`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Direct llvmpipe `tinkertoy --headless --frames 2 --width 640 --height 480 --screenshot ...`
+  - `pixi run ex tinkertoy --headless --frames 2 --width 640 --height 480 --screenshot ...`
+  - Basic analyzer checks for both Tinkertoy screenshots
+  - Python runner tests (`67 passed`)
+  - Full `examples` aggregate target build
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:
@@ -1447,8 +1478,8 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Finish the Tinkertoy builder-state checkpoint with mandatory lint,
-   post-lint focused validation, commit, and push.
+1. Finish the keyboard action checkpoint with mandatory lint, post-lint focused
+   validation, commit, and push.
 2. Then continue robot/IK solver/hotkey parity through promoted `dart::gui`
    concepts.
 3. Keep `examples/fetch/` in the completed-evidence set for camera,

@@ -685,6 +685,7 @@ DartScene createDartScene(const AppOptions& options)
     DartScene scene;
     scene.world = options.world;
     scene.preStep = options.preStep;
+    scene.keyboardActions = options.keyboardActions;
     scene.ikHandles.reserve(options.ikHandles.size());
     for (const auto& handle : options.ikHandles) {
       if (handle.target == nullptr) {

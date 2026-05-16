@@ -40,11 +40,16 @@
 
 #include <limits>
 
+#include <cctype>
+
 namespace dart::gui::filament {
 
 using dart::gui::addOrbitCameraScroll;
 using dart::gui::computeCameraRelativeNudge;
 using dart::gui::DirectionalNudgeInput;
+using dart::gui::KeyboardActionContext;
+using dart::gui::KeyboardKey;
+using dart::gui::KeyboardShortcut;
 using dart::gui::OrbitCameraControllerInput;
 using dart::gui::requestSingleStep;
 using dart::gui::togglePaused;
@@ -58,6 +63,77 @@ void handleScroll(GLFWwindow* window, double, double yOffset)
       glfwGetWindowUserPointer(window));
   if (controller != nullptr) {
     addOrbitCameraScroll(*controller, yOffset);
+  }
+}
+
+int glfwKeyForShortcut(const KeyboardShortcut& shortcut)
+{
+  if (shortcut.character != '\0') {
+    const unsigned char value = static_cast<unsigned char>(shortcut.character);
+    if (std::isalpha(value)) {
+      return std::toupper(value);
+    }
+    return value;
+  }
+
+  switch (shortcut.key) {
+    case KeyboardKey::Tab:
+      return GLFW_KEY_TAB;
+    case KeyboardKey::Enter:
+      return GLFW_KEY_ENTER;
+    case KeyboardKey::Backspace:
+      return GLFW_KEY_BACKSPACE;
+    case KeyboardKey::Delete:
+      return GLFW_KEY_DELETE;
+    case KeyboardKey::Up:
+      return GLFW_KEY_UP;
+    case KeyboardKey::Down:
+      return GLFW_KEY_DOWN;
+    case KeyboardKey::Left:
+      return GLFW_KEY_LEFT;
+    case KeyboardKey::Right:
+      return GLFW_KEY_RIGHT;
+    case KeyboardKey::PageUp:
+      return GLFW_KEY_PAGE_UP;
+    case KeyboardKey::PageDown:
+      return GLFW_KEY_PAGE_DOWN;
+    case KeyboardKey::GraveAccent:
+      return GLFW_KEY_GRAVE_ACCENT;
+    case KeyboardKey::Unknown:
+      return GLFW_KEY_UNKNOWN;
+  }
+
+  return GLFW_KEY_UNKNOWN;
+}
+
+bool isShortcutDown(GLFWwindow* window, const KeyboardShortcut& shortcut)
+{
+  const int glfwKey = glfwKeyForShortcut(shortcut);
+  return glfwKey != GLFW_KEY_UNKNOWN
+         && glfwGetKey(window, glfwKey) == GLFW_PRESS;
+}
+
+void dispatchKeyboardActions(
+    GLFWwindow* window,
+    DartScene& scene,
+    dart::gui::ViewerLifecycleState& lifecycle,
+    ApplicationInputState& state)
+{
+  if (state.customActionWasPressed.size() != scene.keyboardActions.size()) {
+    state.customActionWasPressed.assign(scene.keyboardActions.size(), false);
+  }
+
+  KeyboardActionContext context;
+  context.lifecycle = &lifecycle;
+
+  for (std::size_t i = 0; i < scene.keyboardActions.size(); ++i) {
+    const auto& action = scene.keyboardActions[i];
+    const bool isPressed = isShortcutDown(window, action.shortcut);
+    if (isPressed && (action.repeat || !state.customActionWasPressed[i])
+        && action.callback) {
+      action.callback(context);
+    }
+    state.customActionWasPressed[i] = isPressed;
   }
 }
 
@@ -114,6 +190,8 @@ void pollApplicationInput(
       lifecycle.paused = true;
     }
   }
+
+  dispatchKeyboardActions(window, scene, lifecycle, state);
 }
 
 void updateImGuiMouseInput(
