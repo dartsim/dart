@@ -38,6 +38,9 @@
 #include "dart/common/macros.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/revolute_joint.hpp"
+#include "dart/dynamics/shape.hpp"
+#include "dart/dynamics/shape_frame.hpp"
+#include "dart/dynamics/shape_node.hpp"
 #include "dart/dynamics/simple_frame.hpp"
 #include "dart/dynamics/skeleton.hpp"
 #include "dart/io/read.hpp"
@@ -46,8 +49,11 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <array>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -167,6 +173,84 @@ private:
   Creator mRestorer;
   bool mOverridden{false};
 };
+
+struct AxisExtent
+{
+  double min = std::numeric_limits<double>::infinity();
+  double max = -std::numeric_limits<double>::infinity();
+  bool hasShape = false;
+};
+
+void accumulateShapeNodeAxisExtent(
+    const ShapeNode* shapeNode, int axis, AxisExtent& extent)
+{
+  if (!shapeNode || !shapeNode->getShape()) {
+    return;
+  }
+
+  const auto& bounds = shapeNode->getShape()->getBoundingBox();
+  const Eigen::Vector3d& min = bounds.getMin();
+  const Eigen::Vector3d& max = bounds.getMax();
+  const std::array<Eigen::Vector3d, 8> corners{
+      Eigen::Vector3d(min.x(), min.y(), min.z()),
+      Eigen::Vector3d(max.x(), min.y(), min.z()),
+      Eigen::Vector3d(min.x(), max.y(), min.z()),
+      Eigen::Vector3d(max.x(), max.y(), min.z()),
+      Eigen::Vector3d(min.x(), min.y(), max.z()),
+      Eigen::Vector3d(max.x(), min.y(), max.z()),
+      Eigen::Vector3d(min.x(), max.y(), max.z()),
+      Eigen::Vector3d(max.x(), max.y(), max.z())};
+
+  for (const auto& corner : corners) {
+    const double value = (shapeNode->getWorldTransform() * corner)[axis];
+    extent.min = std::min(extent.min, value);
+    extent.max = std::max(extent.max, value);
+  }
+  extent.hasShape = true;
+}
+
+AxisExtent collisionAxisExtent(const BodyNode* bodyNode, int axis)
+{
+  AxisExtent extent;
+  if (!bodyNode) {
+    return extent;
+  }
+
+  bodyNode->eachShapeNodeWith<CollisionAspect>([&](const ShapeNode* shapeNode) {
+    accumulateShapeNodeAxisExtent(shapeNode, axis, extent);
+  });
+  return extent;
+}
+
+AxisExtent collisionAxisExtent(const SkeletonPtr& skeleton, int axis)
+{
+  AxisExtent extent;
+  if (!skeleton) {
+    return extent;
+  }
+
+  for (auto i = 0u; i < skeleton->getNumBodyNodes(); ++i) {
+    auto bodyExtent = collisionAxisExtent(skeleton->getBodyNode(i), axis);
+    if (!bodyExtent.hasShape) {
+      continue;
+    }
+
+    extent.min = std::min(extent.min, bodyExtent.min);
+    extent.max = std::max(extent.max, bodyExtent.max);
+    extent.hasShape = true;
+  }
+
+  return extent;
+}
+
+AxisExtent mergedAxisExtent(const AxisExtent& first, const AxisExtent& second)
+{
+  AxisExtent merged;
+  merged.hasShape = first.hasShape || second.hasShape;
+  merged.min = std::min(first.min, second.min);
+  merged.max = std::max(first.max, second.max);
+  return merged;
+}
 
 } // namespace
 
@@ -770,6 +854,66 @@ TEST(World, ConfigWarnsWhenPreferredAndFallbackUnavailable)
       << "Expected dart, experimental, or fcl fallback, got: " << type;
 }
 #endif
+
+//==============================================================================
+TEST(World, AtlasSimbiconFeetContactGroundWithNativeCollision)
+{
+  auto world = World::create();
+  ASSERT_NE(world, nullptr);
+  world->setTimeStep(0.001);
+  world->setCollisionDetector(CollisionDetectorType::Dart);
+  ASSERT_NE(world->getCollisionDetector(), nullptr);
+  EXPECT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
+
+  auto ground = dart::io::readSkeleton("dart://sample/sdf/atlas/ground.urdf");
+  auto atlas
+      = dart::io::readSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.sdf");
+  ASSERT_NE(ground, nullptr);
+  ASSERT_NE(atlas, nullptr);
+
+  atlas->setPosition(0, -0.5 * dart::math::pi);
+  world->addSkeleton(ground);
+  world->addSkeleton(atlas);
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  auto* leftFoot = atlas->getBodyNode("l_foot");
+  auto* rightFoot = atlas->getBodyNode("r_foot");
+  ASSERT_NE(leftFoot, nullptr);
+  ASSERT_NE(rightFoot, nullptr);
+
+  constexpr int upAxis = 1;
+  const AxisExtent groundExtent = collisionAxisExtent(ground, upAxis);
+  ASSERT_TRUE(groundExtent.hasShape);
+  const double groundTop = groundExtent.max;
+
+  auto footGroup = world->getCollisionDetector()->createCollisionGroup();
+  auto groundGroup = world->getCollisionDetector()->createCollisionGroup();
+  ASSERT_NE(footGroup, nullptr);
+  ASSERT_NE(groundGroup, nullptr);
+  footGroup->addShapeFramesOf(leftFoot, rightFoot);
+  groundGroup->addShapeFramesOf(ground.get());
+  ASSERT_GT(footGroup->getNumShapeFrames(), 0u);
+  ASSERT_GT(groundGroup->getNumShapeFrames(), 0u);
+
+  collision::CollisionOption option(true, 100u);
+  collision::CollisionResult result;
+  const bool colliding = footGroup->collide(groundGroup.get(), option, &result);
+  ASSERT_TRUE(colliding);
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  bool sawUpwardFootNormal = false;
+  for (const auto& contact : result.getContacts()) {
+    sawUpwardFootNormal = sawUpwardFootNormal || contact.normal[upAxis] > 0.5;
+  }
+
+  EXPECT_TRUE(sawUpwardFootNormal);
+
+  const AxisExtent footExtent = mergedAxisExtent(
+      collisionAxisExtent(leftFoot, upAxis),
+      collisionAxisExtent(rightFoot, upAxis));
+  ASSERT_TRUE(footExtent.hasShape);
+  EXPECT_GE(footExtent.min, groundTop - 0.06);
+}
 
 //==============================================================================
 simulation::WorldPtr createWorld()

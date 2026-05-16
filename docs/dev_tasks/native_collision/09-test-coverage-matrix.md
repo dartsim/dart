@@ -49,90 +49,91 @@ AND at least one test asserts the determinism + pair-order symmetry
 contract (A×B and B×A produce contacts whose positions match and
 normals flip).
 
-| Codename                             | Status | Source                                                             | Notes                                                         |
-| ------------------------------------ | ------ | ------------------------------------------------------------------ | ------------------------------------------------------------- |
-| `sphere_sphere_basic`                | DONE   | `test_sphere_sphere.cpp`, `test_narrow_phase.cpp`                  | Multi-config sweep                                            |
-| `sphere_sphere_zero_radius`          | DONE   | `test_sphere_sphere.cpp::ZeroRadius`                               | Degenerate radius                                             |
-| `sphere_sphere_concentric`           | DONE   | `test_sphere_sphere.cpp`                                           | Coincident centers                                            |
-| `sphere_sphere_determinism`          | DONE   | `test_sphere_sphere.cpp`                                           |                                                               |
-| `sphere_sphere_pair_order`           | DONE   | `test_sphere_sphere.cpp`                                           |                                                               |
-| `sphere_box_face`                    | DONE   | `test_sphere_box.cpp`                                              |                                                               |
-| `sphere_box_corner`                  | DONE   | `test_sphere_box.cpp`                                              |                                                               |
-| `sphere_box_edge`                    | DONE   | `test_sphere_box.cpp`                                              |                                                               |
-| `sphere_box_center_inside`           | DONE   | `test_sphere_box.cpp`                                              | Deep penetration                                              |
-| `sphere_box_determinism`             | DONE   | `test_sphere_box.cpp`                                              |                                                               |
-| `sphere_box_pair_order`              | DONE   | `test_sphere_box.cpp`                                              |                                                               |
-| `sphere_capsule_middle`              | DONE   | `test_capsule_capsule.cpp`                                         |                                                               |
-| `sphere_capsule_caps`                | DONE   | `test_capsule_capsule.cpp`                                         | Both endpoints                                                |
-| `sphere_cylinder_side`               | DONE   | `test_cylinder.cpp`                                                |                                                               |
-| `sphere_cylinder_top`                | DONE   | `test_cylinder.cpp`                                                |                                                               |
-| `sphere_cylinder_top_edge`           | DONE   | `test_cylinder.cpp`                                                | Edge between cap + side                                       |
-| `sphere_plane_*`                     | DONE   | `test_plane.cpp`                                                   |                                                               |
-| `sphere_mesh_basic`                  | DONE   | `test_mesh_mesh.cpp`, `test_dart_collision_detector.cpp`           |                                                               |
-| `sphere_mesh_pair_order`             | DONE   | `test_dart_collision_detector.cpp`                                 | Renamed in Round 5                                            |
-| `sphere_convex_intersecting`         | DONE   | `test_convex.cpp`                                                  |                                                               |
-| `sphere_sdf_distance`                | DONE   | `test_sdf_compare.cpp`                                             |                                                               |
-| `sphere_compound_basic`              | DONE   | `test_compound.cpp`                                                |                                                               |
-| `boxbox_basic`                       | DONE   | `test_box_box.cpp`                                                 |                                                               |
-| `boxbox_separated_axis_xyz`          | DONE   | `test_box_box.cpp`                                                 |                                                               |
-| `boxbox_touching`                    | DONE   | `test_box_box.cpp`                                                 |                                                               |
-| `boxbox_overlapping_face_patch`      | DONE   | `test_box_box.cpp::RotatedBoxOnFlatGroundEmitsFacePatch`           | Rotated near-face patch emits >=3 clipped contacts            |
-| `boxbox_edge_edge`                   | DONE   | `test_box_box.cpp::EdgeEdgeTiltedContactEmitsSingleSupportPoint`   | Edge-edge tilted contact — Round 7                            |
-| `boxbox_face_vertex`                 | DONE   | `test_box_box.cpp::FaceVertexContactAgainstGroundFace`             | One vertex against opposing face — Round 7                    |
-| `boxbox_rotated_on_ground`           | DONE   | `test_box_box.cpp` + `test_world.cpp`                              | Static contact patch + dynamic rest checks                    |
-| `boxbox_rotated_settles_on_face`     | DONE   | `test_world.cpp::DefaultNativeRotatedBoxSettlesOnFace`             | Dynamic rest condition — Round 7 acceptance #2                |
-| `boxbox_15s_no_tunneling`            | DONE   | `test_world.cpp::DefaultNativeRotatedBoxStaysOnGround15s`          | Long-horizon stability — Round 7 acceptance #3                |
-| `boxbox_sat_axis_no_flicker`         | DONE   | `test_box_box.cpp::SatAxisStableForNearFaceBoxGroundPerturbations` | SAT axis stability under perturbation — Round 7 acceptance #5 |
-| `boxbox_determinism`                 | DONE   | `test_box_box.cpp:411`                                             |                                                               |
-| `boxbox_pair_order_swap`             | DONE   | `test_box_box.cpp:427`                                             | Round 3                                                       |
-| `boxbox_distance`                    | DONE   | `test_distance_core.cpp`                                           |                                                               |
-| `box_capsule_*`                      | DONE   | `test_capsule_capsule.cpp`                                         | Face / corner / penetrating / rotated                         |
-| `box_cylinder_*`                     | DONE   | `test_cylinder.cpp`                                                | Side / face / on-top / axial cap patch                        |
-| `box_plane_*`                        | DONE   | `test_plane.cpp`                                                   |                                                               |
-| `box_mesh_colliding`                 | DONE   | `test_mesh_mesh.cpp`                                               |                                                               |
-| `box_mesh_large_flat_patch_capped`   | DONE   | `test_mesh_mesh.cpp`                                               |                                                               |
-| `box_convex_intersecting`            | DONE   | `test_convex.cpp`                                                  |                                                               |
-| `box_compound_basic`                 | DONE   | `test_compound.cpp`                                                |                                                               |
-| `capsule_capsule_parallel_overlap`   | DONE   | `test_capsule_capsule.cpp`                                         |                                                               |
-| `capsule_capsule_end_to_end`         | DONE   | `test_capsule_capsule.cpp`                                         |                                                               |
-| `capsule_capsule_perpendicular`      | DONE   | `test_capsule_capsule.cpp`                                         |                                                               |
-| `capsule_capsule_distance`           | DONE   | `test_capsule_capsule.cpp`                                         |                                                               |
-| `capsule_plane_standing`             | DONE   | `test_plane.cpp`                                                   |                                                               |
-| `capsule_plane_lying`                | DONE   | `test_plane.cpp`                                                   |                                                               |
-| `capsule_cylinder_*`                 | DONE   | `test_cylinder.cpp`                                                | Parallel + capsule-on-top                                     |
-| `capsule_mesh`                       | DONE   | `test_mesh_mesh.cpp::CapsuleVsMeshPairOrder`                       |                                                               |
-| `capsule_convex`                     | DONE   | `test_convex.cpp::CapsuleConvexPairOrder`                          |                                                               |
-| `capsule_sdf`                        | DONE   | `test_sdf_compare.cpp`                                             |                                                               |
-| `capsule_compound`                   | DONE   | `test_compound.cpp::CapsulePairOrder`                              |                                                               |
-| `cylinder_cylinder_parallel_overlap` | DONE   | `test_cylinder.cpp`                                                |                                                               |
-| `cylinder_cylinder_stacked`          | DONE   | `test_cylinder.cpp`                                                |                                                               |
-| `cylinder_cylinder_perpendicular`    | DONE   | `test_cylinder.cpp`                                                |                                                               |
-| `cylinder_plane_*`                   | DONE   | `test_cylinder.cpp`                                                | Standing / lying / tilted / distance                          |
-| `cylinder_mesh`                      | DONE   | `test_mesh_mesh.cpp::CylinderVsMeshPairOrder`                      |                                                               |
-| `cylinder_convex`                    | DONE   | `test_convex.cpp::CylinderConvexPairOrder`                         |                                                               |
-| `cylinder_sdf`                       | DONE   | `test_sdf_compare.cpp::CylinderSdfPairOrder`                       | Distance support                                              |
-| `cylinder_compound`                  | DONE   | `test_compound.cpp::CylinderPairOrder`                             |                                                               |
-| `plane_mesh_penetrating`             | DONE   | `test_plane.cpp`                                                   |                                                               |
-| `plane_mesh_broadphase_path`         | DONE   | `test_dart_collision_detector.cpp`                                 |                                                               |
-| `plane_mesh_pair_order`              | DONE   | `test_narrow_phase.cpp`                                            |                                                               |
-| `plane_convex`                       | DONE   | `test_convex.cpp::PlaneConvexPairOrder`                            |                                                               |
-| `plane_compound`                     | DONE   | `test_compound.cpp::PlanePairOrder`                                |                                                               |
-| `mesh_mesh_basic`                    | DONE   | `test_mesh_mesh.cpp`                                               |                                                               |
-| `mesh_mesh_separated`                | DONE   | `test_mesh_mesh.cpp`                                               |                                                               |
-| `mesh_mesh_single_triangle_vs_large` | DONE   | `test_mesh_mesh.cpp`                                               |                                                               |
-| `mesh_mesh_contact_plane`            | DONE   | `test_mesh_contact_regression.cpp`                                 |                                                               |
-| `mesh_convex`                        | DONE   | `test_convex.cpp::MeshConvexPairOrder`                             | Routes through GJK                                            |
-| `mesh_sdf`                           | DONE   | `test_sdf_compare.cpp::MeshSdfPairOrder`                           | Distance support                                              |
-| `mesh_compound`                      | DONE   | `test_compound.cpp::MeshPairOrder`                                 |                                                               |
-| `convex_convex_intersecting`         | DONE   | `test_convex.cpp`                                                  |                                                               |
-| `convex_convex_separated`            | DONE   | `test_convex.cpp`                                                  |                                                               |
-| `convex_convex_rotated`              | DONE   | `test_convex.cpp`                                                  |                                                               |
-| `convex_sdf`                         | DONE   | `test_sdf_compare.cpp::ConvexSdfPairOrder`                         | Distance support                                              |
-| `convex_compound`                    | DONE   | `test_compound.cpp::ConvexPairOrder`                               |                                                               |
-| `sdf_sdf`                            | DONE   | `test_sdf_compare.cpp::SdfSdfPairOrder`                            | Distance support                                              |
-| `sdf_compound`                       | DONE   | `test_sdf_compare.cpp::CompoundSdfPairOrder`                       | Distance support                                              |
-| `compound_compound_basic`            | DONE   | `test_compound.cpp`                                                |                                                               |
-| `compound_compound_separated`        | DONE   | `test_compound.cpp`                                                |                                                               |
+| Codename                             | Status | Source                                                              | Notes                                                         |
+| ------------------------------------ | ------ | ------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `sphere_sphere_basic`                | DONE   | `test_sphere_sphere.cpp`, `test_narrow_phase.cpp`                   | Multi-config sweep                                            |
+| `sphere_sphere_zero_radius`          | DONE   | `test_sphere_sphere.cpp::ZeroRadius`                                | Degenerate radius                                             |
+| `sphere_sphere_concentric`           | DONE   | `test_sphere_sphere.cpp`                                            | Coincident centers                                            |
+| `sphere_sphere_determinism`          | DONE   | `test_sphere_sphere.cpp`                                            |                                                               |
+| `sphere_sphere_pair_order`           | DONE   | `test_sphere_sphere.cpp`                                            |                                                               |
+| `sphere_box_face`                    | DONE   | `test_sphere_box.cpp`                                               |                                                               |
+| `sphere_box_corner`                  | DONE   | `test_sphere_box.cpp`                                               |                                                               |
+| `sphere_box_edge`                    | DONE   | `test_sphere_box.cpp`                                               |                                                               |
+| `sphere_box_center_inside`           | DONE   | `test_sphere_box.cpp`                                               | Deep penetration                                              |
+| `sphere_box_determinism`             | DONE   | `test_sphere_box.cpp`                                               |                                                               |
+| `sphere_box_pair_order`              | DONE   | `test_sphere_box.cpp`                                               |                                                               |
+| `sphere_capsule_middle`              | DONE   | `test_capsule_capsule.cpp`                                          |                                                               |
+| `sphere_capsule_caps`                | DONE   | `test_capsule_capsule.cpp`                                          | Both endpoints                                                |
+| `sphere_cylinder_side`               | DONE   | `test_cylinder.cpp`                                                 |                                                               |
+| `sphere_cylinder_top`                | DONE   | `test_cylinder.cpp`                                                 |                                                               |
+| `sphere_cylinder_top_edge`           | DONE   | `test_cylinder.cpp`                                                 | Edge between cap + side                                       |
+| `sphere_plane_*`                     | DONE   | `test_plane.cpp`                                                    |                                                               |
+| `sphere_mesh_basic`                  | DONE   | `test_mesh_mesh.cpp`, `test_dart_collision_detector.cpp`            |                                                               |
+| `sphere_mesh_pair_order`             | DONE   | `test_dart_collision_detector.cpp`                                  | Renamed in Round 5                                            |
+| `sphere_convex_intersecting`         | DONE   | `test_convex.cpp`                                                   |                                                               |
+| `sphere_sdf_distance`                | DONE   | `test_sdf_compare.cpp`                                              |                                                               |
+| `sphere_compound_basic`              | DONE   | `test_compound.cpp`                                                 |                                                               |
+| `boxbox_basic`                       | DONE   | `test_box_box.cpp`                                                  |                                                               |
+| `boxbox_separated_axis_xyz`          | DONE   | `test_box_box.cpp`                                                  |                                                               |
+| `boxbox_touching`                    | DONE   | `test_box_box.cpp`                                                  |                                                               |
+| `boxbox_overlapping_face_patch`      | DONE   | `test_box_box.cpp::RotatedBoxOnFlatGroundEmitsFacePatch`            | Rotated near-face patch emits >=3 clipped contacts            |
+| `boxbox_edge_edge`                   | DONE   | `test_box_box.cpp::EdgeEdgeTiltedContactEmitsSingleSupportPoint`    | Edge-edge tilted contact — Round 7                            |
+| `boxbox_face_vertex`                 | DONE   | `test_box_box.cpp::FaceVertexContactAgainstGroundFace`              | One vertex against opposing face — Round 7                    |
+| `boxbox_rotated_on_ground`           | DONE   | `test_box_box.cpp` + `test_world.cpp`                               | Static contact patch + dynamic rest checks                    |
+| `boxbox_rotated_settles_on_face`     | DONE   | `test_world.cpp::DefaultNativeRotatedBoxSettlesOnFace`              | Dynamic rest condition — Round 7 acceptance #2                |
+| `boxbox_15s_no_tunneling`            | DONE   | `test_world.cpp::DefaultNativeRotatedBoxStaysOnGround15s`           | Long-horizon stability — Round 7 acceptance #3                |
+| `boxbox_sat_axis_no_flicker`         | DONE   | `test_box_box.cpp::SatAxisStableForNearFaceBoxGroundPerturbations`  | SAT axis stability under perturbation — Round 7 acceptance #5 |
+| `boxbox_determinism`                 | DONE   | `test_box_box.cpp:411`                                              |                                                               |
+| `boxbox_pair_order_swap`             | DONE   | `test_box_box.cpp:427`                                              | Round 3                                                       |
+| `boxbox_distance`                    | DONE   | `test_distance_core.cpp`                                            |                                                               |
+| `box_capsule_*`                      | DONE   | `test_capsule_capsule.cpp`                                          | Face / corner / penetrating / rotated                         |
+| `box_cylinder_*`                     | DONE   | `test_cylinder.cpp`                                                 | Side / face / on-top / axial cap patch                        |
+| `box_plane_*`                        | DONE   | `test_plane.cpp`                                                    |                                                               |
+| `box_mesh_colliding`                 | DONE   | `test_mesh_mesh.cpp`                                                |                                                               |
+| `box_mesh_large_flat_patch_capped`   | DONE   | `test_mesh_mesh.cpp`                                                |                                                               |
+| `box_mesh_atlas_foot_ground`         | DONE   | `test_world.cpp::AtlasSimbiconFeetContactGroundWithNativeCollision` | Real Atlas foot mesh vs ground box regression                 |
+| `box_convex_intersecting`            | DONE   | `test_convex.cpp`                                                   |                                                               |
+| `box_compound_basic`                 | DONE   | `test_compound.cpp`                                                 |                                                               |
+| `capsule_capsule_parallel_overlap`   | DONE   | `test_capsule_capsule.cpp`                                          |                                                               |
+| `capsule_capsule_end_to_end`         | DONE   | `test_capsule_capsule.cpp`                                          |                                                               |
+| `capsule_capsule_perpendicular`      | DONE   | `test_capsule_capsule.cpp`                                          |                                                               |
+| `capsule_capsule_distance`           | DONE   | `test_capsule_capsule.cpp`                                          |                                                               |
+| `capsule_plane_standing`             | DONE   | `test_plane.cpp`                                                    |                                                               |
+| `capsule_plane_lying`                | DONE   | `test_plane.cpp`                                                    |                                                               |
+| `capsule_cylinder_*`                 | DONE   | `test_cylinder.cpp`                                                 | Parallel + capsule-on-top                                     |
+| `capsule_mesh`                       | DONE   | `test_mesh_mesh.cpp::CapsuleVsMeshPairOrder`                        |                                                               |
+| `capsule_convex`                     | DONE   | `test_convex.cpp::CapsuleConvexPairOrder`                           |                                                               |
+| `capsule_sdf`                        | DONE   | `test_sdf_compare.cpp`                                              |                                                               |
+| `capsule_compound`                   | DONE   | `test_compound.cpp::CapsulePairOrder`                               |                                                               |
+| `cylinder_cylinder_parallel_overlap` | DONE   | `test_cylinder.cpp`                                                 |                                                               |
+| `cylinder_cylinder_stacked`          | DONE   | `test_cylinder.cpp`                                                 |                                                               |
+| `cylinder_cylinder_perpendicular`    | DONE   | `test_cylinder.cpp`                                                 |                                                               |
+| `cylinder_plane_*`                   | DONE   | `test_cylinder.cpp`                                                 | Standing / lying / tilted / distance                          |
+| `cylinder_mesh`                      | DONE   | `test_mesh_mesh.cpp::CylinderVsMeshPairOrder`                       |                                                               |
+| `cylinder_convex`                    | DONE   | `test_convex.cpp::CylinderConvexPairOrder`                          |                                                               |
+| `cylinder_sdf`                       | DONE   | `test_sdf_compare.cpp::CylinderSdfPairOrder`                        | Distance support                                              |
+| `cylinder_compound`                  | DONE   | `test_compound.cpp::CylinderPairOrder`                              |                                                               |
+| `plane_mesh_penetrating`             | DONE   | `test_plane.cpp`                                                    |                                                               |
+| `plane_mesh_broadphase_path`         | DONE   | `test_dart_collision_detector.cpp`                                  |                                                               |
+| `plane_mesh_pair_order`              | DONE   | `test_narrow_phase.cpp`                                             |                                                               |
+| `plane_convex`                       | DONE   | `test_convex.cpp::PlaneConvexPairOrder`                             |                                                               |
+| `plane_compound`                     | DONE   | `test_compound.cpp::PlanePairOrder`                                 |                                                               |
+| `mesh_mesh_basic`                    | DONE   | `test_mesh_mesh.cpp`                                                |                                                               |
+| `mesh_mesh_separated`                | DONE   | `test_mesh_mesh.cpp`                                                |                                                               |
+| `mesh_mesh_single_triangle_vs_large` | DONE   | `test_mesh_mesh.cpp`                                                |                                                               |
+| `mesh_mesh_contact_plane`            | DONE   | `test_mesh_contact_regression.cpp`                                  |                                                               |
+| `mesh_convex`                        | DONE   | `test_convex.cpp::MeshConvexPairOrder`                              | Routes through GJK                                            |
+| `mesh_sdf`                           | DONE   | `test_sdf_compare.cpp::MeshSdfPairOrder`                            | Distance support                                              |
+| `mesh_compound`                      | DONE   | `test_compound.cpp::MeshPairOrder`                                  |                                                               |
+| `convex_convex_intersecting`         | DONE   | `test_convex.cpp`                                                   |                                                               |
+| `convex_convex_separated`            | DONE   | `test_convex.cpp`                                                   |                                                               |
+| `convex_convex_rotated`              | DONE   | `test_convex.cpp`                                                   |                                                               |
+| `convex_sdf`                         | DONE   | `test_sdf_compare.cpp::ConvexSdfPairOrder`                          | Distance support                                              |
+| `convex_compound`                    | DONE   | `test_compound.cpp::ConvexPairOrder`                                |                                                               |
+| `sdf_sdf`                            | DONE   | `test_sdf_compare.cpp::SdfSdfPairOrder`                             | Distance support                                              |
+| `sdf_compound`                       | DONE   | `test_sdf_compare.cpp::CompoundSdfPairOrder`                        | Distance support                                              |
+| `compound_compound_basic`            | DONE   | `test_compound.cpp`                                                 |                                                               |
+| `compound_compound_separated`        | DONE   | `test_compound.cpp`                                                 |                                                               |
 
 **Adapter-routed shapes** (DART has these dynamics shapes but the
 native taxonomy does not have a dedicated `ShapeType` for them; they
@@ -346,12 +347,12 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 
 ## Summary Counters (as of 2026-05-15)
 
-- **§1 Pair-wise narrow-phase:** 73 DONE, 0 PARTIAL, 7 GAP (of 80 rows)
+- **§1 Pair-wise narrow-phase:** 74 DONE, 0 PARTIAL, 7 GAP (of 81 rows)
 - **§2 Algorithm-level:** 31 DONE, 2 PARTIAL, 11 GAP (of 44 rows)
 - **§3 Stress / regression:** 17 DONE, 1 PARTIAL, 15 GAP (of 33 rows)
 - **§4 Benchmarks:** 22 DONE, 0 PARTIAL, 6 GAP (of 28 rows)
 - **§5 Infrastructure:** 8 DONE, 0 PARTIAL, 1 GAP (of 9 rows)
-- **TOTAL:** 151 DONE, 3 PARTIAL, 40 GAP (of 194 rows)
+- **TOTAL:** 152 DONE, 3 PARTIAL, 40 GAP (of 195 rows)
 
 DART native is currently at ~78% of the proposed superset, with the
 remaining coverage concentrated in: (a) BVH/CCD algorithm-isolation rows,

@@ -3339,6 +3339,23 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     Strict setup-collision sanity remains on the fixed colliding rows; the
     edge-case lane now times boundary and near-miss setups without emitting
     benchmark error rows.
+- Current local Atlas/hello-world regression coverage refresh:
+  - Commit: current working tree after local head `debd057e44f`
+    (`Extend raw narrow-phase reference benchmarks`).
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_simulation_World --parallel 5`,
+    `./build/default/cpp/Release/bin/INTEGRATION_simulation_World --gtest_filter=World.AtlasSimbiconFeetContactGroundWithNativeCollision`,
+    `./build/default/cpp/Release/bin/UNIT_simulation_World --gtest_filter='WorldTests.DefaultNativeBoxRestsOnGround:WorldTests.DefaultNativeRotatedBoxRestsOnGround:WorldTests.DefaultNativeRotatedBoxSettlesOnFace:WorldTests.DefaultNativeRotatedBoxStaysOnGround15s'`,
+    and `./build/default/cpp/Release/bin/INTEGRATION_simulation_World`.
+  - Result: passed. The new Atlas Simbicon smoke loads the exact
+    `ground.urdf` and `atlas_v3_no_head.sdf` assets, keeps the default
+    native `dart` detector active, isolates the `l_foot`/`r_foot` collision
+    shapes against the ground, and verifies foot-ground contacts with an
+    upward foot normal while the foot collision extents remain at the ground
+    plane within tolerance. The existing default-world box/ground tests passed
+    4/4, covering the `hello_world`-style upright and rotated falling-box
+    scenes, including the 15-second no-tunneling guard. The full integration
+    world executable passed 17/17 tests with the new Atlas coverage included.
 
 ## Known Risks
 

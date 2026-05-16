@@ -753,6 +753,28 @@ Validation passed on the post-refresh tree:
   listed primitive pairs, and the raw-reference task reported
   `collision benchmark check: 1 passed, 0 failed, 0 skipped, 23 reported`.
 
+## Round 15 Spot-Check
+
+The reported example regressions now have direct local coverage on the current
+post-Round-14 tree. `tests/integration/simulation/test_world.cpp` adds
+`World.AtlasSimbiconFeetContactGroundWithNativeCollision`, which loads the
+Atlas Simbicon ground and robot assets, keeps the default native `dart`
+detector active, and checks `l_foot`/`r_foot` mesh collision shapes against
+the ground box for contacts with an upward foot normal. The existing
+`UNIT_simulation_World` default-native box/ground tests remain the
+`hello_world`-style dynamic guard, including the 15-second no-tunneling case.
+
+Validation passed:
+
+- `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_simulation_World --parallel 5`
+  passed.
+- `./build/default/cpp/Release/bin/INTEGRATION_simulation_World --gtest_filter=World.AtlasSimbiconFeetContactGroundWithNativeCollision`
+  passed.
+- `./build/default/cpp/Release/bin/UNIT_simulation_World --gtest_filter='WorldTests.DefaultNativeBoxRestsOnGround:WorldTests.DefaultNativeRotatedBoxRestsOnGround:WorldTests.DefaultNativeRotatedBoxSettlesOnFace:WorldTests.DefaultNativeRotatedBoxStaysOnGround15s'`
+  passed 4/4 tests.
+- `./build/default/cpp/Release/bin/INTEGRATION_simulation_World` passed 17/17
+  tests with the new Atlas coverage included.
+
 ## Prompt-To-Artifact Checklist
 
 | Requirement                                                                                                                  | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Status  |

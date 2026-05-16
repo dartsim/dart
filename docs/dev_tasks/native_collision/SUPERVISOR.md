@@ -3048,3 +3048,20 @@ Validation passed on the post-Round-6 tree:
 exited 0 with `collision benchmark check: 1 passed, 0 failed, 0 skipped, 23 reported`.
 The benchmark binary's built-in accuracy verification passed for the primitive
 pairs listed in the benchmark output.
+
+## Atlas/Hello-World Regression Local Completion Notes (Codex, 2026-05-15)
+
+The reported `hello_world` and Atlas Simbicon ground-contact regressions now
+have focused local coverage. `UNIT_simulation_World` already covers the
+`hello_world`-style default-native box/ground dynamic path, including upright,
+rotated, face-settling, and 15-second no-tunneling checks. The current working
+tree adds `World.AtlasSimbiconFeetContactGroundWithNativeCollision` to
+`INTEGRATION_simulation_World`; it loads the Atlas Simbicon ground and robot
+assets, keeps the default native `dart` detector, isolates `l_foot`/`r_foot`
+collision shapes against the ground, and asserts contact generation with an
+upward foot normal.
+
+Validation passed on the post-Q4 tree: `INTEGRATION_simulation_World` rebuilt,
+the focused Atlas Simbicon contact test passed, the four focused
+default-native box/ground tests passed, and the full
+`INTEGRATION_simulation_World` executable passed 17/17 tests.
