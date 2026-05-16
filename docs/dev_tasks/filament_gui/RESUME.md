@@ -819,25 +819,26 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`1297aca1fe6 Restore drag and drop affordances`. The current pending
-checkpoint is `examples/human_joint_limits/` strict audit. The implementation
-restores the live SKEL world, preserves the file timestep/Y-down gravity, keeps
-the ground static, enables joint-limit enforcement on every human joint,
-restores the 640x480 default launch size, prints Space instructions, adds
-README coverage, and adds marker guards through public `dart::gui`. The
-historical TinyDNN-backed custom arm/leg constraints remain a named
-dependency/API follow-up because the current maintained dependency stack no
-longer carries TinyDNN.
+`63f990d5251 Restore panel extension example`. The current pending checkpoint
+is `examples/csv_logger/` strict audit. Historical comparison shows
+`examples/csv_logger/main.cpp` and `examples/csv_logger/README.md` match
+`520993d7301^` exactly, so this slice preserves the non-GUI command-line CSV
+logger instead of migrating it to `dart::gui`. Add marker guards for the
+world/output/steps/time-step/skeleton/body CLI contract, exact CSV header and
+row-count behavior, README expectations, and absence of renderer dependencies;
+then validate a short executable run that writes a CSV file.
 
 ## Current Immediate Next Step
 
-Commit and push the local `examples/human_joint_limits/` checkpoint without
-opening a PR. Completed validation includes focused build/CTest, direct and
-pixi headless screenshot analyzer checks, Python example-runner tests,
-aggregate `examples` build, mandatory `pixi run lint`, and post-lint focused
-build/CTest/direct screenshot smoke. Keep `--screenshot <path>` and
-`--out <dir>` working for the existing CTest, GitHub Actions smoke path, and
-historical image-sequence workflows. A later broader smoke sweep can still use:
+Implement and push the local `examples/csv_logger/` checkpoint without opening
+a PR. Completed pre-lint validation is focused build for `csv_logger` and
+`UNIT_gui_FilamentSceneExtraction`, focused CTest, a direct short CSV run
+checking header and row count, Python C++ example-runner coverage, and the
+aggregate `examples` build. Remaining checkpoint validation is mandatory
+`pixi run lint` and post-lint focused checks; those have also passed locally.
+Commit and push the checkpoint. Keep `--screenshot <path>` and `--out <dir>`
+working for the existing CTest, GitHub Actions smoke path, and historical
+image-sequence workflows. A later broader smoke sweep can still use:
 
 ```bash
 pixi run test-dart-gui-smoke

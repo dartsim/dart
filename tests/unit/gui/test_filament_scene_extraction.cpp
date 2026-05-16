@@ -807,6 +807,50 @@ TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
   }
 }
 
+TEST(FilamentSceneExtraction, CsvLoggerPreservesNonGuiLoggingContract)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "csv_logger" / "main.cpp");
+  const auto cmakeSource = readSourceFile(
+      std::filesystem::path("examples") / "csv_logger" / "CMakeLists.txt");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "csv_logger" / "README.md");
+
+  EXPECT_NE(
+      mainSource.find("dart://sample/sdf/double_pendulum.world"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("simulation_log.csv"), std::string::npos);
+  EXPECT_NE(mainSource.find("std::size_t steps = 1000"), std::string::npos);
+  EXPECT_NE(mainSource.find("double timeStep = 0.001"), std::string::npos);
+  EXPECT_NE(mainSource.find("--world <uri>"), std::string::npos);
+  EXPECT_NE(mainSource.find("--output <path>"), std::string::npos);
+  EXPECT_NE(mainSource.find("--steps <n>"), std::string::npos);
+  EXPECT_NE(mainSource.find("--dt <seconds>"), std::string::npos);
+  EXPECT_NE(mainSource.find("--skeleton <name>"), std::string::npos);
+  EXPECT_NE(mainSource.find("--body <name>"), std::string::npos);
+  EXPECT_NE(mainSource.find("dart::io::readWorld"), std::string::npos);
+  EXPECT_NE(mainSource.find("world->setTimeStep"), std::string::npos);
+  EXPECT_NE(mainSource.find("world->getSkeleton(0)"), std::string::npos);
+  EXPECT_NE(mainSource.find("skeleton->getBodyNode(0)"), std::string::npos);
+  EXPECT_NE(mainSource.find("time,com_x,com_y,com_z,"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("body_qw,body_qx,body_qy,body_qz"), std::string::npos);
+  EXPECT_NE(mainSource.find("skeleton->getCOM()"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("bodyNode->getWorldTransform()"), std::string::npos);
+  EXPECT_NE(mainSource.find("logRow();"), std::string::npos);
+  EXPECT_NE(mainSource.find("world->step()"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.steps + 1"), std::string::npos);
+
+  EXPECT_NE(readmeSource.find("CSV Logger Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("external tooling"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Pass `--help`"), std::string::npos);
+
+  EXPECT_EQ(mainSource.find("dart/gui"), std::string::npos);
+  EXPECT_EQ(mainSource.find("ApplicationOptions"), std::string::npos);
+  EXPECT_EQ(cmakeSource.find("dart-gui"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, HelloWorldExamplePreservesParityMarkers)
 {
   const auto mainSource = readSourceFile(

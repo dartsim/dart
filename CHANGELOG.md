@@ -201,6 +201,9 @@
     through public `dart::gui`.
   - Restored hardcoded-design example joint keyboard controls, camera default,
     and example README through public `dart::gui`.
+  - Preserved the `csv_logger` example's non-GUI command-line CSV logging
+    contract and added strict-audit marker coverage so renderer promotion does
+    not pull it into the GUI dependency surface.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

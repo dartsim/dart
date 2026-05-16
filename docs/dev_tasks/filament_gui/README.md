@@ -124,13 +124,18 @@ target rotation/reset keyboard actions through public `dart::gui`, and
 restores shared viewer help text. Exact mouse rotation rings remain a public
 manipulation API follow-up.
 That checkpoint was pushed as
-`ae175ef6981 Restore Fetch target manipulation`. The active strict-audit slice
-is now `examples/imgui/`: migrate it from the current generic box/slider panel
-demo back to the historical panel-extension example shape using public
-`dart::gui`, including target selection/dragging, keydown callbacks, gravity
-control, viewer help, camera/run defaults, README, and explicit public API gaps
-for headlight toggles, camera-inspector text, key release, and render/post-step
-hooks.
+`ae175ef6981 Restore Fetch target manipulation`. The panel-extension strict
+audit for `examples/imgui/` has also been pushed as
+`63f990d5251 Restore panel extension example`; it migrates the generic
+box/slider demo back to the historical panel-extension example shape using
+public `dart::gui`, including target selection/dragging, keydown callbacks,
+gravity control, viewer help, camera/run defaults, README, and explicit public
+API gaps for headlight toggles, camera-inspector text, key release, and
+render/post-step hooks. The active strict-audit slice is now
+`examples/csv_logger/`: historical/current source comparison found it
+unchanged from the pre-promotion baseline, so the checkpoint should document
+the preserved non-GUI CLI logging contract, add marker coverage, validate a
+short CSV run, and avoid adding renderer dependencies.
 An earlier parity slice restored `examples/rigid_shapes`:
 restore the historical shape-spawn/delete/contact keyboard controls, convex
 mesh spawn path, contact-point visualization, camera home, and 640x480 default

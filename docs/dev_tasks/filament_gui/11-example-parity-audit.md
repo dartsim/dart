@@ -428,6 +428,30 @@ public `dart::gui` without direct backend UI or OSG event types.
 | README documents the promoted runner, controls, defaults, headless capture, and remaining public gaps. | Restored.                                 | Current README documents `pixi run ex imgui`, controls, defaults, capture, and API gaps.                                                                  |
 | Keep source free of direct backend UI, viewer, event-handler, and OSG types.                           | Restored through marker guard.            | Source avoids the forbidden backend tokens scanned by `UNIT_gui_FilamentSceneExtraction`.                                                                 |
 
+### CSV Logger Itemized Inventory
+
+Historical sources compared:
+`520993d7301^:examples/csv_logger/main.cpp` and
+`520993d7301^:examples/csv_logger/README.md`.
+
+This is a preserved non-GUI example. The current source and README match the
+pre-promotion files exactly, so restoration means keeping the command-line
+logging workflow intact while the renderer migration proceeds around it.
+
+| Historical item                                                                                                       | Current outcome                | Notes                                                                                                                                             |
+| --------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Load `dart://sample/sdf/double_pendulum.world` by default.                                                            | Preserved.                     | Current source keeps the historical `Options::worldUri` default and `dart::io::readWorld` path.                                                   |
+| Write `simulation_log.csv` by default.                                                                                | Preserved.                     | Current source keeps the historical output path default and `--output` override.                                                                  |
+| Simulate 1000 steps by default and log the initial state plus every stepped state.                                    | Preserved.                     | Current source keeps `steps = 1000`, writes one row before stepping, then writes `steps` more rows.                                               |
+| Accept `--world`, `--output`, `--steps`, `--dt`, `--skeleton`, `--body`, `-h`, and `--help`.                          | Preserved.                     | Current source keeps the historical parser and error handling.                                                                                    |
+| Reject invalid step counts, non-positive time steps, unknown skeletons, unknown bodies, and bad output paths.         | Preserved.                     | Current source keeps the historical validation and diagnostic messages.                                                                           |
+| Use the first skeleton/body by default, with named skeleton/body selection when requested.                            | Preserved.                     | Current source keeps the historical selection behavior.                                                                                           |
+| CSV header is `time,com_x,com_y,com_z,body_x,body_y,body_z,body_qw,body_qx,body_qy,body_qz`.                          | Preserved.                     | Current source keeps the exact header and fixed six-decimal formatting.                                                                           |
+| Log world time, skeleton COM, and selected body translation/orientation quaternion.                                   | Preserved.                     | Current source still computes those values directly from DART simulation state.                                                                   |
+| README explains the external-tooling CSV goal, DART IO/world-step concepts, output, CLI flags, build, and help usage. | Preserved.                     | Current README is unchanged from the historical file.                                                                                             |
+| No GUI renderer migration is required for this example.                                                               | Superseded by non-GUI scope.   | Do not add `dart::gui` or renderer dependencies; the official renderer promotion should leave this CLI example intact.                            |
+| Keep source-marker coverage for the preserved CLI/logging contract.                                                   | Restored through marker guard. | `UNIT_gui_FilamentSceneExtraction` now guards the CLI flags, defaults, CSV header, row count expression, README, and absence of GUI dependencies. |
+
 ## Example Inventory
 
 | Example                     | Current Audit State                                                                | Next Required Action                                                                                                               |
@@ -440,7 +464,7 @@ public `dart::gui` without direct backend UI or OSG event types.
 | `boxes`                     | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm Bullet preference, camera/defaults, README, and guards.                                                                    |
 | `capsule_ground_contact`    | Restored by strict audit.                                                          | Keep marker guards for controls, camera/defaults, README, and no backend types.                                                    |
 | `coupler_constraint`        | Restored by strict audit.                                                          | Keep marker guards for controller, reset key, diagnostics, grid, camera/defaults, README, and no backend types.                    |
-| `csv_logger`                | Needs strict audit.                                                                | Confirm non-GUI logging behavior and README remain intact.                                                                         |
+| `csv_logger`                | Preserved by strict audit as a non-GUI example.                                    | Keep marker guards for CLI flags, CSV header/row count, README, and no GUI renderer dependency.                                    |
 | `drag_and_drop`             | Restored except public rotation-manipulator API gap.                               | Keep marker guards for frame handle, child box, markers, camera/defaults, README, and no backend types.                            |
 | `empty`                     | Restored except public key-release/render-hook API gaps.                           | Keep key-release and pre/post-render hooks tracked as public API follow-ups.                                                       |
 | `fetch`                     | Restored except public mouse rotation-gizmo API gap.                               | Keep marker guards for target handle, orientation keys, help text, grid, camera/defaults, README, and no backend types.            |
