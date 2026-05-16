@@ -55,6 +55,9 @@
   - Stopped generated in-memory mesh shapes from attempting material loads from
     empty file URIs, allowing examples such as `simple_frames` to use
     `ArrowShape` without renderer startup warnings.
+  - Added promoted panel window/menu/collapsible helpers and used them to
+    restore the Fetch example panel geometry, menu bar, scrollbar, Help
+    section, and default-open Simulation controls.
   - Restored the `capsule_ground_contact` example's pose-reset keyboard
     controls, velocity-clear action, camera/run defaults, persistent-manifold
     instructions, and README through public `dart::gui`.

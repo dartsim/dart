@@ -819,48 +819,46 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`68e31a339e4 Restore boxes example instructions`. No rows remain with the exact
+`061bf811d76 Restore simple frames names and arrow`. No rows remain with the
+exact
 `Needs strict audit` state. The current pending checkpoint is
-`examples/simple_frames/` strict re-open. Compare the current source and README
-against `520993d7301^:examples/simple_frames`, write any updated inventory
-findings in `11-example-parity-audit.md`, then preserve, restore, or explicitly
-name any public API gaps before coding past this slice.
+the fresh `examples/fetch/` re-open requested by maintainer correction. Compare
+the current source and README against
+`520993d7301^:examples/fetch/main.cpp`, write any updated inventory findings in
+`11-example-parity-audit.md`, then preserve, restore, or explicitly name any
+public API gaps before coding past this slice.
 
 ## Current Immediate Next Step
 
-Audit `examples/simple_frames/` before coding: compare the current source and
-README to the historical OSG/ImGui source, verify frame geometry, view/frame
-controls, camera/run defaults, README, and marker guards, then repair the
-source or name missing renderer-neutral public API explicitly. Keep
-`--screenshot <path>` and `--out <dir>` working for the existing CTest, GitHub
-Actions smoke path, and historical image-sequence workflows. A later broader
-smoke sweep can still use:
+Audit `examples/fetch/` before coding: compare the current source and README to
+the historical OSG/ImGui source, challenge every previous restored-state
+assumption, and verify the target manipulation affordance, mocap sync, panel
+help text, Play/Pause/Step/Exit/About controls, camera/run defaults,
+headless/image-sequence capture, README, and source-marker guards. Repair any
+remaining gap through promoted `dart::gui` APIs or name the missing
+renderer-neutral public API explicitly before taking another linear cursor. A
+later broader smoke sweep can still use:
 
-Current Simple Frames audit finding: repair historical frame names `F1`, `F2`,
-`F3`, marker names `A`, `A1`, `A2`, `A3`, restore the DART `ArrowShape` instead
-of the line-segment approximation, restore standalone README build/execute
-sections and feature list, and extend marker guards.
+Current Fetch re-open finding: add public panel window/menu/collapsible helpers
+so Fetch can restore the historical `(10, 20)` panel position, `(360, 600)`
+size, `0.5` background alpha, menu bar, horizontal scrollbar, collapsible Help
+section, and default-open Simulation section without direct ImGui or private
+Filament calls in the example.
 
-Implementation state: Simple Frames now restores the historical frame and
-marker names, uses DART `ArrowShape`, restores README build/execute sections
-and feature list, and extends marker coverage. The renderer/dynamics mesh path
-also skips empty material source URIs for generated in-memory mesh shapes so
-`ArrowShape` does not emit empty `file://` startup warnings.
+Implementation state: public `dart::gui::Panel` now carries panel window
+options, `PanelBuilder` now exposes collapsible-header and menu helpers, the
+Filament backend maps those public concepts to ImGui internally, and Fetch uses
+that API to restore its panel geometry, menu bar, scrollbar, Help/Simulation
+sections, Exit/About menu items, and historical `User Guid:` text.
 
-Pre-lint validation passed: focused build for `simple_frames` and
-`UNIT_gui_FilamentSceneExtraction`, focused CTest, direct and pixi headless
-screenshot analyzer checks, Python C++ example-runner tests, aggregate
+Pre-lint validation passed: focused build for `fetch` and
+`UNIT_gui_FilamentSceneExtraction`, focused CTest, direct and pixi Fetch
+headless screenshot analyzer checks, Python C++ example-runner tests, aggregate
 `examples` build, and `git diff --check`.
 
-Post-lint validation passed: `pixi run lint`, focused rebuild for
-`simple_frames` and `UNIT_gui_FilamentSceneExtraction`, focused CTest, direct
-and pixi headless screenshot analyzer checks, and `git diff --check`.
-
-Latest maintainer correction during this checkpoint: many more examples remain
-incompletely restored, and `examples/fetch/` was named again as the concrete
-case. Finish, lint, commit, and push the in-flight Simple Frames checkpoint,
-then re-open Fetch with a fresh comparison against
-`520993d7301^:examples/fetch/main.cpp` before taking another linear cursor.
+Post-lint validation passed: `pixi run lint`, focused rebuild for `fetch` and
+`UNIT_gui_FilamentSceneExtraction`, focused CTest, direct and pixi Fetch
+headless screenshot analyzer checks, and `git diff --check`.
 
 ```bash
 pixi run test-dart-gui-smoke

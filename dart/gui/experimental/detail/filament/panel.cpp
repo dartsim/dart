@@ -79,6 +79,43 @@ public:
     return ImGui::SliderScalar(
         labelValue.c_str(), ImGuiDataType_Double, &value, &minimum, &maximum);
   }
+
+  bool collapsingHeader(std::string_view label, bool defaultOpen) override
+  {
+    const std::string labelValue(label);
+    ImGuiTreeNodeFlags flags = 0;
+    if (defaultOpen) {
+      flags |= ImGuiTreeNodeFlags_DefaultOpen;
+    }
+    return ImGui::CollapsingHeader(labelValue.c_str(), flags);
+  }
+
+  bool beginMenuBar() override
+  {
+    return ImGui::BeginMenuBar();
+  }
+
+  void endMenuBar() override
+  {
+    ImGui::EndMenuBar();
+  }
+
+  bool beginMenu(std::string_view label) override
+  {
+    const std::string labelValue(label);
+    return ImGui::BeginMenu(labelValue.c_str());
+  }
+
+  void endMenu() override
+  {
+    ImGui::EndMenu();
+  }
+
+  bool menuItem(std::string_view label) override
+  {
+    const std::string labelValue(label);
+    return ImGui::MenuItem(labelValue.c_str());
+  }
 };
 
 } // namespace
@@ -183,13 +220,36 @@ void renderApplicationPanels(
 
     const char* title
         = panel.title.empty() ? "DART Controls" : panel.title.c_str();
-    ImGui::SetNextWindowBgAlpha(0.72f);
-    ImGui::SetNextWindowSize(
-        {320.0f * static_cast<float>(guiScale), 0.0f}, ImGuiCond_FirstUseEver);
-    ImGui::Begin(
-        title,
-        nullptr,
-        ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
+    if (panel.initialPosition.has_value()) {
+      ImGui::SetNextWindowPos(
+          {static_cast<float>((*panel.initialPosition)[0] * guiScale),
+           static_cast<float>((*panel.initialPosition)[1] * guiScale)},
+          ImGuiCond_Always);
+    }
+    ImGui::SetNextWindowBgAlpha(
+        static_cast<float>(panel.backgroundAlpha.value_or(0.72)));
+    if (panel.initialSize.has_value()) {
+      ImGui::SetNextWindowSize(
+          {static_cast<float>((*panel.initialSize)[0] * guiScale),
+           static_cast<float>((*panel.initialSize)[1] * guiScale)},
+          ImGuiCond_Always);
+    } else {
+      ImGui::SetNextWindowSize(
+          {320.0f * static_cast<float>(guiScale), 0.0f},
+          ImGuiCond_FirstUseEver);
+    }
+
+    ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoSavedSettings;
+    if (panel.autoResize) {
+      windowFlags |= ImGuiWindowFlags_AlwaysAutoResize;
+    }
+    if (panel.horizontalScrollbar) {
+      windowFlags |= ImGuiWindowFlags_HorizontalScrollbar;
+    }
+    if (panel.menuBar) {
+      windowFlags |= ImGuiWindowFlags_MenuBar;
+    }
+    ImGui::Begin(title, nullptr, windowFlags);
     if (panel.build) {
       panel.build(builder);
     }

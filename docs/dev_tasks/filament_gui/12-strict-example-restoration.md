@@ -275,6 +275,10 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     in-flight Simple Frames checkpoint, then re-open `examples/fetch/` with a
     fresh comparison against `520993d7301^:examples/fetch/main.cpp` before
     selecting another linear cursor.
+26. The Simple Frames names/arrow checkpoint was pushed as
+    `061bf811d76 Restore simple frames names and arrow`. The active cursor is
+    now the fresh `examples/fetch/` re-open requested by maintainer correction;
+    compare it against `520993d7301^:examples/fetch/main.cpp` before coding.
 
 ## Checkpoint Rule
 

@@ -35,7 +35,9 @@
 
 #include <dart/gui/export.hpp>
 
+#include <array>
 #include <functional>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -67,6 +69,36 @@ public:
   virtual bool slider(
       std::string_view label, double& value, double minimum, double maximum)
       = 0;
+
+  virtual bool collapsingHeader(std::string_view, bool = false)
+  {
+    return true;
+  }
+
+  virtual bool beginMenuBar()
+  {
+    return false;
+  }
+
+  virtual void endMenuBar()
+  {
+    // Default no-op for renderers without panel menu bars.
+  }
+
+  virtual bool beginMenu(std::string_view)
+  {
+    return false;
+  }
+
+  virtual void endMenu()
+  {
+    // Default no-op for renderers without panel menus.
+  }
+
+  virtual bool menuItem(std::string_view)
+  {
+    return false;
+  }
 };
 
 struct PanelContext
@@ -81,6 +113,12 @@ struct PanelContext
 struct Panel
 {
   std::string title;
+  std::optional<std::array<double, 2>> initialPosition;
+  std::optional<std::array<double, 2>> initialSize;
+  std::optional<double> backgroundAlpha;
+  bool autoResize = true;
+  bool horizontalScrollbar = false;
+  bool menuBar = false;
   std::function<void(PanelBuilder&)> build;
   std::function<void(PanelBuilder&, PanelContext&)> buildWithContext;
 };

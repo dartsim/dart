@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `68e31a339e4 Restore boxes example instructions`.
+  `061bf811d76 Restore simple frames names and arrow`.
 - Latest pushed code checkpoint:
-  `68e31a339e4 Restore boxes example instructions`.
+  `061bf811d76 Restore simple frames names and arrow`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -149,6 +149,7 @@ history but are not guaranteed to be in chronological order.
   - `b11f7db7d6c Restore Biped Stand instructions`
   - `7af2ad1228d Restore box stacking scene parity`
   - `68e31a339e4 Restore boxes example instructions`
+  - `061bf811d76 Restore simple frames names and arrow`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -744,6 +745,45 @@ history but are not guaranteed to be in chronological order.
   checkpoints restored target manipulation and panel help. After the in-flight
   Simple Frames checkpoint is committed and pushed, re-open Fetch with a fresh
   historical-source comparison before selecting another linear cursor.
+- The Simple Frames names/arrow checkpoint was pushed as
+  `061bf811d76 Restore simple frames names and arrow`; do not wait for CI
+  before continuing independent strict-audit work.
+- Active slice is now a fresh `examples/fetch/` re-open. Compare the current
+  source and README against `520993d7301^:examples/fetch/main.cpp`, challenge
+  prior restored-state wording, and repair any remaining Fetch behavior gap
+  through promoted `dart::gui` or name the exact public API follow-up before
+  selecting another example cursor.
+- Current Fetch re-open finding before code changes: the world, target, grid,
+  camera, capture, and manipulation behavior are restored, but the promoted
+  panel API still cannot express the historical panel window position/size,
+  background alpha, menu bar, horizontal scrollbar, or collapsible Help and
+  Simulation sections. Repair this by adding renderer-neutral public panel
+  window/menu/collapsible helpers and using them from Fetch; do not reintroduce
+  direct ImGui or private Filament calls in the example.
+- Fetch panel-window implementation state: `dart::gui::Panel` now exposes
+  renderer-neutral initial position, initial size, background alpha,
+  auto-resize, horizontal-scrollbar, and menu-bar options, while
+  `PanelBuilder` exposes collapsible-header and menu helpers. The Filament
+  implementation maps those public concepts to ImGui internally, and
+  `examples/fetch/` uses them to restore the historical `(10, 20)` panel
+  position, `(360, 600)` size, `0.5` alpha, menu bar, horizontal scrollbar,
+  collapsible `Help`, default-open `Simulation`, `Menu -> Exit`,
+  `Help -> About DART`, and historical `User Guid:` text.
+- Fetch panel-window pre-lint validation: focused build for `fetch` and
+  `UNIT_gui_FilamentSceneExtraction` passed, focused CTest passed, direct
+  llvmpipe Fetch screenshot passed analyzer coverage
+  (`/tmp/dart_fetch_panel_window_direct.ppm`, 1213047/1228800 nonzero pixels),
+  pixi Fetch screenshot passed analyzer coverage
+  (`/tmp/dart_fetch_panel_window_pixi.ppm`, 303780/307200 nonzero pixels),
+  Python C++ example-runner tests passed (67/67), aggregate `examples` build
+  passed, and `git diff --check` passed.
+- Fetch panel-window post-lint validation: `pixi run lint` passed, focused
+  rebuild for `fetch` and `UNIT_gui_FilamentSceneExtraction` passed, focused
+  CTest passed, direct llvmpipe Fetch screenshot passed analyzer coverage
+  (`/tmp/dart_fetch_panel_window_direct_postlint.ppm`, 1213038/1228800
+  nonzero pixels), pixi Fetch screenshot passed analyzer coverage
+  (`/tmp/dart_fetch_panel_window_pixi_postlint.ppm`, 303774/307200 nonzero
+  pixels), and `git diff --check` passed.
 
 ## Current Code Shape
 

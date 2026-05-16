@@ -8,7 +8,8 @@
   per-step callbacks.
 - Expected output: a Fetch robot, object, work-area grid, and draggable
   transparent green target handle with local-axis arrowheads, planar translation
-  guides, and rotation rings.
+  guides, rotation rings, and a restored Fetch control panel with menu and
+  collapsible help/simulation sections.
 - Controls: select the green target handle, then Ctrl-left drag it or move it
   with the keyboard selection controls. Hold X/Y/Z while Ctrl-dragging to
   constrain motion to one world axis. Ctrl-Shift-left drag rotates the selected

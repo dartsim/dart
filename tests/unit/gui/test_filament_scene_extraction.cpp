@@ -263,6 +263,42 @@ public:
     return true;
   }
 
+  bool collapsingHeader(std::string_view label, bool defaultOpen) override
+  {
+    events.emplace_back(
+        "collapsing:" + std::string(label) + ":"
+        + (defaultOpen ? "open" : "closed"));
+    return true;
+  }
+
+  bool beginMenuBar() override
+  {
+    events.emplace_back("begin-menu-bar");
+    return true;
+  }
+
+  void endMenuBar() override
+  {
+    events.emplace_back("end-menu-bar");
+  }
+
+  bool beginMenu(std::string_view label) override
+  {
+    events.emplace_back("begin-menu:" + std::string(label));
+    return true;
+  }
+
+  void endMenu() override
+  {
+    events.emplace_back("end-menu");
+  }
+
+  bool menuItem(std::string_view label) override
+  {
+    events.emplace_back("menu-item:" + std::string(label));
+    return true;
+  }
+
   bool buttonPressed = true;
   bool checkboxValue = true;
   std::vector<std::string> events;
@@ -656,8 +692,20 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   dart::gui::Panel panel;
   panel.title = "Controls";
   panel.build = [&](dart::gui::PanelBuilder& builder) {
+    if (builder.beginMenuBar()) {
+      if (builder.beginMenu("Menu")) {
+        if (builder.menuItem("Exit")) {
+          ++clicks;
+        }
+        builder.endMenu();
+      }
+      builder.endMenuBar();
+    }
     builder.text("custom controls");
     builder.separator();
+    if (builder.collapsingHeader("Advanced", true)) {
+      builder.text("advanced controls");
+    }
     if (builder.button("Trigger")) {
       ++clicks;
     }
@@ -677,7 +725,7 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   panel.build(builder);
   panel.buildWithContext(builder, context);
 
-  EXPECT_EQ(clicks, 1);
+  EXPECT_EQ(clicks, 2);
   EXPECT_TRUE(diagnostics);
   EXPECT_DOUBLE_EQ(gain, 1.0);
   EXPECT_EQ(selectedLabel, "box");
@@ -685,8 +733,15 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   EXPECT_EQ(
       builder.events,
       (std::vector<std::string>{
+          "begin-menu-bar",
+          "begin-menu:Menu",
+          "menu-item:Exit",
+          "end-menu",
+          "end-menu-bar",
           "text:custom controls",
           "separator",
+          "collapsing:Advanced:open",
+          "text:advanced controls",
           "button:Trigger",
           "same-line",
           "checkbox:Diagnostics",
@@ -1450,9 +1505,14 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
       std::filesystem::path("examples") / "fetch" / "README.md");
   const auto interactionHeader = readSourceFile(
       std::filesystem::path("dart") / "gui" / "interaction.hpp");
+  const auto panelHeader
+      = readSourceFile(std::filesystem::path("dart") / "gui" / "panel.hpp");
   const auto selectionSource = readSourceFile(
       std::filesystem::path("dart") / "gui" / "experimental" / "detail"
       / "filament" / "selection.cpp");
+  const auto panelSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "experimental" / "detail"
+      / "filament" / "panel.cpp");
 
   EXPECT_NE(mainSource.find("#if DART_HAVE_BULLET"), std::string::npos);
   EXPECT_NE(
@@ -1486,13 +1546,33 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
   EXPECT_NE(mainSource.find("syncMocapTarget"), std::string::npos);
   EXPECT_NE(mainSource.find("Fetch robot example"), std::string::npos);
+  EXPECT_NE(mainSource.find("initialPosition"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("std::array<double, 2>{10.0, 20.0}"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("std::array<double, 2>{360.0, 600.0}"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("backgroundAlpha = 0.5"), std::string::npos);
+  EXPECT_NE(mainSource.find("horizontalScrollbar = true"), std::string::npos);
+  EXPECT_NE(mainSource.find("menuBar = true"), std::string::npos);
+  EXPECT_NE(mainSource.find("builder.beginMenuBar()"), std::string::npos);
+  EXPECT_NE(mainSource.find("builder.beginMenu(\"Menu\")"), std::string::npos);
+  EXPECT_NE(mainSource.find("builder.menuItem(\"Exit\")"), std::string::npos);
+  EXPECT_NE(mainSource.find("builder.beginMenu(\"Help\")"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("builder.menuItem(\"About DART\")"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("builder.collapsingHeader(\"Help\")"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("builder.collapsingHeader(\"Simulation\", true)"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("User Guid:"), std::string::npos);
   EXPECT_NE(
       mainSource.find("Point cloud and voxel grid rendering example"),
       std::string::npos);
   EXPECT_NE(
       mainSource.find("whole body motion of the Fetch robot"),
       std::string::npos);
-  EXPECT_NE(mainSource.find("User Guide"), std::string::npos);
   EXPECT_NE(mainSource.find("Left drag orbits"), std::string::npos);
   EXPECT_NE(mainSource.find("Ctrl-Shift-left drag rotates"), std::string::npos);
   EXPECT_NE(
@@ -1508,10 +1588,24 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("Reset target pose"), std::string::npos);
   EXPECT_NE(
       interactionHeader.find("rotateSimpleFrameRenderable"), std::string::npos);
+  EXPECT_NE(panelHeader.find("initialPosition"), std::string::npos);
+  EXPECT_NE(panelHeader.find("initialSize"), std::string::npos);
+  EXPECT_NE(panelHeader.find("backgroundAlpha"), std::string::npos);
+  EXPECT_NE(panelHeader.find("collapsingHeader"), std::string::npos);
+  EXPECT_NE(panelHeader.find("beginMenuBar"), std::string::npos);
+  EXPECT_NE(panelHeader.find("menuItem"), std::string::npos);
   EXPECT_NE(
       selectionSource.find("rotateRenderableAndApplyIk"), std::string::npos);
   EXPECT_NE(
       selectionSource.find("isRotationDragModifierDown"), std::string::npos);
+  EXPECT_NE(panelSource.find("ImGui::SetNextWindowPos"), std::string::npos);
+  EXPECT_NE(panelSource.find("ImGui::SetNextWindowSize"), std::string::npos);
+  EXPECT_NE(
+      panelSource.find("ImGuiWindowFlags_HorizontalScrollbar"),
+      std::string::npos);
+  EXPECT_NE(panelSource.find("ImGuiWindowFlags_MenuBar"), std::string::npos);
+  EXPECT_NE(panelSource.find("ImGui::BeginMenuBar"), std::string::npos);
+  EXPECT_NE(panelSource.find("ImGui::CollapsingHeader"), std::string::npos);
   EXPECT_NE(readmeSource.find("Fetch MJCF Example"), std::string::npos);
   EXPECT_NE(
       readmeSource.find("transparent green target handle"), std::string::npos);

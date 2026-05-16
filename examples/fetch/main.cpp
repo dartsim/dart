@@ -55,6 +55,7 @@
 
 #include <Eigen/Geometry>
 
+#include <array>
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -465,8 +466,33 @@ dart::gui::Panel createFetchPanel()
 {
   dart::gui::Panel panel;
   panel.title = "Fetch robot example";
-  panel.buildWithContext = [](dart::gui::PanelBuilder& builder,
-                              dart::gui::PanelContext& context) {
+  panel.initialPosition = std::array<double, 2>{10.0, 20.0};
+  panel.initialSize = std::array<double, 2>{360.0, 600.0};
+  panel.backgroundAlpha = 0.5;
+  panel.autoResize = false;
+  panel.horizontalScrollbar = true;
+  panel.menuBar = true;
+
+  auto showAbout = std::make_shared<bool>(false);
+  panel.buildWithContext = [showAbout](
+                               dart::gui::PanelBuilder& builder,
+                               dart::gui::PanelContext& context) {
+    if (builder.beginMenuBar()) {
+      if (builder.beginMenu("Menu")) {
+        if (builder.menuItem("Exit") && context.lifecycle != nullptr) {
+          dart::gui::requestExit(*context.lifecycle);
+        }
+        builder.endMenu();
+      }
+      if (builder.beginMenu("Help")) {
+        if (builder.menuItem("About DART")) {
+          *showAbout = true;
+        }
+        builder.endMenu();
+      }
+      builder.endMenuBar();
+    }
+
     builder.text("Point cloud and voxel grid rendering example");
     builder.text(
         "The whole body motion of the Fetch robot is determined by the "
@@ -475,20 +501,24 @@ dart::gui::Panel createFetchPanel()
         "The end-effector follows the invisible dummy object indicated at the "
         "center of the transparent green target handle.");
     builder.text("The offset grid marks the pick-and-place work area.");
-    builder.text("User Guide");
-    builder.text(
-        "Select the green handle, then Ctrl-left drag or use arrow keys.");
-    builder.text("X/Y/Z constrain Ctrl-left drag to one world axis.");
-    builder.text("Ctrl-Shift-left drag rotates the selected handle.");
-    builder.text("Hold X/Y/Z while rotating to use a local target axis.");
-    builder.text("u/j, i/k, o/l rotate the target about local X/Y/Z.");
-    builder.text("r resets the target pose.");
-    builder.text("Left drag orbits; right or middle drag pans; wheel zooms.");
-    builder.text("Space pauses; n steps once; Escape exits.");
-    builder.text(
-        "--screenshot captures one frame; --out writes a PPM sequence.");
-    builder.separator();
-    if (context.lifecycle != nullptr) {
+
+    if (builder.collapsingHeader("Help")) {
+      builder.text("User Guid:");
+      builder.text(
+          "Select the green handle, then Ctrl-left drag or use arrow keys.");
+      builder.text("X/Y/Z constrain Ctrl-left drag to one world axis.");
+      builder.text("Ctrl-Shift-left drag rotates the selected handle.");
+      builder.text("Hold X/Y/Z while rotating to use a local target axis.");
+      builder.text("u/j, i/k, o/l rotate the target about local X/Y/Z.");
+      builder.text("r resets the target pose.");
+      builder.text("Left drag orbits; right or middle drag pans; wheel zooms.");
+      builder.text("Space pauses; n steps once; Escape exits.");
+      builder.text(
+          "--screenshot captures one frame; --out writes a PPM sequence.");
+    }
+
+    if (builder.collapsingHeader("Simulation", true)
+        && context.lifecycle != nullptr) {
       if (builder.button("Play")) {
         context.lifecycle->paused = false;
       }
@@ -505,11 +535,13 @@ dart::gui::Panel createFetchPanel()
         dart::gui::requestExit(*context.lifecycle);
       }
     }
+
     builder.separator();
-    builder.text("Help");
     builder.text("The end-effector follows the interactive target.");
     builder.text("Mouse rotation uses public selected-frame manipulation.");
-    builder.text("About DART: project and libdart simulation libraries.");
+    if (*showAbout) {
+      builder.text("About DART: project and libdart simulation libraries.");
+    }
     builder.text("time: " + std::to_string(context.simulationTime));
     builder.text("contacts: " + std::to_string(context.contactCount));
     builder.text("selected: " + context.selectedLabel);
