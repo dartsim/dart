@@ -117,6 +117,7 @@
   - Broke the collision→dynamics source dependency using a bridge pattern: dynamics-dependent implementations moved from `dart/collision/*.cpp` to `dart/dynamics/detail/*_bridge.cpp`. Collision `.cpp` files no longer include any `dart/dynamics/` headers.
   - Added built-in native collision module (`dart/collision/native/`) with 575+ tests covering all primitive shape pairs, GJK/EPA, distance queries, raycast, CCD, four broad-phase algorithms, collision filtering, compound shapes, and parallel narrowphase.
   - Wired the native DART backend as a full `CollisionDetector` implementation with distance queries, raycast, and expanded shape adapters (Cone, Ellipsoid, Heightmap, MultiSphere). The legacy `"experimental"` factory key remains as an alias for compatibility.
+  - Fixed native capsule-box duplicate filtering to stay pair-local so accumulated collision results do not suppress new contacts in dense worlds.
   - Native collision: added MPR convex penetration and optional libccd parity tests/bench.
   - Native collision: handle degenerate triangle cases in GJK/MPR for robust convex queries.
   - Native collision: improved broad-phase early exit, contact-count tracking, box-box distance, cylinder-box narrow phase, and primitive-mesh traversal performance.

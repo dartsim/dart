@@ -406,3 +406,27 @@ TEST(CapsuleBox, HorizontalLineSupportHasEndpointContacts)
   EXPECT_TRUE(collided);
   EXPECT_GE(result.numContacts(), 2u);
 }
+
+TEST(CapsuleBox, DuplicateFilteringIsPairLocal)
+{
+  CapsuleShape capsule(0.035, 0.9);
+  BoxShape box(Eigen::Vector3d(10.0, 10.0, 0.1));
+
+  Eigen::Isometry3d tfCapsule = Eigen::Isometry3d::Identity();
+  tfCapsule.linear() = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY())
+                           .toRotationMatrix();
+  tfCapsule.translation() = Eigen::Vector3d(0.0, 0.0, 0.08);
+  Eigen::Isometry3d tfBox = Eigen::Isometry3d::Identity();
+
+  CollisionResult baseline;
+  ASSERT_TRUE(collideCapsuleBox(capsule, tfCapsule, box, tfBox, baseline));
+  ASSERT_GE(baseline.numContacts(), 2u);
+
+  CollisionResult accumulated;
+  for (std::size_t i = 0; i < baseline.numContacts(); ++i) {
+    accumulated.addContact(baseline.getContact(i));
+  }
+
+  EXPECT_TRUE(collideCapsuleBox(capsule, tfCapsule, box, tfBox, accumulated));
+  EXPECT_EQ(accumulated.numContacts(), baseline.numContacts() * 2u);
+}

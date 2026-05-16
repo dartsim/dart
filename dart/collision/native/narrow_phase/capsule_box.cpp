@@ -201,6 +201,9 @@ bool collideCapsuleBox(
   closestPointOnSegmentInBoxSpace(
       boxBottom, boxTop, halfExtents, closestOnSegment);
 
+  std::array<ContactPoint, 3> pairContacts;
+  std::size_t numPairContacts = 0;
+
   auto addContactForAxisPoint = [&](const Eigen::Vector3d& axisPointLocal) {
     if (result.numContacts() >= option.maxNumContacts) {
       return false;
@@ -248,8 +251,8 @@ bool collideCapsuleBox(
     contact.normal = -normalWorld;
     contact.depth = penetration;
 
-    for (std::size_t i = 0; i < result.numContacts(); ++i) {
-      const auto& existing = result.getContact(i);
+    for (std::size_t i = 0; i < numPairContacts; ++i) {
+      const auto& existing = pairContacts[i];
       if ((existing.position - contact.position).squaredNorm() < 1e-12
           && existing.normal.dot(contact.normal) > 0.999) {
         return false;
@@ -257,6 +260,7 @@ bool collideCapsuleBox(
     }
 
     result.addContact(contact);
+    pairContacts[numPairContacts++] = contact;
     return true;
   };
 
