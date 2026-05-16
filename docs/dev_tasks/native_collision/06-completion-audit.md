@@ -28,7 +28,10 @@ latest local validation records. The latest local code follow-up refreshes raw
 box-ground, convex-mesh fallback, public mesh collision coverage, raw /
 convex / mesh batch narrow-phase coverage, and mixed batch-dispatcher
 coverage, plus ten-box stack, thin-box, and slender-capsule stability coverage
-without changing the no-PR boundary. This dev-task folder remains active
+without changing the no-PR boundary. The latest local build-surface follow-up
+also cleans stale legacy collision artifacts and stale package export snippets
+from reused build directories after the retained FCL/Bullet/ODE component names
+became native-backed interface facades. This dev-task folder remains active
 because final PR/CI evidence transfer and folder deletion are explicitly out of
 the current scope.
 
@@ -40,8 +43,8 @@ mutation during the current pass:
 
 | Requirement / gate                                                                  | Concrete evidence                                                                                                                                                                                                                                                                                       | Current audit result                                                                                                                |
 | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Native `dart` detector is the normal runtime path.                                  | `README.md` current-status checklist, default-detector tests recorded in `03-evidence-gates.md`, `pixi run test-all` on `ca0201e67f4`, and the current evidence-hardening recheck on `5627a80a0a2`.                                                                                                     | Locally satisfied; final PR validation still required.                                                                              |
-| Legacy FCL/Bullet/ODE names are compatibility facades, not runtime backend choices. | `audit-collision-compat-facades`, `check-collision-runtime-isolation`, package smoke in `docs/dev_tasks/native_collision/smoke/native_compat_package/`, and direct `readelf` checks recorded on `6404f7607be`.                                                                                          | Locally satisfied; final downstream/PR evidence still required before removing retained facades.                                    |
+| Native `dart` detector is the normal runtime path.                                  | `README.md` current-status checklist, default-detector tests recorded in `03-evidence-gates.md`, `pixi run test-all` on `ca0201e67f4`, the evidence-hardening recheck on `5627a80a0a2`, and the current full validation on `35578ad2f8a`.                                                               | Locally satisfied; final PR validation still required.                                                                              |
+| Legacy FCL/Bullet/ODE names are compatibility facades, not runtime backend choices. | `audit-collision-compat-facades`, `check-collision-runtime-isolation`, package smoke in `docs/dev_tasks/native_collision/smoke/native_compat_package/`, direct `readelf` checks recorded on `6404f7607be`, and stale-artifact/export cleanup evidence on `35578ad2f8a`.                                 | Locally satisfied; final downstream/PR evidence still required before removing retained facades.                                    |
 | Feature-level collision correctness covers the current DART surface.                | `09-test-coverage-matrix.md` records 199 DONE, 0 PARTIAL, 0 GAP, and 25 DEFERRED rows; focused raw, convex, mesh, batch, `hello_world`, and Atlas Simbicon validations are recorded in `03-evidence-gates.md`.                                                                                          | Locally satisfied for the feature-level pass; deferred rows are explicitly outside this pass or belong to the performance wave.     |
 | gz-physics compatibility remains green.                                             | `pixi run -e gazebo test-gz` passed 65/65 on `6404f7607be`; `readelf` showed the gz DART plugin depends on `libdart-collision-native.so` without old collision/reference runtime dependencies.                                                                                                          | Locally satisfied; final PR/downstream CI evidence still required.                                                                  |
 | Benchmark/profiling guardrails exist without making optimization part of this pass. | `pixi run -e collision-reference bm-collision-check` passed before benchmark-evidence head `4b155655890`, and local benchmark JSON artifacts are recorded in `03-evidence-gates.md`.                                                                                                                    | Locally satisfied for guardrails; final benchmark artifact evidence on the completing PR surface remains open.                      |
@@ -52,9 +55,9 @@ mutation during the current pass:
 
 Snapshot audit commands before recording this section showed:
 
-- Branch-state snapshot: `feature/new_coll` was clean at `5627a80a0a2`
-  (`Clarify native collision supervisor status`) and was 97 commits ahead of
-  `origin/feature/new_coll`. This snapshot and later docs-only audit commits may
+- Branch-state snapshot: `feature/new_coll` was clean at `35578ad2f8a`
+  (`Clean stale legacy collision build artifacts`) and was 102 commits ahead of
+  `origin/feature/new_coll`. This snapshot and later docs/evidence commits may
   move `HEAD`; use `git status --short --branch` and
   `git log -3 --oneline --decorate` for the exact current branch state.
 - Remote-tracking snapshot: `origin/feature/new_coll` resolved to
@@ -62,12 +65,13 @@ Snapshot audit commands before recording this section showed:
 - Review surface state: read-only `gh pr view 2652 --repo dartsim/dart`
   reports PR #2652 as `CLOSED`, draft, dirty, based on `main`, and still
   anchored to head `714d220d82a`. No PR metadata or GitHub state was mutated.
-- Latest full current-state validation head: `5627a80a0a2`
-  (`Clarify native collision supervisor status`) passed the local
+- Latest full current-state validation head: `35578ad2f8a`
+  (`Clean stale legacy collision build artifacts`) passed the local
   `pixi run test-all` gate with 6/6 top-level gates: linting, build, unit
-  tests, simulation-experimental tests, Python tests, and documentation. This is
-  a docs/evidence-only recheck on top of the `ca0201e67f4` Atlas Simbicon code
-  coverage head.
+  tests, simulation-experimental tests, Python tests, and documentation. This
+  includes a CMake cleanup that removes stale legacy collision artifacts and
+  export snippets from reused build directories after the compatibility
+  component names became native-backed interface facades.
 - Latest full code-validation head: `4db514cfd22`
   (`Add native narrow-phase batch dispatcher`) also passed the local
   `pixi run test-all` gate with Release CTest 264/264 and Python 147/147.
@@ -150,6 +154,28 @@ was rerun on clean head `5627a80a0a2`
   was mutated by this recheck.
 - Scope note: no PR, push, workflow, branch, or GitHub state was mutated by
   this validation pass.
+
+After the stale legacy collision artifact cleanup, the same full local
+validation gate was rerun on clean head `35578ad2f8a`
+(`Clean stale legacy collision build artifacts`):
+
+- Commands:
+  `pixi run config`,
+  `DART_PARALLEL_JOBS=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run build`,
+  `cmake --build build/default/cpp/Release --target dart_component_collision-fcl dart_component_collision-bullet dart_component_collision-ode`,
+  `pixi run lint`,
+  `git diff --check`, and
+  `DART_PARALLEL_JOBS=5 CMAKE_BUILD_PARALLEL_LEVEL=5 CTEST_PARALLEL_LEVEL=5 pixi run test-all`
+- Result: passed. The artifact scan reported only
+  `build/default/cpp/Release/dart/collision/native/libdart-collision-native.so`,
+  and the package/export scan found no old facade-library or
+  FCL/Bullet/ODE/libccd runtime references. `pixi run lint` passed, including
+  runtime-isolation and compatibility-facade audits. The full local
+  `pixi run test-all` report passed 6/6 top-level gates; the C++ unit-test
+  phase reported 264/264 passing tests, and the examples build rebuilt
+  `hello_world` and `atlas_simbicon`.
+- Scope: local validation only. No PR, push, workflow, branch, or GitHub state
+  was mutated by this recheck.
 
 - Native-only and gz-physics manual workflow-dispatch evidence is now collected
   for pushed head `1e1faf6feb1`, but the final PR-complete state still needs

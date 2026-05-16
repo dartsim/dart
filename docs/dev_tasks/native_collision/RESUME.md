@@ -27,10 +27,14 @@ the native compatibility package smoke, and direct `readelf` checks.
 part of the local gate. The completion audit snapshot and validation-baseline
 wording were refreshed so future passes do not treat historical "current head"
 evidence as live branch state.
-The latest local code commit before this handoff update was `ca0201e67f4`
-(`Add Atlas Simbicon native collision regression`), which records the
-controller-loop Atlas Simbicon no-tunneling regression in the test matrix and
-passed the full local validation gate.
+The latest local build-surface cleanup commit before this handoff update was
+`35578ad2f8a` (`Clean stale legacy collision build artifacts`), which removes
+stale legacy collision artifacts and stale package export snippets from reused
+build directories after the retained FCL/Bullet/ODE component names became
+native-backed interface facades. The latest local feature-code commit remains
+`ca0201e67f4` (`Add Atlas Simbicon native collision regression`), which records
+the controller-loop Atlas Simbicon no-tunneling regression in the test matrix.
+The current head `35578ad2f8a` passed the full local validation gate.
 
 The final north-star PR is not complete because PR #2652 is closed and still
 points at old head `714d220d82a`; later pushes to `feature/new_coll` do not
@@ -102,9 +106,9 @@ the distinction clear:
 
 If code or evidence changes again, run `pixi run lint` before committing and
 run the focused validation that matches the change. Full `pixi run test-all`
-evidence is refreshed locally for current-state validation head `ca0201e67f4`;
-later local evidence commits are docs-only and should be checked with
-`git status --short --branch` plus `git log -3 --oneline --decorate`.
+evidence is refreshed locally for current-state validation head `35578ad2f8a`;
+later local evidence commits should be checked with `git status --short --branch`
+plus `git log -3 --oneline --decorate`.
 
 Publish transport note: `origin` is configured as
 `git@github.com:dartsim/dart.git`, but SSH access was unreachable during resume
@@ -125,16 +129,19 @@ post GitHub comments unless the user explicitly asks.
   `test_reference_backends`, fresh `pixi run -e gazebo test-gz`, and native
   package/link smoke with direct `readelf` checks.
 - Public docs collision-runtime wording baseline: `ad1b6782578`.
-- Latest full local `pixi run test-all` validation: local head `5627a80a0a2`
-  (`Clarify native collision supervisor status`), with 6/6 top-level gates
-  passing after docs/evidence audit hardening on top of the Atlas Simbicon
-  coverage head. The latest feature code head remains `ca0201e67f4`
+- Latest full local `pixi run test-all` validation: local head `35578ad2f8a`
+  (`Clean stale legacy collision build artifacts`), with 6/6 top-level gates
+  passing after docs/evidence audit hardening and stale legacy collision
+  artifact cleanup on top of the Atlas Simbicon coverage head. The latest
+  feature code head remains `ca0201e67f4`
   (`Add Atlas Simbicon native collision regression`), after the raw, convex,
   mesh, mixed batch-dispatcher, native stability-label,
   stack/stress/BVH/convex-landscape, convex fragment, exact `hello_world`, and
   Atlas Simbicon controller stability follow-ups. The full validation run
   included linting, build, examples, unit tests, simulation-experimental tests,
-  Python tests, and documentation.
+  Python tests, and documentation. The artifact scan reported only
+  `libdart-collision-native.so`, and the package/export scan found no old
+  facade-library or FCL/Bullet/ODE/libccd runtime references.
 - Latest evidence-record commits are local and may be ahead of
   `origin/feature/new_coll`; run `git log -3 --oneline --decorate` for the
   current local head. Recent docs-only evidence commits refresh the
@@ -230,6 +237,17 @@ post GitHub comments unless the user explicitly asks.
   `git diff --check` passed, and
   `DART_PARALLEL_JOBS=5 CMAKE_BUILD_PARALLEL_LEVEL=5 CTEST_PARALLEL_LEVEL=5 pixi run test-all`
   passed all 6 top-level gates with the final `All tests passed!` report.
+- Current local build-surface cleanup refresh after `35578ad2f8a`:
+  `pixi run config` passed,
+  `DART_PARALLEL_JOBS=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run build` passed,
+  the retained compatibility component targets built as interface facades,
+  `pixi run lint` and `git diff --check` passed, the artifact scan reported
+  only `libdart-collision-native.so`, the package/export scan found no old
+  facade-library or FCL/Bullet/ODE/libccd runtime references, and
+  `DART_PARALLEL_JOBS=5 CMAKE_BUILD_PARALLEL_LEVEL=5 CTEST_PARALLEL_LEVEL=5 pixi run test-all`
+  passed all 6 top-level gates with C++ tests 264/264 and the final
+  `All tests passed!` report. No PR, push, workflow, branch, or GitHub state
+  was mutated by this validation pass.
 - Previous local default-world stability refresh after `944bd95f874`: focused
   build of `UNIT_simulation_World` passed,
   `WorldTests.DefaultNativeHelloWorldBoxDoesNotTunnel` passed, full

@@ -96,17 +96,20 @@ Make native DART collision the default runtime stack
   - `e65c57a9770` (`Add native convex fragment stability coverage`)
   - `944bd95f874` (`Add hello world native collision regression`)
   - `ca0201e67f4` (`Add Atlas Simbicon native collision regression`)
+  - `35578ad2f8a` (`Clean stale legacy collision build artifacts`)
 - `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-all`
   passed on local head `4db514cfd22` with 6/6 top-level gates: linting, build,
   unit tests, simulation-experimental tests, Python tests, and documentation.
   Release CTest passed 264/264 and Python tests passed 147/147.
 - The latest current-state local recheck with the same `pixi run test-all`
-  command passed on head `5627a80a0a2` after docs/evidence audit hardening on
-  top of `ca0201e67f4`, which includes the native stability-label commits,
-  stack/stress/BVH/convex-landscape coverage, exact `hello_world`-style
-  no-tunneling coverage, and Atlas Simbicon controller-loop no-tunneling
-  coverage. The recheck passed 6/6 top-level gates and printed the final
-  `All tests passed!` report.
+  command passed on head `35578ad2f8a` after docs/evidence audit hardening and
+  stale legacy collision artifact cleanup on top of `ca0201e67f4`, which
+  includes the native stability-label commits, stack/stress/BVH/convex-landscape
+  coverage, exact `hello_world`-style no-tunneling coverage, and Atlas Simbicon
+  controller-loop no-tunneling coverage. The recheck passed 6/6 top-level gates
+  and printed the final `All tests passed!` report. The artifact scan reported
+  only `libdart-collision-native.so`, and the package/export scan found no old
+  facade-library or FCL/Bullet/ODE/libccd runtime references.
 - Focused local regression validation for the latest follow-up passed:
   - `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_box_box|UNIT_collision_DartCollisionDetector|test_convex|test_mesh_mesh)$' --repeat until-fail:20`
   - `UNIT_simulation_World --gtest_filter='WorldTests.DefaultNative*BoxRestsOnGround'`
@@ -144,8 +147,10 @@ Make native DART collision the default runtime stack
 - Local commits after `ca0201e67f4` are docs/evidence-only refreshes. Recent
   audit commits include `19aed78ae04` for current local `test-all` evidence and
   `d1a1dbd9ac9` for read-only review-surface state; later packet refresh commits
-  may move `HEAD`. `pixi run lint` has passed after the latest code update,
-  including `check-collision-runtime-isolation` and
+  may move `HEAD`. The latest local build-surface cleanup commit
+  `35578ad2f8a` removes stale legacy collision build artifacts and export
+  snippets from reused build directories. `pixi run lint` has passed after the
+  latest code update, including `check-collision-runtime-isolation` and
   `audit-collision-compat-facades`. Use `git log -3 --oneline --decorate` for
   the exact current local head.
 - `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -e collision-reference bm-collision-check`

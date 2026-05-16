@@ -3611,6 +3611,36 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     and documentation, then printed `All tests passed!`. The command was local
     only; no PR, push, workflow, branch, or GitHub state was mutated by this
     validation pass.
+- Current local full validation after stale legacy collision artifact cleanup:
+  - Commit: `35578ad2f8a`
+    (`Clean stale legacy collision build artifacts`).
+  - Scope: CMake/build-surface cleanup for reused build directories after the
+    retained `collision-fcl`, `collision-bullet`, and `collision-ode`
+    components became native-backed interface facades. The cleanup removes old
+    per-engine shared/static artifacts and stale per-config package export
+    snippets that could otherwise survive from an older concrete-library
+    configure.
+  - Commands:
+    `pixi run config`,
+    `DART_PARALLEL_JOBS=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run build`,
+    `cmake --build build/default/cpp/Release --target dart_component_collision-fcl dart_component_collision-bullet dart_component_collision-ode`,
+    `find build/default/cpp/Release \\( -name 'libdart-collision-native.so*' -o -name 'libdart-collision-reference-*.so*' -o -name 'libdart-collision-fcl.so*' -o -name 'libdart-collision-bullet.so*' -o -name 'libdart-collision-ode.so*' \\) -print | sort`,
+    `rg -n "libdart-collision-(fcl|bullet|ode)|libfcl|libBullet|libode|libccd" build/default/cpp/Release/dart/CMakeFiles/Export build/default/cpp/Release/share/dart/cmake build/default/cpp/Release/cmake_install.cmake build/default/cpp/Release/dart/cmake_install.cmake`,
+    `pixi run lint`,
+    `git diff --check`, and
+    `DART_PARALLEL_JOBS=5 CMAKE_BUILD_PARALLEL_LEVEL=5 CTEST_PARALLEL_LEVEL=5 pixi run test-all`.
+  - Result: passed. The component-target build reported no work, as expected
+    for the interface facades. The artifact scan reported only
+    `build/default/cpp/Release/dart/collision/native/libdart-collision-native.so`.
+    The package/export scan found no retained references to old collision
+    facade libraries or FCL/Bullet/ODE/libccd runtime libraries. `pixi run lint`
+    passed, including runtime-isolation and compatibility-facade audits, and
+    `git diff --check` passed. The full local `pixi run test-all` report
+    passed all 6 top-level gates: linting, build, unit tests,
+    simulation-experimental tests, Python tests, and documentation. The C++
+    unit-test phase reported 264/264 passing tests, and the examples build
+    rebuilt `hello_world` and `atlas_simbicon`. No PR, push, workflow, branch,
+    or GitHub state was mutated by this local validation pass.
 
 ## Known Risks
 

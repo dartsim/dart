@@ -19,7 +19,10 @@ mesh-BVH, convex-landscape, convex-fragment, exact `hello_world`-style
 no-tunneling, and Atlas Simbicon controller-loop regression coverage, rebuilds
 `hello_world` without the OctoMap `<ciso646>` warning, and refreshes the
 focused native/reference/benchmark validation evidence in
-`03-evidence-gates.md`.
+`03-evidence-gates.md`. The latest local build-surface follow-up also removes
+stale legacy collision artifacts and stale package export snippets from reused
+build directories after the retained FCL/Bullet/ODE component names became
+native-backed interface facades.
 
 ## Current Status
 
@@ -79,8 +82,10 @@ focused native/reference/benchmark validation evidence in
       runtime path and the old engines as optional reference-comparison inputs.
 - [x] Native-only install metadata no longer advertises old collision runtime
       libraries; retained legacy collision component targets are native-backed
-      interface facades, and the old per-engine build option variables are no
-      longer part of the installed metadata.
+      interface facades, stale legacy collision artifacts and stale per-config
+      export snippets are cleaned from reused build directories, and the old
+      per-engine build option variables are no longer part of the installed
+      metadata.
 - [x] A fresh native-only runtime install probe with `dartpy`, GUI, VSG GUI, IO,
       utils, URDF, simulation-experimental, and `dart-collision-native` built
       and installed shows no old collision component files and no FCL, Bullet,
@@ -204,10 +209,13 @@ focused native/reference/benchmark validation evidence in
       minimum this means `pixi run lint`, `pixi run test-all`, and any
       maintainer-selected CI gates whose failures are not covered locally. The
       latest full current-state `pixi run test-all` pass was rerun on local
-      head `5627a80a0a2` after docs/evidence audit hardening and passed 6/6
+      head `35578ad2f8a` after docs/evidence audit hardening and stale
+      legacy collision artifact cleanup, and passed 6/6
       top-level gates: linting, build, unit tests, simulation-experimental
-      tests, Python tests, and documentation. The latest feature code head
-      `ca0201e67f4` adds stack, stress, mesh-BVH, convex-landscape,
+      tests, Python tests, and documentation. The artifact scan reported only
+      `libdart-collision-native.so`, and the package/export scan found no old
+      facade-library or FCL/Bullet/ODE/libccd runtime references. The latest
+      feature code head `ca0201e67f4` adds stack, stress, mesh-BVH, convex-landscape,
       convex-fragment, and exact `hello_world`-style stability coverage and
       an Atlas Simbicon controller-loop no-tunneling regression, and
       verifies the native collision CTest labels for the world-level native
