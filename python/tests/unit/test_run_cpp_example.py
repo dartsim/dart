@@ -1,4 +1,5 @@
 import importlib.util
+import sys
 from pathlib import Path
 
 import pytest
@@ -14,6 +15,7 @@ def run_cpp_example():
     assert spec.loader is not None
 
     module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
 
@@ -30,20 +32,42 @@ def test_normalize_target_passthrough(run_cpp_example, capsys):
     assert capsys.readouterr().err == ""
 
 
+def test_parse_args_requires_target(run_cpp_example, capsys):
+    with pytest.raises(SystemExit) as exc:
+        run_cpp_example.parse_args([])
+
+    assert exc.value.code == 2
+    captured = capsys.readouterr()
+    assert "usage:" in captured.err
+    assert "required: target" in captured.err
+
+
+def test_parse_args_allows_pixi_help_without_target(run_cpp_example, capsys):
+    with pytest.raises(SystemExit) as exc:
+        run_cpp_example.parse_args(["--pixi-help"])
+
+    assert exc.value.code == 0
+    captured = capsys.readouterr()
+    assert "CMake target / example binary name" in captured.out
+    assert captured.err == ""
+
+
 @pytest.mark.parametrize(
-    ("target", "build_target", "binary_name"),
+    ("target", "build_target", "binary_name", "requirements"),
     [
-        ("raylib", "dart_raylib", "raylib"),
-        ("dart_raylib", "dart_raylib", "raylib"),
-        ("atlas_simbicon", "atlas_simbicon", "atlas_simbicon"),
+        ("raylib", "dart_raylib", "raylib", ("raylib",)),
+        ("dart_raylib", "dart_raylib", "raylib", ("raylib",)),
+        ("filament_gui", "dart_filament_gui", "filament_gui", ("filament",)),
+        ("atlas_simbicon", "atlas_simbicon", "atlas_simbicon", ()),
     ],
 )
-def test_resolve_build_and_binary(target, build_target, binary_name, run_cpp_example):
-    resolved_build_target, resolved_binary = run_cpp_example._resolve_build_and_binary(
-        target
-    )
-    assert resolved_build_target == build_target
-    assert resolved_binary == binary_name
+def test_resolve_example(
+    target, build_target, binary_name, requirements, run_cpp_example
+):
+    spec = run_cpp_example._resolve_example(target)
+    assert spec.build_target == build_target
+    assert spec.binary_name == binary_name
+    assert spec.requirements == requirements
 
 
 def test_cmake_cache_bool(run_cpp_example, tmp_path):
@@ -75,7 +99,8 @@ def test_ensure_target_requirements_enables_raylib(run_cpp_example, tmp_path, mo
     monkeypatch.setattr(run_cpp_example.subprocess, "run", fake_run)
 
     env = {"EXAMPLE": "1"}
-    run_cpp_example._ensure_target_requirements(tmp_path, "raylib", env)
+    spec = run_cpp_example._resolve_example("raylib")
+    run_cpp_example._ensure_target_requirements(tmp_path, spec, env, smoke=False)
 
     assert len(calls) == 1
     cmd, args, kwargs = calls[0]
@@ -95,5 +120,92 @@ def test_ensure_target_requirements_noop_when_enabled(run_cpp_example, tmp_path,
 
     monkeypatch.setattr(run_cpp_example.subprocess, "run", fail_run)
 
-    run_cpp_example._ensure_target_requirements(tmp_path, "raylib", {"EXAMPLE": "1"})
+    spec = run_cpp_example._resolve_example("raylib")
+    run_cpp_example._ensure_target_requirements(
+        tmp_path, spec, {"EXAMPLE": "1"}, smoke=False
+    )
 
+
+def test_run_filament_smoke_uses_no_tests_error_when_supported(
+    run_cpp_example, tmp_path, monkeypatch
+):
+    calls = []
+
+    def fake_run_with_optional_xvfb(command, env, use_xvfb):
+        calls.append((command, env, use_xvfb))
+
+    monkeypatch.setenv("DISPLAY", ":99")
+    monkeypatch.setattr(
+        run_cpp_example, "_run_with_optional_xvfb", fake_run_with_optional_xvfb
+    )
+    monkeypatch.setattr(run_cpp_example, "_ctest_supports_no_tests_error", lambda: True)
+
+    env = {"EXAMPLE": "1"}
+    run_cpp_example._run_filament_smoke(tmp_path, env)
+
+    assert len(calls) == 1
+    command, runtime_env, use_xvfb = calls[0]
+    assert command[:3] == ["ctest", "--test-dir", str(tmp_path)]
+    assert "--no-tests=error" in command
+    assert runtime_env["EXAMPLE"] == "1"
+    assert use_xvfb is False
+
+
+def test_run_filament_smoke_probes_tests_for_old_ctest(
+    run_cpp_example, tmp_path, monkeypatch
+):
+    calls = []
+    probes = []
+
+    def fake_run_with_optional_xvfb(command, env, use_xvfb):
+        calls.append((command, env, use_xvfb))
+
+    def fake_validate(build_dir, env):
+        probes.append((build_dir, env))
+
+    monkeypatch.setenv("DISPLAY", ":99")
+    monkeypatch.setattr(run_cpp_example, "_ctest_supports_no_tests_error", lambda: False)
+    monkeypatch.setattr(
+        run_cpp_example, "_validate_filament_smoke_tests_discovered", fake_validate
+    )
+    monkeypatch.setattr(
+        run_cpp_example, "_run_with_optional_xvfb", fake_run_with_optional_xvfb
+    )
+
+    env = {"EXAMPLE": "1"}
+    run_cpp_example._run_filament_smoke(tmp_path, env)
+
+    assert len(probes) == 1
+    assert probes[0][0] == tmp_path
+    assert probes[0][1]["EXAMPLE"] == "1"
+    assert len(calls) == 1
+    command, runtime_env, use_xvfb = calls[0]
+    assert command[:3] == ["ctest", "--test-dir", str(tmp_path)]
+    assert "--no-tests=error" not in command
+    assert runtime_env["EXAMPLE"] == "1"
+    assert use_xvfb is False
+
+
+@pytest.mark.parametrize(
+    ("output", "expected"),
+    [
+        ("ctest version 3.26.4", (3, 26, 4)),
+        ("cmake version 4.2", (4, 2, 0)),
+        ("not a version", None),
+    ],
+)
+def test_parse_cmake_version(run_cpp_example, output, expected):
+    assert run_cpp_example._parse_cmake_version(output) == expected
+
+
+@pytest.mark.parametrize(
+    ("env", "expected"),
+    [
+        ({}, False),
+        ({"DISPLAY": ":99"}, True),
+        ({"WAYLAND_DISPLAY": "wayland-0"}, True),
+        ({"DISPLAY": "", "WAYLAND_DISPLAY": ""}, False),
+    ],
+)
+def test_has_linux_display(run_cpp_example, env, expected):
+    assert run_cpp_example._has_linux_display(env) is expected

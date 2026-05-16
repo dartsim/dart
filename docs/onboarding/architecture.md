@@ -10,7 +10,12 @@
 
 ## Overview
 
-DART (Dynamic Animation and Robotics Toolkit) is a comprehensive physics simulation library for robotics and computer animation. It provides accurate and stable simulation of articulated rigid body systems using **generalized coordinates** and **Featherstone's Articulated Body Algorithm**.
+DART (Dynamic Animation and Robotics Toolkit) is a research-focused C++20
+physics engine for robotics, animation, and machine learning. It provides
+accurate, stable articulated rigid body simulation using **generalized
+coordinates** and **Featherstone's Articulated Body Algorithm**, while exposing
+the math, collision, constraint, model-loading, benchmark, and test foundations
+needed to implement and compare new research algorithms.
 
 **Project Location:** ``
 
@@ -1035,7 +1040,7 @@ int main() {
 
 ## Summary
 
-DART is a well-architected physics simulation library with:
+DART is a well-architected research-focused physics engine with:
 
 ### **Strengths:**
 

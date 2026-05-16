@@ -549,7 +549,7 @@ gh pr checks <PR_NUMBER> --watch --interval 30 --fail-fast
 
 Notes:
 
-- Suggested (Unverified): If the `CI gz-physics` workflow fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature); Linux example (2/3 cores): `N=$(( ( $(nproc) * 2 ) / 3 ))` then `DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz`.
+- If the `CI gz-physics` workflow fails, reproduce locally with the Gazebo workflow in [build-system.md](build-system.md#gazebo-integration-feature): `N=${DART_SAFE_JOBS:-$(python scripts/parallel_jobs.py)}` then `DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz`.
 - Suggested (Unverified): If you create PRs from the command line, prefer `gh pr create --body-file <path>` over `--body "..."` when the body contains backticks; some shells (e.g., zsh) treat backticks as command substitution.
 
 ## Troubleshooting

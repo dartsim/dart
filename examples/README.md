@@ -64,6 +64,8 @@
 - `add_delete_skels`
 - `drag_and_drop`
 - `empty`
+- `filament_gui`
+- `gui_scene_diagnostics`
 - `imgui`
 - `polyhedron_visual`
 - `raylib`
@@ -88,6 +90,17 @@ README.md in that example directory.
 
 If you are working inside the DART repo, prefer the `pixi run` entry points
 documented in `docs/onboarding/building.md` when available.
+
+For C++ examples, the generic in-tree runner is:
+
+```bash
+pixi run ex <example-target>
+```
+
+For example, `pixi run ex hello_world` builds and runs `hello_world`. Examples
+with extra CMake requirements, such as `raylib` and `filament_gui`, declare
+those requirements in `scripts/run_cpp_example.py` so the same command shape can
+remain stable as more examples are added.
 
 ## Build Examples as One Project
 

@@ -8,12 +8,14 @@ This directory contains documentation for DART users, developers, and contributo
 
 ## Documentation Structure
 
-### Developer Onboarding (Markdown)
+### Developer And Agent Docs (Markdown)
 
-Located in `onboarding/` - **Architecture guides for developers:**
+Located in `onboarding/`, `ai/`, and `plans/` - **architecture, workflow, and
+planning guides for developers and agents:**
 
 - **[Onboarding Guide](onboarding/README.md)** - Complete internal architecture overview with diagrams
-- [AI Agent Entrypoint](ai/README.md) - AI-native workflow map, verification gates, sessions, and component ownership
+- [AI Agent Entrypoint](ai/README.md) - AI-native principles, north star, workflow map, verification gates, sessions, and component ownership
+- [Living Plans](plans/README.md) - Planning rules, operating dashboard, and strategic roadmap
 - [Core Architecture](onboarding/architecture.md) - Deep dive into simulation engine internals
 - [Aspect System](onboarding/aspect-system.md) - Aspect/State/Properties design and implementation
 - [Dynamics System](onboarding/dynamics.md) - Articulated body system and kinematics
@@ -42,6 +44,7 @@ _Format: ReStructuredText (RST) for Sphinx/ReadTheDocs publishing_
 - **Building from source?** → [onboarding/building.md](onboarding/building.md)
 - **Contributing code?** → [onboarding/contributing.md](onboarding/contributing.md) + [onboarding/code-style.md](onboarding/code-style.md)
 - **Understanding architecture?** → [onboarding/architecture.md](onboarding/architecture.md)
-- **Using AI agent workflows?** → [ai/README.md](ai/README.md) + [onboarding/ai-tools.md](onboarding/ai-tools.md)
+- **Revising project plans?** → [plans/README.md](plans/README.md) + [plans/dashboard.md](plans/dashboard.md) + [plans/north-star-roadmap.md](plans/north-star-roadmap.md)
+- **Using AI agent workflows?** → [ai/README.md](ai/README.md) + [ai/principles.md](ai/principles.md) + [ai/north-star.md](ai/north-star.md) + [onboarding/ai-tools.md](onboarding/ai-tools.md)
 - **Using DART API?** → [dart.readthedocs.io](https://dart.readthedocs.io/)
 - **Looking for examples?** → [examples/](../examples/) and [tutorials/](../tutorials/)

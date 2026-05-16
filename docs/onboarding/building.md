@@ -218,7 +218,24 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
 
    Note: `pixi run test-all` runs `pixi run lint` (auto-fixing) internally; check `git status` afterwards before committing.
 
-4. (Optional) Gazebo / gz-physics integration test:
+4. Run a C++ example when needed:
+
+   ```bash
+   pixi run ex <example-target>
+   ```
+
+   Example:
+
+   ```bash
+   pixi run ex hello_world
+   pixi run ex filament_gui
+   ```
+
+   `scripts/run_cpp_example.py` centralizes example-specific CMake
+   requirements so examples such as `raylib` and `filament_gui` can still use
+   the same command shape.
+
+5. (Optional) Gazebo / gz-physics integration test:
 
    Suggested (Unverified):
 

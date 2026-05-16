@@ -19,12 +19,12 @@
   <a href="https://github.com/dartsim/dart/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-BSD_2--Clause-blue.svg" alt="License"></a>
 </p>
 
-DART (Dynamic Animation and Robotics Toolkit) is an open-source library that
-provides data structures and algorithms for kinematic and dynamic applications
-in robotics and computer animation. Renowned for its accuracy and stability,
-DART utilizes generalized coordinates to represent articulated rigid body
-systems and employs Featherstone's Articulated Body Algorithm to compute motion
-dynamics.
+DART (Dynamic Animation and Robotics Toolkit) is an open-source,
+research-focused physics engine for robotics, animation, and machine learning.
+It provides transparent kinematics, dynamics, collision, and constraint-solving
+foundations for users who need more than a black-box simulator. DART uses
+generalized coordinates for articulated rigid body systems and Featherstone's
+Articulated Body Algorithm for accurate, stable motion dynamics.
 
 <p align="center">
   <img src="docs/assets/unitree_g1_demo.gif" width="720" alt="Unitree G1 humanoid demo" />
@@ -32,12 +32,12 @@ dynamics.
 
 ## Why DART?
 
-- **Accuracy & Stability** — Featherstone's Articulated Body Algorithm with proven numerical stability
-- **Unified Format Support** — Load URDF, SDF, MJCF, and SKEL models through a single API
-- **Built-in Native Collision** — Integrated collision detection with optional FCL, Bullet, and ODE reference comparisons
-- **Constraint Dynamics** — Joint limits, contacts, and closed-loop constraints solved together
-- **Cross-platform** — Linux, macOS, Windows with Python bindings included
-- **Battle-tested** — Powers [Gazebo](https://gazebosim.org), research labs, and production systems worldwide
+- **Research-grade dynamics** — Featherstone algorithms, generalized coordinates, and direct access to dynamics quantities
+- **Easy to start** — Python and C++ packages through common package managers, plus reproducible source builds with pixi
+- **Extensible foundations** — Math, native collision, constraints, model loading, benchmarks, and tests that support new algorithms and baseline comparisons
+- **Unified model loading** — Load URDF, SDF, MJCF, and SKEL models through a single API
+- **Scalable compute roadmap** — Cross-platform CPU support today, with roadmap work for multi-core, SIMD, and accelerator backends
+- **Battle-tested ecosystem** — Powers [Gazebo](https://gazebosim.org), research labs, and production systems worldwide, with best-effort support for production use
 
 ## Quick Start
 
@@ -113,6 +113,9 @@ int main() {
 
 - **[Developer Onboarding Guide](docs/onboarding/README.md)** — Architecture, components, and workflows
 - **[Contributing Guide](CONTRIBUTING.md)** — Style guide and contribution process
+- **[Project Direction](docs/ai/north-star.md)** — Research-focused north star and priorities
+- **[Living Plans](docs/plans/README.md)** — Active and proposed roadmap items
+- **[Background Theory](docs/background/README.md)** — Dynamics, contact solving, and mathematical foundations
 - **[Gazebo Integration](docs/onboarding/build-system.md#gazebo-integration-feature)** — gz-physics integration workflow
 - **[Release Roadmap](docs/onboarding/release-roadmap.md)** — Compatibility, deprecations, and future plans
 

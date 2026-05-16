@@ -19,5 +19,6 @@ void defImGuiApi(nanobind::module_& m);
 void defImGuiWidget(nanobind::module_& m);
 void defImGuiHandler(nanobind::module_& m);
 void defImGuiViewer(nanobind::module_& m);
+void defGuiExperimentalModule(nanobind::module_& m);
 
 } // namespace dart::python_nb

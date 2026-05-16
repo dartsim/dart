@@ -53,6 +53,7 @@
 - Tooling and Docs
   - Added AI-native documentation architecture with AGENTS.md, module-specific guides, slash commands, and command sync automation. ([#2446](https://github.com/dartsim/dart/pull/2446), [#2447](https://github.com/dartsim/dart/pull/2447), [#2448](https://github.com/dartsim/dart/pull/2448), [#2449](https://github.com/dartsim/dart/pull/2449))
   - Added the shared `docs/ai/` agent entrypoint and tightened AI workflow verification, approval-boundary checks, and dev-task cleanup guidance. ([#2649](https://github.com/dartsim/dart/pull/2649))
+  - Added AI-infra principles, living plan dashboard, `dart-plan-update`, and `dart-retrospect` workflows to track research-focused roadmap work and durable session learnings from one source of truth, and aligned public and onboarding documentation entrypoints with that direction.
   - Extended AI command and skill synchronization so Claude Code, OpenCode, and Codex expose the same DART workflow capabilities with parity checks for generated command and skill files.
   - Promoted prompt-only AI workflows into synced workflow commands and removed the separate prompt-template folder.
   - Fixed generated Codex DART skill frontmatter so strict YAML parsers load AI workflow skills without warnings. ([#2546](https://github.com/dartsim/dart/pull/2546))
@@ -165,6 +166,12 @@
   - Documented SKEL as a legacy format.
 
 - GUI and Rendering
+  - Added an optional experimental Filament GUI path with backend-hidden
+    `dart::gui::experimental` scene descriptors, bounded/headless smoke support,
+    debug overlays, selection/manipulation helpers, constrained dartpy bindings,
+    a pinned explicit fetch fallback, and GCC/Clang smoke coverage for local and
+    CI validation.
+    ([#2647](https://github.com/dartsim/dart/pull/2647))
   - Fix SEGV in `ImFontAtlas::AddFontFromMemoryCompressedTTF` when null pointer is passed as compressed font data. ([#2516](https://github.com/dartsim/dart/issues/2516))
   - Added headless rendering support via `ViewerConfig` and pbuffer graphics context for CI pipelines and batch frame capture. Includes `Viewer::captureBuffer()` for raw RGBA pixel readback and a new `headless-rendering` CI job. ([#2466](https://github.com/dartsim/dart/pull/2466))
   - Added headless and screenshot capture support to `dart::gui::vsg::SimpleViewer`, including buffer readback for offscreen validation.

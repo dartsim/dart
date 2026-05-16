@@ -108,6 +108,20 @@ positions = skel.get_positions()  # Returns ndarray
 - Release the GIL around long-running, non-callback C++ calls (e.g., stepping and collision queries) using `nb::call_guard<nb::gil_scoped_release>()` where safe.
 - Convert Python arguments to C++ types before releasing the GIL; nanobind casting and NumPy access require holding the GIL.
 - When the C++ API stores raw pointers, add explicit keep-alive/shared-ownership patterns to prevent lifetime bugs in Python.
+- Treat dartpy as the public user-facing API, not a mirror of all C++ internals.
+  Do not include `dart/**/detail/**`, `dart/**/internal/**`, or
+  `dart/simulation/experimental/comps/**` headers.
+- Do not bind `dart::...::detail` or `dart::...::internal` types, aliases, or
+  data members. A public C++ alias whose underlying type is in `detail` still
+  needs an allowlist entry until the C++ API provides a public wrapper.
+- Do not expose deprecated compatibility shims unless Python users need a
+  migration window; add a deprecation warning, test, stub/doc update, and
+  removal condition for each shim.
+- Prefer explicit public accessors or Pythonic value wrappers when C++ stores
+  data in an internal base class.
+- Keep `scripts/check_api_boundaries_allowlist.txt` entries temporary: each
+  entry needs a replacement, `remove_by` condition, tracking phase or issue, and
+  reason. See [api-boundaries.md](api-boundaries.md).
 
 ### OSG Bindings Design
 

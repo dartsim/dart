@@ -115,7 +115,8 @@ rp3d_profiling_*.txt
 # Benchmark results
 docs/**/results/*.json
 
-# Sisyphus agent artifacts
+# AI tool local state
+.omc/
 .sisyphus/
 
 # Benchmark result artifacts

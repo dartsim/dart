@@ -297,7 +297,7 @@ endif()
 #--------------------
 
 # ImGui
-if(DART_BUILD_GUI)
+if(DART_BUILD_GUI OR DART_BUILD_GUI_FILAMENT)
   if(DART_USE_SYSTEM_IMGUI)
     # Use system-installed ImGui
     dart_find_package(imgui)
@@ -525,6 +525,53 @@ if(DART_BUILD_GUI_RAYLIB)
 
   if(NOT TARGET raylib::raylib)
     message(FATAL_ERROR "Raylib was requested (DART_BUILD_GUI_RAYLIB=ON) but no CMake target was provided by the dependency.")
+  endif()
+endif()
+
+# Filament GUI example (experimental)
+if(DART_BUILD_GUI_FILAMENT)
+  if(DART_FETCH_FILAMENT)
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" OR NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)$")
+      message(FATAL_ERROR "DART_FETCH_FILAMENT currently supports only Linux x86_64 prebuilt Filament archives. Provide Filament_ROOT or use a packaged Filament build on this platform.")
+    endif()
+    if(NOT DART_FILAMENT_VERSION STREQUAL "1.71.3")
+      message(FATAL_ERROR "DART_FETCH_FILAMENT has a pinned hash only for DART_FILAMENT_VERSION=1.71.3. Update the URL hash before changing the version.")
+    endif()
+
+    include(FetchContent)
+    FetchContent_Declare(filament_prebuilt
+      URL "https://github.com/google/filament/releases/download/v${DART_FILAMENT_VERSION}/filament-v${DART_FILAMENT_VERSION}-linux.tgz"
+      URL_HASH SHA256=d41963799c156e2eceff6c8f89d76ce26c3213972f63aa90add5e446a712e12e
+      DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    )
+    FetchContent_GetProperties(filament_prebuilt)
+    if(NOT filament_prebuilt_POPULATED)
+      cmake_policy(PUSH)
+      if(POLICY CMP0169)
+        cmake_policy(SET CMP0169 OLD)
+      endif()
+      FetchContent_Populate(filament_prebuilt)
+      cmake_policy(POP)
+    endif()
+
+    set(_dart_fetched_filament_root "${filament_prebuilt_SOURCE_DIR}")
+    if(EXISTS "${_dart_fetched_filament_root}/filament/include")
+      set(_dart_fetched_filament_root "${_dart_fetched_filament_root}/filament")
+    endif()
+    set(Filament_ROOT "${_dart_fetched_filament_root}" CACHE PATH "Fetched Filament install tree" FORCE)
+  elseif(NOT DART_USE_SYSTEM_FILAMENT)
+    message(FATAL_ERROR "DART_BUILD_GUI_FILAMENT=ON requires DART_USE_SYSTEM_FILAMENT=ON unless DART_FETCH_FILAMENT=ON is explicitly set.")
+  endif()
+
+  dart_find_package(Filament)
+  if(NOT Filament_FOUND)
+    message(FATAL_ERROR "Filament GUI was requested (DART_BUILD_GUI_FILAMENT=ON) but Filament could not be found. Set Filament_ROOT to a Filament install tree that contains include/, lib/, and bin/matc.")
+  endif()
+
+  find_package(glfw3 CONFIG REQUIRED)
+
+  if(NOT TARGET imgui::imgui AND NOT TARGET dart-imgui-lib)
+    message(FATAL_ERROR "Filament GUI was requested but no ImGui target is available.")
   endif()
 endif()
 

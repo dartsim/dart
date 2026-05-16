@@ -3,7 +3,7 @@ dartpy Python API Reference
 
 Welcome to the dartpy Python API documentation. This documentation is automatically generated from the dartpy Python bindings source code.
 
-dartpy provides Python bindings for DART (Dynamic Animation and Robotics Toolkit), allowing you to use DART's powerful physics simulation and robotics capabilities from Python.
+dartpy provides Python bindings for DART (Dynamic Animation and Robotics Toolkit), a research-focused physics engine for robotics, animation, and machine learning. It gives Python users access to DART's dynamics, collision, model-loading, and simulation foundations without requiring them to leave the Python workflow.
 
 .. toctree::
    :maxdepth: 2

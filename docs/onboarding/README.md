@@ -1,4 +1,4 @@
-# DART GUI - Developer Onboarding Guide
+# DART Developer Onboarding Guide
 
 ## Start here next time
 
@@ -25,7 +25,13 @@
 
 ## 1. Overview
 
-**DART** (Dynamic Animation and Robotics Toolkit) is a comprehensive C++ physics engine for robotics simulation, kinematics, dynamics, and control. The **dart_gui** component provides 3D visualization and interactive manipulation capabilities built on OpenSceneGraph (OSG) and Dear ImGui.
+**DART** (Dynamic Animation and Robotics Toolkit) is a research-focused C++20
+physics engine for robotics, animation, and machine learning. It exposes
+transparent kinematics, dynamics, collision, constraint-solving, model-loading,
+and Python-binding foundations so researchers can build on DART rather than
+treating the simulator as a black box. The **dart_gui** component provides 3D
+visualization and interactive manipulation capabilities built on OpenSceneGraph
+(OSG) and Dear ImGui.
 
 ### Release & Branch Strategy
 
@@ -64,6 +70,8 @@ This onboarding guide is organized into several focused documents:
 - **[testing.md](testing.md)** - Test suite organization, unit vs integration tests, running tests
 - **[ci-cd.md](ci-cd.md)** - CI/CD workflows, caching strategies, and performance optimization
 - **[release-roadmap.md](release-roadmap.md)** - Release/branch strategy and deprecation policy
+- **[api-boundaries.md](api-boundaries.md)** - Public vs internal API policy, Python exposure, and symbol visibility
+- **[api-boundary-inventory.md](api-boundary-inventory.md)** - Generated public-header and dartpy boundary inventory
 - **[architecture.md](architecture.md)** - Deep dive into DART's simulation core
 - **[dynamics.md](dynamics.md)** - Articulated body system and kinematics
 - **[constraints.md](constraints.md)** - Constraint resolution and collision response
@@ -1331,7 +1339,8 @@ This repository contains additional detailed analysis documents:
 
 ## Summary
 
-**DART GUI** is a mature, research-grade robotics simulation and visualization library with:
+**DART** is a mature, research-focused physics engine and visualization stack
+with:
 
 ✅ **O(n) efficient dynamics** via Featherstone algorithms
 ✅ **Interactive 3D visualization** with OSG + ImGui

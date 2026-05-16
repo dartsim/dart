@@ -250,9 +250,25 @@ public:
 
   void setDisplayList(int index);
 
+  /// Material assignment range for a contiguous part of a TriMesh-backed mesh.
+  struct SubMeshRange
+  {
+    std::size_t vertexOffset{0};
+    std::size_t vertexCount{0};
+    std::size_t triangleOffset{0};
+    std::size_t triangleCount{0};
+    unsigned int materialIndex{0};
+  };
+
   /// Returns materials extracted from the mesh (for rendering without Assimp).
   /// This provides an Assimp-free way to access material properties.
   std::span<const MeshMaterial> getMaterials() const;
+
+  /// Returns submesh ranges extracted from the mesh source.
+  ///
+  /// Each range references contiguous vertices and triangles in TriMesh order
+  /// and identifies the material index assigned by the source mesh.
+  std::span<const SubMeshRange> getSubMeshRanges() const;
 
   /// Returns the number of materials in this mesh.
   std::size_t getNumMaterials() const;
@@ -260,6 +276,19 @@ public:
   /// Returns a specific material by index.
   /// Returns nullptr if index is out of bounds.
   const MeshMaterial* getMaterial(std::size_t index) const;
+
+  /// Returns texture coordinates aligned with TriMesh vertex order.
+  ///
+  /// These coordinates are extracted from Assimp-backed mesh sources when
+  /// available. The vector is empty when no texture coordinates are available
+  /// or the mesh was created without source texture-coordinate metadata.
+  std::span<const Eigen::Vector3d> getTextureCoords() const;
+
+  /// Returns the number of valid texture coordinate components.
+  ///
+  /// A value of 0 means the mesh has no texture coordinates. Values are clamped
+  /// to 1, 2, or 3 for meshes that do provide coordinates.
+  int getTextureCoordComponents() const;
 
   [[deprecated(
       "Use TriMesh-based APIs; Assimp APIs will be removed in DART "
@@ -307,15 +336,6 @@ protected:
   private:
     std::shared_ptr<const aiScene> mMesh;
     MeshOwnership mMeshOwnership{MeshOwnership::None};
-  };
-
-  struct SubMeshRange
-  {
-    std::size_t vertexOffset{0};
-    std::size_t vertexCount{0};
-    std::size_t triangleOffset{0};
-    std::size_t triangleCount{0};
-    unsigned int materialIndex{0};
   };
 
   static std::shared_ptr<const aiScene> makeMeshHandle(

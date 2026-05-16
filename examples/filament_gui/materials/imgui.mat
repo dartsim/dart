@@ -1,0 +1,27 @@
+material {
+    name : dartImGui,
+    shadingModel : unlit,
+    blending : transparent,
+    depthWrite : false,
+    depthCulling : false,
+    doubleSided : true,
+    requires : [
+        color,
+        uv0
+    ],
+    parameters : [
+        {
+            type : sampler2d,
+            name : fontTexture
+        }
+    ]
+}
+
+fragment {
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+        vec4 color = getColor();
+        float alpha = color.a * texture(materialParams_fontTexture, getUV0()).a;
+        material.baseColor = vec4(color.rgb * alpha, alpha);
+    }
+}

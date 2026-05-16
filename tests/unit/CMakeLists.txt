@@ -216,6 +216,7 @@ dart_add_test("unit" UNIT_dynamics_UniversalJoint dynamics/test_universal_joint.
 dart_add_test("unit" UNIT_dynamics_ShapeNodePtr dynamics/test_shape_node_ptr.cpp)
 dart_add_test("unit" UNIT_dynamics_BodyNodePtr dynamics/test_body_node_ptr.cpp)
 dart_add_test("unit" UNIT_dynamics_NodePtr dynamics/test_node_ptr.cpp)
+dart_add_test("unit" UNIT_dynamics_MeshMaterial dynamics/test_mesh_material.cpp)
 dart_add_test("unit" UNIT_dynamics_MeshShape dynamics/test_mesh_shape.cpp)
 dart_add_test("unit" UNIT_dynamics_HeightmapShape dynamics/test_heightmap_shape.cpp)
 dart_add_test("unit" UNIT_dynamics_SphereShape dynamics/test_sphere_shape.cpp)
@@ -330,6 +331,14 @@ dart_build_tests(
 # ==============================================================================
 # GUI Tests
 # ==============================================================================
+if(TARGET dart-gui-experimental)
+  dart_add_test(
+    "unit"
+    UNIT_gui_FilamentSceneExtraction
+    gui/test_filament_scene_extraction.cpp)
+  target_link_libraries(UNIT_gui_FilamentSceneExtraction dart-gui-experimental)
+endif()
+
 if(TARGET dart-gui)
   dart_add_test("unit" UNIT_gui_HeightmapShapeNode gui/test_heightmap_shape_node.cpp)
   dart_add_test(

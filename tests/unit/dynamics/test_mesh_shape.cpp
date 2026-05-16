@@ -915,6 +915,151 @@ TEST(MeshShapeTest, TriMeshGetMeshPreservesTextureCoords)
   std::filesystem::remove(objPath, ec);
 }
 
+TEST(MeshShapeTest, GltfFixturePreservesPbrMaterialsAndTextureCoords)
+{
+  const std::string filePath = dart::config::dataPath("gltf/pbr_triangle.gltf");
+  auto retriever = std::make_shared<common::LocalResourceRetriever>();
+  const common::Uri meshUri = common::Uri::createFromPath(filePath);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* scene = dynamics::MeshShape::loadMesh(meshUri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+  ASSERT_NE(scene, nullptr);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  dynamics::MeshShape shape(Eigen::Vector3d::Ones(), scene, meshUri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+
+  const auto texCoords = shape.getTextureCoords();
+  ASSERT_EQ(texCoords.size(), 3u);
+  EXPECT_EQ(shape.getTextureCoordComponents(), 2);
+  bool foundNonzeroTexCoord = false;
+  for (const auto& texCoord : texCoords) {
+    EXPECT_GE(texCoord.x(), 0.0);
+    EXPECT_LE(texCoord.x(), 1.0);
+    EXPECT_GE(texCoord.y(), 0.0);
+    EXPECT_LE(texCoord.y(), 1.0);
+    EXPECT_DOUBLE_EQ(texCoord.z(), 0.0);
+    foundNonzeroTexCoord |= texCoord.head<2>().squaredNorm() > 0.0;
+  }
+  EXPECT_TRUE(foundNonzeroTexCoord);
+
+  const auto subMeshRanges = shape.getSubMeshRanges();
+  ASSERT_EQ(subMeshRanges.size(), 1u);
+  EXPECT_EQ(subMeshRanges[0].triangleOffset, 0u);
+  EXPECT_EQ(subMeshRanges[0].triangleCount, 1u);
+  EXPECT_EQ(subMeshRanges[0].materialIndex, 0u);
+
+  ASSERT_FALSE(shape.getMaterials().empty());
+  const auto* material = shape.getMaterial(0u);
+  ASSERT_NE(material, nullptr);
+  EXPECT_TRUE(material->diffuse.isApprox(
+      Eigen::Vector4f(0.12f, 0.34f, 0.56f, 0.78f), 1e-6f));
+  EXPECT_FLOAT_EQ(material->metallicFactor, 0.72f);
+  EXPECT_FLOAT_EQ(material->roughnessFactor, 0.31f);
+  EXPECT_TRUE(material->emissive.isApprox(
+      Eigen::Vector4f(0.02f, 0.03f, 0.04f, 1.0f), 1e-6f));
+  EXPECT_NE(
+      material->baseColorTexturePath.find("block.png"), std::string::npos);
+  EXPECT_NE(
+      material->metallicRoughnessTexturePath.find("block_hidden.png"),
+      std::string::npos);
+  EXPECT_NE(material->normalTexturePath.find("block.png"), std::string::npos);
+  EXPECT_NE(
+      material->occlusionTexturePath.find("block_hidden.png"),
+      std::string::npos);
+  EXPECT_NE(material->emissiveTexturePath.find("block.png"), std::string::npos);
+  EXPECT_GE(material->textureImagePaths.size(), 5u);
+}
+
+TEST(MeshShapeTest, GltfMultiMaterialFixturePreservesPbrMaterialParts)
+{
+  const std::string filePath
+      = dart::config::dataPath("gltf/pbr_multi_material.gltf");
+  auto retriever = std::make_shared<common::LocalResourceRetriever>();
+  const common::Uri meshUri = common::Uri::createFromPath(filePath);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* scene = dynamics::MeshShape::loadMesh(meshUri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+  ASSERT_NE(scene, nullptr);
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  dynamics::MeshShape shape(Eigen::Vector3d::Ones(), scene, meshUri, retriever);
+  DART_SUPPRESS_DEPRECATED_END
+
+  const auto texCoords = shape.getTextureCoords();
+  ASSERT_GE(texCoords.size(), 4u);
+  EXPECT_EQ(shape.getTextureCoordComponents(), 2);
+  for (const auto& texCoord : texCoords) {
+    EXPECT_GE(texCoord.x(), 0.0);
+    EXPECT_LE(texCoord.x(), 1.0);
+    EXPECT_GE(texCoord.y(), 0.0);
+    EXPECT_LE(texCoord.y(), 1.0);
+    EXPECT_DOUBLE_EQ(texCoord.z(), 0.0);
+  }
+
+  const auto subMeshRanges = shape.getSubMeshRanges();
+  ASSERT_GE(subMeshRanges.size(), 2u);
+  std::set<unsigned int> materialIndices;
+  std::size_t triangleCount = 0u;
+  for (const auto& range : subMeshRanges) {
+    materialIndices.insert(range.materialIndex);
+    triangleCount += range.triangleCount;
+  }
+  EXPECT_GE(triangleCount, 2u);
+  EXPECT_TRUE(materialIndices.contains(0u));
+  EXPECT_TRUE(materialIndices.contains(1u));
+
+  ASSERT_GE(shape.getMaterials().size(), 2u);
+  const auto* opaqueMaterial = shape.getMaterial(0u);
+  const auto* transparentMaterial = shape.getMaterial(1u);
+  ASSERT_NE(opaqueMaterial, nullptr);
+  ASSERT_NE(transparentMaterial, nullptr);
+
+  EXPECT_TRUE(opaqueMaterial->diffuse.isApprox(
+      Eigen::Vector4f(0.9f, 0.18f, 0.12f, 1.0f), 1e-6f));
+  EXPECT_FLOAT_EQ(opaqueMaterial->metallicFactor, 0.25f);
+  EXPECT_FLOAT_EQ(opaqueMaterial->roughnessFactor, 0.45f);
+  EXPECT_TRUE(opaqueMaterial->emissive.isApprox(
+      Eigen::Vector4f(0.0f, 0.0f, 0.05f, 1.0f), 1e-6f));
+  EXPECT_NE(
+      opaqueMaterial->baseColorTexturePath.find("block.png"),
+      std::string::npos);
+  EXPECT_NE(
+      opaqueMaterial->metallicRoughnessTexturePath.find("block_hidden.png"),
+      std::string::npos);
+  EXPECT_NE(
+      opaqueMaterial->normalTexturePath.find("block.png"), std::string::npos);
+  EXPECT_NE(
+      opaqueMaterial->occlusionTexturePath.find("block_hidden.png"),
+      std::string::npos);
+  EXPECT_NE(
+      opaqueMaterial->emissiveTexturePath.find("block.png"), std::string::npos);
+
+  EXPECT_TRUE(transparentMaterial->diffuse.isApprox(
+      Eigen::Vector4f(0.1f, 0.5f, 0.9f, 0.6f), 1e-6f));
+  EXPECT_FLOAT_EQ(transparentMaterial->metallicFactor, 0.8f);
+  EXPECT_FLOAT_EQ(transparentMaterial->roughnessFactor, 0.2f);
+  EXPECT_TRUE(transparentMaterial->emissive.isApprox(
+      Eigen::Vector4f(0.02f, 0.06f, 0.1f, 1.0f), 1e-6f));
+  EXPECT_NE(
+      transparentMaterial->baseColorTexturePath.find("block_hidden.png"),
+      std::string::npos);
+  EXPECT_NE(
+      transparentMaterial->metallicRoughnessTexturePath.find("block.png"),
+      std::string::npos);
+  EXPECT_NE(
+      transparentMaterial->normalTexturePath.find("block_hidden.png"),
+      std::string::npos);
+  EXPECT_NE(
+      transparentMaterial->occlusionTexturePath.find("block.png"),
+      std::string::npos);
+  EXPECT_NE(
+      transparentMaterial->emissiveTexturePath.find("block_hidden.png"),
+      std::string::npos);
+}
+
 TEST(MeshShapeTest, TriMeshGetMeshPreservesMaterialIndices)
 {
   const auto tempDir = std::filesystem::temp_directory_path();
@@ -1173,6 +1318,25 @@ TEST(MeshShapeTest, ConvertAssimpMeshPopulatesSubMeshes)
   ASSERT_EQ(ranges.size(), 2u);
   EXPECT_EQ(ranges[0].triangleCount, 1u);
   EXPECT_EQ(ranges[1].triangleOffset, 1u);
+}
+
+TEST(MeshShapeTest, GetSubMeshRangesReturnsExtractedRanges)
+{
+  DirectAssignMeshShape shape;
+
+  const auto triMesh = shape.getTriMesh();
+  ASSERT_NE(triMesh, nullptr);
+
+  const auto ranges = shape.getSubMeshRanges();
+  ASSERT_EQ(ranges.size(), 2u);
+  EXPECT_EQ(ranges[0].vertexOffset, 0u);
+  EXPECT_EQ(ranges[0].vertexCount, 3u);
+  EXPECT_EQ(ranges[0].triangleOffset, 0u);
+  EXPECT_EQ(ranges[0].triangleCount, 1u);
+  EXPECT_EQ(ranges[1].vertexOffset, 3u);
+  EXPECT_EQ(ranges[1].vertexCount, 3u);
+  EXPECT_EQ(ranges[1].triangleOffset, 1u);
+  EXPECT_EQ(ranges[1].triangleCount, 1u);
 }
 
 TEST(MeshShapeTest, ConvertToAssimpMeshUsesEmbeddedMaterials)
@@ -2176,6 +2340,164 @@ TEST(MeshShapeTest, TriMeshConstructorPreservesTexturePaths)
     }
   }
   EXPECT_TRUE(foundTexture);
+
+  std::error_code ec;
+  std::filesystem::remove(objPath, ec);
+}
+
+TEST(MeshShapeTest, ExtractMaterialsPreservesPbrMetadata)
+{
+  const auto tempDir = std::filesystem::temp_directory_path();
+  const auto timestamp
+      = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+  const auto baseName
+      = std::string("dart_meshshape_pbr_") + std::to_string(timestamp);
+  const auto objPath = tempDir / (baseName + ".obj");
+
+  {
+    std::ofstream objFile(objPath.string());
+    ASSERT_TRUE(objFile);
+    objFile << "# placeholder file for mesh uri\n";
+  }
+
+  auto* scene = new aiScene();
+  scene->mNumMaterials = 1;
+  scene->mMaterials = new aiMaterial*[scene->mNumMaterials];
+  scene->mMaterials[0] = new aiMaterial();
+
+  const Eigen::Vector4f expectedBaseColor(0.12f, 0.34f, 0.56f, 0.78f);
+  aiColor4D baseColor(
+      expectedBaseColor.x(),
+      expectedBaseColor.y(),
+      expectedBaseColor.z(),
+      expectedBaseColor.w());
+  ASSERT_EQ(
+      scene->mMaterials[0]->AddProperty(&baseColor, 1u, AI_MATKEY_BASE_COLOR),
+      AI_SUCCESS);
+  float metallic = 0.72f;
+  ASSERT_EQ(
+      scene->mMaterials[0]->AddProperty(
+          &metallic, 1u, AI_MATKEY_METALLIC_FACTOR),
+      AI_SUCCESS);
+  float roughness = 0.0f;
+  ASSERT_EQ(
+      scene->mMaterials[0]->AddProperty(
+          &roughness, 1u, AI_MATKEY_ROUGHNESS_FACTOR),
+      AI_SUCCESS);
+
+  aiString baseColorTexture("textures/base_color.png");
+  ASSERT_EQ(
+      scene->mMaterials[0]->AddProperty(
+          &baseColorTexture, AI_MATKEY_TEXTURE(aiTextureType_BASE_COLOR, 0)),
+      AI_SUCCESS);
+  aiString metallicTexture("textures/metallic.png");
+  ASSERT_EQ(
+      scene->mMaterials[0]->AddProperty(
+          &metallicTexture, AI_MATKEY_TEXTURE(aiTextureType_METALNESS, 0)),
+      AI_SUCCESS);
+  aiString roughnessTexture("textures/roughness.png");
+  ASSERT_EQ(
+      scene->mMaterials[0]->AddProperty(
+          &roughnessTexture,
+          AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE_ROUGHNESS, 0)),
+      AI_SUCCESS);
+#if DART_ASSIMP_VERSION_MAJOR >= 6
+  aiString metallicRoughnessTexture("textures/metallic_roughness.png");
+  ASSERT_EQ(
+      scene->mMaterials[0]->AddProperty(
+          &metallicRoughnessTexture,
+          AI_MATKEY_TEXTURE(aiTextureType_GLTF_METALLIC_ROUGHNESS, 0)),
+      AI_SUCCESS);
+#endif
+  aiString normalTexture("textures/normal.png");
+  ASSERT_EQ(
+      scene->mMaterials[0]->AddProperty(
+          &normalTexture, AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0)),
+      AI_SUCCESS);
+  aiString occlusionTexture("textures/occlusion.png");
+  ASSERT_EQ(
+      scene->mMaterials[0]->AddProperty(
+          &occlusionTexture,
+          AI_MATKEY_TEXTURE(aiTextureType_AMBIENT_OCCLUSION, 0)),
+      AI_SUCCESS);
+  aiString emissiveTexture("textures/emissive.png");
+  ASSERT_EQ(
+      scene->mMaterials[0]->AddProperty(
+          &emissiveTexture, AI_MATKEY_TEXTURE(aiTextureType_EMISSIVE, 0)),
+      AI_SUCCESS);
+
+  scene->mNumMeshes = 1;
+  scene->mMeshes = new aiMesh*[scene->mNumMeshes];
+  auto* mesh = new aiMesh();
+  mesh->mNumVertices = 3;
+  mesh->mVertices = new aiVector3D[mesh->mNumVertices];
+  mesh->mVertices[0] = aiVector3D(0.0f, 0.0f, 0.0f);
+  mesh->mVertices[1] = aiVector3D(1.0f, 0.0f, 0.0f);
+  mesh->mVertices[2] = aiVector3D(0.0f, 1.0f, 0.0f);
+  mesh->mNumFaces = 1;
+  mesh->mFaces = new aiFace[mesh->mNumFaces];
+  mesh->mFaces[0].mNumIndices = 3;
+  mesh->mFaces[0].mIndices = new unsigned int[3];
+  mesh->mFaces[0].mIndices[0] = 0u;
+  mesh->mFaces[0].mIndices[1] = 1u;
+  mesh->mFaces[0].mIndices[2] = 2u;
+  mesh->mPrimitiveTypes = aiPrimitiveType_TRIANGLE;
+  mesh->mMaterialIndex = 0u;
+  scene->mMeshes[0] = mesh;
+
+  scene->mRootNode = new aiNode();
+  scene->mRootNode->mNumMeshes = 1;
+  scene->mRootNode->mMeshes = new unsigned int[1];
+  scene->mRootNode->mMeshes[0] = 0u;
+
+  const common::Uri meshUri = common::Uri::createFromPath(objPath.string());
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  dynamics::MeshShape shape(
+      Eigen::Vector3d::Ones(),
+      scene,
+      meshUri,
+      nullptr,
+      dynamics::MeshShape::MeshOwnership::Manual);
+  DART_SUPPRESS_DEPRECATED_END
+
+  ASSERT_FALSE(shape.getMaterials().empty());
+  const auto* material = shape.getMaterial(0u);
+  ASSERT_NE(material, nullptr);
+  EXPECT_TRUE(material->diffuse.isApprox(expectedBaseColor, 1e-6f));
+  EXPECT_FLOAT_EQ(material->metallicFactor, metallic);
+  EXPECT_FLOAT_EQ(material->roughnessFactor, roughness);
+  EXPECT_NE(
+      material->baseColorTexturePath.find("textures/base_color.png"),
+      std::string::npos);
+  EXPECT_NE(
+      material->metallicTexturePath.find("textures/metallic.png"),
+      std::string::npos);
+  EXPECT_NE(
+      material->roughnessTexturePath.find("textures/roughness.png"),
+      std::string::npos);
+#if DART_ASSIMP_VERSION_MAJOR >= 6
+  EXPECT_NE(
+      material->metallicRoughnessTexturePath.find(
+          "textures/metallic_roughness.png"),
+      std::string::npos);
+#else
+  EXPECT_TRUE(material->metallicRoughnessTexturePath.empty());
+#endif
+  EXPECT_NE(
+      material->normalTexturePath.find("textures/normal.png"),
+      std::string::npos);
+  EXPECT_NE(
+      material->occlusionTexturePath.find("textures/occlusion.png"),
+      std::string::npos);
+  EXPECT_NE(
+      material->emissiveTexturePath.find("textures/emissive.png"),
+      std::string::npos);
+#if DART_ASSIMP_VERSION_MAJOR >= 6
+  EXPECT_GE(material->textureImagePaths.size(), 7u);
+#else
+  EXPECT_GE(material->textureImagePaths.size(), 6u);
+#endif
 
   std::error_code ec;
   std::filesystem::remove(objPath, ec);
