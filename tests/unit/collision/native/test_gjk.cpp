@@ -36,6 +36,10 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
+
+#include <cmath>
+
 using namespace dart::collision::native;
 
 SupportFunction makeSphereSupport(const Eigen::Vector3d& center, double radius)
@@ -250,6 +254,38 @@ TEST(Epa, SphereSphereIntersecting)
   } else {
     EXPECT_LT(gjk.simplex.size, 4);
   }
+}
+
+TEST(Epa, BoxBoxPenetrationDepthAnalytic)
+{
+  auto supportA
+      = makeBoxSupport(Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones());
+  auto supportB
+      = makeBoxSupport(Eigen::Vector3d(1.5, 0.0, 0.0), Eigen::Vector3d::Ones());
+
+  GjkSimplex simplex;
+  const std::array<Eigen::Vector3d, 4> directions
+      = {Eigen::Vector3d::UnitX(),
+         Eigen::Vector3d::UnitY(),
+         Eigen::Vector3d::UnitZ(),
+         Eigen::Vector3d(-1.0, -1.0, -1.0)};
+
+  for (const auto& direction : directions) {
+    SupportPoint point;
+    point.v1 = supportA(direction);
+    point.v2 = supportB(-direction);
+    point.v = point.v1 - point.v2;
+    simplex.push(point);
+  }
+
+  const EpaResult epa = Epa::penetration(supportA, supportB, simplex);
+  ASSERT_TRUE(epa.success);
+
+  EXPECT_NEAR(epa.depth, 0.5, 1e-4);
+  EXPECT_GT(
+      std::abs(epa.normal.normalized().dot(Eigen::Vector3d::UnitX())), 0.99);
+  EXPECT_TRUE(epa.pointOnA.allFinite());
+  EXPECT_TRUE(epa.pointOnB.allFinite());
 }
 
 TEST(Mpr, SphereSpherePenetrationDepthAnalytic)
