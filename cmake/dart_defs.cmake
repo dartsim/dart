@@ -846,6 +846,7 @@ endfunction()
 function(add_component_targets package_name component)
   set(component_prefix "${package_name}_component_")
   set(dependency_targets ${ARGN})
+  set(has_interface_dependency_target FALSE)
 
   is_component(is_valid "${package_name}" "${component}")
   if(NOT is_valid)
@@ -883,6 +884,7 @@ function(add_component_targets package_name component)
     endif()
 
     if("${dependency_type}" STREQUAL INTERFACE_LIBRARY)
+      set(has_interface_dependency_target TRUE)
       install(
         TARGETS "${dependency_target}"
         EXPORT "${target}"
@@ -908,6 +910,16 @@ function(add_component_targets package_name component)
     APPEND
     PROPERTY "${component_prefix}LIBRARIES" ${dependency_targets}
   )
+
+  if(has_interface_dependency_target)
+    # Interface components do not generate per-config import files. Remove
+    # leftovers when a build tree previously configured this component as a
+    # concrete library target.
+    file(GLOB stale_component_target_configs
+      "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/Export/*/${package_name}_${component}Targets-*.cmake"
+    )
+    file(REMOVE ${stale_component_target_configs})
+  endif()
 endfunction()
 
 #-------------------------------------------------------------------------------

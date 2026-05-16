@@ -57,6 +57,20 @@ add_component(${PROJECT_NAME} collision-fcl)
 add_component(${PROJECT_NAME} collision-bullet)
 add_component(${PROJECT_NAME} collision-ode)
 
+function(dart_remove_stale_legacy_collision_artifacts component)
+  # These components are now interface facades. Clean old shared/static
+  # artifacts from reused build directories so package/link audits see the
+  # current target graph instead of stale pre-facade libraries.
+  file(GLOB stale_legacy_collision_artifacts
+    "${DART_BINARY_DIR}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}dart-collision-${component}${CMAKE_SHARED_LIBRARY_SUFFIX}*"
+    "${DART_BINARY_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}dart-collision-${component}${CMAKE_STATIC_LIBRARY_SUFFIX}"
+    "${DART_BINARY_DIR}/bin/${CMAKE_SHARED_LIBRARY_PREFIX}dart-collision-${component}${CMAKE_SHARED_LIBRARY_SUFFIX}*"
+    "${DART_BINARY_DIR}/bin/${CMAKE_IMPORT_LIBRARY_PREFIX}dart-collision-${component}${CMAKE_IMPORT_LIBRARY_SUFFIX}"
+    "${DART_BINARY_DIR}/dart/collision/${component}/CMakeFiles/Export/*/dart_collision-${component}Targets*.cmake"
+  )
+  file(REMOVE ${stale_legacy_collision_artifacts})
+endfunction()
+
 function(dart_add_core_headers)
   dart_property_add(DART_CORE_HEADERS ${ARGN})
 endfunction()
@@ -288,6 +302,8 @@ foreach(_dart_legacy_collision_component fcl bullet ode)
     ${PROJECT_NAME}
     collision-${_dart_legacy_collision_component}
     dart)
+  dart_remove_stale_legacy_collision_artifacts(
+    ${_dart_legacy_collision_component})
 endforeach()
 unset(_dart_legacy_collision_component)
 unset(_dart_legacy_collision_target)
