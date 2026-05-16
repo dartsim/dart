@@ -237,6 +237,30 @@ this read-only recheck. This preserves the current user boundary: do not open,
 reopen, push for, or otherwise mutate a PR until the maintainer explicitly
 asks.
 
+The latest branch-local no-PR recheck before recording this note was run after
+pre-record head `f21cf9c4a88623960b41075a63cd5ff432d4da86`
+(`Harmonize .gitignore for all AI agent folders`) and kept the same boundary:
+
+- `git status --short --branch` reported
+  `feature/new_coll...origin/feature/new_coll [ahead 141]` with only this
+  audit note still uncommitted.
+- `origin/feature/new_coll` remained
+  `f8f5663d514582d8e7ec5d13871f254671083e0d`.
+- `gh pr list --repo dartsim/dart --head feature/new_coll --state all`
+  returned only PR #2652, still `CLOSED`, draft, based on `main`, updated
+  `2026-05-14T19:20:08Z`, and anchored to old head
+  `714d220d82a6ba99350bf2214fc9696f5495a30f`.
+- `gh run list --repo dartsim/dart --branch feature/new_coll --commit f21cf9c4a88`
+  returned `[]`.
+- `pixi run lint` passed on the same tree after the supervisor Markdown
+  formatting fix and AI agent folder ignore refinements, including
+  `check-collision-runtime-isolation` and `audit-collision-compat-facades`.
+
+No PR metadata, workflow state, branch state, or GitHub artifact was mutated by
+this recheck. Later docs-only audit commits may move `HEAD`; use
+`git status --short --branch`, `git rev-parse HEAD`, and the `gh` read-only
+commands above for the exact current local and review-surface state.
+
 ## Current Local Full Validation Recheck (2026-05-16)
 
 After the Atlas Simbicon controller stability coverage update, a fresh local
