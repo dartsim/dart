@@ -141,10 +141,29 @@ compile_flags.txt
 
 .omc/
 
-# Local Claude Code session state (per-project agent settings, hooks,
-# scheduled tasks). Should NOT be tracked — every developer has their
-# own agent configuration.
-.claude/
+# Claude Code project files: team-shared commands + skills ARE
+# source-controlled (so every contributor gets the same DART workflows).
+# Per-developer ephemera (session state, scheduled-task locks, local
+# settings overrides, project-scoped agent runtime caches) MUST NOT be.
+.claude/*
+!.claude/commands/
+!.claude/commands/**/*.md
+!.claude/skills/
+!.claude/skills/**/
+!.claude/skills/**/SKILL.md
+!.claude/agents/
+!.claude/agents/**/*.md
+!.claude/hooks/
+!.claude/hooks/**/*
+!.claude/settings.json
+# Explicitly NOT included (per-developer ephemera):
+#   .claude/scheduled_tasks.json   (in-flight cron jobs for this session)
+#   .claude/scheduled_tasks.lock   (cron daemon lock file)
+#   .claude/settings.local.json    (per-developer permission overrides)
+#   .claude/projects/              (per-developer session logs / memory)
+#   .claude/statsig/               (per-developer feature-flag cache)
+#   .claude/todos/                 (per-developer TaskCreate state)
+#   .claude/ide/                   (per-developer IDE integration)
 
 # Temporary apt downloads
 .tmp_apt/
