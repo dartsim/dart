@@ -8,6 +8,8 @@
   Legacy OpenSceneGraph example sources were removed; common historical GUI
   example names are restored as thin `dart::gui` launchers where a replacement
   scene exists.
+- The application-level viewer is `apps/dartsim/`, built as the `dartsim`
+  executable. It is intentionally not listed as an educational example.
 - Legacy OpenSceneGraph C++ tutorials were removed from `tutorials/`.
 
 ## Categories (Ordered)
@@ -18,7 +20,6 @@
 
 ### 01 Visualization and Interaction
 
-- `dartsim`
 - `hello_world`
 - `rigid_cubes`
 - `drag_and_drop`
@@ -49,10 +50,10 @@ For C++ examples, the generic in-tree runner is:
 pixi run ex <example-target>
 ```
 
-For example, `pixi run ex csv_logger` builds and runs `csv_logger`. GUI
-examples with extra CMake requirements, such as `dartsim`, `hello_world`,
-`boxes`, `rigid_chain`, `atlas_simbicon`, and `heightmap`, declare those
-requirements in `scripts/run_cpp_example.py`.
+For example, `pixi run ex csv_logger` builds and runs `csv_logger`. The
+`dartsim` application and GUI examples with extra CMake requirements, such as
+`hello_world`, `boxes`, `rigid_chain`, `atlas_simbicon`, and `heightmap`,
+declare those requirements in `scripts/run_cpp_example.py`.
 
 ## Build Examples as One Project
 

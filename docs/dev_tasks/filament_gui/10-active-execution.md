@@ -66,7 +66,8 @@ context survives across sessions.
   - CodeQL: https://github.com/dartsim/dart/actions/runs/25945825158 was
     running at the latest check.
 - The restored-example repair is pushed:
-  - `examples/dartsim` is the renamed app-level viewer.
+  - At that checkpoint, `examples/dartsim` was the renamed app-level viewer;
+    the current application pivot moves that source to `apps/dartsim`.
   - `dart/gui/application.hpp` exposes the narrow promoted launch API.
   - Historical GUI example executables are restored as thin `dart::gui`
     launchers.
@@ -84,7 +85,8 @@ context survives across sessions.
   tutorial, example, Python, and documentation surfaces.
 - `DART_BUILD_GUI` now defaults according to platform support for the pinned
   Filament path.
-- The backend-named MVP example has been renamed to `examples/dartsim`.
+- The backend-named MVP example has been promoted into the `apps/dartsim`
+  application source tree while preserving the `dartsim` executable name.
 - Stable `dart/gui/*.hpp` headers now own renderer-independent scene, viewer,
   geometry, interaction, debug, and profiling declarations in `dart::gui`.
   `dart/gui/experimental/*` remains as compatibility shims only.
@@ -148,6 +150,17 @@ Implementation direction:
 - Treat Dear ImGui Docking and a docked 3D viewport as first-class application
   goals for `apps/dartsim/`; image-sequence capture is required now, while
   video capture remains a later recording feature.
+
+Implementation state:
+
+- `5d514a4558e` documents the application pivot and branding distinction before
+  code changes.
+- The current code slice moves the existing `dartsim` source directory to
+  `apps/dartsim/` while preserving the `dartsim` target, executable name, pixi
+  runner behavior, and CI smoke-test names.
+- This extraction is intentionally structural. Real app features such as file
+  loading, docking layout, timeline, inspector, log, and recording panels remain
+  follow-up work under `apps/dartsim/app/`.
 
 ## API Promotion Direction
 
@@ -417,17 +430,14 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Commit and push this live documentation flush so the pivot is durable before
-   more code changes.
-2. Move `examples/dartsim/` to `apps/dartsim/` while preserving the `dartsim`
-   target, pixi runner behavior, and CI smoke target names.
-3. Restore the next simple canonical example source (`hello_world`) as a real
+1. Finish validating, commit, and push the `apps/dartsim` extraction checkpoint.
+2. Restore the next simple canonical example source (`hello_world`) as a real
    public-API `dart::gui` program, then continue across all pre-existing
    examples.
-4. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
+3. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
    corresponding example behavior has moved into public-API example code.
-5. Do not start the physical `experimental/` directory move until the
+4. Do not start the physical `experimental/` directory move until the
    application extraction and enough real example sources prove the consumed
    public API surface.
-6. Run `pixi run lint` before every checkpoint commit, then push the commit to
+5. Run `pixi run lint` before every checkpoint commit, then push the commit to
    the tracked remote branch.

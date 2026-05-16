@@ -12,17 +12,17 @@ It should not introduce a stable public API yet.
 
 The original MVP name was backend-oriented because Filament was being evaluated
 as an experiment. That is no longer the right public shape. The maintained
-example should be named for its scope, not its implementation backend:
+application should be named for its scope, not its implementation backend:
 
-- Directory: `examples/dartsim/`
+- Directory: `apps/dartsim/`
 - Target: `dartsim`
 - Binary: `dartsim`
 - Build option: `DART_BUILD_GUI_FILAMENT=ON`
 - Initial dependencies: `dart`, Filament, GLFW, Dear ImGui
 
 Filament, GLFW, and Dear ImGui remain the official implementation stack, but
-they should not appear in the example name or public example API now that there
-is only one maintained built-in renderer.
+they should not appear in the application name or public `dart::gui` API now
+that there is only one maintained built-in renderer.
 
 Branding direction: `DART` remains the project/library name, `libdart` remains
 appropriate for packaging/library contexts, and `dartsim` is the
@@ -30,12 +30,13 @@ application-level simulator/viewer identity. This branch should use `dartsim`
 for the promoted application-level viewer rather than the neutral
 `gui_viewer`.
 
-Start example-local, then move reusable code into `dart::gui` only after the
-API and lifetime boundaries become clear. The scene extraction, picking,
-viewer-runtime, debug, geometry, and capture helpers have now crossed that
-boundary; compatibility shims remain under `dart/gui/experimental`.
-Renderer/window/overlay implementation remains private backend code, not
-example-local public API.
+The initial MVP started as an example-local proof, but `dartsim` is now treated
+as an application-level source tree under `apps/`. Reusable concepts have moved
+into `dart::gui` only after the API and lifetime boundaries became clear. The
+scene extraction, picking, viewer-runtime, debug, geometry, and capture helpers
+have now crossed that boundary; compatibility shims remain under
+`dart/gui/experimental`. Renderer/window/overlay implementation remains private
+backend code, not application-local public API.
 
 ## Implementation status
 

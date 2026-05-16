@@ -49,11 +49,13 @@ disagreement under "Open Issues" instead of editing "Decisions in force".
   CI dispatch.
 - CI Lint on `8796ed5ad99` passed. Linux, macOS, Windows, and CodeQL were
   running at the latest check and should not block independent local progress.
+- Current pivot after `5d514a4558e`: the application source directory is
+  `apps/dartsim/`; `examples/dartsim/` was only an interim location.
 
 ### Decisions in force (do NOT reopen)
 
-1. **Naming is final**. Application-level binary is `dartsim`; example
-   directory is `examples/dartsim/`; public include is
+1. **Naming is final**. Application-level binary is `dartsim`; application
+   directory is `apps/dartsim/`; public include is
    `<dart/gui/application.hpp>`; entry symbol is `dart::gui::runApplication`.
    No `gui_viewer`, no `filament_gui`, no `dart_filament_gui` in user-facing
    strings. Private helper names were also moved away from the old
@@ -104,7 +106,8 @@ disagreement under "Open Issues" instead of editing "Decisions in force".
    PNG sequences in the same checkpoint.
 2. ~~**Retarget the boundary-guard test**~~ (`UNIT_gui_FilamentSceneExtraction`
    in `tests/unit/gui/test_filament_scene_extraction.cpp`) to scan
-   `examples/dartsim/` and the promoted `dart/gui` header surface. The
+   the `dartsim` application entry point and the promoted `dart/gui` header
+   surface. The
    configure-time application check is now exposed through
    `dart_gui_add_application()` and continues to guard the `dartsim` entry
    point.
@@ -256,21 +259,32 @@ rendered frames.
 
 8'. **Move `examples/dartsim/` → `apps/dartsim/` and grow it into a real
 application.** Single `git mv`, then build out the panels listed
-under Decision 1 above. Initial scope: - `apps/dartsim/main.cpp` accepts a positional arg
-(`dartsim <world-file>`) and recognized extensions
-`.urdf|.sdf|.mjcf|.skel|.dartsim`. With no arg, opens an empty
-world and surfaces a "File → Open…" panel button. - `apps/dartsim/app/scene_loader.cpp` dispatches by extension to
-existing `dart::io::DartLoader` / `SdfParser` / `MjcfParser` /
-`SkelParser`. - `apps/dartsim/app/docking_layout.cpp` configures ImGui docking
-with a central 3D viewport node and side-docked
-Scene/Inspector/Timeline/Log panels. **This requires enabling
-ImGui Docking**, which Decision 5 of the original block previously
-listed as out-of-scope; that exclusion is **lifted specifically
-for ImGui Docking** to enable `apps/dartsim/`. - `apps/dartsim/app/recording.cpp` consumes the promoted
-`dart::gui::Recorder` (screenshot + image-sequence) added in item 6. - The ~30 named `--scene` fixtures are NOT exposed in the app's user
-surface. They become dev-only via `dartsim --dev-scene <name>` for
-Codex's continued use, or migrate to the test-fixture target per
-Decision 5.
+under Decision 1 above.
+
+Status: source-directory extraction is implemented in the next code checkpoint
+after `5d514a4558e`; app feature growth remains outstanding.
+
+Initial scope:
+
+- `apps/dartsim/main.cpp` accepts a positional arg
+  (`dartsim <world-file>`) and recognized extensions
+  `.urdf|.sdf|.mjcf|.skel|.dartsim`. With no arg, opens an empty
+  world and surfaces a "File → Open…" panel button.
+- `apps/dartsim/app/scene_loader.cpp` dispatches by extension to
+  existing `dart::io::DartLoader` / `SdfParser` / `MjcfParser` /
+  `SkelParser`.
+- `apps/dartsim/app/docking_layout.cpp` configures ImGui docking
+  with a central 3D viewport node and side-docked
+  Scene/Inspector/Timeline/Log panels. **This requires enabling
+  ImGui Docking**, which Decision 5 of the original block previously
+  listed as out-of-scope; that exclusion is **lifted specifically
+  for ImGui Docking** to enable `apps/dartsim/`.
+- `apps/dartsim/app/recording.cpp` consumes the promoted
+  `dart::gui::Recorder` (screenshot + image-sequence) added in item 6.
+- The ~30 named `--scene` fixtures are NOT exposed in the app's user
+  surface. They become dev-only via `dartsim --dev-scene <name>` for
+  Codex's continued use, or migrate to the test-fixture target per
+  Decision 5.
 
 9'. **Restore each `examples/<name>/main.cpp` from the pre-cleanup OSG
 sources, migrated to `dart::gui`.** Process per example: - Recover the original source via `git log --diff-filter=D --
@@ -331,6 +345,190 @@ templates to restore first; the API-forcing examples (`imgui`,
 - `scene_fixtures.cpp` either shrinks to zero (factories deleted) or
   moves to a test-only fixture target.
 - `dart/gui/experimental/` contains only `[[deprecated]]` shim headers.
+
+### Default lighting: brighten shadow side without flattening contrast
+
+**Problem:** With the orbiting key light off (or before it has rotated
+into a useful position), the side of the scene facing away from the
+key reads as nearly black. The user has to wait for the orbit to
+rotate before geometry on the shadow side is legible. Cranking the
+orbit period faster is a workaround, not a fix.
+
+**Root cause:** the dark side is filled almost entirely by Filament's
+indirect lighting (IBL spherical-harmonics ambient). The current IBL
+intensity and SH ambient floor are tuned for one well-placed key
+light; when that key is misaligned, there is no fill source.
+
+**Fix: apply all three of the levers below at modest amounts.**
+Modern real-time DCCs (Unity HDRP default sky, Unreal Lumen scene
+capture default, Isaac Sim default stage) all combine these.
+
+1. **Raise default IBL intensity by ~1.6×.**
+   - The current `IndirectLight::Builder().intensity(...)` setting in
+     `dart/gui/experimental/detail/filament/render_environment.cpp`
+     should multiply by ~1.6. Filament defaults run ~30k–60k cd/m²;
+     this lifts shadow-side luminance without washing out the lit side.
+   - Zero perf cost, zero asset change.
+
+2. **Add a fixed fill light opposite the key, shadow-disabled.**
+   - Classic 3-point cinematography: a second directional light at
+     ~30% of the key's intensity, pointing from the opposite
+     hemisphere, with shadow casting **off**. This is the largest
+     contributor to shadow-side legibility and the closest analog to
+     what Isaac Sim ships by default.
+   - Add it during scene environment setup; no per-fixture knob needed.
+   - Cost: one extra non-shadow-casting directional light (~0 GPU cost).
+
+3. **Set a small SH ambient floor (~0.18).**
+   - Prevents pitch-black corners even when both directionals miss.
+   - Tuned via the SH band-0 coefficient on the IBL, or as an explicit
+     ambient term added in the lit material. Whichever path keeps the
+     existing IBL workflow intact.
+   - Cost: zero perf.
+
+**What NOT to do:**
+
+- Do not crank only IBL/ambient — the scene flattens and shadows lose
+  contact grounding (which kills the visual-quality shadow gate in
+  `06-visual-quality.md`).
+- Do not disable shadows — they are required by the visual-quality
+  gate and are a useful debugging signal for contact and penetration.
+- Do not change the orbit-light default period or default-on state to
+  paper over the issue. Orbit is a shading-diagnostics aid, not a
+  required scene element. The static lighting must be self-sufficient.
+- Do not introduce per-scene lighting tuning in `scene_fixtures.cpp`
+  for this fix — the change belongs in the renderer's default lighting
+  setup so every scene benefits.
+
+**Implementation notes for Codex:**
+
+- Single focused commit: edit `render_environment.{hpp,cpp}` for IBL
+  intensity scaling, fill-light creation, and SH ambient floor.
+- Update the headless smoke contrast analyzer threshold if needed:
+  the `analyze_contrast` mode in
+  `dart/gui/experimental/detail/filament/testing/analyze_headless_smoke.py`
+  checks dark/mid/bright bucket counts. The fix raises the dark
+  bucket floor; verify the threshold still passes a flat-but-nonblank
+  scene as failing (the contrast gate must still reject vacuous
+  output).
+- Add a focused unit/snapshot test for the lighting setup: build a
+  one-box scene with the orbiting key disabled, headless render, and
+  assert the back-side luminance is above some legibility floor (e.g.
+  the back-face mid pixel value is ≥ 60/255 in the rendered PPM).
+  This locks in the regression.
+- After landing, re-run all per-scene smokes and visually spot-check
+  `--scene atlas-puppet` and `--scene g1` (the most lighting-sensitive
+  due to large robot meshes in shadow).
+
+**Acceptance:**
+
+- With `--no-orbit-light` set, every scene's shadow side is legibly
+  shaded — no pure-black geometry — without flattening the lit side.
+- The visual-quality shadow gate in `06-visual-quality.md` still
+  passes (shadows still visible, contact grounding preserved).
+- The contrast smoke analyzer still rejects flat output; the fix
+  raises the floor without removing the upper-bound check.
+
+---
+
+### Mouse input bindings (replaces current LMB-overloaded scheme)
+
+The current scheme overloads LMB for camera orbit AND selection AND
+forces `Ctrl+LMB` for dragging a selected manipulator. This breaks
+direct manipulation: the Atlas / Hubo / G1 IK target end-effectors
+look draggable but a plain LMB drag does nothing — the user has to
+discover the Ctrl modifier from the README. Move to the
+Unreal / Unity / Isaac Sim convention with Maya/Blender modifier-key
+fallbacks for trackpad and single-button-mouse users.
+
+**Core rule: LMB is for selecting AND dragging selectables.** No
+Ctrl modifier needed. If a renderable is selectable (free-joint body,
+`SimpleFrame` visual, IK target marker, robot end-effector handle), an
+LMB drag on it directly moves it in the camera plane. The previous
+"Ctrl+LMB to confirm you really want to drag" is gone — selectability
+itself is the gate.
+
+**Primary bindings:**
+
+| Gesture                 | Action                                                |
+| ----------------------- | ----------------------------------------------------- |
+| LMB click               | pick / select single renderable under cursor          |
+| LMB drag on selectable  | drag-move that selectable in the camera plane         |
+| LMB drag on empty space | drag selection rectangle (or nothing, MVP-acceptable) |
+| MMB drag                | pan                                                   |
+| RMB drag                | orbit (rotate camera)                                 |
+| Scroll wheel            | zoom                                                  |
+
+**Modifier-key fallbacks (trackpad / one-button parity):**
+
+| Gesture          | Action                   |
+| ---------------- | ------------------------ |
+| Alt + LMB drag   | orbit (Maya / Isaac Sim) |
+| Shift + MMB drag | pan (Blender)            |
+| Alt + RMB drag   | zoom (drag) (Maya)       |
+
+**Axis-constrained manipulation (keep current behavior):**
+
+| Gesture                            | Action                                          |
+| ---------------------------------- | ----------------------------------------------- |
+| X / Y / Z + LMB drag on selectable | constrain drag-move to that world axis          |
+| Arrow / PageUp / PageDown          | nudge selected free-joint body or `SimpleFrame` |
+
+(Note: the X/Y/Z keys are now sticky modifiers held during the drag,
+not Ctrl-prefixed. The previous `Ctrl+X/Y/Z+LMB` becomes just
+`X/Y/Z + LMB`.)
+
+**Disambiguation rules (must be explicit in implementation):**
+
+- A click is a press+release with cursor movement below a small
+  threshold (e.g. 4 px). Above the threshold, the press starts a drag.
+- Pick-test runs on **press**, not release: the renderable under the
+  cursor at press time is the drag target. This makes drag-on-selectable
+  feel responsive and avoids "I started dragging the marker but the
+  camera moved instead" race conditions.
+- Drag-on-selectable suppresses the camera controller for the duration
+  of the press — orbit/pan modifiers do not fire while a manipulator
+  drag is active.
+- A press on empty space starts an LMB-drag-rect (post-MVP) or a no-op
+  (MVP); it does NOT start an orbit. RMB is the only camera-rotate
+  gesture in primary bindings.
+
+**Implementation notes for Codex:**
+
+- Land this as one focused slice inside the promoted `dart::gui`
+  interaction layer (`dart/gui/interaction.hpp` and the GLFW input
+  bridge under `dart/gui/experimental/detail/filament/input.cpp` until
+  item 8b/c moves it). Do NOT change behavior in two places at once.
+- The change touches: orbit-camera input handling, selection click
+  handling, selection drag handling (now no-modifier), the README
+  mouse-bindings table in `apps/dartsim/README.md`, and any end-user docs that
+  mention mouse controls.
+- Add a focused unit test that asserts each binding maps to the right
+  controller action without requiring a graphics context (input event
+  → expected `OrbitCameraDelta` / `SelectionRequest` /
+  `SelectableDragRequest` output). The existing backend-hidden
+  manipulation math tests are the model.
+- Add an end-to-end gesture test for `--scene atlas-puppet`: simulate
+  LMB-press on the right-hand IK target, drag 50 px, release; assert
+  the IK target's world position changed. Repeat for `hubo-puppet` and
+  `g1` to lock in the regression.
+- Keep the headless smoke unaffected — it doesn't consume mouse input.
+- Update `--help` output and the in-app status panel hint string.
+- Document the trade-off in the changelog: this is a deliberate break
+  from the MVP behavior; users who want LMB orbit have the
+  Alt + LMB fallback.
+
+**Acceptance:**
+
+- Mouse interaction in `apps/dartsim/` and any example that opens a
+  window matches the table above.
+- A plain LMB drag on the Atlas / Hubo / G1 right-hand IK target
+  moves the target (regression for the user-reported bug); no Ctrl
+  modifier required.
+- The fallback modifier keys work on a single-button trackpad.
+- Click-without-drag never triggers an orbit.
+- Drag-without-click never triggers a selection.
+- Drag-on-selectable never triggers a camera move.
 
 ---
 

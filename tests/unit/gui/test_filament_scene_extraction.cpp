@@ -297,6 +297,9 @@ constexpr std::array<std::string_view, 3> kForbiddenPromotedGuiTokens
        "dart::gui::experimental",
        "dart-gui-experimental"};
 
+const std::filesystem::path kDartsimApplicationDirectory
+    = std::filesystem::path("apps") / "dartsim";
+
 struct BackendTokenViolation
 {
   std::filesystem::path source;
@@ -626,10 +629,12 @@ TEST(FilamentSceneExtraction, TierAExamplesUsePromotedPanelBoundary)
   }
 }
 
-TEST(FilamentSceneExtraction, FilamentExampleHeadersAvoidDirectFilamentIncludes)
+TEST(
+    FilamentSceneExtraction,
+    DartsimApplicationHeadersAvoidDirectFilamentIncludes)
 {
-  const auto headers = listPublicHeadersInDirectory(
-      std::filesystem::path("examples") / "dartsim");
+  const auto headers
+      = listPublicHeadersInDirectory(kDartsimApplicationDirectory);
 
   const auto violations
       = scanSourceFilesForTokens(headers, kForbiddenFilamentIncludeTokens);
@@ -641,10 +646,10 @@ TEST(FilamentSceneExtraction, FilamentExampleHeadersAvoidDirectFilamentIncludes)
 
 TEST(
     FilamentSceneExtraction,
-    FilamentExampleEntryPointAvoidsDirectFilamentIncludes)
+    DartsimApplicationEntryPointAvoidsDirectFilamentIncludes)
 {
   const std::vector<std::filesystem::path> sources
-      = {std::filesystem::path("examples") / "dartsim" / "main.cpp"};
+      = {kDartsimApplicationDirectory / "main.cpp"};
 
   const auto violations
       = scanSourceFilesForTokens(sources, kForbiddenFilamentIncludeTokens);
@@ -654,10 +659,10 @@ TEST(
   }
 }
 
-TEST(FilamentSceneExtraction, FilamentExampleEntryPointAvoidsBackendTokens)
+TEST(FilamentSceneExtraction, DartsimApplicationEntryPointAvoidsBackendTokens)
 {
   const std::vector<std::filesystem::path> sources
-      = {std::filesystem::path("examples") / "dartsim" / "main.cpp"};
+      = {kDartsimApplicationDirectory / "main.cpp"};
 
   const auto violations
       = scanSourceFilesForTokens(sources, kForbiddenBackendTokens);
@@ -667,10 +672,10 @@ TEST(FilamentSceneExtraction, FilamentExampleEntryPointAvoidsBackendTokens)
   }
 }
 
-TEST(FilamentSceneExtraction, FilamentExampleEntryPointUsesPublicGuiBoundary)
+TEST(FilamentSceneExtraction, DartsimApplicationEntryPointUsesPublicGuiBoundary)
 {
   const std::vector<std::filesystem::path> sources
-      = {std::filesystem::path("examples") / "dartsim" / "main.cpp"};
+      = {kDartsimApplicationDirectory / "main.cpp"};
 
   const auto violations
       = scanSourceFilesForTokens(sources, kForbiddenFilamentDetailTokens);
@@ -680,10 +685,10 @@ TEST(FilamentSceneExtraction, FilamentExampleEntryPointUsesPublicGuiBoundary)
   }
 }
 
-TEST(FilamentSceneExtraction, FilamentExampleEntryPointStaysMinimal)
+TEST(FilamentSceneExtraction, DartsimApplicationEntryPointStaysMinimal)
 {
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "dartsim" / "main.cpp");
+  const auto mainSource
+      = readSourceFile(kDartsimApplicationDirectory / "main.cpp");
 
   EXPECT_EQ(countOccurrences(mainSource, "#include "), 1u);
   EXPECT_NE(
@@ -696,25 +701,26 @@ TEST(FilamentSceneExtraction, FilamentExampleEntryPointStaysMinimal)
       1u);
 }
 
-TEST(FilamentSceneExtraction, FilamentExampleKeepsOnlyMinimalCppEntryPoint)
+TEST(FilamentSceneExtraction, DartsimApplicationKeepsOnlyMinimalCppEntryPoint)
 {
-  const auto sources = listCppSourceFilesRecursively(
-      std::filesystem::path("examples") / "dartsim");
+  const auto sources
+      = listCppSourceFilesRecursively(kDartsimApplicationDirectory);
 
   const std::vector<std::filesystem::path> expectedSources
-      = {std::filesystem::path("examples") / "dartsim" / "main.cpp"};
+      = {kDartsimApplicationDirectory / "main.cpp"};
   EXPECT_EQ(sources, expectedSources);
 }
 
-TEST(FilamentSceneExtraction, FilamentExampleKeepsOnlyEntryPointAndWrapperFiles)
+TEST(
+    FilamentSceneExtraction,
+    DartsimApplicationKeepsOnlyEntryPointAndWrapperFiles)
 {
-  const auto files = listRegularFilesRecursively(
-      std::filesystem::path("examples") / "dartsim");
+  const auto files = listRegularFilesRecursively(kDartsimApplicationDirectory);
 
   const std::vector<std::filesystem::path> expectedFiles
-      = {std::filesystem::path("examples") / "dartsim" / "CMakeLists.txt",
-         std::filesystem::path("examples") / "dartsim" / "README.md",
-         std::filesystem::path("examples") / "dartsim" / "main.cpp"};
+      = {kDartsimApplicationDirectory / "CMakeLists.txt",
+         kDartsimApplicationDirectory / "README.md",
+         kDartsimApplicationDirectory / "main.cpp"};
   EXPECT_EQ(files, expectedFiles);
 }
 

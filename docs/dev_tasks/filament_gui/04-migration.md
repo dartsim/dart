@@ -21,9 +21,9 @@ no-renderer-backward-compatibility stance, and the multi-phase promotion path.
 1. **MVP example**
    - Historical starting point: build `examples/filament_gui` while Filament
      was still an experiment.
-   - Current promoted name: `examples/dartsim` / `dartsim`.
-   - Keep implementation local to the example until the dependency and lifetime
-     model is proven; then move reusable implementation behind `dart::gui`.
+   - Current promoted application: `apps/dartsim` / `dartsim`.
+   - Keep app-specific behavior under `apps/dartsim` and move reusable
+     implementation behind `dart::gui`.
 
 2. **Backend-hidden extraction**
    - Move world traversal, shape descriptors, materials, debug primitives, and
@@ -43,7 +43,7 @@ no-renderer-backward-compatibility stance, and the multi-phase promotion path.
    - Promote the experimental API to primary `dart::gui` in a major DART
      version.
    - Rename the MVP executable by scope and application brand:
-     `examples/dartsim` / `dartsim`.
+     `apps/dartsim` / `dartsim`.
    - Restore all pre-existing user-facing examples as `dart::gui` examples
      before deleting their old OSG implementations. Each restored example
      should keep its historical example entry point and teach the new DART GUI

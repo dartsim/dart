@@ -1,14 +1,17 @@
 cmake_minimum_required(VERSION 3.22.1)
 
-get_filename_component(example_name ${CMAKE_CURRENT_LIST_DIR} NAME)
+get_filename_component(application_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 
-project(${example_name})
+project(${application_name})
 
-set(example_target dartsim)
+set(application_target dartsim)
 
 if(DART_IN_SOURCE_BUILD AND NOT DART_BUILD_GUI_FILAMENT)
   if(DART_VERBOSE OR NOT DART_IN_SOURCE_BUILD)
-    message(STATUS "Skipping ${example_name} example (requires DART_BUILD_GUI_FILAMENT=ON)")
+    message(
+      STATUS
+      "Skipping ${application_name} application (requires DART_BUILD_GUI_FILAMENT=ON)"
+    )
   endif()
   return()
 endif()
@@ -24,7 +27,7 @@ endif()
 include("${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/filament_sources.cmake")
 
 dart_gui_add_application(
-  ${example_target}
+  ${application_target}
   GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated"
   OUTPUT_NAME "dartsim"
   SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}"

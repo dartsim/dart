@@ -4,6 +4,10 @@
 remain the project and library surface; `dartsim` is the executable used to run
 interactive or headless GUI scenes.
 
+The source lives under `apps/dartsim/` because this is an application-level
+surface, not an educational example. Example programs that demonstrate smaller
+DART concepts live under `examples/`.
+
 ## Usage
 
 ```bash
