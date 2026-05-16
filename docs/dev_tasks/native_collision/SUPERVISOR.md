@@ -265,7 +265,9 @@ A4. **Fix verifier-discovered gap:** add `check-collision-runtime-isolation` to 
 
 A5. **Add `## Acceptance Criteria` subsection to `05-downstream-migration.md`** that defines "downstream deprecation policy evidence" with the concrete artifacts proposed in §1 of this Supervisor file (DEPRECATION.md content, deprecation attribute landing plan, regression test). Surface the policy fork (Q1 above) at the top of that subsection so the user sees the open question whenever they read the migration doc.
 
-Step A is genuinely no-code-behavior; it does NOT require user approval to start. Codex should begin Step A immediately.
+At the time, Step A was genuinely no-code-behavior and did not require user
+approval to start. That instruction is now historical; see the resolved note
+above and the current status section at the top of this file.
 
 ### Step B — Unblocked (user answered Q1 + Q2). Execute after Step A.
 
@@ -2597,7 +2599,7 @@ of F11-1 — fine if F11-1 still lands before R6; problem if not.
 
 Round 15 does NOT change the queue. It restates:
 
-1. **NEXT slice MUST be F11-1** — bundle
+1. **The next slice was required to be F11-1** — bundle
    `collideBoxesBatch(span<BoxPair>, span<CollisionResult>, option)`
    stub + `BoxPair` POD + scalar loop body +
    `boxbox_batch_determinism_vs_single` test +
@@ -2628,7 +2630,7 @@ Round 15 does NOT change the queue. It restates:
 ### What changes for Codex
 
 After landing the in-flight SDF distance slice (finish that since
-it's mid-flight), the very next commit MUST be F11-1. Then resume
+it's mid-flight), the very next commit was required to be F11-1. Then resume
 matrix backlog OR proceed to Round 6 per the queue.
 
 If F11-1 is intentionally being deferred for a reason not in this
