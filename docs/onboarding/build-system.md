@@ -10,7 +10,7 @@
 ## Quickstart (Read This First)
 
 - Day-to-day `pixi run …` workflows: see [building.md](building.md).
-- Gazebo / gz-physics integration: jump to [Gazebo Integration Feature](#gazebo-integration-feature). Suggested (Unverified): `DART_PARALLEL_JOBS=<N> pixi run -e gazebo test-gz`.
+- Gazebo / gz-physics integration: jump to [Gazebo Integration Feature](#gazebo-integration-feature). Compatibility gate: `DART_PARALLEL_JOBS=<N> CTEST_PARALLEL_LEVEL=<N> pixi run -e gazebo test-gz`.
 - CI workflow overview + `gh` monitoring commands: see [ci-cd.md](ci-cd.md).
 
 <details>
@@ -732,7 +732,7 @@ build/
 
 **Purpose:** Test DART integration with Gazebo Physics
 
-**Context (why this exists):** This workflow is used to validate that a pinned gz-physics checkout builds and runs its DART plugin against the DART installed from this repository. When updating DART (e.g., DART 7), keep downstream compatibility by fixing issues in DART (or upstream gz-physics) rather than carrying local gz-physics source patches here. The only intended “patching” is bumping the DART CMake package version requirement so gz-physics will configure against DART 7.
+**Context (why this exists):** This workflow is the compatibility gate for a pinned gz-physics checkout (`gz-physics9_9.0.0`) built against the DART installed from this repository. When updating DART (e.g., DART 7), keep downstream compatibility by fixing issues in DART (or upstream gz-physics) rather than carrying local gz-physics source patches here. The only intended “patching” is bumping the DART CMake package version requirement so gz-physics will configure against DART 7.
 
 **Tasks:**
 
@@ -749,12 +749,18 @@ build/
 - [`cmake/gz_physics_force_vendor_gtest.cmake`](../../cmake/gz_physics_force_vendor_gtest.cmake) - ensures gz-physics uses its vendored GoogleTest headers
 - [`.github/workflows/ci_gz_physics.yml`](../../.github/workflows/ci_gz_physics.yml) - CI entry point for this workflow
 
-**Suggested (Unverified, Linux example):**
+**Required compatibility-gate command:**
 
 ```bash
-N=$(( ( $(nproc) * 2 ) / 3 ))
+N=${DART_SAFE_JOBS:-$(python scripts/parallel_jobs.py)}
 DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz
 ```
+
+This command downloads the pinned `gz-physics9_9.0.0` branch, applies only the
+DART version-requirement patch from `scripts/patch_gz_physics.py`, configures
+with tests enabled, builds the DART plugin and selected gz-physics tests, runs
+`ctest --tests-regex "^(UNIT_|check_UNIT_|COMMON_TEST_.*dartsim)"`, and checks
+that the generated `libgz-physics-dartsim-plugin` links to DART libraries.
 
 **Fast iteration loop (Suggested (Unverified)):**
 
@@ -765,7 +771,15 @@ DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz
 
 **What to look for (success signal):**
 
+- The selected `UNIT_`, `check_UNIT_`, and `COMMON_TEST_.*dartsim` ctest targets
+  pass with `CTEST_OUTPUT_ON_FAILURE=1`.
+- The plugin linkage check prints a DART library from `ldd` or `otool -L`.
 - `test-gz` prints: `✓ DART plugin built successfully with DART integration!`
+
+For PR or release evidence, paste either the `CI gz-physics` run URL or a short
+local transcript summary with the pinned branch, command, selected ctest regex,
+plugin link-check result, and final success line. If a gz-physics-sensitive
+change skips this gate, state the deferral reason in the PR description.
 
 **Gotchas (common failures and how to respond):**
 

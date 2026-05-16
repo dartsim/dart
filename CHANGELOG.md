@@ -288,6 +288,7 @@
   - Added the shared `docs/ai/` agent entrypoint and tightened AI workflow verification, approval-boundary checks, and dev-task cleanup guidance. ([#2649](https://github.com/dartsim/dart/pull/2649))
   - Updated GUI onboarding, module agent docs, ReadTheDocs pages, examples, and tutorial indexes to identify Filament as the maintained renderer and the removed OSG/Raylib paths as unsupported.
   - Removed the OpenSceneGraph GUI implementation sources, Raylib experiment, legacy C++ and Python GUI examples/tutorials, legacy dartpy GUI bindings/stubs, and OSG/Raylib dependency discovery. Filament with GLFW3 and Dear ImGui is now the official renderer surface.
+  - Added AI-infra principles, living plan dashboard, `dart-plan-update`, and `dart-retrospect` workflows to track research-focused roadmap work and durable session learnings from one source of truth, and aligned public and onboarding documentation entrypoints with that direction.
   - Extended AI command and skill synchronization so Claude Code, OpenCode, and Codex expose the same DART workflow capabilities with parity checks for generated command and skill files.
   - Promoted prompt-only AI workflows into synced workflow commands and removed the separate prompt-template folder.
   - Fixed generated Codex DART skill frontmatter so strict YAML parsers load AI workflow skills without warnings. ([#2546](https://github.com/dartsim/dart/pull/2546))

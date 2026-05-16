@@ -48,6 +48,11 @@ Changes occur with major DART releases and are:
 2. Documented in migration guides
 3. Given at least one release cycle of deprecation notice
 
+API compatibility follows the public/internal boundary policy in
+[api-boundaries.md](api-boundaries.md). Public and compatibility APIs need a
+migration path; internal APIs under `detail/` or `internal/` may change without
+the same source-compatibility guarantee.
+
 ## Questions
 
 For questions about this policy:

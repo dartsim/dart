@@ -8,8 +8,8 @@ Agent entry point for DART documentation.
 DART AI Documentation Structure
 ===============================
 
-Entry Points (all redirect to AGENTS.md)
-├── AGENTS.md          ← Single source of truth
+Root Entry Points
+├── AGENTS.md          ← Concise pointer board and session context table
 ├── CLAUDE.md          ← Redirect for Claude Code
 └── GEMINI.md          ← Redirect for Gemini CLI
 
@@ -30,6 +30,8 @@ Shared Skills
 
 Knowledge Base
 └── docs/
+    ├── ai/                ← AI-native principles, mission, and workflow policy
+    ├── plans/             ← Living roadmap from current state to north star
     ├── onboarding/        ← Developer guides
     │   └── ai-tools.md    ← Tool compatibility notes
     └── readthedocs/       ← User documentation
@@ -41,7 +43,9 @@ Knowledge Base
 | ---------------------------------- | -------------------------------------------------- |
 | `onboarding/`                      | Developer guides (architecture, building, testing) |
 | `onboarding/ai-tools.md`           | AI tool compatibility notes                        |
+| `onboarding/api-boundaries.md`     | Public vs internal API policy                      |
 | `onboarding/release-management.md` | Release workflow guidance                          |
+| `plans/`                           | Living roadmap and planning rules                  |
 | `dev_tasks/`                       | Active development task tracking                   |
 | `readthedocs/`                     | Published user documentation (Sphinx/RST)          |
 
@@ -53,9 +57,13 @@ Knowledge Base
 - **Loading models?** → `onboarding/io-parsing.md` or load skill `dart-io`
 - **Working on dartpy?** → `onboarding/python-bindings.md` or load skill `dart-python`
 - **Understanding architecture?** → `onboarding/architecture.md`
+- **Designing public APIs?** → `onboarding/api-boundaries.md`
+- **Revising project plans?** → `plans/README.md` or use `/dart-plan-update`
 - **Contributing?** → `onboarding/contributing.md` or load skill `dart-contribute`
 - **Release workflow?** → `onboarding/release-management.md` or use `/dart-release-*`
 - **Adding docs?** → `readthedocs/README.md`
 - **AI tool issues?** → `onboarding/ai-tools.md`
 
 See root `AGENTS.md` for repo-wide guidance.
+Load `docs/ai/principles.md` for compact AI-infra axioms; it is the source of
+truth for principles, while `AGENTS.md` stays a pointer board.

@@ -10,7 +10,7 @@ Introduction
 ------------
 
 DART (Dynamic Animation and Robotics Toolkit) is a collaborative,
-cross-platform, open-source library developed by the
+cross-platform, open-source, research-focused physics engine developed by the
 `Graphics Lab <http://www.cc.gatech.edu/~karenliu/Home.html>`_ and
 `Humanoid Robotics Lab <http://www.golems.org/>`_ at the
 `Georgia Institute of Technology <http://www.gatech.edu/>`_, with ongoing
@@ -19,10 +19,25 @@ contributions from the
 `University of Washington <http://www.washington.edu/>`_ and the
 `Open Source Robotics Foundation <https://www.osrfoundation.org/>`_. It provides
 data structures and algorithms for kinematic and dynamic applications in
-robotics and computer animation. DART stands out due to its accuracy and
-stability, which are achieved through the use of generalized coordinates to
-represent articulated rigid body systems and the application of Featherstone's
-Articulated Body Algorithm to compute motion dynamics.
+robotics, animation, and machine learning. DART is designed for users who need
+transparent dynamics, collision, and constraint-solving foundations rather than
+a black-box simulator. Its accuracy and stability come from generalized
+coordinates for articulated rigid body systems and Featherstone's Articulated
+Body Algorithm for motion dynamics.
+
+Why DART?
+---------
+
+* Easy to start from Python or C++ packages, with reproducible source builds
+  available through pixi.
+* Research-grade dynamics with direct access to mass matrices, Jacobians,
+  forces, constraints, contacts, and other internal quantities.
+* Extensible foundations for implementing new algorithms and comparing them
+  against existing DART baselines.
+* Cross-platform CPU support today, with roadmap work for multi-core, SIMD, and
+  accelerator backends.
+* Production and research ecosystem use through Gazebo, robotics labs, and
+  downstream applications, with best-effort support for production use.
 
 AI Docs (Interactive Q&A; Experimental)
 ---------------------------------------
@@ -62,6 +77,10 @@ on `Twitter <https://twitter.com/dartsim_org>`_ and subscribing to our
 
 Vision for the next version of DART
 -----------------------------------
+
+For the current research-focused direction and active execution plans, see the
+`DART north star <https://github.com/dartsim/dart/blob/main/docs/ai/north-star.md>`_
+and `living plans <https://github.com/dartsim/dart/blob/main/docs/plans/README.md>`_.
 
 * Elevate the Python binding to a first-class component, ensuring full support
   and equivalent functionality to the C++ APIs, rather than remaining in an
@@ -134,6 +153,7 @@ If you use DART in an academic publication, please consider citing this
    :caption: DART (C++)
 
    dart/user_guide/installation
+   dart/user_guide/api_boundaries
    dart/user_guide/migration_guide
    API Reference <dart/cpp_api_reference>
 

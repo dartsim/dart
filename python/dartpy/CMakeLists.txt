@@ -338,11 +338,8 @@ target_compile_definitions(dartpy
 )
 target_compile_options(dartpy PRIVATE "-UNB_COMPACT_ASSERTIONS")
 
-if(_dartpy_has_legacy_gui OR _dartpy_has_experimental_gui)
+if(_dartpy_has_experimental_gui)
   target_compile_definitions(dartpy PRIVATE DARTPY_HAS_GUI=1)
-endif()
-if(_dartpy_has_legacy_gui)
-  target_compile_definitions(dartpy PRIVATE DARTPY_HAS_LEGACY_GUI=1)
 endif()
 if(_dartpy_has_experimental_gui)
   target_compile_definitions(dartpy PRIVATE DARTPY_HAS_EXPERIMENTAL_GUI=1)

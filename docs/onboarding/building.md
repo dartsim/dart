@@ -213,14 +213,14 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
 
    Example:
 
-   ```bash
-   pixi run ex hello_world
-   pixi run ex dartsim
-   ```
+```bash
+pixi run ex hello_world
+pixi run ex dartsim
+```
 
-   `scripts/run_cpp_example.py` centralizes example-specific CMake
-   requirements so restored GUI examples and `dartsim` can use the same command
-   shape.
+`scripts/run_cpp_example.py` centralizes example-specific CMake
+requirements so restored GUI examples and `dartsim` can use the same command
+shape.
 
 5. (Optional) Gazebo / gz-physics integration test:
 

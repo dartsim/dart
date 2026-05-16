@@ -9,6 +9,7 @@ Update documentation: $ARGUMENTS
 
 @AGENTS.md
 @docs/README.md
+@docs/ai/principles.md
 @docs/onboarding/ai-tools.md
 
 ## Workflow

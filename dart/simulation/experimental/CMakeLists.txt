@@ -31,6 +31,9 @@
 set(target_name ${PROJECT_NAME}-simulation-experimental)
 set(component_name simulation-experimental)
 
+include(dart_defs)
+include(dart_experimental_dependencies)
+
 add_library(${target_name}
   body/rigid_body.cpp
   common/diagnostics.cpp
@@ -55,9 +58,7 @@ add_library(${target_name}
   space/vector_mapper.cpp
   world.cpp
 )
-
-include(dart_defs)
-include(dart_experimental_dependencies)
+dart_apply_strict_symbol_visibility(${target_name})
 
 target_include_directories(${target_name}
   PUBLIC
