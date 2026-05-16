@@ -35,7 +35,7 @@ FILAMENT_ROUTED_EXAMPLES = {
     "wam_ikfast": ("--scene", "wam-ikfast"),
     "fetch": (),
     "tinkertoy": ("--scene", "tinkertoy"),
-    "drag_and_drop": ("--scene", "drag-and-drop"),
+    "drag_and_drop": (),
     "empty": ("--scene", "drag-and-drop"),
     "simple_frames": (),
     "soft_bodies": ("--scene", "soft-bodies"),

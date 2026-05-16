@@ -47,6 +47,9 @@
   - Restored the joint/dynamics example batch (`hybrid_dynamics`,
     `biped_stand`, `joint_constraints`, `free_joint_cases`, and
     `human_joint_limits`) as source-defined `dart::gui` examples.
+  - Moved `drag_and_drop` off the private named-scene fixture path so the
+    example source owns its DART world and passes it through
+    `dart::gui::ApplicationOptions::world`.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

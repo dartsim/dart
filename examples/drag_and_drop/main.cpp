@@ -34,8 +34,69 @@
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
 
+#include <dart/simulation/world.hpp>
+
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/frame.hpp>
+#include <dart/dynamics/simple_frame.hpp>
+
+#include <Eigen/Geometry>
+
+#include <memory>
 #include <string>
 #include <utility>
+
+namespace {
+
+dart::simulation::WorldPtr createDragAndDropWorld()
+{
+  auto world = dart::simulation::World::create("drag_and_drop");
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(4.0, -4.0, 0.0);
+  auto anchor = std::make_shared<dart::dynamics::SimpleFrame>(
+      dart::dynamics::Frame::World(), "interactive frame", transform);
+  anchor->setShape(
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d(0.45, 0.45, 0.45)));
+  anchor->getVisualAspect(true)->setColor(Eigen::Vector3d(0.95, 0.7, 0.15));
+  world->addSimpleFrame(anchor);
+
+  transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(-4.0, 4.0, 0.0);
+  auto draggable = anchor->spawnChildSimpleFrame("draggable", transform);
+  draggable->setShape(
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d(1.0, 1.0, 1.0)));
+  draggable->getVisualAspect(true)->setColor(Eigen::Vector3d(0.9, 0.0, 0.0));
+  world->addSimpleFrame(draggable);
+
+  const auto addMarker = [&](const std::string& name,
+                             const Eigen::Vector3d& position,
+                             const Eigen::Vector3d& color) {
+    Eigen::Isometry3d markerTransform = Eigen::Isometry3d::Identity();
+    markerTransform.translation() = position;
+    auto marker = std::make_shared<dart::dynamics::SimpleFrame>(
+        dart::dynamics::Frame::World(), name, markerTransform);
+    marker->setShape(
+        std::make_shared<dart::dynamics::BoxShape>(
+            Eigen::Vector3d(0.25, 0.25, 0.25)));
+    marker->getVisualAspect(true)->setColor(color);
+    world->addSimpleFrame(marker);
+  };
+
+  addMarker(
+      "X", Eigen::Vector3d(8.0, 0.0, 0.0), Eigen::Vector3d(0.9, 0.0, 0.0));
+  addMarker(
+      "Y", Eigen::Vector3d(0.0, 8.0, 0.0), Eigen::Vector3d(0.0, 0.9, 0.0));
+  addMarker(
+      "Z", Eigen::Vector3d(0.0, 0.0, 8.0), Eigen::Vector3d(0.0, 0.0, 0.9));
+
+  return world;
+}
+
+} // namespace
 
 int main(int argc, char* argv[])
 {
@@ -64,7 +125,7 @@ int main(int argc, char* argv[])
         };
 
   dart::gui::ApplicationOptions options;
-  options.defaultScene = "drag-and-drop";
+  options.world = createDragAndDropWorld();
   options.panels.push_back(std::move(controls));
 
   return dart::gui::runApplication(argc, argv, options);

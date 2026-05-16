@@ -433,6 +433,300 @@ not bundle with R12-1/2/3.
 
 ---
 
+## 2026-05-15 Round 19 — Inverse dependency: examples MUST own their scene, not look it up
+
+**Trigger (user direction, with evidence):**
+
+> The example and dart::gui is inverse dependency:
+>
+> ```
+> dart::gui::ApplicationOptions options;
+> options.defaultScene = "drag-and-drop";
+> options.panels.push_back(std::move(controls));
+> return dart::gui::runApplication(argc, argv, options);
+> ```
+>
+> the example should be defined in the example folder not in
+> `dart/gui/**`
+
+This is the **biggest architectural problem** in the current state.
+It supersedes the "this example is restored" claims for every
+example that uses `options.defaultScene = "<name>"`.
+
+### Verified inverse-dependency chain
+
+```
+examples/drag_and_drop/main.cpp:67
+  └─→ options.defaultScene = "drag-and-drop";       ← string handoff
+      └─→ dart::gui::runApplication(argc, argv, options)
+          └─→ dart/gui/experimental/detail/filament/scenes.cpp:294
+              if (name == "drag-and-drop") {
+                scene = ExampleScene::DragAndDrop;
+              }
+              └─→ scenes.cpp:736
+                  case ExampleScene::DragAndDrop:
+                    return createDragAndDropScene();
+                  └─→ scene_fixtures.cpp:3652
+                      DartScene createDragAndDropScene() {
+                        // ALL example behavior lives here:
+                        // world setup, target frames, axis markers,
+                        // selection handles, interaction targets, ...
+                      }
+```
+
+The example folder owns ZERO of the example's actual content.
+Renaming `examples/<name>/main.cpp` to a real source did not solve
+the inversion — it only added a thin wrapper that names a fixture
+defined inside the GUI library. The library is still the
+authoritative source of every example's behavior, which means:
+
+- A new user reading `examples/drag_and_drop/main.cpp` learns
+  nothing about how to build their own DART simulation with target
+  frames and selection handles.
+- The library cannot be split from the examples — every
+  `dart::gui` build pulls in 4082 LOC of fixture code that has
+  nothing to do with rendering.
+- Removing one example doesn't shrink the library at all.
+- Adding a new example requires editing the library's `enum
+ExampleScene`, the `name → enum` mapping, the `enum → factory`
+  switch, and the `scene_fixtures.cpp` factory itself —
+  user-hostile.
+
+### What "real example ownership" means (the fix)
+
+Every restored `examples/<name>/main.cpp` must:
+
+1. **Build its own `dart::simulation::WorldPtr`** in-source, using
+   `dart::dynamics`, `dart::io`, `dart::collision`, etc. No
+   `options.defaultScene = "<name>"` lookup.
+2. **Pass that world to `runApplication` via
+   `options.world = world`** (the `ApplicationOptions::world`
+   handoff added at `a23ea52a9b0`). This is the existing public
+   API — it just isn't being used.
+3. **Build its own `Panel` instances** for any custom UI controls,
+   register them via `options.panels`. (Already happening for some
+   examples.)
+4. **Build its own `preStep` / `postStep` callbacks** for
+   per-iteration logic (controllers, force application, etc.) via
+   `options.preStep` (added at `19eae1d2d91`). (Already happening
+   for some examples.)
+5. **Use NO `options.defaultScene` string.** The
+   `--scene <name>` CLI flag continues to work for `dartsim`
+   itself (developer fixture menu), but per-example binaries must
+   not consume a scene string — their world is hard-coded in
+   their `main.cpp`.
+6. **Delete the corresponding `createXxxScene()` factory from
+   `scene_fixtures.cpp`** in the same commit, OR (if the fixture
+   is ALSO needed by `dartsim --scene <name>`) move it under a
+   test/dev fixture target outside `dart/gui/`.
+
+### Audit of the 26 currently-"restored" examples
+
+Codex needs to flag, in `examples/<name>/main.cpp` for every
+restored example, whether it uses `options.defaultScene` or
+`options.world`. Likely state right now:
+
+- **Inverse-dependent (BAD)** — uses `options.defaultScene`:
+  `drag_and_drop` (verified), and likely most of the
+  recently-migrated rigid/joint family.
+- **Self-owned (GOOD)** — uses `options.world` with in-source
+  construction: `hello_world` is documented as adding
+  `ApplicationOptions::world` at `a23ea52a9b0`; verify others
+  follow.
+
+The audit goes in this section under a "Per-example dependency
+status" subsection that Codex updates as each example flips from
+inverse to self-owned. Acceptance is the same as the original
+per-example checklist plus: zero `options.defaultScene` strings in
+`examples/**/*.cpp`.
+
+### Per-example dependency status
+
+Audit command:
+
+```bash
+rg -n "options\\.defaultScene" examples
+```
+
+Current result after the joint/dynamics source migration:
+
+- **Still inverse-dependent:** `examples/imgui/main.cpp`,
+  `examples/tinkertoy/main.cpp`.
+- **Flipped to self-owned in this slice:** `examples/drag_and_drop/main.cpp`
+  now constructs its `SimpleFrame` anchor, child draggable frame, and X/Y/Z
+  marker frames in-source and passes `options.world` to
+  `runApplication(argc, argv, options)`.
+- **Already self-owned:** `hello_world`, `boxes`, `box_stacking`,
+  `rigid_cubes`, `simple_frames`, `capsule_ground_contact`, `fetch`,
+  `rigid_chain`, `rigid_loop`, `mixed_chain`, `coupler_constraint`,
+  `add_delete_skels`, `rigid_shapes`, `hybrid_dynamics`, `biped_stand`,
+  `joint_constraints`, `free_joint_cases`, and `human_joint_limits`.
+- **Fixture cleanup gap:** the private `createDragAndDropScene()` remains for
+  `empty` and `dartsim --scene drag-and-drop` developer coverage. Deleting or
+  moving that fixture requires migrating `empty` and then deciding the
+  developer fixture target shape.
+
+### Where the fixture code goes after the inversion
+
+`dart/gui/experimental/detail/filament/scene_fixtures.cpp` is
+4082 LOC today. After every per-example fixture moves into its
+example, the file should contain only the developer-only fixtures
+that `dartsim --scene <name>` exposes (the MVP scene, glTF panels,
+broad robot/PBR coverage). If a fixture is genuinely useful to
+keep available for both an example AND the `dartsim` developer
+menu, the example owns the canonical version and `scenes.cpp`'s
+factory becomes a thin call into the example's source — but
+keeping the example as the source of truth.
+
+Better long-term shape: move the developer fixtures to
+`tests/fixtures/gui_scenes/` (a test-only target) so the GUI
+library carries zero example/fixture code. `dartsim --scene
+<name>` then loads them through a fixture-test linkage; the
+production `dart-gui` library stays slim.
+
+### Acceptance for Round 19
+
+- `git grep -nE 'options\.defaultScene\s*=' examples/` returns
+  ZERO matches.
+- `git grep -nE 'options\.world\s*=' examples/` returns at least
+  one match per restored example.
+- `examples/drag_and_drop/main.cpp` constructs the SimpleFrame
+  anchor, child frame, and axis markers in-source; deletes
+  `createDragAndDropScene()` from `scene_fixtures.cpp`.
+- The same for every other previously-"restored" example
+  (`hello_world` may already be done — confirm; otherwise migrate).
+- `wc -l dart/gui/experimental/detail/filament/scene_fixtures.cpp`
+  drops by at least 500 LOC per migrated example family.
+- `dartsim --scene drag-and-drop` continues to work for
+  developers, either by linking the example's world-building code
+  into the developer fixture target OR by providing a slim
+  fixture target equivalent under `tests/fixtures/`.
+
+### Order: this round is HIGH PRIORITY (above R12-3 / R12-5)
+
+This restructures the work already done. Sequence:
+
+R19-1. **Audit pass** — list every `examples/<name>/main.cpp`
+that uses `options.defaultScene`. Add the list to this
+section.
+R19-2. **Migrate `drag_and_drop` first** as the canonical
+template (because it's the example with the user-reported
+bug AND the user's cited example of the inversion). After
+migration: `drag_and_drop/main.cpp` builds its own world
+with `SimpleFrame` anchor + child + axis markers; the
+`createDragAndDropScene()` factory is deleted; `dartsim
+       --scene drag-and-drop` either keeps working via a slim
+linkage or is removed.
+R19-3. **Migrate the rest of the inverse-dependent examples**
+in the same order Codex used for the original "restoration":
+rigid family → joint/dynamics → robot/IK → geometry/visual.
+Each migration is one commit per example (or per family
+if examples share fixture code).
+R19-4. **Apply the same rule to NEW migrations** going forward.
+The 17 examples not yet migrated (per Round 12 / R12-5
+table) skip the macro-shim step and skip the
+`options.defaultScene` step — they go directly to the
+self-owned `options.world` shape.
+
+R19 supersedes the parts of R12-5 that produced inverse-dependent
+examples. R12-3 (`apps/dartsim/`), R12-1 (mouse), R12-2 (lighting)
+keep their previous priority.
+
+### What Codex should NOT do for Round 19
+
+- Do NOT defend the `options.defaultScene` shape as "DRY because
+  the fixture is shared with dartsim". The DRY argument is
+  backward: the GUI library should not depend on example fixtures.
+  If sharing is needed, the example owns the canonical version
+  and the developer menu pulls from it (or from a test fixture
+  target).
+- Do NOT bulk-rewrite all 26 restored examples in one commit.
+  One example or one family per commit so any regression in the
+  shared inversion-removal infrastructure is bisectable.
+- Do NOT keep any per-example `createXxxScene()` factory in
+  `scene_fixtures.cpp` "for safety" after the example owns its
+  world. Delete the factory in the same commit; the boundary
+  guard / test will catch regressions.
+- Do NOT promote `options.defaultScene` to a richer typed
+  enum-based API. The whole concept of "library knows about
+  named example scenes" is what we're removing; making it more
+  ergonomic to call would entrench the inversion.
+
+---
+
+## 2026-05-15 Round 18 — `--gui-scale` parser robustness + runner argv-merge clarity
+
+**Trigger:** Live user output running
+`pixi run ex drag_and_drop --gui-scale`:
+
+```
+Running: build/.../bin/drag_and_drop --gui-scale --scene drag-and-drop --width 1280 --height 720
+Invalid --gui-scale value '--scene'. Expected a positive number.
+```
+
+Two distinct bugs surfaced in one transcript:
+
+### Bug A: binary treats next flag as a value when value is missing
+
+`scenes.cpp:576-582` does this:
+
+```cpp
+} else if (arg == "--gui-scale" && i + 1 < argc) {
+  const char* value = argv[++i];                 // ← consumes "--scene"
+  const float guiScale = std::strtof(value, &end);
+  if (end == value || *end != '\0' || !std::isfinite(guiScale)
+      || guiScale <= 0.0f) {
+    std::cerr << "Invalid --gui-scale value '" << value
+              << "'. Expected a positive number.\n";
+```
+
+The user typed `--gui-scale` without a value, but the parser
+greedily consumed `--scene` (which the runner appended) as the
+value, then complained about the value being non-numeric. The
+diagnostic blames the wrong thing.
+
+**Fix:** before `++i`, peek at `argv[i+1]`. If it starts with `--`
+(or `-` for short flags), report `"--gui-scale requires a positive
+numeric value"` and exit 2 BEFORE consuming the next argument. Same
+fix for every other value-taking flag in `scenes.cpp` (`--frames`,
+`--width`, `--height`, `--screenshot`, `--orbit-light-period`,
+`--scene`, etc.). Make this a shared helper that every
+value-taking flag calls.
+
+### Bug B: runner argv merge order is surprising
+
+`scripts/run_cpp_example.py:369` returns
+`[*default_args, *run_args]` — runner-injected scene defaults
+(`--scene <name> --width 1280 --height 720`) come BEFORE the
+user's argv. The `_run_args_with_defaults` helper currently strips
+the default `--scene` pair only when the user supplies one;
+extend the dedup to every defaulted pair flag (`--width`,
+`--height`, `--gui-scale`, `--frames`, `--screenshot`,
+`--orbit-light-period`).
+
+### Acceptance for Round 18
+
+- `pixi run ex drag_and_drop --gui-scale` (no value) reports
+  `--gui-scale requires a positive numeric value` from the
+  BINARY, exit 2. The diagnostic names the right flag.
+- `pixi run ex drag_and_drop --width 1920 --height 1080` runs
+  with EXACTLY one `--width 1920 --height 1080` pair on the
+  command line.
+- New tests cover both the binary parser (each value-taking flag
+  rejects missing-value with a clear message) and the runner
+  dedup logic.
+
+Both fixes ship in separate commits. Don't bundle.
+
+### What Codex should NOT do for Round 18
+
+- Do NOT add per-flag short aliases.
+- Do NOT change the binary's left-to-right last-wins option
+  semantics.
+- Do NOT silently drop a flag with missing value.
+
+---
+
 ## 2026-05-15 Round 17 — Every restored example must accept `--gui-scale`
 
 **Trigger:** User direction: "all the GUI examples should be able to

@@ -602,6 +602,7 @@ TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
   {
     std::filesystem::path directory;
     bool usesPanel = false;
+    bool ownsWorld = true;
   };
 
   const std::vector<ExampleExpectation> examples
@@ -623,9 +624,9 @@ TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
          {std::filesystem::path("examples") / "joint_constraints", true},
          {std::filesystem::path("examples") / "free_joint_cases", true},
          {std::filesystem::path("examples") / "human_joint_limits", true},
-         {std::filesystem::path("examples") / "imgui", true},
+         {std::filesystem::path("examples") / "imgui", true, false},
          {std::filesystem::path("examples") / "drag_and_drop", true},
-         {std::filesystem::path("examples") / "tinkertoy", true}};
+         {std::filesystem::path("examples") / "tinkertoy", true, false}};
   std::vector<std::filesystem::path> sources;
   for (const auto& example : examples) {
     sources.push_back(example.directory / "main.cpp");
@@ -660,6 +661,10 @@ TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
       EXPECT_NE(
           mainSource.find("#include <dart/gui/panel.hpp>"), std::string::npos);
       EXPECT_NE(mainSource.find("dart::gui::Panel"), std::string::npos);
+    }
+    if (example.ownsWorld) {
+      EXPECT_NE(mainSource.find("options.world"), std::string::npos);
+      EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
     }
   }
 }
