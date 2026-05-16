@@ -122,8 +122,8 @@ post GitHub comments unless the user explicitly asks.
 - Latest evidence-record commits: current local commits may be ahead of
   `origin/feature/new_coll`; run `git log -3 --oneline --decorate` for the
   current head. Recent docs-only evidence commits refresh the completion-audit
-  snapshot, avoid stale-current-head wording, and keep the deferred
-  finalization handoff explicit.
+  snapshot, avoid stale-current-head wording, align milestone local/final
+  evidence wording, and keep the deferred finalization handoff explicit.
 - Latest source-build prerequisite docs cleanup: `621fca5a1fb`. Validation:
   `pixi run lint` passed on that tree after moving FCL out of required
   prerequisites.
