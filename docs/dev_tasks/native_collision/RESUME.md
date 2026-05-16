@@ -44,6 +44,11 @@ The newer local gz-physics refresh on `6742a21ab0f` also passed 65/65 with
 reference collision tests and benchmarks configured `OFF`; an explicit plugin
 dependency scan reported `libdart-collision-native.so` without old DART
 collision reference/facade, FCL, Bullet, ODE, or libccd matches.
+The newer native compatibility package smoke on `dcfc994542f` also passed, with
+retained `collision-fcl`, `collision-bullet`, and `collision-ode` components
+resolving as native-backed package facades and `readelf` showing
+`libdart-collision-native.so` without old collision/reference runtime
+dependencies.
 
 The final north-star PR is not complete because PR #2652 is closed and still
 points at old head `714d220d82a`; later pushes to `feature/new_coll` do not

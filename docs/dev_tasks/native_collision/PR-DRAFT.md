@@ -173,6 +173,12 @@ Make native DART collision the default runtime stack
   on local head `6404f7607be`; gz/plugin package-smoke binaries link
   `libdart-collision-native.so` without old collision/reference runtime
   dependencies.
+- Native compatibility package smoke and direct `readelf` link inspection also
+  passed on newer local head `dcfc994542f`; retained `collision-fcl`,
+  `collision-bullet`, and `collision-ode` package components resolved as
+  native-backed facades, and the smoke executable linked
+  `libdart-collision-native.so` without old collision/reference runtime
+  dependencies.
 - Prior manual workflow-dispatch reference evidence on pushed head
   `1e1faf6feb1` passed native-only CI, gz-physics CI, the full dartpy wheel
   matrix, and collision benchmark guard artifact upload. Treat this as reference

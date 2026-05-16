@@ -3675,6 +3675,19 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     `libdart-collision-native.so` and no old DART collision reference/facade,
     FCL, Bullet, ODE, or libccd match. No PR, push, workflow, branch, or
     GitHub state was mutated by this local validation pass.
+- Current local native compatibility package smoke refresh after gz-physics
+  evidence update:
+  - Commit: `dcfc994542f`
+    (`Record native collision gz physics validation`).
+  - Command:
+    `pixi run bash -lc 'rm -rf build/native-compat-install-current-local build/native-compat-package-smoke-current-local && cmake --install build/default/cpp/Release --prefix "$PWD/build/native-compat-install-current-local" && cmake -S docs/dev_tasks/native_collision/smoke/native_compat_package -B build/native-compat-package-smoke-current-local -DCMAKE_PREFIX_PATH="$PWD/build/native-compat-install-current-local;$CONDA_PREFIX" && cmake --build build/native-compat-package-smoke-current-local --parallel "$JOBS" && build/native-compat-package-smoke-current-local/native_collision_compat_package_smoke && readelf -d build/native-compat-package-smoke-current-local/native_collision_compat_package_smoke | rg "NEEDED|RUNPATH"'`
+  - Result: passed. The installed package accepted retained
+    `collision-fcl`, `collision-bullet`, and `collision-ode` components and the
+    smoke executable completed successfully. `readelf` showed
+    `libdart-collision-native.so` plus normal DART dependencies and no
+    `libdart-collision-reference-*`, `libdart-test-reference-*`, FCL, Bullet,
+    ODE, or libccd runtime dependency. No PR, push, workflow, branch, or GitHub
+    state was mutated by this local validation pass.
 
 ## Known Risks
 

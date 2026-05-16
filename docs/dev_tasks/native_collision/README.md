@@ -234,6 +234,11 @@ native-backed interface facades.
       the current validation evidence commit, and an explicit plugin dependency
       scan reported `libdart-collision-native.so` without old DART collision
       reference/facade, FCL, Bullet, ODE, or libccd matches.
+      A newer native compatibility package smoke on `dcfc994542f` also passed,
+      with retained `collision-fcl`, `collision-bullet`, and `collision-ode`
+      package components resolving as native-backed facades and `readelf`
+      showing `libdart-collision-native.so` without old collision/reference
+      runtime dependencies.
       The latest code-validation head `4db514cfd22` also passed the full local
       gate with Release CTest 264/264 and Python tests 147/147. The same code
       head passed the focused reference-backend checks and the final

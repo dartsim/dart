@@ -234,6 +234,23 @@ compatibility gate was rerun on clean head `6742a21ab0f`
 - Scope: local validation only. No PR, push, workflow, branch, or GitHub state
   was mutated by this recheck.
 
+After the gz-physics evidence update, the native compatibility package smoke
+was rerun on clean head `dcfc994542f`
+(`Record native collision gz physics validation`):
+
+- Command: fresh install to `build/native-compat-install-current-local`,
+  configure/build
+  `docs/dev_tasks/native_collision/smoke/native_compat_package`, run
+  `native_collision_compat_package_smoke`, and inspect the smoke executable
+  with `readelf -d`.
+- Result: passed. The retained package components `collision-fcl`,
+  `collision-bullet`, and `collision-ode` resolved as native-backed facades,
+  the smoke executable completed successfully, and `readelf` showed
+  `libdart-collision-native.so` with no old DART collision reference/facade,
+  FCL, Bullet, ODE, or libccd runtime dependency.
+- Scope: local validation only. No PR, push, workflow, branch, or GitHub state
+  was mutated by this recheck.
+
 - Native-only and gz-physics manual workflow-dispatch evidence is now collected
   for pushed head `1e1faf6feb1`, but the final PR-complete state still needs
   whatever CI surface the maintainer chooses because PR #2652 is closed.
