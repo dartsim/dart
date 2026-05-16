@@ -16,7 +16,14 @@ remains the project/library identity, and `libdart` remains the
 packaging/library context name. `dartsim` is the application-level
 simulator/viewer brand, analogous to an application product such as Isaac Sim.
 
-The completion audit in `07-completion-audit.md` describes the previous
+The current source-ownership pass is not the same as full example parity.
+Maintainer review called out `examples/fetch/` as a concrete example that had a
+real source file but was not fully restored to the historical GUI behavior.
+Every pre-existing user-facing GUI example remains parity pending until its
+legacy source has been inventoried and the migrated `dart::gui` version
+preserves the user-visible behavior or records a deliberate follow-up gap.
+
+The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as
 migration history and may describe intermediate states that no longer exist in
 the source tree.

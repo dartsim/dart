@@ -620,12 +620,16 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   options.preStep = [&preStepCalled]() {
     preStepCalled = true;
   };
+  options.camera = dart::gui::OrbitCamera{};
+  options.camera->target = Eigen::Vector3d(1.0, 2.0, 3.0);
   options.defaultScene = "mvp";
   options.panels.push_back(std::move(panel));
   ASSERT_NE(options.world, nullptr);
   EXPECT_EQ(options.world->getName(), "panel_test");
   options.preStep();
   EXPECT_TRUE(preStepCalled);
+  ASSERT_TRUE(options.camera.has_value());
+  EXPECT_TRUE(options.camera->target.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
   EXPECT_EQ(options.defaultScene, "mvp");
   ASSERT_EQ(options.panels.size(), 1u);
   EXPECT_EQ(options.panels.front().title, "Controls");
@@ -743,8 +747,13 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
   EXPECT_NE(
       mainSource.find("CollisionDetectorType::Bullet"), std::string::npos);
   EXPECT_NE(mainSource.find("interactive frame"), std::string::npos);
-  EXPECT_NE(mainSource.find("fetch_target_x_bar"), std::string::npos);
-  EXPECT_NE(mainSource.find("fetch_target_y_bar"), std::string::npos);
+  EXPECT_NE(mainSource.find("LineSegmentShape"), std::string::npos);
+  EXPECT_NE(mainSource.find("createTargetCrossShape"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeFetchCamera"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.target = Eigen::Vector3d(0.1, -0.3, 0.3)"),
+      std::string::npos);
   EXPECT_NE(mainSource.find("options.world"), std::string::npos);
   EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
   EXPECT_NE(mainSource.find("syncMocapTarget"), std::string::npos);

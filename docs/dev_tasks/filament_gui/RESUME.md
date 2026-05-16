@@ -58,24 +58,23 @@ The latest naming direction also distinguishes library and application brands:
 for package/library artifacts, and `dartsim` is the application-level
 simulator/viewer identity, analogous to Isaac Sim.
 
-User correction after the `drag_and_drop` checkpoint: examples such as
-`examples/fetch/` may be source-owned without being fully restored. The docs now
-distinguish example ownership (`options.world`, no `options.defaultScene`) from
-feature parity with the historical source. `fetch` has been repaired with the
-visible target affordance, Bullet preference when available, live target
-following, and a focused boundary guard. The next ownership checkpoint removes
-the last per-example `options.defaultScene` uses by making `imgui` and
-`tinkertoy` construct their public-API worlds directly.
+Maintainer correction after the source-ownership sweep: examples such as
+`examples/fetch/` may be source-owned without being fully restored. The active
+docs now distinguish example ownership (`options.world`, no
+`options.defaultScene`) from feature parity with the historical source. The
+in-progress fetch repair adds a public `ApplicationOptions::camera` override,
+restores the historical camera framing, and makes the visible target cross one
+draggable target-frame renderable rather than child bars that can detach from
+the mocap target. After this checkpoint, continue a legacy-source parity audit
+across all migrated examples.
 
 ## Immediate Next Step
 
-The current source-ownership checkpoint is the remaining IK puppet pair,
-`hubo_puppet` and `g1_puppet`, using the promoted IK-handle handoff proven by
-`atlas_puppet`. Their example sources now own robot loading, ground setup, IK
-targets, support geometry, target hotkeys, solve-on-drag handles, and panels,
-and the Python runner no longer injects `--scene hubo-puppet` or `--scene g1`.
-Finish this checkpoint with lint, post-lint validation, commit, push, and CI
-dispatch.
+Finish the `examples/fetch/` parity checkpoint: run `pixi run lint`, repeat the
+focused post-lint build/CTest/Python runner/headless capture checks, commit the
+fetch camera/target-cross/docs changes, push, and dispatch CI without opening a
+PR. Then continue the same legacy-source parity audit for the other migrated
+examples.
 
 ## Context That Would Be Lost
 

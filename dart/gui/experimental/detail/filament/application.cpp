@@ -131,6 +131,7 @@ int runFilamentGuiApplicationImpl(
     const dart::gui::ApplicationOptions& applicationOptions)
 {
   AppOptions appOptions = parseOptions(argc, argv);
+  appOptions.camera = applicationOptions.camera;
   if (!hasSceneOption(argc, argv)) {
     appOptions.world = applicationOptions.world;
     appOptions.preStep = applicationOptions.preStep;
@@ -164,7 +165,8 @@ int runFilamentGuiApplicationImpl(
   }
 
   OrbitCameraController cameraController;
-  cameraController.camera = initialCameraForScene(appOptions.scene);
+  cameraController.camera
+      = appOptions.camera.value_or(initialCameraForScene(appOptions.scene));
   attachOrbitCameraController(window, cameraController);
 
   FilamentRenderContext renderContext = createFilamentRenderContext(

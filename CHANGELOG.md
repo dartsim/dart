@@ -88,6 +88,9 @@
     `dart-gui-experimental` to `dart-gui-core` while keeping compatibility
     headers for existing `dart::gui::experimental` and `dartpy.gui.experimental`
     imports.
+  - Added a renderer-neutral `dart::gui::ApplicationOptions::camera` hook and
+    used it to restore the Fetch example's historical camera framing while
+    keeping the example on public `dart::gui` APIs.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

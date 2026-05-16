@@ -1181,6 +1181,66 @@ Twentieth official-target checkpoint:
     (`dartpy.gui.experimental.ShapeKind.Box`)
   - `git diff --check`
 
+Twenty-first parity-audit correction checkpoint:
+
+- Maintainer correction: many examples are source-owned but still not fully
+  restored to the historical GUI behavior; `examples/fetch/` is the concrete
+  proof case. Do not treat "has a real `examples/<name>/main.cpp`" as
+  completion.
+- New operating rule for the remaining branch work: every pre-existing
+  user-facing GUI example remains **parity pending** until its legacy source
+  has a feature inventory and the migrated `dart::gui` source either preserves
+  each user-visible behavior or records an explicit, justified follow-up gap.
+- Use the historical OSG source immediately before renderer removal as the
+  baseline when available, for example
+  `git show 520993d7301^:examples/<name>/main.cpp`. Compare the restored
+  source against that baseline before claiming parity.
+- Audit dimensions for each example:
+  - world/model loading and initial configuration
+  - collision-engine preferences and required optional components
+  - simulation-loop callbacks/controllers
+  - interactive frames, drag targets, hotkeys, reset/step/play controls, and
+    visible affordances
+  - panels/help/status text and `--gui-scale` behavior
+  - camera defaults, grid/axis/debug visuals, and screenshot/headless behavior
+  - runner/CMake wiring through public `dart::gui`, with no private fixture
+    launcher or backend/experimental headers
+- Immediate `fetch` repair scope:
+  - Keep the already-restored public source ownership, Bullet preference when
+    available, live mocap target following, and green target cross.
+  - Restore remaining historical user experience where the current public API
+    can support it: camera home framing, clearer target/status/help panel
+    content, and a stronger visible target affordance.
+  - If a behavior requires a missing promoted API, add the smallest
+    renderer-neutral `dart::gui` API needed for the example instead of using
+    private Filament/GLFW/ImGui types from the example.
+- Broader parity audit remains active after `fetch`; all already migrated
+  robot/IK, interaction, shape, mesh, capture, and controller examples need the
+  same legacy-source comparison before this dev task can be considered done.
+- Implementation state for this slice: `dart::gui::ApplicationOptions` now has
+  a renderer-neutral optional `OrbitCamera` override. `examples/fetch` uses it
+  to restore the historical camera home framing from the OSG viewer, keeps the
+  example on public `dart::gui` APIs, and replaces the separate child target
+  bars with one `LineSegmentShape` cross on the draggable target frame so
+  selecting the visible cross moves the mocap target rather than detaching a
+  child marker from it.
+- Local evidence so far:
+  - C++ GUI target build for `dart-gui`, `fetch`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Direct Fetch headless capture with project-equivalent llvmpipe environment
+    (`LIBGL_ALWAYS_SOFTWARE=1`, `MESA_LOADER_DRIVER_OVERRIDE=llvmpipe`) and
+    the headless analyzer in basic mode
+  - `pixi run ex fetch --headless --frames 10 --screenshot ...` capture and
+    visual inspection of the rendered image
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+    (`67 passed`)
+  - Full `examples` aggregate target build
+- Local environment note: a direct system-Filament headless Fetch run returned
+  an all-zero PPM on this workstation, while the project runner's llvmpipe path
+  rendered correctly. Treat the project runner environment as the relevant
+  local headless validation path for this checkpoint.
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:

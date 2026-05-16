@@ -45,6 +45,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -110,6 +111,7 @@ struct AppOptions
   dart::gui::RunOptions run;
   dart::simulation::WorldPtr world;
   std::function<void()> preStep;
+  std::optional<dart::gui::OrbitCamera> camera;
   std::vector<dart::gui::Panel> panels;
   std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
   ExampleScene scene = ExampleScene::Mvp;

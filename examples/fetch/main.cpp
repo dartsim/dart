@@ -42,13 +42,12 @@
 #include <dart/constraint/weld_joint_constraint.hpp>
 
 #include <dart/dynamics/body_node.hpp>
-#include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/degree_of_freedom.hpp>
 #include <dart/dynamics/frame.hpp>
 #include <dart/dynamics/joint.hpp>
+#include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/skeleton.hpp>
-#include <dart/dynamics/sphere_shape.hpp>
 
 #include <dart/io/read.hpp>
 
@@ -57,6 +56,8 @@
 #include <iostream>
 #include <memory>
 #include <string>
+
+#include <cstddef>
 
 namespace {
 
@@ -147,25 +148,36 @@ void setFrameColor(
   frame->getVisualAspect(true)->setRGBA(color);
 }
 
-void addTargetBar(
-    dart::simulation::World& world,
-    const std::shared_ptr<dart::dynamics::SimpleFrame>& target,
-    const std::string& name,
-    const Eigen::Vector3d& dimensions)
+std::shared_ptr<dart::dynamics::LineSegmentShape> createTargetCrossShape()
 {
-  auto bar = target->spawnChildSimpleFrame(name);
-  bar->setShape(std::make_shared<dart::dynamics::BoxShape>(dimensions));
-  setFrameColor(bar, Eigen::Vector4d(0.18, 0.86, 0.34, 0.42));
-  world.addSimpleFrame(bar);
+  auto cross = std::make_shared<dart::dynamics::LineSegmentShape>(8.0f);
+  const std::size_t center = cross->addVertex(Eigen::Vector3d::Zero());
+  cross->addVertex(Eigen::Vector3d(0.24, 0.0, 0.0), center);
+  cross->addVertex(Eigen::Vector3d(-0.24, 0.0, 0.0), center);
+  cross->addVertex(Eigen::Vector3d(0.0, 0.24, 0.0), center);
+  cross->addVertex(Eigen::Vector3d(0.0, -0.24, 0.0), center);
+  cross->addVertex(Eigen::Vector3d(0.0, 0.0, 0.18), center);
+  cross->addVertex(Eigen::Vector3d(0.0, 0.0, -0.18), center);
+  return cross;
 }
 
 std::shared_ptr<dart::dynamics::SimpleFrame> createTargetFrame()
 {
   auto target = dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World(), kFetchTargetName, makeTargetTransform());
-  target->setShape(std::make_shared<dart::dynamics::SphereShape>(0.06));
+  target->setShape(createTargetCrossShape());
   setFrameColor(target, Eigen::Vector4d(0.18, 0.86, 0.34, 0.92));
   return target;
+}
+
+dart::gui::OrbitCamera makeFetchCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.1, -0.3, 0.3);
+  camera.yaw = 0.8341400147073799;
+  camera.pitch = 0.3622488790595554;
+  camera.distance = 6.208059278067503;
+  return camera;
 }
 
 FetchScene createFetchScene()
@@ -198,16 +210,6 @@ FetchScene createFetchScene()
 
   scene.target = createTargetFrame();
   scene.world->addSimpleFrame(scene.target);
-  addTargetBar(
-      *scene.world,
-      scene.target,
-      "fetch_target_x_bar",
-      Eigen::Vector3d(0.42, 0.035, 0.035));
-  addTargetBar(
-      *scene.world,
-      scene.target,
-      "fetch_target_y_bar",
-      Eigen::Vector3d(0.035, 0.42, 0.035));
   return scene;
 }
 
@@ -231,6 +233,8 @@ dart::gui::Panel createFetchPanel()
                               dart::gui::PanelContext& context) {
     builder.text("Fetch pick-and-place MJCF world");
     builder.text("Whole-body motion follows the green cross target.");
+    builder.text("Select the cross, then Ctrl-left drag or use arrow keys.");
+    builder.text("X/Y/Z constrain Ctrl-left drag to one world axis.");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -257,6 +261,7 @@ int main(int argc, char* argv[])
 
     dart::gui::ApplicationOptions options;
     options.world = scene.world;
+    options.camera = makeFetchCamera();
     options.preStep = [scene]() {
       syncMocapTarget(scene);
     };

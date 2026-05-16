@@ -35,6 +35,7 @@
 
 #include <dart/gui/export.hpp>
 #include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <dart/simulation/fwd.hpp>
 
@@ -43,6 +44,7 @@
 #include <dart/dynamics/simple_frame.hpp>
 
 #include <functional>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -60,6 +62,7 @@ struct ApplicationOptions
 {
   dart::simulation::WorldPtr world;
   std::function<void()> preStep;
+  std::optional<OrbitCamera> camera;
   std::string defaultScene;
   std::vector<Panel> panels;
   std::vector<InverseKinematicsHandle> ikHandles;
