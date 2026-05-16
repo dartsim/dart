@@ -24,6 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       code: ${{ steps.filter.outputs.code }}
+      wheel_workflow: ${{ steps.filter.outputs.wheel_workflow }}
     steps:
       - uses: actions/checkout@v6
       - uses: dorny/paths-filter@v4
@@ -41,15 +42,19 @@ jobs:
               - '!**/*.rst'
               - '!**/*.po'
               - '!**/*.pot'
+            wheel_workflow:
+              - '.github/workflows/publish_dartpy.yml'
 
   wheel_matrix:
+    needs: changes
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
       - id: matrix
         run: |
-          if [[ "$GITHUB_EVENT_NAME" == "schedule" \
+          if [[ "${{ needs.changes.outputs.wheel_workflow }}" == "true" \
+             || "$GITHUB_EVENT_NAME" == "schedule" \
              || "$GITHUB_EVENT_NAME" == "workflow_dispatch" \
              || "$GITHUB_REF" == "refs/heads/main" \
              || "$GITHUB_REF" == refs/tags/v* ]]; then

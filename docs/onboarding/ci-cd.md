@@ -219,6 +219,8 @@ Guardrails:
 - Keep at least one dartpy wheel per supported OS in PR CI. Expanded Python
   version coverage can run on `main`, release tags, schedules, and manual
   dispatch.
+- Run the full dartpy wheel matrix when `publish_dartpy.yml` itself changes so
+  workflow edits validate both PR and continuous wheel tiers before merge.
 - `main`, release, release-tag, scheduled, and manual workflows must preserve
   the full coverage that PR tiering skips.
 
@@ -401,6 +403,7 @@ build_wheels:
 **Behavior:**
 
 - **PRs**: Baseline Python wheel builds on Ubuntu, macOS, and Windows
+- **PR workflow changes**: Full Python-version matrix builds
 - **Non-main branch pushes**: Baseline Python wheel builds on Ubuntu, macOS, and Windows
 - **Main branch**: Full Python-version matrix builds
 - **Release tags**: Full Python-version matrix builds
