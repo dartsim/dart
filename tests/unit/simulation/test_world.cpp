@@ -38,6 +38,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <vector>
 
 #include <cmath>
 
@@ -440,6 +441,23 @@ struct NativeBoxGroundRunResult
   Eigen::Isometry3d finalTransform = Eigen::Isometry3d::Identity();
 };
 
+double measureBoxLowestVertexZ(
+    const BodyNode* body, const Eigen::Vector3d& boxSize)
+{
+  const auto tf = body->getWorldTransform();
+  const Eigen::Vector3d halfExtents = 0.5 * boxSize;
+  double lowest = std::numeric_limits<double>::infinity();
+  for (const double x : {-halfExtents.x(), halfExtents.x()}) {
+    for (const double y : {-halfExtents.y(), halfExtents.y()}) {
+      for (const double z : {-halfExtents.z(), halfExtents.z()}) {
+        const Eigen::Vector3d vertex = tf * Eigen::Vector3d(x, y, z);
+        lowest = std::min(lowest, vertex.z());
+      }
+    }
+  }
+  return lowest;
+}
+
 NativeBoxGroundRunResult runDefaultNativeBoxOnGround(
     const Eigen::Matrix3d& initialRotation,
     int numSteps,
@@ -484,17 +502,7 @@ NativeBoxGroundRunResult runDefaultNativeBoxOnGround(
   world->addSkeleton(ground);
 
   auto measureLowestVertexZ = [&]() {
-    const auto tf = boxBody->getWorldTransform();
-    double lowest = std::numeric_limits<double>::infinity();
-    for (const double x : {-boxHalfExtent, boxHalfExtent}) {
-      for (const double y : {-boxHalfExtent, boxHalfExtent}) {
-        for (const double z : {-boxHalfExtent, boxHalfExtent}) {
-          const Eigen::Vector3d vertex = tf * Eigen::Vector3d(x, y, z);
-          lowest = std::min(lowest, vertex.z());
-        }
-      }
-    }
-    return lowest;
+    return measureBoxLowestVertexZ(boxBody, boxSize);
   };
 
   NativeBoxGroundRunResult runResult;
@@ -541,6 +549,31 @@ bool hasLocalAxisAlignedWithWorldZ(
     }
   }
   return false;
+}
+
+SkeletonPtr createNativeStackBox(
+    const std::string& name,
+    const Eigen::Vector3d& boxSize,
+    const Eigen::Vector3d& center)
+{
+  auto box = Skeleton::create(name);
+  auto pair = box->createJointAndBodyNodePair<FreeJoint>();
+  auto* joint = pair.first;
+  auto* body = pair.second;
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = center;
+  joint->setTransform(tf);
+
+  auto* shapeNode = body->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(boxSize));
+
+  Inertia inertia;
+  inertia.setMass(1.0);
+  inertia.setMoment(shapeNode->getShape()->computeInertia(1.0));
+  body->setInertia(inertia);
+
+  return box;
 }
 
 } // namespace
@@ -592,6 +625,69 @@ TEST(WorldTests, DefaultNativeRotatedBoxStaysOnGround15s)
   EXPECT_GE(result.lowestVertexZ, 0.05 - 0.005);
   EXPECT_LE(result.highestCenterZAfterRest, 0.05 + 0.15 * 1.74 + 0.02);
   EXPECT_GE(result.lowestCenterZAfterRest, 0.05 + 0.15 - 0.02);
+}
+
+//==============================================================================
+TEST(WorldTests, DefaultNativeTenBoxStackDoesNotTunnel)
+{
+  auto world = World::create();
+  world->setTimeStep(0.001);
+  ASSERT_TRUE(world->getCollisionDetector());
+  ASSERT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
+
+  constexpr int kNumBoxes = 10;
+  const Eigen::Vector3d boxSize = Eigen::Vector3d::Constant(0.25);
+  const double boxHeight = boxSize.z();
+  const double groundTop = 0.05;
+
+  auto ground = Skeleton::create("stack_ground");
+  auto groundPair = ground->createJointAndBodyNodePair<WeldJoint>();
+  groundPair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d(5.0, 5.0, 0.1)));
+  world->addSkeleton(ground);
+
+  std::vector<BodyNode*> boxBodies;
+  boxBodies.reserve(kNumBoxes);
+  for (int i = 0; i < kNumBoxes; ++i) {
+    const double z = groundTop + 0.5 * boxHeight + i * boxHeight;
+    auto box = createNativeStackBox(
+        "stack_box_" + std::to_string(i), boxSize, Eigen::Vector3d(0, 0, z));
+    boxBodies.push_back(box->getBodyNode(0));
+    world->addSkeleton(box);
+  }
+
+  bool sawContact = false;
+  double lowestVertexZ = std::numeric_limits<double>::infinity();
+  double highestFinalCenterZ = -std::numeric_limits<double>::infinity();
+  double finalKineticEnergy = 0.0;
+
+  for (int step = 0; step < 3000; ++step) {
+    world->step();
+    sawContact
+        = sawContact || world->getLastCollisionResult().getNumContacts() > 0u;
+
+    for (const auto* body : boxBodies) {
+      ASSERT_TRUE(body->getWorldTransform().matrix().array().allFinite())
+          << "step=" << step;
+      const double boxLowestVertexZ = measureBoxLowestVertexZ(body, boxSize);
+      lowestVertexZ = std::min(lowestVertexZ, boxLowestVertexZ);
+
+      if (step >= 500 && step % 100 == 0) {
+        EXPECT_GE(boxLowestVertexZ, groundTop - 0.01) << "step=" << step;
+      }
+    }
+  }
+
+  for (const auto* body : boxBodies) {
+    highestFinalCenterZ = std::max(
+        highestFinalCenterZ, body->getWorldTransform().translation().z());
+    finalKineticEnergy += body->getSkeleton()->computeKineticEnergy();
+  }
+
+  EXPECT_TRUE(sawContact);
+  EXPECT_GE(lowestVertexZ, groundTop - 0.01);
+  EXPECT_GT(highestFinalCenterZ, groundTop + boxHeight * 7.0);
+  EXPECT_LT(finalKineticEnergy, 10.0);
 }
 
 //==============================================================================
