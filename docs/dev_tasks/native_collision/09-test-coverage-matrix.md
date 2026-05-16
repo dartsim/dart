@@ -259,11 +259,11 @@ Query-parity note).
 
 ### Per-pair narrow-phase
 
-| Codename                              | Status | JSON output                                 | Notes                                                                                                                                                                              |
-| ------------------------------------- | ------ | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bench_narrow_phase_per_pair_raw`     | DONE   | `native_collision_raw_narrow_phase.json`    | Native raw vs reference adapter — see Q4 parity gap                                                                                                                                |
-| `bench_narrow_phase_per_pair_adapter` | DONE   | `collision_check_narrow_adapter.json`       | Native/reference through public detector adapter path                                                                                                                              |
-| `bench_narrow_phase_per_pair_ref_raw` | DONE   | `collision_check_narrow_raw_reference.json` | SphereSphere/BoxBox/SphereBox fixed raw rows plus primitive edge-case raw rows for SphereSphere, BoxBox, CapsuleCapsule, SphereBox, CapsuleSphere, and CapsuleBox at scale index 1 |
+| Codename                              | Status | JSON output                                 | Notes                                                                                                                                                                                                                                |
+| ------------------------------------- | ------ | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `bench_narrow_phase_per_pair_raw`     | DONE   | `native_collision_raw_narrow_phase.json`    | Native raw vs reference adapter; audited 2026-05-16 with output/contact-count consumption on the high-margin SphereSphere, CapsuleSphere, CylinderCylinder, CylinderBox, CylinderPlane, PlaneSphere, PlaneBox, and PlaneCapsule rows |
+| `bench_narrow_phase_per_pair_adapter` | DONE   | `collision_check_narrow_adapter.json`       | Native/reference through public detector adapter path                                                                                                                                                                                |
+| `bench_narrow_phase_per_pair_ref_raw` | DONE   | `collision_check_narrow_raw_reference.json` | SphereSphere/BoxBox/SphereBox fixed raw rows plus primitive edge-case raw rows for SphereSphere, BoxBox, CapsuleCapsule, SphereBox, CapsuleSphere, and CapsuleBox at scale index 1                                                   |
 
 ### Distance + raycast + CCD
 

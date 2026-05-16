@@ -3790,6 +3790,30 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     Plane-Capsule. `pixi run lint` and `git diff --check` passed. No PR, push,
     workflow, branch, or GitHub state was mutated by this local validation
     pass.
+- Current local suspicious raw-row benchmark audit:
+  - Commit: `184c8be739d`
+    (`Record benchmark harness audit evidence`).
+  - Command:
+    `./build/collision-reference/cpp/Release/bin/bm_comparative_narrow_phase --benchmark_filter='BM_NarrowPhase_(PlaneSphere|PlaneCapsule|CylinderPlane|CapsuleSphere|SphereSphere|CylinderCylinder|CylinderBox|PlaneBox)_(Native|FCL|Bullet|ODE)$' --benchmark_min_time=1ms --benchmark_repetitions=1 --benchmark_out=.benchmark_results/native_collision_suspicious_win_raw_audit.json --benchmark_out_format=json`.
+  - Result: passed locally. The benchmark binary's built-in accuracy
+    verification passed for all registered raw narrow-phase pairs before the
+    focused run. The focused JSON covered SphereSphere, CapsuleSphere,
+    CylinderCylinder, CylinderBox, CylinderPlane, PlaneSphere, PlaneBox, and
+    PlaneCapsule across native, FCL, Bullet, and ODE lanes. With the hardened
+    output/contact-count consumption guards active, native remained ahead of
+    the fastest reference lane by roughly 12.36x, 19.44x, 21.64x, 18.79x,
+    15.04x, 15.00x, 11.09x, and 14.72x respectively. No PR, push, workflow,
+    branch, or GitHub state was mutated by this local validation pass.
+- Current local full validation after benchmark harness audit:
+  - Commit: `184c8be739d`
+    (`Record benchmark harness audit evidence`).
+  - Command:
+    `JOBS=$(python scripts/parallel_jobs.py 2>/dev/null || nproc); DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-all`.
+  - Result: passed. The full local report passed all 6 top-level gates:
+    linting, build, unit tests, simulation-experimental tests, Python tests,
+    and documentation, then printed `All tests passed!`. No PR, push,
+    workflow, branch, or GitHub state was mutated by this local validation
+    pass.
 
 ## Known Risks
 

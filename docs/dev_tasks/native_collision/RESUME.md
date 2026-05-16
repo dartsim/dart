@@ -209,6 +209,15 @@ post GitHub comments unless the user explicitly asks.
   comparative narrow-phase target now consumes collision outputs/contact counts
   in timed rows, rejects empty-contact setups for strict fixed-contact rows,
   and passed the focused narrow and raw-reference benchmark guards locally.
+- Latest full local `pixi run test-all` validation: `184c8be739d`. The full
+  local report passed linting, build, unit tests, simulation-experimental
+  tests, Python tests, and documentation after the benchmark harness evidence
+  commits.
+- Latest focused high-margin raw narrow-phase audit: `184c8be739d`. The focused
+  benchmark JSON
+  `.benchmark_results/native_collision_suspicious_win_raw_audit.json` covered
+  the eight high-margin primitive rows with the hardened benchmark guards
+  active.
 - Latest local gz-physics baseline: `6742a21ab0f`.
 - Latest local native compatibility package-smoke baseline: `dcfc994542f`.
 - Last manual workflow-dispatch CI evidence head: `1e1faf6feb1`.
@@ -299,6 +308,15 @@ post GitHub comments unless the user explicitly asks.
   reported `2 passed, 0 failed, 0 skipped, 22 reported`, and `pixi run lint`
   plus `git diff --check` passed. No PR, push, workflow, branch, or GitHub
   state was mutated by this validation pass.
+- Current local suspicious raw-row benchmark audit after `184c8be739d`:
+  the focused high-margin raw-row benchmark emitted
+  `.benchmark_results/native_collision_suspicious_win_raw_audit.json` after
+  built-in accuracy verification passed. Native remained ahead of the fastest
+  reference lane on the eight checked rows by roughly 11x-22x with result and
+  contact-count consumption active.
+- Current local full validation after `184c8be739d`: `pixi run test-all`
+  passed all 6 top-level gates and printed `All tests passed!`. No PR, push,
+  workflow, branch, or GitHub state was mutated by this validation pass.
 - Current local feature-level stability refresh after `ca0201e67f4`: focused
   build of `INTEGRATION_simulation_World` passed,
   `World.AtlasSimbiconControllerFeetStayAboveGroundWithNativeCollision`
