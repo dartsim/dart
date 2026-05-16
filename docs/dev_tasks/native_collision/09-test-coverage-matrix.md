@@ -315,21 +315,21 @@ Bar per row: a batch entry function exists for the pair, plus a
 determinism test asserting batch results bit-match single-pair loop,
 plus a benchmark sweeping batch size N=1/10/100/1000.
 
-| Codename                                        | Status | Notes                                                                             |
-| ----------------------------------------------- | ------ | --------------------------------------------------------------------------------- |
-| `boxbox_batch_determinism_vs_single`            | DONE   | `test_box_box.cpp::boxbox_batch_determinism_vs_single`                            |
-| `boxbox_batch_api_surface`                      | DONE   | `box_box.hpp` / `box_box.cpp`: `BoxPair` + `collideBoxesBatch(...)`               |
-| `sphere_sphere_batch_determinism_vs_single`     | GAP    | Same pattern, future slice                                                        |
-| `capsule_capsule_batch_determinism_vs_single`   | GAP    | High-frequency in ragdoll — prioritize                                            |
-| `cylinder_cylinder_batch_determinism_vs_single` | GAP    |                                                                                   |
-| `convex_convex_batch_determinism_vs_single`     | GAP    |                                                                                   |
-| `mesh_mesh_batch_determinism_vs_single`         | GAP    |                                                                                   |
-| `narrow_phase_collide_batch_dispatcher`         | GAP    | Q9 Option C: `NarrowPhase::collideBatch(span<Pair>)` fan-out                      |
-| `bench_narrow_phase_per_pair_batch`             | DONE   | `.benchmark_results/native_collision_box_box_round7.json`: BoxBox N=1/10/100/1000 |
-| `bench_simd_sat_axes_per_pair`                  | GAP    | Perf-wave benchmark: SoA SAT-axis projection across N pairs                       |
-| `bench_simd_face_clip_per_pair`                 | GAP    | Perf-wave benchmark: parallel polygon clipping                                    |
-| `bench_simd_xsimd_vs_scalar_speedup`            | GAP    | Cross-cutting: report per-pair speedup factor when SIMD-enabled                   |
-| `lint_no_naked_single_pair_loops`               | GAP    | Future lint: every new pair file must expose batch API too                        |
+| Codename                                        | Status | Notes                                                                                          |
+| ----------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
+| `boxbox_batch_determinism_vs_single`            | DONE   | `test_box_box.cpp::boxbox_batch_determinism_vs_single`                                         |
+| `boxbox_batch_api_surface`                      | DONE   | `box_box.hpp` / `box_box.cpp`: `BoxPair` + `collideBoxesBatch(...)`                            |
+| `sphere_sphere_batch_determinism_vs_single`     | DONE   | `test_sphere_sphere.cpp::sphere_sphere_batch_determinism_vs_single`                            |
+| `capsule_capsule_batch_determinism_vs_single`   | GAP    | High-frequency in ragdoll — prioritize                                                         |
+| `cylinder_cylinder_batch_determinism_vs_single` | GAP    |                                                                                                |
+| `convex_convex_batch_determinism_vs_single`     | GAP    |                                                                                                |
+| `mesh_mesh_batch_determinism_vs_single`         | GAP    |                                                                                                |
+| `narrow_phase_collide_batch_dispatcher`         | GAP    | Q9 Option C: `NarrowPhase::collideBatch(span<Pair>)` fan-out                                   |
+| `bench_narrow_phase_per_pair_batch`             | DONE   | `.benchmark_results/native_collision_box_box_round7.json`: BoxBox/SphereSphere N=1/10/100/1000 |
+| `bench_simd_sat_axes_per_pair`                  | GAP    | Perf-wave benchmark: SoA SAT-axis projection across N pairs                                    |
+| `bench_simd_face_clip_per_pair`                 | GAP    | Perf-wave benchmark: parallel polygon clipping                                                 |
+| `bench_simd_xsimd_vs_scalar_speedup`            | GAP    | Cross-cutting: report per-pair speedup factor when SIMD-enabled                                |
+| `lint_no_naked_single_pair_loops`               | GAP    | Future lint: every new pair file must expose batch API too                                     |
 
 ## 5. Cross-Cutting Infrastructure
 
@@ -350,9 +350,9 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 - **§1 Pair-wise narrow-phase:** 74 DONE, 0 PARTIAL, 7 GAP (of 81 rows)
 - **§2 Algorithm-level:** 31 DONE, 2 PARTIAL, 11 GAP (of 44 rows)
 - **§3 Stress / regression:** 17 DONE, 1 PARTIAL, 15 GAP (of 33 rows)
-- **§4 Benchmarks:** 22 DONE, 0 PARTIAL, 6 GAP (of 28 rows)
+- **§4 Benchmarks:** 23 DONE, 0 PARTIAL, 5 GAP (of 28 rows)
 - **§5 Infrastructure:** 8 DONE, 0 PARTIAL, 1 GAP (of 9 rows)
-- **TOTAL:** 152 DONE, 3 PARTIAL, 40 GAP (of 195 rows)
+- **TOTAL:** 153 DONE, 3 PARTIAL, 39 GAP (of 195 rows)
 
 DART native is currently at ~78% of the proposed superset, with the
 remaining coverage concentrated in: (a) BVH/CCD algorithm-isolation rows,

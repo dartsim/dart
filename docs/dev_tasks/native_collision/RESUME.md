@@ -39,10 +39,11 @@ Current unpushed follow-up fixes a native box-box contact-point regression that
 could let a rotated box fall through a large ground box in default-world
 simulation. It also makes invalid convex/soft mesh data non-collidable with a
 warning and adds public-detector coverage for sphere-mesh collision. The slice
-adds raw box-box, default-world, convex-mesh, and mesh regression tests,
-rebuilds `hello_world` without the OctoMap `<ciso646>` warning, and refreshes
-focused native/reference validation plus raw narrow-phase benchmark evidence.
-The canonical command list and results are recorded in `03-evidence-gates.md`.
+adds raw box-box, sphere-sphere batch, default-world, convex-mesh, and mesh
+regression tests, rebuilds `hello_world` without the OctoMap `<ciso646>`
+warning, and refreshes focused native/reference validation plus raw
+narrow-phase benchmark evidence. The canonical command list and results are
+recorded in `03-evidence-gates.md`.
 
 ## Current Branch
 
@@ -140,6 +141,13 @@ post GitHub comments unless the user explicitly asks.
   warning, and
   `.benchmark_results/native_collision_raw_narrow_phase.json` was produced by
   the raw narrow-phase benchmark run.
+- Current local sphere-sphere batch refresh after `1dbbe30dea3`: focused
+  `test_sphere_sphere` batch determinism passed, the default
+  `collision-native` label passed 29/29 tests, `pixi run lint` passed with
+  runtime-isolation and compatibility-facade audits, and the
+  reference-enabled narrow-phase benchmark emitted
+  `.benchmark_results/native_collision_sphere_sphere_batch.json` for
+  N=1/10/100/1000.
 
 Useful lightweight guards:
 

@@ -33,6 +33,8 @@
 #include <dart/collision/native/narrow_phase/sphere_sphere.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
 
+#include <stdexcept>
+
 #include <cmath>
 
 namespace dart::collision::native {
@@ -96,6 +98,27 @@ bool collideSpheres(
       sphere2.getRadius(),
       result,
       option);
+}
+
+void collideSpheresBatch(
+    std::span<const SpherePair> pairs,
+    std::span<CollisionResult> results,
+    const CollisionOption& option)
+{
+  if (results.size() < pairs.size()) {
+    throw std::invalid_argument(
+        "collideSpheresBatch requires one result for each pair");
+  }
+
+  for (std::size_t i = 0; i < pairs.size(); ++i) {
+    const auto& pair = pairs[i];
+    if (pair.shapeA == nullptr || pair.shapeB == nullptr) {
+      throw std::invalid_argument("collideSpheresBatch received a null sphere");
+    }
+
+    [[maybe_unused]] const bool collided = collideSpheres(
+        *pair.shapeA, pair.tfA, *pair.shapeB, pair.tfB, results[i], option);
+  }
 }
 
 } // namespace dart::collision::native

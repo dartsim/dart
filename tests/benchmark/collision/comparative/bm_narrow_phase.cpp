@@ -355,6 +355,69 @@ static void BM_NarrowPhase_SphereSphere_Native(benchmark::State& state)
 }
 BENCHMARK(BM_NarrowPhase_SphereSphere_Native);
 
+static std::vector<SpherePair> MakeSphereSphereBatchPairs(
+    std::size_t batchSize, const SphereShape& sphere1, const SphereShape& sphere2)
+{
+  std::mt19937 rng(314159u);
+  std::uniform_real_distribution<double> offset(-0.10, 0.10);
+
+  std::vector<SpherePair> pairs;
+  pairs.reserve(batchSize);
+  for (std::size_t i = 0; i < batchSize; ++i) {
+    Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+    tf1.translation() = Eigen::Vector3d(
+        offset(rng), offset(rng), offset(rng));
+
+    Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+    tf2.translation()
+        = Eigen::Vector3d(0.85 + offset(rng), offset(rng), offset(rng));
+
+    pairs.push_back(SpherePair{&sphere1, &sphere2, tf1, tf2});
+  }
+  return pairs;
+}
+
+static void BM_NarrowPhase_SphereSphere_Native_Batch(
+    benchmark::State& state, std::size_t batchSize)
+{
+  SphereShape s1(0.75);
+  SphereShape s2(0.60);
+
+  const auto pairs = MakeSphereSphereBatchPairs(batchSize, s1, s2);
+  std::vector<CollisionResult> results(batchSize);
+  CollisionOption option;
+
+  for (auto _ : state) {
+    for (auto& result : results)
+      result.clear();
+    collideSpheresBatch(pairs, results, option);
+    benchmark::DoNotOptimize(results.data());
+    benchmark::ClobberMemory();
+  }
+
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations())
+      * static_cast<int64_t>(batchSize));
+  state.counters["pairs_per_iteration"] = static_cast<double>(batchSize);
+}
+
+struct SphereSphereBatchBenchmarkRegistrar
+{
+  SphereSphereBatchBenchmarkRegistrar()
+  {
+    for (const std::size_t batchSize : {1u, 10u, 100u, 1000u}) {
+      const std::string name
+          = "BM_NarrowPhase_SphereSphere_Native_Batch_N"
+            + std::to_string(batchSize);
+      benchmark::RegisterBenchmark(
+          name.c_str(), BM_NarrowPhase_SphereSphere_Native_Batch, batchSize);
+    }
+  }
+};
+
+static SphereSphereBatchBenchmarkRegistrar
+    g_sphere_sphere_batch_benchmark_registrar;
+
 static void BM_NarrowPhase_SphereSphere_FCL(benchmark::State& state)
 {
   auto detector = dart::collision::FCLCollisionDetector::createReference();

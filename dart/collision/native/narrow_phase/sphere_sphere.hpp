@@ -38,9 +38,19 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include <span>
+
 namespace dart::collision::native {
 
 class SphereShape;
+
+struct DART_COLLISION_NATIVE_API SpherePair
+{
+  const SphereShape* shapeA;
+  const SphereShape* shapeB;
+  Eigen::Isometry3d tfA;
+  Eigen::Isometry3d tfB;
+};
 
 [[nodiscard]] DART_COLLISION_NATIVE_API bool collideSpheres(
     const Eigen::Vector3d& center1,
@@ -56,6 +66,11 @@ class SphereShape;
     const SphereShape& sphere2,
     const Eigen::Isometry3d& transform2,
     CollisionResult& result,
+    const CollisionOption& option = CollisionOption());
+
+DART_COLLISION_NATIVE_API void collideSpheresBatch(
+    std::span<const SpherePair> pairs,
+    std::span<CollisionResult> results,
     const CollisionOption& option = CollisionOption());
 
 } // namespace dart::collision::native

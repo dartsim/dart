@@ -3356,6 +3356,23 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     4/4, covering the `hello_world`-style upright and rotated falling-box
     scenes, including the 15-second no-tunneling guard. The full integration
     world executable passed 17/17 tests with the new Atlas coverage included.
+- Current local sphere-sphere batch narrow-phase refresh:
+  - Commit: current working tree after local head `1dbbe30dea3`
+    (`Add Atlas native collision regression coverage`).
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_sphere_sphere --parallel 5`,
+    `./build/default/cpp/Release/bin/test_sphere_sphere --gtest_filter=SphereSphereBatch.sphere_sphere_batch_determinism_vs_single`,
+    `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e collision-reference config`,
+    `CMAKE_BUILD_DIR=build/collision-reference/cpp/Release python scripts/cmake_build.py --target bm_comparative_narrow_phase --parallel 5`,
+    and
+    `./build/collision-reference/cpp/Release/bin/bm_comparative_narrow_phase --benchmark_filter='BM_NarrowPhase_SphereSphere_Native_Batch_N(1|10|100|1000)$' --benchmark_min_time=1ms --benchmark_repetitions=1 --benchmark_out=.benchmark_results/native_collision_sphere_sphere_batch.json --benchmark_out_format=json`.
+  - Result: passed. The new `collideSpheresBatch(...)` API emits one result
+    per `SpherePair`, rejects malformed result spans and null sphere pointers,
+    and the focused unit test confirms every batch result bit-matches the
+    scalar sphere-sphere path for 100 deterministic colliding pairs. The
+    reference-enabled benchmark target rebuilt cleanly, its built-in accuracy
+    verification passed for all registered raw narrow-phase pairs, and the
+    sphere-sphere batch benchmark emitted JSON for N=1/10/100/1000.
 
 ## Known Risks
 
