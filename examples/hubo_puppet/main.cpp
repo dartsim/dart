@@ -33,6 +33,7 @@
 #include <dart/config.hpp>
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/debug.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
 
@@ -69,12 +70,14 @@
 
 namespace {
 
-constexpr const char* kHuboSkeletonName = "visual_hubo_puppet_robot";
-constexpr const char* kGroundSkeletonName = "visual_hubo_puppet_ground";
+constexpr const char* kHuboSkeletonName = "hubo_copy";
+constexpr const char* kGroundSkeletonName = "ground";
+constexpr const char* kHuboSupportOverlayName = "hubo_support_polygon_overlay";
 constexpr double kDegrees = 3.14159265358979323846 / 180.0;
 constexpr double kTeleopLinearStep = 0.01;
 constexpr double kTeleopElevationStep = 0.2 * kTeleopLinearStep;
 constexpr double kTeleopYawStep = 2.0 * 3.14159265358979323846 / 180.0;
+constexpr double kSupportVisualElevation = 0.05;
 
 enum class PuppetMotion
 {
@@ -310,6 +313,54 @@ std::shared_ptr<dart::dynamics::LineSegmentShape> createIkTargetHandleShape(
   return handle;
 }
 
+std::shared_ptr<dart::dynamics::LineSegmentShape> createLineShape(
+    const std::vector<dart::gui::DebugLineDescriptor>& lines)
+{
+  auto shape = std::make_shared<dart::dynamics::LineSegmentShape>(3.0f);
+  for (const auto& line : lines) {
+    const auto start = shape->addVertex(line.from);
+    shape->addVertex(line.to, start);
+  }
+  return shape;
+}
+
+std::vector<dart::gui::DebugLineDescriptor> makeHuboSupportPolygonLines(
+    const dart::dynamics::SkeletonPtr& hubo)
+{
+  if (hubo == nullptr) {
+    return {};
+  }
+
+  dart::gui::DebugDrawOptions options;
+  options.drawGrid = false;
+  options.drawWorldFrame = false;
+  options.drawSupportPolygons = true;
+  options.supportPolygonElevation = kSupportVisualElevation;
+  return dart::gui::makeSupportPolygonDebugLines(*hubo, options, "hubo");
+}
+
+dart::dynamics::SimpleFramePtr createHuboSupportPolygonOverlay(
+    const dart::dynamics::SkeletonPtr& hubo)
+{
+  auto overlay = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), kHuboSupportOverlayName);
+  overlay->setShape(createLineShape(makeHuboSupportPolygonLines(hubo)));
+  overlay->getVisualAspect(true)->setRGBA(
+      Eigen::Vector4d(0.22, 0.86, 0.38, 0.86));
+  return overlay;
+}
+
+void updateHuboSupportPolygonOverlay(
+    const dart::dynamics::SkeletonPtr& hubo,
+    const dart::dynamics::SimpleFramePtr& overlay)
+{
+  if (overlay == nullptr) {
+    return;
+  }
+
+  overlay->setShape(createLineShape(makeHuboSupportPolygonLines(hubo)));
+}
+
 void setUnconstrainedIkBounds(const dart::dynamics::InverseKinematicsPtr& ik)
 {
   Eigen::Vector3d linearBounds
@@ -325,11 +376,13 @@ dart::dynamics::SkeletonPtr createGround()
   auto ground = dart::dynamics::Skeleton::create(kGroundSkeletonName);
   auto* body
       = ground->createJointAndBodyNodePair<dart::dynamics::WeldJoint>().second;
+  constexpr double thickness = 0.01;
   auto* shapeNode = body->createShapeNodeWith<dart::dynamics::VisualAspect>(
       std::make_shared<dart::dynamics::BoxShape>(
-          Eigen::Vector3d(4.0, 4.0, 0.04)));
-  shapeNode->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, -0.02));
-  shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.86, 0.88, 0.90, 1.0));
+          Eigen::Vector3d(10.0, 10.0, thickness)));
+  shapeNode->setRelativeTranslation(
+      Eigen::Vector3d(0.0, 0.0, -thickness / 2.0));
+  shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.0, 0.0, 0.2, 1.0));
   return ground;
 }
 
@@ -337,7 +390,67 @@ struct HuboPuppetScene
 {
   dart::simulation::WorldPtr world;
   dart::dynamics::SkeletonPtr hubo;
+  dart::dynamics::SimpleFramePtr supportOverlay;
   std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
+  struct TargetState
+  {
+    dart::simulation::WorldPtr world;
+    dart::dynamics::EndEffector* effector = nullptr;
+    dart::dynamics::InverseKinematicsPtr ik;
+    dart::dynamics::SimpleFramePtr target;
+    std::pair<Eigen::Vector6d, Eigen::Vector6d> defaultBounds;
+    Eigen::Isometry3d defaultTargetTransform = Eigen::Isometry3d::Identity();
+    std::string label;
+    char hotkey = '\0';
+    bool active = false;
+
+    void activate()
+    {
+      if (active || world == nullptr || effector == nullptr || target == nullptr
+          || ik == nullptr) {
+        return;
+      }
+
+      ik->getErrorMethod().setBounds();
+      target->setTransform(effector->getWorldTransform());
+      world->addSimpleFrame(target);
+      active = true;
+      std::cout << "Activated IK target '" << effector->getName() << "'.\n";
+      solve();
+    }
+
+    void deactivate()
+    {
+      if (!active || world == nullptr || target == nullptr || ik == nullptr) {
+        return;
+      }
+
+      ik->getErrorMethod().setBounds(defaultBounds);
+      target->setTransform(defaultTargetTransform);
+      world->removeSimpleFrame(target);
+      active = false;
+      std::cout << "Deactivated IK target '" << effector->getName() << "'.\n";
+    }
+
+    void toggle()
+    {
+      if (active) {
+        deactivate();
+      } else {
+        activate();
+      }
+    }
+
+    void solve()
+    {
+      if (active && ik != nullptr) {
+        ik->solveAndApply(true);
+      }
+    }
+  };
+
+  std::vector<std::shared_ptr<TargetState>> targetStates;
+  Eigen::VectorXd restConfiguration;
 };
 
 void addHuboPuppetIkTargets(
@@ -366,7 +479,7 @@ void addHuboPuppetIkTargets(
 
   const std::array<Config, 6> configs{{
       {"Body_LWR",
-       "hubo_puppet_left_hand",
+       "l_hand",
        "hubo_puppet_ik_target_left_hand",
        "1 left hand",
        '1',
@@ -374,7 +487,7 @@ void addHuboPuppetIkTargets(
        {0.18, 0.55, 1.0, 0.92},
        false},
       {"Body_RWR",
-       "hubo_puppet_right_hand",
+       "r_hand",
        "hubo_puppet_ik_target_right_hand",
        "2 right hand",
        '2',
@@ -382,7 +495,7 @@ void addHuboPuppetIkTargets(
        {1.0, 0.40, 0.24, 0.92},
        false},
       {"Body_LAR",
-       "hubo_puppet_left_foot",
+       "l_foot",
        "hubo_puppet_ik_target_left_foot",
        "3 left foot",
        '3',
@@ -390,7 +503,7 @@ void addHuboPuppetIkTargets(
        {0.26, 0.86, 0.34, 0.92},
        true},
       {"Body_RAR",
-       "hubo_puppet_right_foot",
+       "r_foot",
        "hubo_puppet_ik_target_right_foot",
        "4 right foot",
        '4',
@@ -398,7 +511,7 @@ void addHuboPuppetIkTargets(
        {0.95, 0.72, 0.18, 0.92},
        true},
       {"Body_LWP",
-       "hubo_puppet_left_peg",
+       "l_peg",
        "hubo_puppet_ik_target_left_peg",
        "5 left peg",
        '5',
@@ -406,7 +519,7 @@ void addHuboPuppetIkTargets(
        {0.70, 0.43, 0.96, 0.92},
        false},
       {"Body_RWP",
-       "hubo_puppet_right_peg",
+       "r_peg",
        "hubo_puppet_ik_target_right_peg",
        "6 right peg",
        '6',
@@ -458,15 +571,25 @@ void addHuboPuppetIkTargets(
         endEffector->getWorldTransform());
     target->setShape(createIkTargetHandleShape(0.15));
     target->getVisualAspect(true)->setRGBA(config.color);
-    scene.world->addSimpleFrame(target);
     ik->setTarget(target);
+
+    auto state = std::make_shared<HuboPuppetScene::TargetState>();
+    state->world = scene.world;
+    state->effector = endEffector;
+    state->ik = ik;
+    state->target = target;
+    state->defaultBounds = ik->getErrorMethod().getBounds();
+    state->defaultTargetTransform = target->getRelativeTransform();
+    state->label = config.label;
+    state->hotkey = config.hotkey;
 
     dart::gui::InverseKinematicsHandle handle;
     handle.label = config.label;
     handle.hotkey = config.hotkey;
-    handle.target = std::move(target);
-    handle.ik = std::move(ik);
+    handle.target = target;
+    handle.ik = ik;
     scene.ikHandles.push_back(std::move(handle));
+    scene.targetStates.push_back(std::move(state));
   }
 }
 
@@ -474,22 +597,26 @@ HuboPuppetScene createHuboPuppetScene()
 {
   HuboPuppetScene scene;
   scene.world = dart::simulation::World::create("dartsim_hubo_puppet");
-  scene.world->setGravity(Eigen::Vector3d::Zero());
+  scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   scene.world->addSkeleton(createGround());
 
   auto hubo = loadHuboPuppetSkeleton();
   scene.hubo = hubo;
   scene.world->addSkeleton(hubo);
   addHuboPuppetIkTargets(scene, hubo);
+  scene.restConfiguration = hubo->getPositions();
+  scene.supportOverlay = createHuboSupportPolygonOverlay(scene.hubo);
+  scene.world->addSimpleFrame(scene.supportOverlay);
   return scene;
 }
 
-void solveIkHandles(
-    const std::vector<dart::gui::InverseKinematicsHandle>& handles)
+void solveActiveHuboTargets(
+    const std::vector<std::shared_ptr<HuboPuppetScene::TargetState>>&
+        targetStates)
 {
-  for (const auto& handle : handles) {
-    if (handle.ik != nullptr) {
-      handle.ik->solveAndApply(true);
+  for (const auto& state : targetStates) {
+    if (state != nullptr) {
+      state->solve();
     }
   }
 }
@@ -562,7 +689,9 @@ bool applyRootTeleoperationStep(
 
 std::vector<dart::gui::KeyboardAction> createHuboPuppetKeyboardActions(
     const dart::dynamics::SkeletonPtr& hubo,
-    const std::vector<dart::gui::InverseKinematicsHandle>& ikHandles)
+    const std::vector<std::shared_ptr<HuboPuppetScene::TargetState>>&
+        targetStates,
+    const Eigen::VectorXd& restConfiguration)
 {
   struct Config
   {
@@ -582,20 +711,19 @@ std::vector<dart::gui::KeyboardAction> createHuboPuppetKeyboardActions(
       {'e', "Yaw Hubo right", PuppetMotion::YawRight},
   }};
 
-  auto handles
-      = std::make_shared<std::vector<dart::gui::InverseKinematicsHandle>>(
-          ikHandles);
+  auto states = std::make_shared<
+      std::vector<std::shared_ptr<HuboPuppetScene::TargetState>>>(targetStates);
   std::vector<dart::gui::KeyboardAction> actions;
-  actions.reserve(configs.size());
+  actions.reserve(configs.size() + targetStates.size() + 4);
   for (const Config& config : configs) {
     dart::gui::KeyboardAction action;
     action.label = config.label;
     action.shortcut = dart::gui::KeyboardShortcut::characterKey(config.key);
     action.repeat = true;
-    action.callback = [hubo, handles, motion = config.motion](
+    action.callback = [hubo, states, motion = config.motion](
                           dart::gui::KeyboardActionContext& context) {
       if (applyRootTeleoperationStep(hubo, motion)) {
-        solveIkHandles(*handles);
+        solveActiveHuboTargets(*states);
         if (context.lifecycle != nullptr) {
           context.lifecycle->paused = true;
         }
@@ -603,6 +731,82 @@ std::vector<dart::gui::KeyboardAction> createHuboPuppetKeyboardActions(
     };
     actions.push_back(std::move(action));
   }
+
+  for (const auto& state : targetStates) {
+    if (state == nullptr || state->hotkey == '\0') {
+      continue;
+    }
+
+    dart::gui::KeyboardAction action;
+    action.label = "Toggle Hubo target " + state->label;
+    action.shortcut = dart::gui::KeyboardShortcut::characterKey(state->hotkey);
+    action.callback = [state](dart::gui::KeyboardActionContext& context) {
+      state->toggle();
+      if (context.lifecycle != nullptr) {
+        context.lifecycle->paused = true;
+      }
+    };
+    actions.push_back(std::move(action));
+  }
+
+  const auto addSupportToggle
+      = [&](char key, const char* effectorName, const char* label) {
+          dart::gui::KeyboardAction action;
+          action.label = label;
+          action.shortcut = dart::gui::KeyboardShortcut::characterKey(key);
+          action.callback =
+              [hubo, effectorName](dart::gui::KeyboardActionContext& context) {
+                auto* effector
+                    = hubo ? hubo->getEndEffector(effectorName) : nullptr;
+                auto* support = effector ? effector->getSupport() : nullptr;
+                if (support != nullptr) {
+                  support->setActive(!support->isActive());
+                  if (context.lifecycle != nullptr) {
+                    context.lifecycle->paused = true;
+                  }
+                }
+              };
+          actions.push_back(std::move(action));
+        };
+  addSupportToggle('x', "l_foot", "Toggle left Hubo foot support");
+  addSupportToggle('c', "r_foot", "Toggle right Hubo foot support");
+
+  dart::gui::KeyboardAction printDofs;
+  printDofs.label = "Print Hubo DOFs";
+  printDofs.shortcut = dart::gui::KeyboardShortcut::characterKey('p');
+  printDofs.callback = [hubo](dart::gui::KeyboardActionContext&) {
+    if (hubo == nullptr) {
+      return;
+    }
+    for (std::size_t i = 0; i < hubo->getNumDofs(); ++i) {
+      auto* dof = hubo->getDof(i);
+      std::cout << dof->getName() << ": " << dof->getPosition() << "\n";
+    }
+  };
+  actions.push_back(std::move(printDofs));
+
+  dart::gui::KeyboardAction resetPosture;
+  resetPosture.label = "Reset Hubo relaxed posture";
+  resetPosture.shortcut = dart::gui::KeyboardShortcut::characterKey('t');
+  resetPosture.callback = [hubo, restConfiguration, states](
+                              dart::gui::KeyboardActionContext& context) {
+    if (hubo == nullptr
+        || static_cast<std::size_t>(restConfiguration.size())
+               != hubo->getNumDofs()) {
+      return;
+    }
+
+    for (std::size_t i = 0; i < hubo->getNumDofs(); ++i) {
+      if (i < 2 || 4 < i) {
+        hubo->getDof(i)->setPosition(restConfiguration[static_cast<int>(i)]);
+      }
+    }
+    solveActiveHuboTargets(*states);
+    if (context.lifecycle != nullptr) {
+      context.lifecycle->paused = true;
+    }
+  };
+  actions.push_back(std::move(resetPosture));
   return actions;
 }
 
@@ -618,6 +822,8 @@ dart::gui::Panel createHuboPuppetPanel()
     builder.text("Arrow keys and PageUp/PageDown nudge it.");
     builder.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
     builder.text("WASD moves the root; Q/E yaw; F/Z height.");
+    builder.text("X/C toggles foot support; P prints DOFs; T resets posture.");
+    builder.text("The support polygon overlay follows active foot support.");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -634,6 +840,24 @@ dart::gui::Panel createHuboPuppetPanel()
   return panel;
 }
 
+dart::gui::RunOptions makeHuboPuppetRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 1280;
+  options.height = 960;
+  return options;
+}
+
+dart::gui::OrbitCamera makeHuboPuppetCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.0, 0.0, 0.50);
+  camera.yaw = 0.5118558424318241;
+  camera.pitch = 0.22626228031830078;
+  camera.distance = 6.285196894290584;
+  return camera;
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
@@ -644,11 +868,16 @@ int main(int argc, char* argv[])
     dart::gui::ApplicationOptions options;
     options.world = scene.world;
     options.ikHandles = scene.ikHandles;
-    options.preStep = [handles = scene.ikHandles]() {
-      solveIkHandles(handles);
+    options.runDefaults = makeHuboPuppetRunDefaults();
+    options.camera = makeHuboPuppetCamera();
+    options.preStep = [targetStates = scene.targetStates,
+                       hubo = scene.hubo,
+                       supportOverlay = scene.supportOverlay]() {
+      solveActiveHuboTargets(targetStates);
+      updateHuboSupportPolygonOverlay(hubo, supportOverlay);
     };
-    options.keyboardActions
-        = createHuboPuppetKeyboardActions(scene.hubo, scene.ikHandles);
+    options.keyboardActions = createHuboPuppetKeyboardActions(
+        scene.hubo, scene.targetStates, scene.restConfiguration);
     options.panels.push_back(createHuboPuppetPanel());
     return dart::gui::runApplication(argc, argv, options);
   } catch (const std::exception& e) {

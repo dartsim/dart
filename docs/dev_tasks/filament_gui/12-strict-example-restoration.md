@@ -86,6 +86,12 @@ continuing to drive every table row with a recent checkpoint, partial
 restoration, or named public API gap through this strict historical-source
 standard.
 
+2026-05-16 follow-up during the Hubo Puppet checkpoint: maintainer steering
+again called out that many examples are still not fully restored, including
+`examples/fetch/`. Finish the in-flight Hubo checkpoint, push it for CI, then
+make `examples/fetch/` the next active strict-audit slice before resuming the
+linear cursor at `examples/hybrid_dynamics/`.
+
 ## Active Queue
 
 Use `11-example-parity-audit.md` as the live per-example table. The queue is
@@ -295,9 +301,30 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     headless screenshot, Python C++ example-runner tests, aggregate `examples`
     build, `git diff --check`, mandatory `pixi run lint`, and post-lint
     focused checks passed locally.
-29. After the G1 checkpoint is committed and pushed, the next strict-audit
-    cursor is `examples/hubo_puppet/`; compare it against
+29. The G1 checkpoint was pushed as
+    `1e691ce891b Restore G1 Puppet scene parity`. The active strict-audit
+    cursor is now `examples/hubo_puppet/`; compare it against
     `520993d7301^:examples/hubo_puppet` before coding.
+30. `examples/hubo_puppet/` strict re-open found remaining
+    target/default/README gaps after the earlier robot/IK checkpoint: missing
+    README, smaller renamed ground, all target frames visible and solved instead
+    of number-key toggled, missing support-polygon overlay, missing 1280x960
+    camera home, and missing renderer-neutral replacements for the historical
+    `X`/`C` support toggles, `P` DOF print, and `T` relaxed-pose reset. Repair
+    those now. Keep Shift movement amplification, hold/release `R` posture
+    optimization with balance mode, exact COM marker colors, and historical
+    camera roll/up-vector parity as named promoted API or solver follow-ups
+    unless those surfaces are added in this checkpoint.
+    Implementation and pre-lint validation are complete: focused build/CTest,
+    direct Hubo headless screenshot, Python C++ example-runner tests, aggregate
+    `examples` build, and `git diff --check` passed locally.
+31. After the Hubo checkpoint is committed and pushed, the next strict-audit
+    cursor is a fresh `examples/fetch/` re-open because maintainer steering
+    explicitly named it again as an incompletely restored example. Compare the
+    current source and README against `520993d7301^:examples/fetch`, update
+    `11-example-parity-audit.md` before coding, then repair any newly found gap
+    or record the promoted public API gap. Resume
+    `examples/hybrid_dynamics/` after the Fetch re-open is handled.
 
 ## Checkpoint Rule
 

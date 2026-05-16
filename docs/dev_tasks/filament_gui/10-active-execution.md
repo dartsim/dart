@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `7a9c712a3f1 Restore Fetch panel window controls`.
+  `1e691ce891b Restore G1 Puppet scene parity`.
 - Latest pushed code checkpoint:
-  `7a9c712a3f1 Restore Fetch panel window controls`.
+  `1e691ce891b Restore G1 Puppet scene parity`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -151,6 +151,7 @@ history but are not guaranteed to be in chronological order.
   - `68e31a339e4 Restore boxes example instructions`
   - `061bf811d76 Restore simple frames names and arrow`
   - `7a9c712a3f1 Restore Fetch panel window controls`
+  - `1e691ce891b Restore G1 Puppet scene parity`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -218,12 +219,19 @@ history but are not guaranteed to be in chronological order.
   (`/tmp/dart_fetch_panel_text_direct_postlint.ppm`, 303694/307200 nonzero
   pixels).
 - Current implementation checkpoint in the worktree:
-  `examples/g1_puppet/` strict re-open. This slice restores the historical
-  gravity, 8x8x0.1 gray `ground`, G1 root z `0.75`, source-owned 40-cell XY
-  grid, always-on support-polygon overlay, 1280x960 run defaults, camera home,
-  activation/deactivation console messages, README, and marker guards through
-  public `dart::gui`. Per-body articulated dragging remains a named promoted
-  API follow-up.
+  `examples/hubo_puppet/` strict re-open. This slice restores the historical
+  10x10x0.01 blue `ground`, six number-key target activation toggles,
+  renderer-neutral X/C foot-support toggles, P DOF print, T relaxed-posture
+  reset, always-on support-polygon overlay, 1280x960 run defaults, camera home,
+  README, and marker guards through public `dart::gui`. Shift movement
+  amplification, hold/release R balance optimization, exact COM marker colors,
+  and historical camera up-vector/roll remain named promoted API or solver
+  follow-ups.
+- Latest maintainer correction after the Hubo work: there are still many more
+  incompletely restored examples, and `examples/fetch/` remains the concrete
+  warning case. After the Hubo checkpoint is committed and pushed, re-open
+  `examples/fetch/` before advancing the linear cursor to
+  `examples/hybrid_dynamics/`.
 - Previous human-joint-limits implementation checkpoint:
   `examples/human_joint_limits/` strict audit. The implementation restores the
   live SKEL world, preserves the file timestep/Y-down gravity,
@@ -794,8 +802,21 @@ history but are not guaranteed to be in chronological order.
   CTest, direct llvmpipe G1 screenshot
   (`/tmp/dart_g1_puppet_strict_direct_postlint.ppm`, 1280x960), Python C++
   example-runner tests, aggregate `examples` build, `git diff --check`, and
-  mandatory `pixi run lint` passed locally. After this checkpoint is committed
-  and pushed, the next strict-audit cursor is `examples/hubo_puppet/`.
+  mandatory `pixi run lint` passed locally. This checkpoint was pushed as
+  `1e691ce891b Restore G1 Puppet scene parity`; the active strict-audit cursor
+  is now `examples/hubo_puppet/`.
+- Active `examples/hubo_puppet/` validation is complete for this checkpoint:
+  focused build for `hubo_puppet` and `UNIT_gui_FilamentSceneExtraction`,
+  focused CTest, direct llvmpipe Hubo screenshot
+  (`/tmp/dart_hubo_puppet_strict_direct.ppm`, 1280x960), Python C++ example
+  runner tests, aggregate `examples` build, `git diff --check`, mandatory
+  `pixi run lint`, post-lint focused build/CTest, post-lint `git diff --check`,
+  and post-lint direct Hubo screenshot
+  (`/tmp/dart_hubo_puppet_strict_postlint.ppm`, 1280x960) passed locally. After
+  this checkpoint is committed and pushed, the next strict-audit cursor is a
+  fresh `examples/fetch/` re-open; resume `examples/hybrid_dynamics/` only after
+  that Fetch correction is either repaired or explicitly recorded as a promoted
+  API gap.
 
 ## Current Code Shape
 

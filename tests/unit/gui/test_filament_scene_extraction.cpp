@@ -2147,29 +2147,86 @@ TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)
 {
   const auto mainSource = readSourceFile(
       std::filesystem::path("examples") / "hubo_puppet" / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "hubo_puppet" / "README.md");
 
   EXPECT_NE(mainSource.find("urdf/drchubo/drchubo.urdf"), std::string::npos);
   EXPECT_NE(
       mainSource.find("removeHuboPuppetFingerBodyNodes"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("kHuboSkeletonName = \"hubo_copy\""), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("kGroundSkeletonName = \"ground\""), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Eigen::Vector3d(10.0, 10.0, thickness)"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Eigen::Vector4d(0.0, 0.0, 0.2, 1.0)"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81))"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("kSupportVisualElevation = 0.05"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeSupportPolygonDebugLines"), std::string::npos);
+  EXPECT_NE(mainSource.find("hubo_support_polygon_overlay"), std::string::npos);
   EXPECT_NE(mainSource.find("LineSegmentShape"), std::string::npos);
   EXPECT_NE(mainSource.find("createIkTargetHandleShape"), std::string::npos);
   EXPECT_NE(
       mainSource.find("hubo_puppet_ik_target_left_hand"), std::string::npos);
   EXPECT_NE(
       mainSource.find("hubo_puppet_ik_target_right_peg"), std::string::npos);
+  EXPECT_NE(mainSource.find("\"l_hand\""), std::string::npos);
+  EXPECT_NE(mainSource.find("\"r_peg\""), std::string::npos);
   EXPECT_NE(mainSource.find("support->setActive(true)"), std::string::npos);
   EXPECT_NE(mainSource.find("setUnconstrainedIkBounds"), std::string::npos);
   EXPECT_NE(mainSource.find("Ctrl-left drag"), std::string::npos);
   EXPECT_NE(mainSource.find("InverseKinematicsHandle"), std::string::npos);
   EXPECT_NE(mainSource.find("options.ikHandles"), std::string::npos);
+  EXPECT_NE(mainSource.find("TargetState"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("world->addSimpleFrame(target)"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("world->removeSimpleFrame(target)"), std::string::npos);
+  EXPECT_NE(mainSource.find("Activated IK target"), std::string::npos);
+  EXPECT_NE(mainSource.find("Deactivated IK target"), std::string::npos);
   EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
   EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
   EXPECT_NE(mainSource.find("applyRootTeleoperationStep"), std::string::npos);
-  EXPECT_NE(mainSource.find("solveIkHandles"), std::string::npos);
+  EXPECT_NE(mainSource.find("solveActiveHuboTargets"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Toggle left Hubo foot support"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Toggle right Hubo foot support"), std::string::npos);
+  EXPECT_NE(mainSource.find("Print Hubo DOFs"), std::string::npos);
+  EXPECT_NE(mainSource.find("Reset Hubo relaxed posture"), std::string::npos);
   EXPECT_NE(mainSource.find("WASD moves the root"), std::string::npos);
   EXPECT_NE(mainSource.find("'1'"), std::string::npos);
   EXPECT_NE(mainSource.find("'6'"), std::string::npos);
+  EXPECT_NE(mainSource.find("'x'"), std::string::npos);
+  EXPECT_NE(mainSource.find("'c'"), std::string::npos);
+  EXPECT_NE(mainSource.find("'p'"), std::string::npos);
+  EXPECT_NE(mainSource.find("'t'"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.width = 1280"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.height = 960"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeHuboPuppetCamera"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 0.50)"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.yaw = 0.5118558424318241"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+  EXPECT_EQ(mainSource.find("SupportPolygonVisual"), std::string::npos);
+  EXPECT_EQ(mainSource.find("InteractiveFrame"), std::string::npos);
+  EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
+  EXPECT_EQ(mainSource.find("osg"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Hubo Puppet Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("pixi run ex hubo_puppet"), std::string::npos);
+  EXPECT_NE(readmeSource.find("support-polygon overlay"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Press `1`-`6`"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Shift movement"), std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, G1PuppetExamplePreservesLegacyParityMarkers)

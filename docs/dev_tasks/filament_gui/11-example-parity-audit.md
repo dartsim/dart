@@ -73,6 +73,14 @@ checkpoint is committed and pushed, the next active audit must re-open Fetch
 with a fresh historical-source comparison, then continue through every row that
 is still marked as a recent checkpoint, partial restoration, or public API gap.
 
+2026-05-16 follow-up during the Hubo Puppet checkpoint: maintainer steering
+again called out that many examples remain incompletely restored, with
+`examples/fetch/` named as the representative case. After Hubo is pushed, make
+Fetch the next active slice even though it has several previous restoration
+commits. The itemized inventory below is not a terminal closure; re-check it
+against the historical OSG/ImGui source and update this file before any Fetch
+code change.
+
 ### Fetch Itemized Inventory
 
 Historical source compared: `520993d7301^:examples/fetch/main.cpp`.
@@ -756,14 +764,40 @@ and support/body manipulation affordances need explicit promoted replacements.
 | Historical item                                                                                          | Current outcome                                | Notes                                                                                                                                       |
 | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | Load `package://g1_description/g1_29dof.urdf` through package/http/file retrievers with short CLI flags. | Restored through public `dart::gui`.           | Current source accepts historical `--package-uri`, `--robot-uri`, and `--package-name` plus explicit `--g1-*` aliases.                      |
-| World gravity `(0, 0, -9.81)`, 8x8x0.1 gray ground named `ground`, and G1 root FreeJoint z `0.75`.       | Needs repair in this slice.                    | Current source uses zero gravity, a smaller pale ground, and visual-bound placement.                                                        |
-| XY grid with 40 cells, 0.1 minor line step, and zero offset.                                             | Needs source-owned replacement.                | Restore as DART `LineSegmentShape` geometry rather than OSG `GridVisual`.                                                                   |
+| World gravity `(0, 0, -9.81)`, 8x8x0.1 gray ground named `ground`, and G1 root FreeJoint z `0.75`.       | Restored.                                      | Current source now matches the historical scene setup through public DART objects.                                                          |
+| XY grid with 40 cells, 0.1 minor line step, and zero offset.                                             | Restored with source-owned geometry.           | Current source uses DART `LineSegmentShape` geometry rather than OSG `GridVisual`.                                                          |
 | Four number-key IK targets for hands/feet, inactive until toggled, then added/removed from the world.    | Restored through promoted target states.       | Current source toggles visible `SimpleFrame` targets and solves only active targets. Add marker coverage for activation/deactivation text.  |
 | Enable mouse drag on G1 body nodes.                                                                      | Public API gap / partial promoted replacement. | Public selection can translate free-root renderables and simple frames, but per-body articulated drag parity is not a dedicated public API. |
 | Default support polygon visual at elevation `0.02`.                                                      | Restored with source-owned debug lines.        | Current source builds an always-visible support overlay from public `dart::gui::makeSupportPolygonDebugLines`.                              |
-| 1280x960 window and camera home from `(3.0, 1.6, 1.4)` to `(0, 0, 0.75)`.                                | Needs repair in this slice.                    | Add `ApplicationOptions::runDefaults` and `OrbitCamera` conversion.                                                                         |
-| README documents package overrides, kinematic mode, IK targets, controls, build/run instructions.        | Needs repair in this slice.                    | Historical README exists but was deleted during migration; restore it with promoted `dart::gui` wording.                                    |
-| Keep marker coverage for package loading, scene defaults, grid, support overlay, IK toggles, README.     | Needs repair in this slice.                    | Existing marker guards cover the basic IK path but not the strict scene/default/README contract.                                            |
+| 1280x960 window and camera home from `(3.0, 1.6, 1.4)` to `(0, 0, 0.75)`.                                | Restored.                                      | `ApplicationOptions::runDefaults` and `OrbitCamera` now preserve the historical defaults.                                                   |
+| README documents package overrides, kinematic mode, IK targets, controls, build/run instructions.        | Restored.                                      | README was restored with promoted `dart::gui` wording and the remaining body-drag API follow-up.                                            |
+| Keep marker coverage for package loading, scene defaults, grid, support overlay, IK toggles, README.     | Restored for this slice.                       | Marker guards now cover the strict scene/default/README contract.                                                                           |
+
+### Hubo Puppet Itemized Inventory
+
+Historical source compared: `520993d7301^:examples/hubo_puppet`.
+
+The current source is a promoted `dart::gui` example and already restores local
+URDF loading, finger removal, startup posture, visible IK targets, root
+teleoperation, and target-handle dragging. Strict re-open found remaining
+user-visible gaps: the README is missing, the ground/default camera are not
+restored, all target handles are visible and solved instead of number-key
+toggled, the support polygon is not always visible, and the old OSG event
+handler included posture/support/diagnostic controls that need promoted
+replacements or explicit API gaps.
+
+| Historical item                                                                                        | Current outcome                           | Notes                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------ | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Load `urdf/drchubo/drchubo.urdf`, remove finger bodies, and restore the squat/arm startup posture.     | Restored through public `dart::gui`.      | Current source owns the loaded Hubo skeleton and startup configuration.                                                                               |
+| 10x10x0.01 blue ground named `ground`.                                                                 | Restored.                                 | Current source now matches the historical ground through public DART objects.                                                                         |
+| Six IK targets named `lh/rh/lf/rf/lp/rp` historically toggled by keys `1`-`6`.                         | Restored through promoted target states.  | Current source adds/removes target frames on number-key actions and solves only active target states.                                                 |
+| WASD/QE/FZ root teleoperation.                                                                         | Restored through public keyboard actions. | Current source maps movement to repeatable actions; Shift movement amplification still needs a modifier/key-state API.                                |
+| `X`/`C` toggles left/right foot support, `P` prints DOFs, `T` resets relaxed posture.                  | Restored through keyboard actions.        | Current source implements these as renderer-neutral actions without OSG event handlers.                                                               |
+| Hold `R` to optimize posture and balance, then release to restore centroid mode.                       | Public key-state / solver follow-up.      | Current public keyboard actions do not expose key-release state; full historical balance optimization also needs the old whole-body solver/objective. |
+| Default support polygon visual at elevation `0.05`, COM marker, and support centroid feedback.         | Partially restored.                       | Current source restores the always-on support polygon as public debug-line geometry; exact COM marker color parity remains a visual-debug follow-up.  |
+| 1280x960 window and camera home from `(5.34, 3.00, 1.91)` to `(0, 0, 0.50)` with custom up vector.     | Partially restored.                       | `OrbitCamera` restores eye/target distance/yaw/pitch; the historical non-world-up roll vector remains a public camera API gap.                        |
+| README documents kinematic mode, support polygon, keyboard controls, build/run instructions.           | Restored.                                 | README was restored with promoted `dart::gui` wording and named remaining follow-ups.                                                                 |
+| Keep marker coverage for load/start pose, target toggles, support overlay, controls, defaults, README. | Restored for this slice.                  | Marker guards now cover the strict target/default/README contract.                                                                                    |
 
 ## Example Inventory
 
@@ -780,7 +814,7 @@ and support/body manipulation affordances need explicit promoted replacements.
 | `csv_logger`                | Preserved by strict audit as a non-GUI example.                                    | Keep marker guards for CLI flags, CSV header/row count, README, and no GUI renderer dependency.                                                                                                            |
 | `drag_and_drop`             | Restored except public rotation-manipulator API gap.                               | Keep marker guards for frame handle, child box, markers, camera/defaults, README, and no backend types.                                                                                                    |
 | `empty`                     | Restored except public key-release/render-hook API gaps.                           | Keep key-release and pre/post-render hooks tracked as public API follow-ups.                                                                                                                               |
-| `fetch`                     | Restored by fresh strict re-open; keep re-openable if a new gap is identified.     | Keep marker guards for target manipulation, panel window/menu/collapsible controls, camera/defaults, README, capture, and no backend types.                                                                |
+| `fetch`                     | Re-opened by maintainer correction; previous restored wording is provisional.      | Re-check historical target manipulation, panel/help behavior, camera/defaults, README, capture, and marker guards before calling it complete.                                                              |
 | `free_joint_cases`          | Restored by strict audit.                                                          | Keep marker guards for numeric/reference controls, local CLI flags, camera/defaults, README, and no backend types.                                                                                         |
 | `g1_puppet`                 | Restored by strict re-open except per-body drag API gap.                           | Keep marker guards for package loading, gravity, ground, root pose, grid, support overlay, camera/defaults, README, target toggles, and no backend types.                                                  |
 | `gui_scene_diagnostics`     | Preserved by strict audit as a descriptor diagnostic example.                      | Keep marker guards for CLI flags, descriptor extraction, debug/selection lines, pick output, README, and no backend types.                                                                                 |
@@ -788,7 +822,7 @@ and support/body manipulation affordances need explicit promoted replacements.
 | `headless_simulation`       | Preserved by strict audit as a non-GUI example.                                    | Keep marker guards for CLI flags, seed setup, progress output, README, and no GUI renderer dependency.                                                                                                     |
 | `heightmap`                 | Restored except public debug-grid/color editor gaps.                               | Keep OSG grid style controls tracked as public API follow-up.                                                                                                                                              |
 | `hello_world`               | Restored by strict audit.                                                          | Keep marker guards for instructions, camera/defaults, profiling, README, and no backend types.                                                                                                             |
-| `hubo_puppet`               | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm IK, teleoperation, target activation semantics, and guards.                                                                                                                                        |
+| `hubo_puppet`               | Restored by strict re-open except balance/key-state/camera-roll/debug-color gaps.  | Keep marker guards for load/start pose, target toggles, support actions, support overlay, camera/defaults, README, and no backend types.                                                                   |
 | `human_joint_limits`        | Restored except TinyDNN/custom-constraint dependency follow-up.                    | Keep marker guards for live world, joint-limit enforcement, defaults, README, and no backend types.                                                                                                        |
 | `hybrid_dynamics`           | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm harness toggle, camera, and guards.                                                                                                                                                                |
 | `imgui`                     | Restored except public headlight/camera/key-release/render-hook API gaps.          | Keep marker guards for target frame, keydown callbacks, gravity control, help text, camera/defaults, README, and no backend types.                                                                         |

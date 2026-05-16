@@ -819,22 +819,24 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`7a9c712a3f1 Restore Fetch panel window controls`. No rows remain with the exact
+`1e691ce891b Restore G1 Puppet scene parity`. No rows remain with the exact
 `Needs strict audit` state. The current pending checkpoint is
-`examples/g1_puppet/` strict re-open. Implementation and local validation are
+`examples/hubo_puppet/` strict re-open. Implementation and local validation are
 complete; commit and push this checkpoint before moving on. The checkpoint
-restores the README, historical gravity, 8x8x0.1 gray `ground`, G1 root z
-`0.75`, source-owned XY grid, 1280x960 defaults, camera home from
-`(3.0, 1.6, 1.4)` to `(0, 0, 0.75)`, support-polygon overlay, and marker guards.
-Per-body articulated dragging remains the named promoted API follow-up.
+restores target activation toggles, support toggles, DOF print, posture reset,
+historical ground, support overlay, camera/run defaults, README, and marker
+guards. Balance/key-release, camera-roll/up-vector, and exact COM marker color
+parity remain named follow-ups.
 
 ## Current Immediate Next Step
 
-After the G1 checkpoint is pushed, audit `examples/hubo_puppet/` next: compare
-the current source and README to `520993d7301^:examples/hubo_puppet`, challenge
-the recent robot/IK checkpoint, and verify target activation/deactivation, IK
-behavior, root teleoperation, camera/run defaults, README, capture, and
-source-marker guards. A later broader smoke sweep can still use:
+After the Hubo checkpoint is pushed, re-open `examples/fetch/` next because the
+maintainer again called it out as not fully restored. Compare the current
+source and README to `520993d7301^:examples/fetch`, update
+`11-example-parity-audit.md` before coding, and repair any newly found
+historical behavior gap or record the exact promoted API gap. Resume
+`examples/hybrid_dynamics/` after the Fetch re-open is handled. A later broader
+smoke sweep can still use:
 
 ```bash
 pixi run test-dart-gui-smoke

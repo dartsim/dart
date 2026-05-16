@@ -61,6 +61,10 @@
   - Restored the `g1_puppet` example's historical gravity, ground, root pose,
     XY grid, support-polygon overlay, camera/run defaults, standalone README,
     and IK target activation messages through public `dart::gui`.
+  - Restored the `hubo_puppet` example's historical ground, target activation
+    toggles, support toggles, posture reset, DOF print action,
+    support-polygon overlay, camera/run defaults, and standalone README through
+    public `dart::gui`.
   - Restored the `capsule_ground_contact` example's pose-reset keyboard
     controls, velocity-clear action, camera/run defaults, persistent-manifold
     instructions, and README through public `dart::gui`.
