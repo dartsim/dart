@@ -293,6 +293,10 @@ Compatibility notes:
   - `d489292bdf1` (`Define collision deprecation evidence criteria`)
   - `930aca64d45` (`Sync native collision PR evidence draft`)
   - `621fca5a1fb` (`Clarify collision reference dependencies`)
+  - `944bd95f874` (`Add hello world native collision regression`)
+  - `ca0201e67f4` (`Add Atlas Simbicon native collision regression`)
+  - `6404f7607be` (`Classify native collision matrix deferrals`)
+  - `1bfc9103a6b` (`Refresh current gz compatibility evidence`)
 
 ## Checklist Notes
 

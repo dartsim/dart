@@ -40,13 +40,13 @@ mutation during the current pass:
 
 Latest local audit commands before recording this snapshot showed:
 
-- Audit baseline branch state: `feature/new_coll` was clean at
-  `ca0201e67f4` (`Add Atlas Simbicon native collision regression`) and is 89
-  commits ahead of `origin/feature/new_coll`. This snapshot and later
-  docs-only audit commits may move `HEAD`; use `git status --short --branch`
-  and `git log -3 --oneline --decorate` for the exact current branch state.
-- Audit baseline remote-tracking state: `origin/feature/new_coll` resolved to
-  `f8f5663d514`.
+- Audit branch state: `feature/new_coll` was clean at `1bfc9103a6b`
+  (`Refresh current gz compatibility evidence`) and was 92 commits ahead of
+  `origin/feature/new_coll`. This snapshot and later docs-only audit commits may
+  move `HEAD`; use `git status --short --branch` and
+  `git log -3 --oneline --decorate` for the exact current branch state.
+- Audit remote-tracking state: `origin/feature/new_coll` resolved to
+  `f8f5663d5145`.
 - Review surface state: read-only `gh pr view 2652 --repo dartsim/dart`
   reports PR #2652 as `CLOSED`, draft, dirty, based on `main`, and still
   anchored to head `714d220d82a`. No PR metadata or GitHub state was mutated.
@@ -60,6 +60,10 @@ Latest local audit commands before recording this snapshot showed:
   The same code head passed focused reference-backend checks and the final
   unfiltered `collision-reference` CTest sweep 301/301 after building the
   dedicated simulation-experimental target.
+- Latest local downstream/package/link refresh head: `6404f7607be`
+  (`Classify native collision matrix deferrals`) passed the gz-physics Pixi gate
+  65/65, the native compatibility package smoke, and direct `readelf` link
+  checks. The latest docs/evidence commit `1bfc9103a6b` records that evidence.
 - Local commits after `c5bc95e3bcf` added capsule validation notes, mesh BVH
   coverage, degenerate and scale narrow-phase stress coverage, mixed primitive
   stack coverage, raw stress coverage, convex landscape and fragment coverage,
@@ -77,20 +81,22 @@ outside the current no-PR/no-GitHub-mutation scope.
 
 ## Read-Only Review Surface Reaudit (2026-05-16)
 
-Read-only GitHub checks on local evidence head `49faf77240f` confirmed the
+Read-only GitHub checks on local evidence head `1bfc9103a6b` confirmed the
 final review/CI gap remains external to this branch-local pass:
 
 - The `gh run list` check for full commit
-  `49faf77240f26c7888bdd4c494b71c8849bd7d8d` returned `[]`.
+  `1bfc9103a6b3ec6c9481c95bd5c180c9bc12b0fd` returned `[]`.
 - The `gh pr list --head feature/new_coll --state all` check returned only
   PR #2652, still `CLOSED`, draft, and anchored to old head
   `714d220d82a6ba99350bf2214fc9696f5495a30f`.
+- `gh pr status --repo dartsim/dart` reported no open PRs created by the
+  current user for this repository.
 
 No PR metadata, workflow state, branch state, or GitHub artifact was mutated by
 that audit. This supersedes the earlier read-only checks on local heads
-`ed451c25829` and `1b98064eeac`. Later docs-only commits may move `HEAD`;
-rerun the commands above with `git rev-parse HEAD` for an exact current-head
-check.
+`ed451c25829`, `1b98064eeac`, and `49faf77240f`. Later docs-only commits may
+move `HEAD`; rerun the commands above with `git rev-parse HEAD` for an exact
+current-head check.
 
 ## Current Local Full Validation Recheck (2026-05-16)
 

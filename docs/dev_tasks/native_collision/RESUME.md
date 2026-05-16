@@ -25,8 +25,8 @@ gz-physics/package/link smoke refresh on `6404f7607be` passed 65/65 gz tests,
 the native compatibility package smoke, and direct `readelf` checks.
 `pixi run lint`, runtime isolation, and compatibility-facade audits remain
 part of the local gate. The completion audit snapshot and validation-baseline
-wording were also refreshed so future passes do not treat historical "current
-head" evidence as live branch state.
+wording were refreshed again on local head `1bfc9103a6b` so future passes do
+not treat historical "current head" evidence as live branch state.
 The latest local code commit before this handoff update was `ca0201e67f4`
 (`Add Atlas Simbicon native collision regression`), which records the
 controller-loop Atlas Simbicon no-tunneling regression in the test matrix and
@@ -61,16 +61,16 @@ recorded in `03-evidence-gates.md`.
 
 ## Current Branch
 
-`feature/new_coll` tracks `origin/feature/new_coll`. After explicit user
-approval, the docs/evidence commits were published to
-`origin/feature/new_coll`; the latest published pre-note head was
-`f8f5663d514` (`Avoid stale native collision publish head`). Run
-`git rev-parse HEAD` and `git rev-parse origin/feature/new_coll` for the exact
-current local/remote heads because amending this note changes the latest hash.
-A read-only GitHub recheck on local evidence head `49faf77240f` found no
-Actions runs for that head; branch-local commits do not trigger the main
-workflows while PR #2652 remains closed. PR #2652 is closed, draft, dirty, and
-still anchored to old head `714d220d82a`.
+`feature/new_coll` tracks `origin/feature/new_coll`. Current audited local head
+is `1bfc9103a6b` (`Refresh current gz compatibility evidence`) and
+`origin/feature/new_coll` resolves to `f8f5663d5145`, so the branch is ahead
+locally. Run `git rev-parse HEAD` and
+`git rev-parse origin/feature/new_coll` for the exact current local/remote
+heads because amending this note changes the latest hash. A read-only GitHub
+recheck on local evidence head `1bfc9103a6b` found no Actions runs for that
+head; branch-local commits do not trigger the main workflows while PR #2652
+remains closed. PR #2652 is closed, draft, dirty, and still anchored to old
+head `714d220d82a`.
 
 The latest pushed validation baseline is `376fd5e686d`
 (`Remove per-engine collision reference build options`). Current branch head
@@ -96,7 +96,9 @@ the distinction clear:
 2. Deferred PR-finalization scope: maintainer-selected PR/CI surface, final
    evidence transfer, final local validation on that completing state, and
    deleting this folder in the same completing PR. Read-only checks on local
-   head `49faf77240f` found no workflow runs for that head and confirmed
+   head `1bfc9103a6b` found no workflow runs for that head, `gh pr status`
+   found no open PRs created by the current user for this repository, and
+   confirmed
    PR #2652 remains closed on old head `714d220d82a6ba99350bf2214fc9696f5495a30f`.
 
 If code or evidence changes again, run `pixi run lint` before committing and
@@ -132,11 +134,11 @@ post GitHub comments unless the user explicitly asks.
   follow-ups. That run included linting, build, examples, unit tests,
   simulation-experimental tests, Python tests, and documentation.
 - Latest evidence-record commits are local and may be ahead of
-  `origin/feature/new_coll`; run `git log -3 --oneline --decorate` for the
-  current head. Recent docs-only evidence commits refresh the completion-audit
-  snapshot, avoid stale-current-head wording, align milestone local/final
-  evidence wording, record native stability-label validation, and keep the
-  deferred finalization handoff explicit.
+  `origin/feature/new_coll`; audited current local head is `1bfc9103a6b`. Recent
+  docs-only evidence commits refresh the completion-audit snapshot, avoid
+  stale-current-head wording, align milestone local/final evidence wording,
+  record native stability-label validation, and keep the deferred finalization
+  handoff explicit.
 - Latest source-build prerequisite docs cleanup: `621fca5a1fb`. Validation:
   `pixi run lint` passed on that tree after moving FCL out of required
   prerequisites.
@@ -146,7 +148,7 @@ post GitHub comments unless the user explicitly asks.
 - Latest pushed docs/reference-cleanup heads after those baselines have no
   GitHub Actions runs because branch pushes do not match the workflow filters
   while PR #2652 is closed.
-- Latest read-only successor-PR search on local evidence head `49faf77240f`
+- Latest read-only successor-PR search on local evidence head `1bfc9103a6b`
   found no maintainer-opened replacement review surface; PR #2652 remains the
   only relevant native-collision PR and is closed/draft on old head
   `714d220d82a`.
