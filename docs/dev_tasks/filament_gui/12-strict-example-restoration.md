@@ -540,6 +540,12 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     example-runner tests. Mandatory `pixi run lint`, post-lint focused
     rebuild/CTest, post-lint direct screenshot basic analyzer check,
     `git diff --check`, and an API-boundary inventory diff check also passed.
+57. The active strict re-open cursor is now `examples/vehicle/`. A prior
+    parity checkpoint restored the historical command keys and camera default,
+    but the strict itemized inventory is still missing. Compare current
+    source/README against `520993d7301^:examples/vehicle`, then restore or
+    classify historical command behavior, controller setup, camera/defaults,
+    README, capture, and marker coverage before moving past it.
 
 ## Checkpoint Rule
 

@@ -120,9 +120,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `23d23c868ec Restore Soft Bodies example defaults`.
+  `8b4f8192588 Restore Tinkertoy example picking`.
 - Latest pushed code checkpoint:
-  `23d23c868ec Restore Soft Bodies example defaults`.
+  `8b4f8192588 Restore Tinkertoy example picking`.
 - Latest pushed infrastructure checkpoint: `b7a269906f9` merged
   `origin/main` so the branch has the new AI-native living-plan and API
   boundary infrastructure without reopening the removed backend-named
@@ -238,12 +238,9 @@ history but are not guaranteed to be in chronological order.
   generated command/skill guard patterns, the marker test that enforces removed
   `examples/rerun/` state, and historical dev-task notes. No additional product
   code or docs need removal unless a new concrete Rerun use case is introduced.
-- Active strict re-open cursor after the Rerun audit: `examples/tinkertoy/`.
-  Re-compare current source and README against
-  `520993d7301^:examples/tinkertoy`, then restore or explicitly classify the
-  historical construction controls, force controls, camera home, recording
-  behavior, README, and marker coverage before moving past it.
-- Current Tinkertoy strict re-open implementation restores selected hit
+- Latest pushed strict re-open checkpoint after the Rerun audit:
+  `examples/tinkertoy/`. Current Tinkertoy strict re-open implementation
+  restores selected hit
   point/normal through public `PanelContext`, uses that data to place the
   force target at the clicked point plus surface-normal offset, restores the
   historical panel title/window geometry/menu/help/control labels, explicit
@@ -265,6 +262,12 @@ history but are not guaranteed to be in chronological order.
   (`/tmp/dart_tinkertoy_postlint.ppm`, 921600/921600 nonzero pixels),
   `git diff --check` passed, and the generated API-boundary inventory had no
   diff.
+- Active strict re-open cursor: `examples/vehicle/`. A previous parity
+  checkpoint restored command keys and camera defaults, but the strict itemized
+  inventory is still missing. Compare current source/README against
+  `520993d7301^:examples/vehicle`, then restore or explicitly classify the
+  historical command behavior, controller setup, camera/defaults, README,
+  capture, and marker coverage before moving past it.
 - Recent pushed example-parity checkpoints after Fetch include:
   - `619af5649bc Restore LCP physics controls`
   - `2bc6a0e168d Restore mimic pendulums diagnostics`
