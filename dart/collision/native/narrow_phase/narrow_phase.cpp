@@ -611,6 +611,21 @@ double distanceShapes(
     return d;
   }
 
+  if (type1 == ShapeType::Mesh && type2 == ShapeType::Sdf) {
+    const auto* m = static_cast<const MeshShape*>(shape1);
+    const auto* sdf = static_cast<const SdfShape*>(shape2);
+    return distanceMeshSdf(*m, tf1, *sdf, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Sdf && type2 == ShapeType::Mesh) {
+    const auto* sdf = static_cast<const SdfShape*>(shape1);
+    const auto* m = static_cast<const MeshShape*>(shape2);
+    double d = distanceMeshSdf(*m, tf2, *sdf, tf1, result, option);
+    std::swap(result.pointOnObject1, result.pointOnObject2);
+    result.normal = -result.normal;
+    return d;
+  }
+
   if (type1 == ShapeType::Capsule && type2 == ShapeType::Sphere) {
     const auto* c = static_cast<const CapsuleShape*>(shape1);
     const auto* s = static_cast<const SphereShape*>(shape2);
@@ -1098,6 +1113,10 @@ bool NarrowPhase::isDistanceSupported(ShapeType type1, ShapeType type2)
   }
   if ((type1 == ShapeType::Convex && type2 == ShapeType::Sdf)
       || (type1 == ShapeType::Sdf && type2 == ShapeType::Convex)) {
+    return true;
+  }
+  if ((type1 == ShapeType::Mesh && type2 == ShapeType::Sdf)
+      || (type1 == ShapeType::Sdf && type2 == ShapeType::Mesh)) {
     return true;
   }
   if ((type1 == ShapeType::Capsule && type2 == ShapeType::Sphere)

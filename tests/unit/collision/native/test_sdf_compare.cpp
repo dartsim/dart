@@ -86,6 +86,20 @@ std::vector<Eigen::Vector3d> makeOctahedronVertices(double scale)
       {0.0, 0.0, -scale}};
 }
 
+std::vector<dart::collision::native::MeshShape::Triangle>
+makeOctahedronTriangles()
+{
+  return {
+      {4, 0, 2},
+      {4, 2, 1},
+      {4, 1, 3},
+      {4, 3, 0},
+      {5, 2, 0},
+      {5, 1, 2},
+      {5, 3, 1},
+      {5, 0, 3}};
+}
+
 std::shared_ptr<dart::collision::native::DenseTsdfField> buildDenseTsdf()
 {
   using dart::collision::native::DenseTsdfField;
@@ -335,6 +349,74 @@ TEST(SdfDistance, ConvexSdfPairOrder)
   EXPECT_TRUE(sdf_convex.pointOnObject1.allFinite());
   EXPECT_TRUE(sdf_convex.pointOnObject2.allFinite());
   EXPECT_LT(convex_sdf.normal.dot(sdf_convex.normal), -0.9);
+}
+
+TEST(SdfDistance, MeshVsSdf)
+{
+  using namespace dart::collision::native;
+
+  auto field = buildDenseField();
+  SdfShape sdf(field);
+  MeshShape mesh(makeOctahedronVertices(0.2), makeOctahedronTriangles());
+
+  Eigen::Isometry3d mesh_tf = Eigen::Isometry3d::Identity();
+  mesh_tf.translation() = gridCenter() + Eigen::Vector3d(1.2, 0.0, 0.0);
+
+  Eigen::Isometry3d sdf_tf = Eigen::Isometry3d::Identity();
+
+  DistanceResult result;
+  DistanceOption option;
+  double dist = distanceMeshSdf(mesh, mesh_tf, sdf, sdf_tf, result, option);
+
+  EXPECT_NEAR(dist, 0.2, kDistTol);
+  EXPECT_TRUE(result.pointOnObject1.allFinite());
+  EXPECT_TRUE(result.pointOnObject2.allFinite());
+  EXPECT_TRUE(result.normal.allFinite());
+
+  mesh_tf.translation() = gridCenter() + Eigen::Vector3d(0.9, 0.0, 0.0);
+  result.clear();
+  dist = distanceMeshSdf(mesh, mesh_tf, sdf, sdf_tf, result, option);
+
+  EXPECT_LT(dist, 0.0);
+  EXPECT_NEAR(dist, -0.1, kDistTol);
+}
+
+TEST(SdfDistance, MeshSdfPairOrder)
+{
+  using namespace dart::collision::native;
+
+  auto field = buildDenseField();
+  CollisionWorld world;
+  auto mesh = world.createObject(
+      std::make_unique<MeshShape>(
+          makeOctahedronVertices(0.2), makeOctahedronTriangles()));
+  auto sdf = world.createObject(std::make_unique<SdfShape>(field));
+
+  Eigen::Isometry3d mesh_tf = Eigen::Isometry3d::Identity();
+  mesh_tf.translation() = gridCenter() + Eigen::Vector3d(1.2, 0.0, 0.0);
+  mesh.setTransform(mesh_tf);
+
+  EXPECT_FALSE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Sdf));
+  EXPECT_FALSE(NarrowPhase::isSupported(ShapeType::Sdf, ShapeType::Mesh));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Mesh, ShapeType::Sdf));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Sdf, ShapeType::Mesh));
+
+  DistanceResult mesh_sdf;
+  DistanceResult sdf_mesh;
+  const DistanceOption option = DistanceOption::unlimited();
+
+  const double dist1 = NarrowPhase::distance(mesh, sdf, option, mesh_sdf);
+  const double dist2 = NarrowPhase::distance(sdf, mesh, option, sdf_mesh);
+
+  EXPECT_NEAR(dist1, 0.2, kDistTol);
+  EXPECT_NEAR(dist1, dist2, kDistTol);
+  EXPECT_TRUE(mesh_sdf.pointOnObject1.allFinite());
+  EXPECT_TRUE(mesh_sdf.pointOnObject2.allFinite());
+  EXPECT_TRUE(sdf_mesh.pointOnObject1.allFinite());
+  EXPECT_TRUE(sdf_mesh.pointOnObject2.allFinite());
+  EXPECT_LT(mesh_sdf.normal.dot(sdf_mesh.normal), -0.9);
 }
 
 TEST(SdfDistance, CompoundSdfPairOrder)

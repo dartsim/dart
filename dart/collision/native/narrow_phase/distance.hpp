@@ -44,6 +44,7 @@ class BoxShape;
 class CapsuleShape;
 class ConvexShape;
 class CylinderShape;
+class MeshShape;
 class PlaneShape;
 class Shape;
 class SphereShape;
@@ -132,6 +133,14 @@ class SdfShape;
 [[nodiscard]] DART_COLLISION_NATIVE_API double distanceConvexSdf(
     const ConvexShape& convex,
     const Eigen::Isometry3d& convexTransform,
+    const SdfShape& sdf,
+    const Eigen::Isometry3d& sdfTransform,
+    DistanceResult& result,
+    const DistanceOption& option = DistanceOption());
+
+[[nodiscard]] DART_COLLISION_NATIVE_API double distanceMeshSdf(
+    const MeshShape& mesh,
+    const Eigen::Isometry3d& meshTransform,
     const SdfShape& sdf,
     const Eigen::Isometry3d& sdfTransform,
     DistanceResult& result,

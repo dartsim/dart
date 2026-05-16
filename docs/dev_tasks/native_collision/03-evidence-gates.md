@@ -3162,6 +3162,19 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     `SdfShape` in both query orders, while generic convex/mesh collision and
     distance fallbacks no longer claim unsupported SDF pairs. The broader
     `collision-native` CTest label passed 29/29.
+- Current local mesh/SDF distance refresh:
+  - Commit: current working tree after local head `c2d327c4462`
+    (`Add convex SDF distance support`).
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_sdf_compare --parallel 5`,
+    `./build/default/cpp/Release/bin/test_sdf_compare --gtest_filter='SdfDistance.MeshVsSdf:SdfDistance.MeshSdfPairOrder'`,
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_sdf_compare$' -j 5`,
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target dart_collision_native_tests --parallel 5`,
+    and
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native -j 5`.
+  - Result: passed. Native distance now covers `MeshShape` against `SdfShape`
+    in both query orders through the sampled SDF distance helper. The broader
+    `collision-native` CTest label passed 29/29.
 
 ## Known Risks
 

@@ -1049,4 +1049,16 @@ double distanceConvexSdf(
       convex.getVertices(), convexTransform, sdf, sdfTransform, result, option);
 }
 
+double distanceMeshSdf(
+    const MeshShape& mesh,
+    const Eigen::Isometry3d& meshTransform,
+    const SdfShape& sdf,
+    const Eigen::Isometry3d& sdfTransform,
+    DistanceResult& result,
+    const DistanceOption& option)
+{
+  return distancePointSetSdf(
+      mesh.getVertices(), meshTransform, sdf, sdfTransform, result, option);
+}
+
 } // namespace dart::collision::native
