@@ -38,11 +38,21 @@
 
 #include <dart/simulation/fwd.hpp>
 
+#include <dart/dynamics/fwd.hpp>
+
 #include <functional>
 #include <string>
 #include <vector>
 
 namespace dart::gui {
+
+struct InverseKinematicsHandle
+{
+  std::string label;
+  int hotkey = 0;
+  dart::dynamics::SimpleFramePtr target;
+  dart::dynamics::InverseKinematicsPtr ik;
+};
 
 struct ApplicationOptions
 {
@@ -50,6 +60,7 @@ struct ApplicationOptions
   std::function<void()> preStep;
   std::string defaultScene;
   std::vector<Panel> panels;
+  std::vector<InverseKinematicsHandle> ikHandles;
 };
 
 DART_GUI_API int runApplication(int argc, char* argv[]);

@@ -596,6 +596,20 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   EXPECT_EQ(options.panels.front().title, "Controls");
 }
 
+TEST(FilamentSceneExtraction, ApplicationOptionsStoresIkHandles)
+{
+  dart::gui::ApplicationOptions options;
+  dart::gui::InverseKinematicsHandle handle;
+  handle.label = "left hand";
+  handle.hotkey = '1';
+
+  options.ikHandles.push_back(handle);
+
+  ASSERT_EQ(options.ikHandles.size(), 1u);
+  EXPECT_EQ(options.ikHandles.front().label, "left hand");
+  EXPECT_EQ(options.ikHandles.front().hotkey, '1');
+}
+
 TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
 {
   struct ExampleExpectation

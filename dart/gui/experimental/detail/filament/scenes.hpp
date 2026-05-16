@@ -33,6 +33,7 @@
 #ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCENES_HPP_
 #define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCENES_HPP_
 
+#include <dart/gui/application.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/scene.hpp>
 
@@ -110,6 +111,7 @@ struct AppOptions
   dart::simulation::WorldPtr world;
   std::function<void()> preStep;
   std::vector<dart::gui::Panel> panels;
+  std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
   ExampleScene scene = ExampleScene::Mvp;
   bool showUi = true;
   bool showUiExplicit = false;

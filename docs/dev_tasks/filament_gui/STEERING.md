@@ -551,6 +551,10 @@ rg -n "options\\.defaultScene" examples
 Current result after the Atlas Simbicon ownership repair:
 
 - **Still inverse-dependent:** none under `examples/**/*.cpp`.
+- **Current promoted API repair:** `dart::gui::ApplicationOptions::ikHandles`
+  now carries public DART IK target handles so `atlas_puppet`, `hubo_puppet`,
+  and `g1_puppet` can move to `options.world` without losing hotkey selection,
+  selected labels, or solve-on-drag behavior.
 - **Flipped to self-owned in the latest slice:**
   `examples/atlas_simbicon/main.cpp` now loads the Atlas SDF, owns the
   visual-only setup and ground in-source, and the runner no longer injects

@@ -61,6 +61,9 @@
   - Moved `atlas_simbicon` off the private named-scene fixture launcher so the
     example source loads Atlas, creates its ground, and runs through promoted
     `dart::gui` options directly.
+  - Added a promoted `dart::gui::ApplicationOptions` IK-handle handoff so
+    source-owned examples can preserve target hotkeys, selection labels, and
+    solve-on-drag behavior without depending on private renderer fixtures.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

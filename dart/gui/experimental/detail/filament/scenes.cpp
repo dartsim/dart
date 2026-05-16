@@ -34,7 +34,10 @@
 
 #include "scene_fixtures.hpp"
 
+#include <dart/gui/renderable.hpp>
+
 #include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/simple_frame.hpp>
 
 #include <dart/common/uri.hpp>
 
@@ -682,6 +685,21 @@ DartScene createDartScene(const AppOptions& options)
     DartScene scene;
     scene.world = options.world;
     scene.preStep = options.preStep;
+    scene.ikHandles.reserve(options.ikHandles.size());
+    for (const auto& handle : options.ikHandles) {
+      if (handle.target == nullptr) {
+        continue;
+      }
+
+      IkHandle runtimeHandle;
+      runtimeHandle.targetRenderableId
+          = dart::gui::makeRenderableId(*handle.target);
+      runtimeHandle.label = handle.label;
+      runtimeHandle.hotkey = handle.hotkey;
+      runtimeHandle.target = handle.target;
+      runtimeHandle.ik = handle.ik;
+      scene.ikHandles.push_back(std::move(runtimeHandle));
+    }
     return scene;
   }
 

@@ -728,6 +728,38 @@ Eleventh source-ownership checkpoint:
   - `rg -n "dart_build_gui_scene_example" examples/atlas_simbicon ...`
     returns no matches for `atlas_simbicon`.
   - Full `examples` aggregate target build
+
+Twelfth promoted-API checkpoint:
+
+- Before migrating `atlas_puppet`, `hubo_puppet`, and `g1_puppet`, expose a
+  renderer-neutral public `dart::gui::ApplicationOptions` handoff for IK target
+  handles.
+- The private Filament `DartScene::ikHandles` vector currently owns three
+  user-visible behaviors: number-key selection, selected-target labels, and
+  solve-on-drag/keyboard-nudge. Moving puppet examples to `options.world`
+  without a public handoff would silently regress those behaviors.
+- Add a public DART-owned handle type that contains only DART concepts:
+  label, hotkey, target `SimpleFrame`, and `InverseKinematics` pointer. The
+  backend should compute any renderable IDs internally; examples must not
+  include Filament, GLFW, ImGui, or private backend headers.
+- Map those public handles into the private runtime only when the application
+  supplies `ApplicationOptions::world`; explicit `--scene ...` developer
+  fixtures keep their existing private fixture handles.
+- Local acceptance for this checkpoint:
+  - C++ GUI target build for `dart-gui` and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run lint`
+- Implementation state for this slice: `dart::gui::InverseKinematicsHandle`
+  now exists on promoted `dart/gui/application.hpp` and
+  `ApplicationOptions::ikHandles` carries public DART target frames and IK
+  objects. The Filament runtime copies those handles into its private
+  `DartScene` only for source-owned application worlds and computes renderable
+  IDs internally.
+- Local evidence so far:
+  - C++ GUI target build for `dart-gui` and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
   - `pixi run lint`
 - Implementation state for this slice: `examples/operational_space_control`
   now owns its WAM URDF load, ground, target frame, operational-space
@@ -783,12 +815,14 @@ The branch is ready to hand off for review only when:
    allow it.
 3. Continue across the remaining pre-existing examples in small related
    families, documenting each slice here before implementation.
-4. Prioritize the remaining robot/IK macro-launcher examples after
-   `atlas_simbicon`: `atlas_puppet`, `hubo_puppet`, and `g1_puppet`.
-5. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
+4. Finish the promoted IK-handle handoff with lint, post-lint focused rebuild,
+   commit, push, and CI dispatch if permissions allow it.
+5. Prioritize the remaining robot/IK macro-launcher examples after the
+   IK-handle handoff: `atlas_puppet`, `hubo_puppet`, and `g1_puppet`.
+6. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
    corresponding example behavior has moved into public-API example code.
-6. Do not start the physical `experimental/` directory move until the
+7. Do not start the physical `experimental/` directory move until the
    application extraction and enough real example sources prove the consumed
    public API surface.
-7. Run `pixi run lint` before every checkpoint commit, then push the commit to
+8. Run `pixi run lint` before every checkpoint commit, then push the commit to
    the tracked remote branch.
