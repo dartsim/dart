@@ -37,6 +37,7 @@
 #include <array>
 #include <limits>
 #include <stack>
+#include <stdexcept>
 #include <vector>
 
 #include <cmath>
@@ -905,6 +906,27 @@ bool collideMeshMesh(
   }
 
   return hit;
+}
+
+void collideMeshMeshBatch(
+    std::span<const MeshPair> pairs,
+    std::span<CollisionResult> results,
+    const CollisionOption& option)
+{
+  if (results.size() < pairs.size()) {
+    throw std::invalid_argument(
+        "collideMeshMeshBatch requires one result for each pair");
+  }
+
+  for (std::size_t i = 0; i < pairs.size(); ++i) {
+    const auto& pair = pairs[i];
+    if (pair.shapeA == nullptr || pair.shapeB == nullptr) {
+      throw std::invalid_argument("collideMeshMeshBatch received a null mesh");
+    }
+
+    [[maybe_unused]] const bool collided = collideMeshMesh(
+        *pair.shapeA, pair.tfA, *pair.shapeB, pair.tfB, results[i], option);
+  }
 }
 
 double distanceMeshMesh(

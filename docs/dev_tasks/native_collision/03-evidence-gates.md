@@ -3421,6 +3421,22 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     reference-enabled benchmark target rebuilt cleanly, its built-in accuracy
     verification passed for all registered raw narrow-phase pairs, and the
     convex-convex batch benchmark emitted JSON for N=1/10/100/1000.
+- Current local mesh-mesh batch narrow-phase refresh:
+  - Commit: current working tree after local head `f300507a350`
+    (`Add convex-convex native batch coverage`).
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_mesh_mesh --parallel "$CMAKE_BUILD_PARALLEL_LEVEL"`,
+    `./build/default/cpp/Release/bin/test_mesh_mesh --gtest_filter='MeshMeshBatch.*'`,
+    `CMAKE_BUILD_DIR=build/collision-reference/cpp/Release python scripts/cmake_build.py --target bm_comparative_narrow_phase --parallel "$CMAKE_BUILD_PARALLEL_LEVEL"`,
+    and
+    `./build/collision-reference/cpp/Release/bin/bm_comparative_narrow_phase --benchmark_filter='BM_NarrowPhase_MeshMesh_Native(_Batch_N(1|10|100|1000))?$' --benchmark_min_time=1ms --benchmark_repetitions=1 --benchmark_out=.benchmark_results/native_collision_mesh_mesh_batch.json --benchmark_out_format=json`.
+  - Result: passed. The new `collideMeshMeshBatch(...)` API emits one result
+    per `MeshPair`, rejects malformed result spans and null mesh pointers, and
+    the focused batch test passed exact batch-vs-scalar comparison for 100
+    deterministic colliding mesh pairs. The reference-enabled benchmark target
+    rebuilt cleanly, its built-in accuracy verification passed for all
+    registered raw narrow-phase pairs, and the mesh-mesh batch benchmark
+    emitted JSON for N=1/10/100/1000.
 
 ## Known Risks
 

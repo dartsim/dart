@@ -38,7 +38,17 @@
 
 #include <Eigen/Geometry>
 
+#include <span>
+
 namespace dart::collision::native {
+
+struct DART_COLLISION_NATIVE_API MeshPair
+{
+  const MeshShape* shapeA;
+  const MeshShape* shapeB;
+  Eigen::Isometry3d tfA;
+  Eigen::Isometry3d tfB;
+};
 
 [[nodiscard]] DART_COLLISION_NATIVE_API bool collideMeshMesh(
     const MeshShape& mesh1,
@@ -47,6 +57,11 @@ namespace dart::collision::native {
     const Eigen::Isometry3d& tf2,
     CollisionResult& result,
     const CollisionOption& option);
+
+DART_COLLISION_NATIVE_API void collideMeshMeshBatch(
+    std::span<const MeshPair> pairs,
+    std::span<CollisionResult> results,
+    const CollisionOption& option = CollisionOption());
 
 [[nodiscard]] DART_COLLISION_NATIVE_API double distanceMeshMesh(
     const MeshShape& mesh1,

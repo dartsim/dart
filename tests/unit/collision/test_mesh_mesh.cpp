@@ -32,12 +32,15 @@
 
 #include <dart/collision/native/collision_object.hpp>
 #include <dart/collision/native/collision_world.hpp>
+#include <dart/collision/native/narrow_phase/mesh_mesh.hpp>
 #include <dart/collision/native/narrow_phase/narrow_phase.hpp>
 #include <dart/collision/native/narrow_phase/raycast.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
 
 #include <gtest/gtest.h>
 
+#include <random>
+#include <stdexcept>
 #include <vector>
 
 #include <cmath>
@@ -108,6 +111,57 @@ MeshShape makeGridMesh(int resolution, double scale)
   return MeshShape(std::move(vertices), std::move(triangles));
 }
 
+Eigen::Isometry3d makeMeshBatchTransform(
+    double x, double y, double z, double angle)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.linear() = (Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitX())
+                 * Eigen::AngleAxisd(0.5 * angle, Eigen::Vector3d::UnitY()))
+                    .toRotationMatrix();
+  tf.translation() = Eigen::Vector3d(x, y, z);
+  return tf;
+}
+
+void expectVectorExactlyEqual(
+    const Eigen::Vector3d& expected, const Eigen::Vector3d& actual)
+{
+  EXPECT_EQ(expected.x(), actual.x());
+  EXPECT_EQ(expected.y(), actual.y());
+  EXPECT_EQ(expected.z(), actual.z());
+}
+
+void expectContactExactlyEqual(
+    const ContactPoint& expected, const ContactPoint& actual)
+{
+  expectVectorExactlyEqual(expected.position, actual.position);
+  expectVectorExactlyEqual(expected.normal, actual.normal);
+  EXPECT_EQ(expected.depth, actual.depth);
+  EXPECT_EQ(expected.object1, actual.object1);
+  EXPECT_EQ(expected.object2, actual.object2);
+  EXPECT_EQ(expected.featureIndex1, actual.featureIndex1);
+  EXPECT_EQ(expected.featureIndex2, actual.featureIndex2);
+}
+
+void expectCollisionResultExactlyEqual(
+    const CollisionResult& expected, const CollisionResult& actual)
+{
+  ASSERT_EQ(expected.numManifolds(), actual.numManifolds());
+  ASSERT_EQ(expected.numContacts(), actual.numContacts());
+
+  for (std::size_t i = 0; i < expected.numManifolds(); ++i) {
+    const auto& expectedManifold = expected.getManifold(i);
+    const auto& actualManifold = actual.getManifold(i);
+    EXPECT_EQ(expectedManifold.getType(), actualManifold.getType());
+    EXPECT_EQ(expectedManifold.getObject1(), actualManifold.getObject1());
+    EXPECT_EQ(expectedManifold.getObject2(), actualManifold.getObject2());
+    ASSERT_EQ(expectedManifold.numContacts(), actualManifold.numContacts());
+    for (std::size_t j = 0; j < expectedManifold.numContacts(); ++j) {
+      expectContactExactlyEqual(
+          expectedManifold.getContact(j), actualManifold.getContact(j));
+    }
+  }
+}
+
 } // namespace
 
 TEST(MeshMesh, BoxMeshesColliding)
@@ -131,6 +185,64 @@ TEST(MeshMesh, BoxMeshesColliding)
   ASSERT_GE(result.numContacts(), 1u);
   EXPECT_GT(result.getContact(0).normal.norm(), 0.9);
   EXPECT_GE(result.getContact(0).depth, 0.0);
+}
+
+TEST(MeshMeshBatch, mesh_mesh_batch_determinism_vs_single)
+{
+  MeshShape meshA(makeCubeVertices(1.0), makeCubeTriangles());
+  MeshShape meshB(makeCubeVertices(1.0), makeCubeTriangles());
+
+  std::mt19937 rng(141421u);
+  std::uniform_real_distribution<double> offset(-0.03, 0.03);
+  std::uniform_real_distribution<double> angle(-0.05, 0.05);
+
+  std::vector<MeshPair> pairs;
+  pairs.reserve(100);
+  for (int i = 0; i < 100; ++i) {
+    const Eigen::Isometry3d tfA = makeMeshBatchTransform(
+        offset(rng), offset(rng), offset(rng), angle(rng));
+    const Eigen::Isometry3d tfB = makeMeshBatchTransform(
+        1.20 + offset(rng), offset(rng), offset(rng), angle(rng));
+
+    pairs.push_back(MeshPair{&meshA, &meshB, tfA, tfB});
+  }
+
+  CollisionOption option;
+  option.maxNumContacts = 8;
+  std::vector<CollisionResult> batchResults(pairs.size());
+  collideMeshMeshBatch(pairs, batchResults, option);
+
+  for (std::size_t i = 0; i < pairs.size(); ++i) {
+    CollisionResult singleResult;
+    ASSERT_TRUE(collideMeshMesh(
+        *pairs[i].shapeA,
+        pairs[i].tfA,
+        *pairs[i].shapeB,
+        pairs[i].tfB,
+        singleResult,
+        option));
+    expectCollisionResultExactlyEqual(singleResult, batchResults[i]);
+  }
+}
+
+TEST(MeshMeshBatch, RejectsMalformedInputs)
+{
+  MeshShape meshA(makeCubeVertices(1.0), makeCubeTriangles());
+  MeshShape meshB(makeCubeVertices(1.0), makeCubeTriangles());
+
+  const Eigen::Isometry3d tfA = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
+  tfB.translation() = Eigen::Vector3d(1.20, 0.0, 0.0);
+
+  const std::vector<MeshPair> validPairs{{&meshA, &meshB, tfA, tfB}};
+  std::vector<CollisionResult> emptyResults;
+  EXPECT_THROW(
+      collideMeshMeshBatch(validPairs, emptyResults), std::invalid_argument);
+
+  const std::vector<MeshPair> nullShapePairs{{nullptr, &meshB, tfA, tfB}};
+  std::vector<CollisionResult> results(1);
+  EXPECT_THROW(
+      collideMeshMeshBatch(nullShapePairs, results), std::invalid_argument);
 }
 
 TEST(MeshMesh, BoxMeshesSeparated)
