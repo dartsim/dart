@@ -62,6 +62,10 @@ disagreement under "Open Issues" instead of editing "Decisions in force".
   examples. Use public DART dynamics/simulation APIs to construct worlds,
   pass them through `ApplicationOptions::world`, and use `Panel` only for the
   former custom controls that still matter after the OSG removal.
+- Following checkpoint scope: restore `simple_frames` and
+  `capsule_ground_contact` as source-defined public-API examples. Use
+  `SimpleFrame`/shape APIs for the former and a small `Panel` for the
+  capsule reset controls that used to live in an OSG key handler.
 
 ### Decisions in force (do NOT reopen)
 
@@ -359,6 +363,19 @@ Rigid-box family slice:
       own sources are active.
 - [ ] Validate with focused builds, the GUI boundary unit test, Python example
       runner coverage, one direct headless screenshot, `pixi run lint`, commit,
+      and push.
+
+Simple frame/contact slice:
+
+- [~] `examples/simple_frames/main.cpp`: restore the frame hierarchy with
+  public `SimpleFrame`, box, ellipsoid, and line-segment shape APIs.
+- [~] `examples/capsule_ground_contact/main.cpp`: restore the capsule/ground
+  contact world with public dynamics/simulation APIs and a promoted
+  `Panel` for pose reset/status controls.
+- [ ] Remove `--scene simple-frames` and `--scene capsule-ground-contact`
+      runner defaults once the binaries own their scenes.
+- [ ] Validate with focused builds, the GUI boundary unit test, Python example
+      runner coverage, direct headless screenshots, `pixi run lint`, commit,
       and push.
 
 ### Stop condition for this pivot

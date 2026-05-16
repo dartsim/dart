@@ -603,6 +603,8 @@ TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
          {std::filesystem::path("examples") / "boxes", false},
          {std::filesystem::path("examples") / "rigid_cubes", true},
          {std::filesystem::path("examples") / "box_stacking", true},
+         {std::filesystem::path("examples") / "simple_frames", false},
+         {std::filesystem::path("examples") / "capsule_ground_contact", true},
          {std::filesystem::path("examples") / "imgui", true},
          {std::filesystem::path("examples") / "drag_and_drop", true},
          {std::filesystem::path("examples") / "tinkertoy", true}};

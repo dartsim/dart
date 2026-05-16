@@ -444,6 +444,22 @@ Fourth source-migration checkpoint:
     binary
   - `pixi run lint` before committing
 
+Fifth source-migration checkpoint:
+
+- Restore `examples/simple_frames` and `examples/capsule_ground_contact` as
+  source-defined public-API examples.
+- `simple_frames` should demonstrate `dart::dynamics::SimpleFrame` visual
+  hierarchy construction with public DART shapes and no private fixture
+  launcher.
+- `capsule_ground_contact` should build the capsule, plane collision, and
+  visible ground through public dynamics/simulation APIs, with a small
+  `dart::gui::Panel` replacing the old OSG key-handler reset affordances.
+- Remove the runner default `--scene` injection for these binaries so direct
+  launches and `pixi run ex <name>` execute the restored example source by
+  default.
+- Keep the matching private scene fixtures as transitional dev/test
+  infrastructure until the remaining shared-fixture examples have migrated.
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:
@@ -474,8 +490,8 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Restore the rigid-box example family (`boxes`, `rigid_cubes`,
-   `box_stacking`) as real public-API `dart::gui` programs.
+1. Restore `simple_frames` and `capsule_ground_contact` as real public-API
+   `dart::gui` programs.
 2. Continue across the remaining pre-existing examples in small related
    families, documenting each slice here before implementation.
 3. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
