@@ -239,7 +239,8 @@ The local implementation is in place and has passed the pre-lint focused
 build/CTest, direct and pixi screenshot smokes, Python example-runner tests,
 the aggregate `examples` build, and `git diff --check`. Mandatory
 `pixi run lint` and post-lint focused build/CTest/direct screenshot smoke also
-pass. Commit and push this checkpoint next.
+pass. The checkpoint has been committed and pushed as
+`9f4af05ef1c Restore rigid cubes controls`.
 Keep Atlas relaxed-posture/balance optimization, Hubo analytical IK,
 Atlas/Hubo target activation semantics, and Enter recording as explicit parity
 gaps unless a later slice adds the narrow renderer-neutral public API needed
@@ -802,22 +803,26 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`4a957790bef Restore rigid loop defaults`; the current pending checkpoint
-restores `examples/rigid_cubes` from the strict historical-source audit and
-still needs commit and push after completed local validation.
+`9f4af05ef1c Restore rigid cubes controls`. The current pending checkpoint is
+documentation-only: record the maintainer correction that many more examples
+remain strict-audit pending, keep `examples/fetch/` re-opened as the concrete
+reminder case, and capture the next `examples/coupler_constraint/` inventory.
 
 ## Current Immediate Next Step
 
-Commit and push the `examples/rigid_cubes` restoration checkpoint without
-opening a PR. It restores the historical `cubes.skel` world, Y-down gravity,
-decaying directional force keys, 640x480 run default, camera home, instruction
-text, README, and source-marker tests through public `dart::gui`.
-Treat `examples/fetch/` and other already source-owned examples as still
-auditable if a missing historical user-visible behavior is identified; do not
-use source ownership or screenshot smoke coverage as full-restoration evidence
-by itself. Keep `--screenshot <path>` and `--out <dir>` working for the
-existing CTest, GitHub Actions smoke path, and historical image-sequence
-workflows. A later broader smoke sweep can still use:
+Commit and push the strict-restoration documentation checkpoint without
+opening a PR. It updates the active task docs so scope is not lost: Fetch
+remains re-openable, all pre-existing user-facing examples stay parity pending
+until itemized against historical source, and `coupler_constraint` is the next
+documented code-restoration target after the Fetch re-check.
+
+After that docs checkpoint, compare current `examples/fetch/main.cpp` again
+with `520993d7301^:examples/fetch/main.cpp` and repair any concrete remaining
+user-visible gap through public `dart::gui`. Then restore
+`examples/coupler_constraint/` dynamic controller/reset/overlay/grid/camera
+parity. Keep `--screenshot <path>` and `--out <dir>` working for the existing
+CTest, GitHub Actions smoke path, and historical image-sequence workflows. A
+later broader smoke sweep can still use:
 
 ```bash
 pixi run test-dart-gui-smoke

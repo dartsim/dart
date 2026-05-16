@@ -22,6 +22,9 @@ real source file but was not fully restored to the historical GUI behavior.
 Every pre-existing user-facing GUI example remains parity pending until its
 legacy source has been inventoried and the migrated `dart::gui` version
 preserves the user-visible behavior or records a deliberate follow-up gap.
+The strict restoration rule is now captured in
+`12-strict-example-restoration.md`; use that note before narrowing the active
+slice to a single example.
 The Fetch checkpoint has now restored the historical camera framing, made the
 visible target cross the draggable target-frame affordance, and restored the
 historical work-area grid offset as source-owned public DART geometry because
@@ -170,8 +173,8 @@ instruction text, deterministic non-axis-aligned initial box orientation,
 source-marker guards through public `dart::gui`. Focused build/CTest, direct
 and pixi screenshot smokes, Python example-runner tests, the aggregate
 `examples` build, `git diff --check`, mandatory `pixi run lint`, and
-post-lint focused build/CTest/direct screenshot smoke pass. Commit and push
-this checkpoint next. The checkpoint has been committed and pushed as
+post-lint focused build/CTest/direct screenshot smoke pass. The checkpoint has
+been committed and pushed as
 `bcc31d495c8 Restore hello world defaults`. The active slice is now
 `examples/capsule_ground_contact`: restore the historical `h`/`v` pose-reset
 keys, Space velocity-clear action, 1024x768 run default, camera home,
@@ -207,7 +210,12 @@ The local implementation is in place and has passed the pre-lint focused
 build/CTest, direct and pixi screenshot smokes, Python example-runner tests,
 the aggregate `examples` build, and `git diff --check`. Mandatory
 `pixi run lint` and post-lint focused build/CTest/direct screenshot smoke also
-pass. Commit and push this checkpoint next.
+pass. The checkpoint has been committed and pushed as
+`9f4af05ef1c Restore rigid cubes controls`. Maintainer correction after that
+checkpoint: the active work is not just the next cursor example. Re-open the
+strict example restoration queue, keep `examples/fetch/` as the concrete
+reminder that source ownership is not parity, then continue through the
+remaining examples with itemized historical-source audits.
 
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as

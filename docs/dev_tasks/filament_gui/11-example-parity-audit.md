@@ -31,11 +31,19 @@ Backend-specific sample surfaces are treated separately:
 
 `examples/fetch/` remains open as the concrete reminder case. Earlier
 checkpoints restored MJCF loading, Bullet preference, robot/object initial
-positions, mocap weld reset, target sync, visible target cross, work-area grid,
-camera home, 1280x960 run defaults, GUI scaling, selection/drag/nudge
-instructions, Play/Pause/Step/Exit panel controls, README, and source-marker
-tests. The next action is still an itemized historical-source inventory before
-declaring Fetch complete.
+positions, mocap weld reset, target sync, visible target affordance,
+work-area grid, camera home, 1280x960 run defaults, GUI scaling,
+selection/drag/nudge instructions, Play/Pause/Step/Exit panel controls,
+README, and source-marker tests. That evidence does not close Fetch if another
+historical user-visible behavior is found. Treat Fetch as re-openable until a
+fresh comparison against `520993d7301^:examples/fetch/main.cpp` confirms that
+the remaining differences are either public `dart::gui` restorations,
+official-renderer supersessions, or explicit public API gaps.
+
+The broader correction is documented in `12-strict-example-restoration.md`:
+every pre-existing user-facing example, including ones with recent restoration
+commits, remains subject to strict re-open until this file has an itemized
+historical-source inventory for it.
 
 ### Fetch Itemized Inventory
 
@@ -60,6 +68,7 @@ Historical source compared: `520993d7301^:examples/fetch/main.cpp`.
 | Show general viewer instructions/help.                                                                                       | Restored with promoted flat panel text.             | Current source includes selection/drag text; historical collapsible placement is superseded by the renderer-neutral panel API. |
 | Enable drag-and-drop of the target.                                                                                          | Restored through promoted selection/drag controls.  | Current runner supports Ctrl-left drag plus keyboard nudge controls on selectable frames.                                      |
 | README documents how to run the example.                                                                                     | Restored for promoted runner.                       | Current README documents `pixi run ex fetch` and headless capture.                                                             |
+| Keep Fetch open if another historical behavior gap is identified.                                                            | Active strict-audit rule.                           | Do not treat the first-pass inventory as final without re-checking the current source against the old OSG/ImGui source.        |
 
 ### Hello World Itemized Inventory
 
@@ -171,6 +180,34 @@ reintroducing OSG viewer code.
 | Print and display the historical title and controls.                                                  | Restored.                    | Current source prints instructions and keeps panel instruction coverage.                         |
 | README documents the promoted runner, controls, default size, and headless/image-sequence capture.    | Restored.                    | Current README documents screenshot and `--out` image-sequence capture.                          |
 | Keep the example free of backend-specific world-node, event-handler, viewer, and OSG recording types. | Restored through guard test. | Marker coverage prevents reintroducing removed renderer surfaces or `defaultScene`.              |
+
+### Coupler Constraint Itemized Inventory
+
+Historical source compared:
+`520993d7301^:examples/coupler_constraint/main.cpp`.
+
+The current promoted source creates the two mimic assemblies, limit guides, and
+a basic panel, but it is not fully restored. The historical example was a
+dynamic comparison between bilateral coupler constraints and legacy mimic
+motors, with continuous servo drive, reset behavior, live diagnostic overlay,
+grid, camera/defaults, and console instructions.
+
+| Historical item                                                                                                                  | Current outcome                     | Notes                                                                                                                                            |
+| -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Build left `coupler` and right `motor` mimic assemblies with matching offsets, rod colors, joint limits, and mimic setup.        | Partially restored.                 | Current source restores the assemblies and limits, but initializes reference/follower positions differently from the old controller-driven demo. |
+| Use zero gravity and timestep `1e-3`.                                                                                            | Restored.                           | Current source sets both on the promoted `World`.                                                                                                |
+| Compare left bilateral `CouplerConstraint` behavior against right legacy `MimicMotorConstraint` behavior.                        | Partially restored.                 | Current source creates both rigs but lacks the historical dynamic servo comparison and saturation diagnostics.                                   |
+| Drive both reference joints toward a 45-degree command with torque limit 90, proportional gain 320, and damping gain 25.         | Pending restoration.                | Requires restoring the source-owned controller through `ApplicationOptions::preStep`.                                                            |
+| Refresh the reference/follower link lines every frame and color them by mimic error severity.                                    | Pending restoration.                | Current line frames are static after creation.                                                                                                   |
+| Reset both rigs to their initial positions, zero velocities, and clear external forces with `r`.                                 | Pending restoration.                | Current panel reset only writes the reference angle. Use promoted keyboard actions instead of OSG event handlers.                                |
+| Show live status for target angle, reference position, follower position, limits, desired mimic position, error, and saturation. | Pending restoration.                | Can be restored with the promoted flat panel API; exact ImGui window flags are superseded.                                                       |
+| Print the historical explanation and controls to the console.                                                                    | Pending restoration.                | Use ASCII text while preserving the old meaning.                                                                                                 |
+| Preserve `--gui-scale`.                                                                                                          | Restored through shared runner.     | The promoted runner parses shared GUI scale options; no local backend parser should return.                                                      |
+| Add the historical XY grid with 25 cells and 0.05 minor step.                                                                    | Pending restoration/public API gap. | Prefer source-owned DART line geometry unless a promoted debug-grid API is added first.                                                          |
+| Default launch size 960x720.                                                                                                     | Pending restoration.                | Use `ApplicationOptions::runDefaults`.                                                                                                           |
+| Camera home from eye `(1.5, 1.5, 1.2)` to target `(0.4, 0, 0.2)` with world-up `(0, 0, 1)`.                                      | Pending restoration.                | Convert to `dart::gui::OrbitCamera`.                                                                                                             |
+| README documents the promoted runner, controls, default size, and capture.                                                       | Pending restoration.                | No current README exists for this example.                                                                                                       |
+| Keep the source free of OSG world-node, event-handler, viewer, and direct ImGui types.                                           | Needs guard coverage.               | Restore behavior through public `dart::gui`, not legacy renderer types.                                                                          |
 
 ### Heightmap Itemized Inventory
 
@@ -314,11 +351,11 @@ first-class keyboard shortcut.
 | `box_stacking`              | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm solver controls, camera/defaults, README, and guards.                                                       |
 | `boxes`                     | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm Bullet preference, camera/defaults, README, and guards.                                                     |
 | `capsule_ground_contact`    | Restored by strict audit.                                                          | Keep marker guards for controls, camera/defaults, README, and no backend types.                                     |
-| `coupler_constraint`        | Needs strict audit.                                                                | Compare historical source and list controls/defaults.                                                               |
+| `coupler_constraint`        | Active strict audit; dynamic controller and defaults pending.                      | Restore controller, reset key, overlay details, grid, camera/defaults, README, and guards.                          |
 | `csv_logger`                | Needs strict audit.                                                                | Confirm non-GUI logging behavior and README remain intact.                                                          |
 | `drag_and_drop`             | Needs strict audit.                                                                | Compare historical selection/drag affordances and README.                                                           |
 | `empty`                     | Restored except public key-release/render-hook API gaps.                           | Keep key-release and pre/post-render hooks tracked as public API follow-ups.                                        |
-| `fetch`                     | Itemized first-pass audit; panel-title/text gap repaired in current checkpoint.    | Keep re-openable if further historical behavior gaps are identified.                                                |
+| `fetch`                     | Re-opened strict-audit reminder case.                                              | Re-check against historical source before declaring complete; repair any new behavior gap found.                    |
 | `free_joint_cases`          | Needs strict audit.                                                                | Compare historical source and list controls/defaults.                                                               |
 | `g1_puppet`                 | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm target activation, IK, teleoperation, camera, and guards.                                                   |
 | `gui_scene_diagnostics`     | Needs strict audit.                                                                | Confirm diagnostic GUI behavior and capture expectations.                                                           |

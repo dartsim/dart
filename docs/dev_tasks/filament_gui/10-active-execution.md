@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `7e66f70256b Restore Fetch panel instructions`.
+  `9f4af05ef1c Restore rigid cubes controls`.
 - Latest pushed code checkpoint:
-  `7e66f70256b Restore Fetch panel instructions`.
+  `9f4af05ef1c Restore rigid cubes controls`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -121,6 +121,15 @@ history but are not guaranteed to be in chronological order.
   - `3493d7065c0 Restore box stacking solver controls`
   - `74870cc5cf3 Restore boxes run defaults`
   - `95a6ad0a737 Restore simple frames run defaults`
+  - `9e111631eb5 Restore point cloud example controls`
+  - `227c2498a53 Restore polyhedron visual defaults`
+  - `158e10d4cc2 Restore empty viewer scaffold`
+  - `6ee2b97a20f Restore simulation event handler controls`
+  - `bcc31d495c8 Restore hello world defaults`
+  - `b00e054c45f Restore capsule contact controls`
+  - `b864e5a31d3 Restore rigid chain defaults`
+  - `4a957790bef Restore rigid loop defaults`
+  - `9f4af05ef1c Restore rigid cubes controls`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -144,21 +153,24 @@ history but are not guaranteed to be in chronological order.
   runner tests, full `examples` target build, `git diff --check`,
   `pixi run lint`, and post-lint focused rebuild/CTest/direct screenshot
   checks.
-- Maintainer correction after the hardcoded-design checkpoint: there are many
+- Maintainer correction after the `rigid_cubes` checkpoint: there are many
   more examples that are not fully restored, and `examples/fetch/` is still the
   concrete reminder. The next work must use an explicit historical-source
   inventory for every pre-existing example before calling it restored.
-  `docs/dev_tasks/filament_gui/11-example-parity-audit.md` is now the live
-  checklist for that stricter audit.
+  `docs/dev_tasks/filament_gui/11-example-parity-audit.md` is the live
+  per-example checklist, and
+  `docs/dev_tasks/filament_gui/12-strict-example-restoration.md` records the
+  broader rule and active queue.
 - Immediate audit priority: re-open `examples/fetch/` as an itemized
   historical-source comparison, even though previous checkpoints restored many
   Fetch behaviors. Any remaining Fetch-specific behavior gap must either be
   repaired through promoted `dart::gui` APIs or recorded as a named public API
   follow-up.
-- Current Fetch re-audit implementation in the worktree restores the
-  historical `Fetch robot example` panel title and the old whole-body-motion
-  instructional copy, updates the strict audit table, adds source-marker test
-  coverage, and records the user-visible repair in the changelog.
+- Current Fetch status: previous checkpoints restored many visible behaviors,
+  but Fetch remains re-openable. Re-check the current source against
+  `520993d7301^:examples/fetch/main.cpp` before declaring it complete; repair
+  any new behavior gap through promoted `dart::gui` or record the exact public
+  API gap.
 - Fetch panel-text validation completed before this checkpoint commit: focused
   C++ build for `fetch` and `UNIT_gui_FilamentSceneExtraction`, focused CTest
   for `UNIT_gui_FilamentSceneExtraction`, direct and pixi Fetch headless
@@ -170,35 +182,16 @@ history but are not guaranteed to be in chronological order.
   direct llvmpipe Fetch screenshot with analyzer coverage
   (`/tmp/dart_fetch_panel_text_direct_postlint.ppm`, 303694/307200 nonzero
   pixels).
-- Current implementation checkpoint in the worktree: `examples/heightmap`.
-  Historical behavior included an interactive heightmap
-  `SimpleFrame`, panel controls for terrain visibility, regeneration,
-  resolution, XY size, Z range, and grid display parameters, `--gui-scale`,
-  `--demo interactive|alignment`, an ODE-backed alignment demo with a
-  heightmap, reference box, and ball grids, 1280x720 launch defaults, camera
-  homes for both demos, and an example README.
-- Heightmap implementation state: the source now restores local
-  `--demo interactive|alignment`, 1280x720 run defaults, both historical camera
-  homes, a mutable world-owned `HeightmapShaped` `SimpleFrame`, panel controls
-  for terrain/grid visibility, X/Y resolution, X/Y size, Z min/max,
-  regenerate, Play/Pause/Step/Exit, an ODE-backed alignment world with
-  `heightmap_ball_`, `box_ball_`, and `reference_box` objects, README,
-  changelog, and source-marker tests through public `dart::gui`.
-- Heightmap remaining public API gap: old OSG `GridVisual` fine-grained
-  plane/offset/line-count/line-step/line-width/color controls and the terrain
-  color editor still require DART-owned public panel/debug-grid/color concepts.
-  Do not revive OSG or expose private Filament hooks for these.
-- Heightmap validation completed before lint: focused C++ build for
-  `heightmap` and `UNIT_gui_FilamentSceneExtraction`, focused CTest for
-  `UNIT_gui_FilamentSceneExtraction`, direct interactive and alignment
-  screenshots with basic analyzer coverage, pixi interactive and alignment
-  screenshots with basic analyzer coverage, Python C++ example-runner tests
-  (67 passed), and the full `examples` aggregate target build.
-- Heightmap post-lint validation completed: `pixi run lint`, focused rebuild
-  and CTest for `heightmap` plus `UNIT_gui_FilamentSceneExtraction`, and a
-  direct llvmpipe interactive screenshot with basic analyzer coverage
-  (`/tmp/dart_heightmap_interactive_direct_postlint.ppm`, 307200/307200
-  nonzero pixels).
+- Current implementation checkpoint in the worktree: docs correction only.
+  Update `README.md`, `RESUME.md`, `10-active-execution.md`, and
+  `11-example-parity-audit.md` to record the broad strict-restoration rule,
+  the latest pushed `rigid_cubes` checkpoint, the Fetch re-open requirement,
+  and the next concrete `coupler_constraint` audit inventory before making the
+  next code change.
+- After this docs checkpoint is committed and pushed, continue with a concrete
+  strict-audit repair. Start by re-checking `examples/fetch/` against the
+  historical source, then restore `examples/coupler_constraint/` dynamic
+  behavior through public `dart::gui`.
 
 ## Current Code Shape
 
@@ -2569,18 +2562,22 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Commit and push the Fetch panel-title/instructional-text re-audit checkpoint
-   after `pixi run lint`.
-2. Continue the same historical-source parity audit across every remaining
+1. Commit and push the strict-restoration documentation checkpoint after
+   `pixi run lint`.
+2. Re-check `examples/fetch/` against
+   `520993d7301^:examples/fetch/main.cpp`; repair any concrete remaining
+   user-visible gap through public `dart::gui` or record the exact public API
+   gap.
+3. Restore `examples/coupler_constraint/` dynamic controller, reset key,
+   diagnostic panel, grid, camera/run defaults, README, and guard coverage
+   through public `dart::gui`.
+4. Continue the same historical-source parity audit across every remaining
    pre-existing example; do not treat source ownership, build success, runner
    coverage, or screenshots as sufficient restoration evidence.
-3. Restore heightmap `--demo` selection, interactive controls, alignment mode,
-   camera/run defaults, README, and parity tests through public `dart::gui`
-   after the Fetch re-audit has a documented itemized result.
-4. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
+5. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
    corresponding example behavior has moved into public-API example code.
-5. Do not start the physical `experimental/` directory move until the
+6. Do not start the physical `experimental/` directory move until the
    application extraction and enough real example sources prove the consumed
    public API surface.
-6. Run `pixi run lint` before every checkpoint commit, then push the commit to
+7. Run `pixi run lint` before every checkpoint commit, then push the commit to
    the tracked remote branch.
