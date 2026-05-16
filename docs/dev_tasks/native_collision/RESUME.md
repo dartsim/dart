@@ -133,6 +133,14 @@ Python reported 147/147, documentation built successfully, and the report
 printed `All tests passed!`. No PR, push, workflow, branch, or GitHub state
 was mutated by this recheck.
 
+The latest current-head gz-physics refresh on pre-record head `9cc3fe99008`
+passed `pixi run -e gazebo test-gz` 65/65 against a fresh
+`gz-physics9_9.0.0` checkout. The gazebo DART install configured reference
+collision tests and benchmarks `OFF`, the DART plugin built successfully, and
+direct `readelf` inspection showed `libdart-collision-native.so` without old
+DART collision reference, FCL, Bullet, ODE, or libccd runtime dependencies. No
+PR, push, workflow, branch, or GitHub state was mutated by this recheck.
+
 The latest pushed validation baseline is `376fd5e686d`
 (`Remove per-engine collision reference build options`). Current branch head
 may include docs-only evidence refresh commits on top of that validation
@@ -247,7 +255,7 @@ post GitHub comments unless the user explicitly asks.
   update recording the result. The full local gate passed linting, build, unit
   tests, simulation-experimental tests, Python tests, and documentation, and
   printed `All tests passed!`.
-- Latest local gz-physics baseline: `6742a21ab0f`.
+- Latest local gz-physics baseline: `9cc3fe99008`.
 - Latest local native compatibility package-smoke baseline: `dcfc994542f`.
 - Last manual workflow-dispatch CI evidence head: `1e1faf6feb1`.
 - Latest pushed docs/reference-cleanup heads after those baselines have no
@@ -325,6 +333,11 @@ post GitHub comments unless the user explicitly asks.
   direct `readelf` checks showed the gz DART plugin and package-smoke
   executable depend on `libdart-collision-native.so` without old
   collision/reference runtime dependencies.
+- Current local gz-physics refresh after `9cc3fe99008`:
+  `pixi run -e gazebo test-gz` passed 65/65 tests against a fresh
+  `gz-physics9_9.0.0` checkout, and direct `readelf` inspection of the DART
+  plugin showed `libdart-collision-native.so` without old DART collision
+  reference, FCL, Bullet, ODE, or libccd runtime dependencies.
 - Current local capsule-box duplicate-filtering refresh after `c1f03f23147`:
   focused `test_capsule_capsule` passed with the new pair-local accumulated
   result regression, the previously failing mixed benchmark guard passed, the

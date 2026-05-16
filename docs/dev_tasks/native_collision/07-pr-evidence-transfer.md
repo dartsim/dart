@@ -180,6 +180,14 @@ Local validation currently recorded in the dev-task evidence:
   reported 13/13, Python reported 147/147, documentation built successfully,
   and the report printed `All tests passed!`. No PR, push, workflow, branch,
   or GitHub state was mutated by this recheck.
+- The latest current-head gz-physics refresh on pre-record head `9cc3fe99008`
+  passed `pixi run -e gazebo test-gz` 65/65 against a fresh
+  `gz-physics9_9.0.0` checkout. The gazebo DART install configured reference
+  collision tests and benchmarks `OFF`, the DART plugin built successfully, and
+  direct `readelf` inspection of the plugin showed
+  `libdart-collision-native.so` without old DART collision reference,
+  FCL, Bullet, ODE, or libccd runtime dependencies. No PR, push, workflow,
+  branch, or GitHub state was mutated by this recheck.
 - Focused local regression validation for the latest follow-up passed:
   - `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_box_box|UNIT_collision_DartCollisionDetector|test_convex|test_mesh_mesh)$' --repeat until-fail:20`
   - `UNIT_simulation_World --gtest_filter='WorldTests.DefaultNative*BoxRestsOnGround'`
@@ -269,6 +277,10 @@ Local validation currently recorded in the dev-task evidence:
     gz-physics passed 65/65, and an explicit plugin dependency scan reported
     `libdart-collision-native.so` without old DART collision reference/facade,
     FCL, Bullet, ODE, or libccd matches
+  - current-head gz-physics refresh head `9cc3fe99008` reran
+    `pixi run -e gazebo test-gz`; gz-physics passed 65/65, and direct
+    `readelf` inspection showed `libdart-collision-native.so` without old DART
+    collision reference, FCL, Bullet, ODE, or libccd runtime dependencies
   - current package-smoke refresh head `dcfc994542f` reran the native
     compatibility package smoke after the gz-physics evidence update; retained
     `collision-fcl`, `collision-bullet`, and `collision-ode` package components

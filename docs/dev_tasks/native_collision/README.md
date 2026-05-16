@@ -46,10 +46,11 @@ component names became native-backed interface facades.
       cylinder-vs-plane-like-box support for gz's plane-as-large-box path,
       capped large flat box/mesh contact patches for gz max-contact tests, and
       legacy FCL/ODE facade raycast behavior required by gz's ray-intersection
-      feature tests. The current local gz-physics refresh on local head
-      `6742a21ab0f` rebuilt a fresh gz-physics checkout, printed the expected
-      DART plugin integration success line, and `readelf` showed the gz DART plugin
-      depends on `libdart-collision-native.so` without any
+      feature tests. The current local gz-physics refreshes on local heads
+      `6742a21ab0f` and `9cc3fe99008` rebuilt fresh gz-physics checkouts,
+      printed the expected DART plugin integration success line, and `readelf`
+      showed the gz DART plugin depends on `libdart-collision-native.so`
+      without any
       `libdart-collision-reference-*`, `libdart-test-reference-*`, FCL, Bullet,
       ODE, or libccd runtime dependency. Manual workflow-dispatch evidence on
       `1e1faf6feb1` is
@@ -253,6 +254,12 @@ component names became native-backed interface facades.
       the current validation evidence commit, and an explicit plugin dependency
       scan reported `libdart-collision-native.so` without old DART collision
       reference/facade, FCL, Bullet, ODE, or libccd matches.
+      The latest current-head gz-physics refresh on pre-record head
+      `9cc3fe99008` also passed `pixi run -e gazebo test-gz` 65/65 against a
+      fresh `gz-physics9_9.0.0` checkout with reference collision tests and
+      benchmarks `OFF`; direct `readelf` inspection showed
+      `libdart-collision-native.so` and no old DART collision reference,
+      FCL, Bullet, ODE, or libccd runtime dependency.
       A newer native compatibility package smoke on `dcfc994542f` also passed,
       with retained `collision-fcl`, `collision-bullet`, and `collision-ode`
       package components resolving as native-backed facades and `readelf`
@@ -659,9 +666,9 @@ collision stack.
      native-backed path.
    - Current gz-physics and package evidence is locally green: a fresh
      `pixi run -e gazebo test-gz` passed 65/65 tests against the DART plugin
-     on local head `6742a21ab0f`; the native package smoke passed on local head
-     `dcfc994542f`; direct link inspections showed only the native collision
-     runtime. CI evidence is still required.
+     on local heads `6742a21ab0f` and `9cc3fe99008`; the native package smoke
+     passed on local head `dcfc994542f`; direct link inspections showed only
+     the native collision runtime. CI evidence is still required.
 6. **Performance Guardrails**
    - The current `bm-collision-check` task runs checked narrowphase, distance,
      raycast, mixed-primitive, mesh-heavy, raycast-batch, and public adapter

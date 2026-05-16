@@ -185,6 +185,14 @@ Make native DART collision the default runtime stack
   reported 13/13, Python reported 147/147, documentation built successfully,
   and the report printed `All tests passed!`. No PR, push, workflow, branch,
   or GitHub state was mutated by this recheck.
+- The latest current-head gz-physics refresh on pre-record head `9cc3fe99008`
+  passed `pixi run -e gazebo test-gz` 65/65 against a fresh
+  `gz-physics9_9.0.0` checkout. The gazebo DART install configured reference
+  collision tests and benchmarks `OFF`, the DART plugin built successfully, and
+  direct `readelf` inspection of the plugin showed
+  `libdart-collision-native.so` without old DART collision reference,
+  FCL, Bullet, ODE, or libccd runtime dependencies. No PR, push, workflow,
+  branch, or GitHub state was mutated by this recheck.
 - `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e collision-reference -- ctest --test-dir build/collision-reference/cpp/Release --output-on-failure -R '^test_reference_backends$' -j 5`
   passed 1/1 after configuring `collision-reference` with reference tests and
   reference benchmarks `ON` and all FCL, Bullet, and ODE test-only reference
@@ -220,6 +228,12 @@ Make native DART collision the default runtime stack
   evidence commit. The gz-physics run passed 65/65, and an explicit plugin
   dependency scan reported `libdart-collision-native.so` without old DART
   collision reference/facade, FCL, Bullet, ODE, or libccd matches.
+- `pixi run -e gazebo test-gz` also passed on current pre-record local head
+  `9cc3fe99008` against a fresh `gz-physics9_9.0.0` checkout. Direct
+  `readelf` inspection of
+  `.deps/gz-physics/build/lib/libgz-physics-dartsim-plugin.so.9.0.0` showed
+  `libdart-collision-native.so` without old DART collision reference,
+  FCL, Bullet, ODE, or libccd runtime dependencies.
 - Native compatibility package smoke and direct `readelf` link inspection passed
   on earlier local baseline `6404f7607be`; gz/plugin package-smoke binaries
   link `libdart-collision-native.so` without old collision/reference runtime
