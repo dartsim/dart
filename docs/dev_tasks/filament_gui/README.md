@@ -98,8 +98,15 @@ can recover the historical 1280x960 default launch size while preserving
 command-line overrides. A later strict Fetch pass restores the historical
 two-transparent-green-bar target affordance on the same selectable
 `SimpleFrame`, updates the panel/README wording, and validates it with focused
-build/CTest plus direct and pixi headless screenshot smokes. The next active
-parity slice is `examples/rigid_shapes`:
+build/CTest plus direct and pixi headless screenshot smokes. The current
+strict-audit slice after the pushed Coupler checkpoint is
+`examples/drag_and_drop`: restore the historical frame/child/axis-marker
+layout, visible manipulation affordance, 640x480 default launch size, camera
+home, console/help text, README, and marker guards through public `dart::gui`.
+True InteractiveFrame-style rotation drag remains a named public API gap until
+the promoted manipulation layer exposes a renderer-neutral rotation
+manipulator.
+An earlier parity slice restored `examples/rigid_shapes`:
 restore the historical shape-spawn/delete/contact keyboard controls, convex
 mesh spawn path, contact-point visualization, camera home, and 640x480 default
 launch size through public `dart::gui`, plus the rigid-shapes-specific

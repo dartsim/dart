@@ -60,9 +60,17 @@ Immediate order:
    checkpoint and this broader correction.
 2. Re-open `examples/fetch/` for one more strict comparison and repair any
    concrete gap found through public `dart::gui`.
-3. Commit and push the local `examples/coupler_constraint/` restoration after
-   mandatory lint and post-lint focused checks.
-4. Continue through the remaining `Needs strict audit` and
+3. `examples/coupler_constraint/` was committed and pushed as
+   `3945c65852c Restore coupler constraint controls` after mandatory lint and
+   post-lint focused checks.
+4. Audit and restore `examples/drag_and_drop/` next. The historical source used
+   an `InteractiveFrame` at `(4, -4, 0)`, a child red box, X/Y/Z markers, a
+   640x480 window, camera home from `(20, 17, 17)` to the origin, console
+   instructions, and a README that described the interaction contract. Restore
+   everything expressible through public `dart::gui`; record true
+   InteractiveFrame-style rotation/handle manipulation as a public API gap
+   rather than reintroducing OSG.
+5. Continue through the remaining `Needs strict audit` and
    `Recent parity checkpoint; still subject to strict audit re-open` rows.
 
 ## Checkpoint Rule

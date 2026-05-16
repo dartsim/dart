@@ -803,20 +803,23 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`ce8ba83d2f3 Restore Fetch target affordance`. The current pending checkpoint
-is `examples/coupler_constraint/` behavior parity. The implementation is in
-place locally and still needs mandatory lint, post-lint focused checks, commit,
-and push.
+`3945c65852c Restore coupler constraint controls`. The current pending
+checkpoint is `examples/drag_and_drop/` strict audit. The implementation
+restores the historical frame/child/axis-marker layout, visible manipulation
+affordance, 640x480 default launch size, camera home, console/help text,
+README, and marker guards through public `dart::gui`. True
+InteractiveFrame-style rotation drag remains recorded as a public manipulation
+API gap unless a renderer-neutral rotation manipulator is added.
 
 ## Current Immediate Next Step
 
-Run mandatory `pixi run lint`, post-lint focused Coupler checks, then commit
-and push without opening a PR. The local implementation restores the
-controller-driven mimic/coupler comparison, `r` reset action, live diagnostics,
-source-owned grid, camera/run defaults, README, and marker guards through
-public `dart::gui`. Keep `--screenshot <path>` and `--out <dir>` working for
-the existing CTest, GitHub Actions smoke path, and historical image-sequence
-workflows. A later broader smoke sweep can still use:
+Commit and push the local `examples/drag_and_drop/` checkpoint without opening
+a PR. Completed validation includes focused build/CTest, direct and pixi
+headless screenshot analyzer checks, Python example-runner tests, aggregate
+`examples` build, mandatory `pixi run lint`, and post-lint focused
+build/CTest/direct screenshot smoke. Keep `--screenshot <path>` and
+`--out <dir>` working for the existing CTest, GitHub Actions smoke path, and
+historical image-sequence workflows. A later broader smoke sweep can still use:
 
 ```bash
 pixi run test-dart-gui-smoke

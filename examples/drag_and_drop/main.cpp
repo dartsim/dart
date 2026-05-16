@@ -38,15 +38,39 @@
 
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/frame.hpp>
+#include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 
 #include <Eigen/Geometry>
 
+#include <iostream>
 #include <memory>
 #include <string>
 #include <utility>
 
 namespace {
+
+std::shared_ptr<dart::dynamics::LineSegmentShape> createDragFrameHandleShape()
+{
+  auto handle = std::make_shared<dart::dynamics::LineSegmentShape>(8.0f);
+  const auto center = handle->addVertex(Eigen::Vector3d::Zero());
+  handle->addVertex(Eigen::Vector3d(2.0, 0.0, 0.0), center);
+  handle->addVertex(Eigen::Vector3d(-2.0, 0.0, 0.0), center);
+  handle->addVertex(Eigen::Vector3d(0.0, 2.0, 0.0), center);
+  handle->addVertex(Eigen::Vector3d(0.0, -2.0, 0.0), center);
+  handle->addVertex(Eigen::Vector3d(0.0, 0.0, 2.0), center);
+  handle->addVertex(Eigen::Vector3d(0.0, 0.0, -2.0), center);
+
+  const auto xyA = handle->addVertex(Eigen::Vector3d(1.35, 1.35, 0.0));
+  const auto xyB = handle->addVertex(Eigen::Vector3d(-1.35, 1.35, 0.0));
+  const auto xyC = handle->addVertex(Eigen::Vector3d(-1.35, -1.35, 0.0));
+  const auto xyD = handle->addVertex(Eigen::Vector3d(1.35, -1.35, 0.0));
+  handle->addConnection(xyA, xyB);
+  handle->addConnection(xyB, xyC);
+  handle->addConnection(xyC, xyD);
+  handle->addConnection(xyD, xyA);
+  return handle;
+}
 
 dart::simulation::WorldPtr createDragAndDropWorld()
 {
@@ -57,10 +81,8 @@ dart::simulation::WorldPtr createDragAndDropWorld()
   transform.translation() = Eigen::Vector3d(4.0, -4.0, 0.0);
   auto anchor = std::make_shared<dart::dynamics::SimpleFrame>(
       dart::dynamics::Frame::World(), "interactive frame", transform);
-  anchor->setShape(
-      std::make_shared<dart::dynamics::BoxShape>(
-          Eigen::Vector3d(0.45, 0.45, 0.45)));
-  anchor->getVisualAspect(true)->setColor(Eigen::Vector3d(0.95, 0.7, 0.15));
+  anchor->setShape(createDragFrameHandleShape());
+  anchor->getVisualAspect(true)->setColor(Eigen::Vector3d(0.95, 0.78, 0.18));
   world->addSimpleFrame(anchor);
 
   transform = Eigen::Isometry3d::Identity();
@@ -81,7 +103,7 @@ dart::simulation::WorldPtr createDragAndDropWorld()
         dart::dynamics::Frame::World(), name, markerTransform);
     marker->setShape(
         std::make_shared<dart::dynamics::BoxShape>(
-            Eigen::Vector3d(0.25, 0.25, 0.25)));
+            Eigen::Vector3d(0.2, 0.2, 0.2)));
     marker->getVisualAspect(true)->setColor(color);
     world->addSimpleFrame(marker);
   };
@@ -94,6 +116,38 @@ dart::simulation::WorldPtr createDragAndDropWorld()
       "Z", Eigen::Vector3d(0.0, 0.0, 8.0), Eigen::Vector3d(0.0, 0.0, 0.9));
 
   return world;
+}
+
+dart::gui::RunOptions makeDragAndDropRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
+
+dart::gui::OrbitCamera makeDragAndDropCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.0, 0.0, 0.0);
+  camera.yaw = 0.7044940642422177;
+  camera.pitch = 0.5743269238648862;
+  camera.distance = 31.272991542223778;
+  return camera;
+}
+
+void printDragAndDropInstructions()
+{
+  std::cout
+      << "Drag and drop example:\n"
+      << "  - Click a renderable to select it.\n"
+      << "  - Ctrl-left drag moves the selected frame; hold X, Y, or Z to "
+         "constrain the drag axis.\n"
+      << "  - Arrow keys nudge on the camera plane; PageUp/PageDown nudge "
+         "vertically.\n"
+      << "  - Historical Ctrl-left rotation needs a public "
+         "rotation-manipulator API.\n"
+      << std::endl;
 }
 
 } // namespace
@@ -119,13 +173,19 @@ int main(int argc, char* argv[])
           }
           panel.checkbox("Show tips", showInteractionTips);
           if (showInteractionTips) {
-            panel.text("Ctrl-left drag moves the selected object.");
+            panel.text("Click to select. Ctrl-left drag moves the selection.");
+            panel.text("Hold X, Y, or Z while dragging to constrain an axis.");
+            panel.text("Arrow/PageUp/PageDown nudge the selected frame.");
           }
           panel.text("selected: " + context.selectedLabel);
         };
 
+  printDragAndDropInstructions();
+
   dart::gui::ApplicationOptions options;
   options.world = createDragAndDropWorld();
+  options.runDefaults = makeDragAndDropRunDefaults();
+  options.camera = makeDragAndDropCamera();
   options.panels.push_back(std::move(controls));
 
   return dart::gui::runApplication(argc, argv, options);

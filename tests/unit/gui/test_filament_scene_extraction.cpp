@@ -1065,6 +1065,51 @@ TEST(FilamentSceneExtraction, SimpleFramesExamplePreservesParityMarkers)
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, DragAndDropExamplePreservesLegacyParityMarkers)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "drag_and_drop" / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "drag_and_drop" / "README.md");
+
+  EXPECT_NE(mainSource.find("createDragFrameHandleShape"), std::string::npos);
+  EXPECT_NE(mainSource.find("LineSegmentShape"), std::string::npos);
+  EXPECT_NE(mainSource.find("interactive frame"), std::string::npos);
+  EXPECT_NE(mainSource.find("draggable"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Eigen::Vector3d(-4.0, 4.0, 0.0)"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Eigen::Vector3d(8.0, 0.0, 0.0)"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Eigen::Vector3d(0.0, 8.0, 0.0)"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Eigen::Vector3d(0.0, 0.0, 8.0)"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Eigen::Vector3d(0.2, 0.2, 0.2)"), std::string::npos);
+  EXPECT_NE(mainSource.find("Ctrl-left drag moves"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeDragAndDropRunDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeDragAndDropCamera"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 0.0)"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.world"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Drag and Drop Example"), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("dart::gui::ApplicationOptions"), std::string::npos);
+  EXPECT_NE(readmeSource.find("640x480"), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("InteractiveFrame-style rotation handles"),
+      std::string::npos);
+  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+  EXPECT_EQ(mainSource.find("InteractiveFrame"), std::string::npos);
+  EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
+  EXPECT_EQ(mainSource.find("enableDragAndDrop"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, BoxStackingExamplePreservesParityMarkers)
 {
   const auto mainSource = readSourceFile(

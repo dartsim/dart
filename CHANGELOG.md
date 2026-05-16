@@ -76,6 +76,10 @@
   - Moved `drag_and_drop` off the private named-scene fixture path so the
     example source owns its DART world and passes it through
     `dart::gui::ApplicationOptions::world`.
+  - Restored the `drag_and_drop` example's visible frame handle, historical
+    marker layout, camera/run defaults, README, and marker coverage through
+    public `dart::gui`, with rotation-handle manipulation tracked as a public
+    API follow-up.
   - Moved `imgui` and `tinkertoy` off private named-scene fixture defaults so
     their example sources own their DART worlds through
     `dart::gui::ApplicationOptions::world`.

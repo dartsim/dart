@@ -338,6 +338,32 @@ first-class keyboard shortcut.
 | README documents controls and promoted runner usage.                                                                | Restored.                            | Current README documents `pixi run ex simulation_event_handler` and headless capture.                                               |
 | Keep the example free of backend-specific event-handler and viewer types.                                           | Restored through guard test.         | Continue to avoid OSG includes and private renderer types.                                                                          |
 
+### Drag and Drop Itemized Inventory
+
+Historical sources compared:
+`520993d7301^:examples/drag_and_drop/main.cpp` and
+`520993d7301^:examples/drag_and_drop/README.md`.
+
+The strict-audit slice restores the standalone educational example as a
+source-owned `dart::gui` world. The old OSG `InteractiveFrame`, viewer, world
+node, and direct drag-and-drop hooks stay removed; public `dart::gui` selection
+and frame translation replace the draggable-frame path. True
+InteractiveFrame-style rotation handles remain a named public API gap.
+
+| Historical item                                                                                | Current outcome                       | Notes                                                                                                          |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Create an interactive frame named `interactive frame` at `(4, -4, 0)` with scale `2.0`.        | Restored with promoted frame visuals. | Current source uses one selectable `SimpleFrame` and source-owned DART line geometry for the visible handle.   |
+| Attach the red `draggable` box as a child frame at local `(-4, 4, 0)` with unit box geometry.  | Restored.                             | Current source preserves the parent/child transform relationship and red visual.                               |
+| Add world X/Y/Z marker boxes at `(8, 0, 0)`, `(0, 8, 0)`, and `(0, 0, 8)` with size `0.2`.     | Restored.                             | Current source keeps the historical positions, names, sizes, and red/green/blue colors.                        |
+| Enable drag-and-drop on the interactive frame and child box.                                   | Restored through promoted selection.  | The shared runner supports click selection, Ctrl-left drag, X/Y/Z axis-constrained drag, and keyboard nudging. |
+| Show the historical visible manipulation affordance rather than only a tiny placeholder box.   | Restored as DART geometry.            | Current source adds an orthogonal line-handle gizmo on the selectable frame.                                   |
+| Support the historical Ctrl-left rotation manipulation.                                        | Public API gap.                       | Requires a renderer-neutral transform/rotation manipulator API; do not reintroduce OSG `InteractiveFrame`.     |
+| Print/show the example interaction instructions.                                               | Restored with promoted wording.       | Current source explains selection, Ctrl-left drag, axis constraints, nudging, and the rotation API gap.        |
+| Default launch size 640x480.                                                                   | Restored.                             | Current source uses `ApplicationOptions::runDefaults`.                                                         |
+| Camera home from eye `(20, 17, 17)` to target `(0, 0, 0)` with world-up `(0, 0, 1)`.           | Restored.                             | Current source converts the historical home to `dart::gui::OrbitCamera`.                                       |
+| README documents the promoted runner and no longer calls the standalone source legacy OSG.     | Restored.                             | Current README documents `pixi run ex drag_and_drop`, controls, defaults, headless capture, and the API gap.   |
+| Keep the source free of OSG viewer, world-node, InteractiveFrame, and backend-specific tokens. | Restored through guard test.          | Marker coverage prevents reintroducing removed renderer surfaces.                                              |
+
 ## Example Inventory
 
 | Example                     | Current Audit State                                                                | Next Required Action                                                                                                |
@@ -351,7 +377,7 @@ first-class keyboard shortcut.
 | `capsule_ground_contact`    | Restored by strict audit.                                                          | Keep marker guards for controls, camera/defaults, README, and no backend types.                                     |
 | `coupler_constraint`        | Restored by strict audit.                                                          | Keep marker guards for controller, reset key, diagnostics, grid, camera/defaults, README, and no backend types.     |
 | `csv_logger`                | Needs strict audit.                                                                | Confirm non-GUI logging behavior and README remain intact.                                                          |
-| `drag_and_drop`             | Needs strict audit.                                                                | Compare historical selection/drag affordances and README.                                                           |
+| `drag_and_drop`             | Restored except public rotation-manipulator API gap.                               | Keep marker guards for frame handle, child box, markers, camera/defaults, README, and no backend types.             |
 | `empty`                     | Restored except public key-release/render-hook API gaps.                           | Keep key-release and pre/post-render hooks tracked as public API follow-ups.                                        |
 | `fetch`                     | Re-opened strict-audit reminder case.                                              | Re-check against historical source before declaring complete; repair any new behavior gap found.                    |
 | `free_joint_cases`          | Needs strict audit.                                                                | Compare historical source and list controls/defaults.                                                               |

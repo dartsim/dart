@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `ce8ba83d2f3 Restore Fetch target affordance`.
+  `3945c65852c Restore coupler constraint controls`.
 - Latest pushed code checkpoint:
-  `ce8ba83d2f3 Restore Fetch target affordance`.
+  `3945c65852c Restore coupler constraint controls`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -131,6 +131,7 @@ history but are not guaranteed to be in chronological order.
   - `4a957790bef Restore rigid loop defaults`
   - `9f4af05ef1c Restore rigid cubes controls`
   - `ce8ba83d2f3 Restore Fetch target affordance`
+  - `3945c65852c Restore coupler constraint controls`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -183,10 +184,13 @@ history but are not guaranteed to be in chronological order.
   direct llvmpipe Fetch screenshot with analyzer coverage
   (`/tmp/dart_fetch_panel_text_direct_postlint.ppm`, 303694/307200 nonzero
   pixels).
-- Current implementation checkpoint in the worktree: `examples/coupler_constraint/`
-  behavior parity. The local implementation restores the historical
-  controller-driven comparison, reset action, live diagnostics, grid,
-  camera/run defaults, README, and marker guards through public `dart::gui`.
+- Current implementation checkpoint in the worktree: `examples/drag_and_drop/`
+  strict audit. The local implementation restores the historical
+  frame/child/axis-marker layout, visible frame manipulation affordance,
+  console/help text, 640x480 default launch size, camera home, README, and
+  marker guards through public `dart::gui`. True InteractiveFrame-style
+  rotation drag is tracked as a public manipulation API gap instead of reviving
+  OSG or private backend hooks.
 - Latest Fetch target-bar checkpoint state: committed and pushed as
   `ce8ba83d2f3 Restore Fetch target affordance`. Validation covered focused
   C++ build/CTest, direct and pixi Fetch headless screenshots with analyzer
@@ -198,6 +202,16 @@ history but are not guaranteed to be in chronological order.
   for `UNIT_gui_FilamentSceneExtraction`, direct and pixi Coupler headless
   screenshots with basic analyzer coverage, Python C++ example-runner tests
   (67 passed), and aggregate `examples` build.
+- Coupler post-lint validation completed and the checkpoint was pushed as
+  `3945c65852c Restore coupler constraint controls`. Post-lint evidence
+  covered the focused build, focused CTest, and direct llvmpipe headless
+  screenshot with basic analyzer coverage.
+- Drag-and-drop validation completed before this checkpoint commit: focused
+  C++ build for `drag_and_drop` and `UNIT_gui_FilamentSceneExtraction`,
+  focused CTest for `UNIT_gui_FilamentSceneExtraction`, direct and pixi
+  drag-and-drop headless screenshots with basic analyzer coverage, Python C++
+  example-runner tests (67 passed), aggregate `examples` build, mandatory
+  `pixi run lint`, and post-lint focused build/CTest/direct screenshot smoke.
 
 ## Current Code Shape
 
