@@ -37,6 +37,7 @@ namespace dart {
 namespace gui {
 
 struct ActiveRenderableState;
+struct ApplicationOptions;
 struct DebugLineDescriptor;
 struct GeometryDescriptor;
 struct MaterialDescriptor;
@@ -47,6 +48,8 @@ struct MeshVertex;
 struct OrbitCamera;
 struct OrbitCameraBasis;
 struct OrbitCameraController;
+struct Panel;
+class PanelBuilder;
 struct PerspectiveProjection;
 struct PickHit;
 struct PickRay;

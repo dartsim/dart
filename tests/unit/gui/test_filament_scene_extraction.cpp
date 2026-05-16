@@ -32,7 +32,9 @@
 
 #include <dart/config.hpp>
 
+#include <dart/gui/application.hpp>
 #include <dart/gui/geometry.hpp>
+#include <dart/gui/panel.hpp>
 #include <dart/gui/scene.hpp>
 
 #include <dart/simulation/world.hpp>
@@ -215,6 +217,53 @@ public:
     mTextureCoords = std::move(coords);
     mTextureCoordComponents = components;
   }
+};
+
+class RecordingPanelBuilder final : public dart::gui::PanelBuilder
+{
+public:
+  void text(std::string_view value) override
+  {
+    events.emplace_back("text:" + std::string(value));
+  }
+
+  void separator() override
+  {
+    events.emplace_back("separator");
+  }
+
+  void sameLine() override
+  {
+    events.emplace_back("same-line");
+  }
+
+  bool button(std::string_view label) override
+  {
+    events.emplace_back("button:" + std::string(label));
+    return buttonPressed;
+  }
+
+  bool checkbox(std::string_view label, bool& value) override
+  {
+    events.emplace_back("checkbox:" + std::string(label));
+    value = checkboxValue;
+    return true;
+  }
+
+  bool slider(
+      std::string_view label,
+      double& value,
+      double minimum,
+      double maximum) override
+  {
+    events.emplace_back("slider:" + std::string(label));
+    value = (minimum + maximum) * 0.5;
+    return true;
+  }
+
+  bool buttonPressed = true;
+  bool checkboxValue = true;
+  std::vector<std::string> events;
 };
 
 constexpr std::array<std::string_view, 18> kForbiddenBackendTokens
@@ -441,6 +490,7 @@ TEST(FilamentSceneExtraction, PublicAggregateUsesPromotedGuiHeaders)
       = readSourceFile(std::filesystem::path("dart") / "gui" / "all.hpp");
 
   EXPECT_EQ(aggregate.find("dart/gui/experimental"), std::string::npos);
+  EXPECT_NE(aggregate.find("#include <dart/gui/panel.hpp>"), std::string::npos);
   EXPECT_NE(aggregate.find("#include <dart/gui/scene.hpp>"), std::string::npos);
   EXPECT_NE(
       aggregate.find("#include <dart/gui/viewer.hpp>"), std::string::npos);
@@ -479,6 +529,81 @@ TEST(FilamentSceneExtraction, DiagnosticsExampleUsesPromotedGuiBoundary)
       mainSource.find("#include <dart/gui/scene.hpp>"), std::string::npos);
   EXPECT_NE(
       mainSource.find("dart::gui::extractRenderables"), std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
+{
+  bool diagnostics = false;
+  double gain = 0.0;
+  int clicks = 0;
+  dart::gui::Panel panel{"Controls", [&](dart::gui::PanelBuilder& builder) {
+                           builder.text("custom controls");
+                           builder.separator();
+                           if (builder.button("Trigger")) {
+                             ++clicks;
+                           }
+                           builder.sameLine();
+                           builder.checkbox("Diagnostics", diagnostics);
+                           builder.slider("Gain", gain, 0.0, 2.0);
+                         }};
+
+  RecordingPanelBuilder builder;
+  panel.build(builder);
+
+  EXPECT_EQ(clicks, 1);
+  EXPECT_TRUE(diagnostics);
+  EXPECT_DOUBLE_EQ(gain, 1.0);
+  EXPECT_EQ(
+      builder.events,
+      (std::vector<std::string>{
+          "text:custom controls",
+          "separator",
+          "button:Trigger",
+          "same-line",
+          "checkbox:Diagnostics",
+          "slider:Gain"}));
+
+  dart::gui::ApplicationOptions options;
+  options.defaultScene = "mvp";
+  options.panels.push_back(std::move(panel));
+  EXPECT_EQ(options.defaultScene, "mvp");
+  ASSERT_EQ(options.panels.size(), 1u);
+  EXPECT_EQ(options.panels.front().title, "Controls");
+}
+
+TEST(FilamentSceneExtraction, ImguiExampleUsesPromotedPanelBoundary)
+{
+  const std::vector<std::filesystem::path> sources
+      = {std::filesystem::path("examples") / "imgui" / "main.cpp",
+         std::filesystem::path("examples") / "imgui" / "CMakeLists.txt"};
+
+  const auto backendViolations
+      = scanSourceFilesForTokens(sources, kForbiddenBackendTokens);
+  for (const auto& violation : backendViolations) {
+    ADD_FAILURE() << violation.source << " reaches backend token `"
+                  << violation.token << "` directly";
+  }
+
+  const auto promotedViolations
+      = scanSourceFilesForTokens(sources, kForbiddenPromotedGuiTokens);
+  for (const auto& violation : promotedViolations) {
+    ADD_FAILURE() << violation.source << " reaches old GUI token `"
+                  << violation.token << "`";
+  }
+
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "imgui" / "main.cpp");
+  EXPECT_NE(
+      mainSource.find("#include <dart/gui/application.hpp>"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("#include <dart/gui/panel.hpp>"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("dart::gui::ApplicationOptions"), std::string::npos);
+  EXPECT_NE(mainSource.find("dart::gui::Panel"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("dart::gui::runApplication(argc, argv, options)"),
+      std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, FilamentExampleHeadersAvoidDirectFilamentIncludes)

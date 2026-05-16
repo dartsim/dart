@@ -33,6 +33,7 @@
 #ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCENES_HPP_
 #define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCENES_HPP_
 
+#include <dart/gui/panel.hpp>
 #include <dart/gui/scene.hpp>
 
 #include <dart/simulation/fwd.hpp>
@@ -106,6 +107,7 @@ enum class ExampleScene
 struct AppOptions
 {
   dart::gui::RunOptions run;
+  std::vector<dart::gui::Panel> panels;
   ExampleScene scene = ExampleScene::Mvp;
   bool showUi = true;
   bool showUiExplicit = false;

@@ -298,6 +298,36 @@ Execution order:
 3. Only after that proof point, start the mechanical directory cleanup that
    moves private implementation paths out of `dart/gui/experimental/detail`.
 
+First API checkpoint:
+
+- Add `dart/gui/panel.hpp` with a renderer-neutral `PanelBuilder` interface
+  for text, separators, same-line layout, buttons, checkboxes, and numeric
+  sliders.
+- Extend `dart::gui::ApplicationOptions` with `defaultScene` and custom
+  panels, then add `runApplication(argc, argv, ApplicationOptions)`.
+- Render those panels inside the private Filament/ImGui implementation without
+  exposing `imgui.h`, GLFW, or Filament headers through `dart/gui/*.hpp`.
+- Migrate `examples/imgui` first because it is the smallest Tier-A proof that
+  an example can own a real `main.cpp` and user-facing controls while linking
+  only against `dart-gui`.
+
+Implementation state:
+
+- `dart/gui/panel.hpp` and `dart::gui::ApplicationOptions` are implemented.
+- The private Filament implementation renders application panels inside the
+  existing UI frame through an internal ImGui adapter.
+- `examples/imgui` now has its own `main.cpp` using promoted `dart::gui`
+  headers and `ApplicationOptions.panels`.
+- Local evidence so far:
+  - C++ GUI target build for `dart-gui`, `dartsim`, `imgui`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Full `examples` target build
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct `imgui --headless --frames 1 --screenshot ...` capture
+  - Direct `imgui --headless --show-ui --frames 1 --screenshot ...` capture
+    to exercise the custom panel render path
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:

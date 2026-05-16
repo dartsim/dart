@@ -30,31 +30,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_APPLICATION_HPP_
-#define DART_GUI_APPLICATION_HPP_
+#ifndef DART_GUI_EXPERIMENTAL_PANEL_HPP_
+#define DART_GUI_EXPERIMENTAL_PANEL_HPP_
 
-#include <dart/gui/export.hpp>
 #include <dart/gui/panel.hpp>
 
-#include <string>
-#include <vector>
+namespace dart::gui::experimental {
 
-namespace dart::gui {
+using ::dart::gui::Panel;
+using ::dart::gui::PanelBuilder;
 
-struct ApplicationOptions
-{
-  std::string defaultScene;
-  std::vector<Panel> panels;
-};
+} // namespace dart::gui::experimental
 
-DART_GUI_API int runApplication(int argc, char* argv[]);
-
-DART_GUI_API int runApplication(
-    int argc, char* argv[], const char* defaultScene);
-
-DART_GUI_API int runApplication(
-    int argc, char* argv[], const ApplicationOptions& options);
-
-} // namespace dart::gui
-
-#endif // DART_GUI_APPLICATION_HPP_
+#endif // DART_GUI_EXPERIMENTAL_PANEL_HPP_

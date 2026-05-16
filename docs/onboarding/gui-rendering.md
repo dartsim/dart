@@ -22,6 +22,7 @@ descriptor APIs:
 - picking rays and hit records
 - orbit camera and controller helpers
 - run options and viewer lifecycle state
+- application options and renderer-neutral panel controls
 - screenshot and frame-output helpers
 - profile/debug helpers
 

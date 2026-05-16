@@ -46,6 +46,8 @@
 
 #include <imgui.h>
 
+#include <vector>
+
 #include <cstdint>
 
 namespace dart::gui::filament {
@@ -63,6 +65,7 @@ void updateFrameUi(
     const SelectionController& selectionController,
     bool& orbitLight,
     DebugOverlayController& debugOverlays,
+    std::vector<dart::gui::Panel>& panels,
     dart::gui::ViewerLifecycleState& lifecycle,
     double guiScale,
     dart::gui::ProfileAccumulator& profile)
@@ -91,6 +94,7 @@ void updateFrameUi(
         dartScene.world->getLastCollisionResult(),
         debugOverlays);
   }
+  renderApplicationPanels(panels, guiScale);
   ImGui::Render();
   updateImGuiOverlay(
       engine,

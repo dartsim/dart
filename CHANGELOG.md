@@ -27,6 +27,8 @@
   - Restored historical GUI example executable names as `dart::gui` launchers
     backed by `dartsim`, and added `--out <dir>` PPM image-sequence capture
     alongside the existing `--screenshot <path>` final-frame capture.
+  - Added a renderer-neutral `dart::gui` panel callback surface for examples
+    that need custom controls without including backend UI headers.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

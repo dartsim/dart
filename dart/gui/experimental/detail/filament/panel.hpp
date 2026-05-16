@@ -34,9 +34,11 @@
 #define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_PANEL_HPP_
 
 #include <dart/gui/debug.hpp>
+#include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
 
 #include <string>
+#include <vector>
 
 #include <cstddef>
 
@@ -53,6 +55,9 @@ bool renderBuiltInStatusPanel(
     DebugDrawOptions& contactDebugOptions,
     ViewerLifecycleState& lifecycle,
     double guiScale);
+
+void renderApplicationPanels(
+    std::vector<dart::gui::Panel>& panels, double guiScale);
 
 } // namespace dart::gui::filament
 

@@ -34,6 +34,55 @@
 
 #include <imgui.h>
 
+#include <string>
+
+namespace {
+
+class ImGuiPanelBuilder final : public dart::gui::PanelBuilder
+{
+public:
+  void text(std::string_view value) override
+  {
+    const std::string textValue(value);
+    ImGui::TextWrapped("%s", textValue.c_str());
+  }
+
+  void separator() override
+  {
+    ImGui::Separator();
+  }
+
+  void sameLine() override
+  {
+    ImGui::SameLine();
+  }
+
+  bool button(std::string_view label) override
+  {
+    const std::string labelValue(label);
+    return ImGui::Button(labelValue.c_str());
+  }
+
+  bool checkbox(std::string_view label, bool& value) override
+  {
+    const std::string labelValue(label);
+    return ImGui::Checkbox(labelValue.c_str(), &value);
+  }
+
+  bool slider(
+      std::string_view label,
+      double& value,
+      double minimum,
+      double maximum) override
+  {
+    const std::string labelValue(label);
+    return ImGui::SliderScalar(
+        labelValue.c_str(), ImGuiDataType_Double, &value, &minimum, &maximum);
+  }
+};
+
+} // namespace
+
 namespace dart::gui::filament {
 
 bool renderBuiltInStatusPanel(
@@ -119,6 +168,29 @@ bool renderBuiltInStatusPanel(
   ImGui::End();
 
   return debugOptionsChanged;
+}
+
+void renderApplicationPanels(
+    std::vector<dart::gui::Panel>& panels, double guiScale)
+{
+  ImGuiPanelBuilder builder;
+  for (auto& panel : panels) {
+    if (!panel.build) {
+      continue;
+    }
+
+    const char* title
+        = panel.title.empty() ? "DART Controls" : panel.title.c_str();
+    ImGui::SetNextWindowBgAlpha(0.72f);
+    ImGui::SetNextWindowSize(
+        {320.0f * static_cast<float>(guiScale), 0.0f}, ImGuiCond_FirstUseEver);
+    ImGui::Begin(
+        title,
+        nullptr,
+        ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
+    panel.build(builder);
+    ImGui::End();
+  }
 }
 
 } // namespace dart::gui::filament

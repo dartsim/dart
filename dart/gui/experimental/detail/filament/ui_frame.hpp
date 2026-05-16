@@ -33,6 +33,8 @@
 #ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_UI_FRAME_HPP_
 #define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_UI_FRAME_HPP_
 
+#include <vector>
+
 struct GLFWwindow;
 struct ImGuiIO;
 
@@ -44,6 +46,7 @@ class Scene;
 
 namespace dart::gui {
 
+struct Panel;
 struct ProfileAccumulator;
 struct ViewerLifecycleState;
 
@@ -71,6 +74,7 @@ void updateFrameUi(
     const SelectionController& selectionController,
     bool& orbitLight,
     DebugOverlayController& debugOverlays,
+    std::vector<dart::gui::Panel>& panels,
     dart::gui::ViewerLifecycleState& lifecycle,
     double guiScale,
     dart::gui::ProfileAccumulator& profile);

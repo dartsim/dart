@@ -30,31 +30,34 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_APPLICATION_HPP_
-#define DART_GUI_APPLICATION_HPP_
-
-#include <dart/gui/export.hpp>
+#include <dart/gui/application.hpp>
 #include <dart/gui/panel.hpp>
 
 #include <string>
-#include <vector>
 
-namespace dart::gui {
-
-struct ApplicationOptions
+int main(int argc, char* argv[])
 {
-  std::string defaultScene;
-  std::vector<Panel> panels;
-};
+  bool showDiagnostics = true;
+  double responseGain = 0.5;
+  int buttonClicks = 0;
 
-DART_GUI_API int runApplication(int argc, char* argv[]);
+  dart::gui::ApplicationOptions options;
+  options.defaultScene = "mvp";
+  options.panels.push_back(
+      dart::gui::Panel{"Example Controls", [&](dart::gui::PanelBuilder& panel) {
+                         panel.text("Custom example controls");
+                         panel.separator();
+                         if (panel.button("Trigger action")) {
+                           ++buttonClicks;
+                         }
+                         panel.sameLine();
+                         panel.text("clicks: " + std::to_string(buttonClicks));
+                         panel.checkbox("Diagnostics", showDiagnostics);
+                         panel.slider("Response gain", responseGain, 0.0, 1.0);
+                         if (showDiagnostics) {
+                           panel.text("gain: " + std::to_string(responseGain));
+                         }
+                       }});
 
-DART_GUI_API int runApplication(
-    int argc, char* argv[], const char* defaultScene);
-
-DART_GUI_API int runApplication(
-    int argc, char* argv[], const ApplicationOptions& options);
-
-} // namespace dart::gui
-
-#endif // DART_GUI_APPLICATION_HPP_
+  return dart::gui::runApplication(argc, argv, options);
+}

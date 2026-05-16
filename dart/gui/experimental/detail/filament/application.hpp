@@ -33,9 +33,16 @@
 #ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_APPLICATION_HPP_
 #define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_APPLICATION_HPP_
 
+namespace dart::gui {
+struct ApplicationOptions;
+} // namespace dart::gui
+
 namespace dart::gui::filament {
 
 int runFilamentGuiApplication(int argc, char* argv[]);
+
+int runFilamentGuiApplication(
+    int argc, char* argv[], const dart::gui::ApplicationOptions& options);
 
 } // namespace dart::gui::filament
 

@@ -14,8 +14,7 @@ pixi run ex dartsim --headless --frames 10 --out /tmp/dartsim_frames
 ```
 
 Historical GUI examples such as `hello_world`, `rigid_cubes`,
-`drag_and_drop`, and `imgui` are restored as thin `dart::gui` launchers with
-their own executable names:
+`drag_and_drop`, and `imgui` are restored with their own executable names:
 
 ```bash
 pixi run ex hello_world
@@ -25,3 +24,5 @@ pixi run ex rigid_cubes --headless --frames 10 --out /tmp/rigid_cubes_frames
 
 The renderer implementation is private to `dart::gui`; example code should
 include `<dart/gui/application.hpp>` and call `dart::gui::runApplication(...)`.
+Examples that need custom controls should use `<dart/gui/panel.hpp>` instead of
+including renderer or UI toolkit headers directly.

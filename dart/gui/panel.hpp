@@ -30,31 +30,43 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_APPLICATION_HPP_
-#define DART_GUI_APPLICATION_HPP_
+#ifndef DART_GUI_PANEL_HPP_
+#define DART_GUI_PANEL_HPP_
 
 #include <dart/gui/export.hpp>
-#include <dart/gui/panel.hpp>
 
+#include <functional>
 #include <string>
-#include <vector>
+#include <string_view>
 
 namespace dart::gui {
 
-struct ApplicationOptions
+class DART_GUI_API PanelBuilder
 {
-  std::string defaultScene;
-  std::vector<Panel> panels;
+public:
+  virtual ~PanelBuilder() = default;
+
+  virtual void text(std::string_view value) = 0;
+
+  virtual void separator() = 0;
+
+  virtual void sameLine() = 0;
+
+  virtual bool button(std::string_view label) = 0;
+
+  virtual bool checkbox(std::string_view label, bool& value) = 0;
+
+  virtual bool slider(
+      std::string_view label, double& value, double minimum, double maximum)
+      = 0;
 };
 
-DART_GUI_API int runApplication(int argc, char* argv[]);
-
-DART_GUI_API int runApplication(
-    int argc, char* argv[], const char* defaultScene);
-
-DART_GUI_API int runApplication(
-    int argc, char* argv[], const ApplicationOptions& options);
+struct Panel
+{
+  std::string title;
+  std::function<void(PanelBuilder&)> build;
+};
 
 } // namespace dart::gui
 
-#endif // DART_GUI_APPLICATION_HPP_
+#endif // DART_GUI_PANEL_HPP_

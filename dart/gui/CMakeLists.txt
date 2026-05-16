@@ -23,6 +23,7 @@ set(
   fwd.hpp
   geometry.hpp
   interaction.hpp
+  panel.hpp
   profile.hpp
   renderable.hpp
   scene.hpp
@@ -59,6 +60,7 @@ install(
     fwd.hpp
     geometry.hpp
     interaction.hpp
+    panel.hpp
     profile.hpp
     renderable.hpp
     scene.hpp

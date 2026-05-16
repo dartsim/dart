@@ -5,7 +5,7 @@ set(DART_GUI_SCENE_EXAMPLE_LAUNCHER
     "${DART_GUI_SCENE_EXAMPLE_DIR}/gui_scene_launcher.cpp"
 )
 
-function(dart_build_gui_scene_example target_name scene_name)
+function(dart_build_gui_example target_name)
   if(NOT DART_IN_SOURCE_BUILD)
     list(APPEND CMAKE_MODULE_PATH "${DART_GUI_SCENE_EXAMPLE_DIR}/../cmake")
     find_package(DART 7.0.0 REQUIRED COMPONENTS gui CONFIG)
@@ -18,13 +18,9 @@ function(dart_build_gui_scene_example target_name scene_name)
     return()
   endif()
 
-  add_executable(${target_name} "${DART_GUI_SCENE_EXAMPLE_LAUNCHER}")
+  add_executable(${target_name} ${ARGN})
   target_link_libraries(${target_name} PRIVATE dart-gui)
   target_compile_features(${target_name} PRIVATE cxx_std_20)
-  target_compile_definitions(
-    ${target_name}
-    PRIVATE DART_GUI_DEFAULT_SCENE="${scene_name}"
-  )
 
   if(DART_IN_SOURCE_BUILD)
     set_target_properties(
@@ -32,6 +28,16 @@ function(dart_build_gui_scene_example target_name scene_name)
       PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin"
     )
     dart_add_example(${target_name})
-    dart_format_add("${DART_GUI_SCENE_EXAMPLE_LAUNCHER}")
+    dart_format_add(${ARGN})
+  endif()
+endfunction()
+
+function(dart_build_gui_scene_example target_name scene_name)
+  dart_build_gui_example(${target_name} "${DART_GUI_SCENE_EXAMPLE_LAUNCHER}")
+  if(TARGET ${target_name})
+    target_compile_definitions(
+      ${target_name}
+      PRIVATE DART_GUI_DEFAULT_SCENE="${scene_name}"
+    )
   endif()
 endfunction()

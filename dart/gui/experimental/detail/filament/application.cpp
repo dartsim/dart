@@ -123,31 +123,36 @@ using dart::gui::filament::SimulationStepper;
 using dart::gui::filament::updateFrameUi;
 using dart::gui::filament::updateFrameViewport;
 
-int runFilamentGuiApplicationImpl(int argc, char* argv[])
+int runFilamentGuiApplicationImpl(
+    int argc,
+    char* argv[],
+    const dart::gui::ApplicationOptions& applicationOptions)
 {
-  const AppOptions appOptions = parseOptions(argc, argv);
-  const RunOptions& options = appOptions.run;
+  AppOptions appOptions = parseOptions(argc, argv);
+  appOptions.panels = applicationOptions.panels;
+  const RunOptions& runOptions = appOptions.run;
 
-  if (!options.frameOutputDirectory.empty()) {
+  if (!runOptions.frameOutputDirectory.empty()) {
     std::error_code error;
-    const std::filesystem::path outputDirectory(options.frameOutputDirectory);
+    const std::filesystem::path outputDirectory(
+        runOptions.frameOutputDirectory);
     std::filesystem::create_directories(outputDirectory, error);
     if (error) {
       std::cerr << "Failed to create frame output directory '"
-                << options.frameOutputDirectory << "': " << error.message()
+                << runOptions.frameOutputDirectory << "': " << error.message()
                 << "\n";
       return 1;
     }
     if (!std::filesystem::is_directory(outputDirectory, error)) {
       std::cerr << "Frame output path is not a directory: "
-                << options.frameOutputDirectory << "\n";
+                << runOptions.frameOutputDirectory << "\n";
       return 1;
     }
   }
 
-  ApplicationWindow appWindow = createApplicationWindow(options, std::cerr);
+  ApplicationWindow appWindow = createApplicationWindow(runOptions, std::cerr);
   GLFWwindow* window = appWindow.get();
-  if (!options.headless && window == nullptr) {
+  if (!runOptions.headless && window == nullptr) {
     return 1;
   }
 
@@ -156,13 +161,13 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
   attachOrbitCameraController(window, cameraController);
 
   FilamentRenderContext renderContext = createFilamentRenderContext(
-      options, options.headless ? nullptr : getNativeWindow(window));
+      runOptions, runOptions.headless ? nullptr : getNativeWindow(window));
   auto* engine = renderContext.engine;
   auto* view = renderContext.view;
   auto* scene = renderContext.scene;
   auto* camera = renderContext.camera;
   auto* colorGrading = createDebugColorGrading(*engine);
-  configureMainView(*view, colorGrading, options.headless);
+  configureMainView(*view, colorGrading, runOptions.headless);
   auto* indirectLight = createNeutralIndirectLight(*engine);
   auto* skybox = createNeutralSkybox(*engine);
 
@@ -191,12 +196,12 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
   bool orbitLight = appOptions.orbitLight;
   SceneLights lights = createSceneLights(
       *engine,
-      options.headless,
+      runOptions.headless,
       orbitLight,
       appOptions.orbitLightPeriodSeconds);
   attachSceneEnvironment(*scene, indirectLight, skybox, lights);
 
-  const float guiScale = static_cast<float>(options.guiScale);
+  const float guiScale = static_cast<float>(runOptions.guiScale);
   ImGuiOverlay imguiOverlay = createConfiguredImGuiOverlay(*engine, guiScale);
   auto& imguiIo = getCurrentImGuiIo();
 
@@ -214,7 +219,7 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
       *scene,
       materials,
       materialResources,
-      options,
+      runOptions,
       dartScene,
       cameraController,
       selectionController,
@@ -226,7 +231,7 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
       orbitStartClock,
       profile);
 
-  while (shouldContinueApplicationLoop(options.headless, window)) {
+  while (shouldContinueApplicationLoop(runOptions.headless, window)) {
     const auto frameStart = ProfileAccumulator::Clock::now();
     auto phaseStart = ProfileAccumulator::Clock::now();
     pollApplicationInput(
@@ -241,11 +246,11 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
         cameraController,
         selectionController,
         imguiIo,
-        options.width,
-        options.height,
+        runOptions.width,
+        runOptions.height,
         dartScene.world->getTimeStep(),
         appOptions.showUi,
-        options.guiScale);
+        runOptions.guiScale);
     profile.viewportCameraMs += elapsedMs(phaseStart);
 
     sceneFrameUpdater.update(
@@ -268,6 +273,7 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
           selectionController,
           orbitLight,
           debugOverlays,
+          appOptions.panels,
           lifecycle,
           guiScale,
           profile);
@@ -276,7 +282,7 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
     const FrameRenderResult frameRenderResult = renderApplicationFrame(
         renderContext,
         appOptions.showUi ? imguiOverlay.view : nullptr,
-        options,
+        runOptions,
         viewport.width,
         viewport.height,
         frameStart,
@@ -298,10 +304,10 @@ int runFilamentGuiApplicationImpl(int argc, char* argv[])
   const bool screenshotSucceeded = finalizeScreenshotCapture(
       renderContext,
       screenshotCapture,
-      options.screenshotPath,
+      runOptions.screenshotPath,
       lifecycle.screenshotRequested,
       profile);
-  if (options.maxFrames >= 0) {
+  if (runOptions.maxFrames >= 0) {
     std::cout << "Final contacts: "
               << dartScene.world->getLastCollisionResult().getNumContacts()
               << "\n";
@@ -343,14 +349,21 @@ namespace dart::gui {
 
 int runApplication(int argc, char* argv[])
 {
-  return filament::runFilamentGuiApplication(argc, argv);
+  return runApplication(argc, argv, ApplicationOptions{});
 }
 
 int runApplication(int argc, char* argv[], const char* defaultScene)
 {
-  if (defaultScene == nullptr || defaultScene[0] == '\0'
-      || hasSceneOption(argc, argv)) {
-    return runApplication(argc, argv);
+  ApplicationOptions options;
+  options.defaultScene = defaultScene == nullptr ? "" : defaultScene;
+  return runApplication(argc, argv, options);
+}
+
+int runApplication(
+    int argc, char* argv[], const ApplicationOptions& applicationOptions)
+{
+  if (applicationOptions.defaultScene.empty() || hasSceneOption(argc, argv)) {
+    return filament::runFilamentGuiApplication(argc, argv, applicationOptions);
   }
 
   std::vector<std::string> argumentStorage;
@@ -359,7 +372,7 @@ int runApplication(int argc, char* argv[], const char* defaultScene)
     argumentStorage.emplace_back(argv[i] == nullptr ? "" : argv[i]);
   }
   argumentStorage.emplace_back("--scene");
-  argumentStorage.emplace_back(defaultScene);
+  argumentStorage.emplace_back(applicationOptions.defaultScene);
 
   std::vector<char*> rewrittenArguments;
   rewrittenArguments.reserve(argumentStorage.size());
@@ -367,8 +380,10 @@ int runApplication(int argc, char* argv[], const char* defaultScene)
     rewrittenArguments.push_back(argument.data());
   }
 
-  return runApplication(
-      static_cast<int>(rewrittenArguments.size()), rewrittenArguments.data());
+  return filament::runFilamentGuiApplication(
+      static_cast<int>(rewrittenArguments.size()),
+      rewrittenArguments.data(),
+      applicationOptions);
 }
 
 } // namespace dart::gui
@@ -377,7 +392,15 @@ namespace dart::gui::filament {
 
 int runFilamentGuiApplication(int argc, char* argv[])
 {
-  return runFilamentGuiApplicationImpl(argc, argv);
+  return runFilamentGuiApplication(argc, argv, dart::gui::ApplicationOptions{});
+}
+
+int runFilamentGuiApplication(
+    int argc,
+    char* argv[],
+    const dart::gui::ApplicationOptions& applicationOptions)
+{
+  return runFilamentGuiApplicationImpl(argc, argv, applicationOptions);
 }
 
 } // namespace dart::gui::filament
