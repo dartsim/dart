@@ -120,6 +120,63 @@ def check_factory_aliases(repo_root: Path) -> list[str]:
     return failures
 
 
+def check_deprecation_policy(repo_root: Path) -> list[str]:
+    failures: list[str] = []
+    cmake = read_text(repo_root, "CMakeLists.txt")
+    option_pattern = re.compile(
+        r"dart_option\(\s*"
+        r"DART_COLLISION_DEPRECATE_LEGACY_NAMES\s+"
+        r'"Emit deprecation warnings for legacy collision detector names '
+        r'that now route to the built-in DART detector"\s+'
+        r"ON\s+CATEGORY build\s*\)",
+        re.DOTALL,
+    )
+    if not option_pattern.search(cmake):
+        failures.append(
+            "CMakeLists.txt: DART_COLLISION_DEPRECATE_LEGACY_NAMES must "
+            "default ON for the DART 7 migration window"
+        )
+
+    source = read_text(repo_root, "dart/collision/dart/dart_collision_detector.cpp")
+    require_contains(
+        failures,
+        source,
+        "#if DART_COLLISION_DEPRECATE_LEGACY_NAMES",
+        "legacy factory key deprecation warning",
+    )
+    require_contains(
+        failures,
+        source,
+        "DART_WARN_ONCE(",
+        "legacy factory key deprecation warning",
+    )
+    require_contains(
+        failures,
+        source,
+        "Collision detector factory key '{}' is deprecated",
+        "legacy factory key deprecation warning",
+    )
+    require_contains(
+        failures,
+        source,
+        "use 'dart' or the ",
+        "legacy factory key deprecation warning",
+    )
+    require_contains(
+        failures,
+        source,
+        "default collision detector instead",
+        "legacy factory key deprecation warning",
+    )
+    require_contains(
+        failures,
+        source,
+        "return DartCollisionDetector::create();",
+        "legacy factory key deprecation warning",
+    )
+    return failures
+
+
 def check_cpp_facade(repo_root: Path, facade: EngineFacade) -> list[str]:
     failures: list[str] = []
     compat_header = (
@@ -278,6 +335,7 @@ def main() -> int:
     repo_root = Path(__file__).resolve().parent.parent
     failures: list[str] = []
     failures.extend(check_factory_aliases(repo_root))
+    failures.extend(check_deprecation_policy(repo_root))
     for facade in FACADES:
         failures.extend(check_cpp_facade(repo_root, facade))
     failures.extend(check_python_clean_api(repo_root))
@@ -292,6 +350,7 @@ def main() -> int:
 
     print("Collision compatibility facade audit passed.")
     print("  factory keys: experimental, fcl, fcl_mesh, bullet, ode -> dart")
+    print("  deprecation policy: legacy C++ names warn by default")
     print(
         "  C++ facades: FCLCollisionDetector, BulletCollisionDetector, "
         "OdeCollisionDetector -> DartCollisionDetector"
