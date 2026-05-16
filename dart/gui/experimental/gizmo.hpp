@@ -45,6 +45,7 @@ using ::dart::gui::GizmoHandleKind;
 using ::dart::gui::hasGizmoFlag;
 using ::dart::gui::makeGizmoDebugLines;
 using ::dart::gui::pickNearestGizmoHandle;
+using ::dart::gui::rotateGizmoTarget;
 using ::dart::gui::translateGizmoTarget;
 
 } // namespace dart::gui::experimental

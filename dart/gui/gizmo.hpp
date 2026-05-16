@@ -103,6 +103,9 @@ enum class GizmoHandleKind
   TranslateX,
   TranslateY,
   TranslateZ,
+  RotateX,
+  RotateY,
+  RotateZ,
 };
 
 struct GizmoHandleHit
@@ -128,6 +131,9 @@ DART_GUI_API std::optional<GizmoHandleHit> pickNearestGizmoHandle(
 
 DART_GUI_API bool translateGizmoTarget(
     Gizmo& gizmo, const Eigen::Vector3d& worldTranslation);
+
+DART_GUI_API bool rotateGizmoTarget(
+    Gizmo& gizmo, const Eigen::Vector3d& worldAxis, double angle);
 
 } // namespace dart::gui
 

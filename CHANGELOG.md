@@ -167,8 +167,8 @@
     source-owned examples can preserve target hotkeys, selection labels, and
     solve-on-drag behavior without depending on private renderer fixtures.
   - Added a promoted `dart::gui::Gizmo` registration surface with debug-line
-    visualization and X/Y/Z axis-handle dragging for source-owned transform
-    target affordances.
+    visualization, X/Y/Z axis-handle dragging, and rotation-ring dragging for
+    source-owned transform target affordances.
   - Moved `atlas_puppet` off the private named-scene fixture launcher so the
     example source loads Atlas, creates its ground/root handle/IK targets, and
     passes public `dart::gui` IK handles directly.

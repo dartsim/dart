@@ -96,6 +96,7 @@
 #include <utility>
 #include <vector>
 
+#include <cmath>
 #include <cstdint>
 
 namespace {
@@ -813,7 +814,7 @@ TEST(FilamentSceneExtraction, GizmoDebugLinesFollowTargetFrame)
 
   const auto lines = dart::gui::makeGizmoDebugLines(gizmo, 2.0);
 
-  ASSERT_EQ(lines.size(), 12u);
+  ASSERT_GE(lines.size(), 12u);
   EXPECT_EQ(lines.front().label, "atlas_target.x");
   EXPECT_TRUE(lines.front().from.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
   EXPECT_TRUE(lines.front().to.isApprox(Eigen::Vector3d(2.0, 2.0, 3.0)));
@@ -823,6 +824,14 @@ TEST(FilamentSceneExtraction, GizmoDebugLinesFollowTargetFrame)
           lines.end(),
           [](const dart::gui::DebugLineDescriptor& line) {
             return line.label == "atlas_target.free_x";
+          }),
+      lines.end());
+  EXPECT_NE(
+      std::find_if(
+          lines.begin(),
+          lines.end(),
+          [](const dart::gui::DebugLineDescriptor& line) {
+            return line.label == "atlas_target.rotate_x";
           }),
       lines.end());
 
@@ -884,6 +893,47 @@ TEST(FilamentSceneExtraction, GizmoAxisHandlePickingDrivesTargetFrame)
   dart::gui::Gizmo invalid;
   EXPECT_FALSE(
       dart::gui::translateGizmoTarget(invalid, Eigen::Vector3d::UnitX()));
+}
+
+TEST(FilamentSceneExtraction, GizmoRotationHandleDrivesTargetFrame)
+{
+  auto target = SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), "gizmo_target");
+
+  dart::gui::Gizmo gizmo;
+  gizmo.label = "rotation_target";
+  gizmo.target = target;
+  gizmo.size = 1.0;
+
+  std::vector<dart::gui::Gizmo> gizmos{gizmo};
+  const double ringPoint = 0.72 / std::sqrt(2.0);
+  const dart::gui::PickRay xRingRay{
+      Eigen::Vector3d(-0.02, ringPoint, ringPoint), Eigen::Vector3d::UnitX()};
+  const auto hit
+      = dart::gui::pickNearestGizmoHandle(gizmos, xRingRay, 1.0, 0.05);
+
+  ASSERT_TRUE(hit.has_value());
+  EXPECT_EQ(hit->gizmoIndex, 0u);
+  EXPECT_EQ(hit->handle, dart::gui::GizmoHandleKind::RotateX);
+  EXPECT_TRUE(hit->axis.isApprox(Eigen::Vector3d::UnitX()));
+
+  bool callbackCalled = false;
+  gizmo.onChanged = [&](const Eigen::Isometry3d& transform) {
+    callbackCalled = true;
+    const Eigen::Matrix3d expected
+        = Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitX()).toRotationMatrix();
+    EXPECT_TRUE(transform.linear().isApprox(expected));
+  };
+
+  EXPECT_TRUE(dart::gui::rotateGizmoTarget(gizmo, hit->axis, 0.5));
+  const Eigen::Matrix3d expected
+      = Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitX()).toRotationMatrix();
+  EXPECT_TRUE(target->getWorldTransform().linear().isApprox(expected));
+  EXPECT_TRUE(callbackCalled);
+
+  dart::gui::Gizmo invalid;
+  EXPECT_FALSE(
+      dart::gui::rotateGizmoTarget(invalid, Eigen::Vector3d::UnitX(), 0.5));
 }
 
 TEST(FilamentSceneExtraction, ApplicationRunDefaultsSeedParsedOptions)
@@ -2333,6 +2383,8 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(readmeSource.find("Atlas Puppet Example"), std::string::npos);
   EXPECT_NE(readmeSource.find("dart::gui::Gizmo"), std::string::npos);
   EXPECT_NE(readmeSource.find("axis-arrow dragging"), std::string::npos);
+  EXPECT_NE(readmeSource.find("rotation"), std::string::npos);
+  EXPECT_NE(readmeSource.find("ring dragging"), std::string::npos);
   EXPECT_NE(readmeSource.find("pixi run ex atlas_puppet"), std::string::npos);
   EXPECT_NE(readmeSource.find("1280"), std::string::npos);
   EXPECT_NE(

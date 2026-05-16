@@ -36,6 +36,7 @@
 #include <dart/dynamics/simple_frame.hpp>
 
 #include <algorithm>
+#include <array>
 #include <limits>
 #include <utility>
 
@@ -43,6 +44,10 @@
 
 namespace dart::gui {
 namespace {
+
+constexpr int kRingSegments = 48;
+constexpr double kRingRadiusScale = 0.72;
+constexpr double kTwoPi = 6.2831853071795864769;
 
 void appendLine(
     std::vector<DebugLineDescriptor>& lines,
@@ -125,6 +130,44 @@ void appendFreeMoveHandle(
       label + ".free_z");
 }
 
+void appendRingLines(
+    std::vector<DebugLineDescriptor>& lines,
+    const Eigen::Vector3d& origin,
+    const Eigen::Vector3d& firstAxis,
+    const Eigen::Vector3d& secondAxis,
+    double radius,
+    const Eigen::Vector4d& color,
+    const std::string& label)
+{
+  if (!origin.allFinite() || !firstAxis.allFinite() || !secondAxis.allFinite()
+      || radius <= 0.0 || !std::isfinite(radius)) {
+    return;
+  }
+
+  const double firstNorm = firstAxis.norm();
+  const double secondNorm = secondAxis.norm();
+  if (!std::isfinite(firstNorm) || firstNorm < 1e-12
+      || !std::isfinite(secondNorm) || secondNorm < 1e-12) {
+    return;
+  }
+
+  const Eigen::Vector3d first = firstAxis / firstNorm;
+  const Eigen::Vector3d second = secondAxis / secondNorm;
+  for (int segment = 0; segment < kRingSegments; ++segment) {
+    const double angle0 = kTwoPi * static_cast<double>(segment)
+                          / static_cast<double>(kRingSegments);
+    const double angle1 = kTwoPi * static_cast<double>(segment + 1)
+                          / static_cast<double>(kRingSegments);
+    const Eigen::Vector3d from
+        = origin
+          + (first * std::cos(angle0) + second * std::sin(angle0)) * radius;
+    const Eigen::Vector3d to
+        = origin
+          + (first * std::cos(angle1) + second * std::sin(angle1)) * radius;
+    appendLine(lines, from, to, color, label);
+  }
+}
+
 struct RaySegmentHit
 {
   double rayDistance = 0.0;
@@ -146,6 +189,20 @@ GizmoHandleKind handleKindForAxisIndex(int axisIndex)
       return GizmoHandleKind::TranslateY;
     case 2:
       return GizmoHandleKind::TranslateZ;
+    default:
+      return GizmoHandleKind::None;
+  }
+}
+
+GizmoHandleKind rotationHandleKindForAxisIndex(int axisIndex)
+{
+  switch (axisIndex) {
+    case 0:
+      return GizmoHandleKind::RotateX;
+    case 1:
+      return GizmoHandleKind::RotateY;
+    case 2:
+      return GizmoHandleKind::RotateZ;
     default:
       return GizmoHandleKind::None;
   }
@@ -229,7 +286,8 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
   }
 
   if (!hasGizmoFlag(gizmo.flags, GizmoFlags::Translate)
-      && !hasGizmoFlag(gizmo.flags, GizmoFlags::TranslateXY)) {
+      && !hasGizmoFlag(gizmo.flags, GizmoFlags::TranslateXY)
+      && !hasGizmoFlag(gizmo.flags, GizmoFlags::Rotate)) {
     return lines;
   }
 
@@ -243,17 +301,48 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
   const double length = gizmo.size * scale;
   const std::string label = makeGizmoLabel(gizmo);
 
-  lines.reserve(12);
-  appendArrowLines(
-      lines, origin, rotation.col(0), length, gizmo.colors.x, label + ".x");
-  appendArrowLines(
-      lines, origin, rotation.col(1), length, gizmo.colors.y, label + ".y");
-  if (hasGizmoFlag(gizmo.flags, GizmoFlags::Translate)) {
+  lines.reserve(12 + kRingSegments * 3);
+  if (hasGizmoFlag(gizmo.flags, GizmoFlags::Translate)
+      || hasGizmoFlag(gizmo.flags, GizmoFlags::TranslateXY)) {
     appendArrowLines(
-        lines, origin, rotation.col(2), length, gizmo.colors.z, label + ".z");
+        lines, origin, rotation.col(0), length, gizmo.colors.x, label + ".x");
+    appendArrowLines(
+        lines, origin, rotation.col(1), length, gizmo.colors.y, label + ".y");
+    if (hasGizmoFlag(gizmo.flags, GizmoFlags::Translate)) {
+      appendArrowLines(
+          lines, origin, rotation.col(2), length, gizmo.colors.z, label + ".z");
+    }
+    appendFreeMoveHandle(
+        lines, origin, length * 0.18, gizmo.colors.highlight, label);
   }
-  appendFreeMoveHandle(
-      lines, origin, length * 0.18, gizmo.colors.highlight, label);
+
+  if (hasGizmoFlag(gizmo.flags, GizmoFlags::Rotate)) {
+    const double ringRadius = length * kRingRadiusScale;
+    appendRingLines(
+        lines,
+        origin,
+        rotation.col(1),
+        rotation.col(2),
+        ringRadius,
+        gizmo.colors.x,
+        label + ".rotate_x");
+    appendRingLines(
+        lines,
+        origin,
+        rotation.col(2),
+        rotation.col(0),
+        ringRadius,
+        gizmo.colors.y,
+        label + ".rotate_y");
+    appendRingLines(
+        lines,
+        origin,
+        rotation.col(0),
+        rotation.col(1),
+        ringRadius,
+        gizmo.colors.z,
+        label + ".rotate_z");
+  }
 
   return lines;
 }
@@ -290,7 +379,8 @@ std::optional<GizmoHandleHit> pickNearestGizmoHandle(
     if (gizmo.target == nullptr || gizmo.size <= 0.0
         || !std::isfinite(gizmo.size)
         || (!hasGizmoFlag(gizmo.flags, GizmoFlags::Translate)
-            && !hasGizmoFlag(gizmo.flags, GizmoFlags::TranslateXY))) {
+            && !hasGizmoFlag(gizmo.flags, GizmoFlags::TranslateXY)
+            && !hasGizmoFlag(gizmo.flags, GizmoFlags::Rotate))) {
       continue;
     }
 
@@ -303,33 +393,85 @@ std::optional<GizmoHandleHit> pickNearestGizmoHandle(
     const Eigen::Matrix3d rotation = transform.linear();
     const double length = gizmo.size * scale;
     const double radius = handleRadius * scale;
-    const int axisCount
-        = hasGizmoFlag(gizmo.flags, GizmoFlags::Translate) ? 3 : 2;
-    for (int axisIndex = 0; axisIndex < axisCount; ++axisIndex) {
-      Eigen::Vector3d axis = rotation.col(axisIndex);
-      const double axisNorm = axis.norm();
-      if (!axis.allFinite() || axisNorm < 1e-12 || !std::isfinite(axisNorm)) {
-        continue;
-      }
-      axis /= axisNorm;
-
-      const auto hit
-          = intersectRaySegment(ray, origin, origin + axis * length, radius);
-      if (!hit) {
-        continue;
-      }
-
-      if (!nearest || hit->rayDistance < nearest->distance
-          || (std::abs(hit->rayDistance - nearest->distance) < 1e-12
-              && hit->separation < nearestSeparation)) {
+    const auto considerHit = [&](const RaySegmentHit& hit,
+                                 GizmoHandleKind handle,
+                                 const Eigen::Vector3d& axis) {
+      if (!nearest || hit.rayDistance < nearest->distance
+          || (std::abs(hit.rayDistance - nearest->distance) < 1e-12
+              && hit.separation < nearestSeparation)) {
         GizmoHandleHit gizmoHit;
         gizmoHit.gizmoIndex = gizmoIndex;
-        gizmoHit.handle = handleKindForAxisIndex(axisIndex);
-        gizmoHit.distance = hit->rayDistance;
-        gizmoHit.point = hit->segmentPoint;
+        gizmoHit.handle = handle;
+        gizmoHit.distance = hit.rayDistance;
+        gizmoHit.point = hit.segmentPoint;
         gizmoHit.axis = axis;
         nearest = gizmoHit;
-        nearestSeparation = hit->separation;
+        nearestSeparation = hit.separation;
+      }
+    };
+
+    const int axisCount
+        = hasGizmoFlag(gizmo.flags, GizmoFlags::Translate) ? 3 : 2;
+    if (hasGizmoFlag(gizmo.flags, GizmoFlags::Translate)
+        || hasGizmoFlag(gizmo.flags, GizmoFlags::TranslateXY)) {
+      for (int axisIndex = 0; axisIndex < axisCount; ++axisIndex) {
+        Eigen::Vector3d axis = rotation.col(axisIndex);
+        const double axisNorm = axis.norm();
+        if (!axis.allFinite() || axisNorm < 1e-12 || !std::isfinite(axisNorm)) {
+          continue;
+        }
+        axis /= axisNorm;
+
+        const auto hit
+            = intersectRaySegment(ray, origin, origin + axis * length, radius);
+        if (hit) {
+          considerHit(*hit, handleKindForAxisIndex(axisIndex), axis);
+        }
+      }
+    }
+
+    if (hasGizmoFlag(gizmo.flags, GizmoFlags::Rotate)) {
+      const double ringRadius = length * kRingRadiusScale;
+      const std::array<std::pair<int, int>, 3> ringPlaneAxes{
+          {{1, 2}, {2, 0}, {0, 1}}};
+      for (int axisIndex = 0; axisIndex < 3; ++axisIndex) {
+        Eigen::Vector3d axis = rotation.col(axisIndex);
+        const double axisNorm = axis.norm();
+        if (!axis.allFinite() || axisNorm < 1e-12 || !std::isfinite(axisNorm)) {
+          continue;
+        }
+        axis /= axisNorm;
+
+        Eigen::Vector3d first = rotation.col(ringPlaneAxes[axisIndex].first);
+        Eigen::Vector3d second = rotation.col(ringPlaneAxes[axisIndex].second);
+        const double firstNorm = first.norm();
+        const double secondNorm = second.norm();
+        if (!first.allFinite() || !second.allFinite()
+            || !std::isfinite(firstNorm) || firstNorm < 1e-12
+            || !std::isfinite(secondNorm) || secondNorm < 1e-12) {
+          continue;
+        }
+        first /= firstNorm;
+        second /= secondNorm;
+
+        for (int segment = 0; segment < kRingSegments; ++segment) {
+          const double angle0 = kTwoPi * static_cast<double>(segment)
+                                / static_cast<double>(kRingSegments);
+          const double angle1 = kTwoPi * static_cast<double>(segment + 1)
+                                / static_cast<double>(kRingSegments);
+          const Eigen::Vector3d from
+              = origin
+                + (first * std::cos(angle0) + second * std::sin(angle0))
+                      * ringRadius;
+          const Eigen::Vector3d to
+              = origin
+                + (first * std::cos(angle1) + second * std::sin(angle1))
+                      * ringRadius;
+          const auto hit = intersectRaySegment(ray, from, to, radius);
+          if (hit) {
+            considerHit(*hit, rotationHandleKindForAxisIndex(axisIndex), axis);
+          }
+        }
       }
     }
   }
@@ -351,6 +493,36 @@ bool translateGizmoTarget(Gizmo& gizmo, const Eigen::Vector3d& worldTranslation)
 
   Eigen::Isometry3d transform = simpleFrame->getWorldTransform();
   transform.translation() += worldTranslation;
+  simpleFrame->setTransform(transform, dart::dynamics::Frame::World());
+  if (gizmo.onChanged) {
+    gizmo.onChanged(transform);
+  }
+  return true;
+}
+
+bool rotateGizmoTarget(
+    Gizmo& gizmo, const Eigen::Vector3d& worldAxis, double angle)
+{
+  if (gizmo.target == nullptr || !worldAxis.allFinite()
+      || !std::isfinite(angle)) {
+    return false;
+  }
+
+  const double axisNorm = worldAxis.norm();
+  if (!std::isfinite(axisNorm) || axisNorm <= 1e-12) {
+    return false;
+  }
+
+  const auto simpleFrame
+      = std::dynamic_pointer_cast<dart::dynamics::SimpleFrame>(gizmo.target);
+  if (!simpleFrame) {
+    return false;
+  }
+
+  Eigen::Isometry3d transform = simpleFrame->getWorldTransform();
+  transform.linear()
+      = Eigen::AngleAxisd(angle, worldAxis / axisNorm).toRotationMatrix()
+        * transform.linear();
   simpleFrame->setTransform(transform, dart::dynamics::Frame::World());
   if (gizmo.onChanged) {
     gizmo.onChanged(transform);

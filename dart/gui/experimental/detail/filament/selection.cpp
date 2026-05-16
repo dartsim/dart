@@ -63,6 +63,7 @@ using dart::gui::PickRay;
 using dart::gui::RenderableDescriptor;
 using dart::gui::RenderableId;
 using dart::gui::rotateFrameRenderable;
+using dart::gui::rotateGizmoTarget;
 using dart::gui::translateFrameRenderable;
 using dart::gui::translateGizmoTarget;
 using dart::gui::ViewerLifecycleState;
@@ -138,6 +139,13 @@ bool rotateRenderableAndApplyIk(
 std::string selectionLabelForGizmo(const dart::gui::Gizmo& gizmo)
 {
   return (gizmo.label.empty() ? std::string("gizmo") : gizmo.label) + " gizmo";
+}
+
+bool isRotationGizmoHandle(dart::gui::GizmoHandleKind handle)
+{
+  return handle == dart::gui::GizmoHandleKind::RotateX
+         || handle == dart::gui::GizmoHandleKind::RotateY
+         || handle == dart::gui::GizmoHandleKind::RotateZ;
 }
 
 } // namespace
@@ -306,12 +314,17 @@ void SelectionController::updateMouseSelection(
       if (const auto gizmoHit
           = pickNearestGizmoHandle(scene.gizmos, pressRay, guiScale)) {
         mLeftMouseStartedDrag = true;
-        mSelectedDragMode = DragMode::GizmoTranslateAxis;
+        mSelectedDragMode = isRotationGizmoHandle(gizmoHit->handle)
+                                ? DragMode::GizmoRotateAxis
+                                : DragMode::GizmoTranslateAxis;
         mSelectedDragIsAxisConstrained = true;
         mActiveGizmoIndex = gizmoHit->gizmoIndex;
         mSelectedDragLastRay = pressRay;
+        mSelectedDragLastCursorX = cursorX;
+        mSelectedDragLastCursorY = cursorY;
         mSelectedDragPlanePoint = gizmoHit->point;
         mSelectedDragAxisDirection = gizmoHit->axis;
+        mSelectedRotationAxis = gizmoHit->axis;
         mSelectedRenderableId = 0;
         mSelectedPoint = gizmoHit->point;
         mSelectedNormal.reset();
@@ -398,6 +411,21 @@ void SelectionController::updateMouseSelection(
         lifecycle.paused = true;
         descriptors = extractRenderables(*scene.world);
       }
+    } else if (mSelectedDragMode == DragMode::GizmoRotateAxis) {
+      const double cursorDelta = (cursorX - mSelectedDragLastCursorX)
+                                 - (cursorY - mSelectedDragLastCursorY);
+      const double angle = cursorDelta * kRotationRadiansPerPixel;
+      if (std::abs(angle) > 1e-12 && mActiveGizmoIndex < scene.gizmos.size()
+          && rotateGizmoTarget(
+              scene.gizmos[mActiveGizmoIndex], mSelectedRotationAxis, angle)) {
+        mSelectedPoint = scene.gizmos[mActiveGizmoIndex]
+                             .target->getWorldTransform()
+                             .translation();
+        lifecycle.paused = true;
+        descriptors = extractRenderables(*scene.world);
+      }
+      mSelectedDragLastCursorX = cursorX;
+      mSelectedDragLastCursorY = cursorY;
     } else {
       const PickRay ray = makePerspectivePickRay(
           camera, cursorX, cursorY, framebufferWidth, framebufferHeight);

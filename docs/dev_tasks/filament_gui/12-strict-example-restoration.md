@@ -598,11 +598,12 @@ restored. Do not rely on earlier restored-state wording in the inventory.
 63. R24-1 is committed locally as `9d5dc251b43`. It adds the public
     `dart::gui::Gizmo` value API, registers render-only gizmos through
     `ApplicationOptions`, renders them privately as debug-line overlays, and
-    attaches them to Atlas Puppet targets. The active implementation slice is
-    now R24-2: wire X/Y/Z gizmo arrow handles to axis-drag math for
-    `SimpleFrame` targets while keeping rotation rings, plane handles, hover
-    highlight, and replacing the old target-sphere affordance for later R24
-    slices.
+    attaches them to Atlas Puppet targets.
+64. R24-2 is committed locally as `bb90788bbd2`. It wires X/Y/Z gizmo arrow
+    handles to axis-drag math for `SimpleFrame` targets. The active
+    implementation slice is now R24-3: add X/Y/Z rotation rings and wire them
+    to target rotation while keeping plane handles, hover highlight, and
+    replacing the old target-sphere affordance for later R24 slices.
 
 ## Checkpoint Rule
 

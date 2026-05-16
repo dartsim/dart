@@ -102,6 +102,7 @@ private:
     Translate,
     Rotate,
     GizmoTranslateAxis,
+    GizmoRotateAxis,
   };
 
   bool mWasLeftMousePressed = false;
