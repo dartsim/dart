@@ -1146,8 +1146,12 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
       mainSource.find("CollisionDetectorType::Bullet"), std::string::npos);
   EXPECT_NE(mainSource.find("interactive frame"), std::string::npos);
   EXPECT_NE(mainSource.find("LineSegmentShape"), std::string::npos);
-  EXPECT_NE(mainSource.find("createTargetBarsShape"), std::string::npos);
-  EXPECT_NE(mainSource.find("two transparent green bars"), std::string::npos);
+  EXPECT_NE(mainSource.find("createTargetHandleShape"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("transparent green target handle"), std::string::npos);
+  EXPECT_NE(mainSource.find("kTargetRotationStep"), std::string::npos);
+  EXPECT_NE(mainSource.find("rotateFetchTarget"), std::string::npos);
+  EXPECT_NE(mainSource.find("createFetchKeyboardActions"), std::string::npos);
   EXPECT_NE(mainSource.find("fetch_pick_and_place_grid"), std::string::npos);
   EXPECT_NE(mainSource.find("createFetchGridShape"), std::string::npos);
   EXPECT_NE(mainSource.find("createFetchGrid"), std::string::npos);
@@ -1174,14 +1178,22 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
       mainSource.find("whole body motion of the Fetch robot"),
       std::string::npos);
   EXPECT_NE(mainSource.find("User Guide"), std::string::npos);
+  EXPECT_NE(mainSource.find("Left drag orbits"), std::string::npos);
+  EXPECT_NE(mainSource.find("u/j, i/k, o/l rotate"), std::string::npos);
   EXPECT_NE(mainSource.find("builder.button(\"Play\")"), std::string::npos);
   EXPECT_NE(mainSource.find("builder.button(\"Pause\")"), std::string::npos);
   EXPECT_NE(mainSource.find("builder.button(\"Exit\")"), std::string::npos);
   EXPECT_NE(mainSource.find("dart::gui::requestExit"), std::string::npos);
   EXPECT_NE(mainSource.find("About DART"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
+  EXPECT_NE(mainSource.find("Rotate target +X"), std::string::npos);
+  EXPECT_NE(mainSource.find("Reset target pose"), std::string::npos);
   EXPECT_NE(readmeSource.find("Fetch MJCF Example"), std::string::npos);
   EXPECT_NE(
-      readmeSource.find("transparent green target bars"), std::string::npos);
+      readmeSource.find("transparent green target handle"), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("renderer-neutral manipulation API"),
+      std::string::npos);
   EXPECT_NE(
       readmeSource.find("dart::gui::ApplicationOptions"), std::string::npos);
   EXPECT_NE(readmeSource.find("1280x960"), std::string::npos);

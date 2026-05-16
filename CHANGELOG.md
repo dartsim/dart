@@ -64,6 +64,10 @@
     the historical example source.
   - Restored the `fetch` example's draggable target as two transparent green
     bars matching the historical end-effector affordance.
+  - Strengthened the `fetch` example target affordance with source-owned
+    public DART line geometry, renderer-neutral target rotation/reset keyboard
+    actions, and restored viewer help text, while tracking exact mouse
+    rotation rings as a public manipulation API follow-up.
   - Restored the rigid/constraint example batch (`rigid_chain`, `rigid_loop`,
     `mixed_chain`, `coupler_constraint`, `add_delete_skels`, and
     `rigid_shapes`) as source-defined `dart::gui` examples.

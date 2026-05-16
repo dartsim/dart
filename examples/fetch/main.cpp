@@ -55,10 +55,14 @@
 
 #include <Eigen/Geometry>
 
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
+#include <cmath>
 #include <cstddef>
 
 namespace {
@@ -72,6 +76,7 @@ constexpr const char* kFetchTargetName = "interactive frame";
 constexpr const char* kFetchGridName = "fetch_pick_and_place_grid";
 constexpr const char* kFetchGridBodyName = "fetch_pick_and_place_grid_body";
 constexpr const char* kFetchGridShapeName = "fetch_pick_and_place_grid_lines";
+constexpr double kTargetRotationStep = 0.08726646259971647;
 
 struct FetchScene
 {
@@ -153,22 +158,63 @@ void setFrameColor(
   frame->getVisualAspect(true)->setRGBA(color);
 }
 
-std::shared_ptr<dart::dynamics::LineSegmentShape> createTargetBarsShape()
+std::shared_ptr<dart::dynamics::LineSegmentShape> createTargetHandleShape()
 {
-  auto bars = std::make_shared<dart::dynamics::LineSegmentShape>(10.0f);
-  const std::size_t center = bars->addVertex(Eigen::Vector3d::Zero());
-  bars->addVertex(Eigen::Vector3d(0.24, 0.0, 0.0), center);
-  bars->addVertex(Eigen::Vector3d(-0.24, 0.0, 0.0), center);
-  bars->addVertex(Eigen::Vector3d(0.0, 0.24, 0.0), center);
-  bars->addVertex(Eigen::Vector3d(0.0, -0.24, 0.0), center);
-  return bars;
+  auto handle = std::make_shared<dart::dynamics::LineSegmentShape>(8.0f);
+  const std::size_t center = handle->addVertex(Eigen::Vector3d::Zero());
+
+  handle->addVertex(Eigen::Vector3d(0.24, 0.0, 0.0), center);
+  handle->addVertex(Eigen::Vector3d(-0.24, 0.0, 0.0), center);
+  handle->addVertex(Eigen::Vector3d(0.0, 0.24, 0.0), center);
+  handle->addVertex(Eigen::Vector3d(0.0, -0.24, 0.0), center);
+  handle->addVertex(Eigen::Vector3d(0.0, 0.0, 0.24), center);
+  handle->addVertex(Eigen::Vector3d(0.0, 0.0, -0.24), center);
+
+  const auto addLoop = [&](auto&& pointForIndex) {
+    constexpr std::size_t segments = 32;
+    std::size_t first = 0;
+    std::size_t previous = 0;
+    for (std::size_t i = 0; i < segments; ++i) {
+      const auto vertex = handle->addVertex(pointForIndex(i, segments));
+      if (i == 0) {
+        first = vertex;
+      } else {
+        handle->addConnection(previous, vertex);
+      }
+      previous = vertex;
+    }
+    handle->addConnection(previous, first);
+  };
+
+  constexpr double radius = 0.30;
+  constexpr double pi = 3.14159265358979323846;
+  addLoop([radius, pi](std::size_t i, std::size_t segments) {
+    const double angle
+        = 2.0 * pi * static_cast<double>(i) / static_cast<double>(segments);
+    return Eigen::Vector3d(
+        radius * std::cos(angle), radius * std::sin(angle), 0.0);
+  });
+  addLoop([radius, pi](std::size_t i, std::size_t segments) {
+    const double angle
+        = 2.0 * pi * static_cast<double>(i) / static_cast<double>(segments);
+    return Eigen::Vector3d(
+        radius * std::cos(angle), 0.0, radius * std::sin(angle));
+  });
+  addLoop([radius, pi](std::size_t i, std::size_t segments) {
+    const double angle
+        = 2.0 * pi * static_cast<double>(i) / static_cast<double>(segments);
+    return Eigen::Vector3d(
+        0.0, radius * std::cos(angle), radius * std::sin(angle));
+  });
+
+  return handle;
 }
 
 std::shared_ptr<dart::dynamics::SimpleFrame> createTargetFrame()
 {
   auto target = dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World(), kFetchTargetName, makeTargetTransform());
-  target->setShape(createTargetBarsShape());
+  target->setShape(createTargetHandleShape());
   setFrameColor(target, Eigen::Vector4d(0.18, 0.86, 0.34, 0.55));
   return target;
 }
@@ -275,6 +321,97 @@ void syncMocapTarget(const FetchScene& scene)
   }
 }
 
+void pauseAfterTargetEdit(dart::gui::KeyboardActionContext& context)
+{
+  if (context.lifecycle != nullptr) {
+    context.lifecycle->paused = true;
+  }
+}
+
+void rotateFetchTarget(
+    const std::shared_ptr<dart::dynamics::SimpleFrame>& target,
+    const Eigen::Vector3d& localAxis,
+    double angle,
+    dart::gui::KeyboardActionContext& context)
+{
+  if (target == nullptr) {
+    return;
+  }
+
+  Eigen::Isometry3d transform = target->getTransform();
+  const Eigen::Vector3d worldAxis = transform.linear() * localAxis.normalized();
+  transform.linear() = Eigen::AngleAxisd(angle, worldAxis).toRotationMatrix()
+                       * transform.linear();
+  target->setTransform(transform);
+  pauseAfterTargetEdit(context);
+}
+
+void resetFetchTarget(
+    const std::shared_ptr<dart::dynamics::SimpleFrame>& target,
+    dart::gui::KeyboardActionContext& context)
+{
+  if (target == nullptr) {
+    return;
+  }
+
+  target->setTransform(makeTargetTransform());
+  pauseAfterTargetEdit(context);
+}
+
+dart::gui::KeyboardAction makeFetchTargetAction(
+    std::string label,
+    char key,
+    bool repeat,
+    std::function<void(dart::gui::KeyboardActionContext&)> callback)
+{
+  dart::gui::KeyboardAction action;
+  action.label = std::move(label);
+  action.shortcut = dart::gui::KeyboardShortcut::characterKey(key);
+  action.repeat = repeat;
+  action.callback = std::move(callback);
+  return action;
+}
+
+std::vector<dart::gui::KeyboardAction> createFetchKeyboardActions(
+    const std::shared_ptr<dart::dynamics::SimpleFrame>& target)
+{
+  std::vector<dart::gui::KeyboardAction> actions;
+  const auto addRotation = [&](std::string label,
+                               char key,
+                               const Eigen::Vector3d& axis,
+                               double angle) {
+    actions.push_back(makeFetchTargetAction(
+        std::move(label),
+        key,
+        true,
+        [target, axis, angle](dart::gui::KeyboardActionContext& context) {
+          rotateFetchTarget(target, axis, angle, context);
+        }));
+  };
+
+  addRotation(
+      "Rotate target +X", 'u', Eigen::Vector3d::UnitX(), kTargetRotationStep);
+  addRotation(
+      "Rotate target -X", 'j', Eigen::Vector3d::UnitX(), -kTargetRotationStep);
+  addRotation(
+      "Rotate target +Y", 'i', Eigen::Vector3d::UnitY(), kTargetRotationStep);
+  addRotation(
+      "Rotate target -Y", 'k', Eigen::Vector3d::UnitY(), -kTargetRotationStep);
+  addRotation(
+      "Rotate target +Z", 'o', Eigen::Vector3d::UnitZ(), kTargetRotationStep);
+  addRotation(
+      "Rotate target -Z", 'l', Eigen::Vector3d::UnitZ(), -kTargetRotationStep);
+  actions.push_back(makeFetchTargetAction(
+      "Reset target pose",
+      'r',
+      false,
+      [target](dart::gui::KeyboardActionContext& context) {
+        resetFetchTarget(target, context);
+      }));
+
+  return actions;
+}
+
 dart::gui::Panel createFetchPanel()
 {
   dart::gui::Panel panel;
@@ -287,12 +424,18 @@ dart::gui::Panel createFetchPanel()
         "location of the end-effector.");
     builder.text(
         "The end-effector follows the invisible dummy object indicated at the "
-        "cross of the two transparent green bars.");
+        "center of the transparent green target handle.");
     builder.text("The offset grid marks the pick-and-place work area.");
     builder.text("User Guide");
     builder.text(
-        "Select the green bars, then Ctrl-left drag or use arrow keys.");
+        "Select the green handle, then Ctrl-left drag or use arrow keys.");
     builder.text("X/Y/Z constrain Ctrl-left drag to one world axis.");
+    builder.text("u/j, i/k, o/l rotate the target about local X/Y/Z.");
+    builder.text("r resets the target pose.");
+    builder.text("Left drag orbits; right or middle drag pans; wheel zooms.");
+    builder.text("Space pauses; n steps once; Escape exits.");
+    builder.text(
+        "--screenshot captures one frame; --out writes a PPM sequence.");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button("Play")) {
@@ -314,6 +457,7 @@ dart::gui::Panel createFetchPanel()
     builder.separator();
     builder.text("Help");
     builder.text("The end-effector follows the interactive target.");
+    builder.text("Mouse rotation rings need a public manipulation API.");
     builder.text("About DART: project and libdart simulation libraries.");
     builder.text("time: " + std::to_string(context.simulationTime));
     builder.text("contacts: " + std::to_string(context.contactCount));
@@ -337,6 +481,7 @@ int main(int argc, char* argv[])
       syncMocapTarget(scene);
     };
     options.panels.push_back(createFetchPanel());
+    options.keyboardActions = createFetchKeyboardActions(scene.target);
 
     return dart::gui::runApplication(argc, argv, options);
   } catch (const std::exception& e) {

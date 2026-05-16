@@ -129,7 +129,16 @@ API gap. The current Fetch re-audit checkpoint restores the historical
 `Fetch robot example` panel title and whole-body-motion instructional copy,
 updates the audit table, adds source-marker coverage, and has passed focused
 build/CTest, direct and pixi screenshot analyzer checks, and the Python
-example-runner unit test. The current heightmap checkpoint restores
+example-runner unit test. After the pushed human joint-limits checkpoint
+(`cf0ed62209e`), maintainer steering re-opened Fetch again as the concrete
+incomplete-example case. The next active slice should strengthen Fetch target
+manipulation/help parity through public `dart::gui`: restore a richer
+source-owned target affordance, add any feasible renderer-neutral target
+orientation controls, and record exact mouse rotation-ring parity as a public
+manipulation API gap if needed. The local implementation now adds the richer
+target handle, target rotation/reset keyboard actions, and restored viewer help
+text; validate, lint, commit, and push it before selecting another example. The
+current heightmap checkpoint restores
 `--demo interactive|alignment`, a mutable `HeightmapShaped` `SimpleFrame`,
 renderer-neutral panel controls, the ODE-backed alignment scene, camera/run
 defaults, README, changelog, and source-marker tests. The old OSG grid style

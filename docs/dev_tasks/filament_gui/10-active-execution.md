@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `1297aca1fe6 Restore drag and drop affordances`.
+  `cf0ed62209e Restore human joint limits live example`.
 - Latest pushed code checkpoint:
-  `1297aca1fe6 Restore drag and drop affordances`.
+  `cf0ed62209e Restore human joint limits live example`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -227,6 +227,31 @@ history but are not guaranteed to be in chronological order.
   `pixi run lint`, focused rebuild and CTest for `human_joint_limits` plus
   `UNIT_gui_FilamentSceneExtraction`, and direct llvmpipe headless screenshot
   with basic analyzer coverage.
+- The human joint-limits checkpoint was pushed as
+  `cf0ed62209e Restore human joint limits live example`; do not wait for CI
+  before continuing independent strict-audit work.
+- Latest maintainer correction after the human checkpoint: do not move on as if
+  the remaining queue were only small untouched examples. There are still many
+  examples that are not fully restored, and `examples/fetch/` is again the
+  concrete reminder case.
+- Active slice is re-opened `examples/fetch/`: compare the current source to
+  `520993d7301^:examples/fetch/main.cpp` again, especially the old
+  interactive-frame manipulation affordance and viewer help text. Restore
+  anything expressible through public `dart::gui`; if exact mouse rotation
+  rings/tools require a new renderer-neutral API, spell out that API gap rather
+  than reviving OSG types.
+- Implementation state for this Fetch re-open slice: `examples/fetch/main.cpp`
+  now replaces the two-bar-only marker with one transparent green line target
+  handle that carries local axes/rings on the same selectable `SimpleFrame`,
+  adds renderer-neutral target rotation/reset keyboard actions, and restores
+  the shared viewer help text in the promoted panel. Exact mouse rotation
+  rings/tools remain a public manipulation API follow-up.
+- Fetch re-open validation completed before checkpoint commit: focused C++
+  build for `fetch` and `UNIT_gui_FilamentSceneExtraction`, focused CTest for
+  `UNIT_gui_FilamentSceneExtraction`, direct and pixi Fetch headless
+  screenshots with basic analyzer coverage, Python C++ example-runner tests
+  (67 passed), aggregate `examples` build, `git diff --check`, mandatory
+  `pixi run lint`, and post-lint focused build/CTest/direct screenshot smoke.
 
 ## Current Code Shape
 

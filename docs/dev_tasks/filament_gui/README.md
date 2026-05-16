@@ -112,6 +112,17 @@ size, instructions, README, and marker guards through public `dart::gui`.
 The historical TinyDNN-backed custom arm/leg constraints remain a named
 dependency/API follow-up because the current maintained dependency stack no
 longer carries TinyDNN.
+That checkpoint was pushed as
+`cf0ed62209e Restore human joint limits live example`. The active slice is now
+re-opened `examples/fetch/` again because maintainer steering explicitly warned
+that many examples remain incompletely restored. This Fetch pass must focus on
+the historical interactive target and help surface: the old target exposed
+axis, planar, and rotation manipulation affordances, while the migrated source
+had only two target bars plus translated-frame dragging. The local
+implementation now uses one richer transparent green line target handle, adds
+target rotation/reset keyboard actions through public `dart::gui`, and
+restores shared viewer help text. Exact mouse rotation rings remain a public
+manipulation API follow-up.
 An earlier parity slice restored `examples/rigid_shapes`:
 restore the historical shape-spawn/delete/contact keyboard controls, convex
 mesh spawn path, contact-point visualization, camera home, and 640x480 default

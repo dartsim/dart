@@ -46,6 +46,27 @@ The current Fetch repair addresses the first point by replacing the generic
 3-axis target cross with two transparent green target bars on the same
 selectable `SimpleFrame`.
 
+2026-05-16 follow-up: after the human joint-limits checkpoint, maintainer
+steering again called out that many more examples are still not fully restored,
+with `examples/fetch/` as the concrete example. The active Fetch re-open must
+challenge the earlier conclusion that two target bars plus translation are
+enough: the old `InteractiveFrame` target exposed axis arrows, planar
+translation tools, and rotation rings, and the old panel embedded the shared
+viewer instructions. Restore the strongest public `dart::gui` replacement now
+and keep exact mouse rotation-gizmo parity as a named public manipulation API
+gap if it cannot be expressed without legacy renderer types.
+
+Implementation state for this re-opened Fetch slice: the source now uses one
+transparent green line target handle with local axes/rings, adds
+renderer-neutral keyboard actions for target rotation/reset, and restores the
+shared viewer help text in the panel. Exact mouse rotation rings remain a
+public manipulation API follow-up.
+
+Validation state: focused Fetch build/CTest, direct and pixi headless
+screenshot smokes, Python C++ example-runner tests, aggregate `examples` build,
+`git diff --check`, mandatory lint, and post-lint focused smoke checks have
+passed locally for this slice.
+
 ## Active Queue
 
 Use `11-example-parity-audit.md` as the live per-example table. The queue is
@@ -56,10 +77,12 @@ are not itemized.
 
 Immediate order:
 
-1. Update the active docs to reflect the latest pushed `rigid_cubes`
-   checkpoint and this broader correction.
-2. Re-open `examples/fetch/` for one more strict comparison and repair any
-   concrete gap found through public `dart::gui`.
+1. Update the active docs to reflect the latest pushed
+   `cf0ed62209e Restore human joint limits live example` checkpoint and the
+   renewed Fetch correction.
+2. Re-open `examples/fetch/` now. Stronger target manipulation/help parity is
+   implemented and locally validated; commit and push it. Exact mouse rotation
+   rings/tools remain a renderer-neutral manipulation API gap.
 3. `examples/coupler_constraint/` was committed and pushed as
    `3945c65852c Restore coupler constraint controls` after mandatory lint and
    post-lint focused checks.
@@ -72,7 +95,8 @@ Immediate order:
    rather than reintroducing OSG.
    This checkpoint was pushed as
    `1297aca1fe6 Restore drag and drop affordances`.
-5. Audit and restore `examples/human_joint_limits/` next. The historical
+5. `examples/human_joint_limits/` was committed and pushed as
+   `cf0ed62209e Restore human joint limits live example`. The historical
    example depended on TinyDNN-backed custom arm/leg constraints and required
    ODE/Bullet; the current branch no longer carries TinyDNN. Restore the live
    world, joint-limit enforcement, default size, instructions, README, and
