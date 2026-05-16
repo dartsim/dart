@@ -946,6 +946,68 @@ TEST(WorldTests, DefaultNativeRotatedBoxStaysOnGround15s)
 }
 
 //==============================================================================
+TEST(WorldTests, DefaultNativeHelloWorldBoxDoesNotTunnel)
+{
+  constexpr double groundTop = 0.05;
+  const Eigen::Vector3d boxSize(0.3, 0.3, 0.3);
+
+  auto skeleton = Skeleton::create();
+  auto jointAndBody = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* body = jointAndBody.second;
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0.0, 0.0, 1.0);
+  tf.linear() = math::expMapRot(Eigen::Vector3d(0.31, -0.62, 0.47));
+  body->getParentJoint()->setTransformFromParentBodyNode(tf);
+
+  auto* shapeNode = body->createShapeNodeWith<
+      VisualAspect,
+      CollisionAspect,
+      DynamicsAspect>(std::make_shared<BoxShape>(boxSize));
+  body->setInertia(Inertia(
+      1.0,
+      Eigen::Vector3d::Zero(),
+      shapeNode->getShape()->computeInertia(1.0)));
+
+  auto ground = Skeleton::create("ground");
+  auto* groundBody = ground->createJointAndBodyNodePair<WeldJoint>().second;
+  groundBody
+      ->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
+          std::make_shared<BoxShape>(Eigen::Vector3d(10.0, 10.0, 0.1)));
+
+  auto world = World::create();
+  world->setTimeStep(0.001);
+  ASSERT_TRUE(world->getCollisionDetector());
+  ASSERT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
+  world->addSkeleton(skeleton);
+  world->addSkeleton(ground);
+
+  bool sawContact = false;
+  double lowestVertexZ = std::numeric_limits<double>::infinity();
+  for (int step = 0; step < 3000; ++step) {
+    world->step();
+    const auto& collisionResult = world->getLastCollisionResult();
+    sawContact = sawContact || collisionResult.getNumContacts() > 0u;
+    lowestVertexZ
+        = std::min(lowestVertexZ, measureBoxLowestVertexZ(body, boxSize));
+
+    EXPECT_TRUE(body->getWorldTransform().matrix().array().allFinite())
+        << "step=" << step;
+    if (step >= 500 && step % 100 == 0) {
+      EXPECT_GE(measureBoxLowestVertexZ(body, boxSize), groundTop - 0.005)
+          << "step=" << step;
+    }
+  }
+
+  EXPECT_TRUE(sawContact);
+  EXPECT_GE(lowestVertexZ, groundTop - 0.005);
+  EXPECT_TRUE(hasLocalAxisAlignedWithWorldZ(
+      body->getWorldTransform().linear(), 5.0 * M_PI / 180.0))
+      << "rotation=\n"
+      << body->getWorldTransform().linear();
+}
+
+//==============================================================================
 TEST(WorldTests, DefaultNativeThinBoxDoesNotTunnel)
 {
   const auto result = runDefaultNativeBoxOnGroundWithSize(

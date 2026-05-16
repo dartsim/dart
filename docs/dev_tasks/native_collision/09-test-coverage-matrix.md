@@ -216,6 +216,7 @@ deterministic across threads, etc.).
 | `rotated_box_rests_on_ground`        | DONE   | `test_world.cpp::DefaultNativeRotatedBoxRestsOnGround`                                     | Extended by face-rest and long-horizon checks                       |
 | `rotated_box_settles_on_face_2s`     | DONE   | `test_world.cpp::DefaultNativeRotatedBoxSettlesOnFace`                                     | Round 7 acceptance #2                                               |
 | `rotated_box_15s_no_tunneling`       | DONE   | `test_world.cpp::DefaultNativeRotatedBoxStaysOnGround15s`                                  | Round 7 acceptance #3 — the load-bearing stability test             |
+| `hello_world_box_no_tunneling`       | DONE   | `test_world.cpp::DefaultNativeHelloWorldBoxDoesNotTunnel`                                  | Exact example-style free-joint and shape-node setup                 |
 | `stacked_boxes_n10`                  | DONE   | `test_world.cpp::DefaultNativeTenBoxStackDoesNotTunnel`                                    | Simple vertical stack stability                                     |
 | `stacked_boxes_n100`                 | DONE   | `test_world.cpp::DefaultNativeHundredBoxWallDoesNotTunnel`                                 | 100-box wall stability                                              |
 | `mixed_primitive_stack`              | DONE   | `test_world.cpp::DefaultNativeMixedPrimitiveStackDoesNotTunnel`, `bm_mixed_primitives.cpp` | Unit stability and benchmark coverage                               |
@@ -349,10 +350,10 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 
 - **§1 Pair-wise narrow-phase:** 89 DONE, 0 PARTIAL, 0 GAP (of 89 rows)
 - **§2 Algorithm-level:** 38 DONE, 0 PARTIAL, 11 GAP (of 49 rows)
-- **§3 Stress / regression:** 31 DONE, 0 PARTIAL, 0 GAP (of 31 rows)
+- **§3 Stress / regression:** 32 DONE, 0 PARTIAL, 0 GAP (of 32 rows)
 - **§4 Benchmarks:** 30 DONE, 0 PARTIAL, 14 GAP (of 44 rows)
 - **§5 Infrastructure:** 9 DONE, 0 PARTIAL, 0 GAP (of 9 rows)
-- **TOTAL:** 197 DONE, 0 PARTIAL, 25 GAP (of 222 rows)
+- **TOTAL:** 198 DONE, 0 PARTIAL, 25 GAP (of 223 rows)
 
 DART native is currently at ~89% of the proposed superset, with pair-wise
 narrow-phase coverage closed. The remaining coverage is concentrated in:
