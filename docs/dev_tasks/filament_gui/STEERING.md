@@ -548,13 +548,17 @@ Audit command:
 rg -n "options\\.defaultScene" examples
 ```
 
-Current result after the joint/dynamics source migration:
+Current result after the `imgui` / `tinkertoy` ownership repair:
 
-- **Still inverse-dependent:** `examples/imgui/main.cpp`,
-  `examples/tinkertoy/main.cpp`.
-- **Flipped to self-owned in this slice:** `examples/drag_and_drop/main.cpp`
-  now constructs its `SimpleFrame` anchor, child draggable frame, and X/Y/Z
-  marker frames in-source and passes `options.world` to
+- **Still inverse-dependent:** none under `examples/**/*.cpp`.
+- **Flipped to self-owned in the latest slice:** `examples/imgui/main.cpp`
+  now constructs a small panel-demo DART world in-source, and
+  `examples/tinkertoy/main.cpp` now constructs its reference axes, target,
+  force-line, and initial Tinkertoy assemblies in-source. The runner no longer
+  injects `--scene tinkertoy`.
+- **Recently flipped:** `examples/drag_and_drop/main.cpp` constructs its
+  `SimpleFrame` anchor, child draggable frame, and X/Y/Z marker frames
+  in-source and passes `options.world` to
   `runApplication(argc, argv, options)`.
 - **Already self-owned:** `hello_world`, `boxes`, `box_stacking`,
   `rigid_cubes`, `simple_frames`, `capsule_ground_contact`, `fetch`,

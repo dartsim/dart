@@ -61,18 +61,20 @@ simulator/viewer identity, analogous to Isaac Sim.
 User correction after the `drag_and_drop` checkpoint: examples such as
 `examples/fetch/` may be source-owned without being fully restored. The docs now
 distinguish example ownership (`options.world`, no `options.defaultScene`) from
-feature parity with the historical source. `fetch` is the immediate repair
-target because it lost visible interactive target affordances, Bullet
-preference, and richer target-following panel content during the first
-migration.
+feature parity with the historical source. `fetch` has been repaired with the
+visible target affordance, Bullet preference when available, live target
+following, and a focused boundary guard. The next ownership checkpoint removes
+the last per-example `options.defaultScene` uses by making `imgui` and
+`tinkertoy` construct their public-API worlds directly.
 
 ## Immediate Next Step
 
-After the Fetch parity checkpoint is committed and pushed, continue the broader
-example restoration audit. Do not wait for CI before making independent
-progress, but inspect and fix CI failures if they surface. Next priorities are
-the remaining inverse-dependent examples (`imgui`, `tinkertoy`) and the
-robot/IK examples that still use macro scene launchers.
+After the `imgui`/`tinkertoy` ownership checkpoint is committed and pushed,
+continue the broader example restoration audit. Do not wait for CI before
+making independent progress, but inspect and fix CI failures if they surface.
+Next priorities are the robot/IK examples that still use macro scene launchers:
+`atlas_puppet`, `atlas_simbicon`, `hubo_puppet`, `g1_puppet`, `wam_ikfast`,
+and `operational_space_control`.
 
 ## Context That Would Be Lost
 
@@ -625,14 +627,17 @@ the smoke regex, and CMake scene pairs for drift.
 
 `feature/filament-gui-full-execution`, tracking
 `origin/feature/filament-gui-full-execution`. Verify with
-`git status --short --branch` before editing; the branch was clean at
-`8796ed5ad99` when this handoff was refreshed.
+`git status --short --branch` before editing. The Fetch parity checkpoint is
+`0294ef88c0f3812321c80161dffc857276767fa9`; the current pending checkpoint is
+the `imgui`/`tinkertoy` source-ownership repair.
 
 ## Current Immediate Next Step
 
-Continue after the `--out <dir>` image-sequence checkpoint through the promoted
-`dart::gui` runtime. Keep `--screenshot <path>` working for the existing CTest
-and GitHub Actions smoke path. A later broader smoke sweep can still use:
+Continue after the `imgui`/`tinkertoy` source-ownership checkpoint by restoring
+the robot/IK macro-launcher examples through the promoted `dart::gui` runtime.
+Keep `--screenshot <path>` and `--out <dir>` working for the existing CTest,
+GitHub Actions smoke path, and historical image-sequence workflows. A later
+broader smoke sweep can still use:
 
 ```bash
 pixi run test-dart-gui-smoke

@@ -52,6 +52,9 @@
   - Moved `drag_and_drop` off the private named-scene fixture path so the
     example source owns its DART world and passes it through
     `dart::gui::ApplicationOptions::world`.
+  - Moved `imgui` and `tinkertoy` off private named-scene fixture defaults so
+    their example sources own their DART worlds through
+    `dart::gui::ApplicationOptions::world`.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

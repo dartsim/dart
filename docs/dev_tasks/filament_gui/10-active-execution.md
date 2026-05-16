@@ -603,6 +603,51 @@ Eighth source-migration checkpoint:
   smoke-checks inherited `--gui-scale` parsing, builds all examples, and runs
   lint before commit/push/CI dispatch.
 
+Ninth source-ownership checkpoint:
+
+- Remove the remaining per-example `options.defaultScene` inverse dependency
+  from `examples/imgui` and `examples/tinkertoy`.
+- `imgui` should own a small public-API DART world suitable for demonstrating
+  renderer-neutral `dart::gui::Panel` controls instead of borrowing the private
+  `mvp` developer fixture.
+- `tinkertoy` should move the current Tinkertoy reference axes, target,
+  force-line, and initial block assembly out of the private named-scene
+  fixture path and into `examples/tinkertoy/main.cpp`.
+- This checkpoint is an ownership repair, not a full claim that every old OSG
+  Tinkertoy input affordance has been rebuilt. Any missing historical keyboard,
+  recording, and builder-edit controls remain parity gaps until public
+  `dart::gui` exposes the required input/tool surfaces.
+- Remove the `tinkertoy` runner default `--scene tinkertoy` after the binary
+  owns its world.
+- Local acceptance for this checkpoint:
+  - `git grep -nE 'options\.defaultScene\s*=' examples/` returns no matches.
+  - C++ GUI target build for `imgui`, `tinkertoy`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct headless screenshot capture for `imgui` and `tinkertoy`
+  - `pixi run ex tinkertoy --headless --frames 1 --screenshot ...`
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+- Implementation state for this slice: `examples/imgui/main.cpp` now owns a
+  small public-API panel-demo world, `examples/tinkertoy/main.cpp` now owns
+  the Tinkertoy axes, target, force-line, and initial assemblies, and the
+  runner no longer injects `--scene tinkertoy`.
+- Local evidence so far:
+  - `git grep -nE 'options\.defaultScene\s*=' examples/` returns no matches.
+  - C++ GUI target build for `imgui`, `tinkertoy`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct headless screenshot capture for `imgui` and `tinkertoy`
+  - `pixi run ex tinkertoy --headless --frames 1 --screenshot ...`
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+  - `git diff --check`
+  - Post-lint C++ GUI target rebuild for `imgui`, `tinkertoy`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:
@@ -633,12 +678,11 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Repair `examples/fetch` from source-owned but partial to parity-restored:
-   restore its target affordance with public DART frames/shapes, prefer Bullet
-   when available, preserve the live target-following behavior, and add a
-   focused boundary guard.
-2. Continue across the remaining pre-existing examples in small related
+1. Continue across the remaining pre-existing examples in small related
    families, documenting each slice here before implementation.
+2. Prioritize the robot/IK macro-launcher examples next:
+   `atlas_puppet`, `atlas_simbicon`, `hubo_puppet`, `g1_puppet`,
+   `wam_ikfast`, and `operational_space_control`.
 3. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
    corresponding example behavior has moved into public-API example code.
 4. Do not start the physical `experimental/` directory move until the

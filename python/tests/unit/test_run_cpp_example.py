@@ -34,7 +34,7 @@ FILAMENT_ROUTED_EXAMPLES = {
     "operational_space_control": ("--scene", "operational-space-control"),
     "wam_ikfast": ("--scene", "wam-ikfast"),
     "fetch": (),
-    "tinkertoy": ("--scene", "tinkertoy"),
+    "tinkertoy": (),
     "drag_and_drop": (),
     "empty": ("--scene", "drag-and-drop"),
     "simple_frames": (),

@@ -624,9 +624,9 @@ TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
          {std::filesystem::path("examples") / "joint_constraints", true},
          {std::filesystem::path("examples") / "free_joint_cases", true},
          {std::filesystem::path("examples") / "human_joint_limits", true},
-         {std::filesystem::path("examples") / "imgui", true, false},
+         {std::filesystem::path("examples") / "imgui", true},
          {std::filesystem::path("examples") / "drag_and_drop", true},
-         {std::filesystem::path("examples") / "tinkertoy", true, false}};
+         {std::filesystem::path("examples") / "tinkertoy", true}};
   std::vector<std::filesystem::path> sources;
   for (const auto& example : examples) {
     sources.push_back(example.directory / "main.cpp");
